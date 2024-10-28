@@ -1940,13 +1940,9 @@ void CodeGen::genGenerateMachineCode()
             printf("; OSR variant for entry point 0x%x\n", compiler->info.compILEntry);
         }
 
-        if (compiler->compIsAsync2StateMachine())
+        if (compiler->compIsAsync2())
         {
-            printf("; async2 state machine\n");
-        }
-        else if (compiler->compIsAsync2ViaUnwinding())
-        {
-            printf("; async2 via unwinding\n");
+            printf("; async2\n");
         }
 
         if ((compiler->opts.compFlags & CLFLG_MAXOPT) == CLFLG_MAXOPT)
@@ -7204,7 +7200,7 @@ void CodeGen::genReturn(GenTree* treeNode)
         }
     }
 
-    if (treeNode->OperIs(GT_RETURN) && compiler->compIsAsync2StateMachine())
+    if (treeNode->OperIs(GT_RETURN) && compiler->compIsAsync2())
     {
         instGen_Set_Reg_To_Zero(EA_PTRSIZE, REG_ASYNC_CONTINUATION_RET);
     }

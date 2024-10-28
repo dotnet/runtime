@@ -758,9 +758,6 @@ HRESULT EEConfig::sync()
 
     backpatchEntryPointSlots = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_BackpatchEntryPointSlots) != 0;
 
-    runtimeAsyncViaJitGeneratedStateMachines = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_RuntimeAsyncViaJitGeneratedStateMachines) != 0;
-    taskletAging = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_TaskletAging) != 0;
-
 #if defined(FEATURE_GDBJIT) && defined(_DEBUG)
     {
         LPWSTR pszGDBJitElfDumpW = NULL;

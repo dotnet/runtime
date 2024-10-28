@@ -1829,13 +1829,12 @@ public:
             return false;
         auto asyncType = GetAddrOfAsyncMethodData()->type;
 
-        return asyncType == AsyncMethodType::Async ||
-               (asyncType == AsyncMethodType::AsyncToTask && !g_pConfig->RuntimeAsyncViaJitGeneratedStateMachines());
+        return asyncType == AsyncMethodType::Async;
     }
 
     inline bool RequiresAsyncContinuationArg()
     {
-        return IsAsync2Method() && g_pConfig->RuntimeAsyncViaJitGeneratedStateMachines();
+        return IsAsync2Method();
     }
 
     inline bool HasAsyncMethodData()
@@ -1994,7 +1993,6 @@ private:
 
     bool TryGenerateAsyncThunk(DynamicResolver** resolver, COR_ILMETHOD_DECODER** methodILDecoder);
     bool TryGenerateUnsafeAccessor(DynamicResolver** resolver, COR_ILMETHOD_DECODER** methodILDecoder);
-    void EmitUnwindingBasedRuntimeAsyncThunk(MethodDesc* pAsyncOtherVariant, MetaSig& msig, ILStubLinker* pSL);
     void EmitJitStateMachineBasedRuntimeAsyncThunk(MethodDesc* pAsyncOtherVariant, MetaSig& thunkMsig, ILStubLinker* pSL);
     void EmitAsync2MethodThunk(MethodDesc* pAsyncOtherVariant, MetaSig& msig, ILStubLinker* pSL);
 public:

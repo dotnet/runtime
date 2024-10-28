@@ -112,9 +112,6 @@ public:
 
     bool          BackpatchEntryPointSlots() const { LIMITED_METHOD_CONTRACT; return backpatchEntryPointSlots; }
 
-    bool          RuntimeAsyncViaJitGeneratedStateMachines() const { LIMITED_METHOD_CONTRACT; return runtimeAsyncViaJitGeneratedStateMachines; }
-    bool          TaskletAging() const { LIMITED_METHOD_CONTRACT; return taskletAging; }
-
 #if defined(FEATURE_GDBJIT) && defined(_DEBUG)
     inline bool ShouldDumpElfOnMethod(LPCUTF8 methodName) const
     {
@@ -647,7 +644,6 @@ private: //----------------------------------------------------------------
 #endif
 
     bool runtimeAsyncViaJitGeneratedStateMachines;
-    bool taskletAging;
 public:
 
     enum BitForMask {

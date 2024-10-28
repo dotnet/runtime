@@ -1335,7 +1335,7 @@ int LinearScan::BuildCall(GenTreeCall* call)
     }
 #endif // SWIFT_SUPPORT
 
-    if (call->IsAsync2() && compiler->compIsAsync2StateMachine())
+    if (call->IsAsync2() && compiler->compIsAsync2())
     {
         MarkAsyncContinuationBusyForCall(call);
     }

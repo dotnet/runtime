@@ -2369,9 +2369,7 @@ bool GenTreeCall::HasSideEffects(Compiler* compiler, bool ignoreExceptions, bool
 //   True if so.
 //
 // Remarks:
-//   The exact nature of the async2 calling convention depends on whether
-//   JitConfig.RuntimeAsyncViaJitGeneratedStateMachines is true or not. When
-//   true, it involves passing an async continuation as a separate argument and
+//   async2 involves passing an async continuation as a separate argument and
 //   returning an async continuation in REG_ASYNC_CONTINUATION_RET.
 //
 //   The async continuation is usually JIT added

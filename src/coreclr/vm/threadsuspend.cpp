@@ -4941,9 +4941,6 @@ static bool GetReturnAddressHijackInfo(EECodeInfo *pCodeInfo, ReturnKind *pRetur
     // TODO: Expand return kind to include this?
     *hasAsyncRet = false;
 
-    if (!g_pConfig->RuntimeAsyncViaJitGeneratedStateMachines())
-        return true;
-
     MethodDesc* pMD = pCodeInfo->GetMethodDesc();
     *hasAsyncRet = pMD->IsAsync2Method() ||
         (pMD->IsIntrinsic() && IsSpecialCaseAsyncRet(pMD));

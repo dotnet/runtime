@@ -3366,13 +3366,9 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
             printf("OPTIONS: Jit invoked for ngen\n");
         }
 
-        if (compIsAsync2StateMachine())
+        if (compIsAsync2())
         {
-            printf("OPTIONS: compilation is an async2 state machine\n");
-        }
-        else if (compIsAsync2ViaUnwinding())
-        {
-            printf("OPTIONS: compilation is an async2 function (via unwinding)\n");
+            printf("OPTIONS: compilation is an async2\n");
         }
     }
 #endif
@@ -5227,7 +5223,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     }
 #endif // TARGET_ARM
 
-    if (compIsAsync2StateMachine())
+    if (compIsAsync2())
     {
         DoPhase(this, PHASE_ASYNC2, &Compiler::TransformAsync2);
     }

@@ -146,7 +146,7 @@ void Compiler::lvaInitTypeRef()
         info.compTypeCtxtArg = BAD_VAR_NUM;
     }
 
-    if (compIsAsync2StateMachine())
+    if (compIsAsync2())
     {
         info.compArgsCount++;
     }
@@ -1491,7 +1491,7 @@ void Compiler::lvaInitGenericsCtxt(InitVarDscInfo* varDscInfo)
 
 void Compiler::lvaInitAsyncContinuation(InitVarDscInfo* varDscInfo)
 {
-    if (!compIsAsync2StateMachine())
+    if (!compIsAsync2())
     {
         return;
     }

@@ -277,13 +277,10 @@ void ReplaceInstrAfterCall(PBYTE instrToReplace, MethodDesc* callMD)
     }
     _ASSERTE(IsValidReturnKind(returnKind));
 
-    if (g_pConfig->RuntimeAsyncViaJitGeneratedStateMachines())
+    if (callMD->IsAsync2Method() || (callMD->IsIntrinsic() && IsSpecialCaseAsyncRet(callMD)))
     {
-        if (callMD->IsAsync2Method() || (callMD->IsIntrinsic() && IsSpecialCaseAsyncRet(callMD)))
-        {
-            // Cannot encode requirement to protect async ret after call.
-            return;
-        }
+        // Cannot encode requirement to protect async ret after call.
+        return;
     }
 
     bool ispointerKind = IsPointerReturnKind(returnKind);

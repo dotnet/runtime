@@ -10834,16 +10834,6 @@ public:
         return opts.jitFlags->IsSet(JitFlags::JIT_FLAG_RUNTIMEASYNCFUNCTION);
     }
 
-    bool compIsAsync2StateMachine() const
-    {
-        return compIsAsync2() && (JitConfig.RuntimeAsyncViaJitGeneratedStateMachines() != 0);
-    }
-
-    bool compIsAsync2ViaUnwinding() const
-    {
-        return compIsAsync2() && (JitConfig.RuntimeAsyncViaJitGeneratedStateMachines() == 0);
-    }
-
     //------------------------------------------------------------------------
     // compMethodReturnsMultiRegRetType: Does this method return a multi-reg value?
     //

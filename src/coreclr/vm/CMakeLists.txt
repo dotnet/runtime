@@ -357,7 +357,6 @@ set(VM_SOURCES_WKS
     reflectclasswriter.cpp
     reflectioninvocation.cpp
     runtimehandles.cpp
-    runtimesuspension.cpp
     simplerwlock.cpp
     stackingallocator.cpp
     stringliteralmap.cpp
@@ -455,7 +454,6 @@ set(VM_HEADERS_WKS
     reflectclasswriter.h
     reflectioninvocation.h
     runtimehandles.h
-    runtimesuspension.h
     simplerwlock.hpp
     stackingallocator.h
     stringliteralmap.h

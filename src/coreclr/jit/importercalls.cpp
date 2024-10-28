@@ -526,7 +526,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
         // Temporary hack since these functions have to be recognized as async2
         // calls in JIT generated state machines only.
-        if (compIsAsync2StateMachine() &&
+        if (compIsAsync2() &&
             ((ni == NI_System_Runtime_CompilerServices_RuntimeHelpers_AwaitAwaiterFromRuntimeAsync) ||
              (ni == NI_System_Runtime_CompilerServices_RuntimeHelpers_UnsafeAwaitAwaiterFromRuntimeAsync)))
         {
@@ -923,7 +923,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                                                  NewCallArg::Primitive(varArgsCookie).WellKnown(WellKnownArg::VarArgsCookie));
             }
 
-            if (sig->isAsyncCall() && (JitConfig.RuntimeAsyncViaJitGeneratedStateMachines() != 0))
+            if (sig->isAsyncCall())
             {
                 call->AsCall()->gtArgs.PushFront(this, NewCallArg::Primitive(gtNewNull(), TYP_REF)
                                                            .WellKnown(WellKnownArg::AsyncContinuation));
@@ -943,7 +943,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                                                 NewCallArg::Primitive(instParam).WellKnown(WellKnownArg::InstParam));
             }
 
-            if (sig->isAsyncCall() && (JitConfig.RuntimeAsyncViaJitGeneratedStateMachines() != 0))
+            if (sig->isAsyncCall())
             {
                 call->AsCall()->gtArgs.PushBack(this, NewCallArg::Primitive(gtNewNull(), TYP_REF)
                                                           .WellKnown(WellKnownArg::AsyncContinuation));
@@ -3374,11 +3374,6 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
         node->SetHasOrderingSideEffect();
         node->gtFlags |= GTF_CALL | GTF_GLOB_REF;
         return node;
-    }
-
-    if (ni == NI_System_Runtime_CompilerServices_RuntimeHelpers_get_RuntimeAsyncViaJitGeneratedStateMachines)
-    {
-        return gtNewIconNode(JitConfig.RuntimeAsyncViaJitGeneratedStateMachines() != 0 ? 1 : 0);
     }
 
     if ((ni == NI_System_Runtime_CompilerServices_RuntimeHelpers_AwaitAwaiterFromRuntimeAsync) ||

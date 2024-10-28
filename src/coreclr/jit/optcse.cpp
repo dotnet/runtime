@@ -1104,7 +1104,7 @@ void Compiler::optValnumCSE_InitDataFlow()
         }
     }
 
-    if (compIsAsync2StateMachine())
+    if (compIsAsync2())
     {
         bool anyAsyncKills = false;
         cseAsyncKillsMask  = BitVecOps::MakeFull(cseLivenessTraits);
@@ -1825,7 +1825,7 @@ void Compiler::optValnumCSE_Availability()
                             BitVecOps::IntersectionD(cseLivenessTraits, available_cses, cseCallKillsMask);
 
                             // In async state machines, make all byref CSEs unavailable after suspension points.
-                            if (tree->AsCall()->IsAsync2() && compIsAsync2StateMachine())
+                            if (tree->AsCall()->IsAsync2() && compIsAsync2())
                             {
                                 BitVecOps::IntersectionD(cseLivenessTraits, available_cses, cseAsyncKillsMask);
                             }

@@ -5286,7 +5286,7 @@ BOOL MetaSig::HasAsyncContinuation()
 {
     LIMITED_METHOD_CONTRACT;
 
-    return IsAsyncCall() && g_pConfig->RuntimeAsyncViaJitGeneratedStateMachines();
+    return IsAsyncCall();
 }
 
 //------------------------------------------------------------------

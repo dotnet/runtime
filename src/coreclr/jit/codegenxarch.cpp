@@ -6326,7 +6326,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call X86_ARG(target_ssize_t stackA
     }
 #endif // DEBUG
 
-    bool                  hasAsyncRet = call->IsAsync2() && (JitConfig.RuntimeAsyncViaJitGeneratedStateMachines() != 0);
+    bool                  hasAsyncRet = call->IsAsync2();
     CORINFO_METHOD_HANDLE methHnd;
     GenTree*              target = getCallTarget(call, &methHnd);
     if (target != nullptr)

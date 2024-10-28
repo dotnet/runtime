@@ -252,12 +252,6 @@ public:
     void SyncBlockCachePromotionsGranted(int max_gen) PURE_VIRTUAL
 
     virtual
-    void TaskletPromotionsGranted(int condemned, int max_gen, ScanContext* sc) PURE_VIRTUAL
-
-    virtual
-    void TaskletDemote(int condemned, int max_gen, ScanContext* sc) PURE_VIRTUAL
-
-    virtual
     uint32_t GetActiveSyncBlockCount() PURE_VIRTUAL
 
     // Queries whether or not the current thread has preemptive GC disabled.

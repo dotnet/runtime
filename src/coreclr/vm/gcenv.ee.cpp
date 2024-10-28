@@ -26,8 +26,6 @@
 #include "genanalysis.h"
 #include "eventpipeadapter.h"
 
-#include "runtimesuspension.h"
-
 // Finalizes a weak reference directly.
 extern void FinalizeWeakReference(Object* obj);
 
@@ -330,11 +328,6 @@ void GCToEEInterface::GcScanRoots(promote_func* fn, int condemned, int max_gen, 
             SystemDomain::EnumAllStaticGCRefs(fn, sc);
         }
     }
-
-#ifndef DACCESS_COMPILE
-// TODO Make tasklet reporting DAC friendly
-    IterateTaskletsForGC(fn, condemned, sc);
-#endif
 }
 
 void GCToEEInterface::GcStartWork (int condemned, int max_gen)
@@ -429,30 +422,6 @@ void GCToEEInterface::SyncBlockCachePromotionsGranted(int max_gen)
     CONTRACTL_END;
 
     SyncBlockCache::GetSyncBlockCache()->GCDone(FALSE, max_gen);
-}
-
-void GCToEEInterface::TaskletPromotionsGranted(int condemned, int max_gen, ScanContext* sc)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    AgeTasklets(condemned, max_gen, sc);
-}
-
-void GCToEEInterface::TaskletDemote(int condemned, int max_gen, ScanContext* sc)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    RejuvenateTasklets(condemned, max_gen, sc);
 }
 
 uint32_t GCToEEInterface::GetActiveSyncBlockCount()
