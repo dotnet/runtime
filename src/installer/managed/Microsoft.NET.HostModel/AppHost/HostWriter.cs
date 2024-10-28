@@ -129,28 +129,28 @@ namespace Microsoft.NET.HostModel.AppHost
                         {
                             appHostSourceStream.CopyTo(appHostDestinationStream);
                         }
-                        var appHostLength = appHostDestinationStream.Length;
-                        var destinationFileName = Path.GetFileName(appHostDestinationFilePath);
-                        var appHostSignedLength = enableMacOSCodeSign ?
+                        // Get the size of the source app host to ensure that we don't write extra data to the destination.
+                        // On Windows, the size of the view accessor is rounded up to the next page boundary.
+                        long appHostLength = appHostDestinationStream.Length;
+                        string destinationFileName = Path.GetFileName(appHostDestinationFilePath);
+                        // On Mac, we need to extend the file size to accommodate the signature.
+                        long appHostSignedLength = enableMacOSCodeSign ?
                             appHostLength + MachObjectFile.GetSignatureSizeEstimate((uint)appHostLength, destinationFileName)
                             : appHostLength;
                         appHostDestinationStream.SetLength(appHostSignedLength);
 
                         using MemoryMappedFile memoryMappedFile = MemoryMappedFile.CreateFromFile(appHostDestinationStream, null, 0, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, true);
                         using MemoryMappedViewAccessor memoryMappedViewAccessor = memoryMappedFile.CreateViewAccessor(0, 0, MemoryMappedFileAccess.ReadWrite);
-                        // Get the size of the source app host to ensure that we don't write extra data to the destination.
-                        // On Windows, the size of the view accessor is rounded up to the next page boundary.
 
                         // Transform the host file in-memory.
                         RewriteAppHost(memoryMappedFile, memoryMappedViewAccessor);
 
-                        MachObjectFile machObjectFile = null;
                         if (!appHostIsPEImage)
                         {
                             if (enableMacOSCodeSign)
                             {
                                 string fileName = Path.GetFileName(appHostDestinationFilePath);
-                                machObjectFile = MachObjectFile.Create(memoryMappedViewAccessor);
+                                MachObjectFile machObjectFile = MachObjectFile.Create(memoryMappedViewAccessor);
                                 appHostLength = machObjectFile.CreateAdHocSignature(memoryMappedViewAccessor, fileName);
                                 appHostDestinationStream.SetLength(appHostLength);
                             }
