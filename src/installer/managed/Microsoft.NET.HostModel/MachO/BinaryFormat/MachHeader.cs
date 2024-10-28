@@ -15,6 +15,7 @@ internal struct MachHeader
     private uint _numberOfCommands;
     private uint _sizeOfCommands;
     private readonly uint _flags;
+    private readonly uint reserved;
 
     public uint NumberOfCommands { get => _magic.ConvertValue(_numberOfCommands); set => _numberOfCommands = _magic.ConvertValue(value); }
     public uint SizeOfCommands { get => _magic.ConvertValue(_sizeOfCommands); set => _sizeOfCommands = _magic.ConvertValue(value); }

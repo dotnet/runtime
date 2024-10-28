@@ -12,7 +12,7 @@ internal struct Segment64LoadCommand
     private readonly uint _commandSize;
     public NameBuffer Name;
     private readonly ulong _address;
-    private readonly ulong _size;
+    private ulong _size;
     private readonly ulong _fileOffset;
     private ulong _fileSize;
     private readonly uint _maximumProtection;
@@ -25,5 +25,6 @@ internal struct Segment64LoadCommand
     public ulong GetFileOffset(MachHeader header) => header.ConvertValue(_fileOffset);
     public ulong GetFileSize(MachHeader header) => header.ConvertValue(_fileSize);
     public void SetFileSize(ulong value, MachHeader header) => _fileSize = header.ConvertValue(value);
+    public void SetVMSize(ulong value, MachHeader header) => _size = header.ConvertValue(value);
     public uint GetSectionsCount(MachHeader header) => header.ConvertValue(_numberOfSections);
 }

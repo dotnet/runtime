@@ -8,8 +8,8 @@ namespace Microsoft.NET.HostModel.MachO;
 [StructLayout(LayoutKind.Sequential)]
 internal struct LoadCommand
 {
-    private readonly uint _command;
+    private readonly MachLoadCommandType _command;
     private readonly uint _commandSize;
-    public MachLoadCommandType GetCommandType(MachHeader header) => (MachLoadCommandType)header.ConvertValue(_command);
+    public MachLoadCommandType GetCommandType(MachHeader header) => (MachLoadCommandType)header.ConvertValue((uint)_command);
     public uint GetCommandSize(MachHeader header) => header.ConvertValue(_commandSize);
 }

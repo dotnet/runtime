@@ -6,6 +6,7 @@ namespace Microsoft.NET.HostModel.MachO;
 internal enum MachLoadCommandType : uint
 {
     Segment = 0x1,
+    SymbolTable = 0x2,
     Segment64 = 0x19,
     CodeSignature = 0x1d,
 }

@@ -78,7 +78,7 @@ namespace Microsoft.NET.HostModel.Bundle
 
         public bool IsNativeBinary(string filePath)
         {
-            return IsWindows ? PEUtils.IsPEImage(filePath) : IsOSX ? AppHost.MachOUtils.IsMachOImage(filePath) : ElfUtils.IsElfImage(filePath);
+            return IsWindows ? PEUtils.IsPEImage(filePath) : IsOSX ? MachObjectFile.IsMachOImage(filePath) : ElfUtils.IsElfImage(filePath);
         }
 
         public string GetAssemblyName(string hostName)

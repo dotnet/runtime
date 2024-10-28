@@ -113,7 +113,7 @@ namespace Microsoft.NET.HostModel.AppHost
                 {
                     PEUtils.RemoveCetCompatBit(mappedFile, accessor);
                 }
-                if (!MachObjectFile.IsMachFile(accessor) && enableMacOSCodeSign)
+                if (!MachObjectFile.IsMachOImage(accessor) && enableMacOSCodeSign)
                 {
                     throw new InvalidDataException("Cannot sign a non-Mach-O file.");
                 }

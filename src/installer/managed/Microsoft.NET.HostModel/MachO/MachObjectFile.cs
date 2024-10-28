@@ -139,12 +139,25 @@ internal class MachObjectFile
         return GetFileSize();
     }
 
-    public static bool IsMachFile(MemoryMappedViewAccessor memoryMappedViewAccessor)
+    public static bool IsMachOImage(MemoryMappedViewAccessor memoryMappedViewAccessor)
     {
         memoryMappedViewAccessor.Read(0, out MachMagic magic);
         return magic is MachMagic.MachHeaderCurrentEndian or MachMagic.MachHeaderOppositeEndian
             or MachMagic.MachHeader64CurrentEndian or MachMagic.MachHeader64OppositeEndian
             or MachMagic.FatMagicCurrentEndian or MachMagic.FatMagicOppositeEndian;
+    }
+
+    public static bool IsMachOImage(string filePath)
+    {
+        using (BinaryReader reader = new BinaryReader(File.OpenRead(filePath)))
+        {
+            if (reader.BaseStream.Length < 256) // Header size
+            {
+                return false;
+            }
+            uint magic = reader.ReadUInt32();
+            return Enum.IsDefined(typeof(MachMagic), magic);
+        }
     }
 
     /// <summary>
@@ -158,7 +171,7 @@ internal class MachObjectFile
     public static bool TryRemoveCodesign(MemoryMappedViewAccessor memoryMappedViewAccessor, out long? newLength)
     {
         newLength = null;
-        if (!IsMachFile(memoryMappedViewAccessor))
+        if (!IsMachOImage(memoryMappedViewAccessor))
             return false;
 
         MachObjectFile machFile = Create(memoryMappedViewAccessor);
@@ -250,9 +263,8 @@ internal class MachObjectFile
         textSegment64 = default;
         linkEditSegment64 = default;
         long commandsPtr = Marshal.SizeOf<MachHeader>();
-        // Additional reserved field for 64 bit headers
-        if (header.Is64Bit)
-            commandsPtr += 4;
+        if (!header.Is64Bit)
+            throw new InvalidDataException("Only 64-bit Mach-O files are supported");
         lowestSectionOffset = long.MaxValue;
         for (int i = 0; i < header.NumberOfCommands; i++)
         {
