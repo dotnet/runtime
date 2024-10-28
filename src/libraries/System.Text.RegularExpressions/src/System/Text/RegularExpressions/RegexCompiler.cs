@@ -20,88 +20,168 @@ namespace System.Text.RegularExpressions
     [RequiresDynamicCode("Compiling a RegEx requires dynamic code.")]
     internal abstract class RegexCompiler
     {
-        private static readonly FieldInfo s_runtextstartField = RegexRunnerField("runtextstart");
-        private static readonly FieldInfo s_runtextposField = RegexRunnerField("runtextpos");
-        private static readonly FieldInfo s_runtrackposField = RegexRunnerField("runtrackpos");
-        private static readonly FieldInfo s_runstackField = RegexRunnerField("runstack");
-        private static readonly FieldInfo s_cultureField = typeof(CompiledRegexRunner).GetField("_culture", BindingFlags.Instance | BindingFlags.NonPublic)!;
-        private static readonly FieldInfo s_caseBehaviorField = typeof(CompiledRegexRunner).GetField("_caseBehavior", BindingFlags.Instance | BindingFlags.NonPublic)!;
-        private static readonly FieldInfo s_searchValuesArrayField = typeof(CompiledRegexRunner).GetField("_searchValues", BindingFlags.Instance | BindingFlags.NonPublic)!;
+        [field: MaybeNull]
+        private static FieldInfo RuntextstartField => field ??= RegexRunnerField("runtextstart");
+        [field: MaybeNull]
+        private static FieldInfo RuntextposField => field ??= RegexRunnerField("runtextpos");
+        [field: MaybeNull]
+        private static FieldInfo RuntrackposField => field ??= RegexRunnerField("runtrackpos");
+        [field: MaybeNull]
+        private static FieldInfo RunstackField => field ??= RegexRunnerField("runstack");
+        [field: MaybeNull]
+        private static FieldInfo CultureField => field ??= typeof(CompiledRegexRunner).GetField("_culture", BindingFlags.Instance | BindingFlags.NonPublic)!;
+        [field: MaybeNull]
+        private static FieldInfo CaseBehaviorField => field ??= typeof(CompiledRegexRunner).GetField("_caseBehavior", BindingFlags.Instance | BindingFlags.NonPublic)!;
+        [field: MaybeNull]
+        private static FieldInfo SearchValuesArrayField => field ??= typeof(CompiledRegexRunner).GetField("_searchValues", BindingFlags.Instance | BindingFlags.NonPublic)!;
 
-        private static readonly MethodInfo s_captureMethod = RegexRunnerMethod("Capture");
-        private static readonly MethodInfo s_transferCaptureMethod = RegexRunnerMethod("TransferCapture");
-        private static readonly MethodInfo s_uncaptureMethod = RegexRunnerMethod("Uncapture");
-        private static readonly MethodInfo s_isMatchedMethod = RegexRunnerMethod("IsMatched");
-        private static readonly MethodInfo s_matchLengthMethod = RegexRunnerMethod("MatchLength");
-        private static readonly MethodInfo s_matchIndexMethod = RegexRunnerMethod("MatchIndex");
-        private static readonly MethodInfo s_isBoundaryMethod = typeof(RegexRunner).GetMethod("IsBoundary", BindingFlags.NonPublic | BindingFlags.Static, [typeof(ReadOnlySpan<char>), typeof(int)])!;
-        private static readonly MethodInfo s_isWordCharMethod = RegexRunnerMethod("IsWordChar");
-        private static readonly MethodInfo s_isECMABoundaryMethod = typeof(RegexRunner).GetMethod("IsECMABoundary", BindingFlags.NonPublic | BindingFlags.Static, [typeof(ReadOnlySpan<char>), typeof(int)])!;
-        private static readonly MethodInfo s_crawlposMethod = RegexRunnerMethod("Crawlpos");
-        private static readonly MethodInfo s_charInClassMethod = RegexRunnerMethod("CharInClass");
-        private static readonly MethodInfo s_checkTimeoutMethod = RegexRunnerMethod("CheckTimeout");
+        [field: MaybeNull]
+        private static MethodInfo CaptureMethod => field ??= RegexRunnerMethod("Capture");
+        [field: MaybeNull]
+        private static MethodInfo TransferCaptureMethod => field ??= RegexRunnerMethod("TransferCapture");
+        [field: MaybeNull]
+        private static MethodInfo UncaptureMethod => field ??= RegexRunnerMethod("Uncapture");
+        [field: MaybeNull]
+        private static MethodInfo IsMatchedMethod => field ??= RegexRunnerMethod("IsMatched");
+        [field: MaybeNull]
+        private static MethodInfo MatchLengthMethod => field ??= RegexRunnerMethod("MatchLength");
+        [field: MaybeNull]
+        private static MethodInfo MatchIndexMethod => field ??= RegexRunnerMethod("MatchIndex");
+        [field: MaybeNull]
+        private static MethodInfo IsBoundaryMethod => field ??= typeof(RegexRunner).GetMethod("IsBoundary", BindingFlags.NonPublic | BindingFlags.Static, [typeof(ReadOnlySpan<char>), typeof(int)])!;
+        [field: MaybeNull]
+        private static MethodInfo IsWordCharMethod => field ??= RegexRunnerMethod("IsWordChar");
+        [field: MaybeNull]
+        private static MethodInfo IsECMABoundaryMethod => field ??= typeof(RegexRunner).GetMethod("IsECMABoundary", BindingFlags.NonPublic | BindingFlags.Static, [typeof(ReadOnlySpan<char>), typeof(int)])!;
+        [field: MaybeNull]
+        private static MethodInfo CrawlposMethod => field ??= RegexRunnerMethod("Crawlpos");
+        [field: MaybeNull]
+        private static MethodInfo CharInClassMethod => field ??= RegexRunnerMethod("CharInClass");
+        [field: MaybeNull]
+        private static MethodInfo CheckTimeoutMethod => field ??= RegexRunnerMethod("CheckTimeout");
 
-        private static readonly MethodInfo s_regexCaseEquivalencesTryFindCaseEquivalencesForCharWithIBehaviorMethod = typeof(RegexCaseEquivalences).GetMethod("TryFindCaseEquivalencesForCharWithIBehavior", BindingFlags.Static | BindingFlags.Public)!;
-        private static readonly MethodInfo s_charIsDigitMethod = typeof(char).GetMethod("IsDigit", [typeof(char)])!;
-        private static readonly MethodInfo s_charIsWhiteSpaceMethod = typeof(char).GetMethod("IsWhiteSpace", [typeof(char)])!;
-        private static readonly MethodInfo s_charIsControlMethod = typeof(char).GetMethod("IsControl", [typeof(char)])!;
-        private static readonly MethodInfo s_charIsLetterMethod = typeof(char).GetMethod("IsLetter", [typeof(char)])!;
-        private static readonly MethodInfo s_charIsAsciiDigitMethod = typeof(char).GetMethod("IsAsciiDigit", [typeof(char)])!;
-        private static readonly MethodInfo s_charIsAsciiLetterMethod = typeof(char).GetMethod("IsAsciiLetter", [typeof(char)])!;
-        private static readonly MethodInfo s_charIsAsciiLetterLowerMethod = typeof(char).GetMethod("IsAsciiLetterLower", [typeof(char)])!;
-        private static readonly MethodInfo s_charIsAsciiLetterUpperMethod = typeof(char).GetMethod("IsAsciiLetterUpper", [typeof(char)])!;
-        private static readonly MethodInfo s_charIsAsciiLetterOrDigitMethod = typeof(char).GetMethod("IsAsciiLetterOrDigit", [typeof(char)])!;
-        private static readonly MethodInfo s_charIsAsciiHexDigitMethod = typeof(char).GetMethod("IsAsciiHexDigit", [typeof(char)])!;
-        private static readonly MethodInfo s_charIsAsciiHexDigitLowerMethod = typeof(char).GetMethod("IsAsciiHexDigitLower", [typeof(char)])!;
-        private static readonly MethodInfo s_charIsAsciiHexDigitUpperMethod = typeof(char).GetMethod("IsAsciiHexDigitUpper", [typeof(char)])!;
-        private static readonly MethodInfo s_charIsLetterOrDigitMethod = typeof(char).GetMethod("IsLetterOrDigit", [typeof(char)])!;
-        private static readonly MethodInfo s_charIsLowerMethod = typeof(char).GetMethod("IsLower", [typeof(char)])!;
-        private static readonly MethodInfo s_charIsUpperMethod = typeof(char).GetMethod("IsUpper", [typeof(char)])!;
-        private static readonly MethodInfo s_charIsNumberMethod = typeof(char).GetMethod("IsNumber", [typeof(char)])!;
-        private static readonly MethodInfo s_charIsPunctuationMethod = typeof(char).GetMethod("IsPunctuation", [typeof(char)])!;
-        private static readonly MethodInfo s_charIsSeparatorMethod = typeof(char).GetMethod("IsSeparator", [typeof(char)])!;
-        private static readonly MethodInfo s_charIsSymbolMethod = typeof(char).GetMethod("IsSymbol", [typeof(char)])!;
-        private static readonly MethodInfo s_charGetUnicodeInfo = typeof(char).GetMethod("GetUnicodeCategory", [typeof(char)])!;
-        private static readonly MethodInfo s_spanGetItemMethod = typeof(ReadOnlySpan<char>).GetMethod("get_Item", [typeof(int)])!;
-        private static readonly MethodInfo s_spanGetLengthMethod = typeof(ReadOnlySpan<char>).GetMethod("get_Length")!;
-        private static readonly MethodInfo s_spanIndexOfChar = typeof(MemoryExtensions).GetMethod("IndexOf", [typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0)])!.MakeGenericMethod(typeof(char));
-        private static readonly MethodInfo s_spanIndexOfSpan = typeof(MemoryExtensions).GetMethod("IndexOf", [typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0))])!.MakeGenericMethod(typeof(char));
-        private static readonly MethodInfo s_spanIndexOfSpanStringComparison = typeof(MemoryExtensions).GetMethod("IndexOf", [typeof(ReadOnlySpan<char>), typeof(ReadOnlySpan<char>), typeof(StringComparison)])!;
-        private static readonly MethodInfo s_spanIndexOfAnyCharChar = typeof(MemoryExtensions).GetMethod("IndexOfAny", [typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0)])!.MakeGenericMethod(typeof(char));
-        private static readonly MethodInfo s_spanIndexOfAnyCharCharChar = typeof(MemoryExtensions).GetMethod("IndexOfAny", [typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0)])!.MakeGenericMethod(typeof(char));
-        private static readonly MethodInfo s_spanIndexOfAnySpan = typeof(MemoryExtensions).GetMethod("IndexOfAny", [typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0))])!.MakeGenericMethod(typeof(char));
-        private static readonly MethodInfo s_spanIndexOfAnySearchValues = typeof(MemoryExtensions).GetMethod("IndexOfAny", [typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), typeof(SearchValues<>).MakeGenericType(Type.MakeGenericMethodParameter(0))])!.MakeGenericMethod(typeof(char));
-        private static readonly MethodInfo s_spanIndexOfAnySearchValuesString = typeof(MemoryExtensions).GetMethod("IndexOfAny", [typeof(ReadOnlySpan<char>), typeof(SearchValues<string>)])!;
-        private static readonly MethodInfo s_spanIndexOfAnyExceptChar = typeof(MemoryExtensions).GetMethod("IndexOfAnyExcept", [typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0)])!.MakeGenericMethod(typeof(char));
-        private static readonly MethodInfo s_spanIndexOfAnyExceptCharChar = typeof(MemoryExtensions).GetMethod("IndexOfAnyExcept", [typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0)])!.MakeGenericMethod(typeof(char));
-        private static readonly MethodInfo s_spanIndexOfAnyExceptCharCharChar = typeof(MemoryExtensions).GetMethod("IndexOfAnyExcept", [typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0)])!.MakeGenericMethod(typeof(char));
-        private static readonly MethodInfo s_spanIndexOfAnyExceptSpan = typeof(MemoryExtensions).GetMethod("IndexOfAnyExcept", [typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0))])!.MakeGenericMethod(typeof(char));
-        private static readonly MethodInfo s_spanIndexOfAnyExceptSearchValues = typeof(MemoryExtensions).GetMethod("IndexOfAnyExcept", [typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), typeof(SearchValues<>).MakeGenericType(Type.MakeGenericMethodParameter(0))])!.MakeGenericMethod(typeof(char));
-        private static readonly MethodInfo s_spanIndexOfAnyInRange = typeof(MemoryExtensions).GetMethod("IndexOfAnyInRange", [typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0)])!.MakeGenericMethod(typeof(char));
-        private static readonly MethodInfo s_spanIndexOfAnyExceptInRange = typeof(MemoryExtensions).GetMethod("IndexOfAnyExceptInRange", [typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0)])!.MakeGenericMethod(typeof(char));
-        private static readonly MethodInfo s_spanLastIndexOfChar = typeof(MemoryExtensions).GetMethod("LastIndexOf", [typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0)])!.MakeGenericMethod(typeof(char));
-        private static readonly MethodInfo s_spanLastIndexOfAnyCharChar = typeof(MemoryExtensions).GetMethod("LastIndexOfAny", [typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0)])!.MakeGenericMethod(typeof(char));
-        private static readonly MethodInfo s_spanLastIndexOfAnyCharCharChar = typeof(MemoryExtensions).GetMethod("LastIndexOfAny", [typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0)])!.MakeGenericMethod(typeof(char));
-        private static readonly MethodInfo s_spanLastIndexOfAnySpan = typeof(MemoryExtensions).GetMethod("LastIndexOfAny", [typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0))])!.MakeGenericMethod(typeof(char));
-        private static readonly MethodInfo s_spanLastIndexOfAnySearchValues = typeof(MemoryExtensions).GetMethod("LastIndexOfAny", [typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), typeof(SearchValues<>).MakeGenericType(Type.MakeGenericMethodParameter(0))])!.MakeGenericMethod(typeof(char));
-        private static readonly MethodInfo s_spanLastIndexOfSpan = typeof(MemoryExtensions).GetMethod("LastIndexOf", [typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0))])!.MakeGenericMethod(typeof(char));
-        private static readonly MethodInfo s_spanLastIndexOfAnyExceptChar = typeof(MemoryExtensions).GetMethod("LastIndexOfAnyExcept", [typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0)])!.MakeGenericMethod(typeof(char));
-        private static readonly MethodInfo s_spanLastIndexOfAnyExceptCharChar = typeof(MemoryExtensions).GetMethod("LastIndexOfAnyExcept", [typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0)])!.MakeGenericMethod(typeof(char));
-        private static readonly MethodInfo s_spanLastIndexOfAnyExceptCharCharChar = typeof(MemoryExtensions).GetMethod("LastIndexOfAnyExcept", [typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0)])!.MakeGenericMethod(typeof(char));
-        private static readonly MethodInfo s_spanLastIndexOfAnyExceptSpan = typeof(MemoryExtensions).GetMethod("LastIndexOfAnyExcept", [typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0))])!.MakeGenericMethod(typeof(char));
-        private static readonly MethodInfo s_spanLastIndexOfAnyExceptSearchValues = typeof(MemoryExtensions).GetMethod("LastIndexOfAnyExcept", [typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), typeof(SearchValues<>).MakeGenericType(Type.MakeGenericMethodParameter(0))])!.MakeGenericMethod(typeof(char));
-        private static readonly MethodInfo s_spanLastIndexOfAnyInRange = typeof(MemoryExtensions).GetMethod("LastIndexOfAnyInRange", [typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0)])!.MakeGenericMethod(typeof(char));
-        private static readonly MethodInfo s_spanLastIndexOfAnyExceptInRange = typeof(MemoryExtensions).GetMethod("LastIndexOfAnyExceptInRange", [typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0)])!.MakeGenericMethod(typeof(char));
-        private static readonly MethodInfo s_spanSliceIntMethod = typeof(ReadOnlySpan<char>).GetMethod("Slice", [typeof(int)])!;
-        private static readonly MethodInfo s_spanSliceIntIntMethod = typeof(ReadOnlySpan<char>).GetMethod("Slice", [typeof(int), typeof(int)])!;
-        private static readonly MethodInfo s_spanStartsWithSpan = typeof(MemoryExtensions).GetMethod("StartsWith", [typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0))])!.MakeGenericMethod(typeof(char));
-        private static readonly MethodInfo s_spanStartsWithSpanComparison = typeof(MemoryExtensions).GetMethod("StartsWith", [typeof(ReadOnlySpan<char>), typeof(ReadOnlySpan<char>), typeof(StringComparison)])!;
-        private static readonly MethodInfo s_stringAsSpanMethod = typeof(MemoryExtensions).GetMethod("AsSpan", [typeof(string)])!;
-        private static readonly MethodInfo s_stringGetCharsMethod = typeof(string).GetMethod("get_Chars", [typeof(int)])!;
-        private static readonly MethodInfo s_arrayResize = typeof(Array).GetMethod("Resize")!.MakeGenericMethod(typeof(int));
-        private static readonly MethodInfo s_mathMinIntInt = typeof(Math).GetMethod("Min", [typeof(int), typeof(int)])!;
-        private static readonly MethodInfo s_memoryMarshalGetArrayDataReferenceSearchValues = typeof(MemoryMarshal).GetMethod("GetArrayDataReference", [Type.MakeGenericMethodParameter(0).MakeArrayType()])!.MakeGenericMethod(typeof(SearchValues<char>))!;
-        private static readonly MethodInfo s_unsafeAs = typeof(Unsafe).GetMethod("As", [typeof(object)])!;
+        [field: MaybeNull]
+        private static MethodInfo RegexCaseEquivalencesTryFindCaseEquivalencesForCharWithIBehaviorMethod => field ??= typeof(RegexCaseEquivalences).GetMethod("TryFindCaseEquivalencesForCharWithIBehavior", BindingFlags.Static | BindingFlags.Public)!;
+        [field: MaybeNull]
+        private static MethodInfo CharIsDigitMethod => field ??= typeof(char).GetMethod("IsDigit", [typeof(char)])!;
+        [field: MaybeNull]
+        private static MethodInfo CharIsWhiteSpaceMethod => field ??= typeof(char).GetMethod("IsWhiteSpace", [typeof(char)])!;
+        [field: MaybeNull]
+        private static MethodInfo CharIsControlMethod => field ??= typeof(char).GetMethod("IsControl", [typeof(char)])!;
+        [field: MaybeNull]
+        private static MethodInfo CharIsLetterMethod => field ??= typeof(char).GetMethod("IsLetter", [typeof(char)])!;
+        [field: MaybeNull]
+        private static MethodInfo CharIsAsciiDigitMethod => field ??= typeof(char).GetMethod("IsAsciiDigit", [typeof(char)])!;
+        [field: MaybeNull]
+        private static MethodInfo CharIsAsciiLetterMethod => field ??= typeof(char).GetMethod("IsAsciiLetter", [typeof(char)])!;
+        [field: MaybeNull]
+        private static MethodInfo CharIsAsciiLetterLowerMethod => field ??= typeof(char).GetMethod("IsAsciiLetterLower", [typeof(char)])!;
+        [field: MaybeNull]
+        private static MethodInfo CharIsAsciiLetterUpperMethod => field ??= typeof(char).GetMethod("IsAsciiLetterUpper", [typeof(char)])!;
+        [field: MaybeNull]
+        private static MethodInfo CharIsAsciiLetterOrDigitMethod => field ??= typeof(char).GetMethod("IsAsciiLetterOrDigit", [typeof(char)])!;
+        [field: MaybeNull]
+        private static MethodInfo CharIsAsciiHexDigitMethod => field ??= typeof(char).GetMethod("IsAsciiHexDigit", [typeof(char)])!;
+        [field: MaybeNull]
+        private static MethodInfo CharIsAsciiHexDigitLowerMethod => field ??= typeof(char).GetMethod("IsAsciiHexDigitLower", [typeof(char)])!;
+        [field: MaybeNull]
+        private static MethodInfo CharIsAsciiHexDigitUpperMethod => field ??= typeof(char).GetMethod("IsAsciiHexDigitUpper", [typeof(char)])!;
+        [field: MaybeNull]
+        private static MethodInfo CharIsLetterOrDigitMethod => field ??= typeof(char).GetMethod("IsLetterOrDigit", [typeof(char)])!;
+        [field: MaybeNull]
+        private static MethodInfo CharIsLowerMethod => field ??= typeof(char).GetMethod("IsLower", [typeof(char)])!;
+        [field: MaybeNull]
+        private static MethodInfo CharIsUpperMethod => field ??= typeof(char).GetMethod("IsUpper", [typeof(char)])!;
+        [field: MaybeNull]
+        private static MethodInfo CharIsNumberMethod => field ??= typeof(char).GetMethod("IsNumber", [typeof(char)])!;
+        [field: MaybeNull]
+        private static MethodInfo CharIsPunctuationMethod => field ??= typeof(char).GetMethod("IsPunctuation", [typeof(char)])!;
+        [field: MaybeNull]
+        private static MethodInfo CharIsSeparatorMethod => field ??= typeof(char).GetMethod("IsSeparator", [typeof(char)])!;
+        [field: MaybeNull]
+        private static MethodInfo CharIsSymbolMethod => field ??= typeof(char).GetMethod("IsSymbol", [typeof(char)])!;
+        [field: MaybeNull]
+        private static MethodInfo CharGetUnicodeInfoMethod => field ??= typeof(char).GetMethod("GetUnicodeCategory", [typeof(char)])!;
+        [field: MaybeNull]
+        private static MethodInfo SpanGetItemMethod => field ??= typeof(ReadOnlySpan<char>).GetMethod("get_Item", [typeof(int)])!;
+        [field: MaybeNull]
+        private static MethodInfo SpanGetLengthMethod => field ??= typeof(ReadOnlySpan<char>).GetMethod("get_Length")!;
+        [field: MaybeNull]
+        private static MethodInfo SpanIndexOfCharMethod => field ??= typeof(MemoryExtensions).GetMethod("IndexOf", [typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0)])!.MakeGenericMethod(typeof(char));
+        [field: MaybeNull]
+        private static MethodInfo SpanIndexOfSpanMethod => field ??= typeof(MemoryExtensions).GetMethod("IndexOf", [typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0))])!.MakeGenericMethod(typeof(char));
+        [field: MaybeNull]
+        private static MethodInfo SpanIndexOfSpanStringComparisonMethod => field ??= typeof(MemoryExtensions).GetMethod("IndexOf", [typeof(ReadOnlySpan<char>), typeof(ReadOnlySpan<char>), typeof(StringComparison)])!;
+        [field: MaybeNull]
+        private static MethodInfo SpanIndexOfAnyCharCharMethod => field ??= typeof(MemoryExtensions).GetMethod("IndexOfAny", [typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0)])!.MakeGenericMethod(typeof(char));
+        [field: MaybeNull]
+        private static MethodInfo SpanIndexOfAnyCharCharCharMethod => field ??= typeof(MemoryExtensions).GetMethod("IndexOfAny", [typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0)])!.MakeGenericMethod(typeof(char));
+        [field: MaybeNull]
+        private static MethodInfo SpanIndexOfAnySpanMethod => field ??= typeof(MemoryExtensions).GetMethod("IndexOfAny", [typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0))])!.MakeGenericMethod(typeof(char));
+        [field: MaybeNull]
+        private static MethodInfo SpanIndexOfAnySearchValuesMethod => field ??= typeof(MemoryExtensions).GetMethod("IndexOfAny", [typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), typeof(SearchValues<>).MakeGenericType(Type.MakeGenericMethodParameter(0))])!.MakeGenericMethod(typeof(char));
+        [field: MaybeNull]
+        private static MethodInfo SpanIndexOfAnySearchValuesStringMethod => field ??= typeof(MemoryExtensions).GetMethod("IndexOfAny", [typeof(ReadOnlySpan<char>), typeof(SearchValues<string>)])!;
+        [field: MaybeNull]
+        private static MethodInfo SpanIndexOfAnyExceptCharMethod => field ??= typeof(MemoryExtensions).GetMethod("IndexOfAnyExcept", [typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0)])!.MakeGenericMethod(typeof(char));
+        [field: MaybeNull]
+        private static MethodInfo SpanIndexOfAnyExceptCharCharMethod => field ??= typeof(MemoryExtensions).GetMethod("IndexOfAnyExcept", [typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0)])!.MakeGenericMethod(typeof(char));
+        [field: MaybeNull]
+        private static MethodInfo SpanIndexOfAnyExceptCharCharCharMethod => field ??= typeof(MemoryExtensions).GetMethod("IndexOfAnyExcept", [typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0)])!.MakeGenericMethod(typeof(char));
+        [field: MaybeNull]
+        private static MethodInfo SpanIndexOfAnyExceptSpanMethod => field ??= typeof(MemoryExtensions).GetMethod("IndexOfAnyExcept", [typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0))])!.MakeGenericMethod(typeof(char));
+        [field: MaybeNull]
+        private static MethodInfo SpanIndexOfAnyExceptSearchValuesMethod => field ??= typeof(MemoryExtensions).GetMethod("IndexOfAnyExcept", [typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), typeof(SearchValues<>).MakeGenericType(Type.MakeGenericMethodParameter(0))])!.MakeGenericMethod(typeof(char));
+        [field: MaybeNull]
+        private static MethodInfo SpanIndexOfAnyInRangeMethod => field ??= typeof(MemoryExtensions).GetMethod("IndexOfAnyInRange", [typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0)])!.MakeGenericMethod(typeof(char));
+        [field: MaybeNull]
+        private static MethodInfo SpanIndexOfAnyExceptInRangeMethod => field ??= typeof(MemoryExtensions).GetMethod("IndexOfAnyExceptInRange", [typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0)])!.MakeGenericMethod(typeof(char));
+        [field: MaybeNull]
+        private static MethodInfo SpanLastIndexOfCharMethod => field ??= typeof(MemoryExtensions).GetMethod("LastIndexOf", [typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0)])!.MakeGenericMethod(typeof(char));
+        [field: MaybeNull]
+        private static MethodInfo SpanLastIndexOfAnyCharCharMethod => field ??= typeof(MemoryExtensions).GetMethod("LastIndexOfAny", [typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0)])!.MakeGenericMethod(typeof(char));
+        [field: MaybeNull]
+        private static MethodInfo SpanLastIndexOfAnyCharCharCharMethod => field ??= typeof(MemoryExtensions).GetMethod("LastIndexOfAny", [typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0)])!.MakeGenericMethod(typeof(char));
+        [field: MaybeNull]
+        private static MethodInfo SpanLastIndexOfAnySpanMethod => field ??= typeof(MemoryExtensions).GetMethod("LastIndexOfAny", [typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0))])!.MakeGenericMethod(typeof(char));
+        [field: MaybeNull]
+        private static MethodInfo SpanLastIndexOfAnySearchValuesMethod => field ??= typeof(MemoryExtensions).GetMethod("LastIndexOfAny", [typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), typeof(SearchValues<>).MakeGenericType(Type.MakeGenericMethodParameter(0))])!.MakeGenericMethod(typeof(char));
+        [field: MaybeNull]
+        private static MethodInfo SpanLastIndexOfSpanMethod => field ??= typeof(MemoryExtensions).GetMethod("LastIndexOf", [typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0))])!.MakeGenericMethod(typeof(char));
+        [field: MaybeNull]
+        private static MethodInfo SpanLastIndexOfAnyExceptCharMethod => field ??= typeof(MemoryExtensions).GetMethod("LastIndexOfAnyExcept", [typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0)])!.MakeGenericMethod(typeof(char));
+        [field: MaybeNull]
+        private static MethodInfo SpanLastIndexOfAnyExceptCharCharMethod => field ??= typeof(MemoryExtensions).GetMethod("LastIndexOfAnyExcept", [typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0)])!.MakeGenericMethod(typeof(char));
+        [field: MaybeNull]
+        private static MethodInfo SpanLastIndexOfAnyExceptCharCharCharMethod => field ??= typeof(MemoryExtensions).GetMethod("LastIndexOfAnyExcept", [typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0)])!.MakeGenericMethod(typeof(char));
+        [field: MaybeNull]
+        private static MethodInfo SpanLastIndexOfAnyExceptSpanMethod => field ??= typeof(MemoryExtensions).GetMethod("LastIndexOfAnyExcept", [typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0))])!.MakeGenericMethod(typeof(char));
+        [field: MaybeNull]
+        private static MethodInfo SpanLastIndexOfAnyExceptSearchValuesMethod => field ??= typeof(MemoryExtensions).GetMethod("LastIndexOfAnyExcept", [typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), typeof(SearchValues<>).MakeGenericType(Type.MakeGenericMethodParameter(0))])!.MakeGenericMethod(typeof(char));
+        [field: MaybeNull]
+        private static MethodInfo SpanLastIndexOfAnyInRangeMethod => field ??= typeof(MemoryExtensions).GetMethod("LastIndexOfAnyInRange", [typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0)])!.MakeGenericMethod(typeof(char));
+        [field: MaybeNull]
+        private static MethodInfo SpanLastIndexOfAnyExceptInRangeMethod => field ??= typeof(MemoryExtensions).GetMethod("LastIndexOfAnyExceptInRange", [typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0)])!.MakeGenericMethod(typeof(char));
+        [field: MaybeNull]
+        private static MethodInfo SpanSliceIntMethod => field ??= typeof(ReadOnlySpan<char>).GetMethod("Slice", [typeof(int)])!;
+        [field: MaybeNull]
+        private static MethodInfo SpanSliceIntIntMethod => field ??= typeof(ReadOnlySpan<char>).GetMethod("Slice", [typeof(int), typeof(int)])!;
+        [field: MaybeNull]
+        private static MethodInfo SpanStartsWithSpanMethod => field ??= typeof(MemoryExtensions).GetMethod("StartsWith", [typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0))])!.MakeGenericMethod(typeof(char));
+        [field: MaybeNull]
+        private static MethodInfo SpanStartsWithSpanComparisonMethod => field ??= typeof(MemoryExtensions).GetMethod("StartsWith", [typeof(ReadOnlySpan<char>), typeof(ReadOnlySpan<char>), typeof(StringComparison)])!;
+        [field: MaybeNull]
+        private static MethodInfo StringAsSpanMethod => field ??= typeof(MemoryExtensions).GetMethod("AsSpan", [typeof(string)])!;
+        [field: MaybeNull]
+        private static MethodInfo StringGetCharsMethod => field ??= typeof(string).GetMethod("get_Chars", [typeof(int)])!;
+        [field: MaybeNull]
+        private static MethodInfo ArrayResizeMethod => field ??= typeof(Array).GetMethod("Resize")!.MakeGenericMethod(typeof(int));
+        [field: MaybeNull]
+        private static MethodInfo MathMinIntIntMethod => field ??= typeof(Math).GetMethod("Min", [typeof(int), typeof(int)])!;
+        [field: MaybeNull]
+        private static MethodInfo MemoryMarshalGetArrayDataReferenceSearchValuesMethod => field ??= typeof(MemoryMarshal).GetMethod("GetArrayDataReference", [Type.MakeGenericMethodParameter(0).MakeArrayType()])!.MakeGenericMethod(typeof(SearchValues<char>))!;
+        [field: MaybeNull]
+        private static MethodInfo UnsafeAsMethod => field ??= typeof(Unsafe).GetMethod("As", [typeof(object)])!;
         // Note:
         // Single-range helpers like IsAsciiLetterLower, IsAsciiLetterUpper, IsAsciiDigit, and IsBetween aren't used here, as the IL generated for those
         // single-range checks is as cheap as the method call, and there's no readability issue as with the source generator.
@@ -396,7 +476,7 @@ namespace System.Text.RegularExpressions
             // Load necessary locals
             // int pos = base.runtextpos;
             // ReadOnlySpan<char> inputSpan = dynamicMethodArg; // TODO: We can reference the arg directly rather than using another local.
-            Mvfldloc(s_runtextposField, pos);
+            Mvfldloc(RuntextposField, pos);
             Ldarg_1();
             Stloc(inputSpan);
 
@@ -419,7 +499,7 @@ namespace System.Text.RegularExpressions
             if (!rtl)
             {
                 Ldloca(inputSpan);
-                Call(s_spanGetLengthMethod);
+                Call(SpanGetLengthMethod);
                 if (minRequiredLength > 0)
                 {
                     Ldc(minRequiredLength);
@@ -438,13 +518,13 @@ namespace System.Text.RegularExpressions
             if (!rtl)
             {
                 Ldloca(inputSpan);
-                Call(s_spanGetLengthMethod);
+                Call(SpanGetLengthMethod);
             }
             else
             {
                 Ldc(0);
             }
-            Stfld(s_runtextposField);
+            Stfld(RuntextposField);
             Ldc(0);
             Ret();
             MarkLabel(finishedLengthCheck);
@@ -518,7 +598,7 @@ namespace System.Text.RegularExpressions
                         // if (pos != base.runtextstart) goto returnFalse;
                         // return true;
                         Ldloc(pos);
-                        Ldthisfld(s_runtextstartField);
+                        Ldthisfld(RuntextstartField);
                         Bne(returnFalse);
                         Ldc(1);
                         Ret();
@@ -530,16 +610,16 @@ namespace System.Text.RegularExpressions
                         label = DefineLabel();
                         Ldloc(pos);
                         Ldloca(inputSpan);
-                        Call(s_spanGetLengthMethod);
+                        Call(SpanGetLengthMethod);
                         Ldc(1);
                         Sub();
                         Bge(label);
                         Ldthis();
                         Ldloca(inputSpan);
-                        Call(s_spanGetLengthMethod);
+                        Call(SpanGetLengthMethod);
                         Ldc(1);
                         Sub();
-                        Stfld(s_runtextposField);
+                        Stfld(RuntextposField);
                         MarkLabel(label);
                         Ldc(1);
                         Ret();
@@ -551,12 +631,12 @@ namespace System.Text.RegularExpressions
                         label = DefineLabel();
                         Ldloc(pos);
                         Ldloca(inputSpan);
-                        Call(s_spanGetLengthMethod);
+                        Call(SpanGetLengthMethod);
                         Bge(label);
                         Ldthis();
                         Ldloca(inputSpan);
-                        Call(s_spanGetLengthMethod);
-                        Stfld(s_runtextposField);
+                        Call(SpanGetLengthMethod);
+                        Stfld(RuntextposField);
                         MarkLabel(label);
                         Ldc(1);
                         Ret();
@@ -571,7 +651,7 @@ namespace System.Text.RegularExpressions
                         Beq(label);
                         Ldthis();
                         Ldc(0);
-                        Stfld(s_runtextposField);
+                        Stfld(RuntextposField);
                         MarkLabel(label);
                         Ldc(1);
                         Ret();
@@ -583,17 +663,17 @@ namespace System.Text.RegularExpressions
                         label = DefineLabel();
                         Ldloc(pos);
                         Ldloca(inputSpan);
-                        Call(s_spanGetLengthMethod);
+                        Call(SpanGetLengthMethod);
                         Ldc(1);
                         Sub();
                         Blt(returnFalse);
                         Ldloc(pos);
                         Ldloca(inputSpan);
-                        Call(s_spanGetLengthMethod);
+                        Call(SpanGetLengthMethod);
                         BgeUn(label);
                         Ldloca(inputSpan);
                         Ldloc(pos);
-                        Call(s_spanGetItemMethod);
+                        Call(SpanGetItemMethod);
                         LdindU2();
                         Ldc('\n');
                         Bne(returnFalse);
@@ -607,7 +687,7 @@ namespace System.Text.RegularExpressions
                         // return true;
                         Ldloc(pos);
                         Ldloca(inputSpan);
-                        Call(s_spanGetLengthMethod);
+                        Call(SpanGetLengthMethod);
                         Blt(returnFalse);
                         Ldc(1);
                         Ret();
@@ -621,16 +701,16 @@ namespace System.Text.RegularExpressions
                             label = DefineLabel();
                             Ldloc(pos);
                             Ldloca(inputSpan);
-                            Call(s_spanGetLengthMethod);
+                            Call(SpanGetLengthMethod);
                             Ldc(_regexTree.FindOptimizations.MinRequiredLength + extraNewlineBump);
                             Sub();
                             Bge(label);
                             Ldthis();
                             Ldloca(inputSpan);
-                            Call(s_spanGetLengthMethod);
+                            Call(SpanGetLengthMethod);
                             Ldc(_regexTree.FindOptimizations.MinRequiredLength + extraNewlineBump);
                             Sub();
-                            Stfld(s_runtextposField);
+                            Stfld(RuntextposField);
                             MarkLabel(label);
                             Ldc(1);
                             Ret();
@@ -662,7 +742,7 @@ namespace System.Text.RegularExpressions
                                 Ldloc(pos);
                                 Ldc(1);
                                 Sub();
-                                Call(s_spanGetItemMethod);
+                                Call(SpanGetItemMethod);
                                 LdindU2();
                                 Ldc('\n');
                                 Beq(label);
@@ -670,9 +750,9 @@ namespace System.Text.RegularExpressions
                                 // int tmp = inputSpan.Slice(pos).IndexOf('\n');
                                 Ldloca(inputSpan);
                                 Ldloc(pos);
-                                Call(s_spanSliceIntMethod);
+                                Call(SpanSliceIntMethod);
                                 Ldc('\n');
-                                Call(s_spanIndexOfChar);
+                                Call(SpanIndexOfCharMethod);
                                 using (RentedLocalBuilder newlinePos = RentInt32Local())
                                 {
                                     Stloc(newlinePos);
@@ -691,7 +771,7 @@ namespace System.Text.RegularExpressions
                                     Ldc(1);
                                     Add();
                                     Ldloca(inputSpan);
-                                    Call(s_spanGetLengthMethod);
+                                    Call(SpanGetLengthMethod);
                                     Bgt(returnFalse);
 
                                     // pos += newlinePos + 1;
@@ -705,7 +785,7 @@ namespace System.Text.RegularExpressions
                                     // We've updated the position.  Make sure there's still enough room in the input for a possible match.
                                     // if (pos > inputSpan.Length - minRequiredLength) returnFalse;
                                     Ldloca(inputSpan);
-                                    Call(s_spanGetLengthMethod);
+                                    Call(SpanGetLengthMethod);
                                     if (minRequiredLength != 0)
                                     {
                                         Ldc(minRequiredLength);
@@ -729,12 +809,12 @@ namespace System.Text.RegularExpressions
                                 label = DefineLabel();
                                 Ldloc(pos);
                                 Ldloca(inputSpan);
-                                Call(s_spanGetLengthMethod);
+                                Call(SpanGetLengthMethod);
                                 Ldc(maxLength + extraNewlineBump);
                                 Sub();
                                 Bge(label);
                                 Ldloca(inputSpan);
-                                Call(s_spanGetLengthMethod);
+                                Call(SpanGetLengthMethod);
                                 Ldc(maxLength + extraNewlineBump);
                                 Sub();
                                 Stloc(pos);
@@ -768,13 +848,13 @@ namespace System.Text.RegularExpressions
                     Ldc(literal.Distance);
                     Add();
                 }
-                Call(s_spanSliceIntMethod);
+                Call(SpanSliceIntMethod);
 
                 // ...IndexOf(prefix);
                 if (opts.FindMode is FindNextStartingPositionMode.LeadingStrings_LeftToRight or FindNextStartingPositionMode.LeadingStrings_OrdinalIgnoreCase_LeftToRight)
                 {
                     LoadSearchValues(opts.LeadingPrefixes, opts.FindMode is FindNextStartingPositionMode.LeadingStrings_OrdinalIgnoreCase_LeftToRight ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
-                    Call(s_spanIndexOfAnySearchValuesString);
+                    Call(SpanIndexOfAnySearchValuesStringMethod);
                 }
                 else
                 {
@@ -782,7 +862,7 @@ namespace System.Text.RegularExpressions
                         opts.LeadingPrefix :
                         opts.FixedDistanceLiteral.String!;
                     LoadSearchValues([literalString], opts.FindMode is FindNextStartingPositionMode.LeadingString_OrdinalIgnoreCase_LeftToRight ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
-                    Call(s_spanIndexOfAnySearchValuesString);
+                    Call(SpanIndexOfAnySearchValuesStringMethod);
                 }
                 Stloc(i);
 
@@ -797,7 +877,7 @@ namespace System.Text.RegularExpressions
                 Ldloc(pos);
                 Ldloc(i);
                 Add();
-                Stfld(s_runtextposField);
+                Stfld(RuntextposField);
                 Ldc(1);
                 Ret();
             }
@@ -812,10 +892,10 @@ namespace System.Text.RegularExpressions
                 Ldloca(inputSpan);
                 Ldc(0);
                 Ldloc(pos);
-                Call(s_spanSliceIntIntMethod);
+                Call(SpanSliceIntIntMethod);
                 Ldstr(prefix);
-                Call(s_stringAsSpanMethod);
-                Call(s_spanLastIndexOfSpan);
+                Call(StringAsSpanMethod);
+                Call(SpanLastIndexOfSpanMethod);
                 Stloc(pos);
 
                 // if (pos < 0) goto ReturnFalse;
@@ -829,7 +909,7 @@ namespace System.Text.RegularExpressions
                 Ldloc(pos);
                 Ldc(prefix.Length);
                 Add();
-                Stfld(s_runtextposField);
+                Stfld(RuntextposField);
                 Ldc(1);
                 Ret();
             }
@@ -851,7 +931,7 @@ namespace System.Text.RegularExpressions
                 // ReadOnlySpan<char> span = inputSpan.Slice(pos);
                 Ldloca(inputSpan);
                 Ldloc(pos);
-                Call(s_spanSliceIntMethod);
+                Call(SpanSliceIntMethod);
                 Stloc(textSpanLocal);
 
                 // Use IndexOf{Any} to accelerate the skip loop via vectorization to match the first prefix.
@@ -895,14 +975,14 @@ namespace System.Text.RegularExpressions
                             Ldc(primarySet.Distance);
                             Add();
                         }
-                        Call(s_spanSliceIntMethod);
+                        Call(SpanSliceIntMethod);
                     }
                     else if (primarySet.Distance != 0)
                     {
                         // slice.Slice(primarySet.Distance)
                         Ldloca(textSpanLocal);
                         Ldc(primarySet.Distance);
-                        Call(s_spanSliceIntMethod);
+                        Call(SpanSliceIntMethod);
                     }
                     else
                     {
@@ -918,14 +998,14 @@ namespace System.Text.RegularExpressions
                             case 1:
                                 // tmp = ...IndexOf(setChars[0]);
                                 Ldc(primarySet.Chars[0]);
-                                Call(primarySet.Negated ? s_spanIndexOfAnyExceptChar : s_spanIndexOfChar);
+                                Call(primarySet.Negated ? SpanIndexOfAnyExceptCharMethod : SpanIndexOfCharMethod);
                                 break;
 
                             case 2:
                                 // tmp = ...IndexOfAny(setChars[0], setChars[1]);
                                 Ldc(primarySet.Chars[0]);
                                 Ldc(primarySet.Chars[1]);
-                                Call(primarySet.Negated ? s_spanIndexOfAnyExceptCharChar : s_spanIndexOfAnyCharChar);
+                                Call(primarySet.Negated ? SpanIndexOfAnyExceptCharCharMethod : SpanIndexOfAnyCharCharMethod);
                                 break;
 
                             case 3:
@@ -933,7 +1013,7 @@ namespace System.Text.RegularExpressions
                                 Ldc(primarySet.Chars[0]);
                                 Ldc(primarySet.Chars[1]);
                                 Ldc(primarySet.Chars[2]);
-                                Call(primarySet.Negated ? s_spanIndexOfAnyExceptCharCharChar : s_spanIndexOfAnyCharCharChar);
+                                Call(primarySet.Negated ? SpanIndexOfAnyExceptCharCharCharMethod : SpanIndexOfAnyCharCharCharMethod);
                                 break;
 
                             default:
@@ -949,14 +1029,14 @@ namespace System.Text.RegularExpressions
                         {
                             // tmp = ...IndexOf{AnyExcept}(low);
                             Ldc(primarySet.Range.Value.LowInclusive);
-                            Call(primarySet.Negated ? s_spanIndexOfAnyExceptChar : s_spanIndexOfChar);
+                            Call(primarySet.Negated ? SpanIndexOfAnyExceptCharMethod : SpanIndexOfCharMethod);
                         }
                         else
                         {
                             // tmp = ...IndexOfAny{Except}InRange(low, high);
                             Ldc(primarySet.Range.Value.LowInclusive);
                             Ldc(primarySet.Range.Value.HighInclusive);
-                            Call(primarySet.Negated ? s_spanIndexOfAnyExceptInRange : s_spanIndexOfAnyInRange);
+                            Call(primarySet.Negated ? SpanIndexOfAnyExceptInRangeMethod : SpanIndexOfAnyInRangeMethod);
                         }
                     }
                     else if (RegexCharClass.IsUnicodeCategoryOfSmallCharCount(primarySet.Set, out char[]? setChars, out bool negated, out _))
@@ -965,7 +1045,7 @@ namespace System.Text.RegularExpressions
 
                         // tmp = ...IndexOfAny(s_searchValues);
                         LoadSearchValues(setChars);
-                        Call(negated ? s_spanIndexOfAnyExceptSearchValues : s_spanIndexOfAnySearchValues);
+                        Call(negated ? SpanIndexOfAnyExceptSearchValuesMethod : SpanIndexOfAnySearchValuesMethod);
                     }
                     else
                     {
@@ -996,13 +1076,13 @@ namespace System.Text.RegularExpressions
                                 // IndexOfAnyExceptInRange('\0', '\u007f');
                                 Ldc(0);
                                 Ldc(127);
-                                Call(s_spanIndexOfAnyExceptInRange);
+                                Call(SpanIndexOfAnyExceptInRangeMethod);
                             }
                             else
                             {
                                 // IndexOfAnyExcept(searchValuesArray[...]);
                                 LoadSearchValues(asciiChars.AsSpan().ToArray());
-                                Call(s_spanIndexOfAnyExceptSearchValues);
+                                Call(SpanIndexOfAnyExceptSearchValuesMethod);
                             }
                             Stloc(i);
 
@@ -1010,14 +1090,14 @@ namespace System.Text.RegularExpressions
                             Label doneSearch = DefineLabel();
                             Ldloc(i);
                             Ldloca(span);
-                            Call(s_spanGetLengthMethod);
+                            Call(SpanGetLengthMethod);
                             BgeUnFar(doneSearch);
 
                             // if (span[i] <= 0x7f) goto doneSearch;
                             Ldc(0x7f);
                             Ldloca(span);
                             Ldloc(i);
-                            Call(s_spanGetItemMethod);
+                            Call(SpanGetItemMethod);
                             LdindU2();
                             BgeUnFar(doneSearch);
 
@@ -1028,7 +1108,7 @@ namespace System.Text.RegularExpressions
                             // if (CharInClass(span[i])) goto doneSearch;
                             Ldloca(span);
                             Ldloc(i);
-                            Call(s_spanGetItemMethod);
+                            Call(SpanGetItemMethod);
                             LdindU2();
                             EmitMatchCharacterClass(primarySet.Set);
                             Brtrue(doneSearch);
@@ -1042,7 +1122,7 @@ namespace System.Text.RegularExpressions
                             // } while ((uint)i < span.Length);
                             Ldloc(i);
                             Ldloca(span);
-                            Call(s_spanGetLengthMethod);
+                            Call(SpanGetLengthMethod);
                             BltUnFar(loop);
 
                             // i = -1;
@@ -1099,7 +1179,7 @@ namespace System.Text.RegularExpressions
                                 Ldc(maxDistance);
                                 Add();
                                 Ldloca(textSpanLocal);
-                                Call(s_spanGetLengthMethod);
+                                Call(SpanGetLengthMethod);
                                 _ilg!.Emit(OpCodes.Bge_Un, returnFalse);
                             }
                         }
@@ -1121,7 +1201,7 @@ namespace System.Text.RegularExpressions
                         Ldc(sets[setIndex].Distance);
                         Add();
                     }
-                    Call(s_spanGetItemMethod);
+                    Call(SpanGetItemMethod);
                     LdindU2();
                     EmitMatchCharacterClass(sets[setIndex].Set);
                     BrfalseFar(charNotInClassLabel);
@@ -1133,7 +1213,7 @@ namespace System.Text.RegularExpressions
                 Ldloc(pos);
                 Ldloc(iLocal);
                 Add();
-                Stfld(s_runtextposField);
+                Stfld(RuntextposField);
                 Ldc(1);
                 Ret();
 
@@ -1151,7 +1231,7 @@ namespace System.Text.RegularExpressions
                     MarkLabel(checkSpanLengthLabel);
                     Ldloc(iLocal);
                     Ldloca(textSpanLocal);
-                    Call(s_spanGetLengthMethod);
+                    Call(SpanGetLengthMethod);
                     if (setsToUse > 1 || primarySet.Distance != 0)
                     {
                         Ldc(minRequiredLength - 1);
@@ -1182,9 +1262,9 @@ namespace System.Text.RegularExpressions
                     Ldloca(inputSpan);
                     Ldc(0);
                     Ldloc(pos);
-                    Call(s_spanSliceIntIntMethod);
+                    Call(SpanSliceIntIntMethod);
                     Ldc(set.Chars[0]);
-                    Call(s_spanLastIndexOfChar);
+                    Call(SpanLastIndexOfCharMethod);
                     Stloc(pos);
 
                     // if (pos < 0) goto returnFalse;
@@ -1198,7 +1278,7 @@ namespace System.Text.RegularExpressions
                     Ldloc(pos);
                     Ldc(1);
                     Add();
-                    Stfld(s_runtextposField);
+                    Stfld(RuntextposField);
                     Ldc(1);
                     Ret();
                 }
@@ -1214,13 +1294,13 @@ namespace System.Text.RegularExpressions
                     Stloc(pos);
                     Ldloc(pos);
                     Ldloca(inputSpan);
-                    Call(s_spanGetLengthMethod);
+                    Call(SpanGetLengthMethod);
                     BgeUnFar(returnFalse);
 
                     // if (!MatchCharacterClass(inputSpan[i], set.Set)) goto condition;
                     Ldloca(inputSpan);
                     Ldloc(pos);
-                    Call(s_spanGetItemMethod);
+                    Call(SpanGetItemMethod);
                     LdindU2();
                     EmitMatchCharacterClass(set.Set);
                     Brfalse(condition);
@@ -1231,7 +1311,7 @@ namespace System.Text.RegularExpressions
                     Ldloc(pos);
                     Ldc(1);
                     Add();
-                    Stfld(s_runtextposField);
+                    Stfld(RuntextposField);
                     Ldc(1);
                     Ret();
                 }
@@ -1255,7 +1335,7 @@ namespace System.Text.RegularExpressions
                 using RentedLocalBuilder slice = RentReadOnlySpanCharLocal();
                 Ldloca(inputSpan);
                 Ldloc(pos);
-                Call(s_spanSliceIntMethod);
+                Call(SpanSliceIntMethod);
                 Stloc(slice);
 
                 // Find the literal.  If we can't find it, we're done searching.
@@ -1266,22 +1346,22 @@ namespace System.Text.RegularExpressions
                 if (target.Literal.String is string literalString)
                 {
                     Ldstr(literalString);
-                    Call(s_stringAsSpanMethod);
+                    Call(StringAsSpanMethod);
                     if (target.Literal.StringComparison is StringComparison.OrdinalIgnoreCase)
                     {
                         Ldc((int)target.Literal.StringComparison);
-                        Call(s_spanIndexOfSpanStringComparison);
+                        Call(SpanIndexOfSpanStringComparisonMethod);
                     }
                     else
                     {
                         Debug.Assert(target.Literal.StringComparison is StringComparison.Ordinal);
-                        Call(s_spanIndexOfSpan);
+                        Call(SpanIndexOfSpanMethod);
                     }
                 }
                 else if (target.Literal.Chars is not char[] literalChars)
                 {
                     Ldc(target.Literal.Char);
-                    Call(s_spanIndexOfChar);
+                    Call(SpanIndexOfCharMethod);
                 }
                 else
                 {
@@ -1290,18 +1370,18 @@ namespace System.Text.RegularExpressions
                         case 2:
                             Ldc(literalChars[0]);
                             Ldc(literalChars[1]);
-                            Call(s_spanIndexOfAnyCharChar);
+                            Call(SpanIndexOfAnyCharCharMethod);
                             break;
                         case 3:
                             Ldc(literalChars[0]);
                             Ldc(literalChars[1]);
                             Ldc(literalChars[2]);
-                            Call(s_spanIndexOfAnyCharCharChar);
+                            Call(SpanIndexOfAnyCharCharCharMethod);
                             break;
                         default:
                             Ldstr(new string(literalChars));
-                            Call(s_stringAsSpanMethod);
-                            Call(s_spanIndexOfAnySpan);
+                            Call(StringAsSpanMethod);
+                            Call(SpanIndexOfAnySpanMethod);
                             break;
                     }
                 }
@@ -1327,11 +1407,11 @@ namespace System.Text.RegularExpressions
                 Stloc(prev);
                 Ldloc(prev);
                 Ldloca(slice);
-                Call(s_spanGetLengthMethod);
+                Call(SpanGetLengthMethod);
                 BgeUn(innerLoopEnd);
                 Ldloca(slice);
                 Ldloc(prev);
-                Call(s_spanGetItemMethod);
+                Call(SpanGetItemMethod);
                 LdindU2();
                 EmitMatchCharacterClass(target.LoopNode.Str!);
                 BrtrueFar(innerLoopBody);
@@ -1375,14 +1455,14 @@ namespace System.Text.RegularExpressions
                 Add();
                 Ldc(1);
                 Add();
-                Stfld(s_runtextposField);
+                Stfld(RuntextposField);
 
                 // base.runtrackpos = pos + i;
                 Ldthis();
                 Ldloc(pos);
                 Ldloc(i);
                 Add();
-                Stfld(s_runtrackposField);
+                Stfld(RuntrackposField);
 
                 // return true;
                 Ldc(1);
@@ -1450,15 +1530,15 @@ namespace System.Text.RegularExpressions
                     Ldthis();
                     Dup();
                     Ldc(0);
-                    Ldthisfld(s_runtextposField);
+                    Ldthisfld(RuntextposField);
                     Dup();
                     Ldc(length);
                     Add();
-                    Call(s_captureMethod);
-                    Ldthisfld(s_runtextposField);
+                    Call(CaptureMethod);
+                    Ldthisfld(RuntextposField);
                     Ldc(length);
                     Add();
-                    Stfld(s_runtextposField);
+                    Stfld(RuntextposField);
                     Ldc(1);
                     Ret();
                     return;
@@ -1483,7 +1563,7 @@ namespace System.Text.RegularExpressions
 
             // int pos = base.runtextpos;
             // int originalpos = pos;
-            Ldthisfld(s_runtextposField);
+            Ldthisfld(RuntextposField);
             Stloc(pos);
             Ldloc(pos);
             Stloc(originalPos);
@@ -1522,12 +1602,12 @@ namespace System.Text.RegularExpressions
                 Stloc(pos);
                 Ldloc(pos);
             }
-            Stfld(s_runtextposField);
+            Stfld(RuntextposField);
             Ldthis();
             Ldc(0);
             Ldloc(originalPos);
             Ldloc(pos);
-            Call(s_captureMethod);
+            Call(CaptureMethod);
             Ldc(1);
             Ret();
 
@@ -1553,10 +1633,10 @@ namespace System.Text.RegularExpressions
                 Br(condition);
                 MarkLabel(body);
                 Ldthis();
-                Call(s_uncaptureMethod);
+                Call(UncaptureMethod);
                 MarkLabel(condition);
                 Ldthis();
-                Call(s_crawlposMethod);
+                Call(CrawlposMethod);
                 Brtrue(body);
 
                 // Done:
@@ -1581,7 +1661,7 @@ namespace System.Text.RegularExpressions
                 // slice = inputSpan.Slice(pos);
                 Ldloca(inputSpan);
                 Ldloc(pos);
-                Call(s_spanSliceIntMethod);
+                Call(SpanSliceIntMethod);
                 Stloc(slice);
             }
 
@@ -1611,7 +1691,7 @@ namespace System.Text.RegularExpressions
                 Debug.Assert(requiredLength > 0);
                 EmitSum(sliceStaticPos + requiredLength - 1, dynamicRequiredLength);
                 Ldloca(slice);
-                Call(s_spanGetLengthMethod);
+                Call(SpanGetLengthMethod);
                 BgeUnFar(doneLabel);
             }
 
@@ -1692,7 +1772,7 @@ namespace System.Text.RegularExpressions
                     // startingCapturePos = base.Crawlpos();
                     startingCapturePos = DeclareInt32();
                     Ldthis();
-                    Call(s_crawlposMethod);
+                    Call(CrawlposMethod);
                     Stloc(startingCapturePos);
                 }
 
@@ -1859,7 +1939,7 @@ namespace System.Text.RegularExpressions
                 // if (!base.IsMatched(capnum)) goto (ecmascript ? end : doneLabel);
                 Ldthis();
                 Ldc(capnum);
-                Call(s_isMatchedMethod);
+                Call(IsMatchedMethod);
                 BrfalseFar((node.Options & RegexOptions.ECMAScript) == 0 ? doneLabel : backreferenceEnd);
 
                 using RentedLocalBuilder matchLength = RentInt32Local();
@@ -1869,14 +1949,14 @@ namespace System.Text.RegularExpressions
                 // int matchLength = base.MatchLength(capnum);
                 Ldthis();
                 Ldc(capnum);
-                Call(s_matchLengthMethod);
+                Call(MatchLengthMethod);
                 Stloc(matchLength);
 
                 if (!rtl)
                 {
                     // if (slice.Length < matchLength) goto doneLabel;
                     Ldloca(slice);
-                    Call(s_spanGetLengthMethod);
+                    Call(SpanGetLengthMethod);
                 }
                 else
                 {
@@ -1889,7 +1969,7 @@ namespace System.Text.RegularExpressions
                 // int matchIndex = base.MatchIndex(capnum);
                 Ldthis();
                 Ldc(capnum);
-                Call(s_matchIndexMethod);
+                Call(MatchIndexMethod);
                 Stloc(matchIndex);
 
                 Label condition = DefineLabel();
@@ -1910,7 +1990,7 @@ namespace System.Text.RegularExpressions
                 Ldloc(matchIndex);
                 Ldloc(i);
                 Add();
-                Call(s_spanGetItemMethod);
+                Call(SpanGetItemMethod);
                 LdindU2();
                 Stloc(backreferenceCharacter);
                 if (!rtl)
@@ -1929,7 +2009,7 @@ namespace System.Text.RegularExpressions
                     Ldloc(i);
                     Add();
                 }
-                Call(s_spanGetItemMethod);
+                Call(SpanGetItemMethod);
                 LdindU2();
                 Stloc(currentCharacter);
 
@@ -1945,10 +2025,10 @@ namespace System.Text.RegularExpressions
 
                     // if (RegexCaseEquivalences.TryFindCaseEquivalencesForCharWithIBehavior(backreferenceChar, _culture, ref _caseBehavior, out ReadOnlySpan<char> equivalences))
                     Ldloc(backreferenceCharacter);
-                    Ldthisfld(s_cultureField);
-                    Ldthisflda(s_caseBehaviorField);
+                    Ldthisfld(CultureField);
+                    Ldthisflda(CaseBehaviorField);
                     Ldloca(caseEquivalences);
-                    Call(s_regexCaseEquivalencesTryFindCaseEquivalencesForCharWithIBehaviorMethod);
+                    Call(RegexCaseEquivalencesTryFindCaseEquivalencesForCharWithIBehaviorMethod);
                     BrfalseFar(doneLabel);
 
                     // if (equivalences.IndexOf(slice[i]) < 0) // Or if (equivalences.IndexOf(inputSpan[pos - matchLength + i]) < 0) when rtl
@@ -1967,9 +2047,9 @@ namespace System.Text.RegularExpressions
                         Ldloc(i);
                         Add();
                     }
-                    Call(s_spanGetItemMethod);
+                    Call(SpanGetItemMethod);
                     LdindU2();
-                    Call(s_spanIndexOfChar);
+                    Call(SpanIndexOfCharMethod);
                     Ldc(0);
                     // return false; // input didn't match.
                     BltFar(doneLabel);
@@ -2052,7 +2132,7 @@ namespace System.Text.RegularExpressions
                 // if (!base.IsMatched(capnum)) goto refNotMatched;
                 Ldthis();
                 Ldc(capnum);
-                Call(s_isMatchedMethod);
+                Call(IsMatchedMethod);
                 BrfalseFar(refNotMatched);
 
                 // The specified capture was captured.  Run the "yes" branch.
@@ -2222,7 +2302,7 @@ namespace System.Text.RegularExpressions
                     // int startingCapturePos = base.Crawlpos();
                     startingCapturePos = DeclareInt32();
                     Ldthis();
-                    Call(s_crawlposMethod);
+                    Call(CrawlposMethod);
                     Stloc(startingCapturePos);
                 }
 
@@ -2404,7 +2484,7 @@ namespace System.Text.RegularExpressions
                     // if (!IsMatched(uncapnum)) goto doneLabel;
                     Ldthis();
                     Ldc(uncapnum);
-                    Call(s_isMatchedMethod);
+                    Call(IsMatchedMethod);
                     BrfalseFar(doneLabel);
                 }
 
@@ -2424,7 +2504,7 @@ namespace System.Text.RegularExpressions
                     Ldc(capnum);
                     Ldloc(startingPos);
                     Ldloc(pos);
-                    Call(s_captureMethod);
+                    Call(CaptureMethod);
                 }
                 else
                 {
@@ -2434,7 +2514,7 @@ namespace System.Text.RegularExpressions
                     Ldc(uncapnum);
                     Ldloc(startingPos);
                     Ldloc(pos);
-                    Call(s_transferCaptureMethod);
+                    Call(TransferCaptureMethod);
                 }
 
                 if (isAtomic || !childBacktracks)
@@ -2498,11 +2578,11 @@ namespace System.Text.RegularExpressions
 
                 MarkLabel(body);
                 Ldthis();
-                Call(s_uncaptureMethod);
+                Call(UncaptureMethod);
 
                 MarkLabel(condition);
                 Ldthis();
-                Call(s_crawlposMethod);
+                Call(CrawlposMethod);
                 Ldloc(startingCapturePos);
                 Bgt(body);
             }
@@ -2614,14 +2694,14 @@ namespace System.Text.RegularExpressions
                         {
                             // base.Crawlpos();
                             Ldthis();
-                            Call(s_crawlposMethod);
+                            Call(CrawlposMethod);
                         });
                     }
                     else
                     {
                         // capturePos = base.Crawlpos();
                         Ldthis();
-                        Call(s_crawlposMethod);
+                        Call(CrawlposMethod);
                         Stloc(capturePos);
                     }
                 }
@@ -2695,7 +2775,7 @@ namespace System.Text.RegularExpressions
                     Debug.Assert(sliceStaticPos == 0, "This should be the first node and thus static position shouldn't have advanced.");
 
                     // pos = base.runtrackpos;
-                    Mvfldloc(s_runtrackposField, pos);
+                    Mvfldloc(RuntrackposField, pos);
 
                     SliceInputSpan();
                     return;
@@ -2876,13 +2956,13 @@ namespace System.Text.RegularExpressions
                 //     base.runtextpos = pos;
                 // }
                 TransferSliceStaticPosToPos();
-                Ldthisfld(s_runtextposField);
+                Ldthisfld(RuntextposField);
                 Ldloc(pos);
                 Label skipUpdate = DefineLabel();
                 Bge(skipUpdate);
                 Ldthis();
                 Ldloc(pos);
-                Stfld(s_runtextposField);
+                Stfld(RuntextposField);
                 MarkLabel(skipUpdate);
             }
 
@@ -2913,16 +2993,16 @@ namespace System.Text.RegularExpressions
                                 {
                                     Ldloca(slice);
                                     Ldc(sliceStaticPos);
-                                    Call(s_spanSliceIntMethod);
+                                    Call(SpanSliceIntMethod);
                                 }
                                 else
                                 {
                                     Ldloc(slice);
                                 }
                                 Ldstr(caseInsensitiveString);
-                                Call(s_stringAsSpanMethod);
+                                Call(StringAsSpanMethod);
                                 Ldc((int)StringComparison.OrdinalIgnoreCase);
-                                Call(s_spanStartsWithSpanComparison);
+                                Call(SpanStartsWithSpanComparisonMethod);
                                 BrfalseFar(doneLabel);
 
                                 sliceStaticPos += caseInsensitiveString.Length;
@@ -2979,7 +3059,7 @@ namespace System.Text.RegularExpressions
                         Ldc(1);
                         Sub();
                         Ldloca(inputSpan);
-                        Call(s_spanGetLengthMethod);
+                        Call(SpanGetLengthMethod);
                         BgeUnFar(doneLabel);
                     }
                 }
@@ -2996,7 +3076,7 @@ namespace System.Text.RegularExpressions
                     Ldloca(inputSpan);
                     EmitSum(-1, pos);
                 }
-                Call(s_spanGetItemMethod);
+                Call(SpanGetItemMethod);
                 LdindU2();
 
                 // if (loadedChar != ch) goto doneLabel;
@@ -3054,23 +3134,23 @@ namespace System.Text.RegularExpressions
                 switch (node.Kind)
                 {
                     case RegexNodeKind.Boundary:
-                        Call(s_isBoundaryMethod);
+                        Call(IsBoundaryMethod);
                         BrfalseFar(doneLabel);
                         break;
 
                     case RegexNodeKind.NonBoundary:
-                        Call(s_isBoundaryMethod);
+                        Call(IsBoundaryMethod);
                         BrtrueFar(doneLabel);
                         break;
 
                     case RegexNodeKind.ECMABoundary:
-                        Call(s_isECMABoundaryMethod);
+                        Call(IsECMABoundaryMethod);
                         BrfalseFar(doneLabel);
                         break;
 
                     default:
                         Debug.Assert(node.Kind == RegexNodeKind.NonECMABoundary);
-                        Call(s_isECMABoundaryMethod);
+                        Call(IsECMABoundaryMethod);
                         BrtrueFar(doneLabel);
                         break;
                 }
@@ -3104,7 +3184,7 @@ namespace System.Text.RegularExpressions
                             }
                             else
                             {
-                                Ldthisfld(s_runtextstartField);
+                                Ldthisfld(RuntextstartField);
                             }
                             BneFar(doneLabel);
                         }
@@ -3116,7 +3196,7 @@ namespace System.Text.RegularExpressions
                             // if (slice[sliceStaticPos - 1] != '\n') goto doneLabel;
                             Ldloca(slice);
                             Ldc(sliceStaticPos - 1);
-                            Call(s_spanGetItemMethod);
+                            Call(SpanGetItemMethod);
                             LdindU2();
                             Ldc('\n');
                             BneFar(doneLabel);
@@ -3133,7 +3213,7 @@ namespace System.Text.RegularExpressions
                             Ldloc(pos);
                             Ldc(1);
                             Sub();
-                            Call(s_spanGetItemMethod);
+                            Call(SpanGetItemMethod);
                             LdindU2();
                             Ldc('\n');
                             BneFar(doneLabel);
@@ -3154,7 +3234,7 @@ namespace System.Text.RegularExpressions
                             Ldloc(pos);
                             Ldloca(inputSpan);
                         }
-                        Call(s_spanGetLengthMethod);
+                        Call(SpanGetLengthMethod);
                         BltUnFar(doneLabel);
                         break;
 
@@ -3171,7 +3251,7 @@ namespace System.Text.RegularExpressions
                             Ldloc(pos);
                             Ldloca(inputSpan);
                         }
-                        Call(s_spanGetLengthMethod);
+                        Call(SpanGetLengthMethod);
                         Ldc(1);
                         Sub();
                         BltFar(doneLabel);
@@ -3184,11 +3264,11 @@ namespace System.Text.RegularExpressions
                             Label success = DefineLabel();
                             Ldc(sliceStaticPos);
                             Ldloca(slice);
-                            Call(s_spanGetLengthMethod);
+                            Call(SpanGetLengthMethod);
                             BgeUn(success);
                             Ldloca(slice);
                             Ldc(sliceStaticPos);
-                            Call(s_spanGetItemMethod);
+                            Call(SpanGetItemMethod);
                             LdindU2();
                             Ldc('\n');
                             BneFar(doneLabel);
@@ -3200,11 +3280,11 @@ namespace System.Text.RegularExpressions
                             Label success = DefineLabel();
                             Ldloc(pos);
                             Ldloca(inputSpan);
-                            Call(s_spanGetLengthMethod);
+                            Call(SpanGetLengthMethod);
                             BgeUn(success);
                             Ldloca(inputSpan);
                             Ldloc(pos);
-                            Call(s_spanGetItemMethod);
+                            Call(SpanGetItemMethod);
                             LdindU2();
                             Ldc('\n');
                             BneFar(doneLabel);
@@ -3235,7 +3315,7 @@ namespace System.Text.RegularExpressions
                     Ldc(str.Length);
                     Sub();
                     Ldloca(inputSpan);
-                    Call(s_spanGetLengthMethod);
+                    Call(SpanGetLengthMethod);
                     BgeUnFar(doneLabel);
 
                     for (int i = str.Length - 1; i >= 0; i--)
@@ -3247,7 +3327,7 @@ namespace System.Text.RegularExpressions
                         Stloc(pos);
                         Ldloca(inputSpan);
                         Ldloc(pos);
-                        Call(s_spanGetItemMethod);
+                        Call(SpanGetItemMethod);
                         LdindU2();
                         Ldc(str[i]);
                         BneFar(doneLabel);
@@ -3258,10 +3338,10 @@ namespace System.Text.RegularExpressions
 
                 Ldloca(slice);
                 Ldc(sliceStaticPos);
-                Call(s_spanSliceIntMethod);
+                Call(SpanSliceIntMethod);
                 Ldstr(str);
-                Call(s_stringAsSpanMethod);
-                Call(s_spanStartsWithSpan);
+                Call(StringAsSpanMethod);
+                Call(SpanStartsWithSpanMethod);
                 BrfalseFar(doneLabel);
                 sliceStaticPos += str.Length;
             }
@@ -3402,11 +3482,11 @@ namespace System.Text.RegularExpressions
                     {
                         // Math.Min(inputSpan.Length, endingPos + literal.Length - 1) - startingPos
                         Ldloca(inputSpan);
-                        Call(s_spanGetLengthMethod);
+                        Call(SpanGetLengthMethod);
                         Ldloc(endingPos);
                         Ldc(literalLength - 1);
                         Add();
-                        Call(s_mathMinIntInt);
+                        Call(MathMinIntIntMethod);
                     }
                     else
                     {
@@ -3415,7 +3495,7 @@ namespace System.Text.RegularExpressions
                     }
                     Ldloc(startingPos);
                     Sub();
-                    Call(s_spanSliceIntIntMethod);
+                    Call(SpanSliceIntIntMethod);
 
                     EmitIndexOf(literal, useLast: true, negate: false);
                     Stloc(endingPos);
@@ -3464,7 +3544,7 @@ namespace System.Text.RegularExpressions
                         {
                             // base.Crawlpos();
                             Ldthis();
-                            Call(s_crawlposMethod);
+                            Call(CrawlposMethod);
                         });
                     }
                 }
@@ -3476,7 +3556,7 @@ namespace System.Text.RegularExpressions
 
                     // capturePos = base.Crawlpos();
                     Ldthis();
-                    Call(s_crawlposMethod);
+                    Call(CrawlposMethod);
                     Stloc(capturePos);
                 }
 
@@ -3610,14 +3690,14 @@ namespace System.Text.RegularExpressions
                         {
                             // startingPos = slice.IndexOf(node.Ch);
                             Ldc(node.Ch);
-                            Call(s_spanIndexOfChar);
+                            Call(SpanIndexOfCharMethod);
                         }
                         else
                         {
                             // startingPos = slice.IndexOfAny(node.Ch, literal.String[0]);
                             Ldc(node.Ch);
                             Ldc(literal.String[0]);
-                            Call(s_spanIndexOfAnyCharChar);
+                            Call(SpanIndexOfAnyCharCharMethod);
                         }
                     }
                     else if (literal.SetChars is not null) // set literal
@@ -3629,7 +3709,7 @@ namespace System.Text.RegularExpressions
                                 // startingPos = slice.IndexOfAny(literal.SetChars[0], literal.SetChars[1]);
                                 Ldc(literal.SetChars[0]);
                                 Ldc(literal.SetChars[1]);
-                                Call(s_spanIndexOfAnyCharChar);
+                                Call(SpanIndexOfAnyCharCharMethod);
                                 break;
 
                             case (true, 3):
@@ -3637,7 +3717,7 @@ namespace System.Text.RegularExpressions
                                 Ldc(literal.SetChars[0]);
                                 Ldc(literal.SetChars[1]);
                                 Ldc(literal.SetChars[2]);
-                                Call(s_spanIndexOfAnyCharCharChar);
+                                Call(SpanIndexOfAnyCharCharCharMethod);
                                 break;
 
                             case (true, _):
@@ -3650,7 +3730,7 @@ namespace System.Text.RegularExpressions
                                 Ldc(node.Ch);
                                 Ldc(literal.SetChars[0]);
                                 Ldc(literal.SetChars[1]);
-                                Call(s_spanIndexOfAnyCharCharChar);
+                                Call(SpanIndexOfAnyCharCharCharMethod);
                                 break;
 
                             case (false, _):
@@ -3666,14 +3746,14 @@ namespace System.Text.RegularExpressions
                         {
                             // startingPos = slice.IndexOf(node.Ch);
                             Ldc(node.Ch);
-                            Call(s_spanIndexOfChar);
+                            Call(SpanIndexOfCharMethod);
                         }
                         else
                         {
                             // startingPos = slice.IndexOfAny(node.Ch, literal.Range.LowInclusive);
                             Ldc(node.Ch);
                             Ldc(literal.Range.LowInclusive);
-                            Call(s_spanIndexOfAnyCharChar);
+                            Call(SpanIndexOfAnyCharCharMethod);
                         }
                     }
                     else // range literal
@@ -3682,7 +3762,7 @@ namespace System.Text.RegularExpressions
                         overlap = true;
                         Ldc(literal.Range.LowInclusive);
                         Ldc(literal.Range.HighInclusive);
-                        Call(s_spanIndexOfAnyInRange);
+                        Call(SpanIndexOfAnyInRangeMethod);
                     }
                     Stloc(startingPos);
 
@@ -3705,13 +3785,13 @@ namespace System.Text.RegularExpressions
                         // if ((uint)startingPos >= (uint)slice.Length) goto doneLabel;
                         Ldloc(startingPos);
                         Ldloca(slice);
-                        Call(s_spanGetLengthMethod);
+                        Call(SpanGetLengthMethod);
                         BgeUnFar(doneLabel);
 
                         // if (slice[startingPos] == node.Ch) goto doneLabel;
                         Ldloca(slice);
                         Ldloc(startingPos);
-                        Call(s_spanGetItemMethod);
+                        Call(SpanGetItemMethod);
                         LdindU2();
                         Ldc(node.Ch);
                         BeqFar(doneLabel);
@@ -3770,7 +3850,7 @@ namespace System.Text.RegularExpressions
                 {
                     // capturepos = base.CrawlPos();
                     Ldthis();
-                    Call(s_crawlposMethod);
+                    Call(CrawlposMethod);
                     Stloc(capturepos);
                 }
 
@@ -3921,7 +4001,7 @@ namespace System.Text.RegularExpressions
                     }
                     if (expressionHasCaptures)
                     {
-                        EmitStackPush(() => { Ldthis(); Call(s_crawlposMethod); });
+                        EmitStackPush(() => { Ldthis(); Call(CrawlposMethod); });
                     }
 
                     if (iterationMayBeEmpty)
@@ -4099,7 +4179,7 @@ namespace System.Text.RegularExpressions
                     }
                     if (expressionHasCaptures)
                     {
-                        EmitStackPush(() => { Ldthis(); Call(s_crawlposMethod); });
+                        EmitStackPush(() => { Ldthis(); Call(CrawlposMethod); });
                     }
 
                     Label skipBacktrack = DefineLabel();
@@ -4294,7 +4374,7 @@ namespace System.Text.RegularExpressions
                     Ldloca(slice);
                     Ldc(sliceStaticPos);
                     Ldc(iterations);
-                    Call(s_spanSliceIntIntMethod);
+                    Call(SpanSliceIntIntMethod);
 
                     // If we're able to vectorize the search, do so. Otherwise, fall back to a loop.
                     // For the loop, we're validating that each char matches the target node.
@@ -4343,7 +4423,7 @@ namespace System.Text.RegularExpressions
                         MarkLabel(conditionLabel);
                         Ldloc(iterationLocal);
                         Ldloca(spanLocal);
-                        Call(s_spanGetLengthMethod);
+                        Call(SpanGetLengthMethod);
                         BltFar(bodyLabel);
                     }
 
@@ -4405,7 +4485,7 @@ namespace System.Text.RegularExpressions
                     Sub();
                     Ldc(1);
                     Sub();
-                    Call(s_spanGetItemMethod);
+                    Call(SpanGetItemMethod);
                     LdindU2();
                     if (node.IsSetFamily)
                     {
@@ -4452,7 +4532,7 @@ namespace System.Text.RegularExpressions
                     // int i = inputSpan.Length - pos;
                     TransferSliceStaticPosToPos();
                     Ldloca(inputSpan);
-                    Call(s_spanGetLengthMethod);
+                    Call(SpanGetLengthMethod);
                     Ldloc(pos);
                     Sub();
                     Stloc(iterationLocal);
@@ -4467,7 +4547,7 @@ namespace System.Text.RegularExpressions
                     {
                         Ldloca(slice);
                         Ldc(sliceStaticPos);
-                        Call(s_spanSliceIntMethod);
+                        Call(SpanSliceIntMethod);
                     }
                     else
                     {
@@ -4484,7 +4564,7 @@ namespace System.Text.RegularExpressions
 
                     // i = slice.Length - sliceStaticPos;
                     Ldloca(slice);
-                    Call(s_spanGetLengthMethod);
+                    Call(SpanGetLengthMethod);
                     if (sliceStaticPos > 0)
                     {
                         Ldc(sliceStaticPos);
@@ -4514,13 +4594,13 @@ namespace System.Text.RegularExpressions
                     // if ((uint)i >= (uint)slice.Length) goto atomicLoopDoneLabel;
                     Ldloc(iterationLocal);
                     Ldloca(slice);
-                    Call(s_spanGetLengthMethod);
+                    Call(SpanGetLengthMethod);
                     BgeUnFar(atomicLoopDoneLabel);
 
                     // if (slice[i] != ch) goto atomicLoopDoneLabel;
                     Ldloca(slice);
                     Ldloc(iterationLocal);
-                    Call(s_spanGetItemMethod);
+                    Call(SpanGetItemMethod);
                     LdindU2();
                     if (node.IsSetFamily)
                     {
@@ -4579,7 +4659,7 @@ namespace System.Text.RegularExpressions
                     // slice = slice.Slice(i);
                     Ldloca(slice);
                     Ldloc(iterationLocal);
-                    Call(s_spanSliceIntMethod);
+                    Call(SpanSliceIntMethod);
                     Stloc(slice);
 
                     // pos += i;
@@ -4617,7 +4697,7 @@ namespace System.Text.RegularExpressions
                     // if ((uint)sliceStaticPos >= (uint)slice.Length) goto skipUpdatesLabel;
                     Ldc(sliceStaticPos);
                     Ldloca(slice);
-                    Call(s_spanGetLengthMethod);
+                    Call(SpanGetLengthMethod);
                     BgeUnFar(skipUpdatesLabel);
                 }
                 else
@@ -4642,7 +4722,7 @@ namespace System.Text.RegularExpressions
                     Ldc(1);
                     Sub();
                 }
-                Call(s_spanGetItemMethod);
+                Call(SpanGetItemMethod);
                 LdindU2();
                 if (node.IsSetFamily)
                 {
@@ -4667,7 +4747,7 @@ namespace System.Text.RegularExpressions
                     // slice = slice.Slice(1);
                     Ldloca(slice);
                     Ldc(1);
-                    Call(s_spanSliceIntMethod);
+                    Call(SpanSliceIntMethod);
                     Stloc(slice);
 
                     // pos++;
@@ -4816,7 +4896,7 @@ namespace System.Text.RegularExpressions
                 if (expressionHasCaptures)
                 {
                     // base.runstack[stackpos++] = base.Crawlpos();
-                    EmitStackPush(() => { Ldthis(); Call(s_crawlposMethod); });
+                    EmitStackPush(() => { Ldthis(); Call(CrawlposMethod); });
                 }
                 if (startingPos is not null)
                 {
@@ -5164,8 +5244,8 @@ namespace System.Text.RegularExpressions
                     // IndexOf(span)
                     Debug.Assert(!negate, "Negation isn't appropriate for a multi");
                     Ldstr(node.Str!);
-                    Call(s_stringAsSpanMethod);
-                    Call(useLast ? s_spanLastIndexOfSpan : s_spanIndexOfSpan);
+                    Call(StringAsSpanMethod);
+                    Call(useLast ? SpanLastIndexOfSpanMethod : SpanIndexOfSpanMethod);
                     return;
                 }
 
@@ -5181,10 +5261,10 @@ namespace System.Text.RegularExpressions
                     Ldc(node.Ch);
                     Call((useLast, negate) switch
                     {
-                        (false, false) => s_spanIndexOfChar,
-                        (false, true) => s_spanIndexOfAnyExceptChar,
-                        (true, false) => s_spanLastIndexOfChar,
-                        (true, true) => s_spanLastIndexOfAnyExceptChar,
+                        (false, false) => SpanIndexOfCharMethod,
+                        (false, true) => SpanIndexOfAnyExceptCharMethod,
+                        (true, false) => SpanLastIndexOfCharMethod,
+                        (true, true) => SpanLastIndexOfAnyExceptCharMethod,
                     });
                     return;
                 }
@@ -5202,10 +5282,10 @@ namespace System.Text.RegularExpressions
                         Ldc(highInclusive);
                         Call((useLast, negated) switch
                         {
-                            (false, false) => s_spanIndexOfAnyInRange,
-                            (false, true) => s_spanIndexOfAnyExceptInRange,
-                            (true, false) => s_spanLastIndexOfAnyInRange,
-                            (true, true) => s_spanLastIndexOfAnyExceptInRange,
+                            (false, false) => SpanIndexOfAnyInRangeMethod,
+                            (false, true) => SpanIndexOfAnyExceptInRangeMethod,
+                            (true, false) => SpanLastIndexOfAnyInRangeMethod,
+                            (true, true) => SpanLastIndexOfAnyExceptInRangeMethod,
                         });
                         return;
                     }
@@ -5222,10 +5302,10 @@ namespace System.Text.RegularExpressions
                                 Ldc(setChars[0]);
                                 Call((useLast, negated) switch
                                 {
-                                    (false, false) => s_spanIndexOfChar,
-                                    (false, true) => s_spanIndexOfAnyExceptChar,
-                                    (true, false) => s_spanLastIndexOfChar,
-                                    (true, true) => s_spanLastIndexOfAnyExceptChar,
+                                    (false, false) => SpanIndexOfCharMethod,
+                                    (false, true) => SpanIndexOfAnyExceptCharMethod,
+                                    (true, false) => SpanLastIndexOfCharMethod,
+                                    (true, true) => SpanLastIndexOfAnyExceptCharMethod,
                                 });
                                 return;
 
@@ -5234,10 +5314,10 @@ namespace System.Text.RegularExpressions
                                 Ldc(setChars[1]);
                                 Call((useLast, negated) switch
                                 {
-                                    (false, false) => s_spanIndexOfAnyCharChar,
-                                    (false, true) => s_spanIndexOfAnyExceptCharChar,
-                                    (true, false) => s_spanLastIndexOfAnyCharChar,
-                                    (true, true) => s_spanLastIndexOfAnyExceptCharChar,
+                                    (false, false) => SpanIndexOfAnyCharCharMethod,
+                                    (false, true) => SpanIndexOfAnyExceptCharCharMethod,
+                                    (true, false) => SpanLastIndexOfAnyCharCharMethod,
+                                    (true, true) => SpanLastIndexOfAnyExceptCharCharMethod,
                                 });
                                 return;
 
@@ -5247,10 +5327,10 @@ namespace System.Text.RegularExpressions
                                 Ldc(setChars[2]);
                                 Call((useLast, negated) switch
                                 {
-                                    (false, false) => s_spanIndexOfAnyCharCharChar,
-                                    (false, true) => s_spanIndexOfAnyExceptCharCharChar,
-                                    (true, false) => s_spanLastIndexOfAnyCharCharChar,
-                                    (true, true) => s_spanLastIndexOfAnyExceptCharCharChar,
+                                    (false, false) => SpanIndexOfAnyCharCharCharMethod,
+                                    (false, true) => SpanIndexOfAnyExceptCharCharCharMethod,
+                                    (true, false) => SpanLastIndexOfAnyCharCharCharMethod,
+                                    (true, true) => SpanLastIndexOfAnyExceptCharCharCharMethod,
                                 });
                                 return;
 
@@ -5293,7 +5373,7 @@ namespace System.Text.RegularExpressions
                 Label skipResize = DefineLabel();
 
                 Ldloc(stackpos);
-                Ldthisfld(s_runstackField);
+                Ldthisfld(RunstackField);
                 Ldlen();
                 if (count > 1)
                 {
@@ -5303,12 +5383,12 @@ namespace System.Text.RegularExpressions
                 Blt(skipResize);
 
                 Ldthis();
-                _ilg!.Emit(OpCodes.Ldflda, s_runstackField);
-                Ldthisfld(s_runstackField);
+                _ilg!.Emit(OpCodes.Ldflda, RunstackField);
+                Ldthisfld(RunstackField);
                 Ldlen();
                 Ldc(2);
                 Mul();
-                Call(s_arrayResize);
+                Call(ArrayResizeMethod);
 
                 MarkLabel(skipResize);
             }
@@ -5316,7 +5396,7 @@ namespace System.Text.RegularExpressions
             void EmitStackPush(Action load)
             {
                 // base.runstack[stackpos] = load();
-                Ldthisfld(s_runstackField);
+                Ldthisfld(RunstackField);
                 Ldloc(stackpos);
                 load();
                 StelemI4();
@@ -5331,7 +5411,7 @@ namespace System.Text.RegularExpressions
             void EmitStackPop()
             {
                 // ... = base.runstack[--stackpos];
-                Ldthisfld(s_runstackField);
+                Ldthisfld(RunstackField);
                 Ldloc(stackpos);
                 Ldc(1);
                 Sub();
@@ -5365,7 +5445,7 @@ namespace System.Text.RegularExpressions
 
                 // int start = base.runtextpos;
                 LocalBuilder start = DeclareInt32();
-                Mvfldloc(s_runtextposField, start);
+                Mvfldloc(RuntextposField, start);
 
                 // int end = base.runtextpos = start +/- length;
                 LocalBuilder end = DeclareInt32();
@@ -5375,14 +5455,14 @@ namespace System.Text.RegularExpressions
                 Stloc(end);
                 Ldthis();
                 Ldloc(end);
-                Stfld(s_runtextposField);
+                Stfld(RuntextposField);
 
                 // base.Capture(0, start, end);
                 Ldthis();
                 Ldc(0);
                 Ldloc(start);
                 Ldloc(end);
-                Call(s_captureMethod);
+                Call(CaptureMethod);
             }
             else if (_regexTree.FindOptimizations.FindMode is
                     FindNextStartingPositionMode.LeadingAnchor_LeftToRight_Beginning or
@@ -5410,13 +5490,13 @@ namespace System.Text.RegularExpressions
                 if (!rtl)
                 {
                     Ldarga_s(1);
-                    Call(s_spanGetLengthMethod);
+                    Call(SpanGetLengthMethod);
                 }
                 else
                 {
                     Ldc(0);
                 }
-                Stfld(s_runtextposField);
+                Stfld(RuntextposField);
             }
             else
             {
@@ -5434,11 +5514,11 @@ namespace System.Text.RegularExpressions
                 Ldarg_1();
                 Call(tryMatchAtCurrentPositionMethod);
                 BrtrueFar(returnLabel);
-                Ldthisfld(s_runtextposField);
+                Ldthisfld(RuntextposField);
                 if (!rtl)
                 {
                     Ldarga_s(1);
-                    Call(s_spanGetLengthMethod);
+                    Call(SpanGetLengthMethod);
                 }
                 else
                 {
@@ -5449,10 +5529,10 @@ namespace System.Text.RegularExpressions
 
                 // runtextpos++ // or -- for rtl
                 Ldthis();
-                Ldthisfld(s_runtextposField);
+                Ldthisfld(RuntextposField);
                 Ldc(!rtl ? 1 : -1);
                 Add();
-                Stfld(s_runtextposField);
+                Stfld(RuntextposField);
 
                 // Check the timeout every time we run the whole match logic at a new starting location, as each such
                 // operation could do work at least linear in the length of the input.
@@ -5492,119 +5572,119 @@ namespace System.Text.RegularExpressions
                 case RegexCharClass.DigitClass:
                 case RegexCharClass.NotDigitClass:
                     // char.IsDigit(ch)
-                    Call(s_charIsDigitMethod);
+                    Call(CharIsDigitMethod);
                     NegateIf(charClass == RegexCharClass.NotDigitClass);
                     return;
 
                 case RegexCharClass.SpaceClass:
                 case RegexCharClass.NotSpaceClass:
                     // char.IsWhiteSpace(ch)
-                    Call(s_charIsWhiteSpaceMethod);
+                    Call(CharIsWhiteSpaceMethod);
                     NegateIf(charClass == RegexCharClass.NotSpaceClass);
                     return;
 
                 case RegexCharClass.WordClass:
                 case RegexCharClass.NotWordClass:
                     // RegexRunner.IsWordChar(ch)
-                    Call(s_isWordCharMethod);
+                    Call(IsWordCharMethod);
                     NegateIf(charClass == RegexCharClass.NotWordClass);
                     return;
 
                 case RegexCharClass.ControlClass:
                 case RegexCharClass.NotControlClass:
                     // char.IsControl(ch)
-                    Call(s_charIsControlMethod);
+                    Call(CharIsControlMethod);
                     NegateIf(charClass == RegexCharClass.NotControlClass);
                     return;
 
                 case RegexCharClass.LetterClass:
                 case RegexCharClass.NotLetterClass:
                     // char.IsLetter(ch)
-                    Call(s_charIsLetterMethod);
+                    Call(CharIsLetterMethod);
                     NegateIf(charClass == RegexCharClass.NotLetterClass);
                     return;
 
                 case RegexCharClass.LetterOrDigitClass:
                 case RegexCharClass.NotLetterOrDigitClass:
                     // char.IsLetterOrDigit(ch)
-                    Call(s_charIsLetterOrDigitMethod);
+                    Call(CharIsLetterOrDigitMethod);
                     NegateIf(charClass == RegexCharClass.NotLetterOrDigitClass);
                     return;
 
                 case RegexCharClass.LowerClass:
                 case RegexCharClass.NotLowerClass:
                     // char.IsLower(ch)
-                    Call(s_charIsLowerMethod);
+                    Call(CharIsLowerMethod);
                     NegateIf(charClass == RegexCharClass.NotLowerClass);
                     return;
 
                 case RegexCharClass.UpperClass:
                 case RegexCharClass.NotUpperClass:
                     // char.IsUpper(ch)
-                    Call(s_charIsUpperMethod);
+                    Call(CharIsUpperMethod);
                     NegateIf(charClass == RegexCharClass.NotUpperClass);
                     return;
 
                 case RegexCharClass.NumberClass:
                 case RegexCharClass.NotNumberClass:
                     // char.IsNumber(ch)
-                    Call(s_charIsNumberMethod);
+                    Call(CharIsNumberMethod);
                     NegateIf(charClass == RegexCharClass.NotNumberClass);
                     return;
 
                 case RegexCharClass.PunctuationClass:
                 case RegexCharClass.NotPunctuationClass:
                     // char.IsPunctuation(ch)
-                    Call(s_charIsPunctuationMethod);
+                    Call(CharIsPunctuationMethod);
                     NegateIf(charClass == RegexCharClass.NotPunctuationClass);
                     return;
 
                 case RegexCharClass.SeparatorClass:
                 case RegexCharClass.NotSeparatorClass:
                     // char.IsSeparator(ch)
-                    Call(s_charIsSeparatorMethod);
+                    Call(CharIsSeparatorMethod);
                     NegateIf(charClass == RegexCharClass.NotSeparatorClass);
                     return;
 
                 case RegexCharClass.SymbolClass:
                 case RegexCharClass.NotSymbolClass:
                     // char.IsSymbol(ch)
-                    Call(s_charIsSymbolMethod);
+                    Call(CharIsSymbolMethod);
                     NegateIf(charClass == RegexCharClass.NotSymbolClass);
                     return;
 
                 case RegexCharClass.AsciiLetterClass:
                 case RegexCharClass.NotAsciiLetterClass:
                     // char.IsAsciiLetter(ch)
-                    Call(s_charIsAsciiLetterMethod);
+                    Call(CharIsAsciiLetterMethod);
                     NegateIf(charClass == RegexCharClass.NotAsciiLetterClass);
                     return;
 
                 case RegexCharClass.AsciiLetterOrDigitClass:
                 case RegexCharClass.NotAsciiLetterOrDigitClass:
                     // char.IsAsciiLetterOrDigit(ch)
-                    Call(s_charIsAsciiLetterOrDigitMethod);
+                    Call(CharIsAsciiLetterOrDigitMethod);
                     NegateIf(charClass == RegexCharClass.NotAsciiLetterOrDigitClass);
                     return;
 
                 case RegexCharClass.HexDigitClass:
                 case RegexCharClass.NotHexDigitClass:
                     // char.IsAsciiHexDigit(ch)
-                    Call(s_charIsAsciiHexDigitMethod);
+                    Call(CharIsAsciiHexDigitMethod);
                     NegateIf(charClass == RegexCharClass.NotHexDigitClass);
                     return;
 
                 case RegexCharClass.HexDigitLowerClass:
                 case RegexCharClass.NotHexDigitLowerClass:
                     // char.IsAsciiHexDigitLower(ch)
-                    Call(s_charIsAsciiHexDigitLowerMethod);
+                    Call(CharIsAsciiHexDigitLowerMethod);
                     NegateIf(charClass == RegexCharClass.NotHexDigitLowerClass);
                     return;
 
                 case RegexCharClass.HexDigitUpperClass:
                 case RegexCharClass.NotHexDigitUpperClass:
                     // char.IsAsciiHexDigitUpper(ch)
-                    Call(s_charIsAsciiHexDigitUpperMethod);
+                    Call(CharIsAsciiHexDigitUpperMethod);
                     NegateIf(charClass == RegexCharClass.NotHexDigitUpperClass);
                     return;
             }
@@ -5642,7 +5722,7 @@ namespace System.Text.RegularExpressions
             if (RegexCharClass.TryGetOnlyCategories(charClass, categories, out int numCategories, out bool negated))
             {
                 // char.GetUnicodeCategory(ch) == category
-                Call(s_charGetUnicodeInfo);
+                Call(CharGetUnicodeInfoMethod);
                 Ldc((int)categories[0]);
                 Ceq();
                 NegateIf(negated);
@@ -5897,7 +5977,7 @@ namespace System.Text.RegularExpressions
             {
                 Ldloc(tempLocal);
                 Ldstr(charClass);
-                Call(s_charInClassMethod);
+                Call(CharInClassMethod);
                 Stloc(resultLocal);
             }
 
@@ -6012,49 +6092,49 @@ namespace System.Text.RegularExpressions
                 case "\0\0\0\u03ff\ufffe\u07ff\ufffe\u07ff":
                     // char.IsAsciiLetterOrDigit(ch)
                     Ldloc(tempLocal);
-                    Call(s_charIsAsciiLetterOrDigitMethod);
+                    Call(CharIsAsciiLetterOrDigitMethod);
                     break;
 
                 case "\0\0\0\u03FF\0\0\0\0":
                     // char.IsAsciiDigit(ch)
                     Ldloc(tempLocal);
-                    Call(s_charIsAsciiDigitMethod);
+                    Call(CharIsAsciiDigitMethod);
                     break;
 
                 case "\0\0\0\0\ufffe\u07FF\ufffe\u07ff":
                     // char.IsAsciiLetter(ch)
                     Ldloc(tempLocal);
-                    Call(s_charIsAsciiLetterMethod);
+                    Call(CharIsAsciiLetterMethod);
                     break;
 
                 case "\0\0\0\0\0\0\ufffe\u07ff":
                     // char.IsAsciiLetterLower(ch)
                     Ldloc(tempLocal);
-                    Call(s_charIsAsciiLetterLowerMethod);
+                    Call(CharIsAsciiLetterLowerMethod);
                     break;
 
                 case "\0\0\0\0\ufffe\u07FF\0\0":
                     // char.IsAsciiLetterUpper(ch)
                     Ldloc(tempLocal);
-                    Call(s_charIsAsciiLetterUpperMethod);
+                    Call(CharIsAsciiLetterUpperMethod);
                     break;
 
                 case "\0\0\0\u03FF\u007E\0\u007E\0":
                     // char.IsAsciiHexDigit(ch)
                     Ldloc(tempLocal);
-                    Call(s_charIsAsciiHexDigitMethod);
+                    Call(CharIsAsciiHexDigitMethod);
                     break;
 
                 case "\0\0\0\u03FF\0\0\u007E\0":
                     // char.IsAsciiHexDigitLower(ch)
                     Ldloc(tempLocal);
-                    Call(s_charIsAsciiHexDigitLowerMethod);
+                    Call(CharIsAsciiHexDigitLowerMethod);
                     break;
 
                 case "\0\0\0\u03FF\u007E\0\0\0":
                     // char.IsAsciiHexDigitUpper(ch)
                     Ldloc(tempLocal);
-                    Call(s_charIsAsciiHexDigitUpperMethod);
+                    Call(CharIsAsciiHexDigitUpperMethod);
                     break;
 
                 default:
@@ -6063,7 +6143,7 @@ namespace System.Text.RegularExpressions
                     Ldloc(tempLocal);
                     Ldc(4);
                     Shr();
-                    Call(s_stringGetCharsMethod);
+                    Call(StringGetCharsMethod);
                     Ldc(1);
                     Ldloc(tempLocal);
                     Ldc(15);
@@ -6147,7 +6227,7 @@ namespace System.Text.RegularExpressions
             {
                 // base.CheckTimeout();
                 Ldthis();
-                Call(s_checkTimeoutMethod);
+                Call(CheckTimeoutMethod);
             }
         }
 
@@ -6161,13 +6241,13 @@ namespace System.Text.RegularExpressions
             if (chars.Length is 4 or 5 && !RegexCharClass.IsAscii(chars))
             {
                 Ldstr(chars.ToString());
-                Call(s_stringAsSpanMethod);
+                Call(StringAsSpanMethod);
                 Call((last, except) switch
                 {
-                    (false, false) => s_spanIndexOfAnySpan,
-                    (false, true) => s_spanIndexOfAnyExceptSpan,
-                    (true, false) => s_spanLastIndexOfAnySpan,
-                    (true, true) => s_spanLastIndexOfAnyExceptSpan,
+                    (false, false) => SpanIndexOfAnySpanMethod,
+                    (false, true) => SpanIndexOfAnyExceptSpanMethod,
+                    (true, false) => SpanLastIndexOfAnySpanMethod,
+                    (true, true) => SpanLastIndexOfAnyExceptSpanMethod,
                 });
             }
             else
@@ -6175,10 +6255,10 @@ namespace System.Text.RegularExpressions
                 LoadSearchValues(chars.ToArray());
                 Call((last, except) switch
                 {
-                    (false, false) => s_spanIndexOfAnySearchValues,
-                    (false, true) => s_spanIndexOfAnyExceptSearchValues,
-                    (true, false) => s_spanLastIndexOfAnySearchValues,
-                    (true, true) => s_spanLastIndexOfAnyExceptSearchValues,
+                    (false, false) => SpanIndexOfAnySearchValuesMethod,
+                    (false, true) => SpanIndexOfAnyExceptSearchValuesMethod,
+                    (true, false) => SpanLastIndexOfAnySearchValuesMethod,
+                    (true, true) => SpanLastIndexOfAnyExceptSearchValuesMethod,
                 });
             }
         }
@@ -6206,8 +6286,8 @@ namespace System.Text.RegularExpressions
 
             // DerivedSearchValues d = Unsafe.As<DerivedSearchValues>(Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(this._searchValues), index));
             // ... = d;
-            Ldthisfld(s_searchValuesArrayField);
-            Call(s_memoryMarshalGetArrayDataReferenceSearchValues);
+            Ldthisfld(SearchValuesArrayField);
+            Call(MemoryMarshalGetArrayDataReferenceSearchValuesMethod);
             Ldc(index * IntPtr.Size);
             Add();
             _ilg!.Emit(OpCodes.Ldind_Ref);
@@ -6217,7 +6297,7 @@ namespace System.Text.RegularExpressions
                 "Calling Unsafe.As<T> is safe since the T doesn't have trimming annotations.")]
             static MethodInfo MakeUnsafeAs(Type type)
             {
-                return s_unsafeAs.MakeGenericMethod(type);
+                return UnsafeAsMethod.MakeGenericMethod(type);
             }
         }
     }
