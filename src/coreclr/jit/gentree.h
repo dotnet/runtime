@@ -4809,6 +4809,11 @@ public:
     // After lowering, this is a PUTARG_* node.
     GenTree* GetNode()
     {
+        return NodeRef();
+    }
+
+    GenTree*& NodeRef()
+    {
         return m_lateNode == nullptr ? m_earlyNode : m_lateNode;
     }
 
