@@ -13955,6 +13955,11 @@ namespace System.Runtime.ExceptionServices
     {
         public HandleProcessCorruptedStateExceptionsAttribute() { }
     }
+    public delegate bool UnhandledExceptionHandler(System.Exception exception);
+    public static partial class ExceptionHandling
+    {
+        public static void SetUnhandledExceptionHandler(UnhandledExceptionHandler handler) { throw null; }
+    }
 }
 namespace System.Runtime.InteropServices
 {
