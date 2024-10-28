@@ -25,8 +25,10 @@ internal sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataPro
     int IXCLRDataProcess.EndEnumTasks(ulong handle)
         => _legacyProcess is not null ? _legacyProcess.EndEnumTasks(handle) : HResults.E_NOTIMPL;
 
-    int IXCLRDataProcess.GetTaskByOSThreadID(uint osThreadID, /*IXCLRDataTask*/ void** task)
+    int IXCLRDataProcess.GetTaskByOSThreadID(uint osThreadID, out IXCLRDataTask? task)
     {
+        task = default;
+
         // Find the thread correspending to the OS thread ID
         Contracts.IThread contract = _target.Contracts.Thread;
         TargetPointer thread = contract.GetThreadStoreData().FirstThread;
@@ -46,35 +48,16 @@ internal sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataPro
         if (matchingThread == TargetPointer.Null)
             return HResults.E_INVALIDARG;
 
-        ComWrappers cw = new StrategyBasedComWrappers();
-
-        int hr;
-        nint legacyTaskPointer = 0;
-        object? legacyTask = null;
+        IXCLRDataTask? legacyTask = null;
         if (_legacyProcess is not null)
         {
-            hr = _legacyProcess.GetTaskByOSThreadID(osThreadID, (void**)&legacyTaskPointer);
+            int hr = _legacyProcess.GetTaskByOSThreadID(osThreadID, out legacyTask);
             if (hr < 0)
                 return hr;
-
-            legacyTask = cw.GetOrCreateObjectForComInstance(legacyTaskPointer, CreateObjectFlags.None);
         }
 
-        ClrDataTask taskObj = new(matchingThread, _target, legacyTask);
-
-        // Lifetime is now managed via ClrDataTask
-        if (legacyTaskPointer != 0)
-            Marshal.Release(legacyTaskPointer);
-
-        nint iunknownPtr = cw.GetOrCreateComInterfaceForObject(taskObj, CreateComInterfaceFlags.None);
-        hr = Marshal.QueryInterface(iunknownPtr, typeof(IXCLRDataTask).GUID, out nint taskPtr);
-        if (iunknownPtr != 0)
-            Marshal.Release(iunknownPtr);
-
-        if (hr == HResults.S_OK)
-            *task = (IXCLRDataModule*)taskPtr;
-
-        return hr;
+        task = new ClrDataTask(matchingThread, _target, legacyTask);
+        return HResults.S_OK;
     }
 
     int IXCLRDataProcess.GetTaskByUniqueID(ulong taskID, /*IXCLRDataTask*/ void** task)

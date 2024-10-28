@@ -13,11 +13,11 @@ internal sealed unsafe partial class ClrDataTask : IXCLRDataTask
     private readonly Target _target;
     private readonly IXCLRDataTask? _legacyImpl;
 
-    public ClrDataTask(TargetPointer address, Target target, object? legacyImpl)
+    public ClrDataTask(TargetPointer address, Target target, IXCLRDataTask? legacyImpl)
     {
         _address = address;
         _target = target;
-        _legacyImpl = legacyImpl as IXCLRDataTask;
+        _legacyImpl = legacyImpl;
     }
 
     public int GetProcess(/*IXCLRDataProcess*/ void** process)

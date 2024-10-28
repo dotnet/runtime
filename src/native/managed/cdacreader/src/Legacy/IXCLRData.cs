@@ -131,7 +131,7 @@ internal unsafe partial interface IXCLRDataProcess
     int EndEnumTasks(ulong handle);
 
     [PreserveSig]
-    int GetTaskByOSThreadID(uint osThreadID, /*IXCLRDataTask*/ void** task);
+    int GetTaskByOSThreadID(uint osThreadID, out IXCLRDataTask? task);
     [PreserveSig]
     int GetTaskByUniqueID(ulong taskID, /*IXCLRDataTask*/ void** task);
 
