@@ -406,9 +406,9 @@
       <Sha>16f58fa314e7deff4b3df36c862f157609ace2b4</Sha>
       <SourceBuild RepoName="roslyn" ManagedOnly="true" />
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.ApiCompat.Task" Version="10.0.100-alpha.1.24480.5">
+    <Dependency Name="Microsoft.DotNet.ApiCompat.Task" Version="10.0.100-alpha.1.24527.7">
       <Uri>https://github.com/dotnet/sdk</Uri>
-      <Sha>9de571282093d76401a3f457a8e9f4427e088778</Sha>
+      <Sha>4a56ead8a89bc74b82f1d7c80507d95d161c1872</Sha>
     </Dependency>
     <!-- Intermediate is necessary for source build. -->
     <Dependency Name="Microsoft.SourceBuild.Intermediate.sdk" Version="10.0.100-alpha.1.24480.5">
