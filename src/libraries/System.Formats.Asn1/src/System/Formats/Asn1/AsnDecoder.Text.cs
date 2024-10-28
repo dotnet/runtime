@@ -33,22 +33,19 @@ namespace System.Formats.Asn1
         ///   <see langword="true"/> if the character string value has a primitive encoding;
         ///   otherwise, <see langword="false"/>.
         /// </returns>
-        /// <remarks>
-        ///   This method does not determine if the string used only characters defined by the encoding.
-        /// </remarks>
         /// <exception cref="ArgumentOutOfRangeException">
         ///   <paramref name="ruleSet"/> is not defined.
         /// </exception>
         /// <exception cref="AsnContentException">
-        ///   the next value does not have the correct tag.
+        ///   The next value does not have the correct tag.
         ///
         ///   -or-
         ///
-        ///   the length encoding is not valid under the current encoding rules.
+        ///   The length encoding is not valid under the current encoding rules.
         ///
         ///   -or-
         ///
-        ///   the contents are not valid under the current encoding rules.
+        ///   The contents are not valid under the current encoding rules.
         /// </exception>
         /// <exception cref="ArgumentException">
         ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagClass"/> is
@@ -56,6 +53,9 @@ namespace System.Formats.Asn1
         ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagValue"/> is not a character
         ///   string tag type.
         /// </exception>
+        /// <remarks>
+        ///   This method does not determine if the string used only characters defined by the encoding.
+        /// </remarks>
         /// <seealso cref="TryReadCharacterStringBytes"/>
         public static bool TryReadPrimitiveCharacterStringBytes(
             ReadOnlySpan<byte> source,
@@ -112,22 +112,19 @@ namespace System.Formats.Asn1
         ///   value of the unprocessed character string;
         ///   otherwise, <see langword="false"/>.
         /// </returns>
-        /// <remarks>
-        ///   This method does not determine if the string used only characters defined by the encoding.
-        /// </remarks>
         /// <exception cref="ArgumentOutOfRangeException">
         ///   <paramref name="ruleSet"/> is not defined.
         /// </exception>
         /// <exception cref="AsnContentException">
-        ///   the next value does not have the correct tag.
+        ///   The next value does not have the correct tag.
         ///
         ///   -or-
         ///
-        ///   the length encoding is not valid under the current encoding rules.
+        ///   The length encoding is not valid under the current encoding rules.
         ///
         ///   -or-
         ///
-        ///   the contents are not valid under the current encoding rules.
+        ///   The contents are not valid under the current encoding rules.
         /// </exception>
         /// <exception cref="ArgumentException">
         ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagClass"/> is
@@ -139,6 +136,9 @@ namespace System.Formats.Asn1
         ///
         ///   <paramref name="destination"/> overlaps <paramref name="source"/>.
         /// </exception>
+        /// <remarks>
+        ///   This method does not determine if the string used only characters defined by the encoding.
+        /// </remarks>
         /// <seealso cref="TryReadPrimitiveCharacterStringBytes"/>
         /// <seealso cref="ReadCharacterString"/>
         /// <seealso cref="TryReadCharacterString"/>
@@ -217,19 +217,19 @@ namespace System.Formats.Asn1
         ///   <paramref name="encodingType"/> is not a known character string type.
         /// </exception>
         /// <exception cref="AsnContentException">
-        ///   the next value does not have the correct tag.
+        ///   The next value does not have the correct tag.
         ///
         ///   -or-
         ///
-        ///   the length encoding is not valid under the current encoding rules.
+        ///   The length encoding is not valid under the current encoding rules.
         ///
         ///   -or-
         ///
-        ///   the contents are not valid under the current encoding rules.
+        ///   The contents are not valid under the current encoding rules.
         ///
         ///   -or-
         ///
-        ///   the string did not successfully decode.
+        ///   The string did not successfully decode.
         /// </exception>
         /// <exception cref="ArgumentException">
         ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagClass"/> is
@@ -289,19 +289,19 @@ namespace System.Formats.Asn1
         ///   <paramref name="encodingType"/> is not a known character string type.
         /// </exception>
         /// <exception cref="AsnContentException">
-        ///   the next value does not have the correct tag.
+        ///   The next value does not have the correct tag.
         ///
         ///   -or-
         ///
-        ///   the length encoding is not valid under the current encoding rules.
+        ///   The length encoding is not valid under the current encoding rules.
         ///
         ///   -or-
         ///
-        ///   the contents are not valid under the current encoding rules.
+        ///   The contents are not valid under the current encoding rules.
         ///
         ///   -or-
         ///
-        ///   the string did not successfully decode.
+        ///   The string did not successfully decode.
         /// </exception>
         /// <exception cref="ArgumentException">
         ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagClass"/> is
@@ -561,19 +561,16 @@ namespace System.Formats.Asn1
         ///   <see langword="true"/> and advances the reader if the character string value had a primitive encoding,
         ///   <see langword="false"/> and does not advance the reader if it had a constructed encoding.
         /// </returns>
-        /// <remarks>
-        ///   This method does not determine if the string used only characters defined by the encoding.
-        /// </remarks>
         /// <exception cref="AsnContentException">
-        ///   the next value does not have the correct tag.
+        ///   The next value does not have the correct tag.
         ///
         ///   -or-
         ///
-        ///   the length encoding is not valid under the current encoding rules.
+        ///   The length encoding is not valid under the current encoding rules.
         ///
         ///   -or-
         ///
-        ///   the contents are not valid under the current encoding rules.
+        ///   The contents are not valid under the current encoding rules.
         /// </exception>
         /// <exception cref="ArgumentException">
         ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagClass"/> is
@@ -581,6 +578,9 @@ namespace System.Formats.Asn1
         ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagValue"/> is not a character
         ///   string tag type.
         /// </exception>
+        /// <remarks>
+        ///   This method does not determine if the string used only characters defined by the encoding.
+        /// </remarks>
         /// <seealso cref="TryReadCharacterStringBytes"/>
         public bool TryReadPrimitiveCharacterStringBytes(
             Asn1Tag expectedTag,
@@ -620,19 +620,16 @@ namespace System.Formats.Asn1
         ///   length to receive the value, otherwise
         ///   <see langword="false"/> and the reader does not advance.
         /// </returns>
-        /// <remarks>
-        ///   This method does not determine if the string used only characters defined by the encoding.
-        /// </remarks>
         /// <exception cref="AsnContentException">
-        ///   the next value does not have the correct tag.
+        ///   The next value does not have the correct tag.
         ///
         ///   -or-
         ///
-        ///   the length encoding is not valid under the current encoding rules.
+        ///   The length encoding is not valid under the current encoding rules.
         ///
         ///   -or-
         ///
-        ///   the contents are not valid under the current encoding rules.
+        ///   The contents are not valid under the current encoding rules.
         /// </exception>
         /// <exception cref="ArgumentException">
         ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagClass"/> is
@@ -640,6 +637,9 @@ namespace System.Formats.Asn1
         ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagValue"/> is not a character
         ///   string tag type.
         /// </exception>
+        /// <remarks>
+        ///   This method does not determine if the string used only characters defined by the encoding.
+        /// </remarks>
         /// <seealso cref="TryReadPrimitiveCharacterStringBytes"/>
         /// <seealso cref="ReadCharacterString"/>
         /// <seealso cref="TryReadCharacterString"/>
@@ -668,10 +668,10 @@ namespace System.Formats.Asn1
         ///   Reads the next value as character string with the specified tag and
         ///   encoding type, copying the decoded value into a provided destination buffer.
         /// </summary>
+        /// <param name="destination">The buffer in which to write.</param>
         /// <param name="encodingType">
         ///   One of the enumeration values representing the value type to process.
         /// </param>
-        /// <param name="destination">The buffer in which to write.</param>
         /// <param name="charsWritten">
         ///   On success, receives the number of chars written to <paramref name="destination"/>.
         /// </param>
@@ -688,19 +688,19 @@ namespace System.Formats.Asn1
         ///   <paramref name="encodingType"/> is not a known character string type.
         /// </exception>
         /// <exception cref="AsnContentException">
-        ///   the next value does not have the correct tag.
+        ///   The next value does not have the correct tag.
         ///
         ///   -or-
         ///
-        ///   the length encoding is not valid under the current encoding rules.
+        ///   The length encoding is not valid under the current encoding rules.
         ///
         ///   -or-
         ///
-        ///   the contents are not valid under the current encoding rules.
+        ///   The contents are not valid under the current encoding rules.
         ///
         ///   -or-
         ///
-        ///   the string did not successfully decode.
+        ///   The string did not successfully decode.
         /// </exception>
         /// <exception cref="ArgumentException">
         ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagClass"/> is
@@ -748,19 +748,19 @@ namespace System.Formats.Asn1
         ///   <paramref name="encodingType"/> is not a known character string type.
         /// </exception>
         /// <exception cref="AsnContentException">
-        ///   the next value does not have the correct tag.
+        ///   The next value does not have the correct tag.
         ///
         ///   -or-
         ///
-        ///   the length encoding is not valid under the current encoding rules.
+        ///   The length encoding is not valid under the current encoding rules.
         ///
         ///   -or-
         ///
-        ///   the contents are not valid under the current encoding rules.
+        ///   The contents are not valid under the current encoding rules.
         ///
         ///   -or-
         ///
-        ///   the string did not successfully decode.
+        ///   The string did not successfully decode.
         /// </exception>
         /// <exception cref="ArgumentException">
         ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagClass"/> is

@@ -802,17 +802,19 @@ namespace System.StubHelpers
             // COMPAT: We never pass null to MarshalManagedToNative.
             if (pManagedHome is null)
             {
+                *pNativeHome = IntPtr.Zero;
                 return;
             }
 
             *pNativeHome = marshaler.MarshalManagedToNative(pManagedHome);
         }
 
-        internal static void ConvertContentsToManaged(ICustomMarshaler marshaler, ref object pManagedHome, IntPtr* pNativeHome)
+        internal static void ConvertContentsToManaged(ICustomMarshaler marshaler, ref object? pManagedHome, IntPtr* pNativeHome)
         {
             // COMPAT: We never pass null to MarshalNativeToManaged.
             if (*pNativeHome == IntPtr.Zero)
             {
+                pManagedHome = null;
                 return;
             }
 

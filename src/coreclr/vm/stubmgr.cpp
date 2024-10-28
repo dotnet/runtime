@@ -734,7 +734,7 @@ bool StubManager::IsStubLoggingEnabled()
     // on the helper thread. (B/c it may deadlock. See SUPPRESS_ALLOCATION_ASSERTS_IN_THIS_SCOPE)
 
     // We avoid this by just not logging when native-debugging.
-    if (IsDebuggerPresent())
+    if (minipal_is_native_debugger_present())
     {
         return false;
     }
@@ -1236,15 +1236,6 @@ BOOL StubLinkStubManager::TraceDelegateObject(BYTE* pbDel, TraceDestination *tra
 }
 
 #endif // DACCESS_COMPILE
-
-void StubLinkStubManager::RemoveStubRange(BYTE* start, UINT length)
-{
-    WRAPPER_NO_CONTRACT;
-    _ASSERTE(start != NULL && length > 0);
-
-    BYTE* end = start + length;
-    GetRangeList()->RemoveRanges((LPVOID)start, start, end);
-}
 
 BOOL StubLinkStubManager::CheckIsStub_Internal(PCODE stubStartAddress)
 {
@@ -1879,6 +1870,11 @@ BOOL ILStubManager::TraceManager(Thread *thread,
         LOG((LF_CORDB, LL_INFO1000, "ILSM::TraceManager: Delegate Invoke Method\n"));
         return StubLinkStubManager::TraceDelegateObject((BYTE*)pThis, trace);
     }
+    else if (pStubMD->IsDelegateShuffleThunk())
+    {
+        LOG((LF_CORDB, LL_INFO1000, "ILSM::TraceManager: Delegate Shuffle Thunk\n"));
+        return TraceShuffleThunk(trace, pContext, pRetAddr);
+    }
     else
     {
         LOG((LF_CORDB, LL_INFO1000, "ILSM::TraceManager: No known target, IL Stub is a leaf\n"));
@@ -2277,4 +2273,3 @@ void TailCallStubManager::DoEnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 #endif
 
 #endif // #ifdef DACCESS_COMPILE
-

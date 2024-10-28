@@ -49,6 +49,7 @@ namespace pal
 #ifdef TARGET_WINDOWS
 #define CDECL __cdecl
 #include <Windows.h>
+#include <minipal/debugger.h>
 
 #define DLL_EXPORT __declspec(dllexport)
 #define MAIN __cdecl wmain
@@ -138,7 +139,7 @@ namespace pal
 
     inline debugger_state_t is_debugger_attached()
     {
-        return (::IsDebuggerPresent() == TRUE) ? debugger_state_t::attached : debugger_state_t::not_attached;
+        return (minipal_is_native_debugger_present() == TRUE) ? debugger_state_t::attached : debugger_state_t::not_attached;
     }
 
     inline bool does_file_exist(const string_t& file_path)
