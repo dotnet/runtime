@@ -968,15 +968,15 @@ namespace System.Runtime.CompilerServices
         public bool IsClassInitedAndActive => (Volatile.Read(ref Flags) & (enum_flag_Initialized | enum_flag_EnsuredInstanceActive)) == (enum_flag_Initialized | enum_flag_EnsuredInstanceActive);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static DynamicStaticsInfo* GetDynamicStaticsInfo(MethodTableAuxiliaryData* pAuxiliaryData)
+        public ref DynamicStaticsInfo GetDynamicStaticsInfo()
         {
-            return (DynamicStaticsInfo*)(((byte*)pAuxiliaryData) - sizeof(DynamicStaticsInfo));
+            return ref Unsafe.Subtract(ref Unsafe.As<MethodTableAuxiliaryData, DynamicStaticsInfo>(ref this), 1);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static ThreadStaticsInfo* GetThreadStaticsInfo(MethodTableAuxiliaryData* pAuxiliaryData)
+        public ref ThreadStaticsInfo GetThreadStaticsInfo()
         {
-            return (ThreadStaticsInfo*)(((byte*)pAuxiliaryData) - sizeof(ThreadStaticsInfo));
+            return ref Unsafe.Subtract(ref Unsafe.As<MethodTableAuxiliaryData, ThreadStaticsInfo>(ref this), 1);
         }
     }
 
