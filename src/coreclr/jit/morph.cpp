@@ -2856,7 +2856,7 @@ void Compiler::fgMorphMultiregStructArgs(GenTreeCall* call)
         if ((arg.AbiInfo.ArgType == TYP_STRUCT) && !arg.AbiInfo.PassedByRef)
         {
             foundStructArg = true;
-            GenTree*& argx = (arg.GetLateNode() != nullptr) ? arg.LateNodeRef() : arg.EarlyNodeRef();
+            GenTree*& argx = arg.NodeRef();
 
             if (!argx->OperIs(GT_FIELD_LIST))
             {
