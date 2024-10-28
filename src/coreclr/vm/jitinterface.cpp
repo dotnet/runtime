@@ -6352,8 +6352,8 @@ const char* CEEInfo::getClassNameFromMetadata(CORINFO_CLASS_HANDLE cls, const ch
 CORINFO_CLASS_HANDLE CEEInfo::getTypeInstantiationArgument(CORINFO_CLASS_HANDLE cls, unsigned index)
 {
     CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
+        NOTHROW;
+        GC_NOTRIGGER;
         MODE_PREEMPTIVE;
     } CONTRACTL_END;
 
@@ -6363,6 +6363,30 @@ CORINFO_CLASS_HANDLE CEEInfo::getTypeInstantiationArgument(CORINFO_CLASS_HANDLE 
 
     TypeHandle VMClsHnd(cls);
     Instantiation inst = VMClsHnd.GetInstantiation();
+    TypeHandle typeArg = index < inst.GetNumArgs() ? inst[index] : NULL;
+    result = CORINFO_CLASS_HANDLE(typeArg.AsPtr());
+
+    EE_TO_JIT_TRANSITION_LEAF();
+
+    return result;
+}
+
+CORINFO_CLASS_HANDLE CEEInfo::getMethodInstantiationArgument(CORINFO_METHOD_HANDLE ftn, unsigned index)
+{
+    CONTRACTL {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    CORINFO_CLASS_HANDLE result = NULL;
+
+    JIT_TO_EE_TRANSITION_LEAF();
+
+    MethodDesc* method = (MethodDesc*) ftn;
+    _ASSERTE(method->GetNumGenericMethodArgs() == 1);
+    Instantiation inst = method->GetMethodInstantiation();
+
     TypeHandle typeArg = index < inst.GetNumArgs() ? inst[index] : NULL;
     result = CORINFO_CLASS_HANDLE(typeArg.AsPtr());
 
@@ -8534,7 +8558,7 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
     info->detail = CORINFO_DEVIRTUALIZATION_UNKNOWN;
     memset(&info->resolvedTokenDevirtualizedMethod, 0, sizeof(info->resolvedTokenDevirtualizedMethod));
     memset(&info->resolvedTokenDevirtualizedUnboxedMethod, 0, sizeof(info->resolvedTokenDevirtualizedUnboxedMethod));
-    info->requiresInstMethodTableArg = false;
+    info->isInstantiatingStub = false;
     info->wasArrayInterfaceDevirt = false;
 
     MethodDesc* pBaseMD = GetMethod(info->virtualMethod);
@@ -8738,21 +8762,23 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
 
     // Success! Pass back the results.
     //
-    info->devirtualizedMethod = (CORINFO_METHOD_HANDLE) pDevirtMD;
-
     if (isArray)
     {
+        // Note if array devirtualization produced an instantiation stub
+        // so jit can try and inline it.
+        //
+        info->isInstantiatingStub = pDevirtMD->IsInstantiatingStub();
         info->exactContext = MAKE_METHODCONTEXT((CORINFO_METHOD_HANDLE) pDevirtMD);
-        info->requiresInstMethodTableArg = pDevirtMD->RequiresInstMethodTableArg();
         info->wasArrayInterfaceDevirt = true;
     }
     else
     {
         info->exactContext = MAKE_CLASSCONTEXT((CORINFO_CLASS_HANDLE) pExactMT);
-        info->requiresInstMethodTableArg = false;
+        info->isInstantiatingStub = false;
         info->wasArrayInterfaceDevirt = false;
     }
 
+    info->devirtualizedMethod = (CORINFO_METHOD_HANDLE) pDevirtMD;
     info->detail = CORINFO_DEVIRTUALIZATION_SUCCESS;
 
     return true;
@@ -8805,6 +8831,47 @@ CORINFO_METHOD_HANDLE CEEInfo::getUnboxedEntry(
     }
 
     *requiresInstMethodTableArg = requiresInstMTArg;
+
+    EE_TO_JIT_TRANSITION();
+
+    return result;
+}
+
+/*********************************************************************/
+CORINFO_METHOD_HANDLE CEEInfo::getInstantiatedEntry(
+    CORINFO_METHOD_HANDLE ftn,
+    CORINFO_METHOD_HANDLE* methodArg,
+    CORINFO_CLASS_HANDLE* classArg)
+{
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    CORINFO_METHOD_HANDLE result = NULL;
+
+    JIT_TO_EE_TRANSITION();
+
+    *methodArg = NULL;
+    *classArg = NULL;
+
+    MethodDesc* pMD = GetMethod(ftn);
+    bool requiresInstMTArg = false;
+
+    if (pMD->IsInstantiatingStub())
+    {
+        result = (CORINFO_METHOD_HANDLE) pMD->GetWrappedMethodDesc();
+
+        if (pMD->HasMethodInstantiation())
+        {
+            *methodArg = ftn;
+        }
+        else
+        {
+            *classArg = (CORINFO_CLASS_HANDLE)pMD->GetMethodTable();
+        }
+    }
 
     EE_TO_JIT_TRANSITION();
 

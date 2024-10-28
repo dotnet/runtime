@@ -3742,6 +3742,8 @@ public:
     CORINFO_CLASS_HANDLE gtGetArrayElementClassHandle(GenTree* array);
     // Get a class handle from a helper call argument
     CORINFO_CLASS_HANDLE gtGetHelperArgClassHandle(GenTree* array);
+    // Get a method handle from a helper call argument
+    CORINFO_METHOD_HANDLE gtGetHelperArgMethodHandle(GenTree* array);
     // Get the class handle for a field
     CORINFO_CLASS_HANDLE gtGetFieldClassHandle(CORINFO_FIELD_HANDLE fieldHnd, bool* pIsExact, bool* pIsNonNull);
     // Check if this tree is a typeof()
@@ -7565,6 +7567,7 @@ public:
                                              unsigned               classAttr,
                                              unsigned               likelihood,
                                              bool                   arrayInterface,
+                                             bool                   instantiatingStub,
                                              CORINFO_CONTEXT_HANDLE originalContextHandle);
 
     int getGDVMaxTypeChecks()
@@ -8989,6 +8992,11 @@ private:
     CORINFO_CLASS_HANDLE getTypeInstantiationArgument(CORINFO_CLASS_HANDLE cls, unsigned index)
     {
         return info.compCompHnd->getTypeInstantiationArgument(cls, index);
+    }
+
+    CORINFO_CLASS_HANDLE getMethodInstantiationArgument(CORINFO_METHOD_HANDLE ftn, unsigned index)
+    {
+        return info.compCompHnd->getMethodInstantiationArgument(ftn, index);
     }
 
     bool isNumericsNamespace(const char* ns)
