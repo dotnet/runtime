@@ -24,6 +24,7 @@ internal sealed class Module : IData<Module>
         ThunkHeap = target.ReadPointer(address + (ulong)type.Fields[nameof(ThunkHeap)].Offset);
         DynamicMetadata = target.ReadPointer(address + (ulong)type.Fields[nameof(DynamicMetadata)].Offset);
         Path = target.ReadPointer(address + (ulong)type.Fields[nameof(Path)].Offset);
+        FileName = target.ReadPointer(address + (ulong)type.Fields[nameof(FileName)].Offset);
 
         FieldDefToDescMap = address + (ulong)type.Fields[nameof(FieldDefToDescMap)].Offset;
         ManifestModuleReferencesMap = address + (ulong)type.Fields[nameof(ManifestModuleReferencesMap)].Offset;
@@ -41,6 +42,7 @@ internal sealed class Module : IData<Module>
     public TargetPointer ThunkHeap { get; init; }
     public TargetPointer DynamicMetadata { get; init; }
     public TargetPointer Path { get; init; }
+    public TargetPointer FileName { get; init; }
 
     public TargetPointer FieldDefToDescMap { get; init; }
     public TargetPointer ManifestModuleReferencesMap { get; init; }

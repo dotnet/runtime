@@ -14,11 +14,11 @@ include_directories(${CLR_SRC_NATIVE_DIR} ${CMAKE_CURRENT_BINARY_DIR})
 
 add_library(minipal_objects OBJECT ${SOURCES})
 
-# Add a copy of the minipal object library with interprocedural optimization disabled
+# Add a copy of the minipal static library with interprocedural optimization disabled
 # for NativeAOT scenarios, where we ship static libraries that need to be able to be run with
 # a variety of toolchain versions, not only the exact one we built with.
-add_library(minipal_objects_no_lto OBJECT ${SOURCES})
-set_target_properties(minipal_objects_no_lto PROPERTIES INTERPROCEDURAL_OPTIMIZATION OFF)
+add_library(aotminipal STATIC ${SOURCES})
+set_target_properties(aotminipal PROPERTIES INTERPROCEDURAL_OPTIMIZATION OFF)
 
 # Provide a static library for our shared library and executable scenarios
 # for easier usability.

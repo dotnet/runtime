@@ -218,12 +218,6 @@
 
       <AppleNativeFilesToBundle Include="$(PublishDir)\**\*.*" Exclude="@(AppleAssembliesToBundle);@(ApplePdbsToBundle);@(AppleXmlsToBundle);@(_SatelliteAssemblies)" />
     </ItemGroup>
-
-    <ItemGroup Condition="'$(RuntimeFlavor)' == 'coreclr'">
-      <AppleNativeFilesToBundle Include="$(CoreCLRArtifactsPath)\aotsdk\libbrotlienc.a" />
-      <AppleNativeFilesToBundle Include="$(CoreCLRArtifactsPath)\aotsdk\libbrotlidec.a" />
-      <AppleNativeFilesToBundle Include="$(CoreCLRArtifactsPath)\aotsdk\libbrotlicommon.a" />
-    </ItemGroup>
   </Target>
 
   <Target Name="_CopyTestArchive"
