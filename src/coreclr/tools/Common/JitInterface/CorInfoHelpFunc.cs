@@ -124,7 +124,6 @@ namespace Internal.JitInterface
         CORINFO_HELP_STOP_FOR_GC,       // Call GC (force a GC)
         CORINFO_HELP_POLL_GC,           // Ask GC if it wants to collect
 
-        CORINFO_HELP_STRESS_GC,         // Force a GC, but then update the JITTED code to be a noop call
         CORINFO_HELP_CHECK_OBJ,         // confirm that ECX is a valid object pointer (debugging only)
 
         /* GC Write barrier support */

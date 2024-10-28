@@ -2616,30 +2616,10 @@ HRESULT EEToProfInterfaceImpl::SetEnterLeaveFunctionHooksForJit(FunctionEnter3 *
 
 /*************************************************************/
 // Slow helper to tailcall from the fast one
-NOINLINE HCIMPL0(void, JIT_PollGC_Framed)
+extern "C" void QCALLTYPE PollGC_Native();
 {
-    BEGIN_PRESERVE_LAST_ERROR;
-
-    FCALL_CONTRACT;
-    FC_GC_POLL_NOT_NEEDED();
-
-    HELPER_METHOD_FRAME_BEGIN_NOPOLL();    // Set up a frame
-#ifdef _DEBUG
-    BOOL GCOnTransition = FALSE;
-    if (g_pConfig->FastGCStressLevel()) {
-        GCOnTransition = GC_ON_TRANSITIONS (FALSE);
-    }
-#endif // _DEBUG
-    CommonTripThread();         // Indicate we are at a GC safe point
-#ifdef _DEBUG
-    if (g_pConfig->FastGCStressLevel()) {
-        GC_ON_TRANSITIONS (GCOnTransition);
-    }
-#endif // _DEBUG
-    HELPER_METHOD_FRAME_END();
-    END_PRESERVE_LAST_ERROR;
+    // Empty function to p/invoke to in order to allow the GC to suspend on transition
 }
-HCIMPLEND
 
 HCIMPL0(VOID, JIT_PollGC)
 {
@@ -2747,47 +2727,6 @@ HCIMPL0(void, JIT_RareDisableHelper)
     END_PRESERVE_LAST_ERROR;
 }
 HCIMPLEND
-
-/*********************************************************************/
-// This is called by the JIT after every instruction in fully interruptible
-// code to make certain our GC tracking is OK
-HCIMPL0(VOID, JIT_StressGC_NOP)
-{
-    FCALL_CONTRACT;
-}
-HCIMPLEND
-
-
-HCIMPL0(VOID, JIT_StressGC)
-{
-    FCALL_CONTRACT;
-
-#ifdef _DEBUG
-    HELPER_METHOD_FRAME_BEGIN_0();    // Set up a frame
-
-    bool fSkipGC = false;
-
-    if (!fSkipGC)
-        GCHeapUtilities::GetGCHeap()->GarbageCollect();
-
-// <TODO>@TODO: the following ifdef is in error, but if corrected the
-// compiler complains about the *__ms->pRetAddr() saying machine state
-// doesn't allow -></TODO>
-#ifdef _X86
-                // Get the machine state, (from HELPER_METHOD_FRAME_BEGIN)
-                // and wack our return address to a nop function
-        BYTE* retInstrs = ((BYTE*) *__ms->pRetAddr()) - 4;
-        _ASSERTE(retInstrs[-1] == 0xE8);                // it is a call instruction
-                // Wack it to point to the JITStressGCNop instead
-        InterlockedExchange((LONG*) retInstrs), (LONG) JIT_StressGC_NOP);
-#endif // _X86
-
-    HELPER_METHOD_FRAME_END();
-#endif // _DEBUG
-}
-HCIMPLEND
-
-
 
 FCIMPL0(INT32, JIT_GetCurrentManagedThreadId)
 {
