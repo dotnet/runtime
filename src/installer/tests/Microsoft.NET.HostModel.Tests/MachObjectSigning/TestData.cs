@@ -17,14 +17,15 @@ internal class TestData
 
         private static IEnumerable<(FileInfo File, string UniqueName)> GetRecursiveFiles(DirectoryInfo dir, string prefix = "")
         {
-            var files = dir.GetFiles().Select(f => (f, $"{prefix}{dir.Name}-{f.Name}"));
+            var files = dir.GetFiles().Select(f => (f, $"{prefix}{dir.Name}-{f.Name}".ToLowerInvariant()));
             var recursiveFiles = dir.GetDirectories().SelectMany(sd => GetRecursiveFiles(sd, $"{prefix}{dir.Name}-"));
             return files.Concat(recursiveFiles);
         }
 
-        internal static (string Name, FileInfo File) GetSingle()
+        internal static (string Name, FileInfo File) GetSingle(params string[] matches)
         {
-            var file = GetRecursiveFiles(new DirectoryInfo("MachO")).First();
+            var file = GetRecursiveFiles(new DirectoryInfo("MachO"))
+                .Where(f => matches.All(m => f.UniqueName.Contains(m))).First();
             return (file.File.Name, file.File);
         }
     }

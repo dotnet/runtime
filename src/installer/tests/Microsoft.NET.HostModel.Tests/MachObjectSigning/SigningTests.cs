@@ -115,7 +115,7 @@ namespace Microsoft.NET.HostModel.MachO.CodeSign.Tests
         void SignedHelloWorldRuns()
         {
             using var testArtifact = TestArtifact.Create(nameof(SignedHelloWorldRuns));
-            foreach (var filePath in GetTestFilePaths(testArtifact))
+            var filePath = TestData.MachObjects.GetSingle(RuntimeInformation.ProcessArchitecture.ToString().ToLowerInvariant(), "signed").File.FullName;
             {
                 string fileName = Path.GetFileName(filePath);
                 string originalFilePath = filePath;
@@ -134,9 +134,6 @@ namespace Microsoft.NET.HostModel.MachO.CodeSign.Tests
                 switch(result.ExitCode)
                 {
                     case 0:
-                        break;
-                    case 149:
-                        result.StdErr.Should().Contain("This executable is not bound to a managed DLL to execute");
                         break;
                     default:
                         Assert.Fail($"'{managedSignedPath}' returned an unexpected exit code: {result.ExitCode}\n\tStdOut:'{result.StdOut}'\n\tStdErr: '{result.StdErr}'");
