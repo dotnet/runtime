@@ -11,6 +11,16 @@ namespace System.Security.Cryptography.X509Certificates
 {
     internal static partial class X500NameEncoder
     {
+        private enum EncodingRules
+        {
+            Unknown,
+            IA5String,
+            DirectoryString,
+            PrintableString,
+            UTF8String,
+            NumericString,
+        }
+
         private const string OidTagPrefix = "OID.";
         private const string UseSemicolonSeparators = ";";
         private const string UseCommaSeparators = ",";
@@ -19,6 +29,8 @@ namespace System.Security.Cryptography.X509Certificates
 
         private static readonly SearchValues<char> s_needsQuotingChars =
             SearchValues.Create(",+=\"\n<>#;"); // \r is NOT in this list, because it isn't in Windows.
+
+        private static readonly Lazy<Dictionary<string, EncodingRules>> s_lazyEncodingRulesLookup = new(CreateEncodingRulesLookup);
 
         internal static string X500DistinguishedNameDecode(
             byte[] encodedName,
@@ -510,32 +522,42 @@ namespace System.Security.Cryptography.X509Certificates
                     throw new CryptographicException(SR.Cryptography_Invalid_X500Name, e);
                 }
 
-                if (tagOid.SequenceEqual(Oids.EmailAddress))
+                switch (LookupEncodingRules(tagOid))
                 {
-                    try
-                    {
-                        // An email address with an invalid value will throw.
-                        writer.WriteCharacterString(UniversalTagNumber.IA5String, data);
-                    }
-                    catch (EncoderFallbackException)
-                    {
-                        throw new CryptographicException(SR.Cryptography_Invalid_IA5String);
-                    }
-                }
-                else if (forceUtf8Encoding)
-                {
-                    writer.WriteCharacterString(UniversalTagNumber.UTF8String, data);
-                }
-                else
-                {
-                    try
-                    {
-                        writer.WriteCharacterString(UniversalTagNumber.PrintableString, data);
-                    }
-                    catch (EncoderFallbackException)
-                    {
+                    case EncodingRules.IA5String:
+                        try
+                        {
+                            writer.WriteCharacterString(UniversalTagNumber.IA5String, data);
+                        }
+                        catch (EncoderFallbackException)
+                        {
+                            throw new CryptographicException(SR.Cryptography_Invalid_IA5String);
+                        }
+                        break;
+                    case EncodingRules.UTF8String:
+                    case EncodingRules.DirectoryString or EncodingRules.Unknown when forceUtf8Encoding:
                         writer.WriteCharacterString(UniversalTagNumber.UTF8String, data);
-                    }
+                        break;
+                    case EncodingRules.NumericString:
+                        writer.WriteCharacterString(UniversalTagNumber.NumericString, data);
+                        break;
+                    case EncodingRules.PrintableString:
+                        writer.WriteCharacterString(UniversalTagNumber.PrintableString, data);
+                        break;
+                    case EncodingRules.DirectoryString:
+                    case EncodingRules.Unknown:
+                        try
+                        {
+                            writer.WriteCharacterString(UniversalTagNumber.PrintableString, data);
+                        }
+                        catch (EncoderFallbackException)
+                        {
+                            writer.WriteCharacterString(UniversalTagNumber.UTF8String, data);
+                        }
+                        break;
+                    default:
+                        Debug.Fail("Encoding rule was not handled.");
+                        goto case EncodingRules.Unknown;
                 }
             }
 
@@ -566,6 +588,52 @@ namespace System.Security.Cryptography.X509Certificates
             }
 
             return written;
+        }
+
+        private static Dictionary<string, EncodingRules> CreateEncodingRulesLookup()
+        {
+            const int LookupDictionarySize = 27;
+            Dictionary<string, EncodingRules> lookup = new(LookupDictionarySize)
+            {
+                { Oids.EmailAddress, EncodingRules.IA5String },
+                { Oids.CommonName, EncodingRules.DirectoryString },
+                { Oids.Surname, EncodingRules.DirectoryString },
+                { Oids.GivenName, EncodingRules.DirectoryString },
+                { Oids.Initials, EncodingRules.DirectoryString },
+                { Oids.GenerationQualifier, EncodingRules.DirectoryString },
+                { Oids.DnQualifier, EncodingRules.PrintableString },
+                { Oids.SerialNumber, EncodingRules.PrintableString },
+                { Oids.Pseudonym, EncodingRules.DirectoryString },
+                { Oids.DnsName, EncodingRules.UTF8String },
+                { Oids.IntEmail, EncodingRules.UTF8String },
+                { Oids.Jid, EncodingRules.UTF8String },
+                { Oids.CountryOrRegionName, EncodingRules.PrintableString },
+                { Oids.CountryOrRegionName3C, EncodingRules.PrintableString },
+                { Oids.CountryOrRegionName3N, EncodingRules.NumericString },
+                { Oids.LocalityName, EncodingRules.DirectoryString },
+                { Oids.StateOrProvinceName, EncodingRules.DirectoryString },
+                { Oids.StreetAddress, EncodingRules.DirectoryString },
+                { Oids.HouseIdentifier, EncodingRules.DirectoryString },
+                { Oids.Organization, EncodingRules.DirectoryString },
+                { Oids.OrganizationalUnit, EncodingRules.DirectoryString },
+                { Oids.Title, EncodingRules.DirectoryString },
+                { Oids.Description, EncodingRules.DirectoryString },
+                { Oids.PostalCode, EncodingRules.DirectoryString },
+                { Oids.PostOfficeBox, EncodingRules.DirectoryString },
+                { Oids.PhysicalDeliveryOfficeName, EncodingRules.DirectoryString },
+                { Oids.TelephoneNumber, EncodingRules.PrintableString },
+            };
+
+            Debug.Assert(lookup.Count == LookupDictionarySize);
+            return lookup;
+        }
+
+        private static EncodingRules LookupEncodingRules(ReadOnlySpan<char> oid)
+        {
+            Dictionary<string, EncodingRules> lookup = s_lazyEncodingRulesLookup.Value;
+            Dictionary<string, EncodingRules>.AlternateLookup<ReadOnlySpan<char>> alternateLookup =
+                lookup.GetAlternateLookup<ReadOnlySpan<char>>();
+            return alternateLookup.TryGetValue(oid, out EncodingRules rules) ? rules : EncodingRules.Unknown;
         }
     }
 }

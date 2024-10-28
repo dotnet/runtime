@@ -105,11 +105,31 @@ namespace System.Security.Cryptography
 
         // X500 Names
         internal const string CommonName = "2.5.4.3";
+        internal const string Surname = "2.5.4.4";
+        internal const string SerialNumber = "2.5.4.5";
         internal const string CountryOrRegionName = "2.5.4.6";
         internal const string LocalityName = "2.5.4.7";
         internal const string StateOrProvinceName = "2.5.4.8";
+        internal const string StreetAddress = "2.5.4.9";
         internal const string Organization = "2.5.4.10";
         internal const string OrganizationalUnit = "2.5.4.11";
+        internal const string Title = "2.5.4.12";
+        internal const string Description = "2.5.4.13";
+        internal const string PostalCode = "2.5.4.17";
+        internal const string PostOfficeBox = "2.5.4.18";
+        internal const string PhysicalDeliveryOfficeName = "2.5.4.19";
+        internal const string TelephoneNumber = "2.5.4.20";
+        internal const string GivenName = "2.5.4.42";
+        internal const string Initials = "2.5.4.43";
+        internal const string GenerationQualifier = "2.5.4.44";
+        internal const string DnQualifier = "2.5.4.46";
+        internal const string HouseIdentifier = "2.5.4.51";
+        internal const string Pseudonym = "2.5.4.65";
+        internal const string CountryOrRegionName3C = "2.5.4.98";
+        internal const string CountryOrRegionName3N = "2.5.4.99";
+        internal const string DnsName = "2.5.4.100";
+        internal const string IntEmail = "2.5.4.104";
+        internal const string Jid = "2.5.4.105";
         internal const string EmailAddress = "1.2.840.113549.1.9.1";
 
         // Cert Extensions
