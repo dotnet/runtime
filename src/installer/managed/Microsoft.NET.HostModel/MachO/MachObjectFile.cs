@@ -27,63 +27,59 @@ internal class MachObjectFile
 
     private MachHeader _header;
     private (LinkEditCommand Command, long FileOffset) _codeSignatureLC;
-    // A Mach-O file will have either a 32-bit or 64-bit __TEXT segment, but not both.
-    private readonly (SegmentLoadCommand Command, long FileOffset) _textSegment;
     private readonly (Segment64LoadCommand Command, long FileOffset) _textSegment64;
-    // A Mach-O file will have either a 32-bit or 64-bit __LINKEDIT segment, but not both.
-    private (SegmentLoadCommand Command, long FileOffset) _linkEditSegment;
     private (Segment64LoadCommand Command, long FileOffset) _linkEditSegment64;
-    private readonly long _lowestSection;
-    private readonly string _identifier;
     private CodeSignature _codeSignatureBlob;
+    /// <summary>
+    /// The offset of the lowest section in the object file. This is to ensure that additional load commands do not overwrite sections.
+    /// </summary>
+    private readonly long _lowestSectionOffset;
+    /// <summary>
+    /// The offset in the object file where the next additional load command should be written.
+    /// </summary>
     private readonly long _nextCommandPtr;
 
-    /// <summary>
-    /// Creates a new MachObjectFile from a memory mapped file.
-    /// </summary>
     private MachObjectFile(
         MachHeader header,
         (LinkEditCommand Command, long FileOffset) codeSignatureLC,
-        (SegmentLoadCommand Command, long FileOffset) textSegment,
         (Segment64LoadCommand Command, long FileOffset) textSegment64,
-        (SegmentLoadCommand Command, long FileOffset) linkEditSegment,
         (Segment64LoadCommand Command, long FileOffset) linkEditSegment64,
         long lowestSection,
-        string identifier,
         CodeSignature codeSignatureBlob,
         long nextCommandPtr)
     {
         _codeSignatureBlob = codeSignatureBlob;
         _header = header;
         _codeSignatureLC = codeSignatureLC;
-        _textSegment = textSegment;
         _textSegment64 = textSegment64;
-        _linkEditSegment = linkEditSegment;
         _linkEditSegment64 = linkEditSegment64;
-        _lowestSection = lowestSection;
-        _identifier = identifier;
+        _lowestSectionOffset = lowestSection;
         _nextCommandPtr = nextCommandPtr;
     }
 
-    public static MachObjectFile Create(MemoryMappedViewAccessor file, string identifier)
+    /// <summary>
+    /// Reads the information from a memory mapped Mach-O file and creates a <see cref="MachObjectFile"/> that represents it.
+    /// </summary>
+    public static MachObjectFile Create(MemoryMappedViewAccessor file)
     {
         long commandsPtr = 0;
         file.Read(commandsPtr, out MachHeader header);
-        var nextCommandPtr = ReadCommands(file, in header, out var codeSignatureLC, out var textSegment, out var textSegment64, out var linkEditSegment, out var linkEditSegment64, out var lowestSection);
-        Debug.Assert(linkEditSegment.Command.IsDefault ^ linkEditSegment64.Command.IsDefault);
-        Debug.Assert(textSegment.Command.IsDefault ^ textSegment64.Command.IsDefault);
+        long nextCommandPtr = ReadCommands(
+            file,
+            in header,
+            out (LinkEditCommand Command, long FileOffset) codeSignatureLC,
+            out (Segment64LoadCommand Command, long FileOffset) textSegment64,
+            out (Segment64LoadCommand Command, long FileOffset) linkEditSegment64,
+            out long lowestSection);
         CodeSignature codeSignatureBlob = null;
         if (!codeSignatureLC.Command.IsDefault)
             codeSignatureBlob = CodeSignature.Read(file, codeSignatureLC.Command.GetDataOffset(header));
         return new MachObjectFile(
             header,
             codeSignatureLC,
-            textSegment,
             textSegment64,
-            linkEditSegment,
             linkEditSegment64,
             lowestSection,
-            identifier,
             codeSignatureBlob,
             nextCommandPtr);
     }
@@ -106,7 +102,8 @@ internal class MachObjectFile
         AllocateCodeSignatureLC(identifier);
         WriteLoadCommands(file);
         _codeSignatureBlob = CreateSignature(file, identifier);
-        return GetSignatureStart();
+        _codeSignatureBlob.WriteToFile(file);
+        return GetFileSize();
     }
 
     /// <summary>
@@ -130,10 +127,7 @@ internal class MachObjectFile
 
         file.Write(0, ref _header);
 
-        if (_linkEditSegment.Command.IsDefault)
-            file.Write(_linkEditSegment64.FileOffset, ref _linkEditSegment64.Command);
-        else
-            file.Write(_linkEditSegment.FileOffset, ref _linkEditSegment.Command);
+        file.Write(_linkEditSegment64.FileOffset, ref _linkEditSegment64.Command);
 
         if (!_codeSignatureLC.Command.IsDefault)
         {
@@ -167,26 +161,16 @@ internal class MachObjectFile
         if (!IsMachFile(memoryMappedViewAccessor))
             return false;
 
-        MachObjectFile machFile = Create(memoryMappedViewAccessor, "");
+        MachObjectFile machFile = Create(memoryMappedViewAccessor);
         if (machFile._codeSignatureLC.Command.IsDefault)
             return false;
 
         machFile._header.NumberOfCommands -= 1;
         machFile._header.SizeOfCommands -= (uint)Marshal.SizeOf<LinkEditCommand>();
-        if (machFile._linkEditSegment.Command.IsDefault)
-        {
-            machFile._linkEditSegment64.Command.SetFileSize(
-                machFile._linkEditSegment64.Command.GetFileSize(machFile._header)
-                    - machFile._codeSignatureLC.Command.GetFileSize(machFile._header),
-                machFile._header);
-        }
-        else
-        {
-            machFile._linkEditSegment.Command.SetFileSize(
-                machFile._linkEditSegment.Command.GetFileSize(machFile._header)
-                    - machFile._codeSignatureLC.Command.GetFileSize(machFile._header),
-                machFile._header);
-        }
+        machFile._linkEditSegment64.Command.SetFileSize(
+            machFile._linkEditSegment64.Command.GetFileSize(machFile._header)
+                - machFile._codeSignatureLC.Command.GetFileSize(machFile._header),
+            machFile._header);
         newLength = machFile.GetFileSize();
         machFile._codeSignatureLC = default;
         machFile.Write(memoryMappedViewAccessor);
@@ -205,13 +189,9 @@ internal class MachObjectFile
             return false;
         if (!CodeSignatureLCsAreEquivalent(a._codeSignatureLC, b._codeSignatureLC, a._header))
             return false;
-        if (!a._textSegment.Equals(b._textSegment))
-            return false;
         if (!a._textSegment64.Equals(b._textSegment64))
             return false;
-        if (!LinkEditsAreEquivalent(a._linkEditSegment, b._linkEditSegment, a._header))
-            return false;
-        if (!LinkEditsAreEquivalent64(a._linkEditSegment64, b._linkEditSegment64, a._header))
+        if (!LinkEditSegmentsAreEquivalent(a._linkEditSegment64, b._linkEditSegment64, a._header))
             return false;
         if (a._codeSignatureBlob is null || b._codeSignatureBlob is null)
             return false;
@@ -230,18 +210,7 @@ internal class MachObjectFile
             return true;
         }
 
-        static bool LinkEditsAreEquivalent((SegmentLoadCommand Command, long FileOffset) a, (SegmentLoadCommand Command, long FileOffset) b, MachHeader header)
-        {
-            if (a.Command.GetFileOffset(header) != b.Command.GetFileOffset(header))
-                return false;
-            if (a.Command.GetSectionsCount(header) != b.Command.GetSectionsCount(header))
-                return false;
-            if (a.FileOffset != b.FileOffset)
-                return false;
-            return true;
-        }
-
-        static bool LinkEditsAreEquivalent64((Segment64LoadCommand Command, long FileOffset) a, (Segment64LoadCommand Command, long FileOffset) b, MachHeader header)
+        static bool LinkEditSegmentsAreEquivalent((Segment64LoadCommand Command, long FileOffset) a, (Segment64LoadCommand Command, long FileOffset) b, MachHeader header)
         {
             if (a.Command.GetFileOffset(header) != b.Command.GetFileOffset(header))
                 return false;
@@ -259,12 +228,7 @@ internal class MachObjectFile
     private void WriteLoadCommands(MemoryMappedViewAccessor file)
     {
         file.Write(0, ref _header);
-
-        if (_linkEditSegment.Command.IsDefault)
-            file.Write(_linkEditSegment64.FileOffset, ref _linkEditSegment64.Command);
-        else
-            file.Write(_linkEditSegment.FileOffset, ref _linkEditSegment.Command);
-
+        file.Write(_linkEditSegment64.FileOffset, ref _linkEditSegment64.Command);
         if (_codeSignatureLC.Command.IsDefault)
             throw new InvalidOperationException("Load commands must be written after the code signature load command is allocated");
         file.Write(_codeSignatureLC.FileOffset, ref _codeSignatureLC.Command);
@@ -278,16 +242,12 @@ internal class MachObjectFile
         MemoryMappedViewAccessor inputFile,
         in MachHeader header,
         out (LinkEditCommand Command, long FileOffset) codeSignatureLC,
-        out (SegmentLoadCommand Command, long FileOffset) textSegment,
         out (Segment64LoadCommand Command, long FileOffset) textSegment64,
-        out (SegmentLoadCommand Command, long FileOffset) linkEditSegment,
         out (Segment64LoadCommand Command, long FileOffset) linkEditSegment64,
         out long lowestSectionOffset)
     {
         codeSignatureLC = default;
-        textSegment = default;
         textSegment64 = default;
-        linkEditSegment = default;
         linkEditSegment64 = default;
         long commandsPtr = Marshal.SizeOf<MachHeader>();
         // Additional reserved field for 64 bit headers
@@ -302,27 +262,6 @@ internal class MachObjectFile
                 case MachLoadCommandType.CodeSignature:
                     inputFile.Read(commandsPtr, out LinkEditCommand leCommand);
                     codeSignatureLC = (leCommand, commandsPtr);
-                    break;
-                case MachLoadCommandType.Segment:
-                    inputFile.Read(commandsPtr, out SegmentLoadCommand segment);
-                    if (segment.Name.Equals(NameBuffer.__TEXT))
-                    {
-                        textSegment = (segment, commandsPtr);
-                        var sectionPtr = commandsPtr + Marshal.SizeOf<SegmentLoadCommand>();
-                        var sectionCount = segment.GetSectionsCount(header);
-                        for (int s = 0; s < sectionCount; s++)
-                        {
-                            inputFile.Read(sectionPtr, out SectionLoadCommand section);
-                            lowestSectionOffset = Math.Min(lowestSectionOffset, section.GetFileOffset(header));
-                            sectionPtr += Marshal.SizeOf<SectionLoadCommand>();
-                        }
-                        break;
-                    }
-                    if (segment.Name.Equals(NameBuffer.__LINKEDIT))
-                    {
-                        linkEditSegment = (segment, commandsPtr);
-                        break;
-                    }
                     break;
                 case MachLoadCommandType.Segment64:
                     inputFile.Read(commandsPtr, out Segment64LoadCommand segment64);
@@ -365,18 +304,15 @@ internal class MachObjectFile
             // Update the header to accomodate the new code signature load command
             _header.NumberOfCommands += 1;
             _header.SizeOfCommands += (uint)Marshal.SizeOf<LinkEditCommand>();
-            if (_header.SizeOfCommands > _lowestSection)
+            if (_header.SizeOfCommands > _lowestSectionOffset)
             {
                 throw new NotImplementedException("Mach Object does not have enough space for the code signature load command");
             }
         }
 
-        var currentLinkEditOffset = _linkEditSegment.Command.GetFileOffset(_header) + _linkEditSegment64.Command.GetFileOffset(_header);
+        var currentLinkEditOffset = _linkEditSegment64.Command.GetFileOffset(_header);
         var linkEditSize = csOffset + csSize - currentLinkEditOffset;
-        if (_linkEditSegment.Command.IsDefault)
-            _linkEditSegment64.Command.SetFileSize(linkEditSize, _header);
-        else
-            _linkEditSegment.Command.SetFileSize((uint)linkEditSize, _header);
+        _linkEditSegment64.Command.SetFileSize(linkEditSize, _header);
         _codeSignatureLC = (new LinkEditCommand(MachLoadCommandType.CodeSignature, csOffset, csSize, _header), csPtr);
     }
 
@@ -393,7 +329,7 @@ internal class MachObjectFile
         CmsWrapperBlob cmsWrapperBlob = CmsWrapperBlob.Empty;
 
         byte[] identifierBytes = new byte[GetIdentifierLength(identifier)];
-        Encoding.UTF8.GetBytes(_identifier).CopyTo(identifierBytes, 0);
+        Encoding.UTF8.GetBytes(identifier).CopyTo(identifierBytes, 0);
 
         byte[] cdHashes = new byte[(GetCodeSlotCount() + SpecialSlotCount) * DefaultHashSize];
 
@@ -481,8 +417,8 @@ internal class MachObjectFile
         codeDirectoryBlob.Log2PageSize = Log2PageSize;
 
         codeDirectoryBlob.CodeLimit64 = GetSignatureStart() >= uint.MaxValue ? GetSignatureStart() : 0;
-        codeDirectoryBlob.ExecSegmentBase = _textSegment.Command.GetFileOffset(_header) + _textSegment64.Command.GetFileOffset(_header);
-        codeDirectoryBlob.ExecSegmentLimit = _textSegment.Command.GetFileSize(_header) + _textSegment64.Command.GetFileSize(_header);
+        codeDirectoryBlob.ExecSegmentBase = _textSegment64.Command.GetFileOffset(_header);
+        codeDirectoryBlob.ExecSegmentLimit = _textSegment64.Command.GetFileSize(_header);
         if (_header.FileType == MachFileType.Execute)
             codeDirectoryBlob.ExecSegmentFlags |= ExecutableSegmentFlags.MainBinary;
 
@@ -493,26 +429,27 @@ internal class MachObjectFile
     /// Gets the total size of the Mach-O file according to the load commands.
     /// </summary>
     private long GetFileSize()
-        => (long)(_linkEditSegment.Command.GetFileOffset(_header) + _linkEditSegment.Command.GetFileSize(_header)
-            + _linkEditSegment64.Command.GetFileOffset(_header) + _linkEditSegment64.Command.GetFileSize(_header));
+        => (long)(_linkEditSegment64.Command.GetFileOffset(_header) + _linkEditSegment64.Command.GetFileSize(_header));
 
     private static uint GetIdentifierLength(string identifier)
     {
         return (uint)(Encoding.UTF8.GetByteCount(identifier) + 1);
     }
 
-    private uint GetCodeDirectorySize(string identifier)
+    private uint GetCodeDirectorySize(string identifier) => GetCodeDirectorySize(GetSignatureStart(), identifier);
+    private static uint GetCodeDirectorySize(uint signatureStart, string identifier)
     {
         return (uint)(Marshal.SizeOf<CodeDirectoryHeader>()
             + GetIdentifierLength(identifier)
             + SpecialSlotCount * DefaultHashSize
-            + GetCodeSlotCount() * DefaultHashSize);
+            + GetCodeSlotCount(signatureStart) * DefaultHashSize);
     }
 
-    private uint GetCodeSignatureSize(string identifier)
+    private uint GetCodeSignatureSize(string identifier) => GetCodeSignatureSize(GetSignatureStart(), identifier);
+    private static uint GetCodeSignatureSize(uint signatureStart, string identifier)
     {
         return (uint)(Marshal.SizeOf<EmbeddedSignatureHeader>()
-            + GetCodeDirectorySize(identifier)
+            + GetCodeDirectorySize(signatureStart, identifier)
             + Marshal.SizeOf<RequirementsBlob>()
             + Marshal.SizeOf<CmsWrapperBlob>());
     }
@@ -523,12 +460,17 @@ internal class MachObjectFile
         {
             return _codeSignatureLC.Command.GetDataOffset(_header);
         }
-        return (uint)(_linkEditSegment.Command.GetFileOffset(_header) + _linkEditSegment.Command.GetFileSize(_header)
-            + _linkEditSegment64.Command.GetFileOffset(_header) + _linkEditSegment64.Command.GetFileSize(_header));
+        return (uint)(_linkEditSegment64.Command.GetFileOffset(_header) + _linkEditSegment64.Command.GetFileSize(_header));
     }
 
-    private uint GetCodeSlotCount()
+    private uint GetCodeSlotCount() => GetCodeSlotCount(GetSignatureStart());
+    private static uint GetCodeSlotCount(uint signatureStart)
     {
-        return (GetSignatureStart() + PageSize - 1) / PageSize;
+        return (signatureStart + PageSize - 1) / PageSize;
+    }
+
+    internal static long GetSignatureSizeEstimate(uint fileSize, string identifier)
+    {
+        return GetCodeSignatureSize(fileSize, identifier);
     }
 }

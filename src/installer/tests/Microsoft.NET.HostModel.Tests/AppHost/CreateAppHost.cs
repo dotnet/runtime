@@ -507,11 +507,15 @@ namespace Microsoft.NET.HostModel.AppHost.Tests
         }
 
         private static readonly byte[] s_placeholderData = AppBinaryPathPlaceholderSearchValue.Concat(DotNetSearchPlaceholderValue).ToArray();
+        /// <summary>
+        /// Prepares a mock executable file with the AppHost placeholder embedded in it.
+        /// This file will not run, but can be used to test HostWriter and signing process.
+        /// </summary>
         public static string PrepareMockMachAppHostFile(string directory)
         {
             string fileName = "MockAppHost.mach.o";
             string outputFilePath = Path.Combine(directory, fileName);
-            using (var aOutStream = TestData.MachObjects.GetSingle().File.Open(FileMode.Open, FileAccess.Read, FileShare.Read))
+            using (var aOutStream = TestData.MachObjects.GetAll().First().File.Open(FileMode.Open, FileAccess.Read, FileShare.Read))
             using (var managedSignFile = File.OpenWrite(outputFilePath))
             {
                 aOutStream!.CopyTo(managedSignFile);
