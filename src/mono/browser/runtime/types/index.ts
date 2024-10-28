@@ -203,6 +203,7 @@ export type ResourceExtensions = { [extensionName: string]: ResourceList };
 
 export interface ResourceGroups {
     hash?: string;
+    fingerprinting?: { [name: string]: string },
     coreAssembly?: ResourceList; // nullable only temporarily
     assembly?: ResourceList; // nullable only temporarily
     lazyAssembly?: ResourceList; // nullable only temporarily

@@ -25,37 +25,37 @@ public class HashtableTests : SerializationTest<FormattedObjectSerializer>
         // The converter isn't used for this scenario and can be a no-op.
         SerializationInfo info = new(typeof(Hashtable), FormatterConverterStub.Instance);
         hashtable.GetObjectData(info, default);
-        info.MemberCount.Should().Be(7);
+        Assert.Equal(7, info.MemberCount);
 
         var enumerator = info.GetEnumerator();
 
-        enumerator.MoveNext().Should().BeTrue();
-        enumerator.Current.Name.Should().Be("LoadFactor");
-        enumerator.Current.Value.Should().Be(0.72f);
+        Assert.True(enumerator.MoveNext());
+        Assert.Equal("LoadFactor", enumerator.Current.Name);
+        Assert.Equal(0.72f, enumerator.Current.Value);
 
-        enumerator.MoveNext().Should().BeTrue();
-        enumerator.Current.Name.Should().Be("Version");
-        enumerator.Current.Value.Should().Be(1);
+        Assert.True(enumerator.MoveNext());
+        Assert.Equal("Version", enumerator.Current.Name);
+        Assert.Equal(1, enumerator.Current.Value);
 
-        enumerator.MoveNext().Should().BeTrue();
-        enumerator.Current.Name.Should().Be("Comparer");
-        enumerator.Current.Value.Should().BeNull();
+        Assert.True(enumerator.MoveNext());
+        Assert.Equal("Comparer", enumerator.Current.Name);
+        Assert.Null(enumerator.Current.Value);
 
-        enumerator.MoveNext().Should().BeTrue();
-        enumerator.Current.Name.Should().Be("HashCodeProvider");
-        enumerator.Current.Value.Should().BeNull();
+        Assert.True(enumerator.MoveNext());
+        Assert.Equal("HashCodeProvider", enumerator.Current.Name);
+        Assert.Null(enumerator.Current.Value);
 
-        enumerator.MoveNext().Should().BeTrue();
-        enumerator.Current.Name.Should().Be("HashSize");
-        enumerator.Current.Value.Should().Be(3);
+        Assert.True(enumerator.MoveNext());
+        Assert.Equal("HashSize", enumerator.Current.Name);
+        Assert.Equal(3, enumerator.Current.Value);
 
-        enumerator.MoveNext().Should().BeTrue();
-        enumerator.Current.Name.Should().Be("Keys");
-        enumerator.Current.Value.Should().BeEquivalentTo(new object[] { "This" });
+        Assert.True(enumerator.MoveNext());
+        Assert.Equal("Keys", enumerator.Current.Name);
+        Assert.Equal(new object[] { "This" }, enumerator.Current.Value);
 
-        enumerator.MoveNext().Should().BeTrue();
-        enumerator.Current.Name.Should().Be("Values");
-        enumerator.Current.Value.Should().BeEquivalentTo(new object[] { "That" });
+        Assert.True(enumerator.MoveNext());
+        Assert.Equal("Values", enumerator.Current.Name);
+        Assert.Equal(new object[] { "That" }, enumerator.Current.Value);
     }
 
     [Fact]
@@ -68,12 +68,12 @@ public class HashtableTests : SerializationTest<FormattedObjectSerializer>
 
         BinaryFormattedObject format = new(Serialize(hashtable));
         ClassRecord systemClass = (ClassRecord)format.RootRecord;
-        systemClass.RecordType.Should().Be(SerializationRecordType.SystemClassWithMembersAndTypes);
-        systemClass.TypeName.FullName.Should().Be("System.Collections.Hashtable");
-        systemClass.GetSerializationRecord("Comparer")!.Should().BeAssignableTo<ClassRecord>().Which.TypeName.FullName.Should().Be("System.OrdinalComparer");
-        systemClass.GetSerializationRecord("HashCodeProvider")!.Should().BeAssignableTo<ClassRecord>().Which.TypeName.FullName.Should().Be("System.Resources.Extensions.Tests.FormattedObject.HashtableTests+CustomHashCodeProvider");
-        systemClass.GetSerializationRecord("Keys")!.Should().BeAssignableTo<SZArrayRecord<object>>();
-        systemClass.GetSerializationRecord("Values")!.Should().BeAssignableTo<SZArrayRecord<object>>();
+        Assert.Equal(SerializationRecordType.SystemClassWithMembersAndTypes, systemClass.RecordType);
+        Assert.Equal("System.Collections.Hashtable", systemClass.TypeName.FullName);
+        Assert.Equal("System.OrdinalComparer", systemClass.GetClassRecord("Comparer")!.TypeName.FullName);
+        Assert.Equal("System.Resources.Extensions.Tests.FormattedObject.HashtableTests+CustomHashCodeProvider", systemClass.GetClassRecord("HashCodeProvider")!.TypeName.FullName);
+        Assert.True(systemClass.GetSerializationRecord("Keys") is SZArrayRecord<object>);
+        Assert.True(systemClass.GetSerializationRecord("Values") is SZArrayRecord<object>);
     }
 
     [Serializable]

@@ -13,7 +13,7 @@ namespace System.Formats.Nrbf.Tests
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Fails with ValueTuple is not marked as serializable, but only in this repo")]
         public void UserCanReadAnyValidInputAndCheckTypesUsingStronglyTypedTypeInstances()
         {
-            Dictionary<string, object> input = new()
+            Dictionary<string, object> input = new(new CustomStringComparer())
             {
                 { "exception", new Exception("test") },
                 { "struct", new ValueTuple<bool, int>(true, 123) },
@@ -267,6 +267,13 @@ namespace System.Formats.Nrbf.Tests
                 Assert.True(keyValuePairs[0].TypeNameMatches(typeof(KeyValuePair<TKey, TValue>)));
             }
         }
+    }
+
+    [Serializable]
+    public class CustomStringComparer : IEqualityComparer<string>
+    {
+        public bool Equals(string? x, string? y) => x == y;
+        public int GetHashCode(string x) => x?.GetHashCode() ?? 0;
     }
 
     [Serializable]

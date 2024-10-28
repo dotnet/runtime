@@ -263,13 +263,11 @@ int minipal_getcpufeatures(void)
                                         {
                                             result |= XArchIntrinsicConstants_Evex;
                                             result |= XArchIntrinsicConstants_Avx10v1;
-
-                                            bool isV512Supported = (cpuidInfo[CPUID_EBX] & (1 << 18)) != 0;     // Avx10/V512
-
-                                            if (isV512Supported)
-                                            {
-                                                result |= XArchIntrinsicConstants_Avx10v1_V512;
-                                            }
+                                            
+                                            // We assume that the Avx10/V512 support can be inferred from
+                                            // both Avx10v1 and Avx512 being present.
+                                            assert(((cpuidInfo[CPUID_EBX] & (1 << 18)) != 0) ==                 // Avx10/V512
+                                                ((result & XArchIntrinsicConstants_Avx512) != 0));
                                         }
                                     }
                                 }

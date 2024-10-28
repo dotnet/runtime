@@ -16,7 +16,11 @@ namespace System
 {
     public sealed partial class TimeZoneInfo
     {
+#if TARGET_ILLUMOS || TARGET_SOLARIS
+        private const string DefaultTimeZoneDirectory = "/usr/share/lib/zoneinfo/";
+#else
         private const string DefaultTimeZoneDirectory = "/usr/share/zoneinfo/";
+#endif
 
         // Set fallback values using abbreviations, base offset, and id
         // These are expected in environments without time zone globalization data
@@ -220,6 +224,10 @@ namespace System
             return rulesList.ToArray();
         }
 
+        private string NameLookupId =>
+                HasIanaId ? Id :
+                (_equivalentZones is not null && _equivalentZones.Count > 0 ? _equivalentZones[0].Id : (GetAlternativeId(Id, out _) ?? Id));
+
         private string? PopulateDisplayName()
         {
             if (IsUtcAlias(Id))
@@ -235,7 +243,7 @@ namespace System
             if (!GlobalizationMode.Hybrid)
                 return displayName;
 #endif
-            GetFullValueForDisplayNameField(Id, BaseUtcOffset, ref displayName);
+            GetFullValueForDisplayNameField(NameLookupId, BaseUtcOffset, ref displayName);
 
             return displayName;
         }
@@ -253,7 +261,7 @@ namespace System
             if (!GlobalizationMode.Hybrid)
                 return standardDisplayName;
 #endif
-            GetStandardDisplayName(Id, ref standardDisplayName);
+            GetStandardDisplayName(NameLookupId, ref standardDisplayName);
 
             return standardDisplayName;
         }
@@ -271,7 +279,7 @@ namespace System
             if (!GlobalizationMode.Hybrid)
                 return daylightDisplayName;
 #endif
-            GetDaylightDisplayName(Id, ref daylightDisplayName);
+            GetDaylightDisplayName(NameLookupId, ref daylightDisplayName);
 
             return daylightDisplayName;
         }

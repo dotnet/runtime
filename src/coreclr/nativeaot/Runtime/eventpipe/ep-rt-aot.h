@@ -760,7 +760,9 @@ inline
 void
 ep_rt_set_server_name(void)
 {
-    // This is optional, decorates the thread name with EventPipe specific information
+    extern void
+    ep_rt_aot_set_server_name (void);
+    ep_rt_aot_set_server_name ();
 }
 
 

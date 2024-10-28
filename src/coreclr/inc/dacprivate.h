@@ -274,11 +274,14 @@ struct MSLAYOUT DacpMethodTableData
 {
     BOOL bIsFree = FALSE; // everything else is NULL if this is true.
     CLRDATA_ADDRESS Module = 0;
+    // Note: DacpMethodTableData::Class is really a pointer to the canonical method table
     CLRDATA_ADDRESS Class = 0;
     CLRDATA_ADDRESS ParentMethodTable = 0;
     WORD wNumInterfaces = 0;
     WORD wNumMethods = 0;
+    // Note: Always 0, since .NET 9
     WORD wNumVtableSlots = 0;
+    // Note: Always 0, since .NET 9
     WORD wNumVirtuals = 0;
     DWORD BaseSize = 0;
     DWORD ComponentSize = 0;
@@ -422,11 +425,11 @@ enum DacpAppDomainDataStage {
     STAGE_CLOSED
 };
 
-// Information about a BaseDomain (AppDomain, SharedDomain or SystemDomain).
+// Information about an AppDomain or SystemDomain.
 // For types other than AppDomain, some fields (like dwID, DomainLocalBlock, etc.) will be 0/null.
 struct MSLAYOUT DacpAppDomainData
 {
-    // The pointer to the BaseDomain (not necessarily an AppDomain).
+    // The pointer to the AppDomain or SystemDomain.
     // It's useful to keep this around in the structure
     CLRDATA_ADDRESS AppDomainPtr = 0;
     CLRDATA_ADDRESS AppSecDesc = 0;
@@ -452,7 +455,7 @@ struct MSLAYOUT DacpAssemblyData
     CLRDATA_ADDRESS AssemblyPtr = 0; //useful to have
     CLRDATA_ADDRESS ClassLoader = 0;
     CLRDATA_ADDRESS ParentDomain = 0;
-    CLRDATA_ADDRESS BaseDomainPtr = 0;
+    CLRDATA_ADDRESS DomainPtr = 0;
     CLRDATA_ADDRESS AssemblySecDesc = 0;
     BOOL isDynamic = FALSE;
     UINT ModuleCount = FALSE;
@@ -460,9 +463,9 @@ struct MSLAYOUT DacpAssemblyData
     BOOL isDomainNeutral = FALSE; // Always false, preserved for backward compatibility
     DWORD dwLocationFlags = 0;
 
-    HRESULT Request(ISOSDacInterface *sos, CLRDATA_ADDRESS addr, CLRDATA_ADDRESS baseDomainPtr)
+    HRESULT Request(ISOSDacInterface *sos, CLRDATA_ADDRESS addr, CLRDATA_ADDRESS domainPtr)
     {
-        return sos->GetAssemblyData(baseDomainPtr, addr, this);
+        return sos->GetAssemblyData(domainPtr, addr, this);
     }
 
     HRESULT Request(ISOSDacInterface *sos, CLRDATA_ADDRESS addr)

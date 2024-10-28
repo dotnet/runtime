@@ -1,6 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Formats.Asn1;
+using System.Security.Cryptography.X509Certificates.Asn1;
+
 namespace System.Security.Cryptography.X509Certificates
 {
     public sealed class X509BasicConstraintsExtension : X509Extension
@@ -111,17 +114,61 @@ namespace System.Security.Cryptography.X509Certificates
                 ArgumentOutOfRangeException.ThrowIfNegative(pathLengthConstraint);
             }
 
-            return X509Pal.Instance.EncodeX509BasicConstraints2Extension(certificateAuthority, hasPathLengthConstraint, pathLengthConstraint);
+            return EncodeX509BasicConstraints2Extension(certificateAuthority, hasPathLengthConstraint, pathLengthConstraint);
         }
 
         private void DecodeExtension()
         {
             if (Oid!.Value == Oids.BasicConstraints)
-                X509Pal.Instance.DecodeX509BasicConstraintsExtension(RawData, out _certificateAuthority, out _hasPathLenConstraint, out _pathLenConstraint);
+            {
+                LegacyBasicConstraintsDecoder.DecodeX509BasicConstraintsExtension(
+                    RawData,
+                    out _certificateAuthority,
+                    out _hasPathLenConstraint,
+                    out _pathLenConstraint);
+            }
             else
-                X509Pal.Instance.DecodeX509BasicConstraints2Extension(RawData, out _certificateAuthority, out _hasPathLenConstraint, out _pathLenConstraint);
+            {
+                DecodeX509BasicConstraints2Extension(
+                    RawData,
+                    out _certificateAuthority,
+                    out _hasPathLenConstraint,
+                    out _pathLenConstraint);
+            }
 
             _decoded = true;
+        }
+
+        private static byte[] EncodeX509BasicConstraints2Extension(
+            bool certificateAuthority,
+            bool hasPathLengthConstraint,
+            int pathLengthConstraint)
+        {
+            BasicConstraintsAsn constraints = default;
+
+            constraints.CA = certificateAuthority;
+
+            if (hasPathLengthConstraint)
+            {
+                constraints.PathLengthConstraint = pathLengthConstraint;
+            }
+
+            // Largest possible encoded extension is 11 bytes when pathLenConstraint is int.MaxValue.
+            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER, initialCapacity: 11);
+            constraints.Encode(writer);
+            return writer.Encode();
+        }
+
+        private static void DecodeX509BasicConstraints2Extension(
+            byte[] encoded,
+            out bool certificateAuthority,
+            out bool hasPathLengthConstraint,
+            out int pathLengthConstraint)
+        {
+            BasicConstraintsAsn constraints = BasicConstraintsAsn.Decode(encoded, AsnEncodingRules.BER);
+            certificateAuthority = constraints.CA;
+            hasPathLengthConstraint = constraints.PathLengthConstraint.HasValue;
+            pathLengthConstraint = constraints.PathLengthConstraint.GetValueOrDefault();
         }
 
         private bool _certificateAuthority;

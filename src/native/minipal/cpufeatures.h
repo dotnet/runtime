@@ -30,8 +30,7 @@ enum XArchIntrinsicConstants
     XArchIntrinsicConstants_Avx512Vbmi = 0x10000,
     XArchIntrinsicConstants_Serialize = 0x20000,
     XArchIntrinsicConstants_Avx10v1 = 0x40000,
-    XArchIntrinsicConstants_Avx10v1_V512 = 0x80000,
-    XArchIntrinsicConstants_Evex = 0x100000,
+    XArchIntrinsicConstants_Evex = 0x80000,
 };
 #endif // HOST_X86 || HOST_AMD64
 

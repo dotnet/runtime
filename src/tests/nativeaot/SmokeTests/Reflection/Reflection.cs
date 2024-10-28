@@ -72,6 +72,8 @@ internal static class ReflectionTest
         TestAbstractGenericLdtoken.Run();
         TestTypeHandlesVisibleFromIDynamicInterfaceCastable.Run();
         TestCompilerGeneratedCode.Run();
+        Test105034Regression.Run();
+
 
         //
         // Mostly functionality tests
@@ -710,6 +712,45 @@ internal static class ReflectionTest
             TestGeneric<string>();
 
             TestGeneric<int>();
+        }
+    }
+
+    class Test105034Regression
+    {
+        interface IFactory
+        {
+            object Make();
+        }
+
+        interface IOption<T> where T : new() { }
+
+        class OptionFactory<T> : IFactory where T : class, new()
+        {
+            public object Make() => new T();
+        }
+
+        class Gen<T> { }
+
+        struct Atom { }
+
+        static Type Register<T>() => typeof(T).GetGenericArguments()[0];
+        static IFactory Activate(Type t) => (IFactory)Activator.CreateInstance(typeof(OptionFactory<>).MakeGenericType(t));
+
+        public static void Run()
+        {
+            Console.WriteLine(nameof(Test105034Regression));
+
+            Wrap<Atom>();
+
+            static void Wrap<T>()
+            {
+
+                Type t = Register();
+                static Type Register() => Register<IOption<Gen<T>>>();
+
+                var f = Activate(t);
+                f.Make();
+            }
         }
     }
 
@@ -2207,13 +2248,50 @@ internal static class ReflectionTest
             }
         }
 
+        class ClassWithCctor
+        {
+            static ClassWithCctor() => s_field = 42;
+        }
+
+        class ClassWithCctor<T>
+        {
+            static ClassWithCctor() => s_field = 11;
+        }
+
+        class DynamicClassWithCctor<T>
+        {
+            static DynamicClassWithCctor() => s_field = 1000;
+        }
+
+        class Atom { }
+
         private static bool s_cctorRan;
+        private static int s_field;
 
         public static void Run()
         {
             RuntimeHelpers.RunClassConstructor(typeof(TypeWithNoStaticFieldsButACCtor).TypeHandle);
             if (!s_cctorRan)
                 throw new Exception();
+
+            RunTheCctor(typeof(ClassWithCctor));
+            if (s_field != 42)
+                throw new Exception();
+
+            RunTheCctor(typeof(ClassWithCctor<Atom>));
+            if (s_field != 11)
+                throw new Exception();
+
+            RunTheCctor(typeof(DynamicClassWithCctor<>).MakeGenericType(GetAtom()));
+            if (s_field != 1000)
+                throw new Exception();
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static void RunTheCctor([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.NonPublicConstructors)] Type t)
+                => RuntimeHelpers.RunClassConstructor(t.TypeHandle);
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static Type GetAtom() => typeof(Atom);
         }
     }
 
@@ -2448,7 +2526,7 @@ internal static class ReflectionTest
     {
         class Atom { }
 
-        public static object MakeMdArray<T>() => new T[1,1,1];
+        public static object MakeMdArray<T>() => new T[1, 1, 1];
 
         public static void Run()
         {

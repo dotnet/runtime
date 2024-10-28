@@ -18,7 +18,11 @@ namespace Microsoft.NET.Sdk.WebAssembly
         ];
 
         private static readonly string[] extraMultiThreadedCoreAssemblyName = [
-            "System.Threading.Channels"
+            "System.Threading.Channels",
+            "System.Threading.ThreadPool",
+            "System.Threading",
+            "System.Collections",
+            "System.Collections.Concurrent",
         ];
 
         public bool IsCoreAssembly(string fileName)
@@ -83,7 +87,7 @@ namespace Microsoft.NET.Sdk.WebAssembly
         public Dictionary<string, string>? GetNativeResourceTargetInBootConfig(BootJsonData bootConfig, string resourceName)
         {
             string resourceExtension = Path.GetExtension(resourceName);
-            if (resourceName.StartsWith("dotnet.native.worker", StringComparison.OrdinalIgnoreCase) && string.Equals(resourceExtension, ".js", StringComparison.OrdinalIgnoreCase))
+            if (resourceName.StartsWith("dotnet.native.worker", StringComparison.OrdinalIgnoreCase) && string.Equals(resourceExtension, ".mjs", StringComparison.OrdinalIgnoreCase))
                 return bootConfig.resources.jsModuleWorker ??= new();
             if (resourceName.StartsWith("dotnet.globalization", StringComparison.OrdinalIgnoreCase) && string.Equals(resourceExtension, ".js", StringComparison.OrdinalIgnoreCase))
                 return bootConfig.resources.jsModuleGlobalization ??= new();

@@ -204,6 +204,11 @@ namespace System.Text.Json.Nodes
 
         internal JsonNode? GetItem(string propertyName)
         {
+            if (propertyName is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(propertyName));
+            }
+
             if (TryGetPropertyValue(propertyName, out JsonNode? value))
             {
                 return value;
@@ -236,19 +241,28 @@ namespace System.Text.Json.Nodes
 
         internal void SetItem(string propertyName, JsonNode? value)
         {
+            if (propertyName is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(propertyName));
+            }
+
             OrderedDictionary<string, JsonNode?> dict = Dictionary;
 
-            if (dict.TryGetValue(propertyName, out JsonNode? replacedValue))
+            if (!dict.TryAdd(propertyName, value))
             {
+                int index = dict.IndexOf(propertyName);
+                Debug.Assert(index >= 0);
+                JsonNode? replacedValue = dict.GetAt(index).Value;
+
                 if (ReferenceEquals(value, replacedValue))
                 {
                     return;
                 }
 
                 DetachParent(replacedValue);
+                dict.SetAt(index, value);
             }
 
-            dict[propertyName] = value;
             value?.AssignParent(this);
         }
 

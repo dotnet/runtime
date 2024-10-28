@@ -143,7 +143,7 @@ namespace System
         public bool Equals([NotNullWhen(true)] Version? obj)
         {
             return ReferenceEquals(obj, this) ||
-                (!(obj is null) &&
+                (obj is not null &&
                 _Major == obj._Major &&
                 _Minor == obj._Minor &&
                 _Build == obj._Build &&
@@ -407,7 +407,7 @@ namespace System
         {
             if (v1 is null)
             {
-                return !(v2 is null);
+                return v2 is not null;
             }
 
             return v1.CompareTo(v2) < 0;

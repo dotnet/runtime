@@ -21,7 +21,7 @@ public abstract class MultidimensionalArrayTests<T> : SerializationTest<T> where
         Stream stream = Serialize(twoDimensions);
 
         object deserialized = Deserialize(stream);
-        deserialized.Should().BeEquivalentTo(twoDimensions);
+        Assert.Equal(twoDimensions, deserialized);
     }
 
     [Fact]
@@ -36,7 +36,7 @@ public abstract class MultidimensionalArrayTests<T> : SerializationTest<T> where
         // Raw data will be 0, 1, 10, 11 in memory and in the binary stream
         object deserialized = Deserialize(Serialize(twoDimensions));
 
-        deserialized.Should().BeEquivalentTo(twoDimensions);
+        Assert.Equal(twoDimensions, deserialized);
 
         int[,,] threeDimensions = new int[2, 2, 2];
         threeDimensions[0, 0, 0] = 888;
@@ -49,7 +49,7 @@ public abstract class MultidimensionalArrayTests<T> : SerializationTest<T> where
         threeDimensions[1, 1, 1] = 111;
 
         deserialized = Deserialize(Serialize(threeDimensions));
-        deserialized.Should().BeEquivalentTo(threeDimensions);
+        Assert.Equal(threeDimensions, deserialized);
     }
 
     [Fact]
@@ -58,19 +58,19 @@ public abstract class MultidimensionalArrayTests<T> : SerializationTest<T> where
         // Didn't even know this was possible.
         int[,] twoDimensionOneEmpty = new int[1, 0];
         object deserialized = Deserialize(Serialize(twoDimensionOneEmpty));
-        deserialized.Should().BeEquivalentTo(twoDimensionOneEmpty);
+        Assert.Equal(twoDimensionOneEmpty, deserialized);
 
         int[,] twoDimensionEmptyOne = new int[0, 1];
         deserialized = Deserialize(Serialize(twoDimensionEmptyOne));
-        deserialized.Should().BeEquivalentTo(twoDimensionEmptyOne);
+        Assert.Equal(twoDimensionEmptyOne, deserialized);
 
         int[,] twoDimensionEmpty = new int[0, 0];
         deserialized = Deserialize(Serialize(twoDimensionEmpty));
-        deserialized.Should().BeEquivalentTo(twoDimensionEmpty);
+        Assert.Equal(twoDimensionEmpty, deserialized);
 
         int[,,] threeDimension = new int[1, 0, 1];
         deserialized = Deserialize(Serialize(threeDimension));
-        deserialized.Should().BeEquivalentTo(threeDimension);
+        Assert.Equal(threeDimension, deserialized);
     }
 
     [Theory]
@@ -82,7 +82,7 @@ public abstract class MultidimensionalArrayTests<T> : SerializationTest<T> where
         InitArray(array);
 
         Array deserialized = (Array)Deserialize(Serialize(array));
-        deserialized.Should().BeEquivalentTo(deserialized);
+        Assert.Equal(array, deserialized);
     }
 
     public static TheoryData<int[]> DimensionLengthsTestData { get; } = new()
@@ -108,7 +108,7 @@ public abstract class MultidimensionalArrayTests<T> : SerializationTest<T> where
         InitArray(array);
 
         Array deserialized = (Array)Deserialize(Serialize(array));
-        deserialized.Should().BeEquivalentTo(deserialized);
+        Assert.Equal(array, deserialized);
     }
 
     private static void InitArray(Array array)

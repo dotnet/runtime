@@ -13,11 +13,17 @@ namespace
 {
     bool TryLoadCDACLibrary(HMODULE *phCDAC)
     {
-        // Load cdacreader from next to DAC binary
+        // Load cdacreader from next to current module (DAC binary)
         PathString path;
-        if (FAILED(GetClrModuleDirectory(path)))
+        if (WszGetModuleFileName((HMODULE)GetCurrentModuleBase(), path) == 0)
             return false;
 
+        SString::Iterator iter = path.End();
+        if (!path.FindBack(iter, DIRECTORY_SEPARATOR_CHAR_W))
+            return false;
+
+        iter++;
+        path.Truncate(iter);
         path.Append(CDAC_LIB_NAME);
         *phCDAC = CLRLoadLibrary(path.GetUnicode());
         if (*phCDAC == NULL)
@@ -37,7 +43,7 @@ namespace
     }
 }
 
-CDAC CDAC::Create(uint64_t descriptorAddr, ICorDebugDataTarget* target)
+CDAC CDAC::Create(uint64_t descriptorAddr, ICorDebugDataTarget* target, IUnknown* legacyImpl)
 {
     HMODULE cdacLib;
     if (!TryLoadCDACLibrary(&cdacLib))
@@ -53,20 +59,18 @@ CDAC CDAC::Create(uint64_t descriptorAddr, ICorDebugDataTarget* target)
         return {};
     }
 
-    return CDAC{cdacLib, handle, target};
+    return CDAC{cdacLib, handle, target, legacyImpl};
 }
 
-CDAC::CDAC(HMODULE module, intptr_t handle, ICorDebugDataTarget* target)
+CDAC::CDAC(HMODULE module, intptr_t handle, ICorDebugDataTarget* target, IUnknown* legacyImpl)
     : m_module{module}
     , m_cdac_handle{handle}
     , m_target{target}
+    , m_legacyImpl{legacyImpl}
 {
     _ASSERTE(m_module != NULL && m_cdac_handle != 0 && m_target != NULL);
 
     m_target->AddRef();
-    decltype(&cdac_reader_get_sos_interface) getSosInterface = reinterpret_cast<decltype(&cdac_reader_get_sos_interface)>(::GetProcAddress(m_module, "cdac_reader_get_sos_interface"));
-    _ASSERTE(getSosInterface != nullptr);
-    getSosInterface(m_cdac_handle, &m_sos);
 }
 
 CDAC::~CDAC()
@@ -82,7 +86,10 @@ CDAC::~CDAC()
         ::FreeLibrary(m_module);
 }
 
-IUnknown* CDAC::SosInterface()
+void CDAC::CreateSosInterface(IUnknown** sos)
 {
-    return m_sos;
+    decltype(&cdac_reader_create_sos_interface) createSosInterface = reinterpret_cast<decltype(&cdac_reader_create_sos_interface)>(::GetProcAddress(m_module, "cdac_reader_create_sos_interface"));
+    _ASSERTE(createSosInterface != nullptr);
+    int ret = createSosInterface(m_cdac_handle, m_legacyImpl, sos);
+    _ASSERTE(ret == 0);
 }

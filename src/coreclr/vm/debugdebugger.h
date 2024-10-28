@@ -7,31 +7,18 @@
 **
 ** Purpose: Native methods on System.Debug.Debugger
 **
-**
-
 ===========================================================*/
 
 #ifndef __DEBUG_DEBUGGER_h__
 #define __DEBUG_DEBUGGER_h__
 #include <object.h>
 
-
-class DebugDebugger
-{
-public:
-    static FCDECL0(void, Break);
-    static FCDECL0(FC_BOOL_RET, IsDebuggerAttached);
-
-    // receives a custom notification object from the target and sends it to the RS via
-    // code:Debugger::SendCustomDebuggerNotification
-    static FCDECL1(void, CustomNotification, Object * dataUNSAFE);
-
-    static FCDECL0(FC_BOOL_RET, IsLogging);
-};
-
+extern "C" void QCALLTYPE DebugDebugger_Break();
 extern "C" BOOL QCALLTYPE DebugDebugger_Launch();
 extern "C" void QCALLTYPE DebugDebugger_Log(INT32 Level, PCWSTR pwzModule, PCWSTR pwzMessage);
-
+extern "C" void QCALLTYPE DebugDebugger_CustomNotification(QCall::ObjectHandleOnStack data);
+extern "C" BOOL QCALLTYPE DebugDebugger_IsLoggingHelper();
+extern "C" BOOL QCALLTYPE DebugDebugger_IsManagedDebuggerAttached();
 
 class StackFrameHelper : public Object
 {
@@ -39,7 +26,6 @@ class StackFrameHelper : public Object
     // Modifying the order or fields of this object may require other changes to the
     // classlib definition of the StackFrameHelper class.
 public:
-    THREADBASEREF targetThread;
     I4ARRAYREF rgiOffset;
     I4ARRAYREF rgiILOffset;
     PTRARRAYREF dynamicMethods;
@@ -88,12 +74,7 @@ typedef StackFrameHelper* STACKFRAMEHELPERREF;
 class DebugStackTrace
 {
 public:
-
-#ifndef DACCESS_COMPILE
-// the DAC directly uses the GetStackFramesData and DebugStackTraceElement types
-private:
-#endif // DACCESS_COMPILE
-    struct DebugStackTraceElement {
+    struct Element {
         DWORD dwOffset;     // native offset
         DWORD dwILOffset;
         MethodDesc *pFunc;
@@ -117,29 +98,25 @@ private:
 
 public:
 
-    struct GetStackFramesData {
-
-        // Used for the integer-skip version
-        INT32   skip;
+    struct GetStackFramesData
+    {
         INT32   NumFramesRequested;
         INT32   cElementsAllocated;
         INT32   cElements;
-        DebugStackTraceElement* pElements;
+        Element* pElements;
         THREADBASEREF   TargetThread;
         AppDomain *pDomain;
         BOOL fDoWeHaveAnyFramesFromForeignStackTrace;
 
-
-        GetStackFramesData() :  skip(0),
-                                NumFramesRequested (0),
-                                cElementsAllocated(0),
-                                cElements(0),
-                                pElements(NULL),
-                                TargetThread((THREADBASEREF)(TADDR)NULL)
+        GetStackFramesData()
+            : NumFramesRequested (0)
+            , cElementsAllocated(0)
+            , cElements(0)
+            , pElements(NULL)
+            , TargetThread((THREADBASEREF)(TADDR)NULL)
+            , fDoWeHaveAnyFramesFromForeignStackTrace(FALSE)
         {
             LIMITED_METHOD_CONTRACT;
-            fDoWeHaveAnyFramesFromForeignStackTrace = FALSE;
-
         }
 
         ~GetStackFramesData()
@@ -148,28 +125,13 @@ public:
         }
     };
 
-    static FCDECL4(void,
-                   GetStackFramesInternal,
-                   StackFrameHelper* pStackFrameHelper,
-                   INT32 iSkip,
-                   CLR_BOOL fNeedFileInfo,
-                   Object* pException
-                  );
-
     static void GetStackFramesFromException(OBJECTREF * e, GetStackFramesData *pData, PTRARRAYREF * pDynamicMethodArray = NULL);
-
-#ifndef DACCESS_COMPILE
-// the DAC directly calls GetStackFramesFromException
-private:
-#endif
-
-    static void GetStackFramesHelper(Frame *pStartFrame, void* pStopStack, GetStackFramesData *pData);
-
-    static void GetStackFrames(Frame *pStartFrame, void* pStopStack, GetStackFramesData *pData);
-
-    static StackWalkAction GetStackFramesCallback(CrawlFrame* pCf, VOID* data);
-
 };
+
+extern "C" void QCALLTYPE StackTrace_GetStackFramesInternal(
+    QCall::ObjectHandleOnStack stackFrameHelper,
+    BOOL fNeedFileInfo,
+    QCall::ObjectHandleOnStack exception);
 
 extern "C" MethodDesc* QCALLTYPE StackFrame_GetMethodDescFromNativeIP(LPVOID ip);
 

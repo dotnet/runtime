@@ -5,6 +5,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Tests;
 using System.Threading.Tasks;
 using Xunit;
@@ -105,20 +106,20 @@ namespace System.Text.Json.Nodes.Tests
 
             var jObject = new JsonObject();
             ex = Assert.Throws<ArgumentNullException>(() => jObject.Add(null, 42));
-            Assert.Contains("propertyName", ex.ToString());
+            Assert.Contains("propertyName", ex.Message);
 
             ex = Assert.Throws<ArgumentNullException>(() => jObject[null] = 42);
-            Assert.Contains("propertyName", ex.ToString());
+            Assert.Contains("propertyName", ex.Message);
 
             ex = Assert.Throws<ArgumentNullException>(() => jObject.ContainsKey(null));
-            Assert.Contains("propertyName", ex.ToString());
+            Assert.Contains("propertyName", ex.Message);
 
             ex = Assert.Throws<ArgumentNullException>(() => jObject.Remove(null));
-            Assert.Contains("propertyName", ex.ToString());
+            Assert.Contains("propertyName", ex.Message);
 
             var iDictionary = (IDictionary<string, JsonNode?>)jObject;
             ex = Assert.Throws<ArgumentNullException>(() => iDictionary.TryGetValue(null, out JsonNode _));
-            Assert.Contains("propertyName", ex.ToString());
+            Assert.Contains("propertyName", ex.Message);
         }
 
         [Fact]
@@ -565,7 +566,7 @@ namespace System.Text.Json.Nodes.Tests
             var jObject = new JsonObject();
             jObject.Add("Prop", jValue);
             ArgumentException ex = Assert.Throws<ArgumentException>(() => jObject.Add("Prop", jValue));
-            Assert.Contains("Prop", ex.ToString());
+            Assert.Contains("Prop", ex.Message);
         }
 
         [Fact]
@@ -1601,6 +1602,34 @@ namespace System.Text.Json.Nodes.Tests
             Assert.Equal(3, ilist.Count);
             Assert.DoesNotContain("Two", jObject);
             Assert.Equal(-1, jObject.IndexOf("Two"));
+        }
+
+        [Theory]
+        [InlineData(10_000)]
+        [InlineData(50_000)]
+        [InlineData(100_000)]
+        public static void JsonObject_ExtensionData_ManyDuplicatePayloads(int size)
+        {
+            // Generate the payload
+            StringBuilder builder = new StringBuilder();
+            builder.Append("{");
+            for (int i = 0; i < size; i++)
+            {
+                builder.Append($"\"{i}\": 0,");
+                builder.Append($"\"{i}\": 0,");
+            }
+            builder.Length--; // strip trailing comma
+            builder.Append("}");
+
+            string jsonPayload = builder.ToString();
+            ClassWithObjectExtensionData result = JsonSerializer.Deserialize<ClassWithObjectExtensionData>(jsonPayload);
+            Assert.Equal(size, result.ExtensionData.Count);
+        }
+
+        class ClassWithObjectExtensionData
+        {
+            [JsonExtensionData]
+            public JsonObject ExtensionData { get; set; }
         }
     }
 }

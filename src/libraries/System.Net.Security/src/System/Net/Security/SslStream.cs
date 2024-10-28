@@ -85,7 +85,7 @@ namespace System.Net.Security
 
             public ReadOnlySpan<byte> DecryptedReadOnlySpanSliced(int length)
             {
-                Debug.Assert(length <= DecryptedLength, "length <= DecryptedLength");
+                Debug.Assert(length <= DecryptedLength);
                 return _buffer.ActiveSpan.Slice(0, length);
             }
 
@@ -167,13 +167,15 @@ namespace System.Net.Security
             }
         }
 
-        // used to track ussage in _nested* variables bellow
-        private const int StreamNotInUse = 0;
-        private const int StreamInUse = 1;
-        private const int StreamDisposed = 2;
+        private enum NestedState
+        {
+            StreamNotInUse = 0,
+            StreamInUse = 1,
+            StreamDisposed = 2,
+        }
 
-        private int _nestedWrite;
-        private int _nestedRead;
+        private NestedState _nestedWrite;
+        private NestedState _nestedRead;
 
         private PoolingPointerMemoryManager? _readPointerMemoryManager;
         private PoolingPointerMemoryManager? _writePointerMemoryManager;
@@ -486,7 +488,7 @@ namespace System.Net.Security
         }
 
         // Skips the ThrowIfExceptionalOrNotHandshake() check
-        private SslProtocols GetSslProtocolInternal()
+        internal SslProtocols GetSslProtocolInternal()
         {
             if (_connectionInfo.Protocol == 0)
             {
@@ -578,6 +580,7 @@ namespace System.Net.Security
             }
         }
 
+        [Obsolete(Obsoletions.TlsCipherAlgorithmEnumsMessage, DiagnosticId = Obsoletions.TlsCipherAlgorithmEnumsDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public virtual CipherAlgorithmType CipherAlgorithm
         {
             get
@@ -587,6 +590,7 @@ namespace System.Net.Security
             }
         }
 
+        [Obsolete(Obsoletions.TlsCipherAlgorithmEnumsMessage, DiagnosticId = Obsoletions.TlsCipherAlgorithmEnumsDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public virtual int CipherStrength
         {
             get
@@ -596,6 +600,7 @@ namespace System.Net.Security
             }
         }
 
+        [Obsolete(Obsoletions.TlsCipherAlgorithmEnumsMessage, DiagnosticId = Obsoletions.TlsCipherAlgorithmEnumsDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public virtual HashAlgorithmType HashAlgorithm
         {
             get
@@ -605,6 +610,7 @@ namespace System.Net.Security
             }
         }
 
+        [Obsolete(Obsoletions.TlsCipherAlgorithmEnumsMessage, DiagnosticId = Obsoletions.TlsCipherAlgorithmEnumsDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public virtual int HashStrength
         {
             get
@@ -614,6 +620,7 @@ namespace System.Net.Security
             }
         }
 
+        [Obsolete(Obsoletions.TlsCipherAlgorithmEnumsMessage, DiagnosticId = Obsoletions.TlsCipherAlgorithmEnumsDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public virtual ExchangeAlgorithmType KeyExchangeAlgorithm
         {
             get
@@ -623,6 +630,7 @@ namespace System.Net.Security
             }
         }
 
+        [Obsolete(Obsoletions.TlsCipherAlgorithmEnumsMessage, DiagnosticId = Obsoletions.TlsCipherAlgorithmEnumsDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public virtual int KeyExchangeStrength
         {
             get
@@ -735,7 +743,7 @@ namespace System.Net.Security
         public override int ReadByte()
         {
             ThrowIfExceptionalOrNotAuthenticated();
-            if (Interlocked.Exchange(ref _nestedRead, StreamInUse) == StreamInUse)
+            if (Interlocked.Exchange(ref _nestedRead, NestedState.StreamInUse) == NestedState.StreamInUse)
             {
                 throw new NotSupportedException(SR.Format(SR.net_io_invalidnestedcall, "read"));
             }
@@ -756,7 +764,7 @@ namespace System.Net.Security
                 // Regardless of whether we were able to read a byte from the buffer,
                 // reset the read tracking.  If we weren't able to read a byte, the
                 // subsequent call to Read will set the flag again.
-                _nestedRead = StreamNotInUse;
+                _nestedRead = NestedState.StreamNotInUse;
             }
 
             // Otherwise, fall back to reading a byte via Read, the same way Stream.ReadByte does.

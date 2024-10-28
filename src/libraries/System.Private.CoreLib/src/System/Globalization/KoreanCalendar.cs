@@ -27,10 +27,10 @@ namespace System.Globalization
         //    1 = 2334 + yearOffset
         //  So yearOffset = -2333
         // Gregorian year 2001 is Korean year 4334.
-        private static readonly EraInfo[] s_koreanEraInfo = new EraInfo[]
-        {
+        private static readonly EraInfo[] s_koreanEraInfo =
+        [
             new EraInfo(1, 1, 1, 1, -2333, 2334, GregorianCalendar.MaxYear + 2333)   // era #, start year/month/day, yearOffset, minEraYear
-        };
+        ];
 
         private readonly GregorianCalendarHelper _helper;
 

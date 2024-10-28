@@ -119,10 +119,12 @@ LPVOID ProfileArgIterator::GetNextArgAddr()
     }
 
     LPVOID pArg = nullptr;
+    int argSize = m_argIterator.IsArgPassedByRef() ? (int)sizeof(void*) : m_argIterator.GetArgSize();
 
     if (TransitionBlock::IsFloatArgumentRegisterOffset(argOffset))
     {
-        pArg = (LPBYTE)&pData->floatArgumentRegisters + (argOffset - TransitionBlock::GetOffsetOfFloatArgumentRegisters());
+        int offset = argOffset - TransitionBlock::GetOffsetOfFloatArgumentRegisters();
+        pArg = (LPBYTE)&pData->floatArgumentRegisters + offset;
 
         ArgLocDesc* pArgLocDesc = m_argIterator.GetArgLocDescForStructInRegs();
 
@@ -134,37 +136,39 @@ LPVOID ProfileArgIterator::GetNextArgAddr()
 
                 UINT64* dst = (UINT64*)&pData->buffer[bufferPos];
                 m_bufferPos += 16;
-                if (pArgLocDesc->m_structFields & STRUCT_FLOAT_FIELD_FIRST)
+                if (pArgLocDesc->m_structFields.flags & FpStruct::FloatInt)
                 {
                     *dst++ = *(UINT64*)pArg;
                     *dst = pData->argumentRegisters.a[pArgLocDesc->m_idxGenReg];
                 }
                 else
                 {
-                    _ASSERTE(pArgLocDesc->m_structFields & STRUCT_FLOAT_FIELD_SECOND);
+                    _ASSERTE(pArgLocDesc->m_structFields.flags & FpStruct::IntFloat);
                     *dst++ = pData->argumentRegisters.a[pArgLocDesc->m_idxGenReg];
                     *dst = *(UINT64*)pArg;
                 }
                 return (LPBYTE)&pData->buffer[bufferPos];
             }
-
             _ASSERTE(pArgLocDesc->m_cFloatReg == 2);
         }
+
+        _ASSERTE(offset + argSize <= sizeof(pData->floatArgumentRegisters));
 
         return pArg;
     }
 
     if (TransitionBlock::IsArgumentRegisterOffset(argOffset))
     {
-        pArg = (LPBYTE)&pData->argumentRegisters + (argOffset - TransitionBlock::GetOffsetOfArgumentRegisters());
+        int offset = argOffset - TransitionBlock::GetOffsetOfArgumentRegisters();
+        pArg = (LPBYTE)&pData->argumentRegisters + offset;
         ArgLocDesc* pArgLocDesc = m_argIterator.GetArgLocDescForStructInRegs();
 
         if (pArgLocDesc)
         {
             if (pArgLocDesc->m_cFloatReg == 1)
             {
-                _ASSERTE(!(pArgLocDesc->m_structFields & STRUCT_FLOAT_FIELD_FIRST));
-                _ASSERTE(pArgLocDesc->m_structFields & STRUCT_FLOAT_FIELD_SECOND);
+                _ASSERTE(!(pArgLocDesc->m_structFields.flags & FpStruct::FloatInt));
+                _ASSERTE(pArgLocDesc->m_structFields.flags & FpStruct::IntFloat);
 
                 UINT32 bufferPos = m_bufferPos;
                 UINT64* dst  = (UINT64*)&pData->buffer[bufferPos];
@@ -175,14 +179,32 @@ LPVOID ProfileArgIterator::GetNextArgAddr()
 
                 return (LPBYTE)&pData->buffer[bufferPos];
             }
-
             _ASSERTE(pArgLocDesc->m_cFloatReg == 0);
+        }
+
+        if (offset + argSize > (int)sizeof(pData->argumentRegisters))
+        {
+            // Struct partially spilled on stack.
+            // The first part of struct must be in last argument register.
+            const int regIndex = NUM_ARGUMENT_REGISTERS - 1;
+            _ASSERTE(regIndex == offset / sizeof(pData->argumentRegisters.a[0]));
+            _ASSERTE(argSize <= 16);
+            _ASSERTE(m_bufferPos + 16 <= sizeof(pData->buffer));
+
+            UINT32 bufferPos = m_bufferPos;
+            UINT64* dst  = (UINT64*)&pData->buffer[bufferPos];
+            m_bufferPos += 16;
+
+            *dst = *(UINT64*)pArg;
+            // spilled part must be first on stack (if we copy too much, that's ok)
+            *(dst + 1) = *(UINT64*)pData->profiledSp;
+
+            return (LPBYTE)&pData->buffer[bufferPos];
         }
     }
     else
     {
         _ASSERTE(TransitionBlock::IsStackArgumentOffset(argOffset));
-
         pArg = (LPBYTE)pData->profiledSp + (argOffset - TransitionBlock::GetOffsetOfArgs());
     }
 
@@ -258,11 +280,11 @@ LPVOID ProfileArgIterator::GetReturnBufferAddr(void)
         return (LPVOID)pData->argumentRegisters.a[0];
     }
 
-    UINT fpReturnSize = m_argIterator.GetFPReturnSize();
+    FpStruct::Flags fpReturnSize = FpStruct::Flags(m_argIterator.GetFPReturnSize());
 
     if (fpReturnSize != 0)
     {
-        if ((fpReturnSize & (UINT)STRUCT_FLOAT_FIELD_ONLY_ONE) || (fpReturnSize & (UINT)STRUCT_FLOAT_FIELD_ONLY_TWO))
+        if (fpReturnSize & (FpStruct::OnlyOne | FpStruct::BothFloat))
         {
             return &pData->floatArgumentRegisters.f[0];
         }
@@ -275,14 +297,14 @@ LPVOID ProfileArgIterator::GetReturnBufferAddr(void)
 
             // using the tail 16 bytes for return structure.
             UINT64* dst = (UINT64*)&pData->buffer[sizeof(pData->buffer) - 16];
-            if (fpReturnSize & (UINT)STRUCT_FLOAT_FIELD_FIRST)
+            if (fpReturnSize & FpStruct::FloatInt)
             {
                 *(double*)dst = pData->floatArgumentRegisters.f[0];
                 *(dst + 1) = pData->argumentRegisters.a[0];
             }
             else
             {
-                _ASSERTE(fpReturnSize & (UINT)STRUCT_FLOAT_FIELD_SECOND);
+                _ASSERTE(fpReturnSize & FpStruct::IntFloat);
                 *dst = pData->argumentRegisters.a[0];
                 *(double*)(dst + 1) = pData->floatArgumentRegisters.f[0];
             }

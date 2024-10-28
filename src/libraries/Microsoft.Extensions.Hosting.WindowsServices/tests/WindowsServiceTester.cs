@@ -48,7 +48,7 @@ namespace Microsoft.Extensions.Hosting
             { }
         }
 
-        public static TimeSpan WaitForStatusTimeout { get; set; } = TimeSpan.FromSeconds(30);
+        public static TimeSpan WaitForStatusTimeout { get; set; } = TimeSpan.FromMinutes(3);
 
         public new void WaitForStatus(ServiceControllerStatus desiredStatus) =>
             WaitForStatus(desiredStatus, WaitForStatusTimeout);
@@ -61,15 +61,15 @@ namespace Microsoft.Extensions.Hosting
         }
 
         // the following overloads are necessary to ensure the compiler will produce the correct signature from a lambda.
-        public static WindowsServiceTester Create(Func<Task> serviceMain, [CallerMemberName] string serviceName = null) => Create(RemoteExecutor.Invoke(serviceMain, remoteInvokeOptions), serviceName);
+        public static WindowsServiceTester Create(Func<Task> serviceMain, [CallerMemberName] string serviceName = null) => Create(RemoteExecutor.Invoke(serviceMain, CreateRemoteInvokeOptions()), serviceName);
         
-        public static WindowsServiceTester Create(Func<Task<int>> serviceMain, [CallerMemberName] string serviceName = null) => Create(RemoteExecutor.Invoke(serviceMain, remoteInvokeOptions), serviceName);
+        public static WindowsServiceTester Create(Func<Task<int>> serviceMain, [CallerMemberName] string serviceName = null) => Create(RemoteExecutor.Invoke(serviceMain, CreateRemoteInvokeOptions()), serviceName);
 
-        public static WindowsServiceTester Create(Func<int> serviceMain, [CallerMemberName] string serviceName = null) => Create(RemoteExecutor.Invoke(serviceMain, remoteInvokeOptions), serviceName);
+        public static WindowsServiceTester Create(Func<int> serviceMain, [CallerMemberName] string serviceName = null) => Create(RemoteExecutor.Invoke(serviceMain, CreateRemoteInvokeOptions()), serviceName);
         
-        public static WindowsServiceTester Create(Action serviceMain, [CallerMemberName] string serviceName = null) => Create(RemoteExecutor.Invoke(serviceMain, remoteInvokeOptions), serviceName);
+        public static WindowsServiceTester Create(Action serviceMain, [CallerMemberName] string serviceName = null) => Create(RemoteExecutor.Invoke(serviceMain, CreateRemoteInvokeOptions()), serviceName);
 
-        private static RemoteInvokeOptions remoteInvokeOptions = new RemoteInvokeOptions() { Start = false };
+        private static RemoteInvokeOptions CreateRemoteInvokeOptions() => new RemoteInvokeOptions() { Start = false };
 
         private static WindowsServiceTester Create(RemoteInvokeHandle remoteInvokeHandle, string serviceName)
         {

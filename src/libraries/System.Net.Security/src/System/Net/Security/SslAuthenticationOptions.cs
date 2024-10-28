@@ -11,6 +11,7 @@ namespace System.Net.Security
 {
     internal sealed class SslAuthenticationOptions
     {
+        private const string EnableOcspStaplingContextSwitchName = "System.Net.Security.EnableServerOcspStaplingFromOnlyCertificateOnLinux";
         internal SslAuthenticationOptions()
         {
             TargetHost = string.Empty;
@@ -119,8 +120,10 @@ namespace System.Net.Security
 
                 if (certificateWithKey != null && certificateWithKey.HasPrivateKey)
                 {
+                    bool ocspFetch = false;
+                    _ = AppContext.TryGetSwitch(EnableOcspStaplingContextSwitchName, out ocspFetch);
                     // given cert is X509Certificate2 with key. We can use it directly.
-                    CertificateContext = SslStreamCertificateContext.Create(certificateWithKey, additionalCertificates: null, offline: false, trust: null, noOcspFetch: true);
+                    CertificateContext = SslStreamCertificateContext.Create(certificateWithKey, additionalCertificates: null, offline: false, trust: null, noOcspFetch: !ocspFetch);
                 }
                 else
                 {

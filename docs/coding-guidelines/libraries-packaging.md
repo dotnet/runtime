@@ -18,6 +18,14 @@ Source generators and analyzers can be included in the shared framework by addin
 
 Removing a library from the shared framework is a breaking change and should be avoided.
 
+### References to libraries in the shared framework that produce packages
+
+It's beneficial to avoid project references to libraries that are in the shared framework because it makes the package graph smaller which reduces the number of packages that require servicing and the number of libraries that end up being copied into the application directory.
+
+If a dependency is part of the shared framework a project/package reference is never required on the latest version (`NetCoreAppCurrent`).  A reference is required for previous .NET versions even if the dependency is part of the shared framework if the project you are building targets .NETStandard and references the project there.  You may completely avoid a package dependency on .NETStandard and .NET if it's not needed for .NETStandard (for example - if it is an implementation only dependency and you're building a PNSE assembly for .NETStandard).
+
+Warning NETPKG0001 is emitted when you have an unnecessary reference to a library that is part of the shared framework.  To avoid this warning, make sure your ProjectReference is conditioned so that it doesn't apply on `NetCoreAppCurrent`.
+
 ## Transport package
 
 Transport packages are non-shipping packages that dotnet/runtime produces in order to share binaries with other repositories.
@@ -142,13 +150,13 @@ In order to mitigate design-time/build-time performance issues with source gener
 ### NETStandard Compatibility Error infrastructure
 For libraries that support .NETStandard, the _.NETStandard Compatibility packaging infrastructure_ makes sure that out-of-support target frameworks like _netcoreapp3.1_ or _net461_ are unsupported by the produced package. That enables library authors to support .NETStandard but explicitly not support unsupported .NETStandard compatible target frameworks.
 
-The infrastructure generates a targets file that throws a user readable Error when msbuild invokes a project with an unsupported target framework. In addition to the targets file, placeholder files `_._` are placed into the minimum supported .NETStandard compatible target framework's package folder (as time of writing `net6.0` and `net462`), so that the generated targets files don't apply for that and any newer/compatible target framework. Example:
+The infrastructure generates a targets file that throws a user readable Error when msbuild invokes a project with an unsupported target framework. In addition to the targets file, placeholder files `_._` are placed into the minimum supported .NETStandard compatible target framework's package folder (as time of writing `net8.0` and `net462`), so that the generated targets files don't apply for that and any newer/compatible target framework. Example:
 
 ```
 buildTransitive\net461\Microsoft.Extensions.Configuration.UserSecrets.targets            <- This file is generated and throws an Error
 buildTransitive\net462\_._
 buildTransitive\netcoreapp2.0\Microsoft.Extensions.Configuration.UserSecrets.targets     <- This file is generated and throws an Error
-buildTransitive\net6.0\_._
+buildTransitive\net8.0\_._
 ```
 
 Whenever a library wants to author their own set of props and targets files (i.e. for source generators) and the above mentioned infrastructure kicks in (because the library targets .NETStandard), such files **must be included not only for the .NETStandard target framework but also for the specific minimum supported target frameworks**. The _.NETStandard Compatibility packaging infrastructure_ then omits the otherwise necessary placeholder files. Example:
@@ -158,7 +166,7 @@ buildTransitive\netstandard2.0\Microsoft.Extensions.Configuration.UserSecrets.ta
 buildTransitive\net461\Microsoft.Extensions.Configuration.UserSecrets.targets            <- This file is generated and throws an Error
 buildTransitive\net462\Microsoft.Extensions.Configuration.UserSecrets.targets            <- This file is hand authored and doesn't throw an error
 buildTransitive\netcoreapp2.0\Microsoft.Extensions.Configuration.UserSecrets.targets     <- This file is generated and throws an Error
-buildTransitive\net6.0\Microsoft.Extensions.Configuration.UserSecrets.targets            <- This file is hand authored and doesn't throw an error
+buildTransitive\net8.0\Microsoft.Extensions.Configuration.UserSecrets.targets            <- This file is hand authored and doesn't throw an error
 ```
 
 The above layout is achieved via the following item declaration in the project file. In that case, the hand authored msbuild props and/or targets files are located in a buildTransitive folder in the project tree. Note that the trailing directory separators are required.

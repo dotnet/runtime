@@ -41,8 +41,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 		}
 
 		[ExpectedWarning ("IL2026", "--RequiresOnlyThroughReflection--")]
-		[ExpectedWarning ("IL3002", "--RequiresOnlyThroughReflection--", Tool.NativeAot, "https://github.com/dotnet/linker/issues/2739")]
-		[ExpectedWarning ("IL3050", "--RequiresOnlyThroughReflection--", Tool.NativeAot, "https://github.com/dotnet/linker/issues/2739")]
+		[ExpectedWarning ("IL3002", "--RequiresOnlyThroughReflection--", Tool.NativeAot, "Analyzer doesn't warn for reflection access to arbitrary Requires attributes")]
+		[ExpectedWarning ("IL3050", "--RequiresOnlyThroughReflection--", Tool.NativeAot, "Analyzer doesn't warn for reflection access to arbitrary Requires attributes")]
 		static void TestRequiresOnlyThroughReflection ()
 		{
 			typeof (RequiresAccessedThrough)

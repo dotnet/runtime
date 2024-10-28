@@ -86,6 +86,7 @@ private:
     void InternalInit(Thread * pThreadToWalk, PTR_PInvokeTransitionFrame pFrame, uint32_t dwFlags); // GC stackwalk
     void InternalInit(Thread * pThreadToWalk, PTR_PAL_LIMITED_CONTEXT pCtx, uint32_t dwFlags);  // EH and hijack stackwalk, and collided unwind
     void InternalInit(Thread * pThreadToWalk, NATIVE_CONTEXT* pCtx, uint32_t dwFlags);  // GC stackwalk of redirected thread
+    void EnsureInitializedToManagedFrame();
 
     void InternalInitForEH(Thread * pThreadToWalk, PAL_LIMITED_CONTEXT * pCtx, bool instructionFault); // EH stackwalk
     void InternalInitForStackTrace();  // Environment.StackTrace
@@ -178,6 +179,17 @@ private:
         PTR_uintptr_t pX26;
         PTR_uintptr_t pX27;
         PTR_uintptr_t pX28;
+        PTR_uintptr_t pFP;
+#elif defined(TARGET_LOONGARCH64)
+        PTR_uintptr_t pR23;
+        PTR_uintptr_t pR24;
+        PTR_uintptr_t pR25;
+        PTR_uintptr_t pR26;
+        PTR_uintptr_t pR27;
+        PTR_uintptr_t pR28;
+        PTR_uintptr_t pR29;
+        PTR_uintptr_t pR30;
+        PTR_uintptr_t pR31;
         PTR_uintptr_t pFP;
 #elif defined(UNIX_AMD64_ABI)
         PTR_uintptr_t pRbp;

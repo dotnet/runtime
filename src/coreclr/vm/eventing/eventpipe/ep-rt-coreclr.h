@@ -725,7 +725,7 @@ bool
 ep_rt_process_detach (void)
 {
 	STATIC_CONTRACT_NOTHROW;
-	return (bool)g_fProcessDetach;
+	return (bool)IsAtProcessExit();
 }
 
 static

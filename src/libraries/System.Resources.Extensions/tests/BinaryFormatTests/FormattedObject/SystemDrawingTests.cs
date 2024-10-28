@@ -16,14 +16,14 @@ public class SystemDrawingTests : Common.SystemDrawingTests<FormattedObjectSeria
         BinaryFormattedObject format = new(Serialize(input));
 
         ClassRecord classInfo = (ClassRecord)format.RootRecord;
-        classInfo.RecordType.Should().Be(SerializationRecordType.ClassWithMembersAndTypes);
-        classInfo.Id.Should().NotBe(default);
-        format[format.RootRecord.Id].Should().Be(classInfo);
-        classInfo.TypeName.FullName.Should().Be("System.Drawing.PointF");
-        classInfo.TypeName.AssemblyName!.FullName.Should().Be("System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a");
-        classInfo.MemberNames.Should().BeEquivalentTo(["x", "y"]);
-        classInfo.GetSingle("x").Should().Be(input.X);
-        classInfo.GetSingle("y").Should().Be(input.Y);
+        Assert.Equal(SerializationRecordType.ClassWithMembersAndTypes, classInfo.RecordType);
+        Assert.NotEqual(default, classInfo.Id);
+        Assert.Same(classInfo, format[format.RootRecord.Id]);
+        Assert.Equal("System.Drawing.PointF", classInfo.TypeName.FullName);
+        Assert.Equal("System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", classInfo.TypeName.AssemblyName!.FullName);
+        Assert.Equal(["x", "y"], classInfo.MemberNames);
+        Assert.Equal(input.X, classInfo.GetSingle("x"));
+        Assert.Equal(input.Y, classInfo.GetSingle("y"));
     }
 
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsDrawingSupported))]
@@ -33,15 +33,15 @@ public class SystemDrawingTests : Common.SystemDrawingTests<FormattedObjectSeria
         BinaryFormattedObject format = new(Serialize(input));
 
         ClassRecord classInfo = (ClassRecord)format.RootRecord;
-        classInfo.RecordType.Should().Be(SerializationRecordType.ClassWithMembersAndTypes);
-        classInfo.Id.Should().NotBe(default);
-        format[format.RootRecord.Id].Should().Be(classInfo);
-        classInfo.TypeName.FullName.Should().Be("System.Drawing.RectangleF");
-        classInfo.MemberNames.Should().BeEquivalentTo(["x", "y", "width", "height"]);
-        classInfo.GetSingle("x").Should().Be(input.X);
-        classInfo.GetSingle("y").Should().Be(input.Y);
-        classInfo.GetSingle("width").Should().Be(input.Width);
-        classInfo.GetSingle("height").Should().Be(input.Height);
+        Assert.Equal(SerializationRecordType.ClassWithMembersAndTypes, classInfo.RecordType);
+        Assert.NotEqual(default, classInfo.Id);
+        Assert.Same(classInfo, format[format.RootRecord.Id]);
+        Assert.Equal("System.Drawing.RectangleF", classInfo.TypeName.FullName);
+        Assert.Equal(["x", "y", "width", "height"], classInfo.MemberNames);
+        Assert.Equal(input.X, classInfo.GetSingle("x"));
+        Assert.Equal(input.Y, classInfo.GetSingle("y"));
+        Assert.Equal(input.Width, classInfo.GetSingle("width"));
+        Assert.Equal(input.Height, classInfo.GetSingle("height"));
     }
 
     public static TheoryData<object> SystemDrawing_TestData => new()

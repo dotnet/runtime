@@ -54,6 +54,12 @@ namespace System
     internal static class ThrowHelper
     {
         [DoesNotReturn]
+        internal static void ThrowUnreachableException()
+        {
+            throw new UnreachableException();
+        }
+
+        [DoesNotReturn]
         internal static void ThrowArithmeticException(string message)
         {
             throw new ArithmeticException(message);
@@ -69,18 +75,6 @@ namespace System
         internal static void ThrowArrayTypeMismatchException()
         {
             throw new ArrayTypeMismatchException();
-        }
-
-        [DoesNotReturn]
-        internal static void ThrowArrayTypeMismatchException_CantAssignType()
-        {
-            throw new ArrayTypeMismatchException(SR.ArrayTypeMismatch_CantAssignType);
-        }
-
-        [DoesNotReturn]
-        internal static void ThrowInvalidCastException_DownCastArrayElement()
-        {
-            throw new InvalidCastException(SR.InvalidCast_DownCastArrayElement);
         }
 
         [DoesNotReturn]
@@ -779,8 +773,6 @@ namespace System
             if (!(default(T) == null) && value == null)
                 ThrowArgumentNullException(argName);
         }
-
-
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static void ThrowForUnsupportedSimdVectorBaseType<TVector, T>()

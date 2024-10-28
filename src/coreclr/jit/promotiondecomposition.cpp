@@ -238,7 +238,7 @@ private:
     {
         ClassLayout* dstLayout = m_store->GetLayout(m_compiler);
 
-        StructSegments segments = m_promotion->SignificantSegments(dstLayout);
+        StructSegments segments = m_compiler->GetSignificantSegments(dstLayout);
 
         for (int i = 0; i < m_entries.Height(); i++)
         {
@@ -1218,9 +1218,8 @@ void Compiler::gtPeelOffsets(GenTree** addr, target_ssize_t* offset, FieldSeq** 
             GenTree* op1 = (*addr)->gtGetOp1();
             GenTree* op2 = (*addr)->gtGetOp2();
 
-            if (op2->IsCnsIntOrI() && !op2->AsIntCon()->IsIconHandle())
+            if (op2->IsCnsIntOrI() && op2->TypeIs(TYP_I_IMPL) && !op2->AsIntCon()->IsIconHandle())
             {
-                assert(op2->TypeIs(TYP_I_IMPL));
                 GenTreeIntCon* intCon = op2->AsIntCon();
                 *offset += (target_ssize_t)intCon->IconValue();
 
@@ -1231,9 +1230,8 @@ void Compiler::gtPeelOffsets(GenTree** addr, target_ssize_t* offset, FieldSeq** 
 
                 *addr = op1;
             }
-            else if (op1->IsCnsIntOrI() && !op1->AsIntCon()->IsIconHandle())
+            else if (op1->IsCnsIntOrI() && op1->TypeIs(TYP_I_IMPL) && !op1->AsIntCon()->IsIconHandle())
             {
-                assert(op1->TypeIs(TYP_I_IMPL));
                 GenTreeIntCon* intCon = op1->AsIntCon();
                 *offset += (target_ssize_t)intCon->IconValue();
 

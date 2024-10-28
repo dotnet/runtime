@@ -61,6 +61,8 @@ namespace System.Net.Http
 
         internal bool _enableMultipleHttp2Connections;
 
+        internal bool _enableMultipleHttp3Connections;
+
         internal Func<SocketsHttpConnectionContext, CancellationToken, ValueTask<Stream>>? _connectCallback;
         internal Func<SocketsHttpPlaintextStreamFilterContext, CancellationToken, ValueTask<Stream>>? _plaintextStreamFilter;
 
@@ -123,6 +125,7 @@ namespace System.Net.Http
                 _requestHeaderEncodingSelector = _requestHeaderEncodingSelector,
                 _responseHeaderEncodingSelector = _responseHeaderEncodingSelector,
                 _enableMultipleHttp2Connections = _enableMultipleHttp2Connections,
+                _enableMultipleHttp3Connections = _enableMultipleHttp3Connections,
                 _connectCallback = _connectCallback,
                 _plaintextStreamFilter = _plaintextStreamFilter,
                 _initialHttp2StreamWindowSize = _initialHttp2StreamWindowSize,
@@ -139,6 +142,8 @@ namespace System.Net.Http
         public int MaxResponseHeadersByteLength => (int)Math.Min(int.MaxValue, _maxResponseHeadersLength * 1024L);
 
         public bool EnableMultipleHttp2Connections => _enableMultipleHttp2Connections;
+
+        public bool EnableMultipleHttp3Connections => _enableMultipleHttp3Connections;
 
         private byte[]? _http3SettingsFrame;
 
