@@ -3957,8 +3957,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                 {
                     const GenTreeHWIntrinsic* embOp = op2->AsHWIntrinsic();
 
-                    if (IsInvariantInRange(op2, node) && op2->isEmbeddedMaskingCompatibleHWIntrinsic() &&
-                        embOp->GetHWIntrinsicId() != NI_Sve_ConditionalSelect)
+                    if (IsInvariantInRange(op2, node) && op2->isEmbeddedMaskingCompatibleHWIntrinsic())
                     {
                         uint32_t maskSize = genTypeSize(node->GetSimdBaseType());
                         uint32_t operSize = genTypeSize(op2->AsHWIntrinsic()->GetSimdBaseType());

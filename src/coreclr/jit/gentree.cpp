@@ -20354,6 +20354,8 @@ bool GenTree::isContainableHWIntrinsic() const
             return false;
         }
     }
+#elif defined(TARGET_ARM64)
+    return (AsHWIntrinsic()->GetHWIntrinsicId() == NI_Sve_ConditionalSelect);
 #else
     return false;
 #endif // TARGET_XARCH
@@ -20534,8 +20536,7 @@ bool GenTree::isEmbeddedMaskingCompatibleHWIntrinsic() const
         }
 #elif defined(TARGET_ARM64)
         return HWIntrinsicInfo::IsEmbeddedMaskedOperation(intrinsicId) ||
-               HWIntrinsicInfo::IsOptionalEmbeddedMaskedOperation(intrinsicId) ||
-               (intrinsicId == NI_Sve_ConditionalSelect);
+               HWIntrinsicInfo::IsOptionalEmbeddedMaskedOperation(intrinsicId);
 #endif
     }
     return false;
