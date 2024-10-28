@@ -5897,8 +5897,8 @@ ClrDataAccess::RawGetMethodName(
     return E_NOINTERFACE;
 
 NameFromMethodDesc:
-    if (methodDesc->GetClassification() == mcDynamic &&
-        !methodDesc->GetSig())
+    if (methodDesc->GetClassification() == mcDynamic
+        && methodDesc->GetSigParser().IsNull())
     {
         return FormatCLRStubName(
             NULL,

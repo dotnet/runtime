@@ -168,11 +168,14 @@ static const Entry s_QCall[] =
     DllImportEntry(ModuleBuilder_GetMemberRefFromSignature)
     DllImportEntry(ModuleBuilder_GetArrayMethodToken)
     DllImportEntry(ModuleBuilder_SetFieldRVAContent)
+    DllImportEntry(ModuleHandle_GetMDStreamVersion)
     DllImportEntry(ModuleHandle_GetModuleType)
+    DllImportEntry(ModuleHandle_GetToken)
     DllImportEntry(ModuleHandle_ResolveType)
     DllImportEntry(ModuleHandle_ResolveMethod)
     DllImportEntry(ModuleHandle_ResolveField)
     DllImportEntry(ModuleHandle_GetPEKind)
+    DllImportEntry(ModuleHandle_GetDynamicMethod)
     DllImportEntry(AssemblyHandle_GetManifestModuleSlow)
     DllImportEntry(TypeBuilder_DefineGenericParam)
     DllImportEntry(TypeBuilder_DefineType)
@@ -497,6 +500,7 @@ static const Entry s_QCall[] =
     DllImportEntry(EHEnumNext)
     DllImportEntry(AppendExceptionStackFrame)
 #endif // FEATURE_EH_FUNCLETS
+    DllImportEntry(InitClassHelper)
     DllImportEntry(ResolveVirtualFunctionPointer)
     DllImportEntry(GenericHandleWorker)
 };

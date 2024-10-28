@@ -8,6 +8,7 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 using System.Runtime.Versioning;
+using System.Threading;
 
 namespace System.Runtime.CompilerServices
 {
@@ -354,7 +355,7 @@ namespace System.Runtime.CompilerServices
         [Intrinsic]
         internal static bool IsBitwiseEquatable<T>()
         {
-            // The body of this function will be replaced by the EE with unsafe code!!!
+            // The body of this function will be replaced by the EE.
             // See getILIntrinsicImplementationForRuntimeHelpers for how this happens.
             throw new InvalidOperationException();
         }
@@ -362,23 +363,28 @@ namespace System.Runtime.CompilerServices
         [Intrinsic]
         internal static bool EnumEquals<T>(T x, T y) where T : struct, Enum
         {
-            // The body of this function will be replaced by the EE with unsafe code
-            // See getILIntrinsicImplementation for how this happens.
+            // The body of this function will be replaced by the EE.
+            // See getILIntrinsicImplementationForRuntimeHelpers for how this happens.
             return x.Equals(y);
         }
 
         [Intrinsic]
         internal static int EnumCompareTo<T>(T x, T y) where T : struct, Enum
         {
-            // The body of this function will be replaced by the EE with unsafe code
-            // See getILIntrinsicImplementation for how this happens.
+            // The body of this function will be replaced by the EE.
+            // See getILIntrinsicImplementationForRuntimeHelpers for how this happens.
             return x.CompareTo(y);
         }
 
-        // The body of this function will be created by the EE for the specific type.
-        // See getILIntrinsicImplementation for how this happens.
+#if FEATURE_IJW
         [Intrinsic]
-        internal static extern unsafe void CopyConstruct<T>(T* dest, T* src) where T : unmanaged;
+        internal static unsafe void CopyConstruct<T>(T* dest, T* src) where T : unmanaged
+        {
+            // The body of this function will be replaced by the EE.
+            // See getILIntrinsicImplementationForRuntimeHelpers for how this happens.
+            throw new InvalidOperationException();
+        }
+#endif
 
         internal static ref byte GetRawData(this object obj) =>
             ref Unsafe.As<RawData>(obj).Data;
@@ -610,6 +616,33 @@ namespace System.Runtime.CompilerServices
         public byte Data;
     }
 
+    // Subset of src\vm\methoddesc.hpp
+    [StructLayout(LayoutKind.Sequential)]
+    internal unsafe struct MethodDesc
+    {
+        public ushort Flags3AndTokenRemainder;
+        public byte ChunkIndex;
+        public byte Flags4; // Used to hold more flags
+        public ushort SlotNumber; // The slot number of this MethodDesc in the vtable array.
+        public ushort Flags; // See MethodDescFlags
+        public IntPtr CodeData;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private MethodDescChunk* GetMethodDescChunk() => (MethodDescChunk*)(((byte*)Unsafe.AsPointer<MethodDesc>(ref this)) - (sizeof(MethodDescChunk) + ChunkIndex * sizeof(IntPtr)));
+
+        public MethodTable* MethodTable => GetMethodDescChunk()->MethodTable;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal unsafe struct MethodDescChunk
+    {
+        public MethodTable* MethodTable;
+        public MethodDescChunk*  Next;
+        public byte Size;        // The size of this chunk minus 1 (in multiples of MethodDesc::ALIGNMENT)
+        public byte Count;       // The number of MethodDescs in this chunk minus 1
+        public ushort FlagsAndTokenRange;
+    }
+
     // Subset of src\vm\methodtable.h
     [StructLayout(LayoutKind.Explicit)]
     internal unsafe struct MethodTable
@@ -806,6 +839,15 @@ namespace System.Runtime.CompilerServices
             }
         }
 
+        public bool IsSharedByGenericInstantiations
+        {
+            get
+            {
+                uint genericsFlags = Flags & (enum_flag_HasComponentSize | enum_flag_GenericsMask);
+                return genericsFlags == enum_flag_GenericsMask_SharedInst;
+            }
+        }
+
         public bool ContainsGenericVariables => (Flags & enum_flag_ContainsGenericVariables) != 0;
 
         /// <summary>
@@ -829,6 +871,12 @@ namespace System.Runtime.CompilerServices
         /// <remarks>This method should only be called when <see cref="IsPrimitive"/> returns <see langword="true"/>.</remarks>
         [MethodImpl(MethodImplOptions.InternalCall)]
         public extern CorElementType GetPrimitiveCorElementType();
+
+        /// <summary>
+        /// Get the MethodTable in the type hierarchy of this MethodTable that has the same TypeDef/Module as parent.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public extern MethodTable* GetMethodTableMatchingParentClass(MethodTable* parent);
     }
 
     // Subset of src\vm\methodtable.h
@@ -842,9 +890,12 @@ namespace System.Runtime.CompilerServices
         private const uint enum_flag_HasCheckedCanCompareBitsOrUseFastGetHashCode = 0x0002;  // Whether we have checked the overridden Equals or GetHashCode
         private const uint enum_flag_CanCompareBitsOrUseFastGetHashCode = 0x0004;     // Is any field type or sub field type overridden Equals or GetHashCode
 
+        private const uint enum_flag_Initialized                = 0x0001;
         private const uint enum_flag_HasCheckedStreamOverride   = 0x0400;
         private const uint enum_flag_StreamOverriddenRead       = 0x0800;
         private const uint enum_flag_StreamOverriddenWrite      = 0x1000;
+        private const uint enum_flag_EnsuredInstanceActive      = 0x2000;
+
 
         public bool HasCheckedCanCompareBitsOrUseFastGetHashCode => (Flags & enum_flag_HasCheckedCanCompareBitsOrUseFastGetHashCode) != 0;
 
@@ -884,6 +935,10 @@ namespace System.Runtime.CompilerServices
                 return *(RuntimeType*)Unsafe.AsPointer(ref ExposedClassObjectRaw);
             }
         }
+
+        public bool IsClassInited => (Volatile.Read(ref Flags) & enum_flag_Initialized) != 0;
+
+        public bool IsClassInitedAndActive => (Volatile.Read(ref Flags) & (enum_flag_Initialized | enum_flag_EnsuredInstanceActive)) == (enum_flag_Initialized | enum_flag_EnsuredInstanceActive);
     }
 
     /// <summary>

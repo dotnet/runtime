@@ -177,7 +177,6 @@ set(utils_common_sources
     wasm-module-reader.c
     mono-bitutils.h
     mono-bitutils.c
-    ${CLR_SRC_NATIVE_DIR}/minipal/debugger.c
   )
 
 if(MONO_CROSS_COMPILE)
@@ -205,7 +204,7 @@ set(utils_arch_sources "${utils_arch_sources};mono-hwcap-riscv.c")
 elseif(TARGET_S390X)
 set(utils_arch_sources "${utils_arch_sources};mono-hwcap-s390x.c")
 elseif(TARGET_WASM)
-set(utils_arch_sources "${utils_arch_sources};mono-hwcap-wasm.c;mono-mmap-wasm.c;mono-wasm-pagemgr.c")
+set(utils_arch_sources "${utils_arch_sources};mono-hwcap-wasm.c;mono-mmap-wasm.c")
 elseif(TARGET_WASI)
 set(utils_arch_sources "${utils_arch_sources};mono-hwcap-wasm.c")
 elseif(TARGET_POWERPC OR TARGET_POWERPC64)

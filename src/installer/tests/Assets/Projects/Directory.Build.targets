@@ -12,8 +12,15 @@
   <Target Name="UpdateRuntimeFrameworkVersion"
           Condition="'$(UseLocalTargetingRuntimePack)' == 'true'"
           AfterTargets="ResolveTargetingPackAssets">
+    <PropertyGroup>
+      <_UpdatedVersion>$(Version)</_UpdatedVersion>
+      <!-- When package versions are stabilized, they do not have version suffixes. Because these are
+           non-shipping tests assets, the Version property will still include suffixes (unlike for shipping
+           assets), so we explicitly use the ProductVersion (without suffixes) in the stabilized case. -->
+      <_UpdatedVersion Condition="'$(StabilizePackageVersion)' == 'true'">$(ProductVersion)</_UpdatedVersion>
+    </PropertyGroup>
     <ItemGroup>
-      <RuntimeFramework Version="$(Version)"
+      <RuntimeFramework Version="$(_UpdatedVersion)"
                         Condition="'%(RuntimeFramework.FrameworkName)' == '$(LocalFrameworkOverrideName)'" />
     </ItemGroup>
   </Target>
