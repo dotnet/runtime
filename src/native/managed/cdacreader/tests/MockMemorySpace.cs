@@ -156,9 +156,9 @@ internal unsafe static partial class MockMemorySpace
 
         private (HeapFragment json, HeapFragment pointerData) CreateDataDescriptor()
         {
-            string metadataTypesJson = TargetTestHelpers.MakeTypesJson(_types);
-            string metadataGlobalsJson = TargetTestHelpers.MakeGlobalsJson(_globals);
-            string interpolatedContracts = MakeContractsJson();
+            string metadataTypesJson = _types is not null ? TargetTestHelpers.MakeTypesJson(_types) : string.Empty;
+            string metadataGlobalsJson = _globals is not null ? TargetTestHelpers.MakeGlobalsJson(_globals) : string.Empty;
+            string interpolatedContracts = _contracts is not null ? MakeContractsJson() : string.Empty;
             byte[] jsonBytes = Encoding.UTF8.GetBytes($$"""
             {
                 "version": 0,

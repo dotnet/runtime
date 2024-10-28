@@ -292,13 +292,19 @@ namespace System
                     output = Ssse3.MultiplyAddAdjacent(nibbles,
                         Vector128.Create((short)0x0110).AsSByte()).AsByte();
                 }
-                else
+                else if (AdvSimd.Arm64.IsSupported)
                 {
                     // Workaround for missing MultiplyAddAdjacent on ARM
                     Vector128<short> even = AdvSimd.Arm64.TransposeEven(nibbles, Vector128<byte>.Zero).AsInt16();
                     Vector128<short> odd = AdvSimd.Arm64.TransposeOdd(nibbles, Vector128<byte>.Zero).AsInt16();
                     even = AdvSimd.ShiftLeftLogical(even, 4).AsInt16();
                     output = AdvSimd.AddSaturate(even, odd).AsByte();
+                }
+                else
+                {
+                    // We explicitly recheck each IsSupported query to ensure that the trimmer can see which paths are live/dead
+                    ThrowHelper.ThrowUnreachableException();
+                    output = default;
                 }
                 // Accumulate output in lower INT64 half and take care about endianness
                 output = Vector128.Shuffle(output, Vector128.Create((byte)0, 2, 4, 6, 8, 10, 12, 14, 0, 0, 0, 0, 0, 0, 0, 0));
