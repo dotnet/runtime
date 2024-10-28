@@ -5,7 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection.Metadata.Ecma335;
-using Microsoft.Diagnostics.DataContractReader.Contracts.RuntimeTypeSystem_1_NS;
+using Microsoft.Diagnostics.DataContractReader.RuntimeTypeSystemHelpers;
 using Microsoft.Diagnostics.DataContractReader.Data;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
@@ -15,6 +15,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
     private readonly Target _target;
     private readonly TargetPointer _freeObjectMethodTablePointer;
     private readonly ulong _methodDescAlignment;
+    private readonly TypeValidation _typeValidation;
 
     // TODO(cdac): we mutate this dictionary - copies of the RuntimeTypeSystem_1 struct share this instance.
     // If we need to invalidate our view of memory, we should clear this dictionary.
@@ -24,7 +25,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
     internal struct MethodTable
     {
-        internal MethodTableFlags Flags { get; }
+        internal MethodTableFlags_1 Flags { get; }
         internal ushort NumInterfaces { get; }
         internal ushort NumVirtuals { get; }
         internal TargetPointer ParentMethodTable { get; }
@@ -33,7 +34,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         internal TargetPointer PerInstInfo { get; }
         internal MethodTable(Data.MethodTable data)
         {
-            Flags = new MethodTableFlags
+            Flags = new MethodTableFlags_1
             {
                 MTFlags = data.MTFlags,
                 MTFlags2 = data.MTFlags2,
@@ -48,17 +49,8 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         }
 
         // this MethodTable is a canonical MethodTable if its EEClassOrCanonMT is an EEClass
-        internal bool IsCanonMT => GetEEClassOrCanonMTBits(EEClassOrCanonMT) == EEClassOrCanonMTBits.EEClass;
-    }
+        internal bool IsCanonMT => MethodTableFlags_1.GetEEClassOrCanonMTBits(EEClassOrCanonMT) == MethodTableFlags_1.EEClassOrCanonMTBits.EEClass;
 
-    // Low order bit of EEClassOrCanonMT.
-    // See MethodTable::LowBits UNION_EECLASS / UNION_METHODABLE
-    [Flags]
-    internal enum EEClassOrCanonMTBits
-    {
-        EEClass = 0,
-        CanonMT = 1,
-        Mask = 1,
     }
 
     // Low order bits of TypeHandle address.
@@ -222,11 +214,12 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         }
     }
 
-    internal RuntimeTypeSystem_1(Target target, TargetPointer freeObjectMethodTablePointer, ulong methodDescAlignment)
+    internal RuntimeTypeSystem_1(Target target, TypeValidation typeValidation, TargetPointer freeObjectMethodTablePointer, ulong methodDescAlignment)
     {
         _target = target;
         _freeObjectMethodTablePointer = freeObjectMethodTablePointer;
         _methodDescAlignment = methodDescAlignment;
+        _typeValidation = typeValidation;
     }
 
     internal TargetPointer FreeObjectMethodTablePointer => _freeObjectMethodTablePointer;
@@ -276,9 +269,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         }
 
         // Otherwse, get ready to validate
-        NonValidated.MethodTable nonvalidatedMethodTable = NonValidated.GetMethodTableData(_target, methodTablePointer);
-
-        if (!ValidateMethodTablePointer(nonvalidatedMethodTable))
+        if (!_typeValidation.TryValidateMethodTablePointer(methodTablePointer))
         {
             throw new InvalidOperationException("Invalid method table pointer");
         }
@@ -296,12 +287,12 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
     private TargetPointer GetClassPointer(TypeHandle typeHandle)
     {
         MethodTable methodTable = _methodTables[typeHandle.Address];
-        switch (GetEEClassOrCanonMTBits(methodTable.EEClassOrCanonMT))
+        switch (MethodTableFlags_1.GetEEClassOrCanonMTBits(methodTable.EEClassOrCanonMT))
         {
-            case EEClassOrCanonMTBits.EEClass:
+            case MethodTableFlags_1.EEClassOrCanonMTBits.EEClass:
                 return methodTable.EEClassOrCanonMT;
-            case EEClassOrCanonMTBits.CanonMT:
-                TargetPointer canonMTPtr = new TargetPointer((ulong)methodTable.EEClassOrCanonMT & ~(ulong)RuntimeTypeSystem_1.EEClassOrCanonMTBits.Mask);
+            case MethodTableFlags_1.EEClassOrCanonMTBits.CanonMT:
+                TargetPointer canonMTPtr =MethodTableFlags_1.UntagEEClassOrCanonMT(methodTable.EEClassOrCanonMT);
                 TypeHandle canonMTHandle = GetTypeHandle(canonMTPtr);
                 MethodTable canonMT = _methodTables[canonMTHandle.Address];
                 return canonMT.EEClassOrCanonMT; // canonical method table EEClassOrCanonMT is always EEClass
@@ -440,17 +431,17 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         {
             MethodTable methodTable = _methodTables[typeHandle.Address];
 
-            switch (methodTable.Flags.GetFlag(WFLAGS_HIGH.Category_Mask))
+            switch (methodTable.Flags.GetFlag(MethodTableFlags_1.WFLAGS_HIGH.Category_Mask))
             {
-                case WFLAGS_HIGH.Category_Array:
+                case MethodTableFlags_1.WFLAGS_HIGH.Category_Array:
                     return CorElementType.Array;
-                case WFLAGS_HIGH.Category_Array | WFLAGS_HIGH.Category_IfArrayThenSzArray:
+                case MethodTableFlags_1.WFLAGS_HIGH.Category_Array | MethodTableFlags_1.WFLAGS_HIGH.Category_IfArrayThenSzArray:
                     return CorElementType.SzArray;
-                case WFLAGS_HIGH.Category_ValueType:
-                case WFLAGS_HIGH.Category_Nullable:
-                case WFLAGS_HIGH.Category_PrimitiveValueType:
+                case MethodTableFlags_1.WFLAGS_HIGH.Category_ValueType:
+                case MethodTableFlags_1.WFLAGS_HIGH.Category_Nullable:
+                case MethodTableFlags_1.WFLAGS_HIGH.Category_PrimitiveValueType:
                     return CorElementType.ValueType;
-                case WFLAGS_HIGH.Category_TruePrimitive:
+                case MethodTableFlags_1.WFLAGS_HIGH.Category_TruePrimitive:
                     return (CorElementType)GetClassData(typeHandle).InternalCorElementType;
                 default:
                     return CorElementType.Class;
@@ -472,14 +463,14 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         {
             MethodTable methodTable = _methodTables[typeHandle.Address];
 
-            switch (methodTable.Flags.GetFlag(WFLAGS_HIGH.Category_Mask))
+            switch (methodTable.Flags.GetFlag(MethodTableFlags_1.WFLAGS_HIGH.Category_Mask))
             {
-                case WFLAGS_HIGH.Category_Array:
+                case MethodTableFlags_1.WFLAGS_HIGH.Category_Array:
                     TargetPointer clsPtr = GetClassPointer(typeHandle);
                     rank = _target.ProcessedData.GetOrAdd<Data.ArrayClass>(clsPtr).Rank;
                     return true;
 
-                case WFLAGS_HIGH.Category_Array | WFLAGS_HIGH.Category_IfArrayThenSzArray:
+                case MethodTableFlags_1.WFLAGS_HIGH.Category_Array | MethodTableFlags_1.WFLAGS_HIGH.Category_IfArrayThenSzArray:
                     rank = 1;
                     return true;
             }
