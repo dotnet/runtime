@@ -447,13 +447,12 @@ namespace System.Collections.Generic
                 entries = _entries;
             }
 
-            // The _entries array is ordered, so we need to insert the new entry at the specified index. That means
-            // not only shifting up all elements at that index and higher, but also updating the buckets and chains
-            // to record the newly updated indices.
+            // Shift up all entries above this one, and fix up the buckets or Next pointers that point to the
+            // shifted entries. Because the Next pointers point backwards, we can do this in a single pass starting
+            // from the back.
             for (i = _count - 1; i >= index; --i)
             {
-                entries[i + 1] = entries[i];
-                UpdateBucketIndex(i, shiftAmount: 1);
+                ShiftEntry(i, shiftAmount: 1, modifyIndex: index);
             }
 
             // Store the new key/value pair.
@@ -461,7 +460,7 @@ namespace System.Collections.Generic
             entry.HashCode = hashCode;
             entry.Key = key;
             entry.Value = value;
-            PushEntryIntoBucket(ref entry, index);
+            InsertEntryIntoChain(index);
             _count++;
             _version++;
 
@@ -616,7 +615,7 @@ namespace System.Collections.Generic
                 goto ReturnNotFound;
             }
 
-            int i = -1;
+            int i = -1, prev;
             ref Entry entry = ref Unsafe.NullRef<Entry>();
 
             Entry[]? entries = _entries;
@@ -643,14 +642,16 @@ namespace System.Collections.Generic
                         goto Return;
                     }
 
-                    i = entry.Next;
-
                     collisionCount++;
-                }
-                while (collisionCount <= (uint)entries.Length);
 
-                // The chain of entries forms a loop; which means a concurrent update has happened.
-                // Break out of the loop and throw, rather than looping forever.
+                    prev = i;
+                    i = entry.Next;
+                }
+                while (prev > i);
+
+                // Next pointers point backwards so if this invariant is violated,
+                // then a concurrent operation must have happened to corrupt the chain.
+                // Break out of the loop and throw, rather than potentially looping forever.
                 goto ConcurrentOperation;
             }
             else
@@ -672,14 +673,16 @@ namespace System.Collections.Generic
                         goto Return;
                     }
 
-                    i = entry.Next;
-
                     collisionCount++;
-                }
-                while (collisionCount <= (uint)entries.Length);
 
-                // The chain of entries forms a loop; which means a concurrent update has happened.
-                // Break out of the loop and throw, rather than looping forever.
+                    prev = i;
+                    i = entry.Next;
+                }
+                while (prev > i);
+
+                // Next pointers point backwards so if this invariant is violated,
+                // then a concurrent operation must have happened to corrupt the chain.
+                // Break out of the loop and throw, rather than potentially looping forever.
                 goto ConcurrentOperation;
             }
 
@@ -689,8 +692,7 @@ namespace System.Collections.Generic
             goto Return;
 
         ConcurrentOperation:
-            // We examined more entries than are actually in the list, which means there's a cycle
-            // that's caused by erroneous concurrent use.
+            // An invariant was violated by erroneous concurrent use.
             ThrowHelper.ThrowConcurrentOperation();
 
         Return:
@@ -758,15 +760,15 @@ namespace System.Collections.Generic
             }
 
             // Remove from the associated bucket chain the entry that lives at the specified index.
-            RemoveEntryFromBucket(index);
+            RemoveEntryFromChain(index);
 
-            // Shift down all entries above this one, and fix up the bucket chains to reflect the new indices.
+            // Shift down all entries above this one, and fix up the buckets or Next pointers that point to
+            // the shifted entries. Because the Next pointers point backwards, we can do this in a single pass.
             Entry[]? entries = _entries;
             Debug.Assert(entries is not null);
             for (int i = index + 1; i < count; i++)
             {
-                entries[i - 1] = entries[i];
-                UpdateBucketIndex(i, shiftAmount: -1);
+                ShiftEntry(i, shiftAmount: -1, modifyIndex: index);
             }
 
             entries[--_count] = default;
@@ -835,11 +837,11 @@ namespace System.Collections.Generic
             // the bucket chains, as the new key may not hash to the same bucket as the old key
             // (we could check for this, but in a properly balanced dictionary the chances should
             // be low for a match, so it's not worth it).
-            RemoveEntryFromBucket(index);
+            RemoveEntryFromChain(index);
             e.HashCode = hashCode;
             e.Key = key;
             e.Value = value;
-            PushEntryIntoBucket(ref e, index);
+            InsertEntryIntoChain(index);
 
             _version++;
 
@@ -920,15 +922,15 @@ namespace System.Collections.Generic
         /// The new entry's <see cref="Entry.Next"/> is set to the bucket's current
         /// head, and then the new entry is made the new head.
         /// </remarks>
-        private void PushEntryIntoBucket(ref Entry entry, int entryIndex)
+        private void PushLastEntryIntoBucket(ref Entry entry, int entryIndex)
         {
             ref int bucket = ref GetBucket(entry.HashCode);
             entry.Next = bucket - 1;
             bucket = entryIndex + 1;
         }
 
-        /// <summary>Removes an entry from its bucket.</summary>
-        private void RemoveEntryFromBucket(int entryIndex)
+        /// <summary>Removes an entry from its bucket chain.</summary>
+        private void RemoveEntryFromChain(int entryIndex)
         {
             // We're only calling this method if there's an entry to be removed, in which case
             // entries must have been initialized.
@@ -936,7 +938,7 @@ namespace System.Collections.Generic
             Debug.Assert(entries is not null);
 
             // Get the entry to be removed and the associated bucket.
-            Entry entry = entries[entryIndex];
+            ref Entry entry = ref entries[entryIndex];
             ref int bucket = ref GetBucket(entry.HashCode);
 
             if (bucket == entryIndex + 1)
@@ -944,83 +946,112 @@ namespace System.Collections.Generic
                 // If the entry was at the head of its bucket list, to remove it from the list we
                 // simply need to update the next entry in the list to be the new head.
                 bucket = entry.Next + 1;
+                entry.Next = -1;
             }
             else
             {
                 // The entry wasn't the head of the list. Walk the chain until we find the entry,
                 // updating the previous entry's Next to point to this entry's Next.
-                int i = bucket - 1;
-                int collisionCount = 0;
-                while (true)
+                int currentEntryIndex = bucket - 1;
+                ref int nextEntryIndex = ref entries[currentEntryIndex].Next;
+                while (nextEntryIndex < currentEntryIndex)
                 {
-                    ref Entry e = ref entries[i];
-                    if (e.Next == entryIndex)
+                    if (nextEntryIndex == entryIndex)
                     {
-                        e.Next = entry.Next;
+                        nextEntryIndex = entry.Next;
+                        entry.Next = -1;
                         return;
                     }
 
-                    i = e.Next;
-
-                    if (++collisionCount > entries.Length)
-                    {
-                        // We examined more entries than are actually in the list, which means there's a cycle
-                        // that's caused by erroneous concurrent use.
-                        ThrowHelper.ThrowConcurrentOperation();
-                    }
+                    currentEntryIndex = nextEntryIndex;
+                    nextEntryIndex = ref entries[currentEntryIndex].Next;
                 }
+
+                // Next pointers point backwards so if this invariant is violated,
+                // then a concurrent operation must have happened to corrupt the chain.
+                ThrowHelper.ThrowConcurrentOperation();
+            }
+        }
+
+        private void InsertEntryIntoChain(int entryIndex)
+        {
+            // We're only calling this method if there's an entry to be inserted, in which case
+            // entries must have been initialized.
+            Entry[]? entries = _entries;
+            Debug.Assert(entries is not null);
+
+            // Get the entry to be inserted and the associated bucket.
+            ref Entry entry = ref entries[entryIndex];
+            ref int bucket = ref GetBucket(entry.HashCode);
+
+            if (bucket < entryIndex + 1)
+            {
+                // The head of the list into where this entry should go is an entry
+                // with a lower index. This entry will now be made the head and point
+                // back to the previous head.
+                entry.Next = bucket - 1;
+                bucket = entryIndex + 1;
+            }
+            else
+            {
+                // The head of the list into where this entry should go is an entry
+                // with higher index. Walk the chain until we find the correct location to
+                // insert into and insert by updating the Next pointer of the previous entry
+                // as well as setting the Next pointer of this entry.
+                int currentEntryIndex = bucket - 1;
+                ref int nextEntryIndex = ref entries[currentEntryIndex].Next;
+                while (nextEntryIndex < currentEntryIndex)
+                {
+                    if (nextEntryIndex < entryIndex)
+                    {
+                        entry.Next = nextEntryIndex;
+                        nextEntryIndex = entryIndex;
+                        return;
+                    }
+
+                    currentEntryIndex = nextEntryIndex;
+                    nextEntryIndex = ref entries[currentEntryIndex].Next;
+                }
+
+                // Next pointers point backwards so if this invariant is violated,
+                // then a concurrent operation must have happened to corrupt the chain.
+                ThrowHelper.ThrowConcurrentOperation();
             }
         }
 
         /// <summary>
-        /// Updates the bucket chain containing the specified entry (by index) to shift indices
-        /// by the specified amount.
+        /// Shifts the specified entry (by index) by the specified amount and updates
+        /// any bucket pointing to it. Also updates the next pointer if it points to
+        /// an element that will be shifted during the larger insert/delete operation.
+        /// Specifically, this is any element after the <paramref name="modifyIndex"/>.
         /// </summary>
         /// <param name="entryIndex">The index of the target entry.</param>
         /// <param name="shiftAmount">
         /// 1 if this is part of an insert and the values are being shifted one higher.
         /// -1 if this is part of a remove and the values are being shifted one lower.
         /// </param>
-        private void UpdateBucketIndex(int entryIndex, int shiftAmount)
+        /// <param name="modifyIndex">Index where insert or removal is happening.</param>
+        private void ShiftEntry(int entryIndex, int shiftAmount, int modifyIndex)
         {
             Debug.Assert(shiftAmount is 1 or -1);
 
             Entry[]? entries = _entries;
             Debug.Assert(entries is not null);
 
-            Entry entry = entries[entryIndex];
-            ref int bucket = ref GetBucket(entry.HashCode);
+            ref Entry entry = ref entries[entryIndex + shiftAmount];
+            entry = entries[entryIndex];
 
+            // Update the Next pointer if it points to an element that is part of the insert/delete operation.
+            if (entry.Next >= modifyIndex)
+            {
+                entry.Next += shiftAmount;
+            }
+
+            ref int bucket = ref GetBucket(entry.HashCode);
             if (bucket == entryIndex + 1)
             {
-                // If the entry was at the head of its bucket list, the only thing that needs to be updated
-                // is the bucket head value itself, since no other entries' Next will be referencing this node.
+                // If the entry was at the head of its bucket list, update the bucket head value.
                 bucket += shiftAmount;
-            }
-            else
-            {
-                // The entry wasn't the head of the list. Walk the chain until we find the entry, updating
-                // the previous entry's Next that's pointing to the target entry.
-                int i = bucket - 1;
-                int collisionCount = 0;
-                while (true)
-                {
-                    ref Entry e = ref entries[i];
-                    if (e.Next == entryIndex)
-                    {
-                        e.Next += shiftAmount;
-                        return;
-                    }
-
-                    i = e.Next;
-
-                    if (++collisionCount > entries.Length)
-                    {
-                        // We examined more entries than are actually in the list, which means there's a cycle
-                        // that's caused by erroneous concurrent use.
-                        ThrowHelper.ThrowConcurrentOperation();
-                    }
-                }
             }
         }
 
@@ -1096,7 +1127,7 @@ namespace System.Collections.Generic
             // Populate the buckets.
             for (int i = 0; i < count; i++)
             {
-                PushEntryIntoBucket(ref newEntries[i], i);
+                PushLastEntryIntoBucket(ref newEntries[i], i);
             }
 
             _entries = newEntries;
@@ -1346,7 +1377,10 @@ namespace System.Collections.Generic
         /// <summary>Represents a key/value pair in the dictionary.</summary>
         private struct Entry
         {
-            /// <summary>The index of the next entry in the chain, or -1 if this is the last entry in the chain.</summary>
+            /// <summary>
+            /// The index of the next entry in the chain, or -1 if this is the last entry in the chain.
+            /// The next pointer of an entry always points behind it.
+            /// </summary>
             public int Next;
             /// <summary>Cached hash code of <see cref="Key"/>.</summary>
             public uint HashCode;

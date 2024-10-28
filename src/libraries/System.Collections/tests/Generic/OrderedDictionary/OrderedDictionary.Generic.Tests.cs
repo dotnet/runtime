@@ -329,6 +329,53 @@ namespace System.Collections.Tests
 
         #endregion
 
+        #region Insert
+
+        [Fact]
+        public void OrderedDictionary_Insert_Collisions()
+        {
+            int N = 5;
+            for (int insertLocation = 0; insertLocation <= N; insertLocation++)
+            {
+                var dict = new OrderedDictionary<TKey, TValue>(new BadComparer());
+
+                for (var i = 0; i < 5; i++)
+                {
+                    TKey key = CreateTKey(i); TValue value = CreateTValue(i);
+                    dict[key] = value;
+                }
+
+                Assert.Equal(5, dict.Count);
+
+                TKey key1 = CreateTKey(5); TValue value1 = CreateTValue(5);
+                dict.Insert(index: insertLocation, key1, value1);
+
+                Assert.Equal(6, dict.Count);
+                for (var i = 0; i <= 5; i++)
+                {
+                    TKey key = CreateTKey(i);
+                    Assert.True(dict.ContainsKey(key));
+                }
+
+                dict.RemoveAt(index: insertLocation);
+
+                Assert.Equal(5, dict.Count);
+                for (var i = 0; i < 5; i++)
+                {
+                    TKey key = CreateTKey(i);
+                    Assert.True(dict.ContainsKey(key));
+                }
+            }
+        }
+
+        class BadComparer : IEqualityComparer<TKey>
+        {
+            public bool Equals(TKey? x, TKey? y) => EqualityComparer<TKey>.Default.Equals(x, y);
+            public int GetHashCode(TKey obj) => 42;
+        }
+
+        #endregion
+
         #region Remove(..., out TValue)
 
         [Theory]
@@ -346,6 +393,33 @@ namespace System.Collections.Tests
             }
 
             Assert.False(dictionary.Remove(pair.Key, out _));
+        }
+
+        [Fact]
+        public void OrderedDictionary_Remove_Collisions()
+        {
+            int N = 5;
+            for (int removeLocation = 0; removeLocation < N; removeLocation++)
+            {
+                var dict = new OrderedDictionary<TKey, TValue>(new BadComparer());
+
+                for (var i = 0; i < 5; i++)
+                {
+                    TKey key = CreateTKey(i); TValue value = CreateTValue(i);
+                    dict[key] = value;
+                }
+
+                Assert.Equal(5, dict.Count);
+
+                dict.RemoveAt(index: removeLocation);
+
+                Assert.Equal(4, dict.Count);
+                for (var i = 0; i < 5; i++)
+                {
+                    TKey key = CreateTKey(i);
+                    Assert.Equal(i != removeLocation, dict.ContainsKey(key));
+                }
+            }
         }
 
         #endregion
