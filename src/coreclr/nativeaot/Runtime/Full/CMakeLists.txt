@@ -28,9 +28,11 @@ endif (CLR_CMAKE_TARGET_WIN32)
 
 add_library(Runtime.WorkstationGC STATIC ${COMMON_RUNTIME_SOURCES} ${FULL_RUNTIME_SOURCES} ${RUNTIME_SOURCES_ARCH_ASM} ${RUNTIME_ARCH_ASM_OBJECTS})
 add_dependencies(Runtime.WorkstationGC aot_eventing_headers)
+target_link_libraries(Runtime.WorkstationGC PRIVATE aotminipal)
 
 add_library(Runtime.ServerGC STATIC ${COMMON_RUNTIME_SOURCES} ${FULL_RUNTIME_SOURCES} ${RUNTIME_SOURCES_ARCH_ASM} ${SERVER_GC_SOURCES} ${RUNTIME_ARCH_ASM_OBJECTS})
 add_dependencies(Runtime.ServerGC aot_eventing_headers)
+target_link_libraries(Runtime.ServerGC PRIVATE aotminipal)
 
 add_library(standalonegc-disabled STATIC ${STANDALONEGC_DISABLED_SOURCES})
 add_dependencies(standalonegc-disabled aot_eventing_headers)
@@ -60,11 +62,16 @@ if (CLR_CMAKE_TARGET_WIN32)
   add_library(Runtime.ServerGC.GuardCF STATIC ${COMMON_RUNTIME_SOURCES} ${FULL_RUNTIME_SOURCES} ${RUNTIME_SOURCES_ARCH_ASM} ${SERVER_GC_SOURCES} ${RUNTIME_ARCH_ASM_OBJECTS})
   target_compile_definitions(Runtime.ServerGC.GuardCF PRIVATE -DFEATURE_SVR_GC)
   set_target_properties(Runtime.ServerGC.GuardCF PROPERTIES CLR_CONTROL_FLOW_GUARD ON)
+  target_link_libraries(Runtime.ServerGC.GuardCF PRIVATE aotminipal)
 
   if (CLR_CMAKE_TARGET_ARCH_AMD64)
     add_library(Runtime.VxsortEnabled.GuardCF STATIC ${VXSORT_SOURCES})
     set_target_properties(Runtime.VxsortEnabled.GuardCF PROPERTIES CLR_CONTROL_FLOW_GUARD ON)
   endif (CLR_CMAKE_TARGET_ARCH_AMD64)
+
+  set_target_properties(aotminipal PROPERTIES
+    COMPILE_PDB_NAME "aotminipal"
+    COMPILE_PDB_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>")
 endif (CLR_CMAKE_TARGET_WIN32)
 
 # Get the current list of definitions
@@ -115,6 +122,7 @@ install_static_library(Runtime.WorkstationGC aotsdk nativeaot)
 install_static_library(Runtime.ServerGC aotsdk nativeaot)
 install_static_library(standalonegc-disabled aotsdk nativeaot)
 install_static_library(standalonegc-enabled aotsdk nativeaot)
+install_static_library(aotminipal aotsdk nativeaot)
 if (CLR_CMAKE_TARGET_WIN32)
   install_static_library(Runtime.ServerGC.GuardCF aotsdk nativeaot)
   add_dependencies(Runtime.ServerGC.GuardCF aot_eventing_headers)

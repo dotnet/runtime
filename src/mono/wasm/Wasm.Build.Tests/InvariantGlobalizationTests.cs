@@ -52,7 +52,7 @@ namespace Wasm.Build.Tests
             buildArgs = ExpandBuildArgs(buildArgs, extraProperties);
 
             if (dotnetWasmFromRuntimePack == null)
-                dotnetWasmFromRuntimePack = !(buildArgs.AOT || buildArgs.Config == "Release");
+                dotnetWasmFromRuntimePack = IsDotnetWasmFromRuntimePack(buildArgs);
 
             BuildProject(buildArgs,
                             id: id,
