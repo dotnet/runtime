@@ -6870,6 +6870,7 @@ public:
     AddCodeDsc* fgFindExcptnTarget(SpecialCodeKind kind, BasicBlock* fromBlock);
     bool fgUseThrowHelperBlocks();
     void fgCreateThrowHelperBlockCode(AddCodeDsc* add);
+    void fgSequenceLocals(Statement* stmt);
 
 private:
     bool fgIsThrowHlpBlk(BasicBlock* block);
@@ -6914,7 +6915,6 @@ private:
     void fgMarkDemotedImplicitByRefArgs();
 
     PhaseStatus fgMarkAddressExposedLocals();
-    void fgSequenceLocals(Statement* stmt);
     bool fgExposeUnpropagatedLocals(bool propagatedAny, class LocalEqualsLocalAddrAssertions* assertions);
     void fgExposeLocalsInBitVec(BitVec_ValArg_T bitVec);
 
@@ -7304,6 +7304,7 @@ protected:
 
 public:
     PhaseStatus optOptimizeValnumCSEs();
+    PhaseStatus optLCLMasks();
 
     // some phases (eg hoisting) need to anticipate
     // what CSE will do
@@ -7318,6 +7319,7 @@ protected:
     void optValnumCSE_Availability();
     void optValnumCSE_Heuristic(CSE_HeuristicCommon* heuristic);
     GenTree* optExtractSideEffectsForCSE(GenTree* tree);
+    bool ConvertLCLMasks(Statement* stmt);
 
     bool     optDoCSE;             // True when we have found a duplicate CSE tree
     bool     optValnumCSE_phase = false;   // True when we are executing the optOptimizeValnumCSEs() phase
