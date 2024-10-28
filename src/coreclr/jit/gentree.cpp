@@ -14398,7 +14398,7 @@ GenTree* Compiler::gtFoldExprSpecial(GenTree* tree)
             // generated when a generic value is tested against null:
             //     <T> ... foo(T x) { ... if ((object)x == null) ...
             // Also fold checks against known non-null data like static readonlys
-            if ((val == 0) && (op->IsBoxedValue() || !fgAddrCouldBeNull(op)))
+            if ((val == 0) && !fgAddrCouldBeNull(op))
             {
                 JITDUMP("\nAttempting to optimize BOX(valueType)/non-null %s null [%06u]\n", GenTree::OpName(oper),
                         dspTreeID(tree));
