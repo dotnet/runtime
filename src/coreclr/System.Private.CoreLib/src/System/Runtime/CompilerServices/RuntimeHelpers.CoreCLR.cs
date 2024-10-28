@@ -883,26 +883,26 @@ namespace System.Runtime.CompilerServices
     [StructLayout(LayoutKind.Sequential)]
     internal unsafe ref struct DynamicStaticsInfo
     {
-        public const int ISCLASSINITED = 1;
-        public IntPtr _pGCStatics; // The ISCLASSINITED bit is set when the class is NOT initialized
-        public IntPtr _pNonGCStatics; // The ISCLASSINITED bit is set when the class is NOT initialized
-        public unsafe MethodTable* _methodTable;
+        internal const int ISCLASSINITED = 1;
+        internal IntPtr _pGCStatics; // The ISCLASSINITED bit is set when the class is NOT initialized
+        internal IntPtr _pNonGCStatics; // The ISCLASSINITED bit is set when the class is NOT initialized
+        internal unsafe MethodTable* _methodTable;
     }
 
     [StructLayout(LayoutKind.Sequential)]
     internal unsafe ref struct GenericsStaticsInfo
     {
         // Pointer to field descs for statics
-        public IntPtr _pFieldDescs;
-        public DynamicStaticsInfo _dynamicStatics;
-    };  // struct GenericsStaticsInfo
+        internal IntPtr _pFieldDescs;
+        internal DynamicStaticsInfo _dynamicStatics;
+    }
 
     [StructLayout(LayoutKind.Sequential)]
     internal unsafe ref struct ThreadStaticsInfo
     {
-        public int NonGCTlsIndex;
-        public int GCTlsIndex;
-        public GenericsStaticsInfo _genericStatics;
+        internal int _nonGCTlsIndex;
+        internal int _gcTlsIndex;
+        internal GenericsStaticsInfo _genericStatics;
     }
 
 
