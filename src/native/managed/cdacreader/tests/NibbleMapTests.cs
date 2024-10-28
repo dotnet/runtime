@@ -22,96 +22,13 @@ public class NibbleMapTests
 
     }
 
-    internal class NibbleMapTestBuilder
+    internal static NibbleMapTestTarget CreateTarget(ExecutionManagerTestBuilder.NibbleMapTestBuilder nibbleMapTestBuilder)
     {
-        // This is the base address of the memory range that the map covers.
-        // The map works on code pointers as offsets from this address
-        // For testing we don't actually place anything into this space
-        private readonly TargetPointer MapBase;
-
-
-        private readonly MockTarget.Architecture Arch;
-        // this is the target memory representation of the nibble map itself
-        public readonly MockMemorySpace.HeapFragment NibbleMapFragment;
-
-        public NibbleMapTestBuilder(TargetPointer mapBase, ulong mapRangeSize, TargetPointer mapStart,MockTarget.Architecture arch)
-        {
-            MapBase = mapBase;
-            Arch = arch;
-            int nibbleMapSize = (int)Addr2Pos(mapRangeSize);
-            NibbleMapFragment = new MockMemorySpace.HeapFragment {
-                Address = mapStart,
-                Data = new byte[nibbleMapSize],
-                Name = "Nibble Map",
-            };
-        }
-
-        const int Log2CodeAlign = 2; // N.B. this might be different on 64-bit in the future
-        const int Log2NibblesPerDword = 3;
-        const int Log2BytesPerBucket = Log2CodeAlign + Log2NibblesPerDword;
-        const int Log2NibbleSize = 2;
-        const int NibbleSize = 1 << Log2NibbleSize;
-        const uint NibblesPerDword = (8 * sizeof(uint)) >> Log2NibbleSize;
-        const uint NibblesPerDwordMask = NibblesPerDword - 1;
-        const uint BytesPerBucket = NibblesPerDword * (1 << Log2CodeAlign);
-
-        const uint MaskBytesPerBucket = BytesPerBucket - 1;
-
-        const uint NibbleMask = 0xf;
-        const int HighestNibbleBit = 32 - NibbleSize;
-
-        const uint HighestNibbleMask = NibbleMask << HighestNibbleBit;
-
-        private ulong Addr2Pos(ulong addr)
-        {
-            return addr >> Log2BytesPerBucket;
-        }
-
-        private uint Addr2Offs(ulong addr)
-        {
-            return (uint)  (((addr & MaskBytesPerBucket) >> Log2CodeAlign) + 1);
-        }
-
-        private int Pos2ShiftCount (ulong addr)
-        {
-            return HighestNibbleBit - (int)((addr & NibblesPerDwordMask) << Log2NibbleSize);
-        }
-        public void AllocateCodeChunk(TargetCodePointer codeStart, int codeSize)
-        {
-            // paraphrased from EEJitManager::NibbleMapSetUnlocked
-            if (codeStart.Value < MapBase.Value)
-            {
-                throw new ArgumentException("Code start address is below the map base");
-            }
-            ulong delta = codeStart.Value - MapBase.Value;
-            ulong pos = Addr2Pos(delta);
-            bool bSet = true;
-            uint value = bSet?Addr2Offs(delta):0;
-
-            uint index = (uint) (pos >> Log2NibblesPerDword);
-            uint mask = ~(HighestNibbleMask >> (int)((pos & NibblesPerDwordMask) << Log2NibbleSize));
-
-            value = value << Pos2ShiftCount(pos);
-
-            Span<byte> entry = NibbleMapFragment.Data.AsSpan((int)(index * sizeof(uint)), sizeof(uint));
-            uint oldValue = TestPlaceholderTarget.ReadFromSpan<uint>(entry, Arch.IsLittleEndian);
-
-            if (value != 0 && (oldValue & ~mask) != 0)
-            {
-                throw new InvalidOperationException("Overwriting existing offset");
-            }
-
-            uint newValue = (oldValue & mask) | value;
-            TestPlaceholderTarget.WriteToSpan(newValue, Arch.IsLittleEndian, entry);
-        }
-
-        public NibbleMapTestTarget Create()
-        {
-            return new NibbleMapTestTarget(Arch, new MockMemorySpace.ReadContext() {
-                HeapFragments = new[] { NibbleMapFragment }
-            });
-        }
+        return new NibbleMapTestTarget(nibbleMapTestBuilder.Arch, new MockMemorySpace.ReadContext() {
+            HeapFragments = new[] { nibbleMapTestBuilder.NibbleMapFragment }
+        });
     }
+
 
     [Fact]
     public void RoundTripAddressTest()
@@ -164,13 +81,13 @@ public class NibbleMapTests
         /// this is how big the address space is that the map covers
         const uint MapRangeSize = 0x1000;
         TargetPointer MapEnd = mapBase + MapRangeSize;
-        NibbleMapTestBuilder builder = new(mapBase, MapRangeSize, mapStart, arch);
+        var builder = ExecutionManagerTestBuilder.CreateNibbleMap(mapBase, MapRangeSize, mapStart, arch);
 
         // don't put the code too close to the start - the NibbleMap bails if the code is too close to the start of the range
         TargetCodePointer inputPC = new(mapBase + 0x0200u);
         int codeSize = 0x80; // doesn't matter
         builder.AllocateCodeChunk (inputPC, codeSize);
-        NibbleMapTestTarget target = builder.Create();
+        NibbleMapTestTarget target = CreateTarget(builder);
 
         // TESTCASE:
 
