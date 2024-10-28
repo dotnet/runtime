@@ -448,8 +448,7 @@ namespace System.Collections.Generic
             }
 
             // Shift up all entries above this one, and fix up the buckets or Next pointers that point to the
-            // shifted entries. Because the Next pointers point backwards, we can do this in a single pass starting
-            // from the back.
+            // shifted entries. Because a Next pointer always points to a lower index, we can do this in a single pass.
             for (i = _count - 1; i >= index; --i)
             {
                 ShiftEntry(i, shiftAmount: 1, modifyIndex: index);
@@ -649,7 +648,7 @@ namespace System.Collections.Generic
                 }
                 while (prev > i);
 
-                // Next pointers point backwards so if this invariant is violated,
+                // Next pointers point to lower indexes so if this invariant is violated,
                 // then a concurrent operation must have happened to corrupt the chain.
                 // Break out of the loop and throw, rather than potentially looping forever.
                 goto ConcurrentOperation;
@@ -680,7 +679,7 @@ namespace System.Collections.Generic
                 }
                 while (prev > i);
 
-                // Next pointers point backwards so if this invariant is violated,
+                // Next pointers point to lower indexes so if this invariant is violated,
                 // then a concurrent operation must have happened to corrupt the chain.
                 // Break out of the loop and throw, rather than potentially looping forever.
                 goto ConcurrentOperation;
@@ -763,7 +762,7 @@ namespace System.Collections.Generic
             RemoveEntryFromChain(index);
 
             // Shift down all entries above this one, and fix up the buckets or Next pointers that point to
-            // the shifted entries. Because the Next pointers point backwards, we can do this in a single pass.
+            // the shifted entries. Because the Next pointers point to lower indexes, we can do this in a single pass.
             Entry[]? entries = _entries;
             Debug.Assert(entries is not null);
             for (int i = index + 1; i < count; i++)
@@ -967,7 +966,7 @@ namespace System.Collections.Generic
                     nextEntryIndex = ref entries[currentEntryIndex].Next;
                 }
 
-                // Next pointers point backwards so if this invariant is violated,
+                // Next pointers point to lower indexes so if this invariant is violated,
                 // then a concurrent operation must have happened to corrupt the chain.
                 ThrowHelper.ThrowConcurrentOperation();
             }
@@ -1013,7 +1012,7 @@ namespace System.Collections.Generic
                     nextEntryIndex = ref entries[currentEntryIndex].Next;
                 }
 
-                // Next pointers point backwards so if this invariant is violated,
+                // Next pointers point to lower indexes so if this invariant is violated,
                 // then a concurrent operation must have happened to corrupt the chain.
                 ThrowHelper.ThrowConcurrentOperation();
             }
@@ -1379,7 +1378,7 @@ namespace System.Collections.Generic
         {
             /// <summary>
             /// The index of the next entry in the chain, or -1 if this is the last entry in the chain.
-            /// The next pointer of an entry always points behind it.
+            /// The next pointer of an entry always points to a lower index.
             /// </summary>
             public int Next;
             /// <summary>Cached hash code of <see cref="Key"/>.</summary>
