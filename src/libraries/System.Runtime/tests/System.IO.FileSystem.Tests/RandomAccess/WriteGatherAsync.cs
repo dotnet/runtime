@@ -6,6 +6,7 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.DotNet.XUnitExtensions;
 using Microsoft.Win32.SafeHandles;
 using Xunit;
 
@@ -132,6 +133,77 @@ namespace System.IO.Tests
             byte[] actualContent = File.ReadAllBytes(filePath);
             Assert.Equal(repeatCount, actualContent.Length);
             Assert.All(actualContent, actual => Assert.Equal(value, actual));
+        }
+
+        [OuterLoop("It consumes a lot of resources (disk space and memory).")]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess), nameof(PlatformDetection.IsReleaseRuntime))]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        [InlineData(true, true)]
+        [InlineData(true, false)]
+        public async Task NoInt32OverflowForLargeInputs(bool asyncFile, bool asyncMethod)
+        {
+            // We need to write more than Int32.MaxValue bytes to the disk to reproduce the problem.
+            // To reduce the number of used memory, we allocate only one write buffer and simply repeat it multiple times.
+            // For reading, we need unique buffers to ensure that all of them are getting populated with the right data.
+
+            const int BufferCount = 1002;
+            const int BufferSize = int.MaxValue / 1000;
+            const long FileSize = (long)BufferCount * BufferSize;
+            string filePath = GetTestFilePath();
+            ReadOnlyMemory<byte> writeBuffer = RandomNumberGenerator.GetBytes(BufferSize);
+            List<ReadOnlyMemory<byte>> writeBuffers = Enumerable.Repeat(writeBuffer, BufferCount).ToList();
+            List<Memory<byte>> readBuffers = new List<Memory<byte>>(BufferCount);
+
+            try
+            {
+                for (int i = 0; i < BufferCount; i++)
+                {
+                    readBuffers.Add(new byte[BufferSize]);
+                }
+            }
+            catch (OutOfMemoryException)
+            {
+                throw new SkipTestException("Not enough memory.");
+            }
+
+            FileOptions options = asyncFile ? FileOptions.Asynchronous : FileOptions.None; // we need to test both code paths
+            options |= FileOptions.DeleteOnClose;
+
+            SafeFileHandle? sfh;
+            try
+            {
+                sfh = File.OpenHandle(filePath, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.None, options, preallocationSize: FileSize);
+            }
+            catch (IOException)
+            {
+                throw new SkipTestException("Not enough disk space.");
+            }
+
+            long fileOffset = 0, bytesRead = 0;
+            try
+            {
+                if (asyncMethod)
+                {
+                    await RandomAccess.WriteAsync(sfh, writeBuffers, fileOffset);
+                    bytesRead = await RandomAccess.ReadAsync(sfh, readBuffers, fileOffset);
+                }
+                else
+                {
+                    RandomAccess.Write(sfh, writeBuffers, fileOffset);
+                    bytesRead = RandomAccess.Read(sfh, readBuffers, fileOffset);
+                }
+            }
+            finally
+            {
+                sfh.Dispose(); // delete the file ASAP to avoid running out of resources in CI
+            }
+
+            Assert.Equal(FileSize, bytesRead);
+            for (int i = 0; i < BufferCount; i++)
+            {
+                Assert.Equal(writeBuffer, readBuffers[i]);
+            }
         }
     }
 }
