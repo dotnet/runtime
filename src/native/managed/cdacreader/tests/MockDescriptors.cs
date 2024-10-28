@@ -695,6 +695,7 @@ internal class MockDescriptors
 
     internal class MethodDescriptors
     {
+        internal const uint TokenRemainderBitCount = 12u; /* see METHOD_TOKEN_REMAINDER_BIT_COUNT*/
 
         private static readonly (string Name, DataType Type)[] MethodDescFields = new[]
         {
@@ -737,7 +738,17 @@ internal class MockDescriptors
             types[DataType.MethodDescChunk] = new Target.TypeInfo() { Fields = layout.Fields, Size = layout.Stride };
         }
 
-        internal TargetPointer AddMethodDescChunk(TargetPointer methodTable, string name, byte count, byte size)
+        internal static (string Name, ulong Value, string? Type)[] Globals(TargetTestHelpers targetTestHelpers) => RuntimeTypeSystem.GetGlobals(targetTestHelpers).Concat([
+            (nameof(Constants.Globals.MethodDescTokenRemainderBitCount), TokenRemainderBitCount, "uint8"),
+        ]).ToArray();
+
+        internal void AddGlobalPointers()
+        {
+            RTSBuilder.AddGlobalPointers();
+
+        }
+
+        internal TargetPointer AddMethodDescChunk(TargetPointer methodTable, string name, byte count, byte size, uint tokenRange)
         {
             uint totalAllocSize = Types[DataType.MethodDescChunk].Size.Value;
             totalAllocSize += (uint)(size * MethodDescAlignment);
@@ -747,6 +758,7 @@ internal class MockDescriptors
             TargetTestHelpers.WritePointer(dest.Slice(Types[DataType.MethodDescChunk].Fields[nameof(Data.MethodDescChunk.MethodTable)].Offset), methodTable);
             TargetTestHelpers.Write(dest.Slice(Types[DataType.MethodDescChunk].Fields[nameof(Data.MethodDescChunk.Size)].Offset), size);
             TargetTestHelpers.Write(dest.Slice(Types[DataType.MethodDescChunk].Fields[nameof(Data.MethodDescChunk.Count)].Offset), count);
+            TargetTestHelpers.Write(dest.Slice(Types[DataType.MethodDescChunk].Fields[nameof(Data.MethodDescChunk.FlagsAndTokenRange)].Offset), (ushort)(tokenRange >> (int)TokenRemainderBitCount));
             Builder.AddHeapFragment(methodDescChunk);
             return methodDescChunk.Address;
         }
@@ -763,10 +775,11 @@ internal class MockDescriptors
             return Builder.BorrowAddressRange(methodDescAddress, (int)methodDescTypeInfo.Size.Value);
         }
 
-        internal void SetMethodDesc(scoped Span<byte> dest, byte index)
+        internal void SetMethodDesc(scoped Span<byte> dest, byte index, ushort tokenRemainder)
         {
             Target.TypeInfo methodDescTypeInfo = Types[DataType.MethodDesc];
             TargetTestHelpers.Write(dest.Slice(methodDescTypeInfo.Fields[nameof(Data.MethodDesc.ChunkIndex)].Offset), (byte)index);
+            TargetTestHelpers.Write(dest.Slice(methodDescTypeInfo.Fields[nameof(Data.MethodDesc.Flags3AndTokenRemainder)].Offset), tokenRemainder);
             // TODO: write more fields
         }
 

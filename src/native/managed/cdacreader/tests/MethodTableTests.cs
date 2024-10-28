@@ -57,7 +57,7 @@ public class MethodTableTests
         });
     }
 
-    private (TargetPointer MethodTable, TargetPointer EEClass) AddSystemObjectMethodTable(MockRTS rtsBuilder)
+    internal static (TargetPointer MethodTable, TargetPointer EEClass) AddSystemObjectMethodTable(MockRTS rtsBuilder)
     {
         MockMemorySpace.Builder builder = rtsBuilder.Builder;
         TargetTestHelpers targetTestHelpers = builder.TargetTestHelpers;

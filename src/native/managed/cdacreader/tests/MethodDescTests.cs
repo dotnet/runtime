@@ -4,13 +4,14 @@
 using System;
 using System.Collections.Generic;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
+using Microsoft.Diagnostics.DataContractReader.Data;
 using Xunit;
 
 namespace Microsoft.Diagnostics.DataContractReader.UnitTests;
 
 public class MethodDescTests
 {
-    private static void MethodDescHelper(MockTarget.Architecture arch, Action<MockDescriptors.Object> configure, Action<Target> testCase)
+    private static void MethodDescHelper(MockTarget.Architecture arch, Action<MockDescriptors.MethodDescriptors> configure, Action<Target> testCase)
     {
         TargetTestHelpers targetTestHelpers = new(arch);
 
@@ -28,14 +29,21 @@ public class MethodDescTests
             ManagedObjectAllocator = builder.CreateAllocator(start: 0x00000000_10000000, end: 0x00000000_20000000),
         };
         MockDescriptors.Object.AddTypes(types, targetTestHelpers);
+
+        var methodDescChunkAllocator = builder.CreateAllocator(start: 0x00000000_20002000, end: 0x00000000_20003000);
+        var methodDescBuilder = new MockDescriptors.MethodDescriptors(rtsBuilder)
+        {
+            MethodDescChunkAllocator = methodDescChunkAllocator,
+        };
+
         builder = builder
             .SetContracts([ nameof (Contracts.Object), nameof (Contracts.RuntimeTypeSystem) ])
-            .SetGlobals(MockDescriptors.Object.Globals(targetTestHelpers))
+            .SetGlobals(MockDescriptors.MethodDescriptors.Globals(targetTestHelpers))
             .SetTypes(types);
 
-        objectBuilder.AddGlobalPointers();
+        methodDescBuilder.AddGlobalPointers();
 
-        configure?.Invoke(objectBuilder);
+        configure?.Invoke(methodDescBuilder);
 
         bool success = builder.TryCreateTarget(out ContractDescriptorTarget? target);
         Assert.True(success);
@@ -44,28 +52,30 @@ public class MethodDescTests
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
-    public void MethodDescIsValid(MockTarget.Architecture arch)
+    public void MethodDescGetMethodDescTokenOk(MockTarget.Architecture arch)
     {
         TargetPointer testMethodDescAddress = default;
+        const int MethodDefToken = 0x06 << 24;
+        const ushort expectedRidRangeStart = 0x2000; // arbitrary (larger than  1<< TokenRemainderBitCount)
+        const ushort expectedRidRemainder = 0x10; // arbitrary
+        const uint expectedRid = expectedRidRangeStart | expectedRidRemainder; // arbitrary
+        uint expectedToken = MethodDefToken | expectedRid;
         MethodDescHelper(arch,
         (builder) =>
         {
-            var methodDescChunkAllocator = builder.Builder.CreateAllocator(start: 0x00000000_20002000, end: 0x00000000_20003000);
-            var methodDescBuilder = new MockDescriptors.MethodDescriptors(builder.RTSBuilder)
-            {
-                MethodDescChunkAllocator = methodDescChunkAllocator,
-            };
+            var objectMethodTable = MethodTableTests.AddSystemObjectMethodTable(builder.RTSBuilder).MethodTable;
+
             byte count = 10; // arbitrary
-            byte methodDescSize = (byte)(builder.Types[DataType.MethodDesc].Size.Value / methodDescBuilder.MethodDescAlignment);
+            byte methodDescSize = (byte)(builder.Types[DataType.MethodDesc].Size.Value / builder.MethodDescAlignment);
             byte chunkSize = (byte)(count * methodDescSize);
-            var chunk = methodDescBuilder.AddMethodDescChunk(builder.TestStringMethodTableAddress, "testStringMethod", count, chunkSize);
+            var chunk = builder.AddMethodDescChunk(objectMethodTable, "testMethod", count, chunkSize, tokenRange: expectedRidRangeStart);
 
             byte methodDescNum = 3; // abitrary, less than "count"
             byte methodDescIndex = (byte)(methodDescNum * methodDescSize);
-            Span<byte> dest = methodDescBuilder.BorrowMethodDesc(chunk, methodDescIndex);
-            methodDescBuilder.SetMethodDesc(dest, methodDescIndex);
+            Span<byte> dest = builder.BorrowMethodDesc(chunk, methodDescIndex);
+            builder.SetMethodDesc(dest, methodDescIndex, tokenRemainder: expectedRidRemainder);
 
-            testMethodDescAddress = methodDescBuilder.GetMethodDescAddress(chunk, methodDescIndex);
+            testMethodDescAddress = builder.GetMethodDescAddress(chunk, methodDescIndex);
 
         },
         (target) =>
@@ -74,6 +84,9 @@ public class MethodDescTests
 
             var handle = rts.GetMethodDescHandle(testMethodDescAddress);
             Assert.NotEqual(TargetPointer.Null, handle.Address);
+
+            uint token = rts.GetMethodToken(handle);
+            Assert.Equal(expectedToken, token);
         });
     }
 }
