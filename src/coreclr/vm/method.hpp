@@ -820,8 +820,6 @@ public:
         return IsEEImpl() || IsArray() || IsNoMetadata();
     }
 
-    PCCOR_SIGNATURE GetSig();
-
     void GetSig(PCCOR_SIGNATURE *ppSig, DWORD *pcSig);
     SigParser GetSigParser();
 
