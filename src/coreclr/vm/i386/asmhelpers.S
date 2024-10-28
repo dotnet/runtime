@@ -558,7 +558,6 @@ NESTED_ENTRY DelayLoad_MethodCall, _TEXT, NoHandler
 
     STUB_EPILOG
 
-PATCH_LABEL ExternalMethodFixupPatchLabel
     // Tailcall target
     jmp eax
 
