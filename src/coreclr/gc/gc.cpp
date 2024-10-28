@@ -6421,7 +6421,8 @@ public:
         if (GCToOSInterface::CanGetCurrentProcessorNumber())
         {
             uint32_t proc_no = GCToOSInterface::GetCurrentProcessorNumber();
-            proc_no_to_heap_no[proc_no] = (uint16_t)heap_number;
+            // mod proc_no in case it exceeds MAX_SUPPORTED_CPUS
+            proc_no_to_heap_no[proc_no % MAX_SUPPORTED_CPUS] = (uint16_t)heap_number;
         }
     }
 
@@ -6443,7 +6444,8 @@ public:
         if (GCToOSInterface::CanGetCurrentProcessorNumber())
         {
             uint32_t proc_no = GCToOSInterface::GetCurrentProcessorNumber();
-            int adjusted_heap = proc_no_to_heap_no[proc_no];
+            // mod proc_no in case it exceeds MAX_SUPPORTED_CPUS
+            int adjusted_heap = proc_no_to_heap_no[proc_no % MAX_SUPPORTED_CPUS];
             // with dynamic heap count, need to make sure the value is in range.
             if (adjusted_heap >= gc_heap::n_heaps)
             {
