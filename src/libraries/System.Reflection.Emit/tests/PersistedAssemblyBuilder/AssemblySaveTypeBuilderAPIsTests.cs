@@ -374,6 +374,41 @@ namespace System.Reflection.Emit.Tests
             Assert.Throws<ArgumentException>(() => type.GetInterfaceMap(typeof(InterfaceWithMethod))); // not implemented
         }
 
+        [Fact]
+        public void GetInterface_Validations()
+        {
+            PersistedAssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
+            ModuleBuilder module = ab.GetDynamicModule("MyModule");
+
+            TypeBuilder interfaceType = module.DefineType("InterfaceType", TypeAttributes.Public | TypeAttributes.Interface | TypeAttributes.Abstract, parent: null);
+            MethodBuilder svmInterface = interfaceType.DefineMethod("InterfaceMethod1", MethodAttributes.Public | MethodAttributes.Virtual | MethodAttributes.Abstract, CallingConventions.Standard, typeof(int), Type.EmptyTypes);
+            MethodBuilder mInterface = interfaceType.DefineMethod("InterfaceMethod2", MethodAttributes.Public | MethodAttributes.Virtual | MethodAttributes.Abstract, typeof(string), Array.Empty<Type>());
+            MethodBuilder vmInterface = interfaceType.DefineMethod("InterfaceMethod3", MethodAttributes.Assembly | MethodAttributes.Virtual | MethodAttributes.Abstract, CallingConventions.HasThis, typeof(void), [typeof(bool)]);
+            Type interfaceTypeActual = interfaceType.CreateType();
+
+            // Implicit implementations (same name, signatures)
+            TypeBuilder implType = module.DefineType("ImplType", TypeAttributes.Public, parent: typeof(Impl), new Type[] { interfaceTypeActual });
+            MethodBuilder mImpl = implType.DefineMethod("InterfaceMethod2", MethodAttributes.Public | MethodAttributes.Virtual, typeof(string), Array.Empty<Type>());
+            ILGenerator ilGenerator = mImpl.GetILGenerator();
+            ilGenerator.Emit(OpCodes.Ldstr, "Hello");
+            ilGenerator.Emit(OpCodes.Ret);
+            MethodBuilder m2Impl = implType.DefineMethod("InterfaceMethod3", MethodAttributes.Public | MethodAttributes.Virtual, typeof(void), [typeof(bool)]);
+            ilGenerator = m2Impl.GetILGenerator();
+            ilGenerator.Emit(OpCodes.Ldc_I4_1);
+            ilGenerator.Emit(OpCodes.Ret);
+
+            Type implTypeActual = implType.CreateType();
+
+            Type? interfaceReceived = implTypeActual.GetInterface("InterfaceType");
+            Assert.Equal(interfaceTypeActual, interfaceReceived);
+
+            interfaceReceived = implTypeActual.GetInterface("interfacetype", false);
+            Assert.Null(interfaceReceived);
+
+            interfaceReceived = implTypeActual.GetInterface("interfacetype", true);
+            Assert.NotNull(interfaceReceived);
+        }
+
         public interface InterfaceDerivedFromOtherInterface : DefineMethodOverrideInterface
         {
             public string M2(int a);

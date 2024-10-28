@@ -891,18 +891,130 @@ namespace System.Reflection.Emit
             return candidates.ToArray();
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2063:UnrecognizedReflectionPattern")]
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
         [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
-        public override Type? GetInterface(string name, bool ignoreCase) => throw new NotSupportedException();
+        public override Type? GetInterface(string name, bool ignoreCase)
+        {
+            ArgumentNullException.ThrowIfNull(name);
+            ThrowIfNotCreated();
+
+            Type[] interfaces = GetInterfaces();
+
+            Type? match = null;
+            StringComparison compare = ignoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+            for (int i = 0; i < interfaces.Length; ++i)
+            {
+                Type interfaceType = interfaces[i];
+
+                if (name.Equals(interfaceType.Name, compare))
+                {
+                    if (match != null)
+                    {
+                        // TypeBuilder doesn't validate for duplicates when fields are defined, throw if duplicates found.
+                        throw new AmbiguousMatchException(SR.Format(SR.AmbiguousMatch_MemberInfo, interfaceType.DeclaringType, interfaceType.Name));
+                    }
+
+                    match = interfaceType;
+                }
+            }
+
+            return match;
+        }
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
         public override Type[] GetInterfaces() => _interfaces == null ? EmptyTypes : _interfaces.ToArray();
 
+        internal static BindingFlags GetBindingFlags(PropertyBuilderImpl property)
+        {
+            MethodInfo? getMethod = property.GetMethod;
+            MethodInfo? setMethod = property.SetMethod;
+
+            BindingFlags bindingFlags = BindingFlags.Default;
+
+            if (getMethod != null)
+            {
+                bindingFlags = GetBindingFlags(getMethod);
+            }
+            else if (setMethod != null)
+            {
+                bindingFlags = GetBindingFlags(setMethod);
+            }
+
+            return bindingFlags;
+        }
+
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)]
-        public override PropertyInfo[] GetProperties(BindingFlags bindingAttr) => throw new NotSupportedException();
+        public override PropertyInfo[] GetProperties(BindingFlags bindingAttr)
+        {
+            ThrowIfNotCreated();
+
+            List<PropertyBuilderImpl> candidates = new List<PropertyBuilderImpl>(_propertyDefinitions.Count);
+            foreach (PropertyBuilderImpl property in _propertyDefinitions)
+            {
+                BindingFlags fieldFlags = GetBindingFlags(property);
+                if ((bindingAttr & fieldFlags) == fieldFlags)
+                {
+                    candidates.Add(property);
+                }
+            }
+
+            return candidates.ToArray();
+        }
+
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)]
-        protected override PropertyInfo GetPropertyImpl(string name, BindingFlags bindingAttr, Binder? binder,
-                Type? returnType, Type[]? types, ParameterModifier[]? modifiers) => throw new NotSupportedException();
+        protected override PropertyInfo? GetPropertyImpl(string name, BindingFlags bindingAttr, Binder? binder,
+                Type? returnType, Type[]? types, ParameterModifier[]? modifiers)
+        {
+            ArgumentNullException.ThrowIfNull(name);
+
+            List<PropertyInfo> candidates = GetPropertyCandidates(name, bindingAttr, types);
+
+            if (candidates.Count == 0)
+                return null;
+
+            if (types == null || types.Length == 0)
+            {
+                // no arguments
+                PropertyInfo firstCandidate = candidates[0];
+
+                if (candidates.Count == 1)
+                {
+                    if (returnType is not null && !returnType.IsEquivalentTo(firstCandidate.PropertyType))
+                        return null;
+
+                    return firstCandidate;
+                }
+                else
+                {
+                    if (returnType is null)
+                        // if we are here we have no args or property type to select over and we have more than one property with that name
+                        throw new AmbiguousMatchException(SR.Format(SR.AmbiguousMatch_MemberInfo, firstCandidate.DeclaringType, firstCandidate.Name));
+                }
+            }
+
+            binder ??= DefaultBinder;
+            return binder.SelectProperty(bindingAttr, candidates.ToArray(), returnType, types, modifiers);
+        }
+
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)]
+        private List<PropertyInfo> GetPropertyCandidates(string name, BindingFlags bindingAttr, Type[]? types)
+        {
+            PropertyInfo[] properties = GetProperties(bindingAttr);
+
+            List<PropertyInfo> candidates = new List<PropertyInfo>(properties.Length);
+            for (int i = 0; i < properties.Length; i++)
+            {
+                PropertyInfo propertyInfo = properties[i];
+                if (propertyInfo.Name == name &&
+                    (types == null || (propertyInfo.GetIndexParameters().Length == types.Length)))
+                {
+                    candidates.Add(propertyInfo);
+                }
+            }
+
+            return candidates;
+        }
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicNestedTypes | DynamicallyAccessedMemberTypes.NonPublicNestedTypes)]
         public override Type[] GetNestedTypes(BindingFlags bindingAttr) => throw new NotSupportedException();
