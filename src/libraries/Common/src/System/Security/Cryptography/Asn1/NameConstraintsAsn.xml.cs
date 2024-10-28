@@ -12,8 +12,8 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
     [StructLayout(LayoutKind.Sequential)]
     internal partial struct NameConstraintsAsn
     {
-        internal System.Security.Cryptography.X509Certificates.Asn1.GeneralSubtreeAsn[]? permittedSubtrees;
-        internal System.Security.Cryptography.X509Certificates.Asn1.GeneralSubtreeAsn[]? excludedSubtrees;
+        internal System.Security.Cryptography.X509Certificates.Asn1.GeneralSubtreeAsn[]? PermittedSubtrees;
+        internal System.Security.Cryptography.X509Certificates.Asn1.GeneralSubtreeAsn[]? ExcludedSubtrees;
 
         internal readonly void Encode(AsnWriter writer)
         {
@@ -25,26 +25,26 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
             writer.PushSequence(tag);
 
 
-            if (permittedSubtrees != null)
+            if (PermittedSubtrees != null)
             {
 
                 writer.PushSequence(new Asn1Tag(TagClass.ContextSpecific, 0));
-                for (int i = 0; i < permittedSubtrees.Length; i++)
+                for (int i = 0; i < PermittedSubtrees.Length; i++)
                 {
-                    permittedSubtrees[i].Encode(writer);
+                    PermittedSubtrees[i].Encode(writer);
                 }
                 writer.PopSequence(new Asn1Tag(TagClass.ContextSpecific, 0));
 
             }
 
 
-            if (excludedSubtrees != null)
+            if (ExcludedSubtrees != null)
             {
 
                 writer.PushSequence(new Asn1Tag(TagClass.ContextSpecific, 1));
-                for (int i = 0; i < excludedSubtrees.Length; i++)
+                for (int i = 0; i < ExcludedSubtrees.Length; i++)
                 {
-                    excludedSubtrees[i].Encode(writer);
+                    ExcludedSubtrees[i].Encode(writer);
                 }
                 writer.PopSequence(new Asn1Tag(TagClass.ContextSpecific, 1));
 
@@ -101,7 +101,7 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
             if (sequenceReader.HasData && sequenceReader.PeekTag().HasSameClassAndValue(new Asn1Tag(TagClass.ContextSpecific, 0)))
             {
 
-                // Decode SEQUENCE OF for permittedSubtrees
+                // Decode SEQUENCE OF for PermittedSubtrees
                 {
                     collectionReader = sequenceReader.ReadSequence(new Asn1Tag(TagClass.ContextSpecific, 0));
                     var tmpList = new List<System.Security.Cryptography.X509Certificates.Asn1.GeneralSubtreeAsn>();
@@ -113,7 +113,7 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
                         tmpList.Add(tmpItem);
                     }
 
-                    decoded.permittedSubtrees = tmpList.ToArray();
+                    decoded.PermittedSubtrees = tmpList.ToArray();
                 }
 
             }
@@ -122,7 +122,7 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
             if (sequenceReader.HasData && sequenceReader.PeekTag().HasSameClassAndValue(new Asn1Tag(TagClass.ContextSpecific, 1)))
             {
 
-                // Decode SEQUENCE OF for excludedSubtrees
+                // Decode SEQUENCE OF for ExcludedSubtrees
                 {
                     collectionReader = sequenceReader.ReadSequence(new Asn1Tag(TagClass.ContextSpecific, 1));
                     var tmpList = new List<System.Security.Cryptography.X509Certificates.Asn1.GeneralSubtreeAsn>();
@@ -134,7 +134,7 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
                         tmpList.Add(tmpItem);
                     }
 
-                    decoded.excludedSubtrees = tmpList.ToArray();
+                    decoded.ExcludedSubtrees = tmpList.ToArray();
                 }
 
             }

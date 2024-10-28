@@ -13,10 +13,10 @@
 
       GeneralSubtrees ::= SEQUENCE SIZE (1..MAX) OF GeneralSubtree
   -->
-  <asn:SequenceOf name="permittedSubtrees" implicitTag="0" optional="true">
+  <asn:SequenceOf name="PermittedSubtrees" implicitTag="0" optional="true">
     <asn:AsnType typeName="System.Security.Cryptography.X509Certificates.Asn1.GeneralSubtreeAsn" />
   </asn:SequenceOf>
-  <asn:SequenceOf name="excludedSubtrees" implicitTag="1" optional="true">
+  <asn:SequenceOf name="ExcludedSubtrees" implicitTag="1" optional="true">
     <asn:AsnType typeName="System.Security.Cryptography.X509Certificates.Asn1.GeneralSubtreeAsn" />
   </asn:SequenceOf>
 </asn:Sequence>

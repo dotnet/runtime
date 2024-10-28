@@ -334,7 +334,7 @@ namespace System.Security.Cryptography.X509Certificates
                     return;
                 }
 
-                if (AnyUpnConstraint(asn.excludedSubtrees) || AnyUpnConstraint(asn.permittedSubtrees))
+                if (AnyUpnConstraint(asn.ExcludedSubtrees) || AnyUpnConstraint(asn.PermittedSubtrees))
                 {
                     elements[i] = (cert, flags | (int)X509ChainStatusFlags.HasNotSupportedNameConstraint);
                 }
@@ -349,7 +349,7 @@ namespace System.Security.Cryptography.X509Certificates
 
                 foreach (GeneralSubtreeAsn subtreeAsn in subtreeAsns)
                 {
-                    if (subtreeAsn is { @base.OtherName.TypeId: Oids.UserPrincipalName })
+                    if (subtreeAsn is { Base.OtherName.TypeId: Oids.UserPrincipalName })
                     {
                         return true;
                     }

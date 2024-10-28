@@ -14,7 +14,7 @@
 
       BaseDistance ::= INTEGER (0..MAX)
   -->
-  <asn:AsnType name="@base" typeName="System.Security.Cryptography.Asn1.GeneralNameAsn" />
-  <asn:Integer name="minimum" backingType="int" explicitTag="0" defaultDerInit="0x02, 0x01, 0x00" />
-  <asn:Integer name="maximum" backingType="int" explicitTag="1" optional="true" />
+  <asn:AsnType name="Base" typeName="System.Security.Cryptography.Asn1.GeneralNameAsn" />
+  <asn:Integer name="Minimum" backingType="int" explicitTag="0" defaultDerInit="0x02, 0x01, 0x00" />
+  <asn:Integer name="Maximum" backingType="int" explicitTag="1" optional="true" />
 </asn:Sequence>

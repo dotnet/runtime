@@ -11,11 +11,11 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
     [StructLayout(LayoutKind.Sequential)]
     internal partial struct GeneralSubtreeAsn
     {
-        private static ReadOnlySpan<byte> Defaultminimum => [0x02, 0x01, 0x00];
+        private static ReadOnlySpan<byte> DefaultMinimum => [0x02, 0x01, 0x00];
 
-        internal System.Security.Cryptography.Asn1.GeneralNameAsn @base;
-        internal int minimum;
-        internal int? maximum;
+        internal System.Security.Cryptography.Asn1.GeneralNameAsn Base;
+        internal int Minimum;
+        internal int? Maximum;
 
 #if DEBUG
         static GeneralSubtreeAsn()
@@ -23,9 +23,9 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
             GeneralSubtreeAsn decoded = default;
             AsnValueReader reader;
 
-            reader = new AsnValueReader(Defaultminimum, AsnEncodingRules.DER);
+            reader = new AsnValueReader(DefaultMinimum, AsnEncodingRules.DER);
 
-            if (!reader.TryReadInt32(out decoded.minimum))
+            if (!reader.TryReadInt32(out decoded.Minimum))
             {
                 reader.ThrowIfNotEmpty();
             }
@@ -43,15 +43,15 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
         {
             writer.PushSequence(tag);
 
-            @base.Encode(writer);
+            Base.Encode(writer);
 
-            // DEFAULT value handler for minimum.
+            // DEFAULT value handler for Minimum.
             {
                 const int AsnManagedIntegerDerMaxEncodeSize = 6;
                 AsnWriter tmp = new AsnWriter(AsnEncodingRules.DER, initialCapacity: AsnManagedIntegerDerMaxEncodeSize);
-                tmp.WriteInteger(minimum);
+                tmp.WriteInteger(Minimum);
 
-                if (!tmp.EncodedValueEquals(Defaultminimum))
+                if (!tmp.EncodedValueEquals(DefaultMinimum))
                 {
                     writer.PushSequence(new Asn1Tag(TagClass.ContextSpecific, 0));
                     tmp.CopyTo(writer);
@@ -60,10 +60,10 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
             }
 
 
-            if (maximum.HasValue)
+            if (Maximum.HasValue)
             {
                 writer.PushSequence(new Asn1Tag(TagClass.ContextSpecific, 1));
-                writer.WriteInteger(maximum.Value);
+                writer.WriteInteger(Maximum.Value);
                 writer.PopSequence(new Asn1Tag(TagClass.ContextSpecific, 1));
             }
 
@@ -115,13 +115,13 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
             AsnValueReader explicitReader;
             AsnValueReader defaultReader;
 
-            System.Security.Cryptography.Asn1.GeneralNameAsn.Decode(ref sequenceReader, rebind, out decoded.@base);
+            System.Security.Cryptography.Asn1.GeneralNameAsn.Decode(ref sequenceReader, rebind, out decoded.Base);
 
             if (sequenceReader.HasData && sequenceReader.PeekTag().HasSameClassAndValue(new Asn1Tag(TagClass.ContextSpecific, 0)))
             {
                 explicitReader = sequenceReader.ReadSequence(new Asn1Tag(TagClass.ContextSpecific, 0));
 
-                if (!explicitReader.TryReadInt32(out decoded.minimum))
+                if (!explicitReader.TryReadInt32(out decoded.Minimum))
                 {
                     explicitReader.ThrowIfNotEmpty();
                 }
@@ -130,9 +130,9 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
             }
             else
             {
-                defaultReader = new AsnValueReader(Defaultminimum, AsnEncodingRules.DER);
+                defaultReader = new AsnValueReader(DefaultMinimum, AsnEncodingRules.DER);
 
-                if (!defaultReader.TryReadInt32(out decoded.minimum))
+                if (!defaultReader.TryReadInt32(out decoded.Minimum))
                 {
                     defaultReader.ThrowIfNotEmpty();
                 }
@@ -144,9 +144,9 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
             {
                 explicitReader = sequenceReader.ReadSequence(new Asn1Tag(TagClass.ContextSpecific, 1));
 
-                if (explicitReader.TryReadInt32(out int tmpmaximum))
+                if (explicitReader.TryReadInt32(out int tmpMaximum))
                 {
-                    decoded.maximum = tmpmaximum;
+                    decoded.Maximum = tmpMaximum;
                 }
                 else
                 {
