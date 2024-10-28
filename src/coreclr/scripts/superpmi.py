@@ -2723,7 +2723,7 @@ class SuperPMIReplayAsmDiffs:
 
             display_subset("Smallest {} zero sized diffs:", smallest_zero_size_contexts)
 
-            by_diff_size_pct_examples = [diff for diff in by_diff_size_pct if abs(int(diff['Diff size']) - int(diff['Base size'])) < 50]
+            by_diff_size_pct_examples = [diff for diff in by_diff_size_pct if abs(int(diff['Diff ActualCodeBytes']) - int(diff['Base ActualCodeBytes'])) < 50]
             if len(by_diff_size_pct_examples) == 0:
                 by_diff_size_pct_examples = by_diff_size_pct
 
