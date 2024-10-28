@@ -4900,15 +4900,24 @@ Compiler::ThreeOptLayout::ThreeOptLayout(Compiler* comp)
 //
 void Compiler::ThreeOptLayout::ConsiderEdge(FlowEdge* edge, unsigned startPos)
 {
-    // Since adding to priority queues has logarithmic time complexity,
-    // try to avoid adding edges that we obviously won't consider when reordering.
     assert(edge != nullptr);
 
     BasicBlock* const srcBlk = edge->getSourceBlock();
     BasicBlock* const dstBlk = edge->getDestinationBlock();
+    BasicBlock* const startBlk = blockOrder[startPos];
 
     // Ignore cross-region branches
-    if (!BasicBlock::sameEHRegion(srcBlk, dstBlk))
+    if (!BasicBlock::sameEHRegion(srcBlk, startBlk) || !BasicBlock::sameEHRegion(dstBlk, startBlk))
+    {
+        return;
+    }
+
+    if (compiler->bbIsTryBeg(dstBlk))
+    {
+        return;
+    }
+
+    if (srcBlk->KindIs(BBJ_CALLFINALLYRET))
     {
         return;
     }
@@ -4924,9 +4933,11 @@ void Compiler::ThreeOptLayout::ConsiderEdge(FlowEdge* edge, unsigned startPos)
         return;
     }
 
-    // Don't consider edges to blocks outside the hot range,
+    assert(srcPos >= startPos);
+
+    // Don't consider edges to blocks outside the hot range (i.e. ordinal number isn't set),
     // or backedges to the first block in a region; we don't want to change the entry point.
-    if (dstPos == startPos)
+    if (dstPos <= startPos)
     {
         return;
     }
@@ -4938,6 +4949,7 @@ void Compiler::ThreeOptLayout::ConsiderEdge(FlowEdge* edge, unsigned startPos)
     }
 
     // Don't add an edge that we've already considered
+    // (For exceptionally branchy methods, we want to avoid exploding 'cutPoints' in size)
     if (!usedCandidates.Set(edge, true, usedCandidates.SetKind::Overwrite))
     {
         cutPoints.Push(edge);
@@ -4990,7 +5002,7 @@ void Compiler::ThreeOptLayout::AddNonFallthroughPreds(BasicBlock* block, BasicBl
 //-----------------------------------------------------------------------------
 // Compiler::ThreeOptLayout::Run: Runs 3-opt for each contiguous region of the block list
 // we're interested in reordering.
-// Skips handler regions for now, as these are assumed to be cold.
+// We skip reordering handler regions for now, as these are assumed to be cold.
 //
 void Compiler::ThreeOptLayout::Run()
 {
@@ -5013,12 +5025,6 @@ void Compiler::ThreeOptLayout::Run()
         ordinals[block->bbNum] = numHotBlocks++;
     }
 
-    if (numHotBlocks < 3)
-    {
-        JITDUMP("Not enough hot blocks; skipping reordering\n");
-        return;
-    }
-
     assert(finalBlock != nullptr);
     blockOrder        = new (compiler, CMK_BasicBlock) BasicBlock*[numHotBlocks];
     tempOrder         = new (compiler, CMK_BasicBlock) BasicBlock*[numHotBlocks];
@@ -5027,7 +5033,8 @@ void Compiler::ThreeOptLayout::Run()
     // Initialize current block order
     for (BasicBlock* const block : compiler->Blocks(compiler->fgFirstBB, finalBlock))
     {
-        blockOrder[position++] = block;
+        blockOrder[position] = tempOrder[position] = block;
+        position++;
 
         EHblkDsc* const HBtab = compiler->ehGetBlockTryDsc(block);
         if (HBtab != nullptr)
@@ -5036,22 +5043,25 @@ void Compiler::ThreeOptLayout::Run()
         }
     }
 
-    bool        modified   = false;
-    BasicBlock* lastTryBeg = nullptr;
+    bool modified = false;
+    unsigned XTnum = 0;
     for (EHblkDsc* const HBtab : EHClauses(compiler))
     {
         BasicBlock* const tryBeg = HBtab->ebdTryBeg;
-        if ((tryBeg != lastTryBeg) && (ordinals[tryBeg->bbNum] != 0))
+        if (tryBeg->getTryIndex() != XTnum++)
         {
-            modified |= RunThreeOptPass(tryBeg, HBtab->ebdTryLast);
+            continue;
         }
 
-        lastTryBeg = tryBeg;
+        if (ordinals[tryBeg->bbNum] != 0)
+        {
+            modified |= RunThreeOptPass(tryBeg, HBtab->ebdTryLast, numHotBlocks);
+        }
     }
 
-    if (compiler->fgFirstBB != lastTryBeg)
+    if (!compiler->fgFirstBB->hasTryIndex())
     {
-        modified |= RunThreeOptPass(compiler->fgFirstBB, finalBlock);
+        modified |= RunThreeOptPass(compiler->fgFirstBB, blockOrder[numHotBlocks - 1], numHotBlocks);
     }
 
     if (modified)
@@ -5076,18 +5086,17 @@ void Compiler::ThreeOptLayout::Run()
 //   startBlock - The first block of the range to reorder
 //   endBlock - The last block (inclusive) of the range to reorder
 //
-bool Compiler::ThreeOptLayout::RunThreeOptPass(BasicBlock* startBlock, BasicBlock* endBlock)
+bool Compiler::ThreeOptLayout::RunThreeOptPass(BasicBlock* startBlock, BasicBlock* endBlock, unsigned numHotBlocks)
 {
     assert(startBlock != nullptr);
     assert(endBlock != nullptr);
-    assert((ordinals[startBlock->bbNum] != 0) || startBlock->IsFirst());
-    assert(ordinals[endBlock->bbNum] != 0);
     assert(cutPoints.Empty());
 
-    bool           modified           = false;
-    const unsigned startPos           = ordinals[startBlock->bbNum];
-    const unsigned endPos             = ordinals[endBlock->bbNum];
-    const unsigned numCandidateBlocks = endPos - startPos + 1;
+    bool           modified = false;
+    const unsigned startPos = ordinals[startBlock->bbNum];
+    const unsigned endPos   = ordinals[endBlock->bbNum];
+    const unsigned numBlocks = (endPos - startPos + 1);
+    assert((startPos != 0) || startBlock->IsFirst());
     assert(startPos <= endPos);
 
     // Initialize cutPoints with candidate branches in this section
@@ -5100,9 +5109,9 @@ bool Compiler::ThreeOptLayout::RunThreeOptPass(BasicBlock* startBlock, BasicBloc
     AddNonFallthroughSuccs(blockOrder[endPos], nullptr, startPos);
 
     // For each candidate edge, determine if it's profitable to partition after the source block
-    // and before the destination block, and swapping the partitions to create fallthrough.
+    // and before the destination block, and swap the partitions to create fallthrough.
     // If it is, do the swap, and for the blocks before/after each cut point that lost fallthrough,
-    // consider adding their successors/predecessors to the worklist.
+    // consider adding their successors/predecessors to 'cutPoints'.
     while (!cutPoints.Empty())
     {
         FlowEdge* const candidateEdge = cutPoints.Top();
@@ -5241,35 +5250,37 @@ bool Compiler::ThreeOptLayout::RunThreeOptPass(BasicBlock* startBlock, BasicBloc
         // Swap the partitions
         BasicBlock** const regionStart = blockOrder + startPos;
         BasicBlock** const tempStart   = tempOrder + startPos;
-        const unsigned     numBlocks   = endPos - startPos + 1;
         memcpy(tempStart, regionStart, sizeof(BasicBlock*) * part1Size);
         memcpy(tempStart + part1Size, regionStart + part1Size + part2Size, sizeof(BasicBlock*) * part3Size);
         memcpy(tempStart + part1Size + part3Size, regionStart + part1Size, sizeof(BasicBlock*) * part2Size);
 
-        if (!isForwardJump)
-        {
-            const unsigned remainingCodeSize = endPos - srcPos;
-            if (remainingCodeSize != 0)
-            {
-                memcpy(tempStart + srcPos + 1, regionStart + srcPos + 1, sizeof(BasicBlock*) * remainingCodeSize);
-            }
-        }
-        else
-        {
-            assert((part1Size + part2Size + part3Size) == numBlocks);
-        }
+        const unsigned swappedSize = part1Size + part2Size + part3Size;
+        const unsigned remainingSize = numBlocks - swappedSize;
+        assert(numBlocks >= swappedSize);
+        assert((remainingSize == 0) || !isForwardJump);
+        memcpy(tempStart + swappedSize, regionStart + swappedSize, sizeof(BasicBlock*) * remainingSize);
 
         std::swap(blockOrder, tempOrder);
 
-        // Update the positions of the blocks we moved
-        for (unsigned i = part1Size; i < numBlocks; i++)
+        // Update the ordinals for the blocks we moved
+        for (unsigned i = startPos; i <= endPos; i++)
         {
-            ordinals[tempStart[i]->bbNum] = i;
+            ordinals[blockOrder[i]->bbNum] = i;
         }
 
-        // Ensure this move created fallthrough from srcBlk to dstBlk
+        // Ensure this move created fallthrough from 'srcBlk' to 'dstBlk'
         assert((ordinals[srcBlk->bbNum] + 1) == ordinals[dstBlk->bbNum]);
         modified = true;
+
+        for (unsigned i = 0; i < numHotBlocks; i++)
+        {
+            assert(ordinals[blockOrder[i]->bbNum] == i);
+        }
+    }
+
+    if (modified)
+    {
+        memcpy(tempOrder + startPos, blockOrder + startPos, sizeof(BasicBlock*) * numBlocks);
     }
 
     return modified;
@@ -5284,12 +5295,6 @@ bool Compiler::ThreeOptLayout::RunThreeOptPass(BasicBlock* startBlock, BasicBloc
 //
 void Compiler::fgSearchImprovedLayout()
 {
-    if (compHndBBtabCount != 0)
-    {
-        // TODO: Reorder methods with EH regions
-        return;
-    }
-
 #ifdef DEBUG
     if (verbose)
     {
