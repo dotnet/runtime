@@ -11,6 +11,7 @@
 #define __MONO_METADATA_PROPERTY_BAG_H__
 
 #include <mono/utils/mono-compiler.h>
+#include <glib.h>
 
 typedef struct _MonoPropertyBagItem MonoPropertyBagItem;
 
@@ -21,6 +22,7 @@ struct _MonoPropertyBagItem {
 
 typedef struct {
 	MonoPropertyBagItem *head;
+	gint32     inlinearray_value;
 } MonoPropertyBag;
 
 void* mono_property_bag_get (MonoPropertyBag *bag, int tag);
