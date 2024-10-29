@@ -205,5 +205,59 @@ namespace System.IO.Tests
                 Assert.Equal(writeBuffer, readBuffers[i]);
             }
         }
+
+        [Theory]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        [InlineData(true, true)]
+        [InlineData(true, false)]
+        public async Task IovLimitsAreRespected(bool asyncFile, bool asyncMethod)
+        {
+            // We need to write and read more than IOV_MAX buffers at a time.
+            // IOV_MAX typical value is 1024.
+            const int BufferCount = 1025;
+            const int BufferSize = 1; // the less resources we use, the better
+            const int FileSize = BufferCount * BufferSize;
+            
+            ReadOnlyMemory<byte> writeBuffer = RandomNumberGenerator.GetBytes(BufferSize);
+            ReadOnlyMemory<byte>[] writeBuffers = Enumerable.Repeat(writeBuffer, BufferCount).ToArray();
+            Memory<byte>[] readBuffers = Enumerable.Range(0, BufferCount).Select(_ => new byte[BufferSize].AsMemory()).ToArray();
+
+            FileOptions options = asyncFile ? FileOptions.Asynchronous : FileOptions.None; // we need to test both code paths
+            options |= FileOptions.DeleteOnClose;
+
+            using SafeFileHandle sfh = File.OpenHandle(GetTestFilePath(), FileMode.CreateNew, FileAccess.ReadWrite, FileShare.None, options);
+
+            if (asyncMethod)
+            {
+                await RandomAccess.WriteAsync(sfh, writeBuffers, 0);
+            }
+            else
+            {
+                RandomAccess.Write(sfh, writeBuffers, 0);
+            }
+
+            Assert.Equal(FileSize, RandomAccess.GetLength(sfh));
+
+            long fileOffset = 0;
+            int bufferOffset = 0;
+            while (fileOffset < FileSize)
+            {
+                ArraySegment<Memory<byte>> left = new ArraySegment<Memory<byte>>(readBuffers, bufferOffset, readBuffers.Length - bufferOffset);
+
+                long bytesRead = asyncMethod
+                    ? await RandomAccess.ReadAsync(sfh, left, fileOffset)
+                    : RandomAccess.Read(sfh, left, fileOffset);
+
+                fileOffset += bytesRead;
+                // The following operation is correct only because the BufferSize is 1.
+                bufferOffset += (int)bytesRead;
+            }
+
+            for (int i = 0; i < BufferCount; ++i)
+            {
+                Assert.Equal(writeBuffers[i], readBuffers[i]);
+            }
+        }
     }
 }
