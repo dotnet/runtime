@@ -16,9 +16,8 @@ namespace System.Runtime.CompilerServices
         [LibraryImport(RuntimeHelpers.QCall)]
         private static partial void GetThreadStaticsByMethodTable(ByteRefOnStack result, MethodTable* pMT, [MarshalAs(UnmanagedType.Bool)] bool gcStatics);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
         [Intrinsic]
-        private static extern ref byte VolatileReadAsByref(ref IntPtr address);
+        private static ref byte VolatileReadAsByref(ref IntPtr address) => ref VolatileReadAsByref(ref address);
 
         [DebuggerHidden]
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -33,7 +32,7 @@ namespace System.Runtime.CompilerServices
         {
             ref byte nonGCStaticBase = ref VolatileReadAsByref(ref mt->AuxiliaryData->GetDynamicStaticsInfo()._pNonGCStatics);
 
-            if ((((nuint)Unsafe.AsPointer(ref nonGCStaticBase)) & DynamicStaticsInfo.ISCLASSINITED) != 0)
+            if ((((nuint)Unsafe.AsPointer(ref nonGCStaticBase)) & DynamicStaticsInfo.ISCLASSNOTINITED) != 0)
                 return ref GetNonGCStaticBaseSlow(mt);
             else
                 return ref nonGCStaticBase;
@@ -44,7 +43,7 @@ namespace System.Runtime.CompilerServices
         {
             ref byte nonGCStaticBase = ref VolatileReadAsByref(ref dynamicStaticsInfo->_pNonGCStatics);
 
-            if ((((nuint)Unsafe.AsPointer(ref nonGCStaticBase)) & DynamicStaticsInfo.ISCLASSINITED) != 0)
+            if ((((nuint)Unsafe.AsPointer(ref nonGCStaticBase)) & DynamicStaticsInfo.ISCLASSNOTINITED) != 0)
                 return ref GetNonGCStaticBaseSlow(dynamicStaticsInfo->_methodTable);
             else
                 return ref nonGCStaticBase;
@@ -63,7 +62,7 @@ namespace System.Runtime.CompilerServices
         {
             ref byte gcStaticBase = ref VolatileReadAsByref(ref mt->AuxiliaryData->GetDynamicStaticsInfo()._pGCStatics);
 
-            if ((((nuint)Unsafe.AsPointer(ref gcStaticBase)) & DynamicStaticsInfo.ISCLASSINITED) != 0)
+            if ((((nuint)Unsafe.AsPointer(ref gcStaticBase)) & DynamicStaticsInfo.ISCLASSNOTINITED) != 0)
                 return ref GetGCStaticBaseSlow(mt);
             else
                 return ref gcStaticBase;
@@ -74,7 +73,7 @@ namespace System.Runtime.CompilerServices
         {
             ref byte gcStaticBase = ref VolatileReadAsByref(ref dynamicStaticsInfo->_pGCStatics);
 
-            if ((((nuint)Unsafe.AsPointer(ref gcStaticBase)) & DynamicStaticsInfo.ISCLASSINITED) != 0)
+            if ((((nuint)Unsafe.AsPointer(ref gcStaticBase)) & DynamicStaticsInfo.ISCLASSNOTINITED) != 0)
                 return ref GetGCStaticBaseSlow(dynamicStaticsInfo->_methodTable);
             else
                 return ref gcStaticBase;
@@ -95,7 +94,7 @@ namespace System.Runtime.CompilerServices
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static ref byte GetObjectAsRefByte(object obj)
         {
-            return ref Unsafe.Add(ref Unsafe.As<RawData>(obj)._data, -sizeof(MethodTable*));
+            return ref Unsafe.Subtract(ref Unsafe.As<RawData>(obj)._data, sizeof(MethodTable*));
         }
 
         [StructLayout(LayoutKind.Sequential)]

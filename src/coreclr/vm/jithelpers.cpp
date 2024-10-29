@@ -2418,14 +2418,6 @@ HCIMPL0(void, JIT_FailFast)
 }
 HCIMPLEND
 
-HCIMPL1(TADDR, JIT_VolatileReadAsByref, TADDR* taddrAddress)
-{
-    FCALL_CONTRACT;
-
-    return VolatileLoad(taddrAddress);
-}
-HCIMPLEND
-
 HCIMPL2(void, JIT_ThrowMethodAccessException, CORINFO_METHOD_HANDLE caller, CORINFO_METHOD_HANDLE callee)
 {
     FCALL_CONTRACT;
