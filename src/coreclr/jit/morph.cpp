@@ -15693,7 +15693,13 @@ PhaseStatus Compiler::optLCLMasks()
 {
     if (opts.OptimizationDisabled())
     {
-        JITDUMP("Optimizations Disabled\n");
+        JITDUMP("Skipping. Optimizations Disabled\n");
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+
+    if (!compConvertMaskToVectorUsed)
+    {
+        JITDUMP("Skipping. There are no Convert Mask To Vector nodes\n");
         return PhaseStatus::MODIFIED_NOTHING;
     }
 
