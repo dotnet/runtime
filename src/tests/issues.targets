@@ -675,7 +675,7 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/forceinlining/AttributeConflict/**">
             <Issue>https://github.com/dotnet/runtime/issues/109315</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/directed/forceinlining/PositiveCases/**">
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/forceinlining/PositiveCases/**">
             <Issue>https://github.com/dotnet/runtime/issues/109315</Issue>
         </ExcludeList>
     </ItemGroup>
