@@ -28,7 +28,7 @@ add_library(aotminipal STATIC ${SOURCES})
 set_target_properties(aotminipal PROPERTIES INTERPROCEDURAL_OPTIMIZATION OFF)
 
 if (WIN32)
-    target_link_libraries(minipal_objects_no_lto PUBLIC bcrypt)
+    target_link_libraries(aotminipal PUBLIC bcrypt)
 endif()
 
 # Provide a static library for our shared library and executable scenarios
