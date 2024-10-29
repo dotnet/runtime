@@ -139,6 +139,7 @@ namespace System.Collections.Tests
         #endregion
 
         #region TryAdd
+
         [Fact]
         public void TryAdd_NullKeyThrows()
         {
@@ -148,29 +149,30 @@ namespace System.Collections.Tests
             }
 
             var dictionary = new OrderedDictionary<TKey, TValue>();
+            int index;
+
             AssertExtensions.Throws<ArgumentNullException>("key", () => dictionary.TryAdd(default(TKey), CreateTValue(0)));
+            AssertExtensions.Throws<ArgumentNullException>("key", () => dictionary.TryAdd(default(TKey), CreateTValue(0), out index));
+
             Assert.True(dictionary.TryAdd(CreateTKey(0), default));
             Assert.Equal(1, dictionary.Count);
+
+            Assert.True(dictionary.TryAdd(CreateTKey(1), default, out index));
+            Assert.Equal(1, index);
+            Assert.Equal(2, dictionary.Count);
         }
 
-        [Fact]
-        public void TryAdd_AppendsItemToEndOfDictionary()
+        [Theory]
+        [MemberData(nameof(ValidCollectionSizes))]
+        public void TryAdd_AppendsItemToEndOfDictionary(int count)
         {
-            var dictionary = new OrderedDictionary<TKey, TValue>();
-            AddToCollection(dictionary, 10);
+            OrderedDictionary<TKey, TValue> dictionary = (OrderedDictionary<TKey, TValue>)GenericIDictionaryFactory(count);
             foreach (var entry in dictionary)
             {
                 Assert.False(dictionary.TryAdd(entry.Key, entry.Value));
             }
 
-            TKey newKey;
-            int i = 0;
-            do
-            {
-                newKey = CreateTKey(i);
-            }
-            while (dictionary.ContainsKey(newKey));
-
+            TKey newKey = GetNewKey(dictionary);
             Assert.True(dictionary.TryAdd(newKey, CreateTValue(42)));
             Assert.Equal(dictionary.Count - 1, dictionary.IndexOf(newKey));
         }
@@ -188,31 +190,38 @@ namespace System.Collections.Tests
             Assert.True(valuesEnum.MoveNext());
         }
 
-        [Fact]
-        public void TryAdd_ItemAlreadyExists_IndexCorrect()
+        [Theory]
+        [MemberData(nameof(ValidCollectionSizes))]
+        public void TryAdd_Index_AppendsItemToEndOfDictionary(int count)
         {
-            var dictionary = new OrderedDictionary<TKey, TValue>();
+            OrderedDictionary<TKey, TValue> dictionary = (OrderedDictionary<TKey, TValue>)GenericIDictionaryFactory(count);
+            int index;
 
-            for (int i = 0; i < 3; i++)
+            for (int i = 0; i < dictionary.Count; i++)
             {
-                dictionary.Add(CreateTKey(i), CreateTValue(i));
-            }
-
-            for (int i = 0; i < 3; i++)
-            {
-                Assert.False(dictionary.TryAdd(CreateTKey(i), CreateTValue(i), out int index));
+                (TKey key, TValue value) = dictionary.GetAt(i);
+                Assert.False(dictionary.TryAdd(key, value, out index));
                 Assert.Equal(i, index);
             }
+
+            Assert.True(dictionary.TryAdd(GetNewKey(dictionary), CreateTValue(42), out index));
+            Assert.Equal(dictionary.Count - 1, index);
         }
 
-        [Fact]
-        public void TryAdd_NewItem_IndexCorrect()
+        [Theory]
+        [MemberData(nameof(ValidPositiveCollectionSizes))]
+        public void TryAdd_NewItem_IndexCorrect(int count)
         {
             var dictionary = new OrderedDictionary<TKey, TValue>();
 
-            for (int i = 0; i < 3; i++)
+            for (int i = 0; i < count; i++)
             {
-                Assert.True(dictionary.TryAdd(CreateTKey(i), CreateTValue(i), out int index));
+                int index;
+                TKey newKey = GetNewKey(dictionary);
+
+                Assert.True(dictionary.TryAdd(newKey, CreateTValue(i), out index));
+                Assert.Equal(i, index);
+                Assert.False(dictionary.TryAdd(newKey, CreateTValue(i), out index));
                 Assert.Equal(i, index);
             }
         }
@@ -221,44 +230,47 @@ namespace System.Collections.Tests
 
         #region TryGetValue
 
-        [Fact]
-        public void TryGetValue_ExistingItem()
+        [Theory]
+        [MemberData(nameof(ValidCollectionSizes))]
+        public void TryGetValue_Index_NullKeyThrows(int count)
         {
-            var dictionary = new OrderedDictionary<TKey, TValue>();
-
-            for (int i = 0; i < 3; i++)
+            OrderedDictionary<TKey, TValue> dictionary = (OrderedDictionary<TKey, TValue>)GenericIDictionaryFactory(count);
+            TValue outValue;
+            int index;
+            if (DefaultValueAllowed)
             {
-                dictionary.Add(CreateTKey(i), CreateTValue(i));
+                TKey missingKey = default(TKey);
+                while (dictionary.ContainsKey(missingKey))
+                    dictionary.Remove(missingKey);
+                Assert.False(dictionary.TryGetValue(missingKey, out outValue, out index));
             }
-
-            for (int i = 0; i < 3; i++)
+            else
             {
-                Assert.True(dictionary.TryGetValue(CreateTKey(i), out TValue value, out int index));
-                Assert.Equal(CreateTValue(i), value);
-                Assert.Equal(i, index);
+                Assert.Throws<ArgumentNullException>(() => dictionary.TryGetValue(default(TKey), out outValue, out index));
             }
         }
 
-        [Fact]
-        public void TryGetValue_MissingItem()
+        [Theory]
+        [MemberData(nameof(ValidCollectionSizes))]
+        public void TryGetValue_ValidKeyNotContainedInDictionary(int count)
         {
-            var dictionary = new OrderedDictionary<TKey, TValue>();
+            OrderedDictionary<TKey, TValue> dictionary = (OrderedDictionary<TKey, TValue>)GenericIDictionaryFactory(count);
+            TKey missingKey = GetNewKey(dictionary);
+            Assert.False(dictionary.TryGetValue(missingKey, out _, out int index));
+            Assert.Equal(-1, index);
+        }
 
-            for (int i = 0; i < 3; i++)
-            {
-                var key = CreateTKey(i);
-                var value = CreateTValue(i);
-
-                Assert.False(dictionary.TryGetValue(key, out TValue v, out int index));
-                Assert.Equal(default(TValue), v);
-                Assert.Equal(-1, index);
-
-                dictionary.Add(key, value);
-
-                Assert.True(dictionary.TryGetValue(key, out v, out index));
-                Assert.Equal(value, v);
-                Assert.Equal(i, index);
-            }
+        [Theory]
+        [MemberData(nameof(ValidCollectionSizes))]
+        public void TryGetValue_ValidKeyContainedInDictionary(int count)
+        {
+            OrderedDictionary<TKey, TValue>dictionary = (OrderedDictionary<TKey, TValue>)GenericIDictionaryFactory(count);
+            TKey missingKey = GetNewKey(dictionary);
+            TValue value = CreateTValue(5123);
+            dictionary.TryAdd(missingKey, value);
+            Assert.True(dictionary.TryGetValue(missingKey, out TValue outValue, out int index));
+            Assert.Equal(value, outValue);
+            Assert.Equal(dictionary.Count - 1, index);
         }
 
         #endregion
