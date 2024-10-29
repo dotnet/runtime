@@ -5106,8 +5106,7 @@ bool Compiler::ThreeOptLayout::RunThreeOptPass(BasicBlock* startBlock, BasicBloc
     // consider adding their successors/predecessors to 'cutPoints'.
     while (!cutPoints.Empty())
     {
-        FlowEdge* const candidateEdge = cutPoints.Top();
-        cutPoints.Pop();
+        FlowEdge* const candidateEdge = cutPoints.Pop();
         assert(usedCandidates[candidateEdge]);
 
         BasicBlock* const srcBlk = candidateEdge->getSourceBlock();
