@@ -8,24 +8,6 @@
 #include <Windows.h>
 #endif
 
-// Define some well-known GUIDs on non-Windows platforms.
-#ifndef HOST_WINDOWS
-// 00000000-0000-0000-0000-000000000000
-minipal_guid_t const GUID_NULL = { 0x0, 0x0, 0x0, { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 } };
-
-// 00000000-0000-0000-C000-000000000046
-minipal_guid_t const IID_IUnknown = { 0x0, 0x0, 0x0, { 0xC0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x46 } };
-
-// 00000001-0000-0000-C000-000000000046
-minipal_guid_t const IID_IClassFactory = { 0x1, 0x0, 0x0, { 0xC0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x46 } };
-
-// 0c733a30-2a1c-11ce-ade5-00aa0044773d
-minipal_guid_t const IID_ISequentialStream = { 0x0c733a30, 0x2a1c, 0x11ce, { 0xad, 0xe5, 0x00, 0xaa, 0x00, 0x44, 0x77, 0x3d } };
-
-// 0000000C-0000-0000-C000-000000000046
-minipal_guid_t const IID_IStream = { 0xC, 0x0, 0x0, { 0xC0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x46 } };
-#endif
-
 // See RFC-4122 section 4.4 on creation of random GUID.
 // https://www.ietf.org/rfc/rfc4122.txt
 //
@@ -50,6 +32,9 @@ bool minipal_guid_v4_create(minipal_guid_t* guid)
     // Windows has a built-in function for creating v4 GUIDs.
     return SUCCEEDED(CoCreateGuid((GUID*)guid));
 #else
+    // Technically, v4 GUIDs don't require cryptographically secure random bytes;
+    // however, CoCreateGuid provides that guarantee and we want to ensure
+    // that guarantee is maintained as customers have taken a dependency on it.
     if (minipal_get_cryptographically_secure_random_bytes((uint8_t*)guid, sizeof(*guid)) != 0)
         return false;
 

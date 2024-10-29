@@ -146,3 +146,5 @@ nativeStringResourceTable_mscorrc
 #WaitForSingleObjectEx
 #WideCharToMultiByte
 #WriteFile
+
+#GUID_NULL
