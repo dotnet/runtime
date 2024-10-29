@@ -4241,28 +4241,36 @@ namespace {
             PREFIX_ASSUME(pMap + dwordIndex != NULL);
             dword = VolatileLoadWithoutBarrier<DWORD>(pMap + dwordIndex);
 
-            // #2 if DWORD is a pointer, then we can return
-            if (IsPointer(dword))
+            // if DWORD is empty, we can skip steps 2,3, and 4
+            if (dword)
             {
-                TADDR newAddr = base + DecodePointer(dword);
-                return newAddr;
-            }
+                // #2 if DWORD is a pointer, then we can return
+                if (IsPointer(dword))
+                {
+                    TADDR newAddr = base + DecodePointer(dword);
+                    return newAddr;
+                }
 
-            // #3 if DWORD is nibbles and corresponding nibble is intialized and points to an equal or earlier address, return the corresponding address
-            nibble = GetNibble(dword, nibbleIndex);
-            if ((nibble) && (nibble <= offset) )
-            {
-                return base + NibbleToRelativeAddress(dwordIndex, nibbleIndex, nibble);
-            }
-
-            // #4 find preceeding nibble and return if found
-            // TODO: re-implement using ctz intrinsic
-            for(; nibbleIndex-- > 0;)
-            {
+                // #3 if DWORD is nibbles and corresponding nibble is intialized and points to an equal or earlier address, return the corresponding address
                 nibble = GetNibble(dword, nibbleIndex);
-                if (nibble)
+                if ((nibble) && (nibble <= offset) )
                 {
                     return base + NibbleToRelativeAddress(dwordIndex, nibbleIndex, nibble);
+                }
+
+                // #4 find preceeding nibble and return if found
+                // if nibbleIndex == 0, then there are no preceeding nibbles in this DWORD
+                if(nibbleIndex != 0)
+                {
+                    DWORD preceedingNibbleMask = ~0x0u << (32 - nibbleIndex * 4);
+                    size_t ctz = NibbleBitScanForward(dword & preceedingNibbleMask);
+                    if(ctz)
+                    {
+                        size_t nibbleToCheck = (31 - ctz) / 4;
+                        nibble = GetNibble(dword, nibbleToCheck);
+                        _ASSERTE(nibble);
+                        return base + NibbleToRelativeAddress(dwordIndex, nibbleToCheck, nibble);
+                    }
                 }
             }
 
@@ -4284,13 +4292,13 @@ namespace {
             }
 
             // #5.4 find preceeding nibble and return if found
-            for(; nibbleIndex-- > 0;)
+            size_t ctz = NibbleBitScanForward(dword);
+            if(ctz)
             {
-                nibble = GetNibble(dword, nibbleIndex);
-                if (nibble)
-                {
-                    return base + NibbleToRelativeAddress(dwordIndex, nibbleIndex, nibble);
-                }
+                size_t nibbleToCheck = (31 - ctz) / 4;
+                nibble = GetNibble(dword, nibbleToCheck);
+                _ASSERTE(nibble);
+                return base + NibbleToRelativeAddress(dwordIndex, nibbleToCheck, nibble);
             }
 
             // If none of the above was found, return 0

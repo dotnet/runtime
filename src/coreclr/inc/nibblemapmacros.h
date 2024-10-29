@@ -100,4 +100,28 @@ inline size_t DecodePointer(DWORD dword)
     return (size_t) ((dword & ~NIBBLE_MASK) + (((dword & NIBBLE_MASK) - 9) << 2));
 }
 
+//------------------------------------------------------------------------
+// BitScanForward: Search the mask data from least significant bit (LSB) to the most significant bit
+// (MSB) for a set bit (1)
+//
+// Arguments:
+//    value - the value
+//
+// Return Value:
+//    0 if the mask is zero; nonzero otherwise.
+//
+inline size_t NibbleBitScanForward(DWORD value)
+{
+    if(value == 0) return 0;
+
+#if defined(_MSC_VER)
+    unsigned long result;
+    ::_BitScanForward(&result, value);
+    return static_cast<size_t>(result);
+#else
+    int32_t result = __builtin_ctz(value);
+    return static_cast<size_t>(result);
+#endif
+}
+
 #endif  // NIBBLEMAPMACROS_H_
