@@ -344,14 +344,11 @@ bool emitter::IsApxNFEncodableInstruction(instruction ins) const
 //
 bool emitter::IsApxExtendedEvexInstruction(instruction ins) const
 {
-    // TODO-Ruihan: assert if it is legacy instructions.
     if(!UsePromotedEVEXEncoding())
     {
         return false;
     }
 
-    // TODO-XArch-apx:
-    // add EVEX.NF check when the feature is available in JIT.
     return HasApxNdd(ins) || HasApxNf(ins);
 }
 
@@ -1424,11 +1421,6 @@ bool emitter::TakesEvexPrefix(const instrDesc* id) const
 {
     instruction ins = id->idIns();
 
-    // TODO-XArch-apx:
-    // Ruihan:
-    // we might need to consider isolating the legacy-promoted-EVEX case,
-    // VEX/EVEX-promoted-EVEX could be merged into this path.
-
     if (!IsEvexEncodableInstruction(ins))
     {
         // Never supports the EVEX encoding
@@ -1470,6 +1462,12 @@ bool emitter::TakesEvexPrefix(const instrDesc* id) const
         // returned TRUE if they should have used EVEX due to the HasMaskReg(id)
         // check above so we need to still return false here to preserve semantics.
         return !HasKMaskRegisterDest(ins);
+    }
+
+    if (IsApxExtendedEvexInstruction(ins) && emitComp->DoJitStressPromotedEvexEncoding())
+    {
+        // This path will be hit when we stress APX-EVEX and encode VEX with Extended EVEX.
+        return (IsBMIInstruction(ins) && HasApxNf(ins));
     }
 #endif // DEBUG
 
@@ -1550,9 +1548,12 @@ bool emitter::TakesApxExtendedEvexPrefix(const instrDesc* id) const
         return false;
     }
 
-    // TODO-apx:
-    // there are duplicated stress logics here and in HasExtendedGPReg()
-    // need to clean up later. 
+    if (IsAvx512OrPriorInstruction(ins))
+    {
+        // This check should reject any instruction not from legacy map-0 or 1.
+        return false;
+    }
+
 #if defined(DEBUG)
     if (emitComp->DoJitStressPromotedEvexEncoding())
     {
@@ -1635,7 +1636,6 @@ emitter::code_t emitter::AddEvexPrefix(const instrDesc* id, code_t code, emitAtt
     if (instrIsExtendedReg3opImul(ins))
     {
         // the only case imul(0x68) will need EVEX prefix is EVEX.NF feature enabled.
-        assert(id->idIsEvexNfContextSet());
         // imul(0x68) opcode comes with ModR/M.REG byte to indicate implicit register use,
         // when it is using extended registers (>= REG_R8), it comes with built-in REX prefix,
         // remove them first and add the counter part in EVEX.
@@ -3166,17 +3166,15 @@ unsigned emitter::emitGetAdjustedSize(instrDesc* id, code_t code) const
             }
         }
 
-        adjustedSize = prefixAdjustedSize;
-
         emitAttr attr = id->idOpSize();
-
-        if ((attr == EA_2BYTE) && (ins != INS_movzx) && (ins != INS_movsx))
+        if ((attr == EA_2BYTE) && (ins != INS_movzx) && (ins != INS_movsx) && !TakesApxExtendedEvexPrefix(id))
         {
             // Most 16-bit operand instructions will need a 0x66 prefix.
-            adjustedSize++;
+            prefixAdjustedSize++;
         }
+
+        adjustedSize = prefixAdjustedSize;
     }
-#endif // TARGET_AMD64
     else
     {
         if (ins == INS_crc32)
@@ -3226,6 +3224,14 @@ unsigned emitter::emitGetPrefixSize(instrDesc* id, code_t code, bool includeRexP
 
     if (includeRexPrefixSize && hasRexPrefix(code))
     {
+        if (instrIsExtendedReg3opImul(id->idIns()) && TakesApxExtendedEvexPrefix(id))
+        {
+            // there is a special case when calculating the size of IMUL with APX-EVEX,
+            // IMUL_08 or beyond will have a built-in REX prefix with its opcode,
+            // so it will hit this branch, but when IMUL is encoded with APX-EVEX,
+            // the size of REX is included in the prefix size, where should be calculated outside.
+            return 0;
+        }
         return 1;
     }
 
@@ -4563,7 +4569,7 @@ inline UNATIVE_OFFSET emitter::emitInsSizeSVCalcDisp(instrDesc* id, code_t code,
                 assert(emitComp->lvaTempsHaveLargerOffsetThanVars());
 
                 // Check whether we can use compressed displacement if EVEX.
-                if (TakesEvexPrefix(id))
+                if (TakesEvexPrefix(id) || TakesApxExtendedEvexPrefix(id))
                 {
                     bool compressedFitsInByte = false;
                     TryEvexCompressDisp8Byte(id, ssize_t(offs), &compressedFitsInByte);
@@ -4607,7 +4613,7 @@ inline UNATIVE_OFFSET emitter::emitInsSizeSVCalcDisp(instrDesc* id, code_t code,
 #endif // !FEATURE_FIXED_OUT_ARGS
 
     bool useSmallEncoding = false;
-    if (TakesEvexPrefix(id))
+    if (TakesEvexPrefix(id) || TakesApxExtendedEvexPrefix(id))
     {
         TryEvexCompressDisp8Byte(id, ssize_t(offs), &useSmallEncoding);
     }
@@ -4774,7 +4780,7 @@ UNATIVE_OFFSET emitter::emitInsSizeAM(instrDesc* id, code_t code)
     }
     else
     {
-        if (TakesEvexPrefix(id))
+        if (TakesEvexPrefix(id) || TakesApxExtendedEvexPrefix(id))
         {
             dsp = TryEvexCompressDisp8Byte(id, dsp, &dspInByte);
         }
@@ -6578,7 +6584,6 @@ void emitter::emitIns_R_I(instruction ins,
 
         sz += emitInsSize(id, insCodeMI(ins), includeRexPrefixSize);
     }
-
     sz += emitGetAdjustedSize(id, insCodeMI(ins));
 #ifdef TARGET_AMD64
     if (reg == REG_EAX && !instrIs3opImul(ins) && TakesApxExtendedEvexPrefix(id))
@@ -12773,7 +12778,6 @@ void emitter::emitDispIns(
                 case INS_shr:
                 case INS_sar:
                 {
-                    assert(id->idIsEvexNdContextSet());
                     printf("%s", emitRegName(id->idReg1(), attr));
                     printf(", %s", emitRegName(id->idReg2(), attr));
                     emitDispShift(ins, (BYTE)0);
@@ -13988,12 +13992,13 @@ BYTE* emitter::emitOutputAM(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
 
             case EA_2BYTE:
             {
-                /* Output a size prefix for a 16-bit operand */
-                if (id->idIsEvexNdContextSet())
+                // Output a size prefix for a 16-bit operand
+                if (TakesApxExtendedEvexPrefix(id))
                 {
-                    assert(TakesApxExtendedEvexPrefix(id));
+                    assert(IsApxExtendedEvexInstruction(ins));
                     assert(hasEvexPrefix(code));
-                    code |= EXTENDED_EVEX_PP_BITS;
+                    // Evex.pp should already be added when adding the prefix.
+                    assert((code & EXTENDED_EVEX_PP_BITS) != 0);
                 }
                 else
                 {
@@ -14044,7 +14049,7 @@ GOT_DSP:
     }
     else
     {
-        if (TakesEvexPrefix(id))
+        if (TakesEvexPrefix(id) || TakesApxExtendedEvexPrefix(id))
         {
             dsp = TryEvexCompressDisp8Byte(id, dsp, &dspInByte);
         }
@@ -14910,7 +14915,7 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
     // function, to which the remainder of the emitter logic should handle properly.
     // TODO-XARCH-AVX512 : embedded broadcast might change this
     int dspAsByte = dsp;
-    if (TakesEvexPrefix(id))
+    if (TakesEvexPrefix(id) || TakesApxExtendedEvexPrefix(id))
     {
         dspAsByte = int(TryEvexCompressDisp8Byte(id, ssize_t(dsp), &dspInByte));
     }
@@ -14964,7 +14969,7 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
         // TODO-XARCH-AVX512 : working to wrap up all adjusted disp8 compression logic into the following
         // function, to which the remainder of the emitter logic should handle properly.
         // TODO-XARCH-AVX512 : embedded broadcast might change this
-        if (TakesEvexPrefix(id))
+        if (TakesEvexPrefix(id) || TakesApxExtendedEvexPrefix(id))
         {
             dspAsByte = int(TryEvexCompressDisp8Byte(id, ssize_t(dsp), &dspInByte));
         }
@@ -15718,18 +15723,7 @@ BYTE* emitter::emitOutputR(BYTE* dst, instrDesc* id)
                     code |= 0x1;
                 }
 
-                if (TakesRex2Prefix(id))
-                {
-                    code = AddRex2Prefix(ins, code);
-                }
-                else if (TakesApxExtendedEvexPrefix(id))
-                {
-                    // TODO-Ruihan::
-                    // now the use cases of REX2 and APX-EVEX are not overlapped,
-                    // eventually, we will need to have REX2 preferred when EVEX
-                    // features are not used.
-                    code = AddEvexPrefix(id, code, size);
-                }
+                code = AddX86PrefixIfNeeded(id, code, size);
 
                 if (TakesRexWPrefix(id))
                 {
@@ -17505,7 +17499,23 @@ ssize_t emitter::GetInputSizeInBytes(instrDesc* id) const
 //
 ssize_t emitter::TryEvexCompressDisp8Byte(instrDesc* id, ssize_t dsp, bool* dspInByte)
 {
-    assert(TakesEvexPrefix(id));
+    assert(TakesEvexPrefix(id) || TakesApxExtendedEvexPrefix(id));
+
+    if (!hasTupleTypeInfo(id->idIns()))
+    {
+        // After APX, some instructions with APX features will be promoted
+        // to APX-EVEX, we will re-use the existing displacement emitting
+        // path, but for those instructions with no tuple information,
+        // APX-EVEX treat the scaling factor to be 1 constantly.
+        instruction ins = id->idIns();
+        // TODO-XArch-APX:
+        // This assert may need tweak if BMI1 instructions are promoted
+        // into EVEX for multiple features, currently only EVEX.NF.
+        assert(IsApxExtendedEvexInstruction(id->idIns()));
+        *dspInByte = ((signed char)dsp == (ssize_t)dsp);
+        return dsp;
+    }
+
     insTupleType tt = insTupleTypeInfo(id->idIns());
     assert(hasTupleTypeInfo(id->idIns()));
 

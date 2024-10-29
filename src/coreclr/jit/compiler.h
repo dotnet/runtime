@@ -10025,7 +10025,7 @@ private:
     bool DoJitStressPromotedEvexEncoding() const
     {
 #ifdef DEBUG
-        if (JitConfig.JitStressPromotedEVEXEncoding())
+        if (JitConfig.JitStressPromotedEvexEncoding())
         {
             return true;
         }

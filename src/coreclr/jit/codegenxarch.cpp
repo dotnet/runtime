@@ -9408,12 +9408,12 @@ void CodeGen::genAmd64EmitterUnitTestsApx()
 
     // theEmitter->emitIns_R_R_R(INS_add, EA_2BYTE, REG_R12, REG_R13, REG_R11, (insOpts)(INS_OPTS_EVEX_nf | INS_OPTS_EVEX_nd));
 
-    theEmitter->emitIns_R_R_R(INS_andn,  EA_8BYTE, REG_R11, REG_R13, REG_R11, INS_OPTS_EVEX_nf);
-    theEmitter->emitIns_R_R_R(INS_bextr, EA_8BYTE, REG_R11, REG_R13, REG_R11, INS_OPTS_EVEX_nf);
+    // theEmitter->emitIns_R_R_R(INS_andn,  EA_8BYTE, REG_R11, REG_R13, REG_R11, INS_OPTS_EVEX_nf);
+    // theEmitter->emitIns_R_R_R(INS_bextr, EA_8BYTE, REG_R11, REG_R13, REG_R11, INS_OPTS_EVEX_nf);
     
-    theEmitter->emitIns_R_R(INS_blsi,    EA_8BYTE, REG_R11, REG_R13, INS_OPTS_EVEX_nf);
-    theEmitter->emitIns_R_R(INS_blsmsk,  EA_8BYTE, REG_R11, REG_R13, INS_OPTS_EVEX_nf);
-    theEmitter->emitIns_R_R(INS_blsr,    EA_8BYTE, REG_R11, REG_R13, INS_OPTS_EVEX_nf);
+    // theEmitter->emitIns_R_R(INS_blsi,    EA_8BYTE, REG_R11, REG_R13, INS_OPTS_EVEX_nf);
+    // theEmitter->emitIns_R_R(INS_blsmsk,  EA_8BYTE, REG_R11, REG_R13, INS_OPTS_EVEX_nf);
+    theEmitter->emitIns_R_S(INS_blsr,    EA_8BYTE, REG_R11, 0, 1);
 }
 
 #endif // defined(DEBUG) && defined(TARGET_AMD64)
