@@ -7,20 +7,20 @@ using System.Collections.Generic;
 namespace Microsoft.Extensions.Configuration
 {
     /// <summary>
-    /// Used to build key/value based configuration settings for use in an application.
+    /// Builds key/value-based configuration settings for use in an application.
     /// </summary>
     public class ConfigurationBuilder : IConfigurationBuilder
     {
         private readonly List<IConfigurationSource> _sources = new();
 
         /// <summary>
-        /// Returns the sources used to obtain configuration values.
+        /// Gets the sources used to obtain configuration values.
         /// </summary>
         public IList<IConfigurationSource> Sources => _sources;
 
         /// <summary>
         /// Gets a key/value collection that can be used to share data between the <see cref="IConfigurationBuilder"/>
-        /// and the registered <see cref="IConfigurationProvider"/>s.
+        /// and the registered <see cref="IConfigurationProvider"/> providers.
         /// </summary>
         public IDictionary<string, object> Properties { get; } = new Dictionary<string, object>();
 

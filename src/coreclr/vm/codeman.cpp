@@ -423,11 +423,6 @@ void UnwindInfoTable::AddToUnwindInfoTable(UnwindInfoTable** unwindInfoPtr, PT_R
     }
 }
 
-#ifdef STUBLINKER_GENERATES_UNWIND_INFO
-extern StubUnwindInfoHeapSegment *g_StubHeapSegments;
-#endif // STUBLINKER_GENERATES_UNWIND_INFO
-
-extern CrstStatic g_StubUnwindInfoHeapSegmentsCrst;
 /*****************************************************************************/
 // Publish all existing JIT compiled methods by iterating through the code heap
 // Note that because we need to keep the entries in order we have to hold
@@ -468,25 +463,6 @@ extern CrstStatic g_StubUnwindInfoHeapSegmentsCrst;
             }
         }
     }
-
-#ifdef STUBLINKER_GENERATES_UNWIND_INFO
-    // Enumerate all existing stubs
-    CrstHolder crst(&g_StubUnwindInfoHeapSegmentsCrst);
-    for (StubUnwindInfoHeapSegment* pStubHeapSegment = g_StubHeapSegments; pStubHeapSegment; pStubHeapSegment = pStubHeapSegment->pNext)
-    {
-        // The stubs are in reverse order, so we reverse them so they are in memory order
-        CQuickArrayList<StubUnwindInfoHeader*> list;
-        for (StubUnwindInfoHeader *pHeader = pStubHeapSegment->pUnwindHeaderList; pHeader; pHeader = pHeader->pNext)
-            list.Push(pHeader);
-
-        for(int i = (int) list.Size()-1; i >= 0; --i)
-        {
-            StubUnwindInfoHeader *pHeader = list[i];
-            AddToUnwindInfoTable(&pStubHeapSegment->pUnwindInfoTable, &pHeader->FunctionEntry,
-                (TADDR) pStubHeapSegment->pbBaseAddress, (TADDR) pStubHeapSegment->pbBaseAddress + pStubHeapSegment->cbSegment);
-        }
-    }
-#endif // STUBLINKER_GENERATES_UNWIND_INFO
 }
 
 /*****************************************************************************/
@@ -2376,6 +2352,16 @@ HeapList* LoaderCodeHeap::CreateCodeHeap(CodeHeapRequestInfo *pInfo, LoaderHeap 
     }
     else
     {
+        // Include internal CodeHeap structures in the reserve
+        allocationSize = ALIGN_UP(allocationSize, VIRTUAL_ALLOC_RESERVE_GRANULARITY);
+        reserveSize = max(reserveSize, allocationSize);
+
+        if (reserveSize != (DWORD) reserveSize)
+        {
+            _ASSERTE(!"reserveSize does not fit in a DWORD");
+            EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
+        }
+
         if (loAddr != NULL || hiAddr != NULL)
         {
 #ifdef _DEBUG
@@ -2625,8 +2611,7 @@ HeapList* EEJitManager::NewCodeHeap(CodeHeapRequestInfo *pInfo, DomainCodeHeapLi
                   (PVOID)pStartRange,
                   (ULONG)((ULONG64)pEndRange - (ULONG64)pStartRange),
                   GetRuntimeFunctionCallback,
-                  this,
-                  DYNFNTABLE_JIT);
+                  this);
     }
     EX_CATCH
     {

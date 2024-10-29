@@ -141,8 +141,6 @@ set(utils_common_sources
     mono-tls.h
     mono-tls-inline.h
     mono-tls.c
-    mono-utils-debug.c
-    mono-utils-debug.h
     mono-memory-model.h
     atomic.h
     atomic.c
@@ -206,7 +204,7 @@ set(utils_arch_sources "${utils_arch_sources};mono-hwcap-riscv.c")
 elseif(TARGET_S390X)
 set(utils_arch_sources "${utils_arch_sources};mono-hwcap-s390x.c")
 elseif(TARGET_WASM)
-set(utils_arch_sources "${utils_arch_sources};mono-hwcap-wasm.c;mono-mmap-wasm.c;mono-wasm-pagemgr.c")
+set(utils_arch_sources "${utils_arch_sources};mono-hwcap-wasm.c;mono-mmap-wasm.c")
 elseif(TARGET_WASI)
 set(utils_arch_sources "${utils_arch_sources};mono-hwcap-wasm.c")
 elseif(TARGET_POWERPC OR TARGET_POWERPC64)
@@ -216,12 +214,6 @@ else()
 endif()
 
 set(utils_sources "${utils_platform_sources};${utils_arch_sources};${utils_common_sources}")
-
-set(utils_sources
-    ${utils_sources}
-    ${CLR_SRC_NATIVE_DIR}/external/libunwind/include/remote/freebsd-elf_common.h
-    ${CLR_SRC_NATIVE_DIR}/external/libunwind/include/remote/freebsd-elf32.h
-    ${CLR_SRC_NATIVE_DIR}/external/libunwind/include/remote/freebsd-elf64.h)
 
 if(ENABLE_DTRACE)
     find_program(DTRACE dtrace)

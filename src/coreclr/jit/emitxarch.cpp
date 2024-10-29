@@ -49,6 +49,23 @@ bool emitter::IsKInstruction(instruction ins)
     return (flags & KInstruction) != 0;
 }
 
+//------------------------------------------------------------------------
+// IsKInstructionWithLBit: Does this instruction require K register and
+//    LBIT_IN_3BYTE_VEX_PREFIX bit.
+//
+// Arguments:
+//    ins - The instruction to check.
+//
+// Returns:
+//    `true` if this instruction requires K register and
+//    LBIT_IN_3BYTE_VEX_PREFIX bit.
+//
+bool emitter::IsKInstructionWithLBit(instruction ins)
+{
+    insFlags flags = CodeGenInterface::instInfo[ins];
+    return (flags & KInstructionWithLBit) != 0;
+}
+
 bool emitter::IsAVXOnlyInstruction(instruction ins)
 {
     return (ins >= INS_FIRST_AVX_INSTRUCTION) && (ins <= INS_LAST_AVX_INSTRUCTION);
@@ -1495,7 +1512,7 @@ emitter::code_t emitter::AddVexPrefix(instruction ins, code_t code, emitAttr att
 
     code |= DEFAULT_3BYTE_VEX_PREFIX;
 
-    if (attr == EA_32BYTE)
+    if ((attr == EA_32BYTE) || IsKInstructionWithLBit(ins))
     {
         // Set L bit to 1 in case of instructions that operate on 256-bits.
         code |= LBIT_IN_3BYTE_VEX_PREFIX;
@@ -1568,20 +1585,6 @@ bool emitter::TakesRexWPrefix(const instrDesc* id) const
                 // TODO-Cleanup: This should really only ever be EA_4BYTE
                 assert((attr == EA_4BYTE) || (attr == EA_16BYTE));
                 return false;
-            }
-
-            case INS_vbroadcastsd:
-            case INS_vpbroadcastq:
-            {
-                // TODO-XARCH-AVX512: These use W1 if a kmask is involved
-                return TakesEvexPrefix(id);
-            }
-
-            case INS_vpermilpd:
-            case INS_vpermilpdvar:
-            {
-                // TODO-XARCH-AVX512: These use W1 if a kmask or broaadcast from memory is involved
-                return TakesEvexPrefix(id);
             }
 
             default:
@@ -2772,7 +2775,14 @@ bool emitter::emitInsCanOnlyWriteSSE2OrAVXReg(instrDesc* id)
             // These SSE instructions write to a general purpose integer register.
             return false;
         }
-
+        case INS_kmovb_gpr:
+        case INS_kmovw_gpr:
+        case INS_kmovd_gpr:
+        case INS_kmovq_gpr:
+        {
+            // These kmov writes to a general purpose integer register
+            return !isGeneralRegister(id->idReg1());
+        }
         default:
         {
             return true;
@@ -19810,6 +19820,10 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_pmuludq:
         case INS_pmaddwd:
         case INS_pmaddubsw:
+        case INS_vpdpbusd:
+        case INS_vpdpwssd:
+        case INS_vpdpbusds:
+        case INS_vpdpwssds:
             result.insThroughput = PERFSCORE_THROUGHPUT_2X;
             result.insLatency += PERFSCORE_LATENCY_5C;
             break;
@@ -19982,10 +19996,6 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_vfnmsub132ss:
         case INS_vfnmsub213ss:
         case INS_vfnmsub231ss:
-        case INS_vpdpbusd:  // will be populated when the HW becomes publicly available
-        case INS_vpdpwssd:  // will be populated when the HW becomes publicly available
-        case INS_vpdpbusds: // will be populated when the HW becomes publicly available
-        case INS_vpdpwssds: // will be populated when the HW becomes publicly available
             // uops.info
             result.insThroughput = PERFSCORE_THROUGHPUT_2X;
             result.insLatency += PERFSCORE_LATENCY_4C;

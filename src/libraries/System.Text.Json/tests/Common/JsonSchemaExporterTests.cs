@@ -9,6 +9,7 @@ using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
 using System.Text.Json.Serialization.Tests;
+using System.Xml.Linq;
 using Json.Schema;
 using Xunit;
 using Xunit.Sdk;
@@ -29,7 +30,11 @@ namespace System.Text.Json.Schema.Tests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/103694", TestRuntimes.Mono)]
         public void TestTypes_GeneratesExpectedJsonSchema(ITestData testData)
         {
-            JsonNode schema = Serializer.DefaultOptions.GetJsonSchemaAsNode(testData.Type, testData.Options);
+            JsonSerializerOptions options = testData.SerializerOptions is { } opts
+                ? new(opts) { TypeInfoResolver = Serializer.DefaultOptions.TypeInfoResolver }
+                : Serializer.DefaultOptions;
+
+            JsonNode schema = options.GetJsonSchemaAsNode(testData.Type, testData.Options);
             AssertValidJsonSchema(testData.Type, testData.ExpectedJsonSchema, schema);
         }
 
@@ -37,8 +42,12 @@ namespace System.Text.Json.Schema.Tests
         [MemberData(nameof(GetTestDataUsingAllValues))]
         public void TestTypes_SerializedValueMatchesGeneratedSchema(ITestData testData)
         {
-            JsonNode schema = Serializer.DefaultOptions.GetJsonSchemaAsNode(testData.Type, testData.Options);
-            JsonNode? instance = JsonSerializer.SerializeToNode(testData.Value, testData.Type, Serializer.DefaultOptions);
+            JsonSerializerOptions options = testData.SerializerOptions is { } opts
+                ? new(opts) { TypeInfoResolver = Serializer.DefaultOptions.TypeInfoResolver }
+                : Serializer.DefaultOptions;
+
+            JsonNode schema = options.GetJsonSchemaAsNode(testData.Type, testData.Options);
+            JsonNode? instance = JsonSerializer.SerializeToNode(testData.Value, testData.Type, options);
             AssertDocumentMatchesSchema(schema, instance);
         }
 
@@ -80,6 +89,13 @@ namespace System.Text.Json.Schema.Tests
         {
             JsonNode schema = Serializer.DefaultOptions.GetJsonSchemaAsNode(type);
             Assert.Equal(""""{"$comment":"Unsupported .NET type","not":true}"""", schema.ToJsonString());
+        }
+
+        [Fact]
+        public void CanGenerateXElementSchema()
+        {
+            JsonNode schema = Serializer.DefaultOptions.GetJsonSchemaAsNode(typeof(XElement));
+            Assert.True(schema.ToJsonString().Length < 100_000);
         }
 
         [Fact]

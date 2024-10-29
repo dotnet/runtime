@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Runtime.InteropServices;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
@@ -76,9 +77,12 @@ namespace System.Text.Json.Schema
         {
             Debug.Assert(typeInfo.IsConfigured);
 
-            if (cacheResult && state.TryPushType(typeInfo, propertyInfo, out string? existingJsonPointer))
+            JsonSchemaExporterContext exporterContext = state.CreateContext(typeInfo, propertyInfo, parentPolymorphicTypeInfo);
+
+            if (cacheResult && typeInfo.Kind is not JsonTypeInfoKind.None &&
+                state.TryGetExistingJsonPointer(exporterContext, out string? existingJsonPointer))
             {
-                // We're generating the schema of a recursive type, return a reference pointing to the outermost schema.
+                // The schema context has already been generated in the schema document, return a reference to it.
                 return CompleteSchema(ref state, new JsonSchema { Ref = existingJsonPointer });
             }
 
@@ -204,7 +208,8 @@ namespace System.Text.Json.Schema
                     List<string>? required = null;
                     JsonSchema? additionalProperties = null;
 
-                    if (typeInfo.UnmappedMemberHandling is JsonUnmappedMemberHandling.Disallow)
+                    JsonUnmappedMemberHandling effectiveUnmappedMemberHandling = typeInfo.UnmappedMemberHandling ?? typeInfo.Options.UnmappedMemberHandling;
+                    if (effectiveUnmappedMemberHandling is JsonUnmappedMemberHandling.Disallow)
                     {
                         additionalProperties = JsonSchema.False;
                     }
@@ -239,6 +244,7 @@ namespace System.Text.Json.Schema
 
                         if (property.AssociatedParameter is { HasDefaultValue: true } parameterInfo)
                         {
+                            JsonSchema.EnsureMutable(ref propertySchema);
                             propertySchema.DefaultValue = JsonSerializer.SerializeToNode(parameterInfo.DefaultValue, property.JsonTypeInfo);
                             propertySchema.HasDefaultValue = true;
                         }
@@ -362,17 +368,12 @@ namespace System.Text.Json.Schema
                     {
                         schema.MakeNullable();
                     }
-
-                    if (cacheResult)
-                    {
-                        state.PopGeneratedType();
-                    }
                 }
 
                 if (state.ExporterOptions.TransformSchemaNode != null)
                 {
                     // Prime the schema for invocation by the JsonNode transformer.
-                    schema.ExporterContext = state.CreateContext(typeInfo, propertyInfo, parentPolymorphicTypeInfo);
+                    schema.ExporterContext = exporterContext;
                 }
 
                 return schema;
@@ -407,7 +408,7 @@ namespace System.Text.Json.Schema
         private readonly ref struct GenerationState(JsonSerializerOptions options, JsonSchemaExporterOptions exporterOptions)
         {
             private readonly List<string> _currentPath = [];
-            private readonly List<(JsonTypeInfo typeInfo, JsonPropertyInfo? propertyInfo, int depth)> _generationStack = [];
+            private readonly Dictionary<(JsonTypeInfo, JsonPropertyInfo?), string[]> _generated = new();
 
             public int CurrentDepth => _currentPath.Count;
             public JsonSerializerOptions Options { get; } = options;
@@ -430,77 +431,75 @@ namespace System.Text.Json.Schema
             }
 
             /// <summary>
-            /// Pushes the current type/property to the generation stack or returns a JSON pointer if the type is recursive.
+            /// Registers the current schema node generation context; if it has already been generated return a JSON pointer to its location.
             /// </summary>
-            public bool TryPushType(JsonTypeInfo typeInfo, JsonPropertyInfo? propertyInfo, [NotNullWhen(true)] out string? existingJsonPointer)
+            public bool TryGetExistingJsonPointer(in JsonSchemaExporterContext context, [NotNullWhen(true)] out string? existingJsonPointer)
             {
-                foreach ((JsonTypeInfo otherTypeInfo, JsonPropertyInfo? otherPropertyInfo, int depth) in _generationStack)
+                (JsonTypeInfo TypeInfo, JsonPropertyInfo? PropertyInfo) key = (context.TypeInfo, context.PropertyInfo);
+#if NET
+                ref string[]? pathToSchema = ref CollectionsMarshal.GetValueRefOrAddDefault(_generated, key, out bool exists);
+#else
+                bool exists = _generated.TryGetValue(key, out string[]? pathToSchema);
+#endif
+                if (exists)
                 {
-                    if (typeInfo == otherTypeInfo && propertyInfo == otherPropertyInfo)
-                    {
-                        existingJsonPointer = FormatJsonPointer(_currentPath, depth);
-                        return true;
-                    }
+                    existingJsonPointer = FormatJsonPointer(pathToSchema);
+                    return true;
                 }
-
-                _generationStack.Add((typeInfo, propertyInfo, CurrentDepth));
+#if NET
+                pathToSchema = context._path;
+#else
+                _generated[key] = context._path;
+#endif
                 existingJsonPointer = null;
                 return false;
             }
 
-            public void PopGeneratedType()
-            {
-                Debug.Assert(_generationStack.Count > 0);
-                _generationStack.RemoveAt(_generationStack.Count - 1);
-            }
-
             public JsonSchemaExporterContext CreateContext(JsonTypeInfo typeInfo, JsonPropertyInfo? propertyInfo, JsonTypeInfo? baseTypeInfo)
             {
-                return new JsonSchemaExporterContext(typeInfo, propertyInfo, baseTypeInfo, _currentPath.ToArray());
+                return new JsonSchemaExporterContext(typeInfo, propertyInfo, baseTypeInfo, [.. _currentPath]);
             }
 
-            private static string FormatJsonPointer(List<string> currentPathList, int depth)
+            private static string FormatJsonPointer(ReadOnlySpan<string> path)
             {
-                Debug.Assert(0 <= depth && depth < currentPathList.Count);
-
-                if (depth == 0)
+                if (path.IsEmpty)
                 {
                     return "#";
                 }
 
-                using ValueStringBuilder sb = new(initialCapacity: depth * 10);
+                using ValueStringBuilder sb = new(initialCapacity: path.Length * 10);
                 sb.Append('#');
 
-                for (int i = 0; i < depth; i++)
+                foreach (string segment in path)
                 {
-                    ReadOnlySpan<char> segment = currentPathList[i].AsSpan();
+                    ReadOnlySpan<char> span = segment.AsSpan();
                     sb.Append('/');
 
                     do
                     {
                         // Per RFC 6901 the characters '~' and '/' must be escaped.
-                        int pos = segment.IndexOfAny('~', '/');
+                        int pos = span.IndexOfAny('~', '/');
                         if (pos < 0)
                         {
-                            sb.Append(segment);
+                            sb.Append(span);
                             break;
                         }
 
-                        sb.Append(segment.Slice(0, pos));
+                        sb.Append(span.Slice(0, pos));
 
-                        if (segment[pos] == '~')
+                        if (span[pos] == '~')
                         {
                             sb.Append("~0");
                         }
                         else
                         {
-                            Debug.Assert(segment[pos] == '/');
+                            Debug.Assert(span[pos] == '/');
                             sb.Append("~1");
                         }
 
-                        segment = segment.Slice(pos + 1);
+                        span = span.Slice(pos + 1);
                     }
-                    while (!segment.IsEmpty);
+                    while (!span.IsEmpty);
                 }
 
                 return sb.ToString();

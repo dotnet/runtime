@@ -24,7 +24,6 @@ NESTED_ENTRY DelayLoad_MethodCall, _TEXT
 
         EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
 
-PATCH_LABEL ExternalMethodFixupPatchLabel
         TAILJMP_RAX
 
 NESTED_END DelayLoad_MethodCall, _TEXT

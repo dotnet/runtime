@@ -5779,15 +5779,12 @@ namespace System
         public string Trim() { throw null; }
         public string Trim(char trimChar) { throw null; }
         public string Trim(params char[]? trimChars) { throw null; }
-        public string Trim(params System.ReadOnlySpan<char> trimChars) { throw null; }
         public string TrimEnd() { throw null; }
         public string TrimEnd(char trimChar) { throw null; }
         public string TrimEnd(params char[]? trimChars) { throw null; }
-        public string TrimEnd(params System.ReadOnlySpan<char> trimChars) { throw null; }
         public string TrimStart() { throw null; }
         public string TrimStart(char trimChar) { throw null; }
         public string TrimStart(params char[]? trimChars) { throw null; }
-        public string TrimStart(params System.ReadOnlySpan<char> trimChars) { throw null; }
         public bool TryCopyTo(System.Span<char> destination) { throw null; }
     }
     public abstract partial class StringComparer : System.Collections.Generic.IComparer<string?>, System.Collections.Generic.IEqualityComparer<string?>, System.Collections.IComparer, System.Collections.IEqualityComparer
@@ -9471,11 +9468,14 @@ namespace System.Globalization
     }
     public static partial class ISOWeek
     {
+        public static int GetWeekOfYear(System.DateOnly date) { throw null; }
         public static int GetWeekOfYear(System.DateTime date) { throw null; }
         public static int GetWeeksInYear(int year) { throw null; }
+        public static int GetYear(System.DateOnly date) { throw null; }
         public static int GetYear(System.DateTime date) { throw null; }
         public static System.DateTime GetYearEnd(int year) { throw null; }
         public static System.DateTime GetYearStart(int year) { throw null; }
+        public static System.DateOnly ToDateOnly(int year, int week, System.DayOfWeek dayOfWeek) { throw null; }
         public static System.DateTime ToDateTime(int year, int week, System.DayOfWeek dayOfWeek) { throw null; }
     }
     public partial class JapaneseCalendar : System.Globalization.Calendar
@@ -10750,15 +10750,15 @@ namespace System.IO
     {
         public static readonly new System.IO.StreamWriter Null;
         public StreamWriter(System.IO.Stream stream) { }
-        public StreamWriter(System.IO.Stream stream, System.Text.Encoding encoding) { }
-        public StreamWriter(System.IO.Stream stream, System.Text.Encoding encoding, int bufferSize) { }
+        public StreamWriter(System.IO.Stream stream, System.Text.Encoding? encoding) { }
+        public StreamWriter(System.IO.Stream stream, System.Text.Encoding? encoding, int bufferSize) { }
         public StreamWriter(System.IO.Stream stream, System.Text.Encoding? encoding = null, int bufferSize = -1, bool leaveOpen = false) { }
         public StreamWriter(string path) { }
         public StreamWriter(string path, bool append) { }
-        public StreamWriter(string path, bool append, System.Text.Encoding encoding) { }
-        public StreamWriter(string path, bool append, System.Text.Encoding encoding, int bufferSize) { }
+        public StreamWriter(string path, bool append, System.Text.Encoding? encoding) { }
+        public StreamWriter(string path, bool append, System.Text.Encoding? encoding, int bufferSize) { }
         public StreamWriter(string path, System.IO.FileStreamOptions options) { }
-        public StreamWriter(string path, System.Text.Encoding encoding, System.IO.FileStreamOptions options) { }
+        public StreamWriter(string path, System.Text.Encoding? encoding, System.IO.FileStreamOptions options) { }
         public virtual bool AutoFlush { get { throw null; } set { } }
         public virtual System.IO.Stream BaseStream { get { throw null; } }
         public override System.Text.Encoding Encoding { get { throw null; } }
@@ -15883,10 +15883,10 @@ namespace System.Threading.Tasks
         public static System.Threading.Tasks.Task<System.Threading.Tasks.Task<TResult>> WhenAny<TResult>(params System.Threading.Tasks.Task<TResult>[] tasks) { throw null; }
         public static System.Collections.Generic.IAsyncEnumerable<System.Threading.Tasks.Task> WhenEach(System.Collections.Generic.IEnumerable<System.Threading.Tasks.Task> tasks) { throw null; }
         public static System.Collections.Generic.IAsyncEnumerable<System.Threading.Tasks.Task> WhenEach(params System.Threading.Tasks.Task[] tasks) { throw null; }
-        public static System.Collections.Generic.IAsyncEnumerable<System.Threading.Tasks.Task> WhenEach(System.ReadOnlySpan<System.Threading.Tasks.Task> tasks) { throw null; }
+        public static System.Collections.Generic.IAsyncEnumerable<System.Threading.Tasks.Task> WhenEach(params System.ReadOnlySpan<System.Threading.Tasks.Task> tasks) { throw null; }
         public static System.Collections.Generic.IAsyncEnumerable<System.Threading.Tasks.Task<TResult>> WhenEach<TResult>(System.Collections.Generic.IEnumerable<System.Threading.Tasks.Task<TResult>> tasks) { throw null; }
         public static System.Collections.Generic.IAsyncEnumerable<System.Threading.Tasks.Task<TResult>> WhenEach<TResult>(params System.Threading.Tasks.Task<TResult>[] tasks) { throw null; }
-        public static System.Collections.Generic.IAsyncEnumerable<System.Threading.Tasks.Task<TResult>> WhenEach<TResult>(System.ReadOnlySpan<System.Threading.Tasks.Task<TResult>> tasks) { throw null; }
+        public static System.Collections.Generic.IAsyncEnumerable<System.Threading.Tasks.Task<TResult>> WhenEach<TResult>(params System.ReadOnlySpan<System.Threading.Tasks.Task<TResult>> tasks) { throw null; }
         public static System.Runtime.CompilerServices.YieldAwaitable Yield() { throw null; }
     }
     public static partial class TaskAsyncEnumerableExtensions

@@ -49,6 +49,7 @@ namespace pal
 #ifdef TARGET_WINDOWS
 #define CDECL __cdecl
 #include <Windows.h>
+#include <minipal/debugger.h>
 
 #define DLL_EXPORT __declspec(dllexport)
 #define MAIN __cdecl wmain
@@ -138,7 +139,7 @@ namespace pal
 
     inline debugger_state_t is_debugger_attached()
     {
-        return (::IsDebuggerPresent() == TRUE) ? debugger_state_t::attached : debugger_state_t::not_attached;
+        return (minipal_is_native_debugger_present() == TRUE) ? debugger_state_t::attached : debugger_state_t::not_attached;
     }
 
     inline bool does_file_exist(const string_t& file_path)
@@ -455,7 +456,7 @@ namespace pal
 #else // !__APPLE__
         // Use procfs to detect if there is a tracer process.
         // See https://www.kernel.org/doc/html/latest/filesystems/proc.html
-        char status[2048] = { 0 };
+        char status[2048];
         int fd = ::open("/proc/self/status", O_RDONLY);
         if (fd == -1)
         {
@@ -471,6 +472,8 @@ namespace pal
         {
             // We have data. At this point we can likely make a strong decision.
             const char tracer_pid_name[] = "TracerPid:";
+            // null terminate status
+            status[bytes_read] = '\0';
             const char* tracer_pid_ptr = ::strstr(status, tracer_pid_name);
             if (tracer_pid_ptr == nullptr)
                 return debugger_state_t::not_attached;

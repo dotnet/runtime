@@ -23,6 +23,10 @@ scriptroot="$( cd -P "$( dirname "$source" )" && pwd )"
 
 imagename="dotnet-sdk-libs-current"
 configuration="Release"
+repo_root=$(git -C "$scriptroot" rev-parse --show-toplevel)
+major_version=$(grep -oP '(?<=<MajorVersion>).*?(?=</MajorVersion>)' "$repo_root/eng/Versions.props")
+minor_version=$(grep -oP '(?<=<MinorVersion>).*?(?=</MinorVersion>)' "$repo_root/eng/Versions.props")
+version="$major_version.$minor_version"
 
 while [[ $# > 0 ]]; do
   opt="$(echo "${1/#--/-}" | tr "[:upper:]" "[:lower:]")"
@@ -41,11 +45,11 @@ while [[ $# > 0 ]]; do
   esac
 done
 
-repo_root=$(git rev-parse --show-toplevel)
 docker_file="$scriptroot/libraries-sdk.linux.Dockerfile"
 
 docker build --tag $imagename \
     --build-arg CONFIGURATION=$configuration \
+    --build-arg VERSION=$version \
     --file $docker_file \
     $repo_root
 
