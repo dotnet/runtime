@@ -88,7 +88,7 @@ namespace System.Runtime.CompilerServices
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static ref byte GetObjectAsRefByte(object obj)
         {
-            return ref Unsafe.Subtract(ref RuntimeHelpers.GetRawData(obj)._data, sizeof(MethodTable*));
+            return ref Unsafe.Subtract(ref RuntimeHelpers.GetRawData(obj), sizeof(MethodTable*));
         }
 
         [StructLayout(LayoutKind.Sequential)]
@@ -193,7 +193,7 @@ namespace System.Runtime.CompilerServices
             }
             else
             {
-                int cCollectibleTlsData = t_ThreadStatics->_cNonCollectibleTlsData;
+                int cCollectibleTlsData = t_ThreadStatics->_cCollectibleTlsData;
                 if (cCollectibleTlsData > indexOffset)
                 {
                     IntPtr* pCollectibleTlsArrayData = t_ThreadStatics->_collectibleTlsArrayData;
