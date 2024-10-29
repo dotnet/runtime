@@ -139,28 +139,32 @@ namespace Microsoft.NET.HostModel.AppHost
                             : appHostLength;
                         appHostDestinationStream.SetLength(appHostSignedLength);
 
-                        using MemoryMappedFile memoryMappedFile = MemoryMappedFile.CreateFromFile(appHostDestinationStream, null, 0, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, true);
-                        using MemoryMappedViewAccessor memoryMappedViewAccessor = memoryMappedFile.CreateViewAccessor(0, 0, MemoryMappedFileAccess.ReadWrite);
-
-                        // Transform the host file in-memory.
-                        RewriteAppHost(memoryMappedFile, memoryMappedViewAccessor);
-
-                        if (!appHostIsPEImage)
+                        using (MemoryMappedFile memoryMappedFile = MemoryMappedFile.CreateFromFile(appHostDestinationStream, null, 0, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, true))
+                        using (MemoryMappedViewAccessor memoryMappedViewAccessor = memoryMappedFile.CreateViewAccessor(0, 0, MemoryMappedFileAccess.ReadWrite))
                         {
-                            if (enableMacOSCodeSign)
+                            // Transform the host file in-memory.
+                            RewriteAppHost(memoryMappedFile, memoryMappedViewAccessor);
+                            if (!appHostIsPEImage)
                             {
-                                string fileName = Path.GetFileName(appHostDestinationFilePath);
-                                MachObjectFile machObjectFile = MachObjectFile.Create(memoryMappedViewAccessor);
-                                appHostLength = machObjectFile.CreateAdHocSignature(memoryMappedViewAccessor, fileName);
-                                appHostDestinationStream.SetLength(appHostLength);
-                            }
-                            else
-                            {
-                                if (MachObjectFile.TryRemoveCodesign(memoryMappedViewAccessor, out long? length))
+                                if (enableMacOSCodeSign)
+                                {
+                                    string fileName = Path.GetFileName(appHostDestinationFilePath);
+                                    MachObjectFile machObjectFile = MachObjectFile.Create(memoryMappedViewAccessor);
+                                    appHostLength = machObjectFile.CreateAdHocSignature(memoryMappedViewAccessor, fileName);
+                                }
+                                else if (MachObjectFile.TryRemoveCodesign(memoryMappedViewAccessor, out long? length))
                                 {
                                     appHostLength = length.Value;
                                 }
+                                appHostDestinationStream.SetLength(appHostLength);
                             }
+                        }
+
+                        if (assemblyToCopyResourcesFrom != null && appHostIsPEImage)
+                        {
+                            using var updater = new ResourceUpdater(appHostDestinationStream, true);
+                            updater.AddResourcesFromPEImage(assemblyToCopyResourcesFrom);
+                            updater.Update();
                         }
                     }
                 });
