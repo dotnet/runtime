@@ -156,9 +156,9 @@ namespace Microsoft.NET.HostModel.AppHost
                                 {
                                     appHostLength = length.Value;
                                 }
-                                appHostDestinationStream.SetLength(appHostLength);
                             }
                         }
+                        appHostDestinationStream.SetLength(appHostLength);
 
                         if (assemblyToCopyResourcesFrom != null && appHostIsPEImage)
                         {
