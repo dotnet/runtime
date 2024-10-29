@@ -15684,21 +15684,18 @@ bool Compiler::ConvertLCLMasks(Statement* stmt)
 }
 
 //------------------------------------------------------------------------
-// optLCLMasks: Allow locls to be of MASK type
+// optLCLMasks: Allow locals to be of MASK type
 //
 // Returns:
 //    Suitable phase status
 //
 PhaseStatus Compiler::optLCLMasks()
 {
-    // TODO: Use a different config option
-#ifdef DEBUG
-    if (optConfigDisableCSE())
+    if (opts.OptimizationDisabled())
     {
-        JITDUMP("Disabled by JitNoCSE\n");
+        JITDUMP("Optimizations Disabled\n");
         return PhaseStatus::MODIFIED_NOTHING;
     }
-#endif
 
     bool madeChanges = false;
 
