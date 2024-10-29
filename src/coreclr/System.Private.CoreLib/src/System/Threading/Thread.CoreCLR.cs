@@ -8,12 +8,6 @@ using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 using System.Runtime.Versioning;
 
-namespace System.Runtime
-{
-    internal sealed class BypassReadyToRunAttribute : Attribute
-    {
-    }
-}
 namespace System.Threading
 {
     internal readonly struct ThreadHandle
@@ -443,10 +437,17 @@ namespace System.Threading
             public static IntPtr pNativeThread;
         }
         /// <summary>
-        /// Get the ThreadStaticBase used for this threads TLS data
+        /// Get the ThreadStaticBase used for this threads TLS data. This ends up being a pointer to the pNativeThread field on the ThreadLocalData,
+        /// which is at a well known offset from the start of the ThreadLocalData
         /// </summary>
+        /// 
+        /// <remarks>
+        /// We use BypassReadyToRunAttribute to ensure that this method is not compiled using ReadyToRun. This avoids an issue where we might
+        /// fail to use the JIT_GetNonGCThreadStaticBaseOptimized2 JIT helpers to access the field, which would result in a stack overflow, as accessing
+        /// this field would recursively call this method.
+        /// </remarks>
+        [System.Runtime.BypassReadyToRunAttribute] 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [System.Runtime.BypassReadyToRunAttribute]
         internal static unsafe StaticsHelpers.ThreadLocalData* GetThreadStaticsBase()
         {
             return (StaticsHelpers.ThreadLocalData*)(((byte*)Unsafe.AsPointer(ref DirectOnThreadLocalData.pNativeThread)) - sizeof(StaticsHelpers.ThreadLocalData));
