@@ -424,12 +424,9 @@ enum CorInfoHelpFunc
 
     CORINFO_HELP_MON_ENTER,
     CORINFO_HELP_MON_EXIT,
-    CORINFO_HELP_MON_ENTER_STATIC,
-    CORINFO_HELP_MON_EXIT_STATIC,
 
     CORINFO_HELP_GETCLASSFROMMETHODPARAM, // Given a generics method handle, returns a class handle
-    CORINFO_HELP_GETSYNCFROMCLASSHANDLE,  // Given a generics class handle, returns the sync monitor
-                                          // in its ManagedClassObject
+    CORINFO_HELP_GETSYNCFROMCLASSHANDLE,  // Given a generics class handle return the ManagedClassObject that is used to lock a static method
 
     /* GC support */
 
@@ -1514,7 +1511,7 @@ struct CORINFO_DEVIRTUALIZATION_INFO
     // - details on the computation done by the jit host
     // - If pResolvedTokenDevirtualizedMethod is not set to NULL and targeting an R2R image
     //   use it as the parameter to getCallInfo
-    // - requiresInstMethodTableArg is set to TRUE if the devirtualized method requires a type handle arg.
+    // - isInstantiatingStub is set to TRUE if the devirtualized method is a generic method instantiating stub
     // - wasArrayInterfaceDevirt is set TRUE for array interface method devirtualization
     //     (in which case the method handle and context will be a generic method)
     //
@@ -1523,7 +1520,7 @@ struct CORINFO_DEVIRTUALIZATION_INFO
     CORINFO_DEVIRTUALIZATION_DETAIL detail;
     CORINFO_RESOLVED_TOKEN          resolvedTokenDevirtualizedMethod;
     CORINFO_RESOLVED_TOKEN          resolvedTokenDevirtualizedUnboxedMethod;
-    bool                            requiresInstMethodTableArg;
+    bool                            isInstantiatingStub;
     bool                            wasArrayInterfaceDevirt;
 };
 
@@ -2114,6 +2111,14 @@ public:
         bool*                 requiresInstMethodTableArg
         ) = 0;
 
+    // Get the wrapped entry point for an instantiating stub, if possible.
+    // Sets methodArg for method instantiations, classArg for class instantiations.
+    virtual CORINFO_METHOD_HANDLE getInstantiatedEntry(
+        CORINFO_METHOD_HANDLE ftn,
+        CORINFO_METHOD_HANDLE* methodArg,
+        CORINFO_CLASS_HANDLE* classArg
+        ) = 0;
+
     // Given T, return the type of the default Comparer<T>.
     // Returns null if the type can't be determined exactly.
     virtual CORINFO_CLASS_HANDLE getDefaultComparerClass(
@@ -2293,6 +2298,13 @@ public:
     virtual CORINFO_CLASS_HANDLE getTypeInstantiationArgument(
             CORINFO_CLASS_HANDLE cls,
             unsigned             index
+            ) = 0;
+
+    // Return the type argument of the instantiated generic method,
+    // which is specified by the index
+    virtual CORINFO_CLASS_HANDLE getMethodInstantiationArgument(
+            CORINFO_METHOD_HANDLE ftn,
+            unsigned              index
             ) = 0;
 
     // Prints the name for a specified class including namespaces and enclosing

@@ -318,7 +318,7 @@ BEGIN
     IDS_INVALID_RECURSIVE_GENERIC_FIELD_LOAD "Could not load type '%1' from assembly '%2' because of an invalid self-referential generic field."
 
 #if FEATURE_COMINTEROP
-    IDS_EE_CANNOTCAST_NOMARSHAL                 "The Windows Runtime Object can only be used in the threading context where it was created, because it implements INoMarshal or has MarshalingBehaviorAttribute(MarshalingType.None) set."
+    IDS_EE_CANNOTCAST_NOMARSHAL                 "The object can only be used in the threading context where it was created, because it implements INoMarshal."
 #endif
 
     IDS_CLASSLOAD_GENERAL                   "Could not load type '%1' from assembly '%2'."

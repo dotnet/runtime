@@ -6,6 +6,7 @@ project(PortableRuntime)
 add_definitions(-DUSE_PORTABLE_HELPERS)
 
 add_library(PortableRuntime STATIC ${COMMON_RUNTIME_SOURCES} ${PORTABLE_RUNTIME_SOURCES})
+target_link_libraries(PortableRuntime PRIVATE aotminipal)
 
 # Get the current list of definitions
 get_compile_definitions(DEFINITIONS)
@@ -15,6 +16,10 @@ if(WIN32)
     set(COMPILER_LANGUAGE "")
     set(PREPROCESSOR_FLAGS -EP -nologo)
     set(ASM_OFFSETS_CPP ${RUNTIME_DIR}/windows/AsmOffsets.cpp)
+
+    set_target_properties(aotminipal PROPERTIES
+        COMPILE_PDB_NAME "aotminipal"
+        COMPILE_PDB_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>")
 else()
     set(COMPILER_LANGUAGE -x c++)
     set(PREPROCESSOR_FLAGS -E -P)
@@ -29,3 +34,4 @@ add_custom_command(
 )
 
 install_static_library(PortableRuntime aotsdk nativeaot)
+install_static_library(aotminipal aotsdk nativeaot)

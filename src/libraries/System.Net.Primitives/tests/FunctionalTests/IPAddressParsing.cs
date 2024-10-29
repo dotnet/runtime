@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Net.Sockets;
+using System.Runtime.InteropServices;
 using System.Text;
 using Xunit;
 
@@ -140,6 +141,26 @@ namespace System.Net.Primitives.Functional.Tests
 
         private static T Parse<T>(string s) where T : ISpanParsable<T> => T.Parse(s.AsSpan(), null);
         private static bool TryParse<T>(string s, out T result) where T : ISpanParsable<T> => T.TryParse(s.AsSpan(), null, out result);
+    }
+
+    public sealed class IPAddressParsingFormatting_IUtf8SpanParsable_IUtf8SpanFormattable : IPAddressParsingFormatting_Span
+    {
+        public override IPAddress Parse(string ipString) => Parse<IPAddress>(ipString);
+        public override bool TryParse(string ipString, out IPAddress address) => TryParse<IPAddress>(ipString, out address);
+        public override bool TryFormat(IPAddress address, Span<byte> utf8Destination, out int bytesWritten) => ((IUtf8SpanFormattable)address).TryFormat(utf8Destination, out bytesWritten, default, null);
+
+        private static T Parse<T>(string s) where T : IUtf8SpanParsable<T>
+        {
+            byte[] utf8Bytes = Encoding.UTF8.GetBytes(s);
+
+            return T.Parse(utf8Bytes.AsSpan(), null);
+        }
+        private static bool TryParse<T>(string s, out T result) where T : IUtf8SpanParsable<T>
+        {
+            byte[] utf8Bytes = Encoding.UTF8.GetBytes(s);
+
+            return T.TryParse(utf8Bytes.AsSpan(), null, out result);
+        }
     }
 
     public abstract class IPAddressParsingFormatting
@@ -468,13 +489,13 @@ namespace System.Net.Primitives.Functional.Tests
 
         public static readonly object[][] ScopeIds =
         {
-            new object[] { "Fe08::1%123", 123},
-            new object[] { "Fe08::1%12345678", 12345678},
-            new object[] { "fe80::e8b0:63ff:fee8:6b3b%9", 9},
-            new object[] { "fe80::e8b0:63ff:fee8:6b3b", 0},
-            new object[] { "fe80::e8b0:63ff:fee8:6b3b%abcd0", 0},
-            new object[] { "::%unknownInterface", 0},
-            new object[] { "::%0", 0},
+            new object[] { "Fe08::1%123", 123 },
+            new object[] { "Fe08::1%12345678", 12345678 },
+            new object[] { "fe80::e8b0:63ff:fee8:6b3b%9", 9 },
+            new object[] { "fe80::e8b0:63ff:fee8:6b3b", 0 },
+            new object[] { "fe80::e8b0:63ff:fee8:6b3b%abcd0", 0 },
+            new object[] { "::%unknownInterface", 0 },
+            new object[] { "::%0", 0 },
         };
 
         [Theory]
