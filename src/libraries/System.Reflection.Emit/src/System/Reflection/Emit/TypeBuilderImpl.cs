@@ -1016,11 +1016,52 @@ namespace System.Reflection.Emit
             return candidates;
         }
 
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicNestedTypes | DynamicallyAccessedMemberTypes.NonPublicNestedTypes)]
-        public override Type[] GetNestedTypes(BindingFlags bindingAttr) => throw new NotSupportedException();
+        private static BindingFlags GetBindingFlags(TypeBuilderImpl type)
+        {
+            BindingFlags bindingFlags = (type.Attributes & TypeAttributes.VisibilityMask) == TypeAttributes.Public ?
+                BindingFlags.Public : BindingFlags.NonPublic;
+
+            return bindingFlags;
+        }
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicNestedTypes | DynamicallyAccessedMemberTypes.NonPublicNestedTypes)]
-        public override Type? GetNestedType(string name, BindingFlags bindingAttr) => throw new NotSupportedException();
+        public override Type[] GetNestedTypes(BindingFlags bindingAttr)
+        {
+            ThrowIfNotCreated();
+            List<Type> nestedTypes = new List<Type>();
+            foreach (TypeBuilderImpl type in _module.GetNestedTypeBuilders(this))
+            {
+                BindingFlags typeFlags = GetBindingFlags(type);
+                if ((bindingAttr & typeFlags) == typeFlags)
+                {
+                    nestedTypes.Add(type);
+                }
+            }
+
+            return nestedTypes.ToArray();
+        }
+
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicNestedTypes | DynamicallyAccessedMemberTypes.NonPublicNestedTypes)]
+        public override Type? GetNestedType(string name, BindingFlags bindingAttr)
+        {
+            Type[] types = GetNestedTypes(bindingAttr);
+
+            Type? match = null;
+            foreach (Type type in types)
+            {
+                if (type.Name == name)
+                {
+                    if (match != null)
+                    {
+                        throw new AmbiguousMatchException(SR.Format(SR.AmbiguousMatch_MemberInfo, type.DeclaringType, type.Name));
+                    }
+
+                    match = type;
+                }
+            }
+
+            return match;
+        }
 
         [DynamicallyAccessedMembers(GetAllMembers)]
         public override MemberInfo[] GetMember(string name, MemberTypes type, BindingFlags bindingAttr) => throw new NotSupportedException();
