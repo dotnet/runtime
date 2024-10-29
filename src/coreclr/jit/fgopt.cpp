@@ -4911,6 +4911,11 @@ void Compiler::ThreeOptLayout::ConsiderEdge(FlowEdge* edge)
         return;
     }
 
+    if (srcBlk->hasHndIndex() || dstBlk->hasHndIndex())
+    {
+        return;
+    }
+
     if (srcBlk->KindIs(BBJ_CALLFINALLYRET))
     {
         return;
@@ -5057,7 +5062,7 @@ void Compiler::ThreeOptLayout::Run()
         {
             BasicBlock* const block = blockOrder[i - 1];
             BasicBlock* const next  = blockOrder[i];
-            if (!block->NextIs(next))
+            if (!block->NextIs(next) && BasicBlock::sameEHRegion(block, next))
             {
                 compiler->fgUnlinkBlock(next);
                 compiler->fgInsertBBafter(block, next);
