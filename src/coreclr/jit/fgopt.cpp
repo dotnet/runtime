@@ -4911,11 +4911,15 @@ void Compiler::ThreeOptLayout::ConsiderEdge(FlowEdge* edge)
         return;
     }
 
+    // Don't waste time reordering within handler regions
     if (srcBlk->hasHndIndex() || dstBlk->hasHndIndex())
     {
         return;
     }
 
+    // For backward jumps, we will consider partitioning before 'srcBlk'.
+    // If 'srcBlk' is a BBJ_CALLFINALLYRET, this partition will split up a call-finally pair.
+    // Thus, don't consider edges out of BBJ_CALLFINALLYRET blocks.
     if (srcBlk->KindIs(BBJ_CALLFINALLYRET))
     {
         return;
