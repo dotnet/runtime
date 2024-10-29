@@ -970,7 +970,7 @@ template <typename TYPE>
 FORCEINLINE void DeleteCoTaskMem(TYPE *value)
 {
     if (value)
-        minipal_co_task_mem_free(value);
+        CoTaskMemFree(value);
 }
 
 template<typename _TYPE>

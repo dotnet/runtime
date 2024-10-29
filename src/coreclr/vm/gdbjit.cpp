@@ -452,7 +452,7 @@ HRESULT FunctionMember::GetLocalsDebugInfo(NotifyGdb::PTK_TypeInfoMap pTypeMap,
 
 MethodDebugInfo::MethodDebugInfo(int numPoints, int numLocals)
 {
-    points = (SequencePointInfo*) minipal_co_task_mem_alloc(sizeof(SequencePointInfo) * numPoints);
+    points = (SequencePointInfo*) CoTaskMemAlloc(sizeof(SequencePointInfo) * numPoints);
     if (points == nullptr)
     {
         COMPlusThrowOM();
@@ -467,10 +467,10 @@ MethodDebugInfo::MethodDebugInfo(int numPoints, int numLocals)
         return;
     }
 
-    locals = (LocalVarInfo*) minipal_co_task_mem_alloc(sizeof(LocalVarInfo) * numLocals);
+    locals = (LocalVarInfo*) CoTaskMemAlloc(sizeof(LocalVarInfo) * numLocals);
     if (locals == nullptr)
     {
-        minipal_co_task_mem_free(points);
+        CoTaskMemFree(points);
         COMPlusThrowOM();
     }
     memset(locals, 0, sizeof(LocalVarInfo) * numLocals);
@@ -482,13 +482,13 @@ MethodDebugInfo::~MethodDebugInfo()
     if (locals)
     {
         for (int i = 0; i < localsSize; i++)
-            minipal_co_task_mem_free(locals[i].name);
-        minipal_co_task_mem_free(locals);
+            CoTaskMemFree(locals[i].name);
+        CoTaskMemFree(locals);
     }
 
     for (int i = 0; i < size; i++)
-        minipal_co_task_mem_free(points[i].fileName);
-    minipal_co_task_mem_free(points);
+        CoTaskMemFree(points[i].fileName);
+    CoTaskMemFree(points);
 }
 
 /* Get mapping of IL offsets to source line numbers */

@@ -11,11 +11,17 @@
     {
 #endif // __cplusplus
 
-// Allocate memory on the platform equivalent of the CoTaskMem heap.
-void* minipal_co_task_mem_alloc(size_t cb);
+#ifndef HOST_WINDOWS
+inline void* CoTaskMemAlloc(size_t cb)
+{
+    return malloc(cb);
+}
 
-// Free memory allocated on the platform equivalent of the CoTaskMem heap.
-void minipal_co_task_mem_free(void* pv);
+inline void CoTaskMemFree(void* pv)
+{
+    free(pv);
+}
+#endif
 
 #ifdef __cplusplus
     }

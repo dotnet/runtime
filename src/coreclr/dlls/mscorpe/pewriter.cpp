@@ -1589,7 +1589,7 @@ HRESULT PEWriter::write(void ** ppImage)
     size_t lSize = filePos;
 
     // allocate the block we are handing back to the caller
-    void * pImage = (void *) minipal_co_task_mem_alloc(lSize);
+    void * pImage = (void *) CoTaskMemAlloc(lSize);
     if (NULL == pImage)
     {
         return E_OUTOFMEMORY;
@@ -1622,7 +1622,7 @@ HRESULT PEWriter::write(void ** ppImage)
     // make sure we wrote the exact numbmer of bytes expected
     _ASSERTE(lSize == (size_t) (pCur - (char *)pImage));
 
-    // give pointer to memory image back to caller (who must free with minipal_co_task_mem_free())
+    // give pointer to memory image back to caller (who must free with CoTaskMemFree())
     *ppImage = pImage;
 
     // all done
