@@ -1657,7 +1657,7 @@ void OleVariant::MarshalLPWSTRRArrayComToOle(BASEARRAYREF *pComArray, void *oleA
                 // Allocate the string using CoTaskMemAlloc.
                 {
                     GCX_PREEMP();
-                    lpwstr = (LPWSTR)CoTaskMemAlloc(allocLength);
+                    lpwstr = (LPWSTR)minicom_CoTaskMemAlloc(allocLength);
                 }
                 if (lpwstr == NULL)
                     ThrowOutOfMemory();
@@ -1694,7 +1694,7 @@ void OleVariant::ClearLPWSTRArray(void *oleArray, SIZE_T cElements, MethodTable 
         LPWSTR lpwstr = *pOle++;
 
         if (lpwstr != NULL)
-            CoTaskMemFree(lpwstr);
+            minicom_CoTaskMemFree(lpwstr);
     }
 }
 
@@ -1801,7 +1801,7 @@ void OleVariant::MarshalLPSTRRArrayComToOle(BASEARRAYREF *pComArray, void *oleAr
                 // Allocate the string using CoTaskMemAlloc.
                 {
                     GCX_PREEMP();
-                    lpstr = (LPSTR)CoTaskMemAlloc(allocLength);
+                    lpstr = (LPSTR)minicom_CoTaskMemAlloc(allocLength);
                 }
                 if (lpstr == NULL)
                     ThrowOutOfMemory();
@@ -1840,7 +1840,7 @@ void OleVariant::ClearLPSTRArray(void *oleArray, SIZE_T cElements, MethodTable *
         LPSTR lpstr = *pOle++;
 
         if (lpstr != NULL)
-            CoTaskMemFree(lpstr);
+            minicom_CoTaskMemFree(lpstr);
     }
 }
 

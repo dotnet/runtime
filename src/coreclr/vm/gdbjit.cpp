@@ -452,7 +452,7 @@ HRESULT FunctionMember::GetLocalsDebugInfo(NotifyGdb::PTK_TypeInfoMap pTypeMap,
 
 MethodDebugInfo::MethodDebugInfo(int numPoints, int numLocals)
 {
-    points = (SequencePointInfo*) CoTaskMemAlloc(sizeof(SequencePointInfo) * numPoints);
+    points = (SequencePointInfo*) minicom_CoTaskMemAlloc(sizeof(SequencePointInfo) * numPoints);
     if (points == nullptr)
     {
         COMPlusThrowOM();
@@ -467,10 +467,10 @@ MethodDebugInfo::MethodDebugInfo(int numPoints, int numLocals)
         return;
     }
 
-    locals = (LocalVarInfo*) CoTaskMemAlloc(sizeof(LocalVarInfo) * numLocals);
+    locals = (LocalVarInfo*) minicom_CoTaskMemAlloc(sizeof(LocalVarInfo) * numLocals);
     if (locals == nullptr)
     {
-        CoTaskMemFree(points);
+        minicom_CoTaskMemFree(points);
         COMPlusThrowOM();
     }
     memset(locals, 0, sizeof(LocalVarInfo) * numLocals);
@@ -482,13 +482,13 @@ MethodDebugInfo::~MethodDebugInfo()
     if (locals)
     {
         for (int i = 0; i < localsSize; i++)
-            CoTaskMemFree(locals[i].name);
-        CoTaskMemFree(locals);
+            minicom_CoTaskMemFree(locals[i].name);
+        minicom_CoTaskMemFree(locals);
     }
 
     for (int i = 0; i < size; i++)
-        CoTaskMemFree(points[i].fileName);
-    CoTaskMemFree(points);
+        minicom_CoTaskMemFree(points[i].fileName);
+    minicom_CoTaskMemFree(points);
 }
 
 /* Get mapping of IL offsets to source line numbers */
