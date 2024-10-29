@@ -540,6 +540,7 @@ internal class MockDescriptors
 
     public class Thread
     {
+        const bool UseFunclets = false;
         private const ulong DefaultAllocationRangeStart = 0x0003_0000;
         private const ulong DefaultAllocationRangeEnd = 0x0004_0000;
 
@@ -596,7 +597,7 @@ internal class MockDescriptors
                 (nameof(Constants.Globals.ThreadStore), threadStoreGlobal.Address, null),
                 (nameof(Constants.Globals.FinalizerThread), finalizerThreadGlobal.Address, null),
                 (nameof(Constants.Globals.GCThread), gcThreadGlobal.Address, null),
-                (nameof(Constants.Globals.FeatureEHFunclets), 0, null),
+                (nameof(Constants.Globals.FeatureEHFunclets), UseFunclets ? 1 : 0, null),
             ];
         }
 
@@ -639,7 +640,10 @@ internal class MockDescriptors
         {
             TargetTestHelpers helpers = _builder.TargetTestHelpers;
             Target.TypeInfo typeInfo = Types[DataType.Thread];
-            MockMemorySpace.HeapFragment thread = _allocator.Allocate(typeInfo.Size.Value, "Thread");
+            if (UseFunclets)
+                throw new NotImplementedException("todo for funclets: allocate the ExceptionInfo separately");
+            ulong allocSize = typeInfo.Size.Value + (UseFunclets ? 0 : Types[DataType.ExceptionInfo].Size.Value);
+            MockMemorySpace.HeapFragment thread = _allocator.Allocate(allocSize, UseFunclets ? "Thread" : "Thread and ExceptionInfo");
             Span<byte> data = thread.Data.AsSpan();
             helpers.Write(
                 data.Slice(typeInfo.Fields[nameof(Data.Thread.Id)].Offset),
@@ -650,11 +654,16 @@ internal class MockDescriptors
             _builder.AddHeapFragment(thread);
 
             // Add exception info for the thread
-            MockMemorySpace.HeapFragment exceptionInfo = _allocator.Allocate(Types[DataType.ExceptionInfo].Size.Value, "ExceptionInfo");
-            _builder.AddHeapFragment(exceptionInfo);
+            //MockMemorySpace.HeapFragment exceptionInfo = _allocator.Allocate(Types[DataType.ExceptionInfo].Size.Value, "ExceptionInfo");
+            //_builder.AddHeapFragment(exceptionInfo);
+            TargetPointer exceptionInfoAddress = default;
+            if (UseFunclets)
+                throw new NotImplementedException("todo for funclets: allocate and ExceptionInfo");
+            else
+                exceptionInfoAddress = thread.Address + Types[DataType.ExceptionInfo].Size.Value;
             helpers.WritePointer(
                 data.Slice(typeInfo.Fields[nameof(Data.Thread.ExceptionTracker)].Offset),
-                exceptionInfo.Address);
+                exceptionInfoAddress);
 
             ulong threadLinkOffset = (ulong)typeInfo.Fields[nameof(Data.Thread.LinkNext)].Offset;
             if (_previousThread != TargetPointer.Null)

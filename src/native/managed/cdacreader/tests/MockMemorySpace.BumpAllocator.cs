@@ -45,6 +45,8 @@ internal unsafe static partial class MockMemorySpace
         public bool TryAllocate(ulong size, string name, [NotNullWhen(true)] out HeapFragment? fragment)
         {
             ulong current = AlignUp(_current);
+            Debug.Assert(current >= _current);
+            Debug.Assert((current % (ulong)MinAlign) == 0);
             if (current + size <= _blockEnd)
             {
                 fragment = new HeapFragment {
