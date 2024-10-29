@@ -26,8 +26,8 @@ public unsafe class LoaderTests
 
         // Add the modules
         MockLoader loader = new(builder);
-        TargetPointer moduleAddr = loader.AddModule(helpers, path: expected);
-        TargetPointer moduleAddrEmptyPath = loader.AddModule(helpers);
+        TargetPointer moduleAddr = loader.AddModule(path: expected);
+        TargetPointer moduleAddrEmptyPath = loader.AddModule();
 
         bool success = builder.TryCreateTarget(out ContractDescriptorTarget? target);
         Assert.True(success);
@@ -62,8 +62,8 @@ public unsafe class LoaderTests
 
         // Add the modules
         MockLoader loader = new(builder);
-        TargetPointer moduleAddr = loader.AddModule(helpers, fileName: expected);
-        TargetPointer moduleAddrEmptyName = loader.AddModule(helpers);
+        TargetPointer moduleAddr = loader.AddModule(fileName: expected);
+        TargetPointer moduleAddrEmptyName = loader.AddModule();
 
         bool success = builder.TryCreateTarget(out ContractDescriptorTarget? target);
         Assert.True(success);
