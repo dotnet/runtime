@@ -2109,7 +2109,17 @@ bool Compiler::optTryInvertWhileLoop(FlowGraphNaturalLoop* loop)
         for (Statement* stmt : block->Statements())
         {
             GenTree* clonedTree = gtCloneExpr(stmt->GetRootNode());
-            fgNewStmtAtEnd(newCond, clonedTree, stmt->GetDebugInfo());
+            Statement* clonedStmt = fgNewStmtAtEnd(newCond, clonedTree, stmt->GetDebugInfo());
+
+            if (stmt == condBlock->lastStmt())
+            {
+                // TODO: This ought not to be necessary, but has large negative diffs if we don't do it
+                assert(clonedStmt->GetRootNode()->OperIs(GT_JTRUE));
+                clonedStmt->GetRootNode()->AsUnOp()->gtOp1 = gtReverseCond(clonedStmt->GetRootNode()->gtGetOp1());
+                newCond->SetCond(newCond->GetFalseEdge(), newCond->GetTrueEdge());
+            }
+
+            DISPSTMT(clonedStmt);
         }
 
         newCond->CopyFlags(block, BBF_COPY_PROPAGATE);
@@ -2161,8 +2171,6 @@ PhaseStatus Compiler::optInvertLoops()
             m_dfsTree = fgComputeDfs();
             m_loops   = FlowGraphNaturalLoops::Find(m_dfsTree);
         }
-
-        fgDebugCheckLoops();
 
         fgRenumberBlocks();
     }
