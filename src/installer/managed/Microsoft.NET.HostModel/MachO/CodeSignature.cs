@@ -13,7 +13,7 @@ namespace Microsoft.NET.HostModel.MachO;
 /// <summary>
 /// Managed class with information about a Mach-O code signature.
 /// </summary>
-internal class CodeSignature
+internal unsafe class CodeSignature
 {
     private readonly long _fileOffset;
     private EmbeddedSignatureHeader _embeddedSignature;
@@ -131,10 +131,10 @@ internal class CodeSignature
         long fileOffset = _fileOffset;
 
         file.Write(fileOffset, ref _embeddedSignature);
-        fileOffset += Marshal.SizeOf<EmbeddedSignatureHeader>();
+        fileOffset += sizeof(EmbeddedSignatureHeader);
 
         file.Write(fileOffset, ref _codeDirectory);
-        fileOffset += Marshal.SizeOf<CodeDirectoryHeader>();
+        fileOffset += sizeof(CodeDirectoryHeader);
 
         file.WriteArray(fileOffset, _identifier, 0, _identifier.Length);
         fileOffset += _identifier.Length;
@@ -143,22 +143,22 @@ internal class CodeSignature
         fileOffset += _cdHashes.Length;
 
         file.Write(fileOffset, ref _requirementsBlob);
-        fileOffset += Marshal.SizeOf<RequirementsBlob>();
+        fileOffset += sizeof(RequirementsBlob);
 
         file.Write(fileOffset, ref _cmsWrapperBlob);
-        Debug.Assert(fileOffset + Marshal.SizeOf<CmsWrapperBlob>() == _fileOffset + Size);
+        Debug.Assert(fileOffset + sizeof(CmsWrapperBlob) == _fileOffset + Size);
     }
 
     internal void WriteToStream(FileStream file)
     {
         byte[] arr = new byte[(int)Size];
         Span<byte> buffer = arr;
-
+        int bufferOffset;
         MemoryMarshal.Write(buffer, ref _embeddedSignature);
-        int bufferOffset = Marshal.SizeOf<EmbeddedSignatureHeader>();
+        bufferOffset = sizeof(EmbeddedSignatureHeader);
 
         MemoryMarshal.Write(buffer.Slice(bufferOffset), ref _codeDirectory);
-        bufferOffset += Marshal.SizeOf<CodeDirectoryHeader>();
+        bufferOffset += sizeof(CodeDirectoryHeader);
 
         _identifier.CopyTo(buffer.Slice(bufferOffset));
         bufferOffset += _identifier.Length;
@@ -167,10 +167,10 @@ internal class CodeSignature
         bufferOffset += _cdHashes.Length;
 
         MemoryMarshal.Write(buffer.Slice(bufferOffset), ref _requirementsBlob);
-        bufferOffset += Marshal.SizeOf<RequirementsBlob>();
+        bufferOffset += sizeof(RequirementsBlob);
 
         MemoryMarshal.Write(buffer.Slice(bufferOffset), ref _cmsWrapperBlob);
-        Debug.Assert(bufferOffset + Marshal.SizeOf<CmsWrapperBlob>() == buffer.Length);
+        Debug.Assert(bufferOffset + sizeof(CmsWrapperBlob) == buffer.Length);
 
         file.Write(arr, 0, buffer.Length);
     }

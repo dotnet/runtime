@@ -16,7 +16,9 @@ internal struct LinkEditCommand
     public LinkEditCommand(MachLoadCommandType command, uint dataOffset, uint dataSize, MachHeader header)
     {
         _command = (MachLoadCommandType)header.ConvertValue((uint)command);
-        _commandSize = header.ConvertValue((uint)Marshal.SizeOf<LinkEditCommand>());
+        uint commandSize;
+        unsafe { commandSize = (uint) sizeof(LinkEditCommand); }
+        _commandSize = header.ConvertValue(commandSize);
         _dataOffset = header.ConvertValue(dataOffset);
         _dataSize = header.ConvertValue(dataSize);
     }

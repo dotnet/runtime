@@ -16,7 +16,7 @@ namespace Microsoft.NET.HostModel.MachO;
 /// The object is created from a memory mapped file, and a signature can be calculated from the memory mapped file.
 /// However, since a memory mapped file cannot be extended, the signature is written to a file stream.
 /// </summary>
-internal class MachObjectFile
+internal unsafe class MachObjectFile
 {
     internal const uint SpecialSlotCount = 2;
     internal const uint PageSize = 4096;
@@ -179,7 +179,7 @@ internal class MachObjectFile
             return false;
 
         machFile._header.NumberOfCommands -= 1;
-        machFile._header.SizeOfCommands -= (uint)Marshal.SizeOf<LinkEditCommand>();
+        machFile._header.SizeOfCommands -= (uint)sizeof(LinkEditCommand);
         machFile._linkEditSegment64.Command.SetFileSize(
             machFile._linkEditSegment64.Command.GetFileSize(machFile._header)
                 - machFile._codeSignatureLC.Command.GetFileSize(machFile._header),
@@ -262,7 +262,8 @@ internal class MachObjectFile
         codeSignatureLC = default;
         textSegment64 = default;
         linkEditSegment64 = default;
-        long commandsPtr = Marshal.SizeOf<MachHeader>();
+        long commandsPtr;
+        commandsPtr = sizeof(MachHeader);
         if (!header.Is64Bit)
             throw new InvalidDataException("Only 64-bit Mach-O files are supported");
         lowestSectionOffset = long.MaxValue;
@@ -280,13 +281,14 @@ internal class MachObjectFile
                     if (segment64.Name.Equals(NameBuffer.__TEXT))
                     {
                         textSegment64 = (segment64, commandsPtr);
-                        var sectionPtr = commandsPtr + Marshal.SizeOf<Segment64LoadCommand>();
-                        var sectionsCount = segment64.GetSectionsCount(header);
+                        long sectionPtr;
+                        sectionPtr = commandsPtr + sizeof(Segment64LoadCommand);
+                        uint sectionsCount = segment64.GetSectionsCount(header);
                         for (int s = 0; s < sectionsCount; s++)
                         {
                             inputFile.Read(sectionPtr, out Section64LoadCommand section);
                             lowestSectionOffset = Math.Min(lowestSectionOffset, section.GetFileOffset(header));
-                            sectionPtr += Marshal.SizeOf<Section64LoadCommand>();
+                            sectionPtr += sizeof(Section64LoadCommand);
                         }
                         break;
                     }
@@ -315,7 +317,7 @@ internal class MachObjectFile
         {
             // Update the header to accomodate the new code signature load command
             _header.NumberOfCommands += 1;
-            _header.SizeOfCommands += (uint)Marshal.SizeOf<LinkEditCommand>();
+            _header.SizeOfCommands += (uint)sizeof(LinkEditCommand);
             if (_header.SizeOfCommands > _lowestSectionOffset)
             {
                 throw new NotImplementedException("Mach Object does not have enough space for the code signature load command");
@@ -381,21 +383,19 @@ internal class MachObjectFile
         }
 
         // Create Embedded Signature Header
-        {
-            embeddedSignature.Size = GetCodeSignatureSize(identifier);
-            embeddedSignature.CodeDirectory = new BlobIndex(
-                CodeDirectorySpecialSlot.CodeDirectory,
-                (uint)Marshal.SizeOf<EmbeddedSignatureHeader>());
-            embeddedSignature.Requirements = new BlobIndex(
-                CodeDirectorySpecialSlot.Requirements,
-                (uint)Marshal.SizeOf<EmbeddedSignatureHeader>()
-                    + GetCodeDirectorySize(identifier));
-            embeddedSignature.CmsWrapper = new BlobIndex(
-                CodeDirectorySpecialSlot.CmsWrapper,
-                (uint)Marshal.SizeOf<EmbeddedSignatureHeader>()
-                    + GetCodeDirectorySize(identifier)
-                    + (uint)Marshal.SizeOf<RequirementsBlob>());
-        }
+        embeddedSignature.Size = GetCodeSignatureSize(identifier);
+        embeddedSignature.CodeDirectory = new BlobIndex(
+            CodeDirectorySpecialSlot.CodeDirectory,
+            (uint)sizeof(EmbeddedSignatureHeader));
+        embeddedSignature.Requirements = new BlobIndex(
+            CodeDirectorySpecialSlot.Requirements,
+            (uint)sizeof(EmbeddedSignatureHeader)
+                + GetCodeDirectorySize(identifier));
+        embeddedSignature.CmsWrapper = new BlobIndex(
+            CodeDirectorySpecialSlot.CmsWrapper,
+            (uint)sizeof(EmbeddedSignatureHeader)
+                + GetCodeDirectorySize(identifier)
+                + (uint)sizeof(RequirementsBlob));
 
         return CodeSignature.Create(
             GetSignatureStart(),
@@ -414,12 +414,13 @@ internal class MachObjectFile
         uint codeDirectorySize = GetCodeDirectorySize(identifier);
 
         CodeDirectoryHeader codeDirectoryBlob = new();
-        uint hashesOffset = (uint)Marshal.SizeOf<CodeDirectoryHeader>() + identifierLength + DefaultHashSize * SpecialSlotCount;
+        uint hashesOffset;
+        hashesOffset = (uint)sizeof(CodeDirectoryHeader) + identifierLength + DefaultHashSize * SpecialSlotCount;
         codeDirectoryBlob.Size = codeDirectorySize;
         codeDirectoryBlob.Version = version;
         codeDirectoryBlob.Flags = CodeDirectoryFlags.Adhoc;
         codeDirectoryBlob.HashesOffset = hashesOffset;
-        codeDirectoryBlob.IdentifierOffset = (uint)Marshal.SizeOf<CodeDirectoryHeader>();
+        codeDirectoryBlob.IdentifierOffset = (uint)sizeof(CodeDirectoryHeader);
         codeDirectoryBlob.SpecialSlotCount = SpecialSlotCount;
         codeDirectoryBlob.CodeSlotCount = GetCodeSlotCount();
         codeDirectoryBlob.ExecutableLength = GetSignatureStart() > uint.MaxValue ? uint.MaxValue : GetSignatureStart();
@@ -451,19 +452,25 @@ internal class MachObjectFile
     private uint GetCodeDirectorySize(string identifier) => GetCodeDirectorySize(GetSignatureStart(), identifier);
     private static uint GetCodeDirectorySize(uint signatureStart, string identifier)
     {
-        return (uint)(Marshal.SizeOf<CodeDirectoryHeader>()
-            + GetIdentifierLength(identifier)
-            + SpecialSlotCount * DefaultHashSize
-            + GetCodeSlotCount(signatureStart) * DefaultHashSize);
+        unsafe
+        {
+            return (uint)(sizeof(CodeDirectoryHeader)
+                + GetIdentifierLength(identifier)
+                + SpecialSlotCount * DefaultHashSize
+                + GetCodeSlotCount(signatureStart) * DefaultHashSize);
+        }
     }
 
     private uint GetCodeSignatureSize(string identifier) => GetCodeSignatureSize(GetSignatureStart(), identifier);
     private static uint GetCodeSignatureSize(uint signatureStart, string identifier)
     {
-        return (uint)(Marshal.SizeOf<EmbeddedSignatureHeader>()
-            + GetCodeDirectorySize(signatureStart, identifier)
-            + Marshal.SizeOf<RequirementsBlob>()
-            + Marshal.SizeOf<CmsWrapperBlob>());
+        unsafe
+        {
+            return (uint)(sizeof(EmbeddedSignatureHeader)
+                + GetCodeDirectorySize(signatureStart, identifier)
+                + sizeof(RequirementsBlob)
+                + sizeof(CmsWrapperBlob));
+        }
     }
 
     private uint GetSignatureStart()

@@ -9,18 +9,20 @@ namespace Microsoft.DotNet.CoreSetup
 {
     public class Codesign
     {
-        private const string CodesignPath = @"/usr/bin/codesign";
+        private const string CodesignPath = "/usr/bin/codesign";
 
         public static bool IsAvailable => File.Exists(CodesignPath);
 
-        public static (int ExitCode, string StdErr) Run(string args, string appHostPath)
+        public static (int ExitCode, string StdErr) Run(string args, string binaryPath)
         {
             Debug.Assert(RuntimeInformation.IsOSPlatform(OSPlatform.OSX));
             Debug.Assert(IsAvailable);
 
-            var psi = new ProcessStartInfo()
+            ProcessStartInfo psi = new()
             {
-                Arguments = $"{args} \"{appHostPath}\"",
+                Arguments = $"""
+                    {args} "{binaryPath}"
+                """,
                 FileName = CodesignPath,
                 RedirectStandardError = true,
                 UseShellExecute = false,
