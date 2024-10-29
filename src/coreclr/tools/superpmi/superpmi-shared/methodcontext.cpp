@@ -6679,13 +6679,13 @@ void MethodContext::recGetMethodInstantiationArgument(CORINFO_METHOD_HANDLE ftn,
     key.A = CastHandle(ftn);
     key.B = index;
     DWORDLONG value = CastHandle(result);
-    GetTypeInstantiationArgument->Add(key, value);
-    DEBUG_REC(dmpGetTypeInstantiationArgument(key, value));
+    GetMethodInstantiationArgument->Add(key, value);
+    DEBUG_REC(dmpGetMethodInstantiationArgument(key, value));
 }
 void MethodContext::dmpGetMethodInstantiationArgument(DLD key, DWORDLONG value)
 {
     printf("GetMethodInstantiationArgument key - methodNonNull-%" PRIu64 ", index-%u, value NonNull-%" PRIu64 "", key.A, key.B, value);
-    GetTypeInstantiationArgument->Unlock();
+    GetMethodInstantiationArgument->Unlock();
 }
 CORINFO_CLASS_HANDLE MethodContext::repGetMethodInstantiationArgument(CORINFO_METHOD_HANDLE ftn, unsigned index)
 {
@@ -6695,7 +6695,7 @@ CORINFO_CLASS_HANDLE MethodContext::repGetMethodInstantiationArgument(CORINFO_ME
     key.B = index;
 
     DWORDLONG value = LookupByKeyOrMissNoMessage(GetMethodInstantiationArgument, key);
-    DEBUG_REP(dmpGetTypeInstantiationArgument(key, value));
+    DEBUG_REP(dmpGetMethodInstantiationArgument(key, value));
     return (CORINFO_CLASS_HANDLE)value;
 }
 
