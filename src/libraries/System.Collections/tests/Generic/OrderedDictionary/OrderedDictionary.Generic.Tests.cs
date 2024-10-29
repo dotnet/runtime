@@ -187,6 +187,80 @@ namespace System.Collections.Tests
 
             Assert.True(valuesEnum.MoveNext());
         }
+
+        [Fact]
+        public void TryAdd_ItemAlreadyExists_IndexCorrect()
+        {
+            var dictionary = new OrderedDictionary<TKey, TValue>();
+
+            for (int i = 0; i < 3; i++)
+            {
+                dictionary.Add(CreateTKey(i), CreateTValue(i));
+            }
+
+            for (int i = 0; i < 3; i++)
+            {
+                Assert.False(dictionary.TryAdd(CreateTKey(i), CreateTValue(i), out var index));
+                Assert.Equal(i, index);
+            }
+        }
+
+        [Fact]
+        public void TryAdd_NewItem_IndexCorrect()
+        {
+            var dictionary = new OrderedDictionary<TKey, TValue>();
+
+            for (int i = 0; i < 3; i++)
+            {
+                Assert.True(dictionary.TryAdd(CreateTKey(i), CreateTValue(i), out var index));
+                Assert.Equal(i, index);
+            }
+        }
+
+        #endregion
+
+        #region TryGetValue
+
+        [Fact]
+        public void TryGetValue_ExistingItem()
+        {
+            var dictionary = new OrderedDictionary<TKey, TValue>();
+
+            for (int i = 0; i < 3; i++)
+            {
+                dictionary.Add(CreateTKey(i), CreateTValue(i));
+            }
+
+            for (int i = 0; i < 3; i++)
+            {
+                Assert.True(dictionary.TryGetValue(CreateTKey(i), out var value, out var index));
+                Assert.Equal(CreateTValue(i), value);
+                Assert.Equal(i, index);
+            }
+        }
+
+        [Fact]
+        public void TryGetValue_MissingItem()
+        {
+            var dictionary = new OrderedDictionary<TKey, TValue>();
+
+            for (int i = 0; i < 3; i++)
+            {
+                var key = CreateTKey(i);
+                var value = CreateTValue(i);
+
+                Assert.False(dictionary.TryGetValue(key, out var v, out var index));
+                Assert.Equal(default(TValue), v);
+                Assert.Equal(-1, index);
+
+                dictionary.Add(key, value);
+
+                Assert.True(dictionary.TryGetValue(key, out v, out index));
+                Assert.Equal(value, v);
+                Assert.Equal(i, index);
+            }
+        }
+
         #endregion
 
         #region ContainsValue

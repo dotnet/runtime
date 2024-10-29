@@ -174,7 +174,9 @@ namespace System.Collections.Generic
         public void TrimExcess() { }
         public void TrimExcess(int capacity) { }
         public bool TryAdd(TKey key, TValue value) { throw null; }
+        public bool TryAdd(TKey key, TValue value, out int index) { throw null; }
         public bool TryGetValue(TKey key, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TValue value) { throw null; }
+        public bool TryGetValue(TKey key, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TValue value, out int index) { throw null; }
         public partial struct Enumerator : System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<TKey, TValue>>, System.Collections.IDictionaryEnumerator, System.Collections.IEnumerator, System.IDisposable
         {
             private object _dummy;
