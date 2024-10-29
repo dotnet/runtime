@@ -6266,7 +6266,7 @@ public:
         void ConsiderEdge(FlowEdge* edge, unsigned startPos);
         void AddNonFallthroughSuccs(BasicBlock* block, BasicBlock* next, unsigned startPos);
         void AddNonFallthroughPreds(BasicBlock* block, BasicBlock* prev, unsigned startPos);
-        bool RunThreeOptPass(BasicBlock* startBlock, BasicBlock* endBlock, unsigned numHotBlocks);
+        bool RunThreeOptPass(BasicBlock* startBlock, BasicBlock* endBlock);
 
     public:
         ThreeOptLayout(Compiler* comp);

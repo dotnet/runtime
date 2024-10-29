@@ -5055,13 +5055,13 @@ void Compiler::ThreeOptLayout::Run()
 
         if (ordinals[tryBeg->bbNum] != 0)
         {
-            modified |= RunThreeOptPass(tryBeg, HBtab->ebdTryLast, numHotBlocks);
+            modified |= RunThreeOptPass(tryBeg, HBtab->ebdTryLast);
         }
     }
 
     if (!compiler->fgFirstBB->hasTryIndex())
     {
-        modified |= RunThreeOptPass(compiler->fgFirstBB, blockOrder[numHotBlocks - 1], numHotBlocks);
+        modified |= RunThreeOptPass(compiler->fgFirstBB, blockOrder[numHotBlocks - 1]);
     }
 
     if (modified)
@@ -5086,7 +5086,7 @@ void Compiler::ThreeOptLayout::Run()
 //   startBlock - The first block of the range to reorder
 //   endBlock - The last block (inclusive) of the range to reorder
 //
-bool Compiler::ThreeOptLayout::RunThreeOptPass(BasicBlock* startBlock, BasicBlock* endBlock, unsigned numHotBlocks)
+bool Compiler::ThreeOptLayout::RunThreeOptPass(BasicBlock* startBlock, BasicBlock* endBlock)
 {
     assert(startBlock != nullptr);
     assert(endBlock != nullptr);
@@ -5263,7 +5263,7 @@ bool Compiler::ThreeOptLayout::RunThreeOptPass(BasicBlock* startBlock, BasicBloc
         std::swap(blockOrder, tempOrder);
 
         // Update the ordinals for the blocks we moved
-        for (unsigned i = startPos; i <= endPos; i++)
+        for (unsigned i = (startPos + part1Size); i <= endPos; i++)
         {
             ordinals[blockOrder[i]->bbNum] = i;
         }
@@ -5271,11 +5271,6 @@ bool Compiler::ThreeOptLayout::RunThreeOptPass(BasicBlock* startBlock, BasicBloc
         // Ensure this move created fallthrough from 'srcBlk' to 'dstBlk'
         assert((ordinals[srcBlk->bbNum] + 1) == ordinals[dstBlk->bbNum]);
         modified = true;
-
-        for (unsigned i = 0; i < numHotBlocks; i++)
-        {
-            assert(ordinals[blockOrder[i]->bbNum] == i);
-        }
     }
 
     if (modified)
