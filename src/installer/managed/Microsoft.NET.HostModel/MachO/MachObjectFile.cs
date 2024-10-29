@@ -425,25 +425,19 @@ internal unsafe class MachObjectFile
     private uint GetCodeDirectorySize(string identifier) => GetCodeDirectorySize(GetSignatureStart(), identifier);
     private static uint GetCodeDirectorySize(uint signatureStart, string identifier)
     {
-        unsafe
-        {
-            return (uint)(sizeof(CodeDirectoryHeader)
-                + GetIdentifierLength(identifier)
-                + SpecialSlotCount * DefaultHashSize
-                + GetCodeSlotCount(signatureStart) * DefaultHashSize);
-        }
+        return (uint)(sizeof(CodeDirectoryHeader)
+            + GetIdentifierLength(identifier)
+            + SpecialSlotCount * DefaultHashSize
+            + GetCodeSlotCount(signatureStart) * DefaultHashSize);
     }
 
     private uint GetCodeSignatureSize(string identifier) => GetCodeSignatureSize(GetSignatureStart(), identifier);
     private static uint GetCodeSignatureSize(uint signatureStart, string identifier)
     {
-        unsafe
-        {
-            return (uint)(sizeof(EmbeddedSignatureHeader)
-                + GetCodeDirectorySize(signatureStart, identifier)
-                + sizeof(RequirementsBlob)
-                + sizeof(CmsWrapperBlob));
-        }
+        return (uint)(sizeof(EmbeddedSignatureHeader)
+            + GetCodeDirectorySize(signatureStart, identifier)
+            + sizeof(RequirementsBlob)
+            + sizeof(CmsWrapperBlob));
     }
 
     private uint GetSignatureStart()
