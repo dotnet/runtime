@@ -146,6 +146,7 @@
     <PlatformManifestFileEntry Include="libRuntime.VxSortEnabled.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libstandalonegc-disabled.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libstandalonegc-enabled.a" IsNative="true" />
+    <PlatformManifestFileEntry Include="libaotminipal.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libstdc++compat.a" IsNative="true" />
     <!-- NativeAOT/Windows specific files -->
     <PlatformManifestFileEntry Include="bootstrapper.obj" IsNative="true" />
@@ -170,6 +171,7 @@
     <PlatformManifestFileEntry Include="System.Globalization.Native.Aot.GuardCF.lib" IsNative="true" />
     <PlatformManifestFileEntry Include="System.IO.Compression.Native.Aot.lib" IsNative="true" />
     <PlatformManifestFileEntry Include="System.IO.Compression.Native.Aot.GuardCF.lib" IsNative="true" />
+    <PlatformManifestFileEntry Include="aotminipal.lib" IsNative="true" />
     <!-- NativeAOT managed specific files -->
     <PlatformManifestFileEntry Include="System.Private.DisabledReflection.dll" />
     <PlatformManifestFileEntry Include="System.Private.Reflection.Execution.dll" />
