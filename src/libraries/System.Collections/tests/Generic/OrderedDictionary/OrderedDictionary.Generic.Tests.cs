@@ -200,7 +200,7 @@ namespace System.Collections.Tests
 
             for (int i = 0; i < 3; i++)
             {
-                Assert.False(dictionary.TryAdd(CreateTKey(i), CreateTValue(i), out var index));
+                Assert.False(dictionary.TryAdd(CreateTKey(i), CreateTValue(i), out int index));
                 Assert.Equal(i, index);
             }
         }
@@ -212,7 +212,7 @@ namespace System.Collections.Tests
 
             for (int i = 0; i < 3; i++)
             {
-                Assert.True(dictionary.TryAdd(CreateTKey(i), CreateTValue(i), out var index));
+                Assert.True(dictionary.TryAdd(CreateTKey(i), CreateTValue(i), out int index));
                 Assert.Equal(i, index);
             }
         }
@@ -233,7 +233,7 @@ namespace System.Collections.Tests
 
             for (int i = 0; i < 3; i++)
             {
-                Assert.True(dictionary.TryGetValue(CreateTKey(i), out var value, out var index));
+                Assert.True(dictionary.TryGetValue(CreateTKey(i), out TValue value, out int index));
                 Assert.Equal(CreateTValue(i), value);
                 Assert.Equal(i, index);
             }
@@ -249,7 +249,7 @@ namespace System.Collections.Tests
                 var key = CreateTKey(i);
                 var value = CreateTValue(i);
 
-                Assert.False(dictionary.TryGetValue(key, out var v, out var index));
+                Assert.False(dictionary.TryGetValue(key, out TValue v, out int index));
                 Assert.Equal(default(TValue), v);
                 Assert.Equal(-1, index);
 
