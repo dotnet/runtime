@@ -2138,8 +2138,6 @@ PhaseStatus Compiler::optInvertLoops()
 
     if (compCodeOpt() != SMALL_CODE)
     {
-        fgDumpFlowGraph(PHASE_INVERT_LOOPS, PhasePosition::PostPhase);
-
         for (FlowGraphNaturalLoop* loop : m_loops->InPostOrder())
         {
             madeChanges |= optTryInvertWhileLoop(loop);
