@@ -162,6 +162,15 @@ CORINFO_METHOD_HANDLE interceptor_ICJI::getUnboxedEntry(
     return original_ICorJitInfo->getUnboxedEntry(ftn, requiresInstMethodTableArg);
 }
 
+CORINFO_METHOD_HANDLE interceptor_ICJI::getInstantiatedEntry(
+          CORINFO_METHOD_HANDLE ftn,
+          CORINFO_METHOD_HANDLE* methodArg,
+          CORINFO_CLASS_HANDLE* classArg)
+{
+    mcs->AddCall("getInstantiatedEntry");
+    return original_ICorJitInfo->getInstantiatedEntry(ftn, methodArg, classArg);
+}
+
 CORINFO_CLASS_HANDLE interceptor_ICJI::getDefaultComparerClass(
           CORINFO_CLASS_HANDLE elemType)
 {
@@ -329,6 +338,14 @@ CORINFO_CLASS_HANDLE interceptor_ICJI::getTypeInstantiationArgument(
 {
     mcs->AddCall("getTypeInstantiationArgument");
     return original_ICorJitInfo->getTypeInstantiationArgument(cls, index);
+}
+
+CORINFO_CLASS_HANDLE interceptor_ICJI::getMethodInstantiationArgument(
+          CORINFO_METHOD_HANDLE ftn,
+          unsigned index)
+{
+    mcs->AddCall("getMethodInstantiationArgument");
+    return original_ICorJitInfo->getMethodInstantiationArgument(ftn, index);
 }
 
 size_t interceptor_ICJI::printClassName(
