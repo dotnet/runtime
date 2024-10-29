@@ -877,17 +877,6 @@ namespace System.Runtime.CompilerServices
         /// </summary>
         [MethodImpl(MethodImplOptions.InternalCall)]
         public extern MethodTable* GetMethodTableMatchingParentClass(MethodTable* parent);
-
-        /// <summary>
-        /// Given a statics pointer in the DynamicStaticsInfo, get the actual statics pointer.
-        /// </summary>
-        public static ref byte MaskStaticsPointer(ref byte staticsPtr)
-        {
-            fixed (byte* p = &staticsPtr)
-            {
-                 return ref Unsafe.AsRef<byte>((byte*)((nuint)p & ~(nuint)DynamicStaticsInfo.ISCLASSNOTINITED));
-            }
-        }
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -896,6 +885,19 @@ namespace System.Runtime.CompilerServices
         internal const int ISCLASSNOTINITED = 1;
         internal IntPtr _pGCStatics; // The ISCLASSNOTINITED bit is set when the class is NOT initialized
         internal IntPtr _pNonGCStatics; // The ISCLASSNOTINITED bit is set when the class is NOT initialized
+
+        /// <summary>
+        /// Given a statics pointer in the DynamicStaticsInfo, get the actual statics pointer.
+        /// If the class it initialized, this mask is not necessary
+        /// </summary>
+        internal static ref byte MaskStaticsPointer(ref byte staticsPtr)
+        {
+            fixed (byte* p = &staticsPtr)
+            {
+                 return ref Unsafe.AsRef<byte>((byte*)((nuint)p & ~(nuint)DynamicStaticsInfo.ISCLASSNOTINITED));
+            }
+        }
+
         internal unsafe MethodTable* _methodTable;
     }
 

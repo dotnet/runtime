@@ -24,7 +24,7 @@ namespace System.Runtime.CompilerServices
         private static ref byte GetNonGCStaticBaseSlow(MethodTable* mt)
         {
             InitHelpers.InitClassSlow(mt);
-            return ref MethodTable.MaskStaticsPointer(ref VolatileReadAsByref(ref mt->AuxiliaryData->GetDynamicStaticsInfo()._pNonGCStatics));
+            return ref DynamicStaticsInfo.MaskStaticsPointer(ref VolatileReadAsByref(ref mt->AuxiliaryData->GetDynamicStaticsInfo()._pNonGCStatics));
         }
 
         [DebuggerHidden]
@@ -54,7 +54,7 @@ namespace System.Runtime.CompilerServices
         private static ref byte GetGCStaticBaseSlow(MethodTable* mt)
         {
             InitHelpers.InitClassSlow(mt);
-            return ref MethodTable.MaskStaticsPointer(ref VolatileReadAsByref(ref mt->AuxiliaryData->GetDynamicStaticsInfo()._pGCStatics));
+            return ref DynamicStaticsInfo.MaskStaticsPointer(ref VolatileReadAsByref(ref mt->AuxiliaryData->GetDynamicStaticsInfo()._pGCStatics));
         }
 
         [DebuggerHidden]
@@ -81,12 +81,6 @@ namespace System.Runtime.CompilerServices
 
         // Thread static helpers
 
-        [StructLayout(LayoutKind.Sequential)]
-        private sealed class RawData
-        {
-            internal byte _data;
-        }
-
         /// <summary>
         /// Return beginning of the object as a reference to byte
         /// </summary>
@@ -94,7 +88,7 @@ namespace System.Runtime.CompilerServices
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static ref byte GetObjectAsRefByte(object obj)
         {
-            return ref Unsafe.Subtract(ref Unsafe.As<RawData>(obj)._data, sizeof(MethodTable*));
+            return ref Unsafe.Subtract(ref RuntimeHelpers.GetRawData(obj)._data, sizeof(MethodTable*));
         }
 
         [StructLayout(LayoutKind.Sequential)]
