@@ -5031,6 +5031,9 @@ void Compiler::ThreeOptLayout::Run()
         blockOrder[position] = tempOrder[position] = block;
         position++;
 
+        // While walking the span of blocks to reorder,
+        // remember where each try region ends within this span.
+        // We'll use this information to run 3-opt per region.
         EHblkDsc* const HBtab = compiler->ehGetBlockTryDsc(block);
         if (HBtab != nullptr)
         {
@@ -5038,22 +5041,29 @@ void Compiler::ThreeOptLayout::Run()
         }
     }
 
+    // Reorder try regions first
     bool modified = false;
     for (EHblkDsc* const HBtab : EHClauses(compiler))
     {
+        // If multiple region indices map to the same region,
+        // make sure we reorder its blocks only once
         BasicBlock* const tryBeg = HBtab->ebdTryBeg;
         if (tryBeg->getTryIndex() != currEHRegion++)
         {
             continue;
         }
 
-        if (ordinals[tryBeg->bbNum] != 0)
+        // Only reorder try regions within the candidate span of blocks.
+        if ((ordinals[tryBeg->bbNum] != 0) || tryBeg->IsFirst())
         {
+            JITDUMP("Running 3-opt for try region #%d\n", (currEHRegion - 1));
             modified |= RunThreeOptPass(tryBeg, HBtab->ebdTryLast);
         }
     }
 
+    // Finally, reorder the main method body
     currEHRegion = 0;
+    JITDUMP("Running 3-opt for main method body\n");
     modified |= RunThreeOptPass(compiler->fgFirstBB, blockOrder[numHotBlocks - 1]);
 
     if (modified)
@@ -5062,6 +5072,10 @@ void Compiler::ThreeOptLayout::Run()
         {
             BasicBlock* const block = blockOrder[i - 1];
             BasicBlock* const next  = blockOrder[i];
+
+            // Only reorder within EH regions to maintain contiguity.
+            // TODO: Allow moving blocks in different regions when 'next' is the region entry.
+            // This would allow us to move entire regions up/down because of the contiguity requirement.
             if (!block->NextIs(next) && BasicBlock::sameEHRegion(block, next))
             {
                 compiler->fgUnlinkBlock(next);
@@ -5084,9 +5098,9 @@ bool Compiler::ThreeOptLayout::RunThreeOptPass(BasicBlock* startBlock, BasicBloc
     assert(endBlock != nullptr);
     assert(cutPoints.Empty());
 
-    bool           modified = false;
-    const unsigned startPos = ordinals[startBlock->bbNum];
-    const unsigned endPos   = ordinals[endBlock->bbNum];
+    bool           modified  = false;
+    const unsigned startPos  = ordinals[startBlock->bbNum];
+    const unsigned endPos    = ordinals[endBlock->bbNum];
     const unsigned numBlocks = (endPos - startPos + 1);
     assert((startPos != 0) || startBlock->IsFirst());
     assert(startPos <= endPos);
@@ -5245,7 +5259,8 @@ bool Compiler::ThreeOptLayout::RunThreeOptPass(BasicBlock* startBlock, BasicBloc
         memcpy(tempStart + part1Size, regionStart + part1Size + part2Size, sizeof(BasicBlock*) * part3Size);
         memcpy(tempStart + part1Size + part3Size, regionStart + part1Size, sizeof(BasicBlock*) * part2Size);
 
-        const unsigned swappedSize = part1Size + part2Size + part3Size;
+        // For backward jumps, there might be additional blocks after 'srcBlk' that need to be copied over.
+        const unsigned swappedSize   = part1Size + part2Size + part3Size;
         const unsigned remainingSize = numBlocks - swappedSize;
         assert(numBlocks >= swappedSize);
         assert((remainingSize == 0) || !isForwardJump);
@@ -5264,6 +5279,7 @@ bool Compiler::ThreeOptLayout::RunThreeOptPass(BasicBlock* startBlock, BasicBloc
         modified = true;
     }
 
+    // Write back to 'tempOrder' so changes to this region aren't lost next time we swap 'tempOrder' and 'blockOrder'
     if (modified)
     {
         memcpy(tempOrder + startPos, blockOrder + startPos, sizeof(BasicBlock*) * numBlocks);
