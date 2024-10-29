@@ -370,7 +370,7 @@ internal unsafe partial interface IXCLRDataTask
     int SetDesiredExecutionState(uint state);
 
     [PreserveSig]
-    int CreateStackWalk(uint flags, /*IXCLRDataStackWalk*/ void** stackWalk);
+    int CreateStackWalk(uint flags, out IXCLRDataStackWalk? stackWalk);
 
     [PreserveSig]
     int GetOSThreadID(uint* id);

@@ -10,11 +10,15 @@ namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 [GeneratedComClass]
 internal sealed unsafe partial class ClrDataStackWalk : IXCLRDataStackWalk
 {
+    private readonly TargetPointer _threadAddr;
+    private readonly uint _flags;
     private readonly Target _target;
     private readonly IXCLRDataStackWalk? _legacyImpl;
 
-    public ClrDataStackWalk(Target target, IXCLRDataStackWalk? legacyImpl)
+    public ClrDataStackWalk(TargetPointer threadAddr, uint flags, Target target, IXCLRDataStackWalk? legacyImpl)
     {
+        _threadAddr = threadAddr;
+        _flags = flags;
         _target = target;
         _legacyImpl = legacyImpl;
     }

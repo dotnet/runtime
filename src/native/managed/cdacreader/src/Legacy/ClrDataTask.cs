@@ -36,8 +36,27 @@ internal sealed unsafe partial class ClrDataTask : IXCLRDataTask
         => _legacyImpl is not null ? _legacyImpl.GetDesiredExecutionState(state) : HResults.E_NOTIMPL;
     int IXCLRDataTask.SetDesiredExecutionState(uint state)
         => _legacyImpl is not null ? _legacyImpl.SetDesiredExecutionState(state) : HResults.E_NOTIMPL;
-    int IXCLRDataTask.CreateStackWalk(uint flags, /*IXCLRDataStackWalk*/ void** stackWalk)
-        => _legacyImpl is not null ? _legacyImpl.CreateStackWalk(flags, stackWalk) : HResults.E_NOTIMPL;
+
+    int IXCLRDataTask.CreateStackWalk(uint flags, out IXCLRDataStackWalk? stackWalk)
+    {
+        stackWalk = default;
+
+        Contracts.ThreadData threadData = _target.Contracts.Thread.GetThreadData(_address);
+        if (threadData.State.HasFlag(Contracts.ThreadState.Unstarted))
+            return HResults.E_FAIL;
+
+        IXCLRDataStackWalk? legacyStackWalk = null;
+        if (_legacyImpl is not null)
+        {
+            int hr = _legacyImpl.CreateStackWalk(flags, out legacyStackWalk);
+            if (hr < 0)
+                return hr;
+        }
+
+        stackWalk = new ClrDataStackWalk(_address, flags, _target, legacyStackWalk);
+        return HResults.S_OK;
+    }
+
     int IXCLRDataTask.GetOSThreadID(uint* id)
         => _legacyImpl is not null ? _legacyImpl.GetOSThreadID(id) : HResults.E_NOTIMPL;
     int IXCLRDataTask.GetContext(uint contextFlags, uint contextBufSize, uint* contextSize, byte* contextBuffer)
