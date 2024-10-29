@@ -4911,7 +4911,6 @@ def setup_args(args):
 
         if coreclr_args.crossgen2:
             # Can we find crossgen2?
-            #crossgen2_tool_name = "crossgen2.dll"
             crossgen2_tool_name = "crossgen2.exe" if platform.system() == "Windows" else "crossgen2"
             crossgen2_tool_path = os.path.abspath(os.path.join(coreclr_args.core_root, "crossgen2", crossgen2_tool_name))
             if not os.path.exists(crossgen2_tool_path):
