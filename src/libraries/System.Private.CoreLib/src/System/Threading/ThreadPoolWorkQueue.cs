@@ -10,6 +10,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using System.Threading.Tasks;
+using ExceptionHandling = System.Runtime.ExceptionServices.ExceptionHandling;
 
 namespace System.Threading
 {
@@ -1187,12 +1188,21 @@ namespace System.Threading
         {
             if (workItem is Task task)
             {
+                // Task workitems catch their exceptions for later observation
+                // We do not need to pass unhandled ones to ExceptionHandling.s_handler
                 task.ExecuteFromThreadPool(currentThread);
             }
             else
             {
                 Debug.Assert(workItem is IThreadPoolWorkItem);
-                Unsafe.As<IThreadPoolWorkItem>(workItem).Execute();
+                try
+                {
+                    Unsafe.As<IThreadPoolWorkItem>(workItem).Execute();
+                }
+                catch (Exception ex) when (ExceptionHandling.s_handler != null && ExceptionHandling.s_handler(ex))
+                {
+                    // the handler returned "true" means the exception is now "handled" and we should continue.
+                }
             }
         }
     }
