@@ -1850,13 +1850,11 @@ Compiler::OptInvertCountTreeInfoType Compiler::optInvertCountTreeInfo(GenTree* t
 }
 
 //-----------------------------------------------------------------------------
-// optInvertWhileLoop: modify flow and duplicate code so that for/while loops are
+// optTryInvertWhileLoop: modify flow and duplicate code so that for/while loops are
 //   entered at top and tested at bottom (aka loop rotation or bottom testing).
 //   Creates a "zero trip test" condition which guards entry to the loop.
 //   Enables loop invariant hoisting and loop cloning, which depend on
-//   `do {} while` format loops. Enables creation of a pre-header block after the
-//   zero trip test to place code that only runs if the loop is guaranteed to
-//   run at least once.
+//   `do {} while` format loops.
 //
 // Arguments:
 //   block -- block that may be the predecessor of the un-rotated loop's test block.
@@ -1864,156 +1862,95 @@ Compiler::OptInvertCountTreeInfoType Compiler::optInvertCountTreeInfo(GenTree* t
 // Returns:
 //   true if any IR changes possibly made (used to determine phase return status)
 //
-// Notes:
-//   Uses a simple lexical screen to detect likely loops.
-//
-//   Specifically, we're looking for the following case:
-//
-//  block:
-//          ...
-//          jmp test                // `block` argument
-//    top:
-//          ...
-//          ...
-//   test:
-//          ..stmts..
-//          cond
-//          jtrue top
-//
-//   If we find this, and the condition is simple enough, we change
-//   the loop to the following:
-//
-//  block:
-//          ...
-//          jmp bNewCond
-//  bNewCond:
-//          ..stmts..               // duplicated cond block statements
-//          cond                    // duplicated cond
-//          jfalse join
-//          // else fall-through
-//    top:
-//          ...
-//          ...
-//   test:
-//          ..stmts..
-//          cond
-//          jtrue top
-//   join:
-//
-//  Makes no changes if the flow pattern match fails.
-//
-//  May not modify a loop if profile is unfavorable, if the cost of duplicating
-//  code is large (factoring in potential CSEs).
-//
-bool Compiler::optInvertWhileLoop(BasicBlock* block)
+bool Compiler::optTryInvertWhileLoop(FlowGraphNaturalLoop* loop)
 {
-    assert(opts.OptimizationEnabled());
-    assert(compCodeOpt() != SMALL_CODE);
+    // Should have preheaders at this point
+    assert(loop->EntryEdges().size() == 1);
+    BasicBlock* preheader = loop->EntryEdge(0)->getSourceBlock();
 
-    // Does the BB end with an unconditional jump?
+    ArrayStack<BasicBlock*> duplicatedBlocks(getAllocator(CMK_LoopOpt));
 
-    if (!block->KindIs(BBJ_ALWAYS) || block->JumpsToNext())
+    BasicBlock* condBlock = loop->GetHeader();
+    while (true)
     {
+        if (!BasicBlock::sameEHRegion(preheader, condBlock))
+        {
+            JITDUMP("No loop-inversion for " FMT_LP
+                    " since we could not find a condition block in the same EH region as the preheader\n",
+                    loop->GetIndex());
+            return false;
+        }
+
+        duplicatedBlocks.Push(condBlock);
+
+        if (condBlock->KindIs(BBJ_ALWAYS))
+        {
+            condBlock = condBlock->GetTarget();
+
+            if (!loop->ContainsBlock(condBlock) || (condBlock == loop->GetHeader()))
+            {
+                JITDUMP("No loop-inversion for " FMT_LP "; ran out of blocks following BBJ_ALWAYS blocks\n",
+                        loop->GetIndex());
+                return false;
+            }
+
+            continue;
+        }
+
+        if (!condBlock->KindIs(BBJ_COND))
+        {
+            JITDUMP("No loop-inversion for " FMT_LP " since we could not find any BBJ_COND block\n", loop->GetIndex());
+            return false;
+        }
+
+        break;
+    }
+
+    bool trueExits  = !loop->ContainsBlock(condBlock->GetTrueTarget());
+    bool falseExits = !loop->ContainsBlock(condBlock->GetFalseTarget());
+
+    if (trueExits == falseExits)
+    {
+        JITDUMP("No loop-inversion for " FMT_LP " since we could not find any exiting BBJ_COND block\n",
+                loop->GetIndex());
         return false;
     }
 
-    if (block->HasFlag(BBF_KEEP_BBJ_ALWAYS))
+    BasicBlock* exit = trueExits ? condBlock->GetTrueTarget() : condBlock->GetFalseTarget();
+
+    // Exiting the loop may enter a new try-region. However, to keep exits canonical, we will
+    // have to split the exit such that old loop edges exit to one half, while the duplicated condition
+    // exits to the other half. This will result in jump into the middle of a try-region, which is illegal.
+    // TODO: We can fix this by placing the first half of the split (which will be an empty block) outside
+    // the try region.
+    if (!BasicBlock::sameEHRegion(preheader, exit))
     {
-        // It can't be one of the ones we use for our exception magic
+        JITDUMP("No loop-inversion for " FMT_LP " since the preheader " FMT_BB " and exit " FMT_BB
+                " are in different EH regions\n",
+                loop->GetIndex(), preheader->bbNum, exit->bbNum);
         return false;
     }
 
-    // Get hold of the jump target
-    BasicBlock* const bTest = block->GetTarget();
-
-    // Does the bTest consist of 'jtrue(cond) block' ?
-    if (!bTest->KindIs(BBJ_COND))
-    {
-        return false;
-    }
-
-    // bTest must be a backwards jump to block->bbNext
-    // This will be the top of the loop.
-    //
-    BasicBlock* const bTop = bTest->GetTrueTarget();
-
-    if (!block->NextIs(bTop))
-    {
-        return false;
-    }
-
-    // Since bTest is a BBJ_COND it will have a false target
-    //
-    BasicBlock* const bJoin = bTest->GetFalseTarget();
-    noway_assert(bJoin != nullptr);
-
-    // 'block' must be in the same try region as the condition, since we're going to insert a duplicated condition
-    // in a new block after 'block', and the condition might include exception throwing code.
-    // On non-funclet platforms (x86), the catch exit is a BBJ_ALWAYS, but we don't want that to
-    // be considered as the head of a loop, so also disallow different handler regions.
-    if (!BasicBlock::sameEHRegion(block, bTest))
-    {
-        return false;
-    }
-
-    // The duplicated condition block will branch to bTest->GetFalseTarget(), so that also better be in the
-    // same try region (or no try region) to avoid generating illegal flow.
-    if (bJoin->hasTryIndex() && !BasicBlock::sameTryRegion(block, bJoin))
-    {
-        return false;
-    }
-
-    // It has to be a forward jump. Defer this check until after all the cheap checks
-    // are done, since it iterates forward in the block list looking for block's target.
-    //  TODO-CQ: Check if we can also optimize the backwards jump as well.
-    //
-    if (!fgIsForwardBranch(block, block->GetTarget()))
-    {
-        return false;
-    }
-
-    // Find the loop termination test at the bottom of the loop.
-    Statement* const condStmt = bTest->lastStmt();
-
-    // Verify the test block ends with a conditional that we can manipulate.
-    GenTree* const condTree = condStmt->GetRootNode();
-    noway_assert(condTree->gtOper == GT_JTRUE);
-    if (!condTree->AsOp()->gtOp1->OperIsCompare())
-    {
-        return false;
-    }
-
-    JITDUMP("Matched flow pattern for loop inversion: block " FMT_BB " bTop " FMT_BB " bTest " FMT_BB "\n",
-            block->bbNum, bTop->bbNum, bTest->bbNum);
-
-    // Estimate the cost of cloning the entire test block.
-    //
-    // Note: it would help throughput to compute the maximum cost
-    // first and early out for large bTest blocks, as we are doing two
-    // tree walks per tree. But because of this helper call scan, the
-    // maximum cost depends on the trees in the block.
-    //
-    // We might consider flagging blocks with hoistable helper calls
-    // during importation, so we can avoid the helper search and
-    // implement an early bail out for large blocks with no helper calls.
-    //
-    // Note that gtPrepareCost can cause operand swapping, so we must
-    // return `true` (possible IR change) from here on.
+    JITDUMP("Condition in block " FMT_BB " of loop " FMT_LP " is a candidate for duplication to invert the loop\n",
+            condBlock->bbNum, loop->GetIndex());
 
     unsigned estDupCostSz = 0;
 
-    for (Statement* const stmt : bTest->Statements())
+    for (int i = 0; i < duplicatedBlocks.Height(); i++)
     {
-        GenTree* tree = stmt->GetRootNode();
-        gtPrepareCost(tree);
-        estDupCostSz += tree->GetCostSz();
+        BasicBlock* block = duplicatedBlocks.Bottom(i);
+        for (Statement* stmt : block->Statements())
+        {
+            GenTree* tree = stmt->GetRootNode();
+            gtPrepareCost(tree);
+            estDupCostSz += tree->GetCostSz();
+        }
     }
 
     weight_t       loopIterations            = BB_LOOP_WEIGHT_SCALE;
     bool           allProfileWeightsAreValid = false;
-    weight_t const weightBlock               = block->bbWeight;
-    weight_t const weightTest                = bTest->bbWeight;
-    weight_t const weightTop                 = bTop->bbWeight;
+    weight_t const weightPreheader           = preheader->bbWeight;
+    weight_t const weightCond                = condBlock->bbWeight;
 
     // If we have profile data then we calculate the number of times
     // the loop will iterate into loopIterations
@@ -2021,46 +1958,19 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
     {
         // Only rely upon the profile weight when all three of these blocks
         // have good profile weights
-        if (block->hasProfileWeight() && bTest->hasProfileWeight() && bTop->hasProfileWeight())
+        if (preheader->hasProfileWeight() && condBlock->hasProfileWeight())
         {
             // If this while loop never iterates then don't bother transforming
             //
-            if (weightTop == BB_ZERO_WEIGHT)
+            if (weightPreheader == BB_ZERO_WEIGHT)
             {
-                return true;
+                JITDUMP("No loop-inversion for " FMT_LP " since the the preheader " FMT_BB " has 0 weight\n",
+                        loop->GetIndex(), preheader->bbNum);
+                return false;
             }
 
-            // We generally expect weightTest > weightTop
-            //
-            // Tolerate small inconsistencies...
-            //
-            if (!fgProfileWeightsConsistent(weightBlock + weightTop, weightTest))
-            {
-                JITDUMP("Profile weights locally inconsistent: block " FMT_WT ", next " FMT_WT ", test " FMT_WT "\n",
-                        weightBlock, weightTop, weightTest);
-            }
-            else
-            {
-                allProfileWeightsAreValid = true;
-
-                // Determine average iteration count
-                //
-                //   weightTop is the number of time this loop executes
-                //   weightTest is the number of times that we consider entering or remaining in the loop
-                //   loopIterations is the average number of times that this loop iterates
-                //
-                weight_t loopEntries = weightTest - weightTop;
-
-                // If profile is inaccurate, try and use other data to provide a credible estimate.
-                // The value should at least be >= weightBlock.
-                //
-                if (loopEntries < weightBlock)
-                {
-                    loopEntries = weightBlock;
-                }
-
-                loopIterations = weightTop / loopEntries;
-            }
+            loopIterations            = weightCond / weightPreheader;
+            allProfileWeightsAreValid = true;
         }
         else
         {
@@ -2085,9 +1995,7 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
         }
     }
 
-    // If the compare has too high cost then we don't want to dup.
-
-    bool costIsTooHigh = (estDupCostSz > maxDupCostSz);
+    bool costIsTooHigh = estDupCostSz > maxDupCostSz;
 
     OptInvertCountTreeInfoType optInvertTotalInfo = {};
     if (costIsTooHigh)
@@ -2101,32 +2009,37 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
         //
         // If the condition has array.Length operations, also boost, as they are likely to be CSE'd.
 
-        for (Statement* const stmt : bTest->Statements())
+        for (int i = 0; i < duplicatedBlocks.Height() && costIsTooHigh; i++)
         {
-            GenTree* tree = stmt->GetRootNode();
-
-            OptInvertCountTreeInfoType optInvertInfo = optInvertCountTreeInfo(tree);
-            optInvertTotalInfo.sharedStaticHelperCount += optInvertInfo.sharedStaticHelperCount;
-            optInvertTotalInfo.arrayLengthCount += optInvertInfo.arrayLengthCount;
-
-            if ((optInvertInfo.sharedStaticHelperCount > 0) || (optInvertInfo.arrayLengthCount > 0))
+            BasicBlock* block = duplicatedBlocks.Bottom(i);
+            for (Statement* const stmt : block->Statements())
             {
-                // Calculate a new maximum cost. We might be able to early exit.
+                GenTree* tree = stmt->GetRootNode();
 
-                unsigned newMaxDupCostSz =
-                    maxDupCostSz + 24 * min(optInvertTotalInfo.sharedStaticHelperCount, (int)(loopIterations + 1.5)) +
-                    8 * optInvertTotalInfo.arrayLengthCount;
+                OptInvertCountTreeInfoType optInvertInfo = optInvertCountTreeInfo(tree);
+                optInvertTotalInfo.sharedStaticHelperCount += optInvertInfo.sharedStaticHelperCount;
+                optInvertTotalInfo.arrayLengthCount += optInvertInfo.arrayLengthCount;
 
-                // Is the cost too high now?
-                costIsTooHigh = (estDupCostSz > newMaxDupCostSz);
-                if (!costIsTooHigh)
+                if ((optInvertInfo.sharedStaticHelperCount > 0) || (optInvertInfo.arrayLengthCount > 0))
                 {
-                    // No need counting any more trees; we're going to do the transformation.
-                    JITDUMP("Decided to duplicate loop condition block after counting helpers in tree [%06u] in "
-                            "block " FMT_BB,
-                            dspTreeID(tree), bTest->bbNum);
-                    maxDupCostSz = newMaxDupCostSz; // for the JitDump output below
-                    break;
+                    // Calculate a new maximum cost. We might be able to early exit.
+
+                    unsigned newMaxDupCostSz =
+                        maxDupCostSz +
+                        24 * min(optInvertTotalInfo.sharedStaticHelperCount, (int)(loopIterations + 1.5)) +
+                        8 * optInvertTotalInfo.arrayLengthCount;
+
+                    // Is the cost too high now?
+                    costIsTooHigh = (estDupCostSz > newMaxDupCostSz);
+                    if (!costIsTooHigh)
+                    {
+                        // No need counting any more trees; we're going to do the transformation.
+                        JITDUMP("Decided to duplicate loop condition block after counting helpers in tree [%06u] in "
+                                "block " FMT_BB,
+                                dspTreeID(tree), block->bbNum);
+                        maxDupCostSz = newMaxDupCostSz; // for the JitDump output below
+                        break;
+                    }
                 }
             }
         }
@@ -2140,7 +2053,7 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
         printf(
             "\nDuplication of loop condition [%06u] is %s, because the cost of duplication (%i) is %s than %i,"
             "\n   loopIterations = %7.3f, optInvertTotalInfo.sharedStaticHelperCount >= %d, validProfileWeights = %s\n",
-            dspTreeID(condTree), costIsTooHigh ? "not done" : "performed", estDupCostSz,
+            dspTreeID(condBlock->lastStmt()->GetRootNode()), costIsTooHigh ? "not done" : "performed", estDupCostSz,
             costIsTooHigh ? "greater" : "less or equal", maxDupCostSz, loopIterations,
             optInvertTotalInfo.sharedStaticHelperCount, dspBool(allProfileWeightsAreValid));
     }
@@ -2151,182 +2064,56 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
         return true;
     }
 
-    bool foundCondTree = false;
+    // Split the preheader so we can duplicate the statements into it. The new
+    // block will be a BBJ_COND node.
+    BasicBlock* newCond = fgSplitBlockAtEnd(preheader);
 
-    // Create a new block after `block` to put the copied condition code.
-    //
-    BasicBlock* const bNewCond = fgNewBBafter(BBJ_COND, block, /*extendRegion*/ true);
+    // Split the new block once more to create a proper preheader, so we end up
+    // with preheader (always) -> newCond (cond) -> newPreheader (always) -> header
+    BasicBlock* newPreheader = fgSplitBlockAtEnd(newCond);
 
-    // Clone each statement in bTest and append to bNewCond.
-    for (Statement* const stmt : bTest->Statements())
+    // Make sure exit stays canonical
+    BasicBlock* nonEnterBlock = fgSplitBlockAtBeginning(exit);
+
+    JITDUMP("New preheader is " FMT_BB "\n", newPreheader->bbNum);
+    JITDUMP("Duplicated condition block is " FMT_BB "\n", newCond->bbNum);
+    JITDUMP("Old exit is " FMT_BB ", new non-enter block is " FMT_BB "\n", exit->bbNum, nonEnterBlock->bbNum);
+
+    // Get the newCond -> newPreheader edge
+    FlowEdge* newCondToNewPreheader = newCond->GetTargetEdge();
+
+    // Add newCond -> nonEnterBlock
+    FlowEdge* newCondToNewExit = fgAddRefPred(nonEnterBlock, newCond);
+
+    newCond->SetCond(trueExits ? newCondToNewExit : newCondToNewPreheader,
+                     trueExits ? newCondToNewPreheader : newCondToNewExit);
+
+    newCond->GetTrueEdge()->setLikelihood(condBlock->GetTrueEdge()->getLikelihood());
+    newCond->GetFalseEdge()->setLikelihood(condBlock->GetFalseEdge()->getLikelihood());
+
+    BasicBlock* newHeader = trueExits ? condBlock->GetFalseTarget() : condBlock->GetTrueTarget();
+
+    // Add newPreheader -> newHeader
+    FlowEdge* newPreheaderToNewHeader = fgAddRefPred(newHeader, newPreheader, newPreheader->GetTargetEdge());
+
+    // Remove newPreheader -> header
+    fgRemoveRefPred(newPreheader->GetTargetEdge());
+
+    // Update newPreheader to point to newHeader
+    newPreheader->SetTargetEdge(newPreheaderToNewHeader);
+
+    // Duplicate all the code now
+    for (int i = 0; i < duplicatedBlocks.Height(); i++)
     {
-        GenTree* originalTree = stmt->GetRootNode();
-        GenTree* clonedTree   = gtCloneExpr(originalTree);
-
-        // Special case handling needed for the conditional jump tree
-        if (originalTree == condTree)
+        BasicBlock* block = duplicatedBlocks.Bottom(i);
+        for (Statement* stmt : block->Statements())
         {
-            foundCondTree = true;
-
-            // Get the compare subtrees
-            GenTree* originalCompareTree = originalTree->AsOp()->gtOp1;
-            GenTree* clonedCompareTree   = clonedTree->AsOp()->gtOp1;
-            assert(originalCompareTree->OperIsCompare());
-            assert(clonedCompareTree->OperIsCompare());
-
-            // The original test branches to remain in the loop.  The
-            // new cloned test will branch to avoid the loop.  So the
-            // cloned compare needs to reverse the branch condition.
-            gtReverseCond(clonedCompareTree);
+            GenTree* clonedTree = gtCloneExpr(stmt->GetRootNode());
+            fgNewStmtAtEnd(newCond, clonedTree, stmt->GetDebugInfo());
         }
 
-        Statement* clonedStmt = fgNewStmtAtEnd(bNewCond, clonedTree);
-
-        if (opts.compDbgInfo)
-        {
-            clonedStmt->SetDebugInfo(stmt->GetDebugInfo());
-        }
+        newCond->CopyFlags(block, BBF_COPY_PROPAGATE);
     }
-
-    assert(foundCondTree);
-
-    // Flag the block that received the copy as potentially having various constructs.
-    bNewCond->CopyFlags(bTest, BBF_COPY_PROPAGATE);
-
-    // Fix flow and profile
-    //
-    bNewCond->inheritWeight(block);
-
-    if (allProfileWeightsAreValid)
-    {
-        weight_t const delta = weightTest - weightTop;
-
-        // If there is just one outside edge incident on bTest, then ideally delta == block->bbWeight.
-        // But this might not be the case if profile data is inconsistent.
-        //
-        // And if bTest has multiple outside edges we want to account for the weight of them all.
-        //
-        if (delta > block->bbWeight)
-        {
-            bNewCond->setBBProfileWeight(delta);
-        }
-    }
-
-    // Update pred info
-    //
-    // For now we set the likelihood of the newCond branch to match
-    // the likelihood of the test branch (though swapped, since we're
-    // currently reversing the condition). This may or may not match
-    // the block weight adjustments we're making. All this becomes
-    // easier to reconcile once we rely on edge likelihoods more and
-    // have synthesis running (so block weights ==> frequencies).
-    //
-    // Until then we won't worry that edges and blocks are potentially
-    // out of sync.
-    //
-    FlowEdge* const testTopEdge     = bTest->GetTrueEdge();
-    FlowEdge* const testJoinEdge    = bTest->GetFalseEdge();
-    FlowEdge* const newCondJoinEdge = fgAddRefPred(bJoin, bNewCond, testJoinEdge);
-    FlowEdge* const newCondTopEdge  = fgAddRefPred(bTop, bNewCond, testTopEdge);
-
-    bNewCond->SetTrueEdge(newCondJoinEdge);
-    bNewCond->SetFalseEdge(newCondTopEdge);
-
-    fgRedirectTargetEdge(block, bNewCond);
-    assert(block->JumpsToNext());
-
-    // Move all predecessor edges that look like loop entry edges to point to the new cloned condition
-    // block, not the existing condition block. The idea is that if we only move `block` to point to
-    // `bNewCond`, but leave other `bTest` predecessors still pointing to `bTest`, when we eventually
-    // recognize loops, the loop will appear to have multiple entries, which will prevent optimization.
-    // We don't have loops yet, but blocks should be in increasing lexical numbered order, so use that
-    // as the proxy for predecessors that are "in" versus "out" of the potential loop. Note that correctness
-    // is maintained no matter which condition block we point to, but we'll lose optimization potential
-    // (and create spaghetti code) if we get it wrong.
-    //
-    unsigned const loopFirstNum  = bTop->bbNum;
-    unsigned const loopBottomNum = bTest->bbNum;
-    for (BasicBlock* const predBlock : bTest->PredBlocksEditing())
-    {
-        unsigned const bNum = predBlock->bbNum;
-        if ((loopFirstNum <= bNum) && (bNum <= loopBottomNum))
-        {
-            // Looks like the predecessor is from within the potential loop; skip it.
-            continue;
-        }
-
-        // Redirect the predecessor to the new block.
-        JITDUMP("Redirecting non-loop " FMT_BB " -> " FMT_BB " to " FMT_BB " -> " FMT_BB "\n", predBlock->bbNum,
-                bTest->bbNum, predBlock->bbNum, bNewCond->bbNum);
-
-        switch (predBlock->GetKind())
-        {
-            case BBJ_ALWAYS:
-            case BBJ_CALLFINALLY:
-            case BBJ_CALLFINALLYRET:
-            case BBJ_COND:
-            case BBJ_SWITCH:
-            case BBJ_EHFINALLYRET:
-                fgReplaceJumpTarget(predBlock, bTest, bNewCond);
-                break;
-
-            case BBJ_EHCATCHRET:
-            case BBJ_EHFILTERRET:
-                // These block types should not need redirecting
-                break;
-
-            default:
-                assert(!"Unexpected bbKind for predecessor block");
-                break;
-        }
-    }
-
-    // If we have profile data for all blocks and we know that we are cloning the
-    // `bTest` block into `bNewCond` and thus changing the control flow from `block` so
-    // that it no longer goes directly to `bTest` anymore, we have to adjust
-    // various weights.
-    //
-    if (allProfileWeightsAreValid)
-    {
-        // Update the weight for bTest. Normally, this reduces the weight of the bTest, except in odd
-        // cases of stress modes with inconsistent weights.
-        //
-        JITDUMP("Reducing profile weight of " FMT_BB " from " FMT_WT " to " FMT_WT "\n", bTest->bbNum, weightTest,
-                weightTop);
-        bTest->inheritWeight(bTop);
-
-#ifdef DEBUG
-        // If we're checking profile data, see if profile for the two target blocks is consistent.
-        //
-        if ((activePhaseChecks & PhaseChecks::CHECK_PROFILE) == PhaseChecks::CHECK_PROFILE)
-        {
-            if (JitConfig.JitProfileChecks() > 0)
-            {
-                const ProfileChecks checks        = (ProfileChecks)JitConfig.JitProfileChecks();
-                const bool          nextProfileOk = fgDebugCheckIncomingProfileData(bNewCond->GetFalseTarget(), checks);
-                const bool          jumpProfileOk = fgDebugCheckIncomingProfileData(bNewCond->GetTrueTarget(), checks);
-
-                if (hasFlag(checks, ProfileChecks::RAISE_ASSERT))
-                {
-                    assert(nextProfileOk);
-                    assert(jumpProfileOk);
-                }
-            }
-        }
-#endif // DEBUG
-    }
-
-#ifdef DEBUG
-    if (verbose)
-    {
-        printf("\nDuplicated loop exit block at " FMT_BB " for loop (" FMT_BB " - " FMT_BB ")\n", bNewCond->bbNum,
-               bNewCond->GetFalseTarget()->bbNum, bTest->bbNum);
-        printf("Estimated code size expansion is %d\n", estDupCostSz);
-
-        fgDumpBlock(bNewCond);
-        fgDumpBlock(bTest);
-    }
-#endif // DEBUG
 
     return true;
 }
@@ -2339,9 +2126,6 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
 //
 PhaseStatus Compiler::optInvertLoops()
 {
-    noway_assert(opts.OptimizationEnabled());
-    noway_assert(fgModified == false);
-
 #if defined(OPT_CONFIG)
     if (!JitConfig.JitDoLoopInversion())
     {
@@ -2350,37 +2134,39 @@ PhaseStatus Compiler::optInvertLoops()
     }
 #endif // OPT_CONFIG
 
-    bool madeChanges = fgRenumberBlocks();
+    bool madeChanges = false;
 
-    if (compCodeOpt() == SMALL_CODE)
+    if (compCodeOpt() != SMALL_CODE)
     {
-        // do not invert any loops
-    }
-    else
-    {
-        for (BasicBlock* const block : Blocks())
+        fgDumpFlowGraph(PHASE_INVERT_LOOPS, PhasePosition::PostPhase);
+
+        for (FlowGraphNaturalLoop* loop : m_loops->InPostOrder())
         {
-            // Make sure the appropriate fields are initialized
-            //
-            if (block->bbWeight == BB_ZERO_WEIGHT)
-            {
-                // Zero weighted block can't have a LOOP_HEAD flag
-                noway_assert(block->isLoopHead() == false);
-                continue;
-            }
-
-            if (optInvertWhileLoop(block))
-            {
-                madeChanges = true;
-            }
+            madeChanges |= optTryInvertWhileLoop(loop);
         }
     }
 
-    if (fgModified)
+    if (madeChanges)
     {
-        // Reset fgModified here as we've done a consistent set of edits.
-        //
-        fgModified = false;
+        fgInvalidateDfsTree();
+        m_dfsTree = fgComputeDfs();
+        m_loops   = FlowGraphNaturalLoops::Find(m_dfsTree);
+
+        // In normal cases no further canonicalization will be required as we
+        // try to ensure loops stay canonicalized during inversion. However,
+        // duplicating the condition outside an inner loop can introduce new
+        // exits in the parent loop, so we may rarely need to recanonicalize
+        // exit blocks.
+        if (optCanonicalizeLoops())
+        {
+            fgInvalidateDfsTree();
+            m_dfsTree = fgComputeDfs();
+            m_loops   = FlowGraphNaturalLoops::Find(m_dfsTree);
+        }
+
+        fgDebugCheckLoops();
+
+        fgRenumberBlocks();
     }
 
     return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
