@@ -215,7 +215,7 @@ namespace System.IO.Tests
         {
             // We need to write and read more than IOV_MAX buffers at a time.
             // IOV_MAX typical value is 1024.
-            const int BufferCount = 1025;
+            const int BufferCount = 1026;
             const int BufferSize = 1; // the less resources we use, the better
             const int FileSize = BufferCount * BufferSize;
             
