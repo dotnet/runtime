@@ -25,8 +25,40 @@ internal sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataPro
     int IXCLRDataProcess.EndEnumTasks(ulong handle)
         => _legacyProcess is not null ? _legacyProcess.EndEnumTasks(handle) : HResults.E_NOTIMPL;
 
-    int IXCLRDataProcess.GetTaskByOSThreadID(uint osThreadID, /*IXCLRDataTask*/ void** task)
-        => _legacyProcess is not null ? _legacyProcess.GetTaskByOSThreadID(osThreadID, task) : HResults.E_NOTIMPL;
+    int IXCLRDataProcess.GetTaskByOSThreadID(uint osThreadID, out IXCLRDataTask? task)
+    {
+        task = default;
+
+        // Find the thread correspending to the OS thread ID
+        Contracts.IThread contract = _target.Contracts.Thread;
+        TargetPointer thread = contract.GetThreadStoreData().FirstThread;
+        TargetPointer matchingThread = TargetPointer.Null;
+        while (thread != TargetPointer.Null)
+        {
+            Contracts.ThreadData threadData = contract.GetThreadData(thread);
+            if (threadData.OSId.Value == osThreadID)
+            {
+                matchingThread = thread;
+                break;
+            }
+
+            thread = threadData.NextThread;
+        }
+
+        if (matchingThread == TargetPointer.Null)
+            return HResults.E_INVALIDARG;
+
+        IXCLRDataTask? legacyTask = null;
+        if (_legacyProcess is not null)
+        {
+            int hr = _legacyProcess.GetTaskByOSThreadID(osThreadID, out legacyTask);
+            if (hr < 0)
+                return hr;
+        }
+
+        task = new ClrDataTask(matchingThread, _target, legacyTask);
+        return HResults.S_OK;
+    }
 
     int IXCLRDataProcess.GetTaskByUniqueID(ulong taskID, /*IXCLRDataTask*/ void** task)
         => _legacyProcess is not null ? _legacyProcess.GetTaskByUniqueID(taskID, task) : HResults.E_NOTIMPL;
