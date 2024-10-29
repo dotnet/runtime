@@ -110,9 +110,9 @@ inline size_t DecodePointer(DWORD dword)
 // Return Value:
 //    0 if the mask is zero; nonzero otherwise.
 //
-inline size_t NibbleBitScanForward(DWORD value)
+FORCEINLINE size_t NibbleBitScanForward(DWORD value)
 {
-    if(value == 0) return 0;
+    assert(value != 0);
 
 #if defined(_MSC_VER)
     unsigned long result;

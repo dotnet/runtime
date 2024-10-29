@@ -4263,13 +4263,15 @@ namespace {
                 if(nibbleIndex != 0)
                 {
                     DWORD preceedingNibbleMask = ~0x0u << (32 - nibbleIndex * 4);
-                    size_t ctz = NibbleBitScanForward(dword & preceedingNibbleMask);
-                    if(ctz)
+                    if(dword & preceedingNibbleMask)
                     {
+                        size_t ctz = NibbleBitScanForward(dword & preceedingNibbleMask);
                         size_t nibbleToCheck = (31 - ctz) / 4;
                         nibble = GetNibble(dword, nibbleToCheck);
-                        _ASSERTE(nibble);
-                        return base + NibbleToRelativeAddress(dwordIndex, nibbleToCheck, nibble);
+                        if(nibble) 
+                        {
+                            return base + NibbleToRelativeAddress(dwordIndex, nibbleToCheck, nibble);
+                        }
                     }
                 }
             }
@@ -4285,16 +4287,16 @@ namespace {
             PREFIX_ASSUME(pMap + dwordIndex != NULL);
             dword = VolatileLoadWithoutBarrier<DWORD>(pMap + dwordIndex);
 
-            // #5.2 if DWORD is a pointer, then we can return
-            if (IsPointer(dword))
+            if(dword)
             {
-                return base + DecodePointer(dword);
-            }
+                // #5.2 if DWORD is a pointer, then we can return
+                if (IsPointer(dword))
+                {
+                    return base + DecodePointer(dword);
+                }
 
-            // #5.4 find preceeding nibble and return if found
-            size_t ctz = NibbleBitScanForward(dword);
-            if(ctz)
-            {
+                // #5.4 find preceeding nibble and return if found
+                size_t ctz = NibbleBitScanForward(dword);
                 size_t nibbleToCheck = (31 - ctz) / 4;
                 nibble = GetNibble(dword, nibbleToCheck);
                 _ASSERTE(nibble);
