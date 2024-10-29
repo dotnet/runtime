@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Text;
 using System.Runtime.InteropServices;
 using Microsoft.Diagnostics.DataContractReader.RuntimeTypeSystemHelpers;
 
@@ -120,7 +121,7 @@ internal class MockDescriptors
         (nameof(Data.ThreadStore.DeadCount), DataType.uint32),
     ];
 
-    public static class RuntimeTypeSystem
+    public class RuntimeTypeSystem
     {
         internal const ulong TestFreeObjectMethodTableGlobalAddress = 0x00000000_7a0000a0;
 
