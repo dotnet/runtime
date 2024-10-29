@@ -221,11 +221,12 @@ CDAC_TYPE_BEGIN(Module)
 CDAC_TYPE_INDETERMINATE(Module)
 CDAC_TYPE_FIELD(Module, /*pointer*/, Assembly, cdac_data<Module>::Assembly)
 CDAC_TYPE_FIELD(Module, /*pointer*/, Base, cdac_data<Module>::Base)
-CDAC_TYPE_FIELD(Module, /*pointer*/, Flags, cdac_data<Module>::Flags)
+CDAC_TYPE_FIELD(Module, /*uint32*/, Flags, cdac_data<Module>::Flags)
 CDAC_TYPE_FIELD(Module, /*pointer*/, LoaderAllocator, cdac_data<Module>::LoaderAllocator)
 CDAC_TYPE_FIELD(Module, /*pointer*/, ThunkHeap, cdac_data<Module>::ThunkHeap)
 CDAC_TYPE_FIELD(Module, /*pointer*/, DynamicMetadata, cdac_data<Module>::DynamicMetadata)
 CDAC_TYPE_FIELD(Module, /*pointer*/, Path, cdac_data<Module>::Path)
+CDAC_TYPE_FIELD(Module, /*pointer*/, FileName, cdac_data<Module>::FileName)
 
 CDAC_TYPE_FIELD(Module, /*pointer*/, FieldDefToDescMap, cdac_data<Module>::FieldDefToDescMap)
 CDAC_TYPE_FIELD(Module, /*pointer*/, ManifestModuleReferencesMap, cdac_data<Module>::ManifestModuleReferencesMap)
@@ -238,6 +239,9 @@ CDAC_TYPE_END(Module)
 
 CDAC_TYPE_BEGIN(ModuleLookupMap)
 CDAC_TYPE_FIELD(ModuleLookupMap, /*pointer*/, TableData, offsetof(LookupMapBase, pTable))
+CDAC_TYPE_FIELD(ModuleLookupMap, /*pointer*/, Next, offsetof(LookupMapBase, pNext))
+CDAC_TYPE_FIELD(ModuleLookupMap, /*uint32*/, Count, offsetof(LookupMapBase, dwCount))
+CDAC_TYPE_FIELD(ModuleLookupMap, /*nuint*/, SupportedFlagsMask, offsetof(LookupMapBase, supportedFlags))
 CDAC_TYPE_END(ModuleLookupMap)
 
 // RuntimeTypeSystem
@@ -344,6 +348,48 @@ CDAC_TYPE_BEGIN(CodePointer)
 CDAC_TYPE_SIZE(sizeof(PCODE))
 CDAC_TYPE_END(CodePointer)
 
+CDAC_TYPE_BEGIN(MethodDescVersioningState)
+CDAC_TYPE_INDETERMINATE(MethodDescVersioningState)
+CDAC_TYPE_FIELD(MethodDescVersioningState, /*pointer*/, NativeCodeVersionNode, cdac_data<MethodDescVersioningState>::NativeCodeVersionNode)
+CDAC_TYPE_FIELD(MethodDescVersioningState, /*uint8*/, Flags, cdac_data<MethodDescVersioningState>::Flags)
+CDAC_TYPE_END(MethodDescVersioningState)
+
+CDAC_TYPE_BEGIN(PrecodeMachineDescriptor)
+CDAC_TYPE_INDETERMINATE(PrecodeMachineDescriptor)
+CDAC_TYPE_FIELD(PrecodeMachineDescriptor, /*uint8*/, ReadWidthOfPrecodeType, offsetof(PrecodeMachineDescriptor, ReadWidthOfPrecodeType))
+CDAC_TYPE_FIELD(PrecodeMachineDescriptor, /*uint8*/, ShiftOfPrecodeType, offsetof(PrecodeMachineDescriptor, ShiftOfPrecodeType))
+CDAC_TYPE_FIELD(PrecodeMachineDescriptor, /*uint8*/, OffsetOfPrecodeType, offsetof(PrecodeMachineDescriptor, OffsetOfPrecodeType))
+CDAC_TYPE_FIELD(PrecodeMachineDescriptor, /*uint8*/, InvalidPrecodeType, offsetof(PrecodeMachineDescriptor, InvalidPrecodeType))
+CDAC_TYPE_FIELD(PrecodeMachineDescriptor, /*uint8*/, StubPrecodeType, offsetof(PrecodeMachineDescriptor, StubPrecodeType))
+#ifdef HAS_NDIRECT_IMPORT_PRECODE
+CDAC_TYPE_FIELD(PrecodeMachineDescriptor, /*uint8*/, PInvokeImportPrecodeType, offsetof(PrecodeMachineDescriptor, PInvokeImportPrecodeType))
+#endif
+#ifdef HAS_FIXUP_PRECODE
+CDAC_TYPE_FIELD(PrecodeMachineDescriptor, /*uint8*/, FixupPrecodeType, offsetof(PrecodeMachineDescriptor, FixupPrecodeType))
+#endif
+#ifdef HAS_THISPTR_RETBUF_PRECODE
+CDAC_TYPE_FIELD(PrecodeMachineDescriptor, /*uint8*/, ThisPointerRetBufPrecodeType, offsetof(PrecodeMachineDescriptor, ThisPointerRetBufPrecodeType))
+#endif
+CDAC_TYPE_FIELD(PrecodeMachineDescriptor, /*uint32*/, StubCodePageSize, offsetof(PrecodeMachineDescriptor, StubCodePageSize))
+CDAC_TYPE_END(PrecodeMachineDescriptor)
+
+CDAC_TYPE_BEGIN(PlatformMetadata)
+CDAC_TYPE_INDETERMINATE(PlatformMetadata)
+CDAC_TYPE_FIELD(PlatformMetadata, /*PrecodeMachineDescriptor*/, PrecodeMachineDescriptor, offsetof(CDacPlatformMetadata, precode))
+CDAC_TYPE_FIELD(PlatformMetadata, /*uint8*/, CodePointerFlags, offsetof(CDacPlatformMetadata, codePointerFlags))
+CDAC_TYPE_END(PlatformMetadata)
+
+CDAC_TYPE_BEGIN(StubPrecodeData)
+CDAC_TYPE_INDETERMINATE(StubPrecodeData)
+CDAC_TYPE_FIELD(StubPrecodeData, /*pointer*/, MethodDesc, offsetof(StubPrecodeData, MethodDesc))
+CDAC_TYPE_FIELD(StubPrecodeData, /*uint8*/, Type, offsetof(StubPrecodeData, Type))
+CDAC_TYPE_END(StubPrecodeData)
+
+CDAC_TYPE_BEGIN(FixupPrecodeData)
+CDAC_TYPE_INDETERMINATE(FixupPrecodeData)
+CDAC_TYPE_FIELD(FixupPrecodeData, /*pointer*/, MethodDesc, offsetof(FixupPrecodeData, MethodDesc))
+CDAC_TYPE_END(FixupPrecodeData)
+
 CDAC_TYPE_BEGIN(RangeSectionMap)
 CDAC_TYPE_INDETERMINATE(RangeSectionMap)
 CDAC_TYPE_FIELD(RangeSectionMap, /*pointer*/, TopLevelData, cdac_data<RangeSectionMap>::TopLevelData)
@@ -381,6 +427,20 @@ CDAC_TYPE_FIELD(CodeHeapListNode, /*pointer*/, MapBase, offsetof(HeapList, mapBa
 CDAC_TYPE_FIELD(CodeHeapListNode, /*pointer*/, HeaderMap, offsetof(HeapList, pHdrMap))
 CDAC_TYPE_END(CodeHeapListNode)
 
+CDAC_TYPE_BEGIN(ILCodeVersioningState)
+CDAC_TYPE_INDETERMINATE(ILCodeVersioningState)
+CDAC_TYPE_FIELD(ILCodeVersioningState, /*uint32*/, ActiveVersionKind, cdac_data<ILCodeVersioningState>::ActiveVersionKind)
+CDAC_TYPE_FIELD(ILCodeVersioningState, /*pointer*/, ActiveVersionNode, cdac_data<ILCodeVersioningState>::ActiveVersionNode)
+CDAC_TYPE_FIELD(ILCodeVersioningState, /*pointer*/, ActiveVersionModule, cdac_data<ILCodeVersioningState>::ActiveVersionModule)
+CDAC_TYPE_FIELD(ILCodeVersioningState, /*uint32*/, ActiveVersionMethodDef, cdac_data<ILCodeVersioningState>::ActiveVersionMethodDef)
+CDAC_TYPE_END(ILCodeVersioningState)
+
+CDAC_TYPE_BEGIN(NativeCodeVersionNode)
+CDAC_TYPE_INDETERMINATE(NativeCodeVersionNode)
+CDAC_TYPE_FIELD(NativeCodeVersionNode, /*pointer*/, Next, cdac_data<NativeCodeVersionNode>::Next)
+CDAC_TYPE_FIELD(NativeCodeVersionNode, /*pointer*/, MethodDesc, cdac_data<NativeCodeVersionNode>::MethodDesc)
+CDAC_TYPE_FIELD(NativeCodeVersionNode, /*pointer*/, NativeCode, cdac_data<NativeCodeVersionNode>::NativeCode)
+CDAC_TYPE_END(NativeCodeVersionNode)
 CDAC_TYPES_END()
 
 CDAC_GLOBALS_BEGIN()
@@ -421,6 +481,7 @@ CDAC_GLOBAL_POINTER(SyncTableEntries, &::g_pSyncTable)
 CDAC_GLOBAL_POINTER(MiniMetaDataBuffAddress, &::g_MiniMetaDataBuffAddress)
 CDAC_GLOBAL_POINTER(MiniMetaDataBuffMaxSize, &::g_MiniMetaDataBuffMaxSize)
 CDAC_GLOBAL_POINTER(ExecutionManagerCodeRangeMapAddress, cdac_data<ExecutionManager>::CodeRangeMapAddress)
+CDAC_GLOBAL_POINTER(PlatformMetadata, &::g_cdacPlatformMetadata)
 CDAC_GLOBALS_END()
 
 #undef CDAC_BASELINE

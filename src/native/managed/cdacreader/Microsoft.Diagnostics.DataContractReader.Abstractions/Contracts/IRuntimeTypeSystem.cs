@@ -153,6 +153,13 @@ internal interface IRuntimeTypeSystem : IContract
     // A IL Stub method is also a StoredSigMethodDesc, and a NoMetadataMethod
     public virtual bool IsILStub(MethodDescHandle methodDesc) => throw new NotImplementedException();
 
+    public virtual bool IsCollectibleMethod(MethodDescHandle methodDesc) => throw new NotImplementedException();
+    public virtual bool IsVersionable(MethodDescHandle methodDesc) => throw new NotImplementedException();
+
+    public virtual TargetPointer GetMethodDescVersioningState(MethodDescHandle methodDesc) => throw new NotImplementedException();
+
+    public virtual TargetCodePointer GetNativeCode(MethodDescHandle methodDesc) => throw new NotImplementedException();
+
     #endregion MethodDesc inspection APIs
 }
 

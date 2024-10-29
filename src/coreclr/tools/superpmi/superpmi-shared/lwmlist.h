@@ -68,6 +68,7 @@ LWM(GetIsClassInitedFlagAddress, DWORDLONG, Agnostic_GetIsClassInitedFlagAddress
 LWM(GetStaticBaseAddress, DLD, Agnostic_GetStaticBaseAddress)
 LWM(GetClassNameFromMetadata, DLD, DD)
 LWM(GetTypeInstantiationArgument, DLD, DWORDLONG)
+LWM(GetMethodInstantiationArgument, DLD, DWORDLONG)
 LWM(GetClassNumInstanceFields, DWORDLONG, DWORD)
 LWM(GetClassSize, DWORDLONG, DWORD)
 LWM(GetHeapClassSize, DWORDLONG, DWORD)
@@ -138,6 +139,7 @@ LWM(GetTypeForBoxOnStack, DWORDLONG, DWORDLONG)
 LWM(GetTypeForPrimitiveValueClass, DWORDLONG, DWORD)
 LWM(GetTypeForPrimitiveNumericClass, DWORDLONG, DWORD)
 LWM(GetUnboxedEntry, DWORDLONG, DLD);
+LWM(GetInstantiatedEntry, DWORDLONG, Agnostic_GetInstantiatedEntryResult);
 LWM(GetUnBoxHelper, DWORDLONG, DWORD)
 LWM(GetRuntimeTypePointer, DWORDLONG, DWORDLONG)
 LWM(IsObjectImmutable, DWORDLONG, DWORD)

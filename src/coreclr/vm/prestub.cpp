@@ -21,6 +21,7 @@
 #include "array.h"
 #include "ecall.h"
 #include "virtualcallstub.h"
+#include "../debug/ee/debugger.h"
 
 #ifdef FEATURE_INTERPRETER
 #include "interpreter.h"
@@ -3392,7 +3393,10 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBl
 
     // Force a GC on every jit if the stress level is high enough
     GCStress<cfg_any>::MaybeTrigger();
-
+    if (g_externalMethodFixupTraceActiveCount > 0)
+    {
+        g_pDebugger->ExternalMethodFixupNextStep(pCode);
+    }
     // Ready to return
 
     UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
