@@ -260,7 +260,6 @@ FCFuncEnd()
 FCFuncStart(gThreadFuncs)
     FCFuncElement("InternalFinalize", ThreadNative::Finalize)
     FCFuncElement("get_OptimalMaxSpinWaitsPerSpinIteration", ThreadNative::GetOptimalMaxSpinWaitsPerSpinIteration)
-    FCFuncElement("GetThreadStaticsBase", ThreadNative::GetThreadLocalStaticBase)
 FCFuncEnd()
 
 FCFuncStart(gThreadPoolFuncs)
