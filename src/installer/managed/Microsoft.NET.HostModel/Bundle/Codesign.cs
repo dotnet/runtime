@@ -20,9 +20,7 @@ namespace Microsoft.DotNet.CoreSetup
 
             ProcessStartInfo psi = new()
             {
-                Arguments = $"""
-                    {args} "{binaryPath}"
-                """,
+                Arguments = $"{args} \"{binaryPath}\"",
                 FileName = CodesignPath,
                 RedirectStandardError = true,
                 UseShellExecute = false,
