@@ -7593,7 +7593,6 @@ static void getMethodInfoHelper(
                              (ftn->RequiresInstMethodTableArg() ? CORINFO_GENERICS_CTXT_FROM_METHODTABLE : 0) |
                              (ftn->RequiresInstMethodDescArg() ? CORINFO_GENERICS_CTXT_FROM_METHODDESC : 0)));
 
-
     if (methInfo->options & CORINFO_GENERICS_CTXT_MASK)
     {
 #if defined(PROFILING_SUPPORTED)
