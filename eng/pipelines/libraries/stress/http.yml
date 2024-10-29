@@ -38,7 +38,7 @@ extends:
           DUMPS_SHARE_MOUNT_ROOT: "/dumps-share"
         pool:
           name: $(DncEngPublicBuildPool)
-          demands: ImageOverride -equals 1es-ubuntu-2204-open
+          demands: ImageOverride -equals Build.Ubuntu.2204.Amd64.Open
 
         steps:
         - checkout: self
@@ -128,6 +128,10 @@ extends:
           displayName: Build CLR and Libraries
 
         - powershell: |
+            $env:CLIENT_DUMPS_SHARE="$(Build.ArtifactStagingDirectory)/dumps/client/"
+            $env:SERVER_DUMPS_SHARE="$(Build.ArtifactStagingDirectory)/dumps/server/"
+            New-Item -Force $env:CLIENT_DUMPS_SHARE -ItemType Directory
+            New-Item -Force $env:SERVER_DUMPS_SHARE -ItemType Directory
             $(httpStressProject)/run-docker-compose.ps1 -w -o -c $(BUILD_CONFIGURATION) -t $(sdkBaseImage)
             echo "##vso[task.setvariable variable=succeeded;isOutput=true]true"
           name: buildStress
