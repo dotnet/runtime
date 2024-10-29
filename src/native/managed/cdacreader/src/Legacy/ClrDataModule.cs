@@ -16,7 +16,7 @@ internal sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCL
     private readonly IXCLRDataModule? _legacyModule;
     private readonly IXCLRDataModule2? _legacyModule2;
 
-    // This is an IUnknown pointer for the legacy implementation 
+    // This is an IUnknown pointer for the legacy implementation
     private readonly nint _legacyModulePointer;
 
     public ClrDataModule(TargetPointer address, Target target, IXCLRDataModule? legacyImpl)
