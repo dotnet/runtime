@@ -149,7 +149,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [InlineData("OID.2.5.4.99=840", UniversalTagNumber.NumericString)]
         [InlineData("OID.2.5.4.98=USA", UniversalTagNumber.PrintableString)]
         [InlineData("SERIALNUMBER=1234ABC", UniversalTagNumber.PrintableString)]
-        public static void ForceUtf8EncodingForEligibleComponents(string distinguishedName, UniversalTagNumber tagNumber)
+        public static void Encode_ForceUtf8EncodingForEligibleComponents(string distinguishedName, UniversalTagNumber tagNumber)
         {
             X500DistinguishedName name = new(distinguishedName, X500DistinguishedNameFlags.ForceUTF8Encoding);
             byte[] encoded = name.RawData;
@@ -164,6 +164,25 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
             value.ReadObjectIdentifier();
             Assert.Equal(new Asn1Tag(tagNumber), value.PeekTag());
+        }
+
+        [Theory]
+        [InlineData("C=$$")]
+        [InlineData("C=\"$$\"")]
+        [InlineData("E=\uD83C\uDF4C")] // banana
+        [InlineData("OID.2.5.4.99=a")]
+        public static void Encode_InvalidCharactersThrowCryptographicException(string distinguishedName)
+        {
+            Assert.ThrowsAny<CryptographicException>(() =>
+                new X500DistinguishedName(distinguishedName, X500DistinguishedNameFlags.ForceUTF8Encoding));
+        }
+
+        [Theory]
+        [InlineData(X500DistinguishedNameFlags.None)]
+        [InlineData(X500DistinguishedNameFlags.ForceUTF8Encoding)]
+        public static void Encode_FailsForIncorrectSurrogatePair(X500DistinguishedNameFlags flags)
+        {
+            Assert.ThrowsAny<CryptographicException>(() => new X500DistinguishedName("CN=\uD800", flags));
         }
     }
 }

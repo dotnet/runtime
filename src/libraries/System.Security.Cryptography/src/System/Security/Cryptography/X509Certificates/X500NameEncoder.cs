@@ -525,24 +525,17 @@ namespace System.Security.Cryptography.X509Certificates
                 switch (LookupEncodingRules(tagOid))
                 {
                     case EncodingRules.IA5String:
-                        try
-                        {
-                            writer.WriteCharacterString(UniversalTagNumber.IA5String, data);
-                        }
-                        catch (EncoderFallbackException)
-                        {
-                            throw new CryptographicException(SR.Cryptography_Invalid_IA5String);
-                        }
+                        WriteCryptoCharacterString(writer, UniversalTagNumber.IA5String, data);
                         break;
                     case EncodingRules.UTF8String:
                     case EncodingRules.DirectoryString or EncodingRules.Unknown when forceUtf8Encoding:
-                        writer.WriteCharacterString(UniversalTagNumber.UTF8String, data);
+                        WriteCryptoCharacterString(writer, UniversalTagNumber.UTF8String, data);
                         break;
                     case EncodingRules.NumericString:
-                        writer.WriteCharacterString(UniversalTagNumber.NumericString, data);
+                        WriteCryptoCharacterString(writer, UniversalTagNumber.NumericString, data);
                         break;
                     case EncodingRules.PrintableString:
-                        writer.WriteCharacterString(UniversalTagNumber.PrintableString, data);
+                        WriteCryptoCharacterString(writer, UniversalTagNumber.PrintableString, data);
                         break;
                     case EncodingRules.DirectoryString:
                     case EncodingRules.Unknown:
@@ -552,7 +545,7 @@ namespace System.Security.Cryptography.X509Certificates
                         }
                         catch (EncoderFallbackException)
                         {
-                            writer.WriteCharacterString(UniversalTagNumber.UTF8String, data);
+                            WriteCryptoCharacterString(writer, UniversalTagNumber.UTF8String, data);
                         }
                         break;
                     default:
@@ -593,7 +586,7 @@ namespace System.Security.Cryptography.X509Certificates
         private static Dictionary<string, EncodingRules> CreateEncodingRulesLookup()
         {
             const int LookupDictionarySize = 27;
-            Dictionary<string, EncodingRules> lookup = new(LookupDictionarySize)
+            Dictionary<string, EncodingRules> lookup = new(LookupDictionarySize, StringComparer.Ordinal)
             {
                 { Oids.EmailAddress, EncodingRules.IA5String },
                 { Oids.CommonName, EncodingRules.DirectoryString },
@@ -626,6 +619,25 @@ namespace System.Security.Cryptography.X509Certificates
 
             Debug.Assert(lookup.Count == LookupDictionarySize);
             return lookup;
+        }
+
+        private static void WriteCryptoCharacterString(AsnWriter writer, UniversalTagNumber tagNumber, ReadOnlySpan<char> data)
+        {
+            try
+            {
+                writer.WriteCharacterString(tagNumber, data);
+            }
+            catch (EncoderFallbackException)
+            {
+                if (tagNumber == UniversalTagNumber.IA5String)
+                {
+                    throw new CryptographicException(SR.Cryptography_Invalid_IA5String);
+                }
+                else
+                {
+                    throw new CryptographicException(SR.Cryptography_Invalid_X500Name);
+                }
+            }
         }
 
         private static EncodingRules LookupEncodingRules(ReadOnlySpan<char> oid)
