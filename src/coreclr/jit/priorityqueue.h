@@ -59,7 +59,7 @@ public:
     }
 
     // Insert new element at the back of the vector.
-    // Then, while the new element has a higher priority than its parent, swap them.
+    // Then, while the new element has a higher priority than its parent, move the element up.
     void Push(const T& value)
     {
         size_t i = data.size();
@@ -69,36 +69,42 @@ public:
             return (i - 1) / 2;
         };
 
-        for (size_t parent = getParent(i); (i != 0) && comp(data[parent], data[i]); i = parent, parent = getParent(i))
+        // Instead of swapping the new value with its parent, copy the parent value to the correct location,
+        // and write the new value once.
+        for (size_t parent = getParent(i); (i != 0) && comp(data[parent], value); i = parent, parent = getParent(i))
         {
-            std::swap(data[parent], data[i]);
+            data[i] = data[parent];
         }
 
+        data[i] = value;
         // assert(VerifyMaxHeap());
     }
 
-    // Swap the root and last element to facilitate removing the former.
-    // Then, while the new root element has a lower priority than its children,
-    // swap the element with its highest-priority child.
+    // Remove and return the root element.
+    // To efficiently pop from the back of the vector, we will look for a new position for the last element.
     T Pop()
     {
         assert(!data.empty());
-        std::swap(data.front(), data.back());
-        const T elem = std::move(data.back());
-        data.pop_back();
 
         auto getLeftChild = [](const size_t i) -> size_t {
             return (2 * i) + 1;
         };
 
-        for (size_t i = 0, maxChild = getLeftChild(i); maxChild < data.size(); i = maxChild, maxChild = getLeftChild(i))
+        const T      root     = data.front();
+        const T&     lastElem = data.back();
+        const size_t size     = data.size() - 1;
+        size_t       i        = 0;
+
+        // Instead of swapping 'lastElem' with its highest-priority child, copy the child to the parent position.
+        // Once we've found a position for 'lastElem', we will write to it once.
+        for (size_t maxChild = getLeftChild(i); maxChild < size; i = maxChild, maxChild = getLeftChild(i))
         {
             const size_t rightChild = maxChild + 1;
-            maxChild = ((rightChild < data.size()) && comp(data[maxChild], data[rightChild])) ? rightChild : maxChild;
+            maxChild = ((rightChild < size) && comp(data[maxChild], data[rightChild])) ? rightChild : maxChild;
 
-            if (comp(data[i], data[maxChild]))
+            if (comp(lastElem, data[maxChild]))
             {
-                std::swap(data[i], data[maxChild]);
+                data[i] = data[maxChild];
             }
             else
             {
@@ -106,7 +112,10 @@ public:
             }
         }
 
+        data[i] = lastElem;
+        data.pop_back();
+
         // assert(VerifyMaxHeap());
-        return elem;
+        return root;
     }
 };
