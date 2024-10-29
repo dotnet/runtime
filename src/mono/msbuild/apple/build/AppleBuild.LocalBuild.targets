@@ -44,10 +44,10 @@
   should be considered if we ever want to change the Condition of the ConfigureTrimming target -->
   <Target Name="ConfigureTrimming" Condition="'$(UseNativeAOTRuntime)' != 'true' and '$(EnableAggressiveTrimming)' == 'true' and '$(SkipConfigureTrimming)' != 'true'">
     <PropertyGroup>
-      <!-- Prevent getting DynamicCodeSupport=true default from ILLink targets that are imported with the Sdk.targets -->
+      <!-- Prevent getting defaults from ILLink targets that are imported with the Sdk.targets -->
       <DynamicCodeSupport>false</DynamicCodeSupport>
-      <!-- Prevent getting _DefaultValueAttributeSupport=false default from ILLink targets that are imported with the Sdk.targets -->
       <_DefaultValueAttributeSupport>true</_DefaultValueAttributeSupport>
+      <_DesignerHostSupport>true</_DesignerHostSupport>
     </PropertyGroup>
     <ItemGroup>
       <!-- Mark all the assemblies for link. We will explicitly mark the non-trimmable ones -->
