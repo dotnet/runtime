@@ -146,11 +146,19 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [InlineData("OID.2.25.77135202736018529853602245419149860647=sample", UniversalTagNumber.UTF8String)]
         [InlineData("C=US", UniversalTagNumber.PrintableString)]
         [InlineData("OID.2.5.4.20=\"+0 (555) 555-1234\"", UniversalTagNumber.PrintableString)]
-        [InlineData("OID.2.5.4.99=840", UniversalTagNumber.NumericString)]
-        [InlineData("OID.2.5.4.98=USA", UniversalTagNumber.PrintableString)]
+        [InlineData("OID.2.5.4.99=840", UniversalTagNumber.NumericString, true)]
+        [InlineData("OID.2.5.4.98=USA", UniversalTagNumber.PrintableString, true)]
         [InlineData("SERIALNUMBER=1234ABC", UniversalTagNumber.PrintableString)]
-        public static void Encode_ForceUtf8EncodingForEligibleComponents(string distinguishedName, UniversalTagNumber tagNumber)
+        public static void Encode_ForceUtf8EncodingForEligibleComponents(
+            string distinguishedName,
+            UniversalTagNumber tagNumber,
+            bool nonWindowsOnly = false)
         {
+            if (PlatformDetection.IsWindows && nonWindowsOnly)
+            {
+                return;
+            }
+
             X500DistinguishedName name = new(distinguishedName, X500DistinguishedNameFlags.ForceUTF8Encoding);
             byte[] encoded = name.RawData;
 
@@ -170,14 +178,22 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [InlineData("C=$$")]
         [InlineData("C=\"$$\"")]
         [InlineData("E=\uD83C\uDF4C")] // banana
-        [InlineData("OID.2.5.4.99=a")]
-        public static void Encode_InvalidCharactersThrowCryptographicException(string distinguishedName)
+        [InlineData("OID.2.5.4.99=a", true)]
+        [InlineData("OID.2.5.4.6=$$")]
+        public static void Encode_InvalidCharactersThrowCryptographicException(
+            string distinguishedName,
+            bool nonWindowsOnly = false)
         {
+            if (PlatformDetection.IsWindows && nonWindowsOnly)
+            {
+                return;
+            }
+
             Assert.ThrowsAny<CryptographicException>(() =>
                 new X500DistinguishedName(distinguishedName, X500DistinguishedNameFlags.ForceUTF8Encoding));
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows))]
         [InlineData(X500DistinguishedNameFlags.None)]
         [InlineData(X500DistinguishedNameFlags.ForceUTF8Encoding)]
         public static void Encode_FailsForIncorrectSurrogatePair(X500DistinguishedNameFlags flags)
