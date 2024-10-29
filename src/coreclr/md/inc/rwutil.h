@@ -21,7 +21,7 @@ class UTSemReadWrite;
         }                                                   \
         else                                                \
         {                                                   \
-            int cbBuffer = ((int)minipal_u16_strlen((const CHAR16_T*)wszInput) * 3) + 1; \
+            int cbBuffer = ((int)u16_strlen(wszInput) * 3) + 1; \
             (szOutput) = (char *)_alloca(cbBuffer);         \
             Unicode2UTF((wszInput), (szOutput), cbBuffer);  \
         }                                                   \

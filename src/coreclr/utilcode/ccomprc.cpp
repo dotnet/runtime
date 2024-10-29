@@ -136,7 +136,7 @@ HRESULT CCompRC::Init(LPCWSTR pResourceFile)
         {
             NewArrayHolder<WCHAR> pwszResourceFile(NULL);
 
-            DWORD lgth = (DWORD) minipal_u16_strlen((const CHAR16_T*)pResourceFile) + 1;
+            DWORD lgth = (DWORD) u16_strlen(pResourceFile) + 1;
             pwszResourceFile = new(nothrow) WCHAR[lgth];
             if (pwszResourceFile)
             {

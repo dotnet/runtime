@@ -6080,7 +6080,7 @@ void MethodTable::GetGuid(GUID *pGuid, BOOL bGenerateIfNotFound, BOOL bClassic /
             szName = GetFullyQualifiedNameForClassNestedAwareW(this);
             if (szName == NULL)
                 return;
-            cchName = minipal_u16_strlen((const CHAR16_T*)szName);
+            cchName = u16_strlen(szName);
 
             // Enlarge buffer for class name.
             cbCur = cchName * sizeof(WCHAR);

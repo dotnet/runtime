@@ -386,7 +386,7 @@ inline SString::SString(tagUTF8Literal dummytag, const UTF8 *literal)
 }
 
 inline SString::SString(tagLiteral dummytag, const WCHAR *literal)
-  : SBuffer(Immutable, (const BYTE *) literal, (COUNT_T) (minipal_u16_strlen((const CHAR16_T*)literal)+1)*sizeof(WCHAR))
+  : SBuffer(Immutable, (const BYTE *) literal, (COUNT_T) (u16_strlen(literal)+1)*sizeof(WCHAR))
 {
     SS_CONTRACT_VOID
     {

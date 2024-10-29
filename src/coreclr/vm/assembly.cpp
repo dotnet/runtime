@@ -1043,12 +1043,12 @@ void Assembly::AddDiagnosticStartupHookPath(LPCWSTR wszPath)
 {
     LPCWSTR wszDiagnosticStartupHookPathsLocal = s_wszDiagnosticStartupHookPaths;
 
-    size_t cchPath = minipal_u16_strlen((const CHAR16_T*)wszPath);
+    size_t cchPath = u16_strlen(wszPath);
     size_t cchDiagnosticStartupHookPathsNew = cchPath;
     size_t cchDiagnosticStartupHookPathsLocal = 0;
     if (nullptr != wszDiagnosticStartupHookPathsLocal)
     {
-        cchDiagnosticStartupHookPathsLocal = minipal_u16_strlen((const CHAR16_T*)wszDiagnosticStartupHookPathsLocal);
+        cchDiagnosticStartupHookPathsLocal = u16_strlen(wszDiagnosticStartupHookPathsLocal);
         // Add 1 for the path separator
         cchDiagnosticStartupHookPathsNew += cchDiagnosticStartupHookPathsLocal + 1;
     }

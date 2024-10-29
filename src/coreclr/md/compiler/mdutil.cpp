@@ -480,7 +480,7 @@ ULONG _GetSizeOfConstantBlob(
         if (cchString != (ULONG) -1)
             ulSize = cchString * sizeof(WCHAR);
         else
-            ulSize = (ULONG)(sizeof(WCHAR) * minipal_u16_strlen((const CHAR16_T*)(LPWSTR)pValue));
+            ulSize = (ULONG)(sizeof(WCHAR) * u16_strlen((LPWSTR)pValue));
         break;
 
     case ELEMENT_TYPE_CLASS:

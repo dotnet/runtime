@@ -18,6 +18,7 @@
 #include "clrversion.h"
 #include "hostinformation.h"
 #include <minipal/guid.h>
+#include <minipal/strings.h>
 
 #undef EP_INFINITE_WAIT
 #define EP_INFINITE_WAIT INFINITE

@@ -872,7 +872,7 @@ template <int nMaxLengthIncludingNull>
 class MSLAYOUT EmbeddedIPCString
 {
 public:
-    // Set, caller responsibility that minipal_u16_strlen((const CHAR16_T*)pData) < nMaxLengthIncludingNull
+    // Set, caller responsibility that u16_strlen(pData) < nMaxLengthIncludingNull
     void SetString(const WCHAR * pData)
     {
         // If the string doesn't fit into the buffer, that's an issue (and so this is a real

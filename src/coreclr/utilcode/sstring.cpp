@@ -244,7 +244,7 @@ void SString::Set(const WCHAR *string)
         Clear();
     else
     {
-        Resize((COUNT_T) minipal_u16_strlen((const CHAR16_T*)string), REPRESENTATION_UNICODE);
+        Resize((COUNT_T) u16_strlen(string), REPRESENTATION_UNICODE);
         wcscpy_s(GetRawUnicode(), GetBufferSizeInCharIncludeNullChar(), string);
     }
 

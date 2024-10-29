@@ -1756,7 +1756,7 @@ DWORD ReadResourceDirectory(const PEDecoder *pDecoder, DWORD rvaOfResourceSectio
                 return 0;
 
             size_t entryNameLen = *(WORD*)pDecoder->GetRvaData(entryNameRva);
-            if (minipal_u16_strlen((const CHAR16_T*)name) != entryNameLen)
+            if (u16_strlen(name) != entryNameLen)
                 continue;
 
             if (!pDecoder->CheckRva(entryNameRva, (COUNT_T)(sizeof(WORD) * (1 + entryNameLen))))

@@ -30,7 +30,7 @@ WszCreateProcess(
     BOOL fResult;
     DWORD err;
     {
-        size_t commandLineLength = minipal_u16_strlen((const CHAR16_T*)lpCommandLine) + 1;
+        size_t commandLineLength = u16_strlen(lpCommandLine) + 1;
         NewArrayHolder<WCHAR> nonConstCommandLine(new (nothrow) WCHAR[commandLineLength]);
         if (nonConstCommandLine == NULL)
         {

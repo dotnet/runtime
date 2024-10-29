@@ -1846,8 +1846,8 @@ static inline bool isListedModule(const WCHAR *wszModuleFile)
     }
     if (isUserDebug == FALSE)
     {
-        u16_strncpy_s(wszModuleName, g_cBytesNeeded, tmp, minipal_u16_strlen((const CHAR16_T*)tmp));
-        wszModuleName[minipal_u16_strlen((const CHAR16_T*)tmp)] = W('\0');
+        u16_strncpy_s(wszModuleName, g_cBytesNeeded, tmp, u16_strlen(tmp));
+        wszModuleName[u16_strlen(tmp)] = W('\0');
         if (u16_strcmp(wszModuleName, wszModuleFile) == 0)
         {
             isUserDebug = TRUE;
@@ -2570,7 +2570,7 @@ void NotifyGdb::OnMethodPrepared(MethodDesc* methodDescPtr)
 
     if (pNIExt)
     {
-      u16_strcpy_s(pNIExt, minipal_u16_strlen((const CHAR16_T*)pNIExt) + 1, W(".dll"));
+      u16_strcpy_s(pNIExt, u16_strlen(pNIExt) + 1, W(".dll"));
     }
 
     if (isListedModule(wszModuleFile))

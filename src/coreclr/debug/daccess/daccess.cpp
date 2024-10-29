@@ -264,7 +264,7 @@ SplitFullName(_In_z_ PCWSTR fullName,
     else
     {
         *params = NULL;
-        memberEnd = fullName + (minipal_u16_strlen((const CHAR16_T*)fullName) - 1);
+        memberEnd = fullName + (u16_strlen(fullName) - 1);
     }
 
     if (syntax != SPLIT_TYPE)
@@ -5680,7 +5680,7 @@ static int FormatCLRStubName(
     // Compute the address as a string safely.
     WCHAR addrString[Max64BitHexString + 1];
     FormatInteger(addrString, ARRAY_SIZE(addrString), "%p", stubAddr);
-    size_t addStringLen = minipal_u16_strlen((const CHAR16_T*)addrString);
+    size_t addStringLen = u16_strlen(addrString);
 
     // Compute maximum length, include the null terminator.
     size_t formatName_MaxLen = ARRAY_SIZE(formatName_Prefix) // Include trailing null
@@ -5691,7 +5691,7 @@ static int FormatCLRStubName(
     size_t stubManagedNameLen = 0;
     if (stubNameMaybe != NULL)
     {
-        stubManagedNameLen = minipal_u16_strlen((const CHAR16_T*)stubNameMaybe);
+        stubManagedNameLen = u16_strlen(stubNameMaybe);
         formatName_MaxLen += ARRAY_SIZE(formatName_OpenBracket) - 1;
         formatName_MaxLen += ARRAY_SIZE(formatName_CloseBracket) - 1;
     }
@@ -6458,7 +6458,7 @@ ClrDataAccess::GetMetaDataFileInfoFromPEFile(PEAssembly *pPEAssembly,
     // It is possible that the module is in-memory. That is the wszFilePath here is empty.
     // We will try to use the module name instead in this case for hosting debugger
     // to find match.
-    if (minipal_u16_strlen((const CHAR16_T*)wszFilePath) == 0)
+    if (u16_strlen(wszFilePath) == 0)
     {
         mdImage->GetModuleFileNameHintForDAC().DacGetUnicode(cchFilePath, wszFilePath, &uniPathChars);
         if (uniPathChars > cchFilePath)
@@ -7259,9 +7259,9 @@ STDAPI OutOfProcessExceptionEventCallback(_In_ PDWORD pContext,
         return hr;
     }
 
-    if ((pwszEventName == NULL) || (*pchSize <= minipal_u16_strlen((const CHAR16_T*)gmb.wzEventTypeName)))
+    if ((pwszEventName == NULL) || (*pchSize <= u16_strlen(gmb.wzEventTypeName)))
     {
-        *pchSize = static_cast<DWORD>(minipal_u16_strlen((const CHAR16_T*)gmb.wzEventTypeName)) + 1;
+        *pchSize = static_cast<DWORD>(u16_strlen(gmb.wzEventTypeName)) + 1;
         return HRESULT_FROM_WIN32(ERROR_INSUFFICIENT_BUFFER);
     }
 
@@ -7383,9 +7383,9 @@ STDAPI OutOfProcessExceptionEventSignatureCallback(_In_ PDWORD pContext,
     // Return pwszName as an emptry string to let WER use localized version of "Parameter n"
     *pwszName = W('\0');
 
-    if ((pwszValue == NULL) || (*pchValue <= minipal_u16_strlen((const CHAR16_T*)pwszBucketValues[dwIndex])))
+    if ((pwszValue == NULL) || (*pchValue <= u16_strlen(pwszBucketValues[dwIndex])))
     {
-        *pchValue = static_cast<DWORD>(minipal_u16_strlen((const CHAR16_T*)pwszBucketValues[dwIndex]))+ 1;
+        *pchValue = static_cast<DWORD>(u16_strlen(pwszBucketValues[dwIndex]))+ 1;
         return HRESULT_FROM_WIN32(ERROR_INSUFFICIENT_BUFFER);
     }
 

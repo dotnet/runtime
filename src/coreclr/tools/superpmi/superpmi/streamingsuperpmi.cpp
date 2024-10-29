@@ -30,9 +30,9 @@ static bool AddJitOption(LightWeightMap<DWORD,DWORD>* map, char* newOption)
     }
 
     DWORD keyIndex =
-        (DWORD)map->AddBuffer((unsigned char*)key, sizeof(WCHAR) * ((unsigned int)minipal_u16_strlen((const CHAR16_T*)key) + 1));
+        (DWORD)map->AddBuffer((unsigned char*)key, sizeof(WCHAR) * ((unsigned int)u16_strlen(key) + 1));
     DWORD valueIndex =
-        (DWORD)map->AddBuffer((unsigned char*)value, sizeof(WCHAR) * ((unsigned int)minipal_u16_strlen((const CHAR16_T*)value) + 1));
+        (DWORD)map->AddBuffer((unsigned char*)value, sizeof(WCHAR) * ((unsigned int)u16_strlen(value) + 1));
     map->Add(keyIndex, valueIndex);
 
     delete[] key;

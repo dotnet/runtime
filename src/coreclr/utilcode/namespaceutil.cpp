@@ -35,9 +35,9 @@ int ns::GetFullLength(                  // Number of chars in full name.
 
     int iLen = 1;                       // Null terminator.
     if (szNameSpace)
-        iLen += (int)minipal_u16_strlen((const CHAR16_T*)szNameSpace);
+        iLen += (int)u16_strlen(szNameSpace);
     if (szName)
-        iLen += (int)minipal_u16_strlen((const CHAR16_T*)szName);
+        iLen += (int)u16_strlen(szName);
     if (szNameSpace && *szNameSpace && szName && *szName)
         ++iLen;
     return iLen;
@@ -186,7 +186,7 @@ int ns::SplitPath(                      // true ok, false trunction.
             ++ptr;
         else
             ptr = szPath;
-        iLen = (int)minipal_u16_strlen((const CHAR16_T*)ptr);
+        iLen = (int)u16_strlen(ptr);
         iCopyMax = min(iCopyMax, iLen);
         wcsncpy_s(szName, cchName, ptr, iCopyMax);
         szName[iCopyMax] = 0;

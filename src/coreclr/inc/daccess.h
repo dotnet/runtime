@@ -575,7 +575,7 @@
 #include <type_traits>
 #include "crosscomp.h"
 
-#include <minipal/strings.h>
+#include <dn-u16.h>
 
 // Information stored in the DAC table of interest to the DAC implementation
 // Note that this information is shared between all instantiations of ClrDataAccess, so initialize
@@ -1524,7 +1524,7 @@ public:
         WCHAR* str = DacInstantiateStringW(m_addr, maxChars, false);
         if (str)
         {
-            DacEnumMemoryRegion(m_addr, minipal_u16_strlen((const CHAR16_T*)str) + 1);
+            DacEnumMemoryRegion(m_addr, u16_strlen(str) + 1);
         }
     }
 };

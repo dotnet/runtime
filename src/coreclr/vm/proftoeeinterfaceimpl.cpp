@@ -4046,7 +4046,7 @@ HRESULT ProfToEEInterfaceImpl::GetModuleInfo2(ModuleID     moduleId,
             wszFileName = strScopeName.GetUnicode();
         }
 
-        ULONG trueLen = (ULONG)(minipal_u16_strlen((const CHAR16_T*)wszFileName) + 1);
+        ULONG trueLen = (ULONG)(u16_strlen(wszFileName) + 1);
 
         // Return name of module as required.
         if (wszName && cchName > 0)
@@ -5492,7 +5492,7 @@ HRESULT ProfToEEInterfaceImpl::GetAppDomainInfo(AppDomainID appDomainId,
     if (szFriendlyName != NULL)
     {
         // Get the module file name
-        ULONG trueLen = (ULONG)(minipal_u16_strlen((const CHAR16_T*)szFriendlyName) + 1);
+        ULONG trueLen = (ULONG)(u16_strlen(szFriendlyName) + 1);
 
         // Return name of module as required.
         if (szName && cchName > 0)
@@ -6354,7 +6354,7 @@ HRESULT ProfToEEInterfaceImpl::GetDynamicFunctionInfo(FunctionID functionId,
         ss.Normalize();
         LPCWSTR methodName = ss.GetUnicode();
 
-        ULONG trueLen = (ULONG)(minipal_u16_strlen((const CHAR16_T*)methodName) + 1);
+        ULONG trueLen = (ULONG)(u16_strlen(methodName) + 1);
 
         // Return name of method as required.
         if (wszName && cchName > 0)
@@ -9682,7 +9682,7 @@ HRESULT ProfToEEInterfaceImpl::GetRuntimeInformation(USHORT * pClrInstanceId,
         PCWSTR pczVersionString = CLR_PRODUCT_VERSION_L;
 
         // Get the module file name
-        ULONG trueLen = (ULONG)(minipal_u16_strlen((const CHAR16_T*)pczVersionString) + 1);
+        ULONG trueLen = (ULONG)(u16_strlen(pczVersionString) + 1);
 
         // Return name of module as required.
         if (szVersionString && cchVersionString > 0)

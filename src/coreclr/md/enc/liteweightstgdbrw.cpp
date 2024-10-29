@@ -1167,7 +1167,7 @@ CLiteWeightStgdbRW::SetFileName(
 
     // Size of the file name incl. null terminator
     size_t cchFileName;
-    cchFileName = minipal_u16_strlen((const CHAR16_T*)wszFileName) + 1;
+    cchFileName = u16_strlen(wszFileName) + 1;
 
     // Allocate and copy the file name
     m_wszFileName = new (nothrow) WCHAR[cchFileName];

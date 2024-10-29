@@ -255,7 +255,7 @@ void DisplayFile(_In_z_ WCHAR* szFile, BOOL isFile, ULONG DumpFilter, _In_opt_z_
 
     // We need to make sure this file isn't too long. Checking _MAX_PATH is probably safe, but since we have a much
     // larger buffer, we might as well use it all.
-    if (minipal_u16_strlen((const CHAR16_T*)szFile) > 1000)
+    if (u16_strlen(szFile) > 1000)
         return;
 
 
