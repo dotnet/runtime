@@ -199,7 +199,7 @@ namespace System.ComponentModel.Tests
                 Assert.Equal(2, properties[1].GetChildProperties().Count);
                 Assert.Equal("Bool", properties[1].GetChildProperties()[0].Name);
 
-                // Even though C1.Class.Base is not explictely registered, we should still be able to get the properties of Base.
+                // Even though C1.Class.Base is not explicitly registered, we should still be able to get the properties of Base.
                 Assert.Equal("String", properties[1].GetChildProperties()[1].Name);
             }, options).Dispose();
         }
@@ -220,7 +220,7 @@ namespace System.ComponentModel.Tests
                 Assert.Equal(2, properties[1].GetChildProperties().Count);
                 Assert.Equal("Bool", properties[1].GetChildProperties()[0].Name);
 
-                // Even though C1.Class.Base is not explictely registered, we should still be able to get the properties of Base.
+                // Even though C1.Class.Base is not explicitly registered, we should still be able to get the properties of Base.
                 Assert.Equal("String", properties[1].GetChildProperties()[1].Name);
             }).Dispose();
         }

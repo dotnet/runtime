@@ -1611,18 +1611,19 @@ private:
     Interval** localVarIntervals;
 
     // Set of blocks that have been visited.
-    BlockSet bbVisitedSet;
-    void     markBlockVisited(BasicBlock* block)
+    BitVecTraits* traits;
+    BitVec        bbVisitedSet;
+    void          markBlockVisited(BasicBlock* block)
     {
-        BlockSetOps::AddElemD(compiler, bbVisitedSet, block->bbNum);
+        BitVecOps::AddElemD(traits, bbVisitedSet, block->bbPostorderNum);
     }
     void clearVisitedBlocks()
     {
-        BlockSetOps::ClearD(compiler, bbVisitedSet);
+        BitVecOps::ClearD(traits, bbVisitedSet);
     }
     bool isBlockVisited(BasicBlock* block)
     {
-        return BlockSetOps::IsMember(compiler, bbVisitedSet, block->bbNum);
+        return BitVecOps::IsMember(traits, bbVisitedSet, block->bbPostorderNum);
     }
 
 #if DOUBLE_ALIGN
@@ -1639,10 +1640,6 @@ private:
     BasicBlock** blockSequence;
     void         setBlockSequence();
     bool         blockSequencingDone;
-#ifdef DEBUG
-    // LSRA must not change number of blocks and blockEpoch that it initializes at start.
-    unsigned blockEpoch;
-#endif // DEBUG
 
     // Indicates whether the allocation pass has been completed.
     bool allocationPassComplete;

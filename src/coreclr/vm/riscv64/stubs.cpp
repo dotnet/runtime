@@ -1071,7 +1071,10 @@ void StubLinkerCPU::EmitMovConstant(IntReg reg, UINT64 imm)
 
     EmitLuImm(reg, high19);
     int low12 = int(high31) << (32-12) >> (32-12);
-    EmitAddImm(reg, reg, low12);
+    if (low12)
+    {
+        EmitAddImm(reg, reg, low12);
+    }
 
     // And load remaining part by batches of 11 bits size.
     INT32 remainingShift = msb - 30;

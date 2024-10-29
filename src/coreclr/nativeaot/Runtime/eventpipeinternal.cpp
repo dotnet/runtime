@@ -161,7 +161,7 @@ EXTERN_C void QCALLTYPE EventPipeInternal_DeleteProvider(intptr_t provHandle)
     }
 }
 
-// All the runtime redefine this enum, should move to commmon code.
+// All the runtime redefine this enum, should move to common code.
 // https://github.com/dotnet/runtime/issues/87069
 enum class ActivityControlCode
 {
