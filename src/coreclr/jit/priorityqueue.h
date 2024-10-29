@@ -80,10 +80,11 @@ public:
     // Swap the root and last element to facilitate removing the former.
     // Then, while the new root element has a lower priority than its children,
     // swap the element with its highest-priority child.
-    void Pop()
+    T Pop()
     {
         assert(!data.empty());
         std::swap(data.front(), data.back());
+        const T elem = std::move(data.back());
         data.pop_back();
 
         auto getLeftChild = [](const size_t i) -> size_t {
@@ -106,5 +107,6 @@ public:
         }
 
         // assert(VerifyMaxHeap());
+        return elem;
     }
 };
