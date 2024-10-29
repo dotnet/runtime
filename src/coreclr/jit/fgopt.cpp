@@ -4885,6 +4885,7 @@ Compiler::ThreeOptLayout::ThreeOptLayout(Compiler* comp)
     , ordinals(new(comp, CMK_Generic) unsigned[comp->fgBBNumMax + 1]{})
     , blockOrder(nullptr)
     , tempOrder(nullptr)
+    , currEHRegion(0)
 {
 }
 
@@ -4896,23 +4897,16 @@ Compiler::ThreeOptLayout::ThreeOptLayout(Compiler* comp)
 //
 // Parameters:
 //   edge - The branch to consider creating fallthrough for
-//   startPos - The start index of the region currently being reordered
 //
-void Compiler::ThreeOptLayout::ConsiderEdge(FlowEdge* edge, unsigned startPos)
+void Compiler::ThreeOptLayout::ConsiderEdge(FlowEdge* edge)
 {
     assert(edge != nullptr);
 
     BasicBlock* const srcBlk = edge->getSourceBlock();
     BasicBlock* const dstBlk = edge->getDestinationBlock();
-    BasicBlock* const startBlk = blockOrder[startPos];
 
     // Ignore cross-region branches
-    if (!BasicBlock::sameEHRegion(srcBlk, startBlk) || !BasicBlock::sameEHRegion(dstBlk, startBlk))
-    {
-        return;
-    }
-
-    if (compiler->bbIsTryBeg(dstBlk))
+    if ((srcBlk->bbTryIndex != currEHRegion) || (dstBlk->bbTryIndex != currEHRegion))
     {
         return;
     }
@@ -4933,11 +4927,9 @@ void Compiler::ThreeOptLayout::ConsiderEdge(FlowEdge* edge, unsigned startPos)
         return;
     }
 
-    assert(srcPos >= startPos);
-
     // Don't consider edges to blocks outside the hot range (i.e. ordinal number isn't set),
     // or backedges to the first block in a region; we don't want to change the entry point.
-    if (dstPos <= startPos)
+    if ((dstPos == 0) || compiler->bbIsTryBeg(dstBlk))
     {
         return;
     }
@@ -4963,16 +4955,15 @@ void Compiler::ThreeOptLayout::ConsiderEdge(FlowEdge* edge, unsigned startPos)
 // Parameters:
 //   block - The source of edges to consider
 //   next - The lexical successor to 'block' in 3-opt's current ordering
-//   startPos - The start index of the region currently being reordered
 //
-void Compiler::ThreeOptLayout::AddNonFallthroughSuccs(BasicBlock* block, BasicBlock* next, unsigned startPos)
+void Compiler::ThreeOptLayout::AddNonFallthroughSuccs(BasicBlock* block, BasicBlock* next)
 {
     assert(block != nullptr);
     for (FlowEdge* const succEdge : block->SuccEdges(compiler))
     {
         if (succEdge->getDestinationBlock() != next)
         {
-            ConsiderEdge(succEdge, startPos);
+            ConsiderEdge(succEdge);
         }
     }
 }
@@ -4984,9 +4975,8 @@ void Compiler::ThreeOptLayout::AddNonFallthroughSuccs(BasicBlock* block, BasicBl
 // Parameters:
 //   block - The destination of edges to consider
 //   prev - The lexical predecessor to 'block' in 3-opt's current ordering
-//   startPos - The start index of the region currently being reordered
 //
-void Compiler::ThreeOptLayout::AddNonFallthroughPreds(BasicBlock* block, BasicBlock* prev, unsigned startPos)
+void Compiler::ThreeOptLayout::AddNonFallthroughPreds(BasicBlock* block, BasicBlock* prev)
 {
     assert(block != nullptr);
 
@@ -4994,7 +4984,7 @@ void Compiler::ThreeOptLayout::AddNonFallthroughPreds(BasicBlock* block, BasicBl
     {
         if (predEdge->getSourceBlock() != prev)
         {
-            ConsiderEdge(predEdge, startPos);
+            ConsiderEdge(predEdge);
         }
     }
 }
@@ -5044,11 +5034,10 @@ void Compiler::ThreeOptLayout::Run()
     }
 
     bool modified = false;
-    unsigned XTnum = 0;
     for (EHblkDsc* const HBtab : EHClauses(compiler))
     {
         BasicBlock* const tryBeg = HBtab->ebdTryBeg;
-        if (tryBeg->getTryIndex() != XTnum++)
+        if (tryBeg->getTryIndex() != currEHRegion++)
         {
             continue;
         }
@@ -5059,10 +5048,8 @@ void Compiler::ThreeOptLayout::Run()
         }
     }
 
-    if (!compiler->fgFirstBB->hasTryIndex())
-    {
-        modified |= RunThreeOptPass(compiler->fgFirstBB, blockOrder[numHotBlocks - 1]);
-    }
+    currEHRegion = 0;
+    modified |= RunThreeOptPass(compiler->fgFirstBB, blockOrder[numHotBlocks - 1]);
 
     if (modified)
     {
@@ -5102,11 +5089,11 @@ bool Compiler::ThreeOptLayout::RunThreeOptPass(BasicBlock* startBlock, BasicBloc
     // Initialize cutPoints with candidate branches in this section
     for (unsigned position = startPos; position < endPos; position++)
     {
-        AddNonFallthroughSuccs(blockOrder[position], blockOrder[position + 1], startPos);
+        AddNonFallthroughSuccs(blockOrder[position], blockOrder[position + 1]);
     }
 
     // Also consider any backedges out of the last block in this region
-    AddNonFallthroughSuccs(blockOrder[endPos], nullptr, startPos);
+    AddNonFallthroughSuccs(blockOrder[endPos], nullptr);
 
     // For each candidate edge, determine if it's profitable to partition after the source block
     // and before the destination block, and swap the partitions to create fallthrough.
@@ -5181,7 +5168,7 @@ bool Compiler::ThreeOptLayout::RunThreeOptPass(BasicBlock* startBlock, BasicBloc
             cost        = srcNextCost + dstPrevCost;
             improvement = candidateEdge->getLikelyWeight() + getCost(blockOrder[endPos], blockOrder[srcPos + 1]);
 
-            // Don't include branches S4 in the cost/improvement calculation,
+            // Don't include branches into S4 in the cost/improvement calculation,
             // since we're only considering branches within this region.
         }
         else
@@ -5230,21 +5217,21 @@ bool Compiler::ThreeOptLayout::RunThreeOptPass(BasicBlock* startBlock, BasicBloc
         // consider all other edges out of 'srcBlk''s current fallthrough predecessor
         if (srcPrevCost != 0.0)
         {
-            AddNonFallthroughSuccs(blockOrder[srcPos - 1], srcBlk, startPos);
+            AddNonFallthroughSuccs(blockOrder[srcPos - 1], srcBlk);
         }
 
         // If we're going to break up fallthrough out of 'srcBlk',
         // consider all other edges into 'srcBlk''s current fallthrough successor
         if (srcNextCost != 0.0)
         {
-            AddNonFallthroughPreds(blockOrder[srcPos + 1], srcBlk, startPos);
+            AddNonFallthroughPreds(blockOrder[srcPos + 1], srcBlk);
         }
 
         // If we're going to break up fallthrough into 'dstBlk',
         // consider all other edges out of 'dstBlk''s current fallthrough predecessor
         if (dstPrevCost != 0.0)
         {
-            AddNonFallthroughSuccs(blockOrder[dstPos - 1], dstBlk, startPos);
+            AddNonFallthroughSuccs(blockOrder[dstPos - 1], dstBlk);
         }
 
         // Swap the partitions

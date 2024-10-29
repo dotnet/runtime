@@ -6262,10 +6262,11 @@ public:
         unsigned* ordinals;
         BasicBlock** blockOrder;
         BasicBlock** tempOrder;
+        unsigned currEHRegion;
 
-        void ConsiderEdge(FlowEdge* edge, unsigned startPos);
-        void AddNonFallthroughSuccs(BasicBlock* block, BasicBlock* next, unsigned startPos);
-        void AddNonFallthroughPreds(BasicBlock* block, BasicBlock* prev, unsigned startPos);
+        void ConsiderEdge(FlowEdge* edge);
+        void AddNonFallthroughSuccs(BasicBlock* block, BasicBlock* next);
+        void AddNonFallthroughPreds(BasicBlock* block, BasicBlock* prev);
         bool RunThreeOptPass(BasicBlock* startBlock, BasicBlock* endBlock);
 
     public:
