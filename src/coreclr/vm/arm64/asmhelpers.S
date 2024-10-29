@@ -606,7 +606,6 @@ C_FUNC(DelayLoad_MethodCall):
     mov x12, x0
 
     EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
-    PATCH_LABEL ExternalMethodFixupPatchLabel
     EPILOG_BRANCH_REG   x12
 
 NESTED_END DelayLoad_MethodCall_FakeProlog, _TEXT

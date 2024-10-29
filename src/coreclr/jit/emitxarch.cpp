@@ -1587,20 +1587,6 @@ bool emitter::TakesRexWPrefix(const instrDesc* id) const
                 return false;
             }
 
-            case INS_vbroadcastsd:
-            case INS_vpbroadcastq:
-            {
-                // TODO-XARCH-AVX512: These use W1 if a kmask is involved
-                return TakesEvexPrefix(id);
-            }
-
-            case INS_vpermilpd:
-            case INS_vpermilpdvar:
-            {
-                // TODO-XARCH-AVX512: These use W1 if a kmask or broaadcast from memory is involved
-                return TakesEvexPrefix(id);
-            }
-
             default:
             {
                 unreached();
