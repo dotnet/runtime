@@ -462,6 +462,87 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
+        public void CreateType_GetMembers()
+        {
+            AssemblySaveTools.PopulateAssemblyAndModule(out ModuleBuilder mb);
+
+            TypeBuilder type = mb.DefineType("MyType", TypeAttributes.Public | TypeAttributes.Class);
+
+            // Define a class with a field, method, property, constructor and nested type
+            FieldBuilder field = type.DefineField("Field", typeof(int), FieldAttributes.Public);
+
+            MethodBuilder method = type.DefineMethod("Method", MethodAttributes.Public, typeof(int), Type.EmptyTypes);
+            ILGenerator ilGenerator = method.GetILGenerator();
+            ilGenerator.Emit(OpCodes.Ldc_I4_1);
+            ilGenerator.Emit(OpCodes.Ret);
+
+            PropertyBuilder property = type.DefineProperty("Property", PropertyAttributes.None, typeof(int), Type.EmptyTypes);
+            MethodBuilder getMethod = type.DefineMethod("get_Property", MethodAttributes.Public | MethodAttributes.SpecialName | MethodAttributes.HideBySig, typeof(int), Type.EmptyTypes);
+            ILGenerator getIlGenerator = getMethod.GetILGenerator();
+            getIlGenerator.Emit(OpCodes.Ldc_I4_2);
+            getIlGenerator.Emit(OpCodes.Ret);
+            property.SetGetMethod(getMethod);
+
+            ConstructorBuilder constructor = type.DefineConstructor(MethodAttributes.Public, CallingConventions.Standard, Type.EmptyTypes);
+            ILGenerator constructorIlGenerator = constructor.GetILGenerator();
+            constructorIlGenerator.Emit(OpCodes.Ret);
+
+            TypeBuilder nestedType = type.DefineNestedType("NestedType", TypeAttributes.NestedPublic | TypeAttributes.Class);
+
+            // Create a child type
+            TypeBuilder child = mb.DefineType("ChildType", TypeAttributes.Public | TypeAttributes.Class, type);
+
+            nestedType.CreateType();
+            type.CreateType();
+            child.CreateType();
+
+            Test(type);
+            Test(child);
+
+            void Test(TypeBuilder type)
+            {
+                // Test get all
+                MemberInfo[] members = type.GetMembers(BindingFlags.Public | BindingFlags.Instance);
+                Assert.Contains(field, members);
+                Assert.Contains(method, members);
+                Assert.Contains(property, members);
+                Assert.Contains(getMethod, members);
+                Assert.Contains(constructor, members);
+                Assert.Contains(nestedType, members);
+
+                // Test get all with wrong flags
+                members = type.GetMembers(BindingFlags.NonPublic);
+                Assert.Empty(members);
+
+                // Test get field by name
+                members = type.GetMember("Field", MemberTypes.Field, BindingFlags.Public | BindingFlags.Instance);
+                Assert.Single(members);
+                Assert.Equal(field, members[0]);
+
+                // Test get method by name
+                members = type.GetMember("Method", MemberTypes.Method, BindingFlags.Public | BindingFlags.Instance);
+                Assert.Single(members);
+                Assert.Equal(method, members[0]);
+
+                // Test get property by name
+                members = type.GetMember("Property", MemberTypes.Property, BindingFlags.Public | BindingFlags.Instance);
+                Assert.Single(members);
+                Assert.Equal(property, members[0]);
+
+                // Test get constructor by name
+                members = type.GetMember(".ctor", MemberTypes.Constructor, BindingFlags.Public | BindingFlags.Instance);
+                Assert.Single(members);
+                Assert.Equal(constructor, members[0]);
+
+                // Test get nested type by name
+                members = type.GetMember("NestedType", MemberTypes.NestedType, BindingFlags.Public);
+                Assert.Single(members);
+                Assert.Equal(nestedType, members[0]);
+            }
+        }
+
+
+        [Fact]
         public void CreateType_ValidateMethods()
         {
             PersistedAssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder concreteTypeWithAbstractMethod);
