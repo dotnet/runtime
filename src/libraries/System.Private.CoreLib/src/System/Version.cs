@@ -302,6 +302,15 @@ namespace System
             return result;
         }
 
+        /// <summary>
+        /// Converts the specified read-only span of UTF-8 characters that represents a version number to an equivalent Version object.
+        /// </summary>
+        /// <param name="utf8Text">A read-only span of UTF-8 characters that contains a version number to convert.</param>
+        /// <returns>An object that is equivalent to the version number specified in the <paramref name="utf8Text" /> parameter.</returns>
+        /// <exception cref="ArgumentException"><paramref name="utf8Text" /> has fewer than two or more than four version components.</exception>
+        /// <exception cref="ArgumentOutOfRangeException">At least one component in <paramref name="utf8Text" /> is less than zero.</exception>
+        /// <exception cref="FormatException">At least one component in <paramref name="utf8Text" /> is not an integer.</exception>
+        /// <exception cref="OverflowException">At least one component in <paramref name="utf8Text" /> represents a number that is greater than <see cref="int.MaxValue"/>.</exception>
         public static Version Parse(ReadOnlySpan<byte> utf8Text) =>
             ParseVersion(utf8Text, throwOnFailure: true)!;
 
@@ -323,6 +332,15 @@ namespace System
             return result is not null;
         }
 
+        /// <summary>
+        /// Tries to convert the UTF-8 representation of a version number to an equivalent Version object, and returns a value that indicates whether the conversion succeeded.
+        /// </summary>
+        /// <param name="utf8Text">The span of UTF-8 characters to parse.</param>
+        /// <param name="result">
+        ///     When this method returns, contains the Version equivalent of the number that is contained in <paramref name="utf8Text" />, if the conversion succeeded.
+        ///     If <paramref name="utf8Text" /> is empty, or if the conversion fails, result is null when the method returns.
+        /// </param>
+        /// <returns>true if the <paramref name="utf8Text" /> parameter was converted successfully; otherwise, false.</returns>
         public static bool TryParse(ReadOnlySpan<byte> utf8Text, [NotNullWhen(true)] out Version? result)
         {
             result = ParseVersion(utf8Text, throwOnFailure: false);
