@@ -92,43 +92,64 @@ namespace System.Net.Primitives.Functional.Tests
         [MemberData(nameof(IncorrectFormatData))]
         public void Parse_IncorrectFormat_ThrowsFormatException(string input)
         {
+            byte[] utf8Bytes = Encoding.UTF8.GetBytes(input);
+
             Assert.Throws<FormatException>(() => IPNetwork.Parse(input));
+            Assert.Throws<FormatException>(() => IPNetwork.Parse(utf8Bytes));
         }
 
         [Theory]
         [MemberData(nameof(IncorrectFormatData))]
         public void TryParse_IncorrectFormat_ReturnsFalse(string input)
         {
+            byte[] utf8Bytes = Encoding.UTF8.GetBytes(input);
+
             Assert.False(IPNetwork.TryParse(input, out _));
+            Assert.False(IPNetwork.TryParse(utf8Bytes, out _));
         }
 
         [Theory]
         [MemberData(nameof(InvalidNetworkNotationData))]
         public void Parse_InvalidNetworkNotation_ThrowsFormatException(string input)
         {
+            byte[] utf8Bytes = Encoding.UTF8.GetBytes(input);
+
             Assert.Throws<FormatException>(() => IPNetwork.Parse(input));
+            Assert.Throws<FormatException>(() => IPNetwork.Parse(utf8Bytes));
         }
 
         [Theory]
         [MemberData(nameof(InvalidNetworkNotationData))]
         public void TryParse_InvalidNetworkNotation_ReturnsFalse(string input)
         {
+            byte[] utf8Bytes = Encoding.UTF8.GetBytes(input);
+
             Assert.False(IPNetwork.TryParse(input, out _));
+            Assert.False(IPNetwork.TryParse(utf8Bytes, out _));
         }
 
         [Theory]
         [MemberData(nameof(ValidIPNetworkData))]
         public void Parse_ValidNetworkNotation_Succeeds(string input)
         {
-            var network = IPNetwork.Parse(input);
-            Assert.Equal(input, network.ToString());
+            byte[] utf8Bytes = Encoding.UTF8.GetBytes(input);
+            var stringParsedNetwork = IPNetwork.Parse(input);
+            var utf8ParsedNetwork = IPNetwork.Parse(utf8Bytes);
+
+            Assert.Equal(input, stringParsedNetwork.ToString());
+            Assert.Equal(input, utf8ParsedNetwork.ToString());
         }
 
         [Theory]
         [MemberData(nameof(ValidIPNetworkData))]
         public void TryParse_ValidNetworkNotation_Succeeds(string input)
         {
+            byte[] utf8Bytes = Encoding.UTF8.GetBytes(input);
+
             Assert.True(IPNetwork.TryParse(input, out IPNetwork network));
+            Assert.Equal(input, network.ToString());
+
+            Assert.True(IPNetwork.TryParse(utf8Bytes, out network));
             Assert.Equal(input, network.ToString());
         }
 

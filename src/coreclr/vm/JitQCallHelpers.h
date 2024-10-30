@@ -22,5 +22,7 @@ extern "C" void * QCALLTYPE ResolveVirtualFunctionPointer(QCall::ObjectHandleOnS
 extern "C" CORINFO_GENERIC_HANDLE QCALLTYPE GenericHandleWorker(MethodDesc * pMD, MethodTable * pMT, LPVOID signature, DWORD dictionaryIndexAndSlot, Module* pModule);
 extern "C" void QCALLTYPE InitClassHelper(MethodTable* pMT);
 extern "C" void QCALLTYPE ThrowInvalidCastException(CORINFO_CLASS_HANDLE pTargetType, CORINFO_CLASS_HANDLE pSourceType);
+extern "C" void QCALLTYPE GetThreadStaticsByMethodTable(QCall::ByteRefOnStack refHandle, MethodTable* pMT, bool gcStatic);
+extern "C" void QCALLTYPE GetThreadStaticsByIndex(QCall::ByteRefOnStack refHandle, uint32_t staticBlockIndex, bool gcStatic);
 
 #endif //_JITQCALLHELPERS_H

@@ -2721,7 +2721,7 @@ void Thread::CooperativeCleanup()
 
     if (GCHeapUtilities::IsGCHeapInitialized())
     {
-        gc_alloc_context* gc_alloc_context = &t_runtime_thread_locals.alloc_context.m_GCAllocContext; 
+        gc_alloc_context* gc_alloc_context = &t_runtime_thread_locals.alloc_context.m_GCAllocContext;
         // If the GC heap is initialized, we need to fix the alloc context for this detaching thread.
         // GetTotalAllocatedBytes reads dead_threads_non_alloc_bytes, but will suspend EE, being in COOP mode we cannot race with that
         // however, there could be other threads terminating and doing the same Add.
@@ -7264,13 +7264,10 @@ static void ManagedThreadBase_DispatchOuter(ManagedThreadCallState *pCallState)
     PAL_ENDTRY;
 }
 
-
-// For the implementation, there are three variants of work possible:
-
-// 1.  Establish the base of a managed thread, and switch to the correct AppDomain.
-static void ManagedThreadBase_FullTransition(ADCallBackFcnType pTarget,
-                                                   LPVOID args,
-                                                   UnhandledExceptionLocation filterType)
+// Establish the base of a managed thread
+static void ManagedThreadBase_Dispatch(ADCallBackFcnType pTarget,
+                                       LPVOID args,
+                                       UnhandledExceptionLocation filterType)
 {
     CONTRACTL
     {
@@ -7284,47 +7281,20 @@ static void ManagedThreadBase_FullTransition(ADCallBackFcnType pTarget,
     ManagedThreadBase_DispatchOuter(&CallState);
 }
 
-// 2.  Establish the base of a managed thread, but the AppDomain transition must be
-//     deferred until later.
-void ManagedThreadBase_NoADTransition(ADCallBackFcnType pTarget,
-                                             UnhandledExceptionLocation filterType)
-{
-    CONTRACTL
-    {
-        GC_TRIGGERS;
-        THROWS;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-
-    AppDomain *pAppDomain = GetAppDomain();
-
-    ManagedThreadCallState CallState(pTarget, NULL, filterType);
-
-    // self-describing, to create a pTurnAround data for eventual delivery to a subsequent AppDomain
-    // transition.
-    CallState.args = &CallState;
-
-    ManagedThreadBase_DispatchOuter(&CallState);
-}
-
-
-
 // And here are the various exposed entrypoints for base thread behavior
 
 // The 'new Thread(...).Start()' case from COMSynchronizable kickoff thread worker
 void ManagedThreadBase::KickOff(ADCallBackFcnType pTarget, LPVOID args)
 {
     WRAPPER_NO_CONTRACT;
-    ManagedThreadBase_FullTransition(pTarget, args, ManagedThread);
+    ManagedThreadBase_Dispatch(pTarget, args, ManagedThread);
 }
 
-// The Finalizer thread establishes exception handling at its base, but defers all the AppDomain
-// transitions.
+// The Finalizer thread establishes exception handling at its base
 void ManagedThreadBase::FinalizerBase(ADCallBackFcnType pTarget)
 {
     WRAPPER_NO_CONTRACT;
-    ManagedThreadBase_NoADTransition(pTarget, FinalizerThread);
+    ManagedThreadBase_Dispatch(pTarget, NULL, FinalizerThread);
 }
 
 //+----------------------------------------------------------------------------
