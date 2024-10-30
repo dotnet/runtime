@@ -108,7 +108,7 @@ class Diff:
         self.python_path = sys.executable
         self.script_dir = os.path.abspath(os.path.dirname(os.path.realpath(__file__)))
 
-        self.spmi_location = os.path.join(self.work_directory, "artifacts", "spmi")
+        self.spmi_location = os.path.join(coreclr_args.work_directory, "artifacts", "spmi")
 
         self.log_directory = coreclr_args.log_directory
         self.host_os = "windows" if platform.system() == "Windows" else "linux"
