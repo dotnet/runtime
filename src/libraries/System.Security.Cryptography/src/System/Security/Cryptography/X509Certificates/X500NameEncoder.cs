@@ -585,36 +585,58 @@ namespace System.Security.Cryptography.X509Certificates
 
         private static Dictionary<string, EncodingRules> CreateEncodingRulesLookup()
         {
-            const int LookupDictionarySize = 27;
+            // Attributes that are not "obsolete" from ITU T-REC X.520-2019.
+            // Attributes that are included are attributes that are string-like and can be represented by a String,
+            // and are not obsolete.
+            // Windows does not have any restrictions on encoding non-string encodable types, it will encode them
+            // anyway, such as OID.2.5.4.14=test will encode test as a PrintableString, even though the OID is a SET.
+            // To maintain similar behavior as Windows, those types will remain treated as unknown.
+            const int LookupDictionarySize = 43;
             Dictionary<string, EncodingRules> lookup = new(LookupDictionarySize, StringComparer.Ordinal)
             {
-                { Oids.EmailAddress, EncodingRules.IA5String },
+                { Oids.KnowledgeInformation, EncodingRules.DirectoryString },
                 { Oids.CommonName, EncodingRules.DirectoryString },
                 { Oids.Surname, EncodingRules.DirectoryString },
-                { Oids.GivenName, EncodingRules.DirectoryString },
-                { Oids.Initials, EncodingRules.DirectoryString },
-                { Oids.GenerationQualifier, EncodingRules.DirectoryString },
-                { Oids.DnQualifier, EncodingRules.PrintableString },
                 { Oids.SerialNumber, EncodingRules.PrintableString },
-                { Oids.Pseudonym, EncodingRules.DirectoryString },
-                { Oids.DnsName, EncodingRules.UTF8String },
-                { Oids.IntEmail, EncodingRules.UTF8String },
-                { Oids.Jid, EncodingRules.UTF8String },
                 { Oids.CountryOrRegionName, EncodingRules.PrintableString },
-                { Oids.CountryOrRegionName3C, EncodingRules.PrintableString },
-                { Oids.CountryOrRegionName3N, EncodingRules.NumericString },
                 { Oids.LocalityName, EncodingRules.DirectoryString },
                 { Oids.StateOrProvinceName, EncodingRules.DirectoryString },
                 { Oids.StreetAddress, EncodingRules.DirectoryString },
-                { Oids.HouseIdentifier, EncodingRules.DirectoryString },
                 { Oids.Organization, EncodingRules.DirectoryString },
                 { Oids.OrganizationalUnit, EncodingRules.DirectoryString },
                 { Oids.Title, EncodingRules.DirectoryString },
                 { Oids.Description, EncodingRules.DirectoryString },
+                { Oids.BusinessCategory, EncodingRules.DirectoryString },
                 { Oids.PostalCode, EncodingRules.DirectoryString },
                 { Oids.PostOfficeBox, EncodingRules.DirectoryString },
                 { Oids.PhysicalDeliveryOfficeName, EncodingRules.DirectoryString },
                 { Oids.TelephoneNumber, EncodingRules.PrintableString },
+                { Oids.X121Address, EncodingRules.NumericString },
+                { Oids.InternationalISDNNumber, EncodingRules.NumericString },
+                { Oids.DestinationIndicator, EncodingRules.PrintableString },
+                { Oids.Name, EncodingRules.DirectoryString },
+                { Oids.GivenName, EncodingRules.DirectoryString },
+                { Oids.Initials, EncodingRules.DirectoryString },
+                { Oids.GenerationQualifier, EncodingRules.DirectoryString },
+                { Oids.DnQualifier, EncodingRules.PrintableString },
+                { Oids.HouseIdentifier, EncodingRules.DirectoryString },
+                { Oids.DmdName, EncodingRules.DirectoryString },
+                { Oids.Pseudonym, EncodingRules.DirectoryString },
+                { Oids.UiiInUrn, EncodingRules.UTF8String },
+                { Oids.ContentUrl, EncodingRules.UTF8String },
+                { Oids.Uri, EncodingRules.UTF8String },
+                { Oids.Urn, EncodingRules.UTF8String },
+                { Oids.Url, EncodingRules.UTF8String },
+                { Oids.UrnC, EncodingRules.PrintableString },
+                { Oids.EpcInUrn, EncodingRules.DirectoryString },
+                { Oids.LdapUrl, EncodingRules.UTF8String },
+                { Oids.OrganizationIdentifier, EncodingRules.DirectoryString },
+                { Oids.CountryOrRegionName3C, EncodingRules.PrintableString },
+                { Oids.CountryOrRegionName3N, EncodingRules.NumericString },
+                { Oids.DnsName, EncodingRules.UTF8String },
+                { Oids.IntEmail, EncodingRules.UTF8String },
+                { Oids.JabberId, EncodingRules.UTF8String },
+                { Oids.EmailAddress, EncodingRules.IA5String },
             };
 
             Debug.Assert(lookup.Count == LookupDictionarySize);
