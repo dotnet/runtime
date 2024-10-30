@@ -797,12 +797,12 @@ namespace System.Reflection.Emit
         private MethodInfo[] GetMethods(string name, BindingFlags bindingAttr)
         {
             ArgumentNullException.ThrowIfNull(name);
-            ThrowIfNotCreated();
 
+            MethodInfo[] candidates = GetMethods(bindingAttr);
             List<MethodInfo> methods = new List<MethodInfo>();
-            foreach (MethodBuilderImpl method in _methodDefinitions)
+            foreach (MethodInfo method in candidates)
             {
-                if (name == method.Name && MatchesTheFilter(method, GetBindingFlags(method), bindingAttr, CallingConventions.Any, method.ParameterTypes))
+                if (name == method.Name)
                 {
                     methods.Add(method);
                 }
@@ -915,17 +915,18 @@ namespace System.Reflection.Emit
             ArgumentNullException.ThrowIfNull(name);
             ThrowIfNotCreated();
 
-            List<FieldInfo> candidates = new List<FieldInfo>(_fieldDefinitions.Count);
-            foreach (FieldBuilderImpl fieldInfo in _fieldDefinitions)
+            FieldInfo[] candidates = GetFields(bindingAttr);
+            List<FieldInfo> fields = new List<FieldInfo>();
+
+            foreach (FieldInfo field in candidates)
             {
-                BindingFlags fieldFlags = GetBindingFlags(fieldInfo);
-                if (name == fieldInfo.Name && (bindingAttr & fieldFlags) == fieldFlags)
+                if (name == field.Name)
                 {
-                    candidates.Add(fieldInfo);
+                    fields.Add(field);
                 }
             }
 
-            return candidates.ToArray();
+            return fields.ToArray();
         }
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields)]
@@ -933,17 +934,22 @@ namespace System.Reflection.Emit
         {
             ThrowIfNotCreated();
 
-            List<FieldBuilderImpl> candidates = new List<FieldBuilderImpl>(_fieldDefinitions.Count);
+            List<FieldInfo> fields = new List<FieldInfo>(_fieldDefinitions.Count);
             foreach (FieldBuilderImpl fieldInfo in _fieldDefinitions)
             {
                 BindingFlags fieldFlags = GetBindingFlags(fieldInfo);
                 if ((bindingAttr & fieldFlags) == fieldFlags)
                 {
-                    candidates.Add(fieldInfo);
+                    fields.Add(fieldInfo);
                 }
             }
 
-            return candidates.ToArray();
+            if (!bindingAttr.HasFlag(BindingFlags.DeclaredOnly) && _typeParent != null)
+            {
+                 fields.AddRange(_typeParent.GetFields(bindingAttr));
+            }
+
+            return fields.ToArray();
         }
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2063:UnrecognizedReflectionPattern")]
@@ -1003,18 +1009,18 @@ namespace System.Reflection.Emit
         private PropertyInfo[] GetProperties(string name, BindingFlags bindingAttr)
         {
             ArgumentNullException.ThrowIfNull(name);
-            ThrowIfNotCreated();
-            List<PropertyInfo> candidates = new List<PropertyInfo>(_propertyDefinitions.Count);
-            foreach (PropertyBuilderImpl property in _propertyDefinitions)
+
+            PropertyInfo[] candidates = GetProperties(bindingAttr);
+            List<PropertyInfo> properties = new List<PropertyInfo>();
+            foreach (PropertyInfo property in candidates)
             {
-                BindingFlags flags = GetBindingFlags(property);
-                if (name == property.Name && (bindingAttr & flags) == flags)
+                if (name == property.Name)
                 {
-                    candidates.Add(property);
+                    properties.Add(property);
                 }
             }
 
-            return candidates.ToArray();
+            return properties.ToArray();
         }
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)]
@@ -1022,7 +1028,7 @@ namespace System.Reflection.Emit
         {
             ThrowIfNotCreated();
 
-            List<PropertyBuilderImpl> candidates = new List<PropertyBuilderImpl>(_propertyDefinitions.Count);
+            List<PropertyInfo> candidates = new List<PropertyInfo>(_propertyDefinitions.Count);
             foreach (PropertyBuilderImpl property in _propertyDefinitions)
             {
                 BindingFlags flags = GetBindingFlags(property);
@@ -1030,6 +1036,11 @@ namespace System.Reflection.Emit
                 {
                     candidates.Add(property);
                 }
+            }
+
+            if (!bindingAttr.HasFlag(BindingFlags.DeclaredOnly) && _typeParent != null)
+            {
+                candidates.AddRange(_typeParent.GetProperties(bindingAttr));
             }
 
             return candidates.ToArray();

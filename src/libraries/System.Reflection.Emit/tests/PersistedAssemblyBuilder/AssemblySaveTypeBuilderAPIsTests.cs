@@ -234,7 +234,7 @@ namespace System.Reflection.Emit.Tests
             TypeBuilder ifaceType = module.DefineType("InterfaceType", TypeAttributes.Public | TypeAttributes.Interface | TypeAttributes.Abstract);
             TypeBuilder implType = module.DefineType("ImplType", TypeAttributes.Public);
 
-            GenericTypeParameterBuilder[] gParams =  implType.DefineGenericParameters("T");
+            GenericTypeParameterBuilder[] gParams = implType.DefineGenericParameters("T");
             gParams[0].SetInterfaceConstraints(ifaceType);
             Type constructedGenericInterface = typeof(IComparable<>).MakeGenericType(gParams);
             implType.AddInterfaceImplementation(constructedGenericInterface);
@@ -507,8 +507,11 @@ namespace System.Reflection.Emit.Tests
                 Assert.Contains(method, members);
                 Assert.Contains(property, members);
                 Assert.Contains(getMethod, members);
-                Assert.Contains(constructor, members);
-                Assert.Contains(nestedType, members);
+                if (type != child) // child type doesn't have the parent constructor nor the nested type
+                {
+                    Assert.Contains(nestedType, members);
+                    Assert.Contains(constructor, members);
+                }
 
                 // Test get all with wrong flags
                 members = type.GetMembers(BindingFlags.NonPublic);
@@ -529,15 +532,18 @@ namespace System.Reflection.Emit.Tests
                 Assert.Single(members);
                 Assert.Equal(property, members[0]);
 
-                // Test get constructor by name
-                members = type.GetMember(".ctor", MemberTypes.Constructor, BindingFlags.Public | BindingFlags.Instance);
-                Assert.Single(members);
-                Assert.Equal(constructor, members[0]);
+                if (type != child)
+                {
+                    // Test get constructor by name
+                    members = type.GetMember(".ctor", MemberTypes.Constructor, BindingFlags.Public | BindingFlags.Instance);
+                    Assert.Single(members);
+                    Assert.Equal(constructor, members[0]);
 
-                // Test get nested type by name
-                members = type.GetMember("NestedType", MemberTypes.NestedType, BindingFlags.Public);
-                Assert.Single(members);
-                Assert.Equal(nestedType, members[0]);
+                    // Test get nested type by name
+                    members = type.GetMember("NestedType", MemberTypes.NestedType, BindingFlags.Public);
+                    Assert.Single(members);
+                    Assert.Equal(nestedType, members[0]);
+                }
             }
         }
 
@@ -553,7 +559,7 @@ namespace System.Reflection.Emit.Tests
             TypeBuilder abstractType = module.DefineType("AbstractType", TypeAttributes.Public | TypeAttributes.Abstract);
             MethodBuilder abstractMethod = abstractType.DefineMethod("AbstractMethod", MethodAttributes.Public | MethodAttributes.Abstract);
             abstractType.DefineMethod("PinvokeMethod", MethodAttributes.Public | MethodAttributes.Abstract | MethodAttributes.PinvokeImpl);
-            Assert.Throws<InvalidOperationException>(() => abstractMethod.GetILGenerator()); 
+            Assert.Throws<InvalidOperationException>(() => abstractMethod.GetILGenerator());
             abstractType.CreateType(); // succeeds
 
             TypeBuilder concreteTypeWithNativeAndPinvokeMethod = module.DefineType("Type3", TypeAttributes.Public);
@@ -935,7 +941,7 @@ namespace System.Reflection.Emit.Tests
         public void GetFieldGetFieldsTest()
         {
             AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
-            foreach(object[] fd in FieldTestData)
+            foreach (object[] fd in FieldTestData)
             {
                 FieldBuilder field = type.DefineField((string)fd[0], (Type)fd[1], (FieldAttributes)fd[2]);
                 Assert.Equal(fd[0], field.Name);
@@ -956,7 +962,7 @@ namespace System.Reflection.Emit.Tests
 
             Assert.Throws<AmbiguousMatchException>(() => type.GetField("TestName1", Helpers.AllFlags));
             Assert.Equal(allFields[0], type.GetField("TestName1", BindingFlags.Public | BindingFlags.Instance));
-            Assert.Equal(allFields[allFields.Length-1], type.GetField("TestName1", BindingFlags.Public | BindingFlags.Static));
+            Assert.Equal(allFields[allFields.Length - 1], type.GetField("TestName1", BindingFlags.Public | BindingFlags.Static));
             Assert.Equal(allFields[10], type.GetField("testname5", Helpers.AllFlags));
             Assert.Equal(allFields[10], type.GetField("testname5", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.IgnoreCase));
             Assert.Equal(allFields[9], type.GetField("testname5", BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.IgnoreCase));
