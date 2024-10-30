@@ -3,8 +3,8 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
-using ExceptionHandling = System.Runtime.ExceptionServices.ExceptionHandling;
 
 //
 // Implements the single finalizer thread for a Redhawk instance. Essentially waits for an event to fire
