@@ -1,3 +1,12 @@
+### Release version 0.4
+
+Changes:
+
+ * improve imports reading
+ * improve dump bytes
+ * show custom sections content in verbose2 mode (-vv)
+ * introduce wa-lib assembly with the shared code
+
 ### Release version 0.3
 
 Changes:
