@@ -1926,6 +1926,20 @@ bool Compiler::optTryInvertWhileLoop(FlowGraphNaturalLoop* loop)
         return false;
     }
 
+    // TODO-Quirk: Remove this
+    if (preheader->JumpsToNext())
+    {
+        JITDUMP("No loop inversion for " FMT_LP " since its preheader is already fallthrough\n", loop->GetIndex());
+        return false;
+    }
+
+    // TODO-Quirk: Remove this
+    if (!preheader->NextIs(stayInLoopSucc))
+    {
+        JITDUMP("No loop inversion for " FMT_LP " since its preheader does not fall through to \"stayInLoopSucc\"\n", loop->GetIndex());
+        return false;
+    }
+
     // Exiting the loop may enter a new try-region. However, to keep exits canonical, we will
     // have to split the exit such that old loop edges exit to one half, while the duplicated condition
     // exits to the other half. This will result in jump into the middle of a try-region, which is illegal.
