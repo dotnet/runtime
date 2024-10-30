@@ -2243,6 +2243,8 @@ bool Compiler::optTryInvertWhileLoop(FlowGraphNaturalLoop* loop)
     }
 #endif // DEBUG
 
+    Metrics.LoopsInverted++;
+
     return true;
 }
 
