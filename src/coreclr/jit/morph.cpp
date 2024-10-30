@@ -13212,10 +13212,29 @@ void Compiler::fgMorphStmts(BasicBlock* block)
 //
 // Arguments:
 //    block - block in question
+//    unreachable - [optional] set of blocks proven to be unreachable
 //
-void Compiler::fgMorphBlock(BasicBlock* block)
+void Compiler::fgMorphBlock(BasicBlock* block, BlockSet* unreachable)
 {
     JITDUMP("\nMorphing " FMT_BB "\n", block->bbNum);
+
+    // Helpers for reachability tracking
+    //
+    auto SetUnreachable = [=](BasicBlock* block) {
+        if (unreachable != nullptr)
+        {
+            BlockSetOps::AddElemD(this, *unreachable, block->bbNum);
+        }
+    };
+
+    auto IsReachable = [=](BasicBlock* block) {
+        if (unreachable == nullptr)
+        {
+            return false;
+        }
+        assert(m_dfsTree->Contains(block));
+        return !BlockSetOps::IsMember(this, *unreachable, block->bbNum);
+    };
 
     if (optLocalAssertionProp)
     {
@@ -13243,6 +13262,8 @@ void Compiler::fgMorphBlock(BasicBlock* block)
             else
             {
                 bool hasPredAssertions = false;
+                bool isReachable =
+                    (block == fgFirstBB) || (block == genReturnBB) || (opts.IsOSR() && (block == fgEntryBB));
 
                 for (BasicBlock* const pred : block->PredBlocks())
                 {
@@ -13257,10 +13278,27 @@ void Compiler::fgMorphBlock(BasicBlock* block)
                         JITDUMP(FMT_BB " pred " FMT_BB " not processed; clearing assertions in\n", block->bbNum,
                                 pred->bbNum);
                         hasPredAssertions = false;
+
+                        // Generally we must assume this pred will be reachable.
+                        //
+                        isReachable = true;
                         break;
                     }
 
-                    // Yes, pred assertions are available.
+                    // This pred was reachable in the pre-morph DFS, but might have
+                    // become unreachable during morph. If so, we can ignore its assertion state.
+                    //
+                    if (!IsReachable(pred))
+                    {
+                        JITDUMP("Pred " FMT_BB " is no longer reachable\n", pred->bbNum);
+                        continue;
+                    }
+
+                    // Since we have a reachable pred, this blocks is also reachable.
+                    //
+                    isReachable = true;
+
+                    // This pred is reachable and has available assertions.
                     // If the pred is (a non-degenerate) BBJ_COND, fetch the appropriate out set.
                     //
                     ASSERT_TP  assertionsOut;
@@ -13311,6 +13349,30 @@ void Compiler::fgMorphBlock(BasicBlock* block)
                     // Either no preds, or some preds w/o assertions.
                     //
                     canUsePredAssertions = false;
+                }
+
+                // If there wasn't any reachable pred, this block is also not
+                // reachable. Note we exclude handler entries above, since we don't
+                // do the correct assertion tracking for handlers. Thus there is
+                // no need to consider reachable EH preds.
+                //
+                if (!isReachable)
+                {
+                    JITDUMP(FMT_BB " has no reachable preds, marking as unreachable\n", block->bbNum);
+                    SetUnreachable(block);
+
+                    // Remove the block's IR and flow edges but don't mark the block as removed.
+                    // Convert to BBJ_THROW. But leave CALLFINALLY alone.
+                    //
+                    // In any case, there is nothing to morph, so just return.
+                    //
+                    if (!block->KindIs(BBJ_CALLFINALLY))
+                    {
+                        fgUnreachableBlock(block);
+                        block->RemoveFlags(BBF_REMOVED);
+                        block->SetKindAndTargetEdge(BBJ_THROW);
+                    }
+                    return;
                 }
             }
 
@@ -13430,6 +13492,11 @@ PhaseStatus Compiler::fgMorphBlocks()
         INDEBUG(fgSafeBasicBlockCreation = false;);
         INDEBUG(fgSafeFlowEdgeCreation = false;);
 
+        // We will track which blocks become unreachable during morph
+        //
+        EnsureBasicBlockEpoch();
+        BlockSet unreachable = BlockSetOps::MakeEmpty(this);
+
         // Allow edge creation to genReturnBB (target of return merging)
         // and the scratch block successor (target for tail call to loop).
         // This will also disallow dataflow into these blocks.
@@ -13452,7 +13519,7 @@ PhaseStatus Compiler::fgMorphBlocks()
         for (unsigned i = m_dfsTree->GetPostOrderCount(); i != 0; i--)
         {
             BasicBlock* const block = m_dfsTree->GetPostOrder(i - 1);
-            fgMorphBlock(block);
+            fgMorphBlock(block, &unreachable);
         }
         assert(bbNumMax == fgBBNumMax);
 
