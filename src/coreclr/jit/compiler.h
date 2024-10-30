@@ -7319,7 +7319,20 @@ protected:
     void optValnumCSE_Availability();
     void optValnumCSE_Heuristic(CSE_HeuristicCommon* heuristic);
     GenTree* optExtractSideEffectsForCSE(GenTree* tree);
-    bool ConvertLCLMasks(Statement* stmt);
+
+    // struct LCLMasksData;
+    // {
+    //     unsigned usesAsMask;
+    //     unsigned usesAsVector;
+    // };
+
+    typedef JitHashTable<GenTreeLclVar*, JitPtrKeyFuncs<GenTreeLclVar>, signed> LCLMasksTable;
+
+    void findLCLStoreMask(Statement* stmt, LCLMasksTable *masksTable);
+    void removeLCLStoreMask(Statement* stmt, LCLMasksTable *masksTable);
+    void checkLCLVarMask(GenTreeLclVarCommon* lcl, Statement* const stmt, LCLMasksTable *masksTable);
+    void updateLCLVar(GenTreeLclVarCommon* lcl, Statement* const stmt, LCLMasksTable *masksTable);
+
 
     bool     optDoCSE;             // True when we have found a duplicate CSE tree
     bool     optValnumCSE_phase = false;   // True when we are executing the optOptimizeValnumCSEs() phase

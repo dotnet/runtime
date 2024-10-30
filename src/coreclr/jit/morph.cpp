@@ -15504,10 +15504,192 @@ PhaseStatus Compiler::fgMorphArrayOps()
     return changed ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
 
+// //------------------------------------------------------------------------
+// // RemoveLCLUseConvert: tree visitor to remove conversion to masks for uses of LCL
+// //
+// class RemoveLCLUseConvertVisitor final : public GenTreeVisitor<RemoveLCLUseConvertVisitor>
+// {
+// public:
+//     enum
+//     {
+//         DoPostOrder       = true,
+//         UseExecutionOrder = true
+//     };
+
+//     RemoveLCLUseConvertVisitor(Compiler* compiler, unsigned lclNum, Statement* stmt)
+//         : GenTreeVisitor<RemoveLCLUseConvertVisitor>(compiler)
+//         , removedConversion(false)
+//         , lclNum(lclNum)
+//         , stmt(stmt)
+//     {
+//     }
+
+//     Compiler::fgWalkResult PostOrderVisit(GenTree** use, GenTree* user)
+//     {
+
+//         // RemoveLCLUseConvertVisitor use
+//         //                [000031] -----------                         *  HWINTRINSIC mask   ubyte
+//         ConvertVectorToMask
+//         //                [000030] -----------                         +--*  HWINTRINSIC mask   ubyte
+//         CreateTrueMaskAll
+//         //                [000026] -----------                         \--*  LCL_VAR   simd16 V06 tmp3
+
+//         // RemoveLCLUseConvertVisitor user
+//         //                [000029] ---XG------                         *  HWINTRINSIC simd16 ubyte LoadVector
+//         //                [000031] -----------                         +--*  HWINTRINSIC mask   ubyte
+//         //                ConvertVectorToMask [000030] -----------                         |  +--*  HWINTRINSIC mask
+//         //                ubyte CreateTrueMaskAll [000026] -----------                         |  \--*  LCL_VAR
+//         simd16
+//         //                V06 tmp3 [000028] -----------                         \--*  LCL_VAR   long   V02 loc1
+
+//         GenTree* const convertOp = *use;
+
+//         // Look for:
+//         //      user(ConvertVectorToMask(CreateTrueMaskAll, LCL_VAR(lclNum)))
+//         if (convertOp->OperIsConvertVectorToMask())
+//         {
+//             GenTree* lclOp = convertOp->AsHWIntrinsic()->Op(2);
+//             if (lclOp->OperIs(GT_LCL_VAR) && (lclOp->AsLclVarCommon()->GetLclNum() == lclNum))
+//             {
+//                 if (m_compiler->verbose)
+//                 {
+//                     JITDUMP("\nRemoveLCLUseConvertVisitor use\n");
+//                     m_compiler->gtDispTree(*use);
+//                     JITDUMP("\nRemoveLCLUseConvertVisitor user\n");
+//                     m_compiler->gtDispTree(user);
+//                 }
+
+//                 // Find the location of convertOp in the user
+//                 int opNum = 1;
+//                 for (; opNum <= user->AsHWIntrinsic()->GetOperandCount(); opNum++)
+//                 {
+//                     if (user->AsHWIntrinsic()->Op(opNum) == convertOp)
+//                     {
+//                         break;
+//                     }
+//                 }
+//                 assert(opNum <= user->AsHWIntrinsic()->GetOperandCount());
+
+//                 // Fix up the type of the lcl
+//                 lclOp->gtType = convertOp->gtType;
+
+//                 // Remove the convert convertOp
+//                 convertOp->gtBashToNOP();
+//                 user->AsHWIntrinsic()->Op(opNum) = lclOp;
+//                 m_compiler->fgSequenceLocals(stmt);
+
+//                 if (m_compiler->verbose)
+//                 {
+//                     JITDUMP("\nAfter removal:\n");
+//                     m_compiler->gtDispTree(user);
+//                 }
+
+//                 removedConversion = true;
+//                 return fgWalkResult::WALK_ABORT;
+//             }
+//         }
+
+//         return fgWalkResult::WALK_CONTINUE;
+//     }
+
+//     bool removedConversion;
+
+// private:
+//     unsigned   lclNum;
+//     Statement* stmt;
+// };
+
 //------------------------------------------------------------------------
-// RemoveLCLUseConvert: tree visitor to remove conversion to masks for uses of LCL
+// ConvertLCLMasks: Allow LCL in a statement to be of MASK type
 //
-class RemoveLCLUseConvertVisitor final : public GenTreeVisitor<RemoveLCLUseConvertVisitor>
+// After import of hwintrinsics, all vector masks are converted to vectors before being
+// stored to variables (either local or in memory). For correctness, all stores to memory
+// must be converted to a vector as there is no way of knowing how that data will be used
+// elsewhere. However, the scope of a LCL is the current method, therefore it free to be
+// stored in whatever format is most optimal.
+//
+// If a local variable is created as a vector mask, then the general case is expected that it
+// will be used as a mask throughout the code. This is the case that should be optimised for.
+//
+// Operation:
+// Look for a LCL which where the input is converted from a MASK. Remove the conversion and
+// updated the type to MASK. Find all uses of the LCL. For each use, update the type to MASK.
+// If it is converted to a MASK, then remove the node. Otherwise, add a conversion from vector
+// to mask.
+//
+// Arguments:
+//      stmt - Statement to check
+//
+// Returns:
+//    True if changes were made
+//
+// bool Compiler::ConvertLCLMasks(Statement* stmt)
+// {
+//     // Look for:
+//     //      STORELCL(TYP_SIMD, ConvertMaskToVector(mask))
+
+//     GenTree* tree = stmt->GetRootNode();
+
+//     if ((tree->OperGet() != GT_STORE_LCL_VAR) || (!varTypeIsSIMD(tree->gtType)) ||
+//         (!tree->AsLclVar()->Data()->OperIsConvertMaskToVector()))
+//     {
+//         return false;
+//     }
+
+//     JITDUMP("Found Local mask store with conversion\n");
+//     gtDispTree(tree);
+
+//     GenTreeHWIntrinsic* convertOp = tree->AsLclVar()->Data()->AsHWIntrinsic();
+//     unsigned const      lclNum    = tree->AsLclVarCommon()->GetLclNum();
+//     GenTree*            maskOp    = convertOp->Op(1);
+
+//     // Update the type of the STORELCL - including the lclvar.
+//     tree->gtType      = maskOp->gtType;
+//     LclVarDsc* varDsc = lvaGetDesc(lclNum);
+//     varDsc->lvType    = maskOp->gtType;
+
+//     // Remove the convert from the tree.
+//     convertOp->gtBashToNOP();
+//     tree->AsOp()->gtOp1 = maskOp;
+//     fgSequenceLocals(stmt);
+
+//     JITDUMP("\nRemoved conversion\n");
+//     gtDispTree(tree);
+
+//     // Find all uses of the LCL. These could be anywhere in the current method.
+//     for (BasicBlock* block : Blocks())
+//     {
+//         for (Statement* const stmt : block->Statements())
+//         {
+//             for (GenTreeLclVarCommon* lcl : stmt->LocalsTreeList())
+//             {
+//                 if (lcl->OperIs(GT_LCL_VAR) && (lcl->GetLclNum() == lclNum) && (lcl->gtType != TYP_MASK))
+//                 {
+//                     JITDUMP("\nFound a use\n");
+//                     gtDispTree(lcl);
+
+//                     // Find the parent. If it is a ConvertVectorToMask then remove it.
+//                     RemoveLCLUseConvertVisitor ev(this, lcl->GetLclNum(), stmt);
+//                     GenTree*                   root = stmt->GetRootNode();
+//                     ev.WalkTree(&root, nullptr);
+
+//                     // TODO: If a ConvertVectorToMask was not found then insert a ConvertMaskToVector
+//                     if (!ev.removedConversion)
+//                     {
+//                         assert(false);
+//                     }
+//                 }
+//             }
+//         }
+//     }
+
+//     return true;
+// }
+
+//------------------------------------------------------------------------
+// RemoveLCLUseConvert: tree visitor to remove conversion to masks for uses of LCL var
+//
+class CheckLCLUseIsConvertVisitor final : public GenTreeVisitor<CheckLCLUseIsConvertVisitor>
 {
 public:
     enum
@@ -15516,9 +15698,59 @@ public:
         UseExecutionOrder = true
     };
 
-    RemoveLCLUseConvertVisitor(Compiler* compiler, unsigned lclNum, Statement* stmt)
-        : GenTreeVisitor<RemoveLCLUseConvertVisitor>(compiler)
-        , removedConversion(false)
+    CheckLCLUseIsConvertVisitor(Compiler* compiler, unsigned lclNum)
+        : GenTreeVisitor<CheckLCLUseIsConvertVisitor>(compiler)
+        , foundConversion(false)
+        , lclNum(lclNum)
+    {
+    }
+
+    Compiler::fgWalkResult PostOrderVisit(GenTree** use, GenTree* user)
+    {
+        // CheckLCLUseIsConvertVisitor use
+        // [000026] -----------                         \--*  LCL_VAR   simd16 V06 tmp3
+
+        // CheckLCLUseIsConvertVisitor user
+        // [000031] -----------                         *  HWINTRINSIC mask   ubyte ConvertVectorToMask
+        // [000030] -----------                         +--*  HWINTRINSIC mask   ubyte CreateTrueMaskAll
+        // [000026] -----------                         \--*  LCL_VAR   simd16 V06 tmp3
+
+        GenTree* const lclOp = *use;
+
+        if (lclOp->OperIs(GT_LCL_VAR) && (lclOp->AsLclVarCommon()->GetLclNum() == lclNum))
+        {
+            if (user->OperIsConvertVectorToMask())
+            {
+                JITDUMP("\nLCL is used by ConvertVectorToMask:\n");
+                m_compiler->gtDispTree(user);
+                foundConversion = true;
+            }
+        }
+
+        return fgWalkResult::WALK_CONTINUE;
+    }
+
+    bool foundConversion;
+
+private:
+    unsigned   lclNum;
+    Statement* stmt;
+};
+
+//------------------------------------------------------------------------
+// RemoveLCLUseConvert: tree visitor to remove conversion to masks for uses of LCL
+//
+class UpdateLCLUseToMaskVisitor final : public GenTreeVisitor<UpdateLCLUseToMaskVisitor>
+{
+public:
+    enum
+    {
+        DoPostOrder       = true,
+        UseExecutionOrder = true
+    };
+
+    UpdateLCLUseToMaskVisitor(Compiler* compiler, unsigned lclNum, Statement* stmt)
+        : GenTreeVisitor<UpdateLCLUseToMaskVisitor>(compiler)
         , lclNum(lclNum)
         , stmt(stmt)
     {
@@ -15527,27 +15759,29 @@ public:
     Compiler::fgWalkResult PostOrderVisit(GenTree** use, GenTree* user)
     {
 
-        // RemoveLCLUseConvertVisitor use
-        //                [000031] -----------                         *  HWINTRINSIC mask   ubyte ConvertVectorToMask
-        //                [000030] -----------                         +--*  HWINTRINSIC mask   ubyte CreateTrueMaskAll
-        //                [000026] -----------                         \--*  LCL_VAR   simd16 V06 tmp3
+        // UpdateLCLUseToMaskVisitor use
+        // [000031] -----------                         *  HWINTRINSIC mask   ubyte ConvertVectorToMask
+        // [000030] -----------                         +--*  HWINTRINSIC mask   ubyte CreateTrueMaskAll
+        // [000026] -----------                         \--*  LCL_VAR   simd16 V06 tmp3
 
-        // RemoveLCLUseConvertVisitor user
-        //                [000029] ---XG------                         *  HWINTRINSIC simd16 ubyte LoadVector
-        //                [000031] -----------                         +--*  HWINTRINSIC mask   ubyte
-        //                ConvertVectorToMask [000030] -----------                         |  +--*  HWINTRINSIC mask
-        //                ubyte CreateTrueMaskAll [000026] -----------                         |  \--*  LCL_VAR   simd16
-        //                V06 tmp3 [000028] -----------                         \--*  LCL_VAR   long   V02 loc1
-
-        GenTree* const convertOp = *use;
+        // UpdateLCLUseToMaskVisitor user
+        // [000029] ---XG------                         *  HWINTRINSIC simd16 ubyte LoadVector
+        // [000031] -----------                         +--*  HWINTRINSIC mask   ubyte ConvertVectorToMask
+        // [000030] -----------                         +--*  HWINTRINSIC mask ubyte CreateTrueMaskAll
+        // [000026] -----------                         \--*  LCL_VAR   simd16 V06 tmp3
+        // [000028] -----------                         \--*  LCL_VAR   long   V02
 
         // Look for:
         //      user(ConvertVectorToMask(CreateTrueMaskAll, LCL_VAR(lclNum)))
-        if (convertOp->OperIsConvertVectorToMask())
+        if ((*use)->OperIsConvertVectorToMask())
         {
-            GenTree* lclOp = convertOp->AsHWIntrinsic()->Op(2);
+            GenTree* const convertOp = *use;
+            GenTree*       lclOp     = convertOp->AsHWIntrinsic()->Op(2);
+
             if (lclOp->OperIs(GT_LCL_VAR) && (lclOp->AsLclVarCommon()->GetLclNum() == lclNum))
             {
+                assert(lclOp->gtType != TYP_MASK);
+
                 if (m_compiler->verbose)
                 {
                     JITDUMP("\nRemoveLCLUseConvertVisitor use\n");
@@ -15581,46 +15815,39 @@ public:
                     m_compiler->gtDispTree(user);
                 }
 
-                removedConversion = true;
                 return fgWalkResult::WALK_ABORT;
             }
+        }
+
+        // Look for:
+        //      user(LCL_VAR(lclNum)))
+        else if ((*use)->OperIs(GT_LCL_VAR) && ((*use)->gtType != TYP_MASK) &&
+                 ((*use)->AsLclVarCommon()->GetLclNum() == lclNum) && !user->OperIsConvertVectorToMask())
+        {
+            if (m_compiler->verbose)
+            {
+                JITDUMP("\nRemoveLCLUseConvertVisitor ELSE use\n");
+                m_compiler->gtDispTree(*use);
+                JITDUMP("\nRemoveLCLUseConvertVisitor ELSE user\n");
+                m_compiler->gtDispTree(user);
+            }
+
+            // TODO: Fill this in when I hit it
+            assert(false);
+
+            return fgWalkResult::WALK_ABORT;
         }
 
         return fgWalkResult::WALK_CONTINUE;
     }
 
-    bool removedConversion;
 
 private:
     unsigned   lclNum;
     Statement* stmt;
 };
 
-//------------------------------------------------------------------------
-// ConvertLCLMasks: Allow LCL in a statement to be of MASK type
-//
-// After import of hwintrinsics, all vector masks are converted to vectors before being
-// stored to variables (either local or in memory). For correctness, all stores to memory
-// must be converted to a vector as there is no way of knowing how that data will be used
-// elsewhere. However, the scope of a LCL is the current method, therefore it free to be
-// stored in whatever format is most optimal.
-//
-// If a local variable is created as a vector mask, then the general case is expected that it
-// will be used as a mask throughout the code. This is the case that should be optimised for.
-//
-// Operation:
-// Look for a LCL which where the input is converted from a MASK. Remove the conversion and
-// updated the type to MASK. Find all uses of the LCL. For each use, update the type to MASK.
-// If it is converted to a MASK, then remove the node. Otherwise, add a conversion from vector
-// to mask.
-//
-// Arguments:
-//      stmt - Statement to check
-//
-// Returns:
-//    True if changes were made
-//
-bool Compiler::ConvertLCLMasks(Statement* stmt)
+void Compiler::findLCLStoreMask(Statement* stmt, LCLMasksTable* masksTable)
 {
     // Look for:
     //      STORELCL(TYP_SIMD, ConvertMaskToVector(mask))
@@ -15630,57 +15857,146 @@ bool Compiler::ConvertLCLMasks(Statement* stmt)
     if ((tree->OperGet() != GT_STORE_LCL_VAR) || (!varTypeIsSIMD(tree->gtType)) ||
         (!tree->AsLclVar()->Data()->OperIsConvertMaskToVector()))
     {
-        return false;
+        return;
     }
 
     JITDUMP("Found Local mask store with conversion\n");
     gtDispTree(tree);
 
-    GenTreeHWIntrinsic* convertOp = tree->AsLclVar()->Data()->AsHWIntrinsic();
-    unsigned const      lclNum    = tree->AsLclVarCommon()->GetLclNum();
+    // Add to the table.
+    masksTable->Set(tree->AsLclVar(), 0);
+}
+
+void Compiler::removeLCLStoreMask(Statement* stmt, LCLMasksTable* masksTable)
+{
+    // Look for:
+    //      STORELCL(TYP_SIMD, ConvertMaskToVector(mask))
+
+    GenTree* tree = stmt->GetRootNode();
+
+    if ((tree->OperGet() != GT_STORE_LCL_VAR) || (!varTypeIsSIMD(tree->gtType)) ||
+        (!tree->AsLclVar()->Data()->OperIsConvertMaskToVector()))
+    {
+        return;
+    }
+
+    GenTreeLclVar* lcl = tree->AsLclVar();
+
+    // Lookup the lcl store in the table and check the weight.
+
+    signed maskedUsesWeight = 0;
+    bool   found            = masksTable->Lookup(lcl, &maskedUsesWeight);
+    assert(found);
+
+    if (maskedUsesWeight <= 0)
+    {
+        JITDUMP("\nNot enough uses of V%d as a mask. Weight=%d\n", lcl->GetLclNum(), maskedUsesWeight);
+        return;
+    }
+
+    // Remove the ConvertMaskToVector
+
+    GenTreeHWIntrinsic* convertOp = lcl->Data()->AsHWIntrinsic();
+    unsigned const      lclNum    = lcl->GetLclNum();
     GenTree*            maskOp    = convertOp->Op(1);
 
     // Update the type of the STORELCL - including the lclvar.
-    tree->gtType      = maskOp->gtType;
+    lcl->gtType       = maskOp->gtType;
     LclVarDsc* varDsc = lvaGetDesc(lclNum);
     varDsc->lvType    = maskOp->gtType;
 
     // Remove the convert from the tree.
     convertOp->gtBashToNOP();
-    tree->AsOp()->gtOp1 = maskOp;
+    lcl->gtOp1 = maskOp;
     fgSequenceLocals(stmt);
 
-    JITDUMP("\nRemoved conversion\n");
-    gtDispTree(tree);
+    JITDUMP("Updated V%d to store as mask\n", lcl->GetLclNum());
+    gtDispTree(lcl);
+}
 
-    // Find all uses of the LCL. These could be anywhere in the current method.
-    for (BasicBlock* block : Blocks())
+// For the given lcl var, check if it converted to a mask when used. Find the corresponding lcl store in the
+// mask table and update.
+void Compiler::checkLCLVarMask(GenTreeLclVarCommon* lcl, Statement* const stmt, LCLMasksTable* masksTable)
+{
+    if (!lcl->OperIs(GT_LCL_VAR))
     {
-        for (Statement* const stmt : block->Statements())
-        {
-            for (GenTreeLclVarCommon* lcl : stmt->LocalsTreeList())
-            {
-                if (lcl->OperIs(GT_LCL_VAR) && (lcl->GetLclNum() == lclNum) && (lcl->gtType != TYP_MASK))
-                {
-                    JITDUMP("\nFound a use\n");
-                    gtDispTree(lcl);
-
-                    // Find the parent. If it is a ConvertVectorToMask then remove it.
-                    RemoveLCLUseConvertVisitor ev(this, lcl->GetLclNum(), stmt);
-                    GenTree*                   root = stmt->GetRootNode();
-                    ev.WalkTree(&root, nullptr);
-
-                    // TODO: If a ConvertVectorToMask was not found then insert a ConvertMaskToVector
-                    if (!ev.removedConversion)
-                    {
-                        assert(false);
-                    }
-                }
-            }
-        }
+        return;
     }
 
-    return true;
+    // Find the parent of the lcl var
+    CheckLCLUseIsConvertVisitor ev(this, lcl->GetLclNum());
+    GenTree*                    root = stmt->GetRootNode();
+    ev.WalkTree(&root, nullptr);
+
+    // Find the corresponding lcl store(s) in masksTable
+    // (Each lcl may store more than once)
+    for (LCLMasksTable::Node* const iter : LCLMasksTable::KeyValueIteration(masksTable))
+    {
+        GenTreeLclVar* lclStore = iter->GetKey();
+
+        if (lcl->GetLclNum() != lclStore->GetLclNum())
+        {
+            continue;
+        }
+
+        JITDUMP("\nFound a use of lcl store %d\n", lcl->GetLclNum());
+        JITDUMP("\nlcl store:\n");
+        gtDispTree(lclStore);
+        JITDUMP("\nlcl var:\n");
+        gtDispTree(lcl);
+
+        // Update value in masksTable
+
+        signed maskedUsesWeight = 0;
+        bool   foundKey         = masksTable->Lookup(lclStore, &maskedUsesWeight);
+        assert(foundKey);
+
+        if (ev.foundConversion)
+        {
+            maskedUsesWeight++;
+        }
+        else
+        {
+            maskedUsesWeight--;
+        }
+
+        masksTable->Set(lclStore, maskedUsesWeight, LCLMasksTable::Overwrite);
+
+        JITDUMP("\nTable weight for V%d updated to %d\n", lcl->GetLclNum(), maskedUsesWeight);
+    }
+}
+
+void Compiler::updateLCLVar(GenTreeLclVarCommon* lcl, Statement* const stmt, LCLMasksTable* masksTable)
+{
+    if (!lcl->OperIs(GT_LCL_VAR))
+    {
+        return;
+    }
+
+    // Find the corresponding lcl store(s) in masksTable
+    // (Each lcl may store more than once)
+    for (LCLMasksTable::Node* const iter : LCLMasksTable::KeyValueIteration(masksTable))
+    {
+        GenTreeLclVar* lclStore = iter->GetKey();
+
+        if (lcl->GetLclNum() != lclStore->GetLclNum())
+        {
+            continue;
+        }
+
+        signed maskedUsesWeight = iter->GetValue();
+
+        if (maskedUsesWeight <= 0)
+        {
+            JITDUMP("\nNot enough uses of V%d as a mask.\n", lcl->GetLclNum());
+            return;
+        }
+
+        // Remove or add convert....
+        UpdateLCLUseToMaskVisitor ev(this, lcl->GetLclNum(), stmt);
+        GenTree*                  root = stmt->GetRootNode();
+        ev.WalkTree(&root, nullptr);
+    }
 }
 
 //------------------------------------------------------------------------
@@ -15703,13 +16019,55 @@ PhaseStatus Compiler::optLCLMasks()
         return PhaseStatus::MODIFIED_NOTHING;
     }
 
-    bool madeChanges = false;
+    LCLMasksTable masksTable = LCLMasksTable(getAllocator());
 
+    // Find every local store that is first converted from a mask and add them to masksTable.
     for (BasicBlock* block : Blocks())
     {
         for (Statement* const stmt : block->Statements())
         {
-            madeChanges |= ConvertLCLMasks(stmt);
+            findLCLStoreMask(stmt, &masksTable);
+        }
+    }
+
+    if (masksTable.GetCount() == 0)
+    {
+        JITDUMP("Done. No local stores of masks found\n");
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+
+    // Find the uses of every local and check if it is converted to a mask, updating the keys in the masksTable.
+    for (BasicBlock* block : Blocks())
+    {
+        for (Statement* const stmt : block->Statements())
+        {
+            for (GenTreeLclVarCommon* lcl : stmt->LocalsTreeList())
+            {
+                checkLCLVarMask(lcl, stmt, &masksTable);
+            }
+        }
+    }
+
+    bool madeChanges = false;
+
+    // For each local store, potentially remove the convert from mask.
+    for (BasicBlock* block : Blocks())
+    {
+        for (Statement* const stmt : block->Statements())
+        {
+            removeLCLStoreMask(stmt, &masksTable);
+        }
+    }
+
+    // Find the uses of every local and potentially convert to mask.
+    for (BasicBlock* block : Blocks())
+    {
+        for (Statement* const stmt : block->Statements())
+        {
+            for (GenTreeLclVarCommon* lcl : stmt->LocalsTreeList())
+            {
+                updateLCLVar(lcl, stmt, &masksTable);
+            }
         }
     }
 
