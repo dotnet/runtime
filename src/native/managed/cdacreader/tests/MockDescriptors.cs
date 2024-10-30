@@ -778,11 +778,12 @@ internal class MockDescriptors
             return Builder.BorrowAddressRange(methodDescAddress, (int)methodDescTypeInfo.Size.Value);
         }
 
-        internal void SetMethodDesc(scoped Span<byte> dest, byte index, ushort tokenRemainder)
+        internal void SetMethodDesc(scoped Span<byte> dest, byte index, ushort slotNum, ushort tokenRemainder)
         {
             Target.TypeInfo methodDescTypeInfo = Types[DataType.MethodDesc];
             TargetTestHelpers.Write(dest.Slice(methodDescTypeInfo.Fields[nameof(Data.MethodDesc.ChunkIndex)].Offset), (byte)index);
             TargetTestHelpers.Write(dest.Slice(methodDescTypeInfo.Fields[nameof(Data.MethodDesc.Flags3AndTokenRemainder)].Offset), tokenRemainder);
+            TargetTestHelpers.Write(dest.Slice(methodDescTypeInfo.Fields[nameof(Data.MethodDesc.Slot)].Offset), slotNum);
             // TODO: write more fields
         }
 

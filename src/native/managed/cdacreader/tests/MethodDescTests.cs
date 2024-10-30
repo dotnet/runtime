@@ -55,6 +55,7 @@ public class MethodDescTests
         const ushort expectedRidRemainder = 0x10; // arbitrary
         const uint expectedRid = expectedRidRangeStart | expectedRidRemainder; // arbitrary
         uint expectedToken = MethodDefToken | expectedRid;
+        ushort expectedSlotNum = 0x0002; // arbitrary, but must be less than number of vtable slots in the method table
         MethodDescHelper(arch,
         (builder) =>
         {
@@ -68,7 +69,7 @@ public class MethodDescTests
             byte methodDescNum = 3; // abitrary, less than "count"
             byte methodDescIndex = (byte)(methodDescNum * methodDescSize);
             Span<byte> dest = builder.BorrowMethodDesc(chunk, methodDescIndex);
-            builder.SetMethodDesc(dest, methodDescIndex, tokenRemainder: expectedRidRemainder);
+            builder.SetMethodDesc(dest, methodDescIndex, slotNum: expectedSlotNum, tokenRemainder: expectedRidRemainder);
 
             testMethodDescAddress = builder.GetMethodDescAddress(chunk, methodDescIndex);
 
@@ -82,6 +83,8 @@ public class MethodDescTests
 
             uint token = rts.GetMethodToken(handle);
             Assert.Equal(expectedToken, token);
+            ushort slotNum = rts.GetSlotNumber(handle);
+            Assert.Equal(expectedSlotNum, slotNum);
         });
     }
 }
