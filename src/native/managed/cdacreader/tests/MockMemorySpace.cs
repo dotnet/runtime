@@ -156,9 +156,9 @@ internal unsafe static partial class MockMemorySpace
 
         private (HeapFragment json, HeapFragment pointerData) CreateDataDescriptor()
         {
-            string metadataTypesJson = TargetTestHelpers.MakeTypesJson(_types);
-            string metadataGlobalsJson = TargetTestHelpers.MakeGlobalsJson(_globals);
-            string interpolatedContracts = MakeContractsJson();
+            string metadataTypesJson = _types is not null ? TargetTestHelpers.MakeTypesJson(_types) : string.Empty;
+            string metadataGlobalsJson = _globals is not null ? TargetTestHelpers.MakeGlobalsJson(_globals) : string.Empty;
+            string interpolatedContracts = _contracts is not null ? MakeContractsJson() : string.Empty;
             byte[] jsonBytes = Encoding.UTF8.GetBytes($$"""
             {
                 "version": 0,
@@ -265,11 +265,11 @@ internal unsafe static partial class MockMemorySpace
         }
 
         // Get an allocator for a range of addresses to simplify creating heap fragments
-        public BumpAllocator CreateAllocator(ulong start, ulong end)
+        public BumpAllocator CreateAllocator(ulong start, ulong end, int minAlign = 16)
         {
             if (_created)
                 throw new InvalidOperationException("Context already created");
-            BumpAllocator allocator = new BumpAllocator(start, end);
+            BumpAllocator allocator = new BumpAllocator(start, end) { MinAlign = minAlign };
             foreach (var a in _allocators)
             {
                 if (allocator.Overlaps(a))

@@ -1971,10 +1971,11 @@ Stub* COMDelegate::GetInvokeMethodStub(EEImplMethodDesc* pMD)
     {
         // Validate the invoke method, which at the moment just means checking the calling convention
 
-        if (*pMD->GetSig() != (IMAGE_CEE_CS_CALLCONV_HASTHIS | IMAGE_CEE_CS_CALLCONV_DEFAULT))
-            COMPlusThrow(kInvalidProgramException);
-
         MetaSig sig(pMD);
+
+        BYTE callConv = sig.GetCallingConventionInfo();
+        if (callConv != (IMAGE_CEE_CS_CALLCONV_HASTHIS | IMAGE_CEE_CS_CALLCONV_DEFAULT))
+            COMPlusThrow(kInvalidProgramException);
 
         BOOL fReturnVal = !sig.IsReturnTypeVoid();
 
