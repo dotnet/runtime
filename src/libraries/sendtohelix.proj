@@ -83,7 +83,7 @@
       </_BaseProjectsToBuild>
     </ItemGroup>
 
-    <!-- For BuildWasmApps we want to build the project 4 times, with: TestUsingWorkloads=true, and TestUsingWorkloads=false and TestUsingWebcil=true and TestUsingWebcil=false-->
+    <!-- For BuildWasmApps we want to build the project 4 times, with: TestUsingWorkloads=true, and TestUsingWorkloads=false and WasmEnableWebcil=true and WasmEnableWebcil=false-->
     <ItemGroup Condition="'@(_Scenarios -> AnyHaveMetadataValue('Identity', 'buildwasmapps'))' == 'true'">
       <_TestUsingWorkloadsValues Include="true;false" />
       <_TestUsingWebcilValues Include="true;false" Condition="'$(TargetOS)' == 'browser'" />
@@ -104,7 +104,7 @@
       <_TestUsingCrossProductValues Remove="@(_TestUsingCrossProductValues)" Condition="'%(_TestUsingCrossProductValues.Workloads)' == 'false' and '%(_TestUsingCrossProductValues.Fingerprinting)' == 'false'" />
 
       <_BuildWasmAppsProjectsToBuild Include="$(PerScenarioProjectFile)">
-        <AdditionalProperties>$(_PropertiesToPass);Scenario=BuildWasmApps;TestArchiveRuntimeFile=$(TestArchiveRuntimeFile);TestUsingWorkloads=%(_TestUsingCrossProductValues.Workloads);TestUsingWebcil=%(_TestUsingCrossProductValues.Webcil);TestUsingFingerprinting=%(_TestUsingCrossProductValues.Fingerprinting)</AdditionalProperties>
+        <AdditionalProperties>$(_PropertiesToPass);Scenario=BuildWasmApps;TestArchiveRuntimeFile=$(TestArchiveRuntimeFile);TestUsingWorkloads=%(_TestUsingCrossProductValues.Workloads);WasmEnableWebcil=%(_TestUsingCrossProductValues.Webcil);WasmFingerprintAssets=%(_TestUsingCrossProductValues.Fingerprinting)</AdditionalProperties>
         <AdditionalProperties Condition="'$(NeedsToBuildWasmAppsOnHelix)' != ''">%(_BuildWasmAppsProjectsToBuild.AdditionalProperties);NeedsToBuildWasmAppsOnHelix=$(NeedsToBuildWasmAppsOnHelix)</AdditionalProperties>
       </_BuildWasmAppsProjectsToBuild>
     </ItemGroup>

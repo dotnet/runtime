@@ -5,7 +5,7 @@
     <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
     <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <PublishAot Condition="'$(NativeAotSupported)' == 'true'">true</PublishAot>
+    <PublishAot Condition="'$(UseNativeAotForComponents)' == 'true'">true</PublishAot>
     <SuppressTrimAnalysisWarnings>false</SuppressTrimAnalysisWarnings>
   </PropertyGroup>
 

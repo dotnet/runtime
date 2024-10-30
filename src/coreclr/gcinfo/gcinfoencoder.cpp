@@ -462,6 +462,7 @@ GcInfoEncoder::GcInfoEncoder(
     m_pCallSiteSizes = NULL;
     m_NumCallSites = 0;
 #endif
+    m_BlockSize = 0;
 
     m_GSCookieStackSlot = NO_GS_COOKIE;
     m_GSCookieValidRangeStart = 0;
@@ -2576,9 +2577,14 @@ BYTE* GcInfoEncoder::Emit()
 
 void * GcInfoEncoder::eeAllocGCInfo (size_t        blockSize)
 {
+    m_BlockSize = blockSize;
     return m_pCorJitInfo->allocGCInfo(blockSize);
 }
 
+size_t GcInfoEncoder::GetEncodedGCInfoSize() const
+{
+    return m_BlockSize;
+}
 
 BitStreamWriter::BitStreamWriter( IAllocator* pAllocator )
 {

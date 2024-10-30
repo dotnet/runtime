@@ -7,7 +7,7 @@ using System.Diagnostics;
 namespace System.Formats.Asn1
 {
     /// <summary>
-    ///   Provides stateless methods for decoding BER-, CER-, or DER-encoded ASN.1 data.
+    ///   Provides stateless methods for decoding BER-encoded, CER-encoded, and DER-encoded ASN.1 data.
     /// </summary>
     public static partial class AsnDecoder
     {
@@ -213,7 +213,7 @@ namespace System.Formats.Asn1
         /// <param name="source">The buffer containing encoded data.</param>
         /// <param name="ruleSet">The encoding constraints to use when interpreting the data.</param>
         /// <param name="bytesConsumed">
-        ///   When this method returns, the number of bytes from the beginning of <paramref name="source"/>
+        ///   When this method returns, contains the number of bytes from the beginning of <paramref name="source"/>
         ///   that contributed to the length.
         ///   This parameter is treated as uninitialized.
         /// </param>
@@ -251,12 +251,12 @@ namespace System.Formats.Asn1
         /// <param name="source">The buffer containing encoded data.</param>
         /// <param name="ruleSet">The encoding constraints to use when interpreting the data.</param>
         /// <param name="decodedLength">
-        ///   When this method returns, the decoded value of the length, or <see langword="null"/> if the
+        ///   When this method returns, contains the decoded value of the length, or <see langword="null"/> if the
         ///   encoded length represents the indefinite length.
         ///   This parameter is treated as uninitialized.
         /// </param>
         /// <param name="bytesConsumed">
-        ///   When this method returns, the number of bytes from the beginning of <paramref name="source"/>
+        ///   When this method returns, contains the number of bytes from the beginning of <paramref name="source"/>
         ///   that contributed to the length.
         ///   This parameter is treated as uninitialized.
         /// </param>
@@ -778,16 +778,16 @@ namespace System.Formats.Asn1
         /// <param name="data">The data to read.</param>
         /// <param name="ruleSet">The encoding constraints for the reader.</param>
         /// <param name="options">Additional options for the reader.</param>
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///   <paramref name="ruleSet"/> is not defined.
+        /// </exception>
         /// <remarks>
-        ///   This constructor does not evaluate <paramref name="data"/> for correctness,
-        ///   any correctness checks are done as part of member methods.
+        ///   This constructor does not evaluate <paramref name="data"/> for correctness.
+        ///   Any correctness checks are done as part of member methods.
         ///
         ///   This constructor does not copy <paramref name="data"/>. The caller is responsible for
         ///   ensuring that the values do not change until the reader is finished.
         /// </remarks>
-        /// <exception cref="ArgumentOutOfRangeException">
-        ///   <paramref name="ruleSet"/> is not defined.
-        /// </exception>
         public AsnReader(ReadOnlyMemory<byte> data, AsnEncodingRules ruleSet, AsnReaderOptions options = default)
         {
             AsnDecoder.CheckEncodingRules(ruleSet);

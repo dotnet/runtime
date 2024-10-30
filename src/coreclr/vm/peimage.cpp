@@ -536,9 +536,10 @@ void PEImage::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     // these necessary fields enumerated no matter what.
     m_path.EnumMemoryRegions(flags);
 
-    // We always want this field in mini/triage/heap dumps.
+    // SString skips enumeration for triage dumps, but we always want this field, so we specify
+    // CLRDATA_ENUM_MEM_DEFAULT as the flags. This value is used in cases where we either can't
+    // use the full path (triage dumps) or don't have a path (in-memory assembly)
     m_sModuleFileNameHintUsedByDac.EnumMemoryRegions(CLRDATA_ENUM_MEM_DEFAULT);
-
 
     EX_TRY
     {

@@ -1,7 +1,3 @@
-# Due to how we build the libraries native build as part of the CoreCLR build as well as standalone,
-# we can end up coming to this file twice. Only run it once to simplify our build.
-include_guard()
-
 include(${CMAKE_CURRENT_LIST_DIR}/configuretools.cmake)
 
 # Set initial flags for each configuration

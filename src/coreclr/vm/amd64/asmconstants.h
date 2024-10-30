@@ -111,11 +111,12 @@ ASMCONSTANTS_C_ASSERT(OFFSETOF__Thread__m_pFrame
 #define Thread_m_pFrame OFFSETOF__Thread__m_pFrame
 
 
-#define               OFFSETOF__gc_alloc_context__alloc_ptr 0x0
-ASMCONSTANT_OFFSETOF_ASSERT(gc_alloc_context, alloc_ptr);
+#define               OFFSETOF__ee_alloc_context__alloc_ptr 0x8
+ASMCONSTANTS_C_ASSERT(OFFSETOF__ee_alloc_context__alloc_ptr == offsetof(ee_alloc_context, m_GCAllocContext) +
+                                                               offsetof(gc_alloc_context, alloc_ptr));
 
-#define               OFFSETOF__gc_alloc_context__alloc_limit 0x8
-ASMCONSTANT_OFFSETOF_ASSERT(gc_alloc_context, alloc_limit);
+#define               OFFSETOF__ee_alloc_context__m_CombinedLimit 0x0
+ASMCONSTANTS_C_ASSERT(OFFSETOF__ee_alloc_context__m_CombinedLimit == offsetof(ee_alloc_context, m_CombinedLimit));
 
 #define               OFFSETOF__ThreadExceptionState__m_pCurrentTracker 0x000
 ASMCONSTANTS_C_ASSERT(OFFSETOF__ThreadExceptionState__m_pCurrentTracker
@@ -183,6 +184,10 @@ ASMCONSTANTS_C_ASSERT(SIZEOF__InterfaceInfo_t
                     == sizeof(InterfaceInfo_t));
 
 ASMCONSTANTS_C_ASSERT(MethodTableAuxiliaryData::enum_flag_Initialized == 0x1);
+
+#define                OFFSETOF__DynamicStaticsInfo__m_pMethodTable 0x10
+ASMCONSTANTS_C_ASSERT(OFFSETOF__DynamicStaticsInfo__m_pMethodTable
+                    == offsetof(DynamicStaticsInfo, m_pMethodTable));
 
 #define                OFFSETOF__DynamicStaticsInfo__m_pNonGCStatics 0x8
 ASMCONSTANTS_C_ASSERT(OFFSETOF__DynamicStaticsInfo__m_pNonGCStatics
