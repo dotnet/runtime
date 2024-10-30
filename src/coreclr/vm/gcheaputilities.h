@@ -94,7 +94,7 @@ struct ee_alloc_context
     {
         if (!samplingEnabled)
         {
-            combined_limit = gc_allocation_context.alloc_limit;
+            m_CombinedLimit = m_GCAllocContext.alloc_limit;
         }
         else
         {
@@ -103,8 +103,8 @@ struct ee_alloc_context
 
             // if the sampling limit is larger than the allocation context, no sampling will occur in this AC
             // We do Min() prior to adding to alloc_ptr to ensure alloc_ptr+samplingBudget doesn't cause an overflow.
-            size_t size = gc_allocation_context.alloc_limit - gc_allocation_context.alloc_ptr;
-            combined_limit = gc_allocation_context.alloc_ptr + Min(samplingBudget, size);
+            size_t size = m_GCAllocContext.alloc_limit - m_GCAllocContext.alloc_ptr;
+            m_CombinedLimit = m_GCAllocContext.alloc_ptr + Min(samplingBudget, size);
         }
     }
 

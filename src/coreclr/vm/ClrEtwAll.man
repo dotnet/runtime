@@ -3177,7 +3177,6 @@
                         <data name="ClrInstanceID" inType="win:UInt16" />
                         <data name="TypeID" inType="win:Pointer" />
                         <data name="TypeName" inType="win:UnicodeString" />
-                        <data name="HeapIndex" inType="win:UInt32" />
                         <data name="Address" inType="win:Pointer" />
                         <data name="ObjectSize" inType="win:UInt64" outType="win:HexInt64" />
                         <data name="SampledByteOffset" inType="win:UInt64" outType="win:HexInt64" />
@@ -3188,10 +3187,9 @@
                                 <ClrInstanceID> %2 </ClrInstanceID>
                                 <TypeID> %3 </TypeID>
                                 <TypeName> %4 </TypeName>
-                                <HeapIndex> %5 </HeapIndex>
-                                <Address> %6 </Address>
-                                <ObjectSize> %7 </ObjectSize>
-                                <SampledByteOffset> %8 </SampledByteOffset>
+                                <Address> %5 </Address>
+                                <ObjectSize> %6 </ObjectSize>
+                                <SampledByteOffset> %7 </SampledByteOffset>
                             </AllocationSampled>
                         </UserData>
                     </template>
@@ -8652,7 +8650,7 @@
                 <string id="RuntimePublisher.ExecutionCheckpointEventMessage" value="ClrInstanceID=%1;Checkpoint=%2;Timestamp=%3"/>
                 <string id="RuntimePublisher.WaitHandleWaitStartEventMessage" value="WaitSource=%1;%nAssociatedObjectID=%2;%nClrInstanceID=%3"/>
                 <string id="RuntimePublisher.WaitHandleWaitStopEventMessage" value="ClrInstanceID=%1"/>
-                <string id="RuntimePublisher.AllocationSampledEventMessage" value="%nKind=%1;%nClrInstanceID=%2;%nTypeID=%3;%nTypeName=%4;%nHeapIndex=%5;%nAddress=%6;%nObjectSize=%7;%nSampledByteOffset=%8" />
+                <string id="RuntimePublisher.AllocationSampledEventMessage" value="%nKind=%1;%nClrInstanceID=%2;%nTypeID=%3;%nTypeName=%4;%nAddress=%5;%nObjectSize=%6;%nSampledByteOffset=%7" />
                 
                 <string id="RundownPublisher.MethodDCStartEventMessage" value="MethodID=%1;%nModuleID=%2;%nMethodStartAddress=%3;%nMethodSize=%4;%nMethodToken=%5;%nMethodFlags=%6" />
                 <string id="RundownPublisher.MethodDCStart_V1EventMessage" value="MethodID=%1;%nModuleID=%2;%nMethodStartAddress=%3;%nMethodSize=%4;%nMethodToken=%5;%nMethodFlags=%6;%nClrInstanceID=%7" />

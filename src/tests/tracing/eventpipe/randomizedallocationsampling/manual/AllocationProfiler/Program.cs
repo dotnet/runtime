@@ -368,7 +368,6 @@ namespace DynamicAllocationSampling
     //  <data name="ClrInstanceID" inType="win:UInt16" />
     //  <data name="TypeID" inType="win:Pointer" />
     //  <data name="TypeName" inType="win:UnicodeString" />
-    //  <data name="HeapIndex" inType="win:UInt32" />
     //  <data name="Address" inType="win:Pointer" />
     //  <data name="ObjectSize" inType="win:UInt64" outType="win:HexInt64" />
     //  <data name="SampledByteOffset" inType="win:UInt64" outType="win:HexInt64" />
@@ -390,7 +389,6 @@ namespace DynamicAllocationSampling
         public int ClrInstanceID;
         public UInt64 TypeID;
         public string TypeName;
-        public int HeapIndex;
         public UInt64 Address;
         public long ObjectSize;
         public long SampledByteOffset;
@@ -410,19 +408,18 @@ namespace DynamicAllocationSampling
             {
                 TypeID = BitConverter.ToUInt64(data.Slice(6, _pointerSize));
             }
-                                                                                                                            //   \0 should not be included for GetString to work
-            TypeName = Encoding.Unicode.GetString(data.Slice(offsetBeforeString, _payload.EventDataLength - offsetBeforeString - EndOfStringCharLength - 4 - _pointerSize - 8 - 8));
-            HeapIndex = BitConverter.ToInt32(data.Slice(offsetBeforeString + TypeName.Length * 2 + EndOfStringCharLength, 4));
+            //   \0 should not be included for GetString to work
+            TypeName = Encoding.Unicode.GetString(data.Slice(offsetBeforeString, _payload.EventDataLength - offsetBeforeString - EndOfStringCharLength - _pointerSize - 8 - 8));
             if (_pointerSize == 4)
             {
-                Address = BitConverter.ToUInt32(data.Slice(offsetBeforeString + TypeName.Length * 2 + EndOfStringCharLength + 4, _pointerSize));
+                Address = BitConverter.ToUInt32(data.Slice(offsetBeforeString + TypeName.Length * 2 + EndOfStringCharLength, _pointerSize));
             }
             else
             {
-                Address = BitConverter.ToUInt64(data.Slice(offsetBeforeString + TypeName.Length * 2 + EndOfStringCharLength + 4, _pointerSize));
+                Address = BitConverter.ToUInt64(data.Slice(offsetBeforeString + TypeName.Length * 2 + EndOfStringCharLength, _pointerSize));
             }
-            ObjectSize = BitConverter.ToInt64(data.Slice(offsetBeforeString + TypeName.Length * 2 + EndOfStringCharLength + 4 + _pointerSize, 8));
-            SampledByteOffset = BitConverter.ToInt64(data.Slice(offsetBeforeString + TypeName.Length * 2 + EndOfStringCharLength + 4 + _pointerSize + 8, 8));
+            ObjectSize = BitConverter.ToInt64(data.Slice(offsetBeforeString + TypeName.Length * 2 + EndOfStringCharLength + _pointerSize, 8));
+            SampledByteOffset = BitConverter.ToInt64(data.Slice(offsetBeforeString + TypeName.Length * 2 + EndOfStringCharLength + _pointerSize + 8, 8));
         }
     }
 

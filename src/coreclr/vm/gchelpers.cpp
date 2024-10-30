@@ -210,12 +210,7 @@ void FireAllocationSampled(GC_ALLOC_FLAGS flags, size_t size, size_t samplingBud
             (flags & GC_ALLOC_PINNED_OBJECT_HEAP) ? 2 :
             (flags & GC_ALLOC_LARGE_OBJECT_HEAP) ? 1 :
             0;  // SOH
-        unsigned int heapIndex = 0;
-#ifdef BACKGROUND_GC
-        gc_heap* hp = gc_heap::heap_of((BYTE*)orObject);
-        heapIndex = hp->heap_number;
-#endif
-        FireEtwAllocationSampled(allocKind, GetClrInstanceId(), typeId, name, heapIndex, (BYTE*)orObject, size, samplingBudgetOffset);
+        FireEtwAllocationSampled(allocKind, GetClrInstanceId(), typeId, name, (BYTE*)orObject, size, samplingBudgetOffset);
     }
 }
 
@@ -228,7 +223,7 @@ inline Object* Alloc(ee_alloc_context* pEEAllocContext, size_t size, GC_ALLOC_FL
     } CONTRACTL_END;
 
     Object* retVal = nullptr;
-    gc_alloc_context* pAllocContext = &pEEAllocContext->gc_allocation_context;
+    gc_alloc_context* pAllocContext = &pEEAllocContext->m_GCAllocContext;
     bool isSampled = false;
     size_t availableSpace = 0;
     size_t aligned_size = 0;
@@ -241,7 +236,7 @@ inline Object* Alloc(ee_alloc_context* pEEAllocContext, size_t size, GC_ALLOC_FL
 
         // The number bytes we can allocate before we need to emit a sampling event.
         // This calculation is only valid if combined_limit < alloc_limit.
-        samplingBudget = (size_t)(pEEAllocContext->combined_limit - pAllocContext->alloc_ptr);
+        samplingBudget = (size_t)(pEEAllocContext->m_CombinedLimit - pAllocContext->alloc_ptr);
 
         // The number of bytes available in the current allocation context
         availableSpace = (size_t)(pAllocContext->alloc_limit - pAllocContext->alloc_ptr);
@@ -257,7 +252,7 @@ inline Object* Alloc(ee_alloc_context* pEEAllocContext, size_t size, GC_ALLOC_FL
         // combined_limit = nullptr. The (1) check handles both of these situations
         // properly as an empty AC can not have a sampled byte inside of it.
         isSampled =
-            (pEEAllocContext->combined_limit < pAllocContext->alloc_limit) &&
+            (pEEAllocContext->m_CombinedLimit < pAllocContext->alloc_limit) &&
             (samplingBudget < aligned_size);
 
         // if the object overflows the AC, we need to sample the remaining bytes
@@ -336,17 +331,14 @@ inline Object* Alloc(size_t size, GC_ALLOC_FLAGS flags)
     {
         ee_alloc_context *threadContext = GetThreadEEAllocContext();
         GCStress<gc_on_alloc>::MaybeTrigger(&threadContext->m_GCAllocContext);
-        retVal = GCHeapUtilities::GetGCHeap()->Alloc(&threadContext->m_GCAllocContext, size, flags);
-        threadContext->UpdateCombinedLimit();
-
+        retVal = Alloc(threadContext, size, flags);
     }
     else
     {
         GlobalAllocLockHolder holder(&g_global_alloc_lock);
         ee_alloc_context *globalContext = &g_global_alloc_context;
         GCStress<gc_on_alloc>::MaybeTrigger(&globalContext->m_GCAllocContext);
-        retVal = GCHeapUtilities::GetGCHeap()->Alloc(&globalContext->m_GCAllocContext, size, flags);
-        globalContext->UpdateCombinedLimit();
+        retVal = Alloc(globalContext, size, flags);
     }
 
 

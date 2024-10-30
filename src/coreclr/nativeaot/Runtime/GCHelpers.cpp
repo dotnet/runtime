@@ -490,12 +490,7 @@ void FireAllocationSampled(GC_ALLOC_FLAGS flags, size_t size, size_t samplingBud
             (flags & GC_ALLOC_PINNED_OBJECT_HEAP) ? 2 :
             (flags & GC_ALLOC_LARGE_OBJECT_HEAP) ? 1 :
             0;  // SOH
-        unsigned int heapIndex = 0;
-#ifdef BACKGROUND_GC
-        gc_heap* hp = gc_heap::heap_of((BYTE*)orObject);
-        heapIndex = hp->heap_number;
-#endif
-        FireEtwAllocationSampled(allocKind, GetClrInstanceId(), typeId, name, heapIndex, (BYTE*)orObject, size, samplingBudgetOffset);
+        FireEtwAllocationSampled(allocKind, GetClrInstanceId(), typeId, name, (BYTE*)orObject, size, samplingBudgetOffset);
     }
 #endif
 }
