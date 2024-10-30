@@ -48,6 +48,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 			TestNoWarningsInRUCMethod<TestType> ();
 			TestNoWarningsInRUCType<TestType, TestType> ();
+			TestGenericParameterFlowsToNestedType.Test ();
 		}
 
 		static void TestSingleGenericParameterOnType ()
@@ -847,6 +848,31 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			rucType.InstanceMethodRequiresPublicMethods<T> ();
 			rucType.VirtualMethod ();
 			rucType.VirtualMethodRequiresPublicMethods<T> ();
+		}
+
+		class TestGenericParameterFlowsToNestedType
+		{
+			class Generic<T> {
+				[ExpectedWarning ("IL2091")]
+				public T CallNestedMethod () => GenericRequires<T>.Nested.Method ();
+
+				[ExpectedWarning ("IL2091")]
+				public T AccessNestedField () => GenericRequires<T>.Nested.Field;
+			}
+
+			class GenericRequires<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T> {
+				public static class Nested {
+					public static T? Method () => default;
+
+					public static T? Field = default;
+				}
+			}
+
+			public static void Test ()
+			{
+				new Generic<int> ().CallNestedMethod ();
+				new Generic<string> ().AccessNestedField ();
+			}
 		}
 
 		[RequiresUnreferencedCode ("message")]

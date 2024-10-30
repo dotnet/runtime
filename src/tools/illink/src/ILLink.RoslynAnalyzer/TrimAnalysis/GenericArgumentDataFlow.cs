@@ -21,12 +21,20 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 		{
 			ProcessGenericArgumentDataFlow (location, method.TypeArguments, method.TypeParameters, reportDiagnostic);
 
-			ProcessGenericArgumentDataFlow (location, method.ContainingType, reportDiagnostic);
+			var type = method.ContainingType;
+			while (type is { IsGenericType: true }) {
+				ProcessGenericArgumentDataFlow (location, type, reportDiagnostic);
+				type = type.ContainingType;
+			}
 		}
 
 		public static void ProcessGenericArgumentDataFlow (Location location, IFieldSymbol field, Action<Diagnostic> reportDiagnostic)
 		{
-			ProcessGenericArgumentDataFlow (location, field.ContainingType, reportDiagnostic);
+			var type = field.ContainingType;
+			while (type is { IsGenericType: true }) {
+				ProcessGenericArgumentDataFlow (location, type, reportDiagnostic);
+				type = type.ContainingType;
+			}
 		}
 
 		static void ProcessGenericArgumentDataFlow (
@@ -55,7 +63,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 
 		public static bool RequiresGenericArgumentDataFlow (INamedTypeSymbol type)
 		{
-			if (type.IsGenericType) {
+			while (type is { IsGenericType: true }) {
 				if (RequiresGenericArgumentDataFlow (type.TypeParameters))
 					return true;
 
@@ -64,6 +72,8 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 						&& RequiresGenericArgumentDataFlow (namedTypeSymbol))
 						return true;
 				}
+
+				type = type.ContainingType;
 			}
 
 			return false;
