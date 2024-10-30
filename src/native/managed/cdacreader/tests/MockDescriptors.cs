@@ -36,6 +36,11 @@ internal class MockDescriptors
         (nameof(Data.EEClass.NumNonVirtualSlots), DataType.uint16),
     };
 
+    private static readonly (string Name, DataType Type)[] MethodTableAuxiliaryDataFields = new[]
+    {
+        (nameof(Data.MethodTableAuxiliaryData.LoaderModule), DataType.pointer),
+    };
+
     private static readonly (string Name, DataType Type)[] ArrayClassFields = new[]
     {
         (nameof(Data.ArrayClass.Rank), DataType.uint8),
@@ -92,6 +97,10 @@ internal class MockDescriptors
         (nameof(Data.Module.MethodDefToILCodeVersioningStateMap), DataType.pointer),
     ];
 
+    private static readonly (string, DataType)[] AssemblyFields =
+    [
+        (nameof(Data.Assembly.IsCollectible), DataType.uint8),
+    ];
     private static readonly (string, DataType)[] ExceptionInfoFields =
     [
         (nameof(Data.ExceptionInfo.PreviousNestedInfo), DataType.pointer),
@@ -138,6 +147,8 @@ internal class MockDescriptors
             types[DataType.EEClass] = new Target.TypeInfo() { Fields = layout.Fields, Size = layout.Stride };
             layout = targetTestHelpers.ExtendLayout(ArrayClassFields, eeClassLayout);
             types[DataType.ArrayClass] = new Target.TypeInfo() { Fields = layout.Fields, Size = layout.Stride };
+            layout = targetTestHelpers.LayoutFields(MethodTableAuxiliaryDataFields);
+            types[DataType.MethodTableAuxiliaryData] = new Target.TypeInfo() { Fields = layout.Fields, Size = layout.Stride };
             return types;
         }
 
@@ -257,6 +268,19 @@ internal class MockDescriptors
             // TODO fill in the rest of the fields
             builder.AddHeapFragment(methodTableFragment);
             return methodTableFragment.Address;
+        }
+
+        internal void SetMethodTableAuxData(TargetPointer methodTablePointer, TargetPointer loaderModule)
+        {
+            Target.TypeInfo methodTableTypeInfo = Types[DataType.MethodTable];
+            Target.TypeInfo auxDataTypeInfo = Types[DataType.MethodTableAuxiliaryData];
+            MockMemorySpace.HeapFragment auxDataFragment = TypeSystemAllocator.Allocate(auxDataTypeInfo.Size.Value, "MethodTableAuxiliaryData");
+            Span<byte> dest = auxDataFragment.Data;
+            Builder.TargetTestHelpers.WritePointer(dest.Slice(auxDataTypeInfo.Fields[nameof(Data.MethodTableAuxiliaryData.LoaderModule)].Offset), loaderModule);
+            Builder.AddHeapFragment(auxDataFragment);
+
+            Span<byte> methodTable = Builder.BorrowAddressRange(methodTablePointer, (int)methodTableTypeInfo.Size.Value);
+            Builder.TargetTestHelpers.WritePointer(methodTable.Slice(methodTableTypeInfo.Fields[nameof(Data.MethodTable.AuxiliaryData)].Offset), auxDataFragment.Address);
         }
     }
 
@@ -499,11 +523,17 @@ internal class MockDescriptors
 
         internal static Dictionary<DataType, Target.TypeInfo> Types(TargetTestHelpers helpers)
         {
+            Dictionary<DataType, Target.TypeInfo> types = new();
+            AddTypes(helpers, types);
+            return types;
+        }
+
+        internal static void AddTypes(TargetTestHelpers helpers, Dictionary<DataType, Target.TypeInfo> types)
+        {
             TargetTestHelpers.LayoutResult layout = helpers.LayoutFields(ModuleFields);
-            return new()
-            {
-                [DataType.Module] = new Target.TypeInfo() { Fields = layout.Fields, Size = layout.Stride },
-            };
+            types[DataType.Module] = new Target.TypeInfo() { Fields = layout.Fields, Size = layout.Stride };
+            layout= helpers.LayoutFields(AssemblyFields);
+            types[DataType.Assembly] = new Target.TypeInfo() { Fields = layout.Fields, Size = layout.Stride };
         }
 
         internal TargetPointer AddModule(string? path = null, string? fileName = null)
@@ -543,6 +573,11 @@ internal class MockDescriptors
                     module.Data.AsSpan().Slice(typeInfo.Fields[nameof(Data.Module.FileName)].Offset, helpers.PointerSize),
                     fileNameFragment.Address);
             }
+
+            // add an assembly without any fields set (ie: not collectible)
+            MockMemorySpace.HeapFragment assembly = _allocator.Allocate((ulong)helpers.SizeOfTypeInfo(Types(helpers)[DataType.Assembly]), "Assembly");
+            _builder.AddHeapFragment(assembly);
+            helpers.WritePointer(module.Data.AsSpan().Slice(typeInfo.Fields[nameof(Data.Module.Assembly)].Offset, helpers.PointerSize), assembly.Address);
 
             return module.Address;
         }
@@ -717,6 +752,7 @@ internal class MockDescriptors
         };
 
         internal readonly RuntimeTypeSystem RTSBuilder;
+        internal readonly Loader LoaderBuilder;
 
         internal MockMemorySpace.BumpAllocator MethodDescChunkAllocator { get; set; }
 
@@ -725,9 +761,10 @@ internal class MockDescriptors
         internal MockMemorySpace.Builder Builder => RTSBuilder.Builder;
         internal uint MethodDescAlignment => RuntimeTypeSystem.GetMethodDescAlignment(TargetTestHelpers);
 
-        internal MethodDescriptors(RuntimeTypeSystem rtsBuilder)
+        internal MethodDescriptors(RuntimeTypeSystem rtsBuilder, Loader loaderBuilder)
         {
             RTSBuilder = rtsBuilder;
+            LoaderBuilder = loaderBuilder;
             AddTypes();
         }
 
@@ -735,6 +772,7 @@ internal class MockDescriptors
         {
             Dictionary<DataType, Target.TypeInfo> types = RTSBuilder.Types;
             TargetTestHelpers targetTestHelpers = Builder.TargetTestHelpers;
+            Loader.AddTypes(targetTestHelpers, types);
             var layout = targetTestHelpers.LayoutFields(MethodDescFields);
             types[DataType.MethodDesc] = new Target.TypeInfo() { Fields = layout.Fields, Size = layout.Stride };
             layout = targetTestHelpers.LayoutFields(MethodDescChunkFields);

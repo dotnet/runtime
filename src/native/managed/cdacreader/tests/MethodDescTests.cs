@@ -21,20 +21,22 @@ public class MethodDescTests
             TypeSystemAllocator = builder.CreateAllocator(start: 0x00000000_4a000000, end: 0x00000000_4b000000),
         };
 
+        var loaderBuilder = new MockDescriptors.Loader(builder);
+
         MockDescriptors.Object objectBuilder = new(rtsBuilder) {
             // arbtrary adress range
             ManagedObjectAllocator = builder.CreateAllocator(start: 0x00000000_10000000, end: 0x00000000_20000000),
         };
         var methodDescChunkAllocator = builder.CreateAllocator(start: 0x00000000_20002000, end: 0x00000000_20003000);
-        var methodDescBuilder = new MockDescriptors.MethodDescriptors(rtsBuilder)
+        var methodDescBuilder = new MockDescriptors.MethodDescriptors(rtsBuilder, loaderBuilder)
         {
             MethodDescChunkAllocator = methodDescChunkAllocator,
         };
 
         builder = builder
-            .SetContracts([ nameof (Contracts.Object), nameof (Contracts.RuntimeTypeSystem) ])
+            .SetContracts([ nameof (Contracts.Object), nameof (Contracts.RuntimeTypeSystem), nameof (Contracts.Loader) ])
             .SetGlobals(MockDescriptors.MethodDescriptors.Globals(targetTestHelpers))
-            .SetTypes(rtsBuilder.Types);
+            .SetTypes(methodDescBuilder.Types);
 
         methodDescBuilder.AddGlobalPointers();
 
@@ -50,6 +52,7 @@ public class MethodDescTests
     public void MethodDescGetMethodDescTokenOk(MockTarget.Architecture arch)
     {
         TargetPointer testMethodDescAddress = default;
+        TargetPointer objectMethodTable = default;
         const int MethodDefToken = 0x06 << 24;
         const ushort expectedRidRangeStart = 0x2000; // arbitrary (larger than  1<< TokenRemainderBitCount)
         const ushort expectedRidRemainder = 0x10; // arbitrary
@@ -59,7 +62,10 @@ public class MethodDescTests
         MethodDescHelper(arch,
         (builder) =>
         {
-            var objectMethodTable = MethodTableTests.AddSystemObjectMethodTable(builder.RTSBuilder).MethodTable;
+            objectMethodTable = MethodTableTests.AddSystemObjectMethodTable(builder.RTSBuilder).MethodTable;
+            // add a loader module so that we can do the "IsCollectible" check
+            TargetPointer module = builder.LoaderBuilder.AddModule("testModule");
+            builder.RTSBuilder.SetMethodTableAuxData(objectMethodTable, loaderModule: module);
 
             byte count = 10; // arbitrary
             byte methodDescSize = (byte)(builder.Types[DataType.MethodDesc].Size.Value / builder.MethodDescAlignment);
@@ -85,6 +91,11 @@ public class MethodDescTests
             Assert.Equal(expectedToken, token);
             ushort slotNum = rts.GetSlotNumber(handle);
             Assert.Equal(expectedSlotNum, slotNum);
+            TargetPointer mt = rts.GetMethodTable(handle);
+            Assert.Equal(objectMethodTable, mt);
+            bool isCollectible = rts.IsCollectibleMethod(handle);
+            Assert.False(isCollectible);
+
         });
     }
 }
