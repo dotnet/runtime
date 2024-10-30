@@ -18,15 +18,13 @@ public class MethodTableTests
         TargetTestHelpers targetTestHelpers = new(arch);
         MockMemorySpace.Builder builder = new(targetTestHelpers);
 
-        Dictionary<DataType, Target.TypeInfo> rtsTypes = new ();
-        MockRTS rtsBuilder = new (rtsTypes, builder) {
+        MockRTS rtsBuilder = new (builder) {
              // arbitrary address range
             TypeSystemAllocator = builder.CreateAllocator(start: 0x00000000_33000000, end: 0x00000000_34000000),
         };
-        MockRTS.AddTypes(targetTestHelpers, rtsTypes);
         builder
                 .SetContracts ([ nameof(Contracts.RuntimeTypeSystem) ])
-                .SetTypes (rtsTypes)
+                .SetTypes (rtsBuilder.Types)
                 .SetGlobals (MockRTS.Globals);
 
         rtsBuilder.AddGlobalPointers();

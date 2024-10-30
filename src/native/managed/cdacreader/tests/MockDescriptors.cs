@@ -125,8 +125,10 @@ internal class MockDescriptors
     {
         internal const ulong TestFreeObjectMethodTableGlobalAddress = 0x00000000_7a0000a0;
 
-        internal static void AddTypes(TargetTestHelpers targetTestHelpers, Dictionary<DataType, Target.TypeInfo> types)
+        private Dictionary<DataType, Target.TypeInfo>  GetTypes()
         {
+            var targetTestHelpers = Builder.TargetTestHelpers;
+            Dictionary<DataType, Target.TypeInfo> types = new ();
             var layout = targetTestHelpers.LayoutFields(MethodTableFields);
             types[DataType.MethodTable] = new Target.TypeInfo() { Fields = layout.Fields, Size = layout.Stride };
             var eeClassLayout = targetTestHelpers.LayoutFields(EEClassFields);
@@ -134,6 +136,7 @@ internal class MockDescriptors
             types[DataType.EEClass] = new Target.TypeInfo() { Fields = layout.Fields, Size = layout.Stride };
             layout = targetTestHelpers.ExtendLayout(ArrayClassFields, eeClassLayout);
             types[DataType.ArrayClass] = new Target.TypeInfo() { Fields = layout.Fields, Size = layout.Stride };
+            return types;
         }
 
         internal static readonly (string Name, ulong Value, string? Type)[] Globals =
@@ -143,16 +146,17 @@ internal class MockDescriptors
         ];
 
         internal readonly MockMemorySpace.Builder Builder;
-        internal readonly Dictionary<DataType, Target.TypeInfo> Types;
+
+        internal Dictionary<DataType, Target.TypeInfo> Types { get; init; }
 
         internal MockMemorySpace.BumpAllocator TypeSystemAllocator { get; set; }
 
         internal TargetPointer FreeObjectMethodTableAddress { get; private set; }
 
-        internal RuntimeTypeSystem(Dictionary<DataType, Target.TypeInfo> types, MockMemorySpace.Builder builder)
+        internal RuntimeTypeSystem(MockMemorySpace.Builder builder)
         {
-            Types = types;
             Builder = builder;
+            Types = GetTypes();;
         }
 
         internal void AddGlobalPointers()
@@ -266,7 +270,6 @@ internal class MockDescriptors
         internal const ulong TestSyncBlockValueToObjectOffset = sizeof(uint);
 
         internal readonly RuntimeTypeSystem RTSBuilder;
-        internal Dictionary<DataType, Target.TypeInfo> Types => RTSBuilder.Types;
         internal MockMemorySpace.Builder Builder => RTSBuilder.Builder;
 
         internal MockMemorySpace.BumpAllocator ManagedObjectAllocator { get; set; }
@@ -275,17 +278,22 @@ internal class MockDescriptors
 
         internal TargetPointer TestStringMethodTableAddress { get; private set; }
 
+        internal Dictionary<DataType, Target.TypeInfo> Types { get; init; }
+
         internal Object(RuntimeTypeSystem rtsBuilder)
         {
             RTSBuilder = rtsBuilder;
 
             const ulong TestSyncBlocksAddress = 0x00000000_e0000000;
             SyncBlockAllocator = Builder.CreateAllocator(start: TestSyncBlocksAddress, end: TestSyncBlocksAddress + 0x1000);
+
+            Types = GetTypes();
         }
 
-        internal static void AddTypes(Dictionary<DataType, Target.TypeInfo> types, TargetTestHelpers helpers)
+        private Dictionary<DataType, Target.TypeInfo> GetTypes()
         {
-            RuntimeTypeSystem.AddTypes(helpers, types);
+            var helpers = Builder.TargetTestHelpers;
+            Dictionary<DataType, Target.TypeInfo> types = RTSBuilder.Types;
             var objectLayout = helpers.LayoutFields(ObjectFields);
             types[DataType.Object] = new Target.TypeInfo() { Fields = objectLayout.Fields, Size = objectLayout.Stride };
             var layout = helpers.ExtendLayout(StringFields, objectLayout);
@@ -299,6 +307,7 @@ internal class MockDescriptors
             types[DataType.SyncBlock] = new Target.TypeInfo() { Fields = layout.Fields, Size = layout.Stride };
             layout = helpers.LayoutFields(InteropSyncBlockFields);
             types[DataType.InteropSyncBlockInfo] = new Target.TypeInfo() { Fields = layout.Fields, Size = layout.Stride };
+            return types;
         }
 
         internal static (string Name, ulong Value, string? Type)[] Globals(TargetTestHelpers helpers) => RuntimeTypeSystem.Globals.Concat(
@@ -443,9 +452,6 @@ internal class MockDescriptors
             int size = (int)arrayTypeInfo.Size.Value;
             if (!isSingleDimensionZeroLowerBound)
                 size += array.Rank * sizeof(int) * 2;
-
-            // ulong methodTableAddress = (address.Value + (ulong)size + (TestObjectToMethodTableUnmask - 1)) & ~(TestObjectToMethodTableUnmask - 1);
-            //ulong arrayClassAddress = methodTableAddress + (ulong)targetTestHelpers.SizeOfTypeInfo(types[DataType.MethodTable]);
 
             uint flags = (uint)(MethodTableFlags_1.WFLAGS_HIGH.HasComponentSize | MethodTableFlags_1.WFLAGS_HIGH.Category_Array) | (uint)array.Length;
             if (isSingleDimensionZeroLowerBound)
@@ -654,13 +660,9 @@ internal class MockDescriptors
             _builder.AddHeapFragment(thread);
 
             // Add exception info for the thread
-            //MockMemorySpace.HeapFragment exceptionInfo = _allocator.Allocate(Types[DataType.ExceptionInfo].Size.Value, "ExceptionInfo");
-            //_builder.AddHeapFragment(exceptionInfo);
-            TargetPointer exceptionInfoAddress = default;
-            if (UseFunclets)
-                throw new NotImplementedException("todo for funclets: allocate and ExceptionInfo");
-            else
-                exceptionInfoAddress = thread.Address + Types[DataType.ExceptionInfo].Size.Value;
+            // Add exception info for the thread
+            // TODO: [cdac] Handle when UseFunclets is true - see NotImplementedException thrown above
+            TargetPointer exceptionInfoAddress = thread.Address + Types[DataType.ExceptionInfo].Size.Value;
             helpers.WritePointer(
                 data.Slice(typeInfo.Fields[nameof(Data.Thread.ExceptionTracker)].Offset),
                 exceptionInfoAddress);

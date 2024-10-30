@@ -18,8 +18,7 @@ public unsafe class ObjectTests
         TargetTestHelpers targetTestHelpers = new(arch);
 
         MockMemorySpace.Builder builder = new(targetTestHelpers);
-        Dictionary<DataType, Target.TypeInfo> types = new();
-        MockDescriptors.RuntimeTypeSystem rtsBuilder = new(types, builder) {
+        MockDescriptors.RuntimeTypeSystem rtsBuilder = new(builder) {
             // arbtrary address range
             TypeSystemAllocator = builder.CreateAllocator(start: 0x00000000_4a000000, end: 0x00000000_4b000000),
         };
@@ -27,11 +26,10 @@ public unsafe class ObjectTests
             // arbtrary adress range
             ManagedObjectAllocator = builder.CreateAllocator(start: 0x00000000_10000000, end: 0x00000000_20000000),
         };
-        MockObject.AddTypes(types, targetTestHelpers);
         builder = builder
             .SetContracts([ nameof (Contracts.Object), nameof (Contracts.RuntimeTypeSystem) ])
             .SetGlobals(MockObject.Globals(targetTestHelpers))
-            .SetTypes(types);
+            .SetTypes(objectBuilder.Types);
 
         objectBuilder.AddGlobalPointers();
 
