@@ -80,18 +80,7 @@ internal class RFLogging
                 catch (IOException e)
                 {
                     //Disk may be full so simply stop logging
-                    if (ReliabilityFramework._debugBreakOnTestHang)
-                    {
-                        string msg = String.Format("Interrupt because fail to write message to log file: {0}", e.Message);
-                        Console.WriteLine(msg);
-                        Debugger.Break();
-                    }
-                    else
-                    {
-                        string msg = String.Format("Throw exception because fail to write message to log file: {0}", e.Message);
-                        Console.WriteLine(msg);
-                        throw new Exception("Fail to write message to log file");
-                    }
+                    ReliabilityFramework.DebugBreakOrThrowException(ReliabilityFramework._debugBreakOnTestHang, e);
                 }
             }
 
@@ -131,18 +120,7 @@ internal class RFLogging
                 }
                 catch (IOException e)
                 {
-                    if (ReliabilityFramework._debugBreakOnTestHang)
-                    {
-                        string msg = String.Format("Interrupt because fail to write message to log file: {0}", e.Message);
-                        Console.WriteLine(msg);
-                        Debugger.Break();
-                    }
-                    else
-                    {
-                        string msg = String.Format("Throw exception because fail to write message to log file: {0}", e.Message);
-                        Console.WriteLine(msg);
-                        throw new Exception("Fail to write message to log file");
-                    }
+                    ReliabilityFramework.DebugBreakOrThrowException(ReliabilityFramework._debugBreakOnTestHang, e);
                 }
             }
         }
