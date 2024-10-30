@@ -1765,7 +1765,7 @@ void Nullable::UnBoxNoCheck(void* destPtr, OBJECTREF boxedVal, MethodTable* dest
     }
 }
 
-void Nullable::UnboxWriteValue(void* destPtr, OBJECTREF boxedVal, MethodTable* destMT)
+void Nullable::UnboxNullableValue(void* destPtr, OBJECTREF boxedVal, MethodTable* destMT)
 {
     CONTRACTL
     {

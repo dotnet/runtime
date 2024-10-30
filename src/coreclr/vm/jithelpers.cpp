@@ -1056,11 +1056,11 @@ BOOL ObjIsInstanceOf(Object* pObject, TypeHandle toTypeHnd, BOOL throwCastExcept
     return ObjIsInstanceOfCore(pObject, toTypeHnd, throwCastException);
 }
 
-HCIMPL3(VOID, FillNullable, uint8_t* destPtr, MethodTable* typeMT, Object* objToCopyFrom)
+HCIMPL3(VOID, UnboxNullableValue, uint8_t* destPtr, MethodTable* typeMT, Object* objToCopyFrom)
 {
     FCALL_CONTRACT;
 
-    Nullable::UnboxWriteValue(destPtr, ObjectToOBJECTREF(objToCopyFrom), typeMT);
+    Nullable::UnboxNullableValue(destPtr, ObjectToOBJECTREF(objToCopyFrom), typeMT);
 }
 HCIMPLEND
 

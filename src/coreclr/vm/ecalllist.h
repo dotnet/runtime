@@ -270,7 +270,7 @@ FCFuncStart(gCastHelpers)
     FCFuncElement("IsInstanceOfAny_NoCacheLookup", ::IsInstanceOfAny_NoCacheLookup)
     FCFuncElement("ChkCastAny_NoCacheLookup", ::ChkCastAny_NoCacheLookup)
     FCFuncElement("WriteBarrier", ::WriteBarrier_Helper)
-    FCFuncElement("FillNullable", ::FillNullable)
+    FCFuncElement("UnboxNullableValue", ::UnboxNullableValue)
 FCFuncEnd()
 
 FCFuncStart(gArrayFuncs)

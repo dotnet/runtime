@@ -31,7 +31,7 @@ namespace System.Runtime.CompilerServices
         private static extern void WriteBarrier(ref object? dst, object? obj);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern void FillNullable(ref byte destPtr, MethodTable* typeMT, object obj);
+        private static extern void UnboxNullableValue(ref byte destPtr, MethodTable* typeMT, object obj);
 
         // IsInstanceOf test used for unusual cases (naked type parameters, variant generic types)
         // Unlike the IsInstanceOfInterface and IsInstanceOfClass functions,
@@ -566,6 +566,9 @@ namespace System.Runtime.CompilerServices
                 return false;
             }
 
+            // Normally getting the first generic argument involves checking the PerInstInfo to get the count of generic dictionaries
+            // in the hierarchy, and then doing a bit of math to find the right dictionary, but since we know this is nullable
+            // we can do a simple double deference to do the same thing.
             Debug.Assert(typeMT->InstantiationArg0() == **typeMT->PerInstInfo);
             MethodTable *pMTNullableArg = **typeMT->PerInstInfo;
             if (pMTNullableArg == boxedMT)
@@ -583,65 +586,46 @@ namespace System.Runtime.CompilerServices
         }
 
         [DebuggerHidden]
-        internal static void Unbox_Nullable_Ref(ref byte destPtr, MethodTable* typeMT, object? obj)
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void Unbox_Nullable_NotIsNullableForType(ref byte destPtr, MethodTable* typeMT, object obj)
         {
-            if (obj == null)
+            // For safety's sake, also allow true nullables to be unboxed normally.
+            // This should not happen normally, but we want to be robust
+            if (typeMT == RuntimeHelpers.GetMethodTable(obj))
             {
-                InitValueClass(ref destPtr, typeMT);
+                Buffer.BulkMoveWithWriteBarrier(ref destPtr, ref RuntimeHelpers.GetRawData(obj), typeMT->GetNumInstanceFieldBytes());
+                return;
             }
-            else
-            {
-                if (!IsNullableForType(typeMT, RuntimeHelpers.GetMethodTable(obj)))
-                {
-                    // For safety's sake, also allow true nullables to be unboxed normally.
-                    // This should not happen normally, but we want to be robust
-                    if (typeMT == RuntimeHelpers.GetMethodTable(obj))
-                    {
-                        Unsafe.CopyBlockUnaligned(ref destPtr, ref RuntimeHelpers.GetRawData(obj), typeMT->GetNumInstanceFieldBytes());
-                        return;
-                    }
-                    CastHelpers.ThrowInvalidCastException(obj, typeMT);
-                }
-
-                // Set the hasValue field on the Nullable type. It MUST always be placed at the start of the object.
-                Unsafe.As<byte, bool>(ref destPtr) = true;
-                ref byte destValuePtr = ref typeMT->GetNullableValueFieldReferenceAndSize(ref destPtr, out uint size);
-                Unsafe.CopyBlockUnaligned(ref destValuePtr, ref RuntimeHelpers.GetRawData(obj), size);
-            }
+            CastHelpers.ThrowInvalidCastException(obj, typeMT);
         }
 
         [DebuggerHidden]
-        internal static void Unbox_Nullable(byte* destPtr, MethodTable* typeMT, object? obj)
+        internal static void Unbox_Nullable(ref byte destPtr, MethodTable* typeMT, object? obj)
         {
             if (obj == null)
             {
                 if (!typeMT->ContainsGCPointers)
                 {
-                    SpanHelpers.ClearWithoutReferences(ref Unsafe.AsRef<byte>(destPtr), typeMT->GetNumInstanceFieldBytes());
+                    SpanHelpers.ClearWithoutReferences(ref destPtr, typeMT->GetNumInstanceFieldBytes());
                 }
                 else
                 {
                     // If the type ContainsGCPointers, we can compute the size without resorting to loading the BaseSizePadding field from the EEClass
                     nuint numInstanceFieldBytes = typeMT->BaseSize - (nuint)(2 * sizeof(IntPtr));
                     // Otherwise, use the helper which is safe for that situation
-                    SpanHelpers.ClearWithReferences(ref Unsafe.AsRef<IntPtr>(destPtr), (typeMT->BaseSize - (nuint)(2 * sizeof(IntPtr))) / (nuint)sizeof(IntPtr));
+                    SpanHelpers.ClearWithReferences(ref Unsafe.As<byte, IntPtr>(ref destPtr), (typeMT->BaseSize - (nuint)(2 * sizeof(IntPtr))) / (nuint)sizeof(IntPtr));
                 }
             }
             else
             {
                 if (!IsNullableForType(typeMT, RuntimeHelpers.GetMethodTable(obj)))
                 {
-                    // For safety's sake, also allow true nullables to be unboxed normally.
-                    // This should not happen normally, but we want to be robust
-                    if (typeMT == RuntimeHelpers.GetMethodTable(obj))
-                    {
-                        Buffer.BulkMoveWithWriteBarrier(ref Unsafe.AsRef<byte>(destPtr), ref RuntimeHelpers.GetRawData(obj), typeMT->GetNumInstanceFieldBytes());
-                        return;
-                    }
-                    CastHelpers.ThrowInvalidCastException(obj, typeMT);
+                    Unbox_Nullable_NotIsNullableForType(ref destPtr, typeMT, obj);
                 }
-
-                FillNullable(ref Unsafe.AsRef<byte>(destPtr), typeMT, obj);
+                else
+                {
+                    UnboxNullableValue(ref destPtr, typeMT, obj);
+                }
             }
         }
 
