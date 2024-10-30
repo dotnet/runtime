@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using Xunit;
 
@@ -335,6 +336,44 @@ namespace System.IO.Tests
                 stream.Read(readData, 0, sourceData.Length);
                 AssertExtensions.Equal(destData, readData);
             }
+        }
+
+        [Theory,
+            InlineData("", ":bar"),
+            InlineData("", ":bar:$DATA"),
+            InlineData("::$DATA", ":bar"),
+            InlineData("::$DATA", ":bar:$DATA")]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void WindowsAlternateDataStreamOverwriteFat32(string defaultStream, string alternateStream)
+        {
+            Console.WriteLine($"Platform: {PlatformDetection.IsNativeAot}");
+            Console.WriteLine($"Process Architecture: {RuntimeInformation.ProcessArchitecture}");
+            Console.WriteLine($"OS Architecture: {RuntimeInformation.OSArchitecture}");
+
+            string testDir = Path.Combine("F:\\tests", GetTestFileName());
+            DirectoryInfo testDirectory = Directory.CreateDirectory(testDir);
+            string testFile = Path.Combine(testDirectory.FullName, GetTestFileName());
+            string testFileDefaultStream = testFile + defaultStream;
+            string testFileAlternateStream = testFile + alternateStream;
+
+            // Copy the default stream into an alternate stream
+            File.WriteAllText(testFileDefaultStream, "Foo");
+            Copy(testFileDefaultStream, testFileAlternateStream);
+            Assert.Equal(testFile, testDirectory.GetFiles().Single().FullName);
+            Assert.Equal("Foo", File.ReadAllText(testFileDefaultStream));
+            Assert.Equal("Foo", File.ReadAllText(testFileAlternateStream));
+
+            // Copy another file over the alternate stream
+            string testFile2 = Path.Combine(testDirectory.FullName, GetTestFileName());
+            string testFile2DefaultStream = testFile2 + defaultStream;
+            File.WriteAllText(testFile2DefaultStream, "Bar");
+            Copy(testFile2DefaultStream, testFileAlternateStream, overwrite: true);
+            Assert.Equal("Foo", File.ReadAllText(testFileDefaultStream));
+            Assert.Equal("Bar", File.ReadAllText(testFileAlternateStream));
+
+            // This always throws as you can't copy an alternate stream out (oddly)
+            Assert.Throws<IOException>(() => Copy(testFileAlternateStream, testFile2, overwrite: true));
+            Assert.Throws<IOException>(() => Copy(testFileAlternateStream, testFile2 + alternateStream, overwrite: true));
         }
 
         [Theory,
