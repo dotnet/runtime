@@ -1917,6 +1917,14 @@ bool Compiler::optTryInvertWhileLoop(FlowGraphNaturalLoop* loop)
     }
 
     BasicBlock* exit = trueExits ? condBlock->GetTrueTarget() : condBlock->GetFalseTarget();
+    BasicBlock* stayInLoopSucc = trueExits ? condBlock->GetFalseTarget() : condBlock->GetTrueTarget();
+
+    // If the condition is already a latch, then the loop is already inverted
+    if (stayInLoopSucc == loop->GetHeader())
+    {
+        JITDUMP("No loop-inversion for " FMT_LP " since it is already inverted\n", loop->GetIndex());
+        return false;
+    }
 
     // Exiting the loop may enter a new try-region. However, to keep exits canonical, we will
     // have to split the exit such that old loop edges exit to one half, while the duplicated condition
@@ -1951,6 +1959,7 @@ bool Compiler::optTryInvertWhileLoop(FlowGraphNaturalLoop* loop)
     bool           allProfileWeightsAreValid = false;
     weight_t const weightPreheader           = preheader->bbWeight;
     weight_t const weightCond                = condBlock->bbWeight;
+    weight_t const weightStayInLoopSucc = stayInLoopSucc->bbWeight;
 
     // If we have profile data then we calculate the number of times
     // the loop will iterate into loopIterations
@@ -1958,19 +1967,48 @@ bool Compiler::optTryInvertWhileLoop(FlowGraphNaturalLoop* loop)
     {
         // Only rely upon the profile weight when all three of these blocks
         // have good profile weights
-        if (preheader->hasProfileWeight() && condBlock->hasProfileWeight())
+        if (preheader->hasProfileWeight() && condBlock->hasProfileWeight() && stayInLoopSucc->hasProfileWeight())
         {
             // If this while loop never iterates then don't bother transforming
             //
-            if (weightPreheader == BB_ZERO_WEIGHT)
+            if (weightStayInLoopSucc == BB_ZERO_WEIGHT)
             {
-                JITDUMP("No loop-inversion for " FMT_LP " since the the preheader " FMT_BB " has 0 weight\n",
+                JITDUMP("No loop-inversion for " FMT_LP " since the in-loop successor " FMT_BB " has 0 weight\n",
                         loop->GetIndex(), preheader->bbNum);
                 return false;
             }
 
-            loopIterations            = weightCond / weightPreheader;
-            allProfileWeightsAreValid = true;
+            // We generally expect weightCond > weightStayInLoopSucc
+            //
+            // Tolerate small inconsistencies...
+            //
+            if (!fgProfileWeightsConsistent(weightPreheader + weightStayInLoopSucc, weightCond))
+            {
+                JITDUMP("Profile weights locally inconsistent: preheader " FMT_WT ", stayInLoopSucc " FMT_WT ", cond " FMT_WT "\n",
+                        weightPreheader, weightStayInLoopSucc, weightCond);
+            }
+            else
+            {
+                allProfileWeightsAreValid = true;
+
+                // Determine average iteration count
+                //
+                //   weightTop is the number of time this loop executes
+                //   weightTest is the number of times that we consider entering or remaining in the loop
+                //   loopIterations is the average number of times that this loop iterates
+                //
+                weight_t loopEntries = weightCond - weightStayInLoopSucc;
+
+                // If profile is inaccurate, try and use other data to provide a credible estimate.
+                // The value should at least be >= weightBlock.
+                //
+                if (loopEntries < weightPreheader)
+                {
+                    loopEntries = weightPreheader;
+                }
+
+                loopIterations = weightStayInLoopSucc / loopEntries;
+            }
         }
         else
         {
@@ -2068,6 +2106,21 @@ bool Compiler::optTryInvertWhileLoop(FlowGraphNaturalLoop* loop)
     // block will be a BBJ_COND node.
     BasicBlock* newCond = fgSplitBlockAtEnd(preheader);
 
+    if (allProfileWeightsAreValid)
+    {
+        weight_t const delta = weightCond - weightStayInLoopSucc;
+
+        // If there is just one outside edge incident on bTest, then ideally delta == block->bbWeight.
+        // But this might not be the case if profile data is inconsistent.
+        //
+        // And if bTest has multiple outside edges we want to account for the weight of them all.
+        //
+        if (delta > preheader->bbWeight)
+        {
+            newCond->setBBProfileWeight(delta);
+        }
+    }
+
     // Split the new block once more to create a proper preheader, so we end up
     // with preheader (always) -> newCond (cond) -> newPreheader (always) -> header
     BasicBlock* newPreheader = fgSplitBlockAtEnd(newCond);
@@ -2091,16 +2144,14 @@ bool Compiler::optTryInvertWhileLoop(FlowGraphNaturalLoop* loop)
     newCond->GetTrueEdge()->setLikelihood(condBlock->GetTrueEdge()->getLikelihood());
     newCond->GetFalseEdge()->setLikelihood(condBlock->GetFalseEdge()->getLikelihood());
 
-    BasicBlock* newHeader = trueExits ? condBlock->GetFalseTarget() : condBlock->GetTrueTarget();
-
-    // Add newPreheader -> newHeader
-    FlowEdge* newPreheaderToNewHeader = fgAddRefPred(newHeader, newPreheader, newPreheader->GetTargetEdge());
+    // Add newPreheader -> stayInLoopSucc
+    FlowEdge* newPreheaderToInLoopSucc = fgAddRefPred(stayInLoopSucc, newPreheader, newPreheader->GetTargetEdge());
 
     // Remove newPreheader -> header
     fgRemoveRefPred(newPreheader->GetTargetEdge());
 
     // Update newPreheader to point to newHeader
-    newPreheader->SetTargetEdge(newPreheaderToNewHeader);
+    newPreheader->SetTargetEdge(newPreheaderToInLoopSucc);
 
     // Duplicate all the code now
     for (int i = 0; i < duplicatedBlocks.Height(); i++)
@@ -2124,6 +2175,59 @@ bool Compiler::optTryInvertWhileLoop(FlowGraphNaturalLoop* loop)
 
         newCond->CopyFlags(block, BBF_COPY_PROPAGATE);
     }
+
+    // If we have profile data for all blocks and we know that we are cloning the
+    // `bTest` block into `bNewCond` and thus changing the control flow from `block` so
+    // that it no longer goes directly to `bTest` anymore, we have to adjust
+    // various weights.
+    //
+    if (allProfileWeightsAreValid)
+    {
+        // Update the weight for the duplicated blocks. Normally, this reduces
+        // the weight of condBlock, except in odd cases of stress modes with
+        // inconsistent weights.
+        //
+        for (int i = 0; i < duplicatedBlocks.Height(); i++)
+        {
+            BasicBlock* block = duplicatedBlocks.Bottom(i);
+            JITDUMP("Reducing profile weight of " FMT_BB " from " FMT_WT " to " FMT_WT "\n", block->bbNum, weightCond,
+                    weightStayInLoopSucc);
+            block->inheritWeight(stayInLoopSucc);
+        }
+
+#ifdef DEBUG
+        // If we're checking profile data, see if profile for the two target blocks is consistent.
+        //
+        if ((activePhaseChecks & PhaseChecks::CHECK_PROFILE) == PhaseChecks::CHECK_PROFILE)
+        {
+            if (JitConfig.JitProfileChecks() > 0)
+            {
+                const ProfileChecks checks        = (ProfileChecks)JitConfig.JitProfileChecks();
+                const bool          nextProfileOk = fgDebugCheckIncomingProfileData(newCond->GetFalseTarget(), checks);
+                const bool          jumpProfileOk = fgDebugCheckIncomingProfileData(newCond->GetTrueTarget(), checks);
+
+                if (hasFlag(checks, ProfileChecks::RAISE_ASSERT))
+                {
+                    assert(nextProfileOk);
+                    assert(jumpProfileOk);
+                }
+            }
+        }
+#endif // DEBUG
+    }
+
+#ifdef DEBUG
+    if (verbose)
+    {
+        printf("\nDuplicated loop exit block at " FMT_BB " for loop " FMT_LP "\n", newCond->bbNum,
+            loop->GetIndex());
+        printf("Estimated code size expansion is %d\n", estDupCostSz);
+
+        fgDumpBlock(newCond);
+        fgDumpBlock(condBlock);
+    }
+#endif // DEBUG
+
 
     return true;
 }
