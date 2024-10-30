@@ -4899,7 +4899,6 @@ void Compiler::fgMoveColdBlocks()
 Compiler::ThreeOptLayout::ThreeOptLayout(Compiler* comp)
     : compiler(comp)
     , cutPoints(comp->getAllocator(CMK_FlowEdge), &ThreeOptLayout::EdgeCmp)
-    , usedCandidates(comp->getAllocator(CMK_FlowEdge))
     , ordinals(new(comp, CMK_Generic) unsigned[comp->fgBBNumMax + 1]{})
     , blockOrder(nullptr)
     , tempOrder(nullptr)
@@ -4920,6 +4919,14 @@ void Compiler::ThreeOptLayout::ConsiderEdge(FlowEdge* edge)
 {
     assert(edge != nullptr);
 
+    // Don't add an edge that we've already considered
+    // (For exceptionally branchy methods, we want to avoid exploding 'cutPoints' in size)
+    if (edge->visited())
+    {
+        return;
+    }
+
+    edge->markVisited();
     BasicBlock* const srcBlk = edge->getSourceBlock();
     BasicBlock* const dstBlk = edge->getDestinationBlock();
 
@@ -4929,7 +4936,9 @@ void Compiler::ThreeOptLayout::ConsiderEdge(FlowEdge* edge)
         return;
     }
 
-    // Don't waste time reordering within handler regions
+    // Don't waste time reordering within handler regions.
+    // Note that if a finally region is sufficiently hot,
+    // we should have cloned it into the main method body already.
     if (srcBlk->hasHndIndex() || dstBlk->hasHndIndex())
     {
         return;
@@ -4967,12 +4976,7 @@ void Compiler::ThreeOptLayout::ConsiderEdge(FlowEdge* edge)
         return;
     }
 
-    // Don't add an edge that we've already considered
-    // (For exceptionally branchy methods, we want to avoid exploding 'cutPoints' in size)
-    if (!usedCandidates.Set(edge, true, usedCandidates.SetKind::Overwrite))
-    {
-        cutPoints.Push(edge);
-    }
+    cutPoints.Push(edge);
 }
 
 //-----------------------------------------------------------------------------
@@ -5143,7 +5147,7 @@ bool Compiler::ThreeOptLayout::RunThreeOptPass(BasicBlock* startBlock, BasicBloc
     while (!cutPoints.Empty())
     {
         FlowEdge* const candidateEdge = cutPoints.Pop();
-        assert(usedCandidates[candidateEdge]);
+        assert(candidateEdge->visited());
 
         BasicBlock* const srcBlk = candidateEdge->getSourceBlock();
         BasicBlock* const dstBlk = candidateEdge->getDestinationBlock();

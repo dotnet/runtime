@@ -6260,7 +6260,6 @@ public:
 
         Compiler* compiler;
         PriorityQueue<FlowEdge*, decltype(&ThreeOptLayout::EdgeCmp)> cutPoints;
-        JitHashTable<FlowEdge*, JitPtrKeyFuncs<FlowEdge>, bool> usedCandidates;
         unsigned* ordinals;
         BasicBlock** blockOrder;
         BasicBlock** tempOrder;

@@ -594,6 +594,9 @@ private:
     // The count of duplicate "edges" (used for switch stmts or degenerate branches)
     unsigned m_dupCount;
 
+    // Convenience flag for phases that need to track edge visitation
+    bool m_visited;
+
     // True if likelihood has been set
     INDEBUG(bool m_likelihoodSet);
 
@@ -604,6 +607,7 @@ public:
         , m_destBlock(destBlock)
         , m_likelihood(0)
         , m_dupCount(0)
+        , m_visited(false)
 #ifdef DEBUG
         , m_likelihoodSet(false)
 #endif // DEBUG
@@ -687,6 +691,23 @@ public:
     {
         assert(m_dupCount >= 1);
         m_dupCount--;
+    }
+
+    bool visited() const
+    {
+        return m_visited;
+    }
+
+    void markVisited()
+    {
+        assert(!visited());
+        m_visited = true;
+    }
+
+    void markUnvisited()
+    {
+        assert(visited());
+        m_visited = false;
     }
 };
 
