@@ -406,17 +406,34 @@ namespace WebAssemblyInfo
             return ma;
         }
 
-        public void DumpBytes(int count)
+        public void DumpBytes(uint count, bool newline = false)
         {
             var pos = Reader.BaseStream.Position;
+            if (newline)
+                Console.WriteLine();
+
             Console.WriteLine("bytes");
 
-            for (int i = 0; i < count; i++)
+            byte[] last = new byte[16];
+
+            for (uint i = 0; i < count; i++)
             {
-                var b = Reader.ReadByte();
-                Console.Write($" {b:x}");
-                if (b >= 0x20 && b < 0x7f)
-                    Console.Write($" '{(char)b}'");
+                var idx = i % 16;
+                last[idx] = Reader.ReadByte();
+                Console.Write($" {last[idx],2:x}");
+
+                if (idx == 15 || i == count - 1) {
+                    if (i == count -1)
+                        for (var j = i % 16; j < 15; j++)
+                            Console.Write("   ");
+
+                    Console.Write(" |");
+
+                    foreach (var b in last)
+                        Console.Write(b >= 0x20 && b < 0x7f ? (char)b : '.');
+
+                    Console.WriteLine("|");
+                }
             }
 
             Console.WriteLine();
@@ -1108,9 +1125,14 @@ namespace WebAssemblyInfo
             if (Context.Verbose)
                 Console.Write($" name: {name}");
 
+            var remainingSize = size - (UInt32)(Reader.BaseStream.Position - start);
+
+            if (Context.Verbose2)
+                DumpBytes(remainingSize, true);
+
             if (name == "name")
             {
-                ReadCustomNameSection(size - (UInt32)(Reader.BaseStream.Position - start));
+                ReadCustomNameSection(remainingSize);
             }
         }
 
