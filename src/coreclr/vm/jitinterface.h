@@ -1047,7 +1047,7 @@ OBJECTHANDLE ConstructStringLiteral(CORINFO_MODULE_HANDLE scopeHnd, mdToken meta
 
 FCDECL2(Object*, JIT_Box_MP_FastPortable, CORINFO_CLASS_HANDLE type, void* data);
 FCDECL2(Object*, JIT_Box, CORINFO_CLASS_HANDLE type, void* data);
-FCDECL0(VOID, JIT_PollGC);
+// FCDECL0(VOID, JIT_PollGC);
 
 FCDECL1(TADDR, JIT_VolatileReadAsByref, TADDR* addressOfTADDR);
 

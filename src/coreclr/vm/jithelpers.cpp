@@ -2616,29 +2616,10 @@ HRESULT EEToProfInterfaceImpl::SetEnterLeaveFunctionHooksForJit(FunctionEnter3 *
 
 /*************************************************************/
 // Slow helper to tailcall from the fast one
-extern "C" void QCALLTYPE PollGC_Native();
+extern "C" void QCALLTYPE PollGC_Native()
 {
     // Empty function to p/invoke to in order to allow the GC to suspend on transition
 }
-
-HCIMPL0(VOID, JIT_PollGC)
-{
-    FCALL_CONTRACT;
-
-    // As long as we can have GCPOLL_CALL polls, it would not hurt to check the trap flag.
-    if (!g_TrapReturningThreads)
-        return;
-
-    // Does someone want this thread stopped?
-    if (!GetThread()->CatchAtSafePoint())
-        return;
-
-    // Tailcall to the slow helper
-    ENDFORBIDGC();
-    HCCALL0(JIT_PollGC_Framed);
-}
-HCIMPLEND
-
 
 /*************************************************************/
 // This helper is similar to JIT_RareDisableHelper, but has more operations
