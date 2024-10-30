@@ -131,6 +131,12 @@ namespace WebAssemblyInfo
             return (min, max);
         }
 
+        void ReadTableType(ref TableType table)
+        {
+            table.RefType = (ReferenceType)Reader.ReadByte();
+            (table.Min, table.Max) = ReadLimits();
+        }
+
         TableType[]? tables;
         void ReadTableSection()
         {
@@ -145,8 +151,7 @@ namespace WebAssemblyInfo
             tables = new TableType[count];
             for (uint i = 0; i < count; i++)
             {
-                tables[i].RefType = (ReferenceType)Reader.ReadByte();
-                (tables[i].Min, tables[i].Max) = ReadLimits();
+                ReadTableType(ref tables[i]);
 
                 if (Context.Verbose2)
                     Console.WriteLine($"  table: {i} reftype: {tables[i].RefType} limits: {tables[i].Min}, {tables[i].Max}");
@@ -269,6 +274,12 @@ namespace WebAssemblyInfo
             }
         }
 
+        void ReadGlobal(ref Global global)
+        {
+            ReadValueType(ref global.Type);
+            global.Mutability = (Mutability)Reader.ReadByte();
+        }
+
         Global[]? globals;
         void ReadGlobalSection()
         {
@@ -286,13 +297,10 @@ namespace WebAssemblyInfo
                 if (Context.Verbose2)
                     Console.Write($"  global idx: {i}");
 
-                ReadValueType(ref globals[i].Type);
-                if (Context.Verbose2)
-                    Console.Write($" type: {globals[i].Type}");
+                ReadGlobal(ref globals[i]);
 
-                globals[i].Mutability = (Mutability)Reader.ReadByte();
                 if (Context.Verbose2)
-                    Console.Write($" mutability: {globals[i].Mutability.ToString().ToLower()}");
+                    Console.Write($" type: {globals[i]}");
 
                 (globals[i].Expression, _) = ReadBlock();
 
@@ -1285,10 +1293,20 @@ namespace WebAssemblyInfo
                 imports[i].Name = ReadString();
                 imports[i].Desc = (ImportDesc)Reader.ReadByte();
 
-                if (imports[i].Desc == ImportDesc.MemIdx) {
-                    (imports[i].Min, imports[i].Max) = ReadLimits();
-                } else
-                    imports[i].Idx = ReadU32();
+                switch(imports[i].Desc) {
+                    case ImportDesc.TypeIdx:
+                        imports[i].Idx = ReadU32();
+                        break;
+                    case ImportDesc.MemType:
+                        (imports[i].Min, imports[i].Max) = ReadLimits();
+                        break;
+                    case ImportDesc.GlobalType:
+                        ReadGlobal(ref imports[i].GlobalType);
+                        break;
+                    case ImportDesc.TableType:
+                        ReadTableType(ref imports[i].TableType);
+                        break;
+                }
 
                 if (imports[i].Desc == ImportDesc.TypeIdx)
                     functionImportsCount++;
@@ -1701,7 +1719,7 @@ namespace WebAssemblyInfo
                 {
                     var id = sections[i].id;
                     var sectionName = (id == SectionId.Custom && customSectionOffset < customSectionNames.Count) ? $" name: {customSectionNames[customSectionOffset++]}" : "";
-                    Console.WriteLine($"    id: {id,-8}{sectionName,-22} size: {sections[i].size,12:N0}");
+                    Console.WriteLine($"    id: {id,-12}{sectionName,-22} size: {sections[i].size,12:N0}");
                 }
             }
 

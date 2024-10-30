@@ -60,7 +60,6 @@ namespace WebAssemblyInfo
                     if (AssemblyFilter != null && !AssemblyFilter.Match(Path.GetFileName(path)).Success)
                         continue;
 
-                    //Console.WriteLine($"path {path}");
                     var ar = GetAssemblyReader(path);
                     ar.GetAllMethods();
                 }

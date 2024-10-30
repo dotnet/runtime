@@ -207,6 +207,11 @@ namespace WebAssemblyInfo
         public ReferenceType RefType;
         public UInt32 Min;
         public UInt32 Max;
+
+        override public string ToString()
+        {
+            return $"table {RefType} {Min} {Max}";
+        }
     }
 
     public struct Element
@@ -283,6 +288,13 @@ namespace WebAssemblyInfo
         public ValueType Type;
         public Mutability Mutability;
         public Instruction[] Expression;
+
+        override public string ToString()
+        {
+            var tail = Expression == null ? "" : $" {Expression}";
+
+            return $"global {Type} {(Mutability == Mutability.Const ? "const" : "var")}{tail}";
+        }
     }
 
     public struct Memory
@@ -428,9 +440,9 @@ namespace WebAssemblyInfo
     public enum ImportDesc : Byte
     {
         TypeIdx = 0,
-        TableIdx,
-        MemIdx,
-        GlobalIdx
+        TableType,
+        MemType,
+        GlobalType
     }
 
     public struct Import
@@ -441,10 +453,29 @@ namespace WebAssemblyInfo
         public UInt32 Min;
         public UInt32 Max;
         public ImportDesc Desc;
+        public Global GlobalType;
+        public TableType TableType;
 
         public override string ToString()
         {
-            return $"(import \"{Module}\" \"{Name}\" ({Desc} {Idx}))";
+            string tail = "";
+            switch(Desc)
+            {
+                case ImportDesc.TypeIdx:
+                    tail = $" typeidx: {Idx}";
+                    break;
+                case ImportDesc.TableType:
+                    tail = $" {TableType}";
+                    break;
+                case ImportDesc.MemType:
+                    tail = $" min: {Min} max: {Max}";
+                    break;
+                case ImportDesc.GlobalType:
+                    tail = $" {GlobalType}";
+                    break;
+            }
+
+            return $"(import \"{Module}\" \"{Name}\" ({Desc} {tail}))";
         }
     }
 
