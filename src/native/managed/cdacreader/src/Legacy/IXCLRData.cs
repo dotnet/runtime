@@ -311,6 +311,37 @@ internal unsafe partial interface IXCLRDataProcess2 : IXCLRDataProcess
 }
 
 [GeneratedComInterface]
+[Guid("E59D8D22-ADA7-49a2-89B5-A415AFCFC95F")]
+internal unsafe partial interface IXCLRDataStackWalk
+{
+    [PreserveSig]
+    int GetContext(
+        uint contextFlags,
+        uint contextBufSize,
+        uint* contextSize,
+        [Out, MarshalUsing(CountElementName = nameof(contextBufSize))] byte[] contextBuf);
+    [PreserveSig]
+    int SetContext(uint contextSize, [In, MarshalUsing(CountElementName = nameof(contextSize))] byte[] context);
+
+    [PreserveSig]
+    int Next();
+
+    [PreserveSig]
+    int GetStackSizeSkipped(ulong* stackSizeSkipped);
+
+    [PreserveSig]
+    int GetFrameType(/*CLRDataSimpleFrameType*/ uint* simpleType, /*CLRDataDetailedFrameType*/ uint* detailedType);
+    [PreserveSig]
+    int GetFrame(/*IXCLRDataFrame*/ void** frame);
+
+    [PreserveSig]
+    int Request(uint reqCode, uint inBufferSize, byte* inBuffer, uint outBufferSize, byte* outBuffer);
+
+    [PreserveSig]
+    int SetContext2(uint flags, uint contextSize, [In, MarshalUsing(CountElementName = nameof(contextSize))] byte[] context);
+}
+
+[GeneratedComInterface]
 [Guid("A5B0BEEA-EC62-4618-8012-A24FFC23934C")]
 internal unsafe partial interface IXCLRDataTask
 {
@@ -339,7 +370,7 @@ internal unsafe partial interface IXCLRDataTask
     int SetDesiredExecutionState(uint state);
 
     [PreserveSig]
-    int CreateStackWalk(uint flags, /*IXCLRDataStackWalk*/ void** stackWalk);
+    int CreateStackWalk(uint flags, out IXCLRDataStackWalk? stackWalk);
 
     [PreserveSig]
     int GetOSThreadID(uint* id);

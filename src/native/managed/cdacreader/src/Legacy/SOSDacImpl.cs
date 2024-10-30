@@ -465,37 +465,20 @@ internal sealed unsafe partial class SOSDacImpl
         => _legacyImpl is not null ? _legacyImpl.GetMethodTableSlot(mt, slot, value) : HResults.E_NOTIMPL;
     int ISOSDacInterface.GetMethodTableTransparencyData(ulong mt, void* data)
         => _legacyImpl is not null ? _legacyImpl.GetMethodTableTransparencyData(mt, data) : HResults.E_NOTIMPL;
-    int ISOSDacInterface.GetModule(ulong addr, /*IXCLRDataModule*/ void** mod)
+    int ISOSDacInterface.GetModule(ulong addr, out IXCLRDataModule? mod)
     {
-        ComWrappers cw = new StrategyBasedComWrappers();
+        mod = default;
 
-        int hr;
-        nint legacyModulePointer = 0;
-        object? legacyModule = null;
+        IXCLRDataModule? legacyModule = null;
         if (_legacyImpl is not null)
         {
-            hr = _legacyImpl.GetModule(addr, (void**)&legacyModulePointer);
+            int hr = _legacyImpl.GetModule(addr, out legacyModule);
             if (hr < 0)
                 return hr;
-
-            legacyModule = cw.GetOrCreateObjectForComInstance(legacyModulePointer, CreateObjectFlags.None);
         }
 
-        ClrDataModule module = new(addr, _target, legacyModulePointer, legacyModule);
-
-        // Lifetime is now managed via ClrDataModule
-        if (legacyModulePointer != 0)
-            Marshal.Release(legacyModulePointer);
-
-        nint iunknownPtr = cw.GetOrCreateComInterfaceForObject(module, CreateComInterfaceFlags.None);
-        hr = Marshal.QueryInterface(iunknownPtr, typeof(IXCLRDataModule).GUID, out nint modPtr);
-        if (iunknownPtr != 0)
-            Marshal.Release(iunknownPtr);
-
-        if (hr == HResults.S_OK)
-            *mod = (IXCLRDataModule*)modPtr;
-
-        return hr;
+        mod = new ClrDataModule(addr, _target, legacyModule);
+        return HResults.S_OK;
     }
 
     int ISOSDacInterface.GetModuleData(ulong moduleAddr, DacpModuleData* data)
