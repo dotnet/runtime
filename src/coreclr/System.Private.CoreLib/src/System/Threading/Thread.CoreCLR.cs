@@ -8,12 +8,6 @@ using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 using System.Runtime.Versioning;
 
-namespace System.Runtime
-{
-    internal sealed class BypassReadyToRunAttribute : Attribute
-    {
-    }
-}
 namespace System.Threading
 {
     internal readonly struct ThreadHandle

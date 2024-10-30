@@ -1049,8 +1049,6 @@ FCDECL2(Object*, JIT_Box_MP_FastPortable, CORINFO_CLASS_HANDLE type, void* data)
 FCDECL2(Object*, JIT_Box, CORINFO_CLASS_HANDLE type, void* data);
 // FCDECL0(VOID, JIT_PollGC);
 
-FCDECL1(TADDR, JIT_VolatileReadAsByref, TADDR* addressOfTADDR);
-
 BOOL ObjIsInstanceOf(Object *pObject, TypeHandle toTypeHnd, BOOL throwCastException = FALSE);
 BOOL ObjIsInstanceOfCore(Object* pObject, TypeHandle toTypeHnd, BOOL throwCastException = FALSE);
 

@@ -877,12 +877,6 @@ namespace System.Runtime.CompilerServices
         /// </summary>
         [MethodImpl(MethodImplOptions.InternalCall)]
         public extern MethodTable* GetMethodTableMatchingParentClass(MethodTable* parent);
-
-        /// <summary>
-        /// Given a statics pointer in the DynamicStaticsInfo, get the actual statics pointer.
-        /// </summary>
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern ref byte MaskStaticsPointer(ref byte staticsPtr);
     }
 
     [StructLayout(LayoutKind.Sequential)]
