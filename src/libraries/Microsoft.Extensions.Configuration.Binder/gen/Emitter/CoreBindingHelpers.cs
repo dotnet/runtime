@@ -901,6 +901,15 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         }
                     case ComplexTypeSpec complexType:
                         {
+                            // Early detection of types we cannot bind to and skip it.
+                            if (!_typeIndex.HasBindableMembers(complexType) &&
+                                !_typeIndex.GetEffectiveTypeSpec(complexType).IsValueType &&
+                                complexType is not CollectionSpec &&
+                                ((ObjectSpec)complexType).InstantiationStrategy == ObjectInstantiationStrategy.ParameterizedConstructor)
+                            {
+                                return false;
+                            }
+
                             string sectionValidationCall = $"{MethodsToGen_CoreBindingHelper.AsConfigWithChildren}({sectionParseExpr})";
                             string sectionIdentifier = GetIncrementalIdentifier(Identifier.section);
 
@@ -968,15 +977,31 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     initKind = InitializationKind.SimpleAssignment;
                 }
 
-                Action<string>? writeOnSuccess = !canSet
-                     ? null
-                     : bindedValueIdentifier =>
-                     {
-                         if (memberAccessExpr != bindedValueIdentifier)
-                         {
-                             _writer.WriteLine($"{memberAccessExpr} = {bindedValueIdentifier};");
-                         }
-                     };
+                Action<string, string?>? writeOnSuccess = !canSet
+                    ? null
+                    : (bindedValueIdentifier, tempIdentifierStoringExpr) =>
+                    {
+                        if (memberAccessExpr != bindedValueIdentifier)
+                        {
+                            _writer.WriteLine($"{memberAccessExpr} = {bindedValueIdentifier};");
+
+                            if (tempIdentifierStoringExpr is not null)
+                            {
+                                _writer.WriteLine($"{tempIdentifierStoringExpr}");
+                            }
+
+                            if (member.CanGet && _typeIndex.CanInstantiate(effectiveMemberType))
+                            {
+                                EmitEndBlock();
+                                EmitStartBlock("else");
+                                _writer.WriteLine($"{memberAccessExpr} = {memberAccessExpr};");
+                            }
+                        }
+                        else
+                        {
+                            _writer.WriteLine($"{tempIdentifierStoringExpr}");
+                        }
+                    };
 
                 EmitBindingLogic(
                     effectiveMemberType,
@@ -994,7 +1019,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 string configArgExpr,
                 InitializationKind initKind,
                 ValueDefaulting valueDefaulting,
-                Action<string>? writeOnSuccess = null)
+                Action<string, string?>? writeOnSuccess = null)
             {
                 if (!_typeIndex.HasBindableMembers(type))
                 {
@@ -1022,15 +1047,14 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 }
                 else if (initKind is InitializationKind.None && type.IsValueType)
                 {
-                    EmitBindingLogic(tempIdentifier, InitializationKind.Declaration);
-                    _writer.WriteLine($"{memberAccessExpr} = {tempIdentifier};");
+                    EmitBindingLogic(tempIdentifier, InitializationKind.Declaration, $"{memberAccessExpr} = {tempIdentifier};");
                 }
                 else
                 {
                     EmitBindingLogic(memberAccessExpr, initKind);
                 }
 
-                void EmitBindingLogic(string instanceToBindExpr, InitializationKind initKind)
+                void EmitBindingLogic(string instanceToBindExpr, InitializationKind initKind, string? tempIdentifierStoringExpr = null)
                 {
                     string bindCoreCall = $@"{nameof(MethodsToGen_CoreBindingHelper.BindCore)}({configArgExpr}, ref {instanceToBindExpr}, defaultValueIfNotFound: {FormatDefaultValueIfNotFound()}, {Identifier.binderOptions});";
 
@@ -1060,7 +1084,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     void EmitBindCoreCall()
                     {
                         _writer.WriteLine(bindCoreCall);
-                        writeOnSuccess?.Invoke(instanceToBindExpr);
+                        writeOnSuccess?.Invoke(instanceToBindExpr, tempIdentifierStoringExpr);
                     }
 
                     string FormatDefaultValueIfNotFound() => valueDefaulting == ValueDefaulting.CallSetter ? "true" : "false";
@@ -1094,7 +1118,9 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 }
                 else
                 {
-                    EmitStartBlock($"if ({sectionValueExpr} is string {nonNull_StringValue_Identifier})");
+                    // In case of calling parsing methods, check the section value first for null or empty before calling parse.
+                    string extraCondition = typeKind == StringParsableTypeKind.AssignFromSectionValue ? "" : $" && !string.IsNullOrEmpty({nonNull_StringValue_Identifier})";
+                    EmitStartBlock($"if ({sectionValueExpr} is string {nonNull_StringValue_Identifier}{extraCondition})");
                     writeOnSuccess?.Invoke(parsedValueExpr);
                     EmitEndBlock();
                 }
@@ -1230,15 +1256,25 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     return;
                 }
 
-                string castTypeDisplayString = TypeIndex.GetPopulationCastTypeDisplayString(type);
                 instanceIdentifier = Identifier.temp;
+                string castExpression = $"{TypeIndex.GetPopulationCastTypeDisplayString(type)} {instanceIdentifier}";
 
-                _writer.WriteLine($$"""
-                        if ({{Identifier.instance}} is not {{castTypeDisplayString}} {{instanceIdentifier}})
-                        {
-                            return;
-                        }
-                        """);
+                if (type.ShouldTryCast)
+                {
+                    _writer.WriteLine($$"""
+                            if ({{Identifier.instance}} is not {{castExpression}})
+                            {
+                                return;
+                            }
+                            """);
+                }
+                else
+                {
+                    _writer.WriteLine($$"""
+                            {{castExpression}} = {{Identifier.instance}};
+                            """);
+                }
+
                 _writer.WriteLine();
 
             }

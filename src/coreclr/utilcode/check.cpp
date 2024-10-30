@@ -11,6 +11,8 @@
 #include <ex.h>
 #include <contract.h>
 
+#include <minipal/debugger.h>
+
 #ifdef _DEBUG
 size_t CHECK::s_cLeakedBytes = 0;
 size_t CHECK::s_cNumFailures = 0;
@@ -189,7 +191,7 @@ void CHECK::Setup(LPCSTR message, LPCSTR condition, LPCSTR file, INT line)
 #endif
 
 #if defined(_DEBUG_IMPL)
-    if (IsInAssert() && IsDebuggerPresent())
+    if (IsInAssert() && minipal_is_native_debugger_present())
     {
         DebugBreak();
     }

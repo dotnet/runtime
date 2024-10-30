@@ -5,13 +5,13 @@
 #include "AsmOffsets.inc"
 
 // GC type flags
-GC_ALLOC_FINALIZE               = 1
+#define GC_ALLOC_FINALIZE               1
 
 //
 // Rename fields of nested structs
 //
-OFFSETOF__Thread__m_alloc_context__alloc_ptr        = OFFSETOF__Thread__m_rgbAllocContextBuffer + OFFSETOF__gc_alloc_context__alloc_ptr
-OFFSETOF__Thread__m_alloc_context__alloc_limit      = OFFSETOF__Thread__m_rgbAllocContextBuffer + OFFSETOF__gc_alloc_context__alloc_limit
+#define OFFSETOF__Thread__m_alloc_context__alloc_ptr        (OFFSETOF__Thread__m_eeAllocContext + OFFSETOF__ee_alloc_context__m_rgbAllocContextBuffer + OFFSETOF__gc_alloc_context__alloc_ptr)
+#define OFFSETOF__Thread__m_eeAllocContext__combined_limit  (OFFSETOF__Thread__m_eeAllocContext + OFFSETOF__ee_alloc_context__combined_limit)
 
 
 
@@ -44,7 +44,7 @@ OFFSETOF__Thread__m_alloc_context__alloc_limit      = OFFSETOF__Thread__m_rgbAll
         // Determine whether the end of the object would lie outside of the current allocation context. If so,
         // we abandon the attempt to allocate the object directly and fall back to the slow helper.
         add         x2, x2, x12
-        ldr         x13, [x1, #OFFSETOF__Thread__m_alloc_context__alloc_limit]
+        ldr         x13, [x1, #OFFSETOF__Thread__m_eeAllocContext__combined_limit]
         cmp         x2, x13
         bhi         LOCAL_LABEL(RhpNewFast_RarePath)
 
@@ -139,7 +139,7 @@ LOCAL_LABEL(NewOutOfMemory):
         // Determine whether the end of the object would lie outside of the current allocation context. If so,
         // we abandon the attempt to allocate the object directly and fall back to the slow helper.
         add         x2, x2, x12
-        ldr         x12, [x3, #OFFSETOF__Thread__m_alloc_context__alloc_limit]
+        ldr         x12, [x3, #OFFSETOF__Thread__m_eeAllocContext__combined_limit]
         cmp         x2, x12
         bhi         LOCAL_LABEL(RhNewString_Rare)
 
@@ -207,7 +207,7 @@ LOCAL_LABEL(RhNewString_Rare):
         // Determine whether the end of the object would lie outside of the current allocation context. If so,
         // we abandon the attempt to allocate the object directly and fall back to the slow helper.
         add         x2, x2, x12
-        ldr         x12, [x3, #OFFSETOF__Thread__m_alloc_context__alloc_limit]
+        ldr         x12, [x3, #OFFSETOF__Thread__m_eeAllocContext__combined_limit]
         cmp         x2, x12
         bhi         LOCAL_LABEL(RhpNewArray_Rare)
 

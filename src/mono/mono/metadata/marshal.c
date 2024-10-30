@@ -130,8 +130,9 @@ static GENERATE_TRY_GET_CLASS_WITH_CACHE (suppress_gc_transition_attribute, "Sys
 static GENERATE_TRY_GET_CLASS_WITH_CACHE (unmanaged_callers_only_attribute, "System.Runtime.InteropServices", "UnmanagedCallersOnlyAttribute")
 static GENERATE_TRY_GET_CLASS_WITH_CACHE (unmanaged_callconv_attribute, "System.Runtime.InteropServices", "UnmanagedCallConvAttribute")
 
-GENERATE_TRY_GET_CLASS_WITH_CACHE (swift_error, "System.Runtime.InteropServices.Swift", "SwiftError")
 GENERATE_TRY_GET_CLASS_WITH_CACHE (swift_self, "System.Runtime.InteropServices.Swift", "SwiftSelf")
+GENERATE_TRY_GET_CLASS_WITH_CACHE (swift_self_t, "System.Runtime.InteropServices.Swift", "SwiftSelf`1");
+GENERATE_TRY_GET_CLASS_WITH_CACHE (swift_error, "System.Runtime.InteropServices.Swift", "SwiftError")
 GENERATE_TRY_GET_CLASS_WITH_CACHE (swift_indirect_result, "System.Runtime.InteropServices.Swift", "SwiftIndirectResult")
 
 static gboolean type_is_blittable (MonoType *type);
@@ -3698,12 +3699,14 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, 
 
 		if (mono_method_signature_has_ext_callconv (csig, MONO_EXT_CALLCONV_SWIFTCALL)) {
 			MonoClass *swift_self = mono_class_try_get_swift_self_class ();
+			MonoClass *swift_self_t = mono_class_try_get_swift_self_t_class ();
 			MonoClass *swift_error = mono_class_try_get_swift_error_class ();
 			MonoClass *swift_indirect_result = mono_class_try_get_swift_indirect_result_class ();
-			MonoClass *swift_error_ptr = mono_class_create_ptr (m_class_get_this_arg (swift_error));
+			MonoClass *swift_error_ptr = swift_error ? mono_class_create_ptr (m_class_get_this_arg (swift_error)) : NULL;
 			int swift_error_args = 0, swift_self_args = 0, swift_indirect_result_args = 0;
 			for (int i = 0; i < method->signature->param_count; ++i) {
 				MonoClass *param_klass = mono_class_from_mono_type_internal (method->signature->params [i]);
+				MonoGenericClass *param_gklass = mono_class_try_get_generic_class (param_klass);
 				if (param_klass) {
 					if (param_klass == swift_error && !m_type_is_byref (method->signature->params [i])) {
 						swift_error_args = swift_self_args = 0;
@@ -3711,7 +3714,15 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, 
 						break;
 					} else if (param_klass == swift_error || param_klass == swift_error_ptr) {
 						swift_error_args++;
-					} else if (param_klass == swift_self) {
+					} else if (param_gklass && (param_gklass->container_class == swift_self_t) && (i != method->signature->param_count - 1)) {
+						swift_error_args = swift_self_args = 0;
+						mono_error_set_generic_error (emitted_error, "System", "InvalidProgramException", "SwiftSelf<T> must be the last argument in the signature.");
+						break;
+					} else if (param_gklass && (param_gklass->container_class == swift_self_t) && m_type_is_byref (method->signature->params [i])) {
+						swift_error_args = swift_self_args = 0;
+						mono_error_set_generic_error (emitted_error, "System", "InvalidProgramException", "Expected SwiftSelf<T> struct, got pointer/reference.");
+						break;
+					} else if (param_klass == swift_self || (param_gklass && (param_gklass->container_class == swift_self_t))) {
 						swift_self_args++;
 					} else if (param_klass == swift_indirect_result) {
 						swift_indirect_result_args++;
@@ -3952,7 +3963,7 @@ mono_marshal_get_native_func_wrapper_indirect (MonoClass *caller_class, MonoMeth
 	    return res;
 
 	char *name = mono_signature_to_name (sig, "wrapper_native_indirect");
-	MonoMethodBuilder *mb = mono_mb_new (caller_class, name, MONO_WRAPPER_MANAGED_TO_NATIVE);
+	MonoMethodBuilder *mb = mono_mb_new (get_wrapper_target_class (image), name, MONO_WRAPPER_MANAGED_TO_NATIVE);
 	mb->method->save_lmf = 1;
 
 	WrapperInfo *info = mono_wrapper_info_create (mb, WRAPPER_SUBTYPE_NATIVE_FUNC_INDIRECT);
@@ -6787,11 +6798,25 @@ static void record_struct_field_physical_lowering (guint8* lowered_bytes, MonoTy
 
 static void record_inlinearray_struct_physical_lowering (guint8* lowered_bytes, MonoClass* klass, guint32 offset) 
 {
-	// Get the first field and record its physical lowering N times
-	MonoClassField* field = mono_class_get_fields_internal (klass, NULL);
+	int align;
+	int type_offset = MONO_ABI_SIZEOF (MonoObject);
+	gpointer iter = NULL;
+	MonoClassField* field;
+
+	// Get the first instance field and record its physical lowering N times
+	while ((field = mono_class_get_fields_internal (klass, &iter))) {
+		if (field->type->attrs & FIELD_ATTRIBUTE_STATIC)
+			continue;
+		if (mono_field_is_deleted (field))
+			continue;
+		break;
+	}
+
+	g_assert (field);
+
 	MonoType* fieldType = field->type;
 	for (int i = 0; i < m_class_inlinearray_value(klass); ++i) {
-		record_struct_field_physical_lowering(lowered_bytes, fieldType, offset + m_field_get_offset(field) + i * mono_type_size(fieldType, NULL));
+		record_struct_field_physical_lowering(lowered_bytes, fieldType, offset + m_field_get_offset(field) + i * mono_type_size(fieldType, &align) - type_offset);
 	}
 }
 

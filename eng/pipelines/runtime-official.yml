@@ -41,12 +41,13 @@ extends:
       # Localization build
       #
 
-      - template: /eng/common/templates-official/job/onelocbuild.yml
-        parameters:
-          MirrorRepo: runtime
-          MirrorBranch: main
-          LclSource: lclFilesfromPackage
-          LclPackageId: 'LCL-JUNO-PROD-RUNTIME'
+      - ${{ if eq(variables['Build.SourceBranch'], 'refs/heads/release/9.0') }}:
+        - template: /eng/common/templates-official/job/onelocbuild.yml
+          parameters:
+            MirrorRepo: runtime
+            MirrorBranch: release/9.0
+            LclSource: lclFilesfromPackage
+            LclPackageId: 'LCL-JUNO-PROD-RUNTIME'
 
       #
       # Source Index Build
@@ -532,21 +533,6 @@ extends:
           # - windows_x86
           # - windows_arm64
           jobTemplates:
-          # LLVMJIT
-          - jobTemplate: /eng/pipelines/common/global-build-job.yml
-            buildConfig: release
-            runtimeFlavor: mono
-            jobParameters:
-              templatePath: 'templates-official'
-              buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
-                        /p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=false
-              nameSuffix: Mono_LLVMJIT
-              runtimeVariant: LLVMJIT
-              isOfficialBuild: ${{ variables.isOfficialBuild }}
-              postBuildSteps:
-                - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
-                  parameters:
-                    name: MonoRuntimePacks
           #LLVMAOT
           - jobTemplate: /eng/pipelines/common/global-build-job.yml
             buildConfig: release
@@ -589,7 +575,7 @@ extends:
         parameters:
           platforms:
           - name: Linux_x64
-            targetRid: linux-x64
+            targetRID: linux-x64
             container: SourceBuild_linux_x64
 
       #

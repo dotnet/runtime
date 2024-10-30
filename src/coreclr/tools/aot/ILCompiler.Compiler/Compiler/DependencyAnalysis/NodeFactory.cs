@@ -241,9 +241,9 @@ namespace ILCompiler.DependencyAnalysis
                 return new TypeThreadStaticIndexNode(type, null);
             });
 
-            _GCStaticEETypes = new NodeCache<GCPointerMap, GCStaticEETypeNode>((GCPointerMap gcMap) =>
+            _GCStaticEETypes = new NodeCache<(GCPointerMap, bool), GCStaticEETypeNode>(((GCPointerMap gcMap, bool requiresAlign8) key) =>
             {
-                return new GCStaticEETypeNode(Target, gcMap);
+                return new GCStaticEETypeNode(Target, key.gcMap, key.requiresAlign8);
             });
 
             _readOnlyDataBlobs = new NodeCache<ReadOnlyDataBlobKey, BlobNode>(key =>
@@ -319,6 +319,11 @@ namespace ILCompiler.DependencyAnalysis
             _genericMethodEntries = new NodeCache<MethodDesc, GenericMethodsHashtableEntryNode>(method =>
             {
                 return new GenericMethodsHashtableEntryNode(method);
+            });
+
+            _exactMethodEntries = new NodeCache<MethodDesc, ExactMethodInstantiationsEntryNode>(method =>
+            {
+                return new ExactMethodInstantiationsEntryNode(method);
             });
 
             _gvmTableEntries = new NodeCache<TypeDesc, TypeGVMEntriesNode>(type =>
@@ -473,7 +478,12 @@ namespace ILCompiler.DependencyAnalysis
 
             _genericCompositions = new NodeCache<Instantiation, GenericCompositionNode>((Instantiation details) =>
             {
-                return new GenericCompositionNode(details);
+                return new GenericCompositionNode(details, constructed: false);
+            });
+
+            _constructedGenericCompositions = new NodeCache<Instantiation, GenericCompositionNode>((Instantiation details) =>
+            {
+                return new GenericCompositionNode(details, constructed: true);
             });
 
             _genericVariances = new NodeCache<GenericVarianceDetails, GenericVarianceNode>((GenericVarianceDetails details) =>
@@ -800,11 +810,12 @@ namespace ILCompiler.DependencyAnalysis
             return _embeddedTrimmingDescriptors.GetOrAdd(module);
         }
 
-        private NodeCache<GCPointerMap, GCStaticEETypeNode> _GCStaticEETypes;
+        private NodeCache<(GCPointerMap, bool), GCStaticEETypeNode> _GCStaticEETypes;
 
-        public ISymbolNode GCStaticEEType(GCPointerMap gcMap)
+        public ISymbolNode GCStaticEEType(GCPointerMap gcMap, bool requiredAlign8)
         {
-            return _GCStaticEETypes.GetOrAdd(gcMap);
+            requiredAlign8 &= Target.SupportsAlign8;
+            return _GCStaticEETypes.GetOrAdd((gcMap, requiredAlign8));
         }
 
         private NodeCache<ReadOnlyDataBlobKey, BlobNode> _readOnlyDataBlobs;
@@ -840,6 +851,13 @@ namespace ILCompiler.DependencyAnalysis
         internal ISymbolNode GenericComposition(Instantiation details)
         {
             return _genericCompositions.GetOrAdd(details);
+        }
+
+        private NodeCache<Instantiation, GenericCompositionNode> _constructedGenericCompositions;
+
+        internal ISymbolNode ConstructedGenericComposition(Instantiation details)
+        {
+            return _constructedGenericCompositions.GetOrAdd(details);
         }
 
         private NodeCache<GenericVarianceDetails, GenericVarianceNode> _genericVariances;
@@ -1054,6 +1072,12 @@ namespace ILCompiler.DependencyAnalysis
         public GenericMethodsHashtableEntryNode GenericMethodsHashtableEntry(MethodDesc method)
         {
             return _genericMethodEntries.GetOrAdd(method);
+        }
+
+        private NodeCache<MethodDesc, ExactMethodInstantiationsEntryNode> _exactMethodEntries;
+        public ExactMethodInstantiationsEntryNode ExactMethodInstantiationsHashtableEntry(MethodDesc method)
+        {
+            return _exactMethodEntries.GetOrAdd(method);
         }
 
         private NodeCache<TypeDesc, TypeGVMEntriesNode> _gvmTableEntries;

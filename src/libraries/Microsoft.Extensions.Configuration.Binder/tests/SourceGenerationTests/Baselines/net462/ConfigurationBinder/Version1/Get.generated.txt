@@ -89,7 +89,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         {
             foreach (IConfigurationSection section in configuration.GetChildren())
             {
-                if (section.Value is string value)
+                if (section.Value is string value && !string.IsNullOrEmpty(value))
                 {
                     instance.Add(ParseInt(value, section.Path));
                 }
@@ -102,7 +102,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             foreach (IConfigurationSection section in configuration.GetChildren())
             {
-                if (section.Value is string value)
+                if (section.Value is string value && !string.IsNullOrEmpty(value))
                 {
                     temp2.Add(ParseInt(value, section.Path));
                 }
@@ -141,7 +141,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 }
             }
 
-            if (configuration["MyInt"] is string value4)
+            if (configuration["MyInt"] is string value4 && !string.IsNullOrEmpty(value4))
             {
                 instance.MyInt = ParseInt(value4, configuration.GetSection("MyInt").Path);
             }
@@ -157,6 +157,10 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 BindCore(section5, ref temp7, defaultValueIfNotFound: false, binderOptions);
                 instance.MyList = temp7;
             }
+            else
+            {
+                instance.MyList = instance.MyList;
+            }
 
             if (AsConfigWithChildren(configuration.GetSection("MyArray")) is IConfigurationSection section8)
             {
@@ -164,6 +168,10 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 temp10 ??= new int[0];
                 BindCore(section8, ref temp10, defaultValueIfNotFound: false, binderOptions);
                 instance.MyArray = temp10;
+            }
+            else
+            {
+                instance.MyArray = instance.MyArray;
             }
 
             if (AsConfigWithChildren(configuration.GetSection("MyDictionary")) is IConfigurationSection section11)
@@ -173,13 +181,17 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 BindCore(section11, ref temp13, defaultValueIfNotFound: false, binderOptions);
                 instance.MyDictionary = temp13;
             }
+            else
+            {
+                instance.MyDictionary = instance.MyDictionary;
+            }
         }
 
         public static void BindCore(IConfiguration configuration, ref global::Program.MyClass2 instance, bool defaultValueIfNotFound, BinderOptions? binderOptions)
         {
             ValidateConfigurationKeys(typeof(global::Program.MyClass2), s_configKeys_ProgramMyClass2, configuration, binderOptions);
 
-            if (configuration["MyInt"] is string value14)
+            if (configuration["MyInt"] is string value14 && !string.IsNullOrEmpty(value14))
             {
                 instance.MyInt = ParseInt(value14, configuration.GetSection("MyInt").Path);
             }

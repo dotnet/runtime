@@ -17,9 +17,10 @@ namespace Internal.Cryptography
 #endif
 
         [UnsupportedOSPlatformGuard("browser")]
+        [UnsupportedOSPlatformGuard("wasi")]
         internal static bool HasSymmetricEncryption { get; } =
 #if NET
-            !OperatingSystem.IsBrowser();
+            !OperatingSystem.IsBrowser() && !OperatingSystem.IsWasi();
 #else
             true;
 #endif
@@ -35,15 +36,17 @@ namespace Internal.Cryptography
 #if NET
         [UnsupportedOSPlatformGuard("android")]
         [UnsupportedOSPlatformGuard("browser")]
+        [UnsupportedOSPlatformGuard("wasi")]
         public static bool IsRC2Supported => !OperatingSystem.IsAndroid() && !OperatingSystem.IsBrowser();
 #else
         public static bool IsRC2Supported => true;
 #endif
 
         [UnsupportedOSPlatformGuard("browser")]
+        [UnsupportedOSPlatformGuard("wasi")]
         internal static bool HasMD5 { get; } =
 #if NET
-            !OperatingSystem.IsBrowser();
+            !OperatingSystem.IsBrowser() && !OperatingSystem.IsWasi();
 #else
             true;
 #endif

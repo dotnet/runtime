@@ -719,9 +719,9 @@ namespace System.Net.Http.Functional.Tests
                 Action<RecordedCounter> check2 = connectionNoLongerIdle;
                 Action<RecordedCounter> check3 = connectionIsActive;
 
-                if (UseVersion.Major > 1)
+                if (UseVersion.Major > 2)
                 {
-                    // With HTTP/2 and HTTP/3, the idle state change is emitted before RequestsQueueDuration.
+                    // With HTTP/3, the idle state change is emitted before RequestsQueueDuration.
                     check1 = connectionNoLongerIdle;
                     check2 = connectionIsActive;
                     check3 = requestsQueueDuration;
@@ -955,19 +955,20 @@ namespace System.Net.Http.Functional.Tests
             {
                 using HttpMessageInvoker client = CreateHttpMessageInvoker();
                 using InstrumentRecorder<double> recorder = SetupInstrumentRecorder<double>(InstrumentNames.RequestDuration);
-                using HttpRequestMessage request = new(HttpMethod.Get, uri) { Version = UseVersion };
+                using HttpRequestMessage request = new(HttpMethod.Post, uri) { Version = UseVersion };
+                request.Content = new StringContent("{}");
 
                 Exception ex = await Assert.ThrowsAnyAsync<Exception>(async () =>
                 {
-                    // Getting a cancellation is also good if we are unable to detect the peer shutdown.
-                    using CancellationTokenSource cts = new CancellationTokenSource(10_000);
+                    // To avoid unlimited blocking, lets bound it to 20 seconds.
+                    using CancellationTokenSource cts = new CancellationTokenSource(20_000);
                     using HttpResponseMessage response = await SendAsync(client, request, cts.Token);
                 });
                 cancelServerCts.Cancel();
                 Assert.True(ex is HttpRequestException or TaskCanceledException);
 
                 Measurement<double> m = Assert.Single(recorder.GetMeasurements());
-                VerifyRequestDuration(m, uri, acceptedErrorTypes: [typeof(TaskCanceledException).FullName, "response_ended"]);
+                VerifyRequestDuration(m, uri, acceptedErrorTypes: [typeof(TaskCanceledException).FullName, "response_ended"], method: "POST");
             }, async server =>
             {
                 await IgnoreExceptions(async () =>
@@ -1164,7 +1165,6 @@ namespace System.Net.Http.Functional.Tests
     }
 
     [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsQuicSupported))]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/103703", typeof(PlatformDetection), nameof(PlatformDetection.IsArmProcess))]
     public class HttpMetricsTest_Http30 : HttpMetricsTest
     {
         protected override Version UseVersion => HttpVersion.Version30;

@@ -300,15 +300,6 @@ inline BOOL MethodTable::IsValueType()
 }
 
 //==========================================================================================
-inline CorElementType MethodTable::GetArrayElementType()
-{
-    WRAPPER_NO_CONTRACT;
-
-    _ASSERTE (IsArray());
-    return dac_cast<PTR_ArrayClass>(GetClass())->GetArrayElementType();
-}
-
-//==========================================================================================
 inline DWORD MethodTable::GetRank()
 {
     LIMITED_METHOD_DAC_CONTRACT;
@@ -404,6 +395,7 @@ inline BOOL MethodTable::HasLayout()
 }
 
 //==========================================================================================
+#ifndef DACCESS_COMPILE
 inline MethodDesc* MethodTable::GetMethodDescForSlot(DWORD slot)
 {
     CONTRACTL
@@ -425,6 +417,7 @@ inline MethodDesc* MethodTable::GetMethodDescForSlot(DWORD slot)
 
     return MethodTable::GetMethodDescForSlotAddress(pCode);
 }
+#endif // DACCESS_COMPILE
 
 //==========================================================================================
 inline MethodDesc* MethodTable::GetMethodDescForSlot_NoThrow(DWORD slot)
@@ -441,7 +434,7 @@ inline MethodDesc* MethodTable::GetMethodDescForSlot_NoThrow(DWORD slot)
 
     if (pCode == (PCODE)NULL)
     {
-        // This code path should only be hit for methods which have not been overriden
+        // This code path should only be hit for methods which have not been overridden
         MethodTable *pMTToSearchForMethodDesc = this->GetCanonicalMethodTable();
         while (pMTToSearchForMethodDesc != NULL)
         {

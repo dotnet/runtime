@@ -56,7 +56,11 @@
 #include <llvm/IR/MDBuilder.h>
 
 #include <llvm/IR/InstrTypes.h> // CallBase
+#if LLVM_API_VERSION < 1900
 #include <llvm/Support/Host.h> // llvm::sys::getHostCPUFeatures
+#else
+#include <llvm/TargetParser/Host.h> // llvm::sys::getHostCPUFeatures
+#endif
 #include <llvm/Analysis/TargetTransformInfo.h> // Intrinsic::ID
 #include <llvm/IR/IntrinsicsX86.h>
 #include <llvm/IR/IntrinsicsAArch64.h>
@@ -480,6 +484,12 @@ void
 mono_llvm_add_func_attr (LLVMValueRef func, AttrKind kind)
 {
 	unwrap<Function> (func)->addFnAttr (convert_attr (kind));
+	if (kind == LLVM_ATTR_UW_TABLE)
+#if defined(TARGET_ARM64) && defined(TARGET_MACH)
+		unwrap<Function> (func)->setUWTableKind (UWTableKind::Sync);
+#else
+		unwrap<Function> (func)->setUWTableKind (UWTableKind::Async);
+#endif
 }
 
 void
@@ -639,19 +649,17 @@ int
 mono_llvm_check_cpu_features (const CpuFeatureAliasFlag *features, int length)
 {
 	int flags = 0;
-	llvm::StringMap<bool> HostFeatures;
-	if (llvm::sys::getHostCPUFeatures (HostFeatures)) {
-		for (int i=0; i<length; i++) {
-			CpuFeatureAliasFlag feature = features [i];
-			if (HostFeatures [feature.alias])
-				flags |= feature.flag;
-		}
-		/*
-		for (auto &F : HostFeatures)
-			if (F.second)
-				outs () << "X: " << F.first () << "\n";
-		*/
+	StringMap<bool> HostFeatures = llvm::sys::getHostCPUFeatures ();
+	for (int i=0; i<length; i++) {
+		CpuFeatureAliasFlag feature = features [i];
+		if (HostFeatures [feature.alias])
+			flags |= feature.flag;
 	}
+	/*
+	for (auto &F : HostFeatures)
+		if (F.second)
+			outs () << "X: " << F.first () << "\n";
+	*/
 	return flags;
 }
 

@@ -12,10 +12,7 @@
     .global RhpFpTrashValues
 #endif // TRASH_SAVED_ARGUMENT_REGISTERS
 
-// Padding to account for the odd number of saved integer registers
-#define ALIGNMENT_PADDING_SIZE (8)
-
-#define COUNT_ARG_REGISTERS (9)
+#define COUNT_ARG_REGISTERS (8)
 #define INTEGER_REGISTER_SIZE (8)
 #define ARGUMENT_REGISTERS_SIZE (COUNT_ARG_REGISTERS * INTEGER_REGISTER_SIZE)
 
@@ -32,7 +29,6 @@
 //
 // From CallerSP to ChildSP, the stack frame is composed of the following adjacent regions:
 //
-//      ALIGNMENT_PADDING_SIZE
 //      ARGUMENT_REGISTERS_SIZE
 //      RETURN_BLOCK_SIZE
 //      FLOAT_ARG_REGISTERS_SIZE
@@ -42,7 +38,7 @@
 
 #define DISTANCE_FROM_CHILDSP_TO_RETURN_BLOCK (PUSHED_FP_SIZE + PUSHED_RA_SIZE + FLOAT_ARG_REGISTERS_SIZE)
 
-#define STACK_SIZE (ALIGNMENT_PADDING_SIZE + ARGUMENT_REGISTERS_SIZE + RETURN_BLOCK_SIZE + FLOAT_ARG_REGISTERS_SIZE + PUSHED_RA_SIZE + PUSHED_FP_SIZE)
+#define STACK_SIZE (ARGUMENT_REGISTERS_SIZE + RETURN_BLOCK_SIZE + FLOAT_ARG_REGISTERS_SIZE + PUSHED_RA_SIZE + PUSHED_FP_SIZE)
 
 #define FLOAT_ARG_OFFSET (PUSHED_FP_SIZE + PUSHED_RA_SIZE)
 #define ARGUMENT_REGISTERS_OFFSET (FLOAT_ARG_OFFSET + FLOAT_ARG_REGISTERS_SIZE + RETURN_BLOCK_SIZE)
@@ -50,7 +46,7 @@
 //
 // RhpUniversalTransition
 //
-// At input to this function, a0-7/tp, f0-7 and the stack may contain any number of arguments.
+// At input to this function, a0-7, f0-7 and the stack may contain any number of arguments.
 //
 // In addition, there are 2 extra arguments passed in the intra-procedure-call scratch register:
 //  t7 will contain the managed function that is to be called by this transition function
@@ -63,16 +59,15 @@
 //
 // Frame layout is:
 //
-//  {StackPassedArgs}                           ChildSP+100     CallerSP+000
-//  {AlignmentPad (0x8 bytes)}                  ChildSP+0F8     CallerSP-008
-//  {IntArgRegs (a0-a7/tp) (0x48 bytes)}        ChildSP+0B0     CallerSP-050
-//  {ReturnBlock (0x20 bytes)}                  ChildSP+090     CallerSP-070
+//  {StackPassedArgs}                           ChildSP+0F0     CallerSP+000
+//  {IntArgRegs (a0-a7) (0x40 bytes)}           ChildSP+0B0     CallerSP-040
+//  {ReturnBlock (0x20 bytes)}                  ChildSP+090     CallerSP-060
 //   -- The base address of the Return block is the TransitionBlock pointer, the floating point args are
 //      in the neg space of the TransitionBlock pointer.  Note that the callee has knowledge of the exact
 //      layout of all pieces of the frame that lie at or above the pushed floating point registers.
-//  {FpArgRegs (f0-f7) (0x80 bytes)}            ChildSP+010     CallerSP-0F0
-//  {PushedRA}                                  ChildSP+008     CallerSP-0F8
-//  {PushedFP}                                  ChildSP+000     CallerSP-100
+//  {FpArgRegs (f0-f7) (0x80 bytes)}            ChildSP+010     CallerSP-0E0
+//  {PushedRA}                                  ChildSP+008     CallerSP-0E8
+//  {PushedFP}                                  ChildSP+000     CallerSP-0F0
 //
 // NOTE: If the frame layout ever changes, the C++ UniversalTransitionStackFrame structure
 // must be updated as well.
@@ -115,8 +110,6 @@
         st.d  $a5, $sp, ARGUMENT_REGISTERS_OFFSET + 0x28
         st.d  $a6, $sp, ARGUMENT_REGISTERS_OFFSET + 0x30
         st.d  $a7, $sp, ARGUMENT_REGISTERS_OFFSET + 0x38
-        st.d  $tp, $sp, ARGUMENT_REGISTERS_OFFSET + 0x40
-        st.d  $r0, $sp, ARGUMENT_REGISTERS_OFFSET + 0x48
 
 #ifdef TRASH_SAVED_ARGUMENT_REGISTERS
         PREPARE_EXTERNAL_VAR RhpFpTrashValues, $a1
@@ -172,7 +165,6 @@
         ld.d  $a5, $sp, ARGUMENT_REGISTERS_OFFSET + 0x28
         ld.d  $a6, $sp, ARGUMENT_REGISTERS_OFFSET + 0x30
         ld.d  $a7, $sp, ARGUMENT_REGISTERS_OFFSET + 0x38
-        ld.d  $tp, $sp, ARGUMENT_REGISTERS_OFFSET + 0x40
 
         // Restore FP and RA registers, and free the allocated stack block
         EPILOG_RESTORE_REG_PAIR_INDEXED  22, 1, STACK_SIZE

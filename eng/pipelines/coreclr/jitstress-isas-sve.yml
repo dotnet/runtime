@@ -1,0 +1,39 @@
+# This pipeline only runs on GitHub PRs, not on merges.
+trigger: none
+
+# Only run on specific changes to the JIT directory that are likely to affect Sve.
+pr:
+  branches:
+    include:
+    - main
+  paths:
+    include:
+    - src/coreclr/jit/codegenarmarch.cpp
+    - src/coreclr/jit/emitarm64sve.cpp
+    - src/coreclr/jit/emitfmtsarm64sve.h
+    - src/coreclr/jit/hwintrinsicarm64.cpp
+    - src/coreclr/jit/hwintrinsiccodegenarm64.cpp
+    - src/coreclr/jit/hwintrinsiclistarm64sve.h
+    - src/coreclr/jit/instrsarm64sve.h
+    - src/coreclr/jit/lowerarmarch.cpp
+    - src/coreclr/jit/lsraarmarch.cpp
+    - src/coreclr/jit/lsraarm64.cpp
+
+schedules:
+- cron: "30 19 * * 6"
+  displayName: Sat at 11:30 AM (UTC-8:00)
+  branches:
+    include:
+    - main
+  always: true
+
+variables:
+  - template: /eng/pipelines/common/variables.yml
+
+extends:
+  template:  /eng/pipelines/coreclr/templates/jit-outerloop-pipeline.yml
+  parameters:
+    platforms:
+    # just run on windows for now, because abi is universal for other platforms
+    - windows_x64
+    testGroup: jitstress-isas-sve

@@ -15,6 +15,11 @@ namespace System.Collections.Generic
         private T[] _items;
         private int _count;
 
+        public ArrayBuilder(int capacity)
+        {
+            _items = new T[capacity];
+        }
+
         public T[] ToArray()
         {
             if (_items == null)
@@ -22,6 +27,15 @@ namespace System.Collections.Generic
             if (_count != _items.Length)
                 Array.Resize(ref _items, _count);
             return _items;
+        }
+
+        public void CopyTo(T[] destination)
+        {
+            if (_items != null)
+            {
+                // Use Array.Copy instead of Span.CopyTo to handle covariant destination
+                Array.Copy(_items, destination, _count);
+            }
         }
 
         public void Add(T item)
@@ -32,7 +46,9 @@ namespace System.Collections.Generic
         }
 
 #if NET
-        public readonly Span<T> AsSpan(int start) => _items.AsSpan(start);
+        public readonly Span<T> AsSpan() => _items.AsSpan(0, _count);
+
+        public readonly Span<T> AsSpan(int start) => _items.AsSpan(start, _count - start);
 
         public Span<T> AppendSpan(int length)
         {

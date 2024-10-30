@@ -111,12 +111,7 @@ namespace System.Threading
         /// <returns>The initialized variable</returns>
         private static T EnsureInitializedCore<T>([NotNull] ref T? target, Func<T> valueFactory) where T : class
         {
-            T value = valueFactory();
-            if (value == null)
-            {
-                throw new InvalidOperationException(SR.Lazy_StaticInit_InvalidOperation);
-            }
-
+            T value = valueFactory() ?? throw new InvalidOperationException(SR.Lazy_StaticInit_InvalidOperation);
             Interlocked.CompareExchange(ref target, value, null!);
             Debug.Assert(target != null);
             return target;

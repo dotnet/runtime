@@ -109,8 +109,8 @@
           Condition="'$(UsePortableRuntimePack)' == 'true'">
 
     <ItemGroup>
-      <_RuntimePackFiles Condition="%(_AppleUsedRuntimePackFiles.Extension) == '.dll' and %(_AppleUsedRuntimePackFiles.FileName) != 'System.Private.CoreLib'" Include="@(_AppleUsedRuntimePackFiles->'$(MicrosoftNetCoreAppRuntimePackLibDir)%(FileName)%(Extension)')" />
-      <_RuntimePackFiles Condition="%(_AppleUsedRuntimePackFiles.Extension) != '.dll' or %(_AppleUsedRuntimePackFiles.FileName) == 'System.Private.CoreLib'" Include="@(_AppleUsedRuntimePackFiles->'$(MicrosoftNetCoreAppRuntimePackNativeDir)%(FileName)%(Extension)')" />
+      <_RuntimePackFiles Condition="(%(_AppleUsedRuntimePackFiles.Extension) == '.dll' or %(_AppleUsedRuntimePackFiles.Extension) == '.pdb') and %(_AppleUsedRuntimePackFiles.FileName) != 'System.Private.CoreLib'" Include="@(_AppleUsedRuntimePackFiles->'$(MicrosoftNetCoreAppRuntimePackLibDir)%(FileName)%(Extension)')" />
+      <_RuntimePackFiles Condition="(%(_AppleUsedRuntimePackFiles.Extension) != '.dll' and %(_AppleUsedRuntimePackFiles.Extension) != '.pdb') or %(_AppleUsedRuntimePackFiles.FileName) == 'System.Private.CoreLib'" Include="@(_AppleUsedRuntimePackFiles->'$(MicrosoftNetCoreAppRuntimePackNativeDir)%(FileName)%(Extension)')" />
     </ItemGroup>
 
     <Copy SourceFiles="@(_RuntimePackFiles)"

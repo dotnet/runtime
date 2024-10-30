@@ -14,13 +14,13 @@ terminology.
 | AOT | Ahead-of-time compiler. Converts the MSIL bytecode to native machine code for a specific target CPU architecture. |
 | BBT | Microsoft internal early version of C/C++ PGO. See https://www.microsoft.com/windows/cse/bit_projects.mspx. |
 | BOTR | Book Of The Runtime. |
-| BCL | Base Class Library. A set of `System.*` (and to a limited extent `Microsoft.*`) libraries that make up the lower layer of the .NET library stack. |
+| BCL | Base Class Library. A set of `System.*` (and to a limited extent `Microsoft.*`) libraries that make up the lower layer of the .NET library stack. See CoreFX. |
 | CIL | Common Intermediate Language. Equivalent to IL, also equivalent to [MSIL](https://learn.microsoft.com/dotnet/standard/managed-execution-process#compiling-to-msil). |
 | CLI | Command Line Interface, or Common Language Infastructure. |
 | CLR | [Common Language Runtime](https://learn.microsoft.com/dotnet/standard/clr). |
 | COMPlus | An early name for the .NET platform, back when it was envisioned as a successor to the COM platform (hence, "COM+"). Used in various places in the CLR infrastructure, most prominently as a common prefix for the names of internal configuration settings. Note that this is different from the product that eventually ended up being named [COM+](https://msdn.microsoft.com/library/windows/desktop/ms685978.aspx). |
 | COR | [Common Object Runtime](http://www.danielmoth.com/Blog/mscorlibdll.aspx). The name of .NET before it was named .NET. |
-| CoreFX | Core Framework. Original project name for open source and cross-platform version of [.NET runtime libraries](https://github.com/dotnet/runtime/tree/main/src/libraries) |
+| CoreFX | Core Framework. Original project name for open source and cross-platform version of [.NET runtime libraries](https://github.com/dotnet/runtime/tree/main/src/libraries). Where we want to distinguish the foundational .NET libraries - those in the dotnet/runtime repo - instead of CoreFX or BCL we call them the core libraries. |
 | DAC | Data Access Component. An abstraction layer over the internal structures in the runtime. |
 | EE | [Execution Engine](https://learn.microsoft.com/dotnet/standard/managed-execution-process#running_code). |
 | GC | [Garbage Collector](https://github.com/dotnet/runtime/blob/main/docs/design/coreclr/botr/garbage-collection.md). |
@@ -49,7 +49,7 @@ terminology.
 | SPCL | `System.Private.CoreLib` - the lowest managed assembly in the libraries stack that contains `System.Object`, `String`, etc. |
 | SuperPMI | JIT component test framework (super fast JIT testing - it mocks/replays EE in EE-JIT interface) - see [SuperPMI details](https://github.com/dotnet/runtime/blob/main/src/coreclr/tools/superpmi/readme.md). |
 | SVR | The CLR used to be built as two variants, with one called "mscorsvr.dll", to mean the "server" version. In particular, it contained the server GC implementation, which was intended for multi-threaded apps capable of taking advantage of multiple processors. In the .NET Framework 2 release, the two variants were merged into "mscorwks.dll". The WKS version was the default, however the SVR version remained available. |
-| TFM | [Target Framework Moniker](https://learn.microsoft.com/dotnet/standard/frameworks) such as `net6.0` or `netstandard2.0`. |
+| TFM | [Target Framework Moniker](https://learn.microsoft.com/dotnet/standard/frameworks) such as `net8.0` or `netstandard2.0`. |
 | TPA | Trusted Platform Assemblies used to be a special set of assemblies that comprised the platform assemblies, when it was originally designed. As of today, it is simply the set of assemblies known to constitute the application. |
 | URT | Universal Runtime. Ancient name for what ended up being .NET, is used in the WinError facility name FACILITY_URT. |
 | UTC | [Universal Tuple Compiler](https://blogs.msdn.microsoft.com/vcblog/2013/06/12/optimizing-c-code-overview/). The Microsoft C++ optimizer back-end that starts by converting the information from the FrontEnd into tuples – a binary stream of instructions. |
@@ -285,8 +285,8 @@ and enabling support for running WPF on .NET Core (Windows Only).
 ## Engineering system
 
 * **Helix**. It's a massively-parallel, general-purpose job processing and
-  result aggregation system running in the cloud. The work items that corefx
-  sends to Helix are [xunit][xunit] tests. Test results are shown through the
+  result aggregation system running in the cloud. The work items that we
+  send to Helix are [xunit][xunit] tests. Test results are shown through the
   [*Mission Control* reporting site][mc.dot.net]; to go to the test results in a
   PR from Azure DevOps, you can click on the *Send to Helix* step in the build,
   and the logs will have the URL.

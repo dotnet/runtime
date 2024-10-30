@@ -184,7 +184,11 @@ namespace System.Diagnostics.Metrics.Tests
                     // Listener is not enabled yet
                     Assert.Equal(0, instrumentsEncountered);
 
-                    listener.InstrumentPublished = (instruments, theListener) => instrumentsEncountered++;
+                    listener.InstrumentPublished = (theInstrument, theListener) =>
+                    {
+                        if (theInstrument.Meter.Name == meter.Name)
+                            instrumentsEncountered++;
+                    };
 
                     // Listener still not started yet
                     Assert.Equal(0, instrumentsEncountered);
@@ -891,7 +895,11 @@ namespace System.Diagnostics.Metrics.Tests
                 Gauge<int> gauge = meter7.CreateGauge<int>("Gauge");
 
                 using MeterListener listener = new MeterListener();
-                listener.InstrumentPublished = (theInstrument, theListener) => theListener.EnableMeasurementEvents(theInstrument, theInstrument);
+                listener.InstrumentPublished = (theInstrument, theListener) =>
+                {
+                    if (theInstrument.Meter.Name.StartsWith("MeterDisposalsTest", StringComparison.Ordinal))
+                        theListener.EnableMeasurementEvents(theInstrument, theInstrument);
+                };
 
                 int count = 0;
 
@@ -970,7 +978,11 @@ namespace System.Diagnostics.Metrics.Tests
 
                 int completedMeasurements = 0;
                 MeterListener listener = new MeterListener();
-                listener.InstrumentPublished = (theInstrument, theListener) => theListener.EnableMeasurementEvents(theInstrument, theInstrument);
+                listener.InstrumentPublished = (theInstrument, theListener) =>
+                {
+                    if (theInstrument.Meter.Name == meter.Name)
+                        theListener.EnableMeasurementEvents(theInstrument, theInstrument);
+                };
                 listener.MeasurementsCompleted = (theInstrument, state) => completedMeasurements++;
 
                 int count = 0;
@@ -1036,7 +1048,11 @@ namespace System.Diagnostics.Metrics.Tests
                 ObservableUpDownCounter<float> observableUpDownCounter = meter.CreateObservableUpDownCounter("ObservableUpDownCounter", () => new Measurement<float>(-5.7f, new KeyValuePair<string, object?>[] { new KeyValuePair<string, object?>("Key", "value")}));
 
                 MeterListener listener = new MeterListener();
-                listener.InstrumentPublished = (theInstrument, theListener) => theListener.EnableMeasurementEvents(theInstrument, theInstrument);
+                listener.InstrumentPublished = (theInstrument, theListener) =>
+                {
+                    if (theInstrument.Meter.Name == meter.Name)
+                        theListener.EnableMeasurementEvents(theInstrument, theInstrument);
+                };
 
                 int count = 0;
 
@@ -1178,7 +1194,11 @@ namespace System.Diagnostics.Metrics.Tests
                 MeterListener listener = new MeterListener();
 
                 string lastState = "1";
-                listener.InstrumentPublished = (theInstrument, theListener) => theListener.EnableMeasurementEvents(theInstrument, lastState);
+                listener.InstrumentPublished = (theInstrument, theListener) =>
+                {
+                    if (theInstrument.Meter.Name == meter.Name)
+                        theListener.EnableMeasurementEvents(theInstrument, lastState);
+                };
                 int completedCount = 0;
                 listener.MeasurementsCompleted = (theInstrument, state) => { Assert.Equal(lastState, state); completedCount++; };
                 listener.Start();

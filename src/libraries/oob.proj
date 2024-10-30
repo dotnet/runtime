@@ -18,13 +18,8 @@
 
   <ItemGroup Condition="'$(BuildTargetFramework)' != '$(NetCoreAppCurrent)' or '$(BuildTargetFramework)' == ''">
     <ProjectReference Include="oob-all.proj" SkipGetTargetFrameworkProperties="true" />
-  </ItemGroup>
-
-  <!-- Support building reference projects only. -->
-  <ItemGroup Condition="'$(RefOnly)' == 'true'">
-    <ProjectReference Remove="@(ProjectReference)" />
-    <ProjectReference Include="sfx-ref.proj" OutputItemType="SharedFrameworkAssembly" />
-    <ProjectReference Include="oob-ref.proj" />
+    <!-- Skip building all source generators when building from source as that would bring new prebuilts in. -->
+    <ProjectReference Include="oob-gen.proj" Condition="'$(DotNetBuildSourceOnly)' != 'true'" />
   </ItemGroup>
 
   <Target Name="GetTrimOOBAssembliesInputs"
@@ -45,7 +40,7 @@
 
   <Target Name="TrimOOBAssemblies"
           AfterTargets="Build"
-          Condition="'$(RefOnly)' != 'true' and '@(OOBAssembly)' != ''"
+          Condition="'@(OOBAssembly)' != ''"
           DependsOnTargets="GetTrimOOBAssembliesInputs;PrepareForAssembliesTrim"
           Inputs="$(ILLinkTasksAssembly);@(OOBAssemblyToTrim);@(OOBAssemblyReference);@(OOBLibrarySuppressionsXml)"
           Outputs="$(OOBAssembliesTrimMarkerFile)">

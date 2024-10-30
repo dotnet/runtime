@@ -16,6 +16,7 @@ using System.Xml;
 using Xunit;
 using Xunit.Abstractions;
 using Xunit.Sdk;
+using Microsoft.Build.Logging.StructuredLogger;
 
 #nullable enable
 
@@ -163,10 +164,10 @@ namespace Wasm.Build.Tests
             if (buildProjectOptions.Publish && buildProjectOptions.BuildOnlyAfterPublish)
                 commandLineArgs.Append("-p:WasmBuildOnlyAfterPublish=true");
 
-            var cmd = new DotNetCommand(s_buildEnv, _testOutput)
-                                    .WithWorkingDirectory(_projectDir!)
-                                    .WithEnvironmentVariable("NUGET_PACKAGES", _nugetPackagesDir)
-                                    .WithEnvironmentVariables(buildProjectOptions.ExtraBuildEnvironmentVariables);
+            using ToolCommand cmd = new DotNetCommand(s_buildEnv, _testOutput)
+                                        .WithWorkingDirectory(_projectDir!);
+            cmd.WithEnvironmentVariable("NUGET_PACKAGES", _nugetPackagesDir)
+                .WithEnvironmentVariables(buildProjectOptions.ExtraBuildEnvironmentVariables);
             if (UseWBTOverridePackTargets && s_buildEnv.IsWorkload)
                 cmd.WithEnvironmentVariable("WBTOverrideRuntimePack", "true");
 
@@ -176,8 +177,29 @@ namespace Wasm.Build.Tests
             else if (res.ExitCode == 0)
                 throw new XunitException($"Build should have failed, but it didn't. Process exited with exitCode : {res.ExitCode}");
 
+            // Ensure we got all output.
+            string[] successMessages = ["Build succeeded"];
+            string[] errorMessages = ["Build failed", "Build FAILED", "Restore failed", "Stopping the build"];
+            if ((res.ExitCode == 0 && successMessages.All(m => !res.Output.Contains(m))) || (res.ExitCode != 0 && errorMessages.All(m => !res.Output.Contains(m))))
+            {
+                _testOutput.WriteLine("Replacing dotnet process output with messages from binlog");
+
+                var outputBuilder = new StringBuilder();
+                var buildRoot = BinaryLog.ReadBuild(logFilePath);
+                buildRoot.VisitAllChildren<TextNode>(m =>
+                {
+                    if (m is Message || m is Error || m is Warning)
+                        outputBuilder.AppendLine(m.Title);
+                });
+
+                res = new CommandResult(res.StartInfo, res.ExitCode, outputBuilder.ToString());
+            }
+
             return (res, logFilePath);
         }
+
+        protected bool IsDotnetWasmFromRuntimePack(BuildArgs buildArgs) =>
+            !(buildArgs.AOT || (buildArgs.Config == "Release" && IsUsingWorkloads));
 
         protected string RunAndTestWasmApp(BuildArgs buildArgs,
                                            RunHost host,
@@ -271,6 +293,8 @@ namespace Wasm.Build.Tests
             args.Append($" --output-directory={testLogPath}");
             args.Append($" --expected-exit-code={expectedAppExitCode}");
             args.Append($" {extraXHarnessArgs ?? string.Empty}");
+            args.Append(" --browser-arg=--disable-gpu");
+            args.Append(" --pageLoadStrategy=none");
 
             // `/.dockerenv` - is to check if this is running in a codespace
             if (File.Exists("/.dockerenv"))
@@ -620,7 +644,6 @@ namespace Wasm.Build.Tests
         private static IHostRunner GetHostRunnerFromRunHost(RunHost host) => host switch
         {
             RunHost.V8 => new V8HostRunner(),
-            RunHost.NodeJS => new NodeJSHostRunner(),
             _ => new BrowserHostRunner(),
         };
     }
@@ -628,8 +651,9 @@ namespace Wasm.Build.Tests
     public record BuildArgs(string ProjectName,
                             string Config,
                             bool AOT,
-                            string ProjectFileContents,
-                            string? ExtraBuildArgs);
+                            string Id,
+                            string? ExtraBuildArgs,
+                            string? ProjectFileContents=null);
     public record BuildProduct(string ProjectDir, string LogFile, bool Result, string BuildOutput);
 
     public enum NativeFilesType { FromRuntimePack, Relinked, AOT };

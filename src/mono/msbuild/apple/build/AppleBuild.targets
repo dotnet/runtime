@@ -75,8 +75,12 @@
       <_CommonLinkerArgs Include="-lc++" />
       <_CommonLinkerArgs Include="-liconv" />
       <_CommonLinkerArgs Include="-licucore" />
+      <_CommonLinkerArgs Include="-L/usr/lib/swift" />
+      <_CommonLinkerArgs Include="-lswiftCore" />
+      <_CommonLinkerArgs Include="-lswiftFoundation" />
       <_CommonLinkerArgs Include="-framework Foundation" />
       <_CommonLinkerArgs Include="-framework Security" />
+      <_CommonLinkerArgs Include="-framework CryptoKit" />
       <_CommonLinkerArgs Include="-framework UIKit" />
     </ItemGroup>
   </Target>

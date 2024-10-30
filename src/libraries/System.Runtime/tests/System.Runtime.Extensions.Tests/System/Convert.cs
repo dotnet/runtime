@@ -33,6 +33,12 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void ToBase64CharArray_NonEmptyInput_ZeroLength_Test()
+        {
+            Assert.Equal(0, Convert.ToBase64CharArray(new byte[1], 0, 0, new char[0], 0, Base64FormattingOptions.None));
+        }
+
+        [Fact]
         public static void ToBase64StringTest()
         {
             byte[] barray = new byte[] { 1, 2, 3 };
@@ -75,6 +81,12 @@ namespace System.Tests
                 Assert.Equal(original.Length, bytesWritten);
                 AssertExtensions.SequenceEqual(original, actualBytes);
             }
+        }
+
+        [Fact]
+        public static void FromBase64CharArray_NonEmptyInputZeroLength_ReturnsEmptyArray()
+        {
+            Assert.Same(Array.Empty<byte>(), Convert.FromBase64CharArray(new char[42], 0, 0));
         }
 
         [Fact]

@@ -9,7 +9,7 @@
     <IsTrimmable>false</IsTrimmable>
     <EnableAOTAnalyzer>false</EnableAOTAnalyzer>
     <NoWarn>$(NoWarn);CA1852</NoWarn>
-    <!-- Public API not fully documented. -->
+    <!-- Public API in this assembly is only for tests and don't need to be documented. -->
     <NoWarn>$(NoWarn);1591</NoWarn>
     <IsPackable>true</IsPackable>
     <PackageDescription>Suite of xUnit.net tests to check for container compatibility with Microsoft.Extensions.DependencyInjection.</PackageDescription>

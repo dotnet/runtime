@@ -22,6 +22,8 @@
              Link="CommonTest\System\Security\Cryptography\CryptoUtils.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\PlatformSupport.cs"
              Link="CommonTest\System\Security\Cryptography\PlatformSupport.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\CngKeyWrapper.cs"
+             Link="TestCommon\System\Security\Cryptography\CngKeyWrapper.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\RSA\EncryptDecrypt.cs"
              Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\RSA\EncryptDecrypt.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\RSA\ImportExport.cs"

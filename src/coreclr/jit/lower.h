@@ -157,7 +157,7 @@ private:
     GenTreeCC* LowerNodeCC(GenTree* node, GenCondition condition);
     void       LowerJmpMethod(GenTree* jmp);
     void       LowerRet(GenTreeOp* ret);
-    void       LowerStoreLocCommon(GenTreeLclVarCommon* lclVar);
+    GenTree*   LowerStoreLocCommon(GenTreeLclVarCommon* lclVar);
     void       LowerRetStruct(GenTreeUnOp* ret);
     void       LowerRetSingleRegStructLclVar(GenTreeUnOp* ret);
     void       LowerCallStruct(GenTreeCall* call);
@@ -183,6 +183,10 @@ private:
     GenTree* LowerVirtualStubCall(GenTreeCall* call);
     void     LowerArgsForCall(GenTreeCall* call);
     void     ReplaceArgWithPutArgOrBitcast(GenTree** ppChild, GenTree* newNode);
+#if defined(TARGET_X86) && defined(FEATURE_IJW)
+    void LowerSpecialCopyArgs(GenTreeCall* call);
+    void InsertSpecialCopyArg(GenTreePutArgStk* putArgStk, CORINFO_CLASS_HANDLE argType, unsigned lclNum);
+#endif // defined(TARGET_X86) && defined(FEATURE_IJW)
     GenTree* NewPutArg(GenTreeCall* call, GenTree* arg, CallArg* callArg, var_types type);
     void     LowerArg(GenTreeCall* call, CallArg* callArg, bool late);
 #if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
@@ -353,6 +357,9 @@ private:
     GenTree* LowerIndir(GenTreeIndir* ind);
     bool     OptimizeForLdpStp(GenTreeIndir* ind);
     bool     TryMakeIndirsAdjacent(GenTreeIndir* prevIndir, GenTreeIndir* indir);
+    bool     IsStoreToLoadForwardingCandidateInLoop(GenTreeIndir* prevIndir, GenTreeIndir* indir);
+    bool     TryMoveAddSubRMWAfterIndir(GenTreeLclVarCommon* store);
+    bool     TryMakeIndirAndStoreAdjacent(GenTreeIndir* prevIndir, GenTreeLclVarCommon* store);
     void     MarkTree(GenTree* root);
     void     UnmarkTree(GenTree* root);
     GenTree* LowerStoreIndir(GenTreeStoreInd* node);
@@ -401,11 +408,11 @@ private:
     bool LowerRMWMemOp(GenTreeIndir* storeInd);
 #endif
 
-    void WidenSIMD12IfNecessary(GenTreeLclVarCommon* node);
-    bool CheckMultiRegLclVar(GenTreeLclVar* lclNode, int registerCount);
-    void LowerStoreLoc(GenTreeLclVarCommon* tree);
-    void LowerRotate(GenTree* tree);
-    void LowerShift(GenTreeOp* shift);
+    void     WidenSIMD12IfNecessary(GenTreeLclVarCommon* node);
+    bool     CheckMultiRegLclVar(GenTreeLclVar* lclNode, int registerCount);
+    GenTree* LowerStoreLoc(GenTreeLclVarCommon* tree);
+    void     LowerRotate(GenTree* tree);
+    void     LowerShift(GenTreeOp* shift);
 #ifdef FEATURE_HW_INTRINSICS
     GenTree* LowerHWIntrinsic(GenTreeHWIntrinsic* node);
     void     LowerHWIntrinsicCC(GenTreeHWIntrinsic* node, NamedIntrinsic newIntrinsicId, GenCondition condition);
@@ -429,6 +436,7 @@ private:
     void LowerHWIntrinsicFusedMultiplyAddScalar(GenTreeHWIntrinsic* node);
     void LowerModPow2(GenTree* node);
     bool TryLowerAddForPossibleContainment(GenTreeOp* node, GenTree** next);
+    void StoreFFRValue(GenTreeHWIntrinsic* node);
 #endif // !TARGET_XARCH && !TARGET_ARM64
     GenTree* InsertNewSimdCreateScalarUnsafeNode(var_types   type,
                                                  GenTree*    op1,
@@ -629,6 +637,7 @@ private:
         }
     };
     ArrayStack<SavedIndir> m_blockIndirs;
+    bool                   m_ffrTrashed;
 #endif
 };
 

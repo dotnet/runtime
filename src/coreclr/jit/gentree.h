@@ -467,6 +467,7 @@ enum GenTreeFlags : unsigned int
     GTF_TLS_GET_ADDR            = 0x01000000, // GT_CALL -- call is tls_get_addr
 
     GTF_MEMORYBARRIER_LOAD      = 0x40000000, // GT_MEMORYBARRIER -- Load barrier
+    GTF_MEMORYBARRIER_STORE     = 0x80000000, // GT_MEMORYBARRIER -- Store barrier
 
     GTF_FLD_TLS                 = 0x80000000, // GT_FIELD_ADDR -- field address is a Windows x86 TLS reference
     GTF_FLD_DEREFERENCED        = 0x40000000, // GT_FIELD_ADDR -- used to preserve previous behavior
@@ -488,7 +489,7 @@ enum GenTreeFlags : unsigned int
     GTF_IND_ALLOW_NON_ATOMIC    = 0x00100000, // GT_IND -- this memory access does not need to be atomic
 
     GTF_IND_COPYABLE_FLAGS = GTF_IND_VOLATILE | GTF_IND_NONFAULTING | GTF_IND_UNALIGNED | GTF_IND_INITCLASS,
-    GTF_IND_FLAGS = GTF_IND_COPYABLE_FLAGS | GTF_IND_NONNULL | GTF_IND_TGT_NOT_HEAP | GTF_IND_TGT_HEAP | GTF_IND_INVARIANT,
+    GTF_IND_FLAGS = GTF_IND_COPYABLE_FLAGS | GTF_IND_NONNULL | GTF_IND_TGT_NOT_HEAP | GTF_IND_TGT_HEAP | GTF_IND_INVARIANT | GTF_IND_ALLOW_NON_ATOMIC,
 
     GTF_ADDRMODE_NO_CSE         = 0x80000000, // GT_ADD/GT_MUL/GT_LSH -- Do not CSE this node only, forms complex
                                               //                         addressing mode
@@ -513,18 +514,18 @@ enum GenTreeFlags : unsigned int
     GTF_ICON_FIELD_HDL          = 0x04000000, // GT_CNS_INT -- constant is a field handle
     GTF_ICON_STATIC_HDL         = 0x05000000, // GT_CNS_INT -- constant is a handle to static data
     GTF_ICON_STR_HDL            = 0x06000000, // GT_CNS_INT -- constant is a pinned handle pointing to a string object
-    GTF_ICON_OBJ_HDL            = 0x12000000, // GT_CNS_INT -- constant is an object handle (e.g. frozen string or Type object)
-    GTF_ICON_CONST_PTR          = 0x07000000, // GT_CNS_INT -- constant is a pointer to immutable data, (e.g. IAT_PPVALUE)
-    GTF_ICON_GLOBAL_PTR         = 0x08000000, // GT_CNS_INT -- constant is a pointer to mutable data (e.g. from the VM state)
-    GTF_ICON_VARG_HDL           = 0x09000000, // GT_CNS_INT -- constant is a var arg cookie handle
-    GTF_ICON_PINVKI_HDL         = 0x0A000000, // GT_CNS_INT -- constant is a pinvoke calli handle
-    GTF_ICON_TOKEN_HDL          = 0x0B000000, // GT_CNS_INT -- constant is a token handle (other than class, method or field)
-    GTF_ICON_TLS_HDL            = 0x0C000000, // GT_CNS_INT -- constant is a TLS ref with offset
-    GTF_ICON_FTN_ADDR           = 0x0D000000, // GT_CNS_INT -- constant is a function address
-    GTF_ICON_CIDMID_HDL         = 0x0E000000, // GT_CNS_INT -- constant is a class ID or a module ID
-    GTF_ICON_BBC_PTR            = 0x0F000000, // GT_CNS_INT -- constant is a basic block count pointer
-    GTF_ICON_STATIC_BOX_PTR     = 0x10000000, // GT_CNS_INT -- constant is an address of the box for a STATIC_IN_HEAP field
-    GTF_ICON_FIELD_SEQ          = 0x11000000, // <--------> -- constant is a FieldSeq* (used only as VNHandle)
+    GTF_ICON_OBJ_HDL            = 0x07000000, // GT_CNS_INT -- constant is an object handle (e.g. frozen string or Type object)
+    GTF_ICON_CONST_PTR          = 0x08000000, // GT_CNS_INT -- constant is a pointer to immutable data, (e.g. IAT_PPVALUE)
+    GTF_ICON_GLOBAL_PTR         = 0x09000000, // GT_CNS_INT -- constant is a pointer to mutable data (e.g. from the VM state)
+    GTF_ICON_VARG_HDL           = 0x0A000000, // GT_CNS_INT -- constant is a var arg cookie handle
+    GTF_ICON_PINVKI_HDL         = 0x0B000000, // GT_CNS_INT -- constant is a pinvoke calli handle
+    GTF_ICON_TOKEN_HDL          = 0x0C000000, // GT_CNS_INT -- constant is a token handle (other than class, method or field)
+    GTF_ICON_TLS_HDL            = 0x0D000000, // GT_CNS_INT -- constant is a TLS ref with offset
+    GTF_ICON_FTN_ADDR           = 0x0E000000, // GT_CNS_INT -- constant is a function address
+    GTF_ICON_CIDMID_HDL         = 0x0F000000, // GT_CNS_INT -- constant is a class ID or a module ID
+    GTF_ICON_BBC_PTR            = 0x10000000, // GT_CNS_INT -- constant is a basic block count pointer
+    GTF_ICON_STATIC_BOX_PTR     = 0x11000000, // GT_CNS_INT -- constant is an address of the box for a STATIC_IN_HEAP field
+    GTF_ICON_FIELD_SEQ          = 0x12000000, // <--------> -- constant is a FieldSeq* (used only as VNHandle)
     GTF_ICON_STATIC_ADDR_PTR    = 0x13000000, // GT_CNS_INT -- constant is a pointer to a static base address
     GTF_ICON_SECREL_OFFSET      = 0x14000000, // GT_CNS_INT -- constant is an offset in a certain section.
     GTF_ICON_TLSGD_OFFSET       = 0x15000000, // GT_CNS_INT -- constant is an argument to tls_get_addr.
@@ -546,6 +547,8 @@ enum GenTreeFlags : unsigned int
     GTF_MDARRLEN_NONFAULTING    = 0x20000000, // GT_MDARR_LENGTH -- An MD array length operation that cannot fault. Same as GT_IND_NONFAULTING.
 
     GTF_MDARRLOWERBOUND_NONFAULTING = 0x20000000, // GT_MDARR_LOWER_BOUND -- An MD array lower bound operation that cannot fault. Same as GT_IND_NONFAULTING.
+
+    GTF_ALLOCOBJ_EMPTY_STATIC = 0x80000000, // GT_ALLOCOBJ -- allocation site is part of an empty static pattern
 
 #ifdef FEATURE_HW_INTRINSICS
     GTF_HW_EM_OP                  = 0x10000000, // GT_HWINTRINSIC -- node is used as an operand to an embedded mask
@@ -2129,7 +2132,7 @@ public:
 
     void ClearUnsigned()
     {
-        assert(OperIs(GT_ADD, GT_SUB, GT_CAST) || OperIsMul());
+        assert(OperIs(GT_ADD, GT_SUB, GT_CAST, GT_LE, GT_LT, GT_GT, GT_GE) || OperIsMul());
         gtFlags &= ~GTF_UNSIGNED;
     }
 
@@ -4309,6 +4312,13 @@ struct ReturnTypeDesc
 private:
     var_types m_regType[MAX_RET_REG_COUNT];
 
+#if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
+    // Structs according to hardware floating-point calling convention are passed as two logical fields, each in
+    // separate register, disregarding struct layout such as packing, custom alignment, padding with empty structs, etc.
+    // We need size (can be derived from m_regType) & offset of each field for memory load/stores
+    unsigned m_fieldOffset[MAX_RET_REG_COUNT];
+#endif
+
 #ifdef DEBUG
     bool m_inited;
 #endif
@@ -4340,6 +4350,9 @@ public:
         for (unsigned i = 0; i < MAX_RET_REG_COUNT; ++i)
         {
             m_regType[i] = TYP_UNKNOWN;
+#if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
+            m_fieldOffset[i] = 0;
+#endif
         }
 #ifdef DEBUG
         m_inited = false;
@@ -4385,8 +4398,11 @@ public:
         for (unsigned i = regCount + 1; i < MAX_RET_REG_COUNT; ++i)
         {
             assert(m_regType[i] == TYP_UNKNOWN);
-        }
+#if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
+            assert(m_fieldOffset[i] == 0);
 #endif
+        }
+#endif // DEBUG
 
         return regCount;
     }
@@ -4434,6 +4450,25 @@ public:
 
         return result;
     }
+
+    unsigned GetSingleReturnFieldOffset() const
+    {
+        assert(!IsMultiRegRetType());
+        assert(m_regType[0] != TYP_UNKNOWN);
+#if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
+        return m_fieldOffset[0];
+#else
+        return 0;
+#endif
+    }
+
+#if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
+    unsigned GetReturnFieldOffset(unsigned index) const
+    {
+        assert(m_regType[index] != TYP_UNKNOWN);
+        return m_fieldOffset[index];
+    }
+#endif
 
     // Get i'th ABI return register
     regNumber GetABIReturnReg(unsigned idx, CorInfoCallConvExtension callConv) const;
@@ -4542,9 +4577,6 @@ struct CallArgABIInformation
         : NumRegs(0)
         , ByteOffset(0)
         , ByteSize(0)
-#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-        , StructFloatFieldType()
-#endif
         , ArgType(TYP_UNDEF)
         , PassedByRef(false)
 #if FEATURE_ARG_SPLIT
@@ -4571,18 +4603,6 @@ public:
     unsigned NumRegs;
     unsigned ByteOffset;
     unsigned ByteSize;
-#if defined(UNIX_AMD64_ABI)
-    // Unix amd64 will split floating point types and integer types in structs
-    // between floating point and general purpose registers. Keep track of that
-    // information so we do not need to recompute it later.
-    SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR StructDesc;
-#endif // UNIX_AMD64_ABI
-#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-    // For LoongArch64's ABI, the struct which has float field(s) and no more than two fields
-    // may be passed by float register(s).
-    // e.g  `struct {int a; float b;}` passed by an integer register and a float register.
-    var_types StructFloatFieldType[2];
-#endif
     // The type used to pass this argument. This is generally the original
     // argument type, but when a struct is passed as a scalar type, this is
     // that type. Note that if a struct is passed by reference, this will still
@@ -4823,6 +4843,11 @@ public:
     // After lowering, this is a PUTARG_* node.
     GenTree* GetNode()
     {
+        return NodeRef();
+    }
+
+    GenTree*& NodeRef()
+    {
         return m_lateNode == nullptr ? m_earlyNode : m_lateNode;
     }
 
@@ -4858,10 +4883,11 @@ class CallArgs
     // made for this call.
     unsigned m_padStkAlign;
 #endif
-    bool m_hasThisPointer           : 1;
-    bool m_hasRetBuffer             : 1;
-    bool m_isVarArgs                : 1;
-    bool m_abiInformationDetermined : 1;
+    bool m_hasThisPointer              : 1;
+    bool m_hasRetBuffer                : 1;
+    bool m_isVarArgs                   : 1;
+    bool m_abiInformationDetermined    : 1;
+    bool m_newAbiInformationDetermined : 1;
     // True if we have one or more register arguments.
     bool m_hasRegArgs : 1;
     // True if we have one or more stack arguments.
@@ -4919,8 +4945,10 @@ public:
         PushFront(comp, arg);
     }
 
-    void ResetFinalArgsAndABIInfo();
     void AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call);
+    void ResetFinalArgsAndABIInfo();
+
+    void DetermineNewABIInfo(Compiler* comp, GenTreeCall* call);
 
     void ArgsComplete(Compiler* comp, GenTreeCall* call);
     void EvalArgsToTemps(Compiler* comp, GenTreeCall* call);
@@ -4936,7 +4964,15 @@ public:
     void SetIsVarArgs() { m_isVarArgs = true; }
     void ClearIsVarArgs() { m_isVarArgs = false; }
     bool IsAbiInformationDetermined() const { return m_abiInformationDetermined; }
-    bool AreArgsComplete() const { return m_argsComplete; }
+    bool IsNewAbiInformationDetermined() const { return m_newAbiInformationDetermined; }
+
+    // TODO-Remove: Workaround for bad codegen in MSVC versions < 19.41, see
+    // https://github.com/dotnet/runtime/pull/104370#issuecomment-2222910359
+#ifdef _MSC_VER
+    __declspec(noinline)
+#endif
+        bool AreArgsComplete() const { return m_argsComplete; }
+
     bool HasRegArgs() const { return m_hasRegArgs; }
     bool HasStackArgs() const { return m_hasStackArgs; }
     bool NeedsTemps() const { return m_needsTemps; }
@@ -5339,8 +5375,6 @@ struct GenTreeCall final : public GenTree
         return (gtCallMoreFlags & GTF_CALL_M_RETBUFFARG) != 0;
     }
 
-    bool TreatAsShouldHaveRetBufArg() const;
-
     //-----------------------------------------------------------------------------------------
     // HasMultiRegRetVal: whether the call node returns its value in multiple return registers.
     //
@@ -5364,7 +5398,7 @@ struct GenTreeCall final : public GenTree
         }
 #endif
 
-        if (!varTypeIsStruct(gtType) || TreatAsShouldHaveRetBufArg())
+        if (!varTypeIsStruct(gtType) || ShouldHaveRetBufArg())
         {
             return false;
         }
@@ -6645,6 +6679,7 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
 
     static NamedIntrinsic GetHWIntrinsicIdForUnOp(
         Compiler* comp, genTreeOps oper, GenTree* op1, var_types simdBaseType, unsigned simdSize, bool isScalar);
+
     static NamedIntrinsic GetHWIntrinsicIdForBinOp(Compiler*  comp,
                                                    genTreeOps oper,
                                                    GenTree*   op1,
@@ -6652,14 +6687,20 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
                                                    var_types  simdBaseType,
                                                    unsigned   simdSize,
                                                    bool       isScalar);
+
     static NamedIntrinsic GetHWIntrinsicIdForCmpOp(Compiler*  comp,
                                                    genTreeOps oper,
+                                                   var_types  type,
                                                    GenTree*   op1,
                                                    GenTree*   op2,
                                                    var_types  simdBaseType,
                                                    unsigned   simdSize,
                                                    bool       isScalar);
-    static genTreeOps     GetOperForHWIntrinsicId(NamedIntrinsic id, var_types simdBaseType, bool* isScalar);
+
+    static var_types GetLookupTypeForCmpOp(
+        Compiler* comp, genTreeOps oper, var_types type, var_types simdBaseType, unsigned simdSize);
+
+    static genTreeOps GetOperForHWIntrinsicId(NamedIntrinsic id, var_types simdBaseType, bool* isScalar);
 
     genTreeOps GetOperForHWIntrinsicId(bool* isScalar) const
     {
@@ -6667,6 +6708,20 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
     }
 
     bool ShouldConstantProp(GenTree* operand, GenTreeVecCon* vecCon);
+
+    void NormalizeJitBaseTypeToInt(NamedIntrinsic id, var_types simdBaseType)
+    {
+        assert(varTypeIsSmall(simdBaseType));
+
+        if (varTypeIsUnsigned(simdBaseType))
+        {
+            SetSimdBaseJitType(CORINFO_TYPE_UINT);
+        }
+        else
+        {
+            SetSimdBaseJitType(CORINFO_TYPE_UINT);
+        }
+    }
 
 private:
     void SetHWIntrinsicId(NamedIntrinsic intrinsicId);

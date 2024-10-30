@@ -36,7 +36,7 @@
 // R2R Version 9.2 adds MemZero and NativeMemSet helpers
 // R2R Version 9.3 adds BulkWriteBarrier helper
 //                 uses GCInfo v3, which makes safe points in partially interruptible code interruptible.
-// R2R Version 10.0 adds support for the statics being allocated on a per type basis instead of on a per module basis
+// R2R Version 10.0 adds support for the statics being allocated on a per type basis instead of on a per module basis, disable support for LogMethodEnter helper
 // R2R Version 10.1 adds Unbox_TypeTest helper
 
 struct READYTORUN_CORE_HEADER
@@ -346,7 +346,7 @@ enum ReadyToRunHelper
     READYTORUN_HELPER_GetString                 = 0x50,
 
     // Used by /Tuning for Profile optimizations
-    READYTORUN_HELPER_LogMethodEnter            = 0x51,
+    READYTORUN_HELPER_LogMethodEnter            = 0x51, // No longer supported as of READYTORUN_MAJOR_VERSION 10.0
 
     // Reflection helpers
     READYTORUN_HELPER_GetRuntimeTypeHandle      = 0x54,
@@ -408,9 +408,7 @@ enum ReadyToRunHelper
     READYTORUN_HELPER_DblRem                    = 0xE0,
     READYTORUN_HELPER_FltRem                    = 0xE1,
 
-    // These two helpers can be removed once MINIMUM_READYTORUN_MAJOR_VERSION is 10+
-    // alongside the CORINFO_HELP_FLTROUND/CORINFO_HELP_DBLROUND
-    // counterparts and all related code.
+    // Unused since READYTORUN_MAJOR_VERSION 10.0
     READYTORUN_HELPER_DblRound                  = 0xE2,
     READYTORUN_HELPER_FltRound                  = 0xE3,
 

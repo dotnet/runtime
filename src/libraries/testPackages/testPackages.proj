@@ -67,14 +67,6 @@
       <SupportedTestFramework Include="$(NetCoreAppMinimum)" />
       <SupportedTestFramework Include="$(NetCoreAppPrevious)" />
       <SupportedTestFramework Include="$(NetCoreAppCurrent)" />
-      <!--
-        We aren't shipping net6.0 and net7.0 assets any more.
-        TODO: Move this into the package testing targets.
-        Also, consider removing all Arcade-based configuration for supported testing frameworks and instead
-        configure it here with our target TFM properties.
-      -->
-      <SupportedTestFramework Remove="net6.0" />
-      <SupportedTestFramework Remove="net7.0" />
     </ItemGroup>
   
     <ItemGroup>
@@ -87,6 +79,7 @@
       <SupportedTestFramework Include="net471" />
       <SupportedTestFramework Include="net472" />
       <SupportedTestFramework Include="net48" />
+      <SupportedTestFramework Include="net481" />
     </ItemGroup>
 
     <GetCompatiblePackageTargetFrameworks PackagePaths="@(TestPackagesPath)"

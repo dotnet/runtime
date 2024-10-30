@@ -140,9 +140,13 @@ extern bool g_arm64_atomics_present;
 
 #define EMPTY_BASES_DECL
 
-
 #if !defined(_MSC_VER) || defined(SOURCE_FORMATTING)
-#define __assume(x) (void)0
+#if __has_builtin(__builtin_assume)
+#define __assume(condition) do { bool assume_cond = (condition); __builtin_assume(assume_cond); } while (0)
+#else
+#define __assume(condition) do { if (!(condition)) __builtin_unreachable(); } while (0)
+#endif // __has_builtin(__builtin_assume)
+
 #define __annotation(x)
 #endif //!MSC_VER
 
@@ -170,13 +174,6 @@ extern bool g_arm64_atomics_present;
 
 /******************* PAL-Specific Entrypoints *****************************/
 
-#define IsDebuggerPresent PAL_IsDebuggerPresent
-
-PALIMPORT
-BOOL
-PALAPI
-PAL_IsDebuggerPresent();
-
 #define DLL_PROCESS_ATTACH 1
 #define DLL_THREAD_ATTACH  2
 #define DLL_THREAD_DETACH  3
@@ -191,6 +188,7 @@ PAL_IsDebuggerPresent();
 #define PAL_INITIALIZE_ENSURE_STACK_SIZE            0x20
 #define PAL_INITIALIZE_REGISTER_SIGNALS             0x40
 #define PAL_INITIALIZE_REGISTER_ACTIVATION_SIGNAL   0x80
+#define PAL_INITIALIZE_FLUSH_PROCESS_WRITE_BUFFERS  0x100
 
 // PAL_Initialize() flags
 #define PAL_INITIALIZE                 (PAL_INITIALIZE_SYNC_THREAD | \
@@ -206,7 +204,8 @@ PAL_IsDebuggerPresent();
                                         PAL_INITIALIZE_DEBUGGER_EXCEPTIONS | \
                                         PAL_INITIALIZE_ENSURE_STACK_SIZE | \
                                         PAL_INITIALIZE_REGISTER_SIGNALS | \
-                                        PAL_INITIALIZE_REGISTER_ACTIVATION_SIGNAL)
+                                        PAL_INITIALIZE_REGISTER_ACTIVATION_SIGNAL  | \
+                                        PAL_INITIALIZE_FLUSH_PROCESS_WRITE_BUFFERS)
 
 typedef DWORD (PALAPI_NOEXPORT *PTHREAD_START_ROUTINE)(LPVOID lpThreadParameter);
 typedef PTHREAD_START_ROUTINE LPTHREAD_START_ROUTINE;
@@ -1844,11 +1843,11 @@ typedef struct _IMAGE_ARM_RUNTIME_FUNCTION_ENTRY {
 #define CONTEXT_EXCEPTION_REQUEST 0x40000000L
 #define CONTEXT_EXCEPTION_REPORTING 0x80000000L
 
-#define CONTEXT_XSTATE (CONTEXT_ARM64 | 0x40L)
+#define CONTEXT_ARM64_XSTATE (CONTEXT_ARM64 | 0x20L)
+#define CONTEXT_XSTATE CONTEXT_ARM64_XSTATE
 
-#define XSTATE_SVE (0)
-
-#define XSTATE_MASK_SVE (UI64(1) << (XSTATE_SVE))
+#define XSTATE_ARM64_SVE (2)
+#define XSTATE_MASK_ARM64_SVE (UI64(1) << (XSTATE_ARM64_SVE))
 
 //
 // This flag is set by the unwinder if it has unwound to a call

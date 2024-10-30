@@ -21,9 +21,6 @@
 
 static uint32_t crc_table[256];
 static z_word_t crc_big_table[256];
-
-static uint32_t crc_braid_table[W][256];
-static z_word_t crc_braid_big_table[W][256];
 static uint32_t x2n_table[32];
 
 #include "crc32_braid_comb_p.h"
@@ -80,9 +77,6 @@ static void make_crc_table(void) {
     x2n_table[0] = p;
     for (n = 1; n < 32; n++)
         x2n_table[n] = p = multmodp(p, p);
-
-    /* initialize the braiding tables -- needs x2n_table[] */
-    braid(crc_braid_table, crc_braid_big_table, N, W);
 }
 
 /*

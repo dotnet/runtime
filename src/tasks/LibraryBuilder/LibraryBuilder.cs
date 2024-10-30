@@ -337,6 +337,12 @@ public class LibraryBuilderTask : AppBuilderTask
         buildOptions.CompilerArguments.Add(IsSharedLibrary ? $"-shared -o {libraryName}" : $"-o {libraryName}");
         buildOptions.IncludePaths.Add(MonoRuntimeHeaders);
         buildOptions.LinkerArguments.Add($"--soname={libraryName}");
+
+        // Google requires all the native libraries to be aligned to 16 bytes (for 16k memory page size)
+        // This is required only for 64-bit binaries.
+        if (string.CompareOrdinal ("android-arm64", RuntimeIdentifier) == 0 || string.CompareOrdinal ("android-x64", RuntimeIdentifier) == 0) {
+            buildOptions.LinkerArguments.Add($"-z,max-page-size=16384");
+        }
         buildOptions.LinkerArguments.AddRange(linkerArgs);
         buildOptions.NativeLibraryPaths.AddRange(libs);
         buildOptions.Sources.AddRange(sources);

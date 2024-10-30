@@ -10,7 +10,7 @@ public record AssertTestMainJsAppBundleOptions(
     bool IsPublish,
     string TargetFramework,
     string BinFrameworkDir,
-    string? PredefinedIcudt,
+    string? CustomIcuFile,
     string ProjectName,
     string MainJS,
     GlobalizationMode GlobalizationMode = GlobalizationMode.Sharded,
@@ -23,16 +23,16 @@ public record AssertTestMainJsAppBundleOptions(
     bool AssertSymbolsFile = true,
     bool HasV8Script = false,
     bool IsBrowserProject = true)
-        : AssertBundleOptionsBase(
+        : AssertWasmSdkBundleOptions(
                Config: Config,
                IsPublish: IsPublish,
                TargetFramework: TargetFramework,
                BinFrameworkDir: BinFrameworkDir,
-               PredefinedIcudt: PredefinedIcudt,
+               CustomIcuFile: CustomIcuFile,
                GlobalizationMode: GlobalizationMode,
                ExpectedFileType: ExpectedFileType,
                RuntimeType: RuntimeType,
-               BootJsonFileName: BootJsonFileName,
+               BootConfigFileName: BootJsonFileName,
                ExpectFingerprintOnDotnetJs: ExpectFingerprintOnDotnetJs,
                ExpectSymbolsFile: ExpectSymbolsFile,
                AssertIcuAssets: AssertIcuAssets,

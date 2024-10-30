@@ -175,28 +175,15 @@ namespace System.Numerics.Tensors
                     {
                         float* xPtr = px;
 
-                        // We need to the ensure the underlying data can be aligned and only align
-                        // it if it can. It is possible we have an unaligned ref, in which case we
-                        // can never achieve the required SIMD alignment.
+                        // Unlike many other vectorization algorithms, we cannot align for aggregation
+                        // because that changes how results compound together and can cause a significant
+                        // difference in the output. This also means we're processing the full data from beg
+                        // so account for that to ensure we don't double process and include them in the
+                        // aggregate twice.
 
-                        bool canAlign = ((nuint)(xPtr) % sizeof(float)) == 0;
-
-                        if (canAlign)
-                        {
-                            // Compute by how many elements we're misaligned and adjust the pointers accordingly
-                            //
-                            // Noting that we are only actually aligning dPtr. This is because unaligned stores
-                            // are more expensive than unaligned loads and aligning both is significantly more
-                            // complex.
-
-                            misalignment = ((uint)(sizeof(Vector<float>)) - ((nuint)(xPtr) % (uint)(sizeof(Vector<float>)))) / sizeof(float);
-
-                            xPtr += misalignment;
-
-                            Debug.Assert(((nuint)(xPtr) % (uint)(sizeof(Vector<float>))) == 0);
-
-                            remainder -= misalignment;
-                        }
+                        misalignment = (uint)Vector<float>.Count;
+                        xPtr += misalignment;
+                        remainder -= misalignment;
 
                         Vector<float> vector1;
                         Vector<float> vector2;
@@ -480,29 +467,18 @@ namespace System.Numerics.Tensors
                         float* xPtr = px;
                         float* yPtr = py;
 
-                        // We need to the ensure the underlying data can be aligned and only align
-                        // it if it can. It is possible we have an unaligned ref, in which case we
-                        // can never achieve the required SIMD alignment.
+                        // Unlike many other vectorization algorithms, we cannot align for aggregation
+                        // because that changes how results compound together and can cause a significant
+                        // difference in the output. This also means we're processing the full data from beg
+                        // so account for that to ensure we don't double process and include them in the
+                        // aggregate twice.
 
-                        bool canAlign = ((nuint)(xPtr) % sizeof(float)) == 0;
+                        misalignment = (uint)Vector<float>.Count;
 
-                        if (canAlign)
-                        {
-                            // Compute by how many elements we're misaligned and adjust the pointers accordingly
-                            //
-                            // Noting that we are only actually aligning dPtr. This is because unaligned stores
-                            // are more expensive than unaligned loads and aligning both is significantly more
-                            // complex.
+                        xPtr += misalignment;
+                        yPtr += misalignment;
 
-                            misalignment = ((uint)(sizeof(Vector<float>)) - ((nuint)(xPtr) % (uint)(sizeof(Vector<float>)))) / sizeof(float);
-
-                            xPtr += misalignment;
-                            yPtr += misalignment;
-
-                            Debug.Assert(((nuint)(xPtr) % (uint)(sizeof(Vector<float>))) == 0);
-
-                            remainder -= misalignment;
-                        }
+                        remainder -= misalignment;
 
                         Vector<float> vector1;
                         Vector<float> vector2;

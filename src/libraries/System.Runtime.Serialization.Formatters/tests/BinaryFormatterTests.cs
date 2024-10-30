@@ -67,7 +67,6 @@ namespace System.Runtime.Serialization.Formatters.Tests
 
         [Theory]
         [SkipOnCoreClr("Takes too long on Checked", ~RuntimeConfiguration.Release)]
-        [ActiveIssue("https://github.com/mono/mono/issues/15115", TestRuntimes.Mono)]
         [MemberData(nameof(SerializableObjects_MemberData))]
         public void ValidateAgainstBlobs(object obj, TypeSerializableValue[] blobs)
             => ValidateAndRoundtrip(obj, blobs, false);
@@ -536,6 +535,22 @@ namespace System.Runtime.Serialization.Formatters.Tests
             BinaryFormatterHelpers.Clone(Array.CreateInstance(typeof(uint[]), new[] { 5 }, new[] { 1 }));
         }
 
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Unpatched versions of .NET Framework would throw.")]
+        public void AssignUniqueIdToValueType()
+        {
+            Tuple<IComparable, object> tuple = new Tuple<IComparable, object>(42, new byte[] { 1, 2, 3, 4 });
+            BinaryFormatter formatter = new BinaryFormatter();
+            using (MemoryStream stream = new MemoryStream())
+            {
+                formatter.Serialize(stream, tuple);
+                stream.Position = 0;
+                Tuple<IComparable, object> deserialized = (Tuple<IComparable, object>)formatter.Deserialize(stream);
+                Assert.Equal(tuple.Item1, deserialized.Item1);
+                Assert.Equal(tuple.Item2, deserialized.Item2);
+            }
+        }
+
         private static void ValidateEqualityComparer(object obj)
         {
             Type objType = obj.GetType();
@@ -658,7 +673,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
             byte[] data = Convert.FromBase64String(base64Blob);
             base64Blob = Encoding.UTF8.GetString(data);
 
-            return Regex.Replace(base64Blob, @"Version=\d.\d.\d.\d.", "Version=0.0.0.0", RegexOptions.Multiline)
+            return Regex.Replace(base64Blob, @"Version=\d+\.\d+\.\d+\.\d+.", "Version=0.0.0.0", RegexOptions.Multiline)
                 // Ignore the old Test key and Open public keys.
                 .Replace("PublicKeyToken=cc7b13ffcd2ddd51", "PublicKeyToken=null")
                 .Replace("PublicKeyToken=9d77cc7ad39b68eb", "PublicKeyToken=null")

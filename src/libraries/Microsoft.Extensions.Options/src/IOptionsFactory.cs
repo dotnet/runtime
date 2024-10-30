@@ -7,7 +7,7 @@ using System.Diagnostics.CodeAnalysis;
 namespace Microsoft.Extensions.Options
 {
     /// <summary>
-    /// Used to create <typeparamref name="TOptions"/> instances.
+    /// Creates <typeparamref name="TOptions"/> instances.
     /// </summary>
     /// <typeparam name="TOptions">The type of options being requested.</typeparam>
     public interface IOptionsFactory<[DynamicallyAccessedMembers(Options.DynamicallyAccessedMembers)] TOptions>

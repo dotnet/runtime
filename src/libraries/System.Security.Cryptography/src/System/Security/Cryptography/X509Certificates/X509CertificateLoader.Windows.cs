@@ -281,7 +281,8 @@ namespace System.Security.Cryptography.X509Certificates
         {
             Debug.Assert((keyStorageFlags & KeyStorageFlagsAll) == keyStorageFlags);
 
-            Interop.Crypt32.PfxCertStoreFlags pfxCertStoreFlags = 0;
+            Interop.Crypt32.PfxCertStoreFlags pfxCertStoreFlags = Interop.Crypt32.PfxCertStoreFlags.PKCS12_PREFER_CNG_KSP;
+
             if ((keyStorageFlags & X509KeyStorageFlags.UserKeySet) == X509KeyStorageFlags.UserKeySet)
                 pfxCertStoreFlags |= Interop.Crypt32.PfxCertStoreFlags.CRYPT_USER_KEYSET;
             else if ((keyStorageFlags & X509KeyStorageFlags.MachineKeySet) == X509KeyStorageFlags.MachineKeySet)
@@ -297,7 +298,10 @@ namespace System.Security.Cryptography.X509Certificates
             // difficult to do SHA-2 RSA signatures with, simplifies the story for UWP, and reduces the
             // complexity of pointer interpretation.
             if ((keyStorageFlags & X509KeyStorageFlags.EphemeralKeySet) == X509KeyStorageFlags.EphemeralKeySet)
+            {
+                pfxCertStoreFlags &= ~Interop.Crypt32.PfxCertStoreFlags.PKCS12_PREFER_CNG_KSP;
                 pfxCertStoreFlags |= Interop.Crypt32.PfxCertStoreFlags.PKCS12_NO_PERSIST_KEY | Interop.Crypt32.PfxCertStoreFlags.PKCS12_ALWAYS_CNG_KSP;
+            }
 
             // In .NET Framework loading a PFX then adding the key to the Windows Certificate Store would
             // enable a native application compiled against CAPI to find that private key and interoperate with it.

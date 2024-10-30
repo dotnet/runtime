@@ -3,7 +3,6 @@
 
 using System;
 using System.Text.Json;
-using System.Text.Unicode;
 using Xunit;
 
 namespace Microsoft.Diagnostics.DataContractReader.UnitTests;

@@ -110,7 +110,7 @@ namespace System.Runtime.Loader
 
         // This method is invoked by the VM to resolve a satellite assembly reference
         // after trying assembly resolution via Load override without success.
-        private static Assembly? ResolveSatelliteAssembly(IntPtr gchManagedAssemblyLoadContext, AssemblyName assemblyName)
+        private static RuntimeAssembly? ResolveSatelliteAssembly(IntPtr gchManagedAssemblyLoadContext, AssemblyName assemblyName)
         {
             AssemblyLoadContext context = (AssemblyLoadContext)(GCHandle.FromIntPtr(gchManagedAssemblyLoadContext).Target)!;
 
@@ -136,7 +136,7 @@ namespace System.Runtime.Loader
 
         // This method is invoked by the VM to resolve an assembly reference using the Resolving event
         // after trying assembly resolution via Load override and TPA load context without success.
-        private static Assembly? ResolveUsingResolvingEvent(IntPtr gchManagedAssemblyLoadContext, AssemblyName assemblyName)
+        private static RuntimeAssembly? ResolveUsingResolvingEvent(IntPtr gchManagedAssemblyLoadContext, AssemblyName assemblyName)
         {
             AssemblyLoadContext context = (AssemblyLoadContext)(GCHandle.FromIntPtr(gchManagedAssemblyLoadContext).Target)!;
             // Invoke the AssemblyResolve event callbacks if wired up
