@@ -4803,6 +4803,12 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                 break;
             }
 
+            case NI_System_Runtime_CompilerServices_StaticsHelpers_VolatileReadAsByref:
+            {
+                retNode = gtNewIndir(TYP_BYREF, impPopStack().val, GTF_IND_VOLATILE);
+                break;
+            }
+
             case NI_System_Threading_Volatile_Read:
             {
                 assert((sig->sigInst.methInstCount == 0) || (sig->sigInst.methInstCount == 1));
@@ -10641,6 +10647,13 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                             else if (strcmp(methodName, "GetMethodTable") == 0)
                             {
                                 result = NI_System_Runtime_CompilerServices_RuntimeHelpers_GetMethodTable;
+                            }
+                        }
+                        else if (strcmp(className, "StaticsHelpers") == 0)
+                        {
+                            if (strcmp(methodName, "VolatileReadAsByref") == 0)
+                            {
+                                result = NI_System_Runtime_CompilerServices_StaticsHelpers_VolatileReadAsByref;
                             }
                         }
                         else if (strcmp(className, "Unsafe") == 0)
