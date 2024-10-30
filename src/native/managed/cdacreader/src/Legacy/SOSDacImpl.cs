@@ -190,9 +190,8 @@ internal sealed unsafe partial class SOSDacImpl
             // elements we return
             return HResults.E_INVALIDARG;
         }
+
         int hr = HResults.E_NOTIMPL;
-
-
         try
         {
             if (cRevertedRejitVersions != 0)
