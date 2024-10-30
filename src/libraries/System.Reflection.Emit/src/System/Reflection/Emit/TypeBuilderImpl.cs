@@ -984,7 +984,19 @@ namespace System.Reflection.Emit
         }
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
-        public override Type[] GetInterfaces() => _interfaces == null ? EmptyTypes : _interfaces.ToArray();
+        public override Type[] GetInterfaces()
+        {
+            ThrowIfNotCreated();
+
+            List<Type> interfaces = _interfaces ?? [];
+
+            if(_typeParent != null)
+            {
+                interfaces.AddRange(_typeParent.GetInterfaces());
+            }
+
+            return interfaces.ToArray();
+        }
 
         internal static BindingFlags GetBindingFlags(PropertyBuilderImpl property)
         {
