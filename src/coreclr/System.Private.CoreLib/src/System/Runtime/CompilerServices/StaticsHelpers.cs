@@ -16,24 +16,23 @@ namespace System.Runtime.CompilerServices
         [LibraryImport(RuntimeHelpers.QCall)]
         private static partial void GetThreadStaticsByMethodTable(ByteRefOnStack result, MethodTable* pMT, [MarshalAs(UnmanagedType.Bool)] bool gcStatics);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
         [Intrinsic]
-        private static extern ref byte VolatileReadAsByref(ref IntPtr address);
+        private static ref byte VolatileReadAsByref(ref IntPtr address) => ref VolatileReadAsByref(ref address);
 
         [DebuggerHidden]
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static ref byte GetNonGCStaticBaseSlow(MethodTable* mt)
         {
             InitHelpers.InitClassSlow(mt);
-            return ref MethodTable.MaskStaticsPointer(ref VolatileReadAsByref(ref MethodTableAuxiliaryData.GetDynamicStaticsInfo(mt->AuxiliaryData)->_pNonGCStatics));
+            return ref DynamicStaticsInfo.MaskStaticsPointer(ref VolatileReadAsByref(ref mt->AuxiliaryData->GetDynamicStaticsInfo()._pNonGCStatics));
         }
 
         [DebuggerHidden]
         private static ref byte GetNonGCStaticBase(MethodTable* mt)
         {
-            ref byte nonGCStaticBase = ref VolatileReadAsByref(ref MethodTableAuxiliaryData.GetDynamicStaticsInfo(mt->AuxiliaryData)->_pNonGCStatics);
+            ref byte nonGCStaticBase = ref VolatileReadAsByref(ref mt->AuxiliaryData->GetDynamicStaticsInfo()._pNonGCStatics);
 
-            if ((((nuint)Unsafe.AsPointer(ref nonGCStaticBase)) & DynamicStaticsInfo.ISCLASSINITED) != 0)
+            if ((((nuint)Unsafe.AsPointer(ref nonGCStaticBase)) & DynamicStaticsInfo.ISCLASSNOTINITED) != 0)
                 return ref GetNonGCStaticBaseSlow(mt);
             else
                 return ref nonGCStaticBase;
@@ -44,7 +43,7 @@ namespace System.Runtime.CompilerServices
         {
             ref byte nonGCStaticBase = ref VolatileReadAsByref(ref dynamicStaticsInfo->_pNonGCStatics);
 
-            if ((((nuint)Unsafe.AsPointer(ref nonGCStaticBase)) & DynamicStaticsInfo.ISCLASSINITED) != 0)
+            if ((((nuint)Unsafe.AsPointer(ref nonGCStaticBase)) & DynamicStaticsInfo.ISCLASSNOTINITED) != 0)
                 return ref GetNonGCStaticBaseSlow(dynamicStaticsInfo->_methodTable);
             else
                 return ref nonGCStaticBase;
@@ -55,15 +54,15 @@ namespace System.Runtime.CompilerServices
         private static ref byte GetGCStaticBaseSlow(MethodTable* mt)
         {
             InitHelpers.InitClassSlow(mt);
-            return ref MethodTable.MaskStaticsPointer(ref VolatileReadAsByref(ref MethodTableAuxiliaryData.GetDynamicStaticsInfo(mt->AuxiliaryData)->_pGCStatics));
+            return ref DynamicStaticsInfo.MaskStaticsPointer(ref VolatileReadAsByref(ref mt->AuxiliaryData->GetDynamicStaticsInfo()._pGCStatics));
         }
 
         [DebuggerHidden]
         private static ref byte GetGCStaticBase(MethodTable* mt)
         {
-            ref byte gcStaticBase = ref VolatileReadAsByref(ref MethodTableAuxiliaryData.GetDynamicStaticsInfo(mt->AuxiliaryData)->_pGCStatics);
+            ref byte gcStaticBase = ref VolatileReadAsByref(ref mt->AuxiliaryData->GetDynamicStaticsInfo()._pGCStatics);
 
-            if ((((nuint)Unsafe.AsPointer(ref gcStaticBase)) & DynamicStaticsInfo.ISCLASSINITED) != 0)
+            if ((((nuint)Unsafe.AsPointer(ref gcStaticBase)) & DynamicStaticsInfo.ISCLASSNOTINITED) != 0)
                 return ref GetGCStaticBaseSlow(mt);
             else
                 return ref gcStaticBase;
@@ -74,19 +73,13 @@ namespace System.Runtime.CompilerServices
         {
             ref byte gcStaticBase = ref VolatileReadAsByref(ref dynamicStaticsInfo->_pGCStatics);
 
-            if ((((nuint)Unsafe.AsPointer(ref gcStaticBase)) & DynamicStaticsInfo.ISCLASSINITED) != 0)
+            if ((((nuint)Unsafe.AsPointer(ref gcStaticBase)) & DynamicStaticsInfo.ISCLASSNOTINITED) != 0)
                 return ref GetGCStaticBaseSlow(dynamicStaticsInfo->_methodTable);
             else
                 return ref gcStaticBase;
         }
 
         // Thread static helpers
-
-        [StructLayout(LayoutKind.Sequential)]
-        private sealed class RawData
-        {
-            public byte Data;
-        }
 
         /// <summary>
         /// Return beginning of the object as a reference to byte
@@ -95,24 +88,24 @@ namespace System.Runtime.CompilerServices
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static ref byte GetObjectAsRefByte(object obj)
         {
-            return ref Unsafe.Add(ref Unsafe.As<RawData>(obj).Data, -sizeof(MethodTable*));
+            return ref Unsafe.Subtract(ref RuntimeHelpers.GetRawData(obj), sizeof(MethodTable*));
         }
 
         [StructLayout(LayoutKind.Sequential)]
         internal struct ThreadLocalData
         {
-            public const int NUMBER_OF_TLSOFFSETS_NOT_USED_IN_NONCOLLECTIBLE_ARRAY = 2;
-            public int cNonCollectibleTlsData; // Size of offset into the non-collectible TLS array which is valid, NOTE: this is relative to the start of the pNonCollectibleTlsArrayData object, not the start of the data in the array
-            public int cCollectibleTlsData; // Size of offset into the TLS array which is valid
-            private IntPtr pNonCollectibleTlsArrayData_private; // This is object[], but using object[] directly causes the structure to be laid out via auto-layout, which is not what we want.
-            public IntPtr* pCollectibleTlsArrayData; // Points at the Thread local array data.
+            internal const int NUMBER_OF_TLSOFFSETS_NOT_USED_IN_NONCOLLECTIBLE_ARRAY = 2;
+            internal int _cNonCollectibleTlsData; // Size of offset into the non-collectible TLS array which is valid, NOTE: this is relative to the start of the nonCollectibleTlsArrayData object, not the start of the data in the array
+            internal int _cCollectibleTlsData; // Size of offset into the TLS array which is valid
+            private IntPtr _nonCollectibleTlsArrayData_private; // This is object[], but using object[] directly causes the structure to be laid out via auto-layout, which is not what we want.
+            internal IntPtr* _collectibleTlsArrayData; // Points at the Thread local array data.
 
-            public object[] pNonCollectibleTlsArrayData
+            internal object[] NonCollectibleTlsArrayData
             {
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
                 get
                 {
-                    return Unsafe.As<IntPtr, object[]>(ref pNonCollectibleTlsArrayData_private);
+                    return Unsafe.As<IntPtr, object[]>(ref _nonCollectibleTlsArrayData_private);
                 }
             }
         }
@@ -185,9 +178,9 @@ namespace System.Runtime.CompilerServices
             int indexOffset = GetIndexOffset(index);
             if (GetIndexType(index) == NonCollectibleTLSIndexType)
             {
-                if (t_ThreadStatics->cNonCollectibleTlsData > GetIndexOffset(index))
+                if (t_ThreadStatics->_cNonCollectibleTlsData > GetIndexOffset(index))
                 {
-                    object? threadStaticObjectNonCollectible = Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(t_ThreadStatics->pNonCollectibleTlsArrayData), indexOffset - ThreadLocalData.NUMBER_OF_TLSOFFSETS_NOT_USED_IN_NONCOLLECTIBLE_ARRAY);
+                    object? threadStaticObjectNonCollectible = Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(t_ThreadStatics->NonCollectibleTlsArrayData), indexOffset - ThreadLocalData.NUMBER_OF_TLSOFFSETS_NOT_USED_IN_NONCOLLECTIBLE_ARRAY);
                     if (threadStaticObjectNonCollectible != null)
                     {
                         return ref GetObjectAsRefByte(threadStaticObjectNonCollectible);
@@ -200,10 +193,10 @@ namespace System.Runtime.CompilerServices
             }
             else
             {
-                int cCollectibleTlsData = t_ThreadStatics->cCollectibleTlsData;
+                int cCollectibleTlsData = t_ThreadStatics->_cCollectibleTlsData;
                 if (cCollectibleTlsData > indexOffset)
                 {
-                    IntPtr* pCollectibleTlsArrayData = t_ThreadStatics->pCollectibleTlsArrayData;
+                    IntPtr* pCollectibleTlsArrayData = t_ThreadStatics->_collectibleTlsArrayData;
 
                     pCollectibleTlsArrayData += indexOffset;
                     IntPtr objHandle = *pCollectibleTlsArrayData;
@@ -227,7 +220,7 @@ namespace System.Runtime.CompilerServices
         [DebuggerHidden]
         private static ref byte GetNonGCThreadStaticBase(MethodTable* mt)
         {
-            int index = MethodTableAuxiliaryData.GetThreadStaticsInfo(mt->AuxiliaryData)->NonGCTlsIndex;
+            int index = mt->AuxiliaryData->GetThreadStaticsInfo()._nonGCTlsIndex;
             if (IsIndexAllocated(index))
                 return ref GetThreadLocalStaticBaseByIndex(index, false);
             else
@@ -237,7 +230,7 @@ namespace System.Runtime.CompilerServices
         [DebuggerHidden]
         private static ref byte GetGCThreadStaticBase(MethodTable* mt)
         {
-            int index = MethodTableAuxiliaryData.GetThreadStaticsInfo(mt->AuxiliaryData)->GCTlsIndex;
+            int index = mt->AuxiliaryData->GetThreadStaticsInfo()._gcTlsIndex;
             if (IsIndexAllocated(index))
                 return ref GetThreadLocalStaticBaseByIndex(index, true);
             else
@@ -247,7 +240,7 @@ namespace System.Runtime.CompilerServices
         [DebuggerHidden]
         private static ref byte GetDynamicNonGCThreadStaticBase(ThreadStaticsInfo *threadStaticsInfo)
         {
-            int index = threadStaticsInfo->NonGCTlsIndex;
+            int index = threadStaticsInfo->_nonGCTlsIndex;
             if (IsIndexAllocated(index))
                 return ref GetThreadLocalStaticBaseByIndex(index, false);
             else
@@ -257,7 +250,7 @@ namespace System.Runtime.CompilerServices
         [DebuggerHidden]
         private static ref byte GetDynamicGCThreadStaticBase(ThreadStaticsInfo *threadStaticsInfo)
         {
-            int index = threadStaticsInfo->GCTlsIndex;
+            int index = threadStaticsInfo->_gcTlsIndex;
             if (IsIndexAllocated(index))
                 return ref GetThreadLocalStaticBaseByIndex(index, true);
             else

@@ -888,26 +888,39 @@ namespace System.Runtime.CompilerServices
     [StructLayout(LayoutKind.Sequential)]
     internal unsafe ref struct DynamicStaticsInfo
     {
-        public const int ISCLASSINITED = 1;
-        public IntPtr _pGCStatics; // The ISCLASSINITED bit is set when the class is NOT initialized
-        public IntPtr _pNonGCStatics; // The ISCLASSINITED bit is set when the class is NOT initialized
-        public unsafe MethodTable* _methodTable;
+        internal const int ISCLASSNOTINITED = 1;
+        internal IntPtr _pGCStatics; // The ISCLASSNOTINITED bit is set when the class is NOT initialized
+        internal IntPtr _pNonGCStatics; // The ISCLASSNOTINITED bit is set when the class is NOT initialized
+
+        /// <summary>
+        /// Given a statics pointer in the DynamicStaticsInfo, get the actual statics pointer.
+        /// If the class it initialized, this mask is not necessary
+        /// </summary>
+        internal static ref byte MaskStaticsPointer(ref byte staticsPtr)
+        {
+            fixed (byte* p = &staticsPtr)
+            {
+                 return ref Unsafe.AsRef<byte>((byte*)((nuint)p & ~(nuint)DynamicStaticsInfo.ISCLASSNOTINITED));
+            }
+        }
+
+        internal unsafe MethodTable* _methodTable;
     }
 
     [StructLayout(LayoutKind.Sequential)]
     internal unsafe ref struct GenericsStaticsInfo
     {
         // Pointer to field descs for statics
-        public IntPtr _pFieldDescs;
-        public DynamicStaticsInfo _dynamicStatics;
-    };  // struct GenericsStaticsInfo
+        internal IntPtr _pFieldDescs;
+        internal DynamicStaticsInfo _dynamicStatics;
+    }
 
     [StructLayout(LayoutKind.Sequential)]
     internal unsafe ref struct ThreadStaticsInfo
     {
-        public int NonGCTlsIndex;
-        public int GCTlsIndex;
-        public GenericsStaticsInfo _genericStatics;
+        internal int _nonGCTlsIndex;
+        internal int _gcTlsIndex;
+        internal GenericsStaticsInfo _genericStatics;
     }
 
 
@@ -973,15 +986,15 @@ namespace System.Runtime.CompilerServices
         public bool IsClassInitedAndActive => (Volatile.Read(ref Flags) & (enum_flag_Initialized | enum_flag_EnsuredInstanceActive)) == (enum_flag_Initialized | enum_flag_EnsuredInstanceActive);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static DynamicStaticsInfo* GetDynamicStaticsInfo(MethodTableAuxiliaryData* pAuxiliaryData)
+        public ref DynamicStaticsInfo GetDynamicStaticsInfo()
         {
-            return (DynamicStaticsInfo*)(((byte*)pAuxiliaryData) - sizeof(DynamicStaticsInfo));
+            return ref Unsafe.Subtract(ref Unsafe.As<MethodTableAuxiliaryData, DynamicStaticsInfo>(ref this), 1);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static ThreadStaticsInfo* GetThreadStaticsInfo(MethodTableAuxiliaryData* pAuxiliaryData)
+        public ref ThreadStaticsInfo GetThreadStaticsInfo()
         {
-            return (ThreadStaticsInfo*)(((byte*)pAuxiliaryData) - sizeof(ThreadStaticsInfo));
+            return ref Unsafe.Subtract(ref Unsafe.As<MethodTableAuxiliaryData, ThreadStaticsInfo>(ref this), 1);
         }
     }
 

@@ -108,6 +108,36 @@ internal class MockDescriptors
         (nameof(Data.Module.MethodDefToILCodeVersioningStateMap), DataType.pointer),
     ];
 
+    private static readonly (string, DataType)[] ExceptionInfoFields =
+    [
+        (nameof(Data.ExceptionInfo.PreviousNestedInfo), DataType.pointer),
+        (nameof(Data.ExceptionInfo.ThrownObject), DataType.pointer),
+    ];
+
+    private static readonly (string, DataType)[] ThreadFields =
+    [
+        (nameof(Data.Thread.Id), DataType.uint32),
+        (nameof(Data.Thread.OSId), DataType.nuint),
+        (nameof(Data.Thread.State), DataType.uint32),
+        (nameof(Data.Thread.PreemptiveGCDisabled), DataType.uint32),
+        (nameof(Data.Thread.RuntimeThreadLocals), DataType.pointer),
+        (nameof(Data.Thread.Frame), DataType.pointer),
+        (nameof(Data.Thread.TEB), DataType.pointer),
+        (nameof(Data.Thread.LastThrownObject), DataType.pointer),
+        (nameof(Data.Thread.LinkNext), DataType.pointer),
+        (nameof(Data.Thread.ExceptionTracker), DataType.pointer),
+    ];
+
+    private static readonly (string, DataType)[] ThreadStoreFields =
+    [
+        (nameof(Data.ThreadStore.ThreadCount), DataType.uint32),
+        (nameof(Data.ThreadStore.FirstThreadLink), DataType.pointer),
+        (nameof(Data.ThreadStore.UnstartedCount), DataType.uint32),
+        (nameof(Data.ThreadStore.BackgroundCount), DataType.uint32),
+        (nameof(Data.ThreadStore.PendingCount), DataType.uint32),
+        (nameof(Data.ThreadStore.DeadCount), DataType.uint32),
+    ];
+
     public static class RuntimeTypeSystem
     {
         internal const ulong TestFreeObjectMethodTableGlobalAddress = 0x00000000_7a0000a0;
@@ -373,8 +403,9 @@ internal class MockDescriptors
             };
         }
 
-        internal TargetPointer AddModule(TargetTestHelpers helpers, string? path = null, string? fileName = null)
+        internal TargetPointer AddModule(string? path = null, string? fileName = null)
         {
+            TargetTestHelpers helpers = _builder.TargetTestHelpers;
             Target.TypeInfo typeInfo = Types(helpers)[DataType.Module];
             uint size = typeInfo.Size.Value;
             MockMemorySpace.HeapFragment module = _allocator.Allocate(size, "Module");
@@ -411,6 +442,146 @@ internal class MockDescriptors
             }
 
             return module.Address;
+        }
+    }
+
+    public class Thread
+    {
+        private const ulong DefaultAllocationRangeStart = 0x0003_0000;
+        private const ulong DefaultAllocationRangeEnd = 0x0004_0000;
+
+        internal Dictionary<DataType, Target.TypeInfo> Types { get; init; }
+        internal (string Name, ulong Value, string? Type)[] Globals { get; init; }
+
+        internal TargetPointer FinalizerThreadAddress { get; init; }
+        internal TargetPointer GCThreadAddress { get; init; }
+
+        private readonly MockMemorySpace.Builder _builder;
+        private readonly MockMemorySpace.BumpAllocator _allocator;
+
+        private readonly TargetPointer _threadStoreAddress;
+
+        // Most recently added thread. We update its link to the next thread if another thread is added.
+        private TargetPointer _previousThread = TargetPointer.Null;
+
+        public Thread(MockMemorySpace.Builder builder)
+            : this(builder, (DefaultAllocationRangeStart, DefaultAllocationRangeEnd))
+        { }
+
+        public Thread(MockMemorySpace.Builder builder, (ulong Start, ulong End) allocationRange)
+        {
+            _builder = builder;
+            _allocator = _builder.CreateAllocator(allocationRange.Start, allocationRange.End);
+
+            TargetTestHelpers helpers = builder.TargetTestHelpers;
+
+            Types = GetTypes(helpers);
+
+            // Add thread store and set global to point at it
+            MockMemorySpace.HeapFragment threadStoreGlobal = _allocator.Allocate((ulong)helpers.PointerSize, "[global pointer] ThreadStore");
+            MockMemorySpace.HeapFragment threadStore = _allocator.Allocate(Types[DataType.ThreadStore].Size.Value, "ThreadStore");
+            helpers.WritePointer(threadStoreGlobal.Data, threadStore.Address);
+            _builder.AddHeapFragments([threadStoreGlobal, threadStore]);
+            _threadStoreAddress = threadStore.Address;
+
+            // Add finalizer thread and set global to point at it
+            MockMemorySpace.HeapFragment finalizerThreadGlobal = _allocator.Allocate((ulong)helpers.PointerSize, "[global pointer] Finalizer thread");
+            MockMemorySpace.HeapFragment finalizerThread = _allocator.Allocate(Types[DataType.Thread].Size.Value, "Finalizer thread");
+            helpers.WritePointer(finalizerThreadGlobal.Data, finalizerThread.Address);
+            _builder.AddHeapFragments([finalizerThreadGlobal, finalizerThread]);
+            FinalizerThreadAddress = finalizerThread.Address;
+
+            // Add GC thread and set global to point at it
+            MockMemorySpace.HeapFragment gcThreadGlobal = _allocator.Allocate((ulong)helpers.PointerSize, "[global pointer] GC thread");
+            MockMemorySpace.HeapFragment gcThread = _allocator.Allocate(Types[DataType.Thread].Size.Value, "GC thread");
+            helpers.WritePointer(gcThreadGlobal.Data, gcThread.Address);
+            _builder.AddHeapFragments([gcThreadGlobal, gcThread]);
+            GCThreadAddress = gcThread.Address;
+
+            Globals =
+            [
+                (nameof(Constants.Globals.ThreadStore), threadStoreGlobal.Address, null),
+                (nameof(Constants.Globals.FinalizerThread), finalizerThreadGlobal.Address, null),
+                (nameof(Constants.Globals.GCThread), gcThreadGlobal.Address, null),
+                (nameof(Constants.Globals.FeatureEHFunclets), 0, null),
+            ];
+        }
+
+        private static Dictionary<DataType, Target.TypeInfo> GetTypes(TargetTestHelpers helpers)
+        {
+            TargetTestHelpers.LayoutResult exceptionInfoLayout = helpers.LayoutFields(ExceptionInfoFields);
+            TargetTestHelpers.LayoutResult threadLayout = helpers.LayoutFields(ThreadFields);
+            TargetTestHelpers.LayoutResult threadStoreLayout = helpers.LayoutFields(ThreadStoreFields);
+            return new()
+            {
+                [DataType.ExceptionInfo] = new Target.TypeInfo() { Fields = exceptionInfoLayout.Fields, Size = exceptionInfoLayout.Stride },
+                [DataType.Thread] = new Target.TypeInfo() { Fields = threadLayout.Fields, Size = threadLayout.Stride },
+                [DataType.ThreadStore] = new Target.TypeInfo() { Fields = threadStoreLayout.Fields, Size = threadStoreLayout.Stride },
+            };
+        }
+
+        internal void SetThreadCounts(int threadCount, int unstartedCount, int backgroundCount, int pendingCount, int deadCount)
+        {
+            TargetTestHelpers helpers = _builder.TargetTestHelpers;
+            Target.TypeInfo typeInfo = Types[DataType.ThreadStore];
+            Span<byte> data = _builder.BorrowAddressRange(_threadStoreAddress, (int)typeInfo.Size.Value);
+            helpers.Write(
+                data.Slice(typeInfo.Fields[nameof(Data.ThreadStore.ThreadCount)].Offset),
+                threadCount);
+            helpers.Write(
+                data.Slice(typeInfo.Fields[nameof(Data.ThreadStore.UnstartedCount)].Offset),
+                unstartedCount);
+            helpers.Write(
+                data.Slice(typeInfo.Fields[nameof(Data.ThreadStore.BackgroundCount)].Offset),
+                backgroundCount);
+            helpers.Write(
+                data.Slice(typeInfo.Fields[nameof(Data.ThreadStore.PendingCount)].Offset),
+                pendingCount);
+            helpers.Write(
+                data.Slice(typeInfo.Fields[nameof(Data.ThreadStore.DeadCount)].Offset),
+                deadCount);
+        }
+
+        internal TargetPointer AddThread(uint id, TargetNUInt osId)
+        {
+            TargetTestHelpers helpers = _builder.TargetTestHelpers;
+            Target.TypeInfo typeInfo = Types[DataType.Thread];
+            MockMemorySpace.HeapFragment thread = _allocator.Allocate(typeInfo.Size.Value, "Thread");
+            Span<byte> data = thread.Data.AsSpan();
+            helpers.Write(
+                data.Slice(typeInfo.Fields[nameof(Data.Thread.Id)].Offset),
+                id);
+            helpers.WriteNUInt(
+                data.Slice(typeInfo.Fields[nameof(Data.Thread.OSId)].Offset),
+                osId);
+            _builder.AddHeapFragment(thread);
+
+            // Add exception info for the thread
+            MockMemorySpace.HeapFragment exceptionInfo = _allocator.Allocate(Types[DataType.ExceptionInfo].Size.Value, "ExceptionInfo");
+            _builder.AddHeapFragment(exceptionInfo);
+            helpers.WritePointer(
+                data.Slice(typeInfo.Fields[nameof(Data.Thread.ExceptionTracker)].Offset),
+                exceptionInfo.Address);
+
+            ulong threadLinkOffset = (ulong)typeInfo.Fields[nameof(Data.Thread.LinkNext)].Offset;
+            if (_previousThread != TargetPointer.Null)
+            {
+                // Set the next link for the previously added thread to the newly added one
+                helpers.WritePointer(
+                    _builder.BorrowAddressRange(_previousThread + threadLinkOffset, helpers.PointerSize),
+                    thread.Address + threadLinkOffset);
+            }
+            else
+            {
+                // Set the first thread link in the thread store
+                ulong firstThreadLinkAddr = _threadStoreAddress + (ulong)Types[DataType.ThreadStore].Fields[nameof(Data.ThreadStore.FirstThreadLink)].Offset;
+                helpers.WritePointer(
+                    _builder.BorrowAddressRange(firstThreadLinkAddr, helpers.PointerSize),
+                    thread.Address + threadLinkOffset);
+            }
+
+            _previousThread = thread.Address;
+            return thread.Address;
         }
     }
 }

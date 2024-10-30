@@ -198,6 +198,18 @@ internal unsafe class TargetTestHelpers
         }
     }
 
+    internal void Write(Span<byte> dest, int i)
+    {
+        if (Arch.IsLittleEndian)
+        {
+            BinaryPrimitives.WriteInt32LittleEndian(dest, i);
+        }
+        else
+        {
+            BinaryPrimitives.WriteInt32BigEndian(dest, i);
+        }
+    }
+
     internal void Write(Span<byte> dest, uint u)
     {
         if (Arch.IsLittleEndian)
