@@ -96,6 +96,12 @@ public sealed class MissingTestException : Exception
     }
 }
 
+public sealed class ExceptionHandler
+{
+    public string HandleMessage { get; set; }
+    public Action Handler { get; set; }
+}
+
 public class ReliabilityFramework
 {
     // instance members
@@ -303,7 +309,8 @@ public class ReliabilityFramework
     public void HandleOom(Exception e, string message)
     {
         _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.Tests, String.Format("Exception while running tests: {0}", e));
-        DebugBreakOrThrowException(_curTestSet.DebugBreakOnOutOfMemory, e, _logger);
+        ExceptionHandler exceptionHandler = GenerateExceptionMessageAndHandler(_curTestSet.DebugBreakOnOutOfMemory, e);
+        DebugBreakOrThrowException(exceptionHandler);
     }
 
     /// <summary>
@@ -521,27 +528,31 @@ public class ReliabilityFramework
         return (99);
     }
 
-    internal static void DebugBreakOrThrowException(bool debugBreak, Exception e, RFLogging _logger = null)
+    public static ExceptionHandler GenerateExceptionMessageAndHandler(bool debugBreak, Exception e)
     {
-        string msg;
-        Action handler;
+        ExceptionHandler exceptionHandler = new ExceptionHandler();
 
         if (debugBreak)
         {
-            msg = String.Format("Interrupt for exception: {0}", e.Message);
-            handler = delegate() { Debugger.Break(); };
+            exceptionHandler.HandleMessage = String.Format("Interrupt for exception: {0}", e.Message);
+            exceptionHandler.Handler = delegate() { Debugger.Break(); };
         }
         else
         {
-            msg = String.Format("Throw exception: {0}", e.Message);
-            handler = delegate() { throw e; };
+            exceptionHandler.HandleMessage = String.Format("Throw exception: {0}", e.Message);
+            exceptionHandler.Handler = delegate() { throw e; };
         }
 
+        return exceptionHandler;
+    }
+
+    private void DebugBreakOrThrowException(ExceptionHandler exceptionHandler)
+    {
+        string msg = exceptionHandler.HandleMessage;
+        Action handler = exceptionHandler.Handler;
+
         Console.WriteLine(msg);
-        if (_logger != null)
-        {
-            _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.Tests, msg);
-        }
+        _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.Tests, msg);
         handler();
     }
 
@@ -790,7 +801,8 @@ public class ReliabilityFramework
                     if (DateTime.Now.Subtract(_startTime) > minTimeToStartTest)
                     {
                         MissingTestException e = new MissingTestException("New tests not starting");
-                        DebugBreakOrThrowException(_curTestSet.DebugBreakOnMissingTest, e, _logger);
+                        ExceptionHandler exceptionHandler = GenerateExceptionMessageAndHandler(_curTestSet.DebugBreakOnMissingTest, e);
+                        DebugBreakOrThrowException(exceptionHandler);
                     }
                 }
             }
@@ -885,7 +897,8 @@ public class ReliabilityFramework
             }
 
             TimeoutException e = new TimeoutException("Time limit reached.");
-            DebugBreakOrThrowException(_curTestSet.DebugBreakOnTestHang, e, _logger);
+            ExceptionHandler exceptionHandler = GenerateExceptionMessageAndHandler(_curTestSet.DebugBreakOnTestHang, e);
+            DebugBreakOrThrowException(exceptionHandler);
         }
     }
 
@@ -1041,7 +1054,8 @@ public class ReliabilityFramework
                             }
                             catch (PathTooLongException e)
                             {
-                                DebugBreakOrThrowException(_curTestSet.DebugBreakOnPathTooLong, e, _logger);
+                                ExceptionHandler exceptionHandler = GenerateExceptionMessageAndHandler(_curTestSet.DebugBreakOnPathTooLong, e);
+                                DebugBreakOrThrowException(exceptionHandler);
                             }
                             catch (OutOfMemoryException e)
                             {

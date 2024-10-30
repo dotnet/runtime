@@ -80,7 +80,12 @@ internal class RFLogging
                 catch (IOException e)
                 {
                     //Disk may be full so simply stop logging
-                    ReliabilityFramework.DebugBreakOrThrowException(ReliabilityFramework._debugBreakOnTestHang, e);
+                    ExceptionHandler exceptionHandler = ReliabilityFramework.GenerateExceptionMessageAndHandler(ReliabilityFramework._debugBreakOnTestHang, e);
+                    string msg = exceptionHandler.HandleMessage;
+                    Action handler = exceptionHandler.Handler;
+
+                    Console.WriteLine(msg);
+                    handler();
                 }
             }
 
@@ -120,7 +125,12 @@ internal class RFLogging
                 }
                 catch (IOException e)
                 {
-                    ReliabilityFramework.DebugBreakOrThrowException(ReliabilityFramework._debugBreakOnTestHang, e);
+                    ExceptionHandler exceptionHandler = ReliabilityFramework.GenerateExceptionMessageAndHandler(ReliabilityFramework._debugBreakOnTestHang, e);
+                    string msg = exceptionHandler.HandleMessage;
+                    Action handler = exceptionHandler.Handler;
+
+                    Console.WriteLine(msg);
+                    handler();
                 }
             }
         }
