@@ -10,6 +10,13 @@ internal readonly partial struct ReJIT_1 : IReJIT
     internal readonly Target _target;
     private readonly Data.ProfControlBlock _profControlBlock;
 
+    // see src/coreclr/inc/corprof.idl
+    [Flags]
+    private enum COR_PRF_MONITOR
+    {
+        COR_PRF_ENABLE_REJIT = 0x00040000,
+    }
+
     public ReJIT_1(Target target, Data.ProfControlBlock profControlBlock)
     {
         _target = target;
@@ -18,7 +25,7 @@ internal readonly partial struct ReJIT_1 : IReJIT
 
     bool IReJIT.IsEnabled()
     {
-        bool profEnabledReJIT = (_profControlBlock.GlobalEventMask & (ulong)Legacy.COR_PRF_MONITOR.COR_PRF_ENABLE_REJIT) != 0;
+        bool profEnabledReJIT = (_profControlBlock.GlobalEventMask & (ulong)COR_PRF_MONITOR.COR_PRF_ENABLE_REJIT) != 0;
         // FIXME: it is very likely this is always true in the DAC
         // Most people don't set DOTNET_ProfAPI_RejitOnAttach = 0
         // See https://github.com/dotnet/runtime/issues/106148

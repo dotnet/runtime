@@ -25,13 +25,19 @@ Contracts used:
 | --- |
 
 ```csharp
+// see src/coreclr/inc/corprof.idl
+[Flags]
+private enum COR_PRF_MONITOR
+{
+    COR_PRF_ENABLE_REJIT = 0x00040000,
+}
+
 bool IsEnabled()
 {
     TargetPointer address = target.ReadGlobalPointer("ProfilerControlBlock");
     ulong globalEventMask = target.Read<ulong>(address + /* ProfControlBlock::GlobalEventMask offset*/);
     bool profEnabledReJIT = (GlobalEventMask & (ulong)COR_PRF_MONITOR.COR_PRF_ENABLE_REJIT) != 0;
     bool clrConfigEnabledReJit = /* host process does not have environment variable DOTNET_ProfAPI_ReJitOnAttach set to 0 */;
-    // See https://github.com/dotnet/runtime/issues/106148
     return profEnabledReJIT || clrConfigEnabledReJIT;
 }
 ```
