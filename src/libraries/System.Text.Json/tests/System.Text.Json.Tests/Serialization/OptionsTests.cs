@@ -687,7 +687,8 @@ namespace System.Text.Json.Serialization.Tests
                 RuntimeConfigurationOptions =
                 {
                     ["System.Text.Json.JsonSerializer.IsReflectionEnabledByDefault"] = false
-                }
+                },
+                TimeOut = RemoteExecutor.FailWaitTimeoutMilliseconds * PlatformDetection.SlowRuntimeTimeoutModifier
             };
 
             RemoteExecutor.Invoke(static () =>
@@ -732,7 +733,8 @@ namespace System.Text.Json.Serialization.Tests
                 RuntimeConfigurationOptions =
                 {
                     ["System.Text.Json.JsonSerializer.IsReflectionEnabledByDefault"] = false
-                }
+                },
+                TimeOut = RemoteExecutor.FailWaitTimeoutMilliseconds * PlatformDetection.SlowRuntimeTimeoutModifier
             };
 
             RemoteExecutor.Invoke(static () =>
@@ -789,7 +791,8 @@ namespace System.Text.Json.Serialization.Tests
                 RuntimeConfigurationOptions =
                 {
                     ["System.Text.Json.JsonSerializer.IsReflectionEnabledByDefault"] = false
-                }
+                },
+                TimeOut = RemoteExecutor.FailWaitTimeoutMilliseconds * PlatformDetection.SlowRuntimeTimeoutModifier
             };
 
             RemoteExecutor.Invoke(static () =>
@@ -812,7 +815,10 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData(true)]
         public static void Options_JsonSerializerContext_GetConverter_DoesNotFallBackToReflectionConverter(bool isCompatibilitySwitchExplicitlyDisabled)
         {
-            var options = new RemoteInvokeOptions();
+            var options = new RemoteInvokeOptions
+            {
+                TimeOut = RemoteExecutor.FailWaitTimeoutMilliseconds * PlatformDetection.SlowRuntimeTimeoutModifier
+            };
 
             if (isCompatibilitySwitchExplicitlyDisabled)
             {
@@ -851,7 +857,8 @@ namespace System.Text.Json.Serialization.Tests
                 RuntimeConfigurationOptions =
                 {
                     ["System.Text.Json.Serialization.EnableSourceGenReflectionFallback"] = true
-                }
+                },
+                TimeOut = RemoteExecutor.FailWaitTimeoutMilliseconds * PlatformDetection.SlowRuntimeTimeoutModifier
             };
 
             RemoteExecutor.Invoke(static () =>
@@ -889,7 +896,8 @@ namespace System.Text.Json.Serialization.Tests
                 {
                     ["System.Text.Json.JsonSerializer.IsReflectionEnabledByDefault"] = false,
                     ["System.Text.Json.Serialization.EnableSourceGenReflectionFallback"] = true
-                }
+                },
+                TimeOut = RemoteExecutor.FailWaitTimeoutMilliseconds * PlatformDetection.SlowRuntimeTimeoutModifier
             };
 
             RemoteExecutor.Invoke(static () =>
@@ -926,7 +934,11 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData(true)]
         public static void Options_RespectNullableAnnotationsDefault_FeatureSwitch(bool? state)
         {
-            var options = new RemoteInvokeOptions();
+            var options = new RemoteInvokeOptions
+            {
+                TimeOut = RemoteExecutor.FailWaitTimeoutMilliseconds * PlatformDetection.SlowRuntimeTimeoutModifier
+            };
+
             if (state.HasValue)
             {
                 options.RuntimeConfigurationOptions["System.Text.Json.Serialization.RespectNullableAnnotationsDefault"] = state.Value;
@@ -973,6 +985,7 @@ namespace System.Text.Json.Serialization.Tests
             {
                 TimeOut = RemoteExecutor.FailWaitTimeoutMilliseconds * PlatformDetection.SlowRuntimeTimeoutModifier
             };
+
             if (state.HasValue)
             {
                 options.RuntimeConfigurationOptions["System.Text.Json.Serialization.RespectRequiredConstructorParametersDefault"] = state.Value;
