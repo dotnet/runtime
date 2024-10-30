@@ -124,4 +124,18 @@ FORCEINLINE size_t NibbleBitScanForward(DWORD value)
 #endif
 }
 
+inline bool FindPreviousNibble(DWORD dword, size_t &nibbleIndex, DWORD &nibble)
+{
+    if(!dword)
+    {
+        return false;
+    }
+
+    size_t ctz = NibbleBitScanForward(dword);
+    nibbleIndex = (31 - ctz) / 4;
+    nibble = GetNibble(dword, nibbleIndex);
+    _ASSERTE(nibble);
+    return true;
+}
+
 #endif  // NIBBLEMAPMACROS_H_
