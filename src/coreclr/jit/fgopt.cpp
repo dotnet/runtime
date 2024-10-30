@@ -4869,7 +4869,25 @@ void Compiler::fgMoveColdBlocks()
 //
 /* static */ bool Compiler::ThreeOptLayout::EdgeCmp(const FlowEdge* left, const FlowEdge* right)
 {
-    return left->getLikelyWeight() < right->getLikelyWeight();
+    assert(left != right);
+    const weight_t leftWeight  = left->getLikelyWeight();
+    const weight_t rightWeight = right->getLikelyWeight();
+
+    // Break ties by comparing the source blocks' bbIDs.
+    // If both edges are out of the same source block, use the target blocks' bbIDs.
+    if (leftWeight == rightWeight)
+    {
+        BasicBlock* const leftSrc = left->getSourceBlock();
+        BasicBlock* const rightSrc = right->getSourceBlock();
+        if (leftSrc == rightSrc)
+        {
+            return left->getDestinationBlock()->bbID < right->getDestinationBlock()->bbID;
+        }
+
+        return leftSrc->bbID < rightSrc->bbID;
+    }
+
+    return leftWeight < rightWeight;
 }
 
 //-----------------------------------------------------------------------------
