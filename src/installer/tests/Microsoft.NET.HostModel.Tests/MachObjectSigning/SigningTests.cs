@@ -164,11 +164,12 @@ namespace Microsoft.NET.HostModel.MachO.CodeSign.Tests
                 var appHostSignedLength = appHostLength + MachObjectFile.GetSignatureSizeEstimate((uint)appHostLength, destinationFileName);
                 appHostDestinationStream.SetLength(appHostSignedLength);
 
-                using MemoryMappedFile memoryMappedFile = MemoryMappedFile.CreateFromFile(appHostDestinationStream, null, 0, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, true);
-                using MemoryMappedViewAccessor memoryMappedViewAccessor = memoryMappedFile.CreateViewAccessor(0, 0, MemoryMappedFileAccess.ReadWrite);
-
-                var machObjectFile = MachObjectFile.Create(memoryMappedViewAccessor);
-                appHostLength = machObjectFile.CreateAdHocSignature(memoryMappedViewAccessor, fileName);
+                using (MemoryMappedFile memoryMappedFile = MemoryMappedFile.CreateFromFile(appHostDestinationStream, null, 0, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, true))
+                using (MemoryMappedViewAccessor memoryMappedViewAccessor = memoryMappedFile.CreateViewAccessor(0, 0, MemoryMappedFileAccess.ReadWrite))
+                {
+                    var machObjectFile = MachObjectFile.Create(memoryMappedViewAccessor);
+                    appHostLength = machObjectFile.CreateAdHocSignature(memoryMappedViewAccessor, fileName);
+                }
                 appHostDestinationStream.SetLength(appHostLength);
             }
         }
