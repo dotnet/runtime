@@ -883,14 +883,6 @@ namespace System.Runtime.CompilerServices
         public extern MethodTable* GetMethodTableMatchingParentClass(MethodTable* parent);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public extern ref byte GetNullableValueFieldReferenceAndSize(ref byte nullableAddr, out uint size);
-
-//        [MethodImpl(MethodImplOptions.InternalCall)]
-//        public extern byte* GetNullableValueFieldReferenceAndSize(byte* nullableAddr, out uint size);
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public extern ref byte GetNullableValueFieldReferenceAndSize(byte* nullableAddr, out uint size);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
         public extern MethodTable* InstantiationArg0();
     }
 

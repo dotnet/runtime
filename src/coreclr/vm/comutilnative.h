@@ -259,7 +259,6 @@ public:
     static FCDECL1(UINT32, GetNumInstanceFieldBytes, MethodTable* mt);
     static FCDECL1(CorElementType, GetPrimitiveCorElementType, MethodTable* mt);
     static FCDECL2(MethodTable*, GetMethodTableMatchingParentClass, MethodTable* mt, MethodTable* parent);
-    static FCDECL3(uint8_t*, GetNullableValueFieldReferenceAndSize, MethodTable* mt, uint8_t* nullableAddr, uint32_t* pSize);
     static FCDECL1(MethodTable*, InstantiationArg0, MethodTable* mt);
 };
 

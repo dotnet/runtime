@@ -1818,17 +1818,6 @@ FCIMPL2(MethodTable*, MethodTableNative::GetMethodTableMatchingParentClass, Meth
 }
 FCIMPLEND
 
-FCIMPL3(uint8_t*, MethodTableNative::GetNullableValueFieldReferenceAndSize, MethodTable* mt, uint8_t* nullableAddr, uint32_t* pSize)
-{
-    FCALL_CONTRACT;
-    _ASSERTE(Nullable::IsNullableType(mt));
-    _ASSERTE(strcmp(mt->GetApproxFieldDescListRaw()[1].GetDebugName(), "value") == 0);
-
-    *pSize = mt->GetInstantiation()[0].AsMethodTable()->GetNumInstanceFieldBytes();
-    return nullableAddr + mt->GetApproxFieldDescListRaw()[1].GetOffset();
-}
-FCIMPLEND
-
 FCIMPL1(MethodTable*, MethodTableNative::InstantiationArg0, MethodTable* mt);
 {
     FCALL_CONTRACT;

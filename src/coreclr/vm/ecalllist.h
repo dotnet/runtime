@@ -361,7 +361,6 @@ FCFuncStart(gMethodTableFuncs)
     FCFuncElement("GetNumInstanceFieldBytes", MethodTableNative::GetNumInstanceFieldBytes)
     FCFuncElement("GetPrimitiveCorElementType", MethodTableNative::GetPrimitiveCorElementType)
     FCFuncElement("GetMethodTableMatchingParentClass", MethodTableNative::GetMethodTableMatchingParentClass)
-    FCFuncElement("GetNullableValueFieldReferenceAndSize", MethodTableNative::GetNullableValueFieldReferenceAndSize)
     FCFuncElement("InstantiationArg0", MethodTableNative::InstantiationArg0)
 FCFuncEnd()
 
