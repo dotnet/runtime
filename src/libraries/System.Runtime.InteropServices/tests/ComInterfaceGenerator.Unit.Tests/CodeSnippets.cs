@@ -671,14 +671,14 @@ namespace ComInterfaceGenerator.Unit.Tests
             }
             """;
 
-        public string ForwarderWithPreserveSigAndOut => $$"""
+        public string ForwarderWithPreserveSigAndRefKind(string refKind) => $$"""
             using System;
             using System.Runtime.CompilerServices;
             using System.Runtime.InteropServices;
             using System.Runtime.InteropServices.Marshalling;
 
             #nullable enable
-            
+
             [assembly:DisableRuntimeMarshalling]
 
             {{GeneratedComInterface()}}
@@ -690,7 +690,7 @@ namespace ComInterfaceGenerator.Unit.Tests
             partial interface INativeAPIBase
             {
                 [PreserveSig]
-                int FindValue(int key, out IValue? value);
+                int FindValue(int key, {{refKind}} IValue? value);
             }
 
             {{GeneratedComInterface()}}
