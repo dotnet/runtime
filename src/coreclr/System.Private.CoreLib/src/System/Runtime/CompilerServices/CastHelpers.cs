@@ -630,6 +630,7 @@ namespace System.Runtime.CompilerServices
         }
 
         [DebuggerHidden]
+        [MethodImpl(MethodImplOptions.NoInlining)]
         internal static ref byte Unbox_Helper(MethodTable* pMT1, object obj)
         {
             // must be a value type
@@ -651,10 +652,10 @@ namespace System.Runtime.CompilerServices
         }
 
         [DebuggerHidden]
-        internal static void Unbox_TypeTest(MethodTable *pMT1, MethodTable *pMT2)
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        internal static void Unbox_TypeTest_Helper(MethodTable *pMT1, MethodTable *pMT2)
         {
-            if (pMT1 == pMT2 ||
-                (pMT1->IsPrimitive && pMT2->IsPrimitive &&
+            if ((pMT1->IsPrimitive && pMT2->IsPrimitive &&
                 pMT1->GetPrimitiveCorElementType() == pMT2->GetPrimitiveCorElementType())
 #if FEATURE_TYPEEQUIVALENCE
                 || AreTypesEquivalent(pMT1, pMT2)
@@ -665,6 +666,15 @@ namespace System.Runtime.CompilerServices
             }
 
             CastHelpers.ThrowInvalidCastException(pMT1, pMT2);
+        }
+
+        [DebuggerHidden]
+        internal static void Unbox_TypeTest(MethodTable *pMT1, MethodTable *pMT2)
+        {
+            if (pMT1 == pMT2)
+                return;
+            else
+                Unbox_TypeTest_Helper(pMT1, pMT2);
         }
     }
 }
