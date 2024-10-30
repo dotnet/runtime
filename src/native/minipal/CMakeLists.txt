@@ -3,7 +3,6 @@ include(configure.cmake)
 set(SOURCES
     cpufeatures.c
     guid.c
-    memory.c
     random.c
     debugger.c
     strings.c

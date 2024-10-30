@@ -10,7 +10,7 @@
 #include "staticcontract.h"
 #include "volatile.h"
 #include "palclr.h"
-#include <minipal/memory.h>
+#include <minipal/com/memory.h>
 
 #include <utility>
 #include <type_traits>
@@ -970,7 +970,7 @@ template <typename TYPE>
 FORCEINLINE void DeleteCoTaskMem(TYPE *value)
 {
     if (value)
-        minicom_CoTaskMemFree(value);
+        CoTaskMemFree(value);
 }
 
 template<typename _TYPE>

@@ -339,7 +339,7 @@ void StgIO::Close()
         case STGIO_SHAREDMEM:
         if (m_pBaseData != NULL)
         {
-            minicom_CoTaskMemFree(m_pBaseData);
+            CoTaskMemFree(m_pBaseData);
             m_pBaseData = NULL;
             break;
         }

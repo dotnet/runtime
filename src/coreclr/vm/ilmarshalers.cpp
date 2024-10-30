@@ -4302,7 +4302,7 @@ extern "C" void QCALLTYPE MngdNativeArrayMarshaler_ConvertSpaceToNative(MngdNati
         if ( (!ClrSafeInt<SIZE_T>::multiply(cElements, cbElement, cbArray)) || cbArray > MAX_SIZE_FOR_INTEROP)
             COMPlusThrow(kArgumentException, IDS_EE_STRUCTARRAYTOOLARGE);
 
-        *pNativeHome = minicom_CoTaskMemAlloc(cbArray);
+        *pNativeHome = CoTaskMemAlloc(cbArray);
 
         if (*pNativeHome == NULL)
             ThrowOutOfMemory();
