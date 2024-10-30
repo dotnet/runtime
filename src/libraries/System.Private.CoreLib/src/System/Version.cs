@@ -313,18 +313,28 @@ namespace System
                 return false;
             }
 
-            return (result = ParseVersion(input.AsSpan(), throwOnFailure: false)) != null;
+            result = ParseVersion(input.AsSpan(), throwOnFailure: false);
+            return result is not null;
         }
 
-        public static bool TryParse(ReadOnlySpan<char> input, [NotNullWhen(true)] out Version? result) =>
-            (result = ParseVersion(input, throwOnFailure: false)) != null;
+        public static bool TryParse(ReadOnlySpan<char> input, [NotNullWhen(true)] out Version? result)
+        {
+            result = ParseVersion(input, throwOnFailure: false);
+            return result is not null;
+        }
 
-        public static bool TryParse(ReadOnlySpan<byte> utf8Text, [NotNullWhen(true)] out Version? result) =>
-            (result = ParseVersion(utf8Text, throwOnFailure: false)) != null;
+        public static bool TryParse(ReadOnlySpan<byte> utf8Text, [NotNullWhen(true)] out Version? result)
+        {
+            result = ParseVersion(utf8Text, throwOnFailure: false);
+            return result is not null;
+        }
 
         /// <inheritdoc cref="IUtf8SpanParsable{TSelf}.TryParse(ReadOnlySpan{byte}, IFormatProvider?, out TSelf)"/>
-        static bool IUtf8SpanParsable<Version>.TryParse(ReadOnlySpan<byte> utf8Text, IFormatProvider? provider, [NotNullWhen(true)] out Version? result) =>
-            (result = ParseVersion(utf8Text, throwOnFailure: false)) != null;
+        static bool IUtf8SpanParsable<Version>.TryParse(ReadOnlySpan<byte> utf8Text, IFormatProvider? provider, [NotNullWhen(true)] out Version? result)
+        {
+            result = ParseVersion(utf8Text, throwOnFailure: false);
+            return result is not null;
+        }
 
         private static Version? ParseVersion<TChar>(ReadOnlySpan<TChar> input, bool throwOnFailure)
             where TChar : unmanaged, IUtfChar<TChar>
