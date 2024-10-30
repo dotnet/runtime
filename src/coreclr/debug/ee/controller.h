@@ -1095,6 +1095,7 @@ class DebuggerController
     // fp is the frame pointer for that method.
     static void DispatchMethodEnter(void * pIP, FramePointer fp);
     static void DispatchMulticastDelegate(DELEGATEREF pbDel, INT32 countDel);
+    static void DispatchExternalMethodFixup(PCODE addr);
 
 
     // Delete any patches that exist for a specific module and optionally a specific AppDomain.
@@ -1318,6 +1319,9 @@ public:
     void EnableMultiCastDelegate();
     void DisableMultiCastDelegate();
 
+    void EnableExternalMethodFixup();
+    void DisableExternalMethodFixup();
+
     void DisableAll();
 
     virtual DEBUGGER_CONTROLLER_TYPE GetDCType( void )
@@ -1419,6 +1423,8 @@ public:
 
     virtual void TriggerMulticastDelegate(DELEGATEREF pDel, INT32 delegateCount);
 
+    virtual void TriggerExternalMethodFixup(PCODE target);
+
     // Send the managed debug event.
     // This is called after TriggerPatch/TriggerSingleStep actually trigger.
     // Note this can have a strange interaction with SetIp. Specifically this thread:
@@ -1458,6 +1464,7 @@ private:
     bool                m_deleted;
     bool                m_fEnableMethodEnter;
     bool                m_multicastDelegateHelper;
+    bool                m_externalMethodFixup;
 
 #endif // !DACCESS_COMPILE
 };
@@ -1696,6 +1703,7 @@ protected:
 
     virtual void TriggerMethodEnter(Thread * thread, DebuggerJitInfo * dji, const BYTE * ip, FramePointer fp);
     void TriggerMulticastDelegate(DELEGATEREF pDel, INT32 delegateCount);
+    void TriggerExternalMethodFixup(PCODE target);
 
     void ResetRange();
 

@@ -3341,22 +3341,12 @@ bool Compiler::fgReorderBlocks(bool useProfile)
 
     if (useProfile)
     {
+        // Don't run the new layout until we get to the backend,
+        // since LSRA can introduce new blocks, and lowering can churn the flowgraph.
+        //
         if (JitConfig.JitDoReversePostOrderLayout())
         {
-            fgDoReversePostOrderLayout();
-            fgMoveColdBlocks();
-
-            if (compHndBBtabCount != 0)
-            {
-                fgFindEHRegionEnds();
-            }
-
-            // Renumber blocks to facilitate LSRA's order of block visitation
-            // TODO: Consider removing this, and using traversal order in lSRA
-            //
-            fgRenumberBlocks();
-
-            return true;
+            return (newRarelyRun || movedBlocks || optimizedSwitches);
         }
 
         // We will be reordering blocks, so ensure the false target of a BBJ_COND block is its next block
@@ -4660,7 +4650,8 @@ void Compiler::fgMoveHotJumps()
 }
 
 //-----------------------------------------------------------------------------
-// fgDoReversePostOrderLayout: Reorder blocks using a greedy RPO traversal.
+// fgDoReversePostOrderLayout: Reorder blocks using a greedy RPO traversal,
+// taking care to keep loop bodies compact.
 //
 void Compiler::fgDoReversePostOrderLayout()
 {
@@ -4675,9 +4666,19 @@ void Compiler::fgDoReversePostOrderLayout()
     }
 #endif // DEBUG
 
-    // Compute DFS of all blocks in the method, using profile data to determine the order successors are visited in
+    // Compute DFS of all blocks in the method, using profile data to determine the order successors are visited in.
+    // Then, identify any loops in the DFS tree so we can keep their bodies compact.
     //
-    FlowGraphDfsTree* const dfsTree = fgComputeDfs</* useProfile */ true>();
+    FlowGraphDfsTree* const      dfsTree       = fgComputeDfs</* useProfile */ true>();
+    FlowGraphNaturalLoops* const loops         = FlowGraphNaturalLoops::Find(dfsTree);
+    BasicBlock** const           rpoSequence   = new (this, CMK_BasicBlock) BasicBlock*[dfsTree->GetPostOrderCount()];
+    unsigned                     index         = dfsTree->GetPostOrderCount();
+    auto                         addToSequence = [rpoSequence, &index](BasicBlock* block) {
+        assert(index != 0);
+        rpoSequence[--index] = block;
+    };
+
+    fgVisitBlocksInLoopAwareRPO(dfsTree, loops, addToSequence);
 
     // Fast path: We don't have any EH regions, so just reorder the blocks
     //
@@ -4685,10 +4686,14 @@ void Compiler::fgDoReversePostOrderLayout()
     {
         for (unsigned i = dfsTree->GetPostOrderCount() - 1; i != 0; i--)
         {
-            BasicBlock* const block       = dfsTree->GetPostOrder(i);
-            BasicBlock* const blockToMove = dfsTree->GetPostOrder(i - 1);
-            fgUnlinkBlock(blockToMove);
-            fgInsertBBafter(block, blockToMove);
+            BasicBlock* const block       = rpoSequence[i];
+            BasicBlock* const blockToMove = rpoSequence[i - 1];
+
+            if (!block->NextIs(blockToMove))
+            {
+                fgUnlinkBlock(blockToMove);
+                fgInsertBBafter(block, blockToMove);
+            }
         }
 
         fgMoveHotJumps</* hasEH */ false>();
@@ -4733,8 +4738,8 @@ void Compiler::fgDoReversePostOrderLayout()
     //
     for (unsigned i = dfsTree->GetPostOrderCount() - 1; i != 0; i--)
     {
-        BasicBlock* const block       = dfsTree->GetPostOrder(i);
-        BasicBlock* const blockToMove = dfsTree->GetPostOrder(i - 1);
+        BasicBlock* const block       = rpoSequence[i];
+        BasicBlock* const blockToMove = rpoSequence[i - 1];
 
         // Only reorder blocks within the same EH region -- we don't want to make them non-contiguous
         //
@@ -4747,8 +4752,11 @@ void Compiler::fgDoReversePostOrderLayout()
                 continue;
             }
 
-            fgUnlinkBlock(blockToMove);
-            fgInsertBBafter(block, blockToMove);
+            if (!block->NextIs(blockToMove))
+            {
+                fgUnlinkBlock(blockToMove);
+                fgInsertBBafter(block, blockToMove);
+            }
         }
     }
 
@@ -4769,6 +4777,9 @@ void Compiler::fgDoReversePostOrderLayout()
 //
 // Notes:
 //    Exception handlers are assumed to be cold, so we won't move blocks within them.
+//    On platforms that don't use funclets, we should use Compiler::fgRelocateEHRegions to move cold handlers.
+//    Note that Compiler::fgMoveColdBlocks will break up EH regions to facilitate intermediate transformations.
+//    To reestablish contiguity of EH regions, callers need to follow this with Compiler::fgRebuildEHRegions.
 //
 void Compiler::fgMoveColdBlocks()
 {
@@ -4783,212 +4794,63 @@ void Compiler::fgMoveColdBlocks()
     }
 #endif // DEBUG
 
-    auto moveColdMainBlocks = [this]() {
-        // Find the last block in the main body that isn't part of an EH region
-        //
-        BasicBlock* lastMainBB;
-        for (lastMainBB = this->fgLastBBInMainFunction(); lastMainBB != nullptr; lastMainBB = lastMainBB->Prev())
+    auto moveBlock = [this](BasicBlock* block, BasicBlock* insertionPoint) {
+        assert(block != insertionPoint);
+        // Don't move handler blocks.
+        // Also, leave try entries behind as a breadcrumb for where to reinsert try blocks.
+        if (!bbIsTryBeg(block) && !block->hasHndIndex())
         {
-            if (!lastMainBB->hasTryIndex() && !lastMainBB->hasHndIndex())
+            if (block->isBBCallFinallyPair())
             {
-                break;
-            }
-        }
-
-        // Nothing to do if there are two or fewer non-EH blocks
-        //
-        if ((lastMainBB == nullptr) || lastMainBB->IsFirst() || lastMainBB->PrevIs(fgFirstBB))
-        {
-            return;
-        }
-
-        // Search the main method body for rarely-run blocks to move
-        //
-        BasicBlock* prev;
-        for (BasicBlock* block = lastMainBB->Prev(); block != fgFirstBB; block = prev)
-        {
-            prev = block->Prev();
-
-            // We only want to move cold blocks.
-            // Also, don't consider blocks in EH regions for now; only move blocks in the main method body.
-            // Finally, don't move block if it is the beginning of a call-finally pair,
-            // as we want to keep these pairs contiguous
-            // (if we encounter the end of a pair below, we'll move the whole pair).
-            //
-            if (!block->isBBWeightCold(this) || block->hasTryIndex() || block->hasHndIndex() ||
-                block->isBBCallFinallyPair())
-            {
-                continue;
-            }
-
-            this->fgUnlinkBlock(block);
-            this->fgInsertBBafter(lastMainBB, block);
-
-            // If block is the end of a call-finally pair, prev is the beginning of the pair.
-            // Move prev to before block to keep the pair contiguous.
-            //
-            if (block->KindIs(BBJ_CALLFINALLYRET))
-            {
-                BasicBlock* const callFinally = prev;
-                prev                          = prev->Prev();
-                assert(callFinally->KindIs(BBJ_CALLFINALLY));
-                assert(!callFinally->HasFlag(BBF_RETLESS_CALL));
-                this->fgUnlinkBlock(callFinally);
-                this->fgInsertBBafter(lastMainBB, callFinally);
-            }
-        }
-
-        // We have moved all cold main blocks before lastMainBB to after lastMainBB.
-        // If lastMainBB itself is cold, move it to the end of the method to restore its relative ordering.
-        //
-        if (lastMainBB->isBBWeightCold(this))
-        {
-            BasicBlock* const newLastMainBB = this->fgLastBBInMainFunction();
-            if (lastMainBB != newLastMainBB)
-            {
-                BasicBlock* const prev = lastMainBB->Prev();
-                this->fgUnlinkBlock(lastMainBB);
-                this->fgInsertBBafter(newLastMainBB, lastMainBB);
-
-                // Call-finally check
-                //
-                if (lastMainBB->KindIs(BBJ_CALLFINALLYRET))
+                BasicBlock* const callFinallyRet = block->Next();
+                if (callFinallyRet != insertionPoint)
                 {
-                    assert(prev->KindIs(BBJ_CALLFINALLY));
-                    assert(!prev->HasFlag(BBF_RETLESS_CALL));
-                    assert(prev != newLastMainBB);
-                    this->fgUnlinkBlock(prev);
-                    this->fgInsertBBafter(newLastMainBB, prev);
+                    fgUnlinkRange(block, callFinallyRet);
+                    fgMoveBlocksAfter(block, callFinallyRet, insertionPoint);
                 }
+            }
+            else
+            {
+                fgUnlinkBlock(block);
+                fgInsertBBafter(insertionPoint, block);
             }
         }
     };
 
-    moveColdMainBlocks();
-
-    // No EH regions
-    //
-    if (compHndBBtabCount == 0)
+    BasicBlock* const lastMainBB = fgLastBBInMainFunction();
+    if (lastMainBB->IsFirst())
     {
         return;
     }
 
-    // We assume exception handlers are cold, so we won't bother moving blocks within them.
-    // We will move blocks only within try regions.
-    // First, determine where each try region ends, without considering nested regions.
-    // We will use these end blocks as insertion points.
+    // Search the main method body for rarely-run blocks to move
     //
-    BasicBlock** const tryRegionEnds = new (this, CMK_Generic) BasicBlock* [compHndBBtabCount] {};
-
-    for (BasicBlock* const block : Blocks(fgFirstBB, fgLastBBInMainFunction()))
-    {
-        if (block->hasTryIndex())
-        {
-            tryRegionEnds[block->getTryIndex()] = block;
-        }
-    }
-
-    // Search all try regions in the main method body for cold blocks to move
-    //
-    BasicBlock* prev;
-    for (BasicBlock* block = fgLastBBInMainFunction(); block != fgFirstBB; block = prev)
+    for (BasicBlock *block = lastMainBB->Prev(), *prev; !block->IsFirst(); block = prev)
     {
         prev = block->Prev();
 
-        // Only consider cold blocks in try regions.
-        // If we have such a block that is also part of an exception handler, don't bother moving it.
-        // Finally, don't move block if it is the beginning of a call-finally pair,
+        // We only want to move cold blocks.
+        // Also, don't move block if it is the end of a call-finally pair,
         // as we want to keep these pairs contiguous
-        // (if we encounter the end of a pair below, we'll move the whole pair).
+        // (if we encounter the beginning of a pair, we'll move the whole pair).
         //
-        if (!block->isBBWeightCold(this) || !block->hasTryIndex() || block->hasHndIndex() ||
-            block->isBBCallFinallyPair())
+        if (!block->isBBWeightCold(this) || block->isBBCallFinallyPairTail())
         {
             continue;
         }
 
-        const unsigned  tryIndex = block->getTryIndex();
-        EHblkDsc* const HBtab    = ehGetDsc(tryIndex);
-
-        // Don't move the beginning of a try region.
-        // Also, if this try region's entry is cold, don't bother moving its blocks.
-        //
-        if ((HBtab->ebdTryBeg == block) || HBtab->ebdTryBeg->isBBWeightCold(this))
-        {
-            continue;
-        }
-
-        BasicBlock* const insertionPoint = tryRegionEnds[tryIndex];
-        assert(insertionPoint != nullptr);
-
-        // Don't move the end of this try region
-        //
-        if (block == insertionPoint)
-        {
-            continue;
-        }
-
-        fgUnlinkBlock(block);
-        fgInsertBBafter(insertionPoint, block);
-
-        // Keep call-finally pairs contiguous
-        //
-        if (block->KindIs(BBJ_CALLFINALLYRET))
-        {
-            BasicBlock* const callFinally = prev;
-            prev                          = prev->Prev();
-            assert(callFinally->KindIs(BBJ_CALLFINALLY));
-            assert(!callFinally->HasFlag(BBF_RETLESS_CALL));
-            fgUnlinkBlock(callFinally);
-            fgInsertBBafter(insertionPoint, callFinally);
-        }
+        moveBlock(block, lastMainBB);
     }
 
-    // Find the new try region ends
+    // We have moved all cold main blocks before lastMainBB to after lastMainBB.
+    // If lastMainBB itself is cold, move it to the end of the method to restore its relative ordering.
     //
-    for (unsigned XTnum = 0; XTnum < compHndBBtabCount; XTnum++)
+    if (lastMainBB->isBBWeightCold(this) && !lastMainBB->isBBCallFinallyPairTail())
     {
-        BasicBlock* const tryEnd = tryRegionEnds[XTnum];
-
-        // This try region isn't in the main method body
-        //
-        if (tryEnd == nullptr)
+        BasicBlock* const newLastMainBB = fgLastBBInMainFunction();
+        if (lastMainBB != newLastMainBB)
         {
-            continue;
-        }
-
-        // If we moved cold blocks to the end of this try region,
-        // search for the new end block
-        //
-        BasicBlock* newTryEnd = tryEnd;
-        for (BasicBlock* const block : Blocks(tryEnd, fgLastBBInMainFunction()))
-        {
-            if (!BasicBlock::sameTryRegion(tryEnd, block))
-            {
-                break;
-            }
-
-            newTryEnd = block;
-        }
-
-        // We moved cold blocks to the end of this try region, but the old end block is cold, too.
-        // Move the old end block to the end of the region to preserve its relative ordering.
-        //
-        if ((tryEnd != newTryEnd) && !tryEnd->hasHndIndex() && tryEnd->isBBWeightCold(this))
-        {
-            BasicBlock* const prev = tryEnd->Prev();
-            fgUnlinkBlock(tryEnd);
-            fgInsertBBafter(newTryEnd, tryEnd);
-
-            // Keep call-finally pairs contiguous
-            //
-            if (tryEnd->KindIs(BBJ_CALLFINALLYRET))
-            {
-                assert(prev->KindIs(BBJ_CALLFINALLY));
-                assert(!prev->HasFlag(BBF_RETLESS_CALL));
-                fgUnlinkBlock(prev);
-                fgInsertBBafter(newTryEnd, prev);
-            }
+            moveBlock(lastMainBB, newLastMainBB);
         }
     }
 }

@@ -954,7 +954,7 @@ namespace System.Collections.Concurrent.Tests
             Assert.True(dictionary.IsEmpty, "TestClear: FAILED.  IsEmpty returned false after Clear");
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))]
         [InlineData(3)]
         [InlineData(1_162_687)]
         public static void TestCapacity(int capacity)

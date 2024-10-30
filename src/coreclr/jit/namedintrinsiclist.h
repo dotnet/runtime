@@ -77,6 +77,8 @@ enum NamedIntrinsic : unsigned short
     NI_System_Threading_Thread_get_ManagedThreadId,
     NI_System_Threading_Volatile_Read,
     NI_System_Threading_Volatile_Write,
+    NI_System_Threading_Volatile_ReadBarrier,
+    NI_System_Threading_Volatile_WriteBarrier,
     NI_System_Type_get_IsEnum,
     NI_System_Type_GetEnumUnderlyingType,
     NI_System_Type_get_IsValueType,
@@ -116,6 +118,8 @@ enum NamedIntrinsic : unsigned short
     NI_System_Runtime_CompilerServices_RuntimeHelpers_IsReferenceOrContainsReferences,
     NI_System_Runtime_CompilerServices_RuntimeHelpers_GetMethodTable,
 
+    NI_System_Runtime_CompilerServices_StaticsHelpers_VolatileReadAsByref,
+
     NI_System_Runtime_InteropService_MemoryMarshal_GetArrayDataReference,
 
     NI_System_String_Equals,
@@ -144,7 +148,6 @@ enum NamedIntrinsic : unsigned short
     NI_System_Threading_Interlocked_Exchange,
     NI_System_Threading_Interlocked_ExchangeAdd,
     NI_System_Threading_Interlocked_MemoryBarrier,
-    NI_System_Threading_Interlocked_ReadMemoryBarrier,
 
     // These two are special marker IDs so that we still get the inlining profitability boost
     NI_System_Numerics_Intrinsic,

@@ -3311,6 +3311,9 @@ namespace System.Security.Cryptography.X509Certificates
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         public string ExportPkcs7Pem() { throw null; }
         public System.Security.Cryptography.X509Certificates.X509Certificate2Collection Find(System.Security.Cryptography.X509Certificates.X509FindType findType, object findValue, bool validOnly) { throw null; }
+        public System.Security.Cryptography.X509Certificates.X509Certificate2Collection FindByThumbprint(System.Security.Cryptography.HashAlgorithmName hashAlgorithm, System.ReadOnlySpan<byte> thumbprintBytes) { throw null; }
+        public System.Security.Cryptography.X509Certificates.X509Certificate2Collection FindByThumbprint(System.Security.Cryptography.HashAlgorithmName hashAlgorithm, System.ReadOnlySpan<char> thumbprintHex) { throw null; }
+        public System.Security.Cryptography.X509Certificates.X509Certificate2Collection FindByThumbprint(System.Security.Cryptography.HashAlgorithmName hashAlgorithm, string thumbprintHex) { throw null; }
         public new System.Security.Cryptography.X509Certificates.X509Certificate2Enumerator GetEnumerator() { throw null; }
         [System.ObsoleteAttribute("Loading certificate data through the constructor or Import is obsolete. Use X509CertificateLoader instead to load certificates.", DiagnosticId="SYSLIB0057", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public void Import(byte[] rawData) { }
