@@ -16,9 +16,9 @@ namespace System.Runtime.CompilerServices
         [LibraryImport(RuntimeHelpers.QCall)]
         internal static partial void ThrowInvalidCastException(void* fromTypeHnd, void* toTypeHnd);
 
-        internal static void ThrowInvalidCastException(object fromTypeHnd, void* toTypeHnd)
+        internal static void ThrowInvalidCastException(object fromType, void* toTypeHnd)
         {
-            ThrowInvalidCastException(RuntimeHelpers.GetMethodTable(fromTypeHnd), toTypeHnd);
+            ThrowInvalidCastException(RuntimeHelpers.GetMethodTable(fromType), toTypeHnd);
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
