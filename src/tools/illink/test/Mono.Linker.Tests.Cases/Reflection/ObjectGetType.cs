@@ -53,10 +53,6 @@ namespace Mono.Linker.Tests.Cases.Reflection
 
 			DataFlowUnusedGetType.Test ();
 
-			NullValue.Test ();
-			NoValue.Test ();
-			UnknownValue.Test ();
-
 			PrivateMembersOnBaseTypesAppliedToDerived.Test ();
 
 			IsInstOf.Test ();
@@ -1468,60 +1464,6 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		}
 
 		[Kept]
-		class NullValue
-		{
-			[Kept]
-			class TestType
-			{
-			}
-
-			[Kept]
-			[ExpectedWarning ("IL2072", nameof (DataFlowTypeExtensions.RequiresAll) + "(Type)", nameof (Object.GetType) + "()")]
-			public static void Test ()
-			{
-				TestType nullInstance = null;
-				// Even though this throws at runtime, we warn about the return value of GetType
-				nullInstance.GetType ().RequiresAll ();
-			}
-		}
-
-		[Kept]
-		class NoValue
-		{
-			[Kept]
-			[ExpectedWarning ("IL2072", nameof (DataFlowTypeExtensions.RequiresAll) + "(Type)", nameof (Object.GetType) + "()")]
-			public static void Test ()
-			{
-				Type t = null;
-				Type noValue = Type.GetTypeFromHandle (t.TypeHandle);
-				// Even though the above throws at runtime, we warn about the return value of GetType
-				noValue.GetType ().RequiresAll ();
-			}
-		}
-
-		[Kept]
-		class UnknownValue
-		{
-			[Kept]
-			[KeptMember (".ctor()")]
-			class TestType
-			{
-			}
-
-			[Kept]
-			static TestType GetInstance () => new TestType ();
-
-			[Kept]
-			[ExpectedWarning ("IL2072", nameof (DataFlowTypeExtensions.RequiresAll) + "(Type)", nameof (Object.GetType) + "()")]
-			public static void Test ()
-			{
-				TestType unknownValue = GetInstance ();
-				// Should warn about the return value of GetType
-				unknownValue.GetType ().RequiresAll ();
-			}
-		}
-
-		[Kept]
 		class PrivateMembersOnBaseTypesAppliedToDerived
 		{
 			[Kept]
@@ -1584,7 +1526,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			}
 
 			[Kept]
-			[UnexpectedWarning ("IL2072", Tool.TrimmerAnalyzerAndNativeAot, "https://github.com/dotnet/runtime/issues/93720")]
+			[UnexpectedWarning ("IL2072", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/93720")]
 			static void TestIsInstOf (object o)
 			{
 				if (o is Target t) {
@@ -1593,10 +1535,20 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			}
 
 			[Kept]
+			[ExpectedWarning ("IL2072", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/93720")]
+			static void TestIsInstOfMismatch (object o)
+			{
+				if (o is Target t) {
+					t.GetType ().RequiresPublicMethods ();
+				}
+			}
+
+			[Kept]
 			public static void Test ()
 			{
 				var target = new Target ();
 				TestIsInstOf (target);
+				TestIsInstOfMismatch (target);
 			}
 		}
 

@@ -736,7 +736,7 @@ namespace DebuggerTests
                 await EvaluateOnCallFrameAndCheck(id,
                    ("myList+\"asd\"", TString("System.Collections.Generic.List`1[System.Int32]asd")),
                    ("dt+\"asd\"", TString("1/1/0001 12:00:00 AMasd")),
-                   ("myClass+\"asd\"", TString("OverridenToStringasd")),
+                   ("myClass+\"asd\"", TString("OverriddenToStringasd")),
                    ("listNull+\"asd\"", TString("asd"))
                 );
                 await CheckEvaluateFail(id,

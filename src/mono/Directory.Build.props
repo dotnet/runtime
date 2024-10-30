@@ -12,7 +12,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <!-- Version of the Apple OS SDKs we target. Usually empty so the latest version is used but can be overriden externally. -->
+    <!-- Version of the Apple OS SDKs we target. Usually empty so the latest version is used but can be overridden externally. -->
     <iOSVersion></iOSVersion>
     <tvOSVersion></tvOSVersion>
     <watchOSVersion></watchOSVersion>

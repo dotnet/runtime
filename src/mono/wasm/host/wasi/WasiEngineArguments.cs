@@ -30,6 +30,7 @@ internal sealed class WasiEngineArguments
 
     private OptionSet GetOptions() => new OptionSet
     {
+        // until WASI can work with unix exit code https://github.com/WebAssembly/wasi-cli/pull/44
         { "forward-exit-code", "Forward process exit code via stderr", v => ForwardExitCode = true }
     };
 

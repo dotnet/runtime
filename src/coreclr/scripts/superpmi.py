@@ -695,11 +695,6 @@ class SuperPMICollect:
 
         if coreclr_args.crossgen2:
             self.corerun = os.path.join(self.core_root, self.corerun_tool_name)
-            if coreclr_args.dotnet_tool_path is None:
-                self.crossgen2_driver_tool = self.corerun
-            else:
-                self.crossgen2_driver_tool = coreclr_args.dotnet_tool_path
-            logging.debug("Using crossgen2 driver tool %s", self.crossgen2_driver_tool)
 
         if coreclr_args.pmi or coreclr_args.crossgen2:
             self.assemblies = coreclr_args.assemblies
@@ -1089,7 +1084,7 @@ class SuperPMICollect:
                     # Log what is in the response file
                     write_file_to_log(rsp_filepath)
 
-                    command = [self.crossgen2_driver_tool, self.coreclr_args.crossgen2_tool_path, "@" + rsp_filepath]
+                    command = [self.coreclr_args.crossgen2_tool_path, "@" + rsp_filepath]
                     command_string = " ".join(command)
                     logging.debug("%s%s", print_prefix, command_string)
 
@@ -1952,7 +1947,7 @@ def aggregate_diff_metrics(details_file):
     # Project out these fields for the saved diffs, to use for further
     # processing. Saving everything into memory is costly on memory when there
     # are a large number of diffs.
-    diffs_fields = ["Context", "Context size", "Base size", "Diff size", "Base PerfScore", "Diff PerfScore"]
+    diffs_fields = ["Context", "Context size", "Base ActualCodeBytes", "Diff ActualCodeBytes", "Base PerfScore", "Diff PerfScore"]
     diffs = []
 
     for row in read_csv(details_file):
@@ -1983,8 +1978,8 @@ def aggregate_diff_metrics(details_file):
             diff_dict["Failing compiles"] += 1
 
         if base_result == "Success" and diff_result == "Success":
-            base_size = int(row["Base size"])
-            diff_size = int(row["Diff size"])
+            base_size = int(row["Base ActualCodeBytes"])
+            diff_size = int(row["Diff ActualCodeBytes"])
             base_dict["Diffed code bytes"] += base_size
             diff_dict["Diffed code bytes"] += diff_size
 
@@ -2463,7 +2458,7 @@ class SuperPMIReplayAsmDiffs:
 
                     # If we are not specifying custom metrics then print a summary here, otherwise leave the summarization up to jit-analyze.
                     if self.coreclr_args.metrics is None:
-                        base_diff_sizes = [(int(r["Base size"]), int(r["Diff size"])) for r in diffs]
+                        base_diff_sizes = [(int(r["Base ActualCodeBytes"]), int(r["Diff ActualCodeBytes"])) for r in diffs]
                         (num_size_improvements, num_size_regressions, num_size_same, byte_improvements, byte_regressions) = calculate_size_improvements_regressions(base_diff_sizes)
 
                         num_diffs_str = "{:,d} contexts with diffs".format(len(diffs))
@@ -2686,8 +2681,8 @@ class SuperPMIReplayAsmDiffs:
             display_subset("Smallest {} contexts with binary differences:", smallest_contexts)
 
             if self.coreclr_args.metrics is None:
-                base_metric_name = "Base size"
-                diff_metric_name = "Diff size"
+                base_metric_name = "Base ActualCodeBytes"
+                diff_metric_name = "Diff ActualCodeBytes"
             else:
                 base_metric_name = "Base PerfScore"
                 diff_metric_name = "Diff PerfScore"
@@ -2718,12 +2713,12 @@ class SuperPMIReplayAsmDiffs:
             display_subset("Top {} regressions, percentage-wise:", top_regressions_pct)
 
             # 20 contexts without size diffs (possibly GC info diffs), sorted by size
-            zero_size_diffs = filter(lambda r: int(r["Diff size"]) == int(r["Base size"]), diffs)
+            zero_size_diffs = filter(lambda r: int(r["Diff ActualCodeBytes"]) == int(r["Base ActualCodeBytes"]), diffs)
             smallest_zero_size_contexts = sorted(zero_size_diffs, key=lambda r: int(r["Context size"]))[:20]
 
             display_subset("Smallest {} zero sized diffs:", smallest_zero_size_contexts)
 
-            by_diff_size_pct_examples = [diff for diff in by_diff_size_pct if abs(int(diff['Diff size']) - int(diff['Base size'])) < 50]
+            by_diff_size_pct_examples = [diff for diff in by_diff_size_pct if abs(int(diff['Diff ActualCodeBytes']) - int(diff['Base ActualCodeBytes'])) < 50]
             if len(by_diff_size_pct_examples) == 0:
                 by_diff_size_pct_examples = by_diff_size_pct
 
@@ -2834,7 +2829,7 @@ def write_asmdiffs_markdown_summary(write_fh, base_jit_options, diff_jit_options
                 write_fh.write("|---|--:|--:|--:|--:|--:|--:|\n")
 
                 def write_row(name, diffs):
-                    base_diff_sizes = [(int(r["Base size"]), int(r["Diff size"])) for r in diffs]
+                    base_diff_sizes = [(int(r["Base ActualCodeBytes"]), int(r["Diff ActualCodeBytes"])) for r in diffs]
                     (num_improvements, num_regressions, num_same, byte_improvements, byte_regressions) = calculate_size_improvements_regressions(base_diff_sizes)
                     write_fh.write("|{}|{:,d}|{}|{}|{}|{}|{}|\n".format(
                         name,
@@ -2937,8 +2932,8 @@ def write_example_diffs_to_markdown_summary(write_fh, asm_diffs):
 
             with DetailsSection(write_fh, collection_name):
                 for (func_name, diff, diff_text) in examples_to_put_in_summary:
-                    base_size = int(diff["Base size"])
-                    diff_size = int(diff["Diff size"])
+                    base_size = int(diff["Base ActualCodeBytes"])
+                    diff_size = int(diff["Diff ActualCodeBytes"])
                     with DetailsSection(write_fh, "{} ({}) : {}".format(format_delta(base_size, diff_size), compute_and_format_pct(base_size, diff_size), func_name)):
                         write_fh.write(diff_text)
 
@@ -3138,7 +3133,7 @@ class SuperPMIReplayThroughputDiff:
                     os.remove(overall_md_summary_file)
 
                 with open(overall_md_summary_file, "w") as write_fh:
-                    self.write_tpdiff_markdown_summary(write_fh, base_jit_build_string_decoded, diff_jit_build_string_decoded, base_jit_options, diff_jit_options, tp_diffs, True)
+                    write_tpdiff_markdown_summary(write_fh, base_jit_build_string_decoded, diff_jit_build_string_decoded, base_jit_options, diff_jit_options, tp_diffs, True)
                     logging.info("  Summary Markdown file: %s", overall_md_summary_file)
 
                 short_md_summary_file = create_unique_file_name(self.coreclr_args.spmi_location, "tpdiff_short_summary", "md")
@@ -3147,7 +3142,7 @@ class SuperPMIReplayThroughputDiff:
                     os.remove(short_md_summary_file)
 
                 with open(short_md_summary_file, "w") as write_fh:
-                    self.write_tpdiff_markdown_summary(write_fh, base_jit_build_string_decoded, diff_jit_build_string_decoded, base_jit_options, diff_jit_options, tp_diffs, False)
+                    write_tpdiff_markdown_summary(write_fh, base_jit_build_string_decoded, diff_jit_build_string_decoded, base_jit_options, diff_jit_options, tp_diffs, False)
                     logging.info("  Short Summary Markdown file: %s", short_md_summary_file)                
 
         return True
@@ -4916,24 +4911,14 @@ def setup_args(args):
 
         if coreclr_args.crossgen2:
             # Can we find crossgen2?
-            crossgen2_tool_name = "crossgen2.dll"
+            crossgen2_tool_name = "crossgen2.exe" if platform.system() == "Windows" else "crossgen2"
             crossgen2_tool_path = os.path.abspath(os.path.join(coreclr_args.core_root, "crossgen2", crossgen2_tool_name))
             if not os.path.exists(crossgen2_tool_path):
                 print("`--crossgen2` is specified, but couldn't find " + crossgen2_tool_path + ". (Is it built?)")
                 sys.exit(1)
 
-            # Which dotnet will we use to run it?
-            dotnet_script_name = "dotnet.cmd" if platform.system() == "Windows" else "dotnet.sh"
-            dotnet_tool_path = os.path.abspath(os.path.join(coreclr_args.runtime_repo_location, dotnet_script_name))
-            if not os.path.exists(dotnet_tool_path):
-                dotnet_tool_name = determine_dotnet_tool_name(coreclr_args)
-                dotnet_tool_path = find_tool(coreclr_args, dotnet_tool_name, search_core_root=False, search_product_location=False, search_path=True, throw_on_not_found=False)  # Only search path
-
             coreclr_args.crossgen2_tool_path = crossgen2_tool_path
-            coreclr_args.dotnet_tool_path = dotnet_tool_path
             logging.debug("Using crossgen2 tool %s", coreclr_args.crossgen2_tool_path)
-            if coreclr_args.dotnet_tool_path is not None:
-                logging.debug("Using dotnet tool %s", coreclr_args.dotnet_tool_path)
 
         if coreclr_args.nativeaot:
             # Can we find nativeaot?

@@ -19,7 +19,7 @@ namespace Microsoft.Interop
             // Value type with MarshalAs(UnmanagedType.Error), to be marshalled as an unmanaged HRESULT.
             if (info is { ManagedType: ValueTypeInfo, MarshallingAttributeInfo: MarshalAsInfo(UnmanagedType.Error, _) })
             {
-                return ResolvedGenerator.Resolved(s_marshaller.Bind(info));
+                return ResolvedGenerator.Resolved(s_marshaller.Bind(info, context));
             }
 
             return ResolvedGenerator.UnresolvedGenerator;
@@ -29,14 +29,14 @@ namespace Microsoft.Interop
         {
             public ManagedTypeInfo AsNativeType(TypePositionInfo info) => SpecialTypeInfo.Int32;
 
-            public IEnumerable<StatementSyntax> Generate(TypePositionInfo info, StubCodeContext context)
+            public IEnumerable<StatementSyntax> Generate(TypePositionInfo info, StubCodeContext codeContext, StubIdentifierContext context)
             {
                 var (managed, unmanaged) = context.GetIdentifiers(info);
 
                 switch (context.CurrentStage)
                 {
-                    case StubCodeContext.Stage.Marshal:
-                        if (MarshallerHelpers.GetMarshalDirection(info, context) is MarshalDirection.ManagedToUnmanaged or MarshalDirection.Bidirectional)
+                    case StubIdentifierContext.Stage.Marshal:
+                        if (MarshallerHelpers.GetMarshalDirection(info, codeContext) is MarshalDirection.ManagedToUnmanaged or MarshalDirection.Bidirectional)
                         {
                             // unmanaged = Unsafe.BitCast<managedType, int>(managed);
                             yield return AssignmentStatement(
@@ -53,8 +53,8 @@ namespace Microsoft.Interop
                                     Argument(IdentifierName(managed))));
                         }
                         break;
-                    case StubCodeContext.Stage.Unmarshal:
-                        if (MarshallerHelpers.GetMarshalDirection(info, context) is MarshalDirection.UnmanagedToManaged or MarshalDirection.Bidirectional)
+                    case StubIdentifierContext.Stage.Unmarshal:
+                        if (MarshallerHelpers.GetMarshalDirection(info, codeContext) is MarshalDirection.UnmanagedToManaged or MarshalDirection.Bidirectional)
                         {
                             // managed = Unsafe.BitCast<int, managedType>(unmanaged);
                             yield return AssignmentStatement(
@@ -91,8 +91,8 @@ namespace Microsoft.Interop
                 return ValueBoundaryBehavior.NativeIdentifier;
             }
 
-            public ByValueMarshalKindSupport SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, TypePositionInfo info, StubCodeContext context, out GeneratorDiagnostic? diagnostic)
-                => ByValueMarshalKindSupportDescriptor.Default.GetSupport(marshalKind, info, context, out diagnostic);
+            public ByValueMarshalKindSupport SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, TypePositionInfo info, out GeneratorDiagnostic? diagnostic)
+                => ByValueMarshalKindSupportDescriptor.Default.GetSupport(marshalKind, info, out diagnostic);
 
             public bool UsesNativeIdentifier(TypePositionInfo info, StubCodeContext context) => true;
         }

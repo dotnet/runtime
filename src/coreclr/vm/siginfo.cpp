@@ -290,7 +290,7 @@ void SigPointer::ConvertToInternalExactlyOne(Module* pSigModule, SigTypeContext 
                     uint8_t required;
                     IfFailThrowBF(GetByte(&required), BFA_BAD_COMPLUS_SIG, pSigModule);
                     pSigBuilder->AppendByte(required);
-                    
+
                     // this check is not functional in DAC and provides no security against a malicious dump
                     // the DAC is prepared to receive an invalid type handle
 #ifndef DACCESS_COMPILE
@@ -2360,11 +2360,11 @@ BOOL SigPointer::HasCustomModifier(Module *pModule, LPCSTR szModName, CorElement
             uint8_t required;
             if (FAILED(sp.GetByte(&required)))
                 return FALSE;
-            
+
             void* typeHandle;
             if (FAILED(sp.GetPointer(&typeHandle)))
                 return FALSE;
-            
+
             TypeHandle type = TypeHandle::FromPtr(typeHandle);
             tk = type.GetCl();
             lookupModule = type.GetModule();
@@ -3272,11 +3272,6 @@ BOOL IsTypeDefEquivalent(mdToken tk, Module *pModule)
         // 4. Type is externally visible (i.e. public)
         if (!IsTypeDefExternallyVisible(tk, pModule, dwAttrType))
             return FALSE;
-
-        // since the token has not been loaded yet,
-        // its module might be not fully initialized in this domain
-        // take care of that possibility
-        pModule->EnsureAllocated();
 
         // 6. If type is nested, nesting type must be equivalent.
         if (IsTdNested(dwAttrType))
@@ -5420,7 +5415,7 @@ void MetaSig::EnsureSigValueTypesLoaded(MethodDesc *pMD)
     // The signature format is approximately:
     // CallingConvention   NumberOfArguments    ReturnType   Arg1  ...
     // There is also a blob length at pSig-1.
-    SigPointer ptr(pMD->GetSig());
+    SigPointer ptr = pMD->GetSigPointer();
 
     // Skip over calling convention.
     IfFailThrowBF(ptr.GetCallingConv(NULL), BFA_BAD_SIGNATURE, pModule);
@@ -5459,7 +5454,7 @@ void MetaSig::CheckSigTypesCanBeLoaded(MethodDesc * pMD)
     // The signature format is approximately:
     // CallingConvention   NumberOfArguments    ReturnType   Arg1  ...
     // There is also a blob length at pSig-1.
-    SigPointer ptr(pMD->GetSig());
+    SigPointer ptr = pMD->GetSigPointer();
 
     // Skip over calling convention.
     IfFailThrowBF(ptr.GetCallingConv(NULL), BFA_BAD_SIGNATURE, pModule);

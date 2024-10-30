@@ -19,7 +19,9 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!-- SDK pins this to a lower version https://github.com/dotnet/sdk/issues/43325 -->
     <PackageReference Include="System.Reflection.Metadata" Version="$(SystemReflectionMetadataToolsetVersion)" />
+    <!-- The SDK distributes the live version of Json we can't reference that https://github.com/dotnet/runtime/issues/108262 -->
     <PackageReference Include="System.Text.Json" Version="$(SystemTextJsonToolsetVersion)" />
   </ItemGroup>
 

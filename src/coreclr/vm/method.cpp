@@ -474,19 +474,6 @@ void MethodDesc::GetSigFromMetadata(IMDInternalImport * importer,
 }
 
 //*******************************************************************************
-PCCOR_SIGNATURE MethodDesc::GetSig()
-{
-    WRAPPER_NO_CONTRACT;
-
-    PCCOR_SIGNATURE pSig;
-    DWORD           cSig;
-
-    GetSig(&pSig, &cSig);
-
-    PREFIX_ASSUME(pSig != NULL);
-
-    return pSig;
-}
 
 Signature MethodDesc::GetSignature()
 {
@@ -2069,6 +2056,7 @@ PCODE MethodDesc::GetMultiCallableAddrOfVirtualizedCode(OBJECTREF *orThis, TypeH
         GC_TRIGGERS;
 
         PRECONDITION(IsVtableMethod());
+        PRECONDITION(!staticTH.IsNull() || !IsInterface()); // If this is a non-interface method, staticTH may be null
         POSTCONDITION(RETVAL != NULL);
     }
     CONTRACT_END;

@@ -358,6 +358,7 @@ set( JIT_HEADERS
   opcode.h
   optcse.h
   phase.h
+  priorityqueue.h
   promotion.h
   rangecheck.h
   rationalize.h

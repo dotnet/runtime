@@ -293,6 +293,8 @@ namespace ILLink.Shared.TrimAnalysis
 					} else if (typeHandleValue is RuntimeTypeHandleForValueWithDynamicallyAccessedMembers damAnnotatedHandle
 						&& (damAnnotatedHandle.UnderlyingTypeValue.DynamicallyAccessedMemberTypes & DynamicallyAccessedMemberTypes.NonPublicConstructors) != 0) {
 						// No action needed, NonPublicConstructors keeps the static constructor on the type
+					} else if (typeHandleValue is RuntimeTypeHandleForNullableSystemTypeValue) {
+						// No action needed, RunClassConstructor does not run the class constructor of the underlying type of Nullable<T>
 					} else {
 						_diagnosticContext.AddDiagnostic (DiagnosticId.UnrecognizedTypeInRuntimeHelpersRunClassConstructor, calledMethod.GetDisplayName ());
 					}

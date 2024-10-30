@@ -46,6 +46,35 @@ namespace System.Diagnostics.Metrics.Tests
             Assert.True(o is EventSource, "Expected object returned from MetricsEventSource.GetInstance() to be assignable to EventSource");
         }
 
+        // Tests that version event from MetricsEventSource is fired.
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void TestVersion()
+        {
+            RemoteExecutor.Invoke(static () =>
+            {
+                using var meter = new Meter("test"); // we need this to ensure MetricsEventSource.Logger creation.
+
+                using (var eventSourceListener = new MetricsEventListener(NullTestOutputHelper.Instance, EventKeywords.All, 60))
+                {
+                    var versionEvents = eventSourceListener.Events.Where(e => e.EventName == "Version");
+
+                    Assert.Single(versionEvents);
+
+                    var versionEvent = versionEvents.First();
+
+                    var version = new Version(
+                        (int)versionEvent.Payload[0],
+                        (int)versionEvent.Payload[1],
+                        (int)versionEvent.Payload[2]);
+
+                    Assert.NotNull(version);
+                    Assert.Equal(
+                        new Version(typeof(Meter).Assembly.GetCustomAttribute<AssemblyFileVersionAttribute>()?.Version ?? "0.0.0").ToString(3),
+                        version.ToString());
+                }
+            }).Dispose();
+        }
+
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
         [OuterLoop("Slow and has lots of console spew")]
         public void MultipleListeners_DifferentCounters()
@@ -249,7 +278,7 @@ namespace System.Diagnostics.Metrics.Tests
             Counter<int> c3 = meter3.CreateCounter<int>("counter3");
 
             EventWrittenEventArgs[] events;
-            using (MetricsEventListener listener = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, isShared: true, IntervalSecs, ""))
+            using (MetricsEventListener listener = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, isShared: true, IntervalSecs, "*"))
             {
                 listener.WaitForCollectionStop(s_waitForEventTimeout, 1);
                 c.Add(5);
@@ -1788,7 +1817,7 @@ namespace System.Diagnostics.Metrics.Tests
                 Assert.Equal(Helpers.FormatTags(i.Tags), e.InstrumentTags);
                 Assert.Equal(Helpers.FormatTags(i.Meter.Tags), e.MeterTags);
                 Assert.Equal(Helpers.FormatObjectHash(i.Meter.Scope), e.ScopeHash);
-                Assert.True(e.InstrumentId > 0);
+                Assert.True(e.InstrumentId >= 0); // It is possible getting Id 0 with InstrumentPublished event when measurements are not enabling  (e.g. CounterRateValuePublished event)
             }
 
             Assert.Equal(expectedInstruments.Length, publishEvents.Length);
@@ -2102,7 +2131,11 @@ namespace System.Diagnostics.Metrics.Tests
         protected override void OnEventWritten(EventWrittenEventArgs eventData)
         {
             string sessionId = eventData.Payload[0].ToString();
-            if (eventData.EventName != "MultipleSessionsNotSupportedError" && eventData.EventName != "MultipleSessionsConfiguredIncorrectlyError" && sessionId != "" && sessionId != _sessionId)
+            if (eventData.EventName != "MultipleSessionsNotSupportedError"
+                && eventData.EventName != "MultipleSessionsConfiguredIncorrectlyError"
+                && eventData.EventName != "Version"
+                && sessionId != ""
+                && sessionId != _sessionId)
             {
                 return;
             }

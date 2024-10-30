@@ -34,7 +34,7 @@ Dictionary elements must have strings as values, and must include an `"Identity"
 To use the task, you need to reference the assembly and add the task to the project, as well as declare the task parameters that correspond to the properties and items you want to retrieve from the json blob.
 
 ```xml
-<UsingTask TaskName="MyJsonReader" AssemblyFile="..\MonoTargetsTasks\bin\Debug\net6.0\MonoTargetsTasks.dll"
+<UsingTask TaskName="MyJsonReader" AssemblyFile="..\MonoTargetsTasks\bin\Debug\net10.0\MonoTargetsTasks.dll"
         TaskFactory="JsonToItemsTaskFactory.JsonToItemsTaskFactory">
     <ParameterGroup>
         <X1 ParameterType="System.String" Required="false" Output="true" />

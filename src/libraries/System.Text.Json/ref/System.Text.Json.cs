@@ -8,6 +8,7 @@ namespace System.Runtime.InteropServices
 {
     public static partial class JsonMarshal
     {
+        public static System.ReadOnlySpan<byte> GetRawUtf8PropertyName(System.Text.Json.JsonProperty property) { throw null; }
         public static System.ReadOnlySpan<byte> GetRawUtf8Value(System.Text.Json.JsonElement element) { throw null; }
     }
 }
@@ -209,6 +210,7 @@ namespace System.Text.Json
     }
     public static partial class JsonSerializer
     {
+        [System.Diagnostics.CodeAnalysis.FeatureSwitchDefinitionAttribute("System.Text.Json.JsonSerializer.IsReflectionEnabledByDefault")]
         public static bool IsReflectionEnabledByDefault { get { throw null; } }
         public static object? Deserialize(System.IO.Stream utf8Json, System.Text.Json.Serialization.Metadata.JsonTypeInfo jsonTypeInfo) { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("JSON serialization and deserialization might require types that cannot be statically analyzed and might need runtime code generation. Use System.Text.Json source generation for native AOT applications.")]
@@ -1041,6 +1043,12 @@ namespace System.Text.Json.Serialization
         KebabCaseLower = 4,
         KebabCaseUpper = 5,
     }
+    public enum JsonKnownReferenceHandler
+    {
+        Unspecified = 0,
+        Preserve = 1,
+        IgnoreCycles = 2,
+    }
     public sealed partial class JsonNumberEnumConverter<TEnum> : System.Text.Json.Serialization.JsonConverterFactory where TEnum : struct, System.Enum
     {
         public JsonNumberEnumConverter() { }
@@ -1141,6 +1149,7 @@ namespace System.Text.Json.Serialization
         public bool PropertyNameCaseInsensitive { get { throw null; } set { } }
         public System.Text.Json.Serialization.JsonKnownNamingPolicy PropertyNamingPolicy { get { throw null; } set { } }
         public System.Text.Json.JsonCommentHandling ReadCommentHandling { get { throw null; } set { } }
+        public System.Text.Json.Serialization.JsonKnownReferenceHandler ReferenceHandler { get { throw null; } set { } }
         public bool RespectNullableAnnotations { get { throw null; } set { } }
         public bool RespectRequiredConstructorParameters { get { throw null; } set { } }
         public System.Text.Json.Serialization.JsonUnknownTypeHandling UnknownTypeHandling { get { throw null; } set { } }

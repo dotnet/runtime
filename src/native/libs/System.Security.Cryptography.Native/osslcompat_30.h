@@ -17,6 +17,7 @@
 #define OSSL_KDF_PARAM_KEY    "key"
 #define OSSL_KDF_PARAM_SALT   "salt"
 #define OSSL_KDF_PARAM_INFO   "info"
+#define OSSL_KDF_PARAM_MODE   "mode"
 
 #define OSSL_MAC_PARAM_KEY    "key"
 #define OSSL_MAC_PARAM_CUSTOM "custom"
@@ -76,6 +77,7 @@ EVP_PKEY_CTX *EVP_PKEY_CTX_new_from_pkey(
     OSSL_LIB_CTX *libctx, EVP_PKEY *pkey, const char *propquery);
 
 OSSL_PARAM OSSL_PARAM_construct_end(void);
+OSSL_PARAM OSSL_PARAM_construct_int(const char *key, int *buf);
 OSSL_PARAM OSSL_PARAM_construct_int32(const char *key, int32_t *buf);
 OSSL_PARAM OSSL_PARAM_construct_octet_string(const char *key, void *buf, size_t bsize);
 OSSL_PARAM OSSL_PARAM_construct_utf8_string(const char *key, char *buf, size_t bsize);

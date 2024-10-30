@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import { dotnet, exit } from './_framework/dotnet.js'
+import { saveProfile } from './profiler.js'
 
 // Read test case from query string
 const params = new URLSearchParams(location.search);
@@ -27,6 +28,11 @@ dotnet
 
 // Modify runtime start based on test case
 switch (testCase) {
+    case "SatelliteAssembliesTest":
+        if (params.get("loadAllSatelliteResources") === "true") {
+            dotnet.withConfig({ loadAllSatelliteResources: true });
+        }
+        break;
     case "AppSettingsTest":
         dotnet.withApplicationEnvironment(params.get("applicationEnvironment"));
         break;
@@ -121,9 +127,20 @@ switch (testCase) {
         };
         dotnet.withConfig({ maxParallelDownloads: maxParallelDownloads });
         break;
+    case "ProfilerTest":
+        dotnet.withConfig({
+            logProfilerOptions: {
+                takeHeapshot: "ProfilerTest::TakeHeapshot",
+                configuration: "log:alloc,output=output.mlpd"
+            }
+        })
+        break;
+    case "OverrideBootConfigName":
+        dotnet.withConfigSrc("boot.json");
+        break;
 }
 
-const { setModuleImports, getAssemblyExports, getConfig, INTERNAL } = await dotnet.create();
+const { setModuleImports, Module, getAssemblyExports, getConfig, INTERNAL } = await dotnet.create();
 const config = getConfig();
 const exports = await getAssemblyExports(config.mainAssemblyName);
 const assemblyExtension = Object.keys(config.resources.coreAssembly)[0].endsWith('.wasm') ? ".wasm" : ".dll";
@@ -132,7 +149,7 @@ const assemblyExtension = Object.keys(config.resources.coreAssembly)[0].endsWith
 try {
     switch (testCase) {
         case "SatelliteAssembliesTest":
-            await exports.SatelliteAssembliesTest.Run();
+            await exports.SatelliteAssembliesTest.Run(params.get("loadAllSatelliteResources") !== "true");
             exit(0);
             break;
         case "LazyLoadingTest":
@@ -173,7 +190,7 @@ try {
             break;
         case "DebugLevelTest":
             testOutput("WasmDebugLevel: " + config.debugLevel);
-            exit(0);
+            exit(42);
             break;
         case "InterpPgoTest":
             setModuleImports('main.js', {
@@ -199,6 +216,30 @@ try {
                 countChars
             });
             exports.MemoryTest.Run();
+            exit(0);
+            break;
+        case "ProfilerTest":
+            console.log("not ready yet")
+            const myExports = await getAssemblyExports(config.mainAssemblyName);
+            const testMeaning = myExports.ProfilerTest.TestMeaning;
+            const takeHeapshot = myExports.ProfilerTest.TakeHeapshot;
+            console.log("ready");
+
+            dotnet.run();
+
+            const ret = testMeaning();
+            document.getElementById("out").innerHTML = ret;
+            console.debug(`ret: ${ret}`);
+
+            takeHeapshot();
+            saveProfile(Module);
+
+            let exit_code = ret == 42 ? 0 : 1;
+            exit(exit_code);
+            break;
+        case "OverrideBootConfigName":
+            testOutput("ConfigSrc: " + Module.configSrc);
+            exports.OverrideBootConfigNameTest.Run();
             exit(0);
             break;
         default:

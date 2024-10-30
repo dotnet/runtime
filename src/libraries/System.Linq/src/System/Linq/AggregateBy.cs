@@ -8,6 +8,22 @@ namespace System.Linq
 {
     public static partial class Enumerable
     {
+        /// <summary>
+        /// Applies an accumulator function over a sequence, grouping results by key.
+        /// </summary>
+        /// <typeparam name="TSource">The type of the elements of <paramref name="source"/>.</typeparam>
+        /// <typeparam name="TKey">The type of the key returned by <paramref name="keySelector"/>.</typeparam>
+        /// <typeparam name="TAccumulate">The type of the accumulator value.</typeparam>
+        /// <param name="source">An <see cref="IEnumerable{T}"/> to aggregate over.</param>
+        /// <param name="keySelector">A function to extract the key for each element.</param>
+        /// <param name="seed">The initial accumulator value.</param>
+        /// <param name="func">An accumulator function to be invoked on each element.</param>
+        /// <param name="keyComparer">An <see cref="IEqualityComparer{T}"/> to compare keys with.</param>
+        /// <returns>An enumerable containing the aggregates corresponding to each key deriving from <paramref name="source"/>.</returns>
+        /// <remarks>
+        /// This method is comparable to the <see cref="GroupBy{TSource, TKey}(IEnumerable{TSource}, Func{TSource, TKey})"/> methods
+        /// where each grouping is being aggregated into a single value as opposed to allocating a collection for each group.
+        /// </remarks>
         public static IEnumerable<KeyValuePair<TKey, TAccumulate>> AggregateBy<TSource, TKey, TAccumulate>(
             this IEnumerable<TSource> source,
             Func<TSource, TKey> keySelector,
@@ -36,6 +52,22 @@ namespace System.Linq
             return AggregateByIterator(source, keySelector, seed, func, keyComparer);
         }
 
+        /// <summary>
+        /// Applies an accumulator function over a sequence, grouping results by key.
+        /// </summary>
+        /// <typeparam name="TSource">The type of the elements of <paramref name="source"/>.</typeparam>
+        /// <typeparam name="TKey">The type of the key returned by <paramref name="keySelector"/>.</typeparam>
+        /// <typeparam name="TAccumulate">The type of the accumulator value.</typeparam>
+        /// <param name="source">An <see cref="IEnumerable{T}"/> to aggregate over.</param>
+        /// <param name="keySelector">A function to extract the key for each element.</param>
+        /// <param name="seedSelector">A factory for the initial accumulator value.</param>
+        /// <param name="func">An accumulator function to be invoked on each element.</param>
+        /// <param name="keyComparer">An <see cref="IEqualityComparer{T}"/> to compare keys with.</param>
+        /// <returns>An enumerable containing the aggregates corresponding to each key deriving from <paramref name="source"/>.</returns>
+        /// <remarks>
+        /// This method is comparable to the <see cref="GroupBy{TSource, TKey}(IEnumerable{TSource}, Func{TSource, TKey})"/> methods
+        /// where each grouping is being aggregated into a single value as opposed to allocating a collection for each group.
+        /// </remarks>
         public static IEnumerable<KeyValuePair<TKey, TAccumulate>> AggregateBy<TSource, TKey, TAccumulate>(
             this IEnumerable<TSource> source,
             Func<TSource, TKey> keySelector,

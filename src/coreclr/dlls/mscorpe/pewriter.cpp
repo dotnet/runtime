@@ -575,10 +575,6 @@ HRESULT PEWriter::Init(PESectionMan *pFrom, DWORD createFlags)
     {
         m_ntHeaders->FileHeader.Machine = VAL16(IMAGE_FILE_MACHINE_I386);
     }
-    else if ((createFlags & ICEE_CREATE_MACHINE_MASK) == ICEE_CREATE_MACHINE_IA64)
-    {
-        m_ntHeaders->FileHeader.Machine = VAL16(IMAGE_FILE_MACHINE_IA64);
-    }
     else if ((createFlags & ICEE_CREATE_MACHINE_MASK) == ICEE_CREATE_MACHINE_AMD64)
     {
         m_ntHeaders->FileHeader.Machine = VAL16(IMAGE_FILE_MACHINE_AMD64);

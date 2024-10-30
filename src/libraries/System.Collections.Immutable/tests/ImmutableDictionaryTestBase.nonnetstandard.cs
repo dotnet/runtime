@@ -262,7 +262,7 @@ namespace System.Collections.Immutable.Tests
             Assert.Throws<InvalidOperationException>(() => manualEnum.Current);
         }
 
-        internal abstract IBinaryTree GetRootNode<TKey, TValue>(IImmutableDictionary<TKey, TValue> dictionary);
+        internal abstract BinaryTreeProxy GetRootNode<TKey, TValue>(IImmutableDictionary<TKey, TValue> dictionary);
 
         private static void KeysOrValuesTestHelper<T>(ICollection<T> collection, T containedValue)
         {
@@ -287,7 +287,7 @@ namespace System.Collections.Immutable.Tests
 
         private void VerifyAvlTreeState<TKey, TValue>(IImmutableDictionary<TKey, TValue> dictionary)
         {
-            IBinaryTree rootNode = this.GetRootNode(dictionary);
+            BinaryTreeProxy rootNode = this.GetRootNode(dictionary);
             rootNode.VerifyBalanced();
             rootNode.VerifyHeightIsWithinTolerance(dictionary.Count);
         }

@@ -218,6 +218,12 @@ namespace TestStackOverflow
         [Fact]
         public static void TestStackOverflow3()
         {
+            if (RuntimeInformation.ProcessArchitecture == Architecture.Arm)
+            {
+                // Disabled on ARM due to https://github.com/dotnet/runtime/issues/107184
+                return;
+            }
+
             TestStackOverflow("stackoverflow3", "", out List<string> lines);
 
             if (!lines[lines.Count - 1].EndsWith("at TestStackOverflow3.Program.Main()"))

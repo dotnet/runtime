@@ -1001,6 +1001,7 @@ BOOL Thread::ReadyForAsyncException()
         else
         {
              CONTEXT ctx;
+             ctx.ContextFlags = CONTEXT_CONTROL;
              SetIP(&ctx, 0);
              SetSP(&ctx, 0);
              FillRegDisplay(&rd, &ctx);
@@ -2378,7 +2379,7 @@ void Thread::PerformPreemptiveGC()
         // BUG(github #10318) - when not using allocation contexts, the alloc lock
         // must be acquired here. Until fixed, this assert prevents random heap corruption.
         _ASSERTE(GCHeapUtilities::UseThreadAllocationContexts());
-        GCHeapUtilities::GetGCHeap()->StressHeap(&t_runtime_thread_locals.alloc_context);
+        GCHeapUtilities::GetGCHeap()->StressHeap(&t_runtime_thread_locals.alloc_context.m_GCAllocContext);
         m_bGCStressing = FALSE;
     }
     m_GCOnTransitionsOK = TRUE;
@@ -3735,6 +3736,9 @@ ThrowControlForThread(
 #ifdef FEATURE_EH_FUNCLETS
         FaultingExceptionFrame *pfef
 #endif // FEATURE_EH_FUNCLETS
+#if defined(TARGET_AMD64) && defined(TARGET_WINDOWS)
+        , TADDR ssp
+#endif // TARGET_AMD64 && TARGET_WINDOWS
         )
 {
     STATIC_CONTRACT_THROWS;
@@ -3783,6 +3787,10 @@ ThrowControlForThread(
     FaultingExceptionFrame *pfef = &fef;
 #endif // FEATURE_EH_FUNCLETS
     pfef->InitAndLink(pThread->m_OSContext);
+
+#if defined(TARGET_AMD64) && defined(TARGET_WINDOWS)
+    pfef->SetSSP(ssp);
+#endif
 
     // !!! Can not assert here.  Sometimes our EHInfo for catch clause extends beyond
     // !!! Jit_EndCatch.  Not sure if we have guarantee on catch clause.

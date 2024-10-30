@@ -10529,8 +10529,9 @@ object_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 				break;
 			}
 		}
-
-		while ((f = mono_class_get_fields_internal (k, &iter))) {
+                //Above for loop might end if 'k' is null , ensure 'k' is not 
+                //null before passing it to mono_class_get_fields_internal to avoid crash
+		while (k && (f = mono_class_get_fields_internal (k, &iter))) {
 			if (mono_class_get_field_token (f) == field_token) {
 				goto get_field_value;
 			}

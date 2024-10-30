@@ -58,7 +58,7 @@
     <ApiCompatEnableRuleCannotChangeParameterName>true</ApiCompatEnableRuleCannotChangeParameterName>
 
     <_ApiCompatCaptureGroupPattern>.+%5C$([System.IO.Path]::DirectorySeparatorChar)(.+)%5C$([System.IO.Path]::DirectorySeparatorChar)(.+)</_ApiCompatCaptureGroupPattern>
-    <_ApiCompatRuntimePrefixPattern>(.+)/(net%5Cd.%5Cd)-(.+)/(.+)</_ApiCompatRuntimePrefixPattern>
+    <_ApiCompatRuntimePrefixPattern>(.+)/(net%5Cd+%5C.%5Cd)-(.+)/(.+)</_ApiCompatRuntimePrefixPattern>
     <_ApiCompatLibReplacementString>lib/$1/$2</_ApiCompatLibReplacementString>
     <!-- CoreLib source projects have different output paths. -->
     <_ApiCompatLibReplacementString Condition="'$(MSBuildProjectName)' == 'System.Private.CoreLib'">lib/$(NetCoreAppCurrent)/$2</_ApiCompatLibReplacementString>
