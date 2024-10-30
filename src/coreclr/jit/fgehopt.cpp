@@ -248,7 +248,7 @@ PhaseStatus Compiler::fgRemoveEmptyFinally()
                 {
                     bool const removed = map->Remove(oldKey);
                     assert(removed);
-                    JITDUMP("ACD%u was in EH#%u handler region: removing (%u)\n", add->acdNum, XTnum);
+                    JITDUMP("ACD%u was in EH#%u handler region: removing\n", add->acdNum, XTnum);
                     JITDUMPEXEC(add->Dump());
                     continue;
                 }
