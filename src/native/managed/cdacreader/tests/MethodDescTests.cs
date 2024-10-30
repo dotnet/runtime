@@ -16,20 +16,15 @@ public class MethodDescTests
         TargetTestHelpers targetTestHelpers = new(arch);
 
         MockMemorySpace.Builder builder = new(targetTestHelpers);
-        Dictionary<DataType, Target.TypeInfo> types = new();
-        MockDescriptors.RuntimeTypeSystem rtsBuilder = new(types, builder) {
+        MockDescriptors.RuntimeTypeSystem rtsBuilder = new(builder) {
             // arbtrary address range
             TypeSystemAllocator = builder.CreateAllocator(start: 0x00000000_4a000000, end: 0x00000000_4b000000),
         };
-
-        MockDescriptors.MethodDescriptors.AddTypes(targetTestHelpers, types);
 
         MockDescriptors.Object objectBuilder = new(rtsBuilder) {
             // arbtrary adress range
             ManagedObjectAllocator = builder.CreateAllocator(start: 0x00000000_10000000, end: 0x00000000_20000000),
         };
-        MockDescriptors.Object.AddTypes(types, targetTestHelpers);
-
         var methodDescChunkAllocator = builder.CreateAllocator(start: 0x00000000_20002000, end: 0x00000000_20003000);
         var methodDescBuilder = new MockDescriptors.MethodDescriptors(rtsBuilder)
         {
@@ -39,7 +34,7 @@ public class MethodDescTests
         builder = builder
             .SetContracts([ nameof (Contracts.Object), nameof (Contracts.RuntimeTypeSystem) ])
             .SetGlobals(MockDescriptors.MethodDescriptors.Globals(targetTestHelpers))
-            .SetTypes(types);
+            .SetTypes(rtsBuilder.Types);
 
         methodDescBuilder.AddGlobalPointers();
 

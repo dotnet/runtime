@@ -728,10 +728,13 @@ internal class MockDescriptors
         internal MethodDescriptors(RuntimeTypeSystem rtsBuilder)
         {
             RTSBuilder = rtsBuilder;
+            AddTypes();
         }
 
-        internal static void AddTypes(TargetTestHelpers targetTestHelpers, Dictionary<DataType, Target.TypeInfo> types)
+        private void AddTypes()
         {
+            Dictionary<DataType, Target.TypeInfo> types = RTSBuilder.Types;
+            TargetTestHelpers targetTestHelpers = Builder.TargetTestHelpers;
             var layout = targetTestHelpers.LayoutFields(MethodDescFields);
             types[DataType.MethodDesc] = new Target.TypeInfo() { Fields = layout.Fields, Size = layout.Stride };
             layout = targetTestHelpers.LayoutFields(MethodDescChunkFields);
