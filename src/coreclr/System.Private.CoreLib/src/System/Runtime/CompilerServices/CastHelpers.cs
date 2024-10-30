@@ -637,8 +637,11 @@ namespace System.Runtime.CompilerServices
 
             MethodTable* pMT2 = RuntimeHelpers.GetMethodTable(obj);
             if ((pMT1->IsPrimitive && pMT2->IsPrimitive &&
-                pMT1->GetPrimitiveCorElementType() == pMT2->GetPrimitiveCorElementType()) ||
-                AreTypesEquivalent(pMT1, pMT2))
+                pMT1->GetPrimitiveCorElementType() == pMT2->GetPrimitiveCorElementType())
+#if FEATURE_TYPEEQUIVALENCE
+                || AreTypesEquivalent(pMT1, pMT2)
+#endif // FEATURE_TYPEEQUIVALENCE
+                )
             {
                 return ref RuntimeHelpers.GetRawData(obj);
             }
@@ -652,8 +655,11 @@ namespace System.Runtime.CompilerServices
         {
             if (pMT1 == pMT2 ||
                 (pMT1->IsPrimitive && pMT2->IsPrimitive &&
-                pMT1->GetPrimitiveCorElementType() == pMT2->GetPrimitiveCorElementType()) ||
-                AreTypesEquivalent(pMT1, pMT2))
+                pMT1->GetPrimitiveCorElementType() == pMT2->GetPrimitiveCorElementType())
+#if FEATURE_TYPEEQUIVALENCE
+                || AreTypesEquivalent(pMT1, pMT2)
+#endif // FEATURE_TYPEEQUIVALENCE
+                )
             {
                 return;
             }
