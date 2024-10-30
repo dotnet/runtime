@@ -415,6 +415,53 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
+        public void DefineNestedType_GetNestedType()
+        {
+            PersistedAssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyAndModule(out ModuleBuilder mb);
+
+            // define two top level classes
+            TypeBuilder type1 = mb.DefineType("Type1", TypeAttributes.Public | TypeAttributes.Class);
+            TypeBuilder type2 = mb.DefineType("Type2", TypeAttributes.Public | TypeAttributes.Class); // used to make sure we never find that one
+
+            // Define a public and private nested class in Type1
+            TypeBuilder nestedType1 = type1.DefineNestedType("NestedType1", TypeAttributes.NestedPublic | TypeAttributes.Class);
+            TypeBuilder nestedType2 = type1.DefineNestedType("NestedType2", TypeAttributes.NestedPrivate | TypeAttributes.Class);
+
+            // create all the types
+            nestedType2.CreateType();
+            nestedType1.CreateType();
+            type2.CreateType();
+            type1.CreateType();
+
+            // Get public nested types of type1
+            Type[] nestedTypes = type1.GetNestedTypes(BindingFlags.Public);
+            Assert.Equal(1, nestedTypes.Length);
+            Assert.Equal(nestedType1, nestedTypes[0]);
+
+            // Get all nested types of type1
+            nestedTypes = type1.GetNestedTypes(BindingFlags.NonPublic | BindingFlags.Public);
+            Assert.Equal(2, nestedTypes.Length);
+            Assert.Contains(nestedType1, nestedTypes);
+            Assert.Contains(nestedType2, nestedTypes);
+
+            // Get the nested type by name
+            Type? type = type1.GetNestedType("NestedType1");
+            Assert.Equal(nestedType1, type);
+
+            // Get a name that doesn't exist
+            type = type1.GetNestedType("NestedType3");
+            Assert.Null(type);
+
+            // Get by name with wrong flag
+            type = type1.GetNestedType("NestedType1", BindingFlags.NonPublic);
+            Assert.Null(type);
+
+            // Type2 should not have any nested types
+            nestedTypes = type2.GetNestedTypes(BindingFlags.Public | BindingFlags.NonPublic);
+            Assert.Empty(nestedTypes);
+        }
+
+        [Fact]
         public void CreateType_ValidateMethods()
         {
             PersistedAssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder concreteTypeWithAbstractMethod);

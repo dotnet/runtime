@@ -1018,8 +1018,7 @@ namespace System.Reflection.Emit
 
         private static BindingFlags GetBindingFlags(TypeBuilderImpl type)
         {
-            BindingFlags bindingFlags = (type.Attributes & TypeAttributes.VisibilityMask) == TypeAttributes.Public ?
-                BindingFlags.Public : BindingFlags.NonPublic;
+            BindingFlags bindingFlags = type.IsPublic || type.IsNestedPublic ? BindingFlags.Public : BindingFlags.NonPublic;
 
             return bindingFlags;
         }
