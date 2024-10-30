@@ -23,6 +23,11 @@ public class Runtime_108851
     [Fact]
     public static void Problem()
     {
+        if (!Avx512F.IsSupported)
+        {
+            return;
+        }
+
         var vr1 = Vector128.Create<double>(0);
         if (Avx512F.ConvertToUInt32WithTruncation(vr1) >= 2894444111893762202L)
         {
