@@ -431,9 +431,12 @@ namespace WebAssemblyInfo
                 Console.Write($" {last[idx],2:x}");
 
                 if (idx == 15 || i == count - 1) {
-                    if (i == count -1)
-                        for (var j = i % 16; j < 15; j++)
+                    if (i == count -1) {
+                        for (var j = i % 16; j < 15; j++) {
                             Console.Write("   ");
+                            last[j+1] = (byte)' ';
+                        }
+                    }
 
                     Console.Write(" |");
 
