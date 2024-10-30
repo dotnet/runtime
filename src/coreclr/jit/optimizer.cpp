@@ -1916,7 +1916,7 @@ bool Compiler::optTryInvertWhileLoop(FlowGraphNaturalLoop* loop)
         return false;
     }
 
-    BasicBlock* exit = trueExits ? condBlock->GetTrueTarget() : condBlock->GetFalseTarget();
+    BasicBlock* exit           = trueExits ? condBlock->GetTrueTarget() : condBlock->GetFalseTarget();
     BasicBlock* stayInLoopSucc = trueExits ? condBlock->GetFalseTarget() : condBlock->GetTrueTarget();
 
     // If the condition is already a latch, then the loop is already inverted
@@ -1936,7 +1936,8 @@ bool Compiler::optTryInvertWhileLoop(FlowGraphNaturalLoop* loop)
     // TODO-Quirk: Remove this
     if (!preheader->NextIs(stayInLoopSucc))
     {
-        JITDUMP("No loop inversion for " FMT_LP " since its preheader does not fall through to \"stayInLoopSucc\"\n", loop->GetIndex());
+        JITDUMP("No loop inversion for " FMT_LP " since its preheader does not fall through to \"stayInLoopSucc\"\n",
+                loop->GetIndex());
         return false;
     }
 
@@ -1973,7 +1974,7 @@ bool Compiler::optTryInvertWhileLoop(FlowGraphNaturalLoop* loop)
     bool           allProfileWeightsAreValid = false;
     weight_t const weightPreheader           = preheader->bbWeight;
     weight_t const weightCond                = condBlock->bbWeight;
-    weight_t const weightStayInLoopSucc = stayInLoopSucc->bbWeight;
+    weight_t const weightStayInLoopSucc      = stayInLoopSucc->bbWeight;
 
     // If we have profile data then we calculate the number of times
     // the loop will iterate into loopIterations
@@ -1998,7 +1999,8 @@ bool Compiler::optTryInvertWhileLoop(FlowGraphNaturalLoop* loop)
             //
             if (!fgProfileWeightsConsistent(weightPreheader + weightStayInLoopSucc, weightCond))
             {
-                JITDUMP("Profile weights locally inconsistent: preheader " FMT_WT ", stayInLoopSucc " FMT_WT ", cond " FMT_WT "\n",
+                JITDUMP("Profile weights locally inconsistent: preheader " FMT_WT ", stayInLoopSucc " FMT_WT
+                        ", cond " FMT_WT "\n",
                         weightPreheader, weightStayInLoopSucc, weightCond);
             }
             else
@@ -2173,7 +2175,7 @@ bool Compiler::optTryInvertWhileLoop(FlowGraphNaturalLoop* loop)
         BasicBlock* block = duplicatedBlocks.Bottom(i);
         for (Statement* stmt : block->Statements())
         {
-            GenTree* clonedTree = gtCloneExpr(stmt->GetRootNode());
+            GenTree*   clonedTree = gtCloneExpr(stmt->GetRootNode());
             Statement* clonedStmt = fgNewStmtAtEnd(newCond, clonedTree, stmt->GetDebugInfo());
 
             if (stmt == condBlock->lastStmt())
@@ -2233,15 +2235,13 @@ bool Compiler::optTryInvertWhileLoop(FlowGraphNaturalLoop* loop)
 #ifdef DEBUG
     if (verbose)
     {
-        printf("\nDuplicated loop exit block at " FMT_BB " for loop " FMT_LP "\n", newCond->bbNum,
-            loop->GetIndex());
+        printf("\nDuplicated loop exit block at " FMT_BB " for loop " FMT_LP "\n", newCond->bbNum, loop->GetIndex());
         printf("Estimated code size expansion is %d\n", estDupCostSz);
 
         fgDumpBlock(newCond);
         fgDumpBlock(condBlock);
     }
 #endif // DEBUG
-
 
     return true;
 }
