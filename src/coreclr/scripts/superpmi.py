@@ -4164,7 +4164,7 @@ def summarize_json_summaries(coreclr_args):
                 summarizable_asm_diffs.extend(asm_diffs)
 
         # Sort by collection name
-        summarizable_asm_diffs.sort(key=lambda t: t[2][0])
+        summarizable_asm_diffs.sort(key=lambda t: t[0])
 
         with open(overall_md_summary_file, "w") as write_fh:
             write_asmdiffs_markdown_summary(write_fh, base_jit_options, diff_jit_options, summarizable_asm_diffs, True)
@@ -4186,7 +4186,7 @@ def summarize_json_summaries(coreclr_args):
                 summarizable_tp_diffs.extend(tp_diffs)
 
         # Sort by collection name
-        summarizable_tp_diffs.sort(key=lambda t: t[4][0])
+        summarizable_tp_diffs.sort(key=lambda t: t[0])
 
         with open(overall_md_summary_file, "w") as write_fh:
             write_tpdiff_markdown_summary(write_fh, base_jit_build_string_decoded, diff_jit_build_string_decoded, base_jit_options, diff_jit_options, summarizable_tp_diffs, True)
