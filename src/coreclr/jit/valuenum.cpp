@@ -6596,7 +6596,6 @@ bool ValueNumStore::IsVNNeverNegative(ValueNum vn)
                 case VNF_EQ:
                 case VNF_NE:
                 case VNF_UMOD:
-                case VNF_UDIV:
                 case VNF_GE_UN:
                 case VNF_GT_UN:
                 case VNF_LE_UN:
