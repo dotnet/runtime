@@ -87,7 +87,7 @@ extends:
         parameters:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
           helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
-          buildConfig: Release
+          buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
           runtimeFlavor: mono
           platforms:
             #- linux_x64
@@ -204,5 +204,43 @@ extends:
                   llvmAotStepContainer: linux_x64_llvmaot
                   testRunNamePrefixSuffix: Mono_Release
                   testBuildArgs: -tree:JIT/Intrinsics -tree:JIT/HardwareIntrinsics -tree:JIT/SIMD
+            extraVariablesTemplates:
+              - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
+
+      #
+      # Mono CoreCLR runtime test executions using live libraries and mini Full AOT
+      # Only when Mono is changed
+      #
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+          buildConfig: Release
+          runtimeFlavor: mono
+          platforms:
+            # - linux_x64
+            - linux_arm64
+          variables:
+            - name: timeoutPerTestInMinutes
+              value: 60
+            - name: timeoutPerTestCollectionInMinutes
+              value: 180
+          jobParameters:
+            testGroup: innerloop
+            nameSuffix: AllSubsets_Mono_MiniFullAot_RuntimeTests
+            runtimeVariant: minifullaot
+            buildArgs: -s mono+libs+clr.hosts -c $(_BuildConfig)
+            timeoutInMinutes: 300
+            condition: >-
+              or(
+                  eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+                  eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
+                  eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
+                  eq(variables['isRollingBuild'], true))
+            postBuildSteps:
+              - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
+                parameters:
+                  creator: dotnet-bot
+                  testRunNamePrefixSuffix: Mono_$(_BuildConfig)
             extraVariablesTemplates:
               - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
