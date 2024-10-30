@@ -699,6 +699,16 @@ namespace System.Runtime.CompilerServices
         public void* ElementType;
 
         /// <summary>
+        /// The PerInstInfo is used to describe the generic arguments and dictionary of this type.
+        /// It points as a PerInstInfo, which is an array of pointers to generic dictionaries, which then point
+        /// to the actual type arguments + the contents of the generic dictionary. The size of the PerInstInfo is
+        /// defined in the negative space of that structure, and the size of the generic dictionary is described
+        /// in the DictionaryLayout of the associated canonical MethodTable.
+        /// </summary>
+        [FieldOffset(ElementTypeOffset)]
+        public MethodTable*** PerInstInfo;
+
+        /// <summary>
         /// This interface map used to list out the set of interfaces. Only meaningful if InterfaceCount is non-zero.
         /// </summary>
         [FieldOffset(InterfaceMapOffset)]
@@ -772,7 +782,9 @@ namespace System.Runtime.CompilerServices
 
         public bool NonTrivialInterfaceCast => (Flags & enum_flag_NonTrivialInterfaceCast) != 0;
 
+#if FEATURE_TYPEEQUIVALENCE
         public bool HasTypeEquivalence => (Flags & enum_flag_HasTypeEquivalence) != 0;
+#endif // FEATURE_TYPEEQUIVALENCE
 
         public bool HasFinalizer => (Flags & enum_flag_HasFinalizer) != 0;
 
@@ -872,6 +884,11 @@ namespace System.Runtime.CompilerServices
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         public extern ref byte GetNullableValueFieldReferenceAndSize(ref byte nullableAddr, out uint size);
+
+//        [MethodImpl(MethodImplOptions.InternalCall)]
+//        public extern byte* GetNullableValueFieldReferenceAndSize(byte* nullableAddr, out uint size);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public extern ref byte GetNullableValueFieldReferenceAndSize(byte* nullableAddr, out uint size);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         public extern MethodTable* InstantiationArg0();

@@ -233,9 +233,12 @@ extern "C" FCDECL2(VOID, JIT_WriteBarrierEnsureNonHeapTarget, Object **dst, Obje
 extern "C" FCDECL2(Object*, ChkCastAny_NoCacheLookup, CORINFO_CLASS_HANDLE type, Object* obj);
 extern "C" FCDECL2(Object*, IsInstanceOfAny_NoCacheLookup, CORINFO_CLASS_HANDLE type, Object* obj);
 
+extern "C" FCDECL3(VOID, FillNullable, uint8_t* destPtr, MethodTable* typeMT, Object* objToCopyFrom);
+
 // ARM64 JIT_WriteBarrier uses speciall ABI and thus is not callable directly
 // Copied write barriers must be called at a different location
 extern "C" FCDECL2(VOID, JIT_WriteBarrier_Callable, Object **dst, Object *ref);
+
 #define WriteBarrier_Helper JIT_WriteBarrier_Callable
 
 #ifdef TARGET_AMD64

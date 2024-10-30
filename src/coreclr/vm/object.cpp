@@ -1765,6 +1765,21 @@ void Nullable::UnBoxNoCheck(void* destPtr, OBJECTREF boxedVal, MethodTable* dest
     }
 }
 
+void Nullable::UnboxWriteValue(void* destPtr, OBJECTREF boxedVal, MethodTable* destMT)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
+    Nullable* dest = (Nullable*) destPtr;
+
+    *dest->HasValueAddr(destMT) = true;
+    CopyValueClass(dest->ValueAddr(destMT), boxedVal->UnBox(), boxedVal->GetMethodTable());
+}
+
 //===============================================================================
 // a boxed Nullable<T> should either be null or a boxed T, but sometimes it is
 // useful to have a 'true' boxed Nullable<T> (that is it has two fields).  This

@@ -2551,7 +2551,7 @@ public:
     static BOOL UnBoxNoGC(void* dest, OBJECTREF boxedVal, MethodTable* destMT);
     static void UnBoxNoCheck(void* dest, OBJECTREF boxedVal, MethodTable* destMT);
     static OBJECTREF BoxedNullableNull(TypeHandle nullableType) { return NULL; }
-
+    static void UnboxWriteValue(void* destPtr, OBJECTREF boxedVal, MethodTable* destMT);
     // if 'Obj' is a true boxed nullable, return the form we want (either null or a boxed T)
     static OBJECTREF NormalizeBox(OBJECTREF obj);
 

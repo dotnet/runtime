@@ -30,6 +30,9 @@ namespace System.Runtime.CompilerServices
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern void WriteBarrier(ref object? dst, object? obj);
 
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private static extern void FillNullable(ref byte destPtr, MethodTable* typeMT, object obj);
+
         // IsInstanceOf test used for unusual cases (naked type parameters, variant generic types)
         // Unlike the IsInstanceOfInterface and IsInstanceOfClass functions,
         // this test must deal with all kinds of type tests
@@ -500,7 +503,7 @@ namespace System.Runtime.CompilerServices
 
         // Helpers for Unboxing
         [DebuggerHidden]
-        [MethodImpl(MethodImplOptions.NoInlining)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static unsafe void InitValueClass(ref byte destBytes, MethodTable *pMT)
         {
             uint numInstanceFieldBytes = pMT->GetNumInstanceFieldBytes();
@@ -518,6 +521,25 @@ namespace System.Runtime.CompilerServices
         }
 
         [DebuggerHidden]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static unsafe void InitValueClassPtr(byte* destBytes, MethodTable *pMT)
+        {
+            uint numInstanceFieldBytes = pMT->GetNumInstanceFieldBytes();
+            if ((((uint)destBytes | numInstanceFieldBytes) & ((uint)sizeof(void*) - 1)) != 0)
+            {
+                // If we have a non-pointer aligned instance field bytes count, or a non-aligned destBytes, we can zero out the data byte by byte
+                // And we do not need to concern ourselves with references
+                SpanHelpers.ClearWithoutReferences(ref Unsafe.AsRef<byte>(destBytes), numInstanceFieldBytes);
+            }
+            else
+            {
+                // Otherwise, use the helper which is safe for that situation
+                SpanHelpers.ClearWithReferences(ref Unsafe.AsRef<IntPtr>(destBytes), (nuint)numInstanceFieldBytes / (nuint)sizeof(IntPtr));
+            }
+        }
+
+#if FEATURE_TYPEEQUIVALENCE
+        [DebuggerHidden]
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static bool AreTypesEquivalent(MethodTable* pMTa, MethodTable* pMTb)
         {
@@ -533,8 +555,10 @@ namespace System.Runtime.CompilerServices
 
             return RuntimeHelpers.AreTypesEquivalent(pMTa, pMTb);
         }
+#endif // FEATURE_TYPEEQUIVALENCE
 
         [DebuggerHidden]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool IsNullableForType(MethodTable* typeMT, MethodTable* boxedMT)
         {
             if (!typeMT->IsNullable)
@@ -542,19 +566,24 @@ namespace System.Runtime.CompilerServices
                 return false;
             }
 
-            MethodTable *pMTNullableArg = typeMT->InstantiationArg0();
+            Debug.Assert(typeMT->InstantiationArg0() == **typeMT->PerInstInfo);
+            MethodTable *pMTNullableArg = **typeMT->PerInstInfo;
             if (pMTNullableArg == boxedMT)
             {
                 return true;
             }
             else
             {
+#if FEATURE_TYPEEQUIVALENCE
                 return AreTypesEquivalent(pMTNullableArg, boxedMT);
+#else
+                return false;
+#endif // FEATURE_TYPEEQUIVALENCE
             }
         }
 
         [DebuggerHidden]
-        internal static void Unbox_Nullable(ref byte destPtr, MethodTable* typeMT, object? obj)
+        internal static void Unbox_Nullable_Ref(ref byte destPtr, MethodTable* typeMT, object? obj)
         {
             if (obj == null)
             {
@@ -578,6 +607,41 @@ namespace System.Runtime.CompilerServices
                 Unsafe.As<byte, bool>(ref destPtr) = true;
                 ref byte destValuePtr = ref typeMT->GetNullableValueFieldReferenceAndSize(ref destPtr, out uint size);
                 Unsafe.CopyBlockUnaligned(ref destValuePtr, ref RuntimeHelpers.GetRawData(obj), size);
+            }
+        }
+
+        [DebuggerHidden]
+        internal static void Unbox_Nullable(byte* destPtr, MethodTable* typeMT, object? obj)
+        {
+            if (obj == null)
+            {
+                if (!typeMT->ContainsGCPointers)
+                {
+                    SpanHelpers.ClearWithoutReferences(ref Unsafe.AsRef<byte>(destPtr), typeMT->GetNumInstanceFieldBytes());
+                }
+                else
+                {
+                    // If the type ContainsGCPointers, we can compute the size without resorting to loading the BaseSizePadding field from the EEClass
+                    nuint numInstanceFieldBytes = typeMT->BaseSize - (nuint)(2 * sizeof(IntPtr));
+                    // Otherwise, use the helper which is safe for that situation
+                    SpanHelpers.ClearWithReferences(ref Unsafe.AsRef<IntPtr>(destPtr), (typeMT->BaseSize - (nuint)(2 * sizeof(IntPtr))) / (nuint)sizeof(IntPtr));
+                }
+            }
+            else
+            {
+                if (!IsNullableForType(typeMT, RuntimeHelpers.GetMethodTable(obj)))
+                {
+                    // For safety's sake, also allow true nullables to be unboxed normally.
+                    // This should not happen normally, but we want to be robust
+                    if (typeMT == RuntimeHelpers.GetMethodTable(obj))
+                    {
+                        Buffer.BulkMoveWithWriteBarrier(ref Unsafe.AsRef<byte>(destPtr), ref RuntimeHelpers.GetRawData(obj), typeMT->GetNumInstanceFieldBytes());
+                        return;
+                    }
+                    CastHelpers.ThrowInvalidCastException(obj, typeMT);
+                }
+
+                FillNullable(ref Unsafe.AsRef<byte>(destPtr), typeMT, obj);
             }
         }
 

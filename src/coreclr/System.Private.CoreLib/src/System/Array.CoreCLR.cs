@@ -253,7 +253,7 @@ namespace System
 
                 if (pDestMT->IsNullable)
                 {
-                    CastHelpers.Unbox_Nullable(ref dest, pDestMT, obj);
+                    CastHelpers.Unbox_Nullable_Ref(ref dest, pDestMT, obj);
                 }
                 else if (obj is null || RuntimeHelpers.GetMethodTable(obj) != pDestMT)
                 {
@@ -546,7 +546,7 @@ namespace System
                 {
                     if (pElementMethodTable->IsNullable)
                     {
-                        CastHelpers.Unbox_Nullable(ref offsetDataRef, pElementMethodTable, value);
+                        CastHelpers.Unbox_Nullable_Ref(ref offsetDataRef, pElementMethodTable, value);
                     }
                     else
                     {
