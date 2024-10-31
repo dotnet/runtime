@@ -10,6 +10,7 @@ namespace System.Formats.Asn1
         /// <summary>
         ///   Begin writing an Octet String value with a specified tag.
         /// </summary>
+        /// <param name="tag">The tag to write, or <see langword="null"/> for the default tag (Universal 4).</param>
         /// <returns>
         ///   A disposable value which will automatically call <see cref="PopOctetString"/>.
         /// </returns>
@@ -22,7 +23,6 @@ namespace System.Formats.Asn1
         ///   This method does not necessarily create a Constructed encoding, and it is not invalid to
         ///   write values other than Octet String inside this Push/Pop.
         /// </remarks>
-        /// <param name="tag">The tag to write, or <see langword="null"/> for the default tag (Universal 4).</param>
         /// <seealso cref="PopOctetString"/>
         public Scope PushOctetString(Asn1Tag? tag = null)
         {
@@ -38,12 +38,6 @@ namespace System.Formats.Asn1
         ///   returning the writer to the parent context.
         /// </summary>
         /// <param name="tag">The tag to write, or <see langword="null"/> for the default tag (Universal 4).</param>
-        /// <remarks>
-        ///   In <see cref="AsnEncodingRules.BER"/> and <see cref="AsnEncodingRules.DER"/> modes
-        ///   the encoded contents will remain in a single primitive Octet String.
-        ///   In <see cref="AsnEncodingRules.CER"/> mode the contents will be broken up into
-        ///   multiple segments, when required.
-        /// </remarks>
         /// <exception cref="ArgumentException">
         ///   <paramref name="tag"/>.<see cref="Asn1Tag.TagClass"/> is
         ///   <see cref="TagClass.Universal"/>, but
@@ -53,6 +47,12 @@ namespace System.Formats.Asn1
         /// <exception cref="InvalidOperationException">
         ///   the writer is not currently positioned within an Octet String with the specified tag.
         /// </exception>
+        /// <remarks>
+        ///   In <see cref="AsnEncodingRules.BER"/> and <see cref="AsnEncodingRules.DER"/> modes,
+        ///   the encoded contents will remain in a single primitive Octet String.
+        ///   In <see cref="AsnEncodingRules.CER"/> mode, the contents will be broken up into
+        ///   multiple segments, when required.
+        /// </remarks>
         public void PopOctetString(Asn1Tag? tag = default)
         {
             CheckUniversalTag(tag, UniversalTagNumber.OctetString);

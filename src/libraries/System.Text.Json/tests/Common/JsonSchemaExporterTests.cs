@@ -9,6 +9,7 @@ using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
 using System.Text.Json.Serialization.Tests;
+using System.Xml.Linq;
 using Json.Schema;
 using Xunit;
 using Xunit.Sdk;
@@ -88,6 +89,13 @@ namespace System.Text.Json.Schema.Tests
         {
             JsonNode schema = Serializer.DefaultOptions.GetJsonSchemaAsNode(type);
             Assert.Equal(""""{"$comment":"Unsupported .NET type","not":true}"""", schema.ToJsonString());
+        }
+
+        [Fact]
+        public void CanGenerateXElementSchema()
+        {
+            JsonNode schema = Serializer.DefaultOptions.GetJsonSchemaAsNode(typeof(XElement));
+            Assert.True(schema.ToJsonString().Length < 100_000);
         }
 
         [Fact]

@@ -13,7 +13,7 @@ if ($ExitCode -ne 0) {
     Write-Host "HttpStress failed, copying artifacts for investigation"
 
     # Copy runtime if it's not already there
-    if ($env:DUMPS_SHARE_MOUNT_ROOT && !(Test-Path -Path $env:DUMPS_SHARE_MOUNT_ROOT/net$env:VERSION-windows-$env:CONFIGURATION-x64/ -ErrorAction SilentlyContinue)) {
+    if ($env:DUMPS_SHARE_MOUNT_ROOT -and !(Test-Path -Path $env:DUMPS_SHARE_MOUNT_ROOT/net$env:VERSION-windows-$env:CONFIGURATION-x64/ -ErrorAction SilentlyContinue)) {
         Copy-Item -Recurse C:/live-runtime-artifacts/testhost/net$env:VERSION-windows-$env:CONFIGURATION-x64/ $env:DUMPS_SHARE_MOUNT_ROOT/
     }
 }

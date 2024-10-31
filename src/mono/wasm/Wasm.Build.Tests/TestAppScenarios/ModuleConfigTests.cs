@@ -74,4 +74,33 @@ public class ModuleConfigTests : AppTestBase
             "Emscripten err override doesn't work"
         );
     }
+
+    [Theory]
+    [InlineData("Release", true)]
+    [InlineData("Release", false)]
+    public async Task OverrideBootConfigName(string config, bool isPublish)
+    {
+        CopyTestAsset("WasmBasicTestApp", $"OverrideBootConfigName", "App");
+
+        string[] extraArgs = ["-p:WasmBootConfigFileName=boot.json"];
+        if (isPublish)
+            PublishProject(config, bootConfigFileName: "boot.json", extraArgs: extraArgs);
+        else
+            BuildProject(config, bootConfigFileName: "boot.json", extraArgs: extraArgs);
+
+        var runOptions = new RunOptions(
+            Configuration: config,
+            TestScenario: "OverrideBootConfigName"
+        );
+        var result = await (isPublish
+            ? RunSdkStyleAppForPublish(runOptions)
+            : RunSdkStyleAppForBuild(runOptions)
+        );
+
+        Assert.Collection(
+            result.TestOutput,
+            m => Assert.Equal("ConfigSrc: boot.json", m),
+            m => Assert.Equal("Managed code has run", m)
+        );
+    }
 }

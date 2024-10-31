@@ -99,7 +99,7 @@ namespace ILLink.RoslynAnalyzer
 								VerifyAttributeArguments (requiresAttribute)) {
 								syntaxNodeAnalysisContext.ReportDiagnostic (Diagnostic.Create (RequiresDiagnosticRule,
 									syntaxNodeAnalysisContext.Node.GetLocation (),
-									containingSymbol.GetDisplayName (),
+									instanceCtor.GetDisplayName (),
 									(string) requiresAttribute.ConstructorArguments[0].Value!,
 									GetUrlFromAttribute (requiresAttribute)));
 							}

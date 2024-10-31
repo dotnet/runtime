@@ -2226,9 +2226,9 @@ void Compiler::impPopArgsForSwiftCall(GenTreeCall* call, CORINFO_SIG_INFO* sig, 
                     BADCODE("Duplicate SwiftSelf parameter");
                 }
 
-                if (argIndex != 0)
+                if (argIndex != (sig->numArgs - 1))
                 {
-                    BADCODE("SwiftSelf<T> must be the first argument in the signature");
+                    BADCODE("SwiftSelf<T> must be the last argument in the signature");
                 }
 
                 selfType                = info.compCompHnd->getTypeInstantiationArgument(argClass, 0);
@@ -3381,9 +3381,11 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
             case NI_System_Threading_Interlocked_Exchange:
             case NI_System_Threading_Interlocked_ExchangeAdd:
             case NI_System_Threading_Interlocked_MemoryBarrier:
-            case NI_System_Threading_Interlocked_ReadMemoryBarrier:
             case NI_System_Threading_Volatile_Read:
             case NI_System_Threading_Volatile_Write:
+            case NI_System_Threading_Volatile_ReadBarrier:
+            case NI_System_Threading_Volatile_WriteBarrier:
+
                 betterToExpand = true;
                 break;
 
@@ -4207,12 +4209,27 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
 #endif // defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_RISCV64)
 
             case NI_System_Threading_Interlocked_MemoryBarrier:
-            case NI_System_Threading_Interlocked_ReadMemoryBarrier:
             {
                 assert(sig->numArgs == 0);
-                // On XARCH `NI_System_Threading_Interlocked_ReadMemoryBarrier` fences need not be emitted.
+                retNode = gtNewMemoryBarrier(BARRIER_FULL);
+                break;
+            }
+
+            case NI_System_Threading_Volatile_ReadBarrier:
+            {
+                assert(sig->numArgs == 0);
+                // On XARCH `NI_System_Threading_Volatile_ReadBarrier` fences need not be emitted.
                 // However, we still need to capture the effect on reordering.
-                retNode = gtNewMemoryBarrier(ni == NI_System_Threading_Interlocked_ReadMemoryBarrier);
+                retNode = gtNewMemoryBarrier(BARRIER_LOAD_ONLY);
+                break;
+            }
+
+            case NI_System_Threading_Volatile_WriteBarrier:
+            {
+                assert(sig->numArgs == 0);
+                // On XARCH `NI_System_Threading_Volatile_WriteBarrier` fences need not be emitted.
+                // However, we still need to capture the effect on reordering.
+                retNode = gtNewMemoryBarrier(BARRIER_STORE_ONLY);
                 break;
             }
 
@@ -4783,6 +4800,12 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                     op1     = impImplicitR4orR8Cast(op1, TYP_FLOAT);
                     retNode = gtNewBitCastNode(TYP_INT, op1);
                 }
+                break;
+            }
+
+            case NI_System_Runtime_CompilerServices_StaticsHelpers_VolatileReadAsByref:
+            {
+                retNode = gtNewIndir(TYP_BYREF, impPopStack().val, GTF_IND_VOLATILE);
                 break;
             }
 
@@ -7110,7 +7133,7 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
 
                 addGuardedDevirtualizationCandidate(call, exactMethod, exactCls, exactContext, exactMethodAttrs,
                                                     clsAttrs, likelyHood, dvInfo.wasArrayInterfaceDevirt,
-                                                    originalContext);
+                                                    dvInfo.isInstantiatingStub, originalContext);
             }
 
             if (call->GetInlineCandidatesCount() == numExactClasses)
@@ -7133,10 +7156,11 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
     // Iterate over the guesses
     for (int candidateId = 0; candidateId < candidatesCount; candidateId++)
     {
-        CORINFO_CLASS_HANDLE  likelyClass    = likelyClasses[candidateId];
-        CORINFO_METHOD_HANDLE likelyMethod   = likelyMethods[candidateId];
-        unsigned              likelihood     = likelihoods[candidateId];
-        bool                  arrayInterface = false;
+        CORINFO_CLASS_HANDLE  likelyClass       = likelyClasses[candidateId];
+        CORINFO_METHOD_HANDLE likelyMethod      = likelyMethods[candidateId];
+        unsigned              likelihood        = likelihoods[candidateId];
+        bool                  arrayInterface    = false;
+        bool                  instantiatingStub = false;
 
         CORINFO_CONTEXT_HANDLE likelyContext = originalContext;
 
@@ -7178,9 +7202,10 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
                 break;
             }
 
-            likelyContext  = dvInfo.exactContext;
-            likelyMethod   = dvInfo.devirtualizedMethod;
-            arrayInterface = dvInfo.wasArrayInterfaceDevirt;
+            likelyContext     = dvInfo.exactContext;
+            likelyMethod      = dvInfo.devirtualizedMethod;
+            arrayInterface    = dvInfo.wasArrayInterfaceDevirt;
+            instantiatingStub = dvInfo.isInstantiatingStub;
         }
         else
         {
@@ -7255,7 +7280,8 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
         // Add this as a potential candidate.
         //
         addGuardedDevirtualizationCandidate(call, likelyMethod, likelyClass, likelyContext, likelyMethodAttribs,
-                                            likelyClassAttribs, likelihood, arrayInterface, originalContext);
+                                            likelyClassAttribs, likelihood, arrayInterface, instantiatingStub,
+                                            originalContext);
     }
 }
 
@@ -7281,6 +7307,7 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
 //    classAttr - attributes of the class
 //    likelihood - odds that this class is the class seen at runtime
 //    arrayInterface - devirtualization of an array interface call
+//    instantiatingStub - devirtualized method in an instantiating stub
 //    originalContextHandle - context for the original call
 //
 void Compiler::addGuardedDevirtualizationCandidate(GenTreeCall*           call,
@@ -7291,6 +7318,7 @@ void Compiler::addGuardedDevirtualizationCandidate(GenTreeCall*           call,
                                                    unsigned               classAttr,
                                                    unsigned               likelihood,
                                                    bool                   arrayInterface,
+                                                   bool                   instantiatingStub,
                                                    CORINFO_CONTEXT_HANDLE originalContextHandle)
 {
     // This transformation only makes sense for delegate and virtual calls
@@ -7359,14 +7387,32 @@ void Compiler::addGuardedDevirtualizationCandidate(GenTreeCall*           call,
     //
     InlineCandidateInfo* pInfo = new (this, CMK_Inlining) InlineCandidateInfo;
 
-    pInfo->guardedMethodHandle             = methodHandle;
-    pInfo->guardedMethodUnboxedEntryHandle = nullptr;
-    pInfo->guardedClassHandle              = classHandle;
-    pInfo->originalContextHandle           = originalContextHandle;
-    pInfo->likelihood                      = likelihood;
-    pInfo->requiresInstMethodTableArg      = false;
-    pInfo->exactContextHandle              = contextHandle;
-    pInfo->arrayInterface                  = arrayInterface;
+    pInfo->guardedMethodHandle                  = methodHandle;
+    pInfo->guardedMethodUnboxedEntryHandle      = nullptr;
+    pInfo->guardedMethodInstantiatedEntryHandle = nullptr;
+    pInfo->guardedClassHandle                   = classHandle;
+    pInfo->originalContextHandle                = originalContextHandle;
+    pInfo->likelihood                           = likelihood;
+    pInfo->exactContextHandle                   = contextHandle;
+    pInfo->arrayInterface                       = arrayInterface;
+
+    // If the guarded method is an instantiating stub, find the instantiated method
+    //
+    if (instantiatingStub)
+    {
+        JITDUMP("    ... method is an instantiating stub, looking for instantiated entry\n");
+        CORINFO_CLASS_HANDLE  ignoredClass  = NO_CLASS_HANDLE;
+        CORINFO_METHOD_HANDLE ignoredMethod = NO_METHOD_HANDLE;
+        CORINFO_METHOD_HANDLE instantiatedMethod =
+            info.compCompHnd->getInstantiatedEntry(methodHandle, &ignoredMethod, &ignoredClass);
+        assert(ignoredClass == NO_CLASS_HANDLE);
+
+        if (instantiatedMethod != NO_METHOD_HANDLE)
+        {
+            JITDUMP("    ... updating GDV candidate with instantiated entry info\n");
+            pInfo->guardedMethodInstantiatedEntryHandle = instantiatedMethod;
+        }
+    }
 
     // If the guarded class is a value class, look for an unboxed entry point.
     //
@@ -7381,7 +7427,6 @@ void Compiler::addGuardedDevirtualizationCandidate(GenTreeCall*           call,
         {
             JITDUMP("    ... updating GDV candidate with unboxed entry info\n");
             pInfo->guardedMethodUnboxedEntryHandle = unboxedEntryMethodHandle;
-            pInfo->requiresInstMethodTableArg      = requiresInstMethodTableArg;
         }
     }
 
@@ -7599,6 +7644,10 @@ void Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
         if (gdvCandidate->guardedMethodUnboxedEntryHandle != nullptr)
         {
             fncHandle = gdvCandidate->guardedMethodUnboxedEntryHandle;
+        }
+        else if (gdvCandidate->guardedMethodInstantiatedEntryHandle != nullptr)
+        {
+            fncHandle = gdvCandidate->guardedMethodInstantiatedEntryHandle;
         }
         else
         {
@@ -8172,7 +8221,43 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     const char* derivedClassName  = "?derivedClass";
     const char* derivedMethodName = "?derivedMethod";
     const char* note              = "inexact or not final";
+    const char* instArg           = "";
 #endif
+
+    CORINFO_METHOD_HANDLE instantiatingStub = NO_METHOD_HANDLE;
+
+    if (dvInfo.isInstantiatingStub)
+    {
+        // We should only end up with generic methods for array interface devirt.
+        //
+        assert(dvInfo.wasArrayInterfaceDevirt);
+
+        // We don't expect NAOT to end up here, since it has Array<T>
+        // and normal devirtualization.
+        //
+        assert(!IsTargetAbi(CORINFO_NATIVEAOT_ABI));
+
+        // We don't expect R2R to end up here, since it does not (yet) support
+        // array interface devirtualization.
+        //
+        assert(!opts.IsReadyToRun());
+
+        // We don't expect there to be an existing inst param arg.
+        //
+        CallArg* const instParam = call->gtArgs.FindWellKnownArg(WellKnownArg::InstParam);
+        if (instParam != nullptr)
+        {
+            assert(!"unexpected inst param in virtual/interface call");
+            return;
+        }
+
+        // We want to inline the instantiating stub. Fetch the relevant info.
+        //
+        CORINFO_CLASS_HANDLE ignored = NO_CLASS_HANDLE;
+        derivedMethod = info.compCompHnd->getInstantiatedEntry(derivedMethod, &instantiatingStub, &ignored);
+        assert(ignored == NO_CLASS_HANDLE);
+        assert((derivedMethod == NO_METHOD_HANDLE) || (instantiatingStub != NO_METHOD_HANDLE));
+    }
 
     // If we failed to get a method handle, we can't directly devirtualize.
     //
@@ -8202,6 +8287,10 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
         {
             note = "final method";
         }
+        if (dvInfo.isInstantiatingStub)
+        {
+            instArg = " [instantiating stub]";
+        }
 
         if (verbose || doPrint)
         {
@@ -8209,7 +8298,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
             derivedClassName  = eeGetClassName(derivedClass);
             if (verbose)
             {
-                printf("    devirt to %s::%s -- %s\n", derivedClassName, derivedMethodName, note);
+                printf("    devirt to %s::%s -- %s%s\n", derivedClassName, derivedMethodName, note, instArg);
                 gtDispTree(call);
             }
         }
@@ -8244,16 +8333,11 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
             return;
         }
 
-        considerGuardedDevirtualization(call, ilOffset, isInterface, baseMethod, baseClass, pContextHandle);
+        considerGuardedDevirtualization(call, ilOffset, isInterface, baseMethod, objClass, pContextHandle);
         return;
     }
 
     // All checks done. Time to transform the call.
-    //
-    // We should always have an exact class context.
-    //
-    // Note that wouldnt' be true if the runtime side supported array interface devirt,
-    // the resulting method would be a generic method of the non-generic SZArrayHelper class.
     //
     assert(canDevirtualize);
     Metrics.DevirtualizedCall++;
@@ -8267,6 +8351,18 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     call->gtCallType    = CT_USER_FUNC;
     call->gtControlExpr = nullptr;
     INDEBUG(call->gtCallDebugFlags |= GTF_CALL_MD_DEVIRTUALIZED);
+
+    if (dvInfo.isInstantiatingStub)
+    {
+        // Pass the instantiating stub method desc as the inst param arg.
+        //
+        // Note different embedding would be needed for NAOT/R2R,
+        // but we have ruled those out above.
+        //
+        GenTree* const instParam =
+            gtNewIconEmbHndNode(instantiatingStub, nullptr, GTF_ICON_METHOD_HDL, instantiatingStub);
+        call->gtArgs.InsertInstParam(this, instParam);
+    }
 
     // Virtual calls include an implicit null check, which we may
     // now need to make explicit.
@@ -8825,10 +8921,10 @@ CORINFO_CLASS_HANDLE Compiler::impGetSpecialIntrinsicExactReturnType(GenTreeCall
             if (instParam != nullptr)
             {
                 assert(instParam->GetNext() == nullptr);
-                CORINFO_CLASS_HANDLE hClass = gtGetHelperArgClassHandle(instParam->GetNode());
-                if (hClass != NO_CLASS_HANDLE)
+                CORINFO_METHOD_HANDLE hMethod = gtGetHelperArgMethodHandle(instParam->GetNode());
+                if (hMethod != NO_METHOD_HANDLE)
                 {
-                    typeHnd = getTypeInstantiationArgument(hClass, 0);
+                    typeHnd = getMethodInstantiationArgument(hMethod, 0);
                 }
             }
 
@@ -9127,13 +9223,13 @@ void Compiler::impCheckCanInline(GenTreeCall*           call,
 
             // Null out bits we don't use when we're just inlining
             //
-            pInfo->guardedClassHandle              = nullptr;
-            pInfo->guardedMethodHandle             = nullptr;
-            pInfo->guardedMethodUnboxedEntryHandle = nullptr;
-            pInfo->originalContextHandle           = nullptr;
-            pInfo->likelihood                      = 0;
-            pInfo->requiresInstMethodTableArg      = false;
-            pInfo->arrayInterface                  = false;
+            pInfo->guardedClassHandle                   = nullptr;
+            pInfo->guardedMethodHandle                  = nullptr;
+            pInfo->guardedMethodUnboxedEntryHandle      = nullptr;
+            pInfo->guardedMethodInstantiatedEntryHandle = nullptr;
+            pInfo->originalContextHandle                = nullptr;
+            pInfo->likelihood                           = 0;
+            pInfo->arrayInterface                       = false;
         }
 
         pInfo->methInfo                       = methInfo;
@@ -10553,6 +10649,13 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                                 result = NI_System_Runtime_CompilerServices_RuntimeHelpers_GetMethodTable;
                             }
                         }
+                        else if (strcmp(className, "StaticsHelpers") == 0)
+                        {
+                            if (strcmp(methodName, "VolatileReadAsByref") == 0)
+                            {
+                                result = NI_System_Runtime_CompilerServices_StaticsHelpers_VolatileReadAsByref;
+                            }
+                        }
                         else if (strcmp(className, "Unsafe") == 0)
                         {
                             if (strcmp(methodName, "Add") == 0)
@@ -10835,10 +10938,6 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                         {
                             result = NI_System_Threading_Interlocked_MemoryBarrier;
                         }
-                        else if (strcmp(methodName, "ReadMemoryBarrier") == 0)
-                        {
-                            result = NI_System_Threading_Interlocked_ReadMemoryBarrier;
-                        }
                     }
                     else if (strcmp(className, "Thread") == 0)
                     {
@@ -10860,6 +10959,14 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                         else if (strcmp(methodName, "Write") == 0)
                         {
                             result = NI_System_Threading_Volatile_Write;
+                        }
+                        else if (strcmp(methodName, "ReadBarrier") == 0)
+                        {
+                            result = NI_System_Threading_Volatile_ReadBarrier;
+                        }
+                        else if (strcmp(methodName, "WriteBarrier") == 0)
+                        {
+                            result = NI_System_Threading_Volatile_WriteBarrier;
                         }
                     }
                 }

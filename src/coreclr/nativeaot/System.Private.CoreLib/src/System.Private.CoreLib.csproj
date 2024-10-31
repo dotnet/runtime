@@ -270,9 +270,6 @@
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.ReportEvent_IntPtr.cs">
       <Link>Common\Interop\Windows\Advapi32\Interop.ReportEvent_IntPtr.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.IsDebuggerPresent.cs">
-      <Link>Interop\Windows\Kernel32\Interop.IsDebuggerPresent.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.RaiseFailFastException.cs">
       <Link>Interop\Windows\Kernel32\Interop.RaiseFailFastException.cs</Link>
     </Compile>
