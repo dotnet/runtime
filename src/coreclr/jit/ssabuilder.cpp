@@ -1429,7 +1429,6 @@ UseDefLocation IncrementalSsaBuilder::FindOrCreateReachingDef(const UseDefLocati
                         continue;
                     }
 
-                    // TODO: This cannot be recursive
                     UseDefLocation phiArgDef = FindOrCreateReachingDef(UseDefLocation(pred, nullptr, nullptr));
                     SsaBuilder::AddNewPhiArg(m_comp, dom, phiDef, phi, m_lclNum, phiArgDef.Tree->GetSsaNum(), pred);
                 }
