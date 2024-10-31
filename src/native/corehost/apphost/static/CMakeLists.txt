@@ -169,7 +169,6 @@ else()
         System.Native-Static
         System.Security.Cryptography.Native.OpenSsl-Static
 
-        palrt
         coreclrpal_dac
         corguids
         dbgutil
