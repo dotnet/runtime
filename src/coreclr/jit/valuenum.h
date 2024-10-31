@@ -1052,7 +1052,7 @@ public:
     bool IsVNInt32Constant(ValueNum vn);
 
     // Returns true if the VN represents a node that is never negative.
-    bool IsMsbNeverSet(ValueNum vn);
+    bool IsVNNeverNegative(ValueNum vn);
 
     typedef SmallHashTable<ValueNum, bool, 8U> CheckedBoundVNSet;
 
