@@ -586,8 +586,7 @@ namespace System.Security.Cryptography.X509Certificates
         private static Dictionary<string, EncodingRules> CreateEncodingRulesLookup()
         {
             // Attributes that are not "obsolete" from ITU T-REC X.520-2019.
-            // Attributes that are included are attributes that are string-like and can be represented by a String,
-            // and are not obsolete.
+            // Attributes that are included are attributes that are string-like and can be represented by a String.
             // Windows does not have any restrictions on encoding non-string encodable types, it will encode them
             // anyway, such as OID.2.5.4.14=test will encode test as a PrintableString, even though the OID is a SET.
             // To maintain similar behavior as Windows, those types will remain treated as unknown.
