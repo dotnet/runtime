@@ -6,7 +6,7 @@ import BuildConfiguration from "consts:configuration";
 
 import { marshal_exception_to_cs, bind_arg_marshal_to_cs, marshal_task_to_cs } from "./marshal-to-cs";
 import { get_signature_argument_count, bound_js_function_symbol, get_sig, get_signature_version, get_signature_type, imported_js_function_symbol, get_signature_handle, get_signature_function_name, get_signature_module_name, is_receiver_should_free, get_caller_native_tid, get_sync_done_semaphore_ptr, get_arg } from "./marshal";
-import { forceThreadMemoryViewRefresh } from "./memory";
+import { fixupPointer, forceThreadMemoryViewRefresh } from "./memory";
 import { JSFunctionSignature, JSMarshalerArguments, BoundMarshalerToJs, JSFnHandle, BoundMarshalerToCs, JSHandle, MarshalerType, VoidPtrNull } from "./types/internal";
 import { VoidPtr } from "./types/emscripten";
 import { INTERNAL, Module, loaderHelpers, mono_assert, runtimeHelpers } from "./globals";
@@ -24,7 +24,7 @@ export const js_import_wrapper_by_fn_handle: Function[] = <any>[null];// 0th slo
 export function mono_wasm_bind_js_import_ST (signature: JSFunctionSignature): VoidPtr {
     if (WasmEnableThreads) return VoidPtrNull;
     assert_js_interop();
-    signature = ((signature as any) >>> 0) as any;
+    signature = fixupPointer(signature, 0);
     try {
         bind_js_import(signature);
         return VoidPtrNull;
@@ -36,8 +36,8 @@ export function mono_wasm_bind_js_import_ST (signature: JSFunctionSignature): Vo
 export function mono_wasm_invoke_jsimport_MT (signature: JSFunctionSignature, args: JSMarshalerArguments) {
     if (!WasmEnableThreads) return;
     assert_js_interop();
-    signature = ((signature as any) >>> 0) as any;
-    args = ((args as any) >>> 0) as any;
+    signature = fixupPointer(signature, 0);
+    args = fixupPointer(args, 0);
 
     const function_handle = get_signature_handle(signature);
 
@@ -76,7 +76,7 @@ export function mono_wasm_invoke_jsimport_MT (signature: JSFunctionSignature, ar
 export function mono_wasm_invoke_jsimport_ST (function_handle: JSFnHandle, args: JSMarshalerArguments): void {
     if (WasmEnableThreads) return;
     loaderHelpers.assert_runtime_running();
-    args = ((args as any) >>> 0) as any;
+    args = fixupPointer(args, 0);
     const bound_fn = js_import_wrapper_by_fn_handle[<any>function_handle];
     mono_assert(bound_fn, () => `Imported function handle expected ${function_handle}`);
     bound_fn(args);
@@ -368,7 +368,7 @@ export function mono_wasm_invoke_js_function_impl (bound_function_js_handle: JSH
     loaderHelpers.assert_runtime_running();
     const bound_fn = mono_wasm_get_jsobj_from_js_handle(bound_function_js_handle);
     mono_assert(bound_fn && typeof (bound_fn) === "function" && bound_fn[bound_js_function_symbol], () => `Bound function handle expected ${bound_function_js_handle}`);
-    args = ((args as any) >>> 0) as any;
+    args = fixupPointer(args, 0);
     bound_fn(args);
 }
 

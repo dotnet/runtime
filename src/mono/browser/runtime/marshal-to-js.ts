@@ -20,7 +20,7 @@ import { monoStringToString, utf16ToString } from "./strings";
 import { GCHandleNull, JSMarshalerArgument, JSMarshalerArguments, JSMarshalerType, MarshalerToCs, MarshalerToJs, BoundMarshalerToJs, MarshalerType, JSHandle } from "./types/internal";
 import { TypedArray } from "./types/emscripten";
 import { get_marshaler_to_cs_by_type, jsinteropDoc, marshal_exception_to_cs } from "./marshal-to-cs";
-import { localHeapViewF64, localHeapViewI32, localHeapViewU8 } from "./memory";
+import { fixupPointer, localHeapViewF64, localHeapViewI32, localHeapViewU8 } from "./memory";
 import { call_delegate } from "./managed-exports";
 import { mono_log_debug } from "./logging";
 import { invoke_later_when_on_ui_thread_async } from "./invoke-js";
@@ -345,7 +345,7 @@ export function mono_wasm_resolve_or_reject_promise_impl (args: JSMarshalerArgum
         mono_log_debug("This promise resolution/rejection can't be propagated to managed code, mono runtime already exited.");
         return;
     }
-    args = ((args as any) >>> 0) as any;
+    args = fixupPointer(args, 0);
     const exc = get_arg(args, 0);
     const receiver_should_free = WasmEnableThreads && is_receiver_should_free(args);
     try {
@@ -525,13 +525,16 @@ function _marshal_array_to_js_impl (arg: JSMarshalerArgument, element_type: Mars
             result[index] = _marshal_js_object_to_js(element_arg);
         }
     } else if (element_type == MarshalerType.Byte) {
-        const sourceView = localHeapViewU8().subarray(buffer_ptr >>> 0, (buffer_ptr >>> 0) + length);
+        const bufferOffset = fixupPointer(buffer_ptr, 0);
+        const sourceView = localHeapViewU8().subarray(bufferOffset, bufferOffset + length);
         result = sourceView.slice();//copy
     } else if (element_type == MarshalerType.Int32) {
-        const sourceView = localHeapViewI32().subarray(buffer_ptr >>> 2, (buffer_ptr >>> 2) + length);
+        const bufferOffset = fixupPointer(buffer_ptr, 2);
+        const sourceView = localHeapViewI32().subarray(bufferOffset, bufferOffset + length);
         result = sourceView.slice();//copy
     } else if (element_type == MarshalerType.Double) {
-        const sourceView = localHeapViewF64().subarray(buffer_ptr >>> 3, (buffer_ptr >>> 3) + length);
+        const bufferOffset =fixupPointer(buffer_ptr, 3);
+        const sourceView = localHeapViewF64().subarray(bufferOffset, bufferOffset + length);
         result = sourceView.slice();//copy
     } else {
         throw new Error(`NotImplementedException ${element_type}. ${jsinteropDoc}`);

@@ -506,3 +506,7 @@ export function forceThreadMemoryViewRefresh () {
         runtimeHelpers.updateMemoryViews();
     }
 }
+
+export function fixupPointer(signature: any, shiftAmount: number): any {
+    return ((signature as any) >>> shiftAmount) as any;
+}
