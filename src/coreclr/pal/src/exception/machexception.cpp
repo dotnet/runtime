@@ -31,6 +31,8 @@ SET_DEFAULT_DEBUG_CHANNEL(EXCEPT); // some headers have code with asserts, so do
 #include "pal/virtual.h"
 #include "pal/map.hpp"
 #include "pal/environ.h"
+
+#include <minipal/debugger.h>
 #include <minipal/utils.h>
 
 #include "machmessage.h"
@@ -180,7 +182,7 @@ GetExceptionMask()
         }
         else
         {
-            if (PAL_IsDebuggerPresent())
+            if (minipal_is_native_debugger_present())
             {
                 exMode = MachException_SuppressDebugging;
             }

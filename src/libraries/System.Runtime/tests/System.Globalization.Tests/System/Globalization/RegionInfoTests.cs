@@ -272,7 +272,7 @@ namespace System.Globalization.Tests
         public void BuiltInRegionListTest()
         {
             // Ensure we can create all region info objects from the built-in list
-            Dictionary<string, string> regionNames = (Dictionary<string, string>)typeof(RegionInfo).Assembly.GetType("System.Globalization.CultureData").GetProperty("RegionNames", BindingFlags.Static | BindingFlags.NonPublic).GetValue(null);
+            Dictionary<string, string> regionNames = (Dictionary<string, string>)Type.GetType("System.Globalization.CultureData, System.Private.CoreLib").GetProperty("RegionNames", BindingFlags.Static | BindingFlags.NonPublic).GetValue(null);
 
             foreach (var kvp in regionNames)
             {

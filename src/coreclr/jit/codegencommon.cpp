@@ -2250,6 +2250,7 @@ void CodeGen::genEmitUnwindDebugGCandEH()
 
     // Create and store the GC info for this method.
     genCreateAndStoreGCInfo(codeSize, prologSize, epilogSize DEBUGARG(codePtr));
+    compiler->Metrics.GCInfoBytes = (int)compiler->compInfoBlkSize;
 
     /* Tell the emitter that we're done with this function */
 
@@ -2382,6 +2383,7 @@ void CodeGen::genReportEH()
 
     // Tell the VM how many EH clauses to expect.
     compiler->eeSetEHcount(EHCount);
+    compiler->Metrics.EHClauseCount = (int)EHCount;
 
     struct EHClauseInfo
     {

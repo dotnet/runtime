@@ -41,6 +41,10 @@
     <BuildMonoAOTCrossCompiler Condition="'$(TargetsBrowser)' == 'true'">true</BuildMonoAOTCrossCompiler>
     <BuildMonoAOTCrossCompiler Condition="'$(TargetsAndroid)' == 'true'">true</BuildMonoAOTCrossCompiler>
     <BuildMonoAOTCrossCompiler Condition="'$(TargetsWasi)' == 'true'">true</BuildMonoAOTCrossCompiler>
+    <MonoUseCrossTool Condition="'$(TargetsAndroid)' == 'true' or '$(TargetsLinuxBionic)' == 'true'">true</MonoUseCrossTool>
+    <MonoUseCrossTool Condition="'$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true'">true</MonoUseCrossTool>
+    <MonoUseCrossTool Condition="'$(TargetstvOS)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetsMacCatalyst)' == 'true'">true</MonoUseCrossTool>
+    <MonoUseCrossTool Condition="'$(TargetsLinux)' == 'true' and '$(Platform)' == 'arm64'">true</MonoUseCrossTool>
     <MonoObjCrossDir>$([MSBuild]::NormalizeDirectory('$(MonoObjDir)', 'cross'))</MonoObjCrossDir>
     <CrossConfigH Condition="'$(BuildMonoAOTCrossCompiler)' == 'true'">$([MSBuild]::NormalizePath('$(MonoObjCrossDir)', 'config.h'))</CrossConfigH>
     <MonoBundleLLVMOptimizer Condition="'$(MonoEnableLLVM)' == 'true'">true</MonoBundleLLVMOptimizer>
@@ -52,6 +56,7 @@
     <RepositoryEngineeringCommonDir>$([MSBuild]::NormalizeDirectory('$(RepositoryEngineeringDir)', 'common'))</RepositoryEngineeringCommonDir>
     <CrossToolchainFile>$([MSBuild]::NormalizePath('$(RepositoryEngineeringCommonDir)', 'cross', 'toolchain.cmake'))</CrossToolchainFile>
     <MonoLLVMMajorVersion>$(runtimelinuxx64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion.Substring(0, $(runtimelinuxx64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion.IndexOf('.'))))</MonoLLVMMajorVersion>
+    <MonoLLVMLibclangVersion>$(runtimelinuxx64MicrosoftNETCoreRuntimeMonoLLVMLibclangVersion)</MonoLLVMLibclangVersion>
     <MonoUseLibCxx Condition="'$(MonoLLVMMajorVersion)' >= '16.0'">true</MonoUseLibCxx>
   </PropertyGroup>
 
@@ -101,6 +106,14 @@
                       PrivateAssets="all"
                       Version="$(EmsdkPackageVersion)"
                       PackageArch="$(BuildArchitecture)" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(MonoUseCrossTool)' == 'true'">
+    <PackageReference Include="runtime.$(_portableHostOS)-$(BuildArchitecture).Microsoft.NETCore.Runtime.Mono.LLVM.Libclang"
+                      PrivateAssets="all"
+                      Version="$(MonoLLVMLibclangVersion)"
+                      PackageArch="$(BuildArchitecture)"
+                      GeneratePathProperty="true" />
   </ItemGroup>
 
   <!--
@@ -789,7 +802,6 @@ JS_ENGINES = [NODE_JS]
     <PropertyGroup Condition="'$(TargetstvOS)' == 'true' or '$(TargetsiOS)' == 'true'">
       <!-- FIXME: Disable for simulator -->
       <_MonoSkipInitCompiler>true</_MonoSkipInitCompiler>
-      <MonoUseCrossTool>true</MonoUseCrossTool>
       <MonoAotCMakeSysroot Condition="'$(TargetsiOS)' == 'true' and '$(TargetsiOSSimulator)' != 'true'">$(XcodeDir)/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS$(iOSVersion).sdk</MonoAotCMakeSysroot>
       <MonoAotCMakeSysroot Condition="'$(TargetsiOS)' == 'true' and '$(TargetsiOSSimulator)' == 'true'">$(XcodeDir)/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator$(iOSVersion).sdk</MonoAotCMakeSysroot>
       <MonoAotCMakeSysroot Condition="'$(TargetstvOS)' == 'true' and '$(TargetstvOSSimulator)' != 'true'">$(XcodeDir)/Platforms/AppleTVOS.platform/Developer/SDKs/AppleTVOS$(tvOSVersion).sdk</MonoAotCMakeSysroot>
@@ -802,7 +814,6 @@ JS_ENGINES = [NODE_JS]
 
     <!-- Catalyst specific options -->
     <PropertyGroup Condition="'$(TargetsMacCatalyst)' == 'true'">
-      <MonoUseCrossTool>true</MonoUseCrossTool>
       <MonoAotCMakeSysroot Condition="'$(TargetsMacCatalyst)' == 'true'">$(XcodeDir)/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk</MonoAotCMakeSysroot>
       <MonoAotOffsetsFile>$(MonoObjCrossDir)offsets-$(Platform)-darwin.h</MonoAotOffsetsFile>
       <MonoAotAbi Condition="'$(Platform)' == 'arm64'">aarch64-apple-maccatalyst</MonoAotAbi>
@@ -816,12 +827,7 @@ JS_ENGINES = [NODE_JS]
     </PropertyGroup>
 
     <!-- Linux specific options -->
-    <ItemGroup Condition="'$(AotHostOS)' == 'linux'">
-      <_LibClang Include="$(ANDROID_NDK_ROOT)/toolchains/llvm/prebuilt/$(MonoToolchainPrebuiltOS)/lib/libclang.so" Condition=" Exists('$(ANDROID_NDK_ROOT)/toolchains/llvm/prebuilt/$(MonoToolchainPrebuiltOS)/lib/libclang.so') "/>
-      <_LibClang Include="$(ANDROID_NDK_ROOT)/toolchains/llvm/prebuilt/$(MonoToolchainPrebuiltOS)/lib64/libclang.so.*" Condition=" '$(_LibClang)' == '' "/>
-    </ItemGroup>
     <PropertyGroup Condition="'$(TargetsLinux)' == 'true' and '$(Platform)' == 'arm64'">
-      <MonoUseCrossTool>true</MonoUseCrossTool>
       <MonoAotAbi>aarch64-linux-gnu</MonoAotAbi>
       <MonoAotOffsetsFile>$(MonoObjCrossDir)offsets-aarch-linux-gnu.h</MonoAotOffsetsFile>
       <MonoAotOffsetsPrefix>$(MonoCrossDir)/usr/lib/gcc/aarch64-linux-gnu/7</MonoAotOffsetsPrefix>
@@ -860,13 +866,9 @@ JS_ENGINES = [NODE_JS]
 
     <!-- WASM specific options -->
     <PropertyGroup Condition="'$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true'">
-      <MonoUseCrossTool>true</MonoUseCrossTool>
       <MonoAotAbi Condition="'$(TargetsBrowser)' == 'true'">wasm32-unknown-none</MonoAotAbi>
       <MonoAotAbi Condition="'$(TargetsWasi)' == 'true'">wasm32-unknown-wasip2</MonoAotAbi>
       <MonoAotOffsetsFile>$(MonoObjCrossDir)offsets-wasm32-unknown-none.h</MonoAotOffsetsFile>
-      <MonoLibClang Condition="$([MSBuild]::IsOSPlatform('OSX'))">$(MonoLLVMDir)/$(BuildArchitecture)/lib/libclang.dylib</MonoLibClang>
-      <MonoLibClang Condition="$([MSBuild]::IsOSPlatform('Linux'))">$(MonoLLVMDir)/$(BuildArchitecture)/lib/libclang.so</MonoLibClang>
-      <MonoLibClang Condition="$([MSBuild]::IsOSPlatform('Windows'))">$([MSBuild]::NormalizePath('$(MonoLLVMDir)', '$(BuildArchitecture)', 'bin', 'libclang.dll'))</MonoLibClang>
       <_ForceRelease Condition="$([MSBuild]::IsOSPlatform('Windows')) and '$(TargetArchitecture)' == 'wasm' and '$(Configuration)' == 'Debug'">true</_ForceRelease>
     </PropertyGroup>
 
@@ -908,7 +910,6 @@ JS_ENGINES = [NODE_JS]
     <PropertyGroup Condition="'$(TargetsAndroid)' == 'true' or '$(TargetsLinuxBionic)' == 'true'">
       <_MonoSkipInitCompiler>false</_MonoSkipInitCompiler>
 
-      <MonoUseCrossTool>true</MonoUseCrossTool>
       <MonoAotCMakeSysroot Condition="Exists('$(ANDROID_NDK_ROOT)/sysroot')">$(ANDROID_NDK_ROOT)/sysroot</MonoAotCMakeSysroot>
       <MonoAotCMakeSysroot Condition="'$(MonoAotCMakeSysroot)' == '' And Exists('$(ANDROID_NDK_ROOT)/toolchains/llvm/prebuilt/$(MonoToolchainPrebuiltOS)/sysroot')">$(ANDROID_NDK_ROOT)/toolchains/llvm/prebuilt/$(MonoToolchainPrebuiltOS)/sysroot</MonoAotCMakeSysroot>
       <MonoAotAbi Condition="'$(Platform)' == 'arm64'">aarch64-v8a-linux-android</MonoAotAbi>
@@ -919,19 +920,30 @@ JS_ENGINES = [NODE_JS]
     </PropertyGroup>
 
     <PropertyGroup>
-      <MonoLibClang Condition="$([MSBuild]::IsOSPlatform('OSX')) and '$(MonoLibClang)' == ''">$(XcodeDir)/Toolchains/XcodeDefault.xctoolchain/usr/lib/libclang.dylib</MonoLibClang>
-      <MonoLibClang Condition="$([MSBuild]::IsOSPlatform('Linux')) and '$(MonoLibClang)' == ''">@(_LibClang)</MonoLibClang>
-      <MonoLibClang Condition="'$(HostOS)' == 'windows' and '$(MonoLibClang)' == ''">c:/dev/LLVM/bin/libclang.dll</MonoLibClang>
       <MonoAotCMakeSysroot Condition="'$(MonoAotCMakeSysroot)' == ''">$(MonoCrossDir)</MonoAotCMakeSysroot>
     </PropertyGroup>
+
+    <ItemGroup Condition="'$(MonoUseCrossTool)' == 'true'">
+      <_LibclangPackageReferencePathPropertyName Include="Pkgruntime_$(_portableHostOS)-$(BuildArchitecture)_Microsoft_NETCore_Runtime_Mono_LLVM_Libclang" />
+    </ItemGroup>
+    <PropertyGroup Condition="'$(MonoUseCrossTool)' == 'true'">
+      <_LibclangPackageReferencePath>$(%(_LibclangPackageReferencePathPropertyName.Identity))</_LibclangPackageReferencePath>
+      <_LibclangSuffix Condition="'$(HostOS)' == 'Windows'">.dll</_LibclangSuffix>
+      <_LibclangSuffix Condition="'$(HostOS)' == 'OSX'">.dylib</_LibclangSuffix>
+      <_LibclangSuffix Condition="'$(_LibclangSuffix)' == ''">.so</_LibclangSuffix>
+      <_LibclangPath>$(_LibclangPackageReferencePath)\tools\libclang$(_LibclangSuffix)</_LibclangPath>
+      <_LibclangPythonBindingsPath>$(_LibclangPackageReferencePath)\tools\bindings\python</_LibclangPythonBindingsPath>
+      <_LibclangHeadersPath>$(_LibclangPackageReferencePath)\tools\include</_LibclangHeadersPath>
+    </PropertyGroup>
+
     <ItemGroup Condition="'$(MonoUseCrossTool)' == 'true'">
       <MonoAotCrossOffsetsToolParams Include="--abi=$(MonoAotAbi)" />
-      <MonoAotCrossOffsetsToolParams Include="--netcore" />
       <MonoAotCrossOffsetsToolParams Include="--targetdir=&quot;$(MonoObjDir.TrimEnd('\/'))&quot;" />
       <MonoAotCrossOffsetsToolParams Include="--monodir=&quot;$(MonoProjectRoot.TrimEnd('\/'))&quot;" />
       <MonoAotCrossOffsetsToolParams Include="--nativedir=&quot;$(SharedNativeRoot.TrimEnd('\/'))&quot;" />
       <MonoAotCrossOffsetsToolParams Include="--outfile=&quot;$(MonoAotOffsetsFile)&quot;" />
-      <MonoAotCrossOffsetsToolParams Include="--libclang=&quot;$(MonoLibClang)&quot;" />
+      <MonoAotCrossOffsetsToolParams Include="--libclang=&quot;$(_LibclangPath)&quot;" />
+      <MonoAotCrossOffsetsToolParams Include="--libclang-headers=&quot;$(_LibclangHeadersPath)&quot;" />
       <MonoAotCrossOffsetsToolParams Condition="'$(MonoAotOffsetsPrefix)' != ''" Include="--prefix=&quot;$(MonoAotOffsetsPrefix)&quot;" />
       <MonoAotCrossOffsetsToolParams Condition="'$(MonoAotCMakeSysroot)' != ''" Include="--sysroot=&quot;$(MonoAotCMakeSysroot)&quot;" />
       <MonoAotCrossOffsetsToolParams Condition="'$(TargetsBrowser)' == 'true'" Include="--emscripten-sdk=&quot;$([MSBuild]::NormalizePath('$(EMSDK_PATH)', 'emscripten').TrimEnd('\/'))&quot;" />
@@ -1004,8 +1016,8 @@ JS_ENGINES = [NODE_JS]
     <!-- offsets tool -->
     <Message Condition="Exists('$(_MonoAotPrebuiltOffsetsFile)')" Text="Out-of-tree offset file found, moving into place" Importance="High" />
     <Copy Condition="Exists('$(_MonoAotPrebuiltOffsetsFile)')" SourceFiles="$(_MonoAotPrebuiltOffsetsFile)" DestinationFolder="$([System.IO.Path]::GetDirectoryName('$(MonoAotOffsetsFile)'))" />
-    <Message Condition="'$(MonoUseCrossTool)' == 'true' and !Exists('$(MonoAotOffsetsFile)')" Text="Running '$(_MonoAotCrossOffsetsCommand)'" Importance="High" />
-    <Exec Condition="'$(MonoUseCrossTool)' == 'true' and !Exists('$(MonoAotOffsetsFile)')" Command="$(_MonoAotCrossOffsetsCommand)" IgnoreStandardErrorWarningFormat="true" />
+    <Message Condition="'$(MonoUseCrossTool)' == 'true' and !Exists('$(MonoAotOffsetsFile)')" Text="Running 'PYTHONPATH=$(_LibclangPythonBindingsPath) $(_MonoAotCrossOffsetsCommand)'" Importance="High" />
+    <Exec Condition="'$(MonoUseCrossTool)' == 'true' and !Exists('$(MonoAotOffsetsFile)')" Command="$(_MonoAotCrossOffsetsCommand)" EnvironmentVariables="PYTHONPATH=$(_LibclangPythonBindingsPath)" IgnoreStandardErrorWarningFormat="true" />
 
     <!-- configure -->
     <PropertyGroup>

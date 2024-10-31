@@ -21,6 +21,7 @@
 #include "array.h"
 #include "ecall.h"
 #include "virtualcallstub.h"
+#include "../debug/ee/debugger.h"
 
 #ifdef FEATURE_INTERPRETER
 #include "interpreter.h"
@@ -3392,7 +3393,10 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBl
 
     // Force a GC on every jit if the stress level is high enough
     GCStress<cfg_any>::MaybeTrigger();
-
+    if (g_externalMethodFixupTraceActiveCount > 0)
+    {
+        g_pDebugger->ExternalMethodFixupNextStep(pCode);
+    }
     // Ready to return
 
     UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
@@ -3492,6 +3496,14 @@ static PCODE getHelperForSharedStatic(Module * pModule, CORCOMPILE_FIXUP_BLOB_KI
 
     switch(helpFunc)
     {
+        case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2:
+        case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2_NOJITOPT:
+        {
+            pMT->EnsureTlsIndexAllocated();
+            pArgs->arg0 = (TADDR)pMT->GetThreadStaticsInfo()->NonGCTlsIndex.GetIndexOffset();
+            break;
+        }
+
         case CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR:
         case CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE:
         case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR:

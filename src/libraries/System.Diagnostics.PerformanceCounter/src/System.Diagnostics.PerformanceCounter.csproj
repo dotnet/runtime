@@ -25,6 +25,7 @@ System.Diagnostics.PerformanceCounter</PackageDescription>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
+    <Compile Include="Properties\InternalsVisibleTo.cs" />
     <Compile Include="System\Diagnostics\DiagnosticsConfiguration.cs" />
     <Compile Include="System\Diagnostics\CounterCreationData.cs" />
     <Compile Include="System\Diagnostics\CounterCreationDataCollection.cs" />
