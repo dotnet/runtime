@@ -4,7 +4,6 @@
 using System;
 using System.Diagnostics;
 using System.IO;
-using System.Runtime.InteropServices;
 using Microsoft.NET.HostModel.AppHost;
 
 namespace Microsoft.DotNet.CoreSetup.Test
@@ -93,7 +92,8 @@ namespace Microsoft.DotNet.CoreSetup.Test
                 windowsGraphicalUserInterface: isWindowsGui,
                 assemblyToCopyResourcesFrom: copyResources ? AppDll : null,
                 disableCetCompat: disableCetCompat,
-                dotNetSearchOptions: dotNetRootOptions);
+                dotNetSearchOptions: dotNetRootOptions,
+                enableMacOSCodeSign: true);
         }
 
         public enum MockedComponent

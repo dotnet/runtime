@@ -113,20 +113,22 @@ namespace Microsoft.NET.HostModel.AppHost
                 {
                     PEUtils.RemoveCetCompatBit(mappedFile, accessor);
                 }
-                if (!MachObjectFile.IsMachOImage(accessor) && enableMacOSCodeSign)
-                {
-                    throw new InvalidDataException("Cannot sign a non-Mach-O file.");
-                }
             }
 
             try
             {
                 RetryUtil.RetryOnIOError(() =>
                 {
+                    bool isMachOImage;
                     using (FileStream appHostDestinationStream = new FileStream(appHostDestinationFilePath, FileMode.Create, FileAccess.ReadWrite))
                     {
                         using (FileStream appHostSourceStream = new(appHostSourceFilePath, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 1))
                         {
+                            isMachOImage = MachObjectFile.IsMachOImage(appHostSourceStream);
+                            if (!isMachOImage && enableMacOSCodeSign)
+                            {
+                                throw new InvalidDataException("Cannot sign a non-Mach-O file.");
+                            }
                             appHostSourceStream.CopyTo(appHostDestinationStream);
                         }
                         // Get the size of the source app host to ensure that we don't write extra data to the destination.
@@ -134,17 +136,16 @@ namespace Microsoft.NET.HostModel.AppHost
                         long appHostLength = appHostDestinationStream.Length;
                         string destinationFileName = Path.GetFileName(appHostDestinationFilePath);
                         // On Mac, we need to extend the file size to accommodate the signature.
-                        long appHostSignedLength = enableMacOSCodeSign ?
+                        long appHostTmpCapacity = enableMacOSCodeSign ?
                             appHostLength + MachObjectFile.GetSignatureSizeEstimate((uint)appHostLength, destinationFileName)
                             : appHostLength;
-                        appHostDestinationStream.SetLength(appHostSignedLength);
 
-                        using (MemoryMappedFile memoryMappedFile = MemoryMappedFile.CreateFromFile(appHostDestinationStream, null, 0, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, true))
-                        using (MemoryMappedViewAccessor memoryMappedViewAccessor = memoryMappedFile.CreateViewAccessor(0, 0, MemoryMappedFileAccess.ReadWrite))
+                        using (MemoryMappedFile memoryMappedFile = MemoryMappedFile.CreateFromFile(appHostDestinationStream, null, appHostTmpCapacity, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, true))
+                        using (MemoryMappedViewAccessor memoryMappedViewAccessor = memoryMappedFile.CreateViewAccessor(0, appHostTmpCapacity, MemoryMappedFileAccess.ReadWrite))
                         {
                             // Transform the host file in-memory.
                             RewriteAppHost(memoryMappedFile, memoryMappedViewAccessor);
-                            if (!appHostIsPEImage)
+                            if (isMachOImage)
                             {
                                 if (enableMacOSCodeSign)
                                 {

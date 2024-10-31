@@ -55,9 +55,11 @@ internal unsafe partial class MachObjectFile
         long commandsPtr = 0;
         if (!IsMachOImage(file))
             throw new InvalidDataException("File is not a Mach-O image");
+
         file.Read(commandsPtr, out MachHeader header);
         if (!header.Is64Bit)
             throw new AppHostMachOFormatException(MachOFormatError.Not64BitExe);
+
         long nextCommandPtr = ReadCommands(
             file,
             in header,
@@ -65,9 +67,9 @@ internal unsafe partial class MachObjectFile
             out (Segment64LoadCommand Command, long FileOffset) textSegment64,
             out (Segment64LoadCommand Command, long FileOffset) linkEditSegment64,
             out long lowestSection);
-        CodeSignature codeSignatureBlob = null;
-        if (!codeSignatureLC.Command.IsDefault)
-            codeSignatureBlob = CodeSignature.Read(file, codeSignatureLC.Command.GetDataOffset(header));
+        CodeSignature codeSignatureBlob = codeSignatureLC.Command.IsDefault
+            ? null
+            : CodeSignature.Read(file, codeSignatureLC.Command.GetDataOffset(header));
         return new MachObjectFile(
             header,
             codeSignatureLC,
@@ -106,6 +108,18 @@ internal unsafe partial class MachObjectFile
             or MachMagic.FatMagicCurrentEndian or MachMagic.FatMagicOppositeEndian;
     }
 
+    public static bool IsMachOImage(FileStream file)
+    {
+        var oldPosition = file.Position;
+        file.Position = 0;
+        // We can read the Magic as any endianness since we just need to determine if it is a Mach-O file.
+        uint magic = (uint)(file.ReadByte() << 24 | file.ReadByte() << 16 | file.ReadByte() << 8 | file.ReadByte());
+        file.Position = oldPosition;
+        return (MachMagic)magic is MachMagic.MachHeaderCurrentEndian or MachMagic.MachHeaderOppositeEndian
+            or MachMagic.MachHeader64CurrentEndian or MachMagic.MachHeader64OppositeEndian
+            or MachMagic.FatMagicCurrentEndian or MachMagic.FatMagicOppositeEndian;
+    }
+
     public static bool IsMachOImage(string filePath)
     {
         using (BinaryReader reader = new BinaryReader(File.OpenRead(filePath)))
@@ -126,7 +140,7 @@ internal unsafe partial class MachObjectFile
     /// </summary>
     /// <param name="memoryMappedViewAccessor">The file to remove the signature from.</param>
     /// <param name="newLength">The new length of the file if the signature is remove and the method returns true</param>
-    /// <returns></returns>
+    /// <returns>True if a signature was present and removed, false otherwise</returns>
     public static bool TryRemoveCodesign(MemoryMappedViewAccessor memoryMappedViewAccessor, out long? newLength)
     {
         newLength = null;
@@ -244,8 +258,7 @@ internal unsafe partial class MachObjectFile
                     if (segment64.Name.Equals(NameBuffer.__TEXT))
                     {
                         textSegment64 = (segment64, commandsPtr);
-                        long sectionPtr;
-                        sectionPtr = commandsPtr + sizeof(Segment64LoadCommand);
+                        long sectionPtr = commandsPtr + sizeof(Segment64LoadCommand);
                         uint sectionsCount = segment64.GetSectionsCount(header);
                         for (int s = 0; s < sectionsCount; s++)
                         {

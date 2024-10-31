@@ -3,6 +3,7 @@
 
 using System;
 using System.Buffers.Binary;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 
 namespace Microsoft.NET.HostModel.MachO;
@@ -18,26 +19,32 @@ internal struct RequirementsBlob
     private uint _size;
     private uint _subBlobCount;
 
-    public static RequirementsBlob Empty = new RequirementsBlob
-    {
-        _magic = (BlobMagic)((uint)BlobMagic.Requirements).ConvertToBigEndian(),
-        _size = 12u.ConvertToBigEndian(),
-        _subBlobCount = 0
-    };
+    public static RequirementsBlob Empty = GetEmptyRequirementsBlob();
 
     public byte[] GetBytes()
     {
+        Debug.Assert(_subBlobCount == 0);
         byte[] buffer = new byte[12];
         if (BitConverter.IsLittleEndian)
         {
             BinaryPrimitives.WriteUInt32LittleEndian(buffer, (uint)_magic);
-            BinaryPrimitives.WriteInt32LittleEndian(buffer.AsSpan(4), (int)_size);
-            BinaryPrimitives.WriteInt32LittleEndian(buffer.AsSpan(8), (int)_subBlobCount);
+            BinaryPrimitives.WriteUInt32LittleEndian(buffer.AsSpan(sizeof(uint)), _size);
+            BinaryPrimitives.WriteUInt32LittleEndian(buffer.AsSpan(sizeof(uint) + sizeof(uint)), _subBlobCount);
             return buffer;
         }
         BinaryPrimitives.WriteUInt32BigEndian(buffer, (uint)_magic);
-        BinaryPrimitives.WriteInt32BigEndian(buffer.AsSpan(4), (int)_size);
-        BinaryPrimitives.WriteInt32BigEndian(buffer.AsSpan(8), (int)_subBlobCount);
+        BinaryPrimitives.WriteUInt32BigEndian(buffer.AsSpan(sizeof(uint)), _size);
+        BinaryPrimitives.WriteUInt32BigEndian(buffer.AsSpan(sizeof(uint) + sizeof(uint)), _subBlobCount);
         return buffer;
+    }
+
+    private static unsafe RequirementsBlob GetEmptyRequirementsBlob()
+    {
+        return new RequirementsBlob
+        {
+            _magic = (BlobMagic)((uint)BlobMagic.Requirements).ConvertToBigEndian(),
+            _size = ((uint)sizeof(RequirementsBlob)).ConvertToBigEndian(),
+            _subBlobCount = 0
+        };
     }
 }

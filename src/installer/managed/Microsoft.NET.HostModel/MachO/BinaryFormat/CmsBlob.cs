@@ -15,9 +15,14 @@ internal struct CmsWrapperBlob
     private BlobMagic _magic;
     private uint _length;
 
-    public static CmsWrapperBlob Empty = new CmsWrapperBlob
+    public static CmsWrapperBlob Empty = GetEmptyBlob();
+
+    private static unsafe CmsWrapperBlob GetEmptyBlob()
     {
-        _magic = (BlobMagic)((uint)BlobMagic.CmsWrapper).ConvertToBigEndian(),
-        _length = 8u.ConvertToBigEndian()
-    };
+        return new CmsWrapperBlob
+        {
+            _magic = (BlobMagic)((uint)BlobMagic.CmsWrapper).ConvertToBigEndian(),
+            _length = ((uint)sizeof(CmsWrapperBlob)).ConvertToBigEndian()
+        };
+    }
 }

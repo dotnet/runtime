@@ -6,6 +6,9 @@ using System.Runtime.InteropServices;
 
 namespace Microsoft.NET.HostModel.MachO;
 
+/// <summary>
+/// A 16 byte buffer used to store names in Mach-O load commands.
+/// </summary>
 [StructLayout(LayoutKind.Sequential)]
 internal struct NameBuffer
 {

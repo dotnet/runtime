@@ -485,27 +485,6 @@ namespace Microsoft.NET.HostModel.AppHost.Tests
             }
         }
 
-        [Fact]
-        [PlatformSpecific(TestPlatforms.OSX)]
-        public void SignedAppHostRuns()
-        {
-            using var testDirectory = TestArtifact.Create(nameof(SignedAppHostRuns));
-            var testAppHostPath = Path.Combine(testDirectory.Location, Path.GetFileName(Binaries.AppHost.FilePath));
-            File.Copy(Binaries.SingleFileHost.FilePath, testAppHostPath);
-            long preRemovalSize = new FileInfo(testAppHostPath).Length;
-            string signedHostPath = testAppHostPath + ".signed";
-
-            SigningTests.AdHocSignFile(testAppHostPath, signedHostPath, Binaries.AppHost.FileName);
-
-            File.SetUnixFileMode(testAppHostPath, UnixFileMode.UserRead | UnixFileMode.UserExecute | UnixFileMode.UserWrite | UnixFileMode.GroupRead | UnixFileMode.OtherRead);
-            var executedCommand = Command.Create(testAppHostPath)
-                .CaptureStdErr()
-                .CaptureStdOut()
-                .Execute();
-            // AppHost exit code should be 149 when the apphost runs properly but cannot find the appliation/runtime
-            executedCommand.ExitCode.Should().Be(149);
-        }
-
         private static readonly byte[] s_placeholderData = AppBinaryPathPlaceholderSearchValue.Concat(DotNetSearchPlaceholderValue).ToArray();
         /// <summary>
         /// Prepares a mock executable file with the AppHost placeholder embedded in it.

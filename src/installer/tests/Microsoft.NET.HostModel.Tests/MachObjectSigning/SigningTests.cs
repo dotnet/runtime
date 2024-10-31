@@ -79,7 +79,45 @@ namespace Microsoft.NET.HostModel.MachO.CodeSign.Tests
 
                 // Managed signed file
                 AdHocSignFile(originalFilePath, managedSignedPath, fileName);
-                Assert.True(IsSigned(managedSignedPath));
+                Assert.True(IsSigned(managedSignedPath), $"Failed to sign a copy of {filePath}");
+            }
+        }
+
+        [Fact]
+        public void CanRemoveSignature()
+        {
+            using var testArtifact = TestArtifact.Create(nameof(CanRemoveSignature));
+            foreach (var filePath in GetTestFilePaths(testArtifact))
+            {
+                string fileName = Path.GetFileName(filePath);
+                string originalFilePath = filePath;
+                string managedSignedPath = filePath + ".signed";
+                RemoveSignature(originalFilePath, managedSignedPath);
+                Assert.False(IsSigned(managedSignedPath), $"Failed to remove signature from {filePath}");
+            }
+        }
+
+        [Fact]
+        public void CanUnsignAndResign()
+        {
+            using var testArtifact = TestArtifact.Create(nameof(CanUnsignAndResign));
+            foreach (var filePath in GetTestFilePaths(testArtifact))
+            {
+                string fileName = Path.GetFileName(filePath);
+                string originalFilePath = filePath;
+                string managedSignedPath = filePath + ".signed";
+
+                // Managed signed file
+                AdHocSignFile(originalFilePath, managedSignedPath, fileName);
+                Assert.True(IsSigned(managedSignedPath), $"Failed to sign a copy of {filePath}");
+
+                // Remove signature
+                RemoveSignature(managedSignedPath, managedSignedPath + ".unsigned");
+                Assert.False(IsSigned(managedSignedPath + ".unsigned"), $"Failed to remove signature from {filePath}");
+
+                // Resign
+                AdHocSignFile(managedSignedPath + ".unsigned", managedSignedPath + ".resigned", fileName);
+                Assert.True(IsSigned(managedSignedPath + ".resigned"), $"Failed to resign {filePath}");
             }
         }
 
@@ -97,24 +135,24 @@ namespace Microsoft.NET.HostModel.MachO.CodeSign.Tests
 
                 // Codesigned file
                 File.Copy(filePath, codesignFilePath);
-                Assert.True(Codesign.IsAvailable);
-                Codesign.Run("--remove-signature", codesignFilePath).ExitCode.Should().Be(0);
-                Codesign.Run("-s -", codesignFilePath).ExitCode.Should().Be(0);
+                Assert.True(Codesign.IsAvailable, "Could not find codesign tool");
+                Codesign.Run("--remove-signature", codesignFilePath).ExitCode.Should().Be(0, $"'codesign --remove-signature {codesignFilePath}' failed!");
+                Codesign.Run("-s -", codesignFilePath).ExitCode.Should().Be(0, $"'codesign -s - {codesignFilePath}' failed!");
 
                 // Managed signed file
                 AdHocSignFile(originalFilePath, managedSignedPath, fileName);
 
                 var check = Codesign.Run("-v", managedSignedPath);
-                check.ExitCode.Should().Be(0, check.StdErr);
-                Assert.True(MachFilesAreEquivalent(codesignFilePath, managedSignedPath, fileName));
+                check.ExitCode.Should().Be(0, check.StdErr, $"Failed to sign a copy of '{filePath}'");
+                Assert.True(MachFilesAreEquivalent(codesignFilePath, managedSignedPath, fileName), $"Managed signature does not match codesign output for '{filePath}'");
             }
         }
 
         [Fact]
         [PlatformSpecific(TestPlatforms.OSX)]
-        void SignedHelloWorldRuns()
+        void SignedMachOExecutableRuns()
         {
-            using var testArtifact = TestArtifact.Create(nameof(SignedHelloWorldRuns));
+            using var testArtifact = TestArtifact.Create(nameof(SignedMachOExecutableRuns));
             foreach(var (fileName, fileInfo) in TestData.MachObjects.GetRunnable())
             {
                 string unsignedFilePath = Path.Combine(testArtifact.Location, fileName);
@@ -162,13 +200,39 @@ namespace Microsoft.NET.HostModel.MachO.CodeSign.Tests
                 var appHostLength = appHostDestinationStream.Length;
                 var destinationFileName = Path.GetFileName(managedSignedPath);
                 var appHostSignedLength = appHostLength + MachObjectFile.GetSignatureSizeEstimate((uint)appHostLength, destinationFileName);
-                appHostDestinationStream.SetLength(appHostSignedLength);
 
-                using (MemoryMappedFile memoryMappedFile = MemoryMappedFile.CreateFromFile(appHostDestinationStream, null, 0, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, true))
-                using (MemoryMappedViewAccessor memoryMappedViewAccessor = memoryMappedFile.CreateViewAccessor(0, 0, MemoryMappedFileAccess.ReadWrite))
+                using (MemoryMappedFile memoryMappedFile = MemoryMappedFile.CreateFromFile(appHostDestinationStream, null, appHostSignedLength, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, true))
+                using (MemoryMappedViewAccessor memoryMappedViewAccessor = memoryMappedFile.CreateViewAccessor(0, appHostSignedLength, MemoryMappedFileAccess.ReadWrite))
                 {
                     var machObjectFile = MachObjectFile.Create(memoryMappedViewAccessor);
                     appHostLength = machObjectFile.CreateAdHocSignature(memoryMappedViewAccessor, fileName);
+                }
+                appHostDestinationStream.SetLength(appHostLength);
+            }
+        }
+
+        /// <summary>
+        /// AdHoc sign a test file. This should look similar to HostWriter.CreateAppHost.
+        /// </summary>
+        internal static void RemoveSignature(string originalFilePath, string removedSignaturePath)
+        {
+            Assert.NotEqual(originalFilePath, removedSignaturePath);
+            // Open the source host file.
+            using (FileStream appHostDestinationStream = new FileStream(removedSignaturePath, FileMode.Create, FileAccess.ReadWrite))
+            {
+                using (FileStream appHostSourceStream = new(originalFilePath, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 1))
+                {
+                    appHostSourceStream.CopyTo(appHostDestinationStream);
+                }
+                var appHostLength = appHostDestinationStream.Length;
+                var destinationFileName = Path.GetFileName(removedSignaturePath);
+                var appHostSignedLength = appHostLength + MachObjectFile.GetSignatureSizeEstimate((uint)appHostLength, destinationFileName);
+
+                using (MemoryMappedFile memoryMappedFile = MemoryMappedFile.CreateFromFile(appHostDestinationStream, null, appHostSignedLength, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, true))
+                using (MemoryMappedViewAccessor memoryMappedViewAccessor = memoryMappedFile.CreateViewAccessor(0, appHostSignedLength, MemoryMappedFileAccess.ReadWrite))
+                {
+                    if (MachObjectFile.TryRemoveCodesign(memoryMappedViewAccessor, out long? newLength))
+                        appHostLength = newLength.Value;
                 }
                 appHostDestinationStream.SetLength(appHostLength);
             }
