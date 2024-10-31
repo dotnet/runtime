@@ -986,7 +986,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         MethodClassification.Instantiated => DataType.InstantiatedMethodDesc,
         MethodClassification.ComInterop => throw new NotImplementedException(), //TODO[cdac]:
         MethodClassification.Dynamic => DataType.DynamicMethodDesc,
-        _ => throw new InvalidOperationException($"Unexpected method classification 0x{cls:x2} for MethodDesc")
+        _ => throw new InvalidOperationException($"Unexpected method classification 0x{classification:x2} for MethodDesc")
     };
 
     private uint MethodDescAdditionalPointersOffset(MethodDesc md)
