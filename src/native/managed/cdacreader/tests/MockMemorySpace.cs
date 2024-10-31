@@ -265,11 +265,11 @@ internal unsafe static partial class MockMemorySpace
         }
 
         // Get an allocator for a range of addresses to simplify creating heap fragments
-        public BumpAllocator CreateAllocator(ulong start, ulong end)
+        public BumpAllocator CreateAllocator(ulong start, ulong end, int minAlign = 16)
         {
             if (_created)
                 throw new InvalidOperationException("Context already created");
-            BumpAllocator allocator = new BumpAllocator(start, end);
+            BumpAllocator allocator = new BumpAllocator(start, end) { MinAlign = minAlign };
             foreach (var a in _allocators)
             {
                 if (allocator.Overlaps(a))

@@ -371,7 +371,7 @@ internal class ExecutionManagerTestBuilder
 
     public JittedCodeRange AllocateJittedCodeRange(ulong codeRangeStart, uint codeRangeSize)
     {
-        MockMemorySpace.BumpAllocator allocator = Builder.CreateAllocator(codeRangeStart, codeRangeStart + codeRangeSize);
+        MockMemorySpace.BumpAllocator allocator = Builder.CreateAllocator(codeRangeStart, codeRangeStart + codeRangeSize, minAlign: 1);
         return new JittedCodeRange { Allocator = allocator };
     }
 

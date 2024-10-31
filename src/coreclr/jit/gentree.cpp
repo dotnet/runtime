@@ -14239,6 +14239,52 @@ CORINFO_CLASS_HANDLE Compiler::gtGetHelperArgClassHandle(GenTree* tree)
 }
 
 //------------------------------------------------------------------------
+// gtGetHelperArgMethodHandle: find the compile time method handle from
+//   a helper call argument tree
+//
+// Arguments:
+//    tree - tree that passes the handle to the helper
+//
+// Returns:
+//    The compile time method handle, if known.
+//
+CORINFO_METHOD_HANDLE Compiler::gtGetHelperArgMethodHandle(GenTree* tree)
+{
+    CORINFO_METHOD_HANDLE result = NO_METHOD_HANDLE;
+
+    // The handle could be a literal constant
+    if ((tree->OperGet() == GT_CNS_INT) && (tree->TypeGet() == TYP_I_IMPL))
+    {
+        assert(tree->IsIconHandle(GTF_ICON_METHOD_HDL));
+        result = (CORINFO_METHOD_HANDLE)tree->AsIntCon()->gtCompileTimeHandle;
+    }
+    // Or the result of a runtime lookup
+    else if (tree->OperGet() == GT_RUNTIMELOOKUP)
+    {
+        result = tree->AsRuntimeLookup()->GetMethodHandle();
+    }
+    // Or something reached indirectly
+    else if (tree->gtOper == GT_IND)
+    {
+        // The handle indirs we are looking for will be marked as non-faulting.
+        // Certain others (eg from refanytype) may not be.
+        if (tree->gtFlags & GTF_IND_NONFAULTING)
+        {
+            GenTree* handleTreeInternal = tree->AsOp()->gtOp1;
+
+            if ((handleTreeInternal->OperGet() == GT_CNS_INT) && (handleTreeInternal->TypeGet() == TYP_I_IMPL))
+            {
+                // These handle constants should be method handles.
+                assert(handleTreeInternal->IsIconHandle(GTF_ICON_METHOD_HDL));
+                result = (CORINFO_METHOD_HANDLE)handleTreeInternal->AsIntCon()->gtCompileTimeHandle;
+            }
+        }
+    }
+
+    return result;
+}
+
+//------------------------------------------------------------------------
 // gtFoldExprSpecial -- optimize binary ops with one constant operand
 //
 // Arguments:

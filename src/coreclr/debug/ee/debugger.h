@@ -2613,6 +2613,7 @@ public:
     HRESULT ReDaclEvents(PSECURITY_DESCRIPTOR securityDescriptor);
 #ifndef DACCESS_COMPILE
     void MulticastTraceNextStep(DELEGATEREF pbDel, INT32 count);
+    void ExternalMethodFixupNextStep(PCODE address);
 #endif
 
 #ifdef DACCESS_COMPILE

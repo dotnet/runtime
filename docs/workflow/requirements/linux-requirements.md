@@ -22,7 +22,8 @@ The minimum required RAM is 1GB (builds are known to fail on 512MB VM's (https:/
 To get started, you can use this helper script to install dependencies on some platforms, or you can install them yourself following the instructions in the next sections. If you opt to try this script, make sure to run it as `sudo` if you don't have root privileges:
 
 ```bash
-sudo eng/install-native-dependencies.sh
+# requires sudo for non-root user
+eng/common/native/install-dependencies.sh
 ```
 
 Note that it is always a good idea to manually double check that all the dependencies were installed correctly if you opt to use the script.
