@@ -2257,16 +2257,6 @@ void CodeGen::instGen_Set_Reg_To_Imm(emitAttr       size,
             GetEmitter()->emitIns_R_I(INS_mov, size, reg, imm, INS_OPTS_NONE,
                                       INS_SCALABLE_OPTS_NONE DEBUGARG(targetHandle) DEBUGARG(gtFlags));
         }
-        else if ((size == EA_8BYTE) && !compiler->getNeedsGSSecurityCookie()
-                 /* && compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_SIZE_OPT) */)
-        {
-            // TODO: if the algorithm below only needs, say, two movz/movk instructions,
-            // then we should use that instead of the data section load?
-            CORINFO_FIELD_HANDLE hnd =
-                Compiler::eeFindJitDataOffs(GetEmitter()->emitDataConst(&imm, EA_8BYTE, 8, TYP_LONG));
-            GetEmitter()->emitIns_R_C(INS_ldr, EA_8BYTE, reg, REG_NA, hnd, 0);
-            return;
-        }
         else
         {
             // Arm64 allows any arbitrary 16-bit constant to be loaded into a register halfword
@@ -2297,33 +2287,54 @@ void CodeGen::instGen_Set_Reg_To_Imm(emitAttr       size,
 
             unsigned bits = (size == EA_8BYTE) ? 64 : 32;
 
-            // Iterate over imm examining 16 bits at a time
+            int instructionsUsed = 0;
             for (unsigned i = 0; i < bits; i += 16)
             {
-                uint16_t imm16 = uint16_t(imm >> i);
-
-                if (imm16 != skipVal)
+                if (uint16_t(imm >> i) != skipVal)
                 {
-                    if (ins == INS_movn)
-                    {
-                        // For the movn case, we need to bitwise invert the immediate.  This is because
-                        //   (movn x0, ~imm16) === (movz x0, imm16; or x0, x0, #0xffff`ffff`ffff`0000)
-                        imm16 = ~imm16;
-                    }
-
-                    GetEmitter()->emitIns_R_I_I(ins, size, reg, imm16, i,
-                                                INS_OPTS_LSL DEBUGARG(i == 0 ? targetHandle : 0)
-                                                    DEBUGARG(i == 0 ? gtFlags : GTF_EMPTY));
-
-                    // Once the initial movz/movn is emitted the remaining instructions will all use movk
-                    ins = INS_movk;
+                    instructionsUsed++;
                 }
             }
 
-            // We must emit a movn or movz or we have not done anything
-            // The cases which hit this assert should be (emitIns_valid_imm_for_mov() == true) and
-            // should not be in this else condition
-            assert(ins == INS_movk);
+            if ((size == EA_8BYTE) && !compiler->getNeedsGSSecurityCookie() && (compiler->compCurBB != nullptr)
+                /* && compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_SIZE_OPT) */)
+            {
+                // TODO: if the algorithm below only needs, say, two movz/movk instructions,
+                // then we should use that instead of the data section load?
+                CORINFO_FIELD_HANDLE hnd =
+                    Compiler::eeFindJitDataOffs(GetEmitter()->emitDataConst(&imm, EA_8BYTE, 8, TYP_LONG));
+                GetEmitter()->emitIns_R_C(INS_ldr, EA_8BYTE, reg, REG_NA, hnd, 0);
+            }
+            else
+            {
+                // Iterate over imm examining 16 bits at a time
+                for (unsigned i = 0; i < bits; i += 16)
+                {
+                    uint16_t imm16 = uint16_t(imm >> i);
+
+                    if (imm16 != skipVal)
+                    {
+                        if (ins == INS_movn)
+                        {
+                            // For the movn case, we need to bitwise invert the immediate.  This is because
+                            //   (movn x0, ~imm16) === (movz x0, imm16; or x0, x0, #0xffff`ffff`ffff`0000)
+                            imm16 = ~imm16;
+                        }
+
+                        GetEmitter()->emitIns_R_I_I(ins, size, reg, imm16, i,
+                                                    INS_OPTS_LSL DEBUGARG(i == 0 ? targetHandle : 0)
+                                                        DEBUGARG(i == 0 ? gtFlags : GTF_EMPTY));
+
+                        // Once the initial movz/movn is emitted the remaining instructions will all use movk
+                        ins = INS_movk;
+                    }
+                }
+
+                // We must emit a movn or movz or we have not done anything
+                // The cases which hit this assert should be (emitIns_valid_imm_for_mov() == true) and
+                // should not be in this else condition
+                assert(ins == INS_movk);
+            }
         }
         // The caller may have requested that the flags be set on this mov (rarely/never)
         if (flags == INS_FLAGS_SET)
