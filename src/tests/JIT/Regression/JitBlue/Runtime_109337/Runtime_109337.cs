@@ -13,6 +13,7 @@ public class Runtime_109337
 {
     private struct S0
     {
+        public uint F1;
         public ushort F2;
     }
 
@@ -20,13 +21,25 @@ public class Runtime_109337
     public static void TestEntryPoint()
     {
         var vr4 = new S0();
-        var result = M8(vr4);
-        Assert.Equal(result, 0);
+        Assert.Equal(0, TestDiv(vr4));
+
+        vr4.F1 = 2147483649u;
+        Assert.Equal(0, TestMod(vr4));
     }
 
-    private static int M8(S0 argThis)
+    private static int TestDiv(S0 argThis)
     {
         if (((long)(17731708739983220386UL / (ushort)(argThis.F2 | 1))) >= 0)
+        {
+            return 1;
+        }
+
+        return 0;
+    }
+
+    private static int TestMod(S0 argThis)
+    {
+        if (((int)(2147483648u % argThis.F1)) >= 0)
         {
             return 1;
         }

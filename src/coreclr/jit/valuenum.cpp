@@ -6595,14 +6595,10 @@ bool ValueNumStore::IsVNNeverNegative(ValueNum vn)
                 case VNF_LE:
                 case VNF_EQ:
                 case VNF_NE:
-                case VNF_UMOD:
                 case VNF_GE_UN:
                 case VNF_GT_UN:
                 case VNF_LE_UN:
                 case VNF_LT_UN:
-                case VNF_ADD_UN_OVF:
-                case VNF_SUB_UN_OVF:
-                case VNF_MUL_UN_OVF:
                 case VNF_MDArrLowerBound:
 #ifdef FEATURE_HW_INTRINSICS
 #ifdef TARGET_XARCH
