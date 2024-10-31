@@ -4877,7 +4877,7 @@ void Compiler::fgMoveColdBlocks()
     // If both edges are out of the same source block, use the target blocks' bbIDs.
     if (leftWeight == rightWeight)
     {
-        BasicBlock* const leftSrc = left->getSourceBlock();
+        BasicBlock* const leftSrc  = left->getSourceBlock();
         BasicBlock* const rightSrc = right->getSourceBlock();
         if (leftSrc == rightSrc)
         {
@@ -5176,7 +5176,14 @@ bool Compiler::ThreeOptLayout::RunThreeOptPass(BasicBlock* startBlock, BasicBloc
         assert(blockOrder[srcPos] == srcBlk);
         assert(blockOrder[dstPos] == dstBlk);
 
-        auto getCost = [this](BasicBlock* srcBlk, BasicBlock* dstBlk) -> weight_t {
+        // To determine if it's worth creating fallthrough from 'srcBlk' into 'dstBlk',
+        // we first sum the weights of fallthrough edges at the proposed cut points
+        // (i.e. the "score" of the current partition order).
+        // Then, we do the same for the fallthrough edges that would be created by reordering partitions.
+        // If the new score exceeds the current score, then the proposed fallthrough gains
+        // justify losing the existing fallthrough behavior.
+
+        auto getScore = [this](BasicBlock* srcBlk, BasicBlock* dstBlk) -> weight_t {
             assert(srcBlk != nullptr);
             assert(dstBlk != nullptr);
             FlowEdge* const edge = compiler->fgGetPredForBlock(dstBlk, srcBlk);
@@ -5184,10 +5191,10 @@ bool Compiler::ThreeOptLayout::RunThreeOptPass(BasicBlock* startBlock, BasicBloc
         };
 
         const bool isForwardJump = (srcPos < dstPos);
-        weight_t   srcPrevCost   = 0.0;
-        weight_t   srcNextCost   = 0.0;
-        weight_t   dstPrevCost   = 0.0;
-        weight_t   cost, improvement;
+        weight_t   srcPrevScore  = 0.0;
+        weight_t   srcNextScore  = 0.0;
+        weight_t   dstPrevScore  = 0.0;
+        weight_t   currScore, newScore;
         unsigned   part1Size, part2Size, part3Size;
 
         if (isForwardJump)
@@ -5207,10 +5214,10 @@ bool Compiler::ThreeOptLayout::RunThreeOptPass(BasicBlock* startBlock, BasicBloc
             part2Size = dstPos - srcPos - 1;
             part3Size = endPos - dstPos + 1;
 
-            srcNextCost = getCost(srcBlk, blockOrder[srcPos + 1]);
-            dstPrevCost = getCost(blockOrder[dstPos - 1], dstBlk);
-            cost        = srcNextCost + dstPrevCost;
-            improvement = candidateEdge->getLikelyWeight() + getCost(blockOrder[endPos], blockOrder[srcPos + 1]);
+            srcNextScore = getScore(srcBlk, blockOrder[srcPos + 1]);
+            dstPrevScore = getScore(blockOrder[dstPos - 1], dstBlk);
+            currScore    = srcNextScore + dstPrevScore;
+            newScore     = candidateEdge->getLikelyWeight() + getScore(blockOrder[endPos], blockOrder[srcPos + 1]);
 
             // Don't include branches into S4 in the cost/improvement calculation,
             // since we're only considering branches within this region.
@@ -5234,46 +5241,47 @@ bool Compiler::ThreeOptLayout::RunThreeOptPass(BasicBlock* startBlock, BasicBloc
             part2Size = srcPos - dstPos;
             part3Size = 1;
 
-            srcPrevCost = getCost(blockOrder[srcPos - 1], srcBlk);
-            dstPrevCost = getCost(blockOrder[dstPos - 1], dstBlk);
-            cost        = srcPrevCost + dstPrevCost;
-            improvement = candidateEdge->getLikelyWeight() + getCost(blockOrder[dstPos - 1], srcBlk);
+            srcPrevScore = getScore(blockOrder[srcPos - 1], srcBlk);
+            dstPrevScore = getScore(blockOrder[dstPos - 1], dstBlk);
+            currScore    = srcPrevScore + dstPrevScore;
+            newScore     = candidateEdge->getLikelyWeight() + getScore(blockOrder[dstPos - 1], srcBlk);
 
             if (srcPos != endPos)
             {
-                srcNextCost = getCost(srcBlk, blockOrder[srcPos + 1]);
-                cost += srcNextCost;
-                improvement += getCost(blockOrder[srcPos - 1], blockOrder[srcPos + 1]);
+                srcNextScore = getScore(srcBlk, blockOrder[srcPos + 1]);
+                currScore += srcNextScore;
+                newScore += getScore(blockOrder[srcPos - 1], blockOrder[srcPos + 1]);
             }
         }
 
         // Continue evaluating candidates if this one isn't profitable
-        if ((improvement <= cost) || Compiler::fgProfileWeightsEqual(improvement, cost, 0.001))
+        if ((newScore <= currScore) || Compiler::fgProfileWeightsEqual(newScore, currScore, 0.001))
         {
             continue;
         }
 
         // We've found a profitable cut point. Continue with the swap.
-        JITDUMP("Creating fallthrough for " FMT_BB " -> " FMT_BB " (cost=%f, improvement=%f)\n", srcBlk->bbNum,
-                dstBlk->bbNum, cost, improvement);
+        JITDUMP("Creating fallthrough for " FMT_BB " -> " FMT_BB
+                " (current partition score = %f, new partition score = %f)\n",
+                srcBlk->bbNum, dstBlk->bbNum, currScore, newScore);
 
         // If we're going to break up fallthrough into 'srcBlk',
         // consider all other edges out of 'srcBlk''s current fallthrough predecessor
-        if (srcPrevCost != 0.0)
+        if (srcPrevScore != 0.0)
         {
             AddNonFallthroughSuccs(blockOrder[srcPos - 1], srcBlk);
         }
 
         // If we're going to break up fallthrough out of 'srcBlk',
         // consider all other edges into 'srcBlk''s current fallthrough successor
-        if (srcNextCost != 0.0)
+        if (srcNextScore != 0.0)
         {
             AddNonFallthroughPreds(blockOrder[srcPos + 1], srcBlk);
         }
 
         // If we're going to break up fallthrough into 'dstBlk',
         // consider all other edges out of 'dstBlk''s current fallthrough predecessor
-        if (dstPrevCost != 0.0)
+        if (dstPrevScore != 0.0)
         {
             AddNonFallthroughSuccs(blockOrder[dstPos - 1], dstBlk);
         }
