@@ -7,7 +7,7 @@ import { mono_wasm_new_root, mono_wasm_new_root_buffer } from "./roots";
 import { MonoString, MonoStringNull, WasmRoot, WasmRootBuffer } from "./types/internal";
 import { Module } from "./globals";
 import cwraps from "./cwraps";
-import { isSharedArrayBuffer, localHeapViewU8, getU32_local, setU16_local, localHeapViewU32, getU16_local, localHeapViewU16, _zero_region, malloc } from "./memory";
+import { isSharedArrayBuffer, localHeapViewU8, getU32_local, setU16_local, localHeapViewU32, getU16_local, localHeapViewU16, _zero_region, malloc, free } from "./memory";
 import { NativePointer, CharPtr, VoidPtr } from "./types/emscripten";
 
 export const interned_js_string_table = new Map<string, MonoString>();
@@ -267,7 +267,7 @@ function stringToMonoStringNewRoot (string: string, result: WasmRoot<MonoString>
     const buffer = malloc(bufferLen);
     stringToUTF16(buffer as any, buffer as any + bufferLen, string);
     cwraps.mono_wasm_string_from_utf16_ref(<any>buffer, string.length, result.address);
-    Module._free(buffer);
+    free(buffer);
 }
 
 // When threading is enabled, TextDecoder does not accept a view of a

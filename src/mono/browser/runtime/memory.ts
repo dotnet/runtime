@@ -42,6 +42,10 @@ export function malloc (size: number): VoidPtr {
     return (Module._malloc(size) as any >>> 0) as any;
 }
 
+export function free (ptr: VoidPtr) {
+    Module._free(ptr);
+}
+
 export function _create_temp_frame (): void {
     _ensure_allocated();
     alloca_stack.push(alloca_offset);
@@ -507,6 +511,6 @@ export function forceThreadMemoryViewRefresh () {
     }
 }
 
-export function fixupPointer(signature: any, shiftAmount: number): any {
+export function fixupPointer (signature: any, shiftAmount: number): any {
     return ((signature as any) >>> shiftAmount) as any;
 }

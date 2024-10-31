@@ -3,10 +3,11 @@
 
 import { MonoMethod, MonoType } from "./types/internal";
 import { NativePointer } from "./types/emscripten";
-import { Module, mono_assert } from "./globals";
+import { mono_assert } from "./globals";
 import {
     setI32, getU32_unaligned, _zero_region,
-    malloc
+    malloc,
+    free
 } from "./memory";
 import { WasmOpcode } from "./jiterpreter-opcodes";
 import cwraps from "./cwraps";
@@ -137,7 +138,7 @@ class TrampolineInfo {
             this.traceName = subName;
         } finally {
             if (namePtr)
-                Module._free(<any>namePtr);
+                free(<any>namePtr);
         }
     }
 

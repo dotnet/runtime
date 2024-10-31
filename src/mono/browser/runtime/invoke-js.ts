@@ -6,7 +6,7 @@ import BuildConfiguration from "consts:configuration";
 
 import { marshal_exception_to_cs, bind_arg_marshal_to_cs, marshal_task_to_cs } from "./marshal-to-cs";
 import { get_signature_argument_count, bound_js_function_symbol, get_sig, get_signature_version, get_signature_type, imported_js_function_symbol, get_signature_handle, get_signature_function_name, get_signature_module_name, is_receiver_should_free, get_caller_native_tid, get_sync_done_semaphore_ptr, get_arg } from "./marshal";
-import { fixupPointer, forceThreadMemoryViewRefresh } from "./memory";
+import { fixupPointer, forceThreadMemoryViewRefresh, free } from "./memory";
 import { JSFunctionSignature, JSMarshalerArguments, BoundMarshalerToJs, JSFnHandle, BoundMarshalerToCs, JSHandle, MarshalerType, VoidPtrNull } from "./types/internal";
 import { VoidPtr } from "./types/emscripten";
 import { INTERNAL, Module, loaderHelpers, mono_assert, runtimeHelpers } from "./globals";
@@ -338,7 +338,7 @@ function bind_fn (closure: BindingClosure) {
             marshal_exception_to_cs(<any>args, ex);
         } finally {
             if (receiver_should_free) {
-                Module._free(args as any);
+                free(args as any);
             }
             endMeasure(mark, MeasuredBlock.callCsFunction, fqn);
         }
