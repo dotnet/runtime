@@ -85,7 +85,7 @@ namespace
             if (FAILED(hr))
                 return hr;
             
-            if (1 != md_set_column_value_as_guid(moduleCursor, mdtModule_Mvid, 1, &mvid))
+            if (!md_set_column_value_as_guid(moduleCursor, mdtModule_Mvid, mvid))
                 return E_OUTOFMEMORY;
             
             dncp::com_ptr<ControllingIUnknown> obj;

@@ -258,25 +258,25 @@ static bool initialize_minimal_table_rows(mdcxt_t* cxt)
     mdcursor_t module_cursor;
     if (!md_append_row(cxt, mdtid_Module, &module_cursor))
         return false;
-    
+
     // Set the Generation to 0
     uint32_t generation = 0;
-    if (1 != md_set_column_value_as_constant(module_cursor, mdtModule_Generation, 1, &generation))
+    if (!md_set_column_value_as_constant(module_cursor, mdtModule_Generation, generation))
         return false;
-    
+
     // Use the 0 index to specify the NULL guid as the guids for the image.
     uint32_t guid_heap_offset = 0;
-    if (1 != set_column_value_as_heap_offset(module_cursor, mdtModule_Mvid, 1, &guid_heap_offset)
-        || 1 != set_column_value_as_heap_offset(module_cursor, mdtModule_EncBaseId, 1, &guid_heap_offset)
-        || 1 != set_column_value_as_heap_offset(module_cursor, mdtModule_EncId, 1, &guid_heap_offset))
+    if (!set_column_value_as_heap_offset(module_cursor, mdtModule_Mvid, guid_heap_offset)
+        || !set_column_value_as_heap_offset(module_cursor, mdtModule_EncBaseId, guid_heap_offset)
+        || !set_column_value_as_heap_offset(module_cursor, mdtModule_EncId, guid_heap_offset))
     {
         return false;
     }
 
     char const* name = "";
-    if (1 != md_set_column_value_as_utf8(module_cursor, mdtModule_Name, 1, &name))
+    if (!md_set_column_value_as_utf8(module_cursor, mdtModule_Name, name))
         return false;
-    
+
     // Mark that we're done adding the Module row.
     md_commit_row_add(module_cursor);
 
@@ -286,19 +286,19 @@ static bool initialize_minimal_table_rows(mdcxt_t* cxt)
         return false;
 
     uint32_t flags = 0;
-    if (1 != md_set_column_value_as_constant(global_type_cursor, mdtTypeDef_Flags, 1, &flags))
+    if (!md_set_column_value_as_constant(global_type_cursor, mdtTypeDef_Flags, flags))
         return false;
-    
+
     char const* global_type_name = "<Module>"; // Defined in ECMA-335 II.10.8
-    if (1 != md_set_column_value_as_utf8(global_type_cursor, mdtTypeDef_TypeName, 1, &global_type_name))
+    if (!md_set_column_value_as_utf8(global_type_cursor, mdtTypeDef_TypeName, global_type_name))
         return false;
-    
+
     char const* namespace = "";
-    if (1 != md_set_column_value_as_utf8(global_type_cursor, mdtTypeDef_TypeNamespace, 1, &namespace))
+    if (!md_set_column_value_as_utf8(global_type_cursor, mdtTypeDef_TypeNamespace, namespace))
         return false;
-    
+
     mdToken nil_typedef = CreateTokenType(mdtid_TypeDef);
-    if (1 != md_set_column_value_as_token(global_type_cursor, mdtTypeDef_Extends, 1, &nil_typedef))
+    if (!md_set_column_value_as_token(global_type_cursor, mdtTypeDef_Extends, nil_typedef))
         return false;
 
     // Mark that we're done adding the TypeDef row.
@@ -326,7 +326,7 @@ mdhandle_t md_create_new_handle()
     mdcxt_t* pcxt = allocate_full_context(&cxt);
     if (pcxt == NULL)
         return NULL;
-    
+
     if (!initialize_minimal_table_rows(pcxt))
     {
         free(pcxt);
@@ -451,7 +451,7 @@ static bool dump_table_rows(mdtable_t* table)
     assert(table->column_count <= ARRAY_SIZE(to_get));
     uint32_t raw_values[ARRAY_SIZE(to_get)];
 
-#define IF_NOT_ONE_REPORT_RAW(exp) if (1 != (exp)) { printf("Invalid (%u) [%#x]|", j, raw_values[j]); continue; }
+#define IF_NOT_REPORT_RAW(exp) if (!(exp)) { printf("Invalid (%u) [%#x]|", j, raw_values[j]); continue; }
 #define IF_INVALID_BLOB_REPORT_RAW(parse_fn, handle_or_cursor, blob_type, result_buf, result_buf_len) \
     { \
     result_buf = NULL; \
@@ -478,12 +478,12 @@ static bool dump_table_rows(mdtable_t* table)
         {
             if (table->column_details[j] & mdtc_hstring)
             {
-                IF_NOT_ONE_REPORT_RAW(md_get_column_value_as_utf8(cursor, IDX(j), 1, &str));
+                IF_NOT_REPORT_RAW(md_get_column_value_as_utf8(cursor, IDX(j), &str));
                 printf("'%s' [%#x]|", str, raw_values[j]);
             }
             else if (table->column_details[j] & mdtc_hguid)
             {
-                IF_NOT_ONE_REPORT_RAW(md_get_column_value_as_guid(cursor, IDX(j), 1, &guid));
+                IF_NOT_REPORT_RAW(md_get_column_value_as_guid(cursor, IDX(j), &guid));
                 printf("{%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x} [%#x]|",
                     guid.data1, guid.data2, guid.data3,
                     guid.data4[0], guid.data4[1],
@@ -497,8 +497,8 @@ static bool dump_table_rows(mdtable_t* table)
 #ifdef DNMD_PORTABLE_PDB
                 if (table->table_id == mdtid_Document && col == mdtDocument_Name)
                 {
-                    IF_NOT_ONE_REPORT_RAW(md_get_column_value_as_blob(cursor, col, 1, &blob, &blob_len));
-                    
+                    IF_NOT_REPORT_RAW(md_get_column_value_as_blob(cursor, col, &blob, &blob_len));
+
                     char* document_name;
                     size_t name_len;
                     IF_INVALID_BLOB_REPORT_RAW(md_parse_document_name, table->cxt, "DocumentName", document_name, name_len);
@@ -508,8 +508,8 @@ static bool dump_table_rows(mdtable_t* table)
                 }
                 else if (table->table_id == mdtid_MethodDebugInformation && col == mdtMethodDebugInformation_SequencePoints)
                 {
-                    IF_NOT_ONE_REPORT_RAW(md_get_column_value_as_blob(cursor, col, 1, &blob, &blob_len));
-                    
+                    IF_NOT_REPORT_RAW(md_get_column_value_as_blob(cursor, col, &blob, &blob_len));
+
                     if (blob_len == 0)
                     {
                         printf("Empty SequencePoints: Offset: %zu (len: %u) [%#x]|", (blob - table->cxt->blob_heap.ptr), blob_len, raw_values[j]);
@@ -556,7 +556,7 @@ static bool dump_table_rows(mdtable_t* table)
                             assert(!"Invalid sequence point record kind.");
                         }
                     }
-                    
+
                     printf(" } [%#x]|", raw_values[j]);
 
                     free(sequence_points);
@@ -564,7 +564,7 @@ static bool dump_table_rows(mdtable_t* table)
                 }
                 else if (table->table_id == mdtid_LocalConstant && col == mdtLocalConstant_Signature)
                 {
-                    IF_NOT_ONE_REPORT_RAW(md_get_column_value_as_blob(cursor, col, 1, &blob, &blob_len));
+                    IF_NOT_REPORT_RAW(md_get_column_value_as_blob(cursor, col, &blob, &blob_len));
                     md_local_constant_sig_t* local_constant_sig;
                     size_t local_constant_sig_len;
                     IF_INVALID_BLOB_REPORT_RAW(md_parse_local_constant_sig, table->cxt, "LocalConstantSig", local_constant_sig, local_constant_sig_len);
@@ -591,14 +591,14 @@ static bool dump_table_rows(mdtable_t* table)
                         assert(!"Invalid constant kind.");
                     }
                     printf("Value Offset: %zu (len: %zu) [%#x]|", local_constant_sig->value_blob - table->cxt->blob_heap.ptr, local_constant_sig->value_len, raw_values[j]);
-                    
+
                     free(local_constant_sig);
                     continue;
                 }
                 else if (table->table_id == mdtid_ImportScope && col == mdtImportScope_Imports)
                 {
-                    IF_NOT_ONE_REPORT_RAW(md_get_column_value_as_blob(cursor, col, 1, &blob, &blob_len));
-                    
+                    IF_NOT_REPORT_RAW(md_get_column_value_as_blob(cursor, col, &blob, &blob_len));
+
                     if (blob_len == 0)
                     {
                         printf("Empty Imports: Offset: %zu (len: %u) [%#x]|", (blob - table->cxt->blob_heap.ptr), blob_len, raw_values[j]);
@@ -651,30 +651,30 @@ static bool dump_table_rows(mdtable_t* table)
                             break;
                         }
                     }
-                    
+
                     printf(" } [%#x]|", raw_values[j]);
 
                     free(imports);
                     continue;
                 }
 #endif
-                IF_NOT_ONE_REPORT_RAW(md_get_column_value_as_blob(cursor, col, 1, &blob, &blob_len));
+                IF_NOT_REPORT_RAW(md_get_column_value_as_blob(cursor, col, &blob, &blob_len));
                 printf("Offset: %zu (len: %u) [%#x]|", (blob - table->cxt->blob_heap.ptr), blob_len, raw_values[j]);
             }
             else if (table->column_details[j] & mdtc_hus)
             {
-                IF_NOT_ONE_REPORT_RAW(md_get_column_value_as_userstring(cursor, IDX(j), 1, &user_string));
+                IF_NOT_REPORT_RAW(md_get_column_value_as_userstring(cursor, IDX(j), &user_string));
                 printf("UTF-16 string (%u bytes) [%#x]|", user_string.str_bytes, raw_values[j]);
             }
             else if (table->column_details[j] & (mdtc_idx_table | mdtc_idx_coded))
             {
-                IF_NOT_ONE_REPORT_RAW(md_get_column_value_as_token(cursor, IDX(j), 1, &tk));
+                IF_NOT_REPORT_RAW(md_get_column_value_as_token(cursor, IDX(j), &tk));
                 printf("0x%08x (mdToken) [%#x]|", tk, raw_values[j]);
             }
             else
             {
                 assert(table->column_details[j] & mdtc_constant);
-                IF_NOT_ONE_REPORT_RAW(md_get_column_value_as_constant(cursor, IDX(j), 1, &constant));
+                IF_NOT_REPORT_RAW(md_get_column_value_as_constant(cursor, IDX(j), &constant));
                 printf("0x%08x [%#x]|", constant, raw_values[j]);
             }
         }
@@ -683,7 +683,7 @@ static bool dump_table_rows(mdtable_t* table)
             return false;
     }
     printf("\n");
-#undef IF_NOT_ONE_REPORT_RAW
+#undef IF_NOT_REPORT_RAW
 #undef IF_INVALID_BLOB_REPORT_RAW
 
     return true;
@@ -803,7 +803,7 @@ static size_t get_stream_header_and_contents_size(char const* heap_name, size_t 
 static size_t get_table_stream_size(mdcxt_t* cxt)
 {
     // II.24.2.6 #~ stream
-    size_t const table_stream_header_size =        
+    size_t const table_stream_header_size =
         + sizeof(uint32_t) // Reserved
         + sizeof(uint8_t) // MajorVersion
         + sizeof(uint8_t) // MinorVersion
@@ -813,9 +813,9 @@ static size_t get_table_stream_size(mdcxt_t* cxt)
         + sizeof(uint64_t) // Sorted tables
         // Rows and Tables entries are both variable length and calculated below
     ;
-    
+
     size_t save_size = table_stream_header_size;
-    
+
     for (uint8_t i = 0; i < MDTABLE_MAX_COUNT; ++i)
     {
         if (cxt->tables[i].cxt != NULL && cxt->tables[i].row_count != 0)
@@ -824,15 +824,15 @@ static size_t get_table_stream_size(mdcxt_t* cxt)
             save_size += cxt->tables[i].data.size; // Table data
         }
     }
-    
+
     return save_size;
 }
 
 static size_t get_image_size(mdcxt_t* cxt)
-{    
+{
     if (cxt->editor == NULL)
         return cxt->raw_metadata.size;
-    
+
     // II.24.2.1 Metadata Root size
     size_t const image_header_size =
         sizeof(uint32_t) // Signature
@@ -844,7 +844,7 @@ static size_t get_image_size(mdcxt_t* cxt)
         + sizeof(uint16_t) // Flags
         + sizeof(uint16_t) // Streams (number of streams)
     ;
-    
+
     size_t save_size = image_header_size;
 
     if (cxt->blob_heap.size != 0)
@@ -858,7 +858,7 @@ static size_t get_image_size(mdcxt_t* cxt)
 
     if (cxt->context_flags & mdc_minimal_delta)
         save_size += get_stream_header_and_contents_size("#JTD", 0);
-    
+
     // All names of the tables stream are the same length,
     // so pick the one in the standard.
     save_size += get_stream_header_and_contents_size("#~", get_table_stream_size(cxt));
@@ -918,7 +918,7 @@ bool md_write_to_buffer(mdhandle_t handle, uint8_t* buffer, size_t* len)
         memcpy(buffer, cxt->raw_metadata.ptr, cxt->raw_metadata.size);
         return true;
     }
-    
+
     if (buffer == NULL || full_buffer_len < image_size)
     {
         *len = image_size;
@@ -934,16 +934,16 @@ bool md_write_to_buffer(mdhandle_t handle, uint8_t* buffer, size_t* len)
     {
         return false;
     }
-    
+
     size_t version_str_len = strlen(cxt->version);
     uint32_t version_buf_len = align_to((uint32_t)version_str_len + 1, 4);
 
     if (!write_u32(&buffer, &remaining_buffer_len, (uint32_t)version_buf_len))
         return false;
-    
+
     if (remaining_buffer_len < version_buf_len)
         return false;
-    
+
     memcpy(buffer, cxt->version, version_str_len + 1);
     // Pad the version string to a 4-byte boundary.
     memset(buffer + version_str_len + 1, 0, version_buf_len - version_str_len - 1);
@@ -951,7 +951,7 @@ bool md_write_to_buffer(mdhandle_t handle, uint8_t* buffer, size_t* len)
 
     if (!write_u16(&buffer, &remaining_buffer_len, cxt->flags))
         return false;
-    
+
     uint16_t stream_count = 0;
     if (cxt->blob_heap.size != 0)
         stream_count++;
@@ -983,7 +983,7 @@ bool md_write_to_buffer(mdhandle_t handle, uint8_t* buffer, size_t* len)
             valid_tables |= (1ULL << i);
             if (cxt->tables[i].is_sorted)
                 sorted_tables |= (1ULL << i);
-            
+
             // Indirect tables only exist in images that use the uncompresed stream.
             if (table_is_indirect_table((mdtable_id_t)i))
                 tables_stream_name = "#-";
@@ -992,7 +992,7 @@ bool md_write_to_buffer(mdhandle_t handle, uint8_t* buffer, size_t* len)
 
     // The tables stream is always included.
     stream_count++;
-    
+
     if (!write_u16(&buffer, &remaining_buffer_len, stream_count))
         return false;
 
@@ -1011,7 +1011,7 @@ bool md_write_to_buffer(mdhandle_t handle, uint8_t* buffer, size_t* len)
         mddata_t offset_space;
         if (!write_stream_header("#JTD", 0, &offset_space, &buffer, &remaining_buffer_len))
             return false;
-        
+
         // Set the stream offset to the location of the stream header.
         // There's no content in this stream, but the offset must be valid.
         write_u32(&offset_space.ptr, &offset_space.size, (uint32_t)((uint8_t*)offset_space.ptr - buffer_start));

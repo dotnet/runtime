@@ -8,7 +8,7 @@ static bool is_row_sorted_with_next_row(md_key_info_t const* keys, uint8_t count
         col_index_t key_col = index_to_col(keys[i].index, table_id);
 
         access_cxt_t row_acxt;
-        if (!create_access_context(&row, key_col, 1, false, &row_acxt))
+        if (!create_access_context(&row, key_col, false, &row_acxt))
             return false;
 
         // Key columns can only be constant, index into a table, or a coded token index.
@@ -16,7 +16,7 @@ static bool is_row_sorted_with_next_row(md_key_info_t const* keys, uint8_t count
         assert(row_acxt.col_details & (mdtc_constant | mdtc_idx_table | mdtc_idx_coded));
 
         access_cxt_t next_acxt;
-        if (!create_access_context(&next_row, key_col, 1, false, &next_acxt))
+        if (!create_access_context(&next_row, key_col, false, &next_acxt))
             return false;
 
         uint32_t row_value;
@@ -34,21 +34,19 @@ static bool is_row_sorted_with_next_row(md_key_info_t const* keys, uint8_t count
     return true;
 }
 
-static int32_t set_column_value_as_token_or_cursor(mdcursor_t c, uint32_t col_idx, mdToken const* tk, mdcursor_t const* cursor, uint32_t in_length)
+static bool set_column_value_as_token_or_cursor(mdcursor_t c, uint32_t col_idx, mdToken const* tk, mdcursor_t const* cursor)
 {
-    assert(in_length != 0 && (tk != NULL || cursor != NULL));
-
     access_cxt_t acxt;
-    if (!create_access_context(&c, col_idx, in_length, true, &acxt))
-        return -1;
+    if (!create_access_context(&c, col_idx, true, &acxt))
+        return false;
 
     // If we can't write on the underlying table, then fail.
     if (acxt.writable_data == NULL)
-        return -1;
+        return false;
 
     // If this isn't an index column, then fail.
     if (!(acxt.col_details & (mdtc_idx_table | mdtc_idx_coded)))
-        return -1;
+        return false;
 
     uint8_t key_count = 0;
     uint8_t key_idx = UINT8_MAX;
@@ -71,90 +69,84 @@ static int32_t set_column_value_as_token_or_cursor(mdcursor_t c, uint32_t col_id
         }
     }
 
-    int32_t written = 0;
-    do
+    mdToken token;
+    if (tk != NULL)
     {
-        mdToken token;
-        if (tk != NULL)
-        {
-            token = tk[written];
-        }
-        else
-        {
-            if (!md_cursor_to_token(cursor[written], &token))
-                return -1;
-        }
+        token = *tk;
+    }
+    else
+    {
+        if (!md_cursor_to_token(*cursor, &token))
+            return false;
+    }
 
 #ifdef DNMD_PORTABLE_PDB
+    {
+        uint32_t table_row = RidFromToken(token);
+        mdtable_id_t table_id = ExtractTokenType(token);
+        if (table_id < mdtid_FirstPdb)
         {
-            uint32_t table_row = RidFromToken(token);
-            mdtable_id_t table_id = ExtractTokenType(token);
-            if (table_id < mdtid_FirstPdb)
-            {
-                if (!update_referenced_type_system_table_row_count(acxt.table->cxt, table_id, table_row))
-                    return -1;
-            }
+            if (!update_referenced_type_system_table_row_count(acxt.table->cxt, table_id, table_row))
+                return false;
         }
+    }
 #endif
 
-        uint32_t raw;
-        if (acxt.col_details & mdtc_idx_table)
-        {
-            uint32_t table_row = RidFromToken(token);
-            mdtable_id_t table_id = ExtractTokenType(token);
-            // The raw value is the row index into the table that
-            // is embedded in the column details.
-            // Return an error if the provided token does not point to the right table.
-            if (ExtractTable(acxt.col_details) != table_id)
-                return -1;
-            raw = table_row;
-        }
-        else
-        {
-            assert(acxt.col_details & mdtc_idx_coded);
-            if (!compose_coded_index(token, acxt.col_details, &raw))
-                return -1;
-        }
+    uint32_t raw;
+    if (acxt.col_details & mdtc_idx_table)
+    {
+        uint32_t table_row = RidFromToken(token);
+        mdtable_id_t table_id = ExtractTokenType(token);
+        // The raw value is the row index into the table that
+        // is embedded in the column details.
+        // Return an error if the provided token does not point to the right table.
+        if (ExtractTable(acxt.col_details) != table_id)
+            return false;
+        raw = table_row;
+    }
+    else
+    {
+        assert(acxt.col_details & mdtc_idx_coded);
+        if (!compose_coded_index(token, acxt.col_details, &raw))
+            return false;
+    }
 
-        if (!write_column_data(&acxt, raw))
-            return -1;
+    if (!write_column_data(&acxt, raw))
+        return false;
 
-        // If the column we are writing to is a key of a sorted column, then we need to validate that it is sorted correctly.
-        // We'll validate against the previous row here and then validate against the next row after we've written all of the columns that we will write.
-        if (key_idx != UINT8_MAX)
+    // If the column we are writing to is a key of a sorted column, then we need to validate that it is sorted correctly.
+    // We'll validate against the previous row here and then validate against the next row after we've written all of the columns that we will write.
+    if (key_idx != UINT8_MAX)
+    {
+        assert(keys != NULL && key_idx < key_count);
+        mdcursor_t current_row = c;
+        bool success = md_cursor_next(&current_row);
+        assert(success);
+        (void)success;
+        mdcursor_t prior_row = current_row;
+        if (md_cursor_move(&prior_row, -1) && !CursorNull(&prior_row))
         {
-            assert(keys != NULL && key_idx < key_count);
-            mdcursor_t current_row = c;
-            bool success = md_cursor_move(&current_row, written);
-            assert(success);
-            (void)success;
-            mdcursor_t prior_row = current_row;
-            if (md_cursor_move(&prior_row, -1) && !CursorNull(&prior_row))
+            // If we have a prior row, then we need to check if we're sorted with respect to it.
+            if (!is_row_sorted_with_next_row(keys, key_count, acxt.table->table_id, prior_row, current_row))
             {
-                // If we have a prior row, then we need to check if we're sorted with respect to it.
-                if (!is_row_sorted_with_next_row(keys, key_count, acxt.table->table_id, prior_row, current_row))
-                {
-                    // If we're not sorted, then invalidate key_idx to avoid checking if we're sorted for future row writes.
-                    // We won't go from unsorted to sorted.
-                    acxt.table->is_sorted = false;
-                    key_idx = UINT8_MAX;
-                }
+                // If we're not sorted, then invalidate key_idx to avoid checking if we're sorted for future row writes.
+                // We won't go from unsorted to sorted.
+                acxt.table->is_sorted = false;
+                key_idx = UINT8_MAX;
             }
         }
-
-        written++;
-    } while (in_length > 1 && next_row(&acxt));
+    }
 
     // Validate that the last row we wrote is sorted with respect to any following rows.
     if (key_idx != UINT8_MAX)
     {
         assert(keys != NULL && key_idx < key_count);
         mdcursor_t current_row = c;
-        bool success = md_cursor_move(&current_row, written);
+        bool success = md_cursor_next(&current_row);
         assert(success);
         (void)success;
         mdcursor_t next_row = current_row;
-        if (md_cursor_move(&next_row, 1) && !CursorEnd(&next_row))
+        if (md_cursor_next(&next_row) && !CursorEnd(&next_row))
         {
             // If we have a prior row, then we need to check if we're sorted with respect to it.
             if (!is_row_sorted_with_next_row(keys, key_count, acxt.table->table_id, current_row, next_row))
@@ -167,36 +159,28 @@ static int32_t set_column_value_as_token_or_cursor(mdcursor_t c, uint32_t col_id
         }
     }
 
-    return written;
+    return true;
 }
 
-int32_t md_set_column_value_as_token(mdcursor_t c, col_index_t col, uint32_t in_length, mdToken const* tk)
+bool md_set_column_value_as_token(mdcursor_t c, col_index_t col, mdToken tk)
 {
-    if (tk == NULL || in_length == 0)
-        return -1;
-    return set_column_value_as_token_or_cursor(c, col_to_index(col, CursorTable(&c)), tk, NULL, in_length);
+    return set_column_value_as_token_or_cursor(c, col_to_index(col, CursorTable(&c)), &tk, NULL);
 }
 
-int32_t md_set_column_value_as_cursor(mdcursor_t c, col_index_t col, uint32_t in_length, mdcursor_t const* cursor)
+bool md_set_column_value_as_cursor(mdcursor_t c, col_index_t col, mdcursor_t cursor)
 {
-    if (cursor == NULL || in_length == 0)
-        return -1;
-    return set_column_value_as_token_or_cursor(c, col_to_index(col, CursorTable(&c)), NULL, cursor, in_length);
+    return set_column_value_as_token_or_cursor(c, col_to_index(col, CursorTable(&c)), NULL, &cursor);
 }
 
-int32_t md_set_column_value_as_constant(mdcursor_t c, col_index_t col_idx, uint32_t in_length, uint32_t const* constant)
+bool md_set_column_value_as_constant(mdcursor_t c, col_index_t col_idx, uint32_t constant)
 {
-    if (in_length == 0)
-        return 0;
-    assert(constant != NULL);
-
     access_cxt_t acxt;
-    if (!create_access_context(&c, col_idx, in_length, true, &acxt))
-        return -1;
+    if (!create_access_context(&c, col_idx, true, &acxt))
+        return false;
 
     // If this isn't an constant column, then fail.
     if (!(acxt.col_details & mdtc_constant))
-        return -1;
+        return false;
 
     uint8_t key_count = 0;
     uint8_t key_idx = UINT8_MAX;
@@ -219,44 +203,38 @@ int32_t md_set_column_value_as_constant(mdcursor_t c, col_index_t col_idx, uint3
         }
     }
 
-    int32_t written = 0;
-    do
-    {
-        if (!write_column_data(&acxt, constant[written]))
-            return -1;
+    if (!write_column_data(&acxt, constant))
+        return false;
 
-        // If the column we are writing to is a key of a sorted column, then we need to validate that it is sorted correctly.
-        // We'll validate against the previous row here and then validate against the next row after we've written all of the columns that we will write.
-        if (key_idx != UINT8_MAX)
+    // If the column we are writing to is a key of a sorted column, then we need to validate that it is sorted correctly.
+    // We'll validate against the previous row here and then validate against the next row after we've written all of the columns that we will write.
+    if (key_idx != UINT8_MAX)
+    {
+        assert(keys != NULL && key_idx < key_count);
+        mdcursor_t current_row = c;
+        bool success = md_cursor_next(&current_row);
+        assert(success);
+        (void)success;
+        mdcursor_t prior_row = current_row;
+        if (md_cursor_move(&prior_row, -1) && !CursorNull(&prior_row))
         {
-            assert(keys != NULL && key_idx < key_count);
-            mdcursor_t current_row = c;
-            bool success = md_cursor_move(&current_row, written);
-            assert(success);
-            (void)success;
-            mdcursor_t prior_row = current_row;
-            if (md_cursor_move(&prior_row, -1) && !CursorNull(&prior_row))
+            // If we have a prior row, then we need to check if we're sorted with respect to it.
+            if (!is_row_sorted_with_next_row(keys, key_count, acxt.table->table_id, prior_row, current_row))
             {
-                // If we have a prior row, then we need to check if we're sorted with respect to it.
-                if (!is_row_sorted_with_next_row(keys, key_count, acxt.table->table_id, prior_row, current_row))
-                {
-                    // If we're not sorted, then invalidate key_idx to avoid checking if we're sorted for future row writes.
-                    // We won't go from unsorted to sorted.
-                    acxt.table->is_sorted = false;
-                    key_idx = UINT8_MAX;
-                }
+                // If we're not sorted, then invalidate key_idx to avoid checking if we're sorted for future row writes.
+                // We won't go from unsorted to sorted.
+                acxt.table->is_sorted = false;
+                key_idx = UINT8_MAX;
             }
         }
-
-        written++;
-    } while (in_length > 1 && next_row(&acxt));
+    }
 
     // Validate that the last row we wrote is sorted with respect to any following rows.
     if (key_idx != UINT8_MAX)
     {
         assert(keys != NULL && key_idx < key_count);
         mdcursor_t current_row = c;
-        bool success = md_cursor_move(&current_row, written);
+        bool success = md_cursor_next(&current_row);
         assert(success);
         (void)success;
         mdcursor_t next_row = current_row;
@@ -273,7 +251,7 @@ int32_t md_set_column_value_as_constant(mdcursor_t c, col_index_t col_idx, uint3
         }
     }
 
-    return written;
+    return true;
 }
 
 #ifdef DEBUG_COLUMN_SORTING
@@ -290,169 +268,127 @@ static void validate_column_is_not_key(mdtable_t const* table, col_index_t col_i
 #endif
 
 // Set a column value as an existing offset into a heap.
-int32_t set_column_value_as_heap_offset(mdcursor_t c, col_index_t col_idx, uint32_t in_length, uint32_t* offset)
+bool set_column_value_as_heap_offset(mdcursor_t c, col_index_t col_idx, uint32_t offset)
 {
-    if (in_length == 0)
-        return 0;
-
     access_cxt_t acxt;
-    if (!create_access_context(&c, col_idx, in_length, true, &acxt))
-        return -1;
+    if (!create_access_context(&c, col_idx, true, &acxt))
+        return false;
 
     // If this isn't a heap index column, then fail.
     if (!(acxt.col_details & mdtc_idx_heap))
-        return -1;
+        return false;
 
     mdstream_t const* heap = get_heap_by_id(acxt.table->cxt, ExtractHeapType(acxt.col_details));
     if (heap == NULL)
-        return -1;
+        return false;
 
 #ifdef DEBUG_COLUMN_SORTING
     validate_column_is_not_key(acxt.table, col_idx);
 #endif
 
-    int32_t written = 0;
-    do
-    {
-        if (!write_column_data(&acxt, offset[written]))
-            return -1;
-        written++;
-    } while (in_length > 1 && next_row(&acxt));
+    if (!write_column_data(&acxt, offset))
+        return false;
 
-    return written;
+    return true;
 }
 
-int32_t md_set_column_value_as_utf8(mdcursor_t c, col_index_t col_idx, uint32_t in_length, char const* const* str)
+bool md_set_column_value_as_utf8(mdcursor_t c, col_index_t col_idx, char const* str)
 {
-    if (in_length == 0)
-        return 0;
-
     access_cxt_t acxt;
-    if (!create_access_context(&c, col_idx, in_length, true, &acxt))
-        return -1;
+    if (!create_access_context(&c, col_idx, true, &acxt))
+        return false;
 
     // If this isn't an constant column, then fail.
     if (!(acxt.col_details & mdtc_hstring))
-        return -1;
+        return false;
 
 #ifdef DEBUG_COLUMN_SORTING
     validate_column_is_not_key(acxt.table, col_idx);
 #endif
 
-    int32_t written = 0;
-    do
-    {
-        uint32_t heap_offset;
-        heap_offset = add_to_string_heap(CursorTable(&c)->cxt, str[written]);
+    uint32_t heap_offset;
+    heap_offset = add_to_string_heap(acxt.table->cxt, str);
 
-        if (heap_offset == 0 && str[written][0] != '\0')
-            return -1;
+    if (heap_offset == 0 && str[0] != '\0')
+        return false;
 
-        if (!write_column_data(&acxt, heap_offset))
-            return -1;
-        written++;
-    } while (in_length > 1 && next_row(&acxt));
+    if (!write_column_data(&acxt, heap_offset))
+        return false;
 
-    return written;
+    return true;
 }
 
-int32_t md_set_column_value_as_blob(mdcursor_t c, col_index_t col_idx, uint32_t in_length, uint8_t const* const* blob, uint32_t const* blob_len)
+// TODO: These functions should not call set_column_value_as_heap_offset.
+bool md_set_column_value_as_blob(mdcursor_t c, col_index_t col_idx, uint8_t const* blob, uint32_t blob_len)
 {
-    if (in_length == 0)
-        return 0;
-
     access_cxt_t acxt;
-    if (!create_access_context(&c, col_idx, in_length, true, &acxt))
-        return -1;
+    if (!create_access_context(&c, col_idx, true, &acxt))
+        return false;
 
     // If this isn't an constant column, then fail.
     if (!(acxt.col_details & mdtc_hblob))
-        return -1;
+        return false;
 
 #ifdef DEBUG_COLUMN_SORTING
     validate_column_is_not_key(acxt.table, col_idx);
 #endif
 
-    int32_t written = 0;
-    do
-    {
-        uint32_t heap_offset = add_to_blob_heap(CursorTable(&c)->cxt, blob[written], blob_len[written]);
+    uint32_t heap_offset = add_to_blob_heap(acxt.table->cxt, blob, blob_len);
 
-        if (heap_offset == 0 && blob_len[written] != 0)
-            return -1;
+    if (heap_offset == 0 && blob_len > 0)
+        return false;
 
-        if (!write_column_data(&acxt, heap_offset))
-            return -1;
-        written++;
-    } while (in_length > 1 && next_row(&acxt));
+    if (!write_column_data(&acxt, heap_offset))
+        return false;
 
-    return written;
+    return true;
 }
 
-int32_t md_set_column_value_as_guid(mdcursor_t c, col_index_t col_idx, uint32_t in_length, mdguid_t const* guid)
+bool md_set_column_value_as_guid(mdcursor_t c, col_index_t col_idx, mdguid_t guid)
 {
-    if (in_length == 0)
-        return 0;
-
     access_cxt_t acxt;
-    if (!create_access_context(&c, col_idx, in_length, true, &acxt))
-        return -1;
+    if (!create_access_context(&c, col_idx, true, &acxt))
+        return false;
 
     // If this isn't an constant column, then fail.
     if (!(acxt.col_details & mdtc_hguid))
-        return -1;
+        return false;
 
 #ifdef DEBUG_COLUMN_SORTING
     validate_column_is_not_key(acxt.table, col_idx);
 #endif
 
-    int32_t written = 0;
-    do
-    {
-        uint32_t index = add_to_guid_heap(CursorTable(&c)->cxt, guid[written]);
+    uint32_t index = add_to_guid_heap(acxt.table->cxt, guid);
 
-        if (index == 0 && memcmp(&guid[written], &empty_guid, sizeof(mdguid_t)) != 0)
-            return -1;
+    if (index == 0 && memcmp(&guid, &empty_guid, sizeof(mdguid_t)) != 0)
+        return false;
 
-        if (!write_column_data(&acxt, index))
-            return -1;
-        written++;
-    } while (in_length > 1 && next_row(&acxt));
-
-    return written;
+    return set_column_value_as_heap_offset(c, col_idx, index);
 }
 
-int32_t md_set_column_value_as_userstring(mdcursor_t c, col_index_t col_idx, uint32_t in_length, char16_t const* const* userstring)
+bool md_set_column_value_as_userstring(mdcursor_t c, col_index_t col_idx, char16_t const* userstring)
 {
-    if (in_length == 0)
-        return 0;
-
     access_cxt_t acxt;
-    if (!create_access_context(&c, col_idx, in_length, true, &acxt))
-        return -1;
+    if (!create_access_context(&c, col_idx, true, &acxt))
+        return false;
 
     // If this isn't an constant column, then fail.
-    if (!(acxt.col_details & mdtc_hblob))
-        return -1;
+    if (!(acxt.col_details & mdtc_hus))
+        return false;
 
 #ifdef DEBUG_COLUMN_SORTING
     validate_column_is_not_key(acxt.table, col_idx);
 #endif
 
-    int32_t written = 0;
-    do
-    {
-        uint32_t index = add_to_user_string_heap(CursorTable(&c)->cxt, userstring[written]);
+    uint32_t index = add_to_user_string_heap(CursorTable(&c)->cxt, userstring);
 
-        if (index == 0 && userstring[written][0] != 0)
-            return -1;
+    if (index == 0 && userstring[0] != 0)
+        return false;
 
-        if (!write_column_data(&acxt, index))
-            return -1;
-        written++;
-    } while (in_length > 1 && next_row(&acxt));
+    if (!write_column_data(&acxt, index))
+        return false;
 
-    return written;
+    return true;
 }
 
 int32_t update_shifted_row_references(mdcursor_t* c, uint32_t count, uint8_t col_index, mdtable_id_t updated_table, uint32_t original_starting_table_index, uint32_t new_starting_table_index)
@@ -469,7 +405,7 @@ int32_t update_shifted_row_references(mdcursor_t* c, uint32_t count, uint8_t col
     for (uint32_t i = 0; i < count; i++, md_cursor_next(c))
     {
         mdToken tk;
-        if (1 != md_get_column_value_as_token(*c, col, 1, &tk))
+        if (!md_get_column_value_as_token(*c, col, &tk))
             return -1;
 
         if ((mdtable_id_t)ExtractTokenType(tk) == updated_table)
@@ -479,7 +415,7 @@ int32_t update_shifted_row_references(mdcursor_t* c, uint32_t count, uint8_t col
             {
                 rid += diff;
                 tk = TokenFromRid(rid, CreateTokenType(updated_table));
-                if (1 != md_set_column_value_as_token(*c, col, 1, &tk))
+                if (!md_set_column_value_as_token(*c, col, tk))
                     return -1;
             }
         }
@@ -518,16 +454,16 @@ static bool copy_cursor_column(mdcursor_t dest, mdcursor_t src, col_index_t idx)
     switch (table->column_details[idx] & mdtc_categorymask)
     {
     case mdtc_constant:
-        if (1 != md_get_column_value_as_constant(src, idx, 1, &column_value))
+        if (!md_get_column_value_as_constant(src, idx, &column_value))
             return false;
         break;
     case mdtc_idx_coded:
     case mdtc_idx_table:
-        if (1 != md_get_column_value_as_token(src, idx, 1, &column_value))
+        if (!md_get_column_value_as_token(src, idx, &column_value))
             return false;
         break;
     case mdtc_idx_heap:
-        if (1 != get_column_value_as_heap_offset(src, idx, 1, &column_value))
+        if (!get_column_value_as_heap_offset(src, idx, &column_value))
             return false;
         break;
     default:
@@ -538,16 +474,16 @@ static bool copy_cursor_column(mdcursor_t dest, mdcursor_t src, col_index_t idx)
     switch (dest_table->column_details[idx] & mdtc_categorymask)
     {
     case mdtc_constant:
-        if (1 != md_set_column_value_as_constant(dest, idx, 1, &column_value))
+        if (!md_set_column_value_as_constant(dest, idx, column_value))
             return false;
         break;
     case mdtc_idx_coded:
     case mdtc_idx_table:
-        if (1 != md_set_column_value_as_token(dest, idx, 1, &column_value))
+        if (!md_set_column_value_as_token(dest, idx, column_value))
             return false;
         break;
     case mdtc_idx_heap:
-        if (1 != set_column_value_as_heap_offset(dest, idx, 1, &column_value))
+        if (set_column_value_as_heap_offset(dest, idx, column_value))
             return false;
         break;
     default:
@@ -561,10 +497,24 @@ static bool set_column_as_end_of_table_cursor(mdcursor_t c, col_index_t col_idx)
 {
     mdtable_t* table = CursorTable(&c);
     assert((table->column_details[col_to_index(col_idx, table)] & mdtc_categorymask) == mdtc_idx_table);
-    mdtable_id_t target_table = ExtractTable(table->column_details[col_to_index(col_idx, table)]);
-    mdcursor_t end_of_table = create_cursor(&table->cxt->tables[target_table], table->cxt->tables[target_table].row_count + 1);
+    mdtable_id_t target_table_id = ExtractTable(table->column_details[col_to_index(col_idx, table)]);
+    mdtable_t* target_table = &table->cxt->tables[target_table_id];
 
-    return md_set_column_value_as_cursor(c, col_idx, 1, &end_of_table);
+    mdcursor_t end_of_table;
+    if (target_table->cxt == NULL)
+    {
+        if (!initialize_new_table_details(table->cxt, target_table_id, target_table))
+        {
+            return false;
+        }
+        end_of_table = create_cursor(target_table, 0);
+    }
+    else
+    {
+        end_of_table = create_cursor(target_table, target_table->row_count + 1);
+    }
+
+    return md_set_column_value_as_cursor(c, col_idx, end_of_table);
 }
 
 static bool initialize_list_columns(mdcursor_t c)
@@ -694,7 +644,7 @@ static bool add_new_row_to_list(mdcursor_t list_owner, col_index_t list_col, mdc
     uint32_t count;
     if (!md_get_column_value_as_range(list_owner, list_col, &range, &count))
         return false;
-    
+
     // Assert that the insertion location is in our range or points to the first row of the next range.
     // For a zero-length range, row_to_insert_before will be the first row of the next range, so we need to account for that.
     assert(CursorTable(&range) == CursorTable(&row_to_insert_before));
@@ -716,7 +666,7 @@ static bool add_new_row_to_list(mdcursor_t list_owner, col_index_t list_col, mdc
         if (!md_insert_row_before(row_to_insert_before, &new_indirection_row))
             return false;
 
-        if (!md_set_column_value_as_cursor(new_indirection_row, index_to_col(0, CursorTable(&row_to_insert_before)->table_id), 1, new_row))
+        if (!md_set_column_value_as_cursor(new_indirection_row, index_to_col(0, CursorTable(&row_to_insert_before)->table_id), *new_row))
             return false;
 
         if (count == 0 || CursorRow(&range) == CursorRow(&row_to_insert_before))
@@ -725,7 +675,7 @@ static bool add_new_row_to_list(mdcursor_t list_owner, col_index_t list_col, mdc
             // If the start of our range is the same as the row we're inserting before, then we're inserting at the start of the list.
             // In both of these cases, we need to update the parent's row column to point to the newly inserted row.
             // Otherwise, this element would be associated with the entry before the parent row.
-            if (!md_set_column_value_as_cursor(list_owner, list_col, 1, &new_indirection_row))
+            if (!md_set_column_value_as_cursor(list_owner, list_col, new_indirection_row))
                 return false;
         }
 
@@ -748,13 +698,13 @@ static bool add_new_row_to_list(mdcursor_t list_owner, col_index_t list_col, mdc
             // otherwise the list will be inconsistent.
             mdcursor_t parent_row = list_owner;
             mdcursor_t current_cursor_value;
-            if (1 != md_get_column_value_as_cursor(list_owner, list_col, 1, &current_cursor_value))
+            if (!md_get_column_value_as_cursor(list_owner, list_col, &current_cursor_value))
                return false;
 
             while (md_cursor_move(&parent_row, -1))
             {
                 mdcursor_t prev_cursor_value;
-                if (1 != md_get_column_value_as_cursor(parent_row, list_col, 1, &prev_cursor_value))
+                if (!md_get_column_value_as_cursor(parent_row, list_col, &prev_cursor_value))
                     return false;
 
                 if (CursorRow(&prev_cursor_value) != CursorRow(&current_cursor_value))
@@ -768,7 +718,7 @@ static bool add_new_row_to_list(mdcursor_t list_owner, col_index_t list_col, mdc
 
             for (; CursorRow(&parent_row) <= CursorRow(&list_owner); md_cursor_next(&parent_row))
             {
-                if (1 != md_set_column_value_as_cursor(parent_row, list_col, 1, new_row))
+                if (!md_set_column_value_as_cursor(parent_row, list_col, *new_row))
                     return false;
             }
         }
@@ -825,7 +775,7 @@ bool md_add_new_row_to_list(mdcursor_t list_owner, col_index_t list_col, mdcurso
     // Move the cursor just past the end of the range. We'll insert a row at the end of the range.
     if (!md_cursor_move(&row_after_range, count))
         return false;
-    
+
     return add_new_row_to_list(list_owner, list_col, row_after_range, new_row);
 }
 
@@ -874,11 +824,11 @@ bool md_add_new_row_to_sorted_list(mdcursor_t list_owner, col_index_t list_col, 
             mdcursor_t target_row;
             if (!md_resolve_indirect_cursor(row_to_check, &target_row))
                 return false;
-            
+
             uint32_t current_sort_col_value;
-            if (1 != md_get_column_value_as_constant(target_row, sort_order_col, 1, &current_sort_col_value))
+            if (!md_get_column_value_as_constant(target_row, sort_order_col, &current_sort_col_value))
                 return false;
-            
+
             if (current_sort_col_value <= sort_col_value)
             {
                 // row_to_check is the first row with a sort order less than or equal to the new row.
@@ -902,12 +852,12 @@ bool md_add_new_row_to_sorted_list(mdcursor_t list_owner, col_index_t list_col, 
 
     if (!add_new_row_to_list(list_owner, list_col, row_to_insert_before, new_row))
         return false;
-    
+
     // Now that we've added the new column to the list, set the sort order column to the provided value to
     // ensure the sort is accurate.
-    if (1 != md_set_column_value_as_constant(*new_row, sort_order_col, 1, &sort_col_value))
+    if (!md_set_column_value_as_constant(*new_row, sort_order_col, sort_col_value))
         return false;
-    
+
     return true;
 }
 
@@ -1012,7 +962,7 @@ bool sort_list_by_column(mdcursor_t parent, col_index_t list_col, col_index_t co
         }
 
         uint32_t sequence_number;
-        if (1 != md_get_column_value_as_constant(target, col, 1, &sequence_number))
+        if (!md_get_column_value_as_constant(target, col, &sequence_number))
         {
             free(cursor_order_buffer);
             assert(!"Failed to read constant column from target cursor");
@@ -1077,10 +1027,16 @@ bool sort_list_by_column(mdcursor_t parent, col_index_t list_col, col_index_t co
 
     col_index_t indirect_col = index_to_col(0, CursorTable(&range)->table_id);
 
-    if (next_index != md_set_column_value_as_cursor(range, indirect_col, (uint32_t)next_index, correct_cursor_order))
+    mdcursor_t to_update = range;
+    for (uint32_t i = 0; i < count; i++)
     {
-        free(cursor_order_buffer);
-        return false;
+        if (!md_set_column_value_as_cursor(to_update, indirect_col, correct_cursor_order[i]))
+        {
+            free(cursor_order_buffer);
+            return false;
+        }
+
+        md_cursor_next(&to_update);
     }
 
     free(cursor_order_buffer);
