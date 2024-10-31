@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace System.IO.Tests
 {
@@ -286,6 +287,12 @@ namespace System.IO.Tests
 
     public class File_Copy_str_str_b : File_Copy_str_str
     {
+        private ITestOutputHelper _output;
+        public File_Copy_str_str_b(ITestOutputHelper output)
+        {
+            _output = output;
+        }
+
         protected override void Copy(string source, string dest)
         {
             File.Copy(source, dest, false);
@@ -364,7 +371,7 @@ namespace System.IO.Tests
             // Copy the default stream into an alternate stream
             File.WriteAllText(testFileDefaultStream, "Foo");
             Assert.Equal("Foo", File.ReadAllText(testFileDefaultStream));
-            Console.WriteLine($"Copying default stream into alternate stream.");
+            _output.WriteLine("Copying default stream into alternate stream.");
             Copy(testFileDefaultStream, testFileAlternateStream);
             Assert.Equal(testFile, testDirectory.GetFiles().Single().FullName);
             Assert.Equal("Foo", File.ReadAllText(testFileDefaultStream));
@@ -376,9 +383,9 @@ namespace System.IO.Tests
             File.WriteAllText(testFile2DefaultStream, "Bar");
             Assert.Equal("Bar", File.ReadAllText(testFile2DefaultStream));
             Assert.Equal("Foo", File.ReadAllText(testFileAlternateStream));
-            Console.WriteLine($"Attributes for {testFile2DefaultStream}:{File.GetAttributes(testFile2DefaultStream)}");
-            Console.WriteLine($"Attributes for {testFileAlternateStream}:{File.GetAttributes(testFileAlternateStream)}");
-            Console.WriteLine($"Overwriting alternate stream.");
+            _output.WriteLine($"Attributes for '{testFile2DefaultStream}': {File.GetAttributes(testFile2DefaultStream)}");
+            _output.WriteLine($"Attributes for '{testFileAlternateStream}': {File.GetAttributes(testFileAlternateStream)}");
+            _output.WriteLine("Overwriting alternate stream.");
             Copy(testFile2DefaultStream, testFileAlternateStream, overwrite: true);
             Assert.Equal("Foo", File.ReadAllText(testFileDefaultStream));
             Assert.Equal("Bar", File.ReadAllText(testFileAlternateStream));
