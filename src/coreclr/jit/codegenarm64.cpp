@@ -2257,6 +2257,16 @@ void CodeGen::instGen_Set_Reg_To_Imm(emitAttr       size,
             GetEmitter()->emitIns_R_I(INS_mov, size, reg, imm, INS_OPTS_NONE,
                                       INS_SCALABLE_OPTS_NONE DEBUGARG(targetHandle) DEBUGARG(gtFlags));
         }
+        else if ((size == EA_8BYTE) && !compiler->getNeedsGSSecurityCookie()
+                 /* && compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_SIZE_OPT) */)
+        {
+            // TODO: if the algorithm below only needs, say, two movz/movk instructions,
+            // then we should use that instead of the data section load?
+            CORINFO_FIELD_HANDLE hnd =
+                Compiler::eeFindJitDataOffs(GetEmitter()->emitDataConst(&imm, EA_8BYTE, 8, TYP_LONG));
+            GetEmitter()->emitIns_R_C(INS_ldr, EA_8BYTE, reg, REG_NA, hnd, 0);
+            return;
+        }
         else
         {
             // Arm64 allows any arbitrary 16-bit constant to be loaded into a register halfword
