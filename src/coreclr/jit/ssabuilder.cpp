@@ -203,6 +203,19 @@ void SsaBuilder::AddPhiArg(
     AddNewPhiArg(m_pCompiler, block, stmt, phi, lclNum, ssaNum, pred);
 }
 
+//------------------------------------------------------------------------
+// AddNewPhiArg: Do the IR manipulations to add a new phi arg to a GenTreePhi
+// node.
+//
+// Arguments:
+//    comp   - Compiler instance
+//    block  - Block containing the phi node
+//    stmt   - The statement that contains the GT_PHI node
+//    phi    - The phi node
+//    lclNum - The local
+//    ssaNum - SSA number of the phi arg
+//    pred   - The predecessor block corresponding to the phi arg
+//
 void SsaBuilder::AddNewPhiArg(Compiler*   comp,
                               BasicBlock* block,
                               Statement*  stmt,
