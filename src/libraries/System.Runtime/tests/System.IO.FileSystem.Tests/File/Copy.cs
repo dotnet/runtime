@@ -237,6 +237,17 @@ namespace System.IO.Tests
             File.WriteAllText(testFile2DefaultStream, "Bar");
             Assert.Throws<IOException>(() => Copy(testFile2DefaultStream, testFileAlternateStream));
 
+            try
+            {
+                Copy(testFile2DefaultStream, testFileAlternateStream);
+                Assert.Fail();
+            }
+            catch (IOException e)
+            {
+                // Error code for "the file exists".
+                Assert.Equal(-2147024816, e.HResult);
+            }
+
             // This always throws as you can't copy an alternate stream out (oddly)
             Assert.Throws<IOException>(() => Copy(testFileAlternateStream, testFile2));
             Assert.Throws<IOException>(() => Copy(testFileAlternateStream, testFile2 + alternateStream));
@@ -344,44 +355,6 @@ namespace System.IO.Tests
             InlineData("::$DATA", ":bar"),
             InlineData("::$DATA", ":bar:$DATA")]
         [PlatformSpecific(TestPlatforms.Windows)]
-        public void WindowsAlternateDataStreamOverwriteFat32(string defaultStream, string alternateStream)
-        {
-            Console.WriteLine($"Platform: {PlatformDetection.IsNativeAot}");
-            Console.WriteLine($"Process Architecture: {RuntimeInformation.ProcessArchitecture}");
-            Console.WriteLine($"OS Architecture: {RuntimeInformation.OSArchitecture}");
-
-            string testDir = Path.Combine("F:\\tests", GetTestFileName());
-            DirectoryInfo testDirectory = Directory.CreateDirectory(testDir);
-            string testFile = Path.Combine(testDirectory.FullName, GetTestFileName());
-            string testFileDefaultStream = testFile + defaultStream;
-            string testFileAlternateStream = testFile + alternateStream;
-
-            // Copy the default stream into an alternate stream
-            File.WriteAllText(testFileDefaultStream, "Foo");
-            Copy(testFileDefaultStream, testFileAlternateStream);
-            Assert.Equal(testFile, testDirectory.GetFiles().Single().FullName);
-            Assert.Equal("Foo", File.ReadAllText(testFileDefaultStream));
-            Assert.Equal("Foo", File.ReadAllText(testFileAlternateStream));
-
-            // Copy another file over the alternate stream
-            string testFile2 = Path.Combine(testDirectory.FullName, GetTestFileName());
-            string testFile2DefaultStream = testFile2 + defaultStream;
-            File.WriteAllText(testFile2DefaultStream, "Bar");
-            Copy(testFile2DefaultStream, testFileAlternateStream, overwrite: true);
-            Assert.Equal("Foo", File.ReadAllText(testFileDefaultStream));
-            Assert.Equal("Bar", File.ReadAllText(testFileAlternateStream));
-
-            // This always throws as you can't copy an alternate stream out (oddly)
-            Assert.Throws<IOException>(() => Copy(testFileAlternateStream, testFile2, overwrite: true));
-            Assert.Throws<IOException>(() => Copy(testFileAlternateStream, testFile2 + alternateStream, overwrite: true));
-        }
-
-        [Theory,
-            InlineData("", ":bar"),
-            InlineData("", ":bar:$DATA"),
-            InlineData("::$DATA", ":bar"),
-            InlineData("::$DATA", ":bar:$DATA")]
-        [PlatformSpecific(TestPlatforms.Windows)]
         public void WindowsAlternateDataStreamOverwrite(string defaultStream, string alternateStream)
         {
             DirectoryInfo testDirectory = Directory.CreateDirectory(GetTestFilePath());
@@ -391,6 +364,8 @@ namespace System.IO.Tests
 
             // Copy the default stream into an alternate stream
             File.WriteAllText(testFileDefaultStream, "Foo");
+            Assert.Equal("Foo", File.ReadAllText(testFileDefaultStream));
+            Console.WriteLine($"Copying default stream into alternate stream.");
             Copy(testFileDefaultStream, testFileAlternateStream);
             Assert.Equal(testFile, testDirectory.GetFiles().Single().FullName);
             Assert.Equal("Foo", File.ReadAllText(testFileDefaultStream));
@@ -400,6 +375,11 @@ namespace System.IO.Tests
             string testFile2 = Path.Combine(testDirectory.FullName, GetTestFileName());
             string testFile2DefaultStream = testFile2 + defaultStream;
             File.WriteAllText(testFile2DefaultStream, "Bar");
+            Assert.Equal("Bar", File.ReadAllText(testFile2DefaultStream));
+            Assert.Equal("Foo", File.ReadAllText(testFileAlternateStream));
+            Console.WriteLine($"Attributes for {testFile2DefaultStream}:{File.GetAttributes(testFile2DefaultStream)}");
+            Console.WriteLine($"Attributes for {testFileAlternateStream}:{File.GetAttributes(testFileAlternateStream)}");
+            Console.WriteLine($"Overwriting alternate stream.");
             Copy(testFile2DefaultStream, testFileAlternateStream, overwrite: true);
             Assert.Equal("Foo", File.ReadAllText(testFileDefaultStream));
             Assert.Equal("Bar", File.ReadAllText(testFileAlternateStream));
