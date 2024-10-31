@@ -3632,7 +3632,7 @@ getFileName(
 
         /* Convert to ASCII */
         int size = 0;
-        int length = (PAL_wcslen(lpCommandLine)+1) * sizeof(WCHAR);
+        int length = (PAL_wcslen(lpCommandLine)+1) * 3 /* MaxWCharToAcpLengthFactor */;
         lpFileName = lpFileNamePS.OpenStringBuffer(length);
         if (NULL == lpFileName)
         {
