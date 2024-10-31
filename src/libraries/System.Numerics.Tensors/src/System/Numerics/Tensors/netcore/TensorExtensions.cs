@@ -2665,7 +2665,7 @@ namespace System.Numerics.Tensors
                         tempPermutation[i] = tensor.Rank - 1 - i;
                     }
 
-                    permutation = new ReadOnlySpan<int>(tempPermutation);
+                    permutation = tempPermutation;
                 }
                 else
                 {
