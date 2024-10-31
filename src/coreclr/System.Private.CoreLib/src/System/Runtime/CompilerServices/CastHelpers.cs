@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
 namespace System.Runtime.CompilerServices
@@ -16,9 +17,11 @@ namespace System.Runtime.CompilerServices
         [LibraryImport(RuntimeHelpers.QCall)]
         internal static partial void ThrowInvalidCastException(void* fromTypeHnd, void* toTypeHnd);
 
+        [DoesNotReturn]
         internal static void ThrowInvalidCastException(object fromType, void* toTypeHnd)
         {
             ThrowInvalidCastException(RuntimeHelpers.GetMethodTable(fromType), toTypeHnd);
+            throw null!; // Provide hint to the inliner that this method does not return
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -502,42 +505,6 @@ namespace System.Runtime.CompilerServices
         }
 
         // Helpers for Unboxing
-        [DebuggerHidden]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static unsafe void InitValueClass(ref byte destBytes, MethodTable *pMT)
-        {
-            uint numInstanceFieldBytes = pMT->GetNumInstanceFieldBytes();
-            if ((((uint)Unsafe.AsPointer(ref destBytes) | numInstanceFieldBytes) & ((uint)sizeof(void*) - 1)) != 0)
-            {
-                // If we have a non-pointer aligned instance field bytes count, or a non-aligned destBytes, we can zero out the data byte by byte
-                // And we do not need to concern ourselves with references
-                SpanHelpers.ClearWithoutReferences(ref destBytes, numInstanceFieldBytes);
-            }
-            else
-            {
-                // Otherwise, use the helper which is safe for that situation
-                SpanHelpers.ClearWithReferences(ref Unsafe.As<byte, IntPtr>(ref destBytes), (nuint)numInstanceFieldBytes / (nuint)sizeof(IntPtr));
-            }
-        }
-
-        [DebuggerHidden]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static unsafe void InitValueClassPtr(byte* destBytes, MethodTable *pMT)
-        {
-            uint numInstanceFieldBytes = pMT->GetNumInstanceFieldBytes();
-            if ((((uint)destBytes | numInstanceFieldBytes) & ((uint)sizeof(void*) - 1)) != 0)
-            {
-                // If we have a non-pointer aligned instance field bytes count, or a non-aligned destBytes, we can zero out the data byte by byte
-                // And we do not need to concern ourselves with references
-                SpanHelpers.ClearWithoutReferences(ref Unsafe.AsRef<byte>(destBytes), numInstanceFieldBytes);
-            }
-            else
-            {
-                // Otherwise, use the helper which is safe for that situation
-                SpanHelpers.ClearWithReferences(ref Unsafe.AsRef<IntPtr>(destBytes), (nuint)numInstanceFieldBytes / (nuint)sizeof(IntPtr));
-            }
-        }
-
 #if FEATURE_TYPEEQUIVALENCE
         [DebuggerHidden]
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -591,12 +558,11 @@ namespace System.Runtime.CompilerServices
         {
             // For safety's sake, also allow true nullables to be unboxed normally.
             // This should not happen normally, but we want to be robust
-            if (typeMT == RuntimeHelpers.GetMethodTable(obj))
+            if (typeMT != RuntimeHelpers.GetMethodTable(obj))
             {
-                Buffer.BulkMoveWithWriteBarrier(ref destPtr, ref RuntimeHelpers.GetRawData(obj), typeMT->GetNumInstanceFieldBytes());
-                return;
+                CastHelpers.ThrowInvalidCastException(obj, typeMT);
             }
-            CastHelpers.ThrowInvalidCastException(obj, typeMT);
+            Buffer.BulkMoveWithWriteBarrier(ref destPtr, ref RuntimeHelpers.GetRawData(obj), typeMT->GetNumInstanceFieldBytes());
         }
 
         [DebuggerHidden]
@@ -637,35 +603,32 @@ namespace System.Runtime.CompilerServices
             Debug.Assert(pMT1->IsValueType);
 
             MethodTable* pMT2 = RuntimeHelpers.GetMethodTable(obj);
-            if ((pMT1->IsPrimitive && pMT2->IsPrimitive &&
-                pMT1->GetPrimitiveCorElementType() == pMT2->GetPrimitiveCorElementType())
+            if ((!pMT1->IsPrimitive || !pMT2->IsPrimitive ||
+                pMT1->GetPrimitiveCorElementType() != pMT2->GetPrimitiveCorElementType())
 #if FEATURE_TYPEEQUIVALENCE
-                || AreTypesEquivalent(pMT1, pMT2)
+                && !AreTypesEquivalent(pMT1, pMT2)
 #endif // FEATURE_TYPEEQUIVALENCE
                 )
             {
-                return ref RuntimeHelpers.GetRawData(obj);
+                CastHelpers.ThrowInvalidCastException(obj, pMT1);
             }
 
-            CastHelpers.ThrowInvalidCastException(obj, pMT1);
-            return ref Unsafe.AsRef<byte>(null);
+            return ref RuntimeHelpers.GetRawData(obj);
         }
 
         [DebuggerHidden]
         [MethodImpl(MethodImplOptions.NoInlining)]
         internal static void Unbox_TypeTest_Helper(MethodTable *pMT1, MethodTable *pMT2)
         {
-            if ((pMT1->IsPrimitive && pMT2->IsPrimitive &&
-                pMT1->GetPrimitiveCorElementType() == pMT2->GetPrimitiveCorElementType())
+            if ((!pMT1->IsPrimitive || !pMT2->IsPrimitive ||
+                pMT1->GetPrimitiveCorElementType() != pMT2->GetPrimitiveCorElementType())
 #if FEATURE_TYPEEQUIVALENCE
-                || AreTypesEquivalent(pMT1, pMT2)
+                && !AreTypesEquivalent(pMT1, pMT2)
 #endif // FEATURE_TYPEEQUIVALENCE
                 )
             {
-                return;
+                CastHelpers.ThrowInvalidCastException(pMT1, pMT2);
             }
-
-            CastHelpers.ThrowInvalidCastException(pMT1, pMT2);
         }
 
         [DebuggerHidden]

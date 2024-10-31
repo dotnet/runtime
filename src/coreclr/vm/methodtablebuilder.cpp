@@ -1892,7 +1892,13 @@ MethodTableBuilder::BuildMethodTableThrowing(
     // TODO: fix it so that we emit them in the correct order in the first place.
     if (pMT->ContainsGCPointers())
     {
-        _ASSERTE(pMT->GetClass()->GetBaseSizePadding() == 0); // This is dependended on by the System.Runtime.CompilerServices.CastHelpers.IsNullableForType code
+#ifdef _DEBUG
+        if (pMT->IsValueType())
+        {
+            DWORD baseSizePadding = pMT->GetClass()->GetBaseSizePadding();
+            _ASSERTE(baseSizePadding == (sizeof(TADDR) * 2)); // This is dependended on by the System.Runtime.CompilerServices.CastHelpers.IsNullableForType code
+        }
+#endif // _DEBUG
         CGCDesc* gcDesc = CGCDesc::GetCGCDescFromMT(pMT);
         qsort(gcDesc->GetLowestSeries(), (int)gcDesc->GetNumSeries(), sizeof(CGCDescSeries), compareCGCDescSeries);
     }
