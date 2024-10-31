@@ -4,6 +4,7 @@
 using System;
 using System.Diagnostics;
 using System.IO;
+
 using Microsoft.NET.HostModel.AppHost;
 
 namespace Microsoft.DotNet.CoreSetup.Test
