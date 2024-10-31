@@ -693,7 +693,7 @@ if (CLR_CMAKE_HOST_UNIX)
     endif()
   endif(CLR_CMAKE_HOST_MACCATALYST)
 
-  if(CLR_CMAKE_TARGET_ARCH_ARM64 AND CLR_CMAKE_TARGET_LINUX)
+  if(NOT CLR_CROSS_COMPONENTS_BUILD AND CLR_CMAKE_TARGET_ARCH_ARM64 AND CLR_CMAKE_TARGET_LINUX)
     # Enable Pointer Authentication (PAC) extension
     add_compile_options(-mbranch-protection=pac-ret)
   endif()
