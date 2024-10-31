@@ -10,30 +10,17 @@
 
 JitConfigValues JitConfig;
 
-void JitConfigValues::MethodSet::initialize(const WCHAR* list, ICorJitHost* host)
+void JitConfigValues::MethodSet::initialize(const char* list, ICorJitHost* host)
 {
     assert(m_list == nullptr);
     assert(m_names == nullptr);
 
-    // Convert the input list to UTF-8
-    int utf8ListLen = WideCharToMultiByte(CP_UTF8, 0, list, -1, nullptr, 0, nullptr, nullptr);
-    if (utf8ListLen == 0)
+    if (list == nullptr)
     {
         return;
     }
-    else
-    {
-        // char* m_list;
-        //
-        m_list = static_cast<char*>(host->allocateMemory(utf8ListLen));
-        if (WideCharToMultiByte(CP_UTF8, 0, list, -1, static_cast<LPSTR>(m_list), utf8ListLen, nullptr, nullptr) == 0)
-        {
-            // Failed to convert the list. Free the memory and ignore the list.
-            host->freeMemory(static_cast<void*>(m_list));
-            m_list = nullptr;
-            return;
-        }
-    }
+
+    m_list = list;
 
     auto commitPattern = [this, host](const char* start, const char* end) {
         if (end <= start)
@@ -90,11 +77,7 @@ void JitConfigValues::MethodSet::destroy(ICorJitHost* host)
         next = name->m_next;
         host->freeMemory(static_cast<void*>(name));
     }
-    if (m_list != nullptr)
-    {
-        host->freeMemory(static_cast<void*>(m_list));
-        m_list = nullptr;
-    }
+    host->freeMemory(const_cast<char*>(m_list));
     m_names = nullptr;
 }
 
@@ -194,9 +177,8 @@ void JitConfigValues::initialize(ICorJitHost* host)
 #define RELEASE_CONFIG_INTEGER(name, key, defaultValue) m_##name = host->getIntConfigValue(key, defaultValue);
 #define RELEASE_CONFIG_STRING(name, key)                m_##name = host->getStringConfigValue(key);
 #define RELEASE_CONFIG_METHODSET(name, key)                                                                            \
-    const WCHAR* name##value = host->getStringConfigValue(key);                                                        \
-    m_##name.initialize(name##value, host);                                                                            \
-    host->freeStringConfigValue(name##value);
+    const char* name##value = host->getStringConfigValue(key);                                                         \
+    m_##name.initialize(name##value, host);
 
 #include "jitconfigvalues.h"
 

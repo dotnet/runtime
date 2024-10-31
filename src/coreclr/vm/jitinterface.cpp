@@ -10210,26 +10210,7 @@ void CEEInfo::getEEInfo(CORINFO_EE_INFO *pEEInfoOut)
     EE_TO_JIT_TRANSITION();
 }
 
-const char16_t * CEEInfo::getJitTimeLogFilename()
-{
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    } CONTRACTL_END;
-
-    LPCWSTR result = NULL;
-
-    JIT_TO_EE_TRANSITION();
-    result = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_JitTimeLogFile);
-    EE_TO_JIT_TRANSITION();
-
-    return (const char16_t *)result;
-}
-
-
-
-    // Return details about EE internal data structures
+// Return details about EE internal data structures
 uint32_t CEEInfo::getThreadTLSIndex(void **ppIndirection)
 {
     CONTRACTL {

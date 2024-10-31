@@ -2259,11 +2259,11 @@ void CodeGen::genEmitUnwindDebugGCandEH()
         BYTE*  dumpAddr = (BYTE*)codePtrRW;
         size_t dumpSize = finalHotCodeSize;
 
-        const WCHAR* rawHexCodeFilePath = JitConfig.JitRawHexCodeFile();
+        const char* rawHexCodeFilePath = JitConfig.JitRawHexCodeFile();
         if (rawHexCodeFilePath)
         {
             FILE*   hexDmpf;
-            errno_t ec = _wfopen_s(&hexDmpf, rawHexCodeFilePath, W("at")); // NOTE: file append mode
+            errno_t ec = fopen_s(&hexDmpf, rawHexCodeFilePath, "at"); // NOTE: file append mode
             if (ec == 0)
             {
                 assert(hexDmpf);
@@ -6823,7 +6823,7 @@ void CodeGen::genReportRichDebugInfoToFile()
     static CritSecObject s_critSect;
     CritSecHolder        holder(s_critSect);
 
-    FILE* file = _wfopen(JitConfig.WriteRichDebugInfoFile(), W("a"));
+    FILE* file = fopen(JitConfig.WriteRichDebugInfoFile(), "a");
     if (file == nullptr)
     {
         return;

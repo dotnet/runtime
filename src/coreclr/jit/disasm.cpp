@@ -1489,10 +1489,10 @@ void DisAssembler::disAsmCode(BYTE*  hotCodePtr,
 #endif // !DEBUG
 
 #ifdef DEBUG
-    const WCHAR* fileName = JitConfig.JitLateDisasmTo();
+    const char* fileName = JitConfig.JitLateDisasmTo();
     if (fileName != nullptr)
     {
-        errno_t ec = _wfopen_s(&disAsmFile, fileName, W("a+"));
+        errno_t ec = fopen_s(&disAsmFile, fileName, "a+");
         if (ec != 0)
         {
             disAsmFile = nullptr;
