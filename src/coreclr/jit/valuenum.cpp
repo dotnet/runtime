@@ -5483,7 +5483,7 @@ ValueNum ValueNumStore::EvalUsingMathIdentity(var_types typ, VNFunc func, ValueN
                 if (genTreeOps(func) == GT_GE)
                 {
                     // (never negative) >= 0 == true
-                    if ((arg1VN == VNZeroForType(TypeOfVN(arg1VN))) && IsVNNeverNegative(arg0VN))
+                    if ((arg1VN == VNZeroForType(TypeOfVN(arg1VN))) && IsMsbNeverSet(arg0VN))
                     {
                         resultVN = VNOneForType(typ);
                     }
@@ -5491,7 +5491,7 @@ ValueNum ValueNumStore::EvalUsingMathIdentity(var_types typ, VNFunc func, ValueN
                 else if (genTreeOps(func) == GT_LE)
                 {
                     // 0 <= (never negative) == true
-                    if ((arg0VN == VNZeroForType(TypeOfVN(arg0VN))) && IsVNNeverNegative(arg1VN))
+                    if ((arg0VN == VNZeroForType(TypeOfVN(arg0VN))) && IsMsbNeverSet(arg1VN))
                     {
                         resultVN = VNOneForType(typ);
                     }
@@ -5618,7 +5618,7 @@ ValueNum ValueNumStore::EvalUsingMathIdentity(var_types typ, VNFunc func, ValueN
                 if (genTreeOps(func) == GT_LT)
                 {
                     // (never negative) < 0 == false
-                    if ((arg1VN == VNZeroForType(TypeOfVN(arg1VN))) && IsVNNeverNegative(arg0VN))
+                    if ((arg1VN == VNZeroForType(TypeOfVN(arg1VN))) && IsMsbNeverSet(arg0VN))
                     {
                         resultVN = ZeroVN;
                     }
@@ -5626,7 +5626,7 @@ ValueNum ValueNumStore::EvalUsingMathIdentity(var_types typ, VNFunc func, ValueN
                 else if (genTreeOps(func) == GT_GT)
                 {
                     // 0 > (never negative) == false
-                    if ((arg0VN == VNZeroForType(TypeOfVN(arg0VN))) && IsVNNeverNegative(arg1VN))
+                    if ((arg0VN == VNZeroForType(TypeOfVN(arg0VN))) && IsMsbNeverSet(arg1VN))
                     {
                         resultVN = ZeroVN;
                     }
@@ -5713,7 +5713,7 @@ ValueNum ValueNumStore::EvalUsingMathIdentity(var_types typ, VNFunc func, ValueN
                 }
 
                 // Convert to a signed comparison if both operands are never negative
-                if (IsVNNeverNegative(arg0VN) && IsVNNeverNegative(arg1VN))
+                if (IsMsbNeverSet(arg0VN) && IsMsbNeverSet(arg1VN))
                 {
                     resultVN = VNForFunc(typ, VNFunc(GT_GT), arg0VN, arg1VN);
                     break;
@@ -5747,7 +5747,7 @@ ValueNum ValueNumStore::EvalUsingMathIdentity(var_types typ, VNFunc func, ValueN
                 }
 
                 // Convert to a signed comparison if both operands are never negative
-                if (IsVNNeverNegative(arg0VN) && IsVNNeverNegative(arg1VN))
+                if (IsMsbNeverSet(arg0VN) && IsMsbNeverSet(arg1VN))
                 {
                     resultVN = VNForFunc(typ, VNFunc(GT_LE), arg0VN, arg1VN);
                     break;
@@ -6554,7 +6554,7 @@ bool ValueNumStore::IsVNInt32Constant(ValueNum vn)
 }
 
 //------------------------------------------------------------------------
-// IsVNNeverNegative: Determines if the given value number can never take on a negative value
+// IsMsbNeverSet: Determines if the given value number can never take on a negative value
 // in a signed context (i.e. when the most-significant bit represents signedness).
 //
 // Parameters:
@@ -6563,7 +6563,7 @@ bool ValueNumStore::IsVNInt32Constant(ValueNum vn)
 // Returns:
 //    True if the most-significant bit is never set, false otherwise.
 //
-bool ValueNumStore::IsVNNeverNegative(ValueNum vn)
+bool ValueNumStore::IsMsbNeverSet(ValueNum vn)
 {
     auto vnVisitor = [this](ValueNum vn) -> VNVisit {
         if ((vn == NoVN) || !varTypeIsIntegral(TypeOfVN(vn)))
