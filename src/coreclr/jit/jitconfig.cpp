@@ -77,7 +77,11 @@ void JitConfigValues::MethodSet::destroy(ICorJitHost* host)
         next = name->m_next;
         host->freeMemory(static_cast<void*>(name));
     }
-    host->freeMemory(const_cast<char*>(m_list));
+    if (m_list != nullptr)
+    {
+        host->freeMemory(const_cast<char*>(m_list));
+        m_list = nullptr;
+    }
     m_names = nullptr;
 }
 
