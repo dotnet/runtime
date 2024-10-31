@@ -92,7 +92,7 @@ jobs:
             creator: dotnet-bot
             testBuildArgs: /p:DevTeamProvisioning=- /p:RunAOTCompilation=true /p:MonoForceInterpreter=true
             testRunNamePrefixSuffix: Mono_$(_BuildConfig)
-            extraHelixArguments: /p:MonoForceInterpreter=true
+            extraHelixArguments: /p:NeedsToBuildAppsOnHelix=true
 
 #
 # iOS/tvOS devices
