@@ -1949,6 +1949,7 @@ int32_t SystemNative_PWrite(intptr_t fd, void* buffer, int32_t bufferSize, int64
     return (int32_t)count;
 }
 
+#if (HAVE_PREADV || HAVE_PWRITEV) && !defined(TARGET_WASM)
 static int GetAllowedVectorCount(int32_t vectorCount)
 {
     int allowedCount = (int)vectorCount;
@@ -1964,6 +1965,7 @@ static int GetAllowedVectorCount(int32_t vectorCount)
 #endif
     return allowedCount;
 }
+#endif // (HAVE_PREADV || HAVE_PWRITEV) && !defined(TARGET_WASM)
 
 int64_t SystemNative_PReadV(intptr_t fd, IOVector* vectors, int32_t vectorCount, int64_t fileOffset)
 {
