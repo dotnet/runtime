@@ -5,20 +5,6 @@ using System;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
-internal sealed class ThreadFactory : IContractFactory<IThread>
-{
-    IThread IContractFactory<IThread>.CreateContract(Target target, int version)
-    {
-        TargetPointer threadStorePointer = target.ReadGlobalPointer(Constants.Globals.ThreadStore);
-        TargetPointer threadStore = target.ReadPointer(threadStorePointer);
-        return version switch
-        {
-            1 => new Thread_1(target, threadStore),
-            _ => default(Thread),
-        };
-    }
-}
-
 internal readonly struct Thread_1 : IThread
 {
     private readonly Target _target;

@@ -131,7 +131,7 @@ internal unsafe partial interface IXCLRDataProcess
     int EndEnumTasks(ulong handle);
 
     [PreserveSig]
-    int GetTaskByOSThreadID(uint osThreadID, /*IXCLRDataTask*/ void** task);
+    int GetTaskByOSThreadID(uint osThreadID, out IXCLRDataTask? task);
     [PreserveSig]
     int GetTaskByUniqueID(ulong taskID, /*IXCLRDataTask*/ void** task);
 
@@ -308,4 +308,88 @@ internal unsafe partial interface IXCLRDataProcess2 : IXCLRDataProcess
     int GetGcNotification(GcEvtArgs* gcEvtArgs);
     [PreserveSig]
     int SetGcNotification(GcEvtArgs gcEvtArgs);
+}
+
+[GeneratedComInterface]
+[Guid("E59D8D22-ADA7-49a2-89B5-A415AFCFC95F")]
+internal unsafe partial interface IXCLRDataStackWalk
+{
+    [PreserveSig]
+    int GetContext(
+        uint contextFlags,
+        uint contextBufSize,
+        uint* contextSize,
+        [Out, MarshalUsing(CountElementName = nameof(contextBufSize))] byte[] contextBuf);
+    [PreserveSig]
+    int SetContext(uint contextSize, [In, MarshalUsing(CountElementName = nameof(contextSize))] byte[] context);
+
+    [PreserveSig]
+    int Next();
+
+    [PreserveSig]
+    int GetStackSizeSkipped(ulong* stackSizeSkipped);
+
+    [PreserveSig]
+    int GetFrameType(/*CLRDataSimpleFrameType*/ uint* simpleType, /*CLRDataDetailedFrameType*/ uint* detailedType);
+    [PreserveSig]
+    int GetFrame(/*IXCLRDataFrame*/ void** frame);
+
+    [PreserveSig]
+    int Request(uint reqCode, uint inBufferSize, byte* inBuffer, uint outBufferSize, byte* outBuffer);
+
+    [PreserveSig]
+    int SetContext2(uint flags, uint contextSize, [In, MarshalUsing(CountElementName = nameof(contextSize))] byte[] context);
+}
+
+[GeneratedComInterface]
+[Guid("A5B0BEEA-EC62-4618-8012-A24FFC23934C")]
+internal unsafe partial interface IXCLRDataTask
+{
+    [PreserveSig]
+    int GetProcess(/*IXCLRDataProcess*/ void** process);
+
+    [PreserveSig]
+    int GetCurrentAppDomain(/*IXCLRDataAppDomain*/ void** appDomain);
+
+    [PreserveSig]
+    int GetUniqueID(ulong* id);
+
+    [PreserveSig]
+    int GetFlags(uint* flags);
+
+    [PreserveSig]
+    int IsSameObject(IXCLRDataTask* task);
+
+    [PreserveSig]
+    int GetManagedObject(/*IXCLRDataValue*/ void** value);
+
+    [PreserveSig]
+    int GetDesiredExecutionState(uint* state);
+
+    [PreserveSig]
+    int SetDesiredExecutionState(uint state);
+
+    [PreserveSig]
+    int CreateStackWalk(uint flags, out IXCLRDataStackWalk? stackWalk);
+
+    [PreserveSig]
+    int GetOSThreadID(uint* id);
+
+    [PreserveSig]
+    int GetContext(uint contextFlags, uint contextBufSize, uint* contextSize, byte* contextBuffer);
+
+    [PreserveSig]
+    int SetContext(uint contextSize, byte* context);
+
+    [PreserveSig]
+    int GetCurrentExceptionState(/*IXCLRDataExceptionState*/ void** exception);
+
+    [PreserveSig]
+    int Request(uint reqCode, uint inBufferSize, byte* inBuffer, uint outBufferSize, byte* outBuffer);
+
+    [PreserveSig]
+    int GetName(uint bufLen, uint* nameLen, char* nameBuffer);
+
+    [PreserveSig]
+    int GetLastExceptionState(/*IXCLRDataExceptionState*/ void** exception);
 }

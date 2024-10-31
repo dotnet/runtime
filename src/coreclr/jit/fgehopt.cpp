@@ -233,6 +233,9 @@ PhaseStatus Compiler::fgRemoveEmptyFinally()
             AddCodeDscMap* const map = fgGetAddCodeDscMap();
             for (AddCodeDsc* const add : AddCodeDscMap::ValueIteration(map))
             {
+                JITDUMP("Considering ");
+                JITDUMPEXEC(add->Dump());
+
                 // Remember the old lookup key
                 //
                 AddCodeDscKey oldKey(add);
@@ -245,7 +248,7 @@ PhaseStatus Compiler::fgRemoveEmptyFinally()
                 {
                     bool const removed = map->Remove(oldKey);
                     assert(removed);
-                    JITDUMP("ACD%u was in EH#%u handler region: removing\n", XTnum);
+                    JITDUMP("ACD%u was in EH#%u handler region: removing\n", add->acdNum, XTnum);
                     JITDUMPEXEC(add->Dump());
                     continue;
                 }
@@ -258,6 +261,7 @@ PhaseStatus Compiler::fgRemoveEmptyFinally()
 
                 if (!inTry || ((unsigned)(add->acdTryIndex - 1) != XTnum))
                 {
+                    JITDUMP("ACD%u not affected\n", add->acdNum);
                     continue;
                 }
 

@@ -725,6 +725,7 @@ GenTreeCall* Compiler::fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfo
         case CORINFO_HELP_GETPINNED_GCSTATIC_BASE_NOCTOR:
         case CORINFO_HELP_GETPINNED_NONGCSTATIC_BASE_NOCTOR:
         case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2:
+        case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2_NOJITOPT:
             callFlags |= GTF_CALL_HOISTABLE;
             FALLTHROUGH;
 
@@ -754,7 +755,8 @@ GenTreeCall* Compiler::fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfo
 
     if ((helper == CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED) ||
         (helper == CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED) ||
-        (helper == CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2))
+        (helper == CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2) ||
+        (helper == CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2_NOJITOPT))
     {
         result = gtNewHelperCallNode(helper, type, gtNewIconNode(typeIndex));
     }
@@ -3418,9 +3420,12 @@ void Compiler::fgAddCodeRef(BasicBlock* srcBlk, SpecialCodeKind kind)
     add              = new (this, CMK_Unknown) AddCodeDsc;
     add->acdDstBlk   = nullptr;
     add->acdTryIndex = srcBlk->bbTryIndex;
-    add->acdHndIndex = srcBlk->bbHndIndex;
-    add->acdKeyDsg   = dsg;
-    add->acdKind     = kind;
+
+    // For non-funclet EH we don't constrain ACD placement via handler regions
+    add->acdHndIndex = UsesFunclets() ? srcBlk->bbHndIndex : 0;
+
+    add->acdKeyDsg = dsg;
+    add->acdKind   = kind;
 
     // This gets set true in the stack level setter
     // if there's still a need for this helper
