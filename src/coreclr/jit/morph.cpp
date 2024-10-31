@@ -13379,11 +13379,12 @@ void Compiler::fgMorphBlock(BasicBlock* block, MorphUnreachableInfo* unreachable
                     unreachableInfo->SetUnreachable(block);
 
                     // Remove the block's IR and flow edges but don't mark the block as removed.
-                    // Convert to BBJ_THROW. But leave CALLFINALLY for non-funclet EH alone.
+                    // Convert to BBJ_THROW. But leave CALLFINALLY alone.
                     //
                     // If we clear out the block, there is nothing to morph, so just return.
                     //
-                    if (UsesFunclets() || !block->KindIs(BBJ_CALLFINALLY))
+                    bool const isCallFinally = block->KindIs(BBJ_CALLFINALLY);
+                    if (!isCallFinally)
                     {
                         fgUnreachableBlock(block);
                         block->RemoveFlags(BBF_REMOVED);
