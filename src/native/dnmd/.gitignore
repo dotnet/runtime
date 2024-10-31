@@ -1,0 +1,5 @@
+artifacts/
+.vs/
+.idea/
+*~
+TestResults/
