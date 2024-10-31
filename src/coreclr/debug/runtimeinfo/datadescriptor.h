@@ -341,7 +341,7 @@ CDAC_TYPE_FIELD(MethodDescChunk, /*uint16*/, FlagsAndTokenRange, cdac_data<Metho
 CDAC_TYPE_END(MethodDescChunk)
 
 CDAC_TYPE_BEGIN(InstantiatedMethodDesc)
-CDAC_TYPE_INDETERMINATE(InstantiatedMethodDesc)
+CDAC_TYPE_SIZE(sizeof(InstantiatedMethodDesc))
 CDAC_TYPE_FIELD(InstantiatedMethodDesc, /*pointer*/, PerInstInfo, cdac_data<InstantiatedMethodDesc>::PerInstInfo)
 CDAC_TYPE_FIELD(InstantiatedMethodDesc, /*uint16*/, Flags2, cdac_data<InstantiatedMethodDesc>::Flags2)
 CDAC_TYPE_FIELD(InstantiatedMethodDesc, /*uint16*/, NumGenericArgs, cdac_data<InstantiatedMethodDesc>::NumGenericArgs)
@@ -355,7 +355,7 @@ CDAC_TYPE_FIELD(StoredSigMethodDesc, /*uint32*/, ExtendedFlags, cdac_data<Stored
 CDAC_TYPE_END(StoredSigMethodDesc)
 
 CDAC_TYPE_BEGIN(DynamicMethodDesc)
-CDAC_TYPE_INDETERMINATE(DynamicMethodDesc)
+CDAC_TYPE_SIZE(sizeof(DynamicMethodDesc))
 CDAC_TYPE_FIELD(DynamicMethodDesc, /*pointer*/, MethodName, cdac_data<DynamicMethodDesc>::MethodName)
 CDAC_TYPE_END(DynamicMethodDesc)
 
