@@ -134,7 +134,7 @@ switch (testCase) {
             preRun: (Module) => {
                 // wasting 2GB of memory
                 for (let i = 0; i < 210; i++) {
-                    testOutput(`wasting 1m ${Module._malloc(10 * 1024 * 1024)}`);
+                    testOutput(`wasting 10m ${Module._malloc(10 * 1024 * 1024)}`);
                 }
                 testOutput(`WASM ${Module.HEAP32.byteLength} bytes.`);
             }
