@@ -110,7 +110,7 @@ internal unsafe partial class MachObjectFile
 
     public static bool IsMachOImage(FileStream file)
     {
-        var oldPosition = file.Position;
+        long oldPosition = file.Position;
         file.Position = 0;
         // We can read the Magic as any endianness since we just need to determine if it is a Mach-O file.
         uint magic = (uint)(file.ReadByte() << 24 | file.ReadByte() << 16 | file.ReadByte() << 8 | file.ReadByte());
