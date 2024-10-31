@@ -843,8 +843,6 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
             TargetPointer slotsStart = _target.ReadPointer(indirectionPointer);
             return slotsStart + (ulong)(slotNum & (NumPointersPerIndirection - 1)) * (ulong)_target.PointerSize;
         }
-
-
     }
 
     private VtableIndirections GetVTableIndirections(TargetPointer methodTableAddress)
