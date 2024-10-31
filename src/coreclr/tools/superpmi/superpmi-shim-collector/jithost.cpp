@@ -91,7 +91,7 @@ bool RecordVariable(const char* key)
 
     for (const char* ignoredVar : s_ignoredVars)
     {
-        if (_strcmpi(key, ignoredVar) == 0)
+        if (_stricmp(key, ignoredVar) == 0)
         {
             return false;
         }

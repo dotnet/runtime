@@ -179,7 +179,7 @@ int JitHost::getIntConfigValue(const char* key, int defaultValue)
 
     if (valueFound)
     {
-        LogDebug("Environment variable %ws=%d", key, result);
+        LogDebug("Environment variable %s=%d", key, result);
     }
 
     return valueFound ? result : defaultValue;
@@ -224,7 +224,7 @@ const char* JitHost::getStringConfigValue(const char* key)
 
     if (result != nullptr)
     {
-        LogDebug("Environment variable %ws=%ws", key, result);
+        LogDebug("Environment variable %s=%s", key, result);
     }
     return result;
 }
