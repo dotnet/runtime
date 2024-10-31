@@ -6553,6 +6553,16 @@ bool ValueNumStore::IsVNInt32Constant(ValueNum vn)
     return TypeOfVN(vn) == TYP_INT;
 }
 
+//------------------------------------------------------------------------
+// IsVNNeverNegative: Determines if the given value number can never take on a negative value
+// in a signed context (i.e. when the most-significant bit represents signedness).
+//
+// Parameters:
+//    vn - Value number to query
+//
+// Returns:
+//    True if the most-significant bit is never set, false otherwise.
+//
 bool ValueNumStore::IsVNNeverNegative(ValueNum vn)
 {
     auto vnVisitor = [this](ValueNum vn) -> VNVisit {
