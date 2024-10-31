@@ -134,6 +134,7 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "GNU" AND (CLR_CMAKE_HOST_ARCH_AMD64 OR CLR_CM
 endif()
 
 set(SOURCES
+  com/guid.cpp
   cruntime/wchar.cpp
   debug/debug.cpp
   exception/seh.cpp
@@ -158,7 +159,6 @@ set(SOURCES
   misc/error.cpp
   misc/errorstrings.cpp
   misc/fmtmessage.cpp
-  misc/miscpalapi.cpp
   misc/perfjitdump.cpp
   misc/strutil.cpp
   misc/sysinfo.cpp
@@ -201,6 +201,12 @@ set(SOURCES
   thread/process.cpp
   thread/thread.cpp
   thread/threadsusp.cpp
+)
+
+set_source_files_properties(
+    com/guid.cpp
+    PROPERTIES
+    INCLUDE_DIRECTORIES ${CMAKE_CURRENT_SOURCE_DIR}/../inc/rt
 )
 
 if(NOT CLR_CMAKE_USE_SYSTEM_LIBUNWIND)
