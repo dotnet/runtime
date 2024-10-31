@@ -116,7 +116,7 @@ bool IsOpenSslAvailable()
 
 HRESULT Sha256Hash(BYTE* pSrc, DWORD srcSize, BYTE* pDst, DWORD dstSize)
 {
-    if (!IsOpenSslAvailable())
+    if (!IsOpenSslAvailable() || CryptoNative_EnsureOpenSslInitialized())
     {
         return E_FAIL;
     }
