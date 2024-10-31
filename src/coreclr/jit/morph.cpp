@@ -13208,33 +13208,50 @@ void Compiler::fgMorphStmts(BasicBlock* block)
 }
 
 //------------------------------------------------------------------------
+// MorphUnreachbleInfo: construct info for unreachability tracking during morph
+//
+// Arguments:
+//    comp - compiler object
+//
+Compiler::MorphUnreachableInfo::MorphUnreachableInfo(Compiler* comp)
+    : m_traits(comp->m_dfsTree->GetPostOrderCount(), comp)
+    , m_vec(BitVecOps::MakeEmpty(&m_traits)){};
+
+//------------------------------------------------------------------------
+// SetUnreachable: during morph, mark a block as unreachable
+//
+// Arguments:
+//    block - block in question
+//
+void Compiler::MorphUnreachableInfo::SetUnreachable(BasicBlock* block)
+{
+    BitVecOps::AddElemD(&m_traits, m_vec, block->bbPostorderNum);
+}
+
+//------------------------------------------------------------------------
+// IsUnreachable: during morph, see if a block is now known to be unreachable
+//
+// Arguments:
+//    block - block in question
+//
+// Returns:
+//    true if so
+//
+bool Compiler::MorphUnreachableInfo::IsUnreachable(BasicBlock* block)
+{
+    return BitVecOps::IsMember(&m_traits, m_vec, block->bbPostorderNum);
+}
+
+//------------------------------------------------------------------------
 // fgMorphBlock: Morph a basic block
 //
 // Arguments:
 //    block - block in question
-//    unreachable - [optional] set of blocks proven to be unreachable
+//    unreachableInfo - [optional] info on blocks proven unreachable
 //
-void Compiler::fgMorphBlock(BasicBlock* block, BlockSet* unreachable)
+void Compiler::fgMorphBlock(BasicBlock* block, MorphUnreachableInfo* unreachableInfo)
 {
     JITDUMP("\nMorphing " FMT_BB "\n", block->bbNum);
-
-    // Helpers for reachability tracking
-    //
-    auto SetUnreachable = [=](BasicBlock* block) {
-        if (unreachable != nullptr)
-        {
-            BlockSetOps::AddElemD(this, *unreachable, block->bbNum);
-        }
-    };
-
-    auto IsReachable = [=](BasicBlock* block) {
-        if (unreachable == nullptr)
-        {
-            return false;
-        }
-        assert(m_dfsTree->Contains(block));
-        return !BlockSetOps::IsMember(this, *unreachable, block->bbNum);
-    };
 
     if (optLocalAssertionProp)
     {
@@ -13288,7 +13305,7 @@ void Compiler::fgMorphBlock(BasicBlock* block, BlockSet* unreachable)
                     // This pred was reachable in the pre-morph DFS, but might have
                     // become unreachable during morph. If so, we can ignore its assertion state.
                     //
-                    if (!IsReachable(pred))
+                    if (unreachableInfo->IsUnreachable(pred))
                     {
                         JITDUMP("Pred " FMT_BB " is no longer reachable\n", pred->bbNum);
                         continue;
@@ -13359,7 +13376,7 @@ void Compiler::fgMorphBlock(BasicBlock* block, BlockSet* unreachable)
                 if (!isReachable)
                 {
                     JITDUMP(FMT_BB " has no reachable preds, marking as unreachable\n", block->bbNum);
-                    SetUnreachable(block);
+                    unreachableInfo->SetUnreachable(block);
 
                     // Remove the block's IR and flow edges but don't mark the block as removed.
                     // Convert to BBJ_THROW. But leave CALLFINALLY for non-funclet EH alone.
@@ -13494,8 +13511,7 @@ PhaseStatus Compiler::fgMorphBlocks()
 
         // We will track which blocks become unreachable during morph
         //
-        EnsureBasicBlockEpoch();
-        BlockSet unreachable = BlockSetOps::MakeEmpty(this);
+        MorphUnreachableInfo unreachableInfo(this);
 
         // Allow edge creation to genReturnBB (target of return merging)
         // and the scratch block successor (target for tail call to loop).
@@ -13519,7 +13535,7 @@ PhaseStatus Compiler::fgMorphBlocks()
         for (unsigned i = m_dfsTree->GetPostOrderCount(); i != 0; i--)
         {
             BasicBlock* const block = m_dfsTree->GetPostOrder(i - 1);
-            fgMorphBlock(block, &unreachable);
+            fgMorphBlock(block, &unreachableInfo);
         }
         assert(bbNumMax == fgBBNumMax);
 
