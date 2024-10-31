@@ -5164,7 +5164,7 @@ bool Compiler::ThreeOptLayout::RunThreeOptPass(BasicBlock* startBlock, BasicBloc
         // 'srcBlk' and 'dstBlk' better be distinct
         assert(srcPos != dstPos);
 
-        // Previous moves might have inadvertently created fallthrough from srcBlk to dstBlk,
+        // Previous moves might have inadvertently created fallthrough from 'srcBlk' to 'dstBlk',
         // so there's nothing to do this round.
         if ((srcPos + 1) == dstPos)
         {
@@ -5191,9 +5191,6 @@ bool Compiler::ThreeOptLayout::RunThreeOptPass(BasicBlock* startBlock, BasicBloc
         };
 
         const bool isForwardJump = (srcPos < dstPos);
-        weight_t   srcPrevScore  = 0.0;
-        weight_t   srcNextScore  = 0.0;
-        weight_t   dstPrevScore  = 0.0;
         weight_t   currScore, newScore;
         unsigned   part1Size, part2Size, part3Size;
 
@@ -5214,10 +5211,8 @@ bool Compiler::ThreeOptLayout::RunThreeOptPass(BasicBlock* startBlock, BasicBloc
             part2Size = dstPos - srcPos - 1;
             part3Size = endPos - dstPos + 1;
 
-            srcNextScore = getScore(srcBlk, blockOrder[srcPos + 1]);
-            dstPrevScore = getScore(blockOrder[dstPos - 1], dstBlk);
-            currScore    = srcNextScore + dstPrevScore;
-            newScore     = candidateEdge->getLikelyWeight() + getScore(blockOrder[endPos], blockOrder[srcPos + 1]);
+            currScore = getScore(srcBlk, blockOrder[srcPos + 1]) + getScore(blockOrder[dstPos - 1], dstBlk);
+            newScore  = candidateEdge->getLikelyWeight() + getScore(blockOrder[endPos], blockOrder[srcPos + 1]);
 
             // Don't include branches into S4 in the cost/improvement calculation,
             // since we're only considering branches within this region.
@@ -5241,15 +5236,12 @@ bool Compiler::ThreeOptLayout::RunThreeOptPass(BasicBlock* startBlock, BasicBloc
             part2Size = srcPos - dstPos;
             part3Size = 1;
 
-            srcPrevScore = getScore(blockOrder[srcPos - 1], srcBlk);
-            dstPrevScore = getScore(blockOrder[dstPos - 1], dstBlk);
-            currScore    = srcPrevScore + dstPrevScore;
-            newScore     = candidateEdge->getLikelyWeight() + getScore(blockOrder[dstPos - 1], srcBlk);
+            currScore = getScore(blockOrder[srcPos - 1], srcBlk) + getScore(blockOrder[dstPos - 1], dstBlk);
+            newScore  = candidateEdge->getLikelyWeight() + getScore(blockOrder[dstPos - 1], srcBlk);
 
             if (srcPos != endPos)
             {
-                srcNextScore = getScore(srcBlk, blockOrder[srcPos + 1]);
-                currScore += srcNextScore;
+                currScore += getScore(srcBlk, blockOrder[srcPos + 1]);
                 newScore += getScore(blockOrder[srcPos - 1], blockOrder[srcPos + 1]);
             }
         }
@@ -5291,25 +5283,19 @@ bool Compiler::ThreeOptLayout::RunThreeOptPass(BasicBlock* startBlock, BasicBloc
         assert((ordinals[srcBlk->bbNum] + 1) == ordinals[dstBlk->bbNum]);
         modified = true;
 
-        // If we broke up fallthrough into 'srcBlk',
-        // consider all other edges out of 'srcBlk''s current fallthrough predecessor
-        if (srcPrevScore != 0.0)
-        {
-            AddNonFallthroughSuccs(srcPos - 1);
-        }
+        // At every cut point is an opportunity to consider more candidate edges.
+        // To the left of each cut point, consider successor edges that don't fall through.
+        // Ditto predecessor edges to the right of each cut point.
+        AddNonFallthroughSuccs(startPos + part1Size - 1);
+        AddNonFallthroughSuccs(startPos + part1Size + part2Size - 1);
+        AddNonFallthroughSuccs(startPos + part1Size + part2Size + part3Size - 1);
 
-        // If we broke up fallthrough out of 'srcBlk',
-        // consider all other edges into 'srcBlk''s current fallthrough successor
-        if (srcNextScore != 0.0)
-        {
-            AddNonFallthroughPreds(srcPos + 1);
-        }
+        AddNonFallthroughPreds(startPos + part1Size);
+        AddNonFallthroughPreds(startPos + part1Size + part2Size);
 
-        // If we broke up fallthrough into 'dstBlk',
-        // consider all other edges out of 'dstBlk''s current fallthrough predecessor
-        if (dstPrevScore != 0.0)
+        if (remainingSize != 0)
         {
-            AddNonFallthroughSuccs(dstPos - 1);
+            AddNonFallthroughPreds(startPos + part1Size + part2Size + part3Size);
         }
     }
 
