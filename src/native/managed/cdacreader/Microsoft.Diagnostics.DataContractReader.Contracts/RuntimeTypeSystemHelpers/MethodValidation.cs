@@ -230,27 +230,8 @@ internal class MethodValidation
     private uint MethodDescAdditionalPointersOffset(NonValidatedMethodDesc umd)
     {
         MethodClassification cls = umd.Classification;
-        switch (cls)
-        {
-            case MethodClassification.IL:
-                return _target.GetTypeInfo(DataType.MethodDesc).Size ?? throw new InvalidOperationException("size of MethodDesc not known");
-            case MethodClassification.FCall:
-                throw new NotImplementedException();
-            case MethodClassification.PInvoke:
-                throw new NotImplementedException();
-            case MethodClassification.EEImpl:
-                throw new NotImplementedException();
-            case MethodClassification.Array:
-                throw new NotImplementedException();
-            case MethodClassification.Instantiated:
-                throw new NotImplementedException();
-            case MethodClassification.ComInterop:
-                throw new NotImplementedException();
-            case MethodClassification.Dynamic:
-                throw new NotImplementedException();
-            default:
-                throw new InvalidOperationException($"Unexpected method classification 0x{cls:x2} for MethodDesc");
-        }
+        DataType type = RuntimeTypeSystem_1.GetMethodClassificationDataType(cls);
+        return _target.GetTypeInfo(type).Size ?? throw new InvalidOperationException("size of MethodDesc not known");
     }
 
     internal uint GetMethodDescBaseSize(NonValidatedMethodDesc umd)

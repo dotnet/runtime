@@ -975,30 +975,34 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         return md.HasNativeCodeSlot;
     }
 
+    internal static DataType GetMethodClassificationDataType(MethodClassification classification)
+    => classification switch
+    {
+        MethodClassification.IL => DataType.MethodDesc,
+        MethodClassification.FCall => throw new NotImplementedException(), //TODO[cdac]:
+        MethodClassification.PInvoke => throw new NotImplementedException(), //TODO[cdac]:
+        MethodClassification.EEImpl => throw new NotImplementedException(), //TODO[cdac]:
+        MethodClassification.Array => throw new NotImplementedException(), //TODO[cdac]:
+        MethodClassification.Instantiated => DataType.InstantiatedMethodDesc,
+        MethodClassification.ComInterop => throw new NotImplementedException(), //TODO[cdac]:
+        MethodClassification.Dynamic => DataType.DynamicMethodDesc,
+        _ => throw new InvalidOperationException($"Unexpected method classification 0x{cls:x2} for MethodDesc")
+    };
+
     private uint MethodDescAdditionalPointersOffset(MethodDesc md)
     {
+        // See MethodDesc::GetBaseSize and s_ClassificationSizeTable
+        // sizeof(MethodDesc),                 mcIL
+        // sizeof(FCallMethodDesc),            mcFCall
+        // sizeof(NDirectMethodDesc),          mcPInvoke
+        // sizeof(EEImplMethodDesc),           mcEEImpl
+        // sizeof(ArrayMethodDesc),            mcArray
+        // sizeof(InstantiatedMethodDesc),     mcInstantiated
+        // sizeof(CLRToCOMCallMethodDesc),     mcComInterOp
+        // sizeof(DynamicMethodDesc)           mcDynamic
         MethodClassification cls = md.Classification;
-        switch (cls)
-        {
-            case MethodClassification.IL:
-                return _target.GetTypeInfo(DataType.MethodDesc).Size ?? throw new InvalidOperationException("size of MethodDesc not known");
-            case MethodClassification.FCall:
-                throw new NotImplementedException(); //TODO(cdac):
-            case MethodClassification.PInvoke:
-                throw new NotImplementedException(); //TODO(cdac):
-            case MethodClassification.EEImpl:
-                throw new NotImplementedException(); //TODO(cdac):
-            case MethodClassification.Array:
-                throw new NotImplementedException(); //TODO(cdac):
-            case MethodClassification.Instantiated:
-                throw new NotImplementedException(); //TODO(cdac):
-            case MethodClassification.ComInterop:
-                throw new NotImplementedException(); //TODO(cdac):
-            case MethodClassification.Dynamic:
-                throw new NotImplementedException(); //TODO(cdac):
-            default:
-                throw new InvalidOperationException($"Unexpected method classification 0x{cls:x2} for MethodDesc");
-        }
+        DataType type = GetMethodClassificationDataType(cls);
+        return _target.GetTypeInfo(type).Size ?? throw new InvalidOperationException($"size of MethodDesc not known");
     }
 
     TargetPointer IRuntimeTypeSystem.GetAddressOfNativeCodeSlot(MethodDescHandle methodDesc)
