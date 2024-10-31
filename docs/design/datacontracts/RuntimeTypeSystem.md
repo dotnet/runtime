@@ -1115,8 +1115,6 @@ Getting the native code pointer for methods with a NativeCodeSlot or a stable en
         if (!typeHandle.IsMethodTable())
             throw new InvalidOperationException("typeHandle is not a MethodTable");
         MethodTable mt = _methodTables[typeHandle.Address];
-        // MethodTable::GetSlotPtrRaw
-        // TODO(cdac): CONSISTENCY_CHECK(slotNum < GetNumVtableSlots());
 
         if (slotNum < mt.NumVirtuals)
         {
