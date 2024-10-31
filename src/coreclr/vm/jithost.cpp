@@ -25,7 +25,8 @@ int JitHost::getIntConfigValue(const char* name, int defaultValue)
 {
     WRAPPER_NO_CONTRACT;
 
-    SString str(SString::Utf8, name);
+    StackSString str;
+    SString(SString::Utf8Literal, name).ConvertToUnicode(str);
 
     // Translate JIT call into runtime configuration query
     CLRConfig::ConfigDWORDInfo info{ str.GetUnicode(), (DWORD)defaultValue, CLRConfig::LookupOptions::Default };
@@ -38,7 +39,8 @@ const char* JitHost::getStringConfigValue(const char* name)
 {
     WRAPPER_NO_CONTRACT;
 
-    SString str(SString::Utf8, name);
+    StackSString str;
+    SString(SString::Utf8Literal, name).ConvertToUnicode(str);
 
     // Translate JIT call into runtime configuration query
     CLRConfig::ConfigStringInfo info{ str.GetUnicode(), CLRConfig::LookupOptions::Default };
