@@ -14,27 +14,22 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 	{
 		public static void ProcessGenericArgumentDataFlow (Location location, INamedTypeSymbol type, Action<Diagnostic> reportDiagnostic)
 		{
-			ProcessGenericArgumentDataFlow (location, type.TypeArguments, type.TypeParameters, reportDiagnostic);
+			while (type is { IsGenericType: true }) {
+				ProcessGenericArgumentDataFlow (location, type.TypeArguments, type.TypeParameters, reportDiagnostic);
+				type = type.ContainingType;
+			}
 		}
 
 		public static void ProcessGenericArgumentDataFlow (Location location, IMethodSymbol method, Action<Diagnostic> reportDiagnostic)
 		{
 			ProcessGenericArgumentDataFlow (location, method.TypeArguments, method.TypeParameters, reportDiagnostic);
 
-			var type = method.ContainingType;
-			while (type is { IsGenericType: true }) {
-				ProcessGenericArgumentDataFlow (location, type, reportDiagnostic);
-				type = type.ContainingType;
-			}
+			ProcessGenericArgumentDataFlow (location, method.ContainingType, reportDiagnostic);
 		}
 
 		public static void ProcessGenericArgumentDataFlow (Location location, IFieldSymbol field, Action<Diagnostic> reportDiagnostic)
 		{
-			var type = field.ContainingType;
-			while (type is { IsGenericType: true }) {
-				ProcessGenericArgumentDataFlow (location, type, reportDiagnostic);
-				type = type.ContainingType;
-			}
+			ProcessGenericArgumentDataFlow (location, field.ContainingType, reportDiagnostic);
 		}
 
 		static void ProcessGenericArgumentDataFlow (
