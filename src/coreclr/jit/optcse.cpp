@@ -5246,10 +5246,10 @@ void CSE_HeuristicCommon::PerformCSE(CSE_Candidate* successfulCandidate)
         //
         *link = cse;
 
-        assert(m_pCompiler->fgRemoveRestOfBlock == false);
+        m_pCompiler->gtSetStmtInfo(stmt);
+        m_pCompiler->fgSetStmtSeq(stmt);
+        m_pCompiler->gtUpdateStmtSideEffects(stmt);
 
-        /* re-morph the statement */
-        m_pCompiler->fgMorphBlockStmt(blk, stmt DEBUGARG("optValnumCSE"));
     } while (lst != nullptr);
 
     ArrayStack<UseDefLocation> defs(m_pCompiler->getAllocator(CMK_CSE));
