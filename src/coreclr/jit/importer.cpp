@@ -4047,8 +4047,6 @@ GenTree* Compiler::impImportStaticFieldAddress(CORINFO_RESOLVED_TOKEN* pResolved
     {
         case CORINFO_FIELD_STATIC_GENERICS_STATIC_HELPER:
         {
-            assert(!compIsForInlining());
-
             // We first call a special helper to get the statics base pointer
             op1 = impParentClassTokenToHandle(pResolvedToken);
 
@@ -4088,7 +4086,8 @@ GenTree* Compiler::impImportStaticFieldAddress(CORINFO_RESOLVED_TOKEN* pResolved
 #endif // FEATURE_READYTORUN
             {
                 if ((pFieldInfo->helper == CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED) ||
-                    (pFieldInfo->helper == CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2))
+                    (pFieldInfo->helper == CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2) ||
+                    (pFieldInfo->helper == CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2_NOJITOPT))
                 {
                     typeIndex = info.compCompHnd->getThreadLocalFieldInfo(pResolvedToken->hField, false);
                 }
@@ -8968,6 +8967,15 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                             return;
                         }
 
+                        // Flag if this allocation happens within a method that uses the static empty
+                        // pattern (if we stack allocate this object, we can optimize the empty side away)
+                        //
+                        if (lookupNamedIntrinsic(info.compMethodHnd) == NI_System_SZArrayHelper_GetEnumerator)
+                        {
+                            JITDUMP("Allocation is part of empty static pattern\n");
+                            op1->gtFlags |= GTF_ALLOCOBJ_EMPTY_STATIC;
+                        }
+
                         // Remember that this basic block contains 'new' of an object
                         block->SetFlags(BBF_HAS_NEWOBJ);
                         optMethodFlags |= OMF_HAS_NEWOBJ;
@@ -9222,10 +9230,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                             compInlineResult->NoteFatal(InlineObservation::CALLEE_LDFLD_NEEDS_HELPER);
                             return;
 
-                        case CORINFO_FIELD_STATIC_GENERICS_STATIC_HELPER:
                         case CORINFO_FIELD_STATIC_READYTORUN_HELPER:
-                            /* We may be able to inline the field accessors in specific instantiations of generic
-                             * methods */
                             compInlineResult->NoteFatal(InlineObservation::CALLSITE_LDFLD_NEEDS_HELPER);
                             return;
 

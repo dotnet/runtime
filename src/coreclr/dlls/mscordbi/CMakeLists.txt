@@ -96,7 +96,6 @@ if(CLR_CMAKE_HOST_WIN32)
 elseif(CLR_CMAKE_HOST_UNIX)
 
     list(APPEND COREDBI_LIBRARIES
-        palrt
         # share the PAL in the dac module
         mscordaccore
     )

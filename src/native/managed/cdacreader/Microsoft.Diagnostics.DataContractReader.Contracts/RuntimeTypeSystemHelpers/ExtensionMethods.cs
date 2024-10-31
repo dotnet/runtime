@@ -1,9 +1,11 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-namespace Microsoft.Diagnostics.DataContractReader.Contracts.RuntimeTypeSystem_1_NS;
+using Microsoft.Diagnostics.DataContractReader.Contracts;
 
-internal static class RuntimeTypeSystem_1_Helpers
+namespace Microsoft.Diagnostics.DataContractReader.RuntimeTypeSystemHelpers;
+
+internal static class ExtensionMethods
 {
     public static bool IsTypeDesc(this TypeHandle type)
     {

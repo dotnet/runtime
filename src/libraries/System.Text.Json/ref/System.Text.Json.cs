@@ -1045,6 +1045,12 @@ namespace System.Text.Json.Serialization
         KebabCaseLower = 4,
         KebabCaseUpper = 5,
     }
+    public enum JsonKnownReferenceHandler
+    {
+        Unspecified = 0,
+        Preserve = 1,
+        IgnoreCycles = 2,
+    }
     public sealed partial class JsonNumberEnumConverter<TEnum> : System.Text.Json.Serialization.JsonConverterFactory where TEnum : struct, System.Enum
     {
         public JsonNumberEnumConverter() { }
@@ -1145,6 +1151,7 @@ namespace System.Text.Json.Serialization
         public bool PropertyNameCaseInsensitive { get { throw null; } set { } }
         public System.Text.Json.Serialization.JsonKnownNamingPolicy PropertyNamingPolicy { get { throw null; } set { } }
         public System.Text.Json.JsonCommentHandling ReadCommentHandling { get { throw null; } set { } }
+        public System.Text.Json.Serialization.JsonKnownReferenceHandler ReferenceHandler { get { throw null; } set { } }
         public bool RespectNullableAnnotations { get { throw null; } set { } }
         public bool RespectRequiredConstructorParameters { get { throw null; } set { } }
         public System.Text.Json.Serialization.JsonUnknownTypeHandling UnknownTypeHandling { get { throw null; } set { } }

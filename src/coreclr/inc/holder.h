@@ -10,6 +10,7 @@
 #include "staticcontract.h"
 #include "volatile.h"
 #include "palclr.h"
+#include <minipal/com/memory.h>
 
 #include <utility>
 #include <type_traits>
