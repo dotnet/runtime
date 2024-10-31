@@ -62,7 +62,6 @@ partial interface IRuntimeTypeSystem : IContract
     public virtual ReadOnlySpan<TypeHandle> GetInstantiation(TypeHandle typeHandle);
     public virtual bool IsGenericTypeDefinition(TypeHandle typeHandle);
 
-    public virtual TypeHandle TypeHandleFromAddress(TargetPointer address);
     public virtual bool HasTypeParam(TypeHandle typeHandle);
 
     // Element type of the type. NOTE: this drops the CorElementType.GenericInst, and CorElementType.String is returned as CorElementType.Class.
@@ -552,7 +551,7 @@ The contract additionally depends on these data descriptors
             if (!typeHandle.Flags.IsArray)
                 throw new ArgumentException(nameof(typeHandle));
 
-            return TypeHandleFromAddress(typeHandle.PerInstInfo);
+            return GetTypeHandle(typeHandle.PerInstInfo);
         }
         else if (typeHandle.IsTypeDesc())
         {
@@ -565,7 +564,7 @@ The contract additionally depends on these data descriptors
                 case CorElementType.Byref:
                 case CorElementType.Ptr:
                     TargetPointer typeArgPointer = // Read TypeArg field from ParamTypeDesc contract using address typeHandle.TypeDescAddress()
-                    return TypeHandleFromAddress(typeArgPointer);
+                    return GetTypeHandle(typeArgPointer);
             }
         }
         throw new ArgumentException(nameof(typeHandle));
