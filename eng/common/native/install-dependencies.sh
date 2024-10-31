@@ -6,12 +6,12 @@ set -e
 #
 # Usage:
 #
-# ./install-native-dependencies.sh <OS>
+# ./install-dependencies.sh <OS>
 
 os="$(echo "$1" | tr "[:upper:]" "[:lower:]")"
 
 if [ -z "$os" ]; then
-    . "$(dirname "$0")"/common/native/init-os-and-arch.sh
+    . "$(dirname "$0")"/init-os-and-arch.sh
 fi
 
 case "$os" in
@@ -24,13 +24,13 @@ case "$os" in
             apt update
 
             apt install -y build-essential gettext locales cmake llvm clang lld lldb liblldb-dev libunwind8-dev libicu-dev liblttng-ust-dev \
-                libssl-dev libkrb5-dev zlib1g-dev
+                libssl-dev libkrb5-dev zlib1g-dev pigz
 
             localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias en_US.UTF-8
         elif [ "$ID" = "fedora" ]; then
-            dnf install -y cmake llvm lld lldb clang python curl libicu-devel openssl-devel krb5-devel zlib-devel lttng-ust-devel
+            dnf install -y cmake llvm lld lldb clang python curl libicu-devel openssl-devel krb5-devel zlib-devel lttng-ust-devel pigz
         elif [ "$ID" = "alpine" ]; then
-            apk add build-base cmake bash curl clang llvm-dev lld lldb krb5-dev lttng-ust-dev icu-dev zlib-dev openssl-dev
+            apk add build-base cmake bash curl clang llvm-dev lld lldb krb5-dev lttng-ust-dev icu-dev zlib-dev openssl-dev pigz
         else
             echo "Unsupported distro. distro: $ID"
             exit 1
@@ -44,7 +44,14 @@ case "$os" in
         export HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK=1
         # Skip brew update for now, see https://github.com/actions/setup-python/issues/577
         # brew update --preinstall
-        brew bundle --no-upgrade --no-lock --file "$(dirname "$0")/Brewfile"
+        brew bundle --no-upgrade --no-lock --file=- <<EOF
+brew "cmake"
+brew "icu4c"
+brew "openssl@3"
+brew "pkg-config"
+brew "python3"
+brew "pigz"
+EOF
         ;;
 
     *)
