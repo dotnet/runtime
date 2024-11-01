@@ -12446,6 +12446,34 @@ void Compiler::fgAssertionGen(GenTree* tree)
 #endif
     };
 
+    // If this tree creates an assignment of 0 or 1 to an int local, also create a [0..1] subrange
+    // assertion for that local, in case this local is used as a bool.
+    //
+    auto addImpliedBoolSubrangeAssertion = [=](AssertionIndex index, ASSERT_TP assertions) {
+        AssertionDsc* const assertion = optGetAssertion(index);
+        if ((assertion->assertionKind == OAK_EQUAL) && (assertion->op1.kind == O1K_LCLVAR) &&
+            (assertion->op2.kind == O2K_CONST_INT))
+        {
+            ssize_t iconVal = assertion->op2.u1.iconVal;
+            if ((iconVal == 0) || (iconVal == 1))
+            {
+                AssertionDsc extraAssertion   = {OAK_SUBRANGE};
+                extraAssertion.op1.kind       = O1K_LCLVAR;
+                extraAssertion.op1.lcl.lclNum = assertion->op1.lcl.lclNum;
+                extraAssertion.op2.kind       = O2K_SUBRANGE;
+                extraAssertion.op2.u2         = IntegralRange(SymbolicIntegerValue::Zero, SymbolicIntegerValue::One);
+
+                AssertionIndex extraIndex = optFinalizeCreatingAssertion(&extraAssertion);
+                if (extraIndex != NO_ASSERTION_INDEX)
+                {
+                    unsigned const bvIndex = extraIndex - 1;
+                    BitVecOps::AddElemD(apTraits, assertions, bvIndex);
+                    announce(extraIndex, "[bool range] ");
+                }
+            }
+        }
+    };
+
     // For BBJ_COND nodes, we have two assertion out BVs.
     // apLocal will be stored on bbAssertionOutIfFalse and be used for false successors.
     // apLocalIfTrue will be stored on bbAssertionOutIfTrue and be used for true successors.
@@ -12470,7 +12498,7 @@ void Compiler::fgAssertionGen(GenTree* tree)
 
     if (makeCondAssertions)
     {
-        // Update apLocal and apIfTrue with suitable assertions
+        // Update apLocal and apLocalIfTrue with suitable assertions
         // from the JTRUE
         //
         assert(optCrossBlockLocalAssertionProp);
@@ -12494,6 +12522,7 @@ void Compiler::fgAssertionGen(GenTree* tree)
             announce(ifTrueAssertionIndex, "[if true] ");
             unsigned const bvIndex = ifTrueAssertionIndex - 1;
             BitVecOps::AddElemD(apTraits, apLocalIfTrue, bvIndex);
+            addImpliedBoolSubrangeAssertion(ifTrueAssertionIndex, apLocalIfTrue);
         }
 
         if (ifFalseAssertionIndex != NO_ASSERTION_INDEX)
@@ -12501,6 +12530,7 @@ void Compiler::fgAssertionGen(GenTree* tree)
             announce(ifFalseAssertionIndex, "[if false] ");
             unsigned const bvIndex = ifFalseAssertionIndex - 1;
             BitVecOps::AddElemD(apTraits, apLocal, ifFalseAssertionIndex - 1);
+            addImpliedBoolSubrangeAssertion(ifFalseAssertionIndex, apLocal);
         }
     }
     else
@@ -12509,6 +12539,7 @@ void Compiler::fgAssertionGen(GenTree* tree)
         announce(apIndex, "");
         unsigned const bvIndex = apIndex - 1;
         BitVecOps::AddElemD(apTraits, apLocal, bvIndex);
+        addImpliedBoolSubrangeAssertion(apIndex, apLocal);
     }
 }
 

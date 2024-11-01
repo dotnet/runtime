@@ -660,10 +660,10 @@ void Compiler::optAssertionInit(bool isLocalProp)
         if (optCrossBlockLocalAssertionProp)
         {
             // We may need a fairly large table.
-            // Allow for roughly one assertion per local, up to the tracked limit.
+            // Allow for roughly 1.5 assertions per local, up to the tracked limit.
             // (empirical studies show about 0.6 asserions/local)
             //
-            optMaxAssertionCount = (AssertionIndex)min(maxTrackedLocals, ((lvaCount / 64) + 1) * 64);
+            optMaxAssertionCount = (AssertionIndex)min(maxTrackedLocals, ((lvaCount / 64) + 1) * 96);
         }
         else
         {
