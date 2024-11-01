@@ -668,7 +668,7 @@ RELEASE_CONFIG_INTEGER(JitGuardedDevirtualizationMaxTypeChecks, W("JitGuardedDev
 
 // Various policies for GuardedDevirtualization (0x4B == 75)
 RELEASE_CONFIG_INTEGER(JitGuardedDevirtualizationChainLikelihood, W("JitGuardedDevirtualizationChainLikelihood"), 0x4B)
-RELEASE_CONFIG_INTEGER(JitGuardedDevirtualizationChainStatements, W("JitGuardedDevirtualizationChainStatements"), 1)
+RELEASE_CONFIG_INTEGER(JitGuardedDevirtualizationChainStatements, W("JitGuardedDevirtualizationChainStatements"), 3)
 CONFIG_STRING(JitGuardedDevirtualizationRange, W("JitGuardedDevirtualizationRange"))
 CONFIG_INTEGER(JitRandomGuardedDevirtualization, W("JitRandomGuardedDevirtualization"), 0)
 
