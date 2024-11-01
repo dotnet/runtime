@@ -608,8 +608,9 @@ class Module : public ModuleBase
     VPTR_VTABLE_CLASS(Module, ModuleBase)
 
 private:
-    PTR_CUTF8               m_pSimpleName; // Cached simple name for better performance and easier diagnostics
-    const WCHAR*            m_path;        // Cached path for easier diagnostics
+    PTR_CUTF8               m_pSimpleName;  // Cached simple name for better performance and easier diagnostics
+    const WCHAR*            m_path;         // Cached path for easier diagnostics
+    const WCHAR*            m_fileName;     // Cached file name for easier diagnostics
 
     PTR_PEAssembly          m_pPEAssembly;
     PTR_VOID                m_baseAddress; // Cached base address for easier diagnostics
@@ -1647,6 +1648,7 @@ struct cdac_data<Module>
     static constexpr size_t ThunkHeap = offsetof(Module, m_pThunkHeap);
     static constexpr size_t DynamicMetadata = offsetof(Module, m_pDynamicMetadata);
     static constexpr size_t Path = offsetof(Module, m_path);
+    static constexpr size_t FileName = offsetof(Module, m_fileName);
 
     // Lookup map pointers
     static constexpr size_t FieldDefToDescMap = offsetof(Module, m_FieldDefToDescMap);

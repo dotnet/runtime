@@ -268,8 +268,15 @@ namespace ILLink.Tasks
 #pragma warning disable IL3000 // Avoid accessing Assembly file path when publishing as a single file
 				var taskDirectory = Path.GetDirectoryName (Assembly.GetExecutingAssembly ().Location);
 #pragma warning restore IL3000 // Avoid accessing Assembly file path when publishing as a single file
+
 				// IL Linker always runs on .NET Core, even when using desktop MSBuild to host ILLink.Tasks.
-				_illinkPath = Path.Combine (Path.GetDirectoryName (taskDirectory), "net9.0", "illink.dll");
+				// ILLinkImplFramework ()= NetCoreAppToolCurrent) was used to build the corresponding illink.dll
+				string path = Path.Combine (Path.GetDirectoryName (taskDirectory), BuildMetadata.ILLinkImplFramework, "illink.dll");
+
+				Log.LogMessage(MessageImportance.Normal, $"ILLink.Tasks path: {path}");
+
+				_illinkPath = path;
+
 				return _illinkPath;
 			}
 			set => _illinkPath = value;

@@ -2361,7 +2361,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             }
 
             impSpillSideEffect(true, verCurrentState.esStackDepth -
-                                         2 DEBUGARG("Spilling op1 side effects for SimdAsHWIntrinsic"));
+                                         2 DEBUGARG("Spilling op1 side effects for vector CreateSequence"));
 
             op2 = impPopStack().val;
             op1 = impPopStack().val;
@@ -3376,12 +3376,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector512_op_LeftShift:
         {
             assert(sig->numArgs == 2);
-
-            if (varTypeIsByte(simdBaseType))
-            {
-                // byte and sbyte would require more work to support
-                break;
-            }
 
             if ((simdSize != 32) || compOpportunisticallyDependsOn(InstructionSet_AVX2))
             {

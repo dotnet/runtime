@@ -5298,10 +5298,9 @@ void CSE_HeuristicCommon::PerformCSE(CSE_Candidate* successfulCandidate)
         //
         *link = cse;
 
-        assert(m_pCompiler->fgRemoveRestOfBlock == false);
-
-        /* re-morph the statement */
-        m_pCompiler->fgMorphBlockStmt(blk, stmt DEBUGARG("optValnumCSE"));
+        m_pCompiler->gtSetStmtInfo(stmt);
+        m_pCompiler->fgSetStmtSeq(stmt);
+        m_pCompiler->gtUpdateStmtSideEffects(stmt);
 
     } while (lst != nullptr);
 }
