@@ -1026,7 +1026,7 @@ ConvertString(const WCHAR* str)
     if (str == nullptr)
         return { };
 
-    size_t cch = u16_strlen(str) + 1;
+    size_t cch = minipal_u16_strlen((CHAR16_T*)str) + 1;
     int len = minipal_get_length_utf16_to_utf8((CHAR16_T*)str, cch, 0);
     if (len == 0)
         return { };

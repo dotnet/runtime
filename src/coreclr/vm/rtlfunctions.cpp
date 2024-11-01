@@ -57,13 +57,14 @@ HRESULT EnsureRtlFunctions()
 
 #ifndef HOST_X86
 
+#define DYNAMIC_FUNCTION_TABLE_MAX_RANGE INT32_MAX
+
 VOID InstallEEFunctionTable (
         PVOID pvTableID,
         PVOID pvStartRange,
         ULONG cbRange,
         PGET_RUNTIME_FUNCTION_CALLBACK pfnGetRuntimeFunctionCallback,
-        PVOID pvContext,
-        EEDynamicFunctionTableType TableType)
+        PVOID pvContext)
 {
     CONTRACTL
     {
@@ -120,7 +121,7 @@ VOID InstallEEFunctionTable (
             (ULONG_PTR)pvStartRange,
             cbRange,
             pfnGetRuntimeFunctionCallback,
-            EncodeDynamicFunctionTableContext(pvContext, TableType),
+            pvContext,
             wszModuleName))
     {
         COMPlusThrowOM();

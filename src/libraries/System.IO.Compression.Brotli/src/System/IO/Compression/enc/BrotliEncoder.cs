@@ -103,16 +103,21 @@ namespace System.IO.Compression
         }
 
         /// <summary>Gets the maximum expected compressed length for the provided input size.</summary>
-        /// <param name="inputSize">The input size to get the maximum expected compressed length from. Must be greater or equal than 0 and less or equal than <see cref="int.MaxValue" /> - 524166.</param>
+        /// <param name="inputSize">The input size to get the maximum expected compressed length from. Must be greater than or equal to 0 and small enough that the result is less than or equal to <see cref="int.MaxValue"/>.</param>
         /// <returns>A number representing the maximum compressed length for the provided input size.</returns>
         /// <remarks>Returns 2 if <paramref name="inputSize" /> is 0.</remarks>
-        /// <exception cref="System.ArgumentOutOfRangeException"><paramref name="inputSize" /> is less than 0, the minimum allowed input size, or greater than <see cref="int.MaxValue" /> - 524166, the maximum allowed input size.</exception>
+        /// <exception cref="System.ArgumentOutOfRangeException"><paramref name="inputSize" /> is less than 0, the minimum allowed input size, or large enough that the result would be larger than <see cref="int.MaxValue"/>.</exception>
         public static int GetMaxCompressedLength(int inputSize)
         {
             ArgumentOutOfRangeException.ThrowIfNegative(inputSize);
-            ArgumentOutOfRangeException.ThrowIfGreaterThan(inputSize, BrotliUtils.MaxInputSize);
 
-            return (int)Interop.Brotli.BrotliEncoderMaxCompressedSize((nuint)inputSize);
+            nuint result = Interop.Brotli.BrotliEncoderMaxCompressedSize((nuint)inputSize);
+            if (result > int.MaxValue)
+            {
+                throw new ArgumentOutOfRangeException(nameof(inputSize));
+            }
+
+            return (int)result;
         }
 
         internal OperationStatus Flush(Memory<byte> destination, out int bytesWritten) => Flush(destination.Span, out bytesWritten);
