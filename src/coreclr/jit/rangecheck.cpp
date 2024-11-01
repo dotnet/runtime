@@ -1019,12 +1019,34 @@ Range RangeCheck::ComputeRangeForBinOp(BasicBlock* block, GenTreeOp* binop, bool
     GenTree* op1 = binop->gtGetOp1();
     GenTree* op2 = binop->gtGetOp2();
 
+    ValueNum op1VN = op1->gtVNPair.GetConservative();
+    ValueNum op2VN = op2->gtVNPair.GetConservative();
+
+    ValueNumStore* vnStore = m_pCompiler->vnStore;
+
+    bool op1IsCns = vnStore->IsVNConstant(op1VN);
+    bool op2IsCns = vnStore->IsVNConstant(op2VN);
+
+    if (binop->OperIsCommutative() && op1IsCns && !op2IsCns)
+    {
+        // Normalize constants to the right for commutative operators.
+        std::swap(op1, op2);
+        std::swap(op1VN, op2VN);
+        std::swap(op1IsCns, op2IsCns);
+    }
+
     // Special cases for binops where op2 is a constant
     if (binop->OperIs(GT_AND, GT_RSH, GT_LSH, GT_UMOD))
     {
-        if (!op2->IsIntCnsFitsInI32())
+        if (!op2IsCns)
         {
             // only cns is supported for op2 at the moment for &,%,<<,>> operators
+            return Range(Limit::keUnknown);
+        }
+
+        ssize_t op2Cns = vnStore->CoercedConstantValue<ssize_t>(op2VN);
+        if (!FitsIn<int>(op2Cns))
+        {
             return Range(Limit::keUnknown);
         }
 
@@ -1032,18 +1054,20 @@ Range RangeCheck::ComputeRangeForBinOp(BasicBlock* block, GenTreeOp* binop, bool
         if (binop->OperIs(GT_AND))
         {
             // x & cns -> [0..cns]
-            icon = static_cast<int>(op2->AsIntCon()->IconValue());
+            icon = static_cast<int>(op2Cns);
         }
         else if (binop->OperIs(GT_UMOD))
         {
             // x % cns -> [0..cns-1]
-            icon = static_cast<int>(op2->AsIntCon()->IconValue()) - 1;
+            icon = static_cast<int>(op2Cns) - 1;
         }
-        else if (binop->OperIs(GT_RSH, GT_LSH) && op1->OperIs(GT_AND) && op1->AsOp()->gtGetOp2()->IsIntCnsFitsInI32())
+        else if (binop->OperIs(GT_RSH, GT_LSH) && op1->OperIs(GT_AND) &&
+                 vnStore->IsVNConstantFittingIn<int32_t>(op1->AsOp()->gtGetOp2()->gtVNPair.GetConservative()))
         {
             // (x & cns1) >> cns2 -> [0..cns1>>cns2]
-            int icon1 = static_cast<int>(op1->AsOp()->gtGetOp2()->AsIntCon()->IconValue());
-            int icon2 = static_cast<int>(op2->AsIntCon()->IconValue());
+            int icon1 = static_cast<int>(
+                vnStore->CoercedConstantValue<ssize_t>(op1->AsOp()->gtGetOp2()->gtVNPair.GetConservative()));
+            int icon2 = static_cast<int>(op2Cns);
             if ((icon1 >= 0) && (icon2 >= 0) && (icon2 < 32))
             {
                 icon = binop->OperIs(GT_RSH) ? (icon1 >> icon2) : (icon1 << icon2);
