@@ -17491,21 +17491,6 @@ void dispNodeList(GenTree* list, bool verbose)
 #endif
 
 /*****************************************************************************
- * Callback to mark the nodes of a qmark-colon subtree that are conditionally
- * executed.
- */
-
-/* static */
-Compiler::fgWalkResult Compiler::gtMarkColonCond(GenTree** pTree, fgWalkData* data)
-{
-    assert(data->pCallbackData == nullptr);
-
-    (*pTree)->gtFlags |= GTF_COLON_COND;
-
-    return WALK_CONTINUE;
-}
-
-/*****************************************************************************
  * Callback to clear the conditionally executed flags of nodes that no longer
    will be conditionally executed. Note that when we find another colon we must
    stop, as the nodes below this one WILL be conditionally executed. This callback

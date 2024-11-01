@@ -7611,8 +7611,6 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
        o Perform optional postorder morphing if optimizing
      */
 
-    bool isQmarkColon = false;
-
     ASSERT_TP origAssertions = BitVecOps::UninitVal();
     ASSERT_TP thenAssertions = BitVecOps::UninitVal();
 
@@ -7656,6 +7654,10 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
         break;
 
         case GT_QMARK:
+        case GT_COLON:
+            assert(!"QMARK/COLON no longer valid in morph");
+            break;
+
         case GT_JTRUE:
 
             noway_assert(op1);
@@ -7673,13 +7675,6 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
                 GenTree* effOp1 = op1->gtEffectiveVal();
                 noway_assert((effOp1->gtOper == GT_CNS_INT) &&
                              (effOp1->IsIntegralConst(0) || effOp1->IsIntegralConst(1)));
-            }
-            break;
-
-        case GT_COLON:
-            if (optLocalAssertionProp)
-            {
-                isQmarkColon = true;
             }
             break;
 
@@ -8062,10 +8057,6 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
 
                 // Small-typed return values are normalized by the callee
                 retVal = gtNewCastNode(TYP_INT, retVal, false, info.compRetType);
-
-                // Propagate GTF_COLON_COND
-                retVal->gtFlags |= (tree->gtFlags & GTF_COLON_COND);
-
                 retVal = fgMorphTree(retVal);
                 tree->AsOp()->SetReturnValue(retVal);
 
@@ -8180,15 +8171,6 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
 
     if (op1 != nullptr)
     {
-        // If we are entering the "then" part of a Qmark-Colon we must
-        // save the state of the current assertions table so that we can
-        // restore this state when entering the "else" part
-        if (isQmarkColon)
-        {
-            noway_assert(optLocalAssertionProp);
-            BitVecOps::Assign(apTraits, origAssertions, apLocal);
-        }
-
         // TODO-Bug: Moving the null check to this indirection should nominally check for interference with
         // the other operands in case this is a store. However, doing so unconditionally preserves previous
         // behavior and "fixes up" field store importation that places the null check in the wrong location
@@ -8221,15 +8203,6 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
         }
 
         tree->AsOp()->gtOp1 = op1 = fgMorphTree(op1, mac);
-
-        // If we are exiting the "then" part of a Qmark-Colon we must
-        // save the state of the current assertions table so that we
-        // can merge this state with the "else" part exit
-        if (isQmarkColon)
-        {
-            noway_assert(optLocalAssertionProp);
-            BitVecOps::Assign(apTraits, thenAssertions, apLocal);
-        }
     }
 
     /*-------------------------------------------------------------------------
@@ -8238,28 +8211,7 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
 
     if (op2 != nullptr)
     {
-        // If we are entering the "else" part of a Qmark-Colon we must
-        // reset the state of the current assertions table
-        if (isQmarkColon)
-        {
-            noway_assert(optLocalAssertionProp);
-            BitVecOps::Assign(apTraits, apLocal, origAssertions);
-        }
-
         tree->AsOp()->gtOp2 = op2 = fgMorphTree(op2);
-
-        // If we are exiting the "else" part of a Qmark-Colon we must
-        // merge the state of the current assertions table with that
-        // of the exit of the "then" part.
-        //
-        if (isQmarkColon)
-        {
-            noway_assert(optLocalAssertionProp);
-
-            // Merge then and else (current) assertion sets.
-            //
-            BitVecOps::IntersectionD(apTraits, apLocal, thenAssertions);
-        }
     }
 
 #ifndef TARGET_64BIT
@@ -8297,24 +8249,14 @@ DONE_MORPHING_CHILDREN:
         }
     }
 
-    GenTree* oldTree = tree;
-
-    GenTree* qmarkOp1 = nullptr;
-    GenTree* qmarkOp2 = nullptr;
-
-    if ((tree->OperGet() == GT_QMARK) && (tree->AsOp()->gtOp2->OperGet() == GT_COLON))
-    {
-        qmarkOp1 = oldTree->AsOp()->gtOp2->AsOp()->gtOp1;
-        qmarkOp2 = oldTree->AsOp()->gtOp2->AsOp()->gtOp2;
-    }
-
     // Try to fold it, maybe we get lucky,
-    tree = gtFoldExpr(tree);
+    GenTree* const oldTree = tree;
+    tree                   = gtFoldExpr(tree);
 
     if (oldTree != tree)
     {
         /* if gtFoldExpr returned op1 or op2 then we are done */
-        if ((tree == op1) || (tree == op2) || (tree == qmarkOp1) || (tree == qmarkOp2))
+        if ((tree == op1) || (tree == op2))
         {
             return tree;
         }
@@ -8829,16 +8771,6 @@ DONE_MORPHING_CHILDREN:
             }
             break;
 
-        case GT_COLON:
-            if (fgGlobalMorph)
-            {
-                /* Mark the nodes that are conditionally executed */
-                fgWalkTreePre(&tree, gtMarkColonCond);
-            }
-            /* Since we're doing this postorder we clear this if it got set by a child */
-            fgRemoveRestOfBlock = false;
-            break;
-
         case GT_COMMA:
         {
             /* Special case: trees that don't produce a value */
@@ -8965,7 +8897,7 @@ DONE_MORPHING_CHILDREN:
     // Propagate comma throws.
     // If we are in the Valuenum CSE phase then don't morph away anything as these
     // nodes may have CSE defs/uses in them.
-    if (fgGlobalMorph && (oper != GT_COLON) &&
+    if (fgGlobalMorph &&
         /* TODO-ASG-Cleanup: delete this zero-diff quirk */ !GenTree::OperIsStore(oper))
     {
         if ((op1 != nullptr) && fgIsCommaThrow(op1, true))
@@ -11006,10 +10938,7 @@ GenTree* Compiler::fgPropagateCommaThrow(GenTree* parent, GenTreeOp* commaThrow,
     assert(fgGlobalMorph);
     assert(fgIsCommaThrow(commaThrow));
 
-    if ((commaThrow->gtFlags & GTF_COLON_COND) == 0)
-    {
-        fgRemoveRestOfBlock = true;
-    }
+    fgRemoveRestOfBlock = true;
 
     if ((precedingSideEffects & GTF_ALL_EFFECT) == 0)
     {
@@ -12446,6 +12375,34 @@ void Compiler::fgAssertionGen(GenTree* tree)
 #endif
     };
 
+    // If this tree creates an assignment of 0 or 1 to an int local, also create a [0..1] subrange
+    // assertion for that local, in case this local is used as a bool.
+    //
+    auto AddImpliedBoolSubrangeAssertion = [=](AssertionIndex index, ASSERT_TP assertions) {
+        AssertionDsc* const assertion = optGetAssertion(index);
+        if ((assertion->assertionKind == OAK_EQUAL) && (assertion->op1.kind == O1K_LCLVAR) &&
+            (assertion->op2.kind == O2K_CONST_INT))
+        {
+            ssize_t iconVal = assertion->op2.u1.iconVal;
+            if ((iconVal == 0) || (iconVal == 1))
+            {
+                AssertionDsc extraAssertion   = {OAK_SUBRANGE};
+                extraAssertion.op1.kind       = O1K_LCLVAR;
+                extraAssertion.op1.lcl.lclNum = assertion->op1.lcl.lclNum;
+                extraAssertion.op2.kind       = O2K_SUBRANGE;
+                extraAssertion.op2.u2         = IntegralRange(SymbolicIntegerValue::Zero, SymbolicIntegerValue::One);
+
+                AssertionIndex extraIndex = optFinalizeCreatingAssertion(&extraAssertion);
+                if (extraIndex != NO_ASSERTION_INDEX)
+                {
+                    unsigned const bvIndex = extraIndex - 1;
+                    BitVecOps::AddElemD(apTraits, assertions, bvIndex);
+                    announce(extraIndex, "[bool range] ");
+                }
+            }
+        }
+    };
+
     // For BBJ_COND nodes, we have two assertion out BVs.
     // apLocal will be stored on bbAssertionOutIfFalse and be used for false successors.
     // apLocalIfTrue will be stored on bbAssertionOutIfTrue and be used for true successors.
@@ -12470,7 +12427,7 @@ void Compiler::fgAssertionGen(GenTree* tree)
 
     if (makeCondAssertions)
     {
-        // Update apLocal and apIfTrue with suitable assertions
+        // Update apLocal and apLocalIfTrue with suitable assertions
         // from the JTRUE
         //
         assert(optCrossBlockLocalAssertionProp);
@@ -12494,6 +12451,7 @@ void Compiler::fgAssertionGen(GenTree* tree)
             announce(ifTrueAssertionIndex, "[if true] ");
             unsigned const bvIndex = ifTrueAssertionIndex - 1;
             BitVecOps::AddElemD(apTraits, apLocalIfTrue, bvIndex);
+            AddImpliedBoolSubrangeAssertion(ifTrueAssertionIndex, apLocalIfTrue);
         }
 
         if (ifFalseAssertionIndex != NO_ASSERTION_INDEX)
@@ -12501,6 +12459,7 @@ void Compiler::fgAssertionGen(GenTree* tree)
             announce(ifFalseAssertionIndex, "[if false] ");
             unsigned const bvIndex = ifFalseAssertionIndex - 1;
             BitVecOps::AddElemD(apTraits, apLocal, ifFalseAssertionIndex - 1);
+            AddImpliedBoolSubrangeAssertion(ifFalseAssertionIndex, apLocal);
         }
     }
     else
@@ -12509,6 +12468,7 @@ void Compiler::fgAssertionGen(GenTree* tree)
         announce(apIndex, "");
         unsigned const bvIndex = apIndex - 1;
         BitVecOps::AddElemD(apTraits, apLocal, bvIndex);
+        AddImpliedBoolSubrangeAssertion(apIndex, apLocal);
     }
 }
 
@@ -12890,7 +12850,6 @@ bool Compiler::fgMorphBlockStmt(BasicBlock* block, Statement* stmt DEBUGARG(cons
             printf("Removing the rest of block as unreachable:\n");
         }
 #endif
-        noway_assert((morph->gtFlags & GTF_COLON_COND) == 0);
         fgRemoveRestOfBlock = true;
     }
 
@@ -13123,7 +13082,6 @@ void Compiler::fgMorphStmts(BasicBlock* block)
             /* Use the call as the new stmt */
             morphedTree = morphedTree->AsOp()->gtOp1;
             noway_assert(morphedTree->gtOper == GT_CALL);
-            noway_assert((morphedTree->gtFlags & GTF_COLON_COND) == 0);
 
             fgRemoveRestOfBlock = true;
         }
@@ -13134,7 +13092,7 @@ void Compiler::fgMorphStmts(BasicBlock* block)
         {
             fgHasNoReturnCall = false;
 
-            if ((fgGetTopLevelQmark(stmt->GetRootNode()) == nullptr) && gtRemoveTreesAfterNoReturnCall(block, stmt))
+            if (gtRemoveTreesAfterNoReturnCall(block, stmt))
             {
                 fgRemoveRestOfBlock = true;
                 morphedTree         = stmt->GetRootNode();
@@ -13643,7 +13601,6 @@ bool Compiler::gtRemoveTreesAfterNoReturnCall(BasicBlock* block, Statement* stmt
 
         fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
         {
-            assert(!(*use)->OperIs(GT_QMARK));
             m_useStack.Push(UseInfo{use, user});
             return WALK_CONTINUE;
         }
@@ -14444,13 +14401,13 @@ bool Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
     return introducedThrow;
 }
 
-/*****************************************************************************
- *
- *  Expand GT_QMARK nodes from the flow graph into basic blocks.
- *
- */
-
-void Compiler::fgExpandQmarkNodes()
+//------------------------------------------------------------------------
+// fgExpandQmarkNodes: expand GT_QMARKs into control flow
+//
+// Returns:
+//    Suitable phase status.
+//
+PhaseStatus Compiler::fgExpandQmarkNodes()
 {
     bool introducedThrows = false;
 
@@ -14460,18 +14417,17 @@ void Compiler::fgExpandQmarkNodes()
         {
             for (Statement* const stmt : block->Statements())
             {
-                GenTree* expr = stmt->GetRootNode();
-#ifdef DEBUG
-                fgPreExpandQmarkChecks(expr);
-#endif
+                INDEBUG(fgPreExpandQmarkChecks(stmt->GetRootNode()));
                 introducedThrows |= fgExpandQmarkStmt(block, stmt);
             }
         }
-#ifdef DEBUG
-        fgPostExpandQmarkChecks();
-#endif
+
+        fgInvalidateDfsTree();
+        m_dfsTree = fgComputeDfs();
     }
+
     compQmarkRationalized = true;
+    INDEBUG(fgPostExpandQmarkChecks());
 
     // TODO: if qmark expansion created throw blocks, try and merge them
     //
@@ -14479,6 +14435,8 @@ void Compiler::fgExpandQmarkNodes()
     {
         JITDUMP("Qmark expansion created new throw blocks\n");
     }
+
+    return compQmarkUsed ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
 
 //------------------------------------------------------------------------

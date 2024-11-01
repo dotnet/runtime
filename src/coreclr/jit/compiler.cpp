@@ -4733,6 +4733,10 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     fgStress64RsltMul();
 #endif // DEBUG
 
+    // Expand QMarks
+    //
+    DoPhase(this, PHASE_EXPAND_QMARKS, &Compiler::fgExpandQmarkNodes);
+
     // Morph the trees in all the blocks of the method
     //
     unsigned const preMorphBBCount = fgBBcount;
@@ -4746,8 +4750,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
         // Decide the kind of code we want to generate
         fgSetOptions();
-
-        fgExpandQmarkNodes();
 
 #ifdef DEBUG
         compCurBB = nullptr;

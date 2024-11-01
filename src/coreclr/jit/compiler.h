@@ -3787,7 +3787,6 @@ public:
     typedef fgWalkResult(fgWalkPreFn)(GenTree** pTree, fgWalkData* data);
     typedef fgWalkResult(fgWalkPostFn)(GenTree** pTree, fgWalkData* data);
 
-    static fgWalkPreFn gtMarkColonCond;
     static fgWalkPreFn gtClearColonCond;
 
     struct FindLinkData
@@ -5509,7 +5508,7 @@ public:
 
     GenTreeQmark* fgGetTopLevelQmark(GenTree* expr, GenTree** ppDst = nullptr);
     bool fgExpandQmarkStmt(BasicBlock* block, Statement* stmt);
-    void fgExpandQmarkNodes();
+    PhaseStatus fgExpandQmarkNodes();
 
     bool fgSimpleLowerCastOfSmpOp(LIR::Range& range, GenTreeCast* cast);
 
