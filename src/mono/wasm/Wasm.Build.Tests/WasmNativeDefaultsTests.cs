@@ -111,7 +111,7 @@ namespace Wasm.Build.Tests
         [MemberData(nameof(SettingDifferentFromValuesInRuntimePack), parameters: true)]
         public void DefaultsWithPublish(string config, string extraProperties, bool aot, bool expectWasmBuildNativeForBuild, bool expectWasmBuildNativeForPublish)
         {
-            (string output, string? line) = CheckWasmNativeDefaultValue("native_defaults_publish", config, extraProperties, aot, dotnetWasmFromRuntimePack: !expectWasmBuildNativeForPublish, publish: true);
+            (string output, string? line) = CheckWasmNativeDefaultValue("native_defaults_publish", config, extraProperties, aot, expectWasmBuildNativeForPublish, isPublish: true);
 
             InferAndCheckPropertyValues(line, isPublish: true, wasmBuildNative: expectWasmBuildNativeForPublish, config: config);
         }
@@ -176,8 +176,8 @@ namespace Wasm.Build.Tests
                                                         config,
                                                         extraProperties,
                                                         aot: false,
-                                                        dotnetWasmFromRuntimePack: !publish,
-                                                        publish: publish,
+                                                        nativeBuild: true,
+                                                        isPublish: publish,
                                                         extraItems: nativeRefItem);
 
             InferAndCheckPropertyValues(line, isPublish: publish, wasmBuildNative: true, config: config);
@@ -242,11 +242,11 @@ namespace Wasm.Build.Tests
         private void CheckPropertyValues(string? line, bool wasmBuildNative, bool wasmNativeStrip, bool wasmNativeDebugSymbols, bool? wasmBuildingForNestedPublish)
         {
             Assert.NotNull(line);
-            Assert.Contains($"** WasmBuildNative: '{wasmBuildNative.ToString().ToLower()}', " +
+            string expected = $"** WasmBuildNative: '{wasmBuildNative.ToString().ToLower()}', " +
                             $"WasmNativeStrip: '{wasmNativeStrip.ToString().ToLower()}', " +
                             $"WasmNativeDebugSymbols: '{wasmNativeDebugSymbols.ToString().ToLower()}', " +
-                            $"WasmBuildingForNestedPublish: '{(wasmBuildingForNestedPublish.HasValue && wasmBuildingForNestedPublish == true ? "true" : "")}'",
-                        line);
+                            $"WasmBuildingForNestedPublish: '{(wasmBuildingForNestedPublish.HasValue && wasmBuildingForNestedPublish == true ? "true" : "")}'";
+            Assert.Contains(expected, line);
         }
     }
 }

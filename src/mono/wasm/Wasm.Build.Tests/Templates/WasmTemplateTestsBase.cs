@@ -69,18 +69,7 @@ public class WasmTemplateTestsBase : BuildTestBase
             .EnsureSuccessful();
 
         string projectFilePath = Path.Combine(_projectDir!, $"{projectName}.csproj");
-
-        if (aot)
-        {
-            extraProperties += $"\n<RunAOTCompilation>true</RunAOTCompilation>";
-            extraProperties += $"\n<EmccVerbose>{s_isWindows}</EmccVerbose>";
-        }
-        extraProperties += "<TreatWarningsAsErrors>true</TreatWarningsAsErrors>";
-        if (runAnalyzers)
-            extraProperties += "<RunAnalyzers>true</RunAnalyzers>";
-
-        AddItemsPropertiesToProject(projectFilePath, extraProperties, extraItems, insertAtEnd);
-
+        UpdateProjectFile(projectFilePath, aot, runAnalyzers, extraProperties, extraItems, insertAtEnd);
         return new ProjectInfo(config, aot, projectName, projectFilePath);
     }
 
@@ -91,6 +80,7 @@ public class WasmTemplateTestsBase : BuildTestBase
         string idPrefix,
         string projectDirReativeToAssetDir = "",
         bool appendUnicodeToPath = true,
+        bool runAnalyzers = true,
         string extraProperties = "",
         string extraItems = "",
         string insertAtEnd = "")
@@ -102,8 +92,21 @@ public class WasmTemplateTestsBase : BuildTestBase
             _projectDir = Path.Combine(_projectDir!, projectDirReativeToAssetDir);
         }
         string projectFilePath = Path.Combine(_projectDir!, $"{assetDirName}.csproj");
-        AddItemsPropertiesToProject(projectFilePath, extraProperties, extraItems, insertAtEnd);
+        UpdateProjectFile(projectFilePath, aot, runAnalyzers, extraProperties, extraItems, insertAtEnd);
         return new ProjectInfo(config, aot, assetDirName, projectFilePath);
+    }
+
+    private void UpdateProjectFile(string projectFilePath, bool aot, bool runAnalyzers, string extraProperties, string extraItems, string insertAtEnd)
+    {
+        if (aot)
+        {
+            extraProperties += $"\n<RunAOTCompilation>true</RunAOTCompilation>";
+            extraProperties += $"\n<EmccVerbose>{s_isWindows}</EmccVerbose>";
+        }
+        extraProperties += "<TreatWarningsAsErrors>true</TreatWarningsAsErrors>";
+        if (runAnalyzers)
+            extraProperties += "<RunAnalyzers>true</RunAnalyzers>";
+        AddItemsPropertiesToProject(projectFilePath, extraProperties, extraItems, insertAtEnd);
     }
 
 
