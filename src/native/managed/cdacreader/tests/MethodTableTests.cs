@@ -25,7 +25,7 @@ public class MethodTableTests
         builder
                 .SetContracts ([ nameof(Contracts.RuntimeTypeSystem) ])
                 .SetTypes (rtsBuilder.Types)
-                .SetGlobals (MockRTS.Globals);
+                .SetGlobals (MockRTS.GetGlobals(targetTestHelpers));
 
         rtsBuilder.AddGlobalPointers();
 
@@ -57,7 +57,7 @@ public class MethodTableTests
         });
     }
 
-    private (TargetPointer MethodTable, TargetPointer EEClass) AddSystemObjectMethodTable(MockRTS rtsBuilder)
+    internal static (TargetPointer MethodTable, TargetPointer EEClass) AddSystemObjectMethodTable(MockRTS rtsBuilder)
     {
         MockMemorySpace.Builder builder = rtsBuilder.Builder;
         TargetTestHelpers targetTestHelpers = builder.TargetTestHelpers;
