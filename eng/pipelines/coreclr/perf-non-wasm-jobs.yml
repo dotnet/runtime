@@ -434,7 +434,7 @@ jobs:
         nameSuffix: PerfBDNApp
         isOfficialBuild: false
         pool:
-          vmImage: 'macos-12'
+          vmImage: 'macos-latest-large'
         postBuildSteps:
           - template: /eng/pipelines/coreclr/templates/build-perf-bdn-app.yml
             parameters:
