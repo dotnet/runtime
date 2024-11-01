@@ -561,6 +561,7 @@ EEJitManager::MethodSectionIterator::MethodSectionIterator(const void *code, SIZ
         while(m_codeTable < m_codeTableEnd && IsPointer(m_dword))
         {
             m_dword = *m_codeTable++;
+            m_code += BYTES_PER_DWORD;
         }
     }
     else
@@ -593,7 +594,7 @@ BOOL EEJitManager::MethodSectionIterator::Next()
         {
             m_dword = *m_codeTable++;
             m_index = 0;
-            while(m_codeTable < m_codeTableEnd && IsPointer(m_dword))
+            while(m_codeTable < m_codeTableEnd && (IsPointer(m_dword) || m_dword == 0))
             {
                 m_dword = *m_codeTable++;
                 m_code += BYTES_PER_DWORD;
@@ -4018,9 +4019,6 @@ TADDR EEJitManager::FindMethodCode(RangeSection * pRangeSection, PCODE currentPC
     _ASSERTE(pRangeSection != NULL);
     _ASSERTE(pRangeSection->_flags & RangeSection::RANGE_SECTION_CODEHEAP);
 
-    // remove bottom two bits to ensure alignment math
-    // on ARM32 Thumb, the low bits indicate the thumb instruction set
-    currentPC = ALIGN_DOWN(currentPC, CODE_ALIGN);
 
     HeapList *pHp = pRangeSection->_pHeapList;
 
@@ -4032,63 +4030,70 @@ TADDR EEJitManager::FindMethodCode(RangeSection * pRangeSection, PCODE currentPC
 
     TADDR base = pHp->mapBase;
     TADDR delta = currentPC - base;
+    PTR_DWORD pMap = pHp->pHdrMap;
+    PTR_DWORD pMapStart = pMap;
 
     size_t dwordIndex = GetDwordIndex(delta);
     size_t nibbleIndex = GetNibbleIndex(delta);
 
-    PTR_DWORD pMap = pHp->pHdrMap;
-
     DWORD dword;
-    DWORD nibble;
+    DWORD tmp;
 
+    size_t startPos = ADDR2POS(delta);  // align to 32byte buckets
+                                        // ( == index into the array of nibbles)
     DWORD  offset   = ADDR2OFFS(delta); // this is the offset inside the bucket + 1
     _ASSERTE(offset == (offset & NIBBLE_MASK));
 
+    pMap += (startPos >> LOG2_NIBBLES_PER_DWORD); // points to the proper DWORD of the map
+
     // #1 look up DWORD represnting current PC
-    PREFIX_ASSUME(pMap + dwordIndex != NULL);
-    dword = VolatileLoadWithoutBarrier<DWORD>(pMap + dwordIndex);
+    PREFIX_ASSUME(pMap != NULL);
+    dword = VolatileLoadWithoutBarrier<DWORD>(pMap);
 
-    // if DWORD is empty, we can skip steps 2,3, and 4
-    if (dword)
+    // #2 if DWORD is a pointer, then we can return
+    if (IsPointer(dword))
     {
-        // #2 if DWORD is a pointer, then we can return
-        if (IsPointer(dword))
-        {
-            TADDR newAddr = base + DecodePointer(dword);
-            return newAddr;
-        }
+        TADDR newAddr = base + DecodePointer(dword);
+        return newAddr;
+    }
 
-        // #3 if DWORD is nibbles and corresponding nibble is intialized and points to an equal or earlier address, return the corresponding address
-        nibble = GetNibble(dword, nibbleIndex);
-        if ((nibble) && (nibble <= offset) )
-        {
-            return base + NibbleToRelativeAddress(dwordIndex, nibbleIndex, nibble);
-        }
+    // #3 if DWORD is nibbles and corresponding nibble is intialized and points to an equal or earlier address, return the corresponding address
+    tmp = dword >> POS2SHIFTCOUNT(startPos);
+    if ((tmp & NIBBLE_MASK) && ((tmp & NIBBLE_MASK) <= offset))
+    {
+        return base + POSOFF2ADDR(startPos, tmp & NIBBLE_MASK);
+    }
 
-        // #4 find preceeding nibble, return if found
-        // if nibbleIndex == 0, then there are no preceeding nibbles in this DWORD
-        if(nibbleIndex != 0)
+    // #4 find preceeding nibble, return if found
+    tmp >>= NIBBLE_SIZE;
+    if (tmp)
+    {
+        startPos--;
+        while(!(tmp & NIBBLE_MASK))
         {
-            DWORD preceedingNibbleMask = ~0x0u << (32 - nibbleIndex * 4);
-            if(FindPreviousNibble(dword & preceedingNibbleMask, nibbleIndex, nibble))
-            {
-                return base + NibbleToRelativeAddress(dwordIndex, nibbleIndex, nibble);
-            }
+            tmp >>= NIBBLE_SIZE;
+            startPos--;
         }
+        return base + POSOFF2ADDR(startPos, tmp & NIBBLE_MASK);
     }
 
     // #5.1 read previous DWORD. If no such DWORD return 0.
-    if (dwordIndex == 0)
+    // We skipped the remainder of the DWORD,
+    // so we must set startPos to the highest position of
+    // previous DWORD, unless we are already on the first DWORD
+    if (startPos < NIBBLES_PER_DWORD)
     {
         return 0;
     }
-    dwordIndex--;
-    nibbleIndex = NIBBLES_PER_DWORD;
 
-    PREFIX_ASSUME(pMap + dwordIndex != NULL);
-    dword = VolatileLoadWithoutBarrier<DWORD>(pMap + dwordIndex);
+    startPos = ((startPos >> LOG2_NIBBLES_PER_DWORD) << LOG2_NIBBLES_PER_DWORD) - 1;
+    dword = VolatileLoadWithoutBarrier<DWORD>(--pMap);
 
-    if(dword)
+    // We should not have read a value before the start of the map.
+    _ASSERTE(pMapStart <= pMap);
+
+    // If the second dword is not empty, we know it either has a nibble or a pointer
+    if (dword)
     {
         // #5.2 if DWORD is a pointer, then we can return
         if (IsPointer(dword))
@@ -4097,10 +4102,13 @@ TADDR EEJitManager::FindMethodCode(RangeSection * pRangeSection, PCODE currentPC
         }
 
         // #5.4 find preceeding nibble and return if found
-        if(FindPreviousNibble(dword, nibbleIndex, nibble))
+        tmp = dword;
+        while(!(tmp & NIBBLE_MASK))
         {
-            return base + NibbleToRelativeAddress(dwordIndex, nibbleIndex, nibble);
+            tmp >>= NIBBLE_SIZE;
+            startPos--;
         }
+        return base + POSOFF2ADDR(startPos, tmp & NIBBLE_MASK);
     }
 
     // If none of the above was found, return 0
@@ -4161,13 +4169,14 @@ void EEJitManager::NibbleMapSetUnlocked(HeapList * pHp, TADDR pCode, size_t code
     *(pMap+dwordIndex) = ((*(pMap+dwordIndex)) & mask) | value;
 
     size_t firstByteAfterMethod = delta + codeSize;
-    size_t nextDwordIndex = dwordIndex + 1;
-    while ((nextDwordIndex + 1) * BYTES_PER_DWORD <= firstByteAfterMethod)
+    DWORD encodedPointer = EncodePointer(delta);
+    dwordIndex++;
+    while ((dwordIndex + 1) * BYTES_PER_DWORD <= firstByteAfterMethod)
     {
         // All of these DWORDs should be empty
-        _ASSERTE(!(*(pMap+nextDwordIndex)));
-        *(pMap+nextDwordIndex) = EncodePointer(delta);
-        nextDwordIndex++;
+        _ASSERTE(!(*(pMap+dwordIndex)));
+        *(pMap+dwordIndex) = encodedPointer;
+        dwordIndex++;
     }
 }
 

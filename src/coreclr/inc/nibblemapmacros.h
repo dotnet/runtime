@@ -60,7 +60,7 @@
 #define POS2SHIFTCOUNT(x)       (DWORD)  (HIGHEST_NIBBLE_BIT - (((x) & NIBBLES_PER_DWORD_MASK) << LOG2_NIBBLE_SIZE))
 #define POS2MASK(x)             (DWORD) ~(HIGHEST_NIBBLE_MASK >> (((x) & NIBBLES_PER_DWORD_MASK) << LOG2_NIBBLE_SIZE))
 
-DWORD inline Pos2ShiftCount(size_t pos)
+inline DWORD Pos2ShiftCount(size_t pos)
 {
     return HIGHEST_NIBBLE_BIT - ((pos & NIBBLES_PER_DWORD_MASK) << LOG2_NIBBLE_SIZE);
 }
@@ -87,7 +87,7 @@ inline DWORD GetNibble(DWORD dword, size_t nibbleIndex)
 
 inline bool IsPointer(DWORD dword)
 {
-    return GetNibble(dword, NIBBLES_PER_DWORD - 1) > 8;
+    return (dword & NIBBLE_MASK) > 8;
 }
 
 inline DWORD EncodePointer(size_t relativePointer)
