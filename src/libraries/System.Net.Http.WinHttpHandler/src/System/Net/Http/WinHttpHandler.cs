@@ -1269,7 +1269,7 @@ namespace System.Net.Http
             SetRequestHandleClientCertificateOptions(state.RequestHandle, state.RequestMessage.RequestUri);
             SetRequestHandleCredentialsOptions(state);
             SetRequestHandleBufferingOptions(state.RequestHandle);
-            SetRequestHandleHttp2Options(state.RequestHandle, state.RequestMessage.Version);
+            SetRequestHandleHttpProtocolOptions(state.RequestHandle, state.RequestMessage.Version);
         }
 
         private static void SetRequestHandleProxyOptions(WinHttpRequestState state)
@@ -1509,20 +1509,21 @@ namespace System.Net.Http
             SetWinHttpOption(requestHandle, Interop.WinHttp.WINHTTP_OPTION_MAX_RESPONSE_DRAIN_SIZE, ref optionData);
         }
 
-        private void SetRequestHandleHttp2Options(SafeWinHttpHandle requestHandle, Version requestVersion)
+        private void SetRequestHandleHttpProtocolOptions(SafeWinHttpHandle requestHandle, Version requestVersion)
         {
             Debug.Assert(requestHandle != null);
-            uint optionData = (requestVersion == HttpVersion20) ? Interop.WinHttp.WINHTTP_PROTOCOL_FLAG_HTTP2 : 0;
+            uint optionData = (requestVersion == HttpVersion30) ? Interop.WinHttp.WINHTTP_PROTOCOL_FLAG_HTTP3 :
+                              (requestVersion == HttpVersion20) ? Interop.WinHttp.WINHTTP_PROTOCOL_FLAG_HTTP2 : 0;
             if (Interop.WinHttp.WinHttpSetOption(
                 requestHandle,
                 Interop.WinHttp.WINHTTP_OPTION_ENABLE_HTTP_PROTOCOL,
                 ref optionData))
             {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"HTTP/2 option supported, setting to {optionData}");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"HTTP/{requestVersion.Major} option supported, setting to {optionData}");
             }
             else
             {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "HTTP/2 option not supported");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"HTTP/{requestVersion.Major} option not supported");
             }
         }
 

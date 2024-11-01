@@ -357,4 +357,184 @@ namespace System.Net.Http.Functional.Tests
 
         public PlatformHandler_ResponseStream_Http2_Test(ITestOutputHelper output) : base(output) { }
     }
+
+#if NET
+#if !WINHTTPHANDLER_TEST // [ActiveIssue("https://github.com/dotnet/runtime/issues/33930")]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows10Version1607OrGreater))]
+    public sealed class PlatformHandlerTest_Cookies_Http3 : HttpClientHandlerTest_Cookies
+    {
+        protected override Version UseVersion => HttpVersion.Version30;
+
+        public PlatformHandlerTest_Cookies_Http3(ITestOutputHelper output) : base(output) { }
+    }
+#endif
+
+    public sealed class PlatformHandler_HttpClientHandler_Asynchrony_Http3_Test : HttpClientHandler_Asynchrony_Test
+    {
+        protected override Version UseVersion => HttpVersion.Version30;
+
+        public PlatformHandler_HttpClientHandler_Asynchrony_Http3_Test(ITestOutputHelper output) : base(output) { }
+    }
+
+    public sealed class PlatformHandler_HttpProtocol_Http3_Tests : HttpProtocolTests
+    {
+        protected override Version UseVersion => HttpVersion.Version30;
+
+        public PlatformHandler_HttpProtocol_Http3_Tests(ITestOutputHelper output) : base(output) { }
+    }
+
+    public sealed class PlatformHandler_HttpProtocolTests_Http3_Dribble : HttpProtocolTests_Dribble
+    {
+        protected override Version UseVersion => HttpVersion.Version30;
+
+        public PlatformHandler_HttpProtocolTests_Http3_Dribble(ITestOutputHelper output) : base(output) { }
+    }
+
+    public sealed class PlatformHandler_HttpClient_SelectedSites_Http3_Test : HttpClient_SelectedSites_Test
+    {
+        protected override Version UseVersion => HttpVersion.Version30;
+
+        public PlatformHandler_HttpClient_SelectedSites_Http3_Test(ITestOutputHelper output) : base(output) { }
+    }
+
+    public sealed class PlatformHandler_HttpClientEKU_Http3_Test : HttpClientEKUTest
+    {
+        protected override Version UseVersion => HttpVersion.Version30;
+
+        public PlatformHandler_HttpClientEKU_Http3_Test(ITestOutputHelper output) : base(output) { }
+    }
+
+    public sealed class PlatformHandler_HttpClientHandler_Decompression_Http3_Tests : HttpClientHandler_Decompression_Test
+    {
+        protected override Version UseVersion => HttpVersion.Version30;
+
+        public PlatformHandler_HttpClientHandler_Decompression_Http3_Tests(ITestOutputHelper output) : base(output) { }
+    }
+
+    public sealed class PlatformHandler_HttpClientHandler_DangerousAcceptAllCertificatesValidator_Http3_Test : HttpClientHandler_DangerousAcceptAllCertificatesValidator_Test
+    {
+        protected override Version UseVersion => HttpVersion.Version30;
+
+        public PlatformHandler_HttpClientHandler_DangerousAcceptAllCertificatesValidator_Http3_Test(ITestOutputHelper output) : base(output) { }
+    }
+
+    public sealed class PlatformHandler_HttpClientHandler_ClientCertificates_Http3_Test : HttpClientHandler_ClientCertificates_Test
+    {
+        protected override Version UseVersion => HttpVersion.Version30;
+
+        public PlatformHandler_HttpClientHandler_ClientCertificates_Http3_Test(ITestOutputHelper output) : base(output) { }
+    }
+
+    public sealed class PlatformHandler_HttpClientHandler_DefaultProxyCredentials_Http3_Test : HttpClientHandler_DefaultProxyCredentials_Test
+    {
+        protected override Version UseVersion => HttpVersion.Version30;
+
+        public PlatformHandler_HttpClientHandler_DefaultProxyCredentials_Http3_Test(ITestOutputHelper output) : base(output) { }
+    }
+
+    [SkipOnPlatform(TestPlatforms.Browser, "MaxConnectionsPerServer not supported on Browser")]
+    public sealed class PlatformHandler_HttpClientHandler_MaxConnectionsPerServer_Http3_Test : HttpClientHandler_MaxConnectionsPerServer_Test
+    {
+        protected override Version UseVersion => HttpVersion.Version30;
+
+        public PlatformHandler_HttpClientHandler_MaxConnectionsPerServer_Http3_Test(ITestOutputHelper output) : base(output) { }
+    }
+
+    public sealed class PlatformHandler_HttpClientHandler_ServerCertificates_Http3_Test : HttpClientHandler_ServerCertificates_Test
+    {
+        protected override Version UseVersion => HttpVersion.Version30;
+
+        public PlatformHandler_HttpClientHandler_ServerCertificates_Http3_Test(ITestOutputHelper output) : base(output)
+        {
+            AllowAllCertificates = false;
+        }
+    }
+
+    public sealed class PlatformHandler_PostScenario_Http3_Test : PostScenarioTest
+    {
+        protected override Version UseVersion => HttpVersion.Version30;
+
+        public PlatformHandler_PostScenario_Http3_Test(ITestOutputHelper output) : base(output) { }
+    }
+
+    public sealed class PlatformHandler_HttpClientHandler_SslProtocols_Http3_Test : HttpClientHandler_SslProtocols_Test
+    {
+        protected override Version UseVersion => HttpVersion.Version30;
+
+        public PlatformHandler_HttpClientHandler_SslProtocols_Http3_Test(ITestOutputHelper output) : base(output) { }
+    }
+
+    public sealed class PlatformHandler_HttpClientHandler_Proxy_Http3_Test : HttpClientHandler_Proxy_Test
+    {
+        protected override Version UseVersion => HttpVersion.Version30;
+
+        public PlatformHandler_HttpClientHandler_Proxy_Http3_Test(ITestOutputHelper output) : base(output) { }
+    }
+
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows10Version1607OrGreater))]
+    public sealed class PlatformHandler_HttpClientHandler_Http3_Test : HttpClientHandlerTest
+    {
+        protected override Version UseVersion => HttpVersion.Version30;
+
+        public PlatformHandler_HttpClientHandler_Http3_Test(ITestOutputHelper output) : base(output) { }
+    }
+
+    public sealed class PlatformHandlerTest_AutoRedirect_Http3 : HttpClientHandlerTest_AutoRedirect
+    {
+        protected override Version UseVersion => HttpVersion.Version30;
+
+        public PlatformHandlerTest_AutoRedirect_Http3(ITestOutputHelper output) : base(output) { }
+    }
+
+    public sealed class PlatformHandler_DefaultCredentials_Http3_Test : DefaultCredentialsTest
+    {
+        protected override Version UseVersion => HttpVersion.Version30;
+
+        public PlatformHandler_DefaultCredentials_Http3_Test(ITestOutputHelper output) : base(output) { }
+    }
+
+    public sealed class PlatformHandler_IdnaProtocol_Http3_Tests : IdnaProtocolTests
+    {
+        protected override Version UseVersion => HttpVersion.Version30;
+
+        public PlatformHandler_IdnaProtocol_Http3_Tests(ITestOutputHelper output) : base(output) { }
+        // WinHttp on Win7 does not support IDNA
+        protected override bool SupportsIdna => !PlatformDetection.IsWindows7;
+    }
+
+    public sealed class PlatformHandlerTest_Cookies_Http11_Http3 : HttpClientHandlerTest_Cookies_Http11
+    {
+        protected override Version UseVersion => HttpVersion.Version30;
+
+        public PlatformHandlerTest_Cookies_Http11_Http3(ITestOutputHelper output) : base(output) { }
+    }
+
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows10Version1607OrGreater))]
+    public sealed class PlatformHandler_HttpClientHandler_MaxResponseHeadersLength_Http3_Test : HttpClientHandler_MaxResponseHeadersLength_Test
+    {
+        protected override Version UseVersion => HttpVersion.Version30;
+
+        public PlatformHandler_HttpClientHandler_MaxResponseHeadersLength_Http3_Test(ITestOutputHelper output) : base(output) { }
+    }
+
+    public sealed class PlatformHandler_HttpClientHandler_Cancellation_Http3_Test : HttpClientHandler_Cancellation_Test
+    {
+        protected override Version UseVersion => HttpVersion.Version30;
+
+        public PlatformHandler_HttpClientHandler_Cancellation_Http3_Test(ITestOutputHelper output) : base(output) { }
+    }
+
+    public sealed class PlatformHandler_HttpClientHandler_Authentication_Http3_Test : HttpClientHandler_Authentication_Test
+    {
+        protected override Version UseVersion => HttpVersion.Version30;
+
+        public PlatformHandler_HttpClientHandler_Authentication_Http3_Test(ITestOutputHelper output) : base(output) { }
+    }
+    public sealed class PlatformHandler_ResponseStream_Http3_Test : ResponseStreamTest
+    {
+        protected override Version UseVersion => HttpVersion.Version30;
+
+        public PlatformHandler_ResponseStream_Http3_Test(ITestOutputHelper output) : base(output) { }
+    }
+#endif
 }
