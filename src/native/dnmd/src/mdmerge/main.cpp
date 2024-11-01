@@ -82,7 +82,7 @@ void merge(merge_config_t cfg)
     size_t save_size;
     md_write_to_buffer(handle.get(), nullptr, &save_size);
     malloc_span<uint8_t> out_buffer { (uint8_t*)malloc(save_size), save_size };
-    if (!md_write_to_buffer(handle.get(), out_buffer, &save_size))
+    if (!md_write_to_buffer(handle.get(), out_buffer.data(), &save_size))
     {
         std::fprintf(stderr, "Failed to save image.\n");
     }

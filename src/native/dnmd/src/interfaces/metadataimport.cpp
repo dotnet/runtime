@@ -1153,7 +1153,7 @@ HRESULT STDMETHODCALLTYPE MetadataImportRO::FindMethod(
             if (!md_get_column_value_as_blob(target, mdtMethodDef_Signature, &sig, &sigLen))
                 return CLDB_E_FILE_CORRUPT;
             if (sigLen != methodDefSig.size()
-                || ::memcmp(methodDefSig, sig, sigLen) != 0)
+                || ::memcmp(methodDefSig.data(), sig, sigLen) != 0)
             {
                 continue;
             }

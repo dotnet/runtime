@@ -150,7 +150,7 @@ namespace
         THROW_IF_FAILED(image->GetSaveSize(cssAccurate, &size));
 
         malloc_span<uint8_t> imageWithIndirectionTables{ (uint8_t*)malloc(size), size };
-        THROW_IF_FAILED(image->SaveToMemory(imageWithIndirectionTables, size));
+        THROW_IF_FAILED(image->SaveToMemory(imageWithIndirectionTables.data(), size));
 
         return imageWithIndirectionTables;
     }

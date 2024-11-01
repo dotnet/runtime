@@ -29,12 +29,12 @@ public:
         return _size;
     }
 
-    operator T* () noexcept
+    T* data() noexcept
     {
         return _ptr;
     }
 
-    operator T const* () const noexcept
+    T const* data() const noexcept
     {
         return _ptr;
     }
@@ -137,7 +137,7 @@ span<T> slice(span<T> b, size_t offset)
 {
     if (offset > b.size())
         throw std::out_of_range{ "Out of bounds access" };
-    return { b + offset, b.size() - offset };
+    return { b.data() + offset, b.size() - offset };
 }
 
 #endif // _SRC_INC_INTERNAL_SPAN_HPP_

@@ -113,7 +113,7 @@ int strcat_s(char* dest, rsize_t destsz, char const* src)
 
 bool pal::ComputeSha1Hash(span<uint8_t const> data, std::array<uint8_t, SHA1_HASH_SIZE>& hashDestination)
 {
-    minipal_sha1(data, data.size(), hashDestination.data(), SHA1_HASH_SIZE);
+    minipal_sha1(data.data(), data.size(), hashDestination.data(), SHA1_HASH_SIZE);
     return true;
 }
 

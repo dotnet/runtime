@@ -206,13 +206,13 @@ namespace
         if (publicKeyBlob.size() < sizeof(PublicKeyBlob))
             return CORSEC_E_INVALID_PUBLICKEY;
 
-        PublicKeyBlob const* publicKey = reinterpret_cast<PublicKeyBlob const*>((uint8_t const*)publicKeyBlob);
+        PublicKeyBlob const* publicKey = reinterpret_cast<PublicKeyBlob const*>(publicKeyBlob.data());
 
         if (publicKey->PublicKeyLength != publicKeyBlob.size() - sizeof(PublicKeyBlob))
             return CORSEC_E_INVALID_PUBLICKEY;
 
         if (publicKeyBlob.size() == sizeof(StrongNameKeys::EcmaPublicKey)
-            && std::memcmp(publicKeyBlob, StrongNameKeys::EcmaPublicKey, sizeof(StrongNameKeys::EcmaPublicKey)) == 0)
+            && std::memcmp(publicKeyBlob.data(), StrongNameKeys::EcmaPublicKey, sizeof(StrongNameKeys::EcmaPublicKey)) == 0)
         {
             return S_OK;
         }
@@ -685,14 +685,10 @@ namespace
         if (!md_set_column_value_as_utf8(assemblyRef, mdtAssemblyRef_Culture, assemblyCulture))
             return E_FAIL;
 
-        uint8_t const* hash = sourceAssemblyHash;
-        uint32_t hashLength = (uint32_t)sourceAssemblyHash.size();
-        if (!md_set_column_value_as_blob(assemblyRef, mdtAssemblyRef_HashValue, hash, hashLength))
+        if (!md_set_column_value_as_blob(assemblyRef, mdtAssemblyRef_HashValue, sourceAssemblyHash.data(), (uint32_t)sourceAssemblyHash.size()))
             return E_FAIL;
 
-        uint8_t const* publicKeyTokenBlob = publicKeyToken.data();
-        uint32_t publicKeyTokenLength = (uint32_t)publicKeyToken.size();
-        if (!md_set_column_value_as_blob(assemblyRef, mdtAssemblyRef_PublicKeyOrToken, publicKeyTokenBlob, publicKeyTokenLength))
+        if (!md_set_column_value_as_blob(assemblyRef, mdtAssemblyRef_PublicKeyOrToken, publicKeyToken.data(), (uint32_t)publicKeyToken.size()))
             return E_FAIL;
 
         *targetAssembly = assemblyRef;
@@ -1704,9 +1700,7 @@ HRESULT ImportReferenceToTypeDefOrRefOrSpec(
             if (!md_append_row(targetModule, mdtid_TypeSpec, &typeSpec))
                 return E_FAIL;
 
-            uint8_t const* importedSignatureData = importedSignature;
-            uint32_t importedSignatureLength = (uint32_t)importedSignature.size();
-            if (!md_set_column_value_as_blob(typeSpec, mdtTypeSpec_Signature, importedSignatureData, importedSignatureLength))
+            if (!md_set_column_value_as_blob(typeSpec, mdtTypeSpec_Signature, importedSignature.data(), (uint32_t)importedSignature.size()))
                 return E_FAIL;
 
             if (!md_cursor_to_token(typeSpec, importedToken))

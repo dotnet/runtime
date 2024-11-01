@@ -140,7 +140,7 @@ bool pal::ReadFile(pal::path path, malloc_span<uint8_t>& b)
     b = { (uint8_t*)std::malloc(size), size };
 
     DWORD bytesRead;
-    if (!ReadFile(file.get(), b, (DWORD)b.size(), &bytesRead, nullptr))
+    if (!::ReadFile(file.get(), b.data(), (DWORD)b.size(), &bytesRead, nullptr))
         return false;
 
     return bytesRead == b.size();

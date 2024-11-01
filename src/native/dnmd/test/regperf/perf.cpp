@@ -207,7 +207,7 @@ int MAIN_CALLCONV main(int argc, char** argv)
     }
 
     RETURN_IF_FAILED(PerfInitialize(
-        dataImage,
+        dataImage.data(),
         (uint32_t)dataImage.size()));
 
     benchmark::Initialize(&argc, argv);
