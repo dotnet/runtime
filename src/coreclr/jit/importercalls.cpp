@@ -130,6 +130,17 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
         // assume the worst-case.
         mflags = (calliSig.callConv & CORINFO_CALLCONV_HASTHIS) ? 0 : CORINFO_FLG_STATIC;
 
+        // TODO: Handle spilled function pointers
+        if (call->AsCall()->unmgdCallConv == CorInfoCallConvExtension::Managed &&
+            ((GenTree*)call->AsCall()->gtCallMethHnd)->OperIs(GT_FTN_ADDR))
+        {
+            pResolvedToken->hMethod = ((GenTree*)call->AsCall()->gtCallMethHnd)->AsFptrVal()->gtFptrMethod;
+            pResolvedToken->hClass  = info.compCompHnd->getMethodClass(pResolvedToken->hMethod);
+            eeGetCallInfo(pResolvedToken, nullptr, CORINFO_CALLINFO_LDFTN, callInfo);
+            call = nullptr;
+            goto REGULAR_IMPORT;
+        }
+
 #ifdef DEBUG
         if (verbose)
         {
@@ -142,6 +153,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
     }
     else // (opcode != CEE_CALLI)
     {
+    REGULAR_IMPORT:
         NamedIntrinsic ni = NI_Illegal;
 
         // Passing CORINFO_CALLINFO_ALLOWINSTPARAM indicates that this JIT is prepared to
