@@ -67,8 +67,8 @@ C_FUNC(\Name):
         adrp \HelperReg, C_FUNC(\Name)@GOTPAGE
         ldr  \HelperReg, [\HelperReg, C_FUNC(\Name)@GOTPAGEOFF]
 #else
-        adrp \HelperReg, C_FUNC(\Name)
-        add  \HelperReg, \HelperReg, :lo12:C_FUNC(\Name)
+        adrp \HelperReg, :got:C_FUNC(\Name)
+        ldr  \HelperReg, [\HelperReg, :got_lo12:C_FUNC(\Name)]
 #endif
 .endm
 
