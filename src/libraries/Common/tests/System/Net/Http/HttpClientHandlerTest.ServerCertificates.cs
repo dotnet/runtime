@@ -40,10 +40,10 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public void Ctor_ExpectedDefaultValues()
         {
-            if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
+            /*if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
             {
                 return;
-            }
+            }*/
 
             using (HttpClientHandler handler = CreateHttpClientHandler())
             {
@@ -55,10 +55,10 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public void ServerCertificateCustomValidationCallback_SetGet_Roundtrips()
         {
-            if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
+            /*if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
             {
                 return;
-            }
+            }*/
 
             using (HttpClientHandler handler = CreateHttpClientHandler())
             {
