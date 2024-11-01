@@ -5759,6 +5759,7 @@ check_get_virtual_method_assumptions (MonoClass* klass, MonoMethod* method)
 static MonoMethod*
 try_prepare_objaddr_callvirt_optimization (MonoCompile *cfg, guchar *next_ip, guchar* end, MonoMethod *method, MonoGenericContext* generic_context, MonoType *param_type)
 {
+	g_assert(param_type);
 	MonoClass *klass = mono_class_from_mono_type_internal (param_type);
 
 	// TODO: relax the _is_def requirement?
