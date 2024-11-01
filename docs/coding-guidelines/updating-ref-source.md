@@ -3,7 +3,7 @@ This document provides the steps you need to take to update the reference assemb
 ## For most assemblies within libraries
 
 1. Implement the API in the source assembly and [build it](../workflow/building/libraries/README.md#building-individual-libraries). Note that when adding new public types, this might fail with a `TypeMustExist` error. The deadlock can be worked around by disabling ApiCompat's assembly validation: `dotnet build /p:ApiCompatValidateAssemblies=false`.
-2. Run the following command (from the src directory) `dotnet msbuild /t:GenerateReferenceAssemblySource` to update the reference assembly**.
+2. Update the reference assembly located in the ref directory. You can do this manually for each API mismatch or use the GenAPI tool. Note that currently this tool will likely generate lots of mismatches (see https://github.com/dotnet/runtime/issues/100843) so you'll want to do a combination of both. Run the following command (from the src directory) `dotnet msbuild /t:GenerateReferenceAssemblySource` to run the GenAPI tool**.
 3. Navigate to the ref directory and build the reference assembly.
 4. Add, build, and run tests.
 
