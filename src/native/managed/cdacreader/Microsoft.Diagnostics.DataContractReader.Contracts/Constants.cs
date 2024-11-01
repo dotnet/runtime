@@ -38,5 +38,9 @@ internal static class Constants
 
         internal const string MethodDescTokenRemainderBitCount = nameof(MethodDescTokenRemainderBitCount);
         internal const string DirectorySeparator = nameof(DirectorySeparator);
+
+        internal const string ExecutionManagerCodeRangeMapAddress = nameof(ExecutionManagerCodeRangeMapAddress);
+        internal const string StubCodeBlockLast = nameof(StubCodeBlockLast);
+        internal const string PlatformMetadata = nameof(PlatformMetadata);
     }
 }

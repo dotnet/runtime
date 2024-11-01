@@ -127,6 +127,19 @@ switch (testCase) {
         };
         dotnet.withConfig({ maxParallelDownloads: maxParallelDownloads });
         break;
+    case "AllocateLargeHeapThenInterop":
+        dotnet.withEnvironmentVariable("MONO_LOG_LEVEL", "debug")
+        dotnet.withEnvironmentVariable("MONO_LOG_MASK", "gc")
+        dotnet.withModuleConfig({
+            preRun: (Module) => {
+                // wasting 2GB of memory
+                for (let i = 0; i < 210; i++) {
+                    testOutput(`wasting 10m ${Module._malloc(10 * 1024 * 1024)}`);
+                }
+                testOutput(`WASM ${Module.HEAP32.byteLength} bytes.`);
+            }
+        })
+        break;
     case "ProfilerTest":
         dotnet.withConfig({
             logProfilerOptions: {

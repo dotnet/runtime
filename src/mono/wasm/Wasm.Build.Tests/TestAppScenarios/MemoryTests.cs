@@ -31,7 +31,7 @@ public class MemoryTests : WasmTemplateTestsBase
         string config = "Release";
         ProjectInfo info = CopyTestAsset(config, false, "WasmBasicTestApp", "MemoryTests", "App");
         bool isPublish = false;
-        string extraArgs = BuildTestBase.IsUsingWorkloads ? "-p:EmccMaximumHeapSize=4294901760" : "-p:EmccMaximumHeapSize=4294901760";
+        string extraArgs = "-p:EmccMaximumHeapSize=4294901760";
         BuildTemplateProject(info,
             new BuildProjectOptions(
                 info.Configuration,

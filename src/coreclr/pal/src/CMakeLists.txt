@@ -134,6 +134,7 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "GNU" AND (CLR_CMAKE_HOST_ARCH_AMD64 OR CLR_CM
 endif()
 
 set(SOURCES
+  com/guid.cpp
   cruntime/wchar.cpp
   debug/debug.cpp
   exception/seh.cpp
@@ -149,8 +150,6 @@ set(SOURCES
   init/sxs.cpp
   loader/module.cpp
   locale/unicode.cpp
-  ${CLR_SRC_NATIVE_DIR}/minipal/utf8.c
-  ${CLR_SRC_NATIVE_DIR}/minipal/unicodedata.c
   map/common.cpp
   map/map.cpp
   map/virtual.cpp
@@ -160,7 +159,6 @@ set(SOURCES
   misc/error.cpp
   misc/errorstrings.cpp
   misc/fmtmessage.cpp
-  misc/miscpalapi.cpp
   misc/perfjitdump.cpp
   misc/strutil.cpp
   misc/sysinfo.cpp
@@ -203,6 +201,12 @@ set(SOURCES
   thread/process.cpp
   thread/thread.cpp
   thread/threadsusp.cpp
+)
+
+set_source_files_properties(
+    com/guid.cpp
+    PROPERTIES
+    INCLUDE_DIRECTORIES ${CMAKE_CURRENT_SOURCE_DIR}/../inc/rt
 )
 
 if(NOT CLR_CMAKE_USE_SYSTEM_LIBUNWIND)
@@ -251,9 +255,6 @@ endif(CLR_CMAKE_TARGET_OSX)
 if(CLR_CMAKE_TARGET_LINUX)
   add_library(tracepointprovider OBJECT misc/tracepointprovider.cpp)
 endif(CLR_CMAKE_TARGET_LINUX)
-
-add_library(minipal_debugger STATIC ${CLR_SRC_NATIVE_DIR}/minipal/debugger.c)
-target_link_libraries(coreclrpal PRIVATE minipal_debugger)
 
 if(CLR_CMAKE_TARGET_OSX)
   find_library(COREFOUNDATION CoreFoundation)
@@ -340,6 +341,9 @@ if(CLR_CMAKE_TARGET_SUNOS)
     rt
   )
 endif(CLR_CMAKE_TARGET_SUNOS)
+
+target_link_libraries(coreclrpal
+  PRIVATE minipal)
 
 if(FEATURE_EVENT_TRACE)
   add_subdirectory(eventprovider)

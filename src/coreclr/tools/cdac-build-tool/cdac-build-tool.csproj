@@ -14,7 +14,6 @@
     <IsShipping>false</IsShipping> <!-- This tool is an implementation detail of the build process, it does not ship -->
     <Description>.NET runtime data contract build tool</Description>
     <RootNamespace>Microsoft.DotNet.Diagnostics.DataContract</RootNamespace>
-    <RollForward>Major</RollForward>
   </PropertyGroup>
 
   <ItemGroup>

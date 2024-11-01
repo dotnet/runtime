@@ -34,10 +34,12 @@ ModuleHandle GetModuleHandle(TargetPointer module);
 TargetPointer GetAssembly(ModuleHandle handle);
 ModuleFlags GetFlags(ModuleHandle handle);
 string GetPath(ModuleHandle handle);
+string GetFileName(ModuleHandle handle);
 TargetPointer GetLoaderAllocator(ModuleHandle handle);
 TargetPointer GetThunkHeap(ModuleHandle handle);
 TargetPointer GetILBase(ModuleHandle handle);
 ModuleLookupTables GetLookupTables(ModuleHandle handle);
+TargetPointer GetModuleLookupMapElement(TargetPointer table, uint token, out TargetNUInt flags);
 ```
 
 ## Version 1
@@ -51,6 +53,7 @@ Data descriptors used:
 | `Module` | `LoaderAllocator` | LoaderAllocator of the Module |
 | `Module` | `ThunkHeap` | Pointer to the thunk heap |
 | `Module` | `Path` | Path of the Module (UTF-16, null-terminated) |
+| `Module` | `FileName` | File name of the Module (UTF-16, null-terminated) |
 | `Module` | `FieldDefToDescMap` | Mapping table |
 | `Module` | `ManifestModuleReferencesMap` | Mapping table |
 | `Module` | `MemberRefToDescMap` | Mapping table |
@@ -58,6 +61,9 @@ Data descriptors used:
 | `Module` | `TypeDefToMethodTableMap` | Mapping table |
 | `Module` | `TypeRefToMethodTableMap` | Mapping table |
 | `ModuleLookupMap` | `TableData` | Start of the mapping table's data |
+| `ModuleLookupMap` | `SupportedFlagsMask` | Mask for flag bits on lookup map entries |
+| `ModuleLookupMap` | `Count` | Number of TargetPointer sized entries in this section of the map |
+| `ModuleLookupMap` | `Next` | Pointer to next ModuleLookupMap segment for this map
 
 ``` csharp
 ModuleHandle GetModuleHandle(TargetPointer modulePointer)
@@ -80,6 +86,13 @@ string GetPath(ModuleHandle handle)
     TargetPointer pathStart = target.ReadPointer(handle.Address + /* Module::Path offset */);
     char[] path = // Read<char> from target starting at pathStart until null terminator
     return new string(path);
+}
+
+string GetFileName(ModuleHandle handle)
+{
+    TargetPointer fileNameStart = target.ReadPointer(handle.Address + /* Module::FileName offset */);
+    char[] fileName = // Read<char> from target starting at fileNameStart until null terminator
+    return new string(fileName);
 }
 
 TargetPointer GetLoaderAllocator(ModuleHandle handle)
@@ -108,5 +121,33 @@ ModuleLookupTables GetLookupTables(ModuleHandle handle)
         TypeRefToMethodTableMap: target.ReadPointer(handle.Address + /* Module::TypeRefToMethodTableMap */),
         MethodDefToILCodeVersioningState: target.ReadPointer(handle.Address + /*
         Module::MethodDefToILCodeVersioningState */));
+}
+
+TargetPointer GetModuleLookupMapElement(TargetPointer table, uint token, out TargetNUInt flags);
+{
+    uint rid = /* get row id from token*/ (token);
+    flags = new TargetNUInt(0);
+    if (table == TargetPointer.Null)
+        return TargetPointer.Null;
+    uint index = rid;
+    // have to read lookupMap an extra time upfront because only the first map
+    // has valid supportedFlagsMask
+    TargetNUInt supportedFlagsMask = _target.ReadNUInt(table + /* ModuleLookupMap::SupportedFlagsMask */);
+    do
+    {
+        if (index < _target.Read<uint>(table + /*ModuleLookupMap::Count*/))
+        {
+            TargetPointer entryAddress = _target.ReadPointer(lookupMap + /*ModuleLookupMap::TableData*/) + (ulong)(index * _target.PointerSize);
+            TargetPointer rawValue = _target.ReadPointer(entryAddress);
+            flags = rawValue & supportedFlagsMask;
+            return rawValue & ~(supportedFlagsMask.Value);
+        }
+        else
+        {
+            table = _target.ReadPointer(lookupMap + /*ModuleLookupMap::Next*/);
+            index -= _target.Read<uint>(lookupMap + /*ModuleLookupMap::Count*/);
+        }
+    } while (table != TargetPointer.Null);
+    return TargetPointer.Null;
 }
 ```
