@@ -430,6 +430,30 @@ namespace System.Threading
             get;
         }
 
+        private static class DirectOnThreadLocalData
+        {
+            // Special Thread Static variable which is always allocated at the address of the Thread variable in the ThreadLocalData of the current thread
+            [ThreadStatic]
+            public static IntPtr pNativeThread;
+        }
+
+        /// <summary>
+        /// Get the ThreadStaticBase used for this threads TLS data. This ends up being a pointer to the pNativeThread field on the ThreadLocalData,
+        /// which is at a well known offset from the start of the ThreadLocalData
+        /// </summary>
+        ///
+        /// <remarks>
+        /// We use BypassReadyToRunAttribute to ensure that this method is not compiled using ReadyToRun. This avoids an issue where we might
+        /// fail to use the JIT_GetNonGCThreadStaticBaseOptimized2 JIT helpers to access the field, which would result in a stack overflow, as accessing
+        /// this field would recursively call this method.
+        /// </remarks>
+        [System.Runtime.BypassReadyToRunAttribute]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static unsafe StaticsHelpers.ThreadLocalData* GetThreadStaticsBase()
+        {
+            return (StaticsHelpers.ThreadLocalData*)(((byte*)Unsafe.AsPointer(ref DirectOnThreadLocalData.pNativeThread)) - sizeof(StaticsHelpers.ThreadLocalData));
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void ResetFinalizerThread()
         {

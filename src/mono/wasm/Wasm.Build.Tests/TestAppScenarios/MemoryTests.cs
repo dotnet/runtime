@@ -30,7 +30,7 @@ public class MemoryTests : AppTestBase
     {
         string config = "Release";
         CopyTestAsset("WasmBasicTestApp", "MemoryTests", "App");
-        string extraArgs = BuildTestBase.IsUsingWorkloads ? "-p:EmccMaximumHeapSize=4294901760" : "-p:EmccMaximumHeapSize=4294901760";
+        string extraArgs = "-p:EmccMaximumHeapSize=4294901760";
         BuildProject(config, assertAppBundle: false, extraArgs: extraArgs, expectSuccess: BuildTestBase.IsUsingWorkloads);
 
         if (BuildTestBase.IsUsingWorkloads)
