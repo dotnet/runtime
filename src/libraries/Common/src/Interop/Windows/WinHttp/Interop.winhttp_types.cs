@@ -159,6 +159,7 @@ internal static partial class Interop
         public const uint WINHTTP_OPTION_ENABLE_HTTP_PROTOCOL = 133;
         public const uint WINHTTP_OPTION_HTTP_PROTOCOL_USED = 134;
         public const uint WINHTTP_PROTOCOL_FLAG_HTTP2 = 0x1;
+        public const uint WINHTTP_PROTOCOL_FLAG_HTTP3 = 0x2;
         public const uint WINHTTP_HTTP2_PLUS_CLIENT_CERT_FLAG = 0x1;
         public const uint WINHTTP_OPTION_DISABLE_STREAM_QUEUE = 139;
 
