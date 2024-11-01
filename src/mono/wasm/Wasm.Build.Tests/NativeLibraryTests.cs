@@ -29,8 +29,8 @@ namespace Wasm.Build.Tests
                 aot,
                 "AppUsingNativeLib-a",
                 extraProperties: "<WasmBuildNative>true</WasmBuildNative>",
-                extraItems: "<NativeFileReference Include=\"native-lib.o\" />");            
-            
+                extraItems: "<NativeFileReference Include=\"native-lib.o\" />");
+
             Utils.DirectoryCopy(Path.Combine(BuildEnvironment.TestAssetsPath, "AppUsingNativeLib"), _projectDir!, overwrite: true);
             File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "native-libs", "native-lib.o"), Path.Combine(_projectDir!, "native-lib.o"));
             UpdateBrowserMainJs();
@@ -62,7 +62,7 @@ namespace Wasm.Build.Tests
                                 <WasmFilesToIncludeInFileSystem Include=""{Path.Combine(BuildEnvironment.TestAssetsPath, "mono.png")}"" />
                             ";
             ProjectInfo info = CreateWasmTemplateProject(Template.WasmBrowser, config, aot, prefix, extraItems: extraItems);
-            ReplaceFile("Program.cs", Path.Combine(BuildEnvironment.TestAssetsPath, "Wasm.Buid.Tests.Programs", "SkiaSharp.cs"));
+            ReplaceFile("Program.cs", Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "SkiaSharp.cs"));
             UpdateBrowserMainJs();
 
             bool isPublish = true;
@@ -74,7 +74,7 @@ namespace Wasm.Build.Tests
                             ExpectedFileType: GetExpectedFileType(info, isPublish: isPublish),
                             IsPublish: isPublish
                         ));
-            
+
             RunOptions runOptions = new(info.Configuration, ExtraArgs: "mono.png");
             RunResult output = await RunForPublishWithWebServer(new(config, ExpectedExitCode: 0));
             Assert.Contains(output.TestOutput, m => m.Contains("Size: 26462 Height: 599, Width: 499"));
@@ -86,8 +86,8 @@ namespace Wasm.Build.Tests
         public async Task ProjectUsingBrowserNativeCrypto(string config, bool aot)
         {
             ProjectInfo info = CreateWasmTemplateProject(Template.WasmBrowser, config, aot, "AppUsingBrowserNativeCrypto");
-            
-            ReplaceFile("Program.cs", Path.Combine(BuildEnvironment.TestAssetsPath, "Wasm.Buid.Tests.Programs", "NativeCrypto.cs"));
+
+            ReplaceFile("Program.cs", Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "NativeCrypto.cs"));
             UpdateBrowserMainJs();
 
             bool isPublish = true;
@@ -119,8 +119,8 @@ namespace Wasm.Build.Tests
                 config,
                 aot,
                 "AppUsingNativeLib-a",
-                extraItems: "<NativeLibrary Include=\"native-lib.o\" />\n<NativeLibrary Include=\"DoesNotExist.o\" />");            
-            
+                extraItems: "<NativeLibrary Include=\"native-lib.o\" />\n<NativeLibrary Include=\"DoesNotExist.o\" />");
+
             Utils.DirectoryCopy(Path.Combine(BuildEnvironment.TestAssetsPath, "AppUsingNativeLib"), _projectDir!, overwrite: true);
             File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "native-libs", "native-lib.o"), Path.Combine(_projectDir!, "native-lib.o"));
             UpdateBrowserMainJs();

@@ -957,7 +957,7 @@ namespace Wasm.Build.Tests
         //                                 new BuildProjectOptions(
         //                                     InitProject: () =>
         //                                     {
-        //                                         File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "Wasm.Buid.Tests.Programs", "UnmanagedCallback.cs"), Path.Combine(_projectDir!, "Program.cs"));
+        //                                         File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "UnmanagedCallback.cs"), Path.Combine(_projectDir!, "Program.cs"));
         //                                         File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "native-libs", "local.c"), Path.Combine(_projectDir!, "local.c"));
         //                                     },
         //                                     Publish: true,

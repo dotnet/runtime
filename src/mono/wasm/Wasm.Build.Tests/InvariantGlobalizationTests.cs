@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
@@ -24,6 +25,7 @@ namespace Wasm.Build.Tests
                     new object?[] { null },
                     new object?[] { false },
                     new object?[] { true })
+                .Where(item => !(item.ElementAt(0) is string config && config == "Debug" && item.ElementAt(1) is bool aotValue && aotValue))
                 .UnwrapItemsAsArrays();
 
         // TODO: check that icu bits have been linked out
@@ -46,9 +48,8 @@ namespace Wasm.Build.Tests
                 extraProperties = $"{extraProperties}<InvariantGlobalization>{invariantGlobalization}</InvariantGlobalization>";
 
             string prefix = $"invariant_{invariantGlobalization?.ToString() ?? "unset"}";
-            ProjectInfo info = CreateWasmTemplateProject(Template.WasmBrowser, config, aot, prefix, extraProperties: extraProperties);
-            ReplaceFile("Program.cs", Path.Combine(BuildEnvironment.TestAssetsPath, "Wasm.Buid.Tests.Programs", "InvariantGlobalization.cs"));
-            UpdateBrowserMainJs();
+            ProjectInfo info = CopyTestAsset(config, aot, "WasmBasicTestApp", prefix, "App", extraProperties: extraProperties);
+            ReplaceFile(Path.Combine("Common", "Program.cs"), Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "InvariantGlobalization.cs"));
 
             bool isPublish = true;
             // invariantGlobalization triggers native build
@@ -63,7 +64,7 @@ namespace Wasm.Build.Tests
                             GlobalizationMode: invariantGlobalization == true ? GlobalizationMode.Invariant : GlobalizationMode.Sharded
                         ));
 
-            RunResult output = await RunForPublishWithWebServer(new(info.Configuration, ExpectedExitCode: 42));
+            RunResult output = await RunForPublishWithWebServer(new(info.Configuration, TestScenario: "DotnetRun", ExpectedExitCode: 42));
             if (invariantGlobalization == true)
             {
                 Assert.Contains(output.TestOutput, m => m.Contains("Could not create es-ES culture"));

@@ -47,7 +47,7 @@ namespace Wasm.Build.Tests
                                 string[] args)
         {
             ProjectInfo info = CreateWasmTemplateProject(Template.WasmBrowser, config, aot, projectNamePrefix);
-            ReplaceFile("Program.cs", Path.Combine(BuildEnvironment.TestAssetsPath, "Wasm.Buid.Tests.Programs", projectContentsName));
+            ReplaceFile("Program.cs", Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", projectContentsName));
             UpdateBrowserMainJs();
             string mainJsPath = Path.Combine(_projectDir!, "wwwroot", "main.js");
             UpdateFile(
