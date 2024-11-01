@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Runtime.CompilerServices;
 
 namespace System.Threading.RateLimiting
 {
@@ -10,7 +9,6 @@ namespace System.Threading.RateLimiting
     {
         internal static readonly double TickFrequency = (double)TimeSpan.TicksPerSecond / Stopwatch.Frequency;
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static TimeSpan GetElapsedTime(long startTimestamp)
 #if NET
             => Stopwatch.GetElapsedTime(startTimestamp);
