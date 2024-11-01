@@ -140,8 +140,8 @@ namespace Wasm.Build.Tests
             params string[] extraArgs)
         {
             string buildType = buildOptions.IsPublish ? "publish" : "build";
-            string logFileSuffix = buildOptions.Label == null ? string.Empty : buildOptions.Label.Replace(' ', '_') + "-";
-            string logFilePath = Path.Combine(s_buildEnv.LogRootPath, buildOptions.Id, $"{buildOptions.Id}-{logFileSuffix}{buildType}.binlog");
+            string logFileSuffix = string.IsNullOrEmpty(buildOptions.Label) ? string.Empty : buildOptions.Label.Replace(' ', '_') + "-";
+            string logFilePath = Path.Combine(_logPath, $"{buildOptions.Id}-{logFileSuffix}{buildType}.binlog");
 
             _testOutput.WriteLine($"{Environment.NewLine}** -------- {buildType} -------- **{Environment.NewLine}");
             _testOutput.WriteLine($"Binlog path: {logFilePath}");
