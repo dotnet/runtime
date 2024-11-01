@@ -1374,6 +1374,10 @@ private:
                 }
             };
 
+            Statement* firstChainStmt    = nullptr;
+            Statement* chainableCallStmt = nullptr;
+            Statement* lastChainStmt     = nullptr;
+
             for (Statement* const nextStmt : remainderBlock->Statements())
             {
                 JITDUMP(" Scouting " FMT_STMT "\n", nextStmt->GetID());
@@ -1387,16 +1391,44 @@ private:
                 {
                     GenTreeCall* const call = root->AsCall();
 
-                    if (call->IsGuardedDevirtualizationCandidate() &&
-                        (call->GetGDVCandidateInfo(0)->likelihood >= gdvChainLikelihood))
+                    if (call->IsGuardedDevirtualizationCandidate())
                     {
-                        JITDUMP("GDV call at [%06u] has likelihood %u >= %u; chaining (%u stmts, %u nodes to dup).\n",
+                        if (call->GetGDVCandidateInfo(0)->likelihood >= gdvChainLikelihood)
+                        {
+                            // A chainable call.
+                            //
+                            // If we already found a chainable call, we won't include this new one.
+                            // Instead it will get chained to the previous one, once that's expanded.
+                            //
+                            if (chainableCallStmt != nullptr)
+                            {
+                                JITDUMP("  reached second chainable call [%06u], bailing out\n",
+                                        compiler->dspTreeID(call));
+                                break;
+                            }
+
+                            JITDUMP(
+                                "GDV call at [%06u] has likelihood %u >= %u; chaining (%u stmts, %u nodes to dup).\n",
                                 compiler->dspTreeID(call), call->GetGDVCandidateInfo(0)->likelihood, gdvChainLikelihood,
                                 chainStatementDup, chainNodeDup);
 
-                        call->gtCallMoreFlags |= GTF_CALL_M_GUARDED_DEVIRT_CHAIN;
-                        break;
+                            call->gtCallMoreFlags |= GTF_CALL_M_GUARDED_DEVIRT_CHAIN;
+                            chainableCallStmt = nextStmt;
+
+                            // Todo: allow growing the chain past this point.
+                            //
+                            lastChainStmt = nextStmt;
+                        }
                     }
+
+                    // If we hit a non-chainable call we need to bail out. If we haven't yet found a chainable call
+                    // and keep looking and find one, that call will not chain like we expect.
+                    //
+                    // And if we have found a chainable call we will just use the chain we've already built.
+                    //
+                    JITDUMP("GDV call at [%06u] has likelihood %u < %u; NOT chaining%s\n", compiler->dspTreeID(call),
+                            call->GetGDVCandidateInfo(0)->likelihood, gdvChainLikelihood,
+                            chainableCallStmt == nullptr ? "" : " and ending current chain before this stmt");
                 }
 
                 // Stop searching if we've accumulated too much dup cost.
@@ -1415,7 +1447,7 @@ private:
 
                 if (clonabilityVisitor.m_unclonableNode != nullptr)
                 {
-                    JITDUMP("  node [%06u] can't be cloned\n",
+                    JITDUMP("  node [%06u] can't be cloned, bailing out\n",
                             compiler->dspTreeID(clonabilityVisitor.m_unclonableNode));
                     break;
                 }
@@ -1424,6 +1456,28 @@ private:
                 //
                 chainStatementDup++;
                 chainNodeDup += clonabilityVisitor.m_nodeCount;
+
+                if (firstChainStmt == nullptr)
+                {
+                    firstChainStmt = nextStmt;
+                }
+            }
+
+            // Currently we won't actually chain past currentCallStmt.
+            //
+            // If we think there is benefit to a longer chain (say a PGO'd cast) we need
+            // to scout for it above and extend the chain when we find it.
+            //
+            // And if we do find such opportunities, we need to modify how the chaining
+            // is done, so the statements after the call get properly cloned.
+            //
+            if (firstChainStmt != nullptr)
+            {
+                assert(chainableCallStmt == lastChainStmt);
+
+                JITDUMP("Will clone from " FMT_STMT " to " FMT_STMT " when [%06u] is processed\n",
+                        firstChainStmt->GetID(), lastChainStmt->GetID(),
+                        compiler->dspTreeID(chainableCallStmt->GetRootNode()));
             }
         }
 
