@@ -3,10 +3,6 @@
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppPrevious);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
     <EnableDefaultItems>true</EnableDefaultItems>
-    <!-- Disabling baseline validation since this is a brand new package.
-       Once this package has shipped a stable version, the following line
-       should be removed in order to re-enable validation. -->
-    <DisablePackageBaselineValidation>true</DisablePackageBaselineValidation>
     <IsPackable>true</IsPackable>
     <PackageDescription>This package includes the default implementation of IMeterFactory and additional extension methods to easily register it with the Dependency Injection framework.</PackageDescription>
     <!-- TODO: Add package README file: https://github.com/dotnet/runtime/issues/99358 -->

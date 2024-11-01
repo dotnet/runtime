@@ -1467,7 +1467,7 @@ mono_method_has_unmanaged_callers_only_attribute (MonoMethod *method);
 
 typedef struct _MonoVarianceSearchTableEntry {
     MonoClass *klass;
-    guint16 offset;
+    int offset;
 } MonoVarianceSearchTableEntry;
 
 MonoVarianceSearchTableEntry *

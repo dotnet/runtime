@@ -77,7 +77,7 @@ namespace System.IO.Compression
             _outstandingWriteStream = null;
 
             _storedEntryNameBytes = cd.Filename;
-            _storedEntryName = (_archive.EntryNameAndCommentEncoding ?? Encoding.UTF8).GetString(_storedEntryNameBytes);
+            _storedEntryName = DecodeEntryString(_storedEntryNameBytes);
             DetectEntryNameVersion();
 
             _lhUnknownExtraFields = null;
@@ -200,7 +200,7 @@ namespace System.IO.Compression
         [AllowNull]
         public string Comment
         {
-            get => (_archive.EntryNameAndCommentEncoding ?? Encoding.UTF8).GetString(_fileComment);
+            get => DecodeEntryString(_fileComment);
             set
             {
                 _fileComment = ZipHelper.GetEncodedTruncatedBytesFromString(value, _archive.EntryNameAndCommentEncoding, ushort.MaxValue, out bool isUTF8);
@@ -350,6 +350,18 @@ namespace System.IO.Compression
         public override string ToString()
         {
             return FullName;
+        }
+
+        private string DecodeEntryString(byte[] entryStringBytes)
+        {
+            Debug.Assert(entryStringBytes != null);
+
+            Encoding readEntryStringEncoding =
+                (_generalPurposeBitFlag & BitFlagValues.UnicodeFileNameAndComment) == BitFlagValues.UnicodeFileNameAndComment
+                ? Encoding.UTF8
+                : _archive?.EntryNameAndCommentEncoding ?? Encoding.UTF8;
+
+            return readEntryStringEncoding.GetString(entryStringBytes);
         }
 
         // Only allow opening ZipArchives with large ZipArchiveEntries in update mode when running in a 64-bit process.

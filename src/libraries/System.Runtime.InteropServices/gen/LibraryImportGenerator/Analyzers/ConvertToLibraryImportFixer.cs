@@ -68,6 +68,11 @@ namespace Microsoft.Interop.Analyzers
             return optionsBuilder.ToImmutable();
         }
 
+        protected override ImmutableDictionary<string, Option> CombineOptions(ImmutableDictionary<string, Option> fixAllOptions, ImmutableDictionary<string, Option> diagnosticOptions)
+        {
+            return fixAllOptions;
+        }
+
         protected override IEnumerable<ConvertToSourceGeneratedInteropFix> CreateAllFixesForDiagnosticOptions(SyntaxNode node, ImmutableDictionary<string, Option> options)
         {
             bool warnForAdditionalWork = options.TryGetValue(Option.MayRequireAdditionalWork, out Option mayRequireAdditionalWork) && mayRequireAdditionalWork is Option.Bool(true);

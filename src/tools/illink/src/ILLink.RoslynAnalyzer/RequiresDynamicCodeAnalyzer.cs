@@ -34,6 +34,8 @@ namespace ILLink.RoslynAnalyzer
 
 		private protected override DiagnosticDescriptor RequiresDiagnosticRule => s_requiresDynamicCodeRule;
 
+		private protected override DiagnosticId RequiresDiagnosticId => DiagnosticId.RequiresDynamicCode;
+
 		private protected override DiagnosticDescriptor RequiresAttributeMismatch => s_requiresDynamicCodeAttributeMismatch;
 
 		private protected override DiagnosticDescriptor RequiresOnStaticCtor => s_requiresDynamicCodeOnStaticCtor;

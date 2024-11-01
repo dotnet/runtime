@@ -50,6 +50,7 @@ set(VM_SOURCES_DAC_AND_WKS_COMMON
     bundle.cpp
     castcache.cpp
     callcounting.cpp
+    cdacplatformmetadata.cpp
     ceeload.cpp
     class.cpp
     classhash.cpp
@@ -345,7 +346,6 @@ set(VM_SOURCES_WKS
     nativeeventsource.cpp
     nativelibrary.cpp
     nativelibrarynative.cpp
-    objectlist.cpp
     olevariant.cpp
     pendingload.cpp
     pinvokeoverride.cpp
@@ -391,7 +391,7 @@ set(VM_HEADERS_WKS
     callhelpers.h
     callsiteinspect.h
     callconvbuilder.hpp
-    cdacoffsets.h
+    cdacdata.h
     ceemain.h
     clrconfignative.h
     clrex.h
@@ -444,7 +444,6 @@ set(VM_HEADERS_WKS
     multicorejit.h
     multicorejitimpl.h
     nativeeventsource.h
-    objectlist.h
     olevariant.h
     pendingload.h
     profdetach.h
@@ -579,7 +578,6 @@ if(CLR_CMAKE_TARGET_WIN32)
         comtoclrcall.cpp
         dispatchinfo.cpp
         dispparammarshaler.cpp
-        mngstdinterfaces.cpp
         olecontexthelpers.cpp
         runtimecallablewrapper.cpp
         stdinterfaces.cpp
@@ -595,7 +593,6 @@ if(CLR_CMAKE_TARGET_WIN32)
         comtoclrcall.h
         dispatchinfo.h
         dispparammarshaler.h
-        mngstdinterfaces.h
         olecontexthelpers.h
         runtimecallablewrapper.h
         stdinterfaces.h
@@ -842,6 +839,7 @@ elseif(CLR_CMAKE_TARGET_ARCH_LOONGARCH64)
 
     set(VM_SOURCES_WKS_ARCH
         ${ARCH_SOURCES_DIR}/profiler.cpp
+        ${ARCH_SOURCES_DIR}/singlestepper.cpp
         gcinfodecoder.cpp
     )
 elseif(CLR_CMAKE_TARGET_ARCH_RISCV64)

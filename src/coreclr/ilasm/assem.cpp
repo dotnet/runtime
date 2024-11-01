@@ -160,6 +160,7 @@ Assembler::Assembler()
     indexKeywords(&indxKeywords);
 
     m_pPortablePdbWriter = NULL;
+    m_pOverrideAssemblyName = NULL;
 }
 
 
@@ -1089,19 +1090,10 @@ BOOL Assembler::EmitClass(Class *pClass)
     LPCUTF8              szFullName;
     WCHAR*              wzFullName=&wzUniBuf[0];
     HRESULT             hr = E_FAIL;
-    GUID                guid;
     size_t              L;
     mdToken             tok;
 
     if(pClass == NULL) return FALSE;
-
-    hr = CoCreateGuid(&guid);
-    if (FAILED(hr))
-    {
-        printf("Unable to create GUID\n");
-        m_State = STATE_FAIL;
-        return FALSE;
-    }
 
     if(pClass->m_pEncloser)
         szFullName = strrchr(pClass->m_szFQN,NESTING_SEP) + 1;

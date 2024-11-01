@@ -295,7 +295,6 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != '' and '$(TargetPlatformIdentifier)' != 'windows' and '$(UseManagedNtlm)' != 'true'">
-    <ILLinkSubstitutionsXmls Include="$(ILLinkDirectory)ILLink.Substitutions.xml" />
     <Compile Include="System\Net\NegotiateAuthenticationPal.Unix.cs" />
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\GssSafeHandles.cs"
              Link="Common\Microsoft\Win32\SafeHandles\GssSafeHandles.cs" />

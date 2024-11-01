@@ -406,9 +406,9 @@ EXTERN_C void* QCALLTYPE RhpGetCurrentThread()
     return ThreadStore::GetCurrentThread();
 }
 
-FCIMPL3(void, RhpInitiateThreadAbort, void* thread, Object * threadAbortException, CLR_BOOL doRudeAbort)
+FCIMPL3(void, RhpInitiateThreadAbort, void* thread, Object * threadAbortException, FC_BOOL_ARG doRudeAbort)
 {
-    GetThreadStore()->InitiateThreadAbort((Thread*)thread, threadAbortException, doRudeAbort);
+    GetThreadStore()->InitiateThreadAbort((Thread*)thread, threadAbortException, FC_ACCESS_BOOL(doRudeAbort));
 }
 FCIMPLEND
 

@@ -48,7 +48,13 @@ namespace System.IO.Tests
             TestEncoding(System.Text.Encoding.Unicode, "This is Unicode\u00FF");
         }
 
-        private static void TestEncoding(System.Text.Encoding encoding, string testString)
+        [Fact]
+        public static void NullEncoding()
+        {
+            TestEncoding(null, "This is UTF8\u00FF");
+        }
+
+        private static void TestEncoding(System.Text.Encoding? encoding, string testString)
         {
             StreamWriter sw2;
             StreamReader sr2;

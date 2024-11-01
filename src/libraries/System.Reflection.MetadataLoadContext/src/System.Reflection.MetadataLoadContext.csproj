@@ -158,8 +158,8 @@
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\RequiresUnreferencedCodeAttribute.cs" />
   </ItemGroup>
 
-  <ItemGroup>
-    <!-- Application tfms (.NETCoreApp, .NETFramework) need to use the same or higher version of .NETStandard's dependencies. -->
+  <!-- Application tfms (.NETCoreApp, .NETFramework) need to use the same or higher version of .NETStandard's dependencies. -->
+  <ItemGroup Condition="'$(TargetFramework)' != '$(NetCoreAppCurrent)'">
     <ProjectReference Include="$(LibrariesProjectRoot)System.Collections.Immutable\src\System.Collections.Immutable.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Reflection.Metadata\src\System.Reflection.Metadata.csproj" />
   </ItemGroup>

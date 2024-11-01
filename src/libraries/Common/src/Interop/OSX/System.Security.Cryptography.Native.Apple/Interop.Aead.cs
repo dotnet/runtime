@@ -30,7 +30,6 @@ internal static partial class Interop
 
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
-        [SupportedOSPlatform("maccatalyst")]
         [SupportedOSPlatform("ios13.0")]
         [SupportedOSPlatform("tvos13.0")]
         internal static unsafe void ChaCha20Poly1305Encrypt(
@@ -68,7 +67,6 @@ internal static partial class Interop
 
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
-        [SupportedOSPlatform("maccatalyst")]
         [SupportedOSPlatform("ios13.0")]
         [SupportedOSPlatform("tvos13.0")]
         internal static unsafe void ChaCha20Poly1305Decrypt(
@@ -113,7 +111,6 @@ internal static partial class Interop
 
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
-        [SupportedOSPlatform("maccatalyst")]
         [SupportedOSPlatform("ios13.0")]
         [SupportedOSPlatform("tvos13.0")]
         internal static unsafe void AesGcmEncrypt(
@@ -151,7 +148,6 @@ internal static partial class Interop
 
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
-        [SupportedOSPlatform("maccatalyst")]
         [SupportedOSPlatform("ios13.0")]
         [SupportedOSPlatform("tvos13.0")]
         internal static unsafe void AesGcmDecrypt(

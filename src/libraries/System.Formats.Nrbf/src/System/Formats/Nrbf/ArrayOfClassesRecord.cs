@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Reflection.Metadata;
 using System.Formats.Nrbf.Utils;
+using System.Diagnostics;
 
 namespace System.Formats.Nrbf;
 
@@ -54,6 +55,7 @@ internal sealed class ArrayOfClassesRecord : SZArrayRecord<ClassRecord>
                 }
 
                 int nullCount = ((NullsRecord)actual).NullCount;
+                Debug.Assert(nullCount > 0, "All implementations of NullsRecord are expected to return a positive value for NullCount.");
                 do
                 {
                     result[resultIndex++] = null;
@@ -62,6 +64,8 @@ internal sealed class ArrayOfClassesRecord : SZArrayRecord<ClassRecord>
                 while (nullCount > 0);
             }
         }
+
+        Debug.Assert(resultIndex == result.Length, "We should have traversed the entirety of the newly created array.");
 
         return result;
     }

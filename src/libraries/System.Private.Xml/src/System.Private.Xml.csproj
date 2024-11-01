@@ -5,12 +5,7 @@
     <RootNamespace>System.Xml</RootNamespace>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <EnableAOTAnalyzer>false</EnableAOTAnalyzer>
-    <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
   </PropertyGroup>
-
-  <ItemGroup>
-    <ILLinkSubstitutionsXmls Include="$(ILLinkDirectory)ILLink.Substitutions.xml" />
-  </ItemGroup>
 
   <ItemGroup>
     <Compile Include="$(CommonPath)System\Text\StringBuilderCache.cs" Link="Common\System\StringBuilderCache.cs" />

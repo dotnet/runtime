@@ -230,7 +230,7 @@ namespace System.Threading
         //
         // Common timeout support
         //
-        private struct TimeoutTracker
+        private readonly struct TimeoutTracker
         {
             private readonly int _total;
             private readonly int _start;

@@ -34,10 +34,7 @@ internal sealed class ClassWithIdRecord : ClassRecord
         SerializationRecordId id = SerializationRecordId.Decode(reader);
         SerializationRecordId metadataId = SerializationRecordId.Decode(reader);
 
-        if (recordMap[metadataId] is not ClassRecord referencedRecord)
-        {
-            throw new SerializationException(SR.Serialization_InvalidReference);
-        }
+        ClassRecord referencedRecord = recordMap.GetRecord<ClassRecord>(metadataId);
 
         return new ClassWithIdRecord(id, referencedRecord);
     }

@@ -256,11 +256,6 @@ check_symbol_exists(
     HAVE_TIOCGWINSZ)
 
 check_symbol_exists(
-    TIOCSWINSZ
-    "sys/ioctl.h"
-    HAVE_TIOCSWINSZ)
-
-check_symbol_exists(
     cfsetspeed
     termios.h
     HAVE_CFSETSPEED)
@@ -464,6 +459,18 @@ check_symbol_exists(
     HAVE_EPOLL)
 
 check_symbol_exists(
+    gethostname
+    unistd.h
+    HAVE_GETHOSTNAME)
+
+check_symbol_exists(
+    getnameinfo
+    netdb.h
+    HAVE_GETNAMEINFO)
+
+check_struct_has_member("struct sockaddr_un" sun_path "sys/types.h;sys/un.h" HAVE_SOCKADDR_UN_SUN_PATH)
+
+check_symbol_exists(
     accept4
     sys/socket.h
     HAVE_ACCEPT4)
@@ -567,7 +574,10 @@ elseif(CLR_CMAKE_TARGET_ANDROID)
     unset(HAVE_ALIGNED_ALLOC) # only exists on newer Android
     set(HAVE_CLOCK_MONOTONIC 1)
     set(HAVE_CLOCK_REALTIME 1)
-elseif(CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
+elseif(CLR_CMAKE_TARGET_WASI)
+    set(HAVE_FORK 0)
+    unset(HAVE_GETNAMEINFO) # WASIp2 libc has empty function with TODO and abort()
+elseif(CLR_CMAKE_TARGET_BROWSER)
     set(HAVE_FORK 0)
 else()
     check_symbol_exists(

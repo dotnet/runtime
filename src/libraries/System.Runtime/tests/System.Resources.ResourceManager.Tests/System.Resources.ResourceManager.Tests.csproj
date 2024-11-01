@@ -61,6 +61,10 @@
     <PackageReference Include="System.Drawing.Common" Version="$(SystemDrawingCommonVersion)" />
     <!--Reference to System.Resources.Extensions is required in order to be able to embed a resource that requires a custom reader-->
     <ProjectReference Include="$(LibrariesProjectRoot)System.Resources.Extensions\src\System.Resources.Extensions.csproj" />
+    <!-- Reference the `NetCoreAppMinimum` build which has a functional BinaryFormatter and force a private copy to ensure it's not excluded -->
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.Serialization.Formatters\src\System.Runtime.Serialization.Formatters.csproj"
+                      Private="true"
+                      SetTargetFramework="TargetFramework=$(NetCoreAppMinimum)" />
   </ItemGroup>
   <!--
     MSBuild on .NET Core doesn't support non-string resources. See https://github.com/Microsoft/msbuild/issues/2221

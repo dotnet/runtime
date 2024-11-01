@@ -2050,51 +2050,38 @@ namespace System
                 {
                     ref short spanRef = ref Unsafe.As<T, short>(ref MemoryMarshal.GetReference(span));
                     ref short valueRef = ref Unsafe.As<T, short>(ref MemoryMarshal.GetReference(values));
-                    switch (values.Length)
+                    return values.Length switch
                     {
-                        case 0:
-                            return -1;
-
-                        case 1:
-                            return SpanHelpers.IndexOfValueType(ref spanRef, valueRef, span.Length);
-
-                        case 2:
-                            return SpanHelpers.IndexOfAnyValueType(
+                        0 => -1,
+                        1 => SpanHelpers.IndexOfValueType(ref spanRef, valueRef, span.Length),
+                        2 => SpanHelpers.IndexOfAnyValueType(
                                 ref spanRef,
                                 valueRef,
                                 Unsafe.Add(ref valueRef, 1),
-                                span.Length);
-
-                        case 3:
-                            return SpanHelpers.IndexOfAnyValueType(
-                                ref spanRef,
-                                valueRef,
-                                Unsafe.Add(ref valueRef, 1),
-                                Unsafe.Add(ref valueRef, 2),
-                                span.Length);
-
-                        case 4:
-                            return SpanHelpers.IndexOfAnyValueType(
-                                ref spanRef,
-                                valueRef,
-                                Unsafe.Add(ref valueRef, 1),
-                                Unsafe.Add(ref valueRef, 2),
-                                Unsafe.Add(ref valueRef, 3),
-                                span.Length);
-
-                        case 5:
-                            return SpanHelpers.IndexOfAnyValueType(
-                                ref spanRef,
-                                valueRef,
-                                Unsafe.Add(ref valueRef, 1),
-                                Unsafe.Add(ref valueRef, 2),
-                                Unsafe.Add(ref valueRef, 3),
-                                Unsafe.Add(ref valueRef, 4),
-                                span.Length);
-
-                        default:
-                            return ProbabilisticMap.IndexOfAny(ref Unsafe.As<short, char>(ref spanRef), span.Length, ref Unsafe.As<short, char>(ref valueRef), values.Length);
-                    }
+                                span.Length),
+                        3 => SpanHelpers.IndexOfAnyValueType(
+                                 ref spanRef,
+                                 valueRef,
+                                 Unsafe.Add(ref valueRef, 1),
+                                 Unsafe.Add(ref valueRef, 2),
+                                 span.Length),
+                        4 => SpanHelpers.IndexOfAnyValueType(
+                                 ref spanRef,
+                                 valueRef,
+                                 Unsafe.Add(ref valueRef, 1),
+                                 Unsafe.Add(ref valueRef, 2),
+                                 Unsafe.Add(ref valueRef, 3),
+                                 span.Length),
+                        5 => SpanHelpers.IndexOfAnyValueType(
+                                 ref spanRef,
+                                 valueRef,
+                                 Unsafe.Add(ref valueRef, 1),
+                                 Unsafe.Add(ref valueRef, 2),
+                                 Unsafe.Add(ref valueRef, 3),
+                                 Unsafe.Add(ref valueRef, 4),
+                                 span.Length),
+                        _ => ProbabilisticMap.IndexOfAny(ref Unsafe.As<short, char>(ref spanRef), span.Length, ref Unsafe.As<short, char>(ref valueRef), values.Length),
+                    };
                 }
             }
 
@@ -2106,6 +2093,7 @@ namespace System
         /// </summary>
         /// <param name="span">The span to search.</param>
         /// <param name="values">The set of values to search for.</param>
+        /// <returns>The first index of any of the specified values, or -1 if none are found.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int IndexOfAny<T>(this ReadOnlySpan<T> span, SearchValues<T> values) where T : IEquatable<T>?
         {
@@ -2122,6 +2110,7 @@ namespace System
         /// </summary>
         /// <param name="span">The span to search.</param>
         /// <param name="values">The set of values to search for.</param>
+        /// <returns>The first index of any of the specified values, or -1 if none are found.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int IndexOfAny(this ReadOnlySpan<char> span, SearchValues<string> values)
         {
@@ -2347,51 +2336,38 @@ namespace System
                 {
                     ref short spanRef = ref Unsafe.As<T, short>(ref MemoryMarshal.GetReference(span));
                     ref short valueRef = ref Unsafe.As<T, short>(ref MemoryMarshal.GetReference(values));
-                    switch (values.Length)
+                    return values.Length switch
                     {
-                        case 0:
-                            return -1;
-
-                        case 1:
-                            return SpanHelpers.LastIndexOfValueType(ref spanRef, valueRef, span.Length);
-
-                        case 2:
-                            return SpanHelpers.LastIndexOfAnyValueType(
-                                ref spanRef,
-                                valueRef,
-                                Unsafe.Add(ref valueRef, 1),
-                                span.Length);
-
-                        case 3:
-                            return SpanHelpers.LastIndexOfAnyValueType(
-                                ref spanRef,
-                                valueRef,
-                                Unsafe.Add(ref valueRef, 1),
-                                Unsafe.Add(ref valueRef, 2),
-                                span.Length);
-
-                        case 4:
-                            return SpanHelpers.LastIndexOfAnyValueType(
-                                ref spanRef,
-                                valueRef,
-                                Unsafe.Add(ref valueRef, 1),
-                                Unsafe.Add(ref valueRef, 2),
-                                Unsafe.Add(ref valueRef, 3),
-                                span.Length);
-
-                        case 5:
-                            return SpanHelpers.LastIndexOfAnyValueType(
-                                ref spanRef,
-                                valueRef,
-                                Unsafe.Add(ref valueRef, 1),
-                                Unsafe.Add(ref valueRef, 2),
-                                Unsafe.Add(ref valueRef, 3),
-                                Unsafe.Add(ref valueRef, 4),
-                                span.Length);
-
-                        default:
-                            return ProbabilisticMap.LastIndexOfAny(ref Unsafe.As<short, char>(ref spanRef), span.Length, ref Unsafe.As<short, char>(ref valueRef), values.Length);
-                    }
+                        0 => -1,
+                        1 => SpanHelpers.LastIndexOfValueType(ref spanRef, valueRef, span.Length),
+                        2 => SpanHelpers.LastIndexOfAnyValueType(
+                                 ref spanRef,
+                                 valueRef,
+                                 Unsafe.Add(ref valueRef, 1),
+                                 span.Length),
+                        3 => SpanHelpers.LastIndexOfAnyValueType(
+                                 ref spanRef,
+                                 valueRef,
+                                 Unsafe.Add(ref valueRef, 1),
+                                 Unsafe.Add(ref valueRef, 2),
+                                 span.Length),
+                        4 => SpanHelpers.LastIndexOfAnyValueType(
+                                 ref spanRef,
+                                 valueRef,
+                                 Unsafe.Add(ref valueRef, 1),
+                                 Unsafe.Add(ref valueRef, 2),
+                                 Unsafe.Add(ref valueRef, 3),
+                                 span.Length),
+                        5 => SpanHelpers.LastIndexOfAnyValueType(
+                                 ref spanRef,
+                                 valueRef,
+                                 Unsafe.Add(ref valueRef, 1),
+                                 Unsafe.Add(ref valueRef, 2),
+                                 Unsafe.Add(ref valueRef, 3),
+                                 Unsafe.Add(ref valueRef, 4),
+                                 span.Length),
+                        _ => ProbabilisticMap.LastIndexOfAny(ref Unsafe.As<short, char>(ref spanRef), span.Length, ref Unsafe.As<short, char>(ref valueRef), values.Length),
+                    };
                 }
             }
 
@@ -2622,6 +2598,8 @@ namespace System
         /// </summary>
         /// <param name="span">The span to search.</param>
         /// <param name="value">The value to compare.</param>
+        /// <typeparam name="T">The type of elements in the span.</typeparam>
+        /// <returns><see langword="true" /> if <paramref name="value" /> matches the beginning of <paramref name="span" />; otherwise, <see langword="false" />.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool StartsWith<T>(this ReadOnlySpan<T> span, T value) where T : IEquatable<T>? =>
             span.Length != 0 && (span[0]?.Equals(value) ?? (object?)value is null);
@@ -2631,6 +2609,8 @@ namespace System
         /// </summary>
         /// <param name="span">The span to search.</param>
         /// <param name="value">The value to compare.</param>
+        /// <typeparam name="T">The type of the elements in the span.</typeparam>
+        /// <returns><see langword="true" /> if <paramref name="value" /> matches the end of <paramref name="span" />; otherwise, <see langword="false" />.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool EndsWith<T>(this ReadOnlySpan<T> span, T value) where T : IEquatable<T>? =>
             span.Length != 0 && (span[^1]?.Equals(value) ?? (object?)value is null);
@@ -3150,7 +3130,7 @@ namespace System
         /// <param name="span">The sorted <see cref="Span{T}"/> to search.</param>
         /// <param name="value">The object to locate. The value can be null for reference types.</param>
         /// <param name="comparer">The <typeparamref name="TComparer"/> to use when comparing.</param>
-        /// /// <returns>
+        /// <returns>
         /// The zero-based index of <paramref name="value"/> in the sorted <paramref name="span"/>,
         /// if <paramref name="value"/> is found; otherwise, a negative number that is the bitwise complement
         /// of the index of the next element that is larger than <paramref name="value"/> or, if there is
@@ -3224,7 +3204,7 @@ namespace System
         /// <param name="span">The sorted <see cref="ReadOnlySpan{T}"/> to search.</param>
         /// <param name="value">The object to locate. The value can be null for reference types.</param>
         /// <param name="comparer">The <typeparamref name="TComparer"/> to use when comparing.</param>
-        /// /// <returns>
+        /// <returns>
         /// The zero-based index of <paramref name="value"/> in the sorted <paramref name="span"/>,
         /// if <paramref name="value"/> is found; otherwise, a negative number that is the bitwise complement
         /// of the index of the next element that is larger than <paramref name="value"/> or, if there is
@@ -4312,6 +4292,7 @@ namespace System
         /// <summary>
         /// Enables enumerating each split within a <see cref="ReadOnlySpan{T}"/> that has been divided using one or more separators.
         /// </summary>
+        /// <typeparam name="T">The type of items in the <see cref="SpanSplitEnumerator{T}"/>.</typeparam>
         public ref struct SpanSplitEnumerator<T> where T : IEquatable<T>
         {
             /// <summary>The input span being split.</summary>

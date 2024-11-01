@@ -1769,6 +1769,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                     if (assemblyAndPdbData == null || assemblyAndPdbData.AsmBytes == null)
                     {
                         var unescapedFileName = Uri.UnescapeDataString(step.Url);
+                        if (isFingerprinted)
+                            unescapedFileName = string.Concat(Path.GetFileNameWithoutExtension(Path.GetFileNameWithoutExtension(unescapedFileName)), Path.GetExtension(unescapedFileName));
                         assemblies.Add(AssemblyInfo.WithoutDebugInfo(Path.GetFileName(unescapedFileName), logger));
                         logger.LogDebug($"Bytes from assembly {step.Url} is NULL");
                         continue;

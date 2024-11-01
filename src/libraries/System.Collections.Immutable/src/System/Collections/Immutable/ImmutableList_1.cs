@@ -16,7 +16,7 @@ namespace System.Collections.Immutable
     [CollectionBuilder(typeof(ImmutableList), nameof(ImmutableList.Create))]
     [DebuggerDisplay("Count = {Count}")]
     [DebuggerTypeProxy(typeof(ImmutableEnumerableDebuggerProxy<>))]
-    public sealed partial class ImmutableList<T> : IImmutableList<T>, IList<T>, IList, IOrderedCollection<T>, IImmutableListQueries<T>, IStrongEnumerable<T, ImmutableList<T>.Enumerator>
+    public sealed partial class ImmutableList<T> : IImmutableList<T>, IList<T>, IList, IStrongEnumerable<T, ImmutableList<T>.Enumerator>
     {
         /// <summary>
         /// An empty immutable list.
@@ -177,15 +177,6 @@ namespace System.Collections.Immutable
         /// <returns>A read-only reference to the element at the given position.</returns>
         /// <exception cref="IndexOutOfRangeException">Thrown when <paramref name="index"/> is negative or not less than <see cref="Count"/>.</exception>
         public ref readonly T ItemRef(int index) => ref _root.ItemRef(index);
-
-        #endregion
-
-        #region IOrderedCollection<T> Indexers
-
-        /// <summary>
-        /// Gets the element in the collection at a given index.
-        /// </summary>
-        T IOrderedCollection<T>.this[int index] => this[index];
 
         #endregion
 
@@ -1098,11 +1089,6 @@ namespace System.Collections.Immutable
         public Enumerator GetEnumerator() => new Enumerator(_root);
 
         /// <summary>
-        /// Returns the root <see cref="Node"/> of the list
-        /// </summary>
-        internal Node Root => _root;
-
-        /// <summary>
         /// Creates a new sorted set wrapper for a node tree.
         /// </summary>
         /// <param name="root">The root of the collection.</param>
@@ -1191,7 +1177,7 @@ namespace System.Collections.Immutable
             // index into that sequence like a list, so the one possible piece of
             // garbage produced is a temporary array to store the list while
             // we build the tree.
-            IOrderedCollection<T> list = items.AsOrderedCollection();
+            IReadOnlyList<T> list = items.AsReadOnlyList();
             if (list.Count == 0)
             {
                 return Empty;

@@ -29,6 +29,7 @@ using System.Threading;
 using Internal.Runtime.CompilerHelpers;
 using Internal.Runtime.CompilerServices;
 
+using ExceptionStringID = Internal.TypeSystem.ExceptionStringID;
 using ReflectionPointer = System.Reflection.Pointer;
 
 namespace Internal.Runtime.Augments
@@ -117,6 +118,32 @@ namespace Internal.Runtime.Augments
                 pImmutableLengths[i] = lengths[i];
 
             return Array.NewMultiDimArray(typeHandleForArrayType.ToMethodTable(), pImmutableLengths, lengths.Length);
+        }
+
+        public static unsafe void SetArrayValue(Array array, int[] indices, object value)
+        {
+            MethodTable* elementMT = array.ElementMethodTable;
+
+            if (elementMT->IsPointer || elementMT->IsFunctionPointer)
+            {
+                Debug.Assert(value.GetMethodTable()->ValueTypeSize == IntPtr.Size);
+                elementMT = value.GetMethodTable();
+            }
+
+            if (elementMT->IsValueType)
+            {
+                Debug.Assert(value.GetMethodTable()->IsValueType && elementMT->ValueTypeSize == value.GetMethodTable()->ValueTypeSize);
+                nint flattenedIndex = array.GetFlattenedIndex(indices);
+                ref byte element = ref Unsafe.AddByteOffset(ref MemoryMarshal.GetArrayDataReference(array), (nuint)flattenedIndex * array.ElementSize);
+                RuntimeImports.RhUnbox(value, ref element, elementMT);
+            }
+            else
+            {
+                RuntimeImports.RhCheckArrayStore(array, value);
+                nint flattenedIndex = array.GetFlattenedIndex(indices);
+                ref object element = ref Unsafe.Add(ref Unsafe.As<byte, object>(ref MemoryMarshal.GetArrayDataReference(array)), flattenedIndex);
+                element = value;
+            }
         }
 
         public static IntPtr GetAllocateObjectHelperForType(RuntimeTypeHandle type)
@@ -489,15 +516,10 @@ namespace Internal.Runtime.Augments
             return typeHandle.ToMethodTable()->IsDynamicType;
         }
 
-        public static bool HasCctor(RuntimeTypeHandle typeHandle)
-        {
-            return typeHandle.ToMethodTable()->HasCctor;
-        }
-
         public static unsafe IntPtr ResolveStaticDispatchOnType(RuntimeTypeHandle instanceType, RuntimeTypeHandle interfaceType, int slot, out RuntimeTypeHandle genericContext)
         {
             MethodTable* genericContextPtr = default;
-            IntPtr result = RuntimeImports.RhResolveDispatchOnType(instanceType.ToMethodTable(), interfaceType.ToMethodTable(), checked((ushort)slot), &genericContextPtr);
+            IntPtr result = RuntimeImports.RhResolveStaticDispatchOnType(instanceType.ToMethodTable(), interfaceType.ToMethodTable(), checked((ushort)slot), &genericContextPtr);
             if (result != IntPtr.Zero)
                 genericContext = new RuntimeTypeHandle(genericContextPtr);
             else
@@ -706,6 +728,46 @@ namespace Internal.Runtime.Augments
         public static void RhHandleFree(IntPtr handle)
         {
             RuntimeImports.RhHandleFree(handle);
+        }
+
+        public static void ThrowTypeLoadExceptionWithArgument(ExceptionStringID id, string className, string typeName, string messageArg)
+        {
+            throw TypeLoaderExceptionHelper.CreateTypeLoadException(id, className, typeName, messageArg);
+        }
+
+        public static void ThrowTypeLoadException(ExceptionStringID id, string className, string typeName)
+        {
+            throw TypeLoaderExceptionHelper.CreateTypeLoadException(id, className, typeName);
+        }
+
+        public static void ThrowMissingMethodException(ExceptionStringID id, string methodName)
+        {
+            throw TypeLoaderExceptionHelper.CreateMissingMethodException(id, methodName);
+        }
+
+        public static void ThrowMissingFieldException(ExceptionStringID id, string fieldName)
+        {
+            throw TypeLoaderExceptionHelper.CreateMissingFieldException(id, fieldName);
+        }
+
+        public static void ThrowFileNotFoundException(ExceptionStringID id, string fileName)
+        {
+            throw TypeLoaderExceptionHelper.CreateFileNotFoundException(id, fileName);
+        }
+
+        public static void ThrowInvalidProgramException(ExceptionStringID id)
+        {
+            throw TypeLoaderExceptionHelper.CreateInvalidProgramException(id);
+        }
+
+        public static void ThrowInvalidProgramExceptionWithArgument(ExceptionStringID id, string methodName)
+        {
+            throw TypeLoaderExceptionHelper.CreateInvalidProgramException(id, methodName);
+        }
+
+        public static void ThrowBadImageFormatException(ExceptionStringID id)
+        {
+            throw TypeLoaderExceptionHelper.CreateBadImageFormatException(id);
         }
     }
 }

@@ -63,6 +63,15 @@
     <ProjectCapability Include="DotNetCoreWeb"/>
   </ItemGroup>
 
+  <!-- When trimming non-exe projects, root the whole intermediate assembly. -->
+  <Target Name="_RootEntireIntermediateAssembly" AfterTargets="PrepareForILLink" BeforeTargets="_RunILLink" Condition="'$(RuntimeIdentifier)' == 'browser-wasm' And '$(OutputType)' == 'Library'">
+    <ItemGroup>
+      <TrimmerRootAssembly Condition="'%(Identity)' == '@(IntermediateAssembly)'">
+        <RootMode>all</RootMode>
+      </TrimmerRootAssembly>
+    </ItemGroup>
+  </Target>
+
   <Target Name="_GetWasmGenerateAppBundleDependencies">
     <Warning Condition="'$(InvariantGlobalization)' == 'true' and '$(HybridGlobalization)' == 'true'" Text="%24(HybridGlobalization) has no effect when %24(InvariantGlobalization) is set to true." />
     <Warning Condition="'$(WasmIcuDataFileName)' != '' and '$(HybridGlobalization)' == 'true'" Text="%24(WasmIcuDataFileName) has no effect when %24(HybridGlobalization) is set to true." />
@@ -314,6 +323,7 @@
       <_EmccCFlags Include="-DLINK_ICALLS=1"                   Condition="'$(WasmLinkIcalls)' == 'true'" />
       <_EmccCFlags Include="-DENABLE_AOT_PROFILER=1"           Condition="$(WasmProfilers.Contains('aot'))" />
       <_EmccCFlags Include="-DENABLE_BROWSER_PROFILER=1"       Condition="$(WasmProfilers.Contains('browser'))" />
+      <_EmccCFlags Include="-DENABLE_LOG_PROFILER=1"           Condition="$(WasmProfilers.Contains('log'))" />
       <_EmccCFlags Include="-DENABLE_JS_INTEROP_BY_VALUE=1"    Condition="'$(WasmEnableJsInteropByValue)' == 'true'" />
 
       <_EmccCFlags Include="-DGEN_PINVOKE=1" />
@@ -358,7 +368,8 @@
       <EmscriptenEnvVars Include="PYTHONPATH=$(EmscriptenPythonToolsPath)" Condition="'$(OS)' == 'Windows_NT'" />
       <EmscriptenEnvVars Include="PYTHONHOME=" Condition="'$(OS)' == 'Windows_NT'" />
       <EmscriptenEnvVars Include="EM_CACHE=$(WasmCachePath)" Condition="'$(WasmCachePath)' != ''" />
-      <EmscriptenEnvVars Include="EM_FROZEN_CACHE=True" Condition="'$(WasmCachePath)' == '$(EmscriptenCacheSdkCacheDir)'" />
+      <EmscriptenEnvVars Include="EM_FROZEN_CACHE=1" Condition="'$(WasmCachePath)' == '$(EmscriptenCacheSdkCacheDir)'" />
+      <EmscriptenEnvVars Include="EM_FROZEN_CACHE=0" Condition="'$(WasmCachePath)' != '' and '$(WasmCachePath)' != '$(EmscriptenCacheSdkCacheDir)'" />
       <EmscriptenEnvVars Include="ENABLE_JS_INTEROP_BY_VALUE=1" Condition="'$(WasmEnableJsInteropByValue)' == 'true'" />
       <EmscriptenEnvVars Include="ENABLE_JS_INTEROP_BY_VALUE=0" Condition="'$(WasmEnableJsInteropByValue)' != 'true'" />
       <EmscriptenEnvVars Include="WASM_ENABLE_SIMD=1" Condition="'$(WasmEnableSIMD)' != 'false'" />
@@ -367,6 +378,7 @@
       <EmscriptenEnvVars Include="WASM_ENABLE_EH=0" Condition="'$(WasmEnableExceptionHandling)' == 'false'" />
       <EmscriptenEnvVars Include="ENABLE_AOT_PROFILER=$([System.Convert]::ToInt32($(WasmProfilers.Contains('aot'))))" />
       <EmscriptenEnvVars Include="ENABLE_BROWSER_PROFILER=$([System.Convert]::ToInt32($(WasmProfilers.Contains('browser'))))" />
+      <EmscriptenEnvVars Include="ENABLE_LOG_PROFILER=$([System.Convert]::ToInt32($(WasmProfilers.Contains('log'))))" />
       <EmscriptenEnvVars Include="RUN_AOT_COMPILATION=1" Condition="'$(RunAOTCompilation)' == 'true'" />
       <EmscriptenEnvVars Include="RUN_AOT_COMPILATION=0" Condition="'$(RunAOTCompilation)' != 'true'" />
 
@@ -477,6 +489,7 @@
       <_EmccLinkStepArgs Include="$(EmccExtraLDFlags)" />
 
       <_WasmLinkStepArgs Include="@(_EmccLinkStepArgs)" />
+      <_WasmLinkStepArgs Include="@(LinkerArg)" />
     </ItemGroup>
   </Target>
 

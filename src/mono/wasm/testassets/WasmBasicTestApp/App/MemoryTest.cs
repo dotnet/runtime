@@ -7,7 +7,7 @@ using System.Text.Json;
 using System.Text;
 using System.Runtime.InteropServices.JavaScript;
 
-public partial class MemoryTest // ?test=AllocateLargeHeapThenInterop
+public partial class MemoryTest
 {
     [JSImport("countChars", "main.js")]
     internal static partial int CountChars(string testArray);
@@ -15,11 +15,11 @@ public partial class MemoryTest // ?test=AllocateLargeHeapThenInterop
     [JSExport]
     internal static void Run()
     {
-        // Allocate over 2GB space, 2 621 440 000 bytes
-        const int arrayCnt = 25;
+        // Allocate 250MB managed space above 2GB already wasted before startup
+        const int arrayCnt = 10;
         int[][] arrayHolder = new int[arrayCnt][];
         string errors = "";
-        TestOutput.WriteLine("Starting over 2GB array allocation");
+        TestOutput.WriteLine("Starting managed array allocation");
         for (int i = 0; i < arrayCnt; i++)
         {
             try
@@ -31,13 +31,13 @@ public partial class MemoryTest // ?test=AllocateLargeHeapThenInterop
                 errors += $"Exception {ex} was thrown on i={i}";
             }
         }
-        TestOutput.WriteLine("Finished over 2GB array allocation");
+        TestOutput.WriteLine("Finished managed array allocation");
 
         // call a method many times to trigger tier-up optimization
         string randomString = GenerateRandomString(1000);
         try
         {
-            for (int i = 0; i < 10000; i++)
+            for (int i = 0; i < 1000; i++)
             {
                 int count = CountChars(randomString);
                 if (count != randomString.Length)

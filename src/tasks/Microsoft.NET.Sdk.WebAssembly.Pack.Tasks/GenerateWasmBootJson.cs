@@ -336,7 +336,7 @@ public class GenerateWasmBootJson : Task
                         resourceList = new();
                         resourceData.extensions[extensionName] = resourceList;
                     }
-                    var targetPath = resource.GetMetadata("TargetPath");
+                    var targetPath = endpointByAsset[resource.ItemSpec].ItemSpec;
                     Debug.Assert(!string.IsNullOrEmpty(targetPath), "Target path for '{0}' must exist.", resource.ItemSpec);
                     AddResourceToList(resource, resourceList, targetPath);
                     continue;
@@ -431,7 +431,7 @@ public class GenerateWasmBootJson : Task
         {
             if (!resourceList.ContainsKey(resourceKey))
             {
-                Log.LogMessage(MessageImportance.Low, "Added resource '{0}' to the manifest.", resource.ItemSpec);
+                Log.LogMessage(MessageImportance.Low, "Added resource '{0}' with key '{1}' to the manifest.", resource.ItemSpec, resourceKey);
                 resourceList.Add(resourceKey, $"sha256-{resource.GetMetadata("Integrity")}");
             }
         }

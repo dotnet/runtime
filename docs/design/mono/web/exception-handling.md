@@ -114,7 +114,7 @@ Currently, exceptions are raised by calling mono_raise_exception () in the middl
 
 -   To allow mono_raise_exception () to unwind through native code, we need to save the LMF structures which can add a lot of overhead even in the common case when no exception is thrown. So this is not zero-cost exception handling.
 
-An alternative might be to use a JNI style set-pending-exception API. Runtime code could call mono_set_pending_exception (), then return to its caller with an error indication allowing the caller to clean up. When execution returns to managed code, then managed-\>native wrapper could check whenever there is a pending exception and throw it if neccesary. Since we already check for pending thread interruption, this would have no overhead, allowing us to drop the LMF saving/restoring code, or significant parts of it.
+An alternative might be to use a JNI style set-pending-exception API. Runtime code could call mono_set_pending_exception (), then return to its caller with an error indication allowing the caller to clean up. When execution returns to managed code, then managed-\>native wrapper could check whenever there is a pending exception and throw it if necessary. Since we already check for pending thread interruption, this would have no overhead, allowing us to drop the LMF saving/restoring code, or significant parts of it.
 
 ### libunwind
 

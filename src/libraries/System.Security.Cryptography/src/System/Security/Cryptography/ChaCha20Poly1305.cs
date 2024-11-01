@@ -9,7 +9,6 @@ namespace System.Security.Cryptography
     [UnsupportedOSPlatform("browser")]
     [UnsupportedOSPlatform("ios")]
     [UnsupportedOSPlatform("tvos")]
-    [SupportedOSPlatform("maccatalyst")]
     [SupportedOSPlatform("ios13.0")]
     [SupportedOSPlatform("tvos13.0")]
     public sealed partial class ChaCha20Poly1305 : IDisposable

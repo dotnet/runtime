@@ -689,7 +689,6 @@ public class ReliabilityFramework
 
                 if (startTest)
                 {
-                    _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.TestStarter, String.Format("Looking for test to start..."));
                     while (true)
                     {
                         // we haven't found a test to run yet, let's look for another one.
@@ -699,7 +698,6 @@ public class ReliabilityFramework
                             // alright, we looped, we don't want to get stuck here forever (when all tests have executed their maximum amount of times)
                             // so we'll break out, check on the time limit / test run limit, and come back to run tests in a bit...
                             lastTestStarted = 0;
-                            _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.TestStarter, String.Format("Wrapped on test list..."));
                             break;
                         }
 
@@ -768,7 +766,6 @@ public class ReliabilityFramework
                                 }
                                 else
                                 {
-                                    _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.TestStarter, String.Format("Cannot start test {0} Maxruns:{1} MaxCopies:{2} TestTooLong:{3} OtherGroup:{4}{5}", curTest.RefOrID, reachedMaximumRuns, maximumCopiesRunning, testTooLong, otherGroupTestRunning, Environment.NewLine));
                                 }
                             }
                         }
@@ -790,7 +787,6 @@ public class ReliabilityFramework
             else
             {
                 Thread.Sleep(1000);
-                _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.TestStarter, String.Format("Ran all tests"));
             }
         } while ((_curTestSet.MaximumTime == 0 || // no time limit
             (DateTime.Now.Subtract(_startTime).Ticks / TimeSpan.TicksPerMinute) < _curTestSet.MaximumTime) &&		// or time limit reached

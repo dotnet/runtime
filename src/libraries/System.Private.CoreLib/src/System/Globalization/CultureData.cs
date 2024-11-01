@@ -163,7 +163,7 @@ namespace System.Globalization
                 { "AL", "sq-AL" },
                 { "AM", "hy-AM" },
                 { "AO", "pt-AO" },
-                { "AQ", "en-A" },
+                { "AQ", "en-AQ" },
                 { "AR", "es-AR" },
                 { "AS", "en-AS" },
                 { "AT", "de-AT" },
@@ -188,7 +188,7 @@ namespace System.Globalization
                 { "BR", "pt-BR" },
                 { "BS", "en-BS" },
                 { "BT", "dz-BT" },
-                { "BV", "nb-B" },
+                { "BV", "nb-BV" },
                 { "BW", "en-BW" },
                 { "BY", "be-BY" },
                 { "BZ", "en-BZ" },
@@ -201,7 +201,7 @@ namespace System.Globalization
                 { "CI", "fr-CI" },
                 { "CK", "en-CK" },
                 { "CL", "es-CL" },
-                { "CM", "fr-C" },
+                { "CM", "fr-CM" },
                 { "CN", "zh-CN" },
                 { "CO", "es-CO" },
                 { "CR", "es-CR" },
@@ -244,13 +244,13 @@ namespace System.Globalization
                 { "GP", "fr-GP" },
                 { "GQ", "es-GQ" },
                 { "GR", "el-GR" },
-                { "GS", "en-G" },
+                { "GS", "en-GS" },
                 { "GT", "es-GT" },
                 { "GU", "en-GU" },
                 { "GW", "pt-GW" },
                 { "GY", "en-GY" },
                 { "HK", "zh-HK" },
-                { "HM", "en-H" },
+                { "HM", "en-HM" },
                 { "HN", "es-HN" },
                 { "HR", "hr-HR" },
                 { "HT", "fr-HT" },
@@ -371,7 +371,7 @@ namespace System.Globalization
                 { "SZ", "ss-SZ" },
                 { "TC", "en-TC" },
                 { "TD", "fr-TD" },
-                { "TF", "fr-T" },
+                { "TF", "fr-TF" },
                 { "TG", "fr-TG" },
                 { "TH", "th-TH" },
                 { "TJ", "tg-Cyrl-TJ" },
@@ -918,13 +918,7 @@ namespace System.Globalization
                 // since windows doesn't know about zh-CHS and zh-CHT,
                 // we leave sRealName == zh-Hanx but we still need to
                 // pretend that it was zh-CHX.
-                switch (_sName)
-                {
-                    case "zh-CHS":
-                    case "zh-CHT":
-                        return _sName;
-                }
-                return _sRealName;
+                return _sName is "zh-CHS" or "zh-CHT" ? _sName : _sRealName;
             }
         }
 

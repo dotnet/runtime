@@ -2257,7 +2257,7 @@ PROCCreateCrashDump(
         if (g_createdumpCallback != nullptr)
         {
             // Remove the signal handlers inherited from the runtime process
-            SEHCleanupSignals();
+            SEHCleanupSignals(true /* isChildProcess */);
 
             // Call the statically linked createdump code
             g_createdumpCallback(argv.size(), argv.data());
@@ -2556,7 +2556,7 @@ PROCAbort(int signal, siginfo_t* siginfo)
 
     // Restore all signals; the SIGABORT handler to prevent recursion and
     // the others to prevent multiple core dumps from being generated.
-    SEHCleanupSignals();
+    SEHCleanupSignals(false /* isChildProcess */);
 
     // Abort the process after waiting for the core dump to complete
     abort();

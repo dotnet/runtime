@@ -69,7 +69,7 @@ namespace System.Collections.Generic
                 // We use a non-randomized comparer for improved perf, falling back to a randomized comparer if the
                 // hash buckets become unbalanced.
                 if (typeof(T) == typeof(string) &&
-                    NonRandomizedStringEqualityComparer.GetStringComparer(_comparer!) is IEqualityComparer<string> stringComparer)
+                    NonRandomizedStringEqualityComparer.GetStringComparer(_comparer) is IEqualityComparer<string> stringComparer)
                 {
                     _comparer = (IEqualityComparer<T>)stringComparer;
                 }
@@ -92,7 +92,7 @@ namespace System.Collections.Generic
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.collection);
             }
 
-            if (collection is HashSet<T> otherAsHashSet && EqualityComparersAreEqual(this, otherAsHashSet))
+            if (collection is HashSet<T> otherAsHashSet && EffectiveEqualityComparersAreEqual(this, otherAsHashSet))
             {
                 ConstructFrom(otherAsHashSet);
             }
@@ -145,6 +145,8 @@ namespace System.Collections.Generic
         /// <summary>Initializes the HashSet from another HashSet with the same element type and equality comparer.</summary>
         private void ConstructFrom(HashSet<T> source)
         {
+            Debug.Assert(EffectiveEqualityComparersAreEqual(this, source), "must use identical effective comparers.");
+
             if (source.Count == 0)
             {
                 // As well as short-circuiting on the rest of the work done,
@@ -364,6 +366,52 @@ namespace System.Collections.Generic
         #endregion
 
         #region AlternateLookup
+
+        /// <summary>
+        /// Gets an instance of a type that may be used to perform operations on the current <see cref="HashSet{T}"/>
+        /// using a <typeparamref name="TAlternate"/> instead of a <typeparamref name="T"/>.
+        /// </summary>
+        /// <typeparam name="TAlternate">The alternate type of instance for performing lookups.</typeparam>
+        /// <returns>The created lookup instance.</returns>
+        /// <exception cref="InvalidOperationException">The set's comparer is not compatible with <typeparamref name="TAlternate"/>.</exception>
+        /// <remarks>
+        /// The set must be using a comparer that implements <see cref="IAlternateEqualityComparer{TAlternate, T}"/> with
+        /// <typeparamref name="TAlternate"/> and <typeparamref name="T"/>. If it doesn't, an exception will be thrown.
+        /// </remarks>
+        public AlternateLookup<TAlternate> GetAlternateLookup<TAlternate>()
+            where TAlternate : allows ref struct
+        {
+            if (!AlternateLookup<TAlternate>.IsCompatibleItem(this))
+            {
+                ThrowHelper.ThrowInvalidOperationException(ExceptionResource.InvalidOperation_IncompatibleComparer);
+            }
+
+            return new AlternateLookup<TAlternate>(this);
+        }
+
+        /// <summary>
+        /// Gets an instance of a type that may be used to perform operations on the current <see cref="HashSet{T}"/>
+        /// using a <typeparamref name="TAlternate"/> instead of a <typeparamref name="T"/>.
+        /// </summary>
+        /// <typeparam name="TAlternate">The alternate type of instance for performing lookups.</typeparam>
+        /// <param name="lookup">The created lookup instance when the method returns true, or a default instance that should not be used if the method returns false.</param>
+        /// <returns>true if a lookup could be created; otherwise, false.</returns>
+        /// <remarks>
+        /// The set must be using a comparer that implements <see cref="IAlternateEqualityComparer{TAlternate, T}"/> with
+        /// <typeparamref name="TAlternate"/> and <typeparamref name="T"/>. If it doesn't, the method returns false.
+        /// </remarks>
+        public bool TryGetAlternateLookup<TAlternate>(out AlternateLookup<TAlternate> lookup)
+            where TAlternate : allows ref struct
+        {
+            if (AlternateLookup<TAlternate>.IsCompatibleItem(this))
+            {
+                lookup = new AlternateLookup<TAlternate>(this);
+                return true;
+            }
+
+            lookup = default;
+            return false;
+        }
 
         /// <summary>
         /// Provides a type that may be used to perform operations on a <see cref="HashSet{T}"/>
@@ -1204,6 +1252,11 @@ namespace System.Collections.Generic
             }
         }
 
+        /// <summary>
+        /// Similar to <see cref="Comparer"/> but surfaces the actual comparer being used to hash entries.
+        /// </summary>
+        internal IEqualityComparer<T> EffectiveComparer => _comparer ?? EqualityComparer<T>.Default;
+
         /// <summary>Ensures that this hash set can hold the specified number of elements without growing.</summary>
         public int EnsureCapacity(int capacity)
         {
@@ -1722,7 +1775,13 @@ namespace System.Collections.Generic
         /// </summary>
         internal static bool EqualityComparersAreEqual(HashSet<T> set1, HashSet<T> set2) => set1.Comparer.Equals(set2.Comparer);
 
-#endregion
+        /// <summary>
+        /// Checks if effective equality comparers are equal. This is used for algorithms that
+        /// require that both collections use identical hashing implementations for their entries.
+        /// </summary>
+        internal static bool EffectiveEqualityComparersAreEqual(HashSet<T> set1, HashSet<T> set2) => set1.EffectiveComparer.Equals(set2.EffectiveComparer);
+
+        #endregion
 
         private struct Entry
         {

@@ -10,6 +10,7 @@
 #include "staticcontract.h"
 #include "volatile.h"
 #include "palclr.h"
+#include <minipal/com/memory.h>
 
 #include <utility>
 #include <type_traits>
@@ -909,8 +910,10 @@ FORCEINLINE void DoTheRelease(TYPE *value)
 template<typename _TYPE>
 using DoNothingHolder = SpecializedWrapper<_TYPE, DoNothing<_TYPE*>>;
 
+#ifndef SOS_INCLUDE
 template<typename _TYPE>
 using ReleaseHolder = SpecializedWrapper<_TYPE, DoTheRelease<_TYPE>>;
+#endif // SOS_INCLUDE
 
 template<typename _TYPE>
 using NonVMComHolder = SpecializedWrapper<_TYPE, DoTheRelease<_TYPE>>;

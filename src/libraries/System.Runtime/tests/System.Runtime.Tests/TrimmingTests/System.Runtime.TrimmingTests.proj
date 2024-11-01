@@ -10,13 +10,23 @@
     <TestConsoleAppSourceFiles Include="AppDomainGetThreadWindowsPrincipalTest.cs">
       <SkipOnTestRuntimes>osx-x64;linux-x64;browser-wasm</SkipOnTestRuntimes>
     </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="DebuggerSupportTrue.cs">
+      <EnabledProperties>DebuggerSupport</EnabledProperties>
+      <NativeAotIncompatible>true</NativeAotIncompatible>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="DebuggerSupportFalse.cs">
+      <DisabledProperties>DebuggerSupport</DisabledProperties>
+      <NativeAotIncompatible>true</NativeAotIncompatible>
+    </TestConsoleAppSourceFiles>
     <TestConsoleAppSourceFiles Include="DebuggerTypeProxyAttributeTests.cs" >
       <EnabledProperties>DebuggerSupport</EnabledProperties>
     </TestConsoleAppSourceFiles>
     <TestConsoleAppSourceFiles Include="DebuggerVisualizerAttributeTests.cs" >
       <EnabledProperties>DebuggerSupport</EnabledProperties>
     </TestConsoleAppSourceFiles>
-    <TestConsoleAppSourceFiles Include="DefaultValueAttributeCtorTest.cs" />
+    <TestConsoleAppSourceFiles Include="DefaultValueAttributeCtorTest.cs">
+      <EnabledProperties>_DefaultValueAttributeSupport</EnabledProperties>
+    </TestConsoleAppSourceFiles>
     <TestConsoleAppSourceFiles Include="GenericArraySortHelperTest.cs" />
     <TestConsoleAppSourceFiles Include="InheritedAttributeTests.cs" />
     <TestConsoleAppSourceFiles Include="InterfacesOnArrays.cs" />

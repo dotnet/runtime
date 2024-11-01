@@ -18,6 +18,7 @@ namespace System
         private const string InitializeMethodName = "Initialize";
         private const string DisallowedSimpleAssemblyNameSuffix = ".dll";
 
+        [FeatureSwitchDefinition("System.StartupHookProvider.IsSupported")]
         private static bool IsSupported => AppContext.TryGetSwitch("System.StartupHookProvider.IsSupported", out bool isSupported) ? isSupported : true;
 
         private struct StartupHookNameOrPath
@@ -184,12 +185,8 @@ namespace System
                     // with the correct name.
                     MethodInfo? wrongSigMethod = type.GetMethod(InitializeMethodName,
                                                       BindingFlags.Public | BindingFlags.NonPublic |
-                                                      BindingFlags.Static | BindingFlags.Instance);
-                    // Didn't find any
-                    if (wrongSigMethod == null)
-                    {
-                        throw new MissingMethodException(StartupHookTypeName, InitializeMethodName);
-                    }
+                                                      BindingFlags.Static | BindingFlags.Instance) ??
+                                                      throw new MissingMethodException(StartupHookTypeName, InitializeMethodName);
                 }
                 catch (AmbiguousMatchException)
                 {

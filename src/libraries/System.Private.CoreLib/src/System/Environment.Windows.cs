@@ -364,10 +364,10 @@ namespace System
         /// Get the CPU usage, including the process time spent running the application code, the process time spent running the operating system code,
         /// and the total time spent running both the application and operating system code.
         /// </summary>
-        [SupportedOSPlatform("maccatalyst")]
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
         [UnsupportedOSPlatform("browser")]
+        [SupportedOSPlatform("maccatalyst")]
         public static ProcessCpuUsage CpuUsage
         {
             get => Interop.Kernel32.GetProcessTimes(Interop.Kernel32.GetCurrentProcess(), out _, out _, out long procKernelTime, out long procUserTime) ?

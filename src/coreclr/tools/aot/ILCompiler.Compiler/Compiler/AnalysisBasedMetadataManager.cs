@@ -13,6 +13,7 @@ using Debug = System.Diagnostics.Debug;
 using EcmaModule = Internal.TypeSystem.Ecma.EcmaModule;
 using CustomAttributeHandle = System.Reflection.Metadata.CustomAttributeHandle;
 using ExportedTypeHandle = System.Reflection.Metadata.ExportedTypeHandle;
+using FlowAnnotations = ILLink.Shared.TrimAnalysis.FlowAnnotations;
 
 namespace ILCompiler
 {
@@ -32,7 +33,7 @@ namespace ILCompiler
         public AnalysisBasedMetadataManager(CompilerTypeSystemContext typeSystemContext)
             : this(typeSystemContext, new FullyBlockedMetadataBlockingPolicy(),
                 new FullyBlockedManifestResourceBlockingPolicy(), null, new NoStackTraceEmissionPolicy(),
-                new NoDynamicInvokeThunkGenerationPolicy(), Array.Empty<ModuleDesc>(), Array.Empty<TypeDesc>(),
+                new NoDynamicInvokeThunkGenerationPolicy(), null, Array.Empty<ModuleDesc>(), Array.Empty<TypeDesc>(),
                 Array.Empty<ReflectableEntity<TypeDesc>>(), Array.Empty<ReflectableEntity<MethodDesc>>(),
                 Array.Empty<ReflectableEntity<FieldDesc>>(), Array.Empty<ReflectableCustomAttribute>(),
                 default)
@@ -46,6 +47,7 @@ namespace ILCompiler
             string logFile,
             StackTraceEmissionPolicy stackTracePolicy,
             DynamicInvokeThunkGenerationPolicy invokeThunkGenerationPolicy,
+            FlowAnnotations flowAnnotations,
             IEnumerable<ModuleDesc> modulesWithMetadata,
             IEnumerable<TypeDesc> forcedTypes,
             IEnumerable<ReflectableEntity<TypeDesc>> reflectableTypes,
@@ -53,7 +55,7 @@ namespace ILCompiler
             IEnumerable<ReflectableEntity<FieldDesc>> reflectableFields,
             IEnumerable<ReflectableCustomAttribute> reflectableAttributes,
             MetadataManagerOptions options)
-            : base(typeSystemContext, blockingPolicy, resourceBlockingPolicy, logFile, stackTracePolicy, invokeThunkGenerationPolicy, options)
+            : base(typeSystemContext, blockingPolicy, resourceBlockingPolicy, logFile, stackTracePolicy, invokeThunkGenerationPolicy, options, flowAnnotations)
         {
             _modulesWithMetadata = new List<ModuleDesc>(modulesWithMetadata);
             _forcedTypes = new List<TypeDesc>(forcedTypes);

@@ -25,12 +25,18 @@ namespace Microsoft.Extensions.Http.Logging
             public static readonly EventId RequestHeader = new EventId(102, "RequestHeader");
             public static readonly EventId ResponseHeader = new EventId(103, "ResponseHeader");
 
+            public static readonly EventId RequestFailed = new EventId(104, "RequestFailed");
+
             public static readonly EventId PipelineStart = new EventId(100, "RequestPipelineStart");
             public static readonly EventId PipelineEnd = new EventId(101, "RequestPipelineEnd");
 
             public static readonly EventId RequestPipelineRequestHeader = new EventId(102, "RequestPipelineRequestHeader");
             public static readonly EventId RequestPipelineResponseHeader = new EventId(103, "RequestPipelineResponseHeader");
+
+            public static readonly EventId PipelineFailed = new EventId(104, "RequestPipelineFailed");
         }
+
+        public static readonly Func<string, bool> ShouldRedactHeaderValue = (header) => true;
 
         private static readonly Action<ILogger, HttpMethod, string?, Exception?> _requestStart = LoggerMessage.Define<HttpMethod, string?>(
             LogLevel.Information,
@@ -43,6 +49,11 @@ namespace Microsoft.Extensions.Http.Logging
             EventIds.RequestEnd,
             "Received HTTP response headers after {ElapsedMilliseconds}ms - {StatusCode}");
 
+        private static readonly Action<ILogger, double, Exception?> _requestFailed = LoggerMessage.Define<double>(
+            LogLevel.Information,
+            EventIds.RequestFailed,
+            "HTTP request failed after {ElapsedMilliseconds}ms");
+
         private static readonly Func<ILogger, HttpMethod, string?, IDisposable?> _beginRequestPipelineScope = LoggerMessage.DefineScope<HttpMethod, string?>("HTTP {HttpMethod} {Uri}");
 
         private static readonly Action<ILogger, HttpMethod, string?, Exception?> _requestPipelineStart = LoggerMessage.Define<HttpMethod, string?>(
@@ -54,6 +65,11 @@ namespace Microsoft.Extensions.Http.Logging
             LogLevel.Information,
             EventIds.PipelineEnd,
             "End processing HTTP request after {ElapsedMilliseconds}ms - {StatusCode}");
+
+        private static readonly Action<ILogger, double, Exception?> _requestPipelineFailed = LoggerMessage.Define<double>(
+            LogLevel.Information,
+            EventIds.PipelineFailed,
+            "HTTP request failed after {ElapsedMilliseconds}ms");
 
         private static bool GetDisableUriRedactionSettingValue()
         {
@@ -110,6 +126,9 @@ namespace Microsoft.Extensions.Http.Logging
             }
         }
 
+        public static void LogRequestFailed(this ILogger logger, TimeSpan duration, HttpRequestException exception) =>
+            _requestFailed(logger, duration.TotalMilliseconds, exception);
+
         public static IDisposable? BeginRequestPipelineScope(this ILogger logger, HttpRequestMessage request, out string? formattedUri)
         {
             formattedUri = GetRedactedUriString(request.RequestUri);
@@ -145,6 +164,9 @@ namespace Microsoft.Extensions.Http.Logging
                     (state, ex) => state.ToString());
             }
         }
+
+        public static void LogRequestPipelineFailed(this ILogger logger, TimeSpan duration, HttpRequestException exception) =>
+            _requestPipelineFailed(logger, duration.TotalMilliseconds, exception);
 
         internal static string? GetRedactedUriString(Uri? uri)
         {

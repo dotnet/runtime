@@ -21,6 +21,7 @@ namespace System.Text.Json
         /// The value of the property is backed by the "System.Text.Json.JsonSerializer.IsReflectionEnabledByDefault"
         /// <see cref="AppContext"/> setting and defaults to <see langword="true"/> if unset.
         /// </remarks>
+        [FeatureSwitchDefinition("System.Text.Json.JsonSerializer.IsReflectionEnabledByDefault")]
         public static bool IsReflectionEnabledByDefault { get; } =
             AppContext.TryGetSwitch(
                 switchName: "System.Text.Json.JsonSerializer.IsReflectionEnabledByDefault",

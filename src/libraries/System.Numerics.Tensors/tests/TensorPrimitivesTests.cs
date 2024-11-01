@@ -163,9 +163,17 @@ namespace System.Numerics.Tensors.Tests
         /// the value is stored into a random position in <paramref name="x"/>, and the original
         /// value is subsequently restored.
         /// </summary>
-        protected void RunForEachSpecialValue(Action action, BoundedMemory<T> x)
+        protected void RunForEachSpecialValue(Action action, BoundedMemory<T> x) =>
+            RunForEachSpecialValue(action, x, GetSpecialValues());
+
+        /// <summary>
+        /// Runs the specified action for each special value. Before the action is invoked,
+        /// the value is stored into a random position in <paramref name="x"/>, and the original
+        /// value is subsequently restored.
+        /// </summary>
+        protected void RunForEachSpecialValue(Action action, BoundedMemory<T> x, IEnumerable<T> specialValues)
         {
-            Assert.All(GetSpecialValues(), value =>
+            Assert.All(specialValues, value =>
             {
                 int pos = Random.Next(x.Length);
                 T orig = x[pos];
@@ -1021,6 +1029,17 @@ namespace System.Numerics.Tensors.Tests
                 using BoundedMemory<T> x = CreateAndFillTensor(tensorLength);
                 using BoundedMemory<T> destination = CreateTensor(tensorLength);
 
+                T[] additionalSpecialValues =
+                [
+                    typeof(T) == typeof(float) ? (T)(object)-709.7f :
+                        typeof(T) == typeof(double) ? (T)(object)-709.7 :
+                        default,
+
+                    typeof(T) == typeof(float) ? (T)(object)709.7f :
+                        typeof(T) == typeof(double) ? (T)(object)709.7 :
+                        default,
+                ];
+
                 RunForEachSpecialValue(() =>
                 {
                     Exp(x, destination);
@@ -1028,7 +1047,7 @@ namespace System.Numerics.Tensors.Tests
                     {
                         AssertEqualTolerance(Exp(x[i]), destination[i]);
                     }
-                }, x);
+                }, x, GetSpecialValues().Concat(additionalSpecialValues));
             });
         }
 

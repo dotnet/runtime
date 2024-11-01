@@ -6,12 +6,12 @@
     <IsPackable>true</IsPackable>
     <PackageDescription>Provides support for operating over tensors.</PackageDescription>
     <GenAPIExcludeApiList>ReferenceAssemblyExclusions.txt</GenAPIExcludeApiList>
-    <ApiCompatValidateAssemblies>true</ApiCompatValidateAssemblies>
-    <!-- SYSLIB5001: Tensor<T> and related APIs are Experimental in .NET 9 -->
+    <!-- SYSLIB5001: Tensor<T> and related APIs in System.Numerics.Tensors are experimental in .NET 9 -->
     <NoWarn>$(NoWarn);SYSLIB5001</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="Properties\InternalVisibleTo.cs" />
     <Compile Include="System\Numerics\Tensors\TensorPrimitives.Single.cs" />
     <Compile Include="System\Numerics\Tensors\TensorPrimitives.Helpers.cs" />
     <Compile Include="System\ThrowHelper.cs" />

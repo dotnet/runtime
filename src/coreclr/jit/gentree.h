@@ -467,6 +467,7 @@ enum GenTreeFlags : unsigned int
     GTF_TLS_GET_ADDR            = 0x01000000, // GT_CALL -- call is tls_get_addr
 
     GTF_MEMORYBARRIER_LOAD      = 0x40000000, // GT_MEMORYBARRIER -- Load barrier
+    GTF_MEMORYBARRIER_STORE     = 0x80000000, // GT_MEMORYBARRIER -- Store barrier
 
     GTF_FLD_TLS                 = 0x80000000, // GT_FIELD_ADDR -- field address is a Windows x86 TLS reference
     GTF_FLD_DEREFERENCED        = 0x40000000, // GT_FIELD_ADDR -- used to preserve previous behavior
@@ -488,7 +489,7 @@ enum GenTreeFlags : unsigned int
     GTF_IND_ALLOW_NON_ATOMIC    = 0x00100000, // GT_IND -- this memory access does not need to be atomic
 
     GTF_IND_COPYABLE_FLAGS = GTF_IND_VOLATILE | GTF_IND_NONFAULTING | GTF_IND_UNALIGNED | GTF_IND_INITCLASS,
-    GTF_IND_FLAGS = GTF_IND_COPYABLE_FLAGS | GTF_IND_NONNULL | GTF_IND_TGT_NOT_HEAP | GTF_IND_TGT_HEAP | GTF_IND_INVARIANT,
+    GTF_IND_FLAGS = GTF_IND_COPYABLE_FLAGS | GTF_IND_NONNULL | GTF_IND_TGT_NOT_HEAP | GTF_IND_TGT_HEAP | GTF_IND_INVARIANT | GTF_IND_ALLOW_NON_ATOMIC,
 
     GTF_ADDRMODE_NO_CSE         = 0x80000000, // GT_ADD/GT_MUL/GT_LSH -- Do not CSE this node only, forms complex
                                               //                         addressing mode
@@ -546,6 +547,8 @@ enum GenTreeFlags : unsigned int
     GTF_MDARRLEN_NONFAULTING    = 0x20000000, // GT_MDARR_LENGTH -- An MD array length operation that cannot fault. Same as GT_IND_NONFAULTING.
 
     GTF_MDARRLOWERBOUND_NONFAULTING = 0x20000000, // GT_MDARR_LOWER_BOUND -- An MD array lower bound operation that cannot fault. Same as GT_IND_NONFAULTING.
+
+    GTF_ALLOCOBJ_EMPTY_STATIC = 0x80000000, // GT_ALLOCOBJ -- allocation site is part of an empty static pattern
 
 #ifdef FEATURE_HW_INTRINSICS
     GTF_HW_EM_OP                  = 0x10000000, // GT_HWINTRINSIC -- node is used as an operand to an embedded mask
@@ -2095,7 +2098,7 @@ public:
 
     void ClearUnsigned()
     {
-        assert(OperIs(GT_ADD, GT_SUB, GT_CAST) || OperIsMul());
+        assert(OperIs(GT_ADD, GT_SUB, GT_CAST, GT_LE, GT_LT, GT_GT, GT_GE) || OperIsMul());
         gtFlags &= ~GTF_UNSIGNED;
     }
 
@@ -4275,6 +4278,13 @@ struct ReturnTypeDesc
 private:
     var_types m_regType[MAX_RET_REG_COUNT];
 
+#if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
+    // Structs according to hardware floating-point calling convention are passed as two logical fields, each in
+    // separate register, disregarding struct layout such as packing, custom alignment, padding with empty structs, etc.
+    // We need size (can be derived from m_regType) & offset of each field for memory load/stores
+    unsigned m_fieldOffset[MAX_RET_REG_COUNT];
+#endif
+
 #ifdef DEBUG
     bool m_inited;
 #endif
@@ -4306,6 +4316,9 @@ public:
         for (unsigned i = 0; i < MAX_RET_REG_COUNT; ++i)
         {
             m_regType[i] = TYP_UNKNOWN;
+#if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
+            m_fieldOffset[i] = 0;
+#endif
         }
 #ifdef DEBUG
         m_inited = false;
@@ -4351,8 +4364,11 @@ public:
         for (unsigned i = regCount + 1; i < MAX_RET_REG_COUNT; ++i)
         {
             assert(m_regType[i] == TYP_UNKNOWN);
-        }
+#if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
+            assert(m_fieldOffset[i] == 0);
 #endif
+        }
+#endif // DEBUG
 
         return regCount;
     }
@@ -4400,6 +4416,25 @@ public:
 
         return result;
     }
+
+    unsigned GetSingleReturnFieldOffset() const
+    {
+        assert(!IsMultiRegRetType());
+        assert(m_regType[0] != TYP_UNKNOWN);
+#if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
+        return m_fieldOffset[0];
+#else
+        return 0;
+#endif
+    }
+
+#if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
+    unsigned GetReturnFieldOffset(unsigned index) const
+    {
+        assert(m_regType[index] != TYP_UNKNOWN);
+        return m_fieldOffset[index];
+    }
+#endif
 
     // Get i'th ABI return register
     regNumber GetABIReturnReg(unsigned idx, CorInfoCallConvExtension callConv) const;
@@ -4508,9 +4543,6 @@ struct CallArgABIInformation
         : NumRegs(0)
         , ByteOffset(0)
         , ByteSize(0)
-#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-        , StructFloatFieldType()
-#endif
         , ArgType(TYP_UNDEF)
         , PassedByRef(false)
 #if FEATURE_ARG_SPLIT
@@ -4537,18 +4569,6 @@ public:
     unsigned NumRegs;
     unsigned ByteOffset;
     unsigned ByteSize;
-#if defined(UNIX_AMD64_ABI)
-    // Unix amd64 will split floating point types and integer types in structs
-    // between floating point and general purpose registers. Keep track of that
-    // information so we do not need to recompute it later.
-    SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR StructDesc;
-#endif // UNIX_AMD64_ABI
-#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-    // For LoongArch64's ABI, the struct which has float field(s) and no more than two fields
-    // may be passed by float register(s).
-    // e.g  `struct {int a; float b;}` passed by an integer register and a float register.
-    var_types StructFloatFieldType[2];
-#endif
     // The type used to pass this argument. This is generally the original
     // argument type, but when a struct is passed as a scalar type, this is
     // that type. Note that if a struct is passed by reference, this will still
@@ -4788,6 +4808,11 @@ public:
     // This is the same as GetEarlyNode() until morph.
     // After lowering, this is a PUTARG_* node.
     GenTree* GetNode()
+    {
+        return NodeRef();
+    }
+
+    GenTree*& NodeRef()
     {
         return m_lateNode == nullptr ? m_earlyNode : m_lateNode;
     }
@@ -6620,6 +6645,7 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
 
     static NamedIntrinsic GetHWIntrinsicIdForUnOp(
         Compiler* comp, genTreeOps oper, GenTree* op1, var_types simdBaseType, unsigned simdSize, bool isScalar);
+
     static NamedIntrinsic GetHWIntrinsicIdForBinOp(Compiler*  comp,
                                                    genTreeOps oper,
                                                    GenTree*   op1,
@@ -6627,14 +6653,20 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
                                                    var_types  simdBaseType,
                                                    unsigned   simdSize,
                                                    bool       isScalar);
+
     static NamedIntrinsic GetHWIntrinsicIdForCmpOp(Compiler*  comp,
                                                    genTreeOps oper,
+                                                   var_types  type,
                                                    GenTree*   op1,
                                                    GenTree*   op2,
                                                    var_types  simdBaseType,
                                                    unsigned   simdSize,
                                                    bool       isScalar);
-    static genTreeOps     GetOperForHWIntrinsicId(NamedIntrinsic id, var_types simdBaseType, bool* isScalar);
+
+    static var_types GetLookupTypeForCmpOp(
+        Compiler* comp, genTreeOps oper, var_types type, var_types simdBaseType, unsigned simdSize);
+
+    static genTreeOps GetOperForHWIntrinsicId(NamedIntrinsic id, var_types simdBaseType, bool* isScalar);
 
     genTreeOps GetOperForHWIntrinsicId(bool* isScalar) const
     {
@@ -6642,6 +6674,20 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
     }
 
     bool ShouldConstantProp(GenTree* operand, GenTreeVecCon* vecCon);
+
+    void NormalizeJitBaseTypeToInt(NamedIntrinsic id, var_types simdBaseType)
+    {
+        assert(varTypeIsSmall(simdBaseType));
+
+        if (varTypeIsUnsigned(simdBaseType))
+        {
+            SetSimdBaseJitType(CORINFO_TYPE_UINT);
+        }
+        else
+        {
+            SetSimdBaseJitType(CORINFO_TYPE_UINT);
+        }
+    }
 
 private:
     void SetHWIntrinsicId(NamedIntrinsic intrinsicId);

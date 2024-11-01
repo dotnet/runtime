@@ -50,7 +50,7 @@ if("${HARDENED_RUNTIME}")
     set_target_properties(%ProjectName% PROPERTIES XCODE_ATTRIBUTE_CODE_SIGN_ENTITLEMENTS "app.entitlements")
     add_custom_command(
       TARGET %ProjectName% POST_BUILD
-      COMMAND if test \"$CODE_SIGN_IDENTITY\"\; then codesign -fs \"$CODE_SIGN_IDENTITY\" $CODESIGNING_FOLDER_PATH/Contents/Resources/*.dylib\; fi
+      COMMAND if test \"$CODE_SIGN_IDENTITY\" && ls -1 $CODESIGNING_FOLDER_PATH/Contents/Resources/*.dylib 2>/dev/null | grep -q .\; then codesign -fs \"$CODE_SIGN_IDENTITY\" $CODESIGNING_FOLDER_PATH/Contents/Resources/*.dylib\; fi
       )
   endif()
 endif()

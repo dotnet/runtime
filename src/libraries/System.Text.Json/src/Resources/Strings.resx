@@ -507,7 +507,7 @@
     <value>Members '{0}' and '{1}' on type '{2}' cannot both bind with parameter '{3}' in the deserialization constructor.</value>
   </data>
   <data name="ConstructorParamIncompleteBinding" xml:space="preserve">
-    <value>Each parameter in the deserialization constructor on type '{0}' must bind to an object property or field on deserialization. Each parameter name must match with a property or field on the object. Fields are only considered when 'JsonSerializerOptions.IncludeFields' is enabled. The match can be case-insensitive.</value>
+    <value>Each parameter in the deserialization constructor on type '{0}' must bind to an object property or field on deserialization. Each parameter name and type must match with a property or field on the object. Fields are only considered when 'JsonSerializerOptions.IncludeFields' is enabled. The name match can be case-insensitive.</value>
   </data>
   <data name="ObjectWithParameterizedCtorRefMetadataNotSupported" xml:space="preserve">
     <value>Reference metadata is not supported when deserializing constructor parameters. See type '{0}'.</value>
@@ -661,6 +661,9 @@
   </data>
   <data name="Polymorphism_InvalidCustomTypeDiscriminatorPropertyName" xml:space="preserve">
     <value>The metadata property names '$id', '$ref', and '$values' are reserved and cannot be used as custom type discriminator property names.</value>
+  </data>
+  <data name="Polymorphism_PropertyConflictsWithMetadataPropertyName" xml:space="preserve">
+    <value>The type '{0}' contains property '{1}' that conflicts with an existing metadata property name. Consider either renaming it or ignoring it with JsonIgnoreAttribute.</value>
   </data>
   <data name="Polymorphism_ConfigurationDoesNotSpecifyDerivedTypes" xml:space="preserve">
     <value>Polymorphic configuration for type '{0}' should specify at least one derived type.</value>

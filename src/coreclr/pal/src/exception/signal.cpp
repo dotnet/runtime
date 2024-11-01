@@ -190,8 +190,13 @@ BOOL SEHInitializeSignals(CorUnix::CPalThread *pthrCurrent, DWORD flags)
         handle_signal(SIGSEGV, sigsegv_handler, &g_previous_sigsegv);
 #else
         handle_signal(SIGTRAP, sigtrap_handler, &g_previous_sigtrap);
+        int additionalFlagsForSigSegv = 0;
+#ifndef TARGET_SUNOS
+        // On platforms that support signal handlers that don't return,
         // SIGSEGV handler runs on a separate stack so that we can handle stack overflow
-        handle_signal(SIGSEGV, sigsegv_handler, &g_previous_sigsegv, SA_ONSTACK);
+        additionalFlagsForSigSegv |= SA_ONSTACK;
+#endif
+        handle_signal(SIGSEGV, sigsegv_handler, &g_previous_sigsegv, additionalFlagsForSigSegv);
 
         if (!pthrCurrent->EnsureSignalAlternateStack())
         {
@@ -279,7 +284,7 @@ Function :
     Restore default signal handlers
 
 Parameters :
-    None
+    isChildProcess - indicates that it is called from a child process fork
 
     (no return value)
 
@@ -288,34 +293,42 @@ reason for this function is that during PAL_Terminate, we reach a point where
 SEH isn't possible anymore (handle manager is off, etc). Past that point,
 we can't avoid crashing on a signal.
 --*/
-void SEHCleanupSignals()
+void SEHCleanupSignals(bool isChildProcess)
 {
     TRACE("Restoring default signal handlers\n");
 
-    if (g_registered_signal_handlers)
+    if (isChildProcess)
     {
-        restore_signal(SIGILL, &g_previous_sigill);
+        if (g_registered_signal_handlers)
+        {
+            restore_signal(SIGILL, &g_previous_sigill);
 #if !HAVE_MACH_EXCEPTIONS
-        restore_signal(SIGTRAP, &g_previous_sigtrap);
+            restore_signal(SIGTRAP, &g_previous_sigtrap);
 #endif
-        restore_signal(SIGFPE, &g_previous_sigfpe);
-        restore_signal(SIGBUS, &g_previous_sigbus);
-        restore_signal(SIGABRT, &g_previous_sigabrt);
-        restore_signal(SIGSEGV, &g_previous_sigsegv);
-        restore_signal(SIGINT, &g_previous_sigint);
-        restore_signal(SIGQUIT, &g_previous_sigquit);
-    }
+            restore_signal(SIGFPE, &g_previous_sigfpe);
+            restore_signal(SIGBUS, &g_previous_sigbus);
+            restore_signal(SIGSEGV, &g_previous_sigsegv);
+            restore_signal(SIGINT, &g_previous_sigint);
+            restore_signal(SIGQUIT, &g_previous_sigquit);
+        }
 
 #ifdef INJECT_ACTIVATION_SIGNAL
-    if (g_registered_activation_handler)
-    {
-        restore_signal(INJECT_ACTIVATION_SIGNAL, &g_previous_activation);
-    }
+        if (g_registered_activation_handler)
+        {
+            restore_signal(INJECT_ACTIVATION_SIGNAL, &g_previous_activation);
+        }
 #endif
 
-    if (g_registered_sigterm_handler)
+        if (g_registered_sigterm_handler)
+        {
+            restore_signal(SIGTERM, &g_previous_sigterm);
+        }
+    }
+
+    // Restore only the SIGABRT so that abort that ends up the process can actually end it
+    if (g_registered_signal_handlers)
     {
-        restore_signal(SIGTERM, &g_previous_sigterm);
+        restore_signal(SIGABRT, &g_previous_sigabrt);
     }
 }
 
@@ -336,7 +349,7 @@ Return :
 --*/
 bool IsRunningOnAlternateStack(void *context)
 {
-#if HAVE_MACH_EXCEPTIONS
+#if HAVE_MACH_EXCEPTIONS || defined(TARGET_SUNOS)
     return false;
 #else
     bool isRunningOnAlternateStack;
@@ -637,30 +650,34 @@ static void sigsegv_handler(int code, siginfo_t *siginfo, void *context)
             else
             {
                 (void)!write(STDERR_FILENO, StackOverflowMessage, sizeof(StackOverflowMessage) - 1);
-                PROCAbort(SIGSEGV, siginfo);
             }
-        }
 
-        // Now that we know the SIGSEGV didn't happen due to a stack overflow, execute the common
-        // hardware signal handler on the original stack.
-
-        if (GetCurrentPalThread() && IsRunningOnAlternateStack(context))
-        {
-            if (SwitchStackAndExecuteHandler(code, siginfo, context, 0 /* sp */)) // sp == 0 indicates execution on the original stack
-            {
-                return;
-            }
+            // The current executable (shared library) doesn't have hardware exception handler installed or opted to not to
+            // handle it. So this handler will invoke the previously installed handler at the end of this function.
         }
         else
         {
-            // The code flow gets here when the signal handler is not running on an alternate stack or when it wasn't created
-            // by coreclr. In both cases, we execute the common_signal_handler directly.
-            // If thread isn't created by coreclr and has alternate signal stack GetCurrentPalThread() will return NULL too.
-            // But since in this case we don't handle hardware exceptions (IsSafeToHandleHardwareException returns false)
-            // we can call common_signal_handler on the alternate stack.
-            if (common_signal_handler(code, siginfo, context, 2, (size_t)0, (size_t)siginfo->si_addr))
+            // Now that we know the SIGSEGV didn't happen due to a stack overflow, execute the common
+            // hardware signal handler on the original stack.
+
+            if (GetCurrentPalThread() && IsRunningOnAlternateStack(context))
             {
-                return;
+                if (SwitchStackAndExecuteHandler(code, siginfo, context, 0 /* sp */)) // sp == 0 indicates execution on the original stack
+                {
+                    return;
+                }
+            }
+            else
+            {
+                // The code flow gets here when the signal handler is not running on an alternate stack or when it wasn't created
+                // by coreclr. In both cases, we execute the common_signal_handler directly.
+                // If thread isn't created by coreclr and has alternate signal stack GetCurrentPalThread() will return NULL too.
+                // But since in this case we don't handle hardware exceptions (IsSafeToHandleHardwareException returns false)
+                // we can call common_signal_handler on the alternate stack.
+                if (common_signal_handler(code, siginfo, context, 2, (size_t)0, (size_t)siginfo->si_addr))
+                {
+                    return;
+                }
             }
         }
     }

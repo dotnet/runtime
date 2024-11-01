@@ -1256,6 +1256,7 @@ public:
 
     void EmitGenericParamConstraints(int numTyPars, TyParDescr* pTyPars, mdToken tkOwner, GenericParamConstraintList* pGPCL);
 
+    char *m_pOverrideAssemblyName;
 };
 
 #endif  // Assember_h

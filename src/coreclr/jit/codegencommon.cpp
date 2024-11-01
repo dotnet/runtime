@@ -527,12 +527,15 @@ void CodeGen::genMarkLabelsForCodegen()
     }
 
     // Walk all the exceptional code blocks and mark them, since they don't appear in the normal flow graph.
-    for (Compiler::AddCodeDsc* add = compiler->fgAddCodeList; add != nullptr; add = add->acdNext)
+    if (compiler->fgHasAddCodeDscMap())
     {
-        if (add->acdUsed)
+        for (Compiler::AddCodeDsc* const add : Compiler::AddCodeDscMap::ValueIteration(compiler->fgGetAddCodeDscMap()))
         {
-            JITDUMP("  " FMT_BB " : throw helper block\n", add->acdDstBlk->bbNum);
-            add->acdDstBlk->SetFlags(BBF_HAS_LABEL);
+            if (add->acdUsed)
+            {
+                JITDUMP("  " FMT_BB " : throw helper block\n", add->acdDstBlk->bbNum);
+                add->acdDstBlk->SetFlags(BBF_HAS_LABEL);
+            }
         }
     }
 
@@ -1365,9 +1368,8 @@ AGAIN:
                 {
                     cns += addConst->IconValue();
                     op2 = op2->AsOp()->gtOp1;
+                    goto AGAIN;
                 }
-
-                goto AGAIN;
             }
             break;
 #endif // TARGET_XARCH
@@ -1516,8 +1518,22 @@ void CodeGen::genExitCode(BasicBlock* block)
     bool jmpEpilog = block->HasFlag(BBF_HAS_JMP);
     if (compiler->getNeedsGSSecurityCookie())
     {
+#ifndef JIT32_GCENCODER
+        // At this point the gc info that we track in codegen is often incorrect,
+        // as it could be missing return registers or arg registers (in a case of tail call).
+        // GS cookie check will emit a call and that will pass our GC info to emit and potentially mess things up.
+        // While we could infer returns/args and force them to be live and it seems to work in JIT32_GCENCODER case,
+        // it appears to be nontrivial in more general case.
+        // So, instead, we just claim that the whole thing is not GC-interruptible.
+        // Effectively this starts the epilog a few instructions earlier.
+        //
+        // CONSIDER: is that a good place to be that codegen loses track of returns/args at this point?
+        GetEmitter()->emitDisableGC();
+#endif
+
         genEmitGSCookieCheck(jmpEpilog);
 
+#ifdef JIT32_GCENCODER
         if (jmpEpilog)
         {
             // Dev10 642944 -
@@ -1540,6 +1556,7 @@ void CodeGen::genExitCode(BasicBlock* block)
             GetEmitter()->emitThisGCrefRegs = GetEmitter()->emitInitGCrefRegs = gcInfo.gcRegGCrefSetCur;
             GetEmitter()->emitThisByrefRegs = GetEmitter()->emitInitByrefRegs = gcInfo.gcRegByrefSetCur;
         }
+#endif
     }
 
     genReserveEpilog(block);
@@ -1579,8 +1596,7 @@ void CodeGen::genJumpToThrowHlpBlk(emitJumpKind jumpKind, SpecialCodeKind codeKi
             excpRaisingBlock = failBlk;
 
 #ifdef DEBUG
-            Compiler::AddCodeDsc* add =
-                compiler->fgFindExcptnTarget(codeKind, compiler->bbThrowIndex(compiler->compCurBB));
+            Compiler::AddCodeDsc* add = compiler->fgFindExcptnTarget(codeKind, compiler->compCurBB);
             assert(add->acdUsed);
             assert(excpRaisingBlock == add->acdDstBlk);
 #if !FEATURE_FIXED_OUT_ARGS
@@ -1591,8 +1607,7 @@ void CodeGen::genJumpToThrowHlpBlk(emitJumpKind jumpKind, SpecialCodeKind codeKi
         else
         {
             // Find the helper-block which raises the exception.
-            Compiler::AddCodeDsc* add =
-                compiler->fgFindExcptnTarget(codeKind, compiler->bbThrowIndex(compiler->compCurBB));
+            Compiler::AddCodeDsc* add = compiler->fgFindExcptnTarget(codeKind, compiler->compCurBB);
             PREFIX_ASSUME_MSG((add != nullptr), ("ERROR: failed to find exception throw block"));
             assert(add->acdUsed);
             excpRaisingBlock = add->acdDstBlk;
@@ -2273,6 +2288,7 @@ void CodeGen::genEmitUnwindDebugGCandEH()
 
     // Create and store the GC info for this method.
     genCreateAndStoreGCInfo(codeSize, prologSize, epilogSize DEBUGARG(codePtr));
+    compiler->Metrics.GCInfoBytes = (int)compiler->compInfoBlkSize;
 
     /* Tell the emitter that we're done with this function */
 
@@ -2405,6 +2421,7 @@ void CodeGen::genReportEH()
 
     // Tell the VM how many EH clauses to expect.
     compiler->eeSetEHcount(EHCount);
+    compiler->Metrics.EHClauseCount = (int)EHCount;
 
     struct EHClauseInfo
     {
@@ -3201,6 +3218,13 @@ var_types CodeGen::genParamStackType(LclVarDsc* dsc, const ABIPassingSegment& se
             // can always use the full register size here. This allows us to
             // use stp more often.
             return TYP_I_IMPL;
+#elif defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
+            // On RISC-V/LoongArch structs passed according to floating-point calling convention are enregistered one
+            // field per register regardless of the field layout in memory, so the small int load/store instructions
+            // must not be upsized to 4 bytes, otherwise for example:
+            // * struct { struct{} e1,e2,e3; byte b; float f; } -- 4-byte store for 'b' would trash 'f'
+            // * struct { float f; struct{} e1,e2,e3; byte b; } -- 4-byte store for 'b' would trash adjacent stack slot
+            return seg.GetRegisterType();
 #else
             return genActualType(seg.GetRegisterType());
 #endif
@@ -3231,9 +3255,8 @@ void CodeGen::genSpillOrAddRegisterParam(unsigned lclNum, RegGraph* graph)
     unsigned                     paramLclNum = varDsc->lvIsStructField ? varDsc->lvParentLcl : lclNum;
     LclVarDsc*                   paramVarDsc = compiler->lvaGetDesc(paramLclNum);
     const ABIPassingInformation& abiInfo     = compiler->lvaGetParameterABIInfo(paramLclNum);
-    for (unsigned i = 0; i < abiInfo.NumSegments; i++)
+    for (const ABIPassingSegment& seg : abiInfo.Segments())
     {
-        const ABIPassingSegment& seg = abiInfo.Segment(i);
         if (!seg.IsPassedInRegister() || ((paramRegs & genRegMask(seg.GetRegister())) == 0))
         {
             continue;
@@ -3354,9 +3377,8 @@ void CodeGen::genHomeRegisterParams(regNumber initReg, bool* initRegStillZeroed)
             }
 
             const ABIPassingInformation& abiInfo = compiler->lvaGetParameterABIInfo(lclNum);
-            for (unsigned i = 0; i < abiInfo.NumSegments; i++)
+            for (const ABIPassingSegment& seg : abiInfo.Segments())
             {
-                const ABIPassingSegment& seg = abiInfo.Segment(i);
                 if (seg.IsPassedInRegister() && ((paramRegs & genRegMask(seg.GetRegister())) != 0))
                 {
                     var_types storeType = genParamStackType(lclDsc, seg);
@@ -4403,9 +4425,8 @@ void CodeGen::genHomeSwiftStructParameters(bool handleStack)
         const ABIPassingInformation& abiInfo = compiler->lvaGetParameterABIInfo(lclNum);
         DBEXEC(VERBOSE, abiInfo.Dump());
 
-        for (unsigned i = 0; i < abiInfo.NumSegments; i++)
+        for (const ABIPassingSegment& seg : abiInfo.Segments())
         {
-            const ABIPassingSegment& seg = abiInfo.Segment(i);
             if (seg.IsPassedOnStack() != handleStack)
             {
                 continue;
@@ -4721,43 +4742,13 @@ void CodeGen::genReserveProlog(BasicBlock* block)
 
 void CodeGen::genReserveEpilog(BasicBlock* block)
 {
-    regMaskTP gcrefRegsArg = gcInfo.gcRegGCrefSetCur;
-    regMaskTP byrefRegsArg = gcInfo.gcRegByrefSetCur;
-
-    /* The return value is special-cased: make sure it goes live for the epilog */
-
-    bool jmpEpilog = block->HasFlag(BBF_HAS_JMP);
-
-    if (IsFullPtrRegMapRequired() && !jmpEpilog)
-    {
-        if (varTypeIsGC(compiler->info.compRetNativeType))
-        {
-            noway_assert(genTypeStSz(compiler->info.compRetNativeType) == genTypeStSz(TYP_I_IMPL));
-
-            gcInfo.gcMarkRegPtrVal(REG_INTRET, compiler->info.compRetNativeType);
-
-            switch (compiler->info.compRetNativeType)
-            {
-                case TYP_REF:
-                    gcrefRegsArg |= RBM_INTRET;
-                    break;
-                case TYP_BYREF:
-                    byrefRegsArg |= RBM_INTRET;
-                    break;
-                default:
-                    break;
-            }
-
-            JITDUMP("Extending return value GC liveness to epilog\n");
-        }
-    }
-
     JITDUMP("Reserving epilog IG for block " FMT_BB "\n", block->bbNum);
 
     assert(block != nullptr);
-    const VARSET_TP& gcrefVarsArg(GetEmitter()->emitThisGCrefVars);
-    GetEmitter()->emitCreatePlaceholderIG(IGPT_EPILOG, block, gcrefVarsArg, gcrefRegsArg, byrefRegsArg,
-                                          block->IsLast());
+    // We pass empty GC info, because epilog is always an extend IG and will ignore what we pass.
+    // Besides, at this point the GC info that we track in CodeGen is often incorrect.
+    // See comments in genExitCode for more info.
+    GetEmitter()->emitCreatePlaceholderIG(IGPT_EPILOG, block, VarSetOps::MakeEmpty(compiler), 0, 0, block->IsLast());
 }
 
 /*****************************************************************************
@@ -7390,18 +7381,19 @@ void CodeGen::genStructReturn(GenTree* treeNode)
         assert(varDsc->lvIsMultiRegRet);
 
 #if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-        // On LoongArch64, for a struct like "{ int, double }", "retTypeDesc" will be "{ TYP_INT, TYP_DOUBLE }",
-        // i. e. not include the padding for the first field, and so the general loop below won't work.
-        var_types type  = retTypeDesc.GetReturnRegType(0);
-        regNumber toReg = retTypeDesc.GetABIReturnReg(0, compiler->info.compCallConv);
-        GetEmitter()->emitIns_R_S(ins_Load(type), emitTypeSize(type), toReg, lclNode->GetLclNum(), 0);
+        var_types type   = retTypeDesc.GetReturnRegType(0);
+        unsigned  offset = retTypeDesc.GetReturnFieldOffset(0);
+        regNumber toReg  = retTypeDesc.GetABIReturnReg(0, compiler->info.compCallConv);
+
+        GetEmitter()->emitIns_R_S(ins_Load(type), emitTypeSize(type), toReg, lclNode->GetLclNum(), offset);
         if (regCount > 1)
         {
             assert(regCount == 2);
-            int offset = genTypeSize(type);
-            type       = retTypeDesc.GetReturnRegType(1);
-            offset     = (int)((unsigned int)offset < genTypeSize(type) ? genTypeSize(type) : offset);
-            toReg      = retTypeDesc.GetABIReturnReg(1, compiler->info.compCallConv);
+            assert(offset + genTypeSize(type) <= retTypeDesc.GetReturnFieldOffset(1));
+            type   = retTypeDesc.GetReturnRegType(1);
+            offset = retTypeDesc.GetReturnFieldOffset(1);
+            toReg  = retTypeDesc.GetABIReturnReg(1, compiler->info.compCallConv);
+
             GetEmitter()->emitIns_R_S(ins_Load(type), emitTypeSize(type), toReg, lclNode->GetLclNum(), offset);
         }
 #else // !TARGET_LOONGARCH64 && !TARGET_RISCV64
@@ -7496,9 +7488,8 @@ void CodeGen::genCallPlaceRegArgs(GenTreeCall* call)
         if (argNode->OperIs(GT_FIELD_LIST))
         {
             GenTreeFieldList::Use* use = argNode->AsFieldList()->Uses().begin().GetUse();
-            for (unsigned i = 0; i < abiInfo.NumSegments; i++)
+            for (const ABIPassingSegment& seg : abiInfo.Segments())
             {
-                const ABIPassingSegment& seg = abiInfo.Segment(i);
                 if (!seg.IsPassedInRegister())
                 {
                     continue;
@@ -7526,9 +7517,8 @@ void CodeGen::genCallPlaceRegArgs(GenTreeCall* call)
             assert(compFeatureArgSplit());
             genConsumeArgSplitStruct(argNode->AsPutArgSplit());
             unsigned regIndex = 0;
-            for (unsigned i = 0; i < abiInfo.NumSegments; i++)
+            for (const ABIPassingSegment& seg : abiInfo.Segments())
             {
-                const ABIPassingSegment& seg = abiInfo.Segment(i);
                 if (!seg.IsPassedInRegister())
                 {
                     continue;
@@ -7564,9 +7554,8 @@ void CodeGen::genCallPlaceRegArgs(GenTreeCall* call)
     {
         for (CallArg& arg : call->gtArgs.Args())
         {
-            for (unsigned i = 0; i < arg.NewAbiInfo.NumSegments; i++)
+            for (const ABIPassingSegment& seg : arg.NewAbiInfo.Segments())
             {
-                const ABIPassingSegment& seg = arg.NewAbiInfo.Segment(i);
                 if (seg.IsPassedInRegister() && genIsValidFloatReg(seg.GetRegister()))
                 {
                     regNumber targetReg = compiler->getCallArgIntRegister(seg.GetRegister());
@@ -7647,9 +7636,8 @@ void CodeGen::genJmpPlaceArgs(GenTree* jmp)
         LclVarDsc* varDsc = compiler->lvaGetDesc(varNum);
 
         const ABIPassingInformation& abiInfo = compiler->lvaGetParameterABIInfo(varNum);
-        for (unsigned i = 0; i < abiInfo.NumSegments; i++)
+        for (const ABIPassingSegment& segment : abiInfo.Segments())
         {
-            const ABIPassingSegment& segment = abiInfo.Segment(i);
             if (segment.IsPassedOnStack())
             {
                 continue;
@@ -7779,6 +7767,11 @@ void CodeGen::genMultiRegStoreToLocal(GenTreeLclVar* lclNode)
         assert(regCount == varDsc->lvFieldCnt);
     }
 
+#if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
+    // genMultiRegStoreToLocal is only used for calls on RISC-V and LoongArch
+    const ReturnTypeDesc* returnTypeDesc = actualOp1->AsCall()->GetReturnTypeDesc();
+#endif
+
 #ifdef SWIFT_SUPPORT
     const uint32_t* offsets = nullptr;
     if (actualOp1->IsCall() && (actualOp1->AsCall()->GetUnmanagedCallConv() == CorInfoCallConvExtension::Swift))
@@ -7829,8 +7822,8 @@ void CodeGen::genMultiRegStoreToLocal(GenTreeLclVar* lclNode)
         else
         {
 #if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-            // should consider the padding field within a struct.
-            offset = (offset % genTypeSize(srcType)) ? AlignUp(offset, genTypeSize(srcType)) : offset;
+            // Should consider the padding, empty struct fields, etc within a struct.
+            offset = returnTypeDesc->GetReturnFieldOffset(i);
 #endif
 #ifdef SWIFT_SUPPORT
             if (offsets != nullptr)
