@@ -117,6 +117,11 @@ namespace System.Security.Cryptography
         /// </remarks>
         public static bool TryFindUtf8(ReadOnlySpan<byte> pemData, out PemFields fields)
         {
+            if (!Utf8.IsValid(pemData))
+            {
+                throw new ArgumentException(SR.Argument_PemEncoding_PemInvalidUtf8, nameof(pemData));
+            }
+
             return TryFindCore<byte, Utf8PemEncoder>(pemData, out fields);
         }
 

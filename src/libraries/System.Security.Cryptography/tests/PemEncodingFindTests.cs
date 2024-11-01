@@ -479,6 +479,13 @@ MII
 
     public class PemEncodingFindUtf8ThrowingTests : PemEncodingFindTests<byte>
     {
+        [Fact]
+        public void FindUtf8_InvalidUtf8_OutsideOfEncapBoundary_InvalidPem()
+        {
+            ReadOnlySpan<byte> content = [0xFF, 0xFF, .."\n-----BEGIN TEST-----\nZm9v\n-----END TEST-----"u8];
+            AssertExtensions.Throws<ArgumentException, byte>("pemData", content, static data => PemEncoding.FindUtf8(data));
+        }
+
         protected override PemFields FindPem(ReadOnlySpan<byte> input) => PemEncoding.FindUtf8(input);
 
         protected override void AssertNoPemFound(ReadOnlySpan<byte> input)
@@ -491,6 +498,13 @@ MII
 
     public class PemEncodingFindUtf8TryTests : PemEncodingFindTests<byte>
     {
+        [Fact]
+        public void FindUtf8_InvalidUtf8_OutsideOfEncapBoundary_InvalidPem()
+        {
+            ReadOnlySpan<byte> content = [0xFF, 0xFF, .."\n-----BEGIN TEST-----\nZm9v\n-----END TEST-----"u8];
+            AssertExtensions.Throws<ArgumentException, byte>("pemData", content, static data => PemEncoding.TryFindUtf8(data, out _));
+        }
+
         protected override PemFields FindPem(ReadOnlySpan<byte> input)
         {
             bool found = PemEncoding.TryFindUtf8(input, out PemFields fields);
