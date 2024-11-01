@@ -1870,7 +1870,7 @@ AssemblyNamesList2::AssemblyNamesList2(const char* list, HostAllocator alloc)
     const char*    nameStart  = nullptr; // start of the name currently being processed. nullptr if no current name
     AssemblyName** ppPrevLink = &m_pNames;
 
-    for (const char* listWalk = const_cast<char*>(list); prevChar != '\0'; prevChar = *listWalk, listWalk++)
+    for (const char* listWalk = list; prevChar != '\0'; prevChar = *listWalk, listWalk++)
     {
         char curChar = *listWalk;
 
