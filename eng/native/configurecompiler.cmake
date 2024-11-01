@@ -693,7 +693,7 @@ if (CLR_CMAKE_HOST_UNIX)
     endif()
   endif(CLR_CMAKE_HOST_MACCATALYST)
 
-  if(NOT CLR_CROSS_COMPONENTS_BUILD AND CLR_CMAKE_TARGET_ARCH_ARM64 AND CLR_CMAKE_TARGET_LINUX)
+  if(CLR_CMAKE_HOST_ARCH_ARM64 AND CLR_CMAKE_HOST_LINUX)
     # Enable Pointer Authentication (PAC) extension
     add_compile_options(-mbranch-protection=pac-ret)
   endif()
@@ -701,7 +701,6 @@ if (CLR_CMAKE_HOST_UNIX)
 endif(CLR_CMAKE_HOST_UNIX)
 
 if(CLR_CMAKE_TARGET_UNIX)
-
   add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_OS>>>:TARGET_UNIX>)
   # Contracts are disabled on UNIX.
   add_definitions(-DDISABLE_CONTRACTS)
