@@ -1050,7 +1050,8 @@ Range RangeCheck::ComputeRangeForBinOp(BasicBlock* block, GenTreeOp* binop, bool
             return Range(Limit::keUnknown);
         }
 
-        int icon = -1;
+        int op1op2Cns = 0;
+        int icon      = -1;
         if (binop->OperIs(GT_AND))
         {
             // x & cns -> [0..cns]
@@ -1062,11 +1063,10 @@ Range RangeCheck::ComputeRangeForBinOp(BasicBlock* block, GenTreeOp* binop, bool
             icon = static_cast<int>(op2Cns) - 1;
         }
         else if (binop->OperIs(GT_RSH, GT_LSH) && op1->OperIs(GT_AND) &&
-                 vnStore->IsVNConstantFittingIn<int32_t>(op1->AsOp()->gtGetOp2()->gtVNPair.GetConservative()))
+                 vnStore->IsVNIntegralConstant<int>(op1->AsOp()->gtGetOp2()->gtVNPair.GetConservative(), &op1op2Cns))
         {
             // (x & cns1) >> cns2 -> [0..cns1>>cns2]
-            int icon1 = static_cast<int>(
-                vnStore->CoercedConstantValue<ssize_t>(op1->AsOp()->gtGetOp2()->gtVNPair.GetConservative()));
+            int icon1 = op1op2Cns;
             int icon2 = static_cast<int>(op2Cns);
             if ((icon1 >= 0) && (icon2 >= 0) && (icon2 < 32))
             {

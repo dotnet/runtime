@@ -1343,14 +1343,21 @@ public:
     }
 
     template <typename T>
-    bool IsVNConstantFittingIn(ValueNum vn)
+    bool IsVNIntegralConstant(ValueNum vn, T* value)
     {
         if (!IsVNConstant(vn) || !varTypeIsIntegral(TypeOfVN(vn)))
         {
+            *value = 0;
             return false;
         }
         ssize_t val = CoercedConstantValue<ssize_t>(vn);
-        return FitsIn<T>(val);
+        if (FitsIn<T>(val))
+        {
+            *value = static_cast<T>(val);
+            return true;
+        }
+        *value = 0;
+        return false;
     }
 
     CORINFO_OBJECT_HANDLE ConstantObjHandle(ValueNum vn)
