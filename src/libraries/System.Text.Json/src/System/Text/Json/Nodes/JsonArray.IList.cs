@@ -131,12 +131,12 @@ namespace System.Text.Json.Nodes
                 ThrowHelper.ThrowArgumentNullException(nameof(match));
             }
 
-            List<JsonNode?>? list = _list;
-            if (list is null)
+            if (_list is not { } list)
             {
                 return 0;
             }
 
+            // Algorithm adapted from List<T>.RemoveAll()
             int size = list.Count;
             int freeIndex = 0;   // the first free slot in items array
 
@@ -161,11 +161,13 @@ namespace System.Text.Json.Nodes
                 }
             }
 
+            // Detach trailing nodes, as they are skipped in the loop above
             int removedLength = size - freeIndex;
             for (int i = 0; i < removedLength; i++)
             {
-                DetachParent(list[freeIndex + removedLength]);
+                DetachParent(list[freeIndex + i]);
             }
+
             list.RemoveRange(freeIndex, removedLength);
             return removedLength;
         }
@@ -185,16 +187,15 @@ namespace System.Text.Json.Nodes
         {
             if (index < 0)
             {
-                ThrowHelper.ThrowIndexArgumentOutOfRange_NeedNonNegNumException();
+                ThrowHelper.ThrowArgumentOutOfRangeException_NeedNonNegNum(nameof(index));
             }
 
             if (count < 0)
             {
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.count, ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
+                ThrowHelper.ThrowArgumentOutOfRangeException_NeedNonNegNum(nameof(count));
             }
 
-            List<JsonNode?>? list = _list;
-            if (list is null)
+            if (_list is not { } list)
             {
                 if (index == 0 && count == 0)
                 {
@@ -202,21 +203,23 @@ namespace System.Text.Json.Nodes
                 }
                 else
                 {
-                    ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_InvalidOffLen);
+                    ThrowHelper.ThrowArgumentException_InvalidOffLen();
                     return;
                 }
             }
 
-            int size = list.Count;
-
-            if (size - index < count)
-                ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_InvalidOffLen);
+            if (list.Count - index < count)
+            {
+                ThrowHelper.ThrowArgumentException_InvalidOffLen();
+            }
 
             if (count > 0)
             {
                 for (int i = 0; i < count; i++)
                 {
                     DetachParent(list[index + i]);
+                    // There's no need to assign nulls because List<>.RemoveRange calls
+                    // Array.Clear on the removed partition.
                 }
 
                 list.RemoveRange(index, count);
