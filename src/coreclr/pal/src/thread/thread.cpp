@@ -1479,7 +1479,7 @@ SetThreadDescription(
     char *nameBuf = NULL;
 
     PAL_ERROR palError = InternalGetThreadDataFromHandle(pThread, hThread, &pTargetThread, &pobjThread);
-    if (palError != NO_ERROR)
+    if (palError == NO_ERROR)
     {
         // Ignore requests to set the main thread name because
         // it causes the value returned by Process.ProcessName to change.
