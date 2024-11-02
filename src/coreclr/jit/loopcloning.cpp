@@ -1181,7 +1181,7 @@ bool Compiler::optDeriveLoopCloningConditions(FlowGraphNaturalLoop* loop, LoopCl
             }
 
             default:
-                JITDUMP("Unknown opt\n");
+                assert(!"Unknown opt type");
                 return false;
         }
     }
@@ -1378,12 +1378,14 @@ bool Compiler::optDeriveLoopCloningConditions(FlowGraphNaturalLoop* loop, LoopCl
                 // TODO: ensure array is dereference-able?
             }
             break;
+
             case LcOptInfo::LcTypeTest:
+            case LcOptInfo::LcMethodAddrTest:
                 // handled above
                 break;
 
             default:
-                JITDUMP("Unknown opt\n");
+                assert(!"Unknown opt type");
                 return false;
         }
     }
@@ -3037,33 +3039,6 @@ PhaseStatus Compiler::optCloneLoops()
             }
         }
     }
-
-#if 0
-    // The code in this #if has been useful in debugging loop cloning issues, by
-    // enabling selective enablement of the loop cloning optimization according to
-    // method hash.
-#ifdef DEBUG
-    unsigned methHash = info.compMethodHash();
-    char* lostr = getenv("loopclonehashlo");
-    unsigned methHashLo = 0;
-    if (lostr != NULL)
-    {
-        sscanf_s(lostr, "%x", &methHashLo);
-        // methHashLo = (unsigned(atoi(lostr)) << 2);  // So we don't have to use negative numbers.
-    }
-    char* histr = getenv("loopclonehashhi");
-    unsigned methHashHi = UINT32_MAX;
-    if (histr != NULL)
-    {
-        sscanf_s(histr, "%x", &methHashHi);
-        // methHashHi = (unsigned(atoi(histr)) << 2);  // So we don't have to use negative numbers.
-    }
-    if (methHash < methHashLo || methHash > methHashHi)
-    {
-        return PhaseStatus::MODIFIED_EVERYTHING;
-    }
-#endif
-#endif
 
     assert(Metrics.LoopsCloned == 0); // It should be initialized, but not yet changed.
     for (FlowGraphNaturalLoop* loop : m_loops->InReversePostOrder())

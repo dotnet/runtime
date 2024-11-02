@@ -665,7 +665,8 @@ JS_ENGINES = [NODE_JS]
       <_MonoCMakeArgs Condition="'$(Platform)' == 'arm'" Include="-DANDROID_ABI=armeabi-v7a" />
       <_MonoCMakeArgs Condition="'$(Platform)' == 'x86'" Include="-DANDROID_ABI=x86" />
       <_MonoCMakeArgs Condition="'$(Platform)' == 'x64'" Include="-DANDROID_ABI=x86_64" />
-      <_MonoCMakeArgs Include="-DENABLE_MINIMAL=ssa,logging" />
+      <_MonoCMakeArgs Condition="'$(Configuration)' != 'Debug'" Include="-DENABLE_MINIMAL=ssa,logging" />
+      <_MonoCMakeArgs Condition="'$(Configuration)' == 'Debug'" Include="-DENABLE_MINIMAL=ssa" />
 
       <_MonoCFLAGS Condition="'$(Platform)' == 'arm'" Include="-march=armv7-a" />
       <_MonoCFLAGS Condition="'$(Platform)' == 'arm'" Include="-mtune=cortex-a8" />
