@@ -9259,16 +9259,17 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
                     const unsigned expectedSize = sizeof_simdType / widenFactor;
 
                     assert((sizeof_simdType != 16) || (expectedSize == 8) || (expectedSize == 4) ||
-                            (expectedSize == 2));
+                           (expectedSize == 2));
                     assert((sizeof_simdType != 32) || (expectedSize == 16) || (expectedSize == 8) ||
-                            (expectedSize == 4));
+                           (expectedSize == 4));
                     assert((sizeof_simdType != 64) || (expectedSize == 32) || (expectedSize == 16) ||
-                            (expectedSize == 8));
+                           (expectedSize == 8));
 
                     if (expectedSize < 16)
                     {
-                        // If we need less than a full vector, we can always contain an unaligned load of sufficient size.
-                        // We may also be able to contain a SIMD scalar load provided the element type is large enough.
+                        // If we need less than a full vector, we can always contain an unaligned load of sufficient
+                        // size. We may also be able to contain a SIMD scalar load provided the element type is large
+                        // enough.
 
                         supportsAlignedSIMDLoads = false;
                         supportsGeneralLoads     = (operandSize >= expectedSize);
