@@ -130,7 +130,6 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
         // assume the worst-case.
         mflags = (calliSig.callConv & CORINFO_CALLCONV_HASTHIS) ? 0 : CORINFO_FLG_STATIC;
 
-        // TODO: Handle spilled function pointers
         if (call->AsCall()->unmgdCallConv == CorInfoCallConvExtension::Managed &&
             ((GenTree*)call->AsCall()->gtCallMethHnd)->OperIs(GT_FTN_ADDR))
         {
@@ -1959,6 +1958,12 @@ GenTreeCall* Compiler::impImportIndirectCall(CORINFO_SIG_INFO* sig, const DebugI
     // However, stubgen IL optimization can change LDC.I8 to LDC.I4
     // See ILCodeStream::LowerOpcode
     assert(genActualType(fptr->gtType) == TYP_I_IMPL || genActualType(fptr->gtType) == TYP_INT);
+
+    GenTree* fptrVal;
+    if (fptr->OperIs(GT_LCL_VAR) && impGetLclVal(fptr->AsLclVar(), &fptrVal))
+    {
+        fptr = fptrVal;
+    }
 
 #ifdef DEBUG
     // This temporary must never be converted to a double in stress mode,

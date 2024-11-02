@@ -333,6 +333,7 @@ Compiler::Compiler(ArenaAllocator*       arena,
                    InlineInfo*           inlineInfo)
     : compArenaAllocator(arena)
     , impInlineInfo(inlineInfo)
+    , impLclVals(LocalValMap(CompAllocator(arena, CMK_Generic)))
     , impPendingBlockMembers(CompAllocator(arena, CMK_Generic))
     , impSpillCliquePredMembers(CompAllocator(arena, CMK_Generic))
     , impSpillCliqueSuccMembers(CompAllocator(arena, CMK_Generic))
@@ -4583,6 +4584,8 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     // partially imported try regions, add OSR step blocks.
     //
     DoPhase(this, PHASE_POST_IMPORT, &Compiler::fgPostImportationCleanup);
+
+    compImportationDone = true;
 
     // If we're importing for inlining, we're done.
     if (compIsForInlining())

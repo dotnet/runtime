@@ -4719,6 +4719,14 @@ protected:
     Statement* impStmtList = nullptr; // Statements for the BB being imported.
     Statement* impLastStmt = nullptr; // The last statement for the current BB.
 
+    //------------------- Importer forward substitution -----------------------
+
+    typedef JitHashTable<UINT64, JitSmallPrimitiveKeyFuncs<UINT64>, GenTree*> LocalValMap;
+    LocalValMap impLclVals; // The values of the locals.
+
+    void impSetLclVal(unsigned lclNum, GenTree* tree);
+    bool impGetLclVal(GenTreeLclVar* tree, GenTree** val);
+
 public:
     static const unsigned CHECK_SPILL_ALL  = static_cast<unsigned>(-1);
     static const unsigned CHECK_SPILL_NONE = static_cast<unsigned>(-2);
@@ -9939,6 +9947,7 @@ public:
     bool fgLocalVarLivenessChanged;
     bool fgIsDoingEarlyLiveness         = false;
     bool fgDidEarlyLiveness             = false;
+    bool compImportationDone            = false;
     bool compPostImportationCleanupDone = false;
     bool compLSRADone                   = false;
     bool compRationalIRForm             = false;

@@ -568,6 +568,94 @@ void Compiler::impAppendStmt(Statement* stmt)
 }
 
 //------------------------------------------------------------------------
+// impSetLclVal: Add the local variable to the list of locals in the current block.
+//
+// Arguments:
+//    lclNum - The local variable number.
+//    tree   - The tree that stores the value of the local variable.
+//
+void Compiler::impSetLclVal(unsigned lclNum, GenTree* tree)
+{
+    assert(tree != nullptr);
+    if (!opts.OptimizationEnabled())
+    {
+        return;
+    }
+
+    impLclVals.Set((static_cast<UINT64>(compCurBB->bbNum) << 32 | lclNum), tree, LocalValMap::Overwrite);
+    JITDUMP("\nCreate substitution for V%02u at BB%02u in '%s':\n", lclNum, compCurBB->bbNum, info.compMethodName);
+    DISPTREE(tree);
+}
+
+//------------------------------------------------------------------------
+// impGetLclVal: Get the value of the local variable from the list of locals in the current block.
+//
+// Arguments:
+//    tree - The local variable node.
+//    val  - The value of the local variable.
+//
+// Return Value:
+//    True if the value of the local variable is found in the list of locals in the current block.
+//
+bool Compiler::impGetLclVal(GenTreeLclVar* tree, GenTree** val)
+{
+    assert(tree != nullptr);
+
+    if (!opts.OptimizationEnabled())
+    {
+        return false;
+    }
+
+    GenTree* gtVal = nullptr;
+    INDEBUG(GenTreeLclVar* origTree = tree);
+
+    Compiler* comp = this;
+
+    JITDUMP("\n");
+
+    while (true)
+    {
+        JITDUMP("Try to find substitution for V%02u at BB%02u in '%s':\n", tree->GetLclNum(), comp->compCurBB->bbNum,
+                comp->info.compMethodName);
+        DISPTREE(tree);
+        if (lvaGetDesc(tree->GetLclNum())->lvSingleDef &&
+            comp->impLclVals.Lookup((static_cast<UINT64>(comp->compCurBB->bbNum) << 32 | tree->GetLclNum()), &gtVal) &&
+            gtVal->TypeIs(tree->TypeGet()))
+        {
+            if (gtVal->OperIsConst() || gtVal->OperIs(GT_FTN_ADDR) ||
+                (gtVal->IsCall() && gtIsTypeHandleToRuntimeTypeHelper(gtVal->AsCall())))
+            {
+                JITDUMP("Use substitution for V%02u:\n", tree->GetLclNum());
+                DISPTREE(gtVal);
+                *val = gtVal;
+                return true;
+            }
+            else if (gtVal->OperIs(GT_LCL_VAR))
+            {
+                if (comp->compIsForInlining())
+                {
+                    for (unsigned i = 0; i < comp->impInlineInfo->argCnt; i++)
+                    {
+                        if (comp->impInlineInfo->inlArgInfo[i].argTmpNum == gtVal->AsLclVar()->GetLclNum())
+                        {
+                            comp = comp->impInlineInfo->InlinerCompiler;
+                            break;
+                        }
+                    }
+                }
+                tree = gtVal->AsLclVar();
+                continue;
+            }
+        }
+
+        break;
+    }
+
+    JITDUMP("No substitution found for V%02u\n", origTree->GetLclNum());
+    return false;
+}
+
+//------------------------------------------------------------------------
 // impExtractLastStmt: Extract the last statement from the current stmts list.
 //
 // Return Value:
