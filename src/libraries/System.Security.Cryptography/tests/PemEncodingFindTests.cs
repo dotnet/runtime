@@ -480,10 +480,13 @@ MII
     public class PemEncodingFindUtf8ThrowingTests : PemEncodingFindTests<byte>
     {
         [Fact]
-        public void FindUtf8_InvalidUtf8_OutsideOfEncapBoundary_InvalidPem()
+        public void FindUtf8_InvalidUtf8_OutsideOfEncapBoundary_Ignored()
         {
             ReadOnlySpan<byte> content = [0xFF, 0xFF, .."\n-----BEGIN TEST-----\nZm9v\n-----END TEST-----"u8];
-            AssertExtensions.Throws<ArgumentException, byte>("pemData", content, static data => PemEncoding.FindUtf8(data));
+            PemFields fields = PemEncoding.FindUtf8(content);
+            Assert.Equal(14..18, fields.Label);
+            Assert.Equal(24..28, fields.Base64Data);
+            Assert.Equal(3..47, fields.Location);
         }
 
         protected override PemFields FindPem(ReadOnlySpan<byte> input) => PemEncoding.FindUtf8(input);
@@ -499,10 +502,13 @@ MII
     public class PemEncodingFindUtf8TryTests : PemEncodingFindTests<byte>
     {
         [Fact]
-        public void FindUtf8_InvalidUtf8_OutsideOfEncapBoundary_InvalidPem()
+        public void FindUtf8_InvalidUtf8_OutsideOfEncapBoundary_Ignored()
         {
             ReadOnlySpan<byte> content = [0xFF, 0xFF, .."\n-----BEGIN TEST-----\nZm9v\n-----END TEST-----"u8];
-            AssertExtensions.Throws<ArgumentException, byte>("pemData", content, static data => PemEncoding.TryFindUtf8(data, out _));
+            Assert.True(PemEncoding.TryFindUtf8(content, out PemFields fields), nameof(PemEncoding.TryFindUtf8));
+            Assert.Equal(14..18, fields.Label);
+            Assert.Equal(24..28, fields.Base64Data);
+            Assert.Equal(3..47, fields.Location);
         }
 
         protected override PemFields FindPem(ReadOnlySpan<byte> input)

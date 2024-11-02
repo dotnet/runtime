@@ -89,8 +89,11 @@ namespace System.Security.Cryptography
         /// <c>true</c> if PEM-encoded data was found; otherwise <c>false</c>.
         /// </returns>
         /// <remarks>
-        /// IETF RFC 7468 permits different decoding rules. This method
-        /// always uses lax rules.
+        ///   <para>IETF RFC 7468 permits different decoding rules. This method always uses lax rules.</para>
+        ///   <para>
+        ///     This does not validate the UTF-8 data outside of encapsulation boundaries and is ignored. It is the caller's
+        ///     responsibility to ensure the entire input is UTF-8 if required.
+        ///   </para>
         /// </remarks>
         public static bool TryFind(ReadOnlySpan<char> pemData, out PemFields fields)
         {
@@ -113,15 +116,14 @@ namespace System.Security.Cryptography
         ///   <see langword="true" /> if PEM-encoded data was found; otherwise <see langword="false" />.
         /// </returns>
         /// <remarks>
-        ///   IETF RFC 7468 permits different decoding rules. This method always uses lax rules.
+        ///   <para>IETF RFC 7468 permits different decoding rules. This method always uses lax rules.</para>
+        ///   <para>
+        ///     This does not validate the UTF-8 data outside of encapsulation boundaries and is ignored. It is the caller's
+        ///     responsibility to ensure the entire input is UTF-8 if required.
+        ///   </para>
         /// </remarks>
         public static bool TryFindUtf8(ReadOnlySpan<byte> pemData, out PemFields fields)
         {
-            if (!Utf8.IsValid(pemData))
-            {
-                throw new ArgumentException(SR.Argument_PemEncoding_PemInvalidUtf8, nameof(pemData));
-            }
-
             return TryFindCore<byte, Utf8PemEncoder>(pemData, out fields);
         }
 
