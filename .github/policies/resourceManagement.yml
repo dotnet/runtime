@@ -700,7 +700,7 @@ configuration:
         then:
         - mentionUsers:
             mentionees:
-            - directhex
+            - akoeplinger
             - matouskozak
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}

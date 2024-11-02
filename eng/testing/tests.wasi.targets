@@ -49,6 +49,8 @@
     <_XHarnessArgs Condition="'$(WasmXHarnessTestsTimeout)' != ''" >$(_XHarnessArgs) &quot;--timeout=$(WasmXHarnessTestsTimeout)&quot;</_XHarnessArgs>
     <_XHarnessArgs                                                 >$(_XHarnessArgs) --engine-arg=--wasi --engine-arg=http</_XHarnessArgs>
     <_XHarnessArgs                                                 >$(_XHarnessArgs) --engine-arg=--wasi --engine-arg=inherit-network</_XHarnessArgs>
+    <_XHarnessArgs                                                 >$(_XHarnessArgs) --engine-arg=--wasi --engine-arg=tcp</_XHarnessArgs>
+    <_XHarnessArgs                                                 >$(_XHarnessArgs) --engine-arg=--wasi --engine-arg=udp</_XHarnessArgs>
     <_XHarnessArgs                                                 >$(_XHarnessArgs) --engine-arg=--wasi --engine-arg=allow-ip-name-lookup</_XHarnessArgs>
     <_XHarnessArgs                                                 >$(_XHarnessArgs) --engine-arg=--env --engine-arg=DOTNET_WASI_PRINT_EXIT_CODE=1</_XHarnessArgs>
     <_XHarnessArgs Condition="'$(WasmXHarnessArgsCli)' != ''"      >$(_XHarnessArgs) $(WasmXHarnessArgsCli)</_XHarnessArgs>

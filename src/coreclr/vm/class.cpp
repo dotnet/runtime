@@ -124,25 +124,22 @@ void EEClass::Destruct(MethodTable * pOwningMT)
     if (IsDelegate())
     {
         DelegateEEClass* pDelegateEEClass = (DelegateEEClass*)this;
-
-        if (pDelegateEEClass->m_pStaticCallStub)
+        for (Stub* pThunk : {pDelegateEEClass->m_pStaticCallStub, pDelegateEEClass->m_pInstRetBuffCallStub})
         {
-            // Collect data to remove stub entry from StubManager if
-            // stub is deleted.
-            BYTE* entry = (BYTE*)pDelegateEEClass->m_pStaticCallStub->GetEntryPoint();
-            UINT length = pDelegateEEClass->m_pStaticCallStub->GetNumCodeBytes();
+            if (pThunk == nullptr)
+                continue;
 
-            ExecutableWriterHolder<Stub> stubWriterHolder(pDelegateEEClass->m_pStaticCallStub, sizeof(Stub));
-            BOOL fStubDeleted = stubWriterHolder.GetRW()->DecRef();
-            if (fStubDeleted)
+            _ASSERTE(pThunk->IsShuffleThunk());
+
+            if (pThunk->HasExternalEntryPoint()) // IL thunk
             {
-                StubLinkStubManager::g_pManager->RemoveStubRange(entry, length);
+                pThunk->DecRef();
             }
-        }
-        if (pDelegateEEClass->m_pInstRetBuffCallStub)
-        {
-            ExecutableWriterHolder<Stub> stubWriterHolder(pDelegateEEClass->m_pInstRetBuffCallStub, sizeof(Stub));
-            stubWriterHolder.GetRW()->DecRef();
+            else
+            {
+                ExecutableWriterHolder<Stub> stubWriterHolder(pThunk, sizeof(Stub));
+                stubWriterHolder.GetRW()->DecRef();
+            }
         }
     }
 
@@ -1586,7 +1583,7 @@ void ClassLoader::PropagateCovariantReturnMethodImplSlots(MethodTable* pMT)
 //
 // Debugger notification
 //
-BOOL TypeHandle::NotifyDebuggerLoad(AppDomain *pDomain, BOOL attaching) const
+BOOL TypeHandle::NotifyDebuggerLoad(BOOL attaching) const
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -1601,21 +1598,21 @@ BOOL TypeHandle::NotifyDebuggerLoad(AppDomain *pDomain, BOOL attaching) const
     }
 
     return g_pDebugInterface->LoadClass(
-        *this, GetCl(), GetModule(), pDomain);
+        *this, GetCl(), GetModule());
 }
 
 //*******************************************************************************
-void TypeHandle::NotifyDebuggerUnload(AppDomain *pDomain) const
+void TypeHandle::NotifyDebuggerUnload() const
 {
     LIMITED_METHOD_CONTRACT;
 
     if (!GetModule()->IsVisibleToDebugger())
         return;
 
-    if (!pDomain->IsDebuggerAttached())
+    if (!AppDomain::GetCurrentDomain()->IsDebuggerAttached())
         return;
 
-    g_pDebugInterface->UnloadClass(GetCl(), GetModule(), pDomain);
+    g_pDebugInterface->UnloadClass(GetCl(), GetModule());
 }
 
 //*******************************************************************************

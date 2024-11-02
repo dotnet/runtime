@@ -4,6 +4,7 @@
 
 #include <config.h>
 #include <mono/utils/mono-compiler.h>
+#include <minipal/debugger.h>
 
 #ifndef DISABLE_JIT
 
@@ -16,7 +17,6 @@
 #include "aot-compiler.h"
 #include <mono/metadata/abi-details.h>
 #include <mono/metadata/class-abi-details.h>
-#include <mono/utils/mono-utils-debug.h>
 #include "mono/metadata/icall-signatures.h"
 
 static const gboolean debug_tailcall_break_compile = FALSE; // break in method_to_ir
@@ -165,7 +165,7 @@ mini_emit_call_args (MonoCompile *cfg, MonoMethodSignature *sig,
 	}
 
 	if (tailcall && (debug_tailcall_break_compile || debug_tailcall_break_run)
-		&& mono_is_usermode_native_debugger_present ()) {
+		&& minipal_is_native_debugger_present ()) {
 
 		if (debug_tailcall_break_compile)
 			G_BREAKPOINT ();

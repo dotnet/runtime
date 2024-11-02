@@ -5,12 +5,10 @@
 **
 ** Header:  Assembly.hpp
 **
-
-**
 ** Purpose: Implements assembly (loader domain) architecture
 **
-**
 ===========================================================*/
+
 #ifndef _ASSEMBLY_H
 #define _ASSEMBLY_H
 
@@ -23,13 +21,6 @@
 #include "cordbpriv.h"
 #include "assemblyspec.hpp"
 
-class AppDomain;
-class DomainAssembly;
-class SystemDomain;
-class ClassLoader;
-class AssemblyNative;
-class AssemblySpec;
-class AllocMemTracker;
 class FriendAssemblyDescriptor;
 
 // Bits in m_dwDynamicAssemblyAccess (see System.Reflection.Emit.AssemblyBuilderAccess.cs)
@@ -324,10 +315,23 @@ public:
         m_debuggerFlags = flags;
     }
 
+    DomainAssembly* GetNextAssemblyInSameALC()
+    {
+        return m_NextAssemblyInSameALC;
+    }
+
+    void SetNextAssemblyInSameALC(DomainAssembly* assembly)
+    {
+        _ASSERTE(m_NextAssemblyInSameALC == NULL);
+        m_NextAssemblyInSameALC = assembly;
+    }
+
 private:
     DebuggerAssemblyControlFlags ComputeDebuggingConfig(void);
-    HRESULT GetDebuggingCustomAttributes(DWORD* pdwFlags);
 
+#ifdef DEBUGGING_SUPPORTED
+    HRESULT GetDebuggingCustomAttributes(DWORD* pdwFlags);
+#endif
 public:
     // On failure:
     //      if loadFlag == Loader::Load => throw
@@ -512,7 +516,7 @@ private:
 
     PTR_LoaderAllocator   m_pLoaderAllocator;
 #ifdef FEATURE_COLLECTIBLE_TYPES
-    bool                  m_isCollectible;
+    BYTE                  m_isCollectible;
 #endif // FEATURE_COLLECTIBLE_TYPES
     bool                  m_isDynamic;
 
@@ -530,6 +534,18 @@ private:
     DebuggerAssemblyControlFlags m_debuggerFlags;
 
     LOADERHANDLE          m_hExposedObject;
+
+    DomainAssembly*             m_NextAssemblyInSameALC;
+
+    friend struct ::cdac_data<Assembly>;
+};
+
+template<>
+struct cdac_data<Assembly>
+{
+#ifdef FEATURE_COLLECTIBLE_TYPES
+    static constexpr size_t IsCollectible = offsetof(Assembly, m_isCollectible);
+#endif
 };
 
 #ifndef DACCESS_COMPILE
