@@ -7873,6 +7873,13 @@ CorInfoInline CEEInfo::canInline (CORINFO_METHOD_HANDLE hCaller,
         goto exit;
     }
 
+    if (pCallee->HasUnmanagedCallersOnlyAttribute() && NDirect::MarshalingRequired(pCallee))
+    {
+        result = INLINE_NEVER;
+        szFailReason = "Inlinee is marked as unmanaged callers only but requires runtime marshaling";
+        goto exit;
+    }
+
     // Also check to see if the method requires a security object.  This means they call demand and
     // shouldn't be inlined.
     if (IsMdRequireSecObject(pCallee->GetAttrs()))
