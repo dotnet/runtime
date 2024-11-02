@@ -3,6 +3,7 @@
 
 using System;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using Xunit;
@@ -225,6 +226,7 @@ public unsafe class DisabledRuntimeMarshallingNative
 #endif
 
     [UnmanagedCallersOnly]
+    [MethodImpl(MethodImplOptions.NoInlining)]
     public static bool CheckStructWithShortAndBoolManaged(StructWithShortAndBool str, short s, bool b)
     {
         return str.s == s && str.b == b;
