@@ -14409,19 +14409,25 @@ bool Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
 //
 PhaseStatus Compiler::fgExpandQmarkNodes()
 {
-    bool introducedThrows = false;
-
-    if (compQmarkUsed)
+    if (!compQmarkUsed)
     {
-        for (BasicBlock* const block : Blocks())
-        {
-            for (Statement* const stmt : block->Statements())
-            {
-                INDEBUG(fgPreExpandQmarkChecks(stmt->GetRootNode()));
-                introducedThrows |= fgExpandQmarkStmt(block, stmt);
-            }
-        }
+        INDEBUG(fgPostExpandQmarkChecks());
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
 
+    const bool isDfsValid = m_dfsTree != nullptr;
+
+    for (BasicBlock* const block : Blocks())
+    {
+        for (Statement* const stmt : block->Statements())
+        {
+            INDEBUG(fgPreExpandQmarkChecks(stmt->GetRootNode()));
+            fgExpandQmarkStmt(block, stmt);
+        }
+    }
+
+    if (isDfsValid)
+    {
         fgInvalidateDfsTree();
         m_dfsTree = fgComputeDfs();
     }
@@ -14429,14 +14435,7 @@ PhaseStatus Compiler::fgExpandQmarkNodes()
     compQmarkRationalized = true;
     INDEBUG(fgPostExpandQmarkChecks());
 
-    // TODO: if qmark expansion created throw blocks, try and merge them
-    //
-    if (introducedThrows)
-    {
-        JITDUMP("Qmark expansion created new throw blocks\n");
-    }
-
-    return compQmarkUsed ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
+    return PhaseStatus::MODIFIED_EVERYTHING;
 }
 
 //------------------------------------------------------------------------
