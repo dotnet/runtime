@@ -9211,11 +9211,10 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
                         break;
                     }
 
-                    // These are widening instructions. A load can be contained provided the source is large enough
+                    // These are widening instructions. A load can be contained if the source is large enough
                     // after taking into account the multiplier of source to target element size. Most of these
                     // double the width, but a few instruction forms have higher multipliers (ex: PMOVZXBQ)
 
-                    const unsigned sizeof_simdType = genTypeSize(parentNode->TypeGet());
                     const unsigned sizeof_baseType = genTypeSize(parentNode->GetSimdBaseType());
                     unsigned       widenFactor     = 2;
 
@@ -9256,31 +9255,26 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
                     }
 
                     const unsigned operandSize  = genTypeSize(childNode->TypeGet());
-                    const unsigned expectedSize = sizeof_simdType / widenFactor;
-
-                    assert((sizeof_simdType != 16) || (expectedSize == 8) || (expectedSize == 4) ||
-                           (expectedSize == 2));
-                    assert((sizeof_simdType != 32) || (expectedSize == 16) || (expectedSize == 8) ||
-                           (expectedSize == 4));
-                    assert((sizeof_simdType != 64) || (expectedSize == 32) || (expectedSize == 16) ||
-                           (expectedSize == 8));
+                    const unsigned expectedSize = genTypeSize(parentNode->TypeGet()) / widenFactor;
 
                     if (expectedSize < 16)
                     {
-                        // If we need less than a full vector, we can always contain an unaligned load of sufficient
-                        // size. We may also be able to contain a SIMD scalar load provided the element type is large
-                        // enough.
+                        // If we need less than a full vector:
+                        // * In MinOpts, we should never contain aligned loads because they will not
+                        //   fault on hardware not supporting VEX encoding as a full vector load would.
+                        // * We can always contain an unaligned load of sufficient size because there are
+                        //   no alignment requirements below vector size.
+                        // * We can contain a SIMD scalar load, provided the element type is large enough.
 
-                        supportsAlignedSIMDLoads = false;
+                        supportsAlignedSIMDLoads = !comp->opts.MinOpts();
                         supportsGeneralLoads     = (operandSize >= expectedSize);
 
                         if (childNode->OperIsHWIntrinsic())
                         {
                             GenTreeHWIntrinsic* childIntrinsic       = childNode->AsHWIntrinsic();
-                            NamedIntrinsic      childIntrinsicId     = childIntrinsic->GetHWIntrinsicId();
                             const unsigned      sizeof_childBaseType = genTypeSize(childIntrinsic->GetSimdBaseType());
 
-                            supportsSIMDScalarLoads = sizeof_childBaseType >= expectedSize;
+                            supportsSIMDScalarLoads = (sizeof_childBaseType >= expectedSize);
                         }
                     }
                     else
