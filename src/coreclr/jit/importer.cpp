@@ -611,6 +611,22 @@ bool Compiler::impGetLclVal(GenTreeLclVar* tree, GenTree** val)
 
     Compiler* comp = this;
 
+    auto setCompForLcl = [&comp](unsigned lclNum) {
+        if (comp->compIsForInlining())
+        {
+            for (unsigned i = 0; i < comp->impInlineInfo->argCnt; i++)
+            {
+                if (comp->impInlineInfo->inlArgInfo[i].argTmpNum == lclNum)
+                {
+                    comp = comp->impInlineInfo->InlinerCompiler;
+                    break;
+                }
+            }
+        }
+    };
+
+    setCompForLcl(tree->GetLclNum());
+
     JITDUMP("\n");
 
     while (true)
@@ -631,17 +647,7 @@ bool Compiler::impGetLclVal(GenTreeLclVar* tree, GenTree** val)
             }
             else if (gtVal->OperIs(GT_LCL_VAR))
             {
-                if (comp->compIsForInlining())
-                {
-                    for (unsigned i = 0; i < comp->impInlineInfo->argCnt; i++)
-                    {
-                        if (comp->impInlineInfo->inlArgInfo[i].argTmpNum == gtVal->AsLclVar()->GetLclNum())
-                        {
-                            comp = comp->impInlineInfo->InlinerCompiler;
-                            break;
-                        }
-                    }
-                }
+                setCompForLcl(gtVal->AsLclVar()->GetLclNum());
                 tree = gtVal->AsLclVar();
                 continue;
             }
