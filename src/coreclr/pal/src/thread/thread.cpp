@@ -1493,10 +1493,12 @@ SetThreadDescription(
                 {
                     pThread->SetLastError(ERROR_INSUFFICIENT_BUFFER);
                 }
-
-                int setNameResult = minipal_set_thread_name(pTargetThread->GetPThreadSelf(), nameBuf);
-                (void)setNameResult; // used
-                _ASSERTE(setNameResult == 0);
+                else
+                {
+                    int setNameResult = minipal_set_thread_name(pTargetThread->GetPThreadSelf(), nameBuf);
+                    (void)setNameResult; // used
+                    _ASSERTE(setNameResult == 0);
+                }
 
                 free(nameBuf);
             }
@@ -1506,7 +1508,8 @@ SetThreadDescription(
             }
         }
 
-        pobjThread->ReleaseReference(pThread);
+        if (pobjThread != NULL)
+            pobjThread->ReleaseReference(pThread);
     }
 
     LOGEXIT("SetThreadDescription");
