@@ -565,7 +565,7 @@ if(GCC)
 
   if(HOST_WASI)
     # When building under WASI SDK, it's stricter about discarding 'const' qualifiers, causing some existing
-    # code (e.g., mono-rand.c:315) to be rejected
+    # code to be rejected
     set(WERROR_C "${WERROR_C} -Wno-incompatible-pointer-types-discards-qualifiers")
   endif()
 
@@ -889,6 +889,7 @@ endif()
 ### End of OS specific checks
 
 include_directories("${CLR_SRC_NATIVE_DIR}")
+add_subdirectory(${CLR_SRC_NATIVE_DIR}/minipal minipal)
 
 if(NOT DISABLE_LIBS)
   set(INSTALL_MONO_API 1)

@@ -337,7 +337,7 @@ struct ShuffleGraphNode
 
 BOOL AddNextShuffleEntryToArray(ArgLocDesc sArgSrc, ArgLocDesc sArgDst, SArray<ShuffleEntry> * pShuffleEntryArray, ShuffleComputationType shuffleType)
 {
-#if defined(TARGET_RISCV64)
+#if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
     if (sArgSrc.m_structFields.flags != sArgDst.m_structFields.flags)
     {
         _ASSERT(sArgSrc.m_structFields.flags == FpStruct::UseIntCallConv
@@ -347,7 +347,7 @@ BOOL AddNextShuffleEntryToArray(ArgLocDesc sArgSrc, ArgLocDesc sArgDst, SArray<S
         // calling conventions is handled by IL stubs.
         return FALSE;
     }
-#endif // TARGET_RISCV64
+#endif // TARGET_RISCV64 || TARGET_LOONGARCH64
 
     ShuffleEntry entry;
     ZeroMemory(&entry, sizeof(entry));
@@ -825,7 +825,7 @@ LoaderHeap *DelegateEEClass::GetStubHeap()
     return GetInvokeMethod()->GetLoaderAllocator()->GetStubHeap();
 }
 
-#if defined(TARGET_RISCV64)
+#if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
 static Stub* CreateILDelegateShuffleThunk(MethodDesc* pDelegateMD, bool callTargetWithThis)
 {
     SigTypeContext typeContext(pDelegateMD);
@@ -885,7 +885,7 @@ static Stub* CreateILDelegateShuffleThunk(MethodDesc* pDelegateMD, bool callTarg
 
     return Stub::NewStub(JitILStub(pStubMD), NEWSTUB_FL_SHUFFLE_THUNK);
 }
-#endif // TARGET_RISCV64
+#endif // TARGET_RISCV64 || TARGET_LOONGARCH64
 
 static PCODE SetupShuffleThunk(MethodTable * pDelMT, MethodDesc *pTargetMeth)
 {
@@ -927,12 +927,12 @@ static PCODE SetupShuffleThunk(MethodTable * pDelMT, MethodDesc *pTargetMeth)
     }
     else
     {
-#if defined(TARGET_RISCV64)
+#if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
         pShuffleThunk = CreateILDelegateShuffleThunk(pMD, isInstRetBuff);
 #else
         _ASSERTE(FALSE);
         return (PCODE)NULL;
-#endif // TARGET_RISCV64
+#endif // TARGET_RISCV64 || TARGET_LOONGARCH64
     }
 
     if (!pShuffleThunk)
@@ -1971,10 +1971,11 @@ Stub* COMDelegate::GetInvokeMethodStub(EEImplMethodDesc* pMD)
     {
         // Validate the invoke method, which at the moment just means checking the calling convention
 
-        if (*pMD->GetSig() != (IMAGE_CEE_CS_CALLCONV_HASTHIS | IMAGE_CEE_CS_CALLCONV_DEFAULT))
-            COMPlusThrow(kInvalidProgramException);
-
         MetaSig sig(pMD);
+
+        BYTE callConv = sig.GetCallingConventionInfo();
+        if (callConv != (IMAGE_CEE_CS_CALLCONV_HASTHIS | IMAGE_CEE_CS_CALLCONV_DEFAULT))
+            COMPlusThrow(kInvalidProgramException);
 
         BOOL fReturnVal = !sig.IsReturnTypeVoid();
 

@@ -2197,7 +2197,7 @@ namespace
 {
     gc_alloc_context* STDCALL GetAllocContextHelper()
     {
-        return &t_runtime_thread_locals.alloc_context;
+        return &t_runtime_thread_locals.alloc_context.m_GCAllocContext;
     }
 }
 #endif

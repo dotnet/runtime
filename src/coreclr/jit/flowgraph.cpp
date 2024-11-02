@@ -725,6 +725,7 @@ GenTreeCall* Compiler::fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfo
         case CORINFO_HELP_GETPINNED_GCSTATIC_BASE_NOCTOR:
         case CORINFO_HELP_GETPINNED_NONGCSTATIC_BASE_NOCTOR:
         case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2:
+        case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2_NOJITOPT:
             callFlags |= GTF_CALL_HOISTABLE;
             FALLTHROUGH;
 
@@ -754,7 +755,8 @@ GenTreeCall* Compiler::fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfo
 
     if ((helper == CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED) ||
         (helper == CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED) ||
-        (helper == CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2))
+        (helper == CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2) ||
+        (helper == CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2_NOJITOPT))
     {
         result = gtNewHelperCallNode(helper, type, gtNewIconNode(typeIndex));
     }
@@ -1241,11 +1243,23 @@ GenTree* Compiler::fgGetCritSectOfStaticMethod()
 
     if (!kind.needsRuntimeLookup)
     {
-        void *critSect = nullptr, **pCrit = nullptr;
-        critSect = info.compCompHnd->getMethodSync(info.compMethodHnd, (void**)&pCrit);
-        noway_assert((!critSect) != (!pCrit));
+        CORINFO_OBJECT_HANDLE ptr = info.compCompHnd->getRuntimeTypePointer(info.compClassHnd);
+        if (ptr != NULL)
+        {
+            setMethodHasFrozenObjects();
+            tree = gtNewIconEmbHndNode((void*)ptr, nullptr, GTF_ICON_OBJ_HDL, nullptr);
+        }
+        else
+        {
+            void *critSect = nullptr, **pCrit = nullptr;
+            critSect = info.compCompHnd->getMethodSync(info.compMethodHnd, (void**)&pCrit);
+            noway_assert((!critSect) != (!pCrit));
 
-        tree = gtNewIconEmbHndNode(critSect, pCrit, GTF_ICON_GLOBAL_PTR, info.compMethodHnd);
+            tree = gtNewIconEmbHndNode(critSect, pCrit, GTF_ICON_GLOBAL_PTR, info.compMethodHnd);
+
+            // Given the class handle, get the pointer to the Monitor.
+            tree = gtNewHelperCallNode(CORINFO_HELP_GETSYNCFROMCLASSHANDLE, TYP_REF, tree);
+        }
     }
     else
     {
@@ -1291,7 +1305,7 @@ GenTree* Compiler::fgGetCritSectOfStaticMethod()
         noway_assert(tree); // tree should now contain the CORINFO_CLASS_HANDLE for the exact class.
 
         // Given the class handle, get the pointer to the Monitor.
-        tree = gtNewHelperCallNode(CORINFO_HELP_GETSYNCFROMCLASSHANDLE, TYP_I_IMPL, tree);
+        tree = gtNewHelperCallNode(CORINFO_HELP_GETSYNCFROMCLASSHANDLE, TYP_REF, tree);
     }
 
     noway_assert(tree);
@@ -1578,14 +1592,13 @@ GenTree* Compiler::fgCreateMonitorTree(unsigned lvaMonAcquired, unsigned lvaThis
     if (info.compIsStatic)
     {
         tree = fgGetCritSectOfStaticMethod();
-        tree = gtNewHelperCallNode(enter ? CORINFO_HELP_MON_ENTER_STATIC : CORINFO_HELP_MON_EXIT_STATIC, TYP_VOID, tree,
-                                   varAddrNode);
     }
     else
     {
         tree = gtNewLclvNode(lvaThisVar, TYP_REF);
-        tree = gtNewHelperCallNode(enter ? CORINFO_HELP_MON_ENTER : CORINFO_HELP_MON_EXIT, TYP_VOID, tree, varAddrNode);
     }
+
+    tree = gtNewHelperCallNode(enter ? CORINFO_HELP_MON_ENTER : CORINFO_HELP_MON_EXIT, TYP_VOID, tree, varAddrNode);
 
 #ifdef DEBUG
     if (verbose)
@@ -2494,14 +2507,14 @@ PhaseStatus Compiler::fgAddInternal()
         if (info.compIsStatic)
         {
             tree = fgGetCritSectOfStaticMethod();
-            tree = gtNewHelperCallNode(CORINFO_HELP_MON_ENTER_STATIC, TYP_VOID, tree);
         }
         else
         {
             noway_assert(lvaTable[info.compThisArg].lvType == TYP_REF);
             tree = gtNewLclvNode(info.compThisArg, TYP_REF);
-            tree = gtNewHelperCallNode(CORINFO_HELP_MON_ENTER, TYP_VOID, tree);
         }
+
+        tree = gtNewHelperCallNode(CORINFO_HELP_MON_ENTER, TYP_VOID, tree);
 
         /* Create a new basic block and stick the call in it */
 
@@ -2527,13 +2540,13 @@ PhaseStatus Compiler::fgAddInternal()
         if (info.compIsStatic)
         {
             tree = fgGetCritSectOfStaticMethod();
-            tree = gtNewHelperCallNode(CORINFO_HELP_MON_EXIT_STATIC, TYP_VOID, tree);
         }
         else
         {
             tree = gtNewLclvNode(info.compThisArg, TYP_REF);
-            tree = gtNewHelperCallNode(CORINFO_HELP_MON_EXIT, TYP_VOID, tree);
         }
+
+        tree = gtNewHelperCallNode(CORINFO_HELP_MON_EXIT, TYP_VOID, tree);
 
         fgNewStmtNearEnd(genReturnBB, tree);
 
@@ -3407,9 +3420,12 @@ void Compiler::fgAddCodeRef(BasicBlock* srcBlk, SpecialCodeKind kind)
     add              = new (this, CMK_Unknown) AddCodeDsc;
     add->acdDstBlk   = nullptr;
     add->acdTryIndex = srcBlk->bbTryIndex;
-    add->acdHndIndex = srcBlk->bbHndIndex;
-    add->acdKeyDsg   = dsg;
-    add->acdKind     = kind;
+
+    // For non-funclet EH we don't constrain ACD placement via handler regions
+    add->acdHndIndex = UsesFunclets() ? srcBlk->bbHndIndex : 0;
+
+    add->acdKeyDsg = dsg;
+    add->acdKind   = kind;
 
     // This gets set true in the stack level setter
     // if there's still a need for this helper
@@ -5964,9 +5980,9 @@ bool FlowGraphNaturalLoop::CanDuplicate(INDEBUG(const char** reason))
 
     Compiler*       comp   = m_dfsTree->GetCompiler();
     BasicBlockVisit result = VisitLoopBlocks([=](BasicBlock* block) {
-        if (comp->bbIsTryBeg(block))
+        if (!BasicBlock::sameEHRegion(block, GetHeader()))
         {
-            INDEBUG(*reason = "Loop has a `try` begin");
+            INDEBUG(*reason = "Loop not entirely within one EH region");
             return BasicBlockVisit::Abort;
         }
 

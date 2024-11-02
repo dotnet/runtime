@@ -281,4 +281,14 @@ internal class NibbleMap
         return GetAbsoluteAddress(mapBase, mapIdx, t.Nibble);
     }
 
+    public TargetPointer FindMethodCode(Data.CodeHeapListNode heapListNode, TargetCodePointer jittedCodeAddress)
+    {
+        if (jittedCodeAddress < heapListNode.StartAddress || jittedCodeAddress > heapListNode.EndAddress)
+        {
+            return TargetPointer.Null;
+        }
+
+        return FindMethodCode(heapListNode.MapBase, heapListNode.HeaderMap, jittedCodeAddress);
+    }
+
 }
