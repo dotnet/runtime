@@ -136,7 +136,9 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
             pResolvedToken->hMethod = ((GenTree*)call->AsCall()->gtCallMethHnd)->AsFptrVal()->gtFptrMethod;
             pResolvedToken->hClass  = info.compCompHnd->getMethodClass(pResolvedToken->hMethod);
             eeGetCallInfo(pResolvedToken, nullptr, CORINFO_CALLINFO_LDFTN, callInfo);
-            bool sigCompatible = callInfo->sig.numArgs == calliSig.numArgs &&
+            // We only care about CALLCONV_HASTHIS for managed methods
+            unsigned targetFlags   = (callInfo->sig.callConv & CORINFO_CALLCONV_HASTHIS) ? 0 : CORINFO_FLG_STATIC;
+            bool     sigCompatible = callInfo->sig.numArgs == calliSig.numArgs && mflags == targetFlags &&
                                  impCheckImplicitArgumentCoercion(JITtype2varType(callInfo->sig.retType),
                                                                   JITtype2varType(calliSig.retType));
 
