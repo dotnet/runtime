@@ -136,8 +136,37 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
             pResolvedToken->hMethod = ((GenTree*)call->AsCall()->gtCallMethHnd)->AsFptrVal()->gtFptrMethod;
             pResolvedToken->hClass  = info.compCompHnd->getMethodClass(pResolvedToken->hMethod);
             eeGetCallInfo(pResolvedToken, nullptr, CORINFO_CALLINFO_LDFTN, callInfo);
-            call = nullptr;
-            goto REGULAR_IMPORT;
+            bool sigCompatible = callInfo->sig.numArgs == calliSig.numArgs &&
+                                 impCheckImplicitArgumentCoercion(JITtype2varType(callInfo->sig.retType),
+                                                                  JITtype2varType(calliSig.retType));
+
+            CORINFO_ARG_LIST_HANDLE methArg = callInfo->sig.args;
+            CORINFO_ARG_LIST_HANDLE callArg = calliSig.args;
+            for (unsigned i = 0; sigCompatible && i < callInfo->sig.numArgs; i++)
+            {
+                CORINFO_CLASS_HANDLE classHnd;
+                CorInfoType          sigType = strip(info.compCompHnd->getArgType(&callInfo->sig, methArg, &classHnd));
+                CorInfoType          argType = strip(info.compCompHnd->getArgType(&calliSig, callArg, &classHnd));
+                if (!impCheckImplicitArgumentCoercion(JITtype2varType(sigType), JITtype2varType(argType)))
+                {
+                    sigCompatible = false;
+                    break;
+                }
+
+                methArg = info.compCompHnd->getArgNext(methArg);
+                callArg = info.compCompHnd->getArgNext(callArg);
+            }
+
+            if (sigCompatible)
+            {
+                call = nullptr;
+                goto REGULAR_IMPORT;
+            }
+            else
+            {
+                // We have to clone the FTN_ADDR node, as it is substituted from the local
+                call->AsCall()->gtCallMethHnd = (CORINFO_METHOD_HANDLE)gtClone((GenTree*)call->AsCall()->gtCallMethHnd);
+            }
         }
 
 #ifdef DEBUG
