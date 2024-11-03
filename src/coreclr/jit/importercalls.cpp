@@ -130,7 +130,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
         // assume the worst-case.
         mflags = (calliSig.callConv & CORINFO_CALLCONV_HASTHIS) ? 0 : CORINFO_FLG_STATIC;
 
-        if (call->AsCall()->unmgdCallConv == CorInfoCallConvExtension::Managed &&
+        if (opts.OptimizationEnabled() && call->AsCall()->unmgdCallConv == CorInfoCallConvExtension::Managed &&
             ((GenTree*)call->AsCall()->gtCallMethHnd)->OperIs(GT_FTN_ADDR))
         {
             pResolvedToken->hMethod = ((GenTree*)call->AsCall()->gtCallMethHnd)->AsFptrVal()->gtFptrMethod;
