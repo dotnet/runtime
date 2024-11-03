@@ -9212,59 +9212,62 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
                     }
 
                     // These are widening instructions. A load can be contained if the source is large enough
-                    // after taking into account the multiplier of source to target element size. Most of these
-                    // double the width, but a few instruction forms have higher multipliers (ex: PMOVZXBQ)
+                    // after taking into account the multiplier of source to target element size.
 
-                    const unsigned sizeof_baseType = genTypeSize(parentNode->GetSimdBaseType());
-                    unsigned       widenFactor     = 2;
+                    const var_types   parentBaseType    = parentNode->GetSimdBaseType();
+                    const instruction parentInstruction = HWIntrinsicInfo::lookupIns(parentIntrinsicId, parentBaseType);
 
-                    switch (parentIntrinsicId)
+                    assert(emitter::hasTupleTypeInfo(parentInstruction));
+
+                    const insTupleType tupleType   = emitter::insTupleTypeInfo(parentInstruction);
+                    const unsigned     parentSize  = parentNode->GetSimdSize();
+                    unsigned           widenFactor = 0;
+
+                    switch (tupleType)
                     {
-                        case NI_SSE41_ConvertToVector128Int32:
-                        case NI_AVX2_ConvertToVector256Int32:
-                        case NI_AVX512F_ConvertToVector512Int32:
-                        case NI_AVX512F_ConvertToVector512UInt32:
+                        case INS_TT_FULL:
+                        case INS_TT_FULL_MEM:
                         {
-                            if (sizeof_baseType == 1)
-                            {
-                                widenFactor = 4;
-                            }
+                            widenFactor = 1;
                             break;
                         }
-
-                        case NI_SSE41_ConvertToVector128Int64:
-                        case NI_AVX2_ConvertToVector256Int64:
-                        case NI_AVX512F_ConvertToVector512Int64:
-                        case NI_AVX512F_ConvertToVector512UInt64:
+                        case INS_TT_HALF:
+                        case INS_TT_HALF_MEM:
                         {
-                            if (sizeof_baseType == 1)
-                            {
-                                widenFactor = 8;
-                            }
-                            else if (sizeof_baseType == 2)
-                            {
-                                widenFactor = 4;
-                            }
+                            widenFactor = 2;
                             break;
                         }
-
+                        case INS_TT_QUARTER_MEM:
+                        {
+                            widenFactor = 4;
+                            break;
+                        }
+                        case INS_TT_EIGHTH_MEM:
+                        {
+                            widenFactor = 8;
+                            break;
+                        }
+                        case INS_TT_MOVDDUP:
+                        {
+                            widenFactor = parentSize == 16 ? 2 : 1;
+                            break;
+                        }
                         default:
                         {
+                            unreached();
                             break;
                         }
                     }
 
+                    const unsigned expectedSize = parentSize / widenFactor;
                     const unsigned operandSize  = genTypeSize(childNode->TypeGet());
-                    const unsigned expectedSize = genTypeSize(parentNode->TypeGet()) / widenFactor;
 
                     if (expectedSize < 16)
                     {
-                        // If we need less than a full vector:
-                        // * In MinOpts, we should never contain aligned loads because they will not
-                        //   fault on hardware not supporting VEX encoding as a full vector load would.
-                        // * We can always contain an unaligned load of sufficient size because there are
-                        //   no alignment requirements below vector size.
-                        // * We can contain a SIMD scalar load, provided the element type is large enough.
+                        // We do not need to consider alignment for non-VEX encoding here because we're
+                        // loading less than a full vector.
+                        //
+                        // We can also contain a SIMD scalar load, provided the element type is large enough.
 
                         supportsAlignedSIMDLoads = !comp->opts.MinOpts();
                         supportsGeneralLoads     = (operandSize >= expectedSize);
