@@ -3142,7 +3142,7 @@ const static insTupleType insTupleTypeInfos[] =
 // Return Value:
 //    true if this instruction has tuple type info.
 //
-inline bool emitter::hasTupleTypeInfo(instruction ins)
+bool emitter::hasTupleTypeInfo(instruction ins)
 {
     assert((unsigned)ins < ArrLen(insTupleTypeInfos));
     return (insTupleTypeInfos[ins] != INS_TT_NONE);
