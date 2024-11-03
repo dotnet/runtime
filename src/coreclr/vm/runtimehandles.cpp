@@ -138,6 +138,31 @@ extern "C" BOOL QCALLTYPE RuntimeMethodHandle_IsCAVisibleFromDecoratedType(
     return bResult;
 }
 
+extern "C" void QCALLTYPE RuntimeTypeHandle_GetTypeObjectSlow(
+    void* typeHandleRaw,
+    QCall::ObjectHandleOnStack result)
+{
+    QCALL_CONTRACT;
+
+    _ASSERTE(typeHandleRaw != NULL);
+
+    BEGIN_QCALL;
+
+    GCX_COOP();
+
+    TypeHandle typeHandle = TypeHandle::FromPtr(typeHandleRaw);
+
+    // RuntimeTypeHandle::GetTypeObject has picked off the most common case, but does not cover array types.
+    // Before we do the really heavy weight option of setting up a helper method frame, check if we have to.
+    result.Set(typeHandle.GetManagedClassObjectIfExists());
+    if (result.Get() == NULL)
+        result.Set(typeHandle.GetManagedClassObject());
+
+    _ASSERTE(result.Get() != NULL);
+
+    END_QCALL;
+}
+
 // static
 NOINLINE static ReflectClassBaseObject* GetRuntimeTypeHelper(LPVOID __me, TypeHandle typeHandle, OBJECTREF keepAlive)
 {
@@ -145,8 +170,6 @@ NOINLINE static ReflectClassBaseObject* GetRuntimeTypeHelper(LPVOID __me, TypeHa
     if (typeHandle.AsPtr() == NULL)
         return NULL;
 
-    // RuntimeTypeHandle::GetRuntimeType has picked off the most common case, but does not cover array types.
-    // Before we do the really heavy weight option of setting up a helper method frame, check if we have to.
     OBJECTREF refType = typeHandle.GetManagedClassObjectIfExists();
     if (refType != NULL)
         return (ReflectClassBaseObject*)OBJECTREFToObject(refType);
@@ -161,27 +184,23 @@ NOINLINE static ReflectClassBaseObject* GetRuntimeTypeHelper(LPVOID __me, TypeHa
 
 #define RETURN_CLASS_OBJECT(typeHandle, keepAlive) FC_INNER_RETURN(ReflectClassBaseObject*, GetRuntimeTypeHelper(__me, typeHandle, keepAlive))
 
-FCIMPL1(ReflectClassBaseObject*, RuntimeTypeHandle::GetRuntimeType, EnregisteredTypeHandle th)
+FCIMPL1(ReflectClassBaseObject*, RuntimeTypeHandle::GetTypeObject, EnregisteredTypeHandle th)
 {
     FCALL_CONTRACT;
 
+    _ASSERTE(th != NULL);
+
     TypeHandle typeHandle = TypeHandle::FromPtr(th);
-    _ASSERTE(CheckPointer(typeHandle.AsPtr(), NULL_OK));
-    if (typeHandle.AsPtr()!= NULL)
+    if (!typeHandle.IsTypeDesc())
     {
-        if (!typeHandle.IsTypeDesc())
+        OBJECTREF typePtr = typeHandle.AsMethodTable()->GetManagedClassObjectIfExists();
+        if (typePtr != NULL)
         {
-            OBJECTREF typePtr = typeHandle.AsMethodTable()->GetManagedClassObjectIfExists();
-            if (typePtr != NULL)
-            {
-                return (ReflectClassBaseObject*)OBJECTREFToObject(typePtr);
-            }
+            return (ReflectClassBaseObject*)OBJECTREFToObject(typePtr);
         }
     }
-    else
-        return NULL;
 
-    RETURN_CLASS_OBJECT(typeHandle, NULL);
+    return NULL;
 }
 FCIMPLEND
 

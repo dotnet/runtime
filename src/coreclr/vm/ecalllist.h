@@ -81,10 +81,6 @@ FCFuncStart(gExceptionFuncs)
     FCFuncElement("GetExceptionCount", ExceptionNative::GetExceptionCount)
 FCFuncEnd()
 
-FCFuncStart(gSystem_Type)
-    FCFuncElement("GetTypeFromHandleUnsafe", RuntimeTypeHandle::GetRuntimeType)
-FCFuncEnd()
-
 FCFuncStart(gCOMTypeHandleFuncs)
     FCFuncElement("GetDeclaringMethod", RuntimeTypeHandle::GetDeclaringMethod)
     FCFuncElement("GetDeclaringType", RuntimeTypeHandle::GetDeclaringType)
@@ -111,6 +107,7 @@ FCFuncStart(gCOMTypeHandleFuncs)
     FCFuncElement("IsUnmanagedFunctionPointer", RuntimeTypeHandle::IsUnmanagedFunctionPointer)
     FCFuncElement("CompareCanonicalHandles", RuntimeTypeHandle::CompareCanonicalHandles)
     FCFuncElement("IsEquivalentTo", RuntimeTypeHandle::IsEquivalentTo)
+    FCFuncElement("GetTypeObject", RuntimeTypeHandle::GetTypeObject)
 FCFuncEnd()
 
 FCFuncStart(gMetaDataImport)
@@ -433,7 +430,6 @@ FCClassElement("String", "System", gStringFuncs)
 FCClassElement("StubHelpers", "System.StubHelpers", gStubHelperFuncs)
 FCClassElement("Thread", "System.Threading", gThreadFuncs)
 FCClassElement("ThreadPool", "System.Threading", gThreadPoolFuncs)
-FCClassElement("Type", "System", gSystem_Type)
 
 #undef FCFuncElement
 #undef FCFuncElementSig

@@ -30,7 +30,36 @@ namespace System
         /// </summary>
         /// <param name="value">An IntPtr handle to a RuntimeType to create a <see cref="RuntimeTypeHandle"/> object from.</param>
         /// <returns>A new <see cref="RuntimeTypeHandle"/> object that corresponds to the value parameter.</returns>
-        public static RuntimeTypeHandle FromIntPtr(IntPtr value) => new RuntimeTypeHandle(Type.GetTypeFromHandleUnsafe(value));
+        public static RuntimeTypeHandle FromIntPtr(IntPtr value) => new RuntimeTypeHandle(GetTypeFromHandle(value));
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_GetTypeObjectSlow")]
+        private static partial void GetTypeObjectSlow(
+            IntPtr handle,
+            ObjectHandleOnStack typeObject);
+
+        // This is the slow path for a number of cases.
+        // Being the slow path means it shouldn't be inlined to avoid
+        // the cost of a P/Invoke frame being inserted when the fast path is taken.
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        internal static RuntimeType GetTypeObjectSlow(IntPtr handle)
+        {
+            RuntimeType? typeObject = null;
+            GetTypeObjectSlow(handle, ObjectHandleOnStack.Create(ref typeObject));
+            return typeObject!;
+        }
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private static extern RuntimeType? GetTypeObject(IntPtr handle);
+
+        private static RuntimeType? GetTypeFromHandle(IntPtr handle)
+        {
+            if (handle == IntPtr.Zero)
+            {
+                return null;
+            }
+
+            return GetTypeObject(handle) ?? GetTypeObjectSlow(handle);
+        }
 
         /// <summary>
         /// Returns the internal pointer representation of a <see cref="RuntimeTypeHandle"/> object.
@@ -49,7 +78,7 @@ namespace System
         public static bool operator !=(object? left, RuntimeTypeHandle right) => !right.Equals(left);
 
         // This is the RuntimeType for the type
-        internal RuntimeType m_type;
+        internal RuntimeType? m_type;
 
         public override int GetHashCode()
             => m_type?.GetHashCode() ?? 0;
@@ -62,7 +91,7 @@ namespace System
 
         public IntPtr Value => m_type?.m_handle ?? 0;
 
-        internal RuntimeTypeHandle(RuntimeType type)
+        internal RuntimeTypeHandle(RuntimeType? type)
         {
             m_type = type;
         }
@@ -74,7 +103,7 @@ namespace System
 
         internal TypeHandle GetNativeTypeHandle()
         {
-            return m_type.GetNativeTypeHandle();
+            return m_type!.GetNativeTypeHandle();
         }
 
         internal static bool IsTypeDefinition(RuntimeType type)
@@ -304,7 +333,7 @@ namespace System
 
         internal RuntimeType GetRuntimeType()
         {
-            return m_type;
+            return m_type!;
         }
 
         internal static RuntimeAssembly GetAssembly(RuntimeType type)
@@ -347,6 +376,11 @@ namespace System
 
         public ModuleHandle GetModuleHandle()
         {
+            if (m_type is null)
+            {
+                throw new ArgumentException(SR.Arg_InvalidHandle);
+            }
+
             return new ModuleHandle(GetModule(m_type));
         }
 
