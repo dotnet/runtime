@@ -136,7 +136,12 @@ HCIMPL2(INT32, JIT_Div, INT32 dividend, INT32 divisor)
 
     if (((UINT32) (divisor + 1)) <= 1)  // Unsigned test for divisor in [-1 .. 0]
     {
-        if (divisor == -1)
+        if (divisor == 0)
+        {
+            ehKind = kDivideByZeroException;
+            goto ThrowExcep;
+        }
+        else if (divisor == -1)
         {
             if (dividend == INT32_MIN)
             {
@@ -150,7 +155,7 @@ HCIMPL2(INT32, JIT_Div, INT32 dividend, INT32 divisor)
     return(dividend / divisor);
 
 ThrowExcep:
-    FCThrow(ehKind);
+    COMPlusThrow(ehKind);
 }
 HCIMPLEND
 
@@ -163,7 +168,12 @@ HCIMPL2(INT32, JIT_Mod, INT32 dividend, INT32 divisor)
 
     if (((UINT32) (divisor + 1)) <= 1)  // Unsigned test for divisor in [-1 .. 0]
     {
-        if (divisor == -1)
+        if (divisor == 0)
+        {
+            ehKind = kDivideByZeroException;
+            goto ThrowExcep;
+        }
+        else if (divisor == -1)
         {
             if (dividend == INT32_MIN)
             {
@@ -177,7 +187,7 @@ HCIMPL2(INT32, JIT_Mod, INT32 dividend, INT32 divisor)
     return(dividend % divisor);
 
 ThrowExcep:
-    FCThrow(ehKind);
+    COMPlusThrow(ehKind);
 }
 HCIMPLEND
 
@@ -185,6 +195,9 @@ HCIMPLEND
 HCIMPL2(UINT32, JIT_UDiv, UINT32 dividend, UINT32 divisor)
 {
     FCALL_CONTRACT;
+
+    if (divisor == 0)
+        COMPlusThrow(kDivideByZeroException);
 
     return(dividend / divisor);
 }
@@ -194,6 +207,9 @@ HCIMPLEND
 HCIMPL2(UINT32, JIT_UMod, UINT32 dividend, UINT32 divisor)
 {
     FCALL_CONTRACT;
+
+    if (divisor == 0)
+        COMPlusThrow(kDivideByZeroException);
 
     return(dividend % divisor);
 }
@@ -208,6 +224,12 @@ HCIMPL2_VV(INT64, JIT_LDiv, INT64 dividend, INT64 divisor)
 
     if (Is32BitSigned(divisor))
     {
+        if ((INT32)divisor == 0)
+        {
+            ehKind = kDivideByZeroException;
+            goto ThrowExcep;
+        }
+
         if ((INT32)divisor == -1)
         {
             if ((UINT64) dividend == UI64(0x8000000000000000))
@@ -227,7 +249,7 @@ HCIMPL2_VV(INT64, JIT_LDiv, INT64 dividend, INT64 divisor)
     return(dividend / divisor);
 
 ThrowExcep:
-    FCThrow(ehKind);
+    COMPlusThrow(ehKind);
 }
 HCIMPLEND
 
@@ -240,6 +262,12 @@ HCIMPL2_VV(INT64, JIT_LMod, INT64 dividend, INT64 divisor)
 
     if (Is32BitSigned(divisor))
     {
+        if ((INT32)divisor == 0)
+        {
+            ehKind = kDivideByZeroException;
+            goto ThrowExcep;
+        }
+
         if ((INT32)divisor == -1)
         {
             // <TODO>TODO, we really should remove this as it lengthens the code path
@@ -261,7 +289,7 @@ HCIMPL2_VV(INT64, JIT_LMod, INT64 dividend, INT64 divisor)
     return(dividend % divisor);
 
 ThrowExcep:
-    FCThrow(ehKind);
+    COMPlusThrow(ehKind);
 }
 HCIMPLEND
 
@@ -272,6 +300,9 @@ HCIMPL2_VV(UINT64, JIT_ULDiv, UINT64 dividend, UINT64 divisor)
 
     if (Hi32Bits(divisor) == 0)
     {
+        if ((UINT32)(divisor) == 0)
+        COMPlusThrow(kDivideByZeroException);
+
         if (Hi32Bits(dividend) == 0)
             return((UINT32)dividend / (UINT32)divisor);
     }
@@ -287,6 +318,9 @@ HCIMPL2_VV(UINT64, JIT_ULMod, UINT64 dividend, UINT64 divisor)
 
     if (Hi32Bits(divisor) == 0)
     {
+        if ((UINT32)(divisor) == 0)
+        COMPlusThrow(kDivideByZeroException);
+
         if (Hi32Bits(dividend) == 0)
             return((UINT32)dividend % (UINT32)divisor);
     }
@@ -4219,7 +4253,7 @@ bool IndirectionAllowedForJitHelper(CorInfoHelpFunc ftnNum)
     {
         return false;
     }
-    
+
     return true;
 }
 
