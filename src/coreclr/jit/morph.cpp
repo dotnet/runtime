@@ -13624,6 +13624,14 @@ PhaseStatus Compiler::fgMorphBlocks()
     }
 #endif
 
+    if (optLocalAssertionProp)
+    {
+        Metrics.LocalAssertionCount    = optAssertionCount;
+        Metrics.LocalAssertionOverflow = optAssertionOverflow;
+        Metrics.MorphTrackedLocals     = lvaTrackedCount;
+        Metrics.MorphLocals            = lvaCount;
+    }
+
     return PhaseStatus::MODIFIED_EVERYTHING;
 }
 
