@@ -495,6 +495,7 @@ int minipal_getcpufeatures(void)
     if (IsProcessorFeaturePresent(PF_ARM_V82_DP_INSTRUCTIONS_AVAILABLE))
     {
         result |= ARM64IntrinsicConstants_Dp;
+        result |= ARM64IntrinsicConstants_Rdm;
     }
 
     if (IsProcessorFeaturePresent(PF_ARM_V83_LRCPC_INSTRUCTIONS_AVAILABLE))
