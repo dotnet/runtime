@@ -635,8 +635,7 @@ bool Compiler::impGetLclVal(GenTreeLclVar* tree, GenTree** val)
                 comp->info.compMethodName);
         DISPTREE(tree);
         LclVarDsc* lcl = comp->lvaGetDesc(tree->GetLclNum());
-        if (lcl->lvSingleDef &&
-            !lcl->IsAddressExposed() &&
+        if (lcl->lvSingleDef && !lcl->IsAddressExposed() &&
             comp->impLclVals.Lookup((static_cast<UINT64>(comp->compCurBB->bbNum) << 32 | tree->GetLclNum()), &gtVal) &&
             gtVal->TypeIs(tree->TypeGet()))
         {
