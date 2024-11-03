@@ -631,9 +631,8 @@ bool Compiler::impGetLclVal(GenTreeLclVar* tree, GenTree** val)
 
     while (true)
     {
-        JITDUMP("Try to find substitution for V%02u at BB%02u in '%s':\n", tree->GetLclNum(), comp->compCurBB->bbNum,
+        JITDUMP("Find substitution for V%02u at BB%02u in '%s'\n", tree->GetLclNum(), comp->compCurBB->bbNum,
                 comp->info.compMethodName);
-        DISPTREE(tree);
         LclVarDsc* lcl = comp->lvaGetDesc(tree->GetLclNum());
         if (lcl->lvSingleDef && !lcl->IsAddressExposed() &&
             comp->impLclVals.Lookup((static_cast<UINT64>(comp->compCurBB->bbNum) << 32 | tree->GetLclNum()), &gtVal) &&
@@ -641,8 +640,7 @@ bool Compiler::impGetLclVal(GenTreeLclVar* tree, GenTree** val)
         {
             if (gtVal->OperIs(GT_FTN_ADDR) || (gtVal->IsCall() && gtIsTypeHandleToRuntimeTypeHelper(gtVal->AsCall())))
             {
-                JITDUMP("Use substitution for V%02u:\n", tree->GetLclNum());
-                DISPTREE(gtVal);
+                JITDUMP("Use substitution [%06u] for V%02u\n", gtVal->gtTreeID, tree->GetLclNum());
                 *val = gtVal;
                 return true;
             }
