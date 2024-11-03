@@ -634,7 +634,9 @@ bool Compiler::impGetLclVal(GenTreeLclVar* tree, GenTree** val)
         JITDUMP("Try to find substitution for V%02u at BB%02u in '%s':\n", tree->GetLclNum(), comp->compCurBB->bbNum,
                 comp->info.compMethodName);
         DISPTREE(tree);
-        if (lvaGetDesc(tree->GetLclNum())->lvSingleDef &&
+        LclVarDsc* lcl = comp->lvaGetDesc(tree->GetLclNum());
+        if (lcl->lvSingleDef &&
+            !lcl->IsAddressExposed() &&
             comp->impLclVals.Lookup((static_cast<UINT64>(comp->compCurBB->bbNum) << 32 | tree->GetLclNum()), &gtVal) &&
             gtVal->TypeIs(tree->TypeGet()))
         {
