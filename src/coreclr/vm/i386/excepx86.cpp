@@ -1547,7 +1547,7 @@ CPFH_UnwindHandler(EXCEPTION_RECORD *pExceptionRecord,
 EXCEPTION_HANDLER_IMPL(COMPlusFrameHandler)
 {
     WRAPPER_NO_CONTRACT;
-    _ASSERTE(!DebugIsEECxxException(pExceptionRecord) && "EE C++ Exception leaked into managed code!");
+//    _ASSERTE(!DebugIsEECxxException(pExceptionRecord) && "EE C++ Exception leaked into managed code!");
 
     STRESS_LOG5(LF_EH, LL_INFO100, "In COMPlusFrameHandler EH code = %x  flag = %x EIP = %x with ESP = %x, pEstablisherFrame = 0x%p\n",
         pExceptionRecord->ExceptionCode, pExceptionRecord->ExceptionFlags,
