@@ -6918,6 +6918,31 @@ private:
     bool fgExposeUnpropagatedLocals(bool propagatedAny, class LocalEqualsLocalAddrAssertions* assertions);
     void fgExposeLocalsInBitVec(BitVec_ValArg_T bitVec);
 
+    PhaseStatus fgOptimizeLCLMasks();
+
+    struct LCLMasksWeight
+    {
+        // For a given var, number of Lcl Stores with conversion from mask minus number of Lcl Stores
+        // without conversion from mask.
+        signed storeWeight;
+
+        // For a given var, number of Lcl var with conversion to mask minus number of Lcl vars without
+        // conversion to mask.
+        signed varWeight;
+
+        bool MaskConversionsDominate()
+        {
+            return ((storeWeight > 0) && (varWeight > 0));
+        }
+    };
+
+    typedef JitHashTable<unsigned, JitLargePrimitiveKeyFuncs<unsigned>, LCLMasksWeight> LCLMasksWeightTable;
+
+    bool fgLCLMasksCheckLCLStore(Statement* stmt, LCLMasksWeightTable *weightsTable);
+    void fgLCLMasksCheckLCLVar(GenTreeLclVarCommon* lclVar, Statement* const stmt, LCLMasksWeightTable *weightsTable);
+    bool fgLCLMasksUpdateLCLStore(Statement* stmt, LCLMasksWeightTable* weightsTable);
+    void fgLCLMasksUpdateLCLVar(GenTreeLclVarCommon* lclVar, Statement* const stmt, LCLMasksWeightTable *weightsTable);
+
     PhaseStatus PhysicalPromotion();
 
     PhaseStatus fgForwardSub();
@@ -7304,7 +7329,6 @@ protected:
 
 public:
     PhaseStatus optOptimizeValnumCSEs();
-    PhaseStatus optLCLMasks();
 
     // some phases (eg hoisting) need to anticipate
     // what CSE will do
@@ -7319,27 +7343,6 @@ protected:
     void optValnumCSE_Availability();
     void optValnumCSE_Heuristic(CSE_HeuristicCommon* heuristic);
     GenTree* optExtractSideEffectsForCSE(GenTree* tree);
-
-    struct LCLMasksWeight
-    {
-        // For a given var, number of Lcl Stores with conversion from mask minus number of Lcl Stores without conversion from mask.
-        signed storeWeight;
-
-        // For a given var, number of Lcl var with conversion to mask minus number of Lcl vars without conversion to mask.
-        signed varWeight;
-
-        bool MaskConversionsDominate()
-        {
-            return ((storeWeight > 0) && (varWeight > 0));
-        }
-    };
-
-    typedef JitHashTable<unsigned, JitLargePrimitiveKeyFuncs<unsigned>, LCLMasksWeight> LCLMasksWeightTable;
-
-    bool LCLMasksCheckLCLStore(Statement* stmt, LCLMasksWeightTable *weightsTable);
-    void LCLMasksCheckLCLVar(GenTreeLclVarCommon* lclVar, Statement* const stmt, LCLMasksWeightTable *weightsTable);
-    bool LCLMasksUpdateLCLStore(Statement* stmt, LCLMasksWeightTable* weightsTable);
-    void LCLMasksUpdateLCLVar(GenTreeLclVarCommon* lclVar, Statement* const stmt, LCLMasksWeightTable *weightsTable);
 
     bool     optDoCSE;             // True when we have found a duplicate CSE tree
     bool     optValnumCSE_phase = false;   // True when we are executing the optOptimizeValnumCSEs() phase
