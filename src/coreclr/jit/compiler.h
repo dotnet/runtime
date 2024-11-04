@@ -6920,6 +6920,7 @@ private:
 
     PhaseStatus fgOptimizeLCLMasks();
 
+#if defined(TARGET_ARM64)
     struct LCLMasksWeight
     {
         // For a given var, number of Lcl Stores with conversion from mask minus number of Lcl Stores
@@ -6942,6 +6943,7 @@ private:
     void fgLCLMasksCheckLCLVar(GenTreeLclVarCommon* lclVar, Statement* const stmt, LCLMasksWeightTable *weightsTable);
     bool fgLCLMasksUpdateLCLStore(Statement* stmt, LCLMasksWeightTable* weightsTable);
     void fgLCLMasksUpdateLCLVar(GenTreeLclVarCommon* lclVar, Statement* const stmt, LCLMasksWeightTable *weightsTable);
+#endif // TARGET_ARM64
 
     PhaseStatus PhysicalPromotion();
 

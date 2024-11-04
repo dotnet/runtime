@@ -2427,6 +2427,8 @@ void Compiler::fgExposeLocalsInBitVec(BitVec_ValArg_T bitVec)
     }
 }
 
+#if defined(TARGET_ARM64)
+
 //-----------------------------------------------------------------------------
 // LCLMasksCheckLCLVarVisitor: Find the user of a lcl var and check if it is a convert to mask
 //
@@ -2797,8 +2799,10 @@ void Compiler::fgLCLMasksUpdateLCLVar(GenTreeLclVarCommon* lclVar,
     gtDispTree(lclVar);
 }
 
+#endif // TARGET_ARM64
+
 //------------------------------------------------------------------------
-// optLCLMasks: Allow locals to be of MASK type
+// optLCLMasks: Allow locals to be of Mask type
 //
 // At the C# level, Masks share the same type as a Vector. It's possible for the same
 // variable to be used as a mask or vector. Any APIs that return a mask must first convert
@@ -2839,6 +2843,10 @@ void Compiler::fgLCLMasksUpdateLCLVar(GenTreeLclVarCommon* lclVar,
 //
 PhaseStatus Compiler::fgOptimizeLCLMasks()
 {
+#if !defined(TARGET_ARM64)
+    return PhaseStatus::MODIFIED_NOTHING;
+#endif // !TARGET_ARM64
+
     if (opts.OptimizationDisabled())
     {
         JITDUMP("Skipping. Optimizations Disabled\n");
