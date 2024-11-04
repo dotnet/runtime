@@ -358,7 +358,7 @@ namespace System.Diagnostics.TraceSourceTests
                     listener.Flush();
 
                     Assert.Contains("LogicalOperationStack=", listener.Output);
-                    Assert.Contains(string.Join(", ", Enumerable.Reverse(items)), listener.Output);
+                    Assert.Contains(string.Join(", ", items.Reverse()), listener.Output);
                 }
                 finally
                 {

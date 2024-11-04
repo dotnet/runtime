@@ -42,7 +42,7 @@ namespace System.SpanTests
             ReadOnlySpan<int> srcSpan = new ReadOnlySpan<int>(src);
             bool success = srcSpan.TryCopyTo(segment);
             Assert.True(success);
-            Assert.Equal(src.AsSpan(), segment);
+            Assert.Equal(src, segment);
         }
 
         [Fact]

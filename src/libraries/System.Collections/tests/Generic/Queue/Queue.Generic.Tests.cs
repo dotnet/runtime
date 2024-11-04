@@ -181,6 +181,7 @@ namespace System.Collections.Tests
             Queue<T> collection = new Queue<T>(count + 1);
             AddToCollection(collection, count);
             T[] elements = collection.ToArray();
+            elements.Reverse();
             Assert.True(Enumerable.SequenceEqual(elements, collection.ToArray<T>()));
         }
 

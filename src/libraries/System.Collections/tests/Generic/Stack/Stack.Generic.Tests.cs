@@ -80,7 +80,7 @@ namespace System.Collections.Tests
             _ = numberOfMatchingElements;
             IEnumerable<T> enumerable = CreateEnumerable(enumerableType, null, enumerableLength, 0, numberOfDuplicateElements);
             Stack<T> stack = new Stack<T>(enumerable);
-            Assert.Equal(Enumerable.Reverse(enumerable.ToArray()), stack.ToArray());
+            Assert.Equal(enumerable.ToArray().Reverse(), stack.ToArray());
         }
 
         [Fact]

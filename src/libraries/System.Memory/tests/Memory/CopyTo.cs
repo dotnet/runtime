@@ -41,7 +41,7 @@ namespace System.MemoryTests
             Memory<int> srcMemory = src;
             bool success = srcMemory.TryCopyTo(segment);
             Assert.True(success);
-            Assert.Equal(src.AsSpan(), segment);
+            Assert.Equal(src, segment);
         }
 
         [Fact]
