@@ -38,6 +38,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "cycletimer.h"
 #include "blockset.h"
 #include "arraystack.h"
+#include "priorityqueue.h"
 #include "hashbv.h"
 #include "jitexpandarray.h"
 #include "valuenum.h"
@@ -4912,7 +4913,7 @@ private:
     void impImportBlockPending(BasicBlock* block);
 
     // Similar to impImportBlockPending, but assumes that block has already been imported once and is being
-    // reimported for some reason.  It specifically does *not* look at verCurrentState to set the EntryState
+    // reimported for some reason.  It specifically does *not* look at stackState to set the EntryState
     // for the block, but instead, just re-uses the block's existing EntryState.
     void impReimportBlockPending(BasicBlock* block);
 
@@ -6213,6 +6214,29 @@ public:
     bool fgReorderBlocks(bool useProfile);
     void fgDoReversePostOrderLayout();
     void fgMoveColdBlocks();
+    void fgSearchImprovedLayout();
+
+    class ThreeOptLayout
+    {
+        static bool EdgeCmp(const FlowEdge* left, const FlowEdge* right);
+
+        Compiler* compiler;
+        PriorityQueue<FlowEdge*, decltype(&ThreeOptLayout::EdgeCmp)> cutPoints;
+        unsigned* ordinals;
+        BasicBlock** blockOrder;
+        BasicBlock** tempOrder;
+        unsigned numCandidateBlocks;
+        unsigned currEHRegion;
+
+        void ConsiderEdge(FlowEdge* edge);
+        void AddNonFallthroughSuccs(unsigned blockPos);
+        void AddNonFallthroughPreds(unsigned blockPos);
+        bool RunThreeOptPass(BasicBlock* startBlock, BasicBlock* endBlock);
+
+    public:
+        ThreeOptLayout(Compiler* comp);
+        void Run();
+    };
 
     template <bool hasEH>
     void fgMoveHotJumps();
@@ -11230,37 +11254,22 @@ public:
     }
 #endif // DEBUG
 
-    /*
-    XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-    XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-    XX                                                                           XX
-    XX                           IL verification stuff                           XX
-    XX                                                                           XX
-    XX                                                                           XX
-    XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-    XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-    */
-
 public:
-    EntryState verCurrentState;
+    EntryState stackState;
 
-    void verInitBBEntryState(BasicBlock* block, EntryState* currentState);
+    void initBBEntryState(BasicBlock* block, EntryState* currentState);
 
-    void verInitCurrentState();
-    void verResetCurrentState(BasicBlock* block, EntryState* currentState);
+    void initCurrentState();
+    void resetCurrentState(BasicBlock* block, EntryState* currentState);
 
-    void     verConvertBBToThrowVerificationException(BasicBlock* block DEBUGARG(bool logMsg));
-    void     verHandleVerificationFailure(BasicBlock* block DEBUGARG(bool logMsg));
-    typeInfo verMakeTypeInfoForLocal(unsigned lclNum);
-    typeInfo verMakeTypeInfo(CORINFO_CLASS_HANDLE clsHnd); // converts from jit type representation to typeInfo
-    typeInfo verMakeTypeInfo(CorInfoType          ciType,
-                             CORINFO_CLASS_HANDLE clsHnd); // converts from jit type representation to typeInfo
+    typeInfo makeTypeInfoForLocal(unsigned lclNum);
+    typeInfo makeTypeInfo(CORINFO_CLASS_HANDLE clsHnd); // converts from jit type representation to typeInfo
+    typeInfo makeTypeInfo(CorInfoType          ciType,
+                          CORINFO_CLASS_HANDLE clsHnd); // converts from jit type representation to typeInfo
 
-    typeInfo verParseArgSigToTypeInfo(CORINFO_SIG_INFO* sig, CORINFO_ARG_LIST_HANDLE args);
-
-    bool verCheckTailCallConstraint(OPCODE                  opcode,
-                                    CORINFO_RESOLVED_TOKEN* pResolvedToken,
-                                    CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken);
+    bool checkTailCallConstraint(OPCODE                  opcode,
+                                 CORINFO_RESOLVED_TOKEN* pResolvedToken,
+                                 CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken);
 
 #ifdef DEBUG
 
