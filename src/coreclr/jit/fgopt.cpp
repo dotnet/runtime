@@ -5045,6 +5045,12 @@ void Compiler::ThreeOptLayout::Run()
         numBlocksUpperBound--;
     }
 
+    // For methods with fewer than three candidate blocks, we cannot partition anything
+    if (finalBlock->IsFirst() || finalBlock->Prev()->IsFirst())
+    {
+        return;
+    }
+
     assert(numBlocksUpperBound != 0);
     blockOrder = new (compiler, CMK_BasicBlock) BasicBlock*[numBlocksUpperBound];
     tempOrder  = new (compiler, CMK_BasicBlock) BasicBlock*[numBlocksUpperBound];
