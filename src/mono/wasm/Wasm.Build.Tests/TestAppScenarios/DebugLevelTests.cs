@@ -45,7 +45,7 @@ public class DebugLevelTests : WasmTemplateTestsBase
             aot: false,
             assetDirName: "WasmBasicTestApp",
             idPrefix: "DebugLevelTests_BuildWithDefaultLevel",
-            projectDirReativeToAssetDir: "App"
+            projectDirRelativeToAssetDir: "App"
         );
         BuildPublishProject(info);
         RunOptions options = new(info.Configuration, TestScenario: "DebugLevelTest", ExpectedExitCode: 42);
@@ -65,7 +65,7 @@ public class DebugLevelTests : WasmTemplateTestsBase
             aot: false,
             assetDirName: "WasmBasicTestApp",
             idPrefix: "DebugLevelTests_BuildWithExplicitValue",
-            projectDirReativeToAssetDir: "App"
+            projectDirRelativeToAssetDir: "App"
         );
         BuildPublishProject(info, extraArgs: $"-p:WasmDebugLevel={debugLevel}");
         RunOptions options = new(info.Configuration, TestScenario: "DebugLevelTest", ExpectedExitCode: 42);
@@ -83,7 +83,7 @@ public class DebugLevelTests : WasmTemplateTestsBase
             aot: false,
             assetDirName: "WasmBasicTestApp",
             idPrefix: "DebugLevelTests_PublishWithDefaultLevel",
-            projectDirReativeToAssetDir: "App"
+            projectDirRelativeToAssetDir: "App"
         );
         BuildPublishProject(info, isPublish: true);
         RunOptions options = new(info.Configuration, TestScenario: "DebugLevelTest", ExpectedExitCode: 42);
@@ -103,14 +103,14 @@ public class DebugLevelTests : WasmTemplateTestsBase
             aot: false,
             assetDirName: "WasmBasicTestApp",
             idPrefix: "DebugLevelTests_PublishWithExplicitValue",
-            projectDirReativeToAssetDir: "App"
+            projectDirRelativeToAssetDir: "App"
         );
         BuildPublishProject(info, isPublish: true, extraArgs: $"-p:WasmDebugLevel={debugLevel}");
         RunOptions options = new(info.Configuration, TestScenario: "DebugLevelTest", ExpectedExitCode: 42);
         RunResult result = await RunForPublishWithWebServer(options);
         AssertDebugLevel(result.TestOutput, debugLevel);
     }
-    
+
 
     [Theory]
     [InlineData("Debug")]
@@ -122,7 +122,7 @@ public class DebugLevelTests : WasmTemplateTestsBase
             aot: false,
             assetDirName: "WasmBasicTestApp",
             idPrefix: "DebugLevelTests_PublishWithDefaultLevelAndPdbs",
-            projectDirReativeToAssetDir: "App"
+            projectDirRelativeToAssetDir: "App"
         );
         BuildPublishProject(info, isPublish: true, extraArgs: $"-p:CopyOutputSymbolsToPublishDirectory=true");
         RunOptions options = new(info.Configuration, TestScenario: "DebugLevelTest", ExpectedExitCode: 42);
