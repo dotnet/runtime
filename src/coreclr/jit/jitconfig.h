@@ -28,7 +28,7 @@ public:
             bool        m_containsSignature;
         };
 
-        const char* m_list;
+        const char* m_listFromConfig;
         MethodName* m_names;
 
         MethodSet(const MethodSet& other)            = delete;
@@ -39,12 +39,7 @@ public:
         {
         }
 
-        inline const char* list() const
-        {
-            return m_list;
-        }
-
-        void initialize(const char* list, ICorJitHost* host);
+        void initialize(const char* listFromConfig, ICorJitHost* host);
         void destroy(ICorJitHost* host);
 
         inline bool isEmpty() const

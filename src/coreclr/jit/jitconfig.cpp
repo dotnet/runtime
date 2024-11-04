@@ -10,17 +10,25 @@
 
 JitConfigValues JitConfig;
 
-void JitConfigValues::MethodSet::initialize(const char* list, ICorJitHost* host)
+//----------------------------------------------------------------------
+// initialize: Initialize the method set by parsing the string
+//
+// Arguments:
+//     listFromConfig - A string containing the list. The string must have come from the host's config,
+//                      and this class takes ownership of the string.
+//     host           - Pointer to host interface
+//
+void JitConfigValues::MethodSet::initialize(const char* listFromConfig, ICorJitHost* host)
 {
-    assert(m_list == nullptr);
+    assert(m_listFromConfig == nullptr);
     assert(m_names == nullptr);
 
-    if (list == nullptr)
+    if (listFromConfig == nullptr)
     {
         return;
     }
 
-    m_list = list;
+    m_listFromConfig = listFromConfig;
 
     auto commitPattern = [this, host](const char* start, const char* end) {
         if (end <= start)
@@ -55,7 +63,7 @@ void JitConfigValues::MethodSet::initialize(const char* list, ICorJitHost* host)
         m_names                   = name;
     };
 
-    const char* curPatternStart = m_list;
+    const char* curPatternStart = m_listFromConfig;
     const char* curChar;
     for (curChar = curPatternStart; *curChar != '\0'; curChar++)
     {
@@ -69,6 +77,12 @@ void JitConfigValues::MethodSet::initialize(const char* list, ICorJitHost* host)
     commitPattern(curPatternStart, curChar);
 }
 
+//----------------------------------------------------------------------
+// destroy: Destroy the method set.
+//
+// Arguments:
+//     host - Pointer to host interface
+//
 void JitConfigValues::MethodSet::destroy(ICorJitHost* host)
 {
     // Free method names, free the list string, and reset our state
@@ -77,10 +91,10 @@ void JitConfigValues::MethodSet::destroy(ICorJitHost* host)
         next = name->m_next;
         host->freeMemory(static_cast<void*>(name));
     }
-    if (m_list != nullptr)
+    if (m_listFromConfig != nullptr)
     {
-        host->freeMemory(const_cast<char*>(m_list));
-        m_list = nullptr;
+        host->freeStringConfigValue(m_listFromConfig);
+        m_listFromConfig = nullptr;
     }
     m_names = nullptr;
 }
