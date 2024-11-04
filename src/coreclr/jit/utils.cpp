@@ -4245,8 +4245,8 @@ template <size_t bufferSize>
 class Utf16String
 {
 private:
-    wchar_t  m_buffer[bufferSize];
-    wchar_t* m_pBuffer = nullptr;
+    WCHAR  m_buffer[bufferSize];
+    WCHAR* m_pBuffer = nullptr;
 
 public:
     Utf16String(const char* str)
@@ -4286,7 +4286,7 @@ public:
         }
     }
 
-    const wchar_t* Result()
+    const WCHAR* Result()
     {
         return m_pBuffer;
     }
