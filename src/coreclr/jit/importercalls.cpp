@@ -3925,8 +3925,8 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
             case NI_System_Type_op_Inequality:
             {
                 JITDUMP("Importing Type.op_*Equality intrinsic\n");
-                GenTree* op1     = getSubstitutedOp(impStackTop(1).val);
-                GenTree* op2     = getSubstitutedOp(impStackTop(0).val);
+                GenTree* op1     = impStackTop(1).val;
+                GenTree* op2     = impStackTop(0).val;
                 GenTree* optTree = gtFoldTypeEqualityCall(ni == NI_System_Type_op_Equality, op1, op2);
                 if (optTree != nullptr)
                 {
