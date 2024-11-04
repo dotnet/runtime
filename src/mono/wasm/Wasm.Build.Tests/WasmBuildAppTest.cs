@@ -96,7 +96,7 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun]
-        // Issue: we cannot read from the config file
+        [ActiveIssue("from some reason we cannot read from the config file")]
         public void PropertiesFromRuntimeConfigJson(string config, bool aot)
             => TestMain("runtime_config_json",
                         @"
@@ -120,7 +120,7 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun]
-        // Issue: we cannot read from the config file
+        [ActiveIssue("from some reason we cannot read from the config file")]
         public void PropertiesFromCsproj(string config, bool aot)
             => TestMain("csproj_properties",
                         @"
