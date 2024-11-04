@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.IO.Pipes;
 using System.Threading;
 using Microsoft.Win32.SafeHandles;
 using Xunit;
@@ -14,8 +13,6 @@ namespace System.IO.Tests
         protected abstract T MethodUnderTest(SafeFileHandle handle, byte[] bytes, long fileOffset);
 
         protected virtual bool UsesOffsets => true;
-
-        protected virtual bool ThrowsForUnseekableFile => true;
 
         public static IEnumerable<object[]> GetSyncAsyncOptions()
         {
@@ -50,20 +47,6 @@ namespace System.IO.Tests
             Assert.Throws<ObjectDisposedException>(() => MethodUnderTest(handle, Array.Empty<byte>(), 0));
         }
 
-        [Fact]
-        [SkipOnPlatform(TestPlatforms.Browser, "System.IO.Pipes aren't supported on browser")]
-        public void ThrowsNotSupportedExceptionForUnseekableFile()
-        {
-            if (ThrowsForUnseekableFile)
-            {
-                using (var server = new AnonymousPipeServerStream(PipeDirection.Out))
-                using (SafeFileHandle handle = new SafeFileHandle(server.SafePipeHandle.DangerousGetHandle(), ownsHandle: false))
-                {
-                    Assert.Throws<NotSupportedException>(() => MethodUnderTest(handle, Array.Empty<byte>(), 0));
-                }
-            }
-        }
-
         [Theory]
         [MemberData(nameof(GetSyncAsyncOptions))]
         public void ThrowsArgumentOutOfRangeExceptionForNegativeFileOffset(FileOptions options)
@@ -77,7 +60,7 @@ namespace System.IO.Tests
             }
         }
 
-        protected static CancellationTokenSource GetCancelledTokenSource()
+        internal static CancellationTokenSource GetCancelledTokenSource()
         {
             CancellationTokenSource source = new CancellationTokenSource();
             source.Cancel();
