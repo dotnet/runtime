@@ -47,4 +47,16 @@ internal abstract class ContractRegistry
     /// Gets an instance of the CodeVersions contract for the target.
     /// </summary>
     public abstract ICodeVersions CodeVersions { get; }
+    /// <summary>
+    /// Gets an instance of the PlatformMetadata contract for the target.
+    /// </summary>
+    public abstract IPlatformMetadata PlatformMetadata { get; }
+    /// <summary>
+    /// Gets an instance of the PrecodeStubs contract for the target.
+    /// </summary>
+    public abstract IPrecodeStubs PrecodeStubs { get; }
+    /// <summary>
+    /// Gets an instance of the ReJIT contract for the target.
+    /// </summary>
+    public abstract IReJIT ReJIT { get;  }
 }

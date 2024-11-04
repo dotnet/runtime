@@ -92,9 +92,11 @@ HRESULT PortablePdbWriter::Init(IMetaDataDispenserEx2* mdDispenser)
     time_t now;
     time(&now);
     m_pdbStream.id.pdbTimeStamp = (ULONG)now;
-    hr = CoCreateGuid(&m_pdbStream.id.pdbGuid);
-
-    if (FAILED(hr)) goto exit;
+    if (!minipal_guid_v4_create(reinterpret_cast<minipal_guid_t*>(&m_pdbStream.id.pdbGuid)))
+    {
+        hr = E_FAIL;
+        goto exit;
+    }
 
     hr = mdDispenser->DefinePortablePdbScope(
         CLSID_CorMetaDataRuntime,
@@ -176,7 +178,7 @@ HRESULT PortablePdbWriter::DefineDocument(char* name, GUID* language)
         mdDocument docToken = mdDocumentNil;
 
         if (FAILED(hr = m_pdbEmitter->DefineDocument(
-            name, // will be tokenized 
+            name, // will be tokenized
             &hashAlgorithmUnknown,
             hashValue,
             cbHashValue,

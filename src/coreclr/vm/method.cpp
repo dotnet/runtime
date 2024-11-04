@@ -474,19 +474,6 @@ void MethodDesc::GetSigFromMetadata(IMDInternalImport * importer,
 }
 
 //*******************************************************************************
-PCCOR_SIGNATURE MethodDesc::GetSig()
-{
-    WRAPPER_NO_CONTRACT;
-
-    PCCOR_SIGNATURE pSig;
-    DWORD           cSig;
-
-    GetSig(&pSig, &cSig);
-
-    PREFIX_ASSUME(pSig != NULL);
-
-    return pSig;
-}
 
 Signature MethodDesc::GetSignature()
 {

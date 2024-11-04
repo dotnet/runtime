@@ -436,8 +436,7 @@ enum ConvToJitSigFlags : int
 // contextType  - The type with any instantiaton information
 //
 static void ConvToJitSig(
-    PCCOR_SIGNATURE       pSig,
-    DWORD                 cbSig,
+    SigPointer            sig,
     CORINFO_MODULE_HANDLE scopeHnd,
     mdToken               token,
     SigTypeContext*       typeContext,
@@ -456,10 +455,7 @@ static void ConvToJitSig(
     static_assert_no_msg(CORINFO_CALLCONV_MASK == (CorInfoCallConv) IMAGE_CEE_CS_CALLCONV_MASK);
     static_assert_no_msg(CORINFO_CALLCONV_HASTHIS == (CorInfoCallConv) IMAGE_CEE_CS_CALLCONV_HASTHIS);
 
-    TypeHandle typeHnd = TypeHandle();
-
-    sigRet->pSig = pSig;
-    sigRet->cbSig = cbSig;
+    sig.GetSignature(&sigRet->pSig, &sigRet->cbSig);
     sigRet->methodSignature = 0;
     sigRet->retTypeClass = 0;
     sigRet->retTypeSigClass = 0;
@@ -469,8 +465,6 @@ static void ConvToJitSig(
     sigRet->sigInst.classInstCount = (unsigned) typeContext->m_classInst.GetNumArgs();
     sigRet->sigInst.methInst = (CORINFO_CLASS_HANDLE *) typeContext->m_methodInst.GetRawArgs();
     sigRet->sigInst.methInstCount = (unsigned) typeContext->m_methodInst.GetNumArgs();
-
-    SigPointer sig(pSig, cbSig);
 
     if ((flags & CONV_TO_JITSIG_FLAGS_LOCALSIG) == 0)
     {
@@ -506,6 +500,7 @@ static void ConvToJitSig(
 
         CorElementType type = sig.PeekElemTypeClosed(module, typeContext);
 
+        TypeHandle typeHnd = TypeHandle();
         if (!CorTypeInfo::IsPrimitiveType(type))
         {
             typeHnd = sig.GetTypeHandleThrowing(module, typeContext);
@@ -1231,7 +1226,12 @@ CorInfoHelpFunc CEEInfo::getSharedStaticsHelper(FieldDesc * pField, MethodTable 
         else
         {
             if (noCtor)
-                helper = CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR;
+            {
+                if (pFieldMT == CoreLibBinder::GetExistingClass(CLASS__DIRECTONTHREADLOCALDATA))
+                    helper = CanJITOptimizeTLSAccess() ? CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2 : CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2_NOJITOPT; // ALWAYS use this helper, as its needed to ensure basic thread static access works
+                else
+                    helper = CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR;
+            }
             else
                 helper = CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE;
         }
@@ -1435,6 +1435,13 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
                 fieldAccessor = CORINFO_FIELD_STATIC_SHARED_STATIC_HELPER;
 
                 pResult->helper = getSharedStaticsHelper(pField, pFieldMT);
+                if (pFieldMT == CoreLibBinder::GetExistingClass(CLASS__DIRECTONTHREADLOCALDATA))
+                {
+                    fieldAccessor = CORINFO_FIELD_STATIC_TLS_MANAGED;
+                    pFieldMT->EnsureTlsIndexAllocated();
+                    pResult->helper = CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2_NOJITOPT;
+                }
+
                 if (CanJITOptimizeTLSAccess())
                 {
                     // For windows x64/x86/arm64, linux x64/arm64/loongarch64/riscv64:
@@ -1462,6 +1469,10 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
                     {
                         fieldAccessor = CORINFO_FIELD_STATIC_TLS_MANAGED;
                         pResult->helper = CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED;
+                    }
+                    else if (pResult->helper == CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2_NOJITOPT)
+                    {
+                        pResult->helper = CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2;
                     }
                 }
             }
@@ -1680,13 +1691,10 @@ CEEInfo::findCallSiteSig(
 
     JIT_TO_EE_TRANSITION();
 
-    PCCOR_SIGNATURE       pSig = NULL;
-    uint32_t              cbSig = 0;
-
+    SigPointer sig{};
     if (IsDynamicScope(scopeHnd))
     {
         DynamicResolver * pResolver = GetDynamicResolver(scopeHnd);
-        SigPointer sig;
 
         if (TypeFromToken(sigMethTok) == mdtMemberRef)
         {
@@ -1711,13 +1719,14 @@ CEEInfo::findCallSiteSig(
             scopeHnd = GetScopeHandle(resolved.Method->GetModule());
         }
 
-        sig.GetSignature(&pSig, &cbSig);
         sigMethTok = mdTokenNil;
     }
     else
     {
         Module * module = (Module *)scopeHnd;
         LPCUTF8  szName;
+        PCCOR_SIGNATURE pSig = NULL;
+        uint32_t cbSig = 0;
 
         if (TypeFromToken(sigMethTok) == mdtMemberRef)
         {
@@ -1727,14 +1736,15 @@ CEEInfo::findCallSiteSig(
         {
             IfFailThrow(module->GetMDImport()->GetSigOfMethodDef(sigMethTok, (ULONG*)&cbSig, &pSig));
         }
+
+        sig = SigParser{ pSig, cbSig };
     }
 
     SigTypeContext typeContext;
     GetTypeContext(context, &typeContext);
 
     ConvToJitSig(
-        pSig,
-        cbSig,
+        sig,
         scopeHnd,
         sigMethTok,
         &typeContext,
@@ -1760,32 +1770,31 @@ CEEInfo::findSig(
 
     JIT_TO_EE_TRANSITION();
 
-    PCCOR_SIGNATURE       pSig = NULL;
-    uint32_t              cbSig = 0;
-
+    SigPointer sig{};
     if (IsDynamicScope(scopeHnd))
     {
-        SigPointer sig = GetDynamicResolver(scopeHnd)->ResolveSignature(sigTok);
-        sig.GetSignature(&pSig, &cbSig);
+        sig = GetDynamicResolver(scopeHnd)->ResolveSignature(sigTok);
         sigTok = mdTokenNil;
     }
     else
     {
         Module * module = (Module *)scopeHnd;
 
+        PCCOR_SIGNATURE pSig = NULL;
+        uint32_t cbSig = 0;
         // We need to resolve this stand alone sig
         IfFailThrow(module->GetMDImport()->GetSigFromToken(
             (mdSignature)sigTok,
             (ULONG*)(&cbSig),
             &pSig));
+        sig = SigParser{ pSig, cbSig };
     }
 
     SigTypeContext typeContext;
     GetTypeContext(context, &typeContext);
 
     ConvToJitSig(
-        pSig,
-        cbSig,
+        sig,
         scopeHnd,
         sigTok,
         &typeContext,
@@ -4834,17 +4843,12 @@ static void getMethodSigInternal(
 
     MethodDesc * ftn = GetMethod(ftnHnd);
 
-    PCCOR_SIGNATURE pSig = NULL;
-    DWORD           cbSig = 0;
-    ftn->GetSig(&pSig, &cbSig);
-
     SigTypeContext context(ftn, (TypeHandle)owner);
 
     // Type parameters in the signature are instantiated
     // according to the class/method/array instantiation of ftnHnd and owner
     ConvToJitSig(
-        pSig,
-        cbSig,
+        ftn->GetSigParser(),
         GetScopeHandle(ftn),
         mdTokenNil,
         &context,
@@ -6364,8 +6368,8 @@ const char* CEEInfo::getClassNameFromMetadata(CORINFO_CLASS_HANDLE cls, const ch
 CORINFO_CLASS_HANDLE CEEInfo::getTypeInstantiationArgument(CORINFO_CLASS_HANDLE cls, unsigned index)
 {
     CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
+        NOTHROW;
+        GC_NOTRIGGER;
         MODE_PREEMPTIVE;
     } CONTRACTL_END;
 
@@ -6375,6 +6379,30 @@ CORINFO_CLASS_HANDLE CEEInfo::getTypeInstantiationArgument(CORINFO_CLASS_HANDLE 
 
     TypeHandle VMClsHnd(cls);
     Instantiation inst = VMClsHnd.GetInstantiation();
+    TypeHandle typeArg = index < inst.GetNumArgs() ? inst[index] : NULL;
+    result = CORINFO_CLASS_HANDLE(typeArg.AsPtr());
+
+    EE_TO_JIT_TRANSITION_LEAF();
+
+    return result;
+}
+
+CORINFO_CLASS_HANDLE CEEInfo::getMethodInstantiationArgument(CORINFO_METHOD_HANDLE ftn, unsigned index)
+{
+    CONTRACTL {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    CORINFO_CLASS_HANDLE result = NULL;
+
+    JIT_TO_EE_TRANSITION_LEAF();
+
+    MethodDesc* method = (MethodDesc*) ftn;
+    _ASSERTE(method->GetNumGenericMethodArgs() == 1);
+    Instantiation inst = method->GetMethodInstantiation();
+
     TypeHandle typeArg = index < inst.GetNumArgs() ? inst[index] : NULL;
     result = CORINFO_CLASS_HANDLE(typeArg.AsPtr());
 
@@ -6611,6 +6639,76 @@ void CEEInfo::setMethodAttribs (
 }
 
 /*********************************************************************/
+class MethodInfoHelperContext final
+{
+public:
+    MethodDesc* Method;
+    COR_ILMETHOD_DECODER* Header;
+    DynamicResolver* TransientResolver;
+
+    MethodInfoHelperContext(MethodDesc* pMD, _In_opt_ COR_ILMETHOD_DECODER* header = NULL)
+        : Method{ pMD }
+        , Header{ header }
+        , TransientResolver{}
+    {
+        LIMITED_METHOD_CONTRACT;
+        _ASSERTE(pMD != NULL);
+    }
+
+    MethodInfoHelperContext(const MethodInfoHelperContext&) = delete;
+    MethodInfoHelperContext(MethodInfoHelperContext&& other) = delete;
+
+    ~MethodInfoHelperContext()
+    {
+        STANDARD_VM_CONTRACT;
+        delete TransientResolver;
+    }
+
+    MethodInfoHelperContext& operator=(const MethodInfoHelperContext&) = delete;
+    MethodInfoHelperContext& operator=(MethodInfoHelperContext&& other) = delete;
+
+    bool HasTransientMethodDetails() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        return TransientResolver != NULL;
+    }
+
+    CORINFO_MODULE_HANDLE CreateScopeHandle() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        _ASSERTE(HasTransientMethodDetails());
+        return MakeDynamicScope(TransientResolver);
+    }
+
+    // This operation transfers any ownership to a
+    // TransientMethodDetails instance.
+    TransientMethodDetails CreateTransientMethodDetails()
+    {
+        STANDARD_VM_CONTRACT;
+        _ASSERTE(HasTransientMethodDetails());
+
+        CORINFO_MODULE_HANDLE handle = CreateScopeHandle();
+        TransientResolver = NULL;
+        return TransientMethodDetails{ Method, Header, handle };
+    }
+
+    void UpdateWith(const TransientMethodDetails& details)
+    {
+        LIMITED_METHOD_CONTRACT;
+        Header = details.Header;
+        TransientResolver = details.Scope != NULL ? GetDynamicResolver(details.Scope) : NULL;
+    }
+
+    void TakeOwnership(TransientMethodDetails details)
+    {
+        LIMITED_METHOD_CONTRACT;
+        UpdateWith(details);
+
+        // Default initialize local instance since we are
+        // taking ownership of the transient method details.
+        details = {};
+    }
+};
 
 void getMethodInfoILMethodHeaderHelper(
     COR_ILMETHOD_DECODER* header,
@@ -6673,7 +6771,7 @@ correctly (but slower) if the IL intrinsics are removed.
 
 *********************************************************************/
 
-bool getILIntrinsicImplementationForUnsafe(MethodDesc * ftn,
+static bool getILIntrinsicImplementationForUnsafe(MethodDesc * ftn,
                                            CORINFO_METHOD_INFO * methInfo)
 {
     STANDARD_VM_CONTRACT;
@@ -7107,7 +7205,7 @@ bool getILIntrinsicImplementationForUnsafe(MethodDesc * ftn,
     return false;
 }
 
-bool getILIntrinsicImplementationForInterlocked(MethodDesc * ftn,
+static bool getILIntrinsicImplementationForInterlocked(MethodDesc * ftn,
                                                 CORINFO_METHOD_INFO * methInfo)
 {
     STANDARD_VM_CONTRACT;
@@ -7217,11 +7315,14 @@ bool IsBitwiseEquatable(TypeHandle typeHandle, MethodTable * methodTable)
     return true;
 }
 
-bool getILIntrinsicImplementationForRuntimeHelpers(MethodDesc * ftn,
-    CORINFO_METHOD_INFO * methInfo)
+static bool getILIntrinsicImplementationForRuntimeHelpers(
+    MethodInfoHelperContext& cxt,
+    CORINFO_METHOD_INFO* methInfo,
+    SigPointer* localSig)
 {
     STANDARD_VM_CONTRACT;
 
+    MethodDesc* ftn = cxt.Method;
     _ASSERTE(CoreLibBinder::IsClass(ftn->GetMethodTable(), CLASS__RUNTIME_HELPERS));
 
     mdMethodDef tk = ftn->GetMemberDef();
@@ -7272,8 +7373,22 @@ bool getILIntrinsicImplementationForRuntimeHelpers(MethodDesc * ftn,
         methInfo->maxStack = 1;
         methInfo->EHcount = 0;
         methInfo->options = (CorInfoOptions)0;
+        *localSig = {};
         return true;
     }
+
+#if FEATURE_IJW
+    if (tk == CoreLibBinder::GetMethod(METHOD__RUNTIME_HELPERS__COPY_CONSTRUCT)->GetMemberDef())
+    {
+        if (!GenerateCopyConstructorHelper(ftn, &cxt.TransientResolver, &cxt.Header))
+            ThrowHR(COR_E_BADIMAGEFORMAT);
+
+        _ASSERTE(cxt.Header != NULL);
+        getMethodInfoILMethodHeaderHelper(cxt.Header, methInfo);
+        *localSig = SigPointer(cxt.Header->LocalVarSig, cxt.Header->cbLocalVarSig);
+        return true;
+    }
+#endif // FEATURE_IJW
 
     if (tk == CoreLibBinder::GetMethod(METHOD__RUNTIME_HELPERS__ENUM_EQUALS)->GetMemberDef())
     {
@@ -7312,6 +7427,7 @@ bool getILIntrinsicImplementationForRuntimeHelpers(MethodDesc * ftn,
             methInfo->maxStack = 2;
             methInfo->EHcount = 0;
             methInfo->options = (CorInfoOptions)0;
+            *localSig = {};
             return true;
         }
     }
@@ -7364,6 +7480,7 @@ bool getILIntrinsicImplementationForRuntimeHelpers(MethodDesc * ftn,
             methInfo->maxStack = 2;
             methInfo->EHcount = 0;
             methInfo->options = (CorInfoOptions)0;
+            *localSig = {};
             return true;
         }
     }
@@ -7371,7 +7488,7 @@ bool getILIntrinsicImplementationForRuntimeHelpers(MethodDesc * ftn,
     return false;
 }
 
-bool getILIntrinsicImplementationForActivator(MethodDesc* ftn,
+static bool getILIntrinsicImplementationForActivator(MethodDesc* ftn,
     CORINFO_METHOD_INFO* methInfo,
     SigPointer* pSig)
 {
@@ -7405,77 +7522,6 @@ bool getILIntrinsicImplementationForActivator(MethodDesc* ftn,
 //---------------------------------------------------------------------------------------
 //
 
-class MethodInfoHelperContext final
-{
-public:
-    MethodDesc* Method;
-    COR_ILMETHOD_DECODER* Header;
-    DynamicResolver* TransientResolver;
-
-    MethodInfoHelperContext(MethodDesc* pMD, _In_opt_ COR_ILMETHOD_DECODER* header = NULL)
-        : Method{ pMD }
-        , Header{ header }
-        , TransientResolver{}
-    {
-        LIMITED_METHOD_CONTRACT;
-        _ASSERTE(pMD != NULL);
-    }
-
-    MethodInfoHelperContext(const MethodInfoHelperContext&) = delete;
-    MethodInfoHelperContext(MethodInfoHelperContext&& other) = delete;
-
-    ~MethodInfoHelperContext()
-    {
-        STANDARD_VM_CONTRACT;
-        delete TransientResolver;
-    }
-
-    MethodInfoHelperContext& operator=(const MethodInfoHelperContext&) = delete;
-    MethodInfoHelperContext& operator=(MethodInfoHelperContext&& other) = delete;
-
-    bool HasTransientMethodDetails() const
-    {
-        LIMITED_METHOD_CONTRACT;
-        return TransientResolver != NULL;
-    }
-
-    CORINFO_MODULE_HANDLE CreateScopeHandle() const
-    {
-        LIMITED_METHOD_CONTRACT;
-        _ASSERTE(HasTransientMethodDetails());
-        return MakeDynamicScope(TransientResolver);
-    }
-
-    // This operation transfers any ownership to a
-    // TransientMethodDetails instance.
-    TransientMethodDetails CreateTransientMethodDetails()
-    {
-        STANDARD_VM_CONTRACT;
-        _ASSERTE(HasTransientMethodDetails());
-
-        CORINFO_MODULE_HANDLE handle = CreateScopeHandle();
-        TransientResolver = NULL;
-        return TransientMethodDetails{ Method, Header, handle };
-    }
-
-    void UpdateWith(const TransientMethodDetails& details)
-    {
-        LIMITED_METHOD_CONTRACT;
-        Header = details.Header;
-        TransientResolver = details.Scope != NULL ? GetDynamicResolver(details.Scope) : NULL;
-    }
-
-    void TakeOwnership(TransientMethodDetails details)
-    {
-        LIMITED_METHOD_CONTRACT;
-        UpdateWith(details);
-
-        // Default initialize local instance since we are
-        // taking ownership of the transient method details.
-        details = {};
-    }
-};
-
 static void getMethodInfoHelper(
     MethodInfoHelperContext& cxt,
     CORINFO_METHOD_INFO* methInfo,
@@ -7491,18 +7537,13 @@ static void getMethodInfoHelper(
     CORINFO_MODULE_HANDLE scopeHnd = NULL;
 
     /* Grab information from the IL header */
-    PCCOR_SIGNATURE pLocalSig   = NULL;
-    uint32_t        cbLocalSig  = 0;
+    SigPointer localSig{};
 
     // Having a header means there is backing IL for the method.
     if (NULL != cxt.Header)
     {
-        scopeHnd = cxt.HasTransientMethodDetails()
-            ? cxt.CreateScopeHandle()
-            : GetScopeHandle(ftn);
         bool fILIntrinsic = false;
-
-        MethodTable * pMT  = ftn->GetMethodTable();
+        MethodTable* pMT = ftn->GetMethodTable();
 
         if (ftn->IsIntrinsic())
         {
@@ -7516,24 +7557,22 @@ static void getMethodInfoHelper(
             }
             else if (CoreLibBinder::IsClass(pMT, CLASS__RUNTIME_HELPERS))
             {
-                fILIntrinsic = getILIntrinsicImplementationForRuntimeHelpers(ftn, methInfo);
+                fILIntrinsic = getILIntrinsicImplementationForRuntimeHelpers(cxt, methInfo, &localSig);
             }
             else if (CoreLibBinder::IsClass(pMT, CLASS__ACTIVATOR))
             {
-                SigPointer localSig;
                 fILIntrinsic = getILIntrinsicImplementationForActivator(ftn, methInfo, &localSig);
-                if (fILIntrinsic)
-                {
-                    localSig.GetSignature(&pLocalSig, &cbLocalSig);
-                }
             }
         }
+
+        scopeHnd = cxt.HasTransientMethodDetails()
+            ? cxt.CreateScopeHandle()
+            : GetScopeHandle(ftn);
 
         if (!fILIntrinsic)
         {
             getMethodInfoILMethodHeaderHelper(cxt.Header, methInfo);
-            pLocalSig = cxt.Header->LocalVarSig;
-            cbLocalSig = cxt.Header->cbLocalVarSig;
+            localSig = SigPointer{ cxt.Header->LocalVarSig, cxt.Header->cbLocalVarSig };
         }
     }
     else if (ftn->IsDynamicMethod())
@@ -7547,40 +7586,20 @@ static void getMethodInfoHelper(
                                                   &methInfo->options,
                                                   &EHCount);
         methInfo->EHcount = (unsigned short)EHCount;
-        SigPointer localSig = pResolver->GetLocalSig();
-        localSig.GetSignature(&pLocalSig, &cbLocalSig);
+        localSig = pResolver->GetLocalSig();
     }
-    else if (ftn->GetMemberDef() == CoreLibBinder::GetMethod(METHOD__RUNTIME_HELPERS__COPY_CONSTRUCT)->GetMemberDef())
+    else if (ftn->TryGenerateUnsafeAccessor(&cxt.TransientResolver, &cxt.Header))
     {
-        _ASSERTE(ftn->HasMethodInstantiation());
-        Instantiation inst = ftn->GetMethodInstantiation();
-
-        _ASSERTE(inst.GetNumArgs() == 1);
-        TypeHandle type = inst[0];
-
-        if (!GenerateCopyConstructorHelper(ftn, type, &cxt.TransientResolver, &cxt.Header, methInfo))
-        {
-            ThrowHR(COR_E_BADIMAGEFORMAT);
-        }
-
         scopeHnd = cxt.CreateScopeHandle();
 
         _ASSERTE(cxt.Header != NULL);
         getMethodInfoILMethodHeaderHelper(cxt.Header, methInfo);
-        pLocalSig = cxt.Header->LocalVarSig;
-        cbLocalSig = cxt.Header->cbLocalVarSig;
+        localSig = SigPointer{ cxt.Header->LocalVarSig, cxt.Header->cbLocalVarSig };
     }
     else
     {
-        if (!ftn->TryGenerateUnsafeAccessor(&cxt.TransientResolver, &cxt.Header))
-            ThrowHR(COR_E_BADIMAGEFORMAT);
-
-        scopeHnd = cxt.CreateScopeHandle();
-
-        _ASSERTE(cxt.Header != NULL);
-        getMethodInfoILMethodHeaderHelper(cxt.Header, methInfo);
-        pLocalSig = cxt.Header->LocalVarSig;
-        cbLocalSig = cxt.Header->cbLocalVarSig;
+        _ASSERTE(!ftn->IsIntrinsic() && "Non-implementable intrinsic methods should have a throwing body");
+        ThrowHR(COR_E_BADIMAGEFORMAT);
     }
 
     _ASSERTE(scopeHnd != NULL);
@@ -7589,12 +7608,6 @@ static void getMethodInfoHelper(
                             ((ftn->AcquiresInstMethodTableFromThis() ? CORINFO_GENERICS_CTXT_FROM_THIS : 0) |
                              (ftn->RequiresInstMethodTableArg() ? CORINFO_GENERICS_CTXT_FROM_METHODTABLE : 0) |
                              (ftn->RequiresInstMethodDescArg() ? CORINFO_GENERICS_CTXT_FROM_METHODDESC : 0)));
-
-    // EEJitManager::ResolveEHClause and CrawlFrame::GetExactGenericInstantiations
-    // need to be able to get to CORINFO_GENERICS_CTXT_MASK if there are any
-    // catch clauses like "try {} catch(MyException<T> e) {}".
-    // Such constructs are rare, and having to extend the lifetime of variable
-    // for such cases is reasonable
 
     if (methInfo->options & CORINFO_GENERICS_CTXT_MASK)
     {
@@ -7614,10 +7627,6 @@ static void getMethodInfoHelper(
         }
 #endif // defined(PROFILING_SUPPORTED)
     }
-
-    PCCOR_SIGNATURE pSig = NULL;
-    DWORD           cbSig = 0;
-    ftn->GetSig(&pSig, &cbSig);
 
     SigTypeContext context;
 
@@ -7641,8 +7650,7 @@ static void getMethodInfoHelper(
     // Type parameters in the signature should be instantiated according to the
     // class/method/array instantiation of ftnHnd
     ConvToJitSig(
-        pSig,
-        cbSig,
+        ftn->GetSigParser(),
         methInfo->scope,
         mdTokenNil,
         &context,
@@ -7660,8 +7668,7 @@ static void getMethodInfoHelper(
     // Type parameters in the signature should be instantiated according to the
     // class/method/array instantiation of ftnHnd
     ConvToJitSig(
-        pLocalSig,
-        cbLocalSig,
+        localSig,
         methInfo->scope,
         mdTokenNil,
         &context,
@@ -8561,7 +8568,7 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
     info->detail = CORINFO_DEVIRTUALIZATION_UNKNOWN;
     memset(&info->resolvedTokenDevirtualizedMethod, 0, sizeof(info->resolvedTokenDevirtualizedMethod));
     memset(&info->resolvedTokenDevirtualizedUnboxedMethod, 0, sizeof(info->resolvedTokenDevirtualizedUnboxedMethod));
-    info->requiresInstMethodTableArg = false;
+    info->isInstantiatingStub = false;
     info->wasArrayInterfaceDevirt = false;
 
     MethodDesc* pBaseMD = GetMethod(info->virtualMethod);
@@ -8765,21 +8772,23 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
 
     // Success! Pass back the results.
     //
-    info->devirtualizedMethod = (CORINFO_METHOD_HANDLE) pDevirtMD;
-
     if (isArray)
     {
+        // Note if array devirtualization produced an instantiation stub
+        // so jit can try and inline it.
+        //
+        info->isInstantiatingStub = pDevirtMD->IsInstantiatingStub();
         info->exactContext = MAKE_METHODCONTEXT((CORINFO_METHOD_HANDLE) pDevirtMD);
-        info->requiresInstMethodTableArg = pDevirtMD->RequiresInstMethodTableArg();
         info->wasArrayInterfaceDevirt = true;
     }
     else
     {
         info->exactContext = MAKE_CLASSCONTEXT((CORINFO_CLASS_HANDLE) pExactMT);
-        info->requiresInstMethodTableArg = false;
+        info->isInstantiatingStub = false;
         info->wasArrayInterfaceDevirt = false;
     }
 
+    info->devirtualizedMethod = (CORINFO_METHOD_HANDLE) pDevirtMD;
     info->detail = CORINFO_DEVIRTUALIZATION_SUCCESS;
 
     return true;
@@ -8832,6 +8841,47 @@ CORINFO_METHOD_HANDLE CEEInfo::getUnboxedEntry(
     }
 
     *requiresInstMethodTableArg = requiresInstMTArg;
+
+    EE_TO_JIT_TRANSITION();
+
+    return result;
+}
+
+/*********************************************************************/
+CORINFO_METHOD_HANDLE CEEInfo::getInstantiatedEntry(
+    CORINFO_METHOD_HANDLE ftn,
+    CORINFO_METHOD_HANDLE* methodArg,
+    CORINFO_CLASS_HANDLE* classArg)
+{
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    CORINFO_METHOD_HANDLE result = NULL;
+
+    JIT_TO_EE_TRANSITION();
+
+    *methodArg = NULL;
+    *classArg = NULL;
+
+    MethodDesc* pMD = GetMethod(ftn);
+    bool requiresInstMTArg = false;
+
+    if (pMD->IsInstantiatingStub())
+    {
+        result = (CORINFO_METHOD_HANDLE) pMD->GetWrappedMethodDesc();
+
+        if (pMD->HasMethodInstantiation())
+        {
+            *methodArg = ftn;
+        }
+        else
+        {
+            *classArg = (CORINFO_CLASS_HANDLE)pMD->GetMethodTable();
+        }
+    }
 
     EE_TO_JIT_TRANSITION();
 
@@ -9876,7 +9926,7 @@ bool CEEInfo::pInvokeMarshalingRequired(CORINFO_METHOD_HANDLE method, CORINFO_SI
         GetTypeContext(&callSiteSig->sigInst, &typeContext);
         result = NDirect::MarshalingRequired(
                     NULL,
-                    callSiteSig->pSig,
+                    SigPointer{ callSiteSig->pSig, callSiteSig->cbSig },
                     GetModule(callSiteSig->scope),
                     &typeContext);
     }
@@ -10018,6 +10068,7 @@ CORINFO_METHOD_HANDLE CEEInfo::getSpecialCopyHelper(CORINFO_CLASS_HANDLE type)
 
     JIT_TO_EE_TRANSITION();
 
+#ifdef FEATURE_IJW
     TypeHandle th = TypeHandle(type);
 
     _ASSERTE(th.IsValueType());
@@ -10034,6 +10085,9 @@ CORINFO_METHOD_HANDLE CEEInfo::getSpecialCopyHelper(CORINFO_CLASS_HANDLE type)
 
     pHelperMD->CheckRestore();
     result = (CORINFO_METHOD_HANDLE)pHelperMD;
+#else
+    _ASSERTE(!"Requires IJW feature");
+#endif // FEATURE_IJW
 
     EE_TO_JIT_TRANSITION();
 

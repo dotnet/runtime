@@ -826,15 +826,10 @@ static const HWIntrinsicIsaRange hwintrinsicIsaRangeArray[] = {
     { NI_Illegal, NI_Illegal },                                 // X86Serialize_X64
     { NI_Illegal, NI_Illegal },                                 // EVEX_X64
     { FIRST_NI_AVX512F_X64, LAST_NI_AVX512F_X64 },
-    { NI_Illegal, NI_Illegal },                                 // AVX512F_VL_X64
     { NI_Illegal, NI_Illegal },                                 // AVX512BW_X64
-    { NI_Illegal, NI_Illegal },                                 // AVX512BW_VL_X64
     { NI_Illegal, NI_Illegal },                                 // AVX512CD_X64
-    { NI_Illegal, NI_Illegal },                                 // AVX512CD_VL_X64
     { NI_Illegal, NI_Illegal },                                 // AVX512DQ_X64
-    { NI_Illegal, NI_Illegal },                                 // AVX512DQ_VL_X64
     { NI_Illegal, NI_Illegal },                                 // AVX512VBMI_X64
-    { NI_Illegal, NI_Illegal },                                 // AVX512VBMI_VL_X64
     { FIRST_NI_AVX10v1_X64, LAST_NI_AVX10v1_X64 },
     { NI_Illegal, NI_Illegal },                                 // AVX10v1_V512_X64
 #elif defined (TARGET_ARM64)

@@ -88,15 +88,10 @@ instructionset64bit,X86   ,MOVBE
 instructionset64bit,X86   ,X86Serialize
 instructionset64bit,X86   ,EVEX
 instructionset64bit,X86   ,AVX512F
-instructionset64bit,X86   ,AVX512F_VL
 instructionset64bit,X86   ,AVX512BW
-instructionset64bit,X86   ,AVX512BW_VL
 instructionset64bit,X86   ,AVX512CD
-instructionset64bit,X86   ,AVX512CD_VL
 instructionset64bit,X86   ,AVX512DQ
-instructionset64bit,X86   ,AVX512DQ_VL
 instructionset64bit,X86   ,AVX512VBMI
-instructionset64bit,X86   ,AVX512VBMI_VL
 instructionset64bit,X86   ,AVX10v1
 instructionset64bit,X86   ,AVX10v1_V512
 instructionset64bit,X86   ,APX

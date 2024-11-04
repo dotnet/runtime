@@ -113,6 +113,14 @@ NativeCodeVersionHandle ICodeVersions.GetNativeCodeVersionForIP(TargetCodePointe
 
 NativeCodeVersionHandle GetSpecificNativeCodeVersion(MethodDescHandle md, TargetCodePointer startAddress)
 {
+    // "Initial" stage of NativeCodeVersionIterator::Next() with a null m_ilCodeFilter
+    TargetCodePointer firstNativeCode = rts.GetNativeCode(md);
+    if (firstNativeCode == startAddress)
+    {
+        NativeCodeVersionHandle first = new NativeCodeVersionHandle(md.Address, TargetPointer.Null);
+        return first;
+    }
+    // ImplicitCodeVersion stage of NativeCodeVersionIterator::Next()
     TargetPointer methodDescVersioningStateAddress = target.Contracts.RuntimeTypeSystem.GetMethodDescVersioningState(md);
     if (methodDescVersioningStateAddress == TargetPointer.Null)
     {

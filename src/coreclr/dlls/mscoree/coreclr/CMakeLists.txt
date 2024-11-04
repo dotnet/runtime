@@ -140,7 +140,6 @@ else()
         coreclrpal
         ${END_WHOLE_ARCHIVE}
         mscorrc
-        palrt
     )
 endif(CLR_CMAKE_TARGET_WIN32)
 
