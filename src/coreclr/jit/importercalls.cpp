@@ -1990,7 +1990,7 @@ GenTreeCall* Compiler::impImportIndirectCall(CORINFO_SIG_INFO* sig, const DebugI
     assert(genActualType(fptr->gtType) == TYP_I_IMPL || genActualType(fptr->gtType) == TYP_INT);
 
     GenTree* fptrVal;
-    if (fptr->OperIs(GT_LCL_VAR) && impGetLclVal(fptr->AsLclVar(), &fptrVal))
+    if (fptr->OperIs(GT_LCL_VAR) && impGetLclVal(fptr->AsLclVar(), &fptrVal) && fptrVal->OperIs(GT_FTN_ADDR))
     {
         fptr = fptrVal;
     }
