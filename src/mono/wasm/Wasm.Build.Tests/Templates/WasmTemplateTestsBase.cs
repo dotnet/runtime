@@ -32,14 +32,16 @@ public class WasmTemplateTestsBase : BuildTestBase
             { "partial class StopwatchSample", $"return 42;{Environment.NewLine}partial class StopwatchSample" }
         };
 
-    private string GetProjectName(string idPrefix, string config, bool aot, bool appendUnicodeToPath) =>
-        appendUnicodeToPath ?
-            $"{idPrefix}_{config}_{aot}_{GetRandomId()}_{s_unicodeChars}" :
-            $"{idPrefix}_{config}_{aot}_{GetRandomId()}";
+    private string GetProjectName(string idPrefix, string config, bool aot, bool appendUnicodeToPath, bool avoidAotLongPathIssue = false) =>
+        avoidAotLongPathIssue ? // https://github.com/dotnet/runtime/issues/103625
+            $"{GetRandomId()}" :
+            appendUnicodeToPath ?
+                $"{idPrefix}_{config}_{aot}_{GetRandomId()}_{s_unicodeChars}" :
+                $"{idPrefix}_{config}_{aot}_{GetRandomId()}";
 
-    private string InitProjectLocation(string idPrefix, string config, bool aot, bool appendUnicodeToPath)
+    private string InitProjectLocation(string idPrefix, string config, bool aot, bool appendUnicodeToPath, bool avoidAotLongPathIssue = false)
     {
-        string projectName = GetProjectName(idPrefix, config, aot, appendUnicodeToPath);
+        string projectName = GetProjectName(idPrefix, config, aot, appendUnicodeToPath, avoidAotLongPathIssue);
         InitPaths(projectName);
         InitProjectDir(_projectDir, addNuGetSourceForLocalPackages: true);
         return projectName;
@@ -78,18 +80,18 @@ public class WasmTemplateTestsBase : BuildTestBase
         bool aot,
         string assetDirName,
         string idPrefix,
-        string projectDirReativeToAssetDir = "",
+        string projectDirRelativeToAssetDir = "",
         bool appendUnicodeToPath = true,
         bool runAnalyzers = true,
         string extraProperties = "",
         string extraItems = "",
         string insertAtEnd = "")
     {
-        InitProjectLocation(idPrefix, config, aot, appendUnicodeToPath);
+        InitProjectLocation(idPrefix, config, aot, appendUnicodeToPath, avoidAotLongPathIssue: s_isWindows && aot);
         Utils.DirectoryCopy(Path.Combine(BuildEnvironment.TestAssetsPath, assetDirName), Path.Combine(_projectDir!));
-        if (!string.IsNullOrEmpty(projectDirReativeToAssetDir))
+        if (!string.IsNullOrEmpty(projectDirRelativeToAssetDir))
         {
-            _projectDir = Path.Combine(_projectDir!, projectDirReativeToAssetDir);
+            _projectDir = Path.Combine(_projectDir!, projectDirRelativeToAssetDir);
         }
         string projectFilePath = Path.Combine(_projectDir!, $"{assetDirName}.csproj");
         UpdateProjectFile(projectFilePath, aot, runAnalyzers, extraProperties, extraItems, insertAtEnd);
@@ -122,7 +124,7 @@ public class WasmTemplateTestsBase : BuildTestBase
         //buildOptions.ExtraBuildEnvironmentVariables["TreatPreviousAsCurrent"] = "false";
 
         (CommandResult res, string logFilePath) = BuildProjectWithoutAssert(buildOptions, extraArgs);
-        
+
         if (buildOptions.UseCache)
             _buildContext.CacheBuild(projectInfo, new BuildProduct(_projectDir!, logFilePath, true, res.Output));
 
@@ -278,10 +280,10 @@ public class WasmTemplateTestsBase : BuildTestBase
         {
             await runOptions.ExecuteAfterLoaded(runOptions, page);
         }
-        
+
         if (runOptions.Test is not null)
             await runOptions.Test(page);
-        
+
         _testOutput.WriteLine($"Waiting for additional 10secs to see if any errors are reported");
         int exitCode = await runner.WaitForExitMessageAsync(TimeSpan.FromSeconds(10));
         if (runOptions.ExpectedExitCode is not null && exitCode != runOptions.ExpectedExitCode)
