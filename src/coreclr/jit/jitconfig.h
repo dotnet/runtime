@@ -39,6 +39,11 @@ public:
         {
         }
 
+        const char* list() const
+        {
+            return m_listFromConfig;
+        }
+
         void initialize(const char* listFromConfig, ICorJitHost* host);
         void destroy(ICorJitHost* host);
 
