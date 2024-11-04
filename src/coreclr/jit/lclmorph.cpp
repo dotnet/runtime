@@ -2843,9 +2843,7 @@ void Compiler::fgLCLMasksUpdateLCLVar(GenTreeLclVarCommon* lclVar,
 //
 PhaseStatus Compiler::fgOptimizeLCLMasks()
 {
-#if !defined(TARGET_ARM64)
-    return PhaseStatus::MODIFIED_NOTHING;
-#endif // !TARGET_ARM64
+#if defined(TARGET_ARM64)
 
     if (opts.OptimizationDisabled())
     {
@@ -2909,6 +2907,7 @@ PhaseStatus Compiler::fgOptimizeLCLMasks()
     }
 
     // For each Local variable, potentially add/remove a conversion.
+    JITDUMP("\n");
     for (BasicBlock* block : Blocks())
     {
         for (Statement* const stmt : block->Statements())
@@ -2921,4 +2920,8 @@ PhaseStatus Compiler::fgOptimizeLCLMasks()
     }
 
     return PhaseStatus::MODIFIED_EVERYTHING;
+
+#else
+    return PhaseStatus::MODIFIED_NOTHING;
+#endif // TARGET_ARM64
 }
