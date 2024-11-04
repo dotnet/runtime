@@ -38,6 +38,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "cycletimer.h"
 #include "blockset.h"
 #include "arraystack.h"
+#include "priorityqueue.h"
 #include "hashbv.h"
 #include "jitexpandarray.h"
 #include "valuenum.h"
@@ -6213,6 +6214,29 @@ public:
     bool fgReorderBlocks(bool useProfile);
     void fgDoReversePostOrderLayout();
     void fgMoveColdBlocks();
+    void fgSearchImprovedLayout();
+
+    class ThreeOptLayout
+    {
+        static bool EdgeCmp(const FlowEdge* left, const FlowEdge* right);
+
+        Compiler* compiler;
+        PriorityQueue<FlowEdge*, decltype(&ThreeOptLayout::EdgeCmp)> cutPoints;
+        unsigned* ordinals;
+        BasicBlock** blockOrder;
+        BasicBlock** tempOrder;
+        unsigned numCandidateBlocks;
+        unsigned currEHRegion;
+
+        void ConsiderEdge(FlowEdge* edge);
+        void AddNonFallthroughSuccs(unsigned blockPos);
+        void AddNonFallthroughPreds(unsigned blockPos);
+        bool RunThreeOptPass(BasicBlock* startBlock, BasicBlock* endBlock);
+
+    public:
+        ThreeOptLayout(Compiler* comp);
+        void Run();
+    };
 
     template <bool hasEH>
     void fgMoveHotJumps();
