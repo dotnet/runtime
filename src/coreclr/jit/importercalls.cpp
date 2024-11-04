@@ -166,7 +166,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
             else
             {
                 // We have to clone the FTN_ADDR node, as it is substituted from the local
-                call->AsCall()->gtCallMethHnd = (CORINFO_METHOD_HANDLE)gtClone((GenTree*)call->AsCall()->gtCallMethHnd);
+                call->AsCall()->gtCallAddr = gtClone(call->AsCall()->gtCallAddr);
             }
         }
 
