@@ -5034,31 +5034,32 @@ void Compiler::ThreeOptLayout::Run()
     // Walk backwards through the main method body, looking for the last hot block.
     // Since we moved all cold blocks to the end of the method already,
     // we should have a span of hot blocks to consider reordering at the beginning of the method.
+    // While doing this, try to get as tight an upper bound for the number of hot blocks as possible.
+    // For methods without funclet regions, 'numBlocksUpperBound' is exact.
+    // Otherwise, it's off by the number of handler blocks.
     BasicBlock* finalBlock;
+    unsigned numBlocksUpperBound = compiler->fgBBcount;
     for (finalBlock = compiler->fgLastBBInMainFunction();
          !finalBlock->IsFirst() && finalBlock->isBBWeightCold(compiler); finalBlock = finalBlock->Prev())
-        ;
+    {
+        numBlocksUpperBound--;
+    }
 
-    // Initialize the ordinal numbers for the hot blocks.
+    assert(numBlocksUpperBound != 0);
+    blockOrder = new (compiler, CMK_BasicBlock) BasicBlock*[numBlocksUpperBound];
+    tempOrder  = new (compiler, CMK_BasicBlock) BasicBlock*[numBlocksUpperBound];
+
+    // Initialize the current block order.
     // Note that we default-initialized 'ordinals' with zeros.
     // Block reordering shouldn't change the method's entry point,
     // so if a block has an ordinal of zero and it's not 'fgFirstBB',
     // the block wasn't visited below, so it's not in the range of candidate blocks.
     for (BasicBlock* const block : compiler->Blocks(compiler->fgFirstBB, finalBlock))
     {
-        ordinals[block->bbNum] = numCandidateBlocks++;
-    }
-
-    assert(numCandidateBlocks != 0);
-    blockOrder        = new (compiler, CMK_BasicBlock) BasicBlock*[numCandidateBlocks];
-    tempOrder         = new (compiler, CMK_BasicBlock) BasicBlock*[numCandidateBlocks];
-    unsigned position = 0;
-
-    // Initialize current block order
-    for (BasicBlock* const block : compiler->Blocks(compiler->fgFirstBB, finalBlock))
-    {
-        blockOrder[position] = tempOrder[position] = block;
-        position++;
+        assert(numCandidateBlocks < numBlocksUpperBound);
+        ordinals[block->bbNum] = numCandidateBlocks;
+        blockOrder[numCandidateBlocks] = tempOrder[numCandidateBlocks] = block;
+        numCandidateBlocks++;
 
         // While walking the span of blocks to reorder,
         // remember where each try region ends within this span.
