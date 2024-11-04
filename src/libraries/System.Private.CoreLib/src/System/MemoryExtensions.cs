@@ -1231,8 +1231,7 @@ namespace System
 
         /// <inheritdoc cref="IndexOfAnyInRange{T}(ReadOnlySpan{T}, T, T)"/>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int IndexOfAnyInRange<T>(this Span<T> span, T lowInclusive, T highInclusive)
-            where T : IComparable<T> =>
+        public static int IndexOfAnyInRange<T>(this Span<T> span, T lowInclusive, T highInclusive) where T : IComparable<T> =>
             IndexOfAnyInRange((ReadOnlySpan<T>)span, lowInclusive, highInclusive);
 
         /// <summary>Searches for the first index of any value in the range between <paramref name="lowInclusive"/> and <paramref name="highInclusive"/>, inclusive.</summary>
@@ -1245,8 +1244,7 @@ namespace System
         /// If all of the values are outside of the specified range, returns -1.
         /// </returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int IndexOfAnyInRange<T>(this ReadOnlySpan<T> span, T lowInclusive, T highInclusive)
-            where T : IComparable<T>
+        public static int IndexOfAnyInRange<T>(this ReadOnlySpan<T> span, T lowInclusive, T highInclusive) where T : IComparable<T>
         {
             if (lowInclusive is null || highInclusive is null)
             {
@@ -1297,8 +1295,7 @@ namespace System
 
         /// <inheritdoc cref="IndexOfAnyExceptInRange{T}(ReadOnlySpan{T}, T, T)"/>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int IndexOfAnyExceptInRange<T>(this Span<T> span, T lowInclusive, T highInclusive)
-            where T : IComparable<T> =>
+        public static int IndexOfAnyExceptInRange<T>(this Span<T> span, T lowInclusive, T highInclusive) where T : IComparable<T> =>
             IndexOfAnyExceptInRange((ReadOnlySpan<T>)span, lowInclusive, highInclusive);
 
         /// <summary>Searches for the first index of any value outside of the range between <paramref name="lowInclusive"/> and <paramref name="highInclusive"/>, inclusive.</summary>
@@ -1311,8 +1308,7 @@ namespace System
         /// If all of the values are inside of the specified range, returns -1.
         /// </returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int IndexOfAnyExceptInRange<T>(this ReadOnlySpan<T> span, T lowInclusive, T highInclusive)
-            where T : IComparable<T>
+        public static int IndexOfAnyExceptInRange<T>(this ReadOnlySpan<T> span, T lowInclusive, T highInclusive) where T : IComparable<T>
         {
             if (lowInclusive is null || highInclusive is null)
             {
@@ -1363,8 +1359,7 @@ namespace System
 
         /// <inheritdoc cref="LastIndexOfAnyInRange{T}(ReadOnlySpan{T}, T, T)"/>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int LastIndexOfAnyInRange<T>(this Span<T> span, T lowInclusive, T highInclusive)
-            where T : IComparable<T> =>
+        public static int LastIndexOfAnyInRange<T>(this Span<T> span, T lowInclusive, T highInclusive) where T : IComparable<T> =>
             LastIndexOfAnyInRange((ReadOnlySpan<T>)span, lowInclusive, highInclusive);
 
         /// <summary>Searches for the last index of any value in the range between <paramref name="lowInclusive"/> and <paramref name="highInclusive"/>, inclusive.</summary>
@@ -1377,8 +1372,7 @@ namespace System
         /// If all of the values are outside of the specified range, returns -1.
         /// </returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int LastIndexOfAnyInRange<T>(this ReadOnlySpan<T> span, T lowInclusive, T highInclusive)
-            where T : IComparable<T>
+        public static int LastIndexOfAnyInRange<T>(this ReadOnlySpan<T> span, T lowInclusive, T highInclusive) where T : IComparable<T>
         {
             if (lowInclusive is null || highInclusive is null)
             {
@@ -1429,8 +1423,7 @@ namespace System
 
         /// <inheritdoc cref="LastIndexOfAnyExceptInRange{T}(ReadOnlySpan{T}, T, T)"/>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int LastIndexOfAnyExceptInRange<T>(this Span<T> span, T lowInclusive, T highInclusive)
-            where T : IComparable<T> =>
+        public static int LastIndexOfAnyExceptInRange<T>(this Span<T> span, T lowInclusive, T highInclusive) where T : IComparable<T> =>
             LastIndexOfAnyExceptInRange((ReadOnlySpan<T>)span, lowInclusive, highInclusive);
 
         /// <summary>Searches for the last index of any value outside of the range between <paramref name="lowInclusive"/> and <paramref name="highInclusive"/>, inclusive.</summary>
@@ -1443,8 +1436,7 @@ namespace System
         /// If all of the values are inside of the specified range, returns -1.
         /// </returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int LastIndexOfAnyExceptInRange<T>(this ReadOnlySpan<T> span, T lowInclusive, T highInclusive)
-            where T : IComparable<T>
+        public static int LastIndexOfAnyExceptInRange<T>(this ReadOnlySpan<T> span, T lowInclusive, T highInclusive) where T : IComparable<T>
         {
             if (lowInclusive is null || highInclusive is null)
             {
@@ -1512,8 +1504,7 @@ namespace System
         /// <summary>
         /// Determines the relative order of the sequences being compared by comparing the elements using IComparable{T}.CompareTo(T).
         /// </summary>
-        public static int SequenceCompareTo<T>(this Span<T> span, ReadOnlySpan<T> other)
-            where T : IComparable<T>? =>
+        public static int SequenceCompareTo<T>(this Span<T> span, ReadOnlySpan<T> other) where T : IComparable<T>? =>
             SequenceCompareTo((ReadOnlySpan<T>)span, other);
 
         /// <summary>
@@ -1913,7 +1904,7 @@ namespace System
         /// <param name="value1">One of the values to search for.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe int LastIndexOfAny<T>(this Span<T> span, T value0, T value1) where T : IEquatable<T>? =>
-            LastIndexOfAny(span, value0, value1);
+            LastIndexOfAny((ReadOnlySpan<T>)span, value0, value1);
 
         /// <summary>
         /// Searches for the last index of any of the specified values similar to calling LastIndexOf several times with the logical OR operator. If not found, returns -1.
@@ -1924,7 +1915,7 @@ namespace System
         /// <param name="value2">One of the values to search for.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe int LastIndexOfAny<T>(this Span<T> span, T value0, T value1, T value2) where T : IEquatable<T>? =>
-            LastIndexOfAny(span, value0, value1, value2);
+            LastIndexOfAny((ReadOnlySpan<T>)span, value0, value1, value2);
 
         /// <summary>
         /// Searches for the last index of any of the specified values similar to calling LastIndexOf several times with the logical OR operator. If not found, returns -1.
@@ -2217,8 +2208,7 @@ namespace System
         /// Determines the relative order of the sequences being compared by comparing the elements using IComparable{T}.CompareTo(T).
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe int SequenceCompareTo<T>(this ReadOnlySpan<T> span, ReadOnlySpan<T> other)
-            where T : IComparable<T>?
+        public static unsafe int SequenceCompareTo<T>(this ReadOnlySpan<T> span, ReadOnlySpan<T> other) where T : IComparable<T>?
         {
             // Can't use IsBitwiseEquatable<T>() below because that only tells us about
             // equality checks, not about CompareTo checks.
@@ -2950,8 +2940,7 @@ namespace System
         /// <exception cref="ArgumentException">
         /// The implementation of <paramref name="comparer"/> caused an error during the sort.
         /// </exception>
-        public static void Sort<T, TComparer>(this Span<T> span, TComparer comparer)
-            where TComparer : IComparer<T>?
+        public static void Sort<T, TComparer>(this Span<T> span, TComparer comparer) where TComparer : IComparer<T>?
         {
             if (span.Length > 1)
             {
@@ -3015,8 +3004,7 @@ namespace System
         /// <paramref name="comparer"/> is null, and one or more elements in <paramref name="keys"/> do not
         /// implement the <see cref="IComparable{T}" /> interface.
         /// </exception>
-        public static void Sort<TKey, TValue, TComparer>(this Span<TKey> keys, Span<TValue> items, TComparer comparer)
-            where TComparer : IComparer<TKey>?
+        public static void Sort<TKey, TValue, TComparer>(this Span<TKey> keys, Span<TValue> items, TComparer comparer) where TComparer : IComparer<TKey>?
         {
             if (keys.Length != items.Length)
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_SpansMustHaveSameLength);
