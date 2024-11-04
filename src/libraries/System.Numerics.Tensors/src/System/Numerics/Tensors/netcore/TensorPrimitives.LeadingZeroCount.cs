@@ -30,6 +30,7 @@ namespace System.Numerics.Tensors
         {
             public static bool Vectorizable =>
                 (Avx512CD.VL.IsSupported && (sizeof(T) == 4 || sizeof(T) == 8)) ||
+                (sizeof(T) == 1 && (Avx512BW.IsSupported && Avx512Vbmi.VL.IsSupported)) ||
                 (AdvSimd.IsSupported && (sizeof(T) == 1 || sizeof(T) == 2 || sizeof(T) == 4));
 
             public static T Invoke(T x) => T.LeadingZeroCount(x);
@@ -41,6 +42,22 @@ namespace System.Numerics.Tensors
                 {
                     if (sizeof(T) == 4) return Avx512CD.VL.LeadingZeroCount(x.AsUInt32()).As<uint, T>();
                     if (sizeof(T) == 8) return Avx512CD.VL.LeadingZeroCount(x.AsUInt64()).As<ulong, T>();
+                }
+                if (Avx512Vbmi.VL.IsSupported && sizeof(T) == 1)
+                {
+                    Vector128<byte> nibbleMask = Vector128.Create<byte>(0xF);
+                    Vector128<byte> permuteMask = Vector128.Create<byte>(0x80);
+                    Vector128<byte> lookupVectorLow =
+                        Vector128.Create((byte)8, 7, 6, 6, 5, 5, 5, 5, 4, 4, 4, 4, 4, 4, 4, 4);
+                    Vector128<byte> lookupVectorHigh =
+                        Vector128.Create((byte)3, 2, 2, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+                    Vector128<byte> lowNibble = x.AsByte() & nibbleMask;
+                    Vector128<byte> highNibble = Sse2.ShiftRightLogical(x.AsInt32(), 4).AsByte() & nibbleMask;
+                    Vector128<byte> byteSelectMask = Sse2.CompareEqual(highNibble, Vector128<byte>.Zero);
+                    Vector128<byte> indexVector = Sse41.BlendVariable(highNibble, lowNibble, byteSelectMask);
+                    indexVector += (~byteSelectMask & nibbleMask);
+                    indexVector |= (~byteSelectMask & permuteMask);
+                    return Avx512Vbmi.VL.PermuteVar16x8x2(lookupVectorLow, indexVector, lookupVectorHigh).As<byte, T>();
                 }
 
                 Debug.Assert(AdvSimd.IsSupported);
@@ -61,6 +78,19 @@ namespace System.Numerics.Tensors
                     if (sizeof(T) == 4) return Avx512CD.VL.LeadingZeroCount(x.AsUInt32()).As<uint, T>();
                     if (sizeof(T) == 8) return Avx512CD.VL.LeadingZeroCount(x.AsUInt64()).As<ulong, T>();
                 }
+                if (Avx512Vbmi.VL.IsSupported && sizeof(T) == 1)
+                {
+                    Vector256<byte> nibbleMask = Vector256.Create<byte>(0xF);
+                    Vector256<byte> lookupVector =
+                        Vector256.Create((byte)8, 7, 6, 6, 5, 5, 5, 5, 4, 4, 4, 4, 4, 4, 4, 4,
+                                               3, 2, 2, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+                    Vector256<byte> lowNibble = x.AsByte() & nibbleMask;
+                    Vector256<byte> highNibble = Avx2.ShiftRightLogical(x.AsInt32(), 4).AsByte() & nibbleMask;
+                    Vector256<byte> byteSelectMask = Avx2.CompareEqual(highNibble, Vector256<byte>.Zero);
+                    Vector256<byte> indexVector = Avx2.BlendVariable(highNibble, lowNibble, byteSelectMask);
+                    indexVector += (~byteSelectMask & nibbleMask);
+                    return Avx512Vbmi.VL.PermuteVar32x8(lookupVector, indexVector).As<byte, T>();
+                }
 
                 return Vector256.Create(Invoke(x.GetLower()), Invoke(x.GetUpper()));
             }
@@ -72,6 +102,21 @@ namespace System.Numerics.Tensors
                 {
                     if (sizeof(T) == 4) return Avx512CD.LeadingZeroCount(x.AsUInt32()).As<uint, T>();
                     if (sizeof(T) == 8) return Avx512CD.LeadingZeroCount(x.AsUInt64()).As<ulong, T>();
+                }
+                if (Avx512BW.IsSupported && Avx512Vbmi.IsSupported && sizeof(T) == 1)
+                {
+                    Vector512<byte> nibbleMask = Vector512.Create<byte>(0xF);
+                    Vector512<byte> lookupVector =
+                        Vector512.Create((byte)8, 7, 6, 6, 5, 5, 5, 5, 4, 4, 4, 4, 4, 4, 4, 4,
+                                               3, 2, 2, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                                               0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                                               0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+                    Vector512<byte> lowNibble = x.AsByte() & nibbleMask;
+                    Vector512<byte> highNibble = Avx512F.ShiftRightLogical(x.AsInt32(), 4).AsByte() & nibbleMask;
+                    Vector512<byte> byteSelect = Avx512BW.CompareEqual(highNibble, Vector512<byte>.Zero);
+                    Vector512<byte> indexVector = Avx512BW.BlendVariable(highNibble, lowNibble, byteSelect);
+                    indexVector += (~byteSelect & nibbleMask);
+                    return Avx512Vbmi.PermuteVar64x8(lookupVector, indexVector).As<byte, T>();
                 }
 
                 return Vector512.Create(Invoke(x.GetLower()), Invoke(x.GetUpper()));
