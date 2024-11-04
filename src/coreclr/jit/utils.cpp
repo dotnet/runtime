@@ -24,8 +24,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "opcode.h"
 #include "jitstd/algorithm.h"
 
-#include <dn-u16.h> // for u16_strtod
-
 /*****************************************************************************/
 
 #define DECLARE_DATA
