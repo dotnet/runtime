@@ -4259,7 +4259,7 @@ public:
 
         if (strBufferSize > bufferSize)
         {
-            m_pBuffer = new wchar_t[strBufferSize];
+            m_pBuffer = new WCHAR[strBufferSize];
         }
         else
         {
