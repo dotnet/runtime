@@ -4585,8 +4585,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     //
     DoPhase(this, PHASE_POST_IMPORT, &Compiler::fgPostImportationCleanup);
 
-    compImportationDone = true;
-
     // If we're importing for inlining, we're done.
     if (compIsForInlining())
     {

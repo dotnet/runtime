@@ -3070,7 +3070,7 @@ public:
     GenTree* gtNewGenericCon(var_types type, uint8_t* cnsVal);
 
     GenTree* gtNewConWithPattern(var_types type, uint8_t pattern);
-
+    
     GenTreeLclVar* gtNewStoreLclVarNode(unsigned lclNum, GenTree* value);
 
     GenTreeLclFld* gtNewStoreLclFldNode(
@@ -9947,7 +9947,6 @@ public:
     bool fgLocalVarLivenessChanged;
     bool fgIsDoingEarlyLiveness         = false;
     bool fgDidEarlyLiveness             = false;
-    bool compImportationDone            = false;
     bool compPostImportationCleanupDone = false;
     bool compLSRADone                   = false;
     bool compRationalIRForm             = false;

@@ -8258,11 +8258,6 @@ GenTreeLclVar* Compiler::gtNewStoreLclVarNode(unsigned lclNum, GenTree* value)
 
     gtInitializeStoreNode(store, value);
 
-    if (!compImportationDone)
-    {
-        impSetLclVal(lclNum, value);
-    }
-
     return store;
 }
 

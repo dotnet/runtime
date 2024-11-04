@@ -130,10 +130,9 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
         // assume the worst-case.
         mflags = (calliSig.callConv & CORINFO_CALLCONV_HASTHIS) ? 0 : CORINFO_FLG_STATIC;
 
-        if (opts.OptimizationEnabled() && call->AsCall()->unmgdCallConv == CorInfoCallConvExtension::Managed &&
-            ((GenTree*)call->AsCall()->gtCallMethHnd)->OperIs(GT_FTN_ADDR))
+        if (opts.OptimizationEnabled() && call->AsCall()->gtCallAddr->OperIs(GT_FTN_ADDR))
         {
-            pResolvedToken->hMethod = ((GenTree*)call->AsCall()->gtCallMethHnd)->AsFptrVal()->gtFptrMethod;
+            pResolvedToken->hMethod = call->AsCall()->gtCallAddr->AsFptrVal()->gtFptrMethod;
             pResolvedToken->hClass  = info.compCompHnd->getMethodClass(pResolvedToken->hMethod);
             eeGetCallInfo(pResolvedToken, nullptr, CORINFO_CALLINFO_LDFTN, callInfo);
             // We only care about CALLCONV_HASTHIS for managed methods

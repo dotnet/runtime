@@ -634,7 +634,7 @@ bool Compiler::impGetLclVal(GenTreeLclVar* tree, GenTree** val)
         JITDUMP("Find substitution for V%02u at BB%02u in '%s'\n", tree->GetLclNum(), comp->compCurBB->bbNum,
                 comp->info.compMethodName);
         LclVarDsc* lcl = comp->lvaGetDesc(tree->GetLclNum());
-        if (lcl->lvSingleDef && !lcl->IsAddressExposed() &&
+        if (lcl->lvSingleDef && !lcl->lvHasLdAddrOp &&
             comp->impLclVals.Lookup((static_cast<UINT64>(comp->compCurBB->bbNum) << 32 | tree->GetLclNum()), &gtVal) &&
             gtVal->TypeIs(tree->TypeGet()))
         {
@@ -759,6 +759,8 @@ void Compiler::impStoreToTemp(unsigned         lclNum,
 
     if (!store->IsNothingNode())
     {
+        impSetLclVal(lclNum, val);
+
         if (pAfterStmt)
         {
             Statement* storeStmt = gtNewStmt(store, di);
@@ -6939,6 +6941,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     impSpillSideEffects(false, CHECK_SPILL_ALL DEBUGARG("Spill before store to pinned local"));
                 }
 
+                impSetLclVal(lclNum, op1);
                 op1 = gtNewStoreLclVarNode(lclNum, op1);
 
                 // TODO-ASG: delete this zero-diff quirk. Requires some forward substitution work.
