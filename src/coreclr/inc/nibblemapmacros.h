@@ -21,15 +21,67 @@
 // in the mapped code region. In order to make initialization
 // easier we add one to the real offset, a nibble-value of zero
 // means that there is no header start in the resp. bucket.
-// To have constant time reads, we also store relative pointers
-// in DWORDs which represent code regions which are completed
-// covered by a function. This is indicated by the nibble value
-// in the lowest bits of the DWORD having a value > 8.
-// 
+// In order to speed up "backwards scanning" we start numbering
+// nibbles inside a DWORD from the highest bits (28..31). Because
+// of that we can scan backwards inside the DWORD with right shifts.
+//
+// To have constant time reads, we store pointers relative to the map
+// base in DWORDs which represent code regions that are completely
+// covered by a function. A DWORD is a pointer if the nibble value
+// in the lowest bits of the DWORD have a value > 8.
+//
 // Pointers are encoded in DWORDS by using the top 28 bits as normal.
 // The bottom 4 bits are read as a nibble (the value must be greater than 8
 // to identify the DWORD as a pointer) which encodes the final 2 bits of
-// information. 
+// information.
+//
+///////////////////////////////////////////////////////////////////////
+////                         Set Algorithm
+///////////////////////////////////////////////////////////////////////
+//
+// 1. Write encoded nibble at offset corresponding to PC.
+// 2. If codeSize completely covers one or more subsequent DWORDs,
+//    insert relative pointers into each covered DWORD.
+//
+///////////////////////////////////////////////////////////////////////
+////                        Delete Algorithm
+///////////////////////////////////////////////////////////////////////
+//
+// 1. Delete the nibble corresponding to the PC.
+// 2. Delete all following pointers which match the offset of PC.
+//    We must check the pointers refer to the PC because there may
+//    one or more subsequent nibbles in the DWORD. In that case the
+//    following pointers would not refer to PC but a different offset.
+//
+///////////////////////////////////////////////////////////////////////
+////                        Read Algorithm
+///////////////////////////////////////////////////////////////////////
+//
+// 1. Look up DWORD representing given PC.
+// 2. If DWORD is a pointer, then return pointer + mapBase.
+// 3. If nibble corresponding to PC is initialized and the value
+//    it represents precedes the PC return that value.
+// 4. Find the first preceding initialized nibble in the DWORD.
+//    If found, return the value the nibble represents.
+// 5. Execute steps 2 and 4 on the proceeding DWORD.
+//    If this DWORD does not contain a pointer or any initialized nibbles,
+//    then we must not be in a function and can return an nullptr.
+//
+///////////////////////////////////////////////////////////////////////
+////                        Concurrency
+///////////////////////////////////////////////////////////////////////
+//
+// Writes to the nibblemap (set and delete) require holding a critical
+// section and therefore can not be done concurrently. Reads can be done
+// without a lock and can occur at any time.
+//
+// The read algorithm is designed so that as long as no tearing occurs
+// on a DWORD, the read will always be valid. This is because the read
+// only depends on a single DWORD. Either the first if that contains a
+// pointer/preceeding initialized nibble, or second if that contains a
+// pointer/nibble. Given that DWORDs are 32-bits and aligned to 4-byte
+// boundaries, these reads should not tear.
+//
 
 #if defined(HOST_64BIT)
 // TODO: bump up the windows CODE_ALIGN to 16 and iron out any nibble map bugs that exist.
@@ -60,82 +112,33 @@
 #define POS2SHIFTCOUNT(x)       (DWORD)  (HIGHEST_NIBBLE_BIT - (((x) & NIBBLES_PER_DWORD_MASK) << LOG2_NIBBLE_SIZE))
 #define POS2MASK(x)             (DWORD) ~(HIGHEST_NIBBLE_MASK >> (((x) & NIBBLES_PER_DWORD_MASK) << LOG2_NIBBLE_SIZE))
 
-inline DWORD Pos2ShiftCount(size_t pos)
+namespace NibbleMap
 {
-    return HIGHEST_NIBBLE_BIT - ((pos & NIBBLES_PER_DWORD_MASK) << LOG2_NIBBLE_SIZE);
-}
-
-inline size_t GetDwordIndex(size_t relativePointer)
-{
-    return relativePointer >> LOG2_BYTES_PER_DWORD;
-}
-
-inline size_t GetNibbleIndex(size_t relativePointer)
-{
-    return (relativePointer >> (LOG2_BYTES_PER_BUCKET)) & NIBBLES_PER_DWORD_MASK;
-}
-
-inline size_t NibbleToRelativeAddress(size_t dwordIndex, size_t nibbleIndex, DWORD nibbleValue)
-{
-    return (dwordIndex << LOG2_BYTES_PER_DWORD) + (nibbleIndex << LOG2_BYTES_PER_BUCKET) + ((nibbleValue - 1) << LOG2_CODE_ALIGN);
-}
-
-inline DWORD GetNibble(DWORD dword, size_t nibbleIndex)
-{
-    return (dword >> POS2SHIFTCOUNT(nibbleIndex)) & NIBBLE_MASK;
-}
-
-inline bool IsPointer(DWORD dword)
-{
-    return (dword & NIBBLE_MASK) > 8;
-}
-
-inline DWORD EncodePointer(size_t relativePointer)
-{
-    return (DWORD) ((relativePointer & ~NIBBLE_MASK) + (((relativePointer & NIBBLE_MASK) >> 2) + 9));
-}
-
-inline size_t DecodePointer(DWORD dword)
-{
-    return (size_t) ((dword & ~NIBBLE_MASK) + (((dword & NIBBLE_MASK) - 9) << 2));
-}
-
-//------------------------------------------------------------------------
-// BitScanForward: Search the mask data from least significant bit (LSB) to the most significant bit
-// (MSB) for a set bit (1)
-//
-// Arguments:
-//    value - the value
-//
-// Return Value:
-//    0 if the mask is zero; nonzero otherwise.
-//
-FORCEINLINE size_t NibbleBitScanForward(DWORD value)
-{
-    assert(value != 0);
-
-#if defined(_MSC_VER)
-    unsigned long result;
-    ::_BitScanForward(&result, value);
-    return static_cast<size_t>(result);
-#else
-    int32_t result = __builtin_ctz(value);
-    return static_cast<size_t>(result);
-#endif
-}
-
-inline bool FindPreviousNibble(DWORD dword, size_t &nibbleIndex, DWORD &nibble)
-{
-    if(!dword)
+    inline size_t GetDwordIndex(size_t relativePointer)
     {
-        return false;
+        return relativePointer >> LOG2_BYTES_PER_DWORD;
     }
 
-    size_t ctz = NibbleBitScanForward(dword);
-    nibbleIndex = (31 - ctz) / 4;
-    nibble = GetNibble(dword, nibbleIndex);
-    _ASSERTE(nibble);
-    return true;
+    inline size_t GetNibbleIndex(size_t relativePointer)
+    {
+        return (relativePointer >> (LOG2_BYTES_PER_BUCKET)) & NIBBLES_PER_DWORD_MASK;
+    }
+
+    inline bool IsPointer(DWORD dword)
+    {
+        return (dword & NIBBLE_MASK) > 8;
+    }
+
+    inline DWORD EncodePointer(size_t relativePointer)
+    {
+        return (DWORD) ((relativePointer & ~NIBBLE_MASK) + (((relativePointer & NIBBLE_MASK) >> 2) + 9));
+    }
+
+    inline size_t DecodePointer(DWORD dword)
+    {
+        return (size_t) ((dword & ~NIBBLE_MASK) + (((dword & NIBBLE_MASK) - 9) << 2));
+    }
 }
+
 
 #endif  // NIBBLEMAPMACROS_H_

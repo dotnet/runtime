@@ -3934,14 +3934,11 @@ TADDR EEJitManager::FindMethodCode(PCODE currentPC)
 
 // Finds the header corresponding to the code at offset "delta".
 // Returns NULL if there is no header for the given "delta"
-// Read Algo:
-//     1. Look up DWORD representing given PC
-//     2. If DWORD is a Pointer, then return value. Otherwise,
-//     3. If nibble corresponding to PC is initialized, if the value the nibble represents precedes the PC return that value, otherwise
-//     4. Find the preceding initialized nibble in the DWORD. If found, return the value the nibble represents. Otherwise,
-//     5. Execute steps 1, 2 then 4 on the proceeding DWORD. If this is also uninitialized, then we are not in a function and can return a nullptr.
+// For implementation details, see comment in nibblemapmacros.h
 TADDR EEJitManager::FindMethodCode(RangeSection * pRangeSection, PCODE currentPC)
 {
+    using namespace NibbleMap;
+
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
@@ -3950,7 +3947,6 @@ TADDR EEJitManager::FindMethodCode(RangeSection * pRangeSection, PCODE currentPC
 
     _ASSERTE(pRangeSection != NULL);
     _ASSERTE(pRangeSection->_flags & RangeSection::RANGE_SECTION_CODEHEAP);
-
 
     HeapList *pHp = pRangeSection->_pHeapList;
 
@@ -3964,9 +3960,6 @@ TADDR EEJitManager::FindMethodCode(RangeSection * pRangeSection, PCODE currentPC
     TADDR delta = currentPC - base;
     PTR_DWORD pMap = pHp->pHdrMap;
     PTR_DWORD pMapStart = pMap;
-
-    size_t dwordIndex = GetDwordIndex(delta);
-    size_t nibbleIndex = GetNibbleIndex(delta);
 
     DWORD dword;
     DWORD tmp;
@@ -4060,11 +4053,11 @@ void EEJitManager::NibbleMapSet(HeapList * pHp, TADDR pCode, size_t codeSize)
     NibbleMapSetUnlocked(pHp, pCode, codeSize);
 }
 
-// Write Algo:
-//     1. Write nibble as in previous algorithm
-//     2. If function completely covers following DWORDs, insert relative pointers
+// For implementation details, see comment in nibblemapmacros.h
 void EEJitManager::NibbleMapSetUnlocked(HeapList * pHp, TADDR pCode, size_t codeSize)
 {
+    using namespace NibbleMap;
+
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
@@ -4089,7 +4082,7 @@ void EEJitManager::NibbleMapSetUnlocked(HeapList * pHp, TADDR pCode, size_t code
 
     DWORD mask  = POS2MASK(nibbleIndex);
 
-    value = value << Pos2ShiftCount(nibbleIndex);
+    value <<= POS2SHIFTCOUNT(nibbleIndex);
 
     PTR_DWORD pMap = pHp->pHdrMap;
 
@@ -4112,6 +4105,7 @@ void EEJitManager::NibbleMapSetUnlocked(HeapList * pHp, TADDR pCode, size_t code
     }
 }
 
+// For implementation details, see comment in nibblemapmacros.h
 void EEJitManager::NibbleMapDelete(HeapList* pHp, TADDR pCode)
 {
     CONTRACTL {
@@ -4125,6 +4119,8 @@ void EEJitManager::NibbleMapDelete(HeapList* pHp, TADDR pCode)
 
 void EEJitManager::NibbleMapDeleteUnlocked(HeapList* pHp, TADDR pCode)
 {
+    using namespace NibbleMap;
+
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
@@ -4153,7 +4149,6 @@ void EEJitManager::NibbleMapDeleteUnlocked(HeapList* pHp, TADDR pCode)
     _ASSERTE(((*(pMap+dwordIndex)) & ~mask) && !IsPointer(*(pMap+dwordIndex)));
 
     // delete the relevant nibble
-    // It is important for this update to be atomic. Synchronization would be required with FindMethodCode otherwise.
     *(pMap+dwordIndex) = ((*(pMap+dwordIndex)) & mask);
 
     // the last DWORD of the nibble map is reserved to be empty for bounds checking
