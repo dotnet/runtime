@@ -3939,11 +3939,7 @@ TADDR EEJitManager::FindMethodCode(RangeSection * pRangeSection, PCODE currentPC
 {
     using namespace NibbleMap;
 
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        SUPPORTS_DAC;
-    } CONTRACTL_END;
+    LIMITED_METHOD_DAC_CONTRACT;
 
     _ASSERTE(pRangeSection != NULL);
     _ASSERTE(pRangeSection->_flags & RangeSection::RANGE_SECTION_CODEHEAP);
@@ -3967,6 +3963,7 @@ TADDR EEJitManager::FindMethodCode(RangeSection * pRangeSection, PCODE currentPC
     size_t startPos = ADDR2POS(delta);  // align to 32byte buckets
                                         // ( == index into the array of nibbles)
     DWORD  offset   = ADDR2OFFS(delta); // this is the offset inside the bucket + 1
+
     _ASSERTE(offset == (offset & NIBBLE_MASK));
 
     pMap += (startPos >> LOG2_NIBBLES_PER_DWORD); // points to the proper DWORD of the map
@@ -3982,14 +3979,14 @@ TADDR EEJitManager::FindMethodCode(RangeSection * pRangeSection, PCODE currentPC
         return newAddr;
     }
 
-    // #3 if DWORD is nibbles and corresponding nibble is intialized and points to an equal or earlier address, return the corresponding address
+    // #3 check if corresponding nibble is intialized and points to an equal or earlier address
     tmp = dword >> POS2SHIFTCOUNT(startPos);
     if ((tmp & NIBBLE_MASK) && ((tmp & NIBBLE_MASK) <= offset))
     {
         return base + POSOFF2ADDR(startPos, tmp & NIBBLE_MASK);
     }
 
-    // #4 find preceeding nibble, return if found
+    // #4 try to find preceeding nibble in the DWORD
     tmp >>= NIBBLE_SIZE;
     if (tmp)
     {
@@ -4002,7 +3999,7 @@ TADDR EEJitManager::FindMethodCode(RangeSection * pRangeSection, PCODE currentPC
         return base + POSOFF2ADDR(startPos, tmp & NIBBLE_MASK);
     }
 
-    // #5.1 read previous DWORD. If no such DWORD return 0.
+    // #5.1 read previous DWORD
     // We skipped the remainder of the DWORD,
     // so we must set startPos to the highest position of
     // previous DWORD, unless we are already on the first DWORD
@@ -4017,16 +4014,16 @@ TADDR EEJitManager::FindMethodCode(RangeSection * pRangeSection, PCODE currentPC
     // We should not have read a value before the start of the map.
     _ASSERTE(pMapStart <= pMap);
 
-    // If the second dword is not empty, we know it either has a nibble or a pointer
+    // If the second dword is not empty, it either has a nibble or a pointer
     if (dword)
     {
-        // #5.2 if DWORD is a pointer, then we can return
+        // #5.2 either DWORD is a pointer
         if (IsPointer(dword))
         {
             return base + DecodePointer(dword);
         }
 
-        // #5.4 find preceeding nibble and return if found
+        // #5.4 or contains a nibble
         tmp = dword;
         while(!(tmp & NIBBLE_MASK))
         {
@@ -4066,7 +4063,7 @@ void EEJitManager::NibbleMapSetUnlocked(HeapList * pHp, TADDR pCode, size_t code
     // Currently all callers to this method ensure EEJitManager::m_CodeHeapCritSec
     // is held.
     _ASSERTE(m_CodeHeapCritSec.OwnedByCurrentThread());
-    
+
     _ASSERTE(pCode >= pHp->mapBase);
     _ASSERTE(pCode + codeSize <= pHp->startAddress + pHp->maxCodeHeapSize);
 
@@ -4076,32 +4073,32 @@ void EEJitManager::NibbleMapSetUnlocked(HeapList * pHp, TADDR pCode, size_t code
 
     size_t delta = pCode - pHp->mapBase;
 
-    size_t dwordIndex = GetDwordIndex(delta);
-    size_t nibbleIndex = GetNibbleIndex(delta);
+    size_t pos = ADDR2POS(delta);
     DWORD value = ADDR2OFFS(delta);
 
-    DWORD mask  = POS2MASK(nibbleIndex);
+    DWORD index = (DWORD) (pos >> LOG2_NIBBLES_PER_DWORD);
+    DWORD mask  = POS2MASK(pos);
 
-    value <<= POS2SHIFTCOUNT(nibbleIndex);
+    value <<= POS2SHIFTCOUNT(pos);
 
     PTR_DWORD pMap = pHp->pHdrMap;
 
     // assert that we don't overwrite an existing offset
     // the nibble is empty and the DWORD is not a pointer
-    _ASSERTE(!((*(pMap+dwordIndex)) & ~mask) && !IsPointer(*(pMap+dwordIndex)));
+    _ASSERTE(!((*(pMap+index)) & ~mask) && !IsPointer(*(pMap+index)));
 
     // It is important for this update to be atomic. Synchronization would be required with FindMethodCode otherwise.
-    *(pMap+dwordIndex) = ((*(pMap+dwordIndex)) & mask) | value;
+    *(pMap+index) = ((*(pMap+index)) & mask) | value;
 
     size_t firstByteAfterMethod = delta + codeSize;
     DWORD encodedPointer = EncodePointer(delta);
-    dwordIndex++;
-    while ((dwordIndex + 1) * BYTES_PER_DWORD <= firstByteAfterMethod)
+    index++;
+    while ((index + 1) * BYTES_PER_DWORD <= firstByteAfterMethod)
     {
         // All of these DWORDs should be empty
-        _ASSERTE(!(*(pMap+dwordIndex)));
-        *(pMap+dwordIndex) = encodedPointer;
-        dwordIndex++;
+        _ASSERTE(!(*(pMap+index)));
+        *(pMap+index) = encodedPointer;
+        index++;
     }
 }
 
