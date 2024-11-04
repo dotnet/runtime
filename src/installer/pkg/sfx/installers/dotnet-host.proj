@@ -59,13 +59,6 @@
 
     <Copy SourceFiles="@(FilesToPublish)"
           DestinationFiles="%(FilesToPublish.Destination)" />
-
-    <!--
-      Create symlink so the dotnet host is in PATH. It points to where dotnet will be installed, so
-      it may seem to point to the wrong place in the build machine's layout.
-    -->
-    <Exec Condition="'$(BuildRpmPackage)' == 'true'" Command="ln -sf &quot;/usr/share/dotnet/dotnet&quot; &quot;$(_UsrBinPath)dotnet&quot;" />
-
   </Target>
 
   <Target Name="PublishSymbolsToDisk">

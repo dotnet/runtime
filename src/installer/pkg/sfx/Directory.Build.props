@@ -14,6 +14,8 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(BuildOnlyPgoInstrumentedAssets)' != 'true'">
     <GenerateInstallers>true</GenerateInstallers>
+    <BuildDebPackage Condition="'$(TargetsLinuxGlibc)' == 'true'">true</BuildDebPackage>
+    <BuildRpmPackage Condition="'$(TargetsLinuxGlibc)' == 'true'">true</BuildRpmPackage>
     <GenerateVSInsertionPackages>true</GenerateVSInsertionPackages>
   </PropertyGroup>
 </Project>
