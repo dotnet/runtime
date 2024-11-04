@@ -2633,15 +2633,13 @@ bool Compiler::fgLCLMasksCheckLCLStore(Statement* stmt, LCLMasksWeightTable* wei
 }
 
 //-----------------------------------------------------------------------------
-// fgLCLMasksCheckLCLStore: For the given lcl var, update the var weights in
+// fgLCLMasksCheckLCLVar: For the given lcl var, update the var weights in
 // the table.
 //
 // Arguments:
-//     stmt - The statement.
+//     lclVar - The local variable.
+//     stmt - The statement the local vairable is contained in.
 //     weightsTable - table to update.
-//
-// Returns:
-//     True if a converted local store was found.
 //
 void Compiler::fgLCLMasksCheckLCLVar(GenTreeLclVarCommon* lclVar,
                                      Statement* const     stmt,
@@ -2684,6 +2682,17 @@ void Compiler::fgLCLMasksCheckLCLVar(GenTreeLclVarCommon* lclVar,
     weightsTable->Set(lclVar->GetLclNum(), weight, LCLMasksWeightTable::Overwrite);
 }
 
+//-----------------------------------------------------------------------------
+// fgLCLMasksUpdateLCLStore: For the given statement, if it is a local store,
+// and mask conversions dominate in the weightings, then update to store as a mask.
+//
+// Arguments:
+//     stmt - The statement.
+//     weightsTable - table to update.
+//
+// Returns:
+//     True if a converted local store was found.
+//
 bool Compiler::fgLCLMasksUpdateLCLStore(Statement* stmt, LCLMasksWeightTable* weightsTable)
 {
     // Look for:
@@ -2741,6 +2750,15 @@ bool Compiler::fgLCLMasksUpdateLCLStore(Statement* stmt, LCLMasksWeightTable* we
     return true;
 }
 
+//-----------------------------------------------------------------------------
+// fgLCLMasksUpdateLCLVar: For the given lcl var, if mask conversions dominate in
+// the weightings, then update to use as the source as a mask.
+//
+// Arguments:
+//     lclVar - The local variable.
+//     stmt - The statement the local vairable is contained in.
+//     weightsTable - table to update.
+//
 void Compiler::fgLCLMasksUpdateLCLVar(GenTreeLclVarCommon* lclVar,
                                       Statement* const     stmt,
                                       LCLMasksWeightTable* weightsTable)
@@ -2770,7 +2788,7 @@ void Compiler::fgLCLMasksUpdateLCLVar(GenTreeLclVarCommon* lclVar,
     JITDUMP("Local Var V%02d at [%06u] will be converted. Weighting {%d, %d}\n", lclVar->GetLclNum(), dspTreeID(lclVar),
             weight.storeWeight, weight.varWeight);
 
-    // Remove or add convert....
+    // Remove or add a mask conversion/
     LCLMasksUpdateLCLVarVisitor ev(this, lclVar->GetLclNum(), stmt);
     GenTree*                    root = stmt->GetRootNode();
     ev.WalkTree(&root, nullptr);
@@ -2781,6 +2799,40 @@ void Compiler::fgLCLMasksUpdateLCLVar(GenTreeLclVarCommon* lclVar,
 
 //------------------------------------------------------------------------
 // optLCLMasks: Allow locals to be of MASK type
+//
+// At the C# level, Masks share the same type as a Vector. It's possible for the same
+// variable to be used as a mask or vector. Any APIs that return a mask must first convert
+// the value to a vector before storing it to a variable. Any uses of a variable as a mask
+// must first convert from vector before using it. In many cases this creates unnecessary
+// conversions. For variables that live outside the scope of the current method then the
+// conversions are required to ensure correctness. However, for local variables where the
+// scope is local to the current method, then it is possible to keep the value as a mask,
+// by updating all definitions and uses.
+//
+// In the common case it is expected that uses of masks are consistent - once a variable is
+// created as a mask it will continue to be used and updated as a mask.
+//
+// In the uncommon case, a variable may be created in one type, used as another and/or
+// updated to a different type.
+//
+// For example (the conversion is implicit)
+//   vector<int> x = _ConvertMaskToVector_(CreateMask());
+//   x = Add(x, y);
+//
+// To account for this, this pass uses a weighting. For each variable, count the count the
+// number of definitions with a convert from mask minus the number of definitions without a
+// convert. Then do the same for each use. If both totals for a variable are positive, then
+// convert every definition and use to use a mask instead of a vector.
+//
+// This weighting does not account for:
+// * Loops. Uses/definitions inside a loop will account for more real weight than any outside
+// a loop. This is not expected to be an issue as in most cases when using loops, a variable
+// will be set once outside a loop then used/defined multiple times inside a loop.
+// * Re-definition. A variable may first be created as a mask used as such, then much later in
+// the method defined as a vector and used as such from then on. This can be worked around at
+// the user level by encouraging users not to reuse variable names.
+//
+// It is assumed that the simple weighting will be good enough for almost all use cases.
 //
 // Returns:
 //    Suitable phase status
@@ -2801,7 +2853,7 @@ PhaseStatus Compiler::fgOptimizeLCLMasks()
 
     LCLMasksWeightTable weightsTable = LCLMasksWeightTable(getAllocator());
 
-    // Find every local store that is first converted from a mask and add them to masksTable.
+    // Find every local store and add them to masksTable.
     bool foundConvertingStore = false;
     JITDUMP("\n");
     for (BasicBlock* block : Blocks())
@@ -2818,7 +2870,7 @@ PhaseStatus Compiler::fgOptimizeLCLMasks()
         return PhaseStatus::MODIFIED_NOTHING;
     }
 
-    // Find the uses of every local and check if it is converted to a mask, updating the keys in the masksTable.
+    // Find the uses of every local and add them to masksTable.
     JITDUMP("\n");
     for (BasicBlock* block : Blocks())
     {
@@ -2848,7 +2900,7 @@ PhaseStatus Compiler::fgOptimizeLCLMasks()
         return PhaseStatus::MODIFIED_NOTHING;
     }
 
-    // For each Local Var, potentially add/remove a conversion.
+    // For each Local variable, potentially add/remove a conversion.
     for (BasicBlock* block : Blocks())
     {
         for (Statement* const stmt : block->Statements())
