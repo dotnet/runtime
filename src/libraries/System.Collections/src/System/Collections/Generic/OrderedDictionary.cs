@@ -6,12 +6,8 @@ using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-#if NET8_0_OR_GREATER
 using static System.ArgumentNullException;
 using static System.ArgumentOutOfRangeException;
-#else
-using static System.Collections.ThrowHelper;
-#endif
 
 namespace System.Collections.Generic
 {
