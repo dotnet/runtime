@@ -296,7 +296,7 @@ namespace System.Threading.RateLimiting
                     return;
                 }
 
-                if (((nowTicks - _lastReplenishmentTick) * RateLimiterHelper.TickFrequency) < ReplenishmentPeriod.Ticks && !_options.AutoReplenishment)
+                if (RateLimiterHelper.GetElapsedTime(_lastReplenishmentTick, nowTicks) < ReplenishmentPeriod && !_options.AutoReplenishment)
                 {
                     return;
                 }

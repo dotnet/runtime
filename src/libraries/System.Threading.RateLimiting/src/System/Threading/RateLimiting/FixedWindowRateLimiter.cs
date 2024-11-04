@@ -290,7 +290,7 @@ namespace System.Threading.RateLimiting
                     return;
                 }
 
-                if (((nowTicks - _lastReplenishmentTick) * RateLimiterHelper.TickFrequency) < _options.Window.Ticks && !_options.AutoReplenishment)
+                if (RateLimiterHelper.GetElapsedTime(_lastReplenishmentTick, nowTicks) < _options.Window && !_options.AutoReplenishment)
                 {
                     return;
                 }
