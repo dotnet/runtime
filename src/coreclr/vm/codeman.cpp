@@ -4087,8 +4087,7 @@ void EEJitManager::NibbleMapSetUnlocked(HeapList * pHp, TADDR pCode, size_t code
     // the nibble is empty and the DWORD is not a pointer
     _ASSERTE(!((*(pMap+index)) & ~mask) && !IsPointer(*(pMap+index)));
 
-    // It is important for this update to be atomic. Synchronization would be required with FindMethodCode otherwise.
-    *(pMap+index) = ((*(pMap+index)) & mask) | value;
+    *(pMap+index) = ((*(pMap+index))&mask)|value;
 
     size_t firstByteAfterMethod = delta + codeSize;
     DWORD encodedPointer = EncodePointer(delta);
@@ -4135,25 +4134,27 @@ void EEJitManager::NibbleMapDeleteUnlocked(HeapList* pHp, TADDR pCode)
 
     size_t delta = pCode - pHp->mapBase;
 
-    size_t dwordIndex = GetDwordIndex(delta);
-    size_t nibbleIndex = GetNibbleIndex(delta);
+    size_t pos = ADDR2POS(delta);
+    DWORD value = ADDR2OFFS(delta);
 
-    DWORD mask  = POS2MASK(nibbleIndex);
+    DWORD index = (DWORD) (pos >> LOG2_NIBBLES_PER_DWORD);
+    DWORD mask  = POS2MASK(pos);
 
     PTR_DWORD pMap = pHp->pHdrMap;
 
     // assert that the nibble is not empty and the DWORD is not a pointer
-    _ASSERTE(((*(pMap+dwordIndex)) & ~mask) && !IsPointer(*(pMap+dwordIndex)));
+    pMap += index;
+    _ASSERTE(((*pMap) & ~mask) && !IsPointer(*pMap));
 
     // delete the relevant nibble
-    *(pMap+dwordIndex) = ((*(pMap+dwordIndex)) & mask);
+    *pMap = ((*pMap) & mask);
 
     // the last DWORD of the nibble map is reserved to be empty for bounds checking
-    PTR_DWORD pNextDword = pMap + dwordIndex + 1;
-    while (IsPointer(*pNextDword) && DecodePointer(*pNextDword) == delta){
+    pMap++;
+    while (IsPointer(*pMap) && DecodePointer(*pMap) == delta){
         // The next DWORD is a pointer to the nibble being deleted, so we can delete it
-        *pNextDword = 0;
-        pNextDword++;
+        *pMap = 0;
+        pMap++;
     }
 }
 

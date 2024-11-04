@@ -114,16 +114,6 @@
 
 namespace NibbleMap
 {
-    inline size_t GetDwordIndex(size_t relativePointer)
-    {
-        return relativePointer >> LOG2_BYTES_PER_DWORD;
-    }
-
-    inline size_t GetNibbleIndex(size_t relativePointer)
-    {
-        return (relativePointer >> (LOG2_BYTES_PER_BUCKET)) & NIBBLES_PER_DWORD_MASK;
-    }
-
     inline bool IsPointer(DWORD dword)
     {
         return (dword & NIBBLE_MASK) > 8;
