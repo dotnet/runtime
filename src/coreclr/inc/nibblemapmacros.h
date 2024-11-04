@@ -114,17 +114,17 @@
 
 namespace NibbleMap
 {
-    inline bool IsPointer(DWORD dword)
+    FORCEINLINE bool IsPointer(DWORD dword)
     {
         return (dword & NIBBLE_MASK) > 8;
     }
 
-    inline DWORD EncodePointer(size_t relativePointer)
+    FORCEINLINE DWORD EncodePointer(size_t relativePointer)
     {
         return (DWORD) ((relativePointer & ~NIBBLE_MASK) + (((relativePointer & NIBBLE_MASK) >> 2) + 9));
     }
 
-    inline size_t DecodePointer(DWORD dword)
+    FORCEINLINE size_t DecodePointer(DWORD dword)
     {
         return (size_t) ((dword & ~NIBBLE_MASK) + (((dword & NIBBLE_MASK) - 9) << 2));
     }
