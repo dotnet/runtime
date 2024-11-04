@@ -4087,7 +4087,7 @@ void EEJitManager::NibbleMapSetUnlocked(HeapList * pHp, TADDR pCode, size_t code
     // the nibble is empty and the DWORD is not a pointer
     _ASSERTE(!((*(pMap+index)) & ~mask) && !IsPointer(*(pMap+index)));
 
-    *(pMap+index) = ((*(pMap+index))&mask)|value;
+    VolatileStore<DWORD>(pMap+index, ((*(pMap+index))&mask)|value);
 
     size_t firstByteAfterMethod = delta + codeSize;
     DWORD encodedPointer = EncodePointer(delta);
@@ -4096,7 +4096,8 @@ void EEJitManager::NibbleMapSetUnlocked(HeapList * pHp, TADDR pCode, size_t code
     {
         // All of these DWORDs should be empty
         _ASSERTE(!(*(pMap+index)));
-        *(pMap+index) = encodedPointer;
+        VolatileStore<DWORD>(pMap+index, encodedPointer);
+
         index++;
     }
 }
@@ -4147,13 +4148,13 @@ void EEJitManager::NibbleMapDeleteUnlocked(HeapList* pHp, TADDR pCode)
     _ASSERTE(((*pMap) & ~mask) && !IsPointer(*pMap));
 
     // delete the relevant nibble
-    *pMap = ((*pMap) & mask);
+    VolatileStore<DWORD>(pMap, (*pMap) & mask);
 
     // the last DWORD of the nibble map is reserved to be empty for bounds checking
     pMap++;
     while (IsPointer(*pMap) && DecodePointer(*pMap) == delta){
         // The next DWORD is a pointer to the nibble being deleted, so we can delete it
-        *pMap = 0;
+        VolatileStore<DWORD>(pMap, 0);
         pMap++;
     }
 }
