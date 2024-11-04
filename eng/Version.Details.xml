@@ -306,39 +306,39 @@
       <Uri>https://github.com/dotnet/llvm-project</Uri>
       <Sha>cb75d3a5d108bcab298682c62814109a7651b277</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NETCore.App.Runtime.win-x64" Version="10.0.0-alpha.1.24527.3">
+    <Dependency Name="Microsoft.NETCore.App.Runtime.win-x64" Version="10.0.0-alpha.1.24553.1">
       <Uri>https://github.com/dotnet/runtime</Uri>
-      <Sha>6bc04bfdb1f86bec39ddbb6213f8fdffa1715751</Sha>
+      <Sha>91939711895b6141e1be509ee743a8afb7a64ee7</Sha>
     </Dependency>
-    <Dependency Name="runtime.native.System.IO.Ports" Version="10.0.0-alpha.1.24527.3">
+    <Dependency Name="runtime.native.System.IO.Ports" Version="10.0.0-alpha.1.24553.1">
       <Uri>https://github.com/dotnet/runtime</Uri>
-      <Sha>6bc04bfdb1f86bec39ddbb6213f8fdffa1715751</Sha>
+      <Sha>91939711895b6141e1be509ee743a8afb7a64ee7</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NETCore.ILAsm" Version="10.0.0-alpha.1.24527.3">
+    <Dependency Name="Microsoft.NETCore.ILAsm" Version="10.0.0-alpha.1.24553.1">
       <Uri>https://github.com/dotnet/runtime</Uri>
-      <Sha>6bc04bfdb1f86bec39ddbb6213f8fdffa1715751</Sha>
+      <Sha>91939711895b6141e1be509ee743a8afb7a64ee7</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NET.Sdk.IL" Version="10.0.0-alpha.1.24527.3">
+    <Dependency Name="Microsoft.NET.Sdk.IL" Version="10.0.0-alpha.1.24553.1">
       <Uri>https://github.com/dotnet/runtime</Uri>
-      <Sha>6bc04bfdb1f86bec39ddbb6213f8fdffa1715751</Sha>
+      <Sha>91939711895b6141e1be509ee743a8afb7a64ee7</Sha>
     </Dependency>
-    <Dependency Name="System.Text.Json" Version="10.0.0-alpha.1.24527.3">
+    <Dependency Name="System.Text.Json" Version="10.0.0-alpha.1.24553.1">
       <Uri>https://github.com/dotnet/runtime</Uri>
-      <Sha>6bc04bfdb1f86bec39ddbb6213f8fdffa1715751</Sha>
+      <Sha>91939711895b6141e1be509ee743a8afb7a64ee7</Sha>
     </Dependency>
     <!-- Intermediate is necessary for source build. -->
-    <Dependency Name="Microsoft.SourceBuild.Intermediate.runtime.linux-x64" Version="10.0.0-alpha.1.24527.3">
+    <Dependency Name="Microsoft.SourceBuild.Intermediate.runtime.linux-x64" Version="10.0.0-alpha.1.24553.1">
       <Uri>https://github.com/dotnet/runtime</Uri>
-      <Sha>6bc04bfdb1f86bec39ddbb6213f8fdffa1715751</Sha>
+      <Sha>91939711895b6141e1be509ee743a8afb7a64ee7</Sha>
       <SourceBuild RepoName="runtime" ManagedOnly="false" />
     </Dependency>
-    <Dependency Name="System.Reflection.Metadata" Version="10.0.0-alpha.1.24527.3">
+    <Dependency Name="System.Reflection.Metadata" Version="10.0.0-alpha.1.24553.1">
       <Uri>https://github.com/dotnet/runtime</Uri>
-      <Sha>6bc04bfdb1f86bec39ddbb6213f8fdffa1715751</Sha>
+      <Sha>91939711895b6141e1be509ee743a8afb7a64ee7</Sha>
     </Dependency>
-    <Dependency Name="System.Reflection.MetadataLoadContext" Version="10.0.0-alpha.1.24527.3">
+    <Dependency Name="System.Reflection.MetadataLoadContext" Version="10.0.0-alpha.1.24553.1">
       <Uri>https://github.com/dotnet/runtime</Uri>
-      <Sha>6bc04bfdb1f86bec39ddbb6213f8fdffa1715751</Sha>
+      <Sha>91939711895b6141e1be509ee743a8afb7a64ee7</Sha>
     </Dependency>
     <Dependency Name="Microsoft.DotNet.XHarness.TestRunners.Common" Version="10.0.0-prerelease.24524.9">
       <Uri>https://github.com/dotnet/xharness</Uri>
