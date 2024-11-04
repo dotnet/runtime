@@ -2262,11 +2262,9 @@ void CodeGen::genEmitUnwindDebugGCandEH()
         const char* rawHexCodeFilePath = JitConfig.JitRawHexCodeFile();
         if (rawHexCodeFilePath)
         {
-            FILE*   hexDmpf;
-            errno_t ec = fopen_s(&hexDmpf, rawHexCodeFilePath, "at"); // NOTE: file append mode
-            if (ec == 0)
+            FILE* hexDmpf = fopen_utf8(rawHexCodeFilePath, "at"); // NOTE: file append mode
+            if (hexDmpf != nullptr)
             {
-                assert(hexDmpf);
                 hexDump(hexDmpf, dumpAddr, dumpSize);
                 fclose(hexDmpf);
             }

@@ -1941,7 +1941,7 @@ MethodSet::MethodSet(const char* filename, HostAllocator alloc)
     : m_pInfos(nullptr)
     , m_alloc(alloc)
 {
-    FILE* methodSetFile = fopen(filename, "r");
+    FILE* methodSetFile = fopen_utf8(filename, "r");
     if (methodSetFile == nullptr)
     {
         return;
@@ -4240,3 +4240,81 @@ bool CastFromDoubleOverflows(double fromValue, var_types toType)
     }
 }
 } // namespace CheckedOps
+
+template <size_t bufferSize>
+class Utf16String
+{
+private:
+    wchar_t  m_buffer[bufferSize];
+    wchar_t* m_pBuffer = nullptr;
+
+public:
+    Utf16String(const char* str)
+    {
+        int strBufferSize = MultiByteToWideChar(CP_UTF8, 0, str, -1, nullptr, 0);
+        if (strBufferSize == 0)
+        {
+            return;
+        }
+
+        if (strBufferSize > bufferSize)
+        {
+            m_pBuffer = new wchar_t[strBufferSize];
+        }
+        else
+        {
+            m_pBuffer = m_buffer;
+        }
+
+        if (MultiByteToWideChar(CP_UTF8, 0, str, -1, m_pBuffer, strBufferSize) == 0)
+        {
+            if (m_pBuffer != m_buffer)
+            {
+                delete[] m_pBuffer;
+            }
+
+            m_pBuffer = nullptr;
+        }
+    }
+
+    ~Utf16String()
+    {
+        if (m_pBuffer != m_buffer)
+        {
+            delete[] m_pBuffer;
+            m_pBuffer = nullptr;
+        }
+    }
+
+    const wchar_t* Result()
+    {
+        return m_pBuffer;
+    }
+};
+
+//------------------------------------------------------------------------
+// fopen_utf8: Open the file at the specified UTF8 path with the specified mode.
+//
+// Arguments:
+//   path - UTF8 path
+//   mode - UTF8 mode
+//
+// Returns:
+//    Opened file handle
+//
+FILE* fopen_utf8(const char* path, const char* mode)
+{
+#ifdef HOST_WINDOWS
+    Utf16String<256> pathWide(path);
+    Utf16String<16>  modeWide(mode);
+
+    if ((pathWide.Result() == nullptr) || (modeWide.Result() == nullptr))
+    {
+        return nullptr;
+    }
+
+    return _wfopen(pathWide.Result(), modeWide.Result());
+#else
+    return fopen(path, mode);
+#endif
+}

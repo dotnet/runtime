@@ -1193,4 +1193,6 @@ bool CastFromDoubleOverflows(double fromValue, var_types toType);
 #define STRINGIFY_(x) #x
 #define STRINGIFY(x)  STRINGIFY_(x)
 
+FILE* fopen_utf8(const char* path, const char* mode);
+
 #endif // _UTILS_H_

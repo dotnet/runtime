@@ -82,7 +82,7 @@ static FILE* jitstdoutInit()
     FILE*       file          = nullptr;
     if (jitStdOutFile != nullptr)
     {
-        file = fopen(jitStdOutFile, "a");
+        file = fopen_utf8(jitStdOutFile, "a");
         assert(file != nullptr);
     }
 
