@@ -616,7 +616,8 @@ HRESULT PEWriter::Init(PESectionMan *pFrom, DWORD createFlags)
 
     if (createFlags & ICEE_CREATE_FILE_DET)
     {
-        m_ntHeaders->FileHeader.TimeDateStamp = VAL32(0);
+        // A timestamp of 0 triggers asserts in the VM
+        m_ntHeaders->FileHeader.TimeDateStamp = VAL32(1);
     }
 
     // Linker version should be consistent with current VC level
