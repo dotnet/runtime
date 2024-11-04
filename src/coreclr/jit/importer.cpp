@@ -638,7 +638,9 @@ bool Compiler::impGetLclVal(GenTreeLclVar* tree, GenTree** val)
             comp->impLclVals.Lookup((static_cast<UINT64>(comp->compCurBB->bbNum) << 32 | tree->GetLclNum()), &gtVal) &&
             gtVal->TypeIs(tree->TypeGet()))
         {
-            if (gtVal->OperIs(GT_FTN_ADDR) || (gtVal->IsCall() && gtIsTypeHandleToRuntimeTypeHelper(gtVal->AsCall())))
+            if (gtVal->OperIs(GT_FTN_ADDR) || gtVal->OperIsConst() ||
+                (gtVal->IsCall() && (gtIsTypeHandleToRuntimeTypeHelper(gtVal->AsCall()) ||
+                                     gtIsTypeHandleToRuntimeTypeHandleHelper(gtVal->AsCall()))))
             {
                 JITDUMP("Use substitution [%06u] for V%02u\n", gtVal->gtTreeID, tree->GetLclNum());
                 *val = gtVal;

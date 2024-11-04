@@ -19566,11 +19566,6 @@ CORINFO_CLASS_HANDLE Compiler::gtGetFieldClassHandle(CORINFO_FIELD_HANDLE fieldH
 //
 bool Compiler::gtIsTypeof(GenTree* tree, CORINFO_CLASS_HANDLE* handle)
 {
-    GenTree* typeVal;
-    if (handle != nullptr && tree->OperIs(GT_LCL_VAR) && impGetLclVal(tree->AsLclVar(), &typeVal))
-    {
-        tree = typeVal;
-    }
     if (tree->IsCall())
     {
         GenTreeCall* call = tree->AsCall();

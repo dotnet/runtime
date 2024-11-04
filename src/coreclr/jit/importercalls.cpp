@@ -166,7 +166,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
             else
             {
                 // We have to clone the FTN_ADDR node, as it is substituted from the local
-                call->AsCall()->gtCallAddr = gtClone(call->AsCall()->gtCallAddr);
+                call->AsCall()->gtCallAddr = gtCloneExpr(call->AsCall()->gtCallAddr);
             }
         }
 
@@ -3461,6 +3461,15 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
     CorInfoType callJitType = sig->retType;
     var_types   callType    = JITtype2varType(callJitType);
 
+    auto getSubstitutedOp = [&](GenTree* op) -> GenTree* {
+        GenTree* opVal = nullptr;
+        if (op->OperIs(GT_LCL_VAR) && impGetLclVal(op->AsLclVar(), &opVal))
+        {
+            return opVal;
+        }
+        return op;
+    };
+
     /* First do the intrinsics which are always smaller than a call */
 
     if (ni != NI_Illegal)
@@ -3827,7 +3836,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
 
             case NI_System_RuntimeTypeHandle_ToIntPtr:
             {
-                GenTree* op1 = impStackTop(0).val;
+                GenTree* op1 = getSubstitutedOp(impStackTop(0).val);
 
                 if (op1->IsHelperCall() && gtIsTypeHandleToRuntimeTypeHandleHelper(op1->AsCall()))
                 {
@@ -3855,7 +3864,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                     if (lookupNamedIntrinsic(call->gtCallMethHnd) == NI_System_RuntimeType_get_TypeHandle)
                     {
                         // Check that the arg is CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE helper call
-                        GenTree* arg = call->gtArgs.GetArgByIndex(0)->GetNode();
+                        GenTree* arg = getSubstitutedOp(call->gtArgs.GetArgByIndex(0)->GetNode());
                         if (arg->IsHelperCall() && gtIsTypeHandleToRuntimeTypeHelper(arg->AsCall()))
                         {
                             impPopStack();
@@ -3865,7 +3874,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                                 op1->AsRetExpr()->gtInlineCandidate->gtBashToNOP();
                             }
                             // Skip roundtrip and return the type handle directly
-                            retNode = arg->AsCall()->gtArgs.GetArgByIndex(0)->GetNode();
+                            retNode = gtCloneExpr(arg->AsCall()->gtArgs.GetArgByIndex(0)->GetNode());
                         }
                     }
                 }
@@ -3874,7 +3883,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
 
             case NI_System_Type_GetTypeFromHandle:
             {
-                GenTree*        op1 = impStackTop(0).val;
+                GenTree*        op1 = getSubstitutedOp(impStackTop(0).val);
                 CorInfoHelpFunc typeHandleHelper;
                 if (op1->gtOper == GT_CALL && op1->AsCall()->IsHelperCall() &&
                     gtIsTypeHandleToRuntimeTypeHandleHelper(op1->AsCall(), &typeHandleHelper))
@@ -3906,7 +3915,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
 
             case NI_System_Type_GetGenericTypeDefinition:
             {
-                GenTree* type = impStackTop(0).val;
+                GenTree* type = getSubstitutedOp(impStackTop(0).val);
 
                 retNode = impGetGenericTypeDefinition(type);
                 break;
@@ -3916,8 +3925,8 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
             case NI_System_Type_op_Inequality:
             {
                 JITDUMP("Importing Type.op_*Equality intrinsic\n");
-                GenTree* op1     = impStackTop(1).val;
-                GenTree* op2     = impStackTop(0).val;
+                GenTree* op1     = getSubstitutedOp(impStackTop(1).val);
+                GenTree* op2     = getSubstitutedOp(impStackTop(0).val);
                 GenTree* optTree = gtFoldTypeEqualityCall(ni == NI_System_Type_op_Equality, op1, op2);
                 if (optTree != nullptr)
                 {
@@ -3969,8 +3978,8 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
 
             case NI_System_Type_IsAssignableFrom:
             {
-                GenTree* typeTo   = impStackTop(1).val;
-                GenTree* typeFrom = impStackTop(0).val;
+                GenTree* typeTo   = getSubstitutedOp(impStackTop(1).val);
+                GenTree* typeFrom = getSubstitutedOp(impStackTop(0).val);
 
                 retNode = impTypeIsAssignable(typeTo, typeFrom);
                 break;
@@ -3978,8 +3987,8 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
 
             case NI_System_Type_IsAssignableTo:
             {
-                GenTree* typeTo   = impStackTop(0).val;
-                GenTree* typeFrom = impStackTop(1).val;
+                GenTree* typeTo   = getSubstitutedOp(impStackTop(0).val);
+                GenTree* typeFrom = getSubstitutedOp(impStackTop(1).val);
 
                 retNode = impTypeIsAssignable(typeTo, typeFrom);
                 break;
@@ -3991,7 +4000,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                 //
                 //   struct RuntimeTypeHandle { IntPtr _value; }
                 //
-                GenTree* op1 = impStackTop(0).val;
+                GenTree* op1 = getSubstitutedOp(impStackTop(0).val);
                 if (IsTargetAbi(CORINFO_NATIVEAOT_ABI) && op1->IsHelperCall() &&
                     gtIsTypeHandleToRuntimeTypeHelper(op1->AsCall()) && callvirt)
                 {
@@ -4024,7 +4033,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                 // e.g., `typeof(int).IsValueType` => `true`
                 // e.g., `typeof(Span<int>).IsByRefLike` => `true`
                 CORINFO_CLASS_HANDLE hClass = NO_CLASS_HANDLE;
-                if (gtIsTypeof(impStackTop().val, &hClass))
+                if (gtIsTypeof(getSubstitutedOp(impStackTop().val), &hClass))
                 {
                     assert(hClass != NO_CLASS_HANDLE);
                     switch (ni)
@@ -4083,7 +4092,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
 
             case NI_System_Type_GetEnumUnderlyingType:
             {
-                GenTree*             type             = impStackTop().val;
+                GenTree*             type             = getSubstitutedOp(impStackTop().val);
                 CORINFO_CLASS_HANDLE hClassEnum       = NO_CLASS_HANDLE;
                 CORINFO_CLASS_HANDLE hClassUnderlying = NO_CLASS_HANDLE;
                 if (gtIsTypeof(type, &hClassEnum) && (hClassEnum != NO_CLASS_HANDLE) &&
@@ -9644,20 +9653,32 @@ GenTree* Compiler::impMinMaxIntrinsic(CORINFO_METHOD_HANDLE method,
     assert(varTypeIsFloating(callType));
     assert(sig->numArgs == 2);
 
-    GenTreeDblCon* cnsNode   = nullptr;
-    GenTree*       otherNode = nullptr;
+    GenTreeDblCon* cnsNode        = nullptr;
+    GenTree*       otherNode      = nullptr;
+    GenTree*       substituteNode = nullptr;
 
-    GenTree* op2 = impImplicitR4orR8Cast(impStackTop().val, callType);
-    GenTree* op1 = impImplicitR4orR8Cast(impStackTop(1).val, callType);
+    GenTree* op2 = impStackTop().val;
+    if (op2->OperIs(GT_LCL_VAR) && impGetLclVal(op2->AsLclVar(), &substituteNode))
+    {
+        op2 = substituteNode;
+    }
+    op2 = impImplicitR4orR8Cast(op2, callType);
+
+    GenTree* op1 = impStackTop(1).val;
+    if (op1->OperIs(GT_LCL_VAR) && impGetLclVal(op1->AsLclVar(), &substituteNode))
+    {
+        op1 = substituteNode;
+    }
+    op1 = impImplicitR4orR8Cast(op1, callType);
 
     if (op2->IsCnsFltOrDbl())
     {
-        cnsNode   = op2->AsDblCon();
+        cnsNode   = gtCloneExpr(op2)->AsDblCon();
         otherNode = op1;
     }
     else if (op1->IsCnsFltOrDbl())
     {
-        cnsNode   = op1->AsDblCon();
+        cnsNode   = gtCloneExpr(op1)->AsDblCon();
         otherNode = op2;
     }
 
