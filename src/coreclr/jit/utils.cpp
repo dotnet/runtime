@@ -4243,7 +4243,7 @@ template <size_t bufferSize>
 class Utf16String
 {
 private:
-    WCHAR  m_buffer[bufferSize];
+    WCHAR  m_bufferUnsafe[bufferSize];
     WCHAR* m_pBuffer = nullptr;
 
 public:
@@ -4261,12 +4261,12 @@ public:
         }
         else
         {
-            m_pBuffer = m_buffer;
+            m_pBuffer = m_bufferUnsafe;
         }
 
         if (MultiByteToWideChar(CP_UTF8, 0, str, -1, m_pBuffer, strBufferSize) == 0)
         {
-            if (m_pBuffer != m_buffer)
+            if (m_pBuffer != m_bufferUnsafe)
             {
                 delete[] m_pBuffer;
             }
