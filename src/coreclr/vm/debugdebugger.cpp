@@ -7,8 +7,6 @@
 **
 ** Purpose: Native methods on System.Debug.Debugger
 **
-**
-
 ===========================================================*/
 
 #include "common.h"
@@ -68,7 +66,7 @@ extern "C" void QCALLTYPE DebugDebugger_Break()
         // A managed debugger is already attached -- let it handle the event.
         g_pDebugInterface->SendUserBreakpoint(GetThread());
     }
-    else if (IsDebuggerPresent())
+    else if (minipal_is_native_debugger_present())
     {
         // No managed debugger, but a native debug is attached. Explicitly fire a native user breakpoint.
         // Don't rely on Watson support since that may have a different policy.
@@ -104,43 +102,6 @@ extern "C" BOOL QCALLTYPE DebugDebugger_Launch()
 
     return FALSE;
 }
-
-FCIMPL0(FC_BOOL_RET, DebugDebugger::IsDebuggerAttached)
-{
-    FCALL_CONTRACT;
-
-    FC_GC_POLL_RET();
-
-#ifdef DEBUGGING_SUPPORTED
-    FC_RETURN_BOOL(CORDebuggerAttached());
-#else // DEBUGGING_SUPPORTED
-    FC_RETURN_BOOL(FALSE);
-#endif
-}
-FCIMPLEND
-
-namespace
-{
-    BOOL IsLoggingHelper()
-    {
-        CONTRACTL
-        {
-            NOTHROW;
-            GC_NOTRIGGER;
-            MODE_ANY;
-        }
-        CONTRACTL_END;
-
-    #ifdef DEBUGGING_SUPPORTED
-        if (CORDebuggerAttached())
-        {
-            return (g_pDebugInterface->IsLoggingEnabled());
-        }
-    #endif // DEBUGGING_SUPPORTED
-        return FALSE;
-    }
-}
-
 
 // Log to managed debugger.
 // It will send a managed log event, which will faithfully send the two string parameters here without
@@ -186,7 +147,7 @@ extern "C" void QCALLTYPE DebugDebugger_Log(INT32 Level, PCWSTR pwzModule, PCWST
     // for the given category
     if (CORDebuggerAttached())
     {
-        if (IsLoggingHelper() )
+        if (g_pDebugInterface->IsLoggingEnabled() )
         {
             // Copy log message and category into our own SString to protect against GC
             // Strings may contain embedded nulls, but we need to handle null-terminated
@@ -215,16 +176,6 @@ extern "C" void QCALLTYPE DebugDebugger_Log(INT32 Level, PCWSTR pwzModule, PCWST
 
 #endif // DEBUGGING_SUPPORTED
 }
-
-FCIMPL0(FC_BOOL_RET, DebugDebugger::IsLogging)
-{
-    FCALL_CONTRACT;
-
-    FC_GC_POLL_RET();
-
-    FC_RETURN_BOOL(IsLoggingHelper());
-}
-FCIMPLEND
 
 static StackWalkAction GetStackFramesCallback(CrawlFrame* pCf, VOID* data)
 {
@@ -900,6 +851,31 @@ extern "C" void QCALLTYPE DebugDebugger_CustomNotification(QCall::ObjectHandleOn
 
     END_QCALL;
 #endif // DEBUGGING_SUPPORTED
+}
+
+extern "C" BOOL QCALLTYPE DebugDebugger_IsLoggingHelper()
+{
+    QCALL_CONTRACT_NO_GC_TRANSITION;
+
+#ifdef DEBUGGING_SUPPORTED
+    if (CORDebuggerAttached())
+    {
+        return g_pDebugInterface->IsLoggingEnabled();
+    }
+#endif // DEBUGGING_SUPPORTED
+
+    return FALSE;
+}
+
+extern "C" BOOL QCALLTYPE DebugDebugger_IsManagedDebuggerAttached()
+{
+    QCALL_CONTRACT_NO_GC_TRANSITION;
+
+#ifdef DEBUGGING_SUPPORTED
+    return CORDebuggerAttached();
+#else
+    return FALSE;
+#endif
 }
 #endif // !DACCESS_COMPILE
 

@@ -15,14 +15,13 @@ using Xunit.Sdk;
 
 namespace Wasm.Build.Tests;
 
-public abstract class BlazorWasmTestBase : WasmTemplateTestBase
+public abstract class BlazorWasmTestBase : WasmTemplateTestsBase
 {
     protected readonly BlazorWasmProjectProvider _provider;
     protected BlazorWasmTestBase(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
-                : base(output, buildContext, new BlazorWasmProjectProvider(output))
+                : base(output, buildContext, new BlazorWasmProjectProvider(output, DefaultTargetFrameworkForBlazor))
     {
         _provider = GetProvider<BlazorWasmProjectProvider>();
-        _provider.BundleDirName = "wwwroot";
     }
 
     public void InitBlazorWasmProjectDir(string id, string targetFramework = DefaultTargetFrameworkForBlazor)
@@ -250,10 +249,4 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestBase
 
     public string FindBlazorBinFrameworkDir(string config, bool forPublish, string framework = DefaultTargetFrameworkForBlazor, string? projectDir = null)
         => _provider.FindBinFrameworkDir(config: config, forPublish: forPublish, framework: framework, projectDir: projectDir);
-
-    public string FindBlazorHostedBinFrameworkDir(string config, bool forPublish, string clientDirRelativeToProjectDir, string framework = DefaultTargetFrameworkForBlazor)
-    {
-        string? clientProjectDir = _projectDir == null ? null : Path.Combine(_projectDir, clientDirRelativeToProjectDir);
-        return _provider.FindBinFrameworkDir(config: config, forPublish: forPublish, framework: framework, projectDir: clientProjectDir);
-    }
 }

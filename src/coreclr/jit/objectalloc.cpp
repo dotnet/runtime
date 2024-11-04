@@ -623,6 +623,58 @@ unsigned int ObjectAllocator::MorphAllocObjNodeIntoStackAlloc(
 
     comp->fgInsertStmtBefore(block, stmt, initStmt);
 
+    // If this allocation is part the special empty static pattern, find the controlling
+    // branch and force control to always flow to the new instance side.
+    //
+    if ((allocObj->gtFlags & GTF_ALLOCOBJ_EMPTY_STATIC) != 0)
+    {
+        BasicBlock* const predBlock = block->GetUniquePred(comp);
+        assert(predBlock != nullptr);
+        assert(predBlock->KindIs(BBJ_COND));
+
+        JITDUMP("Empty static pattern controlled by " FMT_BB ", optimizing to always use stack allocated instance\n",
+                predBlock->bbNum);
+        Statement* const controllingStmt = predBlock->lastStmt();
+        GenTree* const   controllingNode = controllingStmt->GetRootNode();
+        assert(controllingNode->OperIs(GT_JTRUE));
+
+        FlowEdge* const trueEdge    = predBlock->GetTrueEdge();
+        FlowEdge* const falseEdge   = predBlock->GetFalseEdge();
+        FlowEdge*       keptEdge    = nullptr;
+        FlowEdge*       removedEdge = nullptr;
+
+        if (trueEdge->getDestinationBlock() == block)
+        {
+            keptEdge    = trueEdge;
+            removedEdge = falseEdge;
+        }
+        else
+        {
+            assert(falseEdge->getDestinationBlock() == block);
+            keptEdge    = falseEdge;
+            removedEdge = trueEdge;
+        }
+
+        BasicBlock* removedBlock = removedEdge->getDestinationBlock();
+        comp->fgRemoveRefPred(removedEdge);
+        predBlock->SetKindAndTargetEdge(BBJ_ALWAYS, keptEdge);
+
+        if (predBlock->hasProfileWeight())
+        {
+            block->setBBProfileWeight(predBlock->bbWeight);
+        }
+
+        // Just lop off the JTRUE, the rest can clean up later
+        // (eg may have side effects)
+        //
+        controllingStmt->SetRootNode(controllingNode->AsOp()->gtOp1);
+
+        // We must remove the empty static block now too.
+        assert(removedBlock->bbRefs == 0);
+        assert(removedBlock->KindIs(BBJ_ALWAYS));
+        comp->fgRemoveBlock(removedBlock, /* unreachable */ true);
+    }
+
     return lclNum;
 }
 

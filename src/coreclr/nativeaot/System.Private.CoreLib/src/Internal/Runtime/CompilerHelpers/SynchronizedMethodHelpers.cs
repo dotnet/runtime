@@ -43,42 +43,7 @@ namespace Internal.Runtime.CompilerHelpers
             lockTaken = false;
         }
 
-        private static unsafe void MonitorEnterStatic(MethodTable* pMT, ref bool lockTaken)
-        {
-            // Inlined Monitor.Enter with a few tweaks
-            object obj = GetStaticLockObject(pMT);
-            int currentThreadID = ManagedThreadId.CurrentManagedThreadIdUnchecked;
-            int resultOrIndex = ObjectHeader.Acquire(obj, currentThreadID);
-            if (resultOrIndex < 0)
-            {
-                lockTaken = true;
-                return;
-            }
-
-            Lock lck = resultOrIndex == 0 ?
-                ObjectHeader.GetLockObject(obj) :
-                SyncTable.GetLockObject(resultOrIndex);
-
-            lck.TryEnterSlow(Timeout.Infinite, currentThreadID);
-            lockTaken = true;
-        }
-        private static unsafe void MonitorExitStatic(MethodTable* pMT, ref bool lockTaken)
-        {
-            // Inlined Monitor.Exit with a few tweaks
-            if (!lockTaken)
-                return;
-
-            object obj = GetStaticLockObject(pMT);
-            ObjectHeader.Release(obj);
-            lockTaken = false;
-        }
-
-        private static unsafe RuntimeType GetStaticLockObject(MethodTable* pMT)
-        {
-            return Type.GetTypeFromMethodTable(pMT);
-        }
-
-        private static unsafe MethodTable* GetSyncFromClassHandle(MethodTable* pMT) => pMT;
+        private static unsafe RuntimeType GetSyncFromClassHandle(MethodTable* pMT) => Type.GetTypeFromMethodTable(pMT);
 
         private static unsafe MethodTable* GetClassFromMethodParam(IntPtr pDictionary)
         {

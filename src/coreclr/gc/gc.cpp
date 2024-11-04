@@ -6450,7 +6450,11 @@ public:
         if (GCToOSInterface::CanGetCurrentProcessorNumber())
         {
             uint32_t proc_no = GCToOSInterface::GetCurrentProcessorNumber();
-            proc_no_to_heap_no[proc_no] = (uint16_t)heap_number;
+            // For a 32-bit process running on a machine with > 64 procs, 
+            // even though the process can only use up to 32 procs, the processor 
+            // index can be >= 64; or in the cpu group case, if the process is not running in cpu group #0, 
+            // the GetCurrentProcessorNumber will return a number that's >= 64.
+            proc_no_to_heap_no[proc_no % MAX_SUPPORTED_CPUS] = (uint16_t)heap_number;
         }
     }
 
@@ -6472,7 +6476,11 @@ public:
         if (GCToOSInterface::CanGetCurrentProcessorNumber())
         {
             uint32_t proc_no = GCToOSInterface::GetCurrentProcessorNumber();
-            int adjusted_heap = proc_no_to_heap_no[proc_no];
+            // For a 32-bit process running on a machine with > 64 procs, 
+            // even though the process can only use up to 32 procs, the processor 
+            // index can be >= 64; or in the cpu group case, if the process is not running in cpu group #0, 
+            // the GetCurrentProcessorNumber will return a number that's >= 64.
+            int adjusted_heap = proc_no_to_heap_no[proc_no % MAX_SUPPORTED_CPUS];
             // with dynamic heap count, need to make sure the value is in range.
             if (adjusted_heap >= gc_heap::n_heaps)
             {
@@ -30096,11 +30104,12 @@ void gc_heap::mark_phase (int condemned_gen_number)
             }
 #endif // MULTIPLE_HEAPS && FEATURE_CARD_MARKING_STEALING
 
+            drain_mark_queue();
+
 #ifdef USE_REGIONS
             update_old_card_survived();
 #endif //USE_REGIONS
 
-            drain_mark_queue();
             fire_mark_event (ETW::GC_ROOT_OLDER, current_promoted_bytes, last_promoted_bytes);
         }
     }
@@ -41874,9 +41883,17 @@ void gc_heap::mark_through_cards_for_segments (card_fn fn, BOOL relocating CARD_
                 last_object_processed = min(limit, last_object);
 #endif // FEATURE_CARD_MARKING_STEALING
                 dprintf (3, (" Clearing cards [%zx, %zx[ ", (size_t)card_address(card), (size_t)last_object_processed));
-                clear_cards(card, card_of(last_object_processed));
-                n_card_set -= (card_of(last_object_processed) - card);
-                total_cards_cleared += (card_of(last_object_processed) - card);
+
+                size_t card_last_obj = card_of (last_object_processed);
+                clear_cards(card, card_last_obj);
+
+                // We need to be careful of the accounting here because we could be in the situation where there are more set cards between end of 
+                // last set card batch and last_object_processed. We will be clearing all of them. But we can't count the set cards we haven't
+                // discovered yet or we can get a negative number for n_card_set. However, if last_object_processed lands before what end_card
+                // corresponds to, we can't count the whole batch because it will be handled by a later clear_cards.
+                size_t cards_to_deduct = (card_last_obj < end_card) ? (card_last_obj - card) : (end_card - card);
+                n_card_set -= cards_to_deduct;
+                total_cards_cleared += cards_to_deduct;
             }
 
             n_eph += cg_pointers_found;
@@ -48942,7 +48959,7 @@ HRESULT GCHeap::Initialize()
 
     // Adjust GCRegionSize based on how large each heap would be, for smaller heaps we would
     // like to keep Region sizes small. We choose between 4, 2 and 1mb based on the calculations
-    // below (unless its configured explictly) such that there are at least 2 regions available
+    // below (unless its configured explicitly) such that there are at least 2 regions available
     // except for the smallest case. Now the lowest limit possible is 4mb.
     if (gc_region_size == 0)
     {
