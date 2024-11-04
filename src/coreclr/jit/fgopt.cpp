@@ -5048,6 +5048,7 @@ void Compiler::ThreeOptLayout::Run()
     // For methods with fewer than three candidate blocks, we cannot partition anything
     if (finalBlock->IsFirst() || finalBlock->Prev()->IsFirst())
     {
+        JITDUMP("Not enough blocks to partition anything. Skipping 3-opt.\n");
         return;
     }
 
