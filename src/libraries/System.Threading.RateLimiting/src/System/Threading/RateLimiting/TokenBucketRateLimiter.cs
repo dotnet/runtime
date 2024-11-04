@@ -311,7 +311,7 @@ namespace System.Threading.RateLimiting
                 }
                 else
                 {
-                    add = _fillRate * (nowTicks - _lastReplenishmentTick) * RateLimiterHelper.TickFrequency;
+                    add = _fillRate * RateLimiterHelper.GetElapsedTime(_lastReplenishmentTick, nowTicks).Ticks;
                 }
 
                 _tokenCount = Math.Min(_options.TokenLimit, _tokenCount + add);
