@@ -535,7 +535,7 @@ void SetEvexEmbMaskIfNeeded(instrDesc* id, insOpts instOptions)
 //
 void SetEvexNdIfNeeded(instrDesc* id, insOpts instOptions)
 {
-    if ((instOptions & INS_OPTS_EVEX_nd_MASK) != 0)
+    if ((instOptions & INS_OPTS_EVEX_nd) != 0)
     {
         assert(UsePromotedEVEXEncoding());
         assert(IsApxNDDEncodableInstruction(id->idIns()));
@@ -543,7 +543,7 @@ void SetEvexNdIfNeeded(instrDesc* id, insOpts instOptions)
     }
     else
     {
-        assert((instOptions & INS_OPTS_EVEX_nd_MASK) == 0);
+        assert((instOptions & INS_OPTS_EVEX_nd) == 0);
     }
 }
 
@@ -556,7 +556,7 @@ void SetEvexNdIfNeeded(instrDesc* id, insOpts instOptions)
 //
 void SetEvexNfIfNeeded(instrDesc* id, insOpts instOptions)
 {
-    if ((instOptions & INS_OPTS_EVEX_nf_MASK) != 0)
+    if ((instOptions & INS_OPTS_EVEX_nf) != 0)
     {
         assert(UsePromotedEVEXEncoding());
         assert(IsApxNFEncodableInstruction(id->idIns()));
@@ -564,7 +564,7 @@ void SetEvexNfIfNeeded(instrDesc* id, insOpts instOptions)
     }
     else
     {
-        assert((instOptions & INS_OPTS_EVEX_nf_MASK) == 0);
+        assert((instOptions & INS_OPTS_EVEX_nf) == 0);
     }
 }
 
@@ -830,7 +830,7 @@ void emitIns_R_R(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2,
 void emitIns_R_R_I(
     instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, int ival, insOpts instOptions = INS_OPTS_NONE);
 
-void emitIns_AR(instruction ins, emitAttr attr, regNumber base, int offs);
+void emitIns_AR(instruction ins, emitAttr attr, regNumber base, int offs, insOpts instOptions = INS_OPTS_NONE);
 
 void emitIns_AR_R_R(instruction ins,
                     emitAttr    attr,
@@ -1001,7 +1001,7 @@ void emitIns_R_L(instruction ins, emitAttr attr, BasicBlock* dst, regNumber reg)
 
 void emitIns_R_D(instruction ins, emitAttr attr, unsigned offs, regNumber reg);
 
-void emitIns_I_AR(instruction ins, emitAttr attr, int val, regNumber reg, int offs);
+void emitIns_I_AR(instruction ins, emitAttr attr, int val, regNumber reg, int offs, insOpts instOptions = INS_OPTS_NONE);
 
 void emitIns_I_AI(instruction ins, emitAttr attr, int val, ssize_t disp);
 
@@ -1012,7 +1012,7 @@ void emitIns_R_AI(instruction  ins,
                   regNumber    ireg,
                   ssize_t disp DEBUGARG(size_t targetHandle = 0) DEBUGARG(GenTreeFlags gtFlags = GTF_EMPTY));
 
-void emitIns_AR_R(instruction ins, emitAttr attr, regNumber reg, regNumber base, cnsval_ssize_t disp);
+void emitIns_AR_R(instruction ins, emitAttr attr, regNumber reg, regNumber base, cnsval_ssize_t disp, insOpts instOptions = INS_OPTS_NONE);
 
 void emitIns_AI_R(instruction ins, emitAttr attr, regNumber ireg, ssize_t disp);
 
@@ -1033,7 +1033,8 @@ void emitIns_ARX_R(instruction    ins,
                    regNumber      base,
                    regNumber      index,
                    unsigned       scale,
-                   cnsval_ssize_t disp);
+                   cnsval_ssize_t disp,
+                   insOpts instOptions = INS_OPTS_NONE);
 
 void emitIns_I_AX(instruction ins, emitAttr attr, int val, regNumber reg, unsigned mul, int disp);
 
