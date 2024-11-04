@@ -2562,6 +2562,7 @@ public:
         else if ((*use)->OperIs(GT_LCL_VAR) && ((*use)->gtType != TYP_MASK) &&
                  ((*use)->AsLclVarCommon()->GetLclNum() == lclNum) && !user->OperIsConvertVectorToMask())
         {
+#ifdef DEBUG
             if (m_compiler->verbose)
             {
                 JITDUMP("\nRemoveLCLUseConvertVisitor ELSE use\n");
@@ -2569,6 +2570,7 @@ public:
                 JITDUMP("\nRemoveLCLUseConvertVisitor ELSE user\n");
                 m_compiler->gtDispTree(user);
             }
+#endif
 
             // TODO: Fill this in when I hit it
             assert(false);
@@ -2742,13 +2744,24 @@ bool Compiler::fgLCLMasksUpdateLCLStore(Statement* stmt, LCLMasksWeightTable* we
     }
     else
     {
+#ifdef DEBUG
         // TODO: Fill out. Need to add a convertVectorToMask
-        gtDispTree(lclStore);
+        if (verbose)
+        {
+            gtDispTree(lclStore);
+        }
+#endif
         assert(false);
     }
 
+#ifdef DEBUG
     JITDUMP("Updated V%02d to store as mask\n", lclStore->GetLclNum());
-    gtDispTree(lclStore);
+    if (verbose)
+    {
+        gtDispTree(lclStore);
+    }
+#endif
+
     return true;
 }
 
@@ -2795,8 +2808,13 @@ void Compiler::fgLCLMasksUpdateLCLVar(GenTreeLclVarCommon* lclVar,
     GenTree*                    root = stmt->GetRootNode();
     ev.WalkTree(&root, nullptr);
 
+#ifdef DEBUG
     JITDUMP("Updated V%02d to be a mask\n", lclVar->GetLclNum());
-    gtDispTree(lclVar);
+    if (verbose)
+    {
+        gtDispTree(lclVar);
+    }
+#endif
 }
 
 #endif // TARGET_ARM64
