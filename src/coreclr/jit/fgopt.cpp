@@ -5038,7 +5038,7 @@ void Compiler::ThreeOptLayout::Run()
     // For methods without funclet regions, 'numBlocksUpperBound' is exact.
     // Otherwise, it's off by the number of handler blocks.
     BasicBlock* finalBlock;
-    unsigned numBlocksUpperBound = compiler->fgBBcount;
+    unsigned    numBlocksUpperBound = compiler->fgBBcount;
     for (finalBlock = compiler->fgLastBBInMainFunction();
          !finalBlock->IsFirst() && finalBlock->isBBWeightCold(compiler); finalBlock = finalBlock->Prev())
     {
@@ -5057,7 +5057,7 @@ void Compiler::ThreeOptLayout::Run()
     for (BasicBlock* const block : compiler->Blocks(compiler->fgFirstBB, finalBlock))
     {
         assert(numCandidateBlocks < numBlocksUpperBound);
-        ordinals[block->bbNum] = numCandidateBlocks;
+        ordinals[block->bbNum]         = numCandidateBlocks;
         blockOrder[numCandidateBlocks] = tempOrder[numCandidateBlocks] = block;
         numCandidateBlocks++;
 
@@ -5134,6 +5134,12 @@ bool Compiler::ThreeOptLayout::RunThreeOptPass(BasicBlock* startBlock, BasicBloc
     const unsigned numBlocks = (endPos - startPos + 1);
     assert((startPos != 0) || startBlock->IsFirst());
     assert(startPos <= endPos);
+
+    if (numBlocks < 3)
+    {
+        JITDUMP("Not enough blocks to partition anything. Skipping reordering.\n");
+        return false;
+    }
 
     // Initialize cutPoints with candidate branches in this section
     for (unsigned position = startPos; position <= endPos; position++)
