@@ -2792,10 +2792,7 @@ extern "C"
 
     }
 }
-#endif // FEATURE_NATIVEAOT
-
-#endif // HOST_UNIX
-#ifndef FEATURE_NATIVEAOT
+#endif // !defined(HOST_UNIX)
 
 /****************************************************************************/
 /* This is called by the runtime when an exception is thrown */
