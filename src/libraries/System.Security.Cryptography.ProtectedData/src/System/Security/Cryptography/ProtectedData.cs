@@ -76,7 +76,7 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        /// Encrypts the data in a specified byte span and writes  the encrypted data to a byte span.
+        /// Encrypts the data in a specified byte span and writes the encrypted data to a byte span.
         /// </summary>
         /// <param name="userData">A byte span that contains data to encrypt.</param>
         /// <param name="scope">One of the enumeration values that specifies the scope of encryption.</param>
