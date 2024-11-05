@@ -4,7 +4,6 @@ set(MDRUNTIMERW_SOURCES
   metamodelrw.cpp
   peparse.cpp
   rwutil.cpp
-  sha256.cpp
   stgio.cpp
   stgtiggerstorage.cpp
   stgtiggerstream.cpp
@@ -34,22 +33,12 @@ set(MDRUNTIMERW_HEADERS
   ../inc/portablepdbmdds.h
   ../inc/portablepdbmdi.h
   ../inc/rwutil.h
-  ../inc/sha256.h
   ../inc/stgio.h
   ../inc/stgtiggerstorage.h
   ../inc/stgtiggerstream.h
   ../inc/streamutil.h
   ../runtime/mdinternalro.h
 )
-
-if(CLR_CMAKE_TARGET_LINUX)
-  configure_file(
-    ../../../native/libs/System.Security.Cryptography.Native/pal_crypto_config.h.in
-    ${CMAKE_CURRENT_BINARY_DIR}/pal_crypto_config.h)
-  include_directories(../../../native/libs/Common)
-  include_directories(../../../native/libs/System.Security.Cryptography.Native)
-  include_directories(${CMAKE_CURRENT_BINARY_DIR})
-endif(CLR_CMAKE_TARGET_LINUX)
 
 if (CLR_CMAKE_TARGET_WIN32)
   list(APPEND MDRUNTIMERW_SOURCES ${MDRUNTIMERW_HEADERS})
@@ -73,16 +62,3 @@ target_precompile_headers(mdruntimerw-dbi PRIVATE stdafx.h)
 add_library_clr(mdruntimerw_ppdb ${MDRUNTIMERW_SOURCES})
 target_compile_definitions(mdruntimerw_ppdb PRIVATE FEATURE_METADATA_EMIT_ALL FEATURE_METADATA_EMIT_PORTABLE_PDB)
 target_precompile_headers(mdruntimerw_ppdb PRIVATE stdafx.h)
-
-if(CLR_CMAKE_TARGET_LINUX)
-  if(FEATURE_DISTRO_AGNOSTIC_SSL)
-    target_link_libraries(mdruntimerw_wks PRIVATE System.Security.Cryptography.Native.OpenSsl-Static)
-    target_link_libraries(mdruntimerw_ppdb PRIVATE System.Security.Cryptography.Native.OpenSsl-Static)
-  else()
-    find_package(OpenSSL QUIET)
-    if(OPENSSL_FOUND)
-      target_link_libraries(mdruntimerw_wks PRIVATE OpenSSL::SSL OpenSSL::Crypto System.Security.Cryptography.Native.OpenSsl-Static)
-      target_link_libraries(mdruntimerw_ppdb PRIVATE OpenSSL::SSL OpenSSL::Crypto System.Security.Cryptography.Native.OpenSsl-Static)
-    endif(OPENSSL_FOUND)
-  endif(FEATURE_DISTRO_AGNOSTIC_SSL)
-endif(CLR_CMAKE_TARGET_LINUX)

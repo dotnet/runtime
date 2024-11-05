@@ -3,7 +3,6 @@
 
 #include "stdafx.h"
 #include "pdbheap.h"
-#include "sha256.h"
 
 PdbHeap::PdbHeap() : m_data(NULL), m_size(0)
 {
@@ -83,7 +82,7 @@ __checkReturn
 HRESULT PdbHeap::ComputeSha256Checksum(BYTE (&checksum)[32])
 {
     _ASSERTE(m_size >= sizeof(PDB_ID));
-    return Sha256Hash(m_data, m_size, (BYTE*)&checksum, sizeof(checksum));
+    return E_FAIL; // Sha256Hash(m_data, m_size, (BYTE*)&checksum, sizeof(checksum));
 }
 
 __checkReturn

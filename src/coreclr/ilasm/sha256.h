@@ -1,16 +1,18 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 //*****************************************************************************
-// sha256.cpp
+// sha256.h
 //
 
 //
 // contains implementation of sha256 hash algorithm
 //
 //*****************************************************************************
+#ifndef __sha256__h__
+#define __sha256__h__
 
 #ifdef _WIN32
-HRESULT Sha256Hash(BYTE* pSrc, DWORD srcSize, BYTE* pDst, DWORD dstSize)
+inline HRESULT Sha256Hash(BYTE* pSrc, DWORD srcSize, BYTE* pDst, DWORD dstSize)
 {
     NTSTATUS status;
 
@@ -53,7 +55,15 @@ HRESULT Sha256Hash(BYTE* pSrc, DWORD srcSize, BYTE* pDst, DWORD dstSize)
         goto cleanup;
     }
 
-    memcpy(pDst, hash, min(hashLength, dstSize));
+    if (dstSize < hashLength)
+    {
+    	memcpy(pDst, hash, dstSize);
+    }
+    else
+    {
+    	memcpy(pDst, hash, hashLength);
+    }
+
     status = S_OK;
 
 cleanup:
@@ -71,7 +81,7 @@ cleanup:
 #include <CommonCrypto/CommonCrypto.h>
 #include <CommonCrypto/CommonDigest.h>
 
-HRESULT Sha256Hash(BYTE* pSrc, DWORD srcSize, BYTE* pDst, DWORD dstSize)
+inline HRESULT Sha256Hash(BYTE* pSrc, DWORD srcSize, BYTE* pDst, DWORD dstSize)
 {
     BYTE hash[32];
     CC_SHA256(pSrc, (CC_LONG)srcSize, hash);
@@ -93,12 +103,12 @@ extern "C" {
     #include "pal_evp.h"
 }
 
-bool IsOpenSslAvailable()
+inline bool IsOpenSslAvailable()
 {
     return CryptoNative_OpenSslAvailable() != 0;
 }
 
-HRESULT Sha256Hash(BYTE* pSrc, DWORD srcSize, BYTE* pDst, DWORD dstSize)
+inline HRESULT Sha256Hash(BYTE* pSrc, DWORD srcSize, BYTE* pDst, DWORD dstSize)
 {
     if (!IsOpenSslAvailable() || CryptoNative_EnsureOpenSslInitialized())
     {
@@ -113,13 +123,23 @@ HRESULT Sha256Hash(BYTE* pSrc, DWORD srcSize, BYTE* pDst, DWORD dstSize)
         return E_FAIL;
     }
 
-    memcpy(pDst, hash, min(hashLength, dstSize));
+    if (dstSize < hashLength)
+    {
+    	memcpy(pDst, hash, dstSize);
+    }
+    else
+    {
+    	memcpy(pDst, hash, hashLength);
+    }
+
     return S_OK;
 }
 #else
 // Unsupported platform
-HRESULT Sha256Hash(BYTE* pSrc, DWORD srcSize, BYTE* pDst, DWORD dstSize)
+inline HRESULT Sha256Hash(BYTE* pSrc, DWORD srcSize, BYTE* pDst, DWORD dstSize)
 {
     return E_FAIL;
 }
 #endif
+
+#endif // __sha256__h__
