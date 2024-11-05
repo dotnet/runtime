@@ -34,6 +34,7 @@ class ObjectAllocator final : public Phase
     BitVec              m_PossiblyStackPointingPointers;
     BitVec              m_DefinitelyStackPointingPointers;
     LocalToLocalMap     m_HeapLocalToStackLocalMap;
+    LocalToLocalMap     m_EnumeratorLocalToPseduoLocalMap;
     BitSetShortLongRep* m_ConnGraphAdjacencyMatrix;
 
     //===============================================================================
@@ -77,9 +78,21 @@ inline ObjectAllocator::ObjectAllocator(Compiler* comp)
     : Phase(comp, PHASE_ALLOCATE_OBJECTS)
     , m_IsObjectStackAllocationEnabled(false)
     , m_AnalysisDone(false)
-    , m_bitVecTraits(comp->lvaCount, comp)
     , m_HeapLocalToStackLocalMap(comp->getAllocator())
+    , m_EnumeratorLocalToPseudoLocalMap(comp->getAllocator())
 {
+    // Allocate some extra BV space for the "pseudo" vars used to track
+    // conditionally escaping locals under GDV.
+    //
+    unsigned localCount = comp->lvaCount;
+    unsigned pseudoCount = 0;
+    if (comp->hasImpEnumeratorGdvLocalMap())
+    {
+        pseudoCount = comp->getImpEnumeratorGdvLocalMap()->GetCount();
+    }
+
+    m_bitVecTraits = BitVecTraits(localCount + pseudoCount, comp);
+
     m_EscapingPointers                = BitVecOps::UninitVal();
     m_PossiblyStackPointingPointers   = BitVecOps::UninitVal();
     m_DefinitelyStackPointingPointers = BitVecOps::UninitVal();

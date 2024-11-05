@@ -191,6 +191,14 @@ void ObjectAllocator::MarkEscapingVarsAndBuildConnGraph()
         {
             GenTree* const tree   = *use;
             unsigned const lclNum = tree->AsLclVarCommon()->GetLclNum();
+            LclVarDsc* const varDsc = m_compiler->lvaGetDesc(lclNum);
+
+            if (varDsc->lvIsEnumerator)
+            {
+                // Track lcl -> List<(**user, block, read/write)>
+                JITDUMP("Found enumerator V%02u %s at [%06u]\n", lclNum,
+                    tree->OperIsLocalStore() ? "def" : "use", m_compiler->dspTreeID(tree));
+            }
 
             // If this local already escapes, no need to look further.
             //
@@ -208,7 +216,6 @@ void ObjectAllocator::MarkEscapingVarsAndBuildConnGraph()
             else if (tree->OperIs(GT_LCL_VAR) && tree->TypeIs(TYP_REF, TYP_BYREF, TYP_I_IMPL))
             {
                 assert(tree == m_ancestors.Top());
-
                 if (!m_allocator->CanLclVarEscapeViaParentStack(&m_ancestors, lclNum))
                 {
                     lclEscapes = false;
@@ -711,6 +718,7 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
 
     bool keepChecking                  = true;
     bool canLclVarEscapeViaParentStack = true;
+    bool isEnumeratorLocal             = comp->lvaGetDesc(lclNum).lvIsEnumerator;
 
     while (keepChecking)
     {
@@ -788,6 +796,11 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
                 {
                     canLclVarEscapeViaParentStack =
                         !Compiler::s_helperCallProperties.IsNoEscape(comp->eeGetHelperNum(asCall->gtCallMethHnd));
+                }
+
+                if (isEnumeratorLocal)
+                {
+                    JITDUMP("Enumerator V%02u passed to call...\n");
                 }
                 break;
             }
