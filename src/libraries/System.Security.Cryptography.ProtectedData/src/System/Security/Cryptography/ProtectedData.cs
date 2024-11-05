@@ -37,6 +37,22 @@ namespace System.Security.Cryptography
             return outputData;
         }
 
+        /// <summary>
+        /// Encrypts the data in a specified byte span and returns a byte array that contains the encrypted data.
+        /// </summary>
+        /// <param name="userData">A byte span that contains data to encrypt.</param>
+        /// <param name="scope">One of the enumeration values that specifies the scope of encryption.</param>
+        /// <param name="optionalEntropy">
+        /// An optional additional byte span used to increase the complexity of the encryption,
+        /// or empty for no additional complexity.
+        /// </param>
+        /// <returns>A byte array representing the encrypted data.</returns>
+        /// <exception cref="CryptographicException">The encryption failed.</exception>
+        /// <exception cref="NotSupportedException">The operating system does not support this method.</exception>
+        /// <exception cref="OutOfMemoryException">The system ran out of memory while encrypting the data.</exception>
+        /// <exception cref="PlatformNotSupportedException">
+        /// Calls to the Protect method are supported on Windows operating systems only.
+        /// </exception>
         public static byte[] Protect(
             ReadOnlySpan<byte> userData,
             DataProtectionScope scope,
@@ -59,6 +75,30 @@ namespace System.Security.Cryptography
             return outputData;
         }
 
+        /// <summary>
+        /// Encrypts the data in a specified byte span and writes  the encrypted data to a byte span.
+        /// </summary>
+        /// <param name="userData">A byte span that contains data to encrypt.</param>
+        /// <param name="scope">One of the enumeration values that specifies the scope of encryption.</param>
+        /// <param name="destination">The buffer to receive the encrypted data.</param>
+        /// <param name="bytesWritten">
+        /// When this method returns, contains the number of bytes
+        /// written to <paramref name="destination"/>.
+        /// </param>
+        /// <param name="optionalEntropy">
+        /// An optional additional byte span used to increase the complexity of the encryption,
+        /// or empty for no additional complexity.
+        /// </param>
+        /// <returns>true if destination was large enough to receive the decrypted data; otherwise, false.</returns>
+        /// <exception cref="ArgumentException">
+        /// The buffer in <paramref name="destination"/> is too small to hold the encrypted data.
+        /// </exception>
+        /// <exception cref="CryptographicException">The encryption failed.</exception>
+        /// <exception cref="NotSupportedException">The operating system does not support this method.</exception>
+        /// <exception cref="OutOfMemoryException">The system ran out of memory while encrypting the data.</exception>
+        /// <exception cref="PlatformNotSupportedException">
+        /// Calls to the Protect method are supported on Windows operating systems only.
+        /// </exception>
         public static bool TryProtect(
             ReadOnlySpan<byte> userData,
             DataProtectionScope scope,
@@ -80,6 +120,26 @@ namespace System.Security.Cryptography
             );
         }
 
+        /// <summary>
+        /// Encrypts the data in a specified byte span and writes  the encrypted data to a byte span.
+        /// </summary>
+        /// <param name="userData">A byte span that contains data to encrypt.</param>
+        /// <param name="scope">One of the enumeration values that specifies the scope of encryption.</param>
+        /// <param name="destination">The buffer to receive the encrypted data.</param>
+        /// <param name="optionalEntropy">
+        /// An optional additional byte span used to increase the complexity of the encryption,
+        /// or empty for no additional complexity.
+        /// </param>
+        /// <returns>The total number of bytes written to <paramref name="destination"/></returns>
+        /// <exception cref="ArgumentException">
+        /// The buffer in <paramref name="destination"/> is too small to hold the encrypted data.
+        /// </exception>
+        /// <exception cref="CryptographicException">The encryption failed.</exception>
+        /// <exception cref="NotSupportedException">The operating system does not support this method.</exception>
+        /// <exception cref="OutOfMemoryException">The system ran out of memory while encrypting the data.</exception>
+        /// <exception cref="PlatformNotSupportedException">
+        /// Calls to the Protect method are supported on Windows operating systems only.
+        /// </exception>
         public static int Protect(
             ReadOnlySpan<byte> userData,
             DataProtectionScope scope,
@@ -129,6 +189,22 @@ namespace System.Security.Cryptography
             return outputData;
         }
 
+        /// <summary>
+        /// Decrypts the data in a specified byte array and returns a byte array that contains the decrypted.
+        /// </summary>
+        /// <param name="encryptedData">A byte span that contains data to decrypt.</param>
+        /// <param name="scope">One of the enumeration values that specifies the scope of encryption.</param>
+        /// <param name="optionalEntropy">
+        /// An optional additional byte span used to increase the complexity of the encryption,
+        /// or empty for no additional complexity.
+        /// </param>
+        /// <returns>A byte array representing the encrypted data.</returns>
+        /// <exception cref="CryptographicException">The encryption failed.</exception>
+        /// <exception cref="NotSupportedException">The operating system does not support this method.</exception>
+        /// <exception cref="OutOfMemoryException">The system ran out of memory while encrypting the data.</exception>
+        /// <exception cref="PlatformNotSupportedException">
+        /// Calls to the Protect method are supported on Windows operating systems only.
+        /// </exception>
         public static byte[] Unprotect(
             ReadOnlySpan<byte> encryptedData,
             DataProtectionScope scope,
@@ -152,6 +228,30 @@ namespace System.Security.Cryptography
             return outputData;
         }
 
+        /// <summary>
+        /// Decrypts the data in a specified byte array and writes the decrypted data to a byte span.
+        /// </summary>
+        /// <param name="encryptedData">A byte span that contains data to decrypt.</param>
+        /// <param name="scope">One of the enumeration values that specifies the scope of encryption.</param>
+        /// <param name="destination">The buffer to receive the decrypted data.</param>
+        /// <param name="bytesWritten">
+        /// When this method returns, contains the number of bytes
+        /// written to <paramref name="destination"/>.
+        /// </param>
+        /// <param name="optionalEntropy">
+        /// An optional additional byte span used to increase the complexity of the encryption,
+        /// or empty for no additional complexity.
+        /// </param>
+        /// <returns>true if destination was large enough to receive the decrypted data; otherwise, false.</returns>
+        /// <exception cref="ArgumentException">
+        /// The buffer in <paramref name="destination"/> is too small to hold the decrypted data.
+        /// </exception>
+        /// <exception cref="CryptographicException">The encryption failed.</exception>
+        /// <exception cref="NotSupportedException">The operating system does not support this method.</exception>
+        /// <exception cref="OutOfMemoryException">The system ran out of memory while encrypting the data.</exception>
+        /// <exception cref="PlatformNotSupportedException">
+        /// Calls to the Protect method are supported on Windows operating systems only.
+        /// </exception>
         public static bool TryUnprotect(
             ReadOnlySpan<byte> encryptedData,
             DataProtectionScope scope,
@@ -173,6 +273,26 @@ namespace System.Security.Cryptography
             );
         }
 
+        /// <summary>
+        /// Decrypts the data in a specified byte array and writes the decrypted data to a byte span.
+        /// </summary>
+        /// <param name="encryptedData">A byte span that contains data to decrypt.</param>
+        /// <param name="scope">One of the enumeration values that specifies the scope of encryption.</param>
+        /// <param name="destination">The buffer to receive the decrypted data.</param>
+        /// <param name="optionalEntropy">
+        /// An optional additional byte span used to increase the complexity of the encryption,
+        /// or empty for no additional complexity.
+        /// </param>
+        /// <returns>The total number of bytes written to <paramref name="destination"/></returns>
+        /// <exception cref="ArgumentException">
+        /// The buffer in <paramref name="destination"/> is too small to hold the decrypted data.
+        /// </exception>
+        /// <exception cref="CryptographicException">The encryption failed.</exception>
+        /// <exception cref="NotSupportedException">The operating system does not support this method.</exception>
+        /// <exception cref="OutOfMemoryException">The system ran out of memory while encrypting the data.</exception>
+        /// <exception cref="PlatformNotSupportedException">
+        /// Calls to the Protect method are supported on Windows operating systems only.
+        /// </exception>
         public static int Unprotect(
             ReadOnlySpan<byte> encryptedData,
             DataProtectionScope scope,
