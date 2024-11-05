@@ -48,7 +48,7 @@ namespace ILCompiler
                         && comparer.Equals(nsHandle, "System.Runtime.InteropServices"))
                     {
                         var method = (EcmaMethod)_module.GetMethod(ca.Parent);
-                        string name = method.GetUnmanagedCallersOnlyExportName();
+                        string? name = method.GetUnmanagedCallersOnlyExportName();
 
                         if (name == "DllMain")
                             throw new InvalidOperationException("Exporting DllMain from managed code is not supported!");
