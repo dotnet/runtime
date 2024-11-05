@@ -131,7 +131,7 @@ HRESULT Sha256Hash(BYTE* pSrc, DWORD srcSize, BYTE* pDst, DWORD dstSize)
 
     fprintf(stderr, "\n");
 
-    for (int i = 0; i < hashLength; i++)
+    for (DWORD i = 0; i < hashLength; i++)
     {
         fprintf(stderr, "%c", hash[i]);
     }
