@@ -2456,12 +2456,14 @@ public:
             user->OperIsConvertVectorToMask())
         {
             foundConversion = true;
+            convertOp       = user->AsHWIntrinsic();
         }
 
         return fgWalkResult::WALK_CONTINUE;
     }
 
-    bool foundConversion;
+    bool                foundConversion;
+    GenTreeHWIntrinsic* convertOp = nullptr;
 
 private:
     unsigned lclNum;
@@ -2581,7 +2583,7 @@ private:
 // Returns:
 //     True if a converted local store was found.
 //
-bool Compiler::fgLCLMasksCheckLCLStore(Statement* stmt, LCLMasksWeightTable* weightsTable)
+bool Compiler::fgLCLMasksCheckLCLStore(Statement* stmt, BasicBlock* const block, LCLMasksWeightTable* weightsTable)
 {
     // Look for:
     //      STORELCL(TYP_SIMD, ConvertMaskToVector(mask))
@@ -2596,33 +2598,20 @@ bool Compiler::fgLCLMasksCheckLCLStore(Statement* stmt, LCLMasksWeightTable* wei
     GenTreeLclVar* lclStore = tree->AsLclVar();
 
     LCLMasksWeight weight;
-    bool           found  = weightsTable->Lookup(lclStore->GetLclNum(), &weight);
+    bool           found = weightsTable->Lookup(lclStore->GetLclNum(), &weight);
 
-    // Check if the store is converted from mask
+    // Check if the store is converted from mask.
     bool isConverted = lclStore->Data()->OperIsConvertMaskToVector();
+
+    // Update the weights.
+    JITDUMP("Local Store V%02d at [%06u] has %s conversion. ", lclStore->GetLclNum(), dspTreeID(lclStore),
+            isConverted ? "mask" : "no");
+    weight.UpdateStoreWeight(isConverted, block->getBBWeight(this));
+
     if (isConverted)
     {
-        weight.storeWeight++;
-        JITDUMP("Local Store V%02d at [%06u] is converted from mask. Incrementing store weight to %f\n",
-                lclStore->GetLclNum(), dspTreeID(lclStore), weight.storeWeight);
-
-        // Cache the simd type data. If it has already been cached then the types should match.
-
-        GenTreeHWIntrinsic* convertOp       = lclStore->Data()->AsHWIntrinsic();
-        CorInfoType         simdBaseJitType = convertOp->Op(1)->AsHWIntrinsic()->GetSimdBaseJitType();
-        unsigned            simdSize        = convertOp->Op(1)->AsHWIntrinsic()->GetSimdSize();
-
-        assert((weight.simdBaseJitType == CORINFO_TYPE_UNDEF) && (weight.simdSize == 0) ||
-               (weight.simdBaseJitType == simdBaseJitType) && (weight.simdSize == simdSize));
-
-        weight.simdBaseJitType = simdBaseJitType;
-        weight.simdSize        = simdSize;
-    }
-    else
-    {
-        weight.storeWeight--;
-        JITDUMP("Local Store V%02d at [%06u] has no conversion. Decrementing store weight to %f\n",
-                lclStore->GetLclNum(), dspTreeID(lclStore), weight.storeWeight);
+        // Cache the simd type data of the convert.
+        weight.CacheSimdTypes(lclStore->Data()->AsHWIntrinsic());
     }
 
     // Update the table.
@@ -2637,11 +2626,13 @@ bool Compiler::fgLCLMasksCheckLCLStore(Statement* stmt, LCLMasksWeightTable* wei
 //
 // Arguments:
 //     lclVar - The local variable.
-//     stmt - The statement the local vairable is contained in.
+//     stmt - The statement the local variable is contained in.
+//     stmt - The block the local variable is contained in.
 //     weightsTable - table to update.
 //
 void Compiler::fgLCLMasksCheckLCLVar(GenTreeLclVarCommon* lclVar,
                                      Statement* const     stmt,
+                                     BasicBlock* const    block,
                                      LCLMasksWeightTable* weightsTable)
 {
     if (!lclVar->OperIs(GT_LCL_VAR))
@@ -2650,7 +2641,7 @@ void Compiler::fgLCLMasksCheckLCLVar(GenTreeLclVarCommon* lclVar,
     }
 
     LCLMasksWeight weight;
-    bool           found  = weightsTable->Lookup(lclVar->GetLclNum(), &weight);
+    bool           found = weightsTable->Lookup(lclVar->GetLclNum(), &weight);
 
     // If there no entry, then the var does not have a local store.
     if (!found)
@@ -2664,17 +2655,16 @@ void Compiler::fgLCLMasksCheckLCLVar(GenTreeLclVarCommon* lclVar,
     GenTree*                   root = stmt->GetRootNode();
     ev.WalkTree(&root, nullptr);
 
+    // Update the weights.
+    JITDUMP("Local Var V%02d at [%06u] has %s conversion. ", lclVar->GetLclNum(), dspTreeID(lclVar),
+            ev.foundConversion ? "mask" : "no");
+    weight.UpdateVarWeight(ev.foundConversion, block->getBBWeight(this));
+
     if (ev.foundConversion)
     {
-        weight.varWeight++;
-        JITDUMP("Local Var V%02d at [%06u] is converted to mask. Incrementing var weight to %f\n", lclVar->GetLclNum(),
-                dspTreeID(lclVar), weight.varWeight);
-    }
-    else
-    {
-        weight.varWeight--;
-        JITDUMP("Local Var V%02d at [%06u] has no conversion. Decrementing var weight to %f\n", lclVar->GetLclNum(),
-                dspTreeID(lclVar), weight.varWeight);
+        // Cache the simd type data of the convert.
+        assert(ev.convertOp != nullptr);
+        weight.CacheSimdTypes(ev.convertOp);
     }
 
     // Update the table.
@@ -2707,18 +2697,18 @@ bool Compiler::fgLCLMasksUpdateLCLStore(Statement* stmt, LCLMasksWeightTable* we
     GenTreeLclVar* lclStore = tree->AsLclVar();
 
     LCLMasksWeight weight;
-    bool           found  = weightsTable->Lookup(lclStore->GetLclNum(), &weight);
+    bool           found = weightsTable->Lookup(lclStore->GetLclNum(), &weight);
     assert(found);
 
-    if (!weight.MaskConversionsDominate())
+    if (weight.GetTotalWeight() <= 0.0)
     {
-        JITDUMP("Local Store V%02d at [%06u] will not be converted. Weighting {%f, %f}\n", lclStore->GetLclNum(),
-                dspTreeID(lclStore), weight.storeWeight, weight.varWeight);
+        JITDUMP("Local Store V%02d at [%06u] will not be converted. ", lclStore->GetLclNum(), dspTreeID(lclStore));
+        weight.DumpTotalWeight();
         return false;
     }
 
-    JITDUMP("Local Store V%02d at [%06u] will be converted. Weighting {%f, %f}\n", lclStore->GetLclNum(),
-            dspTreeID(lclStore), weight.storeWeight, weight.varWeight);
+    JITDUMP("Local Store V%02d at [%06u] will be converted. ", lclStore->GetLclNum(), dspTreeID(lclStore));
+    weight.DumpTotalWeight();
 
     // Update the type of the STORELCL - including the lclvar.
     lclStore->gtType  = TYP_MASK;
@@ -2779,7 +2769,7 @@ void Compiler::fgLCLMasksUpdateLCLVar(GenTreeLclVarCommon* lclVar,
     }
 
     LCLMasksWeight weight;
-    bool           found  = weightsTable->Lookup(lclVar->GetLclNum(), &weight);
+    bool           found = weightsTable->Lookup(lclVar->GetLclNum(), &weight);
 
     // If there no entry, then the var does not have a local store.
     if (!found)
@@ -2788,15 +2778,15 @@ void Compiler::fgLCLMasksUpdateLCLVar(GenTreeLclVarCommon* lclVar,
         return;
     }
 
-    if (!weight.MaskConversionsDominate())
+    if (weight.GetTotalWeight() <= 0.0)
     {
-        JITDUMP("Local Var V%02d at [%06u] will not be converted. Weighting {%f, %f}\n", lclVar->GetLclNum(),
-                dspTreeID(lclVar), weight.storeWeight, weight.varWeight);
+        JITDUMP("Local Var V%02d at [%06u] will not be converted. ", lclVar->GetLclNum(), dspTreeID(lclVar));
+        weight.DumpTotalWeight();
         return;
     }
 
-    JITDUMP("Local Var V%02d at [%06u] will be converted. Weighting {%f, %f}\n", lclVar->GetLclNum(), dspTreeID(lclVar),
-            weight.storeWeight, weight.varWeight);
+    JITDUMP("Local Var V%02d at [%06u] will be converted. ", lclVar->GetLclNum(), dspTreeID(lclVar));
+    weight.DumpTotalWeight();
 
     // Remove or add a mask conversion/
     LCLMasksUpdateLCLVarVisitor ev(this, lclVar->GetLclNum(), stmt, weight.simdBaseJitType, weight.simdSize);
@@ -2830,16 +2820,15 @@ void Compiler::fgLCLMasksUpdateLCLVar(GenTreeLclVarCommon* lclVar,
 //
 // To account for this, this pass uses a weighting. For each variable, count the count the
 // number of definitions with a convert from mask minus the number of definitions without a
-// convert. Then do the same for each use. If both totals for a variable are positive, then
-// convert every definition and use to use a mask instead of a vector.
+// convert. Then do the same for each use. To account for looping, each count is multiplied
+// by the weight of it's basic basic. In addition, each count is multiplied by the number of
+// instructions required for the conversion. If the totals for both definitions and uses are
+// positive, then convert all definintions and uses.
 //
-// This weighting does not account for:
-// * Loops. Uses/definitions inside a loop will account for more real weight than any outside
-// a loop. This is not expected to be an issue as in most cases when using loops, a variable
-// will be set once outside a loop then used/defined multiple times inside a loop.
-// * Re-definition. A variable may first be created as a mask used as such, then much later in
-// the method defined as a vector and used as such from then on. This can be worked around at
-// the user level by encouraging users not to reuse variable names.
+// This weighting does not account for re-definition. A variable may first be created as a
+// mask used as such, then much later in the method defined as a vector and used as such from
+// then on. This can be worked around at the user level by encouraging users not to reuse
+// variable names.
 //
 // It is assumed that the simple weighting will be good enough for almost all use cases.
 //
@@ -2871,7 +2860,7 @@ PhaseStatus Compiler::fgOptimizeLCLMasks()
     {
         for (Statement* const stmt : block->Statements())
         {
-            foundConvertingStore |= fgLCLMasksCheckLCLStore(stmt, &weightsTable);
+            foundConvertingStore |= fgLCLMasksCheckLCLStore(stmt, block, &weightsTable);
         }
     }
 
@@ -2889,7 +2878,7 @@ PhaseStatus Compiler::fgOptimizeLCLMasks()
         {
             for (GenTreeLclVarCommon* lcl : stmt->LocalsTreeList())
             {
-                fgLCLMasksCheckLCLVar(lcl, stmt, &weightsTable);
+                fgLCLMasksCheckLCLVar(lcl, stmt, block, &weightsTable);
             }
         }
     }

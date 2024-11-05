@@ -6936,16 +6936,55 @@ private:
         CorInfoType simdBaseJitType = CORINFO_TYPE_UNDEF;
         unsigned    simdSize = 0;
 
-        bool MaskConversionsDominate()
+        void UpdateStoreWeight(bool increment, weight_t blockWeight)
         {
-            return ((storeWeight > 0.0) && (varWeight > 0.0));
+            weight_t incVal = increment ? blockWeight : -blockWeight;
+            storeWeight += incVal;
+            JITDUMP("Incrementing store weight by %f. ", incVal);
+            DumpTotalWeight();
+        }
+
+        void UpdateVarWeight(bool increment, weight_t blockWeight)
+        {
+            weight_t incVal = increment ? blockWeight : -blockWeight;
+            varWeight += incVal;
+            JITDUMP("Incrementing var weight by %f. ", incVal);
+            DumpTotalWeight();
+        }
+
+        weight_t GetTotalWeight()
+        {
+            // Conversion of mask to vector is one instruction.
+            const weight_t costOfStoreWeight = 1.0;
+
+            // Conversion of vector to mask is two instructions.
+            const weight_t costOfVarWeight = 2.0;
+
+            return ((costOfStoreWeight * storeWeight) + (costOfVarWeight * varWeight));
+        }
+
+        void DumpTotalWeight()
+        {
+            JITDUMP("Weighting: %f {%fs, %fv}\n", GetTotalWeight(), storeWeight, varWeight);
+        }
+
+        void CacheSimdTypes(GenTreeHWIntrinsic* op)
+        {
+            CorInfoType newSimdBaseJitType = op->GetSimdBaseJitType();
+            unsigned newSimdSize = op->GetSimdSize();
+
+            assert((simdBaseJitType == CORINFO_TYPE_UNDEF) && (simdSize == 0) ||
+                   (simdBaseJitType == newSimdBaseJitType) && (simdSize == newSimdSize));
+
+            simdBaseJitType = newSimdBaseJitType;
+            simdSize        = newSimdSize;
         }
     };
 
     typedef JitHashTable<unsigned, JitLargePrimitiveKeyFuncs<unsigned>, LCLMasksWeight> LCLMasksWeightTable;
 
-    bool fgLCLMasksCheckLCLStore(Statement* stmt, LCLMasksWeightTable *weightsTable);
-    void fgLCLMasksCheckLCLVar(GenTreeLclVarCommon* lclVar, Statement* const stmt, LCLMasksWeightTable *weightsTable);
+    bool fgLCLMasksCheckLCLStore(Statement* stmt, BasicBlock* const block, LCLMasksWeightTable *weightsTable);
+    void fgLCLMasksCheckLCLVar(GenTreeLclVarCommon* lclVar, Statement* const stmt, BasicBlock* const block, LCLMasksWeightTable *weightsTable);
     bool fgLCLMasksUpdateLCLStore(Statement* stmt, LCLMasksWeightTable* weightsTable);
     void fgLCLMasksUpdateLCLVar(GenTreeLclVarCommon* lclVar, Statement* const stmt, LCLMasksWeightTable *weightsTable);
 #endif // TARGET_ARM64
