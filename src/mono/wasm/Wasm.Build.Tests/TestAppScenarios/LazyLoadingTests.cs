@@ -41,7 +41,7 @@ public class LazyLoadingTests : WasmTemplateTestsBase
                 ExpectedFileType: GetExpectedFileType(info, isPublish: isPublish),
                 IsPublish: isPublish
             ),
-            extraArgs: $"-p:LazyLoadingTestExtension={lazyLoadingTestExtension}"
+            extraArgs: $"-p:LazyLoadingTestExtension={lazyLoadingTestExtension} -p:TestLazyLoading=true"
         );
 
         // We are running the app and passing all possible lazy extensions to test matrix of all possibilities.
@@ -72,7 +72,9 @@ public class LazyLoadingTests : WasmTemplateTestsBase
                 BinFrameworkDir: GetBinFrameworkDir(info.Configuration, isPublish),
                 ExpectedFileType: GetExpectedFileType(info, isPublish: isPublish),
                 IsPublish: isPublish
-        ));
+            ),
+            extraArgs: $"-p:TestLazyLoading=true"
+        );
         RunOptions options = new(
             info.Configuration,
             TestScenario: "LazyLoadingTest",

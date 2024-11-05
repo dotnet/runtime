@@ -123,12 +123,6 @@ public class WasmTemplateTestsBase : BuildTestBase
         // TODO: reenable this when the SDK supports targetting net10.0
         //buildOptions.ExtraBuildEnvironmentVariables["TreatPreviousAsCurrent"] = "false";
 
-        if (buildOptions.IsPublish && projectInfo.AOT)
-        {
-            // avoid https://github.com/dotnet/runtime/issues/92238
-            extraArgs = extraArgs.Concat(new string[] { "-p:WasmStripILAfterAOT=false" }).ToArray();
-        }
-
         (CommandResult res, string logFilePath) = BuildProjectWithoutAssert(buildOptions, extraArgs);
 
         if (buildOptions.UseCache)
