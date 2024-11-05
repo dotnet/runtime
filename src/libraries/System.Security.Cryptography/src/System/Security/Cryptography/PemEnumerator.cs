@@ -31,7 +31,7 @@ namespace System.Security.Cryptography
 
         public Enumerator GetEnumerator() => new Enumerator(_contents, _tryFindFunc);
 
-        public ref struct Enumerator
+        internal ref struct Enumerator
         {
             private ReadOnlySpan<TChar> _contents;
             private PemFields _pemFields;
