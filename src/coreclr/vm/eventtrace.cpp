@@ -2328,6 +2328,13 @@ enum CallbackProviderIndex
     DotNETRuntimePrivate = 3
 };
 
+enum SessionChange
+{
+    EventPipeSessionDisable = 0,
+    EventPipeSessionEnable = 1,
+    EtwSessionChangeUnknown = 2
+};
+
 #if !defined(HOST_UNIX)
 // EventFilterType identifies the filter type used by the PEVENT_FILTER_DESCRIPTOR
 enum EventFilterType
@@ -2400,7 +2407,8 @@ VOID EtwCallbackCommon(
     UCHAR Level,
     ULONGLONG MatchAnyKeyword,
     PVOID pFilterData,
-    BOOL isEventPipeCallback)
+    BOOL isEventPipeCallback,
+    SessionChange change)
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -2466,10 +2474,25 @@ VOID EtwCallbackCommon(
         GCHeapUtilities::RecordEventStateChange(bIsPublicTraceHandle, keywords, level);
     }
 
-    // Special check for the runtime provider's ManagedHeapCollectKeyword.  Profilers
-    // flick this to force a full GC.
-    if (g_fEEStarted && !g_fEEShutDown && bIsPublicTraceHandle &&
-        ((MatchAnyKeyword & CLR_MANAGEDHEAPCOLLECT_KEYWORD) != 0))
+    // Special check for a profiler requested GC.
+    // A full GC will be forced if:
+    // 1. The runtime has started and is not shutting down.
+    // 2. The public provider is requesting GC.
+    // 3. The provider's ManagedHeapCollectKeyword is enabled.
+    // 4. If it is an ETW provider, the control code is to enable or capture the state of the provider.
+    // 5. If it is an EventPipe provider, the session is not being disabled.
+    bool bValidGCRequest =
+        g_fEEStarted && !g_fEEShutDown &&
+        bIsPublicTraceHandle &&
+        ((MatchAnyKeyword & CLR_MANAGEDHEAPCOLLECT_KEYWORD) != 0) &&
+#if !defined(HOST_UNIX)
+        ((ControlCode == EVENT_CONTROL_CODE_ENABLE_PROVIDER) ||
+         (ControlCode == EVENT_CONTROL_CODE_CAPTURE_STATE)) &&
+#endif // !defined(HOST_UNIX)
+        ((Change == EtwSessionChangeUnknown) ||
+         (Change == EventPipeSessionEnable));
+
+    if (bValidGCRequest)
     {
         // Profilers may (optionally) specify extra data in the filter parameter
         // to log with the GCStart event.
@@ -2506,7 +2529,9 @@ VOID EventPipeEtwCallbackDotNETRuntimeStress(
 {
     LIMITED_METHOD_CONTRACT;
 
-    EtwCallbackCommon(DotNETRuntimeStress, ControlCode, Level, MatchAnyKeyword, FilterData, true);
+    SessionChange change = SourceId == NULL ? EventPipeSessionDisable : EventPipeSessionEnable;
+
+    EtwCallbackCommon(DotNETRuntimeStress, ControlCode, Level, MatchAnyKeyword, FilterData, true, change);
 }
 
 VOID EventPipeEtwCallbackDotNETRuntime(
@@ -2520,7 +2545,9 @@ VOID EventPipeEtwCallbackDotNETRuntime(
 {
     LIMITED_METHOD_CONTRACT;
 
-    EtwCallbackCommon(DotNETRuntime, ControlCode, Level, MatchAnyKeyword, FilterData, true);
+    SessionChange change = SourceId == NULL ? EventPipeSessionDisable : EventPipeSessionEnable;
+
+    EtwCallbackCommon(DotNETRuntime, ControlCode, Level, MatchAnyKeyword, FilterData, true, change);
 }
 
 VOID EventPipeEtwCallbackDotNETRuntimeRundown(
@@ -2534,7 +2561,9 @@ VOID EventPipeEtwCallbackDotNETRuntimeRundown(
 {
     LIMITED_METHOD_CONTRACT;
 
-    EtwCallbackCommon(DotNETRuntimeRundown, ControlCode, Level, MatchAnyKeyword, FilterData, true);
+    SessionChange change = SourceId == NULL ? EventPipeSessionDisable : EventPipeSessionEnable;
+
+    EtwCallbackCommon(DotNETRuntimeRundown, ControlCode, Level, MatchAnyKeyword, FilterData, true, change);
 }
 
 VOID EventPipeEtwCallbackDotNETRuntimePrivate(
@@ -2548,7 +2577,9 @@ VOID EventPipeEtwCallbackDotNETRuntimePrivate(
 {
     WRAPPER_NO_CONTRACT;
 
-    EtwCallbackCommon(DotNETRuntimePrivate, ControlCode, Level, MatchAnyKeyword, FilterData, true);
+    SessionChange change = SourceId == NULL ? EventPipeSessionDisable : EventPipeSessionEnable;
+
+    EtwCallbackCommon(DotNETRuntimePrivate, ControlCode, Level, MatchAnyKeyword, FilterData, true, change);
 }
 
 
@@ -2704,7 +2735,7 @@ extern "C"
             return;
         }
 
-        EtwCallbackCommon(providerIndex, ControlCode, Level, MatchAnyKeyword, FilterData, false);
+        EtwCallbackCommon(providerIndex, ControlCode, Level, MatchAnyKeyword, FilterData, false, SessionChange.EtwSessionChangeUnknown);
 
         // A manifest based provider can be enabled to multiple event tracing sessions
         // As long as there is atleast 1 enabled session, IsEnabled will be TRUE
