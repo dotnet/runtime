@@ -137,7 +137,11 @@ namespace ILCompiler
                 if ((flags & Evex) != 0)
                     builder.AddSupportedInstructionSet("evex");
                 if ((flags & Vpclmulqdq) != 0)
-                    builder.AddSupportedInstructionSet("vpclmulqdq");
+                {
+                    builder.AddSupportedInstructionSet("vpclmul");
+                    if ((flags & Avx512) != 0)
+                        builder.AddSupportedInstructionSet("vpclmul_v512");
+                }
             }
 
             public static int FromInstructionSet(InstructionSet instructionSet)
@@ -203,7 +207,7 @@ namespace ILCompiler
                     InstructionSet.X64_EVEX => Evex,
                     InstructionSet.X64_EVEX_X64 => Evex,
                     InstructionSet.X64_VPCLMULQDQ => Vpclmulqdq,
-                    InstructionSet.X64_VPCLMULQDQ_V512 => Vpclmulqdq,
+                    InstructionSet.X64_VPCLMULQDQ_V512 => (Vpclmulqdq | Avx512),
 
                     // Baseline ISAs - they're always available
                     InstructionSet.X64_SSE => 0,

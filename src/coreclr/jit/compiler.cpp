@@ -2262,11 +2262,6 @@ void Compiler::compSetProcessor()
 
                 preferredVectorByteLength = 256 / 8;
             }
-
-            if (instructionSetFlags.HasInstructionSet(InstructionSet_VPCLMULQDQ))
-            {
-                instructionSetFlags.AddInstructionSet(InstructionSet_VPCLMULQDQ_V512);
-            }
         }
         else
         {
@@ -6179,6 +6174,7 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
         if (JitConfig.EnableVPCLMULQDQ() != 0)
         {
             instructionSetFlags.AddInstructionSet(InstructionSet_VPCLMULQDQ);
+            instructionSetFlags.AddInstructionSet(InstructionSet_VPCLMULQDQ_V512);
         }
 
         if (JitConfig.EnablePOPCNT() != 0)
