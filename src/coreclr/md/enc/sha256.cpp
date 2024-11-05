@@ -73,24 +73,8 @@ cleanup:
 
 HRESULT Sha256Hash(BYTE* pSrc, DWORD srcSize, BYTE* pDst, DWORD dstSize)
 {
-    CC_SHA256_CTX ctx = {{ 0 }};
-
-    if (!CC_SHA256_Init(&ctx))
-    {
-        return E_FAIL;
-    }
-
-    if (!CC_SHA256_Update(&ctx, pSrc, srcSize))
-    {
-        return E_FAIL;
-    }
-
-    BYTE hash[CC_SHA256_DIGEST_LENGTH];
-
-    if (!CC_SHA256_Final(hash, &ctx))
-    {
-        return E_FAIL;
-    }
+    BYTE hash[32];
+    CC_SHA256(pSrc, (CC_LONG)srcSize, hash);
 
     if (dstSize < CC_SHA256_DIGEST_LENGTH)
     {
