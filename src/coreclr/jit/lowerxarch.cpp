@@ -357,62 +357,10 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
 
         if (size <= comp->getUnrollThreshold(Compiler::UnrollKind::Memset))
         {
-            if (!src->OperIs(GT_CNS_INT))
-            {
-                // TODO-CQ: We could unroll even when the initialization value is not a constant
-                // by inserting a MUL init, 0x01010101 instruction. We need to determine if the
-                // extra latency that MUL introduces isn't worse that rep stosb. Likely not.
-                blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindRepInstr;
-            }
-            else
-            {
-                // The fill value of an initblk is interpreted to hold a
-                // value of (unsigned int8) however a constant of any size
-                // may practically reside on the evaluation stack. So extract
-                // the lower byte out of the initVal constant and replicate
-                // it to a larger constant whose size is sufficient to support
-                // the largest width store of the desired inline expansion.
-
-                ssize_t fill = src->AsIntCon()->IconValue() & 0xFF;
-
-                const bool canUseSimd = !blkNode->IsOnHeapAndContainsReferences() && comp->IsBaselineSimdIsaSupported();
-                if (size > comp->getUnrollThreshold(Compiler::UnrollKind::Memset, canUseSimd))
-                {
-                    // It turns out we can't use SIMD so the default threshold is too big
-                    goto TOO_BIG_TO_UNROLL;
-                }
-                if (canUseSimd && (size >= XMM_REGSIZE_BYTES))
-                {
-                    // We're going to use SIMD (and only SIMD - we don't want to occupy a GPR register
-                    // with a fill value just to handle the remainder when we can do that with
-                    // an overlapped SIMD load).
-                    src->SetContained();
-                }
-                else if (fill == 0)
-                {
-                    // Leave as is - zero shouldn't be contained when we don't use SIMD.
-                }
-#ifdef TARGET_AMD64
-                else if (size >= REGSIZE_BYTES)
-                {
-                    fill *= 0x0101010101010101LL;
-                    src->gtType = TYP_LONG;
-                }
-#endif
-                else
-                {
-                    fill *= 0x01010101;
-                }
-
-                blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindUnroll;
-                src->AsIntCon()->SetIconValue(fill);
-
-                ContainBlockStoreAddress(blkNode, size, dstAddr, nullptr);
-            }
+            blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindRepInstr;
         }
         else
         {
-        TOO_BIG_TO_UNROLL:
             if (blkNode->IsZeroingGcPointersOnHeap())
             {
                 blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindLoop;
