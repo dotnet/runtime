@@ -9,12 +9,7 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
 {
     public class DryIocDependencyInjectionSpecificationTests : SkippableDependencyInjectionSpecificationTests
     {
-        public override bool SupportsIServiceProviderIsService => false;
-
-        public override string[] SkippedTests => new[]
-        {
-            "ServiceScopeFactoryIsSingleton"
-        };
+        public override string[] SkippedTests => [];
 
         protected override IServiceProvider CreateServiceProviderImpl(IServiceCollection serviceCollection)
         {

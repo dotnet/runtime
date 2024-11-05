@@ -550,6 +550,7 @@ namespace System.Runtime
 #if NATIVEAOT
         [RuntimeExport("RhThrowHwEx")]
 #endif
+        [StackTraceHidden]
         public static void RhThrowHwEx(uint exceptionCode, ref ExInfo exInfo)
         {
 #if NATIVEAOT
@@ -624,6 +625,7 @@ namespace System.Runtime
 #if NATIVEAOT
         [RuntimeExport("RhThrowEx")]
 #endif
+        [StackTraceHidden]
         public static void RhThrowEx(object exceptionObj, ref ExInfo exInfo)
         {
 #if NATIVEAOT
@@ -705,6 +707,7 @@ namespace System.Runtime
 #if NATIVEAOT
         [RuntimeExport("RhRethrow")]
 #endif
+        [StackTraceHidden]
         public static void RhRethrow(ref ExInfo activeExInfo, ref ExInfo exInfo)
         {
 #if NATIVEAOT
@@ -722,6 +725,7 @@ namespace System.Runtime
             FallbackFailFast(RhFailFastReason.InternalError, null);
         }
 
+        [StackTraceHidden]
         private static void DispatchEx(scoped ref StackFrameIterator frameIter, ref ExInfo exInfo)
         {
             Debug.Assert(exInfo._passNumber == 1, "expected asm throw routine to set the pass");
@@ -977,6 +981,7 @@ namespace System.Runtime
             prevFramePtr = curFramePtr;
         }
 
+        [StackTraceHidden]
         private static bool FindFirstPassHandler(object exception, uint idxStart,
             ref StackFrameIterator frameIter, out uint tryRegionIdx, out byte* pHandler)
         {
@@ -1134,6 +1139,7 @@ namespace System.Runtime
         {
             InvokeSecondPass(ref exInfo, idxStart, MaxTryRegionIdx);
         }
+
         private static void InvokeSecondPass(ref ExInfo exInfo, uint idxStart, uint idxLimit)
         {
             EHEnum ehEnum;

@@ -12,11 +12,6 @@
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Microsoft.Build" Version="$(MicrosoftBuildVersion)" />
-    <PackageReference Include="Microsoft.Build.Tasks.Core" Version="$(MicrosoftBuildTasksCoreVersion)" />
-    <PackageReference Include="System.Reflection.Metadata" Version="$(SystemReflectionMetadataToolsetVersion)" />
-  </ItemGroup>
-  <ItemGroup>
     <Compile Include="MonoAOTCompiler.cs" />
     <Compile Include="..\Common\CompilerCache.cs" />
     <Compile Include="..\Common\ProxyFile.cs" />

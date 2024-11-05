@@ -32,6 +32,7 @@ msbuild.log
 msbuild.err
 msbuild.wrn
 *.binlog
+*.pp
 .deps/
 .dirstamp
 .libs/
