@@ -204,7 +204,7 @@ namespace System.Security.Cryptography
         /// <returns>A byte array representing the encrypted data.</returns>
         /// <exception cref="CryptographicException">The encryption failed.</exception>
         /// <exception cref="NotSupportedException">The operating system does not support this method.</exception>
-        /// <exception cref="OutOfMemoryException">The system ran out of memory while encrypting the data.</exception>
+        /// <exception cref="OutOfMemoryException">The system ran out of memory while decrypting the data.</exception>
         /// <exception cref="PlatformNotSupportedException">
         /// Calls to the Protect method are supported on Windows operating systems only.
         /// </exception>
