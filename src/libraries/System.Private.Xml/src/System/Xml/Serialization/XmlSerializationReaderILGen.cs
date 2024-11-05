@@ -1756,11 +1756,13 @@ namespace System.Xml.Serialization
         }
 
         [RequiresUnreferencedCode("XmlSerializationReader methods have RequiresUnreferencedCode")]
+        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         private void WriteXmlNodeEqual(string source, string name, string? ns)
         {
             WriteXmlNodeEqual(source, name, ns, true);
         }
         [RequiresUnreferencedCode("XmlSerializationReader methods have RequiresUnreferencedCode")]
+        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         private void WriteXmlNodeEqual(string source, string name, string? ns, bool doAndIf)
         {
             bool isNameNullOrEmpty = string.IsNullOrEmpty(name);

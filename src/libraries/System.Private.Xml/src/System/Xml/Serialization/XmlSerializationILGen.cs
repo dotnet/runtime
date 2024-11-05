@@ -271,6 +271,7 @@ namespace System.Xml.Serialization
         }
 
         [RequiresUnreferencedCode("Uses CreatedTypes Dictionary")]
+        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         internal string GenerateBaseSerializer(string baseSerializer, string readerClass, string writerClass, CodeIdentifiers classes)
         {
             baseSerializer = CodeIdentifier.MakeValid(baseSerializer);

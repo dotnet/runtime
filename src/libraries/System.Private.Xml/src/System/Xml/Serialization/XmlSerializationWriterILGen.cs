@@ -23,6 +23,7 @@ namespace System.Xml.Serialization
         }
 
         [RequiresUnreferencedCode("calls WriteReflectionInit")]
+        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         internal void GenerateBegin()
         {
             this.typeBuilder = CodeGenerator.CreateTypeBuilder(
@@ -149,6 +150,7 @@ namespace System.Xml.Serialization
         }
 
         [RequiresUnreferencedCode("calls Load")]
+        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         private void WritePrimitiveValue(TypeDesc typeDesc, SourceInfo source, out Type returnType)
         {
             if (typeDesc == StringTypeDesc || typeDesc.FormatterName == "String")
@@ -198,6 +200,7 @@ namespace System.Xml.Serialization
         }
 
         [RequiresUnreferencedCode("Calls WriteCheckDefault")]
+        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         private void WritePrimitive(string method, string name, string? ns, object? defaultValue, SourceInfo source, TypeMapping mapping, bool writeXsiType, bool isElement, bool isNullable)
         {
             TypeDesc typeDesc = mapping.TypeDesc!;
@@ -285,6 +288,7 @@ namespace System.Xml.Serialization
         }
 
         [RequiresUnreferencedCode("XmlSerializationWriter methods have RequiresUnreferencedCode")]
+        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         private void WriteTag(string methodName, string name, string? ns)
         {
             MethodInfo XmlSerializationWriter_Method = typeof(XmlSerializationWriter).GetMethod(
@@ -299,6 +303,7 @@ namespace System.Xml.Serialization
         }
 
         [RequiresUnreferencedCode("XmlSerializationWriter methods have RequiresUnreferencedCode")]
+        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         private void WriteTag(string methodName, string name, string? ns, bool writePrefixed)
         {
             MethodInfo XmlSerializationWriter_Method = typeof(XmlSerializationWriter).GetMethod(
@@ -315,6 +320,7 @@ namespace System.Xml.Serialization
         }
 
         [RequiresUnreferencedCode("calls WriteTag")]
+        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         private void WriteStartElement(string name, string? ns, bool writePrefixed)
         {
             WriteTag("WriteStartElement", name, ns, writePrefixed);
@@ -345,12 +351,14 @@ namespace System.Xml.Serialization
         }
 
         [RequiresUnreferencedCode("calls WriteTag")]
+        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         private void WriteLiteralNullTag(string name, string? ns)
         {
             WriteTag("WriteNullTagLiteral", name, ns);
         }
 
         [RequiresUnreferencedCode("calls WriteTag")]
+        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         private void WriteEmptyTag(string name, string? ns)
         {
             WriteTag("WriteEmptyTag", name, ns);
@@ -1379,6 +1387,7 @@ namespace System.Xml.Serialization
         }
 
         [RequiresUnreferencedCode("calls WritePrimitive")]
+        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         private void WriteAttribute(SourceInfo source, AttributeAccessor attribute, string parent)
         {
             if (attribute.Mapping is SpecialMapping special)
@@ -1881,6 +1890,7 @@ namespace System.Xml.Serialization
         }
 
         [RequiresUnreferencedCode("calls Load")]
+        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         private void WriteText(SourceInfo source, TextAccessor text)
         {
             if (text.Mapping is PrimitiveMapping primitiveMapping)
@@ -2099,6 +2109,7 @@ namespace System.Xml.Serialization
         }
 
         [RequiresUnreferencedCode("XmlSerializationWriter methods have RequiresUnreferencedCode")]
+        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         private void WriteElementCall(string func, Type cast, SourceInfo source, string? name, string? ns, bool isNullable, bool isAny)
         {
             MethodInfo XmlSerializationWriter_func = typeof(XmlSerializationWriter).GetMethod(
@@ -2219,6 +2230,7 @@ namespace System.Xml.Serialization
         }
 
         [RequiresUnreferencedCode("calls WriteLiteralNullTag")]
+        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         private void WriteNullCheckBegin(string source, ElementAccessor element)
         {
             LocalBuilder local = ilg.GetLocal(source);
