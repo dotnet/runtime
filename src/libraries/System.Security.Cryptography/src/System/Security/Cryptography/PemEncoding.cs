@@ -60,8 +60,11 @@ namespace System.Security.Cryptography
         /// the encoded data.
         /// </returns>
         /// <remarks>
-        /// IETF RFC 7468 permits different decoding rules. This method
-        /// always uses lax rules.
+        ///   <para>IETF RFC 7468 permits different decoding rules. This method always uses lax rules.</para>
+        ///   <para>
+        ///     This does not validate the UTF-8 data outside of encapsulation boundaries and is ignored. It is the caller's
+        ///     responsibility to ensure the entire input is UTF-8 if required.
+        ///   </para>
         /// </remarks>
         public static PemFields FindUtf8(ReadOnlySpan<byte> pemData)
         {
@@ -89,11 +92,8 @@ namespace System.Security.Cryptography
         /// <c>true</c> if PEM-encoded data was found; otherwise <c>false</c>.
         /// </returns>
         /// <remarks>
-        ///   <para>IETF RFC 7468 permits different decoding rules. This method always uses lax rules.</para>
-        ///   <para>
-        ///     This does not validate the UTF-8 data outside of encapsulation boundaries and is ignored. It is the caller's
-        ///     responsibility to ensure the entire input is UTF-8 if required.
-        ///   </para>
+        /// IETF RFC 7468 permits different decoding rules. This method
+        /// always uses lax rules.
         /// </remarks>
         public static bool TryFind(ReadOnlySpan<char> pemData, out PemFields fields)
         {
@@ -487,7 +487,7 @@ namespace System.Security.Cryptography
         /// The buffer to receive the PEM-encoded text.
         /// </param>
         /// <param name="bytesWritten">
-        /// When this method returns, this parameter contains the number of UTF-8 characters
+        /// When this method returns, this parameter contains the number of UTF-8 encoded bytes
         /// written to <paramref name="destination"/>.
         /// </param>
         /// <returns>
@@ -546,7 +546,7 @@ namespace System.Security.Cryptography
         /// The data to encode.
         /// </param>
         /// <returns>
-        /// An array of UTF-8 characters of the encoded PEM.
+        ///   An array containing the bytes representing the UTF-8 encoding of the PEM.
         /// </returns>
         /// <remarks>
         /// This method always wraps the base-64 encoded text to 64 characters, per the
