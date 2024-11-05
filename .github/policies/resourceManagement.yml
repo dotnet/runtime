@@ -382,8 +382,8 @@ configuration:
         then:
         - mentionUsers:
             mentionees:
-            - lambdageek
             - steveisok
+            - vitek-karas
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 
@@ -395,8 +395,8 @@ configuration:
         then:
         - mentionUsers:
             mentionees:
-            - lambdageek
             - steveisok
+            - vitek-karas
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 
@@ -408,8 +408,8 @@ configuration:
         then:
         - mentionUsers:
             mentionees:
-            - fanyang-mono
             - steveisok
+            - vitek-karas
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 
@@ -422,7 +422,7 @@ configuration:
         - mentionUsers:
             mentionees:
             - steveisok
-            - lambdageek
+            - vitek-karas
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 
