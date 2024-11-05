@@ -6921,6 +6921,7 @@ private:
     PhaseStatus fgOptimizeLCLMasks();
 
 #if defined(TARGET_ARM64)
+
     struct LCLMasksWeight
     {
         // For a given var, number of Lcl Stores with conversion from mask minus number of Lcl Stores
@@ -6930,6 +6931,9 @@ private:
         // For a given var, number of Lcl var with conversion to mask minus number of Lcl vars without
         // conversion to mask.
         signed varWeight;
+
+        CorInfoType simdBaseJitType;
+        unsigned    simdSize;
 
         bool MaskConversionsDominate()
         {

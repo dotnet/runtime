@@ -2487,74 +2487,56 @@ public:
         UseExecutionOrder = true
     };
 
-    LCLMasksUpdateLCLVarVisitor(Compiler* compiler, unsigned lclNum, Statement* stmt)
+    LCLMasksUpdateLCLVarVisitor(
+        Compiler* compiler, unsigned lclNum, Statement* stmt, CorInfoType simdBaseJitType, unsigned simdSize)
         : GenTreeVisitor<LCLMasksUpdateLCLVarVisitor>(compiler)
         , lclNum(lclNum)
         , stmt(stmt)
+        , simdBaseJitType(simdBaseJitType)
+        , simdSize(simdSize)
     {
     }
 
     Compiler::fgWalkResult PostOrderVisit(GenTree** use, GenTree* user)
     {
-
-        // LCLMasksUpdateLCLVarVisitor use
-        // [000031] -----------                         *  HWINTRINSIC mask   ubyte ConvertVectorToMask
-        // [000030] -----------                         +--*  HWINTRINSIC mask   ubyte CreateTrueMaskAll
-        // [000026] -----------                         \--*  LCL_VAR   simd16 V06 tmp3
-
-        // LCLMasksUpdateLCLVarVisitor user
-        // [000029] ---XG------                         *  HWINTRINSIC simd16 ubyte LoadVector
-        // [000031] -----------                         +--*  HWINTRINSIC mask   ubyte ConvertVectorToMask
-        // [000030] -----------                         +--*  HWINTRINSIC mask ubyte CreateTrueMaskAll
-        // [000026] -----------                         \--*  LCL_VAR   simd16 V06 tmp3
-        // [000028] -----------                         \--*  LCL_VAR   long   V02
-
         // Look for:
         //      user(ConvertVectorToMask(CreateTrueMaskAll, LCL_VAR(lclNum)))
-        if ((*use)->OperIsConvertVectorToMask())
+        if ((*use)->OperIsConvertVectorToMask() && (*use)->AsHWIntrinsic()->Op(2)->OperIs(GT_LCL_VAR) &&
+            ((*use)->AsHWIntrinsic()->Op(2)->AsLclVar()->GetLclNum() == lclNum))
         {
             GenTree* const convertOp = *use;
-            GenTree*       lclOp     = convertOp->AsHWIntrinsic()->Op(2);
+            GenTreeLclVar* lclOp     = (*use)->AsHWIntrinsic()->Op(2)->AsLclVar();
 
-            if (lclOp->OperIs(GT_LCL_VAR) && (lclOp->AsLclVarCommon()->GetLclNum() == lclNum))
+            assert(lclOp->gtType != TYP_MASK);
+
+            // Find the location of convertOp in the user
+            int opNum = 1;
+            for (; opNum <= user->AsHWIntrinsic()->GetOperandCount(); opNum++)
             {
-                assert(lclOp->gtType != TYP_MASK);
-
-                // if (m_compiler->verbose)
-                // {
-                //     JITDUMP("\nRemoveLCLUseConvertVisitor use\n");
-                //     m_compiler->gtDispTree(*use);
-                //     JITDUMP("\nRemoveLCLUseConvertVisitor user\n");
-                //     m_compiler->gtDispTree(user);
-                // }
-
-                // Find the location of convertOp in the user
-                int opNum = 1;
-                for (; opNum <= user->AsHWIntrinsic()->GetOperandCount(); opNum++)
+                if (user->AsHWIntrinsic()->Op(opNum) == convertOp)
                 {
-                    if (user->AsHWIntrinsic()->Op(opNum) == convertOp)
-                    {
-                        break;
-                    }
+                    break;
                 }
-                assert(opNum <= user->AsHWIntrinsic()->GetOperandCount());
-
-                // Fix up the type of the lcl
-                lclOp->gtType = convertOp->gtType;
-
-                // Remove the convert convertOp
-                convertOp->gtBashToNOP();
-                user->AsHWIntrinsic()->Op(opNum) = lclOp;
-                m_compiler->fgSequenceLocals(stmt);
-
-                // if (m_compiler->verbose)
-                // {
-                //     JITDUMP("\nAfter removal:\n");
-                //     m_compiler->gtDispTree(user);
-                // }
-
-                return fgWalkResult::WALK_ABORT;
             }
+            assert(opNum <= user->AsHWIntrinsic()->GetOperandCount());
+
+            // Fix up the type of the lcl
+            lclOp->gtType = convertOp->gtType;
+
+            // Remove the convert convertOp
+            convertOp->gtBashToNOP();
+            *use = lclOp;
+            m_compiler->fgSequenceLocals(stmt);
+
+#ifdef DEBUG
+            JITDUMP("Updated V%02d to be a mask (Removed conversion)\n", lclOp->GetLclNum());
+            if (m_compiler->verbose)
+            {
+                m_compiler->gtDispTree(*use);
+            }
+#endif
+
+            return fgWalkResult::WALK_ABORT;
         }
 
         // Look for:
@@ -2562,18 +2544,26 @@ public:
         else if ((*use)->OperIs(GT_LCL_VAR) && ((*use)->gtType != TYP_MASK) &&
                  ((*use)->AsLclVarCommon()->GetLclNum() == lclNum) && !user->OperIsConvertVectorToMask())
         {
+            GenTreeLclVar* lclOp = (*use)->AsLclVar();
+
+            // Fix up the type of the lcl
+            var_types vectorType = lclOp->gtType;
+            lclOp->gtType        = TYP_MASK;
+
+            // Create a convert to mask node and insert it infront of the lcl.
+            // There is not enough information in the lcl to get simd types. Instead we reuse the cached simd
+            // types from the removed convert nodes.
+            assert((simdBaseJitType != CORINFO_TYPE_UNDEF) && (simdSize != 0));
+            *use = m_compiler->gtNewSimdCvtMaskToVectorNode(vectorType, lclOp, simdBaseJitType, simdSize);
+            ;
+
 #ifdef DEBUG
+            JITDUMP("Updated V%02d to be a mask (Added conversion)\n", lclOp->GetLclNum());
             if (m_compiler->verbose)
             {
-                JITDUMP("\nRemoveLCLUseConvertVisitor ELSE use\n");
                 m_compiler->gtDispTree(*use);
-                JITDUMP("\nRemoveLCLUseConvertVisitor ELSE user\n");
-                m_compiler->gtDispTree(user);
             }
 #endif
-
-            // TODO: Fill this in when I hit it
-            assert(false);
 
             return fgWalkResult::WALK_ABORT;
         }
@@ -2583,8 +2573,10 @@ public:
 
 
 private:
-    unsigned   lclNum;
-    Statement* stmt;
+    unsigned    lclNum;
+    Statement*  stmt;
+    CorInfoType simdBaseJitType;
+    unsigned    simdSize;
 };
 
 //-----------------------------------------------------------------------------
@@ -2612,7 +2604,7 @@ bool Compiler::fgLCLMasksCheckLCLStore(Statement* stmt, LCLMasksWeightTable* wei
 
     GenTreeLclVar* lclStore = tree->AsLclVar();
 
-    LCLMasksWeight weight = {0, 0};
+    LCLMasksWeight weight = {0, 0, CORINFO_TYPE_UNDEF, 0};
     bool           found  = weightsTable->Lookup(lclStore->GetLclNum(), &weight);
 
     // Check if the store is converted from mask
@@ -2622,6 +2614,19 @@ bool Compiler::fgLCLMasksCheckLCLStore(Statement* stmt, LCLMasksWeightTable* wei
         weight.storeWeight++;
         JITDUMP("Local Store V%02d at [%06u] is converted from mask. Incrementing store weight to %d\n",
                 lclStore->GetLclNum(), dspTreeID(lclStore), weight.storeWeight);
+
+        // Cache the simd type data. If it has already been cached then the types should match.
+
+        GenTreeHWIntrinsic* convertOp       = lclStore->Data()->AsHWIntrinsic();
+        CorInfoType         simdBaseJitType = convertOp->Op(1)->AsHWIntrinsic()->GetSimdBaseJitType();
+        unsigned            simdSize        = convertOp->Op(1)->AsHWIntrinsic()->GetSimdSize();
+        ;
+
+        assert((weight.simdBaseJitType == CORINFO_TYPE_UNDEF) && (weight.simdSize == 0) ||
+               (weight.simdBaseJitType == simdBaseJitType) && (weight.simdSize == simdSize));
+
+        weight.simdBaseJitType = simdBaseJitType;
+        weight.simdSize        = simdSize;
     }
     else
     {
@@ -2741,6 +2746,8 @@ bool Compiler::fgLCLMasksUpdateLCLStore(Statement* stmt, LCLMasksWeightTable* we
         convertOp->gtBashToNOP();
         lclStore->gtOp1 = maskOp;
         fgSequenceLocals(stmt);
+
+        JITDUMP("Updated V%02d to store as mask (Removed conversion)\n", lclStore->GetLclNum());
     }
     else
     {
@@ -2752,10 +2759,11 @@ bool Compiler::fgLCLMasksUpdateLCLStore(Statement* stmt, LCLMasksWeightTable* we
         }
 #endif
         assert(false);
+
+        JITDUMP("Updated V%02d to store as mask (Added conversion)\n", lclStore->GetLclNum());
     }
 
 #ifdef DEBUG
-    JITDUMP("Updated V%02d to store as mask\n", lclStore->GetLclNum());
     if (verbose)
     {
         gtDispTree(lclStore);
@@ -2804,17 +2812,9 @@ void Compiler::fgLCLMasksUpdateLCLVar(GenTreeLclVarCommon* lclVar,
             weight.storeWeight, weight.varWeight);
 
     // Remove or add a mask conversion/
-    LCLMasksUpdateLCLVarVisitor ev(this, lclVar->GetLclNum(), stmt);
+    LCLMasksUpdateLCLVarVisitor ev(this, lclVar->GetLclNum(), stmt, weight.simdBaseJitType, weight.simdSize);
     GenTree*                    root = stmt->GetRootNode();
     ev.WalkTree(&root, nullptr);
-
-#ifdef DEBUG
-    JITDUMP("Updated V%02d to be a mask\n", lclVar->GetLclNum());
-    if (verbose)
-    {
-        gtDispTree(lclVar);
-    }
-#endif
 }
 
 #endif // TARGET_ARM64
