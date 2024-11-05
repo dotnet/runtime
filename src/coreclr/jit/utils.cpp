@@ -4277,7 +4277,7 @@ public:
 
     ~Utf16String()
     {
-        if (m_pBuffer != m_buffer)
+        if (m_pBuffer != m_bufferUnsafe)
         {
             delete[] m_pBuffer;
             m_pBuffer = nullptr;
