@@ -21,6 +21,7 @@ namespace System.Xml
     }
 
     [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
+    [RequiresDynamicCode(DataSet.RequiresDynamicCodeMessage)]
     internal sealed class XmlBoundElement : XmlElement
     {
         private DataRow? _row;
