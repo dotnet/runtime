@@ -397,7 +397,7 @@ namespace System.Security.Cryptography
                     }
                     finally
                     {
-                        if (!interopSpan.IsEmpty)
+                        if (outputBlob.pbData != IntPtr.Zero)
                         {
                             interopSpan.Clear();
                             Marshal.FreeHGlobal(outputBlob.pbData);
