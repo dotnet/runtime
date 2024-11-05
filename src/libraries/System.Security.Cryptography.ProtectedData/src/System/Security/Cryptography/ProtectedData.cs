@@ -206,7 +206,7 @@ namespace System.Security.Cryptography
         /// <exception cref="NotSupportedException">The operating system does not support this method.</exception>
         /// <exception cref="OutOfMemoryException">The system ran out of memory while decrypting the data.</exception>
         /// <exception cref="PlatformNotSupportedException">
-        /// Calls to the Protect method are supported on Windows operating systems only.
+        /// Calls to the Unprotect method are supported on Windows operating systems only.
         /// </exception>
         public static byte[] Unprotect(
             ReadOnlySpan<byte> encryptedData,
