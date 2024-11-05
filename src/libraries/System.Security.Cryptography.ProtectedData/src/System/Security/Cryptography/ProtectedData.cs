@@ -40,7 +40,7 @@ namespace System.Security.Cryptography
         /// <summary>
         /// Encrypts the data in a specified byte span and returns a byte array that contains the encrypted data.
         /// </summary>
-        /// <param name="userData">A byte span that contains data to encrypt.</param>
+        /// <param name="userData">A buffer that contains the data to encrypt.</param>
         /// <param name="scope">One of the enumeration values that specifies the scope of encryption.</param>
         /// <param name="optionalEntropy">
         /// An optional additional byte span used to increase the complexity of the encryption,
