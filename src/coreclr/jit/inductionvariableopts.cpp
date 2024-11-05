@@ -1284,6 +1284,11 @@ bool Compiler::optLocalHasNonLoopUses(unsigned lclNum, FlowGraphNaturalLoop* loo
         return true;
     }
 
+    if (!varDsc->lvTracked)
+    {
+        return true;
+    }
+
     BasicBlockVisit visitResult = loop->VisitRegularExitBlocks([=](BasicBlock* block) {
         if (VarSetOps::IsMember(this, block->bbLiveIn, varDsc->lvVarIndex))
         {
