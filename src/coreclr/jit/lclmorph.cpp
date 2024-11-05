@@ -2450,14 +2450,6 @@ public:
 
     Compiler::fgWalkResult PostOrderVisit(GenTree** use, GenTree* user)
     {
-        // LCLMasksCheckLCLVarVisitor use
-        // [000026] -----------                         \--*  LCL_VAR   simd16 V06 tmp3
-
-        // LCLMasksCheckLCLVarVisitor user
-        // [000031] -----------                         *  HWINTRINSIC mask   ubyte ConvertVectorToMask
-        // [000030] -----------                         +--*  HWINTRINSIC mask   ubyte CreateTrueMaskAll
-        // [000026] -----------                         \--*  LCL_VAR   simd16 V06 tmp3
-
         GenTree* const lclOp = *use;
 
         if (lclOp->OperIs(GT_LCL_VAR) && (lclOp->AsLclVarCommon()->GetLclNum() == lclNum) &&
@@ -2555,7 +2547,6 @@ public:
             // types from the removed convert nodes.
             assert((simdBaseJitType != CORINFO_TYPE_UNDEF) && (simdSize != 0));
             *use = m_compiler->gtNewSimdCvtMaskToVectorNode(vectorType, lclOp, simdBaseJitType, simdSize);
-            ;
 
 #ifdef DEBUG
             JITDUMP("Updated V%02d to be a mask (Added conversion)\n", lclOp->GetLclNum());
@@ -2620,7 +2611,6 @@ bool Compiler::fgLCLMasksCheckLCLStore(Statement* stmt, LCLMasksWeightTable* wei
         GenTreeHWIntrinsic* convertOp       = lclStore->Data()->AsHWIntrinsic();
         CorInfoType         simdBaseJitType = convertOp->Op(1)->AsHWIntrinsic()->GetSimdBaseJitType();
         unsigned            simdSize        = convertOp->Op(1)->AsHWIntrinsic()->GetSimdSize();
-        ;
 
         assert((weight.simdBaseJitType == CORINFO_TYPE_UNDEF) && (weight.simdSize == 0) ||
                (weight.simdBaseJitType == simdBaseJitType) && (weight.simdSize == simdSize));
@@ -2730,17 +2720,17 @@ bool Compiler::fgLCLMasksUpdateLCLStore(Statement* stmt, LCLMasksWeightTable* we
     JITDUMP("Local Store V%02d at [%06u] will be converted. Weighting {%d, %d}\n", lclStore->GetLclNum(),
             dspTreeID(lclStore), weight.storeWeight, weight.varWeight);
 
+    // Update the type of the STORELCL - including the lclvar.
+    lclStore->gtType  = TYP_MASK;
+    LclVarDsc* varDsc = lvaGetDesc(lclStore->GetLclNum());
+    varDsc->lvType    = TYP_MASK;
+
     if (lclStore->Data()->OperIsConvertMaskToVector())
     {
         // Remove the ConvertMaskToVector
 
         GenTreeHWIntrinsic* convertOp = lclStore->Data()->AsHWIntrinsic();
         GenTree*            maskOp    = convertOp->Op(1);
-
-        // Update the type of the STORELCL - including the lclvar.
-        lclStore->gtType  = maskOp->gtType;
-        LclVarDsc* varDsc = lvaGetDesc(lclStore->GetLclNum());
-        varDsc->lvType    = maskOp->gtType;
 
         // Remove the convert from the tree.
         convertOp->gtBashToNOP();
@@ -2751,14 +2741,11 @@ bool Compiler::fgLCLMasksUpdateLCLStore(Statement* stmt, LCLMasksWeightTable* we
     }
     else
     {
-#ifdef DEBUG
-        // TODO: Fill out. Need to add a convertVectorToMask
-        if (verbose)
-        {
-            gtDispTree(lclStore);
-        }
-#endif
-        assert(false);
+        // Convert the input of the store to a mask.
+        assert((weight.simdBaseJitType != CORINFO_TYPE_UNDEF) && (weight.simdSize != 0));
+        GenTree* convertOp =
+            gtNewSimdCvtVectorToMaskNode(TYP_MASK, lclStore->Data(), weight.simdBaseJitType, weight.simdSize);
+        lclStore->Data() = convertOp;
 
         JITDUMP("Updated V%02d to store as mask (Added conversion)\n", lclStore->GetLclNum());
     }
