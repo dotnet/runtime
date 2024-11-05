@@ -79,10 +79,10 @@ HRESULT PdbHeap::SetDataGuid(REFGUID newGuid)
 }
 
 __checkReturn
-HRESULT PdbHeap::ComputeSha256Checksum(BYTE (&checksum)[32])
+HRESULT PdbHeap::ComputeSha256Checksum(HRESULT (*computeSha256)(BYTE* pSrc, DWORD srcSize, BYTE* pDst, DWORD dstSize), BYTE (&checksum)[32])
 {
     _ASSERTE(m_size >= sizeof(PDB_ID));
-    return E_FAIL; // Sha256Hash(m_data, m_size, (BYTE*)&checksum, sizeof(checksum));
+    return computeSha256(m_data, m_size, (BYTE*)&checksum, sizeof(checksum));
 }
 
 __checkReturn
