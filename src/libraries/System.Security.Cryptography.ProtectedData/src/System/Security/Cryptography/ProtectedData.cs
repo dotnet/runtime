@@ -89,7 +89,10 @@ namespace System.Security.Cryptography
         /// An optional additional byte span used to increase the complexity of the encryption,
         /// or empty for no additional complexity.
         /// </param>
-        /// <returns>true if destination was large enough to receive the decrypted data; otherwise, false.</returns>
+        /// <returns>
+        /// <see langword="true"/> if <paramref name="destination"/> was large enough to receive the decrypted data;
+        /// otherwise, <see langword="false"/>.
+        /// </returns>
         /// <exception cref="ArgumentException">
         /// The buffer in <paramref name="destination"/> is too small to hold the encrypted data.
         /// </exception>
