@@ -113,15 +113,6 @@ HRESULT Sha256Hash(BYTE* pSrc, DWORD srcSize, BYTE* pDst, DWORD dstSize)
         return E_FAIL;
     }
 
-    fprintf(stderr, "\n");
-
-    for (DWORD i = 0; i < hashLength; i++)
-    {
-        fprintf(stderr, "%c", hash[i]);
-    }
-
-    fprintf(stderr, "\n");
-
     memcpy(pDst, hash, min(hashLength, dstSize));
     return S_OK;
 }
