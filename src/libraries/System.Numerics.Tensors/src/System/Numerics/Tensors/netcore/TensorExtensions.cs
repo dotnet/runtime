@@ -2658,8 +2658,14 @@ namespace System.Numerics.Tensors
 
                 if (dimensions.IsEmpty)
                 {
-                    lengths = tensor._lengths.Reverse().ToArray();
-                    permutation = Enumerable.Range(0, tensor.Rank).Reverse().ToArray();
+                    int[] tempPermutation = new int[tensor.Rank];
+                    for (int i = 0; i < tensor.Rank; i++)
+                    {
+                        lengths[i] = tensor._lengths[tensor.Rank - 1 - i];
+                        tempPermutation[i] = tensor.Rank - 1 - i;
+                    }
+
+                    permutation = tempPermutation;
                 }
                 else
                 {
