@@ -2062,6 +2062,7 @@ namespace System.Xml.Serialization
         }
 
         [RequiresUnreferencedCode("calls WriteSourceEnd")]
+        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         private void WriteAttribute(Member member)
         {
             AttributeAccessor attribute = member.Mapping.Attribute!;
@@ -2298,6 +2299,7 @@ namespace System.Xml.Serialization
         }
 
         [RequiresUnreferencedCode("calls WriteText")]
+        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         private void WriteMemberText(Member anyText)
         {
             ilg.InitElseIf();
@@ -2350,6 +2352,7 @@ namespace System.Xml.Serialization
         }
 
         [RequiresUnreferencedCode("calls WriteSourceEnd")]
+        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         private void WriteText(Member member)
         {
             TextAccessor text = member.Mapping.Text!;
@@ -2722,6 +2725,7 @@ namespace System.Xml.Serialization
             }
         }
 
+        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         private void WriteSourceBeginTyped(string source)
         {
             WriteSourceBegin(source);
@@ -3320,6 +3324,7 @@ namespace System.Xml.Serialization
         }
 
         [RequiresUnreferencedCode("calls ILGenForCreateInstance")]
+        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         private void WriteDerivedSerializable(SerializableMapping head, SerializableMapping? mapping, string source, bool isWrappedAny)
         {
             if (mapping == null)
@@ -3676,6 +3681,7 @@ namespace System.Xml.Serialization
         }
 
         [RequiresUnreferencedCode("calls WriteSourceEnd")]
+        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         private void ILGenSet(string source, object value)
         {
             WriteSourceBegin(source);
