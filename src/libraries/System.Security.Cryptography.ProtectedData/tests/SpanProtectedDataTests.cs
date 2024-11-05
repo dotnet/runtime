@@ -3,90 +3,93 @@
 
 using Xunit;
 
-namespace System.Security.Cryptography.ProtectedDataTests;
-
-public class SpanProtectedDataTests : ProtectedDataTests
+namespace System.Security.Cryptography.ProtectedDataTests
 {
-    protected override byte[] Protect(byte[] plain, byte[]? entropy, DataProtectionScope scope)
+    public class SpanProtectedDataTests : ProtectedDataTests
     {
-        ReadOnlySpan<byte> inputSpan = plain;
-        ReadOnlySpan<byte> entropySpan = entropy;
-        Span<byte> destination = stackalloc byte[400];
-        int written = ProtectedData.Protect(inputSpan, scope, destination, entropySpan);
-        return destination.Slice(0, written).ToArray();
-    }
+        private const int DefaultProtectedBufferSize = 400;
 
-    protected override byte[] Unprotect(byte[] encrypted, byte[]? entropy, DataProtectionScope scope)
-    {
-        ReadOnlySpan<byte> inputSpan = encrypted;
-        ReadOnlySpan<byte> entropySpan = entropy;
-        Span<byte> destination = stackalloc byte[encrypted.Length];
-        int written = ProtectedData.Unprotect(inputSpan, scope, destination, entropySpan);
-        return destination.Slice(0, written).ToArray();
-    }
-
-    [Fact]
-    public void ZeroBufferThrows()
-    {
-        AssertExtensions.Throws<ArgumentException>(
-            () => ProtectedData.Protect([1, 2, 3], DataProtectionScope.CurrentUser, Span<byte>.Empty),
-            "destination");
-    }
-
-    [Theory]
-    [InlineData(-1, false)]
-    [InlineData(0, true)]
-    [InlineData(1, true)]
-    public void NearCorrectSizeBufferTests(int delta, bool success)
-    {
-        if (success)
+        protected override byte[] Protect(byte[] plain, byte[]? entropy, DataProtectionScope scope)
         {
-            Execute(out int original, out int resized);
-            Assert.Equal(original, resized);
-        }
-        else
-        {
-            Assert.Throws<ArgumentException>(() => Execute(out _, out _));
+            ReadOnlySpan<byte> inputSpan = plain;
+            ReadOnlySpan<byte> entropySpan = entropy;
+            Span<byte> destination = stackalloc byte[DefaultProtectedBufferSize];
+            int written = ProtectedData.Protect(inputSpan, scope, destination, entropySpan);
+            return destination.Slice(0, written).ToArray();
         }
 
-        return;
-
-        void Execute(out int firstSize, out int secondSize)
+        protected override byte[] Unprotect(byte[] encrypted, byte[]? entropy, DataProtectionScope scope)
         {
-            Span<byte> buffer = stackalloc byte[400];
-            firstSize = ProtectedData.Protect([1, 2, 3], DataProtectionScope.CurrentUser, buffer);
-            secondSize = ProtectedData.Protect([1, 2, 3],
-                DataProtectionScope.CurrentUser,
-                buffer.Slice(0, firstSize + delta));
-        }
-    }
-
-    [Theory]
-    [InlineData(-1, false)]
-    [InlineData(0, true)]
-    [InlineData(1, true)]
-    public void NearCorrectSizeBufferUnprotect(int delta, bool success)
-    {
-        if (success)
-        {
-            Execute(out int original, out int resized);
-            Assert.Equal(original, resized);
-        }
-        else
-        {
-            Assert.Throws<ArgumentException>(() => Execute(out _, out _));
+            ReadOnlySpan<byte> inputSpan = encrypted;
+            ReadOnlySpan<byte> entropySpan = entropy;
+            Span<byte> destination = stackalloc byte[encrypted.Length];
+            int written = ProtectedData.Unprotect(inputSpan, scope, destination, entropySpan);
+            return destination.Slice(0, written).ToArray();
         }
 
-        return;
-
-        void Execute(out int firstSize, out int secondSize)
+        [Fact]
+        public void ZeroBufferThrows()
         {
-            Span<byte> buffer = stackalloc byte[400];
-            byte[] protectedData = ProtectedData.Protect([1, 2, 3], DataProtectionScope.CurrentUser);
-            firstSize = ProtectedData.Unprotect(protectedData, DataProtectionScope.CurrentUser, buffer);
-            secondSize = ProtectedData.Unprotect(protectedData,
-                DataProtectionScope.CurrentUser,
-                buffer.Slice(0, firstSize + delta));
+            AssertExtensions.Throws<ArgumentException>(
+                "destination",
+                () => ProtectedData.Protect([1, 2, 3], DataProtectionScope.CurrentUser, Span<byte>.Empty));
+        }
+
+        [Theory]
+        [InlineData(-1, false)]
+        [InlineData(0, true)]
+        [InlineData(1, true)]
+        public void NearCorrectSizeBufferTests(int delta, bool success)
+        {
+            if (success)
+            {
+                Execute(out int original, out int resized);
+                Assert.Equal(original, resized);
+            }
+            else
+            {
+                AssertExtensions.Throws<ArgumentException>("destination", () => Execute(out _, out _));
+            }
+
+            return;
+
+            void Execute(out int firstSize, out int secondSize)
+            {
+                Span<byte> buffer = stackalloc byte[DefaultProtectedBufferSize];
+                firstSize = ProtectedData.Protect([1, 2, 3], DataProtectionScope.CurrentUser, buffer);
+                secondSize = ProtectedData.Protect([1, 2, 3],
+                    DataProtectionScope.CurrentUser,
+                    buffer.Slice(0, firstSize + delta));
+            }
+        }
+
+        [Theory]
+        [InlineData(-1, false)]
+        [InlineData(0, true)]
+        [InlineData(1, true)]
+        public void NearCorrectSizeBufferUnprotect(int delta, bool success)
+        {
+            if (success)
+            {
+                Execute(out int original, out int resized);
+                Assert.Equal(original, resized);
+            }
+            else
+            {
+                AssertExtensions.Throws<ArgumentException>("destination", () => Execute(out _, out _));
+            }
+
+            return;
+
+            void Execute(out int firstSize, out int secondSize)
+            {
+                Span<byte> buffer = stackalloc byte[DefaultProtectedBufferSize];
+                byte[] protectedData = ProtectedData.Protect([1, 2, 3], DataProtectionScope.CurrentUser);
+                firstSize = ProtectedData.Unprotect(protectedData, DataProtectionScope.CurrentUser, buffer);
+                secondSize = ProtectedData.Unprotect(protectedData,
+                    DataProtectionScope.CurrentUser,
+                    buffer.Slice(0, firstSize + delta));
+            }
         }
     }
 }

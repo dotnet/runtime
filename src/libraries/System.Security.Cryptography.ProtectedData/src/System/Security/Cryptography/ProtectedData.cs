@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Internal.Cryptography;
 using CryptProtectDataFlags = Interop.Crypt32.CryptProtectDataFlags;
@@ -30,8 +28,7 @@ namespace System.Security.Cryptography
                 protect: true,
                 allocateArray: true,
                 bytesWritten: out _,
-                outputData: out outputData
-            );
+                outputData: out outputData);
             Debug.Assert(result);
             Debug.Assert(outputData != null);
             return outputData;
@@ -68,17 +65,16 @@ namespace System.Security.Cryptography
                 protect: true,
                 allocateArray: true,
                 bytesWritten: out _,
-                outputData: out outputData
-            );
+                outputData: out outputData);
             Debug.Assert(result);
             Debug.Assert(outputData != null);
             return outputData;
         }
 
         /// <summary>
-        /// Encrypts the data in a specified byte span and writes the encrypted data to a byte span.
+        /// Encrypts the data in a specified buffer and writes the encrypted data to a destination buffer.
         /// </summary>
-        /// <param name="userData">A byte span that contains data to encrypt.</param>
+        /// <param name="userData">A buffer that contains data to encrypt.</param>
         /// <param name="scope">One of the enumeration values that specifies the scope of encryption.</param>
         /// <param name="destination">The buffer to receive the encrypted data.</param>
         /// <param name="bytesWritten">
@@ -86,7 +82,7 @@ namespace System.Security.Cryptography
         /// written to <paramref name="destination"/>.
         /// </param>
         /// <param name="optionalEntropy">
-        /// An optional additional byte span used to increase the complexity of the encryption,
+        /// An optional additional buffer used to increase the complexity of the encryption,
         /// or empty for no additional complexity.
         /// </param>
         /// <returns>
@@ -119,18 +115,17 @@ namespace System.Security.Cryptography
                 allocateArray: false,
                 outputSpan: destination,
                 bytesWritten: out bytesWritten,
-                outputData: out _
-            );
+                outputData: out _);
         }
 
         /// <summary>
-        /// Encrypts the data in a specified byte span and writes the encrypted data to a byte span.
+        /// Encrypts the data in a specified buffer and writes the encrypted data to a destination buffer.
         /// </summary>
-        /// <param name="userData">A byte span that contains data to encrypt.</param>
+        /// <param name="userData">A buffer that contains data to encrypt.</param>
         /// <param name="scope">One of the enumeration values that specifies the scope of encryption.</param>
         /// <param name="destination">The buffer to receive the encrypted data.</param>
         /// <param name="optionalEntropy">
-        /// An optional additional byte span used to increase the complexity of the encryption,
+        /// An optional additional buffer used to increase the complexity of the encryption,
         /// or empty for no additional complexity.
         /// </param>
         /// <returns>The total number of bytes written to <paramref name="destination"/></returns>
@@ -160,8 +155,7 @@ namespace System.Security.Cryptography
                     allocateArray: false,
                     outputSpan: destination,
                     bytesWritten: out bytesWritten,
-                    outputData: out _
-                ))
+                    outputData: out _))
             {
                 throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
             }
@@ -184,8 +178,7 @@ namespace System.Security.Cryptography
                 protect: false,
                 allocateArray: true,
                 bytesWritten: out _,
-                outputData: out outputData
-            );
+                outputData: out outputData);
 
             Debug.Assert(result);
             Debug.Assert(outputData != null);
@@ -195,10 +188,10 @@ namespace System.Security.Cryptography
         /// <summary>
         /// Decrypts the data in a specified byte array and returns a byte array that contains the decrypted data.
         /// </summary>
-        /// <param name="encryptedData">A byte span that contains data to decrypt.</param>
+        /// <param name="encryptedData">A buffer that contains data to decrypt.</param>
         /// <param name="scope">One of the enumeration values that specifies the scope of encryption.</param>
         /// <param name="optionalEntropy">
-        /// An optional additional byte span used to increase the complexity of the encryption,
+        /// An optional additional buffer used to increase the complexity of the encryption,
         /// or empty for no additional complexity.
         /// </param>
         /// <returns>A byte array representing the encrypted data.</returns>
@@ -223,8 +216,7 @@ namespace System.Security.Cryptography
                 protect: false,
                 allocateArray: true,
                 bytesWritten: out _,
-                outputData: out outputData
-            );
+                outputData: out outputData);
 
             Debug.Assert(result);
             Debug.Assert(outputData != null);
@@ -232,9 +224,9 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        /// Decrypts the data in a specified byte array and writes the decrypted data to a byte span.
+        /// Decrypts the data in a specified buffer and writes the decrypted data to a destination buffer.
         /// </summary>
-        /// <param name="encryptedData">A byte span that contains data to decrypt.</param>
+        /// <param name="encryptedData">A buffer that contains data to decrypt.</param>
         /// <param name="scope">One of the enumeration values that specifies the scope of encryption.</param>
         /// <param name="destination">The buffer to receive the decrypted data.</param>
         /// <param name="bytesWritten">
@@ -242,10 +234,13 @@ namespace System.Security.Cryptography
         /// written to <paramref name="destination"/>.
         /// </param>
         /// <param name="optionalEntropy">
-        /// An optional additional byte span used to increase the complexity of the encryption,
+        /// An optional additional buffer used to increase the complexity of the encryption,
         /// or empty for no additional complexity.
         /// </param>
-        /// <returns>true if destination was large enough to receive the decrypted data; otherwise, false.</returns>
+        /// <returns>
+        /// <see langword="true"/> if <paramref name="destination"/> was large enough to receive the decrypted data;
+        /// otherwise, <see langword="false"/>.
+        /// </returns>
         /// <exception cref="ArgumentException">
         /// The buffer in <paramref name="destination"/> is too small to hold the decrypted data.
         /// </exception>
@@ -272,18 +267,17 @@ namespace System.Security.Cryptography
                 allocateArray: false,
                 outputSpan: destination,
                 bytesWritten: out bytesWritten,
-                outputData: out _
-            );
+                outputData: out _);
         }
 
         /// <summary>
-        /// Decrypts the data in a specified byte array and writes the decrypted data to a byte span.
+        /// Decrypts the data in a specified buffer and writes the decrypted data to a destination buffer.
         /// </summary>
-        /// <param name="encryptedData">A byte span that contains data to decrypt.</param>
+        /// <param name="encryptedData">A buffer that contains data to decrypt.</param>
         /// <param name="scope">One of the enumeration values that specifies the scope of encryption.</param>
         /// <param name="destination">The buffer to receive the decrypted data.</param>
         /// <param name="optionalEntropy">
-        /// An optional additional byte span used to increase the complexity of the encryption,
+        /// An optional additional buffer used to increase the complexity of the encryption,
         /// or empty for no additional complexity.
         /// </param>
         /// <returns>The total number of bytes written to <paramref name="destination"/></returns>
@@ -313,8 +307,7 @@ namespace System.Security.Cryptography
                     allocateArray: false,
                     outputSpan: destination,
                     bytesWritten: out bytesWritten,
-                    outputData: out _
-                ))
+                    outputData: out _))
             {
                 throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
             }
@@ -404,12 +397,7 @@ namespace System.Security.Cryptography
                     {
                         if (outputBlob.pbData != IntPtr.Zero)
                         {
-                            int length = (int)(outputBlob.cbData);
-                            byte* pOutputData = (byte*)(outputBlob.pbData);
-                            for (int i = 0; i < length; i++)
-                            {
-                                pOutputData[i] = 0;
-                            }
+                            CryptographicOperations.ZeroMemory(new Span<byte>(outputBlob.pbData.ToPointer(), (int)outputBlob.cbData));
                             Marshal.FreeHGlobal(outputBlob.pbData);
                         }
                     }
