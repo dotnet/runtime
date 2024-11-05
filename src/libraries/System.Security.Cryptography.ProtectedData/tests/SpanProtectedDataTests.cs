@@ -28,8 +28,9 @@ public class SpanProtectedDataTests : ProtectedDataTests
     [Fact]
     public void ZeroBufferThrows()
     {
-        Assert.Throws<ArgumentException>(() =>
-            ProtectedData.Protect([1, 2, 3], DataProtectionScope.CurrentUser, Span<byte>.Empty));
+        AssertExtensions.Throws<ArgumentException>(
+            () => ProtectedData.Protect([1, 2, 3], DataProtectionScope.CurrentUser, Span<byte>.Empty),
+            "destination");
     }
 
     [Theory]
