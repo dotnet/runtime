@@ -180,6 +180,7 @@ namespace System.Xml.Serialization
         }
 
         [RequiresUnreferencedCode("calls WriteReflectionInit")]
+        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         internal void GenerateBegin()
         {
             this.typeBuilder = CodeGenerator.CreateTypeBuilder(
@@ -200,6 +201,7 @@ namespace System.Xml.Serialization
         }
 
         [RequiresUnreferencedCode("calls WriteStructMethod")]
+        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         internal override void GenerateMethod(TypeMapping mapping)
         {
             if (!GeneratedMethods.Add(mapping))
@@ -220,6 +222,7 @@ namespace System.Xml.Serialization
         }
 
         [RequiresUnreferencedCode("calls GenerateReferencedMethods")]
+        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         internal void GenerateEnd()
         {
             GenerateReferencedMethods();
@@ -263,6 +266,7 @@ namespace System.Xml.Serialization
         }
 
         [RequiresUnreferencedCode("calls GenerateMembersElement")]
+        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         internal string? GenerateElement(XmlMapping xmlMapping)
         {
             if (!xmlMapping.IsReadable)
@@ -303,6 +307,7 @@ namespace System.Xml.Serialization
         }
 
         [RequiresUnreferencedCode("XmlSerializationReader methods have RequiresUnreferencedCode")]
+        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         private void WriteUnknownNode(string func, string node, ElementAccessor? e, bool anyIfs)
         {
             if (anyIfs)
@@ -350,6 +355,7 @@ namespace System.Xml.Serialization
         }
 
         [RequiresUnreferencedCode("calls GenerateLiteralMembersElement")]
+        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         private string GenerateMembersElement(XmlMembersMapping xmlMembersMapping)
         {
             return GenerateLiteralMembersElement(xmlMembersMapping);
@@ -385,6 +391,7 @@ namespace System.Xml.Serialization
         }
 
         [RequiresUnreferencedCode("calls InitializeValueTypes")]
+        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         private string GenerateLiteralMembersElement(XmlMembersMapping xmlMembersMapping)
         {
             ElementAccessor element = xmlMembersMapping.Accessor;
@@ -631,6 +638,7 @@ namespace System.Xml.Serialization
         }
 
         [RequiresUnreferencedCode("calls WriteMemberElements")]
+        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         private string GenerateTypeElement(XmlTypeMapping xmlTypeMapping)
         {
             ElementAccessor element = xmlTypeMapping.Accessor;
@@ -683,6 +691,7 @@ namespace System.Xml.Serialization
             string.Create(CultureInfo.InvariantCulture, $"id{++_nextIdNumber}_{CodeIdentifier.MakeValidInternal(name)}");
 
         [RequiresUnreferencedCode("XmlSerializationReader methods have RequiresUnreferencedCode")]
+        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         private void WritePrimitive(TypeMapping mapping, string source)
         {
             System.Diagnostics.Debug.Assert(source == "Reader.ReadElementString()" || source == "Reader.ReadString()"
@@ -1179,6 +1188,7 @@ namespace System.Xml.Serialization
         }
 
         [RequiresUnreferencedCode("calls ILGenForCreateInstance")]
+        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         private void WriteEnumAndArrayTypes()
         {
             foreach (TypeScope scope in Scopes)
@@ -1284,6 +1294,7 @@ namespace System.Xml.Serialization
         }
 
         [RequiresUnreferencedCode("calls WriteElement")]
+        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         private void WriteNullableMethod(NullableMapping nullableMapping)
         {
             string? methodName;
@@ -1330,12 +1341,14 @@ namespace System.Xml.Serialization
         }
 
         [RequiresUnreferencedCode("calls WriteLiteralStructMethod")]
+        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         private void WriteStructMethod(StructMapping structMapping)
         {
             WriteLiteralStructMethod(structMapping);
         }
 
         [RequiresUnreferencedCode("calls WriteEnumAndArrayTypes")]
+        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         private void WriteLiteralStructMethod(StructMapping structMapping)
         {
             string? methodName;
@@ -1817,6 +1830,7 @@ namespace System.Xml.Serialization
         }
 
         [RequiresUnreferencedCode("calls WriteSourceEnd")]
+        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         private void WriteAttributes(Member[] members, Member? anyAttribute, string elseCall, LocalBuilder firstParam)
         {
             int count = 0;
@@ -2139,6 +2153,7 @@ namespace System.Xml.Serialization
         }
 
         [RequiresUnreferencedCode("calls ILGenForCreateInstance")]
+        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         private void WriteMemberBegin(Member[] members)
         {
             for (int i = 0; i < members.Length; i++)
@@ -2246,6 +2261,7 @@ namespace System.Xml.Serialization
         }
 
         [RequiresUnreferencedCode("calls WriteMemberElementsIf")]
+        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         private void WriteMemberElements(Member[] members, string elementElseString, string elseString, Member? anyElement, Member? anyText)
         {
             if (anyText != null)
@@ -2441,6 +2457,7 @@ namespace System.Xml.Serialization
         }
 
         [RequiresUnreferencedCode("calls WriteElement")]
+        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         private void WriteMemberElementsElse(Member? anyElement, string elementElseString)
         {
             if (anyElement != null)
@@ -2473,6 +2490,7 @@ namespace System.Xml.Serialization
         }
 
         [RequiresUnreferencedCode("calls WriteElement")]
+        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         private void WriteMemberElementsIf(Member[] members, Member? anyElement, string elementElseString)
         {
             int count = 0;
@@ -2636,12 +2654,14 @@ namespace System.Xml.Serialization
         }
 
         [RequiresUnreferencedCode("calls WriteMemberEnd")]
+        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         private void WriteMemberEnd(Member[] members)
         {
             WriteMemberEnd(members, false);
         }
 
         [RequiresUnreferencedCode("calls WriteSourceEnd")]
+        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         private void WriteMemberEnd(Member[] members, bool soapRefs)
         {
             for (int i = 0; i < members.Length; i++)
@@ -2713,6 +2733,7 @@ namespace System.Xml.Serialization
         [GeneratedRegex("(?<a>[^[]+)[[](?<ia>.+)[]]")]
         private static partial Regex P0Regex { get; }
 
+        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         private void WriteSourceBegin(string source)
         {
             object? variable;
@@ -2875,6 +2896,7 @@ namespace System.Xml.Serialization
         }
 
         [RequiresUnreferencedCode("calls WriteMemberBegin")]
+        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         private void WriteArray(string source, string? arrayName, ArrayMapping arrayMapping, bool readOnly, bool isNullable, int elementIndex)
         {
             MethodInfo XmlSerializationReader_ReadNull = typeof(XmlSerializationReader).GetMethod(
@@ -2992,6 +3014,7 @@ namespace System.Xml.Serialization
         }
 
         [RequiresUnreferencedCode("calls ILGenForCreateInstance")]
+        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         private void WriteElement(string source, string? arrayName, string? choiceSource, ElementAccessor element, ChoiceIdentifierAccessor? choice, string? checkSpecified, bool checkForNull, bool readOnly, int fixupIndex, int elementIndex)
         {
             if (checkSpecified != null && checkSpecified.Length > 0)
@@ -3437,6 +3460,7 @@ namespace System.Xml.Serialization
             ilg.WhileEnd();
         }
 
+        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         private void WriteParamsRead(int length)
         {
             const int StackallocLimit =
@@ -3510,6 +3534,7 @@ namespace System.Xml.Serialization
         }
 
         [RequiresUnreferencedCode("calls WriteArrayLocalDecl")]
+        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         private void WriteArrayLocalDecl(string typeName, string variableName, string initValue, TypeDesc arrayTypeDesc)
         {
             ReflectionAwareILGen.WriteArrayLocalDecl(typeName, variableName, new SourceInfo(initValue, initValue, null, arrayTypeDesc.Type, ilg), arrayTypeDesc);

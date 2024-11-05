@@ -103,9 +103,11 @@ namespace System.Xml.Serialization
             return _methodBuilders[methodName];
         }
         [RequiresUnreferencedCode("calls WriteStructMethod")]
+        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         internal virtual void GenerateMethod(TypeMapping mapping) { }
 
         [RequiresUnreferencedCode("calls GenerateMethod")]
+        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         internal void GenerateReferencedMethods()
         {
             while (_references > 0)

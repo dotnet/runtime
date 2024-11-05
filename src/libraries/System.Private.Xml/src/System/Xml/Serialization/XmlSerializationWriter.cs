@@ -83,6 +83,8 @@ namespace System.Xml.Serialization
             {
                 return _namespaces?.NamespaceList;
             }
+
+            [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
             set
             {
                 if (value == null)
