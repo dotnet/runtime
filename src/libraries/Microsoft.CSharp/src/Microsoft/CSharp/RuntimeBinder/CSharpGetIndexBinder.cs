@@ -45,7 +45,6 @@ namespace Microsoft.CSharp.RuntimeBinder
         /// </summary>
         /// <param name="callingContext">The <see cref="System.Type"/> that indicates where this operation is defined.</param>
         /// <param name="argumentInfo">The sequence of <see cref="CSharpArgumentInfo"/> instances for the arguments to this operation.</param>
-
         public CSharpGetIndexBinder(
             Type callingContext,
             IEnumerable<CSharpArgumentInfo> argumentInfo) :
