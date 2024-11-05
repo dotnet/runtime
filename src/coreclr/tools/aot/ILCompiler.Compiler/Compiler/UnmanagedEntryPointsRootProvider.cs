@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.Generic;
 using System.Reflection.Metadata;
 
@@ -48,7 +49,7 @@ namespace ILCompiler
                         && comparer.Equals(nsHandle, "System.Runtime.InteropServices"))
                     {
                         var method = (EcmaMethod)_module.GetMethod(ca.Parent);
-                        string? name = method.GetUnmanagedCallersOnlyExportName();
+                        string name = method.GetUnmanagedCallersOnlyExportName();
 
                         if (name == "DllMain")
                             throw new InvalidOperationException("Exporting DllMain from managed code is not supported!");
