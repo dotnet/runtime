@@ -3420,9 +3420,12 @@ void Compiler::fgAddCodeRef(BasicBlock* srcBlk, SpecialCodeKind kind)
     add              = new (this, CMK_Unknown) AddCodeDsc;
     add->acdDstBlk   = nullptr;
     add->acdTryIndex = srcBlk->bbTryIndex;
-    add->acdHndIndex = srcBlk->bbHndIndex;
-    add->acdKeyDsg   = dsg;
-    add->acdKind     = kind;
+
+    // For non-funclet EH we don't constrain ACD placement via handler regions
+    add->acdHndIndex = UsesFunclets() ? srcBlk->bbHndIndex : 0;
+
+    add->acdKeyDsg = dsg;
+    add->acdKind   = kind;
 
     // This gets set true in the stack level setter
     // if there's still a need for this helper

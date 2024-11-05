@@ -651,6 +651,33 @@
         <ExcludeList Include="$(XunitTestBinBase)/baseservices/multidimmarray/rank1array/**">
             <Issue>https://github.com/dotnet/runtime/issues/108255</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/opt/cse/hugeexpr1/**">
+            <Issue>https://github.com/dotnet/runtime/issues/109309</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/opt/cse/hugeSimpleExpr1/**">
+            <Issue>https://github.com/dotnet/runtime/issues/109309</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/profiler/rejit/rejit/**">
+            <Issue>https://github.com/dotnet/runtime/issues/109310</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/Arrays/misc/arrres_il_r/**">
+            <Issue>https://github.com/dotnet/runtime/issues/109311</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/GC/API/WeakReference/IsAlive/**">
+            <Issue>https://github.com/dotnet/runtime/issues/109312</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/lifetime/lifetime2/**">
+            <Issue>https://github.com/dotnet/runtime/issues/109313</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/opt/ObjectStackAllocation/ObjectStackAllocationTests/**">
+            <Issue>https://github.com/dotnet/runtime/issues/109314</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/forceinlining/AttributeConflict/**">
+            <Issue>https://github.com/dotnet/runtime/issues/109315</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/forceinlining/PositiveCases/**">
+            <Issue>https://github.com/dotnet/runtime/issues/109315</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <!-- Crossgen2 x86 specific excludes -->

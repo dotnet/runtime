@@ -20,36 +20,55 @@ internal sealed unsafe partial class ClrDataTask : IXCLRDataTask
         _legacyImpl = legacyImpl;
     }
 
-    public int GetProcess(/*IXCLRDataProcess*/ void** process)
+    int IXCLRDataTask.GetProcess(/*IXCLRDataProcess*/ void** process)
         => _legacyImpl is not null ? _legacyImpl.GetProcess(process) : HResults.E_NOTIMPL;
-    public int GetCurrentAppDomain(/*IXCLRDataAppDomain*/ void** appDomain)
+    int IXCLRDataTask.GetCurrentAppDomain(/*IXCLRDataAppDomain*/ void** appDomain)
         => _legacyImpl is not null ? _legacyImpl.GetCurrentAppDomain(appDomain) : HResults.E_NOTIMPL;
-    public int GetUniqueID(ulong* id)
+    int IXCLRDataTask.GetUniqueID(ulong* id)
         => _legacyImpl is not null ? _legacyImpl.GetUniqueID(id) : HResults.E_NOTIMPL;
-    public int GetFlags(uint* flags)
+    int IXCLRDataTask.GetFlags(uint* flags)
         => _legacyImpl is not null ? _legacyImpl.GetFlags(flags) : HResults.E_NOTIMPL;
-    public int IsSameObject(IXCLRDataTask* task)
+    int IXCLRDataTask.IsSameObject(IXCLRDataTask* task)
         => _legacyImpl is not null ? _legacyImpl.IsSameObject(task) : HResults.E_NOTIMPL;
-    public int GetManagedObject(/*IXCLRDataValue*/ void** value)
+    int IXCLRDataTask.GetManagedObject(/*IXCLRDataValue*/ void** value)
         => _legacyImpl is not null ? _legacyImpl.GetManagedObject(value) : HResults.E_NOTIMPL;
-    public int GetDesiredExecutionState(uint* state)
+    int IXCLRDataTask.GetDesiredExecutionState(uint* state)
         => _legacyImpl is not null ? _legacyImpl.GetDesiredExecutionState(state) : HResults.E_NOTIMPL;
-    public int SetDesiredExecutionState(uint state)
+    int IXCLRDataTask.SetDesiredExecutionState(uint state)
         => _legacyImpl is not null ? _legacyImpl.SetDesiredExecutionState(state) : HResults.E_NOTIMPL;
-    public int CreateStackWalk(uint flags, /*IXCLRDataStackWalk*/ void** stackWalk)
-        => _legacyImpl is not null ? _legacyImpl.CreateStackWalk(flags, stackWalk) : HResults.E_NOTIMPL;
-    public int GetOSThreadID(uint* id)
+
+    int IXCLRDataTask.CreateStackWalk(uint flags, out IXCLRDataStackWalk? stackWalk)
+    {
+        stackWalk = default;
+
+        Contracts.ThreadData threadData = _target.Contracts.Thread.GetThreadData(_address);
+        if (threadData.State.HasFlag(Contracts.ThreadState.Unstarted))
+            return HResults.E_FAIL;
+
+        IXCLRDataStackWalk? legacyStackWalk = null;
+        if (_legacyImpl is not null)
+        {
+            int hr = _legacyImpl.CreateStackWalk(flags, out legacyStackWalk);
+            if (hr < 0)
+                return hr;
+        }
+
+        stackWalk = new ClrDataStackWalk(_address, flags, _target, legacyStackWalk);
+        return HResults.S_OK;
+    }
+
+    int IXCLRDataTask.GetOSThreadID(uint* id)
         => _legacyImpl is not null ? _legacyImpl.GetOSThreadID(id) : HResults.E_NOTIMPL;
-    public int GetContext(uint contextFlags, uint contextBufSize, uint* contextSize, byte* contextBuffer)
+    int IXCLRDataTask.GetContext(uint contextFlags, uint contextBufSize, uint* contextSize, byte* contextBuffer)
         => _legacyImpl is not null ? _legacyImpl.GetContext(contextFlags, contextBufSize, contextSize, contextBuffer) : HResults.E_NOTIMPL;
-    public int SetContext(uint contextSize, byte* context)
+    int IXCLRDataTask.SetContext(uint contextSize, byte* context)
         => _legacyImpl is not null ? _legacyImpl.SetContext(contextSize, context) : HResults.E_NOTIMPL;
-    public int GetCurrentExceptionState(/*IXCLRDataExceptionState*/ void** exception)
+    int IXCLRDataTask.GetCurrentExceptionState(/*IXCLRDataExceptionState*/ void** exception)
         => _legacyImpl is not null ? _legacyImpl.GetCurrentExceptionState(exception) : HResults.E_NOTIMPL;
-    public int Request(uint reqCode, uint inBufferSize, byte* inBuffer, uint outBufferSize, byte* outBuffer)
+    int IXCLRDataTask.Request(uint reqCode, uint inBufferSize, byte* inBuffer, uint outBufferSize, byte* outBuffer)
         => _legacyImpl is not null ? _legacyImpl.Request(reqCode, inBufferSize, inBuffer, outBufferSize, outBuffer) : HResults.E_NOTIMPL;
-    public int GetName(uint bufLen, uint* nameLen, char* nameBuffer)
+    int IXCLRDataTask.GetName(uint bufLen, uint* nameLen, char* nameBuffer)
         => _legacyImpl is not null ? _legacyImpl.GetName(bufLen, nameLen, nameBuffer) : HResults.E_NOTIMPL;
-    public int GetLastExceptionState(/*IXCLRDataExceptionState*/ void** exception)
+    int IXCLRDataTask.GetLastExceptionState(/*IXCLRDataExceptionState*/ void** exception)
         => _legacyImpl is not null ? _legacyImpl.GetLastExceptionState(exception) : HResults.E_NOTIMPL;
 }
