@@ -6740,6 +6740,25 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     {
                         lvaUpdateClass(lclNum, op1, tiRetVal.GetClassHandleForObjRef());
                     }
+
+                    // If we see a local being assigned the result of a GDV-inlineable
+                    // IEnumerable<T>.GetEnumerator, keep track of both the local and the call.
+                    //
+                    if (op1->OperIs(GT_RET_EXPR))
+                    {
+                        JITDUMP(".... checking for GDV of IEnumerable<T>...\n");
+
+                        GenTreeCall* const   call = op1->AsRetExpr()->gtInlineCandidate;
+                        NamedIntrinsic const ni   = lookupNamedIntrinsic(call->gtCallMethHnd);
+
+                        if (ni == NI_System_Collections_Generic_IEnumerable_GetEnumerator)
+                        {
+                            JITDUMP("V%02u value is GDV of IEnumerable<T>.GetEnumerator\n", lclNum);
+                            lvaTable[lclNum].lvIsEnumerator = true;
+                            JITDUMP("Flagging [%06u] for enumerator cloning via V%02u\n", dspTreeID(call), lclNum);
+                            getImpEnumeratorGdvLocalMap()->Set(call, lclNum);
+                        }
+                    }
                 }
 
                 /* Filter out simple stores to itself */
@@ -8892,6 +8911,23 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         {
                             JITDUMP("Allocation is part of empty static pattern\n");
                             op1->gtFlags |= GTF_ALLOCOBJ_EMPTY_STATIC;
+                        }
+
+                        // If the method being imported is an inlinee, and the original call was flagged
+                        // for possible enumerator cloning, flag the allocation as well.
+                        //
+                        if (compIsForInlining() && hasImpEnumeratorGdvLocalMap())
+                        {
+                            NodeToUnsignedMap* const map           = getImpEnumeratorGdvLocalMap();
+                            unsigned                 enumeratorLcl = BAD_VAR_NUM;
+                            GenTreeCall* const       call          = impInlineInfo->iciCall;
+                            if (map->Lookup(call, &enumeratorLcl))
+                            {
+                                JITDUMP("Flagging [%06u] for enumerator cloning via V%02u\n", dspTreeID(op1),
+                                        enumeratorLcl);
+                                map->Remove(call);
+                                map->Set(op1, enumeratorLcl);
+                            }
                         }
 
                         // Remember that this basic block contains 'new' of an object

@@ -667,6 +667,9 @@ public:
 
     unsigned char lvRedefinedInEmbeddedStatement : 1; // Local has redefinitions inside embedded statements that
                                                       // disqualify it from local copy prop.
+
+    unsigned char lvIsEnumerator : 1; // Local is assigned exact class where : IEnumerable<T> via GDV
+
 private:
     unsigned char lvIsNeverNegative : 1; // The local is known to be never negative
 
@@ -4506,6 +4509,26 @@ protected:
     //-------------------- Stack manipulation ---------------------------------
 
     unsigned impStkSize; // Size of the full stack
+
+    // Enumerator de-abstraction support
+    //
+    typedef JitHashTable<GenTree*, JitPtrKeyFuncs<GenTree>, unsigned> NodeToUnsignedMap;
+
+    // Map is only set on the root instance.
+    //
+    NodeToUnsignedMap* impEnumeratorGdvLocalMap = nullptr;
+    bool hasImpEnumeratorGdvLocalMap() { return impInlineRoot()->impEnumeratorGdvLocalMap != nullptr; }
+    NodeToUnsignedMap* getImpEnumeratorGdvLocalMap()
+    {
+        Compiler* compiler = impInlineRoot();
+        if (compiler->impEnumeratorGdvLocalMap == nullptr)
+        {
+            CompAllocator alloc(compiler->getAllocator(CMK_Generic));
+            compiler->impEnumeratorGdvLocalMap = new (alloc) NodeToUnsignedMap(alloc);
+        }
+        
+        return compiler->impEnumeratorGdvLocalMap;
+    }
 
 #define SMALL_STACK_SIZE 16 // number of elements in impSmallStack
 
@@ -11524,8 +11547,6 @@ public:
         }
         return compRoot->m_fieldSeqStore;
     }
-
-    typedef JitHashTable<GenTree*, JitPtrKeyFuncs<GenTree>, unsigned> NodeToUnsignedMap;
 
     NodeToUnsignedMap* m_memorySsaMap[MemoryKindCount];
 
