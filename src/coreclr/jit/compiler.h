@@ -6973,8 +6973,9 @@ private:
             CorInfoType newSimdBaseJitType = op->GetSimdBaseJitType();
             unsigned newSimdSize = op->GetSimdSize();
 
-            assert((simdBaseJitType == CORINFO_TYPE_UNDEF) && (simdSize == 0) ||
-                   (simdBaseJitType == newSimdBaseJitType) && (simdSize == newSimdSize));
+            assert((newSimdBaseJitType != CORINFO_TYPE_UNDEF));
+            assert((simdBaseJitType == CORINFO_TYPE_UNDEF) ||
+                   ((simdBaseJitType == newSimdBaseJitType) && (simdSize == newSimdSize)));
 
             simdBaseJitType = newSimdBaseJitType;
             simdSize        = newSimdSize;

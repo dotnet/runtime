@@ -2547,7 +2547,7 @@ public:
             // Create a convert to mask node and insert it infront of the lcl.
             // There is not enough information in the lcl to get simd types. Instead we reuse the cached simd
             // types from the removed convert nodes.
-            assert((simdBaseJitType != CORINFO_TYPE_UNDEF) && (simdSize != 0));
+            assert(simdBaseJitType != CORINFO_TYPE_UNDEF);
             *use = m_compiler->gtNewSimdCvtMaskToVectorNode(vectorType, lclOp, simdBaseJitType, simdSize);
 
 #ifdef DEBUG
@@ -2732,7 +2732,7 @@ bool Compiler::fgLCLMasksUpdateLCLStore(Statement* stmt, LCLMasksWeightTable* we
     else
     {
         // Convert the input of the store to a mask.
-        assert((weight.simdBaseJitType != CORINFO_TYPE_UNDEF) && (weight.simdSize != 0));
+        assert(weight.simdBaseJitType != CORINFO_TYPE_UNDEF);
         GenTree* convertOp =
             gtNewSimdCvtVectorToMaskNode(TYP_MASK, lclStore->Data(), weight.simdBaseJitType, weight.simdSize);
         lclStore->Data() = convertOp;
