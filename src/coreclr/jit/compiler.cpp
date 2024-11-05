@@ -5155,6 +5155,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
             auto lateLayoutPhase = [this] {
                 fgDoReversePostOrderLayout();
                 fgMoveColdBlocks();
+                fgSearchImprovedLayout();
 
                 if (compHndBBtabCount != 0)
                 {
