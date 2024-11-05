@@ -206,8 +206,8 @@ namespace ILCompiler
                     InstructionSet.X64_AVX10v1_V512_X64 => (Avx10v1 | Avx512),
                     InstructionSet.X64_EVEX => Evex,
                     InstructionSet.X64_EVEX_X64 => Evex,
-                    InstructionSet.X64_VPCLMULQDQ => Vpclmulqdq,
-                    InstructionSet.X64_VPCLMULQDQ_V512 => (Vpclmulqdq | Avx512),
+                    InstructionSet.X64_PCLMULQDQ_V256 => Vpclmulqdq,
+                    InstructionSet.X64_PCLMULQDQ_V512 => (Vpclmulqdq | Avx512),
 
                     // Baseline ISAs - they're always available
                     InstructionSet.X64_SSE => 0,

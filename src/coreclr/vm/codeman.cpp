@@ -1394,8 +1394,8 @@ void EEJitManager::SetCpuInfo()
 
     if (((cpuFeatures & XArchIntrinsicConstants_Vpclmulqdq) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableVPCLMULQDQ))
     {
-        CPUCompileFlags.Set(InstructionSet_VPCLMULQDQ);
-        CPUCompileFlags.Set(InstructionSet_VPCLMULQDQ_V512);
+        CPUCompileFlags.Set(InstructionSet_PCLMULQDQ_V256);
+        CPUCompileFlags.Set(InstructionSet_PCLMULQDQ_V512);
     }
 
     if (((cpuFeatures & XArchIntrinsicConstants_AvxVnni) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVXVNNI))

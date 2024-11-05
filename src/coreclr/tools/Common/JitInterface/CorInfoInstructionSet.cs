@@ -56,8 +56,8 @@ namespace Internal.JitInterface
         X64_FMA = InstructionSet_X64.FMA,
         X64_LZCNT = InstructionSet_X64.LZCNT,
         X64_PCLMULQDQ = InstructionSet_X64.PCLMULQDQ,
-        X64_VPCLMULQDQ = InstructionSet_X64.VPCLMULQDQ,
-        X64_VPCLMULQDQ_V512 = InstructionSet_X64.VPCLMULQDQ_V512,
+        X64_PCLMULQDQ_V256 = InstructionSet_X64.PCLMULQDQ_V256,
+        X64_PCLMULQDQ_V512 = InstructionSet_X64.PCLMULQDQ_V512,
         X64_POPCNT = InstructionSet_X64.POPCNT,
         X64_Vector128 = InstructionSet_X64.Vector128,
         X64_Vector256 = InstructionSet_X64.Vector256,
@@ -123,8 +123,8 @@ namespace Internal.JitInterface
         X86_FMA = InstructionSet_X86.FMA,
         X86_LZCNT = InstructionSet_X86.LZCNT,
         X86_PCLMULQDQ = InstructionSet_X86.PCLMULQDQ,
-        X86_VPCLMULQDQ = InstructionSet_X86.VPCLMULQDQ,
-        X86_VPCLMULQDQ_V512 = InstructionSet_X86.VPCLMULQDQ_V512,
+        X86_PCLMULQDQ_V256 = InstructionSet_X86.PCLMULQDQ_V256,
+        X86_PCLMULQDQ_V512 = InstructionSet_X86.PCLMULQDQ_V512,
         X86_POPCNT = InstructionSet_X86.POPCNT,
         X86_Vector128 = InstructionSet_X86.Vector128,
         X86_Vector256 = InstructionSet_X86.Vector256,
@@ -226,8 +226,8 @@ namespace Internal.JitInterface
         FMA = 13,
         LZCNT = 14,
         PCLMULQDQ = 15,
-        VPCLMULQDQ = 16,
-        VPCLMULQDQ_V512 = 17,
+        PCLMULQDQ_V256 = 16,
+        PCLMULQDQ_V512 = 17,
         POPCNT = 18,
         Vector128 = 19,
         Vector256 = 20,
@@ -299,8 +299,8 @@ namespace Internal.JitInterface
         FMA = 13,
         LZCNT = 14,
         PCLMULQDQ = 15,
-        VPCLMULQDQ = 16,
-        VPCLMULQDQ_V512 = 17,
+        PCLMULQDQ_V256 = 16,
+        PCLMULQDQ_V512 = 17,
         POPCNT = 18,
         Vector128 = 19,
         Vector256 = 20,
@@ -742,13 +742,13 @@ namespace Internal.JitInterface
                         resultflags.AddInstructionSet(InstructionSet.X64_SSE2);
                     if (resultflags.HasInstructionSet(InstructionSet.X64_PCLMULQDQ))
                         resultflags.AddInstructionSet(InstructionSet.X64_SSE2);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_VPCLMULQDQ))
+                    if (resultflags.HasInstructionSet(InstructionSet.X64_PCLMULQDQ_V256))
                         resultflags.AddInstructionSet(InstructionSet.X64_PCLMULQDQ);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_VPCLMULQDQ))
+                    if (resultflags.HasInstructionSet(InstructionSet.X64_PCLMULQDQ_V256))
                         resultflags.AddInstructionSet(InstructionSet.X64_AVX);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_VPCLMULQDQ_V512))
-                        resultflags.AddInstructionSet(InstructionSet.X64_VPCLMULQDQ);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_VPCLMULQDQ_V512))
+                    if (resultflags.HasInstructionSet(InstructionSet.X64_PCLMULQDQ_V512))
+                        resultflags.AddInstructionSet(InstructionSet.X64_PCLMULQDQ_V256);
+                    if (resultflags.HasInstructionSet(InstructionSet.X64_PCLMULQDQ_V512))
                         resultflags.AddInstructionSet(InstructionSet.X64_AVX512F);
                     if (resultflags.HasInstructionSet(InstructionSet.X64_AVXVNNI))
                         resultflags.AddInstructionSet(InstructionSet.X64_AVX2);
@@ -857,13 +857,13 @@ namespace Internal.JitInterface
                         resultflags.AddInstructionSet(InstructionSet.X86_SSE2);
                     if (resultflags.HasInstructionSet(InstructionSet.X86_PCLMULQDQ))
                         resultflags.AddInstructionSet(InstructionSet.X86_SSE2);
-                    if (resultflags.HasInstructionSet(InstructionSet.X86_VPCLMULQDQ))
+                    if (resultflags.HasInstructionSet(InstructionSet.X86_PCLMULQDQ_V256))
                         resultflags.AddInstructionSet(InstructionSet.X86_PCLMULQDQ);
-                    if (resultflags.HasInstructionSet(InstructionSet.X86_VPCLMULQDQ))
+                    if (resultflags.HasInstructionSet(InstructionSet.X86_PCLMULQDQ_V256))
                         resultflags.AddInstructionSet(InstructionSet.X86_AVX);
-                    if (resultflags.HasInstructionSet(InstructionSet.X86_VPCLMULQDQ_V512))
-                        resultflags.AddInstructionSet(InstructionSet.X86_VPCLMULQDQ);
-                    if (resultflags.HasInstructionSet(InstructionSet.X86_VPCLMULQDQ_V512))
+                    if (resultflags.HasInstructionSet(InstructionSet.X86_PCLMULQDQ_V512))
+                        resultflags.AddInstructionSet(InstructionSet.X86_PCLMULQDQ_V256);
+                    if (resultflags.HasInstructionSet(InstructionSet.X86_PCLMULQDQ_V512))
                         resultflags.AddInstructionSet(InstructionSet.X86_AVX512F);
                     if (resultflags.HasInstructionSet(InstructionSet.X86_AVXVNNI))
                         resultflags.AddInstructionSet(InstructionSet.X86_AVX2);
@@ -1090,13 +1090,13 @@ namespace Internal.JitInterface
                     if (resultflags.HasInstructionSet(InstructionSet.X64_SSE2))
                         resultflags.AddInstructionSet(InstructionSet.X64_PCLMULQDQ);
                     if (resultflags.HasInstructionSet(InstructionSet.X64_PCLMULQDQ))
-                        resultflags.AddInstructionSet(InstructionSet.X64_VPCLMULQDQ);
+                        resultflags.AddInstructionSet(InstructionSet.X64_PCLMULQDQ_V256);
                     if (resultflags.HasInstructionSet(InstructionSet.X64_AVX))
-                        resultflags.AddInstructionSet(InstructionSet.X64_VPCLMULQDQ);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_VPCLMULQDQ))
-                        resultflags.AddInstructionSet(InstructionSet.X64_VPCLMULQDQ_V512);
+                        resultflags.AddInstructionSet(InstructionSet.X64_PCLMULQDQ_V256);
+                    if (resultflags.HasInstructionSet(InstructionSet.X64_PCLMULQDQ_V256))
+                        resultflags.AddInstructionSet(InstructionSet.X64_PCLMULQDQ_V512);
                     if (resultflags.HasInstructionSet(InstructionSet.X64_AVX512F))
-                        resultflags.AddInstructionSet(InstructionSet.X64_VPCLMULQDQ_V512);
+                        resultflags.AddInstructionSet(InstructionSet.X64_PCLMULQDQ_V512);
                     if (resultflags.HasInstructionSet(InstructionSet.X64_AVX2))
                         resultflags.AddInstructionSet(InstructionSet.X64_AVXVNNI);
                     if (resultflags.HasInstructionSet(InstructionSet.X64_X86Base))
@@ -1205,13 +1205,13 @@ namespace Internal.JitInterface
                     if (resultflags.HasInstructionSet(InstructionSet.X86_SSE2))
                         resultflags.AddInstructionSet(InstructionSet.X86_PCLMULQDQ);
                     if (resultflags.HasInstructionSet(InstructionSet.X86_PCLMULQDQ))
-                        resultflags.AddInstructionSet(InstructionSet.X86_VPCLMULQDQ);
+                        resultflags.AddInstructionSet(InstructionSet.X86_PCLMULQDQ_V256);
                     if (resultflags.HasInstructionSet(InstructionSet.X86_AVX))
-                        resultflags.AddInstructionSet(InstructionSet.X86_VPCLMULQDQ);
-                    if (resultflags.HasInstructionSet(InstructionSet.X86_VPCLMULQDQ))
-                        resultflags.AddInstructionSet(InstructionSet.X86_VPCLMULQDQ_V512);
+                        resultflags.AddInstructionSet(InstructionSet.X86_PCLMULQDQ_V256);
+                    if (resultflags.HasInstructionSet(InstructionSet.X86_PCLMULQDQ_V256))
+                        resultflags.AddInstructionSet(InstructionSet.X86_PCLMULQDQ_V512);
                     if (resultflags.HasInstructionSet(InstructionSet.X86_AVX512F))
-                        resultflags.AddInstructionSet(InstructionSet.X86_VPCLMULQDQ_V512);
+                        resultflags.AddInstructionSet(InstructionSet.X86_PCLMULQDQ_V512);
                     if (resultflags.HasInstructionSet(InstructionSet.X86_AVX2))
                         resultflags.AddInstructionSet(InstructionSet.X86_AVXVNNI);
                     if (resultflags.HasInstructionSet(InstructionSet.X86_X86Base))
@@ -1343,8 +1343,8 @@ namespace Internal.JitInterface
                     yield return new InstructionSetInfo("fma", "Fma", InstructionSet.X64_FMA, true);
                     yield return new InstructionSetInfo("lzcnt", "Lzcnt", InstructionSet.X64_LZCNT, true);
                     yield return new InstructionSetInfo("pclmul", "Pclmulqdq", InstructionSet.X64_PCLMULQDQ, true);
-                    yield return new InstructionSetInfo("vpclmul", "Pclmulqdq_V256", InstructionSet.X64_VPCLMULQDQ, true);
-                    yield return new InstructionSetInfo("vpclmul_v512", "Pclmulqdq_V512", InstructionSet.X64_VPCLMULQDQ_V512, true);
+                    yield return new InstructionSetInfo("vpclmul", "Pclmulqdq_V256", InstructionSet.X64_PCLMULQDQ_V256, true);
+                    yield return new InstructionSetInfo("vpclmul_v512", "Pclmulqdq_V512", InstructionSet.X64_PCLMULQDQ_V512, true);
                     yield return new InstructionSetInfo("popcnt", "Popcnt", InstructionSet.X64_POPCNT, true);
                     yield return new InstructionSetInfo("Vector128", "", InstructionSet.X64_Vector128, false);
                     yield return new InstructionSetInfo("Vector256", "", InstructionSet.X64_Vector256, false);
@@ -1386,8 +1386,8 @@ namespace Internal.JitInterface
                     yield return new InstructionSetInfo("fma", "Fma", InstructionSet.X86_FMA, true);
                     yield return new InstructionSetInfo("lzcnt", "Lzcnt", InstructionSet.X86_LZCNT, true);
                     yield return new InstructionSetInfo("pclmul", "Pclmulqdq", InstructionSet.X86_PCLMULQDQ, true);
-                    yield return new InstructionSetInfo("vpclmul", "Pclmulqdq_V256", InstructionSet.X86_VPCLMULQDQ, true);
-                    yield return new InstructionSetInfo("vpclmul_v512", "Pclmulqdq_V512", InstructionSet.X86_VPCLMULQDQ_V512, true);
+                    yield return new InstructionSetInfo("vpclmul", "Pclmulqdq_V256", InstructionSet.X86_PCLMULQDQ_V256, true);
+                    yield return new InstructionSetInfo("vpclmul_v512", "Pclmulqdq_V512", InstructionSet.X86_PCLMULQDQ_V512, true);
                     yield return new InstructionSetInfo("popcnt", "Popcnt", InstructionSet.X86_POPCNT, true);
                     yield return new InstructionSetInfo("Vector128", "", InstructionSet.X86_Vector128, false);
                     yield return new InstructionSetInfo("Vector256", "", InstructionSet.X86_Vector256, false);
@@ -1782,10 +1782,10 @@ namespace Internal.JitInterface
                         { return InstructionSet.X64_PCLMULQDQ_X64; }
                         else
                         if (nestedTypeName == "V256")
-                        { return InstructionSet.X64_VPCLMULQDQ; }
+                        { return InstructionSet.X64_PCLMULQDQ_V256; }
                         else
                         if (nestedTypeName == "V512")
-                        { return InstructionSet.X64_VPCLMULQDQ_V512; }
+                        { return InstructionSet.X64_PCLMULQDQ_V512; }
                         else
                         { return InstructionSet.X64_PCLMULQDQ; }
 
@@ -1936,10 +1936,10 @@ namespace Internal.JitInterface
 
                     case "Pclmulqdq":
                         if (nestedTypeName == "V256")
-                        { return InstructionSet.X86_VPCLMULQDQ; }
+                        { return InstructionSet.X86_PCLMULQDQ_V256; }
                         else
                         if (nestedTypeName == "V512")
-                        { return InstructionSet.X86_VPCLMULQDQ_V512; }
+                        { return InstructionSet.X86_PCLMULQDQ_V512; }
                         else
                         { return InstructionSet.X86_PCLMULQDQ; }
 

@@ -58,8 +58,8 @@ enum CORINFO_InstructionSet
     InstructionSet_FMA=13,
     InstructionSet_LZCNT=14,
     InstructionSet_PCLMULQDQ=15,
-    InstructionSet_VPCLMULQDQ=16,
-    InstructionSet_VPCLMULQDQ_V512=17,
+    InstructionSet_PCLMULQDQ_V256=16,
+    InstructionSet_PCLMULQDQ_V512=17,
     InstructionSet_POPCNT=18,
     InstructionSet_Vector128=19,
     InstructionSet_Vector256=20,
@@ -127,8 +127,8 @@ enum CORINFO_InstructionSet
     InstructionSet_FMA=13,
     InstructionSet_LZCNT=14,
     InstructionSet_PCLMULQDQ=15,
-    InstructionSet_VPCLMULQDQ=16,
-    InstructionSet_VPCLMULQDQ_V512=17,
+    InstructionSet_PCLMULQDQ_V256=16,
+    InstructionSet_PCLMULQDQ_V512=17,
     InstructionSet_POPCNT=18,
     InstructionSet_Vector128=19,
     InstructionSet_Vector256=20,
@@ -600,14 +600,14 @@ inline CORINFO_InstructionSetFlags EnsureInstructionSetFlagsAreValid(CORINFO_Ins
             resultflags.RemoveInstructionSet(InstructionSet_AES);
         if (resultflags.HasInstructionSet(InstructionSet_PCLMULQDQ) && !resultflags.HasInstructionSet(InstructionSet_SSE2))
             resultflags.RemoveInstructionSet(InstructionSet_PCLMULQDQ);
-        if (resultflags.HasInstructionSet(InstructionSet_VPCLMULQDQ) && !resultflags.HasInstructionSet(InstructionSet_PCLMULQDQ))
-            resultflags.RemoveInstructionSet(InstructionSet_VPCLMULQDQ);
-        if (resultflags.HasInstructionSet(InstructionSet_VPCLMULQDQ) && !resultflags.HasInstructionSet(InstructionSet_AVX))
-            resultflags.RemoveInstructionSet(InstructionSet_VPCLMULQDQ);
-        if (resultflags.HasInstructionSet(InstructionSet_VPCLMULQDQ_V512) && !resultflags.HasInstructionSet(InstructionSet_VPCLMULQDQ))
-            resultflags.RemoveInstructionSet(InstructionSet_VPCLMULQDQ_V512);
-        if (resultflags.HasInstructionSet(InstructionSet_VPCLMULQDQ_V512) && !resultflags.HasInstructionSet(InstructionSet_AVX512F))
-            resultflags.RemoveInstructionSet(InstructionSet_VPCLMULQDQ_V512);
+        if (resultflags.HasInstructionSet(InstructionSet_PCLMULQDQ_V256) && !resultflags.HasInstructionSet(InstructionSet_PCLMULQDQ))
+            resultflags.RemoveInstructionSet(InstructionSet_PCLMULQDQ_V256);
+        if (resultflags.HasInstructionSet(InstructionSet_PCLMULQDQ_V256) && !resultflags.HasInstructionSet(InstructionSet_AVX))
+            resultflags.RemoveInstructionSet(InstructionSet_PCLMULQDQ_V256);
+        if (resultflags.HasInstructionSet(InstructionSet_PCLMULQDQ_V512) && !resultflags.HasInstructionSet(InstructionSet_PCLMULQDQ_V256))
+            resultflags.RemoveInstructionSet(InstructionSet_PCLMULQDQ_V512);
+        if (resultflags.HasInstructionSet(InstructionSet_PCLMULQDQ_V512) && !resultflags.HasInstructionSet(InstructionSet_AVX512F))
+            resultflags.RemoveInstructionSet(InstructionSet_PCLMULQDQ_V512);
         if (resultflags.HasInstructionSet(InstructionSet_AVXVNNI) && !resultflags.HasInstructionSet(InstructionSet_AVX2))
             resultflags.RemoveInstructionSet(InstructionSet_AVXVNNI);
         if (resultflags.HasInstructionSet(InstructionSet_X86Serialize) && !resultflags.HasInstructionSet(InstructionSet_X86Base))
@@ -714,14 +714,14 @@ inline CORINFO_InstructionSetFlags EnsureInstructionSetFlagsAreValid(CORINFO_Ins
             resultflags.RemoveInstructionSet(InstructionSet_AES);
         if (resultflags.HasInstructionSet(InstructionSet_PCLMULQDQ) && !resultflags.HasInstructionSet(InstructionSet_SSE2))
             resultflags.RemoveInstructionSet(InstructionSet_PCLMULQDQ);
-        if (resultflags.HasInstructionSet(InstructionSet_VPCLMULQDQ) && !resultflags.HasInstructionSet(InstructionSet_PCLMULQDQ))
-            resultflags.RemoveInstructionSet(InstructionSet_VPCLMULQDQ);
-        if (resultflags.HasInstructionSet(InstructionSet_VPCLMULQDQ) && !resultflags.HasInstructionSet(InstructionSet_AVX))
-            resultflags.RemoveInstructionSet(InstructionSet_VPCLMULQDQ);
-        if (resultflags.HasInstructionSet(InstructionSet_VPCLMULQDQ_V512) && !resultflags.HasInstructionSet(InstructionSet_VPCLMULQDQ))
-            resultflags.RemoveInstructionSet(InstructionSet_VPCLMULQDQ_V512);
-        if (resultflags.HasInstructionSet(InstructionSet_VPCLMULQDQ_V512) && !resultflags.HasInstructionSet(InstructionSet_AVX512F))
-            resultflags.RemoveInstructionSet(InstructionSet_VPCLMULQDQ_V512);
+        if (resultflags.HasInstructionSet(InstructionSet_PCLMULQDQ_V256) && !resultflags.HasInstructionSet(InstructionSet_PCLMULQDQ))
+            resultflags.RemoveInstructionSet(InstructionSet_PCLMULQDQ_V256);
+        if (resultflags.HasInstructionSet(InstructionSet_PCLMULQDQ_V256) && !resultflags.HasInstructionSet(InstructionSet_AVX))
+            resultflags.RemoveInstructionSet(InstructionSet_PCLMULQDQ_V256);
+        if (resultflags.HasInstructionSet(InstructionSet_PCLMULQDQ_V512) && !resultflags.HasInstructionSet(InstructionSet_PCLMULQDQ_V256))
+            resultflags.RemoveInstructionSet(InstructionSet_PCLMULQDQ_V512);
+        if (resultflags.HasInstructionSet(InstructionSet_PCLMULQDQ_V512) && !resultflags.HasInstructionSet(InstructionSet_AVX512F))
+            resultflags.RemoveInstructionSet(InstructionSet_PCLMULQDQ_V512);
         if (resultflags.HasInstructionSet(InstructionSet_AVXVNNI) && !resultflags.HasInstructionSet(InstructionSet_AVX2))
             resultflags.RemoveInstructionSet(InstructionSet_AVXVNNI);
         if (resultflags.HasInstructionSet(InstructionSet_X86Serialize) && !resultflags.HasInstructionSet(InstructionSet_X86Base))
@@ -890,10 +890,10 @@ inline const char *InstructionSetToString(CORINFO_InstructionSet instructionSet)
             return "PCLMULQDQ";
         case InstructionSet_PCLMULQDQ_X64 :
             return "PCLMULQDQ_X64";
-        case InstructionSet_VPCLMULQDQ :
-            return "VPCLMULQDQ";
-        case InstructionSet_VPCLMULQDQ_V512 :
-            return "VPCLMULQDQ_V512";
+        case InstructionSet_PCLMULQDQ_V256 :
+            return "PCLMULQDQ_V256";
+        case InstructionSet_PCLMULQDQ_V512 :
+            return "PCLMULQDQ_V512";
         case InstructionSet_POPCNT :
             return "POPCNT";
         case InstructionSet_POPCNT_X64 :
@@ -996,10 +996,10 @@ inline const char *InstructionSetToString(CORINFO_InstructionSet instructionSet)
             return "LZCNT";
         case InstructionSet_PCLMULQDQ :
             return "PCLMULQDQ";
-        case InstructionSet_VPCLMULQDQ :
-            return "VPCLMULQDQ";
-        case InstructionSet_VPCLMULQDQ_V512 :
-            return "VPCLMULQDQ_V512";
+        case InstructionSet_PCLMULQDQ_V256 :
+            return "PCLMULQDQ_V256";
+        case InstructionSet_PCLMULQDQ_V512 :
+            return "PCLMULQDQ_V512";
         case InstructionSet_POPCNT :
             return "POPCNT";
         case InstructionSet_Vector128 :
@@ -1096,8 +1096,8 @@ inline CORINFO_InstructionSet InstructionSetFromR2RInstructionSet(ReadyToRunInst
         case READYTORUN_INSTRUCTION_Fma: return InstructionSet_FMA;
         case READYTORUN_INSTRUCTION_Lzcnt: return InstructionSet_LZCNT;
         case READYTORUN_INSTRUCTION_Pclmulqdq: return InstructionSet_PCLMULQDQ;
-        case READYTORUN_INSTRUCTION_Pclmulqdq_V256: return InstructionSet_VPCLMULQDQ;
-        case READYTORUN_INSTRUCTION_Pclmulqdq_V512: return InstructionSet_VPCLMULQDQ_V512;
+        case READYTORUN_INSTRUCTION_Pclmulqdq_V256: return InstructionSet_PCLMULQDQ_V256;
+        case READYTORUN_INSTRUCTION_Pclmulqdq_V512: return InstructionSet_PCLMULQDQ_V512;
         case READYTORUN_INSTRUCTION_Popcnt: return InstructionSet_POPCNT;
         case READYTORUN_INSTRUCTION_AvxVnni: return InstructionSet_AVXVNNI;
         case READYTORUN_INSTRUCTION_Movbe: return InstructionSet_MOVBE;
@@ -1135,8 +1135,8 @@ inline CORINFO_InstructionSet InstructionSetFromR2RInstructionSet(ReadyToRunInst
         case READYTORUN_INSTRUCTION_Fma: return InstructionSet_FMA;
         case READYTORUN_INSTRUCTION_Lzcnt: return InstructionSet_LZCNT;
         case READYTORUN_INSTRUCTION_Pclmulqdq: return InstructionSet_PCLMULQDQ;
-        case READYTORUN_INSTRUCTION_Pclmulqdq_V256: return InstructionSet_VPCLMULQDQ;
-        case READYTORUN_INSTRUCTION_Pclmulqdq_V512: return InstructionSet_VPCLMULQDQ_V512;
+        case READYTORUN_INSTRUCTION_Pclmulqdq_V256: return InstructionSet_PCLMULQDQ_V256;
+        case READYTORUN_INSTRUCTION_Pclmulqdq_V512: return InstructionSet_PCLMULQDQ_V512;
         case READYTORUN_INSTRUCTION_Popcnt: return InstructionSet_POPCNT;
         case READYTORUN_INSTRUCTION_AvxVnni: return InstructionSet_AVXVNNI;
         case READYTORUN_INSTRUCTION_Movbe: return InstructionSet_MOVBE;

@@ -115,7 +115,7 @@ static CORINFO_InstructionSet V256VersionOfIsa(CORINFO_InstructionSet isa)
     switch (isa)
     {
         case InstructionSet_PCLMULQDQ:
-            return InstructionSet_VPCLMULQDQ;
+            return InstructionSet_PCLMULQDQ_V256;
         default:
             return InstructionSet_NONE;
     }
@@ -138,7 +138,7 @@ static CORINFO_InstructionSet V512VersionOfIsa(CORINFO_InstructionSet isa)
         case InstructionSet_AVX10v1_X64:
             return InstructionSet_AVX10v1_V512_X64;
         case InstructionSet_PCLMULQDQ:
-            return InstructionSet_VPCLMULQDQ_V512;
+            return InstructionSet_PCLMULQDQ_V512;
         default:
             return InstructionSet_NONE;
     }
@@ -872,8 +872,8 @@ bool HWIntrinsicInfo::isFullyImplementedIsa(CORINFO_InstructionSet isa)
         case InstructionSet_LZCNT_X64:
         case InstructionSet_PCLMULQDQ:
         case InstructionSet_PCLMULQDQ_X64:
-        case InstructionSet_VPCLMULQDQ:
-        case InstructionSet_VPCLMULQDQ_V512:
+        case InstructionSet_PCLMULQDQ_V256:
+        case InstructionSet_PCLMULQDQ_V512:
         case InstructionSet_POPCNT:
         case InstructionSet_POPCNT_X64:
         case InstructionSet_SSE:

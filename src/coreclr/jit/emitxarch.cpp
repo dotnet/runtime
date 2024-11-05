@@ -254,7 +254,19 @@ bool emitter::IsEvexEncodableInstruction(instruction ins) const
     {
         return false;
     }
-    return HasEvexEncoding(ins);
+
+    switch (ins)
+    {
+        case INS_pclmulqdq:
+        {
+            return emitComp->compOpportunisticallyDependsOn(InstructionSet_PCLMULQDQ_V256);
+        }
+
+        default:
+        {
+            return HasEvexEncoding(ins);
+        }
+    }
 }
 
 //------------------------------------------------------------------------
@@ -19860,7 +19872,6 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             break;
 
         case INS_pclmulqdq:
-        case INS_vpclmulqdq:
             result.insThroughput = PERFSCORE_THROUGHPUT_1C;
             result.insLatency += PERFSCORE_LATENCY_7C;
             break;

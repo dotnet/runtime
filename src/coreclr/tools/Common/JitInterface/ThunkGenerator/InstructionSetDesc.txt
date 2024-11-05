@@ -40,8 +40,8 @@ instructionset     ,X86   ,Bmi2                 ,        ,11 ,BMI2              
 instructionset     ,X86   ,Fma                  ,        ,12 ,FMA                   ,fma
 instructionset     ,X86   ,Lzcnt                ,        ,13 ,LZCNT                 ,lzcnt
 instructionset     ,X86   ,Pclmulqdq            ,        ,14 ,PCLMULQDQ             ,pclmul
-instructionset     ,X86   ,Pclmulqdq_V256       ,        ,48 ,VPCLMULQDQ            ,vpclmul
-instructionset     ,X86   ,Pclmulqdq_V512       ,        ,49 ,VPCLMULQDQ_V512       ,vpclmul_v512
+instructionset     ,X86   ,Pclmulqdq_V256       ,        ,48 ,PCLMULQDQ_V256        ,vpclmul
+instructionset     ,X86   ,Pclmulqdq_V512       ,        ,49 ,PCLMULQDQ_V512        ,vpclmul_v512
 instructionset     ,X86   ,Popcnt               ,        ,15 ,POPCNT                ,popcnt
 instructionset     ,X86   ,                     ,        ,   ,Vector128             ,
 instructionset     ,X86   ,                     ,        ,   ,Vector256             ,
@@ -144,10 +144,10 @@ implication        ,X86   ,AVX512VBMI_VL        ,AVX512BW_VL
 
 implication        ,X86   ,AES                  ,SSE2
 implication        ,X86   ,PCLMULQDQ            ,SSE2
-implication        ,X86   ,VPCLMULQDQ           ,PCLMULQDQ
-implication        ,X86   ,VPCLMULQDQ           ,AVX
-implication        ,X86   ,VPCLMULQDQ_V512      ,VPCLMULQDQ
-implication        ,X86   ,VPCLMULQDQ_V512      ,AVX512F
+implication        ,X86   ,PCLMULQDQ_V256       ,PCLMULQDQ
+implication        ,X86   ,PCLMULQDQ_V256       ,AVX
+implication        ,X86   ,PCLMULQDQ_V512       ,PCLMULQDQ_V256
+implication        ,X86   ,PCLMULQDQ_V512       ,AVX512F
 implication        ,X86   ,AVXVNNI              ,AVX2
 implication        ,X86   ,X86Serialize         ,X86Base
 

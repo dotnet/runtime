@@ -2592,17 +2592,6 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             return LowerHWIntrinsicTernaryLogic(node);
         }
 
-        case NI_PCLMULQDQ_CarrylessMultiply:
-        {
-            // The EVEX form of 128-bit pclmulqdq requires VPCLMULQDQ in addition to AVX512VL
-            if (comp->compOpportunisticallyDependsOn(InstructionSet_VPCLMULQDQ))
-            {
-                intrinsicId = NI_VPCLMULQDQ_CarrylessMultiply;
-                node->ChangeHWIntrinsicId(intrinsicId);
-            }
-            break;
-        }
-
         default:
             break;
     }
@@ -9352,8 +9341,8 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
                 case NI_SSE41_MultipleSumAbsoluteDifferences:
                 case NI_AES_KeygenAssist:
                 case NI_PCLMULQDQ_CarrylessMultiply:
-                case NI_VPCLMULQDQ_CarrylessMultiply:
-                case NI_VPCLMULQDQ_V512_CarrylessMultiply:
+                case NI_PCLMULQDQ_V256_CarrylessMultiply:
+                case NI_PCLMULQDQ_V512_CarrylessMultiply:
                 case NI_AVX_Blend:
                 case NI_AVX_Compare:
                 case NI_AVX_DotProduct:
@@ -11329,8 +11318,8 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                         case NI_AVX512DQ_VL_Range:
                         case NI_AVX512DQ_ReduceScalar:
                         case NI_PCLMULQDQ_CarrylessMultiply:
-                        case NI_VPCLMULQDQ_CarrylessMultiply:
-                        case NI_VPCLMULQDQ_V512_CarrylessMultiply:
+                        case NI_PCLMULQDQ_V256_CarrylessMultiply:
+                        case NI_PCLMULQDQ_V512_CarrylessMultiply:
                         case NI_AVX10v1_AlignRight32:
                         case NI_AVX10v1_AlignRight64:
                         case NI_AVX10v1_GetMantissaScalar:
