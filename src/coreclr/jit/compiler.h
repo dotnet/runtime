@@ -6926,19 +6926,19 @@ private:
     {
         // For a given var, number of Lcl Stores with conversion from mask minus number of Lcl Stores
         // without conversion from mask.
-        signed storeWeight;
+        weight_t storeWeight = 0.0;
 
         // For a given var, number of Lcl var with conversion to mask minus number of Lcl vars without
         // conversion to mask.
-        signed varWeight;
+        weight_t varWeight = 0.0;
 
         // The simd types of the Lcl Store after conversion to vector.
-        CorInfoType simdBaseJitType;
-        unsigned    simdSize;
+        CorInfoType simdBaseJitType = CORINFO_TYPE_UNDEF;
+        unsigned    simdSize = 0;
 
         bool MaskConversionsDominate()
         {
-            return ((storeWeight > 0) && (varWeight > 0));
+            return ((storeWeight > 0.0) && (varWeight > 0.0));
         }
     };
 
