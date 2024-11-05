@@ -20560,7 +20560,6 @@ bool GenTree::isEvexCompatibleHWIntrinsic(Compiler* comp) const
                 return HWIntrinsicInfo::HasEvexSemantics(intrinsicId);
             }
         }
-
     }
 #endif
     return false;
