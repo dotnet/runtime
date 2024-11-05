@@ -1479,7 +1479,7 @@ SetThreadDescription(
     char *nameBuf = NULL;
 
     PAL_ERROR palError = InternalGetThreadDataFromHandle(pThread, hThread, &pTargetThread, &pobjThread);
-    if (palError != NO_ERROR)
+    if (palError == NO_ERROR)
     {
         // Ignore requests to set the main thread name because
         // it causes the value returned by Process.ProcessName to change.
@@ -1493,10 +1493,12 @@ SetThreadDescription(
                 {
                     pThread->SetLastError(ERROR_INSUFFICIENT_BUFFER);
                 }
-
-                int setNameResult = minipal_set_thread_name(pTargetThread->GetPThreadSelf(), nameBuf);
-                (void)setNameResult; // used
-                _ASSERTE(setNameResult == 0);
+                else
+                {
+                    int setNameResult = minipal_set_thread_name(pTargetThread->GetPThreadSelf(), nameBuf);
+                    (void)setNameResult; // used
+                    _ASSERTE(setNameResult == 0);
+                }
 
                 free(nameBuf);
             }
@@ -1506,7 +1508,8 @@ SetThreadDescription(
             }
         }
 
-        pobjThread->ReleaseReference(pThread);
+        if (pobjThread != NULL)
+            pobjThread->ReleaseReference(pThread);
     }
 
     LOGEXIT("SetThreadDescription");
