@@ -349,6 +349,7 @@ namespace System.Security.Cryptography
                     }
 
                     DATA_BLOB outputBlob = default(DATA_BLOB);
+                    Span<byte> interopSpan = default;
                     try
                     {
                         bool success = protect ?
@@ -367,16 +368,17 @@ namespace System.Security.Cryptography
                                 throw lastWin32Error.ToCryptographicException();
                         }
 
+
                         // In some cases, the API would fail due to OOM but simply return a null pointer.
                         if (outputBlob.pbData == IntPtr.Zero)
                             throw new OutOfMemoryException();
 
                         int length = (int)(outputBlob.cbData);
+                        interopSpan = new Span<byte>(outputBlob.pbData.ToPointer(), length);
+
                         if (allocateArray)
                         {
-                            byte[] outputBytes = new byte[length];
-                            Marshal.Copy(outputBlob.pbData, outputBytes, 0, length);
-                            outputData = outputBytes;
+                            outputData = interopSpan.ToArray();
                             bytesWritten = length;
                             return true;
                         }
@@ -388,16 +390,16 @@ namespace System.Security.Cryptography
                             return false;
                         }
 
-                        new Span<byte>(outputBlob.pbData.ToPointer(), length).CopyTo(outputSpan);
+                        interopSpan.CopyTo(outputSpan);
                         bytesWritten = length;
                         outputData = null;
                         return true;
                     }
                     finally
                     {
-                        if (outputBlob.pbData != IntPtr.Zero)
+                        if (!interopSpan.IsEmpty)
                         {
-                            CryptographicOperations.ZeroMemory(new Span<byte>(outputBlob.pbData.ToPointer(), (int)outputBlob.cbData));
+                            interopSpan.Clear();
                             Marshal.FreeHGlobal(outputBlob.pbData);
                         }
                     }

@@ -69,26 +69,20 @@ namespace System.Security.Cryptography.ProtectedDataTests
         [InlineData(1, true)]
         public void NearCorrectSizeBufferUnprotect(int delta, bool success)
         {
+            byte[] buffer = new byte[DefaultProtectedBufferSize];
+            byte[] protectedData = ProtectedData.Protect([1, 2, 3], DataProtectionScope.CurrentUser);
+            int original = ProtectedData.Unprotect(protectedData, DataProtectionScope.CurrentUser, buffer.AsSpan());
             if (success)
             {
-                Execute(out int original, out int resized);
-                Assert.Equal(original, resized);
+                Assert.Equal(original, ProtectedData.Unprotect(protectedData,
+                    DataProtectionScope.CurrentUser,
+                    buffer.AsSpan(0, original + delta)));
             }
             else
             {
-                AssertExtensions.Throws<ArgumentException>("destination", () => Execute(out _, out _));
-            }
-
-            return;
-
-            void Execute(out int firstSize, out int secondSize)
-            {
-                Span<byte> buffer = stackalloc byte[DefaultProtectedBufferSize];
-                byte[] protectedData = ProtectedData.Protect([1, 2, 3], DataProtectionScope.CurrentUser);
-                firstSize = ProtectedData.Unprotect(protectedData, DataProtectionScope.CurrentUser, buffer);
-                secondSize = ProtectedData.Unprotect(protectedData,
-                    DataProtectionScope.CurrentUser,
-                    buffer.Slice(0, firstSize + delta));
+                AssertExtensions.Throws<ArgumentException>(
+                    "destination",
+                    () => ProtectedData.Unprotect(protectedData, DataProtectionScope.CurrentUser, buffer.AsSpan(0, original + delta)));
             }
         }
     }
