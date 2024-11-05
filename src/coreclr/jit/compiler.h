@@ -6932,6 +6932,7 @@ private:
         // conversion to mask.
         signed varWeight;
 
+        // The simd types of the Lcl Store after conversion to vector.
         CorInfoType simdBaseJitType;
         unsigned    simdSize;
 
