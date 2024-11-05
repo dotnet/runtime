@@ -2761,6 +2761,8 @@ BasicBlock* Compiler::fgCloneTryRegion(BasicBlock* tryEntry, CloneTryInfo& info,
     // all the EH indicies at or above insertBeforeIndex will shift,
     // and the EH table may reallocate.
     //
+    // This addition may also fail, if the table would become too large...
+    //
     EHblkDsc* const clonedOutermostEbd =
         fgTryAddEHTableEntries(insertBeforeIndex, regionCount, /* deferAdding */ deferCloning);
 

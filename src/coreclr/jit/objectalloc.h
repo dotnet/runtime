@@ -18,6 +18,95 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 //===============================================================================
 #include "phase.h"
 #include "smallhash.h"
+#include "vector.h"
+
+// A use or def of an enumerator var in the code
+//
+struct EnumeratorVarAppearance
+{
+    EnumeratorVarAppearance(BasicBlock* block, Statement* stmt, GenTree** use, unsigned lclNum, bool isDef)
+        : m_block(block)
+        , m_stmt(stmt)
+        , m_use(use)
+        , m_lclNum(lclNum)
+        , m_isDef(isDef)
+        , m_isGuard(false)
+    {
+    }
+
+    BasicBlock* m_block;
+    Statement*  m_stmt;
+    GenTree**   m_use;
+    unsigned    m_lclNum;
+    bool        m_isDef;
+    bool        m_isGuard;
+};
+
+// Information about def and uses of enumerator vars, plus...
+//
+struct EnumeratorVar
+{
+    EnumeratorVarAppearance*                  m_def                = nullptr;
+    jitstd::vector<EnumeratorVarAppearance*>* m_appearances        = nullptr;
+    bool                                      m_hasMultipleDefs    = false;
+    bool                                      m_isAllocTemp        = false;
+    bool                                      m_isInitialAllocTemp = false;
+    bool                                      m_isFinalAllocTemp   = false;
+    bool                                      m_isUseTemp          = false;
+};
+
+typedef JitHashTable<unsigned, JitSmallPrimitiveKeyFuncs<unsigned>, EnumeratorVar*> EnumeratorVarMap;
+
+// Describes a GDV guard
+//
+struct GuardInfo
+{
+    unsigned             m_local = BAD_VAR_NUM;
+    CORINFO_CLASS_HANDLE m_type  = NO_CLASS_HANDLE;
+    BasicBlock*          m_block = nullptr;
+};
+
+// Describes a guarded enumerator cloning candidate
+//
+struct CloneInfo : public GuardInfo
+{
+    CloneInfo()
+    {
+        m_blocks = BitVecOps::UninitVal();
+    }
+
+    // Pseudo-local tracking conditinal escapes
+    unsigned m_pseudoLocal = BAD_VAR_NUM;
+
+    // Locals that must be rewritten in the clone, and map
+    // to their rewritten locals
+    EnumeratorVarMap*         m_appearanceMap   = nullptr;
+    unsigned                  m_appearanceCount = 0;
+    jitstd::vector<unsigned>* m_allocTemps      = nullptr;
+
+    // Where the enumerator allocation happens
+    GenTree*    m_allocTree  = nullptr;
+    Statement*  m_allocStmt  = nullptr;
+    BasicBlock* m_allocBlock = nullptr;
+
+    // Block holding the GDV test that decides if the enumerator will be allocated
+    BasicBlock* m_domBlock = nullptr;
+
+    // Blocks to clone (in order), and a set representation
+    // of the same
+    jitstd::vector<BasicBlock*>* m_blocksToClone = nullptr;
+    BitVec                       m_blocks;
+
+    // How to scale the profile in the cloned code
+    weight_t m_profileScale = 0.0;
+
+    // Status of this candidate
+    bool m_checkedCanClone = false;
+    bool m_canClone        = false;
+    bool m_willClone       = false;
+};
+
+typedef JitHashTable<unsigned, JitSmallPrimitiveKeyFuncs<unsigned>, CloneInfo*> CloneMap;
 
 class ObjectAllocator final : public Phase
 {
@@ -36,18 +125,28 @@ class ObjectAllocator final : public Phase
     LocalToLocalMap     m_HeapLocalToStackLocalMap;
     BitSetShortLongRep* m_ConnGraphAdjacencyMatrix;
 
+    // Info for conditionally-escaping locals
+    LocalToLocalMap m_EnumeratorLocalToPseudoLocalMap;
+    CloneMap        m_CloneMap;
+    unsigned        m_maxPseudoLocals;
+    unsigned        m_numPseudoLocals;
+    unsigned        m_regionsToClone;
+
     //===============================================================================
     // Methods
 public:
     ObjectAllocator(Compiler* comp);
     bool IsObjectStackAllocationEnabled() const;
     void EnableObjectStackAllocation();
+    bool CanAllocateLclVarOnStack(unsigned int         lclNum,
+                                  CORINFO_CLASS_HANDLE clsHnd,
+                                  const char**         reason,
+                                  bool                 preliminaryCheck = false);
 
 protected:
     virtual PhaseStatus DoPhase() override;
 
 private:
-    bool         CanAllocateLclVarOnStack(unsigned int lclNum, CORINFO_CLASS_HANDLE clsHnd, const char** reason);
     bool         CanLclVarEscape(unsigned int lclNum);
     void         MarkLclVarAsPossiblyStackPointing(unsigned int lclNum);
     void         MarkLclVarAsDefinitelyStackPointing(unsigned int lclNum);
@@ -65,8 +164,33 @@ private:
     unsigned int MorphAllocObjNodeIntoStackAlloc(
         GenTreeAllocObj* allocObj, CORINFO_CLASS_HANDLE clsHnd, bool isValueClass, BasicBlock* block, Statement* stmt);
     struct BuildConnGraphVisitorCallbackData;
-    bool CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parentStack, unsigned int lclNum);
+    bool CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parentStack, unsigned int lclNum, BasicBlock* block);
     void UpdateAncestorTypes(GenTree* tree, ArrayStack<GenTree*>* parentStack, var_types newType);
+
+    // Conditionally escaping allocation support
+    //
+    void     CheckForGuardedAllocationOrCopy(BasicBlock* block, Statement* stmt, GenTree** use, unsigned lclNum);
+    bool     CheckForGuardedUse(BasicBlock* block, GenTree* tree, unsigned lclNum);
+    bool     CheckForEnumeratorUse(unsigned lclNum, unsigned dstLclNum);
+    bool     IsGuarded(BasicBlock* block, GenTree* tree, GuardInfo* info, bool testOutcome);
+    GenTree* IsGuard(BasicBlock* block, GuardInfo* info);
+    unsigned NewPseudoLocal();
+
+    bool CanHavePseudoLocals()
+    {
+        return (m_maxPseudoLocals > 0);
+    }
+
+    void RecordAppearance(unsigned lclNum, BasicBlock* block, Statement* stmt, GenTree** use);
+    bool AnalyzeIfCloningCanPreventEscape(BitVecTraits* bitVecTraits,
+                                          BitVec&       escapingNodes,
+                                          BitVec&       escapingNodesToProcess);
+    bool CanClone(CloneInfo* info);
+    bool CheckCanClone(CloneInfo* info);
+    bool CloneOverlaps(CloneInfo* info);
+    bool ShouldClone(CloneInfo* info);
+    void CloneAndSpecialize(CloneInfo* info);
+    void CloneAndSpecialize();
 
     static const unsigned int s_StackAllocMaxSize = 0x2000U;
 };
@@ -77,9 +201,46 @@ inline ObjectAllocator::ObjectAllocator(Compiler* comp)
     : Phase(comp, PHASE_ALLOCATE_OBJECTS)
     , m_IsObjectStackAllocationEnabled(false)
     , m_AnalysisDone(false)
-    , m_bitVecTraits(comp->lvaCount, comp)
-    , m_HeapLocalToStackLocalMap(comp->getAllocator())
+    , m_bitVecTraits(BitVecTraits(comp->lvaCount, comp))
+    , m_HeapLocalToStackLocalMap(comp->getAllocator(CMK_ObjectAllocator))
+    , m_EnumeratorLocalToPseudoLocalMap(comp->getAllocator(CMK_ObjectAllocator))
+    , m_CloneMap(comp->getAllocator(CMK_ObjectAllocator))
+    , m_maxPseudoLocals(0)
+    , m_numPseudoLocals(0)
+    , m_regionsToClone(0)
+
 {
+    // If we are going to do any conditional escape analysis, allocate
+    // extra BV space for the "pseudo" locals we'll need.
+    //
+    // For now, disable conditional escape analysis with OSR
+    // since the dominance picture is muddled at this point.
+    //
+    // The conditionally escaping allocation sites will likely be in loops anyways.
+    //
+    bool const hasEnumeratorLocals = comp->hasImpEnumeratorGdvLocalMap();
+
+    if (hasEnumeratorLocals)
+    {
+        unsigned const enumeratorLocalCount = comp->getImpEnumeratorGdvLocalMap()->GetCount();
+        assert(enumeratorLocalCount > 0);
+
+        bool const enableConditionalEscape = JitConfig.JitObjectStackAllocationConditionalEscape() > 0;
+        bool const isOSR                   = comp->opts.IsOSR();
+
+        if (enableConditionalEscape && !isOSR)
+        {
+            m_maxPseudoLocals = enumeratorLocalCount;
+            m_bitVecTraits    = BitVecTraits(comp->lvaCount + enumeratorLocalCount + 1, comp);
+            JITDUMP("Enabling conditional escape analysis [%u pseudo-vars]\n", enumeratorLocalCount);
+        }
+        else
+        {
+            JITDUMP("Not enabling conditional escape analysis [%u pseudo-vars]: %s\n", enumeratorLocalCount,
+                    enableConditionalEscape ? "OSR" : "disabled by config");
+        }
+    }
+
     m_EscapingPointers                = BitVecOps::UninitVal();
     m_PossiblyStackPointingPointers   = BitVecOps::UninitVal();
     m_DefinitelyStackPointingPointers = BitVecOps::UninitVal();
@@ -112,16 +273,19 @@ inline void ObjectAllocator::EnableObjectStackAllocation()
 // Arguments:
 //    lclNum   - Local variable number
 //    clsHnd   - Class/struct handle of the variable class
-//    reason  - [out, required] if result is false, reason why
+//    reason   - [out, required] if result is false, reason why
+//    preliminaryCheck - if true, allow checking before analysis is done
+//                 (for things that inherently disqualify the local)
 //
 // Return Value:
 //    Returns true iff local variable can be allocated on the stack.
 //
 inline bool ObjectAllocator::CanAllocateLclVarOnStack(unsigned int         lclNum,
                                                       CORINFO_CLASS_HANDLE clsHnd,
-                                                      const char**         reason)
+                                                      const char**         reason,
+                                                      bool                 preliminaryCheck)
 {
-    assert(m_AnalysisDone);
+    assert(preliminaryCheck || m_AnalysisDone);
 
     bool enableBoxedValueClasses = true;
     bool enableRefClasses        = true;
@@ -171,6 +335,11 @@ inline bool ObjectAllocator::CanAllocateLclVarOnStack(unsigned int         lclNu
     {
         *reason = "[too large]";
         return false;
+    }
+
+    if (preliminaryCheck)
+    {
+        return true;
     }
 
     const bool escapes = CanLclVarEscape(lclNum);
