@@ -4,6 +4,7 @@
 from __future__ import print_function
 import os
 import sys
+sys.dont_write_bytecode = True
 import argparse
 import clang.cindex
 
@@ -60,6 +61,7 @@ class OffsetsTool:
 
 		parser = argparse.ArgumentParser ()
 		parser.add_argument ('--libclang', dest='libclang', help='path to shared library of libclang.{so,dylib}', required=True)
+		parser.add_argument ('--libclang-headers', dest='libclang_headers', help='path to internal clang headers when libclang is not coming from a system install')
 		parser.add_argument ('--emscripten-sdk', dest='emscripten_path', help='path to emscripten sdk')
 		parser.add_argument ('--wasi-sdk', dest='wasi_path', help='path to wasi sdk')
 		parser.add_argument ('--outfile', dest='outfile', help='path to output file', required=True)
@@ -69,7 +71,6 @@ class OffsetsTool:
 		parser.add_argument ('--abi=', dest='abi', help='ABI triple to generate', required=True)
 		parser.add_argument ('--sysroot=', dest='sysroot', help='path to sysroot headers of target')
 		parser.add_argument ('--prefix=', dest='prefixes', action='append', help='prefix path to include directory of target')
-		parser.add_argument ('--netcore', dest='netcore', help='target runs with netcore', action='store_true')
 		args = parser.parse_args ()
 
 		if not args.libclang or not os.path.isfile (args.libclang):
@@ -87,18 +88,19 @@ class OffsetsTool:
 		self.target_args = []
 		android_api_level = "-D__ANDROID_API=21"
 
+		if args.libclang_headers:
+			self.sys_includes+= [args.libclang_headers]
+
 		if "wasm" in args.abi:
 			if args.wasi_path != None:
 				require_sysroot (args)
-				self.sys_includes = [args.wasi_path + "/share/wasi-sysroot/include", args.wasi_path + "/lib/clang/18/include", args.mono_path + "/wasi/mono-include"]
+				self.sys_includes += [args.wasi_path + "/share/wasi-sysroot/include", args.mono_path + "/wasi/mono-include"]
 				self.target = Target ("TARGET_WASI", None, ["TARGET_WASM"] + WASI_DEFINES)
 				self.target_args += ["-target", args.abi]
 				self.target_args += ["--sysroot", args.sysroot]
 			else:
 				require_emscipten_path (args)
-				clang_path = os.path.dirname(args.libclang)
-				self.sys_includes = [args.emscripten_path + "/system/include", args.emscripten_path + "/system/include/libc", args.emscripten_path + "/system/lib/libc/musl/arch/emscripten", args.emscripten_path + "/system/lib/libc/musl/include", args.emscripten_path + "/system/lib/libc/musl/arch/generic",
-									 clang_path + "/../lib/clang/16/include"]
+				self.sys_includes += [args.emscripten_path + "/system/include", args.emscripten_path + "/system/include/libc", args.emscripten_path + "/system/lib/libc/musl/arch/emscripten", args.emscripten_path + "/system/lib/libc/musl/include", args.emscripten_path + "/system/lib/libc/musl/arch/generic"]
 				self.target = Target ("TARGET_WASM", None, [])
 				self.target_args += ["-target", args.abi]
 

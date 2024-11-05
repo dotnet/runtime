@@ -85,7 +85,7 @@ class SigPointer : public SigParser
 
 public:
     // Constructor.
-    SigPointer() { LIMITED_METHOD_DAC_CONTRACT; }
+    SigPointer() : SigParser() { LIMITED_METHOD_DAC_CONTRACT; }
 
     // Copy constructor.
     SigPointer(const SigPointer & sig) : SigParser(sig)

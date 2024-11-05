@@ -174,9 +174,8 @@ struct RCW
     enum MarshalingType
      {
          MarshalingType_Unknown = 0,      /* The MarshalingType has not been set*/
-         MarshalingType_Inhibit = 1,      /* This value is same as the MarshalingType.Inhibit*/
-         MarshalingType_FreeThreaded = 2, /* This value is same as the MarshalingType.FreeThreaded*/
-         MarshalingType_Standard = 3      /* This value is same as the MarshalingType.Standard*/
+         MarshalingType_Inhibit = 1,      /* Type implements INoMarshal */
+         MarshalingType_FreeThreaded = 2, /* Type aggregates the FreeThreaded marshaller */
      };
 
     //-------------------------------------------------
@@ -557,8 +556,8 @@ public:
             static_assert((1 << 3) >= GCPressureSize_COUNT, "m_GCPressure needs a bigger data type");
             DWORD       m_GCPressure:3;            // index into s_rGCPressureTable
 
-            // Reserve 2 bits for marshaling behavior
-            DWORD       m_MarshalingType:2;        // MarshalingBehavior of the COM object.
+            // Reserve 2 bits for marshaling type
+            DWORD       m_MarshalingType:2;        // Marshaling type of the COM object.
 
             DWORD       m_Detached:1;              // set if the RCW was found dead during GC
         };
