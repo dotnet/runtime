@@ -193,7 +193,7 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        /// Decrypts the data in a specified byte array and returns a byte array that contains the decrypted.
+        /// Decrypts the data in a specified byte array and returns a byte array that contains the decrypted data.
         /// </summary>
         /// <param name="encryptedData">A byte span that contains data to decrypt.</param>
         /// <param name="scope">One of the enumeration values that specifies the scope of encryption.</param>
