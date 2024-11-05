@@ -9,6 +9,11 @@
   <ItemGroup>
     <Compile Include="GenericVectorTests.cs" />
     <Compile Include="GenericVectorUnsupportedTests.cs" />
+    <Compile Include="Matrix4x4RightHandChangedBasisTests.cs" />
+    <Compile Include="Matrix4x4LeftHandChangedBasisTests.cs" />
+    <Compile Include="Matrix4x4OrientationAwareTests.cs" />
+    <Compile Include="Matrix4x4RightHandTests.cs" />
+    <Compile Include="Matrix4x4LeftHandTests.cs" />
     <Compile Include="Util.cs" />
     <Compile Include="Vector2Tests.cs" />
     <Compile Include="Vector3Tests.cs" />
