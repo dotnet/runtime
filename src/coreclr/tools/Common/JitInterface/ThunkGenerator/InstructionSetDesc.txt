@@ -40,8 +40,8 @@ instructionset     ,X86   ,Bmi2                 ,        ,11 ,BMI2              
 instructionset     ,X86   ,Fma                  ,        ,12 ,FMA                   ,fma
 instructionset     ,X86   ,Lzcnt                ,        ,13 ,LZCNT                 ,lzcnt
 instructionset     ,X86   ,Pclmulqdq            ,        ,14 ,PCLMULQDQ             ,pclmul
-instructionset     ,X86   ,Pclmulqdq_V256       ,        ,48 ,VPCLMULQDQ            ,vpclmulqdq
-instructionset     ,X86   ,                     ,        ,   ,VPCLMULQDQ_V512       ,
+instructionset     ,X86   ,Pclmulqdq_V256       ,        ,48 ,VPCLMULQDQ            ,vpclmul
+instructionset     ,X86   ,Pclmulqdq_V512       ,        ,49 ,VPCLMULQDQ_V512       ,vpclmul_v512
 instructionset     ,X86   ,Popcnt               ,        ,15 ,POPCNT                ,popcnt
 instructionset     ,X86   ,                     ,        ,   ,Vector128             ,
 instructionset     ,X86   ,                     ,        ,   ,Vector256             ,

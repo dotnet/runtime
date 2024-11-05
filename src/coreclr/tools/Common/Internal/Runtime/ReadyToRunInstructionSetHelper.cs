@@ -88,7 +88,7 @@ namespace Internal.ReadyToRunConstants
                             case InstructionSet.X64_PCLMULQDQ: return ReadyToRunInstructionSet.Pclmulqdq;
                             case InstructionSet.X64_PCLMULQDQ_X64: return ReadyToRunInstructionSet.Pclmulqdq;
                             case InstructionSet.X64_VPCLMULQDQ: return ReadyToRunInstructionSet.Pclmulqdq_V256;
-                            case InstructionSet.X64_VPCLMULQDQ_V512: return null;
+                            case InstructionSet.X64_VPCLMULQDQ_V512: return ReadyToRunInstructionSet.Pclmulqdq_V512;
                             case InstructionSet.X64_POPCNT: return ReadyToRunInstructionSet.Popcnt;
                             case InstructionSet.X64_POPCNT_X64: return ReadyToRunInstructionSet.Popcnt;
                             case InstructionSet.X64_Vector128: return null;
@@ -164,7 +164,7 @@ namespace Internal.ReadyToRunConstants
                             case InstructionSet.X86_PCLMULQDQ: return ReadyToRunInstructionSet.Pclmulqdq;
                             case InstructionSet.X86_PCLMULQDQ_X64: return null;
                             case InstructionSet.X86_VPCLMULQDQ: return ReadyToRunInstructionSet.Pclmulqdq_V256;
-                            case InstructionSet.X86_VPCLMULQDQ_V512: return null;
+                            case InstructionSet.X86_VPCLMULQDQ_V512: return ReadyToRunInstructionSet.Pclmulqdq_V512;
                             case InstructionSet.X86_POPCNT: return ReadyToRunInstructionSet.Popcnt;
                             case InstructionSet.X86_POPCNT_X64: return null;
                             case InstructionSet.X86_Vector128: return null;

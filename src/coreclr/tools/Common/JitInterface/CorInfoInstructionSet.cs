@@ -226,56 +226,58 @@ namespace Internal.JitInterface
         FMA = 13,
         LZCNT = 14,
         PCLMULQDQ = 15,
-        POPCNT = 16,
-        Vector128 = 17,
-        Vector256 = 18,
-        Vector512 = 19,
-        AVXVNNI = 20,
-        MOVBE = 21,
-        X86Serialize = 22,
-        EVEX = 23,
-        AVX512F = 24,
-        AVX512F_VL = 25,
-        AVX512BW = 26,
-        AVX512BW_VL = 27,
-        AVX512CD = 28,
-        AVX512CD_VL = 29,
-        AVX512DQ = 30,
-        AVX512DQ_VL = 31,
-        AVX512VBMI = 32,
-        AVX512VBMI_VL = 33,
-        AVX10v1 = 34,
-        AVX10v1_V512 = 35,
-        VectorT128 = 36,
-        VectorT256 = 37,
-        VectorT512 = 38,
-        X86Base_X64 = 39,
-        SSE_X64 = 40,
-        SSE2_X64 = 41,
-        SSE3_X64 = 42,
-        SSSE3_X64 = 43,
-        SSE41_X64 = 44,
-        SSE42_X64 = 45,
-        AVX_X64 = 46,
-        AVX2_X64 = 47,
-        AES_X64 = 48,
-        BMI1_X64 = 49,
-        BMI2_X64 = 50,
-        FMA_X64 = 51,
-        LZCNT_X64 = 52,
-        PCLMULQDQ_X64 = 53,
-        POPCNT_X64 = 54,
-        AVXVNNI_X64 = 55,
-        MOVBE_X64 = 56,
-        X86Serialize_X64 = 57,
-        EVEX_X64 = 58,
-        AVX512F_X64 = 59,
-        AVX512BW_X64 = 60,
-        AVX512CD_X64 = 61,
-        AVX512DQ_X64 = 62,
-        AVX512VBMI_X64 = 63,
-        AVX10v1_X64 = 64,
-        AVX10v1_V512_X64 = 65,
+        VPCLMULQDQ = 16,
+        VPCLMULQDQ_V512 = 17,
+        POPCNT = 18,
+        Vector128 = 19,
+        Vector256 = 20,
+        Vector512 = 21,
+        AVXVNNI = 22,
+        MOVBE = 23,
+        X86Serialize = 24,
+        EVEX = 25,
+        AVX512F = 26,
+        AVX512F_VL = 27,
+        AVX512BW = 28,
+        AVX512BW_VL = 29,
+        AVX512CD = 30,
+        AVX512CD_VL = 31,
+        AVX512DQ = 32,
+        AVX512DQ_VL = 33,
+        AVX512VBMI = 34,
+        AVX512VBMI_VL = 35,
+        AVX10v1 = 36,
+        AVX10v1_V512 = 37,
+        VectorT128 = 38,
+        VectorT256 = 39,
+        VectorT512 = 40,
+        X86Base_X64 = 41,
+        SSE_X64 = 42,
+        SSE2_X64 = 43,
+        SSE3_X64 = 44,
+        SSSE3_X64 = 45,
+        SSE41_X64 = 46,
+        SSE42_X64 = 47,
+        AVX_X64 = 48,
+        AVX2_X64 = 49,
+        AES_X64 = 50,
+        BMI1_X64 = 51,
+        BMI2_X64 = 52,
+        FMA_X64 = 53,
+        LZCNT_X64 = 54,
+        PCLMULQDQ_X64 = 55,
+        POPCNT_X64 = 56,
+        AVXVNNI_X64 = 57,
+        MOVBE_X64 = 58,
+        X86Serialize_X64 = 59,
+        EVEX_X64 = 60,
+        AVX512F_X64 = 61,
+        AVX512BW_X64 = 62,
+        AVX512CD_X64 = 63,
+        AVX512DQ_X64 = 64,
+        AVX512VBMI_X64 = 65,
+        AVX10v1_X64 = 66,
+        AVX10v1_V512_X64 = 67,
     }
 
     public enum InstructionSet_X86
@@ -297,56 +299,58 @@ namespace Internal.JitInterface
         FMA = 13,
         LZCNT = 14,
         PCLMULQDQ = 15,
-        POPCNT = 16,
-        Vector128 = 17,
-        Vector256 = 18,
-        Vector512 = 19,
-        AVXVNNI = 20,
-        MOVBE = 21,
-        X86Serialize = 22,
-        EVEX = 23,
-        AVX512F = 24,
-        AVX512F_VL = 25,
-        AVX512BW = 26,
-        AVX512BW_VL = 27,
-        AVX512CD = 28,
-        AVX512CD_VL = 29,
-        AVX512DQ = 30,
-        AVX512DQ_VL = 31,
-        AVX512VBMI = 32,
-        AVX512VBMI_VL = 33,
-        AVX10v1 = 34,
-        AVX10v1_V512 = 35,
-        VectorT128 = 36,
-        VectorT256 = 37,
-        VectorT512 = 38,
-        X86Base_X64 = 39,
-        SSE_X64 = 40,
-        SSE2_X64 = 41,
-        SSE3_X64 = 42,
-        SSSE3_X64 = 43,
-        SSE41_X64 = 44,
-        SSE42_X64 = 45,
-        AVX_X64 = 46,
-        AVX2_X64 = 47,
-        AES_X64 = 48,
-        BMI1_X64 = 49,
-        BMI2_X64 = 50,
-        FMA_X64 = 51,
-        LZCNT_X64 = 52,
-        PCLMULQDQ_X64 = 53,
-        POPCNT_X64 = 54,
-        AVXVNNI_X64 = 55,
-        MOVBE_X64 = 56,
-        X86Serialize_X64 = 57,
-        EVEX_X64 = 58,
-        AVX512F_X64 = 59,
-        AVX512BW_X64 = 60,
-        AVX512CD_X64 = 61,
-        AVX512DQ_X64 = 62,
-        AVX512VBMI_X64 = 63,
-        AVX10v1_X64 = 64,
-        AVX10v1_V512_X64 = 65,
+        VPCLMULQDQ = 16,
+        VPCLMULQDQ_V512 = 17,
+        POPCNT = 18,
+        Vector128 = 19,
+        Vector256 = 20,
+        Vector512 = 21,
+        AVXVNNI = 22,
+        MOVBE = 23,
+        X86Serialize = 24,
+        EVEX = 25,
+        AVX512F = 26,
+        AVX512F_VL = 27,
+        AVX512BW = 28,
+        AVX512BW_VL = 29,
+        AVX512CD = 30,
+        AVX512CD_VL = 31,
+        AVX512DQ = 32,
+        AVX512DQ_VL = 33,
+        AVX512VBMI = 34,
+        AVX512VBMI_VL = 35,
+        AVX10v1 = 36,
+        AVX10v1_V512 = 37,
+        VectorT128 = 38,
+        VectorT256 = 39,
+        VectorT512 = 40,
+        X86Base_X64 = 41,
+        SSE_X64 = 42,
+        SSE2_X64 = 43,
+        SSE3_X64 = 44,
+        SSSE3_X64 = 45,
+        SSE41_X64 = 46,
+        SSE42_X64 = 47,
+        AVX_X64 = 48,
+        AVX2_X64 = 49,
+        AES_X64 = 50,
+        BMI1_X64 = 51,
+        BMI2_X64 = 52,
+        FMA_X64 = 53,
+        LZCNT_X64 = 54,
+        PCLMULQDQ_X64 = 55,
+        POPCNT_X64 = 56,
+        AVXVNNI_X64 = 57,
+        MOVBE_X64 = 58,
+        X86Serialize_X64 = 59,
+        EVEX_X64 = 60,
+        AVX512F_X64 = 61,
+        AVX512BW_X64 = 62,
+        AVX512CD_X64 = 63,
+        AVX512DQ_X64 = 64,
+        AVX512VBMI_X64 = 65,
+        AVX10v1_X64 = 66,
+        AVX10v1_V512_X64 = 67,
     }
 
     public unsafe struct InstructionSetFlags : IEnumerable<InstructionSet>
@@ -1339,8 +1343,8 @@ namespace Internal.JitInterface
                     yield return new InstructionSetInfo("fma", "Fma", InstructionSet.X64_FMA, true);
                     yield return new InstructionSetInfo("lzcnt", "Lzcnt", InstructionSet.X64_LZCNT, true);
                     yield return new InstructionSetInfo("pclmul", "Pclmulqdq", InstructionSet.X64_PCLMULQDQ, true);
-                    yield return new InstructionSetInfo("vpclmulqdq", "Pclmulqdq_V256", InstructionSet.X64_VPCLMULQDQ, true);
-                    yield return new InstructionSetInfo("VPCLMULQDQ_V512", "", InstructionSet.X64_VPCLMULQDQ_V512, false);
+                    yield return new InstructionSetInfo("vpclmul", "Pclmulqdq_V256", InstructionSet.X64_VPCLMULQDQ, true);
+                    yield return new InstructionSetInfo("vpclmul_v512", "Pclmulqdq_V512", InstructionSet.X64_VPCLMULQDQ_V512, true);
                     yield return new InstructionSetInfo("popcnt", "Popcnt", InstructionSet.X64_POPCNT, true);
                     yield return new InstructionSetInfo("Vector128", "", InstructionSet.X64_Vector128, false);
                     yield return new InstructionSetInfo("Vector256", "", InstructionSet.X64_Vector256, false);
@@ -1382,8 +1386,8 @@ namespace Internal.JitInterface
                     yield return new InstructionSetInfo("fma", "Fma", InstructionSet.X86_FMA, true);
                     yield return new InstructionSetInfo("lzcnt", "Lzcnt", InstructionSet.X86_LZCNT, true);
                     yield return new InstructionSetInfo("pclmul", "Pclmulqdq", InstructionSet.X86_PCLMULQDQ, true);
-                    yield return new InstructionSetInfo("vpclmulqdq", "Pclmulqdq_V256", InstructionSet.X86_VPCLMULQDQ, true);
-                    yield return new InstructionSetInfo("VPCLMULQDQ_V512", "", InstructionSet.X86_VPCLMULQDQ_V512, false);
+                    yield return new InstructionSetInfo("vpclmul", "Pclmulqdq_V256", InstructionSet.X86_VPCLMULQDQ, true);
+                    yield return new InstructionSetInfo("vpclmul_v512", "Pclmulqdq_V512", InstructionSet.X86_VPCLMULQDQ_V512, true);
                     yield return new InstructionSetInfo("popcnt", "Popcnt", InstructionSet.X86_POPCNT, true);
                     yield return new InstructionSetInfo("Vector128", "", InstructionSet.X86_Vector128, false);
                     yield return new InstructionSetInfo("Vector256", "", InstructionSet.X86_Vector256, false);
@@ -1777,10 +1781,13 @@ namespace Internal.JitInterface
                         if (nestedTypeName == "X64")
                         { return InstructionSet.X64_PCLMULQDQ_X64; }
                         else
-                        { return InstructionSet.X64_PCLMULQDQ; }
-
-                    case "Pclmulqdq_V256":
+                        if (nestedTypeName == "V256")
                         { return InstructionSet.X64_VPCLMULQDQ; }
+                        else
+                        if (nestedTypeName == "V512")
+                        { return InstructionSet.X64_VPCLMULQDQ_V512; }
+                        else
+                        { return InstructionSet.X64_PCLMULQDQ; }
 
                     case "Popcnt":
                         if (nestedTypeName == "X64")
@@ -1928,10 +1935,13 @@ namespace Internal.JitInterface
                         { return InstructionSet.X86_LZCNT; }
 
                     case "Pclmulqdq":
-                        { return InstructionSet.X86_PCLMULQDQ; }
-
-                    case "Pclmulqdq_V256":
+                        if (nestedTypeName == "V256")
                         { return InstructionSet.X86_VPCLMULQDQ; }
+                        else
+                        if (nestedTypeName == "V512")
+                        { return InstructionSet.X86_VPCLMULQDQ_V512; }
+                        else
+                        { return InstructionSet.X86_PCLMULQDQ; }
 
                     case "Popcnt":
                         { return InstructionSet.X86_POPCNT; }
