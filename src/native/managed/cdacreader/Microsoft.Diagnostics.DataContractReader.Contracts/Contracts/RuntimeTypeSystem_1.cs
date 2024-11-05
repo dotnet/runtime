@@ -955,6 +955,9 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
     {
         MethodDesc md = _methodDescs[methodDesc.Address];
         TargetPointer codeDataAddress = md.CodeData;
+        if (codeDataAddress == TargetPointer.Null)
+            return TargetPointer.Null;
+
         Data.MethodDescCodeData codeData = _target.ProcessedData.GetOrAdd<Data.MethodDescCodeData>(codeDataAddress);
         return codeData.VersioningState;
     }
