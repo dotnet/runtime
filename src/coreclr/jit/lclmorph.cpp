@@ -2430,6 +2430,79 @@ void Compiler::fgExposeLocalsInBitVec(BitVec_ValArg_T bitVec)
 #if defined(TARGET_ARM64)
 
 //-----------------------------------------------------------------------------
+// UpdateStoreWeight: Updates the weighting to take account of a local store.
+//
+// Arguments:
+//     hasConvertFromMask - Is this the store of a convert from mask
+//     blockWeight - Weight of the block the store is contained in
+//
+void Compiler::LCLMasksWeight::UpdateStoreWeight(bool hasConvertFromMask, weight_t blockWeight)
+{
+    if (hasConvertFromMask)
+    {
+        // Count the cost of the existing convert mask to vector.
+        weight_t incVal = blockWeight * costOfConvertMaskToVector;
+        JITDUMP("Incrementing currentCost by %f. ", incVal);
+        currentCost += incVal;
+    }
+    else
+    {
+        // Switching would require adding a convert vector to mask.
+        weight_t incVal = blockWeight * costOfConvertVectorToMask;
+        JITDUMP("Incrementing switchCost by %f. ", incVal);
+        switchCost += incVal;
+    }
+    DumpTotalWeight();
+    JITDUMP("bbWeight=%f\n", blockWeight);
+}
+
+//-----------------------------------------------------------------------------
+// UpdateVarWeight: Updates the weighting to take account of a local variable use.
+//
+// Arguments:
+//     hasConvertFromMask - Is this variable converted to a mask when used
+//     blockWeight - Weight of the block the use is contained in
+//
+void Compiler::LCLMasksWeight::UpdateVarWeight(bool hasConvertToMask, weight_t blockWeight)
+{
+    if (hasConvertToMask)
+    {
+        // Count the cost of the existing convert vector to mask.
+        weight_t incVal = blockWeight * costOfConvertVectorToMask;
+        JITDUMP("Incrementing currentCost by %f. ", incVal);
+        currentCost += incVal;
+    }
+    else
+    {
+        // Switching would require adding a convert mask to vector.
+        weight_t incVal = blockWeight * costOfConvertMaskToVector;
+        JITDUMP("Incrementing switchCost by %f. ", incVal);
+        switchCost += incVal;
+    }
+    DumpTotalWeight();
+    JITDUMP("bbWeight=%f\n", blockWeight);
+}
+
+//-----------------------------------------------------------------------------
+// CacheSimdTypes: Cache the simd types of a hwintrinsic
+//
+// Arguments:
+//     op - The HW intrinsic to cache
+//
+void Compiler::LCLMasksWeight::CacheSimdTypes(GenTreeHWIntrinsic* op)
+{
+    CorInfoType newSimdBaseJitType = op->GetSimdBaseJitType();
+    unsigned    newSimdSize        = op->GetSimdSize();
+
+    assert((newSimdBaseJitType != CORINFO_TYPE_UNDEF));
+    assert((simdBaseJitType == CORINFO_TYPE_UNDEF) ||
+           ((simdBaseJitType == newSimdBaseJitType) && (simdSize == newSimdSize)));
+
+    simdBaseJitType = newSimdBaseJitType;
+    simdSize        = newSimdSize;
+}
+
+//-----------------------------------------------------------------------------
 // LCLMasksCheckLCLVarVisitor: Find the user of a lcl var and check if it is a convert to mask
 //
 class LCLMasksCheckLCLVarVisitor final : public GenTreeVisitor<LCLMasksCheckLCLVarVisitor>
@@ -2646,7 +2719,6 @@ void Compiler::fgLCLMasksCheckLCLVar(GenTreeLclVarCommon* lclVar,
     // If there no entry, then the var does not have a local store.
     if (!found)
     {
-        JITDUMP("Local Var V%02d at [%06u] is not stored to local.\n", lclVar->GetLclNum(), dspTreeID(lclVar));
         return;
     }
 
@@ -2700,7 +2772,7 @@ bool Compiler::fgLCLMasksUpdateLCLStore(Statement* stmt, LCLMasksWeightTable* we
     bool           found = weightsTable->Lookup(lclStore->GetLclNum(), &weight);
     assert(found);
 
-    if (weight.GetTotalWeight() <= 0.0)
+    if (!weight.ShouldSwitch())
     {
         JITDUMP("Local Store V%02d at [%06u] will not be converted. ", lclStore->GetLclNum(), dspTreeID(lclStore));
         weight.DumpTotalWeight();
@@ -2774,11 +2846,10 @@ void Compiler::fgLCLMasksUpdateLCLVar(GenTreeLclVarCommon* lclVar,
     // If there no entry, then the var does not have a local store.
     if (!found)
     {
-        JITDUMP("Local Var V%02d at [%06u] is not stored to local.\n", lclVar->GetLclNum(), dspTreeID(lclVar));
         return;
     }
 
-    if (weight.GetTotalWeight() <= 0.0)
+    if (!weight.ShouldSwitch())
     {
         JITDUMP("Local Var V%02d at [%06u] will not be converted. ", lclVar->GetLclNum(), dspTreeID(lclVar));
         weight.DumpTotalWeight();

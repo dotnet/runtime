@@ -6924,62 +6924,36 @@ private:
 
     struct LCLMasksWeight
     {
-        // For a given var, number of Lcl Stores with conversion from mask minus number of Lcl Stores
-        // without conversion from mask.
-        weight_t storeWeight = 0.0;
+        // For the given variable, the cost of storing as vector.
+        weight_t currentCost = 0.0;
 
-        // For a given var, number of Lcl var with conversion to mask minus number of Lcl vars without
-        // conversion to mask.
-        weight_t varWeight = 0.0;
+        // For the given variable, the cost of storing as mask.
+        weight_t switchCost = 0.0;
+
+        // Conversion of mask to vector is one instruction.
+        static const weight_t costOfConvertMaskToVector = 1.0;
+
+        // Conversion of vector to mask is two instructions.
+        static const weight_t costOfConvertVectorToMask = 2.0;
 
         // The simd types of the Lcl Store after conversion to vector.
         CorInfoType simdBaseJitType = CORINFO_TYPE_UNDEF;
         unsigned    simdSize = 0;
 
-        void UpdateStoreWeight(bool increment, weight_t blockWeight)
+        void UpdateStoreWeight(bool hasConvertFromMask, weight_t blockWeight);
+        void UpdateVarWeight(bool hasConvertToMask, weight_t blockWeight);
+
+        bool ShouldSwitch()
         {
-            weight_t incVal = increment ? blockWeight : -blockWeight;
-            storeWeight += incVal;
-            JITDUMP("Incrementing store weight by %f. ", incVal);
-            DumpTotalWeight();
-        }
-
-        void UpdateVarWeight(bool increment, weight_t blockWeight)
-        {
-            weight_t incVal = increment ? blockWeight : -blockWeight;
-            varWeight += incVal;
-            JITDUMP("Incrementing var weight by %f. ", incVal);
-            DumpTotalWeight();
-        }
-
-        weight_t GetTotalWeight()
-        {
-            // Conversion of mask to vector is one instruction.
-            const weight_t costOfStoreWeight = 1.0;
-
-            // Conversion of vector to mask is two instructions.
-            const weight_t costOfVarWeight = 2.0;
-
-            return ((costOfStoreWeight * storeWeight) + (costOfVarWeight * varWeight));
+            return currentCost > switchCost;
         }
 
         void DumpTotalWeight()
         {
-            JITDUMP("Weighting: %f {%fs, %fv}\n", GetTotalWeight(), storeWeight, varWeight);
+            JITDUMP("Weighting: {%fc %fs}\n", currentCost, switchCost);
         }
 
-        void CacheSimdTypes(GenTreeHWIntrinsic* op)
-        {
-            CorInfoType newSimdBaseJitType = op->GetSimdBaseJitType();
-            unsigned newSimdSize = op->GetSimdSize();
-
-            assert((newSimdBaseJitType != CORINFO_TYPE_UNDEF));
-            assert((simdBaseJitType == CORINFO_TYPE_UNDEF) ||
-                   ((simdBaseJitType == newSimdBaseJitType) && (simdSize == newSimdSize)));
-
-            simdBaseJitType = newSimdBaseJitType;
-            simdSize        = newSimdSize;
-        }
+        void CacheSimdTypes(GenTreeHWIntrinsic* op);
     };
 
     typedef JitHashTable<unsigned, JitLargePrimitiveKeyFuncs<unsigned>, LCLMasksWeight> LCLMasksWeightTable;
