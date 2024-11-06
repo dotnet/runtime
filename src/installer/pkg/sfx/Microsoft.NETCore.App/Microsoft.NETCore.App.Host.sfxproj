@@ -89,14 +89,4 @@
     <HeatOutputFileElementToStabilize Include="native\singlefilehost.exe" ReplacementId="staticapphosttemplateapphostexe" />
     <HeatOutputFileElementToStabilize Include="native\comhost.dll" ReplacementId="comhosttemplatecomhostdll" />
   </ItemGroup>
-
-  <Target Name="AddLinuxPackageInformation" BeforeTargets="GetDebInstallerJsonProperties;GetRpmInstallerJsonProperties">
-    <ItemGroup>
-      <RpmOwnedDirectory Include="$(LinuxInstallRoot)/packs/Microsoft.NETCore.App.Host.$(RuntimeIdentifier)" />
-      <RpmOwnedDirectory Include="$(LinuxInstallRoot)/packs/Microsoft.NETCore.App.Host.$(RuntimeIdentifier)/$(Version)" />
-      <RpmOwnedDirectory Include="$(LinuxInstallRoot)/packs/Microsoft.NETCore.App.Host.$(RuntimeIdentifier)/$(Version)/runtimes" />
-      <RpmOwnedDirectory Include="$(LinuxInstallRoot)/packs/Microsoft.NETCore.App.Host.$(RuntimeIdentifier)/$(Version)/runtimes/$(RuntimeIdentifier)" />
-      <RpmOwnedDirectory Include="$(LinuxInstallRoot)/packs/Microsoft.NETCore.App.Host.$(RuntimeIdentifier)/$(Version)/runtimes/$(RuntimeIdentifier)/native" />
-    </ItemGroup>
-  </Target>
 </Project>
