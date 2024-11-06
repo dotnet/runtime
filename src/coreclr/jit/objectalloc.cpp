@@ -151,6 +151,17 @@ void ObjectAllocator::DoAnalysis()
     m_AnalysisDone = true;
 }
 
+unsigned ObjectAllocator::NewPseudoLocal()
+{
+    unsigned result = BAD_VAR_NUM;
+    if (m_numPseudoLocals < m_maxPseudoLocals)
+    {
+        result = comp->lvaCount + m_numPseudoLocals;
+        m_numPseudoLocals++;
+    }
+    return result;
+}
+
 //------------------------------------------------------------------------------
 // MarkEscapingVarsAndBuildConnGraph : Walk the trees of the method and mark any ref/byref/i_impl
 //                                     local variables that may escape. Build a connection graph
@@ -189,15 +200,15 @@ void ObjectAllocator::MarkEscapingVarsAndBuildConnGraph()
 
         Compiler::fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
         {
-            GenTree* const tree   = *use;
-            unsigned const lclNum = tree->AsLclVarCommon()->GetLclNum();
+            GenTree* const   tree   = *use;
+            unsigned const   lclNum = tree->AsLclVarCommon()->GetLclNum();
             LclVarDsc* const varDsc = m_compiler->lvaGetDesc(lclNum);
 
             if (varDsc->lvIsEnumerator)
             {
                 // Track lcl -> List<(**user, block, read/write)>
-                JITDUMP("Found enumerator V%02u %s at [%06u]\n", lclNum,
-                    tree->OperIsLocalStore() ? "def" : "use", m_compiler->dspTreeID(tree));
+                JITDUMP("Found enumerator V%02u %s at [%06u]\n", lclNum, tree->OperIsLocalStore() ? "def" : "use",
+                        m_compiler->dspTreeID(tree));
             }
 
             // If this local already escapes, no need to look further.
@@ -212,6 +223,49 @@ void ObjectAllocator::MarkEscapingVarsAndBuildConnGraph()
             if (tree->OperIsLocalStore())
             {
                 lclEscapes = false;
+
+                // See if this is enumeratorLocal = ALLOCOBJ
+                // If so we will set up a pseudo-var for tracking conditional escapes.
+                //
+                // Since we are running in RPO, this allocation site will be seen before
+                // any guarded uses.
+                //
+                GenTree* const data = tree->AsLclVarCommon()->Data();
+
+                if (data->OperIs(GT_ALLOCOBJ) && m_compiler->hasImpEnumeratorGdvLocalMap())
+                {
+                    // This is the allocation of concrete enumerator under GDV.
+                    // Find the local that will represent its uses.
+                    // (note it is usually *not* lclNum).
+                    //
+                    Compiler::NodeToUnsignedMap* const map             = m_compiler->getImpEnumeratorGdvLocalMap();
+                    unsigned                           enumeratorLocal = BAD_VAR_NUM;
+                    if (map->Lookup(data, &enumeratorLocal))
+                    {
+                        // We are going to conditionally track accesses to this local via a pseudo local.
+                        // We should have been able to predict in advance how many we'll need.
+                        //
+                        const unsigned pseudoLocal = m_allocator->NewPseudoLocal();
+                        assert(pseudoLocal != BAD_VAR_NUM);
+                        bool added =
+                            m_allocator->m_EnumeratorLocalToPseudoLocalMap.AddOrUpdate(enumeratorLocal, pseudoLocal);
+                        assert(added);
+
+                        // We will query this info if we see CALL(enumeratorLocal)
+                        // during subsequent analysis, to verify that access is
+                        // under the same type guard.
+                        //
+                        GuardedCallInfo info;
+                        info.m_local = enumeratorLocal;
+                        info.m_type  = data->AsAllocObj()->gtAllocObjClsHnd;
+                        m_allocator->m_GuardedCallMap.Set(pseudoLocal, info);
+
+                        JITDUMP(
+                            "Enumerator allocation [%06u]: will track accesses to V%02u guarded by type %s via P%02u\n",
+                            m_compiler->dspTreeID(data), enumeratorLocal, m_compiler->eeGetClassName(info.m_type),
+                            pseudoLocal);
+                    }
+                }
             }
             else if (tree->OperIs(GT_LCL_VAR) && tree->TypeIs(TYP_REF, TYP_BYREF, TYP_I_IMPL))
             {
@@ -718,7 +772,7 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
 
     bool keepChecking                  = true;
     bool canLclVarEscapeViaParentStack = true;
-    bool isEnumeratorLocal             = comp->lvaGetDesc(lclNum).lvIsEnumerator;
+    bool isEnumeratorLocal             = comp->lvaGetDesc(lclNum)->lvIsEnumerator;
 
     while (keepChecking)
     {
@@ -800,7 +854,24 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
 
                 if (isEnumeratorLocal)
                 {
-                    JITDUMP("Enumerator V%02u passed to call...\n");
+                    JITDUMP("Enumerator V%02u passed to call...\n", lclNum);
+
+                    // Find pseudo local... if none, assume this local escapes at the call.
+                    //
+                    unsigned pseudoLocal = BAD_VAR_NUM;
+                    if (m_EnumeratorLocalToPseudoLocalMap.TryGetValue(lclNum, &pseudoLocal))
+                    {
+                        // Verify that this call is made under the set of conditions tracked by the
+                        // pseudo local...
+                        //
+                        // If so, track this as an assignment PseudoLocal = ...
+                        // Later if we don't clone and split off this GDV path,
+                        // we will mark PseudoLocal as escaped.
+                        //
+                        JITDUMP("... under GDV; tracking via pseudo-local P%02u\n", pseudoLocal);
+                        AddConnGraphEdge(pseudoLocal, lclNum);
+                        canLclVarEscapeViaParentStack = false;
+                    }
                 }
                 break;
             }

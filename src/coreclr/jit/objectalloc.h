@@ -19,6 +19,23 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "phase.h"
 #include "smallhash.h"
 
+struct EnumeratorVarUse
+{
+    BasicBlock* m_block;
+    Statement*  m_stmt;
+    GenTree**   m_use;
+};
+
+// Describes a GDV check of the form m_local.GetType() == m_type
+//
+struct GuardedCallInfo
+{
+    unsigned             m_local;
+    CORINFO_CLASS_HANDLE m_type;
+};
+
+typedef JitHashTable<unsigned, JitSmallPrimitiveKeyFuncs<unsigned>, GuardedCallInfo> GuardedCallMap;
+
 class ObjectAllocator final : public Phase
 {
     typedef SmallHashTable<unsigned int, unsigned int, 8U> LocalToLocalMap;
@@ -34,8 +51,13 @@ class ObjectAllocator final : public Phase
     BitVec              m_PossiblyStackPointingPointers;
     BitVec              m_DefinitelyStackPointingPointers;
     LocalToLocalMap     m_HeapLocalToStackLocalMap;
-    LocalToLocalMap     m_EnumeratorLocalToPseduoLocalMap;
     BitSetShortLongRep* m_ConnGraphAdjacencyMatrix;
+
+    // Info for conditionally-escaping locals
+    LocalToLocalMap m_EnumeratorLocalToPseudoLocalMap;
+    GuardedCallMap  m_GuardedCallMap;
+    unsigned        m_maxPseudoLocals;
+    unsigned        m_numPseudoLocals;
 
     //===============================================================================
     // Methods
@@ -66,9 +88,10 @@ private:
     unsigned int MorphAllocObjNodeIntoStackAlloc(
         GenTreeAllocObj* allocObj, CORINFO_CLASS_HANDLE clsHnd, bool isValueClass, BasicBlock* block, Statement* stmt);
     struct BuildConnGraphVisitorCallbackData;
-    bool CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parentStack, unsigned int lclNum);
-    void UpdateAncestorTypes(GenTree* tree, ArrayStack<GenTree*>* parentStack, var_types newType);
-
+    bool                      CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parentStack, unsigned int lclNum);
+    void                      UpdateAncestorTypes(GenTree* tree, ArrayStack<GenTree*>* parentStack, var_types newType);
+    bool                      IsGuardedCall(GenTreeCall* call, GuardedCallInfo& info);
+    unsigned                  NewPseudoLocal();
     static const unsigned int s_StackAllocMaxSize = 0x2000U;
 };
 
@@ -78,20 +101,24 @@ inline ObjectAllocator::ObjectAllocator(Compiler* comp)
     : Phase(comp, PHASE_ALLOCATE_OBJECTS)
     , m_IsObjectStackAllocationEnabled(false)
     , m_AnalysisDone(false)
+    , m_bitVecTraits(BitVecTraits(comp->lvaCount, comp))
     , m_HeapLocalToStackLocalMap(comp->getAllocator())
     , m_EnumeratorLocalToPseudoLocalMap(comp->getAllocator())
+    , m_GuardedCallMap(comp->getAllocator())
+    , m_maxPseudoLocals(0)
+    , m_numPseudoLocals(0)
+
 {
-    // Allocate some extra BV space for the "pseudo" vars used to track
-    // conditionally escaping locals under GDV.
+    // If we are going to do any conditional escape analysis, allocate
+    // extra BV space for the "pseudo" locals we'll need.
     //
-    unsigned localCount = comp->lvaCount;
-    unsigned pseudoCount = 0;
     if (comp->hasImpEnumeratorGdvLocalMap())
     {
-        pseudoCount = comp->getImpEnumeratorGdvLocalMap()->GetCount();
+        unsigned enumeratorLocalCount = comp->getImpEnumeratorGdvLocalMap()->GetCount();
+        assert(enumeratorLocalCount > 0);
+        m_maxPseudoLocals = enumeratorLocalCount;
+        m_bitVecTraits    = BitVecTraits(comp->lvaCount + enumeratorLocalCount, comp);
     }
-
-    m_bitVecTraits = BitVecTraits(localCount + pseudoCount, comp);
 
     m_EscapingPointers                = BitVecOps::UninitVal();
     m_PossiblyStackPointingPointers   = BitVecOps::UninitVal();
