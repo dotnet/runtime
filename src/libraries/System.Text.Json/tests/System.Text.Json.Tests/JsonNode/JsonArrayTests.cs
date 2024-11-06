@@ -777,6 +777,14 @@ namespace System.Text.Json.Nodes.Tests
             testArray.RemoveAll(whatever => true); // RemoveAll on empty array always succeeds.
         }
 
+        [Fact]
+        public static void RemoveAll_FreshlyDeserialized()
+        {
+            JsonArray testArray = JsonSerializer.Deserialize<JsonArray>("[1,2,3,4,5]");
+            Assert.Equal(3, testArray.RemoveAll(val => val.GetValue<int>() % 2 == 1));
+            JsonNodeTests.AssertDeepEqual(new JsonArray { 2, 4 }, testArray);
+        }
+
         [Theory]
         [InlineData(new int[] { 1, 1, 1, 1, 1 }, new int[] { 1, 1, 1, 1, 1 }, 0)]
         [InlineData(new int[] { 2, 1, 1, 1, 1 }, new int[] { 1, 1, 1, 1 }, 1)]
@@ -865,6 +873,22 @@ namespace System.Text.Json.Nodes.Tests
 
             static bool IsIndexRemoved(int originalIndex) => originalIndex >= RemoveStartIndex &&
                 originalIndex < RemoveStartIndex + RemoveLength;
+        }
+
+        [Fact]
+        public static void RemoveRange_FreshlyDeserialized()
+        {
+            
+            Assert.Throws<ArgumentOutOfRangeException>(() => PrepareData().RemoveRange(-1, 1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => PrepareData().RemoveRange(1, -1));
+            Assert.Throws<ArgumentException>(() => PrepareData().RemoveRange(10, 1));
+            Assert.Throws<ArgumentException>(() => PrepareData().RemoveRange(1, 10));
+
+            JsonArray testArray = PrepareData();
+            testArray.RemoveRange(2, 2);
+            JsonNodeTests.AssertDeepEqual(new JsonArray { 1, 2, 5 }, testArray);
+
+            static JsonArray PrepareData() => JsonSerializer.Deserialize<JsonArray>("[1,2,3,4,5]");
         }
     }
 }
