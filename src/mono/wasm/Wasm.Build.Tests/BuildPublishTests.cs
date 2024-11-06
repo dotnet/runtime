@@ -25,7 +25,7 @@ namespace Wasm.Build.Tests
         [BuildAndRun(config: "Debug", aot: true)]
         public void Wasm_CannotAOT_InDebug(string config, bool aot)
         {
-            ProjectInfo info = CreateWasmTemplateProject(Template.WasmBrowser, config, aot, "no_aot_in_debug");
+            ProjectInfo info = CopyTestAsset(config, aot, "WasmBasicTestApp", "no_aot_in_debug", "App");
 
             bool isPublish = true;
             (string _, string buildOutput) = BuildTemplateProject(info,
@@ -45,10 +45,7 @@ namespace Wasm.Build.Tests
         [BuildAndRun(config: "Debug")]
         public async Task BuildThenPublishNoAOT(string config, bool aot)
         {
-            ProjectInfo info = CreateWasmTemplateProject(Template.WasmBrowser, config, aot, "build_publish");
-        
-            UpdateBrowserProgramFile();
-            UpdateBrowserMainJs();
+            ProjectInfo info = CopyTestAsset(config, aot, "WasmBasicTestApp", "build_publish", "App");
 
             bool isPublish = false;
             BuildTemplateProject(info,
@@ -63,7 +60,7 @@ namespace Wasm.Build.Tests
             if (!_buildContext.TryGetBuildFor(info, out BuildProduct? product))
                 throw new XunitException($"Test bug: could not get the build product in the cache");
 
-            RunOptions runOptions = new(info.Configuration, ExpectedExitCode: 42);
+            RunOptions runOptions = new(info.Configuration, TestScenario: "DotnetRun");
             await RunForBuildWithDotnetRun(runOptions);
 
             isPublish = true;

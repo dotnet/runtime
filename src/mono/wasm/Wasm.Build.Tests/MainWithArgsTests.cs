@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
@@ -24,8 +25,9 @@ namespace Wasm.Build.Tests
                         // ToDo:
                         // ActiveIssue - passing args to the program does not work, possible error in the test logic
                         // new object?[] { new object?[] { "abc", "foobar"} },
-                        new object?[] { new object?[0] }
-            ).UnwrapItemsAsArrays();
+                        new object?[] { new object?[0] })
+                .Where(item => !(item.ElementAt(0) is string config && config == "Debug" && item.ElementAt(1) is bool aotValue && aotValue))
+                .UnwrapItemsAsArrays();
 
         [Theory]
         [MemberData(nameof(MainWithArgsTestData), parameters: new object[] { /*aot*/ false })]
@@ -46,15 +48,9 @@ namespace Wasm.Build.Tests
                                 string projectContentsName,
                                 string[] args)
         {
-            ProjectInfo info = CreateWasmTemplateProject(Template.WasmBrowser, config, aot, projectNamePrefix);
-            ReplaceFile("Program.cs", Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", projectContentsName));
-            UpdateBrowserMainJs();
-            string mainJsPath = Path.Combine(_projectDir!, "wwwroot", "main.js");
-            UpdateFile(
-                mainJsPath,
-                new Dictionary<string, string> {
-                    { ".withApplicationArguments(\"start\")", $".withApplicationArgumentsFromQuery()" }
-                });
+            ProjectInfo info = CopyTestAsset(config, aot, "WasmBasicTestApp", projectNamePrefix, "App");
+            ReplaceFile(Path.Combine("Common", "Program.cs"), Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", projectContentsName));
+
             string argsStr = string.Join(" ", args);
             _testOutput.WriteLine ($"-- args: {argsStr}, name: {projectContentsName}");
 
@@ -70,7 +66,8 @@ namespace Wasm.Build.Tests
 
             int argsCount = args.Length;
             int expectedCode = 42 + argsCount;
-            RunResult output = await RunForPublishWithWebServer(new(info.Configuration, ExtraArgs: argsStr, ExpectedExitCode: expectedCode));
+            RunResult output = await RunForPublishWithWebServer(
+                new(info.Configuration, TestScenario: "DotnetRun", ExtraArgs: argsStr, ExpectedExitCode: expectedCode));
             Assert.Contains(output.TestOutput, m => m.Contains($"args#: {argsCount}"));
             foreach (var arg in args)
                 Assert.Contains(output.TestOutput, m => m.Contains($"arg: {arg}"));

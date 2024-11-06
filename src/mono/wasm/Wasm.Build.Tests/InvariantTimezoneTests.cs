@@ -44,9 +44,8 @@ namespace Wasm.Build.Tests
                 extraProperties = $"{extraProperties}<InvariantTimezone>{invariantTimezone}</InvariantTimezone>";
 
             string prefix = $"invariant_{invariantTimezone?.ToString() ?? "unset"}";
-            ProjectInfo info = CreateWasmTemplateProject(Template.WasmBrowser, config, aot, prefix, extraProperties: extraProperties);
-            ReplaceFile("Program.cs", Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "InvariantTimezone.cs"));
-            UpdateBrowserMainJs();
+            ProjectInfo info = CopyTestAsset(config, aot, "WasmBasicTestApp", prefix, "App", extraProperties: extraProperties);
+            ReplaceFile(Path.Combine("Common", "Program.cs"), Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "InvariantTimezone.cs"));
 
             bool isPublish = true;
             // invariantTimezone triggers native build
@@ -60,7 +59,7 @@ namespace Wasm.Build.Tests
                             IsPublish: isPublish
                         ));
 
-            RunResult output = await RunForPublishWithWebServer(new(info.Configuration, ExpectedExitCode: 42));
+            RunResult output = await RunForPublishWithWebServer(new(info.Configuration, TestScenario: "DotnetRun", ExpectedExitCode: 42));
             Assert.Contains(output.TestOutput, m => m.Contains("UTC BaseUtcOffset is 0"));
             if (invariantTimezone == true)
             {
