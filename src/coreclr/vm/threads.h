@@ -2405,8 +2405,6 @@ private:
 #if defined(HAVE_GCCOVER) && defined(USE_REDIRECT_FOR_GCSTRESS)
 public:
     BOOL CheckForAndDoRedirectForGCStress (T_CONTEXT *pCurrentThreadCtx);
-private:
-    bool        m_fPreemptiveGCDisabledForGCStress;
 #endif // HAVE_GCCOVER && USE_REDIRECT_FOR_GCSTRESS
 #endif // FEATURE_HIJACK && !TARGET_UNIX
 

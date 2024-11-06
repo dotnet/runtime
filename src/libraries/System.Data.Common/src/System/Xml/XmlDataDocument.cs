@@ -1076,6 +1076,9 @@ namespace System.Xml
                 _ => throw new InvalidOperationException(SR.Format(SR.DataDom_CloneNode, dp.NodeType.ToString())),
             };
 
+        // Some of the static methods are in a separate class so that the
+        // RequiresUnreferencedCode annotation on XmlDataDocument doesn't apply
+        // to them.
         internal static class Helpers
         {
             internal static bool IsTextLikeNode(XmlNode n)
