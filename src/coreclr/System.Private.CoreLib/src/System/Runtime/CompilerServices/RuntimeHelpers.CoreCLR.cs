@@ -355,7 +355,7 @@ namespace System.Runtime.CompilerServices
         [Intrinsic]
         internal static bool IsBitwiseEquatable<T>()
         {
-            // The body of this function will be replaced by the EE with unsafe code!!!
+            // The body of this function will be replaced by the EE.
             // See getILIntrinsicImplementationForRuntimeHelpers for how this happens.
             throw new InvalidOperationException();
         }
@@ -363,23 +363,28 @@ namespace System.Runtime.CompilerServices
         [Intrinsic]
         internal static bool EnumEquals<T>(T x, T y) where T : struct, Enum
         {
-            // The body of this function will be replaced by the EE with unsafe code
-            // See getILIntrinsicImplementation for how this happens.
+            // The body of this function will be replaced by the EE.
+            // See getILIntrinsicImplementationForRuntimeHelpers for how this happens.
             return x.Equals(y);
         }
 
         [Intrinsic]
         internal static int EnumCompareTo<T>(T x, T y) where T : struct, Enum
         {
-            // The body of this function will be replaced by the EE with unsafe code
-            // See getILIntrinsicImplementation for how this happens.
+            // The body of this function will be replaced by the EE.
+            // See getILIntrinsicImplementationForRuntimeHelpers for how this happens.
             return x.CompareTo(y);
         }
 
-        // The body of this function will be created by the EE for the specific type.
-        // See getILIntrinsicImplementation for how this happens.
+#if FEATURE_IJW
         [Intrinsic]
-        internal static extern unsafe void CopyConstruct<T>(T* dest, T* src) where T : unmanaged;
+        internal static unsafe void CopyConstruct<T>(T* dest, T* src) where T : unmanaged
+        {
+            // The body of this function will be replaced by the EE.
+            // See getILIntrinsicImplementationForRuntimeHelpers for how this happens.
+            throw new InvalidOperationException();
+        }
+#endif
 
         internal static ref byte GetRawData(this object obj) =>
             ref Unsafe.As<RawData>(obj).Data;
@@ -874,6 +879,45 @@ namespace System.Runtime.CompilerServices
         public extern MethodTable* GetMethodTableMatchingParentClass(MethodTable* parent);
     }
 
+    [StructLayout(LayoutKind.Sequential)]
+    internal unsafe ref struct DynamicStaticsInfo
+    {
+        internal const int ISCLASSNOTINITED = 1;
+        internal IntPtr _pGCStatics; // The ISCLASSNOTINITED bit is set when the class is NOT initialized
+        internal IntPtr _pNonGCStatics; // The ISCLASSNOTINITED bit is set when the class is NOT initialized
+
+        /// <summary>
+        /// Given a statics pointer in the DynamicStaticsInfo, get the actual statics pointer.
+        /// If the class it initialized, this mask is not necessary
+        /// </summary>
+        internal static ref byte MaskStaticsPointer(ref byte staticsPtr)
+        {
+            fixed (byte* p = &staticsPtr)
+            {
+                 return ref Unsafe.AsRef<byte>((byte*)((nuint)p & ~(nuint)DynamicStaticsInfo.ISCLASSNOTINITED));
+            }
+        }
+
+        internal unsafe MethodTable* _methodTable;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal unsafe ref struct GenericsStaticsInfo
+    {
+        // Pointer to field descs for statics
+        internal IntPtr _pFieldDescs;
+        internal DynamicStaticsInfo _dynamicStatics;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal unsafe ref struct ThreadStaticsInfo
+    {
+        internal int _nonGCTlsIndex;
+        internal int _gcTlsIndex;
+        internal GenericsStaticsInfo _genericStatics;
+    }
+
+
     // Subset of src\vm\methodtable.h
     [StructLayout(LayoutKind.Sequential)]
     internal unsafe struct MethodTableAuxiliaryData
@@ -934,6 +978,18 @@ namespace System.Runtime.CompilerServices
         public bool IsClassInited => (Volatile.Read(ref Flags) & enum_flag_Initialized) != 0;
 
         public bool IsClassInitedAndActive => (Volatile.Read(ref Flags) & (enum_flag_Initialized | enum_flag_EnsuredInstanceActive)) == (enum_flag_Initialized | enum_flag_EnsuredInstanceActive);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public ref DynamicStaticsInfo GetDynamicStaticsInfo()
+        {
+            return ref Unsafe.Subtract(ref Unsafe.As<MethodTableAuxiliaryData, DynamicStaticsInfo>(ref this), 1);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public ref ThreadStaticsInfo GetThreadStaticsInfo()
+        {
+            return ref Unsafe.Subtract(ref Unsafe.As<MethodTableAuxiliaryData, ThreadStaticsInfo>(ref this), 1);
+        }
     }
 
     /// <summary>

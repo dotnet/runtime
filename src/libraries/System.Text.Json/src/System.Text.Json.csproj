@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppPrevious);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
@@ -33,9 +33,9 @@ The System.Text.Json library is built-in as part of the shared framework in .NET
     <Compile Include="..\Common\JsonKebabCaseLowerNamingPolicy.cs" Link="Common\System\Text\Json\Serialization\JsonKebabCaseLowerNamingPolicy.cs" />
     <Compile Include="..\Common\JsonKebabCaseUpperNamingPolicy.cs" Link="Common\System\Text\Json\Serialization\JsonKebabCaseUpperNamingPolicy.cs" />
     <Compile Include="..\Common\JsonKnownNamingPolicy.cs" Link="Common\System\Text\Json\Serialization\JsonKnownNamingPolicy.cs" />
+    <Compile Include="..\Common\JsonKnownReferenceHandler.cs" Link="Common\System\Text\Json\Serialization\JsonKnownReferenceHandler.cs" />
     <Compile Include="..\Common\JsonNumberHandling.cs" Link="Common\System\Text\Json\Serialization\JsonNumberHandling.cs" />
     <Compile Include="..\Common\JsonObjectCreationHandling.cs" Link="Common\System\Text\Json\Serialization\JsonObjectCreationHandling.cs" />
-    <Compile Include="..\Common\JsonUnmappedMemberHandling.cs" Link="Common\System\Text\Json\Serialization\JsonUnmappedMemberHandling.cs" />
     <Compile Include="..\Common\JsonSeparatorNamingPolicy.cs" Link="Common\System\Text\Json\Serialization\JsonSeparatorNamingPolicy.cs" />
     <Compile Include="..\Common\JsonSerializableAttribute.cs" Link="Common\System\Text\Json\Serialization\JsonSerializableAttribute.cs" />
     <Compile Include="..\Common\JsonSerializerDefaults.cs" Link="Common\System\Text\Json\Serialization\JsonSerializerDefaults.cs" />
@@ -44,6 +44,7 @@ The System.Text.Json library is built-in as part of the shared framework in .NET
     <Compile Include="..\Common\JsonSourceGenerationMode.cs" Link="Common\System\Text\Json\Serialization\JsonSourceGenerationMode.cs" />
     <Compile Include="..\Common\JsonSourceGenerationOptionsAttribute.cs" Link="Common\System\Text\Json\Serialization\JsonSourceGenerationOptionsAttribute.cs" />
     <Compile Include="..\Common\JsonUnknownTypeHandling.cs" Link="Common\System\Text\Json\Serialization\JsonUnknownTypeHandling.cs" />
+    <Compile Include="..\Common\JsonUnmappedMemberHandling.cs" Link="Common\System\Text\Json\Serialization\JsonUnmappedMemberHandling.cs" />
     <Compile Include="..\Common\ReflectionExtensions.cs" Link="Common\System\Text\Json\Serialization\ReflectionExtensions.cs" />
     <Compile Include="..\Common\ThrowHelper.cs" Link="Common\System\Text\Json\ThrowHelper.cs" />
     <Compile Include="System\Runtime\InteropServices\JsonMarshal.cs" />
@@ -295,7 +296,6 @@ The System.Text.Json library is built-in as part of the shared framework in .NET
     <Compile Include="System\Text\Json\Serialization\ReadStackFrame.cs" />
     <Compile Include="System\Text\Json\Serialization\ReferenceHandler.cs" />
     <Compile Include="System\Text\Json\Serialization\ReferenceHandlerOfT.cs" />
-    <Compile Include="System\Text\Json\Serialization\ReferenceHandlingStrategy.cs" />
     <Compile Include="System\Text\Json\Serialization\ReferenceResolver.cs" />
     <Compile Include="System\Text\Json\Serialization\StackFrameObjectState.cs" />
     <Compile Include="System\Text\Json\Serialization\StackFramePropertyState.cs" />

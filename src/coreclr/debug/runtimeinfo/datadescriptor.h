@@ -221,11 +221,12 @@ CDAC_TYPE_BEGIN(Module)
 CDAC_TYPE_INDETERMINATE(Module)
 CDAC_TYPE_FIELD(Module, /*pointer*/, Assembly, cdac_data<Module>::Assembly)
 CDAC_TYPE_FIELD(Module, /*pointer*/, Base, cdac_data<Module>::Base)
-CDAC_TYPE_FIELD(Module, /*pointer*/, Flags, cdac_data<Module>::Flags)
+CDAC_TYPE_FIELD(Module, /*uint32*/, Flags, cdac_data<Module>::Flags)
 CDAC_TYPE_FIELD(Module, /*pointer*/, LoaderAllocator, cdac_data<Module>::LoaderAllocator)
 CDAC_TYPE_FIELD(Module, /*pointer*/, ThunkHeap, cdac_data<Module>::ThunkHeap)
 CDAC_TYPE_FIELD(Module, /*pointer*/, DynamicMetadata, cdac_data<Module>::DynamicMetadata)
 CDAC_TYPE_FIELD(Module, /*pointer*/, Path, cdac_data<Module>::Path)
+CDAC_TYPE_FIELD(Module, /*pointer*/, FileName, cdac_data<Module>::FileName)
 
 CDAC_TYPE_FIELD(Module, /*pointer*/, FieldDefToDescMap, cdac_data<Module>::FieldDefToDescMap)
 CDAC_TYPE_FIELD(Module, /*pointer*/, ManifestModuleReferencesMap, cdac_data<Module>::ManifestModuleReferencesMap)
@@ -243,10 +244,17 @@ CDAC_TYPE_FIELD(ModuleLookupMap, /*uint32*/, Count, offsetof(LookupMapBase, dwCo
 CDAC_TYPE_FIELD(ModuleLookupMap, /*nuint*/, SupportedFlagsMask, offsetof(LookupMapBase, supportedFlags))
 CDAC_TYPE_END(ModuleLookupMap)
 
+CDAC_TYPE_BEGIN(Assembly)
+CDAC_TYPE_INDETERMINATE(Assembly)
+#ifdef FEATURE_COLLECTIBLE_TYPES
+CDAC_TYPE_FIELD(Assembly, /*uint8*/, IsCollectible, cdac_data<Assembly>::IsCollectible)
+#endif
+CDAC_TYPE_END(Assembly)
+
 // RuntimeTypeSystem
 
 CDAC_TYPE_BEGIN(MethodTable)
-CDAC_TYPE_INDETERMINATE(MethodTable)
+CDAC_TYPE_SIZE(sizeof(MethodTable))
 CDAC_TYPE_FIELD(MethodTable, /*uint32*/, MTFlags, cdac_data<MethodTable>::MTFlags)
 CDAC_TYPE_FIELD(MethodTable, /*uint32*/, BaseSize, cdac_data<MethodTable>::BaseSize)
 CDAC_TYPE_FIELD(MethodTable, /*uint32*/, MTFlags2, cdac_data<MethodTable>::MTFlags2)
@@ -256,7 +264,13 @@ CDAC_TYPE_FIELD(MethodTable, /*pointer*/, ParentMethodTable, cdac_data<MethodTab
 CDAC_TYPE_FIELD(MethodTable, /*uint16*/, NumInterfaces, cdac_data<MethodTable>::NumInterfaces)
 CDAC_TYPE_FIELD(MethodTable, /*uint16*/, NumVirtuals, cdac_data<MethodTable>::NumVirtuals)
 CDAC_TYPE_FIELD(MethodTable, /*pointer*/, PerInstInfo, cdac_data<MethodTable>::PerInstInfo)
+CDAC_TYPE_FIELD(MethodTable, /*pointer*/, AuxiliaryData, cdac_data<MethodTable>::AuxiliaryData)
 CDAC_TYPE_END(MethodTable)
+
+CDAC_TYPE_BEGIN(MethodTableAuxiliaryData)
+CDAC_TYPE_INDETERMINATE(MethodTableAuxiliaryData)
+CDAC_TYPE_FIELD(MethodTableAuxiliaryData, /*pointer*/, LoaderModule, offsetof(MethodTableAuxiliaryData, m_pLoaderModule))
+CDAC_TYPE_END(MethodTableAuxiliaryData)
 
 CDAC_TYPE_BEGIN(EEClass)
 CDAC_TYPE_INDETERMINATE(EEClass)
@@ -308,11 +322,13 @@ CDAC_TYPE_FIELD(DynamicMetadata, /*inline byte array*/, Data, cdac_data<DynamicM
 CDAC_TYPE_END(DynamicMetadata)
 
 CDAC_TYPE_BEGIN(MethodDesc)
-CDAC_TYPE_INDETERMINATE(MethodDesc)
+CDAC_TYPE_SIZE(sizeof(MethodDesc))
 CDAC_TYPE_FIELD(MethodDesc, /*uint8*/, ChunkIndex, cdac_data<MethodDesc>::ChunkIndex)
 CDAC_TYPE_FIELD(MethodDesc, /*uint16*/, Slot, cdac_data<MethodDesc>::Slot)
 CDAC_TYPE_FIELD(MethodDesc, /*uint16*/, Flags, cdac_data<MethodDesc>::Flags)
 CDAC_TYPE_FIELD(MethodDesc, /*uint16*/, Flags3AndTokenRemainder, cdac_data<MethodDesc>::Flags3AndTokenRemainder)
+CDAC_TYPE_FIELD(MethodDesc, /*uint8*/, EntryPointFlags, cdac_data<MethodDesc>::EntryPointFlags)
+CDAC_TYPE_FIELD(MethodDesc, /*pointer*/, CodeData, cdac_data<MethodDesc>::CodeData)
 CDAC_TYPE_END(MethodDesc)
 
 CDAC_TYPE_BEGIN(MethodDescChunk)
@@ -325,7 +341,7 @@ CDAC_TYPE_FIELD(MethodDescChunk, /*uint16*/, FlagsAndTokenRange, cdac_data<Metho
 CDAC_TYPE_END(MethodDescChunk)
 
 CDAC_TYPE_BEGIN(InstantiatedMethodDesc)
-CDAC_TYPE_INDETERMINATE(InstantiatedMethodDesc)
+CDAC_TYPE_SIZE(sizeof(InstantiatedMethodDesc))
 CDAC_TYPE_FIELD(InstantiatedMethodDesc, /*pointer*/, PerInstInfo, cdac_data<InstantiatedMethodDesc>::PerInstInfo)
 CDAC_TYPE_FIELD(InstantiatedMethodDesc, /*uint16*/, Flags2, cdac_data<InstantiatedMethodDesc>::Flags2)
 CDAC_TYPE_FIELD(InstantiatedMethodDesc, /*uint16*/, NumGenericArgs, cdac_data<InstantiatedMethodDesc>::NumGenericArgs)
@@ -339,7 +355,7 @@ CDAC_TYPE_FIELD(StoredSigMethodDesc, /*uint32*/, ExtendedFlags, cdac_data<Stored
 CDAC_TYPE_END(StoredSigMethodDesc)
 
 CDAC_TYPE_BEGIN(DynamicMethodDesc)
-CDAC_TYPE_INDETERMINATE(DynamicMethodDesc)
+CDAC_TYPE_SIZE(sizeof(DynamicMethodDesc))
 CDAC_TYPE_FIELD(DynamicMethodDesc, /*pointer*/, MethodName, cdac_data<DynamicMethodDesc>::MethodName)
 CDAC_TYPE_END(DynamicMethodDesc)
 
@@ -347,11 +363,53 @@ CDAC_TYPE_BEGIN(CodePointer)
 CDAC_TYPE_SIZE(sizeof(PCODE))
 CDAC_TYPE_END(CodePointer)
 
+CDAC_TYPE_BEGIN(MethodDescCodeData)
+CDAC_TYPE_INDETERMINATE(MethodDescCodeData)
+CDAC_TYPE_FIELD(MethodDescCodeData, /*CodePointer*/, TemporaryEntryPoint, offsetof(MethodDescCodeData,TemporaryEntryPoint))
+CDAC_TYPE_FIELD(MethodDescCodeData, /*pointer*/, VersioningState, offsetof(MethodDescCodeData,VersioningState))
+CDAC_TYPE_END(MethodDescCodeData)
+
 CDAC_TYPE_BEGIN(MethodDescVersioningState)
 CDAC_TYPE_INDETERMINATE(MethodDescVersioningState)
 CDAC_TYPE_FIELD(MethodDescVersioningState, /*pointer*/, NativeCodeVersionNode, cdac_data<MethodDescVersioningState>::NativeCodeVersionNode)
 CDAC_TYPE_FIELD(MethodDescVersioningState, /*uint8*/, Flags, cdac_data<MethodDescVersioningState>::Flags)
 CDAC_TYPE_END(MethodDescVersioningState)
+
+CDAC_TYPE_BEGIN(PrecodeMachineDescriptor)
+CDAC_TYPE_INDETERMINATE(PrecodeMachineDescriptor)
+CDAC_TYPE_FIELD(PrecodeMachineDescriptor, /*uint8*/, ReadWidthOfPrecodeType, offsetof(PrecodeMachineDescriptor, ReadWidthOfPrecodeType))
+CDAC_TYPE_FIELD(PrecodeMachineDescriptor, /*uint8*/, ShiftOfPrecodeType, offsetof(PrecodeMachineDescriptor, ShiftOfPrecodeType))
+CDAC_TYPE_FIELD(PrecodeMachineDescriptor, /*uint8*/, OffsetOfPrecodeType, offsetof(PrecodeMachineDescriptor, OffsetOfPrecodeType))
+CDAC_TYPE_FIELD(PrecodeMachineDescriptor, /*uint8*/, InvalidPrecodeType, offsetof(PrecodeMachineDescriptor, InvalidPrecodeType))
+CDAC_TYPE_FIELD(PrecodeMachineDescriptor, /*uint8*/, StubPrecodeType, offsetof(PrecodeMachineDescriptor, StubPrecodeType))
+#ifdef HAS_NDIRECT_IMPORT_PRECODE
+CDAC_TYPE_FIELD(PrecodeMachineDescriptor, /*uint8*/, PInvokeImportPrecodeType, offsetof(PrecodeMachineDescriptor, PInvokeImportPrecodeType))
+#endif
+#ifdef HAS_FIXUP_PRECODE
+CDAC_TYPE_FIELD(PrecodeMachineDescriptor, /*uint8*/, FixupPrecodeType, offsetof(PrecodeMachineDescriptor, FixupPrecodeType))
+#endif
+#ifdef HAS_THISPTR_RETBUF_PRECODE
+CDAC_TYPE_FIELD(PrecodeMachineDescriptor, /*uint8*/, ThisPointerRetBufPrecodeType, offsetof(PrecodeMachineDescriptor, ThisPointerRetBufPrecodeType))
+#endif
+CDAC_TYPE_FIELD(PrecodeMachineDescriptor, /*uint32*/, StubCodePageSize, offsetof(PrecodeMachineDescriptor, StubCodePageSize))
+CDAC_TYPE_END(PrecodeMachineDescriptor)
+
+CDAC_TYPE_BEGIN(PlatformMetadata)
+CDAC_TYPE_INDETERMINATE(PlatformMetadata)
+CDAC_TYPE_FIELD(PlatformMetadata, /*PrecodeMachineDescriptor*/, PrecodeMachineDescriptor, offsetof(CDacPlatformMetadata, precode))
+CDAC_TYPE_FIELD(PlatformMetadata, /*uint8*/, CodePointerFlags, offsetof(CDacPlatformMetadata, codePointerFlags))
+CDAC_TYPE_END(PlatformMetadata)
+
+CDAC_TYPE_BEGIN(StubPrecodeData)
+CDAC_TYPE_INDETERMINATE(StubPrecodeData)
+CDAC_TYPE_FIELD(StubPrecodeData, /*pointer*/, MethodDesc, offsetof(StubPrecodeData, MethodDesc))
+CDAC_TYPE_FIELD(StubPrecodeData, /*uint8*/, Type, offsetof(StubPrecodeData, Type))
+CDAC_TYPE_END(StubPrecodeData)
+
+CDAC_TYPE_BEGIN(FixupPrecodeData)
+CDAC_TYPE_INDETERMINATE(FixupPrecodeData)
+CDAC_TYPE_FIELD(FixupPrecodeData, /*pointer*/, MethodDesc, offsetof(FixupPrecodeData, MethodDesc))
+CDAC_TYPE_END(FixupPrecodeData)
 
 CDAC_TYPE_BEGIN(RangeSectionMap)
 CDAC_TYPE_INDETERMINATE(RangeSectionMap)
@@ -404,6 +462,11 @@ CDAC_TYPE_FIELD(NativeCodeVersionNode, /*pointer*/, Next, cdac_data<NativeCodeVe
 CDAC_TYPE_FIELD(NativeCodeVersionNode, /*pointer*/, MethodDesc, cdac_data<NativeCodeVersionNode>::MethodDesc)
 CDAC_TYPE_FIELD(NativeCodeVersionNode, /*pointer*/, NativeCode, cdac_data<NativeCodeVersionNode>::NativeCode)
 CDAC_TYPE_END(NativeCodeVersionNode)
+
+CDAC_TYPE_BEGIN(ProfControlBlock)
+CDAC_TYPE_FIELD(ProfControlBlock, /*uint64*/, GlobalEventMask, offsetof(ProfControlBlock, globalEventMask))
+CDAC_TYPE_END(ProfControlBlock)
+
 CDAC_TYPES_END()
 
 CDAC_GLOBALS_BEGIN()
@@ -444,6 +507,8 @@ CDAC_GLOBAL_POINTER(SyncTableEntries, &::g_pSyncTable)
 CDAC_GLOBAL_POINTER(MiniMetaDataBuffAddress, &::g_MiniMetaDataBuffAddress)
 CDAC_GLOBAL_POINTER(MiniMetaDataBuffMaxSize, &::g_MiniMetaDataBuffMaxSize)
 CDAC_GLOBAL_POINTER(ExecutionManagerCodeRangeMapAddress, cdac_data<ExecutionManager>::CodeRangeMapAddress)
+CDAC_GLOBAL_POINTER(PlatformMetadata, &::g_cdacPlatformMetadata)
+CDAC_GLOBAL_POINTER(ProfilerControlBlock, &::g_profControlBlock)
 CDAC_GLOBALS_END()
 
 #undef CDAC_BASELINE

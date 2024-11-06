@@ -43,6 +43,7 @@ EXTERN_C VOID STDCALL PrecodeRemotingThunk();
 
 #define SIZEOF_PRECODE_BASE         CODE_SIZE_ALIGN
 #define OFFSETOF_PRECODE_TYPE       0
+#define SHIFTOF_PRECODE_TYPE        5
 
 #elif defined(TARGET_RISCV64)
 
@@ -438,12 +439,16 @@ public:
 
 #if defined(TARGET_LOONGARCH64)
         assert(0 == OFFSETOF_PRECODE_TYPE);
+        static_assert(5 == SHIFTOF_PRECODE_TYPE, "expected shift of 5");
         short type = *((short*)m_data);
-        type >>= 5;
+        type >>= SHIFTOF_PRECODE_TYPE;
 #elif defined(TARGET_RISCV64)
         assert(0 == OFFSETOF_PRECODE_TYPE);
         BYTE type = *((BYTE*)m_data + OFFSETOF_PRECODE_TYPE);
 #else
+#if defined(SHIFTOF_PRECODE_TYPE)
+#error "did not expect SHIFTOF_PRECODE_TYPE to be defined"
+#endif
         BYTE type = m_data[OFFSETOF_PRECODE_TYPE];
 #endif
 
@@ -596,4 +601,41 @@ static_assert_no_msg(NDirectImportPrecode::Type != ThisPtrRetBufPrecode::Type);
 static_assert_no_msg(sizeof(Precode) <= sizeof(NDirectImportPrecode));
 static_assert_no_msg(sizeof(Precode) <= sizeof(FixupPrecode));
 static_assert_no_msg(sizeof(Precode) <= sizeof(ThisPtrRetBufPrecode));
+
+#ifndef DACCESS_COMPILE
+// A summary of the precode layout for diagnostic purposes
+struct PrecodeMachineDescriptor
+{
+    uint32_t StubCodePageSize;
+
+    uint8_t OffsetOfPrecodeType;
+    // cDAC will do (where N = 8*ReadWidthOfPrecodeType):
+    //   uintN_t PrecodeType = *(uintN_t*)(pPrecode + OffsetOfPrecodeType);
+    //   PrecodeType >>= ShiftOfPrecodeType;
+    //   return (byte)PrecodeType;
+    uint8_t ReadWidthOfPrecodeType;
+    uint8_t ShiftOfPrecodeType;
+
+    uint8_t InvalidPrecodeType;
+    uint8_t StubPrecodeType;
+#ifdef HAS_NDIRECT_IMPORT_PRECODE
+    uint8_t PInvokeImportPrecodeType;
+#endif
+
+#ifdef HAS_FIXUP_PRECODE
+    uint8_t FixupPrecodeType;
+#endif
+
+#ifdef HAS_THISPTR_RETBUF_PRECODE
+    uint8_t ThisPointerRetBufPrecodeType;
+#endif
+
+public:
+    PrecodeMachineDescriptor() = default;
+    PrecodeMachineDescriptor(const PrecodeMachineDescriptor&) = delete;
+    PrecodeMachineDescriptor& operator=(const PrecodeMachineDescriptor&) = delete;
+    static void Init(PrecodeMachineDescriptor* dest);
+};
+#endif //DACCESS_COMPILE
+
 #endif // __PRECODE_H__
