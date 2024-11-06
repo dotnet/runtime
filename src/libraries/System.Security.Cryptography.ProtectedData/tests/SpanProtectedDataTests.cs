@@ -41,25 +41,21 @@ namespace System.Security.Cryptography.ProtectedDataTests
         [InlineData(1, true)]
         public void NearCorrectSizeBufferTests(int delta, bool success)
         {
+            byte[] buffer = new byte[DefaultProtectedBufferSize];
+            int original = ProtectedData.Protect([1, 2, 3], DataProtectionScope.CurrentUser, buffer);
+
             if (success)
             {
-                Execute(out int original, out int resized);
-                Assert.Equal(original, resized);
+                Assert.Equal(original, ProtectedData.Protect(
+                    [1, 2, 3],
+                    DataProtectionScope.CurrentUser,
+                    buffer.AsSpan(0, original + delta)));
             }
             else
             {
-                AssertExtensions.Throws<ArgumentException>("destination", () => Execute(out _, out _));
-            }
-
-            return;
-
-            void Execute(out int firstSize, out int secondSize)
-            {
-                Span<byte> buffer = stackalloc byte[DefaultProtectedBufferSize];
-                firstSize = ProtectedData.Protect([1, 2, 3], DataProtectionScope.CurrentUser, buffer);
-                secondSize = ProtectedData.Protect([1, 2, 3],
-                    DataProtectionScope.CurrentUser,
-                    buffer.Slice(0, firstSize + delta));
+                AssertExtensions.Throws<ArgumentException>(
+                    "destination",
+                    () => ProtectedData.Protect([1, 2, 3], DataProtectionScope.CurrentUser, buffer.AsSpan(0, original + delta)));
             }
         }
 
@@ -74,7 +70,8 @@ namespace System.Security.Cryptography.ProtectedDataTests
             int original = ProtectedData.Unprotect(protectedData, DataProtectionScope.CurrentUser, buffer.AsSpan());
             if (success)
             {
-                Assert.Equal(original, ProtectedData.Unprotect(protectedData,
+                Assert.Equal(original, ProtectedData.Unprotect(
+                    protectedData,
                     DataProtectionScope.CurrentUser,
                     buffer.AsSpan(0, original + delta)));
             }

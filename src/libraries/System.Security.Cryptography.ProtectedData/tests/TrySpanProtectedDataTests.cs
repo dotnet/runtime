@@ -39,25 +39,22 @@ namespace System.Security.Cryptography.ProtectedDataTests
         [InlineData(1, true)]
         public void NearCorrectSizeBufferProtect(int delta, bool success)
         {
-            Assert.Equal(success, TryExecute(out int original, out int resized));
+            byte[]? buffer = new byte[DefaultProtectedBufferSize];
+
+            int originalSize;
+            Assert.True(ProtectedData.TryProtect([1, 2, 3],
+                DataProtectionScope.CurrentUser,
+                buffer,
+                out originalSize));
+
+            int resized;
+            Assert.Equal(success, ProtectedData.TryProtect([1, 2, 3],
+                DataProtectionScope.CurrentUser,
+                buffer.AsSpan(0, originalSize + delta),
+                out resized));
             if (success)
             {
                 Assert.Equal(original, resized);
-            }
-
-            return;
-
-            bool TryExecute(out int firstSize, out int secondSize)
-            {
-                Span<byte> buffer = stackalloc byte[DefaultProtectedBufferSize];
-                Assert.True(ProtectedData.TryProtect([1, 2, 3],
-                    DataProtectionScope.CurrentUser,
-                    buffer,
-                    out firstSize));
-                return ProtectedData.TryProtect([1, 2, 3],
-                    DataProtectionScope.CurrentUser,
-                    buffer.Slice(0, firstSize + delta),
-                    out secondSize);
             }
         }
 
