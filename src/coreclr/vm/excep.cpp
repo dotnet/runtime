@@ -4767,7 +4767,8 @@ LONG InternalUnhandledExceptionFilter_Worker(
 #endif // !TARGET_UNIX
 
             // Send notifications to the AppDomains.
-            NotifyAppDomainsOfUnhandledException(pParam->pExceptionInfo, NULL, useLastThrownObject, fIsProcessTerminating /*isTerminating*/);
+            // UNITY: We'll assume for now that if an event is sent that the unhandled exception has been handled until the proposed API: https://github.com/dotnet/runtime/issues/101560 has been implemented
+            fIsProcessTerminating = !NotifyAppDomainsOfUnhandledException(pParam->pExceptionInfo, NULL, useLastThrownObject, fIsProcessTerminating /*isTerminating*/);
 
             // If the process is not terminating, then return back to the filter and ask it to execute
             if (!fIsProcessTerminating)
