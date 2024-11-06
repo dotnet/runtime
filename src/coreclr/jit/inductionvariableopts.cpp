@@ -394,7 +394,7 @@ bool Compiler::optCanSinkWidenedIV(unsigned lclNum, FlowGraphNaturalLoop* loop)
     assert(dsc->lvInSsa);
 
     BasicBlockVisit result = loop->VisitRegularExitBlocks([=](BasicBlock* exit) {
-        if (optLocalIsLiveIntoBlock(lclNum, exit))
+        if (!optLocalIsLiveIntoBlock(lclNum, exit))
         {
             JITDUMP("  Exit " FMT_BB " does not need a sink; V%02u is not live-in\n", exit->bbNum, lclNum);
             return BasicBlockVisit::Continue;
