@@ -229,39 +229,6 @@ PTR_VOID CrawlFrame::GetParamTypeArg()
     }
 }
 
-
-
-// [pClassInstantiation] : Always filled in, though may be set to NULL if no inst.
-// [pMethodInst] : Always filled in, though may be set to NULL if no inst.
-void CrawlFrame::GetExactGenericInstantiations(Instantiation *pClassInst,
-                                               Instantiation *pMethodInst)
-{
-
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        PRECONDITION(CheckPointer(pClassInst));
-        PRECONDITION(CheckPointer(pMethodInst));
-    } CONTRACTL_END;
-
-    TypeHandle specificClass;
-    MethodDesc* specificMethod;
-
-    BOOL ret = Generics::GetExactInstantiationsOfMethodAndItsClassFromCallInformation(
-        GetFunction(),
-        GetExactGenericArgsToken(),
-        &specificClass,
-        &specificMethod);
-
-    if (!ret)
-    {
-        _ASSERTE(!"Cannot return exact class instantiation when we are requested to.");
-    }
-
-    *pClassInst = specificMethod->GetExactClassInstantiation(specificClass);
-    *pMethodInst = specificMethod->GetMethodInstantiation();
-}
-
 PTR_VOID CrawlFrame::GetExactGenericArgsToken()
 {
 
@@ -1696,7 +1663,7 @@ StackWalkAction StackFrameIterator::Filter(void)
                     m_fFuncletNotSeen = true;
                     STRESS_LOG3(LF_GCROOTS, LL_INFO100,
                                         "STACKWALK: Moved over first ExInfo @ %p in second pass, SP: %p, Enclosing clause: %p\n",
-                                        pExInfo, (void*)m_crawl.GetRegisterSet()->SP, (void*)m_sfFuncletParent.SP);                
+                                        pExInfo, (void*)m_crawl.GetRegisterSet()->SP, (void*)m_sfFuncletParent.SP);
                 }
                 m_movedPastFirstExInfo = true;
             }
@@ -1907,7 +1874,7 @@ ProcessFuncletsForGCReporting:
                                         {
                                             if (!ExecutionManager::IsManagedCode(GetIP(m_crawl.GetRegisterSet()->pCallerContext)))
                                             {
-                                                // Initiate force reporting of references in the new managed exception handling code frames. 
+                                                // Initiate force reporting of references in the new managed exception handling code frames.
                                                 // These frames are still alive when we are in a finally funclet.
                                                 m_forceReportingWhileSkipping = ForceGCReportingStage::LookForManagedFrame;
                                                 STRESS_LOG0(LF_GCROOTS, LL_INFO100, "STACKWALK: Setting m_forceReportingWhileSkipping = ForceGCReportingStage::LookForManagedFrame while processing filter funclet\n");
@@ -1968,7 +1935,7 @@ ProcessFuncletsForGCReporting:
 
                                             if (!fFrameWasUnwound && !ExecutionManager::IsManagedCode(GetIP(m_crawl.GetRegisterSet()->pCallerContext)))
                                             {
-                                                // Initiate force reporting of references in the new managed exception handling code frames. 
+                                                // Initiate force reporting of references in the new managed exception handling code frames.
                                                 // These frames are still alive when we are in a finally funclet.
                                                 m_forceReportingWhileSkipping = ForceGCReportingStage::LookForManagedFrame;
                                                 STRESS_LOG0(LF_GCROOTS, LL_INFO100, "STACKWALK: Setting m_forceReportingWhileSkipping = ForceGCReportingStage::LookForManagedFrame\n");
@@ -2160,7 +2127,7 @@ ProcessFuncletsForGCReporting:
                                             // would report garbage values as live objects. So instead parent can use the IP of the resume
                                             // address of catch funclet to report live GC references.
                                             m_crawl.fShouldParentFrameUseUnwindTargetPCforGCReporting = true;
-                                            
+
                                             if (g_isNewExceptionHandlingEnabled)
                                             {
                                                 m_crawl.ehClauseForCatch = pExInfo->m_ClauseForCatch;
@@ -2181,7 +2148,7 @@ ProcessFuncletsForGCReporting:
                                                     "(EH handler range [%x, %x) ), so we need to specially report roots to ensure variables alive"
                                                     " in its handler stay live.\n",
                                                     pTracker->GetCatchToCallPC(), m_crawl.ehClauseForCatch.HandlerStartPC,
-                                                    m_crawl.ehClauseForCatch.HandlerEndPC);                                                
+                                                    m_crawl.ehClauseForCatch.HandlerEndPC);
                                             }
                                         }
                                         else if (!m_crawl.IsFunclet())
@@ -2291,14 +2258,14 @@ ProcessFuncletsForGCReporting:
                                 STRESS_LOG0(LF_GCROOTS, LL_INFO100, "STACKWALK: Setting m_forceReportingWhileSkipping = ForceGCReportingStage::LookForMarkerFrame\n");
                             }
 
-#ifdef _DEBUG                                
+#ifdef _DEBUG
                             if (m_forceReportingWhileSkipping != ForceGCReportingStage::Off)
                             {
                                 STRESS_LOG3(LF_GCROOTS, LL_INFO100,
                                     "STACKWALK: Force callback for skipped function m_crawl.pFunc = %pM (%s.%s)\n", m_crawl.pFunc, m_crawl.pFunc->m_pszDebugClassName, m_crawl.pFunc->m_pszDebugMethodName);
                                 _ASSERTE((m_crawl.pFunc->GetMethodTable() == g_pEHClass) || (strcmp(m_crawl.pFunc->m_pszDebugClassName, "ILStubClass") == 0) || (strcmp(m_crawl.pFunc->m_pszDebugMethodName, "CallFinallyFunclet") == 0) || (m_crawl.pFunc->GetMethodTable() == g_pExceptionServicesInternalCallsClass));
                             }
-#endif                                                                
+#endif
                         }
                     }
                 }
@@ -3185,6 +3152,7 @@ void StackFrameIterator::PreProcessingForManagedFrames(void)
     m_pCachedGSCookie = (GSCookie*)m_crawl.GetCodeManager()->GetGSCookieAddr(
                                                         m_crawl.pRD,
                                                         &m_crawl.codeInfo,
+                                                        m_codeManFlags,
                                                         &m_crawl.codeManState);
 #endif // !DACCESS_COMPILE
 

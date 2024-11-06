@@ -404,6 +404,8 @@ PALEXPORT int32_t SystemNative_GetAtOutOfBandMark(intptr_t socket, int32_t* avai
 
 PALEXPORT int32_t SystemNative_GetBytesAvailable(intptr_t socket, int32_t* available);
 
+PALEXPORT int32_t SystemNative_GetWasiSocketDescriptor(intptr_t socket, void** entry);
+
 PALEXPORT int32_t SystemNative_CreateSocketEventPort(intptr_t* port);
 
 PALEXPORT int32_t SystemNative_CloseSocketEventPort(intptr_t port);
