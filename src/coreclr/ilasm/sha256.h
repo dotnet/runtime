@@ -14,43 +14,45 @@
 #ifdef _WIN32
 inline HRESULT Sha256Hash(BYTE* pSrc, DWORD srcSize, BYTE* pDst, DWORD dstSize)
 {
-    NTSTATUS status;
+    BCRYPT_ALG_HANDLE  algHandle = NULL;
+    BCRYPT_HASH_HANDLE hashHandle = NULL;
 
-    BCRYPT_ALG_HANDLE   algHandle = NULL;
-    BCRYPT_HASH_HANDLE  hashHandle = NULL;
+    BYTE  hash[32]; // 256 bits
+    DWORD hashLength = 0;
+    DWORD resultLength = 0;
 
-    BYTE    hash[32]; // 256 bits
-    DWORD   hashLength = 0;
-    DWORD   resultLength = 0;
-    status = BCryptOpenAlgorithmProvider(&algHandle, BCRYPT_SHA256_ALGORITHM, NULL, 0);
-    if(!NT_SUCCESS(status))
+    NTSTATUS status = BCryptOpenAlgorithmProvider(&algHandle, BCRYPT_SHA256_ALGORITHM, NULL, 0);
+
+    if (!NT_SUCCESS(status))
     {
         goto cleanup;
     }
+
     status = BCryptGetProperty(algHandle, BCRYPT_HASH_LENGTH, (PBYTE)&hashLength, sizeof(hashLength), &resultLength, 0);
-    if(!NT_SUCCESS(status))
+
+    if (!NT_SUCCESS(status))
     {
         goto cleanup;
     }
-    if (hashLength != 32)
-    {
-        status = STATUS_NO_MEMORY;
-        goto cleanup;
-    }
+
+    assert(hashLength == 32);
     status = BCryptCreateHash(algHandle, &hashHandle, NULL, 0, NULL, 0, 0);
-    if(!NT_SUCCESS(status))
+
+    if (!NT_SUCCESS(status))
     {
         goto cleanup;
     }
 
     status = BCryptHashData(hashHandle, pSrc, srcSize, 0);
-    if(!NT_SUCCESS(status))
+
+    if (!NT_SUCCESS(status))
     {
         goto cleanup;
     }
 
     status = BCryptFinishHash(hashHandle, hash, hashLength, 0);
-    if(!NT_SUCCESS(status))
+
+    if (!NT_SUCCESS(status))
     {
         goto cleanup;
     }
@@ -67,14 +69,16 @@ inline HRESULT Sha256Hash(BYTE* pSrc, DWORD srcSize, BYTE* pDst, DWORD dstSize)
     status = S_OK;
 
 cleanup:
-    if (NULL != hashHandle)
+    if (hashHandle != NULL)
     {
          BCryptDestroyHash(hashHandle);
     }
-    if(NULL != algHandle)
+
+    if (algHandle != NULL)
     {
         BCryptCloseAlgorithmProvider(algHandle, 0);
     }
+
     return status;
 }
 #elif defined(__APPLE__)
