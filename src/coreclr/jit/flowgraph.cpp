@@ -6623,9 +6623,9 @@ FlowGraphDominanceFrontiers::FlowGraphDominanceFrontiers(FlowGraphDominatorTree*
 //   Data structure representing dominance frontiers.
 //
 // Remarks:
-//   Recall that the dominance frontier of a block B is the set of blocks
-//   B3 such that there exists some B2 s.t. B3 is a successor of B2, and
-//   B dominates B2. Note that this dominance need not be strict -- B2
+//   Recall that the dominance frontier of a block B is the set of blocks B3
+//   such that there exists some B2 s.t. B3 is a successor of B2, and B
+//   dominates B2 but not B3. Note that this dominance need not be strict -- B2
 //   and B may be the same node.
 //
 //   In other words, a block B' is in DF(B) if B dominates an immediate
