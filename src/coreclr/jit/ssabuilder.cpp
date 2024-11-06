@@ -1716,7 +1716,8 @@ bool IncrementalSsaBuilder::Insert()
     }
 
     // The IDF gives a bound on the potential recursion depth of
-    // FindOrCreateReachingDef. Limit this to a value we know won't overflow.
+    // FindOrCreateReachingDef. Limit this to a value we know won't stack
+    // overflow.
     if (BitVecOps::Count(&m_poTraits, m_iteratedDominanceFrontiers) > 100)
     {
         return false;
