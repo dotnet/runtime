@@ -131,45 +131,18 @@ namespace System.Text.Json.Nodes
                 ThrowHelper.ThrowArgumentNullException(nameof(match));
             }
 
-            if (_list is not { } list)
+            return List.RemoveAll(node =>
             {
-                return 0;
-            }
-
-            // Algorithm adapted from List<T>.RemoveAll()
-            int size = list.Count;
-            int freeIndex = 0;   // the first free slot in items array
-
-            // Find the first item which needs to be removed.
-            while (freeIndex < size && !match(list[freeIndex])) freeIndex++;
-            if (freeIndex >= size) return 0;
-
-            int current = freeIndex + 1;
-            while (current < size)
-            {
-                // Find the first item which needs to be kept.
-                while (current < size && match(list[current])) current++;
-
-                if (current < size)
+                if (match(node))
                 {
-                    DetachParent(list[freeIndex]);
-
-                    // copy item to the free slot.
-                    list[freeIndex++] = list[current];
-                    list[current] = null; // prevent it from being detached from the parent in the following for-loop
-                    ++current;
+                    DetachParent(node);
+                    return true;
                 }
-            }
-
-            // Detach trailing nodes, as they are skipped in the loop above
-            int removedLength = size - freeIndex;
-            for (int i = 0; i < removedLength; i++)
-            {
-                DetachParent(list[freeIndex + i]);
-            }
-
-            list.RemoveRange(freeIndex, removedLength);
-            return removedLength;
+                else
+                {
+                    return false;
+                }
+            });
         }
 
         /// <summary>
@@ -195,18 +168,7 @@ namespace System.Text.Json.Nodes
                 ThrowHelper.ThrowArgumentOutOfRangeException_NeedNonNegNum(nameof(count));
             }
 
-            if (_list is not { } list)
-            {
-                if (index == 0 && count == 0)
-                {
-                    return;
-                }
-                else
-                {
-                    ThrowHelper.ThrowArgumentException_InvalidOffLen();
-                    return;
-                }
-            }
+            List<JsonNode?> list = List;
 
             if (list.Count - index < count)
             {
