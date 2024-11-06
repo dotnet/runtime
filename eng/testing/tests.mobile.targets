@@ -38,6 +38,9 @@
     <HttpActivityPropagationSupport Condition="'$(HttpActivityPropagationSupport)' == ''">false</HttpActivityPropagationSupport>
     <UseSystemResourceKeys Condition="'$(UseSystemResourceKeys)' == ''">false</UseSystemResourceKeys>
     <UseNativeHttpHandler Condition="'$(UseNativeHttpHandler)' == ''">false</UseNativeHttpHandler>
+    <DynamicCodeSupport Condition="'$(DynamicCodeSupport)' == '' and '$(MonoForceInterpreter)' != 'true'">false</DynamicCodeSupport>
+    <_DefaultValueAttributeSupport Condition="'$(_DefaultValueAttributeSupport)' == ''">true</_DefaultValueAttributeSupport>
+    <_DesignerHostSupport Condition="'$(_DesignerHostSupport)' == ''">true</_DesignerHostSupport>
   </PropertyGroup>
 
   <!-- When trimming non-exe projects, root the whole intermediate assembly.
@@ -98,11 +101,6 @@
     <ItemGroup>
       <!-- Mark all the assemblies for link. We will explicitly mark the non-trimmable ones -->
       <ResolvedFileToPublish TrimMode="$(TrimMode)" />
-
-      <!-- Prevent getting defaults from ILLink targets that are imported with the Sdk.targets -->
-      <RuntimeHostConfigurationOption Include="System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported" Value="false" />
-      <RuntimeHostConfigurationOption Include="System.ComponentModel.DefaultValueAttribute.IsSupported" Value="true" />
-      <RuntimeHostConfigurationOption Include="System.ComponentModel.Design.IDesignerHost.IsSupported" Value="true" />
 
       <!-- Don't trim the main assembly.
            TrimMode="" is needed so the root assemblies are correctly identified -->
