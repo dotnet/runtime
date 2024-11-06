@@ -248,8 +248,10 @@ private:
             mdMethodDef m_methodDef;
         } m_synthetic;
     };
-};
 
+    // cDAC accesses fields via ILCodeVersioningState.m_activeVersion
+    friend struct ::cdac_data<ILCodeVersioningState>;
+};
 
 class NativeCodeVersionNode
 {
@@ -316,6 +318,16 @@ private:
         IsActiveChildFlag = 1
     };
     DWORD m_flags;
+
+    friend struct ::cdac_data<NativeCodeVersionNode>;
+};
+
+template<>
+struct cdac_data<NativeCodeVersionNode>
+{
+    static constexpr size_t Next = offsetof(NativeCodeVersionNode, m_pNextMethodDescSibling);
+    static constexpr size_t MethodDesc = offsetof(NativeCodeVersionNode, m_pMethodDesc);
+    static constexpr size_t NativeCode = offsetof(NativeCodeVersionNode, m_pNativeCode);
 };
 
 class NativeCodeVersionCollection
@@ -473,6 +485,15 @@ private:
     BYTE m_flags;
     NativeCodeVersionId m_nextId;
     PTR_NativeCodeVersionNode m_pFirstVersionNode;
+
+    friend struct ::cdac_data<MethodDescVersioningState>;
+};
+
+template<>
+struct cdac_data<MethodDescVersioningState>
+{
+    static constexpr size_t NativeCodeVersionNode = offsetof(MethodDescVersioningState, m_pFirstVersionNode);
+    static constexpr size_t Flags = offsetof(MethodDescVersioningState, m_flags);
 };
 
 class ILCodeVersioningState
@@ -505,6 +526,17 @@ private:
     PTR_ILCodeVersionNode m_pFirstVersionNode;
     PTR_Module m_pModule;
     mdMethodDef m_methodDef;
+
+    friend struct ::cdac_data<ILCodeVersioningState>;
+};
+
+template<>
+struct cdac_data<ILCodeVersioningState>
+{
+    static constexpr size_t ActiveVersionKind = offsetof(ILCodeVersioningState, m_activeVersion.m_storageKind);
+    static constexpr size_t ActiveVersionNode = offsetof(ILCodeVersioningState, m_activeVersion.m_pVersionNode);
+    static constexpr size_t ActiveVersionModule = offsetof(ILCodeVersioningState, m_activeVersion.m_synthetic.m_pModule);
+    static constexpr size_t ActiveVersionMethodDef = offsetof(ILCodeVersioningState, m_activeVersion.m_synthetic.m_methodDef);
 };
 
 class CodeVersionManager

@@ -485,6 +485,9 @@ int32_t __stdcall RhpHardwareExceptionHandler(uintptr_t faultCode, uintptr_t fau
 
 #else // TARGET_UNIX
 
+uintptr_t GetSSP(CONTEXT *pContext);
+void SetSSP(CONTEXT *pContext, uintptr_t ssp);
+
 static bool g_ContinueOnFatalErrors = false;
 
 // Set the runtime to continue search when encountering an unhandled runtime exception. Once done it is forever.
@@ -539,21 +542,15 @@ int32_t __stdcall RhpVectoredExceptionHandler(PEXCEPTION_POINTERS pExPtrs)
             // When the CET is enabled, the interruption happens on the ret instruction in the calee.
             // We need to "pop" rsp to the caller, as if the ret has consumed it.
             interruptedContext->SetSp(interruptedContext->GetSp() + 8);
+            uintptr_t ssp = GetSSP(interruptedContext);
+            SetSSP(interruptedContext, ssp + 8);
         }
 
         // Change the IP to be at the original return site, as if we have returned to the caller.
         // That IP is an interruptible safe point, so we can suspend right there.
-        uintptr_t origIp = interruptedContext->GetIp();
         interruptedContext->SetIp((uintptr_t)pThread->GetHijackedReturnAddress());
 
         pThread->InlineSuspend(interruptedContext);
-
-        if (areShadowStacksEnabled)
-        {
-            // Undo the "pop", so that the ret could now succeed.
-            interruptedContext->SetSp(interruptedContext->GetSp() - 8);
-            interruptedContext->SetIp(origIp);
-        }
 
         ASSERT(!pThread->IsHijacked());
         return EXCEPTION_CONTINUE_EXECUTION;

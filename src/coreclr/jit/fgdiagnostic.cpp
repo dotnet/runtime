@@ -3182,11 +3182,14 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
     }
 
     // Ensure that all throw helper blocks are currently in the block list.
-    for (Compiler::AddCodeDsc* add = fgAddCodeList; add != nullptr; add = add->acdNext)
+    if (fgHasAddCodeDscMap())
     {
-        if (add->acdUsed)
+        for (Compiler::AddCodeDsc* const add : Compiler::AddCodeDscMap::ValueIteration(fgAddCodeDscMap))
         {
-            assert(add->acdDstBlk->bbTraversalStamp == curTraversalStamp);
+            if (add->acdUsed)
+            {
+                assert(add->acdDstBlk->bbTraversalStamp == curTraversalStamp);
+            }
         }
     }
 

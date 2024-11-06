@@ -456,6 +456,7 @@ void *FieldDesc::GetInstanceAddress(OBJECTREF o)
     {
         if(IsEnCNew()) {THROWS;} else {DISABLED(THROWS);};
         if(IsEnCNew()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);};
+        MODE_COOPERATIVE;
     }
     CONTRACTL_END;
 

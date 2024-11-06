@@ -127,6 +127,16 @@ namespace System.Globalization.Tests
             yield return new object[] { s_currentCompare, "\u0130", "\u0131", 0, 1, CompareOptions.Ordinal, -1, 0 };
             yield return new object[] { s_currentCompare, "\u0131", "\u0130", 0, 1, CompareOptions.Ordinal, -1, 0 };
 
+            if (!PlatformDetection.IsHybridGlobalizationOnBrowser)
+            {
+                yield return new object[] { s_invariantCompare, "eﬆ", "est", 0, 2, CompareOptions.IgnoreCase, 0, 2 };
+                yield return new object[] { s_invariantCompare, " eﬆ", "est", 0, 3, CompareOptions.IgnoreCase, 1, 2 };
+                yield return new object[] { s_invariantCompare, " ﬆ", "st", 0, 2, CompareOptions.IgnoreCase, 1, 1 };
+                yield return new object[] { s_invariantCompare, "est", "eﬆ", 0, 3, CompareOptions.IgnoreCase, 0, 3 };
+                yield return new object[] { s_invariantCompare, " est", "eﬆ", 0, 4, CompareOptions.IgnoreCase, 1, 3 };
+                yield return new object[] { s_invariantCompare, " st", "ﬆ", 0, 3, CompareOptions.IgnoreCase, 1, 2 };
+            }
+
             // Platform differences
             if (PlatformDetection.IsNlsGlobalization)
             {

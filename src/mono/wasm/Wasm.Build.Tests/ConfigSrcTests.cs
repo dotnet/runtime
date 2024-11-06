@@ -16,7 +16,7 @@ public class ConfigSrcTests : TestMainJsTestBase
 
     // NOTE: port number determinizes dynamically, so could not generate absolute URI
     [Theory]
-    [BuildAndRun(host: RunHost.V8 | RunHost.NodeJS)]
+    [BuildAndRun(host: RunHost.V8)]
     public void ConfigSrcAbsolutePath(BuildArgs buildArgs, RunHost host, string id)
     {
         buildArgs = buildArgs with { ProjectName = $"configsrcabsolute_{buildArgs.Config}_{buildArgs.AOT}" };
@@ -26,7 +26,7 @@ public class ConfigSrcTests : TestMainJsTestBase
                         id: id,
                         new BuildProjectOptions(
                             InitProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), s_mainReturns42),
-                            DotnetWasmFromRuntimePack: !(buildArgs.AOT || buildArgs.Config == "Release")));
+                            DotnetWasmFromRuntimePack: IsDotnetWasmFromRuntimePack(buildArgs)));
 
         string binDir = GetBinDir(baseDir: _projectDir!, config: buildArgs.Config);
         string bundleDir = Path.Combine(binDir, "AppBundle");

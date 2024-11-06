@@ -1,4 +1,3 @@
-version: '3'
 services:
   client:
     build:
@@ -6,19 +5,23 @@ services:
       dockerfile: ${DOCKERFILE:-Dockerfile}
     image: httpstress
     volumes:
-      - "${CLIENT_DUMPS_SHARE}:${DUMPS_SHARE_MOUNT_ROOT}"
+      - "${DUMPS_SHARE}:${DUMPS_SHARE_MOUNT_ROOT}"
     links:
       - server
     environment:
-      - HTTPSTRESS_ARGS=-runMode client -serverUri https://server:5001 ${HTTPSTRESS_CLIENT_ARGS}
+      - STRESS_ARGS=-runMode client -serverUri https://server:5001 ${STRESS_CLIENT_ARGS}
+      - STRESS_ROLE=client
+      - DUMPS_SHARE_MOUNT_ROOT=${DUMPS_SHARE_MOUNT_ROOT}
   server:
     build:
       context: .
       dockerfile: ${DOCKERFILE:-Dockerfile}
     image: httpstress
     volumes:
-      - "${SERVER_DUMPS_SHARE}:${DUMPS_SHARE_MOUNT_ROOT}"
+      - "${DUMPS_SHARE}:${DUMPS_SHARE_MOUNT_ROOT}"
     ports:
       - "5001:5001"
     environment:
-      - HTTPSTRESS_ARGS=-runMode server -serverUri https://+:5001 ${HTTPSTRESS_SERVER_ARGS}
+      - STRESS_ARGS=-runMode server -serverUri https://+:5001 ${STRESS_SERVER_ARGS}
+      - STRESS_ROLE=server
+      - DUMPS_SHARE_MOUNT_ROOT=${DUMPS_SHARE_MOUNT_ROOT}
