@@ -1364,7 +1364,7 @@ void Compiler::JitTestCheckSSA()
 
 class IncrementalLiveInBuilder
 {
-    Compiler* m_comp;
+    Compiler*               m_comp;
     ArrayStack<BasicBlock*> m_queue;
 
 public:
@@ -1387,7 +1387,9 @@ public:
 //   use         - The use
 //   reachingDef - The reaching definition of the use
 //
-void IncrementalLiveInBuilder::MarkLiveInBackwards(unsigned lclNum, const UseDefLocation& use, const UseDefLocation& reachingDef)
+void IncrementalLiveInBuilder::MarkLiveInBackwards(unsigned              lclNum,
+                                                   const UseDefLocation& use,
+                                                   const UseDefLocation& reachingDef)
 {
     m_queue.Reset();
 
@@ -1448,8 +1450,12 @@ public:
     {
     }
 
-    void Insert();
-    static void MarkLiveInBackwards(Compiler* comp, unsigned lclNum, const UseDefLocation& use, const UseDefLocation& reachingDef, BitVec& visitedSet);
+    void        Insert();
+    static void MarkLiveInBackwards(Compiler*             comp,
+                                    unsigned              lclNum,
+                                    const UseDefLocation& use,
+                                    const UseDefLocation& reachingDef,
+                                    BitVec&               visitedSet);
 };
 
 //------------------------------------------------------------------------
@@ -1504,9 +1510,10 @@ UseDefLocation IncrementalSsaBuilder::FindOrCreateReachingDef(const UseDefLocati
                         continue;
                     }
 
-                    UseDefLocation phiArgUse = UseDefLocation(pred, nullptr, nullptr);
+                    UseDefLocation phiArgUse         = UseDefLocation(pred, nullptr, nullptr);
                     UseDefLocation phiArgReachingDef = FindOrCreateReachingDef(phiArgUse);
-                    SsaBuilder::AddNewPhiArg(m_comp, dom, phiDef, phi, m_lclNum, phiArgReachingDef.Tree->GetSsaNum(), pred);
+                    SsaBuilder::AddNewPhiArg(m_comp, dom, phiDef, phi, m_lclNum, phiArgReachingDef.Tree->GetSsaNum(),
+                                             pred);
 
                     // The phi arg is modelled at the end of the pred block;
                     // mark liveness for it.

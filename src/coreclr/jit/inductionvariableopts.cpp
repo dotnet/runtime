@@ -424,7 +424,8 @@ bool Compiler::optCanSinkWidenedIV(unsigned lclNum, FlowGraphNaturalLoop* loop)
         block->VisitAllSuccs(this, [=](BasicBlock* succ) {
             if (!loop->ContainsBlock(succ) && bbIsHandlerBeg(succ))
             {
-                assert(!optLocalIsLiveIntoBlock(lclNum, succ) && "Candidate IV for widening is live into exceptional exit");
+                assert(!optLocalIsLiveIntoBlock(lclNum, succ) &&
+                       "Candidate IV for widening is live into exceptional exit");
             }
 
             return BasicBlockVisit::Continue;
