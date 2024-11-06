@@ -14,7 +14,7 @@
 #ifdef _WIN32
 inline HRESULT Sha256Hash(BYTE* pSrc, DWORD srcSize, BYTE* pDst, DWORD dstSize)
 {
-    if (dstSize < 32)
+    if (dstSize != 32)
     {
         return E_FAIL;
     }
@@ -75,7 +75,7 @@ cleanup:
 
 inline HRESULT Sha256Hash(BYTE* pSrc, DWORD srcSize, BYTE* pDst, DWORD dstSize)
 {
-    if (dstSize < CC_SHA256_DIGEST_LENGTH)
+    if (dstSize != CC_SHA256_DIGEST_LENGTH)
     {
         return E_FAIL;
     }
@@ -96,7 +96,7 @@ inline bool IsOpenSslAvailable()
 
 inline HRESULT Sha256Hash(BYTE* pSrc, DWORD srcSize, BYTE* pDst, DWORD dstSize)
 {
-    if (CryptoNative_EnsureOpenSslInitialized() || (dstSize < 32))
+    if (CryptoNative_EnsureOpenSslInitialized() || (dstSize != 32))
     {
         return E_FAIL;
     }
