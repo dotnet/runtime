@@ -97,7 +97,7 @@ inline HRESULT Sha256Hash(BYTE* pSrc, DWORD srcSize, BYTE* pDst, DWORD dstSize)
 
     return S_OK;
 }
-#elif defined(__linux__)
+#else
 extern "C" {
     #include "openssl.h"
     #include "pal_evp.h"
@@ -133,12 +133,6 @@ inline HRESULT Sha256Hash(BYTE* pSrc, DWORD srcSize, BYTE* pDst, DWORD dstSize)
     }
 
     return S_OK;
-}
-#else
-// Unsupported platform
-inline HRESULT Sha256Hash(BYTE* pSrc, DWORD srcSize, BYTE* pDst, DWORD dstSize)
-{
-    return E_FAIL;
 }
 #endif
 
