@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 
@@ -42,7 +41,7 @@ internal readonly partial struct ExecutionManager_1 : IExecutionManager
             }
             TargetPointer codeHeaderAddress = Target.ReadPointer(codeHeaderIndirect);
             Data.RealCodeHeader realCodeHeader = Target.ProcessedData.GetOrAdd<Data.RealCodeHeader>(codeHeaderAddress);
-            info = new CodeBlock(jittedCodeAddress, codeHeaderOffset, relativeOffset, realCodeHeader, rangeSection.Data!.JitManager);
+            info = new CodeBlock(start.Value, codeHeaderOffset, relativeOffset, realCodeHeader, rangeSection.Data!.JitManager);
             return true;
         }
 
