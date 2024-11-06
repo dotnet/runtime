@@ -181,6 +181,15 @@ public class WasmTemplateTestsBase : BuildTestBase
         UpdateFile(pathRelativeToProjectDir, newContent);
     }
 
+    protected void DeleteFile(string pathRelativeToProjectDir)
+    {
+        var deletedFilePath = Path.Combine(_projectDir!, pathRelativeToProjectDir);
+        if(File.Exists(deletedFilePath))
+        {
+            File.Delete(deletedFilePath);
+        }
+    }
+
     protected void RemoveContentsFromProjectFile(string pathRelativeToProjectDir, string afterMarker, string beforeMarker)
     {
         var path = Path.Combine(_projectDir!, pathRelativeToProjectDir);
