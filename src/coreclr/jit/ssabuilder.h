@@ -53,7 +53,7 @@ public:
     // variable are stored in the "per SSA data" on the local descriptor.
     void Build();
 
-    static void InsertInSsa(Compiler*                   comp,
+    static bool InsertInSsa(Compiler*                   comp,
                             unsigned                    lclNum,
                             ArrayStack<UseDefLocation>& defs,
                             ArrayStack<UseDefLocation>& uses);

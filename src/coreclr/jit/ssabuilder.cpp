@@ -1458,7 +1458,7 @@ public:
     {
     }
 
-    void        Insert();
+    bool        Insert();
     static void MarkLiveInBackwards(Compiler*             comp,
                                     unsigned              lclNum,
                                     const UseDefLocation& use,
@@ -1689,9 +1689,38 @@ Statement* IncrementalSsaBuilder::LatestStatement(Statement* stmt1, Statement* s
 //------------------------------------------------------------------------
 // Insert: Insert the uses and definitions in SSA.
 //
-void IncrementalSsaBuilder::Insert()
+// Returns:
+//   True if we were able to insert the local into SSA. False if we gave up
+//   (due to hitting internal limits).
+//
+bool IncrementalSsaBuilder::Insert()
 {
     FlowGraphDfsTree* dfsTree = m_comp->m_dfsTree;
+
+    // Compute iterated dominance frontiers of all real definitions. These are
+    // the blocks that unpruned phi definitions would be inserted into. We
+    // insert the phis lazily to end up with pruned SSA, but we still need to
+    // know which blocks are candidates for phis.
+    BlkVector idf(m_comp->getAllocator(CMK_SSA));
+
+    for (int i = 0; i < m_defs.Height(); i++)
+    {
+        BasicBlock* block = m_defs.BottomRef(i).Block;
+        idf.clear();
+        m_comp->m_domFrontiers->ComputeIteratedDominanceFrontier(block, &idf);
+
+        for (BasicBlock* idfBlock : idf)
+        {
+            BitVecOps::AddElemD(&m_poTraits, m_iteratedDominanceFrontiers, idfBlock->bbPostorderNum);
+        }
+    }
+
+    // The IDF gives a bound on the potential recursion depth of
+    // FindOrCreateReachingDef. Limit this to a value we know won't overflow.
+    if (BitVecOps::Count(&m_poTraits, m_iteratedDominanceFrontiers) > 100)
+    {
+        return false;
+    }
 
     LclVarDsc* dsc = m_comp->lvaGetDesc(m_lclNum);
     // Alloc SSA numbers for all real definitions.
@@ -1712,24 +1741,6 @@ void IncrementalSsaBuilder::Insert()
         JITDUMP("  [%06u] d:%u\n", Compiler::dspTreeID(def.Tree), ssaNum);
     }
 
-    // Compute iterated dominance frontiers of all real definitions. These are
-    // the blocks that unpruned phi definitions would be inserted into. We
-    // insert the phis lazily to end up with pruned SSA, but we still need to
-    // know which blocks are candidates for phis.
-    BlkVector idf(m_comp->getAllocator(CMK_SSA));
-
-    for (int i = 0; i < m_defs.Height(); i++)
-    {
-        BasicBlock* block = m_defs.BottomRef(i).Block;
-        idf.clear();
-        m_comp->m_domFrontiers->ComputeIteratedDominanceFrontier(block, &idf);
-
-        for (BasicBlock* idfBlock : idf)
-        {
-            BitVecOps::AddElemD(&m_poTraits, m_iteratedDominanceFrontiers, idfBlock->bbPostorderNum);
-        }
-    }
-
     // Finally compute all the reaching defs for the uses.
     for (int i = 0; i < m_uses.Height(); i++)
     {
@@ -1746,6 +1757,8 @@ void IncrementalSsaBuilder::Insert()
 
         m_liveInBuilder.MarkLiveInBackwards(m_lclNum, use, def);
     }
+
+    return true;
 }
 
 //------------------------------------------------------------------------
@@ -1758,12 +1771,16 @@ void IncrementalSsaBuilder::Insert()
 //   defs   - All STORE_LCL_VAR definitions of the local
 //   uses   - All LCL_VAR uses of the local
 //
+// Returns:
+//   True if we were able to insert the local into SSA. False if we gave up
+//   (due to hitting internal limits).
+//
 // Remarks:
 //   All uses are required to never read an uninitialized value of the local.
 //   That is, this function requires that all paths through the function go
 //   through one of the defs in "defs" before any use in "uses".
 //
-void SsaBuilder::InsertInSsa(Compiler*                   comp,
+bool SsaBuilder::InsertInSsa(Compiler*                   comp,
                              unsigned                    lclNum,
                              ArrayStack<UseDefLocation>& defs,
                              ArrayStack<UseDefLocation>& uses)
@@ -1831,6 +1848,11 @@ void SsaBuilder::InsertInSsa(Compiler*                   comp,
     }
 
     IncrementalSsaBuilder builder(comp, lclNum, defs, uses);
-    builder.Insert();
-    dsc->lvInSsa = true;
+    if (builder.Insert())
+    {
+        dsc->lvInSsa = true;
+        return true;
+    }
+
+    return false;
 }
