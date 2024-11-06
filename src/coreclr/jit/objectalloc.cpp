@@ -141,8 +141,18 @@ void ObjectAllocator::DoAnalysis()
 
     if (comp->lvaCount > 0)
     {
-        m_EscapingPointers         = BitVecOps::MakeEmpty(&m_bitVecTraits);
-        m_ConnGraphAdjacencyMatrix = new (comp->getAllocator(CMK_ObjectAllocator)) BitSetShortLongRep[comp->lvaCount];
+        m_EscapingPointers = BitVecOps::MakeEmpty(&m_bitVecTraits);
+        m_ConnGraphAdjacencyMatrix =
+            new (comp->getAllocator(CMK_ObjectAllocator)) BitSetShortLongRep[comp->lvaCount + m_maxPseudoLocals + 1];
+
+        // If we are doing conditional escape analysis, we also need to compute dominance.
+        //
+        if (CanHavePseudoLocals())
+        {
+            assert(comp->m_dfsTree != nullptr);
+            assert(comp->m_domTree == nullptr);
+            comp->m_domTree = FlowGraphDominatorTree::Build(comp->m_dfsTree);
+        }
 
         MarkEscapingVarsAndBuildConnGraph();
         ComputeEscapingNodes(&m_bitVecTraits, m_EscapingPointers);
@@ -151,6 +161,12 @@ void ObjectAllocator::DoAnalysis()
     m_AnalysisDone = true;
 }
 
+//------------------------------------------------------------------------------
+// NewPseudoLocal: return index of a new pseudo local.
+//
+// Returns:
+//   index to use, or BAD_VAR_NUM if no more indices are available.
+//
 unsigned ObjectAllocator::NewPseudoLocal()
 {
     unsigned result = BAD_VAR_NUM;
@@ -160,6 +176,114 @@ unsigned ObjectAllocator::NewPseudoLocal()
         m_numPseudoLocals++;
     }
     return result;
+}
+
+//------------------------------------------------------------------------------
+// IsGuarded: does evaluation of `tree` depend on a GDV check?
+//
+// Arguments:
+//   tree -- tree in question
+//   info -- [out] closest enclosing guard info, if method returns true
+//
+// Returns:
+//   true if tree is evaluated under something that looks like a GDV check
+//
+bool ObjectAllocator::IsGuarded(BasicBlock* block, GenTree* tree, GuardInfo* info)
+{
+    // Walk up the dominator tree....
+    //
+
+    for (BasicBlock* idomBlock = block->bbIDom; idomBlock != nullptr; idomBlock = idomBlock->bbIDom)
+    {
+        JITDUMP("... checking " FMT_BB, idomBlock->bbNum);
+        if (!idomBlock->KindIs(BBJ_COND))
+        {
+            JITDUMP("... not cond\n");
+            continue;
+        }
+
+        Statement* const stmt = idomBlock->lastStmt();
+
+        if (stmt == nullptr)
+        {
+            JITDUMP("... no last stmt\n");
+            return false;
+        }
+
+        GenTree* const jumpTree = stmt->GetRootNode();
+
+        if (!jumpTree->OperIs(GT_JTRUE))
+        {
+            JITDUMP("... no JTRUE\n");
+            return false;
+        }
+
+        GenTree* const tree = jumpTree->AsOp()->gtOp1;
+
+        if (!tree->OperIsCompare())
+        {
+            JITDUMP("... no JTRUE(cmp)\n");
+            return false;
+        }
+
+        GenTree* op1 = tree->AsOp()->gtOp1;
+        GenTree* op2 = tree->AsOp()->gtOp2;
+
+        // gdv creates NE(hnd, indir(locl))
+        // but let's not rely on that
+        //
+        if (!op1->OperIs(GT_IND))
+        {
+            std::swap(op1, op2);
+        }
+
+        if (!op1->OperIs(GT_IND))
+        {
+            JITDUMP("... no JTRUE(cmp(ind, ...))\n");
+            continue;
+        }
+
+        if (!op1->TypeIs(TYP_I_IMPL))
+        {
+            JITDUMP("... no JTRUE(cmp(ind:int, ...))\n");
+            continue;
+        }
+
+        GenTree* const addr = op1->AsIndir()->Addr();
+
+        if (!addr->TypeIs(TYP_REF))
+        {
+            JITDUMP("... no JTRUE(cmp(ind:int(*:ref), ...))\n");
+            continue;
+        }
+
+        if (!addr->OperIs(GT_LCL_VAR))
+        {
+            JITDUMP("... no JTRUE(cmp(ind:int(lcl:ref), ...))\n");
+            continue;
+        }
+
+        if (!op2->IsIconHandle(GTF_ICON_CLASS_HDL))
+        {
+            JITDUMP("... no JTRUE(cmp(ind:int(lcl:ref), clsHnd))\n");
+            continue;
+        }
+
+        // Passed the checks... fill in the info.
+        //
+        info->m_local  = addr->AsLclVar()->GetLclNum();
+        bool isNonNull = false;
+        bool isExact   = false;
+        info->m_type   = (CORINFO_CLASS_HANDLE)op2->AsIntCon()->gtIconVal;
+
+        JITDUMP("... under guard V%02u\n", info->m_local);
+
+        return true;
+    }
+
+    JITDUMP("... no more doms\n");
+
+    return false;
 }
 
 //------------------------------------------------------------------------------
@@ -232,11 +356,16 @@ void ObjectAllocator::MarkEscapingVarsAndBuildConnGraph()
                 //
                 GenTree* const data = tree->AsLclVarCommon()->Data();
 
+                // Note this could be any conditional allocation, and we could track the conditions
+                // under which it escapes. GDVs are a nice subset because the conditions are stylized,
+                // and the condition analysis seems tractable, and we expect the un-inlined failed
+                // GDVs to be the main causes of escapes.
+                //
                 if (data->OperIs(GT_ALLOCOBJ) && m_compiler->hasImpEnumeratorGdvLocalMap())
                 {
                     // This is the allocation of concrete enumerator under GDV.
-                    // Find the local that will represent its uses.
-                    // (note it is usually *not* lclNum).
+                    // Find the local that will represent its uses (we have kept track of this during
+                    // importation and GDV expansion). Note it is usually *not* lclNum.
                     //
                     Compiler::NodeToUnsignedMap* const map             = m_compiler->getImpEnumeratorGdvLocalMap();
                     unsigned                           enumeratorLocal = BAD_VAR_NUM;
@@ -255,7 +384,7 @@ void ObjectAllocator::MarkEscapingVarsAndBuildConnGraph()
                         // during subsequent analysis, to verify that access is
                         // under the same type guard.
                         //
-                        GuardedCallInfo info;
+                        GuardInfo info;
                         info.m_local = enumeratorLocal;
                         info.m_type  = data->AsAllocObj()->gtAllocObjClsHnd;
                         m_allocator->m_GuardedCallMap.Set(pseudoLocal, info);
@@ -310,6 +439,11 @@ void ObjectAllocator::MarkEscapingVarsAndBuildConnGraph()
         }
     }
 
+    for (unsigned int p = 0; p < m_maxPseudoLocals; p++)
+    {
+        m_ConnGraphAdjacencyMatrix[p + comp->lvaCount] = BitVecOps::MakeEmpty(&m_bitVecTraits);
+    }
+
     // We should have computed the DFS tree already.
     //
     FlowGraphDfsTree* const dfs = comp->m_dfsTree;
@@ -320,12 +454,23 @@ void ObjectAllocator::MarkEscapingVarsAndBuildConnGraph()
     for (unsigned i = dfs->GetPostOrderCount(); i != 0; i--)
     {
         BasicBlock* const block = dfs->GetPostOrder(i - 1);
+        comp->compCurBB         = block;
 
         for (Statement* const stmt : block->Statements())
         {
             BuildConnGraphVisitor buildConnGraphVisitor(this);
             buildConnGraphVisitor.WalkTree(stmt->GetRootNodePointer(), nullptr);
         }
+    }
+
+    // Mark any "unoptimized" pseudo locals as escaping.
+    // (currently none are optimized)
+    //
+    for (unsigned p = 0; p < m_numPseudoLocals; p++)
+    {
+        unsigned pseudoLocal = p + comp->lvaCount;
+        JITDUMP("   P%02u was not optimized\n", pseudoLocal);
+        MarkLclVarAsEscaping(pseudoLocal);
     }
 }
 
@@ -844,7 +989,7 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
 
             case GT_CALL:
             {
-                GenTreeCall* asCall = parent->AsCall();
+                GenTreeCall* const asCall = parent->AsCall();
 
                 if (asCall->IsHelperCall())
                 {
@@ -856,7 +1001,7 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
                 {
                     JITDUMP("Enumerator V%02u passed to call...\n", lclNum);
 
-                    // Find pseudo local... if none, assume this local escapes at the call.
+                    // Find pseudo local...
                     //
                     unsigned pseudoLocal = BAD_VAR_NUM;
                     if (m_EnumeratorLocalToPseudoLocalMap.TryGetValue(lclNum, &pseudoLocal))
@@ -864,13 +1009,42 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
                         // Verify that this call is made under the set of conditions tracked by the
                         // pseudo local...
                         //
-                        // If so, track this as an assignment PseudoLocal = ...
-                        // Later if we don't clone and split off this GDV path,
-                        // we will mark PseudoLocal as escaped.
-                        //
-                        JITDUMP("... under GDV; tracking via pseudo-local P%02u\n", pseudoLocal);
-                        AddConnGraphEdge(pseudoLocal, lclNum);
-                        canLclVarEscapeViaParentStack = false;
+                        GuardInfo info;
+                        if (IsGuarded(comp->compCurBB, asCall, &info))
+                        {
+                            GuardInfo pseudoInfo;
+                            if (m_GuardedCallMap.Lookup(pseudoLocal, &pseudoInfo))
+                            {
+                                if ((info.m_local == lclNum && pseudoInfo.m_local == lclNum) &&
+                                    (info.m_type == pseudoInfo.m_type))
+                                {
+                                    // If so, track this as an assignment PseudoLocal = ...
+                                    // Later if we don't clone and split off this GDV path,
+                                    // we will mark PseudoLocal as escaped.
+                                    //
+                                    JITDUMP("... under GDV; tracking via pseudo-local P%02u\n", pseudoLocal);
+                                    AddConnGraphEdge(pseudoLocal, lclNum);
+                                    canLclVarEscapeViaParentStack = false;
+                                }
+                                else
+                                {
+                                    JITDUMP("... under different guard call is V%02u T%P, info is V%02u T%P ...?\n",
+                                            info.m_local, info.m_type, pseudoInfo.m_local, pseudoInfo.m_type);
+                                }
+                            }
+                            else
+                            {
+                                JITDUMP("... under non-gdv guard?\n");
+                            }
+                        }
+                        else
+                        {
+                            JITDUMP("... not guarded?\n");
+                        }
+                    }
+                    else
+                    {
+                        JITDUMP("... no pseudo local?\n");
                     }
                 }
                 break;

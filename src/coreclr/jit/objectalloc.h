@@ -28,13 +28,13 @@ struct EnumeratorVarUse
 
 // Describes a GDV check of the form m_local.GetType() == m_type
 //
-struct GuardedCallInfo
+struct GuardInfo
 {
     unsigned             m_local;
     CORINFO_CLASS_HANDLE m_type;
 };
 
-typedef JitHashTable<unsigned, JitSmallPrimitiveKeyFuncs<unsigned>, GuardedCallInfo> GuardedCallMap;
+typedef JitHashTable<unsigned, JitSmallPrimitiveKeyFuncs<unsigned>, GuardInfo> GuardedCallMap;
 
 class ObjectAllocator final : public Phase
 {
@@ -88,10 +88,14 @@ private:
     unsigned int MorphAllocObjNodeIntoStackAlloc(
         GenTreeAllocObj* allocObj, CORINFO_CLASS_HANDLE clsHnd, bool isValueClass, BasicBlock* block, Statement* stmt);
     struct BuildConnGraphVisitorCallbackData;
-    bool                      CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parentStack, unsigned int lclNum);
-    void                      UpdateAncestorTypes(GenTree* tree, ArrayStack<GenTree*>* parentStack, var_types newType);
-    bool                      IsGuardedCall(GenTreeCall* call, GuardedCallInfo& info);
-    unsigned                  NewPseudoLocal();
+    bool     CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parentStack, unsigned int lclNum);
+    void     UpdateAncestorTypes(GenTree* tree, ArrayStack<GenTree*>* parentStack, var_types newType);
+    bool     IsGuarded(BasicBlock* block, GenTree* tree, GuardInfo* info);
+    unsigned NewPseudoLocal();
+    bool     CanHavePseudoLocals()
+    {
+        return m_maxPseudoLocals > 0;
+    }
     static const unsigned int s_StackAllocMaxSize = 0x2000U;
 };
 
@@ -117,7 +121,7 @@ inline ObjectAllocator::ObjectAllocator(Compiler* comp)
         unsigned enumeratorLocalCount = comp->getImpEnumeratorGdvLocalMap()->GetCount();
         assert(enumeratorLocalCount > 0);
         m_maxPseudoLocals = enumeratorLocalCount;
-        m_bitVecTraits    = BitVecTraits(comp->lvaCount + enumeratorLocalCount, comp);
+        m_bitVecTraits    = BitVecTraits(comp->lvaCount + enumeratorLocalCount + 1, comp);
     }
 
     m_EscapingPointers                = BitVecOps::UninitVal();
