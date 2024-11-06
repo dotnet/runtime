@@ -51,12 +51,12 @@ if [%TEST_USING_WORKLOADS%] == [true] (
 ) else (
     set SDK_HAS_WORKLOAD_INSTALLED=false
 )
-if [%TEST_USING_WEBCIL%] == [false] (
+if [%WASM_ENABLE_WEBCIL%] == [false] (
    set USE_WEBCIL_FOR_TESTS=false
 ) else (
    set USE_WEBCIL_FOR_TESTS=true
 )
-if [%TEST_USING_FINGERPRINTING%] == [false] (
+if [%WASM_FINGERPRINT_ASSETS%] == [false] (
    set USE_FINGERPRINTING_FOR_TESTS=false
 ) else (
    set USE_FINGERPRINTING_FOR_TESTS=true

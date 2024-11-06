@@ -32,18 +32,3 @@ Shims the X509V3_EXT_print method.
 Returns 1 on success, otherwise 0 if there was an error.
 */
 PALEXPORT int32_t CryptoNative_X509V3ExtPrint(BIO* out, X509_EXTENSION* ext);
-
-/*
-Decodes the X509 BASIC_CONSTRAINTS information and fills the out variables:
-1. bool certificateAuthority
-2. bool hasPathLengthConstraint
-3. int32_t pathLengthConstraint
-
-Returns 1 if the BASIC_CONSTRAINTS information was successfully decoded,
-otherwise 0.
-*/
-PALEXPORT int32_t CryptoNative_DecodeX509BasicConstraints2Extension(const uint8_t* encoded,
-                                                                     int32_t encodedLength,
-                                                                     int32_t* certificateAuthority,
-                                                                     int32_t* hasPathLengthConstraint,
-                                                                     int32_t* pathLengthConstraint);
