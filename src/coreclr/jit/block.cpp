@@ -328,8 +328,21 @@ FlowEdge* Compiler::BlockDominancePreds(BasicBlock* blk)
     return res;
 }
 
+//------------------------------------------------------------------------
+// IsInsertedSsaLiveIn: See if a local is marked as being live-in to a block in
+// the side table with locals inserted into SSA.
+//
+// Arguments:
+//   block - The block
+//   lclNum - The local
+//
+// Returns:
+//    True if the local is marked as live-in to that block
+//
 bool Compiler::IsInsertedSsaLiveIn(BasicBlock* block, unsigned lclNum)
 {
+    assert(lvaGetDesc(lclNum)->lvInSsa);
+
     if (m_insertedSsaLocalsLiveIn == nullptr)
     {
         return false;
@@ -338,6 +351,17 @@ bool Compiler::IsInsertedSsaLiveIn(BasicBlock* block, unsigned lclNum)
     return m_insertedSsaLocalsLiveIn->Lookup(BasicBlockLocalPair(block, lclNum));
 }
 
+//------------------------------------------------------------------------
+// AddInsertedSsaLiveIn: Mark as local that was inserted into SSA as being
+// live-in to a block.
+//
+// Arguments:
+//   block - The block
+//   lclNum - The local
+//
+// Returns:
+//    True if this was added anew; false if the local was already marked as such.
+//
 bool Compiler::AddInsertedSsaLiveIn(BasicBlock* block, unsigned lclNum)
 {
     if (m_insertedSsaLocalsLiveIn == nullptr)

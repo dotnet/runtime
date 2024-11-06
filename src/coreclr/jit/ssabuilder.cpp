@@ -1366,28 +1366,38 @@ class IncrementalLiveInBuilder
 {
     Compiler* m_comp;
     ArrayStack<BasicBlock*> m_queue;
-    BitVecTraits m_traits;
-    BitVec m_visited;
 
 public:
     IncrementalLiveInBuilder(Compiler* comp)
         : m_comp(comp)
         , m_queue(comp->getAllocator(CMK_SSA))
-        , m_traits(comp->fgBBNumMax + 1, comp)
-        , m_visited(BitVecOps::MakeEmpty(&m_traits))
     {
     }
 
     void MarkLiveInBackwards(unsigned lclNum, const UseDefLocation& use, const UseDefLocation& reachingDef);
 };
 
+//------------------------------------------------------------------------
+// MarkLiveInBackwards: Given a use and its reaching definition, mark that
+// local as live-in into all blocks on the path from the reaching definition to
+// the use.
+//
+// Parameters:
+//   lclNum      - The local
+//   use         - The use
+//   reachingDef - The reaching definition of the use
+//
 void IncrementalLiveInBuilder::MarkLiveInBackwards(unsigned lclNum, const UseDefLocation& use, const UseDefLocation& reachingDef)
 {
-    BitVecOps::ClearD(&m_traits, m_visited);
     m_queue.Reset();
 
     m_queue.Push(use.Block);
-    BitVecOps::AddElemD(&m_traits, m_visited, use.Block->bbNum);
+    if (!m_comp->AddInsertedSsaLiveIn(use.Block, lclNum))
+    {
+        // We've already marked this block as live-in before -- no need to
+        // repeat that work (everyone should agree on reaching defs)
+        return;
+    }
 
     while (!m_queue.Empty())
     {
@@ -1397,16 +1407,9 @@ void IncrementalLiveInBuilder::MarkLiveInBackwards(unsigned lclNum, const UseDef
             continue;
         }
 
-        if (!m_comp->AddInsertedSsaLiveIn(block, lclNum))
-        {
-            // Already marked live-in here; expect to have been marked live in
-            // to this reaching def.
-            continue;
-        }
-
         for (FlowEdge* edge = m_comp->BlockPredsWithEH(block); edge != nullptr; edge = edge->getNextPredEdge())
         {
-            if (BitVecOps::TryAddElemD(&m_traits, m_visited, edge->getSourceBlock()->bbNum))
+            if (m_comp->AddInsertedSsaLiveIn(edge->getSourceBlock(), lclNum))
             {
                 m_queue.Push(edge->getSourceBlock());
             }

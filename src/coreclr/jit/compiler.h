@@ -2974,7 +2974,7 @@ public:
 
     typedef JitHashTable<BasicBlockLocalPair, BasicBlockLocalPair, bool> BasicBlockLocalPairSet;
 
-    BasicBlockLocalPairSet* m_insertedSsaLocalsLiveIn;
+    BasicBlockLocalPairSet* m_insertedSsaLocalsLiveIn = nullptr;
     bool IsInsertedSsaLiveIn(BasicBlock* block, unsigned lclNum);
     bool AddInsertedSsaLiveIn(BasicBlock* block, unsigned lclNum);
 
@@ -7749,6 +7749,7 @@ public:
                                          LoopLocalOccurrences*   loopLocals);
     bool optCanAndShouldChangeExitTest(GenTree* cond, bool dump);
     bool optLocalHasNonLoopUses(unsigned lclNum, FlowGraphNaturalLoop* loop, LoopLocalOccurrences* loopLocals);
+    bool optLocalIsLiveIntoBlock(unsigned lclNum, BasicBlock* block);
 
     bool optWidenIVs(ScalarEvolutionContext& scevContext, FlowGraphNaturalLoop* loop, LoopLocalOccurrences* loopLocals);
     bool optWidenPrimaryIV(FlowGraphNaturalLoop* loop,
