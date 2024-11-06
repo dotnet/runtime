@@ -9,7 +9,7 @@ using DATA_BLOB = Interop.Crypt32.DATA_BLOB;
 
 namespace System.Security.Cryptography
 {
-    public static class ProtectedData
+    public static partial class ProtectedData
     {
         private static readonly byte[] s_nonEmpty = new byte[1];
 
@@ -34,6 +34,7 @@ namespace System.Security.Cryptography
             return outputData;
         }
 
+#if NET
         /// <summary>
         /// Encrypts the data in a specified byte span and returns a byte array that contains the encrypted data.
         /// </summary>
@@ -162,6 +163,7 @@ namespace System.Security.Cryptography
 
             return bytesWritten;
         }
+#endif
 
         public static byte[] Unprotect(byte[] encryptedData, byte[]? optionalEntropy, DataProtectionScope scope)
         {
@@ -185,6 +187,7 @@ namespace System.Security.Cryptography
             return outputData;
         }
 
+#if NET
         /// <summary>
         /// Decrypts the data in a specified byte array and returns a byte array that contains the decrypted data.
         /// </summary>
@@ -314,6 +317,7 @@ namespace System.Security.Cryptography
 
             return bytesWritten;
         }
+#endif
 
         private static bool TryProtectOrUnprotect(
             ReadOnlySpan<byte> inputData,
