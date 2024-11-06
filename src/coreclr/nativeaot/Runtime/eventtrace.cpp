@@ -230,14 +230,13 @@ void EtwCallbackCommon(
 #ifdef FEATURE_ETW
     // Special check for a profiler requested GC.
     // A full GC will be forced if:
-    // 1. The runtime has started and is not shutting down.
+    // 1. The GC Heap is initialized.
     // 2. The public provider is requesting GC.
     // 3. The provider's ManagedHeapCollectKeyword is enabled.
     // 4. For an ETW provider, the control code is to enable or capture the state of the provider.
     bool bValidGCRequest =
-        g_fEEStarted && !g_fEEShutDown &&
-        bIsPublicTraceHandle &&
         GCHeapUtilities::IsGCHeapInitialized() &&
+        bIsPublicTraceHandle &&
         ((MatchAnyKeyword & CLR_MANAGEDHEAPCOLLECT_KEYWORD) != 0) &&
         ((ControlCode == EVENT_CONTROL_CODE_ENABLE_PROVIDER) ||
          (ControlCode == EVENT_CONTROL_CODE_CAPTURE_STATE)) &&
