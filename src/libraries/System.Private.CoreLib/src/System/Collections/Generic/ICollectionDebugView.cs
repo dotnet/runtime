@@ -11,6 +11,7 @@ namespace System.Collections.Generic
 
         public ICollectionDebugView(ICollection<T> collection)
         {
+#if NET
             ArgumentNullException.ThrowIfNull(collection);
 
             _collection = collection;
