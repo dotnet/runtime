@@ -42,6 +42,9 @@ namespace System.Text.Json.Serialization.Converters
                 parameters: [converterOptions, namingPolicy, options])!;
         }
 
+        // Some of the static methods are in a separate class so that the
+        // RequiresDynamicCode annotation on EnumConverterFactory doesn't apply
+        // to them.
         internal static class Helpers
         {
             public static bool IsSupportedTypeCode(TypeCode typeCode)
