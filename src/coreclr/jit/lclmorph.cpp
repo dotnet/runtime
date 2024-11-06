@@ -2453,7 +2453,6 @@ void Compiler::LCLMasksWeight::UpdateStoreWeight(bool hasConvertFromMask, weight
         switchCost += incVal;
     }
     DumpTotalWeight();
-    JITDUMP("bbWeight=%f\n", blockWeight);
 }
 
 //-----------------------------------------------------------------------------
@@ -2480,7 +2479,6 @@ void Compiler::LCLMasksWeight::UpdateVarWeight(bool hasConvertToMask, weight_t b
         switchCost += incVal;
     }
     DumpTotalWeight();
-    JITDUMP("bbWeight=%f\n", blockWeight);
 }
 
 //-----------------------------------------------------------------------------
