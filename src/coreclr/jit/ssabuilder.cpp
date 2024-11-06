@@ -1391,9 +1391,12 @@ void IncrementalLiveInBuilder::MarkLiveInBackwards(unsigned              lclNum,
                                                    const UseDefLocation& use,
                                                    const UseDefLocation& reachingDef)
 {
-    m_queue.Reset();
+    if (use.Block == reachingDef.Block)
+    {
+        // No work to be done
+        return;
+    }
 
-    m_queue.Push(use.Block);
     if (!m_comp->AddInsertedSsaLiveIn(use.Block, lclNum))
     {
         // We've already marked this block as live-in before -- no need to
@@ -1401,19 +1404,24 @@ void IncrementalLiveInBuilder::MarkLiveInBackwards(unsigned              lclNum,
         return;
     }
 
+    m_queue.Reset();
+    m_queue.Push(use.Block);
+
     while (!m_queue.Empty())
     {
         BasicBlock* block = m_queue.Pop();
-        if (block == reachingDef.Block)
-        {
-            continue;
-        }
 
         for (FlowEdge* edge = m_comp->BlockPredsWithEH(block); edge != nullptr; edge = edge->getNextPredEdge())
         {
-            if (m_comp->AddInsertedSsaLiveIn(edge->getSourceBlock(), lclNum))
+            BasicBlock* pred = edge->getSourceBlock();
+            if (pred == reachingDef.Block)
             {
-                m_queue.Push(edge->getSourceBlock());
+                continue;
+            }
+
+            if (m_comp->AddInsertedSsaLiveIn(pred, lclNum))
+            {
+                m_queue.Push(pred);
             }
         }
     }
