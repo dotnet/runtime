@@ -22,7 +22,7 @@ inline HRESULT Sha256Hash(BYTE* pSrc, DWORD srcSize, BYTE* pDst, DWORD dstSize)
     BYTE    hash[32]; // 256 bits
     DWORD   hashLength = 0;
     DWORD   resultLength = 0;
-    status = BCryptOpenAlgorithmProvider(&algHandle, BCRYPT_SHA256_ALGORITHM, NULL, BCRYPT_HASH_REUSABLE_FLAG);
+    status = BCryptOpenAlgorithmProvider(&algHandle, BCRYPT_SHA256_ALGORITHM, NULL, 0);
     if(!NT_SUCCESS(status))
     {
         goto cleanup;
