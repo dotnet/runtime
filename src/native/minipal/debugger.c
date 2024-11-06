@@ -35,6 +35,8 @@
 #include <sys/proc.h>
 #include <sys/types.h>
 #include <sys/procfs.h>
+#elif defined(__HAIKU__)
+#include <OS.h>
 #endif
 
 bool minipal_is_native_debugger_present(void)
@@ -128,6 +130,14 @@ bool minipal_is_native_debugger_present(void)
     pid_t pid = getpid();
     getprocs64(&proc, sizeof(proc), NULL, 0, &pid, 1);
     return (proc.pi_flags & STRC) != 0; // SMPTRACE or SWTED might work too
+
+#elif defined(__HAIKU__)
+    team_info info;
+    if (get_team_info(B_CURRENT_TEAM, &info) == B_OK)
+    {
+        return info.debugger_nub_thread > 0;
+    }
+    return false;
 
 #else
     return false;
