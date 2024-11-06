@@ -22,9 +22,6 @@ inline HRESULT Sha256Hash(BYTE* pSrc, DWORD srcSize, BYTE* pDst, DWORD dstSize)
     BCRYPT_ALG_HANDLE  algHandle  = NULL;
     BCRYPT_HASH_HANDLE hashHandle = NULL;
 
-    DWORD hashLength   = 0;
-    DWORD resultLength = 0;
-
     NTSTATUS status = BCryptOpenAlgorithmProvider(&algHandle, BCRYPT_SHA256_ALGORITHM, NULL, 0);
 
     if (!NT_SUCCESS(status))
@@ -32,14 +29,6 @@ inline HRESULT Sha256Hash(BYTE* pSrc, DWORD srcSize, BYTE* pDst, DWORD dstSize)
         goto cleanup;
     }
 
-    status = BCryptGetProperty(algHandle, BCRYPT_HASH_LENGTH, (PBYTE)&hashLength, sizeof(hashLength), &resultLength, 0);
-
-    if (!NT_SUCCESS(status))
-    {
-        goto cleanup;
-    }
-
-    assert(hashLength == 32);
     status = BCryptCreateHash(algHandle, &hashHandle, NULL, 0, NULL, 0, 0);
 
     if (!NT_SUCCESS(status))
@@ -54,7 +43,7 @@ inline HRESULT Sha256Hash(BYTE* pSrc, DWORD srcSize, BYTE* pDst, DWORD dstSize)
         goto cleanup;
     }
 
-    status = BCryptFinishHash(hashHandle, pDst, hashLength, 0);
+    status = BCryptFinishHash(hashHandle, pDst, dstSize, 0);
 
 cleanup:
     if (hashHandle != NULL)
@@ -101,7 +90,7 @@ inline HRESULT Sha256Hash(BYTE* pSrc, DWORD srcSize, BYTE* pDst, DWORD dstSize)
         return E_FAIL;
     }
 
-    DWORD hashLength = 0;
+    uint32_t hashLength = 0;
 
     if (!CryptoNative_EvpDigestOneShot(CryptoNative_EvpSha256(), pSrc, srcSize, pDst, &hashLength))
     {
