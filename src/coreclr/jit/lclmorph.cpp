@@ -2692,7 +2692,7 @@ bool Compiler::fgLCLMasksCheckLCLStore(Statement* stmt, BasicBlock* const block,
 }
 
 //-----------------------------------------------------------------------------
-// fgLCLMasksCheckLCLVar: For the given lcl var, update the var weights in
+// fgLCLMasksCheckLCLVar: For the given lcl var, update the weights in
 // the table.
 //
 // Arguments:
@@ -2743,7 +2743,7 @@ void Compiler::fgLCLMasksCheckLCLVar(GenTreeLclVarCommon* lclVar,
 
 //-----------------------------------------------------------------------------
 // fgLCLMasksUpdateLCLStore: For the given statement, if it is a local store,
-// and mask conversions dominate in the weightings, then update to store as a mask.
+// and the weighting recommends to switch, then update to store as a mask.
 //
 // Arguments:
 //     stmt - The statement.
@@ -2821,8 +2821,8 @@ bool Compiler::fgLCLMasksUpdateLCLStore(Statement* stmt, LCLMasksWeightTable* we
 }
 
 //-----------------------------------------------------------------------------
-// fgLCLMasksUpdateLCLVar: For the given lcl var, if mask conversions dominate in
-// the weightings, then update to use as the source as a mask.
+// fgLCLMasksUpdateLCLVar: For the given lcl var, if the weighting recommends to switch,
+// then update to use the source as a mask.
 //
 // Arguments:
 //     lclVar - The local variable.
@@ -2887,19 +2887,16 @@ void Compiler::fgLCLMasksUpdateLCLVar(GenTreeLclVarCommon* lclVar,
 //   vector<int> x = _ConvertMaskToVector_(CreateMask());
 //   x = Add(x, y);
 //
-// To account for this, this pass uses a weighting. For each variable, count the count the
-// number of definitions with a convert from mask minus the number of definitions without a
-// convert. Then do the same for each use. To account for looping, each count is multiplied
-// by the weight of it's basic basic. In addition, each count is multiplied by the number of
-// instructions required for the conversion. If the totals for both definitions and uses are
-// positive, then convert all definintions and uses.
+// To account for this, the pass uses a weighting. For each variable, if it is a local store,
+// then count the existing cost of every covert to/from mask. Also count the cost for
+// switching the variable to store as mask (this may include adding additional conversions
+// as well as removing). For each counted instance, take into account the number of
+// instructions in the conversion and the weight of the block.
 //
 // This weighting does not account for re-definition. A variable may first be created as a
-// mask used as such, then much later in the method defined as a vector and used as such from
+// mask used as such, then later in the method defined as a vector and used as such from
 // then on. This can be worked around at the user level by encouraging users not to reuse
 // variable names.
-//
-// It is assumed that the simple weighting will be good enough for almost all use cases.
 //
 // Returns:
 //    Suitable phase status
