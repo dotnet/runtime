@@ -2407,8 +2407,7 @@ VOID EtwCallbackCommon(
     UCHAR Level,
     ULONGLONG MatchAnyKeyword,
     PVOID pFilterData,
-    BOOL isEventPipeCallback,
-    SessionChange change)
+    SessionChange Change)
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -2444,7 +2443,7 @@ VOID EtwCallbackCommon(
     // This callback gets called on both ETW/EventPipe session enable/disable.
     // We need toupdate the EventPipe provider context if we are in a callback
     // from EventPipe, but not from ETW.
-    if (isEventPipeCallback)
+    if (Change == EventPipeSessionEnable || Change == EventPipeSessionDisable)
     {
         ctxToUpdate->EventPipeProvider.Level = Level;
         ctxToUpdate->EventPipeProvider.EnabledKeywordsBitmask = MatchAnyKeyword;
@@ -2531,7 +2530,7 @@ VOID EventPipeEtwCallbackDotNETRuntimeStress(
 
     SessionChange change = SourceId == NULL ? EventPipeSessionDisable : EventPipeSessionEnable;
 
-    EtwCallbackCommon(DotNETRuntimeStress, ControlCode, Level, MatchAnyKeyword, FilterData, true, change);
+    EtwCallbackCommon(DotNETRuntimeStress, ControlCode, Level, MatchAnyKeyword, FilterData, change);
 }
 
 VOID EventPipeEtwCallbackDotNETRuntime(
@@ -2547,7 +2546,7 @@ VOID EventPipeEtwCallbackDotNETRuntime(
 
     SessionChange change = SourceId == NULL ? EventPipeSessionDisable : EventPipeSessionEnable;
 
-    EtwCallbackCommon(DotNETRuntime, ControlCode, Level, MatchAnyKeyword, FilterData, true, change);
+    EtwCallbackCommon(DotNETRuntime, ControlCode, Level, MatchAnyKeyword, FilterData, change);
 }
 
 VOID EventPipeEtwCallbackDotNETRuntimeRundown(
@@ -2563,7 +2562,7 @@ VOID EventPipeEtwCallbackDotNETRuntimeRundown(
 
     SessionChange change = SourceId == NULL ? EventPipeSessionDisable : EventPipeSessionEnable;
 
-    EtwCallbackCommon(DotNETRuntimeRundown, ControlCode, Level, MatchAnyKeyword, FilterData, true, change);
+    EtwCallbackCommon(DotNETRuntimeRundown, ControlCode, Level, MatchAnyKeyword, FilterData, change);
 }
 
 VOID EventPipeEtwCallbackDotNETRuntimePrivate(
@@ -2579,7 +2578,7 @@ VOID EventPipeEtwCallbackDotNETRuntimePrivate(
 
     SessionChange change = SourceId == NULL ? EventPipeSessionDisable : EventPipeSessionEnable;
 
-    EtwCallbackCommon(DotNETRuntimePrivate, ControlCode, Level, MatchAnyKeyword, FilterData, true, change);
+    EtwCallbackCommon(DotNETRuntimePrivate, ControlCode, Level, MatchAnyKeyword, FilterData, change);
 }
 
 
@@ -2735,7 +2734,7 @@ extern "C"
             return;
         }
 
-        EtwCallbackCommon(providerIndex, ControlCode, Level, MatchAnyKeyword, FilterData, false, SessionChange.EtwSessionChangeUnknown);
+        EtwCallbackCommon(providerIndex, ControlCode, Level, MatchAnyKeyword, FilterData, EtwSessionChangeUnknown);
 
         // A manifest based provider can be enabled to multiple event tracing sessions
         // As long as there is atleast 1 enabled session, IsEnabled will be TRUE
