@@ -2965,7 +2965,7 @@ public:
         }
         static unsigned GetHashCode(const BasicBlockLocalPair& val)
         {
-            unsigned hash = static_cast<unsigned>(reinterpret_cast<uintptr_t>(&val));
+            unsigned hash = val.Block->bbID;
             hash ^= val.LclNum + 0x9e3779b9 + (hash << 19) + (hash >> 13);
             return hash;
         }
