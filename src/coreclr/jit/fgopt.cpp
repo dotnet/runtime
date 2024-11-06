@@ -5052,6 +5052,14 @@ void Compiler::ThreeOptLayout::Run()
         return;
     }
 
+    // If only the first block of a call-finally pair is hot, include the whole pair in the hot section anyway.
+    // This ensures the call-finally pair won't be split up when swapping partitions.
+    if (finalBlock->isBBCallFinallyPair())
+    {
+        finalBlock = finalBlock->Next();
+        numBlocksUpperBound++;
+    }
+
     assert(numBlocksUpperBound != 0);
     blockOrder = new (compiler, CMK_BasicBlock) BasicBlock*[numBlocksUpperBound];
     tempOrder  = new (compiler, CMK_BasicBlock) BasicBlock*[numBlocksUpperBound];
