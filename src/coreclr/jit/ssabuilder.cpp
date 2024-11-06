@@ -1830,7 +1830,7 @@ bool SsaBuilder::InsertInSsa(Compiler*                   comp,
         }
 
         dsc->lvInSsa = true;
-        return;
+        return true;
     }
 
     if (comp->m_dfsTree == nullptr)
