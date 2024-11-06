@@ -878,7 +878,6 @@ namespace System.Text.Json.Nodes.Tests
         [Fact]
         public static void RemoveRange_FreshlyDeserialized()
         {
-            
             Assert.Throws<ArgumentOutOfRangeException>(() => PrepareData().RemoveRange(-1, 1));
             Assert.Throws<ArgumentOutOfRangeException>(() => PrepareData().RemoveRange(1, -1));
             Assert.Throws<ArgumentException>(() => PrepareData().RemoveRange(10, 1));
