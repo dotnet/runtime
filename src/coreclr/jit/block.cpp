@@ -1026,10 +1026,10 @@ unsigned JitPtrKeyFuncs<BasicBlock>::GetHashCode(const BasicBlock* ptr)
     unsigned hash = SsaStressHashHelper();
     if (hash != 0)
     {
-        return (hash ^ (ptr->bbID << 16) ^ ptr->bbID);
+        return (hash ^ (ptr->bbNum << 16) ^ ptr->bbNum);
     }
 #endif
-    return ptr->bbID;
+    return ptr->bbNum;
 }
 
 //------------------------------------------------------------------------
