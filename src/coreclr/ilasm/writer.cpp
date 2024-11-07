@@ -1703,9 +1703,12 @@ HRESULT Assembler::CreatePEFile(_In_ __nullterminated WCHAR *pwzOutputFilename)
         // created in Assembler::InitMetaData, and it is guaranteed that the IMDInternalEmit for
         // that scope was already acquired immediately after that scope was created.
         _ASSERTE(m_pInternalEmitForDeterministicMvid != NULL);
+        _ASSERTE(sizeof(GUID) <= 32);
+        BYTE hash[32];
+        if (FAILED(hr = Sha256Hash(metaData, metaDataSize, hash, sizeof(hash)))) goto exit;
+
         GUID mvid;
-        hr = Sha256Hash(metaData, metaDataSize, (BYTE*)&mvid, sizeof(GUID));
-        if (FAILED(hr)) goto exit;
+        memcpy(&mvid, hash, sizeof(GUID));
         m_pInternalEmitForDeterministicMvid->ChangeMvid(mvid);
     }
 
