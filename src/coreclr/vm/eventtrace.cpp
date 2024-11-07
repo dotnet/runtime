@@ -2328,6 +2328,72 @@ enum CallbackProviderIndex
     DotNETRuntimePrivate = 3
 };
 
+// EventFilterType identifies the filter type used by the PEVENT_FILTER_DESCRIPTOR
+enum EventFilterType
+{
+    None = 0x0,
+    ClientSequenceNumber = 0x1,
+    EventPipePayload = 0x2,
+    // Schematized = 0x80000000,
+    // SystemFlags = 0x80000001,
+    // TraceHandle = 0x80000002,
+    // PID = 0x80000004,
+    // ExecutableName = 0x80000008,
+    // PackageID = 0x80000010,
+    // PackageAppID = 0x80000020,
+    // Payload = 0x80000100,
+    // EventID = 0x80000200,
+    // EventName = 0x80000400,
+    // Stackwalk = 0x80001000,
+    // StackwalkName = 0x80002000,
+    // StackwalkLevelKW = 0x80004000,
+};
+
+VOID ParseFilterDataClientSequenceNumber(
+    PEVENT_FILTER_DESCRIPTOR FilterData,
+    LONGLONG * pClientSequenceNumber)
+{
+    LIMITED_METHOD_CONTRACT;
+
+#if !defined(HOST_UNIX)
+    if (FilterData == NULL)
+        return;
+
+    if (FilterData->Type == ClientSequenceNumber && FilterData->Size == sizeof(LONGLONG))
+    {
+        *pClientSequenceNumber = *(LONGLONG *) (FilterData->Ptr);
+    }
+    else if (FilterData->Type == EventPipePayload)
+    {
+        const char* buffer = reinterpret_cast<const char*>(FilterData->Ptr);
+        const char* buffer_end = buffer + FilterData->Size;
+
+        while (buffer < buffer_end)
+        {
+            const char* key = buffer;
+            buffer += strlen(key) + 1;
+
+            if (buffer >= buffer_end)
+                break;
+
+            const char* value = buffer;
+            buffer += strlen(value) + 1;
+
+            if (strcmp(key, "GCSeqNumber") != 0)
+                continue;
+
+            char* endPtr = nullptr;
+            long parsedValue = strtol(value, &endPtr, 10);
+            if (endPtr != value && *endPtr == '\0')
+            {
+                *pClientSequenceNumber = static_cast<LONGLONG>(parsedValue);
+                break;
+            }
+        }
+    }
+#endif // !defined(HOST_UNIX)
+}
+
 // Common handler for all ETW or EventPipe event notifications. Based on the provider that
 // was enabled/disabled, this implementation forwards the event state change onto GCHeapUtilities
 // which will inform the GC to update its local state about what events are enabled.
@@ -2411,15 +2477,7 @@ VOID EtwCallbackCommon(
         // Profilers may (optionally) specify extra data in the filter parameter
         // to log with the GCStart event.
         LONGLONG l64ClientSequenceNumber = 0;
-#if !defined(HOST_UNIX)
-        PEVENT_FILTER_DESCRIPTOR FilterData = (PEVENT_FILTER_DESCRIPTOR)pFilterData;
-        if ((FilterData != NULL) &&
-           (FilterData->Type == 1) &&
-           (FilterData->Size == sizeof(l64ClientSequenceNumber)))
-        {
-            l64ClientSequenceNumber = *(LONGLONG *) (FilterData->Ptr);
-        }
-#endif // !defined(HOST_UNIX)
+        ParseFilterDataClientSequenceNumber((PEVENT_FILTER_DESCRIPTOR)pFilterData, &l64ClientSequenceNumber);
         ETW::GCLog::ForceGC(l64ClientSequenceNumber);
     }
     // TypeSystemLog needs a notification when certain keywords are modified, so
