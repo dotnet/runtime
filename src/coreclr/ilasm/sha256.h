@@ -8,8 +8,8 @@
 // contains implementation of sha256 hash algorithm
 //
 //*****************************************************************************
-#ifndef __sha256__h__
-#define __sha256__h__
+#ifndef HAVE_SHA256_H
+#define HAVE_SHA256_H
 
 #ifdef _WIN32
 inline HRESULT Sha256Hash(BYTE* pSrc, DWORD srcSize, BYTE* pDst, DWORD dstSize)
