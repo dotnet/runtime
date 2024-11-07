@@ -2528,6 +2528,7 @@ public:
         {
             foundConversion = true;
             convertOp       = user->AsHWIntrinsic();
+            return fgWalkResult::WALK_ABORT;
         }
 
         return fgWalkResult::WALK_CONTINUE;
