@@ -830,8 +830,7 @@ JS_ENGINES = [NODE_JS]
     <PropertyGroup Condition="'$(TargetsLinux)' == 'true' and '$(Platform)' == 'arm64'">
       <MonoAotAbi>aarch64-linux-gnu</MonoAotAbi>
       <MonoAotOffsetsFile>$(MonoObjCrossDir)offsets-aarch-linux-gnu.h</MonoAotOffsetsFile>
-      <MonoAotOffsetsPrefix>$(MonoCrossDir)/usr/lib/gcc/aarch64-linux-gnu/7</MonoAotOffsetsPrefix>
-      <MonoAotOffsetsPrefix Condition="'$(Platform)' == 'arm64'">$(MonoCrossDir)/usr/lib/gcc/aarch64-linux-gnu/5</MonoAotOffsetsPrefix>
+      <MonoAotOffsetsPrefix Condition="'$(Platform)' == 'arm64'">$(MonoCrossDir)/usr/lib/gcc/aarch64-linux-gnu/6</MonoAotOffsetsPrefix>
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(MonoUseLLVMPackage)' == 'true'">
