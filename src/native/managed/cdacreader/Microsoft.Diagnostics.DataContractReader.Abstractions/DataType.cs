@@ -66,5 +66,6 @@ public enum DataType
     ILCodeVersioningState,
     NativeCodeVersionNode,
     ProfControlBlock,
-    ILCodeVersionNode
+    ILCodeVersionNode,
+    ReadyToRunInfo,
 }
