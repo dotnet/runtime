@@ -1911,9 +1911,9 @@ namespace System.Security.Cryptography
         public System.Range Label { get { throw null; } }
         public System.Range Location { get { throw null; } }
     }
+    [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("PKCS1MaskGenerationMethod is not trim compatible because the algorithm implementation referenced by HashName might be removed.")]
     public partial class PKCS1MaskGenerationMethod : System.Security.Cryptography.MaskGenerationMethod
     {
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("PKCS1MaskGenerationMethod is not trim compatible because the algorithm implementation referenced by HashName might be removed.")]
         public PKCS1MaskGenerationMethod() { }
         public string HashName { get { throw null; } set { } }
         public override byte[] GenerateMask(byte[] rgbSeed, int cbReturn) { throw null; }
