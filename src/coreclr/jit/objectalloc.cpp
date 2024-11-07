@@ -323,7 +323,35 @@ bool ObjectAllocator::IsGuarded(BasicBlock* block, GenTree* tree, GuardInfo* inf
 }
 
 //------------------------------------------------------------------------------
-// MarkEscapingVarsAndBuildConnGraph : Walk the trees of the method and mark any ref/byref/i_impl
+// RecordAppearance: note info about an enumerator var appearance
+//
+// Arguments:
+//   lclNum -- enumerator var
+//   block  -- block holding the stmt
+//   stmt   -- stmt holding the use
+//   use    -- local var reference
+//   isDef  -- true if this is a def
+//
+void ObjectAllocator::RecordAppearance(unsigned lclNum, BasicBlock* block, Statement* stmt, GenTree** use, bool isDef)
+{
+    unsigned pseudoLocal = BAD_VAR_NUM;
+    if (!m_EnumeratorLocalToPseudoLocalMap.TryGetValue(lclNum, &pseudoLocal))
+    {
+        return;
+    }
+
+    GuardInfo info;
+    if (!m_GuardedCallMap.Lookup(pseudoLocal, &info))
+    {
+        return;
+    }
+
+    EnumeratorVarAppearance e(block, stmt, use, isDef);
+    info.m_appearances->push_back(e);
+}
+
+//------------------------------------------------------------------------------
+// Markescapingvarsandbuildconngraph : Walk the trees of the method and mark any ref/byref/i_impl
 //                                     local variables that may escape. Build a connection graph
 //                                     for ref/by_ref/i_impl local variables.
 //
@@ -343,6 +371,8 @@ void ObjectAllocator::MarkEscapingVarsAndBuildConnGraph()
     class BuildConnGraphVisitor final : public GenTreeVisitor<BuildConnGraphVisitor>
     {
         ObjectAllocator* m_allocator;
+        BasicBlock*      m_block;
+        Statement*       m_stmt;
 
     public:
         enum
@@ -352,9 +382,11 @@ void ObjectAllocator::MarkEscapingVarsAndBuildConnGraph()
             ComputeStack  = true,
         };
 
-        BuildConnGraphVisitor(ObjectAllocator* allocator)
+        BuildConnGraphVisitor(ObjectAllocator* allocator, BasicBlock* block, Statement* stmt)
             : GenTreeVisitor<BuildConnGraphVisitor>(allocator->comp)
             , m_allocator(allocator)
+            , m_block(block)
+            , m_stmt(stmt)
         {
         }
 
@@ -366,9 +398,9 @@ void ObjectAllocator::MarkEscapingVarsAndBuildConnGraph()
 
             if (varDsc->lvIsEnumerator)
             {
-                // Track lcl -> List<(**user, block, read/write)>
                 JITDUMP("Found enumerator V%02u %s at [%06u]\n", lclNum, tree->OperIsLocalStore() ? "def" : "use",
                         m_compiler->dspTreeID(tree));
+                m_allocator->RecordAppearance(lclNum, m_block, m_stmt, use, tree->OperIsLocalStore());
             }
 
             // If this local already escapes, no need to look further.
@@ -422,9 +454,11 @@ void ObjectAllocator::MarkEscapingVarsAndBuildConnGraph()
                         // during subsequent analysis, to verify that access is
                         // under the same type guard.
                         //
-                        GuardInfo info;
-                        info.m_local = enumeratorLocal;
-                        info.m_type  = data->AsAllocObj()->gtAllocObjClsHnd;
+                        CompAllocator alloc(m_compiler->getAllocator(CMK_ObjectAllocator));
+                        GuardInfo     info;
+                        info.m_local       = enumeratorLocal;
+                        info.m_type        = data->AsAllocObj()->gtAllocObjClsHnd;
+                        info.m_appearances = new (alloc) jitstd::vector<EnumeratorVarAppearance>(alloc);
                         m_allocator->m_GuardedCallMap.Set(pseudoLocal, info);
 
                         JITDUMP(
@@ -437,7 +471,7 @@ void ObjectAllocator::MarkEscapingVarsAndBuildConnGraph()
             else if (tree->OperIs(GT_LCL_VAR) && tree->TypeIs(TYP_REF, TYP_BYREF, TYP_I_IMPL))
             {
                 assert(tree == m_ancestors.Top());
-                if (!m_allocator->CanLclVarEscapeViaParentStack(&m_ancestors, lclNum))
+                if (!m_allocator->CanLclVarEscapeViaParentStack(&m_ancestors, lclNum, m_block))
                 {
                     lclEscapes = false;
                 }
@@ -492,11 +526,9 @@ void ObjectAllocator::MarkEscapingVarsAndBuildConnGraph()
     for (unsigned i = dfs->GetPostOrderCount(); i != 0; i--)
     {
         BasicBlock* const block = dfs->GetPostOrder(i - 1);
-        comp->compCurBB         = block;
-
         for (Statement* const stmt : block->Statements())
         {
-            BuildConnGraphVisitor buildConnGraphVisitor(this);
+            BuildConnGraphVisitor buildConnGraphVisitor(this, block, stmt);
             buildConnGraphVisitor.WalkTree(stmt->GetRootNodePointer(), nullptr);
         }
     }
@@ -587,6 +619,7 @@ void ObjectAllocator::ComputeEscapingNodes(BitVecTraits* bitVecTraits, BitVec& e
             GuardInfo info;
             m_GuardedCallMap.Lookup(pseudoLocal, &info);
             printf("   Escapes only when V%02u.Type NE %s\n", info.m_local, comp->eeGetClassName(info.m_type));
+            printf("   V%02u has %u appearances\n", info.m_local, info.m_appearances->size());
 #endif
 
             // TODO: figure out if we intend to clone to prevent escape, and if
@@ -987,6 +1020,7 @@ unsigned int ObjectAllocator::MorphAllocObjNodeIntoStackAlloc(
 // Arguments:
 //    parentStack     - Parent stack of the current visit
 //    lclNum          - Local variable number
+//    block           - basic block holding the trees
 //
 // Return Value:
 //    true if the local can escape via the parent stack; false otherwise
@@ -995,7 +1029,9 @@ unsigned int ObjectAllocator::MorphAllocObjNodeIntoStackAlloc(
 //    The method currently treats all locals assigned to a field as escaping.
 //    The can potentially be tracked by special field edges in the connection graph.
 //
-bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parentStack, unsigned int lclNum)
+bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parentStack,
+                                                    unsigned int          lclNum,
+                                                    BasicBlock*           block)
 {
     assert(parentStack != nullptr);
     int parentIndex = 1;
@@ -1106,7 +1142,7 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
                         // pseudo local...
                         //
                         GuardInfo info;
-                        if (IsGuarded(comp->compCurBB, asCall, &info))
+                        if (IsGuarded(block, asCall, &info))
                         {
                             GuardInfo pseudoInfo;
                             if (m_GuardedCallMap.Lookup(pseudoLocal, &pseudoInfo))

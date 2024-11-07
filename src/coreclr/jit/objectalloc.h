@@ -18,20 +18,33 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 //===============================================================================
 #include "phase.h"
 #include "smallhash.h"
+#include "vector.h"
 
-struct EnumeratorVarUse
+// A use or def of an enumerator var in the code
+//
+struct EnumeratorVarAppearance
 {
+    EnumeratorVarAppearance(BasicBlock* block, Statement* stmt, GenTree** use, bool isDef)
+        : m_block(block)
+        , m_stmt(stmt)
+        , m_use(use)
+        , m_isDef(isDef)
+    {
+    }
+
     BasicBlock* m_block;
     Statement*  m_stmt;
     GenTree**   m_use;
+    bool        m_isDef;
 };
 
 // Describes a GDV check of the form m_local.GetType() == m_type
 //
 struct GuardInfo
 {
-    unsigned             m_local;
-    CORINFO_CLASS_HANDLE m_type;
+    unsigned                                 m_local;
+    CORINFO_CLASS_HANDLE                     m_type;
+    jitstd::vector<EnumeratorVarAppearance>* m_appearances;
 };
 
 typedef JitHashTable<unsigned, JitSmallPrimitiveKeyFuncs<unsigned>, GuardInfo> GuardedCallMap;
@@ -88,7 +101,7 @@ private:
     unsigned int MorphAllocObjNodeIntoStackAlloc(
         GenTreeAllocObj* allocObj, CORINFO_CLASS_HANDLE clsHnd, bool isValueClass, BasicBlock* block, Statement* stmt);
     struct BuildConnGraphVisitorCallbackData;
-    bool     CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parentStack, unsigned int lclNum);
+    bool     CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parentStack, unsigned int lclNum, BasicBlock* block);
     void     UpdateAncestorTypes(GenTree* tree, ArrayStack<GenTree*>* parentStack, var_types newType);
     bool     IsGuarded(BasicBlock* block, GenTree* tree, GuardInfo* info);
     unsigned NewPseudoLocal();
@@ -96,6 +109,7 @@ private:
     {
         return m_maxPseudoLocals > 0;
     }
+    void RecordAppearance(unsigned lclNum, BasicBlock* block, Statement* stmt, GenTree** use, bool isDef);
     static const unsigned int s_StackAllocMaxSize = 0x2000U;
 };
 
@@ -106,9 +120,9 @@ inline ObjectAllocator::ObjectAllocator(Compiler* comp)
     , m_IsObjectStackAllocationEnabled(false)
     , m_AnalysisDone(false)
     , m_bitVecTraits(BitVecTraits(comp->lvaCount, comp))
-    , m_HeapLocalToStackLocalMap(comp->getAllocator())
-    , m_EnumeratorLocalToPseudoLocalMap(comp->getAllocator())
-    , m_GuardedCallMap(comp->getAllocator())
+    , m_HeapLocalToStackLocalMap(comp->getAllocator(CMK_ObjectAllocator))
+    , m_EnumeratorLocalToPseudoLocalMap(comp->getAllocator(CMK_ObjectAllocator))
+    , m_GuardedCallMap(comp->getAllocator(CMK_ObjectAllocator))
     , m_maxPseudoLocals(0)
     , m_numPseudoLocals(0)
 
