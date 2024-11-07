@@ -596,7 +596,6 @@ $@"{nameof(UnregisterClassForTypeInternal)} arguments:
 
             public static IntPtr GetObjectAsInterface(object obj, ValidatedInterfaceType interfaceType)
             {
-                // If the requested "interface type" is type object then return as IUnknown
                 if (interfaceType.Kind is ValidatedInterfaceKind.IUnknown)
                 {
                     Debug.Assert(interfaceType.ManagedType is null);
