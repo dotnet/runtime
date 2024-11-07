@@ -351,4 +351,7 @@
       <FileWrites Include="@(EventingSourceFile)" />
     </ItemGroup>
   </Target>
+
+  <Import Project="$([MSBuild]::NormalizeDirectory('$(RepoRoot)'))\unity\unityaot-props\System.Private.CoreLib.props"  Condition="'$(UnityAot)' == 'true'" />
+
 </Project>

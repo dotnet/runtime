@@ -1,0 +1,12 @@
+<Project>
+    <PropertyGroup>
+        <DefineConstants>$(DefineConstants);UNITY_AOT</DefineConstants>
+        <NativeAotSourcesRoot>$(CoreClrProjectRoot)\nativeaot</NativeAotSourcesRoot>
+        <NativeAotSourceCoreLib>$(NativeAotSourcesRoot)\System.Private.CoreLib\src</NativeAotSourceCoreLib>
+    </PropertyGroup>
+    <ItemGroup>
+        <Compile Remove="$(BclSourcesRoot)\System\Collections\Generic\ArraySortHelper.Mono.cs" />
+        <Compile Include="$(NativeAotSourceCoreLib)\System\Collections\Generic\ArraySortHelper.NativeAot.cs" />
+    </ItemGroup>
+</Project>
+
