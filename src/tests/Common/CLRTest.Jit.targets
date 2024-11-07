@@ -300,12 +300,11 @@ import glob
 import hashlib
 
 def hash_file(filename):
-    h  = hashlib.sha256()
-    b  = bytearray(128*1024)
-    mv = memoryview(b)
-    with open(filename, 'rb', buffering=0) as f:
-        for n in iter(lambda : f.readinto(mv), 0):
-            h.update(mv[:n])
+    h = hashlib.sha256()
+    BUF_SIZE = 128*1024
+    with open(filename, "rb", buffering=0) as f:
+        for chunk in iter(lambda : f.read(BUF_SIZE), b""):
+            h.update(chunk)
     return h.hexdigest()
 
 def is_managed_assembly(file):
@@ -386,6 +385,7 @@ for inputAssemblyName in glob.glob("*.dll"):
       # Test determinism
       if test_det:
 
+        print(f"file1 size: {os.path.getsize(inputAssemblyName)}")
         hash = hash_file(inputAssemblyName)
 
         ilasm_args = f'{os.environ["CORE_ROOT"]}/ilasm -output={inputAssemblyName} {ilasmSwitches} {disassemblyName}'
@@ -398,6 +398,7 @@ for inputAssemblyName in glob.glob("*.dll"):
             proc.kill()
             sys.exit(1)
 
+        print(f"file2 size: {os.path.getsize(inputAssemblyName)}")
         if hash != hash_file(inputAssemblyName):
           print("ILASM determinism failed")
           sys.exit(1)
