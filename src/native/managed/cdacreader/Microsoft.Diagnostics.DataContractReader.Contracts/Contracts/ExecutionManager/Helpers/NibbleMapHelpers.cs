@@ -32,16 +32,16 @@ internal static class NibbleMapHelpers
         public MapUnit ShiftNextNibble => new MapUnit(Value >>> 4);
 
         public const uint NibbleMask = 0x0Fu;
-        internal Nibble Nibble => new((int)(Value & NibbleMask));
+        internal Nibble Nibble => new(Value & NibbleMask);
 
-        public bool IsZero => Value == 0;
+        public bool IsEmpty => Value == 0;
 
         // Assuming mapIdx is the index of a nibble within the current map unit,
         // shift the unit so that nibble is in the least significant position and return the result.
         public MapUnit FocusOnIndexedNibble(MapKey mapIdx)
         {
-            int shift = mapIdx.GetNibbleShift();
-            return new MapUnit (Value >>> shift);
+            uint shift = mapIdx.GetNibbleShift();
+            return new MapUnit(Value >>> (int)shift);
         }
     }
 
@@ -49,11 +49,11 @@ internal static class NibbleMapHelpers
     // We reserse 0 to mean that there is no method starting at any offset within a bucket
     internal readonly struct Nibble
     {
-        public readonly int Value;
+        public readonly uint Value;
 
-        public Nibble(int value)
+        public Nibble(uint value)
         {
-            Debug.Assert (value >= 0 && value <= 0xF);
+            Debug.Assert(value <= 0xF);
             Value = value;
         }
 
@@ -73,40 +73,48 @@ internal static class NibbleMapHelpers
     // The key to the map is the index of an individual nibble
     internal readonly struct MapKey
     {
-        private readonly ulong MapIdx;
-        public MapKey(ulong mapIdx) => MapIdx = mapIdx;
-        public override string ToString() => $"0x{MapIdx:x}";
+        private readonly ulong _mapIdx;
+        public MapKey(ulong mapIdx) => _mapIdx = mapIdx;
+        public override string ToString() => $"0x{_mapIdx:x}";
 
         // The offset of the address in the target space that this map index represents
-        public ulong TargetByteOffset => MapIdx * BytesPerBucket;
+        public ulong TargetByteOffset => _mapIdx * BytesPerBucket;
 
         // The index of the map unit that contains this map index
-        public ulong ContainingMapUnitIndex => MapIdx / MapUnit.SizeInNibbles;
+        public ulong ContainingMapUnitIndex => _mapIdx / MapUnit.SizeInNibbles;
 
         // The offset of the map unit that contains this map index
         public ulong ContainingMapUnitByteOffset => ContainingMapUnitIndex * MapUnit.SizeInBytes;
 
         // The map index is the index of a nibble within the map, this gives the index of that nibble within a map unit.
-        public int NibbleIndexInMapUnit => (int)(MapIdx & (MapUnit.SizeInNibbles - 1));
+        public uint NibbleIndexInMapUnit => (uint)(_mapIdx & (MapUnit.SizeInNibbles - 1));
 
         // go to the previous nibble
-        public MapKey Prev => new MapKey(MapIdx - 1);
+        public MapKey Prev
+        {
+            get
+            {
+                Debug.Assert(_mapIdx > 0);
+                return new MapKey(_mapIdx - 1);
+            }
+
+        }
 
         // to to the previous map unit
-        public MapKey PrevMapUnit => new MapKey(MapIdx - MapUnit.SizeInNibbles);
+        public MapKey PrevMapUnit => new MapKey(_mapIdx - MapUnit.SizeInNibbles);
 
         // Get a MapKey that is aligned to the first nibble in the map unit that contains this map index
-        public MapKey AlignDownToMapUnit() =>new MapKey(MapIdx & (~(MapUnit.SizeInNibbles - 1)));
+        public MapKey AlignDownToMapUnit() =>new MapKey(_mapIdx & (~(MapUnit.SizeInNibbles - 1)));
 
         // If the map index is less than the size of a map unit, we are in the first MapUnit and
         // can stop searching
-        public bool InFirstMapUnit => MapIdx < MapUnit.SizeInNibbles;
+        public bool InFirstMapUnit => _mapIdx < MapUnit.SizeInNibbles;
 
-        public bool IsZero => MapIdx == 0;
+        public bool IsZero => _mapIdx == 0;
 
         // given the index of a nibble in the map, compute how much we have to shift a MapUnit to put that
         // nibble in the least significant position.
-        internal int GetNibbleShift()
+        internal uint GetNibbleShift()
         {
             return 28 - (NibbleIndexInMapUnit * 4);  // bit shift - 4 bits per nibble
         }
@@ -120,7 +128,7 @@ internal static class NibbleMapHelpers
     }
 
     // for tests
-    internal static int ComputeNibbleShift(MapKey mapIdx) => mapIdx.GetNibbleShift();
+    internal static uint ComputeNibbleShift(MapKey mapIdx) => mapIdx.GetNibbleShift();
 
     internal static TargetPointer RoundTripAddress(TargetPointer mapBase, TargetPointer currentPC)
     {
@@ -141,7 +149,7 @@ internal static class NibbleMapHelpers
     internal static void DecomposeAddress(TargetNUInt relative, out MapKey mapIdx, out Nibble bucketByteIndex)
     {
         mapIdx = new(relative.Value / BytesPerBucket);
-        int bucketByteOffset = (int)(relative.Value & (BytesPerBucket - 1));
+        uint bucketByteOffset = (uint)(relative.Value & (BytesPerBucket - 1));
         bucketByteIndex = new Nibble((bucketByteOffset / MapUnit.SizeInBytes) + 1);
     }
 }

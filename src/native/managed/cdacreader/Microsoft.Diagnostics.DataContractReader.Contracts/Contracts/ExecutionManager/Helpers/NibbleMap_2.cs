@@ -84,7 +84,7 @@ internal class NibbleMap_2 : INibbleMap
         t = t.ShiftNextNibble;
 
         // if there's any nibble set in the current unit, find it
-        if (!t.IsZero)
+        if (!t.IsEmpty)
         {
             mapIdx = mapIdx.Prev;
             while (t.Nibble.IsEmpty)
@@ -111,7 +111,7 @@ internal class NibbleMap_2 : INibbleMap
         t = mapIdx.ReadMapUnit(_target, mapStart);
 
         // if t is not zero, we either have a pointer or a nibble
-        if (!t.IsZero)
+        if (!t.IsEmpty)
         {
             if (IsPointer(t))
             {

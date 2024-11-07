@@ -86,7 +86,7 @@ internal class NibbleMap_1 : INibbleMap
         t = t.ShiftNextNibble;
 
         // if there's any nibble set in the current unit, find it
-        if (!t.IsZero)
+        if (!t.IsEmpty)
         {
             mapIdx = mapIdx.Prev;
             while (t.Nibble.IsEmpty)
@@ -113,7 +113,7 @@ internal class NibbleMap_1 : INibbleMap
         while (true)
         {
             t = mapIdx.ReadMapUnit(_target, mapStart);
-            if (!t.IsZero)
+            if (!t.IsEmpty)
                 break;
             if (mapIdx.InFirstMapUnit)
             {
@@ -124,7 +124,7 @@ internal class NibbleMap_1 : INibbleMap
             mapIdx = mapIdx.PrevMapUnit;
         }
 
-        Debug.Assert(!t.IsZero);
+        Debug.Assert(!t.IsEmpty);
 
         // move to the correct nibble in the map unit
         while (!mapIdx.IsZero && t.Nibble.IsEmpty)
@@ -133,7 +133,7 @@ internal class NibbleMap_1 : INibbleMap
             mapIdx = mapIdx.Prev;
         }
 
-        if (mapIdx.IsZero && t.IsZero)
+        if (mapIdx.IsZero && t.IsEmpty)
         {
             return TargetPointer.Null;
         }

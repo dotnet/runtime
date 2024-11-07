@@ -22,12 +22,12 @@ internal abstract class NibbleMapTestBuilderBase
     // this is the target memory representation of the nibble map itself
     public MockMemorySpace.HeapFragment NibbleMapFragment { get; init; }
 
-    protected const int Log2CodeAlign = 2; // N.B. this might be different on 64-bit in the future
+    protected const int Log2CodeAlign = 2; // This might be different on 64-bit in the future
     protected const int Log2NibblesPerDword = 3;
     protected const int Log2BytesPerBucket = Log2CodeAlign + Log2NibblesPerDword;
     protected const int Log2NibbleSize = 2;
     protected const int NibbleSize = 1 << Log2NibbleSize;
-    protected const uint NibblesPerDword = (8 * sizeof(uint)) >> Log2NibbleSize;
+    protected const uint NibblesPerDword = (8 * sizeof(uint)) >>> Log2NibbleSize;
     protected const uint NibblesPerDwordMask = NibblesPerDword - 1;
     protected const uint BytesPerBucket = NibblesPerDword * (1 << Log2CodeAlign);
 
@@ -40,12 +40,12 @@ internal abstract class NibbleMapTestBuilderBase
 
     protected ulong Addr2Pos(ulong addr)
     {
-        return addr >> Log2BytesPerBucket;
+        return addr >>> Log2BytesPerBucket;
     }
 
     protected uint Addr2Offs(ulong addr)
     {
-        return (uint)  (((addr & MaskBytesPerBucket) >> Log2CodeAlign) + 1);
+        return (uint)  (((addr & MaskBytesPerBucket) >>> Log2CodeAlign) + 1);
     }
 
     protected int Pos2ShiftCount (ulong addr)
@@ -100,8 +100,8 @@ internal class NibbleMapTestBuilder_1 : NibbleMapTestBuilderBase
         bool bSet = true;
         uint value = bSet?Addr2Offs(delta):0;
 
-        uint index = (uint) (pos >> Log2NibblesPerDword);
-        uint mask = ~(HighestNibbleMask >> (int)((pos & NibblesPerDwordMask) << Log2NibbleSize));
+        uint index = (uint) (pos >>> Log2NibblesPerDword);
+        uint mask = ~(HighestNibbleMask >>> (int)((pos & NibblesPerDwordMask) << Log2NibbleSize));
 
         value = value << Pos2ShiftCount(pos);
 
@@ -142,8 +142,8 @@ internal class NibbleMapTestBuilder_2 : NibbleMapTestBuilderBase
         ulong pos = Addr2Pos(delta);
         uint value = Addr2Offs(delta);
 
-        uint index = (uint) (pos >> Log2NibblesPerDword);
-        uint mask = ~(HighestNibbleMask >> (int)((pos & NibblesPerDwordMask) << Log2NibbleSize));
+        uint index = (uint) (pos >>> Log2NibblesPerDword);
+        uint mask = ~(HighestNibbleMask >>> (int)((pos & NibblesPerDwordMask) << Log2NibbleSize));
 
         value = value << Pos2ShiftCount(pos);
 
