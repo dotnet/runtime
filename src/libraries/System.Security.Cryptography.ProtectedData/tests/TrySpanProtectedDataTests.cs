@@ -54,7 +54,7 @@ namespace System.Security.Cryptography.ProtectedDataTests
                 out resized));
             if (success)
             {
-                Assert.Equal(original, resized);
+                Assert.Equal(originalSize, resized);
             }
         }
 
