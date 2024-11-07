@@ -101,4 +101,4 @@ inline HRESULT Sha256Hash(BYTE* pSrc, DWORD srcSize, BYTE* pDst, DWORD dstSize)
 }
 #endif
 
-#endif // __sha256__h__
+#endif // HAVE_SHA256_H
