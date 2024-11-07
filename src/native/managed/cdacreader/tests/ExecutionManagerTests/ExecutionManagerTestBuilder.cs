@@ -174,7 +174,7 @@ internal class ExecutionManagerTestBuilder
         return new RangeSectionMapTestBuilder(arch);
     }
 
-    internal readonly int _version;
+    internal int Verion { get;}
 
     internal MockMemorySpace.Builder Builder { get; }
     private readonly RangeSectionMapTestBuilder _rsmBuilder;
