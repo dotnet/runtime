@@ -434,6 +434,17 @@ CDAC_TYPE_FIELD(RuntimeFunction, /*uint32*/, BeginAddress, offsetof(RUNTIME_FUNC
 CDAC_TYPE_FIELD(RuntimeFunction, /*uint32*/, EndAddress, offsetof(RUNTIME_FUNCTION, EndAddress))
 CDAC_TYPE_END(RuntimeFunction)
 
+CDAC_TYPE_BEGIN(HashMap)
+CDAC_TYPE_INDETERMINATE(HashMap)
+CDAC_TYPE_FIELD(HashMap, /*pointer*/, Buckets, cdac_data<HashMap>::Buckets)
+CDAC_TYPE_END(HashMap)
+
+CDAC_TYPE_BEGIN(Bucket)
+CDAC_TYPE_SIZE(sizeof(Bucket))
+CDAC_TYPE_FIELD(Bucket, /*pointer*/, Keys, offsetof(Bucket, m_rgKeys))
+CDAC_TYPE_FIELD(Bucket, /*pointer*/, Values, offsetof(Bucket, m_rgValues))
+CDAC_TYPE_END(Bucket)
+
 CDAC_TYPE_BEGIN(RangeSectionMap)
 CDAC_TYPE_INDETERMINATE(RangeSectionMap)
 CDAC_TYPE_FIELD(RangeSectionMap, /*pointer*/, TopLevelData, cdac_data<RangeSectionMap>::TopLevelData)
@@ -523,6 +534,8 @@ CDAC_GLOBAL(ObjectToMethodTableUnmask, uint8, 1 | 1 << 1)
 #endif //TARGET_64BIT
 CDAC_GLOBAL(SOSBreakingChangeVersion, uint8, SOS_BREAKING_CHANGE_VERSION)
 CDAC_GLOBAL(DirectorySeparator, uint8, (uint8_t)DIRECTORY_SEPARATOR_CHAR_A)
+CDAC_GLOBAL(HashMapSlotsPerBucket, uint32, SLOTS_PER_BUCKET)
+CDAC_GLOBAL(HashMapValueMask, uint64, VALUE_MASK)
 CDAC_GLOBAL(MethodDescAlignment, uint64, MethodDesc::ALIGNMENT)
 CDAC_GLOBAL(ObjectHeaderSize, uint64, OBJHEADER_SIZE)
 CDAC_GLOBAL(SyncBlockValueToObjectOffset, uint16, OBJHEADER_SIZE - cdac_data<ObjHeader>::SyncBlockValue)

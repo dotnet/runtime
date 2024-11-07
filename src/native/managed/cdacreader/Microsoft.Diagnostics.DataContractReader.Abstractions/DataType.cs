@@ -70,4 +70,6 @@ public enum DataType
     ReadyToRunInfo,
     ImageDataDirectory,
     RuntimeFunction,
+    HashMap,
+    Bucket,
 }
