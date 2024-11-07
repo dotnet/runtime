@@ -52,6 +52,7 @@ bool minipal_can_check_for_native_debugger(void)
     return true;
 #else
     return false;
+#endif
 }
 
 bool minipal_is_native_debugger_present(void)
