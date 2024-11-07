@@ -34,7 +34,6 @@ public class Update : RecipeBase
                     "git config user.name \"Unity coreclr Bot\"",
                     ".yamato/scripts/update_from_upstream.sh"
                     )
-                .WithScheduleTrigger(new Schedule(GlobalSettings.BaseBranchName, "weekly"))
                 .Build()
         }.ToHashSet();
     }
