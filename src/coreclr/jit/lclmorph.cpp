@@ -2501,9 +2501,9 @@ void Compiler::LclMasksWeight::CacheSimdTypes(GenTreeHWIntrinsic* op)
 }
 
 //-----------------------------------------------------------------------------
-// LclMasksCheckLCLVarVisitor: Find the user of a lcl var and check if it is a convert to mask
+// LclMasksCheckLclVarVisitor: Find the user of a lcl var and check if it is a convert to mask
 //
-class LclMasksCheckLCLVarVisitor final : public GenTreeVisitor<LclMasksCheckLCLVarVisitor>
+class LclMasksCheckLclVarVisitor final : public GenTreeVisitor<LclMasksCheckLclVarVisitor>
 {
 public:
     enum
@@ -2512,8 +2512,8 @@ public:
         UseExecutionOrder = true
     };
 
-    LclMasksCheckLCLVarVisitor(Compiler* compiler, unsigned lclNum)
-        : GenTreeVisitor<LclMasksCheckLCLVarVisitor>(compiler)
+    LclMasksCheckLclVarVisitor(Compiler* compiler, unsigned lclNum)
+        : GenTreeVisitor<LclMasksCheckLclVarVisitor>(compiler)
         , foundConversion(false)
         , lclNum(lclNum)
     {
@@ -2545,9 +2545,9 @@ private:
 };
 
 //-----------------------------------------------------------------------------
-// LclMasksUpdateLCLVarVisitor: tree visitor to remove conversion to masks for uses of LCL
+// LclMasksUpdateLclVarVisitor: tree visitor to remove conversion to masks for uses of LCL
 //
-class LclMasksUpdateLCLVarVisitor final : public GenTreeVisitor<LclMasksUpdateLCLVarVisitor>
+class LclMasksUpdateLclVarVisitor final : public GenTreeVisitor<LclMasksUpdateLclVarVisitor>
 {
 public:
     enum
@@ -2556,9 +2556,9 @@ public:
         UseExecutionOrder = true
     };
 
-    LclMasksUpdateLCLVarVisitor(
+    LclMasksUpdateLclVarVisitor(
         Compiler* compiler, unsigned lclNum, Statement* stmt, CorInfoType simdBaseJitType, unsigned simdSize)
-        : GenTreeVisitor<LclMasksUpdateLCLVarVisitor>(compiler)
+        : GenTreeVisitor<LclMasksUpdateLclVarVisitor>(compiler)
         , lclNum(lclNum)
         , stmt(stmt)
         , simdBaseJitType(simdBaseJitType)
@@ -2696,7 +2696,7 @@ bool Compiler::fgLclMasksCheckLclStore(Statement* stmt, BasicBlock* const block,
 }
 
 //-----------------------------------------------------------------------------
-// fgLclMasksCheckLCLVar: For the given lcl var, update the weights in
+// fgLclMasksCheckLclVar: For the given lcl var, update the weights in
 // the table.
 //
 // Arguments:
@@ -2705,7 +2705,7 @@ bool Compiler::fgLclMasksCheckLclStore(Statement* stmt, BasicBlock* const block,
 //     stmt - The block the local variable is contained in.
 //     weightsTable - table to update.
 //
-void Compiler::fgLclMasksCheckLCLVar(GenTreeLclVarCommon* lclVar,
+void Compiler::fgLclMasksCheckLclVar(GenTreeLclVarCommon* lclVar,
                                      Statement* const     stmt,
                                      BasicBlock* const    block,
                                      LclMasksWeightTable* weightsTable)
@@ -2725,7 +2725,7 @@ void Compiler::fgLclMasksCheckLCLVar(GenTreeLclVarCommon* lclVar,
     }
 
     // Find the parent of the lcl var
-    LclMasksCheckLCLVarVisitor ev(this, lclVar->GetLclNum());
+    LclMasksCheckLclVarVisitor ev(this, lclVar->GetLclNum());
     GenTree*                   root = stmt->GetRootNode();
     ev.WalkTree(&root, nullptr);
 
@@ -2825,7 +2825,7 @@ bool Compiler::fgLclMasksUpdateLclStore(Statement* stmt, LclMasksWeightTable* we
 }
 
 //-----------------------------------------------------------------------------
-// fgLclMasksUpdateLCLVar: For the given lcl var, if the weighting recommends to switch,
+// fgLclMasksUpdateLclVar: For the given lcl var, if the weighting recommends to switch,
 // then update to use the source as a mask.
 //
 // Arguments:
@@ -2833,7 +2833,7 @@ bool Compiler::fgLclMasksUpdateLclStore(Statement* stmt, LclMasksWeightTable* we
 //     stmt - The statement the local vairable is contained in.
 //     weightsTable - table to update.
 //
-void Compiler::fgLclMasksUpdateLCLVar(GenTreeLclVarCommon* lclVar,
+void Compiler::fgLclMasksUpdateLclVar(GenTreeLclVarCommon* lclVar,
                                       Statement* const     stmt,
                                       LclMasksWeightTable* weightsTable)
 {
@@ -2862,7 +2862,7 @@ void Compiler::fgLclMasksUpdateLCLVar(GenTreeLclVarCommon* lclVar,
     weight.DumpTotalWeight();
 
     // Remove or add a mask conversion/
-    LclMasksUpdateLCLVarVisitor ev(this, lclVar->GetLclNum(), stmt, weight.simdBaseJitType, weight.simdSize);
+    LclMasksUpdateLclVarVisitor ev(this, lclVar->GetLclNum(), stmt, weight.simdBaseJitType, weight.simdSize);
     GenTree*                    root = stmt->GetRootNode();
     ev.WalkTree(&root, nullptr);
 }
@@ -2952,7 +2952,7 @@ PhaseStatus Compiler::fgOptimizeLclMasks()
         {
             for (GenTreeLclVarCommon* lcl : stmt->LocalsTreeList())
             {
-                fgLclMasksCheckLCLVar(lcl, stmt, block, &weightsTable);
+                fgLclMasksCheckLclVar(lcl, stmt, block, &weightsTable);
             }
         }
     }
@@ -2982,7 +2982,7 @@ PhaseStatus Compiler::fgOptimizeLclMasks()
         {
             for (GenTreeLclVarCommon* lcl : stmt->LocalsTreeList())
             {
-                fgLclMasksUpdateLCLVar(lcl, stmt, &weightsTable);
+                fgLclMasksUpdateLclVar(lcl, stmt, &weightsTable);
             }
         }
     }
