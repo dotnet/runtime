@@ -566,7 +566,7 @@ private:
 
 #if defined(FEATURE_HW_INTRINSICS)
     // Tries to make 'childNode' contained or regOptional in the 'parentNode'
-    void TryMakeSrcContainedOrRegOptional(GenTreeHWIntrinsic* parentNode, GenTree* childNode) const;
+    void TryMakeSrcContainedOrRegOptional(GenTreeHWIntrinsic* parentNode, GenTree* childNode);
 #endif
 
     // Checks and makes 'childNode' contained in the 'parentNode'

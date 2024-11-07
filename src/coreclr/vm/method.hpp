@@ -371,8 +371,6 @@ public:
     // True if the declaring type or instantiation of method (if any) contains formal generic type parameters
     BOOL ContainsGenericVariables();
 
-    Module* GetDefiningModuleForOpenMethod();
-
     // True if this is a class and method instantiation that on <__Canon,...,__Canon>
     BOOL IsTypicalSharedInstantiation();
 
@@ -503,10 +501,6 @@ public:
     MethodDescBackpatchInfoTracker* GetBackpatchInfoTracker();
 
     PTR_LoaderAllocator GetLoaderAllocator();
-
-    // GetDomainSpecificLoaderAllocator returns the collectable loader allocator for collectable types
-    // and the loader allocator in the current domain for non-collectable types
-    LoaderAllocator * GetDomainSpecificLoaderAllocator();
 
     Module* GetLoaderModule();
 
@@ -1914,6 +1908,8 @@ template<> struct cdac_data<MethodDesc>
     static constexpr size_t Slot = offsetof(MethodDesc, m_wSlotNumber);
     static constexpr size_t Flags = offsetof(MethodDesc, m_wFlags);
     static constexpr size_t Flags3AndTokenRemainder = offsetof(MethodDesc, m_wFlags3AndTokenRemainder);
+    static constexpr size_t EntryPointFlags = offsetof(MethodDesc, m_bFlags4);
+    static constexpr size_t CodeData = offsetof(MethodDesc, m_codeData);
 };
 
 #ifndef DACCESS_COMPILE

@@ -8,73 +8,54 @@
 // contains implementation of sha256 hash algorithm
 //
 //*****************************************************************************
-#ifndef __sha256__h__
-#define __sha256__h__
+#ifndef HAVE_SHA256_H
+#define HAVE_SHA256_H
 
 #ifdef _WIN32
 inline HRESULT Sha256Hash(BYTE* pSrc, DWORD srcSize, BYTE* pDst, DWORD dstSize)
 {
-    NTSTATUS status;
+    if (dstSize != 32)
+    {
+        return E_FAIL;
+    }
 
-    BCRYPT_ALG_HANDLE   algHandle = NULL;
-    BCRYPT_HASH_HANDLE  hashHandle = NULL;
+    BCRYPT_ALG_HANDLE  algHandle  = NULL;
+    BCRYPT_HASH_HANDLE hashHandle = NULL;
 
-    BYTE    hash[32]; // 256 bits
-    DWORD   hashLength = 0;
-    DWORD   resultLength = 0;
-    status = BCryptOpenAlgorithmProvider(&algHandle, BCRYPT_SHA256_ALGORITHM, NULL, BCRYPT_HASH_REUSABLE_FLAG);
-    if(!NT_SUCCESS(status))
+    NTSTATUS status = BCryptOpenAlgorithmProvider(&algHandle, BCRYPT_SHA256_ALGORITHM, NULL, 0);
+
+    if (!NT_SUCCESS(status))
     {
         goto cleanup;
     }
-    status = BCryptGetProperty(algHandle, BCRYPT_HASH_LENGTH, (PBYTE)&hashLength, sizeof(hashLength), &resultLength, 0);
-    if(!NT_SUCCESS(status))
-    {
-        goto cleanup;
-    }
-    if (hashLength != 32)
-    {
-        status = STATUS_NO_MEMORY;
-        goto cleanup;
-    }
+
     status = BCryptCreateHash(algHandle, &hashHandle, NULL, 0, NULL, 0, 0);
-    if(!NT_SUCCESS(status))
+
+    if (!NT_SUCCESS(status))
     {
         goto cleanup;
     }
 
     status = BCryptHashData(hashHandle, pSrc, srcSize, 0);
-    if(!NT_SUCCESS(status))
+
+    if (!NT_SUCCESS(status))
     {
         goto cleanup;
     }
 
-    status = BCryptFinishHash(hashHandle, hash, hashLength, 0);
-    if(!NT_SUCCESS(status))
-    {
-        goto cleanup;
-    }
-
-    if (dstSize < hashLength)
-    {
-    	memcpy(pDst, hash, dstSize);
-    }
-    else
-    {
-    	memcpy(pDst, hash, hashLength);
-    }
-
-    status = S_OK;
+    status = BCryptFinishHash(hashHandle, pDst, dstSize, 0);
 
 cleanup:
-    if (NULL != hashHandle)
+    if (hashHandle != NULL)
     {
          BCryptDestroyHash(hashHandle);
     }
-    if(NULL != algHandle)
+
+    if (algHandle != NULL)
     {
         BCryptCloseAlgorithmProvider(algHandle, 0);
     }
+
     return status;
 }
 #elif defined(__APPLE__)
@@ -83,21 +64,15 @@ cleanup:
 
 inline HRESULT Sha256Hash(BYTE* pSrc, DWORD srcSize, BYTE* pDst, DWORD dstSize)
 {
-    BYTE hash[32];
-    CC_SHA256(pSrc, (CC_LONG)srcSize, hash);
-
-    if (dstSize < CC_SHA256_DIGEST_LENGTH)
+    if (dstSize != CC_SHA256_DIGEST_LENGTH)
     {
-        memcpy(pDst, hash, dstSize);
-    }
-    else
-    {
-        memcpy(pDst, hash, CC_SHA256_DIGEST_LENGTH);
+        return E_FAIL;
     }
 
+    CC_SHA256(pSrc, (CC_LONG)srcSize, pDst);
     return S_OK;
 }
-#elif defined(__linux__)
+#else
 extern "C" {
     #include "openssl.h"
     #include "pal_evp.h"
@@ -110,36 +85,20 @@ inline bool IsOpenSslAvailable()
 
 inline HRESULT Sha256Hash(BYTE* pSrc, DWORD srcSize, BYTE* pDst, DWORD dstSize)
 {
-    if (!IsOpenSslAvailable() || CryptoNative_EnsureOpenSslInitialized())
+    if (CryptoNative_EnsureOpenSslInitialized() || (dstSize != 32))
     {
         return E_FAIL;
     }
 
-    BYTE hash[32];
-    DWORD hashLength = 0;
+    uint32_t hashLength = 0;
 
-    if (!CryptoNative_EvpDigestOneShot(CryptoNative_EvpSha256(), pSrc, srcSize, hash, &hashLength))
+    if (!CryptoNative_EvpDigestOneShot(CryptoNative_EvpSha256(), pSrc, srcSize, pDst, &hashLength))
     {
         return E_FAIL;
-    }
-
-    if (dstSize < hashLength)
-    {
-    	memcpy(pDst, hash, dstSize);
-    }
-    else
-    {
-    	memcpy(pDst, hash, hashLength);
     }
 
     return S_OK;
 }
-#else
-// Unsupported platform
-inline HRESULT Sha256Hash(BYTE* pSrc, DWORD srcSize, BYTE* pDst, DWORD dstSize)
-{
-    return E_FAIL;
-}
 #endif
 
-#endif // __sha256__h__
+#endif // HAVE_SHA256_H
