@@ -564,11 +564,14 @@ $@"{nameof(UnregisterClassForTypeInternal)} arguments:
                 }
                 else if (riid == Marshal.IID_IDispatch)
                 {
-                    // If unspecified, default is ClassInterfaceType.AutoDispatch.
+                    ClassInterfaceAttribute? attr =
+                        classType.GetCustomAttribute<ClassInterfaceAttribute>()
+                        ?? classType.Assembly.GetCustomAttribute<ClassInterfaceAttribute>(); // If there is no attribute on the Type, check the Assembly.
+
+                    // If the attribute is unspecified, the default is ClassInterfaceType.AutoDispatch.
                     // See DEFAULT_CLASS_INTERFACE_TYPE in native.
-                    ClassInterfaceAttribute? attr = classType.GetCustomAttribute<ClassInterfaceAttribute>();
                     if (attr is null
-                        || attr.Value is ClassInterfaceType.AutoDual or ClassInterfaceType.AutoDispatch)
+                        || attr.Value is ClassInterfaceType.AutoDispatch or ClassInterfaceType.AutoDual)
                     {
                         return new ValidatedInterfaceType() { Kind = ValidatedInterfaceKind.IDispatch, ManagedType = null };
                     }
