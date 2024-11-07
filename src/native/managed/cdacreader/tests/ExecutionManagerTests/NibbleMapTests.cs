@@ -7,9 +7,9 @@ using Xunit;
 using Microsoft.Diagnostics.DataContractReader.ExecutionManagerHelpers;
 using System.Diagnostics;
 
-namespace Microsoft.Diagnostics.DataContractReader.UnitTests;
+namespace Microsoft.Diagnostics.DataContractReader.UnitTests.ExecutionManagerTests;
 
-public class NibbleMapTests
+public class NibbleMapTestsBase
 {
     internal class NibbleMapTestTarget : TestPlaceholderTarget
     {
@@ -22,14 +22,16 @@ public class NibbleMapTests
 
     }
 
-    internal static NibbleMapTestTarget CreateTarget(ExecutionManagerTestBuilder.NibbleMapTestBuilder nibbleMapTestBuilder)
+    internal static NibbleMapTestTarget CreateTarget(NibbleMapTestBuilderBase nibbleMapTestBuilder)
     {
         return new NibbleMapTestTarget(nibbleMapTestBuilder.Arch, new MockMemorySpace.ReadContext() {
             HeapFragments = new[] { nibbleMapTestBuilder.NibbleMapFragment }
         });
     }
+}
 
-
+public class NibbleMapTests_1 : NibbleMapTestsBase
+{
     [Fact]
     public void RoundTripAddressTest()
     {
@@ -37,7 +39,7 @@ public class NibbleMapTests
         uint delta = 0x10u;
         for (TargetPointer p = mapBase; p < mapBase + 0x1000; p += delta)
         {
-            TargetPointer actual = NibbleMap.RoundTripAddress(mapBase, p);
+            TargetPointer actual = NibbleMapHelpers.RoundTripAddress(mapBase, p);
             Assert.Equal(p, actual);
         }
     }
@@ -57,8 +59,8 @@ public class NibbleMapTests
         int expectedShift = 28;
         for (int i = 0; i < 255; i++)
         {
-            NibbleMap.MapKey input = new (irrelevant + (ulong)i);
-            int actualShift = NibbleMap.ComputeNibbleShift(input);
+            NibbleMapHelpers.MapKey input = new (irrelevant + (ulong)i);
+            int actualShift = NibbleMapHelpers.ComputeNibbleShift(input);
             Assert.True(expectedShift == actualShift, $"Expected {expectedShift}, got {actualShift} for input {input}");
             expectedShift -= 4;
             if (expectedShift == -4)
@@ -81,7 +83,7 @@ public class NibbleMapTests
         /// this is how big the address space is that the map covers
         const uint MapRangeSize = 0x1000;
         TargetPointer MapEnd = mapBase + MapRangeSize;
-        var builder = ExecutionManagerTestBuilder.CreateNibbleMap(mapBase, MapRangeSize, mapStart, arch);
+        var builder = new NibbleMapTestBuilder_1(mapBase, MapRangeSize, mapStart, arch);
 
         // don't put the code too close to the start - the NibbleMap bails if the code is too close to the start of the range
         TargetCodePointer inputPC = new(mapBase + 0x0200u);
@@ -91,7 +93,7 @@ public class NibbleMapTests
 
         // TESTCASE:
 
-        NibbleMap map = NibbleMap.Create(target);
+        NibbleMap_1 map = (NibbleMap_1)NibbleMap_1.Create(target);
         Assert.NotNull(map);
 
         TargetPointer methodCode = map.FindMethodCode(mapBase, mapStart, inputPC);
@@ -124,6 +126,60 @@ public class NibbleMapTests
         }
 
     }
-
-
 }
+
+public class NibbleMapTests_2 : NibbleMapTestsBase
+{
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void NibbleMapOneItemLookupOk(MockTarget.Architecture arch)
+    {
+        // SETUP:
+
+        // this is the beginning of the address range where code pointers might point
+        TargetPointer mapBase = new(0x5f5f_0000u);
+        // this is the beginning of the nibble map itself
+        TargetPointer mapStart = new(0x0456_1000u);
+        /// this is how big the address space is that the map covers
+        const uint MapRangeSize = 0x1000;
+        TargetPointer MapEnd = mapBase + MapRangeSize;
+        var builder = new NibbleMapTestBuilder_2(mapBase, MapRangeSize, mapStart, arch);
+
+        // don't put the code too close to the start - the NibbleMap bails if the code is too close to the start of the range
+        TargetCodePointer inputPC = new(mapBase + 0x0200u);
+        int codeSize = 0x400;
+        builder.AllocateCodeChunk (inputPC, codeSize);
+        NibbleMapTestTarget target = CreateTarget(builder);
+
+        // TESTCASE:
+
+        NibbleMap_2 map = (NibbleMap_2)NibbleMap_2.Create(target);
+        Assert.NotNull(map);
+
+        TargetPointer methodCode = map.FindMethodCode(mapBase, mapStart, inputPC);
+        Assert.Equal(inputPC.Value, methodCode.Value);
+
+        // All addresses in the code chunk should map to the same method
+        for (int i = 0; i < codeSize; i++)
+        {
+            methodCode = map.FindMethodCode(mapBase, mapStart, inputPC.Value + (uint)i);
+            // we should always find the beginning of the method
+            Assert.Equal(inputPC.Value, methodCode.Value);
+        }
+
+        // All addresses before the code chunk should return null
+        for (ulong i = mapBase; i < inputPC; i++)
+        {
+            methodCode = map.FindMethodCode(mapBase, mapStart, i);
+            Assert.Equal(0u, methodCode.Value);
+        }
+
+        // All addresses more than 512 bytes after the code chunk should return null
+        for (ulong i = inputPC.Value + (uint)codeSize + 512; i < MapEnd; i++)
+        {
+            methodCode = map.FindMethodCode(mapBase, mapStart, i);
+            Assert.Equal(0u, methodCode.Value);
+        }
+    }
+}
+

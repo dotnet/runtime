@@ -7,7 +7,7 @@ using Microsoft.Diagnostics.DataContractReader.ExecutionManagerHelpers;
 
 using InteriorMapValue = Microsoft.Diagnostics.DataContractReader.ExecutionManagerHelpers.RangeSectionMap.InteriorMapValue;
 
-namespace Microsoft.Diagnostics.DataContractReader.UnitTests;
+namespace Microsoft.Diagnostics.DataContractReader.UnitTests.ExecutionManagerTests;
 
 internal class ExecutionManagerTestBuilder
 {
@@ -36,103 +36,6 @@ internal class ExecutionManagerTestBuilder
         CodeHeaderStart = 0x0033_4000,
         CodeHeaderEnd = 0x0033_5000,
     };
-    internal class NibbleMapTestBuilder
-    {
-        // This is the base address of the memory range that the map covers.
-        // The map works on code pointers as offsets from this address
-        // For testing we don't actually place anything into this space
-        private readonly TargetPointer MapBase;
-
-        internal readonly MockTarget.Architecture Arch;
-        // this is the target memory representation of the nibble map itself
-        public readonly MockMemorySpace.HeapFragment NibbleMapFragment;
-
-        public NibbleMapTestBuilder(TargetPointer mapBase, ulong mapRangeSize, TargetPointer mapStart,MockTarget.Architecture arch)
-        {
-            MapBase = mapBase;
-            Arch = arch;
-            int nibbleMapSize = (int)Addr2Pos(mapRangeSize);
-            NibbleMapFragment = new MockMemorySpace.HeapFragment {
-                Address = mapStart,
-                Data = new byte[nibbleMapSize],
-                Name = "Nibble Map",
-            };
-        }
-
-        public NibbleMapTestBuilder(TargetPointer mapBase, ulong mapRangeSize, MockMemorySpace.BumpAllocator allocator, MockTarget.Architecture arch)
-        {
-            MapBase = mapBase;
-            Arch = arch;
-            int nibbleMapSize = (int)Addr2Pos(mapRangeSize);
-            NibbleMapFragment = allocator.Allocate((ulong)nibbleMapSize, "Nibble Map");
-        }
-
-        const int Log2CodeAlign = 2; // N.B. this might be different on 64-bit in the future
-        const int Log2NibblesPerDword = 3;
-        const int Log2BytesPerBucket = Log2CodeAlign + Log2NibblesPerDword;
-        const int Log2NibbleSize = 2;
-        const int NibbleSize = 1 << Log2NibbleSize;
-        const uint NibblesPerDword = (8 * sizeof(uint)) >> Log2NibbleSize;
-        const uint NibblesPerDwordMask = NibblesPerDword - 1;
-        const uint BytesPerBucket = NibblesPerDword * (1 << Log2CodeAlign);
-
-        const uint MaskBytesPerBucket = BytesPerBucket - 1;
-
-        const uint NibbleMask = 0xf;
-        const int HighestNibbleBit = 32 - NibbleSize;
-
-        const uint HighestNibbleMask = NibbleMask << HighestNibbleBit;
-
-        private ulong Addr2Pos(ulong addr)
-        {
-            return addr >> Log2BytesPerBucket;
-        }
-
-        private uint Addr2Offs(ulong addr)
-        {
-            return (uint)  (((addr & MaskBytesPerBucket) >> Log2CodeAlign) + 1);
-        }
-
-        private int Pos2ShiftCount (ulong addr)
-        {
-            return HighestNibbleBit - (int)((addr & NibblesPerDwordMask) << Log2NibbleSize);
-        }
-        public void AllocateCodeChunk(TargetCodePointer codeStart, int codeSize)
-        {
-            // paraphrased from EEJitManager::NibbleMapSetUnlocked
-            if (codeStart.Value < MapBase.Value)
-            {
-                throw new ArgumentException("Code start address is below the map base");
-            }
-            ulong delta = codeStart.Value - MapBase.Value;
-            ulong pos = Addr2Pos(delta);
-            bool bSet = true;
-            uint value = bSet?Addr2Offs(delta):0;
-
-            uint index = (uint) (pos >> Log2NibblesPerDword);
-            uint mask = ~(HighestNibbleMask >> (int)((pos & NibblesPerDwordMask) << Log2NibbleSize));
-
-            value = value << Pos2ShiftCount(pos);
-
-            Span<byte> entry = NibbleMapFragment.Data.AsSpan((int)(index * sizeof(uint)), sizeof(uint));
-            uint oldValue = TestPlaceholderTarget.ReadFromSpan<uint>(entry, Arch.IsLittleEndian);
-
-            if (value != 0 && (oldValue & ~mask) != 0)
-            {
-                throw new InvalidOperationException("Overwriting existing offset");
-            }
-
-            uint newValue = (oldValue & mask) | value;
-            TestPlaceholderTarget.WriteToSpan(newValue, Arch.IsLittleEndian, entry);
-        }
-    }
-
-
-    internal static NibbleMapTestBuilder CreateNibbleMap(TargetPointer mapBase, ulong mapRangeSize, TargetPointer mapStart, MockTarget.Architecture arch)
-    {
-        return new NibbleMapTestBuilder(mapBase, mapRangeSize, mapStart, arch);
-    }
-
    internal class RangeSectionMapTestBuilder
     {
         const ulong DefaultTopLevelAddress = 0x0000_1000u; // arbitrary
@@ -149,7 +52,7 @@ internal class ExecutionManagerTestBuilder
         {
         }
 
-        public RangeSectionMapTestBuilder (TargetPointer topLevelAddress, MockMemorySpace.Builder builder)
+        public RangeSectionMapTestBuilder(TargetPointer topLevelAddress, MockMemorySpace.Builder builder)
         {
             _topLevelAddress = topLevelAddress;
             _builder = builder;
@@ -271,6 +174,8 @@ internal class ExecutionManagerTestBuilder
         return new RangeSectionMapTestBuilder(arch);
     }
 
+    internal readonly int _version;
+
     internal MockMemorySpace.Builder Builder { get; }
     private readonly RangeSectionMapTestBuilder _rsmBuilder;
 
@@ -280,12 +185,12 @@ internal class ExecutionManagerTestBuilder
 
     internal readonly Dictionary<DataType, Target.TypeInfo> TypeInfoCache = new();
 
-    internal ExecutionManagerTestBuilder(MockTarget.Architecture arch,  AllocationRange allocationRange) : this(new MockMemorySpace.Builder(new TargetTestHelpers(arch)), allocationRange)
+    internal ExecutionManagerTestBuilder(int version, MockTarget.Architecture arch,  AllocationRange allocationRange) : this(version, new MockMemorySpace.Builder(new TargetTestHelpers(arch)), allocationRange)
     {}
 
-
-    internal ExecutionManagerTestBuilder(MockMemorySpace.Builder builder, AllocationRange allocationRange, Dictionary<DataType, Target.TypeInfo>? typeInfoCache = null)
+    internal ExecutionManagerTestBuilder(int version, MockMemorySpace.Builder builder, AllocationRange allocationRange, Dictionary<DataType, Target.TypeInfo>? typeInfoCache = null)
     {
+        _version = version;
         Builder = builder;
         _rsmBuilder = new RangeSectionMapTestBuilder(ExecutionManagerCodeRangeMapAddress, builder);
         _rangeSectionMapAllocator = Builder.CreateAllocator(allocationRange.RangeSectionMapStart, allocationRange.RangeSectionMapEnd);
@@ -353,10 +258,17 @@ internal class ExecutionManagerTestBuilder
         };
     }
 
-    internal NibbleMapTestBuilder CreateNibbleMap(ulong codeRangeStart, uint codeRangeSize)
+    internal NibbleMapTestBuilderBase CreateNibbleMap(ulong codeRangeStart, uint codeRangeSize)
     {
+        NibbleMapTestBuilderBase nibBuilder = _version switch
+        {
+            1 => new NibbleMapTestBuilder_1(codeRangeStart, codeRangeSize, _nibbleMapAllocator, Builder.TargetTestHelpers.Arch),
 
-        NibbleMapTestBuilder nibBuilder = new NibbleMapTestBuilder(codeRangeStart, codeRangeSize, _nibbleMapAllocator, Builder.TargetTestHelpers.Arch);
+            // The nibblemap algorithm was changed in version 2
+            2 => new NibbleMapTestBuilder_2(codeRangeStart, codeRangeSize, _nibbleMapAllocator, Builder.TargetTestHelpers.Arch),
+            _ => throw new InvalidOperationException("Unknown version"),
+        };
+
         Builder.AddHeapFragment(nibBuilder.NibbleMapFragment);
         return nibBuilder;
     }
