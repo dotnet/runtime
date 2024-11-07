@@ -22,10 +22,10 @@ public class ExecutionManagerTests
             ReadFromTargetDelegate reader = emBuilder.Builder.GetReadContext().ReadFromTarget;
             var topRangeSectionMap = ExecutionManagerTestBuilder.ExecutionManagerCodeRangeMapAddress;
             var typeInfo = emBuilder.TypeInfoCache;
-            return new ExecutionManagerTestTarget(arch, reader, topRangeSectionMap, typeInfo);
+            return new ExecutionManagerTestTarget(emBuilder._version, arch, reader, topRangeSectionMap, typeInfo);
         }
 
-        public ExecutionManagerTestTarget(MockTarget.Architecture arch, ReadFromTargetDelegate dataReader, TargetPointer topRangeSectionMap, Dictionary<DataType, TypeInfo> typeInfoCache) : base(arch)
+        public ExecutionManagerTestTarget(int version, MockTarget.Architecture arch, ReadFromTargetDelegate dataReader, TargetPointer topRangeSectionMap, Dictionary<DataType, TypeInfo> typeInfoCache) : base(arch)
         {
             _topRangeSectionMap = topRangeSectionMap;
             SetDataReader(dataReader);
@@ -33,7 +33,7 @@ public class ExecutionManagerTests
             SetDataCache(new DefaultDataCache(this));
             IContractFactory<IExecutionManager> emfactory = new ExecutionManagerFactory();
             SetContracts(new TestRegistry() {
-                ExecutionManagerContract = new (() => emfactory.CreateContract(this, 1)),
+                ExecutionManagerContract = new (() => emfactory.CreateContract(this, version)),
             });
         }
         public override TargetPointer ReadGlobalPointer(string global)
@@ -98,7 +98,7 @@ public class ExecutionManagerTests
     {
         const ulong codeRangeStart = 0x0a0a_0000u; // arbitrary
         const uint codeRangeSize = 0xc000u; // arbitrary
-        int methodSize = 0x100; // arbitrary
+        int methodSize = 0x450; // arbitrary
 
         TargetPointer jitManagerAddress = new (0x000b_ff00); // arbitrary
 
@@ -120,13 +120,23 @@ public class ExecutionManagerTests
 
         var target = ExecutionManagerTestTarget.FromBuilder(emBuilder);
 
-        // test
+        // test at method start
 
         var em = target.Contracts.ExecutionManager;
         Assert.NotNull(em);
         var eeInfo = em.GetCodeBlockHandle(methodStart);
         Assert.NotNull(eeInfo);
         TargetPointer actualMethodDesc = em.GetMethodDesc(eeInfo.Value);
+        Assert.Equal(expectedMethodDescAddress, actualMethodDesc);
+
+        // test middle of method
+        eeInfo = em.GetCodeBlockHandle(methodStart + 0x250);
+        Assert.NotNull(eeInfo);
+        Assert.Equal(expectedMethodDescAddress, actualMethodDesc);
+
+        // test end of method
+        eeInfo = em.GetCodeBlockHandle(methodStart + 0x450 - 1);
+        Assert.NotNull(eeInfo);
         Assert.Equal(expectedMethodDescAddress, actualMethodDesc);
     }
 
