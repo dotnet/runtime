@@ -10002,7 +10002,7 @@ public:
     bool compSwitchedToOptimized      = false; // Codegen initially was Tier0 but jit switched to FullOpts
     bool compSwitchedToMinOpts        = false; // Codegen initially was Tier1/FullOpts but jit switched to MinOpts
     bool compSuppressedZeroInit       = false; // There are vars with lvSuppressedZeroInit set
-    bool compMaskConvertUsed  = false; // Does the method have Convert Mask To Vector nodes.
+    bool compMaskConvertUsed          = false; // Does the method have Convert Mask To Vector nodes.
 
     // NOTE: These values are only reliable after
     //       the importing is completely finished.
