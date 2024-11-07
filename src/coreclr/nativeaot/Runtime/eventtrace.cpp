@@ -94,6 +94,42 @@ enum CallbackProviderIndex
     DotNETRuntimePrivate = 3
 };
 
+#ifdef FEATURE_ETW
+// EventFilterType identifies the filter type used by the PEVENT_FILTER_DESCRIPTOR
+enum EventFilterType
+{
+    None = 0x0,
+    ClientSequenceNumber = 0x1,
+    // EventPipePayload = 0x2,
+    // Schematized = 0x80000000,
+    // SystemFlags = 0x80000001,
+    // TraceHandle = 0x80000002,
+    // PID = 0x80000004,
+    // ExecutableName = 0x80000008,
+    // PackageID = 0x80000010,
+    // PackageAppID = 0x80000020,
+    // Payload = 0x80000100,
+    // EventID = 0x80000200,
+    // EventName = 0x80000400,
+    // Stackwalk = 0x80001000,
+    // StackwalkName = 0x80002000,
+    // StackwalkLevelKW = 0x80004000,
+};
+
+void ParseFilterDataClientSequenceNumber(
+    EVENT_FILTER_DESCRIPTOR * FilterData,
+    LONGLONG * pClientSequenceNumber)
+{
+    if (FilterData == NULL)
+        return;
+
+    if (FilterData->Type == ClientSequenceNumber && FilterData->Size == sizeof(LONGLONG))
+    {
+        *pClientSequenceNumber = *(LONGLONG *) (FilterData->Ptr);
+    }
+}
+#endif // FEATURE_ETW
+
 void EtwCallbackCommon(
     CallbackProviderIndex ProviderIndex,
     ULONG ControlCode,
@@ -164,13 +200,7 @@ void EtwCallbackCommon(
         // Profilers may (optionally) specify extra data in the filter parameter
         // to log with the GCStart event.
         LONGLONG l64ClientSequenceNumber = 0;
-        EVENT_FILTER_DESCRIPTOR* filterDesc = (EVENT_FILTER_DESCRIPTOR*)pFilterData;
-        if ((filterDesc != NULL) &&
-            (filterDesc->Type == 1) &&
-            (filterDesc->Size == sizeof(l64ClientSequenceNumber)))
-        {
-            l64ClientSequenceNumber = *(LONGLONG *) (filterDesc->Ptr);
-        }
+        ParseFilterDataClientSequenceNumber((EVENT_FILTER_DESCRIPTOR*)pFilterData, &l64ClientSequenceNumber);
         ETW::GCLog::ForceGC(l64ClientSequenceNumber);
     }
 #endif
