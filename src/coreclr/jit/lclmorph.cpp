@@ -2660,7 +2660,8 @@ public:
                         addedConversion = true;
                     }
 
-                    found = true;
+                    found      = true;
+                    modifiedOp = *use;
                 }
                 break;
 
@@ -2694,7 +2695,8 @@ public:
                     *use = lclOp;
                     m_compiler->fgSequenceLocals(stmt);
 
-                    found = true;
+                    found      = true;
+                    modifiedOp = *use;
                 }
                 else if (((*use) == lclOp) && (!user->OperIsConvertVectorToMask()))
                 {
@@ -2718,6 +2720,7 @@ public:
 
                     addedConversion = true;
                     found           = true;
+                    modifiedOp      = *use;
                 }
                 break;
 
@@ -2729,8 +2732,9 @@ public:
     }
 
 public:
-    bool addedConversion = false;
-    bool found           = false;
+    bool     addedConversion = false;
+    bool     found           = false;
+    GenTree* modifiedOp      = nullptr;
 
 private:
     GenTreeLclVarCommon* lclOp;
@@ -2788,7 +2792,7 @@ void Compiler::fgLclMasksUpdateLcl(GenTreeLclVarCommon* lclOp, Statement* const 
 #ifdef DEBUG
         if (verbose)
         {
-            gtDispTree(lclOp);
+            gtDispTree(ev.modifiedOp);
         }
 #endif
     }
