@@ -542,12 +542,36 @@ $@"{nameof(UnregisterClassForTypeInternal)} arguments:
                 _classType = classType;
             }
 
-            public static Type GetValidatedInterfaceType([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)] Type classType, ref Guid riid, object? outer)
+            public enum ValidatedInterfaceKind
+            {
+                IUnknown,
+                IDispatch,
+                ManagedType,
+            }
+
+            public struct ValidatedInterfaceType
+            {
+                public ValidatedInterfaceKind Kind { get; init; }
+                public Type? ManagedType { get; init; }
+            }
+
+            public static ValidatedInterfaceType CreateValidatedInterfaceType([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)] Type classType, ref Guid riid, object? outer)
             {
                 Debug.Assert(classType != null);
                 if (riid == Marshal.IID_IUnknown)
                 {
-                    return typeof(object);
+                    return new ValidatedInterfaceType() { Kind = ValidatedInterfaceKind.IUnknown, ManagedType = null };
+                }
+                else if (riid == Marshal.IID_IDispatch)
+                {
+                    // If unspecified, default is ClassInterfaceType.AutoDispatch.
+                    // See DEFAULT_CLASS_INTERFACE_TYPE in native.
+                    ClassInterfaceAttribute? attr = classType.GetCustomAttribute<ClassInterfaceAttribute>();
+                    if (attr is null
+                        || attr.Value is ClassInterfaceType.AutoDual or ClassInterfaceType.AutoDispatch)
+                    {
+                        return new ValidatedInterfaceType() { Kind = ValidatedInterfaceKind.IDispatch, ManagedType = null };
+                    }
                 }
 
                 // Aggregation can only be done when requesting IUnknown.
@@ -562,7 +586,7 @@ $@"{nameof(UnregisterClassForTypeInternal)} arguments:
                 {
                     if (i.GUID == riid)
                     {
-                        return i;
+                        return new ValidatedInterfaceType() { Kind = ValidatedInterfaceKind.ManagedType, ManagedType = i };
                     }
                 }
 
@@ -570,15 +594,23 @@ $@"{nameof(UnregisterClassForTypeInternal)} arguments:
                 throw new InvalidCastException();
             }
 
-            public static IntPtr GetObjectAsInterface(object obj, Type interfaceType)
+            public static IntPtr GetObjectAsInterface(object obj, ValidatedInterfaceType interfaceType)
             {
                 // If the requested "interface type" is type object then return as IUnknown
-                if (interfaceType == typeof(object))
+                if (interfaceType.Kind is ValidatedInterfaceKind.IUnknown)
                 {
+                    Debug.Assert(interfaceType.ManagedType is null);
                     return Marshal.GetIUnknownForObject(obj);
                 }
+                else if (interfaceType.Kind is ValidatedInterfaceKind.IDispatch)
+                {
+                    Debug.Assert(interfaceType.ManagedType is null);
+                    return Marshal.GetIDispatchForObject(obj);
+                }
 
-                Debug.Assert(interfaceType.IsInterface);
+                Debug.Assert(interfaceType.Kind is ValidatedInterfaceKind.ManagedType
+                    && interfaceType.ManagedType != null
+                    && interfaceType.ManagedType.IsInterface);
 
                 // The intent of this call is to get AND validate the interface can be
                 // marshalled to native code. An exception will be thrown if the
@@ -586,7 +618,7 @@ $@"{nameof(UnregisterClassForTypeInternal)} arguments:
                 // Scenarios where this is relevant:
                 //  - Interfaces that use Generics
                 //  - Interfaces that define implementation
-                IntPtr interfaceMaybe = Marshal.GetComInterfaceForObject(obj, interfaceType, CustomQueryInterfaceMode.Ignore);
+                IntPtr interfaceMaybe = Marshal.GetComInterfaceForObject(obj, interfaceType.ManagedType, CustomQueryInterfaceMode.Ignore);
 
                 if (interfaceMaybe == IntPtr.Zero)
                 {
@@ -620,7 +652,7 @@ $@"{nameof(UnregisterClassForTypeInternal)} arguments:
                 ref Guid riid,
                 out IntPtr ppvObject)
             {
-                Type interfaceType = GetValidatedInterfaceType(_classType, ref riid, pUnkOuter);
+                var interfaceType = CreateValidatedInterfaceType(_classType, ref riid, pUnkOuter);
 
                 object obj = Activator.CreateInstance(_classType)!;
                 if (pUnkOuter != null)
@@ -700,7 +732,7 @@ $@"{nameof(UnregisterClassForTypeInternal)} arguments:
                 bool isDesignTime,
                 out IntPtr ppvObject)
             {
-                Type interfaceType = BasicClassFactory.GetValidatedInterfaceType(_classType, ref riid, pUnkOuter);
+                var interfaceType = BasicClassFactory.CreateValidatedInterfaceType(_classType, ref riid, pUnkOuter);
 
                 object obj = _licenseProxy.AllocateAndValidateLicense(_classType, key, isDesignTime);
                 if (pUnkOuter != null)
