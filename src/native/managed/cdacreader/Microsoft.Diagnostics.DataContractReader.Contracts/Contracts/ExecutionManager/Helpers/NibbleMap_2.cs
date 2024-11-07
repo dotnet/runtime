@@ -10,6 +10,24 @@ using static Microsoft.Diagnostics.DataContractReader.ExecutionManagerHelpers.Ni
 namespace Microsoft.Diagnostics.DataContractReader.ExecutionManagerHelpers;
 
 // CoreCLR nibblemap with O(1) lookup time.
+//
+// Implementation very similar to NibbleMap_1, but with the addition of writing relative pointers
+// into the nibblemap whenever a code block completely covers a DWORD. This allows for O(1) lookup
+// with the cost of O(n) write time.
+//
+// Pointers are encoded using the top 28 bits of the DWORD normally, the bottom 4 bits of the pointer
+// are reduced to 2 bits due to 4 byte code offset and encoded in bits 28 .. 31 of the DWORD with values
+// 9-12. This is used to differentiate nibble values and pointer DWORDs.
+//
+// To read the nibblemap, we check if the DWORD is a pointer. If so, then we know the value currentPC is
+// part of a managed code block beginning at the mapBase + decoded pointer. If the DWORD is empty
+// (no pointer or previous nibbles), then we only need to read the previous DWORD. If that DWORD is empty,
+// then we must not be in a managed function. Otherwise the write algorithm would have written a relative
+// pointer in the DWORD.
+//
+// Note, a currentPC pointing to bytes outside a function have undefined lookup behavior.
+// In this implementation we may "extend" the lookup period of a function several hundred bytes
+// if there is not another function following it.
 
 internal class NibbleMap_2 : INibbleMap
 {
