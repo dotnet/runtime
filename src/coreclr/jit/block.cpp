@@ -364,6 +364,10 @@ bool Compiler::IsInsertedSsaLiveIn(BasicBlock* block, unsigned lclNum)
 //
 bool Compiler::AddInsertedSsaLiveIn(BasicBlock* block, unsigned lclNum)
 {
+    // SSA-inserted locals always have explicit reaching defs for all uses, so
+    // it never makes sense for them to be live into the first block.
+    assert(block != fgFirstBB);
+
     if (m_insertedSsaLocalsLiveIn == nullptr)
     {
         m_insertedSsaLocalsLiveIn = new (this, CMK_SSA) BasicBlockLocalPairSet(getAllocator(CMK_SSA));
