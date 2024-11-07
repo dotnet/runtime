@@ -21419,7 +21419,7 @@ GenTree* Compiler::gtNewSimdCvtMaskToVectorNode(var_types   type,
 {
     assert(varTypeIsMask(op1));
     assert(varTypeIsSIMD(type));
-    compConvertMaskToVectorUsed = true;
+    compMaskConvertUsed = true;
 
 #if defined(TARGET_XARCH)
     return gtNewSimdHWIntrinsicNode(type, op1, NI_EVEX_ConvertMaskToVector, simdBaseJitType, simdSize);
@@ -21812,6 +21812,7 @@ GenTree* Compiler::gtNewSimdCvtVectorToMaskNode(var_types   type,
 {
     assert(varTypeIsMask(type));
     assert(varTypeIsSIMD(op1));
+    compMaskConvertUsed = true;
 
 #if defined(TARGET_XARCH)
     return gtNewSimdHWIntrinsicNode(TYP_MASK, op1, NI_EVEX_ConvertVectorToMask, simdBaseJitType, simdSize);

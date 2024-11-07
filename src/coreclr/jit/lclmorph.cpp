@@ -2846,9 +2846,9 @@ PhaseStatus Compiler::fgOptimizeLclMasks()
         return PhaseStatus::MODIFIED_NOTHING;
     }
 
-    if (!compConvertMaskToVectorUsed)
+    if (!compMaskConvertUsed)
     {
-        JITDUMP("Skipping. There are no Convert Mask To Vector nodes\n");
+        JITDUMP("Skipping. There are no converts of locals \n");
         return PhaseStatus::MODIFIED_NOTHING;
     }
 

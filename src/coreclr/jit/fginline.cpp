@@ -1627,7 +1627,7 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
     compQmarkUsed |= InlineeCompiler->compQmarkUsed;
     compGSReorderStackLayout |= InlineeCompiler->compGSReorderStackLayout;
     compHasBackwardJump |= InlineeCompiler->compHasBackwardJump;
-    compConvertMaskToVectorUsed |= InlineeCompiler->compConvertMaskToVectorUsed;
+    compMaskConvertUsed |= InlineeCompiler->compMaskConvertUsed;
 
     lvaGenericsContextInUse |= InlineeCompiler->lvaGenericsContextInUse;
 
