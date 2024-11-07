@@ -2893,6 +2893,10 @@ void Compiler::fgLCLMasksUpdateLCLVar(GenTreeLclVarCommon* lclVar,
 // as well as removing). For each counted instance, take into account the number of
 // instructions in the conversion and the weight of the block.
 //
+// Local variables that are defined then immediately used just once may not be saved to a
+// store. Here a convert to to vector will be used by a convert to mask. These instances will
+// be caught in the lowering phase.
+//
 // This weighting does not account for re-definition. A variable may first be created as a
 // mask used as such, then later in the method defined as a vector and used as such from
 // then on. This can be worked around at the user level by encouraging users not to reuse
