@@ -14,8 +14,4 @@ update_from_upstream:
   - command: git config user.email "dotnet-vm-team-devs@unity3d.com"
   - command: git config user.name "Unity coreclr Bot"
   - command: .yamato/scripts/update_from_upstream.sh
-  triggers:
-    recurring:
-    - branch: unity-main
-      frequency: weekly
 
