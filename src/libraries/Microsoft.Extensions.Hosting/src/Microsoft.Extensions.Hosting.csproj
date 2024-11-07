@@ -5,10 +5,9 @@
     <EnableDefaultItems>true</EnableDefaultItems>
     <PackageDescription>Hosting and startup infrastructures for applications.</PackageDescription>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <ServicingVersion>1</ServicingVersion>
+    <!-- **IMPORTANT** ServicingVersion moved to ..\Directory.Build.props in order to share with test project. -->
     <!-- Use targeting pack references instead of granular ones in the project file. -->
     <DisableImplicitAssemblyReferences>false</DisableImplicitAssemblyReferences>
-    <!-- ServicingVersion moved to ..\Directory.Build.props in order to share with test project. -->
   </PropertyGroup>
 
   <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net6.0'))">
