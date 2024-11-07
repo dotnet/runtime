@@ -2648,7 +2648,7 @@ private:
 };
 
 //-----------------------------------------------------------------------------
-// fgLclMasksCheckLCLStore: For the given statement, if it is a local store,
+// fgLclMasksCheckLclStore: For the given statement, if it is a local store,
 // then update the store weights in the table.
 //
 // Arguments:
@@ -2658,7 +2658,7 @@ private:
 // Returns:
 //     True if a converted local store was found.
 //
-bool Compiler::fgLclMasksCheckLCLStore(Statement* stmt, BasicBlock* const block, LclMasksWeightTable* weightsTable)
+bool Compiler::fgLclMasksCheckLclStore(Statement* stmt, BasicBlock* const block, LclMasksWeightTable* weightsTable)
 {
     // Look for:
     //      STORELCL(TYP_SIMD, ConvertMaskToVector(mask))
@@ -2746,7 +2746,7 @@ void Compiler::fgLclMasksCheckLCLVar(GenTreeLclVarCommon* lclVar,
 }
 
 //-----------------------------------------------------------------------------
-// fgLclMasksUpdateLCLStore: For the given statement, if it is a local store,
+// fgLclMasksUpdateLclStore: For the given statement, if it is a local store,
 // and the weighting recommends to switch, then update to store as a mask.
 //
 // Arguments:
@@ -2756,7 +2756,7 @@ void Compiler::fgLclMasksCheckLCLVar(GenTreeLclVarCommon* lclVar,
 // Returns:
 //     True if a converted local store was found.
 //
-bool Compiler::fgLclMasksUpdateLCLStore(Statement* stmt, LclMasksWeightTable* weightsTable)
+bool Compiler::fgLclMasksUpdateLclStore(Statement* stmt, LclMasksWeightTable* weightsTable)
 {
     // Look for:
     //      STORELCL(TYP_SIMD, ConvertMaskToVector(mask))
@@ -2934,7 +2934,7 @@ PhaseStatus Compiler::fgOptimizeLclMasks()
     {
         for (Statement* const stmt : block->Statements())
         {
-            foundConvertingStore |= fgLclMasksCheckLCLStore(stmt, block, &weightsTable);
+            foundConvertingStore |= fgLclMasksCheckLclStore(stmt, block, &weightsTable);
         }
     }
 
@@ -2964,7 +2964,7 @@ PhaseStatus Compiler::fgOptimizeLclMasks()
     {
         for (Statement* const stmt : block->Statements())
         {
-            madeChanges |= fgLclMasksUpdateLCLStore(stmt, &weightsTable);
+            madeChanges |= fgLclMasksUpdateLclStore(stmt, &weightsTable);
         }
     }
 

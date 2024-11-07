@@ -6958,9 +6958,9 @@ private:
 
     typedef JitHashTable<unsigned, JitLargePrimitiveKeyFuncs<unsigned>, LclMasksWeight> LclMasksWeightTable;
 
-    bool fgLclMasksCheckLCLStore(Statement* stmt, BasicBlock* const block, LclMasksWeightTable *weightsTable);
+    bool fgLclMasksCheckLclStore(Statement* stmt, BasicBlock* const block, LclMasksWeightTable *weightsTable);
     void fgLclMasksCheckLCLVar(GenTreeLclVarCommon* lclVar, Statement* const stmt, BasicBlock* const block, LclMasksWeightTable *weightsTable);
-    bool fgLclMasksUpdateLCLStore(Statement* stmt, LclMasksWeightTable* weightsTable);
+    bool fgLclMasksUpdateLclStore(Statement* stmt, LclMasksWeightTable* weightsTable);
     void fgLclMasksUpdateLCLVar(GenTreeLclVarCommon* lclVar, Statement* const stmt, LclMasksWeightTable *weightsTable);
 #endif // TARGET_ARM64
 
