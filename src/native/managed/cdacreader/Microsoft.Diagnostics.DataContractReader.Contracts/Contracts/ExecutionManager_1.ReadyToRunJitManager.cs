@@ -69,7 +69,12 @@ internal readonly partial struct ExecutionManager_1 : IExecutionManager
             TargetPointer methodDesc = _lookup.GetValue(map, entryPoint);
             Debug.Assert(methodDesc != TargetPointer.Null);
 
-            throw new NotImplementedException();
+            // TODO: [cdac] Handle method with cold code when computing relative offset
+            // ReadyToRunJitManager::JitTokenToMethodRegionInfo
+            TargetNUInt relativeOffset = new TargetNUInt(code - startAddress);
+
+            info = new CodeBlock(startAddress.Value, methodDesc, relativeOffset, rangeSection.Data!.JitManager);
+            return true;
         }
 
         private bool IsStubCodeBlockThunk(Data.RangeSection rangeSection, Data.ReadyToRunInfo r2rInfo, TargetCodePointer jittedCodeAddress)

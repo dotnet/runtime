@@ -31,28 +31,20 @@ internal partial class ExecutionManagerBase<T> : IExecutionManager
     }
 
     // Note, because of RelativeOffset, this code info is per code pointer, not per method
-    // TODO: rethink whether this makes sense. We don't need to copy the runtime's notion of EECodeInfo verbatim
     private class CodeBlock
     {
-        private readonly int _codeHeaderOffset;
-
         public TargetCodePointer StartAddress { get; }
-        // note: this is the address of the pointer to the "real code header", you need to
-        // dereference it to get the address of _codeHeaderData
-        public TargetPointer CodeHeaderAddress => StartAddress.Value - (ulong)_codeHeaderOffset;
-        private Data.RealCodeHeader _codeHeaderData;
+        public TargetPointer MethodDescAddress { get; }
         public TargetPointer JitManagerAddress { get; }
         public TargetNUInt RelativeOffset { get; }
-        public CodeBlock(TargetCodePointer startAddress, int codeHeaderOffset, TargetNUInt relativeOffset, Data.RealCodeHeader codeHeaderData, TargetPointer jitManagerAddress)
+        public CodeBlock(TargetCodePointer startAddress, TargetPointer methodDesc, TargetNUInt relativeOffset, TargetPointer jitManagerAddress)
         {
-            _codeHeaderOffset = codeHeaderOffset;
             StartAddress = startAddress;
-            _codeHeaderData = codeHeaderData;
+            MethodDescAddress = methodDesc;
             RelativeOffset = relativeOffset;
             JitManagerAddress = jitManagerAddress;
         }
 
-        public TargetPointer MethodDescAddress => _codeHeaderData.MethodDesc;
         public bool Valid => JitManagerAddress != TargetPointer.Null;
     }
 

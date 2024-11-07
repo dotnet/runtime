@@ -42,7 +42,7 @@ internal partial class ExecutionManagerBase<T> : IExecutionManager
             }
             TargetPointer codeHeaderAddress = Target.ReadPointer(codeHeaderIndirect);
             Data.RealCodeHeader realCodeHeader = Target.ProcessedData.GetOrAdd<Data.RealCodeHeader>(codeHeaderAddress);
-            info = new CodeBlock(start.Value, codeHeaderOffset, relativeOffset, realCodeHeader, rangeSection.Data!.JitManager);
+            info = new CodeBlock(start.Value, realCodeHeader.MethodDesc, relativeOffset, rangeSection.Data!.JitManager);
             return true;
         }
 
