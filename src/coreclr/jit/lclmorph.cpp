@@ -2445,7 +2445,7 @@ void Compiler::LclMasksWeight::UpdateWeight(bool isStore, bool hasConvert, weigh
         weight_t cost = isStore ? costOfConvertMaskToVector : costOfConvertVectorToMask;
         cost *= blockWeight;
 
-        JITDUMP("Incrementing currentCost by %f. ", cost);
+        JITDUMP("Incrementing currentCost by %.2f. ", cost);
         currentCost += cost;
     }
     else
@@ -2454,7 +2454,7 @@ void Compiler::LclMasksWeight::UpdateWeight(bool isStore, bool hasConvert, weigh
         weight_t cost = isStore ? costOfConvertVectorToMask : costOfConvertMaskToVector;
         cost *= blockWeight;
 
-        JITDUMP("Incrementing switchCost by %f. ", cost);
+        JITDUMP("Incrementing switchCost by %.2f. ", cost);
         switchCost += cost;
     }
     DumpTotalWeight();

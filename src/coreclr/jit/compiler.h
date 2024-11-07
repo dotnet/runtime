@@ -6949,7 +6949,7 @@ private:
 
         void DumpTotalWeight()
         {
-            JITDUMP("Weighting: {%fc %fs}\n", currentCost, switchCost);
+            JITDUMP("Weighting: {%.2fc %.2fs}\n", currentCost, switchCost);
         }
 
         void CacheSimdTypes(GenTreeHWIntrinsic* op);
