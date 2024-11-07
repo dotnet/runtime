@@ -179,20 +179,27 @@ unsigned ObjectAllocator::NewPseudoLocal()
 }
 
 //------------------------------------------------------------------------------
-// IsGuarded: does evaluation of `tree` depend on a GDV check?
+// IsGuarded: does evaluation of `tree` depend on a failed GDV check?
 //
 // Arguments:
 //   tree -- tree in question
 //   info -- [out] closest enclosing guard info, if method returns true
 //
 // Returns:
-//   true if tree is evaluated under something that looks like a GDV check
+//   true if tree is only evaluated if a GDV check fails. Returns the closest
+//   such check (in terms of dominators), along with info on the check.
+//
+// Notes:
+//   * There may be other checks higher in the tree, consider returning all
+//     checks rather than just the closest.
+//   * Possibly try and recognize user-written type checks...?
+//   * Consider bailing out at some point, for deep dominator trees.
+//   * R2R/NAOT cases where compile time and runtime handles diverge
 //
 bool ObjectAllocator::IsGuarded(BasicBlock* block, GenTree* tree, GuardInfo* info)
 {
     // Walk up the dominator tree....
     //
-
     for (BasicBlock* idomBlock = block->bbIDom; idomBlock != nullptr; idomBlock = idomBlock->bbIDom)
     {
         JITDUMP("... checking " FMT_BB, idomBlock->bbNum);
@@ -202,6 +209,22 @@ bool ObjectAllocator::IsGuarded(BasicBlock* block, GenTree* tree, GuardInfo* inf
             continue;
         }
 
+        // We require that one idomBlock successor *not* dominate.
+        // (otherwise idomBlock this could be the top of a diamond where both outcomes reach block).
+        //
+        const bool trueSuccessorDominates  = comp->m_domTree->Dominates(idomBlock->GetTrueTarget(), block);
+        const bool falseSuccessorDominates = comp->m_domTree->Dominates(idomBlock->GetFalseTarget(), block);
+
+        if (trueSuccessorDominates && falseSuccessorDominates)
+        {
+            JITDUMP("... both successors dominate\n");
+            continue;
+        }
+
+        assert(trueSuccessorDominates || falseSuccessorDominates);
+
+        // Now examine the condition
+        //
         Statement* const stmt = idomBlock->lastStmt();
 
         if (stmt == nullptr)
@@ -220,20 +243,24 @@ bool ObjectAllocator::IsGuarded(BasicBlock* block, GenTree* tree, GuardInfo* inf
 
         GenTree* const tree = jumpTree->AsOp()->gtOp1;
 
-        if (!tree->OperIsCompare())
+        // Must be an equality or inequality
+        //
+        if (!tree->OperIs(GT_NE, GT_EQ))
         {
-            JITDUMP("... no JTRUE(cmp)\n");
-            return false;
+            JITDUMP("... not NE/EQ\n");
+            continue;
         }
 
-        GenTree* op1 = tree->AsOp()->gtOp1;
-        GenTree* op2 = tree->AsOp()->gtOp2;
+        GenTree* op1     = tree->AsOp()->gtOp1;
+        GenTree* op2     = tree->AsOp()->gtOp2;
+        bool     swapped = false;
 
         // gdv creates NE(hnd, indir(locl))
         // but let's not rely on that
         //
         if (!op1->OperIs(GT_IND))
         {
+            swapped = true;
             std::swap(op1, op2);
         }
 
@@ -266,6 +293,15 @@ bool ObjectAllocator::IsGuarded(BasicBlock* block, GenTree* tree, GuardInfo* inf
         if (!op2->IsIconHandle(GTF_ICON_CLASS_HDL))
         {
             JITDUMP("... no JTRUE(cmp(ind:int(lcl:ref), clsHnd))\n");
+            continue;
+        }
+
+        bool isReachableOnGDVFailure =
+            (trueSuccessorDominates && tree->OperIs(GT_NE)) || (falseSuccessorDominates && tree->OperIs(GT_EQ));
+
+        if (!isReachableOnGDVFailure)
+        {
+            JITDUMP("... guarded by successful GDV\n");
             continue;
         }
 
@@ -356,10 +392,12 @@ void ObjectAllocator::MarkEscapingVarsAndBuildConnGraph()
                 //
                 GenTree* const data = tree->AsLclVarCommon()->Data();
 
-                // Note this could be any conditional allocation, and we could track the conditions
+                // Note this may be a conditional allocation. We will try and track the conditions
                 // under which it escapes. GDVs are a nice subset because the conditions are stylized,
                 // and the condition analysis seems tractable, and we expect the un-inlined failed
                 // GDVs to be the main causes of escapes.
+                //
+                // TODO (perhaps): check this is indeed guarded (though we likely want success, not failure)
                 //
                 if (data->OperIs(GT_ALLOCOBJ) && m_compiler->hasImpEnumeratorGdvLocalMap())
                 {
@@ -462,16 +500,6 @@ void ObjectAllocator::MarkEscapingVarsAndBuildConnGraph()
             buildConnGraphVisitor.WalkTree(stmt->GetRootNodePointer(), nullptr);
         }
     }
-
-    // Mark any "unoptimized" pseudo locals as escaping.
-    // (currently none are optimized)
-    //
-    for (unsigned p = 0; p < m_numPseudoLocals; p++)
-    {
-        unsigned pseudoLocal = p + comp->lvaCount;
-        JITDUMP("   P%02u was not optimized\n", pseudoLocal);
-        MarkLclVarAsEscaping(pseudoLocal);
-    }
 }
 
 //------------------------------------------------------------------------------
@@ -485,35 +513,92 @@ void ObjectAllocator::MarkEscapingVarsAndBuildConnGraph()
 void ObjectAllocator::ComputeEscapingNodes(BitVecTraits* bitVecTraits, BitVec& escapingNodes)
 {
     BitSetShortLongRep escapingNodesToProcess = BitVecOps::MakeCopy(bitVecTraits, escapingNodes);
-    BitSetShortLongRep newEscapingNodes       = BitVecOps::UninitVal();
 
-    unsigned int lclNum;
+    auto computeClosure = [&]() {
+        JITDUMP("\nComputing escape closure\n\n");
+        bool               doOneMoreIteration = true;
+        BitSetShortLongRep newEscapingNodes   = BitVecOps::UninitVal();
+        unsigned int       lclNum;
 
-    bool doOneMoreIteration = true;
-    while (doOneMoreIteration)
-    {
-        BitVecOps::Iter iterator(bitVecTraits, escapingNodesToProcess);
-        doOneMoreIteration = false;
-
-        while (iterator.NextElem(&lclNum))
+        while (doOneMoreIteration)
         {
-            if (m_ConnGraphAdjacencyMatrix[lclNum] != nullptr)
-            {
-                doOneMoreIteration = true;
+            BitVecOps::Iter iterator(bitVecTraits, escapingNodesToProcess);
+            doOneMoreIteration = false;
 
-                // newEscapingNodes         = adjacentNodes[lclNum]
-                BitVecOps::Assign(bitVecTraits, newEscapingNodes, m_ConnGraphAdjacencyMatrix[lclNum]);
-                // newEscapingNodes         = newEscapingNodes \ escapingNodes
-                BitVecOps::DiffD(bitVecTraits, newEscapingNodes, escapingNodes);
-                // escapingNodesToProcess   = escapingNodesToProcess U newEscapingNodes
-                BitVecOps::UnionD(bitVecTraits, escapingNodesToProcess, newEscapingNodes);
-                // escapingNodes = escapingNodes U newEscapingNodes
-                BitVecOps::UnionD(bitVecTraits, escapingNodes, newEscapingNodes);
-                // escapingNodesToProcess   = escapingNodesToProcess \ { lclNum }
-                BitVecOps::RemoveElemD(bitVecTraits, escapingNodesToProcess, lclNum);
+            while (iterator.NextElem(&lclNum))
+            {
+                if (m_ConnGraphAdjacencyMatrix[lclNum] != nullptr)
+                {
+                    doOneMoreIteration = true;
+
+                    // newEscapingNodes         = adjacentNodes[lclNum]
+                    BitVecOps::Assign(bitVecTraits, newEscapingNodes, m_ConnGraphAdjacencyMatrix[lclNum]);
+                    // newEscapingNodes         = newEscapingNodes \ escapingNodes
+                    BitVecOps::DiffD(bitVecTraits, newEscapingNodes, escapingNodes);
+                    // escapingNodesToProcess   = escapingNodesToProcess U newEscapingNodes
+                    BitVecOps::UnionD(bitVecTraits, escapingNodesToProcess, newEscapingNodes);
+                    // escapingNodes = escapingNodes U newEscapingNodes
+                    BitVecOps::UnionD(bitVecTraits, escapingNodes, newEscapingNodes);
+                    // escapingNodesToProcess   = escapingNodesToProcess \ { lclNum }
+                    BitVecOps::RemoveElemD(bitVecTraits, escapingNodesToProcess, lclNum);
+
+#ifdef DEBUG
+                    // Print the first witness to new escapes.
+                    //
+                    if (!BitVecOps::IsEmpty(bitVecTraits, newEscapingNodes))
+                    {
+                        BitVecOps::Iter iterator(bitVecTraits, newEscapingNodes);
+                        unsigned int    newLclNum;
+                        while (iterator.NextElem(&newLclNum))
+                        {
+                            // Note P's never are sources of assignments...
+                            JITDUMP("%c%02u causes V%02u to escape\n", lclNum >= comp->lvaCount ? 'P' : 'V', lclNum,
+                                    newLclNum);
+                        }
+                    }
+#endif
+                }
             }
         }
+    };
+
+    computeClosure();
+
+    // See if any enumerator locals are currently unescaping and also assigned
+    // to a pseudolocal... if so, by suitable cloning and rewriting, we can make
+    // sure those locals do not actually escape.
+    //
+    for (unsigned p = 0; p < m_numPseudoLocals; p++)
+    {
+        unsigned const  pseudoLocal            = p + comp->lvaCount;
+        unsigned        lclNum                 = BAD_VAR_NUM;
+        BitVec          pseudoLocalAdjacencies = m_ConnGraphAdjacencyMatrix[pseudoLocal];
+        BitVecOps::Iter iterator(bitVecTraits, pseudoLocalAdjacencies);
+        while (iterator.NextElem(&lclNum))
+        {
+            if (BitVecOps::IsMember(bitVecTraits, escapingNodes, lclNum))
+            {
+                JITDUMP("   V%02u escapes independently of P%02u\n", lclNum, pseudoLocal);
+                continue;
+            }
+
+#ifdef DEBUG
+            printf("   P%02u is guarding the escape of V%02u\n", pseudoLocal, lclNum);
+            GuardInfo info;
+            m_GuardedCallMap.Lookup(pseudoLocal, &info);
+            printf("   Escapes only when V%02u.Type NE %s\n", info.m_local, comp->eeGetClassName(info.m_type));
+#endif
+
+            // TODO: figure out if we intend to clone to prevent escape, and if
+            // so, don't mark the lclNum as escaping...
+            //
+            JITDUMP("   not optimizing, so will mark P%02u as escaping\n", pseudoLocal);
+            MarkLclVarAsEscaping(pseudoLocal);
+            BitVecOps::AddElemD(bitVecTraits, escapingNodesToProcess, pseudoLocal);
+        }
     }
+
+    computeClosure();
 }
 
 //------------------------------------------------------------------------------
@@ -932,7 +1017,7 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
         GenTree* parent               = parentStack->Top(parentIndex);
         keepChecking                  = false;
 
-        JITDUMP("... L%02u ... checking [%06u]\n", lclNum, comp->dspTreeID(parent));
+        JITDUMP("... V%02u ... checking [%06u]\n", lclNum, comp->dspTreeID(parent));
 
         switch (parent->OperGet())
         {
@@ -997,6 +1082,17 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
                         !Compiler::s_helperCallProperties.IsNoEscape(comp->eeGetHelperNum(asCall->gtCallMethHnd));
                 }
 
+                // Note there is nothing special here about this user being a call. We could move all this processing up
+                // to the caller and handle any sort of tree that could lead to escapes this way.
+                //
+                // We have it this way because we currently don't expect to see other escaping references on failed
+                // GDV paths, though perhaps with multi-guess GDV that might change?
+                //
+                // In particular it might be tempting to look for references in uncatchable BBJ_THROWs or similar
+                // and enable a kind of "partial escape analysis" where we copy from stack to heap just before the
+                // point of escape. We would have to add pseudo-locals for this like we do for GDV, but we wouldn't
+                // necessarily need to do the predicate analysis or cloning.
+                //
                 if (isEnumeratorLocal)
                 {
                     JITDUMP("Enumerator V%02u passed to call...\n", lclNum);
@@ -1019,7 +1115,7 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
                                     (info.m_type == pseudoInfo.m_type))
                                 {
                                     // If so, track this as an assignment PseudoLocal = ...
-                                    // Later if we don't clone and split off this GDV path,
+                                    // Later if we don't clone and split off the failing GDV paths,
                                     // we will mark PseudoLocal as escaped.
                                     //
                                     JITDUMP("... under GDV; tracking via pseudo-local P%02u\n", pseudoLocal);
@@ -1028,8 +1124,7 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
                                 }
                                 else
                                 {
-                                    JITDUMP("... under different guard call is V%02u T%P, info is V%02u T%P ...?\n",
-                                            info.m_local, info.m_type, pseudoInfo.m_local, pseudoInfo.m_type);
+                                    JITDUMP("... under different guard?\n");
                                 }
                             }
                             else
