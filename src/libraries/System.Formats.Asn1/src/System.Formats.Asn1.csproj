@@ -4,8 +4,8 @@
     <Nullable>enable</Nullable>
     <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0;net461</TargetFrameworks>
     <IsPackable>true</IsPackable>
-    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
-    <ServicingVersion>1</ServicingVersion>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <ServicingVersion>2</ServicingVersion>
     <PackageDescription>Provides classes that can read and write the ASN.1 BER, CER, and DER data formats.
 
 Commonly Used Types:
