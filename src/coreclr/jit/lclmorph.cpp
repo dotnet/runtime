@@ -2436,7 +2436,7 @@ void Compiler::fgExposeLocalsInBitVec(BitVec_ValArg_T bitVec)
 //     hasConvertFromMask - Is this the store of a convert from mask
 //     blockWeight - Weight of the block the store is contained in
 //
-void Compiler::LCLMasksWeight::UpdateStoreWeight(bool hasConvertFromMask, weight_t blockWeight)
+void Compiler::LclMasksWeight::UpdateStoreWeight(bool hasConvertFromMask, weight_t blockWeight)
 {
     if (hasConvertFromMask)
     {
@@ -2462,7 +2462,7 @@ void Compiler::LCLMasksWeight::UpdateStoreWeight(bool hasConvertFromMask, weight
 //     hasConvertFromMask - Is this variable converted to a mask when used
 //     blockWeight - Weight of the block the use is contained in
 //
-void Compiler::LCLMasksWeight::UpdateVarWeight(bool hasConvertToMask, weight_t blockWeight)
+void Compiler::LclMasksWeight::UpdateVarWeight(bool hasConvertToMask, weight_t blockWeight)
 {
     if (hasConvertToMask)
     {
@@ -2487,7 +2487,7 @@ void Compiler::LCLMasksWeight::UpdateVarWeight(bool hasConvertToMask, weight_t b
 // Arguments:
 //     op - The HW intrinsic to cache
 //
-void Compiler::LCLMasksWeight::CacheSimdTypes(GenTreeHWIntrinsic* op)
+void Compiler::LclMasksWeight::CacheSimdTypes(GenTreeHWIntrinsic* op)
 {
     CorInfoType newSimdBaseJitType = op->GetSimdBaseJitType();
     unsigned    newSimdSize        = op->GetSimdSize();
@@ -2501,9 +2501,9 @@ void Compiler::LCLMasksWeight::CacheSimdTypes(GenTreeHWIntrinsic* op)
 }
 
 //-----------------------------------------------------------------------------
-// LCLMasksCheckLCLVarVisitor: Find the user of a lcl var and check if it is a convert to mask
+// LclMasksCheckLCLVarVisitor: Find the user of a lcl var and check if it is a convert to mask
 //
-class LCLMasksCheckLCLVarVisitor final : public GenTreeVisitor<LCLMasksCheckLCLVarVisitor>
+class LclMasksCheckLCLVarVisitor final : public GenTreeVisitor<LclMasksCheckLCLVarVisitor>
 {
 public:
     enum
@@ -2512,8 +2512,8 @@ public:
         UseExecutionOrder = true
     };
 
-    LCLMasksCheckLCLVarVisitor(Compiler* compiler, unsigned lclNum)
-        : GenTreeVisitor<LCLMasksCheckLCLVarVisitor>(compiler)
+    LclMasksCheckLCLVarVisitor(Compiler* compiler, unsigned lclNum)
+        : GenTreeVisitor<LclMasksCheckLCLVarVisitor>(compiler)
         , foundConversion(false)
         , lclNum(lclNum)
     {
@@ -2545,9 +2545,9 @@ private:
 };
 
 //-----------------------------------------------------------------------------
-// LCLMasksUpdateLCLVarVisitor: tree visitor to remove conversion to masks for uses of LCL
+// LclMasksUpdateLCLVarVisitor: tree visitor to remove conversion to masks for uses of LCL
 //
-class LCLMasksUpdateLCLVarVisitor final : public GenTreeVisitor<LCLMasksUpdateLCLVarVisitor>
+class LclMasksUpdateLCLVarVisitor final : public GenTreeVisitor<LclMasksUpdateLCLVarVisitor>
 {
 public:
     enum
@@ -2556,9 +2556,9 @@ public:
         UseExecutionOrder = true
     };
 
-    LCLMasksUpdateLCLVarVisitor(
+    LclMasksUpdateLCLVarVisitor(
         Compiler* compiler, unsigned lclNum, Statement* stmt, CorInfoType simdBaseJitType, unsigned simdSize)
-        : GenTreeVisitor<LCLMasksUpdateLCLVarVisitor>(compiler)
+        : GenTreeVisitor<LclMasksUpdateLCLVarVisitor>(compiler)
         , lclNum(lclNum)
         , stmt(stmt)
         , simdBaseJitType(simdBaseJitType)
@@ -2648,7 +2648,7 @@ private:
 };
 
 //-----------------------------------------------------------------------------
-// fgLCLMasksCheckLCLStore: For the given statement, if it is a local store,
+// fgLclMasksCheckLCLStore: For the given statement, if it is a local store,
 // then update the store weights in the table.
 //
 // Arguments:
@@ -2658,7 +2658,7 @@ private:
 // Returns:
 //     True if a converted local store was found.
 //
-bool Compiler::fgLCLMasksCheckLCLStore(Statement* stmt, BasicBlock* const block, LCLMasksWeightTable* weightsTable)
+bool Compiler::fgLclMasksCheckLCLStore(Statement* stmt, BasicBlock* const block, LclMasksWeightTable* weightsTable)
 {
     // Look for:
     //      STORELCL(TYP_SIMD, ConvertMaskToVector(mask))
@@ -2672,7 +2672,7 @@ bool Compiler::fgLCLMasksCheckLCLStore(Statement* stmt, BasicBlock* const block,
 
     GenTreeLclVar* lclStore = tree->AsLclVar();
 
-    LCLMasksWeight weight;
+    LclMasksWeight weight;
     bool           found = weightsTable->Lookup(lclStore->GetLclNum(), &weight);
 
     // Check if the store is converted from mask.
@@ -2690,13 +2690,13 @@ bool Compiler::fgLCLMasksCheckLCLStore(Statement* stmt, BasicBlock* const block,
     }
 
     // Update the table.
-    weightsTable->Set(lclStore->GetLclNum(), weight, LCLMasksWeightTable::Overwrite);
+    weightsTable->Set(lclStore->GetLclNum(), weight, LclMasksWeightTable::Overwrite);
 
     return isConverted;
 }
 
 //-----------------------------------------------------------------------------
-// fgLCLMasksCheckLCLVar: For the given lcl var, update the weights in
+// fgLclMasksCheckLCLVar: For the given lcl var, update the weights in
 // the table.
 //
 // Arguments:
@@ -2705,17 +2705,17 @@ bool Compiler::fgLCLMasksCheckLCLStore(Statement* stmt, BasicBlock* const block,
 //     stmt - The block the local variable is contained in.
 //     weightsTable - table to update.
 //
-void Compiler::fgLCLMasksCheckLCLVar(GenTreeLclVarCommon* lclVar,
+void Compiler::fgLclMasksCheckLCLVar(GenTreeLclVarCommon* lclVar,
                                      Statement* const     stmt,
                                      BasicBlock* const    block,
-                                     LCLMasksWeightTable* weightsTable)
+                                     LclMasksWeightTable* weightsTable)
 {
     if (!lclVar->OperIs(GT_LCL_VAR))
     {
         return;
     }
 
-    LCLMasksWeight weight;
+    LclMasksWeight weight;
     bool           found = weightsTable->Lookup(lclVar->GetLclNum(), &weight);
 
     // If there no entry, then the var does not have a local store.
@@ -2725,7 +2725,7 @@ void Compiler::fgLCLMasksCheckLCLVar(GenTreeLclVarCommon* lclVar,
     }
 
     // Find the parent of the lcl var
-    LCLMasksCheckLCLVarVisitor ev(this, lclVar->GetLclNum());
+    LclMasksCheckLCLVarVisitor ev(this, lclVar->GetLclNum());
     GenTree*                   root = stmt->GetRootNode();
     ev.WalkTree(&root, nullptr);
 
@@ -2742,11 +2742,11 @@ void Compiler::fgLCLMasksCheckLCLVar(GenTreeLclVarCommon* lclVar,
     }
 
     // Update the table.
-    weightsTable->Set(lclVar->GetLclNum(), weight, LCLMasksWeightTable::Overwrite);
+    weightsTable->Set(lclVar->GetLclNum(), weight, LclMasksWeightTable::Overwrite);
 }
 
 //-----------------------------------------------------------------------------
-// fgLCLMasksUpdateLCLStore: For the given statement, if it is a local store,
+// fgLclMasksUpdateLCLStore: For the given statement, if it is a local store,
 // and the weighting recommends to switch, then update to store as a mask.
 //
 // Arguments:
@@ -2756,7 +2756,7 @@ void Compiler::fgLCLMasksCheckLCLVar(GenTreeLclVarCommon* lclVar,
 // Returns:
 //     True if a converted local store was found.
 //
-bool Compiler::fgLCLMasksUpdateLCLStore(Statement* stmt, LCLMasksWeightTable* weightsTable)
+bool Compiler::fgLclMasksUpdateLCLStore(Statement* stmt, LclMasksWeightTable* weightsTable)
 {
     // Look for:
     //      STORELCL(TYP_SIMD, ConvertMaskToVector(mask))
@@ -2770,7 +2770,7 @@ bool Compiler::fgLCLMasksUpdateLCLStore(Statement* stmt, LCLMasksWeightTable* we
 
     GenTreeLclVar* lclStore = tree->AsLclVar();
 
-    LCLMasksWeight weight;
+    LclMasksWeight weight;
     bool           found = weightsTable->Lookup(lclStore->GetLclNum(), &weight);
     assert(found);
 
@@ -2825,7 +2825,7 @@ bool Compiler::fgLCLMasksUpdateLCLStore(Statement* stmt, LCLMasksWeightTable* we
 }
 
 //-----------------------------------------------------------------------------
-// fgLCLMasksUpdateLCLVar: For the given lcl var, if the weighting recommends to switch,
+// fgLclMasksUpdateLCLVar: For the given lcl var, if the weighting recommends to switch,
 // then update to use the source as a mask.
 //
 // Arguments:
@@ -2833,16 +2833,16 @@ bool Compiler::fgLCLMasksUpdateLCLStore(Statement* stmt, LCLMasksWeightTable* we
 //     stmt - The statement the local vairable is contained in.
 //     weightsTable - table to update.
 //
-void Compiler::fgLCLMasksUpdateLCLVar(GenTreeLclVarCommon* lclVar,
+void Compiler::fgLclMasksUpdateLCLVar(GenTreeLclVarCommon* lclVar,
                                       Statement* const     stmt,
-                                      LCLMasksWeightTable* weightsTable)
+                                      LclMasksWeightTable* weightsTable)
 {
     if (!lclVar->OperIs(GT_LCL_VAR))
     {
         return;
     }
 
-    LCLMasksWeight weight;
+    LclMasksWeight weight;
     bool           found = weightsTable->Lookup(lclVar->GetLclNum(), &weight);
 
     // If there no entry, then the var does not have a local store.
@@ -2862,7 +2862,7 @@ void Compiler::fgLCLMasksUpdateLCLVar(GenTreeLclVarCommon* lclVar,
     weight.DumpTotalWeight();
 
     // Remove or add a mask conversion/
-    LCLMasksUpdateLCLVarVisitor ev(this, lclVar->GetLclNum(), stmt, weight.simdBaseJitType, weight.simdSize);
+    LclMasksUpdateLCLVarVisitor ev(this, lclVar->GetLclNum(), stmt, weight.simdBaseJitType, weight.simdSize);
     GenTree*                    root = stmt->GetRootNode();
     ev.WalkTree(&root, nullptr);
 }
@@ -2870,7 +2870,7 @@ void Compiler::fgLCLMasksUpdateLCLVar(GenTreeLclVarCommon* lclVar,
 #endif // TARGET_ARM64
 
 //------------------------------------------------------------------------
-// optLCLMasks: Allow locals to be of Mask type
+// optLclMasks: Allow locals to be of Mask type
 //
 // At the C# level, Masks share the same type as a Vector. It's possible for the same
 // variable to be used as a mask or vector. Any APIs that return a mask must first convert
@@ -2909,7 +2909,7 @@ void Compiler::fgLCLMasksUpdateLCLVar(GenTreeLclVarCommon* lclVar,
 // Returns:
 //    Suitable phase status
 //
-PhaseStatus Compiler::fgOptimizeLCLMasks()
+PhaseStatus Compiler::fgOptimizeLclMasks()
 {
 #if defined(TARGET_ARM64)
 
@@ -2925,7 +2925,7 @@ PhaseStatus Compiler::fgOptimizeLCLMasks()
         return PhaseStatus::MODIFIED_NOTHING;
     }
 
-    LCLMasksWeightTable weightsTable = LCLMasksWeightTable(getAllocator());
+    LclMasksWeightTable weightsTable = LclMasksWeightTable(getAllocator());
 
     // Find every local store and add them to masksTable.
     bool foundConvertingStore = false;
@@ -2934,7 +2934,7 @@ PhaseStatus Compiler::fgOptimizeLCLMasks()
     {
         for (Statement* const stmt : block->Statements())
         {
-            foundConvertingStore |= fgLCLMasksCheckLCLStore(stmt, block, &weightsTable);
+            foundConvertingStore |= fgLclMasksCheckLCLStore(stmt, block, &weightsTable);
         }
     }
 
@@ -2952,7 +2952,7 @@ PhaseStatus Compiler::fgOptimizeLCLMasks()
         {
             for (GenTreeLclVarCommon* lcl : stmt->LocalsTreeList())
             {
-                fgLCLMasksCheckLCLVar(lcl, stmt, block, &weightsTable);
+                fgLclMasksCheckLCLVar(lcl, stmt, block, &weightsTable);
             }
         }
     }
@@ -2964,7 +2964,7 @@ PhaseStatus Compiler::fgOptimizeLCLMasks()
     {
         for (Statement* const stmt : block->Statements())
         {
-            madeChanges |= fgLCLMasksUpdateLCLStore(stmt, &weightsTable);
+            madeChanges |= fgLclMasksUpdateLCLStore(stmt, &weightsTable);
         }
     }
 
@@ -2982,7 +2982,7 @@ PhaseStatus Compiler::fgOptimizeLCLMasks()
         {
             for (GenTreeLclVarCommon* lcl : stmt->LocalsTreeList())
             {
-                fgLCLMasksUpdateLCLVar(lcl, stmt, &weightsTable);
+                fgLclMasksUpdateLCLVar(lcl, stmt, &weightsTable);
             }
         }
     }

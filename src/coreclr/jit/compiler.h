@@ -6918,11 +6918,11 @@ private:
     bool fgExposeUnpropagatedLocals(bool propagatedAny, class LocalEqualsLocalAddrAssertions* assertions);
     void fgExposeLocalsInBitVec(BitVec_ValArg_T bitVec);
 
-    PhaseStatus fgOptimizeLCLMasks();
+    PhaseStatus fgOptimizeLclMasks();
 
 #if defined(TARGET_ARM64)
 
-    struct LCLMasksWeight
+    struct LclMasksWeight
     {
         // For the given variable, the cost of storing as vector.
         weight_t currentCost = 0.0;
@@ -6956,12 +6956,12 @@ private:
         void CacheSimdTypes(GenTreeHWIntrinsic* op);
     };
 
-    typedef JitHashTable<unsigned, JitLargePrimitiveKeyFuncs<unsigned>, LCLMasksWeight> LCLMasksWeightTable;
+    typedef JitHashTable<unsigned, JitLargePrimitiveKeyFuncs<unsigned>, LclMasksWeight> LclMasksWeightTable;
 
-    bool fgLCLMasksCheckLCLStore(Statement* stmt, BasicBlock* const block, LCLMasksWeightTable *weightsTable);
-    void fgLCLMasksCheckLCLVar(GenTreeLclVarCommon* lclVar, Statement* const stmt, BasicBlock* const block, LCLMasksWeightTable *weightsTable);
-    bool fgLCLMasksUpdateLCLStore(Statement* stmt, LCLMasksWeightTable* weightsTable);
-    void fgLCLMasksUpdateLCLVar(GenTreeLclVarCommon* lclVar, Statement* const stmt, LCLMasksWeightTable *weightsTable);
+    bool fgLclMasksCheckLCLStore(Statement* stmt, BasicBlock* const block, LclMasksWeightTable *weightsTable);
+    void fgLclMasksCheckLCLVar(GenTreeLclVarCommon* lclVar, Statement* const stmt, BasicBlock* const block, LclMasksWeightTable *weightsTable);
+    bool fgLclMasksUpdateLCLStore(Statement* stmt, LclMasksWeightTable* weightsTable);
+    void fgLclMasksUpdateLCLVar(GenTreeLclVarCommon* lclVar, Statement* const stmt, LclMasksWeightTable *weightsTable);
 #endif // TARGET_ARM64
 
     PhaseStatus PhysicalPromotion();
