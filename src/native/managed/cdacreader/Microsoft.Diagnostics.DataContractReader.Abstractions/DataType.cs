@@ -68,4 +68,5 @@ public enum DataType
     ProfControlBlock,
     ILCodeVersionNode,
     ReadyToRunInfo,
+    ImageDataDirectory,
 }

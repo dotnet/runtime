@@ -62,6 +62,7 @@ internal partial class ExecutionManagerBase<T> : IExecutionManager
         CodeHeap = 0x02,
         RangeList = 0x04,
     }
+
     private abstract class JitManager
     {
         public Target Target { get; }
@@ -72,18 +73,6 @@ internal partial class ExecutionManagerBase<T> : IExecutionManager
         }
 
         public abstract bool GetMethodInfo(RangeSection rangeSection, TargetCodePointer jittedCodeAddress, [NotNullWhen(true)] out CodeBlock? info);
-
-    }
-
-    private class ReadyToRunJitManager : JitManager
-    {
-        public ReadyToRunJitManager(Target target) : base(target)
-        {
-        }
-        public override bool GetMethodInfo(RangeSection rangeSection, TargetCodePointer jittedCodeAddress, [NotNullWhen(true)] out CodeBlock? info)
-        {
-            throw new NotImplementedException(); // TODO(cdac): ReadyToRunJitManager::JitCodeToMethodInfo
-        }
     }
 
     private sealed class RangeSection
