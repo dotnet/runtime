@@ -2521,6 +2521,9 @@ public:
 
     Compiler::fgWalkResult PostOrderVisit(GenTree** use, GenTree* user)
     {
+        // Look for:
+        //      ConvertVectorToMask(CreateTrueMaskAll, LCL_VAR(lclNum)))
+
         GenTree* const lclOp = *use;
 
         if (lclOp->OperIs(GT_LCL_VAR) && (lclOp->AsLclVarCommon()->GetLclNum() == lclNum) &&
