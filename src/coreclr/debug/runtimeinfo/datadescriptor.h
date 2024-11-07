@@ -428,6 +428,12 @@ CDAC_TYPE_FIELD(ImageDataDirectory, /*uint32*/, VirtualAddress, offsetof(IMAGE_D
 CDAC_TYPE_FIELD(ImageDataDirectory, /*uint32*/, Size, offsetof(IMAGE_DATA_DIRECTORY, Size))
 CDAC_TYPE_END(ImageDataDirectory)
 
+CDAC_TYPE_BEGIN(RuntimeFunction)
+CDAC_TYPE_SIZE(sizeof(RUNTIME_FUNCTION))
+CDAC_TYPE_FIELD(RuntimeFunction, /*uint32*/, BeginAddress, offsetof(RUNTIME_FUNCTION, BeginAddress))
+CDAC_TYPE_FIELD(RuntimeFunction, /*uint32*/, EndAddress, offsetof(RUNTIME_FUNCTION, EndAddress))
+CDAC_TYPE_END(RuntimeFunction)
+
 CDAC_TYPE_BEGIN(RangeSectionMap)
 CDAC_TYPE_INDETERMINATE(RangeSectionMap)
 CDAC_TYPE_FIELD(RangeSectionMap, /*pointer*/, TopLevelData, cdac_data<RangeSectionMap>::TopLevelData)

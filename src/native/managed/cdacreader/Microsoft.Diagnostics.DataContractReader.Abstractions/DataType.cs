@@ -69,4 +69,5 @@ public enum DataType
     ILCodeVersionNode,
     ReadyToRunInfo,
     ImageDataDirectory,
+    RuntimeFunction,
 }
