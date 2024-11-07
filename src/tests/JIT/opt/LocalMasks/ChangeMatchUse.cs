@@ -146,7 +146,7 @@ public class AcrossAndCselToAcross
     }
 
     // Create a mask. Use it as a vector, then use as a mask inside a loop.
-    // No conversions will be changed: vector use inside the loop dominates.
+    // Will be converted: mask use inside the loop dominates.
     [Fact]
     public static void UseMaskAsVectorAndMaskInsideLoop()
     {

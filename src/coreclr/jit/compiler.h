@@ -6940,8 +6940,7 @@ private:
         CorInfoType simdBaseJitType = CORINFO_TYPE_UNDEF;
         unsigned    simdSize = 0;
 
-        void UpdateStoreWeight(bool hasConvertFromMask, weight_t blockWeight);
-        void UpdateUseWeight(bool hasConvertToMask, weight_t blockWeight);
+        void UpdateWeight(bool isStore, bool hasConvert, weight_t blockWeight);
 
         bool ShouldSwitch()
         {
@@ -6958,10 +6957,8 @@ private:
 
     typedef JitHashTable<unsigned, JitLargePrimitiveKeyFuncs<unsigned>, LclMasksWeight> LclMasksWeightTable;
 
-    bool fgLclMasksCheckLclStore(Statement* stmt, BasicBlock* const block, LclMasksWeightTable *weightsTable);
-    void fgLclMasksCheckLclVar(GenTreeLclVarCommon* lclVar, Statement* const stmt, BasicBlock* const block, LclMasksWeightTable *weightsTable);
-    bool fgLclMasksUpdateLclStore(Statement* stmt, LclMasksWeightTable* weightsTable);
-    void fgLclMasksUpdateLclVar(GenTreeLclVarCommon* lclVar, Statement* const stmt, LclMasksWeightTable *weightsTable);
+    bool fgLclMasksCheckLcl(GenTreeLclVarCommon* lclVar, Statement* const stmt, BasicBlock* const block, LclMasksWeightTable *weightsTable);
+    void fgLclMasksUpdateLcl(GenTreeLclVarCommon* lclVar, Statement* const stmt, LclMasksWeightTable *weightsTable);
 #endif // TARGET_ARM64
 
     PhaseStatus PhysicalPromotion();
