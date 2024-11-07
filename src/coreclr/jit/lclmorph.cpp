@@ -2456,13 +2456,13 @@ void Compiler::LclMasksWeight::UpdateStoreWeight(bool hasConvertFromMask, weight
 }
 
 //-----------------------------------------------------------------------------
-// UpdateVarWeight: Updates the weighting to take account of a local variable use.
+// UpdateUseWeight: Updates the weighting to take account of a local variable use.
 //
 // Arguments:
 //     hasConvertFromMask - Is this variable converted to a mask when used
 //     blockWeight - Weight of the block the use is contained in
 //
-void Compiler::LclMasksWeight::UpdateVarWeight(bool hasConvertToMask, weight_t blockWeight)
+void Compiler::LclMasksWeight::UpdateUseWeight(bool hasConvertToMask, weight_t blockWeight)
 {
     if (hasConvertToMask)
     {
@@ -2732,7 +2732,7 @@ void Compiler::fgLclMasksCheckLclVar(GenTreeLclVarCommon* lclVar,
     // Update the weights.
     JITDUMP("Local Var V%02d at [%06u] has %s conversion. ", lclVar->GetLclNum(), dspTreeID(lclVar),
             ev.foundConversion ? "mask" : "no");
-    weight.UpdateVarWeight(ev.foundConversion, block->getBBWeight(this));
+    weight.UpdateUseWeight(ev.foundConversion, block->getBBWeight(this));
 
     if (ev.foundConversion)
     {

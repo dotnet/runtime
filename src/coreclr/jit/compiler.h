@@ -6941,7 +6941,7 @@ private:
         unsigned    simdSize = 0;
 
         void UpdateStoreWeight(bool hasConvertFromMask, weight_t blockWeight);
-        void UpdateVarWeight(bool hasConvertToMask, weight_t blockWeight);
+        void UpdateUseWeight(bool hasConvertToMask, weight_t blockWeight);
 
         bool ShouldSwitch()
         {
