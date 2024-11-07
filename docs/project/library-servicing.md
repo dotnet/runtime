@@ -8,6 +8,9 @@ Servicing branches represent shipped versions of .NET, and their name is in the 
 - `release/7.0-staging`
 - `release/6.0-staging`
 
+IMPORTANT: Starting with .NET 9, you no longer need to edit a NuGet package's csproj to enable building and bump the version.
+Keep in mind that we still need package authoring in .NET 8 and older versions.
+
 ## Test your changes
 
 Develop and test your change as normal.  For packages, you may want to test them outside the repo infrastructure. To do so, execute the following steps:
