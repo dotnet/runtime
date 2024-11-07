@@ -13,10 +13,12 @@ internal readonly partial struct ExecutionManager_1 : IExecutionManager
     private class ReadyToRunJitManager : JitManager
     {
         private readonly uint _runtimeFunctionSize;
+        private readonly PtrHashMapLookup _lookup;
 
         public ReadyToRunJitManager(Target target) : base(target)
         {
             _runtimeFunctionSize = Target.GetTypeInfo(DataType.RuntimeFunction).Size!.Value;
+            _lookup = PtrHashMapLookup.Create(target);
         }
 
         public override bool GetMethodInfo(RangeSection rangeSection, TargetCodePointer jittedCodeAddress, [NotNullWhen(true)] out CodeBlock? info)
@@ -58,6 +60,14 @@ internal readonly partial struct ExecutionManager_1 : IExecutionManager
 
             TargetPointer functionEntry = r2rInfo.RuntimeFunctions + (ulong)(index * _runtimeFunctionSize);
             Data.RuntimeFunction function = Target.ProcessedData.GetOrAdd<Data.RuntimeFunction>(functionEntry);
+
+            // ReadyToRunInfo::GetMethodDescForEntryPointInNativeImage
+            TargetPointer startAddress = imageBase + function.BeginAddress;
+            TargetPointer entryPoint = CodePointerUtils.CodePointerFromAddress(startAddress, Target).AsTargetPointer;
+
+            Data.HashMap map = Target.ProcessedData.GetOrAdd<Data.HashMap>(r2rInfo.EntryPointToMethodDescMap);
+            TargetPointer methodDesc = _lookup.GetValue(map, entryPoint);
+            Debug.Assert(methodDesc != TargetPointer.Null);
 
             throw new NotImplementedException();
         }
