@@ -3398,7 +3398,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                 break;
 
             // Intrinsics that we should always expand for NativeAOT. These are
-            // required to be scanned due to ILScanner assumptions.
+            // required to be expanded due to ILScanner assumptions.
             case NI_System_Runtime_CompilerServices_RuntimeHelpers_IsReferenceOrContainsReferences:
             case NI_System_Runtime_InteropService_MemoryMarshal_GetArrayDataReference:
                 mustExpand = true;
