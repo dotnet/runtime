@@ -6920,47 +6920,6 @@ private:
 
     PhaseStatus fgOptimizeLclMasks();
 
-#if defined(TARGET_ARM64)
-
-    struct LclMasksWeight
-    {
-        // For the given variable, the cost of storing as vector.
-        weight_t currentCost = 0.0;
-
-        // For the given variable, the cost of storing as mask.
-        weight_t switchCost = 0.0;
-
-        // Conversion of mask to vector is one instruction.
-        static const weight_t costOfConvertMaskToVector = 1.0;
-
-        // Conversion of vector to mask is two instructions.
-        static const weight_t costOfConvertVectorToMask = 2.0;
-
-        // The simd types of the Lcl Store after conversion to vector.
-        CorInfoType simdBaseJitType = CORINFO_TYPE_UNDEF;
-        unsigned    simdSize = 0;
-
-        void UpdateWeight(bool isStore, bool hasConvert, weight_t blockWeight);
-
-        bool ShouldSwitch()
-        {
-            return currentCost > switchCost;
-        }
-
-        void DumpTotalWeight()
-        {
-            JITDUMP("Weighting: {%.2fc %.2fs}\n", currentCost, switchCost);
-        }
-
-        void CacheSimdTypes(GenTreeHWIntrinsic* op);
-    };
-
-    typedef JitHashTable<unsigned, JitLargePrimitiveKeyFuncs<unsigned>, LclMasksWeight> LclMasksWeightTable;
-
-    bool fgLclMasksCheckLcl(GenTreeLclVarCommon* lclVar, Statement* const stmt, BasicBlock* const block, LclMasksWeightTable *weightsTable);
-    void fgLclMasksUpdateLcl(GenTreeLclVarCommon* lclVar, Statement* const stmt, LclMasksWeightTable *weightsTable);
-#endif // TARGET_ARM64
-
     PhaseStatus PhysicalPromotion();
 
     PhaseStatus fgForwardSub();
