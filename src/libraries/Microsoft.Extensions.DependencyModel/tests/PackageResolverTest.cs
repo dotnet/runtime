@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Runtime.InteropServices;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyModel.Resolution;
 using Xunit;
@@ -34,6 +35,8 @@ namespace Microsoft.Extensions.DependencyModel.Tests
             var environment = EnvironmentMockBuilder.Create()
                 .AddAppContextData("PROBING_DIRECTORIES", string.Empty)
                 .Build();
+
+            Environment.SetEnvironmentVariable(RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "USERPROFILE" : "HOME", "User Profile");
 
             var result = PackageCompilationAssemblyResolver.GetDefaultProbeDirectories(environment);
             result.Should().Contain(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".nuget", "packages"));
