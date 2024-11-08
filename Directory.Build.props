@@ -276,6 +276,7 @@
     <TargetsLinux Condition="'$(TargetOS)' == 'linux' or '$(TargetOS)' == 'android'">true</TargetsLinux>
     <TargetsLinuxBionic Condition="'$(_portableOS)' == 'linux-bionic'">true</TargetsLinuxBionic>
     <TargetsLinuxMusl Condition="'$(_portableOS)' == 'linux-musl'">true</TargetsLinuxMusl>
+    <TargetsLinuxGlibc Condition="'$(TargetsLinux)' == 'true' and '$(TargetsLinuxMusl)' != 'true' and '$(TargetsLinuxBionic)' != 'true'">true</TargetsLinuxGlibc>
     <TargetsNetBSD Condition="'$(TargetOS)' == 'netbsd'">true</TargetsNetBSD>
     <TargetsOSX Condition="'$(TargetOS)' == 'osx'">true</TargetsOSX>
     <TargetsMacCatalyst Condition="'$(TargetOS)' == 'maccatalyst'">true</TargetsMacCatalyst>

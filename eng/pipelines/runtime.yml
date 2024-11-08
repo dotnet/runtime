@@ -115,13 +115,6 @@ extends:
             nameSuffix: AllSubsets_CoreCLR
             buildArgs: -s clr+libs+host+packs -rc Release -c Release -lc $(_BuildConfig)
             timeoutInMinutes: 120
-            postBuildSteps:
-              - template: /eng/pipelines/installer/steps/build-linux-package.yml
-                parameters:
-                  packageType: rpm
-                  target: rpmpkg
-                  packagingArgs: -c Release -lc $(_BuildConfig) /p:BuildRpmPackage=true
-                  condition: and(succeeded(), eq(variables.osSubgroup, ''))
             condition: >-
               or(
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
@@ -1357,16 +1350,6 @@ extends:
               - template: /eng/pipelines/installer/steps/upload-job-artifacts.yml
                 parameters:
                   name: $(osGroup)$(osSubgroup)_$(archType)
-              - template: /eng/pipelines/installer/steps/build-linux-package.yml
-                parameters:
-                  packageType: deb
-                  target: debpkg
-                  packagingArgs: -c $(_BuildConfig) -lc ${{ variables.debugOnPrReleaseOnRolling }} /p:BuildDebPackage=true
-              - template: /eng/pipelines/installer/steps/build-linux-package.yml
-                parameters:
-                  packageType: rpm
-                  target: rpmpkg
-                  packagingArgs: -c $(_BuildConfig) -lc ${{ variables.debugOnPrReleaseOnRolling }} /p:BuildRpmPackage=true
             condition:
               or(
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
