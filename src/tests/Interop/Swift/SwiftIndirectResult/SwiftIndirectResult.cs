@@ -9,7 +9,7 @@ using Xunit;
 
 public unsafe class SwiftIndirectResultTests
 {
-    private struct NonFrozenStruct
+    public struct NonFrozenStruct
     {
         public int A;
         public int B;
