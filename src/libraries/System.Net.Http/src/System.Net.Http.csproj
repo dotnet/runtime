@@ -480,7 +480,7 @@
   <ItemGroup>
     <Reference Include="Microsoft.Win32.Primitives" />
     <Reference Include="System.Collections.NonGeneric" />
-    <Reference Include="System.Console" Condition="'$(Configuration)' == 'Debug'" />
+    <Reference Include="System.Console" />
     <Reference Include="System.Diagnostics.DiagnosticSource" />
     <Reference Include="System.IO.Compression" />
     <Reference Include="System.Net.NameResolution" />

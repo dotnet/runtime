@@ -509,6 +509,7 @@ namespace System.Net.Http
                 catch (HttpRequestException e) when (e.AllowRetry == RequestRetryType.RetryOnConnectionFailure)
                 {
                     Debug.Assert(retryCount >= 0 && retryCount <= MaxConnectionFailureRetries);
+                    System.Console.WriteLine($"{request} failed with {e}. Retry count: {retryCount}");
 
                     if (retryCount == MaxConnectionFailureRetries)
                     {
@@ -531,6 +532,7 @@ namespace System.Net.Http
                 }
                 catch (HttpRequestException e) when (e.AllowRetry == RequestRetryType.RetryOnLowerHttpVersion)
                 {
+                    System.Console.WriteLine($"{request} failed with {e}. Retry count: {retryCount}");
                     // Throw if fallback is not allowed by the version policy.
                     if (request.VersionPolicy != HttpVersionPolicy.RequestVersionOrLower)
                     {
@@ -547,6 +549,7 @@ namespace System.Net.Http
                 }
                 catch (HttpRequestException e) when (e.AllowRetry == RequestRetryType.RetryOnStreamLimitReached)
                 {
+                    System.Console.WriteLine($"{request} failed with {e}. Retry count: {retryCount}");
                     if (NetEventSource.Log.IsEnabled())
                     {
                         Trace($"Retrying request on another HTTP/2 connection after active streams limit is reached on existing one: {e}");

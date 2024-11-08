@@ -22,6 +22,13 @@ namespace System.Net.Http
     [SupportedOSPlatform("windows")]
     internal sealed class Http3RequestStream : IHttpStreamHeadersHandler, IAsyncDisposable, IDisposable
     {
+        private const double SlowHeadersThreshold = 2; // seconds
+
+        private void LogSlowHeaders(TimeSpan elapsed)
+        {
+            System.Console.WriteLine($"Slow headers detected: {elapsed.TotalSeconds} seconds in {_request.Method} request to {_request.RequestUri}");
+        }
+
         private readonly HttpRequestMessage _request;
         private Http3Connection _connection;
         private long _streamId = -1; // A stream does not have an ID until the first I/O against it. This gets set almost immediately following construction.
@@ -59,6 +66,9 @@ namespace System.Net.Http
         private bool _requestSendCompleted;
         private bool _responseRecvCompleted;
 
+        private long _requestStartTimestamp;
+        private bool _headersSent;
+
         public long StreamId
         {
             get => Volatile.Read(ref _streamId);
@@ -70,6 +80,8 @@ namespace System.Net.Http
             _request = request;
             _connection = connection;
             _stream = stream;
+            _requestStartTimestamp = Stopwatch.GetTimestamp();
+
             _sendBuffer = new ArrayBuffer(initialSize: 64, usePool: true);
             _recvBuffer = new ArrayBuffer(initialSize: 64, usePool: true);
 
@@ -151,6 +163,7 @@ namespace System.Net.Http
 
             // upon failure, we should cancel the _requestBodyCancellationSource
             bool shouldCancelBody = true;
+
             try
             {
                 BufferHeaders(_request);
@@ -170,6 +183,11 @@ namespace System.Net.Http
                     // End the stream writing if there's no content to send, do it as part of the write so that the FIN flag isn't send in an empty QUIC frame.
                     // Note that there's no need to call Shutdown separately since the FIN flag in the last write is the same thing.
                     await FlushSendBufferAsync(endStream: _request.Content == null, _requestBodyCancellationSource.Token).ConfigureAwait(false);
+                    var elapsed = Stopwatch.GetElapsedTime(_requestStartTimestamp);
+                    if (elapsed.TotalSeconds >= SlowHeadersThreshold)
+                    {
+                        LogSlowHeaders(elapsed);
+                    }
                 }
 
                 Task sendRequestTask = _request.Content != null
@@ -467,6 +485,12 @@ namespace System.Net.Http
                     // If we get here, it means the content didn't actually do any writing. Send out the headers now.
                     // Also send the FIN flag, since this is the last write. No need to call Shutdown separately.
                     await FlushSendBufferAsync(endStream: true, cancellationToken).ConfigureAwait(false);
+
+                    var elapsed = Stopwatch.GetElapsedTime(_requestStartTimestamp);
+                    if (elapsed.TotalSeconds >= SlowHeadersThreshold)
+                    {
+                        LogSlowHeaders(elapsed);
+                    }
                 }
                 else
                 {
@@ -508,6 +532,13 @@ namespace System.Net.Http
                     BufferFrameEnvelope(Http3FrameType.Data, remaining);
 
                     await _stream.WriteAsync(_sendBuffer.ActiveMemory, cancellationToken).ConfigureAwait(false);
+
+                    var elapsed = Stopwatch.GetElapsedTime(_requestStartTimestamp);
+                    if (elapsed.TotalSeconds >= SlowHeadersThreshold)
+                    {
+                        LogSlowHeaders(elapsed);
+                    }
+
                     await _stream.WriteAsync(buffer, cancellationToken).ConfigureAwait(false);
 
                     _sendBuffer.Discard(_sendBuffer.ActiveLength);
@@ -527,6 +558,15 @@ namespace System.Net.Http
                 BufferFrameEnvelope(Http3FrameType.Data, buffer.Length);
 
                 await _stream.WriteAsync(_sendBuffer.ActiveMemory, cancellationToken).ConfigureAwait(false);
+                if (!_headersSent)
+                {
+                    _headersSent = true;
+                    var elapsed = Stopwatch.GetElapsedTime(_requestStartTimestamp);
+                    if (elapsed.TotalSeconds >= SlowHeadersThreshold)
+                    {
+                        LogSlowHeaders(elapsed);
+                    }
+                }
                 await _stream.WriteAsync(buffer, cancellationToken).ConfigureAwait(false);
 
                 _sendBuffer.Discard(_sendBuffer.ActiveLength);
