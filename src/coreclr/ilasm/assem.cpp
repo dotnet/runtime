@@ -15,7 +15,7 @@
 
 #include "assembler.h"
 
-#ifdef __linux__
+#if !defined(_WIN32) && !defined(__APPLE__)
 #include "sha256.h"
 #endif
 
@@ -247,7 +247,7 @@ BOOL Assembler::Init(BOOL generatePdb)
 
     if (m_fDeterministic)
     {
-#ifdef __linux__
+#if !defined(_WIN32) && !defined(__APPLE__)
         if (!IsOpenSslAvailable())
         {
             fprintf(stderr, "\nWarning: OpenSSL not available. Disabling build determinism.\n");
