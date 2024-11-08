@@ -7,7 +7,7 @@ using Microsoft.Diagnostics.DataContractReader.ExecutionManagerHelpers;
 
 using InteriorMapValue = Microsoft.Diagnostics.DataContractReader.ExecutionManagerHelpers.RangeSectionMap.InteriorMapValue;
 
-namespace Microsoft.Diagnostics.DataContractReader.UnitTests.ExecutionManagerTests;
+namespace Microsoft.Diagnostics.DataContractReader.UnitTests.ExecutionManager;
 
 internal class ExecutionManagerTestBuilder
 {

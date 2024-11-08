@@ -1,14 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Xunit;
-
-using Microsoft.Diagnostics.DataContractReader.Contracts;
-using System.Collections.Generic;
 using System;
 using Microsoft.Diagnostics.DataContractReader.ExecutionManagerHelpers;
 
-namespace Microsoft.Diagnostics.DataContractReader.UnitTests.ExecutionManagerTests;
+namespace Microsoft.Diagnostics.DataContractReader.UnitTests.ExecutionManager;
 
 internal abstract class NibbleMapTestBuilderBase
 {
@@ -159,7 +155,7 @@ internal class NibbleMapTestBuilder_2 : NibbleMapTestBuilderBase
         TestPlaceholderTarget.WriteToSpan(newValue, Arch.IsLittleEndian, entry);
 
         ulong firstByteAfterMethod = delta + (uint)codeSize;
-        uint encodedPointer = NibbleMap_2.EncodePointer((uint)delta);
+        uint encodedPointer = NibbleMapConstantLookup.EncodePointer((uint)delta);
         index++;
         while((index + 1) * 256 <= firstByteAfterMethod)
         {

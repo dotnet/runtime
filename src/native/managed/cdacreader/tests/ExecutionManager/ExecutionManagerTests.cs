@@ -3,11 +3,10 @@
 
 using Xunit;
 
-using Microsoft.Diagnostics.DataContractReader.Contracts;
 using System.Collections.Generic;
-using System;
+using Microsoft.Diagnostics.DataContractReader.Contracts;
 
-namespace Microsoft.Diagnostics.DataContractReader.UnitTests.ExecutionManagerTests;
+namespace Microsoft.Diagnostics.DataContractReader.UnitTests.ExecutionManager;
 
 public class ExecutionManagerTests
 {

@@ -11,7 +11,7 @@ namespace Microsoft.Diagnostics.DataContractReader.ExecutionManagerHelpers;
 
 // CoreCLR nibblemap with O(1) lookup time.
 //
-// Implementation very similar to NibbleMap_1, but with the addition of writing relative pointers
+// Implementation very similar to NibbleMapLinearLookup, but with the addition of writing relative pointers
 // into the nibblemap whenever a code block completely covers a DWORD. This allows for O(1) lookup
 // with the cost of O(n) write time.
 //
@@ -29,11 +29,11 @@ namespace Microsoft.Diagnostics.DataContractReader.ExecutionManagerHelpers;
 // In this implementation we may "extend" the lookup period of a function several hundred bytes
 // if there is not another function following it.
 
-internal class NibbleMap_2 : INibbleMap
+internal class NibbleMapConstantLookup : INibbleMap
 {
     private readonly Target _target;
 
-    private NibbleMap_2(Target target)
+    private NibbleMapConstantLookup(Target target)
     {
         _target = target;
     }
@@ -133,7 +133,7 @@ internal class NibbleMap_2 : INibbleMap
 
     public static INibbleMap Create(Target target)
     {
-        return new NibbleMap_2(target);
+        return new NibbleMapConstantLookup(target);
     }
 
     public TargetPointer FindMethodCode(Data.CodeHeapListNode heapListNode, TargetCodePointer jittedCodeAddress)

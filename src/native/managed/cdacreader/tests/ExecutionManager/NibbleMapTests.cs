@@ -7,7 +7,7 @@ using Xunit;
 using Microsoft.Diagnostics.DataContractReader.ExecutionManagerHelpers;
 using System.Diagnostics;
 
-namespace Microsoft.Diagnostics.DataContractReader.UnitTests.ExecutionManagerTests;
+namespace Microsoft.Diagnostics.DataContractReader.UnitTests.ExecutionManager;
 
 public class NibbleMapTestsBase
 {
@@ -93,7 +93,7 @@ public class NibbleMapTests_1 : NibbleMapTestsBase
 
         // TESTCASE:
 
-        NibbleMap_1 map = (NibbleMap_1)NibbleMap_1.Create(target);
+        NibbleMapLinearLookup map = (NibbleMapLinearLookup)NibbleMapLinearLookup.Create(target);
         Assert.NotNull(map);
 
         TargetPointer methodCode = map.FindMethodCode(mapBase, mapStart, inputPC);
@@ -153,7 +153,7 @@ public class NibbleMapTests_2 : NibbleMapTestsBase
 
         // TESTCASE:
 
-        NibbleMap_2 map = (NibbleMap_2)NibbleMap_2.Create(target);
+        NibbleMapConstantLookup map = (NibbleMapConstantLookup)NibbleMapConstantLookup.Create(target);
         Assert.NotNull(map);
 
         TargetPointer methodCode = map.FindMethodCode(mapBase, mapStart, inputPC);

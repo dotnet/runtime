@@ -7,7 +7,7 @@ using Xunit;
 using Microsoft.Diagnostics.DataContractReader.ExecutionManagerHelpers;
 
 
-namespace Microsoft.Diagnostics.DataContractReader.UnitTests.ExecutionManagerTests;
+namespace Microsoft.Diagnostics.DataContractReader.UnitTests.ExecutionManager;
 
 public class RangeSectionMapTests
 {

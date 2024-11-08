@@ -55,11 +55,11 @@ namespace Microsoft.Diagnostics.DataContractReader.ExecutionManagerHelpers;
 // We will then align the map index to the start of the current map unit (map index 8) and move back to the previous map unit (map index 7)
 // At that point, we scan backwards for non-zero map units. Since there are none, we return null.
 
-internal class NibbleMap_1 : INibbleMap
+internal class NibbleMapLinearLookup : INibbleMap
 {
     private readonly Target _target;
 
-    private NibbleMap_1(Target target)
+    private NibbleMapLinearLookup(Target target)
     {
         _target = target;
     }
@@ -143,7 +143,7 @@ internal class NibbleMap_1 : INibbleMap
 
     public static INibbleMap Create(Target target)
     {
-        return new NibbleMap_1(target);
+        return new NibbleMapLinearLookup(target);
     }
 
     public TargetPointer FindMethodCode(Data.CodeHeapListNode heapListNode, TargetCodePointer jittedCodeAddress)
