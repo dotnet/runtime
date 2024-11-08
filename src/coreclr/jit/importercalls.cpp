@@ -969,15 +969,20 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                                 // inlinees.
                                 rawILOffset);
 
-            // Devirtualization may change which method gets invoked. Update our local cache.
-            //
-            methHnd = callInfo->hMethod;
+            const bool wasDevirtualized = !call->AsCall()->IsVirtual();
 
-            // If we devirtualized to an intrinsic, assume this is one of the special cases.
-            //
-            if ((callInfo->methodFlags & CORINFO_FLG_INTRINSIC) != 0)
+            if (wasDevirtualized)
             {
-                call->AsCall()->gtCallMoreFlags |= GTF_CALL_M_SPECIAL_INTRINSIC;
+                // Devirtualization may change which method gets invoked. Update our local cache.
+                //
+                methHnd = callInfo->hMethod;
+
+                // If we devirtualized to an intrinsic, assume this is one of the special cases.
+                //
+                if ((callInfo->methodFlags & CORINFO_FLG_INTRINSIC) != 0)
+                {
+                    call->AsCall()->gtCallMoreFlags |= GTF_CALL_M_SPECIAL_INTRINSIC;
+                }
             }
         }
         else if (call->AsCall()->IsDelegateInvoke())
@@ -1043,7 +1048,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                 assert(newobjThis->IsLclVarAddr());
 
                 unsigned lclNum = newobjThis->AsLclVarCommon()->GetLclNum();
-                impPushOnStack(gtNewLclvNode(lclNum, lvaGetRealType(lclNum)), verMakeTypeInfo(clsHnd));
+                impPushOnStack(gtNewLclvNode(lclNum, lvaGetRealType(lclNum)), makeTypeInfo(clsHnd));
             }
             else
             {
@@ -1093,7 +1098,7 @@ DONE:
         //
         // For implicit tail calls, we perform this check after return types are
         // known to be compatible.
-        if (isExplicitTailCall && (verCurrentState.esStackDepth != 0))
+        if (isExplicitTailCall && (stackState.esStackDepth != 0))
         {
             BADCODE("Stack should be empty after tailcall");
         }
@@ -1112,7 +1117,7 @@ DONE:
         }
 
         // Stack empty check for implicit tail calls.
-        if (canTailCall && isImplicitTailCall && (verCurrentState.esStackDepth != 0))
+        if (canTailCall && isImplicitTailCall && (stackState.esStackDepth != 0))
         {
             BADCODE("Stack should be empty after tailcall");
         }
@@ -1152,8 +1157,8 @@ DONE:
                     assert(isImplicitTailCall);
 
                     // It is possible that a call node is both an inline candidate and marked
-                    // for opportunistic tail calling.  In-lining happens before morhphing of
-                    // trees.  If in-lining of an in-line candidate gets aborted for whatever
+                    // for opportunistic tail calling.  Inlining happens before morphing of
+                    // trees.  If inlining of an inline candidate gets aborted for whatever
                     // reason, it will survive to the morphing stage at which point it will be
                     // transformed into a tail call after performing additional checks.
 
@@ -1256,7 +1261,7 @@ DONE:
     {
         if (gtIsRecursiveCall(methHnd))
         {
-            assert(verCurrentState.esStackDepth == 0);
+            assert(stackState.esStackDepth == 0);
             BasicBlock* loopHead = nullptr;
             if (!compIsForInlining() && opts.IsOSR())
             {
@@ -1316,8 +1321,8 @@ DONE_CALL:
         if (opcode == CEE_NEWOBJ)
         {
             // we actually did push something, so don't spill the thing we just pushed.
-            assert(verCurrentState.esStackDepth > 0);
-            impAppendTree(call, verCurrentState.esStackDepth - 1, impCurStmtDI);
+            assert(stackState.esStackDepth > 0);
+            impAppendTree(call, stackState.esStackDepth - 1, impCurStmtDI);
         }
         else if (JitConfig.JitProfileValues() && call->IsCall() &&
                  call->AsCall()->IsSpecialIntrinsic(this, NI_System_SpanHelpers_Memmove))
@@ -1364,7 +1369,7 @@ DONE_CALL:
             assert(call->IsCall());
             GenTreeCall* const origCall = call->AsCall();
 
-            // If the call is a special intrisic, we may know a more exact return type.
+            // If the call is a special intrinsic, we may know a more exact return type.
             //
             if (origCall->IsSpecialIntrinsic())
             {
@@ -1537,7 +1542,7 @@ DONE_CALL:
             }
         }
 
-        typeInfo tiRetVal = verMakeTypeInfo(sig->retType, retTypeClass);
+        typeInfo tiRetVal = makeTypeInfo(sig->retType, retTypeClass);
         impPushOnStack(call, tiRetVal);
     }
 
@@ -1935,8 +1940,7 @@ GenTreeCall* Compiler::impImportIndirectCall(CORINFO_SIG_INFO* sig, const DebugI
     if ((sig->callConv != CORINFO_CALLCONV_DEFAULT || sig->totalILArgs() > 0) &&
         !impStackTop().val->OperIs(GT_LCL_VAR, GT_FTN_ADDR, GT_CNS_INT))
     {
-        impSpillStackEntry(verCurrentState.esStackDepth - 1,
-                           BAD_VAR_NUM DEBUGARG(false) DEBUGARG("impImportIndirectCall"));
+        impSpillStackEntry(stackState.esStackDepth - 1, BAD_VAR_NUM DEBUGARG(false) DEBUGARG("impImportIndirectCall"));
     }
 
     /* Get the function pointer */
@@ -2018,16 +2022,16 @@ void Compiler::impPopArgsForUnmanagedCall(GenTreeCall* call, CORINFO_SIG_INFO* s
     argsToReverse = 0;
 #endif
 
-    for (unsigned level = verCurrentState.esStackDepth - argsToReverse; level < verCurrentState.esStackDepth; level++)
+    for (unsigned level = stackState.esStackDepth - argsToReverse; level < stackState.esStackDepth; level++)
     {
-        if (verCurrentState.esStack[level].val->gtFlags & GTF_ORDER_SIDEEFF)
+        if (stackState.esStack[level].val->gtFlags & GTF_ORDER_SIDEEFF)
         {
             assert(lastLevelWithSideEffects == UINT_MAX);
 
             impSpillStackEntry(level,
                                BAD_VAR_NUM DEBUGARG(false) DEBUGARG("impPopArgsForUnmanagedCall - other side effect"));
         }
-        else if (verCurrentState.esStack[level].val->gtFlags & GTF_SIDE_EFFECT)
+        else if (stackState.esStack[level].val->gtFlags & GTF_SIDE_EFFECT)
         {
             if (lastLevelWithSideEffects != UINT_MAX)
             {
@@ -2279,7 +2283,7 @@ void Compiler::impPopArgsForSwiftCall(GenTreeCall* call, CORINFO_SIG_INFO* sig, 
             // TODO-CQ: If we enable FEATURE_IMPLICIT_BYREFS on all platforms
             // where we support Swift we can probably let normal implicit byref
             // handling handle the unlowered case.
-            impSpillStackEntry(verCurrentState.esStackDepth - sig->numArgs + argIndex,
+            impSpillStackEntry(stackState.esStackDepth - sig->numArgs + argIndex,
                                BAD_VAR_NUM DEBUGARG(false) DEBUGARG("Swift struct arg with lowering"));
         }
     }
@@ -4248,10 +4252,10 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                     //        Vector64.Create{ScalarUnsafe}(x)
                     //    ).ToScalar();
 
-                    impSpillSideEffect(true, verCurrentState.esStackDepth -
+                    impSpillSideEffect(true, stackState.esStackDepth -
                                                  3 DEBUGARG("Spilling op1 side effects for FusedMultiplyAdd"));
 
-                    impSpillSideEffect(true, verCurrentState.esStackDepth -
+                    impSpillSideEffect(true, stackState.esStackDepth -
                                                  2 DEBUGARG("Spilling op2 side effects for FusedMultiplyAdd"));
 
                     GenTree* op3 = impImplicitR4orR8Cast(impPopStack().val, callType);
@@ -5134,8 +5138,8 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic          intrinsic,
             // sub
             // ret
 
-            impSpillSideEffect(true, verCurrentState.esStackDepth -
-                                         2 DEBUGARG("Spilling op1 side effects for Unsafe.ByteOffset"));
+            impSpillSideEffect(true,
+                               stackState.esStackDepth - 2 DEBUGARG("Spilling op1 side effects for Unsafe.ByteOffset"));
 
             GenTree* op2 = impPopStack().val;
             GenTree* op1 = impPopStack().val;
@@ -6296,7 +6300,7 @@ GenTree* Compiler::impTransformThis(GenTree*                thisPtr,
 
             // This pushes on the dereferenced byref
             // This is then used immediately to box.
-            impPushOnStack(obj, verMakeTypeInfo(pConstrainedResolvedToken->hClass));
+            impPushOnStack(obj, makeTypeInfo(pConstrainedResolvedToken->hClass));
 
             // This pops off the byref-to-a-value-type remaining on the stack and
             // replaces it with a boxed object.
@@ -9290,10 +9294,10 @@ GenTree* Compiler::impEstimateIntrinsic(CORINFO_METHOD_HANDLE method,
 
                 // AdvSimd.FusedMultiplyAdd expects (addend, left, right), while the APIs take (left, right, addend)
 
-                impSpillSideEffect(true, verCurrentState.esStackDepth -
+                impSpillSideEffect(true, stackState.esStackDepth -
                                              3 DEBUGARG("Spilling op1 side effects for MultiplyAddEstimate"));
 
-                impSpillSideEffect(true, verCurrentState.esStackDepth -
+                impSpillSideEffect(true, stackState.esStackDepth -
                                              2 DEBUGARG("Spilling op2 side effects for MultiplyAddEstimate"));
 
                 swapOp1AndOp3 = true;

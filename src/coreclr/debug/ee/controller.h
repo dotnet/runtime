@@ -1547,7 +1547,7 @@ public:
 #ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
 #ifndef FEATURE_EMULATE_SINGLESTEP
         // only in-place single steps over call intructions are supported at this time
-        _ASSERTE(m_instrAttrib.m_fIsCall);
+        _ASSERTE(!m_fInPlaceSS || m_instrAttrib.m_fIsCall);
         return m_fInPlaceSS;
 #else
 #error only non-emulated single-steps with OUT_OF_PROCESS_SETTHREADCONTEXT enabled are supported
