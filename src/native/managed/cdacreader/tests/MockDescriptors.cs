@@ -134,48 +134,57 @@ internal class MockDescriptors
 
     public class RuntimeTypeSystem
     {
-
         internal const ulong TestFreeObjectMethodTableGlobalAddress = 0x00000000_7a0000a0;
 
-        private Dictionary<DataType, Target.TypeInfo>  GetTypes()
+        private const ulong DefaultAllocationRangeStart = 0x00000000_4a000000;
+        private const ulong DefaultAllocationRangeEnd = 0x00000000_4b000000;
+
+        private static Dictionary<DataType, Target.TypeInfo> GetTypes(TargetTestHelpers helpers)
         {
-            var targetTestHelpers = Builder.TargetTestHelpers;
             Dictionary<DataType, Target.TypeInfo> types = new ();
-            var layout = targetTestHelpers.LayoutFields(MethodTableFields);
+            var layout = helpers.LayoutFields(MethodTableFields);
             types[DataType.MethodTable] = new Target.TypeInfo() { Fields = layout.Fields, Size = layout.Stride };
-            var eeClassLayout = targetTestHelpers.LayoutFields(EEClassFields);
+            var eeClassLayout = helpers.LayoutFields(EEClassFields);
             layout = eeClassLayout;
             types[DataType.EEClass] = new Target.TypeInfo() { Fields = layout.Fields, Size = layout.Stride };
-            layout = targetTestHelpers.ExtendLayout(ArrayClassFields, eeClassLayout);
+            layout = helpers.ExtendLayout(ArrayClassFields, eeClassLayout);
             types[DataType.ArrayClass] = new Target.TypeInfo() { Fields = layout.Fields, Size = layout.Stride };
-            layout = targetTestHelpers.LayoutFields(MethodTableAuxiliaryDataFields);
+            layout = helpers.LayoutFields(MethodTableAuxiliaryDataFields);
             types[DataType.MethodTableAuxiliaryData] = new Target.TypeInfo() { Fields = layout.Fields, Size = layout.Stride };
             return types;
         }
 
         internal static uint GetMethodDescAlignment(TargetTestHelpers helpers) => helpers.Arch.Is64Bit ? 8u : 4u;
 
-        internal static (string Name, ulong Value, string? Type)[] GetGlobals(TargetTestHelpers helpers) =>
-        [
-            (nameof(Constants.Globals.FreeObjectMethodTable), TestFreeObjectMethodTableGlobalAddress, null),
-            (nameof(Constants.Globals.MethodDescAlignment), GetMethodDescAlignment(helpers), nameof(DataType.uint64)),
-        ];
-
         internal readonly MockMemorySpace.Builder Builder;
 
-        internal Dictionary<DataType, Target.TypeInfo> Types { get; init; }
+        internal Dictionary<DataType, Target.TypeInfo> Types { get; }
+        internal (string Name, ulong Value, string? Type)[] Globals { get; }
 
-        internal MockMemorySpace.BumpAllocator TypeSystemAllocator { get; set; }
+        internal MockMemorySpace.BumpAllocator TypeSystemAllocator { get; }
 
         internal TargetPointer FreeObjectMethodTableAddress { get; private set; }
 
-        internal RuntimeTypeSystem(MockMemorySpace.Builder builder)
+        public RuntimeTypeSystem(MockMemorySpace.Builder builder)
+            : this(builder, (DefaultAllocationRangeStart, DefaultAllocationRangeEnd))
+        { }
+
+        public RuntimeTypeSystem(MockMemorySpace.Builder builder, (ulong Start, ulong End) allocationRange)
         {
             Builder = builder;
-            Types = GetTypes();;
+            TypeSystemAllocator = builder.CreateAllocator(allocationRange.Start, allocationRange.End);
+
+            Types = GetTypes(Builder.TargetTestHelpers);
+
+            AddGlobalPointers();
+            Globals =
+            [
+                (nameof(Constants.Globals.FreeObjectMethodTable), TestFreeObjectMethodTableGlobalAddress, null),
+                (nameof(Constants.Globals.MethodDescAlignment), GetMethodDescAlignment(Builder.TargetTestHelpers), nameof(DataType.uint64)),
+            ];
         }
 
-        internal void AddGlobalPointers()
+        private void AddGlobalPointers()
         {
             AddFreeObjectMethodTable();
         }
@@ -204,7 +213,6 @@ internal class MockDescriptors
             // and make the canonMT point at the eeClass
             SetMethodTableEEClassOrCanonMTRaw(canonMT, eeClass);
         }
-
 
         // for cases when a methodTable needs to point at a canonical method table
         internal void SetMethodTableCanonMT(TargetPointer methodTable, TargetPointer canonMT) => SetMethodTableEEClassOrCanonMTRaw(methodTable, canonMT.Value | 1);
@@ -287,6 +295,9 @@ internal class MockDescriptors
 
     public class Object
     {
+        private const ulong DefaultAllocationRangeStart = 0x00000000_10000000;
+        private const ulong DefaultAllocationRangeEnd = 0x00000000_20000000;
+
         private const ulong TestStringMethodTableGlobalAddress = 0x00000000_100000a0;
 
         internal const ulong TestArrayBoundsZeroGlobalAddress = 0x00000000_100000b0;
@@ -301,22 +312,39 @@ internal class MockDescriptors
         internal readonly RuntimeTypeSystem RTSBuilder;
         internal MockMemorySpace.Builder Builder => RTSBuilder.Builder;
 
-        internal MockMemorySpace.BumpAllocator ManagedObjectAllocator { get; set; }
+        internal MockMemorySpace.BumpAllocator ManagedObjectAllocator { get; }
 
-        internal MockMemorySpace.BumpAllocator SyncBlockAllocator { get; private set; }
+        internal MockMemorySpace.BumpAllocator SyncBlockAllocator { get; }
 
         internal TargetPointer TestStringMethodTableAddress { get; private set; }
 
-        internal Dictionary<DataType, Target.TypeInfo> Types { get; init; }
+        internal Dictionary<DataType, Target.TypeInfo> Types { get; }
+        internal (string Name, ulong Value, string? Type)[] Globals { get; }
 
-        internal Object(RuntimeTypeSystem rtsBuilder)
+        public Object(RuntimeTypeSystem rtsBuilder)
+            : this(rtsBuilder, (DefaultAllocationRangeStart, DefaultAllocationRangeEnd))
+        { }
+
+        public Object(RuntimeTypeSystem rtsBuilder, (ulong Start, ulong End) allocationRange)
         {
             RTSBuilder = rtsBuilder;
+            ManagedObjectAllocator = Builder.CreateAllocator(allocationRange.Start, allocationRange.End);
 
             const ulong TestSyncBlocksAddress = 0x00000000_e0000000;
             SyncBlockAllocator = Builder.CreateAllocator(start: TestSyncBlocksAddress, end: TestSyncBlocksAddress + 0x1000);
 
             Types = GetTypes();
+
+            AddGlobalPointers();
+            Globals = rtsBuilder.Globals.Concat(
+            [
+                (nameof(Constants.Globals.ObjectToMethodTableUnmask), TestObjectToMethodTableUnmask, "uint8"),
+                (nameof(Constants.Globals.StringMethodTable), TestStringMethodTableGlobalAddress, null),
+                (nameof(Constants.Globals.ArrayBoundsZero), TestArrayBoundsZeroGlobalAddress, null),
+                (nameof(Constants.Globals.SyncTableEntries), TestSyncTableEntriesGlobalAddress, null),
+                (nameof(Constants.Globals.ObjectHeaderSize), Builder.TargetTestHelpers.ObjHeaderSize, "uint32"),
+                (nameof(Constants.Globals.SyncBlockValueToObjectOffset), TestSyncBlockValueToObjectOffset, "uint16"),
+            ]).ToArray();
         }
 
         private Dictionary<DataType, Target.TypeInfo> GetTypes()
@@ -339,19 +367,8 @@ internal class MockDescriptors
             return types;
         }
 
-        internal static (string Name, ulong Value, string? Type)[] Globals(TargetTestHelpers helpers) => RuntimeTypeSystem.GetGlobals(helpers).Concat(
-        [
-            (nameof(Constants.Globals.ObjectToMethodTableUnmask), TestObjectToMethodTableUnmask, "uint8"),
-            (nameof(Constants.Globals.StringMethodTable), TestStringMethodTableGlobalAddress, null),
-            (nameof(Constants.Globals.ArrayBoundsZero), TestArrayBoundsZeroGlobalAddress, null),
-            (nameof(Constants.Globals.SyncTableEntries), TestSyncTableEntriesGlobalAddress, null),
-            (nameof(Constants.Globals.ObjectHeaderSize), helpers.ObjHeaderSize, "uint32"),
-            (nameof(Constants.Globals.SyncBlockValueToObjectOffset), TestSyncBlockValueToObjectOffset, "uint16"),
-        ]).ToArray();
-
-        internal void AddGlobalPointers()
+        private void AddGlobalPointers()
         {
-            RTSBuilder.AddGlobalPointers();
             AddStringMethodTablePointer();
             AddSyncTableEntriesPointer();
         }
@@ -509,6 +526,8 @@ internal class MockDescriptors
         private const ulong DefaultAllocationRangeStart = 0x0001_0000;
         private const ulong DefaultAllocationRangeEnd = 0x0002_0000;
 
+        internal Dictionary<DataType, Target.TypeInfo> Types { get; }
+
         private readonly MockMemorySpace.Builder _builder;
         private readonly MockMemorySpace.BumpAllocator _allocator;
 
@@ -520,27 +539,24 @@ internal class MockDescriptors
         {
             _builder = builder;
             _allocator = _builder.CreateAllocator(allocationRange.Start, allocationRange.End);
+
+            Types = GetTypes(builder.TargetTestHelpers);
         }
 
-        internal static Dictionary<DataType, Target.TypeInfo> Types(TargetTestHelpers helpers)
+        private static Dictionary<DataType, Target.TypeInfo> GetTypes(TargetTestHelpers helpers)
         {
             Dictionary<DataType, Target.TypeInfo> types = new();
-            AddTypes(helpers, types);
-            return types;
-        }
-
-        internal static void AddTypes(TargetTestHelpers helpers, Dictionary<DataType, Target.TypeInfo> types)
-        {
             TargetTestHelpers.LayoutResult layout = helpers.LayoutFields(ModuleFields);
             types[DataType.Module] = new Target.TypeInfo() { Fields = layout.Fields, Size = layout.Stride };
             layout= helpers.LayoutFields(AssemblyFields);
             types[DataType.Assembly] = new Target.TypeInfo() { Fields = layout.Fields, Size = layout.Stride };
+            return types;
         }
 
         internal TargetPointer AddModule(string? path = null, string? fileName = null)
         {
             TargetTestHelpers helpers = _builder.TargetTestHelpers;
-            Target.TypeInfo typeInfo = Types(helpers)[DataType.Module];
+            Target.TypeInfo typeInfo = Types[DataType.Module];
             uint size = typeInfo.Size.Value;
             MockMemorySpace.HeapFragment module = _allocator.Allocate(size, "Module");
             _builder.AddHeapFragment(module);
@@ -576,7 +592,7 @@ internal class MockDescriptors
             }
 
             // add an assembly without any fields set (ie: not collectible)
-            MockMemorySpace.HeapFragment assembly = _allocator.Allocate((ulong)helpers.SizeOfTypeInfo(Types(helpers)[DataType.Assembly]), "Assembly");
+            MockMemorySpace.HeapFragment assembly = _allocator.Allocate((ulong)helpers.SizeOfTypeInfo(Types[DataType.Assembly]), "Assembly");
             _builder.AddHeapFragment(assembly);
             helpers.WritePointer(module.Data.AsSpan().Slice(typeInfo.Fields[nameof(Data.Module.Assembly)].Offset, helpers.PointerSize), assembly.Address);
 
@@ -590,11 +606,11 @@ internal class MockDescriptors
         private const ulong DefaultAllocationRangeStart = 0x0003_0000;
         private const ulong DefaultAllocationRangeEnd = 0x0004_0000;
 
-        internal Dictionary<DataType, Target.TypeInfo> Types { get; init; }
-        internal (string Name, ulong Value, string? Type)[] Globals { get; init; }
+        internal Dictionary<DataType, Target.TypeInfo> Types { get; }
+        internal (string Name, ulong Value, string? Type)[] Globals { get; }
 
-        internal TargetPointer FinalizerThreadAddress { get; init; }
-        internal TargetPointer GCThreadAddress { get; init; }
+        internal TargetPointer FinalizerThreadAddress { get; }
+        internal TargetPointer GCThreadAddress { get; }
 
         private readonly MockMemorySpace.Builder _builder;
         private readonly MockMemorySpace.BumpAllocator _allocator;
@@ -755,10 +771,12 @@ internal class MockDescriptors
         internal readonly RuntimeTypeSystem RTSBuilder;
         internal readonly Loader LoaderBuilder;
 
+        internal Dictionary<DataType, Target.TypeInfo> Types { get; }
+        internal (string Name, ulong Value, string? Type)[] Globals { get; }
+
         internal MockMemorySpace.BumpAllocator MethodDescChunkAllocator { get; set; }
 
         internal TargetTestHelpers TargetTestHelpers => RTSBuilder.Builder.TargetTestHelpers;
-        internal Dictionary<DataType, Target.TypeInfo> Types => RTSBuilder.Types;
         internal MockMemorySpace.Builder Builder => RTSBuilder.Builder;
         internal uint MethodDescAlignment => RuntimeTypeSystem.GetMethodDescAlignment(TargetTestHelpers);
 
@@ -766,28 +784,26 @@ internal class MockDescriptors
         {
             RTSBuilder = rtsBuilder;
             LoaderBuilder = loaderBuilder;
-            AddTypes();
+            Types = GetTypes();
+            Globals = rtsBuilder.Globals.Concat(
+            [
+                (nameof(Constants.Globals.MethodDescTokenRemainderBitCount), TokenRemainderBitCount, "uint8"),
+            ]).ToArray();
         }
 
-        private void AddTypes()
+        private Dictionary<DataType, Target.TypeInfo> GetTypes()
         {
-            Dictionary<DataType, Target.TypeInfo> types = RTSBuilder.Types;
-            TargetTestHelpers targetTestHelpers = Builder.TargetTestHelpers;
-            Loader.AddTypes(targetTestHelpers, types);
-            var layout = targetTestHelpers.LayoutFields(MethodDescFields);
+            Dictionary<DataType, Target.TypeInfo> types = new();
+            types = types
+                .Concat(RTSBuilder.Types)
+                .Concat(LoaderBuilder.Types)
+                .ToDictionary();
+
+            var layout = TargetTestHelpers.LayoutFields(MethodDescFields);
             types[DataType.MethodDesc] = new Target.TypeInfo() { Fields = layout.Fields, Size = layout.Stride };
-            layout = targetTestHelpers.LayoutFields(MethodDescChunkFields);
+            layout = TargetTestHelpers.LayoutFields(MethodDescChunkFields);
             types[DataType.MethodDescChunk] = new Target.TypeInfo() { Fields = layout.Fields, Size = layout.Stride };
-        }
-
-        internal static (string Name, ulong Value, string? Type)[] Globals(TargetTestHelpers targetTestHelpers) => RuntimeTypeSystem.GetGlobals(targetTestHelpers).Concat([
-            (nameof(Constants.Globals.MethodDescTokenRemainderBitCount), TokenRemainderBitCount, "uint8"),
-        ]).ToArray();
-
-        internal void AddGlobalPointers()
-        {
-            RTSBuilder.AddGlobalPointers();
-
+            return types;
         }
 
         internal TargetPointer AddMethodDescChunk(TargetPointer methodTable, string name, byte count, byte size, uint tokenRange)
@@ -825,6 +841,5 @@ internal class MockDescriptors
             TargetTestHelpers.Write(dest.Slice(methodDescTypeInfo.Fields[nameof(Data.MethodDesc.Slot)].Offset), slotNum);
             // TODO: write more fields
         }
-
     }
 }
