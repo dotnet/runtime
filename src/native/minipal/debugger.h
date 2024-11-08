@@ -11,6 +11,13 @@ extern "C" {
 #endif
 
 /**
+ * Check if the minipal can check for a native debugger.
+ *
+ * @return true if the minipal can check if a native debugger is attached, false otherwise.
+ */
+bool minipal_can_check_for_native_debugger(void);
+
+/**
  * Check if a native debugger is attached to the current process.
  *
  * @return true if a debugger is attached, false otherwise.

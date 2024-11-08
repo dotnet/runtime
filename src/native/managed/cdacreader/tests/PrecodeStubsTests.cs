@@ -185,8 +185,8 @@ public class PrecodeStubsTests
         }
         public PrecodeBuilder(AllocationRange allocationRange, MockMemorySpace.Builder builder, Dictionary<DataType, Target.TypeInfo>? typeInfoCache = null) {
             Builder = builder;
-            PrecodeAllocator = new MockMemorySpace.BumpAllocator(allocationRange.PrecodeDescriptorStart, allocationRange.PrecodeDescriptorEnd);
-            StubDataPageAllocator = new MockMemorySpace.BumpAllocator(allocationRange.StubDataPageStart, allocationRange.StubDataPageEnd);
+            PrecodeAllocator = builder.CreateAllocator(allocationRange.PrecodeDescriptorStart, allocationRange.PrecodeDescriptorEnd);
+            StubDataPageAllocator = builder.CreateAllocator(allocationRange.StubDataPageStart, allocationRange.StubDataPageEnd);
             TypeInfoCache = typeInfoCache ?? CreateTypeInfoCache(Builder.TargetTestHelpers);
         }
 
@@ -230,7 +230,7 @@ public class PrecodeStubsTests
             }
         }
 
-        public void AddCDacMetadata(PrecodeTestDescriptor descriptor) {
+        public void AddPlatformMetadata(PrecodeTestDescriptor descriptor) {
             SetCodePointerFlags(descriptor);
             var typeInfo = TypeInfoCache[DataType.PrecodeMachineDescriptor];
             var fragment = PrecodeAllocator.Allocate((ulong)typeInfo.Size, $"{descriptor.Name} Precode Machine Descriptor");
@@ -305,7 +305,7 @@ public class PrecodeStubsTests
             SetDataReader(reader);
             IContractFactory<IPrecodeStubs> precodeFactory = new PrecodeStubsFactory();
             SetContracts(new TestRegistry() {
-                CDacMetadataContract = new (() => new TestPlatformMetadata(codePointerFlags, PrecodeMachineDescriptorAddress)),
+                PlatformMetadataContract = new (() => new TestPlatformMetadata(codePointerFlags, PrecodeMachineDescriptorAddress)),
                 PrecodeStubsContract = new (() => precodeFactory.CreateContract(this, 1)),
 
             });
@@ -325,7 +325,7 @@ public class PrecodeStubsTests
     public void TestPrecodeStubPrecodeExpectedMethodDesc(PrecodeTestDescriptor test)
     {
         var builder = new PrecodeBuilder(test.Arch);
-        builder.AddCDacMetadata(test);
+        builder.AddPlatformMetadata(test);
 
         TargetPointer expectedMethodDesc = new TargetPointer(0xeeee_eee0u); // arbitrary
         TargetCodePointer stub1 = builder.AddStubPrecodeEntry("Stub 1", test, expectedMethodDesc);

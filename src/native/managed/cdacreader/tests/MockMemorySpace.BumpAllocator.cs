@@ -25,6 +25,8 @@ internal unsafe static partial class MockMemorySpace
         private readonly ulong _blockStart;
         private readonly ulong _blockEnd; // exclusive
         ulong _current;
+
+        public int MinAlign { get; init; } = 16; // by default align to 16 bytes
         public BumpAllocator(ulong blockStart, ulong blockEnd)
         {
             _blockStart = blockStart;
@@ -35,17 +37,25 @@ internal unsafe static partial class MockMemorySpace
         public ulong RangeStart => _blockStart;
         public ulong RangeEnd => _blockEnd;
 
+        private ulong AlignUp(ulong value)
+        {
+            return (value + (ulong)(MinAlign - 1)) & ~(ulong)(MinAlign - 1);
+        }
+
         public bool TryAllocate(ulong size, string name, [NotNullWhen(true)] out HeapFragment? fragment)
         {
-            // FIXME: alignment
-            if (_current + size <= _blockEnd)
+            ulong current = AlignUp(_current);
+            Debug.Assert(current >= _current);
+            Debug.Assert((current % (ulong)MinAlign) == 0);
+            if (current + size <= _blockEnd)
             {
                 fragment = new HeapFragment {
-                    Address = _current,
+                    Address = current,
                     Data = new byte[size],
                     Name = name,
                 };
-                _current += size;
+                current += size;
+                _current = current;
                 return true;
             }
             fragment = null;
