@@ -14,16 +14,15 @@ using System.Xml.Schema;
 
 namespace System.Xml.Serialization
 {
+    [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
+    [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
     internal sealed class XmlSerializationWriterILGen : XmlSerializationILGen
     {
-        [RequiresUnreferencedCode("creates XmlSerializationILGen")]
         internal XmlSerializationWriterILGen(TypeScope[] scopes, string access, string className)
             : base(scopes, access, className)
         {
         }
 
-        [RequiresUnreferencedCode("calls WriteReflectionInit")]
-        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         internal void GenerateBegin()
         {
             this.typeBuilder = CodeGenerator.CreateTypeBuilder(
@@ -46,8 +45,6 @@ namespace System.Xml.Serialization
             }
         }
 
-        [RequiresUnreferencedCode("calls WriteStructMethod")]
-        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         internal override void GenerateMethod(TypeMapping mapping)
         {
             if (!GeneratedMethods.Add(mapping))
@@ -63,8 +60,6 @@ namespace System.Xml.Serialization
             }
         }
 
-        [RequiresUnreferencedCode("calls GenerateReferencedMethods")]
-        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         internal Type GenerateEnd()
         {
             GenerateReferencedMethods();
@@ -74,8 +69,6 @@ namespace System.Xml.Serialization
             return this.typeBuilder.CreateType();
         }
 
-        [RequiresUnreferencedCode("calls GenerateTypeElement")]
-        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         internal string? GenerateElement(XmlMapping xmlMapping)
         {
             if (!xmlMapping.IsWriteable)
@@ -98,7 +91,6 @@ namespace System.Xml.Serialization
             ilg.EndMethod();
         }
 
-        [RequiresUnreferencedCode("calls Load")]
         private void WriteQualifiedNameElement(string name, string? ns, object? defaultValue, SourceInfo source, bool nullable, TypeMapping mapping)
         {
             bool hasDefault = defaultValue != null && defaultValue != DBNull.Value;
@@ -126,7 +118,6 @@ namespace System.Xml.Serialization
             ilg.Call(XmlSerializationWriter_WriteXXX);
         }
 
-        [RequiresUnreferencedCode("calls Load")]
         private void WriteEnumValue(EnumMapping mapping, SourceInfo source, out Type returnType)
         {
             string? methodName = ReferenceMapping(mapping);
@@ -149,8 +140,6 @@ namespace System.Xml.Serialization
             returnType = typeof(string);
         }
 
-        [RequiresUnreferencedCode("calls Load")]
-        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         private void WritePrimitiveValue(TypeDesc typeDesc, SourceInfo source, out Type returnType)
         {
             if (typeDesc == StringTypeDesc || typeDesc.FormatterName == "String")
@@ -199,8 +188,6 @@ namespace System.Xml.Serialization
             }
         }
 
-        [RequiresUnreferencedCode("Calls WriteCheckDefault")]
-        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         private void WritePrimitive(string method, string name, string? ns, object? defaultValue, SourceInfo source, TypeMapping mapping, bool writeXsiType, bool isElement, bool isNullable)
         {
             TypeDesc typeDesc = mapping.TypeDesc!;
@@ -287,8 +274,6 @@ namespace System.Xml.Serialization
             }
         }
 
-        [RequiresUnreferencedCode("XmlSerializationWriter methods have RequiresUnreferencedCode")]
-        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         private void WriteTag(string methodName, string name, string? ns)
         {
             MethodInfo XmlSerializationWriter_Method = typeof(XmlSerializationWriter).GetMethod(
@@ -302,8 +287,6 @@ namespace System.Xml.Serialization
             ilg.Call(XmlSerializationWriter_Method);
         }
 
-        [RequiresUnreferencedCode("XmlSerializationWriter methods have RequiresUnreferencedCode")]
-        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         private void WriteTag(string methodName, string name, string? ns, bool writePrefixed)
         {
             MethodInfo XmlSerializationWriter_Method = typeof(XmlSerializationWriter).GetMethod(
@@ -319,8 +302,6 @@ namespace System.Xml.Serialization
             ilg.Call(XmlSerializationWriter_Method);
         }
 
-        [RequiresUnreferencedCode("calls WriteTag")]
-        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         private void WriteStartElement(string name, string? ns, bool writePrefixed)
         {
             WriteTag("WriteStartElement", name, ns, writePrefixed);
@@ -350,15 +331,11 @@ namespace System.Xml.Serialization
             ilg.Call(XmlSerializationWriter_WriteEndElement);
         }
 
-        [RequiresUnreferencedCode("calls WriteTag")]
-        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         private void WriteLiteralNullTag(string name, string? ns)
         {
             WriteTag("WriteNullTagLiteral", name, ns);
         }
 
-        [RequiresUnreferencedCode("calls WriteTag")]
-        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         private void WriteEmptyTag(string name, string? ns)
         {
             WriteTag("WriteEmptyTag", name, ns);
@@ -369,8 +346,6 @@ namespace System.Xml.Serialization
         private static readonly Type[] s_objectArrayType = new Type[] { typeof(object[]) };
         private static readonly Type[] s_objectType = new Type[] { typeof(object) };
 
-        [RequiresUnreferencedCode("calls WriteMember")]
-        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         private string GenerateMembersElement(XmlMembersMapping xmlMembersMapping)
         {
             ElementAccessor element = xmlMembersMapping.Accessor;
@@ -564,8 +539,6 @@ namespace System.Xml.Serialization
             return methodName;
         }
 
-        [RequiresUnreferencedCode("calls WriteMember")]
-        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         private string GenerateTypeElement(XmlTypeMapping xmlTypeMapping)
         {
             ElementAccessor element = xmlTypeMapping.Accessor;
@@ -805,8 +778,6 @@ namespace System.Xml.Serialization
             }
         }
 
-        [RequiresUnreferencedCode("calls WriteMember")]
-        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         private void WriteEnumAndArrayTypes()
         {
             foreach (TypeScope scope in Scopes)
@@ -935,8 +906,6 @@ namespace System.Xml.Serialization
             }
         }
 
-        [RequiresUnreferencedCode("Calls WriteMember")]
-        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         private void WriteStructMethod(StructMapping mapping)
         {
             string? methodName;
@@ -1180,8 +1149,6 @@ namespace System.Xml.Serialization
             return (listElementTypeDesc != null && listElementTypeDesc != QnameTypeDesc);
         }
 
-        [RequiresUnreferencedCode("calls WriteAttribute")]
-        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         private void WriteMember(SourceInfo source, AttributeAccessor attribute, TypeDesc memberTypeDesc, string parent)
         {
             if (memberTypeDesc.IsAbstract) return;
@@ -1386,8 +1353,6 @@ namespace System.Xml.Serialization
             }
         }
 
-        [RequiresUnreferencedCode("calls WritePrimitive")]
-        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         private void WriteAttribute(SourceInfo source, AttributeAccessor attribute, string parent)
         {
             if (attribute.Mapping is SpecialMapping special)
@@ -1436,8 +1401,6 @@ namespace System.Xml.Serialization
             return convertedDefaultValue;
         }
 
-        [RequiresUnreferencedCode("Calls WriteElements")]
-        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         private void WriteMember(SourceInfo source, string? choiceSource, ElementAccessor[] elements, TextAccessor? text, ChoiceIdentifierAccessor? choice, TypeDesc memberTypeDesc, bool writeAccessors)
         {
             if (memberTypeDesc.IsArrayLike &&
@@ -1448,8 +1411,6 @@ namespace System.Xml.Serialization
                 WriteElements(source, choiceSource, elements, text, choice, $"a{memberTypeDesc.Name}", writeAccessors, memberTypeDesc.IsNullable);
         }
 
-        [RequiresUnreferencedCode("calls WriteArrayItems")]
-        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         private void WriteArray(SourceInfo source, string? choiceSource, ElementAccessor[] elements, TextAccessor? text, ChoiceIdentifierAccessor? choice, TypeDesc arrayTypeDesc)
         {
             if (elements.Length == 0 && text == null) return;
@@ -1511,8 +1472,6 @@ namespace System.Xml.Serialization
             ilg.ExitScope();
         }
 
-        [RequiresUnreferencedCode("calls WriteElements")]
-        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         private void WriteArrayItems(ElementAccessor[] elements, TextAccessor? text, ChoiceIdentifierAccessor? choice, TypeDesc arrayTypeDesc, string arrayName, string? choiceName)
         {
             TypeDesc arrayElementTypeDesc = arrayTypeDesc.ArrayElementTypeDesc!;
@@ -1602,8 +1561,6 @@ namespace System.Xml.Serialization
             }
         }
 
-        [RequiresUnreferencedCode("Calls WriteElement")]
-        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         private void WriteElements(SourceInfo source, string? enumSource, ElementAccessor[] elements, TextAccessor? text, ChoiceIdentifierAccessor? choice, string arrayName, bool writeAccessors, bool isNullable)
         {
             if (elements.Length == 0 && text == null) return;
@@ -1889,8 +1846,6 @@ namespace System.Xml.Serialization
             }
         }
 
-        [RequiresUnreferencedCode("calls Load")]
-        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         private void WriteText(SourceInfo source, TextAccessor text)
         {
             if (text.Mapping is PrimitiveMapping primitiveMapping)
@@ -1938,8 +1893,6 @@ namespace System.Xml.Serialization
             }
         }
 
-        [RequiresUnreferencedCode("Calls WriteCheckDefault")]
-        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         private void WriteElement(SourceInfo source, ElementAccessor element, string arrayName, bool writeAccessor)
         {
             string name = writeAccessor ? element.Name : element.Mapping!.TypeName!;
@@ -2108,8 +2061,6 @@ namespace System.Xml.Serialization
             }
         }
 
-        [RequiresUnreferencedCode("XmlSerializationWriter methods have RequiresUnreferencedCode")]
-        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         private void WriteElementCall(string func, Type cast, SourceInfo source, string? name, string? ns, bool isNullable, bool isAny)
         {
             MethodInfo XmlSerializationWriter_func = typeof(XmlSerializationWriter).GetMethod(
@@ -2126,7 +2077,6 @@ namespace System.Xml.Serialization
             ilg.Call(XmlSerializationWriter_func);
         }
 
-        [RequiresUnreferencedCode("Dynamically looks for '!=' operator on 'value' parameter")]
         private void WriteCheckDefault(SourceInfo source, object value, bool isNullable)
         {
             if (value is string && ((string)value).Length == 0)
@@ -2198,7 +2148,6 @@ namespace System.Xml.Serialization
             }
         }
 
-        [RequiresUnreferencedCode("calls Load")]
         private void WriteChoiceTypeCheck(SourceInfo source, ChoiceIdentifierAccessor choice, string enumName, TypeDesc typeDesc)
         {
             Label labelFalse = ilg.DefineLabel();
@@ -2229,8 +2178,6 @@ namespace System.Xml.Serialization
             ilg.EndIf();
         }
 
-        [RequiresUnreferencedCode("calls WriteLiteralNullTag")]
-        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         private void WriteNullCheckBegin(string source, ElementAccessor element)
         {
             LocalBuilder local = ilg.GetLocal(source);
@@ -2242,7 +2189,6 @@ namespace System.Xml.Serialization
             ilg.Else();
         }
 
-        [RequiresUnreferencedCode("calls ILGenLoad")]
         private void WriteNamespaces(string source)
         {
             MethodInfo XmlSerializationWriter_WriteNamespaceDeclarations = typeof(XmlSerializationWriter).GetMethod(
@@ -2266,14 +2212,11 @@ namespace System.Xml.Serialization
             return -1;
         }
 
-        [RequiresUnreferencedCode("calls WriteLocalDecl")]
         private void WriteLocalDecl(string variableName, string initValue, Type type)
         {
             ReflectionAwareILGen.WriteLocalDecl(variableName, new SourceInfo(initValue, initValue, null, type, ilg));
         }
 
-        [RequiresUnreferencedCode("calls WriteArrayLocalDecl")]
-        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         private static void WriteArrayLocalDecl(string typeName, string variableName, SourceInfo initValue, TypeDesc arrayTypeDesc)
         {
             ReflectionAwareILGen.WriteArrayLocalDecl(typeName, variableName, initValue, arrayTypeDesc);
@@ -2283,7 +2226,6 @@ namespace System.Xml.Serialization
             ReflectionAwareILGen.WriteTypeCompare(variable, type, ilg);
         }
 
-        [RequiresUnreferencedCode("calls WriteInstanceOf")]
         private void WriteInstanceOf(SourceInfo source, Type type)
         {
             ReflectionAwareILGen.WriteInstanceOf(source, type, ilg);
