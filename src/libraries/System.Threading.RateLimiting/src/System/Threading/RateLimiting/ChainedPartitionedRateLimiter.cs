@@ -20,7 +20,7 @@ namespace System.Threading.RateLimiting
 
         public ChainedPartitionedRateLimiter(PartitionedRateLimiter<TResource>[] limiters)
         {
-            _limiters = limiters;
+            _limiters = (PartitionedRateLimiter<TResource>[])limiters.Clone();
         }
 
         public override RateLimiterStatistics? GetStatistics(TResource resource)

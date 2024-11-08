@@ -1,10 +1,8 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -87,6 +85,25 @@ namespace System.Threading.RateLimiting.Tests
             Assert.Throws<ObjectDisposedException>(() => chainedLimiter.GetStatistics(""));
             Assert.Throws<ObjectDisposedException>(() => chainedLimiter.AttemptAcquire(""));
             await Assert.ThrowsAsync<ObjectDisposedException>(async () => await chainedLimiter.AcquireAsync(""));
+        }
+
+        [Fact]
+        public void ArrayChangesAreIgnored()
+        {
+            using var limiter1 = PartitionedRateLimiter.Create<string, int>(resource =>
+            {
+                return RateLimitPartition.Get(1, key => new NotImplementedLimiter());
+            });
+            using var limiter2 = PartitionedRateLimiter.Create<string, int>(resource =>
+            {
+                return RateLimitPartition.Get(1, key => new CustomizableLimiter());
+            });
+            var limiters = new PartitionedRateLimiter<string>[] { limiter1 };
+            var chainedLimiter = PartitionedRateLimiter.CreateChained(limiters);
+
+            limiters[0] = limiter2;
+
+            Assert.Throws<NotImplementedException>(() => chainedLimiter.AttemptAcquire(""));
         }
 
         [Fact]

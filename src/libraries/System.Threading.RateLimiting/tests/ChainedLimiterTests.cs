@@ -1,10 +1,8 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -53,6 +51,20 @@ namespace System.Threading.RateLimiting.Tests
             Assert.Throws<ObjectDisposedException>(() => chainedLimiter.IdleDuration);
             Assert.Throws<ObjectDisposedException>(() => chainedLimiter.AttemptAcquire());
             await Assert.ThrowsAsync<ObjectDisposedException>(async () => await chainedLimiter.AcquireAsync());
+        }
+
+        [Fact]
+        public void ArrayChangesAreIgnored()
+        {
+            using var limiter1 = new CustomizableLimiter { IdleDurationImpl = () => TimeSpan.FromMilliseconds(1) };
+            using var limiter2 = new CustomizableLimiter { IdleDurationImpl = () => TimeSpan.FromMilliseconds(2) };
+            var limiters = new RateLimiter[] { limiter1 };
+            var chainedLimiter = RateLimiter.CreateChained(limiters);
+
+            limiters[0] = limiter2;
+
+            var idleDuration = chainedLimiter.IdleDuration;
+            Assert.Equal(1, idleDuration.Value.TotalMilliseconds);
         }
 
         [Fact]
