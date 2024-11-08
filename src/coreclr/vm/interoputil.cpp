@@ -790,21 +790,11 @@ BOOL IsComObjectClass(TypeHandle type)
     CONTRACTL_END;
 
 #ifdef FEATURE_COMINTEROP
-    if (!type.IsTypeDesc())
-    {
-        MethodTable *pMT = type.AsMethodTable();
-
-        if (pMT->IsComObjectType())
-        {
-            // May be __ComObject or typed RCW. __ComObject must have already been loaded
-            // if we see an MT marked like this so calling the *NoInit method is sufficient.
-
-            return pMT == g_pBaseCOMObject;
-        }
-    }
-#endif
-
+    // May be __ComObject or typed RCW.
+    return type == TypeHandle(g_pBaseCOMObject);
+#else
     return FALSE;
+#endif
 }
 
 VOID

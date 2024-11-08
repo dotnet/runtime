@@ -817,7 +817,7 @@ namespace System.Text.Json.Serialization.Tests
         internal GenericIDictionaryWrapperInternalConstructor() { }
     }
 
-    public class GenericIDictonaryWrapperThreeGenericParameters<TKey, TValue, TUnused> : GenericIDictionaryWrapper<TKey, TValue> { }
+    public class GenericIDictionaryWrapperThreeGenericParameters<TKey, TValue, TUnused> : GenericIDictionaryWrapper<TKey, TValue> { }
 
     public class ReadOnlyStringToStringIDictionaryWrapper : GenericIDictionaryWrapper<string, string>
     {

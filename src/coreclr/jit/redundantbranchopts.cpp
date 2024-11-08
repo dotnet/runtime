@@ -958,7 +958,7 @@ bool Compiler::optRedundantBranch(BasicBlock* const block)
 
     JITDUMP("\nRedundant branch opt in " FMT_BB ":\n", block->bbNum);
 
-    fgMorphBlockStmt(block, stmt DEBUGARG(__FUNCTION__));
+    fgMorphBlockStmt(block, stmt DEBUGARG(__FUNCTION__), /* invalidateDFSTreeOnFGChange */ false);
     Metrics.RedundantBranchesEliminated++;
     return true;
 }
@@ -2173,6 +2173,16 @@ bool Compiler::optRedundantRelop(BasicBlock* const block)
     if (!usedCopy)
     {
         fgRemoveStmt(block, candidateStmt);
+
+        // Make sure the removed store node isn't referenced by an SSA definition
+        assert(candidateStmt->GetRootNode()->OperIs(GT_STORE_LCL_VAR));
+        GenTreeLclVarCommon* const rootNode = candidateStmt->GetRootNode()->AsLclVarCommon();
+        LclVarDsc* const           varDsc   = lvaGetDesc(rootNode);
+        LclSsaVarDsc* const        defDsc   = varDsc->GetPerSsaData(rootNode->GetSsaNum());
+        assert(defDsc->GetDefNode() == rootNode);
+        defDsc->SetDefNode(nullptr);
+
+        DEBUG_DESTROY_NODE(rootNode);
     }
     else
     {

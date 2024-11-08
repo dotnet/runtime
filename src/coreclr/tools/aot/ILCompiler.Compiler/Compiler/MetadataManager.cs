@@ -616,7 +616,7 @@ namespace ILCompiler
         }
 
         /// <summary>
-        /// This method is an extension point that can provide additional dependencies for overriden methods on constructed types.
+        /// This method is an extension point that can provide additional dependencies for overridden methods on constructed types.
         /// </summary>
         public virtual void GetDependenciesForOverridingMethod(ref CombinedDependencyList dependencies, NodeFactory factory, MethodDesc decl, MethodDesc impl)
         {

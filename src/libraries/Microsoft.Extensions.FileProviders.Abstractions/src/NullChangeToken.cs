@@ -12,7 +12,7 @@ namespace Microsoft.Extensions.FileProviders
     public class NullChangeToken : IChangeToken
     {
         /// <summary>
-        /// A singleton instance of <see cref="NullChangeToken"/>
+        /// Gets a singleton instance of <see cref="NullChangeToken"/>.
         /// </summary>
         public static NullChangeToken Singleton { get; } = new NullChangeToken();
 
@@ -21,21 +21,21 @@ namespace Microsoft.Extensions.FileProviders
         }
 
         /// <summary>
-        /// Always false.
+        /// Gets a value that's always <see langword="false"/>.
         /// </summary>
         public bool HasChanged => false;
 
         /// <summary>
-        /// Always false.
+        /// Gets a value that's always <see langword="false"/>.
         /// </summary>
         public bool ActiveChangeCallbacks => false;
 
         /// <summary>
         /// Always returns an empty disposable object. Callbacks will never be called.
         /// </summary>
-        /// <param name="callback">This parameter is ignored</param>
-        /// <param name="state">This parameter is ignored</param>
-        /// <returns>A disposable object that noops on dispose.</returns>
+        /// <param name="callback">This parameter is ignored.</param>
+        /// <param name="state">This parameter is ignored.</param>
+        /// <returns>A disposable object that no-ops on dispose.</returns>
         public IDisposable RegisterChangeCallback(Action<object?> callback, object? state)
         {
             return EmptyDisposable.Instance;

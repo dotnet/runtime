@@ -17,7 +17,7 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
     {
         /// <summary>
         /// Reads metrics configuration from the provided <see cref="IConfiguration"/> section and configures
-        /// which <see cref="Meter"/>'s, <see cref="Instrument"/>'s, and <see cref="IMetricsListener"/>'s are enabled.
+        /// which <see cref="Meter">Meters</see>, <see cref="Instrument">Instruments</see>, and <see cref="IMetricsListener">IMetricsListeners</see> are enabled.
         /// </summary>
         /// <param name="builder">The <see cref="IMetricsBuilder"/>.</param>
         /// <param name="configuration">The <see cref="IConfiguration"/> section to load.</param>

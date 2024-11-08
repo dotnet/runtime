@@ -434,7 +434,7 @@ inline MethodDesc* MethodTable::GetMethodDescForSlot_NoThrow(DWORD slot)
 
     if (pCode == (PCODE)NULL)
     {
-        // This code path should only be hit for methods which have not been overriden
+        // This code path should only be hit for methods which have not been overridden
         MethodTable *pMTToSearchForMethodDesc = this->GetCanonicalMethodTable();
         while (pMTToSearchForMethodDesc != NULL)
         {

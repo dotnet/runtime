@@ -93,15 +93,7 @@ internal sealed class SystemClassWithMembersAndTypesRecord : ClassRecord
             && GetRawValue("hi") is int hi && GetRawValue("flags") is int flags
             && TypeNameMatches(typeof(decimal)))
         {
-            int[] bits =
-            [
-                lo,
-                mid,
-                hi,
-                flags
-            ];
-
-            return Create(new decimal(bits));
+            return Create(new decimal([lo, mid, hi, flags]));
         }
 
         return this;

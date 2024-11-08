@@ -38,10 +38,13 @@ public class Interfaces
 
         TestPublicAndNonpublicDifference.Run();
         TestDefaultInterfaceMethods.Run();
+        TestDefaultInterfaceMethodsDevirtNoInline.Run();
+        TestDefaultInterfaceMethodsNoDevirt.Run();
         TestDefaultInterfaceVariance.Run();
         TestVariantInterfaceOptimizations.Run();
         TestSharedInterfaceMethods.Run();
         TestGenericAnalysis.Run();
+        TestRuntime108229Regression.Run();
         TestCovariantReturns.Run();
         TestDynamicInterfaceCastable.Run();
         TestStaticInterfaceMethodsAnalysis.Run();
@@ -580,6 +583,147 @@ public class Interfaces
         }
     }
 
+    class TestDefaultInterfaceMethodsDevirtNoInline
+    {
+        interface IFoo
+        {
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            int GetNumber() => 42;
+        }
+
+        interface IBar : IFoo
+        {
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            int IFoo.GetNumber() => 43;
+        }
+
+        class Foo : IFoo { }
+        class Bar : IBar { }
+
+        class Baz : IFoo
+        {
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            public int GetNumber() => 100;
+        }
+
+        interface IFoo<T>
+        {
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            Type GetInterfaceType() => typeof(IFoo<T>);
+        }
+
+        class Foo<T> : IFoo<T> { }
+
+        class Base : IFoo
+        {
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            int IFoo.GetNumber() => 100;
+        }
+
+        class Derived : Base, IBar { }
+
+        public static void Run()
+        {
+            Console.WriteLine("Testing default interface methods that can be devirtualized but not inlined...");
+
+            typeof(IFoo).ToString();
+
+            if (((IFoo)new Foo()).GetNumber() != 42)
+                throw new Exception();
+
+            if (((IFoo)new Bar()).GetNumber() != 43)
+                throw new Exception();
+
+            if (((IFoo)new Baz()).GetNumber() != 100)
+                throw new Exception();
+
+            if (((IFoo)new Derived()).GetNumber() != 100)
+                throw new Exception();
+
+            if (((IFoo<object>)new Foo<object>()).GetInterfaceType() != typeof(IFoo<object>))
+                throw new Exception();
+
+            if (((IFoo<int>)new Foo<int>()).GetInterfaceType() != typeof(IFoo<int>))
+                throw new Exception();
+        }
+    }
+
+    class TestDefaultInterfaceMethodsNoDevirt
+    {
+        interface IFoo
+        {
+            int GetNumber() => 42;
+        }
+
+        interface IBar : IFoo
+        {
+            int IFoo.GetNumber() => 43;
+        }
+
+        class Foo : IFoo { }
+        class Bar : IBar { }
+
+        class Baz : IFoo
+        {
+            public int GetNumber() => 100;
+        }
+
+        interface IFoo<T>
+        {
+            Type GetInterfaceType() => typeof(IFoo<T>);
+        }
+
+        class Foo<T> : IFoo<T> { }
+
+        class Base : IFoo
+        {
+            int IFoo.GetNumber() => 100;
+        }
+
+        class Derived : Base, IBar { }
+
+        public static void Run()
+        {
+            Console.WriteLine("Testing default interface methods that cannot be devirtualized...");
+
+            if (GetFoo().GetNumber() != 42)
+                throw new Exception();
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static IFoo GetFoo() => new Foo();
+
+            if (GetBar().GetNumber() != 43)
+                throw new Exception();
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static IFoo GetBar() => new Bar();
+
+            if (GetBaz().GetNumber() != 100)
+                throw new Exception();
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static IFoo GetBaz() => new Baz();
+
+            if (GetDerived().GetNumber() != 100)
+                throw new Exception();
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static IFoo GetDerived() => new Derived();
+
+            if (GetFooObject().GetInterfaceType() != typeof(IFoo<object>))
+                throw new Exception();
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static IFoo<object> GetFooObject() => new Foo<object>();
+
+            if (GetFooInt().GetInterfaceType() != typeof(IFoo<int>))
+                throw new Exception();
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static IFoo<int> GetFooInt() => new Foo<int>();
+        }
+    }
+
     class TestDefaultInterfaceVariance
     {
         class Foo : IVariant<string>, IVariant<object>
@@ -701,6 +845,27 @@ public class Interfaces
             if (s_c3a.Method(null) != "Method(T)")
                 throw new Exception();
             if (s_c3b.Method(null) != "Method(object)")
+                throw new Exception();
+        }
+    }
+
+    class TestRuntime108229Regression
+    {
+        class Shapeshifter : IDynamicInterfaceCastable
+        {
+            public RuntimeTypeHandle GetInterfaceImplementation(RuntimeTypeHandle interfaceType) => throw new NotImplementedException();
+            public bool IsInterfaceImplemented(RuntimeTypeHandle interfaceType, bool throwIfNotImplemented) => true;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static bool Is(object o) => o is IEnumerable<object>;
+
+        public static void Run()
+        {
+            object o = new Shapeshifter();
+
+            // Call multiple times in case we just flushed the cast cache (when we flush we don't store).
+            if (!Is(o) || !Is(o) || !Is(o))
                 throw new Exception();
         }
     }
@@ -886,6 +1051,16 @@ public class Interfaces
         [DynamicInterfaceCastableImplementation]
         interface IInterfaceIndirectCastableImpl : IInterfaceImpl { }
 
+        interface IInterfaceImpl<T> : IInterface
+        {
+            string IInterface.GetCookie() => typeof(T).Name;
+        }
+
+        [DynamicInterfaceCastableImplementation]
+        interface IInterfaceIndirectCastableImpl<T> : IInterfaceImpl<T> { }
+
+        class Atom { }
+
         public static void Run()
         {
             Console.WriteLine("Testing IDynamicInterfaceCastable...");
@@ -920,6 +1095,18 @@ public class Interfaces
             {
                 IInterface o = (IInterface)new CastableClass<IInterface, IInterfaceCastableImpl<int>>();
                 if (o.GetCookie() != "Int32")
+                    throw new Exception();
+            }
+
+            {
+                IInterface o = (IInterface)new CastableClass<IInterface, IInterfaceCastableImpl<Atom>>();
+                if (o.GetCookie() != "Atom")
+                    throw new Exception();
+            }
+
+            {
+                IInterface o = (IInterface)new CastableClass<IInterface, IInterfaceIndirectCastableImpl<Atom>>();
+                if (o.GetCookie() != "Atom")
                     throw new Exception();
             }
         }
