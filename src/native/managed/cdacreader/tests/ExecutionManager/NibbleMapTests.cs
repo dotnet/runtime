@@ -1,11 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using Xunit;
 
 using Microsoft.Diagnostics.DataContractReader.ExecutionManagerHelpers;
-using System.Diagnostics;
 
 namespace Microsoft.Diagnostics.DataContractReader.UnitTests.ExecutionManager;
 
@@ -30,7 +28,7 @@ public class NibbleMapTestsBase
     }
 }
 
-public class NibbleMapTests_1 : NibbleMapTestsBase
+public class NibbleMapLinearLookupTests : NibbleMapTestsBase
 {
     [Fact]
     public void RoundTripAddressTest()
@@ -128,7 +126,7 @@ public class NibbleMapTests_1 : NibbleMapTestsBase
     }
 }
 
-public class NibbleMapTests_2 : NibbleMapTestsBase
+public class NibbleMapConstantLookupTests : NibbleMapTestsBase
 {
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
