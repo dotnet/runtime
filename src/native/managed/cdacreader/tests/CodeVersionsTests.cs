@@ -231,7 +231,7 @@ public class CodeVersionsTests
         public static CVTestTarget FromBuilder(MockTarget.Architecture arch, IReadOnlyCollection<MockMethodDesc> methodDescs, IReadOnlyCollection<MockMethodTable> methodTables, IReadOnlyCollection<MockCodeBlockStart> codeBlocks, IReadOnlyCollection<MockModule> modules, MockCodeVersions builder)
         {
             builder.MarkCreated();
-            return new CVTestTarget(arch, reader: builder.Builder.GetReadContext().ReadFromTarget, typeInfoCache: builder.TypeInfoCache,
+            return new CVTestTarget(arch, reader: builder.Builder.GetReadContext().ReadFromTarget, typeInfoCache: builder.Types,
                                     methodDescs: methodDescs, methodTables: methodTables, codeBlocks: codeBlocks, modules: modules);
         }
 
@@ -308,7 +308,7 @@ public class CodeVersionsTests
     [ClassData(typeof(MockTarget.StdArch))]
     public void GetNativeCodeVersion_OneVersion_Versionable(MockTarget.Architecture arch)
     {
-        var builder = new MockCodeVersions(arch, MockCodeVersions.DefaultAllocationRange);
+        var builder = new MockCodeVersions(arch);
         TargetPointer nativeCodeVersionNode = builder.AddNativeCodeVersionNode();
         TargetPointer methodDescVersioningStateAddress = builder.AddMethodDescVersioningState(nativeCodeVersionNode, true);
         TargetCodePointer codeBlockStart = new TargetCodePointer(0x0a0a_0000);
@@ -348,7 +348,7 @@ public class CodeVersionsTests
         uint methodRowId = 0x25; // arbitrary
         TargetCodePointer expectedNativeCodePointer = new TargetCodePointer(0x0700_abc0);
         uint methodDefToken = 0x06000000 | methodRowId;
-        var builder = new MockCodeVersions(arch, MockCodeVersions.DefaultAllocationRange);
+        var builder = new MockCodeVersions(arch);
         var methodDescAddress = new TargetPointer(0x00aa_aa00);
         var moduleAddress = new TargetPointer(0x00ca_ca00);
 
@@ -402,7 +402,7 @@ public class CodeVersionsTests
         uint methodRowId = 0x25; // arbitrary
         TargetCodePointer expectedNativeCodePointer = new TargetCodePointer(0x0700_abc0);
         uint methodDefToken = 0x06000000 | methodRowId;
-        var builder = new MockCodeVersions(arch, MockCodeVersions.DefaultAllocationRange);
+        var builder = new MockCodeVersions(arch);
         var methodDescAddress = new TargetPointer(0x00aa_aa00);
         var moduleAddress = new TargetPointer(0x00ca_ca00);
 
@@ -470,7 +470,7 @@ public class CodeVersionsTests
     {
         uint methodRowId = 0x25; // arbitrary
         TargetCodePointer expectedNativeCodePointer = new TargetCodePointer(0x0700_abc0);
-        var builder = new MockCodeVersions(arch, MockCodeVersions.DefaultAllocationRange);
+        var builder = new MockCodeVersions(arch);
         var methodDescAddress = new TargetPointer(0x00aa_aa00);
         var moduleAddress = new TargetPointer(0x00ca_ca00);
 

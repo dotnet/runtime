@@ -11,85 +11,90 @@ internal partial class MockDescriptors
 {
     public class CodeVersions
     {
+        private const ulong DefaultAllocationRangeStart = 0x000f_c000;
+        private const ulong DefaultAllocationRangeEnd = 0x00010_0000;
+
+        private static readonly (string Name, DataType Type)[] MethodDescVersioningStateFields =
+        [
+            (nameof(Data.MethodDescVersioningState.NativeCodeVersionNode), DataType.pointer),
+            (nameof(Data.MethodDescVersioningState.Flags), DataType.uint8),
+        ];
+
+        private static readonly (string Name, DataType Type)[] NativeCodeVersionNodeFields =
+        [
+            (nameof(Data.NativeCodeVersionNode.Next), DataType.pointer),
+            (nameof(Data.NativeCodeVersionNode.MethodDesc), DataType.pointer),
+            (nameof(Data.NativeCodeVersionNode.NativeCode), DataType.pointer),
+            (nameof(Data.NativeCodeVersionNode.Flags), DataType.uint32),
+            (nameof(Data.NativeCodeVersionNode.ILVersionId), DataType.nuint),
+        ];
+
+        private static readonly (string Name, DataType Type)[] ILCodeVersioningStateFields =
+        [
+            (nameof(Data.ILCodeVersioningState.ActiveVersionMethodDef), DataType.uint32),
+            (nameof(Data.ILCodeVersioningState.ActiveVersionModule), DataType.pointer),
+            (nameof(Data.ILCodeVersioningState.ActiveVersionKind), DataType.uint32),
+            (nameof(Data.ILCodeVersioningState.ActiveVersionNode), DataType.pointer),
+        ];
+
+        private static readonly (string Name, DataType Type)[] ILCodeVersionNodeFields =
+        [
+            (nameof(Data.ILCodeVersionNode.VersionId), DataType.nuint),
+        ];
+
         internal readonly MockMemorySpace.Builder Builder;
-        internal readonly Dictionary<DataType, Target.TypeInfo> TypeInfoCache = new();
-
-        internal struct AllocationRange
-        {
-            public ulong CodeVersionsRangeStart;
-            public ulong CodeVersionsRangeEnd;
-        }
-
-        public  static readonly AllocationRange DefaultAllocationRange = new AllocationRange() {
-            CodeVersionsRangeStart = 0x000f_c000,
-            CodeVersionsRangeEnd = 0x00010_0000,
-        };
+        internal Dictionary<DataType, Target.TypeInfo> Types { get; }
 
         private readonly MockMemorySpace.BumpAllocator _codeVersionsAllocator;
 
-        public CodeVersions(MockTarget.Architecture arch, AllocationRange allocationRange) : this(new MockMemorySpace.Builder(new TargetTestHelpers(arch)), allocationRange)
-        {}
-        public CodeVersions(MockMemorySpace.Builder builder, AllocationRange allocationRange, Dictionary<DataType, Target.TypeInfo>? typeInfoCache = null)
+        public CodeVersions(MockTarget.Architecture arch)
+            : this(new MockMemorySpace.Builder(new TargetTestHelpers(arch)), (DefaultAllocationRangeStart, DefaultAllocationRangeEnd))
+        { }
+
+        public CodeVersions(MockTarget.Architecture arch, (ulong Start, ulong End) allocationRange)
+            : this(new MockMemorySpace.Builder(new TargetTestHelpers(arch)), allocationRange)
+        { }
+
+        public CodeVersions(MockMemorySpace.Builder builder, (ulong Start, ulong End) allocationRange)
         {
             Builder = builder;
-            _codeVersionsAllocator = Builder.CreateAllocator(allocationRange.CodeVersionsRangeStart, allocationRange.CodeVersionsRangeEnd);
-            TypeInfoCache = typeInfoCache ?? CreateTypeInfoCache(Builder.TargetTestHelpers);
+            _codeVersionsAllocator = Builder.CreateAllocator(allocationRange.Start, allocationRange.End);
+            Types = GetTypes(Builder.TargetTestHelpers);
         }
 
-        internal static Dictionary<DataType, Target.TypeInfo> CreateTypeInfoCache(TargetTestHelpers targetTestHelpers)
+        internal static Dictionary<DataType, Target.TypeInfo> GetTypes(TargetTestHelpers targetTestHelpers)
         {
-            Dictionary<DataType, Target.TypeInfo> typeInfoCache = new();
-            AddToTypeInfoCache(targetTestHelpers, typeInfoCache);
-            return typeInfoCache;
-        }
-
-        internal static void AddToTypeInfoCache(TargetTestHelpers targetTestHelpers, Dictionary<DataType, Target.TypeInfo> typeInfoCache)
-        {
-            var layout = targetTestHelpers.LayoutFields([
-                (nameof(Data.MethodDescVersioningState.NativeCodeVersionNode), DataType.pointer),
-                (nameof(Data.MethodDescVersioningState.Flags), DataType.uint8),
-            ]);
-            typeInfoCache[DataType.MethodDescVersioningState] = new Target.TypeInfo() {
+            Dictionary<DataType, Target.TypeInfo> types = new();
+            var layout = targetTestHelpers.LayoutFields(MethodDescVersioningStateFields);
+            types[DataType.MethodDescVersioningState] = new Target.TypeInfo() {
                 Fields = layout.Fields,
                 Size = layout.Stride,
             };
-            layout = targetTestHelpers.LayoutFields([
-               (nameof(Data.NativeCodeVersionNode.Next), DataType.pointer),
-               (nameof(Data.NativeCodeVersionNode.MethodDesc), DataType.pointer),
-               (nameof(Data.NativeCodeVersionNode.NativeCode), DataType.pointer),
-               (nameof(Data.NativeCodeVersionNode.Flags), DataType.uint32),
-               (nameof(Data.NativeCodeVersionNode.ILVersionId), DataType.nuint),
-            ]);
-            typeInfoCache[DataType.NativeCodeVersionNode] = new Target.TypeInfo() {
+            layout = targetTestHelpers.LayoutFields(NativeCodeVersionNodeFields);
+            types[DataType.NativeCodeVersionNode] = new Target.TypeInfo() {
                 Fields = layout.Fields,
                 Size = layout.Stride,
             };
-            layout = targetTestHelpers.LayoutFields([
-                (nameof(Data.ILCodeVersioningState.ActiveVersionMethodDef), DataType.uint32),
-                (nameof(Data.ILCodeVersioningState.ActiveVersionModule), DataType.pointer),
-                (nameof(Data.ILCodeVersioningState.ActiveVersionKind), DataType.uint32),
-                (nameof(Data.ILCodeVersioningState.ActiveVersionNode), DataType.pointer),
-            ]);
-            typeInfoCache[DataType.ILCodeVersioningState] = new Target.TypeInfo() {
+            layout = targetTestHelpers.LayoutFields(ILCodeVersioningStateFields);
+            types[DataType.ILCodeVersioningState] = new Target.TypeInfo() {
                 Fields = layout.Fields,
                 Size = layout.Stride,
             };
-            layout = targetTestHelpers.LayoutFields([
-                (nameof(Data.ILCodeVersionNode.VersionId), DataType.nuint),
-            ]);
-            typeInfoCache[DataType.ILCodeVersionNode] = new Target.TypeInfo()
+            layout = targetTestHelpers.LayoutFields(ILCodeVersionNodeFields);
+            types[DataType.ILCodeVersionNode] = new Target.TypeInfo()
             {
                 Fields = layout.Fields,
                 Size = layout.Stride,
             };
+            return types;
         }
 
         public void MarkCreated() => Builder.MarkCreated();
 
         public TargetPointer AddMethodDescVersioningState(TargetPointer nativeCodeVersionNode, bool isDefaultVersionActive)
         {
-            Target.TypeInfo info = TypeInfoCache[DataType.MethodDescVersioningState];
-            MockMemorySpace.HeapFragment fragment = _codeVersionsAllocator.Allocate((ulong)TypeInfoCache[DataType.MethodDescVersioningState].Size, "MethodDescVersioningState");
+            Target.TypeInfo info = Types[DataType.MethodDescVersioningState];
+            MockMemorySpace.HeapFragment fragment = _codeVersionsAllocator.Allocate((ulong)Types[DataType.MethodDescVersioningState].Size, "MethodDescVersioningState");
             Builder.AddHeapFragment(fragment);
             Span<byte> mdvs = Builder.BorrowAddressRange(fragment.Address, fragment.Data.Length);
             Builder.TargetTestHelpers.WritePointer(mdvs.Slice(info.Fields[nameof(Data.MethodDescVersioningState.NativeCodeVersionNode)].Offset, Builder.TargetTestHelpers.PointerSize), nativeCodeVersionNode);
@@ -99,15 +104,15 @@ internal partial class MockDescriptors
 
         public TargetPointer AddNativeCodeVersionNode()
         {
-            Target.TypeInfo info = TypeInfoCache[DataType.NativeCodeVersionNode];
-            MockMemorySpace.HeapFragment fragment = _codeVersionsAllocator.Allocate((ulong)TypeInfoCache[DataType.NativeCodeVersionNode].Size, "NativeCodeVersionNode");
+            Target.TypeInfo info = Types[DataType.NativeCodeVersionNode];
+            MockMemorySpace.HeapFragment fragment = _codeVersionsAllocator.Allocate((ulong)Types[DataType.NativeCodeVersionNode].Size, "NativeCodeVersionNode");
             Builder.AddHeapFragment(fragment);
             return fragment.Address;
         }
 
         public void FillNativeCodeVersionNode(TargetPointer dest, TargetPointer methodDesc, TargetCodePointer nativeCode, TargetPointer next, bool isActive, TargetNUInt ilVersionId)
         {
-            Target.TypeInfo info = TypeInfoCache[DataType.NativeCodeVersionNode];
+            Target.TypeInfo info = Types[DataType.NativeCodeVersionNode];
             Span<byte> ncvn = Builder.BorrowAddressRange(dest, (int)info.Size!);
             Builder.TargetTestHelpers.WritePointer(ncvn.Slice(info.Fields[nameof(Data.NativeCodeVersionNode.Next)].Offset, Builder.TargetTestHelpers.PointerSize), next);
             Builder.TargetTestHelpers.WritePointer(ncvn.Slice(info.Fields[nameof(Data.NativeCodeVersionNode.MethodDesc)].Offset, Builder.TargetTestHelpers.PointerSize), methodDesc);
@@ -137,8 +142,8 @@ internal partial class MockDescriptors
 
         public TargetPointer AddILCodeVersioningState(uint activeVersionKind, TargetPointer activeVersionNode, TargetPointer activeVersionModule, uint activeVersionMethodDef)
         {
-            Target.TypeInfo info = TypeInfoCache[DataType.ILCodeVersioningState];
-            MockMemorySpace.HeapFragment fragment = _codeVersionsAllocator.Allocate((ulong)TypeInfoCache[DataType.ILCodeVersioningState].Size, "ILCodeVersioningState");
+            Target.TypeInfo info = Types[DataType.ILCodeVersioningState];
+            MockMemorySpace.HeapFragment fragment = _codeVersionsAllocator.Allocate((ulong)Types[DataType.ILCodeVersioningState].Size, "ILCodeVersioningState");
             Builder.AddHeapFragment(fragment);
             Span<byte> ilcvs = Builder.BorrowAddressRange(fragment.Address, fragment.Data.Length);
             Builder.TargetTestHelpers.WritePointer(ilcvs.Slice(info.Fields[nameof(Data.ILCodeVersioningState.ActiveVersionModule)].Offset, Builder.TargetTestHelpers.PointerSize), activeVersionModule);
@@ -150,8 +155,8 @@ internal partial class MockDescriptors
 
         public TargetPointer AddILCodeVersionNode(TargetNUInt versionId)
         {
-            Target.TypeInfo info = TypeInfoCache[DataType.ILCodeVersionNode];
-            MockMemorySpace.HeapFragment fragment = _codeVersionsAllocator.Allocate((ulong)TypeInfoCache[DataType.ILCodeVersionNode].Size, "NativeCodeVersionNode");
+            Target.TypeInfo info = Types[DataType.ILCodeVersionNode];
+            MockMemorySpace.HeapFragment fragment = _codeVersionsAllocator.Allocate((ulong)Types[DataType.ILCodeVersionNode].Size, "NativeCodeVersionNode");
             Builder.AddHeapFragment(fragment);
             Builder.TargetTestHelpers.WriteNUInt(fragment.Data.AsSpan().Slice(info.Fields[nameof(Data.ILCodeVersionNode.VersionId)].Offset), versionId);
             return fragment.Address;
