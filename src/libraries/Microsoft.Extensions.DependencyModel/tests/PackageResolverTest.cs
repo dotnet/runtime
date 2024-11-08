@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Runtime.InteropServices;
 using FluentAssertions;
 using Microsoft.DotNet.XUnitExtensions;
 using Microsoft.Extensions.DependencyModel.Resolution;
