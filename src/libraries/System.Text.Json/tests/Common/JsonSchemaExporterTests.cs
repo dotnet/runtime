@@ -189,6 +189,52 @@ namespace System.Text.Json.Schema.Tests
             Assert.Same(JsonSchemaExporterOptions.Default, JsonSchemaExporterOptions.Default);
         }
 
+#if !BUILDING_SOURCE_GENERATOR_TESTS
+        [Fact]
+        public void LegacySchemaExporter_CanAccessReflectedMembers()
+        {
+            // A number of libraries such as Microsoft.Extensions.AI and Semantic Kernel
+            // rely on a polyfilled version of JsonSchemaExporter for System.Text.Json v8
+            // that uses private reflection to access necessary metadata. This test validates
+            // that the necessary members are still present in newer implementations of STJ.
+
+            JsonStringEnumConverter converter = new(namingPolicy: JsonNamingPolicy.CamelCase, allowIntegerValues: false);
+            JsonSerializerOptions options = new(JsonSerializerOptions.Default) { Converters = { converter } };
+            JsonConverter nullableConverter = options.GetConverter(typeof(BindingFlags?));
+
+            Type nullableConverterType = nullableConverter.GetType();
+            Assert.True(nullableConverterType.IsGenericType);
+            Assert.StartsWith("System.Text.Json.Serialization.Converters.NullableConverter`1", nullableConverterType.FullName);
+
+            FieldInfo elementConverterField = nullableConverterType.GetField("_elementConverter", BindingFlags.NonPublic | BindingFlags.Instance);
+            Assert.NotNull(elementConverterField);
+            var enumConverter = (JsonConverter)elementConverterField.GetValue(nullableConverter);
+            Assert.NotNull(enumConverter);
+
+            Type enumConverterType = enumConverter.GetType();
+            Assert.True(enumConverterType.IsGenericType);
+            Assert.StartsWith("System.Text.Json.Serialization.Converters.EnumConverter`1", enumConverterType.FullName);
+
+            FieldInfo namingPolicyField = enumConverterType.GetField("_namingPolicy", BindingFlags.NonPublic | BindingFlags.Instance);
+            Assert.NotNull(namingPolicyField);
+            Assert.Same(JsonNamingPolicy.CamelCase, namingPolicyField.GetValue(enumConverter));
+
+            FieldInfo converterOptionsField = enumConverterType.GetField("_converterOptions", BindingFlags.NonPublic | BindingFlags.Instance);
+            Assert.NotNull(converterOptionsField);
+            Assert.Equal(1, (int)converterOptionsField.GetValue(enumConverter));
+
+            JsonPropertyInfo propertyInfo = PocoWithPropertyContext.Default.PocoWithProperty.Properties.Single();
+            PropertyInfo memberNameProperty = typeof(JsonPropertyInfo).GetProperty("MemberName", BindingFlags.NonPublic | BindingFlags.Instance);
+            Assert.NotNull(memberNameProperty);
+            Assert.Equal("Value", memberNameProperty.GetValue(propertyInfo));
+        }
+
+        record PocoWithProperty(int Value);
+
+        [JsonSerializable(typeof(PocoWithProperty))]
+        partial class PocoWithPropertyContext : JsonSerializerContext;
+#endif
+
         protected void AssertValidJsonSchema(Type type, string expectedJsonSchema, JsonNode actualJsonSchema)
         {
             JsonNode? expectedJsonSchemaNode = JsonNode.Parse(expectedJsonSchema, documentOptions: new() { CommentHandling = JsonCommentHandling.Skip, AllowTrailingCommas = true });

@@ -695,11 +695,6 @@ class SuperPMICollect:
 
         if coreclr_args.crossgen2:
             self.corerun = os.path.join(self.core_root, self.corerun_tool_name)
-            if coreclr_args.dotnet_tool_path is None:
-                self.crossgen2_driver_tool = self.corerun
-            else:
-                self.crossgen2_driver_tool = coreclr_args.dotnet_tool_path
-            logging.debug("Using crossgen2 driver tool %s", self.crossgen2_driver_tool)
 
         if coreclr_args.pmi or coreclr_args.crossgen2:
             self.assemblies = coreclr_args.assemblies
@@ -1089,7 +1084,7 @@ class SuperPMICollect:
                     # Log what is in the response file
                     write_file_to_log(rsp_filepath)
 
-                    command = [self.crossgen2_driver_tool, self.coreclr_args.crossgen2_tool_path, "@" + rsp_filepath]
+                    command = [self.coreclr_args.crossgen2_tool_path, "@" + rsp_filepath]
                     command_string = " ".join(command)
                     logging.debug("%s%s", print_prefix, command_string)
 
@@ -2723,7 +2718,7 @@ class SuperPMIReplayAsmDiffs:
 
             display_subset("Smallest {} zero sized diffs:", smallest_zero_size_contexts)
 
-            by_diff_size_pct_examples = [diff for diff in by_diff_size_pct if abs(int(diff['Diff size']) - int(diff['Base size'])) < 50]
+            by_diff_size_pct_examples = [diff for diff in by_diff_size_pct if abs(int(diff['Diff ActualCodeBytes']) - int(diff['Base ActualCodeBytes'])) < 50]
             if len(by_diff_size_pct_examples) == 0:
                 by_diff_size_pct_examples = by_diff_size_pct
 
@@ -4168,6 +4163,9 @@ def summarize_json_summaries(coreclr_args):
                 (base_jit_options, diff_jit_options, asm_diffs) = json.load(fh)
                 summarizable_asm_diffs.extend(asm_diffs)
 
+        # Sort by collection name
+        summarizable_asm_diffs.sort(key=lambda t: t[0])
+
         with open(overall_md_summary_file, "w") as write_fh:
             write_asmdiffs_markdown_summary(write_fh, base_jit_options, diff_jit_options, summarizable_asm_diffs, True)
             logging.info("  Summary Markdown file: %s", overall_md_summary_file)
@@ -4186,6 +4184,9 @@ def summarize_json_summaries(coreclr_args):
             with open(json_file, "r") as fh:
                 (base_jit_build_string_decoded, diff_jit_build_string_decoded, base_jit_options, diff_jit_options, tp_diffs) = json.load(fh)
                 summarizable_tp_diffs.extend(tp_diffs)
+
+        # Sort by collection name
+        summarizable_tp_diffs.sort(key=lambda t: t[0])
 
         with open(overall_md_summary_file, "w") as write_fh:
             write_tpdiff_markdown_summary(write_fh, base_jit_build_string_decoded, diff_jit_build_string_decoded, base_jit_options, diff_jit_options, summarizable_tp_diffs, True)
@@ -4916,24 +4917,14 @@ def setup_args(args):
 
         if coreclr_args.crossgen2:
             # Can we find crossgen2?
-            crossgen2_tool_name = "crossgen2.dll"
+            crossgen2_tool_name = "crossgen2.exe" if platform.system() == "Windows" else "crossgen2"
             crossgen2_tool_path = os.path.abspath(os.path.join(coreclr_args.core_root, "crossgen2", crossgen2_tool_name))
             if not os.path.exists(crossgen2_tool_path):
                 print("`--crossgen2` is specified, but couldn't find " + crossgen2_tool_path + ". (Is it built?)")
                 sys.exit(1)
 
-            # Which dotnet will we use to run it?
-            dotnet_script_name = "dotnet.cmd" if platform.system() == "Windows" else "dotnet.sh"
-            dotnet_tool_path = os.path.abspath(os.path.join(coreclr_args.runtime_repo_location, dotnet_script_name))
-            if not os.path.exists(dotnet_tool_path):
-                dotnet_tool_name = determine_dotnet_tool_name(coreclr_args)
-                dotnet_tool_path = find_tool(coreclr_args, dotnet_tool_name, search_core_root=False, search_product_location=False, search_path=True, throw_on_not_found=False)  # Only search path
-
             coreclr_args.crossgen2_tool_path = crossgen2_tool_path
-            coreclr_args.dotnet_tool_path = dotnet_tool_path
             logging.debug("Using crossgen2 tool %s", coreclr_args.crossgen2_tool_path)
-            if coreclr_args.dotnet_tool_path is not None:
-                logging.debug("Using dotnet tool %s", coreclr_args.dotnet_tool_path)
 
         if coreclr_args.nativeaot:
             # Can we find nativeaot?
