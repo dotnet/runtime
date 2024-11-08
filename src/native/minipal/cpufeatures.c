@@ -106,9 +106,9 @@ static uint32_t avx512StateSupport()
 static uint32_t apxStateSupport()
 {
 #if defined(HOST_APPLE)
-    return false;
+    return 0;
 #elif defined(TARGET_X86)
-    return false;
+    return 0;
 #else
     uint32_t eax;
     __asm("  xgetbv\n" \
@@ -162,7 +162,7 @@ static uint32_t avx512StateSupport()
 static uint32_t apxStateSupport()
 {
 #if defined(TARGET_X86)
-    return false;
+    return 0;
 #else
     return ((_xgetbv(0) & 0x80000) == 0x80000) ? 1 : 0;
 #endif

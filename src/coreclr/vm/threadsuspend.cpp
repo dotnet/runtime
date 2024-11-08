@@ -72,7 +72,7 @@ extern "C" void             RedirectedHandledJITCaseForGCStress_Stub(void);
 #define IS_VALID_CODE_PTR(addr)             _ASSERTE((addr) != NULL)
 
 #if defined(TARGET_AMD64) || defined(TARGET_X86)
-// These values should be picked up from winrt.h, defining them in case they are missing there.
+// These values should be picked up from winnt.h, defining them in case they are missing there.
 #ifndef XSTATE_APX
 #define XSTATE_APX (19)
 #endif // XSTATE_APX
