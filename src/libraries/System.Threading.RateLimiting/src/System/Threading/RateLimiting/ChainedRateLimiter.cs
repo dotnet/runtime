@@ -20,7 +20,7 @@ namespace System.Threading.RateLimiting
 
         public ChainedRateLimiter(RateLimiter[] limiters)
         {
-            _limiters = limiters;
+            _limiters = (RateLimiter[])limiters.Clone();
         }
 
         public override RateLimiterStatistics? GetStatistics()
