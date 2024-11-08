@@ -3391,14 +3391,14 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
             // if it can be, it should expand.
             case NI_System_Runtime_CompilerServices_RuntimeHelpers_CreateSpan:
             case NI_System_Runtime_CompilerServices_RuntimeHelpers_InitializeArray:
-            case NI_Internal_Runtime_MethodTable_Of:
-            case NI_System_Activator_AllocatorOf:
-            case NI_System_Activator_DefaultConstructorOf:
                 betterToExpand = true;
                 break;
 
             // Intrinsics that we should always expand for NativeAOT. These are
             // required to be expanded due to ILScanner assumptions.
+            case NI_Internal_Runtime_MethodTable_Of:
+            case NI_System_Activator_AllocatorOf:
+            case NI_System_Activator_DefaultConstructorOf:
             case NI_System_Runtime_CompilerServices_RuntimeHelpers_IsReferenceOrContainsReferences:
                 mustExpand = true;
                 break;
