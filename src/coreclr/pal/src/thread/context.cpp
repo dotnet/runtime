@@ -313,16 +313,6 @@ typedef int __ptrace_request;
         ASSIGN_CONTROL_REGS \
         ASSIGN_INTEGER_REGS \
 
-#if defined(HOST_AMD64)  && defined(XSTATE_SUPPORTED)
-#ifndef XSTATE_APX
-#define XSTATE_APX (19)
-#endif  // XSTATE_APX
-
-#ifndef XSTATE_MASK_APX
-#define XSTATE_MASK_APX (1 << XSTATE_APX)
-#endif  // XSTATE_MASK_APX
-#endif  // HOST_AMD64 && XSTATE_SUPPORTED
-
 #if defined(XSTATE_SUPPORTED) || defined(HOST_AMD64) && defined(HAVE_MACH_EXCEPTIONS)
 bool Xstate_IsAvx512Supported()
 {
