@@ -21,7 +21,7 @@ struct LclMasksWeight
 
     // The simd types of the Lcl Store after conversion to vector.
     CorInfoType simdBaseJitType = CORINFO_TYPE_UNDEF;
-    unsigned    simdSize = 0;
+    unsigned    simdSize        = 0;
 
     void UpdateWeight(bool isStore, bool hasConvert, weight_t blockWeight);
 
@@ -34,7 +34,6 @@ struct LclMasksWeight
 };
 
 typedef JitHashTable<unsigned, JitLargePrimitiveKeyFuncs<unsigned>, LclMasksWeight> LclMasksWeightTable;
-
 
 //-----------------------------------------------------------------------------
 // UpdateWeight: Updates the weighting to take account of a local.
@@ -107,8 +106,8 @@ public:
     {
         GenTreeHWIntrinsic* convertOp = nullptr;
 
-        bool isLocalStore = false;
-        bool isLocalUse = false;
+        bool isLocalStore  = false;
+        bool isLocalUse    = false;
         bool hasConversion = false;
 
         switch ((*use)->OperGet())
@@ -121,7 +120,7 @@ public:
 
                 if ((*use)->AsLclVar()->Data()->OperIsConvertMaskToVector())
                 {
-                    convertOp = (*use)->AsLclVar()->Data()->AsHWIntrinsic();
+                    convertOp     = (*use)->AsLclVar()->Data()->AsHWIntrinsic();
                     hasConversion = true;
                 }
                 break;
@@ -134,7 +133,7 @@ public:
 
                 if (user->OperIsConvertVectorToMask())
                 {
-                    convertOp = user->AsHWIntrinsic();
+                    convertOp     = user->AsHWIntrinsic();
                     hasConversion = true;
                 }
                 break;
@@ -172,11 +171,10 @@ public:
         return fgWalkResult::WALK_CONTINUE;
     }
 
-    
     bool foundConversions = false;
 
 private:
-    weight_t bbWeight;
+    weight_t             bbWeight;
     LclMasksWeightTable* weightsTable;
 };
 
@@ -192,8 +190,7 @@ public:
         UseExecutionOrder = true
     };
 
-    LclMasksUpdateVisitor(
-        Compiler* compiler, Statement* stmt, LclMasksWeightTable* weightsTable)
+    LclMasksUpdateVisitor(Compiler* compiler, Statement* stmt, LclMasksWeightTable* weightsTable)
         : GenTreeVisitor<LclMasksUpdateVisitor>(compiler)
         , stmt(stmt)
         , weightsTable(weightsTable)
@@ -202,42 +199,42 @@ public:
 
     Compiler::fgWalkResult PostOrderVisit(GenTree** use, GenTree* user)
     {
-        GenTreeLclVarCommon* lclOp = nullptr;
-        bool isLocalStore = false;
-        bool isLocalUse = false;
-        bool addConversion = false;
-        bool removeConversion = false;
+        GenTreeLclVarCommon* lclOp            = nullptr;
+        bool                 isLocalStore     = false;
+        bool                 isLocalUse       = false;
+        bool                 addConversion    = false;
+        bool                 removeConversion = false;
 
         if ((*use)->OperIs(GT_STORE_LCL_VAR) && (*use)->AsLclVarCommon()->Data()->OperIsConvertMaskToVector())
         {
             // Found
             //      use:STORE_LCL_VAR(ConvertMaskToVector(x))
-            lclOp = (*use)->AsLclVarCommon();
-            isLocalStore = true;
+            lclOp            = (*use)->AsLclVarCommon();
+            isLocalStore     = true;
             removeConversion = true;
         }
         else if ((*use)->OperIs(GT_STORE_LCL_VAR) && !(*use)->AsLclVarCommon()->Data()->OperIsConvertMaskToVector())
         {
             // Found
             //      use:STORE_LCL_VAR(x)
-            lclOp = (*use)->AsLclVarCommon();
-            isLocalStore = true;
+            lclOp         = (*use)->AsLclVarCommon();
+            isLocalStore  = true;
             addConversion = true;
         }
         else if ((*use)->OperIsConvertVectorToMask() && (*use)->AsHWIntrinsic()->Op(2)->OperIs(GT_LCL_VAR))
         {
             // Found
             //      user(use:ConvertVectorToMask(LCL_VAR(x)))
-            lclOp = (*use)->AsHWIntrinsic()->Op(2)->AsLclVarCommon();
-            isLocalUse = true;
+            lclOp            = (*use)->AsHWIntrinsic()->Op(2)->AsLclVarCommon();
+            isLocalUse       = true;
             removeConversion = true;
         }
         else if ((*use)->OperIs(GT_LCL_VAR) && (!user->OperIsConvertVectorToMask()))
         {
             // Found
             //      user(use:LCL_VAR(x))
-            lclOp = (*use)->AsLclVar();
-            isLocalUse = true;
+            lclOp         = (*use)->AsLclVar();
+            isLocalUse    = true;
             addConversion = true;
         }
         else
@@ -258,8 +255,8 @@ public:
         // Quit if the cost of changing is higher.
         if (weight.currentCost <= weight.switchCost)
         {
-            JITDUMP("Local %s V%02d at [%06u] will not be converted. ", isLocalStore ? "store" : "var", lclOp->GetLclNum(),
-                    Compiler::dspTreeID(lclOp));
+            JITDUMP("Local %s V%02d at [%06u] will not be converted. ", isLocalStore ? "store" : "var",
+                    lclOp->GetLclNum(), Compiler::dspTreeID(lclOp));
             weight.DumpTotalWeight();
             return fgWalkResult::WALK_CONTINUE;
         }
@@ -271,10 +268,9 @@ public:
         // Fix up the type of the lcl and the lclvar.
         assert(lclOp->gtType != TYP_MASK);
         var_types lclOrigType = lclOp->gtType;
-        lclOp->gtType     = TYP_MASK;
-        LclVarDsc* varDsc = m_compiler->lvaGetDesc(lclOp->GetLclNum());
-        varDsc->lvType = TYP_MASK;
-        
+        lclOp->gtType         = TYP_MASK;
+        LclVarDsc* varDsc     = m_compiler->lvaGetDesc(lclOp->GetLclNum());
+        varDsc->lvType        = TYP_MASK;
 
         // Add or remove a conversion
 
@@ -287,7 +283,7 @@ public:
 
             GenTreeHWIntrinsic* convertOp = lclOp->Data()->AsHWIntrinsic();
 
-            lclOp->gtOp1 = convertOp->Op(1);            
+            lclOp->gtOp1 = convertOp->Op(1);
             convertOp->gtBashToNOP();
             m_compiler->fgSequenceLocals(stmt);
         }
@@ -343,11 +339,12 @@ public:
             // There is not enough information in the lcl to get simd types. Instead reuse the cached simd
             // types from the removed convert nodes.
             assert(weight.simdBaseJitType != CORINFO_TYPE_UNDEF);
-            *use = m_compiler->gtNewSimdCvtMaskToVectorNode(lclOrigType, lclOp, weight.simdBaseJitType, weight.simdSize);
+            *use =
+                m_compiler->gtNewSimdCvtMaskToVectorNode(lclOrigType, lclOp, weight.simdBaseJitType, weight.simdSize);
         }
 
-        JITDUMP("Updated %s V%02d at [%06u] to mask (%s conversion)\n", isLocalStore ? "store" : "var", lclOp->GetLclNum(),
-                m_compiler->dspTreeID(lclOp), addConversion ? "added" : "removed");
+        JITDUMP("Updated %s V%02d at [%06u] to mask (%s conversion)\n", isLocalStore ? "store" : "var",
+                lclOp->GetLclNum(), m_compiler->dspTreeID(lclOp), addConversion ? "added" : "removed");
 
 #ifdef DEBUG
         if (m_compiler->verbose)
@@ -362,10 +359,9 @@ public:
 public:
 
 private:
-    Statement* stmt;
+    Statement*           stmt;
     LclMasksWeightTable* weightsTable;
 };
-
 
 #endif // TARGET_ARM64
 
@@ -447,7 +443,7 @@ PhaseStatus Compiler::fgOptimizeLclMasks()
             if (firstLcl != nullptr)
             {
                 LclMasksCheckVisitor ev(this, block->getBBWeight(this), &weightsTable);
-                GenTree*    root = stmt->GetRootNode();
+                GenTree*             root = stmt->GetRootNode();
                 ev.WalkTree(&root, nullptr);
                 foundConversion |= ev.foundConversions;
             }
@@ -470,7 +466,7 @@ PhaseStatus Compiler::fgOptimizeLclMasks()
             if (firstLcl != nullptr)
             {
                 LclMasksUpdateVisitor ev(this, stmt, &weightsTable);
-                GenTree*    root = stmt->GetRootNode();
+                GenTree*              root = stmt->GetRootNode();
                 ev.WalkTree(&root, nullptr);
             }
         }
