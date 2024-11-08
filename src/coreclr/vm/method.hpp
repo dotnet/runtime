@@ -371,8 +371,6 @@ public:
     // True if the declaring type or instantiation of method (if any) contains formal generic type parameters
     BOOL ContainsGenericVariables();
 
-    Module* GetDefiningModuleForOpenMethod();
-
     // True if this is a class and method instantiation that on <__Canon,...,__Canon>
     BOOL IsTypicalSharedInstantiation();
 
@@ -503,10 +501,6 @@ public:
     MethodDescBackpatchInfoTracker* GetBackpatchInfoTracker();
 
     PTR_LoaderAllocator GetLoaderAllocator();
-
-    // GetDomainSpecificLoaderAllocator returns the collectable loader allocator for collectable types
-    // and the loader allocator in the current domain for non-collectable types
-    LoaderAllocator * GetDomainSpecificLoaderAllocator();
 
     Module* GetLoaderModule();
 

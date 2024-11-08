@@ -95,7 +95,8 @@ public class MethodDescTests
             Assert.Equal(objectMethodTable, mt);
             bool isCollectible = rts.IsCollectibleMethod(handle);
             Assert.False(isCollectible);
-
+            TargetPointer versioning = rts.GetMethodDescVersioningState(handle);
+            Assert.Equal(TargetPointer.Null, versioning);
         });
     }
 }
