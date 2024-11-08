@@ -408,9 +408,9 @@ namespace System.Net.NetworkInformation
                 sr.ReadLine();
                 sr.ReadLine();
                 Span<Range> pieces = stackalloc Range[18]; // [0]-[16] used, +1 to ensure any additional segment goes into [17]
-                while (!sr.EndOfStream)
+                string? line;
+                while ((line = sr.ReadLine()) != null)
                 {
-                    string line = sr.ReadLine()!;
                     if (line.Contains(name))
                     {
                         ReadOnlySpan<char> lineSpan = line;
