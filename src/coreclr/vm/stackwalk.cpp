@@ -3152,6 +3152,7 @@ void StackFrameIterator::PreProcessingForManagedFrames(void)
     m_pCachedGSCookie = (GSCookie*)m_crawl.GetCodeManager()->GetGSCookieAddr(
                                                         m_crawl.pRD,
                                                         &m_crawl.codeInfo,
+                                                        m_codeManFlags,
                                                         &m_crawl.codeManState);
 #endif // !DACCESS_COMPILE
 
