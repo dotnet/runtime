@@ -179,4 +179,64 @@ public class AcrossAndCselToAcross
         }
     }
 
+    [Fact]
+    public static void CastMaskUseAsVector()
+    {
+        for (int i = 0; i < 4; i++)
+        {
+            for (int j = 0; j < 200; j++)
+            {
+                InnerCastMaskUseAsVector();
+            }
+
+            Thread.Sleep(100);
+        }
+        InnerCastMaskUseAsVector();
+    }
+
+    [method: MethodImpl(MethodImplOptions.NoInlining)]
+    private static void InnerCastMaskUseAsVector()
+    {
+        if (Sve.IsSupported)
+        {
+            Vector<int> mask1;
+            if (Environment.TickCount % 2 == 0)
+              mask1 = Sve.CreateTrueMaskInt32();
+            else
+              mask1 = Unsafe.BitCast<Vector<uint>, Vector<int>>(Sve.CreateTrueMaskUInt32());
+            Consume(mask1); // Use as vector
+        }
+    }
+
+    [Fact]
+    public static void CastMaskUseAsMask()
+    {
+        for (int i = 0; i < 4; i++)
+        {
+            for (int j = 0; j < 200; j++)
+            {
+                InnerCastMaskUseAsMask();
+            }
+
+            Thread.Sleep(100);
+        }
+        InnerCastMaskUseAsMask();
+    }
+
+    [method: MethodImpl(MethodImplOptions.NoInlining)]
+    private static void InnerCastMaskUseAsMask()
+    {
+        if (Sve.IsSupported)
+        {
+            Vector<int> mask1;
+            if (Environment.TickCount % 2 == 0)
+              mask1 = Sve.CreateTrueMaskInt32();
+            else
+              mask1 = Unsafe.BitCast<Vector<uint>, Vector<int>>(Sve.CreateTrueMaskUInt32());
+
+            Vector<int> vec1  = Vector.Create<int>(25);
+            Vector<int> vec2  = Sve.Compact(mask1, vec1); // Use as mask
+            Consume(vec2);
+        }
+    }
 }

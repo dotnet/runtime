@@ -2472,8 +2472,6 @@ void Compiler::LclMasksWeight::CacheSimdTypes(GenTreeHWIntrinsic* op)
     unsigned    newSimdSize        = op->GetSimdSize();
 
     assert((newSimdBaseJitType != CORINFO_TYPE_UNDEF));
-    assert((simdBaseJitType == CORINFO_TYPE_UNDEF) ||
-           ((simdBaseJitType == newSimdBaseJitType) && (simdSize == newSimdSize)));
 
     simdBaseJitType = newSimdBaseJitType;
     simdSize        = newSimdSize;
@@ -2633,7 +2631,6 @@ public:
                     assert(lclOp->gtType != TYP_MASK);
                     lclOp->gtType     = TYP_MASK;
                     LclVarDsc* varDsc = m_compiler->lvaGetDesc(lclOp->GetLclNum());
-                    assert(varDsc->lvType != TYP_MASK);
                     varDsc->lvType = TYP_MASK;
 
                     if (lclOp->Data()->OperIsConvertMaskToVector())
