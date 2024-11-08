@@ -142,6 +142,7 @@ set( JIT_SOURCES
   jithashtable.cpp
   jitmetadata.cpp
   layout.cpp
+  lclmasks.cpp
   lclmorph.cpp
   lclvars.cpp
   likelyclass.cpp
