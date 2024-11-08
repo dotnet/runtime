@@ -28,6 +28,7 @@ const char *GetTType( TraceType tt)
         case TRACE_OTHER:                     return "TRACE_OTHER";
         case TRACE_UNJITTED_METHOD:           return "TRACE_UNJITTED_METHOD";
         case TRACE_MULTICAST_DELEGATE_HELPER: return "TRACE_MULTICAST_DELEGATE_HELPER";
+        case TRACE_EXTERNAL_METHOD_FIXUP:     return "TRACE_EXTERNAL_METHOD_FIXUP";
     }
     return "TRACE_REALLY_WACKED";
 }
@@ -121,6 +122,10 @@ const CHAR * TraceDestination::DbgToString(SString & buffer)
 
             case TRACE_MULTICAST_DELEGATE_HELPER:
                 pValue = "TRACE_MULTICAST_DELEGATE_HELPER";
+                break;
+
+            case TRACE_EXTERNAL_METHOD_FIXUP:
+                pValue = "TRACE_EXTERNAL_METHOD_FIXUP";
                 break;
 
             case TRACE_OTHER:
@@ -734,7 +739,7 @@ bool StubManager::IsStubLoggingEnabled()
     // on the helper thread. (B/c it may deadlock. See SUPPRESS_ALLOCATION_ASSERTS_IN_THIS_SCOPE)
 
     // We avoid this by just not logging when native-debugging.
-    if (IsDebuggerPresent())
+    if (minipal_is_native_debugger_present())
     {
         return false;
     }
@@ -1237,15 +1242,6 @@ BOOL StubLinkStubManager::TraceDelegateObject(BYTE* pbDel, TraceDestination *tra
 
 #endif // DACCESS_COMPILE
 
-void StubLinkStubManager::RemoveStubRange(BYTE* start, UINT length)
-{
-    WRAPPER_NO_CONTRACT;
-    _ASSERTE(start != NULL && length > 0);
-
-    BYTE* end = start + length;
-    GetRangeList()->RemoveRanges((LPVOID)start, start, end);
-}
-
 BOOL StubLinkStubManager::CheckIsStub_Internal(PCODE stubStartAddress)
 {
     WRAPPER_NO_CONTRACT;
@@ -1572,13 +1568,7 @@ BOOL RangeSectionStubManager::DoTraceStub(PCODE stubStartAddress, TraceDestinati
 #ifdef DACCESS_COMPILE
         DacNotImpl();
 #else
-#if defined(TARGET_ARM64) && defined(__APPLE__)
-        // On ARM64 Mac, we cannot put a breakpoint inside of ExternalMethodFixupPatchLabel
-        LOG((LF_CORDB, LL_INFO10000, "RSM::DoTraceStub: Skipping on arm64-macOS\n"));
-        return FALSE;
-#else
-        trace->InitForManagerPush(GetEEFuncEntryPoint(ExternalMethodFixupPatchLabel), this);
-#endif //defined(TARGET_ARM64) && defined(__APPLE__)
+        trace->InitForExternalMethodFixup();
 #endif
         return TRUE;
 
@@ -1588,30 +1578,6 @@ BOOL RangeSectionStubManager::DoTraceStub(PCODE stubStartAddress, TraceDestinati
 
     return FALSE;
 }
-
-#ifndef DACCESS_COMPILE
-BOOL RangeSectionStubManager::TraceManager(Thread *thread,
-                            TraceDestination *trace,
-                            CONTEXT *pContext,
-                            BYTE **pRetAddr)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    _ASSERTE(GetIP(pContext) == GetEEFuncEntryPoint(ExternalMethodFixupPatchLabel));
-
-    *pRetAddr = (BYTE *)StubManagerHelpers::GetReturnAddress(pContext);
-
-    PCODE target = StubManagerHelpers::GetTailCallTarget(pContext);
-    trace->InitForStub(target);
-    return TRUE;
-}
-#endif
 
 #ifdef DACCESS_COMPILE
 LPCWSTR RangeSectionStubManager::GetStubManagerName(PCODE addr)
@@ -1878,6 +1844,11 @@ BOOL ILStubManager::TraceManager(Thread *thread,
 
         LOG((LF_CORDB, LL_INFO1000, "ILSM::TraceManager: Delegate Invoke Method\n"));
         return StubLinkStubManager::TraceDelegateObject((BYTE*)pThis, trace);
+    }
+    else if (pStubMD->IsDelegateShuffleThunk())
+    {
+        LOG((LF_CORDB, LL_INFO1000, "ILSM::TraceManager: Delegate Shuffle Thunk\n"));
+        return TraceShuffleThunk(trace, pContext, pRetAddr);
     }
     else
     {
@@ -2277,4 +2248,3 @@ void TailCallStubManager::DoEnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 #endif
 
 #endif // #ifdef DACCESS_COMPILE
-

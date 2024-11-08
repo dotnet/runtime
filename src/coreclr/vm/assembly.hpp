@@ -516,7 +516,7 @@ private:
 
     PTR_LoaderAllocator   m_pLoaderAllocator;
 #ifdef FEATURE_COLLECTIBLE_TYPES
-    bool                  m_isCollectible;
+    BYTE                  m_isCollectible;
 #endif // FEATURE_COLLECTIBLE_TYPES
     bool                  m_isDynamic;
 
@@ -536,6 +536,16 @@ private:
     LOADERHANDLE          m_hExposedObject;
 
     DomainAssembly*             m_NextAssemblyInSameALC;
+
+    friend struct ::cdac_data<Assembly>;
+};
+
+template<>
+struct cdac_data<Assembly>
+{
+#ifdef FEATURE_COLLECTIBLE_TYPES
+    static constexpr size_t IsCollectible = offsetof(Assembly, m_isCollectible);
+#endif
 };
 
 #ifndef DACCESS_COMPILE

@@ -5415,7 +5415,7 @@ void MetaSig::EnsureSigValueTypesLoaded(MethodDesc *pMD)
     // The signature format is approximately:
     // CallingConvention   NumberOfArguments    ReturnType   Arg1  ...
     // There is also a blob length at pSig-1.
-    SigPointer ptr(pMD->GetSig());
+    SigPointer ptr = pMD->GetSigPointer();
 
     // Skip over calling convention.
     IfFailThrowBF(ptr.GetCallingConv(NULL), BFA_BAD_SIGNATURE, pModule);
@@ -5454,7 +5454,7 @@ void MetaSig::CheckSigTypesCanBeLoaded(MethodDesc * pMD)
     // The signature format is approximately:
     // CallingConvention   NumberOfArguments    ReturnType   Arg1  ...
     // There is also a blob length at pSig-1.
-    SigPointer ptr(pMD->GetSig());
+    SigPointer ptr = pMD->GetSigPointer();
 
     // Skip over calling convention.
     IfFailThrowBF(ptr.GetCallingConv(NULL), BFA_BAD_SIGNATURE, pModule);

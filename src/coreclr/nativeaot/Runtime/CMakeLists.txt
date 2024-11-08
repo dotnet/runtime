@@ -49,9 +49,6 @@ set(COMMON_RUNTIME_SOURCES
     ${GC_DIR}/handletablescan.cpp
     ${GC_DIR}/objecthandle.cpp
     ${GC_DIR}/softwarewritewatch.cpp
-
-    ${CLR_SRC_NATIVE_DIR}/minipal/cpufeatures.c
-    ${CLR_SRC_NATIVE_DIR}/minipal/time.c
 )
 
 set(SERVER_GC_SOURCES
@@ -276,7 +273,6 @@ else()
     add_definitions(-DFEATURE_READONLY_GS_COOKIE)
   endif()
   include(unix/configure.cmake)
-  include(${CLR_SRC_NATIVE_DIR}/minipal/configure.cmake)
   include_directories(${CMAKE_CURRENT_BINARY_DIR})
 endif()
 
