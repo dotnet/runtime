@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -13,959 +14,639 @@ using Xunit.Abstractions;
 
 namespace Wasm.Build.Tests
 {
-    public class PInvokeTableGeneratorTests : TestMainJsTestBase
+    public class PInvokeTableGeneratorTests : WasmTemplateTestsBase
     {
         public PInvokeTableGeneratorTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
             : base(output, buildContext)
         {
         }
 
-        // [Theory]
-        // [BuildAndRun()]
-        // public void NativeLibraryWithVariadicFunctions(ProjectInfo buildArgs, RunHost host, string id)
-        // {
-        //     string code = @"
-        //         using System;
-        //         using System.Runtime.InteropServices;
-        //         public class Test
-        //         {
-        //             public static int Main(string[] args)
-        //             {
-        //                 Console.WriteLine($""Main running"");
-        //                 if (args.Length > 2)
-        //                 {
-        //                     // We don't want to run this, because we can't call variadic functions
-        //                     Console.WriteLine($""sum_three: {sum_three(7, 14, 21)}"");
-        //                     Console.WriteLine($""sum_two: {sum_two(3, 6)}"");
-        //                     Console.WriteLine($""sum_one: {sum_one(5)}"");
-        //                 }
-        //                 return 42;
-        //             }
-
-        //             [DllImport(""variadic"", EntryPoint=""sum"")] public static extern int sum_one(int a);
-        //             [DllImport(""variadic"", EntryPoint=""sum"")] public static extern int sum_two(int a, int b);
-        //             [DllImport(""variadic"", EntryPoint=""sum"")] public static extern int sum_three(int a, int b, int c);
-        //         }";
-
-        //     (buildArgs, string output) = BuildForVariadicFunctionTests(code,
-        //                                                   buildArgs with { ProjectName = $"variadic_{buildArgs.Configuration}_{id}" },
-        //                                                   id);
-        //     Assert.Matches("warning.*native function.*sum.*varargs", output);
-        //     Assert.Contains("System.Int32 sum_one(System.Int32)", output);
-        //     Assert.Contains("System.Int32 sum_two(System.Int32, System.Int32)", output);
-        //     Assert.Contains("System.Int32 sum_three(System.Int32, System.Int32, System.Int32)", output);
-
-        //     output = RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 42, host: host, id: id);
-        //     Assert.Contains("Main running", output);
-        // }
-
-        // [Theory]
-        // [BuildAndRun()]
-        // public void DllImportWithFunctionPointersCompilesWithoutWarning(ProjectInfo buildArgs, RunHost host, string id)
-        // {
-        //     string code =
-        //         """
-        //         using System;
-        //         using System.Runtime.InteropServices;
-        //         public class Test
-        //         {
-        //             public static int Main()
-        //             {
-        //                 Console.WriteLine("Main running");
-        //                 return 42;
-        //             }
-
-        //             [DllImport("variadic", EntryPoint="sum")]
-        //             public unsafe static extern int using_sum_one(delegate* unmanaged<char*, IntPtr, void> callback);
-
-        //             [DllImport("variadic", EntryPoint="sum")]
-        //             public static extern int sum_one(int a, int b);
-        //         }
-        //         """;
-
-        //     (buildArgs, string output) = BuildForVariadicFunctionTests(code,
-        //                                                   buildArgs with { ProjectName = $"fnptr_{buildArgs.Configuration}_{id}" },
-        //                                                   id);
-
-        //     Assert.DoesNotMatch("warning\\sWASM0001.*Could\\snot\\sget\\spinvoke.*Parsing\\sfunction\\spointer\\stypes", output);
-        //     Assert.DoesNotMatch("warning\\sWASM0001.*Skipping.*using_sum_one.*because.*function\\spointer", output);
-
-        //     output = RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 42, host: host, id: id);
-        //     Assert.Contains("Main running", output);
-        // }
-
-        // [Theory]
-        // [BuildAndRun()]
-        // public void DllImportWithFunctionPointers_ForVariadicFunction_CompilesWithWarning(ProjectInfo buildArgs, RunHost host, string id)
-        // {
-        //     string code = @"
-        //         using System;
-        //         using System.Runtime.InteropServices;
-        //         public class Test
-        //         {
-        //             public static int Main()
-        //             {
-        //                 Console.WriteLine($""Main running"");
-        //                 return 42;
-        //             }
-
-        //             [DllImport(""variadic"", EntryPoint=""sum"")]
-        //             public unsafe static extern int using_sum_one(delegate* unmanaged<char*, IntPtr, void> callback);
-        //         }";
-
-        //     (buildArgs, string output) = BuildForVariadicFunctionTests(code,
-        //                                                   buildArgs with { ProjectName = $"fnptr_variadic_{buildArgs.Configuration}_{id}" },
-        //                                                   id);
-
-        //     Assert.DoesNotMatch("warning\\sWASM0001.*Could\\snot\\sget\\spinvoke.*Parsing\\sfunction\\spointer\\stypes", output);
-        //     Assert.DoesNotMatch("warning\\sWASM0001.*Skipping.*using_sum_one.*because.*function\\spointer", output);
-
-        //     output = RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 42, host: host, id: id);
-        //     Assert.Contains("Main running", output);
-        // }
-
-        // [Theory]
-        // [BuildAndRun()]
-        // public void UnmanagedStructAndMethodIn_SameAssembly_WithoutDisableRuntimeMarshallingAttribute_NotConsideredBlittable
-        //                 (ProjectInfo buildArgs, string id)
-        // {
-        //     (_, string output) = SingleProjectForDisabledRuntimeMarshallingTest(
-        //         withDisabledRuntimeMarshallingAttribute: false,
-        //         withAutoLayout: true,
-        //         expectSuccess: false,
-        //         buildArgs,
-        //         id
-        //     );
-
-        //     Assert.Matches("error.*Parameter.*types.*pinvoke.*.*blittable", output);
-        // }
-
-        // [Theory]
-        // [BuildAndRun()]
-        // public void UnmanagedStructAndMethodIn_SameAssembly_WithoutDisableRuntimeMarshallingAttribute_WithStructLayout_ConsideredBlittable
-        //                 (ProjectInfo buildArgs, string id)
-        // {
-        //     (_, string output) = SingleProjectForDisabledRuntimeMarshallingTest(
-        //         withDisabledRuntimeMarshallingAttribute: false,
-        //         withAutoLayout: false,
-        //         expectSuccess: true,
-        //         buildArgs,
-        //         id
-        //     );
-
-        //     Assert.DoesNotMatch("error.*Parameter.*types.*pinvoke.*.*blittable", output);
-        // }
-
-        // [Theory]
-        // [BuildAndRun()]
-        // public void UnmanagedStructAndMethodIn_SameAssembly_WithDisableRuntimeMarshallingAttribute_ConsideredBlittable
-        //                 (ProjectInfo buildArgs, RunHost host, string id)
-        // {
-        //     (buildArgs, _) = SingleProjectForDisabledRuntimeMarshallingTest(
-        //         withDisabledRuntimeMarshallingAttribute: true,
-        //         withAutoLayout: true,
-        //         expectSuccess: true,
-        //         buildArgs,
-        //         id
-        //     );
-
-        //     string output = RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 42, host: host, id: id);
-        //     Assert.Contains("Main running 5", output);
-        // }
-
-        // private (ProjectInfo buildArgs ,string output) SingleProjectForDisabledRuntimeMarshallingTest(
-        //     bool withDisabledRuntimeMarshallingAttribute, bool withAutoLayout,
-        //     bool expectSuccess, ProjectInfo buildArgs, string id
-        // ) {
-        //     string code =
-        //     """
-        //     using System;
-        //     using System.Runtime.CompilerServices;
-        //     using System.Runtime.InteropServices;
-        //     """
-        //     + (withDisabledRuntimeMarshallingAttribute ? "[assembly: DisableRuntimeMarshalling]" : "")
-        //     + """
-        //     public class Test
-        //     {
-        //         public static int Main()
-        //         {
-        //             var x = new S { Value = 5 };
-
-        //             Console.WriteLine("Main running " + x.Value);
-        //             return 42;
-        //         }
-        //     """
-        //     + (withAutoLayout ? "\n[StructLayout(LayoutKind.Auto)]\n" : "")
-        //     + """
-        //         public struct S { public int Value; public float Value2; }
-
-        //         [UnmanagedCallersOnly]
-        //         public static void M(S myStruct) { }
-        //     }
-        //     """;
-
-        //     buildArgs = ExpandBuildArgs(
-        //         buildArgs with { ProjectName = $"not_blittable_{buildArgs.Configuration}_{id}" },
-        //         extraProperties: buildArgs.AOT
-        //             ? string.Empty
-        //             : "<WasmBuildNative>true</WasmBuildNative>"
-        //     );
-
-        //     (_, string output) = BuildProject(
-        //         buildArgs,
-        //         id: id,
-        //         new BuildProjectOptions(
-        //             InitProject: () =>
-        //             {
-        //                 File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), code);
-        //             },
-        //             Publish: buildArgs.AOT,
-        //             DotnetWasmFromRuntimePack: false,
-        //             ExpectSuccess: expectSuccess
-        //         )
-        //     );
-
-        //     return (buildArgs, output);
-        // }
-
-        // public static IEnumerable<object?[]> SeparateAssemblyWithDisableMarshallingAttributeTestData(string config)
-        //     => ConfigWithAOTData(aot: false, config: config).Multiply(
-        //             new object[] { /*libraryHasAttribute*/ false, /*appHasAttribute*/ false, /*expectSuccess*/ false },
-        //             new object[] { /*libraryHasAttribute*/ true, /*appHasAttribute*/ false, /*expectSuccess*/ false },
-        //             new object[] { /*libraryHasAttribute*/ false, /*appHasAttribute*/ true, /*expectSuccess*/ true },
-        //             new object[] { /*libraryHasAttribute*/ true, /*appHasAttribute*/ true, /*expectSuccess*/ true }
-        //         ).UnwrapItemsAsArrays();
-
-        // [Theory]
-        // [MemberData(nameof(SeparateAssemblyWithDisableMarshallingAttributeTestData), parameters: "Debug")]
-        // [MemberData(nameof(SeparateAssemblyWithDisableMarshallingAttributeTestData), parameters: "Release")]
-        // public void UnmanagedStructsAreConsideredBlittableFromDifferentAssembly
-        //                 (ProjectInfo buildArgs, bool libraryHasAttribute, bool appHasAttribute, bool expectSuccess, RunHost host, string id)
-        //     => SeparateAssembliesForDisableRuntimeMarshallingTest(
-        //         libraryHasAttribute: libraryHasAttribute,
-        //         appHasAttribute: appHasAttribute,
-        //         expectSuccess: expectSuccess,
-        //         buildArgs,
-        //         host,
-        //         id
-        //     );
-
-        // private void SeparateAssembliesForDisableRuntimeMarshallingTest
-        //                 (bool libraryHasAttribute, bool appHasAttribute, bool expectSuccess, ProjectInfo buildArgs, RunHost host, string id)
-        // {
-        //     string code =
-        //         (libraryHasAttribute ? "[assembly: System.Runtime.CompilerServices.DisableRuntimeMarshalling]" : "")
-        //         + "public struct __NonBlittableTypeForAutomatedTests__ { } public struct S { public int Value; public __NonBlittableTypeForAutomatedTests__ NonBlittable; }";
-
-        //     var libraryBuildArgs = ExpandBuildArgs(
-        //         buildArgs with { ProjectName = $"blittable_different_library_{buildArgs.Configuration}_{id}" },
-        //         extraProperties: "<OutputType>Library</OutputType><RuntimeIdentifier />"
-        //     );
-
-        //     (string libraryDir, string output) = BuildProject(
-        //         libraryBuildArgs,
-        //         id: id + "_library",
-        //         new BuildProjectOptions(
-        //             InitProject: () =>
-        //             {
-        //                 File.WriteAllText(Path.Combine(_projectDir!, "S.cs"), code);
-        //             },
-        //             Publish: buildArgs.AOT,
-        //             DotnetWasmFromRuntimePack: false,
-        //             AssertAppBundle: false
-        //         )
-        //     );
-
-        //     code =
-        //     """
-        //     using System;
-        //     using System.Runtime.CompilerServices;
-        //     using System.Runtime.InteropServices;
-
-        //     """
-        //     + (appHasAttribute ? "[assembly: DisableRuntimeMarshalling]" : "")
-        //     + """
-
-        //     public class Test
-        //     {
-        //         public static int Main()
-        //         {
-        //             var x = new S { Value = 5 };
-
-        //             Console.WriteLine("Main running " + x.Value);
-        //             return 42;
-        //         }
-
-        //         [UnmanagedCallersOnly]
-        //         public static void M(S myStruct) { }
-        //     }
-        //     """;
-
-        //     buildArgs = ExpandBuildArgs(
-        //         buildArgs with { ProjectName = $"blittable_different_app_{buildArgs.Configuration}_{id}" },
-        //         extraItems: $@"<ProjectReference Include='{Path.Combine(libraryDir, libraryBuildArgs.ProjectName + ".csproj")}' />",
-        //         extraProperties: buildArgs.AOT
-        //             ? string.Empty
-        //             : "<WasmBuildNative>true</WasmBuildNative>"
-        //     );
-
-        //     _projectDir = null;
-
-        //     (_, output) = BuildProject(
-        //         buildArgs,
-        //         id: id,
-        //         new BuildProjectOptions(
-        //             InitProject: () =>
-        //             {
-        //                 File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), code);
-        //             },
-        //             Publish: buildArgs.AOT,
-        //             DotnetWasmFromRuntimePack: false,
-        //             ExpectSuccess: expectSuccess
-        //         )
-        //     );
-
-        //     if (expectSuccess)
-        //     {
-        //         output = RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 42, host: host, id: id);
-        //         Assert.Contains("Main running 5", output);
-        //     }
-        //     else
-        //     {
-        //         Assert.Matches("error.*Parameter.*types.*pinvoke.*.*blittable", output);
-        //     }
-        // }
-
-        // [Theory]
-        // [BuildAndRun()]
-        // public void DllImportWithFunctionPointers_WarningsAsMessages(ProjectInfo buildArgs, RunHost host, string id)
-        // {
-        //     string code =
-        //         """
-        //         using System;
-        //         using System.Runtime.InteropServices;
-        //         public class Test
-        //         {
-        //             public static int Main()
-        //             {
-        //                 Console.WriteLine("Main running");
-        //                 return 42;
-        //             }
-
-        //             [DllImport("someting")]
-        //             public unsafe static extern void SomeFunction1(delegate* unmanaged<int> callback);
-        //         }
-        //         """;
-
-        //     (buildArgs, string output) = BuildForVariadicFunctionTests(
-        //         code,
-        //         buildArgs with { ProjectName = $"fnptr_{buildArgs.Configuration}_{id}" },
-        //         id,
-        //         verbosity: "normal",
-        //         extraProperties: "<MSBuildWarningsAsMessages>$(MSBuildWarningsAsMessage);WASM0001</MSBuildWarningsAsMessages>"
-        //     );
-
-        //     Assert.DoesNotContain("warning WASM0001", output);
-
-        //     output = RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 42, host: host, id: id);
-        //     Assert.Contains("Main running", output);
-        // }
-
-        // [Theory]
-        // [BuildAndRun()]
-        // public void UnmanagedCallback_WithFunctionPointers_CompilesWithWarnings(ProjectInfo buildArgs, string id)
-        // {
-        //     string code =
-        //         """
-        //         using System;
-        //         using System.Runtime.InteropServices;
-        //         public class Test
-        //         {
-        //             public static int Main()
-        //             {
-        //                 Console.WriteLine("Main running");
-        //                 return 42;
-        //             }
-
-        //             [UnmanagedCallersOnly]
-        //             public unsafe static extern void SomeFunction1(delegate* unmanaged<int> callback);
-        //         }
-        //         """;
-
-        //     (_, string output) = BuildForVariadicFunctionTests(
-        //         code,
-        //         buildArgs with { ProjectName = $"cb_fnptr_{buildArgs.Configuration}" },
-        //         id
-        //     );
-
-        //     Assert.DoesNotMatch("warning\\sWASM0001.*Skipping.*Test::SomeFunction1.*because.*function\\spointer", output);
-        // }
-
-        // [Theory]
-        // [BuildAndRun()]
-        // public void UnmanagedCallback_InFileType(ProjectInfo buildArgs, RunHost host, string id)
-        // {
-        //     string code =
-        //         """
-        //         using System;
-        //         using System.Runtime.InteropServices;
-        //         public class Test
-        //         {
-        //             public static int Main()
-        //             {
-        //                 Console.WriteLine("Main running");
-        //                 return 42;
-        //             }
-        //         }
-
-        //         file class Foo
-        //         {
-        //             [UnmanagedCallersOnly]
-        //             public unsafe static extern void SomeFunction1(int i);
-        //         }
-        //         """;
-
-        //     (buildArgs, string output) = BuildForVariadicFunctionTests(
-        //         code,
-        //         buildArgs with { ProjectName = $"cb_filetype_{buildArgs.Configuration}" },
-        //         id
-        //     );
-
-        //     Assert.DoesNotMatch(".*(warning|error).*>[A-Z0-9]+__Foo", output);
-
-        //     output = RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 42, host: host, id: id);
-        //     Assert.Contains("Main running", output);
-        // }
-
-        // [Theory]
-        // [BuildAndRun()]
-        // public void UnmanagedCallersOnly_Namespaced(ProjectInfo buildArgs, RunHost host, string id)
-        // {
-        //     string code =
-        //         """
-        //             using System;
-        //             using System.Runtime.InteropServices;
-
-        //             public class Test
-        //             {
-        //                 public unsafe static int Main()
-        //                 {
-        //                     ((delegate* unmanaged<void>)&A.Conflict.C)();
-        //                     ((delegate* unmanaged<void>)&B.Conflict.C)();
-        //                     ((delegate* unmanaged<void>)&A.Conflict.C\u733f)();
-        //                     ((delegate* unmanaged<void>)&B.Conflict.C\u733f)();
-        //                     return 42;
-        //                 }
-        //             }
-
-        //             namespace A {
-        //                 public class Conflict {
-        //                     [UnmanagedCallersOnly(EntryPoint = "A_Conflict_C")]
-        //                     public static void C() {
-        //                         Console.WriteLine("A.Conflict.C");
-        //                     }
-
-        //                     [UnmanagedCallersOnly(EntryPoint = "A_Conflict_C\u733f")]
-        //                     public static void C\u733f() {
-        //                         Console.WriteLine("A.Conflict.C_\U0001F412");
-        //                     }
-        //                 }
-        //             }
-
-        //             namespace B {
-        //                 public class Conflict {
-        //                     [UnmanagedCallersOnly(EntryPoint = "B_Conflict_C")]
-        //                     public static void C() {
-        //                         Console.WriteLine("B.Conflict.C");
-        //                     }
-
-        //                     [UnmanagedCallersOnly(EntryPoint = "B_Conflict_C\u733f")]
-        //                     public static void C\u733f() {
-        //                         Console.WriteLine("B.Conflict.C_\U0001F412");
-        //                     }
-        //                 }
-        //             }
-        //         """;
-
-        //     (buildArgs, string output) = BuildForVariadicFunctionTests(
-        //         code,
-        //         buildArgs with { ProjectName = $"cb_namespace_{buildArgs.Configuration}" },
-        //         id
-        //     );
-
-        //     Assert.DoesNotMatch(".*(warning|error).*>[A-Z0-9]+__Foo", output);
-
-        //     output = RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 42, host: host, id: id);
-        //     Assert.Contains("A.Conflict.C", output);
-        //     Assert.Contains("B.Conflict.C", output);
-        //     if (OperatingSystem.IsWindows()) {
-        //         // Windows console unicode support is not great
-        //         Assert.Contains("A.Conflict.C_", output);
-        //         Assert.Contains("B.Conflict.C_", output);
-        //     } else {
-        //         Assert.Contains("A.Conflict.C_\U0001F412", output);
-        //         Assert.Contains("B.Conflict.C_\U0001F412", output);
-        //     }
-        // }
-
-        // [Theory]
-        // [BuildAndRun()]
-        // public void IcallWithOverloadedParametersAndEnum(ProjectInfo buildArgs, string id)
-        // {
-        //     // Build a library containing icalls with overloaded parameters.
-
-        //     string code =
-        //     """
-        //     using System;
-        //     using System.Runtime.CompilerServices;
-
-        //     public static class Interop
-        //     {
-        //         public enum Numbers { A, B, C, D }
-
-        //         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        //         internal static extern void Square(Numbers x);
-
-        //         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        //         internal static extern void Square(Numbers x, Numbers y);
-
-        //         public static void Main()
-        //         {
-        //             // Noop
-        //         }
-        //     }
-        //     """;
-
-        //     var libraryBuildArgs = ExpandBuildArgs(
-        //         buildArgs with { ProjectName = $"icall_enum_library_{buildArgs.Configuration}_{id}" }
-        //     );
-
-        //     (string libraryDir, string output) = BuildProject(
-        //         libraryBuildArgs,
-        //         id: id + "library",
-        //         new BuildProjectOptions(
-        //             InitProject: () =>
-        //             {
-        //                 File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), code);
-        //             },
-        //             Publish: false,
-        //             DotnetWasmFromRuntimePack: false,
-        //             AssertAppBundle: false
-        //         )
-        //     );
-
-        //     // Build a project with ManagedToNativeGenerator task reading icalls from the above library and runtime-icall-table.h bellow.
-
-        //     string projectCode =
-        //     """
-        //     <Project>
-        //         <UsingTask TaskName="ManagedToNativeGenerator" AssemblyFile="###WasmAppBuilder###" />
-        //         <Target Name="Build">
-        //           <PropertyGroup>
-        //             <WasmPInvokeTablePath>pinvoke-table.h</WasmPInvokeTablePath>
-        //             <WasmInterpToNativeTablePath>wasm_m2n_invoke.g.h</WasmInterpToNativeTablePath>
-        //             <WasmRuntimeICallTablePath>runtime-icall-table.h</WasmRuntimeICallTablePath>
-        //           </PropertyGroup>
-
-        //           <ItemGroup>
-        //             <WasmPInvokeModule Include="libSystem.Native" />
-        //             ###WasmPInvokeModule###
-        //           </ItemGroup>
-
-        //           <ManagedToNativeGenerator
-        //             Assemblies="@(WasmPInvokeAssembly)"
-        //             PInvokeModules="@(WasmPInvokeModule)"
-        //             PInvokeOutputPath="$(WasmPInvokeTablePath)"
-        //             RuntimeIcallTableFile="$(WasmRuntimeICallTablePath)"
-        //             InterpToNativeOutputPath="$(WasmInterpToNativeTablePath)">
-        //             <Output TaskParameter="FileWrites" ItemName="FileWrites" />
-        //           </ManagedToNativeGenerator>
-        //         </Target>
-        //     </Project>
-        //     """;
-
-        //     string AddAssembly(string name) => $"<WasmPInvokeAssembly Include=\"{Path.Combine(libraryDir, "bin", buildArgs.Configuration, DefaultTargetFramework, "browser-wasm", name + ".dll")}\" />";
-
-        //     string icallTable =
-        //     """
-        //     [
-        //      { "klass":"Interop", "icalls": [{} 	,{ "name": "Square(Numbers)", "func": "ves_abc", "handles": false }
-        //     	,{ "name": "Add(Numbers,Numbers)", "func": "ves_def", "handles": false }
-        //     ]}
-        //     ]
-
-        //     """;
-
-        //     string tasksDir = Path.Combine(s_buildEnv.WorkloadPacksDir,
-        //                                                       "Microsoft.NET.Runtime.WebAssembly.Sdk",
-        //                                                       s_buildEnv.GetRuntimePackVersion(DefaultTargetFramework),
-        //                                                       "tasks",
-        //                                                       BuildTestBase.TargetFrameworkForTasks); // not net472!
-        //     if (!Directory.Exists(tasksDir)) {
-        //         string? tasksDirParent = Path.GetDirectoryName (tasksDir);
-        //         if (!string.IsNullOrEmpty (tasksDirParent)) {
-        //             if (!Directory.Exists(tasksDirParent)) {
-        //                 _testOutput.WriteLine($"Expected {tasksDirParent} to exist and contain TFM subdirectories");
-        //             }
-        //             _testOutput.WriteLine($"runtime pack tasks dir {tasksDir} contains subdirectories:");
-        //             foreach (string subdir in Directory.EnumerateDirectories(tasksDirParent)) {
-        //                 _testOutput.WriteLine($"  - {subdir}");
-        //             }
-        //         }
-        //         throw new DirectoryNotFoundException($"Could not find tasks directory {tasksDir}");
-        //     }
-
-        //     string? taskPath = Directory.EnumerateFiles(tasksDir, "WasmAppBuilder.dll", SearchOption.AllDirectories)
-        //                                     .FirstOrDefault();
-        //     if (string.IsNullOrEmpty(taskPath))
-        //         throw new FileNotFoundException($"Could not find WasmAppBuilder.dll in {tasksDir}");
-
-        //     _testOutput.WriteLine ("Using WasmAppBuilder.dll from {0}", taskPath);
-
-        //     projectCode = projectCode
-        //         .Replace("###WasmPInvokeModule###", AddAssembly("System.Private.CoreLib") + AddAssembly("System.Runtime") + AddAssembly(libraryBuildArgs.ProjectName))
-        //         .Replace("###WasmAppBuilder###", taskPath);
-
-        //     buildArgs = buildArgs with { ProjectName = $"icall_enum_{buildArgs.Configuration}_{id}", ProjectFileContents = projectCode };
-
-        //     _projectDir = null;
-
-        //     (_, output) = BuildProject(
-        //         buildArgs,
-        //         id: id + "tasks",
-        //         new BuildProjectOptions(
-        //             InitProject: () =>
-        //             {
-        //                 File.WriteAllText(Path.Combine(_projectDir!, "runtime-icall-table.h"), icallTable);
-        //             },
-        //             Publish: buildArgs.AOT,
-        //             DotnetWasmFromRuntimePack: false,
-        //             UseCache: false,
-        //             AssertAppBundle: false
-        //         )
-        //     );
-
-        //     Assert.DoesNotMatch(".*warning.*Numbers", output);
-        // }
-
-        // [Theory]
-        // [BuildAndRun(parameters: new object[] { "tr_TR.UTF-8" })]
-        // public void BuildNativeInNonEnglishCulture(ProjectInfo buildArgs, string culture, RunHost host, string id)
-        // {
-        //     // Check that we can generate interp tables in non-english cultures
-        //     // Prompted by https://github.com/dotnet/runtime/issues/71149
-
-        //     string code = @"
-        //         using System;
-        //         using System.Runtime.InteropServices;
-
-        //         Console.WriteLine($""square: {square(5)}"");
-        //         return 42;
-
-        //         [DllImport(""simple"")] static extern int square(int x);
-        //     ";
-
-        //     buildArgs = ExpandBuildArgs(buildArgs,
-        //                                 extraItems: @$"<NativeFileReference Include=""simple.c"" />",
-        //                                 extraProperties: buildArgs.AOT
-        //                                                     ? string.Empty
-        //                                                     : "<WasmBuildNative>true</WasmBuildNative>");
-
-        //     var extraEnvVars = new Dictionary<string, string> {
-        //         { "LANG", culture },
-        //         { "LC_ALL", culture },
-        //     };
-
-        //     (_, string output) = BuildProject(buildArgs,
-        //                                 id: id,
-        //                                 new BuildProjectOptions(
-        //                                     InitProject: () =>
-        //                                     {
-        //                                         File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), code);
-        //                                         File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "native-libs", "simple.c"),
-        //                                                     Path.Combine(_projectDir!, "simple.c"));
-        //                                     },
-        //                                     Publish: buildArgs.AOT,
-        //                                     DotnetWasmFromRuntimePack: false,
-        //                                     ExtraBuildEnvironmentVariables: extraEnvVars
-        //                                     ));
-
-        //     output = RunAndTestWasmApp(buildArgs,
-        //                                buildDir: _projectDir,
-        //                                expectedExitCode: 42,
-        //                                host: host,
-        //                                id: id,
-        //                                envVars: extraEnvVars);
-        //     Assert.Contains("square: 25", output);
-        // }
-
-        // [Theory]
-        // [BuildAndRun(parameters: new object[] { new object[] {
-        //         "with-hyphen",
-        //         "with#hash-and-hyphen",
-        //         "with.per.iod",
-        //         "with🚀unicode#"
-        //     } })]
-
-        // private (ProjectInfo, string) BuildForVariadicFunctionTests(string programText, ProjectInfo buildArgs, string id, string? verbosity = null, string extraProperties = "")
-        // {
-        //     extraProperties += "<AllowUnsafeBlocks>true</AllowUnsafeBlocks><_WasmDevel>true</_WasmDevel>";
-
-        //     string filename = "variadic.o";
-        //     buildArgs = ExpandBuildArgs(buildArgs,
-        //                                 extraItems: $"<NativeFileReference Include=\"{filename}\" />",
-        //                                 extraProperties: extraProperties);
-
-        //     (_, string output) = BuildProject(buildArgs,
-        //                                 id: id,
-        //                                 new BuildProjectOptions(
-        //                                     InitProject: () =>
-        //                                     {
-        //                                         File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), programText);
-        //                                         File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "native-libs", filename),
-        //                                                     Path.Combine(_projectDir!, filename));
-        //                                     },
-        //                                     Publish: buildArgs.AOT,
-        //                                     Verbosity: verbosity,
-        //                                     DotnetWasmFromRuntimePack: false));
-
-        //     return (buildArgs, output);
-        // }
-
-        // private void EnsureComInteropCompiles(ProjectInfo buildArgs, string id)
-        // {
-        //     string programText = @"
-        //         using System;
-        //         using System.Runtime.CompilerServices;
-        //         using System.Runtime.InteropServices;
-        //         using System.Runtime.InteropServices.ComTypes;
-
-        //         public class Test
-        //         {
-        //             public static int Main(string[] args)
-        //             {
-        //                 var s = new STGMEDIUM();
-        //                 ReleaseStgMedium(ref s);
-        //                 return 42;
-        //             }
-
-        //             [DllImport(""ole32.dll"")]
-        //             internal static extern void ReleaseStgMedium(ref STGMEDIUM medium);
-        //         }
-
-        //     ";
-
-        //     buildArgs = ExpandBuildArgs(buildArgs);
-
-        //     (string libraryDir, string output) = BuildProject(buildArgs,
-        //                                 id: id,
-        //                                 new BuildProjectOptions(
-        //                                     InitProject: () =>
-        //                                     {
-        //                                         File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), programText);
-        //                                     },
-        //                                     Publish: buildArgs.AOT,
-        //                                     DotnetWasmFromRuntimePack: true));
-
-        //     Assert.Contains("Generated app bundle at " + libraryDir, output);
-        // }
-
-        // private void EnsureWasmAbiRulesAreFollowed(ProjectInfo buildArgs, RunHost host, string id)
-        // {
-        //     string programText = @"
-        //         using System;
-        //         using System.Runtime.CompilerServices;
-        //         using System.Runtime.InteropServices;
-
-        //         public struct SingleFloatStruct {
-        //             public float Value;
-        //         }
-        //         public struct SingleDoubleStruct {
-        //             public struct Nested1 {
-        //                 // This field is private on purpose to ensure we treat visibility correctly
-        //                 double Value;
-        //             }
-        //             public Nested1 Value;
-        //         }
-        //         public struct SingleI64Struct {
-        //             public Int64 Value;
-        //         }
-        //         public struct PairStruct {
-        //             public int A, B;
-        //         }
-        //         public unsafe struct MyFixedArray {
-        //             public fixed int elements[2];
-        //         }
-        //         [System.Runtime.CompilerServices.InlineArray(2)]
-        //         public struct MyInlineArray {
-        //             public int element0;
-        //         }
-
-        //         public class Test
-        //         {
-        //             public static unsafe int Main(string[] argv)
-        //             {
-        //                 var i64_a = 0xFF00FF00FF00FF0L;
-        //                 var i64_b = ~i64_a;
-        //                 var resI = direct64(i64_a);
-        //                 Console.WriteLine(""l (l)="" + resI);
-
-        //                 var sis = new SingleI64Struct { Value = i64_a };
-        //                 var resSI = indirect64(sis);
-        //                 Console.WriteLine(""s (s)="" + resSI.Value);
-
-        //                 var resF = direct(3.14);
-        //                 Console.WriteLine(""f (d)="" + resF);
-
-        //                 SingleDoubleStruct sds = default;
-        //                 Unsafe.As<SingleDoubleStruct, double>(ref sds) = 3.14;
-
-        //                 resF = indirect_arg(sds);
-        //                 Console.WriteLine(""f (s)="" + resF);
-
-        //                 var res = indirect(sds);
-        //                 Console.WriteLine(""s (s)="" + res.Value);
-
-        //                 var pair = new PairStruct { A = 1, B = 2 };
-        //                 var paires = accept_and_return_pair(pair);
-        //                 Console.WriteLine(""paires.B="" + paires.B);
-
-        //                 // This test is split into methods to simplify debugging issues with it
-        //                 var ia = InlineArrayTest1();
-        //                 var iares = InlineArrayTest2(ia);
-        //                 Console.WriteLine($""iares[0]={iares[0]} iares[1]={iares[1]}"");
-
-        //                 MyFixedArray fa = new ();
-        //                 for (int i = 0; i < 2; i++)
-        //                     fa.elements[i] = i;
-        //                 var fares = accept_and_return_fixedarray(fa);
-        //                 Console.WriteLine(""fares.elements[1]="" + fares.elements[1]);
-
-        //                 return (int)res.Value;
-        //             }
-
-        //             public static unsafe MyInlineArray InlineArrayTest1 () {
-        //                 MyInlineArray ia = new ();
-        //                 for (int i = 0; i < 2; i++)
-        //                     ia[i] = i;
-        //                 return ia;
-        //             }
-
-        //             public static unsafe MyInlineArray InlineArrayTest2 (MyInlineArray ia) {
-        //                 return accept_and_return_inlinearray(ia);
-        //             }
-
-        //             [DllImport(""wasm-abi"", EntryPoint=""accept_double_struct_and_return_float_struct"")]
-        //             public static extern SingleFloatStruct indirect(SingleDoubleStruct arg);
-
-        //             [DllImport(""wasm-abi"", EntryPoint=""accept_double_struct_and_return_float_struct"")]
-        //             public static extern float indirect_arg(SingleDoubleStruct arg);
-
-        //             [DllImport(""wasm-abi"", EntryPoint=""accept_double_struct_and_return_float_struct"")]
-        //             public static extern float direct(double arg);
-
-        //             [DllImport(""wasm-abi"", EntryPoint=""accept_and_return_i64_struct"")]
-        //             public static extern SingleI64Struct indirect64(SingleI64Struct arg);
-
-        //             [DllImport(""wasm-abi"", EntryPoint=""accept_and_return_i64_struct"")]
-        //             public static extern Int64 direct64(Int64 arg);
-
-        //             [DllImport(""wasm-abi"", EntryPoint=""accept_and_return_pair"")]
-        //             public static extern PairStruct accept_and_return_pair(PairStruct arg);
-
-        //             [DllImport(""wasm-abi"", EntryPoint=""accept_and_return_fixedarray"")]
-        //             public static extern MyFixedArray accept_and_return_fixedarray(MyFixedArray arg);
-
-        //             [DllImport(""wasm-abi"", EntryPoint=""accept_and_return_inlinearray"")]
-        //             public static extern MyInlineArray accept_and_return_inlinearray(MyInlineArray arg);
-        //         }";
-
-        //     var extraProperties = "<AllowUnsafeBlocks>true</AllowUnsafeBlocks><_WasmDevel>false</_WasmDevel><WasmNativeStrip>false</WasmNativeStrip>";
-        //     var extraItems = @"<NativeFileReference Include=""wasm-abi.c"" />";
-
-        //     buildArgs = ExpandBuildArgs(buildArgs,
-        //                                 extraItems: extraItems,
-        //                                 extraProperties: extraProperties);
-
-        //     (string libraryDir, string output) = BuildProject(buildArgs,
-        //                                 id: id,
-        //                                 new BuildProjectOptions(
-        //                                     InitProject: () =>
-        //                                     {
-        //                                         File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), programText);
-        //                                         File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "native-libs", "wasm-abi.c"),
-        //                                                     Path.Combine(_projectDir!, "wasm-abi.c"));
-        //                                     },
-        //                                     Publish: buildArgs.AOT,
-        //                                     // Verbosity: "diagnostic",
-        //                                     DotnetWasmFromRuntimePack: false));
-
-        //     string objDir = Path.Combine(_projectDir!, "obj", buildArgs.Configuration!, "net9.0", "browser-wasm", "wasm", buildArgs.AOT ? "for-publish" : "for-build");
-
-        //     // Verify that the right signature was added for the pinvoke. We can't determine this by examining the m2n file
-        //     // FIXME: Not possible in in-process mode for some reason, even with verbosity at "diagnostic"
-        //     // Assert.Contains("Adding pinvoke signature FD for method 'Test.", output);
-
-        //     string pinvokeTable = File.ReadAllText(Path.Combine(objDir, "pinvoke-table.h"));
-        //     // Verify that the invoke is in the pinvoke table. Under various circumstances we will silently skip it,
-        //     //  for example if the module isn't found
-        //     Assert.Contains("\"accept_double_struct_and_return_float_struct\", accept_double_struct_and_return_float_struct", pinvokeTable);
-        //     // Verify the signature of the C function prototype. Wasm ABI specifies that the structs should both decompose into scalars.
-        //     Assert.Contains("float accept_double_struct_and_return_float_struct (double);", pinvokeTable);
-        //     Assert.Contains("int64_t accept_and_return_i64_struct (int64_t);", pinvokeTable);
-
-        //     var runOutput = RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 3, host: host, id: id);
-        //     Assert.Contains("l (l)=-1148435428713435121", runOutput);
-        //     Assert.Contains("s (s)=-1148435428713435121", runOutput);
-        //     Assert.Contains("f (d)=3.14", runOutput);
-        //     Assert.Contains("f (s)=3.14", runOutput);
-        //     Assert.Contains("s (s)=3.14", runOutput);
-        //     Assert.Contains("paires.B=4", runOutput);
-        //     Assert.Contains("iares[0]=32", runOutput);
-        //     Assert.Contains("iares[1]=2", runOutput);
-        //     Assert.Contains("fares.elements[1]=2", runOutput);
-        // }
-
-        // [Theory]
-        // [BuildAndRun(aot: true)]
-        // public void EnsureWasmAbiRulesAreFollowedInAOT(ProjectInfo buildArgs, RunHost host, string id) =>
-        //     EnsureWasmAbiRulesAreFollowed(buildArgs, host, id);
-
-        // [Theory]
-        // [BuildAndRun(aot: false)]
-        // public void EnsureWasmAbiRulesAreFollowedInInterpreter(ProjectInfo buildArgs, RunHost host, string id) =>
-        //     EnsureWasmAbiRulesAreFollowed(buildArgs, host, id);
-
-        // [Theory]
-        // [BuildAndRun(aot: true)]
-        // public void EnsureComInteropCompilesInAOT(ProjectInfo buildArgs, string id) =>
-        //     EnsureComInteropCompiles(buildArgs, id);
-
-        // [Theory]
-        // [BuildAndRun(aot: false)]
-        // public void UCOWithSpecialCharacters(ProjectInfo buildArgs, RunHost host, string id)
-        // {
-        //     var extraProperties = "<AllowUnsafeBlocks>true</AllowUnsafeBlocks>";
-        //     var extraItems = @"<NativeFileReference Include=""local.c"" />";
-
-        //     buildArgs = ExpandBuildArgs(buildArgs,
-        //                                 extraItems: extraItems,
-        //                                 extraProperties: extraProperties);
-
-        //     (string libraryDir, string output) = BuildProject(buildArgs,
-        //                                 id: id,
-        //                                 new BuildProjectOptions(
-        //                                     InitProject: () =>
-        //                                     {
-        //                                         File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "UnmanagedCallback.cs"), Path.Combine(_projectDir!, "Program.cs"));
-        //                                         File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "native-libs", "local.c"), Path.Combine(_projectDir!, "local.c"));
-        //                                     },
-        //                                     Publish: true,
-        //                                     DotnetWasmFromRuntimePack: false));
-
-        //     var runOutput = RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 42, host: host, id: id);
-        //     Assert.DoesNotContain("Conflict.A.Managed8\u4F60Func(123) -> 123", runOutput);
-        //     Assert.Contains("ManagedFunc returned 42", runOutput);
-        // }
+        [Theory]
+        [BuildAndRun(aot: false)]
+        public async void NativeLibraryWithVariadicFunctions(string config, bool aot)
+        {
+            ProjectInfo info = PrepreProjectForVariadicFuntion(config, aot, "variadic");
+            ReplaceFile(Path.Combine("Common", "Program.cs"), Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "PInvoke", "VariadicFunctions.cs"));
+            string output = BuildForVariadicFunctionTests(info);
+            Assert.Matches("warning.*native function.*sum.*varargs", output);
+            Assert.Contains("System.Int32 sum_one(System.Int32)", output);
+            Assert.Contains("System.Int32 sum_two(System.Int32, System.Int32)", output);
+            Assert.Contains("System.Int32 sum_three(System.Int32, System.Int32, System.Int32)", output);
+
+            RunResult result = await RunForPublishWithWebServer(new(
+                info.Configuration,
+                TestScenario: "DotnetRun",
+                ExpectedExitCode: 42
+            ));
+            Assert.Contains("Main running", result.TestOutput);
+        }
+
+        [Theory]
+        [BuildAndRun()]
+        public async void DllImportWithFunctionPointersCompilesWithoutWarning(string config, bool aot)
+        {
+            ProjectInfo info = PrepreProjectForVariadicFuntion(config, aot, "fnptr");
+            ReplaceFile(Path.Combine("Common", "Program.cs"), Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "PInvoke", "DllImportNoWarning.cs"));
+            string output = BuildForVariadicFunctionTests(info);
+
+            Assert.DoesNotMatch("warning\\sWASM0001.*Could\\snot\\sget\\spinvoke.*Parsing\\sfunction\\spointer\\stypes", output);
+            Assert.DoesNotMatch("warning\\sWASM0001.*Skipping.*using_sum_one.*because.*function\\spointer", output);
+
+            RunResult result = await RunForPublishWithWebServer(new(
+                info.Configuration,
+                TestScenario: "DotnetRun",
+                ExpectedExitCode: 42
+            ));
+            Assert.Contains("Main running", result.TestOutput);
+        }
+
+        [Theory]
+        [BuildAndRun()]
+        public async void DllImportWithFunctionPointers_ForVariadicFunction_CompilesWithWarning(string config, bool aot)
+        {
+            ProjectInfo info = PrepreProjectForVariadicFuntion(config, aot, "fnptr_variadic");
+            ReplaceFile(Path.Combine("Common", "Program.cs"), Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "PInvoke", "DllImportWarning.cs"));
+            string output = BuildForVariadicFunctionTests(info);
+
+            Assert.DoesNotMatch("warning\\sWASM0001.*Could\\snot\\sget\\spinvoke.*Parsing\\sfunction\\spointer\\stypes", output);
+            Assert.DoesNotMatch("warning\\sWASM0001.*Skipping.*using_sum_one.*because.*function\\spointer", output);
+
+            RunResult result = await RunForPublishWithWebServer(new(
+                info.Configuration,
+                TestScenario: "DotnetRun",
+                ExpectedExitCode: 42
+            ));
+            Assert.Contains("Main running", result.TestOutput);
+        }
+
+        [Theory]
+        [BuildAndRun()]
+        public void UnmanagedStructAndMethodIn_SameAssembly_WithoutDisableRuntimeMarshallingAttribute_NotConsideredBlittable
+                        (string config, bool aot)
+        {
+            ProjectInfo info = PrepreProjectForBlittableTests(
+                config, aot, "not_blittable", disableRuntimeMarshalling: false, useAutoLayout: true);
+            bool isPublish = false;
+            (_, string output) = BuildTemplateProject(info,
+                new BuildProjectOptions(
+                    info.Configuration,
+                    info.ProjectName,
+                    BinFrameworkDir: GetBinFrameworkDir(info.Configuration, isPublish),
+                    IsPublish: isPublish,
+                    ExpectSuccess: false
+            ));
+            Assert.Matches("error.*Parameter.*types.*pinvoke.*.*blittable", output);
+        }
+
+        [Theory]
+        [BuildAndRun()]
+        public void UnmanagedStructAndMethodIn_SameAssembly_WithoutDisableRuntimeMarshallingAttribute_WithStructLayout_ConsideredBlittable
+                        (string config, bool aot)
+        {
+            ProjectInfo info = PrepreProjectForBlittableTests(
+                config, aot, "blittable", disableRuntimeMarshalling: false, useAutoLayout: false);
+            bool isPublish = false;
+            (_, string output) = BuildTemplateProject(info,
+                new BuildProjectOptions(
+                    info.Configuration,
+                    info.ProjectName,
+                    BinFrameworkDir: GetBinFrameworkDir(info.Configuration, isPublish),
+                    ExpectedFileType: GetExpectedFileType(info, isPublish: isPublish, isNativeBuild: true),
+                    IsPublish: isPublish
+            ));
+            Assert.DoesNotMatch("error.*Parameter.*types.*pinvoke.*.*blittable", output);
+        }
+
+        [Theory]
+        [BuildAndRun()]
+        public async void UnmanagedStructAndMethodIn_SameAssembly_WithDisableRuntimeMarshallingAttribute_ConsideredBlittable
+                        (string config, bool aot)
+        {
+            ProjectInfo info = PrepreProjectForBlittableTests(
+                config, aot, "blittable", disableRuntimeMarshalling: true, useAutoLayout: true);
+            bool isPublish = false;
+            (_, string output) = BuildTemplateProject(info,
+                new BuildProjectOptions(
+                    info.Configuration,
+                    info.ProjectName,
+                    BinFrameworkDir: GetBinFrameworkDir(info.Configuration, isPublish),
+                    ExpectedFileType: GetExpectedFileType(info, isPublish: isPublish, isNativeBuild: true),
+                    IsPublish: isPublish
+            ));
+            RunResult result = await RunForBuildWithDotnetRun(new(
+                info.Configuration,
+                TestScenario: "DotnetRun",
+                ExpectedExitCode: 42
+            ));
+            Assert.Contains(result.TestOutput, m => m.Contains("Main running"));
+        }
+
+        private ProjectInfo PrepreProjectForBlittableTests(string config, bool aot, string prefix, bool disableRuntimeMarshalling, bool useAutoLayout = false)
+        {
+            string extraProperties = aot ? string.Empty : "<WasmBuildNative>true</WasmBuildNative>";
+            ProjectInfo info = CopyTestAsset(config, aot, "WasmBasicTestApp", prefix, "App", extraProperties: extraProperties);
+            string programRelativePath = Path.Combine("Common", "Program.cs");
+            ReplaceFile(programRelativePath, Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "PInvoke", "BittableSameAssembly.cs"));
+            
+            var replacements = new Dictionary<string, string> { };
+            if (!disableRuntimeMarshalling)
+            {
+                replacements.Add("[assembly: DisableRuntimeMarshalling]", "");
+            }
+            if (!useAutoLayout)
+            {
+                replacements.Add("[StructLayout(LayoutKind.Auto)]", "");
+            }
+            if (replacements.Count > 0)
+            {
+                UpdateFile(programRelativePath, replacements);
+            }
+            return info;
+        }
+
+        public static IEnumerable<object?[]> SeparateAssemblyWithDisableMarshallingAttributeTestData(string config)
+            => ConfigWithAOTData(aot: false, config: config).Multiply(
+                    new object[] { /*libraryHasAttribute*/ false, /*appHasAttribute*/ false, /*expectSuccess*/ false },
+                    new object[] { /*libraryHasAttribute*/ true, /*appHasAttribute*/ false, /*expectSuccess*/ false },
+                    new object[] { /*libraryHasAttribute*/ false, /*appHasAttribute*/ true, /*expectSuccess*/ true },
+                    new object[] { /*libraryHasAttribute*/ true, /*appHasAttribute*/ true, /*expectSuccess*/ true }
+                ).UnwrapItemsAsArrays();
+
+        [Theory]
+        [MemberData(nameof(SeparateAssemblyWithDisableMarshallingAttributeTestData), parameters: "Debug")]
+        [MemberData(nameof(SeparateAssemblyWithDisableMarshallingAttributeTestData), parameters: "Release")]
+        public async void UnmanagedStructsAreConsideredBlittableFromDifferentAssembly
+                        (string config, bool aot, bool libraryHasAttribute, bool appHasAttribute, bool expectSuccess)
+        {
+            string extraProperties = aot ? string.Empty : "<WasmBuildNative>true</WasmBuildNative>";
+            string extraItems =  @$"<ProjectReference Include=""..\\Library\\Library.csproj"" />";
+            string libRelativePath = Path.Combine("..", "Library", "Library.cs");
+            string programRelativePath = Path.Combine("Common", "Program.cs");
+            ProjectInfo info = CopyTestAsset(config, aot, "WasmBasicTestApp", "blittable_different_library", "App", extraProperties: extraProperties, extraItems: extraItems);
+            ReplaceFile(libRelativePath, Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "PInvoke", "BittableDifferentAssembly_Lib.cs"));
+            ReplaceFile(programRelativePath, Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "PInvoke", "BittableDifferentAssembly.cs"));
+            if (!libraryHasAttribute)
+            {
+                UpdateFile(libRelativePath, new Dictionary<string, string> { { "[assembly: System.Runtime.CompilerServices.DisableRuntimeMarshalling]", "" } });
+            }
+            if (!appHasAttribute)
+            {
+                UpdateFile(programRelativePath, new Dictionary<string, string> { { "[assembly: DisableRuntimeMarshalling]", "" } });
+            }
+            bool isPublish = false;
+            (_, string output) = BuildTemplateProject(info,
+                new BuildProjectOptions(
+                    info.Configuration,
+                    info.ProjectName,
+                    BinFrameworkDir: GetBinFrameworkDir(info.Configuration, isPublish),
+                    ExpectedFileType: GetExpectedFileType(info, isPublish: isPublish, isNativeBuild: true),
+                    IsPublish: isPublish,
+                    ExpectSuccess: expectSuccess
+            ));
+            if (expectSuccess)
+            {
+                RunResult result = await RunForBuildWithDotnetRun(new(
+                    info.Configuration,
+                    TestScenario: "DotnetRun",
+                    ExpectedExitCode: 42
+                ));
+                Assert.Contains("Main running 5", result.TestOutput);
+            }
+            else
+            {
+                Assert.Matches("error.*Parameter.*types.*pinvoke.*.*blittable", output);
+            }
+        }
+
+
+        [Theory]
+        [BuildAndRun()]
+        public async void DllImportWithFunctionPointers_WarningsAsMessages(string config, bool aot)
+        {
+            string extraProperties = "<MSBuildWarningsAsMessages>$(MSBuildWarningsAsMessage);WASM0001</MSBuildWarningsAsMessages>";
+            ProjectInfo info = CopyTestAsset(config, aot, "WasmBasicTestApp", "fnptr", "App", extraProperties: extraProperties);
+            ReplaceFile(Path.Combine("Common", "Program.cs"), Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "PInvoke", "FunctionPointers.cs"));
+
+            string output = BuildForVariadicFunctionTests(info, isNativeBuild: false);
+            Assert.DoesNotContain("warning WASM0001", output);
+
+            RunResult result = await RunForPublishWithWebServer(new(
+                info.Configuration,
+                TestScenario: "DotnetRun",
+                ExpectedExitCode: 42
+            ));
+            Assert.Contains("Main running", result.TestOutput);
+        }
+
+        [Theory]
+        [BuildAndRun()]
+        public void UnmanagedCallback_WithFunctionPointers_CompilesWithWarnings(string config, bool aot)
+        {
+            ProjectInfo info = CopyTestAsset(config, aot, "WasmBasicTestApp", "cb_fnptr", "App");
+            string programRelativePath = Path.Combine("Common", "Program.cs");
+            ReplaceFile(programRelativePath, Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "PInvoke", "FunctionPointers.cs"));
+            UpdateFile(programRelativePath, new Dictionary<string, string> { { "[DllImport(\"someting\")]", "[UnmanagedCallersOnly]" } });
+            string output = BuildForVariadicFunctionTests(info, isNativeBuild: false);
+            Assert.DoesNotMatch("warning\\sWASM0001.*Skipping.*Test::SomeFunction1.*because.*function\\spointer", output);
+        }
+
+        [Theory]
+        [BuildAndRun()]
+        public async void UnmanagedCallback_InFileType(string config, bool aot)
+        {
+            ProjectInfo info = CopyTestAsset(config, aot, "WasmBasicTestApp", "cb_filetype", "App");
+            string programRelativePath = Path.Combine("Common", "Program.cs");
+            ReplaceFile(programRelativePath, Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "PInvoke", "UnmanagedCallbackInFile.cs"));
+
+            string output = BuildForVariadicFunctionTests(info, isNativeBuild: false);
+            Assert.DoesNotMatch(".*(warning|error).*>[A-Z0-9]+__Foo", output);
+
+            RunResult result = await RunForPublishWithWebServer(new(
+                info.Configuration,
+                TestScenario: "DotnetRun",
+                ExpectedExitCode: 42
+            ));
+            Assert.Contains("Main running", result.TestOutput);
+        }
+
+        [Theory]
+        [BuildAndRun()]
+        [ActiveIssue("RuntimeError: null function or function signature mismatch")]
+        public async void UnmanagedCallersOnly_Namespaced(string config, bool aot)
+        {
+            ProjectInfo info = CopyTestAsset(config, aot, "WasmBasicTestApp", "cb_namespace", "App");
+            string programRelativePath = Path.Combine("Common", "Program.cs");
+            ReplaceFile(programRelativePath, Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "PInvoke", "UnmanagedCallbackNamespaced.cs"));
+
+            string output = BuildForVariadicFunctionTests(info, isNativeBuild: false);
+            Assert.DoesNotMatch(".*(warning|error).*>[A-Z0-9]+__Foo", output);
+
+            RunResult result = await RunForPublishWithWebServer(new(
+                info.Configuration,
+                TestScenario: "DotnetRun",
+                ExpectedExitCode: 42
+            ));
+            Assert.Contains("A.Conflict.C", result.TestOutput);
+            Assert.Contains("B.Conflict.C", result.TestOutput);
+            if (OperatingSystem.IsWindows()) {
+                // Windows console unicode support is not great
+                Assert.Contains("A.Conflict.C_", result.TestOutput);
+                Assert.Contains("B.Conflict.C_", result.TestOutput);
+            } else {
+                Assert.Contains("A.Conflict.C_\U0001F412", result.TestOutput);
+                Assert.Contains("B.Conflict.C_\U0001F412", result.TestOutput);
+            }
+        }
+
+        [Theory]
+        [BuildAndRun()]
+        public void IcallWithOverloadedParametersAndEnum(string config, bool aot)
+        {
+            string appendToTheEnd =
+            """
+                <UsingTask TaskName="ManagedToNativeGenerator" AssemblyFile="###WasmAppBuilder###" />
+                <Target Name="Build">
+                  <PropertyGroup>
+                    <WasmPInvokeTablePath>pinvoke-table.h</WasmPInvokeTablePath>
+                    <WasmInterpToNativeTablePath>wasm_m2n_invoke.g.h</WasmInterpToNativeTablePath>
+                    <WasmRuntimeICallTablePath>runtime-icall-table.h</WasmRuntimeICallTablePath>
+                  </PropertyGroup>
+
+                  <ItemGroup>
+                    <WasmPInvokeModule Include="libSystem.Native" />
+                    ###WasmPInvokeModule###
+                  </ItemGroup>
+
+                  <ManagedToNativeGenerator
+                    Assemblies="@(WasmPInvokeAssembly)"
+                    PInvokeModules="@(WasmPInvokeModule)"
+                    PInvokeOutputPath="$(WasmPInvokeTablePath)"
+                    RuntimeIcallTableFile="$(WasmRuntimeICallTablePath)"
+                    InterpToNativeOutputPath="$(WasmInterpToNativeTablePath)">
+                    <Output TaskParameter="FileWrites" ItemName="FileWrites" />
+                  </ManagedToNativeGenerator>
+                </Target>
+            """;
+
+            ProjectInfo info = CopyTestAsset(config, aot, "WasmBasicTestApp", "icall_enum", "App", insertAtEnd: appendToTheEnd);
+            // build a library containing icalls with overloaded parameters.
+            ReplaceFile(Path.Combine("..", "Library", "Library.cs"), Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "PInvoke", "ICall_Lib.cs"));
+            // temporarily change the project directory to build the library
+            _projectDir = Path.Combine(_projectDir!, "..", "Library");
+            bool isPublish = false;
+            // libraries do not have framework dirs
+            string hypotheticalFrameworkDir = Path.Combine(GetBinFrameworkDir(info.Configuration, isPublish));
+            string libAssemblyPath = Path.Combine(hypotheticalFrameworkDir, "..", "..");
+            BuildTemplateProject(info,
+                new BuildProjectOptions(
+                    info.Configuration,
+                    "Library.csproj",
+                    // library project does not have it but it's a required parameter. It's not used when assert: false
+                    BinFrameworkDir: hypotheticalFrameworkDir,
+                    ExpectedFileType: GetExpectedFileType(info, isPublish: isPublish),
+                    IsPublish: isPublish,
+                    AssertAppBundle: false
+            ));
+            // restore the project directory
+            _projectDir = Path.Combine(_projectDir!, "..", "App");
+            
+            string icallTable =
+            """
+            [
+             { "klass":"Interop", "icalls": [{} 	,{ "name": "Square(Numbers)", "func": "ves_abc", "handles": false }
+            	,{ "name": "Add(Numbers,Numbers)", "func": "ves_def", "handles": false }
+            ]}
+            ]
+
+            """;
+            UpdateFile(Path.Combine(_projectDir!, "runtime-icall-table.h"), icallTable);
+
+            string tasksDir = Path.Combine(s_buildEnv.WorkloadPacksDir,
+                                                              "Microsoft.NET.Runtime.WebAssembly.Sdk",
+                                                              s_buildEnv.GetRuntimePackVersion(DefaultTargetFramework),
+                                                              "tasks",
+                                                              BuildTestBase.TargetFrameworkForTasks); // not net472!
+            if (!Directory.Exists(tasksDir)) {
+                string? tasksDirParent = Path.GetDirectoryName (tasksDir);
+                if (!string.IsNullOrEmpty (tasksDirParent)) {
+                    if (!Directory.Exists(tasksDirParent)) {
+                        _testOutput.WriteLine($"Expected {tasksDirParent} to exist and contain TFM subdirectories");
+                    }
+                    _testOutput.WriteLine($"runtime pack tasks dir {tasksDir} contains subdirectories:");
+                    foreach (string subdir in Directory.EnumerateDirectories(tasksDirParent)) {
+                        _testOutput.WriteLine($"  - {subdir}");
+                    }
+                }
+                throw new DirectoryNotFoundException($"Could not find tasks directory {tasksDir}");
+            }
+
+            string? taskPath = Directory.EnumerateFiles(tasksDir, "WasmAppBuilder.dll", SearchOption.AllDirectories)
+                                            .FirstOrDefault();
+            if (string.IsNullOrEmpty(taskPath))
+                throw new FileNotFoundException($"Could not find WasmAppBuilder.dll in {tasksDir}");
+
+            _testOutput.WriteLine ("Using WasmAppBuilder.dll from {0}", taskPath);
+            
+            string AddAssembly(string assemblyLocation, string name) => $"<WasmPInvokeAssembly Include=\"{Path.Combine(assemblyLocation, name + ".dll")}\" />";
+            string frameworkDir = Path.Combine(GetBinFrameworkDir(info.Configuration, isPublish));
+            string appAssemblyPath = Path.Combine(frameworkDir, "..", "..");
+            string pinvokeReplacement =
+                AddAssembly(appAssemblyPath, "System.Private.CoreLib") +
+                AddAssembly(appAssemblyPath, "System.Runtime") +
+                AddAssembly(libAssemblyPath, "Library");
+            UpdateFile("WasmBasicTestApp.csproj", new Dictionary<string, string> {
+                { "###WasmPInvokeModule###", pinvokeReplacement },
+                { "###WasmAppBuilder###", taskPath }
+            });
+
+            // Build a project with ManagedToNativeGenerator task reading icalls from the above library and runtime-icall-table.h
+            (_, string output) = BuildTemplateProject(info,
+                new BuildProjectOptions(
+                    info.Configuration,
+                    info.ProjectName,
+                    BinFrameworkDir: frameworkDir,
+                    ExpectedFileType: GetExpectedFileType(info, isPublish: isPublish),
+                    IsPublish: isPublish,
+                    UseCache: false
+            ));
+
+            Assert.DoesNotMatch(".*warning.*Numbers", output);
+        }
+
+        [Theory]
+        [BuildAndRun(parameters: new object[] { "tr_TR.UTF-8" })]
+        public async void BuildNativeInNonEnglishCulture(string config, bool aot, string culture)
+        {
+            // Check that we can generate interp tables in non-english cultures
+            // Prompted by https://github.com/dotnet/runtime/issues/71149
+
+            string extraItems = @$"<NativeFileReference Include=""simple.c"" />";
+            string extraProperties = aot ? string.Empty : "<WasmBuildNative>true</WasmBuildNative>";
+            ProjectInfo info = CopyTestAsset(config, aot, "WasmBasicTestApp", "buildNativeNonEng", "App", extraItems: extraItems);
+            string programRelativePath = Path.Combine("Common", "Program.cs");
+            ReplaceFile(programRelativePath, Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "PInvoke", "BuildNative.cs"));
+            string cCodeFilename = "simple.c";
+            File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "native-libs", cCodeFilename), Path.Combine(_projectDir!, cCodeFilename));
+
+            var extraEnvVars = new Dictionary<string, string> {
+                { "LANG", culture },
+                { "LC_ALL", culture },
+            };
+            bool isPublish = true;
+            (_, string output) = BuildTemplateProject(info,
+                new BuildProjectOptions(
+                    info.Configuration,
+                    info.ProjectName,
+                    BinFrameworkDir: GetBinFrameworkDir(info.Configuration, isPublish),
+                    ExpectedFileType: GetExpectedFileType(info, isPublish: isPublish, isNativeBuild: true),
+                    IsPublish: isPublish,
+                    ExtraBuildEnvironmentVariables: extraEnvVars
+            ));
+
+            RunResult result = await RunForPublishWithWebServer(new(
+                info.Configuration,
+                TestScenario: "DotnetRun",
+                ExpectedExitCode: 42,
+                Locale: culture
+            ));
+            Assert.Contains("square: 25", result.TestOutput);
+        }
+
+        [Theory]
+        [BuildAndRun(parameters: new object[] { new object[] {
+                "with-hyphen",
+                "with#hash-and-hyphen",
+                "with.per.iod",
+                "with🚀unicode#"
+            } })]
+        public async void CallIntoLibrariesWithNonAlphanumericCharactersInTheirNames(string config, bool aot, string[] libraryNames)
+        {
+            var extraItems = @"<NativeFileReference Include=""*.c"" />";
+            string extraProperties = aot ? string.Empty : "<WasmBuildNative>true</WasmBuildNative>";
+            ProjectInfo info = CopyTestAsset(config, aot, "WasmBasicTestApp", "abi", "App", extraItems: extraItems, extraProperties: extraProperties);
+            
+            int baseArg = 10;
+            GenerateSourceFiles(_projectDir!, baseArg);
+            bool isPublish = aot;
+            (_, string output) = BuildTemplateProject(info,
+                new BuildProjectOptions(
+                    info.Configuration,
+                    info.ProjectName,
+                    BinFrameworkDir: GetBinFrameworkDir(info.Configuration, isPublish),
+                    ExpectedFileType: GetExpectedFileType(info, isPublish: isPublish, isNativeBuild: true),
+                    IsPublish: isPublish
+            ));
+
+            var runOptions = new RunOptions(info.Configuration, TestScenario: "DotnetRun", ExpectedExitCode: 42);
+            RunResult result = isPublish ? await RunForPublishWithWebServer(runOptions) : await RunForBuildWithDotnetRun(runOptions);
+
+            for (int i = 0; i < libraryNames.Length; i ++)
+            {
+                Assert.Contains($"square_{i}: {(i + baseArg) * (i + baseArg)}", result.TestOutput);
+            }
+
+            void GenerateSourceFiles(string outputPath, int baseArg)
+            {
+                StringBuilder csBuilder = new($@"
+                    using System;
+                    using System.Runtime.InteropServices;
+                ");
+
+                StringBuilder dllImportsBuilder = new();
+                for (int i = 0; i < libraryNames.Length; i ++)
+                {
+                    dllImportsBuilder.AppendLine($"[DllImport(\"{libraryNames[i]}\")] static extern int square_{i}(int x);");
+                    csBuilder.AppendLine($@"Console.WriteLine($""TestOutput -> square_{i}: {{square_{i}({i + baseArg})}}"");");
+
+                    string nativeCode = $@"
+                        #include <stdarg.h>
+
+                        int square_{i}(int x)
+                        {{
+                            return x * x;
+                        }}";
+                    File.WriteAllText(Path.Combine(outputPath, $"{libraryNames[i]}.c"), nativeCode);
+                }
+
+                csBuilder.AppendLine("return 42;");
+                csBuilder.Append(dllImportsBuilder);
+
+                UpdateFile(Path.Combine("Common", "Program.cs"), csBuilder.ToString());
+            }
+        }
+
+        private ProjectInfo PrepreProjectForVariadicFuntion(string config, bool aot, string prefix, string extraProperties = "")
+        {
+            string objectFilename = "variadic.o";
+            extraProperties += "<AllowUnsafeBlocks>true</AllowUnsafeBlocks><_WasmDevel>true</_WasmDevel>";
+            string extraItems = $"<NativeFileReference Include=\"{objectFilename}\" />";
+            ProjectInfo info = CopyTestAsset(config, aot, "WasmBasicTestApp", prefix, "App", extraItems: extraItems, extraProperties: extraProperties);
+            File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "native-libs", objectFilename), Path.Combine(_projectDir!, objectFilename));
+            return info;
+        }
+
+        private string BuildForVariadicFunctionTests(ProjectInfo info, bool isPublish = true, string? verbosity = null, bool isNativeBuild = true)
+        {
+            string verbosityArg = verbosity == null ? string.Empty : $" -v:{verbosity}";
+            var extraArgs = new string[] { verbosityArg };
+            (_, string output) = BuildTemplateProject(info,
+                new BuildProjectOptions(
+                    info.Configuration,
+                    info.ProjectName,
+                    BinFrameworkDir: GetBinFrameworkDir(info.Configuration, isPublish),
+                    // NativeFileReference forces native build
+                    ExpectedFileType: GetExpectedFileType(info, isPublish: isPublish, isNativeBuild: isNativeBuild),
+                    IsPublish: isPublish
+                ),
+                extraArgs: extraArgs);
+            return output;
+        }
+
+        private async Task EnsureWasmAbiRulesAreFollowed(string config, bool aot)
+        {
+            var extraItems = @"<NativeFileReference Include=""wasm-abi.c"" />";
+            var extraProperties = "<AllowUnsafeBlocks>true</AllowUnsafeBlocks><_WasmDevel>false</_WasmDevel><WasmNativeStrip>false</WasmNativeStrip>";
+            ProjectInfo info = CopyTestAsset(config, aot, "WasmBasicTestApp", "abi", "App", extraItems: extraItems, extraProperties: extraProperties);
+            ReplaceFile(Path.Combine("Common", "Program.cs"), Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "PInvoke", "AbiRules.cs"));
+            string cCodeFilename = "wasm-abi.c";
+            File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "native-libs", cCodeFilename), Path.Combine(_projectDir!, cCodeFilename));
+
+            bool isPublish = aot;
+            var buildOptions = new BuildProjectOptions(
+                info.Configuration,
+                info.ProjectName,
+                BinFrameworkDir: GetBinFrameworkDir(info.Configuration, isPublish),
+                // NativeFileReference forces native build
+                ExpectedFileType: GetExpectedFileType(info, isPublish: isPublish, isNativeBuild: true),
+                IsPublish: isPublish
+            );
+            BuildTemplateProject(info, buildOptions);
+
+            string objDir = Path.Combine(_projectDir!, "obj", config, buildOptions.TargetFramework, "wasm", isPublish ? "for-publish" : "for-build");
+
+            // Verify that the right signature was added for the pinvoke. We can't determine this by examining the m2n file
+            // FIXME: Not possible in in-process mode for some reason, even with verbosity at "diagnostic"
+            // Assert.Contains("Adding pinvoke signature FD for method 'Test.", output);
+
+            string pinvokeTable = File.ReadAllText(Path.Combine(objDir, "pinvoke-table.h"));
+            // Verify that the invoke is in the pinvoke table. Under various circumstances we will silently skip it,
+            //  for example if the module isn't found
+            Assert.Contains("\"accept_double_struct_and_return_float_struct\", accept_double_struct_and_return_float_struct", pinvokeTable);
+            // Verify the signature of the C function prototype. Wasm ABI specifies that the structs should both decompose into scalars.
+            Assert.Contains("float accept_double_struct_and_return_float_struct (double);", pinvokeTable);
+            Assert.Contains("int64_t accept_and_return_i64_struct (int64_t);", pinvokeTable);
+
+            var runOptions = new RunOptions(info.Configuration, TestScenario: "DotnetRun", ExpectedExitCode: 3);
+            RunResult result = isPublish ? await RunForPublishWithWebServer(runOptions) : await RunForBuildWithDotnetRun(runOptions);
+            Assert.Contains("l (l)=-1148435428713435121", result.TestOutput);
+            Assert.Contains("s (s)=-1148435428713435121", result.TestOutput);
+            Assert.Contains("f (d)=3.14", result.TestOutput);
+            Assert.Contains("f (s)=3.14", result.TestOutput);
+            Assert.Contains("s (s)=3.14", result.TestOutput);
+            Assert.Contains("paires.B=4", result.TestOutput);
+            Assert.Contains(result.TestOutput, m => m.Contains("iares[0]=32"));
+            Assert.Contains(result.TestOutput, m => m.Contains("iares[1]=2"));
+            Assert.Contains("fares.elements[1]=2", result.TestOutput);
+        }
+
+        [Theory]
+        [BuildAndRun(aot: true, config: "Release")]
+        public async void EnsureWasmAbiRulesAreFollowedInAOT(string config, bool aot) =>
+            await EnsureWasmAbiRulesAreFollowed(config, aot);
+
+        [Theory]
+        [BuildAndRun(aot: false)]
+        public async void EnsureWasmAbiRulesAreFollowedInInterpreter(string config, bool aot) =>
+            await EnsureWasmAbiRulesAreFollowed(config, aot);
+
+        [Theory]
+        [BuildAndRun(aot: true, config: "Release")]
+        [ActiveIssue("WasmGenerateAppBundle = false, so _WasmGenerateAppBundle is not triggered. Is the change expected?")]
+        public void EnsureComInteropCompilesInAOT(string config, bool aot)
+        {
+            ProjectInfo info = CopyTestAsset(config, aot, "WasmBasicTestApp", "com", "App");
+            ReplaceFile(Path.Combine("Common", "Program.cs"), Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "PInvoke", "ComInterop.cs"));
+            bool isPublish = aot;
+            (string libraryDir, string output) = BuildTemplateProject(info,
+                new BuildProjectOptions(
+                    info.Configuration,
+                    info.ProjectName,
+                    BinFrameworkDir: GetBinFrameworkDir(info.Configuration, isPublish),
+                    ExpectedFileType: GetExpectedFileType(info, isPublish: isPublish, isNativeBuild: true),
+                    IsPublish: isPublish
+            ));
+            Assert.Contains("Generated app bundle at " + libraryDir, output);
+        }
+
+        [Theory]
+        [BuildAndRun(aot: false)]
+        public async void UCOWithSpecialCharacters(string config, bool aot)
+        {
+            var extraProperties = "<AllowUnsafeBlocks>true</AllowUnsafeBlocks>";
+            var extraItems = @"<NativeFileReference Include=""local.c"" />";
+            ProjectInfo info = CopyTestAsset(config, aot, "WasmBasicTestApp", "uoc", "App", extraItems: extraItems, extraProperties: extraProperties);
+            ReplaceFile(Path.Combine("Common", "Program.cs"), Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "PInvoke", "UnmanagedCallback.cs"));
+            string cCodeFilename = "local.c";
+            File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "native-libs", cCodeFilename), Path.Combine(_projectDir!, cCodeFilename));
+
+            bool isPublish = true;
+            BuildTemplateProject(info,
+                new BuildProjectOptions(
+                    info.Configuration,
+                    info.ProjectName,
+                    BinFrameworkDir: GetBinFrameworkDir(info.Configuration, isPublish),
+                    // NativeFileReference forces native build
+                    ExpectedFileType: GetExpectedFileType(info, isPublish: isPublish, isNativeBuild: true),
+                    IsPublish: isPublish
+            ));
+            
+            RunResult result = await RunForPublishWithWebServer(new(
+                info.Configuration,
+                TestScenario: "DotnetRun",
+                ExpectedExitCode: 42
+            ));
+            Assert.DoesNotContain("Conflict.A.Managed8\u4F60Func(123) -> 123", result.TestOutput);
+            Assert.Contains("ManagedFunc returned 42", result.TestOutput);
+        }
     }
 }

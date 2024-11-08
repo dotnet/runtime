@@ -18,7 +18,7 @@ namespace Conflict.A {
         [UnmanagedCallersOnly(EntryPoint = "ConflictManagedFunc")]
         public static int Managed8\u4F60Func(int number)
         {
-            Console.WriteLine($"Conflict.A.Managed8\u4F60Func({number}) -> {number}");
+            Console.WriteLine($"TestOutput -> Conflict.A.Managed8\u4F60Func({number}) -> {number}");
             return number;
         }
     }
@@ -30,7 +30,7 @@ file partial class Interop
     public static int Managed8\u4F60Func(int number)
     {
         // called from UnmanagedFunc
-        Console.WriteLine($"Managed8\u4F60Func({number}) -> 42");
+        Console.WriteLine($"TestOutput -> Managed8\u4F60Func({number}) -> 42");
         return 42;
     }
 

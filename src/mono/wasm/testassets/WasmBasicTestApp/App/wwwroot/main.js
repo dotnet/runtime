@@ -151,6 +151,9 @@ switch (testCase) {
     case "OverrideBootConfigName":
         dotnet.withConfigSrc("boot.json");
         break;
+    case "MainWithArgs":
+        dotnet.withApplicationArgumentsFromQuery();
+        break;
 }
 
 const { setModuleImports, Module, getAssemblyExports, getConfig, INTERNAL } = await dotnet.create();
@@ -200,6 +203,7 @@ try {
             break;
         case "OutErrOverrideWorks":
         case "DotnetRun":
+        case "MainWithArgs":
             dotnet.run();
             break;
         case "DebugLevelTest":
