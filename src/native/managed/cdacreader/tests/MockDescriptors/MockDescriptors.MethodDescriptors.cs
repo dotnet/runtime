@@ -13,23 +13,31 @@ internal partial class MockDescriptors
     {
         internal const uint TokenRemainderBitCount = 12u; /* see METHOD_TOKEN_REMAINDER_BIT_COUNT*/
 
-        private static readonly (string Name, DataType Type)[] MethodDescFields = new[]
+        private static readonly TypeFields MethodDescFields = new TypeFields()
         {
-            (nameof(Data.MethodDesc.ChunkIndex), DataType.uint8),
-            (nameof(Data.MethodDesc.Slot), DataType.uint16),
-            (nameof(Data.MethodDesc.Flags), DataType.uint16),
-            (nameof(Data.MethodDesc.Flags3AndTokenRemainder), DataType.uint16),
-            (nameof(Data.MethodDesc.EntryPointFlags), DataType.uint8),
-            (nameof(Data.MethodDesc.CodeData), DataType.pointer),
+            DataType = DataType.MethodDesc,
+            Fields =
+            [
+                (nameof(Data.MethodDesc.ChunkIndex), DataType.uint8),
+                (nameof(Data.MethodDesc.Slot), DataType.uint16),
+                (nameof(Data.MethodDesc.Flags), DataType.uint16),
+                (nameof(Data.MethodDesc.Flags3AndTokenRemainder), DataType.uint16),
+                (nameof(Data.MethodDesc.EntryPointFlags), DataType.uint8),
+                (nameof(Data.MethodDesc.CodeData), DataType.pointer),
+            ]
         };
 
-        private static readonly (string Name, DataType Type)[] MethodDescChunkFields = new[]
+        private static readonly TypeFields MethodDescChunkFields = new TypeFields()
         {
-            (nameof(Data.MethodDescChunk.MethodTable), DataType.pointer),
-            (nameof(Data.MethodDescChunk.Next), DataType.pointer),
-            (nameof(Data.MethodDescChunk.Size), DataType.uint8),
-            (nameof(Data.MethodDescChunk.Count), DataType.uint8),
-            (nameof(Data.MethodDescChunk.FlagsAndTokenRange), DataType.uint16)
+            DataType = DataType.MethodDescChunk,
+            Fields =
+            [
+                (nameof(Data.MethodDescChunk.MethodTable), DataType.pointer),
+                (nameof(Data.MethodDescChunk.Next), DataType.pointer),
+                (nameof(Data.MethodDescChunk.Size), DataType.uint8),
+                (nameof(Data.MethodDescChunk.Count), DataType.uint8),
+                (nameof(Data.MethodDescChunk.FlagsAndTokenRange), DataType.uint16)
+            ]
         };
 
         internal readonly RuntimeTypeSystem RTSBuilder;
@@ -57,16 +65,16 @@ internal partial class MockDescriptors
 
         private Dictionary<DataType, Target.TypeInfo> GetTypes()
         {
-            Dictionary<DataType, Target.TypeInfo> types = new();
+            Dictionary<DataType, Target.TypeInfo> types = GetTypesForTypeFields(
+                TargetTestHelpers,
+                [
+                    MethodDescFields,
+                    MethodDescChunkFields,
+                ]);
             types = types
                 .Concat(RTSBuilder.Types)
                 .Concat(LoaderBuilder.Types)
                 .ToDictionary();
-
-            var layout = TargetTestHelpers.LayoutFields(MethodDescFields);
-            types[DataType.MethodDesc] = new Target.TypeInfo() { Fields = layout.Fields, Size = layout.Stride };
-            layout = TargetTestHelpers.LayoutFields(MethodDescChunkFields);
-            types[DataType.MethodDescChunk] = new Target.TypeInfo() { Fields = layout.Fields, Size = layout.Stride };
             return types;
         }
 

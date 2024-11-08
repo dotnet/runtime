@@ -33,12 +33,12 @@ internal partial class MockDescriptors
 
         private static Dictionary<DataType, Target.TypeInfo> GetTypes(TargetTestHelpers helpers)
         {
-            Dictionary<DataType, Target.TypeInfo> types = new();
-            TargetTestHelpers.LayoutResult layout = helpers.LayoutFields(ModuleFields);
-            types[DataType.Module] = new Target.TypeInfo() { Fields = layout.Fields, Size = layout.Stride };
-            layout= helpers.LayoutFields(AssemblyFields);
-            types[DataType.Assembly] = new Target.TypeInfo() { Fields = layout.Fields, Size = layout.Stride };
-            return types;
+            return GetTypesForTypeFields(
+                helpers,
+                [
+                    ModuleFields,
+                    AssemblyFields,
+                ]);
         }
 
         internal TargetPointer AddModule(string? path = null, string? fileName = null)

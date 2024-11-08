@@ -73,15 +73,13 @@ internal partial class MockDescriptors
 
         private static Dictionary<DataType, Target.TypeInfo> GetTypes(TargetTestHelpers helpers)
         {
-            TargetTestHelpers.LayoutResult exceptionInfoLayout = helpers.LayoutFields(ExceptionInfoFields);
-            TargetTestHelpers.LayoutResult threadLayout = helpers.LayoutFields(ThreadFields);
-            TargetTestHelpers.LayoutResult threadStoreLayout = helpers.LayoutFields(ThreadStoreFields);
-            return new()
-            {
-                [DataType.ExceptionInfo] = new Target.TypeInfo() { Fields = exceptionInfoLayout.Fields, Size = exceptionInfoLayout.Stride },
-                [DataType.Thread] = new Target.TypeInfo() { Fields = threadLayout.Fields, Size = threadLayout.Stride },
-                [DataType.ThreadStore] = new Target.TypeInfo() { Fields = threadStoreLayout.Fields, Size = threadStoreLayout.Stride },
-            };
+            return GetTypesForTypeFields(
+                helpers,
+                [
+                    ExceptionInfoFields,
+                    ThreadFields,
+                    ThreadStoreFields,
+                ]);
         }
 
         internal void SetThreadCounts(int threadCount, int unstartedCount, int backgroundCount, int pendingCount, int deadCount)

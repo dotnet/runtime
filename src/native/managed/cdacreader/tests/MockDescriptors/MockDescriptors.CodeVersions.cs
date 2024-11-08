@@ -14,33 +14,49 @@ internal partial class MockDescriptors
         private const ulong DefaultAllocationRangeStart = 0x000f_c000;
         private const ulong DefaultAllocationRangeEnd = 0x00010_0000;
 
-        private static readonly (string Name, DataType Type)[] MethodDescVersioningStateFields =
-        [
-            (nameof(Data.MethodDescVersioningState.NativeCodeVersionNode), DataType.pointer),
-            (nameof(Data.MethodDescVersioningState.Flags), DataType.uint8),
-        ];
+        private static readonly TypeFields MethodDescVersioningStateFields = new TypeFields()
+        {
+            DataType = DataType.MethodDescVersioningState,
+            Fields =
+            [
+                (nameof(Data.MethodDescVersioningState.NativeCodeVersionNode), DataType.pointer),
+                (nameof(Data.MethodDescVersioningState.Flags), DataType.uint8),
+            ]
+        };
 
-        private static readonly (string Name, DataType Type)[] NativeCodeVersionNodeFields =
-        [
-            (nameof(Data.NativeCodeVersionNode.Next), DataType.pointer),
-            (nameof(Data.NativeCodeVersionNode.MethodDesc), DataType.pointer),
-            (nameof(Data.NativeCodeVersionNode.NativeCode), DataType.pointer),
-            (nameof(Data.NativeCodeVersionNode.Flags), DataType.uint32),
-            (nameof(Data.NativeCodeVersionNode.ILVersionId), DataType.nuint),
-        ];
+        private static readonly TypeFields NativeCodeVersionNodeFields = new TypeFields()
+        {
+            DataType = DataType.NativeCodeVersionNode,
+            Fields =
+            [
+                (nameof(Data.NativeCodeVersionNode.Next), DataType.pointer),
+                (nameof(Data.NativeCodeVersionNode.MethodDesc), DataType.pointer),
+                (nameof(Data.NativeCodeVersionNode.NativeCode), DataType.pointer),
+                (nameof(Data.NativeCodeVersionNode.Flags), DataType.uint32),
+                (nameof(Data.NativeCodeVersionNode.ILVersionId), DataType.nuint),
+            ]
+        };
 
-        private static readonly (string Name, DataType Type)[] ILCodeVersioningStateFields =
-        [
-            (nameof(Data.ILCodeVersioningState.ActiveVersionMethodDef), DataType.uint32),
-            (nameof(Data.ILCodeVersioningState.ActiveVersionModule), DataType.pointer),
-            (nameof(Data.ILCodeVersioningState.ActiveVersionKind), DataType.uint32),
-            (nameof(Data.ILCodeVersioningState.ActiveVersionNode), DataType.pointer),
-        ];
+        private static readonly TypeFields ILCodeVersioningStateFields = new TypeFields()
+        {
+            DataType = DataType.ILCodeVersioningState,
+            Fields =
+            [
+                (nameof(Data.ILCodeVersioningState.ActiveVersionMethodDef), DataType.uint32),
+                (nameof(Data.ILCodeVersioningState.ActiveVersionModule), DataType.pointer),
+                (nameof(Data.ILCodeVersioningState.ActiveVersionKind), DataType.uint32),
+                (nameof(Data.ILCodeVersioningState.ActiveVersionNode), DataType.pointer),
+            ]
+        };
 
-        private static readonly (string Name, DataType Type)[] ILCodeVersionNodeFields =
-        [
-            (nameof(Data.ILCodeVersionNode.VersionId), DataType.nuint),
-        ];
+        private static readonly TypeFields ILCodeVersionNodeFields = new TypeFields()
+        {
+            DataType = DataType.ILCodeVersionNode,
+            Fields =
+            [
+                (nameof(Data.ILCodeVersionNode.VersionId), DataType.nuint),
+            ]
+        };
 
         internal readonly MockMemorySpace.Builder Builder;
         internal Dictionary<DataType, Target.TypeInfo> Types { get; }
@@ -62,31 +78,16 @@ internal partial class MockDescriptors
             Types = GetTypes(Builder.TargetTestHelpers);
         }
 
-        internal static Dictionary<DataType, Target.TypeInfo> GetTypes(TargetTestHelpers targetTestHelpers)
+        internal static Dictionary<DataType, Target.TypeInfo> GetTypes(TargetTestHelpers helpers)
         {
-            Dictionary<DataType, Target.TypeInfo> types = new();
-            var layout = targetTestHelpers.LayoutFields(MethodDescVersioningStateFields);
-            types[DataType.MethodDescVersioningState] = new Target.TypeInfo() {
-                Fields = layout.Fields,
-                Size = layout.Stride,
-            };
-            layout = targetTestHelpers.LayoutFields(NativeCodeVersionNodeFields);
-            types[DataType.NativeCodeVersionNode] = new Target.TypeInfo() {
-                Fields = layout.Fields,
-                Size = layout.Stride,
-            };
-            layout = targetTestHelpers.LayoutFields(ILCodeVersioningStateFields);
-            types[DataType.ILCodeVersioningState] = new Target.TypeInfo() {
-                Fields = layout.Fields,
-                Size = layout.Stride,
-            };
-            layout = targetTestHelpers.LayoutFields(ILCodeVersionNodeFields);
-            types[DataType.ILCodeVersionNode] = new Target.TypeInfo()
-            {
-                Fields = layout.Fields,
-                Size = layout.Stride,
-            };
-            return types;
+            return GetTypesForTypeFields(
+                helpers,
+                [
+                    MethodDescVersioningStateFields,
+                    NativeCodeVersionNodeFields,
+                    ILCodeVersioningStateFields,
+                    ILCodeVersionNodeFields,
+                ]);
         }
 
         public void MarkCreated() => Builder.MarkCreated();

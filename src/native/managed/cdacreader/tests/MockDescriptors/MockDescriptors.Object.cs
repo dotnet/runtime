@@ -68,21 +68,18 @@ internal partial class MockDescriptors
 
         private Dictionary<DataType, Target.TypeInfo> GetTypes()
         {
-            var helpers = Builder.TargetTestHelpers;
-            Dictionary<DataType, Target.TypeInfo> types = RTSBuilder.Types;
-            var objectLayout = helpers.LayoutFields(ObjectFields);
-            types[DataType.Object] = new Target.TypeInfo() { Fields = objectLayout.Fields, Size = objectLayout.Stride };
-            var layout = helpers.ExtendLayout(StringFields, objectLayout);
-            types[DataType.String] = new Target.TypeInfo() { Fields = layout.Fields, Size = layout.Stride };
-            layout = helpers.ExtendLayout(ArrayFields, objectLayout);
-            types[DataType.Array] = new Target.TypeInfo() { Fields = layout.Fields, Size = layout.Stride };
-            Debug.Assert(types[DataType.Array].Size == helpers.ArrayBaseSize);
-            layout = helpers.LayoutFields(SyncTableEntryFields);
-            types[DataType.SyncTableEntry] = new Target.TypeInfo() { Fields = layout.Fields, Size = layout.Stride };
-            layout = helpers.LayoutFields(SyncBlockFields);
-            types[DataType.SyncBlock] = new Target.TypeInfo() { Fields = layout.Fields, Size = layout.Stride };
-            layout = helpers.LayoutFields(InteropSyncBlockFields);
-            types[DataType.InteropSyncBlockInfo] = new Target.TypeInfo() { Fields = layout.Fields, Size = layout.Stride };
+            Dictionary<DataType, Target.TypeInfo> types = GetTypesForTypeFields(
+                Builder.TargetTestHelpers,
+                [
+                    ObjectFields,
+                    StringFields,
+                    ArrayFields,
+                    SyncTableEntryFields,
+                    SyncBlockFields,
+                    InteropSyncBlockFields,
+                ]);
+            Debug.Assert(types[DataType.Array].Size == Builder.TargetTestHelpers.ArrayBaseSize);
+            types = types.Concat(RTSBuilder.Types).ToDictionary();
             return types;
         }
 

@@ -17,17 +17,14 @@ internal partial class MockDescriptors
 
         private static Dictionary<DataType, Target.TypeInfo> GetTypes(TargetTestHelpers helpers)
         {
-            Dictionary<DataType, Target.TypeInfo> types = new ();
-            var layout = helpers.LayoutFields(MethodTableFields);
-            types[DataType.MethodTable] = new Target.TypeInfo() { Fields = layout.Fields, Size = layout.Stride };
-            var eeClassLayout = helpers.LayoutFields(EEClassFields);
-            layout = eeClassLayout;
-            types[DataType.EEClass] = new Target.TypeInfo() { Fields = layout.Fields, Size = layout.Stride };
-            layout = helpers.ExtendLayout(ArrayClassFields, eeClassLayout);
-            types[DataType.ArrayClass] = new Target.TypeInfo() { Fields = layout.Fields, Size = layout.Stride };
-            layout = helpers.LayoutFields(MethodTableAuxiliaryDataFields);
-            types[DataType.MethodTableAuxiliaryData] = new Target.TypeInfo() { Fields = layout.Fields, Size = layout.Stride };
-            return types;
+            return GetTypesForTypeFields(
+                helpers,
+                [
+                    MethodTableFields,
+                    EEClassFields,
+                    ArrayClassFields,
+                    MethodTableAuxiliaryDataFields,
+                ]);
         }
 
         internal static uint GetMethodDescAlignment(TargetTestHelpers helpers) => helpers.Arch.Is64Bit ? 8u : 4u;
