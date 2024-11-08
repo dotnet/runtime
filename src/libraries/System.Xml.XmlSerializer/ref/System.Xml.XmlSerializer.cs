@@ -620,7 +620,7 @@ namespace System.Xml.Serialization
     {
         protected XmlSerializationWriter() { }
         protected bool EscapeName { get { throw null; } set { } }
-        protected System.Collections.ArrayList? Namespaces { get { throw null; } [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("XML serializer relies on dynamic code generation which is not available with Ahead of Time compilation")] set { } }
+        protected System.Collections.ArrayList? Namespaces { get { throw null; } set { } }
         protected System.Xml.XmlWriter Writer { get { throw null; } set { } }
         protected void AddWriteCallback(System.Type type, string typeName, string? typeNs, System.Xml.Serialization.XmlSerializationWriteCallback callback) { }
         protected System.Exception CreateChoiceIdentifierValueException(string value, string identifier, string name, string ns) { throw null; }
