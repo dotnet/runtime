@@ -3693,7 +3693,6 @@ bool Lowering::TryContainingCselOp(GenTreeHWIntrinsic* parentNode, GenTreeHWIntr
         switch (parentNode->GetHWIntrinsicId())
         {
             case NI_Sve_AddAcross:
-            case NI_Sve_AddSequentialAcross:
             case NI_Sve_OrAcross:
             case NI_Sve_XorAcross:
             {

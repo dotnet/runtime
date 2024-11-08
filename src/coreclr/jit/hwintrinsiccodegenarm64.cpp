@@ -1080,23 +1080,6 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     {
                         GetEmitter()->emitIns_R_R(ins, emitSize, targetReg, op1Reg, opt);
                     }
-                    else if (HWIntrinsicInfo::IsEmbeddedMaskedOperation(intrin.id) && intrin.op2->isContained())
-                    {
-                        // Handle instructions that have a contained conditional select at op2.
-                        assert(intrin.op2->OperIsHWIntrinsic());
-                        const HWIntrinsic cselIntrin(intrin.op2->AsHWIntrinsic());
-
-                        assert(cselIntrin.id == NI_Sve_ConditionalSelect);
-                        regNumber maskReg = cselIntrin.op1->GetRegNum();
-                        op1Reg            = cselIntrin.op2->GetRegNum();
-
-                        if (isRMW)
-                        {
-                            GetEmitter()->emitIns_Mov(INS_mov, emitSize, targetReg, intrin.op1->GetRegNum(),
-                                                      /* canSkip */ true);
-                        }
-                        GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, maskReg, op1Reg, opt);
-                    }
                     else if (HWIntrinsicInfo::IsScalable(intrin.id))
                     {
                         assert(!node->IsEmbMaskOp());
