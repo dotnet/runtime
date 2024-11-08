@@ -854,11 +854,12 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
     private TargetPointer GetAddressOfSlot(TypeHandle typeHandle, uint slotNum)
     {
         if (!typeHandle.IsMethodTable())
-            throw new InvalidOperationException("typeHandle is not a MethodTable");
-        MethodTable mt = _methodTables[typeHandle.Address];
-        // MethodTable::GetSlotPtrRaw
-        // TODO(cdac): CONSISTENCY_CHECK(slotNum < GetNumVtableSlots());
+            throw new InvalidOperationException($"nameof{typeHandle} is not a MethodTable");
 
+        Debug.Assert(slotNum < GetNumVtableSlots(typeHandle), "Slot number is greater than the number of slots");
+
+        // MethodTable::GetSlotPtrRaw
+        MethodTable mt = _methodTables[typeHandle.Address];
         if (slotNum < mt.NumVirtuals)
         {
             // Virtual slots live in chunks pointed to by vtable indirections
@@ -866,14 +867,14 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         }
         else
         {
-            // Non-virtual slots < GetNumVtableSlots live before the MethodTableAuxiliaryData. The array grows backwards
-            // TODO(cdac): _ASSERTE(HasNonVirtualSlots());
-#if false
-            return MethodTableAuxiliaryData::GetNonVirtualSlotsArray(GetAuxiliaryDataForWrite()) - (1 + (slotNum - GetNumVirtuals()));
-#endif
-            throw new NotImplementedException(); // TODO(cdac):
-        }
+            Debug.Assert(mt.NumVirtuals < GetNumVtableSlots(typeHandle), "Method table does not have non-virtual slots");
 
+            // Non-virtual slots < GetNumVtableSlots live before the MethodTableAuxiliaryData. The array grows backwards
+            TargetPointer auxDataPtr = mt.AuxiliaryData;
+            Data.MethodTableAuxiliaryData auxData = _target.ProcessedData.GetOrAdd<Data.MethodTableAuxiliaryData>(auxDataPtr);
+            TargetPointer nonVirtualSlotsArray = auxDataPtr + (ulong)auxData.OffsetToNonVirtualSlots;
+            return nonVirtualSlotsArray - (1 + (slotNum - mt.NumVirtuals));
+        }
     }
 
     private bool IsWrapperStub(MethodDesc md)
@@ -954,6 +955,9 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
     {
         MethodDesc md = _methodDescs[methodDesc.Address];
         TargetPointer codeDataAddress = md.CodeData;
+        if (codeDataAddress == TargetPointer.Null)
+            return TargetPointer.Null;
+
         Data.MethodDescCodeData codeData = _target.ProcessedData.GetOrAdd<Data.MethodDescCodeData>(codeDataAddress);
         return codeData.VersioningState;
     }
@@ -1067,13 +1071,12 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         if (md.HasNonVtableSlot)
         {
             TargetPointer pSlot = GetAddressOfNonVtableSlot(methodDescAddress, md);
-
             return _target.ReadCodePointer(pSlot);
         }
 
         TargetPointer methodTablePointer = md.MethodTable;
         TypeHandle typeHandle = GetTypeHandle(methodTablePointer);
-        // TODO: cdac:  _ASSERTE(GetMethodTable()->IsCanonicalMethodTable());
+        Debug.Assert(_methodTables[typeHandle.Address].IsCanonMT);
         TargetPointer addrOfSlot = GetAddressOfSlot(typeHandle, md.Slot);
         return _target.ReadCodePointer(addrOfSlot);
     }
