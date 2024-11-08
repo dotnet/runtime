@@ -285,6 +285,12 @@ extends:
             nameSuffix: NativeAOT
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             postBuildSteps:
+              # delete Microsoft.NETCore.App.Ref package to prevent upload conflict
+              - task: DeleteFiles@1
+                displayName: 'Delete Microsoft.NETCore.App.Ref package'
+                inputs:
+                  SourceFolder: $(Build.SourcesDirectory)/artifacts/packages/$(_BuildConfig)/Shipping
+                  Contents: 'Microsoft.NETCore.App.Ref.*.nupkg'
               - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
                 parameters:
                   name: NativeAOTRuntimePacks
@@ -329,6 +335,12 @@ extends:
             nameSuffix: Mono
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             postBuildSteps:
+              # delete Microsoft.NETCore.App.Ref package to prevent upload conflict
+              - task: DeleteFiles@1
+                displayName: 'Delete Microsoft.NETCore.App.Ref package'
+                inputs:
+                  SourceFolder: $(Build.SourcesDirectory)/artifacts/packages/$(_BuildConfig)/Shipping
+                  Contents: 'Microsoft.NETCore.App.Ref.*.nupkg'
               - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
                 parameters:
                   name: MonoRuntimePacks
@@ -347,6 +359,12 @@ extends:
             nameSuffix: Mono
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             postBuildSteps:
+              # delete Microsoft.NETCore.App.Ref package to prevent upload conflict
+              - task: DeleteFiles@1
+                displayName: 'Delete Microsoft.NETCore.App.Ref package'
+                inputs:
+                  SourceFolder: $(Build.SourcesDirectory)/artifacts/packages/$(_BuildConfig)/Shipping
+                  Contents: 'Microsoft.NETCore.App.Ref.*.nupkg'
               - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
                 parameters:
                   name: MonoRuntimePacks
@@ -365,6 +383,12 @@ extends:
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             runtimeVariant: multithread
             postBuildSteps:
+              # delete Microsoft.NETCore.App.Ref package to prevent upload conflict
+              - task: DeleteFiles@1
+                displayName: 'Delete Microsoft.NETCore.App.Ref package'
+                inputs:
+                  SourceFolder: $(Build.SourcesDirectory)/artifacts/packages/$(_BuildConfig)/Shipping
+                  Contents: 'Microsoft.NETCore.App.Ref.*.nupkg'
               - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
                 parameters:
                   name: MonoRuntimePacks
