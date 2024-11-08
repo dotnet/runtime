@@ -408,8 +408,7 @@ namespace System.Net.NetworkInformation
                 sr.ReadLine();
                 sr.ReadLine();
                 Span<Range> pieces = stackalloc Range[18]; // [0]-[16] used, +1 to ensure any additional segment goes into [17]
-                string? line;
-                while ((line = sr.ReadLine()) != null)
+                while (sr.ReadLine() is string line)
                 {
                     if (line.Contains(name))
                     {
