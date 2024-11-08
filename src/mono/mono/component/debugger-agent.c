@@ -5254,7 +5254,7 @@ buffer_add_value_full (Buffer *buf, MonoType *t, void *addr, MonoDomain *domain,
 		}
 		if (CHECK_PROTOCOL_VERSION(2, 65)) {
 			if (m_class_is_inlinearray (klass) && nfields == 1)
-				buffer_add_int (buf, m_class_inlinearray_value (m_class_get_infrequent_data (klass)));
+				buffer_add_int (buf, mono_class_get_inlinearray_value (klass) );
 			else
 				buffer_add_int (buf, -1);
 		}
@@ -5292,7 +5292,7 @@ buffer_add_value_full (Buffer *buf, MonoType *t, void *addr, MonoDomain *domain,
 			if (CHECK_PROTOCOL_VERSION(2, 65)) {
 				if (m_class_is_inlinearray (klass) && nfields == 1) {
 					int element_size = mono_class_instance_size (mono_class_from_mono_type_internal (f->type)) - MONO_ABI_SIZEOF (MonoObject);
-					int array_size = m_class_inlinearray_value (m_class_get_infrequent_data (klass));
+					int array_size = mono_class_get_inlinearray_value (klass);
 					for (int i = 1; i < array_size; i++)
 						buffer_add_value_full (buf, f->type, ((char*)mono_vtype_get_field_addr (addr, f)) + (i*element_size), domain, FALSE, parent_vtypes, len_fixed_array != 1 ? len_fixed_array : isFixedSizeArray(f));
 				}
