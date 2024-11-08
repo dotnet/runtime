@@ -85,9 +85,9 @@ void LclMasksWeight::CacheSimdTypes(GenTreeHWIntrinsic* op)
 }
 
 //-----------------------------------------------------------------------------
-// LclMasksCheckLclVisitor: Find all lcl var definitions and uses. For each one, update the weighting.
+// LclMasksCheckVisitor: Find all lcl var definitions and uses. For each one, update the weighting.
 //
-class LclMasksCheckLclVisitor final : public GenTreeVisitor<LclMasksCheckLclVisitor>
+class LclMasksCheckVisitor final : public GenTreeVisitor<LclMasksCheckVisitor>
 {
 public:
     enum
@@ -96,8 +96,8 @@ public:
         UseExecutionOrder = true
     };
 
-    LclMasksCheckLclVisitor(Compiler* compiler, weight_t bbWeight, LclMasksWeightTable* weightsTable)
-        : GenTreeVisitor<LclMasksCheckLclVisitor>(compiler)
+    LclMasksCheckVisitor(Compiler* compiler, weight_t bbWeight, LclMasksWeightTable* weightsTable)
+        : GenTreeVisitor<LclMasksCheckVisitor>(compiler)
         , bbWeight(bbWeight)
         , weightsTable(weightsTable)
     {
@@ -181,9 +181,9 @@ private:
 };
 
 //-----------------------------------------------------------------------------
-// LclMasksUpdateLclVisitor: tree visitor to remove conversion to masks for uses of LCL
+// LclMasksUpdateVisitor: tree visitor to remove conversion to masks for uses of LCL
 //
-class LclMasksUpdateLclVisitor final : public GenTreeVisitor<LclMasksUpdateLclVisitor>
+class LclMasksUpdateVisitor final : public GenTreeVisitor<LclMasksUpdateVisitor>
 {
 public:
     enum
@@ -192,9 +192,9 @@ public:
         UseExecutionOrder = true
     };
 
-    LclMasksUpdateLclVisitor(
+    LclMasksUpdateVisitor(
         Compiler* compiler, Statement* stmt, LclMasksWeightTable* weightsTable)
-        : GenTreeVisitor<LclMasksUpdateLclVisitor>(compiler)
+        : GenTreeVisitor<LclMasksUpdateVisitor>(compiler)
         , stmt(stmt)
         , weightsTable(weightsTable)
     {
@@ -446,7 +446,7 @@ PhaseStatus Compiler::fgOptimizeLclMasks()
             GenTreeLclVarCommon* firstLcl = *stmt->LocalsTreeList().begin();
             if (firstLcl != nullptr)
             {
-                LclMasksCheckLclVisitor ev(this, block->getBBWeight(this), &weightsTable);
+                LclMasksCheckVisitor ev(this, block->getBBWeight(this), &weightsTable);
                 GenTree*    root = stmt->GetRootNode();
                 ev.WalkTree(&root, nullptr);
                 foundConversion |= ev.foundConversions;
@@ -469,7 +469,7 @@ PhaseStatus Compiler::fgOptimizeLclMasks()
             GenTreeLclVarCommon* firstLcl = *stmt->LocalsTreeList().begin();
             if (firstLcl != nullptr)
             {
-                LclMasksUpdateLclVisitor ev(this, stmt, &weightsTable);
+                LclMasksUpdateVisitor ev(this, stmt, &weightsTable);
                 GenTree*    root = stmt->GetRootNode();
                 ev.WalkTree(&root, nullptr);
             }
