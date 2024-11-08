@@ -186,22 +186,42 @@ LOCAL_LABEL(Done_Restore_CONTEXT_FLOATING_POINT):
     test    BYTE PTR [rdi + CONTEXT_XStateFeaturesMask], XSTATE_MASK_APX
     je      LOCAL_LABEL(Done_Restore_CONTEXT_XSTATE)
 
-    mov r16, qword ptr [rdi + CONTEXT_Egpr + 0 * 8]
-    mov r17, qword ptr [rdi + CONTEXT_Egpr + 1 * 8]
-    mov r18, qword ptr [rdi + CONTEXT_Egpr + 2 * 8]
-    mov r19, qword ptr [rdi + CONTEXT_Egpr + 3 * 8]
-    mov r20, qword ptr [rdi + CONTEXT_Egpr + 4 * 8]
-    mov r21, qword ptr [rdi + CONTEXT_Egpr + 5 * 8]
-    mov r22, qword ptr [rdi + CONTEXT_Egpr + 6 * 8]
-    mov r23, qword ptr [rdi + CONTEXT_Egpr + 7 * 8]
-    mov r24, qword ptr [rdi + CONTEXT_Egpr + 8 * 8]
-    mov r25, qword ptr [rdi + CONTEXT_Egpr + 9 * 8]
-    mov r26, qword ptr [rdi + CONTEXT_Egpr + 10 * 8]
-    mov r27, qword ptr [rdi + CONTEXT_Egpr + 11 * 8]
-    mov r28, qword ptr [rdi + CONTEXT_Egpr + 12 * 8]
-    mov r29, qword ptr [rdi + CONTEXT_Egpr + 13 * 8]
-    mov r30, qword ptr [rdi + CONTEXT_Egpr + 14 * 8]
-    mov r31, qword ptr [rdi + CONTEXT_Egpr + 15 * 8]
+    // TODO-XArch-APX:
+    // we are using raw hex code here to emit EGPRs-related changes,
+    // we will need to come back and re-write this part when assembler supports EGPRs.
+
+    // mov r16, qword ptr [rdi + CONTEXT_Egpr + 0 * 8]
+    .byte 0xd5, 0x48, 0x8b, 0x87, 0xa0, 0x08, 0x00, 0x00
+    // mov r17, qword ptr [rdi + CONTEXT_Egpr + 1 * 8]
+    .byte 0xd5, 0x48, 0x8b, 0x8f, 0xa8, 0x08, 0x00, 0x00
+    // mov r18, qword ptr [rdi + CONTEXT_Egpr + 2 * 8]
+    .byte 0xd5, 0x48, 0x8b, 0x97, 0xb0, 0x08, 0x00, 0x00
+    // mov r19, qword ptr [rdi + CONTEXT_Egpr + 3 * 8]
+    .byte 0xd5, 0x48, 0x8b, 0x9f, 0xb8, 0x08, 0x00, 0x00
+    // mov r20, qword ptr [rdi + CONTEXT_Egpr + 4 * 8]
+    .byte 0xd5, 0x48, 0x8b, 0xa7, 0xc0, 0x08, 0x00, 0x00
+    // mov r21, qword ptr [rdi + CONTEXT_Egpr + 5 * 8]
+    .byte 0xd5, 0x48, 0x8b, 0xaf, 0xc8, 0x08, 0x00, 0x00
+    // mov r22, qword ptr [rdi + CONTEXT_Egpr + 6 * 8]
+    .byte 0xd5, 0x48, 0x8b, 0xb7, 0xd0, 0x08, 0x00, 0x00
+    // mov r23, qword ptr [rdi + CONTEXT_Egpr + 7 * 8]
+    .byte 0xd5, 0x48, 0x8b, 0xbf, 0xd8, 0x08, 0x00, 0x00
+    // mov r24, qword ptr [rdi + CONTEXT_Egpr + 8 * 8]
+    .byte 0xd5, 0x4c, 0x8b, 0x87, 0xe0, 0x08, 0x00, 0x00
+    // mov r25, qword ptr [rdi + CONTEXT_Egpr + 9 * 8]
+    .byte 0xd5, 0x4c, 0x8b, 0x8f, 0xe8, 0x08, 0x00, 0x00
+    // mov r26, qword ptr [rdi + CONTEXT_Egpr + 10 * 8]
+    .byte 0xd5, 0x4c, 0x8b, 0x97, 0xf0, 0x08, 0x00, 0x00
+    // mov r27, qword ptr [rdi + CONTEXT_Egpr + 11 * 8]
+    .byte 0xd5, 0x4c, 0x8b, 0x9f, 0xf8, 0x08, 0x00, 0x00
+    // mov r28, qword ptr [rdi + CONTEXT_Egpr + 12 * 8]
+    .byte 0xd5, 0x4c, 0x8b, 0xa7, 0x00, 0x09, 0x00, 0x00
+    // mov r29, qword ptr [rdi + CONTEXT_Egpr + 13 * 8]
+    .byte 0xd5, 0x4c, 0x8b, 0xaf, 0x08, 0x09, 0x00, 0x00
+    // mov r30, qword ptr [rdi + CONTEXT_Egpr + 14 * 8]
+    .byte 0xd5, 0x4c, 0x8b, 0xb7, 0x10, 0x09, 0x00, 0x00
+    // mov r31, qword ptr [rdi + CONTEXT_Egpr + 15 * 8]
+    .byte 0xd5, 0x4c, 0x8b, 0xbf, 0x18, 0x09, 0x00, 0x00
 
 LOCAL_LABEL(Done_Restore_CONTEXT_XSTATE):
 
