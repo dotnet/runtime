@@ -174,7 +174,7 @@ internal class ExecutionManagerTestBuilder
         return new RangeSectionMapTestBuilder(arch);
     }
 
-    internal int Verion { get;}
+    internal int Version { get;}
 
     internal MockMemorySpace.Builder Builder { get; }
     private readonly RangeSectionMapTestBuilder _rsmBuilder;
@@ -190,7 +190,7 @@ internal class ExecutionManagerTestBuilder
 
     internal ExecutionManagerTestBuilder(int version, MockMemorySpace.Builder builder, AllocationRange allocationRange, Dictionary<DataType, Target.TypeInfo>? typeInfoCache = null)
     {
-        _version = version;
+        Version = version;
         Builder = builder;
         _rsmBuilder = new RangeSectionMapTestBuilder(ExecutionManagerCodeRangeMapAddress, builder);
         _rangeSectionMapAllocator = Builder.CreateAllocator(allocationRange.RangeSectionMapStart, allocationRange.RangeSectionMapEnd);
@@ -260,7 +260,7 @@ internal class ExecutionManagerTestBuilder
 
     internal NibbleMapTestBuilderBase CreateNibbleMap(ulong codeRangeStart, uint codeRangeSize)
     {
-        NibbleMapTestBuilderBase nibBuilder = _version switch
+        NibbleMapTestBuilderBase nibBuilder = Version switch
         {
             1 => new NibbleMapTestBuilder_1(codeRangeStart, codeRangeSize, _nibbleMapAllocator, Builder.TargetTestHelpers.Arch),
 

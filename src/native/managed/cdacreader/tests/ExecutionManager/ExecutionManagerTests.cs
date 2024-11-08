@@ -21,7 +21,7 @@ public class ExecutionManagerTests
             ReadFromTargetDelegate reader = emBuilder.Builder.GetReadContext().ReadFromTarget;
             var topRangeSectionMap = ExecutionManagerTestBuilder.ExecutionManagerCodeRangeMapAddress;
             var typeInfo = emBuilder.TypeInfoCache;
-            return new ExecutionManagerTestTarget(emBuilder.Verion, arch, reader, topRangeSectionMap, typeInfo);
+            return new ExecutionManagerTestTarget(emBuilder.Version, arch, reader, topRangeSectionMap, typeInfo);
         }
 
         public ExecutionManagerTestTarget(int version, MockTarget.Architecture arch, ReadFromTargetDelegate dataReader, TargetPointer topRangeSectionMap, Dictionary<DataType, TypeInfo> typeInfoCache) : base(arch)

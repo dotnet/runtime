@@ -60,7 +60,7 @@ public class NibbleMapTests_1 : NibbleMapTestsBase
         for (int i = 0; i < 255; i++)
         {
             NibbleMapHelpers.MapKey input = new (irrelevant + (ulong)i);
-            int actualShift = NibbleMapHelpers.ComputeNibbleShift(input);
+            uint actualShift = NibbleMapHelpers.ComputeNibbleShift(input);
             Assert.True(expectedShift == actualShift, $"Expected {expectedShift}, got {actualShift} for input {input}");
             expectedShift -= 4;
             if (expectedShift == -4)
