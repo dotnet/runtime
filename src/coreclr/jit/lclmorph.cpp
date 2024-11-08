@@ -2822,11 +2822,20 @@ void Compiler::fgLclMasksUpdateLcl(GenTreeLclVarCommon* lclOp, Statement* const 
 //   vector<int> x = _ConvertMaskToVector_(CreateMask());
 //   x = Add(x, y);
 //
-// To account for this, the pass uses a weighting. For each variable, if it is a local store,
-// then count the existing cost of every covert to/from mask. Also count the cost for
-// switching the variable to store as mask (this may include adding additional conversions
-// as well as removing). For each counted instance, take into account the number of
-// instructions in the conversion and the weight of the block.
+// To optimize this, the pass searches every local variable definition (GT_STORE_LCL_VAR)
+// and use (GT_LCL_VAR). A weighting is calculated and kept in a hash table - one entry
+// for each lclvar number. The weighting contains two values. The first value is the count of
+// of every convert node for the var, each instance multiplied by the number of instructions
+// in the convert and the weighting of the block it exists in. The second value assumes the
+// local var has been switched to store as a mask and performs the same count. The switch
+// will count removes every existing convert and add a convert where there isn't currently
+// a convert.
+//
+// Once every definition and use has been parsed, the parsing runs again. At each step,
+// if the weighting for switching that var is lower than the current weighting then switch
+// to store as mask and add/remove conversions as required.
+//
+// Limitations:
 //
 // Local variables that are defined then immediately used just once may not be saved to a
 // store. Here a convert to to vector will be used by a convert to mask. These instances will
