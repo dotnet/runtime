@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
 using FluentAssertions;
+using Microsoft.DotNet.XUnitExtensions
 using Microsoft.Extensions.DependencyModel.Resolution;
 using Xunit;
 using F = Microsoft.Extensions.DependencyModel.Tests.TestLibraryFactory;
@@ -28,15 +29,12 @@ namespace Microsoft.Extensions.DependencyModel.Tests
             result.Should().Contain(PackagesPath);
         }
 
-
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // https://github.com/dotnet/runtime/issues/21430
         public void ShouldUseNugetUnderUserProfile()
         {
             var environment = EnvironmentMockBuilder.Create()
                 .AddAppContextData("PROBING_DIRECTORIES", string.Empty)
                 .Build();
-
-            Environment.SetEnvironmentVariable(RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "USERPROFILE" : "HOME", "User Profile");
 
             var result = PackageCompilationAssemblyResolver.GetDefaultProbeDirectories(environment);
             result.Should().Contain(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".nuget", "packages"));
