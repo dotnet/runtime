@@ -48,7 +48,7 @@ extends:
 
       # This container contains all required toolsets to build for Android and for Linux with bionic libc.
       android:
-        image: jekoritz.azurecr.io/buildtools/android:azl3-ndk-r27c
+        image: jekoritz.azurecr.io/buildtools/android:azl3-ndk-clean
 
       # This container contains all required toolsets to build for Android and for Linux with bionic libc and a special layout of OpenSSL.
       linux_bionic:
