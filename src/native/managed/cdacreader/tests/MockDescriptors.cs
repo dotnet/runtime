@@ -39,6 +39,7 @@ internal class MockDescriptors
     private static readonly (string Name, DataType Type)[] MethodTableAuxiliaryDataFields = new[]
     {
         (nameof(Data.MethodTableAuxiliaryData.LoaderModule), DataType.pointer),
+        (nameof(Data.MethodTableAuxiliaryData.OffsetToNonVirtualSlots), DataType.int16),
     };
 
     private static readonly (string Name, DataType Type)[] ArrayClassFields = new[]
