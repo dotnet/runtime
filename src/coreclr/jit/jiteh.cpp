@@ -1253,6 +1253,126 @@ void Compiler::fgSetHndEnd(EHblkDsc* handlerTab, BasicBlock* newHndLast)
     }
 }
 
+//-------------------------------------------------------------
+// fgRebuildEHRegions: After reordering blocks, make EH regions contiguous
+// while maintaining relative block order, and update each region's end pointer.
+//
+void Compiler::fgRebuildEHRegions()
+{
+    assert(compHndBBtabCount != 0);
+    unsigned unsetTryEnds = compHndBBtabCount;
+    unsigned unsetHndEnds = compHndBBtabCount;
+
+    // Null out try/handler end pointers to signify the given clause hasn't been visited yet.
+    for (EHblkDsc* const HBtab : EHClauses(this))
+    {
+        HBtab->ebdTryLast = nullptr;
+        HBtab->ebdHndLast = nullptr;
+    }
+
+    // Walk the main method body, and move try blocks to re-establish contiguity.
+    for (BasicBlock *block = fgFirstBB, *next; block != fgFirstFuncletBB; block = next)
+    {
+        next            = block->Next();
+        EHblkDsc* HBtab = ehGetBlockTryDsc(block);
+        if (HBtab != nullptr)
+        {
+            // Move this block up to the previous block in the same try region.
+            BasicBlock* const insertionPoint = HBtab->ebdTryLast;
+            if ((insertionPoint != nullptr) && !insertionPoint->NextIs(block))
+            {
+                assert(block != HBtab->ebdTryLast);
+                fgUnlinkBlock(block);
+                fgInsertBBafter(HBtab->ebdTryLast, block);
+            }
+
+            // Update this try region's (and all parent try regions') end pointer with the last block visited
+            for (unsigned XTnum = block->getTryIndex(); XTnum != EHblkDsc::NO_ENCLOSING_INDEX;
+                 XTnum          = ehGetEnclosingTryIndex(XTnum))
+            {
+                HBtab = ehGetDsc(XTnum);
+                if (HBtab->ebdTryLast == nullptr)
+                {
+                    assert(HBtab->ebdTryBeg == block);
+                    assert(unsetTryEnds != 0);
+                    unsetTryEnds--;
+                    HBtab->ebdTryLast = block;
+                }
+                else if (HBtab->ebdTryLast->NextIs(block))
+                {
+                    HBtab->ebdTryLast = block;
+                }
+            }
+        }
+    }
+
+    // The above logic rebuilt the try regions in the main method body.
+    // Now, resolve the regions in the funclet section, if there is one.
+    assert((unsetTryEnds == 0) || (fgFirstFuncletBB != nullptr));
+
+    // Updates the try region's (and all of its parent regions') end block to 'block,'
+    // if the try region's end block hasn't been updated yet.
+    auto setTryEnd = [this, &unsetTryEnds](BasicBlock* block) {
+        for (unsigned tryIndex = block->getTryIndex(); tryIndex != EHblkDsc::NO_ENCLOSING_INDEX;
+             tryIndex          = ehGetEnclosingTryIndex(tryIndex))
+        {
+            EHblkDsc* const HBtab = ehGetDsc(tryIndex);
+            if (HBtab->ebdTryLast == nullptr)
+            {
+                assert(unsetTryEnds != 0);
+                HBtab->ebdTryLast = block;
+                unsetTryEnds--;
+            }
+            else
+            {
+                break;
+            }
+        }
+    };
+
+    // Updates the handler region's (and all of its parent regions') end block to 'block,'
+    // if the handler region's end block hasn't been updated yet.
+    auto setHndEnd = [this, &unsetHndEnds](BasicBlock* block) {
+        for (unsigned hndIndex = block->getHndIndex(); hndIndex != EHblkDsc::NO_ENCLOSING_INDEX;
+             hndIndex          = ehGetEnclosingHndIndex(hndIndex))
+        {
+            EHblkDsc* const HBtab = ehGetDsc(hndIndex);
+            if (HBtab->ebdHndLast == nullptr)
+            {
+                assert(unsetHndEnds != 0);
+                HBtab->ebdHndLast = block;
+                unsetHndEnds--;
+            }
+            else
+            {
+                break;
+            }
+        }
+    };
+
+    // If we have a funclet section, update the ends of any try regions nested in funclets
+    for (BasicBlock* block = fgLastBB; (unsetTryEnds != 0) && (block != fgLastBBInMainFunction());
+         block             = block->Prev())
+    {
+        if (block->hasTryIndex())
+        {
+            setTryEnd(block);
+        }
+    }
+
+    // Finally, update the handler regions' ends
+    for (BasicBlock* block = fgLastBB; (unsetHndEnds != 0) && (block != nullptr); block = block->Prev())
+    {
+        if (block->hasHndIndex())
+        {
+            setHndEnd(block);
+        }
+    }
+
+    assert(unsetTryEnds == 0);
+    assert(unsetHndEnds == 0);
+}
+
 /*****************************************************************************
  *
  *  Given a EH handler table entry update the ebdTryLast and ebdHndLast pointers
@@ -1371,7 +1491,6 @@ void Compiler::fgRemoveEHTableEntry(unsigned XTnum)
 {
     assert(compHndBBtabCount > 0);
     assert(XTnum < compHndBBtabCount);
-    assert((fgAddCodeDscMap == nullptr) || (fgAddCodeDscMap->GetCount() == 0));
 
     EHblkDsc* HBtab;
 
@@ -1471,6 +1590,88 @@ void Compiler::fgRemoveEHTableEntry(unsigned XTnum)
         {
             /* Last entry. Don't need to do anything */
             noway_assert(XTnum == compHndBBtabCount);
+        }
+    }
+
+    // We also need to update any AddCodeDesc records and map entries
+    //
+    if (!fgHasAddCodeDscMap())
+    {
+        JITDUMP("No ACD entries to update");
+    }
+    else
+    {
+        // There are three possibilities for each ACD entry
+        //
+        // 1. remains as is (stays in same region with same indices)
+        // 2. gets merged with ACD from parent region
+        // 3. gets updated (moves to parent region with new indices)
+        //
+        // First, update each ACD, and remove any modified ones from the
+        // map (via their old key)
+        //
+        AddCodeDscMap* const    map = fgGetAddCodeDscMap();
+        ArrayStack<AddCodeDsc*> modified(getAllocator(CMK_Unknown));
+
+        for (AddCodeDsc* const add : AddCodeDscMap::ValueIteration(map))
+        {
+            bool          isModified = false;
+            AddCodeDscKey oldKey(add);
+
+            // We expect callers have already updated any ACDs that
+            // reference the EH region being removed.
+            //
+            bool inTry = add->acdTryIndex > 0;
+            bool inHnd = add->acdHndIndex > 0;
+            assert(!inTry || ((unsigned)(add->acdTryIndex - 1) != XTnum));
+            assert(!inHnd || ((unsigned)(add->acdHndIndex - 1) != XTnum));
+
+            if (add->acdTryIndex > XTnum)
+            {
+                add->acdTryIndex--;
+                inTry      = add->acdTryIndex > 0;
+                isModified = true;
+            }
+
+            if (add->acdHndIndex > XTnum)
+            {
+                add->acdHndIndex--;
+                inHnd      = add->acdHndIndex > 0;
+                isModified = true;
+            }
+
+            if (isModified)
+            {
+                add->UpdateKeyDesignator(this);
+                bool const removed = map->Remove(oldKey);
+                assert(removed);
+                modified.Push(add);
+            }
+        }
+
+        // Second, walk the modified ACDs and either "merge" them into some
+        // other ACD, or re-insert into the map.
+        //
+        // (Note this can't easily be done in the first pass, since we need to know
+        // the potential merge target won't itself get subsequently modified, and the
+        // order of ACD enumeration is unrelated to the order of EH regions).
+        //
+        while (modified.Height() > 0)
+        {
+            AddCodeDsc* const add = modified.Pop();
+            AddCodeDscKey     newKey(add);
+            AddCodeDsc*       existing = nullptr;
+            if (map->Lookup(newKey, &existing))
+            {
+                JITDUMP("ACD%u merged into ACD%u\n", add->acdNum, existing->acdNum);
+                JITDUMPEXEC(existing->Dump());
+            }
+            else
+            {
+                JITDUMP("ACD%u updated\n", add->acdNum);
+                map->Set(newKey, add);
+                JITDUMPEXEC(add->Dump());
+            }
         }
     }
 }

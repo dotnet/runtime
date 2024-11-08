@@ -28,10 +28,12 @@ imagename="dotnet-sdk-libs-current"
 configuration="Release"
 buildcurrentlibraries=0
 buildonly=0
+nobuild=0
 clientstressargs=""
 serverstressargs=""
 
 projectdir=$1
+shift 1
 if [[ ! -d "$projectdir" ]]; then
     echo "First argument must be path to the stress project directory"
     exit 1
@@ -40,7 +42,7 @@ fi
 dumpssharepath="$projectdir/dumps"
 
 while [[ $# > 0 ]]; do
-  opt="$(echo "${1/#--/-}" | tr "[:upper:]" "[:lower:]")"
+  opt="$(printf "%s" "${1/#--/-}" | tr "[:upper:]" "[:lower:]")"
   case "$opt" in
     -dumpssharepath|-d)
       dumpssharepath=$2
@@ -60,6 +62,10 @@ while [[ $# > 0 ]]; do
       ;;
     -buildonly|-o)
       buildonly=1
+      shift 1
+      ;;
+    -nobuild|-n)
+      nobuild=1
       shift 1
       ;;
     -clientstressargs)
@@ -86,15 +92,17 @@ if [[ "$buildcurrentlibraries" -eq 1 ]]; then
     fi
 fi
 
-build_args="--build-arg VERSION=$version --build-arg CONFIGURATION=$configuration"
-if [[ -n "$imagename" ]]; then
-    build_args="$build_args --build-arg SDK_BASE_IMAGE=$imagename"
-fi
-
 compose_file="$projectdir/docker-compose.yml"
 
-if ! docker-compose --file "$compose_file" build $build_args; then
-    exit $?
+if [[ "$nobuild" -eq 0 ]]; then
+    build_args="--build-arg VERSION=$version --build-arg CONFIGURATION=$configuration"
+    if [[ -n "$imagename" ]]; then
+        build_args="$build_args --build-arg SDK_BASE_IMAGE=$imagename"
+    fi
+
+    if ! docker-compose --file "$compose_file" build $build_args; then
+        exit $?
+    fi
 fi
 
 if [[ "$buildonly" -eq 0 ]]; then

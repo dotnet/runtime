@@ -196,7 +196,7 @@ bool UnixNativeCodeManager::IsSafePoint(PTR_VOID pvAddress)
     if (decoder.IsInterruptible())
         return true;
 
-    if (decoder.IsInterruptibleSafePoint())
+    if (decoder.IsSafePoint())
         return true;
 
     return false;
@@ -246,7 +246,7 @@ void UnixNativeCodeManager::EnumGcRefs(MethodInfo *    pMethodInfo,
                 codeOffset - 1
             );
 
-            assert(decoder.IsInterruptibleSafePoint());
+            assert(decoder.IsSafePoint());
         }
     }
 

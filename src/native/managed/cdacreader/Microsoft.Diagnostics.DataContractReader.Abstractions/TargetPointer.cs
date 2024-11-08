@@ -23,4 +23,6 @@ public readonly struct TargetPointer : IEquatable<TargetPointer>
     public bool Equals(TargetPointer other) => Value == other.Value;
 
     public override int GetHashCode() => Value.GetHashCode();
+
+    public override string ToString() => $"0x{Value:x}";
 }

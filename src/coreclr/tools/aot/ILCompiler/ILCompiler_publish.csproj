@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk" DefaultTargets="Publish;PublishItemsOutputGroup">
+  <!-- This project is publishes a self-contained copy of ILCompiler. -->
+  <PropertyGroup>
+    <_IsPublishing>true</_IsPublishing>
+    <RuntimeIdentifier>$(PackageRID)</RuntimeIdentifier>
+    <PublishDir>$(RuntimeBinDir)ilc-published/</PublishDir>
+    <SelfContained>true</SelfContained>
+    <PublishTrimmed>true</PublishTrimmed>
+    <TrimmerSingleWarn>false</TrimmerSingleWarn>
+    <AotOrSingleFile>true</AotOrSingleFile>
+  </PropertyGroup>
+
+  <Import Project="ILCompiler.props" />
+</Project>
