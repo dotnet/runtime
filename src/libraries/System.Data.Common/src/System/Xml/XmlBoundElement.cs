@@ -90,7 +90,6 @@ namespace System.Xml
                 XmlNode? next = base.NextSibling;
                 if (next == null)
                 {
-
                     XmlBoundElement? parent = ParentNode as XmlBoundElement;
                     if (parent != null)
                     {

@@ -84,7 +84,7 @@ namespace System.Xml.Serialization
                 return _namespaces?.NamespaceList;
             }
 
-            [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
+            [UnconditionalSuppressMessage("AotAnalysis", "IL3050", Justification = "ToArray is called for known reference types only.")]
             set
             {
                 if (value == null)
