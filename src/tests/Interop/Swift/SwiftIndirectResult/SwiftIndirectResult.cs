@@ -23,6 +23,10 @@ public unsafe class SwiftIndirectResultTests
     public static extern void ReturnNonFrozenStruct(SwiftIndirectResult result, int a, int b, int c);
 
     [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [DllImport(SwiftLib, EntryPoint = "$s19SwiftIndirectResult21ReturnNonFrozenStruct1a1b1cAA0efG0Vs5Int32V_A2ItF")]
+    public static extern NonFrozenStruct ReturnNonFrozenStruct(int a, int b, int c);
+
+    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
     [DllImport(SwiftLib, EntryPoint = "$s19SwiftIndirectResult26SumReturnedNonFrozenStruct1fs5Int32VAA0fgH0VyXE_tF")]
     public static extern int SumReturnedNonFrozenStruct(delegate* unmanaged[Swift]<SwiftIndirectResult, SwiftSelf, void> func, void* funcContext);
 
@@ -35,6 +39,11 @@ public unsafe class SwiftIndirectResultTests
         Assert.Equal(10, instance.A);
         Assert.Equal(20, instance.B);
         Assert.Equal(30, instance.C);
+
+        var x = ReturnNonFrozenStruct(10, 20, 30);
+        Assert.Equal(10, x.A);
+        Assert.Equal(20, x.B);
+        Assert.Equal(30, x.C);
     }
 
     [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvSwift) })]
