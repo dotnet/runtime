@@ -5,7 +5,7 @@ using Microsoft.Diagnostics.DataContractReader.ExecutionManagerHelpers;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
-internal sealed class ExecutionManager_1 : ExecutionManagerBase<NibbleMap_1>
+internal sealed class ExecutionManager_1 : ExecutionManagerBase<NibbleMapLinearLookup>
 {
     public ExecutionManager_1(Target target, Data.RangeSectionMap topRangeSectionMap) : base(target, topRangeSectionMap)
     {

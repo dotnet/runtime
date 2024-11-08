@@ -193,12 +193,13 @@ It takes advantage of the fact that the code starts are aligned and
 are spaced apart to represent their addresses as a 4-bit nibble value.
 
 Given a contiguous region of memory in which we lay out a collection of non-overlapping code blocks that are
-not too small (so that two adjacent ones aren't too close together) and  where the start of each code block is preceeded by a code header aligned on some power of 2,
+not too small (so that two adjacent ones aren't too close together) and  where the start of each code block is aligned on some power of 2 and preceeded by a code header,
 we can break up the whole memory space into buckets of a fixed size (32-bytes in the current implementation), where
-each bucket either has a code block header or not.
-Thinking of each code block header address as a hex number, we can view it as: `[index, offset, zeros]`
+each bucket either has a code block or not.
+Thinking of each code block address as a hex number, we can view it as: [index, offset]
 where each index gives us a bucket and the offset gives us the position of the header within the bucket.
-We encode each offset into a 4-bit nibble, reserving the special value 0 to mark the places in the map where a method doesn't start.
+In the current implementation code must be 4 byte aligned therefore there are 8 possible offsets in a bucket.
+These are encoded as values 1-8 in the 4-bit nibble, with 0 reserved to mark the places in the map where a method doesn't start.
 
 To find the start of a method given an address we first convert it into a bucket index (giving the map unit)
 and an offset which we can then turn into the index of the nibble that covers that address.
@@ -239,3 +240,59 @@ Now suppose we do a lookup for address 302 (0x12E)
 * Therefore we know there is no method start at any map index in the current map unit.
 * We will then align the map index to the start of the current map unit (map index 8) and move back to the previous map unit (map index 7)
 * At that point, we scan backwards for a non-zero map unit and a non-zero nibble within the first non-zero map unit. Since there are none, we return null.
+
+
+## Version 2
+
+Version 2 of the contract uses the new `NibbleMapConstantLookup` algorithm which has O(1) lookup time compared to the `NibbleMapLinearLookup` O(n) lookup time.
+
+With the exception of the nibblemap change, version 2 is identical to version 1.
+
+### NibbleMap
+
+The `NibbleMapConstantLookup` implementation is very similar to `NibbleMapLinearLookup` with the addition
+of writing relative pointers into the nibblemap whenever a code block completely covers the code region
+represented by a DWORD, with the current values 256 bytes.
+This allows for O(1) lookup time with the cost of O(n) write time.
+
+Pointers are encoded using the top 28 bits of the DWORD as normal. The bottom 4 bits of the pointer
+are reduced to 2 bits of data using the fact that code start must be 4 byte aligned. This is encoded into
+the nibble in bits 28 .. 31 of the DWORD with values 9-12. This is also used to differentiate DWORDs
+filled with nibble values and DWORDs with pointer values.
+
+| Nibble Value | Meaning | How to decode |
+|:------------:|:--------|:--------------:|
+| 0            | empty | |
+| 1-8          | Nibble | value - 1 |
+| 9-12         | Pointer | value - 1 << 2
+| 13-15        | unused | |
+
+To read the nibblemap, we check if the DWORD is a pointer. If so, then we know the value currentPC is
+part of a managed code block beginning at the mapBase + decoded pointer. Otherwise we can check for nibbles
+as normal. If the DWORD is empty (no pointer or previous nibbles), then we check the previous DWORD for a
+pointer or preceeding nibble. If that DWORD is empty, then we must not be in a managed function. If we were,
+the write algorithm would have written a relative pointer in the DWORD or we would have seen the start nibble.
+
+Note, a currentPC pointing to bytes outside a function has undefined lookup behavior.
+In this implementation we may "extend" the lookup period of a function several hundred bytes
+if there is not another function immediately following it.
+
+We will go through the same example as above with the new algorithm. Suppose there is code starting at address 304 (0x130) with length 1024 (0x400).
+
+* There will be a nibble at the start of the function as before.
+    * The map index will be 304 / 32 = 9 and the byte offset will be 304 % 32 = 16
+    * Because addresses are 4-byte aligned, the nibble value will be 1 + 16 / 4 = 5  (we reserve 0 to mean no method).
+    * So the map unit containing index 9 will contain the value 0x5 << 24 (the map index 9 means we want the second nibble in the second map unit, and we number the nibbles starting from the most significant) , or 0x05000000
+* Since the function starts at 304 with a length of 1024, the last byte of the function is at 1327 (0x52F). Map units (DWORDs) contain 256 bytes (0x100) algined to the map base. Therefore map units represnting 0x200-0x2FF, 0x300-0x3FF and 0x400-0x4ff are completely covered by the function and will have a relative pointer.
+    * To get the relative pointer value we split the code start value at the bottom 4 bits. The top 28 bits are included as normal. We shift the bottom 4 bits 2 to the right and add 9, to get the bottom 4 bits encoding. This gives us a relative pointer value of 311 (0x137).
+        * 304 = 0b100110000
+        * Top 28 bits: 304 = 0b10011xxxx
+        * Bottom 4 bits: 0 = 0b0000
+        * Bottom 4 bits encoding: 9 = (0 >> 2) + 9
+        * Relative Pointer Encoding: 311 = 304 + 9
+
+Now suppose we do a lookup for address 1300 (0x514)
+* The map index will be 1300 / 32 = 40 which is located in the 40 / 8 = 5th map unit (DWORD).
+* We read the value of the 5th map unit and find it is empty.
+* We read the value of the 4th map unit and find that the nibble in the lowest bits has the value of 9 implying that this map unit is a relative pointer.
+* Since we found a relative pointer we can decode the entire map unit as a relative pointer and return that address added to the base.
