@@ -341,7 +341,7 @@ void ObjectAllocator::RecordAppearance(unsigned lclNum, BasicBlock* block, State
     }
 
     GuardInfo info;
-    if (!m_GuardedCallMap.Lookup(pseudoLocal, &info))
+    if (!m_GuardMap.Lookup(pseudoLocal, &info))
     {
         return;
     }
@@ -351,7 +351,117 @@ void ObjectAllocator::RecordAppearance(unsigned lclNum, BasicBlock* block, State
 }
 
 //------------------------------------------------------------------------------
-// Markescapingvarsandbuildconngraph : Walk the trees of the method and mark any ref/byref/i_impl
+// CanClone: check that cloning can remove all escaping references
+//
+// Arguments:
+//   info -- info about the cloning opportunity
+//
+// Returns:
+//   true if cloning can remove all escaping references
+//
+bool ObjectAllocator::CanClone(GuardInfo& info)
+{
+    // The guard variable needs to have at most one definition.
+    //
+    BasicBlock* defBlock = nullptr;
+    for (EnumeratorVarAppearance& a : *info.m_appearances)
+    {
+        if (!a.m_isDef)
+        {
+            continue;
+        }
+
+        if (defBlock != nullptr)
+        {
+            JITDUMP("V%02u multiply defined: " FMT_BB " and " FMT_BB "\n", info.m_local, defBlock->bbNum,
+                    a.m_block->bbNum);
+            return false;
+        }
+
+        defBlock = a.m_block;
+    }
+
+    JITDUMP("V%02u has single def in " FMT_BB "\n", info.m_local, defBlock->bbNum);
+
+    // The definition block must dominate all the uses.
+    //
+    for (EnumeratorVarAppearance& a : *info.m_appearances)
+    {
+        if (a.m_isDef)
+        {
+            continue;
+        }
+
+        if (!comp->m_domTree->Dominates(defBlock, a.m_block))
+        {
+            JITDUMP("V%02u use in " FMT_BB " not dominated by def " FMT_BB "\n", info.m_local, a.m_block->bbNum,
+                    defBlock->bbNum);
+            return false;
+        }
+    }
+
+    JITDUMP("The def dominates all the uses\n");
+
+    // The def block must post-dominate the allocation site, and
+    // the allocation site should not dominate the def block.
+    // (if it does, our optimization does not require cloning as
+    // there should be only one reaching def...)
+    //
+    if (comp->m_domTree->Dominates(info.m_allocBlock, defBlock))
+    {
+        JITDUMP("Unexpected, alloc site " FMT_BB " dominates def block " FMT_BB "\n", info.m_allocBlock->bbNum,
+                defBlock->bbNum);
+
+        return false;
+    }
+
+    // We expect to be able to follow all paths from alloc block to defBlock
+    // (TODO: postdominators... how do we know if we can bypass...)
+    // Todo: track blocks we need to clone
+    //
+    ArrayStack<BasicBlock*> toVisit(comp->getAllocator(CMK_ObjectAllocator));
+    comp->EnsureBasicBlockEpoch();
+    BlockSet visitedBlocks(BlockSetOps::MakeEmpty(comp));
+
+    toVisit.Push(info.m_allocBlock);
+    while (toVisit.Height() > 0)
+    {
+        BasicBlock* const visitBlock = toVisit.Pop();
+        BlockSetOps::AddElemD(comp, visitedBlocks, visitBlock->bbNum);
+
+        if (visitBlock == defBlock)
+        {
+            continue;
+        }
+
+        JITDUMP("walking through " FMT_BB "\n", visitBlock->bbNum);
+
+        // All successors must be defBlock, or dominated by alloc block,
+        // otherwise there is a path from alloc block that avoids def block.
+        //
+        for (BasicBlock* const succ : visitBlock->Succs())
+        {
+            if (BlockSetOps::IsMember(comp, visitedBlocks, succ->bbNum))
+            {
+                continue;
+            }
+            toVisit.Push(succ);
+        }
+    }
+
+    JITDUMP("def block " FMT_BB " post-dominates allocation site " FMT_BB "\n", defBlock->bbNum,
+            info.m_allocBlock->bbNum);
+
+    // Determine the full extent of the cloned region.
+    //
+
+    // Ensure there is at most one EH region inside.
+
+    return false;
+}
+
+//------------------------------------------------------------------------------
+// MarkEscapingVarsAndBuildConnGraph : Walk the trees of the method and mark any ref/byref/i_impl
 //                                     local variables that may escape. Build a connection graph
 //                                     for ref/by_ref/i_impl local variables.
 //
@@ -459,7 +569,8 @@ void ObjectAllocator::MarkEscapingVarsAndBuildConnGraph()
                         info.m_local       = enumeratorLocal;
                         info.m_type        = data->AsAllocObj()->gtAllocObjClsHnd;
                         info.m_appearances = new (alloc) jitstd::vector<EnumeratorVarAppearance>(alloc);
-                        m_allocator->m_GuardedCallMap.Set(pseudoLocal, info);
+                        info.m_allocBlock  = m_block;
+                        m_allocator->m_GuardMap.Set(pseudoLocal, info);
 
                         JITDUMP(
                             "Enumerator allocation [%06u]: will track accesses to V%02u guarded by type %s via P%02u\n",
@@ -614,20 +725,25 @@ void ObjectAllocator::ComputeEscapingNodes(BitVecTraits* bitVecTraits, BitVec& e
                 continue;
             }
 
-#ifdef DEBUG
-            printf("   P%02u is guarding the escape of V%02u\n", pseudoLocal, lclNum);
-            GuardInfo info;
-            m_GuardedCallMap.Lookup(pseudoLocal, &info);
-            printf("   Escapes only when V%02u.Type NE %s\n", info.m_local, comp->eeGetClassName(info.m_type));
-            printf("   V%02u has %u appearances\n", info.m_local, info.m_appearances->size());
-#endif
+            GuardInfo  info;
+            const bool hasInfo  = m_GuardMap.Lookup(pseudoLocal, &info);
+            bool       canClone = false;
 
-            // TODO: figure out if we intend to clone to prevent escape, and if
-            // so, don't mark the lclNum as escaping...
-            //
-            JITDUMP("   not optimizing, so will mark P%02u as escaping\n", pseudoLocal);
-            MarkLclVarAsEscaping(pseudoLocal);
-            BitVecOps::AddElemD(bitVecTraits, escapingNodesToProcess, pseudoLocal);
+            if (hasInfo)
+            {
+                JITDUMP("   P%02u is guarding the escape of V%02u\n", pseudoLocal, lclNum);
+                JITDUMP("   Escapes only when V%02u.Type NE %s\n", info.m_local, comp->eeGetClassName(info.m_type));
+                JITDUMP("   V%02u has %u appearances\n", info.m_local, info.m_appearances->size());
+
+                canClone = CanClone(info);
+            }
+
+            if (!canClone)
+            {
+                JITDUMP("   not optimizing, so will mark P%02u as escaping\n", pseudoLocal);
+                MarkLclVarAsEscaping(pseudoLocal);
+                BitVecOps::AddElemD(bitVecTraits, escapingNodesToProcess, pseudoLocal);
+            }
         }
     }
 
@@ -1145,7 +1261,7 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
                         if (IsGuarded(block, asCall, &info))
                         {
                             GuardInfo pseudoInfo;
-                            if (m_GuardedCallMap.Lookup(pseudoLocal, &pseudoInfo))
+                            if (m_GuardMap.Lookup(pseudoLocal, &pseudoInfo))
                             {
                                 if ((info.m_local == lclNum && pseudoInfo.m_local == lclNum) &&
                                     (info.m_type == pseudoInfo.m_type))

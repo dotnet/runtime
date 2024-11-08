@@ -45,9 +45,10 @@ struct GuardInfo
     unsigned                                 m_local;
     CORINFO_CLASS_HANDLE                     m_type;
     jitstd::vector<EnumeratorVarAppearance>* m_appearances;
+    BasicBlock*                              m_allocBlock;
 };
 
-typedef JitHashTable<unsigned, JitSmallPrimitiveKeyFuncs<unsigned>, GuardInfo> GuardedCallMap;
+typedef JitHashTable<unsigned, JitSmallPrimitiveKeyFuncs<unsigned>, GuardInfo> GuardMap;
 
 class ObjectAllocator final : public Phase
 {
@@ -68,7 +69,7 @@ class ObjectAllocator final : public Phase
 
     // Info for conditionally-escaping locals
     LocalToLocalMap m_EnumeratorLocalToPseudoLocalMap;
-    GuardedCallMap  m_GuardedCallMap;
+    GuardMap        m_GuardMap;
     unsigned        m_maxPseudoLocals;
     unsigned        m_numPseudoLocals;
 
@@ -110,6 +111,7 @@ private:
         return m_maxPseudoLocals > 0;
     }
     void RecordAppearance(unsigned lclNum, BasicBlock* block, Statement* stmt, GenTree** use, bool isDef);
+    bool CanClone(GuardInfo& info);
     static const unsigned int s_StackAllocMaxSize = 0x2000U;
 };
 
@@ -122,7 +124,7 @@ inline ObjectAllocator::ObjectAllocator(Compiler* comp)
     , m_bitVecTraits(BitVecTraits(comp->lvaCount, comp))
     , m_HeapLocalToStackLocalMap(comp->getAllocator(CMK_ObjectAllocator))
     , m_EnumeratorLocalToPseudoLocalMap(comp->getAllocator(CMK_ObjectAllocator))
-    , m_GuardedCallMap(comp->getAllocator(CMK_ObjectAllocator))
+    , m_GuardMap(comp->getAllocator(CMK_ObjectAllocator))
     , m_maxPseudoLocals(0)
     , m_numPseudoLocals(0)
 
