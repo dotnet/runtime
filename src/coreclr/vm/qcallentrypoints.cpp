@@ -502,6 +502,8 @@ static const Entry s_QCall[] =
 #endif // FEATURE_EH_FUNCLETS
     DllImportEntry(InitClassHelper)
     DllImportEntry(ResolveVirtualFunctionPointer)
+    DllImportEntry(GetThreadStaticsByMethodTable)
+    DllImportEntry(GetThreadStaticsByIndex)
     DllImportEntry(GenericHandleWorker)
 };
 
