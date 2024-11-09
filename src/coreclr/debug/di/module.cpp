@@ -319,8 +319,6 @@ IMetaDataImport * CordbModule::GetMetaDataImporter()
     // from debugger, if we have one.
     if (m_pIMImport == NULL)
     {
-        bool isILMetaDataForNGENImage;  // Not currently used for anything.
-
         // The process's LookupMetaData will ping the debugger's ICorDebugMetaDataLocator iface.
         CordbProcess * pProcess = GetProcess();
         RSLockHolder processLockHolder(pProcess->GetProcessLock());
@@ -331,7 +329,7 @@ IMetaDataImport * CordbModule::GetMetaDataImporter()
         // Since we've already done everything possible from the Module anyhow, just call the
         // stuff that talks to the debugger.
         // Don't do anything with the ptr returned here, since it's really m_pInternalMetaDataImport.
-        pProcess->LookupMetaDataFromDebugger(m_vmPEFile, isILMetaDataForNGENImage, this);
+        pProcess->LookupMetaDataFromDebugger(m_vmPEFile, this);
     }
 
     // If we still can't get it, throw.
@@ -781,57 +779,7 @@ HRESULT CordbModule::InitPublicMetaDataFromFile()
     // on the datatarget to map the metadata here.  Note that this must also work for minidumps where the
     // metadata isn't necessarily in the dump image.
 
-    // Get filename. There are 2 filenames to choose from:
-    // - ngen (if applicable).
-    // - non-ngen (aka "normal").
-    // By loading metadata out of the same OS file as loaded into the debuggee space, the OS can share those pages.
-    const WCHAR * szFullPathName = NULL;
-    bool fDebuggerLoadingNgen = false;
-    bool fDebuggeeLoadedNgen = false;
-    szFullPathName = GetNGenImagePath();
-
-    if(szFullPathName != NULL)
-    {
-        fDebuggeeLoadedNgen = true;
-        fDebuggerLoadingNgen = true;
-
-#ifndef TARGET_UNIX
-        // NGEN images are large and we shouldn't load them if they won't be shared, therefore fail the NGEN mapping and
-        // fallback to IL image if the debugger doesn't have the image loaded already.
-        // Its possible that the debugger would still load the NGEN image sometime in the future and we will miss a sharing
-        // opportunity. Its an acceptable loss from an imperfect heuristic.
-        if (NULL == GetModuleHandle(szFullPathName))
-#endif
-        {
-            szFullPathName = NULL;
-            fDebuggerLoadingNgen = false;
-        }
-
-    }
-
-    // If we don't have or decided not to load the NGEN image, check to see if IL image is available
-    if (!fDebuggerLoadingNgen)
-    {
-        szFullPathName = GetModulePath();
-    }
-
-    // If we are doing live debugging we shouldn't use metadata from an IL image because it doesn't match closely enough.
-    // In particular the RVAs for IL code headers are different between the two images which will cause all IL code and
-    // local var signature lookups to fail. With further work we could compensate for the RVAs by computing
-    // the image layout differences and adjusting the returned RVAs, but there may be other differences that need to be accounted
-    // for as well. If we did go that route we should do a binary diff across a variety of NGEN/IL image metadata blobs to
-    // get a concrete understanding of the format differences.
-    //
-    // This check should really be 'Are we OK with only getting the functionality level of mini-dump debugging?' but since we
-    // don't know the debugger's intent we guess whether or not we are doing dump debugging by checking if we are shimmed. Once
-    // the shim supports live debugging we should probably just stop automatically falling back to IL image and let the debugger
-    // decide via the ICorDebugMetadataLocator interface.
-    if(fDebuggeeLoadedNgen && !fDebuggerLoadingNgen && GetProcess()->GetShim()!=NULL)
-    {
-        // The IL image might be there, but we shouldn't use it for live debugging
-        return CORDBG_E_MISSING_METADATA;
-    }
-
+    const WCHAR * szFullPathName = GetModulePath();
 
     // @dbgtodo  metadata  - This is really a CreateFile() call which we can't do. We must offload this to
     // the data target for the dump-debugging scenarios.
@@ -840,20 +788,6 @@ HRESULT CordbModule::InitPublicMetaDataFromFile()
     // then the metadata engine will convert it to a "write" underneath us.
     // We want "read" so that we can let the OS share the pages.
     DWORD dwOpenFlags = 0;
-
-    // If we know we're never going to need to write (i.e. never do EnC), then we should indicate
-    // that to metadata by telling it this interface will always be read-only.  By passing read-only,
-    // the metadata library will then also share the VM space for the image when the same image is
-    // opened multiple times for multiple AppDomains.
-    // We don't currently have a way to tell absolutely whether this module will support EnC, but we
-    // know that NGen modules NEVER support EnC, and NGen is the common case that eats up a lot of VM.
-    // So we'll use the heuristic of opening the metadata for all ngen images as read-only.  Ideally
-    // we'd go even further here (perhaps even changing metadata to map only the region of the file it
-    // needs).
-    if (fDebuggerLoadingNgen)
-    {
-        dwOpenFlags = ofReadOnly | ofTrustedImage;
-    }
 
     // This is the only place we ever validate that the file matches, because we're potentially
     // loading the file from disk ourselves.  We're doing this without giving the debugger a chance
@@ -884,7 +818,6 @@ HRESULT CordbModule::InitPublicMetaDataFromFile(const WCHAR * pszFullPathName,
         // target memory back to the debugger.
         DWORD dwImageTimeStamp = 0;
         DWORD dwImageSize = 0;
-        bool isNGEN = false; // unused
         StringCopyHolder filePath;
 
 
@@ -893,7 +826,6 @@ HRESULT CordbModule::InitPublicMetaDataFromFile(const WCHAR * pszFullPathName,
         if (!this->GetProcess()->GetDAC()->GetMetaDataFileInfoFromPEFile(m_vmPEFile,
                                                                          dwImageTimeStamp,
                                                                          dwImageSize,
-                                                                         isNGEN,
                                                                          &filePath))
         {
             LOG((LF_CORDB,LL_WARNING, "CM::IM: Couldn't get metadata info for file \"%s\"\n", pszFullPathName));
@@ -1275,29 +1207,15 @@ HRESULT CordbModule::GetName(ULONG32 cchName, ULONG32 *pcchName, _Out_writes_to_
         {
             DWORD dwImageTimeStamp = 0; // unused
             DWORD dwImageSize = 0;      // unused
-            bool isNGEN = false;
             StringCopyHolder filePath;
 
             _ASSERTE(!m_vmPEFile.IsNull());
             if (this->GetProcess()->GetDAC()->GetMetaDataFileInfoFromPEFile(m_vmPEFile,
                                                                              dwImageTimeStamp,
                                                                              dwImageSize,
-                                                                             isNGEN,
                                                                              &filePath))
             {
                 _ASSERTE(filePath.IsSet());
-
-                // Unfortunately, metadata lookup preferentially takes the ngen image - so in this case,
-                //  we need to go back and get the IL image's name instead.
-                if ((isNGEN) &&
-                    (this->GetProcess()->GetDAC()->GetILImageInfoFromNgenPEFile(m_vmPEFile,
-                                                                                dwImageTimeStamp,
-                                                                                dwImageSize,
-                                                                                &filePath)))
-                {
-                    _ASSERTE(filePath.IsSet());
-                }
-
                 hr = CopyOutString(filePath, cchName, pcchName, szName);
             }
         }
@@ -1425,44 +1343,6 @@ const WCHAR * CordbModule::GetModulePath()
         return NULL;    // module has no filename
     }
     return m_strModulePath;
-}
-
-//---------------------------------------------------------------------------------------
-// Get and caches ngen image path.
-//
-// Returns:
-//    Null-terminated string to ngen image path.
-//    NULL if there is no ngen filename (eg, file is not ngenned).
-//    Throws on error (such as inability to read the path from the target).
-//
-// Notes:
-//    This can be used to get the path to find metadata. For ngenned images,
-//    the IL (and associated metadata) may not be loaded, so we may want to get the
-//    metadata out of the ngen image.
-const WCHAR * CordbModule::GetNGenImagePath()
-{
-    HRESULT hr = S_OK;
-    EX_TRY
-    {
-        // Lazily initialize.  Module filenames cannot change, and so once
-        // we've retrieved this successfully, it's stored for good.
-        if (!m_strNGenImagePath.IsSet())
-        {
-            IDacDbiInterface * pDac = m_pProcess->GetDAC(); // throws
-            BOOL fNonEmpty = pDac->GetModuleNGenPath(m_vmModule, &m_strNGenImagePath); // throws
-            (void)fNonEmpty; //prevent "unused variable" error from GCC
-            _ASSERTE(m_strNGenImagePath.IsSet() && (m_strNGenImagePath.IsEmpty() == !fNonEmpty));
-        }
-    }
-    EX_CATCH_HRESULT(hr);
-
-    if (FAILED(hr) ||
-        m_strNGenImagePath == NULL ||
-        m_strNGenImagePath.IsEmpty())
-    {
-        return NULL;    // module has no ngen filename
-    }
-    return m_strNGenImagePath;
 }
 
 // Implementation of ICorDebugModule::EnableJITDebugging

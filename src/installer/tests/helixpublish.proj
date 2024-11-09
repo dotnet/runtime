@@ -1,0 +1,65 @@
+<Project Sdk="Microsoft.DotNet.Helix.Sdk">
+
+  <PropertyGroup>
+    <HelixArchitecture>$(TargetArchitecture)</HelixArchitecture>
+    <HelixBuild Condition="'$(HelixBuild)' == ''">$(BUILD_BUILDNUMBER)</HelixBuild>
+    <HelixBuild Condition="'$(HelixBuild)' == ''">default</HelixBuild>
+    <HelixConfiguration>$(Configuration)</HelixConfiguration>
+    <HelixType>test/host</HelixType>
+
+    <IncludeDotNetCli>true</IncludeDotNetCli>
+    <DotNetCliPackageType>sdk</DotNetCliPackageType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <HostTestProject Include="$(InstallerProjectRoot)tests\AppHost.Bundle.Tests\AppHost.Bundle.Tests.csproj" />
+    <HostTestProject Include="$(InstallerProjectRoot)tests\HostActivation.Tests\HostActivation.Tests.csproj" />
+    <HostTestProject Include="$(InstallerProjectRoot)tests\Microsoft.NET.HostModel.Tests\Microsoft.NET.HostModel.Tests.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Pre-built test projects and constructed .NET install layout -->
+    <HelixCorrelationPayload Include="$(TestArtifactsOutputRoot)" Destination="test_assets" />
+    <!-- Native host binaries -->
+    <HelixCorrelationPayload Include="$(DotNetHostBinDir)" Destination="host_bin" />
+    <!-- Native host test/mock binaries -->
+    <HelixCorrelationPayload Include="$([MSBuild]::NormalizePath('$(DotNetHostBinDir)', '..', 'corehost_test'))" Destination="host_test_bin" />
+  </ItemGroup>
+
+  <!-- Environment variables used by host tests to find test assets. See src/installer/tests/TestUtils/TestContext.cs -->
+  <ItemGroup Condition="'$(TargetOS)' == 'windows'">
+    <_HelixPreCommands Include="set TEST_ASSETS_OUTPUT=%HELIX_CORRELATION_PAYLOAD%\test_assets" />
+    <_HelixPreCommands Include="set TEST_ARTIFACTS=%HELIX_WORKITEM_ROOT%\test_artifacts" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetOS)' != 'windows'">
+    <_HelixPreCommands Include="export TEST_ASSETS_OUTPUT=$HELIX_CORRELATION_PAYLOAD/test_assets" />
+    <_HelixPreCommands Include="export TEST_ARTIFACTS=$HELIX_WORKITEM_ROOT/test_artifacts" />
+  </ItemGroup>
+
+  <!-- Get the command and payload directory corresponding to each test -->
+  <Target Name="ComputePayloadPaths" Outputs="%(HostTestProject.Identity)">
+    <MSBuild Projects="%(HostTestProject.Identity)" Targets="GetTargetDir">
+      <Output TaskParameter="TargetOutputs" PropertyName="_PayloadDirectory" />
+    </MSBuild>
+    <MSBuild Projects="%(HostTestProject.Identity)" Targets="GetTargetPath">
+      <Output TaskParameter="TargetOutputs" PropertyName="_TargetPath" />
+    </MSBuild>
+    <ItemGroup>
+      <HostTestProject>
+        <Command>dotnet test $([System.IO.Path]::GetFileName($(_TargetPath))) $(TestRunnerAdditionalArguments)</Command>
+        <PayloadDirectory>$(_PayloadDirectory)</PayloadDirectory>
+      </HostTestProject>
+    </ItemGroup>
+  </Target>
+
+  <Target Name="CreateHelixWorkItems" DependsOnTargets="ComputePayloadPaths" BeforeTargets="CoreTest">
+    <ItemGroup>
+      <HelixWorkItem Include="$([System.IO.Path]::GetFileNameWithoutExtension(%(HostTestProject.Identity)))">
+        <PayloadDirectory>%(HostTestProject.PayloadDirectory)</PayloadDirectory>
+        <Command>%(HostTestProject.Command)</Command>
+        <PreCommands>@(_HelixPreCommands)</PreCommands>
+      </HelixWorkItem>
+    </ItemGroup>
+  </Target>
+
+</Project>

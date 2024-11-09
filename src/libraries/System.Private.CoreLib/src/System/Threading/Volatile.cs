@@ -226,5 +226,23 @@ namespace System.Threading
         public static void Write<T>([NotNullIfNotNull(nameof(value))] ref T location, T value) where T : class? =>
             Unsafe.As<T, VolatileObject>(ref location).Value = value;
         #endregion
+
+        #region Barriers
+        /// <summary>
+        /// Synchronizes memory access as follows:
+        /// The processor that executes the current thread cannot reorder instructions in such a way that memory reads before
+        /// the call to <see cref="ReadBarrier"/> execute after memory accesses that follow the call to <see cref="ReadBarrier"/>.
+        /// </summary>
+        [Intrinsic]
+        public static void ReadBarrier() => ReadBarrier();
+
+        /// <summary>
+        /// Synchronizes memory access as follows:
+        /// The processor that executes the current thread cannot reorder instructions in such a way that memory writes after
+        /// the call to <see cref="WriteBarrier"/> execute before memory accesses that follow the call to <see cref="WriteBarrier"/>.
+        /// </summary>
+        [Intrinsic]
+        public static void WriteBarrier() => WriteBarrier();
+        #endregion
     }
 }

@@ -321,6 +321,8 @@ struct LcJaggedArrayOptInfo : public LcOptInfo
 //
 struct LcTypeTestOptInfo : public LcOptInfo
 {
+    // block where statement occurs
+    BasicBlock* block;
     // statement where the opportunity occurs
     Statement* stmt;
     // indir for the method table
@@ -330,8 +332,13 @@ struct LcTypeTestOptInfo : public LcOptInfo
     // handle being tested for
     CORINFO_CLASS_HANDLE clsHnd;
 
-    LcTypeTestOptInfo(Statement* stmt, GenTreeIndir* methodTableIndir, unsigned lclNum, CORINFO_CLASS_HANDLE clsHnd)
+    LcTypeTestOptInfo(BasicBlock*          block,
+                      Statement*           stmt,
+                      GenTreeIndir*        methodTableIndir,
+                      unsigned             lclNum,
+                      CORINFO_CLASS_HANDLE clsHnd)
         : LcOptInfo(LcTypeTest)
+        , block(block)
         , stmt(stmt)
         , methodTableIndir(methodTableIndir)
         , lclNum(lclNum)
@@ -342,6 +349,8 @@ struct LcTypeTestOptInfo : public LcOptInfo
 
 struct LcMethodAddrTestOptInfo : public LcOptInfo
 {
+    // block where statement occurs
+    BasicBlock* block;
     // statement where the opportunity occurs
     Statement* stmt;
     // indir on the delegate
@@ -355,12 +364,14 @@ struct LcMethodAddrTestOptInfo : public LcOptInfo
     CORINFO_METHOD_HANDLE targetMethHnd;
 #endif
 
-    LcMethodAddrTestOptInfo(Statement*    stmt,
+    LcMethodAddrTestOptInfo(BasicBlock*   block,
+                            Statement*    stmt,
                             GenTreeIndir* delegateAddressIndir,
                             unsigned      delegateLclNum,
                             void*         methAddr,
                             bool isSlot   DEBUG_ARG(CORINFO_METHOD_HANDLE targetMethHnd))
         : LcOptInfo(LcMethodAddrTest)
+        , block(block)
         , stmt(stmt)
         , delegateAddressIndir(delegateAddressIndir)
         , delegateLclNum(delegateLclNum)

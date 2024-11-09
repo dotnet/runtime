@@ -645,7 +645,7 @@ int LinearScan::BuildNode(GenTree* tree)
             {
                 // We need an internal register different from targetReg in which 'tree' produces its result
                 // because both targetReg and internal reg will be in use at the same time.
-                buildInternalFloatRegisterDefForNode(tree, allSIMDRegs());
+                buildInternalIntRegisterDefForNode(tree);
                 setInternalRegsDelayFree = true;
                 buildInternalRegisterUses();
             }
@@ -719,6 +719,7 @@ int LinearScan::BuildNode(GenTree* tree)
         }
         break;
 
+#if defined(FEATURE_SIMD)
         case GT_CNS_VEC:
         {
             GenTreeVecCon* vecCon = tree->AsVecCon();
@@ -741,7 +742,9 @@ int LinearScan::BuildNode(GenTree* tree)
             def->getInterval()->isConstant = true;
             break;
         }
+#endif // FEATURE_SIMD
 
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
         case GT_CNS_MSK:
         {
             GenTreeMskCon* mskCon = tree->AsMskCon();
@@ -764,6 +767,7 @@ int LinearScan::BuildNode(GenTree* tree)
             def->getInterval()->isConstant = true;
             break;
         }
+#endif // FEATURE_MASKED_HW_INTRINSICS
 
         case GT_BOX:
         case GT_COMMA:
