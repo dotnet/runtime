@@ -358,7 +358,7 @@ namespace System
         /// <param name="cancellationToken">A token that may be used to cancel the operation.</param>
         /// <returns>A value representing all of the data from the file.</returns>
         /// <seealso cref="MediaTypeNames"/>
-        public static async Task<BinaryData> FromFileAsync(string path, string? mediaType,
+        public static Task<BinaryData> FromFileAsync(string path, string? mediaType,
             CancellationToken cancellationToken = default)
         {
             if (path is null)
@@ -366,14 +366,19 @@ namespace System
                 throw new ArgumentNullException(nameof(path));
             }
 
+            return Core();
+
+            async Task<BinaryData> Core()
+            {
 #if NET
-            return new BinaryData(
-                await File.ReadAllBytesAsync(path, cancellationToken).ConfigureAwait(false),
-                mediaType);
+                return new BinaryData(
+                    await File.ReadAllBytesAsync(path, cancellationToken).ConfigureAwait(false),
+                    mediaType);
 #else
-            using FileStream fileStream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, 1, useAsync: true);
-            return await FromStreamAsync(fileStream, mediaType, cancellationToken).ConfigureAwait(false);
+                using FileStream fileStream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, 1, useAsync: true);
+                return await FromStreamAsync(fileStream, mediaType, cancellationToken).ConfigureAwait(false);
 #endif
+            }
         }
 
         /// <summary>
