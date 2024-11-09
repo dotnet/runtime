@@ -52,8 +52,8 @@ unsafe class Program
         bool? ExpectedAes = null;
         bool? ExpectedLzcnt = null;
         bool? ExpectedPclmulqdq = null;
-        bool? ExpectedPclmulqdqV256 = null;
-        bool? ExpectedPclmulqdqV512 = null;
+        bool? ExpectedPclmulqdqV256 = false;
+        bool? ExpectedPclmulqdqV512 = false;
         bool? ExpectedSse41 = null;
         bool? ExpectedSse42 = null;
         bool? ExpectedPopcnt = null;
@@ -77,8 +77,8 @@ unsafe class Program
         bool? ExpectedAes = null;
         bool? ExpectedLzcnt = null;
         bool? ExpectedPclmulqdq = null;
-        bool? ExpectedPclmulqdqV256 = null;
-        bool? ExpectedPclmulqdqV512 = null;
+        bool? ExpectedPclmulqdqV256 = false;
+        bool? ExpectedPclmulqdqV512 = false;
         bool? ExpectedSse41 = true;
         bool? ExpectedSse42 = true;
         bool? ExpectedPopcnt = null;
@@ -103,7 +103,7 @@ unsafe class Program
         bool? ExpectedLzcnt = null;
         bool? ExpectedPclmulqdq = null;
         bool? ExpectedPclmulqdqV256 = null;
-        bool? ExpectedPclmulqdqV512 = null;
+        bool? ExpectedPclmulqdqV512 = false;
         bool? ExpectedSse41 = true;
         bool? ExpectedSse42 = true;
         bool? ExpectedPopcnt = null;
@@ -128,7 +128,7 @@ unsafe class Program
         bool? ExpectedLzcnt = null;
         bool? ExpectedPclmulqdq = null;
         bool? ExpectedPclmulqdqV256 = null;
-        bool? ExpectedPclmulqdqV512 = null;
+        bool? ExpectedPclmulqdqV512 = false;
         bool? ExpectedSse41 = true;
         bool? ExpectedSse42 = true;
         bool? ExpectedPopcnt = null;
