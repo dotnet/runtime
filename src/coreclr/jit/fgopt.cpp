@@ -6486,6 +6486,22 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
 
         if (block->KindIs(BBJ_RETURN) && !block->isEmpty() && (block != genReturnBB))
         {
+
+#if !FEATURE_TAILCALL_OPT_SHARED_RETURN
+            // Avoid spitting a return away from a possible tail call
+            //
+            if (!block->hasSingleStmt())
+            {
+                Statement* const lastStmt = block->lastStmt();
+                Statement* const prevStmt = lastStmt->GetPrevStmt();
+                GenTree* const   prevTree = prevStmt->GetRootNode();
+                if (prevTree->IsCall() && prevTree->AsCall()->CanTailCall())
+                {
+                    continue;
+                }
+            }
+#endif
+
             retBlocks.Push(block);
         }
     }
