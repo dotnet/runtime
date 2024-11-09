@@ -78,7 +78,7 @@ namespace ILCompiler
             string suffix = "";
             while (potentialType.ContainingType is MetadataType containingType)
             {
-                suffix += $"_{potentialType.Name}";
+                suffix = $"_{potentialType.Name}{suffix}";
                 potentialType = containingType;
             }
 
