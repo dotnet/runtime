@@ -243,7 +243,7 @@ namespace System
                 throw new ArgumentNullException(nameof(stream));
             }
 
-            return FromStreamAsync(stream, async: false, mediaType).GetAwaiter().GetResult();
+            return FromStreamAsync(stream, useAsync: false, mediaType).GetAwaiter().GetResult();
         }
 
         /// <summary>
@@ -274,10 +274,10 @@ namespace System
                 throw new ArgumentNullException(nameof(stream));
             }
 
-            return FromStreamAsync(stream, async: true, mediaType, cancellationToken);
+            return FromStreamAsync(stream, useAsync: true, mediaType, cancellationToken);
         }
 
-        private static async Task<BinaryData> FromStreamAsync(Stream stream, bool async,
+        private static async Task<BinaryData> FromStreamAsync(Stream stream, bool useAsync,
             string? mediaType = default, CancellationToken cancellationToken = default)
         {
             const int CopyToBufferSize = 81920;  // the default used by Stream.CopyToAsync
@@ -303,7 +303,7 @@ namespace System
 
             using (memoryStream)
             {
-                if (async)
+                if (useAsync)
                 {
                     await stream.CopyToAsync(memoryStream, bufferSize, cancellationToken).ConfigureAwait(false);
                 }
@@ -337,7 +337,7 @@ namespace System
                 throw new ArgumentNullException(nameof(path));
             }
 
-            return FromFileAsync(path, async: false, mediaType).GetAwaiter().GetResult();
+            return new BinaryData(File.ReadAllBytes(path), mediaType);
         }
 
         /// <summary>
@@ -358,7 +358,7 @@ namespace System
         /// <param name="cancellationToken">A token that may be used to cancel the operation.</param>
         /// <returns>A value representing all of the data from the file.</returns>
         /// <seealso cref="MediaTypeNames"/>
-        public static Task<BinaryData> FromFileAsync(string path, string? mediaType,
+        public static async Task<BinaryData> FromFileAsync(string path, string? mediaType,
             CancellationToken cancellationToken = default)
         {
             if (path is null)
@@ -366,14 +366,14 @@ namespace System
                 throw new ArgumentNullException(nameof(path));
             }
 
-            return FromFileAsync(path, async: true, mediaType, cancellationToken);
-        }
-
-        private static async Task<BinaryData> FromFileAsync(string path, bool async,
-            string? mediaType = default, CancellationToken cancellationToken = default)
-        {
-            using FileStream fileStream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, 4096, async);
-            return await FromStreamAsync(fileStream, async, mediaType, cancellationToken).ConfigureAwait(false);
+#if NET
+            return new BinaryData(
+                await File.ReadAllBytesAsync(path, cancellationToken).ConfigureAwait(false),
+                mediaType);
+#else
+            using FileStream fileStream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, 1, useAsync: true);
+            return await FromStreamAsync(fileStream, mediaType, cancellationToken).ConfigureAwait(false);
+#endif
         }
 
         /// <summary>
