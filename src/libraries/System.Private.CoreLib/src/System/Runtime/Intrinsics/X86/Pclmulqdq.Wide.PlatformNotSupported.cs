@@ -51,4 +51,5 @@ namespace System.Runtime.Intrinsics.X86
             /// </summary>
             public static Vector512<ulong> CarrylessMultiply(Vector512<ulong> left, Vector512<ulong> right, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
         }
+    }
 }
