@@ -518,7 +518,7 @@ namespace System
             return true;
         }
 
-        public static bool HasValue(string? value)
+        public static bool HasValue([NotNullWhen(true)] string? value)
         {
             if (value == null || value.Length == 0) return false;
 
