@@ -497,17 +497,18 @@ namespace System.Tests
         [Fact]
         public async Task CreateThrowsOnNullStream()
         {
-            AssertExtensions.Throws<ArgumentNullException>("stream", () => BinaryData.FromStream(null));
-            AssertExtensions.Throws<ArgumentNullException>("stream", () => BinaryData.FromStream(null, null));
-            await AssertExtensions.ThrowsAsync<ArgumentNullException>("stream", () => BinaryData.FromStreamAsync(null));
-            await AssertExtensions.ThrowsAsync<ArgumentNullException>("stream", () => BinaryData.FromStreamAsync(null, null));
+            Stream stream = null;
+            AssertExtensions.Throws<ArgumentNullException>("stream", () => BinaryData.FromStream(stream));
+            AssertExtensions.Throws<ArgumentNullException>("stream", () => BinaryData.FromStream(stream, null));
+            await AssertExtensions.ThrowsAsync<ArgumentNullException>("stream", () => BinaryData.FromStreamAsync(stream));
+            await AssertExtensions.ThrowsAsync<ArgumentNullException>("stream", () => BinaryData.FromStreamAsync(stream, null));
         }
 
         [Fact]
         public void CreateThrowsOnNullString()
         {
             string payload = null;
-            var ex = AssertExtensions.Throws<ArgumentNullException>("data", () => new BinaryData(payload));
+            AssertExtensions.Throws<ArgumentNullException>("data", () => new BinaryData(payload));
             AssertExtensions.Throws<ArgumentNullException>("data", () => new BinaryData(payload, null));
             AssertExtensions.Throws<ArgumentNullException>("data", () => BinaryData.FromString(payload));
             AssertExtensions.Throws<ArgumentNullException>("data", () => BinaryData.FromString(payload, null));
@@ -517,7 +518,7 @@ namespace System.Tests
         public void CreateThrowsOnNullArray()
         {
             byte[] payload = null;
-            var ex = AssertExtensions.Throws<ArgumentNullException>("data", () => new BinaryData(payload));
+            AssertExtensions.Throws<ArgumentNullException>("data", () => new BinaryData(payload));
             AssertExtensions.Throws<ArgumentNullException>("data", () => new BinaryData(payload, null));
             AssertExtensions.Throws<ArgumentNullException>("data", () => BinaryData.FromBytes(payload));
             AssertExtensions.Throws<ArgumentNullException>("data", () => BinaryData.FromBytes(payload, null));

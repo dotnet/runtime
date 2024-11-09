@@ -16,6 +16,7 @@ namespace System.Tests
             byte[] buffer = "some data"u8.ToArray();
             string path = GetRandomFilePath();
             File.WriteAllBytes(path, buffer);
+
             BinaryData data = BinaryData.FromFile(path);
             Assert.Equal(buffer, data.ToArray());
 
@@ -40,8 +41,8 @@ namespace System.Tests
         {
             byte[] buffer = "some data"u8.ToArray();
             string path = GetRandomFilePath();
-
             File.WriteAllBytes(path, buffer);
+
             BinaryData data = BinaryData.FromFile(path, mediaType);
             Assert.Equal(buffer, data.ToArray());
             Assert.Equal(mediaType, data.MediaType);
