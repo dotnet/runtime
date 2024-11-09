@@ -1356,7 +1356,7 @@ mono_class_get_declsec_flags (MonoClass *klass);
 void
 mono_class_set_declsec_flags (MonoClass *klass, guint32 value);
 
-gint32
+MONO_COMPONENT_API gint32
 mono_class_get_inlinearray_value (MonoClass *klass);
 
 void
