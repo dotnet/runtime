@@ -70,51 +70,33 @@ namespace ILCompiler
             if (!potentialTypeDesc.IsIntrinsic || !(potentialTypeDesc is MetadataType potentialType))
                 return "";
 
-            string suffix = "";
-            if (architecture == TargetArchitecture.X64)
-            {
-                if (potentialType.Name == "X64")
-                    potentialType = (MetadataType)potentialType.ContainingType;
-                if (potentialType.Name == "VL")
-                    potentialType = (MetadataType)potentialType.ContainingType;
-                if (potentialType.Name == "V512")
-                {
-                    suffix = "_V512";
-                    potentialType = (MetadataType)potentialType.ContainingType;
-                }
+            // 64-bit ISA variants are not included in the mapping dictionary, so we use the containing type instead
+            if ((architecture, potentialType.Name) is (TargetArchitecture.X64, "X64") or (TargetArchitecture.ARM64, "Arm64"))
+                potentialType = (MetadataType)potentialType.ContainingType;
 
+            // We assume that managed names in InstructionSetDesc.txt use an underscore separator for nested classes
+            string suffix = "";
+            while (potentialType.ContainingType is MetadataType containingType)
+            {
+                suffix += $"_{potentialType.Name}";
+                potentialType = containingType;
+            }
+
+            if (architecture is TargetArchitecture.X64 or TargetArchitecture.X86)
+            {
                 if (potentialType.Namespace != "System.Runtime.Intrinsics.X86")
                     return "";
             }
-            else if (architecture == TargetArchitecture.X86)
-            {
-                if (potentialType.Name == "VL")
-                    potentialType = (MetadataType)potentialType.ContainingType;
-                if (potentialType.Name == "V512")
-                {
-                    suffix = "_V512";
-                    potentialType = (MetadataType)potentialType.ContainingType;
-                }
-                if (potentialType.Namespace != "System.Runtime.Intrinsics.X86")
-                    return "";
-            }
-            else if (architecture == TargetArchitecture.ARM64)
-            {
-                if (potentialType.Name == "Arm64")
-                    potentialType = (MetadataType)potentialType.ContainingType;
-                if (potentialType.Namespace != "System.Runtime.Intrinsics.Arm")
-                    return "";
-            }
-            else if (architecture == TargetArchitecture.ARM)
+            else if (architecture is TargetArchitecture.ARM64 or TargetArchitecture.ARM)
             {
                 if (potentialType.Namespace != "System.Runtime.Intrinsics.Arm")
                     return "";
             }
-            else if (architecture == TargetArchitecture.LoongArch64)
+            else if (architecture is TargetArchitecture.LoongArch64)
             {
                 return "";
             }
-            else if (architecture == TargetArchitecture.RiscV64)
+            else if (architecture is TargetArchitecture.RiscV64)
             {
                 return "";
             }
