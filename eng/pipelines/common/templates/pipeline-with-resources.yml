@@ -127,9 +127,3 @@ extends:
         image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-22.04-cross-armel-tizen
         env:
           ROOTFS_DIR: /crossrootfs/armel
-
-      debpkg:
-        image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-22.04-debpkg
-
-      rpmpkg:
-        image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net9.0-fpm
