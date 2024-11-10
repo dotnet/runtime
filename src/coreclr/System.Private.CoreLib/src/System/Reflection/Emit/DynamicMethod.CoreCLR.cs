@@ -90,7 +90,7 @@ namespace System.Reflection.Emit
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
-                return _invoker ??= new MethodBaseInvoker(this, Signature);
+                return _invoker ??= MethodBaseInvoker.Create(this, Signature.Arguments);
             }
         }
 
@@ -132,13 +132,17 @@ namespace System.Reflection.Emit
             int argCount = (parameters != null) ? parameters.Length : 0;
             if (Signature.Arguments.Length != argCount)
                 throw new TargetParameterCountException(SR.Arg_ParmCnt);
-            object? retValue = argCount switch
+
+            object? retValue = Invoker.Strategy switch
             {
-                0 => Invoker.InvokeWithNoArgs(obj, invokeAttr),
-                1 => Invoker.InvokeWithOneArg(obj, invokeAttr, binder, parameters!, culture),
-                2 or 3 or 4 => Invoker.InvokeWithFewArgs(obj, invokeAttr, binder, parameters!, culture),
-                _ => Invoker.InvokeWithManyArgs(obj, invokeAttr, binder, parameters!, culture),
+                MethodBase.InvokerStrategy.Obj0 => Invoker.InvokeWith0Args(obj, IntPtr.Zero, invokeAttr),
+                MethodBase.InvokerStrategy.Obj1 => Invoker.InvokeWith1Arg(obj, IntPtr.Zero, invokeAttr, binder, parameters![0], culture),
+                MethodBase.InvokerStrategy.Obj4 => Invoker.InvokeWith4Args(obj, IntPtr.Zero, invokeAttr, binder, parameters!, culture),
+                MethodBase.InvokerStrategy.ObjSpan => Invoker.InvokeWithSpanArgs(obj, IntPtr.Zero, invokeAttr, binder, parameters!, culture),
+                MethodBase.InvokerStrategy.Ref4 => Invoker.InvokeWith4RefArgs(obj, IntPtr.Zero, invokeAttr, binder, parameters!, culture),
+                _ => Invoker.InvokeWithManyRefArgs(obj, IntPtr.Zero, invokeAttr, binder, parameters!, culture)
             };
+
             GC.KeepAlive(this);
             return retValue;
         }

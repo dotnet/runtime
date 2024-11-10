@@ -7,32 +7,13 @@ namespace System.Reflection
 {
     internal partial class MethodBaseInvoker
     {
-        private readonly Signature? _signature;
+        internal static MethodBaseInvoker GetOrCreate(RuntimeMethodInfo method) =>
+            MethodBaseInvoker.GetOrCreate(method, (RuntimeType)method.ReturnType, method.ArgumentTypes);
 
-        internal unsafe MethodBaseInvoker(RuntimeMethodInfo method) : this(method, method.Signature.Arguments)
-        {
-            _signature = method.Signature;
-            _invocationFlags = method.ComputeAndUpdateInvocationFlags();
-            _invokeFunc_RefArgs = InterpretedInvoke_Method;
-        }
+        internal static MethodBaseInvoker GetOrCreate(RuntimeConstructorInfo constructor) =>
+            MethodBaseInvoker.GetOrCreate(constructor, (RuntimeType)typeof(void), constructor.ArgumentTypes);
 
-        internal unsafe MethodBaseInvoker(RuntimeConstructorInfo constructor) : this(constructor, constructor.Signature.Arguments)
-        {
-            _signature = constructor.Signature;
-            _invocationFlags = constructor.ComputeAndUpdateInvocationFlags();
-            _invokeFunc_RefArgs = InterpretedInvoke_Constructor;
-        }
-
-        internal unsafe MethodBaseInvoker(DynamicMethod method, Signature signature) : this(method, signature.Arguments)
-        {
-            _signature = signature;
-            _invokeFunc_RefArgs = InterpretedInvoke_Method;
-        }
-
-        private unsafe object? InterpretedInvoke_Constructor(object? obj, IntPtr _, IntPtr* args) =>
-            RuntimeMethodHandle.InvokeMethod(obj, (void**)args, _signature!, isConstructor: obj is null);
-
-        private unsafe object? InterpretedInvoke_Method(object? obj, IntPtr _, IntPtr* args) =>
-            RuntimeMethodHandle.InvokeMethod(obj, (void**)args, _signature!, isConstructor: false);
+        internal static MethodBaseInvoker GetOrCreate(DynamicMethod dm) =>
+            MethodBaseInvoker.GetOrCreate(dm, (RuntimeType)dm.ReturnType, dm.ArgumentTypes);
     }
 }

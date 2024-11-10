@@ -1,12 +1,16 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Reflection.Emit;
 using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Threading;
+using System.Collections.Concurrent;
 using static System.Reflection.InvokerEmitUtil;
 using static System.Reflection.MethodBase;
 using static System.Reflection.MethodInvokerCommon;
@@ -17,26 +21,114 @@ namespace System.Reflection
     {
         internal const int MaxStackAllocArgCount = 4;
 
-        private InvokeFunc_ObjSpanArgs? _invokeFunc_ObjSpanArgs;
-        private InvokeFunc_RefArgs? _invokeFunc_RefArgs;
-        private InvokerStrategy _strategy;
-        internal readonly InvocationFlags _invocationFlags;
+        private static CerHashtable<InvokeSignatureInfo, MethodBaseInvoker> s_invokers;
+        private static object? s_invokersLock;
+
+        // todo: use single with cast: private Delegate _invokeFunc;
+        private readonly InvokeFunc_Obj0Args? _invokeFunc_Obj0Args;
+        private readonly InvokeFunc_Obj1Arg? _invokeFunc_Obj1Arg;
+        private readonly InvokeFunc_ObjSpanArgs? _invokeFunc_ObjSpanArgs;
+        private readonly InvokeFunc_RefArgs? _invokeFunc_RefArgs;
+
+        private readonly int _argCount; // For perf, to avoid calling _signatureInfo.ParameterTypes.Length in fast path.
         private readonly InvokerArgFlags[] _invokerArgFlags;
-        private readonly RuntimeType[] _argTypes;
-        private readonly MethodBase _method;
-        private readonly int _argCount;
-        private readonly bool _needsByRefStrategy;
-        private readonly IntPtr _functionPointer;
+        private readonly MethodBase? _method; // This will be null when using Calli.
+        private readonly InvokeSignatureInfo _signatureInfo;
+        private readonly InvokerStrategy _strategy;
 
-        private MethodBaseInvoker(MethodBase method, RuntimeType[] argumentTypes)
+        public static MethodBaseInvoker Create(MethodBase method, RuntimeType[] argumentTypes)
         {
-            _method = method;
-            _argTypes = argumentTypes;
-            _argCount = _argTypes.Length;
-            _functionPointer = method.MethodHandle.GetFunctionPointer();
-
-            Initialize(argumentTypes, out _strategy, out _invokerArgFlags, out _needsByRefStrategy);
+            return new MethodBaseInvoker(SupportsCalli(method) ? null : method, InvokeSignatureInfo.Create(method, argumentTypes));
         }
+
+        public static MethodBaseInvoker GetOrCreate(MethodBase method, RuntimeType returnType, RuntimeType[] argumentTypes)
+        {
+            if (!CanCacheInvoker(method))
+            {
+                return Create(method, argumentTypes);
+            }
+
+            InvokeSignatureInfo.NormalizedLookupKey key = new((RuntimeType)method.DeclaringType!, returnType, argumentTypes, method.IsStatic);
+
+            int hashcode = key.AlternativeGetHashCode();
+            MethodBaseInvoker existing;
+            unsafe
+            {
+                existing = s_invokers.GetValue<InvokeSignatureInfo.NormalizedLookupKey>(hashcode, key, &InvokeSignatureInfo.NormalizedLookupKey.AlternativeEquals);
+            }
+
+            if (existing is not null)
+            {
+                return existing;
+            }
+
+            if (s_invokersLock is null)
+            {
+                Interlocked.CompareExchange(ref s_invokersLock!, new object(), null);
+            }
+
+            bool lockTaken = false;
+            try
+            {
+                Monitor.Enter(s_invokersLock, ref lockTaken);
+
+                unsafe
+                {
+                    existing = s_invokers.GetValue<InvokeSignatureInfo.NormalizedLookupKey>(hashcode, key, &InvokeSignatureInfo.NormalizedLookupKey.AlternativeEquals);
+                }
+
+                if (existing is not null)
+                {
+                    return existing;
+                }
+
+                InvokeSignatureInfo memberBaseSignatureTypes = InvokeSignatureInfo.Create(key);
+                MethodBaseInvoker invoker = new MethodBaseInvoker(method: null, memberBaseSignatureTypes);
+                s_invokers[memberBaseSignatureTypes] = invoker;
+                return invoker;
+            }
+            finally
+            {
+                if (lockTaken)
+                {
+                    Monitor.Exit(s_invokersLock);
+                }
+            }
+        }
+
+        private static bool CanCacheInvoker(MethodBase method) =>
+            CanCacheDynamicMethod(method) &&
+            // Supporting default values would increase cache memory usage and slow down the common case.
+            !HasDefaultParameterValues(method);
+
+        private MethodBaseInvoker(MethodBase? method, InvokeSignatureInfo signatureInfo)
+        {
+            _argCount = signatureInfo.ParameterTypes.Length;
+            _method = method;
+            _signatureInfo = signatureInfo;
+            Initialize(signatureInfo, out bool needsByRefStrategy, out _invokerArgFlags);
+
+            _strategy = GetInvokerStrategy(_argCount, needsByRefStrategy);
+            switch (_strategy)
+            {
+                case InvokerStrategy.Obj0:
+                    _invokeFunc_Obj0Args = CreateInvokeDelegate_Obj0Args(_method, _signatureInfo, backwardsCompat: true);
+                    break;
+                case InvokerStrategy.Obj1:
+                    _invokeFunc_Obj1Arg = CreateInvokeDelegate_Obj1Arg(_method, _signatureInfo, backwardsCompat: true);
+                    break;
+                case InvokerStrategy.Obj4:
+                case InvokerStrategy.ObjSpan:
+                    _invokeFunc_ObjSpanArgs = CreateInvokeDelegate_ObjSpanArgs(_method, _signatureInfo, backwardsCompat: true);
+                    break;
+                default:
+                    Debug.Assert(_strategy == InvokerStrategy.Ref4 || _strategy == InvokerStrategy.RefMany);
+                    _invokeFunc_RefArgs = CreateInvokeDelegate_RefArgs(_method, _signatureInfo, backwardsCompat: true);
+                    break;
+            }
+        }
+
+        internal InvokerStrategy Strategy => _strategy;
 
         [DoesNotReturn]
         internal static void ThrowTargetParameterCountException()
@@ -44,19 +136,13 @@ namespace System.Reflection
             throw new TargetParameterCountException(SR.Arg_ParmCnt);
         }
 
-
-        internal unsafe object? InvokeWithNoArgs(object? obj, BindingFlags invokeAttr)
+        internal unsafe object? InvokeWith0Args(object? obj, IntPtr functionPointer, BindingFlags invokeAttr)
         {
             Debug.Assert(_argCount == 0);
 
-            if ((_strategy & InvokerStrategy.StrategyDetermined_RefArgs) == 0)
-            {
-                DetermineStrategy_RefArgs(ref _strategy, ref _invokeFunc_RefArgs, _method);
-            }
-
             try
             {
-                return _invokeFunc_RefArgs!(obj, GetFunctionPointer(obj, _functionPointer, _method, _argTypes), refArguments: null);
+                return _invokeFunc_Obj0Args!(obj, functionPointer);
             }
             catch (Exception e) when ((invokeAttr & BindingFlags.DoNotWrapExceptions) == 0)
             {
@@ -64,54 +150,31 @@ namespace System.Reflection
             }
         }
 
-        internal unsafe object? InvokeWithOneArg(
+        internal unsafe object? InvokeWith1Arg(
             object? obj,
+            IntPtr functionPointer,
             BindingFlags invokeAttr,
             Binder? binder,
-            object?[] parameters,
+            object? parameter,
             CultureInfo? culture)
         {
             Debug.Assert(_argCount == 1);
 
-            object? arg = parameters[0];
-            var parametersSpan = new ReadOnlySpan<object?>(in arg);
+            CheckArgument(ref parameter, 0, binder, culture, invokeAttr);
 
-            object? copyOfArg = null;
-            Span<object?> copyOfArgs = new(ref copyOfArg);
-
-            bool copyBack = false;
-            Span<bool> shouldCopyBack = new(ref copyBack);
-
-            object? ret;
-            if ((_strategy & InvokerStrategy.StrategyDetermined_ObjSpanArgs) == 0)
+            try
             {
-                DetermineStrategy_ObjSpanArgs(ref _strategy, ref _invokeFunc_ObjSpanArgs, _method, _needsByRefStrategy);
+                return _invokeFunc_Obj1Arg!(obj, functionPointer, parameter);
             }
-
-            CheckArguments(parametersSpan, copyOfArgs, shouldCopyBack, binder, culture, invokeAttr);
-
-            if (_invokeFunc_ObjSpanArgs is not null)
+            catch (Exception e) when ((invokeAttr & BindingFlags.DoNotWrapExceptions) == 0)
             {
-                try
-                {
-                    ret = _invokeFunc_ObjSpanArgs(obj, GetFunctionPointer(obj, _functionPointer, _method, _argTypes), copyOfArgs);
-                }
-                catch (Exception e) when ((invokeAttr & BindingFlags.DoNotWrapExceptions) == 0)
-                {
-                    throw new TargetInvocationException(e);
-                }
+                throw new TargetInvocationException(e);
             }
-            else
-            {
-                ret = InvokeDirectByRefWithFewArgs(obj, copyOfArgs, invokeAttr);
-            }
-
-            CopyBack(parameters, copyOfArgs, shouldCopyBack);
-            return ret;
         }
 
-        internal unsafe object? InvokeWithFewArgs(
+        internal unsafe object? InvokeWith4Args(
             object? obj,
+            IntPtr functionPointer,
             BindingFlags invokeAttr,
             Binder? binder,
             object?[] parameters,
@@ -123,57 +186,11 @@ namespace System.Reflection
             Span<object?> copyOfArgs = ((Span<object?>)stackArgStorage._args).Slice(0, _argCount);
             Span<bool> shouldCopyBack = ((Span<bool>)stackArgStorage._shouldCopyBack).Slice(0, _argCount);
 
-            object? ret;
-            if ((_strategy & InvokerStrategy.StrategyDetermined_ObjSpanArgs) == 0)
-            {
-                DetermineStrategy_ObjSpanArgs(ref _strategy, ref _invokeFunc_ObjSpanArgs, _method, _needsByRefStrategy);
-            }
-
             CheckArguments(parameters, copyOfArgs, shouldCopyBack, binder, culture, invokeAttr);
-
-            if (_invokeFunc_ObjSpanArgs is not null)
-            {
-                try
-                {
-                    ret = _invokeFunc_ObjSpanArgs(obj, GetFunctionPointer(obj, _functionPointer, _method, _argTypes), copyOfArgs);
-                }
-                catch (Exception e) when ((invokeAttr & BindingFlags.DoNotWrapExceptions) == 0)
-                {
-                    throw new TargetInvocationException(e);
-                }
-            }
-            else
-            {
-                ret = InvokeDirectByRefWithFewArgs(obj, copyOfArgs, invokeAttr);
-
-            }
-
-            CopyBack(parameters, copyOfArgs, shouldCopyBack);
-            return ret;
-        }
-
-        internal unsafe object? InvokeDirectByRefWithFewArgs(object? obj, Span<object?> copyOfArgs, BindingFlags invokeAttr)
-        {
-            Debug.Assert(_argCount <= MaxStackAllocArgCount);
-
-            if ((_strategy & InvokerStrategy.StrategyDetermined_RefArgs) == 0)
-            {
-                DetermineStrategy_RefArgs(ref _strategy, ref _invokeFunc_RefArgs, _method);
-            }
-
-            StackAllocatedByRefs byrefs = default;
-            IntPtr* pByRefFixedStorage = (IntPtr*)&byrefs;
-
-            for (int i = 0; i < _argCount; i++)
-            {
-                *(ByReference*)(pByRefFixedStorage + i) = (_invokerArgFlags[i] & InvokerArgFlags.IsValueType) != 0 ?
-                    ByReference.Create(ref copyOfArgs[i]!.GetRawData()) :
-                    ByReference.Create(ref copyOfArgs[i]);
-            }
 
             try
             {
-                return _invokeFunc_RefArgs!(obj, GetFunctionPointer(obj, _functionPointer, _method, _argTypes), pByRefFixedStorage);
+                return _invokeFunc_ObjSpanArgs!(obj, functionPointer, copyOfArgs);
             }
             catch (Exception e) when ((invokeAttr & BindingFlags.DoNotWrapExceptions) == 0)
             {
@@ -181,8 +198,9 @@ namespace System.Reflection
             }
         }
 
-        internal unsafe object? InvokeWithManyArgs(
+        internal unsafe object? InvokeWithSpanArgs(
             object? obj,
+            IntPtr functionPointer,
             BindingFlags invokeAttr,
             Binder? binder,
             object?[] parameters,
@@ -195,130 +213,131 @@ namespace System.Reflection
             GCFrameRegistration regArgStorage;
             Span<bool> shouldCopyBack;
 
-            if ((_strategy & InvokerStrategy.StrategyDetermined_ObjSpanArgs) == 0)
-            {
-                DetermineStrategy_ObjSpanArgs(ref _strategy, ref _invokeFunc_ObjSpanArgs, _method, _needsByRefStrategy);
-            }
+            IntPtr* pArgStorage = stackalloc IntPtr[_argCount * 2];
+            NativeMemory.Clear(pArgStorage, (nuint)_argCount * (nuint)sizeof(IntPtr) * 2);
+            copyOfArgs = new(ref Unsafe.AsRef<object?>(pArgStorage), _argCount);
+            regArgStorage = new((void**)pArgStorage, (uint)_argCount, areByRefs: false);
+            shouldCopyBack = new Span<bool>(pArgStorage + _argCount, _argCount);
 
-            if (_invokeFunc_ObjSpanArgs is not null)
+            try
             {
-                IntPtr* pArgStorage = stackalloc IntPtr[_argCount * 2];
-                NativeMemory.Clear(pArgStorage, (nuint)_argCount * (nuint)sizeof(IntPtr) * 2);
-                copyOfArgs = new(ref Unsafe.AsRef<object?>(pArgStorage), _argCount);
-                regArgStorage = new((void**)pArgStorage, (uint)_argCount, areByRefs: false);
-                shouldCopyBack = new Span<bool>(pArgStorage + _argCount, _argCount);
+                GCFrameRegistration.RegisterForGCReporting(&regArgStorage);
+
+                CheckArguments(parameters, copyOfArgs, shouldCopyBack, binder, culture, invokeAttr);
 
                 try
                 {
-                    GCFrameRegistration.RegisterForGCReporting(&regArgStorage);
-
-                    CheckArguments(parameters, copyOfArgs, shouldCopyBack, binder, culture, invokeAttr);
-
-                    try
-                    {
-                        ret = _invokeFunc_ObjSpanArgs(obj, GetFunctionPointer(obj, _functionPointer, _method, _argTypes), copyOfArgs);
-                    }
-                    catch (Exception e) when ((invokeAttr & BindingFlags.DoNotWrapExceptions) == 0)
-                    {
-                        throw new TargetInvocationException(e);
-                    }
-
-                    CopyBack(parameters, copyOfArgs, shouldCopyBack);
-                }
-                finally
-                {
-                    GCFrameRegistration.UnregisterForGCReporting(&regArgStorage);
-                }
-            }
-            else
-            {
-                if ((_strategy & InvokerStrategy.StrategyDetermined_RefArgs) == 0)
-                {
-                    DetermineStrategy_RefArgs(ref _strategy, ref _invokeFunc_RefArgs, _method);
-                }
-
-                IntPtr* pStorage = stackalloc IntPtr[3 * _argCount];
-                NativeMemory.Clear(pStorage, (nuint)(3 * _argCount) * (nuint)sizeof(IntPtr));
-                copyOfArgs = new(ref Unsafe.AsRef<object?>(pStorage), _argCount);
-                regArgStorage = new((void**)pStorage, (uint)_argCount, areByRefs: false);
-                IntPtr* pByRefStorage = pStorage + _argCount;
-                GCFrameRegistration regByRefStorage = new((void**)pByRefStorage, (uint)_argCount, areByRefs: true);
-                shouldCopyBack = new Span<bool>(pStorage + _argCount * 2, _argCount);
-
-                try
-                {
-                    GCFrameRegistration.RegisterForGCReporting(&regArgStorage);
-                    GCFrameRegistration.RegisterForGCReporting(&regByRefStorage);
-
-                    CheckArguments(parameters, copyOfArgs, shouldCopyBack, binder, culture, invokeAttr);
-
-                    for (int i = 0; i < _argCount; i++)
-                    {
-                        *(ByReference*)(pByRefStorage + i) = (_invokerArgFlags[i] & InvokerArgFlags.IsValueType) != 0 ?
-                            ByReference.Create(ref Unsafe.AsRef<object>(pStorage + i).GetRawData()) :
-                            ByReference.Create(ref Unsafe.AsRef<object>(pStorage + i));
-                    }
-
-                    try
-                    {
-                        ret = _invokeFunc_RefArgs!(obj, GetFunctionPointer(obj, _functionPointer, _method, _argTypes), pByRefStorage);
-                    }
-                    catch (Exception e) when ((invokeAttr & BindingFlags.DoNotWrapExceptions) == 0)
-                    {
-                        throw new TargetInvocationException(e);
-                    }
-
-                    CopyBack(parameters, copyOfArgs, shouldCopyBack);
-                }
-                finally
-                {
-                    GCFrameRegistration.UnregisterForGCReporting(&regByRefStorage);
-                    GCFrameRegistration.UnregisterForGCReporting(&regArgStorage);
-                }
-            }
-
-            return ret;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal void InvokePropertySetter(
-            object? obj,
-            BindingFlags invokeAttr,
-            Binder? binder,
-            object? parameter,
-            CultureInfo? culture)
-        {
-            Debug.Assert(_argCount == 1);
-
-            object? copyOfArg = null;
-            Span<object?> copyOfArgs = new(ref copyOfArg, 1);
-
-            bool copyBack = false;
-            Span<bool> shouldCopyBack = new(ref copyBack, 1); // Not used for setters
-
-            CheckArguments(new ReadOnlySpan<object?>(in parameter), copyOfArgs, shouldCopyBack, binder, culture, invokeAttr);
-
-            if (_invokeFunc_ObjSpanArgs is not null) // Fast path check
-            {
-                try
-                {
-                    _invokeFunc_ObjSpanArgs(obj, GetFunctionPointer(obj, _functionPointer, _method, _argTypes), copyOfArgs);
+                    ret = _invokeFunc_ObjSpanArgs!(obj, functionPointer, copyOfArgs);
                 }
                 catch (Exception e) when ((invokeAttr & BindingFlags.DoNotWrapExceptions) == 0)
                 {
                     throw new TargetInvocationException(e);
                 }
+
+                CopyBack(parameters, copyOfArgs, shouldCopyBack);
             }
-            else
+            finally
             {
-                if ((_strategy & InvokerStrategy.StrategyDetermined_ObjSpanArgs) == 0)
+                GCFrameRegistration.UnregisterForGCReporting(&regArgStorage);
+            }
+
+            return ret;
+        }
+
+        internal unsafe object? InvokeWith4RefArgs(
+            object? obj,
+            IntPtr functionPointer,
+            BindingFlags invokeAttr,
+            Binder? binder,
+            object?[] parameters,
+            CultureInfo? culture)
+        {
+            Debug.Assert(_argCount <= MaxStackAllocArgCount);
+
+            StackAllocatedArgumentsWithCopyBack stackArgStorage = default;
+            Span<object?> copyOfArgs = ((Span<object?>)stackArgStorage._args).Slice(0, _argCount);
+            Span<bool> shouldCopyBack = ((Span<bool>)stackArgStorage._shouldCopyBack).Slice(0, _argCount);
+
+            StackAllocatedByRefs byrefs = default;
+            IntPtr* pByRefFixedStorage = (IntPtr*)&byrefs;
+
+            CheckArguments(parameters, copyOfArgs, shouldCopyBack, binder, culture, invokeAttr);
+
+            for (int i = 0; i < _argCount; i++)
+            {
+                *(ByReference*)(pByRefFixedStorage + i) = (_invokerArgFlags[i] & InvokerArgFlags.IsValueType) != 0 ?
+                    ByReference.Create(ref copyOfArgs[i]!.GetRawData()) :
+#pragma warning disable CS9080
+                    ByReference.Create(ref copyOfArgs[i]);
+#pragma warning restore CS9080
+            }
+
+            object? ret;
+            try
+            {
+                ret = _invokeFunc_RefArgs!(obj, functionPointer, pByRefFixedStorage);
+            }
+            catch (Exception e) when ((invokeAttr & BindingFlags.DoNotWrapExceptions) == 0)
+            {
+                throw new TargetInvocationException(e);
+            }
+
+            CopyBack(parameters, copyOfArgs, shouldCopyBack);
+            return ret;
+        }
+
+        internal unsafe object? InvokeWithManyRefArgs(
+            object? obj,
+            IntPtr functionPointer,
+            BindingFlags invokeAttr,
+            Binder? binder,
+            object?[] parameters,
+            CultureInfo? culture)
+        {
+            Debug.Assert(_argCount > MaxStackAllocArgCount);
+
+            object? ret;
+
+            IntPtr* pStorage = stackalloc IntPtr[3 * _argCount];
+            NativeMemory.Clear(pStorage, (nuint)(3 * _argCount) * (nuint)sizeof(IntPtr));
+            IntPtr* pByRefStorage = pStorage + _argCount;
+            Span<object?> copyOfArgs = new(ref Unsafe.AsRef<object?>(pStorage), _argCount);
+            GCFrameRegistration regArgStorage = new((void**)pStorage, (uint)_argCount, areByRefs: false);
+            GCFrameRegistration regByRefStorage = new((void**)pByRefStorage, (uint)_argCount, areByRefs: true);
+            Span<bool> shouldCopyBack = new Span<bool>(pStorage + _argCount * 2, _argCount);
+
+            try
+            {
+                GCFrameRegistration.RegisterForGCReporting(&regArgStorage);
+                GCFrameRegistration.RegisterForGCReporting(&regByRefStorage);
+
+                CheckArguments(parameters, copyOfArgs, shouldCopyBack, binder, culture, invokeAttr);
+
+                for (int i = 0; i < _argCount; i++)
                 {
-                    // Initialize for next time.
-                    DetermineStrategy_ObjSpanArgs(ref _strategy, ref _invokeFunc_ObjSpanArgs, _method, _needsByRefStrategy);
+                    *(ByReference*)(pByRefStorage + i) = (_invokerArgFlags[i] & InvokerArgFlags.IsValueType) != 0 ?
+                        ByReference.Create(ref Unsafe.AsRef<object>(pStorage + i).GetRawData()) :
+                        ByReference.Create(ref Unsafe.AsRef<object>(pStorage + i));
                 }
 
-                InvokeDirectByRefWithFewArgs(obj, copyOfArgs, invokeAttr);
+                try
+                {
+                    ret = _invokeFunc_RefArgs!(obj, functionPointer, pByRefStorage);
+                }
+                catch (Exception e) when ((invokeAttr & BindingFlags.DoNotWrapExceptions) == 0)
+                {
+                    throw new TargetInvocationException(e);
+                }
+
+                CopyBack(parameters, copyOfArgs, shouldCopyBack);
             }
+            finally
+            {
+                GCFrameRegistration.UnregisterForGCReporting(&regByRefStorage);
+                GCFrameRegistration.UnregisterForGCReporting(&regArgStorage);
+            }
+
+            return ret;
         }
 
         // Copy modified values out. This is done with ByRef, Type.Missing and parameters changed by the Binder.
@@ -344,50 +363,137 @@ namespace System.Reflection
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal void CheckArgument(
+             ref object? arg,
+             ref bool shouldCopyBack,
+             int i,
+             Binder? binder,
+             CultureInfo? culture,
+             BindingFlags invokeAttr)
+        {
+            RuntimeType sigType = (RuntimeType)_signatureInfo.ParameterTypes[i];
+
+            // Convert a Type.Missing to the default value.
+            if (ReferenceEquals(arg, Type.Missing))
+            {
+                if (_method is null)
+                {
+                    ThrowHelperArgumentExceptionVariableMissing();
+                }
+
+                arg = HandleTypeMissing(_method.GetParametersAsSpan()[i], sigType);
+                shouldCopyBack = true;
+            }
+
+            // Convert the type if necessary.
+            // Check fast path to ignore non-byref types for normalized arguments.
+            if (!ReferenceEquals(sigType, typeof(object)))
+            {
+                if (arg is null)
+                {
+                    if ((_invokerArgFlags[i] & InvokerArgFlags.IsValueType_ByRef_Or_Pointer) != 0)
+                    {
+                        shouldCopyBack = sigType.CheckValue(ref arg, binder, culture, invokeAttr);
+                    }
+                }
+                // Check fast path to ignore when arg type matches signature type.
+                else if (!ReferenceEquals(sigType, arg.GetType()))
+                {
+                    // Fast path to ignore byref types.
+                    if (TryByRefFastPath(sigType, ref arg!))
+                    {
+                        shouldCopyBack = true;
+                    }
+                    else
+                    {
+                        shouldCopyBack = sigType.CheckValue(ref arg, binder, culture, invokeAttr);
+                    }
+                }
+            }
+        }
+
+        //[MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void CheckArguments(
              ReadOnlySpan<object?> parameters,
              Span<object?> copyOfParameters,
              Span<bool> shouldCopyBack,
              Binder? binder,
              CultureInfo? culture,
-             BindingFlags invokeAttr
-         )
+             BindingFlags invokeAttr)
         {
             for (int i = 0; i < parameters.Length; i++)
             {
                 object? arg = parameters[i];
-                RuntimeType sigType = _argTypes[i];
+                RuntimeType sigType = (RuntimeType)_signatureInfo.ParameterTypes[i];
 
                 // Convert a Type.Missing to the default value.
                 if (ReferenceEquals(arg, Type.Missing))
                 {
+                    if (_method is null)
+                    {
+                        ThrowHelperArgumentExceptionVariableMissing();
+                    }
+
                     arg = HandleTypeMissing(_method.GetParametersAsSpan()[i], sigType);
                     shouldCopyBack[i] = true;
                 }
 
                 // Convert the type if necessary.
-                if (arg is null)
+                // Check fast path to ignore non-byref types for normalized arguments.
+                if (!ReferenceEquals(sigType, typeof(object)))
                 {
-                    if ((_invokerArgFlags[i] & InvokerArgFlags.IsValueType_ByRef_Or_Pointer) != 0)
+                    if (arg is null)
                     {
-                        shouldCopyBack[i] = sigType.CheckValue(ref arg, binder, culture, invokeAttr);
+                        if ((_invokerArgFlags[i] & InvokerArgFlags.IsValueType_ByRef_Or_Pointer) != 0)
+                        {
+                            shouldCopyBack[i] = sigType.CheckValue(ref arg, binder, culture, invokeAttr);
+                        }
                     }
-                }
-                else if (!ReferenceEquals(arg.GetType(), sigType))
-                {
-                    // Determine if we can use the fast path for byref types.
-                    if (TryByRefFastPath(sigType, ref arg))
+                    // Check fast path to ignore when arg type matches signature type.
+                    else if (!ReferenceEquals(sigType, arg.GetType()))
                     {
-                        // Fast path when the value's type matches the signature type of a byref parameter.
-                        shouldCopyBack[i] = true;
-                    }
-                    else
-                    {
-                        shouldCopyBack[i] = sigType.CheckValue(ref arg, binder, culture, invokeAttr);
+                        // Fast path to ignore byref types.
+                        if (TryByRefFastPath(sigType, ref arg!))
+                        {
+                            shouldCopyBack[i] = true;
+                        }
+                        else
+                        {
+                            shouldCopyBack[i] = sigType.CheckValue(ref arg, binder, culture, invokeAttr);
+                        }
                     }
                 }
 
                 copyOfParameters[i] = arg;
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal void CheckArgument(
+             ref object? arg,
+             int index,
+             Binder? binder,
+             CultureInfo? culture,
+             BindingFlags invokeAttr)
+        {
+            RuntimeType sigType = (RuntimeType)_signatureInfo.ParameterTypes[index];
+
+            // Convert a Type.Missing to the default value.
+            if (ReferenceEquals(arg, Type.Missing))
+            {
+                if (_method is null)
+                {
+                    // When _method is null, we are using Calli and previously checked if there were any default parameter values.
+                    ThrowHelperArgumentExceptionVariableMissing();
+                }
+
+                arg = HandleTypeMissing(_method.GetParametersAsSpan()[index], sigType);
+            }
+
+            // Convert the type if necessary.
+            if (!ReferenceEquals(sigType, typeof(object)) && !ReferenceEquals(sigType, arg?.GetType()))
+            {
+                sigType.CheckValue(ref arg, binder, culture, invokeAttr);
             }
         }
 
@@ -407,6 +513,22 @@ namespace System.Reflection
             }
 
             return false;
+        }
+
+        private static InvokerStrategy GetInvokerStrategy(int argCount, bool needsByRefStrategy)
+        {
+            if (needsByRefStrategy)
+            {
+                return argCount <= 4 ? InvokerStrategy.Ref4 : InvokerStrategy.RefMany;
+            }
+
+            return argCount switch
+            {
+                0 => InvokerStrategy.Obj0,
+                1 => InvokerStrategy.Obj1,
+                2 or 3 or 4 => InvokerStrategy.Obj4,
+                _ => InvokerStrategy.ObjSpan
+            };
         }
     }
 }

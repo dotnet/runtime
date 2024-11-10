@@ -10,8 +10,7 @@ namespace System.Reflection
 {
     internal sealed partial class RuntimeConstructorInfo : ConstructorInfo
     {
-        [MethodImpl(MethodImplOptions.NoInlining)] // move lazy invocation flags population out of the hot path
-        internal InvocationFlags ComputeAndUpdateInvocationFlags()
+        internal InvocationFlags ComputeInvocationFlags()
         {
             InvocationFlags invocationFlags = InvocationFlags.IsConstructor; // this is a given
 
@@ -128,20 +127,14 @@ namespace System.Reflection
                 return null;
             }
 
-            switch (argCount)
+            _ = Invoker.Strategy switch
             {
-                case 0 :
-                    Invoker.InvokeWithNoArgs(obj, invokeAttr);
-                    break;
-                case 1 :
-                    Invoker.InvokeWithOneArg(obj, invokeAttr, binder, parameters!, culture);
-                    break;
-                case 2 or 3 or 4 :
-                    Invoker.InvokeWithFewArgs(obj, invokeAttr, binder, parameters!, culture);
-                    break;
-                default:
-                    Invoker.InvokeWithManyArgs(obj, invokeAttr, binder, parameters!, culture);
-                    break;
+                MethodBase.InvokerStrategy.Obj0 => Invoker.InvokeWith0Args(obj, m_functionPointer, invokeAttr),
+                MethodBase.InvokerStrategy.Obj1 => Invoker.InvokeWith1Arg(obj, m_functionPointer, invokeAttr, binder, parameters![0], culture),
+                MethodBase.InvokerStrategy.Obj4 => Invoker.InvokeWith4Args(obj, m_functionPointer, invokeAttr, binder, parameters!, culture),
+                MethodBase.InvokerStrategy.ObjSpan => Invoker.InvokeWithSpanArgs(obj, m_functionPointer, invokeAttr, binder, parameters!, culture),
+                MethodBase.InvokerStrategy.Ref4 => Invoker.InvokeWith4RefArgs(obj, m_functionPointer, invokeAttr, binder, parameters!, culture),
+                _ => Invoker.InvokeWithManyRefArgs(obj, m_functionPointer, invokeAttr, binder, parameters!, culture)
             };
 
             return null;
@@ -176,20 +169,14 @@ namespace System.Reflection
                 throw new TargetInvocationException(e);
             }
 
-            switch (argCount)
+            _ = Invoker.Strategy switch
             {
-                case 0:
-                    Invoker.InvokeWithNoArgs(obj, invokeAttr);
-                    break;
-                case 1:
-                    Invoker.InvokeWithOneArg(obj, invokeAttr, binder, parameters!, culture);
-                    break;
-                case 2 or 3 or 4:
-                    Invoker.InvokeWithFewArgs(obj, invokeAttr, binder, parameters!, culture);
-                    break;
-                default:
-                    Invoker.InvokeWithManyArgs(obj, invokeAttr, binder, parameters!, culture);
-                    break;
+                MethodBase.InvokerStrategy.Obj0 => Invoker.InvokeWith0Args(obj, m_functionPointer, invokeAttr),
+                MethodBase.InvokerStrategy.Obj1 => Invoker.InvokeWith1Arg(obj, m_functionPointer, invokeAttr, binder, parameters![0], culture),
+                MethodBase.InvokerStrategy.Obj4 => Invoker.InvokeWith4Args(obj, m_functionPointer, invokeAttr, binder, parameters!, culture),
+                MethodBase.InvokerStrategy.ObjSpan => Invoker.InvokeWithSpanArgs(obj, m_functionPointer, invokeAttr, binder, parameters!, culture),
+                MethodBase.InvokerStrategy.Ref4 => Invoker.InvokeWith4RefArgs(obj, m_functionPointer, invokeAttr, binder, parameters!, culture),
+                _ => Invoker.InvokeWithManyRefArgs(obj, m_functionPointer, invokeAttr, binder, parameters!, culture)
             };
 
             return obj;

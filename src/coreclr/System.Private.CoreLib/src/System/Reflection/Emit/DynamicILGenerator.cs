@@ -168,11 +168,20 @@ namespace System.Reflection.Emit
         // Signature related calls (vararg, calli)
         //
         //
-        public override void EmitCalli(OpCode opcode,
-                                       CallingConventions callingConvention,
-                                       Type? returnType,
-                                       Type[]? parameterTypes,
-                                       Type[]? optionalParameterTypes)
+        public override void EmitCalli(
+            OpCode opcode,
+            CallingConventions callingConvention,
+            Type? returnType,
+            Type[]? parameterTypes,
+            Type[]? optionalParameterTypes)
+            => EmitCalli(opcode, callingConvention, returnType, parameterTypes, optionalParameterTypes);
+
+        internal override void EmitCalli(
+            OpCode opcode,
+            CallingConventions callingConvention,
+            Type? returnType,
+            ReadOnlySpan<Type> parameterTypes,
+            Type[]? optionalParameterTypes)
         {
             int stackchange = 0;
             if (optionalParameterTypes != null)
@@ -194,8 +203,7 @@ namespace System.Reflection.Emit
             if (returnType != typeof(void))
                 stackchange++;
             // Pop off arguments if any.
-            if (parameterTypes != null)
-                stackchange -= parameterTypes.Length;
+            stackchange -= parameterTypes.Length;
             // Pop off vararg arguments.
             if (optionalParameterTypes != null)
                 stackchange -= optionalParameterTypes.Length;
@@ -213,9 +221,7 @@ namespace System.Reflection.Emit
         public override void EmitCalli(OpCode opcode, CallingConvention unmanagedCallConv, Type? returnType, Type[]? parameterTypes)
         {
             int stackchange = 0;
-            int cParams = 0;
-            if (parameterTypes != null)
-                cParams = parameterTypes.Length;
+            int cParams = parameterTypes is null ? 0 : parameterTypes.Length;
 
             SignatureHelper sig = GetMethodSigHelper(unmanagedCallConv, returnType, parameterTypes);
 
@@ -224,8 +230,7 @@ namespace System.Reflection.Emit
                 stackchange++;
 
             // Pop off arguments if any.
-            if (parameterTypes != null)
-                stackchange -= cParams;
+            stackchange -= cParams;
 
             // Pop the native function pointer.
             stackchange--;
@@ -439,7 +444,7 @@ namespace System.Reflection.Emit
         private SignatureHelper GetMethodSigHelper(
                                                 CallingConvention unmanagedCallConv,
                                                 Type? returnType,
-                                                Type[]? parameterTypes)
+                                                ReadOnlySpan<Type> parameterTypes)
         {
             SignatureHelper sigHelp = SignatureHelper.GetMethodSigHelper(null, unmanagedCallConv, returnType);
             AddParameters(sigHelp, parameterTypes, null, null);
@@ -449,7 +454,7 @@ namespace System.Reflection.Emit
         private SignatureHelper GetMethodSigHelper(
                                                 CallingConventions call,
                                                 Type? returnType,
-                                                Type[]? parameterTypes,
+                                                ReadOnlySpan<Type> parameterTypes,
                                                 Type[][]? requiredCustomModifiers,
                                                 Type[][]? optionalCustomModifiers,
                                                 Type[]? optionalParameterTypes)
@@ -464,20 +469,17 @@ namespace System.Reflection.Emit
             return sig;
         }
 
-        private void AddParameters(SignatureHelper sigHelp, Type[]? parameterTypes, Type[][]? requiredCustomModifiers, Type[][]? optionalCustomModifiers)
+        private void AddParameters(SignatureHelper sigHelp, ReadOnlySpan<Type> parameterTypes, Type[][]? requiredCustomModifiers, Type[][]? optionalCustomModifiers)
         {
-            if (requiredCustomModifiers != null && (parameterTypes == null || requiredCustomModifiers.Length != parameterTypes.Length))
+            if (requiredCustomModifiers != null && requiredCustomModifiers.Length != parameterTypes.Length)
                 throw new ArgumentException(SR.Format(SR.Argument_MismatchedArrays, nameof(requiredCustomModifiers), nameof(parameterTypes)));
 
-            if (optionalCustomModifiers != null && (parameterTypes == null || optionalCustomModifiers.Length != parameterTypes.Length))
+            if (optionalCustomModifiers != null && optionalCustomModifiers.Length != parameterTypes.Length)
                 throw new ArgumentException(SR.Format(SR.Argument_MismatchedArrays, nameof(optionalCustomModifiers), nameof(parameterTypes)));
 
-            if (parameterTypes != null)
+            for (int i = 0; i < parameterTypes.Length; i++)
             {
-                for (int i = 0; i < parameterTypes.Length; i++)
-                {
-                    sigHelp.AddDynamicArgument(m_scope, parameterTypes[i], requiredCustomModifiers?[i], optionalCustomModifiers?[i]);
-                }
+                sigHelp.AddDynamicArgument(m_scope, parameterTypes[i], requiredCustomModifiers?[i], optionalCustomModifiers?[i]);
             }
         }
 

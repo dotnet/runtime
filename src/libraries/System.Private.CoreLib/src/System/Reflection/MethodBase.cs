@@ -143,7 +143,7 @@ namespace System.Reflection
         {
             if (paramInfo.DefaultValue == DBNull.Value)
             {
-                throw new ArgumentException(SR.Arg_VarMissNull, "parameters");
+                ThrowHelperArgumentExceptionVariableMissing();
             }
 
             object? arg = paramInfo.DefaultValue;
@@ -165,17 +165,41 @@ namespace System.Reflection
             return arg;
         }
 
-        [Flags]
-        internal enum InvokerStrategy : int
+        [DoesNotReturn]
+        internal static void ThrowHelperArgumentExceptionVariableMissing() =>
+            throw new ArgumentException(SR.Arg_VarMissNull, "parameters");
+
+        internal enum InvokerStrategy
         {
-            HasBeenInvoked_ObjSpanArgs = 0x1,
-            StrategyDetermined_ObjSpanArgs = 0x2,
+            /// <summary>
+            /// Optimized for no arguments.
+            /// </summary>
+            Obj0 = 0,
 
-            HasBeenInvoked_Obj4Args = 0x4,
-            StrategyDetermined_Obj4Args = 0x8,
+            /// <summary>
+            /// Optimized for 1 argument.
+            /// </summary>
+            Obj1 = 1,
 
-            HasBeenInvoked_RefArgs = 0x10,
-            StrategyDetermined_RefArgs = 0x20,
+            /// <summary>
+            /// Optimized for 4 arguments or less.
+            /// </summary>
+            Obj4 = 2,
+
+            /// <summary>
+            /// Optimized for 5 arguments or more.
+            /// </summary>
+            ObjSpan = 3,
+
+            /// <summary>
+            /// Slower approach that handles copy back for 4 arguments or less.
+            /// </summary>
+            Ref4 = 4,
+
+            /// <summary>
+            /// Slower approach that handles copy back for 5 or more arguments.
+            /// </summary>
+            RefMany = 5,
         }
 
         [Flags]

@@ -7,13 +7,11 @@ namespace System.Reflection
     {
         internal unsafe MethodBaseInvoker(RuntimeMethodInfo method) : this(method, method.ArgumentTypes)
         {
-            _invocationFlags = method.ComputeAndUpdateInvocationFlags();
             _invokeFunc_RefArgs = InterpretedInvoke_Method;
         }
 
         internal unsafe MethodBaseInvoker(RuntimeConstructorInfo constructor) : this(constructor, constructor.ArgumentTypes)
         {
-            _invocationFlags = constructor.ComputeAndUpdateInvocationFlags();
             _invokeFunc_RefArgs = InterpretedInvoke_Constructor;
         }
 
