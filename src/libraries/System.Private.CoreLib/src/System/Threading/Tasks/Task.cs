@@ -176,7 +176,7 @@ namespace System.Threading.Tasks
         // When true the Async Causality logging trace is enabled as well as a dictionary to relate operation ids with Tasks
         internal static bool s_asyncDebuggingEnabled; // false by default
 
-        // This dictonary relates the task id, from an operation id located in the Async Causality log to the actual
+        // This dictionary relates the task id, from an operation id located in the Async Causality log to the actual
         // task. This is to be used by the debugger ONLY. Task in this dictionary represent current active tasks.
         private static Dictionary<int, Task>? s_currentActiveTasks;
 

@@ -247,6 +247,30 @@ ABIPassingSegment& ABIPassingInformation::Segment(unsigned index)
 }
 
 //-----------------------------------------------------------------------------
+// Segments:
+//   Get an iterator pair that can be used with range-based for to iterate the
+//   segments.
+//
+// Returns:
+//   Iterator pair.
+//
+IteratorPair<ABIPassingSegmentIterator> ABIPassingInformation::Segments() const
+{
+    const ABIPassingSegment* begin;
+    if (NumSegments == 1)
+    {
+        begin = &m_singleSegment;
+    }
+    else
+    {
+        begin = m_segments;
+    }
+
+    return IteratorPair<ABIPassingSegmentIterator>(ABIPassingSegmentIterator(begin),
+                                                   ABIPassingSegmentIterator(begin + NumSegments));
+}
+
+//-----------------------------------------------------------------------------
 // HasAnyRegisterSegment:
 //   Check if any part of this value is passed in a register.
 //
@@ -255,9 +279,9 @@ ABIPassingSegment& ABIPassingInformation::Segment(unsigned index)
 //
 bool ABIPassingInformation::HasAnyRegisterSegment() const
 {
-    for (unsigned i = 0; i < NumSegments; i++)
+    for (const ABIPassingSegment& seg : Segments())
     {
-        if (Segment(i).IsPassedInRegister())
+        if (seg.IsPassedInRegister())
         {
             return true;
         }
@@ -274,9 +298,9 @@ bool ABIPassingInformation::HasAnyRegisterSegment() const
 //
 bool ABIPassingInformation::HasAnyFloatingRegisterSegment() const
 {
-    for (unsigned i = 0; i < NumSegments; i++)
+    for (const ABIPassingSegment& seg : Segments())
     {
-        if (Segment(i).IsPassedInRegister() && genIsValidFloatReg(Segment(i).GetRegister()))
+        if (seg.IsPassedInRegister() && genIsValidFloatReg(seg.GetRegister()))
         {
             return true;
         }
@@ -293,9 +317,9 @@ bool ABIPassingInformation::HasAnyFloatingRegisterSegment() const
 //
 bool ABIPassingInformation::HasAnyStackSegment() const
 {
-    for (unsigned i = 0; i < NumSegments; i++)
+    for (const ABIPassingSegment& seg : Segments())
     {
-        if (Segment(i).IsPassedOnStack())
+        if (seg.IsPassedOnStack())
         {
             return true;
         }
@@ -365,9 +389,8 @@ unsigned ABIPassingInformation::CountRegsAndStackSlots() const
 {
     unsigned numSlots = 0;
 
-    for (unsigned i = 0; i < NumSegments; i++)
+    for (const ABIPassingSegment& seg : Segments())
     {
-        const ABIPassingSegment& seg = Segment(i);
         if (seg.IsPassedInRegister())
         {
             numSlots++;
@@ -547,9 +570,9 @@ ABIPassingInformation SwiftABIClassifier::Classify(Compiler*    comp,
             var_types             elemType = JITtype2varType(lowering->loweredElements[i]);
             ABIPassingInformation elemInfo = m_classifier.Classify(comp, elemType, nullptr, WellKnownArg::None);
 
-            for (unsigned j = 0; j < elemInfo.NumSegments; j++)
+            for (const ABIPassingSegment& seg : elemInfo.Segments())
             {
-                ABIPassingSegment newSegment = elemInfo.Segment(j);
+                ABIPassingSegment newSegment = seg;
                 newSegment.Offset += lowering->offsets[i];
                 // Adjust the tail size if necessary; the lowered sequence can
                 // pass the tail as a larger type than the tail size.

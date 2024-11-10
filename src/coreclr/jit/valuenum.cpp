@@ -5711,6 +5711,14 @@ ValueNum ValueNumStore::EvalUsingMathIdentity(var_types typ, VNFunc func, ValueN
                 {
                     resultVN = ZeroVN;
                 }
+
+                // Convert to a signed comparison if both operands are never negative
+                if (IsVNNeverNegative(arg0VN) && IsVNNeverNegative(arg1VN))
+                {
+                    resultVN = VNForFunc(typ, VNFunc(GT_GT), arg0VN, arg1VN);
+                    break;
+                }
+
                 break;
             }
 
@@ -5737,6 +5745,14 @@ ValueNum ValueNumStore::EvalUsingMathIdentity(var_types typ, VNFunc func, ValueN
                     resultVN = VNOneForType(typ);
                     break;
                 }
+
+                // Convert to a signed comparison if both operands are never negative
+                if (IsVNNeverNegative(arg0VN) && IsVNNeverNegative(arg1VN))
+                {
+                    resultVN = VNForFunc(typ, VNFunc(GT_LE), arg0VN, arg1VN);
+                    break;
+                }
+
                 break;
             }
 
@@ -6537,6 +6553,16 @@ bool ValueNumStore::IsVNInt32Constant(ValueNum vn)
     return TypeOfVN(vn) == TYP_INT;
 }
 
+//------------------------------------------------------------------------
+// IsVNNeverNegative: Determines if the given value number can never take on a negative value
+// in a signed context (i.e. when the most-significant bit represents signedness).
+//
+// Parameters:
+//    vn - Value number to query
+//
+// Returns:
+//    True if the most-significant bit is never set, false otherwise.
+//
 bool ValueNumStore::IsVNNeverNegative(ValueNum vn)
 {
     auto vnVisitor = [this](ValueNum vn) -> VNVisit {
@@ -6573,14 +6599,17 @@ bool ValueNumStore::IsVNNeverNegative(ValueNum vn)
         {
             switch (funcApp.m_func)
             {
+                case VNF_GT:
+                case VNF_GE:
+                case VNF_LT:
+                case VNF_LE:
+                case VNF_EQ:
+                case VNF_NE:
                 case VNF_GE_UN:
                 case VNF_GT_UN:
                 case VNF_LE_UN:
                 case VNF_LT_UN:
-                case VNF_COUNT:
-                case VNF_ADD_UN_OVF:
-                case VNF_SUB_UN_OVF:
-                case VNF_MUL_UN_OVF:
+                case VNF_MDArrLowerBound:
 #ifdef FEATURE_HW_INTRINSICS
 #ifdef TARGET_XARCH
                 case VNF_HWI_POPCNT_PopCount:
@@ -10864,14 +10893,14 @@ PhaseStatus Compiler::fgValueNumber()
     // Visiting that in reverse will ensure we visit a block's predecessors
     // before itself whenever possible.
     //
-    EnsureBasicBlockEpoch();
-    BlockSet     visitedBlocks(BlockSetOps::MakeEmpty(this));
+    BitVecTraits traits = m_dfsTree->PostOrderTraits();
+    BitVec       visitedBlocks(BitVecOps::MakeEmpty(&traits));
     BasicBlock** postOrder      = m_dfsTree->GetPostOrder();
     unsigned     postOrderCount = m_dfsTree->GetPostOrderCount();
     for (unsigned i = postOrderCount; i != 0; i--)
     {
         BasicBlock* const block = postOrder[i - 1];
-        fgValueNumberBlocks(block, visitedBlocks);
+        fgValueNumberBlocks(block, visitedBlocks, &traits);
     }
 
 #ifdef DEBUG
@@ -10880,6 +10909,7 @@ PhaseStatus Compiler::fgValueNumber()
 #endif // DEBUG
 
     fgVNPassesCompleted++;
+    vnState = nullptr;
 
     return PhaseStatus::MODIFIED_EVERYTHING;
 }
@@ -10888,8 +10918,9 @@ PhaseStatus Compiler::fgValueNumber()
 // fgValueNumberBlocks: Run value numbering for a block or blocks in a loop
 //
 // Arguments:
-//   block -- block to value number (may already have been numbered)
-//   visitedBlocks -- blocks that have already had VNs assigned
+//   block - block to value number (may already have been numbered)
+//   visitedBlocks - blocks that have already had VNs assigned
+//   traits - pointer to BitVecTraits describing visitedBlocks
 //
 // Notes:
 //
@@ -10898,11 +10929,11 @@ PhaseStatus Compiler::fgValueNumber()
 //   header, we switch to visiting the loop blocks in RPO, and once we finish
 //   that visitation, we try and refine loop header PHIs.
 //
-void Compiler::fgValueNumberBlocks(BasicBlock* block, BlockSet& visitedBlocks)
+void Compiler::fgValueNumberBlocks(BasicBlock* block, BitVec& visitedBlocks, BitVecTraits* traits)
 {
     // Because we're not following the strict RPO, we may have already visisted this block.
     //
-    if (BlockSetOps::IsMember(this, visitedBlocks, block->bbNum))
+    if (BitVecOps::IsMember(traits, visitedBlocks, block->bbPostorderNum))
     {
         return;
     }
@@ -10937,7 +10968,7 @@ void Compiler::fgValueNumberBlocks(BasicBlock* block, BlockSet& visitedBlocks)
 
     // Mark block as visited
     //
-    BlockSetOps::AddElemD(this, visitedBlocks, block->bbNum);
+    BitVecOps::AddElemD(traits, visitedBlocks, block->bbPostorderNum);
 
     // Is block the head of a loop?
     //
@@ -10947,7 +10978,7 @@ void Compiler::fgValueNumberBlocks(BasicBlock* block, BlockSet& visitedBlocks)
         // Yes. Visit all other loop blocks using the within-loop RPO.
         //
         loop->VisitLoopBlocksReversePostOrder([&](BasicBlock* block) {
-            fgValueNumberBlocks(block, visitedBlocks);
+            fgValueNumberBlocks(block, visitedBlocks, traits);
             return BasicBlockVisit::Continue;
         });
 
@@ -11166,7 +11197,7 @@ void Compiler::fgValueNumberPhiDef(GenTreeLclVar* newSsaDef, BasicBlock* blk, bo
     for (GenTreePhi::Use& use : phiNode->Uses())
     {
         GenTreePhiArg* phiArg = use.GetNode()->AsPhiArg();
-        if (!vnState->IsReachableThroughPred(blk, phiArg->gtPredBB))
+        if ((vnState != nullptr) && !vnState->IsReachableThroughPred(blk, phiArg->gtPredBB))
         {
             JITDUMP("  Phi arg [%06u] is unnecessary; path through pred " FMT_BB " cannot be taken\n",
                     dspTreeID(phiArg), phiArg->gtPredBB->bbNum);
@@ -11995,6 +12026,45 @@ bool Compiler::fgGetStaticFieldSeqAndAddress(ValueNumStore* vnStore,
             *byteOffset = vnStore->CoercedConstantValue<ssize_t>(treeVN) - fldSeq->GetOffset() + val;
             return true;
         }
+    }
+
+    return false;
+}
+
+//----------------------------------------------------------------------------------
+// GetImmutableDataFromAddress: Given a tree representing an address, try to obtain
+//    the actual content of the value stored at that address (of the given size).
+//    The value is expected to be immutable (invariant).
+//
+// Arguments:
+//    address - tree node representing the address
+//    size    - size of the value to read
+//    pValue  - [out] resulting value
+//
+// Return Value:
+//    true if the value was successfully obtained, false otherwise
+//
+bool Compiler::GetImmutableDataFromAddress(GenTree* address, int size, uint8_t* pValue)
+{
+    assert(vnStore != nullptr);
+
+    ssize_t   byteOffset = 0;
+    FieldSeq* fieldSeq   = nullptr;
+
+    // See if 'src' is a non-gc object handle.
+    CORINFO_OBJECT_HANDLE obj = NO_OBJECT_HANDLE;
+    if (GetObjectHandleAndOffset(address, &byteOffset, &obj) && ((size_t)byteOffset <= INT32_MAX))
+    {
+        assert(obj != NO_OBJECT_HANDLE);
+        return info.compCompHnd->isObjectImmutable(obj) &&
+               info.compCompHnd->getObjectContent(obj, pValue, size, (int)byteOffset);
+    }
+
+    // See if 'src' is some static read-only field (including RVA)
+    if (fgGetStaticFieldSeqAndAddress(vnStore, address, &byteOffset, &fieldSeq) && ((size_t)byteOffset <= INT32_MAX))
+    {
+        CORINFO_FIELD_HANDLE fld = fieldSeq->GetFieldHandle();
+        return (fld != nullptr) && info.compCompHnd->getStaticFieldContent(fld, pValue, size, (int)byteOffset);
     }
 
     return false;
@@ -13960,6 +14030,9 @@ VNFunc Compiler::fgValueNumberJitHelperMethodVNFunc(CorInfoHelpFunc helpFunc)
             break;
         case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2:
             vnf = VNF_GetdynamicNongcthreadstaticBaseNoctorOptimized2;
+            break;
+        case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2_NOJITOPT:
+            vnf = VNF_GetdynamicNongcthreadstaticBaseNoctorOptimized2NoJitOpt;
             break;
         case CORINFO_HELP_GETSTATICFIELDADDR_TLS:
             vnf = VNF_GetStaticAddrTLS;
