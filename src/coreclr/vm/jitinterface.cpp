@@ -3989,7 +3989,7 @@ CORINFO_CLASS_HANDLE CEEInfo::getBuiltinClass(CorInfoClassId classId)
 CORINFO_METHOD_HANDLE getMethodFromDelegateHelper(DelegateObject* delegate)
 {
     CONTRACTL {
-        NOTHROW;
+        THROWS;
         GC_NOTRIGGER;
         MODE_ANY;
     } CONTRACTL_END;
@@ -4027,7 +4027,7 @@ CORINFO_METHOD_HANDLE getMethodFromDelegateHelper(DelegateObject* delegate)
 CORINFO_METHOD_HANDLE CEEInfo::getMethodFromDelegate(void* address, bool pinned)
 {
     CONTRACTL {
-        NOTHROW;
+        THROWS;
         GC_NOTRIGGER;
         MODE_PREEMPTIVE;
     } CONTRACTL_END;
