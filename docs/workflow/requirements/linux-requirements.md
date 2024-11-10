@@ -48,13 +48,15 @@ The packages you need to install are shown in the following list:
 - `libssl-dev`
 - `libkrb5-dev`
 - `ninja-build` (Optional. Enables building native code using `ninja` instead of `make`)
+- `pigz` (Optional. Enables parallel gzip compression for tarball creation in `packs` subset)
+- `cpio` (Optional. Needed to build RPM packages)
 
 **NOTE:** If you are running on *Ubuntu* older than version *22.04 LTS*, or *Debian* older than version 12, then don't install `cmake` using `apt` directly. Follow the instructions in the [CMake on Older Versions of Ubuntu and Debian section](#cmake-on-older-versions-of-ubuntu-and-debian) later down in this doc.
 
 ```bash
 sudo apt install -y cmake llvm lld clang build-essential \
   python-is-python3 curl git lldb libicu-dev liblttng-ust-dev \
-  libssl-dev libkrb5-dev ninja-build
+  libssl-dev libkrb5-dev ninja-build pigz cpio
 ```
 
 #### CMake on Older Versions of Ubuntu and Debian
@@ -114,7 +116,7 @@ Install the following packages for the toolchain:
 
 ```bash
 sudo dnf install -y cmake llvm lld lldb clang python curl git \
-  libicu-devel openssl-devel krb5-devel lttng-ust-devel ninja-build
+  libicu-devel openssl-devel krb5-devel lttng-ust-devel ninja-build pigz cpio
 ```
 
 ### Gentoo
