@@ -190,7 +190,8 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
         if (object != nullptr)
         {
-            JITDUMP("impImportCall trying to transform delegate - found delegate at 0x%llx, pinned: %d\n", object, pinned ? 1 : 0);
+            JITDUMP("impImportCall trying to transform delegate - found delegate at 0x%llx, pinned: %d\n", object,
+                    pinned ? 1 : 0);
             replacementMethod = info.compCompHnd->getMethodFromDelegate(object, pinned);
 
             if (replacementMethod != NO_METHOD_HANDLE)
@@ -200,8 +201,8 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                 newThis =
                     gtNewIndir(TYP_REF,
                                gtNewOperNode(GT_ADD, TYP_BYREF, instance,
-                                   gtNewIconNode(eeGetEEInfo()->offsetOfDelegateFirstTarget, TYP_I_IMPL)),
-                        GTF_IND_INVARIANT | GTF_IND_NONNULL | GTF_IND_NONFAULTING);
+                                             gtNewIconNode(eeGetEEInfo()->offsetOfDelegateFirstTarget, TYP_I_IMPL)),
+                               GTF_IND_INVARIANT | GTF_IND_NONNULL | GTF_IND_NONFAULTING);
             }
         }
     }
@@ -2109,8 +2110,7 @@ GenTree* Compiler::impFixupCallStructReturn(GenTreeCall* call, CORINFO_CLASS_HAN
 //  Return Value:
 //    Whether it's safe to change the IR to call the target method
 //
-bool Compiler::impCanSubstituteSig(CORINFO_SIG_INFO* sourceSig,
-                                   CORINFO_SIG_INFO* targetSig, bool* removeInstance)
+bool Compiler::impCanSubstituteSig(CORINFO_SIG_INFO* sourceSig, CORINFO_SIG_INFO* targetSig, bool* removeInstance)
 {
     if (sourceSig->getCallConv() != targetSig->getCallConv())
     {
@@ -2210,7 +2210,7 @@ bool Compiler::impCanSubstituteSig(CORINFO_SIG_INFO* sourceSig,
         if ((sourceLayout != nullptr) && !ClassLayout::AreCompatible(sourceLayout, targetLayout))
         {
             JITDUMP("impCanSubstituteSig returning false - parameter %u type %s is incompatible with %s\n", i,
-                varTypeName(sourceType), varTypeName(targetType));
+                    varTypeName(sourceType), varTypeName(targetType));
             return false;
         }
     }

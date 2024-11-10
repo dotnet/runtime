@@ -2004,7 +2004,7 @@ void MethodContext::recGetMethodFromDelegate(void* address, bool pinned, CORINFO
 }
 void MethodContext::dmpGetMethodFromDelegate(DLD key, DWORDLONG value)
 {
-    printf("GetMethodFromDelegate key address-%llx pinned-%u, value method-%llx",
+    printf("GetMethodFromDelegate key address-%016" PRIX64 " pinned-%lu, value method-%016" PRIX64 "",
         key.A, key.B, value);
 }
 CORINFO_METHOD_HANDLE MethodContext::repGetMethodFromDelegate(void* address, bool pinned)
@@ -2014,7 +2014,8 @@ CORINFO_METHOD_HANDLE MethodContext::repGetMethodFromDelegate(void* address, boo
     key.A = (DWORDLONG)address;
     key.B = pinned ? 1 : 0;
 
-    DWORDLONG value = LookupByKeyOrMiss(GetMethodFromDelegate, key, ": key address-%llx pinned-%u", key.A, key.B);
+    DWORDLONG value =
+        LookupByKeyOrMiss(GetMethodFromDelegate, key, ": key address-%016" PRIX64 " pinned-%lu", key.A, key.B);
     DEBUG_REP(dmpGetMethodFromDelegate(key, value));
     return (CORINFO_METHOD_HANDLE)value;
 }
