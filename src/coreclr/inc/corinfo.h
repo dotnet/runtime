@@ -2326,7 +2326,7 @@ public:
             CORINFO_CLASS_HANDLE    cls
             ) = 0;
 
-    // Returns the assembly name of the class "cls", or nullptr if there is none.    
+    // Returns the assembly name of the class "cls", or nullptr if there is none.
     virtual const char* getClassAssemblyName (
             CORINFO_CLASS_HANDLE cls
             ) = 0;
@@ -2609,6 +2609,12 @@ public:
     // returns the class handle for the special builtin classes
     virtual CORINFO_CLASS_HANDLE getBuiltinClass (
             CorInfoClassId              classId
+            ) = 0;
+
+    // returns the class handle for the special builtin classes
+    virtual CORINFO_METHOD_HANDLE getMethodFromDelegate (
+            void*                       address,
+            bool                        pinned
             ) = 0;
 
     // "System.Int32" ==> CORINFO_TYPE_INT..

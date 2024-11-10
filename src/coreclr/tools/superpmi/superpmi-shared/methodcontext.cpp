@@ -1987,6 +1987,38 @@ CORINFO_CLASS_HANDLE MethodContext::repGetBuiltinClass(CorInfoClassId classId)
     return result;
 }
 
+void MethodContext::recGetMethodFromDelegate(void* address, bool pinned, CORINFO_METHOD_HANDLE method)
+{
+    if (GetMethodFromDelegate == nullptr)
+        GetMethodFromDelegate = new LightWeightMap<DLD, DWORDLONG>();
+
+    DLD key;
+    ZeroMemory(&key, sizeof(key));
+    key.A = (DWORDLONG)address;
+    key.B = pinned ? 1 : 0;
+
+    DWORDLONG value = CastHandle(method);
+
+    GetMethodFromDelegate->Add(key, value);
+    DEBUG_REC(dmpGetMethodFromDelegate(key, value));
+}
+void MethodContext::dmpGetMethodFromDelegate(DLD key, DWORDLONG value)
+{
+    printf("GetMethodFromDelegate key address-%llx pinned-%u, value method-%llx",
+        key.A, key.B, value);
+}
+CORINFO_METHOD_HANDLE MethodContext::repGetMethodFromDelegate(void* address, bool pinned)
+{
+    DLD key;
+    ZeroMemory(&key, sizeof(key));
+    key.A = (DWORDLONG)address;
+    key.B = pinned ? 1 : 0;
+
+    DWORDLONG value = LookupByKeyOrMiss(GetMethodFromDelegate, key, ": key address-%llx pinned-%u", key.A, key.B);
+    DEBUG_REP(dmpGetMethodFromDelegate(key, value));
+    return (CORINFO_METHOD_HANDLE)value;
+}
+
 void MethodContext::recGetTypeForPrimitiveValueClass(CORINFO_CLASS_HANDLE cls, CorInfoType result)
 {
     if (GetTypeForPrimitiveValueClass == nullptr)
@@ -4589,7 +4621,7 @@ size_t MethodContext::repGetClassModuleIdForStatics(CORINFO_CLASS_HANDLE   cls,
     DWORDLONG key = CastHandle(cls);
     Agnostic_GetClassModuleIdForStatics value = LookupByKeyOrMiss(GetClassModuleIdForStatics, key, ": key %016" PRIX64 "", key);
 
-	DEBUG_REP(dmpGetClassModuleIdForStatics(key, value));
+    DEBUG_REP(dmpGetClassModuleIdForStatics(key, value));
 
     if (pModule != nullptr)
         *pModule = (CORINFO_MODULE_HANDLE)value.Module;
@@ -4689,7 +4721,7 @@ DWORD MethodContext::repGetThreadTLSIndex(void** ppIndirection)
 {
     DLD value = LookupByKeyOrMissNoMessage(GetThreadTLSIndex, 0);
 
-	DEBUG_REP(dmpGetThreadTLSIndex(0, value));
+    DEBUG_REP(dmpGetThreadTLSIndex(0, value));
 
     if (ppIndirection != nullptr)
         *ppIndirection = (void*)value.A;
@@ -4814,7 +4846,7 @@ void MethodContext::repGetLocationOfThisType(CORINFO_METHOD_HANDLE context, CORI
 {
     DWORDLONG key = CastHandle(context);
     Agnostic_CORINFO_LOOKUP_KIND value = LookupByKeyOrMiss(GetLocationOfThisType, key, ": key %016" PRIX64 "", key);
-	DEBUG_REP(dmpGetLocationOfThisType(key, value));
+    DEBUG_REP(dmpGetLocationOfThisType(key, value));
     *pLookupKind = SpmiRecordsHelper::RestoreCORINFO_LOOKUP_KIND(value);
 }
 

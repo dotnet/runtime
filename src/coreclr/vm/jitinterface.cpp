@@ -3985,7 +3985,75 @@ CORINFO_CLASS_HANDLE CEEInfo::getBuiltinClass(CorInfoClassId classId)
     return result;
 }
 
+/*********************************************************************/
+CORINFO_METHOD_HANDLE getMethodFromDelegateHelper(DelegateObject* delegate)
+{
+    CONTRACTL {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    } CONTRACTL_END;
 
+    // If you modify this logic, please update COMDelegate::GetMethodDesc, DacDbiInterfaceImpl::GetDelegateType,
+    // DacDbiInterfaceImpl::GetDelegateType, DacDbiInterfaceImpl::GetDelegateFunctionData,
+    // and DacDbiInterfaceImpl::GetDelegateTargetObject.
+
+    if (delegate->GetInvocationCount() != 0)
+        return 0;
+
+    PCODE code = delegate->GetMethodPtrAux();
+
+    if (code != (PCODE)NULL)
+    {
+        // Note that MethodTable::GetMethodDescForSlotAddress is significantly faster than Entry2MethodDesc
+        return (CORINFO_METHOD_HANDLE)MethodTable::GetMethodDescForSlotAddress(code);
+    }
+
+    // Must be a normal delegate
+    code = delegate->GetMethodPtr();
+
+    MethodTable* pMT = NULL;
+
+    OBJECTREF orThis = delegate->GetTarget();
+    if (orThis != NULL)
+    {
+        pMT = orThis->GetMethodTable();
+    }
+
+    return (CORINFO_METHOD_HANDLE)Entry2MethodDesc(code, pMT);
+}
+
+/*********************************************************************/
+CORINFO_METHOD_HANDLE CEEInfo::getMethodFromDelegate(void* address, bool pinned)
+{
+    CONTRACTL {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    CORINFO_METHOD_HANDLE result = 0;
+
+    JIT_TO_EE_TRANSITION();
+
+    _ASSERTE (address != nullptr);
+
+    if (pinned)
+    {
+        // For frozen delegates we don't need to worry about the GC.
+        result = getMethodFromDelegateHelper((DelegateObject*)address);
+    }
+    else
+    {
+        // For normal objects in static readonlys, we need to ensure that
+        // the GC doesn't run while we're reading from the object.
+        GCX_COOP();
+        result = getMethodFromDelegateHelper(*(DelegateObject**)address);
+    }
+    EE_TO_JIT_TRANSITION();
+
+    return result;
+}
 
 /*********************************************************************/
 CorInfoType CEEInfo::getTypeForPrimitiveValueClass(

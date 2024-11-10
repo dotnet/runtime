@@ -765,6 +765,16 @@ CORINFO_CLASS_HANDLE WrapICorJitInfo::getBuiltinClass(
     return temp;
 }
 
+CORINFO_METHOD_HANDLE WrapICorJitInfo::getMethodFromDelegate(
+          void* address,
+          bool pinned)
+{
+    API_ENTER(getMethodFromDelegate);
+    CORINFO_METHOD_HANDLE temp = wrapHnd->getMethodFromDelegate(address, pinned);
+    API_LEAVE(getMethodFromDelegate);
+    return temp;
+}
+
 CorInfoType WrapICorJitInfo::getTypeForPrimitiveValueClass(
           CORINFO_CLASS_HANDLE cls)
 {

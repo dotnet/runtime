@@ -865,6 +865,15 @@ CORINFO_CLASS_HANDLE interceptor_ICJI::getBuiltinClass(CorInfoClassId classId)
     return temp;
 }
 
+// returns the class handle for the special builtin classes
+CORINFO_METHOD_HANDLE interceptor_ICJI::getMethodFromDelegate(void* address, bool pinned)
+{
+    mc->cr->AddCall("getMethodFromDelegate");
+    CORINFO_METHOD_HANDLE temp   = original_ICorJitInfo->getMethodFromDelegate(address, pinned);
+    mc->recGetMethodFromDelegate(address, pinned, temp);
+    return temp;
+}
+
 // "System.Int32" ==> CORINFO_TYPE_INT..
 CorInfoType interceptor_ICJI::getTypeForPrimitiveValueClass(CORINFO_CLASS_HANDLE cls)
 {

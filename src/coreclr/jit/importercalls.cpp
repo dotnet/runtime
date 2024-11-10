@@ -95,17 +95,20 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
     bool checkForSmallType  = false;
     bool bIntrinsicImported = false;
 
-    CORINFO_SIG_INFO calliSig;
+    CORINFO_SIG_INFO originalSig = {};
     NewCallArg       extraArg;
 
     // Swift calls that might throw use a SwiftError* arg that requires additional IR to handle,
     // so if we're importing a Swift call, look for this type in the signature
     GenTree* swiftErrorNode = nullptr;
 
-    /*-------------------------------------------------------------------------
-     * First create the call node
-     */
+    // prepare data for calli/delegate call replacement
+    bool                  optimizedOrInstrumented = opts.OptimizationEnabled() || opts.IsInstrumented();
+    CORINFO_METHOD_HANDLE replacementMethod       = nullptr; // real method called by the calli/delegate
+    GenTree*              newThis                 = nullptr; // new instance for the delegate call
+    int                   firstArgPos             = -1;      // position of the first arg after delegate
 
+    // handle special import cases
     if (opcode == CEE_CALLI)
     {
         if (IsTargetAbi(CORINFO_NATIVEAOT_ABI))
@@ -120,25 +123,191 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
         }
 
         /* Get the call site sig */
-        eeGetSig(pResolvedToken->token, pResolvedToken->tokenScope, pResolvedToken->tokenContext, &calliSig);
+        eeGetSig(pResolvedToken->token, pResolvedToken->tokenScope, pResolvedToken->tokenContext, &originalSig);
 
-        callRetTyp = JITtype2varType(calliSig.retType);
+        if (!optimizedOrInstrumented)
+        {
+            // ignore
+        }
+        else if (originalSig.getCallConv() == CORINFO_CALLCONV_DEFAULT)
+        {
+            JITDUMP("\n\nimpImportCall trying to import calli as call\n");
+            // TODO-Perf: Add an importer forward substitution to handle more cases here.
+            GenTree* fptr = impStackTop().val;
 
-        call = impImportIndirectCall(&calliSig, di);
+            // We can only handle known valid pointers here since the VM crashes
+            // when querying invalid method addresses.
+            // As such, we can't handle static readonly function pointers here.
+            if (fptr->OperIs(GT_FTN_ADDR))
+            {
+                // Ldftn should never point to a method from another unloadable context
+                replacementMethod = fptr->AsFptrVal()->gtFptrMethod;
+            }
+            else
+            {
+                JITDUMP("impImportCall failed to import calli as call - address node not found\n");
+            }
+        }
+        else
+        {
+            JITDUMP("\n\nimpImportCall failed to import calli as call - call conv %u is not managed\n",
+                    originalSig.getCallConv());
+        }
+    }
+    else if (optimizedOrInstrumented && callInfo->methodFlags & CORINFO_FLG_DELEGATE_INVOKE)
+    {
+        JITDUMP("\n\nimpImportCall trying to transform delegate - checking delegate call\n");
+
+        CORINFO_CLASS_HANDLE delegateClass = info.compCompHnd->getMethodClass(callInfo->hMethod);
+        info.compCompHnd->getMethodSig(callInfo->hMethod, &originalSig, delegateClass);
+
+        // TODO-Perf: Add an importer forward substitution to handle more cases here.
+        GenTree* instance = impStackTop(originalSig.numArgs).val;
+        bool     pinned   = false;
+        void*    object   = nullptr;
+
+        if (instance->IsIconHandle(GTF_ICON_OBJ_HDL))
+        {
+            // Frozen delegates should never point to collectible contexts.
+            pinned = true;
+            object = (void*)instance->AsIntCon()->gtIconVal;
+            JITDUMP("impImportCall trying to transform delegate - found frozen\n");
+        }
+        else if (instance->OperIs(GT_IND))
+        {
+            GenTree* address = instance->AsIndir()->gtOp1;
+            if (address->IsIconHandle(GTF_ICON_CONST_PTR))
+            {
+                // Const static addresses only exist in non-unloadable contexts,
+                // such context will keep the delegate permanently alive so even
+                // if it points to an unloadable method, we can still handle it safely.
+                // This lets us inline DynamicMethods.
+                object = (void*)address->AsIntCon()->gtIconVal;
+                JITDUMP("impImportCall trying to transform delegate - found static readonly\n");
+            }
+        }
+        // TODO-Perf: Handle unloadable delegates in same context.
+
+        if (object != nullptr)
+        {
+            JITDUMP("impImportCall trying to transform delegate - found delegate at 0x%llx, pinned: %d\n", object, pinned ? 1 : 0);
+            replacementMethod = info.compCompHnd->getMethodFromDelegate(object, pinned);
+
+            if (replacementMethod != NO_METHOD_HANDLE)
+            {
+                firstArgPos = (int)(stackState.esStackDepth - originalSig.numArgs);
+                assert(firstArgPos >= 0);
+                newThis =
+                    gtNewIndir(TYP_REF,
+                               gtNewOperNode(GT_ADD, TYP_BYREF, instance,
+                                   gtNewIconNode(eeGetEEInfo()->offsetOfDelegateFirstTarget, TYP_I_IMPL)),
+                        GTF_IND_INVARIANT | GTF_IND_NONNULL | GTF_IND_NONFAULTING);
+            }
+        }
+    }
+
+    if (replacementMethod != NO_METHOD_HANDLE)
+    {
+        JITDUMP("impImportCall trying to transform call - found target method %s\n",
+                eeGetMethodName(replacementMethod));
+        CORINFO_SIG_INFO     methodSig;
+        CORINFO_CLASS_HANDLE targetClass = info.compCompHnd->getMethodClass(replacementMethod);
+        info.compCompHnd->getMethodSig(replacementMethod, &methodSig, targetClass);
+
+        bool     removeInstance   = false;
+        unsigned replacementFlags = info.compCompHnd->getMethodAttribs(replacementMethod);
+
+        if ((replacementFlags & CORINFO_FLG_PINVOKE) != 0)
+        {
+            JITDUMP("impImportCall aborting transformation - found PInvoke\n");
+        }
+        else if (methodSig.hasImplicitThis() && eeIsValueClass(targetClass))
+        {
+            JITDUMP("impImportCall aborting transformation - valuetype instance methods are not supported\n");
+        }
+        else if (!impCanSubstituteSig(&originalSig, &methodSig, &removeInstance))
+        {
+            JITDUMP("impImportCall aborting transformation - incompatible signature\n");
+        }
+        else if (removeInstance && firstArgPos < 0)
+        {
+            JITDUMP("impImportCall aborting transformation - invalid function pointer\n");
+        }
+        else
+        {
+            if (firstArgPos >= 0)
+            {
+                // check if we are at a valid position and
+                // had a valid delegate instance beforehand.
+                assert(&stackState.esStack[firstArgPos - 1] >= stackState.esStack);
+                assert(stackState.esStack[firstArgPos - 1].seTypeInfo.GetType() == TYP_REF);
+                assert(newThis->TypeGet() == TYP_REF);
+                assert(removeInstance || !eeIsValueClass(targetClass));
+            }
+
+            if (removeInstance || firstArgPos < 0)
+            {
+                // shift args if needed
+                if (firstArgPos > 0)
+                {
+                    memmove(&stackState.esStack[firstArgPos - 1], &stackState.esStack[firstArgPos],
+                            (stackState.esStackDepth - firstArgPos) * sizeof(StackEntry));
+                }
+                // we can just pop the top arg after shifting
+                impPopStack();
+            }
+            else
+            {
+                // replace delegate instance with the new this
+                stackState.esStack[firstArgPos - 1].seTypeInfo = typeInfo(targetClass);
+                stackState.esStack[firstArgPos - 1].val        = newThis;
+            }
+
+            JITDUMP("impImportCall transforming call\n");
+
+            // we need to update the token and info to the real method
+            pResolvedToken->tokenContext = impTokenLookupContextHandle;
+            pResolvedToken->tokenScope   = info.compScopeHnd;
+            pResolvedToken->token        = methodSig.token;
+            pResolvedToken->tokenType    = CORINFO_TOKENKIND_Method;
+            pResolvedToken->hMethod      = replacementMethod;
+            pResolvedToken->hClass       = targetClass;
+
+            eeGetCallInfo(pResolvedToken, nullptr, CORINFO_CALLINFO_ALLOWINSTPARAM, callInfo);
+            callInfo->sig               = methodSig;
+            callInfo->hMethod           = replacementMethod;
+            callInfo->methodFlags       = replacementFlags;
+            callInfo->classFlags        = info.compCompHnd->getClassAttribs(targetClass);
+            callInfo->nullInstanceCheck = false;
+            callInfo->accessAllowed     = CORINFO_ACCESS_ALLOWED;
+
+            return impImportCall(CEE_CALL, pResolvedToken, nullptr, nullptr, prefixFlags, callInfo, rawILOffset);
+        }
+    }
+
+    /*-------------------------------------------------------------------------
+     * First create the call node
+     */
+
+    if (opcode == CEE_CALLI)
+    {
+        callRetTyp = JITtype2varType(originalSig.retType);
+
+        call = impImportIndirectCall(&originalSig, di);
 
         // We don't know the target method, so we have to infer the flags, or
         // assume the worst-case.
-        mflags = (calliSig.callConv & CORINFO_CALLCONV_HASTHIS) ? 0 : CORINFO_FLG_STATIC;
+        mflags = (originalSig.callConv & CORINFO_CALLCONV_HASTHIS) ? 0 : CORINFO_FLG_STATIC;
 
 #ifdef DEBUG
         if (verbose)
         {
-            unsigned structSize = (callRetTyp == TYP_STRUCT) ? eeTryGetClassSize(calliSig.retTypeSigClass) : 0;
+            unsigned structSize = (callRetTyp == TYP_STRUCT) ? eeTryGetClassSize(originalSig.retTypeSigClass) : 0;
             printf("\nIn Compiler::impImportCall: opcode is %s, kind=%d, callRetType is %s, structSize is %u\n",
                    opcodeNames[opcode], callInfo->kind, varTypeName(callRetTyp), structSize);
         }
 #endif
-        sig = &calliSig;
+        sig = &originalSig;
     }
     else // (opcode != CEE_CALLI)
     {
@@ -1925,6 +2094,129 @@ GenTree* Compiler::impFixupCallStructReturn(GenTreeCall* call, CORINFO_CLASS_HAN
     }
     return call;
 #endif // FEATURE_MULTIREG_RET
+}
+
+//-----------------------------------------------------------------------------------
+//  impCanSubstituteSig: Checks whether it's safe to replace a call with another one.
+//  This DOES NOT check if the calls are actually compatible, it only checks if their trees are.
+//  Use ONLY when code will call the method with target sig anyway.
+//
+//  Arguments:
+//    sourceSig      - original call signature
+//    targetSig      - new call signature
+//    removeInstance - is removal of original instance needed
+//
+//  Return Value:
+//    Whether it's safe to change the IR to call the target method
+//
+bool Compiler::impCanSubstituteSig(CORINFO_SIG_INFO* sourceSig,
+                                   CORINFO_SIG_INFO* targetSig, bool* removeInstance)
+{
+    if (sourceSig->getCallConv() != targetSig->getCallConv())
+    {
+        JITDUMP("impCanSubstituteSig returning false - call conv %u != %u\n", sourceSig->callConv, targetSig->callConv);
+        return false;
+    }
+
+    bool removedInstance = false;
+
+    unsigned sourceArgCount = sourceSig->totalILArgs();
+    unsigned targetArgCount = targetSig->totalILArgs();
+    if ((sourceArgCount == targetArgCount + 1) && sourceSig->hasImplicitThis())
+    {
+        removedInstance = true;
+        sourceArgCount--;
+    }
+    else if (sourceArgCount != targetArgCount)
+    {
+        JITDUMP("impCanSubstituteSig returning false - args count %u != %u\n", sourceArgCount,
+                targetSig->totalILArgs());
+        return false;
+    }
+
+    if (sourceSig->retType != targetSig->retType)
+    {
+        JITDUMP("impCanSubstituteSig returning false - return type %u != %u\n", (unsigned)sourceSig->retType,
+                (unsigned)targetSig->retType);
+        return false;
+    }
+
+    if (sourceSig->retType == CORINFO_TYPE_VALUECLASS || sourceSig->retType == CORINFO_TYPE_REFANY)
+    {
+        ClassLayout* layoutRetSource = typGetObjLayout(sourceSig->retTypeClass);
+        ClassLayout* layoutRetTarget = typGetObjLayout(targetSig->retTypeClass);
+
+        if (!ClassLayout::AreCompatible(layoutRetSource, layoutRetTarget))
+        {
+            JITDUMP("impCanSubstituteSig returning false - return type %s is incompatible with %s\n",
+                    eeGetClassName(targetSig->retTypeClass), eeGetClassName(sourceSig->retTypeClass));
+            return false;
+        }
+    }
+
+    CORINFO_ARG_LIST_HANDLE sourceArg = sourceSig->args;
+    CORINFO_ARG_LIST_HANDLE targetArg = targetSig->args;
+
+    assert(targetArgCount == sourceArgCount);
+    for (unsigned i = 0; i < targetArgCount; i++)
+    {
+        var_types sourceType;
+        var_types targetType;
+
+        ClassLayout* sourceLayout = nullptr;
+        ClassLayout* targetLayout = nullptr;
+        if (i == 0 && !removeInstance && sourceSig->hasImplicitThis())
+        {
+            // assume ref type on implicit this
+            sourceType = TYP_REF;
+        }
+        else
+        {
+            sourceType = eeGetArgType(sourceArg, sourceSig);
+            if (varTypeIsStruct(sourceType))
+            {
+                CORINFO_CLASS_HANDLE sourceClassHnd = NO_CLASS_HANDLE;
+                info.compCompHnd->getArgType(sourceSig, sourceArg, &sourceClassHnd);
+                sourceLayout = typGetObjLayout(sourceClassHnd);
+            }
+            sourceArg = info.compCompHnd->getArgNext(sourceArg);
+        }
+
+        if (i == 0 && targetSig->hasImplicitThis())
+        {
+            // assume ref type on implicit this
+            targetType = TYP_REF;
+        }
+        else
+        {
+            targetType = eeGetArgType(targetArg, targetSig);
+            if (varTypeIsStruct(targetType))
+            {
+                CORINFO_CLASS_HANDLE targetClassHnd = NO_CLASS_HANDLE;
+                info.compCompHnd->getArgType(targetSig, targetArg, &targetClassHnd);
+                targetLayout = typGetObjLayout(targetClassHnd);
+            }
+            targetArg = info.compCompHnd->getArgNext(targetArg);
+        }
+
+        if (sourceType != targetType)
+        {
+            JITDUMP("impCanSubstituteSig returning false - parameter %u type %s != %s\n", i, varTypeName(sourceType),
+                    varTypeName(targetType));
+            return false;
+        }
+
+        assert((sourceLayout == nullptr) == (targetLayout == nullptr));
+        if ((sourceLayout != nullptr) && !ClassLayout::AreCompatible(sourceLayout, targetLayout))
+        {
+            JITDUMP("impCanSubstituteSig returning false - parameter %u type %s is incompatible with %s\n", i,
+                varTypeName(sourceType), varTypeName(targetType));
+            return false;
+        }
+    }
+
+    *removeInstance = removedInstance;
+    return true;
 }
 
 GenTreeCall* Compiler::impImportIndirectCall(CORINFO_SIG_INFO* sig, const DebugInfo& di)

@@ -329,6 +329,10 @@ void classMustBeLoadedBeforeCodeIsRun(
 CORINFO_CLASS_HANDLE getBuiltinClass(
           CorInfoClassId classId) override;
 
+CORINFO_METHOD_HANDLE getMethodFromDelegate(
+          void* address,
+          bool pinned) override;
+
 CorInfoType getTypeForPrimitiveValueClass(
           CORINFO_CLASS_HANDLE cls) override;
 

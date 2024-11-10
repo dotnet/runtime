@@ -254,6 +254,10 @@ public:
     void dmpGetBuiltinClass(DWORD key, DWORDLONG value);
     CORINFO_CLASS_HANDLE repGetBuiltinClass(CorInfoClassId classId);
 
+    void recGetMethodFromDelegate(void* address, bool pinned, CORINFO_METHOD_HANDLE method);
+    void dmpGetMethodFromDelegate(DLD key, DWORDLONG value);
+    CORINFO_METHOD_HANDLE repGetMethodFromDelegate(void* address, bool pinned);
+
     void recGetTypeForPrimitiveValueClass(CORINFO_CLASS_HANDLE cls, CorInfoType result);
     void dmpGetTypeForPrimitiveValueClass(DWORDLONG key, DWORD value);
     CorInfoType repGetTypeForPrimitiveValueClass(CORINFO_CLASS_HANDLE cls);
@@ -460,13 +464,13 @@ public:
     void dmpGetUnboxedEntry(DWORDLONG key, DLD value);
     CORINFO_METHOD_HANDLE repGetUnboxedEntry(CORINFO_METHOD_HANDLE ftn, bool* requiresInstMethodTableArg);
 
-    void recGetInstantiatedEntry(CORINFO_METHOD_HANDLE ftn, 
+    void recGetInstantiatedEntry(CORINFO_METHOD_HANDLE ftn,
                                  CORINFO_METHOD_HANDLE methodHandle,
                                  CORINFO_CLASS_HANDLE classHandle,
                                  CORINFO_METHOD_HANDLE result);
     void dmpGetInstantiatedEntry(DWORDLONG key, const Agnostic_GetInstantiatedEntryResult& value);
-    CORINFO_METHOD_HANDLE repGetInstantiatedEntry(CORINFO_METHOD_HANDLE ftn, 
-                                                  CORINFO_METHOD_HANDLE* methodHandle, 
+    CORINFO_METHOD_HANDLE repGetInstantiatedEntry(CORINFO_METHOD_HANDLE ftn,
+                                                  CORINFO_METHOD_HANDLE* methodHandle,
                                                   CORINFO_CLASS_HANDLE* classHandle);
 
     void recGetDefaultComparerClass(CORINFO_CLASS_HANDLE cls, CORINFO_CLASS_HANDLE result);
@@ -1207,6 +1211,7 @@ enum mcPackets
     Packet_GetSZArrayHelperEnumeratorClass = 226,
     Packet_GetMethodInstantiationArgument = 227,
     Packet_GetInstantiatedEntry = 228,
+    Packet_GetMethodFromDelegate = 229,
 };
 
 void SetDebugDumpVariables();
