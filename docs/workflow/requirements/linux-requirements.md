@@ -109,6 +109,8 @@ Install the following packages for the toolchain:
 - `krb5-devel`
 - `lttng-ust-devel`
 - `ninja-build` (Optional. Enables building native code using `ninja` instead of `make`)
+- `pigz` (Optional. Enables parallel gzip compression for tarball creation in `packs` subset)
+- `cpio` (Optional. Needed to build RPM packages)
 
 ```bash
 sudo dnf install -y cmake llvm lld lldb clang python curl git \
