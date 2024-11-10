@@ -352,11 +352,14 @@ namespace ILCompiler
                 if (_supportedInstructionSets.Contains("avx512vbmi"))
                     _supportedInstructionSets.Add("avx512vbmi_vl");
 
-                // Having AVX10V1 and any AVX-512 instruction sets enabled,
-                // automatically implies AVX10V1-V512 as well.
+                // These ISAs should automatically extend to 512-bit if
+                // AVX-512 is enabled.
 
                 if (_supportedInstructionSets.Contains("avx10v1"))
                     _supportedInstructionSets.Add("avx10v1_v512");
+
+                if (_supportedInstructionSets.Contains("vpclmul"))
+                    _supportedInstructionSets.Add("vpclmul_v512");
             }
 
             foreach (string supported in _supportedInstructionSets)
