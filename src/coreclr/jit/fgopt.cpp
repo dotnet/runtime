@@ -6486,8 +6486,6 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
 
         if (block->KindIs(BBJ_RETURN) && !block->isEmpty() && (block != genReturnBB))
         {
-
-#if !FEATURE_TAILCALL_OPT_SHARED_RETURN
             // Avoid spitting a return away from a possible tail call
             //
             if (!block->hasSingleStmt())
@@ -6500,7 +6498,6 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
                     continue;
                 }
             }
-#endif
 
             retBlocks.Push(block);
         }
