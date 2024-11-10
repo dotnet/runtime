@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Runtime.InteropServices;
 using Xunit;
 
 namespace System.Numerics.Tests
@@ -115,6 +116,22 @@ namespace System.Numerics.Tests
                 tempByteArray2 = GetRandomByteArray(s_random, 2);
                 VerifyAndString(Print(tempByteArray1) + Print(tempByteArray2) + "b&");
             }
+        }
+
+        [Fact]
+        public void Issue109669()
+        {
+            // Operations on numbers whose result is of the form 0xFFFFFFFF 00000000 ... 00000000
+            // in two's complement.
+
+            Assert.Equal(-4294967296, new BigInteger(-4294967296) & new BigInteger(-1919810));
+            Assert.Equal(-4294967296, new BigInteger(-4042322161) & new BigInteger(-252645136));
+            Assert.Equal(-4294967296, new BigInteger(-8589934592) | new BigInteger(-21474836480));
+
+            BigInteger a = new BigInteger(MemoryMarshal.AsBytes([uint.MaxValue, 0u, 0u]), isBigEndian: true);
+            Assert.Equal(a, a & a);
+            Assert.Equal(a, a | a);
+            Assert.Equal(a, a ^ 0);
         }
 
         private static void VerifyAndString(string opstring)
