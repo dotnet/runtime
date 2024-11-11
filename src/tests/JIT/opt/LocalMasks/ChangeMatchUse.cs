@@ -53,7 +53,7 @@ public class ChangeMatchUse
 
     // Create a mask. Use it as a mask.
     // Conversion of mask1 will be removed.
-    [method: MethodImpl(MethodImplOptions.NoInlining)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
     private static void UseMaskAsMask()
     {
         if (Sve.IsSupported)
@@ -67,7 +67,7 @@ public class ChangeMatchUse
 
     // Create a mask. Use it as a vector.
     // No conversions will be changed: Mask->Vector is optimal.
-    [method: MethodImpl(MethodImplOptions.NoInlining)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
     private static void UseMaskAsVector()
     {
         if (Sve.IsSupported)
@@ -81,7 +81,7 @@ public class ChangeMatchUse
 
     // Create a mask. Use it as a mask, then use as a vector.
     // Mask1 conversions will be switched.
-    [method: MethodImpl(MethodImplOptions.NoInlining)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
     private static void UseMaskAsMaskAndVector()
     {
         if (Sve.IsSupported)
@@ -97,7 +97,7 @@ public class ChangeMatchUse
 
     // Create a mask. Use it as a mask, then use as a vector inside a loop.
     // No conversions will be changed: vector use inside the loop dominates.
-    [method: MethodImpl(MethodImplOptions.NoInlining)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
     private static void UseMaskAsMaskAndVectorInsideLoop()
     {
         if (Sve.IsSupported)
@@ -117,7 +117,7 @@ public class ChangeMatchUse
 
     // Create a mask. Use it as a vector, then use as a mask inside a loop.
     // Will be converted: mask use inside the loop dominates.
-    [method: MethodImpl(MethodImplOptions.NoInlining)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
     private static void UseMaskAsVectorAndMaskInsideLoop()
     {
         if (Sve.IsSupported)
@@ -134,7 +134,7 @@ public class ChangeMatchUse
         }
     }
 
-    [method: MethodImpl(MethodImplOptions.NoInlining)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
     private static void CastMaskUseAsVector()
     {
         if (Sve.IsSupported)
@@ -148,7 +148,7 @@ public class ChangeMatchUse
         }
     }
 
-    [method: MethodImpl(MethodImplOptions.NoInlining)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
     private static void CastMaskUseAsMask()
     {
         if (Sve.IsSupported)
