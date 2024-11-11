@@ -269,7 +269,7 @@ filled with nibble values and DWORDs with pointer values.
 | 9-12         | Pointer | (value - 9) << 2 |
 | 13-15        | unused | |
 
-To read the nibblemap, we check if the DWORD is a pointer. If so, then we know the value looked is
+To read the nibblemap, we check if the DWORD is a pointer. If so, then we know the value looked up is
 part of a managed code block beginning at the map base + decoded pointer. Otherwise we can check for nibbles
 as normal. If the DWORD is empty (no pointer or previous nibbles), then we check the previous DWORD for a
 pointer or preceeding nibble. If that DWORD is empty, then we must not be in a managed function. If we were,
