@@ -3992,11 +3992,6 @@ void Compiler::compSetOptimizationLevel()
             "IL Code Size,Instr %4d,%4d, Basic Block count %3d, Local Variable Num,Ref count %3d,%3d for method %s\n",
             info.compILCodeSize, opts.instrCount, fgBBcount, lvaCount, opts.lvRefCount, info.compFullName));
 
-    if (IsTargetAbi(CORINFO_NATIVEAOT_ABI))
-    {
-        theMinOptsValue = true;
-    }
-
 _SetMinOpts:
 
     // Set the MinOpts value
