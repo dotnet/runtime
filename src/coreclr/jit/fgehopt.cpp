@@ -1333,6 +1333,13 @@ PhaseStatus Compiler::fgCloneFinally()
             }
         }
 
+        // normalCallFinallyReturn->bbWeight = BB_ZERO_WEIGHT;
+        // for (BasicBlock* const predBlock : normalCallFinallyReturn->PredBlocks())
+        // {
+        //     assert(predBlock->NumSucc() == 1);
+        //     normalCallFinallyReturn->bbWeight += predBlock->bbWeight;
+        // }
+
         // Done!
         JITDUMP("\nDone with EH#%u\n\n", XTnum);
         cloneCount++;
