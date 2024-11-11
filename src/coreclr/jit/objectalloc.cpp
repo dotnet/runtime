@@ -33,6 +33,7 @@ PhaseStatus ObjectAllocator::DoPhase()
     if ((comp->optMethodFlags & OMF_HAS_NEWOBJ) == 0)
     {
         JITDUMP("no newobjs in this method; punting\n");
+        comp->fgInvalidateDfsTree();
         return PhaseStatus::MODIFIED_NOTHING;
     }
 
@@ -67,14 +68,15 @@ PhaseStatus ObjectAllocator::DoPhase()
 
     if (didStackAllocate)
     {
+        assert(enabled);
         ComputeStackObjectPointers(&m_bitVecTraits);
         RewriteUses();
-        return PhaseStatus::MODIFIED_EVERYTHING;
     }
-    else
-    {
-        return PhaseStatus::MODIFIED_NOTHING;
-    }
+
+    // This phase always changes the IR. It may also modify the flow graph.
+    //
+    comp->fgInvalidateDfsTree();
+    return PhaseStatus::MODIFIED_EVERYTHING;
 }
 
 //------------------------------------------------------------------------------
@@ -247,8 +249,17 @@ void ObjectAllocator::MarkEscapingVarsAndBuildConnGraph()
         }
     }
 
-    for (BasicBlock* const block : comp->Blocks())
+    // We should have computed the DFS tree already.
+    //
+    FlowGraphDfsTree* const dfs = comp->m_dfsTree;
+    assert(dfs != nullptr);
+
+    // Walk in RPO
+    //
+    for (unsigned i = dfs->GetPostOrderCount(); i != 0; i--)
     {
+        BasicBlock* const block = dfs->GetPostOrder(i - 1);
+
         for (Statement* const stmt : block->Statements())
         {
             BuildConnGraphVisitor buildConnGraphVisitor(this);

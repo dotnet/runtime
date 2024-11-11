@@ -273,6 +273,7 @@ virtual GenericParamContextType GetParamContextType(PREGDISPLAY     pContext,
 */
 virtual void * GetGSCookieAddr(PREGDISPLAY     pContext,
                                EECodeInfo    * pCodeInfo,
+                               unsigned        flags,
                                CodeManState  * pState) = 0;
 
 #ifndef USE_GC_INFO_DECODER
@@ -457,9 +458,6 @@ virtual
 bool IsGcSafe(  EECodeInfo     *pCodeInfo,
                 DWORD           dwRelOffset);
 
-static
-bool InterruptibleSafePointsEnabled();
-
 #if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 virtual
 bool HasTailCalls(EECodeInfo *pCodeInfo);
@@ -541,6 +539,7 @@ PTR_VOID GetExactGenericsToken(SIZE_T          baseStackSlot,
 virtual
 void * GetGSCookieAddr(PREGDISPLAY     pContext,
                        EECodeInfo    * pCodeInfo,
+                       unsigned        flags,
                        CodeManState  * pState);
 
 
