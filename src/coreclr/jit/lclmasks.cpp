@@ -305,10 +305,7 @@ public:
             // to
             //      use:STORE_LCL_VAR(x)
 
-            GenTreeHWIntrinsic* convertOp = lclOp->Data()->AsHWIntrinsic();
-
-            lclOp->gtOp1 = convertOp->Op(1);
-            convertOp->gtBashToNOP();
+            lclOp->Data() = lclOp->Data()->AsHWIntrinsic()->Op(1);
         }
 
         else if (isLocalStore && addConversion)
@@ -347,7 +344,6 @@ public:
             assert(opNum <= user->AsHWIntrinsic()->GetOperandCount());
 
             // Remove the convert convertOp
-            convertOp->gtBashToNOP();
             *use = lclOp;
         }
 
