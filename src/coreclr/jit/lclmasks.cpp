@@ -363,13 +363,7 @@ public:
 
         JITDUMP("Updated %s V%02d at [%06u] to mask (%s conversion)\n", isLocalStore ? "store" : "var",
                 lclOp->GetLclNum(), m_compiler->dspTreeID(lclOp), addConversion ? "added" : "removed");
-
-#ifdef DEBUG
-        if (m_compiler->verbose)
-        {
-            m_compiler->gtDispTree(*use);
-        }
-#endif
+        DISPTREE(*use);
 
         updatedConversions = true;
         return fgWalkResult::WALK_CONTINUE;
