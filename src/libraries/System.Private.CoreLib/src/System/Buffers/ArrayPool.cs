@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Runtime.CompilerServices;
+
 namespace System.Buffers
 {
     /// <summary>
@@ -18,9 +20,10 @@ namespace System.Buffers
     /// </remarks>
     public abstract class ArrayPool<T>
     {
-        // Store the shared ArrayPool in a field of its derived sealed type so the Jit can "see" the exact type
-        // when the Shared property is inlined which will allow it to devirtualize calls made on it.
-        private static readonly SharedArrayPool<T> s_shared = new SharedArrayPool<T>();
+        private static readonly ArrayPool<T> s_shared =
+            SharedArrayPoolStatics.DiagnosticsEnabled ?
+                new DiagnosticArrayPool<T>() :
+                new SharedArrayPool<T>();
 
         /// <summary>
         /// Retrieves a shared <see cref="ArrayPool{T}"/> instance.

@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -493,6 +494,13 @@ namespace System.Buffers
 
     internal static class SharedArrayPoolStatics
     {
+        /// <summary>Whether the diagnostic pool is enabled.</summary>
+        [FeatureSwitchDefinition("System.Buffers.ArrayPool.DiagnosticsEnabled")]
+        internal static bool DiagnosticsEnabled { get; } =
+            AppContext.TryGetSwitch(
+                switchName: "System.Buffers.ArrayPool.DiagnosticsEnabled",
+                isEnabled: out bool value) && value;
+
         /// <summary>Number of partitions to employ.</summary>
         internal static readonly int s_partitionCount = GetPartitionCount();
         /// <summary>The maximum number of arrays per array size to store per partition.</summary>
