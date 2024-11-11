@@ -11,6 +11,5 @@ public record AssertBundleOptions(
     BuildProjectOptions BuildOptions,
     bool ExpectSymbolsFile = true,
     bool AssertIcuAssets = true,
-    bool AssertSymbolsFile = true,
-    bool ExpectFingerprintOnDotnetJs = false
+    bool AssertSymbolsFile = true
 );

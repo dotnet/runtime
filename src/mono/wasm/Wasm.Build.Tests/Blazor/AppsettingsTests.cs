@@ -39,16 +39,7 @@ public class AppsettingsTests : BlazorWasmTestBase
             }
         });
 
-        bool isPublish = false;
-        (string _, string buildOutput) = BuildTemplateProject(info,
-            new BuildProjectOptions(
-                info.Configuration,
-                info.ProjectName,
-                BinFrameworkDir: GetBinFrameworkDir(info.Configuration, isPublish),
-                ExpectedFileType: GetExpectedFileType(info, isPublish),
-                IsPublish: isPublish
-        ));
-
+        (string _, string buildOutput) = BlazorBuild(info);
         bool existsChecked = false;
         bool contentChecked = false;
         await RunForBuildWithDotnetRun(new(

@@ -69,7 +69,16 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestsBase
                 new[] { "-p:BlazorEnableCompression=false",  "/warnaserror"} :
                 new[] { "-p:BlazorEnableCompression=false" };
             extraArgs = extraArgs.Concat(additionalOptiont).ToArray();
-            return base.BuildTemplateProject(projectInfo, buildOptions, extraArgs);
+            (string projectDir, string buildOutput) = base.BuildTemplateProject(
+                projectInfo,
+                buildOptions with { AssertAppBundle = false },
+                extraArgs
+            );
+            if (buildOptions.ExpectSuccess && buildOptions.AssertAppBundle)
+            {
+                AssertBundle(buildOutput, buildOptions);
+            }
+            return (projectDir, buildOutput);
         }
         catch (XunitException xe)
         {
@@ -112,24 +121,36 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestsBase
         return Path.Combine(_projectDir!, $"{id}.csproj");
     }
 
-    protected (CommandResult, string) BlazorBuild(BuildProjectOptions options, params string[] extraArgs)
+    protected (string projectDir, string buildOutput) BlazorBuild(
+        ProjectInfo info, bool isNativeBuild = false, bool useCache = true, params string[] extraArgs)
     {
-        if (options.WarnAsError)
-            extraArgs = extraArgs.Append("/warnaserror").ToArray();
+        bool isPublish = false;
+        return BuildTemplateProject(info,
+            new BuildProjectOptions(
+                info.Configuration,
+                info.ProjectName,
+                BinFrameworkDir: GetBlazorBinFrameworkDir(info.Configuration, isPublish),
+                ExpectedFileType: GetExpectedFileType(info, isPublish, isNativeBuild),
+                IsPublish: isPublish,
+                UseCache: useCache),
+            extraArgs
+        );
+    }
 
-        (CommandResult res, string logPath) = BlazorBuildInternal(
-            options.Id,
-            options.Configuration,
-            setWasmDevel: false,
-            expectSuccess: options.ExpectSuccess,
-            extraArgs: extraArgs);
-
-        if (options.ExpectSuccess && options.AssertAppBundle)
-        {
-            AssertBundle(res.Output, options with { IsPublish = false });
-        }
-
-        return (res, logPath);
+    protected (string projectDir, string buildOutput) BlazorPublish(
+        ProjectInfo info, bool isNativeBuild = false, bool useCache = true, params string[] extraArgs)
+    {
+        bool isPublish = true;
+        return BuildTemplateProject(info,
+            new BuildProjectOptions(
+                info.Configuration,
+                info.ProjectName,
+                BinFrameworkDir: GetBlazorBinFrameworkDir(info.Configuration, isPublish),
+                ExpectedFileType: GetExpectedFileType(info, isPublish, isNativeBuild),
+                IsPublish: isPublish,
+                UseCache: useCache),
+            extraArgs
+        );
     }
 
     protected (CommandResult, string) BlazorPublish(BuildProjectOptions options, params string[] extraArgs)
@@ -197,7 +218,6 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestsBase
             return;
 
         // Publish specific checks
-
         if (buildOptions.ExpectedFileType == NativeFilesType.AOT)
         {
             // check for this too, so we know the format is correct for the negative

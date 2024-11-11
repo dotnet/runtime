@@ -39,15 +39,15 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
     protected BuildEnvironment _buildEnv = BuildTestBase.s_buildEnv;
     protected abstract string BundleDirName { get; }
 
-    public bool IsFingerprintingSupported { get; protected set; }
+    public bool IsFingerprintingEnabled => EnvironmentVariables.UseFingerprinting;
 
-    public bool IsFingerprintingEnabled => IsFingerprintingSupported && EnvironmentVariables.UseFingerprinting;
+    public bool IsFingerprintingOnDotnetJsEnabled => EnvironmentVariables.UseFingerprintingDotnetJS;
 
     // Returns the actual files on disk
     public IReadOnlyDictionary<string, DotNetFileName> AssertBasicBundle(AssertBundleOptions assertOptions)
     {
         EnsureProjectDirIsSet();
-        var dotnetFiles = FindAndAssertDotnetFiles(assertOptions); // HERE, why binFrameworkDir empty?
+        var dotnetFiles = FindAndAssertDotnetFiles(assertOptions);
 
         TestUtils.AssertFilesExist(assertOptions.BuildOptions.BinFrameworkDir,
                                    new[] { "System.Private.CoreLib.dll" },
@@ -82,7 +82,7 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
     {
         EnsureProjectDirIsSet();
         return FindAndAssertDotnetFiles(binFrameworkDir: assertOptions.BuildOptions.BinFrameworkDir,
-                                        expectFingerprintOnDotnetJs: assertOptions.ExpectFingerprintOnDotnetJs,
+                                        expectFingerprintOnDotnetJs: IsFingerprintingOnDotnetJsEnabled,
                                         superSet: GetAllKnownDotnetFilesToFingerprintMap(assertOptions),
                                         expected: GetDotNetFilesExpectedSet(assertOptions));
     }
@@ -487,7 +487,7 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
                 string extension = Path.GetExtension(expectedFilename).Substring(1);
 
                 if (ShouldCheckFingerprint(expectedFilename: expectedFilename,
-                                           expectFingerprintOnDotnetJs: options.ExpectFingerprintOnDotnetJs,
+                                           expectFingerprintOnDotnetJs: IsFingerprintingOnDotnetJsEnabled,
                                            expectFingerprintForThisFile: expectFingerprint))
                 {
                     return Regex.Match(item, $"{prefix}{s_dotnetVersionHashRegex}{extension}").Success;

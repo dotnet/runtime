@@ -20,7 +20,6 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
             : base(_testOutput, _projectDir)
     {
         _defaultTargetFramework = defaultTargetFramework;
-        IsFingerprintingSupported = true;
     }
 
     protected override string BundleDirName { get { return "wwwroot"; } }
