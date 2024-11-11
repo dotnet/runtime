@@ -97,26 +97,26 @@ public class BuildPublishTests : BlazorWasmTestBase
         BlazorPublish(info, isNativeBuild: true, useCache: false);
     }
 
-    Disabling for now - publish folder can have more than one dotnet*hash*js, and not sure
-    how to pick which one to check, for the test
-    [Theory]
-    [InlineData("Debug")]
-    [InlineData("Release")]
-    public void DefaultTemplate_AOT_OnlyWithPublishCommandLine_Then_PublishNoAOT(string config)
-    {
-    string id = $"blz_aot_pub_{config}";
-    CreateBlazorWasmTemplateProject(id);
+    // Disabling for now - publish folder can have more than one dotnet*hash*js, and not sure
+    // how to pick which one to check, for the test
+    //[Theory]
+    //[InlineData("Debug")]
+    //[InlineData("Release")]
+    //public void DefaultTemplate_AOT_OnlyWithPublishCommandLine_Then_PublishNoAOT(string config)
+    //{
+    //string id = $"blz_aot_pub_{config}";
+    //CreateBlazorWasmTemplateProject(id);
 
-    // No relinking, no AOT
-    BlazorBuild(new BuildProjectOptions(id, config, NativeFilesType.FromRuntimePack);
+    //// No relinking, no AOT
+    //BlazorBuild(new BuildProjectOptions(id, config, NativeFilesType.FromRuntimePack);
 
-    // AOT=true only for the publish command line, similar to what
-    // would happen when setting it in Publish dialog for VS
-    BlazorPublish(new BuildProjectOptions(id, config, expectedFileType: NativeFilesType.AOT, "-p:RunAOTCompilation=true");
+    //// AOT=true only for the publish command line, similar to what
+    //// would happen when setting it in Publish dialog for VS
+    //BlazorPublish(new BuildProjectOptions(id, config, expectedFileType: NativeFilesType.AOT, "-p:RunAOTCompilation=true");
 
-    // publish again, no AOT
-    BlazorPublish(new BuildProjectOptions(id, config, NativeFilesType.Relinked);
-    }
+    //// publish again, no AOT
+    //BlazorPublish(new BuildProjectOptions(id, config, NativeFilesType.Relinked);
+    //}
 
     [Theory]
     [InlineData("Debug")]
