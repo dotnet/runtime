@@ -186,9 +186,6 @@ public:
                 weight->CacheSimdTypes(convertOp);
             }
 
-            // Update the table.
-            weightsTable->Set(lclOp->GetLclNum(), *weight, LclMasksWeightTable::Overwrite);
-
             foundConversions |= hasConversion;
         }
 
