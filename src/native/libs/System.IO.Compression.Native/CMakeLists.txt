@@ -6,6 +6,13 @@ if (NOT CLR_CMAKE_USE_SYSTEM_ZLIB)
     include(${CLR_SRC_NATIVE_DIR}/external/zlib-ng.cmake)
 endif()
 
+if (CLR_CMAKE_USE_SYSTEM_BROTLI)
+    find_package(PkgConfig REQUIRED)
+    pkg_check_modules(BROTLI REQUIRED brotlidec brotlienc brotlicommon)
+else()
+    include(${CLR_SRC_NATIVE_DIR}/external/brotli.cmake)
+endif()
+
 configure_file(
     ${CMAKE_CURRENT_SOURCE_DIR}/../Common/pal_config.h.in
     ${CMAKE_CURRENT_BINARY_DIR}/pal_config.h)
@@ -15,18 +22,6 @@ set(NATIVECOMPRESSION_SOURCES
 )
 
 if (NOT CLR_CMAKE_TARGET_BROWSER AND NOT CLR_CMAKE_TARGET_WASI)
-
-    if (CLR_CMAKE_USE_SYSTEM_BROTLI)
-        add_definitions(-DFEATURE_USE_SYSTEM_BROTLI)
-    else ()
-        include(${CLR_SRC_NATIVE_DIR}/external/brotli.cmake)
-
-        set (NATIVECOMPRESSION_SOURCES
-            ${NATIVECOMPRESSION_SOURCES}
-            ${BROTLI_SOURCES}
-        )
-    endif ()
-
     set (NATIVECOMPRESSION_SOURCES
         ${NATIVECOMPRESSION_SOURCES}
         entrypoints.c
@@ -55,6 +50,9 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
             PRIVATE
             ${NATIVE_LIBS_EXTRA}
         )
+
+        target_include_directories(System.IO.Compression.Native PRIVATE ${BROTLI_INCLUDE_DIRS})
+        target_link_libraries(System.IO.Compression.Native PRIVATE ${BROTLI_LIBRARIES})
 
         if (NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS AND NOT CLR_CMAKE_TARGET_ANDROID AND NOT CLR_CMAKE_USE_SYSTEM_BROTLI)
             set(DEF_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/System.IO.Compression.Native_unixexports.src)
@@ -91,7 +89,17 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
     endif()
 
     set_target_properties(System.IO.Compression.Native-Static PROPERTIES OUTPUT_NAME System.IO.Compression.Native CLEAN_DIRECT_OUTPUT 1)
+    target_link_libraries(System.IO.Compression.Native-Static
+        PUBLIC
+        ${NATIVE_LIBS_EXTRA}
+    )
+
+    target_include_directories(System.IO.Compression.Native-Static PUBLIC ${BROTLI_INCLUDE_DIRS})
+    target_link_libraries(System.IO.Compression.Native-Static PUBLIC ${BROTLI_LIBRARIES})
 else ()
+    set(NATIVE_LIBS_EXTRA)
+    append_extra_compression_libs(NATIVE_LIBS_EXTRA)
+
     if (GEN_SHARED_LIB)
         include (GenerateExportHeader)
     endif ()
@@ -108,6 +116,9 @@ else ()
         if (NOT CLR_CMAKE_USE_SYSTEM_ZLIB)
             target_link_libraries(System.IO.Compression.Native PRIVATE zlib)
         endif()
+
+        target_include_directories(System.IO.Compression.Native PUBLIC ${BROTLI_INCLUDE_DIRS})
+        target_link_libraries(System.IO.Compression.Native PUBLIC ${BROTLI_LIBRARIES})
     endif ()
 
     if (NOT GEN_SHARED_LIB AND NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS AND NOT CLR_CMAKE_TARGET_ANDROID AND NOT CLR_CMAKE_TARGET_BROWSER AND NOT CLR_CMAKE_TARGET_WASI)
@@ -123,6 +134,9 @@ else ()
         target_link_libraries(System.IO.Compression.Native-Static PRIVATE zlibstatic)
     endif()
 
+    target_include_directories(System.IO.Compression.Native-Static PUBLIC ${BROTLI_INCLUDE_DIRS})
+    target_link_libraries(System.IO.Compression.Native-Static PUBLIC ${BROTLI_LIBRARIES})
+
     if(STATIC_LIBS_ONLY)
         add_library(System.IO.Compression.Native.Aot
             STATIC
@@ -132,6 +146,9 @@ else ()
         if (NOT CLR_CMAKE_USE_SYSTEM_ZLIB)
             target_link_libraries(System.IO.Compression.Native.Aot PRIVATE zlibstatic)
         endif()
+
+        target_include_directories(System.IO.Compression.Native.Aot PUBLIC ${BROTLI_INCLUDE_DIRS})
+        target_link_libraries(System.IO.Compression.Native.Aot PUBLIC ${BROTLI_LIBRARIES})
 
         set_target_properties(System.IO.Compression.Native.Aot PROPERTIES CLR_CONTROL_FLOW_GUARD OFF)
         set_target_properties(System.IO.Compression.Native.Aot PROPERTIES INTERPROCEDURAL_OPTIMIZATION OFF)
@@ -144,6 +161,9 @@ else ()
         if (NOT CLR_CMAKE_USE_SYSTEM_ZLIB)
             target_link_libraries(System.IO.Compression.Native.Aot.GuardCF PRIVATE zlibstatic)
         endif()
+
+        target_include_directories(System.IO.Compression.Native.Aot.GuardCF PUBLIC ${BROTLI_INCLUDE_DIRS})
+        target_link_libraries(System.IO.Compression.Native.Aot.GuardCF PUBLIC ${BROTLI_LIBRARIES})
 
         set_target_properties(System.IO.Compression.Native.Aot.GuardCF PROPERTIES INTERPROCEDURAL_OPTIMIZATION OFF)
     endif()
@@ -169,6 +189,21 @@ endif ()
 
 if((NOT CLR_CMAKE_USE_SYSTEM_ZLIB) AND STATIC_LIBS_ONLY)
     install_static_library(zlib aotsdk nativeaot)
+endif()
+
+if(NOT CLR_CMAKE_USE_SYSTEM_BROTLI)
+    foreach(BROTLI_LIB ${BROTLI_LIBRARIES})
+        # Brotli's build scripts can add some system dependencies like libm
+        # to BROTLI_LIBRARIES. Only install the libraries that are actually
+        # defined as CMake targets.
+        if (TARGET "${BROTLI_LIB}")
+            if (STATIC_LIBS_ONLY)
+                install_static_library(${BROTLI_LIB} aotsdk nativeaot)
+            else()
+                install (TARGETS ${BROTLI_LIB} DESTINATION ${STATIC_LIB_DESTINATION} COMPONENT libs)
+            endif()
+        endif()
+    endforeach(BROTLI_LIB ${BROTLI_LIBRARIES})
 endif()
 
 install (TARGETS System.IO.Compression.Native-Static DESTINATION ${STATIC_LIB_DESTINATION} COMPONENT libs)
