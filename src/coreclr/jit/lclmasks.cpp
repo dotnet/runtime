@@ -162,7 +162,7 @@ public:
             GenTreeLclVarCommon* lclOp = (*use)->AsLclVarCommon();
 
             // Get the existing weighting (if any).
-            LclMasksWeight defaultWeight;
+            LclMasksWeight  defaultWeight;
             LclMasksWeight* weight = weightsTable->LookupPointerOrAdd(lclOp->GetLclNum(), defaultWeight);
 
             // Update the weights.
