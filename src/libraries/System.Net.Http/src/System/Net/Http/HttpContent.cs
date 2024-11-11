@@ -729,6 +729,13 @@ namespace System.Net.Http
                 return true;
             }
 
+            if (data.StartsWith(UTF32Preamble))
+            {
+                encoding = Encoding.UTF32;
+                preambleLength = UTF32Preamble.Length;
+                return true;
+            }
+
             if (data.StartsWith(UnicodePreamble))
             {
                 encoding = Encoding.Unicode;
@@ -740,13 +747,6 @@ namespace System.Net.Http
             {
                 encoding = Encoding.BigEndianUnicode;
                 preambleLength = BigEndianUnicodePreamble.Length;
-                return true;
-            }
-
-            if (data.StartsWith(UTF32Preamble))
-            {
-                encoding = Encoding.UTF32;
-                preambleLength = UTF32Preamble.Length;
                 return true;
             }
 
