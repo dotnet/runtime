@@ -253,7 +253,7 @@ public:
             isLocalUse       = true;
             removeConversion = true;
         }
-        else if ((*use)->OperIs(GT_LCL_VAR) && (!user->OperIsConvertVectorToMask()))
+        else if ((*use)->OperIs(GT_LCL_VAR) && ((user == nullptr) || !user->OperIsConvertVectorToMask()))
         {
             // Found
             //      user(use:LCL_VAR(x))
