@@ -43,7 +43,7 @@ struct LclMasksWeight
     void CacheSimdTypes(GenTreeHWIntrinsic* op);
 };
 
-typedef JitHashTable<unsigned, JitLargePrimitiveKeyFuncs<unsigned>, LclMasksWeight> LclMasksWeightTable;
+typedef JitHashTable<unsigned, JitSmallPrimitiveKeyFuncs<unsigned>, LclMasksWeight> LclMasksWeightTable;
 
 //-----------------------------------------------------------------------------
 // UpdateWeight: Updates the weighting to take account of a local.
