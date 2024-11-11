@@ -26,6 +26,7 @@ namespace ILCompiler.DependencyAnalysis
         public abstract TypeDesc ObjectType { get; }
 
         public abstract int? ArrayLength { get; }
+        public abstract MethodDesc DelegateMethod { get; }
         public abstract bool IsKnownImmutable { get; }
         public int Size => ObjectType.Context.Target.PointerSize + ContentSize; // SyncBlock + size of contents
         protected abstract int ContentSize { get; }

@@ -2401,6 +2401,16 @@ namespace Internal.JitInterface
             return ObjectToHandle(HandleToObject(objPtr).ObjectType);
         }
 
+        private CORINFO_METHOD_STRUCT_* getMethodFromDelegate(void* address, bool indirect)
+        {
+            Debug.Assert(address != null);
+
+            // it should be impossible to see unpinned delegates during AOT
+            Debug.Assert(!indirect);
+
+            return ObjectToHandle(HandleToObject((CORINFO_OBJECT_STRUCT_*)address).DelegateMethod);
+        }
+
         private CORINFO_OBJECT_STRUCT_* getRuntimeTypePointer(CORINFO_CLASS_STRUCT_* cls)
         {
             TypeDesc type = HandleToObject(cls);

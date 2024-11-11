@@ -48,6 +48,8 @@ namespace ILCompiler.DependencyAnalysis
 
         public override int? ArrayLength => _data.Type.IsArray ? _data.ArrayLength : null;
 
+        public override MethodDesc DelegateMethod => _data.Type.IsDelegate ? _data.DelegateMethod : null;
+
         public override void EncodeContents(ref ObjectDataBuilder dataBuilder, NodeFactory factory, bool relocsOnly)
         {
             // byte contents

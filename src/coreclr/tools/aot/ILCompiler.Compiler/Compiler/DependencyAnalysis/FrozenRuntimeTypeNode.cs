@@ -49,6 +49,7 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         public override int? ArrayLength => null;
+        public override MethodDesc DelegateMethod => null;
 
         public override bool IsKnownImmutable => false;
 

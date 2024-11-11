@@ -2210,6 +2210,7 @@ namespace ILCompiler
             void GetConditionalDependencies(ref CombinedDependencyList dependencies, NodeFactory factory);
             bool IsKnownImmutable { get; }
             int ArrayLength { get; }
+            MethodDesc DelegateMethod { get; }
         }
 
         /// <summary>
@@ -2767,20 +2768,20 @@ namespace ILCompiler
 
         private sealed class DelegateInstance : AllocatedReferenceTypeValue, ISerializableReference
         {
-            private readonly MethodDesc _methodPointed;
+            public MethodDesc DelegateMethod { get; }
             private readonly ReferenceTypeValue _firstParameter;
 
             public DelegateInstance(TypeDesc delegateType, MethodDesc methodPointed, ReferenceTypeValue firstParameter, AllocationSite allocationSite)
                 : base(delegateType, allocationSite)
             {
-                _methodPointed = methodPointed;
+                DelegateMethod = methodPointed;
                 _firstParameter = firstParameter;
             }
 
             private DelegateCreationInfo GetDelegateCreationInfo(NodeFactory factory)
                 => DelegateCreationInfo.Create(
                     Type.ConvertToCanonForm(CanonicalFormKind.Specific),
-                    _methodPointed,
+                    DelegateMethod,
                     constrainedType: null,
                     factory,
                     followVirtualDispatch: false);
@@ -2799,7 +2800,7 @@ namespace ILCompiler
 
             public void WriteContent(ref ObjectDataBuilder builder, ISymbolNode thisNode, NodeFactory factory)
             {
-                Debug.Assert(_methodPointed.Signature.IsStatic == (_firstParameter == null));
+                Debug.Assert(DelegateMethod.Signature.IsStatic == (_firstParameter == null));
 
                 DelegateCreationInfo creationInfo = GetDelegateCreationInfo(factory);
 
@@ -2810,7 +2811,7 @@ namespace ILCompiler
                 Debug.Assert(!node.RepresentsIndirectionCell);  // Shouldn't have allowed this
                 builder.EmitPointerReloc(node);
 
-                if (_methodPointed.Signature.IsStatic)
+                if (DelegateMethod.Signature.IsStatic)
                 {
                     Debug.Assert(creationInfo.Constructor.Method.Name == "InitializeOpenStaticThunk");
 
@@ -2850,7 +2851,7 @@ namespace ILCompiler
                 builder.EmitPointerReloc(factory.SerializedFrozenObject(AllocationSite.OwningType, AllocationSite.InstructionCounter, this));
             }
 
-            public bool IsKnownImmutable => _methodPointed.Signature.IsStatic;
+            public bool IsKnownImmutable => DelegateMethod.Signature.IsStatic;
 
             public int ArrayLength => throw new NotSupportedException();
         }
@@ -2954,6 +2955,8 @@ namespace ILCompiler
             public bool IsKnownImmutable => _elementCount == 0;
 
             public int ArrayLength => Length;
+
+            public MethodDesc DelegateMethod => throw new NotSupportedException();
         }
 
         private sealed class ForeignTypeInstance : AllocatedReferenceTypeValue
@@ -3121,6 +3124,7 @@ namespace ILCompiler
             public bool IsKnownImmutable => !Type.GetFields().GetEnumerator().MoveNext();
 
             public int ArrayLength => throw new NotSupportedException();
+            public MethodDesc DelegateMethod => throw new NotSupportedException();
         }
 
         private struct FieldAccessor
