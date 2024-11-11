@@ -94,6 +94,8 @@ internal unsafe partial class MachObjectFile
     {
         AllocateCodeSignatureLoadCommand(identifier);
         _codeSignatureBlob = null;
+        // The code signature includes hashes of the entire file up to the code signature.
+        // In order to calculate the hashes correctly, everything up to the code signature must be written before the signature is built.
         Write(file);
         _codeSignatureBlob = CodeSignature.CreateSignature(this, file, identifier);
         _codeSignatureBlob.WriteToFile(file);
@@ -209,6 +211,11 @@ internal unsafe partial class MachObjectFile
         }
     }
 
+    public static long GetSignatureSizeEstimate(uint fileSize, string identifier)
+    {
+        return CodeSignature.GetCodeSignatureSize(fileSize, identifier);
+    }
+
     /// <summary>
     /// Writes the entire file to <paramref name="file"/>.
     /// </summary>
@@ -287,7 +294,7 @@ internal unsafe partial class MachObjectFile
     {
         uint csOffset = GetSignatureStart();
         uint csPtr = (uint)(_codeSignatureLoadCommand.Command.IsDefault ? _nextCommandPtr : _codeSignatureLoadCommand.FileOffset);
-        uint csSize = GetCodeSignatureSize(identifier);
+        uint csSize = CodeSignature.GetCodeSignatureSize(GetSignatureStart(), identifier);;
 
         if (_codeSignatureLoadCommand.Command.IsDefault)
         {
@@ -296,7 +303,7 @@ internal unsafe partial class MachObjectFile
             _header.SizeOfCommands += (uint)sizeof(LinkEditCommand);
             if (_header.SizeOfCommands > _lowestSectionOffset)
             {
-                throw new NotImplementedException("Mach Object does not have enough space for the code signature load command");
+                throw new InvalidOperationException("Mach Object does not have enough space for the code signature load command");
             }
         }
 
@@ -306,6 +313,10 @@ internal unsafe partial class MachObjectFile
         _codeSignatureLoadCommand = (new LinkEditCommand(MachLoadCommandType.CodeSignature, csOffset, csSize, _header), csPtr);
     }
 
+    /// <summary>
+    /// The offset in the file where the code signature starts.
+    /// The signature includes hashes of all bytes up to this offset.
+    /// </summary>
     private uint GetSignatureStart()
     {
         if (!_codeSignatureLoadCommand.Command.IsDefault)
@@ -313,13 +324,6 @@ internal unsafe partial class MachObjectFile
             return _codeSignatureLoadCommand.Command.GetDataOffset(_header);
         }
         return (uint)(_linkEditSegment64.Command.GetFileOffset(_header) + _linkEditSegment64.Command.GetFileSize(_header));
-    }
-
-    private uint GetCodeSignatureSize(string identifier) => CodeSignature.GetCodeSignatureSize(GetSignatureStart(), identifier);
-
-    internal static long GetSignatureSizeEstimate(uint fileSize, string identifier)
-    {
-        return CodeSignature.GetCodeSignatureSize(fileSize, identifier);
     }
 
     /// <summary>
