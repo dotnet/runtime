@@ -345,16 +345,16 @@ internal class ExecutionManagerTestBuilder
     // offset from the start of the code
     private uint CodeHeaderOffset => CodeHeaderSize;
 
-    private (MockMemorySpace.HeapFragment fragment, TargetCodePointer codeStart) AllocateJittedMethod(JittedCodeRange jittedCodeRange, int codeSize, string name = "Method Header & Code")
+    private (MockMemorySpace.HeapFragment fragment, TargetCodePointer codeStart) AllocateJittedMethod(JittedCodeRange jittedCodeRange, uint codeSize, string name = "Method Header & Code")
     {
-        ulong size = (ulong)(codeSize + CodeHeaderOffset);
+        ulong size = codeSize + CodeHeaderOffset;
         MockMemorySpace.HeapFragment methodFragment = jittedCodeRange.Allocator.Allocate(size, name);
         Builder.AddHeapFragment(methodFragment);
         TargetCodePointer codeStart = methodFragment.Address + CodeHeaderOffset;
         return (methodFragment, codeStart);
     }
 
-    public TargetCodePointer AddJittedMethod(JittedCodeRange jittedCodeRange, int codeSize, TargetPointer methodDescAddress)
+    public TargetCodePointer AddJittedMethod(JittedCodeRange jittedCodeRange, uint codeSize, TargetPointer methodDescAddress)
     {
         (MockMemorySpace.HeapFragment methodFragment, TargetCodePointer codeStart) = AllocateJittedMethod(jittedCodeRange, codeSize);
 

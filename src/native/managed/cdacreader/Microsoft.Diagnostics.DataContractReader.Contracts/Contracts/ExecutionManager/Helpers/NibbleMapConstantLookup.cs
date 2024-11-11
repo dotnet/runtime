@@ -110,25 +110,26 @@ internal class NibbleMapConstantLookup : INibbleMap
         // read the map unit containing mapIdx and skip over it if it is all zeros
         t = mapIdx.ReadMapUnit(_target, mapStart);
 
-        // if t is not zero, we either have a pointer or a nibble
-        if (!t.IsEmpty)
+        // if t is empty, then currentPC can not be in a function
+        if (t.IsEmpty)
         {
-            if (IsPointer(t))
-            {
-                return DecodePointer(mapBase, t);
-            }
-
-            // move to the correct nibble in the map unit
-            while (!mapIdx.IsZero && t.Nibble.IsEmpty)
-            {
-                t = t.ShiftNextNibble;
-                mapIdx = mapIdx.Prev;
-            }
-
-            return GetAbsoluteAddress(mapBase, mapIdx, t.Nibble);
+            return TargetPointer.Null;
         }
 
-        return TargetPointer.Null;
+        // if t is not empty, it must contain a pointer or a nibble
+        if (IsPointer(t))
+        {
+            return DecodePointer(mapBase, t);
+        }
+
+        // move to the correct nibble in the map unit
+        while (!mapIdx.IsZero && t.Nibble.IsEmpty)
+        {
+            t = t.ShiftNextNibble;
+            mapIdx = mapIdx.Prev;
+        }
+
+        return GetAbsoluteAddress(mapBase, mapIdx, t.Nibble);
     }
 
     public static INibbleMap Create(Target target)

@@ -85,7 +85,7 @@ public class NibbleMapLinearLookupTests : NibbleMapTestsBase
 
         // don't put the code too close to the start - the NibbleMap bails if the code is too close to the start of the range
         TargetCodePointer inputPC = new(mapBase + 0x0200u);
-        int codeSize = 0x80; // doesn't matter
+        uint codeSize = 0x80; // doesn't matter
         builder.AllocateCodeChunk (inputPC, codeSize);
         NibbleMapTestTarget target = CreateTarget(builder);
 
@@ -145,7 +145,7 @@ public class NibbleMapConstantLookupTests : NibbleMapTestsBase
 
         // don't put the code too close to the start - the NibbleMap bails if the code is too close to the start of the range
         TargetCodePointer inputPC = new(mapBase + 0x0200u);
-        int codeSize = 0x400;
+        uint codeSize = 0x400;
         builder.AllocateCodeChunk (inputPC, codeSize);
         NibbleMapTestTarget target = CreateTarget(builder);
 

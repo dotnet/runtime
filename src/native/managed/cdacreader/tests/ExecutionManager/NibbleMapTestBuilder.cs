@@ -69,7 +69,7 @@ internal abstract class NibbleMapTestBuilderBase
         NibbleMapFragment = allocator.Allocate((ulong)nibbleMapSize, "Nibble Map");
     }
 
-    public abstract void AllocateCodeChunk(TargetCodePointer codeStart, int codeSize);
+    public abstract void AllocateCodeChunk(TargetCodePointer codeStart, uint codeSize);
 }
 
 internal class NibbleMapTestBuilder_1 : NibbleMapTestBuilderBase
@@ -84,7 +84,7 @@ internal class NibbleMapTestBuilder_1 : NibbleMapTestBuilderBase
     {
     }
 
-    public override void AllocateCodeChunk(TargetCodePointer codeStart, int codeSize)
+    public override void AllocateCodeChunk(TargetCodePointer codeStart, uint codeSize)
     {
         // paraphrased from EEJitManager::NibbleMapSetUnlocked
         if (codeStart.Value < MapBase.Value)
@@ -126,7 +126,7 @@ internal class NibbleMapTestBuilder_2 : NibbleMapTestBuilderBase
     {
     }
 
-    public override void AllocateCodeChunk(TargetCodePointer codeStart, int codeSize)
+    public override void AllocateCodeChunk(TargetCodePointer codeStart, uint codeSize)
     {
         // paraphrased from EEJitManager::NibbleMapSetUnlocked
         if (codeStart.Value < MapBase.Value)

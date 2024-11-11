@@ -97,7 +97,7 @@ public class ExecutionManagerTests
     {
         const ulong codeRangeStart = 0x0a0a_0000u; // arbitrary
         const uint codeRangeSize = 0xc000u; // arbitrary
-        int methodSize = 0x450; // arbitrary
+        const uint methodSize = 0x450; // arbitrary
 
         TargetPointer jitManagerAddress = new (0x000b_ff00); // arbitrary
 
@@ -119,24 +119,64 @@ public class ExecutionManagerTests
 
         var target = ExecutionManagerTestTarget.FromBuilder(emBuilder);
 
-        // test at method start
-
         var em = target.Contracts.ExecutionManager;
         Assert.NotNull(em);
+
+        // test at method start
         var eeInfo = em.GetCodeBlockHandle(methodStart);
         Assert.NotNull(eeInfo);
         TargetPointer actualMethodDesc = em.GetMethodDesc(eeInfo.Value);
         Assert.Equal(expectedMethodDescAddress, actualMethodDesc);
 
         // test middle of method
-        eeInfo = em.GetCodeBlockHandle(methodStart + 0x250);
+        eeInfo = em.GetCodeBlockHandle(methodStart + methodSize / 2);
         Assert.NotNull(eeInfo);
+        actualMethodDesc = em.GetMethodDesc(eeInfo.Value);
         Assert.Equal(expectedMethodDescAddress, actualMethodDesc);
 
         // test end of method
-        eeInfo = em.GetCodeBlockHandle(methodStart + 0x450 - 1);
+        eeInfo = em.GetCodeBlockHandle(methodStart + methodSize - 1);
         Assert.NotNull(eeInfo);
+        actualMethodDesc = em.GetMethodDesc(eeInfo.Value);
         Assert.Equal(expectedMethodDescAddress, actualMethodDesc);
+    }
+
+    [Theory]
+    [MemberData(nameof(StdArchAllVersions))]
+    public void LookupNullOneRangeZeroMethod(int version, MockTarget.Architecture arch)
+    {
+        const ulong codeRangeStart = 0x0a0a_0000u; // arbitrary
+        const uint codeRangeSize = 0xc000u; // arbitrary
+
+        TargetPointer jitManagerAddress = new (0x000b_ff00); // arbitrary
+
+        ExecutionManagerTestBuilder emBuilder = new(version, arch, ExecutionManagerTestBuilder.DefaultAllocationRange);
+        var jittedCode = emBuilder.AllocateJittedCodeRange(codeRangeStart, codeRangeSize);
+
+        NibbleMapTestBuilderBase nibBuilder = emBuilder.CreateNibbleMap(codeRangeStart, codeRangeSize);
+
+        TargetPointer codeHeapListNodeAddress = emBuilder.AddCodeHeapListNode(TargetPointer.Null, codeRangeStart, codeRangeStart + codeRangeSize, codeRangeStart, nibBuilder.NibbleMapFragment.Address);
+        TargetPointer rangeSectionAddress = emBuilder.AddRangeSection(jittedCode, jitManagerAddress: jitManagerAddress, codeHeapListNodeAddress: codeHeapListNodeAddress);
+        TargetPointer rangeSectionFragmentAddress = emBuilder.AddRangeSectionFragment(jittedCode, rangeSectionAddress);
+
+        emBuilder.MarkCreated();
+
+        var target = ExecutionManagerTestTarget.FromBuilder(emBuilder);
+
+        var em = target.Contracts.ExecutionManager;
+        Assert.NotNull(em);
+
+        // test at code range start
+        var eeInfo = em.GetCodeBlockHandle(codeRangeSize + codeRangeSize);
+        Assert.Null(eeInfo);
+
+        // test middle of code range
+        eeInfo = em.GetCodeBlockHandle(codeRangeSize + codeRangeSize / 2);
+        Assert.Null(eeInfo);
+
+        // test end of code range
+        eeInfo = em.GetCodeBlockHandle(codeRangeSize + codeRangeSize - 1);
+        Assert.Null(eeInfo);
     }
 
     public static IEnumerable<object[]> StdArchAllVersions()
