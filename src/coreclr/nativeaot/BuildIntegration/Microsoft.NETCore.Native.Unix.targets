@@ -31,7 +31,7 @@ The .NET Foundation licenses this file to you under the MIT license.
     <PropertyGroup>
       <UseSystemZlib Condition="'$(UseSystemZlib)' == '' and !Exists('$(IlcSdkPath)libz.a')">true</UseSystemZlib>
       <!-- Use libbrotlicommon.a as the sentinel for the three brotli libs. -->
-      <UseSystemBrotli Condition="'$(UseSystemBrotli)' == '' and !Exists('$(IlcSdkPath)libbrotlicommon.a')">true</UseSystemBrotli>
+      <UseSystemBrotli Condition="'$(UseSystemBrotli)' == '' and !Exists('$(IlcFrameworkNativePath)libbrotlicommon.a')">true</UseSystemBrotli>
       <FullRuntimeName>libRuntime.WorkstationGC</FullRuntimeName>
       <FullRuntimeName Condition="'$(ServerGarbageCollection)' == 'true' or '$(IlcLinkServerGC)' == 'true'">libRuntime.ServerGC</FullRuntimeName>
 
