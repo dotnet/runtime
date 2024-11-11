@@ -16,10 +16,12 @@ using Xunit;
 
 public class Async2MinCallCostMicrobench
 {
-    [Fact]
-    public static void TestEntryPoint()
+    public static int Main()
     {
         Task.Run(AsyncEntry).Wait();
+
+        Console.WriteLine("Test Passed");
+        return 100;
     }
 
     public static async Task AsyncEntry()

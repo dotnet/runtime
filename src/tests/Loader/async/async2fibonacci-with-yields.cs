@@ -10,6 +10,7 @@ public class Async2FibonacceWithYields
 {
     const uint Threshold = 1_000;
     static bool done;
+    const int iterations = 1;
 
     [Fact]
     public static void Test()
@@ -19,7 +20,7 @@ public class Async2FibonacceWithYields
 
     public static async Task AsyncEntry()
     {
-        for (int i = 0; i < 10 && !done; i++)
+        for (int i = 0; i < iterations && !done; i++)
         {
             var sw = new Stopwatch();
             sw.Start();

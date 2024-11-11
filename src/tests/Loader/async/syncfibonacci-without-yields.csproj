@@ -1,7 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <Optimize>True</Optimize>
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <!-- This is a manual test/benchmark -->
+    <CLRTestKind>BuildOnly</CLRTestKind>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildProjectName).cs" />

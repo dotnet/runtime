@@ -8,10 +8,11 @@ using Xunit;
 
 const uint Threshold = 1_000;
 bool done = false;
+const int iterations = 1;
 
 async Task AsyncEntry()
 {
-    for (int i = 0; i < 10 && !done; i++)
+    for (int i = 0; i < iterations && !done; i++)
     {
         var sw = new Stopwatch();
         sw.Start();

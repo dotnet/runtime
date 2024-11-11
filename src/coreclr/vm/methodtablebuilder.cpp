@@ -5942,9 +5942,11 @@ MethodTableBuilder::FindDeclMethodOnInterfaceEntry(bmtInterfaceEntry *pItfEntry,
             if ((slotDeclMethod->GetOwningType() == declRTMethod->GetOwningType()) &&
                 (slotDeclMethod->GetMethodDesc()->GetMethodTable() == declRTMethod->GetMethodDesc()->GetMethodTable()) &&
                 (slotDeclMethod->GetMethodDesc()->GetMemberDef() == declRTMethod->GetMethodDesc()->GetMemberDef()) &&
-                (slotDeclMethod->GetMethodDesc()->IsAsyncThunkMethod() == declRTMethod->GetMethodDesc()->IsAsyncThunkMethod()))
+                (slotDeclMethod->GetMethodDesc()->IsAsyncThunkMethod() != declRTMethod->GetMethodDesc()->IsAsyncThunkMethod()))
             {
                 declMethod = slotIt->Decl();
+                foundOtherVariant = true;
+                break;
             }
         }
 

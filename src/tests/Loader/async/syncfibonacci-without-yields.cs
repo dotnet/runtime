@@ -12,8 +12,7 @@ public class SyncFibonacciWithoutYields
 {
     const uint Threshold = 1_000;
 
-    [Fact]
-    public static void Test()
+    public static int Main()
     {
         for (int i = 0; i < 10; i++)
         {
@@ -22,6 +21,8 @@ public class SyncFibonacciWithoutYields
             uint result = A(100_000_000);
             Console.WriteLine($"{sw.ElapsedMilliseconds} ms result={result}");
         }
+
+        return 100;
     }
 
     static uint A(uint n)

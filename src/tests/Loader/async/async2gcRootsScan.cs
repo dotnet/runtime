@@ -17,17 +17,17 @@ public class Async2RootReporting
 
         // make some garbage
         object o1 = n;
-        //object o2 = n;
-        //object o3 = n;
-        //object o4 = n;
-        //object o5 = n;
-        //object o6 = n;
-        //object o7 = n;
-        //object o8 = n;
-        //object o9 = n;
-        //object o10 = n;
-        //object o11 = n;
-        //object o12 = n;
+        object o2 = n;
+        object o3 = n;
+        object o4 = n;
+        object o5 = n;
+        object o6 = n;
+        object o7 = n;
+        object o8 = n;
+        object o9 = n;
+        object o10 = n;
+        object o11 = n;
+        object o12 = n;
 
         if (n == 0)
             return await cTask;
@@ -35,17 +35,17 @@ public class Async2RootReporting
         var result = await Recursive1(n - 1);
 
         Assert.Equal(n, (int)o1);
-        //Assert.Equal(n, (int)o2);
-        //Assert.Equal(n, (int)o3);
-        //Assert.Equal(n, (int)o4);
-        //Assert.Equal(n, (int)o5);
-        //Assert.Equal(n, (int)o6);
-        //Assert.Equal(n, (int)o7);
-        //Assert.Equal(n, (int)o8);
-        //Assert.Equal(n, (int)o9);
-        //Assert.Equal(n, (int)o10);
-        //Assert.Equal(n, (int)o11);
-        //Assert.Equal(n, (int)o12);
+        Assert.Equal(n, (int)o2);
+        Assert.Equal(n, (int)o3);
+        Assert.Equal(n, (int)o4);
+        Assert.Equal(n, (int)o5);
+        Assert.Equal(n, (int)o6);
+        Assert.Equal(n, (int)o7);
+        Assert.Equal(n, (int)o8);
+        Assert.Equal(n, (int)o9);
+        Assert.Equal(n, (int)o10);
+        Assert.Equal(n, (int)o11);
+        Assert.Equal(n, (int)o12);
 
         return result;
     }
@@ -57,18 +57,17 @@ public class Async2RootReporting
         // make some garbage
         object o1 = n;
 
-// THIS CAUSES CRASHES IN UNWINDER FLAVOR
-        //object o2 = n;
-        //object o3 = n;
-        //object o4 = n;
-        //object o5 = n;
-        //object o6 = n;
-        //object o7 = n;
-        //object o8 = n;
-        //object o9 = n;
-        //object o10 = n;
-        //object o11 = n;
-        //object o12 = n;
+        object o2 = n;
+        object o3 = n;
+        object o4 = n;
+        object o5 = n;
+        object o6 = n;
+        object o7 = n;
+        object o8 = n;
+        object o9 = n;
+        object o10 = n;
+        object o11 = n;
+        object o12 = n;
 
         if (n == 0)
             return await cTask;
@@ -76,25 +75,24 @@ public class Async2RootReporting
         var result = await Recursive2(n - 1);
 
         Assert.Equal(n, (int)o1);
-        //Assert.Equal(n, (int)o2);
-        //Assert.Equal(n, (int)o3);
-        //Assert.Equal(n, (int)o4);
-        //Assert.Equal(n, (int)o5);
-        //Assert.Equal(n, (int)o6);
-        //Assert.Equal(n, (int)o7);
-        //Assert.Equal(n, (int)o8);
-        //Assert.Equal(n, (int)o9);
-        //Assert.Equal(n, (int)o10);
-        //Assert.Equal(n, (int)o11);
-        //Assert.Equal(n, (int)o12);
+        Assert.Equal(n, (int)o2);
+        Assert.Equal(n, (int)o3);
+        Assert.Equal(n, (int)o4);
+        Assert.Equal(n, (int)o5);
+        Assert.Equal(n, (int)o6);
+        Assert.Equal(n, (int)o7);
+        Assert.Equal(n, (int)o8);
+        Assert.Equal(n, (int)o9);
+        Assert.Equal(n, (int)o10);
+        Assert.Equal(n, (int)o11);
+        Assert.Equal(n, (int)o12);
 
         return result;
     }
 
     static System.Collections.Generic.List<object> d = new System.Collections.Generic.List<object>();
 
-    [Fact]
-    public static void Test()
+    public static int Main()
     {
         int numStacks = 10000;
         int stackDepth = 100;
@@ -207,5 +205,7 @@ public class Async2RootReporting
             cs.SetResult(100);
             Task.WaitAll(tasks);
         }
+
+        return 100;
     }
 }

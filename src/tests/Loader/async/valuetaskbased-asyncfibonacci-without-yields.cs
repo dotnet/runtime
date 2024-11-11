@@ -11,8 +11,7 @@ public class ValueTaskBasedAsyncFibonacciWithoutYields
 {
     const uint Threshold = 1_000;
 
-    [Fact]
-    public static int Test() { return AsyncMain().Result; }
+    public static int Main() { return AsyncMain().Result; }
     
     static async ValueTask<int> AsyncMain()
     {
