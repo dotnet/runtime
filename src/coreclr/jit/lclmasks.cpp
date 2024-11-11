@@ -471,13 +471,18 @@ PhaseStatus Compiler::fgOptimizeLclMasks()
     {
         for (Statement* const stmt : block->Statements())
         {
-            GenTreeLclVarCommon* firstLcl = *stmt->LocalsTreeList().begin();
-            if (firstLcl != nullptr)
+            // Only check statements where there is a local of type TYP_SIMD16/TYP_MASK.
+            for (GenTreeLclVarCommon* lcl : stmt->LocalsTreeList())
             {
-                LclMasksCheckVisitor ev(this, block->getBBWeight(this), &weightsTable);
-                GenTree*             root = stmt->GetRootNode();
-                ev.WalkTree(&root, nullptr);
-                foundConversion |= ev.foundConversions;
+                if (lcl->gtType == TYP_SIMD16 || lcl->gtType == TYP_MASK)
+                {
+                    // Parse the entire statement.
+                    LclMasksCheckVisitor ev(this, block->getBBWeight(this), &weightsTable);
+                    GenTree*             root = stmt->GetRootNode();
+                    ev.WalkTree(&root, nullptr);
+                    foundConversion |= ev.foundConversions;
+                    break;
+                }
             }
         }
     }
@@ -494,12 +499,17 @@ PhaseStatus Compiler::fgOptimizeLclMasks()
     {
         for (Statement* const stmt : block->Statements())
         {
-            GenTreeLclVarCommon* firstLcl = *stmt->LocalsTreeList().begin();
-            if (firstLcl != nullptr)
+            // Only check statements where there is a local of type TYP_SIMD16/TYP_MASK.
+            for (GenTreeLclVarCommon* lcl : stmt->LocalsTreeList())
             {
-                LclMasksUpdateVisitor ev(this, stmt, &weightsTable);
-                GenTree*              root = stmt->GetRootNode();
-                ev.WalkTree(&root, nullptr);
+                if (lcl->gtType == TYP_SIMD16 || lcl->gtType == TYP_MASK)
+                {
+                    // Parse the entire statement.
+                    LclMasksUpdateVisitor ev(this, stmt, &weightsTable);
+                    GenTree*              root = stmt->GetRootNode();
+                    ev.WalkTree(&root, nullptr);
+                    break;
+                }
             }
         }
     }
