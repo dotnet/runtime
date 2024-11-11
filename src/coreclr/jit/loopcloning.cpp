@@ -1181,7 +1181,7 @@ bool Compiler::optDeriveLoopCloningConditions(FlowGraphNaturalLoop* loop, LoopCl
             }
 
             default:
-                JITDUMP("Unknown opt\n");
+                assert(!"Unknown opt type");
                 return false;
         }
     }
@@ -1378,12 +1378,14 @@ bool Compiler::optDeriveLoopCloningConditions(FlowGraphNaturalLoop* loop, LoopCl
                 // TODO: ensure array is dereference-able?
             }
             break;
+
             case LcOptInfo::LcTypeTest:
+            case LcOptInfo::LcMethodAddrTest:
                 // handled above
                 break;
 
             default:
-                JITDUMP("Unknown opt\n");
+                assert(!"Unknown opt type");
                 return false;
         }
     }

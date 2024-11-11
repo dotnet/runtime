@@ -1036,7 +1036,7 @@ void CodeGen::genCodeForStoreLclFld(GenTreeLclFld* tree)
             regNumber halfdoubleAsInt2 = internalRegisters.GetSingle(tree);
             emit->emitIns_R_R_R(INS_vmov_d2i, EA_8BYTE, halfdoubleAsInt1, halfdoubleAsInt2, dataReg);
             emit->emitIns_R_R_I(INS_str, EA_4BYTE, halfdoubleAsInt1, addr, 0);
-            emit->emitIns_R_R_I(INS_str, EA_4BYTE, halfdoubleAsInt1, addr, 4);
+            emit->emitIns_R_R_I(INS_str, EA_4BYTE, halfdoubleAsInt2, addr, 4);
         }
     }
     else
