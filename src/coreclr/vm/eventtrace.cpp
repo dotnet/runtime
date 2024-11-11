@@ -2363,13 +2363,15 @@ VOID ParseFilterDataClientSequenceNumber(
         while (buffer < buffer_end)
         {
             const char* key = buffer;
-            buffer += strlen(key) + 1;
+            size_t key_len = strnlen(key, buffer_end - buffer);
+            buffer += key_len + 1;
 
             if (buffer >= buffer_end)
                 break;
 
             const char* value = buffer;
-            buffer += strlen(value) + 1;
+            size_t value_len = strnlen(value, buffer_end - buffer);
+            buffer += value_len + 1;
 
             if (buffer >= buffer_end)
                 break;
