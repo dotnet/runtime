@@ -246,7 +246,7 @@ void UnixNativeCodeManager::EnumGcRefs(MethodInfo *    pMethodInfo,
                 codeOffset - 1
             );
 
-            assert(decoder.IsSafePoint());
+            assert(decoder.CouldBeSafePoint());
         }
     }
 
