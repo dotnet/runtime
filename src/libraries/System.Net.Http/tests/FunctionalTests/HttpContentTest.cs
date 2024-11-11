@@ -732,7 +732,7 @@ namespace System.Net.Http.Functional.Tests
         {
             Encoding encoding = Encoding.GetEncoding(codePage);
 
-            var stringBytes = encoding.GetBytes("oő");
+            byte[] stringBytes = encoding.GetBytes("oő");
 
             var content = new ByteArrayContent([..encoding.GetPreamble(), ..stringBytes]);
 
