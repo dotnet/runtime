@@ -2328,6 +2328,7 @@ enum CallbackProviderIndex
     DotNETRuntimePrivate = 3
 };
 
+#if !defined(HOST_UNIX)
 // EventFilterType identifies the filter type used by the PEVENT_FILTER_DESCRIPTOR
 enum EventFilterType
 {
@@ -2347,7 +2348,6 @@ VOID ParseFilterDataClientSequenceNumber(
 {
     LIMITED_METHOD_CONTRACT;
 
-#if !defined(HOST_UNIX)
     if (FilterData == NULL)
         return;
 
@@ -2388,8 +2388,8 @@ VOID ParseFilterDataClientSequenceNumber(
             }
         }
     }
-#endif // !defined(HOST_UNIX)
 }
+#endif // !defined(HOST_UNIX)
 
 // Common handler for all ETW or EventPipe event notifications. Based on the provider that
 // was enabled/disabled, this implementation forwards the event state change onto GCHeapUtilities
@@ -2474,7 +2474,9 @@ VOID EtwCallbackCommon(
         // Profilers may (optionally) specify extra data in the filter parameter
         // to log with the GCStart event.
         LONGLONG l64ClientSequenceNumber = 0;
+#if !defined(HOST_UNIX)
         ParseFilterDataClientSequenceNumber((PEVENT_FILTER_DESCRIPTOR)pFilterData, &l64ClientSequenceNumber);
+#endif // !defined(HOST_UNIX)
         ETW::GCLog::ForceGC(l64ClientSequenceNumber);
     }
     // TypeSystemLog needs a notification when certain keywords are modified, so
