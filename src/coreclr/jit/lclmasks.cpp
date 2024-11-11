@@ -162,8 +162,8 @@ public:
             GenTreeLclVarCommon* lclOp = (*use)->AsLclVarCommon();
 
             // Get the existing weighting (if any).
-            LclMasksWeight weight;
-            weightsTable->Lookup(lclOp->GetLclNum(), &weight);
+            LclMasksWeight defaultWeight;
+            LclMasksWeight* weight = weightsTable->LookupPointerOrAdd(lclOp->GetLclNum(), defaultWeight);
 
             // Update the weights.
             JITDUMP("Local %s V%02d at [%06u] ", isLocalStore ? "store" : "var", lclOp->GetLclNum(),
@@ -171,23 +171,23 @@ public:
             if (isInvalid)
             {
                 JITDUMP("cannot be converted. ");
-                weight.InvalidateWeight();
+                weight->InvalidateWeight();
             }
             else
             {
                 JITDUMP("has %s conversion. ", hasConversion ? "mask" : "no");
-                weight.UpdateWeight(isLocalStore, hasConversion, bbWeight);
+                weight->UpdateWeight(isLocalStore, hasConversion, bbWeight);
             }
 
             // Cache the simd type data of the conversion.
             if (hasConversion)
             {
                 assert(convertOp != nullptr);
-                weight.CacheSimdTypes(convertOp);
+                weight->CacheSimdTypes(convertOp);
             }
 
             // Update the table.
-            weightsTable->Set(lclOp->GetLclNum(), weight, LclMasksWeightTable::Overwrite);
+            weightsTable->Set(lclOp->GetLclNum(), *weight, LclMasksWeightTable::Overwrite);
 
             foundConversions |= hasConversion;
         }
