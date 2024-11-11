@@ -12,7 +12,7 @@ using System.Runtime.Intrinsics.Arm;
 using System.Threading;
 using Xunit;
 
-public class AcrossAndCselToAcross
+public class ChangeMatchUse
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static void Consume<T>(T value) { }
@@ -24,22 +24,37 @@ public class AcrossAndCselToAcross
     // Create a mask. Use it as a mask.
     // Conversion of mask1 will be removed.
     [Fact]
-    public static void UseMaskAsMask()
+    public static void ChangeMatchUseTests()
     {
         for (int i = 0; i < 4; i++)
         {
             for (int j = 0; j < 200; j++)
             {
-                InnerUseMaskAsMask();
+                UseMaskAsMask();
+                UseMaskAsVector();
+                UseMaskAsMaskAndVector();
+                UseMaskAsMaskAndVectorInsideLoop();
+                UseMaskAsVectorAndMaskInsideLoop();
+                CastMaskUseAsVector();
+                CastMaskUseAsMask();
             }
 
             Thread.Sleep(100);
         }
-        InnerUseMaskAsMask();
+        UseMaskAsMask();
+        UseMaskAsVector();
+        UseMaskAsMaskAndVector();
+        UseMaskAsMaskAndVectorInsideLoop();
+        UseMaskAsVectorAndMaskInsideLoop();
+        CastMaskUseAsVector();
+        CastMaskUseAsMask();
     }
 
+
+    // Create a mask. Use it as a mask.
+    // Conversion of mask1 will be removed.
     [method: MethodImpl(MethodImplOptions.NoInlining)]
-    private static void InnerUseMaskAsMask()
+    private static void UseMaskAsMask()
     {
         if (Sve.IsSupported)
         {
@@ -52,23 +67,8 @@ public class AcrossAndCselToAcross
 
     // Create a mask. Use it as a vector.
     // No conversions will be changed: Mask->Vector is optimal.
-    [Fact]
-    public static void UseMaskAsVector()
-    {
-        for (int i = 0; i < 4; i++)
-        {
-            for (int j = 0; j < 200; j++)
-            {
-                InnerUseMaskAsVector();
-            }
-
-            Thread.Sleep(100);
-        }
-        InnerUseMaskAsVector();
-    }
-
     [method: MethodImpl(MethodImplOptions.NoInlining)]
-    private static void InnerUseMaskAsVector()
+    private static void UseMaskAsVector()
     {
         if (Sve.IsSupported)
         {
@@ -81,23 +81,8 @@ public class AcrossAndCselToAcross
 
     // Create a mask. Use it as a mask, then use as a vector.
     // Mask1 conversions will be switched.
-    [Fact]
-    public static void UseMaskAsMaskAndVector()
-    {
-        for (int i = 0; i < 4; i++)
-        {
-            for (int j = 0; j < 200; j++)
-            {
-                InnerUseMaskAsMaskAndVector();
-            }
-
-            Thread.Sleep(100);
-        }
-        InnerUseMaskAsMaskAndVector();
-    }
-
     [method: MethodImpl(MethodImplOptions.NoInlining)]
-    private static void InnerUseMaskAsMaskAndVector()
+    private static void UseMaskAsMaskAndVector()
     {
         if (Sve.IsSupported)
         {
@@ -112,23 +97,8 @@ public class AcrossAndCselToAcross
 
     // Create a mask. Use it as a mask, then use as a vector inside a loop.
     // No conversions will be changed: vector use inside the loop dominates.
-    [Fact]
-    public static void UseMaskAsMaskAndVectorInsideLoop()
-    {
-        for (int i = 0; i < 4; i++)
-        {
-            for (int j = 0; j < 200; j++)
-            {
-                InnerUseMaskAsMaskAndVectorInsideLoop();
-            }
-
-            Thread.Sleep(100);
-        }
-        InnerUseMaskAsMaskAndVectorInsideLoop();
-    }
-
     [method: MethodImpl(MethodImplOptions.NoInlining)]
-    private static void InnerUseMaskAsMaskAndVectorInsideLoop()
+    private static void UseMaskAsMaskAndVectorInsideLoop()
     {
         if (Sve.IsSupported)
         {
@@ -147,23 +117,8 @@ public class AcrossAndCselToAcross
 
     // Create a mask. Use it as a vector, then use as a mask inside a loop.
     // Will be converted: mask use inside the loop dominates.
-    [Fact]
-    public static void UseMaskAsVectorAndMaskInsideLoop()
-    {
-        for (int i = 0; i < 4; i++)
-        {
-            for (int j = 0; j < 200; j++)
-            {
-                InnerUseMaskAsVectorAndMaskInsideLoop();
-            }
-
-            Thread.Sleep(100);
-        }
-        InnerUseMaskAsVectorAndMaskInsideLoop();
-    }
-
     [method: MethodImpl(MethodImplOptions.NoInlining)]
-    private static void InnerUseMaskAsVectorAndMaskInsideLoop()
+    private static void UseMaskAsVectorAndMaskInsideLoop()
     {
         if (Sve.IsSupported)
         {
@@ -179,23 +134,8 @@ public class AcrossAndCselToAcross
         }
     }
 
-    [Fact]
-    public static void CastMaskUseAsVector()
-    {
-        for (int i = 0; i < 4; i++)
-        {
-            for (int j = 0; j < 200; j++)
-            {
-                InnerCastMaskUseAsVector();
-            }
-
-            Thread.Sleep(100);
-        }
-        InnerCastMaskUseAsVector();
-    }
-
     [method: MethodImpl(MethodImplOptions.NoInlining)]
-    private static void InnerCastMaskUseAsVector()
+    private static void CastMaskUseAsVector()
     {
         if (Sve.IsSupported)
         {
@@ -208,23 +148,8 @@ public class AcrossAndCselToAcross
         }
     }
 
-    [Fact]
-    public static void CastMaskUseAsMask()
-    {
-        for (int i = 0; i < 4; i++)
-        {
-            for (int j = 0; j < 200; j++)
-            {
-                InnerCastMaskUseAsMask();
-            }
-
-            Thread.Sleep(100);
-        }
-        InnerCastMaskUseAsMask();
-    }
-
     [method: MethodImpl(MethodImplOptions.NoInlining)]
-    private static void InnerCastMaskUseAsMask()
+    private static void CastMaskUseAsMask()
     {
         if (Sve.IsSupported)
         {
