@@ -13,6 +13,9 @@ struct LclMasksWeight
     // For the given variable, the cost of storing as mask.
     weight_t switchCost = 0.0;
 
+    // The weighting is invalid.
+    bool invalid = false;
+
     // Conversion of mask to vector is one instruction.
     static constexpr const weight_t costOfConvertMaskToVector = 1.0;
 
@@ -25,9 +28,16 @@ struct LclMasksWeight
 
     void UpdateWeight(bool isStore, bool hasConvert, weight_t blockWeight);
 
+    void InvalidateWeight()
+    {
+        JITDUMP("Invalidating weight. \n");
+        invalid = true;
+        DumpTotalWeight();
+    }
+
     void DumpTotalWeight()
     {
-        JITDUMP("Weighting: {%.2fc %.2fs}\n", currentCost, switchCost);
+        JITDUMP("Weighting: %s{%.2fc %.2fs}\n", invalid ? "Invalid" : "", currentCost, switchCost);
     }
 
     void CacheSimdTypes(GenTreeHWIntrinsic* op);
@@ -108,6 +118,7 @@ public:
 
         bool isLocalStore  = false;
         bool isLocalUse    = false;
+        bool isInvalid     = false;
         bool hasConversion = false;
 
         switch ((*use)->OperGet())
@@ -138,11 +149,15 @@ public:
                 }
                 break;
 
+            case GT_LCL_ADDR:
+                isInvalid = true;
+                break;
+
             default:
                 break;
         }
 
-        if (isLocalStore || isLocalUse)
+        if (isLocalStore || isLocalUse || isInvalid)
         {
             GenTreeLclVarCommon* lclOp = (*use)->AsLclVarCommon();
 
@@ -151,9 +166,18 @@ public:
             weightsTable->Lookup(lclOp->GetLclNum(), &weight);
 
             // Update the weights.
-            JITDUMP("Local %s V%02d at [%06u] has %s conversion. ", isLocalStore ? "store" : "var", lclOp->GetLclNum(),
-                    m_compiler->dspTreeID(lclOp), hasConversion ? "mask" : "no");
-            weight.UpdateWeight(isLocalStore, hasConversion, bbWeight);
+            JITDUMP("Local %s V%02d at [%06u] ", isLocalStore ? "store" : "var", lclOp->GetLclNum(),
+                    m_compiler->dspTreeID(lclOp));
+            if (isInvalid)
+            {
+                JITDUMP("cannot be converted. ");
+                weight.InvalidateWeight();
+            }
+            else
+            {
+                JITDUMP("has %s conversion. ", hasConversion ? "mask" : "no");
+                weight.UpdateWeight(isLocalStore, hasConversion, bbWeight);
+            }
 
             // Cache the simd type data of the conversion.
             if (hasConversion)
@@ -252,8 +276,8 @@ public:
         bool           found = weightsTable->Lookup(lclOp->GetLclNum(), &weight);
         assert(found);
 
-        // Quit if the cost of changing is higher.
-        if (weight.currentCost <= weight.switchCost)
+        // Quit if the cost of changing is higher or is invalid.
+        if (weight.currentCost <= weight.switchCost || weight.invalid)
         {
             JITDUMP("Local %s V%02d at [%06u] will not be converted. ", isLocalStore ? "store" : "var",
                     lclOp->GetLclNum(), Compiler::dspTreeID(lclOp));
