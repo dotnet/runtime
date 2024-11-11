@@ -767,10 +767,10 @@ CORINFO_CLASS_HANDLE WrapICorJitInfo::getBuiltinClass(
 
 CORINFO_METHOD_HANDLE WrapICorJitInfo::getMethodFromDelegate(
           void* address,
-          bool pinned)
+          bool indirect)
 {
     API_ENTER(getMethodFromDelegate);
-    CORINFO_METHOD_HANDLE temp = wrapHnd->getMethodFromDelegate(address, pinned);
+    CORINFO_METHOD_HANDLE temp = wrapHnd->getMethodFromDelegate(address, indirect);
     API_LEAVE(getMethodFromDelegate);
     return temp;
 }

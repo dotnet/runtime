@@ -1987,7 +1987,7 @@ CORINFO_CLASS_HANDLE MethodContext::repGetBuiltinClass(CorInfoClassId classId)
     return result;
 }
 
-void MethodContext::recGetMethodFromDelegate(void* address, bool pinned, CORINFO_METHOD_HANDLE method)
+void MethodContext::recGetMethodFromDelegate(void* address, bool indirect, CORINFO_METHOD_HANDLE method)
 {
     if (GetMethodFromDelegate == nullptr)
         GetMethodFromDelegate = new LightWeightMap<DLD, DWORDLONG>();
@@ -1995,7 +1995,7 @@ void MethodContext::recGetMethodFromDelegate(void* address, bool pinned, CORINFO
     DLD key;
     ZeroMemory(&key, sizeof(key));
     key.A = (DWORDLONG)address;
-    key.B = pinned ? 1 : 0;
+    key.B = indirect ? 1 : 0;
 
     DWORDLONG value = CastHandle(method);
 
@@ -2004,18 +2004,18 @@ void MethodContext::recGetMethodFromDelegate(void* address, bool pinned, CORINFO
 }
 void MethodContext::dmpGetMethodFromDelegate(DLD key, DWORDLONG value)
 {
-    printf("GetMethodFromDelegate key address-%016" PRIX64 " pinned-%u, value method-%016" PRIX64 "",
+    printf("GetMethodFromDelegate key address-%016" PRIX64 " indirect-%u, value method-%016" PRIX64 "",
         key.A, key.B, value);
 }
-CORINFO_METHOD_HANDLE MethodContext::repGetMethodFromDelegate(void* address, bool pinned)
+CORINFO_METHOD_HANDLE MethodContext::repGetMethodFromDelegate(void* address, bool indirect)
 {
     DLD key;
     ZeroMemory(&key, sizeof(key));
     key.A = (DWORDLONG)address;
-    key.B = pinned ? 1 : 0;
+    key.B = indirect ? 1 : 0;
 
     DWORDLONG value =
-        LookupByKeyOrMiss(GetMethodFromDelegate, key, ": key address-%016" PRIX64 " pinned-%u", key.A, key.B);
+        LookupByKeyOrMiss(GetMethodFromDelegate, key, ": key address-%016" PRIX64 " indirect-%u", key.A, key.B);
     DEBUG_REP(dmpGetMethodFromDelegate(key, value));
     return (CORINFO_METHOD_HANDLE)value;
 }

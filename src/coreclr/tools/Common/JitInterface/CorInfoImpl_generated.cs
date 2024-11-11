@@ -1151,12 +1151,12 @@ namespace Internal.JitInterface
         }
 
         [UnmanagedCallersOnly]
-        private static CORINFO_METHOD_STRUCT_* _getMethodFromDelegate(IntPtr thisHandle, IntPtr* ppException, void* address, byte pinned)
+        private static CORINFO_METHOD_STRUCT_* _getMethodFromDelegate(IntPtr thisHandle, IntPtr* ppException, void* address, byte indirect)
         {
             var _this = GetThis(thisHandle);
             try
             {
-                return _this.getMethodFromDelegate(address, pinned != 0);
+                return _this.getMethodFromDelegate(address, indirect != 0);
             }
             catch (Exception ex)
             {

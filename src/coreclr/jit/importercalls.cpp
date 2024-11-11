@@ -163,13 +163,12 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
         // TODO-Perf: Add an importer forward substitution to handle more cases here.
         GenTree* instance = impStackTop(originalSig.numArgs).val;
-        bool     pinned   = false;
+        bool     indirect = false;
         void*    object   = nullptr;
 
         if (instance->IsIconHandle(GTF_ICON_OBJ_HDL))
         {
             // Frozen delegates should never point to collectible contexts.
-            pinned = true;
             object = (void*)instance->AsIntCon()->gtIconVal;
             JITDUMP("impImportCall trying to transform delegate - found frozen\n");
         }
@@ -182,17 +181,18 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                 // such context will keep the delegate permanently alive so even
                 // if it points to an unloadable method, we can still handle it safely.
                 // This lets us inline DynamicMethods.
+                indirect = true;
                 object = (void*)address->AsIntCon()->gtIconVal;
                 JITDUMP("impImportCall trying to transform delegate - found static readonly\n");
             }
         }
-        // TODO-Perf: Handle unloadable delegates in same context.
+        // TODO-Perf: Handle unloadable delegates in the same context.
 
         if (object != nullptr)
         {
-            JITDUMP("impImportCall trying to transform delegate - found delegate at 0x%llx, pinned: %d\n", object,
-                    pinned ? 1 : 0);
-            replacementMethod = info.compCompHnd->getMethodFromDelegate(object, pinned);
+            JITDUMP("impImportCall trying to transform delegate - found delegate at 0x%llx, indirect: %d\n", object,
+                    indirect ? 1 : 0);
+            replacementMethod = info.compCompHnd->getMethodFromDelegate(object, indirect);
 
             if (replacementMethod != NO_METHOD_HANDLE)
             {
@@ -2129,8 +2129,7 @@ bool Compiler::impCanSubstituteSig(CORINFO_SIG_INFO* sourceSig, CORINFO_SIG_INFO
     }
     else if (sourceArgCount != targetArgCount)
     {
-        JITDUMP("impCanSubstituteSig returning false - args count %u != %u\n", sourceArgCount,
-                targetSig->totalILArgs());
+        JITDUMP("impCanSubstituteSig returning false - args count %u != %u\n", sourceArgCount, targetArgCount);
         return false;
     }
 
@@ -2165,7 +2164,7 @@ bool Compiler::impCanSubstituteSig(CORINFO_SIG_INFO* sourceSig, CORINFO_SIG_INFO
 
         ClassLayout* sourceLayout = nullptr;
         ClassLayout* targetLayout = nullptr;
-        if (i == 0 && !removeInstance && sourceSig->hasImplicitThis())
+        if (i == 0 && !removedInstance && sourceSig->hasImplicitThis())
         {
             // assume ref type on implicit this
             sourceType = TYP_REF;

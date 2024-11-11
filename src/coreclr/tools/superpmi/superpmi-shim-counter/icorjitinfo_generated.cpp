@@ -630,10 +630,10 @@ CORINFO_CLASS_HANDLE interceptor_ICJI::getBuiltinClass(
 
 CORINFO_METHOD_HANDLE interceptor_ICJI::getMethodFromDelegate(
           void* address,
-          bool pinned)
+          bool indirect)
 {
     mcs->AddCall("getMethodFromDelegate");
-    return original_ICorJitInfo->getMethodFromDelegate(address, pinned);
+    return original_ICorJitInfo->getMethodFromDelegate(address, indirect);
 }
 
 CorInfoType interceptor_ICJI::getTypeForPrimitiveValueClass(

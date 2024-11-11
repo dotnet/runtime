@@ -331,7 +331,7 @@ CORINFO_CLASS_HANDLE getBuiltinClass(
 
 CORINFO_METHOD_HANDLE getMethodFromDelegate(
           void* address,
-          bool pinned) override;
+          bool indirect) override;
 
 CorInfoType getTypeForPrimitiveValueClass(
           CORINFO_CLASS_HANDLE cls) override;

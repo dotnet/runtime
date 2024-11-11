@@ -1814,9 +1814,8 @@ MethodDesc *COMDelegate::GetMethodDesc(OBJECTREF orDelegate)
     }
     CONTRACTL_END;
 
-    // If you modify this logic, please update getMethodFromDelegateHelper, DacDbiInterfaceImpl::GetDelegateType,
-    // DacDbiInterfaceImpl::GetDelegateType, DacDbiInterfaceImpl::GetDelegateFunctionData,
-    // and DacDbiInterfaceImpl::GetDelegateTargetObject.
+    // If you modify this logic, please update DacDbiInterfaceImpl::GetDelegateType, DacDbiInterfaceImpl::GetDelegateType,
+    // DacDbiInterfaceImpl::GetDelegateFunctionData, and DacDbiInterfaceImpl::GetDelegateTargetObject.
 
     MethodDesc *pMethodHandle = NULL;
 

@@ -3986,49 +3986,11 @@ CORINFO_CLASS_HANDLE CEEInfo::getBuiltinClass(CorInfoClassId classId)
 }
 
 /*********************************************************************/
-CORINFO_METHOD_HANDLE getMethodFromDelegateHelper(DelegateObject* delegate)
+CORINFO_METHOD_HANDLE CEEInfo::getMethodFromDelegate(void* address, bool indirect)
 {
     CONTRACTL {
         THROWS;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    } CONTRACTL_END;
-
-    // If you modify this logic, please update COMDelegate::GetMethodDesc, DacDbiInterfaceImpl::GetDelegateType,
-    // DacDbiInterfaceImpl::GetDelegateType, DacDbiInterfaceImpl::GetDelegateFunctionData,
-    // and DacDbiInterfaceImpl::GetDelegateTargetObject.
-
-    if (delegate->GetInvocationCount() != 0)
-        return 0;
-
-    PCODE code = delegate->GetMethodPtrAux();
-
-    if (code != (PCODE)NULL)
-    {
-        // Note that MethodTable::GetMethodDescForSlotAddress is significantly faster than Entry2MethodDesc
-        return (CORINFO_METHOD_HANDLE)MethodTable::GetMethodDescForSlotAddress(code);
-    }
-
-    // Must be a normal delegate
-    code = delegate->GetMethodPtr();
-
-    MethodTable* pMT = NULL;
-
-    OBJECTREF orThis = delegate->GetTarget();
-    if (orThis != NULL)
-    {
-        pMT = orThis->GetMethodTable();
-    }
-
-    return (CORINFO_METHOD_HANDLE)Entry2MethodDesc(code, pMT);
-}
-
-/*********************************************************************/
-CORINFO_METHOD_HANDLE CEEInfo::getMethodFromDelegate(void* address, bool pinned)
-{
-    CONTRACTL {
-        THROWS;
-        GC_NOTRIGGER;
+        GC_TRIGGERS;
         MODE_PREEMPTIVE;
     } CONTRACTL_END;
 
@@ -4038,18 +4000,29 @@ CORINFO_METHOD_HANDLE CEEInfo::getMethodFromDelegate(void* address, bool pinned)
 
     _ASSERTE (address != nullptr);
 
-    if (pinned)
     {
-        // For frozen delegates we don't need to worry about the GC.
-        result = getMethodFromDelegateHelper((DelegateObject*)address);
-    }
-    else
-    {
-        // For normal objects in static readonlys, we need to ensure that
-        // the GC doesn't run while we're reading from the object.
+        // We get a direct pointer for frozen delegates
+        // and a pointer to a static location for normal ones.
+        // As such we need to deref the pointer if needed.
+        // We technically don't need to care about the GC
+        // for frozen delegates, but APIs used here require COOP.
         GCX_COOP();
-        result = getMethodFromDelegateHelper(*(DelegateObject**)address);
+        DELEGATEREF delegate;
+        {
+            GCX_NOTRIGGER();
+            delegate = (DELEGATEREF)ObjectToOBJECTREF(indirect ?
+                *(DelegateObject**)address : (DelegateObject*)address);
+            _ASSERTE (delegate != nullptr);
+        }
+
+        {
+            GCPROTECT_BEGIN(delegate);
+            if (delegate->GetInvocationCount() == 0)
+                result = (CORINFO_METHOD_HANDLE)COMDelegate::GetMethodDesc(delegate);
+            GCPROTECT_END();
+        }
     }
+
     EE_TO_JIT_TRANSITION();
 
     return result;

@@ -2614,7 +2614,7 @@ public:
     // returns the class handle for the special builtin classes
     virtual CORINFO_METHOD_HANDLE getMethodFromDelegate (
             void*                       address,
-            bool                        pinned
+            bool                        indirect
             ) = 0;
 
     // "System.Int32" ==> CORINFO_TYPE_INT..

@@ -88,7 +88,7 @@ struct JitInterfaceCallbacks
     CorInfoInitClassResult (* initClass)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_FIELD_HANDLE field, CORINFO_METHOD_HANDLE method, CORINFO_CONTEXT_HANDLE context);
     void (* classMustBeLoadedBeforeCodeIsRun)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls);
     CORINFO_CLASS_HANDLE (* getBuiltinClass)(void * thisHandle, CorInfoExceptionClass** ppException, CorInfoClassId classId);
-    CORINFO_METHOD_HANDLE (* getMethodFromDelegate)(void * thisHandle, CorInfoExceptionClass** ppException, void* address, bool pinned);
+    CORINFO_METHOD_HANDLE (* getMethodFromDelegate)(void * thisHandle, CorInfoExceptionClass** ppException, void* address, bool indirect);
     CorInfoType (* getTypeForPrimitiveValueClass)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls);
     CorInfoType (* getTypeForPrimitiveNumericClass)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls);
     bool (* canCast)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE child, CORINFO_CLASS_HANDLE parent);
@@ -960,10 +960,10 @@ public:
 
     virtual CORINFO_METHOD_HANDLE getMethodFromDelegate(
           void* address,
-          bool pinned)
+          bool indirect)
 {
     CorInfoExceptionClass* pException = nullptr;
-    CORINFO_METHOD_HANDLE temp = _callbacks->getMethodFromDelegate(_thisHandle, &pException, address, pinned);
+    CORINFO_METHOD_HANDLE temp = _callbacks->getMethodFromDelegate(_thisHandle, &pException, address, indirect);
     if (pException != nullptr) throw pException;
     return temp;
 }

@@ -254,9 +254,9 @@ public:
     void dmpGetBuiltinClass(DWORD key, DWORDLONG value);
     CORINFO_CLASS_HANDLE repGetBuiltinClass(CorInfoClassId classId);
 
-    void recGetMethodFromDelegate(void* address, bool pinned, CORINFO_METHOD_HANDLE method);
+    void recGetMethodFromDelegate(void* address, bool indirect, CORINFO_METHOD_HANDLE method);
     void dmpGetMethodFromDelegate(DLD key, DWORDLONG value);
-    CORINFO_METHOD_HANDLE repGetMethodFromDelegate(void* address, bool pinned);
+    CORINFO_METHOD_HANDLE repGetMethodFromDelegate(void* address, bool indirect);
 
     void recGetTypeForPrimitiveValueClass(CORINFO_CLASS_HANDLE cls, CorInfoType result);
     void dmpGetTypeForPrimitiveValueClass(DWORDLONG key, DWORD value);

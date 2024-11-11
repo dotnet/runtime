@@ -2810,13 +2810,13 @@ namespace Internal.JitInterface
         }
 
 #pragma warning disable CA1822 // Mark members as static
-        private CORINFO_METHOD_STRUCT_* getMethodFromDelegate(void* address, bool pinned)
+        private CORINFO_METHOD_STRUCT_* getMethodFromDelegate(void* address, bool indirect)
 #pragma warning restore CA1822 // Mark members as static
         {
             Debug.Assert(address != null);
 
             // it should be impossible to see unpinned delegates during AOT
-            Debug.Assert(pinned);
+            Debug.Assert(!indirect);
 
             // TODO-Perf: implement this for NativeAOT
             return null;
