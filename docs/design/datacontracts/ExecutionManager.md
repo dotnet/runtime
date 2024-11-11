@@ -186,11 +186,13 @@ code allocated in that address range), level 4 entires point to level 3 maps and
 
 ### NibbleMap
 
-Version 1 of this contract depends on a "nibble map" data structure
+The ExecutionManager contract depends on a "nibble map" data structure
 that allows mapping of a code address in a contiguous subsection of
 the address space to the pointer to the start of that a code sequence.
 It takes advantage of the fact that the code starts are aligned and
 are spaced apart to represent their addresses as a 4-bit nibble value.
+
+Version 1 of the contract depends on the `NibbleMapLinearLookup` implementation of the nibblemap algorithm.
 
 Given a contiguous region of memory in which we lay out a collection of non-overlapping code blocks that are
 not too small (so that two adjacent ones aren't too close together) and  where the start of each code block is aligned on some power of 2 and preceeded by a code header,
@@ -244,7 +246,7 @@ Now suppose we do a lookup for address 302 (0x12E)
 
 ## Version 2
 
-Version 2 of the contract uses the new `NibbleMapConstantLookup` algorithm which has O(1) lookup time compared to the `NibbleMapLinearLookup` O(n) lookup time.
+Version 2 of the contract depends the new `NibbleMapConstantLookup` algorithm which has O(1) lookup time compared to the `NibbleMapLinearLookup` O(n) lookup time.
 
 With the exception of the nibblemap change, version 2 is identical to version 1.
 
@@ -255,7 +257,7 @@ of writing relative pointers into the nibblemap whenever a code block completely
 represented by a DWORD, with the current values 256 bytes.
 This allows for O(1) lookup time with the cost of O(n) write time.
 
-Pointers are encoded using the top 28 bits of the DWORD as normal. The bottom 4 bits of the pointer
+Pointers are encoded using the top 28 bits of the DWORD. The bottom 4 bits of the pointer
 are reduced to 2 bits of data using the fact that code start must be 4 byte aligned. This is encoded into
 the nibble in bits 28 .. 31 of the DWORD with values 9-12. This is also used to differentiate DWORDs
 filled with nibble values and DWORDs with pointer values.
@@ -264,16 +266,16 @@ filled with nibble values and DWORDs with pointer values.
 |:------------:|:--------|:--------------:|
 | 0            | empty | |
 | 1-8          | Nibble | value - 1 |
-| 9-12         | Pointer | value - 1 << 2
+| 9-12         | Pointer | (value - 9) << 2 |
 | 13-15        | unused | |
 
-To read the nibblemap, we check if the DWORD is a pointer. If so, then we know the value currentPC is
-part of a managed code block beginning at the mapBase + decoded pointer. Otherwise we can check for nibbles
+To read the nibblemap, we check if the DWORD is a pointer. If so, then we know the value looked is
+part of a managed code block beginning at the map base + decoded pointer. Otherwise we can check for nibbles
 as normal. If the DWORD is empty (no pointer or previous nibbles), then we check the previous DWORD for a
 pointer or preceeding nibble. If that DWORD is empty, then we must not be in a managed function. If we were,
 the write algorithm would have written a relative pointer in the DWORD or we would have seen the start nibble.
 
-Note, a currentPC pointing to bytes outside a function has undefined lookup behavior.
+Note, looking up a value that points to bytes outside of a managed function has undefined behavior.
 In this implementation we may "extend" the lookup period of a function several hundred bytes
 if there is not another function immediately following it.
 
