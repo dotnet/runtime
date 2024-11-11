@@ -4007,20 +4007,14 @@ CORINFO_METHOD_HANDLE CEEInfo::getMethodFromDelegate(void* address, bool indirec
         // We technically don't need to care about the GC
         // for frozen delegates, but APIs used here require COOP.
         GCX_COOP();
-        DELEGATEREF delegate;
-        {
-            GCX_NOTRIGGER();
-            delegate = (DELEGATEREF)ObjectToOBJECTREF(indirect ?
-                *(DelegateObject**)address : (DelegateObject*)address);
-            _ASSERTE (delegate != nullptr);
-        }
+        DELEGATEREF delegate = (DELEGATEREF)ObjectToOBJECTREF(indirect ?
+            *(DelegateObject**)address : (DelegateObject*)address);
+        _ASSERTE (delegate != nullptr);
 
-        {
-            GCPROTECT_BEGIN(delegate);
-            if (delegate->GetInvocationCount() == 0)
-                result = (CORINFO_METHOD_HANDLE)COMDelegate::GetMethodDesc(delegate);
-            GCPROTECT_END();
-        }
+        GCPROTECT_BEGIN(delegate);
+        if (delegate->GetInvocationCount() == 0)
+            result = (CORINFO_METHOD_HANDLE)COMDelegate::GetMethodDesc(delegate);
+        GCPROTECT_END();
     }
 
     EE_TO_JIT_TRANSITION();
@@ -5107,7 +5101,7 @@ void CEEInfo::getCallInfo(
     }
     else
     {
-        if (!exactType.IsTypeDesc() && !pTargetMD->IsArray())
+        if (!exactType.IsTypeDesc() && !pTargetMD->IsArray() && !pTargetMD->IsDynamicMethod())
         {
             // Because of .NET's notion of base calls, exactType may point to a sub-class
             // of the actual class that defines pTargetMD.  If the JIT decides to inline, it is

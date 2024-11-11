@@ -182,7 +182,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                 // if it points to an unloadable method, we can still handle it safely.
                 // This lets us inline DynamicMethods.
                 indirect = true;
-                object = (void*)address->AsIntCon()->gtIconVal;
+                object   = (void*)address->AsIntCon()->gtIconVal;
                 JITDUMP("impImportCall trying to transform delegate - found static readonly\n");
             }
         }
@@ -209,10 +209,10 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
     if (replacementMethod != NO_METHOD_HANDLE)
     {
-        JITDUMP("impImportCall trying to transform call - found target method %s\n",
-                eeGetMethodName(replacementMethod));
         CORINFO_SIG_INFO     methodSig;
         CORINFO_CLASS_HANDLE targetClass = info.compCompHnd->getMethodClass(replacementMethod);
+        JITDUMP("impImportCall trying to transform call - found target method %s:%s\n", eeGetClassName(targetClass),
+                eeGetMethodName(replacementMethod));
         info.compCompHnd->getMethodSig(replacementMethod, &methodSig, targetClass);
 
         bool     removeInstance   = false;
