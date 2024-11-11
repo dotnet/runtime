@@ -32,6 +32,7 @@
 #include <openssl/sha.h>
 #include <openssl/ssl.h>
 #include <openssl/tls1.h>
+#include <openssl/ui.h>
 #include <openssl/x509.h>
 #include <openssl/x509v3.h>
 
@@ -53,7 +54,6 @@
 #if HAVE_OPENSSL_ENGINE
 // Some Linux distributions build without engine support.
 #include <openssl/engine.h>
-#include <openssl/ui.h> // We don't need the UI functions except in ENGINE scenarios.
 #endif
 
 #if OPENSSL_VERSION_NUMBER >= OPENSSL_VERSION_1_1_1_RTM
