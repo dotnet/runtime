@@ -3,6 +3,8 @@
 
 using Xunit;
 
+#pragma warning disable CS0618
+
 namespace System.Diagnostics.CodeAnalysis.Tests
 {
     public class DynamicDependencyAttributeTests
@@ -20,9 +22,7 @@ namespace System.Diagnostics.CodeAnalysis.Tests
             Assert.Null(dda.Type);
             Assert.Null(dda.TypeName);
             Assert.Null(dda.AssemblyName);
-#pragma warning disable CS0618
             Assert.Null(dda.Condition);
-#pragma warning restore CS0618
         }
 
         [Theory]
@@ -38,9 +38,7 @@ namespace System.Diagnostics.CodeAnalysis.Tests
             Assert.Equal(type, dda.Type);
             Assert.Null(dda.TypeName);
             Assert.Null(dda.AssemblyName);
-#pragma warning disable CS0618
             Assert.Null(dda.Condition);
-#pragma warning restore CS0618
         }
 
         [Theory]
@@ -56,9 +54,7 @@ namespace System.Diagnostics.CodeAnalysis.Tests
             Assert.Null(dda.Type);
             Assert.Equal(typeName, dda.TypeName);
             Assert.Equal(assemblyName, dda.AssemblyName);
-#pragma warning disable CS0618
             Assert.Null(dda.Condition);
-#pragma warning restore CS0618
         }
 
         [Theory]
@@ -74,9 +70,7 @@ namespace System.Diagnostics.CodeAnalysis.Tests
             Assert.Equal(type, dda.Type);
             Assert.Null(dda.TypeName);
             Assert.Null(dda.AssemblyName);
-#pragma warning disable CS0618
             Assert.Null(dda.Condition);
-#pragma warning restore CS0618
         }
 
         [Theory]
@@ -92,9 +86,7 @@ namespace System.Diagnostics.CodeAnalysis.Tests
             Assert.Null(dda.Type);
             Assert.Equal(typeName, dda.TypeName);
             Assert.Equal(assemblyName, dda.AssemblyName);
-#pragma warning disable CS0618
             Assert.Null(dda.Condition);
-#pragma warning restore CS0618
         }
 
         [Fact]
@@ -103,13 +95,12 @@ namespace System.Diagnostics.CodeAnalysis.Tests
             var dda = new DynamicDependencyAttribute("Foo()");
             Assert.Null(dda.Condition);
 
-#pragma warning disable CS0618
             dda.Condition = "DEBUG";
             Assert.Equal("DEBUG", dda.Condition);
-#pragma warning restore CS0618
 
             dda.Condition = null;
             Assert.Null(dda.Condition);
         }
     }
 }
+#pragma warning restore CS0618

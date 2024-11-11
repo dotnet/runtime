@@ -128,7 +128,7 @@ namespace System.Diagnostics.CodeAnalysis
         public string? AssemblyName { get; }
 
         /// <summary>
-        /// Gets or sets the condition in which the dependency is applicable
+        /// Gets or sets the condition in which the dependency is applicable.
         /// </summary>
         [System.Obsolete("This property is no longer supported.")]
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
