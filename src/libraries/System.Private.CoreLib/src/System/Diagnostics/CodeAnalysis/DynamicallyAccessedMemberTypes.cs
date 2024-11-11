@@ -93,6 +93,76 @@ namespace System.Diagnostics.CodeAnalysis
         Interfaces = 0x2000,
 
         /// <summary>
+        /// Specifies all non-public constructors, including those inherited from base classes.
+        /// </summary>
+        NonPublicConstructorsWithInherited = NonPublicConstructors | 0x4000,
+
+        /// <summary>
+        /// Specifies all non-public methods, including those inherited from base classes.
+        /// </summary>
+        NonPublicMethodsWithInherited = NonPublicMethods | 0x8000,
+
+        /// <summary>
+        /// Specifies all non-public fields, including those inherited from base classes.
+        /// </summary>
+        NonPublicFieldsWithInherited = NonPublicFields | 0x10000,
+
+        /// <summary>
+        /// Specifies all non-public nested types, including those inherited from base classes.
+        /// </summary>
+        NonPublicNestedTypesWithInherited = NonPublicNestedTypes | 0x20000,
+
+        /// <summary>
+        /// Specifies all non-public properties, including those inherited from base classes.
+        /// </summary>
+        NonPublicPropertiesWithInherited = NonPublicProperties | 0x40000,
+
+        /// <summary>
+        /// Specifies all non-public events, including those inherited from base classes.
+        /// </summary>
+        NonPublicEventsWithInherited = NonPublicEvents | 0x80000,
+
+        /// <summary>
+        /// Specifies all public constructors, including those inherited from base classes.
+        /// </summary>
+        PublicConstructorsWithInherited = PublicConstructors | 0x100000,
+
+        /// <summary>
+        /// Specifies all public nested types, including those inherited from base classes.
+        /// </summary>
+        PublicNestedTypesWithInherited = PublicNestedTypes | 0x200000,
+
+        /// <summary>
+        /// Specifies all constructors, including those inherited from base classes.
+        /// </summary>
+        AllConstructors = PublicConstructorsWithInherited | NonPublicConstructorsWithInherited,
+
+        /// <summary>
+        /// Specifies all methods, including those inherited from base classes.
+        /// </summary>
+        AllMethods = PublicMethods | NonPublicMethodsWithInherited,
+
+        /// <summary>
+        /// Specifies all fields, including those inherited from base classes.
+        /// </summary>
+        AllFields = PublicFields | NonPublicFieldsWithInherited,
+
+        /// <summary>
+        /// Specifies all nested types, including those inherited from base classes.
+        /// </summary>
+        AllNestedTypes = PublicNestedTypesWithInherited | NonPublicNestedTypesWithInherited,
+
+        /// <summary>
+        /// Specifies all properties, including those inherited from base classes.
+        /// </summary>
+        AllProperties = PublicProperties | NonPublicPropertiesWithInherited,
+
+        /// <summary>
+        /// Specifies all events, including those inherited from base classes.
+        /// </summary>
+        AllEvents = PublicEvents | NonPublicEventsWithInherited,
+
+        /// <summary>
         /// Specifies all members.
         /// </summary>
         All = ~None
