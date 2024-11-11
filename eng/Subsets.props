@@ -381,7 +381,7 @@
       Test="true" Category="clr" Condition="'$(DotNetBuildSourceOnly)' != 'true' and '$(NativeAotSupported)' == 'true'"/>
   </ItemGroup>
 
-  <ItemGroup Condition="'$(_subset.Contains('+tools.cdacreader+'))">
+  <ItemGroup Condition="$(_subset.Contains('+tools.cdacreader+'))">
     <ProjectToBuild Include="$(RepoRoot)\src\native\managed\compile-native.proj" Category="tools" />
   </ItemGroup>
 
