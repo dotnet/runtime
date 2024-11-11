@@ -3,6 +3,7 @@
 * [Debugging CoreCLR on Windows](#debugging-coreclr-on-windows)
   * [Using Visual Studio](#using-visual-studio)
     * [Using Visual Studio Open Folder with CMake](#using-visual-studio-open-folder-with-cmake)
+    * [Using Visual Studio to debug CLI builds](#using-visual-studio-to-debug-cli-builds)
   * [Using Visual Studio Code](#using-visual-studio-code)
   * [Using SOS with Windbg or Cdb on Windows](#using-sos-with-windbg-or-cdb-on-windows)
 * [Debugging CoreCLR on Linux and macOS](#debugging-coreclr-on-linux-and-macos)
@@ -54,7 +55,7 @@ Visual Studio's capabilities as a full IDE provide a lot of help making the runt
 5. Set `Command=$(SolutionDir)\..\..\..\..\bin\coreclr\windows.$(Platform).$(Configuration)\corerun.exe`. This points to the folder where the built runtime binaries are present.
 6. Set `Command Arguments=<managed app you wish to run>` (e.g. HelloWorld.dll).
 7. Set `Working Directory=$(SolutionDir)\..\..\..\..\bin\coreclr\windows.$(Platform).$(Configuration)`. This points to the folder containing CoreCLR binaries.
-8. Set `Environment=CORE_LIBRARIES=$(SolutionDir)\..\..\..\..\bin\runtime\<target-framework>-windows-$(Configuration)-$(Platform)`, where '\<target-framework\>' is the target framework of current branch; for example `net6.0`, `net8.0` or `net9.0`. A few notes on this step:
+8. Set `Environment=CORE_LIBRARIES=$(SolutionDir)\..\..\..\..\bin\runtime\<target-framework>-windows-$(Configuration)-$(Platform)`, where '\<target-framework\>' is the target framework of current branch: `net10.0`. A few notes on this step:
 
 * This points to the folder containing core libraries except `System.Private.CoreLib`.
 * This step can be skipped if you are debugging CLR tests that reference only `System.Private.CoreLib`. Otherwise, it's required to debug a real-world application that references anything else, including `System.Runtime`.
@@ -84,7 +85,7 @@ Steps 1-9 only need to be done once as long as there's been no changes to the CM
         },
         {
           "name": "CORE_LIBRARIES",
-          // for example net9.0-windows-Debug-x64
+          // for example net10.0-windows-debug-x64
           "value": "${cmake.installRoot}\\..\\..\\runtime\\<tfm>-windows-<configuration>-<arch>\\"
         }
       ],
@@ -102,6 +103,18 @@ Steps 1-9 only need to be done once as long as there's been no changes to the CM
 6. Press F10 or F11 to start debugging at main, or set a breakpoint and press F5.
 
 Whenever you make changes to the CoreCLR source code, don't forget to invoke the _Install_ command again to have them set in place.
+
+#### Using Visual Studio to debug CLI builds
+Visual Studio can also be used to debug builds built externally from CLI scripts.
+
+1. Build at least the `clr` and `libs` subsets as described in the [build instructions](https://github.com/dotnet/runtime/blob/main/docs/workflow/README.md#building-the-repo). Example command: `.\build.cmd -subset clr+libs -configuration Release -runtimeConfiguration Debug`
+2. Build the Core_Root as described in the [testing instructions](https://github.com/dotnet/runtime/blob/main/docs/workflow/testing/coreclr/testing.md#building-the-core_root). This generates `corerun.exe` which serves as the entry point to run managed code. It is placed inside the core root folder along with all required dlls. Example command: `.\src\tests\build.cmd generatelayoutonly`
+3. Launch a Visual Studio instance and select the option to open an existing project/solution. Select `artifacts\tests\coreclr\<OS>.<arch>.<configuration>\Tests\Core_Root\corerun.exe` as the project. Alternatively, launch Visual Studio using `devenv /debugexe artifacts\tests\coreclr\<OS>.<arch>.<configuration>\Tests\Core_Root\corerun.exe`
+4. In the Solution Explorer, right click `corerun` and select properties. Set `Debugger Type` to `Native Only`. Set the `Arguments` field to a path of a managed application to debug.
+5. To set breakpoints, runtime source files can to be added by right clicking the solution in the Solution Explorer and selecting Add -> Existing Item.
+6. Set breakpoints and run the application with `F5` to start debugging.
+
+Note, the `.sln` file can be saved and stores paths to `corerun.exe`, included files, and debug settings. It can be reused as long as the paths do not change.
 
 ### Using Visual Studio Code
 

@@ -42,16 +42,17 @@ namespace System.Text.Json.Serialization.Metadata
                     ThrowHelper.ThrowInvalidOperationException_DerivedTypeNotSupported(BaseType, derivedType);
                 }
 
-                var derivedJsonTypeInfo = new DerivedJsonTypeInfo(derivedType, typeDiscriminator);
+                JsonTypeInfo derivedTypeInfo = options.GetTypeInfoInternal(derivedType);
+                DerivedJsonTypeInfo derivedTypeInfoHolder = new(typeDiscriminator, derivedTypeInfo);
 
-                if (!_typeToDiscriminatorId.TryAdd(derivedType, derivedJsonTypeInfo))
+                if (!_typeToDiscriminatorId.TryAdd(derivedType, derivedTypeInfoHolder))
                 {
                     ThrowHelper.ThrowInvalidOperationException_DerivedTypeIsAlreadySpecified(BaseType, derivedType);
                 }
 
                 if (typeDiscriminator is not null)
                 {
-                    if (!(_discriminatorIdtoType ??= new()).TryAdd(typeDiscriminator, derivedJsonTypeInfo))
+                    if (!(_discriminatorIdtoType ??= new()).TryAdd(typeDiscriminator, derivedTypeInfoHolder))
                     {
                         ThrowHelper.ThrowInvalidOperationException_TypeDicriminatorIdIsAlreadySpecified(BaseType, typeDiscriminator);
                     }
@@ -69,6 +70,8 @@ namespace System.Text.Json.Serialization.Metadata
 
             if (UsesTypeDiscriminators)
             {
+                Debug.Assert(_discriminatorIdtoType != null, "Discriminator index must have been populated.");
+
                 if (!converterCanHaveMetadata)
                 {
                     ThrowHelper.ThrowNotSupportedException_BaseConverterDoesNotSupportMetadata(BaseType);
@@ -87,6 +90,21 @@ namespace System.Text.Json.Serialization.Metadata
 
                     CustomTypeDiscriminatorPropertyNameUtf8 = utf8EncodedName;
                     CustomTypeDiscriminatorPropertyNameJsonEncoded = JsonEncodedText.Encode(propertyName, options.Encoder);
+                }
+
+                // Check if the discriminator property name conflicts with any derived property names.
+                foreach (DerivedJsonTypeInfo derivedTypeInfo in _discriminatorIdtoType.Values)
+                {
+                    if (derivedTypeInfo.JsonTypeInfo.Kind is JsonTypeInfoKind.Object)
+                    {
+                        foreach (JsonPropertyInfo property in derivedTypeInfo.JsonTypeInfo.Properties)
+                        {
+                            if (property is { IsIgnored: false, IsExtensionData: false } && property.Name == propertyName)
+                            {
+                                ThrowHelper.ThrowInvalidOperationException_PropertyConflictsWithMetadataPropertyName(derivedTypeInfo.JsonTypeInfo.Type, propertyName);
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -136,7 +154,7 @@ namespace System.Text.Json.Serialization.Metadata
             }
             else
             {
-                jsonTypeInfo = result.GetJsonTypeInfo(_options);
+                jsonTypeInfo = result.JsonTypeInfo;
                 typeDiscriminator = result.TypeDiscriminator;
                 return true;
             }
@@ -151,7 +169,7 @@ namespace System.Text.Json.Serialization.Metadata
             if (_discriminatorIdtoType.TryGetValue(typeDiscriminator, out DerivedJsonTypeInfo? result))
             {
                 Debug.Assert(typeDiscriminator.Equals(result.TypeDiscriminator));
-                jsonTypeInfo = result.GetJsonTypeInfo(_options);
+                jsonTypeInfo = result.JsonTypeInfo;
                 return true;
             }
 
@@ -218,7 +236,7 @@ namespace System.Text.Json.Serialization.Metadata
                         }
                         else
                         {
-                            ThrowHelper.ThrowNotSupportedException_RuntimeTypeDiamondAmbiguity(BaseType, type, result.DerivedType, interfaceResult.DerivedType);
+                            ThrowHelper.ThrowNotSupportedException_RuntimeTypeDiamondAmbiguity(BaseType, type, result.JsonTypeInfo.Type, interfaceResult.JsonTypeInfo.Type);
                         }
                     }
                 }
@@ -307,24 +325,20 @@ namespace System.Text.Json.Serialization.Metadata
         }
 
         /// <summary>
-        /// Lazy JsonTypeInfo result holder for a derived type.
+        /// JsonTypeInfo result holder for a derived type.
         /// </summary>
         private sealed class DerivedJsonTypeInfo
         {
-            private volatile JsonTypeInfo? _jsonTypeInfo;
-
-            public DerivedJsonTypeInfo(Type type, object? typeDiscriminator)
+            public DerivedJsonTypeInfo(object? typeDiscriminator, JsonTypeInfo derivedTypeInfo)
             {
                 Debug.Assert(typeDiscriminator is null or int or string);
 
-                DerivedType = type;
                 TypeDiscriminator = typeDiscriminator;
+                JsonTypeInfo = derivedTypeInfo;
             }
 
-            public Type DerivedType { get; }
             public object? TypeDiscriminator { get; }
-            public JsonTypeInfo GetJsonTypeInfo(JsonSerializerOptions options)
-                => _jsonTypeInfo ??= options.GetTypeInfoInternal(DerivedType);
+            public JsonTypeInfo JsonTypeInfo { get; }
         }
     }
 }

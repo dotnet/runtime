@@ -1042,7 +1042,7 @@ namespace System.Text.RegularExpressions
         /// <summary>Gets whether the specified span contains only ASCII.</summary>
         public static bool IsAscii(ReadOnlySpan<char> s)
         {
-#if NET8_0_OR_GREATER
+#if NET
             return Ascii.IsValid(s);
 #else
             foreach (char c in s)

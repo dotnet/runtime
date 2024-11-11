@@ -1177,6 +1177,11 @@ void ILCodeStream::EmitBNE_UN(ILCodeLabel* pCodeLabel)
     WRAPPER_NO_CONTRACT;
     Emit(CEE_BNE_UN, -2, (UINT_PTR)pCodeLabel);
 }
+void ILCodeStream::EmitBOX(int token)
+{
+    WRAPPER_NO_CONTRACT;
+    Emit(CEE_BOX, 0, token);
+}
 void ILCodeStream::EmitBR(ILCodeLabel* pCodeLabel)
 {
     WRAPPER_NO_CONTRACT;
@@ -1812,6 +1817,11 @@ void ILCodeStream::EmitUNALIGNED(BYTE alignment)
     Emit(CEE_UNALIGNED, 0, alignment);
 }
 
+void ILCodeStream::EmitUNBOX_ANY(int token)
+{
+    WRAPPER_NO_CONTRACT;
+    Emit(CEE_UNBOX_ANY, 0, token);
+}
 
 void ILCodeStream::EmitNEWOBJ(BinderMethodID id, int numInArgs)
 {

@@ -19,7 +19,7 @@ namespace System.Net
     ///     Provides an Internet Protocol (IP) address.
     ///   </para>
     /// </devdoc>
-    public class IPAddress : ISpanFormattable, ISpanParsable<IPAddress>, IUtf8SpanFormattable
+    public class IPAddress : ISpanFormattable, ISpanParsable<IPAddress>, IUtf8SpanFormattable, IUtf8SpanParsable<IPAddress>
     {
         public static readonly IPAddress Any = new ReadOnlyIPAddress([0, 0, 0, 0]);
         public static readonly IPAddress Loopback = new ReadOnlyIPAddress([127, 0, 0, 1]);
@@ -246,11 +246,27 @@ namespace System.Net
             return (address != null);
         }
 
+        /// <summary>
+        /// Tries to parse a span of UTF-8 characters into a value.
+        /// </summary>
+        /// <param name="utf8Text">The span of UTF-8 characters to parse.</param>
+        /// <param name="result">On return, contains the result of successfully parsing <paramref name="utf8Text"/> or an undefined value on failure.</param>
+        /// <returns><c>true</c> if <paramref name="utf8Text"/> was successfully parsed; otherwise, <c>false</c>.</returns>
+        public static bool TryParse(ReadOnlySpan<byte> utf8Text, [NotNullWhen(true)] out IPAddress? result)
+        {
+            result = IPAddressParser.Parse(utf8Text, tryParse: true);
+            return (result != null);
+        }
+
         public static bool TryParse(ReadOnlySpan<char> ipSpan, [NotNullWhen(true)] out IPAddress? address)
         {
             address = IPAddressParser.Parse(ipSpan, tryParse: true);
             return (address != null);
         }
+
+        /// <inheritdoc/>
+        static bool IUtf8SpanParsable<IPAddress>.TryParse(ReadOnlySpan<byte> utf8Text, IFormatProvider? provider, [NotNullWhen(true)] out IPAddress? result) =>
+            TryParse(utf8Text, out result);
 
         /// <inheritdoc/>
         static bool IParsable<IPAddress>.TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, [NotNullWhen(true)] out IPAddress? result) =>
@@ -269,10 +285,25 @@ namespace System.Net
             return IPAddressParser.Parse(ipString.AsSpan(), tryParse: false)!;
         }
 
+        /// <summary>
+        /// Parses a span of UTF-8 characters into a value.
+        /// </summary>
+        /// <param name="utf8Text">The span of UTF-8 characters to parse.</param>
+        /// <returns>The result of parsing <paramref name="utf8Text"/>.</returns>
+        public static IPAddress Parse(ReadOnlySpan<byte> utf8Text)
+        {
+            return IPAddressParser.Parse(utf8Text, tryParse: false)!;
+        }
+
         public static IPAddress Parse(ReadOnlySpan<char> ipSpan)
         {
             return IPAddressParser.Parse(ipSpan, tryParse: false)!;
         }
+
+        /// <inheritdoc/>
+        static IPAddress IUtf8SpanParsable<IPAddress>.Parse(ReadOnlySpan<byte> utf8Text, IFormatProvider? provider) =>
+            // provider is explicitly ignored
+            Parse(utf8Text);
 
         /// <inheritdoc/>
         static IPAddress ISpanParsable<IPAddress>.Parse(ReadOnlySpan<char> s, IFormatProvider? provider) =>

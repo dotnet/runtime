@@ -35,7 +35,7 @@ namespace System.Threading
     {
         // Indicates whether the thread pool should yield the thread from the dispatch loop to the runtime periodically so that
         // the runtime may use the thread for processing other work
-        internal static bool YieldFromDispatchLoop => false;
+        internal static bool YieldFromDispatchLoop => true;
 
         private const bool IsWorkerTrackingEnabledInConfig = false;
 

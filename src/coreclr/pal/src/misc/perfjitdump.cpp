@@ -102,7 +102,7 @@ namespace
     {
         JitCodeLoadRecord() :
             pid(getpid()),
-            tid((uint32_t)PlatformGetCurrentThreadId())
+            tid((uint32_t)THREADSilentGetCurrentThreadId())
         {
             header.id = JIT_CODE_LOAD;
             header.timestamp = GetTimeStampNS();

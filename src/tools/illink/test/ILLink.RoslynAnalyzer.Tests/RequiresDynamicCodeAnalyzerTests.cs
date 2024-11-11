@@ -349,6 +349,46 @@ build_property.{MSBuildPropertyOptionNames.EnableAotAnalyzer} = true")));
 		}
 
 		[Fact]
+		public Task FixInClass ()
+		{
+			var src = $$"""
+			using System;
+			using System.Diagnostics.CodeAnalysis;
+
+			public class C
+			{
+				[RequiresDynamicCodeAttribute("message")]
+				static int M1() => 0;
+
+				static int Field = M1();
+			}
+			""";
+
+			var fix = $$"""
+			using System;
+			using System.Diagnostics.CodeAnalysis;
+
+			[RequiresDynamicCode()]
+			public class C
+			{
+				[RequiresDynamicCodeAttribute("message")]
+				static int M1() => 0;
+
+				static int Field = M1();
+			}
+			""";
+			return VerifyRequiresDynamicCodeCodeFix (src, fix,
+				baselineExpected: new[] {
+					// /0/Test0.cs(9,21,9,25): warning IL2026: Using member 'C.M1()' which has 'RequiresDynamicCodeAttribute' can break functionality when trimming application code. message.
+					VerifyCS.Diagnostic(DiagnosticId.RequiresDynamicCode).WithSpan(9, 21, 9, 25).WithArguments("C.M1()", " message.", ""),
+				},
+				fixedExpected: new[] {
+					// /0/Test0.cs(4,2): error CS7036: There is no argument given that corresponds to the required parameter 'message' of 'RequiresDynamicCodeAttribute.RequiresDynamicCodeAttribute(string)'
+					DiagnosticResult.CompilerError("CS7036").WithSpan(4, 2, 4, 23).WithArguments("message", "System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute.RequiresDynamicCodeAttribute(string)"),
+					});
+		}
+
+		[Fact]
 		public Task MakeGenericTypeWithAllKnownTypes ()
 		{
 			const string src = $$"""

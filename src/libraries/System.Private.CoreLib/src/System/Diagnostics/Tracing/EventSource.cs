@@ -283,12 +283,13 @@ namespace System.Diagnostics.Tracing
         internal const string DuplicateSourceNamesSwitch = "System.Diagnostics.Tracing.EventSource.AllowDuplicateSourceNames";
         private static readonly bool AllowDuplicateSourceNames = AppContext.TryGetSwitch(DuplicateSourceNamesSwitch, out bool isEnabled) ? isEnabled : false;
 
-
+        [FeatureSwitchDefinition("System.Diagnostics.Tracing.EventSource.IsSupported")]
         internal static bool IsSupported { get; } = InitializeIsSupported();
 
         private static bool InitializeIsSupported() =>
             AppContext.TryGetSwitch("System.Diagnostics.Tracing.EventSource.IsSupported", out bool isSupported) ? isSupported : true;
 
+        [FeatureSwitchDefinition("System.Diagnostics.Metrics.Meter.IsSupported")]
         internal static bool IsMeterSupported { get; } = InitializeIsMeterSupported();
 
         private static bool InitializeIsMeterSupported() =>

@@ -50,12 +50,6 @@ namespace ILLink.RoslynAnalyzer.Tests
 		}
 
 		[Fact]
-		public Task RunClassConstructorUsedViaReflection ()
-		{
-			return RunTest (allowMissingWarnings: true);
-		}
-
-		[Fact]
 		public Task UnderlyingSystemType ()
 		{
 			return RunTest (allowMissingWarnings: true);

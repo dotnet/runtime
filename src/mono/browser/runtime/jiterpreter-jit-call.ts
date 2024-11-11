@@ -5,7 +5,8 @@ import { MonoType, MonoMethod } from "./types/internal";
 import { NativePointer, VoidPtr } from "./types/emscripten";
 import { Module, mono_assert, runtimeHelpers } from "./globals";
 import {
-    getU8, getI32_unaligned, getU32_unaligned, setU32_unchecked, receiveWorkerHeapViews
+    getU8, getI32_unaligned, getU32_unaligned, setU32_unchecked, receiveWorkerHeapViews,
+    free
 } from "./memory";
 import { WasmOpcode, WasmValtype } from "./jiterpreter-opcodes";
 import {
@@ -61,7 +62,6 @@ const maxJitQueueLength = 6,
 
 let trampBuilder: WasmBuilder;
 let fnTable: WebAssembly.Table;
-let wasmEhSupported: boolean | undefined = undefined;
 let nextDisambiguateIndex = 0;
 const fnCache: Array<Function | undefined> = [];
 const targetCache: { [target: number]: TrampolineInfo } = {};
@@ -153,7 +153,7 @@ class TrampolineInfo {
                 suffix = utf8ToString(pMethodName);
             } finally {
                 if (pMethodName)
-                    Module._free(<any>pMethodName);
+                    free(<any>pMethodName);
             }
         }
 
@@ -276,18 +276,6 @@ export function mono_interp_jit_wasm_jit_call_trampoline (
         mono_interp_flush_jitcall_queue();
 }
 
-function getIsWasmEhSupported (): boolean {
-    if (wasmEhSupported !== undefined)
-        return wasmEhSupported;
-
-    // Probe whether the current environment can handle wasm exceptions
-    wasmEhSupported = runtimeHelpers.featureWasmEh === true;
-    if (!wasmEhSupported)
-        mono_log_info("Disabling Jiterpreter Exception Handling");
-
-    return wasmEhSupported;
-}
-
 export function mono_interp_flush_jitcall_queue (): void {
     const jitQueue: TrampolineInfo[] = [];
     let methodPtr = <MonoMethod><any>0;
@@ -336,7 +324,7 @@ export function mono_interp_flush_jitcall_queue (): void {
     }
 
     if (builder.options.enableWasmEh) {
-        if (!getIsWasmEhSupported()) {
+        if (!runtimeHelpers.featureWasmEh) {
             // The user requested to enable wasm EH but it's not supported, so turn the option back off
             applyOptions(<any>{ enableWasmEh: false });
             builder.options.enableWasmEh = false;
@@ -519,7 +507,7 @@ export function mono_interp_flush_jitcall_queue (): void {
                 ;
             }
 
-            const buf = builder.getArrayView();
+            const buf = builder.getArrayView(false, true);
             for (let i = 0; i < buf.length; i++) {
                 const b = buf[i];
                 if (b < 0x10)

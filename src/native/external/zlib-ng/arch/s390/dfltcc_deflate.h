@@ -1,11 +1,10 @@
 #ifndef DFLTCC_DEFLATE_H
 #define DFLTCC_DEFLATE_H
 
+#include "deflate.h"
 #include "dfltcc_common.h"
 
-void Z_INTERNAL *PREFIX(dfltcc_alloc_deflate_state)(PREFIX3(streamp));
 void Z_INTERNAL PREFIX(dfltcc_reset_deflate_state)(PREFIX3(streamp));
-void Z_INTERNAL PREFIX(dfltcc_copy_deflate_state)(void *dst, const void *src);
 int Z_INTERNAL PREFIX(dfltcc_can_deflate)(PREFIX3(streamp) strm);
 int Z_INTERNAL PREFIX(dfltcc_deflate)(PREFIX3(streamp) strm, int flush, block_state *result);
 int Z_INTERNAL PREFIX(dfltcc_deflate_params)(PREFIX3(streamp) strm, int level, int strategy, int *flush);
@@ -14,9 +13,6 @@ int Z_INTERNAL PREFIX(dfltcc_can_set_reproducible)(PREFIX3(streamp) strm, int re
 int Z_INTERNAL PREFIX(dfltcc_deflate_set_dictionary)(PREFIX3(streamp) strm,
                                                 const unsigned char *dictionary, uInt dict_length);
 int Z_INTERNAL PREFIX(dfltcc_deflate_get_dictionary)(PREFIX3(streamp) strm, unsigned char *dictionary, uInt* dict_length);
-
-#define ZALLOC_DEFLATE_STATE PREFIX(dfltcc_alloc_deflate_state)
-#define ZCOPY_DEFLATE_STATE PREFIX(dfltcc_copy_deflate_state)
 
 #define DEFLATE_SET_DICTIONARY_HOOK(strm, dict, dict_len) \
     do { \
@@ -56,5 +52,7 @@ int Z_INTERNAL PREFIX(dfltcc_deflate_get_dictionary)(PREFIX3(streamp) strm, unsi
 #define DEFLATE_NEED_CHECKSUM(strm) (!PREFIX(dfltcc_can_deflate)((strm)))
 
 #define DEFLATE_CAN_SET_REPRODUCIBLE PREFIX(dfltcc_can_set_reproducible)
+
+#define DEFLATE_ADJUST_WINDOW_SIZE(n) MAX(n, HB_SIZE)
 
 #endif

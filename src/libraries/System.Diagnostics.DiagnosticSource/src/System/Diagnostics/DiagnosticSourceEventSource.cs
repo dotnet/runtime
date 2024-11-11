@@ -350,11 +350,28 @@ namespace System.Diagnostics
             WriteEvent(12, SourceName, ActivityName, Arguments);
 
         /// <summary>
+        /// Used to send version information.
+        /// </summary>
+        [Event(13, Keywords = Keywords.Messages)]
+        public void Version(int Major, int Minor, int Patch)
+        {
+            WriteEvent(13, Major, Minor, Patch);
+        }
+
+        /// <summary>
         /// Called when the EventSource gets a command from a EventListener or ETW.
         /// </summary>
         [NonEvent]
         protected override void OnEventCommand(EventCommandEventArgs command)
         {
+            if (command.Command == EventCommand.Enable)
+            {
+                Version(
+                    ThisAssembly.AssemblyFileVersion.Major,
+                    ThisAssembly.AssemblyFileVersion.Minor,
+                    ThisAssembly.AssemblyFileVersion.Build);
+            }
+
             // On every command (which the debugger can force by turning on this EventSource with ETW)
             // call a function that the debugger can hook to do an arbitrary func evaluation.
             BreakPointWithDebuggerFuncEval();

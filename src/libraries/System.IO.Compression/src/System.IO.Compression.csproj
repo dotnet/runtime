@@ -35,6 +35,8 @@
     <Compile Include="System\IO\Compression\DeflateZLib\ZLibException.cs" />
     <Compile Include="$(CommonPath)System\IO\Compression\ZLibNative.cs"
              Link="Common\System\IO\Compression\ZLibNative.cs" />
+    <Compile Include="$(CommonPath)System\IO\Compression\ZLibNative.CompressionLevel.cs"
+          Link="Common\System\IO\Compression\ZLibNative.CompressionLevel.cs" />
     <Compile Include="$(CommonPath)System\IO\Compression\ZLibNative.ZStream.cs"
              Link="Common\System\IO\Compression\ZLibNative.ZStream.cs" />
     <Compile Include="System\IO\Compression\CompressionLevel.cs" />

@@ -709,7 +709,7 @@ namespace System.ServiceProcess
 
         /// <summary>
         /// Gets the services (not including device-driver services) on the given machine name.
-        /// /// </summary>
+        /// </summary>
         /// <param name="machineName">Name of the machine</param>
         /// <returns></returns>
         public static ServiceController[] GetServices(string machineName)

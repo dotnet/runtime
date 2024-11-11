@@ -48,7 +48,7 @@ namespace System.Xml
         private XPathNodeType DecideXPNodeTypeForTextNodes(XmlNode node)
         {
             //the function can only be called on text like nodes.
-            Debug.Assert(XmlDataDocument.IsTextNode(node.NodeType));
+            Debug.Assert(XmlDataDocument.Helpers.IsTextNode(node.NodeType));
             XPathNodeType xnt = XPathNodeType.Whitespace;
             XmlNode? n = node;
             while (n != null)
@@ -73,7 +73,7 @@ namespace System.Xml
 
         private XPathNodeType ConvertNodeType(XmlNode node)
         {
-            if (XmlDataDocument.IsTextNode(node.NodeType))
+            if (XmlDataDocument.Helpers.IsTextNode(node.NodeType))
                 return DecideXPNodeTypeForTextNodes(node);
 
             int xnt = XmlNodeTypeToXpathNodeTypeMap[(int)(node.NodeType)];
@@ -307,14 +307,14 @@ namespace System.Xml
                 else if (_column == null)
                 {
                     string? strRet = _node.Value;
-                    if (XmlDataDocument.IsTextNode(_node.NodeType))
+                    if (XmlDataDocument.Helpers.IsTextNode(_node.NodeType))
                     {
                         //concatenate adjacent textlike nodes
                         XmlNode? parent = _node.ParentNode;
                         if (parent == null)
                             return strRet;
                         XmlNode? n = _doc.SafeNextSibling(_node);
-                        while (n != null && XmlDataDocument.IsTextNode(n.NodeType))
+                        while (n != null && XmlDataDocument.Helpers.IsTextNode(n.NodeType))
                         {
                             strRet += n.Value;
                             n = _doc.SafeNextSibling(n);
@@ -755,13 +755,13 @@ namespace System.Xml
                     XmlNode? parent = _node.ParentNode;
                     if (parent == null)
                         return false;
-                    bool bTextLike = XmlDataDocument.IsTextNode(_node.NodeType);
+                    bool bTextLike = XmlDataDocument.Helpers.IsTextNode(_node.NodeType);
                     do
                     {
                         do
                         {
                             n = _doc.SafeNextSibling(n);
-                        } while (n != null && bTextLike && XmlDataDocument.IsTextNode(n.NodeType));
+                        } while (n != null && bTextLike && XmlDataDocument.Helpers.IsTextNode(n.NodeType));
                     } while (n != null && !IsValidChild(parent, n));
                     if (n != null)
                     {
@@ -801,13 +801,13 @@ namespace System.Xml
                     XmlNode? parent = _node.ParentNode;
                     if (parent == null)
                         return false;
-                    bool bTextLike = XmlDataDocument.IsTextNode(_node.NodeType);
+                    bool bTextLike = XmlDataDocument.Helpers.IsTextNode(_node.NodeType);
                     do
                     {
                         do
                         {
                             n = _doc.SafePreviousSibling(n);
-                        } while (n != null && bTextLike && XmlDataDocument.IsTextNode(n.NodeType));
+                        } while (n != null && bTextLike && XmlDataDocument.Helpers.IsTextNode(n.NodeType));
                     } while (n != null && !IsValidChild(parent, n));
                     if (n != null)
                     {

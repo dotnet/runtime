@@ -782,7 +782,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 // paths to hostfxr so that it can handle resolving the library.
                 RuntimeConfig.FromFile(HostApiInvokerApp.RuntimeConfigJson)
                     .WithProperty("HOSTFXR_PATH", TestContext.BuiltDotNet.GreatestVersionHostFxrFilePath)
-                    .WithProperty("HOSTFXR_PATH_TEST_BEHAVIOR", TestBehaviorEnabledDotNet.GreatestVersionHostFxrFilePath);
+                    .WithProperty("HOSTFXR_PATH_TEST_BEHAVIOR", TestBehaviorEnabledDotNet.GreatestVersionHostFxrFilePath)
+                    .Save();
 
                 SdkAndFrameworkFixture = new SdkAndFrameworkFixture();
             }

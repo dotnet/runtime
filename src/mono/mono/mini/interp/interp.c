@@ -7657,7 +7657,8 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 
 		MINT_IN_CASE(MINT_LDLOCA_S)
 			LOCAL_VAR (ip [1], gpointer) = locals + ip [2];
-			ip += 3;
+			// ip[3] reserved for size data for jiterpreter
+			ip += 4;
 			MINT_IN_BREAK;
 
 #define MOV(argtype1,argtype2) \

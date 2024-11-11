@@ -3168,7 +3168,7 @@ interface ICorProfilerInfo2 : ICorProfilerInfo
      * When a COR_PRF_FRAME_INFO from any other source is passed, or
      * when 0 is passed as the frameInfo argument, exact ClassID and type
      * arguments cannot always be determined.  The value returned in pClassId
-     * may be NULL and some type args will come back as System.Object.
+     * may not be exact and some type args will come back as System.Object.
      *
      */
     HRESULT GetFunctionInfo2(

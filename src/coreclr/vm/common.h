@@ -101,14 +101,13 @@ using std::min;
 
 typedef VPTR(class LoaderAllocator)     PTR_LoaderAllocator;
 typedef DPTR(PTR_LoaderAllocator)       PTR_PTR_LoaderAllocator;
-typedef VPTR(class AppDomain)           PTR_AppDomain;
+typedef DPTR(class AppDomain)           PTR_AppDomain;
 typedef DPTR(class ArrayBase)           PTR_ArrayBase;
 typedef DPTR(class Assembly)            PTR_Assembly;
 typedef DPTR(class AssemblyBaseObject)  PTR_AssemblyBaseObject;
 typedef DPTR(class AssemblyLoadContextBaseObject) PTR_AssemblyLoadContextBaseObject;
 typedef DPTR(class AssemblyBinder)      PTR_AssemblyBinder;
 typedef DPTR(class AssemblyNameBaseObject) PTR_AssemblyNameBaseObject;
-typedef VPTR(class BaseDomain)          PTR_BaseDomain;
 typedef DPTR(class ClassLoader)         PTR_ClassLoader;
 typedef DPTR(class ComCallMethodDesc)   PTR_ComCallMethodDesc;
 typedef DPTR(class CLRToCOMCallMethodDesc) PTR_CLRToCOMCallMethodDesc;
@@ -349,6 +348,14 @@ void* GetClrModuleBase();
 // use this when you want to memcpy something that contains GC refs
 void memmoveGCRefs(void *dest, const void *src, size_t len);
 
+// Struct often used as a parameter to callbacks.
+typedef struct
+{
+    promote_func*  f;
+    ScanContext*   sc;
+    CrawlFrame *   cf;
+    SetSHash<Object**, PtrSetSHashTraits<Object**> > *pScannedSlots;
+} GCCONTEXT;
 
 #if defined(_DEBUG)
 
