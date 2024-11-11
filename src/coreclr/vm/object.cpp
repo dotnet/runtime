@@ -2109,4 +2109,33 @@ INT32 LoaderAllocatorObject::GetSlotsUsed()
 
     return m_slotsUsed;
 }
+
+#ifdef DEBUG
+static void CheckOffsetOfFieldInInstantiation(MethodTable *pMTOfInstantiation, FieldDesc* pField, size_t offset)
+{
+    STANDARD_VM_CONTRACT;
+
+    MethodTable* pGenericFieldMT = pField->GetApproxEnclosingMethodTable();
+    DWORD index = pGenericFieldMT->GetIndexForFieldDesc(pField);
+    FieldDesc *pFieldOnInstantiation = pMTOfInstantiation->GetFieldDescByIndex(index);
+
+    if (pFieldOnInstantiation->GetOffset() != offset)
+    {
+        _ASSERTE(!"Field offset mismatch");
+    }
+}
+
+/*static*/ void GenericCacheStruct::ValidateLayout(MethodTable* pMTOfInstantiation)
+{
+    STANDARD_VM_CONTRACT;
+
+    CheckOffsetOfFieldInInstantiation(pMTOfInstantiation, CoreLibBinder::GetField(FIELD__GENERICCACHE__TABLE), offsetof(GenericCacheStruct, _table));
+    CheckOffsetOfFieldInInstantiation(pMTOfInstantiation, CoreLibBinder::GetField(FIELD__GENERICCACHE__SENTINEL_TABLE), offsetof(GenericCacheStruct, _sentinelTable));
+    CheckOffsetOfFieldInInstantiation(pMTOfInstantiation, CoreLibBinder::GetField(FIELD__GENERICCACHE__LAST_FLUSH_SIZE), offsetof(GenericCacheStruct, _lastFlushSize));
+    CheckOffsetOfFieldInInstantiation(pMTOfInstantiation, CoreLibBinder::GetField(FIELD__GENERICCACHE__INITIAL_CACHE_SIZE), offsetof(GenericCacheStruct, _initialCacheSize));
+    CheckOffsetOfFieldInInstantiation(pMTOfInstantiation, CoreLibBinder::GetField(FIELD__GENERICCACHE__MAX_CACHE_SIZE), offsetof(GenericCacheStruct, _maxCacheSize));
+    // Validate the layout of the Generic
+}
+#endif
+
 #endif // DACCESS_COMPILE

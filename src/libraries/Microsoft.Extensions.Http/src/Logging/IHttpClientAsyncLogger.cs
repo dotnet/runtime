@@ -35,7 +35,7 @@ namespace Microsoft.Extensions.Http.Logging
         /// <param name="request">The HTTP request message that will be sent.</param>
         /// <param name="cancellationToken">The cancellation token to cancel operation.</param>
         /// <returns>The task object representing the asynchronous operation. The result of the operation is a context object that will
-        /// be passed to a corresponding <see cref="LogRequestStopAsync"/> or <see cref="LogRequestFailedAsync"/>. Can be `null`
+        /// be passed to a corresponding <see cref="LogRequestStopAsync"/> or <see cref="LogRequestFailedAsync"/>. Can be <see langword="null" />
         /// if no context object is needed by the implementation.</returns>
         ValueTask<object?> LogRequestStartAsync(HttpRequestMessage request, CancellationToken cancellationToken = default);
 
@@ -55,7 +55,7 @@ namespace Microsoft.Extensions.Http.Logging
         /// </summary>
         /// <param name="context">The context object that was previously returned by <see cref="LogRequestStartAsync"/>.</param>
         /// <param name="request">The HTTP request message that was sent.</param>
-        /// <param name="response">If available, the HTTP response message that was received, and `null` otherwise.</param>
+        /// <param name="response">If available, the HTTP response message that was received, and <see langword="null" /> otherwise.</param>
         /// <param name="exception">Exception that happened during processing the HTTP request.</param>
         /// <param name="elapsed">Time elapsed since calling <see cref="LogRequestStartAsync"/>.</param>
         /// <param name="cancellationToken">The cancellation token to cancel operation.</param>

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
+using System.Globalization;
 using System.Reflection.Metadata;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -40,6 +41,19 @@ namespace DotnetFuzzing.Fuzzers
                 Assert.Equal(fromTryParse.Flags, fromParse.Flags);
                 Assert.Equal(fromTryParse.Version, fromParse.Version);
                 Assert.SequenceEqual(fromTryParse.PublicKeyOrToken.AsSpan(), fromParse.PublicKeyOrToken.AsSpan());
+
+                if (!string.IsNullOrEmpty(fromParse.CultureName))
+                {
+                    try
+                    {
+                        _ = CultureInfo.GetCultureInfo(fromParse.CultureName);
+                    }
+                    catch (CultureNotFoundException)
+                    {
+                        // ToAssemblyName would try to create such a culture and fail.
+                        return;
+                    }
+                }
 
                 Assert.Equal(fromTryParse.ToAssemblyName().Name, fromParse.ToAssemblyName().Name);
                 Assert.Equal(fromTryParse.ToAssemblyName().Version, fromParse.ToAssemblyName().Version);

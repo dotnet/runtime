@@ -464,6 +464,7 @@ namespace System.Diagnostics.Tracing
                         {
                             // Indicate this is a 1 byte multicode with 4 high order bits in the lower nibble.
                             *ptr = (byte)(((uint)NumberListCodes.MultiByte1 << 4) + (id >> 8));
+                            len--;          // The id's 4 high order bits were written into the multicode byte, so update the length.
                             id &= 0xFF;     // Now we only want the low order bits.
                         }
                         ptr++;

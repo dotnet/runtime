@@ -970,7 +970,7 @@ private:
     BYTE m_taggedAlloc[2 * sizeof(void*)];
 #endif // FEATURE_OBJCMARSHAL
 
-    template<typename T> friend struct ::cdac_data;
+    friend struct ::cdac_data<InteropSyncBlockInfo>;
 };
 
 template<>
@@ -1286,7 +1286,7 @@ class SyncBlock
     }
 #endif // defined(ENABLE_CONTRACTS_IMPL)
 
-    template<typename T> friend struct ::cdac_data;
+    friend struct ::cdac_data<SyncBlock>;
 };
 
 template<>
@@ -1674,7 +1674,7 @@ class ObjHeader
 
     BOOL Validate (BOOL bVerifySyncBlkIndex = TRUE);
 
-    template<typename T> friend struct ::cdac_data;
+    friend struct ::cdac_data<ObjHeader>;
 };
 
 template<>

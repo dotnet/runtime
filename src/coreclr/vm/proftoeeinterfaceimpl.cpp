@@ -5983,11 +5983,11 @@ HRESULT ProfToEEInterfaceImpl::GetFunctionInfo2(FunctionID funcId,
     TypeHandle specificClass;
     MethodDesc* pActualMethod;
 
-    ClassID classId = 0;
+    TypeHandle typeHandle(pMethDesc->GetMethodTable());
+    ClassID classId = TypeHandleToClassID(typeHandle);
 
     if (pMethDesc->IsSharedByGenericInstantiations())
     {
-        BOOL exactMatch;
         OBJECTREF pThis = NULL;
 
         if (pFrameInfo != NULL)
@@ -6010,37 +6010,24 @@ HRESULT ProfToEEInterfaceImpl::GetFunctionInfo2(FunctionID funcId,
             }
         }
 
-        exactMatch = Generics::GetExactInstantiationsOfMethodAndItsClassFromCallInformation(
+        Generics::GetExactInstantiationsOfMethodAndItsClassFromCallInformation(
             pMethDesc,
             pThis,
             PTR_VOID((pFrameInfo != NULL) ? pFrameInfo->extraArg : NULL),
             &specificClass,
             &pActualMethod);
 
-        if (exactMatch)
+        // When GetExactInstantiationsOfMethodAndItsClassFromCallInformation cannot determine
+        // the exact class match, the value is correct if the class is not a generic class
+        // or is instantiated with value types. Even if those conditions aren't met, the
+        // default returned value of the method's method table may still be helpful to callers.
+        if (specificClass != NULL)
         {
             classId = TypeHandleToClassID(specificClass);
-        }
-        else if (!specificClass.HasInstantiation() || !specificClass.IsSharedByGenericInstantiations())
-        {
-            //
-            // In this case we could not get the type args for the method, but if the class
-            // is not a generic class or is instantiated with value types, this value is correct.
-            //
-            classId = TypeHandleToClassID(specificClass);
-        }
-        else
-        {
-            //
-            // We could not get any class information.
-            //
-            classId = 0;
         }
     }
     else
     {
-        TypeHandle typeHandle(pMethDesc->GetMethodTable());
-        classId = TypeHandleToClassID(typeHandle);
         pActualMethod = pMethDesc;
     }
 

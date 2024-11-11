@@ -154,7 +154,7 @@ public class AttackTests : ReadTests
         writer.Write((byte)SerializationRecordType.ArraySinglePrimitive);
         writer.Write(1); // object ID
         writer.Write(Array.MaxLength); // length
-        writer.Write((byte)2); // PrimitiveType.Byte
+        writer.Write((byte)PrimitiveType.Byte);
         writer.Write((byte)SerializationRecordType.MessageEnd);
 
         stream.Position = 0;

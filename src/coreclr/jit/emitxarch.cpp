@@ -1587,20 +1587,6 @@ bool emitter::TakesRexWPrefix(const instrDesc* id) const
                 return false;
             }
 
-            case INS_vbroadcastsd:
-            case INS_vpbroadcastq:
-            {
-                // TODO-XARCH-AVX512: These use W1 if a kmask is involved
-                return TakesEvexPrefix(id);
-            }
-
-            case INS_vpermilpd:
-            case INS_vpermilpdvar:
-            {
-                // TODO-XARCH-AVX512: These use W1 if a kmask or broaadcast from memory is involved
-                return TakesEvexPrefix(id);
-            }
-
             default:
             {
                 unreached();
@@ -19834,6 +19820,10 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_pmuludq:
         case INS_pmaddwd:
         case INS_pmaddubsw:
+        case INS_vpdpbusd:
+        case INS_vpdpwssd:
+        case INS_vpdpbusds:
+        case INS_vpdpwssds:
             result.insThroughput = PERFSCORE_THROUGHPUT_2X;
             result.insLatency += PERFSCORE_LATENCY_5C;
             break;
@@ -20006,10 +19996,6 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_vfnmsub132ss:
         case INS_vfnmsub213ss:
         case INS_vfnmsub231ss:
-        case INS_vpdpbusd:  // will be populated when the HW becomes publicly available
-        case INS_vpdpwssd:  // will be populated when the HW becomes publicly available
-        case INS_vpdpbusds: // will be populated when the HW becomes publicly available
-        case INS_vpdpwssds: // will be populated when the HW becomes publicly available
             // uops.info
             result.insThroughput = PERFSCORE_THROUGHPUT_2X;
             result.insLatency += PERFSCORE_LATENCY_4C;

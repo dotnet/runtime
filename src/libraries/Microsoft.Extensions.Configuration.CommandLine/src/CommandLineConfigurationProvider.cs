@@ -7,7 +7,7 @@ using System.Collections.Generic;
 namespace Microsoft.Extensions.Configuration.CommandLine
 {
     /// <summary>
-    /// A command line based <see cref="ConfigurationProvider"/>.
+    /// Provides configuration key-value pairs that are obtained from the command line.
     /// </summary>
     public class CommandLineConfigurationProvider : ConfigurationProvider
     {
@@ -31,12 +31,12 @@ namespace Microsoft.Extensions.Configuration.CommandLine
         }
 
         /// <summary>
-        /// The command line arguments.
+        /// Gets the command-line arguments.
         /// </summary>
         protected IEnumerable<string> Args { get; }
 
         /// <summary>
-        /// Loads the configuration data from the command line args.
+        /// Loads the configuration data from the command-line arguments.
         /// </summary>
         public override void Load()
         {

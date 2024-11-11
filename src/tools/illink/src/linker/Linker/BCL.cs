@@ -35,42 +35,21 @@ namespace Mono.Linker
 				return type.Namespace == "System.Diagnostics.Tracing" && type.Name == "EventSource";
 			}
 
-			public static bool IsNonEventAtribute (TypeReference type)
-			{
-				return type.Namespace == "System.Diagnostics.Tracing" && type.Name == "NonEventAttribute";
-			}
-
 			public static bool IsProviderName (string name)
 			{
 				return name == "Keywords" || name == "Tasks" || name == "Opcodes";
 			}
 		}
 
-		public static bool IsIDisposableImplementation (MethodDefinition method)
-		{
-			if (method.Name != "Dispose" || method.ReturnType.MetadataType != MetadataType.Void)
-				return false;
-
-			if (method.HasMetadataParameters () || method.HasGenericParameters || method.IsStatic)
-				return false;
-
-			if (!method.IsFinal)
-				return false;
-
-			return true;
-		}
-
-		static readonly string[] corlibNames = new[] {
-			"System.Private.CoreLib",
-			"mscorlib",
-			"System.Runtime",
-			"netstandard"
-		};
-
 		public static TypeDefinition? FindPredefinedType (WellKnownType type, LinkContext context)
 		{
 			var (ns, name) = type.GetNamespaceAndName ();
-			foreach (var corlibName in corlibNames) {
+			foreach (var corlibName in (string[])[
+				"System.Private.CoreLib",
+				"mscorlib",
+				"System.Runtime",
+				"netstandard",
+			]) {
 				AssemblyDefinition? corlib = context.TryResolve (corlibName);
 				if (corlib == null)
 					continue;

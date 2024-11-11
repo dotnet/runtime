@@ -13,6 +13,7 @@ namespace Wasm.Build.Tests
 {
     public class ToolCommand : IDisposable
     {
+        private bool isDisposed = false;
         private string _label;
         protected ITestOutputHelper _testOutput;
 
@@ -93,12 +94,15 @@ namespace Wasm.Build.Tests
 
         public virtual void Dispose()
         {
+            if (isDisposed)
+                return;
             if (CurrentProcess is not null && !CurrentProcess.HasExited)
             {
                 CurrentProcess.Kill(entireProcessTree: true);
                 CurrentProcess.Dispose();
                 CurrentProcess = null;
             }
+            isDisposed = true;
         }
 
         protected virtual string GetFullArgs(params string[] args) => string.Join(" ", args);
@@ -109,7 +113,7 @@ namespace Wasm.Build.Tests
             CurrentProcess = CreateProcess(executable, args);
             DataReceivedEventHandler errorHandler = (s, e) =>
             {
-                if (e.Data == null)
+                if (e.Data == null || isDisposed)
                     return;
 
                 string msg = $"[{_label}] {e.Data}";
@@ -120,7 +124,7 @@ namespace Wasm.Build.Tests
 
             DataReceivedEventHandler outputHandler = (s, e) =>
             {
-                if (e.Data == null)
+                if (e.Data == null || isDisposed)
                     return;
 
                 string msg = $"[{_label}] {e.Data}";

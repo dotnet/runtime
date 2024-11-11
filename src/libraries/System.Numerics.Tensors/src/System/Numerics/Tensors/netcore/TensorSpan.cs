@@ -7,7 +7,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 using EditorBrowsableAttribute = System.ComponentModel.EditorBrowsableAttribute;
 using EditorBrowsableState = System.ComponentModel.EditorBrowsableState;
 
@@ -85,6 +84,7 @@ namespace System.Numerics.Tensors
                 this = default;
                 return; // returns default
             }
+
             if (!typeof(T).IsValueType && array.GetType() != typeof(T[]))
                 ThrowHelper.ThrowArrayTypeMismatchException();
 
@@ -132,7 +132,7 @@ namespace System.Numerics.Tensors
             TensorSpanHelpers.ValidateStrides(strides, lengths);
 
             nint maxElements = TensorSpanHelpers.ComputeMaxLinearIndex(strides, lengths);
-            if (maxElements >= span.Length && span.Length != 0)
+            if (span.IsEmpty ? maxElements != 0 : maxElements >= span.Length)
                 ThrowHelper.ThrowArgument_InvalidStridesAndLengths();
 
             _shape = new TensorShape(span.Length, lengths, strides);
@@ -167,7 +167,7 @@ namespace System.Numerics.Tensors
                 this = default;
                 return; // returns default
             }
-            if (!typeof(T).IsValueType && array.GetType() != typeof(T[]))
+            if (array.GetType().GetElementType() != typeof(T))
                 ThrowHelper.ThrowArrayTypeMismatchException();
 
             strides = strides.IsEmpty ? (ReadOnlySpan<nint>)TensorSpanHelpers.CalculateStrides(lengths, linearLength) : strides;
@@ -213,7 +213,7 @@ namespace System.Numerics.Tensors
                 this = default;
                 return; // returns default
             }
-            if (!typeof(T).IsValueType && array.GetType() != typeof(T[]))
+            if (array.GetType().GetElementType() != typeof(T))
                 ThrowHelper.ThrowArrayTypeMismatchException();
 
             nint startOffset = TensorSpanHelpers.ComputeStartOffsetSystemArray(array, startIndex);
@@ -510,14 +510,14 @@ namespace System.Numerics.Tensors
             if (Rank > TensorShape.MaxInlineRank)
             {
                 curIndexesArray = ArrayPool<nint>.Shared.Rent(Rank);
-                curIndexes = curIndexesArray;
-                curIndexes = curIndexes.Slice(0, Rank);
+                curIndexes = curIndexesArray.AsSpan(0, Rank);
             }
             else
             {
                 curIndexesArray = null;
                 curIndexes = stackalloc nint[Rank];
             }
+            curIndexes.Clear();
 
             nint clearedValues = 0;
             while (clearedValues < _shape.FlattenedLength)
@@ -552,36 +552,46 @@ namespace System.Numerics.Tensors
             // Using "if (!TryCopyTo(...))" results in two branches: one for the length
             // check, and one for the result of TryCopyTo. Since these checks are equivalent,
             // we can optimize by performing the check once ourselves then calling Memmove directly.
-            if (_shape.FlattenedLength > destination._shape._memoryLength)
-                ThrowHelper.ThrowArgumentException_DestinationTooShort();
-
-            scoped Span<nint> curIndexes;
-            nint[]? curIndexesArray;
-            if (Rank > TensorShape.MaxInlineRank)
+            if (TensorHelpers.IsBroadcastableTo(Lengths, destination.Lengths))
             {
-                curIndexesArray = ArrayPool<nint>.Shared.Rent(Rank);
-                curIndexes = curIndexesArray;
-                curIndexes = curIndexes.Slice(0, Rank);
+                scoped Span<nint> curIndexes;
+                nint[]? curIndexesArray;
+
+                if (Rank > TensorShape.MaxInlineRank)
+                {
+                    curIndexesArray = ArrayPool<nint>.Shared.Rent(destination.Rank);
+                    curIndexes = curIndexesArray.AsSpan(0, destination.Rank);
+                }
+                else
+                {
+                    curIndexesArray = null;
+                    curIndexes = stackalloc nint[destination.Rank];
+                }
+                curIndexes.Clear();
+
+                nint copiedValues = 0;
+                nint[] tempLengths = Tensor.GetSmallestBroadcastableLengths(Lengths, destination.Lengths);
+
+                TensorSpan<T> destinationSlice = destination.Slice(tempLengths);
+                ReadOnlyTensorSpan<T> srcSlice = Tensor.LazyBroadcast(this, tempLengths);
+                nint copyLength = srcSlice.Strides[^1] == 1 && TensorHelpers.IsContiguousAndDense(srcSlice) ? srcSlice.Lengths[^1] : 1;
+                int indexToAdjust = srcSlice.Strides[^1] == 1 && TensorHelpers.IsContiguousAndDense(srcSlice) ? srcSlice.Rank - 2 : srcSlice.Rank - 1;
+
+                while (copiedValues < destination.FlattenedLength)
+                {
+                    TensorSpanHelpers.Memmove(ref Unsafe.Add(ref destinationSlice._reference, TensorSpanHelpers.ComputeLinearIndex(curIndexes, destinationSlice.Strides, destinationSlice.Lengths)), ref Unsafe.Add(ref srcSlice._reference, TensorSpanHelpers.ComputeLinearIndex(curIndexes, srcSlice.Strides, srcSlice.Lengths)), copyLength);
+                    TensorSpanHelpers.AdjustIndexes(indexToAdjust, 1, curIndexes, tempLengths);
+                    copiedValues += copyLength;
+                }
+                Debug.Assert(copiedValues == destination.FlattenedLength, "Didn't copy the right amount to the array.");
+
+                if (curIndexesArray != null)
+                    ArrayPool<nint>.Shared.Return(curIndexesArray);
             }
             else
             {
-                curIndexesArray = null;
-                curIndexes = stackalloc nint[Rank];
+                ThrowHelper.ThrowArgumentException_DestinationTooShort();
             }
-
-            nint copiedValues = 0;
-            TensorSpan<T> slice = destination.Slice(_shape.Lengths);
-            while (copiedValues < _shape.FlattenedLength)
-            {
-                TensorSpanHelpers.Memmove(ref Unsafe.Add(ref slice._reference, TensorSpanHelpers.ComputeLinearIndex(curIndexes, destination.Strides, Lengths)), ref Unsafe.Add(ref _reference, TensorSpanHelpers.ComputeLinearIndex(curIndexes, Strides, Lengths)), Lengths[Rank - 1]);
-                TensorSpanHelpers.AdjustIndexes(Rank - 2, 1, curIndexes, _shape.Lengths);
-                copiedValues += Lengths[Rank - 1];
-            }
-            Debug.Assert(copiedValues == _shape.FlattenedLength, "Didn't copy the right amount to the array.");
-
-            if (curIndexesArray != null)
-                ArrayPool<nint>.Shared.Return(curIndexesArray);
-
         }
 
         /// <summary>
@@ -596,32 +606,39 @@ namespace System.Numerics.Tensors
         {
             bool retVal = false;
 
-            if (_shape.FlattenedLength <= destination.FlattenedLength)
+            if (TensorHelpers.IsBroadcastableTo(Lengths, destination.Lengths))
             {
                 scoped Span<nint> curIndexes;
                 nint[]? curIndexesArray;
+
                 if (Rank > TensorShape.MaxInlineRank)
                 {
-                    curIndexesArray = ArrayPool<nint>.Shared.Rent(Rank);
-                    curIndexes = curIndexesArray;
-                    curIndexes = curIndexes.Slice(0, Rank);
+                    curIndexesArray = ArrayPool<nint>.Shared.Rent(destination.Rank);
+                    curIndexes = curIndexesArray.AsSpan(0, destination.Rank);
                 }
                 else
                 {
                     curIndexesArray = null;
-                    curIndexes = stackalloc nint[Rank];
+                    curIndexes = stackalloc nint[destination.Rank];
                 }
+                curIndexes.Clear();
 
                 nint copiedValues = 0;
-                TensorSpan<T> slice = destination.Slice(_shape.Lengths);
-                while (copiedValues < _shape.FlattenedLength)
+                nint[] tempLengths = Tensor.GetSmallestBroadcastableLengths(Lengths, destination.Lengths);
+
+                TensorSpan<T> destinationSlice = destination.Slice(tempLengths);
+                ReadOnlyTensorSpan<T> srcSlice = Tensor.LazyBroadcast(this, tempLengths);
+                nint copyLength = srcSlice.Strides[^1] == 1 && TensorHelpers.IsContiguousAndDense(srcSlice) ? srcSlice.Lengths[^1] : 1;
+                int indexToAdjust = srcSlice.Strides[^1] == 1 && TensorHelpers.IsContiguousAndDense(srcSlice) ? srcSlice.Rank - 2 : srcSlice.Rank - 1;
+
+                while (copiedValues < destination.FlattenedLength)
                 {
-                    TensorSpanHelpers.Memmove(ref Unsafe.Add(ref slice._reference, TensorSpanHelpers.ComputeLinearIndex(curIndexes, Strides, Lengths)), ref Unsafe.Add(ref _reference, TensorSpanHelpers.ComputeLinearIndex(curIndexes, Strides, Lengths)), Lengths[Rank - 1]);
-                    TensorSpanHelpers.AdjustIndexes(Rank - 2, 1, curIndexes, _shape.Lengths);
-                    copiedValues += Lengths[Rank - 1];
+                    TensorSpanHelpers.Memmove(ref Unsafe.Add(ref destinationSlice._reference, TensorSpanHelpers.ComputeLinearIndex(curIndexes, destinationSlice.Strides, destinationSlice.Lengths)), ref Unsafe.Add(ref srcSlice._reference, TensorSpanHelpers.ComputeLinearIndex(curIndexes, srcSlice.Strides, srcSlice.Lengths)), copyLength);
+                    TensorSpanHelpers.AdjustIndexes(indexToAdjust, 1, curIndexes, tempLengths);
+                    copiedValues += copyLength;
                 }
+                Debug.Assert(copiedValues == destination.FlattenedLength, "Didn't copy the right amount to the array.");
                 retVal = true;
-                Debug.Assert(copiedValues == _shape.FlattenedLength, "Didn't copy the right amount to the array.");
 
                 if (curIndexesArray != null)
                     ArrayPool<nint>.Shared.Return(curIndexesArray);
@@ -690,37 +707,59 @@ namespace System.Numerics.Tensors
             if (ranges.Length != Lengths.Length)
                 ThrowHelper.ThrowIndexOutOfRangeException();
 
+            TensorSpan<T> toReturn;
             scoped Span<nint> lengths;
             scoped Span<nint> offsets;
+            nint[]? lengthsArray;
+            nint[]? offsetsArray;
             if (Rank > TensorShape.MaxInlineRank)
             {
-                lengths = stackalloc nint[Rank];
-                offsets = stackalloc nint[Rank];
+                lengthsArray = ArrayPool<nint>.Shared.Rent(Rank);
+                lengths = lengthsArray.AsSpan(0, Rank);
+
+                offsetsArray = ArrayPool<nint>.Shared.Rent(Rank);
+                offsets = offsetsArray.AsSpan(0, Rank);
             }
             else
             {
-                lengths = new nint[Rank];
-                offsets = new nint[Rank];
+                lengths = stackalloc nint[Rank];
+                offsets = stackalloc nint[Rank];
+
+                lengthsArray = null;
+                offsetsArray = null;
             }
+            lengths.Clear();
+            offsets.Clear();
 
             for (int i = 0; i < ranges.Length; i++)
             {
                 (offsets[i], lengths[i]) = ranges[i].GetOffsetAndLength(Lengths[i]);
             }
 
+            // When we have an empty Tensor and someone wants to slice all of it, we should return an empty Tensor.
+            // FlattenedLength is computed everytime so using a local to cache the value.
+            nint flattenedLength = FlattenedLength;
             nint index = 0;
-            for (int i = 0; i < offsets.Length; i++)
-            {
-                if (offsets[i] < 0 || offsets[i] >= Lengths[i])
-                    ThrowHelper.ThrowIndexOutOfRangeException();
 
-                index += Strides[i] * (offsets[i]);
+            if (flattenedLength != 0)
+            {
+                for (int i = 0; i < offsets.Length; i++)
+                {
+                    index += Strides[i] * (offsets[i]);
+                }
             }
 
-            if (index >= _shape._memoryLength || index < 0)
+            if ((index >= _shape._memoryLength || index < 0) && flattenedLength != 0)
                 ThrowHelper.ThrowIndexOutOfRangeException();
 
-            return new TensorSpan<T>(ref Unsafe.Add(ref _reference, index), lengths, _shape.Strides, _shape._memoryLength - index);
+            toReturn = new TensorSpan<T>(ref Unsafe.Add(ref _reference, index), lengths, _shape.Strides, _shape._memoryLength - index);
+
+            if (offsetsArray != null)
+                ArrayPool<nint>.Shared.Return(offsetsArray);
+            if (lengthsArray != null)
+                ArrayPool<nint>.Shared.Return(lengthsArray);
+
+            return toReturn;
         }
 
         /// <summary>
@@ -755,14 +794,14 @@ namespace System.Numerics.Tensors
             if (Rank > TensorShape.MaxInlineRank)
             {
                 curIndexesArray = ArrayPool<nint>.Shared.Rent(Rank);
-                curIndexes = curIndexesArray;
-                curIndexes = curIndexes.Slice(0, Rank);
+                curIndexes = curIndexesArray.AsSpan(0, Rank);
             }
             else
             {
                 curIndexesArray = null;
                 curIndexes = stackalloc nint[Rank];
             }
+            curIndexes.Clear();
 
             nint copiedValues = 0;
             while (copiedValues < _shape.FlattenedLength)

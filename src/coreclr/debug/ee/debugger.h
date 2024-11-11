@@ -451,7 +451,7 @@ typedef DPTR(class DebuggerModule) PTR_DebuggerModule;
 class DebuggerModule
 {
   public:
-    DebuggerModule(Module * pRuntimeModule, DomainAssembly * pDomainAssembly, AppDomain * pAppDomain);
+    DebuggerModule(Module * pRuntimeModule, DomainAssembly * pDomainAssembly);
 
     // Do we have any optimized code in the module?
     // JMC-probes aren't emitted in optimized code,
@@ -464,8 +464,6 @@ class DebuggerModule
 
     BOOL ClassLoadCallbacksEnabled(void);
     void EnableClassLoadCallbacks(BOOL f);
-
-    AppDomain* GetAppDomain();
 
     Module * GetRuntimeModule();
 
@@ -482,8 +480,6 @@ class DebuggerModule
 
     PTR_Module     m_pRuntimeModule;
     PTR_DomainAssembly m_pRuntimeDomainAssembly;
-
-    AppDomain*     m_pAppDomain;
 
     bool m_fHasOptimizedCode;
 
@@ -1877,7 +1873,7 @@ extern "C" void __stdcall NotifyRightSideOfSyncCompleteFlare(void);
 extern "C" void __stdcall NotifySecondChanceReadyForDataFlare(void);
 #ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
 #if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
-extern "C" void __stdcall SetThreadContextNeededFlare(TADDR pContext, DWORD size, TADDR Rip, TADDR Rsp);
+extern "C" void __stdcall SetThreadContextNeededFlare(TADDR pContext, DWORD size, bool fIsInPlaceSingleStep, PRD_TYPE opcode);
 #else
 #error Platform not supported
 #endif
@@ -1892,6 +1888,7 @@ extern "C" void __stdcall SetThreadContextNeededFlare(TADDR pContext, DWORD size
 struct ShouldAttachDebuggerParams;
 struct EnsureDebuggerAttachedParams;
 struct SendMDANotificationParams;
+class DebuggerSteppingInfo;
 
 // class Debugger:  This class implements DebugInterface to provide
 // the hooks to the Runtime directly.
@@ -1987,34 +1984,28 @@ public:
                     LPCWSTR pszModuleName,
                     DWORD dwModuleName,
                     Assembly *pAssembly,
-                    AppDomain *pAppDomain,
                     DomainAssembly * pDomainAssembly,
                     BOOL fAttaching);
     DebuggerModule * AddDebuggerModule(DomainAssembly * pDomainAssembly);
 
-
-    void UnloadModule(Module* pRuntimeModule,
-                      AppDomain *pAppDomain);
+    void UnloadModule(Module* pRuntimeModule);
     void DestructModule(Module *pModule);
 
     void RemoveModuleReferences(Module * pModule);
 
 
-    void SendUpdateModuleSymsEventAndBlock(Module * pRuntimeModule, AppDomain * pAppDomain);
-    void SendRawUpdateModuleSymsEvent(Module * pRuntimeModule, AppDomain * pAppDomain);
+    void SendUpdateModuleSymsEventAndBlock(Module * pRuntimeModule);
+    void SendRawUpdateModuleSymsEvent(Module * pRuntimeModule);
 
     BOOL LoadClass(TypeHandle th,
                    mdTypeDef classMetadataToken,
-                   Module* classModule,
-                   AppDomain *pAppDomain);
+                   Module* classModule);
     void UnloadClass(mdTypeDef classMetadataToken,
-                     Module* classModule,
-                     AppDomain *pAppDomain);
+                     Module* classModule);
 
     void SendClassLoadUnloadEvent (mdTypeDef classMetadataToken,
                                    DebuggerModule *classModule,
                                    Assembly *pAssembly,
-                                   AppDomain *pAppDomain,
                                    BOOL fIsLoadEvent);
     BOOL SendSystemClassLoadUnloadEvent (mdTypeDef classMetadataToken,
                                          Module *classModule,
@@ -2168,7 +2159,7 @@ public:
 
     DebuggerModule * LookupOrCreateModule(VMPTR_DomainAssembly vmDomainAssembly);
     DebuggerModule * LookupOrCreateModule(DomainAssembly * pDomainAssembly);
-    DebuggerModule * LookupOrCreateModule(Module * pModule, AppDomain * pAppDomain);
+    DebuggerModule * LookupOrCreateModule(Module * pModule);
 
     HRESULT GetAndSendInterceptCommand(DebuggerIPCEvent *event);
 
@@ -2620,6 +2611,10 @@ public:
     bool ThisIsHelperThread(void);
 
     HRESULT ReDaclEvents(PSECURITY_DESCRIPTOR securityDescriptor);
+#ifndef DACCESS_COMPILE
+    void MulticastTraceNextStep(DELEGATEREF pbDel, INT32 count);
+    void ExternalMethodFixupNextStep(PCODE address);
+#endif
 
 #ifdef DACCESS_COMPILE
     virtual void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
@@ -3065,7 +3060,8 @@ private:
 private:
     BOOL m_fOutOfProcessSetContextEnabled;
 public:
-    void SendSetThreadContextNeeded(CONTEXT *context);
+    // Used by Debugger::FirstChanceNativeException to update the context from out of process
+    void SendSetThreadContextNeeded(CONTEXT *context, DebuggerSteppingInfo *pDebuggerSteppingInfo = NULL);
     BOOL IsOutOfProcessSetContextEnabled();
 };
 
@@ -3337,24 +3333,15 @@ public:
 
     void AddModule(DebuggerModule *module);
 
-    void RemoveModule(Module* module, AppDomain *pAppDomain);
-
+    void RemoveModule(Module* module);
 
     void Clear();
 
-    //
-    // RemoveModules removes any module loaded into the given appdomain from the hash.  This is used when we send an
-    // ExitAppdomain event to ensure that there are no leftover modules in the hash. This can happen when we have shared
-    // modules that aren't properly accounted for in the CLR. We miss sending UnloadModule events for those modules, so
-    // we clean them up with this method.
-    //
-    void RemoveModules(AppDomain *pAppDomain);
 #endif // #ifndef DACCESS_COMPILE
 
     DebuggerModule *GetModule(Module* module);
 
     // We should never look for a NULL Module *
-    DebuggerModule *GetModule(Module* module, AppDomain* pAppDomain);
     DebuggerModule *GetFirstModule(HASHFIND *info);
     DebuggerModule *GetNextModule(HASHFIND *info);
 };

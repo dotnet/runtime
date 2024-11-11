@@ -17,6 +17,7 @@ public class SignalRClientTests : SignalRTestsBase
     {
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/106807")]
     [ConditionalTheory(typeof(BuildTestBase), nameof(IsWorkloadWithMultiThreadingForDefaultFramework))]
     [InlineData("Debug", "LongPolling")]
     [InlineData("Release", "LongPolling")]

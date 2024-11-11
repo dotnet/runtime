@@ -30,12 +30,15 @@ namespace System.Buffers
             }
 
             // Reserve and commit the entire range as NOACCESS.
-
-            VirtualAllocHandle handle = VirtualAllocHandle.Allocate(
-                lpAddress: IntPtr.Zero,
-                dwSize: (IntPtr)totalBytesToAllocate /* cast throws OverflowException if out of range */,
-                flAllocationType: VirtualAllocAllocationType.MEM_RESERVE | VirtualAllocAllocationType.MEM_COMMIT,
-                flProtect: VirtualAllocProtection.PAGE_NOACCESS);
+            VirtualAllocHandle handle;
+            checked
+            {
+                handle = VirtualAllocHandle.Allocate(
+                    lpAddress: IntPtr.Zero,
+                    dwSize: (IntPtr)totalBytesToAllocate /* cast throws OverflowException if out of range */,
+                    flAllocationType: VirtualAllocAllocationType.MEM_RESERVE | VirtualAllocAllocationType.MEM_COMMIT,
+                    flProtect: VirtualAllocProtection.PAGE_NOACCESS);
+            }
 
             if (handle == null || handle.IsInvalid)
             {

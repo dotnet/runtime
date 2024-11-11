@@ -22,7 +22,7 @@ public static class NrbfDecoder
     // The header consists of:
     // - a byte that describes the record type (SerializationRecordType.SerializedStreamHeader)
     // - four 32 bit integers:
-    //   - root Id (every value is valid)
+    //   - root Id (every value except of 0 is valid)
     //   - header Id (value is ignored)
     //   - major version, it has to be equal 1.
     //   - minor version, it has to be equal 0.
