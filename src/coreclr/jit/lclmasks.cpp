@@ -318,9 +318,8 @@ public:
             // There is not enough information in the lcl to get simd types. Instead reuse the cached
             // simd types from the removed convert nodes.
             assert(weight.simdBaseJitType != CORINFO_TYPE_UNDEF);
-            GenTree* convertOp = m_compiler->gtNewSimdCvtVectorToMaskNode(TYP_MASK, lclOp->Data(),
-                                                                          weight.simdBaseJitType, weight.simdSize);
-            lclOp->Data()      = convertOp;
+            lclOp->Data() = m_compiler->gtNewSimdCvtVectorToMaskNode(TYP_MASK, lclOp->Data(), weight.simdBaseJitType,
+                                                                     weight.simdSize);
         }
 
         else if (isLocalUse && removeConversion)
@@ -330,20 +329,6 @@ public:
             // to
             //      user(use:LCL_VAR(x))
 
-            GenTree* const convertOp = *use;
-
-            // Find the location of convertOp in the user
-            int opNum = 1;
-            for (; opNum <= user->AsHWIntrinsic()->GetOperandCount(); opNum++)
-            {
-                if (user->AsHWIntrinsic()->Op(opNum) == convertOp)
-                {
-                    break;
-                }
-            }
-            assert(opNum <= user->AsHWIntrinsic()->GetOperandCount());
-
-            // Remove the convert convertOp
             *use = lclOp;
         }
 
