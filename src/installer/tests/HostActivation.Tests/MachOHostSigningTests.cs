@@ -29,8 +29,7 @@ namespace HostActivation.Tests
                 .CaptureStdErr()
                 .CaptureStdOut()
                 .Execute();
-            // AppHost exit code should be 149 when the apphost runs properly but cannot find the appliation/runtime
-            executedCommand.ExitCode.Should().Be(149);
+            executedCommand.Should().ExitWith(Constants.ErrorCode.AppHostExeNotBoundFailure);
         }
     }
 }

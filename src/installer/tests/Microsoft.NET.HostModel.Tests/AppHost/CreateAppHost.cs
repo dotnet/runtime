@@ -379,12 +379,12 @@ namespace Microsoft.NET.HostModel.AppHost.Tests
         }
 
         [Fact]
-        public void CodeSigningFailuresThrow()
+        public void CodeSignNotMachOThrows()
         {
             using (TestArtifact artifact = CreateTestDirectory())
             {
                 string sourceAppHostMock = PrepareAppHostMockFile(artifact.Location);
-                // File.SetAttributes(sourceAppHostMock, FileAttributes.ReadOnly);
+                File.SetAttributes(sourceAppHostMock, FileAttributes.ReadOnly);
                 string destinationFilePath = Path.Combine(artifact.Location, "DestinationAppHost.exe.mock");
                 string appBinaryFilePath = "Test/App/Binary/Path.dll";
                 // The apphost is not a Mach file, so an exception should be thrown.

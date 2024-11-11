@@ -3,10 +3,12 @@
 
 namespace Microsoft.NET.HostModel.MachO;
 
+/// <summary>
+/// See
+/// </summary>
 internal enum CodeDirectorySpecialSlot
 {
-    Requirements = 2,
-
     CodeDirectory = 0,
+    Requirements = 2,
     CmsWrapper = 0x10000,
 }
