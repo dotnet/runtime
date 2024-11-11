@@ -6,10 +6,7 @@ if (NOT CLR_CMAKE_USE_SYSTEM_ZLIB)
     include(${CLR_SRC_NATIVE_DIR}/external/zlib-ng.cmake)
 endif()
 
-if (CLR_CMAKE_USE_SYSTEM_BROTLI)
-    find_package(PkgConfig REQUIRED)
-    pkg_check_modules(BROTLI REQUIRED brotlidec brotlienc brotlicommon)
-else()
+if(NOT CLR_CMAKE_USE_SYSTEM_BROTLI)
     include(${CLR_SRC_NATIVE_DIR}/external/brotli.cmake)
 endif()
 
