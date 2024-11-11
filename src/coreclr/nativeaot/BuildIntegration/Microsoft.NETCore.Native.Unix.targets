@@ -173,9 +173,9 @@ The .NET Foundation licenses this file to you under the MIT license.
 
     <!-- brotli must be added after System.IO.Compression.Native and brotlicommon must be added last, order matters. -->
     <ItemGroup Condition="'$(UseSystemBrotli)' != 'true'">
-      <NativeLibrary Include="$(IlcSdkPath)libbrotlienc.a" />
-      <NativeLibrary Include="$(IlcSdkPath)libbrotlidec.a" />
-      <NativeLibrary Include="$(IlcSdkPath)libbrotlicommon.a" />
+      <NativeLibrary Include="$(IlcFrameworkNativePath)libbrotlienc.a" />
+      <NativeLibrary Include="$(IlcFrameworkNativePath)libbrotlidec.a" />
+      <NativeLibrary Include="$(IlcFrameworkNativePath)libbrotlicommon.a" />
     </ItemGroup>
 
 

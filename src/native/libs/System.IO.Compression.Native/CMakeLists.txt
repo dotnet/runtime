@@ -6,7 +6,7 @@ if (NOT CLR_CMAKE_USE_SYSTEM_ZLIB)
     include(${CLR_SRC_NATIVE_DIR}/external/zlib-ng.cmake)
 endif()
 
-if(NOT CLR_CMAKE_USE_SYSTEM_BROTLI)
+if (NOT CLR_CMAKE_USE_SYSTEM_BROTLI)
     include(${CLR_SRC_NATIVE_DIR}/external/brotli.cmake)
 endif()
 
@@ -93,6 +93,15 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
 
     target_include_directories(System.IO.Compression.Native-Static PUBLIC ${BROTLI_INCLUDE_DIRS})
     target_link_libraries(System.IO.Compression.Native-Static PUBLIC ${BROTLI_LIBRARIES})
+
+    foreach(BROTLI_LIB ${BROTLI_LIBRARIES})
+        # Brotli's build scripts can add some system dependencies like libm
+        # to BROTLI_LIBRARIES. Only install the libraries that are actually
+        # defined as CMake targets.
+        if (TARGET "${BROTLI_LIB}")
+            install (TARGETS ${BROTLI_LIB} DESTINATION ${STATIC_LIB_DESTINATION} COMPONENT libs)
+        endif()
+    endforeach(BROTLI_LIB ${BROTLI_LIBRARIES})
 else ()
     set(NATIVE_LIBS_EXTRA)
     append_extra_compression_libs(NATIVE_LIBS_EXTRA)
@@ -180,25 +189,20 @@ else ()
     if(STATIC_LIBS_ONLY)
         install_static_library(System.IO.Compression.Native.Aot aotsdk nativeaot)
         install_static_library(System.IO.Compression.Native.Aot.GuardCF aotsdk nativeaot)
+        foreach(BROTLI_LIB ${BROTLI_LIBRARIES})
+            # Brotli's build scripts can add some system dependencies like libm
+            # to BROTLI_LIBRARIES. Only install the libraries that are actually
+            # defined as CMake targets.
+            if (TARGET "${BROTLI_LIB}")
+                install_static_library(${BROTLI_LIB} aotsdk nativeaot)
+            endif()
+        endforeach(BROTLI_LIB ${BROTLI_LIBRARIES})
     endif()
 
 endif ()
 
 if((NOT CLR_CMAKE_USE_SYSTEM_ZLIB) AND STATIC_LIBS_ONLY)
     install_static_library(zlib aotsdk nativeaot)
-endif()
-
-if(NOT CLR_CMAKE_USE_SYSTEM_BROTLI)
-    foreach(BROTLI_LIB ${BROTLI_LIBRARIES})
-        # Brotli's build scripts can add some system dependencies like libm
-        # to BROTLI_LIBRARIES. Only install the libraries that are actually
-        # defined as CMake targets.
-        if (TARGET "${BROTLI_LIB}")
-            if (STATIC_LIBS_ONLY)
-                install_static_library(${BROTLI_LIB} aotsdk nativeaot)
-            endif()
-        endif()
-    endforeach(BROTLI_LIB ${BROTLI_LIBRARIES})
 endif()
 
 install (TARGETS System.IO.Compression.Native-Static DESTINATION ${STATIC_LIB_DESTINATION} COMPONENT libs)
