@@ -237,37 +237,10 @@ namespace ILCompiler
                 _dataField = new ExternSymbolMappedField(context.GetWellKnownType(WellKnownType.Int32), TokenUseBeginSymbol);
             }
 
-            public override TypeSystemContext Context
-            {
-                get
-                {
-                    return _context;
-                }
-            }
-
-            public override TypeDesc OwningType
-            {
-                get
-                {
-                    return _context.GeneratedAssembly.GetGlobalModuleType();
-                }
-            }
-
-            public override string Name
-            {
-                get
-                {
-                    return "InitializeReachabilityInfo";
-                }
-            }
-
-            public override string DiagnosticName
-            {
-                get
-                {
-                    return "InitializeReachabilityInfo";
-                }
-            }
+            public override TypeSystemContext Context => _context;
+            public override TypeDesc OwningType => _context.GeneratedAssembly.GetGlobalModuleType();
+            public override string Name => "InitializeReachabilityInfo";
+            public override string DiagnosticName => "InitializeReachabilityInfo";
 
             public override MethodIL EmitIL()
             {
