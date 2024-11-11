@@ -31,29 +31,29 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			RequireNonPublicConstructors (typeof (NonPublicConstructorsType));
 			RequireNonPublicConstructors (typeof (NonPublicConstructorsBeforeFieldInitType));
 			RequireNonPublicConstructorsWithInherited (typeof (NonPublicConstructorsWithInheritedType));
-			RequireAllConstructors (typeof (AllConstructorsType));
-			RequireAllConstructors (typeof (AllConstructorsBeforeFieldInitType));
+			RequirePublicAndNonPublicConstructors (typeof (AllConstructorsType));
+			RequirePublicAndNonPublicConstructors (typeof (AllConstructorsBeforeFieldInitType));
 			RequirePublicMethods (typeof (PublicMethodsType));
 			RequireNonPublicMethods (typeof (NonPublicMethodsType));
 			RequireNonPublicMethodsWithInherited (typeof (NonPublicMethodsWithInheritedType));
-			RequireAllMethods (typeof (AllMethodsType));
+			RequirePublicAndNonPublicMethods (typeof (AllMethodsType));
 			RequirePublicFields (typeof (PublicFieldsType));
 			RequireNonPublicFields (typeof (NonPublicFieldsType));
 			RequireNonPublicFieldsWithInherited (typeof (NonPublicFieldsWithInheritedType));
-			RequireAllFields (typeof (AllFieldsType));
+			RequirePublicAndNonPublicFields (typeof (AllFieldsType));
 			RequirePublicNestedTypes (typeof (PublicNestedTypesType));
 			RequirePublicNestedTypesWithInherited (typeof (PublicNestedTypesWithInheritedType));
 			RequireNonPublicNestedTypes (typeof (NonPublicNestedTypesType));
 			RequireNonPublicNestedTypesWithInherited (typeof (NonPublicNestedTypesWithInheritedType));
-			RequireAllNestedTypes (typeof (AllNestedTypesType));
+			RequirePublicAndNonPublicNestedTypes (typeof (AllNestedTypesType));
 			RequirePublicProperties (typeof (PublicPropertiesType));
 			RequireNonPublicProperties (typeof (NonPublicPropertiesType));
 			RequireNonPublicPropertiesWithInherited (typeof (NonPublicPropertiesWithInheritedType));
-			RequireAllProperties (typeof (AllPropertiesType));
+			RequirePublicAndNonPublicProperties (typeof (AllPropertiesType));
 			RequirePublicEvents (typeof (PublicEventsType));
 			RequireNonPublicEvents (typeof (NonPublicEventsType));
 			RequireNonPublicEventsWithInherited (typeof (NonPublicEventsWithInheritedType));
-			RequireAllEvents (typeof (AllEventsType));
+			RequirePublicAndNonPublicEvents (typeof (AllEventsType));
 			RequireInterfaces (typeof (InterfacesType));
 			RequireAll (typeof (AllType));
 			RequireAll (typeof (RequireAllWithRecursiveTypeReferences));
@@ -313,7 +313,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 
 		[Kept]
-		private static void RequireAllConstructors (
+		private static void RequirePublicAndNonPublicConstructors (
 			[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
 			[KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute))]
 			Type type)
@@ -771,7 +771,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		}
 
 		[Kept]
-		private static void RequireAllMethods (
+		private static void RequirePublicAndNonPublicMethods (
 			[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)]
 			[KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute))]
 			Type type)
@@ -1268,7 +1268,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		}
 
 		[Kept]
-		private static void RequireAllFields (
+		private static void RequirePublicAndNonPublicFields (
 			[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields)]
 			[KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute))]
 			Type type)
@@ -1575,7 +1575,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		}
 
 		[Kept]
-		private static void RequireAllNestedTypes (
+		private static void RequirePublicAndNonPublicNestedTypes (
 			[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicNestedTypes | DynamicallyAccessedMemberTypes.NonPublicNestedTypes)]
 			[KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute))]
 			Type type)
@@ -1807,7 +1807,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		}
 
 		[Kept]
-		private static void RequireAllProperties (
+		private static void RequirePublicAndNonPublicProperties (
 			[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)]
 			[KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute))]
 			Type type)
@@ -2093,7 +2093,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		}
 
 		[Kept]
-		private static void RequireAllEvents (
+		private static void RequirePublicAndNonPublicEvents (
 			[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicEvents | DynamicallyAccessedMemberTypes.NonPublicEvents)]
 			[KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute))]
 			Type type)
