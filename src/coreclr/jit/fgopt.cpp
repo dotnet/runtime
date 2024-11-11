@@ -6501,10 +6501,21 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
     {
         iterateTailMerge(block);
 
-        // TODO: consider removing hasSingleStmt(), it should find more opportunities
-        // (with size and TP regressions)
-        if (block->KindIs(BBJ_RETURN) && block->hasSingleStmt() && (block != genReturnBB))
+        if (block->KindIs(BBJ_RETURN) && !block->isEmpty() && (block != genReturnBB))
         {
+            // Avoid spitting a return away from a possible tail call
+            //
+            if (!block->hasSingleStmt())
+            {
+                Statement* const lastStmt = block->lastStmt();
+                Statement* const prevStmt = lastStmt->GetPrevStmt();
+                GenTree* const   prevTree = prevStmt->GetRootNode();
+                if (prevTree->IsCall() && prevTree->AsCall()->CanTailCall())
+                {
+                    continue;
+                }
+            }
+
             retBlocks.Push(block);
         }
     }
