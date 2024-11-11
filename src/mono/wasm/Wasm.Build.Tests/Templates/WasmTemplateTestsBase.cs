@@ -113,7 +113,7 @@ public class WasmTemplateTestsBase : BuildTestBase
     }
 
 
-    public (string projectDir, string buildOutput) BuildTemplateProject(
+    public virtual (string projectDir, string buildOutput) BuildTemplateProject(
         ProjectInfo projectInfo,
         BuildProjectOptions buildOptions,
         params string[] extraArgs)
@@ -231,10 +231,10 @@ public class WasmTemplateTestsBase : BuildTestBase
 
     // Keeping these methods with explicit Build/Publish in the name
     // so in the test code it is evident which is being run!
-    public async Task<RunResult> RunForBuildWithDotnetRun(RunOptions runOptions)
+    public virtual async Task<RunResult> RunForBuildWithDotnetRun(RunOptions runOptions)
         => await BrowserRun(runOptions with { Host = RunHost.DotnetRun });
 
-    public async Task<RunResult> RunForPublishWithWebServer(RunOptions runOptions)
+    public virtual async Task<RunResult> RunForPublishWithWebServer(RunOptions runOptions)
         => await BrowserRun(runOptions with { Host = RunHost.WebServer });
 
     private async Task<RunResult> BrowserRun(RunOptions runOptions) => runOptions.Host switch
@@ -252,7 +252,7 @@ public class WasmTemplateTestsBase : BuildTestBase
         _ => throw new NotImplementedException(runOptions.Host.ToString())
     };
 
-    protected async Task<RunResult> BrowserRunTest(string runArgs,
+    private async Task<RunResult> BrowserRunTest(string runArgs,
                                     string workingDirectory,
                                     RunOptions runOptions)
     {

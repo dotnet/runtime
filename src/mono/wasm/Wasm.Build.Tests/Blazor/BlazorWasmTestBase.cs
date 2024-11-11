@@ -4,6 +4,7 @@
 #nullable enable
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -23,6 +24,63 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestsBase
     {
         _provider = GetProvider<WasmSdkBasedProjectProvider>();
     }
+
+    private Dictionary<string, string> blazorHomePageReplacements = new Dictionary<string, string>
+        {
+            { 
+                "Welcome to your new app.",
+                """
+                Welcome to your new app.
+                @code {
+                    protected override void OnAfterRender(bool firstRender)
+                    {
+                        if (firstRender)
+                        {
+                            Console.WriteLine("WASM EXIT 0");
+                        }
+                    }
+                }
+                """ }
+        };
+
+    private Func<RunOptions, IPage, Task>? _executeAfterLoaded = async (runOptions, page) =>
+        {
+            if (runOptions.CheckCounter)
+            {
+                await page.Locator("text=Counter").ClickAsync();
+                var txt = await page.Locator("p[role='status']").InnerHTMLAsync();
+                Assert.Equal("Current count: 0", txt);
+
+                await page.Locator("text=\"Click me\"").ClickAsync();
+                await Task.Delay(300);
+                txt = await page.Locator("p[role='status']").InnerHTMLAsync();
+                Assert.Equal("Current count: 1", txt);
+            }
+        };
+
+    public override (string projectDir, string buildOutput) BuildTemplateProject(
+        ProjectInfo projectInfo,
+        BuildProjectOptions buildOptions,
+        params string[] extraArgs)
+    {
+        try
+        {
+            var additionalOptiont = buildOptions.WarnAsError ? 
+                new[] { "-p:BlazorEnableCompression=false",  "/warnaserror"} :
+                new[] { "-p:BlazorEnableCompression=false" };
+            extraArgs = extraArgs.Concat(additionalOptiont).ToArray();
+            return base.BuildTemplateProject(projectInfo, buildOptions, extraArgs);
+        }
+        catch (XunitException xe)
+        {
+            if (xe.Message.Contains("error CS1001: Identifier expected"))
+                Utils.DirectoryCopy(_projectDir!, _logPath, testOutput: _testOutput);
+            throw;
+        }
+    }
+
+    protected void UpdateHomePage() =>
+        UpdateFile(Path.Combine("Pages", "Home.razor"), blazorHomePageReplacements);
 
     public void InitBlazorWasmProjectDir(string id, string targetFramework = DefaultTargetFrameworkForBlazor)
     {
@@ -97,7 +155,7 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestsBase
         string id,
         string config,
         bool publish = false,
-        bool setWasmDevel = true,
+        bool setWasmDevel = true, // always used with false
         bool expectSuccess = true,
         params string[] extraArgs)
     {
@@ -113,7 +171,7 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestsBase
                             ExpectSuccess: expectSuccess),
                         extraArgs.Concat(new[]
                         {
-                            "-p:BlazorEnableCompression=false",
+                            "-p:BlazorEnableCompression=false", // use it in BuildTemplateProject overload
                             setWasmDevel ? "-p:_WasmDevel=true" : string.Empty
                         }).ToArray());
         }
@@ -174,44 +232,15 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestsBase
 
     // Keeping these methods with explicit Build/Publish in the name
     // so in the test code it is evident which is being run!
-    public async Task<RunResult> BlazorRunForBuildWithDotnetRun(RunOptions runOptions)
-        => await BlazorRunTest(runOptions with { Host = RunHost.DotnetRun });
+    public override async Task<RunResult> RunForBuildWithDotnetRun(RunOptions runOptions)
+        => await base.RunForBuildWithDotnetRun(runOptions with {
+            ExecuteAfterLoaded = runOptions.ExecuteAfterLoaded ?? _executeAfterLoaded
+        });
 
-    public async Task<RunResult> BlazorRunForPublishWithWebServer(RunOptions runOptions)
-        => await BlazorRunTest(runOptions with { Host = RunHost.WebServer });
-
-    public async Task<RunResult> BlazorRunTest(RunOptions runOptions)
-    {
-        if (runOptions.ExecuteAfterLoaded is null)
-        {
-            runOptions = runOptions with { ExecuteAfterLoaded = async (runOptions, page) =>
-                {
-                    if (runOptions.CheckCounter)
-                    {
-                        await page.Locator("text=Counter").ClickAsync();
-                        var txt = await page.Locator("p[role='status']").InnerHTMLAsync();
-                        Assert.Equal("Current count: 0", txt);
-
-                        await page.Locator("text=\"Click me\"").ClickAsync();
-                        await Task.Delay(300);
-                        txt = await page.Locator("p[role='status']").InnerHTMLAsync();
-                        Assert.Equal("Current count: 1", txt);
-                    }
-                }
-            };
-        }
-        switch (runOptions.Host)
-        {
-            case RunHost.DotnetRun:
-                return await BrowserRunTest($"run -c {runOptions.Configuration} --no-build", _projectDir!, runOptions);
-            case RunHost.WebServer:
-                return await BrowserRunTest($"{s_xharnessRunnerCommand} wasm webserver --app=. --web-server-use-default-files",
-                    Path.GetFullPath(Path.Combine(GetBlazorBinFrameworkDir(runOptions.Configuration, forPublish: true), "..")),
-                    runOptions);
-            default:
-                throw new NotImplementedException(runOptions.Host.ToString());
-        }
-    }
+    public override async Task<RunResult> RunForPublishWithWebServer(RunOptions runOptions)
+        => await base.RunForPublishWithWebServer(runOptions with {
+            ExecuteAfterLoaded = runOptions.ExecuteAfterLoaded ?? _executeAfterLoaded
+        });
 
     public string GetBlazorBinFrameworkDir(string config, bool forPublish, string framework = DefaultTargetFrameworkForBlazor, string? projectDir = null)
         => _provider.GetBinFrameworkDir(config: config, forPublish: forPublish, framework: framework, projectDir: projectDir);

@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 using Xunit;
@@ -18,44 +19,48 @@ public class AppsettingsTests : BlazorWasmTestBase
         _enablePerTestCleanup = true;
     }
 
-    // [Fact]
-    // public async Task FileInVfs()
-    // {
-    //     string id = $"blazor_{GetRandomId()}";
-    //     string projectFile = CreateWasmTemplateProject(id, "blazorwasm");
+    [Fact]
+    public async Task FileInVfs()
+    {
+        string config = "debug";
+        ProjectInfo info = CreateWasmTemplateProject(Template.BlazorWasm, config, aot: false, "blazor");
+        UpdateHomePage();
+        string projectDirectory = Path.GetDirectoryName(info.ProjectFilePath)!;
+        File.WriteAllText(Path.Combine(projectDirectory, "wwwroot", "appsettings.json"), $"{{ \"Id\": \"{info.ProjectName}\" }}");
+        UpdateFile("Program.cs", new Dictionary<string, string>
+        {
+            {
+                "var builder",
+                """
+                    System.Console.WriteLine($"appSettings Exists '{File.Exists("/appsettings.json")}'");
+                    System.Console.WriteLine($"appSettings Content '{File.ReadAllText("/appsettings.json")}'");
+                    var builder
+                """
+            }
+        });
 
-    //     string projectDirectory = Path.GetDirectoryName(projectFile)!;
+        bool isPublish = false;
+        (string _, string buildOutput) = BuildTemplateProject(info,
+            new BuildProjectOptions(
+                info.Configuration,
+                info.ProjectName,
+                BinFrameworkDir: GetBinFrameworkDir(info.Configuration, isPublish),
+                ExpectedFileType: GetExpectedFileType(info, isPublish),
+                IsPublish: isPublish
+        ));
 
-    //     File.WriteAllText(Path.Combine(projectDirectory, "wwwroot", "appsettings.json"), $"{{ \"Id\": \"{id}\" }}");
+        bool existsChecked = false;
+        bool contentChecked = false;
+        await RunForBuildWithDotnetRun(new(
+            info.Configuration,
+            OnConsoleMessage: (_, msg) => {
+                if (msg.Contains("appSettings Exists 'True'"))
+                    existsChecked = true;
+                else if (msg.Contains($"appSettings Content '{{ \"Id\": \"{info.ProjectName}\" }}'"))
+                    contentChecked = true;
+            }));
 
-    //     string programPath = Path.Combine(projectDirectory, "Program.cs");
-    //     string programContent = File.ReadAllText(programPath);
-    //     programContent = programContent.Replace("var builder",
-    //     """
-    //     System.Console.WriteLine($"appSettings Exists '{File.Exists("/appsettings.json")}'");
-    //     System.Console.WriteLine($"appSettings Content '{File.ReadAllText("/appsettings.json")}'");
-    //     var builder
-    //     """);
-    //     File.WriteAllText(programPath, programContent);
-
-    //     BlazorBuild(new BuildProjectOptions(id, "debug", NativeFilesType.FromRuntimePack));
-
-    //     bool existsChecked = false;
-    //     bool contentChecked = false;
-
-    //     await BlazorRunForBuildWithDotnetRun(new RunOptions()
-    //     {
-    //         Configuration = "debug",
-    //         OnConsoleMessage = (_, msg) =>
-    //         {
-    //             if (msg.Text.Contains("appSettings Exists 'True'"))
-    //                 existsChecked = true;
-    //             else if (msg.Text.Contains($"appSettings Content '{{ \"Id\": \"{id}\" }}'"))
-    //                 contentChecked = true;
-    //         }
-    //     });
-
-    //     Assert.True(existsChecked, "File '/appsettings.json' wasn't found");
-    //     Assert.True(contentChecked, "Content of '/appsettings.json' is not matched");
-    // }
+        Assert.True(existsChecked, "File '/appsettings.json' wasn't found");
+        Assert.True(contentChecked, "Content of '/appsettings.json' is not matched");
+    }
 }
