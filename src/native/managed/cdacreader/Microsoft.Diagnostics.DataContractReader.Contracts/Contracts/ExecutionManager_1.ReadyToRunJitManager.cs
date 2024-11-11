@@ -65,8 +65,7 @@ internal readonly partial struct ExecutionManager_1 : IExecutionManager
             TargetPointer startAddress = imageBase + function.BeginAddress;
             TargetPointer entryPoint = CodePointerUtils.CodePointerFromAddress(startAddress, Target).AsTargetPointer;
 
-            Data.HashMap map = Target.ProcessedData.GetOrAdd<Data.HashMap>(r2rInfo.EntryPointToMethodDescMap);
-            TargetPointer methodDesc = _lookup.GetValue(map, entryPoint);
+            TargetPointer methodDesc = _lookup.GetValue(r2rInfo.EntryPointToMethodDescMap, entryPoint);
             Debug.Assert(methodDesc != TargetPointer.Null);
 
             // TODO: [cdac] Handle method with cold code when computing relative offset

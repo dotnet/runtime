@@ -166,18 +166,16 @@ internal partial class ExecutionManagerBase<T> : IExecutionManager
     TargetPointer IExecutionManager.GetMethodDesc(CodeBlockHandle codeInfoHandle)
     {
         if (!_codeInfos.TryGetValue(codeInfoHandle.Address, out CodeBlock? info))
-        {
-            throw new InvalidOperationException("EECodeInfo not found");
-        }
+            throw new InvalidOperationException($"{nameof(CodeBlock)} not found for {codeInfoHandle.Address}");
+
         return info.MethodDescAddress;
     }
 
     TargetCodePointer IExecutionManager.GetStartAddress(CodeBlockHandle codeInfoHandle)
     {
         if (!_codeInfos.TryGetValue(codeInfoHandle.Address, out CodeBlock? info))
-        {
-            throw new InvalidOperationException("EECodeInfo not found");
-        }
+            throw new InvalidOperationException($"{nameof(CodeBlock)} not found for {codeInfoHandle.Address}");
+
         return info.StartAddress;
     }
 }

@@ -26,7 +26,7 @@ internal sealed class ReadyToRunInfo : IData<ReadyToRunInfo>
         EntryPointToMethodDescMap = CompositeInfo + (ulong)type.Fields[nameof(EntryPointToMethodDescMap)].Offset;
      }
 
-    private TargetPointer CompositeInfo { get; }
+    internal TargetPointer CompositeInfo { get; }
 
     public uint NumRuntimeFunctions { get; }
     public TargetPointer RuntimeFunctions { get; }

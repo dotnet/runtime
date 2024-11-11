@@ -7,6 +7,13 @@ namespace Microsoft.Diagnostics.DataContractReader.ExecutionManagerHelpers;
 
 internal sealed class HashMapLookup
 {
+    internal enum SpecialKeys
+    {
+        Empty = 0,
+        Deleted = 1,
+        InvalidEntry = ~0,
+    }
+
     public static HashMapLookup Create(Target target)
         => new HashMapLookup(target);
 
@@ -19,9 +26,11 @@ internal sealed class HashMapLookup
         _valueMask = target.ReadGlobal<ulong>(Constants.Globals.HashMapValueMask);
     }
 
-    public TargetPointer GetValue(Data.HashMap map, TargetPointer key)
+    public TargetPointer GetValue(TargetPointer mapAddress, TargetPointer key)
     {
-        // First pointer of Buckets is actually the size
+        Data.HashMap map = _target.ProcessedData.GetOrAdd<Data.HashMap>(mapAddress);
+
+        // First pointer of Buckets is actually the number of buckets
         uint size = _target.Read<uint>(map.Buckets);
         HashFunction(key, size, out uint seed, out uint increment);
 
@@ -49,7 +58,7 @@ internal sealed class HashMapLookup
         return TargetPointer.Null;
     }
 
-    private static void HashFunction(TargetPointer key, uint size, out uint seed, out uint increment)
+    internal static void HashFunction(TargetPointer key, uint size, out uint seed, out uint increment)
     {
         // HashMap::HashFunction
         seed = (uint)(key >> 2);
@@ -74,11 +83,14 @@ internal sealed class PtrHashMapLookup
         _lookup = HashMapLookup.Create(target);
     }
 
-    public TargetPointer GetValue(Data.HashMap map, TargetPointer key)
+    public TargetPointer GetValue(TargetPointer mapAddress, TargetPointer key)
     {
-        TargetPointer value = _lookup.GetValue(map, key);
+        // See PtrHashMap::SanitizeKey in hash.h
+        key = key > (uint)HashMapLookup.SpecialKeys.Deleted ? key : key + 100;
 
-        // PtrHashMap shifts values right by one bit when storing. See hash.h
+        TargetPointer value = _lookup.GetValue(mapAddress, key);
+
+        // PtrHashMap shifts values right by one bit when storing. See PtrHashMap::LookupValue in hash.h
         return value << 1;
     }
 }
