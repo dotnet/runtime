@@ -382,7 +382,7 @@
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+tools.cdacreader+'))">
-    <ProjectToBuild Include="$(RepoRoot)\src\native\managed\compile-native.proj" Category="tools" />
+    <ProjectToBuild Include="$(SharedNativeRoot)managed\compile-native.proj" Category="tools" />
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+tools.cdacreadertests+'))">
