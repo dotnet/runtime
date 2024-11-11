@@ -267,8 +267,8 @@ public:
             return fgWalkResult::WALK_CONTINUE;
         }
 
-        assert(isLocalStore || isLocalUse);
-        assert(addConversion || removeConversion);
+        assert(isLocalStore != isLocalUse);
+        assert(addConversion != removeConversion);
         assert(lclOp != nullptr);
 
         // Get the existing weighting.
