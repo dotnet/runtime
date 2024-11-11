@@ -309,7 +309,6 @@ public:
 
             lclOp->gtOp1 = convertOp->Op(1);
             convertOp->gtBashToNOP();
-            m_compiler->fgSequenceLocals(stmt);
         }
 
         else if (isLocalStore && addConversion)
@@ -350,7 +349,6 @@ public:
             // Remove the convert convertOp
             convertOp->gtBashToNOP();
             *use = lclOp;
-            m_compiler->fgSequenceLocals(stmt);
         }
 
         else if (isLocalUse && addConversion)
@@ -377,10 +375,12 @@ public:
         }
 #endif
 
+        updatedConversions = true;
         return fgWalkResult::WALK_CONTINUE;
     }
 
 public:
+    bool updatedConversions = false;
 
 private:
     Statement*           stmt;
@@ -508,6 +508,10 @@ PhaseStatus Compiler::fgOptimizeLclMasks()
                     LclMasksUpdateVisitor ev(this, stmt, &weightsTable);
                     GenTree*              root = stmt->GetRootNode();
                     ev.WalkTree(&root, nullptr);
+                    if (ev.updatedConversions)
+                    {
+                        fgSequenceLocals(stmt);
+                    }
                     break;
                 }
             }
