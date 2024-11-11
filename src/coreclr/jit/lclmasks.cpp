@@ -448,9 +448,17 @@ PhaseStatus Compiler::fgOptimizeLclMasks()
         return PhaseStatus::MODIFIED_NOTHING;
     }
 
+#if defined(DEBUG)
+    if (JitConfig.JitDoOptimizeLclMasks() == 0)
+    {
+        JITDUMP("Skipping. Disable by config option\n");
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+#endif
+
     if (!compMaskConvertUsed)
     {
-        JITDUMP("Skipping. There are no converts of locals \n");
+        JITDUMP("Skipping. There are no converts of locals\n");
         return PhaseStatus::MODIFIED_NOTHING;
     }
 
