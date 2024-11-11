@@ -22,251 +22,232 @@ namespace Wasm.Build.Tests
         {
         }
 
-        // private BuildProjectOptions _basePublishProjectOptions = new BuildProjectOptions(
-        //                     DotnetWasmFromRuntimePack: false,
-        //                     CreateProject: false,
-        //                     Publish: true
-        //                 );
-        // private BuildProjectOptions _baseBuildProjectOptions = new BuildProjectOptions(
-        //                     DotnetWasmFromRuntimePack: true,
-        //                     CreateProject: false,
-        //                     Publish: false
-        //                 );
+        [Theory, TestCategory("no-fingerprinting")]
+        [InlineData("Debug")]
+        [InlineData("Release")]
+        public void BrowserBuildThenPublish(string config)
+        {
+            string atEnd = """
+                    <Target Name="CheckLinkedFiles" AfterTargets="ILLink">
+                        <ItemGroup>
+                            <_LinkedOutFile Include="$(IntermediateOutputPath)\linked\*.dll" />
+                        </ItemGroup>
+                        <Error Text="No file was linked-out. Trimming probably doesn't work (PublishTrimmed=$(PublishTrimmed))" Condition="@(_LinkedOutFile->Count()) == 0" />
+                    </Target>
+                    """;
+            ProjectInfo info = CreateWasmTemplateProject(Template.WasmBrowser, config, aot: false, "browser", insertAtEnd: atEnd);
+            UpdateBrowserProgramFile();
+            UpdateBrowserMainJs();
 
-        // [Theory, TestCategory("no-fingerprinting")]
-        // [InlineData("Debug")]
-        // [InlineData("Release")]
-        // public void BrowserBuildThenPublish(string config)
-        // {
-        //     string id = $"browser_{config}_{GetRandomId()}";
-        //     string projectFile = CreateWasmTemplateProject(id, "wasmbrowser");
-        //     string projectName = Path.GetFileNameWithoutExtension(projectFile);
+            bool isPublish = false;
+            BuildTemplateProject(info,
+                new BuildProjectOptions(
+                    config,
+                    info.ProjectName,
+                    BinFrameworkDir: GetBinFrameworkDir(config, isPublish),
+                    ExpectedFileType: GetExpectedFileType(info, isPublish),
+                    IsPublish: isPublish
+            ));
 
-        //     UpdateBrowserProgramFile();
-        //     UpdateBrowserMainJs();
+            if (!_buildContext.TryGetBuildFor(info, out BuildProduct? product))
+                throw new XunitException($"Test bug: could not get the build product in the cache");
 
-        //     var buildArgs = new ProjectInfo(projectName, config, false, id, null);
+            File.Move(product!.LogFile, Path.ChangeExtension(product.LogFile!, ".first.binlog"));
 
-        //     AddItemsPropertiesToProject(projectFile,
-        //         insertAtEnd:
-        //             """
-        //             <Target Name="CheckLinkedFiles" AfterTargets="ILLink">
-        //                 <ItemGroup>
-        //                     <_LinkedOutFile Include="$(IntermediateOutputPath)\linked\*.dll" />
-        //                 </ItemGroup>
-        //                 <Error Text="No file was linked-out. Trimming probably doesn't work (PublishTrimmed=$(PublishTrimmed))" Condition="@(_LinkedOutFile->Count()) == 0" />
-        //             </Target>
-        //             """
-        //     );
+            _testOutput.WriteLine($"{Environment.NewLine}Publishing with no changes ..{Environment.NewLine}");
 
-        //     buildArgs = ExpandBuildArgs(buildArgs);
-        //     BuildTemplateProject(buildArgs, id: id, _baseBuildProjectOptions);
+            isPublish = true;
+            BuildTemplateProject(info,
+                new BuildProjectOptions(
+                    config,
+                    info.ProjectName,
+                    BinFrameworkDir: GetBinFrameworkDir(config, isPublish),
+                    ExpectedFileType: GetExpectedFileType(info, isPublish),
+                    IsPublish: isPublish,
+                    UseCache: false
+            ));
+        }
 
-        //     if (!_buildContext.TryGetBuildFor(buildArgs, out BuildProduct? product))
-        //         throw new XunitException($"Test bug: could not get the build product in the cache");
+        public static TheoryData<bool, string> TestDataForAppBundleDir()
+        {
+            var data = new TheoryData<bool, string>();
+            AddTestData(runOutsideProjectDirectory: false);
+            AddTestData(runOutsideProjectDirectory: true);
 
-        //     File.Move(product!.LogFile, Path.ChangeExtension(product.LogFile!, ".first.binlog"));
+            void AddTestData(bool runOutsideProjectDirectory)
+            {
+                // FIXME: Disabled for `main` right now, till 7.0 gets the fix
+                data.Add(runOutsideProjectDirectory, string.Empty);
+                data.Add(runOutsideProjectDirectory,
+                                $"<OutputPath>{Path.Combine(BuildEnvironment.TmpPath, Path.GetRandomFileName())}</OutputPath>");
+                data.Add(runOutsideProjectDirectory,
+                                $"<WasmAppDir>{Path.Combine(BuildEnvironment.TmpPath, Path.GetRandomFileName())}</WasmAppDir>");
+            }
 
-        //     _testOutput.WriteLine($"{Environment.NewLine}Publishing with no changes ..{Environment.NewLine}");
+            return data;
+        }
 
-        //     bool expectRelinking = config == "Release";
-        //     BuildTemplateProject(buildArgs,
-        //                 id: id,
-        //                 _basePublishProjectOptions with
-        //                 {
-        //                     UseCache = false,
-        //                     DotnetWasmFromRuntimePack = !expectRelinking,
-        //                 }
-        //             );
-        // }
+        [Theory, TestCategory("no-fingerprinting")]
+        [MemberData(nameof(TestDataForAppBundleDir))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/108107")]
+        public async Task RunWithDifferentAppBundleLocations(bool runOutsideProjectDirectory, string extraProperties)
+            => await BrowserRunTwiceWithAndThenWithoutBuildAsync("Release", extraProperties, runOutsideProjectDirectory);
 
-        // public static TheoryData<bool, string> TestDataForAppBundleDir()
-        // {
-        //     var data = new TheoryData<bool, string>();
-        //     AddTestData(runOutsideProjectDirectory: false);
-        //     AddTestData(runOutsideProjectDirectory: true);
+        private async Task BrowserRunTwiceWithAndThenWithoutBuildAsync(string config, string extraProperties = "", bool runOutsideProjectDirectory = false)
+        {
+            ProjectInfo info = CreateWasmTemplateProject(Template.WasmBrowser, config, aot: false, "browser", extraProperties: extraProperties);
+            UpdateBrowserProgramFile();
+            UpdateBrowserMainJs();
 
-        //     void AddTestData(bool runOutsideProjectDirectory)
-        //     {
-        //         // FIXME: Disabled for `main` right now, till 7.0 gets the fix
-        //         data.Add(runOutsideProjectDirectory, string.Empty);
-        //         data.Add(runOutsideProjectDirectory,
-        //                         $"<OutputPath>{Path.Combine(BuildEnvironment.TmpPath, Path.GetRandomFileName())}</OutputPath>");
-        //         data.Add(runOutsideProjectDirectory,
-        //                         $"<WasmAppDir>{Path.Combine(BuildEnvironment.TmpPath, Path.GetRandomFileName())}</WasmAppDir>");
-        //     }
+            string workingDir = runOutsideProjectDirectory ? BuildEnvironment.TmpPath : _projectDir!;
 
-        //     return data;
-        // }
+            {
+                using var runCommand = new RunCommand(s_buildEnv, _testOutput)
+                                            .WithWorkingDirectory(workingDir);
 
-        // [Theory, TestCategory("no-fingerprinting")]
-        // [MemberData(nameof(TestDataForAppBundleDir))]
-        // [ActiveIssue("https://github.com/dotnet/runtime/issues/108107")]
-        // public async Task RunWithDifferentAppBundleLocations(bool runOutsideProjectDirectory, string extraProperties)
-        //     => await BrowserRunTwiceWithAndThenWithoutBuildAsync("Release", extraProperties, runOutsideProjectDirectory);
+                await using var runner = new BrowserRunner(_testOutput);
+                var page = await runner.RunAsync(runCommand, $"run --no-silent -c {config} --project \"{info.ProjectName}.csproj\" --forward-console");
+                await runner.WaitForExitMessageAsync(TimeSpan.FromMinutes(2));
+                Assert.Contains("Hello, Browser!", string.Join(Environment.NewLine, runner.OutputLines));
+            }
 
-        // private async Task BrowserRunTwiceWithAndThenWithoutBuildAsync(string config, string extraProperties = "", bool runOutsideProjectDirectory = false)
-        // {
-        //     string id = $"browser_{config}_{GetRandomId()}";
-        //     string projectFile = CreateWasmTemplateProject(id, "wasmbrowser");
+            {
+                using var runCommand = new RunCommand(s_buildEnv, _testOutput)
+                                            .WithWorkingDirectory(workingDir);
 
-        //     UpdateBrowserProgramFile();
-        //     UpdateBrowserMainJs();
+                await using var runner = new BrowserRunner(_testOutput);
+                var page = await runner.RunAsync(runCommand, $"run --no-silent -c {config} --no-build --project \"{info.ProjectName}.csproj\" --forward-console");
+                await runner.WaitForExitMessageAsync(TimeSpan.FromMinutes(2));
+                Assert.Contains("Hello, Browser!", string.Join(Environment.NewLine, runner.OutputLines));
+            }
+        }
 
-        //     if (!string.IsNullOrEmpty(extraProperties))
-        //         AddItemsPropertiesToProject(projectFile, extraProperties: extraProperties);
+        public static IEnumerable<object?[]> BrowserBuildAndRunTestData()
+        {
+            yield return new object?[] { "", BuildTestBase.DefaultTargetFramework, DefaultRuntimeAssetsRelativePath };
+            yield return new object?[] { "-f net9.0", "net9.0", DefaultRuntimeAssetsRelativePath };
 
-        //     string workingDir = runOutsideProjectDirectory ? BuildEnvironment.TmpPath : _projectDir!;
+            if (EnvironmentVariables.WorkloadsTestPreviousVersions)
+                yield return new object?[] { "-f net8.0", "net8.0", DefaultRuntimeAssetsRelativePath };
 
-        //     {
-        //         using var runCommand = new RunCommand(s_buildEnv, _testOutput)
-        //                                     .WithWorkingDirectory(workingDir);
+            // ActiveIssue("https://github.com/dotnet/runtime/issues/90979")
+            // yield return new object?[] { "", BuildTestBase.DefaultTargetFramework, "./" };
+            // yield return new object?[] { "-f net8.0", "net8.0", "./" };
+        }
 
-        //         await using var runner = new BrowserRunner(_testOutput);
-        //         var page = await runner.RunAsync(runCommand, $"run --no-silent -c {config} --project \"{projectFile}\" --forward-console");
-        //         await runner.WaitForExitMessageAsync(TimeSpan.FromMinutes(2));
-        //         Assert.Contains("Hello, Browser!", string.Join(Environment.NewLine, runner.OutputLines));
-        //     }
+        [Theory]
+        [MemberData(nameof(BrowserBuildAndRunTestData))]
+        public async Task BrowserBuildAndRun(string extraNewArgs, string targetFramework, string runtimeAssetsRelativePath) 
+        {
+            string config = "Debug";
+            string extraProperties = runtimeAssetsRelativePath == DefaultRuntimeAssetsRelativePath ?
+                "" :
+                $"<WasmRuntimeAssetsLocation>{runtimeAssetsRelativePath}</WasmRuntimeAssetsLocation>";
+            ProjectInfo info = CreateWasmTemplateProject(
+                Template.WasmBrowser,
+                config,
+                aot: false,
+                "browser",
+                extraProperties: extraProperties,
+                extraArgs: extraNewArgs,
+                addFrameworkArg: extraNewArgs.Length == 0
+            );
 
-        //     {
-        //         using var runCommand = new RunCommand(s_buildEnv, _testOutput)
-        //                                     .WithWorkingDirectory(workingDir);
+            if (targetFramework != "net8.0")
+                UpdateBrowserProgramFile();
+            UpdateBrowserMainJs(targetFramework, runtimeAssetsRelativePath);
 
-        //         await using var runner = new BrowserRunner(_testOutput);
-        //         var page = await runner.RunAsync(runCommand, $"run --no-silent -c {config} --no-build --project \"{projectFile}\" --forward-console");
-        //         await runner.WaitForExitMessageAsync(TimeSpan.FromMinutes(2));
-        //         Assert.Contains("Hello, Browser!", string.Join(Environment.NewLine, runner.OutputLines));
-        //     }
-        // }
+            bool isPublish = true;
+            BuildTemplateProject(info,
+                new BuildProjectOptions(
+                    config,
+                    info.ProjectName,
+                    BinFrameworkDir: GetBinFrameworkDir(config, isPublish),
+                    ExpectedFileType: GetExpectedFileType(info, isPublish),
+                    IsPublish: isPublish,
+                    UseCache: false
+            ));
 
-        // public static IEnumerable<object?[]> BrowserBuildAndRunTestData()
-        // {
-        //     yield return new object?[] { "", BuildTestBase.DefaultTargetFramework, DefaultRuntimeAssetsRelativePath };
-        //     yield return new object?[] { "-f net9.0", "net9.0", DefaultRuntimeAssetsRelativePath };
+            var runOutput = await RunForPublishWithWebServer(new(info.Configuration, ExpectedExitCode: 42));
+            Assert.Contains("Hello, Browser!", runOutput.TestOutput);
+        }
 
-        //     if (EnvironmentVariables.WorkloadsTestPreviousVersions)
-        //         yield return new object?[] { "-f net8.0", "net8.0", DefaultRuntimeAssetsRelativePath };
+        [Theory]
+        [InlineData("Debug", /*appendRID*/ true, /*useArtifacts*/ false)]
+        [InlineData("Debug", /*appendRID*/ true, /*useArtifacts*/ true)]
+        [InlineData("Debug", /*appendRID*/ false, /*useArtifacts*/ true)]
+        [InlineData("Debug", /*appendRID*/ false, /*useArtifacts*/ false)]
+        public async Task BuildAndRunForDifferentOutputPaths(string config, bool appendRID, bool useArtifacts)
+        {
+            ProjectInfo info = CreateWasmTemplateProject(Template.WasmBrowser, config, aot: false);
+            UpdateBrowserProgramFile();
+            UpdateBrowserMainJs();
 
-        //     // ActiveIssue("https://github.com/dotnet/runtime/issues/90979")
-        //     // yield return new object?[] { "", BuildTestBase.DefaultTargetFramework, "./" };
-        //     // yield return new object?[] { "-f net8.0", "net8.0", "./" };
-        // }
+            bool isPublish = false;
+            string projectDirectory = Path.GetDirectoryName(info.ProjectFilePath) ?? "";
+            // browser app does not allow appending RID
+            string frameworkDir = useArtifacts ?
+                Path.Combine(
+                    projectDirectory, "bin", info.ProjectName, config.ToLower(), "wwwroot", "_framework") :
+                GetBinFrameworkDir(config, isPublish);
 
-        // [Theory]
-        // [MemberData(nameof(BrowserBuildAndRunTestData))]
-        // public async Task BrowserBuildAndRun(string extraNewArgs, string targetFramework, string runtimeAssetsRelativePath) 
-        // {
-        //     string config = "Debug";
-        //     string id = $"browser_{config}_{GetRandomId()}";
-        //     string projectFile = CreateWasmTemplateProject(id, "wasmbrowser", extraNewArgs, addFrameworkArg: extraNewArgs.Length == 0);
-        //     string projectName = Path.GetFileNameWithoutExtension(projectFile);
-        //     string extraProperties = runtimeAssetsRelativePath == DefaultRuntimeAssetsRelativePath ?
-        //         "" :
-        //         $"<WasmRuntimeAssetsLocation>{runtimeAssetsRelativePath}</WasmRuntimeAssetsLocation>";
-        //     AddItemsPropertiesToProject(projectFile, extraProperties);
+            string extraPropertiesForDBP = string.Empty;            
+            if (useArtifacts)
+            {
+                extraPropertiesForDBP += "<UseArtifactsOutput>true</UseArtifactsOutput><ArtifactsPath>.</ArtifactsPath>";
+            }
+            if (appendRID)
+            {
+                extraPropertiesForDBP += "<AppendRuntimeIdentifierToOutputPath>true</AppendRuntimeIdentifierToOutputPath>";
+            }
+            // UseArtifactsOutput cannot be set in a project file, due to MSBuild ordering constraints.
+            string propsPath = Path.Combine(projectDirectory, "Directory.Build.props");
+            AddItemsPropertiesToProject(propsPath, extraPropertiesForDBP);
 
-        //     if (targetFramework != "net8.0")
-        //         UpdateBrowserProgramFile();
-        //     UpdateBrowserMainJs(targetFramework, runtimeAssetsRelativePath);
+            BuildTemplateProject(info,
+                new BuildProjectOptions(
+                    config,
+                    info.ProjectName,
+                    BinFrameworkDir: frameworkDir,
+                    ExpectedFileType: GetExpectedFileType(info, isPublish),
+                    IsPublish: isPublish
+            ));
 
-        //     using ToolCommand cmd = new DotNetCommand(s_buildEnv, _testOutput)
-        //                                 .WithWorkingDirectory(_projectDir!);
-        //     cmd.Execute($"build -c {config} -bl:{Path.Combine(s_buildEnv.LogRootPath, $"{id}.binlog")} {(runtimeAssetsRelativePath != DefaultRuntimeAssetsRelativePath ? "-p:WasmRuntimeAssetsLocation=" + runtimeAssetsRelativePath : "")}")
-        //         .EnsureSuccessful();
-        //     var buildArgs = new ProjectInfo(projectName, config, false, id, null);
-        //     buildArgs = ExpandBuildArgs(buildArgs);
-        //     BuildTemplateProject(buildArgs, id: id, _baseBuildProjectOptions);
+            await RunForBuildWithDotnetRun(new(info.Configuration, ExpectedExitCode: 42, ExtraArgs: "x y z"));
+        }
 
-        //     string runOutput = await RunBuiltBrowserApp(config, projectFile);
-        //     Assert.Contains("Hello, Browser!", runOutput);
-        // }
+        [Theory]
+        [InlineData("", true)] // Default case
+        [InlineData("false", false)] // the other case
+        public async Task Test_WasmStripILAfterAOT(string stripILAfterAOT, bool expectILStripping)
+        {
+            string config = "Release";
+            bool aot = true;
+            string extraProperties = "<RunAOTCompilation>true</RunAOTCompilation>";
+            if (!string.IsNullOrEmpty(stripILAfterAOT))
+                extraProperties += $"<WasmStripILAfterAOT>{stripILAfterAOT}</WasmStripILAfterAOT>";
+            ProjectInfo info = CreateWasmTemplateProject(Template.WasmBrowser, config, aot, "strip", extraProperties: extraProperties);
 
-        // [Theory]
-        // [InlineData("Debug", /*appendRID*/ true, /*useArtifacts*/ false)]
-        // [InlineData("Debug", /*appendRID*/ true, /*useArtifacts*/ true)]
-        // [InlineData("Debug", /*appendRID*/ false, /*useArtifacts*/ true)]
-        // [InlineData("Debug", /*appendRID*/ false, /*useArtifacts*/ false)]
-        // public async Task BuildAndRunForDifferentOutputPaths(string config, bool appendRID, bool useArtifacts)
-        // {
-        //     string id = $"{config}_{GetRandomId()}";
-        //     string projectFile = CreateWasmTemplateProject(id, "wasmbrowser");
-        //     string projectName = Path.GetFileNameWithoutExtension(projectFile);
-        //     string projectDirectory = Path.GetDirectoryName(projectFile)!;
+            UpdateBrowserProgramFile();
+            UpdateBrowserMainJs();
 
-        //     UpdateBrowserProgramFile();
-        //     UpdateBrowserMainJs();
-
-        //     string extraPropertiesForDBP = string.Empty;
-        //     string frameworkDir = GetBinFrameworkDir(config, forPublish: false);
-            
-        //     var buildOptions = _baseBuildProjectOptions with 
-        //     {
-        //         BinFrameworkDir = frameworkDir
-        //     };
-        //     if (useArtifacts)
-        //     {
-        //         extraPropertiesForDBP += "<UseArtifactsOutput>true</UseArtifactsOutput><ArtifactsPath>.</ArtifactsPath>";
-        //         buildOptions = buildOptions with
-        //         {
-        //             // browser app does not allow appending RID
-        //             BinFrameworkDir = Path.Combine(
-        //                                     projectDirectory,
-        //                                     "bin",
-        //                                     id,
-        //                                     config.ToLower(),
-        //                                     "wwwroot",
-        //                                     "_framework")
-        //         };
-        //     }
-        //     if (appendRID)
-        //     {
-        //         extraPropertiesForDBP += "<AppendRuntimeIdentifierToOutputPath>true</AppendRuntimeIdentifierToOutputPath>";
-        //     }
-        //     // UseArtifactsOutput cannot be set in a project file, due to MSBuild ordering constraints.
-        //     string propsPath = Path.Combine(projectDirectory, "Directory.Build.props");
-        //     AddItemsPropertiesToProject(propsPath, extraPropertiesForDBP);
-
-        //     var buildArgs = new ProjectInfo(projectName, config, false, id, null);
-        //     buildArgs = ExpandBuildArgs(buildArgs);
-        //     BuildTemplateProject(buildArgs, id: id, buildOptions);
-
-        //     await RunBuiltBrowserApp(config, projectFile, extraArgs: "x y z");
-        // }
-
-        // [Theory]
-        // [InlineData("", true)] // Default case
-        // [InlineData("false", false)] // the other case
-        // public async Task Test_WasmStripILAfterAOT(string stripILAfterAOT, bool expectILStripping)
-        // {
-        //     string config = "Release";
-        //     string id = $"strip_{config}_{GetRandomId()}";
-        //     string projectFile = CreateWasmTemplateProject(id, "wasmbrowser");
-        //     string projectName = Path.GetFileNameWithoutExtension(projectFile);
-        //     string projectDirectory = Path.GetDirectoryName(projectFile)!;
-        //     bool aot = true;
-
-        //     UpdateBrowserProgramFile();
-        //     UpdateBrowserMainJs();
-
-        //     string extraProperties = "<RunAOTCompilation>true</RunAOTCompilation>";
-        //     if (!string.IsNullOrEmpty(stripILAfterAOT))
-        //         extraProperties += $"<WasmStripILAfterAOT>{stripILAfterAOT}</WasmStripILAfterAOT>";
-        //     AddItemsPropertiesToProject(projectFile, extraProperties);
-
-        //     var buildArgs = new ProjectInfo(projectName, config, aot, id, null);
-        //     buildArgs = ExpandBuildArgs(buildArgs);
-        //     BuildTemplateProject(buildArgs,
-        //                 id: id,
-        //                 _basePublishProjectOptions with {
-        //                     UseCache = false,
-        //                     AssertAppBundle = false
-        //                 });
-
-        //     await RunBuiltBrowserApp(config, projectFile);
-        //     string frameworkDir = GetBinFrameworkDir(config, forPublish: true);
-        //     string objBuildDir = Path.Combine(projectDirectory, "obj", config, BuildTestBase.DefaultTargetFramework, "wasm", "for-publish");
-        //     TestWasmStripILAfterAOTOutput(objBuildDir, frameworkDir, expectILStripping, _testOutput);
-        // }
+            bool isPublish = true;
+            string frameworkDir = GetBinFrameworkDir(config, forPublish: true);
+            BuildTemplateProject(info,
+                new BuildProjectOptions(
+                    config,
+                    info.ProjectName,
+                    BinFrameworkDir: frameworkDir,
+                    ExpectedFileType: GetExpectedFileType(info, isPublish),
+                    IsPublish: isPublish,
+                    UseCache: false,
+                    AssertAppBundle: false
+            ));
+            await RunForBuildWithDotnetRun(new(info.Configuration, ExpectedExitCode: 42));
+            string projectDirectory = Path.GetDirectoryName(info.ProjectFilePath)!;
+            string objBuildDir = Path.Combine(projectDirectory, "obj", config, BuildTestBase.DefaultTargetFramework, "wasm", "for-publish");
+            TestWasmStripILAfterAOTOutput(objBuildDir, frameworkDir, expectILStripping, _testOutput);
+        }
 
         internal static void TestWasmStripILAfterAOTOutput(string objBuildDir, string frameworkDir, bool expectILStripping, ITestOutputHelper testOutput)
         {
@@ -321,32 +302,35 @@ namespace Wasm.Build.Tests
             }
         }
 
-        // [Theory]
-        // [InlineData(false)]
-        // [InlineData(true)]
-        // public void PublishPdb(bool copyOutputSymbolsToPublishDirectory)
-        // {
-        //     string config = "Release";
-        //     string shouldCopy = copyOutputSymbolsToPublishDirectory.ToString().ToLower();
-        //     string id = $"publishpdb_{shouldCopy}_{GetRandomId()}";
-        //     string projectFile = CreateWasmTemplateProject(id, "wasmbrowser");
-        //     string projectName = Path.GetFileNameWithoutExtension(projectFile);
-        //     var buildArgs = new ProjectInfo(projectName, config, false, id, null);
-        //     buildArgs = ExpandBuildArgs(buildArgs);
-        //     AddItemsPropertiesToProject(projectFile,
-        //         extraProperties: $"<CopyOutputSymbolsToPublishDirectory>{shouldCopy}</CopyOutputSymbolsToPublishDirectory>");
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void PublishPdb(bool copyOutputSymbolsToPublishDirectory)
+        {
+            string config = "Release";
+            string shouldCopy = copyOutputSymbolsToPublishDirectory.ToString().ToLower();
+            string extraProperties = $"<CopyOutputSymbolsToPublishDirectory>{shouldCopy}</CopyOutputSymbolsToPublishDirectory>";
+            ProjectInfo info = CreateWasmTemplateProject(Template.WasmBrowser, config, aot: false, "publishpdb", extraProperties: extraProperties);
 
-        //     BuildTemplateProject(buildArgs, buildArgs.Id, _basePublishProjectOptions);
-        //     string publishPath = GetBinFrameworkDir(config, forPublish: true);
-        //     AssertFile(".pdb");
-        //     AssertFile(".pdb.gz");
-        //     AssertFile(".pdb.br");
+            bool isPublish = true;
+            string publishPath = GetBinFrameworkDir(config, forPublish: true);
+            BuildTemplateProject(info,
+                new BuildProjectOptions(
+                    config,
+                    info.ProjectName,
+                    BinFrameworkDir: publishPath,
+                    ExpectedFileType: GetExpectedFileType(info, isPublish),
+                    IsPublish: isPublish
+            ));
+            AssertFile(".pdb");
+            AssertFile(".pdb.gz");
+            AssertFile(".pdb.br");
 
-        //     void AssertFile(string suffix)
-        //     {
-        //         var fileName = Directory.EnumerateFiles(publishPath, $"*{suffix}").FirstOrDefault(f => Path.GetFileNameWithoutExtension(f).StartsWith(id));
-        //         Assert.True(copyOutputSymbolsToPublishDirectory == (fileName != null && File.Exists(fileName)), $"The {fileName} file {(copyOutputSymbolsToPublishDirectory ? "should" : "shouldn't")} exist in publish folder");
-        //     }
-        // }
+            void AssertFile(string suffix)
+            {
+                var fileName = Directory.EnumerateFiles(publishPath, $"*{suffix}").FirstOrDefault(f => Path.GetFileNameWithoutExtension(f).StartsWith(info.ProjectName));
+                Assert.True(copyOutputSymbolsToPublishDirectory == (fileName != null && File.Exists(fileName)), $"The {fileName} file {(copyOutputSymbolsToPublishDirectory ? "should" : "shouldn't")} exist in publish folder");
+            }
+        }
     }
 }

@@ -29,7 +29,8 @@ public class WasmTemplateTestsBase : BuildTestBase
     private Dictionary<string, string> browserProgramReplacements = new Dictionary<string, string>
         {
             { "while(true)", $"int i = 0;{Environment.NewLine}while(i++ < 0)" },  // the test has to be fast, skip the loop
-            { "partial class StopwatchSample", $"return 42;{Environment.NewLine}partial class StopwatchSample" }
+            { "partial class StopwatchSample", $"return 42;{Environment.NewLine}partial class StopwatchSample" },
+            { "Hello, Browser!", "TestOutput -> Hello, Browser!" }
         };
 
     private string GetProjectName(string idPrefix, string config, bool aot, bool appendUnicodeToPath, bool avoidAotLongPathIssue = false) =>
