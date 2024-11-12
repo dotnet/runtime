@@ -79,7 +79,7 @@ namespace CorUnix
         PWaitingThreadsListNode rgpWTLNodes[MAXIMUM_WAIT_OBJECTS];
 
         _ThreadWaitInfo() : wtWaitType(SingleObject),
-                            lObjCount(0),,
+                            lObjCount(0),
                             pthrOwner(NULL) {}
     } ThreadWaitInfo;
 
