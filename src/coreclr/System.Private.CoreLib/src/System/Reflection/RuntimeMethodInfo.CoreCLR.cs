@@ -29,10 +29,10 @@ namespace System.Reflection
         private readonly object? m_keepalive;
         private MethodBaseInvoker? m_invoker;
         private InvocationFlags m_invocationFlags;
-        private IntPtr m_functionPointer;
 
         internal InvocationFlags InvocationFlags
         {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
                 InvocationFlags flags = m_invocationFlags;
@@ -41,6 +41,7 @@ namespace System.Reflection
                     m_invocationFlags = flags = ComputeInvocationFlags();
                 }
 
+                Debug.Assert((flags & InvocationFlags.Initialized) == InvocationFlags.Initialized);
                 return flags;
             }
         }
@@ -50,13 +51,7 @@ namespace System.Reflection
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
-                if (m_invoker is null)
-                {
-                    m_invoker ??= MethodBaseInvoker.GetOrCreate(this);
-                    m_functionPointer = MethodHandle.GetFunctionPointer();
-                }
-
-                return m_invoker;
+                return m_invoker ??= new MethodBaseInvoker(this, ArgumentTypes);
             }
         }
         #endregion
@@ -316,7 +311,7 @@ namespace System.Reflection
                 throw new TargetParameterCountException(SR.Arg_ParmCnt);
             }
 
-            Invoker.InvokeWith1Arg(obj, m_functionPointer, invokeAttr, binder, parameter, culture);
+            Invoker.InvokeWith1Arg(obj, invokeAttr, binder, parameter, culture);
         }
 
         #endregion

@@ -20,7 +20,7 @@ namespace System.Reflection.Tests
         [Fact]
         public static void ConstructorInvoke()
         {
-            ConstructorInfo c = typeof(TestClass).GetConstructor(BindingFlags.Public|BindingFlags.Instance, null, Type.EmptyTypes, null);
+            ConstructorInfo c = typeof(TestClass).GetConstructor(BindingFlags.Public | BindingFlags.Instance, null, Type.EmptyTypes, null);
             TestDoNotWrap<MyException2>((bf) => c.Invoke(bf, null, Array.Empty<object>(), null));
         }
 
@@ -40,10 +40,26 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
+        public static void ConstructorInvokeStringCtor_Success()
+        {
+            ConstructorInfo c = typeof(string).GetConstructor(BindingFlags.Public | BindingFlags.Instance, null, new Type[] { typeof(char[]), typeof(int), typeof(int) }, null);
+            string s = (string)c.Invoke(default, null, new object[] { "Hello".ToCharArray(), 0, 5 }, null);
+            Assert.Equal("Hello", s);
+        }
+
+        [Fact]
         public static void ConstructorInvokeStringCtorTwoArgs()
         {
             ConstructorInfo c = typeof(string).GetConstructor(BindingFlags.Public | BindingFlags.Instance, new Type[] { typeof(char[]), typeof(int), typeof(int) });
             TestDoNotWrap<ArgumentNullException>((bf) => c.Invoke(bf, null, new object[] { null, 0, 0 }, null));
+        }
+
+        [Fact]
+        public static void ConstructorInvokeStringCtorTwoArgs_Success()
+        {
+            ConstructorInfo c = typeof(string).GetConstructor(BindingFlags.Public | BindingFlags.Instance, new Type[] { typeof(char[]), typeof(int), typeof(int) });
+            string s = (string)c.Invoke(invokeAttr: default, null, new object[] { "Hello".ToCharArray(), 0, 5 }, null);
+            Assert.Equal("Hello", s);
         }
 
         [Fact]

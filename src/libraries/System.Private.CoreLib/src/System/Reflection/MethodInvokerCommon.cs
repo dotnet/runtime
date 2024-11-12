@@ -13,6 +13,9 @@ namespace System.Reflection
 {
     internal static partial class MethodInvokerCommon
     {
+        private static CerHashtable<InvokeSignatureInfo, Delegate> s_invokerFuncs;
+        private static object? s_invokerFuncsLock;
+
         internal static void Initialize(
             InvokeSignatureInfo signatureInfo,
             out bool needsByRefStrategy,
@@ -68,101 +71,115 @@ namespace System.Reflection
             return argCount <= 4 ? InvokerStrategy.Obj4 : InvokerStrategy.ObjSpan;
         }
 
-        internal static Delegate CreateInvokeFunc(MethodBase? method, InvokeSignatureInfo signatureInfo, InvokerStrategy strategy, bool backwardsCompat)
+        internal static Delegate CreateInvokeFunc(MethodBase? method, InvokeSignatureInfo signatureInfo, InvokerStrategy strategy, bool isForArrayInput, bool backwardsCompat)
         {
-            Delegate? wellKnown;
+            Delegate? invokeFunc;
 
-            return strategy switch
+            if (!TryCreateWellKnownInvokeFunc(method, signatureInfo, strategy, out invokeFunc))
             {
-                InvokerStrategy.Obj0 =>
-                    TryGetWellKnownSignatureForInstanceAny(signatureInfo, out wellKnown) ? wellKnown :
-                        CreateInvokeDelegate_Obj0Args(method, signatureInfo, backwardsCompat),
-                InvokerStrategy.Obj1 =>
-                    TryGetWellKnownSignatureForInstanceAnyVoid(signatureInfo, out wellKnown) ? wellKnown :
-                        CreateInvokeDelegate_Obj1Arg(method, signatureInfo, backwardsCompat),
-                InvokerStrategy.Obj4 => CreateInvokeDelegate_Obj4Args(method, signatureInfo, backwardsCompat),
-                InvokerStrategy.ObjSpan => CreateInvokeDelegate_ObjSpanArgs(method, signatureInfo, backwardsCompat),
-                _ => CreateInvokeDelegate_RefArgs(method, signatureInfo, backwardsCompat)
-            };
+                if (isForArrayInput)
+                {
+                    invokeFunc = strategy switch
+                    {
+                        InvokerStrategy.Obj0 => CreateInvokeDelegate_Obj0Args(method, signatureInfo, backwardsCompat),
+                        InvokerStrategy.Obj1 => CreateInvokeDelegate_Obj1Arg(method, signatureInfo, backwardsCompat),
+                        InvokerStrategy.Obj4 or InvokerStrategy.ObjSpan => CreateInvokeDelegate_ObjSpanArgs(method, signatureInfo, backwardsCompat),
+                        _ => CreateInvokeDelegate_RefArgs(method, signatureInfo, backwardsCompat)
+                    };
+                }
+                else
+                {
+                    invokeFunc = strategy switch
+                    {
+                        InvokerStrategy.Obj0 => CreateInvokeDelegate_Obj0Args(method, signatureInfo, backwardsCompat),
+                        InvokerStrategy.Obj1 => CreateInvokeDelegate_Obj1Arg(method, signatureInfo, backwardsCompat),
+                        InvokerStrategy.Obj4 => CreateInvokeDelegate_Obj4Args(method, signatureInfo, backwardsCompat),
+                        InvokerStrategy.ObjSpan => CreateInvokeDelegate_ObjSpanArgs(method, signatureInfo, backwardsCompat),
+                        _ => CreateInvokeDelegate_RefArgs(method, signatureInfo, backwardsCompat)
+                    };
+                }
+            }
+
+            return invokeFunc;
+
+            static bool TryCreateWellKnownInvokeFunc(MethodBase? method, InvokeSignatureInfo signatureInfo, InvokerStrategy strategy, [NotNullWhen(true)] out Delegate? wellKnown)
+            {
+                if (method is null)
+                {
+                    // Check if the method has a well-known signature that can be invoked directly using calli and a function pointer.
+                    switch (strategy)
+                    {
+                        case InvokerStrategy.Obj0:
+                            if (TryGetWellKnownSignatureFor0Args(signatureInfo, out wellKnown)) return true;
+                            break;
+                        case InvokerStrategy.Obj1:
+                            if (TryGetWellKnownSignatureFor1Arg(signatureInfo, out wellKnown)) return true;
+                            break;
+                    }
+                }
+
+                wellKnown = null;
+                return false;
+            }
         }
 
         internal static bool CanCacheDynamicMethod(MethodBase method) =>
             // The cache method's DeclaringType and other collectible parameters would be referenced.
             !method.IsCollectible &&
             // Value types need to be unboxed which requires its type, so a cached value would not be very sharable.
-            !(method.DeclaringType!.IsValueType && !method.IsStatic) &&
-            SupportsCalli(method);
+            !(method.DeclaringType!.IsValueType && !method.IsStatic);
 
         /// <summary>
         /// Determines if the method is not polymorphic and thus can be called with a calli instruction.
         /// </summary>
         internal static bool SupportsCalli(MethodBase method)
         {
-            Debug.Assert(!method.DeclaringType!.IsValueType || method.DeclaringType.IsSealed);
-
             return method.IsStatic ||
                 method.DeclaringType!.IsSealed ||
                 method.IsFinal ||
-                method is ConstructorInfo;
+                (
+                    method is ConstructorInfo &&
+                    // A string cannot be allocated with an uninitialized value, so we use NewObj.
+                    !ReferenceEquals(method.DeclaringType, typeof(string))
+                );
         }
 
-        internal static Delegate GetOrCreateDynamicMethod(
-            ref CerHashtable<InvokeSignatureInfo, Delegate> cache,
-            ref object? lockObject,
+        internal static Delegate GetOrCreateInvokeFunc(
             InvokeSignatureInfo signatureInfo,
-            MethodBase method,
-            InvokerStrategy strategy)
+            InvokerStrategy strategy,
+            bool isForArrayInput,
+            bool backwardsCompat)
         {
-            if (!CanCacheDynamicMethod(method))
-            {
-                return CreateInvokeFunc(method, signatureInfo, strategy, backwardsCompat: false);
-            }
-
             // Get the cached dynamic method.
-            Delegate invokeFunc = cache[signatureInfo];
+            Delegate invokeFunc = s_invokerFuncs[signatureInfo];
             if (invokeFunc is null)
             {
-                if (lockObject is null)
+                if (s_invokerFuncsLock is null)
                 {
-                    Interlocked.CompareExchange(ref lockObject!, new object(), null);
+                    Interlocked.CompareExchange(ref s_invokerFuncsLock!, new object(), null);
                 }
 
                 bool lockTaken = false;
                 try
                 {
-                    Monitor.Enter(lockObject, ref lockTaken);
-                    invokeFunc = cache[signatureInfo];
+                    Monitor.Enter(s_invokerFuncsLock, ref lockTaken);
+                    invokeFunc = s_invokerFuncs[signatureInfo];
                     if (invokeFunc is null)
                     {
-                        invokeFunc = CreateInvokeFunc(method, signatureInfo, strategy, backwardsCompat: false);
-                        cache[signatureInfo] = invokeFunc;
+                        invokeFunc = CreateInvokeFunc(method: null, signatureInfo, strategy, isForArrayInput, backwardsCompat);
+                        s_invokerFuncs[signatureInfo] = invokeFunc;
                     }
                 }
                 finally
                 {
                     if (lockTaken)
                     {
-                        Monitor.Exit(lockObject);
+                        Monitor.Exit(s_invokerFuncsLock);
                     }
                 }
             }
 
             return invokeFunc;
-        }
-
-        internal static bool HasDefaultParameterValues(MethodBase method)
-        {
-            ReadOnlySpan<ParameterInfo> parameters = method.GetParametersAsSpan();
-
-            for (int i = 0; i < parameters.Length; i++)
-            {
-                if (parameters[i].HasDefaultValue)
-                {
-                    return true;
-                }
-            }
-
-            return false;
         }
 
         /// <summary>

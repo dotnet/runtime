@@ -23,9 +23,9 @@ namespace System.Reflection
             DynamicMethod dm = CreateDynamicMethod(method, signatureInfo, [typeof(object), typeof(IntPtr)]);
             ILGenerator il = dm.GetILGenerator();
 
-            EmitLdargForInstance(il, signatureInfo.IsStatic, signatureInfo.DeclaringType);
+            EmitLdargForInstance(il, method, signatureInfo.IsStatic, signatureInfo.DeclaringType);
             EmitCall(il, method, signatureInfo, signatureInfo.IsStatic, backwardsCompat);
-            EmitReturnHandling(il, signatureInfo.ReturnType);
+            EmitReturnHandling(il, method is RuntimeConstructorInfo ? method.DeclaringType! : signatureInfo.ReturnType);
             return (InvokeFunc_Obj0Args)dm.CreateDelegate(typeof(InvokeFunc_Obj0Args), target: null);
         }
 
@@ -34,14 +34,14 @@ namespace System.Reflection
             DynamicMethod dm = CreateDynamicMethod(method, signatureInfo, [typeof(object), typeof(IntPtr), typeof(object)]);
             ILGenerator il = dm.GetILGenerator();
 
-            EmitLdargForInstance(il, signatureInfo.IsStatic, signatureInfo.DeclaringType);
+            EmitLdargForInstance(il, method, signatureInfo.IsStatic, signatureInfo.DeclaringType);
 
             Debug.Assert(signatureInfo.ParameterTypes.Length == 1);
             il.Emit(OpCodes.Ldarg_2);
             UnboxSpecialType(il, (RuntimeType)signatureInfo.ParameterTypes[0]);
 
             EmitCall(il, method, signatureInfo, signatureInfo.IsStatic, backwardsCompat);
-            EmitReturnHandling(il, signatureInfo.ReturnType);
+            EmitReturnHandling(il, method is RuntimeConstructorInfo ? method.DeclaringType! : signatureInfo.ReturnType);
             return (InvokeFunc_Obj1Arg)dm.CreateDelegate(typeof(InvokeFunc_Obj1Arg), target: null);
         }
 
@@ -50,7 +50,7 @@ namespace System.Reflection
             DynamicMethod dm = CreateDynamicMethod(method, signatureInfo, [typeof(object), typeof(IntPtr), typeof(object), typeof(object), typeof(object), typeof(object)]);
             ILGenerator il = dm.GetILGenerator();
 
-            EmitLdargForInstance(il, signatureInfo.IsStatic, signatureInfo.DeclaringType);
+            EmitLdargForInstance(il, method, signatureInfo.IsStatic, signatureInfo.DeclaringType);
 
             ReadOnlySpan<Type> parameterTypes = signatureInfo.ParameterTypes;
             for (int i = 0; i < parameterTypes.Length; i++)
@@ -74,7 +74,7 @@ namespace System.Reflection
             }
 
             EmitCall(il, method, signatureInfo, signatureInfo.IsStatic, backwardsCompat);
-            EmitReturnHandling(il, signatureInfo.ReturnType);
+            EmitReturnHandling(il, method is RuntimeConstructorInfo ? method.DeclaringType! : signatureInfo.ReturnType);
             return (InvokeFunc_Obj4Args)dm.CreateDelegate(typeof(InvokeFunc_Obj4Args), target: null);
         }
 
@@ -83,7 +83,7 @@ namespace System.Reflection
             DynamicMethod dm = CreateDynamicMethod(method, signatureInfo, [typeof(object), typeof(IntPtr), typeof(Span<object>)]);
             ILGenerator il = dm.GetILGenerator();
 
-            EmitLdargForInstance(il, signatureInfo.IsStatic, signatureInfo.DeclaringType);
+            EmitLdargForInstance(il, method, signatureInfo.IsStatic, signatureInfo.DeclaringType);
 
             ReadOnlySpan<Type> parameterTypes = signatureInfo.ParameterTypes;
             for (int i = 0; i < parameterTypes.Length; i++)
@@ -99,7 +99,7 @@ namespace System.Reflection
             }
 
             EmitCall(il, method, signatureInfo, signatureInfo.IsStatic, backwardsCompat);
-            EmitReturnHandling(il, signatureInfo.ReturnType);
+            EmitReturnHandling(il, method is RuntimeConstructorInfo ? method.DeclaringType! : signatureInfo.ReturnType);
             return (InvokeFunc_ObjSpanArgs)dm.CreateDelegate(typeof(InvokeFunc_ObjSpanArgs), target: null);
         }
 
@@ -108,7 +108,7 @@ namespace System.Reflection
             DynamicMethod dm = CreateDynamicMethod(method, signatureInfo, [typeof(object), typeof(IntPtr), typeof(IntPtr*)]);
             ILGenerator il = dm.GetILGenerator();
 
-            EmitLdargForInstance(il, signatureInfo.IsStatic, signatureInfo.DeclaringType);
+            EmitLdargForInstance(il, method, signatureInfo.IsStatic, signatureInfo.DeclaringType);
 
             ReadOnlySpan<Type> parameterTypes = signatureInfo.ParameterTypes;
             for (int i = 0; i < parameterTypes.Length; i++)
@@ -130,7 +130,7 @@ namespace System.Reflection
             }
 
             EmitCall(il, method, signatureInfo, signatureInfo.IsStatic, backwardsCompat);
-            EmitReturnHandling(il, signatureInfo.ReturnType);
+            EmitReturnHandling(il, method is RuntimeConstructorInfo ? method.DeclaringType! : signatureInfo.ReturnType);
             return (InvokeFunc_RefArgs)dm.CreateDelegate(typeof(InvokeFunc_RefArgs), target: null);
         }
 
@@ -165,6 +165,18 @@ namespace System.Reflection
                 skipVisibility: true); // Supports creating the delegate immediately when calling CreateDelegate().
         }
 
+        private static void EmitLdargForInstance(ILGenerator il, MethodBase? method, bool isStatic, Type declaringType)
+        {
+            if (!isStatic && method is not RuntimeConstructorInfo)
+            {
+                il.Emit(OpCodes.Ldarg_0);
+                if (declaringType.IsValueType)
+                {
+                    il.Emit(OpCodes.Unbox, declaringType);
+                }
+            }
+        }
+
         private static void EmitCall(ILGenerator il, MethodBase? method, InvokeSignatureInfo signatureInfo, bool isStatic, bool backwardsCompat)
         {
             if (method is null)
@@ -192,7 +204,18 @@ namespace System.Reflection
 #endif
                 }
 
-                il.Emit(OpCodes.Callvirt, (MethodInfo)method);
+                if (method is RuntimeConstructorInfo)
+                {
+                    il.Emit(OpCodes.Newobj, (ConstructorInfo)method);
+                }
+                else if (method.IsStatic || method.DeclaringType!.IsValueType)
+                {
+                    il.Emit(OpCodes.Call, (MethodInfo)method);
+                }
+                else
+                {
+                    il.Emit(OpCodes.Callvirt, (MethodInfo)method);
+                }
             }
         }
 
@@ -251,18 +274,6 @@ namespace System.Reflection
             }
 
             il.Emit(OpCodes.Ret);
-        }
-
-        private static void EmitLdargForInstance(ILGenerator il, bool isStatic, Type declaringType)
-        {
-            if (!isStatic)
-            {
-                il.Emit(OpCodes.Ldarg_0);
-                if (declaringType.IsValueType)
-                {
-                    il.Emit(OpCodes.Unbox, declaringType);
-                }
-            }
         }
 
         /// <summary>

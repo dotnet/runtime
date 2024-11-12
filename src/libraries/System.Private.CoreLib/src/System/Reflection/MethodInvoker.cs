@@ -26,18 +26,13 @@ namespace System.Reflection
     /// <seealso cref="ConstructorInvoker"/>
     public sealed partial class MethodInvoker
     {
-        private static CerHashtable<InvokeSignatureInfo, Delegate> s_invokerFuncs;
-        private static object? s_invokerFuncsLock;
-
+        private readonly int _argCount; // For perf, to avoid calling _signatureInfo.ParameterTypes.Length in fast path.
+        private readonly IntPtr _functionPointer;
         private readonly Delegate? _invokeFunc; // todo: use GetMethodImpl and fcnptr?
-        private InvokerStrategy _strategy;
-
-        private readonly InvokeSignatureInfo _signatureInfo;
-        private readonly InvocationFlags _invocationFlags;
         private readonly InvokerArgFlags[] _invokerArgFlags;
         private readonly MethodBase _method;
-        private readonly IntPtr _functionPointer;
-        private readonly int _argCount; // For perf, to avoid calling _signatureInfo.ParameterTypes.Length in fast path.
+        private readonly InvokerStrategy _strategy;
+        private readonly InvokeSignatureInfo _signatureInfo;
 
         /// <summary>
         /// Creates a new instance of MethodInvoker.
@@ -72,19 +67,41 @@ namespace System.Reflection
             throw new ArgumentException(SR.Argument_MustBeRuntimeMethod, nameof(method));
         }
 
-        private MethodInvoker(MethodBase method, RuntimeType[] arguments, InvocationFlags invocationFlags)
+        private MethodInvoker(MethodBase method, RuntimeType[] parameterTypes, InvocationFlags invocationFlags)
         {
-            _invocationFlags = invocationFlags;
-
-            if ((invocationFlags & (InvocationFlags.NoInvoke | InvocationFlags.ContainsStackPointers | InvocationFlags.NoConstructorInvoke)) == 0)
+            if ((invocationFlags & (InvocationFlags.NoInvoke | InvocationFlags.ContainsStackPointers)) == 0)
             {
-                _signatureInfo = InvokeSignatureInfo.Create(method, arguments);
-                _method = method;
-                _argCount = _signatureInfo.ParameterTypes.Length;
+                _argCount = parameterTypes.Length;
                 _functionPointer = method.MethodHandle.GetFunctionPointer();
-                Initialize(_signatureInfo, out bool needsByRefStrategy, out _invokerArgFlags);
-                _strategy = GetInvokerStrategyForSpanInput(_argCount, needsByRefStrategy);
-                _invokeFunc = GetOrCreateDynamicMethod(ref s_invokerFuncs, ref s_invokerFuncsLock, _signatureInfo, method, _strategy);
+                _method = method;
+
+                if (SupportsCalli(method))
+                {
+                    _functionPointer = method.MethodHandle.GetFunctionPointer();
+
+                    if (CanCacheDynamicMethod(method))
+                    {
+                        _signatureInfo = InvokeSignatureInfo.CreateNormalized(method, parameterTypes);
+                        Initialize(_signatureInfo, out bool needsByRefStrategy, out _invokerArgFlags);
+                        _strategy = GetInvokerStrategyForSpanInput(_argCount, needsByRefStrategy);
+                        _invokeFunc = GetOrCreateInvokeFunc(_signatureInfo, _strategy, isForArrayInput: false, backwardsCompat: false);
+                    }
+                    else
+                    {
+                        _signatureInfo = InvokeSignatureInfo.Create(method, parameterTypes);
+                        Initialize(_signatureInfo, out bool needsByRefStrategy, out _invokerArgFlags);
+                        _strategy = GetInvokerStrategyForSpanInput(_argCount, needsByRefStrategy);
+                        _invokeFunc = CreateInvokeFunc(method: null, _signatureInfo, _strategy, isForArrayInput: false, backwardsCompat: false);
+                    }
+                }
+                else
+                {
+                    _signatureInfo = InvokeSignatureInfo.Create(method, parameterTypes);
+                    Initialize(_signatureInfo, out bool needsByRefStrategy, out _invokerArgFlags);
+                    _strategy = GetInvokerStrategyForSpanInput(_argCount, needsByRefStrategy);
+                    _invokeFunc = CreateInvokeFunc(method, _signatureInfo, _strategy, isForArrayInput: false, backwardsCompat: false);
+                    _method = method;
+                }
             }
             else
             {

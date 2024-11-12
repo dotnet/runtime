@@ -17,114 +17,58 @@ using static System.Reflection.MethodInvokerCommon;
 
 namespace System.Reflection
 {
+    /// <summary>
+    /// Provides the implementation of the Invoke() methods on MethodInfo, ConstructorInfo and DynamicMethod.
+    /// </summary>
+    /// <remarks>
+    /// This class is known by the runtime in order to ignore reflection frames during stack walks.
+    /// </remarks>
     internal sealed partial class MethodBaseInvoker
     {
         internal const int MaxStackAllocArgCount = 4;
 
-        private static CerHashtable<InvokeSignatureInfo, MethodBaseInvoker> s_invokers;
-        private static object? s_invokersLock;
-
-        // todo: use single with cast: private Delegate _invokeFunc;
-        private readonly InvokeFunc_Obj0Args? _invokeFunc_Obj0Args;
-        private readonly InvokeFunc_Obj1Arg? _invokeFunc_Obj1Arg;
-        private readonly InvokeFunc_ObjSpanArgs? _invokeFunc_ObjSpanArgs;
-        private readonly InvokeFunc_RefArgs? _invokeFunc_RefArgs;
-
         private readonly int _argCount; // For perf, to avoid calling _signatureInfo.ParameterTypes.Length in fast path.
+        private readonly IntPtr _functionPointer; // This will be Zero when not using calli.
+        private readonly Delegate _invokeFunc;
         private readonly InvokerArgFlags[] _invokerArgFlags;
-        private readonly MethodBase? _method; // This will be null when using Calli.
+        private readonly MethodBase? _method; // This will be null when using calli.
         private readonly InvokeSignatureInfo _signatureInfo;
         private readonly InvokerStrategy _strategy;
+        private readonly bool _allocateObject; // True for constructors when using calli.
+        // todo: CreateUninitializedCache
 
-        public static MethodBaseInvoker Create(MethodBase method, RuntimeType[] argumentTypes)
+        public MethodBaseInvoker(MethodBase method, RuntimeType[] parameterTypes)
         {
-            return new MethodBaseInvoker(SupportsCalli(method) ? null : method, InvokeSignatureInfo.Create(method, argumentTypes));
-        }
+            _argCount = parameterTypes.Length;
 
-        public static MethodBaseInvoker GetOrCreate(MethodBase method, RuntimeType returnType, RuntimeType[] argumentTypes)
-        {
-            if (!CanCacheInvoker(method))
+            if (SupportsCalli(method))
             {
-                return Create(method, argumentTypes);
-            }
+                _allocateObject = method is RuntimeConstructorInfo;
+                _functionPointer = method.MethodHandle.GetFunctionPointer();
+                _method = null;
 
-            InvokeSignatureInfo.NormalizedLookupKey key = new((RuntimeType)method.DeclaringType!, returnType, argumentTypes, method.IsStatic);
-
-            int hashcode = key.AlternativeGetHashCode();
-            MethodBaseInvoker existing;
-            unsafe
-            {
-                existing = s_invokers.GetValue<InvokeSignatureInfo.NormalizedLookupKey>(hashcode, key, &InvokeSignatureInfo.NormalizedLookupKey.AlternativeEquals);
-            }
-
-            if (existing is not null)
-            {
-                return existing;
-            }
-
-            if (s_invokersLock is null)
-            {
-                Interlocked.CompareExchange(ref s_invokersLock!, new object(), null);
-            }
-
-            bool lockTaken = false;
-            try
-            {
-                Monitor.Enter(s_invokersLock, ref lockTaken);
-
-                unsafe
+                if (CanCacheDynamicMethod(method) && !HasDefaultParameterValues(method))
                 {
-                    existing = s_invokers.GetValue<InvokeSignatureInfo.NormalizedLookupKey>(hashcode, key, &InvokeSignatureInfo.NormalizedLookupKey.AlternativeEquals);
+                    _signatureInfo = InvokeSignatureInfo.CreateNormalized(method, parameterTypes);
+                    Initialize(_signatureInfo, out bool needsByRefStrategy, out _invokerArgFlags);
+                    _strategy = GetInvokerStrategy(_argCount, needsByRefStrategy);
+                    _invokeFunc = GetOrCreateInvokeFunc(_signatureInfo, _strategy, isForArrayInput: true, backwardsCompat: false);
                 }
-
-                if (existing is not null)
+                else
                 {
-                    return existing;
-                }
-
-                InvokeSignatureInfo memberBaseSignatureTypes = InvokeSignatureInfo.Create(key);
-                MethodBaseInvoker invoker = new MethodBaseInvoker(method: null, memberBaseSignatureTypes);
-                s_invokers[memberBaseSignatureTypes] = invoker;
-                return invoker;
-            }
-            finally
-            {
-                if (lockTaken)
-                {
-                    Monitor.Exit(s_invokersLock);
+                    _signatureInfo = InvokeSignatureInfo.Create(method, parameterTypes);
+                    Initialize(_signatureInfo, out bool needsByRefStrategy, out _invokerArgFlags);
+                    _strategy = GetInvokerStrategy(_argCount, needsByRefStrategy);
+                    _invokeFunc = CreateInvokeFunc(method: null, _signatureInfo, _strategy, isForArrayInput: true, backwardsCompat: false);
                 }
             }
-        }
-
-        private static bool CanCacheInvoker(MethodBase method) =>
-            CanCacheDynamicMethod(method) &&
-            // Supporting default values would increase cache memory usage and slow down the common case.
-            !HasDefaultParameterValues(method);
-
-        private MethodBaseInvoker(MethodBase? method, InvokeSignatureInfo signatureInfo)
-        {
-            _argCount = signatureInfo.ParameterTypes.Length;
-            _method = method;
-            _signatureInfo = signatureInfo;
-            Initialize(signatureInfo, out bool needsByRefStrategy, out _invokerArgFlags);
-
-            _strategy = GetInvokerStrategy(_argCount, needsByRefStrategy);
-            switch (_strategy)
+            else
             {
-                case InvokerStrategy.Obj0:
-                    _invokeFunc_Obj0Args = CreateInvokeDelegate_Obj0Args(_method, _signatureInfo, backwardsCompat: true);
-                    break;
-                case InvokerStrategy.Obj1:
-                    _invokeFunc_Obj1Arg = CreateInvokeDelegate_Obj1Arg(_method, _signatureInfo, backwardsCompat: true);
-                    break;
-                case InvokerStrategy.Obj4:
-                case InvokerStrategy.ObjSpan:
-                    _invokeFunc_ObjSpanArgs = CreateInvokeDelegate_ObjSpanArgs(_method, _signatureInfo, backwardsCompat: true);
-                    break;
-                default:
-                    Debug.Assert(_strategy == InvokerStrategy.Ref4 || _strategy == InvokerStrategy.RefMany);
-                    _invokeFunc_RefArgs = CreateInvokeDelegate_RefArgs(_method, _signatureInfo, backwardsCompat: true);
-                    break;
+                _signatureInfo = InvokeSignatureInfo.Create(method, parameterTypes);
+                Initialize(_signatureInfo, out bool needsByRefStrategy, out _invokerArgFlags);
+                _strategy = GetInvokerStrategy(_argCount, needsByRefStrategy);
+                _invokeFunc = CreateInvokeFunc(method, _signatureInfo, _strategy, isForArrayInput: true, backwardsCompat: true);
+                _method = method;
             }
         }
 
@@ -136,13 +80,19 @@ namespace System.Reflection
             throw new TargetParameterCountException(SR.Arg_ParmCnt);
         }
 
-        internal unsafe object? InvokeWith0Args(object? obj, IntPtr functionPointer, BindingFlags invokeAttr)
+        internal unsafe object? InvokeWith0Args(object? obj, BindingFlags invokeAttr)
         {
             Debug.Assert(_argCount == 0);
 
             try
             {
-                return _invokeFunc_Obj0Args!(obj, functionPointer);
+                if (_allocateObject)
+                {
+                    obj ??= ((RuntimeType)_signatureInfo.DeclaringType!).GetUninitializedObject();
+                    ((InvokeFunc_Obj0Args)_invokeFunc)(obj, _functionPointer);
+                    return obj;
+                }
+                return ((InvokeFunc_Obj0Args)_invokeFunc)(obj, _functionPointer);
             }
             catch (Exception e) when ((invokeAttr & BindingFlags.DoNotWrapExceptions) == 0)
             {
@@ -152,7 +102,6 @@ namespace System.Reflection
 
         internal unsafe object? InvokeWith1Arg(
             object? obj,
-            IntPtr functionPointer,
             BindingFlags invokeAttr,
             Binder? binder,
             object? parameter,
@@ -164,7 +113,13 @@ namespace System.Reflection
 
             try
             {
-                return _invokeFunc_Obj1Arg!(obj, functionPointer, parameter);
+                if (_allocateObject)
+                {
+                    obj ??= ((RuntimeType)_signatureInfo.DeclaringType!).GetUninitializedObject();
+                    ((InvokeFunc_Obj1Arg)_invokeFunc)!(obj, _functionPointer, parameter);
+                    return obj;
+                }
+                return ((InvokeFunc_Obj1Arg)_invokeFunc)!(obj, _functionPointer, parameter);
             }
             catch (Exception e) when ((invokeAttr & BindingFlags.DoNotWrapExceptions) == 0)
             {
@@ -174,7 +129,6 @@ namespace System.Reflection
 
         internal unsafe object? InvokeWith4Args(
             object? obj,
-            IntPtr functionPointer,
             BindingFlags invokeAttr,
             Binder? binder,
             object?[] parameters,
@@ -190,7 +144,16 @@ namespace System.Reflection
 
             try
             {
-                return _invokeFunc_ObjSpanArgs!(obj, functionPointer, copyOfArgs);
+                if (_allocateObject)
+                {
+                    obj ??= ((RuntimeType)_signatureInfo.DeclaringType!).GetUninitializedObject();
+                    ((InvokeFunc_ObjSpanArgs)_invokeFunc)(obj, _functionPointer, copyOfArgs);
+                    return obj;
+                }
+                else
+                {
+                    return ((InvokeFunc_ObjSpanArgs)_invokeFunc)(obj, _functionPointer, copyOfArgs);
+                }
             }
             catch (Exception e) when ((invokeAttr & BindingFlags.DoNotWrapExceptions) == 0)
             {
@@ -200,7 +163,6 @@ namespace System.Reflection
 
         internal unsafe object? InvokeWithSpanArgs(
             object? obj,
-            IntPtr functionPointer,
             BindingFlags invokeAttr,
             Binder? binder,
             object?[] parameters,
@@ -227,7 +189,16 @@ namespace System.Reflection
 
                 try
                 {
-                    ret = _invokeFunc_ObjSpanArgs!(obj, functionPointer, copyOfArgs);
+                    if (_allocateObject)
+                    {
+                        obj ??= ((RuntimeType)_signatureInfo.DeclaringType!).GetUninitializedObject();
+                        ((InvokeFunc_ObjSpanArgs)_invokeFunc)(obj, _functionPointer, copyOfArgs);
+                        ret = obj;
+                    }
+                    else
+                    {
+                        ret = ((InvokeFunc_ObjSpanArgs)_invokeFunc)(obj, _functionPointer, copyOfArgs);
+                    }
                 }
                 catch (Exception e) when ((invokeAttr & BindingFlags.DoNotWrapExceptions) == 0)
                 {
@@ -235,18 +206,16 @@ namespace System.Reflection
                 }
 
                 CopyBack(parameters, copyOfArgs, shouldCopyBack);
+                return ret;
             }
             finally
             {
                 GCFrameRegistration.UnregisterForGCReporting(&regArgStorage);
             }
-
-            return ret;
         }
 
         internal unsafe object? InvokeWith4RefArgs(
             object? obj,
-            IntPtr functionPointer,
             BindingFlags invokeAttr,
             Binder? binder,
             object?[] parameters,
@@ -275,7 +244,16 @@ namespace System.Reflection
             object? ret;
             try
             {
-                ret = _invokeFunc_RefArgs!(obj, functionPointer, pByRefFixedStorage);
+                if (_allocateObject)
+                {
+                    obj ??= ((RuntimeType)_signatureInfo.DeclaringType!).GetUninitializedObject();
+                    ((InvokeFunc_RefArgs)_invokeFunc)(obj, _functionPointer, pByRefFixedStorage);
+                    ret = obj;
+                }
+                else
+                {
+                    ret = ((InvokeFunc_RefArgs)_invokeFunc)(obj, _functionPointer, pByRefFixedStorage);
+                }
             }
             catch (Exception e) when ((invokeAttr & BindingFlags.DoNotWrapExceptions) == 0)
             {
@@ -288,7 +266,6 @@ namespace System.Reflection
 
         internal unsafe object? InvokeWithManyRefArgs(
             object? obj,
-            IntPtr functionPointer,
             BindingFlags invokeAttr,
             Binder? binder,
             object?[] parameters,
@@ -322,7 +299,16 @@ namespace System.Reflection
 
                 try
                 {
-                    ret = _invokeFunc_RefArgs!(obj, functionPointer, pByRefStorage);
+                    if (_allocateObject)
+                    {
+                        obj ??= ((RuntimeType)_signatureInfo.DeclaringType!).GetUninitializedObject();
+                        ((InvokeFunc_RefArgs)_invokeFunc)(obj, _functionPointer, pByRefStorage);
+                        ret = obj;
+                    }
+                    else
+                    {
+                        ret = ((InvokeFunc_RefArgs)_invokeFunc)(obj, _functionPointer, pByRefStorage);
+                    }
                 }
                 catch (Exception e) when ((invokeAttr & BindingFlags.DoNotWrapExceptions) == 0)
                 {
@@ -529,6 +515,23 @@ namespace System.Reflection
                 2 or 3 or 4 => InvokerStrategy.Obj4,
                 _ => InvokerStrategy.ObjSpan
             };
+        }
+
+        // Supporting default values would increase cache memory usage and slow down the common case
+        // since the default values would have to be cached as well.
+        internal static bool HasDefaultParameterValues(MethodBase method)
+        {
+            ReadOnlySpan<ParameterInfo> parameters = method.GetParametersAsSpan();
+
+            for (int i = 0; i < parameters.Length; i++)
+            {
+                if (parameters[i].HasDefaultValue)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
     }
 }

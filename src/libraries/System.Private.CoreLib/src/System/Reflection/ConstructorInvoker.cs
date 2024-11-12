@@ -27,17 +27,13 @@ namespace System.Reflection
     /// <seealso cref="MethodInvoker"/>
     public sealed partial class ConstructorInvoker
     {
-        private static CerHashtable<InvokeSignatureInfo, Delegate> s_invokerFuncs;
-        private static object? s_invokerFuncsLock;
-
         private readonly int _argCount; // For perf, to avoid calling _signatureInfo.ParameterTypes.Length in fast path.
-        private readonly InvocationFlags _invocationFlags;
+        private readonly IntPtr _functionPointer;
         private readonly Delegate _invokeFunc; // todo: use GetMethodImpl and fcnptr?
         private readonly InvokerArgFlags[] _invokerArgFlags;
         private readonly RuntimeConstructorInfo _method;
         private readonly InvokeSignatureInfo _signatureInfo;
         private readonly InvokerStrategy _strategy;
-        private readonly IntPtr _functionPointer;
 
         /// <summary>
         /// Creates a new instance of ConstructorInvoker.
@@ -64,9 +60,7 @@ namespace System.Reflection
 
         private ConstructorInvoker(RuntimeConstructorInfo constructor)
         {
-            _invocationFlags = constructor.InvocationFlags;
-
-            if ((_invocationFlags & (InvocationFlags.NoInvoke | InvocationFlags.ContainsStackPointers | InvocationFlags.NoConstructorInvoke)) == 0)
+            if ((constructor.InvocationFlags & (InvocationFlags.NoInvoke | InvocationFlags.ContainsStackPointers | InvocationFlags.NoConstructorInvoke)) == 0)
             {
                 _functionPointer = constructor.MethodHandle.GetFunctionPointer();
                 _method = constructor;
@@ -74,7 +68,7 @@ namespace System.Reflection
                 _argCount = _signatureInfo.ParameterTypes.Length;
                 Initialize(_signatureInfo, out bool needsByRefStrategy, out _invokerArgFlags);
                 _strategy = GetInvokerStrategyForSpanInput(_argCount, needsByRefStrategy);
-                _invokeFunc = GetOrCreateDynamicMethod(ref s_invokerFuncs, ref s_invokerFuncsLock, _signatureInfo, constructor, _strategy);
+                _invokeFunc = GetOrCreateInvokeFunc(_signatureInfo, _strategy, isForArrayInput: false, backwardsCompat: false);
             }
             else
             {
@@ -245,7 +239,6 @@ namespace System.Reflection
                 _method.ThrowNoInvokeException();
             }
 
-            // todo: do we need a copyOfArgs if no ref args?
             Span<object?> copyOfArgs;
             GCFrameRegistration regArgStorage;
 

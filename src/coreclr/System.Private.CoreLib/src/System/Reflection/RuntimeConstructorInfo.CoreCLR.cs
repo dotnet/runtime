@@ -30,10 +30,10 @@ namespace System.Reflection
         private Signature? m_signature;
         private MethodBaseInvoker? m_invoker;
         private InvocationFlags m_invocationFlags;
-        private IntPtr m_functionPointer;
-        // todo: add this CreateUninitializedCache or move to invoker, and no longer cache invoker
+
         internal InvocationFlags InvocationFlags
         {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
                 InvocationFlags flags = m_invocationFlags;
@@ -42,6 +42,7 @@ namespace System.Reflection
                     m_invocationFlags = flags = ComputeInvocationFlags();
                 }
 
+                Debug.Assert((flags & InvocationFlags.Initialized) == InvocationFlags.Initialized);
                 return flags;
             }
         }
@@ -51,13 +52,7 @@ namespace System.Reflection
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
-                if (m_invoker is null)
-                {
-                    m_invoker ??= MethodBaseInvoker.GetOrCreate(this);
-                    m_functionPointer = MethodHandle.GetFunctionPointer();
-                }
-
-                return m_invoker;
+                return m_invoker ??= new MethodBaseInvoker(this, ArgumentTypes);
             }
         }
         #endregion

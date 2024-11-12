@@ -10,7 +10,7 @@ namespace System.Reflection
 {
     internal static partial class MethodInvokerCommon
     {
-        public static bool TryGetWellKnownSignatureForInstanceAny(InvokeSignatureInfo signatureInfo, [NotNullWhen(true)] out Delegate? func)
+        public static bool TryGetWellKnownSignatureFor0Args(InvokeSignatureInfo signatureInfo, [NotNullWhen(true)] out Delegate? func)
         {
             Debug.Assert(signatureInfo.ParameterTypes.Length == 0);
 
@@ -41,7 +41,7 @@ namespace System.Reflection
             return false;
         }
 
-        public static bool TryGetWellKnownSignatureForInstanceAnyVoid(InvokeSignatureInfo signatureInfo, [NotNullWhen(true)] out Delegate? func)
+        public static bool TryGetWellKnownSignatureFor1Arg(InvokeSignatureInfo signatureInfo, [NotNullWhen(true)] out Delegate? func)
         {
             Debug.Assert(signatureInfo.ParameterTypes.Length == 1);
 

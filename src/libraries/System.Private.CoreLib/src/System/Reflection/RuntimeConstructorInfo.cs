@@ -129,12 +129,12 @@ namespace System.Reflection
 
             _ = Invoker.Strategy switch
             {
-                MethodBase.InvokerStrategy.Obj0 => Invoker.InvokeWith0Args(obj, m_functionPointer, invokeAttr),
-                MethodBase.InvokerStrategy.Obj1 => Invoker.InvokeWith1Arg(obj, m_functionPointer, invokeAttr, binder, parameters![0], culture),
-                MethodBase.InvokerStrategy.Obj4 => Invoker.InvokeWith4Args(obj, m_functionPointer, invokeAttr, binder, parameters!, culture),
-                MethodBase.InvokerStrategy.ObjSpan => Invoker.InvokeWithSpanArgs(obj, m_functionPointer, invokeAttr, binder, parameters!, culture),
-                MethodBase.InvokerStrategy.Ref4 => Invoker.InvokeWith4RefArgs(obj, m_functionPointer, invokeAttr, binder, parameters!, culture),
-                _ => Invoker.InvokeWithManyRefArgs(obj, m_functionPointer, invokeAttr, binder, parameters!, culture)
+                MethodBase.InvokerStrategy.Obj0 => Invoker.InvokeWith0Args(obj, invokeAttr),
+                MethodBase.InvokerStrategy.Obj1 => Invoker.InvokeWith1Arg(obj, invokeAttr, binder, parameters![0], culture),
+                MethodBase.InvokerStrategy.Obj4 => Invoker.InvokeWith4Args(obj, invokeAttr, binder, parameters!, culture),
+                MethodBase.InvokerStrategy.ObjSpan => Invoker.InvokeWithSpanArgs(obj, invokeAttr, binder, parameters!, culture),
+                MethodBase.InvokerStrategy.Ref4 => Invoker.InvokeWith4RefArgs(obj, invokeAttr, binder, parameters!, culture),
+                _ => Invoker.InvokeWithManyRefArgs(obj, invokeAttr, binder, parameters!, culture)
             };
 
             return null;
@@ -159,27 +159,15 @@ namespace System.Reflection
                 MethodBaseInvoker.ThrowTargetParameterCountException();
             }
 
-            object obj;
-            try
+            return Invoker.Strategy switch
             {
-                obj = ((RuntimeType)DeclaringType!).GetUninitializedObject();
-            }
-            catch (Exception e) when ((invokeAttr & BindingFlags.DoNotWrapExceptions) == 0)
-            {
-                throw new TargetInvocationException(e);
-            }
-
-            _ = Invoker.Strategy switch
-            {
-                MethodBase.InvokerStrategy.Obj0 => Invoker.InvokeWith0Args(obj, m_functionPointer, invokeAttr),
-                MethodBase.InvokerStrategy.Obj1 => Invoker.InvokeWith1Arg(obj, m_functionPointer, invokeAttr, binder, parameters![0], culture),
-                MethodBase.InvokerStrategy.Obj4 => Invoker.InvokeWith4Args(obj, m_functionPointer, invokeAttr, binder, parameters!, culture),
-                MethodBase.InvokerStrategy.ObjSpan => Invoker.InvokeWithSpanArgs(obj, m_functionPointer, invokeAttr, binder, parameters!, culture),
-                MethodBase.InvokerStrategy.Ref4 => Invoker.InvokeWith4RefArgs(obj, m_functionPointer, invokeAttr, binder, parameters!, culture),
-                _ => Invoker.InvokeWithManyRefArgs(obj, m_functionPointer, invokeAttr, binder, parameters!, culture)
+                MethodBase.InvokerStrategy.Obj0 => Invoker.InvokeWith0Args(obj: null, invokeAttr)!,
+                MethodBase.InvokerStrategy.Obj1 => Invoker.InvokeWith1Arg(obj: null, invokeAttr, binder, parameters![0], culture)!,
+                MethodBase.InvokerStrategy.Obj4 => Invoker.InvokeWith4Args(obj: null, invokeAttr, binder, parameters!, culture)!,
+                MethodBase.InvokerStrategy.ObjSpan => Invoker.InvokeWithSpanArgs(obj: null, invokeAttr, binder, parameters!, culture)!,
+                MethodBase.InvokerStrategy.Ref4 => Invoker.InvokeWith4RefArgs(obj: null, invokeAttr, binder, parameters!, culture)!,
+                _ => Invoker.InvokeWithManyRefArgs(obj : null, invokeAttr, binder, parameters!, culture)!
             };
-
-            return obj;
         }
     }
 }

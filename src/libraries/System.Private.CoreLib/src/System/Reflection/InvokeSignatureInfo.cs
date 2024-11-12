@@ -32,18 +32,52 @@ namespace System.Reflection.Emit
             return new InvokeSignatureInfo(declaringType: dm.DeclaringType!, returnType: dm.ReturnType, parameterTypes, dm.IsStatic);
         }
 
-        public static InvokeSignatureInfo Create(in NormalizedLookupKey normalizedLookupKey)
+        public static InvokeSignatureInfo CreateNormalized(MethodBase method, Type[] parameterTypes)
         {
-            return new InvokeSignatureInfo(
-                declaringType: normalizedLookupKey._declaringType,
-                returnType: normalizedLookupKey._returnType,
-                parameterTypes: normalizedLookupKey._parameterTypes,
-                isStatic: normalizedLookupKey._isStatic);
+            InvokeSignatureInfo sigInfo;
+
+            if (method is RuntimeMethodInfo rmi)
+            {
+                sigInfo = CreateNormalized(
+                    declaringType: method.IsStatic ? typeof(void) : rmi.DeclaringType!,
+                    returnType: rmi.ReturnType,
+                    parameterTypes,
+                    rmi.IsStatic);
+            }
+            else if (method is RuntimeConstructorInfo rci)
+            {
+                Debug.Assert(rci.GetReturnType() == typeof(void));
+                Debug.Assert(!rci.IsStatic);
+
+                sigInfo = CreateNormalized(
+                    declaringType: rci.DeclaringType!,
+                    returnType: typeof(void),
+                    parameterTypes,
+                    isStatic: false);
+            }
+            else
+            {
+                DynamicMethod di = (DynamicMethod)method;
+                sigInfo = CreateNormalized(
+                    declaringType: di.IsStatic ? typeof(void) : di.DeclaringType!,
+                    returnType: di.ReturnType,
+                    parameterTypes,
+                    di.IsStatic);
+            }
+
+            return sigInfo;
+
+            static InvokeSignatureInfo CreateNormalized(Type declaringType, Type returnType, Type[] parameterTypes, bool isStatic) =>
+                new InvokeSignatureInfo(
+                    declaringType: NormalizeType(declaringType),
+                    returnType: NormalizeType(returnType),
+                    GetNormalizedParameterTypes(parameterTypes),
+                    isStatic);
         }
 
         public InvokeSignatureInfo(Type declaringType, Type returnType, Type[] parameterTypes, bool isStatic)
         {
-            _declaringType = isStatic ? typeof(void) : declaringType;
+            _declaringType = declaringType;
             _returnType = returnType;
             _parameterTypes = parameterTypes;
             _isStatic = isStatic;
@@ -86,27 +120,21 @@ namespace System.Reflection.Emit
             return true;
         }
 
-        public override int GetHashCode() => GetHashCode(
-            declaringType: _declaringType,
-            returnType: _returnType,
-            _parameterTypes);
-
-        public static int GetHashCode(Type declaringType, Type returnType, Type[] parameterTypes)
+        public override int GetHashCode()
         {
-            int hashcode = declaringType.GetHashCode();
+            int hashcode = _declaringType.GetHashCode();
             hashcode = int.RotateLeft(hashcode, 5);
 
-            hashcode ^= returnType.GetHashCode();
+            hashcode ^= _returnType.GetHashCode();
             hashcode = int.RotateLeft(hashcode, 5);
 
-            for (int i = 0; i < parameterTypes.Length; i++)
+            for (int i = 0; i < _parameterTypes.Length; i++)
             {
-                hashcode ^= parameterTypes[i].GetHashCode();
+                hashcode ^= _parameterTypes[i].GetHashCode();
                 hashcode = int.RotateLeft(hashcode, 5);
             }
 
             // We don't include _isStatic in the hashcode because it is already included with _declaringType==typeof(void).
-
             return hashcode;
         }
 
@@ -159,50 +187,5 @@ namespace System.Reflection.Emit
             type.IsByRef ||
             type.IsPointer ||
             type.IsFunctionPointer;
-
-        /// <summary>
-        /// Provide a zero-alloc ref struct for lookup with normalized types for a Calli signature.
-        /// </summary>
-        internal readonly ref struct NormalizedLookupKey
-        {
-            internal readonly Type _declaringType;
-            internal readonly Type[] _parameterTypes;
-            internal readonly Type _returnType;
-            internal readonly bool _isStatic;
-
-            public NormalizedLookupKey(Type declaringType, Type returnType, Type[] parameterTypes, bool isStatic)
-            {
-                _declaringType = isStatic ? typeof(void) : NormalizeType(declaringType);
-                _parameterTypes = GetNormalizedParameterTypes(parameterTypes);
-                _returnType = NormalizeType(returnType);
-                _isStatic = isStatic;
-            }
-
-            public static bool AlternativeEquals(in NormalizedLookupKey @this, InvokeSignatureInfo signatureInfo)
-            {
-                if (!ReferenceEquals(@this._declaringType, signatureInfo._declaringType) ||
-                    !ReferenceEquals(@this._returnType, signatureInfo._returnType) ||
-                    @this._isStatic != signatureInfo._isStatic ||
-                    @this._parameterTypes.Length != signatureInfo._parameterTypes.Length)
-                {
-                    return false;
-                }
-
-                for (int i = 0; i < @this._parameterTypes.Length; i++)
-                {
-                    if (!ReferenceEquals(@this._parameterTypes[i], signatureInfo._parameterTypes[i]))
-                    {
-                        return false;
-                    }
-                }
-
-                return true;
-            }
-
-            public int AlternativeGetHashCode() => InvokeSignatureInfo.GetHashCode(
-                declaringType: _declaringType,
-                returnType: _returnType,
-                _parameterTypes);
-        }
     }
 }

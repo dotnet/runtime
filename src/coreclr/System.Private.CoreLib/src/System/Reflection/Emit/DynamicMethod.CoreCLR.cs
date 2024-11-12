@@ -90,7 +90,7 @@ namespace System.Reflection.Emit
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
-                return _invoker ??= MethodBaseInvoker.Create(this, Signature.Arguments);
+                return _invoker ??= new MethodBaseInvoker(this, Signature.Arguments);
             }
         }
 
@@ -135,12 +135,12 @@ namespace System.Reflection.Emit
 
             object? retValue = Invoker.Strategy switch
             {
-                MethodBase.InvokerStrategy.Obj0 => Invoker.InvokeWith0Args(obj, IntPtr.Zero, invokeAttr),
-                MethodBase.InvokerStrategy.Obj1 => Invoker.InvokeWith1Arg(obj, IntPtr.Zero, invokeAttr, binder, parameters![0], culture),
-                MethodBase.InvokerStrategy.Obj4 => Invoker.InvokeWith4Args(obj, IntPtr.Zero, invokeAttr, binder, parameters!, culture),
-                MethodBase.InvokerStrategy.ObjSpan => Invoker.InvokeWithSpanArgs(obj, IntPtr.Zero, invokeAttr, binder, parameters!, culture),
-                MethodBase.InvokerStrategy.Ref4 => Invoker.InvokeWith4RefArgs(obj, IntPtr.Zero, invokeAttr, binder, parameters!, culture),
-                _ => Invoker.InvokeWithManyRefArgs(obj, IntPtr.Zero, invokeAttr, binder, parameters!, culture)
+                MethodBase.InvokerStrategy.Obj0 => Invoker.InvokeWith0Args(obj, invokeAttr),
+                MethodBase.InvokerStrategy.Obj1 => Invoker.InvokeWith1Arg(obj, invokeAttr, binder, parameters![0], culture),
+                MethodBase.InvokerStrategy.Obj4 => Invoker.InvokeWith4Args(obj, invokeAttr, binder, parameters!, culture),
+                MethodBase.InvokerStrategy.ObjSpan => Invoker.InvokeWithSpanArgs(obj, invokeAttr, binder, parameters!, culture),
+                MethodBase.InvokerStrategy.Ref4 => Invoker.InvokeWith4RefArgs(obj, invokeAttr, binder, parameters!, culture),
+                _ => Invoker.InvokeWithManyRefArgs(obj, invokeAttr, binder, parameters!, culture)
             };
 
             GC.KeepAlive(this);
