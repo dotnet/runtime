@@ -94,6 +94,67 @@ enum CallbackProviderIndex
     DotNETRuntimePrivate = 3
 };
 
+#ifdef FEATURE_ETW
+// EventFilterType identifies the filter type used by the PEVENT_FILTER_DESCRIPTOR
+enum EventFilterType
+{
+    // data should be pairs of UTF8 null terminated strings all concatenated together.
+    // The first element of the pair is the key and the 2nd is the value. We expect one of the
+    // keys to be the string "GCSeqNumber" and the value to be a number encoded as text.
+    // This is the standard way EventPipe encodes filter values
+    StringKeyValueEncoding = 0,
+    // data should be an 8 byte binary LONGLONG value
+    // this is the historic encoding defined by .NET Framework for use with ETW
+    LongBinaryClientSequenceNumber = 1
+};
+
+void ParseFilterDataClientSequenceNumber(
+    EVENT_FILTER_DESCRIPTOR * FilterData,
+    LONGLONG * pClientSequenceNumber)
+{
+    if (FilterData == NULL)
+        return;
+
+    if (FilterData->Type == LongBinaryClientSequenceNumber && FilterData->Size == sizeof(LONGLONG))
+    {
+        *pClientSequenceNumber = *(LONGLONG *) (FilterData->Ptr);
+    }
+    else if (FilterData->Type == StringKeyValueEncoding)
+    {
+        const char* buffer = reinterpret_cast<const char*>(FilterData->Ptr);
+        const char* buffer_end = buffer + FilterData->Size;
+
+        while (buffer < buffer_end)
+        {
+            const char* key = buffer;
+            size_t key_len = strnlen(key, buffer_end - buffer);
+            buffer += key_len + 1;
+
+            if (buffer >= buffer_end)
+                break;
+
+            const char* value = buffer;
+            size_t value_len = strnlen(value, buffer_end - buffer);
+            buffer += value_len + 1;
+
+            if (buffer > buffer_end)
+                break;
+
+            if (strcmp(key, "GCSeqNumber") != 0)
+                continue;
+
+            char* endPtr = nullptr;
+            long parsedValue = strtol(value, &endPtr, 10);
+            if (endPtr != value && *endPtr == '\0')
+            {
+                *pClientSequenceNumber = static_cast<LONGLONG>(parsedValue);
+                break;
+            }
+        }
+    }
+}
+#endif // FEATURE_ETW
+
 void EtwCallbackCommon(
     CallbackProviderIndex ProviderIndex,
     ULONG ControlCode,
@@ -164,13 +225,7 @@ void EtwCallbackCommon(
         // Profilers may (optionally) specify extra data in the filter parameter
         // to log with the GCStart event.
         LONGLONG l64ClientSequenceNumber = 0;
-        EVENT_FILTER_DESCRIPTOR* filterDesc = (EVENT_FILTER_DESCRIPTOR*)pFilterData;
-        if ((filterDesc != NULL) &&
-            (filterDesc->Type == 1) &&
-            (filterDesc->Size == sizeof(l64ClientSequenceNumber)))
-        {
-            l64ClientSequenceNumber = *(LONGLONG *) (filterDesc->Ptr);
-        }
+        ParseFilterDataClientSequenceNumber((EVENT_FILTER_DESCRIPTOR*)pFilterData, &l64ClientSequenceNumber);
         ETW::GCLog::ForceGC(l64ClientSequenceNumber);
     }
 #endif
