@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
@@ -22,146 +23,103 @@ public class MiscTests3 : BlazorWasmTestBase
         _enablePerTestCleanup = true;
     }
 
-    // [Theory]
-    // [InlineData("Debug", /*build*/true, /*publish*/false)]
-    // [InlineData("Debug", /*build*/false, /*publish*/true)]
-    // [InlineData("Debug", /*build*/true, /*publish*/true)]
-    // [InlineData("Release", /*build*/true, /*publish*/false)]
-    // [InlineData("Release", /*build*/false, /*publish*/true)]
-    // [InlineData("Release", /*build*/true, /*publish*/true)]
-    // public async Task WithDllImportInMainAssembly(string config, bool build, bool publish)
-    // {
-    //     // Based on https://github.com/dotnet/runtime/issues/59255
-    //     string id = $"blz_dllimp_{config}_{s_unicodeChars}";
-    //     if (build && publish)
-    //         id += "build_then_publish";
-    //     else if (build)
-    //         id += "build";
-    //     else
-    //         id += "publish";
+    [Theory]
+    [InlineData("Debug", /*build*/true, /*publish*/false)]
+    [InlineData("Release", /*build*/true, /*publish*/false)]
+    [InlineData("Release", /*build*/false, /*publish*/true)]
+    [InlineData("Release", /*build*/true, /*publish*/true)]
+    public async Task WithDllImportInMainAssembly(string config, bool build, bool publish)
+    {
+        // Based on https://github.com/dotnet/runtime/issues/59255
+        string prefix = $"blz_dllimp_{config}_{s_unicodeChars}";
+        if (build && publish)
+            prefix += "build_then_publish";
+        else if (build)
+            prefix += "build";
+        else
+            prefix += "publish";
+        string extraItems = @"<NativeFileReference Include=""mylib.cpp"" />";
+        ProjectInfo info = CopyTestAsset(config, aot: false, "BlazorBasicTestApp", prefix, "App", extraItems: extraItems);
+        File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "MyDllImport.cs"), Path.Combine(_projectDir!, "Pages", "MyDllImport.cs"));
+        File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "native-libs", "mylib.cpp"), Path.Combine(_projectDir!, "mylib.cpp"));
+        UpdateFile(Path.Combine("Pages", "MyDllImport.cs"), new Dictionary<string, string> { { "##NAMESPACE##", info.ProjectName } });
 
-    //     string projectFile = CreateProjectWithNativeReference(id);
-    //     string nativeSource = @"
-    //         #include <stdio.h>
+        BlazorAddRazorButton("cpp_add", """
+            var result = MyDllImports.cpp_add(10, 12);
+            outputText = $"{result}";
+        """);
 
-    //         extern ""C"" {
-    //             int cpp_add(int a, int b) {
-    //                 return a + b;
-    //             }
-    //         }";
+        if (build)
+            BlazorBuild(info, isNativeBuild: true);
 
-    //     File.WriteAllText(Path.Combine(_projectDir!, "mylib.cpp"), nativeSource);
+        if (publish)
+            BlazorPublish(info, useCache: false, isNativeBuild: true);
 
-    //     string myDllImportCs = @$"
-    //         using System.Runtime.InteropServices;
-    //         namespace {id};
+        RunOptions runOptions = new(config, Test: TestDllImport);
+        if (publish)
+            await RunForPublishWithWebServer(runOptions);
+        else
+            await RunForBuildWithDotnetRun(runOptions);
 
-    //         public static class MyDllImports
-    //         {{
-    //             [DllImport(""mylib"")]
-    //             public static extern int cpp_add(int a, int b);
-    //         }}";
+        async Task TestDllImport(IPage page)
+        {
+            await page.Locator("text=\"cpp_add\"").ClickAsync();
+            var txt = await page.Locator("p[role='test']").InnerHTMLAsync();
+            Assert.Equal("Output: 22", txt);
+        }
+    }
 
-    //     File.WriteAllText(Path.Combine(_projectDir!, "Pages", "MyDllImport.cs"), myDllImportCs);
+    [Fact]
+    public void BugRegression_60479_WithRazorClassLib()
+    {
+        string config = "Release";
+        string razorClassLibraryName = "RazorClassLibrary";
+        string extraItems = @$"
+            <ProjectReference Include=""..\\RazorClassLibrary\\RazorClassLibrary.csproj"" />
+            <BlazorWebAssemblyLazyLoad Include=""{razorClassLibraryName}{ProjectProviderBase.WasmAssemblyExtension}"" />";
+        ProjectInfo info = CopyTestAsset(config, aot: true, "BlazorBasicTestApp", "blz_razor_lib_top", "App", extraItems: extraItems);
 
-    //     AddItemsPropertiesToProject(projectFile, extraItems: @"<NativeFileReference Include=""mylib.cpp"" />");
-    //     BlazorAddRazorButton("cpp_add", """
-    //         var result = MyDllImports.cpp_add(10, 12);
-    //         outputText = $"{result}";
-    //     """);
+        // No relinking, no AOT
+        BlazorBuild(info);
 
-    //     if (build)
-    //         BlazorBuild(new BuildProjectOptions(id, config, NativeFilesType.Relinked));
+        // will relink
+        BlazorPublish(info, useCache: false);
 
-    //     if (publish)
-    //         BlazorPublish(new BuildProjectOptions(id, config, NativeFilesType.Relinked, ExpectRelinkDirWhenPublishing: build));
+        // publish/wwwroot/_framework/blazor.boot.json
+        string frameworkDir = GetBlazorBinFrameworkDir(config, forPublish: true);
+        string bootJson = Path.Combine(frameworkDir, "blazor.boot.json");
 
-    //     RunOptions runOptions = new() { Configuration = config, Test = TestDllImport };
-    //     if (publish)
-    //         await BlazorRunForPublishWithWebServer(runOptions);
-    //     else
-    //         await BlazorRunForBuildWithDotnetRun(runOptions);
+        Assert.True(File.Exists(bootJson), $"Could not find {bootJson}");
+        var jdoc = JsonDocument.Parse(File.ReadAllText(bootJson));
+        if (!jdoc.RootElement.TryGetProperty("resources", out JsonElement resValue) ||
+            !resValue.TryGetProperty("lazyAssembly", out JsonElement lazyVal))
+        {
+            throw new XunitException($"Could not find resources.lazyAssembly object in {bootJson}");
+        }
 
-    //     async Task TestDllImport(IPage page)
-    //     {
-    //         await page.Locator("text=\"cpp_add\"").ClickAsync();
-    //         var txt = await page.Locator("p[role='test']").InnerHTMLAsync();
-    //         Assert.Equal("Output: 22", txt);
-    //     }
-    // }
+        Assert.True(lazyVal.EnumerateObject().Select(jp => jp.Name).FirstOrDefault(f => f.StartsWith(razorClassLibraryName)) != null);
+    }
 
-    // [Fact]
-    // public void BugRegression_60479_WithRazorClassLib()
-    // {
-    //     string id = $"blz_razor_lib_top_{GetRandomId()}";
-    //     InitBlazorWasmProjectDir(id);
-
-    //     string wasmProjectDir = Path.Combine(_projectDir!, "wasm");
-    //     string wasmProjectFile = Path.Combine(wasmProjectDir, "wasm.csproj");
-    //     Directory.CreateDirectory(wasmProjectDir);
-    //     using DotNetCommand cmd = new DotNetCommand(s_buildEnv, _testOutput, useDefaultArgs: false);
-    //     cmd.WithWorkingDirectory(wasmProjectDir)
-    //         .WithEnvironmentVariable("NUGET_PACKAGES", _nugetPackagesDir)
-    //         .ExecuteWithCapturedOutput("new blazorwasm")
-    //         .EnsureSuccessful();
-
-    //     string razorProjectDir = Path.Combine(_projectDir!, "RazorClassLibrary");
-    //     Directory.CreateDirectory(razorProjectDir);
-    //     cmd.WithWorkingDirectory(razorProjectDir)
-    //             .WithEnvironmentVariable("NUGET_PACKAGES", _nugetPackagesDir)
-    //             .ExecuteWithCapturedOutput("new razorclasslib")
-    //             .EnsureSuccessful();
-
-    //     string razorClassLibraryFileNameWithoutExtension = "RazorClassLibrary";
-    //     AddItemsPropertiesToProject(wasmProjectFile, extraItems: @$"
-    //         <ProjectReference Include=""..\\RazorClassLibrary\\RazorClassLibrary.csproj"" />
-    //         <BlazorWebAssemblyLazyLoad Include=""{razorClassLibraryFileNameWithoutExtension}{ProjectProviderBase.WasmAssemblyExtension}"" />
-    //     ");
-
-    //     _projectDir = wasmProjectDir;
-    //     string config = "Release";
-    //     // No relinking, no AOT
-    //     BlazorBuild(new BuildProjectOptions(id, config, NativeFilesType.FromRuntimePack));
-
-    //     // will relink
-    //     BlazorPublish(new BuildProjectOptions(id, config, NativeFilesType.Relinked, ExpectRelinkDirWhenPublishing: true));
-
-    //     // publish/wwwroot/_framework/blazor.boot.json
-    //     string frameworkDir = GetBlazorBinFrameworkDir(config, forPublish: true);
-    //     string bootJson = Path.Combine(frameworkDir, "blazor.boot.json");
-
-    //     Assert.True(File.Exists(bootJson), $"Could not find {bootJson}");
-    //     var jdoc = JsonDocument.Parse(File.ReadAllText(bootJson));
-    //     if (!jdoc.RootElement.TryGetProperty("resources", out JsonElement resValue) ||
-    //         !resValue.TryGetProperty("lazyAssembly", out JsonElement lazyVal))
-    //     {
-    //         throw new XunitException($"Could not find resources.lazyAssembly object in {bootJson}");
-    //     }
-
-    //     Assert.True(lazyVal.EnumerateObject().Select(jp => jp.Name).FirstOrDefault(f => f.StartsWith(razorClassLibraryFileNameWithoutExtension)) != null);
-    // }
-
-    // private void BlazorAddRazorButton(string buttonText, string customCode, string methodName = "test", string razorPage = "Pages/Counter.razor")
-    // {
-    //     string additionalCode = $$"""
-    //         <p role="{{methodName}}">Output: @outputText</p>
-    //         <button class="btn btn-primary" @onclick="{{methodName}}">{{buttonText}}</button>
-
-    //         @code {
-    //             private string outputText = string.Empty;
-    //             public void {{methodName}}()
-    //             {
-    //                 {{customCode}}
-    //             }
-    //         }
-    //     """;
-
-    //     // find blazor's Counter.razor
-    //     string counterRazorPath = Path.Combine(_projectDir!, razorPage);
-    //     if (!File.Exists(counterRazorPath))
-    //         throw new FileNotFoundException($"Could not find {counterRazorPath}");
-
-    //     string oldContent = File.ReadAllText(counterRazorPath);
-    //     File.WriteAllText(counterRazorPath, oldContent + additionalCode);
-    // }
+    private void BlazorAddRazorButton(string buttonText, string customCode, string methodName = "test") =>
+        UpdateFile(Path.Combine("Pages", "Counter.razor"), new Dictionary<string, string> {
+                {
+                    @"<button class=""btn btn-primary"" @onclick=""IncrementCount"">Click me</button>",
+                    $@"
+                        <button class=""btn btn-primary"" @onclick=""IncrementCount"">Click me</button>
+                        <p role=""{methodName}"">Output: @outputText</p>
+                        <button class=""btn btn-primary"" @onclick=""{methodName}"">{buttonText}</button>
+                    "
+                },
+                {
+                    "private int currentCount = 0;",
+                    $@"
+                        private int currentCount = 0;
+                        private string outputText = string.Empty;
+                        public void {methodName}()
+                        {{
+                            {customCode}
+                        }}
+                    "
+                }
+            });
 }

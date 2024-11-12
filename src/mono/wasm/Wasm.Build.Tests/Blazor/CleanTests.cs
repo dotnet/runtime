@@ -26,7 +26,7 @@ public class CleanTests : BlazorWasmTestBase
     public void Blazor_BuildThenClean_NativeRelinking(string config)
     {
         string extraProperties = @"<_WasmDevel>true</_WasmDevel><WasmBuildNative>true</WasmBuildNative>";
-        ProjectInfo info = CopyTestAsset(config, aot: true, "BlazorBasicTestApp", "clean", extraProperties: extraProperties);
+        ProjectInfo info = CopyTestAsset(config, aot: true, "BlazorBasicTestApp", "clean", "App", extraProperties: extraProperties);
         BlazorBuild(info, isNativeBuild: true);
 
         string relinkDir = Path.Combine(_projectDir!, "obj", config, DefaultTargetFrameworkForBlazor, "wasm", "for-build");
@@ -57,7 +57,7 @@ public class CleanTests : BlazorWasmTestBase
     private void Blazor_BuildNativeNonNative_ThenCleanTest(string config, bool firstBuildNative)
     {
         string extraProperties = @"<_WasmDevel>true</_WasmDevel>";
-        ProjectInfo info = CopyTestAsset(config, aot: true, "BlazorBasicTestApp", "clean_native", extraProperties: extraProperties);
+        ProjectInfo info = CopyTestAsset(config, aot: true, "BlazorBasicTestApp", "clean_native", "App", extraProperties: extraProperties);
 
         bool relink = firstBuildNative;
         BlazorBuild(info, isNativeBuild: relink, extraArgs: relink ? "-p:WasmBuildNative=true" : string.Empty);

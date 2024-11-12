@@ -28,7 +28,7 @@ public class BuildPublishTests : BlazorWasmTestBase
     [InlineData("Release")]
     public async Task DefaultTemplate_WithoutWorkload(string config)
     {
-        ProjectInfo info = CopyTestAsset(config, aot: false, "BlazorBasicTestApp", "blz_no_workload");
+        ProjectInfo info = CopyTestAsset(config, aot: false, "BlazorBasicTestApp", "blz_no_workload", "App");
         BlazorBuild(info);
         await RunForBuildWithDotnetRun(new(info.Configuration));
 
@@ -58,7 +58,7 @@ public class BuildPublishTests : BlazorWasmTestBase
     [MemberData(nameof(TestDataForDefaultTemplate_WithWorkload), parameters: new object[] { false })]
     public void DefaultTemplate_NoAOT_WithWorkload(string config, bool testUnicode)
     {
-        ProjectInfo info = CopyTestAsset(config, aot: false, "BlazorBasicTestApp", "blz_no_aot", appendUnicodeToPath: testUnicode);
+        ProjectInfo info = CopyTestAsset(config, aot: false, "BlazorBasicTestApp", "blz_no_aot", "App", appendUnicodeToPath: testUnicode);
         BlazorPublish(info);
     }
 
@@ -66,7 +66,7 @@ public class BuildPublishTests : BlazorWasmTestBase
     [MemberData(nameof(TestDataForDefaultTemplate_WithWorkload), parameters: new object[] { true })]
     public void DefaultTemplate_AOT_WithWorkload(string config, bool testUnicode)
     {
-        ProjectInfo info = CopyTestAsset(config, aot: false, "BlazorBasicTestApp", "blz_aot", appendUnicodeToPath: testUnicode);
+        ProjectInfo info = CopyTestAsset(config, aot: false, "BlazorBasicTestApp", "blz_aot", "App", appendUnicodeToPath: testUnicode);
         BlazorBuild(info);
 
         bool isPublish = true;
@@ -92,7 +92,7 @@ public class BuildPublishTests : BlazorWasmTestBase
         var extraProperty = expectFingerprintOnDotnetJs ?
             "<WasmFingerprintDotnetJs>true</WasmFingerprintDotnetJs><WasmBuildNative>true</WasmBuildNative>" :
             "<WasmBuildNative>true</WasmBuildNative>";
-        ProjectInfo info = CopyTestAsset(config, aot: false, "BlazorBasicTestApp", "blz_checkfingerprinting", extraProperties: extraProperty);
+        ProjectInfo info = CopyTestAsset(config, aot: false, "BlazorBasicTestApp", "blz_checkfingerprinting", "App", extraProperties: extraProperty);
         BlazorBuild(info, isNativeBuild: true);
         BlazorPublish(info, isNativeBuild: true, useCache: false);
     }
@@ -124,7 +124,7 @@ public class BuildPublishTests : BlazorWasmTestBase
     public void DefaultTemplate_WithResources_Publish(string config)
     {
         string[] cultures = ["ja-JP", "es-ES"];
-        ProjectInfo info = CopyTestAsset(config, aot: false, "BlazorBasicTestApp", "blz_resources");
+        ProjectInfo info = CopyTestAsset(config, aot: false, "BlazorBasicTestApp", "blz_resources", "App");
 
         // Ensure we have the source data we rely on
         string resxSourcePath = Path.Combine(BuildEnvironment.TestAssetsPath, "resx");
@@ -162,7 +162,7 @@ public class BuildPublishTests : BlazorWasmTestBase
         string extraProperties = "<RunAOTCompilation>true</RunAOTCompilation>";
         if (!string.IsNullOrEmpty(stripILAfterAOT))
             extraProperties += $"<WasmStripILAfterAOT>{stripILAfterAOT}</WasmStripILAfterAOT>";
-        ProjectInfo info = CopyTestAsset(config, aot: true, "BlazorBasicTestApp", "blz_WasmStripILAfterAOT", extraProperties: extraProperties);
+        ProjectInfo info = CopyTestAsset(config, aot: true, "BlazorBasicTestApp", "blz_WasmStripILAfterAOT", "App", extraProperties: extraProperties);
 
         BlazorPublish(info);
         await RunForPublishWithWebServer(new(config));
@@ -178,7 +178,7 @@ public class BuildPublishTests : BlazorWasmTestBase
     public void BlazorWasm_CannotAOT_InDebug(string config)
     {
         ProjectInfo info = CopyTestAsset(
-            config, aot: true, "BlazorBasicTestApp", "blazorwasm", extraProperties: "<RunAOTCompilation>true</RunAOTCompilation>");
+            config, aot: true, "BlazorBasicTestApp", "blazorwasm", "App", extraProperties: "<RunAOTCompilation>true</RunAOTCompilation>");
 
         bool isPublish = true;
         (string _, string output) = BuildTemplateProject(info,
