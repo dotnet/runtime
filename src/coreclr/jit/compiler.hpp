@@ -3602,7 +3602,7 @@ inline unsigned genMapFloatRegNumToRegArgNum(regNumber regNum)
 #elif defined(TARGET_LOONGARCH64)
     return regNum - REG_F0;
 #elif defined(TARGET_RISCV64)
-    return regNum - REG_FLTARG_0;
+    return regNum - REG_FA0;
 #elif defined(TARGET_ARM64)
     return regNum - REG_V0;
 #elif defined(UNIX_AMD64_ABI)
