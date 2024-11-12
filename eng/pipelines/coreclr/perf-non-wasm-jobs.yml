@@ -39,7 +39,7 @@ jobs:
       platforms:
       - linux_x64
       jobParameters:
-        buildArgs: -s mono+libs+host+packs -c $(_BuildConfig) /p:MonoAOTEnableLLVM=true /p:MonoEnableLLVM=true /p:BuildMonoAOTCrossCompiler=true /p:MonoLibClang="/usr/local/lib/libclang.so.16" /p:AotHostArchitecture=x64 /p:AotHostOS=linux
+        buildArgs: -s mono+libs+host+packs -c $(_BuildConfig) /p:MonoAOTEnableLLVM=true /p:MonoEnableLLVM=true /p:BuildMonoAOTCrossCompiler=true /p:AotHostArchitecture=x64 /p:AotHostOS=linux
         nameSuffix: AOT
         isOfficialBuild: false
         postBuildSteps:
@@ -374,7 +374,7 @@ jobs:
         nameSuffix: PerfBDNApp
         isOfficialBuild: false
         pool:
-          vmImage: 'macos-12'
+          vmImage: 'macos-13'
         postBuildSteps:
           - template: /eng/pipelines/coreclr/templates/build-perf-bdn-app.yml
             parameters:

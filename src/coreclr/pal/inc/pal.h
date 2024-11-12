@@ -140,9 +140,13 @@ extern bool g_arm64_atomics_present;
 
 #define EMPTY_BASES_DECL
 
-
 #if !defined(_MSC_VER) || defined(SOURCE_FORMATTING)
-#define __assume(x) (void)0
+#if __has_builtin(__builtin_assume)
+#define __assume(condition) do { bool assume_cond = (condition); __builtin_assume(assume_cond); } while (0)
+#else
+#define __assume(condition) do { if (!(condition)) __builtin_unreachable(); } while (0)
+#endif // __has_builtin(__builtin_assume)
+
 #define __annotation(x)
 #endif //!MSC_VER
 
@@ -358,13 +362,6 @@ VOID
 PALAPI
 PAL_UnregisterModule(
     IN HINSTANCE hInstance);
-
-PALIMPORT
-VOID
-PALAPI
-PAL_Random(
-    IN OUT LPVOID lpBuffer,
-    IN DWORD dwLength);
 
 PALIMPORT
 BOOL
@@ -2647,6 +2644,8 @@ PALIMPORT BOOL PALAPI PAL_GetUnwindInfoSize(SIZE_T baseAddress, ULONG64 ehFrameH
 #define PAL_CS_NATIVE_DATA_SIZE 96
 #elif defined(__linux__) && defined(__riscv) && __riscv_xlen == 64
 #define PAL_CS_NATIVE_DATA_SIZE 96
+#elif defined(__HAIKU__) && defined(__x86_64__)
+#define PAL_CS_NATIVE_DATA_SIZE 56
 #else
 #error  PAL_CS_NATIVE_DATA_SIZE is not defined for this architecture
 #endif
@@ -3955,7 +3954,9 @@ unsigned int __cdecl _rotr(unsigned int value, int shift)
 PALIMPORT DLLEXPORT char * __cdecl PAL_getenv(const char *);
 PALIMPORT DLLEXPORT int __cdecl _putenv(const char *);
 
+#ifndef ERANGE
 #define ERANGE          34
+#endif
 
 /****************PAL Perf functions for PInvoke*********************/
 #if PAL_PERF

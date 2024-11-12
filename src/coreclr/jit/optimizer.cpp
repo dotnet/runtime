@@ -3687,34 +3687,6 @@ PhaseStatus Compiler::optHoistLoopCode()
     }
 #endif
 
-#if 0
-    // The code in this #if has been useful in debugging loop hoisting issues, by
-    // enabling selective enablement of the loop hoisting optimization according to
-    // method hash.
-#ifdef DEBUG
-    unsigned methHash = info.compMethodHash();
-    char* lostr = getenv("loophoisthashlo");
-    unsigned methHashLo = 0;
-    if (lostr != NULL)
-    {
-        sscanf_s(lostr, "%x", &methHashLo);
-        // methHashLo = (unsigned(atoi(lostr)) << 2);  // So we don't have to use negative numbers.
-    }
-    char* histr = getenv("loophoisthashhi");
-    unsigned methHashHi = UINT32_MAX;
-    if (histr != NULL)
-    {
-        sscanf_s(histr, "%x", &methHashHi);
-        // methHashHi = (unsigned(atoi(histr)) << 2);  // So we don't have to use negative numbers.
-    }
-    if (methHash < methHashLo || methHash > methHashHi)
-    {
-        return PhaseStatus::MODIFIED_NOTHING;
-    }
-    printf("Doing loop hoisting in %s (0x%x).\n", info.compFullName, methHash);
-#endif // DEBUG
-#endif // 0     -- debugging loop hoisting issues
-
 #ifdef DEBUG
     if (verbose)
     {
