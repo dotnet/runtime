@@ -446,7 +446,7 @@ PhaseStatus Compiler::fgOptimizeMaskConversions()
             // Only check statements where there is a local of type TYP_SIMD16/TYP_MASK.
             for (GenTreeLclVarCommon* lcl : stmt->LocalsTreeList())
             {
-                if (lcl->gtType == TYP_SIMD16 || lcl->gtType == TYP_MASK)
+                if (lcl->TypeIs(TYP_SIMD16, TYP_MASK))
                 {
                     // Parse the entire statement.
                     MaskConversionsCheckVisitor ev(this, block->getBBWeight(this), &weightsTable);
@@ -474,7 +474,7 @@ PhaseStatus Compiler::fgOptimizeMaskConversions()
             // Only check statements where there is a local of type TYP_SIMD16/TYP_MASK.
             for (GenTreeLclVarCommon* lcl : stmt->LocalsTreeList())
             {
-                if (lcl->gtType == TYP_SIMD16 || lcl->gtType == TYP_MASK)
+                if (lcl->TypeIs(TYP_SIMD16, TYP_MASK))
                 {
                     // Parse the entire statement.
                     MaskConversionsUpdateVisitor ev(this, stmt, &weightsTable);
