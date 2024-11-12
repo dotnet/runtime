@@ -20,6 +20,9 @@ public class ChangeMatchUse
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static void Consume<T, T2>(T value, T2 value2) { }
 
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void ConsumrAddressExposed<T>(ref Vector<T> value) {}
+
 
     // Create a mask. Use it as a mask.
     // Conversion of mask1 will be removed.
@@ -37,6 +40,7 @@ public class ChangeMatchUse
                 UseMaskAsVectorAndMaskInsideLoop();
                 CastMaskUseAsVector();
                 CastMaskUseAsMask();
+                UseMaskAsMaskAndRef();
             }
 
             Thread.Sleep(100);
@@ -48,6 +52,7 @@ public class ChangeMatchUse
         UseMaskAsVectorAndMaskInsideLoop();
         CastMaskUseAsVector();
         CastMaskUseAsMask();
+        UseMaskAsMaskAndRef();
     }
 
 
@@ -168,4 +173,20 @@ public class ChangeMatchUse
             Consume(vec2);
         }
     }
+
+    // Create a mask. Use it as a mask and a reference.
+    // No conversion due to the reference.
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void UseMaskAsMaskAndRef()
+    {
+        if (Sve.IsSupported)
+        {
+            Vector<double> mask1 = Sve.CreateFalseMaskDouble(); // Create lcl mask
+            Vector<double> vec1  = Vector.Create<double>(1.3);
+            ConsumrAddressExposed(ref mask1); // Use as ref
+            Vector<double> vec2  = Sve.Compact(mask1, vec1); // Use as mask
+            Consume(vec2);
+        }
+    }
+
 }

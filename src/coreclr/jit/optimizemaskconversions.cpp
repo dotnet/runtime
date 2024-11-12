@@ -161,35 +161,33 @@ public:
                 }
                 break;
 
-            case GT_LCL_ADDR:
-                isInvalid = true;
-                break;
-
             default:
                 break;
         }
 
-        if (isLocalStore || isLocalUse || isInvalid)
+        if (isLocalStore || isLocalUse)
         {
-            GenTreeLclVarCommon* lclOp = (*use)->AsLclVarCommon();
+            GenTreeLclVarCommon* lclOp  = (*use)->AsLclVarCommon();
+            LclVarDsc*           varDsc = m_compiler->lvaGetDesc(lclOp->GetLclNum());
 
             // Get the existing weighting (if any).
             MaskConversionsWeight  defaultWeight;
             MaskConversionsWeight* weight = weightsTable->LookupPointerOrAdd(lclOp->GetLclNum(), defaultWeight);
 
-            // Update the weights.
             JITDUMP("Local %s V%02d at [%06u] ", isLocalStore ? "store" : "var", lclOp->GetLclNum(),
                     m_compiler->dspTreeID(lclOp));
-            if (isInvalid)
+
+            // Cannot convert any locals with an exposed address.
+            if (varDsc->IsAddressExposed())
             {
-                JITDUMP("cannot be converted. ");
+                JITDUMP("is address exposed elsewhere. ");
                 weight->InvalidateWeight();
+                return fgWalkResult::WALK_CONTINUE;
             }
-            else
-            {
-                JITDUMP("has %s conversion. ", hasConversion ? "mask" : "no");
-                weight->UpdateWeight(isLocalStore, hasConversion, bbWeight);
-            }
+
+            // Update the weights.
+            JITDUMP("has %s conversion. ", hasConversion ? "mask" : "no");
+            weight->UpdateWeight(isLocalStore, hasConversion, bbWeight);
 
             // Cache the simd type data of the conversion.
             if (hasConversion)
