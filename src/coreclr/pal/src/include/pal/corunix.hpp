@@ -322,7 +322,6 @@ namespace CorUnix
         OBJECT_IMMUTABLE_DATA_CLEANUP_ROUTINE m_pImmutableDataCleanupRoutine;
         DWORD m_dwProcessLocalDataSize;
         OBJECT_PROCESS_LOCAL_DATA_CLEANUP_ROUTINE m_pProcessLocalDataCleanupRoutine;
-        DWORD m_dwSharedDataSize;
         DWORD m_dwSupportedAccessRights;
         // Generic access rights mapping
         SecuritySupport m_eSecuritySupport;
@@ -345,7 +344,6 @@ namespace CorUnix
             OBJECT_IMMUTABLE_DATA_CLEANUP_ROUTINE pImmutableDataCleanupRoutine,
             DWORD dwProcessLocalDataSize,
             OBJECT_PROCESS_LOCAL_DATA_CLEANUP_ROUTINE pProcessLocalDataCleanupRoutine,
-            DWORD dwSharedDataSize,
             DWORD dwSupportedAccessRights,
             SecuritySupport eSecuritySupport,
             SecurityPersistence eSecurityPersistence,
@@ -365,7 +363,6 @@ namespace CorUnix
             m_pImmutableDataCleanupRoutine(pImmutableDataCleanupRoutine),
             m_dwProcessLocalDataSize(dwProcessLocalDataSize),
             m_pProcessLocalDataCleanupRoutine(pProcessLocalDataCleanupRoutine),
-            m_dwSharedDataSize(dwSharedDataSize),
             m_dwSupportedAccessRights(dwSupportedAccessRights),
             m_eSecuritySupport(eSecuritySupport),
             m_eSecurityPersistence(eSecurityPersistence),

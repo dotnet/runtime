@@ -38,7 +38,6 @@ CObjectType CorUnix::otManualResetEvent(
                 NULL,   // No immutable data cleanup routine
                 0,      // No process local data
                 NULL,   // No process local data cleanup routine
-                0,      // No shared data
                 EVENT_ALL_ACCESS, // Currently ignored (no Win32 security)
                 CObjectType::SecuritySupported,
                 CObjectType::SecurityInfoNotPersisted,
@@ -59,7 +58,6 @@ CObjectType CorUnix::otAutoResetEvent(
                 NULL,   // No immutable data cleanup routine
                 0,      // No process local data
                 NULL,   // No process local data cleanup routine
-                0,      // No shared data
                 EVENT_ALL_ACCESS, // Currently ignored (no Win32 security)
                 CObjectType::SecuritySupported,
                 CObjectType::SecurityInfoNotPersisted,

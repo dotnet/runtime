@@ -49,7 +49,6 @@ CObjectType CorUnix::otMutex(
                 NULL,   // No immutable data cleanup routine
                 0,      // No process local data
                 NULL,   // No process local data cleanup routine
-                0,      // No shared data
                 0,      // Should be MUTEX_ALL_ACCESS; currently ignored (no Win32 security)
                 CObjectType::SecuritySupported,
                 CObjectType::SecurityInfoNotPersisted,
@@ -72,7 +71,6 @@ CObjectType CorUnix::otNamedMutex(
                 NULL,   // No immutable data cleanup routine
                 0,      // No process local data
                 NULL,   // No process local data cleanup routine
-                0,      // No shared data
                 0,      // Should be MUTEX_ALL_ACCESS; currently ignored (no Win32 security)
                 CObjectType::SecuritySupported,
                 CObjectType::SecurityInfoNotPersisted,

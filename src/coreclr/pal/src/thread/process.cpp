@@ -138,7 +138,6 @@ CObjectType CorUnix::otProcess(
                 NULL,   // No immutable data cleanup routine
                 sizeof(CProcProcessLocalData),
                 NULL,   // No process local data cleanup routine
-                0,      // No shared data
                 PROCESS_ALL_ACCESS,
                 CObjectType::SecuritySupported,
                 CObjectType::SecurityInfoNotPersisted,

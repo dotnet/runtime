@@ -143,7 +143,6 @@ CObjectType CorUnix::otFileMapping(
                 CFileMappingImmutableDataCleanupRoutine,
                 sizeof(CFileMappingProcessLocalData),
                 NULL,   // No process local data cleanup routine
-                0,
                 PAGE_READWRITE | PAGE_READONLY | PAGE_WRITECOPY,
                 CObjectType::SecuritySupported,
                 CObjectType::SecurityInfoNotPersisted,

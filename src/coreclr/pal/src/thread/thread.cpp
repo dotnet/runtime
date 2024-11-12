@@ -109,7 +109,6 @@ CObjectType CorUnix::otThread(
                 NULL,   // No immutable data cleanup routine
                 sizeof(CThreadProcessLocalData),
                 NULL,   // No process local data cleanup routine
-                0,      // sizeof(CThreadSharedData),
                 0,      // THREAD_ALL_ACCESS,
                 CObjectType::SecuritySupported,
                 CObjectType::SecurityInfoNotPersisted,
