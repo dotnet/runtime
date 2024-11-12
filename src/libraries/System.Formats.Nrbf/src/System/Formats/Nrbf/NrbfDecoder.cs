@@ -9,6 +9,7 @@ using System.Formats.Nrbf.Utils;
 using System.Text;
 using System.Runtime.Serialization;
 using System.Runtime.InteropServices;
+using System.Reflection.Metadata;
 
 namespace System.Formats.Nrbf;
 
@@ -223,7 +224,7 @@ public static class NrbfDecoder
             SerializationRecordType.ArraySingleObject => ArraySingleObjectRecord.Decode(reader),
             SerializationRecordType.ArraySinglePrimitive => DecodeArraySinglePrimitiveRecord(reader),
             SerializationRecordType.ArraySingleString => ArraySingleStringRecord.Decode(reader),
-            SerializationRecordType.BinaryArray => BinaryArrayRecord.Decode(reader, recordMap, options),
+            SerializationRecordType.BinaryArray => DecodeBinaryArrayRecord(reader, recordMap, options),
             SerializationRecordType.BinaryLibrary => BinaryLibraryRecord.Decode(reader, options),
             SerializationRecordType.BinaryObjectString => BinaryObjectStringRecord.Decode(reader),
             SerializationRecordType.ClassWithId => ClassWithIdRecord.Decode(reader, recordMap),
@@ -269,11 +270,16 @@ public static class NrbfDecoder
         };
     }
 
-    private static SerializationRecord DecodeArraySinglePrimitiveRecord(BinaryReader reader)
+    private static ArrayRecord DecodeArraySinglePrimitiveRecord(BinaryReader reader)
     {
         ArrayInfo info = ArrayInfo.Decode(reader);
         PrimitiveType primitiveType = reader.ReadPrimitiveType();
 
+        return DecodeArraySinglePrimitiveRecord(reader, info, primitiveType);
+    }
+
+    private static ArrayRecord DecodeArraySinglePrimitiveRecord(BinaryReader reader, ArrayInfo info, PrimitiveType primitiveType)
+    {
         return primitiveType switch
         {
             PrimitiveType.Boolean => Decode<bool>(info, reader),
@@ -294,8 +300,169 @@ public static class NrbfDecoder
             _ => throw new InvalidOperationException()
         };
 
-        static SerializationRecord Decode<T>(ArrayInfo info, BinaryReader reader) where T : unmanaged
+        static ArrayRecord Decode<T>(ArrayInfo info, BinaryReader reader) where T : unmanaged
             => new ArraySinglePrimitiveRecord<T>(info, ArraySinglePrimitiveRecord<T>.DecodePrimitiveTypes(reader, info.GetSZArrayLength()));
+    }
+
+    private static ArrayRecord DecodeArrayRectangularPrimitiveRecord(PrimitiveType primitiveType, ArrayInfo info, int[] lengths, BinaryReader reader)
+    {
+        return primitiveType switch
+        {
+            PrimitiveType.Boolean => Decode<bool>(info, lengths, reader),
+            PrimitiveType.Byte => Decode<byte>(info, lengths, reader),
+            PrimitiveType.SByte => Decode<sbyte>(info, lengths, reader),
+            PrimitiveType.Char => Decode<char>(info, lengths, reader),
+            PrimitiveType.Int16 => Decode<short>(info, lengths, reader),
+            PrimitiveType.UInt16 => Decode<ushort>(info, lengths, reader),
+            PrimitiveType.Int32 => Decode<int>(info, lengths, reader),
+            PrimitiveType.UInt32 => Decode<uint>(info, lengths, reader),
+            PrimitiveType.Int64 => Decode<long>(info, lengths, reader),
+            PrimitiveType.UInt64 => Decode<ulong>(info, lengths, reader),
+            PrimitiveType.Single => Decode<float>(info, lengths, reader),
+            PrimitiveType.Double => Decode<double>(info, lengths, reader),
+            PrimitiveType.Decimal => Decode<decimal>(info, lengths, reader),
+            PrimitiveType.DateTime => Decode<DateTime>(info, lengths, reader),
+            PrimitiveType.TimeSpan => Decode<TimeSpan>(info, lengths, reader),
+            _ => throw new InvalidOperationException()
+        };
+
+        static ArrayRecord Decode<T>(ArrayInfo info, int[] lengths, BinaryReader reader) where T : unmanaged
+        {
+            // We limit the length of multi-dimensional array to max length of SZArray.
+            // Because of that, it's possible to re-use the same decoding logic for both MD and SZ arrays.
+            IReadOnlyList<T> values = ArraySinglePrimitiveRecord<T>.DecodePrimitiveTypes(reader, info.GetSZArrayLength());
+            return new ArrayRectangularPrimitiveRecord<T>(info, lengths, values);
+        }
+    }
+
+    private static ArrayRecord DecodeBinaryArrayRecord(BinaryReader reader, RecordMap recordMap, PayloadOptions options)
+    {
+        SerializationRecordId objectId = SerializationRecordId.Decode(reader);
+        BinaryArrayType arrayType = reader.ReadArrayType();
+        int rank = reader.ReadInt32();
+
+        bool isRectangular = arrayType is BinaryArrayType.Rectangular;
+
+        // It is an arbitrary limit in the current CoreCLR type loader.
+        // Don't change this value without reviewing the loop a few lines below.
+        const int MaxSupportedArrayRank = 32;
+
+        if (rank < 1 || rank > MaxSupportedArrayRank
+            || (rank != 1 && !isRectangular)
+            || (rank == 1 && isRectangular))
+        {
+            ThrowHelper.ThrowInvalidValue(rank);
+        }
+
+        int[] lengths = new int[rank]; // adversary-controlled, but acceptable since upper limit of 32
+        long totalElementCount = 1; // to avoid integer overflow during the multiplication below
+        for (int i = 0; i < lengths.Length; i++)
+        {
+            lengths[i] = ArrayInfo.ParseValidArrayLength(reader);
+            totalElementCount *= lengths[i];
+
+            // n.b. This forbids "new T[Array.MaxLength, Array.MaxLength, Array.MaxLength, ..., 0]"
+            // but allows "new T[0, Array.MaxLength, Array.MaxLength, Array.MaxLength, ...]". But
+            // that's the same behavior that newarr and Array.CreateInstance exhibit, so at least
+            // we're consistent.
+
+            if (totalElementCount > ArrayInfo.MaxArrayLength)
+            {
+                ThrowHelper.ThrowInvalidValue(lengths[i]); // max array size exceeded
+            }
+        }
+
+        // Per BinaryReaderExtensions.ReadArrayType, we do not support nonzero offsets, so
+        // we don't need to read the NRBF stream 'LowerBounds' field here.
+
+        MemberTypeInfo memberTypeInfo = MemberTypeInfo.Decode(reader, 1, options, recordMap);
+        ArrayInfo arrayInfo = new(objectId, totalElementCount, arrayType, rank);
+
+        (BinaryType binaryType, object? additionalInfo) = memberTypeInfo.Infos[0];
+        if (arrayType == BinaryArrayType.Rectangular)
+        {
+            if (binaryType == BinaryType.Primitive)
+            {
+                return DecodeArrayRectangularPrimitiveRecord((PrimitiveType)additionalInfo!, arrayInfo, lengths, reader);
+            }
+            else if (binaryType == BinaryType.String)
+            {
+                return new RectangularArrayRecord(typeof(string), arrayInfo, memberTypeInfo, lengths);
+            }
+            else if (binaryType == BinaryType.Object)
+            {
+                return new RectangularArrayRecord(typeof(SerializationRecord), arrayInfo, memberTypeInfo, lengths);
+            }
+            else if (binaryType is BinaryType.SystemClass or BinaryType.Class)
+            {
+                TypeName typeName = binaryType == BinaryType.SystemClass ? (TypeName)additionalInfo! : ((ClassTypeInfo)additionalInfo!).TypeName;
+                // BinaryArrayType.Rectangular can be also a jagged array.
+                return typeName.IsArray
+                    ? new JaggedArrayRecord(arrayInfo, memberTypeInfo, lengths)
+                    : new RectangularArrayRecord(typeof(SerializationRecord), arrayInfo, memberTypeInfo, lengths);
+            }
+            else if (binaryType is BinaryType.PrimitiveArray or BinaryType.StringArray or BinaryType.ObjectArray)
+            {
+                // A multi-dimensional array of single dimensional arrays. Example: int[][,]
+                return new JaggedArrayRecord(arrayInfo, memberTypeInfo, lengths);
+            }
+        }
+        else if (arrayType == BinaryArrayType.Single)
+        {
+            if (binaryType is BinaryType.SystemClass or BinaryType.Class)
+            {
+                TypeName typeName = binaryType == BinaryType.SystemClass ? (TypeName)additionalInfo! : ((ClassTypeInfo)additionalInfo!).TypeName;
+                // BinaryArrayType.Single that describes an array is just a jagged array.
+                return typeName.IsArray
+                    ? new JaggedArrayRecord(arrayInfo, memberTypeInfo, lengths)
+                    : new SZArrayOfRecords(arrayInfo, memberTypeInfo);
+            }
+            else if (binaryType == BinaryType.String)
+            {
+                // BinaryArrayRecord can represent string[] (but BF always uses ArraySingleStringRecord for that).
+                return new ArraySingleStringRecord(arrayInfo);
+            }
+            else if (binaryType == BinaryType.Primitive)
+            {
+                // BinaryArrayRecord can represent Primitive[] (but BF always uses ArraySinglePrimitiveRecord for that).
+                return DecodeArraySinglePrimitiveRecord(reader, arrayInfo, (PrimitiveType)additionalInfo!);
+            }
+            else if (binaryType == BinaryType.Object)
+            {
+                // BinaryArrayRecord can represent object[] (but BF always uses ArraySingleObjectRecord for that).
+                return new ArraySingleObjectRecord(arrayInfo);
+            }
+            else if (binaryType is BinaryType.ObjectArray or BinaryType.StringArray or BinaryType.PrimitiveArray)
+            {
+                // It's a Jagged array that does not use BinaryArrayType.Jagged.
+                return new JaggedArrayRecord(arrayInfo, memberTypeInfo, lengths);
+            }
+        }
+        else if (arrayType == BinaryArrayType.Jagged)
+        {
+            if (binaryType is BinaryType.ObjectArray or BinaryType.StringArray or BinaryType.PrimitiveArray)
+            {
+                // It's a Jagged array that does not use BinaryArrayType.Jagged.
+                return new JaggedArrayRecord(arrayInfo, memberTypeInfo, lengths);
+            }
+            else if (binaryType == BinaryType.SystemClass && ((TypeName)additionalInfo!).IsArray)
+            {
+                // BinaryType.SystemClass can be used to describe arrays of system class records.
+                // Example: new Exception[] { new Exception("test") };
+                return new JaggedArrayRecord(arrayInfo, memberTypeInfo, lengths);
+            }
+            else if (binaryType == BinaryType.Class && ((ClassTypeInfo)additionalInfo!).TypeName.IsArray)
+            {
+                // BinaryType.Class can be used to describe arrays of class records.
+                // Example: new MyCustomType[] { new MyCustomType(0) };
+                return new JaggedArrayRecord(arrayInfo, memberTypeInfo, lengths);
+            }
+
+            // It's invalid, the element type must be an array.
+            throw new SerializationException(SR.Format(SR.Serialization_InvalidValue, binaryType));
+        }
+
+        throw new InvalidOperationException();
     }
 
     /// <summary>
