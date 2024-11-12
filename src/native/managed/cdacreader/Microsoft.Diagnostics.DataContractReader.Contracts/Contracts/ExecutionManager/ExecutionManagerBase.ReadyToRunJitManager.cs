@@ -112,7 +112,7 @@ internal partial class ExecutionManagerBase<T> : IExecutionManager
             for (uint i = start; i <= end; ++i)
             {
                 // Entries are terminated by a sentinel value of -1, so we can index one past the end safely.
-                // Read as a runtime function, its begin address is -1 and it fails the check against rel_addr.
+                // Read as a runtime function, its begin address is 0xffffffff (always > relative address).
                 // See RuntimeFunctionsTableNode.GetData in RuntimeFunctionsTableNode.cs
                 Data.RuntimeFunction nextFunc = GetRuntimeFunction(r2rInfo, i + 1);
                 if (relativeAddress >= nextFunc.BeginAddress)
