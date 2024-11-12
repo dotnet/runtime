@@ -95,7 +95,7 @@ INST3(bsr,              "bsr",              IUM_WR, BAD_CODE,     BAD_CODE,     
 
 INST3(movsx,            "movsx",            IUM_WR, BAD_CODE,     BAD_CODE,     0x0F00BE,                                INS_TT_NONE,    INS_FLAGS_Has_Wbit | Encoding_REX2)
 #ifdef TARGET_AMD64
-INST3(movsxd,           "movsxd",           IUM_WR, BAD_CODE,     BAD_CODE,     0x4800000063,                            INS_TT_NONE,    INS_FLAGS_Has_Wbit)
+INST3(movsxd,           "movsxd",           IUM_WR, BAD_CODE,     BAD_CODE,     0x000063,                                INS_TT_NONE,    REX_W1 | Encoding_REX2)
 #endif
 INST3(movzx,            "movzx",            IUM_WR, BAD_CODE,     BAD_CODE,     0x0F00B6,                                INS_TT_NONE,    INS_FLAGS_Has_Wbit | Encoding_REX2)
 
