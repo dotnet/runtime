@@ -22,76 +22,59 @@ public class SimpleRunTests : BlazorWasmTestBase
         _enablePerTestCleanup = true;
     }
 
-    // [Theory]
-    // [InlineData("Debug")]
-    // [InlineData("Release")]
-    // public async Task BlazorBuildRunTest(string config)
-    // {
-    //     string id = $"blazor_{config}_{GetRandomId()}";
-    //     string projectFile = CreateWasmTemplateProject(id, "blazorwasm");
+    [Theory]
+    [InlineData("Debug")]
+    [InlineData("Release")]
+    public async Task BlazorBuildRunTest(string config)
+    {
+        ProjectInfo info = CopyTestAsset(config, aot: false, "BlazorBasicTestApp", "blazor", "App");
+        BlazorBuild(info);
+        await RunForBuildWithDotnetRun(new(config));
+    }
 
-    //     BlazorBuild(new BuildProjectOptions(id, config, NativeFilesType.FromRuntimePack));
-    //     await BlazorRunForBuildWithDotnetRun(new RunOptions() { Configuration = config });
-    // }
+    [Theory]
+    [InlineData("Debug", /*appendRID*/ true, /*useArtifacts*/ false)]
+    [InlineData("Debug", /*appendRID*/ true, /*useArtifacts*/ true)]
+    [InlineData("Debug", /*appendRID*/ false, /*useArtifacts*/ true)]
+    [InlineData("Debug", /*appendRID*/ false, /*useArtifacts*/ false)]
+    public async Task BlazorBuildAndRunForDifferentOutputPaths(string config, bool appendRID, bool useArtifacts)
+    {
+        ProjectInfo info = CopyTestAsset(config, aot: false, "BlazorBasicTestApp", "blazor", "App");
+        string extraPropertiesForDBP = "";
+        if (appendRID)
+            extraPropertiesForDBP += "<AppendRuntimeIdentifierToOutputPath>true</AppendRuntimeIdentifierToOutputPath>";
+        if (useArtifacts)
+            extraPropertiesForDBP += "<UseArtifactsOutput>true</UseArtifactsOutput><ArtifactsPath>.</ArtifactsPath>";
+        string projectDir = Path.GetDirectoryName(info.ProjectFilePath) ?? "";
+        string rootDir = Path.GetDirectoryName(projectDir) ?? "";
+        if (!string.IsNullOrEmpty(extraPropertiesForDBP))
+            AddItemsPropertiesToProject(Path.Combine(rootDir, "Directory.Build.props"),
+                                        extraPropertiesForDBP);
 
-    // [Theory]
-    // [InlineData("Debug", /*appendRID*/ true, /*useArtifacts*/ false)]
-    // [InlineData("Debug", /*appendRID*/ true, /*useArtifacts*/ true)]
-    // [InlineData("Debug", /*appendRID*/ false, /*useArtifacts*/ true)]
-    // [InlineData("Debug", /*appendRID*/ false, /*useArtifacts*/ false)]
-    // public async Task BlazorBuildAndRunForDifferentOutputPaths(string config, bool appendRID, bool useArtifacts)
-    // {
-    //     string id = $"{config}_{GetRandomId()}";
-    //     string projectFile = CreateWasmTemplateProject(id, "blazorwasm");
-    //     string projectName = Path.GetFileNameWithoutExtension(projectFile);
+        bool isPublish = false;
+        string frameworkDir = useArtifacts ?
+                Path.Combine(
+                    projectDir, "bin", info.ProjectName, config.ToLower(), "wwwroot", "_framework") :
+                GetBinFrameworkDir(config, isPublish);
+        BuildTemplateProject(info,
+                new BuildProjectOptions(
+                    config,
+                    info.ProjectName,
+                    BinFrameworkDir: frameworkDir,
+                    ExpectedFileType: GetExpectedFileType(info, isPublish),
+                    IsPublish: isPublish
+            ));
+        await RunForBuildWithDotnetRun(new(config));
+    }
 
-    //     string extraPropertiesForDBP = "";
-    //     if (appendRID)
-    //         extraPropertiesForDBP += "<AppendRuntimeIdentifierToOutputPath>true</AppendRuntimeIdentifierToOutputPath>";
-    //     if (useArtifacts)
-    //         extraPropertiesForDBP += "<UseArtifactsOutput>true</UseArtifactsOutput><ArtifactsPath>.</ArtifactsPath>";
-
-    //     string projectDirectory = Path.GetDirectoryName(projectFile)!;
-    //     if (!string.IsNullOrEmpty(extraPropertiesForDBP))
-    //         AddItemsPropertiesToProject(Path.Combine(projectDirectory, "Directory.Build.props"),
-    //                                     extraPropertiesForDBP);
-
-    //     var buildArgs = new ProjectInfo(projectName, config, false, id, null);
-    //     buildArgs = ExpandBuildArgs(buildArgs);
-
-    //     BuildProjectOptions buildOptions = new(id, config, NativeFilesType.FromRuntimePack);
-    //     if (useArtifacts)
-    //     {
-    //         buildOptions = buildOptions with
-    //         {
-    //             BinFrameworkDir = Path.Combine(projectDirectory,
-    //                                            "bin",
-    //                                            id,
-    //                                            config.ToLower(),
-    //                                            "wwwroot",
-    //                                            "_framework")
-    //         };
-    //     }
-    //     BlazorBuild(buildOptions);
-    //     await BlazorRunForBuildWithDotnetRun(new RunOptions() { Configuration = config });
-    // }
-
-    // [Theory]
-    // [InlineData("Debug", false)]
-    // [InlineData("Release", false)]
-    // [InlineData("Release", true)]
-    // public async Task BlazorPublishRunTest(string config, bool aot)
-    // {
-    //     string id = $"blazor_{config}_{GetRandomId()}";
-    //     string projectFile = CreateWasmTemplateProject(id, "blazorwasm");
-    //     if (aot)
-    //         AddItemsPropertiesToProject(projectFile, "<RunAOTCompilation>true</RunAOTCompilation>");
-
-    //     BlazorPublish(new BuildProjectOptions(
-    //         id,
-    //         config,
-    //         aot ? NativeFilesType.AOT
-    //             : (config == "Release" ? NativeFilesType.Relinked : NativeFilesType.FromRuntimePack)));
-    //     await BlazorRunForPublishWithWebServer(new RunOptions() { Configuration = config });
-    // }
+    [Theory]
+    [InlineData("Debug", false)]
+    [InlineData("Release", false)]
+    [InlineData("Release", true)]
+    public async Task BlazorPublishRunTest(string config, bool aot)
+    {
+        ProjectInfo info = CopyTestAsset(config, aot, "BlazorBasicTestApp", "blazor_publish", "App");
+        BlazorPublish(info);
+        await RunForPublishWithWebServer(new(config));
+    }
 }
