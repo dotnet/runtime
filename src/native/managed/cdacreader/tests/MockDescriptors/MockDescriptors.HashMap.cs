@@ -70,6 +70,15 @@ internal partial class MockDescriptors
                 ]);
         }
 
+        public TargetPointer CreateMap((TargetPointer Key, TargetPointer Value)[] entries)
+        {
+            Target.TypeInfo hashMapType = Types[DataType.HashMap];
+            MockMemorySpace.HeapFragment map = _allocator.Allocate(hashMapType.Size!.Value, "HashMap");
+            _builder.AddHeapFragment(map);
+            PopulateMap(map.Address, entries);
+            return map.Address;
+        }
+
         public void PopulateMap(TargetPointer mapAddress, (TargetPointer Key, TargetPointer Value)[] entries)
         {
             TargetTestHelpers helpers = _builder.TargetTestHelpers;
@@ -101,6 +110,7 @@ internal partial class MockDescriptors
                     if (TryAddEntryToBucket(bucket, key, value))
                         break;
 
+                    seed += increment;
                     tryCount++;
                 }
 
@@ -112,6 +122,15 @@ internal partial class MockDescriptors
             Target.TypeInfo hashMapType = Types[DataType.HashMap];
             Span<byte> map = _builder.BorrowAddressRange(mapAddress, (int)hashMapType.Size!.Value);
             helpers.WritePointer(map.Slice(hashMapType.Fields[nameof(Data.HashMap.Buckets)].Offset, helpers.PointerSize), buckets.Address);
+        }
+
+        public TargetPointer CreatePtrMap((TargetPointer Key, TargetPointer Value)[] entries)
+        {
+            // PtrHashMap shifts values right by one bit
+            (TargetPointer Key, TargetPointer Value)[] ptrMapEntries = entries
+                .Select(e => (e.Key, new TargetPointer(e.Value >> 1)))
+                .ToArray();
+            return CreateMap(ptrMapEntries);
         }
 
         public void PopulatePtrMap(TargetPointer mapAddress, (TargetPointer Key, TargetPointer Value)[] entries)
