@@ -134,6 +134,8 @@ public class ChangeMatchUse
         }
     }
 
+    // Create a mask, potentially bitcasting it. Use it as a vector.
+    // No conversion due to the bitcasting.
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static void CastMaskUseAsVector()
     {
@@ -148,6 +150,8 @@ public class ChangeMatchUse
         }
     }
 
+    // Create a mask, potentially bitcasting it. Use it as a mask.
+    // No conversion due to the bitcasting.
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static void CastMaskUseAsMask()
     {

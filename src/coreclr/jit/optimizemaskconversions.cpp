@@ -30,7 +30,7 @@ struct MaskConversionsWeight
 
     void InvalidateWeight()
     {
-        JITDUMP("Invalidating weight. \n");
+        JITDUMP("Invalidating weight. ");
         invalid = true;
         DumpTotalWeight();
     }
@@ -40,7 +40,7 @@ struct MaskConversionsWeight
         JITDUMP("Weighting: %s{%.2fc %.2fs}\n", invalid ? "Invalid" : "", currentCost, switchCost);
     }
 
-    void CacheSimdTypes(GenTreeHWIntrinsic* op);
+    void CacheSimdTypes(GenTreeHWIntrinsic* op, unsigned lclnum);
 };
 
 typedef JitHashTable<unsigned, JitSmallPrimitiveKeyFuncs<unsigned>, MaskConversionsWeight> MaskConversionsWeightTable;
@@ -81,16 +81,28 @@ void MaskConversionsWeight::UpdateWeight(bool isStore, bool hasConvert, weight_t
 //
 // Arguments:
 //     op - The HW intrinsic to cache
+//     lclnum - The local using the op
 //
-void MaskConversionsWeight::CacheSimdTypes(GenTreeHWIntrinsic* op)
+void MaskConversionsWeight::CacheSimdTypes(GenTreeHWIntrinsic* op, unsigned lclnum)
 {
     CorInfoType newSimdBaseJitType = op->GetSimdBaseJitType();
     unsigned    newSimdSize        = op->GetSimdSize();
 
     assert((newSimdBaseJitType != CORINFO_TYPE_UNDEF));
 
-    simdBaseJitType = newSimdBaseJitType;
-    simdSize        = newSimdSize;
+    if (simdBaseJitType == CORINFO_TYPE_UNDEF)
+    {
+        // Types have not already been cached. Set them.
+        simdBaseJitType = newSimdBaseJitType;
+        simdSize        = newSimdSize;
+    }
+    else if ((simdBaseJitType != newSimdBaseJitType) || (simdSize != newSimdSize))
+    {
+        // Type mismatch with existing cached type.
+        JITDUMP("Local V%02d has different types: (%d, %d) vs (%d, %d). ", lclnum, simdBaseJitType, simdSize,
+                newSimdBaseJitType, newSimdSize);
+        InvalidateWeight();
+    }
 }
 
 //-----------------------------------------------------------------------------
@@ -183,7 +195,7 @@ public:
             if (hasConversion)
             {
                 assert(convertOp != nullptr);
-                weight->CacheSimdTypes(convertOp);
+                weight->CacheSimdTypes(convertOp, lclOp->GetLclNum());
             }
 
             foundConversions |= hasConversion;
