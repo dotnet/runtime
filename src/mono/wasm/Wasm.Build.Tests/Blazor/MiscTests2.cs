@@ -51,14 +51,10 @@ public class MiscTests2 : BlazorWasmTestBase
 
     private CommandResult PublishForRequiresWorkloadTest(string config, string extraItems="", string extraProperties="")
     {
-        string id = $"needs_workload_{config}_{GetRandomId()}";
-        CreateBlazorWasmTemplateProject(id);
+        ProjectInfo info = CopyTestAsset(
+            config, aot: false, "BlazorBasicTestApp", "needs_workload", extraProperties: extraProperties, extraItems: extraItems);
 
-        AddItemsPropertiesToProject(Path.Combine(_projectDir!, $"{id}.csproj"),
-                                    extraProperties: extraProperties,
-                                    extraItems: extraItems);
-
-        string publishLogPath = Path.Combine(s_buildEnv.LogRootPath, id, $"{id}.binlog");
+        string publishLogPath = Path.Combine(s_buildEnv.LogRootPath, info.ProjectName, $"{info.ProjectName}.binlog");
         using DotNetCommand cmd = new DotNetCommand(s_buildEnv, _testOutput);
         return cmd.WithWorkingDirectory(_projectDir!)
                     .WithEnvironmentVariable("NUGET_PACKAGES", _nugetPackagesDir)
