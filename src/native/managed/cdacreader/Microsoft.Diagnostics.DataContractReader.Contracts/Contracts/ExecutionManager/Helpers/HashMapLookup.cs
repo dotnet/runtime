@@ -7,11 +7,11 @@ namespace Microsoft.Diagnostics.DataContractReader.ExecutionManagerHelpers;
 
 internal sealed class HashMapLookup
 {
-    internal enum SpecialKeys
+    internal enum SpecialKeys : uint
     {
         Empty = 0,
         Deleted = 1,
-        InvalidEntry = ~0,
+        InvalidEntry = unchecked((uint)~0),
     }
 
     public static HashMapLookup Create(Target target)
@@ -55,7 +55,7 @@ internal sealed class HashMapLookup
                 break;
         }
 
-        return TargetPointer.Null;
+        return new TargetPointer((uint)SpecialKeys.InvalidEntry);
     }
 
     internal static void HashFunction(TargetPointer key, uint size, out uint seed, out uint increment)
@@ -91,6 +91,8 @@ internal sealed class PtrHashMapLookup
         TargetPointer value = _lookup.GetValue(mapAddress, key);
 
         // PtrHashMap shifts values right by one bit when storing. See PtrHashMap::LookupValue in hash.h
-        return value << 1;
+        return value != (uint)HashMapLookup.SpecialKeys.InvalidEntry
+            ? value << 1
+            : value;
     }
 }
