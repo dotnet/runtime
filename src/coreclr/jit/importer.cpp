@@ -4141,8 +4141,9 @@ GenTree* Compiler::impImportStaticFieldAddress(CORINFO_RESOLVED_TOKEN* pResolved
             if (!isBoxedStatic && (lclTyp == TYP_REF) && ((access & CORINFO_ACCESS_GET) != 0) &&
                 ((*pIndirFlags & GTF_IND_VOLATILE) == 0))
             {
-                bool isSpeculative = true;
-                CORINFO_CLASS_HANDLE classHandle = info.compCompHnd->getStaticFieldCurrentClass(pResolvedToken->hField, &isSpeculative);
+                bool                 isSpeculative = true;
+                CORINFO_CLASS_HANDLE classHandle =
+                    info.compCompHnd->getStaticFieldCurrentClass(pResolvedToken->hField, &isSpeculative);
                 if (classHandle != NO_CLASS_HANDLE)
                 {
                     isStaticReadOnlyInitedRef = !isSpeculative;
