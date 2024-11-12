@@ -1641,7 +1641,6 @@ emitter::code_t emitter::AddVexPrefix(instruction ins, code_t code, emitAttr att
 #define REX2_MAP1_PREFIX 0x008000000000ULL
 emitter::code_t emitter::AddRex2Prefix(instruction ins, code_t code)
 {
-    // TODO-apx: need some workaround in instrDesc settings and definition.
     assert(IsRex2EncodableInstruction(ins));
 
     // Note that there are cases that some register field might be filled before adding prefix,
@@ -1867,7 +1866,7 @@ bool emitter::HasMaskReg(const instrDesc* id) const
 bool IsExtendedReg(regNumber reg)
 {
 #ifdef TARGET_AMD64
-    // TODO-apx: extend the gpr test, extended gprs should be from r8 to r31 after apx.
+    // TODO-XArch-apx: extend the gpr test, extended gprs should be from r8 to r31 after apx.
     return ((reg >= REG_R8) && (reg <= REG_R15)) || ((reg >= REG_XMM8) && (reg <= REG_XMM31));
 #else
     // X86 JIT operates in 32-bit mode and hence extended reg are not available.
@@ -1877,32 +1876,32 @@ bool IsExtendedReg(regNumber reg)
 
 bool emitter::IsExtendedGPReg(regNumber reg) const
 {
-    // TODO-apx:
-    // Consider merge this method into IsExtendedReg(regNumber reg)
-
+// TODO-XArch-apx:
+// Consider merge this method into IsExtendedReg(regNumber reg)
+#ifdef TARGET_AMD64
     if (reg > REG_STK)
     {
         // not an actual reg
         return false;
     }
 
-#ifdef TARGET_AMD64
-    if (UseRex2Encoding())
-    {
-        /*
-            include EGPR checks here.
-        */
-    }
-#endif
-
-    // TODO-apx: It would be better to have stress mode on LSRA to forcely allocate EGPRs,
-    //           instead of stressing here.
+// TODO-apx: It would be better to have stress mode on LSRA to forcely allocate EGPRs,
+//           instead of stressing here.
 #if defined(DEBUG)
     if (emitComp->DoJitStressRex2Encoding())
     {
         return true;
     }
 #endif // DEBUG
+
+    if (UseRex2Encoding())
+    {
+        /*
+            include EGPR checks here.
+        */
+       // return (reg >= REG_R16) && (reg <= REG_31)
+    }
+#endif
     return false;
 }
 
@@ -2010,11 +2009,11 @@ emitter::code_t emitter::AddRexWPrefix(const instrDesc* id, code_t code)
             return emitter::code_t(code | 0x00008000000000ULL);
         }
     }
+#ifdef TARGET_AMD64
     else if (hasRex2Prefix(code))
     {
         return emitter::code_t(code | 0x000800000000ULL);
     }
-#ifdef TARGET_AMD64
     return emitter::code_t(code | 0x4800000000ULL);
 #else
     assert(!"UNREACHED");
@@ -2049,11 +2048,13 @@ emitter::code_t emitter::AddRexRPrefix(const instrDesc* id, code_t code)
             return code & 0xFF7FFFFFFFFFFFULL;
         }
     }
+#ifdef TARGET_AMD64
     else if (TakesRex2Prefix(id))
     {
         assert(IsRex2EncodableInstruction(ins));
         return code |= 0xD50400000000ULL; // REX2.B3
     }
+#endif // TARGET_AMD64
 
     return code | 0x4400000000ULL;
 }
@@ -2083,11 +2084,13 @@ emitter::code_t emitter::AddRexXPrefix(const instrDesc* id, code_t code)
             return code & 0xFFBFFFFFFFFFFFULL;
         }
     }
+#ifdef TARGET_AMD64
     else if (TakesRex2Prefix(id))
     {
         assert(IsRex2EncodableInstruction(ins));
         return code |= 0xD50200000000ULL; // REX2.B3
     }
+#endif // TARGET_AMD64
 
     return code | 0x4200000000ULL;
 }
@@ -2117,11 +2120,13 @@ emitter::code_t emitter::AddRexBPrefix(const instrDesc* id, code_t code)
             return code & 0xFFDFFFFFFFFFFFULL;
         }
     }
+#ifdef TARGET_AMD64
     else if (TakesRex2Prefix(id))
     {
         assert(IsRex2EncodableInstruction(ins));
         return code |= 0xD50100000000ULL; // REX2.B3
     }
+#endif // TARGET_AMD64
 
     return code | 0x4100000000ULL;
 }
@@ -2864,6 +2869,7 @@ unsigned emitter::emitGetAdjustedSize(instrDesc* id, code_t code) const
         // The 4-Byte SSE instructions require one additional byte to hold the ModRM byte
         adjustedSize++;
     }
+#ifdef TARGET_AMD64
     else if (IsRex2EncodableInstruction(ins))
     {
         unsigned prefixAdjustedSize = 0;
@@ -2887,6 +2893,7 @@ unsigned emitter::emitGetAdjustedSize(instrDesc* id, code_t code) const
             adjustedSize++;
         }
     }
+#endif // TARGET_AMD64
     else
     {
         if (ins == INS_crc32)
@@ -2930,6 +2937,7 @@ unsigned emitter::emitGetPrefixSize(instrDesc* id, code_t code, bool includeRexP
 
     if (hasRex2Prefix(code))
     {
+        assert(IsRex2EncodableInstruction(id->idIns()));
         return 2;
     }
 
@@ -3567,6 +3575,7 @@ inline unsigned emitter::insEncodeReg012(const instrDesc* id, regNumber reg, emi
         }
         if (false /*reg >= REG_R16 && reg <= REG_R31*/)
         {
+            // TODO-XArch-APX:
             // seperate the encoding for REX2.B3/B4, REX2.B3 will be handled in `AddRexBPrefix`.
             assert(TakesRex2Prefix(id));
             *code |= 0x001000000000ULL; // REX2.B4
@@ -3617,6 +3626,7 @@ inline unsigned emitter::insEncodeReg345(const instrDesc* id, regNumber reg, emi
         }
         if (false /*reg >= REG_R16 && reg <= REG_R31*/)
         {
+            // TODO-XArch-APX:
             // seperate the encoding for REX2.R3/R4, REX2.R3 will be handled in `AddRexRPrefix`.
             assert(TakesRex2Prefix(id));
             *code |= 0x004000000000ULL; // REX2.R4
@@ -3728,6 +3738,7 @@ inline unsigned emitter::insEncodeRegSIB(const instrDesc* id, regNumber reg, cod
         }
         if (false /*reg >= REG_R16 && reg <= REG_R31*/)
         {
+            // TODO-XArch-APX:
             // seperate the encoding for REX2.X3/X4, REX2.X3 will be handled in `AddRexXPrefix`.
             assert(TakesRex2Prefix(id));
             *code |= 0x002000000000ULL; // REX2.X4

@@ -238,7 +238,11 @@ bool TakesRex2Prefix(const instrDesc* id) const;
 //
 bool hasRex2Prefix(code_t code)
 {
+#ifdef TARGET_AMD64
     return (code & REX2_PREFIX_MASK_2BYTE) == REX2_PREFIX_CODE_2BYTE;
+#else
+    return false;
+#endif
 }
 
 bool IsExtendedGPReg(regNumber reg) const;
