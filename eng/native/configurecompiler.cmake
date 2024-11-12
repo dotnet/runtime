@@ -645,6 +645,13 @@ if (CLR_CMAKE_HOST_UNIX)
     endif()
   endif()
 
+  if (CMAKE_CXX_COMPILER_ID)
+    check_cxx_compiler_flag(-Wno-nontrivial-memaccess COMPILER_SUPPORTS_FNO_NONTRIVIAL_MEMACCESS)
+    if (COMPILER_SUPPORTS_FNO_NONTRIVIAL_MEMACCESS)
+      add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wno-nontrivial-memaccess>)
+    endif()
+  endif()
+
   # Some architectures (e.g., ARM) assume char type is unsigned while CoreCLR assumes char is signed
   # as x64 does. It has been causing issues in ARM (https://github.com/dotnet/runtime/issues/5778)
   add_compile_options(-fsigned-char)
