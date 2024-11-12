@@ -1,4 +1,7 @@
-﻿#pragma warning disable CS0169 // Remove unused private members
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+#pragma warning disable CS0169 // Remove unused private members
 #pragma warning disable IDE0049 // Simplify Names
 
 using System;
