@@ -7,7 +7,7 @@ using NameMap = System.Collections.Generic.Dictionary<System.UInt32, string>;
 
 namespace WebAssemblyInfo
 {
-    public class WasmReader : WasmReaderBase
+    public partial class WasmReader : WasmReaderBase
     {
         public List<WasmReader> ModuleReaders = new();
 
@@ -1141,9 +1141,14 @@ namespace WebAssemblyInfo
             if (Context.Verbose2)
                 DumpBytes(remainingSize, true);
 
-            if (name == "name")
+            switch(name)
             {
-                ReadCustomNameSection(remainingSize);
+                case "name":
+                    ReadCustomNameSection(remainingSize);
+                    break;
+                case "linking":
+                    ReadCustomLinkingSection(remainingSize);
+                    break;
             }
         }
 
