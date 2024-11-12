@@ -137,7 +137,7 @@ void ParseFilterDataClientSequenceNumber(
             size_t value_len = strnlen(value, buffer_end - buffer);
             buffer += value_len + 1;
 
-            if (buffer >= buffer_end)
+            if (buffer > buffer_end)
                 break;
 
             if (strcmp(key, "GCSeqNumber") != 0)
