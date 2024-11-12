@@ -448,7 +448,7 @@ StackWalkAction GcStackCrawlCallBack(CrawlFrame* pCF, VOID* pData)
                     if (paramContextType == GENERIC_PARAM_CONTEXT_METHODDESC)
                     {
                         MethodDesc *pMDReal = dac_cast<PTR_MethodDesc>(pCF->GetParamTypeArg());
-                        _ASSERTE((pMDReal != NULL) || !pCF->IsFrameless());
+                        _ASSERTE((pMDReal != NULL) || !pCF->IsFrameless() || pMD->IsAsync2Method());
                         if (pMDReal != NULL)
                         {
                             GcReportLoaderAllocator(gcctx->f, gcctx->sc, pMDReal->GetLoaderAllocator());
@@ -457,7 +457,7 @@ StackWalkAction GcStackCrawlCallBack(CrawlFrame* pCF, VOID* pData)
                     else if (paramContextType == GENERIC_PARAM_CONTEXT_METHODTABLE)
                     {
                         MethodTable *pMTReal = dac_cast<PTR_MethodTable>(pCF->GetParamTypeArg());
-                        _ASSERTE((pMTReal != NULL) || !pCF->IsFrameless());
+                        _ASSERTE((pMTReal != NULL) || !pCF->IsFrameless() || pMD->IsAsync2Method());
                         if (pMTReal != NULL)
                         {
                             GcReportLoaderAllocator(gcctx->f, gcctx->sc, pMTReal->GetLoaderAllocator());

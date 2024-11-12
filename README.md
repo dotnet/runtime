@@ -12,7 +12,7 @@ Current support in the prototypes looks like the following:
 
 | **Feature/characteristic**               |  **JIT based state machines**  |  **Unwinder based state machines**  |
 |------------------------------------------|:------------------------------:|:-----------------------------------:|
-| **Generics**                             |               ❌               |                  ❌                 |
+| **Generics**                             |               ✅               |                  ❌                 |
 | **Byrefs live across suspension points** |               ❌               |                  ✅                 |
 | **Exception handling**                   |               ✅               |                  ❌                 |
 | **Returns via return buffers**           |               ✅               |                  ❌                 |

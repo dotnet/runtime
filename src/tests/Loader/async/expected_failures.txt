@@ -6,4 +6,4 @@ DOTNET_RuntimeAsyncViaJitGeneratedStateMachines=0:
 * Loader\async\async2sharedgeneric\async2sharedgeneric.dll (generics unsupported)
 
 DOTNET_RuntimeAsyncViaJitGeneratedStateMachines=1:
-* Loader\async\async2sharedgeneric\async2sharedgeneric.dll (generics unsupported)
+* None

@@ -341,7 +341,7 @@ void MethodDescCallSite::CallTargetWorker(const ARG_SLOT *pArguments, ARG_SLOT *
 
 #ifndef FEATURE_INTERPRETER
         _ASSERTE(isCallConv(m_methodSig.GetCallingConvention(), IMAGE_CEE_CS_CALLCONV_DEFAULT));
-        _ASSERTE(!(m_methodSig.GetCallingConventionInfo() & CORINFO_CALLCONV_PARAMTYPE));
+        _ASSERTE(!m_methodSig.HasGenericContextArg());
 #endif
 
 #ifdef DEBUGGING_SUPPORTED

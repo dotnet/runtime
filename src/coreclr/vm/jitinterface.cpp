@@ -14374,7 +14374,7 @@ static Signature BuildResumptionStubCalliSignature(MetaSig& msig, LoaderAllocato
         numArgs++;
     }
 
-    if ((msig.GetCallingConvention() & CORINFO_CALLCONV_PARAMTYPE) != 0)
+    if (msig.HasGenericContextArg())
     {
         numArgs++;
     }
@@ -14412,7 +14412,7 @@ static Signature BuildResumptionStubCalliSignature(MetaSig& msig, LoaderAllocato
         sigBuilder.AppendElementType(ELEMENT_TYPE_OBJECT);
     }
 #ifndef TARGET_X86
-    if ((msig.GetCallingConvention() & CORINFO_CALLCONV_PARAMTYPE) != 0)
+    if (msig.HasGenericContextArg())
     {
         sigBuilder.AppendElementType(ELEMENT_TYPE_I);
     }
@@ -14429,7 +14429,7 @@ static Signature BuildResumptionStubCalliSignature(MetaSig& msig, LoaderAllocato
     }
 
 #ifdef TARGET_X86
-    if ((msig.GetCallingConvention() & CORINFO_CALLCONV_PARAMTYPE) != 0)
+    if (msig.HasGenericContextArg())
     {
         sigBuilder.AppendElementType(ELEMENT_TYPE_I);
     }
@@ -14449,7 +14449,6 @@ CORINFO_METHOD_HANDLE CEEJitInfo::getAsyncResumptionStub()
     } CONTRACTL_END;
 
     MethodDesc* md = m_pMethodBeingCompiled;
-    _ASSERTE(!md->IsSharedByGenericInstantiations());
 
     LoaderAllocator* loaderAlloc = md->GetLoaderAllocator();
 
@@ -14473,10 +14472,9 @@ CORINFO_METHOD_HANDLE CEEJitInfo::getAsyncResumptionStub()
     }
 
 #ifndef TARGET_X86
-    if ((msig.GetCallingConvention() & CORINFO_CALLCONV_PARAMTYPE) != 0)
+    if (msig.HasGenericContextArg())
     {
-        _ASSERTE(!"Generic context currently unhandled");
-        // Will need JIT to store this in an agreed upon place.
+        pCode->EmitLDC(0);
         numArgs++;
     }
 
@@ -14498,9 +14496,15 @@ CORINFO_METHOD_HANDLE CEEJitInfo::getAsyncResumptionStub()
     }
 
 #ifdef TARGET_X86
+    if (msig.HasGenericContextArg())
+    {
+        pCode->EmitLDC(0);
+        numArgs++;
+    }
+
     // Continuation
     pCode->EmitLDARG(0);
-    nmArgs++;
+    numArgs++;
 #endif
 
     // Resumption stubs are uniquely coupled to the code version (since the

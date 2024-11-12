@@ -970,7 +970,7 @@ CorJitResult Interpreter::GenerateInterpreterStub(CEEInfo* comp,
         totalArgs++;
     }
 
-    if (sig.GetCallingConventionInfo() & CORINFO_CALLCONV_PARAMTYPE)
+    if (sig.HasGenericContextArg())
     {
         _ASSERTE(info->args.callConv & CORINFO_CALLCONV_PARAMTYPE);
         hasGenericsContextArg = true;

@@ -730,6 +730,15 @@ class MetaSig
         }
 
         //----------------------------------------------------------
+        // Does it have a generic context argument?
+        //----------------------------------------------------------
+        BOOL HasGenericContextArg()
+        {
+            LIMITED_METHOD_CONTRACT;
+            return m_CallConv & CORINFO_CALLCONV_PARAMTYPE;
+        }
+
+        //----------------------------------------------------------
         // Is it an async call?
         //----------------------------------------------------------
         BOOL IsAsyncCall()
