@@ -5,6 +5,7 @@ using Xunit;
 
 using System.Collections.Generic;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
+using Moq;
 
 namespace Microsoft.Diagnostics.DataContractReader.UnitTests.ExecutionManager;
 
@@ -33,6 +34,7 @@ public class ExecutionManagerTests
             IContractFactory<IExecutionManager> emfactory = new ExecutionManagerFactory();
             SetContracts(new TestRegistry() {
                 ExecutionManagerContract = new (() => emfactory.CreateContract(this, version)),
+                PlatformMetadataContract = new (() => new Mock<IPlatformMetadata>().Object),
             });
         }
         public override TargetPointer ReadGlobalPointer(string global)
