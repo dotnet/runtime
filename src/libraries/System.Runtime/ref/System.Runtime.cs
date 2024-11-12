@@ -8846,6 +8846,20 @@ namespace System.Diagnostics.CodeAnalysis
         PublicEvents = 2048,
         NonPublicEvents = 4096,
         Interfaces = 8192,
+        NonPublicConstructorsWithInherited = 16388,
+        NonPublicMethodsWithInherited = 32784,
+        AllMethods = 32792,
+        NonPublicFieldsWithInherited = 65600,
+        AllFields = 65632,
+        NonPublicNestedTypesWithInherited = 131328,
+        NonPublicPropertiesWithInherited = 263168,
+        AllProperties = 263680,
+        NonPublicEventsWithInherited = 528384,
+        AllEvents = 530432,
+        PublicConstructorsWithInherited = 1048579,
+        AllConstructors = 1064967,
+        PublicNestedTypesWithInherited = 2097280,
+        AllNestedTypes = 2228608,
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Constructor | System.AttributeTargets.Field | System.AttributeTargets.Method, AllowMultiple=true, Inherited=false)]
     public sealed partial class DynamicDependencyAttribute : System.Attribute

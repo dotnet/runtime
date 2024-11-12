@@ -24,9 +24,8 @@
           BeforeTargets="GetPackageFiles">
 
     <ItemGroup Condition="'$(PackageTargetRuntime)' != ''">
-      <File Include="@(LibrariesRuntimeFiles)" TargetPath="framework" />
-      <!-- exclude shared libs as we only need static ones -->
-      <LibPackageExcludes Include="framework\%2A%2A\%2ANative$(LibSuffix)"/>
+      <!-- Include all libraries (managed, static, etc.), but exclude native shared libraries (those with LibSuffix) -->
+      <File Include="@(LibrariesRuntimeFiles)" TargetPath="framework" Condition="'%(LibrariesRuntimeFiles.IsNative)' != 'true' or '%(LibrariesRuntimeFiles.Extension)' != '$(LibSuffix)'" />
 
       <File Include="$(CoreCLRILCompilerDir)*" TargetPath="tools" />
       <File Include="$(CoreCLRAotSdkDir)*" TargetPath="sdk" />
