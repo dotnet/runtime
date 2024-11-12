@@ -13,7 +13,7 @@
   "DacStreams": 1,
   "EcmaMetadata" : 1,
   "Exception": 1,
-  "ExecutionManager": 1,
+  "ExecutionManager": 2,
   "Loader": 1,
   "Object": 1,
   "PlatformMetadata": 1,

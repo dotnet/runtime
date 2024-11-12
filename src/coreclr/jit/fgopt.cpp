@@ -6200,9 +6200,20 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
         {
             matchedPredInfo.Reset();
             matchedPredInfo.Emplace(predInfo.TopRef(i));
-            Statement* const baseStmt = predInfo.TopRef(i).m_stmt;
+            Statement* const  baseStmt  = predInfo.TopRef(i).m_stmt;
+            BasicBlock* const baseBlock = predInfo.TopRef(i).m_block;
+
             for (int j = i + 1; j < predInfo.Height(); j++)
             {
+                BasicBlock* const otherBlock = predInfo.TopRef(j).m_block;
+
+                // Consider: bypass this for statements that can't cause exceptions.
+                //
+                if (!BasicBlock::sameEHRegion(baseBlock, otherBlock))
+                {
+                    continue;
+                }
+
                 Statement* const otherStmt = predInfo.TopRef(j).m_stmt;
 
                 // Consider: compute and cache hashes to make this faster
@@ -6220,12 +6231,18 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
                 continue;
             }
 
-            // We have some number of preds that have identical last statements.
-            // If all preds of block have a matching last stmt, move that statement to the start of block.
+            // We can move the identical last statements to commSucc, if it exists,
+            // and all preds have matching last statements, and we're not changing EH behavior.
             //
-            if ((commSucc != nullptr) && (matchedPredInfo.Height() == (int)commSucc->countOfInEdges()))
+            bool const hasCommSucc               = (commSucc != nullptr);
+            bool const predsInSameEHRegionAsSucc = hasCommSucc && BasicBlock::sameEHRegion(baseBlock, commSucc);
+            bool const canMergeAllPreds = hasCommSucc && (matchedPredInfo.Height() == (int)commSucc->countOfInEdges());
+            bool const canMergeIntoSucc = predsInSameEHRegionAsSucc && canMergeAllPreds;
+
+            if (canMergeIntoSucc)
             {
-                JITDUMP("All preds of " FMT_BB " end with the same tree, moving\n", commSucc->bbNum);
+                JITDUMP("All %d preds of " FMT_BB " end with the same tree, moving\n", matchedPredInfo.Height(),
+                        commSucc->bbNum);
                 JITDUMPEXEC(gtDispStmt(matchedPredInfo.TopRef(0).m_stmt));
 
                 for (int j = 0; j < matchedPredInfo.Height(); j++)
@@ -6253,14 +6270,19 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
                 return true;
             }
 
-            // A subset of preds have matching last stmt, we will cross-jump.
-            // Pick one block as the victim -- preferably a block with just one
+            // All or a subset of preds have matching last stmt, we will cross-jump.
+            // Pick one pred block as the victim -- preferably a block with just one
             // statement or one that falls through to block (or both).
             //
-            if (commSucc != nullptr)
+            if (predsInSameEHRegionAsSucc)
             {
-                JITDUMP("A set of %d preds of " FMT_BB " end with the same tree\n", matchedPredInfo.Height(),
+                JITDUMP("A subset of %d preds of " FMT_BB " end with the same tree\n", matchedPredInfo.Height(),
                         commSucc->bbNum);
+            }
+            else if (commSucc != nullptr)
+            {
+                JITDUMP("%s %d preds of " FMT_BB " end with the same tree but are in a different EH region\n",
+                        canMergeAllPreds ? "All" : "A subset of", matchedPredInfo.Height(), commSucc->bbNum);
             }
             else
             {
@@ -6416,11 +6438,6 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
                 continue;
             }
 
-            if (!BasicBlock::sameEHRegion(block, predBlock))
-            {
-                continue;
-            }
-
             Statement* lastStmt = predBlock->lastStmt();
 
             // Block might be empty.
@@ -6484,10 +6501,21 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
     {
         iterateTailMerge(block);
 
-        // TODO: consider removing hasSingleStmt(), it should find more opportunities
-        // (with size and TP regressions)
-        if (block->KindIs(BBJ_RETURN) && block->hasSingleStmt() && (block != genReturnBB))
+        if (block->KindIs(BBJ_RETURN) && !block->isEmpty() && (block != genReturnBB))
         {
+            // Avoid spitting a return away from a possible tail call
+            //
+            if (!block->hasSingleStmt())
+            {
+                Statement* const lastStmt = block->lastStmt();
+                Statement* const prevStmt = lastStmt->GetPrevStmt();
+                GenTree* const   prevTree = prevStmt->GetRootNode();
+                if (prevTree->IsCall() && prevTree->AsCall()->CanTailCall())
+                {
+                    continue;
+                }
+            }
+
             retBlocks.Push(block);
         }
     }

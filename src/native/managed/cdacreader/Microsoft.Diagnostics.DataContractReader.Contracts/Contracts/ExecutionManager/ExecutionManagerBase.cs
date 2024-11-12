@@ -4,10 +4,12 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using Microsoft.Diagnostics.DataContractReader.ExecutionManagerHelpers;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
-internal readonly partial struct ExecutionManager_1 : IExecutionManager
+internal partial class ExecutionManagerBase<T> : IExecutionManager
+    where T : INibbleMap
 {
     internal readonly Target _target;
 
@@ -18,12 +20,12 @@ internal readonly partial struct ExecutionManager_1 : IExecutionManager
     private readonly EEJitManager _eeJitManager;
     private readonly ReadyToRunJitManager _r2rJitManager;
 
-    public ExecutionManager_1(Target target, Data.RangeSectionMap topRangeSectionMap)
+    public ExecutionManagerBase(Target target, Data.RangeSectionMap topRangeSectionMap)
     {
         _target = target;
         _topRangeSectionMap = topRangeSectionMap;
         _rangeSectionMapLookup = ExecutionManagerHelpers.RangeSectionMap.Create(_target);
-        ExecutionManagerHelpers.NibbleMap nibbleMap = ExecutionManagerHelpers.NibbleMap.Create(_target);
+        INibbleMap nibbleMap = T.Create(_target);
         _eeJitManager = new EEJitManager(_target, nibbleMap);
         _r2rJitManager = new ReadyToRunJitManager(_target);
     }

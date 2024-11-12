@@ -303,13 +303,21 @@
 
   <!-- Manual invoked target that can be used by toolset packages by adding it to the `TargetsForTfmSpecificContentInPackage` property. -->
   <Target Name="AddBuildOutputToToolsPackage">
+    <PropertyGroup Condition="'$(BuildTaskTargetTfmSpecificFolder)' == ''">
+      <BuildTaskTargetTfmSpecificFolder Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">net</BuildTaskTargetTfmSpecificFolder>
+      <BuildTaskTargetTfmSpecificFolder Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">netframework</BuildTaskTargetTfmSpecificFolder>
+    </PropertyGroup>
+
+    <Error Text="The 'BuildTaskTargetTfmSpecificFolder' property must be explicitly set when not targeting .NETCoreApp or .NETFramework"
+           Condition="'$(BuildTaskTargetTfmSpecificFolder)' == ''" />
+
     <ItemGroup>
       <!-- Include build outputs in the package under tools directory. -->
       <_BuildOutputPackageFile Include="$(OutputPath)**"
                                Exclude="$(OutputPath)publish\**;
                                         $(OutputPath)" />
       <TfmSpecificPackageFile Include="@(_BuildOutputPackageFile)"
-                              PackagePath="tools/$(TargetFramework)/%(RecursiveDir)%(FileName)%(Extension)" />
+                              PackagePath="tools/$(BuildTaskTargetTfmSpecificFolder)/%(RecursiveDir)%(FileName)%(Extension)" />
       <TfmSpecificDebugSymbolsFile Include="@(TfmSpecificPackageFile->WithMetadataValue('Extension', '.pdb'))"
                                    TargetPath="/%(TfmSpecificPackageFile.PackagePath)/%(Filename)%(Extension)"
                                    TargetFramework="$(TargetFramework)"

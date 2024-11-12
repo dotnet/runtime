@@ -298,6 +298,12 @@ The .NET Foundation licenses this file to you under the MIT license.
 
       <!-- Export the managed entry point if building a native library in custom main mode -->
       <IlcArg Condition="'$(NativeLib)' == 'Shared' and '$(CustomNativeMain)' == 'true'" Include="--export-dynamic-symbol:__managed__Main" />
+
+      <IlcArg Condition="'$(_InstrumentReachability)' == 'true'" Include="--reachabilityinstrument" />
+      <IlcArg Condition="'$(_InstrumentReachability)' == 'true'" Include="--feature:Internal.Runtime.CompilerHelpers.ReachabilityInstrumentationSupport=true" />
+      <IlcArg Condition="'$(_ReachabilityInstrumentationFile)' != ''" Include="--reachabilityuse:$(_ReachabilityInstrumentationFile)" />
+      <IlcArg Condition="'$(_InstrumentReachability)' == 'true' or '$(_ReachabilityInstrumentationFile)' != ''" Include="--noinlinetls" />
+      <IlcArg Condition="'$(_InstrumentReachability)' == 'true' or '$(_ReachabilityInstrumentationFile)' != ''" Include="--nopreinitstatics" />
     </ItemGroup>
 
     <MakeDir Directories="$(NativeIntermediateOutputPath)" />
