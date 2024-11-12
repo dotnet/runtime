@@ -4175,7 +4175,7 @@ GenTree* Compiler::impImportStaticFieldAddress(CORINFO_RESOLVED_TOKEN* pResolved
             }
             if (isStaticReadOnlyInitedRef)
             {
-                indirFlags |= (GTF_IND_INVARIANT | GTF_IND_NONNULL);
+                indirFlags |= (GTF_IND_NONFAULTING | GTF_IND_INVARIANT | GTF_IND_NONNULL);
             }
             break;
         }
