@@ -1472,7 +1472,7 @@ namespace System.Xml.Serialization
             return memberSource;
         }
 
-        private XmlSerializationCollectionFixupCallback GetCreateCollectionOfObjectsCallback(Type collectionType)
+        private static XmlSerializationCollectionFixupCallback GetCreateCollectionOfObjectsCallback(Type collectionType)
         {
             return (object? collection, object? collectionItems) =>
             {
