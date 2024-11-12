@@ -198,23 +198,23 @@ public class PrecodeStubsTests
 
         public void AddToTypeInfoCache(Dictionary<DataType, Target.TypeInfo> typeInfoCache, TargetTestHelpers targetTestHelpers) {
             var layout = targetTestHelpers.LayoutFields([
-                (nameof(Data.PrecodeMachineDescriptor.StubCodePageSize), DataType.uint32),
-                (nameof(Data.PrecodeMachineDescriptor.OffsetOfPrecodeType), DataType.uint8),
-                (nameof(Data.PrecodeMachineDescriptor.ReadWidthOfPrecodeType), DataType.uint8),
-                (nameof(Data.PrecodeMachineDescriptor.ShiftOfPrecodeType), DataType.uint8),
-                (nameof(Data.PrecodeMachineDescriptor.InvalidPrecodeType), DataType.uint8),
-                (nameof(Data.PrecodeMachineDescriptor.StubPrecodeType), DataType.uint8),
-                (nameof(Data.PrecodeMachineDescriptor.PInvokeImportPrecodeType), DataType.uint8),
-                (nameof(Data.PrecodeMachineDescriptor.FixupPrecodeType), DataType.uint8),
-                (nameof(Data.PrecodeMachineDescriptor.ThisPointerRetBufPrecodeType), DataType.uint8),
+                new(nameof(Data.PrecodeMachineDescriptor.StubCodePageSize), DataType.uint32),
+                new(nameof(Data.PrecodeMachineDescriptor.OffsetOfPrecodeType), DataType.uint8),
+                new(nameof(Data.PrecodeMachineDescriptor.ReadWidthOfPrecodeType), DataType.uint8),
+                new(nameof(Data.PrecodeMachineDescriptor.ShiftOfPrecodeType), DataType.uint8),
+                new(nameof(Data.PrecodeMachineDescriptor.InvalidPrecodeType), DataType.uint8),
+                new(nameof(Data.PrecodeMachineDescriptor.StubPrecodeType), DataType.uint8),
+                new(nameof(Data.PrecodeMachineDescriptor.PInvokeImportPrecodeType), DataType.uint8),
+                new(nameof(Data.PrecodeMachineDescriptor.FixupPrecodeType), DataType.uint8),
+                new(nameof(Data.PrecodeMachineDescriptor.ThisPointerRetBufPrecodeType), DataType.uint8),
             ]);
             typeInfoCache[DataType.PrecodeMachineDescriptor] = new Target.TypeInfo() {
                 Fields = layout.Fields,
                 Size = layout.Stride,
             };
             layout = targetTestHelpers.LayoutFields([
-                (nameof(Data.StubPrecodeData.Type), DataType.uint8),
-                (nameof(Data.StubPrecodeData.MethodDesc), DataType.pointer),
+                new(nameof(Data.StubPrecodeData.Type), DataType.uint8),
+                new(nameof(Data.StubPrecodeData.MethodDesc), DataType.pointer),
             ]);
             typeInfoCache[DataType.StubPrecodeData] = new Target.TypeInfo() {
                 Fields = layout.Fields,

@@ -209,48 +209,48 @@ internal class ExecutionManagerTestBuilder
     internal static void AddToTypeInfoCache(TargetTestHelpers targetTestHelpers, Dictionary<DataType, Target.TypeInfo> typeInfoCache)
     {
         var layout = targetTestHelpers.LayoutFields([
-            (nameof(Data.RangeSectionMap.TopLevelData), DataType.pointer),
+            new(nameof(Data.RangeSectionMap.TopLevelData), DataType.pointer),
         ]);
         typeInfoCache[DataType.RangeSectionMap] = new Target.TypeInfo() {
                 Fields = layout.Fields,
                 Size = layout.Stride,
         };
         layout = targetTestHelpers.LayoutFields([
-            (nameof(Data.RangeSectionFragment.RangeBegin), DataType.pointer),
-            (nameof(Data.RangeSectionFragment.RangeEndOpen), DataType.pointer),
-            (nameof(Data.RangeSectionFragment.RangeSection), DataType.pointer),
-            (nameof(Data.RangeSectionFragment.Next), DataType.pointer)
+            new(nameof(Data.RangeSectionFragment.RangeBegin), DataType.pointer),
+            new(nameof(Data.RangeSectionFragment.RangeEndOpen), DataType.pointer),
+            new(nameof(Data.RangeSectionFragment.RangeSection), DataType.pointer),
+            new(nameof(Data.RangeSectionFragment.Next), DataType.pointer)
         ]);
         typeInfoCache[DataType.RangeSectionFragment] = new Target.TypeInfo() {
                 Fields = layout.Fields,
                 Size = layout.Stride,
         };
         layout = targetTestHelpers.LayoutFields([
-            (nameof(Data.RangeSection.RangeBegin), DataType.pointer),
-            (nameof(Data.RangeSection.RangeEndOpen), DataType.pointer),
-            (nameof(Data.RangeSection.NextForDelete), DataType.pointer),
-            (nameof(Data.RangeSection.JitManager), DataType.pointer),
-            (nameof(Data.RangeSection.Flags), DataType.int32),
-            (nameof(Data.RangeSection.HeapList), DataType.pointer),
-            (nameof(Data.RangeSection.R2RModule), DataType.pointer),
+            new(nameof(Data.RangeSection.RangeBegin), DataType.pointer),
+            new(nameof(Data.RangeSection.RangeEndOpen), DataType.pointer),
+            new(nameof(Data.RangeSection.NextForDelete), DataType.pointer),
+            new(nameof(Data.RangeSection.JitManager), DataType.pointer),
+            new(nameof(Data.RangeSection.Flags), DataType.int32),
+            new(nameof(Data.RangeSection.HeapList), DataType.pointer),
+            new(nameof(Data.RangeSection.R2RModule), DataType.pointer),
         ]);
         typeInfoCache[DataType.RangeSection] = new Target.TypeInfo() {
                 Fields = layout.Fields,
                 Size = layout.Stride,
         };
         layout = targetTestHelpers.LayoutFields([
-            (nameof(Data.CodeHeapListNode.Next), DataType.pointer),
-            (nameof(Data.CodeHeapListNode.StartAddress), DataType.pointer),
-            (nameof(Data.CodeHeapListNode.EndAddress), DataType.pointer),
-            (nameof(Data.CodeHeapListNode.MapBase), DataType.pointer),
-            (nameof(Data.CodeHeapListNode.HeaderMap), DataType.pointer),
+            new(nameof(Data.CodeHeapListNode.Next), DataType.pointer),
+            new(nameof(Data.CodeHeapListNode.StartAddress), DataType.pointer),
+            new(nameof(Data.CodeHeapListNode.EndAddress), DataType.pointer),
+            new(nameof(Data.CodeHeapListNode.MapBase), DataType.pointer),
+            new(nameof(Data.CodeHeapListNode.HeaderMap), DataType.pointer),
         ]);
         typeInfoCache[DataType.CodeHeapListNode] = new Target.TypeInfo() {
                 Fields = layout.Fields,
                 Size = layout.Stride,
         };
         layout = targetTestHelpers.LayoutFields([
-            (nameof(Data.RealCodeHeader.MethodDesc), DataType.pointer),
+            new(nameof(Data.RealCodeHeader.MethodDesc), DataType.pointer),
         ]);
         typeInfoCache[DataType.RealCodeHeader] = new Target.TypeInfo() {
                 Fields = layout.Fields,
