@@ -256,6 +256,46 @@ internal class ExecutionManagerTestBuilder
                 Fields = layout.Fields,
                 Size = layout.Stride,
         };
+        layout = targetTestHelpers.LayoutFields([
+            new(nameof(Data.RuntimeFunction.BeginAddress), DataType.uint32),
+            new(nameof(Data.RuntimeFunction.EndAddress), DataType.uint32),
+        ]);
+        typeInfoCache[DataType.RuntimeFunction] = new Target.TypeInfo()
+        {
+            Fields = layout.Fields,
+            Size = layout.Stride,
+        };
+        layout = targetTestHelpers.LayoutFields(MockDescriptors.HashMap.HashMapFields.Fields);
+        typeInfoCache[DataType.HashMap] = new Target.TypeInfo()
+        {
+            Fields = layout.Fields,
+            Size = layout.Stride,
+        };
+        uint hashMapSize = layout.Stride;
+        layout = targetTestHelpers.LayoutFields(MockDescriptors.HashMap.BucketFields(targetTestHelpers).Fields);
+        typeInfoCache[DataType.Bucket] = new Target.TypeInfo()
+        {
+            Fields = layout.Fields,
+            Size = layout.Stride,
+        };
+        layout = targetTestHelpers.LayoutFields([
+            new(nameof(Data.ReadyToRunInfo.CompositeInfo), DataType.pointer),
+            new(nameof(Data.ReadyToRunInfo.NumRuntimeFunctions), DataType.uint32),
+            new(nameof(Data.ReadyToRunInfo.RuntimeFunctions), DataType.pointer),
+            new(nameof(Data.ReadyToRunInfo.DelayLoadMethodCallThunks), DataType.pointer),
+            new(nameof(Data.ReadyToRunInfo.EntryPointToMethodDescMap), DataType.Unknown, hashMapSize),
+        ]);
+        typeInfoCache[DataType.ReadyToRunInfo] = new Target.TypeInfo()
+        {
+            Fields = layout.Fields,
+            Size = layout.Stride,
+        };
+        layout = targetTestHelpers.LayoutFields(MockDescriptors.ModuleFields.Fields);
+        typeInfoCache[MockDescriptors.ModuleFields.DataType] = new Target.TypeInfo()
+        {
+            Fields = layout.Fields,
+            Size = layout.Stride,
+        };
     }
 
     internal NibbleMapTestBuilderBase CreateNibbleMap(ulong codeRangeStart, uint codeRangeSize)
@@ -303,6 +343,21 @@ internal class ExecutionManagerTestBuilder
         Builder.TargetTestHelpers.WritePointer(rs.Slice(tyInfo.Fields[nameof(Data.RangeSection.JitManager)].Offset, pointerSize), jitManagerAddress);
         // FIXME: other fields
 
+        return rangeSection.Address;
+    }
+
+    public TargetPointer AddReadyToRunRangeSection(JittedCodeRange jittedCodeRange, TargetPointer jitManagerAddress, TargetPointer r2rModule)
+    {
+        var tyInfo = TypeInfoCache[DataType.RangeSection];
+        uint rangeSectionSize = tyInfo.Size.Value;
+        MockMemorySpace.HeapFragment rangeSection = _rangeSectionMapAllocator.Allocate(rangeSectionSize, "RangeSection");
+        Builder.AddHeapFragment(rangeSection);
+        int pointerSize = Builder.TargetTestHelpers.PointerSize;
+        Span<byte> rs = Builder.BorrowAddressRange(rangeSection.Address, (int)rangeSectionSize);
+        Builder.TargetTestHelpers.WritePointer(rs.Slice(tyInfo.Fields[nameof(Data.RangeSection.RangeBegin)].Offset, pointerSize), jittedCodeRange.RangeStart);
+        Builder.TargetTestHelpers.WritePointer(rs.Slice(tyInfo.Fields[nameof(Data.RangeSection.RangeEndOpen)].Offset, pointerSize), jittedCodeRange.RangeEnd);
+        Builder.TargetTestHelpers.WritePointer(rs.Slice(tyInfo.Fields[nameof(Data.RangeSection.R2RModule)].Offset, pointerSize), r2rModule);
+        Builder.TargetTestHelpers.WritePointer(rs.Slice(tyInfo.Fields[nameof(Data.RangeSection.JitManager)].Offset, pointerSize), jitManagerAddress);
         return rangeSection.Address;
     }
 
@@ -369,6 +424,56 @@ internal class ExecutionManagerTestBuilder
         Builder.TargetTestHelpers.WritePointer(chf.Slice(tyInfo.Fields[nameof(Data.RealCodeHeader.MethodDesc)].Offset, Builder.TargetTestHelpers.PointerSize), methodDescAddress);
 
         return codeStart;
+    }
+
+    public TargetPointer AddReadyToRunInfo((uint BeginAddress, uint EndAddress)[] runtimeFunctions)
+    {
+        TargetTestHelpers helpers = Builder.TargetTestHelpers;
+
+        // Add the array of runtime functions
+        uint numRuntimeFunctions = (uint)runtimeFunctions.Length;
+        Target.TypeInfo runtimeFunctionType = TypeInfoCache[DataType.RuntimeFunction];
+        uint runtimeFunctionSize = runtimeFunctionType.Size.Value;
+        MockMemorySpace.HeapFragment runtimeFunctionsFragment = _codeHeaderAllocator.Allocate((numRuntimeFunctions + 1) * runtimeFunctionSize, $"RuntimeFunctions[{numRuntimeFunctions}]");
+        Builder.AddHeapFragment(runtimeFunctionsFragment);
+        for (uint i = 0; i < numRuntimeFunctions; i++)
+        {
+            (uint beginAddress, uint endAddress) = runtimeFunctions[i];
+            Span<byte> func = Builder.BorrowAddressRange(runtimeFunctionsFragment.Address + i * runtimeFunctionSize, (int)runtimeFunctionSize);
+            helpers.Write(func.Slice(runtimeFunctionType.Fields[nameof(Data.RuntimeFunction.BeginAddress)].Offset, sizeof(uint)), beginAddress);
+            helpers.Write(func.Slice(runtimeFunctionType.Fields[nameof(Data.RuntimeFunction.EndAddress)].Offset, sizeof(uint)), endAddress);
+        }
+
+        // Runtime function entries are terminated by a sentinel value of -1
+        Span<byte> sentinel = Builder.BorrowAddressRange(runtimeFunctionsFragment.Address + numRuntimeFunctions * runtimeFunctionSize, (int)runtimeFunctionSize);
+        helpers.Write(sentinel.Slice(runtimeFunctionType.Fields[nameof(Data.RuntimeFunction.BeginAddress)].Offset, sizeof(uint)), ~0u);
+
+        // Add ReadyToRunInfo
+        Target.TypeInfo r2rInfoType = TypeInfoCache[DataType.ReadyToRunInfo];
+        MockMemorySpace.HeapFragment r2rInfo = _codeHeaderAllocator.Allocate(r2rInfoType.Size.Value, "ReadyToRunInfo");
+        Builder.AddHeapFragment(r2rInfo);
+        Span<byte> data = r2rInfo.Data;
+
+        // Point composite info at itself
+        helpers.WritePointer(data.Slice(r2rInfoType.Fields[nameof(Data.ReadyToRunInfo.CompositeInfo)].Offset, helpers.PointerSize), r2rInfo.Address);
+
+        // Point at the runtime functions
+        helpers.Write(data.Slice(r2rInfoType.Fields[nameof(Data.ReadyToRunInfo.NumRuntimeFunctions)].Offset, sizeof(uint)), numRuntimeFunctions);
+        helpers.WritePointer(data.Slice(r2rInfoType.Fields[nameof(Data.ReadyToRunInfo.RuntimeFunctions)].Offset, helpers.PointerSize), runtimeFunctionsFragment.Address);
+
+        return r2rInfo.Address;
+    }
+
+    public TargetPointer AddReadyToRunModule(TargetPointer r2rInfo)
+    {
+        TargetTestHelpers helpers = Builder.TargetTestHelpers;
+
+        Target.TypeInfo moduleType = TypeInfoCache[DataType.Module];
+        MockMemorySpace.HeapFragment r2rModule = _codeHeaderAllocator.Allocate(moduleType.Size.Value, "R2R Module");
+        Builder.AddHeapFragment(r2rModule);
+        helpers.WritePointer(r2rModule.Data.AsSpan().Slice(moduleType.Fields[nameof(Data.Module.ReadyToRunInfo)].Offset, helpers.PointerSize), r2rInfo);
+
+        return r2rModule.Address;
     }
 
     public void MarkCreated() => Builder.MarkCreated();

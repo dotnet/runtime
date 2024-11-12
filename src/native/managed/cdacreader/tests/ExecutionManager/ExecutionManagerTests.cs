@@ -11,7 +11,6 @@ namespace Microsoft.Diagnostics.DataContractReader.UnitTests.ExecutionManager;
 
 public class ExecutionManagerTests
 {
-
     internal class ExecutionManagerTestTarget : TestPlaceholderTarget
     {
         private readonly ulong _topRangeSectionMap;
@@ -56,13 +55,23 @@ public class ExecutionManagerTests
                 if (typeof(T) == typeof(byte))
                     return (T)(object)(byte)0x0Fu;
                 break;
+            case Constants.Globals.FeatureEHFunclets:
+                if (typeof(T) == typeof(byte))
+                    return (T)(object)(byte)1;
+                break;
+            case Constants.Globals.HashMapValueMask:
+                if (typeof(T) == typeof(ulong))
+                    return (T)(object)(PointerSize == 4 ? 0x7FFFFFFFu : 0x7FFFFFFFFFFFFFFFu);
+                break;
+            case Constants.Globals.HashMapSlotsPerBucket:
+                if (typeof(T) == typeof(uint))
+                    return (T)(object)4u;
+                break;
             default:
                 break;
             }
             return base.ReadGlobal<T>(name);
-
         }
-
     }
 
     [Theory]
@@ -179,6 +188,63 @@ public class ExecutionManagerTests
         // test end of code range
         eeInfo = em.GetCodeBlockHandle(codeRangeSize + codeRangeSize - 1);
         Assert.Null(eeInfo);
+    }
+
+    [Theory]
+    [MemberData(nameof(StdArchAllVersions))]
+    public void GetMethodDesc_R2R_OneRuntimeFunction(int version, MockTarget.Architecture arch)
+    {
+        const ulong codeRangeStart = 0x0a0a_0000u; // arbitrary
+        const uint codeRangeSize = 0xc000u; // arbitrary
+
+        TargetPointer jitManagerAddress = new(0x000b_ff00); // arbitrary
+
+        TargetPointer expectedMethodDescAddress = new TargetPointer(0x0101_aaa0);
+
+        ExecutionManagerTestBuilder emBuilder = new(version, arch, ExecutionManagerTestBuilder.DefaultAllocationRange);
+        var jittedCode = emBuilder.AllocateJittedCodeRange(codeRangeStart, codeRangeSize);
+
+        (uint BeginAddress, uint EndAddress) expectedRuntimeFunction = (0x100, 0x200);
+
+        TargetPointer r2rInfo = emBuilder.AddReadyToRunInfo([expectedRuntimeFunction]);
+        MockDescriptors.HashMap hashMapBuilder = new(emBuilder.Builder);
+        hashMapBuilder.PopulatePtrMap(
+            r2rInfo + (uint)emBuilder.TypeInfoCache[DataType.ReadyToRunInfo].Fields[nameof(Data.ReadyToRunInfo.EntryPointToMethodDescMap)].Offset,
+            [(jittedCode.RangeStart + expectedRuntimeFunction.BeginAddress, expectedMethodDescAddress)]);
+
+        TargetPointer r2rModule = emBuilder.AddReadyToRunModule(r2rInfo);
+        TargetPointer rangeSectionAddress = emBuilder.AddReadyToRunRangeSection(jittedCode, jitManagerAddress, r2rModule);
+        _ = emBuilder.AddRangeSectionFragment(jittedCode, rangeSectionAddress);
+
+        emBuilder.MarkCreated();
+
+        TargetCodePointer functionStart = codeRangeStart + expectedRuntimeFunction.BeginAddress;
+        var target = ExecutionManagerTestTarget.FromBuilder(emBuilder);
+
+        // test
+
+        var em = target.Contracts.ExecutionManager;
+        Assert.NotNull(em);
+
+        {
+            var handle = em.GetCodeBlockHandle(codeRangeStart + expectedRuntimeFunction.BeginAddress);
+            Assert.NotNull(handle);
+            TargetPointer actualMethodDesc = em.GetMethodDesc(handle.Value);
+            Assert.Equal(expectedMethodDescAddress, actualMethodDesc);
+        }
+        {
+            uint expectedRuntimeFunctionSize = expectedRuntimeFunction.EndAddress - expectedRuntimeFunction.BeginAddress;
+            var handle = em.GetCodeBlockHandle(codeRangeStart + expectedRuntimeFunction.BeginAddress + expectedRuntimeFunctionSize / 2);
+            Assert.NotNull(handle);
+            TargetPointer actualMethodDesc = em.GetMethodDesc(handle.Value);
+            Assert.Equal(expectedMethodDescAddress, actualMethodDesc);
+        }
+        {
+            var handle = em.GetCodeBlockHandle(codeRangeStart + expectedRuntimeFunction.EndAddress);
+            Assert.NotNull(handle);
+            TargetPointer actualMethodDesc = em.GetMethodDesc(handle.Value);
+            Assert.Equal(expectedMethodDescAddress, actualMethodDesc);
+        }
     }
 
     public static IEnumerable<object[]> StdArchAllVersions()
