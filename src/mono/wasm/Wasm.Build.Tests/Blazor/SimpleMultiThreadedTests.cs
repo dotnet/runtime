@@ -21,76 +21,87 @@ public class SimpleMultiThreadedTests : BlazorWasmTestBase
     }
 
     // dotnet-run needed for running with *build* so wwwroot has the index.html etc
-    // [Theory]
-    // [InlineData("Debug")]
-    // [InlineData("Release")]
-    // public async Task BlazorBuildRunTest(string config)
-    // {
-    //     string id = $"blazor_mt_{config}_{GetRandomId()}";
-    //     string projectFile = CreateWasmTemplateProject(id, "blazorwasm");
+    [Theory]
+    [InlineData("Debug")]
+    [InlineData("Release")]
+    [ActiveIssue("run fails with timeout")]
+    public async Task BlazorBuildRunTest(string config)
+    {
+        string extraProperties = "<WasmEnableThreads>true</WasmEnableThreads>";
+        ProjectInfo info = CopyTestAsset(config, aot: false, "BlazorBasicTestApp", "blazorwasm", "App", extraProperties: extraProperties);
+        bool isPublish = false;
+        string frameworkDir = GetBlazorBinFrameworkDir(info.Configuration, isPublish);
+        BuildTemplateProject(info,
+            new BuildProjectOptions(
+                info.Configuration,
+                info.ProjectName,
+                BinFrameworkDir: frameworkDir,
+                ExpectedFileType: GetExpectedFileType(info, isPublish),
+                IsPublish: isPublish,
+                RuntimeType: RuntimeVariant.MultiThreaded
+        ));
+        // we wan to use "xharness wasm webserver" but from non-publish location
+        string extraArgs = " --web-server-use-cors --web-server-use-cop --web-server-use-https --timeout=15:00:00";
+        await RunForPublishWithWebServer(new(config, ExtraArgs: extraArgs, CustomBundleDir: Path.Combine(frameworkDir, "..")));
+    }
 
-    //     AddItemsPropertiesToProject(projectFile, "<WasmEnableThreads>true</WasmEnableThreads>");
-    //     BlazorBuild(new BuildProjectOptions(id, config, NativeFilesType.FromRuntimePack, RuntimeType: RuntimeType.MultiThreaded));
-    //     // await BlazorRunForBuildWithDotnetRun(config);
+    [ConditionalTheory(typeof(BuildTestBase), nameof(IsWorkloadWithMultiThreadingForDefaultFramework))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/100373")] // to be fixed by: "https://github.com/dotnet/aspnetcore/issues/54365"
+    // [InlineData("Debug", false)] // ActiveIssue https://github.com/dotnet/runtime/issues/98758
+    // [InlineData("Debug", true)]
+    [InlineData("Release", false)]
+    // [InlineData("Release", true)]
+    public async Task BlazorPublishRunTest(string config, bool aot)
+    {
+        string extraProperties = "<WasmEnableThreads>true</WasmEnableThreads>";
+        ProjectInfo info = CopyTestAsset(config, aot, "BlazorBasicTestApp", "blazor_mt", "App", extraProperties: extraProperties);
+        // if (aot)
+        // AddItemsPropertiesToProject(projectFile, "<RunAOTCompilation>true</RunAOTCompilation>");
 
-    //     await BlazorRunTest($"{s_xharnessRunnerCommand} wasm webserver --app=. --web-server-use-default-files --web-server-use-cors --web-server-use-cop --web-server-use-https --timeout=15:00:00",
-    //                          Path.GetFullPath(Path.Combine(GetBlazorBinFrameworkDir(config, forPublish: false), "..")));
-    // }
+        File.WriteAllText(
+            Path.Combine(Path.GetDirectoryName(info.ProjectFilePath)!, "wwwroot", info.ProjectName + ".lib.module.js"),
+            """
+            export function onRuntimeReady({ runtimeBuildInfo }) {
+                console.log('Runtime is ready: ' + JSON.stringify(runtimeBuildInfo));
+                console.log(`WasmEnableThreads=${runtimeBuildInfo.wasmEnableThreads}`);
+            }
+            """
+        );
 
-    // [ConditionalTheory(typeof(BuildTestBase), nameof(IsWorkloadWithMultiThreadingForDefaultFramework))]
-    // [ActiveIssue("https://github.com/dotnet/runtime/issues/100373")] // to be fixed by: "https://github.com/dotnet/aspnetcore/issues/54365"
-    // // [InlineData("Debug", false)] // ActiveIssue https://github.com/dotnet/runtime/issues/98758
-    // // [InlineData("Debug", true)]
-    // [InlineData("Release", false)]
-    // // [InlineData("Release", true)]
-    // public async Task BlazorPublishRunTest(string config, bool aot)
-    // {
-    //     string id = $"blazor_mt_{config}_{GetRandomId()}";
-    //     string projectFile = CreateWasmTemplateProject(id, "blazorwasm");
-    //     AddItemsPropertiesToProject(projectFile, "<WasmEnableThreads>true</WasmEnableThreads>");
-    //     // if (aot)
-    //     // AddItemsPropertiesToProject(projectFile, "<RunAOTCompilation>true</RunAOTCompilation>");
+        bool isPublish = true;
+        BuildTemplateProject(info,
+            new BuildProjectOptions(
+                info.Configuration,
+                info.ProjectName,
+                BinFrameworkDir: GetBlazorBinFrameworkDir(info.Configuration, isPublish),
+                ExpectedFileType: GetExpectedFileType(info, isPublish),
+                IsPublish: isPublish,
+                RuntimeType: RuntimeVariant.MultiThreaded
+        ));
 
-    //     File.WriteAllText(
-    //         Path.Combine(Path.GetDirectoryName(projectFile)!, "wwwroot", id + ".lib.module.js"),
-    //         """
-    //         export function onRuntimeReady({ runtimeBuildInfo }) {
-    //             console.log('Runtime is ready: ' + JSON.stringify(runtimeBuildInfo));
-    //             console.log(`WasmEnableThreads=${runtimeBuildInfo.wasmEnableThreads}`);
-    //         }
-    //         """
-    //     );
+        bool hasEmittedWasmEnableThreads = false;
+        StringBuilder errorOutput = new();
+        await RunForPublishWithWebServer(
+                runOptions: new RunOptions(
+                    Configuration: config,
+                    ExtraArgs: "--web-server-use-cors --web-server-use-cop",
+                    OnConsoleMessage: (type, message) =>
+                    {
+                        if (message.Contains("WasmEnableThreads=true"))
+                            hasEmittedWasmEnableThreads = true;
 
-    //     BlazorPublish(new BuildProjectOptions(
-    //         id,
-    //         config,
-    //         aot ? NativeFilesType.AOT
-    //             : (config == "Release" ? NativeFilesType.Relinked : NativeFilesType.FromRuntimePack),
-    //         RuntimeType: RuntimeVariant.MultiThreaded));
+                        if (type == "error")
+                            errorOutput.AppendLine(message);
+                    },
+                    OnErrorMessage: (message) =>
+                    {
+                        errorOutput.AppendLine(message);
+                    }));
 
-    //     bool hasEmittedWasmEnableThreads = false;
-    //     StringBuilder errorOutput = new();
-    //     await BlazorRunForPublishWithWebServer(
-    //             runOptions: new RunOptions(
-    //                 Configuration: config,
-    //                 ExtraArgs: "--web-server-use-cors --web-server-use-cop",
-    //                 OnConsoleMessage: (_, message) =>
-    //                 {
-    //                     if (message.Text.Contains("WasmEnableThreads=true"))
-    //                         hasEmittedWasmEnableThreads = true;
+        if (errorOutput.Length > 0)
+            throw new XunitException($"Errors found in browser console output:\n{errorOutput}");
 
-    //                     if (message.Type == "error")
-    //                         errorOutput.AppendLine(message.Text);
-    //                 },
-    //                 OnErrorMessage: (message) =>
-    //                 {
-    //                     errorOutput.AppendLine(message);
-    //                 }));
-
-    //     if (errorOutput.Length > 0)
-    //         throw new XunitException($"Errors found in browser console output:\n{errorOutput}");
-
-    //     if (!hasEmittedWasmEnableThreads)
-    //         throw new XunitException($"The test didn't emit expected message 'WasmEnableThreads=true'");
-    // }
+        if (!hasEmittedWasmEnableThreads)
+            throw new XunitException($"The test didn't emit expected message 'WasmEnableThreads=true'");
+    }
 }
