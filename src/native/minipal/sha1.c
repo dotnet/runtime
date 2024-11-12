@@ -1,68 +1,59 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-//
-//
-//
-// ===========================================================================
-// File: sha1.cpp
-//
-// ===========================================================================
-/*++
 
-Abstract:
-
-    SHA-1 implementation
-
-Revision History:
-
---*/
-
-/*
-       File sha1.cpp    <STRIP>Version 03 August 2000.</STRIP>
-
-
-      This implements the SHA-1 hash function.
-      For algorithmic background see (for example)
-
-
-           Alfred J. Menezes et al
-           Handbook of Applied Cryptography
-           The CRC Press Series on Discrete Mathematics
-                   and its Applications
-           CRC Press LLC, 1997
-           ISBN 0-8495-8523-7
-           QA76.9A25M643
-
-       Also see FIPS 180-1 - Secure Hash Standard,
-       1993 May 11 and 1995 April 17, by the U.S.
-       National Institute of Standards and Technology (NIST).
-
-*/
-
-#include "stdafx.h"
-#include <utilcode.h>                   // Utility helpers.
 #include "sha1.h"
+#include <stdint.h>
+#include <limits.h>
+#include <assert.h>
 
-typedef const DWORD DWORDC;
+typedef struct {
+        uint32_t magic_sha1;    // Magic value for A_SHA_CTX
+        uint32_t awaiting_data[16];
+                             // Data awaiting full 512-bit block.
+                             // Length (nbit_total[0] % 512) bits.
+                             // Unused part of buffer (at end) is zero
+        uint32_t partial_hash[5];
+                             // Hash through last full block
+        uint32_t nbit_total[2];
+                             // Total length of message so far
+                             // (bits, mod 2^64)
+} SHA1_CTX;
+
+
+#if !defined(_MSC_VER)
+#if !__has_builtin(_rotl) && !defined(_rotl)
+inline static
+unsigned int _rotl(unsigned int value, int shift)
+{
+    unsigned int retval = 0;
+
+    shift &= 0x1f;
+    retval = (value << shift) | (value >> (sizeof(int) * CHAR_BIT - shift));
+    return retval;
+}
+#endif // !__has_builtin(_rotl)
+#endif // !_MSC_VER
+
+#define MIN(a,b) (((a) < (b)) ? (a) : (b))
+
 #define ROTATE32L(x,n) _rotl(x,n)
-#define SHAVE32(x)     (DWORD)(x)
+#define SHAVE32(x)     (uint32_t)(x)
 
-static void SHA1_block(SHA1_CTX *ctx)
 /*
      Update the SHA-1 hash from a fresh 64 bytes of data.
 */
+static void SHA1_block(SHA1_CTX *ctx)
 {
-    static DWORDC sha1_round1 = 0x5A827999u;
-    static DWORDC sha1_round2 = 0x6ED9EBA1u;
-    static DWORDC sha1_round3 = 0x8F1BBCDCu;
-    static DWORDC sha1_round4 = 0xCA62C1D6u;
+    static const uint32_t sha1_round1 = 0x5A827999u;
+    static const uint32_t sha1_round2 = 0x6ED9EBA1u;
+    static const uint32_t sha1_round3 = 0x8F1BBCDCu;
+    static const uint32_t sha1_round4 = 0xCA62C1D6u;
 
-    DWORD a = ctx->partial_hash[0], b = ctx->partial_hash[1];
-    DWORD c = ctx->partial_hash[2], d = ctx->partial_hash[3];
-    DWORD e = ctx->partial_hash[4];
-    DWORD  msg80[80];
+    uint32_t a = ctx->partial_hash[0], b = ctx->partial_hash[1];
+    uint32_t c = ctx->partial_hash[2], d = ctx->partial_hash[3];
+    uint32_t e = ctx->partial_hash[4];
+    uint32_t  msg80[80];
     int i;
-    BOOL OK = TRUE;
 
     // OACR note:
     // Loop conditions are using (i <= limit - increment) instead of (i < limit) to satisfy OACR. When the increment is greater
@@ -70,15 +61,15 @@ static void SHA1_block(SHA1_CTX *ctx)
 
     for (i = 0; i < 16; i++) {   // Copy to local array, zero original
                                   // Extend length to 80
-        DWORDC datval = ctx->awaiting_data[i];
+        const uint32_t datval = ctx->awaiting_data[i];
         ctx->awaiting_data[i] = 0;
         msg80[i] = datval;
     }
 
     for (i = 16; i <= 80 - 2; i += 2) {
-        DWORDC temp1 =    msg80[i-3] ^ msg80[i-8]
+        const uint32_t temp1 =    msg80[i-3] ^ msg80[i-8]
                         ^ msg80[i-14] ^ msg80[i-16];
-        DWORDC temp2 =    msg80[i-2] ^ msg80[i-7]
+        const uint32_t temp2 =    msg80[i-2] ^ msg80[i-7]
                         ^ msg80[i-13] ^ msg80[i-15];
         msg80[i  ] = ROTATE32L(temp1, 1);
         msg80[i+1] = ROTATE32L(temp2, 1);
@@ -179,33 +170,20 @@ static void SHA1_block(SHA1_CTX *ctx)
     ctx->partial_hash[2] += c;
     ctx->partial_hash[3] += d;
     ctx->partial_hash[4] += e;
-#if 0
-    for (i = 0; i < 16; i++) {
-        printf("%8lx ", msg16[i]);
-        if ((i & 7) == 7) printf("\n");
-    }
-    printf("a, b, c, d, e = %08lx %08lx %08lx %08lx %08lx\n",
-        a, b, c, d, e);
-    printf("Partial hash = %08lx %08lx %08lx %08lx %08lx\n",
-        (long)ctx->partial_hash[0], (long)ctx->partial_hash[1],
-        (long)ctx->partial_hash[2], (long)ctx->partial_hash[3],
-        (long)ctx->partial_hash[4]);
-#endif
 } // end SHA1_block
 
 
-void SHA1Hash::SHA1Init(SHA1_CTX *ctx)
+
+/*
+    Initialize the hash context.
+*/
+static void SHA1Init(SHA1_CTX *ctx)
 {
     ctx->nbit_total[0] = ctx->nbit_total[1] = 0;
 
-    for (DWORD i = 0; i != 16; i++) {
+    for (uint32_t i = 0; i != 16; i++) {
         ctx->awaiting_data[i] = 0;
     }
-
-     /*
-         Initialize hash variables.
-
-     */
 
     ctx->partial_hash[0] = 0x67452301u;
     ctx->partial_hash[1] = 0xefcdab89u;
@@ -215,22 +193,22 @@ void SHA1Hash::SHA1Init(SHA1_CTX *ctx)
 
 }
 
-void SHA1Hash::SHA1Update(
-        SHA1_CTX *  ctx,        // IN/OUT
-        const BYTE *    msg,    // IN
-        DWORD           nbyte)  // IN
 /*
     Append data to a partially hashed SHA-1 message.
 */
+static void SHA1Update(
+        SHA1_CTX *  ctx,        // IN/OUT
+        const uint8_t *    msg,    // IN
+        uint32_t           nbyte)  // IN
 {
-    const BYTE *fresh_data = msg;
-    DWORD nbyte_left = nbyte;
-    DWORD nbit_occupied = ctx->nbit_total[0] & 511;
-    DWORD *awaiting_data;
-    DWORDC nbitnew_low = SHAVE32(8*nbyte);
+    const uint8_t *fresh_data = msg;
+    uint32_t nbyte_left = nbyte;
+    uint32_t nbit_occupied = ctx->nbit_total[0] & 511;
+    uint32_t *awaiting_data;
+    const uint32_t nbitnew_low = SHAVE32(8*nbyte);
 
 
-    _ASSERTE((nbit_occupied & 7) == 0);   // Partial bytes not implemented
+    assert((nbit_occupied & 7) == 0);   // Partial bytes not implemented
 
     ctx->nbit_total[0] += nbitnew_low;
     ctx->nbit_total[1] += (nbyte >> 29)
@@ -243,7 +221,7 @@ void SHA1Hash::SHA1Update(
 
         while ((nbit_occupied & 31) != 0 && nbyte_left != 0) {
             nbit_occupied += 8;
-            *awaiting_data |= (DWORD)*fresh_data++
+            *awaiting_data |= (uint32_t)*fresh_data++
                      << ((-(int)nbit_occupied) & 31);
             nbyte_left--;            // Start at most significant byte
         }
@@ -252,19 +230,19 @@ void SHA1Hash::SHA1Update(
              /* Transfer 4 bytes at a time */
 
     do {
-        DWORDC nword_occupied = nbit_occupied/32;
-        DWORD nwcopy = min(nbyte_left/4, 16 - nword_occupied);
-        _ASSERTE (nbit_occupied <= 512);
-        _ASSERTE ((nbit_occupied & 31) == 0 || nbyte_left == 0);
+        const uint32_t nword_occupied = nbit_occupied/32;
+        uint32_t nwcopy = MIN(nbyte_left/4, 16 - nword_occupied);
+        assert (nbit_occupied <= 512);
+        assert ((nbit_occupied & 31) == 0 || nbyte_left == 0);
         awaiting_data = ctx->awaiting_data + nword_occupied;
         nbyte_left -= 4*nwcopy;
         nbit_occupied += 32*nwcopy;
 
         while (nwcopy != 0) {
-            DWORDC byte0 = (DWORD)fresh_data[0];
-            DWORDC byte1 = (DWORD)fresh_data[1];
-            DWORDC byte2 = (DWORD)fresh_data[2];
-            DWORDC byte3 = (DWORD)fresh_data[3];
+            const uint32_t byte0 = (uint32_t)fresh_data[0];
+            const uint32_t byte1 = (uint32_t)fresh_data[1];
+            const uint32_t byte2 = (uint32_t)fresh_data[2];
+            const uint32_t byte3 = (uint32_t)fresh_data[3];
             *awaiting_data++ = byte3 | (byte2 << 8)
                         | (byte1 << 16) | (byte0 << 24);
                              /* Big endian */
@@ -276,43 +254,41 @@ void SHA1Hash::SHA1Update(
             SHA1_block(ctx);
             nbit_occupied = 0;
             awaiting_data -= 16;
-            _ASSERTE(awaiting_data == ctx->awaiting_data);
+            assert(awaiting_data == ctx->awaiting_data);
         }
     } while (nbyte_left >= 4);
 
-    _ASSERTE (ctx->awaiting_data + nbit_occupied/32
+    assert (ctx->awaiting_data + nbit_occupied/32
                        == awaiting_data);
 
     while (nbyte_left != 0) {
-        DWORDC new_byte = (DWORD)*fresh_data++;
+        const uint32_t new_byte = (uint32_t)*fresh_data++;
 
-        _ASSERTE((nbit_occupied & 31) <= 16);
+        assert((nbit_occupied & 31) <= 16);
         nbit_occupied += 8;
         *awaiting_data |= new_byte << ((-(int)nbit_occupied) & 31);
         nbyte_left--;
     }
 
-    _ASSERTE (nbit_occupied == (ctx->nbit_total[0] & 511));
-} // end SHA1Update
+    assert (nbit_occupied == (ctx->nbit_total[0] & 511));
+}
 
-
-
-void SHA1Hash::SHA1Final(
-        SHA1_CTX *  ctx,            // IN/OUT
-        BYTE *          digest)     // OUT
 /*
         Finish a SHA-1 hash.
 */
+static void SHA1Final(
+        SHA1_CTX *  ctx,            // IN/OUT
+        uint8_t *          digest)     // OUT
 {
-    DWORDC nbit0 = ctx->nbit_total[0];
-    DWORDC nbit1 = ctx->nbit_total[1];
-    DWORD  nbit_occupied = nbit0 & 511;
-    DWORD i;
+    const uint32_t nbit0 = ctx->nbit_total[0];
+    const uint32_t nbit1 = ctx->nbit_total[1];
+    uint32_t  nbit_occupied = nbit0 & 511;
+    uint32_t i;
 
-    _ASSERTE((nbit_occupied & 7) == 0);
+    assert((nbit_occupied & 7) == 0);
 
     ctx->awaiting_data[nbit_occupied/32]
-         |= (DWORD)0x80 << ((-8-nbit_occupied) & 31);
+         |= (uint32_t)0x80 << ((-8-nbit_occupied) & 31);
                           // Append a 1 bit
     nbit_occupied += 8;
 
@@ -332,37 +308,29 @@ void SHA1Hash::SHA1Final(
          /* Copy final digest to user-supplied byte array */
 
     for (i = 0; i != 5; i++) {
-        DWORDC dwi = ctx->partial_hash[i];
-        digest[4*i + 0] = (BYTE)((dwi >> 24) & 255);
-        digest[4*i + 1] = (BYTE)((dwi >> 16) & 255);
-        digest[4*i + 2] = (BYTE)((dwi >>  8) & 255);
-        digest[4*i + 3] = (BYTE)(dwi         & 255);  // Big-endian
+        const uint32_t dwi = ctx->partial_hash[i];
+        digest[4*i + 0] = (uint8_t)((dwi >> 24) & 255);
+        digest[4*i + 1] = (uint8_t)((dwi >> 16) & 255);
+        digest[4*i + 2] = (uint8_t)((dwi >>  8) & 255);
+        digest[4*i + 3] = (uint8_t)(dwi         & 255);  // Big-endian
     }
-} // end SHA1Final
-
-SHA1Hash::SHA1Hash()
-{
-    m_fFinalized = FALSE;
-    SHA1Init(&m_Context);
 }
 
-void SHA1Hash::AddData(BYTE *pbData, DWORD cbData)
+void minipal_sha1(const void *data, size_t length, uint8_t *hash, size_t hashBufferLength)
 {
-    if (m_fFinalized)
-        return;
-
-    SHA1Update(&m_Context, pbData, cbData);
-}
-
-// Retrieve a pointer to the final hash.
-BYTE *SHA1Hash::GetHash()
-{
-    if (m_fFinalized)
-        return m_Value;
-
-    SHA1Final(&m_Context, m_Value);
-
-    m_fFinalized = TRUE;
-
-    return m_Value;
+    assert(hashBufferLength >= SHA1_HASH_SIZE);
+    SHA1_CTX ctx;
+    SHA1Init(&ctx);
+    if (length > UINT32_MAX)
+    {
+        SHA1Update(&ctx, data, UINT32_MAX);
+        data = (uint8_t*)data + UINT32_MAX;
+        length -= UINT32_MAX;
+        SHA1Update(&ctx, data, (uint32_t)length);
+    }
+    else
+    {
+        SHA1Update(&ctx, data, (uint32_t)length);
+    }
+    SHA1Final(&ctx, hash);
 }

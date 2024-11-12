@@ -27,3 +27,6 @@ add_dependencies(runtime hosts)
 
 # The cross-components build is separate, so we don't need to add a dependency on coreclr_misc
 add_component(crosscomponents)
+
+# The cdac-components build is separate
+add_component(cdac)

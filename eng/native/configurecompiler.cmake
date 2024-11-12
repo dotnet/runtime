@@ -60,6 +60,7 @@ if (MSVC)
   define_property(TARGET PROPERTY CLR_EH_CONTINUATION INHERITED BRIEF_DOCS "Controls the /guard:ehcont flag presence" FULL_DOCS "Set this property to ON or OFF to indicate if the /guard:ehcont compiler flag should be present")
   define_property(TARGET PROPERTY CLR_EH_OPTION INHERITED BRIEF_DOCS "Defines the value of the /EH option" FULL_DOCS "Set this property to one of the valid /EHxx options (/EHa, /EHsc, /EHa-, ...)")
   define_property(TARGET PROPERTY MSVC_WARNING_LEVEL INHERITED BRIEF_DOCS "Define the warning level for the /Wn option" FULL_DOCS "Set this property to one of the valid /Wn options (/W0, /W1, /W2, /W3, /W4)")
+  define_property(TARGET PROPERTY SET_SOURCE_CHARSET INHERITED BRIEF_DOCS "Add the /source-charset option" FULL_DOCS "Set this property to add the /source-charset:utf8 option")
 
   set_property(GLOBAL PROPERTY CLR_CONTROL_FLOW_GUARD ON)
 
@@ -881,7 +882,8 @@ if (MSVC)
 
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX,ASM_MASM>:/Zi>) # enable debugging information
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/ZH:SHA_256>) # use SHA256 for generating hashes of compiler processed source files.
-  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/source-charset:utf-8>) # Force MSVC to compile source as UTF-8.
+  set_property(GLOBAL PROPERTY SET_SOURCE_CHARSET ON)
+  add_compile_options($<$<AND:$<BOOL:$<TARGET_PROPERTY:SET_SOURCE_CHARSET>>,$<COMPILE_LANGUAGE:C,CXX>>:/source-charset:utf-8>) # Force MSVC to compile source as UTF-8.
 
   if (CLR_CMAKE_HOST_ARCH_I386)
     add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/Gz>)

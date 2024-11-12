@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk" DefaultTargets="OutputNetHostDir">
+    <Target Name="OutputNetHostDir">
+        <Message Text="$(NetCoreTargetingPackRoot)/Microsoft.NETCore.App.Host.$(NETCoreSdkRuntimeIdentifier)/$(BundledNETCoreAppPackageVersion)/runtimes/$(NETCoreSdkRuntimeIdentifier)/native" Importance="high" />
+    </Target>
+</Project>

@@ -22,7 +22,7 @@
 #include "reflectclasswriter.h"
 #include "comdynamic.h"
 
-#include "sha1.h"
+#include <minipal/sha1.h>
 
 #include "eeconfig.h"
 

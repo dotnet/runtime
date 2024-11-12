@@ -5,6 +5,7 @@ set(SOURCES
     guid.c
     random.c
     debugger.c
+    sha1.c
     strings.c
     time.c
     unicodedata.c
@@ -17,7 +18,7 @@ include_directories(${CLR_SRC_NATIVE_DIR} ${CMAKE_CURRENT_BINARY_DIR})
 add_library(minipal_objects OBJECT ${SOURCES})
 
 if (WIN32)
-    target_link_libraries(minipal_objects PUBLIC bcrypt)
+    target_link_libraries(minipal_objects PUBLIC bcrypt ole32)
 endif()
 
 # Add a copy of the minipal object library with interprocedural optimization disabled
@@ -27,7 +28,7 @@ add_library(aotminipal STATIC ${SOURCES})
 set_target_properties(aotminipal PROPERTIES INTERPROCEDURAL_OPTIMIZATION OFF)
 
 if (WIN32)
-    target_link_libraries(aotminipal PUBLIC bcrypt)
+    target_link_libraries(aotminipal PUBLIC bcrypt ole32)
 endif()
 
 # Provide a static library for our shared library and executable scenarios
@@ -40,3 +41,5 @@ add_library(minipal_sanitizer_support OBJECT
 # Exclude this target from the default build as we may not have sanitzer headers available
 # in a non-sanitized build.
 set_target_properties(minipal_sanitizer_support PROPERTIES EXCLUDE_FROM_ALL ON)
+
+add_subdirectory(com)
