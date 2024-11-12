@@ -65,19 +65,20 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestsBase
     {
         try
         {
-            var additionalOptiont = buildOptions.WarnAsError ? 
-                new[] { "-p:BlazorEnableCompression=false",  "/warnaserror"} :
-                new[] { "-p:BlazorEnableCompression=false" };
-            extraArgs = extraArgs.Concat(additionalOptiont).ToArray();
+            var additionalOptiont = buildOptions.WarnAsError
+                ? new[] { "-p:BlazorEnableCompression=false", "/warnaserror" }
+                : new[] { "-p:BlazorEnableCompression=false" };
+    
             (string projectDir, string buildOutput) = base.BuildTemplateProject(
                 projectInfo,
                 buildOptions with { AssertAppBundle = false },
-                extraArgs
-            );
+                extraArgs.Concat(additionalOptiont).ToArray());
+
             if (buildOptions.ExpectSuccess && buildOptions.AssertAppBundle)
             {
                 AssertBundle(buildOutput, buildOptions);
             }
+
             return (projectDir, buildOutput);
         }
         catch (XunitException xe)
@@ -236,18 +237,14 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestsBase
             Assert.False(File.Exists(Path.Combine(objBuildDir, "emcc-link.rsp")), $"Found unexpected `emcc-link.rsp` in {objBuildDir}, which gets created when relinking during Build.");
     }
 
-    protected string CreateProjectWithNativeReference(string id)
+    protected ProjectInfo CreateProjectWithNativeReference(string config, bool aot, string extraProperties)
     {
-        CreateBlazorWasmTemplateProject(id);
-
         string extraItems = @$"
             {GetSkiaSharpReferenceItems()}
             <WasmFilesToIncludeInFileSystem Include=""{Path.Combine(BuildEnvironment.TestAssetsPath, "mono.png")}"" />
         ";
-        string projectFile = Path.Combine(_projectDir!, $"{id}.csproj");
-        AddItemsPropertiesToProject(projectFile, extraItems: extraItems);
-
-        return projectFile;
+        return CopyTestAsset(
+            config, aot, "BlazorBasicTestApp", "blz_nativeref_aot", "App", extraItems: extraItems, extraProperties: extraProperties);
     }
 
     // Keeping these methods with explicit Build/Publish in the name
