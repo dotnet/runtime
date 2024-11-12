@@ -22,7 +22,7 @@ SET_DEFAULT_DEBUG_CHANNEL(PAL); // some headers have code with asserts, so do th
 #include "pal/cs.hpp"
 #include "pal/file.hpp"
 #include "pal/map.hpp"
-#include "../objmgr/shmobjectmanager.hpp"
+#include "../objmgr/listedobjectmanager.hpp"
 #include "pal/seh.hpp"
 #include "pal/palinternal.h"
 #include "pal/sharedmemory.h"
@@ -298,7 +298,7 @@ Initialize(
 {
     PAL_ERROR palError = ERROR_GEN_FAILURE;
     CPalThread *pThread = nullptr;
-    CSharedMemoryObjectManager *pshmom = nullptr;
+    CListedObjectManager *plom = nullptr;
     LPWSTR command_line = nullptr;
     LPWSTR exe_path = nullptr;
     int retval = -1;
@@ -473,23 +473,23 @@ Initialize(
         // Initialize the object manager
         //
 
-        pshmom = new(std::nothrow) CSharedMemoryObjectManager();
-        if (nullptr == pshmom)
+        plom = new(std::nothrow) CListedObjectManager();
+        if (nullptr == plom)
         {
             ERROR("Unable to allocate new object manager\n");
             palError = ERROR_OUTOFMEMORY;
             goto CLEANUP1b;
         }
 
-        palError = pshmom->Initialize();
+        palError = plom->Initialize();
         if (NO_ERROR != palError)
         {
             ERROR("object manager initialization failed!\n");
-            delete pshmom;
+            delete plom;
             goto CLEANUP1b;
         }
 
-        g_pObjectManager = pshmom;
+        g_pObjectManager = plom;
 
         //
         // Initialize the synchronization manager

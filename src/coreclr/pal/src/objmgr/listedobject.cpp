@@ -7,7 +7,7 @@
 
 Module Name:
 
-    shmobject.hpp
+    listedobject.hpp
 
 Abstract:
     Shared memory based object
@@ -16,7 +16,7 @@ Abstract:
 
 --*/
 
-#include "shmobject.hpp"
+#include "listedobject.hpp"
 #include "pal/cs.hpp"
 #include "pal/dbgmsg.h"
 
@@ -28,7 +28,7 @@ using namespace CorUnix;
 
 /*++
 Function:
-  CSharedMemoryObject::Initialize
+  CListedObject::Initialize
 
   Performs possibly-failing initialization for a newly-constructed
   object
@@ -39,7 +39,7 @@ Parameters:
 --*/
 
 PAL_ERROR
-CSharedMemoryObject::Initialize(
+CListedObject::Initialize(
     CPalThread *pthr,
     CObjectAttributes *poa
     )
@@ -49,7 +49,7 @@ CSharedMemoryObject::Initialize(
     _ASSERTE(NULL != pthr);
     _ASSERTE(NULL != poa);
 
-    ENTRY("CSharedMemoryObject::Initialize"
+    ENTRY("CListedObject::Initialize"
         "(this = %p, pthr = %p, poa = %p)\n",
         this,
         pthr,
@@ -65,14 +65,14 @@ CSharedMemoryObject::Initialize(
 
 InitializeExit:
 
-    LOGEXIT("CSharedMemoryObject::Initialize returns %d\n", palError);
+    LOGEXIT("CListedObject::Initialize returns %d\n", palError);
 
     return palError;
 }
 
 /*++
 Function:
-  CSharedMemoryObject::CleanupForProcessShutdown
+  CListedObject::CleanupForProcessShutdown
 
   Cleanup routine called by the object manager when shutting down
 
@@ -81,13 +81,13 @@ Parameters:
 --*/
 
 void
-CSharedMemoryObject::CleanupForProcessShutdown(
+CListedObject::CleanupForProcessShutdown(
     CPalThread *pthr
     )
 {
     _ASSERTE(NULL != pthr);
 
-    ENTRY("CSharedMemoryObject::CleanupForProcessShutdown"
+    ENTRY("CListedObject::CleanupForProcessShutdown"
         "(this = %p, pthr = %p)\n",
         this,
         pthr
@@ -130,12 +130,12 @@ CSharedMemoryObject::CleanupForProcessShutdown(
 
     pthr->ReleaseThreadReference();
 
-    LOGEXIT("CSharedMemoryObject::CleanupForProcessShutdown\n");
+    LOGEXIT("CListedObject::CleanupForProcessShutdown\n");
 }
 
 /*++
 Function:
-  CSharedMemoryObject::AcquiteObjectDestructionLock
+  CListedObject::AcquiteObjectDestructionLock
 
   Acquires the lock that must be held when decrementing the object's
   reference count (and, if the count drops to 0, while removing the
@@ -146,13 +146,13 @@ Parameters:
 --*/
 
 void
-CSharedMemoryObject::AcquireObjectDestructionLock(
+CListedObject::AcquireObjectDestructionLock(
     CPalThread *pthr
     )
 {
     _ASSERTE(NULL != pthr);
 
-    ENTRY("CSharedMemoryObject::AcquireObjectDestructionLock"
+    ENTRY("CListedObject::AcquireObjectDestructionLock"
         "(this = %p, pthr = $p)\n",
         this,
         pthr
@@ -160,12 +160,12 @@ CSharedMemoryObject::AcquireObjectDestructionLock(
 
     InternalEnterCriticalSection(pthr, m_pcsObjListLock);
 
-    LOGEXIT("CSharedMemoryObject::AcquireObjectDestructionLock\n");
+    LOGEXIT("CListedObject::AcquireObjectDestructionLock\n");
 }
 
 /*++
 Function:
-  CSharedMemoryObject::ReleaseObjectDestructionLock
+  CListedObject::ReleaseObjectDestructionLock
 
   Releases the lock acquired by AcquireObjectDestructionLock
 
@@ -177,14 +177,14 @@ Parameters:
 --*/
 
 void
-CSharedMemoryObject::ReleaseObjectDestructionLock(
+CListedObject::ReleaseObjectDestructionLock(
     CPalThread *pthr,
     bool fDestructionPending
     )
 {
     _ASSERTE(NULL != pthr);
 
-    ENTRY("CSharedMemoryObject::ReleaseObjectDestructionLock"
+    ENTRY("CListedObject::ReleaseObjectDestructionLock"
         "(this = %p, pthr = %p, fDestructionPending = %d\n",
         this,
         pthr,
@@ -201,20 +201,20 @@ CSharedMemoryObject::ReleaseObjectDestructionLock(
 
 /*++
 Function:
-  CSharedMemoryObject::~CSharedMemoryObject
+  CListedObject::~CListedObject
 
   Destructor; should only be called from ReleaseReference
 --*/
 
-CSharedMemoryObject::~CSharedMemoryObject()
+CListedObject::~CListedObject()
 {
-    ENTRY("CSharedMemoryObject::~CSharedMemoryObject(this = %p)\n", this);
-    LOGEXIT("CSharedMemoryObject::~CSharedMemoryObject\n");
+    ENTRY("CListedObject::~CListedObject(this = %p)\n", this);
+    LOGEXIT("CListedObject::~CListedObject\n");
 }
 
 /*++
 Function:
-  CSharedMemoryObject::GetObjectFromListLink
+  CListedObject::GetObjectFromListLink
 
   Given a list link returns the object that contains it. Since m_le is
   protected the caller cannot perform this computation directly
@@ -224,34 +224,34 @@ Parameters:
 --*/
 
 // static
-CSharedMemoryObject*
-CSharedMemoryObject::GetObjectFromListLink(PLIST_ENTRY ple)
+CListedObject*
+CListedObject::GetObjectFromListLink(PLIST_ENTRY ple)
 {
-    CSharedMemoryObject *pshmo;
+    CListedObject *plo;
 
     _ASSERTE(NULL != ple);
 
-    ENTRY("CSharedMemoryObject::GetObjectFromListLink(ple = %p)\n", ple);
+    ENTRY("CListedObject::GetObjectFromListLink(ple = %p)\n", ple);
 
     //
     // Ideally we'd use CONTAINING_RECORD here, but it uses offsetof (see above
     // comment
     //
 
-    pshmo = reinterpret_cast<CSharedMemoryObject*>(
-        reinterpret_cast<size_t>(ple) - offsetof(CSharedMemoryObject, m_le)
+    plo = reinterpret_cast<CListedObject*>(
+        reinterpret_cast<size_t>(ple) - offsetof(CListedObject, m_le)
         );
 
-    _ASSERTE(ple == &pshmo->m_le);
+    _ASSERTE(ple == &plo->m_le);
 
-    LOGEXIT("CSharedMemoryObject::GetObjectFromListLink returns %p\n", pshmo);
+    LOGEXIT("CListedObject::GetObjectFromListLink returns %p\n", plo);
 
-    return pshmo;
+    return plo;
 }
 
 /*++
 Function:
-  CSharedMemoryObject::GetSynchStateController
+  CListedObject::GetSynchStateController
 
   Obtain a synchronization state controller for this object. Should
   never be called.
@@ -263,7 +263,7 @@ Parameters:
 --*/
 
 PAL_ERROR
-CSharedMemoryObject::GetSynchStateController(
+CListedObject::GetSynchStateController(
     CPalThread *pthr,
     ISynchStateController **ppStateController    // OUT
     )
@@ -281,7 +281,7 @@ CSharedMemoryObject::GetSynchStateController(
 
 /*++
 Function:
-  CSharedMemoryObject::GetSynchWaitController
+  CListedObject::GetSynchWaitController
 
   Obtain a synchronization wait controller for this object. Should
   never be called.
@@ -293,7 +293,7 @@ Parameters:
 --*/
 
 PAL_ERROR
-CSharedMemoryObject::GetSynchWaitController(
+CListedObject::GetSynchWaitController(
     CPalThread *pthr,
     ISynchWaitController **ppWaitController    // OUT
     )
@@ -311,7 +311,7 @@ CSharedMemoryObject::GetSynchWaitController(
 
 /*++
 Function:
-  CSharedMemoryObject::GetObjectSynchData
+  CListedObject::GetObjectSynchData
 
   Obtain the synchronization data for this object. Should
   never be called.
@@ -321,7 +321,7 @@ Parameters:
 --*/
 
 PAL_ERROR
-CSharedMemoryObject::GetObjectSynchData(
+CListedObject::GetObjectSynchData(
     VOID **ppvSynchData             // OUT
     )
 {
@@ -359,7 +359,7 @@ CSharedMemoryWaitableObject::Initialize(
         poa
         );
 
-    palError = CSharedMemoryObject::Initialize(pthr, poa);
+    palError = CListedObject::Initialize(pthr, poa);
     if (NO_ERROR != palError)
     {
         goto InitializeExit;

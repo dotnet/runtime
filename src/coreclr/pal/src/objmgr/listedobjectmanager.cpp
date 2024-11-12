@@ -16,8 +16,8 @@ Abstract:
 
 --*/
 
-#include "shmobjectmanager.hpp"
-#include "shmobject.hpp"
+#include "listedobjectmanager.hpp"
+#include "listedobject.hpp"
 #include "pal/cs.hpp"
 #include "pal/thread.hpp"
 #include "pal/procobj.hpp"
@@ -40,7 +40,7 @@ CheckObjectTypeAndRights(
 
 /*++
 Function:
-  CSharedMemoryObjectManager::Initialize
+  CListedObjectManager::Initialize
 
   Performs (possibly failing) startup tasks for the object manager
 
@@ -49,13 +49,13 @@ Parameters:
 --*/
 
 PAL_ERROR
-CSharedMemoryObjectManager::Initialize(
+CListedObjectManager::Initialize(
     void
     )
 {
     PAL_ERROR palError = NO_ERROR;
 
-    ENTRY("CSharedMemoryObjectManager::Initialize (this=%p)\n", this);
+    ENTRY("CListedObjectManager::Initialize (this=%p)\n", this);
 
     InitializeListHead(&m_leNamedObjects);
     InitializeListHead(&m_leAnonymousObjects);
@@ -65,14 +65,14 @@ CSharedMemoryObjectManager::Initialize(
 
     palError = m_HandleManager.Initialize();
 
-    LOGEXIT("CSharedMemoryObjectManager::Initialize returns %d", palError);
+    LOGEXIT("CListedObjectManager::Initialize returns %d", palError);
 
     return palError;
 }
 
 /*++
 Function:
-  CSharedMemoryObjectManager::Shutdown
+  CListedObjectManager::Shutdown
 
   Cleans up the object manager. This routine will call cleanup routines
   for all objects referenced by this process. After this routine is called
@@ -83,16 +83,16 @@ Parameters:
 --*/
 
 PAL_ERROR
-CSharedMemoryObjectManager::Shutdown(
+CListedObjectManager::Shutdown(
     CPalThread *pthr
     )
 {
     PLIST_ENTRY ple;
-    CSharedMemoryObject *pshmobj;
+    CListedObject *pshmobj;
 
     _ASSERTE(NULL != pthr);
 
-    ENTRY("CSharedMemoryObjectManager::Shutdown (this=%p, pthr=%p)\n",
+    ENTRY("CListedObjectManager::Shutdown (this=%p, pthr=%p)\n",
         this,
         pthr
         );
@@ -102,27 +102,27 @@ CSharedMemoryObjectManager::Shutdown(
     while (!IsListEmpty(&m_leAnonymousObjects))
     {
         ple = RemoveTailList(&m_leAnonymousObjects);
-        pshmobj = CSharedMemoryObject::GetObjectFromListLink(ple);
+        pshmobj = CListedObject::GetObjectFromListLink(ple);
         pshmobj->CleanupForProcessShutdown(pthr);
     }
 
     while (!IsListEmpty(&m_leNamedObjects))
     {
         ple = RemoveTailList(&m_leNamedObjects);
-        pshmobj = CSharedMemoryObject::GetObjectFromListLink(ple);
+        pshmobj = CListedObject::GetObjectFromListLink(ple);
         pshmobj->CleanupForProcessShutdown(pthr);
     }
 
     InternalLeaveCriticalSection(pthr, &m_csListLock);
 
-    LOGEXIT("CSharedMemoryObjectManager::Shutdown returns %d\n", NO_ERROR);
+    LOGEXIT("CListedObjectManager::Shutdown returns %d\n", NO_ERROR);
 
     return NO_ERROR;
 }
 
 /*++
 Function:
-  CSharedMemoryObjectManager::AllocateObject
+  CListedObjectManager::AllocateObject
 
   Allocates a new object instance of the specified type.
 
@@ -134,7 +134,7 @@ Parameters:
 --*/
 
 PAL_ERROR
-CSharedMemoryObjectManager::AllocateObject(
+CListedObjectManager::AllocateObject(
     CPalThread *pthr,
     CObjectType *pot,
     CObjectAttributes *poa,
@@ -142,14 +142,14 @@ CSharedMemoryObjectManager::AllocateObject(
     )
 {
     PAL_ERROR palError = NO_ERROR;
-    CSharedMemoryObject *pshmobj = NULL;
+    CListedObject *pshmobj = NULL;
 
     _ASSERTE(NULL != pthr);
     _ASSERTE(NULL != pot);
     _ASSERTE(NULL != poa);
     _ASSERTE(NULL != ppobjNew);
 
-    ENTRY("CSharedMemoryObjectManager::AllocateObject "
+    ENTRY("CListedObjectManager::AllocateObject "
         "(this=%p, pthr=%p, pot=%p, poa=%p, ppobjNew=%p)\n",
         this,
         pthr,
@@ -164,7 +164,7 @@ CSharedMemoryObjectManager::AllocateObject(
     }
     else
     {
-        pshmobj = new(std::nothrow) CSharedMemoryObject(pot, &m_csListLock);
+        pshmobj = new(std::nothrow) CListedObject(pot, &m_csListLock);
     }
 
     if (NULL != pshmobj)
@@ -181,13 +181,13 @@ CSharedMemoryObjectManager::AllocateObject(
         palError = ERROR_OUTOFMEMORY;
     }
 
-    LOGEXIT("CSharedMemoryObjectManager::AllocateObject returns %d\n", palError);
+    LOGEXIT("CListedObjectManager::AllocateObject returns %d\n", palError);
     return palError;
 }
 
 /*++
 Function:
-  CSharedMemoryObjectManager::RegisterObject
+  CListedObjectManager::RegisterObject
 
   Registers a newly-allocated object instance. If the object to be registered
   has a name, and a previously registered object has the same name the new
@@ -210,7 +210,7 @@ Parameters:
 --*/
 
 PAL_ERROR
-CSharedMemoryObjectManager::RegisterObject(
+CListedObjectManager::RegisterObject(
     CPalThread *pthr,
     IPalObject *pobjToRegister,
     CAllowedObjectTypes *paot,
@@ -219,7 +219,7 @@ CSharedMemoryObjectManager::RegisterObject(
     )
 {
     PAL_ERROR palError = NO_ERROR;
-    CSharedMemoryObject *pshmobj = static_cast<CSharedMemoryObject*>(pobjToRegister);
+    CListedObject *pshmobj = static_cast<CListedObject*>(pobjToRegister);
     CObjectAttributes *poa;
     CObjectType *potObj;
     IPalObject *pobjExisting;
@@ -230,7 +230,7 @@ CSharedMemoryObjectManager::RegisterObject(
     _ASSERTE(NULL != pHandle);
     _ASSERTE(NULL != ppobjRegistered);
 
-    ENTRY("CSharedMemoryObjectManager::RegisterObject "
+    ENTRY("CListedObjectManager::RegisterObject "
         "(this=%p, pthr=%p, pobjToRegister=%p, paot=%p, "
         "pHandle=%p, ppobjRegistered=%p)\n",
         this,
@@ -345,14 +345,14 @@ RegisterObjectExit:
         pobjToRegister->ReleaseReference(pthr);
     }
 
-    LOGEXIT("CSharedMemoryObjectManager::RegisterObject return %d\n", palError);
+    LOGEXIT("CListedObjectManager::RegisterObject return %d\n", palError);
 
     return palError;
 }
 
 /*++
 Function:
-  CSharedMemoryObjectManager::LocateObject
+  CListedObjectManager::LocateObject
 
   Search for a previously registered object with a give name and type
 
@@ -370,7 +370,7 @@ Parameters:
 --*/
 
 PAL_ERROR
-CSharedMemoryObjectManager::LocateObject(
+CListedObjectManager::LocateObject(
     CPalThread *pthr,
     CPalString *psObjectToLocate,
     CAllowedObjectTypes *paot,
@@ -387,7 +387,7 @@ CSharedMemoryObjectManager::LocateObject(
     _ASSERTE(PAL_wcslen(psObjectToLocate->GetString()) == psObjectToLocate->GetStringLength());
     _ASSERTE(NULL != ppobj);
 
-    ENTRY("CSharedMemoryObjectManager::LocateObject "
+    ENTRY("CListedObjectManager::LocateObject "
         "(this=%p, pthr=%p, psObjectToLocate=%p, paot=%p, "
         "ppobj=%p)\n",
         this,
@@ -410,8 +410,8 @@ CSharedMemoryObjectManager::LocateObject(
          ple = ple->Flink)
     {
         CObjectAttributes *poa;
-        CSharedMemoryObject *pshmobj =
-            CSharedMemoryObject::GetObjectFromListLink(ple);
+        CListedObject *pshmobj =
+            CListedObject::GetObjectFromListLink(ple);
 
         poa = pshmobj->GetObjectAttributes();
         _ASSERTE(NULL != poa);
@@ -466,14 +466,14 @@ LocateObjectExit:
 
     InternalLeaveCriticalSection(pthr, &m_csListLock);
 
-    LOGEXIT("CSharedMemoryObjectManager::LocateObject returns %d\n", palError);
+    LOGEXIT("CListedObjectManager::LocateObject returns %d\n", palError);
 
     return palError;
 }
 
 /*++
 Function:
-  CSharedMemoryObjectManager::ObtainHandleForObject
+  CListedObjectManager::ObtainHandleForObject
 
   Allocated a new handle for an object
 
@@ -484,7 +484,7 @@ Parameters:
 --*/
 
 PAL_ERROR
-CSharedMemoryObjectManager::ObtainHandleForObject(
+CListedObjectManager::ObtainHandleForObject(
     CPalThread *pthr,
     IPalObject *pobj,
     HANDLE *pNewHandle                  // OUT
@@ -496,7 +496,7 @@ CSharedMemoryObjectManager::ObtainHandleForObject(
     _ASSERTE(NULL != pobj);
     _ASSERTE(NULL != pNewHandle);
 
-    ENTRY("CSharedMemoryObjectManager::ObtainHandleForObject "
+    ENTRY("CListedObjectManager::ObtainHandleForObject "
         "(this=%p, pthr=%p, pobj=%p, "
         "pNewHandle=%p)\n",
         this,
@@ -511,14 +511,14 @@ CSharedMemoryObjectManager::ObtainHandleForObject(
         pNewHandle
         );
 
-    LOGEXIT("CSharedMemoryObjectManager::ObtainHandleForObject return %d\n", palError);
+    LOGEXIT("CListedObjectManager::ObtainHandleForObject return %d\n", palError);
 
     return palError;
 }
 
 /*++
 Function:
-  CSharedMemoryObjectManager::RevokeHandle
+  CListedObjectManager::RevokeHandle
 
   Removes a handle from the process's handle table, which in turn releases
   the handle's reference on the object instance it refers to
@@ -529,7 +529,7 @@ Parameters:
 --*/
 
 PAL_ERROR
-CSharedMemoryObjectManager::RevokeHandle(
+CListedObjectManager::RevokeHandle(
     CPalThread *pthr,
     HANDLE hHandleToRevoke
     )
@@ -538,7 +538,7 @@ CSharedMemoryObjectManager::RevokeHandle(
 
     _ASSERTE(NULL != pthr);
 
-    ENTRY("CSharedMemoryObjectManager::RevokeHandle "
+    ENTRY("CListedObjectManager::RevokeHandle "
         "(this=%p, pthr=%p, hHandleToRevoke=%p)\n",
         this,
         pthr,
@@ -547,14 +547,14 @@ CSharedMemoryObjectManager::RevokeHandle(
 
     palError = m_HandleManager.FreeHandle(pthr, hHandleToRevoke);
 
-    LOGEXIT("CSharedMemoryObjectManager::RevokeHandle returns %d\n", palError);
+    LOGEXIT("CListedObjectManager::RevokeHandle returns %d\n", palError);
 
     return palError;
 }
 
 /*++
 Function:
-  CSharedMemoryObjectManager::ReferenceObjectByHandle
+  CListedObjectManager::ReferenceObjectByHandle
 
   Returns a referenced object instance that a handle refers to
 
@@ -567,7 +567,7 @@ Parameters:
 --*/
 
 PAL_ERROR
-CSharedMemoryObjectManager::ReferenceObjectByHandle(
+CListedObjectManager::ReferenceObjectByHandle(
     CPalThread *pthr,
     HANDLE hHandleToReference,
     CAllowedObjectTypes *paot,
@@ -581,7 +581,7 @@ CSharedMemoryObjectManager::ReferenceObjectByHandle(
     _ASSERTE(NULL != paot);
     _ASSERTE(NULL != ppobj);
 
-    ENTRY("CSharedMemoryObjectManager::ReferenceObjectByHandle "
+    ENTRY("CListedObjectManager::ReferenceObjectByHandle "
         "(this=%p, pthr=%p, hHandleToReference=%p, paot=%p, ppobj=%p)\n",
         this,
         pthr,
@@ -617,7 +617,7 @@ CSharedMemoryObjectManager::ReferenceObjectByHandle(
         }
     }
 
-    LOGEXIT("CSharedMemoryObjectManager::ReferenceObjectByHandle returns %d\n",
+    LOGEXIT("CListedObjectManager::ReferenceObjectByHandle returns %d\n",
         palError
         );
 
@@ -626,7 +626,7 @@ CSharedMemoryObjectManager::ReferenceObjectByHandle(
 
 /*++
 Function:
-  CSharedMemoryObjectManager::ReferenceObjectByHandleArray
+  CListedObjectManager::ReferenceObjectByHandleArray
 
   Returns the referenced object instances that an array of handles
   refer to.
@@ -641,7 +641,7 @@ Parameters:
 --*/
 
 PAL_ERROR
-CSharedMemoryObjectManager::ReferenceMultipleObjectsByHandleArray(
+CListedObjectManager::ReferenceMultipleObjectsByHandleArray(
     CPalThread *pthr,
     HANDLE rghHandlesToReference[],
     DWORD dwHandleCount,
@@ -659,7 +659,7 @@ CSharedMemoryObjectManager::ReferenceMultipleObjectsByHandleArray(
     _ASSERTE(NULL != paot);
     _ASSERTE(NULL != rgpobjs);
 
-    ENTRY("CSharedMemoryObjectManager::ReferenceMultipleObjectsByHandleArray "
+    ENTRY("CListedObjectManager::ReferenceMultipleObjectsByHandleArray "
         "(this=%p, pthr=%p, rghHandlesToReference=%p, dwHandleCount=%d, "
         "pAllowedTyped=%d, rgpobjs=%p)\n",
         this,
@@ -731,7 +731,7 @@ CSharedMemoryObjectManager::ReferenceMultipleObjectsByHandleArray(
         }
     }
 
-    LOGEXIT("CSharedMemoryObjectManager::ReferenceMultipleObjectsByHandleArray"
+    LOGEXIT("CListedObjectManager::ReferenceMultipleObjectsByHandleArray"
         " returns %d\n",
         palError
         );

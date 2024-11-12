@@ -7,7 +7,7 @@
 
 Module Name:
 
-    shmobject.hpp
+    listedobject.hpp
 
 Abstract:
     Shared memory based object
@@ -28,7 +28,7 @@ extern "C"
 
 namespace CorUnix
 {
-    class CSharedMemoryObject : public CPalObjectBase
+    class CListedObject : public CPalObjectBase
     {
     protected:
 
@@ -57,7 +57,7 @@ namespace CorUnix
             bool fDestructionPending
             );
 
-        virtual ~CSharedMemoryObject();
+        virtual ~CListedObject();
 
     public:
 
@@ -65,7 +65,7 @@ namespace CorUnix
         // Constructor used for new object
         //
 
-        CSharedMemoryObject(
+        CListedObject(
             CObjectType *pot,
             CRITICAL_SECTION *pcsObjListLock
             )
@@ -98,13 +98,13 @@ namespace CorUnix
         }
 
         //
-        // Clients of this object -- in particular, CSharedMemoryObjectManager
+        // Clients of this object -- in particular, CListedObjectManager
         // -- can't use CONTAINING_RECORD directly, since they don't have
         // access to m_Link.
         //
 
         static
-        CSharedMemoryObject*
+        CListedObject*
         GetObjectFromListLink(PLIST_ENTRY pLink);
 
         //
@@ -133,7 +133,7 @@ namespace CorUnix
 
     };
 
-    class CSharedMemoryWaitableObject : public CSharedMemoryObject
+    class CSharedMemoryWaitableObject : public CListedObject
     {
     protected:
 
@@ -148,7 +148,7 @@ namespace CorUnix
             CRITICAL_SECTION *pcsObjListLock
             )
             :
-            CSharedMemoryObject(pot, pcsObjListLock)
+            CListedObject(pot, pcsObjListLock)
         {
         };
 

@@ -7,7 +7,7 @@
 
 Module Name:
 
-    shmobjectmanager.hpp
+    listedobjectmanager.hpp
 
 Abstract:
     Shared memory based object manager
@@ -22,11 +22,11 @@ Abstract:
 #include "pal/corunix.hpp"
 #include "pal/handlemgr.hpp"
 #include "pal/list.h"
-#include "shmobject.hpp"
+#include "listedobject.hpp"
 
 namespace CorUnix
 {
-    class CSharedMemoryObjectManager : public IPalObjectManager
+    class CListedObjectManager : public IPalObjectManager
     {
     protected:
 
@@ -39,13 +39,13 @@ namespace CorUnix
 
     public:
 
-        CSharedMemoryObjectManager()
+        CListedObjectManager()
             :
             m_fListLockInitialized(FALSE)
         {
         };
 
-        virtual ~CSharedMemoryObjectManager()
+        virtual ~CListedObjectManager()
         {
         };
 
