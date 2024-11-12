@@ -397,7 +397,7 @@ CSharedMemoryWaitableObject::~CSharedMemoryWaitableObject()
         this
         );
 
-    if (NULL != m_pvSynchData && m_fDeleteSharedData)
+    if (NULL != m_pvSynchData)
     {
         g_pSynchronizationManager->FreeObjectSynchData(
             m_pot,

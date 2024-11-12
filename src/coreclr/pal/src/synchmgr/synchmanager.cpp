@@ -601,7 +601,7 @@ namespace CorUnix
             psdSynchData->SetAbandoned(true);
 
             // Signal the object and trigger thread awakening
-            psdSynchData->Signal(pthrCurrent, 1, false);
+            psdSynchData->Signal(pthrCurrent, 1);
 
             // Release reference to SynchData
             psdSynchData->Release(pthrCurrent);
@@ -2362,9 +2362,6 @@ namespace CorUnix
         _ASSERT_MSG(0 != (WTLN_FLAG_WAIT_ALL & pwtlnNode->dwFlags),
             "UnsignalRestOfLocalAwakeningWaitAll() called on a normal (non wait all) wait");
 
-        _ASSERT_MSG(gPID == pwtlnNode->dwProcessId,
-            "UnsignalRestOfLocalAwakeningWaitAll() called on a wait all with remote awakening");
-
         ThreadWaitInfo *ptwiWaitInfo = pwtlnNode->ptwiWaitInfo;
 
         int iObjCount = ptwiWaitInfo->lObjCount;
@@ -2395,83 +2392,6 @@ namespace CorUnix
         }
 
         _ASSERT_MSG(bOriginatingNodeFound, "Couldn't find originating node while unsignaling rest of the wait all\n");
-    }
-
-    /*++
-    Method:
-      CPalSynchronizationManager::MarkWaitForDelegatedObjectSignalingInProgress
-
-    Marks all the thread waiting list nodes involved in the current wait-all
-    for "delegated object signaling in progress", so that this wait cannot be
-    involved in another delegated object signaling that may happen while the
-    current object singaling is being tranfered to the target process (while
-    transfering it, synchronization locks are released in this process and later
-    grabbed again in the target process; in this time window another thread
-    could signal another object part of the same wait-all. In this case no
-    signal delegation must take place.
-
-    Note: this method must be called while holding the synchronization locks
-          appropriate to the target object described by pwtlnNode (i.e. the
-          local process synch lock if the target object is local, both local
-          and shared one if the object is shared).
-    --*/
-    void CPalSynchronizationManager::MarkWaitForDelegatedObjectSignalingInProgress(
-        CPalThread * pthrCurrent,
-        WaitingThreadsListNode * pwtlnNode)
-    {
-
-        VALIDATEOBJECT(pwtlnNode);
-
-        _ASSERT_MSG(gPID == pwtlnNode->dwProcessId,
-            "MarkWaitForDelegatedObjectSignalingInProgress() called from the wrong process");
-
-        ThreadWaitInfo *ptwiWaitInfo = pwtlnNode->ptwiWaitInfo;
-
-        _ASSERT_MSG(MultipleObjectsWaitAll == ptwiWaitInfo->wtWaitType,
-            "MarkWaitForDelegatedObjectSignalingInProgress() called on a normal (non wait-all) wait");
-
-        // Unmark all nodes other than the target one
-        int iTgtCount = ptwiWaitInfo->lObjCount;
-        for (int i = 0; i < iTgtCount; i++)
-        {
-            VALIDATEOBJECT(ptwiWaitInfo->rgpWTLNodes[i]);
-            ptwiWaitInfo->rgpWTLNodes[i]->dwFlags &= ~WTLN_FLAG_DELEGATED_OBJECT_SIGNALING_IN_PROGRESS;
-        }
-
-        // Mark the target node
-        pwtlnNode->dwFlags |= WTLN_FLAG_DELEGATED_OBJECT_SIGNALING_IN_PROGRESS;
-
-        return;
-    }
-
-    /*++
-    Method:
-      CPalSynchronizationManager::UnmarkTWListForDelegatedObjectSignalingInProgress
-
-    Resets the "delegated object signaling in progress" flags in all the
-    nodes of the thread waitin list for the target waitable objects (represented
-    by its SynchData)
-
-    Note: this method must be called while holding the appropriate
-          synchronization locks (the local process synch lock if the target
-          object is local, both local and shared one if the object is shared).
-    --*/
-    void CPalSynchronizationManager::UnmarkTWListForDelegatedObjectSignalingInProgress(
-        CSynchData * pTgtObjectSynchData)
-    {
-        WaitingThreadsListNode * pwtlnNode;
-
-        VALIDATEOBJECT(pTgtObjectSynchData);
-
-        pwtlnNode =  pTgtObjectSynchData->GetWTLHeadPtr();
-
-        while (pwtlnNode)
-        {
-            VALIDATEOBJECT(pwtlnNode);
-
-            pwtlnNode->dwFlags &= ~WTLN_FLAG_DELEGATED_OBJECT_SIGNALING_IN_PROGRESS;
-            pwtlnNode = pwtlnNode->ptrNext.ptr;
-        }
     }
 
     /*++

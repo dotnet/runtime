@@ -401,7 +401,7 @@ Initialize(
         if (FALSE == EnvironInitialize())
         {
             palError = ERROR_PALINIT_ENV;
-            goto CLEANUP0;
+            goto CLEANUP1;
         }
 
         if (!INIT_IncreaseDescriptorLimit())
@@ -415,7 +415,7 @@ Initialize(
         {
             ERROR("Shared memory static initialization failed!\n");
             palError = ERROR_PALINIT_SHARED_MEMORY_MANAGER;
-            goto CLEANUP0;
+            goto CLEANUP1;
         }
 
         //

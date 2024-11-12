@@ -49,7 +49,6 @@ Abstract:
 namespace CorUnix
 {
     const DWORD WTLN_FLAG_WAIT_ALL                               = 1<<1;
-    const DWORD WTLN_FLAG_DELEGATED_OBJECT_SIGNALING_IN_PROGRESS = 1<<2;
 
 #ifdef SYNCH_OBJECT_VALIDATION
     const DWORD HeadSignature  = 0x48454144;
@@ -90,11 +89,9 @@ namespace CorUnix
 #endif
         WTLNodeGenrPtr ptrNext;
         WTLNodeGenrPtr ptrPrev;
-        SharedID shridSHRThis;
 
         // Data
         DWORD dwThreadId;
-        DWORD dwProcessId;
         DWORD dwObjIndex;
         DWORD dwFlags;
 
@@ -223,13 +220,10 @@ namespace CorUnix
 
         void Signal(
             CPalThread * pthrCurrent,
-            LONG lSignalCount,
-            bool fWorkerThread);
+            LONG lSignalCount);
 
         bool ReleaseFirstWaiter(
-            CPalThread * pthrCurrent,
-            bool * pfDelegated,
-            bool fWorkerThread);
+            CPalThread * pthrCurrent);
 
         LONG ReleaseAllLocalWaiters(
             CPalThread * pthrCurrent);
@@ -829,13 +823,6 @@ namespace CorUnix
             WaitingThreadsListNode * pwtlnNode,
             CSynchData * psdTgtObjectSynchData);
 
-        static void MarkWaitForDelegatedObjectSignalingInProgress(
-            CPalThread * pthrCurrent,
-            WaitingThreadsListNode * pwtlnNode);
-
-        static void UnmarkTWListForDelegatedObjectSignalingInProgress(
-            CSynchData * pTgtObjectSynchData);
-
         static PAL_ERROR ThreadNativeWait(
             ThreadNativeWaitData * ptnwdNativeWaitData,
             DWORD dwTimeout,
@@ -888,8 +875,7 @@ namespace CorUnix
         //
         void UnRegisterWait(
             CPalThread * pthrCurrent,
-            ThreadWaitInfo * ptwiWaitInfo,
-            bool fHaveSharedLock);
+            ThreadWaitInfo * ptwiWaitInfo);
 
         PAL_ERROR RegisterProcessForMonitoring(
             CPalThread * pthrCurrent,

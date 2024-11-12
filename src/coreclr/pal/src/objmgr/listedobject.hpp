@@ -71,8 +71,7 @@ namespace CorUnix
             )
             :
             CPalObjectBase(pot),
-            m_pcsObjListLock(pcsObjListLock),
-            m_fSharedDataDereferenced(FALSE)
+            m_pcsObjListLock(pcsObjListLock)
         {
             InitializeListHead(&m_le);
         };

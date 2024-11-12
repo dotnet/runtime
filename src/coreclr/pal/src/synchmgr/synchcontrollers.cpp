@@ -294,12 +294,9 @@ namespace CorUnix
         {
             ptwiWaitInfo->wtWaitType = wtWaitType;
         }
-        }
 
-        pwtlnNewNode->shridSHRThis       = NULL;
         pwtlnNewNode->ptwiWaitInfo       = ptwiWaitInfo;
         pwtlnNewNode->dwObjIndex         = dwIndex;
-        pwtlnNewNode->dwProcessId        = gPID;
         pwtlnNewNode->dwThreadId         = m_pthrOwner->GetThreadId();
         pwtlnNewNode->dwFlags            = (MultipleObjectsWaitAll == wtWaitType) ?
                                             WTLN_FLAG_WAIT_ALL : 0;
@@ -509,7 +506,7 @@ namespace CorUnix
         _ASSERTE(InternalGetCurrentThread() == m_pthrOwner);
         _ASSERTE(lNewCount >= 0);
 
-        m_psdSynchData->Signal(m_pthrOwner, lNewCount, false);
+        m_psdSynchData->Signal(m_pthrOwner, lNewCount);
 
         return NO_ERROR;
     }
@@ -536,7 +533,7 @@ namespace CorUnix
             "Signal count increment %d would make current signal count %d to "
             "wrap around\n", lAmountToIncrement, lOldCount);
 
-        m_psdSynchData->Signal(m_pthrOwner, lNewCount, false);
+        m_psdSynchData->Signal(m_pthrOwner, lNewCount);
 
         return NO_ERROR;
     }
@@ -668,7 +665,7 @@ namespace CorUnix
             m_psdSynchData->ResetOwnership();
 
             // Signal it and trigger waiter thread awakening
-            m_psdSynchData->Signal(m_pthrOwner, 1, false);
+            m_psdSynchData->Signal(m_pthrOwner, 1);
         }
 
     DOC_exit:
@@ -932,13 +929,11 @@ namespace CorUnix
     --*/
     void CSynchData::Signal(
         CPalThread * pthrCurrent,
-        LONG lSignalCount,
-        bool fWorkerThread)
+        LONG lSignalCount)
     {
         VALIDATEOBJECT(this);
 
         bool fThreadReleased = false;
-        bool fDelegatedSignaling = false;
         bool fReleaseAltersSignalCount =
             (CObjectType::ThreadReleaseAltersSignalCount ==
                 GetObjectType()->GetThreadReleaseSemantics());
@@ -951,9 +946,7 @@ namespace CorUnix
 
         while (m_lSignalCount > 0)
         {
-            fThreadReleased = ReleaseFirstWaiter(pthrCurrent,
-                                                 &fDelegatedSignaling,
-                                                 fWorkerThread);
+            fThreadReleased = ReleaseFirstWaiter(pthrCurrent);
             if (!fThreadReleased)
             {
                 // No more threads to release: break out of the loop
@@ -964,11 +957,6 @@ namespace CorUnix
             {
                 // Adjust signal count
                 m_lSignalCount--;
-            }
-            if (fDelegatedSignaling)
-            {
-                // Object signaling has been delegated
-                m_lSignalCount = 0;
             }
         }
 
@@ -1000,24 +988,18 @@ namespace CorUnix
           object is local, both local and shared one if the object is shared).
     --*/
     bool CSynchData::ReleaseFirstWaiter(
-        CPalThread * pthrCurrent,
-        bool * pfDelegated,
-        bool fWorkerThread)
+        CPalThread * pthrCurrent)
     {
         PAL_ERROR palErr = NO_ERROR;
         bool fThreadAwakened = false;
-        bool fDelegatedSignaling = false;
         DWORD * pdwWaitState;
         DWORD dwObjIdx;
         SharedID shridItem = NULL, shridNextItem = NULL;
         WaitingThreadsListNode * pwtlnItem, * pwtlnNextItem;
-        DWORD dwPid = gPID;
         CPalSynchronizationManager * pSynchManager =
             CPalSynchronizationManager::GetInstance();
 
         VALIDATEOBJECT(this);
-
-        *pfDelegated = false;
 
         pwtlnItem = GetWTLHeadPtr();
 
@@ -1035,34 +1017,8 @@ namespace CorUnix
             if (fWaitAll)
             {
                 // Wait All: we need to find out whether the wait is satisfied,
-                // or it is not; in this case we need to.
-                // If the wait is not a LocalWait, it involves at least one
-                // shared object. If that is the case, at this time we need
-                // to grab the shared lock.  In fact IsRestOfWaitAllSatisfied
-                // and UnsignalRestOfLocalAwakeningWaitAll must be called
-                // atomically to prevent that another thread living
-                // in a different process could race with us stealing the
-                // signaling from one of the objects involved in the wait-all.
-                //
-                // Note: pwtlnItem->ptwiWaitInfo is valid only if the target
-                // wait originates in the current process. Anyway in the
-                // following 'if' we don't need to check that since we are
-                // already making sure that the object is local (!fSharedObject).
-                // If a wait involves at least one object local to this process,
-                // it can only be a wait performed by a thread in the current
-                // process, therefore pwtlnItem->ptwiWaitInfo is valid.
-
-                _ASSERTE(pwtlnItem->dwProcessId == gPID);
-
-                // First check if the current target node is already marked for
-                // wait all check in progress, and in case skip it by setting
-                // wcsWaitCompletionState to WaitIsNotSatisfied
-                bool fMarkedForDelegatedObjectSingalingInProgress =
-                    (0 != (WTLN_FLAG_DELEGATED_OBJECT_SIGNALING_IN_PROGRESS & pwtlnItem->dwFlags));
-
-                wcsWaitCompletionState =
-                    fMarkedForDelegatedObjectSingalingInProgress ? WaitIsNotSatisfied :
-                    IsRestOfWaitAllSatisfied(pwtlnItem);
+                // or it is not.
+                wcsWaitCompletionState = IsRestOfWaitAllSatisfied(pwtlnItem);
             }
             else
             {
@@ -1086,8 +1042,6 @@ namespace CorUnix
                           pdwWaitState, pwtlnItem->dwThreadId);
 
                     dwObjIdx = pwtlnItem->dwObjIndex;
-
-                    _ASSERTE_MSG(dwPid == pwtlnItem->dwProcessId, "Process ID mismatch\n");
 
                     ThreadWaitInfo * ptwiWaitInfo = pwtlnItem->ptwiWaitInfo;
                     bool fAbandoned = false;
@@ -1159,29 +1113,11 @@ namespace CorUnix
                 }
             }
 
-            if (fWorkerThread && fWaitAll && (dwPid == pwtlnItem->dwProcessId))
-            {
-                // Mark the target wait for object signaling
-                CPalSynchronizationManager::MarkWaitForDelegatedObjectSignalingInProgress(
-                    pthrCurrent,
-                    pwtlnItem);
-            }
-
             // Go to the next item
             shridItem = shridNextItem;
             pwtlnItem = pwtlnNextItem;
         }
 
-        if (fDelegatedSignaling)
-        {
-            *pfDelegated = true;
-        }
-        else if (fWorkerThread)
-        {
-            // Reset 'delegated object signaling in progress' flags
-            CPalSynchronizationManager::UnmarkTWListForDelegatedObjectSignalingInProgress(
-                this);
-        }
         return fThreadAwakened;
     }
 
@@ -1205,7 +1141,6 @@ namespace CorUnix
         DWORD dwObjIdx;
         SharedID shridItem = NULL, shridNextItem = NULL;
         WaitingThreadsListNode * pwtlnItem, * pwtlnNextItem;
-        DWORD dwPid = gPID;
         CPalSynchronizationManager * pSynchManager =
             CPalSynchronizationManager::GetInstance();
 
@@ -1225,11 +1160,7 @@ namespace CorUnix
 
             // See note in similar spot in ReleaseFirstWaiter
 
-            _ASSERTE(pwtlnItem->dwProcessId == gPID);
-
-
-            if( dwPid == pwtlnItem->dwProcessId &&
-                (!fWaitAll || WaitIsSatisfied == IsRestOfWaitAllSatisfied(pwtlnItem)) )
+            if(!fWaitAll || WaitIsSatisfied == IsRestOfWaitAllSatisfied(pwtlnItem))
             {
                 //
                 // Target wait is satisfied
@@ -1352,8 +1283,6 @@ namespace CorUnix
                     "IsRestOfWaitAllSatisfied() called on a normal "
                     "(non wait all) wait");
 
-        _ASSERTE_MSG(gPID == pwtlnNode->dwProcessId, "Process ID mismatch\n");
-
         ///////////////////////////
         //
         // Local Thread Awakening
@@ -1411,7 +1340,6 @@ namespace CorUnix
             wcsWaitCompletionState = WaitIsSatisfied;
         }
 
-    IROWAS_exit:
         TRACE("IsRestOfWaitAllSatisfied() returning %u \n", wcsWaitCompletionState);
 
         return wcsWaitCompletionState;

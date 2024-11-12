@@ -27,8 +27,8 @@ Abstract:
 #include <pthread.h>
 
 typedef LPVOID SharedID;
-#define SharedIDToPointer(shID) reinterpret_cast<type*>(shmptr)
-#define SharedIDToTypePointer(TYPE,shID) reinterpret_cast<type*>(shmptr)
+#define SharedIDToPointer(shID) reinterpret_cast<void*>(shID)
+#define SharedIDToTypePointer(TYPE,shID) reinterpret_cast<TYPE*>(shID)
 
 namespace CorUnix
 {

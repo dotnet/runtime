@@ -250,8 +250,6 @@ CListedObjectManager::RegisterObject(
 
     if (0 != poa->sObjectName.GetStringLength())
     {
-        SHMPTR shmObjectListHead = NULL;
-
         //
         // Check if an object by this name already exists
         //
