@@ -8,7 +8,7 @@ using Microsoft.Diagnostics.DataContractReader.ExecutionManagerHelpers;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
-internal readonly partial struct ExecutionManager_1 : IExecutionManager
+internal partial class ExecutionManagerBase<T> : IExecutionManager
 {
     private class ReadyToRunJitManager : JitManager
     {
