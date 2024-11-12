@@ -361,7 +361,7 @@ Initialize(
 
         // The gSharedFilesPath is allocated dynamically so its destructor does not get
         // called unexpectedly during cleanup
-        gSharedFilesPath = InternalNew<PathCharString>();
+        gSharedFilesPath = new(std::nothrow) PathCharString();
         if (gSharedFilesPath == nullptr)
         {
             SetLastError(ERROR_NOT_ENOUGH_MEMORY);
@@ -482,7 +482,7 @@ Initialize(
         // Initialize the object manager
         //
 
-        pshmom = InternalNew<CSharedMemoryObjectManager>();
+        pshmom = new(std::nothrow) CSharedMemoryObjectManager();
         if (nullptr == pshmom)
         {
             ERROR("Unable to allocate new object manager\n");
@@ -494,7 +494,7 @@ Initialize(
         if (NO_ERROR != palError)
         {
             ERROR("object manager initialization failed!\n");
-            InternalDelete(pshmom);
+            delete pshmom;
             goto CLEANUP1b;
         }
 

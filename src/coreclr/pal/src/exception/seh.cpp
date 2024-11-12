@@ -25,7 +25,6 @@ Abstract:
 #include "pal/debug.h"
 #include "pal/init.h"
 #include "pal/process.h"
-#include "pal/malloc.hpp"
 #include "pal/signal.hpp"
 #include "pal/virtual.h"
 
