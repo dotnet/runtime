@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.IO;
 using Xunit;
 using Xunit.Abstractions;
@@ -17,62 +18,51 @@ public class MiscTests : BlazorWasmTestBase
         _enablePerTestCleanup = true;
     }
 
-    // [Theory]
-    // [InlineData("Debug", true)]
-    // [InlineData("Debug", false)]
-    // [InlineData("Release", true)]
-    // [InlineData("Release", false)]
-    // [ActiveIssue("https://github.com/dotnet/runtime/issues/103566")]
-    // public void NativeBuild_WithDeployOnBuild_UsedByVS(string config, bool nativeRelink)
-    // {
-    //     string id = $"blz_deploy_on_build_{config}_{nativeRelink}_{GetRandomId()}";
-    //     string projectFile = CreateProjectWithNativeReference(id);
-    //     string extraProperties = config == "Debug"
-    //                                 ? ("<EmccLinkOptimizationFlag>-O1</EmccLinkOptimizationFlag>" +
-    //                                     "<EmccCompileOptimizationFlag>-O1</EmccCompileOptimizationFlag>")
-    //                                 : string.Empty;
-    //     if (!nativeRelink)
-    //         extraProperties += "<RunAOTCompilation>true</RunAOTCompilation>";
-    //     AddItemsPropertiesToProject(projectFile, extraProperties: extraProperties);
+    [Theory]
+    [InlineData("Debug", true)]
+    [InlineData("Debug", false)]
+    [InlineData("Release", true)]
+    [InlineData("Release", false)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/103566")]
+    public void NativeBuild_WithDeployOnBuild_UsedByVS(string config, bool nativeRelink)
+    {
+        string extraProperties = config == "Debug"
+                                    ? ("<EmccLinkOptimizationFlag>-O1</EmccLinkOptimizationFlag>" +
+                                        "<EmccCompileOptimizationFlag>-O1</EmccCompileOptimizationFlag>")
+                                    : string.Empty;
+        if (!nativeRelink)
+            extraProperties += "<RunAOTCompilation>true</RunAOTCompilation>";
+        ProjectInfo info = CopyTestAsset(config, aot: true, "BlazorBasicTestApp", "blz_deploy_on_build", extraProperties: extraProperties);
 
-    //     // build with -p:DeployOnBuild=true, and that will trigger a publish
-    //     (CommandResult res, _) = BlazorBuild(new BuildProjectOptions(
-    //                                     Id: id,
-    //                                     Configuration: config,
-    //                                     ExpectedFileType: nativeRelink ? NativeFilesType.Relinked : NativeFilesType.AOT,
-    //                                     ExpectRelinkDirWhenPublishing: false,
-    //                                     IsPublish: false),
-    //                                 "-p:DeployBuild=true");
+        // build with -p:DeployOnBuild=true, and that will trigger a publish
+        (string _, string buildOutput) = BlazorBuild(info, isNativeBuild: true, extraArgs: "-p:DeployBuild=true");
 
-    //     // double check relinking!
-    //     int index = res.Output.IndexOf("pinvoke.c -> pinvoke.o");
-    //     Assert.NotEqual(-1, index);
+        // double check relinking!
+        string substring = "pinvoke.c -> pinvoke.o";
+        Assert.Contains(substring, buildOutput);
 
-    //     // there should be only one instance of this string!
-    //     index = res.Output.IndexOf("pinvoke.c -> pinvoke.o", index + 1);
-    //     Assert.Equal(-1, index);
-    // }
+        // there should be only one instance of this string!
+        int occurrences = buildOutput.Split(new[] { substring }, StringSplitOptions.None).Length - 1;
+        Assert.Equal(2, occurrences);
+    }
 
-    // [Theory]
-    // [InlineData("Release")]
-    // public void DefaultTemplate_AOT_InProjectFile(string config)
-    // {
-    //     string id = $"blz_aot_prj_file_{config}_{GetRandomId()}";
-    //     string projectFile = CreateBlazorWasmTemplateProject(id);
+    [Theory]
+    [InlineData("Release")]
+    public void DefaultTemplate_AOT_InProjectFile(string config)
+    {
+        string extraProperties = config == "Debug"
+                                    ? ("<EmccLinkOptimizationFlag>-O1</EmccLinkOptimizationFlag>" +
+                                        "<EmccCompileOptimizationFlag>-O1</EmccCompileOptimizationFlag>")
+                                    : string.Empty;
+        ProjectInfo info = CopyTestAsset(config, aot: true, "BlazorBasicTestApp", "blz_aot_prj_file", extraProperties: extraProperties);
 
-    //     string extraProperties = config == "Debug"
-    //                                 ? ("<EmccLinkOptimizationFlag>-O1</EmccLinkOptimizationFlag>" +
-    //                                     "<EmccCompileOptimizationFlag>-O1</EmccCompileOptimizationFlag>")
-    //                                 : string.Empty;
-    //     AddItemsPropertiesToProject(projectFile, extraProperties: "<RunAOTCompilation>true</RunAOTCompilation>" + extraProperties);
+        // No relinking, no AOT
+        BlazorBuild(info);
 
-    //     // No relinking, no AOT
-    //     BlazorBuild(new BuildProjectOptions(id, config, NativeFilesType.FromRuntimePack));
+        // will aot
+        BlazorPublish(info, useCache: false);
 
-    //     // will aot
-    //     BlazorPublish(new BuildProjectOptions(id, config, NativeFilesType.AOT, ExpectRelinkDirWhenPublishing: true));
-
-    //     // build again
-    //     BlazorBuild(new BuildProjectOptions(id, config, NativeFilesType.FromRuntimePack));
-    // }
+        // build again
+        BlazorBuild(info, useCache: false);
+    }
 }
