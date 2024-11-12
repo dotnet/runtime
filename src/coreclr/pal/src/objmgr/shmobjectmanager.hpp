@@ -37,17 +37,6 @@ namespace CorUnix
 
         CSimpleHandleManager m_HandleManager;
 
-        PAL_ERROR
-        ImportSharedObjectIntoProcess(
-            CPalThread *pthr,
-            CObjectType *pot,
-            CObjectAttributes *poa,
-            SHMPTR shmSharedObjectData,
-            SHMObjData *psmod,
-            bool fAddRefSharedData,
-            CSharedMemoryObject **ppshmobj
-            );
-
     public:
 
         CSharedMemoryObjectManager()

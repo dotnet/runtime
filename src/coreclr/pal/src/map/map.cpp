@@ -111,8 +111,7 @@ void
 FileMappingCleanupRoutine(
     CPalThread *pThread,
     IPalObject *pObjectToCleanup,
-    bool fShutdown,
-    bool fCleanupSharedState
+    bool fShutdown
     );
 
 PAL_ERROR
@@ -187,8 +186,7 @@ void
 FileMappingCleanupRoutine(
     CPalThread *pThread,
     IPalObject *pObjectToCleanup,
-    bool fShutdown,
-    bool fCleanupSharedState
+    bool fShutdown
     )
 {
     PAL_ERROR palError = NO_ERROR;
@@ -197,27 +195,24 @@ FileMappingCleanupRoutine(
     IDataLock *pLocalDataLock = NULL;
     bool fDataChanged = FALSE;
 
-    if (TRUE == fCleanupSharedState)
+    //
+    // If we created a temporary file to back this mapping we need
+    // to unlink it now
+    //
+
+    palError = pObjectToCleanup->GetImmutableData(
+        reinterpret_cast<void**>(&pImmutableData)
+        );
+
+    if (NO_ERROR != palError)
     {
-        //
-        // If we created a temporary file to back this mapping we need
-        // to unlink it now
-        //
+        ASSERT("Unable to obtain immutable data for object to be reclaimed");
+        return;
+    }
 
-        palError = pObjectToCleanup->GetImmutableData(
-            reinterpret_cast<void**>(&pImmutableData)
-            );
-
-        if (NO_ERROR != palError)
-        {
-            ASSERT("Unable to obtain immutable data for object to be reclaimed");
-            return;
-        }
-
-        if (pImmutableData->bPALCreatedTempFile)
-        {
-            unlink(pImmutableData->lpFileName);
-        }
+    if (pImmutableData->bPALCreatedTempFile)
+    {
+        unlink(pImmutableData->lpFileName);
     }
 
     if (FALSE == fShutdown)

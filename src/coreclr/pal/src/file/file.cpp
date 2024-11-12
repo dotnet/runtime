@@ -62,8 +62,7 @@ void
 FileCleanupRoutine(
     CPalThread *pThread,
     IPalObject *pObjectToCleanup,
-    bool fShutdown,
-    bool fCleanupSharedState
+    bool fShutdown
     );
 
 CObjectType CorUnix::otFile(
@@ -121,8 +120,7 @@ void
 FileCleanupRoutine(
     CPalThread *pThread,
     IPalObject *pObjectToCleanup,
-    bool fShutdown,
-    bool fCleanupSharedState
+    bool fShutdown
     )
 {
     PAL_ERROR palError;

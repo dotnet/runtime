@@ -189,7 +189,6 @@ set(SOURCES
   safecrt/wcsncpy_s.cpp
   safecrt/wmakepath_s.cpp
   sharedmemory/sharedmemory.cpp
-  shmemory/shmemory.cpp
   sync/cs.cpp
   synchobj/event.cpp
   synchobj/semaphore.cpp

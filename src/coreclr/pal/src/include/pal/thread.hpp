@@ -20,7 +20,6 @@ Abstract:
 #define _PAL_THREAD_HPP_
 
 #include "corunix.hpp"
-#include "shm.hpp"
 #include "cs.hpp"
 
 #include <pthread.h>

@@ -26,7 +26,6 @@ SET_DEFAULT_DEBUG_CHANNEL(PAL); // some headers have code with asserts, so do th
 #include "pal/seh.hpp"
 #include "pal/palinternal.h"
 #include "pal/sharedmemory.h"
-#include "pal/shmemory.h"
 #include "pal/process.h"
 #include "../thread/procprivate.hpp"
 #include "pal/module.h"
@@ -419,14 +418,6 @@ Initialize(
             goto CLEANUP0;
         }
 
-        /* initialize the shared memory infrastructure */
-        if (!SHMInitialize())
-        {
-            ERROR("Shared memory initialization failed!\n");
-            palError = ERROR_PALINIT_SHM;
-            goto CLEANUP0;
-        }
-
         //
         // Initialize global process data
         //
@@ -689,8 +680,6 @@ CLEANUP1b:
 CLEANUP1a:
     // Cleanup global process data
 CLEANUP1:
-    SHMCleanup();
-CLEANUP0:
     CleanupCGroup();
 CLEANUP0a:
     TLSCleanup();

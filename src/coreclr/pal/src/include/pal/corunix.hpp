@@ -135,11 +135,7 @@ namespace CorUnix
     // 3) A process has released all local references to the object
     //
     // The cleanup routine must only cleanup the object's shared state
-    // when the last parameter (fCleanupSharedSate) is TRUE. When
-    // fCleanupSharedState is FALSE the cleanup routine must not attempt
-    // to access the shared data for the object, as another process may
-    // have already deleted it. ($$REIVEW -- would someone ever need access
-    // to the shared data in order to cleanup process local state?)
+    // when the last parameter (fCleanupSharedSate) is TRUE.
     //
     // When the third parameter (fShutdown) is TRUE the process is in
     // the act of exiting. The cleanup routine should not perform any
@@ -151,8 +147,7 @@ namespace CorUnix
     typedef void (*OBJECTCLEANUPROUTINE) (
         CPalThread *,   // pThread
         IPalObject *,   // pObjectToCleanup
-        bool,           // fShutdown
-        bool            // fCleanupSharedState
+        bool            // fShutdown
         );
 
     //
@@ -472,14 +467,6 @@ namespace CorUnix
         {
             return m_pProcessLocalDataCleanupRoutine;
         }
-
-        DWORD
-        GetSharedDataSize(
-            void
-            )
-        {
-            return m_dwSharedDataSize;
-        };
 
         DWORD
         GetSupportedAccessRights(
@@ -815,24 +802,6 @@ namespace CorUnix
             ) = 0;
     };
 
-    //
-    // The following two enums are part of the local object
-    // optimizations
-    //
-
-    enum ObjectDomain
-    {
-        ProcessLocalObject,
-        SharedObject
-    };
-
-    enum WaitDomain
-    {
-        LocalWait,      // All objects in the wait set are local to this process
-        MixedWait,      // Some objects are local; some are shared
-        SharedWait      // All objects in the wait set are shared
-    };
-
     class IPalObject
     {
     public:
@@ -870,15 +839,6 @@ namespace CorUnix
             LockType eLockRequest,
             IDataLock **ppDataLock,             // OUT
             void **ppvProcessLocalData          // OUT
-            ) = 0;
-
-        virtual
-        PAL_ERROR
-        GetSharedData(
-            CPalThread *pThread,                // IN, OPTIONAL
-            LockType eLockRequest,
-            IDataLock **ppDataLock,             // OUT
-            void **ppvSharedData                // OUT
             ) = 0;
 
         //
@@ -926,18 +886,6 @@ namespace CorUnix
         DWORD
         ReleaseReference(
             CPalThread *pThread
-            ) = 0;
-
-        //
-        // This routine is mainly intended for the synchronization
-        // manager. The promotion / process synch lock must be held
-        // before calling this routine.
-        //
-
-        virtual
-        ObjectDomain
-        GetObjectDomain(
-            void
             ) = 0;
 
         //
@@ -1200,7 +1148,6 @@ namespace CorUnix
         PAL_ERROR
         AllocateObjectSynchData(
             CObjectType *pObjectType,
-            ObjectDomain eObjectDomain,
             VOID **ppvSynchData                 // OUT
             ) = 0;
 
@@ -1208,16 +1155,7 @@ namespace CorUnix
         void
         FreeObjectSynchData(
             CObjectType *pObjectType,
-            ObjectDomain eObjectDomain,
             VOID *pvSynchData
-            ) = 0;
-
-        virtual
-        PAL_ERROR
-        PromoteObjectSynchData(
-            CPalThread *pThread,
-            VOID *pvLocalSynchData,
-            VOID **ppvSharedSynchData           // OUT
             ) = 0;
 
         //
@@ -1248,7 +1186,6 @@ namespace CorUnix
             CPalThread *pThread,                // IN, OPTIONAL
             CObjectType *pObjectType,
             VOID *pvSynchData,
-            ObjectDomain eObjectDomain,
             ISynchStateController **ppStateController       // OUT
             ) = 0;
 
@@ -1258,7 +1195,6 @@ namespace CorUnix
             CPalThread *pThread,                // IN, OPTIONAL
             CObjectType *pObjectType,
             VOID *pvSynchData,
-            ObjectDomain eObjectDomain,
             ISynchWaitController **ppWaitController       // OUT
             ) = 0;
     };

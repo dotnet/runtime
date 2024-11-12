@@ -98,7 +98,6 @@ CSharedMemoryObjectManager::Shutdown(
         );
 
     InternalEnterCriticalSection(pthr, &m_csListLock);
-    SHMLock();
 
     while (!IsListEmpty(&m_leAnonymousObjects))
     {
@@ -114,7 +113,6 @@ CSharedMemoryObjectManager::Shutdown(
         pshmobj->CleanupForProcessShutdown(pthr);
     }
 
-    SHMRelease();
     InternalLeaveCriticalSection(pthr, &m_csListLock);
 
     LOGEXIT("CSharedMemoryObjectManager::Shutdown returns %d\n", NO_ERROR);
@@ -222,11 +220,9 @@ CSharedMemoryObjectManager::RegisterObject(
 {
     PAL_ERROR palError = NO_ERROR;
     CSharedMemoryObject *pshmobj = static_cast<CSharedMemoryObject*>(pobjToRegister);
-    SHMObjData *psmodNew = NULL;
     CObjectAttributes *poa;
     CObjectType *potObj;
     IPalObject *pobjExisting;
-    BOOL fShared = FALSE;
 
     _ASSERTE(NULL != pthr);
     _ASSERTE(NULL != pobjToRegister);
@@ -249,29 +245,12 @@ CSharedMemoryObjectManager::RegisterObject(
     _ASSERTE(NULL != poa);
 
     potObj = pobjToRegister->GetObjectType();
-    fShared = (SharedObject == pshmobj->GetObjectDomain());
 
     InternalEnterCriticalSection(pthr, &m_csListLock);
-
-    if (fShared)
-    {
-        //
-        // We only need to acquire the shared memory lock if this
-        // object is actually shared.
-        //
-
-        SHMLock();
-    }
 
     if (0 != poa->sObjectName.GetStringLength())
     {
         SHMPTR shmObjectListHead = NULL;
-
-        //
-        // The object must be shared
-        //
-
-        _ASSERTE(fShared);
 
         //
         // Check if an object by this name already exists
@@ -327,42 +306,6 @@ CSharedMemoryObjectManager::RegisterObject(
         //
 
         InsertTailList(&m_leNamedObjects, pshmobj->GetObjectListLink());
-
-        psmodNew = SHMPTR_TO_TYPED_PTR(SHMObjData, pshmobj->GetShmObjData());
-        if (NULL == psmodNew)
-        {
-            ASSERT("Failure to map shared object data\n");
-            palError = ERROR_INTERNAL_ERROR;
-            goto RegisterObjectExit;
-        }
-
-        shmObjectListHead = SHMGetInfo(SIID_NAMED_OBJECTS);
-        if (NULL != shmObjectListHead)
-        {
-            SHMObjData *psmodListHead;
-
-            psmodListHead = SHMPTR_TO_TYPED_PTR(SHMObjData, shmObjectListHead);
-            if (NULL != psmodListHead)
-            {
-                psmodNew->shmNextObj = shmObjectListHead;
-                psmodListHead->shmPrevObj = pshmobj->GetShmObjData();
-            }
-            else
-            {
-                ASSERT("Failure to map shared object data\n");
-                palError = ERROR_INTERNAL_ERROR;
-                goto RegisterObjectExit;
-            }
-        }
-
-        psmodNew->fAddedToList = TRUE;
-
-        if (!SHMSetInfo(SIID_NAMED_OBJECTS, pshmobj->GetShmObjData()))
-        {
-            ASSERT("Failed to set shared named object list head\n");
-            palError = ERROR_INTERNAL_ERROR;
-            goto RegisterObjectExit;
-        }
     }
     else
     {
@@ -371,60 +314,6 @@ CSharedMemoryObjectManager::RegisterObject(
         //
 
         InsertTailList(&m_leAnonymousObjects, pshmobj->GetObjectListLink());
-    }
-
-    //
-    // Hoist the object's immutable data (if any) into shared memory if
-    // the object is shared
-    //
-
-    if (fShared && 0 != potObj->GetImmutableDataSize())
-    {
-        VOID *pvImmutableData;
-        SHMObjData *psmod;
-
-        palError = pobjToRegister->GetImmutableData(&pvImmutableData);
-        if (NO_ERROR != palError)
-        {
-            ASSERT("Failure to obtain object immutable data\n");
-            goto RegisterObjectExit;
-        }
-
-        psmod = SHMPTR_TO_TYPED_PTR(SHMObjData, pshmobj->GetShmObjData());
-        if (NULL != psmod)
-        {
-            VOID *pvSharedImmutableData =
-                SHMPTR_TO_TYPED_PTR(VOID, psmod->shmObjImmutableData);
-
-            if (NULL != pvSharedImmutableData)
-            {
-                CopyMemory(
-                    pvSharedImmutableData,
-                    pvImmutableData,
-                    potObj->GetImmutableDataSize()
-                    );
-
-                if (NULL != potObj->GetImmutableDataCopyRoutine())
-                {
-                    (*potObj->GetImmutableDataCopyRoutine())(pvImmutableData, pvSharedImmutableData);
-                }
-
-                psmod->pCopyRoutine = potObj->GetImmutableDataCopyRoutine();
-                psmod->pCleanupRoutine = potObj->GetImmutableDataCleanupRoutine();
-            }
-            else
-            {
-                ASSERT("Failure to map psmod->shmObjImmutableData\n");
-                palError = ERROR_INTERNAL_ERROR;
-                goto RegisterObjectExit;
-            }
-        }
-        else
-        {
-            ASSERT("Failure to map pshmobj->GetShmObjData()\n");
-            palError = ERROR_INTERNAL_ERROR;
-            goto RegisterObjectExit;
-        }
     }
 
     //
@@ -448,11 +337,6 @@ CSharedMemoryObjectManager::RegisterObject(
     }
 
 RegisterObjectExit:
-
-    if (fShared)
-    {
-        SHMRelease();
-    }
 
     InternalLeaveCriticalSection(pthr, &m_csListLock);
 
@@ -495,9 +379,6 @@ CSharedMemoryObjectManager::LocateObject(
 {
     PAL_ERROR palError = NO_ERROR;
     IPalObject *pobjExisting = NULL;
-    SHMPTR shmSharedObjectData = NULL;
-    SHMPTR shmObjectListEntry = NULL;
-    SHMObjData *psmod = NULL;
     LPWSTR pwsz = NULL;
 
     _ASSERTE(NULL != pthr);
@@ -580,116 +461,6 @@ CSharedMemoryObjectManager::LocateObject(
 
         goto LocateObjectExit;
     }
-
-    //
-    // Search the shared memory named object list for a matching object
-    //
-
-    SHMLock();
-
-    shmObjectListEntry = SHMGetInfo(SIID_NAMED_OBJECTS);
-    while (NULL != shmObjectListEntry)
-    {
-        psmod = SHMPTR_TO_TYPED_PTR(SHMObjData, shmObjectListEntry);
-        if (NULL != psmod)
-        {
-            if (psmod->dwNameLength == psObjectToLocate->GetStringLength())
-            {
-                pwsz = SHMPTR_TO_TYPED_PTR(WCHAR, psmod->shmObjName);
-                if (NULL != pwsz)
-                {
-                    if (0 == PAL_wcscmp(pwsz, psObjectToLocate->GetString()))
-                    {
-                        //
-                        // This is the object we were looking for.
-                        //
-
-                        shmSharedObjectData = shmObjectListEntry;
-                        break;
-                    }
-                }
-                else
-                {
-                    ASSERT("Unable to map psmod->shmObjName\n");
-                    break;
-                }
-            }
-
-            shmObjectListEntry = psmod->shmNextObj;
-        }
-        else
-        {
-            ASSERT("Unable to map shmObjectListEntry\n");
-            break;
-        }
-    }
-
-    if (NULL != shmSharedObjectData)
-    {
-        CSharedMemoryObject *pshmobj = NULL;
-        CObjectAttributes oa(pwsz, NULL);
-
-        //
-        // Check if the type is allowed
-        //
-
-        if (!paot->IsTypeAllowed(psmod->eTypeId))
-        {
-            TRACE("Remote object exists w/ incompatible type\n");
-            palError = ERROR_INVALID_HANDLE;
-            goto LocateObjectExitSHMRelease;
-        }
-
-        //
-        // Get the local instance of the CObjectType
-        //
-
-        CObjectType *pot = CObjectType::GetObjectTypeById(psmod->eTypeId);
-        if (NULL == pot)
-        {
-            ASSERT("Invalid object type ID in shared memory info\n");
-            goto LocateObjectExitSHMRelease;
-        }
-
-        TRACE("Remote object exists compatible type -- importing\n");
-
-        //
-        // Create the local state for the shared object
-        //
-
-        palError = ImportSharedObjectIntoProcess(
-            pthr,
-            pot,
-            &oa,
-            shmSharedObjectData,
-            psmod,
-            TRUE,
-            &pshmobj
-            );
-
-        if (NO_ERROR == palError)
-        {
-            *ppobj = static_cast<IPalObject*>(pshmobj);
-        }
-        else
-        {
-            ERROR("Failure initializing object from shared data\n");
-            goto LocateObjectExitSHMRelease;
-        }
-
-    }
-    else
-    {
-        //
-        // The object was not found
-        //
-
-        palError = ERROR_INVALID_NAME;
-    }
-
-LocateObjectExitSHMRelease:
-
-    SHMRelease();
 
 LocateObjectExit:
 
@@ -967,123 +738,6 @@ CSharedMemoryObjectManager::ReferenceMultipleObjectsByHandleArray(
 
     return palError;
 }
-
-/*++
-Function:
-  CSharedMemoryObjectManager::ImportSharedObjectIntoProcess
-
-  Takes an object's shared memory data and from it creates the
-  necessary in-process structures for the object
-
-Parameters:
-  pthr -- thread data for calling thread
-  pot -- the object's type
-  poa -- attributes for the object
-  shmSharedObjectData -- the shared memory pointer for the object's shared
-    data
-  psmod -- the shared memory data for the object, mapped into this process's
-    address space
-  fAddRefSharedData -- if TRUE, we need to add to the shared data reference
-    count
-  ppshmobj -- on success, receives a pointer to the newly created local
-    object instance
---*/
-
-PAL_ERROR
-CSharedMemoryObjectManager::ImportSharedObjectIntoProcess(
-    CPalThread *pthr,
-    CObjectType *pot,
-    CObjectAttributes *poa,
-    SHMPTR shmSharedObjectData,
-    SHMObjData *psmod,
-    bool fAddRefSharedData,
-    CSharedMemoryObject **ppshmobj
-    )
-{
-    PAL_ERROR palError = NO_ERROR;
-    CSharedMemoryObject *pshmobj;
-    PLIST_ENTRY pleObjectList;
-
-    _ASSERTE(NULL != pthr);
-    _ASSERTE(NULL != pot);
-    _ASSERTE(NULL != poa);
-    _ASSERTE(NULL != shmSharedObjectData);
-    _ASSERTE(NULL != psmod);
-    _ASSERTE(NULL != ppshmobj);
-
-    ENTRY("CSharedMemoryObjectManager::ImportSharedObjectIntoProcess(pthr=%p, "
-        "pot=%p, poa=%p, shmSharedObjectData=%p, psmod=%p, fAddRefSharedData=%d, "
-        "ppshmobj=%p)\n",
-        pthr,
-        pot,
-        poa,
-        shmSharedObjectData,
-        psmod,
-        fAddRefSharedData,
-        ppshmobj
-        );
-
-    if (CObjectType::WaitableObject == pot->GetSynchronizationSupport())
-    {
-        pshmobj = new(std::nothrow) CSharedMemoryWaitableObject(pot,
-                                                           &m_csListLock,
-                                                           shmSharedObjectData,
-                                                           psmod,
-                                                           fAddRefSharedData);
-    }
-    else
-    {
-        pshmobj = new(std::nothrow) CSharedMemoryObject(pot,
-                                                   &m_csListLock,
-                                                   shmSharedObjectData,
-                                                   psmod,
-                                                   fAddRefSharedData);
-    }
-
-    if (NULL != pshmobj)
-    {
-        palError = pshmobj->InitializeFromExistingSharedData(pthr, poa);
-        if (NO_ERROR == palError)
-        {
-            if (0 != psmod->dwNameLength)
-            {
-                pleObjectList = &m_leNamedObjects;
-            }
-            else
-            {
-                pleObjectList = &m_leAnonymousObjects;
-            }
-
-            InsertTailList(pleObjectList, pshmobj->GetObjectListLink());
-        }
-        else
-        {
-            goto ImportSharedObjectIntoProcessExit;
-        }
-    }
-    else
-    {
-        ERROR("Unable to allocate new object\n");
-        palError = ERROR_OUTOFMEMORY;
-        goto ImportSharedObjectIntoProcessExit;
-    }
-
-    *ppshmobj = pshmobj;
-
-ImportSharedObjectIntoProcessExit:
-
-    LOGEXIT("CSharedMemoryObjectManager::ImportSharedObjectIntoProcess returns %d\n", palError);
-
-    return palError;
-}
-
-static PalObjectTypeId RemotableObjectTypes[] =
-    {otiManualResetEvent, otiAutoResetEvent, otiMutex, otiProcess};
-
-static CAllowedObjectTypes aotRemotable(
-    RemotableObjectTypes,
-    sizeof(RemotableObjectTypes) / sizeof(RemotableObjectTypes[0])
-    );
 
 /*++
 Function:
