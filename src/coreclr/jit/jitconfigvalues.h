@@ -571,8 +571,9 @@ OPT_CONFIG_INTEGER(JitDoValueNumber, W("JitDoValueNumber"), 1) // Perform value 
 
 OPT_CONFIG_STRING(JitOptRepeatRange, W("JitOptRepeatRange")) // Enable JitOptRepeat based on method hash range
 
-OPT_CONFIG_INTEGER(JitDoIfConversion, W("JitDoIfConversion"), 1)         // Perform If conversion
-OPT_CONFIG_INTEGER(JitDoOptimizeLclMasks, W("JitDoOptimizeLclMasks"), 1) // Perform optimization of local masks
+OPT_CONFIG_INTEGER(JitDoIfConversion, W("JitDoIfConversion"), 1)                       // Perform If conversion
+OPT_CONFIG_INTEGER(JitDoOptimizeMaskConversions, W("JitDoOptimizeMaskConversions"), 1) // Perform optimization of mask
+                                                                                       // conversions
 
 RELEASE_CONFIG_INTEGER(JitEnableOptRepeat, W("JitEnableOptRepeat"), 1) // If zero, do not allow JitOptRepeat
 RELEASE_CONFIG_METHODSET(JitOptRepeat, W("JitOptRepeat")) // Runs optimizer multiple times on specified methods

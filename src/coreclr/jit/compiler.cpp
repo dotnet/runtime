@@ -4799,7 +4799,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
     // Optimize away conversions to/from masks in local variables.
     //
-    DoPhase(this, PHASE_LCL_MASKS, &Compiler::fgOptimizeLclMasks);
+    DoPhase(this, PHASE_OPTIMIZE_MASK_CONVERSIONS, &Compiler::fgOptimizeMaskConversions);
 
     // Do an early pass of liveness for forward sub and morph. This data is
     // valid until after morph.

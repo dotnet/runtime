@@ -142,7 +142,6 @@ set( JIT_SOURCES
   jithashtable.cpp
   jitmetadata.cpp
   layout.cpp
-  lclmasks.cpp
   lclmorph.cpp
   lclvars.cpp
   likelyclass.cpp
@@ -157,6 +156,7 @@ set( JIT_SOURCES
   objectalloc.cpp
   optcse.cpp
   optimizebools.cpp
+  optimizemaskconversions.cpp
   optimizer.cpp
   patchpoint.cpp
   phase.cpp

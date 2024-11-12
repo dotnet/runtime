@@ -5,7 +5,7 @@
 
 #if defined(TARGET_ARM64)
 
-struct LclMasksWeight
+struct MaskConversionsWeight
 {
     // For the given variable, the cost of storing as vector.
     weight_t currentCost = 0.0;
@@ -43,7 +43,7 @@ struct LclMasksWeight
     void CacheSimdTypes(GenTreeHWIntrinsic* op);
 };
 
-typedef JitHashTable<unsigned, JitSmallPrimitiveKeyFuncs<unsigned>, LclMasksWeight> LclMasksWeightTable;
+typedef JitHashTable<unsigned, JitSmallPrimitiveKeyFuncs<unsigned>, MaskConversionsWeight> MaskConversionsWeightTable;
 
 //-----------------------------------------------------------------------------
 // UpdateWeight: Updates the weighting to take account of a local.
@@ -53,7 +53,7 @@ typedef JitHashTable<unsigned, JitSmallPrimitiveKeyFuncs<unsigned>, LclMasksWeig
 //     hasConvert - Is this local converted
 //     blockWeight - Weight of the block the store is contained in
 //
-void LclMasksWeight::UpdateWeight(bool isStore, bool hasConvert, weight_t blockWeight)
+void MaskConversionsWeight::UpdateWeight(bool isStore, bool hasConvert, weight_t blockWeight)
 {
     if (hasConvert)
     {
@@ -82,7 +82,7 @@ void LclMasksWeight::UpdateWeight(bool isStore, bool hasConvert, weight_t blockW
 // Arguments:
 //     op - The HW intrinsic to cache
 //
-void LclMasksWeight::CacheSimdTypes(GenTreeHWIntrinsic* op)
+void MaskConversionsWeight::CacheSimdTypes(GenTreeHWIntrinsic* op)
 {
     CorInfoType newSimdBaseJitType = op->GetSimdBaseJitType();
     unsigned    newSimdSize        = op->GetSimdSize();
@@ -94,9 +94,9 @@ void LclMasksWeight::CacheSimdTypes(GenTreeHWIntrinsic* op)
 }
 
 //-----------------------------------------------------------------------------
-// LclMasksCheckVisitor: Find all lcl var definitions and uses. For each one, update the weighting.
+// MaskConversionsCheckVisitor: Find all lcl var definitions and uses. For each one, update the weighting.
 //
-class LclMasksCheckVisitor final : public GenTreeVisitor<LclMasksCheckVisitor>
+class MaskConversionsCheckVisitor final : public GenTreeVisitor<MaskConversionsCheckVisitor>
 {
 public:
     enum
@@ -105,8 +105,8 @@ public:
         UseExecutionOrder = true
     };
 
-    LclMasksCheckVisitor(Compiler* compiler, weight_t bbWeight, LclMasksWeightTable* weightsTable)
-        : GenTreeVisitor<LclMasksCheckVisitor>(compiler)
+    MaskConversionsCheckVisitor(Compiler* compiler, weight_t bbWeight, MaskConversionsWeightTable* weightsTable)
+        : GenTreeVisitor<MaskConversionsCheckVisitor>(compiler)
         , bbWeight(bbWeight)
         , weightsTable(weightsTable)
     {
@@ -162,8 +162,8 @@ public:
             GenTreeLclVarCommon* lclOp = (*use)->AsLclVarCommon();
 
             // Get the existing weighting (if any).
-            LclMasksWeight  defaultWeight;
-            LclMasksWeight* weight = weightsTable->LookupPointerOrAdd(lclOp->GetLclNum(), defaultWeight);
+            MaskConversionsWeight  defaultWeight;
+            MaskConversionsWeight* weight = weightsTable->LookupPointerOrAdd(lclOp->GetLclNum(), defaultWeight);
 
             // Update the weights.
             JITDUMP("Local %s V%02d at [%06u] ", isLocalStore ? "store" : "var", lclOp->GetLclNum(),
@@ -195,14 +195,14 @@ public:
     bool foundConversions = false;
 
 private:
-    weight_t             bbWeight;
-    LclMasksWeightTable* weightsTable;
+    weight_t                    bbWeight;
+    MaskConversionsWeightTable* weightsTable;
 };
 
 //-----------------------------------------------------------------------------
-// LclMasksUpdateVisitor: tree visitor to remove conversion to masks for uses of LCL
+// MaskConversionsUpdateVisitor: tree visitor to remove conversion to masks for uses of LCL
 //
-class LclMasksUpdateVisitor final : public GenTreeVisitor<LclMasksUpdateVisitor>
+class MaskConversionsUpdateVisitor final : public GenTreeVisitor<MaskConversionsUpdateVisitor>
 {
 public:
     enum
@@ -211,8 +211,8 @@ public:
         UseExecutionOrder = true
     };
 
-    LclMasksUpdateVisitor(Compiler* compiler, Statement* stmt, LclMasksWeightTable* weightsTable)
-        : GenTreeVisitor<LclMasksUpdateVisitor>(compiler)
+    MaskConversionsUpdateVisitor(Compiler* compiler, Statement* stmt, MaskConversionsWeightTable* weightsTable)
+        : GenTreeVisitor<MaskConversionsUpdateVisitor>(compiler)
         , stmt(stmt)
         , weightsTable(weightsTable)
     {
@@ -269,8 +269,8 @@ public:
         assert(lclOp != nullptr);
 
         // Get the existing weighting.
-        LclMasksWeight weight;
-        bool           found = weightsTable->Lookup(lclOp->GetLclNum(), &weight);
+        MaskConversionsWeight weight;
+        bool                  found = weightsTable->Lookup(lclOp->GetLclNum(), &weight);
         assert(found);
 
         // Quit if the cost of changing is higher or is invalid.
@@ -355,14 +355,14 @@ public:
     bool updatedConversions = false;
 
 private:
-    Statement*           stmt;
-    LclMasksWeightTable* weightsTable;
+    Statement*                  stmt;
+    MaskConversionsWeightTable* weightsTable;
 };
 
 #endif // TARGET_ARM64
 
 //------------------------------------------------------------------------
-// optLclMasks: Allow locals to be of Mask type
+// fgOptimizeMaskConversions: Allow locals to be of Mask type
 //
 // At the C# level, Masks share the same type as a Vector. It's possible for the same
 // variable to be used as a mask or vector. Any APIs that return a mask must first convert
@@ -410,7 +410,7 @@ private:
 // Returns:
 //    Suitable phase status
 //
-PhaseStatus Compiler::fgOptimizeLclMasks()
+PhaseStatus Compiler::fgOptimizeMaskConversions()
 {
 #if defined(TARGET_ARM64)
 
@@ -421,7 +421,7 @@ PhaseStatus Compiler::fgOptimizeLclMasks()
     }
 
 #if defined(DEBUG)
-    if (JitConfig.JitDoOptimizeLclMasks() == 0)
+    if (JitConfig.JitDoOptimizeMaskConversions() == 0)
     {
         JITDUMP("Skipping. Disable by config option\n");
         return PhaseStatus::MODIFIED_NOTHING;
@@ -434,7 +434,7 @@ PhaseStatus Compiler::fgOptimizeLclMasks()
         return PhaseStatus::MODIFIED_NOTHING;
     }
 
-    LclMasksWeightTable weightsTable = LclMasksWeightTable(getAllocator());
+    MaskConversionsWeightTable weightsTable = MaskConversionsWeightTable(getAllocator());
 
     // Find every local and add them to weightsTable.
     bool foundConversion = false;
@@ -449,8 +449,8 @@ PhaseStatus Compiler::fgOptimizeLclMasks()
                 if (lcl->gtType == TYP_SIMD16 || lcl->gtType == TYP_MASK)
                 {
                     // Parse the entire statement.
-                    LclMasksCheckVisitor ev(this, block->getBBWeight(this), &weightsTable);
-                    GenTree*             root = stmt->GetRootNode();
+                    MaskConversionsCheckVisitor ev(this, block->getBBWeight(this), &weightsTable);
+                    GenTree*                    root = stmt->GetRootNode();
                     ev.WalkTree(&root, nullptr);
                     foundConversion |= ev.foundConversions;
                     break;
@@ -477,8 +477,8 @@ PhaseStatus Compiler::fgOptimizeLclMasks()
                 if (lcl->gtType == TYP_SIMD16 || lcl->gtType == TYP_MASK)
                 {
                     // Parse the entire statement.
-                    LclMasksUpdateVisitor ev(this, stmt, &weightsTable);
-                    GenTree*              root = stmt->GetRootNode();
+                    MaskConversionsUpdateVisitor ev(this, stmt, &weightsTable);
+                    GenTree*                     root = stmt->GetRootNode();
                     ev.WalkTree(&root, nullptr);
                     if (ev.updatedConversions)
                     {
