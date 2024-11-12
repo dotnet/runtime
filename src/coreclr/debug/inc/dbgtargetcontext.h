@@ -470,7 +470,12 @@ typedef DECLSPEC_ALIGN(16) struct {
 
 } DT_CONTEXT;
 
+
+#if !defined(CROSS_COMPILE) && !defined(TARGET_WINDOWS)
+static_assert(sizeof(DT_CONTEXT) == offsetof(T_CONTEXT, XStateFeaturesMask), "DT_CONTEXT must not include the SVE registers on AMD64");
+#else
 static_assert(sizeof(DT_CONTEXT) == sizeof(T_CONTEXT), "DT_CONTEXT size must equal the T_CONTEXT size on ARM64");
+#endif
 
 #elif defined(DTCONTEXT_IS_LOONGARCH64)
 

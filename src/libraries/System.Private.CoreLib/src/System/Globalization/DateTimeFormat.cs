@@ -144,7 +144,7 @@ namespace System
         private static readonly string[] s_invariantAbbreviatedMonthNames = InvariantFormatInfo.AbbreviatedMonthNames;
         private static readonly string[] s_invariantAbbreviatedDayNames = InvariantFormatInfo.AbbreviatedDayNames;
 
-        internal static string[] fixedNumberFormats = new string[] {
+        internal static readonly string[] fixedNumberFormats = [
             "0",
             "00",
             "000",
@@ -152,7 +152,7 @@ namespace System
             "00000",
             "000000",
             "0000000",
-        };
+        ];
 
         /// <summary>Format the positive integer value to a string and prefix with assigned length of leading zero.</summary>
         /// <typeparam name="TChar">The type of the character.</typeparam>
@@ -206,7 +206,7 @@ namespace System
 
         private static string FormatDayOfWeek(int dayOfWeek, int repeat, DateTimeFormatInfo dtfi)
         {
-            Debug.Assert(dayOfWeek >= 0 && dayOfWeek <= 6, "dayOfWeek >= 0 && dayOfWeek <= 6");
+            Debug.Assert(dayOfWeek >= 0 && dayOfWeek <= 6);
             if (repeat == 3)
             {
                 return dtfi.GetAbbreviatedDayName((DayOfWeek)dayOfWeek);
@@ -484,7 +484,7 @@ namespace System
                         tokenLen = ParseRepeatPattern(format, i, ch);
                         if (tokenLen <= MaxSecondsFractionDigits)
                         {
-                            int fraction = (int)(dateTime.Ticks % Calendar.TicksPerSecond);
+                            int fraction = (int)(dateTime.Ticks % TimeSpan.TicksPerSecond);
                             fraction /= TimeSpanParse.Pow10UpToMaxFractionDigits(MaxSecondsFractionDigits - tokenLen);
                             if (ch == 'f')
                             {
@@ -792,7 +792,7 @@ namespace System
             {
                 // No offset. The instance is a DateTime and the output should be the local time zone
 
-                if (timeOnly && dateTime.Ticks < Calendar.TicksPerDay)
+                if (timeOnly && dateTime.Ticks < TimeSpan.TicksPerDay)
                 {
                     // For time only format and a time only input, the time offset on 0001/01/01 is less
                     // accurate than the system's current offset because of daylight saving time.
@@ -1144,7 +1144,7 @@ namespace System
             // Gregorian year 0001, an exception will be thrown when we try to get the Japanese year for
             // Gregorian year 0001. Therefore, the workaround allows them to call ToString() for time of
             // day from a DateTime by formatting as ISO 8601 format.
-            dateTime.Ticks < Calendar.TicksPerDay &&
+            dateTime.Ticks < TimeSpan.TicksPerDay &&
             dtfi.Calendar.ID is
                 CalendarId.JAPAN or
                 CalendarId.TAIWAN or
@@ -1759,7 +1759,7 @@ namespace System
                 case 'O':
                 case 's':
                 case 'u':
-                    results = new string[] { Format(dateTime, char.ToString(format), dtfi) };
+                    results = [Format(dateTime, char.ToString(format), dtfi)];
                     break;
                 default:
                     throw new FormatException(SR.Format_InvalidString);

@@ -3,16 +3,9 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-#if USE_MDT_EVENTSOURCE
-using Microsoft.Diagnostics.Tracing;
-#else
 using System.Diagnostics.Tracing;
-#endif
-using System.IO;
 using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 using Xunit;
 
 namespace BasicEventSourceTests

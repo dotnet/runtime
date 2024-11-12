@@ -90,7 +90,7 @@ namespace System.Transactions
         // For Recovering Enlistments
         protected InternalEnlistment(Enlistment enlistment, IEnlistmentNotification twoPhaseNotifications)
         {
-            Debug.Assert(this is RecoveringInternalEnlistment, "this is RecoveringInternalEnlistment");
+            Debug.Assert(this is RecoveringInternalEnlistment);
             _enlistment = enlistment;
             _twoPhaseNotifications = twoPhaseNotifications;
             _enlistmentId = 1;
@@ -100,7 +100,7 @@ namespace System.Transactions
         // For Promotable Enlistments
         protected InternalEnlistment(Enlistment enlistment, InternalTransaction transaction, Transaction atomicTransaction)
         {
-            Debug.Assert(this is PromotableInternalEnlistment, "this is PromotableInternalEnlistment");
+            Debug.Assert(this is PromotableInternalEnlistment);
             _enlistment = enlistment;
             _transaction = transaction;
             _atomicTransaction = atomicTransaction;

@@ -3,7 +3,6 @@
 
 using System.Linq;
 using System.Text;
-using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Collections.Generic;
 using Xunit;
@@ -31,7 +30,6 @@ namespace System.Reflection.Emit.Tests
         public sealed override string ToString() => MethodName;
     }
 
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/2389", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
     public class TypeBuilderDefinePInvokeMethodTests
     {
         public static IEnumerable<DpmParams> TestData

@@ -59,8 +59,10 @@ CONFIG_INTEGER(JitBreakMorphTree, W("JitBreakMorphTree"), 0xffffffff)
 CONFIG_INTEGER(JitBreakOnBadCode, W("JitBreakOnBadCode"), 0)
 CONFIG_INTEGER(JitBreakOnMinOpts, W("JITBreakOnMinOpts"), 0) // Halt if jit switches to MinOpts
 CONFIG_INTEGER(JitCloneLoops, W("JitCloneLoops"), 1) // If 0, don't clone. Otherwise clone loops for optimizations.
-CONFIG_INTEGER(JitCloneLoopsWithGdvTests, W("JitCloneLoopsWithGdvTests"), 1) // If 0, don't clone loops based on
-                                                                             // invariant type/method address tests
+CONFIG_INTEGER(JitCloneLoopsWithGdvTests, W("JitCloneLoopsWithGdvTests"), 1)     // If 0, don't clone loops based on
+                                                                                 // invariant type/method address tests
+RELEASE_CONFIG_INTEGER(JitCloneLoopsSizeLimit, W("JitCloneLoopsSizeLimit"), 400) // limit cloning to loops with less
+                                                                                 // than this many tree nodes
 CONFIG_INTEGER(JitDebugLogLoopCloning, W("JitDebugLogLoopCloning"), 0) // In debug builds log places where loop cloning
                                                                        // optimizations are performed on the fast path.
 CONFIG_INTEGER(JitDefaultFill, W("JitDefaultFill"), 0xdd) // In debug builds, initialize the memory allocated by the nra
@@ -189,6 +191,9 @@ CONFIG_INTEGER(JitStressProcedureSplitting, W("JitStressProcedureSplitting"), 0)
                                                                                  // block.
 CONFIG_INTEGER(JitStressRegs, W("JitStressRegs"), 0)
 CONFIG_STRING(JitStressRegsRange, W("JitStressRegsRange")) // Only apply JitStressRegs to methods in this hash range
+
+// If non-negative value N, only stress split the first N trees.
+CONFIG_INTEGER(JitStressSplitTreeLimit, W("JitStressSplitTreeLimit"), -1)
 
 // If non-zero, assert if # of VNF_MapSelect applications considered reaches this.
 CONFIG_INTEGER(JitVNMapSelLimit, W("JitVNMapSelLimit"), 0)
@@ -518,14 +523,6 @@ RELEASE_CONFIG_INTEGER(JitEnableNoWayAssert, W("JitEnableNoWayAssert"), 0)
 RELEASE_CONFIG_INTEGER(JitEnableNoWayAssert, W("JitEnableNoWayAssert"), 1)
 #endif // !defined(DEBUG) && !defined(_DEBUG)
 
-// Track GC roots
-#if defined(TARGET_AMD64) || defined(TARGET_X86)
-#define JitMinOptsTrackGCrefs_Default 0 // Not tracking GC refs in MinOpts is new behavior
-#else
-#define JitMinOptsTrackGCrefs_Default 1
-#endif
-RELEASE_CONFIG_INTEGER(JitMinOptsTrackGCrefs, W("JitMinOptsTrackGCrefs"), JitMinOptsTrackGCrefs_Default)
-
 // The following should be wrapped inside "#if MEASURE_MEM_ALLOC / #endif", but
 // some files include this one without bringing in the definitions from "jit.h"
 // so we don't always know what the "true" value of that flag should be. For now
@@ -651,7 +648,10 @@ RELEASE_CONFIG_INTEGER(JitExtDefaultPolicyProfScale, W("JitExtDefaultPolicyProfS
 RELEASE_CONFIG_INTEGER(JitInlinePolicyModel, W("JitInlinePolicyModel"), 0)
 RELEASE_CONFIG_INTEGER(JitInlinePolicyProfile, W("JitInlinePolicyProfile"), 0)
 RELEASE_CONFIG_INTEGER(JitInlinePolicyProfileThreshold, W("JitInlinePolicyProfileThreshold"), 40)
-RELEASE_CONFIG_INTEGER(JitObjectStackAllocation, W("JitObjectStackAllocation"), 0)
+CONFIG_STRING(JitObjectStackAllocationRange, W("JitObjectStackAllocationRange"))
+RELEASE_CONFIG_INTEGER(JitObjectStackAllocation, W("JitObjectStackAllocation"), 1)
+RELEASE_CONFIG_INTEGER(JitObjectStackAllocationRefClass, W("JitObjectStackAllocationRefClass"), 1)
+RELEASE_CONFIG_INTEGER(JitObjectStackAllocationBoxedValueClass, W("JitObjectStackAllocationBoxedValueClass"), 1)
 
 RELEASE_CONFIG_INTEGER(JitEECallTimingInfo, W("JitEECallTimingInfo"), 0)
 
@@ -684,6 +684,9 @@ RELEASE_CONFIG_INTEGER(TC_OnStackReplacement_InitialCounter, W("TC_OnStackReplac
 
 // Enable partial compilation for Tier0 methods
 RELEASE_CONFIG_INTEGER(TC_PartialCompilation, W("TC_PartialCompilation"), 0)
+
+// If partial compilation is enabled, use random heuristic for patchpoint placement
+CONFIG_INTEGER(JitRandomPartialCompilation, W("JitRandomPartialCompilation"), 0)
 
 // Patchpoint strategy:
 // 0 - backedge sources
@@ -773,6 +776,12 @@ RELEASE_CONFIG_INTEGER(JitEnableCrossBlockLocalAssertionProp, W("JitEnableCrossB
 
 // Do greedy RPO-based layout in Compiler::fgReorderBlocks.
 RELEASE_CONFIG_INTEGER(JitDoReversePostOrderLayout, W("JitDoReversePostOrderLayout"), 1);
+
+// Enable strength reduction
+RELEASE_CONFIG_INTEGER(JitEnableStrengthReduction, W("JitEnableStrengthReduction"), 1)
+
+// Enable IV optimizations
+RELEASE_CONFIG_INTEGER(JitEnableInductionVariableOpts, W("JitEnableInductionVariableOpts"), 1)
 
 // JitFunctionFile: Name of a file that contains a list of functions. If the currently compiled function is in the
 // file, certain other JIT config variables will be active. If the currently compiled function is not in the file,

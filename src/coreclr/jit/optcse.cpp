@@ -17,6 +17,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #endif
 
 #include "optcse.h"
+#include "ssabuilder.h"
 
 #ifdef DEBUG
 #define RLDUMP(...)                                                                                                    \
@@ -536,7 +537,15 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
     // than the one from its op2.  For this case we want to create two different
     // CSE candidates. This allows us to CSE the GT_COMMA separately from its value.
     //
-    if (tree->OperGet() == GT_COMMA)
+    // Even this exception has an exception: for struct typed GT_COMMAs we
+    // cannot allow the comma and op2 to be separate candidates as, if we
+    // decide to CSE both the comma and its op2, then creating the store with
+    // the comma will sink it into the op2, potentially breaking the op2 CSE
+    // definition if it itself is another comma. This restriction is related to
+    // the fact that we do not have af first class representation for struct
+    // temporaries in our IR.
+    //
+    if (tree->OperIs(GT_COMMA) && !varTypeIsStruct(tree))
     {
         // op2 is the value produced by a GT_COMMA
         GenTree* op2      = tree->AsOp()->gtOp2;
@@ -588,7 +597,7 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
             key = vnLibNorm;
         }
     }
-    else // Not a GT_COMMA or a GT_CNS_INT
+    else // Not a primitive GT_COMMA or a GT_CNS_INT
     {
         key = vnLibNorm;
     }
@@ -1878,7 +1887,7 @@ bool CSE_HeuristicCommon::CanConsiderTree(GenTree* tree, bool isReturn)
             // If we have a simple helper call with no other persistent side-effects
             // then we allow this tree to be a CSE candidate
             //
-            if (m_pCompiler->gtTreeHasSideEffects(tree, GTF_PERSISTENT_SIDE_EFFECTS | GTF_IS_IN_CSE))
+            if (m_pCompiler->gtTreeHasSideEffects(tree, GTF_PERSISTENT_SIDE_EFFECTS, /* ignoreCctors */ true))
             {
                 return false;
             }
@@ -1905,7 +1914,12 @@ bool CSE_HeuristicCommon::CanConsiderTree(GenTree* tree, bool isReturn)
         case GT_CNS_INT:
         case GT_CNS_DBL:
         case GT_CNS_STR:
+#if defined(FEATURE_SIMD)
         case GT_CNS_VEC:
+#endif // FEATURE_SIMD
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
+        case GT_CNS_MSK:
+#endif // FEATURE_MASKED_HW_INTRINSICS
             break;
 
         case GT_ARR_ELEM:
@@ -4826,26 +4840,8 @@ void CSE_HeuristicCommon::PerformCSE(CSE_Candidate* successfulCandidate)
     //
     //  Later we will unmark any nested CSE's for the CSE uses.
     //
-    // If there's just a single def for the CSE, we'll put this
-    // CSE into SSA form on the fly. We won't need any PHIs.
-    //
-    unsigned      cseSsaNum = SsaConfig::RESERVED_SSA_NUM;
-    LclSsaVarDsc* ssaVarDsc = nullptr;
 
-    if (dsc->csdDefCount == 1)
-    {
-        JITDUMP(FMT_CSE " is single-def, so associated CSE temp V%02u will be in SSA\n", dsc->csdIndex, cseLclVarNum);
-        lclDsc->lvInSsa = true;
-
-        // Allocate the ssa num
-        CompAllocator allocator = m_pCompiler->getAllocator(CMK_SSA);
-        cseSsaNum               = lclDsc->lvPerSsaData.AllocSsaNum(allocator);
-        ssaVarDsc               = lclDsc->GetPerSsaData(cseSsaNum);
-    }
-    else
-    {
-        INDEBUG(lclDsc->lvIsMultiDefCSE = 1);
-    }
+    INDEBUG(lclDsc->lvIsMultiDefCSE = dsc->csdDefCount > 1);
 
     // Verify that all of the ValueNumbers in this list are correct as
     // Morph will change them when it performs a mutating operation.
@@ -5028,17 +5024,8 @@ void CSE_HeuristicCommon::PerformCSE(CSE_Candidate* successfulCandidate)
             //
 
             // Create a reference to the CSE temp
-            GenTree* cseLclVar = m_pCompiler->gtNewLclvNode(cseLclVarNum, cseLclVarTyp);
+            GenTreeLclVar* cseLclVar = m_pCompiler->gtNewLclvNode(cseLclVarNum, cseLclVarTyp);
             cseLclVar->gtVNPair.SetBoth(dsc->csdConstDefVN);
-
-            // Assign the ssa num for the lclvar use. Note it may be the reserved num.
-            cseLclVar->AsLclVarCommon()->SetSsaNum(cseSsaNum);
-
-            // If this local is in ssa, notify ssa there's a new use.
-            if (ssaVarDsc != nullptr)
-            {
-                ssaVarDsc->AddUse(blk);
-            }
 
             cse = cseLclVar;
             if (isSharedConst)
@@ -5131,8 +5118,7 @@ void CSE_HeuristicCommon::PerformCSE(CSE_Candidate* successfulCandidate)
             //
             exp->gtCSEnum = NO_CSE; // clear the gtCSEnum field
 
-            GenTree* sideEffList = nullptr;
-            m_pCompiler->gtExtractSideEffList(exp, &sideEffList, GTF_PERSISTENT_SIDE_EFFECTS | GTF_IS_IN_CSE);
+            GenTree* sideEffList = m_pCompiler->optExtractSideEffectsForCSE(exp);
 
             // If we have any side effects or extracted CSE defs then we need to create a GT_COMMA tree instead
             //
@@ -5200,41 +5186,15 @@ void CSE_HeuristicCommon::PerformCSE(CSE_Candidate* successfulCandidate)
             store->gtVNPair = ValueNumStore::VNPForVoid(); // The store node itself is $VN.Void.
             noway_assert(store->OperIs(GT_STORE_LCL_VAR));
 
-            // Backpatch the SSA def, if we're putting this CSE temp into ssa.
-            store->AsLclVar()->SetSsaNum(cseSsaNum);
-
             // Move the information about the CSE def to the store; it now indicates a completed
             // CSE def instead of just a candidate. optCSE_canSwap uses this information to reason
             // about evaluation order in between substitutions of CSE defs/uses.
             store->gtCSEnum = exp->gtCSEnum;
             exp->gtCSEnum   = NO_CSE;
 
-            if (cseSsaNum != SsaConfig::RESERVED_SSA_NUM)
-            {
-                LclSsaVarDsc* ssaVarDsc = m_pCompiler->lvaTable[cseLclVarNum].GetPerSsaData(cseSsaNum);
-
-                // These should not have been set yet, since this is the first and
-                // only def for this CSE.
-                assert(ssaVarDsc->GetBlock() == nullptr);
-                assert(ssaVarDsc->GetDefNode() == nullptr);
-
-                ssaVarDsc->m_vnPair = val->gtVNPair;
-                ssaVarDsc->SetBlock(blk);
-                ssaVarDsc->SetDefNode(store->AsLclVarCommon());
-            }
-
             /* Create a reference to the CSE temp */
             GenTree* cseLclVar = m_pCompiler->gtNewLclvNode(cseLclVarNum, cseLclVarTyp);
             cseLclVar->gtVNPair.SetBoth(dsc->csdConstDefVN);
-
-            // Assign the ssa num for the lclvar use. Note it may be the reserved num.
-            cseLclVar->AsLclVarCommon()->SetSsaNum(cseSsaNum);
-
-            // If this local is in ssa, notify ssa there's a new use.
-            if (ssaVarDsc != nullptr)
-            {
-                ssaVarDsc->AddUse(blk);
-            }
 
             GenTree* cseUse = cseLclVar;
             if (isSharedConst)
@@ -5290,12 +5250,38 @@ void CSE_HeuristicCommon::PerformCSE(CSE_Candidate* successfulCandidate)
         //
         *link = cse;
 
-        assert(m_pCompiler->fgRemoveRestOfBlock == false);
-
-        /* re-morph the statement */
-        m_pCompiler->fgMorphBlockStmt(blk, stmt DEBUGARG("optValnumCSE"));
+        m_pCompiler->gtSetStmtInfo(stmt);
+        m_pCompiler->fgSetStmtSeq(stmt);
+        m_pCompiler->gtUpdateStmtSideEffects(stmt);
 
     } while (lst != nullptr);
+
+    ArrayStack<UseDefLocation> defs(m_pCompiler->getAllocator(CMK_CSE));
+    ArrayStack<UseDefLocation> uses(m_pCompiler->getAllocator(CMK_CSE));
+
+    lst = dsc->csdTreeList;
+    do
+    {
+        Statement* lstStmt = lst->tslStmt;
+        for (GenTree* tree : lstStmt->TreeList())
+        {
+            if (tree->OperIs(GT_LCL_VAR) && (tree->AsLclVar()->GetLclNum() == cseLclVarNum))
+            {
+                uses.Push(UseDefLocation(lst->tslBlock, lstStmt, tree->AsLclVar()));
+            }
+            if (tree->OperIs(GT_STORE_LCL_VAR) && (tree->AsLclVar()->GetLclNum() == cseLclVarNum))
+            {
+                defs.Push(UseDefLocation(lst->tslBlock, lstStmt, tree->AsLclVar()));
+            }
+        }
+
+        do
+        {
+            lst = lst->tslNext;
+        } while ((lst != nullptr) && (lst->tslStmt == lstStmt));
+    } while (lst != nullptr);
+
+    SsaBuilder::InsertInSsa(m_pCompiler, cseLclVarNum, defs, uses);
 }
 
 void CSE_Heuristic::AdjustHeuristic(CSE_Candidate* successfulCandidate)
@@ -5412,6 +5398,113 @@ void CSE_HeuristicCommon::ConsiderCandidates()
             madeChanges = true;
         }
     }
+}
+
+//------------------------------------------------------------------------
+// optExtractSideEffectsForCSE: Extract side effects from a tree that is going
+// to be CSE'd. This requires unmarking CSE uses and preserving CSE defs as if
+// they were side effects.
+//
+// Parameters:
+//   tree        - The tree containing side effects
+//
+// Return Value:
+//   Tree of side effects.
+//
+// Remarks:
+//   Unlike gtExtractSideEffList, this considers CSE defs to be side effects
+//   and also unmarks CSE uses as it proceeds. Additionally, for CSE we are ok
+//   with not treating cctor invocations as side effects because we have
+//   already handled those specially during CSE.
+//
+GenTree* Compiler::optExtractSideEffectsForCSE(GenTree* tree)
+{
+    class Extractor final : public GenTreeVisitor<Extractor>
+    {
+        GenTree* m_result = nullptr;
+
+    public:
+        enum
+        {
+            DoPreOrder        = true,
+            UseExecutionOrder = true
+        };
+
+        GenTree* GetResult()
+        {
+            return m_result;
+        }
+
+        Extractor(Compiler* compiler)
+            : GenTreeVisitor(compiler)
+        {
+        }
+
+        fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
+        {
+            GenTree* node = *use;
+
+            if (m_compiler->gtTreeHasSideEffects(node, GTF_PERSISTENT_SIDE_EFFECTS, /* ignoreCctors */ true))
+            {
+                if (m_compiler->gtNodeHasSideEffects(node, GTF_PERSISTENT_SIDE_EFFECTS, /* ignoreCctors */ true))
+                {
+                    Append(node);
+                    return Compiler::WALK_SKIP_SUBTREES;
+                }
+
+                // Generally all GT_CALL nodes are considered to have side-effects.
+                // So if we get here it must be a helper call that we decided it does
+                // not have side effects that we needed to keep.
+                assert(!node->OperIs(GT_CALL) || node->AsCall()->IsHelperCall());
+            }
+
+            // We also need to unmark CSE nodes. This will fail for CSE defs,
+            // those need to be extracted as if they're side effects.
+            if (m_compiler->optUnmarkCSE(node))
+            {
+                // The call to optUnmarkCSE(node) should have cleared any CSE info.
+                assert(!IS_CSE_INDEX(node->gtCSEnum));
+                return Compiler::WALK_CONTINUE;
+            }
+
+            assert(IS_CSE_DEF(node->gtCSEnum));
+#ifdef DEBUG
+            if (m_compiler->verbose)
+            {
+                printf("Preserving the CSE def #%02d at ", GET_CSE_INDEX(node->gtCSEnum));
+                m_compiler->printTreeID(node);
+            }
+#endif
+            Append(node);
+            return Compiler::WALK_SKIP_SUBTREES;
+        }
+
+        void Append(GenTree* node)
+        {
+            if (m_result == nullptr)
+            {
+                m_result = node;
+                return;
+            }
+
+            GenTree* comma = m_compiler->gtNewOperNode(GT_COMMA, TYP_VOID, m_result, node);
+
+            // Set the ValueNumber 'gtVNPair' for the new GT_COMMA node
+            //
+            if ((m_compiler->vnStore != nullptr) && m_result->gtVNPair.BothDefined() && node->gtVNPair.BothDefined())
+            {
+                ValueNumPair op1Exceptions = m_compiler->vnStore->VNPExceptionSet(m_result->gtVNPair);
+                comma->gtVNPair            = m_compiler->vnStore->VNPWithExc(node->gtVNPair, op1Exceptions);
+            }
+
+            m_result = comma;
+        }
+    };
+
+    Extractor extractor(this);
+    extractor.WalkTree(&tree, nullptr);
+
+    return extractor.GetResult();
 }
 
 //------------------------------------------------------------------------

@@ -55,72 +55,38 @@
             LOGALWAYS(msg);                                                   \
             } while(0)
 
+#define STRESS_LOG_WRITE(facility, level, msg, ...) do {                            \
+            if (StressLog::LogOn(facility, level))                                  \
+                StressLog::LogMsg(facility, level, StressLogMsg(msg, __VA_ARGS__)); \
+            LOG((facility, level, msg, __VA_ARGS__));                               \
+            } while(0)
+
 #define STRESS_LOG0(facility, level, msg) do {                                \
             if (StressLog::LogOn(facility, level))                            \
                 StressLog::LogMsg(level, facility, StressLogMsg(msg));        \
             LOG((facility, level, msg));                                      \
             } while(0)
 
-#define STRESS_LOG1(facility, level, msg, data1) do {                              \
-            if (StressLog::LogOn(facility, level))                                 \
-                StressLog::LogMsg(level, facility,                                 \
-                    StressLogMsg(msg, (void*)(size_t)(data1)));                    \
-            LOG((facility, level, msg, data1));                                    \
-            } while(0)
+#define STRESS_LOG1(facility, level, msg, data1) \
+    STRESS_LOG_WRITE(facility, level, msg, data1)
 
-#define STRESS_LOG2(facility, level, msg, data1, data2) do {                            \
-            if (StressLog::LogOn(facility, level))                                      \
-                StressLog::LogMsg(level, facility,                                      \
-                    StressLogMsg(msg, (void*)(size_t)(data1), (void*)(size_t)(data2))); \
-            LOG((facility, level, msg, data1, data2));                                  \
-            } while(0)
+#define STRESS_LOG2(facility, level, msg, data1, data2) \
+    STRESS_LOG_WRITE(facility, level, msg, data1, data2)
 
-#define STRESS_LOG2_CHECK_EE_STARTED(facility, level, msg, data1, data2) do { \
-            if (g_fEEStarted)                                                 \
-                STRESS_LOG2(facility, level, msg, data1, data2);              \
-            else                                                              \
-                LOG((facility, level, msg, data1, data2));                    \
-            } while(0)
+#define STRESS_LOG3(facility, level, msg, data1, data2, data3) \
+    STRESS_LOG_WRITE(facility, level, msg, data1, data2, data3)
 
-#define STRESS_LOG3(facility, level, msg, data1, data2, data3) do {                             \
-            if (StressLog::LogOn(facility, level))                                              \
-                StressLog::LogMsg(level, facility,                                              \
-                    StressLogMsg(msg,                                                           \
-                        (void*)(size_t)(data1),(void*)(size_t)(data2),(void*)(size_t)(data3))); \
-            LOG((facility, level, msg, data1, data2, data3));                                   \
-            } while(0)
+#define STRESS_LOG4(facility, level, msg, data1, data2, data3, data4) \
+    STRESS_LOG_WRITE(facility, level, msg, data1, data2, data3, data4)
 
-#define STRESS_LOG4(facility, level, msg, data1, data2, data3, data4) do {                              \
-            if (StressLog::LogOn(facility, level))                                                      \
-                StressLog::LogMsg(level, facility,                                                      \
-                    StressLogMsg(msg, (void*)(size_t)(data1),(void*)(size_t)(data2),                    \
-                        (void*)(size_t)(data3),(void*)(size_t)(data4)));                                \
-            LOG((facility, level, msg, data1, data2, data3, data4));                                    \
-            } while(0)
+#define STRESS_LOG5(facility, level, msg, data1, data2, data3, data4, data5) \
+    STRESS_LOG_WRITE(facility, level, msg, data1, data2, data3, data4, data5)
 
-#define STRESS_LOG5(facility, level, msg, data1, data2, data3, data4, data5) do {                       \
-            if (StressLog::LogOn(facility, level))                                                      \
-                StressLog::LogMsg(level, facility, 5, msg, (void*)(size_t)(data1),                      \
-                    (void*)(size_t)(data2),(void*)(size_t)(data3),(void*)(size_t)(data4),               \
-                    (void*)(size_t)(data5));                                                            \
-            LOG((facility, level, msg, data1, data2, data3, data4, data5));                             \
-            } while(0)
+#define STRESS_LOG6(facility, level, msg, data1, data2, data3, data4, data5, data6) \
+    STRESS_LOG_WRITE(facility, level, msg, data1, data2, data3, data4, data5, data6)
 
-#define STRESS_LOG6(facility, level, msg, data1, data2, data3, data4, data5, data6) do {                \
-            if (StressLog::LogOn(facility, level))                                                      \
-                StressLog::LogMsg(level, facility, 6, msg, (void*)(size_t)(data1),                      \
-                    (void*)(size_t)(data2),(void*)(size_t)(data3),(void*)(size_t)(data4),               \
-                    (void*)(size_t)(data5), (void*)(size_t)(data6));                                    \
-            LOG((facility, level, msg, data1, data2, data3, data4, data5, data6));                      \
-            } while(0)
-
-#define STRESS_LOG7(facility, level, msg, data1, data2, data3, data4, data5, data6, data7) do {         \
-            if (StressLog::LogOn(facility, level))                                                      \
-                StressLog::LogMsg(level, facility, 7, msg, (void*)(size_t)(data1),                      \
-                    (void*)(size_t)(data2),(void*)(size_t)(data3),(void*)(size_t)(data4),               \
-                    (void*)(size_t)(data5), (void*)(size_t)(data6), (void*)(size_t)(data7));            \
-            LOG((facility, level, msg, data1, data2, data3, data4, data5, data6, data7));               \
-            } while(0)
+#define STRESS_LOG7(facility, level, msg, data1, data2, data3, data4, data5, data6, data7)  \
+    STRESS_LOG_WRITE(facility, level, msg, data1, data2, data3, data4, data5, data6, data7)
 
 #define LOGALWAYS(msg)
 
@@ -205,200 +171,53 @@ struct StressLogMsg
     const char* m_format;
     void* m_args[16];
 
+    template<typename T>
+    static void* ConvertArgument(T arg)
+    {
+        static_assert_no_msg(sizeof(T) <= sizeof(void*));
+        return (void*)(size_t)arg;
+    }
+
     StressLogMsg(const char* format) : m_cArgs(0), m_format(format)
     {
     }
 
-    template < typename T1 >
-    StressLogMsg(const char* format, T1 data1) : m_cArgs(1), m_format(format)
+    template<typename... Ts>
+    StressLogMsg(const char* format, Ts... args)
+        : m_cArgs(sizeof...(args))
+        , m_format(format)
+        , m_args{ ConvertArgument(args)... }
     {
-        static_assert_no_msg(sizeof(T1) <= sizeof(void*));
-        m_args[0] = (void*)(size_t)data1;
-    }
-
-    template < typename T1, typename T2 >
-    StressLogMsg(const char* format, T1 data1, T2 data2) : m_cArgs(2), m_format(format)
-    {
-        static_assert_no_msg(sizeof(T1) <= sizeof(void*) && sizeof(T2) <= sizeof(void*));
-        m_args[0] = (void*)(size_t)data1;
-        m_args[1] = (void*)(size_t)data2;
-    }
-
-    template < typename T1, typename T2, typename T3 >
-    StressLogMsg(const char* format, T1 data1, T2 data2, T3 data3) : m_cArgs(3), m_format(format)
-    {
-        static_assert_no_msg(sizeof(T1) <= sizeof(void*) && sizeof(T2) <= sizeof(void*) && sizeof(T3) <= sizeof(void*));
-        m_args[0] = (void*)(size_t)data1;
-        m_args[1] = (void*)(size_t)data2;
-        m_args[2] = (void*)(size_t)data3;
-    }
-
-    template < typename T1, typename T2, typename T3, typename T4 >
-    StressLogMsg(const char* format, T1 data1, T2 data2, T3 data3, T4 data4) : m_cArgs(4), m_format(format)
-    {
-        static_assert_no_msg(sizeof(T1) <= sizeof(void*) && sizeof(T2) <= sizeof(void*) && sizeof(T3) <= sizeof(void*) && sizeof(T4) <= sizeof(void*));
-        m_args[0] = (void*)(size_t)data1;
-        m_args[1] = (void*)(size_t)data2;
-        m_args[2] = (void*)(size_t)data3;
-        m_args[3] = (void*)(size_t)data4;
-    }
-
-    template < typename T1, typename T2, typename T3, typename T4, typename T5 >
-    StressLogMsg(const char* format, T1 data1, T2 data2, T3 data3, T4 data4, T5 data5) : m_cArgs(5), m_format(format)
-    {
-        static_assert_no_msg(sizeof(T1) <= sizeof(void*) && sizeof(T2) <= sizeof(void*) && sizeof(T3) <= sizeof(void*) && sizeof(T4) <= sizeof(void*) && sizeof(T5) <= sizeof(void*));
-        m_args[0] = (void*)(size_t)data1;
-        m_args[1] = (void*)(size_t)data2;
-        m_args[2] = (void*)(size_t)data3;
-        m_args[3] = (void*)(size_t)data4;
-        m_args[4] = (void*)(size_t)data5;
-    }
-
-    template < typename T1, typename T2, typename T3, typename T4, typename T5, typename T6 >
-    StressLogMsg(const char* format, T1 data1, T2 data2, T3 data3, T4 data4, T5 data5, T6 data6) : m_cArgs(6), m_format(format)
-    {
-        static_assert_no_msg(sizeof(T1) <= sizeof(void*) && sizeof(T2) <= sizeof(void*) && sizeof(T3) <= sizeof(void*) && sizeof(T4) <= sizeof(void*) && sizeof(T5) <= sizeof(void*) && sizeof(T6) <= sizeof(void*));
-        m_args[0] = (void*)(size_t)data1;
-        m_args[1] = (void*)(size_t)data2;
-        m_args[2] = (void*)(size_t)data3;
-        m_args[3] = (void*)(size_t)data4;
-        m_args[4] = (void*)(size_t)data5;
-        m_args[5] = (void*)(size_t)data6;
-    }
-
-    template < typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7 >
-    StressLogMsg(const char* format, T1 data1, T2 data2, T3 data3, T4 data4, T5 data5, T6 data6, T7 data7) : m_cArgs(7), m_format(format)
-    {
-        static_assert_no_msg(sizeof(T1) <= sizeof(void*) && sizeof(T2) <= sizeof(void*) && sizeof(T3) <= sizeof(void*) && sizeof(T4) <= sizeof(void*) && sizeof(T5) <= sizeof(void*) && sizeof(T6) <= sizeof(void*) && sizeof(T7) <= sizeof(void*));
-        m_args[0] = (void*)(size_t)data1;
-        m_args[1] = (void*)(size_t)data2;
-        m_args[2] = (void*)(size_t)data3;
-        m_args[3] = (void*)(size_t)data4;
-        m_args[4] = (void*)(size_t)data5;
-        m_args[5] = (void*)(size_t)data6;
-        m_args[6] = (void*)(size_t)data7;
-    }
-
-    template < typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8 >
-    StressLogMsg(const char* format, T1 data1, T2 data2, T3 data3, T4 data4, T5 data5, T6 data6, T7 data7, T8 data8) : m_cArgs(8), m_format(format)
-    {
-        static_assert_no_msg(sizeof(T1) <= sizeof(void*) && sizeof(T2) <= sizeof(void*) && sizeof(T3) <= sizeof(void*) && sizeof(T4) <= sizeof(void*) && sizeof(T5) <= sizeof(void*) && sizeof(T6) <= sizeof(void*) && sizeof(T7) <= sizeof(void*) && sizeof(T8) <= sizeof(void*));
-        m_args[0] = (void*)(size_t)data1;
-        m_args[1] = (void*)(size_t)data2;
-        m_args[2] = (void*)(size_t)data3;
-        m_args[3] = (void*)(size_t)data4;
-        m_args[4] = (void*)(size_t)data5;
-        m_args[5] = (void*)(size_t)data6;
-        m_args[6] = (void*)(size_t)data7;
-        m_args[7] = (void*)(size_t)data8;
-    }
-
-    template < typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9 >
-    StressLogMsg(const char* format, T1 data1, T2 data2, T3 data3, T4 data4, T5 data5, T6 data6, T7 data7, T8 data8, T9 data9) : m_cArgs(9), m_format(format)
-    {
-        static_assert_no_msg(sizeof(T1) <= sizeof(void*) && sizeof(T2) <= sizeof(void*) && sizeof(T3) <= sizeof(void*) && sizeof(T4) <= sizeof(void*) && sizeof(T5) <= sizeof(void*) && sizeof(T6) <= sizeof(void*) && sizeof(T7) <= sizeof(void*) && sizeof(T8) <= sizeof(void*) && sizeof(T9) <= sizeof(void*));
-        m_args[0] = (void*)(size_t)data1;
-        m_args[1] = (void*)(size_t)data2;
-        m_args[2] = (void*)(size_t)data3;
-        m_args[3] = (void*)(size_t)data4;
-        m_args[4] = (void*)(size_t)data5;
-        m_args[5] = (void*)(size_t)data6;
-        m_args[6] = (void*)(size_t)data7;
-        m_args[7] = (void*)(size_t)data8;
-        m_args[8] = (void*)(size_t)data9;
-    }
-
-    template < typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9, typename T10 >
-    StressLogMsg(const char* format, T1 data1, T2 data2, T3 data3, T4 data4, T5 data5, T6 data6, T7 data7, T8 data8, T9 data9, T10 data10) : m_cArgs(10), m_format(format)
-    {
-        static_assert_no_msg(sizeof(T1) <= sizeof(void*) && sizeof(T2) <= sizeof(void*) && sizeof(T3) <= sizeof(void*) && sizeof(T4) <= sizeof(void*) && sizeof(T5) <= sizeof(void*) && sizeof(T6) <= sizeof(void*) && sizeof(T7) <= sizeof(void*) && sizeof(T8) <= sizeof(void*) && sizeof(T9) <= sizeof(void*) && sizeof(T10) <= sizeof(void*));
-        m_args[0] = (void*)(size_t)data1;
-        m_args[1] = (void*)(size_t)data2;
-        m_args[2] = (void*)(size_t)data3;
-        m_args[3] = (void*)(size_t)data4;
-        m_args[4] = (void*)(size_t)data5;
-        m_args[5] = (void*)(size_t)data6;
-        m_args[6] = (void*)(size_t)data7;
-        m_args[7] = (void*)(size_t)data8;
-        m_args[8] = (void*)(size_t)data9;
-        m_args[9] = (void*)(size_t)data10;
-    }
-
-    template < typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9, typename T10, typename T11 >
-    StressLogMsg(const char* format, T1 data1, T2 data2, T3 data3, T4 data4, T5 data5, T6 data6, T7 data7, T8 data8, T9 data9, T10 data10, T11 data11) : m_cArgs(11), m_format(format)
-    {
-        static_assert_no_msg(sizeof(T1) <= sizeof(void*) && sizeof(T2) <= sizeof(void*) && sizeof(T3) <= sizeof(void*) && sizeof(T4) <= sizeof(void*) && sizeof(T5) <= sizeof(void*) && sizeof(T6) <= sizeof(void*) && sizeof(T7) <= sizeof(void*) && sizeof(T8) <= sizeof(void*) && sizeof(T9) <= sizeof(void*) && sizeof(T10) <= sizeof(void*) && sizeof(T11) <= sizeof(void*));
-        m_args[0] = (void*)(size_t)data1;
-        m_args[1] = (void*)(size_t)data2;
-        m_args[2] = (void*)(size_t)data3;
-        m_args[3] = (void*)(size_t)data4;
-        m_args[4] = (void*)(size_t)data5;
-        m_args[5] = (void*)(size_t)data6;
-        m_args[6] = (void*)(size_t)data7;
-        m_args[7] = (void*)(size_t)data8;
-        m_args[8] = (void*)(size_t)data9;
-        m_args[9] = (void*)(size_t)data10;
-        m_args[10] = (void*)(size_t)data11;
-    }
-
-    template < typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9, typename T10, typename T11, typename T12 >
-    StressLogMsg(const char* format, T1 data1, T2 data2, T3 data3, T4 data4, T5 data5, T6 data6, T7 data7, T8 data8, T9 data9, T10 data10, T11 data11, T12 data12) : m_cArgs(12), m_format(format)
-    {
-        static_assert_no_msg(sizeof(T1) <= sizeof(void*) && sizeof(T2) <= sizeof(void*) && sizeof(T3) <= sizeof(void*) && sizeof(T4) <= sizeof(void*) && sizeof(T5) <= sizeof(void*) && sizeof(T6) <= sizeof(void*) && sizeof(T7) <= sizeof(void*) && sizeof(T8) <= sizeof(void*) && sizeof(T9) <= sizeof(void*) && sizeof(T10) <= sizeof(void*) && sizeof(T11) <= sizeof(void*) && sizeof(T12) <= sizeof(void*));
-        m_args[0] = (void*)(size_t)data1;
-        m_args[1] = (void*)(size_t)data2;
-        m_args[2] = (void*)(size_t)data3;
-        m_args[3] = (void*)(size_t)data4;
-        m_args[4] = (void*)(size_t)data5;
-        m_args[5] = (void*)(size_t)data6;
-        m_args[6] = (void*)(size_t)data7;
-        m_args[7] = (void*)(size_t)data8;
-        m_args[8] = (void*)(size_t)data9;
-        m_args[9] = (void*)(size_t)data10;
-        m_args[10] = (void*)(size_t)data11;
-        m_args[11] = (void*)(size_t)data12;
-    }
-
-
-    template < typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9, typename T10, typename T11, typename T12, typename T13 >
-    StressLogMsg(const char* format, T1 data1, T2 data2, T3 data3, T4 data4, T5 data5, T6 data6, T7 data7, T8 data8, T9 data9, T10 data10, T11 data11, T12 data12, T13 data13) : m_cArgs(13), m_format(format)
-    {
-        static_assert_no_msg(sizeof(T1) <= sizeof(void*) && sizeof(T2) <= sizeof(void*) && sizeof(T3) <= sizeof(void*) && sizeof(T4) <= sizeof(void*) && sizeof(T5) <= sizeof(void*) && sizeof(T6) <= sizeof(void*) && sizeof(T7) <= sizeof(void*) && sizeof(T8) <= sizeof(void*) && sizeof(T9) <= sizeof(void*) && sizeof(T10) <= sizeof(void*) && sizeof(T11) <= sizeof(void*) && sizeof(T12) <= sizeof(void*) && sizeof(T13) <= sizeof(void*));
-        m_args[0] = (void*)(size_t)data1;
-        m_args[1] = (void*)(size_t)data2;
-        m_args[2] = (void*)(size_t)data3;
-        m_args[3] = (void*)(size_t)data4;
-        m_args[4] = (void*)(size_t)data5;
-        m_args[5] = (void*)(size_t)data6;
-        m_args[6] = (void*)(size_t)data7;
-        m_args[7] = (void*)(size_t)data8;
-        m_args[8] = (void*)(size_t)data9;
-        m_args[9] = (void*)(size_t)data10;
-        m_args[10] = (void*)(size_t)data11;
-        m_args[11] = (void*)(size_t)data12;
-        m_args[12] = (void*)(size_t)data13;
-    }
-
-    template < typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9, typename T10, typename T11, typename T12, typename T13, typename T14 >
-    StressLogMsg(const char* format, T1 data1, T2 data2, T3 data3, T4 data4, T5 data5, T6 data6, T7 data7, T8 data8, T9 data9, T10 data10, T11 data11, T12 data12, T13 data13, T14 data14) : m_cArgs(14), m_format(format)
-    {
-        static_assert_no_msg(sizeof(T1) <= sizeof(void*) && sizeof(T2) <= sizeof(void*) && sizeof(T3) <= sizeof(void*) && sizeof(T4) <= sizeof(void*) && sizeof(T5) <= sizeof(void*) && sizeof(T6) <= sizeof(void*) && sizeof(T7) <= sizeof(void*) && sizeof(T8) <= sizeof(void*) && sizeof(T9) <= sizeof(void*) && sizeof(T10) <= sizeof(void*) && sizeof(T11) <= sizeof(void*) && sizeof(T12) <= sizeof(void*) && sizeof(T13) <= sizeof(void*) && sizeof(T14) <= sizeof(void*));
-        m_args[0] = (void*)(size_t)data1;
-        m_args[1] = (void*)(size_t)data2;
-        m_args[2] = (void*)(size_t)data3;
-        m_args[3] = (void*)(size_t)data4;
-        m_args[4] = (void*)(size_t)data5;
-        m_args[5] = (void*)(size_t)data6;
-        m_args[6] = (void*)(size_t)data7;
-        m_args[7] = (void*)(size_t)data8;
-        m_args[8] = (void*)(size_t)data9;
-        m_args[9] = (void*)(size_t)data10;
-        m_args[10] = (void*)(size_t)data11;
-        m_args[11] = (void*)(size_t)data12;
-        m_args[12] = (void*)(size_t)data13;
-        m_args[13] = (void*)(size_t)data14;
+        static_assert_no_msg(sizeof...(args) <= ARRAY_SIZE(m_args));
     }
 };
+
+template<>
+void* StressLogMsg::ConvertArgument(float arg) = delete;
+
+#if TARGET_64BIT
+template<>
+inline void* StressLogMsg::ConvertArgument(double arg)
+{
+    return (void*)(size_t)(*((uint64_t*)&arg));
+}
+#else
+template<>
+void* StressLogMsg::ConvertArgument(double arg) = delete;
+
+// COMPAT: Truncate 64-bit integer arguments to 32-bit
+template<>
+inline void* StressLogMsg::ConvertArgument(uint64_t arg)
+{
+    return (void*)(size_t)arg;
+}
+
+template<>
+inline void* StressLogMsg::ConvertArgument(int64_t arg)
+{
+    return (void*)(size_t)arg;
+}
+#endif
 
 class StressLog
 {

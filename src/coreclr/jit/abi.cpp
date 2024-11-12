@@ -188,6 +188,89 @@ ABIPassingSegment ABIPassingSegment::OnStack(unsigned stackOffset, unsigned offs
 }
 
 //-----------------------------------------------------------------------------
+// ABIPassingInformation:
+//   Construct an instance with the specified number of segments allocated in
+//   the backing storage.
+//
+// Parameters:
+//   comp        - Compiler instance
+//   numSegments - Number of segments
+//
+// Remarks:
+//   The segments are expected to be filled out by the caller after the
+//   allocation; they are not zeroed out by the allocation.
+//
+ABIPassingInformation::ABIPassingInformation(Compiler* comp, unsigned numSegments)
+{
+    NumSegments = numSegments;
+
+    if (numSegments > 1)
+    {
+        m_segments = new (comp, CMK_ABI) ABIPassingSegment[numSegments];
+    }
+}
+
+//-----------------------------------------------------------------------------
+// Segment:
+//   Access a segment by the specified index.
+//
+// Parameters:
+//   index - The index of the segment
+//
+// Returns:
+//   Reference to segment.
+//
+const ABIPassingSegment& ABIPassingInformation::Segment(unsigned index) const
+{
+    assert(index < NumSegments);
+    if (NumSegments == 1)
+    {
+        return m_singleSegment;
+    }
+
+    return m_segments[index];
+}
+
+//-----------------------------------------------------------------------------
+// Segment:
+//   Access a segment by the specified index.
+//
+// Parameters:
+//   index - The index of the segment
+//
+// Returns:
+//   Reference to segment.
+//
+ABIPassingSegment& ABIPassingInformation::Segment(unsigned index)
+{
+    return const_cast<ABIPassingSegment&>(static_cast<const ABIPassingInformation&>(*this).Segment(index));
+}
+
+//-----------------------------------------------------------------------------
+// Segments:
+//   Get an iterator pair that can be used with range-based for to iterate the
+//   segments.
+//
+// Returns:
+//   Iterator pair.
+//
+IteratorPair<ABIPassingSegmentIterator> ABIPassingInformation::Segments() const
+{
+    const ABIPassingSegment* begin;
+    if (NumSegments == 1)
+    {
+        begin = &m_singleSegment;
+    }
+    else
+    {
+        begin = m_segments;
+    }
+
+    return IteratorPair<ABIPassingSegmentIterator>(ABIPassingSegmentIterator(begin),
+                                                   ABIPassingSegmentIterator(begin + NumSegments));
+}
+
+//-----------------------------------------------------------------------------
 // HasAnyRegisterSegment:
 //   Check if any part of this value is passed in a register.
 //
@@ -196,9 +279,28 @@ ABIPassingSegment ABIPassingSegment::OnStack(unsigned stackOffset, unsigned offs
 //
 bool ABIPassingInformation::HasAnyRegisterSegment() const
 {
-    for (unsigned i = 0; i < NumSegments; i++)
+    for (const ABIPassingSegment& seg : Segments())
     {
-        if (Segments[i].IsPassedInRegister())
+        if (seg.IsPassedInRegister())
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
+//-----------------------------------------------------------------------------
+// HasAnyFloatingRegisterSegment:
+//   Check if any part of this value is passed in a floating-point register.
+//
+// Return Value:
+//   True if so.
+//
+bool ABIPassingInformation::HasAnyFloatingRegisterSegment() const
+{
+    for (const ABIPassingSegment& seg : Segments())
+    {
+        if (seg.IsPassedInRegister() && genIsValidFloatReg(seg.GetRegister()))
         {
             return true;
         }
@@ -215,9 +317,9 @@ bool ABIPassingInformation::HasAnyRegisterSegment() const
 //
 bool ABIPassingInformation::HasAnyStackSegment() const
 {
-    for (unsigned i = 0; i < NumSegments; i++)
+    for (const ABIPassingSegment& seg : Segments())
     {
-        if (Segments[i].IsPassedOnStack())
+        if (seg.IsPassedOnStack())
         {
             return true;
         }
@@ -234,7 +336,7 @@ bool ABIPassingInformation::HasAnyStackSegment() const
 //
 bool ABIPassingInformation::HasExactlyOneRegisterSegment() const
 {
-    return (NumSegments == 1) && Segments[0].IsPassedInRegister();
+    return (NumSegments == 1) && Segment(0).IsPassedInRegister();
 }
 
 //-----------------------------------------------------------------------------
@@ -246,7 +348,7 @@ bool ABIPassingInformation::HasExactlyOneRegisterSegment() const
 //
 bool ABIPassingInformation::HasExactlyOneStackSegment() const
 {
-    return (NumSegments == 1) && Segments[0].IsPassedOnStack();
+    return (NumSegments == 1) && Segment(0).IsPassedOnStack();
 }
 
 //-----------------------------------------------------------------------------
@@ -264,15 +366,42 @@ bool ABIPassingInformation::IsSplitAcrossRegistersAndStack() const
         return false;
     }
 
-    bool isFirstInReg = Segments[0].IsPassedInRegister();
+    bool isFirstInReg = Segment(0).IsPassedInRegister();
     for (unsigned i = 1; i < NumSegments; i++)
     {
-        if (isFirstInReg != Segments[i].IsPassedInRegister())
+        if (isFirstInReg != Segment(i).IsPassedInRegister())
         {
             return true;
         }
     }
     return false;
+}
+
+//-----------------------------------------------------------------------------
+// CountRegsAndStackSlots:
+//   Count how many registers and stack slots are used for passing the
+//   argument.
+//
+// Return Value:
+//   Count of registers plus count of stack slots.
+//
+unsigned ABIPassingInformation::CountRegsAndStackSlots() const
+{
+    unsigned numSlots = 0;
+
+    for (const ABIPassingSegment& seg : Segments())
+    {
+        if (seg.IsPassedInRegister())
+        {
+            numSlots++;
+        }
+        else
+        {
+            numSlots += (seg.Size + TARGET_POINTER_SIZE - 1) / TARGET_POINTER_SIZE;
+        }
+    }
+
+    return numSlots;
 }
 
 //-----------------------------------------------------------------------------
@@ -288,7 +417,32 @@ bool ABIPassingInformation::IsSplitAcrossRegistersAndStack() const
 //
 ABIPassingInformation ABIPassingInformation::FromSegment(Compiler* comp, const ABIPassingSegment& segment)
 {
-    return {1, new (comp, CMK_ABI) ABIPassingSegment(segment)};
+    ABIPassingInformation info;
+    info.NumSegments     = 1;
+    info.m_singleSegment = segment;
+    return info;
+}
+
+//-----------------------------------------------------------------------------
+// FromSegments:
+//   Create ABIPassingInformation from two segments.
+//
+// Parameters:
+//   comp    - Compiler instance
+//   firstSegment - The first segment that represents the passing information
+//   secondSegment - The second segment that represents the passing information
+//
+// Return Value:
+//   An instance of ABIPassingInformation.
+//
+ABIPassingInformation ABIPassingInformation::FromSegments(Compiler*                comp,
+                                                          const ABIPassingSegment& firstSegment,
+                                                          const ABIPassingSegment& secondSegment)
+{
+    ABIPassingInformation info;
+    info.NumSegments = 2;
+    info.m_segments  = new (comp, CMK_ABI) ABIPassingSegment[2]{firstSegment, secondSegment};
+    return info;
 }
 
 #ifdef DEBUG
@@ -310,9 +464,9 @@ void ABIPassingInformation::Dump() const
             printf("  [%u] ", i);
         }
 
-        const ABIPassingSegment& seg = Segments[i];
+        const ABIPassingSegment& seg = Segment(i);
 
-        if (Segments[i].IsPassedInRegister())
+        if (seg.IsPassedInRegister())
         {
             printf("[%02u..%02u) reg %s\n", seg.Offset, seg.Offset + seg.Size, getRegName(seg.GetRegister()));
         }
@@ -416,9 +570,9 @@ ABIPassingInformation SwiftABIClassifier::Classify(Compiler*    comp,
             var_types             elemType = JITtype2varType(lowering->loweredElements[i]);
             ABIPassingInformation elemInfo = m_classifier.Classify(comp, elemType, nullptr, WellKnownArg::None);
 
-            for (unsigned j = 0; j < elemInfo.NumSegments; j++)
+            for (const ABIPassingSegment& seg : elemInfo.Segments())
             {
-                ABIPassingSegment newSegment = elemInfo.Segments[j];
+                ABIPassingSegment newSegment = seg;
                 newSegment.Offset += lowering->offsets[i];
                 // Adjust the tail size if necessary; the lowered sequence can
                 // pass the tail as a larger type than the tail size.
@@ -427,12 +581,10 @@ ABIPassingInformation SwiftABIClassifier::Classify(Compiler*    comp,
             }
         }
 
-        ABIPassingInformation result;
-        result.NumSegments = static_cast<unsigned>(segments.Height());
-        result.Segments    = new (comp, CMK_ABI) ABIPassingSegment[result.NumSegments];
+        ABIPassingInformation result(comp, static_cast<unsigned>(segments.Height()));
         for (int i = 0; i < segments.Height(); i++)
         {
-            result.Segments[i] = segments.Bottom(i);
+            result.Segment(i) = segments.Bottom(i);
         }
 
         return result;

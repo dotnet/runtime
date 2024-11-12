@@ -74,7 +74,7 @@ namespace System.Text.RegularExpressions.Symbolic
         CaptureEnd,
 
         /// <summary>
-        /// This node disables backtracking simulation in derivatives for the pattern it contains. This is used for the the
+        /// This node disables backtracking simulation in derivatives for the pattern it contains. This is used for the
         /// second reverse phase of the match generation algorithm, where its needed to ensure all paths are considered when
         /// walking backwards from a known final state.
         /// </summary>

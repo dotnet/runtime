@@ -86,7 +86,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				options.SingleWarn,
 				singleWarnEnabledModules: Enumerable.Empty<string> (),
 				singleWarnDisabledModules: Enumerable.Empty<string> (),
-				suppressedCategories: Enumerable.Empty<string> (),
+				suppressedCategories: options.SuppressedWarningCategories,
 				treatWarningsAsErrors: options.TreatWarningsAsErrors,
 				warningsAsErrors: options.WarningsAsErrors);
 
@@ -113,7 +113,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			}
 
 			SubstitutionProvider substitutionProvider = new SubstitutionProvider(logger, featureSwitches, substitutions);
-			ilProvider = new SubstitutedILProvider(ilProvider, substitutionProvider);
+			ilProvider = new SubstitutedILProvider(ilProvider, substitutionProvider, new DevirtualizationManager());
 
 			CompilerGeneratedState compilerGeneratedState = new CompilerGeneratedState (ilProvider, logger);
 

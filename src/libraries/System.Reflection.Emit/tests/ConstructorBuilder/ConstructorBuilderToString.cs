@@ -18,7 +18,6 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/2389", TestRuntimes.Mono)]
         public void ToString_NoRequiredOptionalCustomModifiers()
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);

@@ -155,7 +155,7 @@ namespace System.Data
                 }
                 return NonNullableField;
 
-                [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2090:MakeGenericMethod",
+                [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2091:MakeGenericMethod",
                     Justification = "'NullableField<TElem> where TElem : struct' implies 'TElem : new()'. Nullable does not make use of new() so it is safe." +
                     "The warning is only issued when IsDynamicCodeSupported is true.")]
                 static Func<object, T?> CreateWhenDynamicCodeSupported()

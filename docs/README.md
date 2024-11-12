@@ -24,9 +24,8 @@ If you want to contribute a code change to this repo, start here.
 Design Docs
 =================
 
-- [.NET Globalization Invariant Mode](design/features/globalization-invariant-mode.md)
-- [WASM Globalization Icu](design/features/globalization-icu-wasm.md)
-- Many more under [design/features](design/features/)
+- Runtime feature designs under [design/features](design/features/)
+- Some runtime design can be found at [dotnet/designs](https://github.com/dotnet/designs)
 
 The Book of the Runtime is a set of chapters that go in depth into various
 interesting aspects of the design of the .NET Framework.

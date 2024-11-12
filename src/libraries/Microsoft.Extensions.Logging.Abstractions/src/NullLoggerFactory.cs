@@ -4,7 +4,7 @@
 namespace Microsoft.Extensions.Logging.Abstractions
 {
     /// <summary>
-    /// An <see cref="ILoggerFactory"/> used to create instance of
+    /// An <see cref="ILoggerFactory"/> used to create an instance of
     /// <see cref="NullLogger"/> that logs nothing.
     /// </summary>
     public class NullLoggerFactory : ILoggerFactory
@@ -21,7 +21,7 @@ namespace Microsoft.Extensions.Logging.Abstractions
 
         /// <inheritdoc />
         /// <remarks>
-        /// This returns a <see cref="NullLogger"/> instance which logs nothing.
+        /// This returns a <see cref="NullLogger"/> instance that logs nothing.
         /// </remarks>
         public ILogger CreateLogger(string name)
         {

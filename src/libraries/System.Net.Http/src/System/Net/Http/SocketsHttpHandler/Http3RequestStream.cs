@@ -17,9 +17,9 @@ using System.Threading.Tasks;
 
 namespace System.Net.Http
 {
-    [SupportedOSPlatform("windows")]
     [SupportedOSPlatform("linux")]
     [SupportedOSPlatform("macos")]
+    [SupportedOSPlatform("windows")]
     internal sealed class Http3RequestStream : IHttpStreamHeadersHandler, IAsyncDisposable, IDisposable
     {
         private readonly HttpRequestMessage _request;
@@ -88,7 +88,14 @@ namespace System.Net.Http
             {
                 _disposed = true;
                 AbortStream();
-                _stream.Dispose();
+                if (_stream.WritesClosed.IsCompleted)
+                {
+                    _connection.LogExceptions(_stream.DisposeAsync().AsTask());
+                }
+                else
+                {
+                    _stream.Dispose();
+                }
                 DisposeSyncHelper();
             }
         }
@@ -107,7 +114,14 @@ namespace System.Net.Http
             {
                 _disposed = true;
                 AbortStream();
-                await _stream.DisposeAsync().ConfigureAwait(false);
+                if (_stream.WritesClosed.IsCompleted)
+                {
+                    _connection.LogExceptions(_stream.DisposeAsync().AsTask());
+                }
+                else
+                {
+                    await _stream.DisposeAsync().ConfigureAwait(false);
+                }
                 DisposeSyncHelper();
             }
         }
@@ -158,15 +172,9 @@ namespace System.Net.Http
                     await FlushSendBufferAsync(endStream: _request.Content == null, _requestBodyCancellationSource.Token).ConfigureAwait(false);
                 }
 
-                Task sendRequestTask;
-                if (_request.Content != null)
-                {
-                    sendRequestTask = SendContentAsync(_request.Content!, _requestBodyCancellationSource.Token);
-                }
-                else
-                {
-                    sendRequestTask = Task.CompletedTask;
-                }
+                Task sendRequestTask = _request.Content != null
+                    ? SendContentAsync(_request.Content, _requestBodyCancellationSource.Token)
+                    : Task.CompletedTask;
 
                 // In parallel, send content and read response.
                 // Depending on Expect 100 Continue usage, one will depend on the other making progress.
@@ -204,6 +212,23 @@ namespace System.Net.Http
 
                 // Wait for the response headers to be read.
                 await readResponseTask.ConfigureAwait(false);
+
+                // If we've sent a body, wait for the writes to be closed (most likely already done).
+                // If sendRequestTask hasn't completed yet, we're doing duplex content transfers and can't wait for writes to be closed yet.
+                if (sendRequestTask.IsCompletedSuccessfully &&
+                    _stream.WritesClosed is { IsCompletedSuccessfully: false } writesClosed)
+                {
+                    try
+                    {
+                        await writesClosed.WaitAsync(_requestBodyCancellationSource.Token).ConfigureAwait(false);
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        // If the request got cancelled before WritesClosed completed, avoid leaking an unobserved task exception.
+                        _connection.LogExceptions(writesClosed);
+                        throw;
+                    }
+                }
 
                 Debug.Assert(_response != null && _response.Content != null);
                 // Set our content stream.
@@ -508,12 +533,11 @@ namespace System.Net.Http
             }
         }
 
-        private async ValueTask FlushSendBufferAsync(bool endStream, CancellationToken cancellationToken)
+        private ValueTask FlushSendBufferAsync(bool endStream, CancellationToken cancellationToken)
         {
-            await _stream.WriteAsync(_sendBuffer.ActiveMemory, endStream, cancellationToken).ConfigureAwait(false);
-            _sendBuffer.Discard(_sendBuffer.ActiveLength);
-
-            await _stream.FlushAsync(cancellationToken).ConfigureAwait(false);
+            ReadOnlyMemory<byte> toSend = _sendBuffer.ActiveMemory;
+            _sendBuffer.Discard(toSend.Length);
+            return _stream.WriteAsync(toSend, endStream, cancellationToken);
         }
 
         private async ValueTask DrainContentLength0Frames(CancellationToken cancellationToken)

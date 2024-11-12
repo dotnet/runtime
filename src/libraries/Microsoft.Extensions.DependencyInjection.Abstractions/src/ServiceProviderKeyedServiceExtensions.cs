@@ -37,6 +37,26 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <param name="provider">The <see cref="IServiceProvider"/> to retrieve the service object from.</param>
         /// <param name="serviceType">An object that specifies the type of service object to get.</param>
         /// <param name="serviceKey">An object that specifies the key of service object to get.</param>
+        /// <returns>A service object of type <paramref name="serviceType"/> or null if there is no such service.</returns>
+        public static object? GetKeyedService(this IServiceProvider provider, Type serviceType, object? serviceKey)
+        {
+            ThrowHelper.ThrowIfNull(provider);
+            ThrowHelper.ThrowIfNull(serviceType);
+
+            if (provider is IKeyedServiceProvider keyedServiceProvider)
+            {
+                return keyedServiceProvider.GetKeyedService(serviceType, serviceKey);
+            }
+
+            throw new InvalidOperationException(SR.KeyedServicesNotSupported);
+        }
+
+        /// <summary>
+        /// Get service of type <paramref name="serviceType"/> from the <see cref="IServiceProvider"/>.
+        /// </summary>
+        /// <param name="provider">The <see cref="IServiceProvider"/> to retrieve the service object from.</param>
+        /// <param name="serviceType">An object that specifies the type of service object to get.</param>
+        /// <param name="serviceKey">An object that specifies the key of service object to get.</param>
         /// <returns>A service object of type <paramref name="serviceType"/>.</returns>
         /// <exception cref="System.InvalidOperationException">There is no service of type <paramref name="serviceType"/>.</exception>
         public static object GetRequiredKeyedService(this IServiceProvider provider, Type serviceType, object? serviceKey)

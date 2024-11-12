@@ -424,11 +424,18 @@ namespace ILCompiler.ObjectWriter
                         n.Offset == 0 && isMethod ? nodeContents.Data.Length : 0);
                     if (_nodeFactory.GetSymbolAlternateName(n) is string alternateName)
                     {
+                        string alternateCName = ExternCName(alternateName);
                         sectionWriter.EmitSymbolDefinition(
-                            ExternCName(alternateName),
+                            alternateCName,
                             n.Offset + thumbBit,
                             n.Offset == 0 && isMethod ? nodeContents.Data.Length : 0,
                             global: true);
+
+                        if (n is IMethodNode)
+                        {
+                            // https://github.com/dotnet/runtime/issues/105330: consider exports CFG targets
+                            EmitReferencedMethod(alternateCName);
+                        }
                     }
                 }
 
@@ -469,7 +476,7 @@ namespace ILCompiler.ObjectWriter
                         relocTarget.Offset);
 
                     if (_options.HasFlag(ObjectWritingOptions.ControlFlowGuard) &&
-                        relocTarget is IMethodNode or AssemblyStubNode)
+                        relocTarget is IMethodNode or AssemblyStubNode or AddressTakenExternSymbolNode)
                     {
                         // For now consider all method symbols address taken.
                         // We could restrict this in the future to those that are referenced from

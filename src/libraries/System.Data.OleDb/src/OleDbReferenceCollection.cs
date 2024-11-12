@@ -32,7 +32,7 @@ namespace System.Data.OleDb
             }
             else
             {
-                Debug.Assert(false, "shouldn't be here");
+                Debug.Fail("shouldn't be here");
             }
         }
 

@@ -77,9 +77,9 @@ struct ThreadLocalData
     int32_t cCollectibleTlsData; // Size of offset into the TLS array which is valid
     PTR_Object pNonCollectibleTlsArrayData;
     DPTR(OBJECTHANDLE) pCollectibleTlsArrayData; // Points at the Thread local array data.
-    PTR_Thread pThread;
+    PTR_Thread pThread; // This starts the region of ThreadLocalData which is referenceable by TLSIndexType::DirectOnThreadLocalData
     PTR_InFlightTLSData pInFlightData; // Points at the in-flight TLS data (TLS data that exists before the class constructor finishes running)
-    TADDR ThreadBlockingInfo_First; // System.Threading.ThreadBlockingInfo.First, This starts the region of ThreadLocalData which is referenceable by TLSIndexType::DirectOnThreadLocalData
+    TADDR ThreadBlockingInfo_First; // System.Threading.ThreadBlockingInfo.t_first
     BYTE ExtendedDirectThreadLocalTLSData[EXTENDED_DIRECT_THREAD_LOCAL_SIZE];
 };
 
@@ -304,7 +304,7 @@ public:
 
 #ifndef DACCESS_COMPILE
     void Set(TLSIndex index, PTR_MethodTable pMT, bool isGCStatic);
-    bool FindClearedIndex(uint8_t whenClearedMarkerToAvoid, TLSIndex* pIndex);
+    bool FindClearedIndex(TLSIndex* pIndex);
     void Clear(TLSIndex index, uint8_t whenCleared);
 #endif // !DACCESS_COMPILE
 
@@ -329,8 +329,8 @@ PTR_MethodTable LookupMethodTableForThreadStaticKnownToBeAllocated(TLSIndex inde
 void InitializeThreadStaticData();
 void InitializeCurrentThreadsStaticData(Thread* pThread);
 void FreeLoaderAllocatorHandlesForTLSData(Thread* pThread);
-void FreeThreadStaticData(ThreadLocalData *pThreadLocalData, Thread* pThread);
-void AssertThreadStaticDataFreed(ThreadLocalData *pThreadLocalData);
+void FreeThreadStaticData(Thread* pThread);
+void AssertThreadStaticDataFreed();
 void GetTLSIndexForThreadStatic(MethodTable* pMT, bool gcStatic, TLSIndex* pIndex, uint32_t bytesNeeded);
 void FreeTLSIndicesForLoaderAllocator(LoaderAllocator *pLoaderAllocator);
 void* GetThreadLocalStaticBase(TLSIndex index);

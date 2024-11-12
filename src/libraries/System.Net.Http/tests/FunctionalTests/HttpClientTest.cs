@@ -429,14 +429,7 @@ namespace System.Net.Http.Functional.Tests
                 {
                     await server.AcceptConnectionAsync(async connection =>
                     {
-                        try
-                        {
-                            await connection.ReadRequestHeaderAsync();
-                        }
-                        catch (Exception ex)
-                        {
-                            _output.WriteLine($"Ignored exception:{Environment.NewLine}{ex}");
-                        }
+                        await IgnoreExceptions(connection.ReadRequestHeaderAsync());
                         cts.Cancel();
                     });
                 });
@@ -599,14 +592,7 @@ namespace System.Net.Http.Functional.Tests
                 {
                     await server.AcceptConnectionAsync(async connection =>
                     {
-                        try
-                        {
-                            await connection.ReadRequestHeaderAsync();
-                        }
-                        catch (Exception ex)
-                        {
-                            _output.WriteLine($"Ignored exception:{Environment.NewLine}{ex}");
-                        }
+                        await IgnoreExceptions(connection.ReadRequestHeaderAsync());
                         cts.Cancel();
                     });
                 });
@@ -676,14 +662,7 @@ namespace System.Net.Http.Functional.Tests
                 {
                     await server.AcceptConnectionAsync(async connection =>
                     {
-                        try
-                        {
-                            await connection.ReadRequestHeaderAsync();
-                        }
-                        catch (Exception ex)
-                        {
-                            _output.WriteLine($"Ignored exception:{Environment.NewLine}{ex}");
-                        }
+                        await IgnoreExceptions(connection.ReadRequestHeaderAsync());
                         cts.Cancel();
                     });
                 });
@@ -1053,16 +1032,12 @@ namespace System.Net.Http.Functional.Tests
                 {
                     await server.AcceptConnectionAsync(async connection =>
                     {
-                        try
+                        await IgnoreExceptions(async () =>
                         {
                             await connection.ReadRequestHeaderAsync();
                             cts.Cancel();
                             await connection.ReadRequestBodyAsync();
-                        }
-                        catch (Exception ex)
-                        {
-                            _output.WriteLine($"Ignored exception:{Environment.NewLine}{ex}");
-                        }
+                        });
                     });
                 });
         }
@@ -1103,15 +1078,7 @@ namespace System.Net.Http.Functional.Tests
                 {
                     await server.AcceptConnectionAsync(async connection =>
                     {
-                        try
-                        {
-                            await connection.ReadRequestHeaderAsync();
-                            await connection.ReadRequestBodyAsync();
-                        }
-                        catch (Exception ex)
-                        {
-                            _output.WriteLine($"Ignored exception:{Environment.NewLine}{ex}");
-                        }
+                        await IgnoreExceptions(connection.ReadRequestDataAsync());
                     });
                 });
         }
@@ -1151,7 +1118,7 @@ namespace System.Net.Http.Functional.Tests
                 {
                     await server.AcceptConnectionAsync(async connection =>
                     {
-                        try
+                        await IgnoreExceptions(async () =>
                         {
                             await connection.ReadRequestDataAsync();
                             await connection.SendResponseAsync(headers: new List<HttpHeaderData>() {
@@ -1163,11 +1130,7 @@ namespace System.Net.Http.Functional.Tests
                                 await connection.WriteStringAsync(content);
                                 await Task.Delay(TimeSpan.FromSeconds(0.1));
                             }
-                        }
-                        catch (Exception ex)
-                        {
-                            _output.WriteLine($"Ignored exception:{Environment.NewLine}{ex}");
-                        }
+                        });
                     });
                 });
         }
@@ -1183,9 +1146,7 @@ namespace System.Net.Http.Functional.Tests
             using var server = new LoopbackServer();
             await server.ListenAsync();
 
-            // Ignore all failures from the server. This includes being disposed of before ever accepting a connection,
-            // which is possible if the client times out so quickly that it hasn't initiated a connection yet.
-            _ = server.AcceptConnectionAsync(async connection =>
+            Task serverTask = server.AcceptConnectionAsync(async connection =>
             {
                 await connection.ReadRequestDataAsync();
                 await connection.SendResponseAsync(headers: new[] { new HttpHeaderData("Content-Length", (Content.Length * 100).ToString()) });
@@ -1203,6 +1164,12 @@ namespace System.Net.Http.Functional.Tests
                 HttpResponseMessage response = httpClient.Send(new HttpRequestMessage(HttpMethod.Get, server.Address));
             });
             Assert.IsType<TimeoutException>(ex.InnerException);
+
+            server.Dispose();
+
+            // Ignore all failures from the server. This includes being disposed of before ever accepting a connection,
+            // which is possible if the client times out so quickly that it hasn't initiated a connection yet.
+            await IgnoreExceptions(serverTask);
         }
 
         public static IEnumerable<object[]> VersionSelectionMemberData()

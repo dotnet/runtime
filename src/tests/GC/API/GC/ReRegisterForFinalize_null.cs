@@ -4,6 +4,7 @@
 // Tests ReRegisterForFinalize()
 
 using System;
+using Xunit;
 
 public class Test_ReRegisterForFinalize_null
 {
@@ -26,7 +27,8 @@ public class Test_ReRegisterForFinalize_null
     }
 
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         Test_ReRegisterForFinalize_null t = new Test_ReRegisterForFinalize_null();
         if (t.RunTest())

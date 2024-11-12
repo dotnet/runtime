@@ -1,7 +1,7 @@
 //! Licensed to the .NET Foundation under one or more agreements.
 //! The .NET Foundation licenses this file to you under the MIT license.
 //!
-//! This is generated file, see src/mono/wasm/runtime/rollup.config.js
+//! This is generated file, see src/mono/browser/runtime/rollup.config.js
 
 //! This is not considered public API with backward compatibility guarantees. 
 
@@ -247,6 +247,9 @@ type ResourceExtensions = {
 };
 interface ResourceGroups {
     hash?: string;
+    fingerprinting?: {
+        [name: string]: string;
+    };
     coreAssembly?: ResourceList;
     assembly?: ResourceList;
     lazyAssembly?: ResourceList;
@@ -692,4 +695,4 @@ declare global {
 }
 declare const createDotnetRuntime: CreateDotnetRuntimeType;
 
-export { AssetBehaviors, AssetEntry, CreateDotnetRuntimeType, DotnetHostBuilder, DotnetModuleConfig, EmscriptenModule, GlobalizationMode, IMemoryView, ModuleAPI, MonoConfig, RuntimeAPI, createDotnetRuntime as default, dotnet, exit };
+export { type AssetBehaviors, type AssetEntry, type CreateDotnetRuntimeType, type DotnetHostBuilder, type DotnetModuleConfig, type EmscriptenModule, GlobalizationMode, type IMemoryView, type ModuleAPI, type MonoConfig, type RuntimeAPI, createDotnetRuntime as default, dotnet, exit };

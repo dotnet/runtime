@@ -595,9 +595,10 @@ bool Compiler::fgExpandThreadLocalAccessForCallNativeAOT(BasicBlock** pBlock, St
 
         CORINFO_CONST_LOOKUP tlsIndexObject = threadStaticInfo.tlsIndexObject;
 
-        GenTree* dllRef = gtNewIconHandleNode((size_t)tlsIndexObject.handle, GTF_ICON_OBJ_HDL);
+        GenTree* dllRef = gtNewIconHandleNode((size_t)tlsIndexObject.handle, GTF_ICON_CONST_PTR);
         dllRef          = gtNewIndir(TYP_INT, dllRef, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
-        dllRef          = gtNewOperNode(GT_MUL, TYP_I_IMPL, dllRef, gtNewIconNode(TARGET_POINTER_SIZE, TYP_INT));
+        dllRef          = gtNewCastNode(TYP_I_IMPL, dllRef, true, TYP_I_IMPL);
+        dllRef          = gtNewOperNode(GT_LSH, TYP_I_IMPL, dllRef, gtNewIconNode(3, TYP_I_IMPL));
 
         // Add the dllRef to produce thread local storage reference for coreclr
         tlsValue = gtNewOperNode(GT_ADD, TYP_I_IMPL, tlsValue, dllRef);
@@ -990,6 +991,7 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
     tlsValueDef                              = gtNewStoreLclVarNode(tlsLclNum, tlsValue);
     GenTree* tlsLclValueUse                  = gtNewLclVarNode(tlsLclNum);
     GenTree* typeThreadStaticBlockIndexValue = call->gtArgs.GetArgByIndex(0)->GetNode();
+    assert(genActualType(typeThreadStaticBlockIndexValue) == TYP_INT);
 
     if (helper == CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2)
     {
@@ -1006,12 +1008,19 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
         //      use(tlsRoot);
         // ...
 
-        GenTree* typeThreadStaticBlockIndexValue = call->gtArgs.GetArgByIndex(0)->GetNode();
-        GenTree* threadStaticBase =
-            gtNewOperNode(GT_ADD, TYP_I_IMPL,
-                          gtNewOperNode(GT_ADD, TYP_I_IMPL, gtCloneExpr(tlsLclValueUse),
-                                        gtCloneExpr(typeThreadStaticBlockIndexValue)),
+        typeThreadStaticBlockIndexValue = gtCloneExpr(typeThreadStaticBlockIndexValue);
+#ifdef TARGET_64BIT
+        typeThreadStaticBlockIndexValue = gtNewCastNode(TYP_I_IMPL, typeThreadStaticBlockIndexValue, true, TYP_I_IMPL);
+        // Usually a constant, try to fold
+        typeThreadStaticBlockIndexValue = gtFoldExpr(typeThreadStaticBlockIndexValue);
+#endif
+
+        GenTree* offset =
+            gtNewOperNode(GT_ADD, TYP_I_IMPL, typeThreadStaticBlockIndexValue,
                           gtNewIconNode(threadStaticBlocksInfo.offsetOfBaseOfThreadLocalData, TYP_I_IMPL));
+        offset = gtFoldExpr(offset);
+
+        GenTree* threadStaticBase      = gtNewOperNode(GT_ADD, TYP_I_IMPL, gtCloneExpr(tlsLclValueUse), offset);
         GenTree* tlsStaticBaseStoreLcl = gtNewStoreLclVarNode(threadStaticBlockLclNum, threadStaticBase);
 
         BasicBlock* tlsBaseComputeBB = fgNewBBFromTreeAfter(BBJ_ALWAYS, prevBb, tlsValueDef, debugInfo, true);
@@ -1059,6 +1068,14 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
         // Create tree to "threadStaticBlockValue = threadStaticBlockBase[typeIndex]"
         typeThreadStaticBlockIndexValue = gtNewOperNode(GT_MUL, TYP_INT, gtCloneExpr(typeThreadStaticBlockIndexValue),
                                                         gtNewIconNode(TARGET_POINTER_SIZE, TYP_INT));
+        // Usually a constant, try to fold
+        typeThreadStaticBlockIndexValue = gtFoldExpr(typeThreadStaticBlockIndexValue);
+#ifdef TARGET_64BIT
+        typeThreadStaticBlockIndexValue = gtNewCastNode(TYP_I_IMPL, typeThreadStaticBlockIndexValue, true, TYP_I_IMPL);
+
+        // Usually a constant, try to fold
+        typeThreadStaticBlockIndexValue = gtFoldExpr(typeThreadStaticBlockIndexValue);
+#endif
         GenTree* typeThreadStaticBlockRef =
             gtNewOperNode(GT_ADD, TYP_BYREF, threadStaticBlocksValue, typeThreadStaticBlockIndexValue);
         GenTree* typeThreadStaticBlockValue = gtNewIndir(TYP_BYREF, typeThreadStaticBlockRef, GTF_IND_NONFAULTING);
@@ -1205,9 +1222,14 @@ PhaseStatus Compiler::fgExpandHelper(bool skipRarelyRunBlocks)
         }
     }
 
-    if ((result == PhaseStatus::MODIFIED_EVERYTHING) && opts.OptimizationEnabled())
+    if (result == PhaseStatus::MODIFIED_EVERYTHING)
     {
-        fgRenumberBlocks();
+        fgInvalidateDfsTree();
+
+        if (opts.OptimizationEnabled())
+        {
+            fgRenumberBlocks();
+        }
     }
 
     return result;
@@ -1415,8 +1437,8 @@ bool Compiler::fgExpandStaticInitForCall(BasicBlock** pBlock, Statement* stmt, G
         }
 
         // Don't fold ADD(CNS1, CNS2) here since the result won't be reloc-friendly for AOT
-        GenTree* offsetNode     = gtNewOperNode(GT_ADD, TYP_I_IMPL, baseAddr, gtNewIconNode(isInitOffset));
-        isInitedActualValueNode = gtNewIndir(TYP_I_IMPL, offsetNode, GTF_IND_NONFAULTING);
+        GenTree* offsetNode     = gtNewOperNode(GT_ADD, TYP_I_IMPL, baseAddr, gtNewIconNode(isInitOffset, TYP_I_IMPL));
+        isInitedActualValueNode = gtNewIndir(TYP_I_IMPL, offsetNode, GTF_IND_NONFAULTING | GTF_IND_VOLATILE);
 
         // 0 means "initialized" on NativeAOT
         isInitedExpectedValue = gtNewIconNode(0, TYP_I_IMPL);
@@ -1426,6 +1448,8 @@ bool Compiler::fgExpandStaticInitForCall(BasicBlock** pBlock, Statement* stmt, G
         assert(isInitOffset == 0);
 
         isInitedActualValueNode = gtNewIndOfIconHandleNode(TYP_INT, (size_t)flagAddr.addr, GTF_ICON_GLOBAL_PTR, false);
+        isInitedActualValueNode->gtFlags |= GTF_IND_VOLATILE;
+        isInitedActualValueNode->SetHasOrderingSideEffect();
 
         // Check ClassInitFlags::INITIALIZED_FLAG bit
         isInitedActualValueNode = gtNewOperNode(GT_AND, TYP_INT, isInitedActualValueNode, gtNewIconNode(1));
@@ -1533,9 +1557,9 @@ bool Compiler::fgExpandStaticInitForCall(BasicBlock** pBlock, Statement* stmt, G
     assert(BasicBlock::sameEHRegion(prevBb, isInitedBb));
 
     // Extra step: merge prevBb with isInitedBb if possible
-    if (fgCanCompactBlocks(prevBb, isInitedBb))
+    if (fgCanCompactBlock(prevBb))
     {
-        fgCompactBlocks(prevBb, isInitedBb);
+        fgCompactBlock(prevBb);
     }
 
     // Clear gtInitClsHnd as a mark that we've already visited this call
@@ -1862,9 +1886,9 @@ bool Compiler::fgVNBasedIntrinsicExpansionForCall_ReadUtf8(BasicBlock** pBlock, 
     assert(BasicBlock::sameEHRegion(prevBb, fastpathBb));
 
     // Extra step: merge prevBb with lengthCheckBb if possible
-    if (fgCanCompactBlocks(prevBb, lengthCheckBb))
+    if (fgCanCompactBlock(prevBb))
     {
-        fgCompactBlocks(prevBb, lengthCheckBb);
+        fgCompactBlock(prevBb);
     }
 
     JITDUMP("ReadUtf8: succesfully expanded!\n")
@@ -2443,7 +2467,7 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
         GenTree* storeCseVal = nullptr;
         if (candidateId == 0)
         {
-            GenTree*& castArg = call->gtArgs.GetUserArgByIndex(0)->LateNodeRef();
+            GenTree*& castArg = call->gtArgs.GetUserArgByIndex(0)->NodeRef();
             if (GenTree::Compare(castArg, expectedClsNode))
             {
                 const unsigned clsTmp = lvaGrabTemp(true DEBUGARG("CSE for expectedClsNode"));
@@ -2686,9 +2710,9 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
     }
 
     // Bonus step: merge prevBb with nullcheckBb as they are likely to be mergeable
-    if (fgCanCompactBlocks(firstBb, nullcheckBb))
+    if (fgCanCompactBlock(firstBb))
     {
-        fgCompactBlocks(firstBb, nullcheckBb);
+        fgCompactBlock(firstBb);
     }
 
     return true;

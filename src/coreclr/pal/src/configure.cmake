@@ -47,6 +47,8 @@ check_include_files(semaphore.h HAVE_SEMAPHORE_H)
 check_include_files(sys/prctl.h HAVE_PRCTL_H)
 check_include_files("sys/auxv.h;asm/hwcap.h" HAVE_AUXV_HWCAP_H)
 check_include_files("sys/ptrace.h" HAVE_SYS_PTRACE_H)
+check_include_files("sys/ucontext.h" HAVE_SYS_UCONTEXT_H)
+check_include_files("sys/mount.h" HAVE_SYS_MOUNT_H)
 check_include_files(ucontext.h HAVE_UCONTEXT_H)
 check_symbol_exists(getauxval sys/auxv.h HAVE_GETAUXVAL)
 
@@ -624,6 +626,7 @@ int main(int argc, char **argv)
 
 check_symbol_exists(unw_get_save_loc libunwind.h HAVE_UNW_GET_SAVE_LOC)
 check_symbol_exists(unw_get_accessors libunwind.h HAVE_UNW_GET_ACCESSORS)
+check_symbol_exists(unw_get_proc_info_in_range libunwind.h HAVE_GET_PROC_INFO_IN_RANGE)
 
 check_cxx_source_compiles("
 #include <libunwind.h>
@@ -911,6 +914,7 @@ elseif(CLR_CMAKE_TARGET_NETBSD)
 elseif(CLR_CMAKE_TARGET_SUNOS)
   set(DEADLOCK_WHEN_THREAD_IS_SUSPENDED_WHILE_BLOCKED_ON_MUTEX 0)
   set(PAL_PTRACE "ptrace((cmd), (pid), (caddr_t)(addr), (data))")
+  set(SET_SCHEDPARAM_NEEDS_PRIVS 1)
 elseif(CLR_CMAKE_TARGET_HAIKU)
   # Haiku does not have ptrace.
   set(DEADLOCK_WHEN_THREAD_IS_SUSPENDED_WHILE_BLOCKED_ON_MUTEX 0)

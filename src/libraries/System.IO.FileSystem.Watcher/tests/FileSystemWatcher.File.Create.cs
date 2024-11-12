@@ -10,6 +10,7 @@ using Xunit.Sdk;
 
 namespace System.IO.Tests
 {
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/103584", TestPlatforms.Windows)]
     public class File_Create_Tests : FileSystemWatcherTest
     {
         [Fact]

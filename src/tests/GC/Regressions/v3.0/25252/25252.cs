@@ -2,17 +2,18 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
-class Program
+public class Program
 {
-    static int Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
         var matrix = new double[128 * 128];
         
         GC.Collect(GC.MaxGeneration);
 
         GC.KeepAlive(matrix);
-        return 100;
     }
 }
 

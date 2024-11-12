@@ -66,28 +66,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Theory]
-        [InlineData(0)]
-        [InlineData(1)]
-        [InlineData(9)]
-        public async Task GetAsync_RequestVersion0X_ThrowsNotSupportedException(int minorVersion)
-        {
-            if (IsWinHttpHandler)
-            {
-                return;
-            }
-
-            using (HttpClient client = CreateHttpClient())
-            {
-                HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, "http://nosuchhost.invalid");
-                request.Version = new Version(0, minorVersion);
-
-                Task<HttpResponseMessage> getResponseTask = client.SendAsync(TestAsync, request);
-
-                await Assert.ThrowsAsync<NotSupportedException>(() => getResponseTask);
-            }
-        }
-
-        [Theory]
         [InlineData(2, 0)]  // This is plain HTTP (not HTTPS), so 2.0 is not supported and should degrade to 1.1
         [InlineData(3, 0)]
         public async Task GetAsync_PlainHttpRequestOnVersion20Or30_DegradesTo11(int majorVersion, int minorVersion)
@@ -117,6 +95,8 @@ namespace System.Net.Http.Functional.Tests
 
         [Theory]
         [InlineData(0, 0)]
+        [InlineData(0, 1)]
+        [InlineData(0, 9)]
         [InlineData(1, 2)]
         [InlineData(1, 6)]
         [InlineData(2, 1)]
@@ -137,11 +117,9 @@ namespace System.Net.Http.Functional.Tests
                 {
                     HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, url);
                     request.Version = version;
-                    Task<HttpResponseMessage> getResponseTask = client.SendAsync(TestAsync, request);
-                    Task<List<string>> serverTask = server.AcceptConnectionSendResponseAndCloseAsync();
-                    await Assert.ThrowsAsync<NotSupportedException>(() => getResponseTask);
+                    await Assert.ThrowsAsync<NotSupportedException>(() => client.SendAsync(TestAsync, request));
                 }
-            }, new LoopbackServer.Options { StreamWrapper = GetStream });
+            });
         }
 
         [Theory]
@@ -216,23 +194,23 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(2, 1)]
         [InlineData(3, 0)]
         [InlineData(4, 2)]
-        public async Task GetAsyncVersion11_BadResponseVersion_ThrowsOr00(int responseMajorVersion, int responseMinorVersion)
+        public async Task GetAsyncVersion11_BadResponseVersion_Throws(int responseMajorVersion, int responseMinorVersion)
         {
-            await LoopbackServer.CreateServerAsync(async (server, url) =>
-            {
-                using (HttpClient client = CreateHttpClient())
+            await LoopbackServer.CreateClientAndServerAsync(
+                async uri =>
                 {
-                    HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, url);
+                    using HttpClient client = CreateHttpClient();
+
+                    HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, uri);
                     request.Version = HttpVersion.Version11;
 
-                    Task<HttpResponseMessage> getResponseTask = client.SendAsync(TestAsync, request);
-                    Task<List<string>> serverTask =
-                        server.AcceptConnectionSendCustomResponseAndCloseAsync(
-                            $"HTTP/{responseMajorVersion}.{responseMinorVersion} 200 OK\r\nConnection: close\r\nDate: {DateTimeOffset.UtcNow:R}\r\nContent-Length: 0\r\n\r\n");
-
-                    await Assert.ThrowsAsync<HttpRequestException>(() => getResponseTask);
-                }
-            }, new LoopbackServer.Options { StreamWrapper = GetStream });
+                    await Assert.ThrowsAsync<HttpRequestException>(() => client.SendAsync(TestAsync, request));
+                },
+                async server =>
+                {
+                    await IgnoreExceptions(server.AcceptConnectionSendCustomResponseAndCloseAsync(
+                        $"HTTP/{responseMajorVersion}.{responseMinorVersion} 200 OK\r\nConnection: close\r\nDate: {DateTimeOffset.UtcNow:R}\r\nContent-Length: 0\r\n\r\n"));
+                }, new LoopbackServer.Options { StreamWrapper = GetStream });
         }
 
         [Theory]
@@ -374,16 +352,17 @@ namespace System.Net.Http.Functional.Tests
 
         private async Task GetAsyncThrowsExceptionHelper(string responseString)
         {
-            await LoopbackServer.CreateServerAsync(async (server, url) =>
-            {
-                using (HttpClient client = CreateHttpClient())
+            await LoopbackServer.CreateClientAndServerAsync(
+                async uri =>
                 {
-                    Task ignoredServerTask = server.AcceptConnectionSendCustomResponseAndCloseAsync(
-                        responseString + "\r\nConnection: close\r\nContent-Length: 0\r\n\r\n");
-
-                    await Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync(TestAsync, url));
-                }
-            }, new LoopbackServer.Options { StreamWrapper = GetStream });
+                    using HttpClient client = CreateHttpClient();
+                    await Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync(TestAsync, uri));
+                },
+                async server =>
+                {
+                    await IgnoreExceptions(server.AcceptConnectionSendCustomResponseAndCloseAsync(
+                        responseString + "\r\nConnection: close\r\nContent-Length: 0\r\n\r\n"));
+                }, new LoopbackServer.Options { StreamWrapper = GetStream });
         }
 
         [Theory]

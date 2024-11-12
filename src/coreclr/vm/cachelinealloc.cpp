@@ -67,7 +67,7 @@ CCacheLineAllocator::~CCacheLineAllocator()
         {
             if(tempPtr->m_pAddr[i] != NULL)
             {
-                if (!g_fProcessDetach)
+                if (!IsAtProcessExit())
                     VFree(tempPtr->m_pAddr[i]);
             }
         }

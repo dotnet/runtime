@@ -16,9 +16,11 @@ namespace System.Collections.Tests
         protected override Dictionary<string, string> CreateCollection() => new Dictionary<string, string>();
         protected override void AddKey(Dictionary<string, string> collection, string key) => collection.Add(key, key);
         protected override bool ContainsKey(Dictionary<string, string> collection, string key) => collection.ContainsKey(key);
+        protected override bool ContainsKey(Dictionary<string, string> collection, ReadOnlySpan<char> key) =>
+            collection.GetAlternateLookup<ReadOnlySpan<char>>().ContainsKey(key);
         protected override IEqualityComparer<string> GetComparer(Dictionary<string, string> collection) => collection.Comparer;
 
-        protected override Type ExpectedInternalComparerTypeBeforeCollisionThreshold => nonRandomizedDefaultComparerType;
+        protected override Type ExpectedInternalComparerTypeBeforeCollisionThreshold => nonRandomizedOrdinalComparerType;
         protected override IEqualityComparer<string> ExpectedPublicComparerBeforeCollisionThreshold => EqualityComparer<string>.Default;
         protected override Type ExpectedInternalComparerTypeAfterCollisionThreshold => randomizedOrdinalComparerType;
 
@@ -58,9 +60,11 @@ namespace System.Collections.Tests
         protected override Dictionary<string, string> CreateCollection() => new Dictionary<string, string>(EqualityComparer<string>.Default);
         protected override void AddKey(Dictionary<string, string> collection, string key) => collection.Add(key, key);
         protected override bool ContainsKey(Dictionary<string, string> collection, string key) => collection.ContainsKey(key);
+        protected override bool ContainsKey(Dictionary<string, string> collection, ReadOnlySpan<char> key) =>
+            collection.GetAlternateLookup<ReadOnlySpan<char>>().ContainsKey(key);
         protected override IEqualityComparer<string> GetComparer(Dictionary<string, string> collection) => collection.Comparer;
 
-        protected override Type ExpectedInternalComparerTypeBeforeCollisionThreshold => nonRandomizedDefaultComparerType;
+        protected override Type ExpectedInternalComparerTypeBeforeCollisionThreshold => nonRandomizedOrdinalComparerType;
         protected override IEqualityComparer<string> ExpectedPublicComparerBeforeCollisionThreshold => EqualityComparer<string>.Default;
         protected override Type ExpectedInternalComparerTypeAfterCollisionThreshold => randomizedOrdinalComparerType;
     }
@@ -70,6 +74,8 @@ namespace System.Collections.Tests
         protected override Dictionary<string, string> CreateCollection() => new Dictionary<string, string>(StringComparer.Ordinal);
         protected override void AddKey(Dictionary<string, string> collection, string key) => collection.Add(key, key);
         protected override bool ContainsKey(Dictionary<string, string> collection, string key) => collection.ContainsKey(key);
+        protected override bool ContainsKey(Dictionary<string, string> collection, ReadOnlySpan<char> key) =>
+            collection.GetAlternateLookup<ReadOnlySpan<char>>().ContainsKey(key);
         protected override IEqualityComparer<string> GetComparer(Dictionary<string, string> collection) => collection.Comparer;
 
         protected override Type ExpectedInternalComparerTypeBeforeCollisionThreshold => nonRandomizedOrdinalComparerType;
@@ -82,6 +88,8 @@ namespace System.Collections.Tests
         protected override Dictionary<string, string> CreateCollection() => new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         protected override void AddKey(Dictionary<string, string> collection, string key) => collection.Add(key, key);
         protected override bool ContainsKey(Dictionary<string, string> collection, string key) => collection.ContainsKey(key);
+        protected override bool ContainsKey(Dictionary<string, string> collection, ReadOnlySpan<char> key) =>
+            collection.GetAlternateLookup<ReadOnlySpan<char>>().ContainsKey(key);
         protected override IEqualityComparer<string> GetComparer(Dictionary<string, string> collection) => collection.Comparer;
 
         protected override Type ExpectedInternalComparerTypeBeforeCollisionThreshold => nonRandomizedOrdinalIgnoreCaseComparerType;
@@ -94,6 +102,8 @@ namespace System.Collections.Tests
         protected override Dictionary<string, string> CreateCollection() => new Dictionary<string, string>(StringComparer.InvariantCulture);
         protected override void AddKey(Dictionary<string, string> collection, string key) => collection.Add(key, key);
         protected override bool ContainsKey(Dictionary<string, string> collection, string key) => collection.ContainsKey(key);
+        protected override bool ContainsKey(Dictionary<string, string> collection, ReadOnlySpan<char> key) =>
+            collection.GetAlternateLookup<ReadOnlySpan<char>>().ContainsKey(key);
         protected override IEqualityComparer<string> GetComparer(Dictionary<string, string> collection) => collection.Comparer;
 
         protected override Type ExpectedInternalComparerTypeBeforeCollisionThreshold => StringComparer.InvariantCulture.GetType();
@@ -108,6 +118,8 @@ namespace System.Collections.Tests
         protected override Dictionary<string, string> CreateCollection() => new Dictionary<string, string>(StringComparer.Ordinal);
         protected override void AddKey(Dictionary<string, string> collection, string key) => CollectionsMarshal.GetValueRefOrAddDefault(collection, key, out _) = null;
         protected override bool ContainsKey(Dictionary<string, string> collection, string key) => collection.ContainsKey(key);
+        protected override bool ContainsKey(Dictionary<string, string> collection, ReadOnlySpan<char> key) =>
+            collection.GetAlternateLookup<ReadOnlySpan<char>>().ContainsKey(key);
         protected override IEqualityComparer<string> GetComparer(Dictionary<string, string> collection) => collection.Comparer;
 
         protected override Type ExpectedInternalComparerTypeBeforeCollisionThreshold => nonRandomizedOrdinalComparerType;
@@ -122,9 +134,11 @@ namespace System.Collections.Tests
         protected override HashSet<string> CreateCollection() => new HashSet<string>();
         protected override void AddKey(HashSet<string> collection, string key) => collection.Add(key);
         protected override bool ContainsKey(HashSet<string> collection, string key) => collection.Contains(key);
+        protected override bool ContainsKey(HashSet<string> collection, ReadOnlySpan<char> key) =>
+            collection.GetAlternateLookup<ReadOnlySpan<char>>().Contains(key);
         protected override IEqualityComparer<string> GetComparer(HashSet<string> collection) => collection.Comparer;
 
-        protected override Type ExpectedInternalComparerTypeBeforeCollisionThreshold => nonRandomizedDefaultComparerType;
+        protected override Type ExpectedInternalComparerTypeBeforeCollisionThreshold => nonRandomizedOrdinalComparerType;
         protected override IEqualityComparer<string> ExpectedPublicComparerBeforeCollisionThreshold => EqualityComparer<string>.Default;
         protected override Type ExpectedInternalComparerTypeAfterCollisionThreshold => randomizedOrdinalComparerType;
     }
@@ -134,9 +148,11 @@ namespace System.Collections.Tests
         protected override HashSet<string> CreateCollection() => new HashSet<string>(EqualityComparer<string>.Default);
         protected override void AddKey(HashSet<string> collection, string key) => collection.Add(key);
         protected override bool ContainsKey(HashSet<string> collection, string key) => collection.Contains(key);
+        protected override bool ContainsKey(HashSet<string> collection, ReadOnlySpan<char> key) =>
+            collection.GetAlternateLookup<ReadOnlySpan<char>>().Contains(key);
         protected override IEqualityComparer<string> GetComparer(HashSet<string> collection) => collection.Comparer;
 
-        protected override Type ExpectedInternalComparerTypeBeforeCollisionThreshold => nonRandomizedDefaultComparerType;
+        protected override Type ExpectedInternalComparerTypeBeforeCollisionThreshold => nonRandomizedOrdinalComparerType;
         protected override IEqualityComparer<string> ExpectedPublicComparerBeforeCollisionThreshold => EqualityComparer<string>.Default;
         protected override Type ExpectedInternalComparerTypeAfterCollisionThreshold => randomizedOrdinalComparerType;
     }
@@ -146,6 +162,8 @@ namespace System.Collections.Tests
         protected override HashSet<string> CreateCollection() => new HashSet<string>(StringComparer.Ordinal);
         protected override void AddKey(HashSet<string> collection, string key) => collection.Add(key);
         protected override bool ContainsKey(HashSet<string> collection, string key) => collection.Contains(key);
+        protected override bool ContainsKey(HashSet<string> collection, ReadOnlySpan<char> key) =>
+            collection.GetAlternateLookup<ReadOnlySpan<char>>().Contains(key);
         protected override IEqualityComparer<string> GetComparer(HashSet<string> collection) => collection.Comparer;
 
         protected override Type ExpectedInternalComparerTypeBeforeCollisionThreshold => nonRandomizedOrdinalComparerType;
@@ -158,6 +176,8 @@ namespace System.Collections.Tests
         protected override HashSet<string> CreateCollection() => new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         protected override void AddKey(HashSet<string> collection, string key) => collection.Add(key);
         protected override bool ContainsKey(HashSet<string> collection, string key) => collection.Contains(key);
+        protected override bool ContainsKey(HashSet<string> collection, ReadOnlySpan<char> key) =>
+            collection.GetAlternateLookup<ReadOnlySpan<char>>().Contains(key);
         protected override IEqualityComparer<string> GetComparer(HashSet<string> collection) => collection.Comparer;
 
         protected override Type ExpectedInternalComparerTypeBeforeCollisionThreshold => nonRandomizedOrdinalIgnoreCaseComparerType;
@@ -170,6 +190,8 @@ namespace System.Collections.Tests
         protected override HashSet<string> CreateCollection() => new HashSet<string>(StringComparer.InvariantCulture);
         protected override void AddKey(HashSet<string> collection, string key) => collection.Add(key);
         protected override bool ContainsKey(HashSet<string> collection, string key) => collection.Contains(key);
+        protected override bool ContainsKey(HashSet<string> collection, ReadOnlySpan<char> key) =>
+            collection.GetAlternateLookup<ReadOnlySpan<char>>().Contains(key);
         protected override IEqualityComparer<string> GetComparer(HashSet<string> collection) => collection.Comparer;
 
         protected override Type ExpectedInternalComparerTypeBeforeCollisionThreshold => StringComparer.InvariantCulture.GetType();
@@ -186,9 +208,11 @@ namespace System.Collections.Tests
         protected override bool ContainsKey(OrderedDictionary<string, string> collection, string key) => collection.ContainsKey(key);
         protected override IEqualityComparer<string> GetComparer(OrderedDictionary<string, string> collection) => collection.Comparer;
 
-        protected override Type ExpectedInternalComparerTypeBeforeCollisionThreshold => nonRandomizedDefaultComparerType;
+        protected override Type ExpectedInternalComparerTypeBeforeCollisionThreshold => nonRandomizedOrdinalComparerType;
         protected override IEqualityComparer<string> ExpectedPublicComparerBeforeCollisionThreshold => EqualityComparer<string>.Default;
         protected override Type ExpectedInternalComparerTypeAfterCollisionThreshold => EqualityComparer<string>.Default.GetType();
+
+        protected override bool SupportsAlternateLookup(OrderedDictionary<string, string> collection) => false;
     }
 
     public class InternalHashCodeTests_OrderedDictionary_DefaultComparer : InternalHashCodeTests<OrderedDictionary<string, string>>
@@ -198,9 +222,11 @@ namespace System.Collections.Tests
         protected override bool ContainsKey(OrderedDictionary<string, string> collection, string key) => collection.ContainsKey(key);
         protected override IEqualityComparer<string> GetComparer(OrderedDictionary<string, string> collection) => collection.Comparer;
 
-        protected override Type ExpectedInternalComparerTypeBeforeCollisionThreshold => nonRandomizedDefaultComparerType;
+        protected override Type ExpectedInternalComparerTypeBeforeCollisionThreshold => nonRandomizedOrdinalComparerType;
         protected override IEqualityComparer<string> ExpectedPublicComparerBeforeCollisionThreshold => EqualityComparer<string>.Default;
         protected override Type ExpectedInternalComparerTypeAfterCollisionThreshold => EqualityComparer<string>.Default.GetType();
+
+        protected override bool SupportsAlternateLookup(OrderedDictionary<string, string> collection) => false;
     }
 
     public class InternalHashCodeTests_OrderedDictionary_OrdinalComparer : InternalHashCodeTests<OrderedDictionary<string, string>>
@@ -213,6 +239,8 @@ namespace System.Collections.Tests
         protected override Type ExpectedInternalComparerTypeBeforeCollisionThreshold => nonRandomizedOrdinalComparerType;
         protected override IEqualityComparer<string> ExpectedPublicComparerBeforeCollisionThreshold => StringComparer.Ordinal;
         protected override Type ExpectedInternalComparerTypeAfterCollisionThreshold => StringComparer.Ordinal.GetType();
+
+        protected override bool SupportsAlternateLookup(OrderedDictionary<string, string> collection) => false;
     }
 
     public class InternalHashCodeTests_OrderedDictionary_OrdinalIgnoreCaseComparer : InternalHashCodeTests<OrderedDictionary<string, string>>
@@ -225,6 +253,8 @@ namespace System.Collections.Tests
         protected override Type ExpectedInternalComparerTypeBeforeCollisionThreshold => nonRandomizedOrdinalIgnoreCaseComparerType;
         protected override IEqualityComparer<string> ExpectedPublicComparerBeforeCollisionThreshold => StringComparer.OrdinalIgnoreCase;
         protected override Type ExpectedInternalComparerTypeAfterCollisionThreshold => StringComparer.OrdinalIgnoreCase.GetType();
+
+        protected override bool SupportsAlternateLookup(OrderedDictionary<string, string> collection) => false;
     }
 
     public class InternalHashCodeTests_OrderedDictionary_LinguisticComparer : InternalHashCodeTests<OrderedDictionary<string, string>> // (not optimized)
@@ -237,12 +267,13 @@ namespace System.Collections.Tests
         protected override Type ExpectedInternalComparerTypeBeforeCollisionThreshold => StringComparer.InvariantCulture.GetType();
         protected override IEqualityComparer<string> ExpectedPublicComparerBeforeCollisionThreshold => StringComparer.InvariantCulture;
         protected override Type ExpectedInternalComparerTypeAfterCollisionThreshold => StringComparer.InvariantCulture.GetType();
+
+        protected override bool SupportsAlternateLookup(OrderedDictionary<string, string> collection) => false;
     }
     #endregion
 
     public abstract class InternalHashCodeTests<TCollection>
     {
-        protected static Type nonRandomizedDefaultComparerType = typeof(object).Assembly.GetType("System.Collections.Generic.NonRandomizedStringEqualityComparer+DefaultComparer", throwOnError: true);
         protected static Type nonRandomizedOrdinalComparerType = typeof(object).Assembly.GetType("System.Collections.Generic.NonRandomizedStringEqualityComparer+OrdinalComparer", throwOnError: true);
         protected static Type nonRandomizedOrdinalIgnoreCaseComparerType = typeof(object).Assembly.GetType("System.Collections.Generic.NonRandomizedStringEqualityComparer+OrdinalIgnoreCaseComparer", throwOnError: true);
         protected static Type randomizedOrdinalComparerType = typeof(object).Assembly.GetType("System.Collections.Generic.RandomizedStringEqualityComparer+OrdinalComparer", throwOnError: true);
@@ -252,6 +283,8 @@ namespace System.Collections.Tests
         protected abstract void AddKey(TCollection collection, string key);
         protected abstract bool ContainsKey(TCollection collection, string key);
         protected abstract IEqualityComparer<string> GetComparer(TCollection collection);
+        protected virtual bool SupportsAlternateLookup(TCollection collection) => true;
+        protected virtual bool ContainsKey(TCollection collection, ReadOnlySpan<char> key) => throw new NotSupportedException();
 
         protected abstract Type ExpectedInternalComparerTypeBeforeCollisionThreshold { get; }
         protected abstract IEqualityComparer<string> ExpectedPublicComparerBeforeCollisionThreshold { get; }
@@ -305,6 +338,10 @@ namespace System.Collections.Tests
             foreach (string key in allKeys)
             {
                 Assert.True(ContainsKey(collection, key));
+                if (SupportsAlternateLookup(collection))
+                {
+                    Assert.True(ContainsKey(collection, key.AsSpan()));
+                }
             }
 
             // Also make sure we didn't accidentally put the internal comparer in the serialized object data.

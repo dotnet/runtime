@@ -21,8 +21,8 @@ public abstract class CycleTests<T> : SerializationTest<T> where T : ISerializer
 
         var deserialized = (NodeWithValueISerializable)Deserialize(stream);
 
-        deserialized.Value.Should().Be(42);
-        deserialized.Node.Should().BeSameAs(deserialized);
+        Assert.Equal(42, deserialized.Value);
+        Assert.Same(deserialized, deserialized.Node);
     }
 
     [Fact]
@@ -44,9 +44,9 @@ public abstract class CycleTests<T> : SerializationTest<T> where T : ISerializer
         Stream stream = Serialize(node1);
 
         var deserialized = (NodeWithValueISerializable)Deserialize(stream);
-        deserialized.Value.Should().Be(42);
-        deserialized.Node!.Value.Should().Be(43);
-        deserialized.Node.Node.Should().BeSameAs(deserialized);
+        Assert.Equal(42, deserialized.Value);
+        Assert.Equal(43, deserialized.Node!.Value);
+        Assert.Same(deserialized, deserialized.Node.Node);
     }
 
     [Fact]
@@ -60,8 +60,8 @@ public abstract class CycleTests<T> : SerializationTest<T> where T : ISerializer
 
         // BinaryFormatter doesn't handle this round trip.
         var deserialized = (ClassWithValueISerializable<StructWithReferenceISerializable<object>>)Deserialize(stream);
-        deserialized.Value.Value.Should().Be(42);
-        deserialized.Value.Reference.Should().BeSameAs(deserialized);
+        Assert.Equal(42, deserialized.Value.Value);
+        Assert.Same(deserialized, deserialized.Value.Reference);
     }
 
     [Fact]
@@ -75,10 +75,10 @@ public abstract class CycleTests<T> : SerializationTest<T> where T : ISerializer
         Stream stream = Serialize(nints);
         var deserialized = (StructWithSelfArrayReferenceISerializable[])Deserialize(stream);
 
-        deserialized[0].Value.Should().Be(42);
-        deserialized[1].Value.Should().Be(43);
-        deserialized[2].Value.Should().Be(44);
-        deserialized[0].Array.Should().BeSameAs(deserialized);
+        Assert.Equal(42, deserialized[0].Value);
+        Assert.Equal(43, deserialized[1].Value);
+        Assert.Equal(44, deserialized[2].Value);
+        Assert.Same(deserialized, deserialized[0].Array);
     }
 
     [Fact]
@@ -89,8 +89,8 @@ public abstract class CycleTests<T> : SerializationTest<T> where T : ISerializer
 
         NodeWithNodeStruct deserialized = (NodeWithNodeStruct)Deserialize(Serialize(node));
 
-        deserialized.NodeStruct.Node.Should().BeSameAs(deserialized);
-        deserialized.Value.Should().Be("Root");
+        Assert.Same(deserialized, deserialized.NodeStruct.Node);
+        Assert.Equal("Root", deserialized.Value);
     }
 
     [Fact]
@@ -103,9 +103,9 @@ public abstract class CycleTests<T> : SerializationTest<T> where T : ISerializer
 
         NodeWithNodeStruct deserialized = (NodeWithNodeStruct)Deserialize(Serialize(node));
 
-        deserialized.Value.Should().Be("Root");
-        deserialized.NodeStruct.Node!.NodeStruct.Node.Should().BeSameAs(deserialized);
-        deserialized.NodeStruct.Node!.Value.Should().Be("Node2");
+        Assert.Equal("Root", deserialized.Value);
+        Assert.Same(deserialized, deserialized.NodeStruct.Node!.NodeStruct.Node);
+        Assert.Equal("Node2", deserialized.NodeStruct.Node!.Value);
     }
 
     [Fact]
@@ -115,13 +115,13 @@ public abstract class CycleTests<T> : SerializationTest<T> where T : ISerializer
         root.Left = root;
 
         BinaryTreeNode deserialized = (BinaryTreeNode)Deserialize(Serialize(root));
-        deserialized.Left.Should().BeSameAs(deserialized);
-        deserialized.Right.Should().BeNull();
+        Assert.Same(deserialized, deserialized.Left);
+        Assert.Null(deserialized.Right);
 
         root.Right = root.Left;
         deserialized = (BinaryTreeNode)Deserialize(Serialize(root));
-        deserialized.Left.Should().BeSameAs(deserialized);
-        deserialized.Right.Should().BeSameAs(deserialized);
+        Assert.Same(deserialized, deserialized.Left);
+        Assert.Same(deserialized, deserialized.Right);
     }
 
     [Fact]
@@ -131,12 +131,12 @@ public abstract class CycleTests<T> : SerializationTest<T> where T : ISerializer
         root.Left = root;
 
         var deserialized = (BinaryTreeNodeISerializable)Deserialize(Serialize(root));
-        deserialized.Left.Should().BeSameAs(deserialized);
-        deserialized.Right.Should().BeNull();
+        Assert.Same(deserialized, deserialized.Left);
+        Assert.Null(deserialized.Right);
 
         root.Right = root.Left;
         deserialized = (BinaryTreeNodeISerializable)Deserialize(Serialize(root));
-        deserialized.Left.Should().BeSameAs(deserialized);
-        deserialized.Right.Should().BeSameAs(deserialized);
+        Assert.Same(deserialized, deserialized.Left);
+        Assert.Same(deserialized, deserialized.Right);
     }
 }

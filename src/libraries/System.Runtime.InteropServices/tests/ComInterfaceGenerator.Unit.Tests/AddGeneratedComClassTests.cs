@@ -120,5 +120,40 @@ namespace ComInterfaceGenerator.Unit.Tests
 
             await VerifyCS.VerifyCodeFixAsync(source, fixedSource);
         }
+
+        [Fact]
+        public async Task TypeThatInheritsFromGeneratedComClassType_ReportsDiagnostic()
+        {
+            string source = """
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
+
+                [GeneratedComClass]
+                partial class J
+                {
+                }
+
+                class [|C|] : J
+                {
+                }
+                """;
+
+            string fixedSource = """
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
+                
+                [GeneratedComClass]
+                partial class J
+                {
+                }
+
+                [GeneratedComClass]
+                partial class C : J
+                {
+                }
+                """;
+
+            await VerifyCS.VerifyCodeFixAsync(source, fixedSource);
+        }
     }
 }

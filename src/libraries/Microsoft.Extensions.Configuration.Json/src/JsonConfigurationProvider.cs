@@ -9,7 +9,7 @@ using System.Text.Json;
 namespace Microsoft.Extensions.Configuration.Json
 {
     /// <summary>
-    /// A JSON file based <see cref="FileConfigurationProvider"/>.
+    /// Provides configuration key-value pairs that are obtained from a JSON file.
     /// </summary>
     public class JsonConfigurationProvider : FileConfigurationProvider
     {

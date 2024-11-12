@@ -88,7 +88,7 @@ namespace
         if (spec->GetName() != nullptr)
             spec->GetDisplayName(ASM_DISPLAYF_VERSION | ASM_DISPLAYF_CULTURE | ASM_DISPLAYF_PUBLIC_KEY_TOKEN, request.AssemblyName);
 
-        DomainAssembly *parentAssembly = spec->GetParentAssembly();
+        ::Assembly *parentAssembly = spec->GetParentAssembly();
         if (parentAssembly != nullptr)
         {
             PEAssembly *pPEAssembly = parentAssembly->GetPEAssembly();

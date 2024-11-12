@@ -118,12 +118,9 @@ namespace System.Text.Json.Serialization.Metadata
                     }
 
                     FlushResult result = await pipeWriter.FlushAsync(cancellationToken).ConfigureAwait(false);
-                    if (result.IsCanceled || result.IsCompleted)
+                    if (result.IsCanceled)
                     {
-                        if (result.IsCanceled)
-                        {
-                            ThrowHelper.ThrowOperationCanceledException_PipeWriteCanceled();
-                        }
+                        ThrowHelper.ThrowOperationCanceledException_PipeWriteCanceled();
                     }
                 }
                 finally
@@ -304,10 +301,8 @@ namespace System.Text.Json.Serialization.Metadata
                 using var bufferWriter = new PooledByteBufferWriter(Options.DefaultBufferSize);
                 using var writer = new Utf8JsonWriter(bufferWriter, Options.GetWriterOptions());
 
-                if (!bufferWriter.CanGetUnflushedBytes)
-                {
-                    ThrowHelper.ThrowInvalidOperationException_PipeWriterDoesNotImplementUnflushedBytes(bufferWriter);
-                }
+                Debug.Assert(bufferWriter.CanGetUnflushedBytes);
+
                 state.PipeWriter = bufferWriter;
                 state.FlushThreshold = (int)(bufferWriter.Capacity * JsonSerializer.FlushThreshold);
 

@@ -109,10 +109,10 @@ namespace System.Net.Http
             return sslStream;
         }
 
-        [SupportedOSPlatform("windows")]
         [SupportedOSPlatform("linux")]
         [SupportedOSPlatform("macos")]
-        public static async ValueTask<QuicConnection> ConnectQuicAsync(HttpRequestMessage request, DnsEndPoint endPoint, TimeSpan idleTimeout, SslClientAuthenticationOptions clientAuthenticationOptions, CancellationToken cancellationToken)
+        [SupportedOSPlatform("windows")]
+        public static async ValueTask<QuicConnection> ConnectQuicAsync(HttpRequestMessage request, DnsEndPoint endPoint, TimeSpan idleTimeout, SslClientAuthenticationOptions clientAuthenticationOptions, Action<QuicConnection, QuicStreamCapacityChangedArgs> streamCapacityCallback, CancellationToken cancellationToken)
         {
             clientAuthenticationOptions = SetUpRemoteCertificateValidationCallback(clientAuthenticationOptions, request);
 
@@ -126,7 +126,8 @@ namespace System.Net.Http
                     DefaultStreamErrorCode = (long)Http3ErrorCode.RequestCancelled,
                     DefaultCloseErrorCode = (long)Http3ErrorCode.NoError,
                     RemoteEndPoint = endPoint,
-                    ClientAuthenticationOptions = clientAuthenticationOptions
+                    ClientAuthenticationOptions = clientAuthenticationOptions,
+                    StreamCapacityCallback = streamCapacityCallback,
                 }, cancellationToken).ConfigureAwait(false);
             }
             catch (Exception ex) when (ex is not OperationCanceledException)

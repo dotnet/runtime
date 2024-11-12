@@ -170,9 +170,9 @@ FCIMPL0(int32_t, RhGetMaxGcGeneration)
 }
 FCIMPLEND
 
-FCIMPL2(int32_t, RhGetGcCollectionCount, int32_t generation, CLR_BOOL getSpecialGCCount)
+FCIMPL2(int32_t, RhGetGcCollectionCount, int32_t generation, FC_BOOL_ARG getSpecialGCCount)
 {
-    return GCHeapUtilities::GetGCHeap()->CollectionCount(generation, getSpecialGCCount);
+    return GCHeapUtilities::GetGCHeap()->CollectionCount(generation, FC_ACCESS_BOOL(getSpecialGCCount));
 }
 FCIMPLEND
 
@@ -476,7 +476,7 @@ static Object* GcAllocInternal(MethodTable* pEEType, uint32_t uFlags, uintptr_t 
     ASSERT(!pThread->IsDoNotTriggerGcSet());
     ASSERT(pThread->IsCurrentThreadInCooperativeMode());
 
-    if (pEEType->ContainsPointers())
+    if (pEEType->ContainsGCPointers())
     {
         uFlags |= GC_ALLOC_CONTAINS_REF;
         uFlags &= ~GC_ALLOC_ZEROING_OPTIONAL;
@@ -540,6 +540,7 @@ static Object* GcAllocInternal(MethodTable* pEEType, uint32_t uFlags, uintptr_t 
     tls_pLastAllocationEEType = pEEType;
 
     Object* pObject = GCHeapUtilities::GetGCHeap()->Alloc(pThread->GetAllocContext(), cbSize, uFlags);
+    pThread->GetEEAllocContext()->UpdateCombinedLimit();
     if (pObject == NULL)
         return NULL;
 
@@ -693,7 +694,7 @@ EXTERN_C void QCALLTYPE RhUnregisterFrozenSegment(void* pSegmentHandle)
 
 FCIMPL1(uint32_t, RhGetGCDescSize, MethodTable* pMT)
 {
-    if (!pMT->ContainsPointersOrCollectible())
+    if (!pMT->ContainsGCPointersOrCollectible())
         return 0;
 
     return (uint32_t)CGCDesc::GetCGCDescFromMT(pMT)->GetSize();

@@ -88,10 +88,13 @@ namespace System.Security.Cryptography
             Debug.Assert(otherPartyPublicKey != null);
             Debug.Assert(_key is not null); // Callers should validate prior.
 
-            // Ensure that this ECDH object contains a private key by attempting a parameter export
-            // which will throw an OpenSslCryptoException if no private key is available
-            ECParameters thisKeyExplicit = ExportExplicitParameters(true);
-            bool thisIsNamed = Interop.Crypto.EcKeyHasCurveName(_key.Value);
+            bool thisIsNamed;
+
+            using (SafeEcKeyHandle ecKey = Interop.Crypto.EvpPkeyGetEcKey(_key.Value))
+            {
+                thisIsNamed = Interop.Crypto.EcKeyHasCurveName(ecKey);
+            }
+
             ECDiffieHellmanOpenSslPublicKey? otherKey = otherPartyPublicKey as ECDiffieHellmanOpenSslPublicKey;
             bool disposeOtherKey = false;
 
@@ -109,10 +112,15 @@ namespace System.Security.Cryptography
 
             bool otherIsNamed = otherKey.HasCurveName;
 
-            SafeEvpPKeyHandle? ourKey = null;
+            // We need to always duplicate handle in case this operation is done by multiple threads and one of them disposes the handle
+            SafeEvpPKeyHandle? ourKey = _key.Value;
+            bool disposeOurKey = false;
+
             SafeEvpPKeyHandle? theirKey = null;
-            byte[]? rented = null;
-            int secretLength = 0;
+
+            // secp521r1 which is the biggest common case maxes out at 66 bytes so 128 should always be enough.
+            const int StackAllocMax = 128;
+            Span<byte> secret = stackalloc byte[StackAllocMax];
 
             try
             {
@@ -123,79 +131,64 @@ namespace System.Security.Cryptography
 
                 if (otherIsNamed == thisIsNamed)
                 {
-                    ourKey = _key.UpRefKeyHandle();
                     theirKey = otherKey.DuplicateKeyHandle();
                 }
                 else if (otherIsNamed)
                 {
-                    ourKey = _key.UpRefKeyHandle();
-
                     using (ECOpenSsl tmp = new ECOpenSsl(otherKey.ExportExplicitParameters()))
                     {
-                        theirKey = tmp.UpRefKeyHandle();
+                        theirKey = tmp.CreateEvpPKeyHandle();
                     }
                 }
                 else
                 {
-                    using (ECOpenSsl tmp = new ECOpenSsl(thisKeyExplicit))
+                    try
                     {
-                        ourKey = tmp.UpRefKeyHandle();
+                        // This is generally not expected to fail except:
+                        // - when key can't be accessed but is available (i.e. TPM)
+                        // - private key is actually missing
+                        using (ECOpenSsl tmp = new ECOpenSsl(ExportExplicitParameters(true)))
+                        {
+                            ourKey = tmp.CreateEvpPKeyHandle();
+                            disposeOurKey = true;
+                        }
+                    }
+                    catch (CryptographicException)
+                    {
+                        // In both cases of failure we'll report lack of private key
+                        throw new CryptographicException(SR.Cryptography_CSP_NoPrivateKey);
                     }
 
                     theirKey = otherKey.DuplicateKeyHandle();
                 }
 
-                using (SafeEvpPKeyCtxHandle ctx = Interop.Crypto.EvpPKeyCtxCreate(ourKey, theirKey, out uint secretLengthU))
+                int written = Interop.Crypto.EvpPKeyDeriveSecretAgreement(ourKey, theirKey, secret);
+                secret = secret.Slice(0, written);
+
+                if (hasher == null)
                 {
-                    if (ctx == null || ctx.IsInvalid || secretLengthU == 0 || secretLengthU > int.MaxValue)
-                    {
-                        throw Interop.Crypto.CreateOpenSslCryptographicException();
-                    }
-
-                    secretLength = (int)secretLengthU;
-
-                    // Indicate that secret can hold stackallocs from nested scopes
-                    scoped Span<byte> secret;
-
-                    // Arbitrary limit. But it covers secp521r1, which is the biggest common case.
-                    const int StackAllocMax = 66;
-
-                    if (secretLength > StackAllocMax)
-                    {
-                        rented = CryptoPool.Rent(secretLength);
-                        secret = new Span<byte>(rented, 0, secretLength);
-                    }
-                    else
-                    {
-                        secret = stackalloc byte[secretLength];
-                    }
-
-                    Interop.Crypto.EvpPKeyDeriveSecretAgreement(ctx, secret);
-
-                    if (hasher == null)
-                    {
-                        return secret.ToArray();
-                    }
-                    else
-                    {
-                        hasher.AppendData(secret);
-                        return null;
-                    }
+                    return secret.ToArray();
+                }
+                else
+                {
+                    hasher.AppendData(secret);
+                    return null;
                 }
             }
             finally
             {
+                CryptographicOperations.ZeroMemory(secret);
+
                 theirKey?.Dispose();
-                ourKey?.Dispose();
 
                 if (disposeOtherKey)
                 {
                     otherKey.Dispose();
                 }
 
-                if (rented != null)
+                if (disposeOurKey)
                 {
-                    CryptoPool.Return(rented, secretLength);
+                    ourKey.Dispose();
                 }
             }
         }

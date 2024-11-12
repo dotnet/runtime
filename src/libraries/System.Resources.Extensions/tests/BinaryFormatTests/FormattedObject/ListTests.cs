@@ -19,16 +19,16 @@ public class ListTests : SerializationTest<FormattedObjectSerializer>
 
         VerifyArrayList((ClassRecord)format[format.RootRecord.Id]);
 
-        format[((ClassRecord)format.RootRecord).GetArrayRecord("_items").Id].Should().BeAssignableTo<SZArrayRecord<object>>();
+        Assert.True(format[((ClassRecord)format.RootRecord).GetArrayRecord("_items").Id] is SZArrayRecord<object>);
     }
 
     private static void VerifyArrayList(ClassRecord systemClass)
     {
-        systemClass.RecordType.Should().Be(SerializationRecordType.SystemClassWithMembersAndTypes);
+        Assert.Equal(SerializationRecordType.SystemClassWithMembersAndTypes, systemClass.RecordType);
 
-        systemClass.TypeName.FullName.Should().Be(typeof(ArrayList).FullName);
-        systemClass.MemberNames.Should().BeEquivalentTo(["_items", "_size", "_version"]);
-        systemClass.GetSerializationRecord("_items").Should().BeAssignableTo<SZArrayRecord<object>>();
+        Assert.Equal(typeof(ArrayList).FullName, systemClass.TypeName.FullName);
+        Assert.Equal(["_items", "_size", "_version"], systemClass.MemberNames);
+        Assert.True(systemClass.GetSerializationRecord("_items") is SZArrayRecord<object>);
     }
 
     [Theory]
@@ -45,7 +45,7 @@ public class ListTests : SerializationTest<FormattedObjectSerializer>
 
         SZArrayRecord<object> array = (SZArrayRecord<object>)format[listRecord.GetArrayRecord("_items").Id];
 
-        array.GetArray().Take(listRecord.GetInt32("_size")).Should().BeEquivalentTo(new[] { value });
+        Assert.Equal(new[] { value }, array.GetArray().Take(listRecord.GetInt32("_size")));
     }
 
     [Fact]
@@ -60,8 +60,7 @@ public class ListTests : SerializationTest<FormattedObjectSerializer>
         VerifyArrayList(listRecord);
 
         SZArrayRecord<object> array = (SZArrayRecord<object>)format[listRecord.GetArrayRecord("_items").Id];
-
-        array.GetArray().Take(listRecord.GetInt32("_size")).ToArray().Should().BeEquivalentTo(new object[] { "JarJar" });
+        Assert.Equal(new object[] { "JarJar" }, array.GetArray().Take(listRecord.GetInt32("_size")));
     }
 
     public static TheoryData<object> ArrayList_Primitive_Data => new()
@@ -126,13 +125,12 @@ public class ListTests : SerializationTest<FormattedObjectSerializer>
     {
         BinaryFormattedObject format = new(Serialize(new List<int>()));
         ClassRecord classInfo = (ClassRecord)format[format.RootRecord.Id];
-        classInfo.RecordType.Should().Be(SerializationRecordType.SystemClassWithMembersAndTypes);
+        Assert.Equal(SerializationRecordType.SystemClassWithMembersAndTypes, classInfo.RecordType);
 
         // Note that T types are serialized as the mscorlib type.
-        classInfo.TypeName.FullName.Should().Be(
-            "System.Collections.Generic.List`1[[System.Int32, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]]");
+        Assert.Equal("System.Collections.Generic.List`1[[System.Int32, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]]", classInfo.TypeName.FullName);
 
-        classInfo.MemberNames.Should().BeEquivalentTo(
+        Assert.Equal(
         [
             "_items",
             // This is something that wouldn't be needed if List<T> implemented ISerializable. If we format
@@ -141,14 +139,14 @@ public class ListTests : SerializationTest<FormattedObjectSerializer>
             // It is a bit silly that _version gets serialized, it's only use is as a check to see if
             // the collection is modified while it is being enumerated.
             "_version"
-        ]);
+        ], classInfo.MemberNames);
 
-        classInfo.GetSerializationRecord("_items").Should().BeAssignableTo<SZArrayRecord<int>>();
-        classInfo.GetInt32("_size").Should().Be(0);
-        classInfo.GetInt32("_version").Should().Be(0);
+        Assert.True(classInfo.GetSerializationRecord("_items") is SZArrayRecord<int>);
+        Assert.Equal(0, classInfo.GetInt32("_size"));
+        Assert.Equal(0, classInfo.GetInt32("_version"));
 
         SZArrayRecord<int> array = (SZArrayRecord<int>)format[classInfo.GetArrayRecord("_items").Id];
-        array.Length.Should().Be(0);
+        Assert.Equal(0, array.Length);
     }
 
     [Fact]
@@ -157,12 +155,12 @@ public class ListTests : SerializationTest<FormattedObjectSerializer>
         BinaryFormattedObject format = new(Serialize(new List<string>()));
 
         ClassRecord classInfo = (ClassRecord)format[format.RootRecord.Id];
-        classInfo.RecordType.Should().Be(SerializationRecordType.SystemClassWithMembersAndTypes);
-        classInfo.TypeName.FullName.Should().StartWith("System.Collections.Generic.List`1[[System.String,");
-        classInfo.GetSerializationRecord("_items").Should().BeAssignableTo<SZArrayRecord<string>>();
+        Assert.Equal(SerializationRecordType.SystemClassWithMembersAndTypes, classInfo.RecordType);
+        Assert.StartsWith("System.Collections.Generic.List`1[[System.String,", classInfo.TypeName.FullName);
+        Assert.True(classInfo.GetSerializationRecord("_items") is SZArrayRecord<string>);
 
         SZArrayRecord<string> array = (SZArrayRecord<string>)format[classInfo.GetArrayRecord("_items").Id];
-        array.Length.Should().Be(0);
+        Assert.Equal(0, array.Length);
     }
 
     public static TheoryData<IList> Lists_UnsupportedTestData => new()

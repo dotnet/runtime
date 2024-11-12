@@ -1416,15 +1416,15 @@ namespace R2RDump
             else if (IsLoongArch64JirlRAInstruction(instr, out uint rj, out int imm))
             {
                 // Common Pattern:
-                //      pcaddu12i
+                //      pcalau12i
                 //      ld.d
                 //      jirl  ra, rj, 0
                 //
-                //      pcaddu12i
+                //      pcalau12i
                 //      addi.d
                 //      ld.d
                 //      jirl  ra, rj, 0
-                //  There may exist some irrelevant instructions between pcaddu12i and jirl.
+                //  There may exist some irrelevant instructions between pcalau12i and jirl.
                 //  We need to find relevant instructions based on rj to calculate the jump address.
                 uint register  = rj;
                 int  immediate = imm;
@@ -1444,11 +1444,11 @@ namespace R2RDump
                             immediate += imm;
                         }
                     }
-                    else if (IsLoongArch64Pcaddu12iInstruction(instr, out rd, out imm))
+                    else if (IsLoongArch64Pcalau12iInstruction(instr, out rd, out imm))
                     {
                         if (rd == register)
                         {
-                            immediate += currentPC + imm;
+                            immediate += (currentPC & ~0xfff) + imm;
                             isFound = true;
                             break;
                         }
@@ -1549,14 +1549,14 @@ namespace R2RDump
         }
 
         /// <summary>
-        /// Determine whether a given instruction is a PCADDU12I.
+        /// Determine whether a given instruction is a PCALAU12I.
         /// </summary>
         /// <param name="ins">Assembly code of instruction</param>
-        private bool IsLoongArch64Pcaddu12iInstruction(uint ins, out uint rd, out int imm)
+        private bool IsLoongArch64Pcalau12iInstruction(uint ins, out uint rd, out int imm)
         {
             rd = 0;
             imm = 0;
-            if (((ins >> 25) & 0x3f) == 0xe)
+            if (((ins >> 25) & 0x3f) == 0xd)
             {
                 rd = ins & 0x1f;
                 imm = (int)((ins >> 5) & 0xfffff) << 12;

@@ -11,7 +11,10 @@ namespace DisabledRuntimeMarshalling.PInvokeAssemblyMarshallingEnabled;
 [ActiveIssue("https://github.com/dotnet/runtime/issues/91388", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
 public unsafe class DelegatesFromExternalAssembly
 {
-    [Fact]
+    public static bool IsWindowsX86Process => OperatingSystem.IsWindows() && RuntimeInformation.ProcessArchitecture == Architecture.X86;
+    public static bool IsNotWindowsX86Process => !IsWindowsX86Process;
+
+    [ConditionalFact(nameof(IsNotWindowsX86Process))]
     public static void StructWithDefaultNonBlittableFields()
     {
         short s = 42;
@@ -21,8 +24,8 @@ public unsafe class DelegatesFromExternalAssembly
 
         Assert.False(cb(new StructWithShortAndBool(s, b), s, b));
     }
-
-    [Fact]
+    
+    [ConditionalFact(nameof(IsNotWindowsX86Process))]
     [PlatformSpecific(TestPlatforms.Windows)]
     public static void StructWithDefaultNonBlittableFields_MarshalAsInfo()
     {

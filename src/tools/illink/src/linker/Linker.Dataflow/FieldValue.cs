@@ -4,10 +4,9 @@
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using ILLink.Shared.DataFlow;
+using Mono.Cecil;
 using Mono.Linker;
-using FieldDefinition = Mono.Cecil.FieldDefinition;
-using TypeDefinition = Mono.Cecil.TypeDefinition;
-
+using FieldReference = Mono.Cecil.FieldReference;
 
 namespace ILLink.Shared.TrimAnalysis
 {
@@ -17,14 +16,14 @@ namespace ILLink.Shared.TrimAnalysis
 	/// </summary>
 	internal sealed partial record FieldValue
 	{
-		public FieldValue (TypeDefinition? staticType, FieldDefinition fieldToLoad, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
+		public FieldValue (FieldReference fieldToLoad, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes, ITryResolveMetadata resolver)
 		{
-			StaticType = staticType == null ? null : new (staticType);
+			StaticType = new (fieldToLoad.FieldType.InflateFrom (fieldToLoad.DeclaringType as IGenericInstance), resolver);
 			Field = fieldToLoad;
 			DynamicallyAccessedMemberTypes = dynamicallyAccessedMemberTypes;
 		}
 
-		public readonly FieldDefinition Field;
+		public readonly FieldReference Field;
 
 		public override DynamicallyAccessedMemberTypes DynamicallyAccessedMemberTypes { get; }
 

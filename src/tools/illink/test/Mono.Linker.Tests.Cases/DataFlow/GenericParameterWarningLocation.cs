@@ -1372,29 +1372,32 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			{
 				static void MethodWithAnnotatedParameter ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] string typeName) { }
 
-				// Analyzer: https://github.com/dotnet/runtime/issues/95118
-				[ExpectedWarning ("IL2026", "TypeWithRUCMethod.PrivateRUCMethod", Tool.Trimmer | Tool.NativeAot, "")]
+				[ExpectedWarning ("IL2026", "TypeWithRUCMethod.PrivateRUCMethod", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/95118")]
 				static void AnnotatedParameter ()
 				{
-					MethodWithAnnotatedParameter ("Mono.Linker.Tests.Cases.DataFlow.GenericParameterWarningLocation+MethodBody+TypeWithPrivateMethods`1[[Mono.Linker.Tests.Cases.DataFlow.GenericParameterWarningLocation+MethodBody+TypeWithRUCMethod]]");
+					MethodWithAnnotatedParameter ("Mono.Linker.Tests.Cases.DataFlow.GenericParameterWarningLocation+MethodBody+TypeWithPrivateMethods`1[["
+							+ "Mono.Linker.Tests.Cases.DataFlow.GenericParameterWarningLocation+MethodBody+TypeWithRUCMethod, test"
+						+ "]], test");
 				}
 
-				// Analyzer: https://github.com/dotnet/runtime/issues/95118
-				[ExpectedWarning ("IL2026", "TypeWithRUCMethod.PrivateRUCMethod", Tool.Trimmer | Tool.NativeAot, "")]
+				[ExpectedWarning ("IL2026", "TypeWithRUCMethod.PrivateRUCMethod", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/95118")]
 				[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
 				static string AnnotatedReturnValue ()
 				{
-					return "Mono.Linker.Tests.Cases.DataFlow.GenericParameterWarningLocation+MethodBody+TypeWithPrivateMethods`1[[Mono.Linker.Tests.Cases.DataFlow.GenericParameterWarningLocation+MethodBody+TypeWithRUCMethod]]";
+					return "Mono.Linker.Tests.Cases.DataFlow.GenericParameterWarningLocation+MethodBody+TypeWithPrivateMethods`1[["
+							+ "Mono.Linker.Tests.Cases.DataFlow.GenericParameterWarningLocation+MethodBody+TypeWithRUCMethod, test"
+						+ "]], test";
 				}
 
 				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
 				static string _annotatedField;
 
-				// Analyzer: https://github.com/dotnet/runtime/issues/95118
-				[ExpectedWarning ("IL2026", "TypeWithRUCMethod.PrivateRUCMethod", Tool.Trimmer | Tool.NativeAot, "")]
+				[ExpectedWarning ("IL2026", "TypeWithRUCMethod.PrivateRUCMethod", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/95118")]
 				static void AnnotatedField ()
 				{
-					_annotatedField = "Mono.Linker.Tests.Cases.DataFlow.GenericParameterWarningLocation+MethodBody+TypeWithPrivateMethods`1[[Mono.Linker.Tests.Cases.DataFlow.GenericParameterWarningLocation+MethodBody+TypeWithRUCMethod]]";
+					_annotatedField = "Mono.Linker.Tests.Cases.DataFlow.GenericParameterWarningLocation+MethodBody+TypeWithPrivateMethods`1[["
+							+ "Mono.Linker.Tests.Cases.DataFlow.GenericParameterWarningLocation+MethodBody+TypeWithRUCMethod, test"
+						+ "]], test";
 				}
 
 				public static void Test ()
@@ -1407,11 +1410,12 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 			class TypeGetType
 			{
-				// Analyzer: https://github.com/dotnet/runtime/issues/95118
-				[ExpectedWarning ("IL2026", "TypeWithRUCMethod.PrivateRUCMethod", Tool.Trimmer | Tool.NativeAot, "")]
+				[ExpectedWarning ("IL2026", "TypeWithRUCMethod.PrivateRUCMethod", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/95118")]
 				static void SpecificType ()
 				{
-					Type.GetType ("Mono.Linker.Tests.Cases.DataFlow.GenericParameterWarningLocation+MethodBody+TypeWithPrivateMethods`1[[Mono.Linker.Tests.Cases.DataFlow.GenericParameterWarningLocation+MethodBody+TypeWithRUCMethod]]");
+					Type.GetType ("Mono.Linker.Tests.Cases.DataFlow.GenericParameterWarningLocation+MethodBody+TypeWithPrivateMethods`1[["
+							+ "Mono.Linker.Tests.Cases.DataFlow.GenericParameterWarningLocation+MethodBody+TypeWithRUCMethod"
+						+ "]]");
 				}
 
 				public static void Test ()

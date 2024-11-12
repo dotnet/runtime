@@ -491,8 +491,6 @@ namespace System.Linq
 
             public override List<TSource> ToList()
             {
-                var list = new List<TSource>();
-
                 using (IEnumerator<TSource> en = _source.GetEnumerator())
                 {
                     if (SkipBeforeFirst(en) && en.MoveNext())
@@ -500,16 +498,23 @@ namespace System.Linq
                         int remaining = Limit - 1; // Max number of items left, not counting the current element.
                         int comparand = HasLimit ? 0 : int.MinValue; // If we don't have an upper bound, have the comparison always return true.
 
+                        SegmentedArrayBuilder<TSource>.ScratchBuffer scratch = default;
+                        SegmentedArrayBuilder<TSource> builder = new(scratch);
                         do
                         {
                             remaining--;
-                            list.Add(en.Current);
+                            builder.Add(en.Current);
                         }
                         while (remaining >= comparand && en.MoveNext());
+
+                        List<TSource> result = builder.ToList();
+                        builder.Dispose();
+
+                        return result;
                     }
                 }
 
-                return list;
+                return [];
             }
 
             private bool SkipBeforeFirst(IEnumerator<TSource> en) => SkipBefore(_minIndexInclusive, en);

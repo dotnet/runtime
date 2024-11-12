@@ -607,7 +607,7 @@ void FloatRegValueHome::GetEnregisteredValue(MemoryRange valueOutBuffer)
       ValueHome(pProcess),
       m_remoteValue(remoteValue)
     {
-        _ASSERTE(remoteValue.pAddress != NULL);
+        _ASSERTE(remoteValue.pAddress != 0);
     } // RemoteValueHome::RemoteValueHome
 
 // Gets a value and returns it in dest
@@ -913,7 +913,7 @@ void HandleValueHome::GetValue(MemoryRange dest)
 
     _ASSERTE(dest.Size() <= sizeof(void *));
     _ASSERTE(dest.StartAddress() != NULL);
-    _ASSERTE(objPtr != NULL);
+    _ASSERTE(objPtr != (CORDB_ADDRESS)NULL);
     m_pProcess->SafeReadBuffer(TargetBuffer(objPtr, sizeof(void *)), (BYTE *)dest.StartAddress());
 } // HandleValueHome::GetValue
 

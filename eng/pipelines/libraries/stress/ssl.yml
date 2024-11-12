@@ -12,6 +12,7 @@ schedules:
     include:
     - main
     - release/8.0
+    - release/9.0
 
 variables:
   - template: ../variables.yml
@@ -33,6 +34,9 @@ extends:
       - job: linux
         displayName: Docker Linux
         timeoutInMinutes: 120
+        variables:
+          DUMPS_SHARE_MOUNT_ROOT: "/dumps-share"
+          DUMPS_SHARE: "$(Build.ArtifactStagingDirectory)/dumps/"
         pool:
           name: $(DncEngPublicBuildPool)
           demands: ImageOverride -equals Build.Ubuntu.2204.Amd64.Open
@@ -52,8 +56,15 @@ extends:
 
         - bash: |
             cd '$(sslStressProject)'
+            export STRESS_CLIENT_ARGS=$SSLSTRESS_CLIENT_ARGS
+            export STRESS_SERVER_ARGS=$SSLSTRESS_SERVER_ARGS
+            mkdir -p $DUMPS_SHARE
             docker-compose up --abort-on-container-exit --no-color
           displayName: Run SslStress
+
+        - publish: $(Build.ArtifactStagingDirectory)/dumps
+          artifact: DumpsLinux
+          condition: failed()
 
       - job: windows
         displayName: Docker NanoServer
@@ -62,11 +73,8 @@ extends:
           name: $(DncEngPublicBuildPool)
           demands: ImageOverride -equals 1es-windows-2022-open
         variables:
-          # The 1es-windows-2022-open image has an issue where the Chocolatey-installed V1 docker-compose takes precendence over the
-          # V2 docker-compose required by the stress tests, see: https://github.com/actions/runner-images/issues/7080
-          # This is worked around by handpicking the V2 executable.
-          # The workaround should be removed when the official fix is propagated into 1es-windows-2022-open, or when we switch to another image.
-          DOCKER_COMPOSE_CMD: "C:/ProgramData/docker/cli-plugins/docker-compose.exe"
+          DUMPS_SHARE_MOUNT_ROOT: "C:/dumps-share"
+          DUMPS_SHARE: "$(Build.ArtifactStagingDirectory)/dumps/"
         steps:
         - checkout: self
           clean: true
@@ -74,9 +82,6 @@ extends:
           lfs: false
 
         - powershell: |
-            # Workaround for https://github.com/microsoft/azure-pipelines-agent/issues/4554. Undo when the image bug is fixed.
-            Remove-Item -Path "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\Microsoft.VCToolsVersion.v143.default.txt"
-
             $(dockerfilesFolder)/build-docker-sdk.ps1 -w -t $(sdkBaseImage) -c $(BUILD_CONFIGURATION)
           displayName: Build CLR and Libraries
 
@@ -86,5 +91,12 @@ extends:
 
         - powershell: |
             cd '$(sslStressProject)'
-            & $env:DOCKER_COMPOSE_CMD up --abort-on-container-exit --no-color
+            $env:STRESS_CLIENT_ARGS = $env:SSLSTRESS_CLIENT_ARGS
+            $env:STRESS_SERVER_ARGS = $env:SSLSTRESS_SERVER_ARGS
+            New-Item -Force $env:DUMPS_SHARE -ItemType Directory
+            docker compose up --abort-on-container-exit --no-color
           displayName: Run SslStress
+
+        - publish: $(Build.ArtifactStagingDirectory)/dumps
+          artifact: DumpsWindows
+          condition: failed()

@@ -129,9 +129,11 @@ namespace System.Linq.Tests
         public void EmptySource()
         {
             int[] source = { };
-
-            Assert.Throws<InvalidOperationException>(() => source.First(x => true));
-            Assert.Throws<InvalidOperationException>(() => source.First(x => false));
+            Assert.All(CreateSources(source), source =>
+            {
+                Assert.Throws<InvalidOperationException>(() => source.First(x => true));
+                Assert.Throws<InvalidOperationException>(() => source.First(x => false));
+            });
         }
 
         [Fact]
@@ -141,7 +143,10 @@ namespace System.Linq.Tests
             Func<int, bool> predicate = IsEven;
             int expected = 4;
 
-            Assert.Equal(expected, source.First(predicate));
+            Assert.All(CreateSources(source), source =>
+            {
+                Assert.Equal(expected, source.First(predicate));
+            });
         }
 
         [Fact]
@@ -150,7 +155,10 @@ namespace System.Linq.Tests
             int[] source = { 9, 5, 1, 3, 17, 21 };
             Func<int, bool> predicate = IsEven;
 
-            Assert.Throws<InvalidOperationException>(() => source.First(predicate));
+            Assert.All(CreateSources(source), source =>
+            {
+                Assert.Throws<InvalidOperationException>(() => source.First(predicate));
+            });
         }
 
         [Fact]
@@ -160,7 +168,10 @@ namespace System.Linq.Tests
             Func<int, bool> predicate = IsEven;
             int expected = 50;
 
-            Assert.Equal(expected, source.First(predicate));
+            Assert.All(CreateSources(source), source =>
+            {
+                Assert.Equal(expected, source.First(predicate));
+            });
         }
 
         [Fact]
@@ -180,7 +191,10 @@ namespace System.Linq.Tests
             Func<int, bool> predicate = IsEven;
             int expected = 10;
 
-            Assert.Equal(expected, source.RunOnce().First(predicate));
+            Assert.All(CreateSources(source), source =>
+            {
+                Assert.Equal(expected, source.RunOnce().First(predicate));
+            });
         }
 
         [Fact]

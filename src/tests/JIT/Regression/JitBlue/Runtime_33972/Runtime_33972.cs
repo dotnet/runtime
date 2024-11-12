@@ -481,8 +481,7 @@ public class Program
     [MethodImpl(MethodImplOptions.NoInlining)]
     static Vector64<byte> AdvSimd_CompareGreaterThanOrEqual_Vector64_Byte_Zero(Vector64<byte> left)
     {
-        // ARM64-FULL-LINE:      movi {{v[0-9]+}}.2s, #0
-        // ARM64-FULL-LINE-NEXT: cmhs {{v[0-9]+}}.8b, {{v[0-9]+}}.8b, {{v[0-9]+}}.8b
+        // ARM64-FULL-LINE: mvni {{v[0-9]+}}.2s, #0
         return AdvSimd.CompareGreaterThanOrEqual(left, Vector64<byte>.Zero);
     }
 
@@ -496,8 +495,7 @@ public class Program
     [MethodImpl(MethodImplOptions.NoInlining)]
     static Vector128<byte> AdvSimd_CompareGreaterThanOrEqual_Vector128_Byte_Zero(Vector128<byte> left)
     {
-        // ARM64-FULL-LINE:      movi {{v[0-9]+}}.4s, #0
-        // ARM64-FULL-LINE-NEXT: cmhs {{v[0-9]+}}.16b, {{v[0-9]+}}.16b, {{v[0-9]+}}.16b
+        // ARM64-FULL-LINE: mvni {{v[0-9]+}}.4s, #0
         return AdvSimd.CompareGreaterThanOrEqual(left, Vector128<byte>.Zero);
     }
 
