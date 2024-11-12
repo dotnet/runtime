@@ -12949,12 +12949,15 @@ bool Compiler::fgMorphBlockStmt(BasicBlock*     block,
         // We should not convert it to a ThrowBB.
         if ((block != fgFirstBB) || !fgFirstBB->HasFlag(BBF_INTERNAL))
         {
-            // Convert block to a throw bb
-            fgConvertBBToThrowBB(block);
-
-            if (invalidateDFSTreeOnFGChange)
+            if (!block->KindIs(BBJ_THROW))
             {
-                fgInvalidateDfsTree();
+                // Convert block to a throw bb
+                fgConvertBBToThrowBB(block);
+
+                if (invalidateDFSTreeOnFGChange)
+                {
+                    fgInvalidateDfsTree();
+                }
             }
         }
 
