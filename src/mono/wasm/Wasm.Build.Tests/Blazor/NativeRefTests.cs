@@ -51,23 +51,23 @@ public class NativeTests : BlazorWasmTestBase
         BlazorPublish(info, isNativeBuild: true);
     }
 
-    // [Theory]
-    // [InlineData("Release")]
-    // public void BlazorWasm_CannotAOT_WithNoTrimming(string config)
-    // {
-    //     string extraProperties = "<PublishTrimmed>false</PublishTrimmed><RunAOTCompilation>true</RunAOTCompilation>";
-    //     ProjectInfo info = CopyTestAsset(config, aot: true, "BlazorBasicTestApp", "blazorwasm_aot", "App", extraProperties: extraProperties);
+    [Theory]
+    [InlineData("Release")]
+    public void BlazorWasm_CannotAOT_WithNoTrimming(string config)
+    {
+        string extraProperties = "<PublishTrimmed>false</PublishTrimmed><RunAOTCompilation>true</RunAOTCompilation>";
+        ProjectInfo info = CopyTestAsset(config, aot: true, "BlazorBasicTestApp", "blazorwasm_aot", "App", extraProperties: extraProperties);
 
-    //     bool isPublish = true;
-    //     (string _, string output) = BuildTemplateProject(info,
-    //         new BuildProjectOptions(
-    //             info.Configuration,
-    //             info.ProjectName,
-    //             BinFrameworkDir: GetBlazorBinFrameworkDir(info.Configuration, isPublish),
-    //             ExpectedFileType: GetExpectedFileType(info, isPublish),
-    //             IsPublish: isPublish,
-    //             ExpectSuccess: false)
-    //     );
-    //     Assert.Contains("AOT is not supported without IL trimming", output);
-    // }
+        bool isPublish = true;
+        (string _, string output) = BuildTemplateProject(info,
+            new BuildProjectOptions(
+                info.Configuration,
+                info.ProjectName,
+                BinFrameworkDir: GetBlazorBinFrameworkDir(info.Configuration, isPublish),
+                ExpectedFileType: GetExpectedFileType(info, isPublish),
+                IsPublish: isPublish,
+                ExpectSuccess: false)
+        );
+        Assert.Contains("AOT is not supported without IL trimming", output);
+    }
 }
