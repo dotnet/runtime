@@ -474,5 +474,9 @@
       <Uri>https://github.com/dotnet/node</Uri>
       <Sha>78c56619da525bd37de4c2828092762fb4fa03c4</Sha>
     </Dependency>
+    <Dependency Name="Microsoft.NET.HostModel.TestData" Version="10.0.0-beta.24522.1">
+      <Uri>https://github.com/dotnet/runtime-assets</Uri>
+      <Sha>24f902e6d5bfe3fec9f07d55efe44794aec614a1</Sha>
+    </Dependency>
   </ToolsetDependencies>
 </Dependencies>
