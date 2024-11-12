@@ -35,7 +35,6 @@ namespace Internal.Runtime.InteropServices
     [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
     internal interface IClassFactory
     {
-        [RequiresUnreferencedCode("Built-in COM support is not trim compatible", Url = "https://aka.ms/dotnet-illink/com")]
         void CreateInstance(
             [MarshalAs(UnmanagedType.Interface)] object? pUnkOuter,
             ref Guid riid,
@@ -50,7 +49,6 @@ namespace Internal.Runtime.InteropServices
     [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
     internal interface IClassFactory2 : IClassFactory
     {
-        [RequiresUnreferencedCode("Built-in COM support is not trim compatible", Url = "https://aka.ms/dotnet-illink/com")]
         new void CreateInstance(
             [MarshalAs(UnmanagedType.Interface)] object? pUnkOuter,
             ref Guid riid,
@@ -280,19 +278,6 @@ namespace Internal.Runtime.InteropServices
         private static unsafe int GetClassFactoryForTypeImpl(ComActivationContextInternal* pCxtInt, bool isolatedContext)
         {
             ref ComActivationContextInternal cxtInt = ref *pCxtInt;
-
-            if (IsLoggingEnabled())
-            {
-                Log(
-$@"{nameof(GetClassFactoryForTypeInternal)} arguments:
-    {cxtInt.ClassId}
-    {cxtInt.InterfaceId}
-    0x{(ulong)cxtInt.AssemblyPathBuffer:x}
-    0x{(ulong)cxtInt.AssemblyNameBuffer:x}
-    0x{(ulong)cxtInt.TypeNameBuffer:x}
-    0x{cxtInt.ClassFactoryDest.ToInt64():x}");
-            }
-
             try
             {
                 var cxt = ComActivationContext.Create(ref cxtInt, isolatedContext);
@@ -341,19 +326,6 @@ $@"{nameof(GetClassFactoryForTypeInternal)} arguments:
         private static unsafe int RegisterClassForTypeImpl(ComActivationContextInternal* pCxtInt, bool isolatedContext)
         {
             ref ComActivationContextInternal cxtInt = ref *pCxtInt;
-
-            if (IsLoggingEnabled())
-            {
-                Log(
-$@"{nameof(RegisterClassForTypeInternal)} arguments:
-    {cxtInt.ClassId}
-    {cxtInt.InterfaceId}
-    0x{(ulong)cxtInt.AssemblyPathBuffer:x}
-    0x{(ulong)cxtInt.AssemblyNameBuffer:x}
-    0x{(ulong)cxtInt.TypeNameBuffer:x}
-    0x{cxtInt.ClassFactoryDest.ToInt64():x}");
-            }
-
             if (cxtInt.InterfaceId != Guid.Empty
                 || cxtInt.ClassFactoryDest != IntPtr.Zero)
             {
@@ -410,19 +382,6 @@ $@"{nameof(RegisterClassForTypeInternal)} arguments:
         private static unsafe int UnregisterClassForTypeImpl(ComActivationContextInternal* pCxtInt, bool isolatedContext)
         {
             ref ComActivationContextInternal cxtInt = ref *pCxtInt;
-
-            if (IsLoggingEnabled())
-            {
-                Log(
-$@"{nameof(UnregisterClassForTypeInternal)} arguments:
-    {cxtInt.ClassId}
-    {cxtInt.InterfaceId}
-    0x{(ulong)cxtInt.AssemblyPathBuffer:x}
-    0x{(ulong)cxtInt.AssemblyNameBuffer:x}
-    0x{(ulong)cxtInt.TypeNameBuffer:x}
-    0x{cxtInt.ClassFactoryDest.ToInt64():x}");
-            }
-
             if (cxtInt.InterfaceId != Guid.Empty
                 || cxtInt.ClassFactoryDest != IntPtr.Zero)
             {
@@ -447,21 +406,6 @@ $@"{nameof(UnregisterClassForTypeInternal)} arguments:
             static void ClassRegistrationScenarioForTypeLocal(ComActivationContext cxt, bool register) => ClassRegistrationScenarioForType(cxt, register);
         }
 
-        private static bool IsLoggingEnabled()
-        {
-#if COM_ACTIVATOR_DEBUG
-            return true;
-#else
-            return false;
-#endif
-        }
-
-        private static void Log(string fmt, params object[] args)
-        {
-            // [TODO] Use FrameworkEventSource in release builds
-            Debug.WriteLine(fmt, args);
-        }
-
         [RequiresUnreferencedCode("Built-in COM support is not trim compatible", Url = "https://aka.ms/dotnet-illink/com")]
         private static Type FindClassType(ComActivationContext cxt)
         {
@@ -478,10 +422,7 @@ $@"{nameof(UnregisterClassForTypeInternal)} arguments:
             }
             catch (Exception e)
             {
-                if (IsLoggingEnabled())
-                {
-                    Log($"COM Activation of {cxt.ClassId} failed. {e}");
-                }
+                Debug.WriteLine($"COM Activation of {cxt.ClassId} failed. {e}");
             }
 
             const int CLASS_E_CLASSNOTAVAILABLE = unchecked((int)0x80040111);
@@ -529,6 +470,7 @@ $@"{nameof(UnregisterClassForTypeInternal)} arguments:
         }
 
         [ComVisible(true)]
+        [RequiresUnreferencedCode("Built-in COM support is not trim compatible", Url = "https://aka.ms/dotnet-illink/com")]
         private sealed class BasicClassFactory : IClassFactory
         {
             private readonly Guid _classId;
@@ -648,7 +590,6 @@ $@"{nameof(UnregisterClassForTypeInternal)} arguments:
                 }
             }
 
-            [RequiresUnreferencedCode("Built-in COM support is not trim compatible", Url = "https://aka.ms/dotnet-illink/com")]
             public void CreateInstance(
                 [MarshalAs(UnmanagedType.Interface)] object? pUnkOuter,
                 ref Guid riid,
@@ -672,6 +613,7 @@ $@"{nameof(UnregisterClassForTypeInternal)} arguments:
         }
 
         [ComVisible(true)]
+        [RequiresUnreferencedCode("Built-in COM support is not trim compatible", Url = "https://aka.ms/dotnet-illink/com")]
         private sealed class LicenseClassFactory : IClassFactory2
         {
             private readonly LicenseInteropProxy _licenseProxy = new LicenseInteropProxy();
@@ -686,7 +628,6 @@ $@"{nameof(UnregisterClassForTypeInternal)} arguments:
                 _classType = classType;
             }
 
-            [RequiresUnreferencedCode("Built-in COM support is not trim compatible", Url = "https://aka.ms/dotnet-illink/com")]
             public void CreateInstance(
                 [MarshalAs(UnmanagedType.Interface)] object? pUnkOuter,
                 ref Guid riid,
