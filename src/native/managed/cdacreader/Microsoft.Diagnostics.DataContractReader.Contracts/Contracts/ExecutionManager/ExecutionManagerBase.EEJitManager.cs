@@ -4,15 +4,16 @@
 using System;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using Microsoft.Diagnostics.DataContractReader.ExecutionManagerHelpers;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
-internal readonly partial struct ExecutionManager_1 : IExecutionManager
+internal partial class ExecutionManagerBase<T> : IExecutionManager
 {
     private class EEJitManager : JitManager
     {
-        private readonly ExecutionManagerHelpers.NibbleMap _nibbleMap;
-        public EEJitManager(Target target, ExecutionManagerHelpers.NibbleMap nibbleMap) : base(target)
+        private readonly INibbleMap _nibbleMap;
+        public EEJitManager(Target target, INibbleMap nibbleMap) : base(target)
         {
             _nibbleMap = nibbleMap;
         }

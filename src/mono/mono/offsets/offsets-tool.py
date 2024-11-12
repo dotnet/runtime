@@ -44,6 +44,25 @@ class FieldInfo:
 		self.name = name
 		self.offset = offset
 
+class ComparableFile:
+	def __init__(self):
+		self.lines = []
+
+	def write(self, line):
+		self.lines.append (line)
+
+	def compare(self, filename):
+		with open (filename, 'r') as f:
+			orig_lines = f.readlines ()
+		return self.lines != orig_lines
+
+	def dump(self, filename):
+		with open (filename, 'w') as f:
+			f.writelines (self.lines)
+
+	def close(self):
+		pass
+
 class OffsetsTool:
 	def __init__(self):
 		pass
@@ -65,6 +84,7 @@ class OffsetsTool:
 		parser.add_argument ('--emscripten-sdk', dest='emscripten_path', help='path to emscripten sdk')
 		parser.add_argument ('--wasi-sdk', dest='wasi_path', help='path to wasi sdk')
 		parser.add_argument ('--outfile', dest='outfile', help='path to output file', required=True)
+		parser.add_argument ('--validate-outfile', dest='validate_outfile', help='checks that there are no changes to outfile and writes changes into outfile.new otherwise', action='store_true')
 		parser.add_argument ('--monodir', dest='mono_path', help='path to mono source tree', required=True)
 		parser.add_argument ('--nativedir', dest='native_path', help='path to src/native', required=True)
 		parser.add_argument ('--targetdir', dest='target_path', help='path to mono tree configured for target', required=True)
@@ -81,6 +101,9 @@ class OffsetsTool:
 			sys.exit (1)
 		if not os.path.isfile (args.target_path + "/config.h"):
 			print ("File '" + args.target_path + "/config.h' doesn't exist.", file=sys.stderr)
+			sys.exit (1)
+		if args.validate_outfile and not os.path.isfile (args.outfile):
+			print ("File '" + args.outfile + "' doesn't exist and --validate-outfile was passed.", file=sys.stderr)
 			sys.exit (1)
 
 		self.sys_includes=[]
@@ -348,8 +371,14 @@ class OffsetsTool:
 
 	def gen (self):
 		outfile = self.args.outfile
+		validate_outfile = self.args.validate_outfile
 		target = self.target
-		f = open (outfile, 'w')
+
+		if validate_outfile:
+			f = ComparableFile ()
+		else:
+			f = open (outfile, 'w')
+
 		f.write ("#ifndef USED_CROSS_COMPILER_OFFSETS\n")
 		if target.arch_define:
 			f.write ("#ifdef " + target.arch_define + "\n")
@@ -404,6 +433,11 @@ class OffsetsTool:
 			else:
 				f.write ("#endif //" + target.platform_define + "\n")
 		f.write ("#endif //USED_CROSS_COMPILER_OFFSETS check\n")
+		f.close ()
+
+		if validate_outfile and f.compare (outfile):
+			print ("Offsets file has changed.", file=sys.stderr)
+			f.dump (outfile + ".new")
 
 tool = OffsetsTool ()
 tool.parse_args ()

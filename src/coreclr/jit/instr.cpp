@@ -956,11 +956,11 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(GenTree* op)
                 return OperandDesc(op->AsIntCon()->IconValue(), op->AsIntCon()->ImmedValNeedsReloc(compiler));
             }
 
+#if defined(FEATURE_SIMD)
             case GT_CNS_VEC:
             {
                 switch (op->TypeGet())
                 {
-#if defined(FEATURE_SIMD)
                     case TYP_SIMD8:
                     {
                         simd8_t constValue;
@@ -997,7 +997,6 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(GenTree* op)
                     }
 
 #endif // TARGET_XARCH
-#endif // FEATURE_SIMD
 
                     default:
                     {
@@ -1005,17 +1004,16 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(GenTree* op)
                     }
                 }
             }
+#endif // FEATURE_SIMD
 
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
             case GT_CNS_MSK:
             {
-#if defined(FEATURE_MASKED_HW_INTRINSICS)
                 simdmask_t constValue;
                 memcpy(&constValue, &op->AsMskCon()->gtSimdMaskVal, sizeof(simdmask_t));
                 return OperandDesc(emit->emitSimdMaskConst(constValue));
-#else
-                unreached();
-#endif // FEATURE_MASKED_HW_INTRINSICS
             }
+#endif // FEATURE_MASKED_HW_INTRINSICS
 
             default:
                 unreached();

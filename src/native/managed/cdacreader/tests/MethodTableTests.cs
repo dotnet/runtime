@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Generic;
-using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Microsoft.Diagnostics.DataContractReader.RuntimeTypeSystemHelpers;
 using Xunit;
 
@@ -18,16 +16,11 @@ public class MethodTableTests
         TargetTestHelpers targetTestHelpers = new(arch);
         MockMemorySpace.Builder builder = new(targetTestHelpers);
 
-        MockRTS rtsBuilder = new (builder) {
-             // arbitrary address range
-            TypeSystemAllocator = builder.CreateAllocator(start: 0x00000000_33000000, end: 0x00000000_34000000),
-        };
+        MockRTS rtsBuilder = new(builder);
         builder
-                .SetContracts ([ nameof(Contracts.RuntimeTypeSystem) ])
-                .SetTypes (rtsBuilder.Types)
-                .SetGlobals (MockRTS.GetGlobals(targetTestHelpers));
-
-        rtsBuilder.AddGlobalPointers();
+            .SetContracts([ nameof(Contracts.RuntimeTypeSystem) ])
+            .SetTypes(rtsBuilder.Types)
+            .SetGlobals(rtsBuilder.Globals);
 
         configure?.Invoke(rtsBuilder);
 
