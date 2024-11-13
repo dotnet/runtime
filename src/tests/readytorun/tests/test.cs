@@ -175,6 +175,18 @@ public class MyClass : IMyInterface
    }
 #endif
 
+#if V2
+    public string ChangedToNonVirtual()
+    {
+        return "ChangedToNonVirtual";
+    }
+#else
+   public virtual string ChangedToNonVirtual()
+   {
+       return "ChangedToNonVirtual";
+   }
+#endif
+
     public static void ThrowIOE()
     {
 #if !V2
@@ -278,6 +290,19 @@ public class MyGeneric<T,U>
         return typeof(List<W>).ToString();
     }
 #endif
+
+#if V2
+    public string ChangedToNonVirtual<W>()
+    {
+        return typeof(List<W>).ToString();
+    }
+#else
+   public virtual string ChangedToNonVirtual<W>()
+   {
+       return typeof(List<W>).ToString();
+   }
+#endif
+
 
     public string NonVirtualMethod()
     {

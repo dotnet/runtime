@@ -24,7 +24,7 @@ namespace BINDER_SPACE
         m_pAssemblyName = NULL;
         m_isInTPA = false;
         m_pBinder = NULL;
-        m_domainAssembly = NULL;
+        m_runtimeAssembly = NULL;
     }
 
     Assembly::~Assembly()

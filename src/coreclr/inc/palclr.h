@@ -481,6 +481,8 @@
 #define PAL_CPP_THROW(type, obj) do { SCAN_THROW_MARKER; throw obj; } while (false)
 #define PAL_CPP_RETHROW do { SCAN_THROW_MARKER; throw; } while (false)
 #define PAL_CPP_CATCH_DERIVED(type, obj) catch (type * obj)
+#define PAL_CPP_CATCH_NON_DERIVED(type, obj) catch (type obj)
+#define PAL_CPP_CATCH_NON_DERIVED_NOARG(type) catch (type)
 #define PAL_CPP_CATCH_ALL catch (...)
 #define PAL_CPP_CATCH_EXCEPTION_NOARG catch (Exception *)
 

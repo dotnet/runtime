@@ -34,17 +34,31 @@ thread_local bool t_triedToCreateThreadStressLog;
    variable-speed CPUs (for power management), this is not accurate, but may
    be good enough.
 */
-__forceinline __declspec(naked) unsigned __int64 getTimeStamp() {
+__forceinline
+#ifdef HOST_WINDOWS
+__declspec(naked)
+#else
+__attribute__((naked))
+#endif
+uint64_t getTimeStamp() {
     STATIC_CONTRACT_LEAF;
 
-   __asm {
+#ifdef HOST_WINDOWS
+    __asm {
         RDTSC   // read time stamp counter
         ret
-    };
+    }
+#else
+    __asm (
+        "rdtsc\n\t"   // read time stamp counter
+        "ret\n\t"
+    );
+#endif
+
 }
 
 #else // HOST_X86
-unsigned __int64 getTimeStamp() {
+uint64_t getTimeStamp() {
     STATIC_CONTRACT_LEAF;
 
     LARGE_INTEGER ret;
@@ -64,14 +78,14 @@ unsigned __int64 getTimeStamp() {
    frequency of the RDTSC instruction, which is just the clock rate of the CPU.
    This can vary due to power management, so this is at best a rough approximation.
 */
-unsigned __int64 getTickFrequency()
+uint64_t getTickFrequency()
 {
     //
     // At startup, the OS calculates the CPU clock frequency and makes it available
     // at HKEY_LOCAL_MACHINE\HARDWARE\DESCRIPTION\System\CentralProcessor\0
     //
 
-    unsigned __int64 hz = 0;
+    uint64_t hz = 0;
 
     HKEY hKey;
     if (ERROR_SUCCESS == RegOpenKeyExW(
@@ -95,7 +109,7 @@ unsigned __int64 getTickFrequency()
             _ASSERTE(REG_DWORD == mhzType);
             _ASSERTE((DWORD)sizeof(mhz) == cbMhz);
 
-            hz = (unsigned __int64)mhz * 1000000;
+            hz = (uint64_t)mhz * 1000000;
         }
 
         RegCloseKey(hKey);
@@ -111,7 +125,7 @@ unsigned __int64 getTickFrequency()
 /* Get the frequency corresponding to 'getTimeStamp'.  For non-x86
    architectures, this is just the performance counter frequency.
 */
-unsigned __int64 getTickFrequency()
+uint64_t getTickFrequency()
 {
     LARGE_INTEGER ret;
     ZeroMemory(&ret, sizeof(LARGE_INTEGER));
@@ -124,7 +138,7 @@ unsigned __int64 getTickFrequency()
 #ifdef STRESS_LOG
 
 StressLog StressLog::theLog = { 0, 0, 0, 0, 0, 0, TLS_OUT_OF_INDEXES, 0, 0, 0 };
-const static unsigned __int64 RECYCLE_AGE = 0x40000000L;        // after a billion cycles, we can discard old threads
+const static uint64_t RECYCLE_AGE = 0x40000000L;        // after a billion cycles, we can discard old threads
 
 /*********************************************************************************/
 void StressLog::Enter(CRITSEC_COOKIE) {
@@ -159,7 +173,7 @@ void ReplacePid(LPCWSTR original, LPWSTR replaced, size_t replacedLength)
         // append the string representation of the PID
         DWORD pid = GetCurrentProcessId();
         WCHAR pidStr[20];
-        _itow_s(pid, pidStr, ARRAY_SIZE(pidStr), 10);
+        FormatInteger(pidStr, ARRAY_SIZE(pidStr), "%u", pid);
         wcscat_s(replaced, replacedLength, pidStr);
 
         // append the rest of the filename
@@ -197,7 +211,7 @@ static LPVOID CreateMemoryMappedFile(LPWSTR logFilename, size_t maxBytesTotal)
     }
 
     size_t fileSize = maxBytesTotal;
-    HandleHolder hMap = WszCreateFileMapping(hFile, NULL, PAGE_READWRITE, (DWORD)(fileSize >> 32), (DWORD)fileSize, NULL);
+    HandleHolder hMap = CreateFileMapping(hFile, NULL, PAGE_READWRITE, (DWORD)(fileSize >> 32), (DWORD)fileSize, NULL);
     if (hMap == NULL)
     {
         return nullptr;
@@ -227,7 +241,7 @@ void StressLog::Initialize(unsigned facilities, unsigned level, unsigned maxByte
         // in this case, interpret the number as GB
         maxBytesPerThread *= (1024 * 1024 * 1024);
     }
-    theLog.MaxSizePerThread = (unsigned)min(maxBytesPerThread,0xffffffff);
+    theLog.MaxSizePerThread = (unsigned)min(maxBytesPerThread,(size_t)0xffffffff);
 
     size_t maxBytesTotal = maxBytesTotalArg;
     if (maxBytesTotal < STRESSLOG_CHUNK_SIZE * 256)
@@ -235,7 +249,7 @@ void StressLog::Initialize(unsigned facilities, unsigned level, unsigned maxByte
         // in this case, interpret the number as GB
         maxBytesTotal *= (1024 * 1024 * 1024);
     }
-    theLog.MaxSizeTotal = (unsigned)min(maxBytesTotal, 0xffffffff);
+    theLog.MaxSizeTotal = (unsigned)min(maxBytesTotal, (size_t)0xffffffff);
     theLog.totalChunk = 0;
     theLog.facilitiesToLog = facilities | LF_ALWAYS;
     theLog.levelToLog = level;
@@ -484,6 +498,12 @@ ThreadStressLog* StressLog::CreateThreadStressLog() {
         t_pCurrentThreadLog = NULL;
     }
 #pragma warning(suppress: 4101)
+    PAL_CPP_CATCH_NON_DERIVED(const std::bad_alloc&, obj)
+    {
+        // Just leave on any exception. Note: can't goto or return from within EX_CATCH...
+        noFLSNow = TRUE;
+    }
+#pragma warning(suppress: 4101)
     PAL_CPP_CATCH_DERIVED(OutOfMemoryException, obj)
     {
         // Just leave on any exception. Note: can't goto or return from within EX_CATCH...
@@ -513,7 +533,7 @@ ThreadStressLog* StressLog::CreateThreadStressLogHelper() {
     // See if we can recycle a dead thread
     if (theLog.deadCount > 0)
     {
-        unsigned __int64 recycleStamp = getTimeStamp() - RECYCLE_AGE;
+        uint64_t recycleStamp = getTimeStamp() - RECYCLE_AGE;
         msgs = theLog.logs;
         //find out oldest dead ThreadStressLog in case we can't find one within
         //recycle age but can't create a new chunk
@@ -963,7 +983,7 @@ void* StressLog::AllocMemoryMapped(size_t n)
     return nullptr;
 }
 
-void* __cdecl ThreadStressLog::operator new(size_t n, const NoThrow&) NOEXCEPT
+void* __cdecl ThreadStressLog::operator new(size_t n, const std::nothrow_t&) noexcept
 {
     if (StressLogChunk::s_memoryMapped)
         return StressLog::AllocMemoryMapped(n);

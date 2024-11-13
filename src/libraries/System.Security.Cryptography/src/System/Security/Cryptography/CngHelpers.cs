@@ -345,7 +345,7 @@ namespace System.Security.Cryptography
                 }
 
                 // We better have computed the right allocation size above!
-                Debug.Assert(offset == blobSize, "offset == blobSize");
+                Debug.Assert(offset == blobSize);
             }
 
             return new ArraySegment<byte>(rsaBlob, 0, blobSize);

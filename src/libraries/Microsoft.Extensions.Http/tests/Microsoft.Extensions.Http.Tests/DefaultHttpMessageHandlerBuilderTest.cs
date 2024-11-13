@@ -28,7 +28,16 @@ namespace Microsoft.Extensions.Http
             var builder = new DefaultHttpMessageHandlerBuilder(Services);
 
             // Act
-            Assert.IsType<HttpClientHandler>(builder.PrimaryHandler);
+#if NET
+            if (SocketsHttpHandler.IsSupported)
+            {
+                Assert.IsType<SocketsHttpHandler>(builder.PrimaryHandler);
+            }
+            else
+#endif
+            {
+                Assert.IsType<HttpClientHandler>(builder.PrimaryHandler);
+            }
         }
 
         // Moq heavily utilizes RefEmit, which does not work on most aot workloads
@@ -78,7 +87,7 @@ namespace Microsoft.Extensions.Http
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/50873", TestPlatforms.Android)]
-        public void Build_PrimaryHandlerIsNull_ThrowsException()
+        public void Build_PrimaryHandlerIsNull_UsesDefault()
         {
             // Arrange
             var builder = new DefaultHttpMessageHandlerBuilder(Services)
@@ -87,8 +96,8 @@ namespace Microsoft.Extensions.Http
             };
 
             // Act & Assert
-            var exception = Assert.Throws<InvalidOperationException>(() => builder.Build());
-            Assert.Equal("The 'PrimaryHandler' must not be null.", exception.Message);
+            var handler = builder.Build();
+            Assert.NotNull(handler);
         }
 
         [Fact]

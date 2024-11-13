@@ -46,14 +46,14 @@ namespace System.Net.Http
         /// <param name="failedProxyCache">The cache of failed proxy requests to employ.</param>
         /// <param name="proxyConfig">The WinHTTP proxy config to parse.</param>
         /// <param name="secure">If true, return proxies suitable for use with a secure connection. If false, return proxies suitable for an insecure connection.</param>
-        public static MultiProxy Parse(FailedProxyCache failedProxyCache, string? proxyConfig, bool secure)
+        public static MultiProxy ParseManualSettings(FailedProxyCache failedProxyCache, string? proxyConfig, bool secure)
         {
             Debug.Assert(failedProxyCache != null);
 
             Uri[] uris = Array.Empty<Uri>();
 
             ReadOnlySpan<char> span = proxyConfig;
-            while (TryParseProxyConfigPart(span, secure, out Uri? uri, out int charactersConsumed))
+            while (TryParseProxyConfigPart(span, secure, manualSettingsUsed: true, out Uri? uri, out int charactersConsumed))
             {
                 int idx = uris.Length;
 
@@ -171,7 +171,7 @@ namespace System.Net.Http
             Debug.Assert(_proxyConfig != null);
             if (_currentIndex < _proxyConfig.Length)
             {
-                bool hasProxy = TryParseProxyConfigPart(_proxyConfig.AsSpan(_currentIndex), _secure, out uri!, out int charactersConsumed);
+                bool hasProxy = TryParseProxyConfigPart(_proxyConfig.AsSpan(_currentIndex), _secure, manualSettingsUsed: false, out uri!, out int charactersConsumed);
 
                 _currentIndex += charactersConsumed;
                 Debug.Assert(_currentIndex <= _proxyConfig.Length);
@@ -193,7 +193,7 @@ namespace System.Net.Http
         /// The strings are a semicolon or whitespace separated list, with each entry in the following format:
         /// ([&lt;scheme&gt;=][&lt;scheme&gt;"://"]&lt;server&gt;[":"&lt;port&gt;])
         /// </remarks>
-        private static bool TryParseProxyConfigPart(ReadOnlySpan<char> proxyString, bool secure, [NotNullWhen(true)] out Uri? uri, out int charactersConsumed)
+        private static bool TryParseProxyConfigPart(ReadOnlySpan<char> proxyString, bool secure, bool manualSettingsUsed, [NotNullWhen(true)] out Uri? uri, out int charactersConsumed)
         {
             const int SECURE_FLAG = 1;
             const int INSECURE_FLAG = 2;
@@ -235,12 +235,18 @@ namespace System.Net.Http
 
                 if (proxyString.StartsWith("http://"))
                 {
-                    proxyType = INSECURE_FLAG;
+                    if (!manualSettingsUsed)
+                    {
+                        proxyType = INSECURE_FLAG;
+                    }
                     proxyString = proxyString.Slice("http://".Length);
                 }
                 else if (proxyString.StartsWith("https://"))
                 {
-                    proxyType = SECURE_FLAG;
+                    if (!manualSettingsUsed)
+                    {
+                        proxyType = SECURE_FLAG;
+                    }
                     proxyString = proxyString.Slice("https://".Length);
                 }
 

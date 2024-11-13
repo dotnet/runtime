@@ -200,6 +200,8 @@ namespace System.Net.Http.Tests
             CheckGetViaLength(null, 0, 0, null);
             CheckGetViaLength(string.Empty, 0, 0, null);
             CheckGetViaLength("  ", 0, 0, null);
+
+            CheckGetViaLength("a\t\u2000", 0, 3, new ViaHeaderValue("a", "\u2000"));
         }
 
         [Fact]

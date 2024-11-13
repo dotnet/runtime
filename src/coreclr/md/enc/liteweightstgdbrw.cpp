@@ -568,7 +568,7 @@ HRESULT CLiteWeightStgdbRW::GetSaveSize(// S_OK or error.
     IfFailGo(GetPoolSaveSize(BLOB_POOL_STREAM, MDPoolBlobs, &cbSize));
     cbTotal += cbSize;
 #ifdef FEATURE_METADATA_EMIT_PORTABLE_PDB
-    IfFailGo(GetPoolSaveSize(PDB_STREAM, NULL, &cbSize));
+    IfFailGo(GetPoolSaveSize(PDB_STREAM, 0, &cbSize));
     cbTotal += cbSize;
 #endif
 
@@ -816,7 +816,7 @@ HRESULT CLiteWeightStgdbRW::SaveToStorage(
     IfFailGo(SavePool(GUID_POOL_STREAM, pStorage, MDPoolGuids));
     IfFailGo(SavePool(BLOB_POOL_STREAM, pStorage, MDPoolBlobs));
 #ifdef FEATURE_METADATA_EMIT_PORTABLE_PDB
-    IfFailGo(SavePool(PDB_STREAM, pStorage, NULL));
+    IfFailGo(SavePool(PDB_STREAM, pStorage, 0));
 #endif
 
     // Write the header to disk.

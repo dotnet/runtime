@@ -37,7 +37,7 @@ namespace System
                               FormatFullInst
     }
 
-    internal partial class RuntimeType
+    internal unsafe partial class RuntimeType
     {
         #region Definitions
 
@@ -1236,6 +1236,10 @@ namespace System
 
         #region Hierarchy
 
+        public override bool IsInstanceOfType([NotNullWhen(true)] object? o) => RuntimeTypeHandle.IsInstanceOfType(this, o);
+
+        protected override bool IsCOMObjectImpl() => false;
+
         // Reflexive, symmetric, transitive.
         public override bool IsEquivalentTo(Type? other)
         {
@@ -1246,9 +1250,7 @@ namespace System
             if (otherRtType == this)
                 return true;
 
-            // It's not worth trying to perform further checks in managed
-            // as they would lead to FCalls anyway.
-            return RuntimeTypeHandle.IsEquivalentTo(this, otherRtType);
+            return false;
         }
 
         #endregion
@@ -1547,13 +1549,18 @@ namespace System
                         }
 
                         MethodBase? invokeMethod;
-                        object? state = null;
+                        object? state;
 
                         try
                         {
                             invokeMethod = binder.BindToMethod(bindingAttr, cons, ref args, null, culture, null, out state);
                         }
-                        catch (MissingMethodException) { invokeMethod = null; }
+                        catch (MissingMethodException innerMME)
+                        {
+                            // Rethrows to rewrite a message to include the class name.
+                            // Make sure the original exception is set as an inner exception.
+                            throw new MissingMethodException(SR.Format(SR.MissingConstructor_Name, FullName), innerMME);
+                        }
 
                         if (invokeMethod == null)
                         {
@@ -1607,7 +1614,7 @@ namespace System
             return CreateInstanceMono(!publicOnly, wrapExceptions);
         }
 
-        // Specialized version of the above for Activator.CreateInstance<T>()
+        // Specialized version of CreateInstanceDefaultCtor() for Activator.CreateInstance<T>()
         [DebuggerStepThroughAttribute]
         [Diagnostics.DebuggerHidden]
         internal object? CreateInstanceOfT()
@@ -1615,6 +1622,43 @@ namespace System
             return CreateInstanceMono(false, true);
         }
 
+        // Specialized version of CreateInstanceDefaultCtor() for Activator.CreateInstance<T>()
+        [DebuggerStepThroughAttribute]
+        [Diagnostics.DebuggerHidden]
+        internal void CallDefaultStructConstructor(ref byte value)
+        {
+            Debug.Assert(IsValueType);
+
+            RuntimeConstructorInfo? ctor = GetDefaultConstructor();
+            if (ctor == null)
+            {
+                return;
+            }
+
+            if (!ctor.IsPublic)
+            {
+                throw new MissingMethodException(SR.Format(SR.Arg_NoDefCTor, this));
+            }
+
+            // Important: when using the interpreter, GetFunctionPointer is an intrinsic that
+            // returns a function descriptor suitable for casting to a managed function pointer.
+            // Other ways of obtaining a function pointer might not work.
+            IntPtr ptr = ctor.MethodHandle.GetFunctionPointer();
+            delegate*<ref byte, void> valueCtor = (delegate*<ref byte, void>)ptr;
+            if (valueCtor == null)
+            {
+                throw new ExecutionEngineException();
+            }
+
+            try
+            {
+                valueCtor(ref value);
+            }
+            catch (Exception e)
+            {
+                throw new TargetInvocationException(e);
+            }
+        }
         #endregion
 
         private TypeCache? cache;
@@ -1659,7 +1703,7 @@ namespace System
             TypeCache cache = Cache;
             int oldCached = cache.Cached;
             int newCached = oldCached | (int)entry;
-            // This CAS will ensure ordering with the the store into the cache
+            // This CAS will ensure ordering with the store into the cache
             // If this fails, we will just take the slowpath again
             Interlocked.CompareExchange(ref cache.Cached, newCached, oldCached);
         }
@@ -2217,16 +2261,6 @@ namespace System
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern object CreateInstanceInternal(QCallTypeHandle type);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern void AllocateValueType(QCallTypeHandle type, object? value, ObjectHandleOnStack res);
-
-        internal static object AllocateValueType(RuntimeType type, object? value)
-        {
-            object? res = null;
-            AllocateValueType(new QCallTypeHandle(ref type), value, ObjectHandleOnStack.Create(ref res));
-            return res!;
-        }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern void GetDeclaringMethod(QCallTypeHandle type, ObjectHandleOnStack res);

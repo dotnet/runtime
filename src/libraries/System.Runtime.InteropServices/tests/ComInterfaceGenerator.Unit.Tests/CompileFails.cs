@@ -39,9 +39,16 @@ namespace ComInterfaceGenerator.Unit.Tests
                    .WithLocation(1)
                    .WithArguments("Event", "INativeAPI"),
             } };
+
+            yield return new object[] { ID(), codeSnippets.DerivedComInterfaceTypeMismatchInWrappers, new[]
+            {
+               VerifyComInterfaceGenerator.Diagnostic(GeneratorDiagnostics.InvalidOptionsOnInterface)
+                   .WithLocation(0)
+                   .WithArguments("IComInterface2", SR.BaseInterfaceMustGenerateAtLeastSameWrappers),
+            } };
         }
 
-        [ParallelTheory]
+        [Theory]
         [MemberData(nameof(ComInterfaceGeneratorSnippetsToCompile))]
         public async Task ValidateComInterfaceGeneratorSnippets(string id, string source, DiagnosticResult[] expectedDiagnostics)
         {
@@ -335,7 +342,7 @@ namespace ComInterfaceGenerator.Unit.Tests
             yield return new[] { ID(), customStructMarshallingCodeSnippets.Stateful.ByValueOutParameter };
         }
 
-        [ParallelTheory]
+        [Theory]
         [MemberData(nameof(InvalidUnmanagedToManagedCodeSnippetsToCompile), GeneratorKind.ComInterfaceGenerator)]
         public async Task ValidateInvalidUnmanagedToManagedCodeSnippets(string id, string source, DiagnosticResult[] expectedDiagnostics)
         {
@@ -349,7 +356,7 @@ namespace ComInterfaceGenerator.Unit.Tests
             await test.RunAsync();
         }
 
-        [ParallelTheory]
+        [Theory]
         [MemberData(nameof(InvalidManagedToUnmanagedCodeSnippetsToCompile), GeneratorKind.ComInterfaceGenerator)]
         public async Task ValidateInvalidManagedToUnmanagedCodeSnippets(string id, string source)
         {
@@ -361,7 +368,7 @@ namespace ComInterfaceGenerator.Unit.Tests
             await VerifyComInterfaceGenerator.VerifySourceGeneratorAsync(source, expectedDiagnostic);
         }
 
-        [ParallelTheory]
+        [Theory]
         [MemberData(nameof(StringMarshallingCodeSnippets), GeneratorKind.ComInterfaceGenerator)]
         public async Task ValidateStringMarshallingDiagnostics(string id, string source, DiagnosticResult[] expectedDiagnostics)
         {
@@ -512,7 +519,7 @@ namespace ComInterfaceGenerator.Unit.Tests
             }
         }
 
-        [ParallelTheory]
+        [Theory]
         [MemberData(nameof(StringMarshallingCustomTypeVisibilities))]
         public async Task VerifyStringMarshallingCustomTypeWithLessVisibilityThanInterfaceWarns(string id, string source, DiagnosticResult[] diagnostics)
         {
@@ -520,7 +527,7 @@ namespace ComInterfaceGenerator.Unit.Tests
             await VerifyComInterfaceGenerator.VerifySourceGeneratorAsync(source, diagnostics);
         }
 
-        [ParallelTheory]
+        [Theory]
         [MemberData(nameof(InterfaceVisibilities))]
         public async Task VerifyInterfaceWithLessVisibilityThanInterfaceWarns(string id, string source, DiagnosticResult[] diagnostics)
         {
@@ -558,76 +565,6 @@ namespace ComInterfaceGenerator.Unit.Tests
                 """;
             await VerifyComInterfaceGenerator.VerifySourceGeneratorAsync(basic, new DiagnosticResult(GeneratorDiagnostics.InvalidAttributedInterfaceMissingPartialModifiers).WithLocation(0).WithArguments("I"));
             await VerifyComInterfaceGenerator.VerifySourceGeneratorAsync(containingTypeIsNotPartial, new DiagnosticResult(GeneratorDiagnostics.InvalidAttributedInterfaceMissingPartialModifiers).WithLocation(0).WithArguments("I"));
-        }
-
-        [Fact]
-        public async Task VerifyComInterfaceInheritingFromComInterfaceInOtherAssemblyReportsDiagnostic()
-        {
-            string additionalSource = $$"""
-                using System.Runtime.InteropServices;
-                using System.Runtime.InteropServices.Marshalling;
-
-                [GeneratedComInterface]
-                [Guid("9D3FD745-3C90-4C10-B140-FAFB01E3541D")]
-                public partial interface I
-                {
-                    void Method();
-                }
-                """;
-
-            string source = $$"""
-                using System.Runtime.InteropServices;
-                using System.Runtime.InteropServices.Marshalling;
-
-                [GeneratedComInterface]
-                [Guid("0DB41042-0255-4CDD-B73A-9C5D5F31303D")]
-                partial interface {|#0:J|} : I
-                {
-                    void MethodA();
-                }
-                """;
-
-            var test = new VerifyComInterfaceGenerator.Test(referenceAncillaryInterop: false)
-            {
-                TestState =
-                {
-                    Sources =
-                    {
-                        ("Source.cs", source)
-                    },
-                    AdditionalProjects =
-                    {
-                        ["Other"] =
-                        {
-                            Sources =
-                            {
-                                ("Other.cs", additionalSource)
-                            },
-                        },
-                    },
-                    AdditionalProjectReferences =
-                    {
-                        "Other"
-                    }
-                },
-                TestBehaviors = TestBehaviors.SkipGeneratedSourcesCheck | TestBehaviors.SkipGeneratedCodeCheck,
-            };
-            test.TestState.AdditionalProjects["Other"].AdditionalReferences.AddRange(test.TestState.AdditionalReferences);
-
-            test.ExpectedDiagnostics.Add(
-                VerifyComInterfaceGenerator
-                    .Diagnostic(GeneratorDiagnostics.BaseInterfaceIsNotGenerated)
-                    .WithLocation(0)
-                    .WithArguments("J", "I"));
-
-            // The Roslyn SDK doesn't apply the compilation options from CreateCompilationOptions to AdditionalProjects-based projects.
-            test.SolutionTransforms.Add((sln, _) =>
-            {
-                var additionalProject = sln.Projects.First(proj => proj.Name == "Other");
-                return additionalProject.WithCompilationOptions(new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, allowUnsafe: true)).Solution;
-            });
-
-            await test.RunAsync();
         }
 
         [Fact]
@@ -772,7 +709,7 @@ namespace ComInterfaceGenerator.Unit.Tests
             }
         }
 
-        [ParallelTheory]
+        [Theory]
         [MemberData(nameof(CountParameterIsOutSnippets))]
         public async Task ValidateSizeParameterRefKindDiagnostics(string ID, string source, params DiagnosticResult[] diagnostics)
         {
@@ -889,7 +826,7 @@ namespace ComInterfaceGenerator.Unit.Tests
             }
         }
 
-        [ParallelTheory]
+        [Theory]
         [MemberData(nameof(IntAndEnumReturnTypeSnippets))]
         public async Task ValidateReturnTypeInfoDiagnostics(string id, string source, DiagnosticResult[] diagnostics)
         {

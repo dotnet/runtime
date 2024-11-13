@@ -40,6 +40,9 @@ internal static partial class Interop
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpMacCurrent")]
         private static partial int CryptoNative_EvpMacCurrent(SafeEvpMacCtxHandle ctx, Span<byte> mac, int macLength);
 
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpMacCtxDup")]
+        private static partial SafeEvpMacCtxHandle CryptoNative_EvpMacCtxDup(SafeEvpMacCtxHandle ctx);
+
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpMacOneShot", StringMarshalling = StringMarshalling.Utf8)]
         private static partial int CryptoNative_EvpMacOneShot(
             SafeEvpMacHandle mac,
@@ -157,6 +160,19 @@ internal static partial class Interop
                 Debug.Assert(ret == 0);
                 throw CreateOpenSslCryptographicException();
             }
+        }
+
+        internal static SafeEvpMacCtxHandle EvpMacCtxDup(SafeEvpMacCtxHandle ctx)
+        {
+            SafeEvpMacCtxHandle clone = CryptoNative_EvpMacCtxDup(ctx);
+
+            if (clone.IsInvalid)
+            {
+                clone.Dispose();
+                throw CreateOpenSslCryptographicException();
+            }
+
+            return clone;
         }
     }
 }

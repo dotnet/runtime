@@ -83,18 +83,54 @@ struct InlinedThreadStaticRoot
     TypeManager* m_typeManager;
 };
 
-struct ThreadBuffer
+// This struct allows adding some state that is only visible to the EE onto the standard gc_alloc_context
+struct ee_alloc_context
 {
-    uint8_t                 m_rgbAllocContextBuffer[SIZEOF_ALLOC_CONTEXT];
+    // Any allocation that would overlap combined_limit needs to be handled by the allocation slow path.
+    // combined_limit is the minimum of:
+    //  - gc_alloc_context.alloc_limit (the end of the current AC)
+    //  - the sampling_limit
+    //
+    // In the simple case that randomized sampling is disabled, combined_limit is always equal to alloc_limit.
+    //
+    // There are two different useful interpretations for the sampling_limit. One is to treat the sampling_limit
+    // as an address and when we allocate an object that overlaps that address we should emit a sampling event.
+    // The other is that we can treat (sampling_limit - alloc_ptr) as a budget of how many bytes we can allocate
+    // before emitting a sampling event. If we always allocated objects contiguously in the AC and incremented
+    // alloc_ptr by the size of the object, these two interpretations would be equivalent. However, when objects
+    // don't fit in the AC we allocate them in some other address range. The budget interpretation is more
+    // flexible to handle those cases.
+    //
+    // The sampling limit isn't stored in any separate field explicitly, instead it is implied:
+    // - if combined_limit == alloc_limit there is no sampled byte in the AC. In the budget interpretation
+    //   we can allocate (alloc_limit - alloc_ptr) unsampled bytes. We'll need a new random number after
+    //   that to determine whether future allocated bytes should be sampled.
+    //   This occurs either because the sampling feature is disabled, or because the randomized selection
+    //   of sampled bytes didn't select a byte in this AC.
+    // - if combined_limit < alloc_limit there is a sample limit in the AC. sample_limit = combined_limit.
+    uint8_t* combined_limit;
+    uint8_t m_rgbAllocContextBuffer[SIZEOF_ALLOC_CONTEXT];
+
+    gc_alloc_context* GetGCAllocContext();
+    uint8_t* GetCombinedLimit();
+    void UpdateCombinedLimit();
+};
+
+
+struct RuntimeThreadLocals
+{
+    ee_alloc_context        m_eeAllocContext;               
     uint32_t volatile       m_ThreadStateFlags;                     // see Thread::ThreadStateFlags enum
     PInvokeTransitionFrame* m_pTransitionFrame;
     PInvokeTransitionFrame* m_pDeferredTransitionFrame;             // see Thread::EnablePreemptiveMode
     PInvokeTransitionFrame* m_pCachedTransitionFrame;
     PTR_Thread              m_pNext;                                // used by ThreadStore's SList<Thread>
     HANDLE                  m_hPalThread;                           // WARNING: this may legitimately be INVALID_HANDLE_VALUE
+#ifdef FEATURE_HIJACK
     void **                 m_ppvHijackedReturnAddressLocation;
     void *                  m_pvHijackedReturnAddress;
     uintptr_t               m_uHijackedReturnValueFlags;
+#endif // FEATURE_HIJACK
     PTR_ExInfo              m_pExInfoStackHead;
     Object*                 m_threadAbortException;                 // ThreadAbortException instance -set only during thread abort
 #ifdef TARGET_X86
@@ -124,7 +160,7 @@ struct ReversePInvokeFrame
     Thread* m_savedThread;
 };
 
-class Thread : private ThreadBuffer
+class Thread : private RuntimeThreadLocals
 {
     friend class AsmOffsets;
     friend struct DefaultSListTraits<Thread>;
@@ -156,7 +192,7 @@ public:
                                                     // For suspension APCs it is mostly harmless, but wasteful and in extreme
                                                     // cases may force the target thread into stack oveflow.
                                                     // We use this flag to avoid sending another APC when one is still going through.
-                                                    // 
+                                                    //
                                                     // On Unix this is an optimization to not queue up more signals when one is
                                                     // still being processed.
     };
@@ -168,19 +204,17 @@ private:
     void ClearState(ThreadStateFlags flags);
     bool IsStateSet(ThreadStateFlags flags);
 
-
+#ifdef FEATURE_HIJACK
     static void HijackCallback(NATIVE_CONTEXT* pThreadContext, void* pThreadToHijack);
-
-    //
-    // Hijack funcs are not called, they are "returned to". And when done, they return to the actual caller.
-    // Thus they cannot have any parameters or return anything.
-    //
-    typedef void FASTCALL HijackFunc();
 
     void HijackReturnAddress(PAL_LIMITED_CONTEXT* pSuspendCtx, HijackFunc* pfnHijackFunction);
     void HijackReturnAddress(NATIVE_CONTEXT* pSuspendCtx, HijackFunc* pfnHijackFunction);
     void HijackReturnAddressWorker(StackFrameIterator* frameIterator, HijackFunc* pfnHijackFunction);
-    bool InlineSuspend(NATIVE_CONTEXT* interruptedContext);
+    void CrossThreadUnhijack();
+    void UnhijackWorker();
+#else // FEATURE_HIJACK
+    void CrossThreadUnhijack() { }
+#endif // FEATURE_HIJACK
 
 #ifdef FEATURE_SUSPEND_REDIRECTION
     bool Redirect();
@@ -188,8 +222,6 @@ private:
 
     bool CacheTransitionFrameForSuspend();
     void ResetCachedTransitionFrame();
-    void CrossThreadUnhijack();
-    void UnhijackWorker();
     void EnsureRuntimeInitialized();
 
     //
@@ -204,6 +236,7 @@ private:
     static uint64_t s_DeadThreadsNonAllocBytes;
 
 public:
+    bool InlineSuspend(NATIVE_CONTEXT* interruptedContext);
 
     static uint64_t GetDeadThreadsNonAllocBytes();
 
@@ -216,16 +249,24 @@ public:
 
     bool                IsInitialized();
 
+    ee_alloc_context *  GetEEAllocContext();
     gc_alloc_context *  GetAllocContext();
 
     uint64_t            GetPalThreadIdForLogging();
 
     void                GcScanRoots(ScanFunc* pfnEnumCallback, ScanContext * pvCallbackData);
 
+#ifdef FEATURE_HIJACK
     void                Hijack();
     void                Unhijack();
     bool                IsHijacked();
     void*               GetHijackedReturnAddress();
+    static bool         IsHijackTarget(void * address);
+#else // FEATURE_HIJACK
+    void                Unhijack() { }
+    bool                IsHijacked() { return false; }
+    static bool         IsHijackTarget(void * address) { return false; }
+#endif // FEATURE_HIJACK
 
 #ifdef FEATURE_GC_STRESS
     static void         HijackForGcStress(PAL_LIMITED_CONTEXT * pSuspendCtx);
@@ -262,8 +303,6 @@ public:
     PInvokeTransitionFrame* GetTransitionFrameForStackTrace();
     void *              GetCurrentThreadPInvokeReturnAddress();
 
-    static bool         IsHijackTarget(void * address);
-
     //
     // The set of operations used to support unmanaged code running in cooperative mode
     //
@@ -287,7 +326,6 @@ public:
     //
     void SetGCSpecial();
     bool IsGCSpecial();
-    bool CatchAtSafePoint();
 
     //
     // Managed/unmanaged interop transitions support APIs

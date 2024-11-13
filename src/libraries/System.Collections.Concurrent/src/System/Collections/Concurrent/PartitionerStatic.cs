@@ -308,7 +308,7 @@ namespace System.Collections.Concurrent
             //--- shared by all derived class with source data type: IList, Array, and IEnumerator
             protected readonly TSourceReader _sharedReader;
 
-            protected static int s_defaultMaxChunkSize = GetDefaultChunkSize<TSource>();
+            protected static readonly int s_defaultMaxChunkSize = GetDefaultChunkSize<TSource>();
 
             //deferred allocating in MoveNext() with initial value 0, to avoid false sharing
             //we also use the fact that: (_currentChunkSize==null) means MoveNext is never called on this enumerator

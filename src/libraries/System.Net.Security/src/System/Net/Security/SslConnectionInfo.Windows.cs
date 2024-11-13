@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Security.Authentication;
 using static Interop.SspiCli;
 
 namespace System.Net.Security
@@ -66,7 +67,17 @@ namespace System.Net.Security
 
             TlsCipherSuite = cipherSuite;
 
-            ApplicationProtocol = GetNegotiatedApplicationProtocol(securityContext);
+            // In TLS1.3, Schannel may erroneously report empty ALPN after
+            // receiving resumption ticket (fake Renegotiation). Avoid updating
+            // ApplicationProtocol in this case if we already have some, TLS1.3
+            // does not allow ALPN changes after the initial handshake.
+            //
+            // TLS 1.2 and below theoretically support ALPN changes during
+            // Renegotiation.
+            if (ApplicationProtocol == null || (Protocol & (int)SslProtocols.Tls13) == 0)
+            {
+                ApplicationProtocol = GetNegotiatedApplicationProtocol(securityContext);
+            }
 
 #if DEBUG
             SecPkgContext_SessionInfo info = default;

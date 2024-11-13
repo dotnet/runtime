@@ -454,19 +454,15 @@ namespace System.Text.RegularExpressions.Tests
                     };
                 }
 
-                if (engine != RegexEngine.Interpreter && // these tests currently fail with RegexInterpreter
-                    RuntimeFeature.IsDynamicCodeCompiled) // if dynamic code isn't compiled, RegexOptions.Compiled falls back to the interpreter, for which these tests currently fail
+                // Fails on .NET Framework: [ActiveIssue("https://github.com/dotnet/runtime/issues/62094")]
+                yield return new object[]
                 {
-                    // Fails on interpreter and .NET Framework: [ActiveIssue("https://github.com/dotnet/runtime/issues/62094")]
-                    yield return new object[]
+                    engine, @"(?:){93}", "x", RegexOptions.None, new[]
                     {
-                        engine, @"(?:){93}", "x", RegexOptions.None, new[]
-                        {
-                            new CaptureData("", 0, 0),
-                            new CaptureData("", 1, 0)
-                        }
-                    };
-                }
+                        new CaptureData("", 0, 0),
+                        new CaptureData("", 1, 0)
+                    }
+                };
 #endif
             }
         }

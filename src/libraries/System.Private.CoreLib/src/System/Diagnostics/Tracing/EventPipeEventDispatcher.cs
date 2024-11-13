@@ -3,7 +3,6 @@
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Win32.SafeHandles;
 
 namespace System.Diagnostics.Tracing
 {
@@ -11,8 +10,8 @@ namespace System.Diagnostics.Tracing
     {
         internal sealed class EventListenerSubscription
         {
-            internal EventKeywords MatchAnyKeywords { get; private set; }
-            internal EventLevel Level { get; private set; }
+            internal EventKeywords MatchAnyKeywords { get; }
+            internal EventLevel Level { get; }
 
             internal EventListenerSubscription(EventKeywords matchAnyKeywords, EventLevel level)
             {
@@ -97,15 +96,15 @@ namespace System.Diagnostics.Tracing
             }
 
             // Enable the EventPipe session.
-            EventPipeProviderConfiguration[] providerConfiguration = new EventPipeProviderConfiguration[]
-            {
+            EventPipeProviderConfiguration[] providerConfiguration =
+            [
                 new EventPipeProviderConfiguration(NativeRuntimeEventSource.EventSourceName, (ulong)aggregatedKeywords, (uint)enableLevel, null)
-            };
+            ];
 
             ulong sessionID = EventPipeInternal.Enable(null, EventPipeSerializationFormat.NetTrace, DefaultEventListenerCircularMBSize, providerConfiguration);
             if (sessionID == 0)
             {
-                throw new EventSourceException(SR.EventSource_CouldNotEnableEventPipe);
+                return;
             }
 
             // Get the session information that is required to properly dispatch events.

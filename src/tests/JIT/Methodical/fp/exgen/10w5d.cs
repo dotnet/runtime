@@ -36319,6 +36319,7 @@ public unsafe class testout1
     }
 
     [Fact]
+    [Xunit.SkipOnCoreClrAttribute("This test simply takes too long to complete under GC stress/heap verify; it is not fundamentally incompatible.", RuntimeTestModes.HeapVerify | RuntimeTestModes.AnyGCStress)]
     public static int TestEntryPoint()
     {
 

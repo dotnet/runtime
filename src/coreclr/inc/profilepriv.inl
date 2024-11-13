@@ -290,7 +290,7 @@ inline void EEFunctionIDMapperHelper(ProfilerInfo *pProfilerInfo, FunctionID fun
 inline UINT_PTR ProfControlBlock::EEFunctionIDMapper(FunctionID funcId, BOOL *pbHookFunction)
 {
     LIMITED_METHOD_CONTRACT;
-    UINT_PTR ptr = NULL;
+    UINT_PTR ptr = 0;
     DoOneProfilerIteration(&mainProfilerInfo,
                           ProfilerCallbackType::Active,
                           &EEFunctionIDMapperHelper,

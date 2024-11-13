@@ -8,15 +8,17 @@
 #ifndef __CLRHOST_H__
 #define __CLRHOST_H__
 
+#include <new>
+
 #include "windows.h" // worth to include before mscoree.h so we are guaranteed to pick few definitions
-#ifdef CreateSemaphore
-#undef CreateSemaphore
-#endif
+
 #include "mscoree.h"
 #include "clrinternal.h"
 #include "switches.h"
 #include "holder.h"
-#include "new.hpp"
+
+using std::nothrow;
+
 #include "staticcontract.h"
 #include "predeftlsslot.h"
 #include "safemath.h"
@@ -65,10 +67,6 @@ BOOL ClrVirtualProtect(LPVOID lpAddress, SIZE_T dwSize, DWORD flNewProtect, PDWO
 HANDLE ClrGetProcessExecutableHeap();
 #endif
 
-#ifdef FAILPOINTS_ENABLED
-extern int RFS_HashStack();
-#endif
-
 // Critical section support for CLR DLLs other than the EE.
 // Include the header defining each Crst type and its corresponding level (relative rank). This is
 // auto-generated from a tool that takes a high-level description of each Crst type and its dependencies.
@@ -86,11 +84,11 @@ DWORD ClrSleepEx(DWORD dwMilliseconds, BOOL bAlertable);
 // be used.  This guarantees that the locks will be vacated when the scope is popped,
 // either on exception or on return.
 
-typedef Holder<CRITSEC_COOKIE, ClrEnterCriticalSection, ClrLeaveCriticalSection, NULL> CRITSEC_Holder;
+typedef Holder<CRITSEC_COOKIE, ClrEnterCriticalSection, ClrLeaveCriticalSection, 0> CRITSEC_Holder;
 
 // Use this holder to manage CRITSEC_COOKIE allocation to ensure it will be released if anything goes wrong
 FORCEINLINE void VoidClrDeleteCriticalSection(CRITSEC_COOKIE cs) { if (cs != NULL) ClrDeleteCriticalSection(cs); }
-typedef Wrapper<CRITSEC_COOKIE, DoNothing<CRITSEC_COOKIE>, VoidClrDeleteCriticalSection, NULL> CRITSEC_AllocationHolder;
+typedef Wrapper<CRITSEC_COOKIE, DoNothing<CRITSEC_COOKIE>, VoidClrDeleteCriticalSection, 0> CRITSEC_AllocationHolder;
 
 #ifndef DACCESS_COMPILE
 // Suspend/resume APIs that fail-fast on errors

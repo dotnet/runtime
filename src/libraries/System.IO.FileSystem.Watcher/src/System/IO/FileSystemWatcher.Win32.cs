@@ -105,8 +105,12 @@ namespace System.IO
             // increased, such that the disposal operation won't take effect and close the handle
             // until that P/Invoke returns; if during that time the FSW is restarted, the IsHandleInvalid
             // check will see a valid handle, unless we also null it out.
-            _directoryHandle.Dispose();
-            _directoryHandle = null;
+            SafeFileHandle? handle = _directoryHandle;
+            if (handle is not null)
+            {
+                _directoryHandle = null;
+                handle.Dispose();
+            }
         }
 
         private void FinalizeDispose()

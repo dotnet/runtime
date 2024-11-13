@@ -61,7 +61,7 @@ namespace System.Data.OleDb
             }
 
             UnsafeNativeMethods.ISQLErrorInfo sqlErrorInfo;
-            errorRecords.GetCustomErrorObject(index, ref ODB.IID_ISQLErrorInfo, out sqlErrorInfo);
+            errorRecords.GetCustomErrorObject(index, in ODB.IID_ISQLErrorInfo, out sqlErrorInfo);
 
             if (null != sqlErrorInfo)
             {

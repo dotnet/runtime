@@ -49,7 +49,7 @@ namespace System
             try
             {
                 // Call the default constructor on the allocated instance.
-                if (RuntimeHelpers.IsReference<T>())
+                if (!typeof(T).IsValueType)
                 {
                     // Grab a pointer to the optimized allocator for the type and call it.
                     IntPtr allocator = AllocatorOf<T>();
@@ -63,7 +63,7 @@ namespace System
                 else
                 {
                     t = default!;
-                    RawCalliHelper.Call(defaultConstructor, ref Unsafe.As<T, byte>(ref t));
+                    RawCalliHelper.CallDefaultStructConstructor(defaultConstructor, ref Unsafe.As<T, byte>(ref t));
 
                     // Debugger goo so that stepping in works. Only affects debug info generation.
                     // The call gets optimized away.

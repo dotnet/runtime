@@ -4,8 +4,6 @@
   </PropertyGroup>
   <PropertyGroup>
     <DebugType>None</DebugType>
-    <NoStandardLib>True</NoStandardLib>
-    <Noconfig>True</Noconfig>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="ConcatTest.cs" />

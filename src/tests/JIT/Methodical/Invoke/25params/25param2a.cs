@@ -69,6 +69,7 @@ public class test
     }
 
     [Fact]
+    [OuterLoop]
     public static int TestEntryPoint()
     {
         Console.WriteLine("Testing method of 25 parameters, mixed data type");

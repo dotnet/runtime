@@ -7,7 +7,7 @@
     <TestFramework>xunit</TestFramework>
     <EnableDefaultItems>true</EnableDefaultItems>
     <EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
-    <DefineConstants Condition="'$(ContinuousIntegrationBuild)' != 'true'">TEST_DEBUG_CONFIG_ALSO</DefineConstants>
+    <DefineConstants Condition="'$(ContinuousIntegrationBuild)' != 'true'">$(DefineConstants);TEST_DEBUG_CONFIG_ALSO</DefineConstants>
     <!-- This project should not build against the live built .NETCoreApp targeting pack as it contributes to the build itself. -->
     <UseLocalTargetingRuntimePack>false</UseLocalTargetingRuntimePack>
 
@@ -19,6 +19,7 @@
     <!-- '/.dockerenv' - is to check if this is running in a codespace -->
     <!-- taken from tests.browser.targets -->
     <InstallChromeForTests Condition="'$(InstallChromeForTests)' == '' and ('$(ContinuousIntegrationBuild)' == 'true' or Exists('/.dockerenv'))">true</InstallChromeForTests>
+    <InstallFirefoxForTests Condition="'$(InstallFirefoxForTests)' == '' and ('$(ContinuousIntegrationBuild)' == 'true' or Exists('/.dockerenv'))">true</InstallFirefoxForTests>
     <InstallV8ForTests Condition="'$(InstallV8ForTests)' == '' and ('$(ContinuousIntegrationBuild)' == 'true' or Exists('/.dockerenv'))">true</InstallV8ForTests>
 
     <!-- don't run any wasm build steps -->
@@ -30,8 +31,13 @@
   <Import Project="$(RepositoryEngineeringDir)testing\wasm-provisioning.targets" />
 
   <PropertyGroup>
-    <_WasmBrowserPathForTests Condition="'$(BROWSER_PATH_FOR_TESTS)' != ''">$(BROWSER_PATH_FOR_TESTS)</_WasmBrowserPathForTests>
-    <_WasmBrowserPathForTests Condition="'$(_WasmBrowserPathForTests)' == '' and '$(InstallChromeForTests)' == 'true'">$(ChromeBinaryPath)</_WasmBrowserPathForTests>
+    <_WasmChromePathForTests Condition="'$(CHROME_PATH_FOR_TESTS)' != ''">$(CHROME_PATH_FOR_TESTS)</_WasmChromePathForTests>
+    <_WasmChromePathForTests Condition="'$(_WasmChromePathForTests)' == '' and '$(InstallChromeForTests)' == 'true'">$(ChromeBinaryPath)</_WasmChromePathForTests>
+    <_WasmFirefoxPathForTests Condition="'$(FIREFOX_PATH_FOR_TESTS)' != ''">$(FIREFOX_PATH_FOR_TESTS)</_WasmFirefoxPathForTests>
+    <_WasmFirefoxPathForTests Condition="'$(_WasmFirefoxPathForTests)' == '' and '$(InstallFirefoxForTests)' == 'true'">$(FirefoxBinaryPath)</_WasmFirefoxPathForTests>
+
+    <_WasmFirefoxPathForTests Condition="'$(FIREFOX_PATH_FOR_TESTS)' != ''">$(FIREFOX_PATH_FOR_TESTS)</_WasmFirefoxPathForTests>
+    <_WasmFirefoxPathForTests Condition="'$(_WasmFirefoxPathForTests)' == '' and '$(InstallFirefoxForTests)' == 'true'">$(FirefoxBinaryPath)</_WasmFirefoxPathForTests>
 
     <RunScriptInputName Condition="'$(OS)' == 'Windows_NT'">RunScriptTemplate.cmd</RunScriptInputName>
     <RunScriptInputName Condition="'$(OS)' != 'Windows_NT'">RunScriptTemplate.sh</RunScriptInputName>
@@ -40,7 +46,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Playwright" Version="1.21.0" />
+    <PackageReference Include="Microsoft.Playwright" Version="1.47.0" />
+    <PackageReference Include="MSBuild.StructuredLogger" Version="2.2.350" />
+    <PackageReference Include="System.Text.Json" Version="$(SystemTextJsonToolsetVersion)" />
     <ProjectReference Include="$(RepoRoot)src\tasks\Microsoft.NET.Sdk.WebAssembly.Pack.Tasks\Microsoft.NET.Sdk.WebAssembly.Pack.Tasks.csproj" />
     <Compile Include="$(BrowserProjectRoot)debugger\DebuggerTestSuite\BrowserLocator.cs" />
 
@@ -57,6 +65,11 @@
       <SetScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set PREPEND_PATH=$([System.IO.Path]::GetDirectoryName($(ChromeDriverBinaryPath)))" />
     </ItemGroup>
 
+    <ItemGroup Condition="'$(InstallFirefoxForTests)' == 'true' and '$(GeckoDriverBinaryPath)' != ''">
+      <SetScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export PREPEND_PATH=$([System.IO.Path]::GetDirectoryName($(GeckoDriverBinaryPath)))" />
+      <SetScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set PREPEND_PATH=$([System.IO.Path]::GetDirectoryName($(GeckoDriverBinaryPath)))" />
+    </ItemGroup>
+
     <ItemGroup Condition="'$(TestUsingWorkloads)' == 'true'">
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export WORKLOAD_PACKS_VER=$(PackageVersionForWorkloadManifests)" />
       <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set WORKLOAD_PACKS_VER=$(PackageVersionForWorkloadManifests)" />
@@ -67,19 +80,23 @@
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export BASE_DIR=%24{HELIX_CORRELATION_PAYLOAD}" />
       <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set BASE_DIR=%HELIX_CORRELATION_PAYLOAD%" />
 
-      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export BROWSER_PATH_FOR_TESTS=$HELIX_CORRELATION_PAYLOAD/$(ChromeDirName)/$(ChromeBinaryName)" />
-      <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set BROWSER_PATH_FOR_TESTS=%HELIX_CORRELATION_PAYLOAD%\$(ChromeDirName)\$(ChromeBinaryName)" />
+      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export CHROME_PATH_FOR_TESTS=$HELIX_CORRELATION_PAYLOAD/$(ChromeDirName)/$(ChromeBinaryName)" />
+      <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set CHROME_PATH_FOR_TESTS=%HELIX_CORRELATION_PAYLOAD%\$(ChromeDirName)\$(ChromeBinaryName)" />
+
+      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export FIREFOX_PATH_FOR_TESTS=$HELIX_CORRELATION_PAYLOAD/$(FirefoxDirName)/$(FirefoxBinaryName)" />
+      <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set FIREFOX_PATH_FOR_TESTS=%HELIX_CORRELATION_PAYLOAD%\$(FirefoxDirName)\$(FirefoxBinaryName)" />
 
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export IS_RUNNING_ON_CI=true" />
       <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set IS_RUNNING_ON_CI=true" />
 
-      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="chmod +x $HELIX_WORKITEM_ROOT/.playwright/node/linux/playwright.sh" />
-      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="chmod +x $HELIX_WORKITEM_ROOT/.playwright/node/linux/node" />
+      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="chmod +x $HELIX_WORKITEM_ROOT/.playwright/node/linux-x64/playwright.sh" />
+      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="chmod +x $HELIX_WORKITEM_ROOT/.playwright/node/linux-x64/node" />
     </ItemGroup>
 
     <PropertyGroup>
       <_XUnitTraitArg Condition="'$(TestUsingWorkloads)' == 'true'">-notrait category=no-workload</_XUnitTraitArg>
       <_XUnitTraitArg Condition="'$(TestUsingWorkloads)' != 'true'">-trait category=no-workload</_XUnitTraitArg>
+      <_XUnitTraitArg Condition="'$(WasmFingerprintAssets)' == 'false'">-trait category=no-fingerprinting</_XUnitTraitArg>
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(ContinuousIntegrationBuild)' != 'true'">
@@ -95,8 +112,11 @@
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export SDK_DIR_NAME=$(_SdkPathForLocalTesting)" />
       <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set SDK_DIR_NAME=$(_SdkPathForLocalTesting)" />
 
-      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export TEST_USING_WEBCIL=$(TestUsingWebcil)" />
-      <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set TEST_USING_WEBCIL=$(TestUsingWebcil)" />
+      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export WASM_ENABLE_WEBCIL=$(WasmEnableWebcil)" />
+      <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set WASM_ENABLE_WEBCIL=$(WasmEnableWebcil)" />
+
+      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export WASM_FINGERPRINT_ASSETS=$(WasmFingerprintAssets)" />
+      <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set WASM_FINGERPRINT_ASSETS=$(WasmFingerprintAssets)" />
 
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export &quot;XUnitTraitArg=$(_XUnitTraitArg)&quot;" />
       <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set &quot;XUnitTraitArg=$(_XUnitTraitArg)&quot;" />
@@ -104,8 +124,8 @@
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export BASE_DIR=$(ArtifactsBinDir)" />
       <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set BASE_DIR=$(ArtifactsBinDir)" />
 
-      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export BROWSER_PATH_FOR_TESTS=$(_WasmBrowserPathForTests)" />
-      <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set BROWSER_PATH_FOR_TESTS=$(_WasmBrowserPathForTests)" />
+      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export CHROME_PATH_FOR_TESTS=$(_WasmChromePathForTests)" />
+      <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set CHROME_PATH_FOR_TESTS=$(_WasmChromePathForTests)" />
 
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export V8_PATH_FOR_TESTS=$(_WasmJSEnginePathForTests)" />
       <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set V8_PATH_FOR_TESTS=$(_WasmJSEnginePathForTests)" />

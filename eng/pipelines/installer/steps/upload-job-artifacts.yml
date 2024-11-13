@@ -1,0 +1,26 @@
+parameters:
+  name: ''
+
+steps:
+# Upload binaries and symbols on failure to allow debugging issues
+- task: CopyFiles@2
+  displayName: Prepare binaries to publish
+  inputs:
+    SourceFolder: '$(Build.SourcesDirectory)/artifacts/bin'
+    Contents: |
+      */corehost/**
+      */corehost_test/**
+    TargetFolder: '$(Build.StagingDirectory)/Binaries'
+  continueOnError: true
+  condition: failed()
+
+- template: /eng/pipelines/common/upload-artifact-step.yml
+  parameters:
+    rootFolder: '$(Build.StagingDirectory)/Binaries'
+    includeRootFolder: false
+    archiveType: $(archiveType)
+    archiveExtension: $(archiveExtension)
+    tarCompression: $(tarCompression)
+    artifactName: 'Installer-Binaries-${{ parameters.name }}-$(_BuildConfig)'
+    displayName: 'Binaries'
+    condition: failed()

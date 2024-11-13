@@ -452,6 +452,13 @@ namespace System.Collections.Tests
             s.Position = 0;
             dict = (Dictionary<T, T>)bf.Deserialize(s);
 
+            if (equalityComparer.Equals(EqualityComparer<string>.Default))
+            {
+                // EqualityComparer<string>.Default is mapped to StringEqualityComparer, but serialized as GenericEqualityComparer<string>
+                Assert.Equal("System.Collections.Generic.GenericEqualityComparer`1[System.String]", dict.Comparer.GetType().ToString());
+                return;
+            }
+
             if (internalTypeName == null)
             {
                 Assert.IsType(equalityComparer.GetType(), dict.Comparer);

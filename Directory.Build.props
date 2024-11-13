@@ -1,4 +1,5 @@
 <Project>
+
   <PropertyGroup>
     <!-- For non-SDK projects that import this file and then import Microsoft.Common.props,
          tell Microsoft.Common.props not to import Directory.Build.props again. -->
@@ -56,18 +57,22 @@
         - eng/native/configurecompiler.cmake
         - eng/native/build-commons.sh
         - src/native/libs/build-native.sh
-        - src/coreclr/tools/aot/ILCompiler.Compiler/Compiler/DependencyAnalysis/ObjectWriter.cs
+        - src/coreclr/tools/aot/ILCompiler.Compiler/Compiler/ObjectWriter/MachObjectWriter.cs
         - src/coreclr/nativeaot/BuildIntegration/Microsoft.NETCore.Native.Unix.targets
+        - src/mono/mono/tools/offsets-tool/offsets-tool.py
+        - src/mono/msbuild/apple/build/AppleBuild.targets
         - src/installer/pkg/sfx/bundle/shared-framework-distribution-template-x64.xml
         - src/installer/pkg/sfx/bundle/shared-framework-distribution-template-arm64.xml
+        - src/tasks/AotCompilerTask/MonoAOTCompiler.props
+        - src/tasks/AppleAppBuilder/Xcode.cs
         - src/tasks/MobileBuildTasks/Apple/AppleProject.cs
-        - dotnet/installer repo > src/redist/targets/GeneratePKG.targets
+        - https://github.com/dotnet/sdk repo > src/Installer/redist-installer/targets/GeneratePKG.targets
      -->
     <AndroidApiLevelMin>21</AndroidApiLevelMin>
-    <iOSVersionMin>11.0</iOSVersionMin>
-    <tvOSVersionMin>11.0</tvOSVersionMin>
-    <macOSVersionMin>10.15</macOSVersionMin>
-    <macOSVersionMin Condition="('$(TargetOS)' == 'osx' or '$(TargetOS)' == 'maccatalyst') and '$(TargetArchitecture)' == 'arm64'">11.0</macOSVersionMin>
+    <iOSVersionMin>12.2</iOSVersionMin>
+    <tvOSVersionMin>12.2</tvOSVersionMin>
+    <macOSVersionMin>12.0</macOSVersionMin>
+    <MacCatalystVersionMin>15.0</MacCatalystVersionMin>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -82,7 +87,7 @@
 
   <!-- The TFMs to build and test against. -->
   <PropertyGroup>
-    <NetCoreAppCurrentVersion>9.0</NetCoreAppCurrentVersion>
+    <NetCoreAppCurrentVersion>10.0</NetCoreAppCurrentVersion>
     <NetCoreAppCurrentIdentifier>.NETCoreApp</NetCoreAppCurrentIdentifier>
     <NetCoreAppCurrentTargetFrameworkMoniker>$(NetCoreAppCurrentIdentifier),Version=v$(NetCoreAppCurrentVersion)</NetCoreAppCurrentTargetFrameworkMoniker>
     <MicrosoftNetCoreAppFrameworkName>Microsoft.NETCore.App</MicrosoftNetCoreAppFrameworkName>
@@ -90,10 +95,8 @@
     <NetCoreAppCurrent>net$(NetCoreAppCurrentVersion)</NetCoreAppCurrent>
 
     <!-- The previous supported .NET version. -->
-    <NetCoreAppPreviousVersion>8.0</NetCoreAppPreviousVersion>
-    <!-- For the .NET 9 release, set NetCoreAppPrevious to empty as NuGet has issues
-         with duplicate TFMs (when using both NetCoreAppPrevious and NetCoreAppMinimum). -->
-    <NetCoreAppPrevious />
+    <NetCoreAppPrevious>net9.0</NetCoreAppPrevious>
+    <NetCoreAppPrevious Condition="'$(DotNetBuildSourceOnly)' == 'true'">$(NetCoreAppCurrent)</NetCoreAppPrevious>
 
     <!-- The minimum supported .NET version. -->
     <NetCoreAppMinimum>net8.0</NetCoreAppMinimum>
@@ -118,8 +121,9 @@
     <NetFrameworkCurrent Condition="'$(DotNetBuildSourceOnly)' == 'true'" />
 
     <!-- Important: Set this to the GA version (or a close approximation) during servicing and adjust the TFM property below. -->
-    <ApiCompatNetCoreAppBaselineVersion>8.0.0</ApiCompatNetCoreAppBaselineVersion>
-    <ApiCompatNetCoreAppBaselineTFM>net8.0</ApiCompatNetCoreAppBaselineTFM>
+    <!-- TODO: Update to 9.0.0 when .NET 9 is generally available. https://github.com/dotnet/runtime/issues/106598 -->
+    <ApiCompatNetCoreAppBaselineVersion>9.0.0-preview.7.24405.7</ApiCompatNetCoreAppBaselineVersion>
+    <ApiCompatNetCoreAppBaselineTFM>net9.0</ApiCompatNetCoreAppBaselineTFM>
   </PropertyGroup>
 
   <PropertyGroup Label="CalculateConfiguration">
@@ -180,7 +184,9 @@
     <TestExclusionListTasksAssemblyPath>$([MSBuild]::NormalizePath('$(TestExclusionListTasksDir)', 'TestExclusionListTasks.dll'))</TestExclusionListTasksAssemblyPath>
     <CoreCLRToolPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'coreclr', '$(TargetOS).$(TargetArchitecture).$(RuntimeConfiguration)'))</CoreCLRToolPath>
     <ILAsmToolPath Condition="'$(DotNetBuildSourceOnly)' == 'true' or '$(BuildArchitecture)' == 's390x' or '$(BuildArchitecture)' == 'ppc64le'">$(CoreCLRToolPath)</ILAsmToolPath>
+    <!-- force download temmporarily https://github.com/dotnet/runtime/issues/101528
     <WasmtimeDir Condition="'$(WasmtimeDir)' == '' and '$(WASMTIME_PATH)' != '' and Exists($(WASMTIME_PATH))">$(WASMTIME_PATH)</WasmtimeDir>
+    -->
     <WasmtimeDir Condition="'$(WasmtimeDir)' == ''">$([MSBuild]::NormalizeDirectory($(ArtifactsObjDir), 'wasmtime'))</WasmtimeDir>
     <InstallWasmtimeForTests Condition="'$(InstallWasmtimeForTests)' == '' and !Exists($(WasmtimeDir))">true</InstallWasmtimeForTests>
     <WasmCommonTargetsPath>$([MSBuild]::NormalizeDirectory($(WasmProjectRoot), 'build'))</WasmCommonTargetsPath>
@@ -270,6 +276,7 @@
     <TargetsLinux Condition="'$(TargetOS)' == 'linux' or '$(TargetOS)' == 'android'">true</TargetsLinux>
     <TargetsLinuxBionic Condition="'$(_portableOS)' == 'linux-bionic'">true</TargetsLinuxBionic>
     <TargetsLinuxMusl Condition="'$(_portableOS)' == 'linux-musl'">true</TargetsLinuxMusl>
+    <TargetsLinuxGlibc Condition="'$(TargetsLinux)' == 'true' and '$(TargetsLinuxMusl)' != 'true' and '$(TargetsLinuxBionic)' != 'true'">true</TargetsLinuxGlibc>
     <TargetsNetBSD Condition="'$(TargetOS)' == 'netbsd'">true</TargetsNetBSD>
     <TargetsOSX Condition="'$(TargetOS)' == 'osx'">true</TargetsOSX>
     <TargetsMacCatalyst Condition="'$(TargetOS)' == 'maccatalyst'">true</TargetsMacCatalyst>
@@ -317,7 +324,8 @@
     <!-- Runtime doesn't support Arcade-driven target framework filtering. -->
     <NoTargetFrameworkFiltering>true</NoTargetFrameworkFiltering>
 
-    <NativeBuildPartitionPropertiesToRemove>ClrFullNativeBuild;ClrRuntimeSubset;ClrJitSubset;ClrPalTestsSubset;ClrAllJitsSubset;ClrILToolsSubset;ClrNativeAotSubset;ClrSpmiSubset;ClrCrossComponentsSubset;ClrDebugSubset;HostArchitecture;PgoInstrument;NativeOptimizationDataSupported;CMakeArgs</NativeBuildPartitionPropertiesToRemove>
+    <NativeBuildPartitionPropertiesToRemove>ClrFullNativeBuild;ClrRuntimeSubset;ClrJitSubset;ClrPalTestsSubset;ClrAllJitsSubset;ClrILToolsSubset;ClrNativeAotSubset;ClrSpmiSubset;ClrCrossComponentsSubset;ClrDebugSubset;HostArchitecture;PgoInstrument;NativeOptimizationDataSupported;CMakeArgs;CxxStandardLibrary;CxxStandardLibraryStatic;CxxAbiLibrary</NativeBuildPartitionPropertiesToRemove>
+    <UseSystemZlib Condition="'$(TargetsAppleMobile)' == 'true' or '$(TargetOS)' == 'android' or '$(TargetArchitecture)' == 'armv6'">true</UseSystemZlib>
   </PropertyGroup>
 
   <!-- RepositoryEngineeringDir isn't set when Installer tests import this file. -->
@@ -380,11 +388,14 @@
     <!-- Enables Strict mode for Roslyn compiler -->
     <Features>strict;nullablePublicOnly</Features>
     <TreatWarningsAsErrors Condition="'$(TreatWarningsAsErrors)' == ''">true</TreatWarningsAsErrors>
+    <!-- Only upgrade NuGetAudit warnings to errors for official builds. -->
+    <WarningsNotAsErrors Condition="'$(OfficialBuild)' != 'true' OR '$(NuGetAuditWarnNotError)' == 'true'">$(WarningsNotAsErrors);NU1901;NU1902;NU1903;NU1904</WarningsNotAsErrors>
     <!-- Warnings to always disable -->
-    <NoWarn>$(NoWarn),CS8969</NoWarn>
+    <NoWarn>$(NoWarn);CS8500;CS8969</NoWarn>
+    <!-- Suppress "CS1591 - Missing XML comment for publicly visible type or member" compiler errors for private assemblies. -->
+    <NoWarn Condition="'$(IsPrivateAssembly)' == 'true'">$(NoWarn);CS1591</NoWarn>
     <!-- Always pass portable to override arcade sdk which uses embedded for local builds -->
     <DebugType>portable</DebugType>
-    <DebugSymbols>true</DebugSymbols>
     <KeepNativeSymbols Condition="'$(KeepNativeSymbols)' == '' and '$(DotNetBuildSourceOnly)' == 'true'">true</KeepNativeSymbols>
     <KeepNativeSymbols Condition="'$(KeepNativeSymbols)' == ''">false</KeepNativeSymbols>
     <!-- Used for launchSettings.json and runtime config files. -->
@@ -397,12 +408,10 @@
   <PropertyGroup Condition="$(MSBuildProjectFullPath.Contains('$([System.IO.Path]::DirectorySeparatorChar)tests$([System.IO.Path]::DirectorySeparatorChar)'))">
     <IsTestProject Condition="$(MSBuildProjectName.EndsWith('.UnitTests')) or $(MSBuildProjectName.EndsWith('.Tests'))">true</IsTestProject>
     <IsTrimmingTestProject Condition="$(MSBuildProjectName.EndsWith('.TrimmingTests'))">true</IsTrimmingTestProject>
-    <IsNativeAotTestProject Condition="$(MSBuildProjectName.EndsWith('.NativeAotTests'))">true</IsNativeAotTestProject>
-    <IsPublishedAppTestProject Condition="'$(IsTrimmingTestProject)' == 'true' or '$(IsNativeAotTestProject)' == 'true'">true</IsPublishedAppTestProject>
-    <IsTestSupportProject Condition="'$(IsTestProject)' != 'true' and '$(IsPublishedAppTestProject)' != 'true'">true</IsTestSupportProject>
+    <IsTestSupportProject Condition="'$(IsTestProject)' != 'true' and '$(IsTrimmingTestProject)' != 'true'">true</IsTestSupportProject>
 
     <!-- Treat test assemblies as non-shipping (do not publish or sign them). -->
-    <IsShipping Condition="'$(IsTestProject)' == 'true' or '$(IsTestSupportProject)' == 'true' or '$(IsPublishedAppTestProject)' == 'true'">false</IsShipping>
+    <IsShipping Condition="'$(IsTestProject)' == 'true' or '$(IsTestSupportProject)' == 'true' or '$(IsTrimmingTestProject)' == 'true'">false</IsShipping>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -413,7 +422,7 @@
                                 '$(IsReferenceAssemblyProject)' != 'true' and
                                 '$(IsGeneratorProject)' != 'true' and
                                 '$(IsTestProject)' != 'true' and
-                                '$(IsPublishedAppTestProject)' != 'true' and
+                                '$(IsTrimmingTestProject)' != 'true' and
                                 '$(IsTestSupportProject)' != 'true' and
                                 '$(UsingMicrosoftDotNetSharedFrameworkSdk)' != 'true' and
                                 '$(MSBuildProjectExtension)' != '.pkgproj' and
@@ -464,9 +473,11 @@
   </PropertyGroup>
 
   <!-- Warnings that should be disabled in our test projects. -->
-  <PropertyGroup Condition="'$(IsTestProject)' == 'true' or '$(IsTestSupportProject)' == 'true' or '$(IsPublishedAppTestProject)' == 'true'">
+  <PropertyGroup Condition="'$(IsTestProject)' == 'true' or '$(IsTestSupportProject)' == 'true' or '$(IsTrimmingTestProject)' == 'true'">
     <!-- we need to re-enable BinaryFormatter within test projects since some tests exercise these code paths to ensure compat -->
     <EnableUnsafeBinaryFormatterSerialization>true</EnableUnsafeBinaryFormatterSerialization>
+    <!-- For DotNetBuildSourceOnly, only the bundled BinaryFormatter is built which does not support serialization. -->
+    <EnableUnsafeBinaryFormatterSerialization Condition="'$(DotNetBuildSourceOnly)' == 'true'">false</EnableUnsafeBinaryFormatterSerialization>
     <!-- don't warn on usage of BinaryFormatter or legacy serialization infrastructure from test projects -->
     <NoWarn>$(NoWarn);SYSLIB0011;SYSLIB0050;SYSLIB0051</NoWarn>
     <!-- don't warn about unnecessary trim warning suppressions. can be removed with preview 6. -->

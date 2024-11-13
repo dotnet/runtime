@@ -48,5 +48,80 @@ namespace System.Formats.Tar.Tests
                 Assert.Equal(value, gea.GlobalExtendedAttributes[key]);
             }
         }
+
+        public static IEnumerable<object[]> WriteIntField_TheoryData()
+        {
+            foreach (TarEntryFormat format in new[] { TarEntryFormat.V7, TarEntryFormat.Ustar, TarEntryFormat.Pax, TarEntryFormat.Gnu })
+            {
+                // Min value.
+                yield return new object[] { format, 0 };
+
+                yield return new object[] { format, 1 };
+                yield return new object[] { format, 42 };
+
+                // Max value octal.
+                yield return new object[] { format, 0x1FFFFF };
+
+                // These values do not fit the octal representation.
+                bool formatIsOctalOnly = format is not TarEntryFormat.Pax and not TarEntryFormat.Gnu;
+                if (!formatIsOctalOnly)
+                {
+                    // Max value property.
+                    yield return new object[] { format, int.MaxValue };
+                }
+
+            }
+        }
+
+        public static IEnumerable<object[]> WriteTimeStampsWithFormats_TheoryData()
+        {
+            foreach (TarEntryFormat entryFormat in new[] { TarEntryFormat.V7, TarEntryFormat.Ustar, TarEntryFormat.Gnu, TarEntryFormat.Pax })
+            {
+                foreach (DateTimeOffset timestamp in GetWriteTimeStamps(entryFormat))
+                {
+                    yield return new object[] { entryFormat, timestamp };
+                }
+            }
+        }
+
+        public static IEnumerable<object[]> WriteTimeStamp_Pax_TheoryData()
+        {
+            foreach (DateTimeOffset timestamp in GetWriteTimeStamps(TarEntryFormat.Pax))
+            {
+                yield return new object[] { timestamp };
+            }
+        }
+
+        private static IEnumerable<DateTimeOffset> GetWriteTimeStamps(TarEntryFormat format)
+        {
+            // One second past Y2K38
+            yield return new DateTimeOffset(2038, 1, 19, 3, 14, 8, TimeSpan.Zero);
+
+            // Min value octal
+            yield return DateTimeOffset.UnixEpoch;
+
+            // Max value 12-byte octal field.
+            yield return DateTimeOffset.UnixEpoch + new TimeSpan(0x1FFFFFFFF * TimeSpan.TicksPerSecond);
+
+            // These values do not fit the octal representation.
+            bool formatIsOctalOnly = format is not TarEntryFormat.Pax and not TarEntryFormat.Gnu;
+            if (!formatIsOctalOnly)
+            {
+                // Min value property.
+                yield return DateTimeOffset.MinValue; // This is not representable with the octal format.
+
+                // One second past what a 12-byte field can store with octal representation
+                yield return DateTimeOffset.UnixEpoch + new TimeSpan((0x1FFFFFFFF + 1) * TimeSpan.TicksPerSecond);
+
+                // Max value property. Everything below seconds is set to zero for test equality comparison.
+                yield return new DateTimeOffset(new DateTime(DateTime.MaxValue.Year,
+                                                            DateTime.MaxValue.Month,
+                                                            DateTime.MaxValue.Day,
+                                                            DateTime.MaxValue.Hour,
+                                                            DateTime.MaxValue.Minute,
+                                                            DateTime.MaxValue.Second,
+                                                            DateTime.MaxValue.Kind), TimeSpan.Zero);
+            }
+        }
     }
 }

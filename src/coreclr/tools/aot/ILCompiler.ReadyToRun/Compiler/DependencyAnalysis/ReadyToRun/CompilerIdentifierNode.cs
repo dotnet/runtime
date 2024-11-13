@@ -20,7 +20,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append("__ReadyToRunHeader_CompilerIdentifier");
+            sb.Append("__ReadyToRunHeader_CompilerIdentifier"u8);
         }
 
         private string GetCompilerVersion()

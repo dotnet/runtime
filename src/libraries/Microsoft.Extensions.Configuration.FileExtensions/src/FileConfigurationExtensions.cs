@@ -7,7 +7,7 @@ using Microsoft.Extensions.FileProviders;
 namespace Microsoft.Extensions.Configuration
 {
     /// <summary>
-    /// Extension methods for <see cref="FileConfigurationProvider"/>.
+    /// Provides extension methods for <see cref="FileConfigurationProvider"/>.
     /// </summary>
     public static class FileConfigurationExtensions
     {
@@ -29,9 +29,6 @@ namespace Microsoft.Extensions.Configuration
             return builder;
         }
 
-        internal static IFileProvider? GetUserDefinedFileProvider(this IConfigurationBuilder builder)
-            => builder.Properties.TryGetValue(FileProviderKey, out object? provider) ? (IFileProvider)provider : null;
-
         /// <summary>
         /// Gets the default <see cref="IFileProvider"/> to be used for file-based providers.
         /// </summary>
@@ -41,7 +38,12 @@ namespace Microsoft.Extensions.Configuration
         {
             ThrowHelper.ThrowIfNull(builder);
 
-            return GetUserDefinedFileProvider(builder) ?? new PhysicalFileProvider(AppContext.BaseDirectory ?? string.Empty);
+            if (builder.Properties.TryGetValue(FileProviderKey, out object? provider))
+            {
+                return (IFileProvider)provider;
+            }
+
+            return new PhysicalFileProvider(AppContext.BaseDirectory ?? string.Empty);
         }
 
         /// <summary>

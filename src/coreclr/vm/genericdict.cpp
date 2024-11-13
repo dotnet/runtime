@@ -233,7 +233,7 @@ BOOL DictionaryLayout::FindTokenWorker(LoaderAllocator*                 pAllocat
             }
 
             // A lock should be taken by FindToken before being allowed to use an empty slot in the layout
-            _ASSERT(SystemDomain::SystemModule()->m_DictionaryCrst.OwnedByCurrentThread());
+            _ASSERT(GetAppDomain()->GetGenericDictionaryExpansionLock()->OwnedByCurrentThread());
 
             PVOID pResultSignature = pSigBuilder == NULL ? pSig : CreateSignatureWithSlotData(pSigBuilder, pAllocator, slot);
             pDictLayout->m_slots[iSlot].m_signature = pResultSignature;
@@ -270,7 +270,7 @@ DictionaryLayout* DictionaryLayout::ExpandDictionaryLayout(LoaderAllocator*     
     {
         STANDARD_VM_CHECK;
         INJECT_FAULT(ThrowOutOfMemory(););
-        PRECONDITION(SystemDomain::SystemModule()->m_DictionaryCrst.OwnedByCurrentThread());
+        PRECONDITION(GetAppDomain()->GetGenericDictionaryExpansionLock()->OwnedByCurrentThread());
         PRECONDITION(CheckPointer(pResult) && CheckPointer(pSlotOut));
     }
     CONTRACTL_END
@@ -280,15 +280,13 @@ DictionaryLayout* DictionaryLayout::ExpandDictionaryLayout(LoaderAllocator*     
 
 #ifdef _DEBUG
     // Stress debug mode by increasing size by only 1 slot for the first 10 slots.
-    DWORD newSize = pCurrentDictLayout->m_numSlots > 10 ? (DWORD)pCurrentDictLayout->m_numSlots * 2 : pCurrentDictLayout->m_numSlots + 1;
-    if (!FitsIn<WORD>(newSize))
+    DWORD newSize = pCurrentDictLayout->m_numSlots > 10 ? ((DWORD)pCurrentDictLayout->m_numSlots) * 2 : pCurrentDictLayout->m_numSlots + 1;
+#else
+    DWORD newSize = ((DWORD)pCurrentDictLayout->m_numSlots) * 2;
+#endif
+    if (!FitsIn<WORD>(newSize + static_cast<WORD>(numGenericArgs)))
         return NULL;
     DictionaryLayout* pNewDictionaryLayout = Allocate((WORD)newSize, pAllocator, NULL);
-#else
-    if (!FitsIn<WORD>((DWORD)pCurrentDictLayout->m_numSlots * 2))
-        return NULL;
-    DictionaryLayout* pNewDictionaryLayout = Allocate(pCurrentDictLayout->m_numSlots * 2, pAllocator, NULL);
-#endif
 
     pNewDictionaryLayout->m_numInitialSlots = pCurrentDictLayout->m_numInitialSlots;
 
@@ -337,7 +335,7 @@ BOOL DictionaryLayout::FindToken(MethodTable*                       pMT,
     if (FindTokenWorker(pAllocator, pMT->GetNumGenericArgs(), pMT->GetClass()->GetDictionaryLayout(), pSigBuilder, pSig, cbSig, nFirstOffset, signatureSource, pResult, pSlotOut, 0, FALSE))
         return TRUE;
 
-    CrstHolder ch(&SystemDomain::SystemModule()->m_DictionaryCrst);
+    CrstHolder ch(GetAppDomain()->GetGenericDictionaryExpansionLock());
     {
         // Try again under lock in case another thread already expanded the dictionaries or filled an empty slot
         if (FindTokenWorker(pMT->GetLoaderAllocator(), pMT->GetNumGenericArgs(), pMT->GetClass()->GetDictionaryLayout(), pSigBuilder, pSig, cbSig, nFirstOffset, signatureSource, pResult, pSlotOut, *pSlotOut, TRUE))
@@ -384,7 +382,7 @@ BOOL DictionaryLayout::FindToken(MethodDesc*                        pMD,
     if (FindTokenWorker(pAllocator, pMD->GetNumGenericMethodArgs(), pMD->GetDictionaryLayout(), pSigBuilder, pSig, cbSig, nFirstOffset, signatureSource, pResult, pSlotOut, 0, FALSE))
         return TRUE;
 
-    CrstHolder ch(&SystemDomain::SystemModule()->m_DictionaryCrst);
+    CrstHolder ch(GetAppDomain()->GetGenericDictionaryExpansionLock());
     {
         // Try again under lock in case another thread already expanded the dictionaries or filled an empty slot
         if (FindTokenWorker(pAllocator, pMD->GetNumGenericMethodArgs(), pMD->GetDictionaryLayout(), pSigBuilder, pSig, cbSig, nFirstOffset, signatureSource, pResult, pSlotOut, *pSlotOut, TRUE))
@@ -502,7 +500,7 @@ Dictionary* Dictionary::GetMethodDictionaryWithSizeCheck(MethodDesc* pMD, ULONG 
         // Only expand the dictionary if the current slot we're trying to use is beyond the size of the dictionary
 
         // Take lock and check for size again, just in case another thread already resized the dictionary
-        CrstHolder ch(&SystemDomain::SystemModule()->m_DictionaryCrst);
+        CrstHolder ch(GetAppDomain()->GetGenericDictionaryExpansionLock());
 
         pDictionary = pMD->GetMethodDictionary();
         currentDictionarySize = pDictionary->GetDictionarySlotsSize(numGenericArgs);
@@ -560,7 +558,7 @@ Dictionary* Dictionary::GetTypeDictionaryWithSizeCheck(MethodTable* pMT, ULONG s
         // Only expand the dictionary if the current slot we're trying to use is beyond the size of the dictionary
 
         // Take lock and check for size again, just in case another thread already resized the dictionary
-        CrstHolder ch(&SystemDomain::SystemModule()->m_DictionaryCrst);
+        CrstHolder ch(GetAppDomain()->GetGenericDictionaryExpansionLock());
 
         pDictionary = pMT->GetDictionary();
         currentDictionarySize = pDictionary->GetDictionarySlotsSize(numGenericArgs);
@@ -783,7 +781,7 @@ Dictionary::PopulateEntry(
 
 #if _DEBUG
         // Lock is needed because dictionary pointers can get updated during dictionary size expansion
-        CrstHolder ch(&SystemDomain::SystemModule()->m_DictionaryCrst);
+        CrstHolder ch(GetAppDomain()->GetGenericDictionaryExpansionLock());
 
         // MethodTable is expected to be normalized
         Dictionary* pDictionary = pMT->GetDictionary();
@@ -1062,10 +1060,6 @@ Dictionary::PopulateEntry(
                 // We indirect through a cell so that updates can take place atomically.
                 // The call stub and the indirection cell have the same lifetime as the dictionary itself, i.e.
                 // are allocated in the domain of the dicitonary.
-                //
-                // In the case of overflow (where there is no dictionary, just a global hash table) then
-                // the entry will be placed in the overflow hash table (JitGenericHandleCache).  This
-                // is partitioned according to domain, i.e. is scraped each time an AppDomain gets unloaded.
                 PCODE addr = pMgr->GetCallStub(ownerType, methodSlot);
 
                 result = (CORINFO_GENERIC_HANDLE)pMgr->GenerateStubIndirection(addr);
@@ -1284,6 +1278,8 @@ Dictionary::PopulateEntry(
 
         MemoryBarrier();
 
+        _ASSERTE(slotIndex != 0); // Technically this assert is invalid, but it will only happen if growing the dictionary layout attempts to grow beyond the capacity
+                                  // of a 16 bit unsigned integer. This is highly unlikely to happen in practice, but possible, and will result in extremely degraded performance.
         if (slotIndex != 0)
         {
             Dictionary* pDictionary;

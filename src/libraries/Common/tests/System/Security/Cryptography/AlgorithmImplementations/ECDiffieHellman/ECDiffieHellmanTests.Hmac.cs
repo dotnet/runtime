@@ -349,7 +349,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
             }
         }
 
-#if NETCOREAPP
+#if NET
         [Theory]
         [MemberData(nameof(HmacDerivationTestCases))]
         public static void HmacDerivation_KnownResults(

@@ -69,7 +69,7 @@ namespace System.Text.Json
             Debug.Assert(indent <= _indentLength * _options.MaxDepth);
 
             // 2 quotes, and optionally, 1 list separator and 1-2 bytes for new line
-            int maxRequired = indent + JsonConstants.MaximumFormatDateTimeOffsetLength + 3 + s_newLineLength;
+            int maxRequired = indent + JsonConstants.MaximumFormatDateTimeOffsetLength + 3 + _newLineLength;
 
             if (_memory.Length - BytesPending < maxRequired)
             {

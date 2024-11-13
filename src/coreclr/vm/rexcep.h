@@ -144,7 +144,6 @@ DEFINE_EXCEPTION(g_SystemNS,           FieldAccessException,           false,  C
 DEFINE_EXCEPTION(g_IONS,               FileLoadException,              true,
                  COR_E_FILELOAD,
                  FUSION_E_INVALID_NAME,
-                 FUSION_E_PRIVATE_ASM_DISALLOWED,
                  FUSION_E_REF_DEF_MISMATCH,
                  HRESULT_FROM_WIN32(ERROR_TOO_MANY_OPEN_FILES),
                  HRESULT_FROM_WIN32(ERROR_SHARING_VIOLATION), HRESULT_FROM_WIN32(ERROR_LOCK_VIOLATION),

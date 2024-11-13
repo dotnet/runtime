@@ -20,7 +20,6 @@ Abstract:
 #include "pal/thread.hpp"
 #include "pal/handlemgr.hpp"
 #include "pal/cs.hpp"
-#include "pal/malloc.hpp"
 #include "pal/dbgmsg.h"
 
 using namespace CorUnix;
@@ -51,7 +50,7 @@ CSimpleHandleManager::Initialize(
        field, with the head in the global 'm_hiFreeListStart'. */
     m_dwTableSize = m_dwTableGrowthRate;
 
-    m_rghteHandleTable = reinterpret_cast<HANDLE_TABLE_ENTRY*>(InternalMalloc((m_dwTableSize * sizeof(HANDLE_TABLE_ENTRY))));
+    m_rghteHandleTable = reinterpret_cast<HANDLE_TABLE_ENTRY*>(malloc((m_dwTableSize * sizeof(HANDLE_TABLE_ENTRY))));
     if(NULL == m_rghteHandleTable)
     {
         ERROR("Unable to create initial handle table array");
@@ -108,7 +107,7 @@ CSimpleHandleManager::AllocateHandle(
         }
 
         /* grow handle table */
-        rghteTempTable = reinterpret_cast<HANDLE_TABLE_ENTRY*>(InternalRealloc(
+        rghteTempTable = reinterpret_cast<HANDLE_TABLE_ENTRY*>(realloc(
             m_rghteHandleTable,
             (m_dwTableSize + m_dwTableGrowthRate) * sizeof(HANDLE_TABLE_ENTRY)));
 

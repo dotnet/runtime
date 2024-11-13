@@ -66,7 +66,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 		public virtual void RootAssemblyVisible (string fileName)
 		{
-#if NETCOREAPP
+#if NET
 			Append ("-a");
 			Append (fileName);
 			Append ("visible");
@@ -151,6 +151,11 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			}
 		}
 
+		public virtual void AddDumpDependencies ()
+		{
+			Append ("--dump-dependencies");
+		}
+
 		public virtual void AddSubstitutions (string file)
 		{
 			Append ("--substitutions");
@@ -213,7 +218,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 			IgnoreLinkAttributes (options.IgnoreLinkAttributes);
 
-#if !NETCOREAPP
+#if !NET
 			if (!string.IsNullOrEmpty (options.Il8n))
 				AddIl8n (options.Il8n);
 #endif
@@ -224,6 +229,10 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			AddSkipUnresolved (options.SkipUnresolved);
 
 			AddStripDescriptors (options.StripDescriptors);
+
+			// The testcase specified [DumpDependencies] so just do that.
+			if (options.DumpDependencies)
+				AddDumpDependencies ();
 
 			AddStripSubstitutions (options.StripSubstitutions);
 

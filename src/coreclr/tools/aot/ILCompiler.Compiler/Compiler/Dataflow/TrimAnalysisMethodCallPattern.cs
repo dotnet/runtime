@@ -86,8 +86,7 @@ namespace ILCompiler.Dataflow
                 logger);
             ReflectionMethodBodyScanner.HandleCall(MethodBody, CalledMethod, Operation, Instance, Arguments,
                 diagnosticContext,
-                reflectionMarker,
-                out MultiValue _);
+                reflectionMarker);
         }
     }
 }

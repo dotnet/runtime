@@ -1,6 +1,7 @@
 <Project>
   <PropertyGroup Condition="'$(Scenario)' == 'WasmDebuggerTests'">
-    <NeedsToRunOnBrowser>true</NeedsToRunOnBrowser>
+    <NeedsToRunOnChrome Condition="'$(DebuggerHost)' == 'chrome'">true</NeedsToRunOnChrome>
+    <NeedsToRunOnFirefox Condition="'$(DebuggerHost)' == 'firefox'">true</NeedsToRunOnFirefox>
     <WorkItemPrefix>$(DebuggerHost)-</WorkItemPrefix>
     <UseDotNetCliVersionFromGlobalJson>true</UseDotNetCliVersionFromGlobalJson>
     <_DebuggerTestsWorkItemTimeout Condition="'$(Scenario)' == 'WasmDebuggerTests'">00:50:00</_DebuggerTestsWorkItemTimeout>

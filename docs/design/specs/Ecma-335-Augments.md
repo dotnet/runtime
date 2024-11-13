@@ -14,7 +14,8 @@ This is a list of additions and edits to be made in ECMA-335 specifications. It 
 - [Covariant Return Types](#covariant-return-types)
 - [Function Pointer Type Identity](#function-pointer-type-identity)
 - [Unsigned data conversion with overflow detection](#unsigned-data-conversion-with-overflow-detection)
-- [Ref field support](#ref-fields)
+- [Ref fields support](#ref-fields)
+- [ByRefLike types in generics](#byreflike-generics)
 - [Rules for IL rewriters](#rules-for-il-rewriters)
 - [Checked user-defined operators](#checked-user-defined-operators)
 - [Atomic reads and writes](#atomic-reads-and-writes)
@@ -1026,6 +1027,31 @@ Changes to signatures:
 - Add a bullet point
   - Managed pointers which point at null, the address just past the end of an object, or the address where an element just past the end of an array would be stored, are permitted but not dereferenceable.
 
+## <a name="byreflike-generics"></a> ByRefLike types in generics
+
+ByRefLike types, defined in C# with the `ref struct` syntax, represent types that cannot escape to the managed heap and must remain on the stack. It is possible for these types to be used as generic parameters, but in order to improve utility certain affordances are required.
+
+### II.10.1.7
+An additional IL keyword, `byreflike`, is introduced to indicate use of ByRefLike types is permitted. This expands the set of permissible types used by this parameters, but limits the potential instructions that can be used on instances of this generic parameter type.
+
+### II.23.1.7
+Update the `SpecialConstraintMask` flag value and description, and add a new flag, `AllowByRefLike`.
+
+| Flag | Value | Description |
+| ---  | ----- | ----------- |
+| `SpecialConstraintMask` | `0x3C` | These 4 bits contain one of the following values: |
+| ... | ... | ... |
+| `AllowByRefLike`        | `0x20` | The generic parameter is allowed to be ByRefLike |
+
+### III.2.1
+The following case is added as the **third** cases in the "if _thisType_" sequence.
+
+> If _thisType_ is ByRefLike and _thisType_ does not implement _method_ then; a `NotSupportedException` is thrown at the callsite.
+
+The following is added to the paragraph starting with "This last case can only occur when _method_ was defined on `System.Object`, `System.ValueType`, or `System.Enum`".
+
+> The third case can only occur when _method_ was defined on `System.Object` or is a Default Interface Method.
+
 ## Rules for IL Rewriters
 
 There are apis such as `System.Runtime.CompilerServices.RuntimeHelpers.CreateSpan<T>(...)` which require that the PE file have a particular structure. In particular, that api requires that the associated RVA of a FieldDef which is used to create a span must be naturally aligned over the data type that `CreateSpan` is instantiated over. There are 2 major concerns.
@@ -1069,7 +1095,7 @@ Note about creating zero-based, one-dimensional arrays in section III.4.21 "newo
 
 ## API documentation
 
-API documentation included in partition IV: Profiles and Libraries is superseded by the actively maintained API documentation in https://github.com/dotnet/dotnet-api-docs repo. The documentation is  published at https://docs.microsoft.com/en-us/dotnet/api/.
+API documentation included in partition IV: Profiles and Libraries is superseded by the actively maintained API documentation in https://github.com/dotnet/dotnet-api-docs repo. The documentation is  published at https://learn.microsoft.com/dotnet/api/.
 
 The incorrect description of `System.Array.Initialize` API in section "II.13.2 Initializing value types" is replaced with "The Base Class Library provides the method System.Array.Initialize (see Partition IV) to initialize every element of an array of unboxed value types by calling its parameterless instance constructor."
 

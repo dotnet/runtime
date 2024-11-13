@@ -12,7 +12,7 @@ using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 using Microsoft.Extensions.Internal;
 
-#if NETCOREAPP
+#if NET
 [assembly: System.Reflection.Metadata.MetadataUpdateHandler(typeof(Microsoft.Extensions.DependencyInjection.ActivatorUtilities.ActivatorUtilitiesUpdateHandler))]
 #endif
 
@@ -23,7 +23,7 @@ namespace Microsoft.Extensions.DependencyInjection
     /// </summary>
     public static class ActivatorUtilities
     {
-#if NETCOREAPP
+#if NET
         // Support caching of constructor metadata for the common case of types in non-collectible assemblies.
         private static readonly ConcurrentDictionary<Type, ConstructorInfoEx[]> s_constructorInfos = new();
 
@@ -35,15 +35,15 @@ namespace Microsoft.Extensions.DependencyInjection
 #endif
 
         private static readonly MethodInfo GetServiceInfo =
-            GetMethodInfo<Func<IServiceProvider, Type, Type, bool, object?, object?>>((sp, t, r, c, k) => GetService(sp, t, r, c, k));
+            new Func<IServiceProvider, Type, Type, bool, object?, object?>(GetService).Method;
 
         /// <summary>
-        /// Instantiate a type with constructor arguments provided directly and/or from an <see cref="IServiceProvider"/>.
+        /// Instantiates a type with constructor arguments provided directly and/or from an <see cref="IServiceProvider"/>.
         /// </summary>
-        /// <param name="provider">The service provider used to resolve dependencies</param>
-        /// <param name="instanceType">The type to activate</param>
+        /// <param name="provider">The service provider used to resolve dependencies.</param>
+        /// <param name="instanceType">The type to activate.</param>
         /// <param name="parameters">Constructor arguments not provided by the <paramref name="provider"/>.</param>
-        /// <returns>An activated object of type instanceType</returns>
+        /// <returns>An activated object of type instanceType.</returns>
         public static object CreateInstance(
             IServiceProvider provider,
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type instanceType,
@@ -60,7 +60,7 @@ namespace Microsoft.Extensions.DependencyInjection
             }
 
             ConstructorInfoEx[]? constructors;
-#if NETCOREAPP
+#if NET
             if (!s_constructorInfos.TryGetValue(instanceType, out constructors))
             {
                 constructors = GetOrAddConstructors(instanceType);
@@ -135,7 +135,7 @@ namespace Microsoft.Extensions.DependencyInjection
                     if (bestLength < length)
                     {
                         bestLength = length;
-#if NETCOREAPP
+#if NET
                         ctorArgs.CopyTo(bestCtorArgs);
 #else
                         if (i == constructors.Length - 1)
@@ -191,7 +191,7 @@ namespace Microsoft.Extensions.DependencyInjection
             matcher.MapParameters(parameterMap, parameters);
             return matcher.CreateInstance(provider);
 
-#if NETCOREAPP
+#if NET
             int GetMaxArgCount()
             {
                 int max = 0;
@@ -222,7 +222,7 @@ namespace Microsoft.Extensions.DependencyInjection
 #endif
         }
 
-#if NETCOREAPP
+#if NET
         private static ConstructorInfoEx[] GetOrAddConstructors(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type type)
         {
@@ -246,7 +246,7 @@ namespace Microsoft.Extensions.DependencyInjection
             s_collectibleConstructorInfos.Value.AddOrUpdate(type, value);
             return value;
         }
-#endif // NETCOREAPP
+#endif // NET
 
         private static ConstructorInfoEx[] CreateConstructorInfoExs(
                 [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type type)
@@ -262,22 +262,22 @@ namespace Microsoft.Extensions.DependencyInjection
         }
 
         /// <summary>
-        /// Create a delegate that will instantiate a type with constructor arguments provided directly
+        /// Creates a delegate that will instantiate a type with constructor arguments provided directly
         /// and/or from an <see cref="IServiceProvider"/>.
         /// </summary>
-        /// <param name="instanceType">The type to activate</param>
+        /// <param name="instanceType">The type to activate.</param>
         /// <param name="argumentTypes">
-        /// The types of objects, in order, that will be passed to the returned function as its second parameter
+        /// The types of objects, in order, that will be passed to the returned function as its second parameter.
         /// </param>
         /// <returns>
         /// A factory that will instantiate instanceType using an <see cref="IServiceProvider"/>
-        /// and an argument array containing objects matching the types defined in argumentTypes
+        /// and an argument array containing objects matching the types defined in argumentTypes.
         /// </returns>
         public static ObjectFactory CreateFactory(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type instanceType,
             Type[] argumentTypes)
         {
-#if NETSTANDARD2_1_OR_GREATER || NETCOREAPP
+#if NETSTANDARD2_1_OR_GREATER || NET
             if (!RuntimeFeature.IsDynamicCodeCompiled)
             {
                 // Create a reflection-based factory when dynamic code is not compiled\jitted as would be the case with
@@ -291,30 +291,30 @@ namespace Microsoft.Extensions.DependencyInjection
 #endif
             CreateFactoryInternal(instanceType, argumentTypes, out ParameterExpression provider, out ParameterExpression argumentArray, out Expression factoryExpressionBody);
 
-            var factoryLambda = Expression.Lambda<Func<IServiceProvider, object?[]?, object>>(
+            var factoryLambda = Expression.Lambda<ObjectFactory>(
                 factoryExpressionBody, provider, argumentArray);
 
-            Func<IServiceProvider, object?[]?, object>? result = factoryLambda.Compile();
-            return result.Invoke;
+            ObjectFactory? result = factoryLambda.Compile();
+            return result;
         }
 
         /// <summary>
-        /// Create a delegate that will instantiate a type with constructor arguments provided directly
+        /// Creates a delegate that will instantiate a type with constructor arguments provided directly
         /// and/or from an <see cref="IServiceProvider"/>.
         /// </summary>
-        /// <typeparam name="T">The type to activate</typeparam>
+        /// <typeparam name="T">The type to activate.</typeparam>
         /// <param name="argumentTypes">
-        /// The types of objects, in order, that will be passed to the returned function as its second parameter
+        /// The types of objects, in order, that will be passed to the returned function as its second parameter.
         /// </param>
         /// <returns>
-        /// A factory that will instantiate type T using an <see cref="IServiceProvider"/>
-        /// and an argument array containing objects matching the types defined in argumentTypes
+        /// A factory that will instantiate type <typeparamref name="T" /> using an <see cref="IServiceProvider"/>
+        /// and an argument array containing objects matching the types defined in <paramref name="argumentTypes" />.
         /// </returns>
         public static ObjectFactory<T>
             CreateFactory<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] T>(
                 Type[] argumentTypes)
         {
-#if NETSTANDARD2_1_OR_GREATER || NETCOREAPP
+#if NETSTANDARD2_1_OR_GREATER || NET
             if (!RuntimeFeature.IsDynamicCodeCompiled)
             {
                 // See the comment above in the non-generic CreateFactory() for why we use 'IsDynamicCodeCompiled' here.
@@ -324,11 +324,11 @@ namespace Microsoft.Extensions.DependencyInjection
 #endif
             CreateFactoryInternal(typeof(T), argumentTypes, out ParameterExpression provider, out ParameterExpression argumentArray, out Expression factoryExpressionBody);
 
-            var factoryLambda = Expression.Lambda<Func<IServiceProvider, object?[]?, T>>(
+            var factoryLambda = Expression.Lambda<ObjectFactory<T>>(
                 factoryExpressionBody, provider, argumentArray);
 
-            Func<IServiceProvider, object?[]?, T>? result = factoryLambda.Compile();
-            return result.Invoke;
+            ObjectFactory<T>? result = factoryLambda.Compile();
+            return result;
         }
 
         private static void CreateFactoryInternal([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type instanceType, Type[] argumentTypes, out ParameterExpression provider, out ParameterExpression argumentArray, out Expression factoryExpressionBody)
@@ -341,12 +341,12 @@ namespace Microsoft.Extensions.DependencyInjection
         }
 
         /// <summary>
-        /// Instantiate a type with constructor arguments provided directly and/or from an <see cref="IServiceProvider"/>.
+        /// Instantiates a type with constructor arguments provided directly and/or from an <see cref="IServiceProvider"/>.
         /// </summary>
-        /// <typeparam name="T">The type to activate</typeparam>
-        /// <param name="provider">The service provider used to resolve dependencies</param>
-        /// <param name="parameters">Constructor arguments not provided by the <paramref name="provider"/>.</param>
-        /// <returns>An activated object of type T</returns>
+        /// <typeparam name="T">The type to activate.</typeparam>
+        /// <param name="provider">The service provider used to resolve dependencies.</param>
+        /// <param name="parameters">Constructor arguments not provided by <paramref name="provider"/>.</param>
+        /// <returns>An activated object of type <typeparamref name="T" />.</returns>
         public static T CreateInstance<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] T>(IServiceProvider provider, params object[] parameters)
         {
             return (T)CreateInstance(provider, typeof(T), parameters);
@@ -355,9 +355,9 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <summary>
         /// Retrieve an instance of the given type from the service provider. If one is not found then instantiate it directly.
         /// </summary>
-        /// <typeparam name="T">The type of the service</typeparam>
-        /// <param name="provider">The service provider used to resolve dependencies</param>
-        /// <returns>The resolved service or created instance</returns>
+        /// <typeparam name="T">The type of the service.</typeparam>
+        /// <param name="provider">The service provider used to resolve dependencies.</param>
+        /// <returns>The resolved service or created instance.</returns>
         public static T GetServiceOrCreateInstance<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] T>(IServiceProvider provider)
         {
             return (T)GetServiceOrCreateInstance(provider, typeof(T));
@@ -366,20 +366,14 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <summary>
         /// Retrieve an instance of the given type from the service provider. If one is not found then instantiate it directly.
         /// </summary>
-        /// <param name="provider">The service provider</param>
-        /// <param name="type">The type of the service</param>
-        /// <returns>The resolved service or created instance</returns>
+        /// <param name="provider">The service provider.</param>
+        /// <param name="type">The type of the service.</param>
+        /// <returns>The resolved service or created instance.</returns>
         public static object GetServiceOrCreateInstance(
             IServiceProvider provider,
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type type)
         {
             return provider.GetService(type) ?? CreateInstance(provider, type);
-        }
-
-        private static MethodInfo GetMethodInfo<T>(Expression<T> expr)
-        {
-            var mc = (MethodCallExpression)expr.Body;
-            return mc.Method;
         }
 
         private static object? GetService(IServiceProvider sp, Type type, Type requiredBy, bool hasDefaultValue, object? key)
@@ -424,7 +418,7 @@ namespace Microsoft.Extensions.DependencyInjection
                         Expression.Constant(parameterType, typeof(Type)),
                         Expression.Constant(constructor.DeclaringType, typeof(Type)),
                         Expression.Constant(hasDefaultValue),
-                        Expression.Constant(keyAttribute?.Key) };
+                        Expression.Constant(keyAttribute?.Key, typeof(object)) };
                     constructorArguments[i] = Expression.Call(GetServiceInfo, parameterTypeExpression);
                 }
 
@@ -443,7 +437,7 @@ namespace Microsoft.Extensions.DependencyInjection
                 Expression.New(constructor, constructorArguments));
         }
 
-#if NETSTANDARD2_1_OR_GREATER || NETCOREAPP
+#if NETSTANDARD2_1_OR_GREATER || NET
         [DoesNotReturn]
         private static void ThrowHelperArgumentNullExceptionServiceProvider()
         {
@@ -457,7 +451,7 @@ namespace Microsoft.Extensions.DependencyInjection
             FindApplicableConstructor(instanceType, argumentTypes, constructors: null, out ConstructorInfo constructor, out int?[] parameterMap);
             Type declaringType = constructor.DeclaringType!;
 
-#if NETCOREAPP
+#if NET
             ConstructorInvoker invoker = ConstructorInvoker.Create(constructor);
 
             ParameterInfo[] constructorParameters = constructor.GetParameters();
@@ -526,7 +520,7 @@ namespace Microsoft.Extensions.DependencyInjection
 
             FactoryParameterContext[] parameters = GetFactoryParameterContext();
             return (serviceProvider, arguments) => ReflectionFactoryCanonical(constructor, parameters, declaringType, serviceProvider, arguments);
-#endif // NETCOREAPP
+#endif // NET
 
             FactoryParameterContext[] GetFactoryParameterContext()
             {
@@ -548,7 +542,7 @@ namespace Microsoft.Extensions.DependencyInjection
                 return parameters;
             }
         }
-#endif // NETSTANDARD2_1_OR_GREATER || NETCOREAPP
+#endif // NETSTANDARD2_1_OR_GREATER || NET
 
         private readonly struct FactoryParameterContext
         {
@@ -650,7 +644,7 @@ namespace Microsoft.Extensions.DependencyInjection
 
             if (constructors is null)
             {
-#if NETCOREAPP
+#if NET
                 if (!s_constructorInfos.TryGetValue(instanceType, out constructors))
                 {
                     constructors = GetOrAddConstructors(instanceType);
@@ -731,7 +725,7 @@ namespace Microsoft.Extensions.DependencyInjection
             public readonly ParameterInfo[] Parameters;
             public readonly bool IsPreferred;
             private readonly object?[]? _parameterKeys;
-#if NETCOREAPP
+#if NET
             public ConstructorInvoker? _invoker;
             public ConstructorInvoker Invoker
             {
@@ -807,7 +801,7 @@ namespace Microsoft.Extensions.DependencyInjection
         {
             private readonly ConstructorInfoEx _constructor;
 
-#if NETCOREAPP
+#if NET
             private readonly Span<object?> _parameterValues;
             public ConstructorMatcher(ConstructorInfoEx constructor, Span<object?> parameterValues)
 #else
@@ -890,7 +884,7 @@ namespace Microsoft.Extensions.DependencyInjection
                     }
                 }
 
-#if NETCOREAPP
+#if NET
                 return _constructor.Invoker.Invoke(_parameterValues.Slice(0, _constructor.Parameters.Length));
 #else
                 try
@@ -928,7 +922,7 @@ namespace Microsoft.Extensions.DependencyInjection
             throw new InvalidOperationException(SR.Format(SR.MarkedCtorMissingArgumentTypes, nameof(ActivatorUtilitiesConstructorAttribute)));
         }
 
-#if NETCOREAPP // Use the faster ConstructorInvoker which also has alloc-free APIs when <= 4 parameters.
+#if NET // Use the faster ConstructorInvoker which also has alloc-free APIs when <= 4 parameters.
         private static object ReflectionFactoryServiceOnlyFixed(
             ConstructorInvoker invoker,
             FactoryParameterContext[] parameters,
@@ -1173,7 +1167,7 @@ namespace Microsoft.Extensions.DependencyInjection
         {
             throw new NullReferenceException();
         }
-#elif NETSTANDARD2_1_OR_GREATER || NETCOREAPP
+#elif NETSTANDARD2_1_OR_GREATER || NET
         private static object ReflectionFactoryCanonical(
             ConstructorInfo constructor,
             FactoryParameterContext[] parameters,
@@ -1203,7 +1197,7 @@ namespace Microsoft.Extensions.DependencyInjection
         }
 #endif
 
-#if NETCOREAPP
+#if NET
         internal static class ActivatorUtilitiesUpdateHandler
         {
             public static void ClearCache(Type[]? _)

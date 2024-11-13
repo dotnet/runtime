@@ -30,6 +30,7 @@ namespace JitTest_sizeof32_sizeof_cs
     public struct Test
     {
         [Fact]
+        [OuterLoop]
         public static unsafe int TestEntryPoint()
         {
             int l = (sbyte)sizeof(RefComplexStruct);

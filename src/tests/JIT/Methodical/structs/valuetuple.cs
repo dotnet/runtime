@@ -79,6 +79,7 @@ public class StructOptsTest
     }
 
     [Fact]
+    [OuterLoop]
     public static int TestEntryPoint()
     {
         int returnVal = Fail;

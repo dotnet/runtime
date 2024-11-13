@@ -5,6 +5,8 @@
 using System;
 using Xunit;
 
+namespace JIT.Methodical.MDArray.DataTypes.@byte;
+
 public struct VT
 {
     public byte[,] byte2darr;
@@ -36,6 +38,7 @@ public class byteMDArrTest
     static byte[][, ,] ja2_b = new byte[2][, ,];
 
     [Fact]
+    [OuterLoop]
     public static int TestEntryPoint()
     {
 

@@ -83,6 +83,7 @@ namespace MS_jumps_cs
         }
 
         [Fact]
+        [OuterLoop]
         public static int TestEntryPoint()
         {
             if (new VT().RunTests())

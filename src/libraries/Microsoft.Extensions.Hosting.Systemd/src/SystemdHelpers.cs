@@ -5,7 +5,7 @@ using System;
 using System.Globalization;
 using System.IO;
 using System.Text;
-#if !NETCOREAPP
+#if !NET
 using System.Diagnostics;
 #endif
 
@@ -19,7 +19,7 @@ namespace Microsoft.Extensions.Hosting.Systemd
         private static readonly bool _isSystemdService = GetIsSystemdService();
 
         /// <summary>
-        /// Check if the current process is hosted as a systemd Service.
+        /// Checks if the current process is hosted as a systemd Service.
         /// </summary>
         /// <returns>
         /// <see langword="true" /> if the current process is hosted as a systemd Service; otherwise, <see langword="false" />.
@@ -37,7 +37,7 @@ namespace Microsoft.Extensions.Hosting.Systemd
             // To support containerized systemd services, check if we're the main process (PID 1)
             // and if there are systemd environment variables defined for notifying the service
             // manager, or passing listen handles.
-#if NETCOREAPP
+#if NET
             int processId = Environment.ProcessId;
 #else
             int processId = Process.GetCurrentProcess().Id;

@@ -25,7 +25,7 @@ const unsigned        OFFSET_MASK  = 0x3;  // mask to access the low 2 bits
 //
 const unsigned  byref_OFFSET_FLAG  = 0x1;  // the offset is an interior ptr
 const unsigned pinned_OFFSET_FLAG  = 0x2;  // the offset is a pinned ptr
-#if defined(TARGET_X86) && !defined(FEATURE_EH_FUNCLETS)
+#if defined(TARGET_X86)
 // JIT32_ENCODER has additional restriction on x86 without funclets: 
 // - for untracked locals the flags allowed are "pinned" and "byref"
 // - for tracked locals the flags allowed are "this" and "byref"
@@ -36,7 +36,7 @@ const unsigned   this_OFFSET_FLAG  = 0x2;  // the offset is "this"
 // The current GCInfo Version
 //-----------------------------------------------------------------------------
 
-#define GCINFO_VERSION 2
+#define GCINFO_VERSION 3
 
 //-----------------------------------------------------------------------------
 // GCInfoToken: A wrapper that contains the GcInfo data and version number.
@@ -65,9 +65,8 @@ struct GCInfoToken
     }
 #endif
 
-    static uint32_t ReadyToRunVersionToGcInfoVersion(uint32_t readyToRunMajorVersion)
+    static uint32_t ReadyToRunVersionToGcInfoVersion(uint32_t readyToRunMajorVersion, uint32_t readyToRunMinorVersion)
     {
-        // GcInfo version is current from  ReadyToRun version 2.0
         return GCINFO_VERSION;
     }
 };

@@ -20,7 +20,7 @@ namespace System.Text.Json.Serialization.Tests
         {
         }
 
-#if NETCOREAPP
+#if NET
         public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
             => base.WriteAsync(buffer, _ignoreCancellationTokenOnWriteAsync ? default : cancellationToken);
 #endif

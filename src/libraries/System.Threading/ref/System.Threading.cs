@@ -269,7 +269,7 @@ namespace System.Threading
         [System.CLSCompliantAttribute(false)]
         public static ulong CompareExchange(ref ulong location1, ulong value, ulong comparand) { throw null; }
         [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute("location1")]
-        public static T CompareExchange<T>(ref T location1, T value, T comparand) where T : class? { throw null; }
+        public static T CompareExchange<T>(ref T location1, T value, T comparand) { throw null; }
         public static int Decrement(ref int location) { throw null; }
         public static long Decrement(ref long location) { throw null; }
         [System.CLSCompliantAttribute(false)]
@@ -296,7 +296,7 @@ namespace System.Threading
         [System.CLSCompliantAttribute(false)]
         public static ulong Exchange(ref ulong location1, ulong value) { throw null; }
         [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute("location1")]
-        public static T Exchange<T>([System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute("value")] ref T location1, T value) where T : class? { throw null; }
+        public static T Exchange<T>([System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute("value")] ref T location1, T value) { throw null; }
         public static int Increment(ref int location) { throw null; }
         public static long Increment(ref long location) { throw null; }
         [System.CLSCompliantAttribute(false)]
@@ -613,6 +613,8 @@ namespace System.Threading
         [System.CLSCompliantAttribute(false)]
         public static void Write(ref System.UIntPtr location, System.UIntPtr value) { }
         public static void Write<T>([System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute("value")] ref T location, T value) where T : class? { }
+        public static void ReadBarrier() { }
+        public static void WriteBarrier() { }
     }
     public partial class WaitHandleCannotBeOpenedException : System.ApplicationException
     {

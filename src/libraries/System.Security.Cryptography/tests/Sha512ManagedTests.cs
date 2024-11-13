@@ -6,11 +6,13 @@ namespace System.Security.Cryptography.Tests
     /// <summary>
     /// Sha512Managed has a copy of the same implementation as SHA512
     /// </summary>
-    public class Sha512ManagedTests : Sha512Tests
+    public class Sha512ManagedTests : Sha512Tests<Sha512ManagedTests.Traits>
     {
-        protected override HashAlgorithm Create()
+        public sealed class Traits : IHashTrait
         {
-            return new SHA512Managed();
+            public static bool IsSupported => true;
+            public static int HashSizeInBytes => SHA512.HashSizeInBytes;
+            public static HashAlgorithm Create() => new SHA512Managed();
         }
     }
 }

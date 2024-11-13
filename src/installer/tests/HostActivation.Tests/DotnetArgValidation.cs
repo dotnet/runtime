@@ -1,9 +1,9 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
 using System.IO;
-
+using System.Text;
 using Microsoft.DotNet.Cli.Build;
 using Microsoft.DotNet.TestUtils;
 using Xunit;
@@ -93,6 +93,23 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .Should().Pass()
                 .And.HaveStdOutMatching($@"Architecture:\s*{TestContext.BuildArchitecture}")
                 .And.HaveStdOutMatching($@"RID:\s*{TestContext.BuildRID}");
+        }
+
+        [Fact]
+        public void DotNetInfo_Utf8Path()
+        {
+            string installLocation = Encoding.UTF8.GetString("utf8-龯蝌灋齅ㄥ䶱"u8);
+            DotNetCli dotnet = new DotNetBuilder(sharedTestState.BaseDirectory.Location, TestContext.BuiltDotNet.BinPath, installLocation)
+                .Build();
+
+            var result = dotnet.Exec("--info")
+                .DotNetRoot(Path.Combine(sharedTestState.BaseDirectory.Location, installLocation))
+                .CaptureStdErr()
+                .CaptureStdOut(Encoding.UTF8)
+                .Execute();
+
+            result.Should().Pass()
+                .And.HaveStdOutMatching($@"DOTNET_ROOT.*{installLocation}");
         }
 
         [Fact]

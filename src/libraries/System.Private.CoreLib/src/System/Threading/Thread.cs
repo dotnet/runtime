@@ -149,15 +149,21 @@ namespace System.Threading
         }
 
 #if (!TARGET_BROWSER && !TARGET_WASI) || FEATURE_WASM_MANAGED_THREADS
+        [UnsupportedOSPlatformGuard("wasi")]
         [UnsupportedOSPlatformGuard("browser")]
+        [UnsupportedOSPlatformGuard("wasi")]
         internal static bool IsThreadStartSupported => true;
         internal static bool IsInternalThreadStartSupported => true;
 #elif FEATURE_WASM_PERFTRACING
+        [UnsupportedOSPlatformGuard("wasi")]
         [UnsupportedOSPlatformGuard("browser")]
+        [UnsupportedOSPlatformGuard("wasi")]
         internal static bool IsThreadStartSupported => false;
         internal static bool IsInternalThreadStartSupported => true;
 #else
+        [UnsupportedOSPlatformGuard("wasi")]
         [UnsupportedOSPlatformGuard("browser")]
+        [UnsupportedOSPlatformGuard("wasi")]
         internal static bool IsThreadStartSupported => false;
         internal static bool IsInternalThreadStartSupported => false;
 #endif
@@ -197,6 +203,9 @@ namespace System.Threading
 
         private void Start(object? parameter, bool captureContext, bool internalThread = false)
         {
+#if TARGET_WASI
+            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+#endif
             ThrowIfNoThreadStart(internalThread);
 
             StartHelper? startHelper = _startHelper;
@@ -288,8 +297,6 @@ namespace System.Threading
                 startHelper._culture = value;
             }
         }
-
-        partial void ThreadNameChanged(string? value);
 
         public CultureInfo CurrentCulture
         {
@@ -394,7 +401,7 @@ namespace System.Threading
 
         internal void SetThreadPoolWorkerThreadName()
         {
-            Debug.Assert(this == CurrentThread);
+            Debug.Assert(ThreadState.HasFlag(ThreadState.Unstarted) || this == CurrentThread);
             Debug.Assert(IsThreadPoolThread);
 
             lock (this)
@@ -404,7 +411,6 @@ namespace System.Threading
             }
         }
 
-#if !CORECLR
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void ResetThreadPoolThread()
         {
@@ -416,7 +422,6 @@ namespace System.Threading
                 ResetThreadPoolThreadSlow();
             }
         }
-#endif
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         private void ResetThreadPoolThreadSlow()
@@ -729,26 +734,46 @@ namespace System.Threading
         [ThreadStatic]
         public static bool ThrowOnBlockingWaitOnJSInteropThread;
 
-        public static void AssureBlockingPossible()
+        [ThreadStatic]
+        public static bool WarnOnBlockingWaitOnJSInteropThread;
+
+#pragma warning disable CS3001
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        private static extern unsafe void WarnAboutBlockingWait(char* stack, int length);
+
+        public static unsafe void AssureBlockingPossible()
         {
             if (ThrowOnBlockingWaitOnJSInteropThread)
             {
                 throw new PlatformNotSupportedException(SR.WasmThreads_BlockingWaitNotSupportedOnJSInterop);
             }
+            else if (WarnOnBlockingWaitOnJSInteropThread)
+            {
+                var st = $"Blocking the thread with JS interop is dangerous and could lead to deadlock. ManagedThreadId: {Environment.CurrentManagedThreadId}\n{Environment.StackTrace}";
+                fixed (char* stack = st)
+                {
+                    WarnAboutBlockingWait(stack, st.Length);
+                }
+            }
         }
+
+#pragma warning restore CS3001
 
         public static void ForceBlockingWait(Action<object?> action, object? state = null)
         {
             var flag = ThrowOnBlockingWaitOnJSInteropThread;
+            var wflag = WarnOnBlockingWaitOnJSInteropThread;
             try
             {
                 ThrowOnBlockingWaitOnJSInteropThread = false;
+                WarnOnBlockingWaitOnJSInteropThread = false;
 
                 action(state);
             }
             finally
             {
                 ThrowOnBlockingWaitOnJSInteropThread = flag;
+                WarnOnBlockingWaitOnJSInteropThread = wflag;
             }
         }
 #endif

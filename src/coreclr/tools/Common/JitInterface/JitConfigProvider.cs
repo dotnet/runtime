@@ -146,12 +146,6 @@ namespace Internal.JitInterface
             {
                 targetOSComponent = "universal";
             }
-#if !READYTORUN
-            else if (target.OperatingSystem == TargetOS.Windows && target.Architecture == TargetArchitecture.X86)
-            {
-                targetOSComponent = "win_aot";
-            }
-#endif
             else
             {
                 targetOSComponent = target.OperatingSystem == TargetOS.Windows ? "win" : "unix";

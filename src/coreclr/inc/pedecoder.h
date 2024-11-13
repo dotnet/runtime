@@ -309,10 +309,6 @@ class PEDecoder
     BOOL HasReadyToRunHeader() const;
     READYTORUN_HEADER *GetReadyToRunHeader() const;
 
-    void  GetEXEStackSizes(SIZE_T *PE_SizeOfStackReserve, SIZE_T *PE_SizeOfStackCommit) const;
-
-    CHECK CheckWillCreateGuardPage() const;
-
     // Native DLLMain Entrypoint
     BOOL HasNativeEntryPoint() const;
     void *GetNativeEntryPoint() const;

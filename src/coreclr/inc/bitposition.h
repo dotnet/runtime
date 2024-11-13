@@ -36,7 +36,7 @@ unsigned            BitPosition(unsigned value)
 //    It performs the "TrailingZeroCount" operation using intrinsics.
 //
 inline
-unsigned            BitPosition(unsigned __int64 value)
+unsigned            BitPosition(uint64_t value)
 {
     _ASSERTE((value != 0) && ((value & (value-1)) == 0));
     DWORD index;

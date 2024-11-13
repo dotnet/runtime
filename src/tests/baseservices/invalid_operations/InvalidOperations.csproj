@@ -3,9 +3,12 @@
     <!-- Needed for mechanical merging of all remaining tests, this particular project may not actually need process isolation -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- Make sure that invalid operations are not optimized out by Roslyn -->
+    <Optimize>false</Optimize>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="ManagedPointers.cs" />
+    <Compile Include="Arrays.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(TestSourceDir)Common/CoreCLRTestLibrary/CoreCLRTestLibrary.csproj" />

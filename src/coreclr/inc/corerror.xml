@@ -172,12 +172,6 @@
 	<Comment> The located assembly's manifest definition does not match the assembly reference. </Comment>
 </HRESULT>
 
-<HRESULT NumericValue="0x80131044">
-	<SymbolicName>FUSION_E_PRIVATE_ASM_DISALLOWED</SymbolicName>
-	<Message>"A strongly-named assembly is required."</Message>
-	<Comment> A strongly-named assembly is required. </Comment>
-</HRESULT>
-
 <HRESULT NumericValue="0x80131047">
 	<SymbolicName>FUSION_E_INVALID_NAME</SymbolicName>
 	<Message>"The given assembly name was invalid."</Message>
@@ -1180,6 +1174,11 @@
     <SymbolicName>CORPROF_E_NOT_GC_OBJECT</SymbolicName>
     <Message>"This object belongs to a non-gc heap."</Message>
     <Comment> This object belongs to a non-gc heap </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x8013138a">
+    <SymbolicName>CORPROF_E_MODULE_IS_ENC</SymbolicName>
+    <Comment> The module is EnC </Comment>
 </HRESULT>
 
 <HRESULT NumericValue="0x80131416">

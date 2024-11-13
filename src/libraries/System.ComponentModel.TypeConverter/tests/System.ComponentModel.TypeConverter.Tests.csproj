@@ -120,6 +120,7 @@
     <Compile Include="SByteConverterTests.cs" />
     <Compile Include="SingleConverterTests.cs" />
     <Compile Include="HalfConverterTests.cs" />
+    <Compile Include="RegisteredTypesTests.cs" />
     <Compile Include="StringConverterTests.cs" />
     <Compile Include="Timers\TimersDescriptionAttributeTests.cs" />
     <Compile Include="TimeOnlyConverterTests.cs" />
@@ -159,13 +160,16 @@
     <Compile Include="Security\Authentication\ExtendedProtection\ExtendedProtectionPolicyTypeConverterTests.cs" />
     <Compile Include="XTypeDescriptionProviderTests.cs" />
 
-    <Compile Include="$(CommonTestPath)TestUtilities\System\DisableParallelization.cs"
-        Link="Common\TestUtilities\System\DisableParallelization.cs" />
+    <Compile Include="$(CommonTestPath)TestUtilities\System\DisableParallelization.cs" Link="Common\TestUtilities\System\DisableParallelization.cs" />
     <TrimmerRootDescriptor Include="$(ILLinkDescriptorsPath)ILLink.Descriptors.Castle.xml" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="System.ComponentModel.TypeConverter.TestData" Version="$(SystemComponentModelTypeConverterTestDataVersion)" />
     <PackageReference Include="Moq" Version="$(MoqVersion)" />
+    <!-- Reference the `NetCoreAppMinimum` build which has a functional BinaryFormatter and force a private copy to ensure it's not excluded -->
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.Serialization.Formatters\src\System.Runtime.Serialization.Formatters.csproj"
+                      Private="true"
+                      SetTargetFramework="TargetFramework=$(NetCoreAppMinimum)" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Resources\TestResx.resx">

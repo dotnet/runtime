@@ -76,7 +76,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				yield return "WIN32";
 
 			if (Characteristics.HasFlag (TestRunCharacteristics.TargetingNetCore))
-				yield return "NETCOREAPP";
+				yield return "NET";
 
 			if (Characteristics.HasFlag (TestRunCharacteristics.SupportsDefaultInterfaceMethods))
 				yield return "SUPPORTS_DEFAULT_INTERFACE_METHODS";

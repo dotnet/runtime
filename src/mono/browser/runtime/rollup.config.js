@@ -24,7 +24,7 @@ const wasmEnableSIMD = process.env.WASM_ENABLE_SIMD === "1" ? true : false;
 const wasmEnableExceptionHandling = process.env.WASM_ENABLE_EH === "1" ? true : false;
 const wasmEnableJsInteropByValue = process.env.ENABLE_JS_INTEROP_BY_VALUE == "1" ? true : false;
 const monoDiagnosticsMock = process.env.MonoDiagnosticsMock === "true" ? true : false;
-// because of stack walk at src/mono/wasm/debugger/BrowserDebugProxy/MonoProxy.cs
+// because of stack walk at src/mono/browser/debugger/BrowserDebugProxy/MonoProxy.cs
 // and unit test at with timers.mjs
 const keep_fnames = /(mono_wasm_runtime_ready|mono_wasm_fire_debugger_agent_message_with_data|mono_wasm_fire_debugger_agent_message_with_data_to_pause|mono_wasm_schedule_timer_tick)/;
 const keep_classnames = /(ManagedObject|ManagedError|Span|ArraySegment|WasmRootBuffer|SessionOptionsBuilder)/;
@@ -44,7 +44,7 @@ const terserConfig = {
 };
 const plugins = isDebug ? [writeOnChangePlugin()] : [terser(terserConfig), writeOnChangePlugin()];
 const banner = "//! Licensed to the .NET Foundation under one or more agreements.\n//! The .NET Foundation licenses this file to you under the MIT license.\n";
-const banner_dts = banner + "//!\n//! This is generated file, see src/mono/wasm/runtime/rollup.config.js\n\n//! This is not considered public API with backward compatibility guarantees. \n";
+const banner_dts = banner + "//!\n//! This is generated file, see src/mono/browser/runtime/rollup.config.js\n\n//! This is not considered public API with backward compatibility guarantees. \n";
 // emcc doesn't know how to load ES6 module, that's why we need the whole rollup.js
 const inlineAssert = [
     {
@@ -68,7 +68,18 @@ const inlineAssert = [
         // eslint-disable-next-line quotes
         pattern: 'mono_assert\\(([^,]*), \\(\\) => *`([^`]*)`\\);',
         replacement: (match) => `if (!(${match[1]})) mono_assert(false, \`${match[2]}\`); // inlined mono_assert condition`
-    }
+    },
+    {
+        // eslint-disable-next-line quotes
+        pattern: 'mono_log_debug\\(*"([^"]*)"\\);',
+        // eslint-disable-next-line quotes
+        replacement: (match) => `if (loaderHelpers.diagnosticTracing) mono_log_debug("${match[1]}"); // inlined mono_log_debug condition`
+    },
+    {
+        // eslint-disable-next-line quotes
+        pattern: 'mono_log_debug\\(\\(\\) => *`([^`]*)`\\);',
+        replacement: (match) => `if (loaderHelpers.diagnosticTracing) mono_log_debug(\`${match[1]}\`); // inlined mono_log_debug condition`
+    },
 ];
 const checkAssert =
 {
@@ -214,6 +225,20 @@ const typesConfig = {
     plugins: [dts()],
     onwarn: onwarn
 };
+const hybridGlobalizationConfig = {
+    input: "./hybrid-globalization/module-exports.ts",
+    output: [
+        {
+            format: "es",
+            file: nativeBinDir + "/dotnet.globalization.js",
+            banner,
+            sourcemap: true,
+            sourcemapPathTransform,
+        }
+    ],
+    plugins: [...outputCodePlugins],
+    onwarn: onwarn
+};
 
 let diagnosticMockTypesConfig = undefined;
 
@@ -269,7 +294,9 @@ const allConfigs = [
     runtimeConfig,
     wasmImportsConfig,
     typesConfig,
-].concat(workerConfigs)
+    hybridGlobalizationConfig,
+]
+    .concat(workerConfigs)
     .concat(diagnosticMockTypesConfig ? [diagnosticMockTypesConfig] : []);
 export default defineConfig(allConfigs);
 

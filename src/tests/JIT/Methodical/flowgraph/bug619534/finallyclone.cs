@@ -5,9 +5,9 @@
  * Problem: There were no SSA edges added for cloned finally blocks. A finally block is cloned if there is an EH, switch or throw within it. This implied bad codegen as described in the customer scenario below. The call to Console.WriteLine changes code movement around the call and so the issue appears to go away but the Console.WriteLine is not really related.
  *
  * Solution: Add an OPONERROR edge around the summary OPSIDEEFFECT tuples to show that they are conditional.
- * 
+ *
  * Customer Scenario: We seem to be hitting this strange bug (see repro code). If there is a try/catch statement in the finally block, the Test() method returns false, even if this should be impossible. Uncommenting the Console.WriteLine in the try block suddenly makes the test pass. Note that there is only one place where shouldFail becomes true. We tried this on an x86 machine, and the test always returns what we expected (true), we also get the correct result on VS2008, so the bug seems to be only on x64 builds.
- * 
+ *
  * */
 
 using System;
@@ -20,6 +20,7 @@ class ApplicationException : Exception { }
 public class TestClass
 {
     [Fact]
+    [OuterLoop]
     public static int TestEntryPoint()
     {
         //this should return true;

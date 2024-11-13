@@ -20,6 +20,7 @@ namespace System.Security.Cryptography
 
         private SafeBCryptKeyHandle? _key;
         private int _lastKeySize;
+        private bool _publicOnly;
 
         internal RSABCrypt()
         {
@@ -51,11 +52,11 @@ namespace System.Security.Cryptography
 
             SafeBCryptKeyHandle newKey = Interop.BCrypt.BCryptGenerateKeyPair(s_algHandle, keySize);
             Interop.BCrypt.BCryptFinalizeKeyPair(newKey);
-            SetKey(newKey);
+            SetKey(newKey, publicOnly: false);
             return newKey;
         }
 
-        private void SetKey(SafeBCryptKeyHandle newKey)
+        private void SetKey(SafeBCryptKeyHandle newKey, bool publicOnly)
         {
             Debug.Assert(!newKey.IsInvalid);
 
@@ -65,6 +66,7 @@ namespace System.Security.Cryptography
 
             SafeBCryptKeyHandle? oldKey = Interlocked.Exchange(ref _key, newKey);
             ForceSetKeySize(keySize);
+            _publicOnly = publicOnly;
             oldKey?.Dispose();
         }
 
@@ -112,7 +114,7 @@ namespace System.Security.Cryptography
                 CryptoPool.Return(keyBlob);
             }
 
-            SetKey(newKey);
+            SetKey(newKey, publicOnly: parameters.D is null);
         }
 
         public override byte[] Encrypt(byte[] data, RSAEncryptionPadding padding)
@@ -190,6 +192,8 @@ namespace System.Security.Cryptography
                 throw new CryptographicException(SR.Cryptography_RSA_DecryptWrongSize);
             }
 
+            ThrowIfPublicOnly();
+
             switch (padding.Mode)
             {
                 case RSAEncryptionPaddingMode.Pkcs1:
@@ -261,6 +265,7 @@ namespace System.Security.Cryptography
             string? hashAlgorithmName = hashAlgorithm.Name;
             ArgumentException.ThrowIfNullOrEmpty(hashAlgorithmName, nameof(hashAlgorithm));
             ArgumentNullException.ThrowIfNull(padding);
+            ThrowIfPublicOnly();
 
             SafeBCryptKeyHandle key = GetKey();
 
@@ -425,6 +430,14 @@ namespace System.Security.Cryptography
         private void ThrowIfDisposed()
         {
             ObjectDisposedException.ThrowIf(_lastKeySize < 0, this);
+        }
+
+        private void ThrowIfPublicOnly()
+        {
+            if (_publicOnly)
+            {
+                throw new CryptographicException(SR.Cryptography_CSP_NoPrivateKey);
+            }
         }
     }
 }

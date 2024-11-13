@@ -143,28 +143,28 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             sb.Append(nameMangler.CompilationUnitPrefix);
-            sb.Append("GenericLookupSignature(");
+            sb.Append("GenericLookupSignature("u8);
             sb.Append(_runtimeLookupKind.ToString());
-            sb.Append(" / ");
+            sb.Append(" / "u8);
             sb.Append(_fixupKind.ToString());
-            sb.Append(": ");
+            sb.Append(": "u8);
             if (_methodArgument != null)
             {
                 sb.Append(nameMangler.GetMangledTypeName(_methodArgument.OwningType));
-                sb.Append("::");
+                sb.Append("::"u8);
                 sb.Append(nameMangler.GetMangledMethodName(_methodArgument.Method));
                 if (_methodArgument.ConstrainedType != null)
                 {
-                    sb.Append("@");
+                    sb.Append("@"u8);
                     sb.Append(nameMangler.GetMangledTypeName(_methodArgument.ConstrainedType));
                 }
                 if (!_methodArgument.Token.IsNull)
                 {
-                    sb.Append(" [");
+                    sb.Append(" ["u8);
                     sb.Append(_methodArgument.Token.MetadataReader.GetString(_methodArgument.Token.MetadataReader.GetAssemblyDefinition().Name));
-                    sb.Append(":");
+                    sb.Append(":"u8);
                     sb.Append(((uint)_methodArgument.Token.Token).ToString("X8"));
-                    sb.Append("]");
+                    sb.Append("]"u8);
                 }
             }
             if (_typeArgument != null)
@@ -175,9 +175,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             {
                 _fieldArgument.AppendMangledName(nameMangler, sb);
             }
-            sb.Append(" (");
+            sb.Append(" ("u8);
             _methodContext.AppendMangledName(nameMangler, sb);
-            sb.Append(")");
+            sb.Append(")"u8);
         }
 
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)

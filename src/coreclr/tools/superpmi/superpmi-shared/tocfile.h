@@ -12,7 +12,7 @@
 class TOCElement
 {
 public:
-    __int64 Offset;
+    int64_t Offset;
     int     Number;
     char    Hash[MM3_HASH_BUFFER_SIZE];
 
@@ -20,7 +20,7 @@ public:
     {
     }
 
-    TOCElement(int number, __int64 offset) : Offset(offset), Number(number)
+    TOCElement(int number, int64_t offset) : Offset(offset), Number(number)
     {
     }
 };

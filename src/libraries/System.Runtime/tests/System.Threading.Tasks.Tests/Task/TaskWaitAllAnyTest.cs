@@ -220,7 +220,6 @@ namespace System.Threading.Tasks.Tests.WaitAllAny
         /// <summary>
         /// The method that will run the scenario
         /// </summary>
-        /// <returns></returns>
         internal void RealRun()
         {
             //create the tasks
@@ -325,7 +324,6 @@ namespace System.Threading.Tasks.Tests.WaitAllAny
         /// - the returned index form WaitAny should correspond to a completed task
         /// - in case of Cancelled  and Exception tests the right exceptions should be got for WaitAll
         /// </summary>
-        /// <returns></returns>
         private void Verify()
         {
             // verification for WaitAll
@@ -1254,6 +1252,44 @@ namespace System.Threading.Tasks.Tests.WaitAllAny
             TestParameters_WaitAllAny parameters = new TestParameters_WaitAllAny(API.WaitAny, 7, WaitBy.TimeSpan, allTasks);
             TaskWaitAllAnyTest test = new TaskWaitAllAnyTest(parameters);
             test.RealRun();
+        }
+
+        [Fact]
+        public static void TaskWaitAll_Enumerable_InvalidArguments()
+        {
+            AssertExtensions.Throws<ArgumentNullException>("tasks", () => Task.WaitAll((IEnumerable<Task>)null));
+            AssertExtensions.Throws<ArgumentException>("tasks", () => Task.WaitAll((IEnumerable<Task>)[null]));
+            AssertExtensions.Throws<ArgumentException>("tasks", () => Task.WaitAll((IEnumerable<Task>)[Task.CompletedTask, null]));
+            AssertExtensions.Throws<ArgumentException>("tasks", () => Task.WaitAll((IEnumerable<Task>)[null, Task.CompletedTask]));
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        public static void TaskWaitAll_Enumerable_Canceled()
+        {
+            var tcs = new TaskCompletionSource();
+
+            Assert.Throws<OperationCanceledException>(() => Task.WaitAll((IEnumerable<Task>)[tcs.Task], new CancellationToken(true)));
+
+            using var cts = new CancellationTokenSource(1);
+            Assert.Throws<OperationCanceledException>(() => Task.WaitAll((IEnumerable<Task>)[Task.CompletedTask, tcs.Task], cts.Token));
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        public static void TaskWaitAll_Enumerable_AllComplete()
+        {
+            Task.WaitAll((IEnumerable<Task>)[]);
+            Task.WaitAll((IEnumerable<Task>)[Task.CompletedTask]);
+            Task.WaitAll((IEnumerable<Task>)[Task.CompletedTask, Task.CompletedTask]);
+
+            Task.WaitAll((IEnumerable<Task>)(Task[])[Task.CompletedTask, Task.CompletedTask]);
+
+            Task.WaitAll((List<Task>)[]);
+            Task.WaitAll((List<Task>)[Task.CompletedTask]);
+            Task.WaitAll((List<Task>)[Task.CompletedTask, Task.CompletedTask]);
+
+            Task.WaitAll((IEnumerable<Task>)[Task.Delay(1)]);
+            Task.WaitAll((List<Task>)[Task.Delay(1)]);
+            Task.WaitAll((IEnumerable<Task>)[Task.Delay(1), Task.CompletedTask, Task.Delay(1), Task.CompletedTask, Task.Delay(1)]);
         }
     }
 }

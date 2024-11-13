@@ -32,6 +32,7 @@ msbuild.log
 msbuild.err
 msbuild.wrn
 *.binlog
+*.pp
 .deps/
 .dirstamp
 .libs/
@@ -187,6 +188,7 @@ node_modules/
 *.metaproj
 *.metaproj.tmp
 bin.localpkg/
+.mono/
 
 # RIA/Silverlight projects
 Generated_Code/

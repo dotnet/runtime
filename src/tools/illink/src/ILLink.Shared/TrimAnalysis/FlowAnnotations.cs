@@ -19,11 +19,13 @@ namespace ILLink.Shared.TrimAnalysis
 	{
 		internal partial bool MethodRequiresDataFlowAnalysis (MethodProxy method);
 
-		internal partial MethodReturnValue GetMethodReturnValue (MethodProxy method, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes);
+		internal partial MethodReturnValue GetMethodReturnValue (MethodProxy method, bool isNewObj, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes);
 
-		internal partial MethodReturnValue GetMethodReturnValue (MethodProxy method);
+		internal partial MethodReturnValue GetMethodReturnValue (MethodProxy method, bool isNewObj);
 
 		internal partial GenericParameterValue GetGenericParameterValue (GenericParameterProxy genericParameter);
+
+		internal partial GenericParameterValue GetGenericParameterValue (GenericParameterProxy genericParameter, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes);
 
 		internal partial MethodParameterValue GetMethodThisParameterValue (MethodProxy method, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes);
 

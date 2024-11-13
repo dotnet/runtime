@@ -229,7 +229,7 @@ namespace System.Xml.Xsl
 
             Delegate delExec = executeMethod is DynamicMethod dm
                 ? dm.CreateDelegate(typeof(ExecuteDelegate))
-                : executeMethod.CreateDelegate(typeof(ExecuteDelegate));
+                : executeMethod.CreateDelegate<ExecuteDelegate>();
 
             _command = new XmlILCommand((ExecuteDelegate)delExec, new XmlQueryStaticData(queryData, earlyBoundTypes));
             OutputSettings = _command.StaticData.DefaultWriterSettings;

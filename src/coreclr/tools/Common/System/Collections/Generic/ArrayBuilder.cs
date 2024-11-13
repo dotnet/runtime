@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Runtime.CompilerServices;
+
 using Debug = System.Diagnostics.Debug;
 
 namespace System.Collections.Generic
@@ -13,6 +15,11 @@ namespace System.Collections.Generic
         private T[] _items;
         private int _count;
 
+        public ArrayBuilder(int capacity)
+        {
+            _items = new T[capacity];
+        }
+
         public T[] ToArray()
         {
             if (_items == null)
@@ -22,12 +29,36 @@ namespace System.Collections.Generic
             return _items;
         }
 
+        public void CopyTo(T[] destination)
+        {
+            if (_items != null)
+            {
+                // Use Array.Copy instead of Span.CopyTo to handle covariant destination
+                Array.Copy(_items, destination, _count);
+            }
+        }
+
         public void Add(T item)
         {
             if (_items == null || _count == _items.Length)
                 Array.Resize(ref _items, 2 * _count + 1);
             _items[_count++] = item;
         }
+
+#if NET
+        public readonly Span<T> AsSpan() => _items.AsSpan(0, _count);
+
+        public readonly Span<T> AsSpan(int start) => _items.AsSpan(start, _count - start);
+
+        public Span<T> AppendSpan(int length)
+        {
+            int origCount = _count;
+            EnsureCapacity(origCount + length);
+
+            _count = origCount + length;
+            return _items.AsSpan(origCount, length);
+        }
+#endif
 
         public void Append(T[] newItems)
         {
@@ -67,32 +98,26 @@ namespace System.Collections.Generic
         {
             if (requestedCapacity > ((_items != null) ? _items.Length : 0))
             {
-                int newCount = Math.Max(2 * _count + 1, requestedCapacity);
-                Array.Resize(ref _items, newCount);
+                Grow(requestedCapacity);
             }
         }
 
-        public int Count
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private void Grow(int requestedCapacity)
         {
-            get
-            {
-                return _count;
-            }
+            int newCount = Math.Max(2 * _count + 1, requestedCapacity);
+            Array.Resize(ref _items, newCount);
         }
 
-        public T this[int index]
+        public readonly int Count => _count;
+
+        public readonly T this[int index]
         {
-            get
-            {
-                return _items[index];
-            }
-            set
-            {
-                _items[index] = value;
-            }
+            get => _items[index];
+            set => _items[index] = value;
         }
 
-        public bool Contains(T t)
+        public readonly bool Contains(T t)
         {
             for (int i = 0; i < _count; i++)
             {
@@ -105,7 +130,7 @@ namespace System.Collections.Generic
             return false;
         }
 
-        public bool Any(Func<T, bool> func)
+        public readonly bool Any(Func<T, bool> func)
         {
             for (int i = 0; i < _count; i++)
             {

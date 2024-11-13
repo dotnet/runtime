@@ -28,6 +28,7 @@ namespace hello_simplerethrow_rethrow_cs
         }
 
         [Fact]
+        [OuterLoop]
         static public int TestEntryPoint()
         {
             //Start recording

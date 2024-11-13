@@ -70,6 +70,7 @@ internal struct BB
 public static class Test_seq_gc_long_1
 {
     [Fact]
+    [OuterLoop]
     public static int TestEntrypoint()
     {
         return TestApp.RunAllTests();

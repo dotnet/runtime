@@ -43,6 +43,7 @@ public class a
     }
 
     [Fact]
+    [OuterLoop]
     public static int TestEntryPoint()
     {
         //Start recording

@@ -76,7 +76,7 @@ protected:
 
     enum CompileTimeStatePtrSpecialValues
     {
-        ILNotYetGenerated   = NULL,
+        ILNotYetGenerated   = 0,
         ILGeneratedAndFreed = 1,
     };
 
@@ -106,7 +106,7 @@ protected:
     PTR_LoaderHeap          m_loaderHeap;
 };
 
-typedef Holder<ILStubResolver*, DoNothing<ILStubResolver*>, ILStubResolver::StubGenFailed, NULL> ILStubGenHolder;
+typedef Holder<ILStubResolver*, DoNothing<ILStubResolver*>, ILStubResolver::StubGenFailed, 0> ILStubGenHolder;
 
 
 #endif // __ILSTUBRESOLVER_H__

@@ -51,6 +51,7 @@ namespace BoxTest_instance_cs
         }
 
         [Fact]
+        [OuterLoop]
         public static void TestEntryPoint()
         {
             Test test = new Test(20.0d);

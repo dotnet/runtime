@@ -51,6 +51,7 @@ namespace SinCalc_try_seh_cs
         }
 
         [Fact]
+        [OuterLoop]
         public static void TestEntryPoint()
         {
             object i;

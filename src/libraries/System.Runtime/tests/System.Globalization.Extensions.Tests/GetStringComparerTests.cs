@@ -19,8 +19,7 @@ namespace System.Globalization.Tests
             AssertExtensions.Throws<ArgumentException>("options", () => new CultureInfo("tr-TR").CompareInfo.GetStringComparer(CompareOptions.OrdinalIgnoreCase | CompareOptions.IgnoreCase));
         }
 
-        [Theory]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/95338", typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnApplePlatform))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnApplePlatform))]
         [InlineData("hello", "hello", "fr-FR", CompareOptions.IgnoreCase, 0, 0)]
         [InlineData("hello", "HELLo", "fr-FR", CompareOptions.IgnoreCase, 0, 0)]
         [InlineData("hello", null, "fr-FR", CompareOptions.IgnoreCase, 1, 1)]

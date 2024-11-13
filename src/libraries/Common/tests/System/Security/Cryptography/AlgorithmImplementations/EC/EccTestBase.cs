@@ -15,7 +15,7 @@ namespace System.Security.Cryptography.Tests
     /// </summary>
     public abstract class EccTestBase
     {
-#if NETCOREAPP
+#if NET
         internal const string ECDSA_P224_OID_VALUE = "1.3.132.0.33"; // Also called nistP224 or secP224r1
         internal const string ECDSA_P256_OID_VALUE = "1.2.840.10045.3.1.7"; // Also called nistP256, secP256r1 or prime256v1(OpenSsl)
         internal const string ECDSA_P384_OID_VALUE = "1.3.132.0.34"; // Also called nistP384 or secP384r1

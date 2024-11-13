@@ -84,6 +84,13 @@ BOOL TypeHandle::IsArray() const {
     return !IsTypeDesc() && AsMethodTable()->IsArray();
 }
 
+BOOL TypeHandle::IsString() const
+{
+    LIMITED_METHOD_CONTRACT;
+
+    return !IsTypeDesc() && AsMethodTable()->IsString();
+}
+
 BOOL TypeHandle::IsGenericVariable() const {
     LIMITED_METHOD_DAC_CONTRACT;
 
@@ -101,33 +108,6 @@ BOOL TypeHandle::HasTypeParam() const {
 
     CorElementType etype = AsTypeDesc()->GetInternalCorElementType();
     return(CorTypeInfo::IsModifier_NoThrow(etype) || etype == ELEMENT_TYPE_VALUETYPE);
-}
-
-Module *TypeHandle::GetDefiningModuleForOpenType() const
-{
-    WRAPPER_NO_CONTRACT;
-    SUPPORTS_DAC;
-
-    Module* returnValue = NULL;
-
-    if (IsGenericVariable())
-    {
-        PTR_TypeVarTypeDesc pTyVar = dac_cast<PTR_TypeVarTypeDesc>(AsTypeDesc());
-        returnValue = pTyVar->GetModule();
-        goto Exit;
-    }
-
-    if (HasTypeParam())
-    {
-        returnValue = GetTypeParam().GetDefiningModuleForOpenType();
-    }
-    else if (HasInstantiation())
-    {
-        returnValue = GetMethodTable()->GetDefiningModuleForOpenType();
-    }
-Exit:
-
-    return returnValue;
 }
 
 BOOL TypeHandle::ContainsGenericVariables(BOOL methodOnly /*=FALSE*/) const
@@ -335,9 +315,9 @@ void TypeHandle::AllocateManagedClassObject(RUNTIMETYPEHANDLE* pDest)
     {
         // Allocate RuntimeType on a frozen segment
         // Take a lock here since we don't want to allocate redundant objects which won't be collected
-        CrstHolder exposedClassLock(AppDomain::GetMethodTableExposedClassObjectLock());
+        CrstHolder exposedClassLock(AppDomain::GetCurrentDomain()->GetMethodTableExposedClassObjectLock());
 
-        if (VolatileLoad(pDest) == NULL)
+        if (VolatileLoad(pDest) == 0)
         {
             FrozenObjectHeapManager* foh = SystemDomain::GetFrozenObjectHeapManager();
             Object* obj = foh->TryAllocateObject(g_pRuntimeTypeClass, g_pRuntimeTypeClass->GetBaseSize());
@@ -347,8 +327,6 @@ void TypeHandle::AllocateManagedClassObject(RUNTIMETYPEHANDLE* pDest)
             refClass = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(obj);
             refClass->SetType(*this);
             RUNTIMETYPEHANDLE handle = (RUNTIMETYPEHANDLE)obj;
-            // Set the bit to 1 (we'll have to reset it before use)
-            handle |= 1;
             VolatileStore(pDest, handle);
         }
     }
@@ -357,17 +335,8 @@ void TypeHandle::AllocateManagedClassObject(RUNTIMETYPEHANDLE* pDest)
         GCPROTECT_BEGIN(refClass);
         refClass = (REFLECTCLASSBASEREF)AllocateObject(g_pRuntimeTypeClass);
         refClass->SetKeepAlive(allocator->GetExposedObject());
-        LOADERHANDLE exposedClassObjectHandle = allocator->AllocateHandle(refClass);
-        _ASSERTE((exposedClassObjectHandle & 1) == 0);
         refClass->SetType(*this);
-
-        // Let all threads fight over who wins using InterlockedCompareExchange.
-        // Only the winner can set m_ExposedClassObject from NULL.
-        if (InterlockedCompareExchangeT(pDest, exposedClassObjectHandle, static_cast<LOADERHANDLE>(NULL)))
-        {
-            // GC will collect unused instance
-            allocator->FreeHandle(exposedClassObjectHandle);
-        }
+        allocator->InsertObjectIntoFieldWithLifetimeOfCollectibleLoaderAllocator(refClass, (Object**)pDest);
         GCPROTECT_END();
     }
 }
@@ -1076,25 +1045,7 @@ OBJECTREF TypeHandle::GetManagedClassObject() const
     }
     else
     {
-        switch(GetInternalCorElementType())
-        {
-            case ELEMENT_TYPE_ARRAY:
-            case ELEMENT_TYPE_SZARRAY:
-            case ELEMENT_TYPE_BYREF:
-            case ELEMENT_TYPE_PTR:
-                return ((ParamTypeDesc*)AsTypeDesc())->GetManagedClassObject();
-
-            case ELEMENT_TYPE_VAR:
-            case ELEMENT_TYPE_MVAR:
-                return ((TypeVarTypeDesc*)AsTypeDesc())->GetManagedClassObject();
-
-            case ELEMENT_TYPE_FNPTR:
-                return ((FnPtrTypeDesc*)AsTypeDesc())->GetManagedClassObject();
-
-            default:
-                _ASSERTE(!"Bad Element Type");
-                return NULL;
-        }
+        return AsTypeDesc()->GetManagedClassObject();
     }
 }
 

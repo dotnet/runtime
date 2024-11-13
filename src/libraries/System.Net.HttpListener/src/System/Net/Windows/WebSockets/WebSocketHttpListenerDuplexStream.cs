@@ -30,7 +30,7 @@ namespace System.Net.WebSockets
         private HttpListenerAsyncEventArgs? _readEventArgs;
         private TaskCompletionSource? _writeTaskCompletionSource;
         private TaskCompletionSource<int>? _readTaskCompletionSource;
-        private int _cleanedUp;
+        private bool _cleanedUp;
 
 #if DEBUG
         private sealed class OutstandingOperations
@@ -595,7 +595,7 @@ namespace System.Net.WebSockets
 
         protected override void Dispose(bool disposing)
         {
-            if (disposing && Interlocked.Exchange(ref _cleanedUp, 1) == 0)
+            if (disposing && !Interlocked.Exchange(ref _cleanedUp, true))
             {
                 _readTaskCompletionSource?.TrySetCanceled();
 
@@ -716,10 +716,14 @@ namespace System.Net.WebSockets
 
         internal sealed class HttpListenerAsyncEventArgs : EventArgs, IDisposable
         {
-            private const int Free = 0;
-            private const int InProgress = 1;
-            private const int Disposed = 2;
-            private int _operating;
+            private OperatingState _operating;
+
+            private enum OperatingState
+            {
+                Free = 0,
+                InProgress = 1,
+                Disposed = 2,
+            }
 
             private bool _disposeCalled;
             private unsafe NativeOverlapped* _ptrNativeOverlapped;
@@ -783,7 +787,7 @@ namespace System.Net.WebSockets
                     Debug.Assert(!_shouldCloseOutput, "'m_ShouldCloseOutput' MUST be 'false' at this point.");
                     Debug.Assert(value == null || _buffer == null,
                         "Either 'm_Buffer' or 'm_BufferList' MUST be NULL.");
-                    Debug.Assert(_operating == Free,
+                    Debug.Assert(_operating == OperatingState.Free,
                         "This property can only be modified if no IO operation is outstanding.");
                     Debug.Assert(value == null || value.Count == 2,
                         "This list can only be 'NULL' or MUST have exactly '2' items.");
@@ -883,7 +887,7 @@ namespace System.Net.WebSockets
                 _disposeCalled = true;
 
                 // Check if this object is in-use for an async socket operation.
-                if (Interlocked.CompareExchange(ref _operating, Disposed, Free) != Free)
+                if (Interlocked.CompareExchange(ref _operating, OperatingState.Disposed, OperatingState.Free) != OperatingState.Free)
                 {
                     // Either already disposed or will be disposed when current operation completes.
                     return;
@@ -930,7 +934,7 @@ namespace System.Net.WebSockets
             internal void StartOperationCommon(ThreadPoolBoundHandle boundHandle)
             {
                 // Change status to "in-use".
-                if (Interlocked.CompareExchange(ref _operating, InProgress, Free) != Free)
+                if (Interlocked.CompareExchange(ref _operating, OperatingState.InProgress, OperatingState.Free) != OperatingState.Free)
                 {
                     // If it was already "in-use" check if Dispose was called.
                     ObjectDisposedException.ThrowIf(_disposeCalled, this);
@@ -1039,7 +1043,7 @@ namespace System.Net.WebSockets
             {
                 FreeOverlapped(false);
                 // Mark as not in-use
-                Interlocked.Exchange(ref _operating, Free);
+                Interlocked.Exchange(ref _operating, OperatingState.Free);
 
                 // Check for deferred Dispose().
                 // The deferred Dispose is not guaranteed if Dispose is called while an operation is in progress.

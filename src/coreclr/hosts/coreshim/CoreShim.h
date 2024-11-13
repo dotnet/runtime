@@ -5,7 +5,6 @@
 #define _CORESHIM_H_
 
 // Platform
-#define NOMINMAX
 #include <Windows.h>
 #include <combaseapi.h>
 

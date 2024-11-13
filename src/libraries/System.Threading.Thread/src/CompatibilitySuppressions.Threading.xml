@@ -22,6 +22,10 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
+    <Target>F:System.Threading.Thread.WarnOnBlockingWaitOnJSInteropThread</Target>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:System.Threading.Thread.AssureBlockingPossible</Target>
   </Suppression>
   <Suppression>

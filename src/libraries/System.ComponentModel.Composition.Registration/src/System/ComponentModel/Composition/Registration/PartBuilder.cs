@@ -29,7 +29,7 @@ namespace System.ComponentModel.Composition.Registration
         private readonly List<Tuple<Predicate<PropertyInfo>, Action<PropertyInfo, ImportBuilder>, Type>> _propertyImports;
         private readonly List<Tuple<Predicate<Type>, Action<Type, ExportBuilder>>> _interfaceExports;
 
-        internal Predicate<Type> SelectType { get; private set; }
+        internal Predicate<Type> SelectType { get; }
 
         internal PartBuilder(Predicate<Type> selectType)
         {

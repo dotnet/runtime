@@ -74,10 +74,10 @@ The main types provided by this library are:
 
 <!-- Links to further documentation -->
 
-* [Configure apps by using configuration files](https://docs.microsoft.com/dotnet/framework/configure-apps/)
-* [System.Configuration namespace](https://docs.microsoft.com/dotnet/api/system.configuration)
-* [System.Configuration.Configuration](https://docs.microsoft.com/dotnet/api/system.configuration.configuration)
-* [System.Configuration.ConfigurationManager](https://docs.microsoft.com/dotnet/api/system.configuration.configurationmanager)
+* [Configure apps by using configuration files](https://learn.microsoft.com/dotnet/framework/configure-apps/)
+* [System.Configuration namespace](https://learn.microsoft.com/dotnet/api/system.configuration)
+* [System.Configuration.Configuration](https://learn.microsoft.com/dotnet/api/system.configuration.configuration)
+* [System.Configuration.ConfigurationManager](https://learn.microsoft.com/dotnet/api/system.configuration.configurationmanager)
 
 ## Feedback & Contributing
 

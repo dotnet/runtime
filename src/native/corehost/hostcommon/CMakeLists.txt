@@ -1,12 +1,19 @@
 # Licensed to the .NET Foundation under one or more agreements.
 # The .NET Foundation licenses this file to you under the MIT license.
 
-project(hostcommon)
-
-set(DOTNET_PROJECT_NAME "hostcommon")
-
 include(files.cmake)
 
-set(SKIP_VERSIONING 1)
-include(../lib_static.cmake)
+add_library(libhostcommon STATIC ${SOURCES})
 
+target_compile_definitions(libhostcommon PRIVATE EXPORT_SHARED_API)
+set_target_properties(libhostcommon PROPERTIES MACOSX_RPATH TRUE)
+
+if (NOT CLR_CMAKE_TARGET_WIN32)
+    target_sources(libhostcommon PRIVATE ${VERSION_FILE_PATH})
+endif()
+
+if (MSVC)
+    target_sources(libhostcommon PRIVATE ${HEADERS})
+endif()
+
+target_link_libraries(libhostcommon PUBLIC hostmisc)

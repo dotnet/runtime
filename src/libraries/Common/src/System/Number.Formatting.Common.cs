@@ -12,43 +12,45 @@ namespace System
 {
     internal static partial class Number
     {
+        private const int CharStackBufferSize = 32;
+
         private const int DefaultPrecisionExponentialFormat = 6;
 
         private const int MaxUInt32DecDigits = 10;
         private const string PosNumberFormat = "#";
 
         private static readonly string[] s_posCurrencyFormats =
-        {
+        [
             "$#", "#$", "$ #", "# $"
-        };
+        ];
 
         private static readonly string[] s_negCurrencyFormats =
-        {
+        [
             "($#)", "-$#", "$-#", "$#-",
             "(#$)", "-#$", "#-$", "#$-",
             "-# $", "-$ #", "# $-", "$ #-",
             "$ -#", "#- $", "($ #)", "(# $)",
             "$- #"
-        };
+        ];
 
         private static readonly string[] s_posPercentFormats =
-        {
+        [
             "# %", "#%", "%#", "% #"
-        };
+        ];
 
         private static readonly string[] s_negPercentFormats =
-        {
+        [
             "-# %", "-#%", "-%#",
             "%-#", "%#-",
             "#-%", "#%-",
             "-% #", "# %-", "% #-",
             "% -#", "#- %"
-        };
+        ];
 
         private static readonly string[] s_negNumberFormats =
-        {
+        [
             "(#)", "-#", "- #", "#-", "# -",
-        };
+        ];
 
         internal static unsafe char ParseFormatSpecifier(ReadOnlySpan<char> format, out int digits)
         {

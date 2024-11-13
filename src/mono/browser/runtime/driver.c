@@ -180,9 +180,12 @@ cleanup_runtime_config (MonovmRuntimeConfigArguments *args, void *user_data)
 	free (user_data);
 }
 
+static int runtime_initialized = 0;
+
 EMSCRIPTEN_KEEPALIVE void
 mono_wasm_load_runtime (int debug_level)
 {
+	runtime_initialized = 1;
 	const char *interp_opts = "";
 
 #ifndef INVARIANT_GLOBALIZATION
@@ -225,6 +228,15 @@ mono_wasm_load_runtime (int debug_level)
 	root_domain = mono_wasm_load_runtime_common (debug_level, wasm_trace_logger, interp_opts);
 
 	bindings_initialize_internals();
+}
+
+int initialize_runtime()
+{
+    if (runtime_initialized == 1)
+		return 0;
+	mono_wasm_load_runtime (0);
+
+	return 0;
 }
 
 EMSCRIPTEN_KEEPALIVE void
@@ -287,8 +299,10 @@ mono_wasm_invoke_jsexport_async_post (void* target_thread, MonoMethod *method, v
 
 
 typedef void (*js_interop_event)(void* args);
+typedef void (*sync_context_pump)(void);
 extern js_interop_event before_sync_js_import;
 extern js_interop_event after_sync_js_import;
+extern sync_context_pump synchronization_context_pump_handler;
 
 // this is running on the target thread
 EMSCRIPTEN_KEEPALIVE void
@@ -304,6 +318,11 @@ EMSCRIPTEN_KEEPALIVE void
 mono_wasm_invoke_jsexport_sync_send (void* target_thread, MonoMethod *method, void* args /*JSMarshalerArguments*/)
 {
 	mono_threads_wasm_sync_run_in_target_thread_vii (target_thread, (void (*)(gpointer, gpointer))mono_wasm_invoke_jsexport_sync, method, args);
+}
+
+EMSCRIPTEN_KEEPALIVE void mono_wasm_synchronization_context_pump (void)
+{
+	synchronization_context_pump_handler ();
 }
 
 #endif /* DISABLE_THREADS */
@@ -338,12 +357,6 @@ mono_wasm_exit (int exit_code)
 	fflush (stdout);
 	fflush (stderr);
 	emscripten_force_exit (exit_code);
-}
-
-EMSCRIPTEN_KEEPALIVE int
-mono_wasm_abort ()
-{
-	abort ();
 }
 
 EMSCRIPTEN_KEEPALIVE void
@@ -429,14 +442,24 @@ mono_wasm_profiler_init_browser (const char *desc)
 
 #endif
 
+#ifdef ENABLE_LOG_PROFILER
+
+void mono_profiler_init_log (const char *desc);
+
+EMSCRIPTEN_KEEPALIVE void
+mono_wasm_profiler_init_log (const char *desc)
+{
+	mono_profiler_init_log (desc);
+}
+
+#endif
+
 EMSCRIPTEN_KEEPALIVE void
 mono_wasm_init_finalizer_thread (void)
 {
 	// in the single threaded build, finalizers periodically run on the main thread instead.
 #ifndef DISABLE_THREADS
-	MONO_ENTER_GC_UNSAFE;
 	mono_gc_init_finalizer_thread ();
-	MONO_EXIT_GC_UNSAFE;
 #endif
 }
 

@@ -11,7 +11,7 @@ using System.Security;
 
 namespace System.Runtime.Caching
 {
-#if NETCOREAPP
+#if NET
     [UnsupportedOSPlatform("browser")]
     [UnsupportedOSPlatform("ios")]
     [UnsupportedOSPlatform("tvos")]

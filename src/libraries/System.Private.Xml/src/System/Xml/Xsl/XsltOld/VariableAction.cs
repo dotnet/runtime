@@ -17,7 +17,7 @@ namespace System.Xml.Xsl.XsltOld
 
     internal class VariableAction : ContainerAction, IXsltContextVariable
     {
-        public static object BeingComputedMark = new object();
+        public static readonly object BeingComputedMark = new object();
         private const int ValueCalculated = 2;
 
         protected XmlQualifiedName? name;

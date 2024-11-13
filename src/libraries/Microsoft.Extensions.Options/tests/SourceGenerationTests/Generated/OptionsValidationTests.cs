@@ -186,7 +186,7 @@ public class OptionsValidationTests
     [Fact]
     public void RangeAttributeModelDateValid()
     {
-#if NETCOREAPP3_1_OR_GREATER
+#if NET
         // Setting non-invariant culture to check that
         // attribute's "ParseLimitsInInvariantCulture" property
         // was set up correctly in the validator:

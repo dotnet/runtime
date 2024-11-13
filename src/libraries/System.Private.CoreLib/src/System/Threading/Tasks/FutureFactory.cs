@@ -765,7 +765,7 @@ namespace System.Threading.Tasks
             Task<TResult> promise = new Task<TResult>(state, creationOptions);
 
             if (TplEventSource.Log.IsEnabled())
-                TplEventSource.Log.TraceOperationBegin(promise.Id, "TaskFactory.FromAsync: " + beginMethod.Method.Name, 0);
+                TplEventSource.Log.TraceOperationBegin(promise.Id, "TaskFactory.FromAsync: " + beginMethod.GetMethodName(), 0);
 
             if (Task.s_asyncDebuggingEnabled)
                 Task.AddToActiveTasks(promise);
@@ -882,7 +882,7 @@ namespace System.Threading.Tasks
             Task<TResult> promise = new Task<TResult>(state, creationOptions);
 
             if (TplEventSource.Log.IsEnabled())
-                TplEventSource.Log.TraceOperationBegin(promise.Id, "TaskFactory.FromAsync: " + beginMethod.Method.Name, 0);
+                TplEventSource.Log.TraceOperationBegin(promise.Id, "TaskFactory.FromAsync: " + beginMethod.GetMethodName(), 0);
 
             if (Task.s_asyncDebuggingEnabled)
                 Task.AddToActiveTasks(promise);
@@ -1007,7 +1007,7 @@ namespace System.Threading.Tasks
             Task<TResult> promise = new Task<TResult>(state, creationOptions);
 
             if (TplEventSource.Log.IsEnabled())
-                TplEventSource.Log.TraceOperationBegin(promise.Id, "TaskFactory.FromAsync: " + beginMethod.Method.Name, 0);
+                TplEventSource.Log.TraceOperationBegin(promise.Id, "TaskFactory.FromAsync: " + beginMethod.GetMethodName(), 0);
 
             if (Task.s_asyncDebuggingEnabled)
                 Task.AddToActiveTasks(promise);
@@ -1140,7 +1140,7 @@ namespace System.Threading.Tasks
             Task<TResult> promise = new Task<TResult>(state, creationOptions);
 
             if (TplEventSource.Log.IsEnabled())
-                TplEventSource.Log.TraceOperationBegin(promise.Id, "TaskFactory.FromAsync: " + beginMethod.Method.Name, 0);
+                TplEventSource.Log.TraceOperationBegin(promise.Id, "TaskFactory.FromAsync: " + beginMethod.GetMethodName(), 0);
 
             if (Task.s_asyncDebuggingEnabled)
                 Task.AddToActiveTasks(promise);

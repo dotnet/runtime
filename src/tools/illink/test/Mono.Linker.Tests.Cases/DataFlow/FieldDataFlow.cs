@@ -4,6 +4,7 @@
 using System;
 using System.Diagnostics.CodeAnalysis;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
+using Mono.Linker.Tests.Cases.Expectations.Metadata;
 using Mono.Linker.Tests.Cases.Expectations.Helpers;
 
 namespace Mono.Linker.Tests.Cases.DataFlow
@@ -11,6 +12,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 	// Note: this test's goal is to validate that the product correctly reports unrecognized patterns
 	//   - so the main validation is done by the ExpectedWarning attributes.
 	[SkipKeptItemsValidation]
+	[SetupCompileArgument ("/unsafe")]
 	[ExpectedNoWarnings]
 	public class FieldDataFlow
 	{
@@ -39,6 +41,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 			TestStringEmpty ();
 
+			AnnotationOnUnsupportedField.Test ();
 			WriteArrayField.Test ();
 			AccessReturnedInstanceField.Test ();
 		}
@@ -229,24 +232,21 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 			static AccessReturnedInstanceField GetInstance ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.All)] Type unused) => null;
 
-			[ExpectedWarning ("IL2072", nameof (GetUnknownType), nameof (GetInstance),
-				ProducedBy = Tool.Trimmer | Tool.NativeAot)] // https://github.com/dotnet/linker/issues/2832
+			[ExpectedWarning ("IL2072", nameof (GetUnknownType), nameof (GetInstance), Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/linker/issues/2832")]
 			[ExpectedWarning ("IL2077", nameof (field), nameof (DataFlowTypeExtensions.RequiresAll))]
 			static void TestRead ()
 			{
 				GetInstance (GetUnknownType ()).field.RequiresAll ();
 			}
 
-			[ExpectedWarning ("IL2072", nameof (GetUnknownType), nameof (GetInstance),
-				ProducedBy = Tool.Trimmer | Tool.NativeAot)] // https://github.com/dotnet/linker/issues/2832
+			[ExpectedWarning ("IL2072", nameof (GetUnknownType), nameof (GetInstance), Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/linker/issues/2832")]
 			[ExpectedWarning ("IL2074", nameof (GetUnknownType), nameof (field))]
 			static void TestWrite ()
 			{
 				GetInstance (GetUnknownType ()).field = GetUnknownType ();
 			}
 
-			[ExpectedWarning ("IL2072", nameof (GetUnknownType), nameof (GetInstance),
-				ProducedBy = Tool.Trimmer | Tool.NativeAot)] // https://github.com/dotnet/linker/issues/2832
+			[ExpectedWarning ("IL2072", nameof (GetUnknownType), nameof (GetInstance), Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/linker/issues/2832")]
 			[ExpectedWarning ("IL2074", nameof (GetUnknownType), nameof (field))]
 			static void TestNullCoalescingAssignment ()
 			{
@@ -319,6 +319,99 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
 			public static Type _staticTypeWithPublicParameterlessConstructor;
+		}
+
+		class AnnotationOnUnsupportedField
+		{
+			class UnsupportedType
+			{
+			}
+
+			static UnsupportedType GetUnsupportedTypeInstance () => null;
+
+			[ExpectedWarning ("IL2097")]
+			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+			static UnsupportedType unsupportedTypeInstance;
+
+			[ExpectedWarning ("IL2098")]
+			static void RequirePublicFields (
+				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)]
+				UnsupportedType unsupportedTypeInstance)
+			{
+			}
+
+			static void TestFlowOutOfField ()
+			{
+				RequirePublicFields (unsupportedTypeInstance);
+			}
+
+			static void TestUnsupportedType () {
+				var t = GetUnsupportedTypeInstance ();
+				unsupportedTypeInstance = t;
+				TestFlowOutOfField ();
+			}
+
+			ref struct StringRef
+			{
+				[ExpectedWarning ("IL2097")]
+				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+				public ref string stringRef;
+
+				public StringRef (ref string s)
+				{
+					stringRef = ref s;
+				}
+
+				static string GetString () => null;
+
+				[ExpectedWarning ("IL2098")]
+				static void RequirePublicFields (
+					[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)]
+					ref string s)
+				{
+				}
+
+				void TestFlowOutOfField ()
+				{
+					RequirePublicFields (ref stringRef);
+				}
+
+				public static void Test ()
+				{
+					string s = GetString ();
+					var stringRef = new StringRef (ref s);
+					stringRef.TestFlowOutOfField ();
+				}
+			}
+
+			class GenericField<T>
+			{
+				[ExpectedWarning ("IL2097")]
+				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+				public static T field;
+			}
+
+			static void TestTypeGenericParameter ()
+			{
+				GenericField<Type>.field = GetUnknownType ();
+			}
+
+			[ExpectedWarning ("IL2097")]
+			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+			unsafe static delegate*<void> functionPointer;
+
+			unsafe static void TestFunctionPointer ()
+			{
+				functionPointer = null;
+			}
+
+			public static void Test ()
+			{
+				TestUnsupportedType ();
+				StringRef.Test ();
+				TestTypeGenericParameter ();
+				TestFunctionPointer ();
+			}
 		}
 
 		class WriteArrayField

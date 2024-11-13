@@ -86,6 +86,7 @@ public class plainarr
     }
 
     [Fact]
+    [OuterLoop]
     public static int TestEntryPoint()
     {
         bool pass = false;

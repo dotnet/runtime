@@ -3,10 +3,12 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using TestLibrary;
 using Xunit;
 
 public class ReproGH93597 {
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtimelab/issues/155", typeof(PlatformDetection), nameof(PlatformDetection.IsNonZeroLowerBoundArrayNotSupported))]
         public static int TestEntryPoint() {
                 var expected = new int[] {5,4,3,2,1};
 

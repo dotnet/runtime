@@ -14,7 +14,7 @@ namespace System
             GC.SuppressFinalize(this);
         }
 
-        internal ThreadLocal<object?> Data { get; private set; }
+        internal ThreadLocal<object?> Data { get; }
 
         [SuppressMessage("Microsoft.Security", "CA1821", Justification = "Finalizer preserved for compat, it is suppressed by the constructor.")]
         ~LocalDataStoreSlot()

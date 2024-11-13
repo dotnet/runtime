@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Reflection;
+using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
 
 namespace ILVerify
@@ -12,11 +12,11 @@ namespace ILVerify
         /// <summary>
         /// Resolve assembly to PEReader. This method should return the same instance when queried multiple times.
         /// </summary>
-        PEReader ResolveAssembly(AssemblyName assemblyName);
+        PEReader ResolveAssembly(AssemblyNameInfo assemblyName);
 
         /// <summary>
         /// Resolve module to PEReader. This method should return the same instance when queried multiple times.
         /// </summary>
-        PEReader ResolveModule(AssemblyName referencingAssembly, string fileName);
+        PEReader ResolveModule(AssemblyNameInfo referencingAssembly, string fileName);
     }
 }

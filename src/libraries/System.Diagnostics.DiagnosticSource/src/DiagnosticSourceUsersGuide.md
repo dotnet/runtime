@@ -61,7 +61,7 @@ Thus the first step in instrumenting code with `DiagnosticSource` is to create a
 `DiagnosticListener`. For example:
 
 ```C#
-    private static DiagnosticSource httpLogger = new DiagnosticListener("System.Net.Http");
+    private static readonly DiagnosticSource httpLogger = new DiagnosticListener("System.Net.Http");
 ```
 Notice that httpLogger is typed as a `DiagnosticSource`. This is because this code
 only cares about writing events and thus only cares about the  `DiagnosticSource` methods that
@@ -104,7 +104,7 @@ Already some of the architectural elements are being exposed, namely:
 Perhaps confusingly you make a `DiagnosticSource` by creating a `DiagnosticListener`:
 
 ```C#
-    static DiagnosticSource mySource = new DiagnosticListener("System.Net.Http");
+    static readonly DiagnosticSource mySource = new DiagnosticListener("System.Net.Http");
 ```
 
 Basically a `DiagnosticListener` is a named place where a source sends its information (events).
@@ -248,7 +248,7 @@ A typical use of the `AllListeners` static property looks like this:
 
 ```C#
     // We are using AllListeners to turn an Action<DiagnosticListener> into an IObserver<DiagnosticListener>
-    static IDisposable listenerSubscription = DiagnosticListener.AllListeners.Subscribe(delegate (DiagnosticListener listener)
+    static readonly IDisposable listenerSubscription = DiagnosticListener.AllListeners.Subscribe(delegate (DiagnosticListener listener)
     {
         // We get a callback of every Diagnostics Listener that is active in the system (past present or future)
         if (listener.Name == "System.Net.Http")
@@ -290,7 +290,7 @@ call `Subscribe()` on it as well. Thus we can fill out the previous example a bi
 
 ```C#
     static IDisposable networkSubscription = null;
-    static IDisposable listenerSubscription = DiagnosticListener.AllListeners.Subscribe(delegate (DiagnosticListener listener)
+    static readonly IDisposable listenerSubscription = DiagnosticListener.AllListeners.Subscribe(delegate (DiagnosticListener listener)
     {
         if (listener.Name == "System.Net.Http")
         {

@@ -23,7 +23,7 @@ using System.Threading;
 using Xunit;
 
 // System.Text.Json is a .NET Core 3.0 specific library
-#if NETCOREAPP
+#if NET
 using System.Text.Json;
 #endif
 
@@ -1195,7 +1195,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
             @this.InnerExceptions.CheckSequenceEquals(other.InnerExceptions, isSamePlatform);
         }
 
-#if NETCOREAPP
+#if NET
         public static void IsEqual(this JsonException @this, JsonException other, bool isSamePlatform)
         {
             if (@this == null && other == null)

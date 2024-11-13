@@ -42,6 +42,7 @@ namespace strswitch_switchincatch_cs
         /// The main entry point for the application.
         /// </summary>
         [Fact]
+        [OuterLoop]
         public static int TestEntryPoint()
         {
             string[] s = { "one", "two", "three", "four", "five", "six" };
@@ -51,7 +52,7 @@ namespace strswitch_switchincatch_cs
             for (int i = 0; i < s.Length; i++)
             {
 
-                beginloop:
+            beginloop:
                 try
                 {
                     try
@@ -86,11 +87,11 @@ namespace strswitch_switchincatch_cs
                     Console.WriteLine("In outer finally\n");
                 }
 
-                continueloop:
+            continueloop:
                 Console.WriteLine("Continuing");
 
             }
-            finish:
+        finish:
             // stop recoding
             testLog.StopRecording();
             return testLog.VerifyOutput();

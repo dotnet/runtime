@@ -2848,6 +2848,9 @@ sgen_gc_invoke_finalizers (void)
 
 	g_assert (!pending_unqueued_finalizer);
 
+	gboolean gchandle_allocated = FALSE;
+	guint32 gchandle = 0;
+
 	/* FIXME: batch to reduce lock contention */
 	while (sgen_have_pending_finalizers ()) {
 		GCObject *obj;
@@ -2878,8 +2881,16 @@ sgen_gc_invoke_finalizers (void)
 		if (!obj)
 			break;
 
+		// We explicitly pin the object via a gchandle so we don't rely on the ref being
+		// present on stack/regs which is not scannable on WASM.
+		if (!gchandle_allocated) {
+			gchandle = sgen_gchandle_new (obj, TRUE);
+			gchandle_allocated = TRUE;
+		} else {
+			sgen_gchandle_set_target (gchandle, obj);
+		}
+
 		count++;
-		/* the object is on the stack so it is pinned */
 		/*g_print ("Calling finalizer for object: %p (%s)\n", obj, sgen_client_object_safe_name (obj));*/
 		sgen_client_run_finalize (obj);
 	}
@@ -2888,6 +2899,9 @@ sgen_gc_invoke_finalizers (void)
 		mono_memory_write_barrier ();
 		pending_unqueued_finalizer = FALSE;
 	}
+
+	if (gchandle_allocated)
+		sgen_gchandle_free (gchandle);
 
 	return count;
 }

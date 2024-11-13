@@ -31,7 +31,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append(nameMangler.CompilationUnitPrefix).Append("__InterfaceDispatchMap_").Append(nameMangler.SanitizeName(nameMangler.GetMangledTypeName(_type)));
+            sb.Append(nameMangler.CompilationUnitPrefix).Append("__InterfaceDispatchMap_"u8).Append(nameMangler.SanitizeName(nameMangler.GetMangledTypeName(_type)));
         }
 
         public int Offset => 0;

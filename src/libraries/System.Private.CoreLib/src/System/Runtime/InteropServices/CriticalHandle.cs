@@ -36,10 +36,10 @@
 ** operations against a single handle at the same time or block their
 ** access to Close and Dispose unless you are very comfortable with the
 ** semantics of passing an invalid (or possibly invalidated and
-** reallocated) to the unamanged routines you marshal your handle to
+** reallocated) to the unmanaged routines you marshal your handle to
 ** (and the effects of closing such a handle while those calls are in
 ** progress). The runtime cannot protect you from undefined program
-** behvior that might result from such scenarios. You have been warned.
+** behavior that might result from such scenarios. You have been warned.
 **
 **
 ===========================================================*/

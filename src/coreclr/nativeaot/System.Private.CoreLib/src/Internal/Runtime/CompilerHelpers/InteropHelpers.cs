@@ -695,7 +695,7 @@ namespace Internal.Runtime.CompilerHelpers
 
         internal sealed class CustomMarshallerTable : ConcurrentUnifier<CustomMarshallerKey, object>
         {
-            internal static CustomMarshallerTable s_customMarshallersTable = new CustomMarshallerTable();
+            internal static readonly CustomMarshallerTable s_customMarshallersTable = new CustomMarshallerTable();
 
             protected override unsafe object Factory(CustomMarshallerKey key)
             {

@@ -975,10 +975,10 @@ dwarf_search_unwind_table (unw_addr_space_t as, unw_word_t ip,
 #endif
     {
 #ifndef UNW_LOCAL_ONLY
-      int32_t last_ip_offset = di->end_ip - ip_base - di->load_offset;
+      int32_t last_ip_offset = (int32_t) (di->end_ip - ip_base - di->load_offset);
       segbase = di->u.rti.segbase;
       if ((ret = remote_lookup (as, (uintptr_t) table, table_len,
-                                ip - ip_base, &ent, &last_ip_offset, arg)) < 0)
+                                (int32_t) (ip - ip_base), &ent, &last_ip_offset, arg)) < 0)
         return ret;
       if (ret)
 	{

@@ -1,0 +1,7 @@
+﻿<Project>
+  <PropertyGroup>
+    <IsTestSupportProject>true</IsTestSupportProject>
+	<TestUtilities>..\..\Common\tests\TestUtilities</TestUtilities>
+  </PropertyGroup>
+  <Import Project="..\Directory.Build.props" />
+</Project>

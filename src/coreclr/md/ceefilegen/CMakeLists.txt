@@ -1,6 +1,5 @@
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
-add_definitions(-D__TODO_PORT_TO_WRAPPERS__)
 include_directories("../inc")
 
 set(CEEFILEGEN_SOURCES

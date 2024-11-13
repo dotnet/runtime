@@ -76,11 +76,11 @@ namespace System.Formats.Asn1
         ///   the method.
         /// </exception>
         /// <exception cref="ArgumentException">
-        ///   the 9 most significant bits are all set.
+        ///   The 9 most significant bits are all set.
         ///
         ///   -or-
         ///
-        ///   the 9 most significant bits are all unset.
+        ///   The 9 most significant bits are all unset.
         /// </exception>
         public void WriteInteger(ReadOnlySpan<byte> value, Asn1Tag? tag = null)
         {
@@ -101,7 +101,7 @@ namespace System.Formats.Asn1
         ///   the method.
         /// </exception>
         /// <exception cref="ArgumentException">
-        ///   the 9 most significant bits are all unset.
+        ///   The 9 most significant bits are all unset.
         /// </exception>
         public void WriteIntegerUnsigned(ReadOnlySpan<byte> value, Asn1Tag? tag = null)
         {
@@ -281,7 +281,7 @@ namespace System.Formats.Asn1
             Debug.Assert(!tag.IsConstructed);
             WriteTag(tag);
 
-#if NETCOREAPP2_1_OR_GREATER
+#if NET
             WriteLength(value.GetByteCount());
             // WriteLength ensures the content-space
             value.TryWriteBytes(_buffer.AsSpan(_offset), out int bytesWritten, isBigEndian: true);

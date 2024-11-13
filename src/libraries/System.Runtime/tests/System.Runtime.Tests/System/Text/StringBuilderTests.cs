@@ -842,6 +842,19 @@ namespace System.Text.Tests
             builder = new StringBuilder(original);
             builder.AppendFormat(provider, format, values);
             Assert.Equal(expected, builder.ToString());
+
+            // Use AppendFormat(string, ReadOnlySpan<object>) or AppendFormat(IFormatProvider, string, ReadOnlySpan<object>)
+            if (provider == null)
+            {
+                // Use AppendFormat(string, ReadOnlySpan<object>)
+                builder = new StringBuilder(original);
+                builder.AppendFormat(format, (ReadOnlySpan<object>)values);
+                Assert.Equal(expected, builder.ToString());
+            }
+            // Use AppendFormat(IFormatProvider, string, ReadOnlySpan<object>)
+            builder = new StringBuilder(original);
+            builder.AppendFormat(provider, format, (ReadOnlySpan<object>)values);
+            Assert.Equal(expected, builder.ToString());
         }
 
         [Fact]
@@ -855,17 +868,21 @@ namespace System.Text.Tests
             var obj2 = new object();
             var obj3 = new object();
             var obj4 = new object();
+            var objArray = new object[] { obj1, obj2, obj3, obj4 };
 
             AssertExtensions.Throws<ArgumentNullException>("format", () => builder.AppendFormat(null, obj1)); // Format is null
             AssertExtensions.Throws<ArgumentNullException>("format", () => builder.AppendFormat(null, obj1, obj2, obj3)); // Format is null
-            AssertExtensions.Throws<ArgumentNullException>("format", () => builder.AppendFormat(null, obj1, obj2, obj3)); // Format is null
             AssertExtensions.Throws<ArgumentNullException>("format", () => builder.AppendFormat(null, obj1, obj2, obj3, obj4)); // Format is null
+            AssertExtensions.Throws<ArgumentNullException>("format", () => builder.AppendFormat(null, objArray)); // Format is null
+            AssertExtensions.Throws<ArgumentNullException>("format", () => builder.AppendFormat(null, (ReadOnlySpan<object>)objArray)); // Format is null
             AssertExtensions.Throws<ArgumentNullException>("args", () => builder.AppendFormat("", null)); // Args is null
             AssertExtensions.Throws<ArgumentNullException>("format", () => builder.AppendFormat(null, (object[])null)); // Both format and args are null
             AssertExtensions.Throws<ArgumentNullException>("format", () => builder.AppendFormat(formatter, (string)null, obj1)); // Format is null
             AssertExtensions.Throws<ArgumentNullException>("format", () => builder.AppendFormat(formatter, (string)null, obj1, obj2)); // Format is null
             AssertExtensions.Throws<ArgumentNullException>("format", () => builder.AppendFormat(formatter, (string)null, obj1, obj2, obj3)); // Format is null
             AssertExtensions.Throws<ArgumentNullException>("format", () => builder.AppendFormat(formatter, (string)null, obj1, obj2, obj3, obj4)); // Format is null
+            AssertExtensions.Throws<ArgumentNullException>("format", () => builder.AppendFormat(formatter, (string)null, objArray)); // Format is null
+            AssertExtensions.Throws<ArgumentNullException>("format", () => builder.AppendFormat(formatter, (string)null, (ReadOnlySpan<object>)objArray)); // Format is null
             AssertExtensions.Throws<ArgumentNullException>("args", () => builder.AppendFormat(formatter, "", null)); // Args is null
             AssertExtensions.Throws<ArgumentNullException>("format", () => builder.AppendFormat(formatter, (string)null, null)); // Both format and args are null
 
@@ -873,19 +890,27 @@ namespace System.Text.Tests
             Assert.Throws<FormatException>(() => builder.AppendFormat("{-1}", obj1, obj2)); // Format has value < 0
             Assert.Throws<FormatException>(() => builder.AppendFormat("{-1}", obj1, obj2, obj3)); // Format has value < 0
             Assert.Throws<FormatException>(() => builder.AppendFormat("{-1}", obj1, obj2, obj3, obj4)); // Format has value < 0
+            Assert.Throws<FormatException>(() => builder.AppendFormat("{-1}", objArray)); // Format has value < 0
+            Assert.Throws<FormatException>(() => builder.AppendFormat("{-1}", (ReadOnlySpan<object>)objArray)); // Format has value < 0
             Assert.Throws<FormatException>(() => builder.AppendFormat(formatter, "{-1}", obj1)); // Format has value < 0
             Assert.Throws<FormatException>(() => builder.AppendFormat(formatter, "{-1}", obj1, obj2)); // Format has value < 0
             Assert.Throws<FormatException>(() => builder.AppendFormat(formatter, "{-1}", obj1, obj2, obj3)); // Format has value < 0
             Assert.Throws<FormatException>(() => builder.AppendFormat(formatter, "{-1}", obj1, obj2, obj3, obj4)); // Format has value < 0
+            Assert.Throws<FormatException>(() => builder.AppendFormat(formatter, "{-1}", objArray)); // Format has value < 0
+            Assert.Throws<FormatException>(() => builder.AppendFormat(formatter, "{-1}", (ReadOnlySpan<object>)objArray)); // Format has value < 0
 
             Assert.Throws<FormatException>(() => builder.AppendFormat("{1}", obj1)); // Format has value >= 1
             Assert.Throws<FormatException>(() => builder.AppendFormat("{2}", obj1, obj2)); // Format has value >= 2
             Assert.Throws<FormatException>(() => builder.AppendFormat("{3}", obj1, obj2, obj3)); // Format has value >= 3
             Assert.Throws<FormatException>(() => builder.AppendFormat("{4}", obj1, obj2, obj3, obj4)); // Format has value >= 4
+            Assert.Throws<FormatException>(() => builder.AppendFormat("{4}", objArray)); // Format has value >= 4
+            Assert.Throws<FormatException>(() => builder.AppendFormat("{4}", (ReadOnlySpan<object>)objArray)); // Format has value >= 4
             Assert.Throws<FormatException>(() => builder.AppendFormat(formatter, "{1}", obj1)); // Format has value >= 1
             Assert.Throws<FormatException>(() => builder.AppendFormat(formatter, "{2}", obj1, obj2)); // Format has value >= 2
             Assert.Throws<FormatException>(() => builder.AppendFormat(formatter, "{3}", obj1, obj2, obj3)); // Format has value >= 3
             Assert.Throws<FormatException>(() => builder.AppendFormat(formatter, "{4}", obj1, obj2, obj3, obj4)); // Format has value >= 4
+            Assert.Throws<FormatException>(() => builder.AppendFormat(formatter, "{4}", objArray)); // Format has value >= 4
+            Assert.Throws<FormatException>(() => builder.AppendFormat(formatter, "{4}", (ReadOnlySpan<object>)objArray)); // Format has value >= 4
 
             Assert.Throws<FormatException>(() => builder.AppendFormat("{", "")); // Format has unescaped {
             Assert.Throws<FormatException>(() => builder.AppendFormat("{a", "")); // Format has unescaped {
@@ -900,7 +925,9 @@ namespace System.Text.Tests
             Assert.Throws<FormatException>(() => builder.AppendFormat("{0     ", "")); // Format with index and spaces is not closed
 
             Assert.Throws<FormatException>(() => builder.AppendFormat("{1000000", new string[10])); // Format index is too long
+            Assert.Throws<FormatException>(() => builder.AppendFormat("{1000000", (ReadOnlySpan<object>)new string[10])); // Format index is too long
             Assert.Throws<FormatException>(() => builder.AppendFormat("{10000000}", new string[10])); // Format index is too long
+            Assert.Throws<FormatException>(() => builder.AppendFormat("{10000000}", (ReadOnlySpan<object>)new string[10])); // Format index is too long
 
             Assert.Throws<FormatException>(() => builder.AppendFormat("{0,", "")); // Format with comma is not closed
             Assert.Throws<FormatException>(() => builder.AppendFormat("{0,   ", "")); // Format with comma and spaces is not closed
@@ -910,13 +937,19 @@ namespace System.Text.Tests
             Assert.Throws<FormatException>(() => builder.AppendFormat("{0,-a", "")); // Format has invalid character after minus sign
 
             Assert.Throws<FormatException>(() => builder.AppendFormat("{0,1000000", new string[10])); // Format length is too long
+            Assert.Throws<FormatException>(() => builder.AppendFormat("{0,1000000", (ReadOnlySpan<object>)new string[10])); // Format length is too long
             Assert.Throws<FormatException>(() => builder.AppendFormat("{0,10000000}", new string[10])); // Format length is too long
+            Assert.Throws<FormatException>(() => builder.AppendFormat("{0,10000000}", (ReadOnlySpan<object>)new string[10])); // Format length is too long
 
             Assert.Throws<FormatException>(() => builder.AppendFormat("{0:", new string[10])); // Format with colon is not closed
+            Assert.Throws<FormatException>(() => builder.AppendFormat("{0:", (ReadOnlySpan<object>)new string[10])); // Format with colon is not closed
             Assert.Throws<FormatException>(() => builder.AppendFormat("{0:    ", new string[10])); // Format with colon and spaces is not closed
+            Assert.Throws<FormatException>(() => builder.AppendFormat("{0:    ", (ReadOnlySpan<object>)new string[10])); // Format with colon and spaces is not closed
 
             Assert.Throws<FormatException>(() => builder.AppendFormat("{0:{", new string[10])); // Format with custom format contains unescaped {
+            Assert.Throws<FormatException>(() => builder.AppendFormat("{0:{", (ReadOnlySpan<object>)new string[10])); // Format with custom format contains unescaped {
             Assert.Throws<FormatException>(() => builder.AppendFormat("{0:{}", new string[10])); // Format with custom format contains unescaped {
+            Assert.Throws<FormatException>(() => builder.AppendFormat("{0:{}", (ReadOnlySpan<object>)new string[10])); // Format with custom format contains unescaped {
 
             Assert.Throws<FormatException>(() => builder.AppendFormat("{0}", new TooManyCharsWrittenSpanFormattable())); // ISpanFormattable that returns more characters than it actually wrote
         }
@@ -1775,11 +1808,15 @@ namespace System.Text.Tests
             var enumerable = values.Select(_ => _);
 
             Assert.Equal(expected, new StringBuilder().AppendJoin('|', values).ToString());
+            Assert.Equal(expected, new StringBuilder().AppendJoin('|', (ReadOnlySpan<object>)values).ToString());
             Assert.Equal(expected, new StringBuilder().AppendJoin('|', enumerable).ToString());
             Assert.Equal(expected, new StringBuilder().AppendJoin('|', stringValues).ToString());
+            Assert.Equal(expected, new StringBuilder().AppendJoin('|', (ReadOnlySpan<string>)stringValues).ToString());
             Assert.Equal(expected, new StringBuilder().AppendJoin("|", values).ToString());
+            Assert.Equal(expected, new StringBuilder().AppendJoin("|", (ReadOnlySpan<object>)values).ToString());
             Assert.Equal(expected, new StringBuilder().AppendJoin("|", enumerable).ToString());
             Assert.Equal(expected, new StringBuilder().AppendJoin("|", stringValues).ToString());
+            Assert.Equal(expected, new StringBuilder().AppendJoin("|", (ReadOnlySpan<string>)stringValues).ToString());
         }
 
         [Fact]
@@ -1801,9 +1838,14 @@ namespace System.Text.Tests
         [InlineData(", ", "1, 2, 3")]
         public static void AppendJoin_TestStringSeparators(string separator, string expected)
         {
-            Assert.Equal(expected, new StringBuilder().AppendJoin(separator, new object[] { 1, 2, 3 }).ToString());
+            var values = new object[] { 1, 2, 3 };
+            var stringValues = new string[] { "1", "2", "3" };
+
+            Assert.Equal(expected, new StringBuilder().AppendJoin(separator, values).ToString());
+            Assert.Equal(expected, new StringBuilder().AppendJoin(separator, (ReadOnlySpan<object>)values).ToString());
             Assert.Equal(expected, new StringBuilder().AppendJoin(separator, Enumerable.Range(1, 3)).ToString());
-            Assert.Equal(expected, new StringBuilder().AppendJoin(separator, new string[] { "1", "2", "3" }).ToString());
+            Assert.Equal(expected, new StringBuilder().AppendJoin(separator, stringValues).ToString());
+            Assert.Equal(expected, new StringBuilder().AppendJoin(separator, (ReadOnlySpan<string>)stringValues).ToString());
         }
 
 
@@ -1825,12 +1867,16 @@ namespace System.Text.Tests
             if (separator?.Length == 1)
             {
                 CreateBuilderWithNoSpareCapacity().AppendJoin(separator[0], values);
+                CreateBuilderWithNoSpareCapacity().AppendJoin(separator[0], (ReadOnlySpan<object>)values);
                 CreateBuilderWithNoSpareCapacity().AppendJoin(separator[0], enumerable);
                 CreateBuilderWithNoSpareCapacity().AppendJoin(separator[0], stringValues);
+                CreateBuilderWithNoSpareCapacity().AppendJoin(separator[0], (ReadOnlySpan<string>)stringValues);
             }
             CreateBuilderWithNoSpareCapacity().AppendJoin(separator, values);
+            CreateBuilderWithNoSpareCapacity().AppendJoin(separator, (ReadOnlySpan<object>)values);
             CreateBuilderWithNoSpareCapacity().AppendJoin(separator, enumerable);
             CreateBuilderWithNoSpareCapacity().AppendJoin(separator, stringValues);
+            CreateBuilderWithNoSpareCapacity().AppendJoin(separator, (ReadOnlySpan<string>)stringValues);
         }
 
         [Theory]
@@ -1849,12 +1895,16 @@ namespace System.Text.Tests
             if (separator?.Length == 1)
             {
                 AssertExtensions.Throws<ArgumentOutOfRangeException>(s_noCapacityParamName, () => CreateBuilderWithNoSpareCapacity().AppendJoin(separator[0], values));
+                AssertExtensions.Throws<ArgumentOutOfRangeException>(s_noCapacityParamName, () => CreateBuilderWithNoSpareCapacity().AppendJoin(separator[0], (ReadOnlySpan<object>)values));
                 AssertExtensions.Throws<ArgumentOutOfRangeException>(s_noCapacityParamName, () => CreateBuilderWithNoSpareCapacity().AppendJoin(separator[0], enumerable));
                 AssertExtensions.Throws<ArgumentOutOfRangeException>(s_noCapacityParamName, () => CreateBuilderWithNoSpareCapacity().AppendJoin(separator[0], stringValues));
+                AssertExtensions.Throws<ArgumentOutOfRangeException>(s_noCapacityParamName, () => CreateBuilderWithNoSpareCapacity().AppendJoin(separator[0], (ReadOnlySpan<string>)stringValues));
             }
             AssertExtensions.Throws<ArgumentOutOfRangeException>(s_noCapacityParamName, () => CreateBuilderWithNoSpareCapacity().AppendJoin(separator, values));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(s_noCapacityParamName, () => CreateBuilderWithNoSpareCapacity().AppendJoin(separator, (ReadOnlySpan<object>)values));
             AssertExtensions.Throws<ArgumentOutOfRangeException>(s_noCapacityParamName, () => CreateBuilderWithNoSpareCapacity().AppendJoin(separator, enumerable));
             AssertExtensions.Throws<ArgumentOutOfRangeException>(s_noCapacityParamName, () => CreateBuilderWithNoSpareCapacity().AppendJoin(separator, stringValues));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(s_noCapacityParamName, () => CreateBuilderWithNoSpareCapacity().AppendJoin(separator, (ReadOnlySpan<string>)stringValues));
         }
 
         [Theory]

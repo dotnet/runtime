@@ -5,6 +5,8 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.DotNet.RemoteExecutor;
+using Microsoft.DotNet.XUnitExtensions;
 using Test.Cryptography;
 using Xunit;
 
@@ -14,7 +16,7 @@ namespace System.Security.Cryptography.Tests
     {
         public static bool IsSupported => THashTrait.IsSupported;
         public static bool IsNotSupported => !IsSupported;
-        protected abstract HashAlgorithm Create();
+        protected HashAlgorithm Create() => THashTrait.Create();
         protected abstract bool TryHashData(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten);
         protected abstract byte[] HashData(byte[] source);
         protected abstract byte[] HashData(ReadOnlySpan<byte> source);
@@ -930,11 +932,235 @@ namespace System.Security.Cryptography.Tests
             Assert.Throws<ArgumentException>("source", () =>
                 CryptographicOperations.HashDataAsync(HashAlgorithm, UntouchableStream.Instance, Memory<byte>.Empty));
         }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void HashAlgorithm_ComputeHash_ConcurrentUseDoesNotCrashProcess()
+        {
+            if (!IsSupported)
+            {
+                throw new SkipTestException("Algorithm is not supported on this platform.");
+            }
+
+            static void Update(object obj)
+            {
+                byte[] data = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+
+                for (int i = 0; i < 10_000; i++)
+                {
+                    try
+                    {
+                        ((HashAlgorithm)obj).ComputeHash(data);
+                    }
+                    catch
+                    {
+                        // Ignore all managed exceptions. HashAlgorithm is not thread safe, but we don't want process
+                        // crashes.
+                    }
+                }
+            }
+
+            RemoteExecutor.Invoke(static () =>
+            {
+                using (HashAlgorithm hash = THashTrait.Create())
+                {
+                    Thread thread1 = new(Update);
+                    Thread thread2 = new(Update);
+                    thread1.Start(hash);
+                    thread2.Start(hash);
+                    thread1.Join();
+                    thread2.Join();
+                }
+
+                return RemoteExecutor.SuccessExitCode;
+            }).Dispose();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void HashAlgorithm_TransformBlock_ConcurrentUseDoesNotCrashProcess()
+        {
+            if (!IsSupported)
+            {
+                throw new SkipTestException("Algorithm is not supported on this platform.");
+            }
+
+            static void Update(object obj)
+            {
+                byte[] data = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+
+                for (int i = 0; i < 10_000; i++)
+                {
+                    try
+                    {
+                        ((HashAlgorithm)obj).TransformBlock(data, 0, data.Length, null, 0);
+                    }
+                    catch
+                    {
+                        // Ignore all managed exceptions. HashAlgorithm is not thread safe, but we don't want process
+                        // crashes.
+                    }
+                }
+            }
+
+            RemoteExecutor.Invoke(static () =>
+            {
+                using (HashAlgorithm hash = THashTrait.Create())
+                {
+                    Thread thread1 = new(Update);
+                    Thread thread2 = new(Update);
+                    thread1.Start(hash);
+                    thread2.Start(hash);
+                    thread1.Join();
+                    thread2.Join();
+                }
+
+                return RemoteExecutor.SuccessExitCode;
+            }).Dispose();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void HashAlgorithm_TransformFinalBlock_ConcurrentUseDoesNotCrashProcess()
+        {
+            if (!IsSupported)
+            {
+                throw new SkipTestException("Algorithm is not supported on this platform.");
+            }
+
+            static void Update(object obj)
+            {
+                byte[] data = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+
+                for (int i = 0; i < 10_000; i++)
+                {
+                    try
+                    {
+                        ((HashAlgorithm)obj).TransformFinalBlock(data, 0, data.Length);
+                    }
+                    catch
+                    {
+                        // Ignore all managed exceptions. HashAlgorithm is not thread safe, but we don't want process
+                        // crashes.
+                    }
+                }
+            }
+
+            RemoteExecutor.Invoke(static () =>
+            {
+                using (HashAlgorithm hash = THashTrait.Create())
+                {
+                    Thread thread1 = new(Update);
+                    Thread thread2 = new(Update);
+                    thread1.Start(hash);
+                    thread2.Start(hash);
+                    thread1.Join();
+                    thread2.Join();
+                }
+
+                return RemoteExecutor.SuccessExitCode;
+            }).Dispose();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void HashAlgorithm_TransformBlockAndInitialize_ConcurrentUseDoesNotCrashProcess()
+        {
+            if (!IsSupported)
+            {
+                throw new SkipTestException("Algorithm is not supported on this platform.");
+            }
+
+            static void Update(object obj)
+            {
+                byte[] data = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+
+                for (int i = 0; i < 10_000; i++)
+                {
+                    try
+                    {
+                        HashAlgorithm hash = ((HashAlgorithm)obj);
+                        hash.TransformBlock(data, 0, data.Length, null, 0);
+                        hash.Initialize();
+                    }
+                    catch
+                    {
+                        // Ignore all managed exceptions. HashAlgorithm is not thread safe, but we don't want process
+                        // crashes.
+                    }
+                }
+            }
+
+            RemoteExecutor.Invoke(static () =>
+            {
+                using (HashAlgorithm hash = THashTrait.Create())
+                {
+                    Thread thread1 = new(Update);
+                    Thread thread2 = new(Update);
+                    thread1.Start(hash);
+                    thread2.Start(hash);
+                    thread1.Join();
+                    thread2.Join();
+                }
+
+                return RemoteExecutor.SuccessExitCode;
+            }).Dispose();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void HashAlgorithm_TransformBlockAndDispose_ConcurrentUseDoesNotCrashProcess()
+        {
+            if (!IsSupported)
+            {
+                throw new SkipTestException("Algorithm is not supported on this platform.");
+            }
+
+            static void Update(object obj)
+            {
+                byte[] data = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+
+                for (int i = 0; i < 10_000; i++)
+                {
+                    try
+                    {
+                        HashAlgorithm hash = ((HashAlgorithm)obj);
+                        hash.TransformBlock(data, 0, data.Length, null, 0);
+                    }
+                    catch
+                    {
+                        // Ignore all managed exceptions. HashAlgorithm is not thread safe, but we don't want process
+                        // crashes.
+                    }
+                }
+            }
+
+            RemoteExecutor.Invoke(static () =>
+            {
+                using (HashAlgorithm hash = THashTrait.Create())
+                {
+                    Thread thread1 = new(Update);
+                    Thread thread2 = new(obj =>
+                    {
+                        Thread.Sleep(10);
+                        try
+                        {
+                            ((HashAlgorithm)obj).Dispose();
+                        }
+                        catch
+                        {
+                        }
+                    });
+                    thread1.Start(hash);
+                    thread2.Start(hash);
+                    thread1.Join();
+                    thread2.Join();
+                }
+
+                return RemoteExecutor.SuccessExitCode;
+            }).Dispose();
+        }
     }
 
     public interface IHashTrait
     {
         static abstract bool IsSupported { get; }
         static abstract int HashSizeInBytes { get; }
+        static abstract HashAlgorithm Create();
     }
 }

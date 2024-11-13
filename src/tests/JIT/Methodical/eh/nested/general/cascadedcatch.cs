@@ -59,6 +59,7 @@ namespace hello_cascadedcatch_general_cs
         }
 
         [Fact]
+        [OuterLoop]
         static public int TestEntryPoint()
         {
             string[] args = new string[] {};

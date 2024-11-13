@@ -48,6 +48,13 @@ eventpipe_collect_tracing_command_try_parse_rundown_requested (
 
 static
 bool
+eventpipe_collect_tracing_command_try_parse_rundown_keyword (
+	uint8_t **buffer,
+	uint32_t *buffer_len,
+	uint64_t *rundown_keyword);
+
+static
+bool
 eventpipe_collect_tracing_command_try_parse_stackwalk_requested (
 	uint8_t **buffer,
 	uint32_t *buffer_len,
@@ -75,6 +82,12 @@ eventpipe_collect_tracing2_command_try_parse_payload (
 static
 uint8_t *
 eventpipe_collect_tracing3_command_try_parse_payload (
+	uint8_t *buffer,
+	uint16_t buffer_len);
+
+static
+uint8_t *
+eventpipe_collect_tracing4_command_try_parse_payload (
 	uint8_t *buffer,
 	uint16_t buffer_len);
 
@@ -148,6 +161,21 @@ eventpipe_collect_tracing_command_try_parse_rundown_requested (
 	EP_ASSERT (rundown_requested != NULL);
 
 	return ds_ipc_message_try_parse_bool (buffer, buffer_len, rundown_requested);
+}
+
+static
+inline
+bool
+eventpipe_collect_tracing_command_try_parse_rundown_keyword (
+	uint8_t **buffer,
+	uint32_t *buffer_len,
+	uint64_t *rundown_keyword)
+{
+	EP_ASSERT (buffer != NULL);
+	EP_ASSERT (buffer_len != NULL);
+	EP_ASSERT (rundown_keyword != NULL);
+
+	return ds_ipc_message_try_parse_uint64_t (buffer, buffer_len, rundown_keyword);
 }
 
 static
@@ -299,6 +327,7 @@ eventpipe_collect_tracing_command_try_parse_payload (
 		ep_raise_error ();
 	instance->rundown_requested = true;
 	instance->stackwalk_requested = true;
+	instance->rundown_keyword = ep_default_rundown_keyword;
 
 ep_on_exit:
 	return (uint8_t *)instance;
@@ -330,6 +359,9 @@ eventpipe_collect_tracing2_command_try_parse_payload (
 		!eventpipe_collect_tracing_command_try_parse_rundown_requested (&buffer_cursor, &buffer_cursor_len, &instance->rundown_requested) ||
 		!eventpipe_collect_tracing_command_try_parse_config (&buffer_cursor, &buffer_cursor_len, &instance->provider_configs))
 		ep_raise_error ();
+
+	instance->rundown_keyword = instance->rundown_requested ? ep_default_rundown_keyword : 0;
+
 	instance->stackwalk_requested = true;
 
 ep_on_exit:
@@ -363,6 +395,42 @@ eventpipe_collect_tracing3_command_try_parse_payload (
 		!eventpipe_collect_tracing_command_try_parse_stackwalk_requested (&buffer_cursor, &buffer_cursor_len, &instance->stackwalk_requested) ||
 		!eventpipe_collect_tracing_command_try_parse_config (&buffer_cursor, &buffer_cursor_len, &instance->provider_configs))
 		ep_raise_error ();
+
+	instance->rundown_keyword = instance->rundown_requested ? ep_default_rundown_keyword : 0;
+
+ep_on_exit:
+	return (uint8_t *)instance;
+
+ep_on_error:
+	ds_eventpipe_collect_tracing_command_payload_free (instance);
+	instance = NULL;
+	ep_exit_error_handler ();
+}
+
+static
+uint8_t *
+eventpipe_collect_tracing4_command_try_parse_payload (
+	uint8_t *buffer,
+	uint16_t buffer_len)
+{
+	EP_ASSERT (buffer != NULL);
+
+	uint8_t * buffer_cursor = buffer;
+	uint32_t buffer_cursor_len = buffer_len;
+
+	EventPipeCollectTracingCommandPayload *instance = ds_eventpipe_collect_tracing_command_payload_alloc ();
+	ep_raise_error_if_nok (instance != NULL);
+
+	instance->incoming_buffer = buffer;
+
+	if (!eventpipe_collect_tracing_command_try_parse_circular_buffer_size (&buffer_cursor, &buffer_cursor_len, &instance->circular_buffer_size_in_mb ) ||
+		!eventpipe_collect_tracing_command_try_parse_serialization_format (&buffer_cursor, &buffer_cursor_len, &instance->serialization_format) ||
+		!eventpipe_collect_tracing_command_try_parse_rundown_keyword (&buffer_cursor, &buffer_cursor_len, &instance->rundown_keyword) ||
+		!eventpipe_collect_tracing_command_try_parse_stackwalk_requested (&buffer_cursor, &buffer_cursor_len, &instance->stackwalk_requested) ||
+		!eventpipe_collect_tracing_command_try_parse_config (&buffer_cursor, &buffer_cursor_len, &instance->provider_configs))
+		ep_raise_error ();
+
+	instance->rundown_requested = instance->rundown_keyword != 0;
 
 ep_on_exit:
 	return (uint8_t *)instance;
@@ -471,7 +539,7 @@ eventpipe_protocol_helper_collect_tracing (
 		dn_vector_size (payload->provider_configs),
 		EP_SESSION_TYPE_IPCSTREAM,
 		payload->serialization_format,
-		payload->rundown_requested,
+		payload->rundown_keyword,
 		payload->stackwalk_requested,
 		ds_ipc_stream_get_stream_ref (stream),
 		NULL,
@@ -542,6 +610,10 @@ ds_eventpipe_protocol_helper_handle_ipc_message (
 		break;
 	case EP_COMMANDID_COLLECT_TRACING_3:
 		payload = (EventPipeCollectTracingCommandPayload *)ds_ipc_message_try_parse_payload (message, eventpipe_collect_tracing3_command_try_parse_payload);
+		result = eventpipe_protocol_helper_collect_tracing (payload, stream);
+		break;
+	case EP_COMMANDID_COLLECT_TRACING_4:
+		payload = (EventPipeCollectTracingCommandPayload *)ds_ipc_message_try_parse_payload (message, eventpipe_collect_tracing4_command_try_parse_payload);
 		result = eventpipe_protocol_helper_collect_tracing (payload, stream);
 		break;
 	case EP_COMMANDID_STOP_TRACING:

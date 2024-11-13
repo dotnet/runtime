@@ -89,6 +89,7 @@ public class jaggedarr
     }
 
     [Fact]
+    [OuterLoop]
     public static int TestEntryPoint()
     {
         bool pass = false;

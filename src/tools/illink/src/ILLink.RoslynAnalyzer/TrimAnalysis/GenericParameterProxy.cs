@@ -14,6 +14,16 @@ namespace ILLink.Shared.TypeSystemProxy
 			TypeParameterSymbol.HasValueTypeConstraint |
 			TypeParameterSymbol.HasUnmanagedTypeConstraint;
 
+		internal partial bool HasEnumConstraint ()
+		{
+			foreach (ITypeSymbol constraintType in TypeParameterSymbol.ConstraintTypes) {
+				if (constraintType.SpecialType == SpecialType.System_Enum)
+					return true;
+			}
+
+			return false;
+		}
+
 		public readonly ITypeParameterSymbol TypeParameterSymbol;
 
 		public override string ToString () => TypeParameterSymbol.ToString ();

@@ -139,12 +139,12 @@ class DiagnosticServerImpl implements DiagnosticServer {
     async advertiseAndWaitForClient (): Promise<void> {
         try {
             const connNum = this.openCount++;
-            mono_log_debug("opening websocket and sending ADVR_V1", connNum);
+            mono_log_debug(() => `opening websocket and sending ADVR_V1 ${connNum}`);
             const ws = await this.openSocket();
             const p = addOneShotProtocolCommandEventListener(createProtocolSocket(ws));
             this.sendAdvertise(ws);
             const message = await p;
-            mono_log_debug("received advertising response: ", message, connNum);
+            mono_log_debug(() => `received advertising response: ${message},${connNum}`);
             queueMicrotask(() => this.parseAndDispatchMessage(ws, connNum, message));
         } finally {
             // if there were errors, resume the runtime anyway
@@ -183,9 +183,9 @@ class DiagnosticServerImpl implements DiagnosticServer {
     }
 
     parseCommand (message: ProtocolCommandEvent, connNum: number): ProtocolClientCommandBase | null {
-        mono_log_debug("parsing byte command: ", message.data, connNum);
+        mono_log_debug(() => `parsing byte command: ${message.data}, ${connNum}`);
         const result = parseProtocolCommand(message.data);
-        mono_log_debug("parsed byte command: ", result, connNum);
+        mono_log_debug(() => `parsed byte command: ${result} ${connNum}`);
         if (result.success) {
             return result.result;
         } else {
@@ -236,7 +236,7 @@ class DiagnosticServerImpl implements DiagnosticServer {
     }
 
     async stopEventPipe (ws: WebSocket | MockRemoteSocket, sessionID: EventPipeSessionIDImpl): Promise<void> {
-        mono_log_debug("stopEventPipe", sessionID);
+        mono_log_debug(() => `stopEventPipe ${sessionID}`);
         cwraps.mono_wasm_event_pipe_session_disable(sessionID);
         // we might send OK before the session is actually stopped since the websocket is async
         // but the client end should be robust to that.
@@ -252,7 +252,7 @@ class DiagnosticServerImpl implements DiagnosticServer {
         sessionIDbuf[3] = (session.sessionID >> 24) & 0xFF;
         // sessionIDbuf[4..7] is 0 because all our session IDs are 32-bit
         this.postClientReplyOK(ws, sessionIDbuf);
-        mono_log_debug("created session, now streaming: ", session);
+        mono_log_debug(() => `created session, now streaming: ${session}`);
         cwraps.mono_wasm_event_pipe_session_start_streaming(session.sessionID);
     }
 
@@ -291,7 +291,7 @@ function parseProtocolCommand (data: ArrayBuffer | BinaryProtocolCommand): Parse
 export function mono_wasm_diagnostic_server_on_server_thread_created (websocketUrlPtr: CharPtr): void {
     mono_assert(WasmEnableThreads, "The diagnostic server requires threads to be enabled during build time.");
     const websocketUrl = utf8ToString(websocketUrlPtr);
-    mono_log_debug(`mono_wasm_diagnostic_server_on_server_thread_created, url ${websocketUrl}`);
+    mono_log_debug(() => `mono_wasm_diagnostic_server_on_server_thread_created, url ${websocketUrl}`);
     let mock: PromiseAndController<Mock> | undefined = undefined;
     if (monoDiagnosticsMock && websocketUrl.startsWith("mock:")) {
         mock = createPromiseController<Mock>();

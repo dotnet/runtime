@@ -638,7 +638,7 @@ unsigned int toCorInfoSize(CorInfoType cit)
         case CORINFO_TYPE_UNDEF:
         case CORINFO_TYPE_VOID:
         default:
-            __debugbreak();
+            DEBUG_BREAK;
             return 0;
     }
     return -1;
@@ -696,8 +696,8 @@ void MethodContext::repCompileMethod(CORINFO_METHOD_INFO* info, unsigned* flags,
     info->options    = (CorInfoOptions)value.info.options;
     info->regionKind = (CorInfoRegionKind)value.info.regionKind;
 
-    info->args   = SpmiRecordsHelper::Restore_CORINFO_SIG_INFO(value.info.args, CompileMethod, SigInstHandleMap);
-    info->locals = SpmiRecordsHelper::Restore_CORINFO_SIG_INFO(value.info.locals, CompileMethod, SigInstHandleMap);
+    info->args   = SpmiRecordsHelper::Restore_CORINFO_SIG_INFO(value.info.args, CompileMethod, SigInstHandleMap, cr->getOrCreateMemoryTracker());
+    info->locals = SpmiRecordsHelper::Restore_CORINFO_SIG_INFO(value.info.locals, CompileMethod, SigInstHandleMap, cr->getOrCreateMemoryTracker());
 
     *flags             = (unsigned)value.flags;
     *os                = (CORINFO_OS)value.os;
@@ -816,93 +816,44 @@ DWORD MethodContext::repGetMethodAttribs(CORINFO_METHOD_HANDLE methodHandle)
     return value;
 }
 
-void MethodContext::recGetClassModule(CORINFO_CLASS_HANDLE cls, CORINFO_MODULE_HANDLE mod)
+void MethodContext::recGetClassAssemblyName(CORINFO_CLASS_HANDLE cls, const char* assemblyName)
 {
-    if (GetClassModule == nullptr)
-        GetClassModule = new LightWeightMap<DWORDLONG, DWORDLONG>();
-
-    DWORDLONG key = CastHandle(cls);
-    DWORDLONG value = CastHandle(mod);
-    GetClassModule->Add(key, value);
-    DEBUG_REC(dmpGetClassModule(key, value));
-}
-void MethodContext::dmpGetClassModule(DWORDLONG key, DWORDLONG value)
-{
-    printf("GetClassModule cls-%016" PRIX64 ", mod-%016" PRIX64 "", key, value);
-}
-CORINFO_MODULE_HANDLE MethodContext::repGetClassModule(CORINFO_CLASS_HANDLE cls)
-{
-    DWORDLONG key = CastHandle(cls);
-    DWORDLONG value = LookupByKeyOrMiss(GetClassModule, key, ": key %016" PRIX64 "", key);
-    DEBUG_REP(dmpGetClassModule(key, value));
-    CORINFO_MODULE_HANDLE result = (CORINFO_MODULE_HANDLE)value;
-    return result;
-}
-
-void MethodContext::recGetModuleAssembly(CORINFO_MODULE_HANDLE mod, CORINFO_ASSEMBLY_HANDLE assem)
-{
-    if (GetModuleAssembly == nullptr)
-        GetModuleAssembly = new LightWeightMap<DWORDLONG, DWORDLONG>();
-
-    DWORDLONG key = CastHandle(mod);
-    DWORDLONG value = CastHandle(assem);
-    GetModuleAssembly->Add(key, value);
-    DEBUG_REC(dmpGetModuleAssembly(key, value));
-}
-void MethodContext::dmpGetModuleAssembly(DWORDLONG key, DWORDLONG value)
-{
-    printf("GetModuleAssembly mod-%016" PRIX64 ", assem-%016" PRIX64 "", key, value);
-}
-CORINFO_ASSEMBLY_HANDLE MethodContext::repGetModuleAssembly(CORINFO_MODULE_HANDLE mod)
-{
-    DWORDLONG key = CastHandle(mod);
-    DWORDLONG value = LookupByKeyOrMiss(GetModuleAssembly, key, ": key %016" PRIX64 "", key);
-    DEBUG_REP(dmpGetModuleAssembly(key, value));
-    CORINFO_ASSEMBLY_HANDLE result = (CORINFO_ASSEMBLY_HANDLE)value;
-    return result;
-}
-
-void MethodContext::recGetAssemblyName(CORINFO_ASSEMBLY_HANDLE assem, const char* assemblyName)
-{
-    if (GetAssemblyName == nullptr)
-        GetAssemblyName = new LightWeightMap<DWORDLONG, DWORD>();
+    if (GetClassAssemblyName == nullptr)
+        GetClassAssemblyName = new LightWeightMap<DWORDLONG, DWORD>();
 
     DWORD value;
     if (assemblyName != nullptr)
     {
-        value = GetAssemblyName->AddBuffer((const unsigned char*)assemblyName, (DWORD)strlen(assemblyName) + 1);
+        value = GetClassAssemblyName->AddBuffer((const unsigned char*)assemblyName, (DWORD)strlen(assemblyName) + 1);
     }
     else
     {
         value = (DWORD)-1;
     }
 
-    DWORDLONG key = CastHandle(assem);
-    GetAssemblyName->Add(key, value);
-    DEBUG_REC(dmpGetAssemblyName(key, value));
+    DWORDLONG key = CastHandle(cls);
+    GetClassAssemblyName->Add(key, value);
+    DEBUG_REC(dmpGetClassAssemblyName(key, value));
 }
-void MethodContext::dmpGetAssemblyName(DWORDLONG key, DWORD value)
+void MethodContext::dmpGetClassAssemblyName(DWORDLONG key, DWORD value)
 {
-    const char* assemblyName = (const char*)GetAssemblyName->GetBuffer(value);
-    printf("GetAssemblyName assem-%016" PRIX64 ", value-%u '%s'", key, value, assemblyName);
-    GetAssemblyName->Unlock();
+    const char* assemblyName = (const char*)GetClassAssemblyName->GetBuffer(value);
+    printf("GetClassAssemblyName cls-%016" PRIX64 ", value-%u '%s'", key, value, assemblyName);
+    GetClassAssemblyName->Unlock();
 }
-const char* MethodContext::repGetAssemblyName(CORINFO_ASSEMBLY_HANDLE assem)
+const char* MethodContext::repGetClassAssemblyName(CORINFO_CLASS_HANDLE cls)
 {
-    DWORDLONG key = CastHandle(assem);
-    const char* result = "hackishAssemblyName";
-    DWORD value = (DWORD)-1;
-    int itemIndex = -1;
-    if (GetAssemblyName != nullptr)
+    DWORDLONG key = CastHandle(cls);
+    DWORD value = LookupByKeyOrMiss(GetClassAssemblyName, key, ": key %016" PRIX64 "", key);
+    const char* result = nullptr;
+
+    DEBUG_REP(dmpGetClassAssemblyName(key, value));
+
+    if (value != (DWORD)-1)
     {
-        itemIndex = GetAssemblyName->GetIndex(key);
+        result = (const char*)GetClassAssemblyName->GetBuffer(value);
     }
-    if (itemIndex >= 0)
-    {
-        value = GetAssemblyName->Get(key);
-        result = (const char*)GetAssemblyName->GetBuffer(value);
-    }
-    DEBUG_REP(dmpGetAssemblyName(key, value));
+
     return result;
 }
 
@@ -1044,10 +995,11 @@ CorInfoInitClassResult MethodContext::repInitClass(CORINFO_FIELD_HANDLE   field,
 }
 
 void MethodContext::recGetMethodNameFromMetadata(CORINFO_METHOD_HANDLE ftn,
-                                                 char*                 methodName,
-                                                 const char**          className,
-                                                 const char**          namespaceName,
-                                                 const char**          enclosingClassName)
+    char* methodName,
+    const char** className,
+    const char** namespaceName,
+    const char** enclosingClassNames,
+    size_t       maxEnclosingClassNames)
 {
     if (GetMethodNameFromMetadata == nullptr)
         GetMethodNameFromMetadata = new LightWeightMap<Agnostic_CORINFO_METHODNAME_TOKENin, Agnostic_CORINFO_METHODNAME_TOKENout>();
@@ -1056,7 +1008,7 @@ void MethodContext::recGetMethodNameFromMetadata(CORINFO_METHOD_HANDLE ftn,
     key.ftn = CastHandle(ftn);
     key.className = (className != nullptr);
     key.namespaceName = (namespaceName != nullptr);
-    key.enclosingClassName = (enclosingClassName != nullptr);
+    key.maxEnclosingClassNames = (DWORD)maxEnclosingClassNames;
 
     if (methodName != nullptr)
         value.methodName = GetMethodNameFromMetadata->AddBuffer((unsigned char*)methodName, (DWORD)strlen(methodName) + 1);
@@ -1070,15 +1022,24 @@ void MethodContext::recGetMethodNameFromMetadata(CORINFO_METHOD_HANDLE ftn,
 
     if ((namespaceName != nullptr) && (*namespaceName != nullptr))
         value.namespaceName =
-            GetMethodNameFromMetadata->AddBuffer((unsigned char*)*namespaceName, (DWORD)strlen(*namespaceName) + 1);
+        GetMethodNameFromMetadata->AddBuffer((unsigned char*)*namespaceName, (DWORD)strlen(*namespaceName) + 1);
     else
         value.namespaceName = (DWORD)-1;
 
-    if ((enclosingClassName != nullptr) && (*enclosingClassName != nullptr))
-        value.enclosingClassName =
-            GetMethodNameFromMetadata->AddBuffer((unsigned char*)*enclosingClassName, (DWORD)strlen(*enclosingClassName) + 1);
+    DWORD* enclosingClassNameIndices = static_cast<DWORD*>(alloca(sizeof(DWORD) * maxEnclosingClassNames));
+    for (size_t i = 0; i < maxEnclosingClassNames; i++)
+    {
+        const char* enclosingClassName = enclosingClassNames[i];
+        if (enclosingClassName != nullptr)
+            enclosingClassNameIndices[i] = GetMethodNameFromMetadata->AddBuffer((unsigned char*)enclosingClassName, (DWORD)strlen(enclosingClassName) + 1);
+        else
+            enclosingClassNameIndices[i] = (DWORD)-1;
+    }
+
+    if (maxEnclosingClassNames > 0)
+        value.enclosingClassNames = GetMethodNameFromMetadata->AddBuffer((unsigned char*)enclosingClassNameIndices, sizeof(DWORD) * (DWORD)maxEnclosingClassNames);
     else
-        value.enclosingClassName = (DWORD)-1;
+        value.enclosingClassNames = (DWORD)-1;
 
     GetMethodNameFromMetadata->Add(key, value);
     DEBUG_REC(dmpGetMethodNameFromMetadata(key, value));
@@ -1089,33 +1050,45 @@ void MethodContext::dmpGetMethodNameFromMetadata(Agnostic_CORINFO_METHODNAME_TOK
     unsigned char* methodName    = (unsigned char*)GetMethodNameFromMetadata->GetBuffer(value.methodName);
     unsigned char* className     = (unsigned char*)GetMethodNameFromMetadata->GetBuffer(value.className);
     unsigned char* namespaceName = (unsigned char*)GetMethodNameFromMetadata->GetBuffer(value.namespaceName);
-    unsigned char* enclosingClassName = (unsigned char*)GetMethodNameFromMetadata->GetBuffer(value.enclosingClassName);
-    printf("GetMethodNameFromMetadata key - ftn-%016" PRIX64 " classNonNull-%u namespaceNonNull-%u enclosingClassNonNull-%u, value meth-'%s', "
-           "class-'%s', namespace-'%s' enclosingClass-'%s'",
-           key.ftn, key.className, key.namespaceName, key.enclosingClassName, methodName, className, namespaceName, enclosingClassName);
+    unsigned char* enclosingClassNameIndices = GetMethodNameFromMetadata->GetBuffer(value.enclosingClassNames);
+    printf("GetMethodNameFromMetadata key - ftn-%016" PRIX64 " classNonNull-%u namespaceNonNull-%u maxEnclosingClassNames-%u, value meth-'%s', "
+           "class-'%s', namespace-'%s'",
+           key.ftn, key.className, key.namespaceName, key.maxEnclosingClassNames, methodName, className, namespaceName);
+
+    for (DWORD i = 0; i < key.maxEnclosingClassNames; i++)
+    {
+        DWORD index;
+        memcpy(&index, &enclosingClassNameIndices[i * sizeof(DWORD)], sizeof(DWORD));
+
+        unsigned char* enclosingClassName = GetMethodNameFromMetadata->GetBuffer(index);
+        if (enclosingClassName != nullptr)
+            printf(" enclosingClass%u-'%s'", i, enclosingClassName);
+    }
+
     GetMethodNameFromMetadata->Unlock();
 }
 
 const char* MethodContext::repGetMethodNameFromMetadata(CORINFO_METHOD_HANDLE ftn,
                                                         const char**          moduleName,
                                                         const char**          namespaceName,
-                                                        const char**          enclosingClassName)
+                                                        const char**          enclosingClassNames,
+                                                        size_t                maxEnclosingClassNames)
 {
     Agnostic_CORINFO_METHODNAME_TOKENin key;
 
     key.ftn = CastHandle(ftn);
     key.className = (moduleName != nullptr);
     key.namespaceName = (namespaceName != nullptr);
-    key.enclosingClassName = (enclosingClassName != nullptr);
+    key.maxEnclosingClassNames = (DWORD)maxEnclosingClassNames;
 
     Agnostic_CORINFO_METHODNAME_TOKENout value = LookupByKeyOrMiss(
         GetMethodNameFromMetadata,
         key,
-        ": ftn-%016" PRIX64 " className-%u namespaceName-%u enclosingClassName-%u",
+        ": ftn-%016" PRIX64 " className-%u namespaceName-%u maxEnclosingClassNames-%u",
         key.ftn,
         key.className,
         key.namespaceName,
-        key.enclosingClassName);
+        key.maxEnclosingClassNames);
 
     DEBUG_REP(dmpGetMethodNameFromMetadata(key, value));
 
@@ -1131,9 +1104,12 @@ const char* MethodContext::repGetMethodNameFromMetadata(CORINFO_METHOD_HANDLE ft
         *namespaceName = (const char*)GetMethodNameFromMetadata->GetBuffer(value.namespaceName);
     }
 
-    if (enclosingClassName != nullptr)
+    unsigned char* enclosingClassNameIndices = GetMethodNameFromMetadata->GetBuffer(value.enclosingClassNames);
+    for (size_t i = 0; i < maxEnclosingClassNames; i++)
     {
-        *enclosingClassName = (const char*)GetMethodNameFromMetadata->GetBuffer(value.enclosingClassName);
+        DWORD index;
+        memcpy(&index, &enclosingClassNameIndices[i * sizeof(DWORD)], sizeof(DWORD));
+        enclosingClassNames[i] = (const char*)GetMethodNameFromMetadata->GetBuffer(index);
     }
 
     return result;
@@ -1572,7 +1548,7 @@ void MethodContext::repGetCallInfo(CORINFO_RESOLVED_TOKEN* pResolvedToken,
             pResult->methodFlags |= CORINFO_FLG_DONT_INLINE;
 
         pResult->classFlags = (unsigned)value.classFlags;
-        pResult->sig = SpmiRecordsHelper::Restore_CORINFO_SIG_INFO(value.sig, GetCallInfo, SigInstHandleMap);
+        pResult->sig = SpmiRecordsHelper::Restore_CORINFO_SIG_INFO(value.sig, GetCallInfo, SigInstHandleMap, cr->getOrCreateMemoryTracker());
         pResult->accessAllowed = (CorInfoIsAccessAllowedResult)value.accessAllowed;
         pResult->callsiteCalloutHelper.helperNum = (CorInfoHelpFunc)value.callsiteCalloutHelper.helperNum;
         pResult->callsiteCalloutHelper.numArgs = (unsigned)value.callsiteCalloutHelper.numArgs;
@@ -1937,6 +1913,30 @@ CORINFO_CLASS_HANDLE MethodContext::repGetTypeForBox(CORINFO_CLASS_HANDLE cls)
     DWORDLONG key = CastHandle(cls);
     DWORDLONG value = LookupByKeyOrMiss(GetTypeForBox, key, ": key %016" PRIX64 "", key);
     DEBUG_REP(dmpGetTypeForBox(key, value));
+    CORINFO_CLASS_HANDLE result = (CORINFO_CLASS_HANDLE)value;
+    return result;
+}
+
+void MethodContext::recGetTypeForBoxOnStack(CORINFO_CLASS_HANDLE cls, CORINFO_CLASS_HANDLE result)
+{
+    if (GetTypeForBoxOnStack == nullptr)
+        GetTypeForBoxOnStack = new LightWeightMap<DWORDLONG, DWORDLONG>();
+
+    DWORDLONG key = CastHandle(cls);
+    DWORDLONG value = CastHandle(result);
+    GetTypeForBoxOnStack->Add(key, value);
+    DEBUG_REC(dmpGetTypeForBoxOnStack(key, value));
+}
+void MethodContext::dmpGetTypeForBoxOnStack(DWORDLONG key, DWORDLONG value)
+{
+    printf("GetTypeForBoxOnStack key cls-%016" PRIX64 ", value res-%016" PRIX64 "", key, value);
+}
+
+CORINFO_CLASS_HANDLE MethodContext::repGetTypeForBoxOnStack(CORINFO_CLASS_HANDLE cls)
+{
+    DWORDLONG key = CastHandle(cls);
+    DWORDLONG value = LookupByKeyOrMiss(GetTypeForBoxOnStack, key, ": key %016" PRIX64 "", key);
+    DEBUG_REP(dmpGetTypeForBoxOnStack(key, value));
     CORINFO_CLASS_HANDLE result = (CORINFO_CLASS_HANDLE)value;
     return result;
 }
@@ -2881,7 +2881,7 @@ void MethodContext::repGetMethodSig(CORINFO_METHOD_HANDLE ftn, CORINFO_SIG_INFO*
 
     DEBUG_REP(dmpGetMethodSig(key, value));
 
-    *sig = SpmiRecordsHelper::Restore_CORINFO_SIG_INFO(value, GetMethodSig, SigInstHandleMap);
+    *sig = SpmiRecordsHelper::Restore_CORINFO_SIG_INFO(value, GetMethodSig, SigInstHandleMap, cr->getOrCreateMemoryTracker());
 }
 
 void MethodContext::recGetArgClass(CORINFO_SIG_INFO*       sig,
@@ -3036,8 +3036,8 @@ bool MethodContext::repGetMethodInfo(CORINFO_METHOD_HANDLE ftn, CORINFO_METHOD_I
         info->options    = (CorInfoOptions)value.info.options;
         info->regionKind = (CorInfoRegionKind)value.info.regionKind;
 
-        info->args   = SpmiRecordsHelper::Restore_CORINFO_SIG_INFO(value.info.args, GetMethodInfo, SigInstHandleMap);
-        info->locals = SpmiRecordsHelper::Restore_CORINFO_SIG_INFO(value.info.locals, GetMethodInfo, SigInstHandleMap);
+        info->args   = SpmiRecordsHelper::Restore_CORINFO_SIG_INFO(value.info.args, GetMethodInfo, SigInstHandleMap, cr->getOrCreateMemoryTracker());
+        info->locals = SpmiRecordsHelper::Restore_CORINFO_SIG_INFO(value.info.locals, GetMethodInfo, SigInstHandleMap, cr->getOrCreateMemoryTracker());
     }
     bool result    = value.result;
     *exceptionCode = (DWORD)value.exceptionCode;
@@ -3068,6 +3068,29 @@ bool MethodContext::repHaveSameMethodDefinition(CORINFO_METHOD_HANDLE methHnd1, 
 
     DWORD value = LookupByKeyOrMiss(HaveSameMethodDefinition, key, "key %016" PRIX64 ", %016" PRIX64, key.A, key.B);
     return value != 0;
+}
+
+void MethodContext::recGetTypeDefinition(CORINFO_CLASS_HANDLE cls, CORINFO_CLASS_HANDLE result)
+{
+    if (GetTypeDefinition == nullptr)
+        GetTypeDefinition = new LightWeightMap<DWORDLONG, DWORDLONG>();
+
+    DWORDLONG key = CastHandle(cls);
+    DWORDLONG value = CastHandle(result);
+    GetTypeDefinition->Add(key, value);
+    DEBUG_REC(dmpGetTypeDefinition(key, value));
+}
+void MethodContext::dmpGetTypeDefinition(DWORDLONG key, DWORDLONG value)
+{
+    printf("GetTypeDefinition key cls-%016" PRIX64 ", value cls-%016" PRIX64 "", key, value);
+}
+CORINFO_CLASS_HANDLE MethodContext::repGetTypeDefinition(CORINFO_CLASS_HANDLE cls)
+{
+    DWORDLONG key = CastHandle(cls);
+    DWORDLONG value = LookupByKeyOrMiss(GetTypeDefinition, key, ": key %016" PRIX64 "", key);
+    DEBUG_REP(dmpGetTypeDefinition(key, value));
+    CORINFO_CLASS_HANDLE result = (CORINFO_CLASS_HANDLE)value;
+    return result;
 }
 
 void MethodContext::recGetNewHelper(CORINFO_CLASS_HANDLE  classHandle,
@@ -3267,9 +3290,10 @@ void MethodContext::recResolveVirtualMethod(CORINFO_DEVIRTUALIZATION_INFO * info
     Agnostic_ResolveVirtualMethodResult result;
     result.returnValue                = returnValue;
     result.devirtualizedMethod        = CastHandle(info->devirtualizedMethod);
-    result.requiresInstMethodTableArg = info->requiresInstMethodTableArg;
+    result.isInstantiatingStub        = info->isInstantiatingStub;
     result.exactContext               = CastHandle(info->exactContext);
     result.detail                     = (DWORD) info->detail;
+    result.wasArrayInterfaceDevirt    = info->wasArrayInterfaceDevirt;
 
     if (returnValue)
     {
@@ -3294,10 +3318,11 @@ void MethodContext::dmpResolveVirtualMethod(const Agnostic_ResolveVirtualMethodK
         key.context,
         key.pResolvedTokenVirtualMethodNonNull,
         key.pResolvedTokenVirtualMethodNonNull ? SpmiDumpHelper::DumpAgnostic_CORINFO_RESOLVED_TOKEN(key.pResolvedTokenVirtualMethod).c_str() : "???");
-    printf(", value returnValue-%s, devirtMethod-%016" PRIX64 ", requiresInstArg-%s, exactContext-%016" PRIX64 ", detail-%d, tokDvMeth{%s}, tokDvUnboxMeth{%s}",
+    printf(", value returnValue-%s, devirtMethod-%016" PRIX64 ", instantiatingStub-%s, wasArrayInterfaceDevirt-%s, exactContext-%016" PRIX64 ", detail-%d, tokDvMeth{%s}, tokDvUnboxMeth{%s}",
         result.returnValue ? "true" : "false",
         result.devirtualizedMethod,
-        result.requiresInstMethodTableArg ? "true" : "false",
+        result.isInstantiatingStub ? "true" : "false",
+        result.wasArrayInterfaceDevirt ? "true" : "false",
         result.exactContext,
         result.detail,
         result.returnValue ? SpmiDumpHelper::DumpAgnostic_CORINFO_RESOLVED_TOKEN(result.resolvedTokenDevirtualizedMethod).c_str() : "???",
@@ -3321,7 +3346,8 @@ bool MethodContext::repResolveVirtualMethod(CORINFO_DEVIRTUALIZATION_INFO * info
     DEBUG_REP(dmpResolveVirtualMethod(key, result));
 
     info->devirtualizedMethod = (CORINFO_METHOD_HANDLE) result.devirtualizedMethod;
-    info->requiresInstMethodTableArg = result.requiresInstMethodTableArg;
+    info->isInstantiatingStub = result.isInstantiatingStub;
+    info->wasArrayInterfaceDevirt = result.wasArrayInterfaceDevirt;
     info->exactContext = (CORINFO_CONTEXT_HANDLE) result.exactContext;
     info->detail = (CORINFO_DEVIRTUALIZATION_DETAIL) result.detail;
     if (result.returnValue)
@@ -3376,6 +3402,46 @@ CORINFO_METHOD_HANDLE MethodContext::repGetUnboxedEntry(CORINFO_METHOD_HANDLE ft
     return (CORINFO_METHOD_HANDLE)(value.A);
 }
 
+void MethodContext::recGetInstantiatedEntry(CORINFO_METHOD_HANDLE ftn,
+    CORINFO_METHOD_HANDLE methodHandle,
+    CORINFO_CLASS_HANDLE classHandle,
+    CORINFO_METHOD_HANDLE result)
+{
+    if (GetInstantiatedEntry == nullptr)
+    {
+        GetInstantiatedEntry = new LightWeightMap<DWORDLONG, Agnostic_GetInstantiatedEntryResult>();
+    }
+
+    DWORDLONG key = CastHandle(ftn);
+    Agnostic_GetInstantiatedEntryResult value;
+    value.methodHandle = CastHandle(methodHandle);
+    value.classHandle = CastHandle(classHandle);
+    value.result = CastHandle(result);
+
+    GetInstantiatedEntry->Add(key, value);
+    DEBUG_REC(dmpGetUnboxedEntry(key, value));
+}
+
+void MethodContext::dmpGetInstantiatedEntry(DWORDLONG key, const Agnostic_GetInstantiatedEntryResult& value)
+{
+    printf("GetUnboxedEntry ftn-%016" PRIX64 ", methodHnd-%016" PRIX64 ", classHnd-%016" PRIX64 ", result-%016" PRIX64 "\n",
+        key, value.methodHandle, value.classHandle, value.result);
+}
+
+CORINFO_METHOD_HANDLE MethodContext::repGetInstantiatedEntry(CORINFO_METHOD_HANDLE ftn, CORINFO_METHOD_HANDLE* methodHandle, CORINFO_CLASS_HANDLE* classHandle)
+{
+    DWORDLONG key = CastHandle(ftn);
+
+    Agnostic_GetInstantiatedEntryResult value = LookupByKeyOrMiss(GetInstantiatedEntry, key, ": key %016" PRIX64 "", key);
+
+    DEBUG_REP(dmpGetInstantiatedEntryEntry(key, value));
+
+    *methodHandle = (CORINFO_METHOD_HANDLE)value.methodHandle;
+    *classHandle = (CORINFO_CLASS_HANDLE)value.classHandle;
+
+    return (CORINFO_METHOD_HANDLE)(value.result);
+}
+
 void MethodContext::recGetDefaultComparerClass(CORINFO_CLASS_HANDLE cls, CORINFO_CLASS_HANDLE result)
 {
     if (GetDefaultComparerClass == nullptr)
@@ -3418,6 +3484,29 @@ CORINFO_CLASS_HANDLE MethodContext::repGetDefaultEqualityComparerClass(CORINFO_C
     DWORDLONG key = CastHandle(cls);
     DWORDLONG value = LookupByKeyOrMiss(GetDefaultEqualityComparerClass, key, ": key %016" PRIX64 "", key);
     DEBUG_REP(dmpGetDefaultEqualityComparerClass(key, value));
+    CORINFO_CLASS_HANDLE result = (CORINFO_CLASS_HANDLE)value;
+    return result;
+}
+
+void MethodContext::recGetSZArrayHelperEnumeratorClass(CORINFO_CLASS_HANDLE cls, CORINFO_CLASS_HANDLE result)
+{
+    if (GetSZArrayHelperEnumeratorClass == nullptr)
+        GetSZArrayHelperEnumeratorClass = new LightWeightMap<DWORDLONG, DWORDLONG>();
+
+    DWORDLONG key = CastHandle(cls);
+    DWORDLONG value = CastHandle(result);
+    GetSZArrayHelperEnumeratorClass->Add(key, value);
+    DEBUG_REC(dmpGetSZArrayHelperEnumeratorClass(key, value));
+}
+void MethodContext::dmpGetSZArrayHelperEnumeratorClass(DWORDLONG key, DWORDLONG value)
+{
+    printf("GetSZArrayHelperEnumeratorClass key cls-%016" PRIX64 ", value cls-%016" PRIX64 "", key, value);
+}
+CORINFO_CLASS_HANDLE MethodContext::repGetSZArrayHelperEnumeratorClass(CORINFO_CLASS_HANDLE cls)
+{
+    DWORDLONG key = CastHandle(cls);
+    DWORDLONG value = LookupByKeyOrMiss(GetSZArrayHelperEnumeratorClass, key, ": key %016" PRIX64 "", key);
+    DEBUG_REP(dmpGetSZArrayHelperEnumeratorClass(key, value));
     CORINFO_CLASS_HANDLE result = (CORINFO_CLASS_HANDLE)value;
     return result;
 }
@@ -3620,7 +3709,7 @@ uint32_t MethodContext::repGetThreadLocalFieldInfo(CORINFO_FIELD_HANDLE field, b
     return value;
 }
 
-void MethodContext::recGetThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo, bool isGCType)
+void MethodContext::recGetThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo)
 {
     if (GetThreadLocalStaticBlocksInfo == nullptr)
         GetThreadLocalStaticBlocksInfo = new LightWeightMap<DWORD, Agnostic_GetThreadLocalStaticBlocksInfo>();
@@ -3635,10 +3724,10 @@ void MethodContext::recGetThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOC
     value.offsetOfThreadLocalStoragePointer     = pInfo->offsetOfThreadLocalStoragePointer;
     value.offsetOfMaxThreadStaticBlocks         = pInfo->offsetOfMaxThreadStaticBlocks;
     value.offsetOfThreadStaticBlocks            = pInfo->offsetOfThreadStaticBlocks;
-    value.offsetOfGCDataPointer                 = pInfo->offsetOfGCDataPointer;
+    value.offsetOfBaseOfThreadLocalData         = pInfo->offsetOfBaseOfThreadLocalData;
 
     // This data is same for entire process, so just add it against key '0'.
-    DWORD key = isGCType ? 0 : 1;
+    DWORD key = 0;
     GetThreadLocalStaticBlocksInfo->Add(key, value);
     DEBUG_REC(dmpGetThreadLocalStaticBlocksInfo(key, value));
 }
@@ -3646,18 +3735,20 @@ void MethodContext::recGetThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOC
 void MethodContext::dmpGetThreadLocalStaticBlocksInfo(DWORD key, const Agnostic_GetThreadLocalStaticBlocksInfo& value)
 {
     printf("GetThreadLocalStaticBlocksInfo key %u, tlsIndex-%s, "
-           ", tlsGetAddrFtnPtr-%016" PRIX64 ", tlsIndexObject - %016" PRIX64 
+           ", tlsGetAddrFtnPtr-%016" PRIX64 ", tlsIndexObject - %016" PRIX64
            ", threadVarsSection - %016" PRIX64
-           ", offsetOfThreadLocalStoragePointer-%u, offsetOfMaxThreadStaticBlocks-%u"
-           ", offsetOfThreadStaticBlocks-%u, offsetOfGCDataPointer-%u",           
+           ", offsetOfThreadLocalStoragePointer-%u"
+           ", offsetOfMaxThreadStaticBlocks-%u"
+           ", offsetOfThreadStaticBlocks-%u"
+           ", offsetOfBaseOfThreadLocalData-%u",
            key, SpmiDumpHelper::DumpAgnostic_CORINFO_CONST_LOOKUP(value.tlsIndex).c_str(), value.tlsGetAddrFtnPtr,
            value.tlsIndexObject, value.threadVarsSection, value.offsetOfThreadLocalStoragePointer,
-           value.offsetOfMaxThreadStaticBlocks, value.offsetOfThreadStaticBlocks, value.offsetOfGCDataPointer);
+           value.offsetOfMaxThreadStaticBlocks, value.offsetOfThreadStaticBlocks, value.offsetOfBaseOfThreadLocalData);
 }
 
-void MethodContext::repGetThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo, bool isGCType)
+void MethodContext::repGetThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo)
 {
-    int key = isGCType ? 0 : 1;
+    int key = 0;
     Agnostic_GetThreadLocalStaticBlocksInfo value = LookupByKeyOrMiss(GetThreadLocalStaticBlocksInfo, key, ": key %u", key);
 
     DEBUG_REP(dmpGetThreadLocalStaticBlocksInfo(key, value));
@@ -3667,9 +3758,9 @@ void MethodContext::repGetThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOC
     pInfo->tlsIndexObject                       = (void*)value.tlsIndexObject;
     pInfo->threadVarsSection                    = (void*)value.threadVarsSection;
     pInfo->offsetOfThreadLocalStoragePointer    = value.offsetOfThreadLocalStoragePointer;
-    pInfo->offsetOfMaxThreadStaticBlocks        = value.offsetOfMaxThreadStaticBlocks;    
+    pInfo->offsetOfMaxThreadStaticBlocks        = value.offsetOfMaxThreadStaticBlocks;
     pInfo->offsetOfThreadStaticBlocks           = value.offsetOfThreadStaticBlocks;
-    pInfo->offsetOfGCDataPointer                = value.offsetOfGCDataPointer;
+    pInfo->offsetOfBaseOfThreadLocalData        = value.offsetOfBaseOfThreadLocalData;
 }
 
 void MethodContext::recGetThreadLocalStaticInfo_NativeAOT(CORINFO_THREAD_STATIC_INFO_NATIVEAOT* pInfo)
@@ -4294,7 +4385,7 @@ void MethodContext::repFindSig(CORINFO_MODULE_HANDLE  moduleHandle,
 
     DEBUG_REP(dmpFindSig(key, value));
 
-    *sig = SpmiRecordsHelper::Restore_CORINFO_SIG_INFO(value, FindSig, SigInstHandleMap);
+    *sig = SpmiRecordsHelper::Restore_CORINFO_SIG_INFO(value, FindSig, SigInstHandleMap, cr->getOrCreateMemoryTracker());
 }
 
 void MethodContext::recGetEEInfo(CORINFO_EE_INFO* pEEInfoOut)
@@ -4305,6 +4396,7 @@ void MethodContext::recGetEEInfo(CORINFO_EE_INFO* pEEInfoOut)
     Agnostic_CORINFO_EE_INFO value;
 
     value.inlinedCallFrameInfo.size                  = (DWORD)pEEInfoOut->inlinedCallFrameInfo.size;
+    value.inlinedCallFrameInfo.sizeWithSecretStubArg = (DWORD)pEEInfoOut->inlinedCallFrameInfo.sizeWithSecretStubArg;
     value.inlinedCallFrameInfo.offsetOfGSCookie      = (DWORD)pEEInfoOut->inlinedCallFrameInfo.offsetOfGSCookie;
     value.inlinedCallFrameInfo.offsetOfFrameVptr     = (DWORD)pEEInfoOut->inlinedCallFrameInfo.offsetOfFrameVptr;
     value.inlinedCallFrameInfo.offsetOfFrameLink     = (DWORD)pEEInfoOut->inlinedCallFrameInfo.offsetOfFrameLink;
@@ -4312,6 +4404,8 @@ void MethodContext::recGetEEInfo(CORINFO_EE_INFO* pEEInfoOut)
     value.inlinedCallFrameInfo.offsetOfCalleeSavedFP = (DWORD)pEEInfoOut->inlinedCallFrameInfo.offsetOfCalleeSavedFP;
     value.inlinedCallFrameInfo.offsetOfCallTarget    = (DWORD)pEEInfoOut->inlinedCallFrameInfo.offsetOfCallTarget;
     value.inlinedCallFrameInfo.offsetOfReturnAddress = (DWORD)pEEInfoOut->inlinedCallFrameInfo.offsetOfReturnAddress;
+    value.inlinedCallFrameInfo.offsetOfSecretStubArg = (DWORD)pEEInfoOut->inlinedCallFrameInfo.offsetOfSecretStubArg;
+    value.inlinedCallFrameInfo.offsetOfSPAfterProlog = (DWORD)pEEInfoOut->inlinedCallFrameInfo.offsetOfSPAfterProlog;
     value.offsetOfThreadFrame                        = (DWORD)pEEInfoOut->offsetOfThreadFrame;
     value.offsetOfGCState                            = (DWORD)pEEInfoOut->offsetOfGCState;
     value.offsetOfDelegateInstance                   = (DWORD)pEEInfoOut->offsetOfDelegateInstance;
@@ -4328,12 +4422,14 @@ void MethodContext::recGetEEInfo(CORINFO_EE_INFO* pEEInfoOut)
 }
 void MethodContext::dmpGetEEInfo(DWORD key, const Agnostic_CORINFO_EE_INFO& value)
 {
-    printf("GetEEInfo key %u, value icfi{sz-%u ogs-%u ofv-%u ofl-%u ocsp-%u ocsfp-%u oct-%u ora-%u} "
+    printf("GetEEInfo key %u, value icfi{sz-%u sz-witharg-%u ogs-%u ofv-%u ofl-%u ocsp-%u ocsfp-%u oct-%u ora-%u ossa-%u osap-%u} "
            "otf-%u ogcs-%u odi-%u odft-%u osdic-%u srpf-%u osps-%u muono-%u tabi-%u osType-%u",
-           key, value.inlinedCallFrameInfo.size, value.inlinedCallFrameInfo.offsetOfGSCookie,
+           key, value.inlinedCallFrameInfo.size, value.inlinedCallFrameInfo.sizeWithSecretStubArg,
+           value.inlinedCallFrameInfo.offsetOfGSCookie,
            value.inlinedCallFrameInfo.offsetOfFrameVptr, value.inlinedCallFrameInfo.offsetOfFrameLink,
            value.inlinedCallFrameInfo.offsetOfCallSiteSP, value.inlinedCallFrameInfo.offsetOfCalleeSavedFP,
            value.inlinedCallFrameInfo.offsetOfCallTarget, value.inlinedCallFrameInfo.offsetOfReturnAddress,
+           value.inlinedCallFrameInfo.offsetOfSecretStubArg, value.inlinedCallFrameInfo.offsetOfSPAfterProlog,
            value.offsetOfThreadFrame, value.offsetOfGCState, value.offsetOfDelegateInstance,
            value.offsetOfDelegateFirstTarget, value.offsetOfWrapperDelegateIndirectCell,
            value.sizeOfReversePInvokeFrame, value.osPageSize, value.maxUncheckedOffsetForNullObject, value.targetAbi,
@@ -4341,64 +4437,33 @@ void MethodContext::dmpGetEEInfo(DWORD key, const Agnostic_CORINFO_EE_INFO& valu
 }
 void MethodContext::repGetEEInfo(CORINFO_EE_INFO* pEEInfoOut)
 {
-    Agnostic_CORINFO_EE_INFO value;
+    Agnostic_CORINFO_EE_INFO value = LookupByKeyOrMissNoMessage(GetEEInfo, 0);
 
-    int index = -1;
-    if (GetEEInfo != nullptr)
-        index = GetEEInfo->GetIndex((DWORD)0);
-    if (index >= 0)
-    {
-        value = GetEEInfo->Get(0);
-        DEBUG_REP(dmpGetEEInfo(0, value));
+    DEBUG_REP(dmpGetEEInfo(0, value));
 
-        pEEInfoOut->inlinedCallFrameInfo.size               = (unsigned)value.inlinedCallFrameInfo.size;
-        pEEInfoOut->inlinedCallFrameInfo.offsetOfGSCookie   = (unsigned)value.inlinedCallFrameInfo.offsetOfGSCookie;
-        pEEInfoOut->inlinedCallFrameInfo.offsetOfFrameVptr  = (unsigned)value.inlinedCallFrameInfo.offsetOfFrameVptr;
-        pEEInfoOut->inlinedCallFrameInfo.offsetOfFrameLink  = (unsigned)value.inlinedCallFrameInfo.offsetOfFrameLink;
-        pEEInfoOut->inlinedCallFrameInfo.offsetOfCallSiteSP = (unsigned)value.inlinedCallFrameInfo.offsetOfCallSiteSP;
-        pEEInfoOut->inlinedCallFrameInfo.offsetOfCalleeSavedFP =
-            (unsigned)value.inlinedCallFrameInfo.offsetOfCalleeSavedFP;
-        pEEInfoOut->inlinedCallFrameInfo.offsetOfCallTarget = (unsigned)value.inlinedCallFrameInfo.offsetOfCallTarget;
-        pEEInfoOut->inlinedCallFrameInfo.offsetOfReturnAddress =
-            (unsigned)value.inlinedCallFrameInfo.offsetOfReturnAddress;
-        pEEInfoOut->offsetOfThreadFrame                = (unsigned)value.offsetOfThreadFrame;
-        pEEInfoOut->offsetOfGCState                    = (unsigned)value.offsetOfGCState;
-        pEEInfoOut->offsetOfDelegateInstance           = (unsigned)value.offsetOfDelegateInstance;
-        pEEInfoOut->offsetOfDelegateFirstTarget        = (unsigned)value.offsetOfDelegateFirstTarget;
-        pEEInfoOut->offsetOfWrapperDelegateIndirectCell= (unsigned)value.offsetOfWrapperDelegateIndirectCell;
-        pEEInfoOut->sizeOfReversePInvokeFrame          = (unsigned)value.sizeOfReversePInvokeFrame;
-        pEEInfoOut->osPageSize                         = (size_t)value.osPageSize;
-        pEEInfoOut->maxUncheckedOffsetForNullObject    = (size_t)value.maxUncheckedOffsetForNullObject;
-        pEEInfoOut->targetAbi                          = (CORINFO_RUNTIME_ABI)value.targetAbi;
-        pEEInfoOut->osType                             = (CORINFO_OS)value.osType;
-    }
-    else
-    {
-        pEEInfoOut->inlinedCallFrameInfo.size                  = (unsigned)0x40;
-        pEEInfoOut->inlinedCallFrameInfo.offsetOfGSCookie      = (unsigned)0;
-        pEEInfoOut->inlinedCallFrameInfo.offsetOfFrameVptr     = (unsigned)0x8;
-        pEEInfoOut->inlinedCallFrameInfo.offsetOfFrameLink     = (unsigned)0x10;
-        pEEInfoOut->inlinedCallFrameInfo.offsetOfCallSiteSP    = (unsigned)0x28;
-        pEEInfoOut->inlinedCallFrameInfo.offsetOfCalleeSavedFP = (unsigned)0x38;
-        pEEInfoOut->inlinedCallFrameInfo.offsetOfCallTarget    = (unsigned)0x18;
-        pEEInfoOut->inlinedCallFrameInfo.offsetOfReturnAddress = (unsigned)0x30;
-        pEEInfoOut->offsetOfThreadFrame                        = (unsigned)0x10;
-        pEEInfoOut->offsetOfGCState                            = (unsigned)0xc;
-        pEEInfoOut->offsetOfDelegateInstance                   = (unsigned)0x8;
-        pEEInfoOut->offsetOfDelegateFirstTarget                = (unsigned)0x18;
-        pEEInfoOut->offsetOfWrapperDelegateIndirectCell        = (unsigned)0x40;
-        pEEInfoOut->sizeOfReversePInvokeFrame                  = (unsigned)0x8;
-        pEEInfoOut->osPageSize                                 = (size_t)0x1000;
-        pEEInfoOut->maxUncheckedOffsetForNullObject            = (size_t)((32 * 1024) - 1);
-        pEEInfoOut->targetAbi                                  = CORINFO_CORECLR_ABI;
-#ifdef TARGET_OSX
-        pEEInfoOut->osType                                     = CORINFO_APPLE;
-#elif defined(TARGET_UNIX)
-        pEEInfoOut->osType                                     = CORINFO_UNIX;
-#else
-        pEEInfoOut->osType                                     = CORINFO_WINNT;
-#endif
-    }
+    pEEInfoOut->inlinedCallFrameInfo.size                  = (unsigned)value.inlinedCallFrameInfo.size;
+    pEEInfoOut->inlinedCallFrameInfo.sizeWithSecretStubArg = (unsigned)value.inlinedCallFrameInfo.sizeWithSecretStubArg;
+    pEEInfoOut->inlinedCallFrameInfo.offsetOfGSCookie      = (unsigned)value.inlinedCallFrameInfo.offsetOfGSCookie;
+    pEEInfoOut->inlinedCallFrameInfo.offsetOfFrameVptr     = (unsigned)value.inlinedCallFrameInfo.offsetOfFrameVptr;
+    pEEInfoOut->inlinedCallFrameInfo.offsetOfFrameLink     = (unsigned)value.inlinedCallFrameInfo.offsetOfFrameLink;
+    pEEInfoOut->inlinedCallFrameInfo.offsetOfCallSiteSP    = (unsigned)value.inlinedCallFrameInfo.offsetOfCallSiteSP;
+    pEEInfoOut->inlinedCallFrameInfo.offsetOfCalleeSavedFP =
+        (unsigned)value.inlinedCallFrameInfo.offsetOfCalleeSavedFP;
+    pEEInfoOut->inlinedCallFrameInfo.offsetOfCallTarget = (unsigned)value.inlinedCallFrameInfo.offsetOfCallTarget;
+    pEEInfoOut->inlinedCallFrameInfo.offsetOfReturnAddress =
+        (unsigned)value.inlinedCallFrameInfo.offsetOfReturnAddress;
+    pEEInfoOut->inlinedCallFrameInfo.offsetOfSecretStubArg = (unsigned)value.inlinedCallFrameInfo.offsetOfSecretStubArg;
+    pEEInfoOut->inlinedCallFrameInfo.offsetOfSPAfterProlog = (unsigned)value.inlinedCallFrameInfo.offsetOfSPAfterProlog;
+    pEEInfoOut->offsetOfThreadFrame                = (unsigned)value.offsetOfThreadFrame;
+    pEEInfoOut->offsetOfGCState                    = (unsigned)value.offsetOfGCState;
+    pEEInfoOut->offsetOfDelegateInstance           = (unsigned)value.offsetOfDelegateInstance;
+    pEEInfoOut->offsetOfDelegateFirstTarget        = (unsigned)value.offsetOfDelegateFirstTarget;
+    pEEInfoOut->offsetOfWrapperDelegateIndirectCell= (unsigned)value.offsetOfWrapperDelegateIndirectCell;
+    pEEInfoOut->sizeOfReversePInvokeFrame          = (unsigned)value.sizeOfReversePInvokeFrame;
+    pEEInfoOut->osPageSize                         = (size_t)value.osPageSize;
+    pEEInfoOut->maxUncheckedOffsetForNullObject    = (size_t)value.maxUncheckedOffsetForNullObject;
+    pEEInfoOut->targetAbi                          = (CORINFO_RUNTIME_ABI)value.targetAbi;
+    pEEInfoOut->osType                             = (CORINFO_OS)value.osType;
 }
 
 void MethodContext::recGetGSCookie(GSCookie* pCookieVal, GSCookie** ppCookieVal)
@@ -4673,37 +4738,60 @@ int32_t* MethodContext::repGetAddrOfCaptureThreadGlobal(void** ppIndirection)
     return (int32_t*)value.B;
 }
 
-void MethodContext::recGetClassDomainID(CORINFO_CLASS_HANDLE cls, void** ppIndirection, unsigned result)
+void MethodContext::recGetClassStaticDynamicInfo(CORINFO_CLASS_HANDLE cls, size_t result)
 {
-    if (GetClassDomainID == nullptr)
-        GetClassDomainID = new LightWeightMap<DWORDLONG, DLD>();
+    if (GetClassStaticDynamicInfo == nullptr)
+        GetClassStaticDynamicInfo = new LightWeightMap<DWORDLONG, DLD>();
 
     DLD value;
 
-    if (ppIndirection != nullptr)
-        value.A = CastPointer(*ppIndirection);
-    else
-        value.A = 0;
-    value.B     = (DWORD)result;
+    value.A = result;
+    value.B = 0;
 
     DWORDLONG key = CastHandle(cls);
-    GetClassDomainID->Add(key, value);
-    DEBUG_REC(dmpGetClassDomainID(key, value));
+    GetClassStaticDynamicInfo->Add(key, value);
+    DEBUG_REC(dmpGetClassStaticDynamicInfo(key, value));
 }
-void MethodContext::dmpGetClassDomainID(DWORDLONG key, DLD value)
+void MethodContext::dmpGetClassStaticDynamicInfo(DWORDLONG key, DLD value)
 {
-    printf("GetClassDomainID key cls-%016" PRIX64 ", value pp-%016" PRIX64 " res-%u", key, value.A, value.B);
+    printf("GetClassStaticDynamicInfo key cls-%016" PRIX64 ", value pp-%016" PRIX64 " res-%u", key, value.A, value.B);
 }
-unsigned MethodContext::repGetClassDomainID(CORINFO_CLASS_HANDLE cls, void** ppIndirection)
+size_t MethodContext::repGetClassStaticDynamicInfo(CORINFO_CLASS_HANDLE cls)
 {
     DWORDLONG key = CastHandle(cls);
-    DLD value = LookupByKeyOrMiss(GetClassDomainID, key, ": key %016" PRIX64 "", key);
+    DLD value = LookupByKeyOrMiss(GetClassStaticDynamicInfo, key, ": key %016" PRIX64 "", key);
 
-    DEBUG_REP(dmpGetClassDomainID(key, value));
+    DEBUG_REP(dmpGetClassStaticDynamicInfo(key, value));
 
-    if (ppIndirection != nullptr)
-        *ppIndirection = (void*)value.A;
-    return (unsigned)value.B;
+    return (size_t)value.A;
+}
+
+void MethodContext::recGetClassThreadStaticDynamicInfo(CORINFO_CLASS_HANDLE cls, size_t result)
+{
+    if (GetClassThreadStaticDynamicInfo == nullptr)
+        GetClassThreadStaticDynamicInfo = new LightWeightMap<DWORDLONG, DLD>();
+
+    DLD value;
+
+    value.A = result;
+    value.B = 0;
+
+    DWORDLONG key = CastHandle(cls);
+    GetClassThreadStaticDynamicInfo->Add(key, value);
+    DEBUG_REC(dmpGetClassThreadStaticDynamicInfo(key, value));
+}
+void MethodContext::dmpGetClassThreadStaticDynamicInfo(DWORDLONG key, DLD value)
+{
+    printf("GetClassThreadStaticDynamicInfo key cls-%016" PRIX64 ", value pp-%016" PRIX64 " res-%u", key, value.A, value.B);
+}
+size_t MethodContext::repGetClassThreadStaticDynamicInfo(CORINFO_CLASS_HANDLE cls)
+{
+    DWORDLONG key = CastHandle(cls);
+    DLD value = LookupByKeyOrMiss(GetClassThreadStaticDynamicInfo, key, ": key %016" PRIX64 "", key);
+
+    DEBUG_REP(dmpGetClassThreadStaticDynamicInfo(key, value));
+
+    return (size_t)value.A;
 }
 
 void MethodContext::recGetLocationOfThisType(CORINFO_METHOD_HANDLE context, CORINFO_LOOKUP_KIND* result)
@@ -4958,7 +5046,7 @@ GetTypeLayoutResult MethodContext::repGetTypeLayout(CORINFO_CLASS_HANDLE typeHnd
 
 void MethodContext::recGetFieldType(CORINFO_FIELD_HANDLE  field,
                                     CORINFO_CLASS_HANDLE* structType,
-                                    CORINFO_CLASS_HANDLE  memberParent,
+                                    CORINFO_CLASS_HANDLE  fieldOwnerHint,
                                     CorInfoType           result)
 {
     if (GetFieldType == nullptr)
@@ -4967,7 +5055,7 @@ void MethodContext::recGetFieldType(CORINFO_FIELD_HANDLE  field,
     DLDL key;
     ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
     key.A = CastHandle(field);
-    key.B = CastHandle(memberParent);
+    key.B = CastHandle(fieldOwnerHint);
 
     DLD value;
     value.B = (DWORD)result;
@@ -4980,7 +5068,7 @@ void MethodContext::recGetFieldType(CORINFO_FIELD_HANDLE  field,
         value.A = CastHandle(*structType);
 
         // If we had a previous call with null 'structType', we will not have captured the
-        // class handle (we use only 'field' and 'memberParent' as keys).
+        // class handle (we use only 'field' and 'fieldOwnerHint' as keys).
         // Update the value in that case.
         unsigned index = GetFieldType->GetIndex(key);
         if ((index != (unsigned)-1) && (GetFieldType->GetItem(index).A == 0))
@@ -5000,12 +5088,12 @@ void MethodContext::dmpGetFieldType(DLDL key, DLD value)
 }
 CorInfoType MethodContext::repGetFieldType(CORINFO_FIELD_HANDLE  field,
                                            CORINFO_CLASS_HANDLE* structType,
-                                           CORINFO_CLASS_HANDLE  memberParent)
+                                           CORINFO_CLASS_HANDLE  fieldOwnerHint)
 {
     DLDL key;
     ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
     key.A = CastHandle(field);
-    key.B = CastHandle(memberParent);
+    key.B = CastHandle(fieldOwnerHint);
 
     DLD value = LookupByKeyOrMiss(GetFieldType, key, ": key %016" PRIX64 "", key.A);
 
@@ -5365,7 +5453,7 @@ void MethodContext::repFindCallSiteSig(CORINFO_MODULE_HANDLE  module,
 
     DEBUG_REP(dmpFindCallSiteSig(key, value));
 
-    *sig = SpmiRecordsHelper::Restore_CORINFO_SIG_INFO(value, FindCallSiteSig, SigInstHandleMap);
+    *sig = SpmiRecordsHelper::Restore_CORINFO_SIG_INFO(value, FindCallSiteSig, SigInstHandleMap, cr->getOrCreateMemoryTracker());
 }
 
 void MethodContext::recGetMethodSync(CORINFO_METHOD_HANDLE ftn, void** ppIndirection, void* result)
@@ -5640,10 +5728,11 @@ HRESULT MethodContext::repAllocPgoInstrumentationBySchema(
     UINT32 countSchemaItems,
     BYTE** pInstrumentationData)
 {
-    if (repAllocPgoInstrumentationBySchemaRecorded(ftnHnd, pSchema, countSchemaItems, pInstrumentationData))
+    HRESULT result;
+    if (repAllocPgoInstrumentationBySchemaRecorded(ftnHnd, pSchema, countSchemaItems, pInstrumentationData, &result))
     {
         // Matching case: return same layout as recorded EE.
-        return S_OK;
+        return result;
     }
 
     // Do our own layout.
@@ -5676,7 +5765,8 @@ bool MethodContext::repAllocPgoInstrumentationBySchemaRecorded(
     CORINFO_METHOD_HANDLE ftnHnd,
     ICorJitInfo::PgoInstrumentationSchema* pSchema,
     UINT32 countSchemaItems,
-    BYTE** pInstrumentationData)
+    BYTE** pInstrumentationData,
+    HRESULT* result)
 {
     if (AllocPgoInstrumentationBySchema == nullptr)
         return false;
@@ -5716,6 +5806,7 @@ bool MethodContext::repAllocPgoInstrumentationBySchemaRecorded(
     // We assume JIT does not write or read from this buffer, only generate
     // code that uses it.
     *pInstrumentationData = (BYTE*)value.instrumentationDataAddress;
+    *result = value.result;
     return true;
 }
 
@@ -5724,6 +5815,7 @@ void MethodContext::recGetPgoInstrumentationResults(CORINFO_METHOD_HANDLE ftnHnd
                                                     UINT32* pCountSchemaItems,
                                                     BYTE** pInstrumentationData,
                                                     ICorJitInfo::PgoSource* pPgoSource,
+                                                    bool* pDynamicPgo,
                                                     HRESULT result)
 {
     if (GetPgoInstrumentationResults == nullptr)
@@ -5754,6 +5846,7 @@ void MethodContext::recGetPgoInstrumentationResults(CORINFO_METHOD_HANDLE ftnHnd
     value.dataByteCount = (unsigned)maxOffset;
     value.result        = (DWORD)result;
     value.pgoSource     = (DWORD)*pPgoSource;
+    value.dynamicPgo    = (DWORD)*pDynamicPgo;
 
     DWORDLONG key = CastHandle(ftnHnd);
     GetPgoInstrumentationResults->Add(key, value);
@@ -5761,8 +5854,8 @@ void MethodContext::recGetPgoInstrumentationResults(CORINFO_METHOD_HANDLE ftnHnd
 }
 void MethodContext::dmpGetPgoInstrumentationResults(DWORDLONG key, const Agnostic_GetPgoInstrumentationResults& value)
 {
-    printf("GetPgoInstrumentationResults key ftn-%016" PRIX64 ", value res-%08X schemaCnt-%u profileBufSize-%u source-%u schema{",
-        key, value.result, value.countSchemaItems, value.dataByteCount, value.pgoSource);
+    printf("GetPgoInstrumentationResults key ftn-%016" PRIX64 ", value res-%08X schemaCnt-%u profileBufSize-%u source-%u dynamic-%u schema{",
+        key, value.result, value.countSchemaItems, value.dataByteCount, value.pgoSource, value.dynamicPgo);
 
     if (value.countSchemaItems > 0)
     {
@@ -5820,7 +5913,7 @@ void MethodContext::dmpGetPgoInstrumentationResults(DWORDLONG key, const Agnosti
                 case ICorJitInfo::PgoInstrumentationKind::GetLikelyMethod:
                     {
                         // (N)umber, (L)ikelihood, (H)andle
-                        printf("N %u L %u H %016" PRIX64 "", (unsigned)(pBuf[i].Other >> 8), (unsigned)(pBuf[i].Other && 0xFF), CastHandle(*(uintptr_t*)(pInstrumentationData + pBuf[i].Offset)));
+                        printf("N %u L %u H %016" PRIX64 "", (unsigned)(pBuf[i].Other >> 8), (unsigned)(pBuf[i].Other & 0xFF), CastHandle(*(uintptr_t*)(pInstrumentationData + pBuf[i].Offset)));
                     }
                     break;
                 default:
@@ -5838,7 +5931,8 @@ HRESULT MethodContext::repGetPgoInstrumentationResults(CORINFO_METHOD_HANDLE ftn
                                                        ICorJitInfo::PgoInstrumentationSchema** pSchema,
                                                        UINT32* pCountSchemaItems,
                                                        BYTE** pInstrumentationData,
-                                                       ICorJitInfo::PgoSource* pPgoSource)
+                                                       ICorJitInfo::PgoSource* pPgoSource,
+                                                       bool* pDynamicPgo)
 {
     DWORDLONG key = CastHandle(ftnHnd);
     Agnostic_GetPgoInstrumentationResults tempValue = LookupByKeyOrMiss(GetPgoInstrumentationResults, key, ": key %016" PRIX64 "", key);
@@ -5848,6 +5942,7 @@ HRESULT MethodContext::repGetPgoInstrumentationResults(CORINFO_METHOD_HANDLE ftn
     *pCountSchemaItems    = (UINT32)tempValue.countSchemaItems;
     *pInstrumentationData = (BYTE*)GetPgoInstrumentationResults->GetBuffer(tempValue.data_index);
     *pPgoSource           = (ICorJitInfo::PgoSource)tempValue.pgoSource;
+    *pDynamicPgo          = (bool)tempValue.dynamicPgo;
 
     ICorJitInfo::PgoInstrumentationSchema* pOutSchema = (ICorJitInfo::PgoInstrumentationSchema*)AllocJitTempBuffer(tempValue.countSchemaItems * sizeof(ICorJitInfo::PgoInstrumentationSchema));
 
@@ -5918,6 +6013,50 @@ bool MethodContext::repIsExactType(CORINFO_CLASS_HANDLE cls)
     DWORD value = LookupByKeyOrMiss(IsExactType, key, ": key %016" PRIX64 "", key);
     DEBUG_REP(dmpIsExactType(key, value));
     return value != 0;
+}
+
+void MethodContext::recIsGenericType(CORINFO_CLASS_HANDLE cls, TypeCompareState result)
+{
+    if (IsGenericType == nullptr)
+        IsGenericType = new LightWeightMap<DWORDLONG, DWORD>();
+
+    DWORDLONG key = CastHandle(cls);
+    DWORD value = (DWORD)result;
+    IsGenericType->Add(key, value);
+    DEBUG_REC(dmpIsGenericType(key, value));
+}
+void MethodContext::dmpIsGenericType(DWORDLONG key, DWORD value)
+{
+    printf("IsGenericType key cls-%016" PRIX64 ", value res-%d", key, value);
+}
+TypeCompareState MethodContext::repIsGenericType(CORINFO_CLASS_HANDLE cls)
+{
+    DWORDLONG key = CastHandle(cls);
+    DWORD value = LookupByKeyOrMiss(IsGenericType, key, ": key %016" PRIX64 "", key);
+    DEBUG_REP(dmpIsGenericType(key, value));
+    return (TypeCompareState)value;
+}
+
+void MethodContext::recIsNullableType(CORINFO_CLASS_HANDLE cls, TypeCompareState result)
+{
+    if (IsNullableType == nullptr)
+        IsNullableType = new LightWeightMap<DWORDLONG, DWORD>();
+
+    DWORDLONG key   = CastHandle(cls);
+    DWORD     value = (DWORD)result;
+    IsNullableType->Add(key, value);
+    DEBUG_REC(dmpIsNullableType(key, value));
+}
+void MethodContext::dmpIsNullableType(DWORDLONG key, DWORD value)
+{
+    printf("IsNullableType key cls-%016" PRIX64 ", value res-%d", key, value);
+}
+TypeCompareState MethodContext::repIsNullableType(CORINFO_CLASS_HANDLE cls)
+{
+    DWORDLONG key   = CastHandle(cls);
+    DWORD     value = LookupByKeyOrMiss(IsNullableType, key, ": key %016" PRIX64 "", key);
+    DEBUG_REP(dmpIsNullableType(key, value));
+    return (TypeCompareState)value;
 }
 
 void MethodContext::recIsEnum(CORINFO_CLASS_HANDLE cls, CORINFO_CLASS_HANDLE underlyingType, TypeCompareState result)
@@ -6223,13 +6362,13 @@ bool MethodContext::repGetSystemVAmd64PassStructInRegisterDescriptor(
     DEBUG_REP(dmpGetSystemVAmd64PassStructInRegisterDescriptor(key, value));
 
     structPassInRegDescPtr->passedInRegisters = value.passedInRegisters ? true : false;
-    structPassInRegDescPtr->eightByteCount    = (unsigned __int8)value.eightByteCount;
+    structPassInRegDescPtr->eightByteCount    = (uint8_t)value.eightByteCount;
     for (int i = 0; i < CLR_SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS; i++)
     {
         structPassInRegDescPtr->eightByteClassifications[i] =
             (SystemVClassificationType)value.eightByteClassifications[i];
-        structPassInRegDescPtr->eightByteSizes[i]   = (unsigned __int8)value.eightByteSizes[i];
-        structPassInRegDescPtr->eightByteOffsets[i] = (unsigned __int8)value.eightByteOffsets[i];
+        structPassInRegDescPtr->eightByteSizes[i]   = (uint8_t)value.eightByteSizes[i];
+        structPassInRegDescPtr->eightByteOffsets[i] = (uint8_t)value.eightByteOffsets[i];
     }
 
     return value.result ? true : false;
@@ -6263,9 +6402,12 @@ void MethodContext::dmpGetSwiftLowering(
 {
     printf("GetSwiftLowering key structHnd-%016" PRIX64 ", value byReference-%u numLoweredElements-%u", key,
         value.byReference, value.numLoweredElements);
-    for (size_t i = 0; i < value.numLoweredElements; i++)
+    if (!value.byReference)
     {
-        printf(" [%zu] %u", i, value.loweredElements[i]);
+        for (size_t i = 0; i < value.numLoweredElements; i++)
+        {
+            printf(" [%zu] %u", i, value.loweredElements[i]);
+        }
     }
 }
 void MethodContext::repGetSwiftLowering(CORINFO_CLASS_HANDLE structHnd, CORINFO_SWIFT_LOWERING* pLowering)
@@ -6285,54 +6427,57 @@ void MethodContext::repGetSwiftLowering(CORINFO_CLASS_HANDLE structHnd, CORINFO_
     }
 }
 
-void MethodContext::recGetLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE structHnd, DWORD value)
+void MethodContext::recGetFpStructLowering(CORINFO_CLASS_HANDLE structHnd, CORINFO_FPSTRUCT_LOWERING* pLowering)
 {
-    if (GetLoongArch64PassStructInRegisterFlags == nullptr)
-        GetLoongArch64PassStructInRegisterFlags = new LightWeightMap<DWORDLONG, DWORD>();
+    if (GetFpStructLowering == nullptr)
+        GetFpStructLowering = new LightWeightMap<DWORDLONG, Agnostic_GetFpStructLowering>();
 
     DWORDLONG key = CastHandle(structHnd);
 
-    GetLoongArch64PassStructInRegisterFlags->Add(key, value);
-    DEBUG_REC(dmpGetLoongArch64PassStructInRegisterFlags(key, value));
-}
+    Agnostic_GetFpStructLowering value;
+    ZeroMemory(&value, sizeof(value));
+    value.byIntegerCallConv = pLowering->byIntegerCallConv ? 1 : 0;
+    if (!pLowering->byIntegerCallConv)
+    {
+        value.numLoweredElements = static_cast<DWORD>(pLowering->numLoweredElements);
+        for (size_t i = 0; i < pLowering->numLoweredElements; i++)
+        {
+            value.loweredElements[i] = static_cast<DWORD>(pLowering->loweredElements[i]);
+            value.offsets[i] = pLowering->offsets[i];
+        }
+    }
 
-void MethodContext::dmpGetLoongArch64PassStructInRegisterFlags(DWORDLONG key, DWORD value)
+    GetFpStructLowering->Add(key, value);
+    DEBUG_REC(dmpGetFpStructLowering(key, value));
+}
+void MethodContext::dmpGetFpStructLowering(
+    DWORDLONG key, const Agnostic_GetFpStructLowering& value)
 {
-    printf("GetLoongArch64PassStructInRegisterFlags key %016" PRIX64 " value-%08X", key, value);
+    printf("GetFpStructLowering key structHnd-%016" PRIX64 ", value byIntegerCallConv-%u numLoweredElements-%u", key,
+        value.byIntegerCallConv, value.numLoweredElements);
+    if (!value.byIntegerCallConv)
+    {
+        for (size_t i = 0; i < value.numLoweredElements; i++)
+        {
+            printf(" [%zu] %u", i, value.loweredElements[i]);
+        }
+    }
 }
-
-DWORD MethodContext::repGetLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE structHnd)
-{
-    DWORDLONG key = CastHandle(structHnd);
-
-    DWORD value = LookupByKeyOrMissNoMessage(GetLoongArch64PassStructInRegisterFlags, key);
-    DEBUG_REP(dmpGetLoongArch64PassStructInRegisterFlags(key, value));
-    return value;
-}
-
-void MethodContext::recGetRISCV64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE structHnd, DWORD value)
-{
-    if (GetRISCV64PassStructInRegisterFlags == nullptr)
-        GetRISCV64PassStructInRegisterFlags = new LightWeightMap<DWORDLONG, DWORD>();
-
-    DWORDLONG key = CastHandle(structHnd);
-
-    GetRISCV64PassStructInRegisterFlags->Add(key, value);
-    DEBUG_REC(dmpGetRISCV64PassStructInRegisterFlags(key, value));
-}
-
-void MethodContext::dmpGetRISCV64PassStructInRegisterFlags(DWORDLONG key, DWORD value)
-{
-    printf("GetRISCV64PassStructInRegisterFlags key %016" PRIX64 " value-%08X", key, value);
-}
-
-DWORD MethodContext::repGetRISCV64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE structHnd)
+void MethodContext::repGetFpStructLowering(CORINFO_CLASS_HANDLE structHnd, CORINFO_FPSTRUCT_LOWERING* pLowering)
 {
     DWORDLONG key = CastHandle(structHnd);
+    Agnostic_GetFpStructLowering value = LookupByKeyOrMiss(GetFpStructLowering, key, ": key %016" PRIX64 "", key);
 
-    DWORD value = LookupByKeyOrMissNoMessage(GetRISCV64PassStructInRegisterFlags, key);
-    DEBUG_REP(dmpGetRISCV64PassStructInRegisterFlags(key, value));
-    return value;
+    DEBUG_REP(dmpGetFpStructLowering(key, value));
+
+    pLowering->byIntegerCallConv = value.byIntegerCallConv != 0;
+    pLowering->numLoweredElements = value.numLoweredElements;
+
+    for (size_t i = 0; i < pLowering->numLoweredElements; i++)
+    {
+        pLowering->loweredElements[i] = static_cast<CorInfoType>(value.loweredElements[i]);
+        pLowering->offsets[i] = value.offsets[i];
+    }
 }
 
 void MethodContext::recGetRelocTypeHint(void* target, WORD result)
@@ -6522,6 +6667,38 @@ CORINFO_CLASS_HANDLE MethodContext::repGetTypeInstantiationArgument(CORINFO_CLAS
     return (CORINFO_CLASS_HANDLE)value;
 }
 
+void MethodContext::recGetMethodInstantiationArgument(CORINFO_METHOD_HANDLE ftn,
+                                                      unsigned             index,
+                                                      CORINFO_CLASS_HANDLE result)
+{
+    if (GetMethodInstantiationArgument == nullptr)
+        GetMethodInstantiationArgument = new LightWeightMap<DLD, DWORDLONG>();
+
+    DLD key;
+    ZeroMemory(&key, sizeof(key));
+    key.A = CastHandle(ftn);
+    key.B = index;
+    DWORDLONG value = CastHandle(result);
+    GetMethodInstantiationArgument->Add(key, value);
+    DEBUG_REC(dmpGetMethodInstantiationArgument(key, value));
+}
+void MethodContext::dmpGetMethodInstantiationArgument(DLD key, DWORDLONG value)
+{
+    printf("GetMethodInstantiationArgument key - methodNonNull-%" PRIu64 ", index-%u, value NonNull-%" PRIu64 "", key.A, key.B, value);
+    GetMethodInstantiationArgument->Unlock();
+}
+CORINFO_CLASS_HANDLE MethodContext::repGetMethodInstantiationArgument(CORINFO_METHOD_HANDLE ftn, unsigned index)
+{
+    DLD key;
+    ZeroMemory(&key, sizeof(key));
+    key.A = CastHandle(ftn);
+    key.B = index;
+
+    DWORDLONG value = LookupByKeyOrMissNoMessage(GetMethodInstantiationArgument, key);
+    DEBUG_REP(dmpGetMethodInstantiationArgument(key, value));
+    return (CORINFO_CLASS_HANDLE)value;
+}
+
 void MethodContext::recPrint(
     const char* name,
     LightWeightMap<DWORDLONG, Agnostic_PrintResult>*& map,
@@ -6632,7 +6809,7 @@ size_t MethodContext::repPrint(
     size_t bytesWritten = 0;
     if ((buffer != nullptr) && (bufferSize > 0))
     {
-        bytesWritten = min(bufferSize - 1, res.stringBufferSize);
+        bytesWritten = min(bufferSize - 1, (size_t)res.stringBufferSize);
         if (bytesWritten > 0)
         {
             // The "full buffer" check above ensures this given that
@@ -7084,6 +7261,33 @@ const WCHAR* MethodContext::repGetStringConfigValue(const WCHAR* name)
     return value;
 }
 
+void MethodContext::recGetSpecialCopyHelper(CORINFO_CLASS_HANDLE type, CORINFO_METHOD_HANDLE helper)
+{
+    if (GetSpecialCopyHelper == nullptr)
+        GetSpecialCopyHelper = new LightWeightMap<DWORDLONG, DWORDLONG>();
+
+    DWORDLONG key;
+    ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
+    key = CastHandle(type);
+
+    DWORDLONG value = CastHandle(helper);
+    GetSpecialCopyHelper->Add(key, value);
+    DEBUG_REC(dmpGetSpecialCopyHelper(key, value));
+}
+
+void MethodContext::dmpGetSpecialCopyHelper(DWORDLONG key, DWORDLONG value)
+{
+    printf("getSpecialCopyHelper key %016" PRIX64 ", value %016" PRIX64 "", key, value);
+}
+
+CORINFO_METHOD_HANDLE MethodContext::repGetSpecialCopyHelper(CORINFO_CLASS_HANDLE type)
+{
+    DWORDLONG key = CastHandle(type);
+    DWORDLONG value = LookupByKeyOrMiss(GetSpecialCopyHelper, key, ": key %016" PRIX64 "", key);
+    DEBUG_REP(dmpGetSpecialCopyHelper(key, value));
+    return (CORINFO_METHOD_HANDLE)value;
+}
+
 void MethodContext::dmpSigInstHandleMap(DWORD key, DWORDLONG value)
 {
     printf("SigInstHandleMap key %u, value %016" PRIX64 "", key, value);
@@ -7161,7 +7365,8 @@ int MethodContext::dumpMethodIdentityInfoToBuffer(char* buff, int len, bool igno
         UINT32 schemaCount = 0;
         BYTE* schemaData = nullptr;
         ICorJitInfo::PgoSource pgoSource = ICorJitInfo::PgoSource::Unknown;
-        HRESULT pgoHR = repGetPgoInstrumentationResults(pInfo->ftn, &schema, &schemaCount, &schemaData, &pgoSource);
+        bool dynamicPgo = false;
+        HRESULT pgoHR = repGetPgoInstrumentationResults(pInfo->ftn, &schema, &schemaCount, &schemaData, &pgoSource, &dynamicPgo);
 
         size_t minOffset = (size_t) ~0;
         size_t maxOffset = 0;
@@ -7259,7 +7464,8 @@ bool MethodContext::hasPgoData(bool& hasEdgeProfile, bool& hasClassProfile, bool
         ICorJitInfo::PgoInstrumentationSchema* schema = nullptr;
         UINT32 schemaCount = 0;
         BYTE* schemaData = nullptr;
-        HRESULT pgoHR = repGetPgoInstrumentationResults(info.ftn, &schema, &schemaCount, &schemaData, &pgoSource);
+        bool dynamicPgo;
+        HRESULT pgoHR = repGetPgoInstrumentationResults(info.ftn, &schema, &schemaCount, &schemaData, &pgoSource, &dynamicPgo);
 
         if (SUCCEEDED(pgoHR))
         {

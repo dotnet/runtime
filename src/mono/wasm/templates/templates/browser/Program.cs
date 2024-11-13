@@ -1,18 +1,55 @@
 using System;
+using System.Diagnostics;
 using System.Runtime.InteropServices.JavaScript;
+using System.Threading.Tasks;
 
 Console.WriteLine("Hello, Browser!");
 
-public partial class MyClass
+if (args.Length == 1 && args[0] == "start")
+    StopwatchSample.Start();
+
+while(true)
 {
+    StopwatchSample.Render();
+    await Task.Delay(1000);
+}
+
+partial class StopwatchSample
+{
+    private static Stopwatch stopwatch = new();
+
+    public static void Start() => stopwatch.Start();
+    public static void Render() => SetInnerText("#time", stopwatch.Elapsed.ToString(@"mm\:ss"));
+    
+    [JSImport("dom.setInnerText", "main.js")]
+    internal static partial void SetInnerText(string selector, string content);
+
     [JSExport]
-    internal static string Greeting()
+    internal static bool Toggle()
     {
-        var text = $"Hello, World! Greetings from {GetHRef()}";
-        Console.WriteLine(text);
-        return text;
+        if (stopwatch.IsRunning)
+        {
+            stopwatch.Stop();
+            return false;
+        }
+        else
+        {
+            stopwatch.Start();
+            return true;
+        }
     }
 
-    [JSImport("window.location.href", "main.js")]
-    internal static partial string GetHRef();
+    [JSExport]
+    internal static void Reset()
+    {
+        if (stopwatch.IsRunning)
+            stopwatch.Restart();
+        else
+            stopwatch.Reset();
+
+        Render();
+    }
+
+    [JSExport]
+    internal static bool IsRunning() => stopwatch.IsRunning;
 }

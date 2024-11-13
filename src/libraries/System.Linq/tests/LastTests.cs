@@ -126,119 +126,79 @@ namespace System.Linq.Tests
         }
 
         [Fact]
-        public void IListEmptySourcePredicate()
+        public void EmptySourcePredicate()
         {
             int[] source = { };
 
-            Assert.Throws<InvalidOperationException>(() => source.Last(x => true));
-            Assert.Throws<InvalidOperationException>(() => source.Last(x => false));
+            Assert.All(CreateSources(source), source =>
+            {
+                Assert.Throws<InvalidOperationException>(() => source.Last(x => true));
+                Assert.Throws<InvalidOperationException>(() => source.Last(x => false));
+            });
         }
 
         [Fact]
-        public void OneElementIListTruePredicate()
+        public void OneElementTruePredicate()
         {
             int[] source = { 4 };
             Func<int, bool> predicate = IsEven;
             int expected = 4;
 
-            Assert.Equal(expected, source.Last(predicate));
+            Assert.All(CreateSources(source), source =>
+            {
+                Assert.Equal(expected, source.Last(predicate));
+            });
         }
 
         [Fact]
-        public void ManyElementsIListPredicateFalseForAll()
+        public void ManyElementsPredicateFalseForAll()
         {
             int[] source = { 9, 5, 1, 3, 17, 21 };
             Func<int, bool> predicate = IsEven;
 
-            Assert.Throws<InvalidOperationException>(() => source.Last(predicate));
+            Assert.All(CreateSources(source), source =>
+            {
+                Assert.Throws<InvalidOperationException>(() => source.Last(predicate));
+            });
         }
 
         [Fact]
-        public void IListPredicateTrueOnlyForLast()
+        public void PredicateTrueOnlyForLast()
         {
             int[] source = { 9, 5, 1, 3, 17, 21, 50 };
             Func<int, bool> predicate = IsEven;
             int expected = 50;
 
-            Assert.Equal(expected, source.Last(predicate));
+            Assert.All(CreateSources(source), source =>
+            {
+                Assert.Equal(expected, source.Last(predicate));
+            });
         }
 
         [Fact]
-        public void IListPredicateTrueForSome()
+        public void PredicateTrueForSome()
         {
             int[] source = { 3, 7, 10, 7, 9, 2, 11, 18, 13, 9 };
             Func<int, bool> predicate = IsEven;
             int expected = 18;
 
-            Assert.Equal(expected, source.Last(predicate));
+            Assert.All(CreateSources(source), source =>
+            {
+                Assert.Equal(expected, source.Last(predicate));
+            });
         }
 
         [Fact]
-        public void IListPredicateTrueForSomeRunOnce()
+        public void PredicateTrueForSomeRunOnce()
         {
             int[] source = { 3, 7, 10, 7, 9, 2, 11, 18, 13, 9 };
             Func<int, bool> predicate = IsEven;
             int expected = 18;
 
-            Assert.Equal(expected, source.RunOnce().Last(predicate));
-        }
-
-        [Fact]
-        public void NotIListIListEmptySourcePredicate()
-        {
-            IEnumerable<int> source = Enumerable.Range(1, 0);
-
-            Assert.Throws<InvalidOperationException>(() => source.Last(x => true));
-            Assert.Throws<InvalidOperationException>(() => source.Last(x => false));
-        }
-
-        [Fact]
-        public void OneElementNotIListTruePredicate()
-        {
-            IEnumerable<int> source = NumberRangeGuaranteedNotCollectionType(4, 1);
-            Func<int, bool> predicate = IsEven;
-            int expected = 4;
-
-            Assert.Equal(expected, source.Last(predicate));
-        }
-
-        [Fact]
-        public void ManyElementsNotIListPredicateFalseForAll()
-        {
-            IEnumerable<int> source = ForceNotCollection(new int[] { 9, 5, 1, 3, 17, 21 });
-            Func<int, bool> predicate = IsEven;
-
-            Assert.Throws<InvalidOperationException>(() => source.Last(predicate));
-        }
-
-        [Fact]
-        public void NotIListPredicateTrueOnlyForLast()
-        {
-            IEnumerable<int> source = ForceNotCollection(new int[] { 9, 5, 1, 3, 17, 21, 50 });
-            Func<int, bool> predicate = IsEven;
-            int expected = 50;
-
-            Assert.Equal(expected, source.Last(predicate));
-        }
-
-        [Fact]
-        public void NotIListPredicateTrueForSome()
-        {
-            IEnumerable<int> source = ForceNotCollection(new int[] { 3, 7, 10, 7, 9, 2, 11, 18, 13, 9 });
-            Func<int, bool> predicate = IsEven;
-            int expected = 18;
-
-            Assert.Equal(expected, source.Last(predicate));
-        }
-
-        [Fact]
-        public void NotIListPredicateTrueForSomeRunOnce()
-        {
-            IEnumerable<int> source = ForceNotCollection(new int[] { 3, 7, 10, 7, 9, 2, 11, 18, 13, 9 });
-            Func<int, bool> predicate = IsEven;
-            int expected = 18;
-
-            Assert.Equal(expected, source.RunOnce().Last(predicate));
+            Assert.All(CreateSources(source), source =>
+            {
+                Assert.Equal(expected, source.RunOnce().Last(predicate));
+            });
         }
 
         [Fact]

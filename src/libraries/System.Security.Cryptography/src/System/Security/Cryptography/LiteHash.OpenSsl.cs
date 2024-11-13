@@ -42,6 +42,11 @@ namespace System.Security.Cryptography
             Interop.Crypto.EvpMacInit(_ctx, key, customizationString, xof);
         }
 
+        private LiteKmac(SafeEvpMacCtxHandle ctx)
+        {
+            _ctx = ctx;
+        }
+
         public void Append(ReadOnlySpan<byte> data)
         {
             if (data.IsEmpty)
@@ -50,6 +55,12 @@ namespace System.Security.Cryptography
             }
 
             Interop.Crypto.EvpMacUpdate(_ctx, data);
+        }
+
+        public LiteKmac Clone()
+        {
+            SafeEvpMacCtxHandle clone = Interop.Crypto.EvpMacCtxDup(_ctx);
+            return new LiteKmac(clone);
         }
 
         public int Current(Span<byte> destination)

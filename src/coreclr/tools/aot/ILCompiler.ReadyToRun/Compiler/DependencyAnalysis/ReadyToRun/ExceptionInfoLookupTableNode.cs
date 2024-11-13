@@ -43,7 +43,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             // EH info node is a singleton in the R2R PE file
-            sb.Append("EHInfoNode");
+            sb.Append("EHInfoNode"u8);
         }
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
@@ -77,7 +77,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             sb.Append(nameMangler.CompilationUnitPrefix);
-            sb.Append("__ReadyToRunExceptionInfoLookupTable@");
+            sb.Append("__ReadyToRunExceptionInfoLookupTable@"u8);
             sb.Append(Offset.ToString());
         }
 

@@ -21,7 +21,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
                 () => signer.SignerIdentifierType = invalidType);
         }
 
-#if NETCOREAPP
+#if NET
         [Fact]
         public static void SignaturePadding_InvalidValue()
         {

@@ -66,7 +66,7 @@ namespace Mono.Linker
 		/// <summary>
 		/// Returns a list of all known methods that override <paramref name="method"/>. The list may be incomplete if other overrides exist in assemblies that haven't been processed by TypeMapInfo yet
 		/// </summary>
-		public IEnumerable<OverrideInformation>? GetOverrides (MethodDefinition method)
+		public List<OverrideInformation>? GetOverrides (MethodDefinition method)
 		{
 			EnsureProcessed (method.Module.Assembly);
 			override_methods.TryGetValue (method, out List<OverrideInformation>? overrides);
@@ -130,14 +130,15 @@ namespace Mono.Linker
 				MapType (nested);
 		}
 
-		internal List<(TypeReference, List<InterfaceImplementation>)>? GetRecursiveInterfaces (TypeDefinition type)
+		internal List<(TypeReference InterfaceType, List<InterfaceImplementation> ImplementationChain)>? GetRecursiveInterfaces (TypeDefinition type)
 		{
+			EnsureProcessed(type.Module.Assembly);
 			if (interfaces.TryGetValue (type, out var value))
 				return value;
 			return null;
 		}
 
-		List<(TypeReference, List<InterfaceImplementation>)> GetRecursiveInterfaceImplementations (TypeDefinition type)
+		List<(TypeReference InterfaceType, List<InterfaceImplementation> ImplementationChain)> GetRecursiveInterfaceImplementations (TypeDefinition type)
 		{
 			List<(TypeReference, List<InterfaceImplementation>)> firstImplementationChain = new ();
 
@@ -149,14 +150,12 @@ namespace Mono.Linker
 			static void AddRecursiveInterfaces (TypeReference typeRef, IEnumerable<InterfaceImplementation> pathToType, List<(TypeReference, List<InterfaceImplementation>)> firstImplementationChain, LinkContext Context)
 			{
 				var type = Context.TryResolve (typeRef);
+				// If we can't resolve the interface type we can't find recursive interfaces
 				if (type is null)
 					return;
 				// Get all explicit interfaces of this type
 				foreach (var iface in type.Interfaces) {
-					var interfaceType = iface.InterfaceType.TryInflateFrom (typeRef, Context);
-					if (interfaceType is null) {
-						continue;
-					}
+					var interfaceType = iface.InterfaceType.InflateFrom (typeRef as IGenericInstance);
 					if (!firstImplementationChain.Any (i => TypeReferenceEqualityComparer.AreEqual (i.Item1, interfaceType, Context))) {
 						firstImplementationChain.Add ((interfaceType, pathToType.Append (iface).ToList ()));
 					}
@@ -164,11 +163,7 @@ namespace Mono.Linker
 
 				// Recursive interfaces after all direct interfaces to preserve Inherit/Implement tree order
 				foreach (var iface in type.Interfaces) {
-					// If we can't resolve the interface type we can't find recursive interfaces
-					var ifaceDirectlyOnType = iface.InterfaceType.TryInflateFrom (typeRef, Context);
-					if (ifaceDirectlyOnType is null) {
-						continue;
-					}
+					var ifaceDirectlyOnType = iface.InterfaceType.InflateFrom (typeRef as IGenericInstance);
 					AddRecursiveInterfaces (ifaceDirectlyOnType, pathToType.Append (iface), firstImplementationChain, Context);
 				}
 			}
@@ -309,7 +304,7 @@ namespace Mono.Linker
 				var baseType = context.TryResolve (type)?.BaseType;
 
 				if (baseType is GenericInstanceType)
-					return TypeReferenceExtensions.InflateGenericType (genericInstance, baseType, context);
+					return TypeReferenceExtensions.InflateGenericType (genericInstance, baseType);
 
 				return baseType;
 			}
@@ -388,7 +383,7 @@ namespace Mono.Linker
 		}
 
 		[SuppressMessage ("ApiDesign", "RS0030:Do not used banned APIs", Justification = "It's best to leave working code alone.")]
-		bool MethodMatch (MethodReference candidate, MethodReference method)
+		static bool MethodMatch (MethodReference candidate, MethodReference method)
 		{
 			if (candidate.HasParameters != method.HasMetadataParameters ())
 				return false;
@@ -401,9 +396,7 @@ namespace Mono.Linker
 
 			// we need to track what the generic parameter represent - as we cannot allow it to
 			// differ between the return type or any parameter
-			if (candidate.GetReturnType (context) is not TypeReference candidateReturnType ||
-				method.GetReturnType (context) is not TypeReference methodReturnType ||
-				!TypeMatch (candidateReturnType, methodReturnType))
+			if (!TypeMatch (candidate.GetReturnType (), method.GetReturnType ()))
 				return false;
 
 			if (!candidate.HasMetadataParameters ())
@@ -418,9 +411,7 @@ namespace Mono.Linker
 				return false;
 
 			for (int i = 0; i < cp.Count; i++) {
-				if (candidate.GetInflatedParameterType (i, context) is not TypeReference candidateParameterType ||
-					method.GetInflatedParameterType (i, context) is not TypeReference methodParameterType ||
-					!TypeMatch (candidateParameterType, methodParameterType))
+				if (!TypeMatch (candidate.GetInflatedParameterType (i), method.GetInflatedParameterType (i)))
 					return false;
 			}
 

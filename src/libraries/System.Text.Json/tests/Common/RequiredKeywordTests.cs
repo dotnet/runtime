@@ -74,7 +74,7 @@ namespace System.Text.Json.Serialization.Tests
         {
             public required string FirstName { get; set; }
             public string MiddleName { get; set; } = "";
-            public required string LastName { get; set; }
+            public required string? LastName { get; set; }
         }
 
         [Theory]
@@ -227,11 +227,11 @@ namespace System.Text.Json.Serialization.Tests
         {
             public required string FirstName { get; set; }
             public string MiddleName { get; set; } = "";
-            public required string LastName { get; set; }
-            public required string Info1 { get; set; }
+            public required string? LastName { get; set; }
+            public required string? Info1 { get; set; }
             public required string Info2 { get; set; }
 
-            public PersonWithRequiredMembersAndSmallParametrizedCtor(string firstName, string lastName)
+            public PersonWithRequiredMembersAndSmallParametrizedCtor(string firstName, string? lastName)
             {
                 FirstName = firstName;
                 LastName = lastName;
@@ -337,17 +337,17 @@ namespace System.Text.Json.Serialization.Tests
         public class PersonWithRequiredMembersAndLargeParametrizedCtor
         {
             // Using suffix for names so that checking if required property is missing can be done with simple string.Contains without false positives
-            public required string AProp { get; set; }
+            public required string? AProp { get; set; }
             public required string BProp { get; set; }
             public required string CProp { get; set; }
             public required string DProp { get; set; }
-            public required string EProp { get; set; }
+            public required string? EProp { get; set; }
             public required string FProp { get; set; }
             public required string GProp { get; set; }
-            public required string HProp { get; set; }
-            public required string IProp { get; set; }
+            public required string? HProp { get; set; }
+            public required string? IProp { get; set; }
 
-            public PersonWithRequiredMembersAndLargeParametrizedCtor(string aprop, string bprop, string cprop, string dprop, string eprop, string fprop, string gprop)
+            public PersonWithRequiredMembersAndLargeParametrizedCtor(string? aprop, string bprop, string cprop, string dprop, string? eprop, string fprop, string gprop)
             {
                 AProp = aprop;
                 BProp = bprop;
@@ -725,6 +725,25 @@ namespace System.Text.Json.Serialization.Tests
                     FirstName = "FirstNameFromJson"
                 }
             };
+        }
+
+        [Fact]
+        public async Task ClassWithNullValidatingConstructor_ValidatesRequiredParameterBeforeCallingCtor()
+        {
+            // Regression test for https://github.com/dotnet/runtime/issues/107065
+            JsonSerializerOptions options = new(Serializer.DefaultOptions) { RespectRequiredConstructorParameters = true };
+            JsonException ex = await Assert.ThrowsAsync<JsonException>(() => Serializer.DeserializeWrapper<ClassWithNullValidatingConstructor>("{}", options));
+            Assert.Null(ex.InnerException);
+        }
+
+        public class ClassWithNullValidatingConstructor
+        {
+            public ClassWithNullValidatingConstructor(string value)
+            {
+                Value = value ?? throw new ArgumentNullException(nameof(value));
+            }
+
+            public string Value { get; }
         }
 
         private static JsonTypeInfo GetTypeInfo<T>(JsonSerializerOptions options)

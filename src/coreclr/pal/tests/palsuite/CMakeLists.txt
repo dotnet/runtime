@@ -65,9 +65,6 @@ add_executable_clr(paltests
   #composite/wfmo/mutex.cpp
   c_runtime/atof/test1/test1.cpp
   c_runtime/atoi/test1/test1.cpp
-  c_runtime/bsearch/test1/test1.cpp
-  c_runtime/bsearch/test2/test2.cpp
-  c_runtime/free/test1/test1.cpp
   c_runtime/isalnum/test1/test1.cpp
   c_runtime/isalpha/test1/test1.cpp
   c_runtime/isdigit/test1/test1.cpp
@@ -80,16 +77,10 @@ add_executable_clr(paltests
   c_runtime/iswupper/test1/test1.cpp
   c_runtime/isxdigit/test1/test1.cpp
   c_runtime/llabs/test1/test1.cpp
-  c_runtime/malloc/test1/test1.cpp
-  c_runtime/malloc/test2/test2.cpp
   c_runtime/memchr/test1/test1.cpp
   c_runtime/memcmp/test1/test1.cpp
   c_runtime/memmove/test1/test1.cpp
   c_runtime/memset/test1/test1.cpp
-  c_runtime/qsort/test1/test1.cpp
-  c_runtime/qsort/test2/test2.cpp
-  c_runtime/rand_srand/test1/test1.cpp
-  c_runtime/realloc/test1/test1.cpp
   c_runtime/sscanf_s/test1/test1.cpp
   c_runtime/sscanf_s/test10/test10.cpp
   c_runtime/sscanf_s/test11/test11.cpp
@@ -118,7 +109,6 @@ add_executable_clr(paltests
   c_runtime/strpbrk/test1/test1.cpp
   c_runtime/strrchr/test1/test1.cpp
   c_runtime/strstr/test1/test1.cpp
-  c_runtime/time/test1/test1.cpp
   c_runtime/tolower/test1/test1.cpp
   c_runtime/toupper/test1/test1.cpp
   c_runtime/towlower/test1/test1.cpp
@@ -142,9 +132,6 @@ add_executable_clr(paltests
   c_runtime/wcstoul/test5/test5.cpp
   c_runtime/wcstoul/test6/test6.cpp
   c_runtime/_alloca/test1/test1.cpp
-  #c_runtime/_gcvt/test1/_gcvt.cpp
-  #c_runtime/_gcvt/test2/test2.cpp
-  c_runtime/_itow/test1/test1.cpp
   c_runtime/_putenv/test1/test1.cpp
   c_runtime/_putenv/test2/test2.cpp
   c_runtime/_putenv/test3/test3.cpp
@@ -178,7 +165,6 @@ add_executable_clr(paltests
   c_runtime/_wfopen/test6/test6.cpp
   c_runtime/_wfopen/test7/test7.cpp
   c_runtime/_wtoi/test1/test1.cpp
-  c_runtime/__iscsym/test1/__iscsym.cpp
   #debug_api/DebugBreak/test1/test1.cpp
   debug_api/OutputDebugStringA/test1/helper.cpp
   debug_api/OutputDebugStringA/test1/test1.cpp
@@ -427,7 +413,6 @@ add_executable_clr(paltests
   miscellaneous/SetEnvironmentVariableW/test3/test3.cpp
   miscellaneous/SetEnvironmentVariableW/test4/test4.cpp
   miscellaneous/SetLastError/test1/test.cpp
-  miscellaneous/_i64tow/test1/test1.cpp
 # pal_specific/PAL_GetUserTempDirectoryW/test1/PAL_GetUserTempDirectoryW.cpp
   pal_specific/PAL_Initialize_Terminate/test1/PAL_Initialize_Terminate.cpp
   pal_specific/PAL_Initialize_Terminate/test2/pal_initialize_twice.cpp

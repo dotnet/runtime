@@ -254,10 +254,6 @@ namespace System
 
         protected override bool IsPointerImpl() => RuntimeTypeHandle.IsPointer(this);
 
-        protected override bool IsCOMObjectImpl() => RuntimeTypeHandle.IsComObject(this, false);
-
-        public override bool IsInstanceOfType([NotNullWhen(true)] object? o) => RuntimeTypeHandle.IsInstanceOfType(this, o);
-
         public override bool IsAssignableFrom([NotNullWhen(true)] TypeInfo? typeInfo)
             => typeInfo != null && IsAssignableFrom(typeInfo.AsType());
 
@@ -650,7 +646,7 @@ namespace System
                     return finalist.Invoke(target, bindingFlags, binder, providedArgs, culture);
                 }
 
-                finalists ??= new MethodInfo[] { finalist };
+                finalists ??= [finalist];
                 providedArgs ??= Array.Empty<object>();
                 object? state = null;
                 MethodBase? invokeMethod = null;
@@ -737,22 +733,22 @@ namespace System
                     SR.Format(SR.Argument_NotEnoughGenArguments, genericArguments.Length, genericParameters.Length));
         }
 
-        internal static CorElementType GetUnderlyingType(RuntimeType type)
+        internal CorElementType GetUnderlyingCorElementType()
         {
+            RuntimeType type = this;
             if (type.IsActualEnum)
             {
                 type = (RuntimeType)Enum.GetUnderlyingType(type);
             }
 
-            return RuntimeTypeHandle.GetCorElementType(type);
+            return type.GetCorElementType();
         }
-
 
         // AggressiveInlining used since on hot path for reflection.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static bool TryGetByRefElementType(RuntimeType type, [NotNullWhen(true)] out RuntimeType? elementType)
         {
-            CorElementType corElemType = RuntimeTypeHandle.GetCorElementType(type);
+            CorElementType corElemType = type.GetCorElementType();
             if (corElemType == CorElementType.ELEMENT_TYPE_BYREF)
             {
                 elementType = RuntimeTypeHandle.GetElementType(type);
@@ -879,6 +875,31 @@ namespace System
 
             Debug.Fail("Error result not expected");
             return false;
+        }
+
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2067:UnrecognizedReflectionPattern",
+            Justification = "AllocateValueType is only called on a ValueType. You can always create an instance of a ValueType.")]
+        [return: NotNullIfNotNull(nameof(value))]
+        internal static object? AllocateValueType(RuntimeType type, object? value)
+        {
+            Debug.Assert(type.IsValueType);
+            Debug.Assert(!type.IsByRefLike);
+
+            if (value is not null)
+            {
+                // Make a copy of the provided value by re-boxing the existing value's underlying data.
+                Debug.Assert(type.IsEquivalentTo(value.GetType()));
+                return RuntimeHelpers.Box(ref RuntimeHelpers.GetRawData(value), type.TypeHandle)!;
+            }
+
+            if (type.IsNullableOfT)
+            {
+                // If the type is Nullable<T>, then create a true boxed Nullable<T> of the default Nullable<T> value.
+                return RuntimeMethodHandle.ReboxToNullable(null, type);
+            }
+
+            // Otherwise, just create a default instance of the type.
+            return RuntimeHelpers.GetUninitializedObject(type);
         }
 
         private CheckValueStatus TryChangeType(ref object? value, ref bool copyBack)

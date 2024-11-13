@@ -301,6 +301,14 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
+        public void TestAssemblyNameWithInternationalChar()
+        {
+            Type testObj = typeof(Hello工程123.Program);
+            var t = Type.GetType(testObj.AssemblyQualifiedName);
+            Assert.NotNull(t);
+        }
+
+        [Fact]
         public void IgnoreLeadingDotForTypeNamesWithoutNamespace()
         {
             Type typeWithNoNamespace = typeof(NoNamespace);

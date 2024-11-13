@@ -1,11 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+import WasmEnableThreads from "consts:wasmEnableThreads";
+
 import { mono_wasm_new_root, mono_wasm_new_root_buffer } from "./roots";
 import { MonoString, MonoStringNull, WasmRoot, WasmRootBuffer } from "./types/internal";
 import { Module } from "./globals";
 import cwraps from "./cwraps";
-import { isSharedArrayBuffer, localHeapViewU8, getU32_local, setU16_local, localHeapViewU32, getU16_local, localHeapViewU16, _zero_region } from "./memory";
+import { isSharedArrayBuffer, localHeapViewU8, getU32_local, setU16_local, localHeapViewU32, getU16_local, localHeapViewU16, _zero_region, malloc, free } from "./memory";
 import { NativePointer, CharPtr, VoidPtr } from "./types/emscripten";
 
 export const interned_js_string_table = new Map<string, MonoString>();
@@ -29,7 +31,7 @@ export function strings_init (): void {
             _text_decoder_utf8_validating = new TextDecoder("utf-8");
             _text_encoder_utf8 = new TextEncoder();
         }
-        mono_wasm_string_decoder_buffer = Module._malloc(12);
+        mono_wasm_string_decoder_buffer = malloc(12);
     }
     if (!mono_wasm_string_root)
         mono_wasm_string_root = mono_wasm_new_root();
@@ -37,19 +39,20 @@ export function strings_init (): void {
 
 export function stringToUTF8 (str: string): Uint8Array {
     if (_text_encoder_utf8 === undefined) {
-        const buffer = new Uint8Array(str.length * 2);
-        Module.stringToUTF8Array(str, buffer, 0, str.length * 2);
+        const len = Module.lengthBytesUTF8(str);
+        const buffer = new Uint8Array(len);
+        Module.stringToUTF8Array(str, buffer, 0, len);
         return buffer;
     }
     return _text_encoder_utf8.encode(str);
 }
 
 export function stringToUTF8Ptr (str: string): CharPtr {
-    const bytes = (str.length + 1) * 2;
-    const ptr = Module._malloc(bytes) as any;
-    _zero_region(ptr, str.length * 2);
-    const buffer = localHeapViewU8().subarray(ptr, ptr + bytes);
-    buffer.set(stringToUTF8(str));
+    const size = Module.lengthBytesUTF8(str) + 1;
+    const ptr = malloc(size) as any;
+    const buffer = localHeapViewU8().subarray(ptr, ptr + size);
+    Module.stringToUTF8Array(str, buffer, 0, size);
+    buffer[size - 1] = 0;
     return ptr;
 }
 
@@ -110,7 +113,7 @@ export function stringToUTF16 (dstPtr: number, endPtr: number, text: string) {
 
 export function stringToUTF16Ptr (str: string): VoidPtr {
     const bytes = (str.length + 1) * 2;
-    const ptr = Module._malloc(bytes) as any;
+    const ptr = malloc(bytes) as any;
     _zero_region(ptr, str.length * 2);
     stringToUTF16(ptr, ptr + bytes, str);
     return ptr;
@@ -118,6 +121,10 @@ export function stringToUTF16Ptr (str: string): VoidPtr {
 }
 
 export function monoStringToString (root: WasmRoot<MonoString>): string | null {
+    // TODO https://github.com/dotnet/runtime/issues/100411
+    // after Blazor stops using monoStringToStringUnsafe
+    // mono_assert(!WasmEnableThreads, "Marshaling strings by reference is not supported in multithreaded mode");
+
     if (root.value === MonoStringNull)
         return null;
 
@@ -152,6 +159,7 @@ export function monoStringToString (root: WasmRoot<MonoString>): string | null {
 }
 
 export function stringToMonoStringRoot (string: string, result: WasmRoot<MonoString>): void {
+    if (WasmEnableThreads) return;
     result.clear();
 
     if (string === null)
@@ -256,10 +264,10 @@ function stringToMonoStringNewRoot (string: string, result: WasmRoot<MonoString>
     // TODO this could be stack allocated for small strings
     // or temp_malloc/alloca for large strings
     // or skip the scratch buffer entirely, and make a new MonoString of size string.length, pin it, and then call stringToUTF16 to write directly into the MonoString's chars
-    const buffer = Module._malloc(bufferLen);
+    const buffer = malloc(bufferLen);
     stringToUTF16(buffer as any, buffer as any + bufferLen, string);
     cwraps.mono_wasm_string_from_utf16_ref(<any>buffer, string.length, result.address);
-    Module._free(buffer);
+    free(buffer);
 }
 
 // When threading is enabled, TextDecoder does not accept a view of a

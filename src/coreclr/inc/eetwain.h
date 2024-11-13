@@ -89,7 +89,6 @@ enum ICodeManagerFlags
     ExecutionAborted =  0x0002, // execution of this function has been aborted
                                     // (i.e. it will not continue execution at the
                                     // current location)
-    AbortingCall    =   0x0004, // The current call will never return
     UpdateAllRegs   =   0x0008, // update full register set
     CodeAltered     =   0x0010, // code of that function might be altered
                                     // (e.g. by debugger), need to call EE
@@ -274,6 +273,7 @@ virtual GenericParamContextType GetParamContextType(PREGDISPLAY     pContext,
 */
 virtual void * GetGSCookieAddr(PREGDISPLAY     pContext,
                                EECodeInfo    * pCodeInfo,
+                               unsigned        flags,
                                CodeManState  * pState) = 0;
 
 #ifndef USE_GC_INFO_DECODER
@@ -539,6 +539,7 @@ PTR_VOID GetExactGenericsToken(SIZE_T          baseStackSlot,
 virtual
 void * GetGSCookieAddr(PREGDISPLAY     pContext,
                        EECodeInfo    * pCodeInfo,
+                       unsigned        flags,
                        CodeManState  * pState);
 
 

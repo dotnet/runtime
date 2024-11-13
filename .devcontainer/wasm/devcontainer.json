@@ -4,8 +4,7 @@
 	"build": {
 		"dockerfile": "Dockerfile",
 		"args": {
-			// Update 'VARIANT' to pick a .NET Core version: 6.0, 7.0
-			"VARIANT": "6.0-jammy"
+			"VARIANT": "8.0-noble"
 		}
 	},
 	"hostRequirements": {
@@ -49,8 +48,6 @@
 	"remoteEnv": {
 		"PATH": "${containerWorkspaceFolder}/.dotnet:${containerWorkspaceFolder}/.dotnet-tools-global:${containerEnv:PATH}",
 		"DOTNET_MULTILEVEL_LOOKUP": "0",
-		// Path to provisioned Emscripten SDK, for rebuilding the wasm runtime
-		"EMSDK_PATH": "${containerWorkspaceFolder}/src/mono/browser/emsdk",
 	},
 
 	// Comment out connect as root instead. More info: https://aka.ms/vscode-remote/containers/non-root.

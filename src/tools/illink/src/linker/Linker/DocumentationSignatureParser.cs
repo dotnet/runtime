@@ -24,7 +24,7 @@ namespace Mono.Linker
 	/// This API instead works with the Cecil OM. It can be used to refer to IL definitions
 	/// where the signature of a member can contain references to instantiated generics.
 	///
-	public static class DocumentationSignatureParser
+	internal static class DocumentationSignatureParser
 	{
 		[Flags]
 		public enum MemberType

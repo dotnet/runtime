@@ -5,7 +5,7 @@
 // and updated to have the scope of the attributes be internal.
 namespace System.Diagnostics.CodeAnalysis
 {
-#if !NETCOREAPP
+#if !NET
 
 	/// <summary>Specifies that null is allowed as an input even if the corresponding type disallows it.</summary>
 	[AttributeUsage (AttributeTargets.Field | AttributeTargets.Parameter | AttributeTargets.Property, Inherited = false)]
@@ -86,7 +86,7 @@ namespace System.Diagnostics.CodeAnalysis
 
 #endif
 
-#if !NETCOREAPP || NETCOREAPP3_1
+#if !NET
 
 	/// <summary>Specifies that the method or property will ensure that the listed field and property members have not-null values.</summary>
 	[AttributeUsage (AttributeTargets.Method | AttributeTargets.Property, Inherited = false, AllowMultiple = true)]

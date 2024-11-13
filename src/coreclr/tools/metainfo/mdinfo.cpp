@@ -6,6 +6,7 @@
 #include <objbase.h>
 #include <crtdbg.h>
 #include <assert.h>
+#include <algorithm>
 
 #include <corpriv.h>
 #include <cor.h>
@@ -194,7 +195,7 @@ const char *g_szNativeType[] =
 
 static const char* ConvertToUtf8(LPCWSTR name, _Out_writes_(bufLen) char* buffer, ULONG bufLen)
 {
-    int res = WszWideCharToMultiByte(CP_UTF8, 0, name, -1, buffer, bufLen, NULL, NULL);
+    int res = WideCharToMultiByte(CP_UTF8, 0, name, -1, buffer, bufLen, NULL, NULL);
     if (res == 0)
         buffer[bufLen] = '\0';
     return buffer;
@@ -1948,7 +1949,7 @@ void MDInfo::DisplayCustomAttributeInfo(mdCustomAttribute inValue, const char *p
         LPWSTR pwzName = (LPWSTR)(new WCHAR[iLen]);
         if(pwzName)
         {
-            WszMultiByteToWideChar(CP_UTF8,0, pMethName,-1, pwzName,iLen);
+            MultiByteToWideChar(CP_UTF8,0, pMethName,-1, pwzName,iLen);
             PrettyPrintSigLegacy(pSig, cbSig, pwzName, &qSigName, m_pImport);
             delete [] pwzName;
         }
@@ -1990,7 +1991,7 @@ void MDInfo::DisplayCustomAttributeInfo(mdCustomAttribute inValue, const char *p
         UINT16 u2 = 0;
         UINT32 u4 = 0;
         UINT64 u8 = 0;
-        unsigned __int64 uI64;
+        uint64_t uI64;
         double dblVal;
         ULONG cbVal;
         LPCUTF8 pStr;
@@ -3011,14 +3012,14 @@ HRESULT _FillVariant(
     case ELEMENT_TYPE_R4:
         {
             V_VT(pvar) = VT_R4;
-            __int32 Value = GET_UNALIGNED_VAL32(pValue);
+            int32_t Value = GET_UNALIGNED_VAL32(pValue);
             V_R4(pvar) = (float &)Value;
         }
         break;
     case ELEMENT_TYPE_R8:
         {
             V_VT(pvar) = VT_R8;
-            __int64 Value = GET_UNALIGNED_VAL64(pValue);
+            int64_t Value = GET_UNALIGNED_VAL64(pValue);
             V_R8(pvar) = (double &) Value;
         }
 
@@ -3772,7 +3773,7 @@ int MDInfo::DumpHex(
         ++nLines;
 
         // Calculate spacing.
-        nPrint = min(cbData, nLine);
+        nPrint = std::min(cbData, nLine);
         nSpace = nLine - nPrint;
 
             // dump in hex.
@@ -3946,8 +3947,8 @@ void MDInfo::DumpRaw(int iDump, bool bunused)
                 BYTE        m_minor;
                 BYTE        m_heaps;                // Bits for heap sizes.
                 BYTE        m_rid;                  // log-base-2 of largest rid.
-                unsigned __int64    m_maskvalid;            // Bit mask of present table counts.
-                unsigned __int64    m_sorted;               // Bit mask of sorted tables.            };
+                uint64_t    m_maskvalid;            // Bit mask of present table counts.
+                uint64_t    m_sorted;               // Bit mask of sorted tables.            };
             };
 
             const MD *pMd;

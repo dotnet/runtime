@@ -25,7 +25,7 @@ namespace Microsoft.WebAssembly.Build.Tasks
         {
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                string envScriptPath = Path.Combine(EmSdkPath, "emsdk_env.bat");
+                string envScriptPath = Path.Combine(EmSdkPath, "emsdk_env.cmd");
                 if (!CheckEnvScript(envScriptPath))
                     return false;
 

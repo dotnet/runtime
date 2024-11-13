@@ -9,7 +9,7 @@ using System.Linq;
 using System.Text;
 using Mono.Linker.Tests.Extensions;
 using Xunit;
-#if NETCOREAPP
+#if NET
 using System.Runtime.InteropServices;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Emit;
@@ -190,7 +190,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			if (Path.IsPathRooted (referenceFileName))
 				return referenceFileName.ToNPath ();
 
-#if NETCOREAPP
+#if NET
 			if (referenceFileName.StartsWith ("System.", StringComparison.Ordinal) ||
 				referenceFileName.StartsWith ("Mono.", StringComparison.Ordinal) ||
 				referenceFileName.StartsWith ("Microsoft.", StringComparison.Ordinal) ||
@@ -224,14 +224,14 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 		protected virtual NPath CompileCSharpAssemblyWithDefaultCompiler (CompilerOptions options)
 		{
-#if NETCOREAPP
+#if NET
 			return CompileCSharpAssemblyWithRoslyn (options);
 #else
 			return CompileCSharpAssemblyWithCsc (options);
 #endif
 		}
 
-#if NETCOREAPP
+#if NET
 		protected virtual NPath CompileCSharpAssemblyWithRoslyn (CompilerOptions options)
 		{
 			var languageVersion = LanguageVersion.Default;
@@ -331,7 +331,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 		protected virtual NPath CompileCSharpAssemblyWithCsc (CompilerOptions options)
 		{
-#if NETCOREAPP
+#if NET
 			return CompileCSharpAssemblyWithRoslyn (options);
 #else
 			return CompileCSharpAssemblyWithExternalCompiler (LocateCscExecutable (), options, "/shared ");

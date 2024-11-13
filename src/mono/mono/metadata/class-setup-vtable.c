@@ -773,6 +773,11 @@ mono_method_get_method_definition (MonoMethod *method)
 static gboolean
 verify_class_overrides (MonoClass *klass, MonoMethod **overrides, int onum)
 {
+#ifndef ENABLE_CHECKED_BUILD
+	if (klass->image == mono_defaults.corlib)
+		return TRUE;
+#endif
+
 	int i;
 
 	for (i = 0; i < onum; ++i) {
@@ -1760,7 +1765,7 @@ mono_class_setup_vtable_general (MonoClass *klass, MonoMethod **overrides, int o
 			MonoMethod *override = iface_overrides [i*2 + 1];
 			if (mono_class_is_gtd (override->klass)) {
 				override = mono_class_inflate_generic_method_full_checked (override, ic, mono_class_get_context (ic), error);
-			} 
+			}
 			// there used to be code here to inflate decl if decl->is_inflated, but in https://github.com/dotnet/runtime/pull/64102#discussion_r790019545 we
 			// think that this does not correspond to any real code.
 			if (!apply_override (klass, ic, vtable, decl, override, &override_map, &override_class_map, &conflict_map))
@@ -1920,7 +1925,7 @@ mono_class_setup_vtable_general (MonoClass *klass, MonoMethod **overrides, int o
 
 				if ((vtable [im_slot] == NULL) && klass->parent != NULL) {
 					// For covariant returns we might need to lookup matching virtual methods in parent types
-					// that were overriden with a method that doesn't exactly match interface method signature.
+					// that were overridden with a method that doesn't exactly match interface method signature.
 					gboolean found = FALSE;
 					for (MonoClass *parent_klass = klass->parent; parent_klass != NULL && !found; parent_klass = parent_klass->parent) {
 						gpointer iter = NULL;
@@ -1931,10 +1936,10 @@ mono_class_setup_vtable_general (MonoClass *klass, MonoMethod **overrides, int o
 								found = TRUE;
 								if (vtable [cm->slot]) {
 									// We match the current method was overriding it. If this method will
-									// get overriden again, the interface slot will also be updated
+									// get overridden again, the interface slot will also be updated
 									vtable [im_slot] = vtable [cm->slot];
 								} else {
-									// We add abstract method in the vtable. This method will be overriden
+									// We add abstract method in the vtable. This method will be overridden
 									// with the actual implementation once we resolve the abstract method later.
 									// FIXME If klass is abstract, we can end up with abstract method in the vtable. Is this a problem ?
 									vtable [im_slot] = cm;

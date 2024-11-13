@@ -108,16 +108,6 @@ namespace System.Xml.Schema
         private static readonly int s_Lz___ = "---".Length;
         private static readonly int s_lz___dd = "---dd".Length;
 
-        // These values were copied from the DateTime class and are
-        // needed to convert ticks to year, month and day. See comment
-        // for method GetYearMonthDay for rationale.
-        // Number of 100ns ticks per time unit
-        private const long TicksPerMillisecond = 10000;
-        private const long TicksPerSecond = TicksPerMillisecond * 1000;
-        private const long TicksPerMinute = TicksPerSecond * 60;
-        private const long TicksPerHour = TicksPerMinute * 60;
-        private const long TicksPerDay = TicksPerHour * 24;
-
         // Number of days in a non-leap year
         private const int DaysPerYear = 365;
         // Number of days in 4 years
@@ -575,7 +565,7 @@ namespace System.Xml.Schema
         {
             long ticks = _dt.Ticks;
             // n = number of days since 1/1/0001
-            int n = (int)(ticks / TicksPerDay);
+            int n = (int)(ticks / TimeSpan.TicksPerDay);
             // y400 = number of whole 400-year periods since 1/1/0001
             int y400 = n / DaysPer400Years;
             // n = day number within 400-year period

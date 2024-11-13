@@ -349,11 +349,11 @@ LPSTR FillSymbolSearchPathThrows(CQuickBytes &qb)
     // Now we have a working buffer with a bunch of interesting stuff.  Time
     // to convert it back to ansi for the imagehlp api's.  Allocate the buffer
     // 2x bigger to handle worst case for MBCS.
-    ch = ::WszWideCharToMultiByte(CP_ACP, WC_NO_BEST_FIT_CHARS, rcBuff, -1, 0, 0, 0, 0);
+    ch = ::WideCharToMultiByte(CP_ACP, WC_NO_BEST_FIT_CHARS, rcBuff, -1, 0, 0, 0, 0);
     LPSTR szRtn = (LPSTR) qb.AllocNoThrow(ch + 1);
     if (!szRtn)
         return NULL;
-    WszWideCharToMultiByte(CP_ACP, WC_NO_BEST_FIT_CHARS, rcBuff, -1, szRtn, ch+1, 0, 0);
+    WideCharToMultiByte(CP_ACP, WC_NO_BEST_FIT_CHARS, rcBuff, -1, szRtn, ch+1, 0, 0);
     return (szRtn);
 }
 LPSTR FillSymbolSearchPath(CQuickBytes &qb)
@@ -955,7 +955,13 @@ void MagicDeinit(void)
 *       Exactly the contents of RtlCaptureContext for Win7 - Win2K doesn't
 *       support this, so we need it for CoreCLR 4, if we require Win2K support
 ****************************************************************************/
-extern "C" __declspec(naked) void __stdcall
+extern "C"
+#ifdef TARGET_WINDOWS
+__declspec(naked)
+#else
+__attribute__((naked))
+#endif
+void __stdcall
 ClrCaptureContext(_Out_ PCONTEXT ctx)
 {
     __asm {

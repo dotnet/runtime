@@ -9,7 +9,7 @@ then
   echo "runpaltests.sh <path to root build directory of the pal tests>  [<path to test output folder>] [<path to temp folder for PAL tests>]"
   echo
   echo "For example:"
-  echo "runpaltests.sh /projectk/build/debug"
+  echo "runpaltests.sh artifacts/bin/coreclr/linux.x64.Debug/paltests/"
   echo
   exit 1
 fi

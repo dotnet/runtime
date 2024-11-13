@@ -34,8 +34,8 @@ namespace System.DirectoryServices.ActiveDirectory
 
     internal struct SupportedCapability
     {
-        public static string ADOid = "1.2.840.113556.1.4.800";
-        public static string ADAMOid = "1.2.840.113556.1.4.1851";
+        public const string ADOid = "1.2.840.113556.1.4.800";
+        public const string ADAMOid = "1.2.840.113556.1.4.1851";
     }
 
     internal sealed class Utils
@@ -2038,7 +2038,7 @@ namespace System.DirectoryServices.ActiveDirectory
         }
 
 
-        internal static IntPtr GetCurrentUserSid()
+        internal static unsafe IntPtr GetCurrentUserSid()
         {
             SafeTokenHandle? tokenHandle = null;
             IntPtr pBuffer = IntPtr.Zero;
@@ -2120,7 +2120,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 }
 
                 // Retrieve the user's SID from the user info
-                global::Interop.TOKEN_USER tokenUser = (global::Interop.TOKEN_USER)Marshal.PtrToStructure(pBuffer, typeof(global::Interop.TOKEN_USER))!;
+                Interop.TOKEN_USER tokenUser = *(Interop.TOKEN_USER*)pBuffer;
                 IntPtr pUserSid = tokenUser.sidAndAttributes.Sid;   // this is a reference into the NATIVE memory (into pBuffer)
 
                 Debug.Assert(global::Interop.Advapi32.IsValidSid(pUserSid));
@@ -2147,7 +2147,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
         }
 
-        internal static IntPtr GetMachineDomainSid()
+        internal static unsafe IntPtr GetMachineDomainSid()
         {
             SafeLsaPolicyHandle? policyHandle = null;
             IntPtr pBuffer = IntPtr.Zero;
@@ -2178,8 +2178,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 }
 
                 Debug.Assert(pBuffer != IntPtr.Zero);
-                POLICY_ACCOUNT_DOMAIN_INFO info = (POLICY_ACCOUNT_DOMAIN_INFO)
-                                    Marshal.PtrToStructure(pBuffer, typeof(POLICY_ACCOUNT_DOMAIN_INFO))!;
+                POLICY_ACCOUNT_DOMAIN_INFO info = *(POLICY_ACCOUNT_DOMAIN_INFO*)pBuffer;
 
                 Debug.Assert(global::Interop.Advapi32.IsValidSid(info.DomainSid));
 
@@ -2226,7 +2225,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 }
 
                 DSROLE_PRIMARY_DOMAIN_INFO_BASIC dsRolePrimaryDomainInfo =
-                    (DSROLE_PRIMARY_DOMAIN_INFO_BASIC)Marshal.PtrToStructure(dsRoleInfoPtr, typeof(DSROLE_PRIMARY_DOMAIN_INFO_BASIC))!;
+                    Marshal.PtrToStructure<DSROLE_PRIMARY_DOMAIN_INFO_BASIC>(dsRoleInfoPtr)!;
 
                 return (dsRolePrimaryDomainInfo.MachineRole == DSROLE_MACHINE_ROLE.DsRole_RoleBackupDomainController ||
                              dsRolePrimaryDomainInfo.MachineRole == DSROLE_MACHINE_ROLE.DsRole_RolePrimaryDomainController);
@@ -2238,15 +2237,14 @@ namespace System.DirectoryServices.ActiveDirectory
             }
         }
 
-        internal static SidType ClassifySID(IntPtr pSid)
+        internal static unsafe SidType ClassifySID(IntPtr pSid)
         {
             Debug.Assert(global::Interop.Advapi32.IsValidSid(pSid));
 
             // Get the issuing authority and the first RID
             IntPtr pIdentAuth = global::Interop.Advapi32.GetSidIdentifierAuthority(pSid);
 
-            global::Interop.Advapi32.SID_IDENTIFIER_AUTHORITY identAuth =
-                (global::Interop.Advapi32.SID_IDENTIFIER_AUTHORITY)Marshal.PtrToStructure(pIdentAuth, typeof(global::Interop.Advapi32.SID_IDENTIFIER_AUTHORITY))!;
+            Interop.Advapi32.SID_IDENTIFIER_AUTHORITY identAuth = *(Interop.Advapi32.SID_IDENTIFIER_AUTHORITY*)pIdentAuth;
 
             IntPtr pRid = global::Interop.Advapi32.GetSidSubAuthority(pSid, 0);
             int rid = Marshal.ReadInt32(pRid);
@@ -2265,6 +2263,12 @@ namespace System.DirectoryServices.ActiveDirectory
             {
                 // No, so it can't be an account or builtin SID.
                 // Probably something like \Everyone or \LOCAL.
+                return SidType.FakeObject;
+            }
+
+            // Is the SID S-1-5-0-0-0-RID(sentinel SID)?
+            if (IsSentinelSID(pSid))
+            {
                 return SidType.FakeObject;
             }
 
@@ -2325,6 +2329,59 @@ namespace System.DirectoryServices.ActiveDirectory
 
             Debug.Assert(pBytes != IntPtr.Zero);
             return pBytes;
+        }
+
+        //
+        // The sentinel SID were placed in the domain SID range S-1-5-21-X-Y-Z-R with R < 512 because the existing domain controllers would always filter those SIDs out at boundaries.
+        // That way, the sentinel SID which says the claims or compound data is safe to consume would be removed should the claims or compound PAC ever pass through a domain controller
+        // that did not know how to apply security checks. S-1-5-21-X-Y-Z-R means that the SID belongs to a domain(including the local account domain) unless X=Y=Z=0 in which
+        // case it's a sentinel SID, a special type of pseudo-object that can't be interpreted in isolation.
+        //
+        internal static bool IsSentinelSID(IntPtr pSid)
+        {
+            Debug.Assert(global::Interop.Advapi32.IsValidSid(pSid));
+
+            IntPtr psubAuthorityCount = global::Interop.Advapi32.GetSidSubAuthorityCount(pSid);
+            int subAuthorityCount = Marshal.ReadByte(psubAuthorityCount);
+
+            //
+            // Sentinel SIDs are of format S-1-5-21-X-Y-Z-R, so if the subauthority count is not equal to 5
+            // (21-X-Y-Z-R), then it is not a sentinel SID.
+            //
+            if (subAuthorityCount != 5)
+            {
+                return false;
+            }
+
+            //
+            // If the rid is greater than equal to 512 then it is not a sentinel sid
+            //
+            int rid = GetLastRidFromSid(pSid);
+            if (rid >= 512)
+            {
+                return false;
+            }
+
+            // We  are going to check for X, Y and Z only hence starting the for loop
+            // with i = 1, and not reading sunAuthority-1 which is the RID
+            for (int i = 1; i < subAuthorityCount - 1; i++)
+            {
+                IntPtr pcurrentSubauthority = global::Interop.Advapi32.GetSidSubAuthority(pSid, i);
+                int currentSubauthority = Marshal.ReadInt32(pcurrentSubauthority);
+
+                //
+                // We return false as soon as we know the first subauthority is not 0
+                //
+                if (currentSubauthority != 0)
+                {
+                    return false;
+                }
+            }
+
+            //
+            // This means X=Y=Z=0
+            //
+            return true;
         }
     }
 }

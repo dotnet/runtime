@@ -13,6 +13,7 @@ parameters:
   runtimeVariant: ''
   dependsOn: []
   crossBuild: false
+  isOfficialBuild: false
 
 ### Build managed test components (native components are getting built as part
 ### of the product build job).
@@ -43,7 +44,7 @@ jobs:
       displayName: '${{ parameters.runtimeFlavor }} Common Pri1 Test Build AnyOS AnyCPU ${{ parameters.buildConfig }}'
 
     # Since the condition is being altered, merge the default with the additional conditions.
-    # See https://docs.microsoft.com/azure/devops/pipelines/process/conditions
+    # See https://learn.microsoft.com/azure/devops/pipelines/process/conditions
     condition: and(succeeded(), ${{ parameters.condition }})
 
     ${{ if ne(parameters.dependsOn[0], '') }}:
@@ -54,6 +55,11 @@ jobs:
 
     ${{ if notIn(parameters.testGroup, 'innerloop', 'clrinterpreter') }}:
       timeoutInMinutes: 160
+
+    artifacts:
+      publish:
+        logs:
+          name: '${{ parameters.runtimeFlavor }}_Common_Runtime_TestBuildLogs_Attempt$(System.JobAttempt)_AnyOS_AnyCPU_$(buildConfig)_${{ parameters.testGroup }}'
 
     variables:
       - ${{ each variable in parameters.variables }}:
@@ -72,13 +78,13 @@ jobs:
         - name: runtimeFlavorArgs
           value: '-nativeaot'
 
-      - name: testTreeFilterArg
+      - name: testFilterArg
         value: ''
 
       # Only build GCSimulator tests when the gc-simulator group is specified.
       - ${{ if eq(parameters.testGroup, 'gc-simulator') }}:
-          - name: testTreeFilterArg
-            value: 'tree GC/Scenarios/GCSimulator'
+          - name: testFilterArg
+            value: 'test GC/Scenarios/GC-simulator.csproj'
 
       - template: /eng/pipelines/common/templates/runtimes/native-test-assets-variables.yml
         parameters:
@@ -90,7 +96,7 @@ jobs:
 
     # Install test build dependencies
     - ${{ if in(parameters.osGroup, 'osx', 'maccatalyst', 'ios', 'iossimulator', 'tvos', 'tvossimulator') }}:
-      - script: $(Build.SourcesDirectory)/eng/install-native-dependencies.sh $(osGroup)
+      - script: $(Build.SourcesDirectory)/eng/common/native/install-dependencies.sh $(osGroup)
         displayName: Install native dependencies
 
     # Build core/libraries dependencies of test build
@@ -104,7 +110,7 @@ jobs:
         displayName: Disk Usage before Build
 
     # Build managed test components
-    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(logRootNameArg)Managed allTargets skipnative skipgeneratelayout skiptestwrappers $(buildConfig) $(archType) $(runtimeFlavorArgs) $(crossArg) $(priorityArg) $(testTreeFilterArg) ci /p:TargetOS=AnyOS
+    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(logRootNameArg)Managed allTargets skipnative skipgeneratelayout skiptestwrappers $(buildConfig) $(archType) $(runtimeFlavorArgs) $(crossArg) $(priorityArg) $(testFilterArg) ci /p:TargetOS=AnyOS
       displayName: Build managed test components
 
     - ${{ if in(parameters.osGroup, 'osx', 'ios', 'tvos') }}:
@@ -136,13 +142,3 @@ jobs:
         archiveExtension: '.tar.gz'
         artifactName: $(microsoftNetSdkIlArtifactName)
         displayName: 'Microsoft.NET.Sdk.IL package'
-
-
-    # Publish Logs
-    - task: PublishPipelineArtifact@1
-      displayName: Publish Logs
-      inputs:
-        targetPath: $(Build.SourcesDirectory)/artifacts/log
-        artifactName: '${{ parameters.runtimeFlavor }}_Common_Runtime_TestBuildLogs_Attempt$(System.JobAttempt)_AnyOS_AnyCPU_$(buildConfig)_${{ parameters.testGroup }}'
-      continueOnError: true
-      condition: always()

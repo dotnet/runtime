@@ -20,7 +20,6 @@ Revision History:
 --*/
 
 #include "pal/thread.hpp"
-#include "pal/malloc.hpp"
 #include "pal/file.hpp"
 #include "pal/stackstring.hpp"
 
@@ -138,7 +137,7 @@ FindFirstFileA(
         goto done;
     }
 
-    find_data = (find_obj *)InternalMalloc(sizeof(find_obj));
+    find_data = (find_obj *)malloc(sizeof(find_obj));
     if ( find_data == NULL )
     {
         ERROR("Unable to allocate memory for find_data\n");

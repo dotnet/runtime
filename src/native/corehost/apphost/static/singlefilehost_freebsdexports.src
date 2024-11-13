@@ -10,6 +10,9 @@ g_dacTable
 ; Used by profilers
 MetaDataGetDispenser
 
+; cDAC contract descriptor
+DotNetRuntimeContractDescriptor
+
 ; FreeBSD needs to reexport these
 __progname
 environ 

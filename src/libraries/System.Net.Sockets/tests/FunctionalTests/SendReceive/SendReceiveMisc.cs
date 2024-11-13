@@ -10,7 +10,7 @@ namespace System.Net.Sockets.Tests
 {
     public class SendReceiveMisc
     {
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void SendRecvIovMaxTcp_Success()
         {
             // sending/receiving more than IOV_MAX segments causes EMSGSIZE on some platforms.
@@ -76,7 +76,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void SendIovMaxUdp_SuccessOrMessageSize()
         {
             // sending more than IOV_MAX segments causes EMSGSIZE on some platforms.
@@ -117,7 +117,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task ReceiveIovMaxUdp_SuccessOrMessageSize()
         {
             // receiving more than IOV_MAX segments causes EMSGSIZE on some platforms.
@@ -190,7 +190,7 @@ namespace System.Net.Sockets.Tests
             await receiveTask;
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [SkipOnPlatform(TestPlatforms.Windows, "All data is sent, even when very large (100M).")]
         public void SocketSendWouldBlock_ReturnsBytesSent()
         {
@@ -219,7 +219,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [PlatformSpecific(TestPlatforms.AnyUnix)]
         public async Task Socket_ReceiveFlags_Success()
         {
@@ -281,6 +281,42 @@ namespace System.Net.Sockets.Tests
 
                 // There should be no more data.
                 Assert.Equal(0, receiver.Available);
+            }
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void ReceiveFrom_MultipleRounds_Success(bool async)
+        {
+            using (var socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp))
+            {
+                socket.ReceiveTimeout = 100;
+                socket.BindToAnonymousPort(IPAddress.Loopback);
+
+                var address = new SocketAddress(AddressFamily.InterNetwork);
+                var buffer = new byte[100];
+                int receivedLength;
+
+                for (int i = 0; i < 5; i++)
+                {
+                    try
+                    {
+                        if (async)
+                        {
+                            using var cts = new CancellationTokenSource();
+                            cts.CancelAfter(100);
+                            receivedLength = socket.ReceiveFromAsync(buffer, SocketFlags.None, address, cts.Token).AsTask().GetAwaiter().GetResult();
+                        }
+                        else
+                        {
+                            receivedLength = socket.ReceiveFrom(buffer, SocketFlags.None, address);
+                        }
+                        Assert.Equal(0, receivedLength);
+                    }
+                    catch (SocketException ex) when (ex.SocketErrorCode == SocketError.TimedOut) { }
+                    catch (OperationCanceledException) { }
+                }
             }
         }
     }

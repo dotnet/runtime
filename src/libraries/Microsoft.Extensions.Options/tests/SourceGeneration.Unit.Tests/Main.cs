@@ -56,11 +56,11 @@ public class EmitterTests
         Assert.Empty(diagnostics);
         _ = Assert.Single(generatedSources);
 
-#if NETCOREAPP
+#if NET
         string generatedSource = File.ReadAllText(@"Baselines/EmitterWithCustomValidator.netcore.g.cs");
 #else
         string generatedSource = File.ReadAllText(@"Baselines/EmitterWithCustomValidator.netfx.g.cs");
-#endif // NETCOREAPP
+#endif // NET
         Assert.Equal(generatedSource.Replace("\r\n", "\n"), generatedSources[0].SourceText.ToString().Replace("\r\n", "\n"));
     }
 
@@ -1715,7 +1715,7 @@ public class EmitterTests
     public async Task GeneratedAttributesTest(LanguageVersion languageVersion)
     {
 
-#if NETCOREAPP
+#if NET
         string lengthAttribute = $$"""
                     [LengthAttribute(1, 3)]
                     public string? P0 { get; set; }
@@ -1728,7 +1728,7 @@ public class EmitterTests
         """;
 #else
 string lengthAttribute = "";
-#endif //NETCOREAPP
+#endif //NET
 
         string source = $$"""
             using System;
@@ -1807,7 +1807,7 @@ string lengthAttribute = "";
         var diags = syntaxTree.GetDiagnostics().ToArray();
         Assert.Empty(diags);
 
-#if NETCOREAPP
+#if NET
         string generatedSource = File.ReadAllText(languageVersion == LanguageVersion.CSharp10  ? @"Baselines/GeneratedAttributesTest.netcore.lang10.g.cs" : @"Baselines/GeneratedAttributesTest.netcore.lang11.g.cs");
 #else
         string generatedSource = File.ReadAllText(languageVersion == LanguageVersion.CSharp10  ? @"Baselines/GeneratedAttributesTest.netfx.lang10.g.cs" : @"Baselines/GeneratedAttributesTest.netfx.lang11.g.cs");
@@ -1857,11 +1857,11 @@ string lengthAttribute = "";
         Assert.Empty(diagnostics);
         Assert.Single(generatedSources);
 
-#if NETCOREAPP
+#if NET
         string generatedSource = File.ReadAllText(@"Baselines/UsingInterfaceAsPropertyTypeForLengthAttributesTests.netcore.g.cs");
 #else
         string generatedSource = File.ReadAllText(@"Baselines/UsingInterfaceAsPropertyTypeForLengthAttributesTests.netfx.g.cs");
-#endif // NETCOREAPP
+#endif // NET
         Assert.Equal(generatedSource.Replace("\r\n", "\n"), generatedSources[0].SourceText.ToString().Replace("\r\n", "\n"));
     }
 
@@ -1907,11 +1907,11 @@ string lengthAttribute = "";
         var (diagnostics, src) = await RunGenerator(source);
         Assert.Empty(diagnostics);
         Assert.Single(src);
-#if NETCOREAPP
+#if NET
         string generatedSource = File.ReadAllText(@"Baselines/OptionsExtendingSystemClassTest.netcore.g.cs");
 #else
         string generatedSource = File.ReadAllText(@"Baselines/OptionsExtendingSystemClassTest.netfx.g.cs");
-#endif // NETCOREAPP
+#endif // NET
         Assert.Equal(generatedSource.Replace("\r\n", "\n"), src[0].SourceText.ToString().Replace("\r\n", "\n"));
     }
 }

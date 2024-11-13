@@ -17,7 +17,7 @@ namespace Mono.Linker.Tests.Cases.LinkAttributes
 	[SetupCompileBefore ("attribute.dll", new[] { "Dependencies/LinkerAttributeRemovalAttributeToRemove.cs" })]
 	[SetupCompileBefore ("copyattribute.dll", new[] { "Dependencies/LinkerAttributeRemovalAttributeFromCopyAssembly.cs" })]
 	[SetupLinkerAction ("copy", "copyattribute")]
-#if !NETCOREAPP
+#if !NET
 	[Reference ("System.dll")]
 	[SetupCompileBefore ("copyassembly.dll", new[] { "Dependencies/LinkerAttributeRemovalCopyAssembly.cs" }, references: new[] { "System.dll", "attribute.dll" })]
 #else

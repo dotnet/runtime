@@ -13,7 +13,7 @@ namespace System.Globalization.Tests
             yield return new object[] { DateTimeFormatInfo.InvariantInfo, new string[] { "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December", "" } };
             yield return new object[]
             {
-                new CultureInfo("ru-RU").DateTimeFormat,
+                CultureInfo.GetCultureInfo("ru-RU").DateTimeFormat,
                 new string[]
                 {
                     "\u044F\u043D\u0432\u0430\u0440\u044F",
@@ -31,11 +31,23 @@ namespace System.Globalization.Tests
                     ""
                 }
             };
+            if (PlatformDetection.IsIcuGlobalization)
+            {
+                yield return new object[] { CultureInfo.GetCultureInfo("en-US").DateTimeFormat, new string[] { "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December", "" } };
+                yield return new object[] { CultureInfo.GetCultureInfo("fr-FR").DateTimeFormat, new string[] { "janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre", "" } };
+            }
             if (PlatformDetection.IsHybridGlobalizationOnBrowser)
             {
                 // see the comments on the right to check the non-Hybrid result, if it differs
                 yield return new object[] { new CultureInfo("ar-SA").DateTimeFormat, new string[] { "محرم", "صفر", "ربيع الأول", "ربيع الآخر", "جمادى الأولى", "جمادى الآخرة", "رجب", "شعبان", "رمضان", "شوال", "ذو القعدة", "ذو الحجة", "" } };
-                yield return new object[] { new CultureInfo("am-ET").DateTimeFormat, new string[] { "ጃንዩወሪ", "ፌብሩወሪ", "ማርች", "ኤፕሪል", "ሜይ", "ጁን", "ጁላይ", "ኦገስት", "ሴፕቴምበር", "ኦክቶበር", "ኖቬምበር", "ዲሴምበር", "" } };
+                if (PlatformDetection.IsFirefox || PlatformDetection.IsNodeJS)
+                {
+                    yield return new object[] { new CultureInfo("am-ET").DateTimeFormat, new string[] {  "ጃንዩወሪ", "ፌብሩወሪ", "ማርች", "ኤፕሪል", "ሜይ", "ጁን", "ጁላይ", "ኦገስት", "ሴፕቴምበር", "ኦክቶበር", "ኖቬምበር", "ዲሴምበር", "" } };
+                }
+                else
+                {
+                    yield return new object[] { new CultureInfo("am-ET").DateTimeFormat, new string[] { "ጃንዋሪ", "ፌብሩዋሪ", "ማርች", "ኤፕሪል", "ሜይ", "ጁን", "ጁላይ", "ኦገስት", "ሴፕቴምበር", "ኦክቶበር", "ኖቬምበር", "ዲሴምበር", "" } }; // "ጃንዩወሪ", "ፌብሩወሪ", "ማርች", "ኤፕሪል", "ሜይ", "ጁን", "ጁላይ", "ኦገስት", "ሴፕቴምበር", "ኦክቶበር", "ኖቬምበር", "ዲሴምበር", ""
+                }
                 yield return new object[] { new CultureInfo("bg-BG").DateTimeFormat, new string[] { "януари", "февруари", "март", "април", "май", "юни", "юли", "август", "септември", "октомври", "ноември", "декември", "" } };
                 yield return new object[] { new CultureInfo("bn-BD").DateTimeFormat, new string[] { "জানুয়ারী", "ফেব্রুয়ারী", "মার্চ", "এপ্রিল", "মে", "জুন", "জুলাই", "আগস্ট", "সেপ্টেম্বর", "অক্টোবর", "নভেম্বর", "ডিসেম্বর", "" } };
                 yield return new object[] { new CultureInfo("bn-IN").DateTimeFormat, new string[] { "জানুয়ারী", "ফেব্রুয়ারী", "মার্চ", "এপ্রিল", "মে", "জুন", "জুলাই", "আগস্ট", "সেপ্টেম্বর", "অক্টোবর", "নভেম্বর", "ডিসেম্বর", "" } };

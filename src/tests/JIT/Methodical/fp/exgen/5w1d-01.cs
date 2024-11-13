@@ -51,6 +51,7 @@ public unsafe class testout1
     }
 
     [Fact]
+    [OuterLoop]
     public static int TestEntryPoint()
     {
         vtstatic_0.arr2d_0[2, 0] = -2.125;

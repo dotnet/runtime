@@ -17,6 +17,7 @@ namespace Precise
             RuntimeHelpers.RunClassConstructor(typeof(test).TypeHandle);
         }
         [Fact]
+        [OuterLoop]
         public static int TestEntryPoint()
         {
             try

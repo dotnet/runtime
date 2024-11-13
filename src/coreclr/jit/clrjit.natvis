@@ -8,8 +8,8 @@ The .NET Foundation licenses this file to you under the MIT license.
 <!--
 Visual Studio debugger visualizers for RyuJIT.
 
-Documentation for VS natvis format: https://learn.microsoft.com/en-us/visualstudio/debugger/create-custom-views-of-native-objects?view=vs-2022
-Documentation for VS debugger format specifiers: https://learn.microsoft.com/en-us/visualstudio/debugger/format-specifiers-in-cpp?view=vs-2022
+Documentation for VS natvis format: https://learn.microsoft.com/visualstudio/debugger/create-custom-views-of-native-objects?view=vs-2022
+Documentation for VS debugger format specifiers: https://learn.microsoft.com/visualstudio/debugger/format-specifiers-in-cpp?view=vs-2022
 -->
 
 <AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
@@ -44,27 +44,27 @@ Documentation for VS debugger format specifiers: https://learn.microsoft.com/en-
   <!-- GenTree -->
 
   <Type Name="GenTree">
-    <DisplayString>{gtTreeID, d}: [{gtOper,en}, {gtType,en}]</DisplayString>
+    <DisplayString>{gtTreeID, d}: [{gtOper,en}, {gtType,en}], {gtVNPair}</DisplayString>
   </Type>
   <Type Name="GenTreeIntCon">
-    <DisplayString>{gtTreeID, d}: [IntCon={((GenTreeIntCon*)this)-&gt;gtIconVal, d}]</DisplayString>
+    <DisplayString>{gtTreeID, d}: [IntCon={((GenTreeIntCon*)this)-&gt;gtIconVal, d}], {gtVNPair}</DisplayString>
   </Type>
   <Type Name="GenTreeDblCon">
-    <DisplayString>{gtTreeID, d}: [DblCon={((GenTreeDblCon*)this)-&gt;gtDconVal, g}]</DisplayString>
+    <DisplayString>{gtTreeID, d}: [DblCon={((GenTreeDblCon*)this)-&gt;gtDconVal, g}], {gtVNPair}</DisplayString>
   </Type>
   <Type Name="GenTreeStrCon">
-    <DisplayString>CNS_STR</DisplayString>
+    <DisplayString>CNS_STR, {gtVNPair}</DisplayString>
   </Type>
   <Type Name="GenTreeVecCon">
-    <DisplayString>CNS_VEC</DisplayString>
+    <DisplayString>CNS_VEC, {gtVNPair}</DisplayString>
   </Type>
   <Type Name="GenTreeLngCon">
-    <DisplayString>{gtTreeID, d}: [LngCon={((GenTreeLngCon*)this)-&gt;gtLconVal, l}]</DisplayString>
+    <DisplayString>{gtTreeID, d}: [LngCon={((GenTreeLngCon*)this)-&gt;gtLconVal, l}], {gtVNPair}</DisplayString>
   </Type>
   <Type Name="GenTreeOp">
-    <DisplayString Condition="this->gtOper==GT_CAST">{gtTreeID, d}: [{((GenTreeCast*)this)-&gt;gtCastType,en} &lt;- {((GenTreeUnOp*)this)-&gt;gtOp1-&gt;gtType,en}]</DisplayString>
-    <DisplayString Condition="this->gtOper==GT_HWINTRINSIC">{gtTreeID, d}: [{((GenTreeHWIntrinsic*)this)-&gt;gtHWIntrinsicId,en}, {gtType,en}]</DisplayString>
-    <DisplayString>{gtTreeID, d}: [{gtOper,en}, {gtType,en}]</DisplayString>
+    <DisplayString Condition="this->gtOper==GT_CAST">{gtTreeID, d}: [{((GenTreeCast*)this)-&gt;gtCastType,en} &lt;- {((GenTreeUnOp*)this)-&gt;gtOp1-&gt;gtType,en}], {gtVNPair}</DisplayString>
+    <DisplayString Condition="this->gtOper==GT_HWINTRINSIC">{gtTreeID, d}: [{((GenTreeHWIntrinsic*)this)-&gt;gtHWIntrinsicId,en}, {gtType,en}], {gtVNPair}</DisplayString>
+    <DisplayString>{gtTreeID, d}: [{gtOper,en}, {gtType,en}], {gtVNPair}</DisplayString>
   </Type>
 
   <Type Name="Statement">
@@ -83,11 +83,16 @@ Documentation for VS debugger format specifiers: https://learn.microsoft.com/en-
   </Type>
 
   <Type Name="GenTreeLclVar" Inheritable="false">
-    <DisplayString>{gtTreeID, d}: [{gtOper,en}, {gtType,en} V{((GenTreeLclVar*)this)-&gt;_gtLclNum,u}]</DisplayString>
+    <DisplayString>{gtTreeID, d}: [{gtOper,en}, {gtType,en} V{((GenTreeLclVar*)this)-&gt;_gtLclNum,u}], {gtVNPair}</DisplayString>
   </Type>
 
   <Type Name="GenTreeLclFld" Inheritable="false">
-    <DisplayString>{gtTreeID, d}: [{gtOper,en}, {gtType,en} V{((GenTreeLclFld*)this)-&gt;_gtLclNum,u}[+{((GenTreeLclFld*)this)-&gt;m_lclOffs,u}]]</DisplayString>
+    <DisplayString>{gtTreeID, d}: [{gtOper,en}, {gtType,en} V{((GenTreeLclFld*)this)-&gt;_gtLclNum,u}[+{((GenTreeLclFld*)this)-&gt;m_lclOffs,u}]], {gtVNPair}</DisplayString>
+  </Type>
+
+  <!-- VN -->
+  <Type Name="ValueNumPair">
+    <DisplayString>VNP=[L: ${m_liberal,xb}, C: ${m_conservative,xb}]</DisplayString>
   </Type>
 
   <!-- Scalar evolution -->

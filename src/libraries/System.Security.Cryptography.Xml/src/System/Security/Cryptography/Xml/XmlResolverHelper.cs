@@ -11,14 +11,14 @@ namespace System.Security.Cryptography.Xml
     {
         internal static XmlResolver GetThrowingResolver()
         {
-#if NET7_0_OR_GREATER
+#if NET
             return XmlResolver.ThrowingResolver;
 #else
             return XmlThrowingResolver.s_singleton;
 #endif
         }
 
-#if !NET7_0_OR_GREATER
+#if !NET
         // An XmlResolver that forbids all external entity resolution.
         // (Copied from XmlResolver.ThrowingResolver.cs.)
         private sealed class XmlThrowingResolver : XmlResolver

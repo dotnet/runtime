@@ -17,6 +17,9 @@ try {
         .withElementOnExit()
         .withExitCodeLogging()
         .withExitOnUnhandledError()
+        .withConfig({
+            jsThreadBlockingMode: "WarnWhenBlockingWait",
+        })
         .create();
 
     setModuleImports("main.js", {

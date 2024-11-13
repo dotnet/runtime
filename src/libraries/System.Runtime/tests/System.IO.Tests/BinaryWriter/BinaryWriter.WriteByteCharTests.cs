@@ -110,7 +110,7 @@ namespace System.IO.Tests
 
             Stream stream = CreateStream();
             // string name = iso-2022-jp, codepage = 50220 (original test used a code page number).
-            // taken from https://docs.microsoft.com/en-us/windows/desktop/Intl/code-page-identifiers
+            // taken from https://learn.microsoft.com/windows/desktop/Intl/code-page-identifiers
             string codepageName = "iso-2022-jp";
             BinaryWriter writer = new BinaryWriter(stream, Encoding.GetEncoding(codepageName));
 

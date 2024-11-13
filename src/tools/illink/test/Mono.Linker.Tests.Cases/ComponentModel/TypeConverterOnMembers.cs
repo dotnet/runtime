@@ -45,8 +45,8 @@ namespace Mono.Linker.Tests.Cases.ComponentModel
 		[Kept]
 		[KeptAttributeAttribute (typeof (TypeConverterAttribute))]
 		[KeptBackingField]
-		[ExpectedWarning ("IL2105",
-			"Type 'NonExistentType' was not found in the caller assembly nor in the base library. " +
+		[ExpectedWarning ("IL2122",
+			"Type 'NonExistentType' is not assembly qualified. " +
 			"Type name strings used for dynamically accessing a type should be assembly qualified.")]
 		public string Bar { [Kept] get; set; }
 

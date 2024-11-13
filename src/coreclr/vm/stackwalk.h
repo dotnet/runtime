@@ -130,9 +130,6 @@ public:
     */
     TADDR GetAmbientSPFromCrawlFrame();
 
-    void GetExactGenericInstantiations(Instantiation *pClassInst,
-                                       Instantiation *pMethodInst);
-
     /* Returns extra information required to reconstruct exact generic parameters,
        if any.
        Returns NULL if
@@ -247,7 +244,7 @@ public:
         LIMITED_METHOD_DAC_CONTRACT;
         _ASSERTE((int)isNoFrameTransition != 0xcc);
 
-        return (isNoFrameTransition ? taNoFrameTransitionMarker : NULL);
+        return (isNoFrameTransition ? taNoFrameTransitionMarker : 0);
     }
 
     /* Has the IP been adjusted to a point where it is safe to do GC ?
@@ -284,7 +281,6 @@ public:
             if (!HasFaulted() && !IsIPadjusted())
             {
                 _ASSERTE(!(flags & ActiveStackFrame));
-                flags |= AbortingCall;
             }
         }
 
@@ -667,7 +663,7 @@ private:
     enum class ForceGCReportingStage : BYTE
     {
         Off = 0,
-        // The stack walker has hit a funclet, we are looking for the first managed 
+        // The stack walker has hit a funclet, we are looking for the first managed
         // frame that would be one of the managed exception handling code frames
         LookForManagedFrame = 1,
         // The stack walker has already hit a managed exception handling code frame,

@@ -13,12 +13,12 @@ namespace Microsoft.Interop
     {
         public ImmutableArray<StatementSyntax> Initializations { get; init; }
         public ImmutableArray<LocalDeclarationStatementSyntax> Variables { get; init; }
-        public static VariableDeclarations GenerateDeclarationsForManagedToUnmanaged(BoundGenerators marshallers, StubCodeContext context, bool initializeDeclarations)
+        public static VariableDeclarations GenerateDeclarationsForManagedToUnmanaged(BoundGenerators marshallers, StubIdentifierContext context, bool initializeDeclarations)
         {
             ImmutableArray<StatementSyntax>.Builder initializations = ImmutableArray.CreateBuilder<StatementSyntax>();
             ImmutableArray<LocalDeclarationStatementSyntax>.Builder variables = ImmutableArray.CreateBuilder<LocalDeclarationStatementSyntax>();
 
-            foreach (BoundGenerator marshaller in marshallers.NativeParameterMarshallers)
+            foreach (IBoundMarshallingGenerator marshaller in marshallers.NativeParameterMarshallers)
             {
                 TypePositionInfo info = marshaller.TypeInfo;
                 if (info.IsManagedReturnPosition)
@@ -26,7 +26,7 @@ namespace Microsoft.Interop
 
                 if (info.RefKind == RefKind.Out)
                 {
-                    initializations.Add(MarshallerHelpers.SkipInitOrDefaultInit(info, context));
+                    initializations.Add(MarshallerHelpers.DefaultInit(info, context));
                 }
 
                 // Declare variables for parameters
@@ -52,7 +52,7 @@ namespace Microsoft.Interop
                 Variables = variables.ToImmutable()
             };
 
-            static void AppendVariableDeclarations(ImmutableArray<LocalDeclarationStatementSyntax>.Builder statementsToUpdate, BoundGenerator marshaller, StubCodeContext context, bool initializeToDefault)
+            static void AppendVariableDeclarations(ImmutableArray<LocalDeclarationStatementSyntax>.Builder statementsToUpdate, IBoundMarshallingGenerator marshaller, StubIdentifierContext context, bool initializeToDefault)
             {
                 (string managed, string native) = context.GetIdentifiers(marshaller.TypeInfo);
 
@@ -66,22 +66,22 @@ namespace Microsoft.Interop
                 }
 
                 // Declare variable with native type for parameter or return value
-                if (marshaller.Generator.UsesNativeIdentifier(marshaller.TypeInfo, context))
+                if (marshaller.UsesNativeIdentifier)
                 {
                     statementsToUpdate.Add(Declare(
-                        marshaller.Generator.AsNativeType(marshaller.TypeInfo).Syntax,
+                        marshaller.NativeType.Syntax,
                         native,
                         initializeToDefault));
                 }
             }
         }
 
-        public static VariableDeclarations GenerateDeclarationsForUnmanagedToManaged(BoundGenerators marshallers, StubCodeContext context, bool initializeDeclarations)
+        public static VariableDeclarations GenerateDeclarationsForUnmanagedToManaged(BoundGenerators marshallers, StubIdentifierContext context, bool initializeDeclarations)
         {
             ImmutableArray<StatementSyntax>.Builder initializations = ImmutableArray.CreateBuilder<StatementSyntax>();
             ImmutableArray<LocalDeclarationStatementSyntax>.Builder variables = ImmutableArray.CreateBuilder<LocalDeclarationStatementSyntax>();
 
-            foreach (BoundGenerator marshaller in marshallers.NativeParameterMarshallers)
+            foreach (IBoundMarshallingGenerator marshaller in marshallers.NativeParameterMarshallers)
             {
                 TypePositionInfo info = marshaller.TypeInfo;
                 if (info.IsNativeReturnPosition || info.IsManagedReturnPosition)
@@ -109,14 +109,14 @@ namespace Microsoft.Interop
                 Variables = variables.ToImmutable()
             };
 
-            static void AppendVariableDeclarations(ImmutableArray<LocalDeclarationStatementSyntax>.Builder statementsToUpdate, BoundGenerator marshaller, StubCodeContext context, bool initializeToDefault)
+            static void AppendVariableDeclarations(ImmutableArray<LocalDeclarationStatementSyntax>.Builder statementsToUpdate, IBoundMarshallingGenerator marshaller, StubIdentifierContext context, bool initializeToDefault)
             {
                 (string managed, string native) = context.GetIdentifiers(marshaller.TypeInfo);
 
                 // Declare variable for return value
                 if (marshaller.TypeInfo.IsNativeReturnPosition)
                 {
-                    bool nativeReturnUsesNativeIdentifier = marshaller.Generator.UsesNativeIdentifier(marshaller.TypeInfo, context);
+                    bool nativeReturnUsesNativeIdentifier = marshaller.UsesNativeIdentifier;
 
                     // Always initialize the return value.
                     statementsToUpdate.Add(Declare(
@@ -127,23 +127,23 @@ namespace Microsoft.Interop
                     if (nativeReturnUsesNativeIdentifier)
                     {
                         statementsToUpdate.Add(Declare(
-                            marshaller.Generator.AsNativeType(marshaller.TypeInfo).Syntax,
+                            marshaller.NativeType.Syntax,
                             native,
                             initializeToDefault: true));
                     }
                 }
                 else
                 {
-                    ValueBoundaryBehavior boundaryBehavior = marshaller.Generator.GetValueBoundaryBehavior(marshaller.TypeInfo, context);
+                    ValueBoundaryBehavior boundaryBehavior = marshaller.ValueBoundaryBehavior;
 
                     // Declare variable with native type for parameter
                     // if the marshaller uses the native identifier and the signature uses a different identifier
                     // than the native identifier.
-                    if (marshaller.Generator.UsesNativeIdentifier(marshaller.TypeInfo, context)
+                    if (marshaller.UsesNativeIdentifier
                         && boundaryBehavior is not
                             (ValueBoundaryBehavior.NativeIdentifier or ValueBoundaryBehavior.CastNativeIdentifier))
                     {
-                        TypeSyntax localType = marshaller.Generator.AsNativeType(marshaller.TypeInfo).Syntax;
+                        TypeSyntax localType = marshaller.NativeType.Syntax;
                         if (boundaryBehavior != ValueBoundaryBehavior.AddressOfNativeIdentifier)
                         {
                             statementsToUpdate.Add(Declare(
@@ -160,7 +160,7 @@ namespace Microsoft.Interop
                             statementsToUpdate.Add(Declare(
                                 RefType(localType),
                                 native,
-                                marshaller.Generator.GenerateNativeByRefInitialization(marshaller.TypeInfo, context)));
+                                marshaller.GenerateNativeByRefInitialization(context)));
                         }
                     }
 

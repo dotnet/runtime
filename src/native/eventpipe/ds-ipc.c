@@ -431,6 +431,7 @@ ds_ipc_stream_factory_get_next_available_stream (ds_ipc_error_callback_func call
 					DS_LOG_INFO_2 ("ds_ipc_stream_factory_get_next_available_stream - NON :: Poll attempt: %d, connection %d had no events.", poll_attempts, connection_id);
 					break;
 				default:
+					ds_port_reset_vcall ((DiagnosticsPort *)ipc_poll_handle.user_data, callback);
 					DS_LOG_INFO_2 ("ds_ipc_stream_factory_get_next_available_stream - UNK :: Poll attempt: %d, connection %d had invalid PollEvent.", poll_attempts, connection_id);
 					saw_error = true;
 					break;
@@ -441,6 +442,12 @@ ds_ipc_stream_factory_get_next_available_stream (ds_ipc_error_callback_func call
 		}
 
 		if (!stream && saw_error) {
+			// Some errors can cause the poll to return instantly, we want to delay if we see an error to avoid
+			// runaway CPU usage.
+			if (poll_timeout_ms == DS_IPC_TIMEOUT_INFINITE)
+				poll_timeout_ms = DS_IPC_POLL_TIMEOUT_MAX_MS;
+			DS_LOG_DEBUG_1 ("ds_ipc_stream_factory_get_next_available_stream - Saw error, sleeping using timeout: %dms.", poll_timeout_ms);
+			ep_rt_thread_sleep ((uint64_t)poll_timeout_ms * NUM_NANOSECONDS_IN_1_MS);
 			_ds_current_port = NULL;
 			ep_raise_error ();
 		}
@@ -839,7 +846,9 @@ listen_port_reset (
 	ds_ipc_error_callback_func callback)
 {
 	EP_ASSERT (object != NULL);
-	return;
+	DiagnosticsListenPort *listen_port = (DiagnosticsListenPort *)object;
+	ds_ipc_reset (listen_port->port.ipc);
+	ds_ipc_listen (listen_port->port.ipc, callback);
 }
 
 static DiagnosticsPortVtable listen_port_vtable = {

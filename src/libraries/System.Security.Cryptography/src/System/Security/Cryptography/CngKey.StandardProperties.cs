@@ -238,7 +238,7 @@ namespace System.Security.Cryptography
                             switch (curve)
                             {
                                 // nistP192 and nistP224 don't have named curve accelerators but we can handle them.
-                                // These string values match the names in https://learn.microsoft.com/en-us/windows/win32/seccng/cng-named-elliptic-curves
+                                // These string values match the names in https://learn.microsoft.com/windows/win32/seccng/cng-named-elliptic-curves
                                 case "nistP192": return 192;
                                 case "nistP224": return 224;
                                 case nameof(ECCurve.NamedCurves.nistP256): return 256;

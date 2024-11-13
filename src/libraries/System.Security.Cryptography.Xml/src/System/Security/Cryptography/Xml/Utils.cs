@@ -212,7 +212,7 @@ namespace System.Security.Cryptography.Xml
                 settings.DtdProcessing = DtdProcessing.Parse;
                 settings.MaxCharactersFromEntities = MaxCharactersFromEntities;
                 settings.MaxCharactersInDocument = MaxCharactersInDocument;
-                XmlReader reader = XmlReader.Create(stringReader, settings, baseUri);
+                using XmlReader reader = XmlReader.Create(stringReader, settings, baseUri);
                 doc.Load(reader);
             }
             return doc;
@@ -235,7 +235,7 @@ namespace System.Security.Cryptography.Xml
                 settings.DtdProcessing = DtdProcessing.Parse;
                 settings.MaxCharactersFromEntities = MaxCharactersFromEntities;
                 settings.MaxCharactersInDocument = MaxCharactersInDocument;
-                XmlReader reader = XmlReader.Create(stringReader, settings, baseUri);
+                using XmlReader reader = XmlReader.Create(stringReader, settings, baseUri);
                 doc.Load(reader);
             }
             return doc;
@@ -720,7 +720,7 @@ namespace System.Security.Cryptography.Xml
             return collection;
         }
 
-#if NET5_0_OR_GREATER
+#if NET
         internal static string EncodeHexString(byte[] sArray)
         {
             return Convert.ToHexString(sArray);
@@ -761,7 +761,7 @@ namespace System.Security.Cryptography.Xml
         {
             AsymmetricAlgorithm? algorithm = (AsymmetricAlgorithm?)certificate.GetRSAPublicKey() ?? certificate.GetECDsaPublicKey();
 
-#if NETCOREAPP
+#if NET
             if (algorithm is null && !OperatingSystem.IsTvOS() && !OperatingSystem.IsIOS())
             {
                 algorithm = certificate.GetDSAPublicKey();

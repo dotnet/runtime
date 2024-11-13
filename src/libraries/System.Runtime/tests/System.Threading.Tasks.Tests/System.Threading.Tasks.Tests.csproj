@@ -5,6 +5,7 @@
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetOS)' == 'browser'">
+    <_WasmPThreadPoolUnusedSize>10</_WasmPThreadPoolUnusedSize>
     <XunitShowProgress>true</XunitShowProgress>
   </PropertyGroup>
   <ItemGroup>

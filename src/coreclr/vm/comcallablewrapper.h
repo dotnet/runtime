@@ -343,7 +343,7 @@ inline void ComCallWrapperTemplateRelease(ComCallWrapperTemplate *value)
     }
 }
 
-typedef Wrapper<ComCallWrapperTemplate *, DoNothing<ComCallWrapperTemplate *>, ComCallWrapperTemplateRelease, NULL> ComCallWrapperTemplateHolder;
+typedef Wrapper<ComCallWrapperTemplate *, DoNothing<ComCallWrapperTemplate *>, ComCallWrapperTemplateRelease, 0> ComCallWrapperTemplateHolder;
 
 
 //--------------------------------------------------------------------------------
@@ -1041,11 +1041,11 @@ FORCEINLINE void CCWRelease(ComCallWrapper* p)
     p->Release();
 }
 
-class CCWHolder : public Wrapper<ComCallWrapper*, CCWHolderDoNothing, CCWRelease, NULL>
+class CCWHolder : public Wrapper<ComCallWrapper*, CCWHolderDoNothing, CCWRelease, 0>
 {
 public:
     CCWHolder(ComCallWrapper* p = NULL)
-        : Wrapper<ComCallWrapper*, CCWHolderDoNothing, CCWRelease, NULL>(p)
+        : Wrapper<ComCallWrapper*, CCWHolderDoNothing, CCWRelease, 0>(p)
     {
         WRAPPER_NO_CONTRACT;
     }
@@ -1054,7 +1054,7 @@ public:
     {
         WRAPPER_NO_CONTRACT;
 
-        Wrapper<ComCallWrapper*, CCWHolderDoNothing, CCWRelease, NULL>::operator=(p);
+        Wrapper<ComCallWrapper*, CCWHolderDoNothing, CCWRelease, 0>::operator=(p);
     }
 };
 //

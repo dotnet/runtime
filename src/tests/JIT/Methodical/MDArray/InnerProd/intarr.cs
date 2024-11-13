@@ -105,7 +105,8 @@ public class intmm
     }
 
     [Fact]
-    public static int TestEntryPoint()
+        [OuterLoop]
+        public static int TestEntryPoint()
     {
         bool pass = false;
 

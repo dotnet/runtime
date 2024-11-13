@@ -59,6 +59,7 @@ namespace BigFrames_skippage
         }
 
         [Fact]
+        [OuterLoop]
         public static int TestEntryPoint()
         {
             TestWrite2(); // Make sure this is JITted first, so the call from Test1() is not to the prestub.

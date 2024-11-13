@@ -123,17 +123,17 @@ dwarf_getfp (struct dwarf_cursor *c, dwarf_loc_t loc, unw_fpreg_t *val)
     return -UNW_EBADREG;
 
   if (DWARF_IS_FP_LOC (loc))
-    return (*c->as->acc.access_fpreg) (c->as, DWARF_GET_LOC (loc), val,
+    return (*c->as->acc.access_fpreg) (c->as, DWARF_GET_REG_LOC (loc), val,
                                        0, c->as_arg);
   /* FPRs may be saved in GPRs */
   if (DWARF_IS_REG_LOC (loc))
-    return (*c->as->acc.access_reg) (c->as, DWARF_GET_LOC (loc), (unw_word_t*)val,
+    return (*c->as->acc.access_reg) (c->as, DWARF_GET_REG_LOC (loc), (unw_word_t*)val,
                                      0, c->as_arg);
   if (DWARF_IS_MEM_LOC (loc))
-    return (*c->as->acc.access_mem) (c->as, DWARF_GET_LOC (loc), (unw_word_t*)val,
+    return (*c->as->acc.access_mem) (c->as, DWARF_GET_MEM_LOC (loc), (unw_word_t*)val,
                                      0, c->as_arg);
   assert(DWARF_IS_VAL_LOC (loc));
-  *val = *(unw_fpreg_t*) DWARF_GET_LOC (loc);
+  *val = *(unw_fpreg_t*) DWARF_GET_MEM_LOC (loc);
   return 0;
 }
 
@@ -147,15 +147,15 @@ dwarf_putfp (struct dwarf_cursor *c, dwarf_loc_t loc, unw_fpreg_t val)
     return -UNW_EBADREG;
 
   if (DWARF_IS_FP_LOC (loc))
-    return (*c->as->acc.access_fpreg) (c->as, DWARF_GET_LOC (loc), &val,
+    return (*c->as->acc.access_fpreg) (c->as, DWARF_GET_REG_LOC (loc), &val,
                                        1, c->as_arg);
   /* FPRs may be saved in GPRs */
   if (DWARF_IS_REG_LOC (loc))
-    return (*c->as->acc.access_reg) (c->as, DWARF_GET_LOC (loc), (unw_word_t*) &val,
+    return (*c->as->acc.access_reg) (c->as, DWARF_GET_REG_LOC (loc), (unw_word_t*) &val,
                                      1, c->as_arg);
 
   assert(DWARF_IS_MEM_LOC (loc));
-  return (*c->as->acc.access_mem) (c->as, DWARF_GET_LOC (loc), (unw_word_t*) &val,
+  return (*c->as->acc.access_mem) (c->as, DWARF_GET_MEM_LOC (loc), (unw_word_t*) &val,
                                    1, c->as_arg);
 }
 
@@ -169,13 +169,13 @@ dwarf_get (struct dwarf_cursor *c, dwarf_loc_t loc, unw_word_t *val)
 
   /* GPRs may be saved in FPRs */
   if (DWARF_IS_FP_LOC (loc))
-    return (*c->as->acc.access_fpreg) (c->as, DWARF_GET_LOC (loc), (unw_fpreg_t*)val,
+    return (*c->as->acc.access_fpreg) (c->as, DWARF_GET_REG_LOC (loc), (unw_fpreg_t*)val,
                                        0, c->as_arg);
   if (DWARF_IS_REG_LOC (loc))
-    return (*c->as->acc.access_reg) (c->as, DWARF_GET_LOC (loc), val,
+    return (*c->as->acc.access_reg) (c->as, DWARF_GET_REG_LOC (loc), val,
                                      0, c->as_arg);
   if (DWARF_IS_MEM_LOC (loc))
-    return (*c->as->acc.access_mem) (c->as, DWARF_GET_LOC (loc), val,
+    return (*c->as->acc.access_mem) (c->as, DWARF_GET_MEM_LOC (loc), val,
                                      0, c->as_arg);
   assert(DWARF_IS_VAL_LOC (loc));
   *val = DWARF_GET_LOC (loc);
@@ -193,14 +193,14 @@ dwarf_put (struct dwarf_cursor *c, dwarf_loc_t loc, unw_word_t val)
 
   /* GPRs may be saved in FPRs */
   if (DWARF_IS_FP_LOC (loc))
-    return (*c->as->acc.access_fpreg) (c->as, DWARF_GET_LOC (loc), (unw_fpreg_t*) &val,
+    return (*c->as->acc.access_fpreg) (c->as, DWARF_GET_REG_LOC (loc), (unw_fpreg_t*) &val,
                                        1, c->as_arg);
   if (DWARF_IS_REG_LOC (loc))
-    return (*c->as->acc.access_reg) (c->as, DWARF_GET_LOC (loc), &val,
+    return (*c->as->acc.access_reg) (c->as, DWARF_GET_REG_LOC (loc), &val,
                                      1, c->as_arg);
 
   assert(DWARF_IS_MEM_LOC (loc));
-  return (*c->as->acc.access_mem) (c->as, DWARF_GET_LOC (loc), &val,
+  return (*c->as->acc.access_mem) (c->as, DWARF_GET_MEM_LOC (loc), &val,
                                    1, c->as_arg);
 }
 

@@ -71,3 +71,4 @@ extends:
                     - syntheticpgo
                     - syntheticpgo_blend
                     - jitrlcse
+                    - jitoldlayout

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Text.Json.Nodes;
+using System.Text.Json.Schema;
 using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json.Serialization.Converters
@@ -27,8 +28,9 @@ namespace System.Text.Json.Serialization.Converters
             }
 
             JsonElement element = JsonElement.ParseValue(ref reader);
-            JsonValue value = new JsonValuePrimitive<JsonElement>(element, JsonMetadataServices.JsonElementConverter, options.GetNodeOptions());
-            return value;
+            return JsonValue.CreateFromElement(ref element, options.GetNodeOptions());
         }
+
+        internal override JsonSchema? GetSchema(JsonNumberHandling _) => JsonSchema.True;
     }
 }

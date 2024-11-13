@@ -147,6 +147,9 @@
   <data name="Argument_PemImport_EncryptedPem" xml:space="preserve">
     <value>An encrypted key was found, but no password was provided. Use ImportFromEncryptedPem to import this key.</value>
   </data>
+  <data name="Argument_Thumbprint_Invalid" xml:space="preserve">
+    <value>The supplied thumbprint is not a valid hex-encoded digest.</value>
+  </data>
   <data name="Argument_X500_EmailTooLong" xml:space="preserve">
     <value>The email address cannot exceed 255 characters.</value>
   </data>
@@ -273,6 +276,9 @@
   <data name="Cryptography_CipherModeNotSupported" xml:space="preserve">
     <value>The specified CipherMode '{0}' is not supported.</value>
   </data>
+  <data name="Cryptography_ConcurrentUseNotSupported" xml:space="preserve">
+    <value>Concurrent operations from multiple threads on this type are not supported.</value>
+  </data>
   <data name="Cryptography_CngKeyWrongAlgorithm" xml:space="preserve">
     <value>This key is for algorithm '{0}'. Expected '{1}'.</value>
   </data>
@@ -323,6 +329,9 @@
   </data>
   <data name="Cryptography_EncryptedIncorrectLength" xml:space="preserve">
     <value>{0} unexpectedly produced a ciphertext with the incorrect length.</value>
+  </data>
+  <data name="Cryptography_EnginesNotSupported" xml:space="preserve">
+    <value>OpenSSL ENGINE is not available on this platform.</value>
   </data>
   <data name="Cryptography_ExceedKdfExtractLimit" xml:space="preserve">
     <value>The total number of bytes extracted cannot exceed UInt32.MaxValue * hash length.</value>
@@ -714,6 +723,12 @@
   <data name="Cryptography_X509_PKCS12_ExportableNotSupported" xml:space="preserve">
     <value>The PKCS#12 Exportable flag is not supported on this platform.</value>
   </data>
+  <data name="Cryptography_X509_PKCS12_LimitExceeded" xml:space="preserve">
+    <value>The PKCS#12/PFX violated the '{0}' limit.</value>
+  </data>
+  <data name="Cryptography_X509_PKCS12_LimitsReadOnly" xml:space="preserve">
+    <value>This Pkcs12LoaderLimits object has been made read-only and can no longer be modified.</value>
+  </data>
   <data name="Cryptography_X509_PKCS12_PersistKeySetNotSupported" xml:space="preserve">
     <value>The PKCS#12 PersistKeySet flag is not supported on this platform.</value>
   </data>
@@ -777,6 +792,9 @@
   <data name="InvalidOperation_UnsupportedBlockSize" xml:space="preserve">
     <value>The algorithm's block size is not supported.</value>
   </data>
+  <data name="InvalidOperation_AlreadyReading" xml:space="preserve">
+    <value>This operation is not supported once the algorithm has started reading.</value>
+  </data>
   <data name="NotSupported_ECDsa_Csp" xml:space="preserve">
     <value>CryptoApi ECDsa keys are not supported.</value>
   </data>
@@ -818,6 +836,9 @@
   </data>
   <data name="PlatformNotSupported_CryptographyOpenSSLNotFound" xml:space="preserve">
     <value>OpenSSL is required for algorithm '{0}' but could not be found or loaded.</value>
+  </data>
+  <data name="PlatformNotSupported_CryptographyOpenSSLProvidersNotSupported" xml:space="preserve">
+    <value>OpenSSL providers are not supported on this platform.</value>
   </data>
   <data name="Security_AccessDenied" xml:space="preserve">
     <value>Access is denied.</value>

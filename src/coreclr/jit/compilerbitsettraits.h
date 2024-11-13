@@ -107,7 +107,9 @@ private:
     Compiler* comp;
 
 public:
-    BitVecTraits(unsigned size, Compiler* comp) : size(size), comp(comp)
+    BitVecTraits(unsigned size, Compiler* comp)
+        : size(size)
+        , comp(comp)
     {
         const unsigned elemBits = 8 * sizeof(size_t);
         arraySize               = roundUp(size, elemBits) / elemBits;

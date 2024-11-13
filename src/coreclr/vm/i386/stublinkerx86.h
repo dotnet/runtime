@@ -6,7 +6,6 @@
 
 #include "stublink.h"
 
-struct ArrayOpScript;
 class MetaSig;
 
 extern PCODE GetPreStubEntryPoint();
@@ -186,62 +185,49 @@ class StubLinkerCPU : public StubLinker
         VOID X64EmitCmp32RegIndexImm32(X86Reg reg, INT32 offs, INT32 imm32); // cmp dword ptr [reg+offs], imm32
 
         VOID X64EmitMovXmmXmm(X86Reg destXmmreg, X86Reg srcXmmReg);
-        VOID X64EmitMovdqaFromMem(X86Reg Xmmreg, X86Reg baseReg, __int32 ofs = 0);
-        VOID X64EmitMovdqaToMem(X86Reg Xmmreg, X86Reg baseReg, __int32 ofs = 0);
-        VOID X64EmitMovSDFromMem(X86Reg Xmmreg, X86Reg baseReg, __int32 ofs = 0);
-        VOID X64EmitMovSDToMem(X86Reg Xmmreg, X86Reg baseReg, __int32 ofs = 0);
-        VOID X64EmitMovSSFromMem(X86Reg Xmmreg, X86Reg baseReg, __int32 ofs = 0);
-        VOID X64EmitMovSSToMem(X86Reg Xmmreg, X86Reg baseReg, __int32 ofs = 0);
+        VOID X64EmitMovdqaFromMem(X86Reg Xmmreg, X86Reg baseReg, int32_t ofs = 0);
+        VOID X64EmitMovdqaToMem(X86Reg Xmmreg, X86Reg baseReg, int32_t ofs = 0);
+        VOID X64EmitMovSDFromMem(X86Reg Xmmreg, X86Reg baseReg, int32_t ofs = 0);
+        VOID X64EmitMovSDToMem(X86Reg Xmmreg, X86Reg baseReg, int32_t ofs = 0);
+        VOID X64EmitMovSSFromMem(X86Reg Xmmreg, X86Reg baseReg, int32_t ofs = 0);
+        VOID X64EmitMovSSToMem(X86Reg Xmmreg, X86Reg baseReg, int32_t ofs = 0);
         VOID X64EmitMovqRegXmm(X86Reg reg, X86Reg Xmmreg);
         VOID X64EmitMovqXmmReg(X86Reg Xmmreg, X86Reg reg);
 
-        VOID X64EmitMovXmmWorker(BYTE prefix, BYTE opcode, X86Reg Xmmreg, X86Reg baseReg, __int32 ofs = 0);
+        VOID X64EmitMovXmmWorker(BYTE prefix, BYTE opcode, X86Reg Xmmreg, X86Reg baseReg, int32_t ofs = 0);
         VOID X64EmitMovqWorker(BYTE opcode, X86Reg Xmmreg, X86Reg reg);
 #endif
 
         VOID X86EmitZeroOutReg(X86Reg reg);
         VOID X86EmitJumpReg(X86Reg reg);
 
-        VOID X86EmitOffsetModRM(BYTE opcode, X86Reg altreg, X86Reg indexreg, __int32 ofs);
-        VOID X86EmitOffsetModRmSIB(BYTE opcode, X86Reg opcodeOrReg, X86Reg baseReg, X86Reg indexReg, __int32 scale, __int32 ofs);
-
-        VOID X86EmitTailcallWithESPAdjust(CodeLabel *pTarget, INT32 imm32);
-        VOID X86EmitTailcallWithSinglePop(CodeLabel *pTarget, X86Reg reg);
+        VOID X86EmitOffsetModRM(BYTE opcode, X86Reg altreg, X86Reg indexreg, int32_t ofs);
+        VOID X86EmitOffsetModRmSIB(BYTE opcode, X86Reg opcodeOrReg, X86Reg baseReg, X86Reg indexReg, int32_t scale, int32_t ofs);
 
         VOID X86EmitNearJump(CodeLabel *pTarget);
         VOID X86EmitCondJump(CodeLabel *pTarget, X86CondCode::cc condcode);
         VOID X86EmitCall(CodeLabel *target, int iArgBytes);
         VOID X86EmitReturn(WORD wArgBytes);
-#ifdef TARGET_AMD64
-        VOID X86EmitLeaRIP(CodeLabel *target, X86Reg reg);
-#endif
 
         VOID X86EmitCurrentThreadFetch(X86Reg dstreg, unsigned preservedRegSet);
 
-        VOID X86EmitIndexRegLoad(X86Reg dstreg, X86Reg srcreg, __int32 ofs = 0);
-        VOID X86EmitIndexRegStore(X86Reg dstreg, __int32 ofs, X86Reg srcreg);
-#if defined(TARGET_AMD64)
-        VOID X86EmitIndexRegStoreRSP(__int32 ofs, X86Reg srcreg);
-        VOID X86EmitIndexRegStoreR12(__int32 ofs, X86Reg srcreg);
-#endif // defined(TARGET_AMD64)
+        VOID X86EmitCurrentThreadAllocContextFetch(X86Reg dstreg, unsigned preservedRegSet);
 
-        VOID X86EmitIndexPush(X86Reg srcreg, __int32 ofs);
-        VOID X86EmitBaseIndexPush(X86Reg baseReg, X86Reg indexReg, __int32 scale, __int32 ofs);
-        VOID X86EmitIndexPop(X86Reg srcreg, __int32 ofs);
-        VOID X86EmitIndexLea(X86Reg dstreg, X86Reg srcreg, __int32 ofs);
-#if defined(TARGET_AMD64)
-        VOID X86EmitIndexLeaRSP(X86Reg dstreg, X86Reg srcreg, __int32 ofs);
-#endif // defined(TARGET_AMD64)
+        VOID X86EmitIndexRegLoad(X86Reg dstreg, X86Reg srcreg, int32_t ofs = 0);
+        VOID X86EmitIndexRegStore(X86Reg dstreg, int32_t ofs, X86Reg srcreg);
 
-        VOID X86EmitSPIndexPush(__int32 ofs);
+        VOID X86EmitIndexPush(X86Reg srcreg, int32_t ofs);
+        VOID X86EmitBaseIndexPush(X86Reg baseReg, X86Reg indexReg, int32_t scale, int32_t ofs);
+        VOID X86EmitIndexPop(X86Reg srcreg, int32_t ofs);
+
+        VOID X86EmitSPIndexPush(int32_t ofs);
         VOID X86EmitSubEsp(INT32 imm32);
         VOID X86EmitAddEsp(INT32 imm32);
         VOID X86EmitEspOffset(BYTE opcode,
                               X86Reg altreg,
-                              __int32 ofs
+                              int32_t ofs
                     AMD64_ARG(X86OperandSize OperandSize = k64BitOp)
                               );
-        VOID X86EmitPushEBPframe();
 
         // Emits the most efficient form of the operation:
         //
@@ -266,7 +252,7 @@ class StubLinkerCPU : public StubLinker
         VOID X86EmitOp(WORD    opcode,
                        X86Reg  altreg,
                        X86Reg  basereg,
-                       __int32 ofs = 0,
+                       int32_t ofs = 0,
                        X86Reg  scaledreg = (X86Reg)0,
                        BYTE    scale = 0
              AMD64_ARG(X86OperandSize OperandSize = k32BitOp)
@@ -277,7 +263,7 @@ class StubLinkerCPU : public StubLinker
         VOID X86EmitOp(WORD    opcode,
                        X86Reg  altreg,
                        X86Reg  basereg,
-                       __int32 ofs,
+                       int32_t ofs,
                        X86OperandSize OperandSize
                        )
         {
@@ -306,14 +292,6 @@ class StubLinkerCPU : public StubLinker
 
         VOID X86EmitRegLoad(X86Reg reg, UINT_PTR imm);
 
-        VOID X86EmitRegSave(X86Reg altreg, __int32 ofs)
-        {
-            LIMITED_METHOD_CONTRACT;
-            X86EmitEspOffset(0x89, altreg, ofs);
-            // X86Reg values never are outside a byte.
-            UnwindSavedReg(static_cast<UCHAR>(altreg), ofs);
-        }
-
         VOID X86_64BitOperands ()
         {
             WRAPPER_NO_CONTRACT;
@@ -321,25 +299,6 @@ class StubLinkerCPU : public StubLinker
             Emit8(0x48);
 #endif
         }
-
-#if defined(FEATURE_COMINTEROP) && defined(TARGET_X86)
-        VOID EmitEnable(CodeLabel *pForwardRef);
-        VOID EmitRareEnable(CodeLabel *pRejoinPoint);
-
-        VOID EmitDisable(CodeLabel *pForwardRef, BOOL fCallIn, X86Reg ThreadReg);
-        VOID EmitRareDisable(CodeLabel *pRejoinPoint);
-        VOID EmitRareDisableHRESULT(CodeLabel *pRejoinPoint, CodeLabel *pExitPoint);
-
-        VOID EmitSetup(CodeLabel *pForwardRef);
-        VOID EmitRareSetup(CodeLabel* pRejoinPoint, BOOL fThrow);
-#endif // FEATURE_COMINTEROP && TARGET_X86
-
-#ifndef FEATURE_STUBS_AS_IL
-        VOID EmitMethodStubProlog(TADDR pFrameVptr, int transitionBlockOffset);
-        VOID EmitMethodStubEpilog(WORD numArgBytes, int transitionBlockOffset);
-
-        VOID EmitCheckGSCookie(X86Reg frameReg, int gsCookieOffset);
-#endif // !FEATURE_STUBS_AS_IL
 
 #ifdef TARGET_X86
         VOID EmitUnboxMethodStub(MethodDesc* pRealMD);
@@ -354,82 +313,12 @@ class StubLinkerCPU : public StubLinker
 #endif // FEATURE_SHARE_GENERIC_CODE
         VOID EmitComputedInstantiatingMethodStub(MethodDesc* pSharedMD, struct ShuffleEntry *pShuffleEntryArray, void* extraArg);
 
-#if defined(FEATURE_COMINTEROP) && defined(TARGET_X86)
-
-#if defined(PROFILING_SUPPORTED)
-        // These are used to emit calls to notify the profiler of transitions in and out of
-        // managed code through COM->COM+ interop or N/Direct
-        VOID EmitProfilerComCallProlog(TADDR pFrameVptr, X86Reg regFrame);
-        VOID EmitProfilerComCallEpilog(TADDR pFrameVptr, X86Reg regFrame);
-#endif // PROFILING_SUPPORTED
-
-        void EmitComMethodStubProlog(TADDR pFrameVptr, CodeLabel** rgRareLabels,
-            CodeLabel** rgRejoinLabels, BOOL bShouldProfile);
-
-        void EmitComMethodStubEpilog(TADDR pFrameVptr, CodeLabel** rgRareLabels,
-            CodeLabel** rgRejoinLabels, BOOL bShouldProfile);
-
-        //========================================================================
-        //  shared Epilog for stubs that enter managed code from COM
-        //  uses a return thunk within the method desc
-        void EmitSharedComMethodStubEpilog(TADDR pFrameVptr,
-                                           CodeLabel** rgRareLabels,
-                                           CodeLabel** rgRejoinLabels,
-                                           unsigned offsetReturnThunk,
-                                           BOOL bShouldProfile);
-#endif // FEATURE_COMINTEROP && TARGET_X86
-
-#ifndef FEATURE_STUBS_AS_IL
-        //===========================================================================
-        // Computes hash code for MulticastDelegate.Invoke()
-        static UINT_PTR HashMulticastInvoke(MetaSig* pSig);
-
-#ifdef TARGET_X86
-        //===========================================================================
-        // Emits code for Delegate.Invoke() any delegate type
-        VOID EmitDelegateInvoke();
-#endif // TARGET_X86
-
-#if defined(TARGET_X86) && !defined(FEATURE_MULTICASTSTUB_AS_IL)
-        //===========================================================================
-        // Emits code for MulticastDelegate.Invoke() - sig specific
-        VOID EmitMulticastInvoke(UINT_PTR hash);
-#endif // defined(TARGET_X86) && !defined(FEATURE_MULTICASTSTUB_AS_IL)
-#endif // !FEATURE_STUBS_AS_IL
-
         //===========================================================================
         // Emits code to adjust for a static delegate target.
         VOID EmitShuffleThunk(struct ShuffleEntry *pShuffleEntryArray);
 
-
-#ifndef FEATURE_ARRAYSTUB_AS_IL
-        //===========================================================================
-        // Emits code to do an array operation.
-        VOID EmitArrayOpStub(const ArrayOpScript*);
-
-        //Worker function to emit throw helpers for array ops.
-        VOID EmitArrayOpStubThrow(unsigned exConst, unsigned cbRetArg);
-#endif
-
-#ifndef FEATURE_STUBS_AS_IL
-        //===========================================================================
-        // Emits code to break into debugger
-        VOID EmitDebugBreak();
-#endif // !FEATURE_STUBS_AS_IL
-
-#if defined(_DEBUG) && !defined(TARGET_UNIX)
-        //===========================================================================
-        // Emits code to log JITHelper access
-        void EmitJITHelperLoggingThunk(PCODE pJitHelper, LPVOID helperFuncCount);
-#endif
-
 #ifdef _DEBUG
         VOID X86EmitDebugTrashReg(X86Reg reg);
-#endif
-
-#if defined(_DEBUG) && defined(STUBLINKER_GENERATES_UNWIND_INFO)
-        virtual VOID EmitUnwindInfoCheckWorker (CodeLabel *pCheckLabel);
-        virtual VOID EmitUnwindInfoCheckSubfunction();
 #endif
 
     private:

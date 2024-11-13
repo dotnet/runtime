@@ -3147,7 +3147,6 @@ mdModule MDInternalRO::GetModuleFromScope(void)
 
 //*****************************************************************************
 // Fill a variant given a MDDefaultValue
-// This routine will create a bstr if the ELEMENT_TYPE of default value is STRING
 //*****************************************************************************
 __checkReturn
 HRESULT _FillMDDefaultValue(
@@ -3218,7 +3217,7 @@ HRESULT _FillMDDefaultValue(
             {
                 IfFailGo(CLDB_E_FILE_CORRUPT);
             }
-            __int32 Value = GET_UNALIGNED_VAL32(pValue);
+            int32_t Value = GET_UNALIGNED_VAL32(pValue);
             pMDDefaultValue->m_fltValue = (float &)Value;
         }
         break;
@@ -3228,7 +3227,7 @@ HRESULT _FillMDDefaultValue(
             {
                 IfFailGo(CLDB_E_FILE_CORRUPT);
             }
-            __int64 Value = GET_UNALIGNED_VAL64(pValue);
+            int64_t Value = GET_UNALIGNED_VAL64(pValue);
             pMDDefaultValue->m_dblValue = (double &) Value;
         }
         break;
@@ -3236,19 +3235,7 @@ HRESULT _FillMDDefaultValue(
         if (cbValue == 0)
             pValue = NULL;
 
-#if BIGENDIAN
-        {
-            // We need to allocate and swap the string if we're on a big endian
-            // This allocation will be freed by the MDDefaultValue destructor.
-            pMDDefaultValue->m_wzValue = new WCHAR[(cbValue + 1) / sizeof (WCHAR)];
-            IfNullGo(pMDDefaultValue->m_wzValue);
-            memcpy(const_cast<WCHAR *>(pMDDefaultValue->m_wzValue), pValue, cbValue);
-            _ASSERTE(cbValue % sizeof(WCHAR) == 0);
-            SwapStringLength(const_cast<WCHAR *>(pMDDefaultValue->m_wzValue), cbValue / sizeof(WCHAR));
-        }
-#else
         pMDDefaultValue->m_wzValue = (LPWSTR) pValue;
-#endif
         break;
     case ELEMENT_TYPE_CLASS:
         //

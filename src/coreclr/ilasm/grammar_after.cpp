@@ -112,7 +112,7 @@ char* NewStrFromTokenW(_In_reads_(tokLen) char* curTok, size_t tokLen)
     char *nb = new char[(tokLen<<1) + 2];
     if(nb != NULL)
     {
-        tokLen = WszWideCharToMultiByte(CP_UTF8,0,(LPCWSTR)wcurTok,(int)(tokLen >> 1),nb,(int)(tokLen<<1) + 2,NULL,NULL);
+        tokLen = WideCharToMultiByte(CP_UTF8,0,(LPCWSTR)wcurTok,(int)(tokLen >> 1),nb,(int)(tokLen<<1) + 2,NULL,NULL);
         nb[tokLen] = 0;
     }
     return nb;
@@ -129,7 +129,7 @@ char* NewStaticStrFromTokenW(_In_reads_(tokLen) char* curTok, size_t tokLen, _Ou
 {
     WCHAR* wcurTok = (WCHAR*)curTok;
     if(tokLen >= bufSize/2) return NULL;
-    tokLen = WszWideCharToMultiByte(CP_UTF8,0,(LPCWSTR)wcurTok,(int)(tokLen >> 1),staticBuf,(int)bufSize,NULL,NULL);
+    tokLen = WideCharToMultiByte(CP_UTF8,0,(LPCWSTR)wcurTok,(int)(tokLen >> 1),staticBuf,(int)bufSize,NULL,NULL);
     staticBuf[tokLen] = 0;
     return staticBuf;
 }
@@ -339,9 +339,9 @@ void Init_str2uint64()
     for(i='A'; i <= 'Z'; i++) digits[i] = i + 10 - 'A';
     for(i='a'; i <= 'z'; i++) digits[i] = i + 10 - 'a';
 }
-static unsigned __int64 str2uint64(const char* str, const char** endStr, unsigned radix)
+static uint64_t str2uint64(const char* str, const char** endStr, unsigned radix)
 {
-    unsigned __int64 ret = 0;
+    uint64_t ret = 0;
     unsigned digit,ix;
     _ASSERTE(radix <= 36);
     for(;;str = nextchar((char*)str))
@@ -971,7 +971,7 @@ Its_An_Id:
                             {
                                 if((wzFile = new WCHAR[tokLen+1]) != NULL)
                                 {
-                                    tokLen = WszMultiByteToWideChar(g_uCodePage,0,curTok,(int)tokLen,wzFile,(int)tokLen+1);
+                                    tokLen = MultiByteToWideChar(g_uCodePage,0,curTok,(int)tokLen,wzFile,(int)tokLen+1);
                                     wzFile[tokLen] = 0;
                                 }
                             }
@@ -1203,19 +1203,19 @@ Its_An_Id:
         }
         begNum = curPos;
         {
-            unsigned __int64 i64 = str2uint64(begNum, const_cast<const char**>(&curPos), radix);
-            unsigned __int64 mask64 = neg ? UI64(0xFFFFFFFF80000000) : UI64(0xFFFFFFFF00000000);
-            unsigned __int64 largestNegVal32 = UI64(0x0000000080000000);
+            uint64_t i64 = str2uint64(begNum, const_cast<const char**>(&curPos), radix);
+            uint64_t mask64 = neg ? UI64(0xFFFFFFFF80000000) : UI64(0xFFFFFFFF00000000);
+            uint64_t largestNegVal32 = UI64(0x0000000080000000);
             if ((i64 & mask64) && (i64 != largestNegVal32))
             {
-                yylval.int64 = new __int64(i64);
-                tok = INT64;
+                yylval.int64 = new int64_t(i64);
+                tok = INT64_V;
                 if (neg) *yylval.int64 = -*yylval.int64;
             }
             else
             {
-                yylval.int32 = (__int32)i64;
-                tok = INT32;
+                yylval.int32 = (int32_t)i64;
+                tok = INT32_V;
                 if(neg) yylval.int32 = -yylval.int32;
             }
         }
@@ -1280,7 +1280,7 @@ Just_A_Character:
     }
     dbprintf(("    Line %d token %d (%c) val = %s\n", PENV->curLine, tok,
             (tok < 128 && isprint(tok)) ? tok : ' ',
-            (tok > 255 && tok != INT32 && tok != INT64 && tok!= FLOAT64) ? yylval.string : ""));
+            (tok > 255 && tok != INT32_V && tok != INT64_V && tok!= FLOAT64) ? yylval.string : ""));
 
     PENV->curPos = curPos;
     PENV->curTok = curTok;
@@ -1333,7 +1333,7 @@ static void corEmitInt(BinStr* buff, unsigned data)
 /**************************************************************************/
 /* move 'ptr past the exactly one type description */
 
-unsigned __int8* skipType(unsigned __int8* ptr, BOOL fFixupType)
+uint8_t* skipType(uint8_t* ptr, BOOL fFixupType)
 {
     mdToken  tk;
 AGAIN:
@@ -1412,7 +1412,7 @@ AGAIN:
                 if(fFixupType)
                 {
                     BYTE* pb = ptr-1; // ptr incremented in switch
-                    unsigned __int8* ptr_save = ptr;
+                    uint8_t* ptr_save = ptr;
                     int n = CorSigUncompressData((PCCOR_SIGNATURE&) ptr);  // fixup #
                     int compressed_size_n = (int)(ptr - ptr_save);  // ptr was updated by CorSigUncompressData()
                     int m = -1;
@@ -1472,7 +1472,7 @@ AGAIN:
                         if ((compressed_size_m == 1) &&
                             (compressed_size_n == 2))
                         {
-                            unsigned __int8 m1 = *(pb + 1);
+                            uint8_t m1 = *(pb + 1);
                             _ASSERTE(m1 < 0x80);
                             *(pb + 1) = 0x80;
                             *(pb + 2) = m1;
@@ -1481,7 +1481,7 @@ AGAIN:
                         if ((compressed_size_m == 1) &&
                             (compressed_size_n == 4))
                         {
-                            unsigned __int8 m1 = *(pb + 1);
+                            uint8_t m1 = *(pb + 1);
                             _ASSERTE(m1 < 0x80);
                             *(pb + 1) = 0xC0;
                             *(pb + 2) = 0x00;
@@ -1492,8 +1492,8 @@ AGAIN:
                         if ((compressed_size_m == 2) &&
                             (compressed_size_n == 4))
                         {
-                            unsigned __int8 m1 = *(pb + 1);
-                            unsigned __int8 m2 = *(pb + 2);
+                            uint8_t m1 = *(pb + 1);
+                            uint8_t m2 = *(pb + 2);
                             _ASSERTE(m1 >= 0x80);
                             m1 &= 0x7f; // strip the bit indicating it's a 2-byte thing
                             *(pb + 1) = 0xC0;
@@ -1559,8 +1559,8 @@ void FixupTyPars(BinStr* pbstype)
 /**************************************************************************/
 static unsigned corCountArgs(BinStr* args)
 {
-    unsigned __int8* ptr = args->ptr();
-    unsigned __int8* end = &args->ptr()[args->length()];
+    uint8_t* ptr = args->ptr();
+    uint8_t* end = &args->ptr()[args->length()];
     unsigned ret = 0;
     while(ptr < end)
     {
@@ -1781,10 +1781,10 @@ void PrintANSILine(FILE* pF, _In_ __nullterminated char* sz)
         if(g_uCodePage != CP_ACP)
         {
                 memset(wz,0,dwUniBuf); // dwUniBuf/2 WCHARs = dwUniBuf bytes
-                WszMultiByteToWideChar(g_uCodePage,0,sz,-1,wz,(dwUniBuf >> 1)-1);
+                MultiByteToWideChar(g_uCodePage,0,sz,-1,wz,(dwUniBuf >> 1)-1);
 
                 memset(sz,0,dwUniBuf);
-                WszWideCharToMultiByte(g_uConsoleCP,0,wz,-1,sz,dwUniBuf-1,NULL,NULL);
+                WideCharToMultiByte(g_uConsoleCP,0,wz,-1,sz,dwUniBuf-1,NULL,NULL);
         }
         fprintf(pF,"%s",sz);
 }

@@ -33,14 +33,11 @@ namespace System.Reflection
             RuntimeTypeHandle[] typeHandleArgs = new RuntimeTypeHandle[size];
             for (int i = 0; i < size; i++)
             {
-                Type typeArg = genericArguments[i];
-                if (typeArg == null)
+                Type? typeArg = genericArguments[i]?.UnderlyingSystemType;
+
+                if (typeArg is not System.RuntimeType)
                     throw new ArgumentException(SR.Argument_InvalidGenericInstArray);
-                typeArg = typeArg.UnderlyingSystemType;
-                if (typeArg == null)
-                    throw new ArgumentException(SR.Argument_InvalidGenericInstArray);
-                if (!(typeArg is RuntimeType))
-                    throw new ArgumentException(SR.Argument_InvalidGenericInstArray);
+
                 typeHandleArgs[i] = typeArg.TypeHandle;
             }
             return typeHandleArgs;
@@ -202,7 +199,7 @@ namespace System.Reflection
 
                 if (declaringType.IsGenericType || declaringType.IsArray)
                 {
-                    int tkDeclaringType = ModuleHandle.GetMetadataImport(this).GetParentToken(metadataToken);
+                    int tkDeclaringType = MetadataImport.GetParentToken(metadataToken);
                     declaringType = (RuntimeType)ResolveType(tkDeclaringType, genericTypeArguments, genericMethodArguments);
                 }
 
@@ -307,12 +304,8 @@ namespace System.Reflection
                 throw new ArgumentOutOfRangeException(nameof(metadataToken),
                     SR.Format(SR.Argument_InvalidToken, tk, this));
 
-            string? str = MetadataImport.GetUserString(metadataToken);
-
-            if (str == null)
-                throw new ArgumentException(
-                    SR.Format(SR.Argument_ResolveString, metadataToken, this));
-
+            string str = MetadataImport.GetUserString(metadataToken) ??
+                throw new ArgumentException(SR.Format(SR.Argument_ResolveString, metadataToken, this));
             return str;
         }
 
@@ -353,7 +346,7 @@ namespace System.Reflection
         #region Internal Members
         internal RuntimeType RuntimeType => m_runtimeType ??= ModuleHandle.GetModuleType(this);
 
-        internal MetadataImport MetadataImport => ModuleHandle.GetMetadataImport(this);
+        internal MetadataImport MetadataImport => new MetadataImport(this);
         #endregion
 
         #region ICustomAttributeProvider Members
@@ -403,7 +396,7 @@ namespace System.Reflection
         {
             ArgumentException.ThrowIfNullOrEmpty(className);
 
-            return TypeNameParser.GetType(className, topLevelAssembly: Assembly,
+            return TypeNameResolver.GetType(className, topLevelAssembly: Assembly,
                 throwOnError: throwOnError, ignoreCase: ignoreCase);
         }
 

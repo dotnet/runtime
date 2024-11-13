@@ -104,18 +104,10 @@ FlowEdge* Compiler::fgAddRefPred(BasicBlock* block, BasicBlock* blockPred, FlowE
 
     block->bbRefs++;
 
-    // Keep the predecessor list in lowest to highest bbNum order. This allows us to discover the loops in
-    // optFindNaturalLoops from innermost to outermost.
+    // Keep the predecessor list in lowest to highest bbID order.
     //
     // If we are initializing preds, we rely on the fact that we are adding references in increasing
-    // order of blockPred->bbNum to avoid searching the list.
-    //
-    // TODO-Throughput: Inserting an edge for a block in sorted order requires searching every existing edge.
-    // Thus, inserting all the edges for a block is quadratic in the number of edges. We need to either
-    // not bother sorting for debuggable code, or sort in optFindNaturalLoops, or better, make the code in
-    // optFindNaturalLoops not depend on order. This also requires ensuring that nobody else has taken a
-    // dependency on this order. Note also that we don't allow duplicates in the list; we maintain a DupCount
-    // count of duplication. This also necessitates walking the flow list for every edge we add.
+    // order of blockPred->bbID to avoid searching the list.
     //
     FlowEdge*  flow = nullptr;
     FlowEdge** listp;
@@ -123,7 +115,7 @@ FlowEdge* Compiler::fgAddRefPred(BasicBlock* block, BasicBlock* blockPred, FlowE
     if (initializingPreds)
     {
         // List is sorted order and we're adding references in
-        // increasing blockPred->bbNum order. The only possible
+        // increasing blockPred->bbID order. The only possible
         // dup list entry is the last one.
         //
         listp              = &block->bbPreds;
@@ -132,7 +124,7 @@ FlowEdge* Compiler::fgAddRefPred(BasicBlock* block, BasicBlock* blockPred, FlowE
         {
             listp = flowLast->getNextPredEdgeRef();
 
-            assert(flowLast->getSourceBlock()->bbNum <= blockPred->bbNum);
+            assert(flowLast->getSourceBlock()->bbID <= blockPred->bbID);
 
             if (flowLast->getSourceBlock() == blockPred)
             {
@@ -190,42 +182,6 @@ FlowEdge* Compiler::fgAddRefPred(BasicBlock* block, BasicBlock* blockPred, FlowE
             // Copy likelihood from old edge.
             //
             flow->setLikelihood(oldEdge->getLikelihood());
-        }
-
-        if (fgHaveValidEdgeWeights)
-        {
-            // We are creating an edge from blockPred to block
-            // and we have already computed the edge weights, so
-            // we will try to setup this new edge with valid edge weights.
-            //
-            if (oldEdge != nullptr)
-            {
-                // If our caller has given us the old edge weights
-                // then we will use them.
-                //
-                flow->setEdgeWeights(oldEdge->edgeWeightMin(), oldEdge->edgeWeightMax(), block);
-            }
-            else
-            {
-                // Set the max edge weight to be the minimum of block's or blockPred's weight
-                //
-                weight_t newWeightMax = min(block->bbWeight, blockPred->bbWeight);
-
-                // If we are inserting a conditional block the minimum weight is zero,
-                // otherwise it is the same as the edge's max weight.
-                if (blockPred->NumSucc() > 1)
-                {
-                    flow->setEdgeWeights(BB_ZERO_WEIGHT, newWeightMax, block);
-                }
-                else
-                {
-                    flow->setEdgeWeights(flow->edgeWeightMax(), newWeightMax, block);
-                }
-            }
-        }
-        else
-        {
-            flow->setEdgeWeights(BB_ZERO_WEIGHT, BB_MAX_WEIGHT, block);
         }
     }
 
@@ -401,7 +357,7 @@ FlowEdge** Compiler::fgGetPredInsertPoint(BasicBlock* blockPred, BasicBlock* new
 
     // Search pred list for insertion point
     //
-    while ((*listp != nullptr) && ((*listp)->getSourceBlock()->bbNum < blockPred->bbNum))
+    while ((*listp != nullptr) && ((*listp)->getSourceBlock()->bbID < blockPred->bbID))
     {
         listp = (*listp)->getNextPredEdgeRef();
     }

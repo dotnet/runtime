@@ -28,7 +28,10 @@ namespace System.Reflection.Tests
         {
             Module module = Assembly.Load(new AssemblyName("TinyAssembly")).ManifestModule;
             Assert.True(module.HasModuleVersionId());
-            Assert.Equal(Guid.Parse("{06BB2468-908C-48CF-ADE9-DB6DE4614004}"), module.GetModuleVersionId());
+            if (!(PlatformDetection.IsMonoRuntime && PlatformDetection.IsAppleMobile && PlatformDetection.IsBuiltWithAggressiveTrimming))
+            {
+                Assert.Equal(Guid.Parse("{06BB2468-908C-48CF-ADE9-DB6DE4614004}"), module.GetModuleVersionId());
+            }
         }
     }
 }

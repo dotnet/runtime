@@ -69,13 +69,15 @@ namespace Microsoft.Interop
 
         public bool IsInheritedMethod => OriginalDeclaringInterface != OwningInterface;
 
+        public bool IsHiddenOnDerivedInterface { get; set; }
+
         private GeneratedMethodContextBase? _managedToUnmanagedStub;
 
         public GeneratedMethodContextBase ManagedToUnmanagedStub => _managedToUnmanagedStub ??= CreateManagedToUnmanagedStub();
 
         private GeneratedMethodContextBase CreateManagedToUnmanagedStub()
         {
-            if (GenerationContext.VtableIndexData.Direction is not (MarshalDirection.ManagedToUnmanaged or MarshalDirection.Bidirectional))
+            if (GenerationContext.VtableIndexData.Direction is not (MarshalDirection.ManagedToUnmanaged or MarshalDirection.Bidirectional) || IsHiddenOnDerivedInterface)
             {
                 return new SkippedStubContext(OriginalDeclaringInterface.Info.Type);
             }
@@ -89,7 +91,7 @@ namespace Microsoft.Interop
 
         private GeneratedMethodContextBase CreateUnmanagedToManagedStub()
         {
-            if (GenerationContext.VtableIndexData.Direction is not (MarshalDirection.UnmanagedToManaged or MarshalDirection.Bidirectional))
+            if (GenerationContext.VtableIndexData.Direction is not (MarshalDirection.UnmanagedToManaged or MarshalDirection.Bidirectional) || IsHiddenOnDerivedInterface)
             {
                 return new SkippedStubContext(GenerationContext.OriginalDefiningType);
             }
@@ -126,7 +128,6 @@ namespace Microsoft.Interop
         {
             // DeclarationCopiedFromBaseDeclaration(<Arguments>)
             //    => ((<baseInterfaceType>)this).<MethodName>(<Arguments>);
-            var forwarder = new Forwarder();
             return MethodDeclaration(GenerationContext.SignatureContext.StubReturnType, MethodInfo.MethodName)
                 .WithModifiers(TokenList(Token(SyntaxKind.NewKeyword)))
                 .WithAttributeLists(List(GenerationContext.SignatureContext.AdditionalAttributes.Concat(MethodInfo.Attributes.Select(a => a.GenerateAttributeList()))))
@@ -140,8 +141,13 @@ namespace Microsoft.Interop
                                     CastExpression(OriginalDeclaringInterface.Info.Type.Syntax, IdentifierName("this"))),
                                 IdentifierName(MethodInfo.MethodName)),
                             ArgumentList(
-                                SeparatedList(GenerationContext.SignatureContext.ManagedParameters.Select(p => forwarder.AsArgument(p, new ManagedStubCodeContext())))))))
+                                SeparatedList(GenerationContext.SignatureContext.ManagedParameters.Select(GenerateArgument))))))
                 .WithSemicolonToken(Token(SyntaxKind.SemicolonToken));
+
+            static ArgumentSyntax GenerateArgument(TypePositionInfo info)
+                => info.IsByRef
+                ? Argument(IdentifierName(info.InstanceIdentifier)).WithRefKindKeyword(MarshallerHelpers.GetManagedArgumentRefKindKeyword(info))
+                : Argument(IdentifierName(info.InstanceIdentifier));
         }
 
         /// <summary>
@@ -192,6 +198,7 @@ namespace Microsoft.Interop
                     {
                         baseMethods = pair;
                     }
+
                     methods.AddRange(baseMethods);
                     startingIndex += baseMethods.Length;
                 }

@@ -52,7 +52,7 @@ namespace System.Security.Cryptography
         /// <summary>
         ///     Options used to set / get the property
         /// </summary>
-        public CngPropertyOptions Options { get; private set; }
+        public CngPropertyOptions Options { get; }
 
         public override bool Equals([NotNullWhen(true)] object? obj)
         {

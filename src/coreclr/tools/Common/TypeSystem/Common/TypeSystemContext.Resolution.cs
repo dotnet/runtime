@@ -4,7 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Reflection;
+using System.Reflection.Metadata;
 
 using Internal.NativeFormat;
 
@@ -24,7 +24,7 @@ namespace Internal.TypeSystem
             SystemModule = systemModule;
         }
 
-        public virtual ModuleDesc ResolveAssembly(AssemblyName name, bool throwIfNotFound = true)
+        public virtual ModuleDesc ResolveAssembly(AssemblyNameInfo name, bool throwIfNotFound = true)
         {
             if (throwIfNotFound)
                 throw new NotSupportedException();

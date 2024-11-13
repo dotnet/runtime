@@ -1,10 +1,5 @@
 <Directives>
   <Application>
-    <Assembly Name="System.Private.CoreLib">
-      <!-- xUnit needs for Assert.Equals -->
-      <Type Name="System.IEquatable`1[[System.Range,System.Private.CoreLib]]" Dynamic="Required All" />
-    </Assembly>
-
     <Assembly Name="System.Memory.Tests">
       <Type Name="System.SpanTests.SpanTests">
         <Method Name="Sort" Dynamic="Required All">

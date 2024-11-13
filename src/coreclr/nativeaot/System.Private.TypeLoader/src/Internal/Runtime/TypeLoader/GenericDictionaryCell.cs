@@ -152,13 +152,24 @@ namespace Internal.Runtime.TypeLoader
             internal override void Prepare(TypeBuilder builder)
             {
                 _resolvedMethod = TypeLoaderEnvironment.GVMLookupForSlotWorker(ConstraintType, ConstrainedMethod);
-                builder.PrepareMethod(_resolvedMethod);
+
+                if (_resolvedMethod.CanShareNormalGenericCode())
+                    builder.PrepareMethod(_resolvedMethod);
             }
 
             internal override IntPtr Create(TypeBuilder builder)
             {
-                IntPtr methodDictionary = _resolvedMethod.RuntimeMethodDictionary;
-                return FunctionPointerOps.GetGenericMethodFunctionPointer(_resolvedMethod.FunctionPointer, methodDictionary);
+                if (_resolvedMethod.CanShareNormalGenericCode())
+                {
+                    IntPtr methodDictionary = _resolvedMethod.RuntimeMethodDictionary;
+                    return FunctionPointerOps.GetGenericMethodFunctionPointer(_resolvedMethod.FunctionPointer, methodDictionary);
+                }
+                else
+                {
+                    if (!TypeLoaderEnvironment.Instance.TryLookupExactMethodPointer(_resolvedMethod, out nint result))
+                        Environment.FailFast("Unable to find exact method pointer for a resolved GVM.");
+                    return result;
+                }
             }
         }
 
@@ -337,9 +348,19 @@ namespace Internal.Runtime.TypeLoader
             {
                 IntPtr result = TypeLoaderEnvironment.TryGetDefaultConstructorForType(Type);
 
-
-                if (result == IntPtr.Zero)
+                if (result != IntPtr.Zero)
+                {
+                    if (Type.IsValueType)
+                    {
+                        result = TypeLoaderEnvironment.ConvertUnboxingFunctionPointerToUnderlyingNonUnboxingPointer(result,
+                            builder.GetRuntimeTypeHandle(Type));
+                    }
+                }
+                else
+                {
                     result = RuntimeAugments.GetFallbackDefaultConstructor();
+                }
+
                 return result;
             }
         }

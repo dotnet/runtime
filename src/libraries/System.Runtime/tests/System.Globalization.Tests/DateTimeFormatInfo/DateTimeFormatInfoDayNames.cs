@@ -28,6 +28,12 @@ namespace System.Globalization.Tests
             yield return new object[] { new string[] { "", "", "", "", "", "", "" } };
         }
 
+        public static IEnumerable<object[]> DayNames_Get_TestData_ICU()
+        {
+            yield return new object[] { CultureInfo.GetCultureInfo("en-US").DateTimeFormat, new string[] { "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday" } };
+            yield return new object[] { CultureInfo.GetCultureInfo("fr-FR").DateTimeFormat, new string[] { "dimanche", "lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi" } };
+        }
+
         public static IEnumerable<object[]> DayNames_Get_TestData_HybridGlobalization()
         {
             yield return new object[] { "ar-SA", new string[] { "الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت" } };
@@ -76,6 +82,13 @@ namespace System.Globalization.Tests
             yield return new object[] { "uk-UA", new string[] { "неділя", "понеділок", "вівторок", "середа", "четвер", "пʼятниця", "субота" } };
             yield return new object[] { "vi-VN", new string[] { "Chủ Nhật", "Thứ Hai", "Thứ Ba", "Thứ Tư", "Thứ Năm", "Thứ Sáu", "Thứ Bảy" } };
             yield return new object[] { "zh-TW", new string[] { "星期日", "星期一", "星期二", "星期三", "星期四", "星期五", "星期六" } };
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsIcuGlobalization))]
+        [MemberData(nameof(DayNames_Get_TestData_ICU))]
+        public void DayNames_Get_ReturnsExpected_ICU(DateTimeFormatInfo format, string[] expected)
+        {
+            Assert.Equal(expected, format.DayNames);
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnBrowser))]

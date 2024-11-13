@@ -14,7 +14,7 @@
 #include "mono/metadata/class-internals.h"
 #include "mono/utils/mono-error-internals.h"
 #include "mono/metadata/unsafe-accessor.h"
-
+#include <mono/metadata/debug-helpers.h>
 
 
 static MonoMethod *
@@ -134,7 +134,10 @@ find_method_slow (MonoClass *klass, const char *name, const char *qname, const c
 						return precise_match;
 				}
 				mono_error_set_generic_error (error, "System.Reflection", "AmbiguousMatchException", "Ambiguity in binding of UnsafeAccessorAttribute.");
-				return NULL;
+				result->i = -1;
+				result->m = NULL;
+				result->matched = FALSE;
+				return result;
 			}
 			matched = TRUE;
 			result->i = i;
@@ -176,23 +179,10 @@ find_method_in_class_unsafe_accessor (MonoClass *klass, const char *name, const 
 	if (!is_ok(error) && mono_error_get_error_code (error) == MONO_ERROR_GENERIC)
 		return NULL;
 
-	int mcount = mono_class_get_method_count (klass);
 
 	g_assert (result != NULL);
 	if (result->matched) {
-		if (result->i < mcount)
-			return mono_class_get_method_by_index (from_class, result->i);
-		else if (result->m != NULL) {
-			// FIXME: metadata-update: hack
-			// it's from a metadata-update, probably
-			MonoMethod * m = mono_class_inflate_generic_method_full_checked (
-				result->m, from_class, mono_class_get_context (from_class), error);
-			mono_error_assert_ok (error);
-			g_assert (m != NULL);
-			g_assert (m->klass == from_class);
-			g_assert (m->is_inflated);
-			return m;
-		}
+		return result->m;
 	}
 
 	g_free (result);

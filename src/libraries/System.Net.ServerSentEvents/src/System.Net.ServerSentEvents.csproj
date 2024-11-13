@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppPrevious);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <IsPackable>true</IsPackable>
+    <PackageDescription>Provides a simple parser for server-sent events (SSE).
+
+Commonly Used Types:
+System.Net.ServerSentEvents.SseParser</PackageDescription>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="System\Net\ServerSentEvents\SseParser_1.cs" />
+    <Compile Include="System\Net\ServerSentEvents\SseItem.cs" />
+    <Compile Include="System\Net\ServerSentEvents\SseItemParser.cs" />
+    <Compile Include="System\Net\ServerSentEvents\SseParser.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Bcl.AsyncInterfaces\src\Microsoft.Bcl.AsyncInterfaces.csproj" />
+
+    <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
+    <PackageReference Include="System.Threading.Tasks.Extensions" Version="$(SystemThreadingTasksExtensionsVersion)" />
+  </ItemGroup>
+
+</Project>

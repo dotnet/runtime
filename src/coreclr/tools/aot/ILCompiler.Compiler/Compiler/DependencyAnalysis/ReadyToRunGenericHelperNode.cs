@@ -222,6 +222,13 @@ namespace ILCompiler.DependencyAnalysis
                 dependencies.Add(new DependencyListEntry(dependency, "GenericLookupResultDependency"));
             }
 
+            if (_id == ReadyToRunHelperId.DelegateCtor)
+            {
+                var delegateCreationInfo = (DelegateCreationInfo)_target;
+                MethodDesc targetMethod = delegateCreationInfo.PossiblyUnresolvedTargetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
+                factory.MetadataManager.GetDependenciesDueToDelegateCreation(ref dependencies, factory, delegateCreationInfo.DelegateType, targetMethod);
+            }
+
             return dependencies;
         }
 
@@ -335,7 +342,7 @@ namespace ILCompiler.DependencyAnalysis
             else
                 mangledContextName = nameMangler.GetMangledTypeName((TypeDesc)_dictionaryOwner);
 
-            sb.Append("__GenericLookupFromDict_").Append(mangledContextName).Append("_");
+            sb.Append("__GenericLookupFromDict_"u8).Append(mangledContextName).Append("_"u8);
             AppendLookupSignatureMangledName(nameMangler, sb);
         }
 
@@ -357,7 +364,7 @@ namespace ILCompiler.DependencyAnalysis
             else
                 mangledContextName = nameMangler.GetMangledTypeName((TypeDesc)_dictionaryOwner);
 
-            sb.Append("__GenericLookupFromType_").Append(mangledContextName).Append("_");
+            sb.Append("__GenericLookupFromType_"u8).Append(mangledContextName).Append("_"u8);
             AppendLookupSignatureMangledName(nameMangler, sb);
         }
 

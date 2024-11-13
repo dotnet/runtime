@@ -1343,7 +1343,7 @@ mono_method_get_imt_slot (MonoMethod *method)
 	}
 
 	/* Initialize hashes */
-	hashes [0] = mono_metadata_str_hash (m_class_get_name (method->klass));
+	hashes [0] = m_class_get_name_hash (method->klass);
 	hashes [1] = mono_metadata_str_hash (m_class_get_name_space (method->klass));
 	hashes [2] = mono_metadata_str_hash (method->name);
 	hashes [3] = mono_metadata_type_hash (sig->ret);
@@ -6529,7 +6529,7 @@ mono_value_box_handle (MonoClass *klass, gpointer value, MonoError *error)
 
 	error_init (error);
 
-	g_assert (m_class_is_valuetype (klass));
+	g_assert (m_class_is_valuetype (klass) || mono_class_is_pointer (klass));
 	g_assert (value != NULL);
 	if (G_UNLIKELY (m_class_is_byreflike (klass))) {
 		char *full_name = mono_type_get_full_name (klass);

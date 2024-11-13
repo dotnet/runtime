@@ -3,7 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-
+using ILLink.Shared.DataFlow;
 using Internal.TypeSystem;
 
 #nullable enable

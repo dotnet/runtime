@@ -204,7 +204,7 @@ mono_file_map_error (size_t length, int flags, int fd, guint64 offset, void **re
 	// been one DWORD in 32bit Windows, expanded to SIZE_T in 64bit Windows.
 	// It is 64bits even on 32bit Windows to allow large files.
 	//
-	// See https://docs.microsoft.com/en-us/windows/desktop/Memory/creating-a-file-mapping-object.
+	// See https://learn.microsoft.com/windows/desktop/Memory/creating-a-file-mapping-object.
 	const guint64 mapping_length = offset + length;
 
 #if HAVE_API_SUPPORT_WIN32_FILE_MAPPING

@@ -182,16 +182,16 @@ build_property.{MSBuildPropertyOptionNames.EnableSingleFileAnalyzer} = true")));
 
 			class C
 			{
-				bool field;
+				bool @field;
 
 				[RequiresAssemblyFiles]
 				bool P {
 					get {
-						return field;
+						return @field;
 					}
 					set {
 						CallDangerousMethod ();
-						field = value;
+						@field = value;
 					}
 				}
 

@@ -409,8 +409,6 @@ ReplayResults JitInstance::CompileMethod(MethodContext* MethodToCompile, int mcI
             pParam->pThis->mc->cr->recAllocGCInfoCapture();
 
             pParam->pThis->mc->cr->recMessageLog(jitResult == CORJIT_OK ? "Successful Compile" : "Successful Compile (BADCODE)");
-
-            pParam->results.NumCodeBytes = NCodeSizeBlock;
         }
         else
         {
@@ -475,7 +473,7 @@ void JitInstance::timeResult(CORINFO_METHOD_INFO info, unsigned flags)
 
     int sampleSize = 10;
     // Save 2 smallest times. To help reduce noise, we will look at the closest pair of these.
-    unsigned __int64 time;
+    uint64_t time;
 
     for (int i = 0; i < sampleSize; i++)
     {

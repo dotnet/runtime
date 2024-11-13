@@ -430,11 +430,11 @@ namespace System.Text.Json
             Debug.Assert(indent <= _indentLength * _options.MaxDepth);
 
             Debug.Assert(value.Length <= JsonConstants.MaxUnescapedTokenSize);
-            Debug.Assert(escapedPropertyName.Length < (int.MaxValue / JsonConstants.MaxExpansionFactorWhileTranscoding) - indent - value.Length - 5 - s_newLineLength);
+            Debug.Assert(escapedPropertyName.Length < (int.MaxValue / JsonConstants.MaxExpansionFactorWhileTranscoding) - indent - value.Length - 5 - _newLineLength);
 
             // All ASCII, 2 quotes for property name, 1 colon, and 1 space => escapedPropertyName.Length + value.Length + 4
             // Optionally, 1 list separator, 1-2 bytes for new line, and up to 3x growth when transcoding
-            int maxRequired = indent + (escapedPropertyName.Length * JsonConstants.MaxExpansionFactorWhileTranscoding) + value.Length + 5 + s_newLineLength;
+            int maxRequired = indent + (escapedPropertyName.Length * JsonConstants.MaxExpansionFactorWhileTranscoding) + value.Length + 5 + _newLineLength;
 
             if (_memory.Length - BytesPending < maxRequired)
             {
@@ -476,10 +476,10 @@ namespace System.Text.Json
             Debug.Assert(indent <= _indentLength * _options.MaxDepth);
 
             Debug.Assert(value.Length <= JsonConstants.MaxUnescapedTokenSize);
-            Debug.Assert(escapedPropertyName.Length < int.MaxValue - indent - value.Length - 5 - s_newLineLength);
+            Debug.Assert(escapedPropertyName.Length < int.MaxValue - indent - value.Length - 5 - _newLineLength);
 
             int minRequired = indent + escapedPropertyName.Length + value.Length + 4; // 2 quotes for property name, 1 colon, and 1 space
-            int maxRequired = minRequired + 1 + s_newLineLength; // Optionally, 1 list separator and 1-2 bytes for new line
+            int maxRequired = minRequired + 1 + _newLineLength; // Optionally, 1 list separator and 1-2 bytes for new line
 
             if (_memory.Length - BytesPending < maxRequired)
             {

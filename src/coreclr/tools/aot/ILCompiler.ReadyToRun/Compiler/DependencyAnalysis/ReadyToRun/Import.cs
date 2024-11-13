@@ -54,7 +54,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public virtual void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             sb.Append(Table.Name);
-            sb.Append("->");
+            sb.Append("->"u8);
             ImportSignature.AppendMangledName(nameMangler, sb);
         }
 

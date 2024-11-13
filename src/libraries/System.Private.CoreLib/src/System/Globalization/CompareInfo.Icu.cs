@@ -192,16 +192,29 @@ namespace System.Globalization
                 Next: ;
                 }
 
+                // Before we return -1, check if the remaining source contains any special or non-Ascii characters.
+                ReadOnlySpan<char> remainingSource = fromBeginning
+                    ? source.Slice(endIndex)
+                    : source.Slice(0, startIndex);
+
+                if (remainingSource.ContainsAnyExcept(s_nonSpecialAsciiChars))
+                {
+                    goto InteropCall;
+                }
+
                 return -1;
 
             InteropCall:
 #if TARGET_BROWSER
                 if (GlobalizationMode.Hybrid)
                 {
-                    int result = Interop.JsGlobalization.IndexOf(m_name, b, target.Length, a, source.Length, options, fromBeginning, out int exception, out object ex_result);
-                    if (exception != 0)
-                        throw new Exception((string)ex_result);
-                    return result;
+                    ReadOnlySpan<char> cultureNameSpan = m_name.AsSpan();
+                    fixed (char* pCultureName = &MemoryMarshal.GetReference(cultureNameSpan))
+                    {
+                        nint exceptionPtr = Interop.JsGlobalization.IndexOf(pCultureName, cultureNameSpan.Length, b, target.Length, a, source.Length, options, fromBeginning, out int result);
+                        Helper.MarshalAndThrowIfException(exceptionPtr);
+                        return result;
+                    }
                 }
 #elif TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
                 if (GlobalizationMode.Hybrid)
@@ -300,10 +313,13 @@ namespace System.Globalization
 #if TARGET_BROWSER
                 if (GlobalizationMode.Hybrid)
                 {
-                    int result = Interop.JsGlobalization.IndexOf(m_name, b, target.Length, a, source.Length, options, fromBeginning, out int exception, out object ex_result);
-                    if (exception != 0)
-                        throw new Exception((string)ex_result);
-                    return result;
+                    ReadOnlySpan<char> cultureNameSpan = m_name.AsSpan();
+                    fixed (char* pCultureName = &MemoryMarshal.GetReference(cultureNameSpan))
+                    {
+                        nint exceptionPtr = Interop.JsGlobalization.IndexOf(pCultureName, cultureNameSpan.Length, b, target.Length, a, source.Length, options, fromBeginning, out int result);
+                        Helper.MarshalAndThrowIfException(exceptionPtr);
+                        return result;
+                    }
                 }
 #elif TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
                 if (GlobalizationMode.Hybrid)

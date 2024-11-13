@@ -36,7 +36,7 @@ namespace System.Runtime.InteropServices
     /// Suppressing the GC transition is an advanced scenario and should not be done without fully understanding
     /// potential consequences.
     ///
-    /// One of these consequences is an impact to Mixed-mode debugging (https://docs.microsoft.com/visualstudio/debugger/how-to-debug-in-mixed-mode).
+    /// One of these consequences is an impact to Mixed-mode debugging (https://learn.microsoft.com/visualstudio/debugger/how-to-debug-in-mixed-mode).
     /// During Mixed-mode debugging, it is not possible to step into or set breakpoints in a P/Invoke that
     /// has been marked with this attribute. A workaround is to switch to native debugging and set a breakpoint in the native function.
     /// In general, usage of this attribute is not recommended if debugging the P/Invoke is important, for example

@@ -430,7 +430,7 @@ HRESULT EECodeManager::FixContextForEnC(PCONTEXT         pCtx,
             {
                 // This is an explicit (not special) var, so add its varNumber + 1 to our
                 // max count ("+1" because varNumber is zero-based).
-                oldNumVars = max(oldNumVars, unsigned(-ICorDebugInfo::UNKNOWN_ILNUM) + varNumber + 1);
+                oldNumVars = max(oldNumVars, (unsigned)(unsigned(-ICorDebugInfo::UNKNOWN_ILNUM) + varNumber + 1));
             }
         }
 
@@ -484,7 +484,7 @@ HRESULT EECodeManager::FixContextForEnC(PCONTEXT         pCtx,
             {
                 // This is an explicit (not special) var, so add its varNumber + 1 to our
                 // max count ("+1" because varNumber is zero-based).
-                newNumVars = max(newNumVars, unsigned(-ICorDebugInfo::UNKNOWN_ILNUM) + varNumber + 1);
+                newNumVars = max(newNumVars, (unsigned)(unsigned(-ICorDebugInfo::UNKNOWN_ILNUM) + varNumber + 1));
             }
         }
 
@@ -843,7 +843,13 @@ bool EECodeManager::IsGcSafe( EECodeInfo     *pCodeInfo,
             dwRelOffset
             );
 
-    return gcInfoDecoder.IsInterruptible();
+    if (gcInfoDecoder.IsInterruptible())
+        return true;
+
+    if (gcInfoDecoder.IsSafePoint())
+        return true;
+
+    return false;
 }
 
 #if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
@@ -939,7 +945,7 @@ unsigned EECodeManager::FindEndOfLastInterruptibleRegion(unsigned curOffset,
     return state.lastRangeOffset;
 #else
     DacNotImpl();
-    return NULL;
+    return 0;
 #endif // #ifndef DACCESS_COMPILE
 }
 
@@ -1180,7 +1186,6 @@ bool EECodeManager::UnwindStackFrame(PREGDISPLAY     pContext,
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
-        HOST_NOCALLS;
         SUPPORTS_DAC;
     } CONTRACTL_END;
 
@@ -1409,31 +1414,6 @@ bool EECodeManager::EnumGcRefs( PREGDISPLAY     pRD,
 
     GCInfoToken gcInfoToken = pCodeInfo->GetGCInfoToken();
 
-#if defined(STRESS_HEAP) && defined(PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED)
-    // When we simulate a hijack during gcstress
-    //  we start with ActiveStackFrame and the offset
-    //  after the call
-    // We need to make it look like a non-leaf frame
-    //  so that it's treated like a regular hijack
-    if (flags & ActiveStackFrame)
-    {
-        GcInfoDecoder _gcInfoDecoder(
-                            gcInfoToken,
-                            DECODE_INTERRUPTIBILITY,
-                            curOffs
-                            );
-        if(!_gcInfoDecoder.IsInterruptible())
-        {
-            // This must be the offset after a call
-#ifdef _DEBUG
-            GcInfoDecoder _safePointDecoder(gcInfoToken, (GcInfoDecoderFlags)0, 0);
-            _ASSERTE(_safePointDecoder.IsSafePoint(curOffs));
-#endif
-            flags &= ~((unsigned)ActiveStackFrame);
-        }
-    }
-#endif // STRESS_HEAP && PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED
-
 #ifdef _DEBUG
     if (flags & ActiveStackFrame)
     {
@@ -1442,7 +1422,7 @@ bool EECodeManager::EnumGcRefs( PREGDISPLAY     pRD,
                             DECODE_INTERRUPTIBILITY,
                             curOffs
                             );
-        _ASSERTE(_gcInfoDecoder.IsInterruptible());
+        _ASSERTE(_gcInfoDecoder.IsInterruptible() || _gcInfoDecoder.CouldBeSafePoint());
     }
 #endif
 
@@ -1466,17 +1446,15 @@ bool EECodeManager::EnumGcRefs( PREGDISPLAY     pRD,
     }
     else
     {
-        /* However if ExecutionAborted, then this must be one of the
-         * ExceptionFrames. Handle accordingly
-         */
-        _ASSERTE(!(flags & AbortingCall) || !(flags & ActiveStackFrame));
+        // Since we are aborting execution, we are either in a frame that actually faulted or in a throwing call.
+        // * We do not need to adjust in a leaf
+        // * A throwing call will have unreachable <brk> after it, thus GC info is the same as before the call.
+        // 
+        // Either way we do not need to adjust.
 
-        if (flags & AbortingCall)
-        {
-            curOffs--;
-            LOG((LF_GCINFO, LL_INFO1000, "Adjusted GC reporting offset due to flags ExecutionAborted && AbortingCall. Now reporting GC refs for %s at offset %04x.\n",
-                methodName, curOffs));
-        }
+        // NOTE: only fully interruptible methods may need to report anything here as without
+        //       exception handling all current local variables are already unreachable.
+        //       EnumerateLiveSlots will shortcircuit the partially interruptible case just a bit later.
     }
 
     // Check if we have been given an override value for relOffset
@@ -1532,6 +1510,24 @@ bool EECodeManager::EnumGcRefs( PREGDISPLAY     pRD,
                         GcInfoDecoderFlags (DECODE_GC_LIFETIMES | DECODE_SECURITY_OBJECT | DECODE_VARARG),
                         curOffs
                         );
+
+    if ((flags & ActiveStackFrame) != 0)
+    {
+        // CONSIDER: We can optimize this by remembering the need to adjust in IsSafePoint and propagating into here.
+        //           Or, better yet, maybe we should change the decoder to not require this adjustment.
+        //           The scenario that adjustment tries to handle (fallthrough into BB with random liveness)
+        //           does not seem possible.
+        if (!gcInfoDecoder.HasInterruptibleRanges())
+        {
+            gcInfoDecoder = GcInfoDecoder(
+                gcInfoToken,
+                GcInfoDecoderFlags(DECODE_GC_LIFETIMES | DECODE_SECURITY_OBJECT | DECODE_VARARG),
+                curOffs - 1
+            );
+
+            _ASSERTE(gcInfoDecoder.CouldBeSafePoint());
+        }
+    }
 
     if (!gcInfoDecoder.EnumerateLiveSlots(
                         pRD,
@@ -1946,6 +1942,7 @@ PTR_VOID EECodeManager::GetExactGenericsToken(SIZE_T          baseStackSlot,
 
 void * EECodeManager::GetGSCookieAddr(PREGDISPLAY     pContext,
                                       EECodeInfo *    pCodeInfo,
+                                      unsigned        flags,
                                       CodeManState  * pState)
 {
     CONTRACTL {
@@ -1958,6 +1955,14 @@ void * EECodeManager::GetGSCookieAddr(PREGDISPLAY     pContext,
 
 #ifdef FEATURE_EH_FUNCLETS
     if (pCodeInfo->IsFunclet())
+    {
+        return NULL;
+    }
+#endif
+
+#ifdef HAS_LIGHTUNWIND
+    // LightUnwind does not track sufficient context to compute GS cookie address
+    if (flags & LightUnwind)
     {
         return NULL;
     }
@@ -2013,7 +2018,7 @@ void * EECodeManager::GetGSCookieAddr(PREGDISPLAY     pContext,
             // Detect the end of GS cookie scope by comparing its address with SP
             // gcInfoDecoder.GetGSCookieValidRangeEnd() is not accurate. It does not
             // account for GS cookie going out of scope inside epilog or multiple epilogs.
-            return (LPVOID) ((ptr >= pContext->SP) ? ptr : NULL);
+            return (ptr >= pContext->SP) ? (LPVOID)ptr : nullptr;
         }
     }
     return NULL;

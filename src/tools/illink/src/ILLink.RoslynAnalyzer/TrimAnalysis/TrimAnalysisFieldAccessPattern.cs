@@ -1,9 +1,8 @@
 // Copyright (c) .NET Foundation and contributors. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.Collections.Generic;
+using System;
 using System.Diagnostics;
-using ILLink.Shared.DataFlow;
 using ILLink.Shared.TrimAnalysis;
 using ILLink.RoslynAnalyzer.DataFlow;
 using Microsoft.CodeAnalysis;
@@ -11,7 +10,7 @@ using Microsoft.CodeAnalysis.Operations;
 
 namespace ILLink.RoslynAnalyzer.TrimAnalysis
 {
-	public readonly record struct TrimAnalysisFieldAccessPattern
+	internal readonly record struct TrimAnalysisFieldAccessPattern
 	{
 		public IFieldSymbol Field { get; init; }
 		public IFieldReferenceOperation Operation { get; init; }
@@ -31,7 +30,6 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 		}
 
 		public TrimAnalysisFieldAccessPattern Merge (
-			ValueSetLattice<SingleValue> lattice,
 			FeatureContextLattice featureContextLattice,
 			TrimAnalysisFieldAccessPattern other)
 		{
@@ -46,15 +44,11 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 				featureContextLattice.Meet (FeatureContext, other.FeatureContext));
 		}
 
-		public IEnumerable<Diagnostic> CollectDiagnostics (DataFlowAnalyzerContext context)
+		public void ReportDiagnostics (DataFlowAnalyzerContext context, Action<Diagnostic> reportDiagnostic)
 		{
-			DiagnosticContext diagnosticContext = new (Operation.Syntax.GetLocation ());
-			foreach (var requiresAnalyzer in context.EnabledRequiresAnalyzers) {
-				if (requiresAnalyzer.CheckAndCreateRequiresDiagnostic (Operation, Field, OwningSymbol, context, FeatureContext, out Diagnostic? diag))
-					diagnosticContext.AddDiagnostic (diag);
-			}
-
-			return diagnosticContext.Diagnostics;
+			DiagnosticContext diagnosticContext = new (Operation.Syntax.GetLocation (), reportDiagnostic);
+			foreach (var requiresAnalyzer in context.EnabledRequiresAnalyzers)
+				requiresAnalyzer.CheckAndCreateRequiresDiagnostic (Operation, Field, OwningSymbol, context, FeatureContext, in diagnosticContext);
 		}
 	}
 }

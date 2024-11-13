@@ -7,7 +7,7 @@ import WasmEnableJsInteropByValue from "consts:wasmEnableJsInteropByValue";
 
 import cwraps from "./cwraps";
 import { _lookup_js_owned_object, mono_wasm_get_js_handle, mono_wasm_get_jsobj_from_js_handle, mono_wasm_release_cs_owned_object, register_with_jsv_handle, setup_managed_proxy, teardown_managed_proxy } from "./gc-handles";
-import { Module, loaderHelpers, mono_assert } from "./globals";
+import { loaderHelpers, mono_assert } from "./globals";
 import {
     ManagedObject, ManagedError,
     get_arg_gc_handle, get_arg_js_handle, get_arg_type, get_arg_i32, get_arg_f64, get_arg_i52, get_arg_i16, get_arg_u8, get_arg_f32,
@@ -20,9 +20,8 @@ import { monoStringToString, utf16ToString } from "./strings";
 import { GCHandleNull, JSMarshalerArgument, JSMarshalerArguments, JSMarshalerType, MarshalerToCs, MarshalerToJs, BoundMarshalerToJs, MarshalerType, JSHandle } from "./types/internal";
 import { TypedArray } from "./types/emscripten";
 import { get_marshaler_to_cs_by_type, jsinteropDoc, marshal_exception_to_cs } from "./marshal-to-cs";
-import { localHeapViewF64, localHeapViewI32, localHeapViewU8 } from "./memory";
+import { fixupPointer, free, localHeapViewF64, localHeapViewI32, localHeapViewU8 } from "./memory";
 import { call_delegate } from "./managed-exports";
-import { gc_locked } from "./gc-lock";
 import { mono_log_debug } from "./logging";
 import { invoke_later_when_on_ui_thread_async } from "./invoke-js";
 
@@ -301,7 +300,7 @@ function try_marshal_sync_task_to_js (arg: JSMarshalerArgument, type: MarshalerT
             // when we arrived here from _marshal_cs_object_to_js
             res_converter = cs_to_js_marshalers.get(element_type);
         }
-        mono_assert(res_converter, () => `Unknown sub_converter for type ${MarshalerType[element_type]}. ${jsinteropDoc}`);
+        mono_assert(res_converter, () => `Unknown sub_converter for type ${element_type}. ${jsinteropDoc}`);
 
         const val = res_converter(arg);
         return Promise.resolve(val);
@@ -324,13 +323,13 @@ function create_task_holder (res_converter?: MarshalerToJs) {
                     // when we arrived here from _marshal_cs_object_to_js
                     res_converter = cs_to_js_marshalers.get(type);
                 }
-                mono_assert(res_converter, () => `Unknown sub_converter for type ${MarshalerType[type]}. ${jsinteropDoc}`);
+                mono_assert(res_converter, () => `Unknown sub_converter for type ${type}. ${jsinteropDoc}`);
 
                 const js_value = res_converter!(argInner);
                 promise_control.resolve(js_value);
             }
         } else {
-            mono_assert(false, () => `Unexpected type ${MarshalerType[type]}`);
+            mono_assert(false, () => `Unexpected type ${type}`);
         }
         mono_wasm_release_cs_owned_object(js_handle);
     });
@@ -346,6 +345,7 @@ export function mono_wasm_resolve_or_reject_promise_impl (args: JSMarshalerArgum
         mono_log_debug("This promise resolution/rejection can't be propagated to managed code, mono runtime already exited.");
         return;
     }
+    args = fixupPointer(args, 0);
     const exc = get_arg(args, 0);
     const receiver_should_free = WasmEnableThreads && is_receiver_should_free(args);
     try {
@@ -364,7 +364,7 @@ export function mono_wasm_resolve_or_reject_promise_impl (args: JSMarshalerArgum
         holder.resolve_or_reject(type, js_handle, arg_value);
         if (receiver_should_free) {
             // this works together with AllocHGlobal in JSFunctionBinding.ResolveOrRejectPromise
-            Module._free(args as any);
+            free(args as any);
         } else {
             set_arg_type(res, MarshalerType.Void);
             set_arg_type(exc, MarshalerType.None);
@@ -387,9 +387,10 @@ export function marshal_string_to_js (arg: JSMarshalerArgument): string | null {
         const buffer = get_arg_intptr(arg);
         const len = get_arg_length(arg) * 2;
         const value = utf16ToString(<any>buffer, <any>buffer + len);
-        Module._free(buffer as any);
+        free(buffer as any);
         return value;
     } else {
+        mono_assert(!WasmEnableThreads, "Marshaling strings by reference is not supported in multithreaded mode");
         const root = get_string_root(arg);
         try {
             const value = monoStringToString(root);
@@ -478,7 +479,7 @@ function _marshal_cs_object_to_js (arg: JSMarshalerArgument): any {
 
     // other types
     const converter = cs_to_js_marshalers.get(marshaler_type);
-    mono_assert(converter, () => `Unknown converter for type ${MarshalerType[marshaler_type]}. ${jsinteropDoc}`);
+    mono_assert(converter, () => `Unknown converter for type ${marshaler_type}. ${jsinteropDoc}`);
     return converter(arg);
 }
 
@@ -493,7 +494,7 @@ function _marshal_array_to_js_impl (arg: JSMarshalerArgument, element_type: Mars
         return null;
     }
     const elementSize = array_element_size(element_type);
-    mono_assert(elementSize != -1, () => `Element type ${MarshalerType[element_type]} not supported`);
+    mono_assert(elementSize != -1, () => `Element type ${element_type} not supported`);
     const buffer_ptr = get_arg_intptr(arg);
     const length = get_arg_length(arg);
     let result: Array<any> | TypedArray | null = null;
@@ -504,7 +505,7 @@ function _marshal_array_to_js_impl (arg: JSMarshalerArgument, element_type: Mars
             result[index] = marshal_string_to_js(element_arg);
         }
         if (!WasmEnableJsInteropByValue) {
-            mono_assert(!WasmEnableThreads || !gc_locked, "GC must not be locked when disposing a GC root");
+            mono_assert(!WasmEnableThreads, "Marshaling string by reference is not supported in multithreaded mode");
             cwraps.mono_wasm_deregister_root(<any>buffer_ptr);
         }
     } else if (element_type == MarshalerType.Object) {
@@ -514,7 +515,7 @@ function _marshal_array_to_js_impl (arg: JSMarshalerArgument, element_type: Mars
             result[index] = _marshal_cs_object_to_js(element_arg);
         }
         if (!WasmEnableJsInteropByValue) {
-            mono_assert(!WasmEnableThreads || !gc_locked, "GC must not be locked when disposing a GC root");
+            mono_assert(!WasmEnableThreads, "Marshaling objects by reference is not supported in multithreaded mode");
             cwraps.mono_wasm_deregister_root(<any>buffer_ptr);
         }
     } else if (element_type == MarshalerType.JSObject) {
@@ -524,18 +525,21 @@ function _marshal_array_to_js_impl (arg: JSMarshalerArgument, element_type: Mars
             result[index] = _marshal_js_object_to_js(element_arg);
         }
     } else if (element_type == MarshalerType.Byte) {
-        const sourceView = localHeapViewU8().subarray(<any>buffer_ptr, buffer_ptr + length);
+        const bufferOffset = fixupPointer(buffer_ptr, 0);
+        const sourceView = localHeapViewU8().subarray(bufferOffset, bufferOffset + length);
         result = sourceView.slice();//copy
     } else if (element_type == MarshalerType.Int32) {
-        const sourceView = localHeapViewI32().subarray(buffer_ptr >> 2, (buffer_ptr >> 2) + length);
+        const bufferOffset = fixupPointer(buffer_ptr, 2);
+        const sourceView = localHeapViewI32().subarray(bufferOffset, bufferOffset + length);
         result = sourceView.slice();//copy
     } else if (element_type == MarshalerType.Double) {
-        const sourceView = localHeapViewF64().subarray(buffer_ptr >> 3, (buffer_ptr >> 3) + length);
+        const bufferOffset = fixupPointer(buffer_ptr, 3);
+        const sourceView = localHeapViewF64().subarray(bufferOffset, bufferOffset + length);
         result = sourceView.slice();//copy
     } else {
-        throw new Error(`NotImplementedException ${MarshalerType[element_type]}. ${jsinteropDoc}`);
+        throw new Error(`NotImplementedException ${element_type}. ${jsinteropDoc}`);
     }
-    Module._free(<any>buffer_ptr);
+    free(<any>buffer_ptr);
     return result;
 }
 
@@ -552,7 +556,7 @@ function _marshal_span_to_js (arg: JSMarshalerArgument, element_type?: Marshaler
     } else if (element_type == MarshalerType.Double) {
         result = new Span(<any>buffer_ptr, length, MemoryViewType.Double);
     } else {
-        throw new Error(`NotImplementedException ${MarshalerType[element_type]}. ${jsinteropDoc}`);
+        throw new Error(`NotImplementedException ${element_type}. ${jsinteropDoc}`);
     }
     return result;
 }
@@ -570,7 +574,7 @@ function _marshal_array_segment_to_js (arg: JSMarshalerArgument, element_type?: 
     } else if (element_type == MarshalerType.Double) {
         result = new ArraySegment(<any>buffer_ptr, length, MemoryViewType.Double);
     } else {
-        throw new Error(`NotImplementedException ${MarshalerType[element_type]}. ${jsinteropDoc}`);
+        throw new Error(`NotImplementedException ${element_type}. ${jsinteropDoc}`);
     }
     const gc_handle = get_arg_gc_handle(arg);
     if (BuildConfiguration === "Debug") {

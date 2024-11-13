@@ -14,7 +14,7 @@ namespace Microsoft.Extensions.Configuration.Test
 
         public DisposableFileSystem()
         {
-#if NETCOREAPP
+#if NET
             DirectoryInfo = Directory.CreateTempSubdirectory();
 #else
             DirectoryInfo = new DirectoryInfo(Path.Combine(Path.GetTempPath(), Path.GetRandomFileName()));

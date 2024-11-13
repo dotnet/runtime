@@ -178,7 +178,7 @@ namespace Internal.TypeSystem.Interop
             Module = owningModule;
             ManagedStructType = managedStructType;
             _interopStateManager = interopStateManager;
-            _hasInvalidLayout = false;
+            _hasInvalidLayout = !managedStructType.HasLayout();
             _typeForFieldIteration = managedStructType.IsInlineArray ? new TypeWithRepeatedFields(managedStructType) : managedStructType;
 
             Stack<MetadataType> typesBeingLookedAt = (s_typesBeingLookedAt ??= new Stack<MetadataType>());

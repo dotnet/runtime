@@ -40,7 +40,7 @@ namespace ILCompiler
             ProcessTypes(assembly, nav, warnOnUnresolvedTypes);
         }
 
-        // protected override TypeDesc? ProcessExportedType(ExportedType exported, ModuleDesc assembly, XPathNavigator nav) => null;
+        protected override MetadataType ProcessExportedType(MetadataType exported, ModuleDesc assembly, XPathNavigator nav) => null;
 
         protected override bool ProcessTypePattern(string fullname, ModuleDesc assembly, XPathNavigator nav) => false;
 
