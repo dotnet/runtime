@@ -32,6 +32,7 @@ class Async2Transformation
     unsigned                      m_exceptionVar            = BAD_VAR_NUM;
     BasicBlock*                   m_lastSuspensionBB        = nullptr;
     BasicBlock*                   m_lastResumptionBB        = nullptr;
+    BasicBlock* m_sharedReturnBB                            = nullptr;
 
     void LiftLIREdges(BasicBlock*                    block,
                       GenTree*                       beyond,

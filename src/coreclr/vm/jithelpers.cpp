@@ -2644,7 +2644,7 @@ HCIMPL1(void, IL_ThrowExact, Object* obj)
     OBJECTREF oref = ObjectToOBJECTREF(obj);
 
 #if defined(_DEBUG) && defined(TARGET_X86)
-    __helperframe.InsureInit(false, NULL);
+    __helperframe.InsureInit(NULL);
     g_ExceptionEIP = (LPVOID)__helperframe.GetReturnAddress();
 #endif // defined(_DEBUG) && defined(TARGET_X86)
 
@@ -3927,6 +3927,15 @@ HCIMPL1(VOID, JIT_PartialCompilationPatchpoint, int ilOffset)
     UNREACHABLE();
 }
 HCIMPLEND
+
+void JIT_ResumeOSR(unsigned ilOffset)
+{
+    // Stub version if OSR feature is disabled
+    //
+    // Should not be called.
+
+    UNREACHABLE();
+}
 
 #endif // FEATURE_ON_STACK_REPLACEMENT
 

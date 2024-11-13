@@ -2639,8 +2639,7 @@ void MethodDesc::CreateDerivedTargetSigWithExtraParams(MetaSig& msig, SigBuilder
     stubSigBuilder->AppendByte(callingConvention);
 
     unsigned numArgs = msig.NumFixedArgs();
-    bool hasInstParam = msig.HasGenericContextArg() != FALSE;
-    if (hasInstParam)
+    if (msig.HasGenericContextArg())
         numArgs++;
     if (msig.HasAsyncContinuation())
         numArgs++;
@@ -2652,7 +2651,7 @@ void MethodDesc::CreateDerivedTargetSigWithExtraParams(MetaSig& msig, SigBuilder
     pReturn.ConvertToInternalExactlyOne(msig.GetModule(), msig.GetSigTypeContext(), stubSigBuilder);
 
 #ifndef TARGET_X86
-    if (hasInstParam)
+    if (msig.HasGenericContextArg())
     {
         // The hidden context parameter
         stubSigBuilder->AppendElementType(ELEMENT_TYPE_I);
@@ -2673,13 +2672,13 @@ void MethodDesc::CreateDerivedTargetSigWithExtraParams(MetaSig& msig, SigBuilder
     }
 
 #ifdef TARGET_X86
-    if (hasInstParam)
+    if (msig.HasGenericContextArg())
     {
         // The hidden context parameter
         stubSigBuilder->AppendElementType(ELEMENT_TYPE_I);
     }
 
-    if (hasAsyncCont)
+    if (msig.HasAsyncContinuation())
     {
         stubSigBuilder->AppendElementType(ELEMENT_TYPE_OBJECT);
     }

@@ -192,6 +192,22 @@ PhaseStatus Async2Transformation::Run()
     m_objectClsHnd = m_comp->info.compCompHnd->getBuiltinClass(CLASSID_SYSTEM_OBJECT);
     m_byteClsHnd   = m_comp->info.compCompHnd->getBuiltinClass(CLASSID_SYSTEM_BYTE);
 
+#ifdef JIT32_GCENCODER
+    // Due to a hard cap on epilogs we need a shared return here.
+    m_sharedReturnBB = m_comp->fgNewBBafter(BBJ_RETURN, m_comp->fgLastBBInMainFunction(), false);
+    m_sharedReturnBB->bbSetRunRarely();
+    m_sharedReturnBB->clearTryIndex();
+    m_sharedReturnBB->clearHndIndex();
+
+    GenTree* continuation = m_comp->gtNewLclvNode(m_newContinuationVar, TYP_REF);
+    GenTree* ret = m_comp->gtNewOperNode(GT_RETURN_SUSPEND, TYP_VOID, continuation);
+    LIR::AsRange(m_sharedReturnBB).InsertAtEnd(continuation, ret);
+
+    JITDUMP("Created shared return BB " FMT_BB "\n", m_sharedReturnBB->bbNum);
+
+    DISPRANGE(LIR::AsRange(m_sharedReturnBB));
+#endif
+
     if (m_comp->opts.OptimizationEnabled())
     {
         if (m_comp->m_dfsTree == nullptr)
@@ -418,13 +434,6 @@ void Async2Transformation::Transform(
         returnInGCData = varTypeIsGC(call->gtReturnType);
     }
 
-    if (returnSize > 0)
-    {
-        JITDUMP("  Will store return of type %s, size %u in %sGC data\n",
-                call->gtReturnType == TYP_STRUCT ? returnStructLayout->GetClassName() : varTypeName(call->gtReturnType),
-                returnSize, returnInGCData ? "" : "non-");
-    }
-
     assert((returnSize > 0) == (call->gtReturnType != TYP_VOID));
 
     // The return value is always stored:
@@ -441,9 +450,25 @@ void Async2Transformation::Transform(
     {
         returnValDataOffset = dataSize;
         dataSize += returnSize;
-
-        JITDUMP("  at offset %u\n", returnValDataOffset);
     }
+
+#ifdef DEBUG
+    if (returnSize > 0)
+    {
+        JITDUMP("  Will store return of type %s, size %u in",
+            call->gtReturnType == TYP_STRUCT ? returnStructLayout->GetClassName() : varTypeName(call->gtReturnType),
+            returnSize);
+
+        if (returnInGCData)
+        {
+            JITDUMP(" GC data\n");
+        }
+        else
+        {
+            JITDUMP(" non-GC data at offset %u\n", returnValDataOffset);
+        }
+    }
+#endif
 
     unsigned exceptionGCDataIndex = UINT_MAX;
     if (block->hasTryIndex())
@@ -543,15 +568,20 @@ void Async2Transformation::Transform(
         m_lastSuspensionBB = m_comp->fgLastBBInMainFunction();
     }
 
-    BasicBlock* retBB = m_comp->fgNewBBafter(BBJ_RETURN, m_lastSuspensionBB, false);
-    retBB->bbSetRunRarely();
-    retBB->clearTryIndex();
-    retBB->clearHndIndex();
-    m_lastSuspensionBB = retBB;
+    BasicBlock* suspendBB = m_comp->fgNewBBafter(BBJ_RETURN, m_lastSuspensionBB, false);
+    suspendBB->bbSetRunRarely();
+    suspendBB->clearTryIndex();
+    suspendBB->clearHndIndex();
+    m_lastSuspensionBB = suspendBB;
 
-    JITDUMP("  Created suspension " FMT_BB " for state %u\n", retBB->bbNum, stateNum);
+    if (m_sharedReturnBB != nullptr)
+    {
+        suspendBB->SetKindAndTargetEdge(BBJ_ALWAYS, m_comp->fgAddRefPred(m_sharedReturnBB, suspendBB));
+    }
 
-    FlowEdge* retBBEdge = m_comp->fgAddRefPred(retBB, block);
+    JITDUMP("  Created suspension " FMT_BB " for state %u\n", suspendBB->bbNum, stateNum);
+
+    FlowEdge* retBBEdge = m_comp->fgAddRefPred(suspendBB, block);
     block->SetCond(retBBEdge, block->GetTargetEdge());
 
     block->GetTrueEdge()->setLikelihood(RESUME_SUSPEND_LIKELIHOOD);
@@ -564,27 +594,27 @@ void Async2Transformation::Transform(
     GenTreeCall* allocContinuation = m_comp->gtNewHelperCallNode(CORINFO_HELP_ALLOC_CONTINUATION, TYP_REF,
                                                                  returnedContinuation, gcRefsCountNode, dataSizeNode);
 
-    m_comp->compCurBB = retBB;
+    m_comp->compCurBB = suspendBB;
     m_comp->fgMorphTree(allocContinuation);
 
-    LIR::AsRange(retBB).InsertAtEnd(LIR::SeqTree(m_comp, allocContinuation));
+    LIR::AsRange(suspendBB).InsertAtEnd(LIR::SeqTree(m_comp, allocContinuation));
 
     GenTree* storeNewContinuation = m_comp->gtNewStoreLclVarNode(m_newContinuationVar, allocContinuation);
-    LIR::AsRange(retBB).InsertAtEnd(storeNewContinuation);
+    LIR::AsRange(suspendBB).InsertAtEnd(storeNewContinuation);
 
     // Fill in 'Resume'
     GenTree* newContinuation = m_comp->gtNewLclvNode(m_newContinuationVar, TYP_REF);
     unsigned resumeOffset    = m_comp->info.compCompHnd->getFieldOffset(m_async2Info.continuationResumeFldHnd);
     GenTree* resumeStubAddr  = CreateResumptionStubAddrTree();
     GenTree* storeResume     = StoreAtOffset(newContinuation, resumeOffset, resumeStubAddr);
-    LIR::AsRange(retBB).InsertAtEnd(LIR::SeqTree(m_comp, storeResume));
+    LIR::AsRange(suspendBB).InsertAtEnd(LIR::SeqTree(m_comp, storeResume));
 
     // Fill in 'state'
     newContinuation       = m_comp->gtNewLclvNode(m_newContinuationVar, TYP_REF);
     unsigned stateOffset  = m_comp->info.compCompHnd->getFieldOffset(m_async2Info.continuationStateFldHnd);
     GenTree* stateNumNode = m_comp->gtNewIconNode((ssize_t)stateNum, TYP_INT);
     GenTree* storeState   = StoreAtOffset(newContinuation, stateOffset, stateNumNode);
-    LIR::AsRange(retBB).InsertAtEnd(LIR::SeqTree(m_comp, storeState));
+    LIR::AsRange(suspendBB).InsertAtEnd(LIR::SeqTree(m_comp, storeState));
 
     // Fill in 'flags'
     unsigned continuationFlags = 0;
@@ -599,7 +629,7 @@ void Async2Transformation::Transform(
     unsigned flagsOffset = m_comp->info.compCompHnd->getFieldOffset(m_async2Info.continuationFlagsFldHnd);
     GenTree* flagsNode   = m_comp->gtNewIconNode((ssize_t)continuationFlags, TYP_INT);
     GenTree* storeFlags  = StoreAtOffset(newContinuation, flagsOffset, flagsNode);
-    LIR::AsRange(retBB).InsertAtEnd(LIR::SeqTree(m_comp, storeFlags));
+    LIR::AsRange(suspendBB).InsertAtEnd(LIR::SeqTree(m_comp, storeFlags));
 
     // Fill in GC pointers
     if (gcRefsCount > 0)
@@ -610,7 +640,7 @@ void Async2Transformation::Transform(
         unsigned gcDataOffset = m_comp->info.compCompHnd->getFieldOffset(m_async2Info.continuationGCDataFldHnd);
         GenTree* gcDataInd    = LoadFromOffset(newContinuation, gcDataOffset, TYP_REF);
         GenTree* storeAllocedObjectArr = m_comp->gtNewStoreLclVarNode(objectArrLclNum, gcDataInd);
-        LIR::AsRange(retBB).InsertAtEnd(LIR::SeqTree(m_comp, storeAllocedObjectArr));
+        LIR::AsRange(suspendBB).InsertAtEnd(LIR::SeqTree(m_comp, storeAllocedObjectArr));
 
         for (LiveLocalInfo& inf : m_liveLocals)
         {
@@ -627,7 +657,7 @@ void Async2Transformation::Transform(
                 GenTree* store =
                     StoreAtOffset(objectArr, OFFSETOF__CORINFO_Array__data + (inf.GCDataIndex * TARGET_POINTER_SIZE),
                                   value);
-                LIR::AsRange(retBB).InsertAtEnd(LIR::SeqTree(m_comp, store));
+                LIR::AsRange(suspendBB).InsertAtEnd(LIR::SeqTree(m_comp, store));
             }
             else
             {
@@ -659,7 +689,7 @@ void Async2Transformation::Transform(
                     unsigned offset =
                         OFFSETOF__CORINFO_Array__data + ((inf.GCDataIndex + gcRefIndex) * TARGET_POINTER_SIZE);
                     GenTree* store = StoreAtOffset(objectArr, offset, value);
-                    LIR::AsRange(retBB).InsertAtEnd(LIR::SeqTree(m_comp, store));
+                    LIR::AsRange(suspendBB).InsertAtEnd(LIR::SeqTree(m_comp, store));
 
                     gcRefIndex++;
 
@@ -678,7 +708,7 @@ void Async2Transformation::Transform(
                             store = m_comp->gtNewStoreLclFldNode(inf.LclNum, TYP_REF, i * TARGET_POINTER_SIZE, null);
                         }
 
-                        LIR::AsRange(retBB).InsertAtEnd(LIR::SeqTree(m_comp, store));
+                        LIR::AsRange(suspendBB).InsertAtEnd(LIR::SeqTree(m_comp, store));
                     }
                 }
 
@@ -696,7 +726,7 @@ void Async2Transformation::Transform(
         unsigned dataOffset          = m_comp->info.compCompHnd->getFieldOffset(m_async2Info.continuationDataFldHnd);
         GenTree* dataInd             = LoadFromOffset(newContinuation, dataOffset, TYP_REF);
         GenTree* storeAllocedByteArr = m_comp->gtNewStoreLclVarNode(byteArrLclNum, dataInd);
-        LIR::AsRange(retBB).InsertAtEnd(LIR::SeqTree(m_comp, storeAllocedByteArr));
+        LIR::AsRange(suspendBB).InsertAtEnd(LIR::SeqTree(m_comp, storeAllocedByteArr));
 
         if (m_comp->doesMethodHavePatchpoints() || m_comp->opts.IsOSR())
         {
@@ -709,7 +739,7 @@ void Async2Transformation::Transform(
             GenTree* byteArr               = m_comp->gtNewLclvNode(byteArrLclNum, TYP_REF);
             unsigned offset                = OFFSETOF__CORINFO_Array__data;
             GenTree* storePatchpointOffset = StoreAtOffset(byteArr, offset, ilOffsetToStore);
-            LIR::AsRange(retBB).InsertAtEnd(LIR::SeqTree(m_comp, storePatchpointOffset));
+            LIR::AsRange(suspendBB).InsertAtEnd(LIR::SeqTree(m_comp, storePatchpointOffset));
         }
 
         // Fill in data
@@ -751,13 +781,16 @@ void Async2Transformation::Transform(
                 store = StoreAtOffset(byteArr, offset, value);
             }
 
-            LIR::AsRange(retBB).InsertAtEnd(LIR::SeqTree(m_comp, store));
+            LIR::AsRange(suspendBB).InsertAtEnd(LIR::SeqTree(m_comp, store));
         }
     }
 
-    newContinuation = m_comp->gtNewLclvNode(m_newContinuationVar, TYP_REF);
-    GenTree* ret    = m_comp->gtNewOperNode(GT_RETURN_SUSPEND, TYP_VOID, newContinuation);
-    LIR::AsRange(retBB).InsertAtEnd(newContinuation, ret);
+    if (suspendBB->KindIs(BBJ_RETURN))
+    {
+        newContinuation = m_comp->gtNewLclvNode(m_newContinuationVar, TYP_REF);
+        GenTree* ret = m_comp->gtNewOperNode(GT_RETURN_SUSPEND, TYP_VOID, newContinuation);
+        LIR::AsRange(suspendBB).InsertAtEnd(newContinuation, ret);
+    }
 
     if (m_lastResumptionBB == nullptr)
     {

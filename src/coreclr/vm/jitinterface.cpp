@@ -14514,12 +14514,16 @@ CORINFO_METHOD_HANDLE CEEJitInfo::getAsyncResumptionStub()
     NativeCodeVersion ncv = config->GetCodeVersion();
     if (ncv.GetOptimizationTier() == NativeCodeVersion::OptimizationTier1OSR)
     {
+#ifdef FEATURE_ON_STACK_REPLACEMENT
         // The OSR version needs to resume in the tier0 version. The tier0
         // version will handle setting up the frame that the OSR version
         // expects and then delegating back into the OSR version (knowing to do
         // so through information stored in the continuation).
         _ASSERTE(m_pPatchpointInfoFromRuntime != NULL);
         pCode->EmitLDC((DWORD_PTR)m_pPatchpointInfoFromRuntime->GetTier0EntryPoint());
+#else
+        _ASSERTE(!"Unexpected optimization tier with OSR disabled");
+#endif
     }
     else
     {

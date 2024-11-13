@@ -1499,7 +1499,10 @@ void Compiler::lvaInitAsyncContinuation(InitVarDscInfo* varDscInfo)
     lvaAsyncContinuationArg = varDscInfo->varNum;
     LclVarDsc* varDsc       = varDscInfo->varDsc;
     varDsc->lvType          = TYP_REF;
-    varDsc->lvIsParam       = 1;
+    varDsc->lvIsParam       = true;
+
+     // The final home for this incoming register might be our local stack frame
+    varDsc->lvOnFrame = true;
 
 #ifdef DEBUG
     varDsc->lvReason = "Async continuation arg";
@@ -1514,7 +1517,6 @@ void Compiler::lvaInitAsyncContinuation(InitVarDscInfo* varDscInfo)
 #if FEATURE_MULTIREG_ARGS
         varDsc->SetOtherArgReg(REG_NA);
 #endif
-        varDsc->lvOnFrame = true; // The final home for this incoming register might be our local stack frame
 
         varDscInfo->intRegArgNum++;
 
