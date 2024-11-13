@@ -1,7 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-// Unit tests for the local masks optimization
+// Unit tests for the masks conversion optimization
+// Uses vectors as masks and vice versa.
 
 using System;
 using System.Numerics;
@@ -12,7 +13,7 @@ using System.Runtime.Intrinsics.Arm;
 using System.Threading;
 using Xunit;
 
-public class ChangeMatchUse
+public class ChangeMaskUse
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static void Consume<T>(T value) { }
