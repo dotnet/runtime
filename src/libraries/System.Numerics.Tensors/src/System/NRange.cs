@@ -18,10 +18,10 @@ namespace System.Buffers
     [Experimental(Experimentals.TensorTDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
     public readonly struct NRange : IEquatable<NRange>
     {
-        /// <summary>Represents the inclusive start NIndex of the NRange.</summary>
+        /// <summary>Gets the inclusive start NIndex of the NRange.</summary>
         public NIndex Start { get; }
 
-        /// <summary>Represents the exclusive end NIndex of the NRange.</summary>
+        /// <summary>Gets the exclusive end NIndex of the NRange.</summary>
         public NIndex End { get; }
 
         /// <summary>Constructs an <see cref="NRange"/> object using the start and end <see cref="NIndex"/>.</summary>

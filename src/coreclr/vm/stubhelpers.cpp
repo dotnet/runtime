@@ -16,6 +16,7 @@
 #include "comdatetime.h"
 #include "gcheaputilities.h"
 #include "interoputil.h"
+#include "../debug/ee/debugger.h"
 
 #ifdef FEATURE_COMINTEROP
 #include <oletls.h>
@@ -736,12 +737,18 @@ FCIMPL1(DWORD, StubHelpers::CalcVaListSize, VARARGS *varargs)
 }
 FCIMPLEND
 
-FCIMPL2(void, StubHelpers::MulticastDebuggerTraceHelper, Object* element, INT32 count)
+extern "C" void QCALLTYPE StubHelpers_MulticastDebuggerTraceHelper(QCall::ObjectHandleOnStack element, INT32 count)
 {
-    FCALL_CONTRACT;
-    FCUnique(0xa5);
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+
+    GCX_COOP();
+
+    g_pDebugger->MulticastTraceNextStep((DELEGATEREF)(element.Get()), count);
+
+    END_QCALL;
 }
-FCIMPLEND
 
 FCIMPL0(void*, StubHelpers::NextCallReturnAddress)
 {

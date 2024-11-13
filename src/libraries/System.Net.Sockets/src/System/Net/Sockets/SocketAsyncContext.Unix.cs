@@ -30,7 +30,7 @@ namespace System.Net.Sockets
 
     // See comments on OperationQueue below for more details of how the queue coordination works.
 
-    internal sealed class SocketAsyncContext
+    internal sealed partial class SocketAsyncContext
     {
         // Cached operation instances for operations commonly repeated on the same socket instance,
         // e.g. async accepts, sends/receives with single and multiple buffers.  More can be
@@ -1256,12 +1256,12 @@ namespace System.Net.Sockets
             }
         }
 
-        private readonly SafeSocketHandle _socket;
+        internal readonly SafeSocketHandle _socket;
         private OperationQueue<ReadOperation> _receiveQueue;
         private OperationQueue<WriteOperation> _sendQueue;
         private SocketAsyncEngine? _asyncEngine;
         private bool IsRegistered => _asyncEngine != null;
-        private bool _isHandleNonBlocking;
+        private bool _isHandleNonBlocking = OperatingSystem.IsWasi(); // WASI sockets are always non-blocking, because we don't have another thread which could be blocked
 
         private readonly object _registerLock = new object();
 
@@ -1330,13 +1330,18 @@ namespace System.Net.Sockets
             // We don't need to synchronize with Register.
             // This method is called when the handle gets released.
             // The Register method will throw ODE when it tries to use the handle at this point.
-            _asyncEngine?.UnregisterSocket(_socket.DangerousGetHandle());
+            _asyncEngine?.UnregisterSocket(_socket.DangerousGetHandle(), this);
 
             return aborted;
         }
 
         public void SetHandleNonBlocking()
         {
+            if (OperatingSystem.IsWasi())
+            {
+                // WASI sockets are always non-blocking, because in ST we don't have another thread which could be blocked
+                return;
+            }
             //
             // Our sockets may start as blocking, and later transition to non-blocking, either because the user
             // explicitly requested non-blocking mode, or because we need non-blocking mode to support async
@@ -1362,6 +1367,7 @@ namespace System.Net.Sockets
         private void PerformSyncOperation<TOperation>(ref OperationQueue<TOperation> queue, TOperation operation, int timeout, int observedSequenceNumber)
             where TOperation : AsyncOperation
         {
+            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException();
             Debug.Assert(timeout == -1 || timeout > 0, $"Unexpected timeout: {timeout}");
 
             using (var e = new ManualResetEventSlim(false, 0))
@@ -1498,6 +1504,8 @@ namespace System.Net.Sockets
 
         public SocketError Connect(Memory<byte> socketAddress)
         {
+            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException();
+
             Debug.Assert(socketAddress.Length > 0, $"Unexpected socketAddressLen: {socketAddress.Length}");
             // Connect is different than the usual "readiness" pattern of other operations.
             // We need to call TryStartConnect to initiate the connect with the OS,
@@ -1590,6 +1598,8 @@ namespace System.Net.Sockets
 
         public unsafe SocketError ReceiveFrom(Memory<byte> buffer, ref SocketFlags flags, Memory<byte> socketAddress, out int socketAddressLen, int timeout, out int bytesReceived)
         {
+            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException();
+
             Debug.Assert(timeout == -1 || timeout > 0, $"Unexpected timeout: {timeout}");
 
             SocketFlags receivedFlags;
@@ -1621,6 +1631,8 @@ namespace System.Net.Sockets
 
         public unsafe SocketError ReceiveFrom(Span<byte> buffer, ref SocketFlags flags, Memory<byte> socketAddress, out int socketAddressLen, int timeout, out int bytesReceived)
         {
+            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException();
+
             SocketFlags receivedFlags;
             SocketError errorCode;
             int observedSequenceNumber;
@@ -1731,6 +1743,8 @@ namespace System.Net.Sockets
 
         public unsafe SocketError ReceiveFrom(IList<ArraySegment<byte>> buffers, ref SocketFlags flags, Memory<byte> socketAddress, out int socketAddressLen, int timeout, out int bytesReceived)
         {
+            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException();
+
             Debug.Assert(timeout == -1 || timeout > 0, $"Unexpected timeout: {timeout}");
 
             SocketFlags receivedFlags;
@@ -1798,6 +1812,8 @@ namespace System.Net.Sockets
         public SocketError ReceiveMessageFrom(
             Memory<byte> buffer, ref SocketFlags flags, Memory<byte> socketAddress, out int socketAddressLen, bool isIPv4, bool isIPv6, int timeout, out IPPacketInformation ipPacketInformation, out int bytesReceived)
         {
+            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException();
+
             Debug.Assert(timeout == -1 || timeout > 0, $"Unexpected timeout: {timeout}");
 
             SocketFlags receivedFlags;
@@ -1833,6 +1849,8 @@ namespace System.Net.Sockets
         public unsafe SocketError ReceiveMessageFrom(
             Span<byte> buffer, ref SocketFlags flags, Memory<byte> socketAddress, out int socketAddressLen, bool isIPv4, bool isIPv6, int timeout, out IPPacketInformation ipPacketInformation, out int bytesReceived)
         {
+            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException();
+
             Debug.Assert(timeout == -1 || timeout > 0, $"Unexpected timeout: {timeout}");
 
             SocketFlags receivedFlags;
@@ -1923,6 +1941,8 @@ namespace System.Net.Sockets
 
         public SocketError SendTo(byte[] buffer, int offset, int count, SocketFlags flags, Memory<byte> socketAddress, int timeout, out int bytesSent)
         {
+            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException();
+
             Debug.Assert(timeout == -1 || timeout > 0, $"Unexpected timeout: {timeout}");
 
             bytesSent = 0;
@@ -1953,6 +1973,8 @@ namespace System.Net.Sockets
 
         public unsafe SocketError SendTo(ReadOnlySpan<byte> buffer, SocketFlags flags, Memory<byte> socketAddress, int timeout, out int bytesSent)
         {
+            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException();
+
             Debug.Assert(timeout == -1 || timeout > 0, $"Unexpected timeout: {timeout}");
 
             bytesSent = 0;
@@ -2030,6 +2052,8 @@ namespace System.Net.Sockets
 
         public SocketError SendTo(IList<ArraySegment<byte>> buffers, SocketFlags flags, Memory<byte> socketAddress, int timeout, out int bytesSent)
         {
+            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException();
+
             Debug.Assert(timeout == -1 || timeout > 0, $"Unexpected timeout: {timeout}");
 
             bytesSent = 0;
@@ -2098,6 +2122,8 @@ namespace System.Net.Sockets
 
         public SocketError SendFile(SafeFileHandle fileHandle, long offset, long count, int timeout, out long bytesSent)
         {
+            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException();
+
             Debug.Assert(timeout == -1 || timeout > 0, $"Unexpected timeout: {timeout}");
 
             bytesSent = 0;

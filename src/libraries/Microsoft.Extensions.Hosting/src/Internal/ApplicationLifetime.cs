@@ -33,19 +33,19 @@ namespace Microsoft.Extensions.Hosting.Internal
         }
 
         /// <summary>
-        /// Triggered when the application host has fully started and is about to wait
+        /// Gets a cancellation token. Triggered when the application host has fully started and is about to wait
         /// for a graceful shutdown.
         /// </summary>
         public CancellationToken ApplicationStarted => _startedSource.Token;
 
         /// <summary>
-        /// Triggered when the application host is performing a graceful shutdown.
-        /// Request may still be in flight. Shutdown will block until this event completes.
+        /// Gets a cancellation token. Triggered when the application host is performing a graceful shutdown.
+        /// Request might still be in flight. Shutdown will block until this event completes.
         /// </summary>
         public CancellationToken ApplicationStopping => _stoppingSource.Token;
 
         /// <summary>
-        /// Triggered when the application host is performing a graceful shutdown.
+        /// Gets a cancellation token. Triggered when the application host is performing a graceful shutdown.
         /// All requests should be complete at this point. Shutdown will block
         /// until this event completes.
         /// </summary>

@@ -108,9 +108,6 @@ enum StubCodeBlockKind : int
     STUB_CODE_BLOCK_NOCODE,
     STUB_CODE_BLOCK_MANAGED,
     STUB_CODE_BLOCK_STUBLINK,
-    // Placeholdes used by NGen images
-    STUB_CODE_BLOCK_VIRTUAL_METHOD_THUNK,
-    STUB_CODE_BLOCK_EXTERNAL_METHOD_THUNK,
     // Placeholdes used by ReadyToRun images
     STUB_CODE_BLOCK_METHOD_CALL_THUNK,
 };
@@ -555,6 +552,9 @@ public:
     {
         return end;
     }
+
+    friend struct ::cdac_data<RangeSection>;
+    friend struct ::cdac_data<RangeSectionMap>;
 };
 
 struct RangeSection
@@ -626,6 +626,19 @@ struct RangeSection
 
 
     RangeSection* _pRangeSectionNextForDelete = NULL; // Used for adding to the cleanup list
+
+    friend struct ::cdac_data<RangeSection>;
+};
+
+template<> struct cdac_data<RangeSection>
+{
+    static constexpr size_t RangeBegin = offsetof(RangeSection, _range.begin);
+    static constexpr size_t RangeEndOpen = offsetof(RangeSection, _range.end);
+    static constexpr size_t NextForDelete = offsetof(RangeSection, _pRangeSectionNextForDelete);
+    static constexpr size_t JitManager = offsetof(RangeSection, _pjit);
+    static constexpr size_t Flags = offsetof(RangeSection, _flags);
+    static constexpr size_t HeapList = offsetof(RangeSection, _pHeapList);
+    static constexpr size_t R2RModule = offsetof(RangeSection, _pR2RModule);
 };
 
 enum class RangeSectionLockState
@@ -835,7 +848,7 @@ class RangeSectionMap
             {
                 // Upgrade to non-collectible
 #ifdef _DEBUG
-                TADDR initialValue = 
+                TADDR initialValue =
 #endif
                 InterlockedCompareExchangeT(&_ptr, ptr - 1, ptr);
                 assert(initialValue == ptr || initialValue == (ptr - 1));
@@ -951,7 +964,7 @@ class RangeSectionMap
             auto levelNew = static_cast<decltype(&(outerLevel->VolatileLoad(NULL))[0])>(AllocateLevel());
             if (levelNew == NULL)
                 return NULL;
-            
+
             if (!outerLevel->Install(levelNew, collectible))
             {
                 // Handle race where another thread grew the table
@@ -1017,7 +1030,7 @@ class RangeSectionMap
         auto rangeSectionL3 = rangeSectionL3Ptr->VolatileLoadWithoutBarrier(pLockState);
         if (rangeSectionL3 == NULL)
             return NULL;
-        
+
         auto rangeSectionL2Ptr = &((*rangeSectionL3)[EffectiveBitsForLevel(address, 3)]);
         if (level == 2)
             return rangeSectionL2Ptr;
@@ -1071,7 +1084,7 @@ class RangeSectionMap
 
         // Account for the range not starting at the beginning of a last level fragment
         rangeSize += pRangeSection->_range.RangeStart() & (bytesAtLastLevel - 1);
-        
+
         uintptr_t fragmentCount = ((rangeSize - 1) / bytesAtLastLevel) + 1;
         return fragmentCount;
     }
@@ -1314,7 +1327,7 @@ public:
                     else
                     {
                         // Since the fragment linked lists are sorted such that the collectible ones are always after the non-collectible ones, this should never happen.
-                        assert(!seenCollectibleRangeList); 
+                        assert(!seenCollectibleRangeList);
                     }
 #endif
                     entryInMapToUpdate = &(entryInMapToUpdate->VolatileLoadWithoutBarrier(pLockState))->pRangeSectionFragmentNext;
@@ -1355,7 +1368,7 @@ public:
 
                         if (foundMeaningfulValue)
                             break;
-                        
+
                         // This level is completely empty. Free it, and then null out the pointer to it.
                         pointerToLevelData->Uninstall();
 #if defined(__GNUC__)
@@ -1432,6 +1445,21 @@ public:
     }
 #endif// DACCESS_COMPILE
 
+    friend struct ::cdac_data<RangeSectionMap>;
+};
+
+template<>
+struct cdac_data<RangeSectionMap>
+{
+    static constexpr size_t TopLevelData = offsetof(RangeSectionMap, _topLevelData);
+
+    struct RangeSectionFragment
+    {
+        static constexpr size_t RangeBegin = offsetof(RangeSectionMap::RangeSectionFragment, _range.begin);
+        static constexpr size_t RangeEndOpen = offsetof(RangeSectionMap::RangeSectionFragment, _range.end);
+        static constexpr size_t RangeSection = offsetof(RangeSectionMap::RangeSectionFragment, pRangeSection);
+        static constexpr size_t Next = offsetof(RangeSectionMap::RangeSectionFragment, pRangeSectionFragmentNext);
+    };
 };
 
 struct RangeSectionMapData
@@ -1820,8 +1848,10 @@ public:
 
 #ifndef DACCESS_COMPILE
 	// Heap Management functions
-    void NibbleMapSet(HeapList * pHp, TADDR pCode, BOOL bSet);
-    void NibbleMapSetUnlocked(HeapList * pHp, TADDR pCode, BOOL bSet);
+    void NibbleMapSet(HeapList * pHp, TADDR pCode, size_t codeSize);
+    void NibbleMapSetUnlocked(HeapList * pHp, TADDR pCode, size_t codeSize);
+    void NibbleMapDelete(HeapList* pHp, TADDR pCode);
+    void NibbleMapDeleteUnlocked(HeapList* pHp, TADDR pCode);
 #endif  // !DACCESS_COMPILE
 
     static TADDR FindMethodCode(RangeSection * pRangeSection, PCODE currentPC);
@@ -2246,7 +2276,17 @@ public:
         JumpStubBlockHeader * m_pBlocks;
         JumpStubTable m_Table;
     };
+
+    friend struct ::cdac_data<ExecutionManager>;
 };
+
+#ifndef DACCESS_COMPILE
+template<>
+struct cdac_data<ExecutionManager>
+{
+    static constexpr void* const CodeRangeMapAddress = (void*)&ExecutionManager::g_codeRangeMap.Data[0];
+};
+#endif
 
 inline CodeHeader * EEJitManager::GetCodeHeader(const METHODTOKEN& MethodToken)
 {
@@ -2532,10 +2572,6 @@ public:
 
     void         GetOffsetsFromUnwindInfo(ULONG* pRSPOffset, ULONG* pRBPOffset);
     ULONG        GetFrameOffsetFromUnwindInfo();
-#if defined(_DEBUG) && defined(HAVE_GCCOVER)
-    // Find first funclet inside (pvFuncletStart, pvFuncletStart + cbCode)
-    static LPVOID findNextFunclet (LPVOID pvFuncletStart, SIZE_T cbCode, LPVOID *ppvFuncletEnd);
-#endif // _DEBUG && HAVE_GCCOVER
 #endif // TARGET_AMD64
 
 private:
@@ -2552,6 +2588,7 @@ private:
     // Simple helper to return a pointer to the UNWIND_INFO given the offset to the unwind info.
     UNWIND_INFO * GetUnwindInfoHelper(ULONG unwindInfoOffset);
 #endif // TARGET_AMD64
+
 };
 
 #include "codeman.inl"

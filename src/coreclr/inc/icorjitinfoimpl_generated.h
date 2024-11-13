@@ -99,10 +99,18 @@ CORINFO_METHOD_HANDLE getUnboxedEntry(
           CORINFO_METHOD_HANDLE ftn,
           bool* requiresInstMethodTableArg) override;
 
+CORINFO_METHOD_HANDLE getInstantiatedEntry(
+          CORINFO_METHOD_HANDLE ftn,
+          CORINFO_METHOD_HANDLE* methodArg,
+          CORINFO_CLASS_HANDLE* classArg) override;
+
 CORINFO_CLASS_HANDLE getDefaultComparerClass(
           CORINFO_CLASS_HANDLE elemType) override;
 
 CORINFO_CLASS_HANDLE getDefaultEqualityComparerClass(
+          CORINFO_CLASS_HANDLE elemType) override;
+
+CORINFO_CLASS_HANDLE getSZArrayHelperEnumeratorClass(
           CORINFO_CLASS_HANDLE elemType) override;
 
 void expandRawHandleIntrinsic(
@@ -179,6 +187,10 @@ const char* getClassNameFromMetadata(
 
 CORINFO_CLASS_HANDLE getTypeInstantiationArgument(
           CORINFO_CLASS_HANDLE cls,
+          unsigned index) override;
+
+CORINFO_CLASS_HANDLE getMethodInstantiationArgument(
+          CORINFO_METHOD_HANDLE ftn,
           unsigned index) override;
 
 size_t printClassName(

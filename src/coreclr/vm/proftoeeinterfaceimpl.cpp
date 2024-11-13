@@ -2048,9 +2048,8 @@ HRESULT ProfToEEInterfaceImpl::GetFunctionFromIP2(LPCBYTE ip, FunctionID * pFunc
         // Yay!
         NOTHROW;
 
-        // Grabbing the rejitid requires entering the rejit manager's hash table & lock,
-        // which can switch us to preemptive mode and trigger GCs
-        GC_TRIGGERS;
+        // Yay!
+        GC_NOTRIGGER;
 
         // Yay!
         MODE_ANY;
@@ -2068,7 +2067,7 @@ HRESULT ProfToEEInterfaceImpl::GetFunctionFromIP2(LPCBYTE ip, FunctionID * pFunc
     PERMANENT_CONTRACT_VIOLATION(TakesLockViolation, ReasonProfilerAsyncCannotRetakeLock);
 
     PROFILER_TO_CLR_ENTRYPOINT_SYNC_EX(
-        kP2EEAllowableAfterAttach | kP2EETriggers,
+        kP2EEAllowableAfterAttach,
         (LF_CORPROF,
         LL_INFO1000,
         "**PROF: GetFunctionFromIP2 0x%p.\n",
@@ -2500,9 +2499,8 @@ HRESULT ProfToEEInterfaceImpl::GetCodeInfo3(FunctionID functionId,
         // Yay!
         NOTHROW;
 
-        // We need to access the rejitmanager, which means taking locks, which means we
-        // may trigger a GC
-        GC_TRIGGERS;
+        // Yay!
+        GC_NOTRIGGER;
 
         // Yay!
         MODE_ANY;
@@ -2510,9 +2508,9 @@ HRESULT ProfToEEInterfaceImpl::GetCodeInfo3(FunctionID functionId,
         // Yay!
         EE_THREAD_NOT_REQUIRED;
 
-        // We need to access the rejitmanager, which means taking locks
+        // We need to take the ExecutionManager reader lock to find the
+        // appropriate jit manager.
         CAN_TAKE_LOCK;
-
 
         PRECONDITION(CheckPointer(pcCodeInfos, NULL_OK));
         PRECONDITION(CheckPointer(codeInfos, NULL_OK));
@@ -2523,7 +2521,7 @@ HRESULT ProfToEEInterfaceImpl::GetCodeInfo3(FunctionID functionId,
     PERMANENT_CONTRACT_VIOLATION(TakesLockViolation, ReasonProfilerAsyncCannotRetakeLock);
 
     PROFILER_TO_CLR_ENTRYPOINT_SYNC_EX(
-        kP2EEAllowableAfterAttach | kP2EETriggers,
+        kP2EEAllowableAfterAttach,
         (LF_CORPROF,
         LL_INFO1000,
         "**PROF: GetCodeInfo3 0x%p 0x%p.\n",
@@ -2541,8 +2539,6 @@ HRESULT ProfToEEInterfaceImpl::GetCodeInfo3(FunctionID functionId,
             PCODE pCodeStart = (PCODE)NULL;
             CodeVersionManager* pCodeVersionManager = pMethodDesc->GetCodeVersionManager();
             {
-                CodeVersionManager::LockHolder codeVersioningLockHolder;
-
                 ILCodeVersion ilCodeVersion = pCodeVersionManager->GetILCodeVersion(pMethodDesc, reJitId);
 
                 NativeCodeVersionCollection nativeCodeVersions = ilCodeVersion.GetNativeCodeVersions(pMethodDesc);
@@ -4928,8 +4924,6 @@ HRESULT ProfToEEInterfaceImpl::GetILToNativeMapping2(FunctionID functionId,
             CodeVersionManager *pCodeVersionManager = pMD->GetCodeVersionManager();
             ILCodeVersion ilCodeVersion = NULL;
             {
-                CodeVersionManager::LockHolder codeVersioningLockHolder;
-
                 pCodeVersionManager->GetILCodeVersion(pMD, reJitId);
 
                 NativeCodeVersionCollection nativeCodeVersions = ilCodeVersion.GetNativeCodeVersions(pMD);
@@ -5455,20 +5449,20 @@ HRESULT ProfToEEInterfaceImpl::GetAppDomainInfo(AppDomainID appDomainId,
         // Yay!
         NOTHROW;
 
-        // AppDomain::GetFriendlyNameForDebugger triggers
-        GC_TRIGGERS;
+        // Yay!
+        GC_NOTRIGGER;
 
         // Yay!
         MODE_ANY;
 
-        // AppDomain::GetFriendlyNameForDebugger takes a lock
-        CAN_TAKE_LOCK;
+        // Yay!
+        CANNOT_TAKE_LOCK;
 
     }
     CONTRACTL_END;
 
     PROFILER_TO_CLR_ENTRYPOINT_SYNC_EX(
-        kP2EEAllowableAfterAttach | kP2EETriggers,
+        kP2EEAllowableAfterAttach,
         (LF_CORPROF,
          LL_INFO1000,
          "**PROF: GetAppDomainInfo 0x%p.\n",
@@ -5493,7 +5487,7 @@ HRESULT ProfToEEInterfaceImpl::GetAppDomainInfo(AppDomainID appDomainId,
     if (appDomainId == (AppDomainID)SystemDomain::System())
         szFriendlyName = g_pwBaseLibrary;
     else
-        szFriendlyName = ((AppDomain*)appDomainId)->GetFriendlyNameForDebugger();
+        szFriendlyName = ((AppDomain*)appDomainId)->GetFriendlyName();
 
     if (szFriendlyName != NULL)
     {
@@ -5989,11 +5983,11 @@ HRESULT ProfToEEInterfaceImpl::GetFunctionInfo2(FunctionID funcId,
     TypeHandle specificClass;
     MethodDesc* pActualMethod;
 
-    ClassID classId = 0;
+    TypeHandle typeHandle(pMethDesc->GetMethodTable());
+    ClassID classId = TypeHandleToClassID(typeHandle);
 
     if (pMethDesc->IsSharedByGenericInstantiations())
     {
-        BOOL exactMatch;
         OBJECTREF pThis = NULL;
 
         if (pFrameInfo != NULL)
@@ -6016,37 +6010,24 @@ HRESULT ProfToEEInterfaceImpl::GetFunctionInfo2(FunctionID funcId,
             }
         }
 
-        exactMatch = Generics::GetExactInstantiationsOfMethodAndItsClassFromCallInformation(
+        Generics::GetExactInstantiationsOfMethodAndItsClassFromCallInformation(
             pMethDesc,
             pThis,
             PTR_VOID((pFrameInfo != NULL) ? pFrameInfo->extraArg : NULL),
             &specificClass,
             &pActualMethod);
 
-        if (exactMatch)
+        // When GetExactInstantiationsOfMethodAndItsClassFromCallInformation cannot determine
+        // the exact class match, the value is correct if the class is not a generic class
+        // or is instantiated with value types. Even if those conditions aren't met, the
+        // default returned value of the method's method table may still be helpful to callers.
+        if (specificClass != NULL)
         {
             classId = TypeHandleToClassID(specificClass);
-        }
-        else if (!specificClass.HasInstantiation() || !specificClass.IsSharedByGenericInstantiations())
-        {
-            //
-            // In this case we could not get the type args for the method, but if the class
-            // is not a generic class or is instantiated with value types, this value is correct.
-            //
-            classId = TypeHandleToClassID(specificClass);
-        }
-        else
-        {
-            //
-            // We could not get any class information.
-            //
-            classId = 0;
         }
     }
     else
     {
-        TypeHandle typeHandle(pMethDesc->GetMethodTable());
-        classId = TypeHandleToClassID(typeHandle);
         pActualMethod = pMethDesc;
     }
 
@@ -6219,13 +6200,11 @@ HRESULT ProfToEEInterfaceImpl::GetFunctionFromIP3(LPCBYTE ip, FunctionID * pFunc
     {
         NOTHROW;
 
-        // Grabbing the rejitid requires entering the rejit manager's hash table & lock,
-        // which can switch us to preemptive mode and trigger GCs
-        GC_TRIGGERS;
+        GC_NOTRIGGER;
         MODE_ANY;
         EE_THREAD_NOT_REQUIRED;
 
-        // Grabbing the rejitid requires entering the rejit manager's hash table & lock,
+        // Calling GetFunctionFromIPInternal may take a reader lock
         CAN_TAKE_LOCK;
 
     }
@@ -6235,7 +6214,7 @@ HRESULT ProfToEEInterfaceImpl::GetFunctionFromIP3(LPCBYTE ip, FunctionID * pFunc
     PERMANENT_CONTRACT_VIOLATION(TakesLockViolation, ReasonProfilerAsyncCannotRetakeLock);
 
     PROFILER_TO_CLR_ENTRYPOINT_SYNC_EX(
-        kP2EEAllowableAfterAttach | kP2EETriggers,
+        kP2EEAllowableAfterAttach,
         (LF_CORPROF,
             LL_INFO1000,
             "**PROF: GetFunctionFromIP3 0x%p.\n",
@@ -6596,7 +6575,7 @@ HRESULT ProfToEEInterfaceImpl::GetCodeInfo4(UINT_PTR pNativeCodeStartAddress,
     CONTRACTL
     {
         NOTHROW;
-        GC_TRIGGERS;
+        GC_NOTRIGGER;
         MODE_ANY;
         EE_THREAD_NOT_REQUIRED;
         CAN_TAKE_LOCK;
@@ -6608,7 +6587,7 @@ HRESULT ProfToEEInterfaceImpl::GetCodeInfo4(UINT_PTR pNativeCodeStartAddress,
     CONTRACTL_END;
 
     PROFILER_TO_CLR_ENTRYPOINT_SYNC_EX(
-        kP2EEAllowableAfterAttach | kP2EETriggers,
+        kP2EEAllowableAfterAttach,
         (LF_CORPROF,
         LL_INFO1000,
         "**PROF: GetCodeInfo4 0x%p.\n",
@@ -10754,6 +10733,7 @@ GCX_COOP_THREAD_EXISTS(GET_THREAD());
 HCIMPL_PROLOG(ProfileEnter)
 {
     FCALL_CONTRACT;
+    FC_GC_POLL_NOT_NEEDED();            // we pulse GC mode, so we are doing a poll
 
     if (GetThreadNULLOk() == NULL)
     {
@@ -10793,13 +10773,10 @@ HCIMPL_PROLOG(ProfileEnter)
     _ASSERTE(GetThread()->PreemptiveGCDisabled());
     _ASSERTE(platformSpecificHandle != NULL);
 
-    // Set up a frame
-    HELPER_METHOD_FRAME_BEGIN_ATTRIB_NOPOLL(Frame::FRAME_ATTR_CAPTURE_DEPTH_2);
-
-    // Our contract is FCALL_CONTRACT, which is considered triggers if you set up a
-    // frame, like we're about to do.
+    // This callback is called from the prolog of a method, without a valid ability to suspend the runtime/take a GC.
+    // This means that we cannot trigger a GC.
     SetCallbackStateFlagsHolder csf(
-        COR_PRF_CALLBACKSTATE_INCALLBACK | COR_PRF_CALLBACKSTATE_IN_TRIGGERS_SCOPE);
+        COR_PRF_CALLBACKSTATE_INCALLBACK);
 
     COR_PRF_ELT_INFO_INTERNAL eltInfo;
     eltInfo.platformSpecificHandle = platformSpecificHandle;
@@ -10926,8 +10903,6 @@ HCIMPL_PROLOG(ProfileEnter)
 LExit:
     ;
 
-    HELPER_METHOD_FRAME_END();      // Un-link the frame
-
 #endif // PROFILING_SUPPORTED
 }
 HCIMPLEND
@@ -10967,13 +10942,10 @@ HCIMPL_PROLOG(ProfileLeave)
     _ASSERTE(GetThread()->PreemptiveGCDisabled());
     _ASSERTE(platformSpecificHandle != NULL);
 
-    // Set up a frame
-    HELPER_METHOD_FRAME_BEGIN_ATTRIB_NOPOLL(Frame::FRAME_ATTR_CAPTURE_DEPTH_2);
-
-    // Our contract is FCALL_CONTRACT, which is considered triggers if you set up a
-    // frame, like we're about to do.
+    // This callback is called from the epilog of a method, without a valid ability to suspend the runtime/take a GC.
+    // This means that we cannot trigger a GC.
     SetCallbackStateFlagsHolder csf(
-        COR_PRF_CALLBACKSTATE_INCALLBACK | COR_PRF_CALLBACKSTATE_IN_TRIGGERS_SCOPE);
+        COR_PRF_CALLBACKSTATE_INCALLBACK);
 
     COR_PRF_ELT_INFO_INTERNAL eltInfo;
     eltInfo.platformSpecificHandle = platformSpecificHandle;
@@ -11060,8 +11032,6 @@ LExit:
 
     ;
 
-    HELPER_METHOD_FRAME_END();      // Un-link the frame
-
 #endif // PROFILING_SUPPORTED
 }
 HCIMPLEND
@@ -11099,13 +11069,10 @@ HCIMPL2(EXTERN_C void, ProfileTailcall, UINT_PTR clientData, void * platformSpec
     _ASSERTE(GetThread()->PreemptiveGCDisabled());
     _ASSERTE(platformSpecificHandle != NULL);
 
-    // Set up a frame
-    HELPER_METHOD_FRAME_BEGIN_ATTRIB_NOPOLL(Frame::FRAME_ATTR_CAPTURE_DEPTH_2);
-
-    // Our contract is FCALL_CONTRACT, which is considered triggers if you set up a
-    // frame, like we're about to do.
+    // This callback is called from the epilog of a method, without a valid ability to suspend the runtime/take a GC.
+    // This means that we cannot trigger a GC.
     SetCallbackStateFlagsHolder csf(
-        COR_PRF_CALLBACKSTATE_INCALLBACK | COR_PRF_CALLBACKSTATE_IN_TRIGGERS_SCOPE);
+        COR_PRF_CALLBACKSTATE_INCALLBACK);
 
     COR_PRF_ELT_INFO_INTERNAL eltInfo;
     eltInfo.platformSpecificHandle = platformSpecificHandle;
@@ -11187,8 +11154,6 @@ HCIMPL2(EXTERN_C void, ProfileTailcall, UINT_PTR clientData, void * platformSpec
 LExit:
 
     ;
-
-    HELPER_METHOD_FRAME_END();      // Un-link the frame
 
 #endif // PROFILING_SUPPORTED
 }

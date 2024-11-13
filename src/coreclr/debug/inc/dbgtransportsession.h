@@ -11,6 +11,8 @@
 
 #endif // !RIGHT_SIDE_COMPILE
 
+#include <minipal/guid.h>
+
 #if defined(FEATURE_DBGIPC_TRANSPORT_VM) || defined(FEATURE_DBGIPC_TRANSPORT_DI)
 
 #include <twowaypipe.h>
@@ -519,7 +521,7 @@ private:
     // Struct defining the format of the data block sent with a SessionRequest.
     struct SessionRequestData
     {
-        GUID            m_sSessionID;   // Unique session ID. Treated as byte blob so no endian-ness
+        minipal_guid_t  m_sSessionID;   // Unique session ID. Treated as byte blob so no endian-ness
     };
 
     // Struct used to track a message that is being (or will soon be) sent but has not yet been acknowledged.
@@ -674,7 +676,7 @@ private:
     // Session ID randomly allocated by the right side and sent over in the SessionRequest message. This
     // serves to disambiguate a re-send of the SessionRequest due to a network error versus a SessionRequest
     // from a different debugger.
-    GUID            m_sSessionID;
+    minipal_guid_t  m_sSessionID;
 
     // Lock used to synchronize sending messages and updating the session state. This ensures message bytes
     // don't become interleaved on the transport connection, the send queue is updated consistently across

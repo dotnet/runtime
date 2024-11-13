@@ -4221,11 +4221,11 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				ppc_lfd (code, ins->dreg, ins->inst_offset, ins->inst_basereg);
 			} else {
 				if (ppc_is_imm32 (ins->inst_offset)) {
-					ppc_addis (code, ppc_r11, ins->inst_destbasereg, ppc_ha(ins->inst_offset));
+					ppc_addis (code, ppc_r11, ins->inst_basereg, ppc_ha(ins->inst_offset));
 					ppc_lfd (code, ins->dreg, ins->inst_offset, ppc_r11);
 				} else {
 					ppc_load (code, ppc_r0, ins->inst_offset);
-					ppc_lfdx (code, ins->dreg, ins->inst_destbasereg, ppc_r0);
+					ppc_lfdx (code, ins->dreg, ins->inst_basereg, ppc_r0);
 				}
 			}
 			break;
@@ -4248,11 +4248,11 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				ppc_lfs (code, ins->dreg, ins->inst_offset, ins->inst_basereg);
 			} else {
 				if (ppc_is_imm32 (ins->inst_offset)) {
-					ppc_addis (code, ppc_r11, ins->inst_destbasereg, ppc_ha(ins->inst_offset));
+					ppc_addis (code, ppc_r11, ins->inst_basereg, ppc_ha(ins->inst_offset));
 					ppc_lfs (code, ins->dreg, ins->inst_offset, ppc_r11);
 				} else {
 					ppc_load (code, ppc_r0, ins->inst_offset);
-					ppc_lfsx (code, ins->dreg, ins->inst_destbasereg, ppc_r0);
+					ppc_lfsx (code, ins->dreg, ins->inst_basereg, ppc_r0);
 				}
 			}
 			break;
@@ -5202,11 +5202,32 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 					break;
 				}
 			} else if (ainfo->regtype == RegTypeFP) {
-				g_assert (ppc_is_imm16 (inst->inst_offset));
-				if (ainfo->size == 8)
-					ppc_stfd (code, ainfo->reg, inst->inst_offset, inst->inst_basereg);
-				else if (ainfo->size == 4)
-					ppc_stfs (code, ainfo->reg, inst->inst_offset, inst->inst_basereg);
+				if (ainfo->size == 8) {
+					if (ppc_is_imm16 (inst->inst_offset)) {
+                                                ppc_stfd (code, ainfo->reg, inst->inst_offset, inst->inst_basereg);
+                                        }
+                                        else if (ppc_is_imm32 (inst->inst_offset)) {
+                                                ppc_addis (code, ppc_r12, inst->inst_basereg, ppc_ha(inst->inst_offset));
+                                                ppc_stfd (code, ainfo->reg, inst->inst_offset, ppc_r12);
+                                        }
+                                        else {
+                                                ppc_load (code, ppc_r12, inst->inst_offset);
+                                                ppc_stfdx (code, ainfo->reg, inst->inst_basereg, ppc_r12);
+                                        }
+				 }
+				else if (ainfo->size == 4) {
+					if (ppc_is_imm16 (inst->inst_offset)) {
+                                                ppc_stfs (code, ainfo->reg, inst->inst_offset, inst->inst_basereg);
+                                        }
+                                        else if (ppc_is_imm32 (inst->inst_offset)) {
+                                                ppc_addis (code, ppc_r12, inst->inst_basereg, ppc_ha(inst->inst_offset));
+                                                ppc_stfs (code, ainfo->reg, inst->inst_offset, ppc_r12);
+                                        }
+                                        else {
+                                                ppc_load (code, ppc_r12, inst->inst_offset);
+                                                ppc_stfsx (code, ainfo->reg, inst->inst_basereg, ppc_r12);
+                                        }
+				}
 				else
 					g_assert_not_reached ();
 			 } else if (ainfo->regtype == RegTypeFPStructByVal) {
@@ -5214,17 +5235,39 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 				int soffset = 0;
 				int cur_reg;
 				int size = 0;
-				g_assert (ppc_is_imm16 (inst->inst_offset));
-				g_assert (ppc_is_imm16 (inst->inst_offset + ainfo->vtregs * sizeof (target_mgreg_t)));
 				/* FIXME: what if there is no class? */
 				if (sig->pinvoke && !sig->marshalling_disabled && mono_class_from_mono_type_internal (inst->inst_vtype))
 					size = mono_class_native_size (mono_class_from_mono_type_internal (inst->inst_vtype), NULL);
 				for (cur_reg = 0; cur_reg < ainfo->vtregs; ++cur_reg) {
-					if (ainfo->size == 4) {
-						ppc_stfs (code, ainfo->reg + cur_reg, doffset, inst->inst_basereg);
-					} else {
-						ppc_stfd (code, ainfo->reg + cur_reg, doffset, inst->inst_basereg);
-					}
+					if (ainfo->size == 8){
+                                                if (ppc_is_imm16 (inst->inst_offset)) {
+                                                        ppc_stfd (code, ainfo->reg + cur_reg, doffset, inst->inst_basereg);
+                                                }
+                                                else if (ppc_is_imm32 (inst->inst_offset)) {
+                                                        ppc_addis (code, ppc_r12, inst->inst_basereg, ppc_ha(doffset));
+                                                        ppc_stfd (code, ainfo->reg + cur_reg, doffset, ppc_r12);
+                                                }
+                                                else {
+                                                        ppc_load (code, ppc_r12, doffset);
+                                                        ppc_stfdx (code, ainfo->reg + cur_reg, inst->inst_basereg, ppc_r12);
+                                                }
+                                        }
+                                        else if (ainfo->size == 4){
+                                                if (ppc_is_imm16 (inst->inst_offset)) {
+                                                        ppc_stfs (code, ainfo->reg + cur_reg, doffset, inst->inst_basereg);
+                                                }
+                                                else if (ppc_is_imm32 (inst->inst_offset)) {
+                                                        ppc_addis (code, ppc_r12, inst->inst_basereg, ppc_ha(doffset));
+                                                        ppc_stfs (code, ainfo->reg + cur_reg, doffset, ppc_r12);
+                                                }
+                                                else {
+                                                        ppc_load (code, ppc_r12, doffset);
+                                                        ppc_stfsx (code, ainfo->reg + cur_reg, inst->inst_basereg, ppc_r12);
+                                                }
+                                        }
+                                        else
+                                                g_assert_not_reached ();
+
 					soffset += ainfo->size;
 					doffset += ainfo->size;
 				}

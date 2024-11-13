@@ -24,19 +24,35 @@ public class SatelliteLoadingTests : AppTestBase
     {
     }
 
-    [Fact, TestCategory("no-fingerprinting")]
-    public async Task LoadSatelliteAssembly()
+    [Theory, TestCategory("no-fingerprinting")]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task LoadSatelliteAssembly(bool loadAllSatelliteResources)
     {
         CopyTestAsset("WasmBasicTestApp", "SatelliteLoadingTests", "App");
         BuildProject("Debug");
 
-        var result = await RunSdkStyleAppForBuild(new(Configuration: "Debug", TestScenario: "SatelliteAssembliesTest"));
+        var result = await RunSdkStyleAppForBuild(new(
+            Configuration: "Debug", 
+            TestScenario: "SatelliteAssembliesTest",
+            BrowserQueryString: new Dictionary<string, string> { ["loadAllSatelliteResources"] = loadAllSatelliteResources.ToString().ToLowerInvariant() }
+        ));
+
+        var expectedOutput = new List<Action<string>>();
+        if (!loadAllSatelliteResources)
+        {
+            // If we are loading all satellite, we don't have a way to test resources without satellite assemblies being loaded.
+            // So there messages are should be present only when we are lazily loading satellites.
+            expectedOutput.Add(m => Assert.Equal("default: hello", m));
+            expectedOutput.Add(m => Assert.Equal("es-ES without satellite: hello", m));
+        }
+
+        expectedOutput.Add(m => Assert.Equal("default: hello", m));
+        expectedOutput.Add(m => Assert.Equal("es-ES with satellite: hola", m));
+
         Assert.Collection(
             result.TestOutput,
-            m => Assert.Equal("default: hello", m),
-            m => Assert.Equal("es-ES without satellite: hello", m),
-            m => Assert.Equal("default: hello", m),
-            m => Assert.Equal("es-ES with satellite: hola", m)
+            expectedOutput.ToArray()
         );
     }
 
@@ -61,8 +77,8 @@ public class SatelliteLoadingTests : AppTestBase
 
         // Build the library
         var libraryCsprojPath = Path.GetFullPath(Path.Combine(_projectDir!, "..", "ResourceLibrary"));
-        new DotNetCommand(s_buildEnv, _testOutput)
-            .WithWorkingDirectory(libraryCsprojPath)
+        using DotNetCommand cmd = new DotNetCommand(s_buildEnv, _testOutput);
+        CommandResult res = cmd.WithWorkingDirectory(libraryCsprojPath)
             .WithEnvironmentVariable("NUGET_PACKAGES", _nugetPackagesDir)
             .ExecuteWithCapturedOutput("build -c Release")
             .EnsureSuccessful();

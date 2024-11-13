@@ -75,14 +75,12 @@ namespace System.Threading
                 Thread workerThread = new Thread(s_workerThreadStart);
                 workerThread.IsThreadPoolThread = true;
                 workerThread.IsBackground = true;
-                // thread name will be set in thread proc
+                workerThread.SetThreadPoolWorkerThreadName();
                 workerThread.UnsafeStart();
             }
 
             private static void WorkerThreadStart()
             {
-                Thread.CurrentThread.SetThreadPoolWorkerThreadName();
-
                 PortableThreadPool threadPoolInstance = ThreadPoolInstance;
 
                 if (NativeRuntimeEventSource.Log.IsEnabled())

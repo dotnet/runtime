@@ -59,6 +59,7 @@
   <ItemGroup>
     <Compile Include="Internal\Runtime\CompilerHelpers\DelegateHelpers.cs" />
     <Compile Include="Internal\Runtime\CompilerHelpers\LibraryInitializer.cs" />
+    <Compile Include="Internal\Runtime\CompilerHelpers\ReachabilityInstrumentationSupport.cs" />
     <Compile Include="Internal\Runtime\CompilerHelpers\ReflectionHelpers.cs" />
     <Compile Include="Internal\Runtime\CompilerHelpers\SharedCodeHelpers.cs" />
     <Compile Include="Internal\Runtime\CompilerHelpers\StartupCode\StartupCodeHelpers.Reflection.cs" />
@@ -270,9 +271,6 @@
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.ReportEvent_IntPtr.cs">
       <Link>Common\Interop\Windows\Advapi32\Interop.ReportEvent_IntPtr.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.IsDebuggerPresent.cs">
-      <Link>Interop\Windows\Kernel32\Interop.IsDebuggerPresent.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.RaiseFailFastException.cs">
       <Link>Interop\Windows\Kernel32\Interop.RaiseFailFastException.cs</Link>
     </Compile>
@@ -332,6 +330,9 @@
     </Compile>
     <Compile Include="$(CompilerCommonPath)\TypeSystem\Common\Utilities\LockFreeReaderHashtable.cs">
       <Link>Utilities\LockFreeReaderHashtable.cs</Link>
+    </Compile>
+    <Compile Include="$(CompilerCommonPath)\TypeSystem\Common\Utilities\LockFreeReaderHashtableOfPointers.cs">
+      <Link>Utilities\LockFreeReaderHashtableOfPointers.cs</Link>
     </Compile>
     <Compile Include="$(AotCommonPath)\System\Collections\Generic\LowLevelList.cs">
       <Link>System\Collections\Generic\LowLevelList.cs</Link>
