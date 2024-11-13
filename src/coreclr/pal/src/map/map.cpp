@@ -28,7 +28,6 @@ Abstract:
 #include "pal/map.hpp"
 #include "pal/thread.hpp"
 #include "pal/file.hpp"
-#include "pal/malloc.hpp"
 
 #include <stddef.h>
 #include <sys/stat.h>
@@ -2110,7 +2109,7 @@ void * MAPMapPEFile(HANDLE hFile, off_t offset)
 #endif
     SIZE_T reserveSize = 0;
     bool forceOveralign = false;
-    int readWriteFlags = MAP_FILE|MAP_PRIVATE|MAP_FIXED;
+    int readWriteFlags = MAP_PRIVATE|MAP_FIXED;
     int readOnlyFlags = readWriteFlags;
 
     ENTRY("MAPMapPEFile (hFile=%p offset=%zx)\n", hFile, offset);
@@ -2317,7 +2316,7 @@ void * MAPMapPEFile(HANDLE hFile, off_t offset)
         // If PAL_MAP_READONLY_PE_HUGE_PAGE_AS_SHARED is set to 1. map the readonly sections as shared
         // which works well with the behavior of the hugetlbfs
         if (mapAsShared != NULL && (strcmp(mapAsShared, "1") == 0))
-            readOnlyFlags = MAP_FILE|MAP_SHARED|MAP_FIXED;
+            readOnlyFlags = MAP_SHARED|MAP_FIXED;
     }
 
     //we have now reserved memory (potentially we got rebased).  Walk the PE sections and map each part

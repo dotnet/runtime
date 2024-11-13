@@ -153,6 +153,8 @@
     <PlatformManifestFileEntry Include="bootstrapper.GuardCF.obj" IsNative="true" />
     <PlatformManifestFileEntry Include="bootstrapperdll.obj" IsNative="true" />
     <PlatformManifestFileEntry Include="bootstrapperdll.GuardCF.obj" IsNative="true" />
+    <PlatformManifestFileEntry Include="dllmain.obj" IsNative="true" />
+    <PlatformManifestFileEntry Include="dllmain.GuardCF.obj" IsNative="true" />
     <PlatformManifestFileEntry Include="eventpipe-disabled.lib" IsNative="true" />
     <PlatformManifestFileEntry Include="eventpipe-disabled.GuardCF.lib" IsNative="true" />
     <PlatformManifestFileEntry Include="eventpipe-enabled.lib" IsNative="true" />

@@ -329,6 +329,60 @@ FlowEdge* Compiler::BlockDominancePreds(BasicBlock* blk)
 }
 
 //------------------------------------------------------------------------
+// IsInsertedSsaLiveIn: See if a local is marked as being live-in to a block in
+// the side table with locals inserted into SSA.
+//
+// Arguments:
+//   block - The block
+//   lclNum - The local
+//
+// Returns:
+//    True if the local is marked as live-in to that block
+//
+bool Compiler::IsInsertedSsaLiveIn(BasicBlock* block, unsigned lclNum)
+{
+    assert(lvaGetDesc(lclNum)->lvInSsa);
+
+    if (m_insertedSsaLocalsLiveIn == nullptr)
+    {
+        return false;
+    }
+
+    return m_insertedSsaLocalsLiveIn->Lookup(BasicBlockLocalPair(block, lclNum));
+}
+
+//------------------------------------------------------------------------
+// AddInsertedSsaLiveIn: Mark as local that was inserted into SSA as being
+// live-in to a block.
+//
+// Arguments:
+//   block - The block
+//   lclNum - The local
+//
+// Returns:
+//    True if this was added anew; false if the local was already marked as such.
+//
+bool Compiler::AddInsertedSsaLiveIn(BasicBlock* block, unsigned lclNum)
+{
+    // SSA-inserted locals always have explicit reaching defs for all uses, so
+    // it never makes sense for them to be live into the first block.
+    assert(block != fgFirstBB);
+
+    if (m_insertedSsaLocalsLiveIn == nullptr)
+    {
+        m_insertedSsaLocalsLiveIn = new (this, CMK_SSA) BasicBlockLocalPairSet(getAllocator(CMK_SSA));
+    }
+
+    if (m_insertedSsaLocalsLiveIn->Set(BasicBlockLocalPair(block, lclNum), true, BasicBlockLocalPairSet::Overwrite))
+    {
+        return false;
+    }
+
+    JITDUMP("Marked V%02u as live into " FMT_BB "\n", lclNum, block->bbNum);
+    return true;
+}
+
+//------------------------------------------------------------------------
 // IsLastHotBlock: see if this is the last block before the cold section
 //
 // Arguments:

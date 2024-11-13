@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Generic;
-using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Xunit;
 
 namespace Microsoft.Diagnostics.DataContractReader.UnitTests;
@@ -12,26 +10,17 @@ using MockObject = MockDescriptors.Object;
 
 public unsafe class ObjectTests
 {
-
     private static void ObjectContractHelper(MockTarget.Architecture arch, Action<MockObject> configure, Action<Target> testCase)
     {
         TargetTestHelpers targetTestHelpers = new(arch);
 
         MockMemorySpace.Builder builder = new(targetTestHelpers);
-        MockDescriptors.RuntimeTypeSystem rtsBuilder = new(builder) {
-            // arbtrary address range
-            TypeSystemAllocator = builder.CreateAllocator(start: 0x00000000_4a000000, end: 0x00000000_4b000000),
-        };
-        MockObject objectBuilder = new(rtsBuilder) {
-            // arbtrary adress range
-            ManagedObjectAllocator = builder.CreateAllocator(start: 0x00000000_10000000, end: 0x00000000_20000000),
-        };
+        MockDescriptors.RuntimeTypeSystem rtsBuilder = new(builder);
+        MockObject objectBuilder = new(rtsBuilder);
         builder = builder
             .SetContracts([ nameof (Contracts.Object), nameof (Contracts.RuntimeTypeSystem) ])
-            .SetGlobals(MockObject.Globals(targetTestHelpers))
+            .SetGlobals(objectBuilder.Globals)
             .SetTypes(objectBuilder.Types);
-
-        objectBuilder.AddGlobalPointers();
 
         configure?.Invoke(objectBuilder);
 
