@@ -867,7 +867,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 				[ExpectedWarning ("IL2091")]
 				public void UseNestedTypeArgument () {
-					new Generic<GenericRequires<T>.Nested> ();
+					new GenericTypeArgument<GenericRequires<T>.Nested> ();
 				}
 
 				[ExpectedWarning ("IL2091")]
@@ -889,6 +889,10 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 					public static event Action<T>? Event;
 				}
+			}
+
+			class GenericTypeArgument<T>
+			{
 			}
 
 			public static void Test ()

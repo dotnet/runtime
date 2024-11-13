@@ -664,30 +664,44 @@ private:
                 //
                 if (block->hasProfileWeight())
                 {
-                    bool           repairWasComplete = true;
-                    weight_t const weight            = removedEdge->getLikelyWeight();
+                    bool           repairWasComplete  = true;
+                    bool           missingProfileData = false;
+                    weight_t const weight             = removedEdge->getLikelyWeight();
 
                     if (weight > 0)
                     {
                         // Target block weight will increase.
                         //
                         BasicBlock* const target = block->GetTarget();
-                        assert(target->hasProfileWeight());
-                        target->setBBProfileWeight(target->bbWeight + weight);
+
+                        // We may have a profiled inlinee in an unprofiled method
+                        //
+                        if (target->hasProfileWeight())
+                        {
+                            target->setBBProfileWeight(target->bbWeight + weight);
+                            missingProfileData = true;
+                        }
 
                         // Alternate weight will decrease
                         //
                         BasicBlock* const alternate = removedEdge->getDestinationBlock();
-                        assert(alternate->hasProfileWeight());
-                        weight_t const alternateNewWeight = alternate->bbWeight - weight;
 
-                        // If profile weights are consistent, expect at worst a slight underflow.
-                        //
-                        if (m_compiler->fgPgoConsistent && (alternateNewWeight < 0))
+                        if (alternate->hasProfileWeight())
                         {
-                            assert(m_compiler->fgProfileWeightsEqual(alternateNewWeight, 0));
+                            weight_t const alternateNewWeight = alternate->bbWeight - weight;
+
+                            // If profile weights are consistent, expect at worst a slight underflow.
+                            //
+                            if (m_compiler->fgPgoConsistent && (alternateNewWeight < 0))
+                            {
+                                assert(m_compiler->fgProfileWeightsEqual(alternateNewWeight, 0));
+                            }
+                            alternate->setBBProfileWeight(max(0.0, alternateNewWeight));
                         }
-                        alternate->setBBProfileWeight(max(0.0, alternateNewWeight));
+                        else
+                        {
+                            missingProfileData = true;
+                        }
 
                         // This will affect profile transitively, so in general
                         // the profile will become inconsistent.
@@ -698,11 +712,16 @@ private:
                         // block's postdominator is target's target (simple
                         // if/then/else/join).
                         //
-                        if (target->KindIs(BBJ_ALWAYS))
+                        if (!missingProfileData && target->KindIs(BBJ_ALWAYS))
                         {
                             repairWasComplete =
                                 alternate->KindIs(BBJ_ALWAYS) && alternate->TargetIs(target->GetTarget());
                         }
+                    }
+
+                    if (missingProfileData)
+                    {
+                        JITDUMP("Profile data could not be locally repaired. Data was missing.\n");
                     }
 
                     if (!repairWasComplete)
@@ -1503,7 +1522,12 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
             // Inlinee contains just one BB. So just insert its statement list to topBlock.
             if (InlineeCompiler->fgFirstBB->bbStmtList != nullptr)
             {
+                JITDUMP("\nInserting inlinee code into " FMT_BB "\n", iciBlock->bbNum);
                 stmtAfter = fgInsertStmtListAfter(iciBlock, stmtAfter, InlineeCompiler->fgFirstBB->firstStmt());
+            }
+            else
+            {
+                JITDUMP("\ninlinee was empty\n");
             }
 
             // Copy inlinee bbFlags to caller bbFlags.
@@ -1539,6 +1563,10 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
             fgInlineAppendStatements(pInlineInfo, iciBlock, stmtAfter);
             insertInlineeBlocks = false;
         }
+        else
+        {
+            JITDUMP("\ninlinee was single-block, but not BBJ_RETURN\n");
+        }
     }
 
     //
@@ -1546,8 +1574,12 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
     //
     if (insertInlineeBlocks)
     {
+        JITDUMP("\nInserting inlinee blocks\n");
         bottomBlock              = fgSplitBlockAfterStatement(topBlock, stmtAfter);
         unsigned const baseBBNum = fgBBNumMax;
+
+        JITDUMP("split " FMT_BB " after the inlinee call site; after portion is now " FMT_BB "\n", topBlock->bbNum,
+                bottomBlock->bbNum);
 
         // The newly split block is not special so doesn't need to be kept.
         //
@@ -1583,7 +1615,7 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
             if (block->KindIs(BBJ_RETURN))
             {
                 noway_assert(!block->HasFlag(BBF_HAS_JMP));
-                JITDUMP("\nConvert bbKind of " FMT_BB " to BBJ_ALWAYS to bottomBlock " FMT_BB "\n", block->bbNum,
+                JITDUMP("\nConvert bbKind of " FMT_BB " to BBJ_ALWAYS to bottom block " FMT_BB "\n", block->bbNum,
                         bottomBlock->bbNum);
 
                 FlowEdge* const newEdge = fgAddRefPred(bottomBlock, block);
