@@ -4953,7 +4953,9 @@ weight_t Compiler::ThreeOptLayout::GetCost(BasicBlock* block, BasicBlock* next)
 
     if (fallthroughEdge != nullptr)
     {
-        return maxCost - fallthroughEdge->getLikelyWeight();
+        // The edge's weight should never exceed its source block's weight,
+        // but handle negative results from rounding errors in getLikelyWeight(), just in case
+        return max(0.0, maxCost - fallthroughEdge->getLikelyWeight());
     }
 
     return maxCost;
@@ -5313,7 +5315,7 @@ bool Compiler::ThreeOptLayout::RunThreeOptPass(BasicBlock* startBlock, BasicBloc
         }
 
         // Continue evaluating partitions if this one isn't profitable
-        if ((currCost <= newCost) || Compiler::fgProfileWeightsEqual(currCost, newCost, 0.001))
+        if ((newCost >= currCost) || Compiler::fgProfileWeightsEqual(currCost, newCost, 0.001))
         {
             continue;
         }
