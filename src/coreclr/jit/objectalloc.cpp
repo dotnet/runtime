@@ -351,16 +351,30 @@ void ObjectAllocator::RecordAppearance(unsigned lclNum, BasicBlock* block, State
 }
 
 //------------------------------------------------------------------------------
-// CanClone: check that cloning can remove all escaping references
+// CanClone: check that cloning can remove all escaping references and
+//   is a reasonble thing to do
 //
 // Arguments:
 //   info -- info about the cloning opportunity
 //
 // Returns:
 //   true if cloning can remove all escaping references
+//   and if cloning is likely to be a good perf/size tradeoff
 //
 bool ObjectAllocator::CanClone(GuardInfo& info)
 {
+    // The allocation site must not be in a loop (stack allocation limitation)
+    //
+    // Note if we can prove non-escape but can't stack allocate, we might be
+    // able to light up an "object is thread exclusive" mode and effectively
+    // promote the fields anyways.
+    //
+    if (info.m_allocBlock->HasFlag(BBF_BACKWARD_JUMP))
+    {
+        JITDUMP("allocation block " FMT_BB " is (possibly) in a loop\n", info.m_allocBlock->bbNum);
+        return false;
+    }
+
     // The guard variable needs to have at most one definition.
     //
     BasicBlock* defBlock = nullptr;
@@ -415,11 +429,16 @@ bool ObjectAllocator::CanClone(GuardInfo& info)
         return false;
     }
 
-    // We expect to be able to follow all paths from alloc block to defBlock.
-    // Because we are inside a GDV hammock, we do not expect to see a normal
-    // flow path from alloc block that can bypass defBlock.
+    // We expect to be able to follow all paths from alloc block to defBlock
+    // without reaching "beyond" def block.
     //
-    // Todo: track blocks we need to clone
+    // Because we are inside a GDV hammock, we do not expect to see a normal
+    // flow path from alloc block that can bypass defBlock. For now we trust
+    // that is the case.
+    //
+    // toVisit: blocks we need to visit to determine extent of cloning
+    // visited: block we will need to clone
+    // toVisitTryEntry: subset of above that are try entries.
     //
     ArrayStack<BasicBlock*> toVisit(comp->getAllocator(CMK_ObjectAllocator));
     ArrayStack<BasicBlock*> visited(comp->getAllocator(CMK_ObjectAllocator));
@@ -475,7 +494,7 @@ bool ObjectAllocator::CanClone(GuardInfo& info)
     //
     // Walk back from each use block until we hit closure.
     //
-    // We should be able to walk forward from defBlock to all the uses,
+    // We should also be able to walk forward from defBlock to all the uses,
     // skipping any successors that are failed GDVs.
     //
     for (EnumeratorVarAppearance& a : *info.m_appearances)
@@ -508,6 +527,10 @@ bool ObjectAllocator::CanClone(GuardInfo& info)
              predEdge           = predEdge->getNextPredEdge())
         {
             BasicBlock* const predBlock = predEdge->getSourceBlock();
+
+            // We should not be able to reach an un-dominated block.
+            // (consider eh paths?)
+            //
             assert(comp->m_domTree->Dominates(defBlock, predBlock));
             if (BlockSetOps::IsMember(comp, visitedBlocks, predBlock->bbNum))
             {
@@ -518,19 +541,25 @@ bool ObjectAllocator::CanClone(GuardInfo& info)
     }
 
     JITDUMP("total cloning including all enumerator uses: %u blocks\n", visited.Height() - 1);
+    unsigned numberOfEHRegionsToClone = 0;
 
     // Now we need to check if the entire cloning extent is within the
     // same try region, or crosses into a try somewhere.
     //
     // If the set of blocks to clone crosses into a try we need to
-    // expand the clone to the entire try plus any enclosed regions,
-    // plus the associated handler / filter and any regions they
-    // enclose, plus any callfinallies that follow.
+    // expand the set of blocks to clone to the entire try plus any
+    // enclosed regions, plus the associated handler / filter and any
+    // regions they enclose, plus any callfinallies that follow.
     //
-    // Need to make this more efficient (add separate try entry visited set)
+    // This is necessary because try regions can't have multiple entries, or
+    // share parts in any meaningful way.
+    //
+    // We may need to make this more efficient. Also should probably abstract
+    // it out somehow.
     //
     while (toVisitTryEntry.Height() > 0)
     {
+        numberOfEHRegionsToClone++;
         BasicBlock* const block = toVisitTryEntry.Pop();
         assert(comp->bbIsTryBeg(block));
 
@@ -676,6 +705,23 @@ bool ObjectAllocator::CanClone(GuardInfo& info)
 
     JITDUMP("total cloning including all uses and subsequent EH: %u blocks\n", visited.Height() - 1);
 
+    // Todo: some kind of costing to decide if this amount of cloning is worth the trouble.
+    //
+    // We generally expect that if we need to clone multiple EH regions, there is one region
+    // that encloses the others. For now we'll simply check that we only need to clone one EH region.
+
+    if (numberOfEHRegionsToClone > 1)
+    {
+        JITDUMP("Too many EH regions to clone (%u)\n", numberOfEHRegionsToClone);
+        return false;
+    }
+
+    comp->Metrics.EnumeratorGDVCanCloneToEnsureNoEscape++;
+
+    // Transfer the extent info to the guard info object...
+    // Set of blocks to clone
+    // EH region to clone (if any)
+
     return false;
 }
 
@@ -758,7 +804,7 @@ void ObjectAllocator::MarkEscapingVarsAndBuildConnGraph()
                 // and the condition analysis seems tractable, and we expect the un-inlined failed
                 // GDVs to be the main causes of escapes.
                 //
-                // TODO (perhaps): check this is indeed guarded (though we likely want success, not failure)
+                // TODO (perhaps): check this allocation is guarded (though we likely want success, not failure)
                 //
                 if (data->OperIs(GT_ALLOCOBJ) && m_compiler->hasImpEnumeratorGdvLocalMap())
                 {
@@ -766,35 +812,52 @@ void ObjectAllocator::MarkEscapingVarsAndBuildConnGraph()
                     // Find the local that will represent its uses (we have kept track of this during
                     // importation and GDV expansion). Note it is usually *not* lclNum.
                     //
+                    // We will keep special track of all accesses to this local.
+                    //
                     Compiler::NodeToUnsignedMap* const map             = m_compiler->getImpEnumeratorGdvLocalMap();
                     unsigned                           enumeratorLocal = BAD_VAR_NUM;
                     if (map->Lookup(data, &enumeratorLocal))
                     {
-                        // We are going to conditionally track accesses to this local via a pseudo local.
-                        // We should have been able to predict in advance how many we'll need.
+                        // If it turns out we can't stack allocate this object even if it does not escape
+                        // then don't bother setting up tracking.
                         //
-                        const unsigned pseudoLocal = m_allocator->NewPseudoLocal();
-                        assert(pseudoLocal != BAD_VAR_NUM);
-                        bool added =
-                            m_allocator->m_EnumeratorLocalToPseudoLocalMap.AddOrUpdate(enumeratorLocal, pseudoLocal);
-                        assert(added);
+                        CORINFO_CLASS_HANDLE clsHnd = data->AsAllocObj()->gtAllocObjClsHnd;
+                        const char*          reason = nullptr;
 
-                        // We will query this info if we see CALL(enumeratorLocal)
-                        // during subsequent analysis, to verify that access is
-                        // under the same type guard.
-                        //
-                        CompAllocator alloc(m_compiler->getAllocator(CMK_ObjectAllocator));
-                        GuardInfo     info;
-                        info.m_local       = enumeratorLocal;
-                        info.m_type        = data->AsAllocObj()->gtAllocObjClsHnd;
-                        info.m_appearances = new (alloc) jitstd::vector<EnumeratorVarAppearance>(alloc);
-                        info.m_allocBlock  = m_block;
-                        m_allocator->m_GuardMap.Set(pseudoLocal, info);
+                        if (m_allocator->CanAllocateLclVarOnStack(enumeratorLocal, clsHnd, &reason))
+                        {
+                            // We are going to conditionally track accesses to this local via a pseudo local.
+                            // We should have been able to predict in advance how many we'll need.
+                            //
+                            const unsigned pseudoLocal = m_allocator->NewPseudoLocal();
+                            assert(pseudoLocal != BAD_VAR_NUM);
+                            bool added = m_allocator->m_EnumeratorLocalToPseudoLocalMap.AddOrUpdate(enumeratorLocal,
+                                                                                                    pseudoLocal);
+                            assert(added);
 
-                        JITDUMP(
-                            "Enumerator allocation [%06u]: will track accesses to V%02u guarded by type %s via P%02u\n",
-                            m_compiler->dspTreeID(data), enumeratorLocal, m_compiler->eeGetClassName(info.m_type),
-                            pseudoLocal);
+                            // We will query this info if we see CALL(enumeratorLocal)
+                            // during subsequent analysis, to verify that access is
+                            // under the same type guard.
+                            //
+                            CompAllocator alloc(m_compiler->getAllocator(CMK_ObjectAllocator));
+                            GuardInfo     info;
+                            info.m_local       = enumeratorLocal;
+                            info.m_type        = clsHnd;
+                            info.m_appearances = new (alloc) jitstd::vector<EnumeratorVarAppearance>(alloc);
+                            info.m_allocBlock  = m_block;
+                            m_allocator->m_GuardMap.Set(pseudoLocal, info);
+
+                            JITDUMP(
+                                "Enumerator allocation [%06u]: will track accesses to V%02u guarded by type %s via P%02u\n",
+                                m_compiler->dspTreeID(data), enumeratorLocal, m_compiler->eeGetClassName(clsHnd),
+                                pseudoLocal);
+                        }
+                        else
+                        {
+                            JITDUMP(
+                                "Enumerator allocation [%06u]: enumerator type %s cannot be stack allocated, so not tracking enumerator local V%02u\n",
+                                m_compiler->dspTreeID(data), m_compiler->eeGetClassName(clsHnd), enumeratorLocal);
+                        }
                     }
                 }
             }
@@ -954,6 +1017,13 @@ void ObjectAllocator::ComputeEscapingNodes(BitVecTraits* bitVecTraits, BitVec& e
                 JITDUMP("   Escapes only when V%02u.Type NE %s\n", info.m_local, comp->eeGetClassName(info.m_type));
                 JITDUMP("   V%02u has %u appearances\n", info.m_local, info.m_appearances->size());
 
+                // We may be able to clone and specialize the enumerator uses to ensure
+                // that the allocated enumerator does not escape.
+                //
+                comp->Metrics.EnumeratorGDVProvisionalNoEscape++;
+
+                // See if cloning is viable...
+                //
                 canClone = CanClone(info);
             }
 

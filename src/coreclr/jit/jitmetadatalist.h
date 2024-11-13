@@ -62,6 +62,7 @@ JITMETADATAMETRIC(ClassGDV,                              int,              0)
 JITMETADATAMETRIC(MethodGDV,                             int,              0)
 JITMETADATAMETRIC(MultiGuessGDV,                         int,              0)
 JITMETADATAMETRIC(ChainedGDV,                            int,              0)
+JITMETADATAMETRIC(EnumeratorGDV,                         int,              0)
 JITMETADATAMETRIC(InlinerBranchFold,                     int,              0)
 JITMETADATAMETRIC(InlineAttempt,                         int,              0)
 JITMETADATAMETRIC(InlineCount,                           int,              0)
@@ -83,6 +84,8 @@ JITMETADATAMETRIC(NewRefClassHelperCalls,                int,              0)
 JITMETADATAMETRIC(StackAllocatedRefClasses,              int,              0)
 JITMETADATAMETRIC(NewBoxedValueClassHelperCalls,         int,              0)
 JITMETADATAMETRIC(StackAllocatedBoxedValueClasses,       int,              0)
+JITMETADATAMETRIC(EnumeratorGDVProvisionalNoEscape,      int,              0)
+JITMETADATAMETRIC(EnumeratorGDVCanCloneToEnsureNoEscape, int,              0)
 
 #undef JITMETADATA
 #undef JITMETADATAINFO

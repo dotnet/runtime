@@ -6757,6 +6757,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                             lvaTable[lclNum].lvIsEnumerator = true;
                             JITDUMP("Flagging [%06u] for enumerator cloning via V%02u\n", dspTreeID(call), lclNum);
                             getImpEnumeratorGdvLocalMap()->Set(call, lclNum);
+                            Metrics.EnumeratorGDV++;
                         }
                     }
                 }

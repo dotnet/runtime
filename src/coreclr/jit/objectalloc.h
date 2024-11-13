@@ -79,12 +79,12 @@ public:
     ObjectAllocator(Compiler* comp);
     bool IsObjectStackAllocationEnabled() const;
     void EnableObjectStackAllocation();
+    bool CanAllocateLclVarOnStack(unsigned int lclNum, CORINFO_CLASS_HANDLE clsHnd, const char** reason);
 
 protected:
     virtual PhaseStatus DoPhase() override;
 
 private:
-    bool         CanAllocateLclVarOnStack(unsigned int lclNum, CORINFO_CLASS_HANDLE clsHnd, const char** reason);
     bool         CanLclVarEscape(unsigned int lclNum);
     void         MarkLclVarAsPossiblyStackPointing(unsigned int lclNum);
     void         MarkLclVarAsDefinitelyStackPointing(unsigned int lclNum);
