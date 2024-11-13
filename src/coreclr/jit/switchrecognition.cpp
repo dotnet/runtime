@@ -370,40 +370,10 @@ bool Compiler::optSwitchConvert(
     assert((jumpCount > 0) && (jumpCount <= SWITCH_MAX_DISTANCE + 1));
     FlowEdge** jmpTab = new (this, CMK_FlowEdge) FlowEdge*[jumpCount + 1 /*default case*/];
 
-    // Quirk: lastBlock's false target may have diverged from bbNext. If the false target is behind firstBlock,
-    // we may create a cycle in the BasicBlock list by setting firstBlock->bbNext to it.
-    // Add a new BBJ_ALWAYS to the false target to avoid this.
-    // (We only need this if the false target is behind firstBlock,
-    // but it's cheaper to just check if the false target has diverged)
-    // TODO-NoFallThrough: Revisit this quirk?
-    bool skipPredRemoval = false;
-    if (!lastBlock->FalseTargetIs(lastBlock->Next()))
-    {
-        if (isReversed)
-        {
-            assert(lastBlock->FalseTargetIs(blockIfTrue));
-            fgRemoveRefPred(trueEdge);
-            BasicBlock* targetBlock = blockIfTrue;
-            blockIfTrue             = fgNewBBafter(BBJ_ALWAYS, firstBlock, true);
-            FlowEdge* const newEdge = fgAddRefPred(targetBlock, blockIfTrue);
-            skipPredRemoval         = true;
-            blockIfTrue->SetTargetEdge(newEdge);
-        }
-        else
-        {
-            assert(lastBlock->FalseTargetIs(blockIfFalse));
-            BasicBlock* targetBlock = blockIfFalse;
-            blockIfFalse            = fgNewBBafter(BBJ_ALWAYS, firstBlock, true);
-            FlowEdge* const newEdge = fgAddRefPred(targetBlock, blockIfFalse);
-            blockIfFalse->SetTargetEdge(newEdge);
-        }
-    }
-
     fgHasSwitch                                   = true;
     firstBlock->GetSwitchTargets()->bbsCount      = jumpCount + 1;
     firstBlock->GetSwitchTargets()->bbsHasDefault = true;
     firstBlock->GetSwitchTargets()->bbsDstTab     = jmpTab;
-    firstBlock->SetNext(isReversed ? blockIfTrue : blockIfFalse);
 
     // Splitting doesn't work well with jump-tables currently
     opts.compProcedureSplitting = false;
@@ -418,10 +388,7 @@ bool Compiler::optSwitchConvert(
     }
 
     // Unlink blockIfTrue from firstBlock, we're going to link it again in the loop below.
-    if (!skipPredRemoval)
-    {
-        fgRemoveRefPred(trueEdge);
-    }
+    fgRemoveRefPred(trueEdge);
 
     FlowEdge* switchTrueEdge = nullptr;
 
