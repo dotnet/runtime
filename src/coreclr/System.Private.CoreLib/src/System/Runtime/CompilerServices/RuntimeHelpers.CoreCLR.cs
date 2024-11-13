@@ -923,8 +923,8 @@ namespace System.Runtime.CompilerServices
         public uint GetNumInstanceFieldBytesIfContainsGCPointers()
         {
             Debug.Assert(ContainsGCPointers);
-            Debug.Assert((this->BaseSize - (nuint)(2 * sizeof(IntPtr)) == GetNumInstanceFieldBytes()));
-            return this->BaseSize - (nuint)(2 * sizeof(IntPtr))
+            Debug.Assert((BaseSize - (nuint)(2 * sizeof(IntPtr)) == GetNumInstanceFieldBytes()));
+            return BaseSize - (uint)(2 * sizeof(IntPtr));
         }
     }
 

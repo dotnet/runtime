@@ -599,7 +599,7 @@ namespace System.Runtime.CompilerServices
 
         [DebuggerHidden]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        internal static ref byte Unbox_Helper(MethodTable* pMT1, object obj)
+        private static ref byte Unbox_Helper(MethodTable* pMT1, object obj)
         {
             // must be a value type
             Debug.Assert(pMT1->IsValueType);
@@ -620,7 +620,7 @@ namespace System.Runtime.CompilerServices
 
         [DebuggerHidden]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        internal static void Unbox_TypeTest_Helper(MethodTable *pMT1, MethodTable *pMT2)
+        private static void Unbox_TypeTest_Helper(MethodTable *pMT1, MethodTable *pMT2)
         {
             if ((!pMT1->IsPrimitive || !pMT2->IsPrimitive ||
                 pMT1->GetPrimitiveCorElementType() != pMT2->GetPrimitiveCorElementType())
@@ -634,7 +634,7 @@ namespace System.Runtime.CompilerServices
         }
 
         [DebuggerHidden]
-        internal static void Unbox_TypeTest(MethodTable *pMT1, MethodTable *pMT2)
+        private static void Unbox_TypeTest(MethodTable *pMT1, MethodTable *pMT2)
         {
             if (pMT1 == pMT2)
                 return;
