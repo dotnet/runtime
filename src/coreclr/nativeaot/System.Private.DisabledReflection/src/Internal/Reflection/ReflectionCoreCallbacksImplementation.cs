@@ -34,7 +34,7 @@ namespace Internal.Reflection
         public override Delegate CreateDelegate(Type type, MethodInfo method, bool throwOnBindFailure) => throw new NotSupportedException(SR.Reflection_Disabled);
         [RequiresUnreferencedCode("The target method might be removed")]
         public override Delegate CreateDelegate(Type type, object target, string method, bool ignoreCase, bool throwOnBindFailure) => throw new NotSupportedException(SR.Reflection_Disabled);
-        public override Delegate CreateDelegate(Type type, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type target, string method, bool ignoreCase, bool throwOnBindFailure) => throw new NotSupportedException(SR.Reflection_Disabled);
+        public override Delegate CreateDelegate(Type type, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.AllMethods)] Type target, string method, bool ignoreCase, bool throwOnBindFailure) => throw new NotSupportedException(SR.Reflection_Disabled);
         public override FieldInfo GetFieldFromHandle(RuntimeFieldHandle runtimeFieldHandle) => throw new NotSupportedException(SR.Reflection_Disabled);
         public override FieldInfo GetFieldFromHandle(RuntimeFieldHandle runtimeFieldHandle, RuntimeTypeHandle declaringTypeHandle) => throw new NotSupportedException(SR.Reflection_Disabled);
         public override IntPtr GetFunctionPointer(RuntimeMethodHandle runtimeMethodHandle, RuntimeTypeHandle declaringTypeHandle) => throw new NotSupportedException(SR.Reflection_Disabled);
