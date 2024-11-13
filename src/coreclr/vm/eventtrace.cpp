@@ -2450,13 +2450,10 @@ VOID EtwCallbackCommon(
         ctxToUpdate->EventPipeProvider.IsEnabled = ControlCode;
 
         // For EventPipe, ControlCode can only be either 0 or 1.
-        _ASSERTE(ControlCode == 0 || ControlCode == 1);
+        _ASSERTE(ControlCode == EVENT_CONTROL_CODE_DISABLE_PROVIDER || ControlCode == EVENT_CONTROL_CODE_ENABLE_PROVIDER);
     }
 
-    if (
-#if !defined(HOST_UNIX)
-        (ControlCode == EVENT_CONTROL_CODE_ENABLE_PROVIDER || ControlCode == EVENT_CONTROL_CODE_DISABLE_PROVIDER) &&
-#endif
+    if ((ControlCode == EVENT_CONTROL_CODE_ENABLE_PROVIDER || ControlCode == EVENT_CONTROL_CODE_DISABLE_PROVIDER) &&
         (ProviderIndex == DotNETRuntime || ProviderIndex == DotNETRuntimePrivate))
     {
 #if !defined(HOST_UNIX)
@@ -2484,10 +2481,8 @@ VOID EtwCallbackCommon(
         g_fEEStarted && !g_fEEShutDown &&
         bIsPublicTraceHandle &&
         ((MatchAnyKeyword & CLR_MANAGEDHEAPCOLLECT_KEYWORD) != 0) &&
-#if !defined(HOST_UNIX)
         ((ControlCode == EVENT_CONTROL_CODE_ENABLE_PROVIDER) ||
          (ControlCode == EVENT_CONTROL_CODE_CAPTURE_STATE)) &&
-#endif // !defined(HOST_UNIX)
         ((Change == EtwSessionChangeUnknown) ||
          (Change == EventPipeSessionEnable));
 
