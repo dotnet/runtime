@@ -28,6 +28,8 @@ public class ChangeMatchUse
     {
         if (Sve.IsSupported)
         {
+            Vector<int> vec = Vector.Create<int>(77);
+
             for (int i = 0; i < 4; i++)
             {
                 for (int j = 0; j < 200; j++)
@@ -40,6 +42,7 @@ public class ChangeMatchUse
                     CastMaskUseAsVector();
                     CastMaskUseAsMask();
                     UseMaskAsMaskAndRef();
+                    UseParamAsMask(vec);
                 }
 
                 Thread.Sleep(100);
@@ -52,6 +55,7 @@ public class ChangeMatchUse
             CastMaskUseAsVector();
             CastMaskUseAsMask();
             UseMaskAsMaskAndRef();
+            UseParamAsMask(vec);
         }
     }
 
@@ -164,4 +168,13 @@ public class ChangeMatchUse
         Consume(vec2);
     }
 
+    // Take a vector parameter. Use it as a mask
+    // No conversion due to it being a parameter.
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void UseParamAsMask(Vector<int> vecParam)
+    {
+        Vector<int> vec1 = Vector.Create<int>(73);
+        Vector<int> vec2 = Sve.Compact(vecParam, vec1); // Use as mask
+        Consume(vec2);
+    }
 }

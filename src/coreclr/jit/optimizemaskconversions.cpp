@@ -184,6 +184,23 @@ public:
                 weight->InvalidateWeight();
                 return fgWalkResult::WALK_CONTINUE;
             }
+            // TODO: For both parameters and OSR locals, these could potentially be converted.
+            //       Instead of retyping the existing locals, for each def create a new local store
+            //       in the new type and update all the uses to use the new store. For parameters
+            //       and OSR locals add a single initial conversion in an initial basic block. Take
+            //       this into account in the weighting.
+            else if (varDsc->lvIsParam)
+            {
+                JITDUMP("is parameter. ");
+                weight->InvalidateWeight();
+                return fgWalkResult::WALK_CONTINUE;
+            }
+            else if (varDsc->lvIsOSRLocal)
+            {
+                JITDUMP("is OSR local. ");
+                weight->InvalidateWeight();
+                return fgWalkResult::WALK_CONTINUE;
+            }
 
             // Update the weights.
             JITDUMP("has %s conversion. ", hasConversion ? "mask" : "no");
