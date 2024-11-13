@@ -198,7 +198,7 @@ internal partial class MockDescriptors
         ]
     };
 
-    private static Dictionary<DataType, Target.TypeInfo> GetTypesForTypeFields(TargetTestHelpers helpers, TypeFields[] typeFields)
+    internal static Dictionary<DataType, Target.TypeInfo> GetTypesForTypeFields(TargetTestHelpers helpers, TypeFields[] typeFields)
     {
         Dictionary<DataType, Target.TypeInfo> types = new();
         foreach (var toAdd in typeFields)
