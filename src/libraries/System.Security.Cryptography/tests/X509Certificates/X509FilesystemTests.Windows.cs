@@ -13,9 +13,6 @@ using Xunit;
 
 namespace System.Security.Cryptography.X509Certificates.Tests
 {
-    /// <summary>
-    /// Tests that apply to the filesystem/cache portions of the X509 infrastructure on Unix implementations.
-    /// </summary>
     [Collection("X509Filesystem")]
     public static class X509FilesystemTests
     {
@@ -37,6 +34,14 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             PreserveStorageProvider = true,
         };
 
+        // 6 random keys that will used across all of the tests in this file
+        private const int KeyGenKeySize = 2048;
+        private static readonly RSA[] s_keys =
+        {
+            RSA.Create(KeyGenKeySize), RSA.Create(KeyGenKeySize), RSA.Create(KeyGenKeySize),
+            RSA.Create(KeyGenKeySize), RSA.Create(KeyGenKeySize), RSA.Create(KeyGenKeySize),
+        };
+
         [Theory]
         [InlineData(X509KeyStorageFlags.DefaultKeySet)]
         [InlineData(X509KeyStorageFlags.DefaultKeySet, true)]
@@ -46,9 +51,11 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [InlineData(X509KeyStorageFlags.MachineKeySet, true)]
         public static void AllFilesDeleted_MultiplePrivateKey_Ctor(X509KeyStorageFlags storageFlags, bool capi = false)
         {
-            EnsureNoKeysGained(
-                (Flags: storageFlags, Bytes: MakePfx(6, capi: capi)),
-                state => new X509Certificate2(state.Bytes, "", state.Flags));
+            AllFilesDeletedTest(
+                storageFlags,
+                capi,
+                multiPrivate: true,
+                static (bytes, pwd, flags) => new X509Certificate2(bytes, pwd, flags));
         }
 
         [Theory]
@@ -60,9 +67,11 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [InlineData(X509KeyStorageFlags.MachineKeySet, true)]
         public static void AllFilesDeleted_SinglePrivateKey_Ctor(X509KeyStorageFlags storageFlags, bool capi = false)
         {
-            EnsureNoKeysGained(
-                (Flags: storageFlags, Bytes: MakePfx(1, 5, capi)),
-                state => new X509Certificate2(state.Bytes, "", state.Flags));
+            AllFilesDeletedTest(
+                storageFlags,
+                capi,
+                multiPrivate: false,
+                static (bytes, pwd, flags) => new X509Certificate2(bytes, pwd, flags));
         }
 
         [Theory]
@@ -74,9 +83,11 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [InlineData(X509KeyStorageFlags.MachineKeySet, true)]
         public static void AllFilesDeleted_MultiplePrivateKey_CollImport(X509KeyStorageFlags storageFlags, bool capi = false)
         {
-            EnsureNoKeysGained(
-                (Flags: storageFlags, Bytes: MakePfx(6, capi: capi)),
-                state => Cert.Import(state.Bytes, "", state.Flags));
+            AllFilesDeletedTest(
+                storageFlags,
+                capi,
+                multiPrivate: true,
+                Cert.Import);
         }
 
         [Theory]
@@ -88,9 +99,11 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [InlineData(X509KeyStorageFlags.MachineKeySet, true)]
         public static void AllFilesDeleted_SinglePrivateKey_CollImport(X509KeyStorageFlags storageFlags, bool capi = false)
         {
-            EnsureNoKeysGained(
-                (Flags: storageFlags, Bytes: MakePfx(1, 5, capi)),
-                state => Cert.Import(state.Bytes, "", state.Flags));
+            AllFilesDeletedTest(
+                storageFlags,
+                capi,
+                multiPrivate: false,
+                Cert.Import);
         }
 
         [Theory]
@@ -102,9 +115,11 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [InlineData(X509KeyStorageFlags.MachineKeySet, true)]
         public static void AllFilesDeleted_MultiplePrivateKey_SingleLoader(X509KeyStorageFlags storageFlags, bool capi = false)
         {
-            EnsureNoKeysGained(
-                (Flags: storageFlags, Bytes: MakePfx(6, capi: capi)),
-                state => X509CertificateLoader.LoadPkcs12(state.Bytes, "", state.Flags));
+            AllFilesDeletedTest(
+                storageFlags,
+                capi,
+                multiPrivate: true,
+                static (bytes, pwd, flags) => X509CertificateLoader.LoadPkcs12(bytes, pwd, flags));
         }
 
         [Theory]
@@ -116,9 +131,11 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [InlineData(X509KeyStorageFlags.MachineKeySet, true)]
         public static void AllFilesDeleted_SinglePrivateKey_SingleLoader(X509KeyStorageFlags storageFlags, bool capi = false)
         {
-            EnsureNoKeysGained(
-                (Flags: storageFlags, Bytes: MakePfx(1, 5, capi)),
-                state => X509CertificateLoader.LoadPkcs12(state.Bytes, "", state.Flags));
+            AllFilesDeletedTest(
+                storageFlags,
+                capi,
+                multiPrivate: false,
+                static (bytes, pwd, flags) => X509CertificateLoader.LoadPkcs12(bytes, pwd, flags));
         }
 
         [Theory]
@@ -130,9 +147,12 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [InlineData(X509KeyStorageFlags.MachineKeySet, true)]
         public static void AllFilesDeleted_MultiplePrivateKey_CollLoader(X509KeyStorageFlags storageFlags, bool capi = false)
         {
-            EnsureNoKeysGained(
-                (Flags: storageFlags, Bytes: MakePfx(6, capi: capi)),
-                state => new ImportedCollection(X509CertificateLoader.LoadPkcs12Collection(state.Bytes, "", state.Flags)));
+            AllFilesDeletedTest(
+                storageFlags,
+                capi,
+                multiPrivate: true,
+                static (bytes, pwd, flags) => new ImportedCollection(
+                    X509CertificateLoader.LoadPkcs12Collection(bytes, pwd, flags)));
         }
 
         [Theory]
@@ -144,9 +164,12 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [InlineData(X509KeyStorageFlags.MachineKeySet, true)]
         public static void AllFilesDeleted_SinglePrivateKey_CollLoader(X509KeyStorageFlags storageFlags, bool capi = false)
         {
-            EnsureNoKeysGained(
-                (Flags: storageFlags, Bytes: MakePfx(1, 5, capi)),
-                state => new ImportedCollection(X509CertificateLoader.LoadPkcs12Collection(state.Bytes, "", state.Flags)));
+            AllFilesDeletedTest(
+                storageFlags,
+                capi,
+                multiPrivate: false,
+                static (bytes, pwd, flags) => new ImportedCollection(
+                    X509CertificateLoader.LoadPkcs12Collection(bytes, pwd, flags)));
         }
 
         [Theory]
@@ -158,9 +181,12 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [InlineData(X509KeyStorageFlags.MachineKeySet, true)]
         public static void AllFilesDeleted_MultiplePrivateKey_SingleLoader_KeepCsp(X509KeyStorageFlags storageFlags, bool capi = false)
         {
-            EnsureNoKeysGained(
-                (Flags: storageFlags, Bytes: MakePfx(6, capi: capi)),
-                state => X509CertificateLoader.LoadPkcs12(state.Bytes, "", state.Flags, s_cspPreservingLimits));
+            AllFilesDeletedTest(
+                storageFlags,
+                capi,
+                multiPrivate: true,
+                static (bytes, pwd, flags) =>
+                    X509CertificateLoader.LoadPkcs12(bytes, pwd, flags, s_cspPreservingLimits));
         }
 
         [Theory]
@@ -172,9 +198,12 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [InlineData(X509KeyStorageFlags.MachineKeySet, true)]
         public static void AllFilesDeleted_SinglePrivateKey_SingleLoader_KeepCsp(X509KeyStorageFlags storageFlags, bool capi = false)
         {
-            EnsureNoKeysGained(
-                (Flags: storageFlags, Bytes: MakePfx(1, 5, capi)),
-                state => X509CertificateLoader.LoadPkcs12(state.Bytes, "", state.Flags, s_cspPreservingLimits));
+            AllFilesDeletedTest(
+                storageFlags,
+                capi,
+                multiPrivate: false,
+                static (bytes, pwd, flags) =>
+                    X509CertificateLoader.LoadPkcs12(bytes, pwd, flags, s_cspPreservingLimits));
         }
 
         [Theory]
@@ -186,10 +215,12 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [InlineData(X509KeyStorageFlags.MachineKeySet, true)]
         public static void AllFilesDeleted_MultiplePrivateKey_CollLoader_KeepCsp(X509KeyStorageFlags storageFlags, bool capi = false)
         {
-            EnsureNoKeysGained(
-                (Flags: storageFlags, Bytes: MakePfx(6, capi: capi)),
-                state => new ImportedCollection(
-                    X509CertificateLoader.LoadPkcs12Collection(state.Bytes, "", state.Flags, s_cspPreservingLimits)));
+            AllFilesDeletedTest(
+                storageFlags,
+                capi,
+                multiPrivate: true,
+                static (bytes, pwd, flags) => new ImportedCollection(
+                    X509CertificateLoader.LoadPkcs12Collection(bytes, pwd, flags, s_cspPreservingLimits)));
         }
 
         [Theory]
@@ -201,43 +232,81 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [InlineData(X509KeyStorageFlags.MachineKeySet, true)]
         public static void AllFilesDeleted_SinglePrivateKey_CollLoader_KeepCsp(X509KeyStorageFlags storageFlags, bool capi = false)
         {
+            AllFilesDeletedTest(
+                storageFlags,
+                capi,
+                multiPrivate: false,
+                static (bytes, pwd, flags) => new ImportedCollection(
+                    X509CertificateLoader.LoadPkcs12Collection(bytes, pwd, flags, s_cspPreservingLimits)));
+        }
+
+        private static void AllFilesDeletedTest(
+            X509KeyStorageFlags storageFlags,
+            bool capi,
+            bool multiPrivate,
+            Func<byte[], string, X509KeyStorageFlags, IDisposable> importer,
+            [CallerMemberName] string? name = null)
+        {
+            const X509KeyStorageFlags NonDefaultKeySet =
+                X509KeyStorageFlags.UserKeySet |
+                X509KeyStorageFlags.MachineKeySet;
+
+            bool defaultKeySet = (storageFlags & NonDefaultKeySet) == 0;
+            int certAndKeyCount = multiPrivate ? s_keys.Length : 1;
+
+            byte[] pfx = MakePfx(certAndKeyCount, capi, name);
+
             EnsureNoKeysGained(
-                (Flags: storageFlags, Bytes: MakePfx(1, 5, capi)),
-                state => new ImportedCollection(
-                    X509CertificateLoader.LoadPkcs12Collection(state.Bytes, "", state.Flags, s_cspPreservingLimits)));
+                (Bytes: pfx, Flags: storageFlags, Importer: importer),
+                static state => state.Importer(state.Bytes, "", state.Flags));
+
+            // When importing for DefaultKeySet, try both 010101 and 101010
+            // intermixing of machine and user keys so that single key import
+            // gets both a machine key and a user key.
+            if (defaultKeySet)
+            {
+                pfx = MakePfx(certAndKeyCount, capi, name, 1);
+
+                EnsureNoKeysGained(
+                    (Bytes: pfx, Flags: storageFlags, Importer: importer),
+                    static state => state.Importer(state.Bytes, "", state.Flags));
+            }
         }
 
         private static byte[] MakePfx(
-            int certAndKeyCount = 1,
-            int certOnlyCount = 0,
-            bool capi = false,
-            [CallerMemberName] string? name = null)
+            int certAndKeyCount,
+            bool capi,
+            [CallerMemberName] string? name = null,
+            int machineKeySkew = 0)
         {
             Pkcs12SafeContents keys = new Pkcs12SafeContents();
             Pkcs12SafeContents certs = new Pkcs12SafeContents();
             DateTimeOffset notBefore = DateTimeOffset.UtcNow.AddMinutes(-5);
             DateTimeOffset notAfter = notBefore.AddMinutes(10);
 
-            // Every other key is a machine key. Depending on the minute when this line of code runs, it's
-            // either starting with the first, or with the second.
-            int machineKeySkew = DateTime.UtcNow.Minute % 2;
-
             PbeParameters pbeParams = new PbeParameters(
                 PbeEncryptionAlgorithm.TripleDes3KeyPkcs12,
                 HashAlgorithmName.SHA1,
                 1);
 
-            for (int i = 0; i < certAndKeyCount; i++)
+            Span<int> indices = [0, 1, 2, 3, 4, 5];
+            RandomNumberGenerator.Shuffle(indices);
+
+            for (int i = 0; i < s_keys.Length; i++)
             {
-                using (RSA key = RSA.Create(1024))
-                {
-                    CertificateRequest req = new CertificateRequest(
+                RSA key = s_keys[indices[i]];
+
+                CertificateRequest req = new CertificateRequest(
                         $"CN={name}.{i}",
                         key,
                         HashAlgorithmName.SHA256,
                         RSASignaturePadding.Pkcs1);
 
-                    using (X509Certificate2 cert = req.CreateSelfSigned(notBefore, notAfter))
+                using (X509Certificate2 cert = req.CreateSelfSigned(notBefore, notAfter))
+                {
+                    Pkcs12CertBag certBag = certs.AddCertificate(cert);
+
+                    if (i < certAndKeyCount)
                     {
                         Pkcs12ShroudedKeyBag keyBag = keys.AddShroudedKey(key, "", pbeParams);
 
@@ -251,24 +320,10 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                             keyBag.Attributes.Add(s_machineKey);
                         }
 
-                        certs.AddCertificate(cert);
-                    }
-                }
-            }
-
-            for (int i = 0; i < certOnlyCount; i++)
-            {
-                using (RSA key = RSA.Create(1024))
-                {
-                    CertificateRequest req = new CertificateRequest(
-                        $"CN={name}.co.{i}",
-                        key,
-                        HashAlgorithmName.SHA256,
-                        RSASignaturePadding.Pkcs1);
-
-                    using (X509Certificate2 cert = req.CreateSelfSigned(notBefore, notAfter))
-                    {
-                        certs.AddCertificate(cert);
+                        byte keyId = checked((byte)i);
+                        Pkcs9LocalKeyId localKeyId = new Pkcs9LocalKeyId(new ReadOnlySpan<byte>(ref keyId));
+                        keyBag.Attributes.Add(localKeyId);
+                        certBag.Attributes.Add(localKeyId);
                     }
                 }
             }
@@ -309,7 +364,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             const int SleepMs = 1000;
 
             KeyPaths keyPaths = KeyPaths.GetKeyPaths();
-            HashSet<string> gainedFiles = null!;
+            HashSet<string> gainedFiles = null;
 
             for (int macro = 0; macro < MacroRetryCount; macro++)
             {
@@ -327,7 +382,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
                 imported?.Dispose();
 
-                gainedFiles = new(keyPaths.EnumerateAllKeys());
+                gainedFiles = new HashSet<string>(keyPaths.EnumerateAllKeys());
                 gainedFiles.ExceptWith(keysBefore);
 
                 for (int micro = 0; micro < MicroRetryCount; micro++)
