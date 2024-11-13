@@ -1104,8 +1104,8 @@ PhaseStatus Compiler::fgCloneFinally()
         const unsigned  finallyTryIndex = firstBlock->bbTryIndex;
         BasicBlock*     insertAfter     = nullptr;
         BlockToBlockMap blockMap(getAllocator());
-        unsigned        cloneBBCount   = 0;
-        weight_t originalWeight;
+        unsigned        cloneBBCount = 0;
+        weight_t        originalWeight;
 
         // When distributing weight between the original and cloned regions,
         // ensure only weight from region entries is considered.
