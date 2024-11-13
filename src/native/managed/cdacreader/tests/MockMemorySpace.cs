@@ -273,7 +273,7 @@ internal unsafe static partial class MockMemorySpace
             foreach (var a in _allocators)
             {
                 if (allocator.Overlaps(a))
-                    throw new InvalidOperationException("Allocator overlaps with existing allocator");
+                    throw new InvalidOperationException($"Requested range (0x{start:x}, 0x{end:x}) overlaps with existing allocator (0x{a.RangeStart:x}, 0x{a.RangeEnd:x})");
             }
             _allocators.Add(allocator);
             return allocator;

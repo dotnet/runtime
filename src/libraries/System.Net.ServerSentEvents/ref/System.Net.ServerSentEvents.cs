@@ -12,7 +12,7 @@ namespace System.Net.ServerSentEvents
         private readonly T _Data_k__BackingField;
         private readonly object _dummy;
         private readonly int _dummyPrimitive;
-        public SseItem(T data, string eventType) { throw null; }
+        public SseItem(T data, string? eventType) { throw null; }
         public T Data { get { throw null; } }
         public string EventType { get { throw null; } }
     }

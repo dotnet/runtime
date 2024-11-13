@@ -1484,9 +1484,6 @@ public:
         SetFlag(enum_flag_IsByRefLike);
     }
 
-    // class is a com object class
-    Module* GetDefiningModuleForOpenType();
-
     inline BOOL IsTypicalTypeDefinition()
     {
         LIMITED_METHOD_CONTRACT;

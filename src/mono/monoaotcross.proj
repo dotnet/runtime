@@ -30,6 +30,11 @@
              Projects="$(MSBuildThisFileFullPath)"
              BuildInParallel="true"
              Properties="MonoAotTargetRid=%(MonoAotTargetRids.Identity);RealRuntimeBinDir=$(RuntimeBinDir)" />
+
+    <ItemGroup Condition="'$(ValidateMonoOffsets)' == 'true'">
+      <NewOffsetsFiles Include="$(MonoProjectRoot)mono/offsets/*.h.new" />
+    </ItemGroup>
+    <Error Condition="'@(NewOffsetsFiles)' != ''" Text="Detected changes in Mono offsets files. When running in a PR build you can download the MonoAOTOffsets artifacts and update the files in the src/mono/mono/offsets folder." />
   </Target>
 
   <Target Name="BuildMonoCrossTarget">
@@ -46,7 +51,7 @@
 
     <MSBuild Targets="BuildMono"
              Projects="$(MSBuildThisFileDirectory)mono.proj"
-             Properties="AotHostOS=$(MonoAotHostOS);AotHostArchitecture=$(TargetArchitecture);BuildMonoAOTCrossCompilerOnly=true;SkipMonoCrossJitConfigure=$(SkipMonoCrossJitConfigure);TargetArchitecture=$(MonoAotTargetArchitecture);TargetOS=$(MonoAotTargetOS)" />
+             Properties="AotHostOS=$(MonoAotHostOS);AotHostArchitecture=$(TargetArchitecture);BuildMonoAOTCrossCompilerOnly=true;TargetArchitecture=$(MonoAotTargetArchitecture);TargetOS=$(MonoAotTargetOS)" />
 
     <ItemGroup>
       <_MonoAOTCrossFiles Include="$(ArtifactsBinDir)mono\$(MonoAotTargetOS).$(MonoAotTargetArchitecture).$(Configuration)\cross\$(MonoAotTargetRid.ToLower())\**" />

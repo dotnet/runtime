@@ -195,20 +195,6 @@ CHECK MethodDesc::CheckActivated()
 
 #ifndef DACCESS_COMPILE
 
-//*******************************************************************************
-LoaderAllocator * MethodDesc::GetDomainSpecificLoaderAllocator()
-{
-    if (GetLoaderModule()->IsCollectible())
-    {
-        return GetLoaderAllocator();
-    }
-    else
-    {
-        return ::GetAppDomain()->GetLoaderAllocator();
-    }
-
-}
-
 HRESULT MethodDesc::EnsureCodeDataExists(AllocMemTracker *pamTracker)
 {
     CONTRACTL
@@ -776,36 +762,6 @@ Instantiation MethodDesc::LoadMethodInstantiation()
     else
         return GetMethodInstantiation();
 }
-
-//*******************************************************************************
-Module *MethodDesc::GetDefiningModuleForOpenMethod()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        FORBID_FAULT;
-    }
-    CONTRACTL_END
-
-    Module *pModule = GetMethodTable()->GetDefiningModuleForOpenType();
-    if (pModule != NULL)
-        return pModule;
-
-    if (IsGenericMethodDefinition())
-        return GetModule();
-
-    Instantiation inst = GetMethodInstantiation();
-    for (DWORD i = 0; i < inst.GetNumArgs(); i++)
-    {
-        pModule = inst[i].GetDefiningModuleForOpenType();
-        if (pModule != NULL)
-            return pModule;
-    }
-
-    return NULL;
-}
-
 
 //*******************************************************************************
 BOOL MethodDesc::ContainsGenericVariables()
