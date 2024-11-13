@@ -574,7 +574,7 @@ namespace System.Runtime.CompilerServices
                 else
                 {
                     // If the type ContainsGCPointers, we can compute the size without resorting to loading the BaseSizePadding field from the EEClass
-                    SpanHelpers.ClearWithReferences(ref Unsafe.As<byte, IntPtr>(ref destPtr), (typeMT->BaseSize - (nuint)(2 * sizeof(IntPtr))) / (nuint)sizeof(IntPtr));
+                    SpanHelpers.ClearWithReferences(ref Unsafe.As<byte, IntPtr>(ref destPtr), typeMT->GetNumInstanceFieldBytesIfContainsGCPointers() / (nuint)sizeof(IntPtr));
                 }
             }
             else

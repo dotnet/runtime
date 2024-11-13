@@ -518,11 +518,16 @@ namespace System
                 if (pElementMethodTable->IsValueType)
                 {
                     ref byte offsetDataRef = ref Unsafe.Add(ref arrayDataRef, flattenedIndex * pMethodTable->ComponentSize);
-                    nuint elementSize = pElementMethodTable->GetNumInstanceFieldBytes();
                     if (pElementMethodTable->ContainsGCPointers)
+                    {
+                        nuint elementSize = pElementMethodTable->GetNumInstanceFieldBytesIfContainsGCPointers();
                         SpanHelpers.ClearWithReferences(ref Unsafe.As<byte, nint>(ref offsetDataRef), elementSize / (nuint)sizeof(IntPtr));
+                    }
                     else
+                    {
+                        nuint elementSize = pElementMethodTable->GetNumInstanceFieldBytes();
                         SpanHelpers.ClearWithoutReferences(ref offsetDataRef, elementSize);
+                    }
                 }
                 else
                 {
@@ -550,13 +555,14 @@ namespace System
                     }
                     else
                     {
-                        nuint elementSize = pElementMethodTable->GetNumInstanceFieldBytes();
                         if (pElementMethodTable->ContainsGCPointers)
                         {
+                            nuint elementSize = pElementMethodTable->GetNumInstanceFieldBytesIfContainsGCPointers();
                             Buffer.BulkMoveWithWriteBarrier(ref offsetDataRef, ref value.GetRawData(), elementSize);
                         }
                         else
                         {
+                            nuint elementSize = pElementMethodTable->GetNumInstanceFieldBytes();
                             SpanHelpers.Memmove(ref offsetDataRef, ref value.GetRawData(), elementSize);
                         }
                     }

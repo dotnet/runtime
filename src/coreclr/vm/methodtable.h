@@ -1867,10 +1867,20 @@ public:
     // the information within MethodTable, and so less code manipulates EEClass
     // objects directly, because doing so can lead to bugs related to generics.
     //
-    // <TODO> Use m_wBaseSize whenever this is identical to GetNumInstanceFieldBytes.
-    // We would need to reserve a flag for this. </TODO>
-    //
     inline DWORD GetNumInstanceFieldBytes();
+
+    // Returns the size of the instance fields for a value type, in bytes when
+    // the type is known to contain GC pointers. This takes advantage of the detail
+    // that if the type contains GC pointers, the size of the instance fields is aligned
+    // to pointer sized boundaries. This is only faster if we already have some reason
+    // to have checked for ContainsGCPointers.
+    inline DWORD GetNumInstanceFieldBytesIfContainsGCPointers()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        _ASSERTE(ContainsGCPointers());
+        _ASSERTE(GetBaseSize() - (DWORD)(2 * sizeof(TADDR)) == GetNumInstanceFieldBytes());
+        return GetBaseSize() - (DWORD)(2 * sizeof(TADDR));
+    }
 
     int GetFieldAlignmentRequirement();
 

@@ -366,11 +366,12 @@ void STDCALL CopyValueClassUnchecked(void* dest, void* src, MethodTable *pMT)
 
     if (pMT->ContainsGCPointers())
     {
-        memmoveGCRefs(dest, src, pMT->GetNumInstanceFieldBytes());
+        memmoveGCRefs(dest, src, pMT->GetNumInstanceFieldBytesIfContainsGCPointers());
     }
     else
     {
-        switch (pMT->GetNumInstanceFieldBytes())
+        DWORD numInstanceFieldBytes = pMT->GetNumInstanceFieldBytes();
+        switch (numInstanceFieldBytes)
         {
         case 1:
             *(UINT8*)dest = *(UINT8*)src;
@@ -391,7 +392,7 @@ void STDCALL CopyValueClassUnchecked(void* dest, void* src, MethodTable *pMT)
             break;
 #endif // !ALIGN_ACCESS
         default:
-            memcpyNoGCRefs(dest, src, pMT->GetNumInstanceFieldBytes());
+            memcpyNoGCRefs(dest, src, numInstanceFieldBytes);
             break;
         }
     }

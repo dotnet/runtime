@@ -918,6 +918,14 @@ namespace System.Runtime.CompilerServices
             Debug.Assert((NullableValueAddrOffset + NullableValueSize) == GetNumInstanceFieldBytes());
             return NullableValueAddrOffset + NullableValueSize;
         }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public uint GetNumInstanceFieldBytesIfContainsGCPointers()
+        {
+            Debug.Assert(ContainsGCPointers);
+            Debug.Assert((this->BaseSize - (nuint)(2 * sizeof(IntPtr)) == GetNumInstanceFieldBytes()));
+            return this->BaseSize - (nuint)(2 * sizeof(IntPtr))
+        }
     }
 
     [StructLayout(LayoutKind.Sequential)]
