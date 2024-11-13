@@ -719,6 +719,25 @@ namespace System.Runtime.CompilerServices
         [FieldOffset(InterfaceMapOffset)]
         public MethodTable** InterfaceMap;
 
+        /// <summary>
+        /// This is used to hold the nullable unbox data for nullable value types.
+        /// </summary>
+        [FieldOffset(InterfaceMapOffset)]
+#if TARGET_64BIT
+        public uint NullableValueAddrOffset;
+#else
+        public byte NullableValueAddrOffset;
+#endif
+
+#if TARGET_64BIT
+        [FieldOffset(InterfaceMapOffset + 4)]
+        public uint NullableValueSize;
+#else
+        [FieldOffset(InterfaceMapOffset)]
+        private uint NullableValueSizeEncoded;
+        public uint NullableValueSize => NullableValueSizeEncoded >> 8;
+#endif
+
         // WFLAGS_LOW_ENUM
         private const uint enum_flag_GenericsMask = 0x00000030;
         private const uint enum_flag_GenericsMask_NonGeneric = 0x00000000; // no instantiation
@@ -825,7 +844,8 @@ namespace System.Runtime.CompilerServices
 
         public bool IsValueType => (Flags & enum_flag_Category_ValueType_Mask) == enum_flag_Category_ValueType;
 
-        public bool IsNullable => (Flags & enum_flag_Category_Mask) == enum_flag_Category_Nullable;
+
+        public bool IsNullable { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return (Flags & enum_flag_Category_Mask) == enum_flag_Category_Nullable; } }
 
         public bool IsByRefLike => (Flags & (enum_flag_HasComponentSize | enum_flag_IsByRefLike)) == enum_flag_IsByRefLike;
 
@@ -890,6 +910,14 @@ namespace System.Runtime.CompilerServices
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         public extern MethodTable* InstantiationArg0();
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public uint GetNullableNumInstanceFieldBytes()
+        {
+            Debug.Assert(IsNullable);
+            Debug.Assert((NullableValueAddrOffset + NullableValueSize) == GetNumInstanceFieldBytes());
+            return NullableValueAddrOffset + NullableValueSize;
+        }
     }
 
     [StructLayout(LayoutKind.Sequential)]

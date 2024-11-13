@@ -33,9 +33,6 @@ namespace System.Runtime.CompilerServices
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern void WriteBarrier(ref object? dst, object? obj);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern void UnboxNullableValue(ref byte destPtr, MethodTable* typeMT, object obj);
-
         // IsInstanceOf test used for unusual cases (naked type parameters, variant generic types)
         // Unlike the IsInstanceOfInterface and IsInstanceOfClass functions,
         // this test must deal with all kinds of type tests
@@ -556,13 +553,13 @@ namespace System.Runtime.CompilerServices
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static void Unbox_Nullable_NotIsNullableForType(ref byte destPtr, MethodTable* typeMT, object obj)
         {
-            // For safety's sake, also allow true nullables to be unboxed normally.
-            // This should not happen normally, but we want to be robust
+            // Also allow true nullables to be unboxed normally.
+            // This should not happen normally, but can happen in debugger scenarios.
             if (typeMT != RuntimeHelpers.GetMethodTable(obj))
             {
                 CastHelpers.ThrowInvalidCastException(obj, typeMT);
             }
-            Buffer.BulkMoveWithWriteBarrier(ref destPtr, ref RuntimeHelpers.GetRawData(obj), typeMT->GetNumInstanceFieldBytes());
+            Buffer.BulkMoveWithWriteBarrier(ref destPtr, ref RuntimeHelpers.GetRawData(obj), typeMT->GetNullableNumInstanceFieldBytes());
         }
 
         [DebuggerHidden]
@@ -572,13 +569,11 @@ namespace System.Runtime.CompilerServices
             {
                 if (!typeMT->ContainsGCPointers)
                 {
-                    SpanHelpers.ClearWithoutReferences(ref destPtr, typeMT->GetNumInstanceFieldBytes());
+                    SpanHelpers.ClearWithoutReferences(ref destPtr, typeMT->GetNullableNumInstanceFieldBytes());
                 }
                 else
                 {
                     // If the type ContainsGCPointers, we can compute the size without resorting to loading the BaseSizePadding field from the EEClass
-                    nuint numInstanceFieldBytes = typeMT->BaseSize - (nuint)(2 * sizeof(IntPtr));
-                    // Otherwise, use the helper which is safe for that situation
                     SpanHelpers.ClearWithReferences(ref Unsafe.As<byte, IntPtr>(ref destPtr), (typeMT->BaseSize - (nuint)(2 * sizeof(IntPtr))) / (nuint)sizeof(IntPtr));
                 }
             }
@@ -590,7 +585,14 @@ namespace System.Runtime.CompilerServices
                 }
                 else
                 {
-                    UnboxNullableValue(ref destPtr, typeMT, obj);
+                    Unsafe.As<byte, bool>(ref destPtr) = true;
+                    ref byte dst = ref Unsafe.Add(ref destPtr, typeMT->NullableValueAddrOffset);
+                    uint valueSize = typeMT->NullableValueSize;
+                    ref byte src = ref RuntimeHelpers.GetRawData(obj);
+                    if (typeMT->ContainsGCPointers)
+                        Buffer.BulkMoveWithWriteBarrier(ref dst, ref src, valueSize);
+                    else
+                        SpanHelpers.Memmove(ref dst, ref src, valueSize);
                 }
             }
         }

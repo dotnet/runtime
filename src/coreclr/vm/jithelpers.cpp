@@ -781,14 +781,6 @@ BOOL ObjIsInstanceOf(Object* pObject, TypeHandle toTypeHnd, BOOL throwCastExcept
     return ObjIsInstanceOfCore(pObject, toTypeHnd, throwCastException);
 }
 
-HCIMPL3(VOID, UnboxNullableValue, uint8_t* destPtr, MethodTable* typeMT, Object* objToCopyFrom)
-{
-    FCALL_CONTRACT;
-
-    Nullable::UnboxNullableValue(destPtr, ObjectToOBJECTREF(objToCopyFrom), typeMT);
-}
-HCIMPLEND
-
 HCIMPL2(Object*, ChkCastAny_NoCacheLookup, CORINFO_CLASS_HANDLE type, Object* obj)
 {
     FCALL_CONTRACT;

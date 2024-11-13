@@ -10068,7 +10068,25 @@ void MethodTableBuilder::CheckForSystemTypes()
             // Pre-compute whether the class is a Nullable<T> so that code:Nullable::IsNullableType is efficient
             // This is useful to the performance of boxing/unboxing a Nullable
             if (GetCl() == g_pNullableClass->GetCl())
+            {
                 pMT->SetIsNullable();
+
+                // Capure Nullable<T> specific details into the MethodTable for better unboxing performance
+                FieldDesc* pFDValue = &pMT->GetApproxFieldDescListRaw()[1];
+                _ASSERTE(strcmp(pFDValue->GetDebugName(), "value") == 0);
+                UINT32 offset = pFDValue->GetOffset();
+                if (offset > 0xFF)
+                {
+                    BuildMethodTableThrowException(IDS_CLASSLOAD_FIELDTOOLARGE);
+                }
+
+                TypeHandle thValueFieldType = pFDValue->GetApproxFieldTypeHandleThrowing();
+                if (!thValueFieldType.IsTypeDesc()) // Non-MethodTable cases can only happen when the size doesn't matter, such as for type variables.
+                {
+                    pMT->SetNullableDetails((UINT8)offset, thValueFieldType.AsMethodTable()->GetNumInstanceFieldBytes());
+                    _ASSERTE(pMT->GetNullableNumInstanceFieldBytes() == pMT->GetNumInstanceFieldBytes());
+                }
+            }
 
             return;
         }

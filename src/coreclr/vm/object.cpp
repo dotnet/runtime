@@ -1606,7 +1606,8 @@ int32_t Nullable::GetValueAddrOffset(MethodTable* nullableMT)
 
     _ASSERTE(IsNullableType(nullableMT));
     _ASSERTE(strcmp(nullableMT->GetApproxFieldDescListRaw()[1].GetDebugName(), "value") == 0);
-    return nullableMT->GetApproxFieldDescListRaw()[1].GetOffset();
+    _ASSERTE(nullableMT->GetApproxFieldDescListRaw()[1].GetOffset() == nullableMT->GetNullableValueAddrOffset());
+    return nullableMT->GetNullableValueAddrOffset();
 }
 
 CLR_BOOL* Nullable::HasValueAddr(MethodTable* nullableMT) {
@@ -1624,7 +1625,8 @@ void* Nullable::ValueAddr(MethodTable* nullableMT) {
     LIMITED_METHOD_CONTRACT;
 
     _ASSERTE(strcmp(nullableMT->GetApproxFieldDescListRaw()[1].GetDebugName(), "value") == 0);
-    return (((BYTE*) this) + nullableMT->GetApproxFieldDescListRaw()[1].GetOffset());
+    _ASSERTE(nullableMT->GetApproxFieldDescListRaw()[1].GetOffset() == nullableMT->GetNullableValueAddrOffset());
+    return (((BYTE*) this) + nullableMT->GetNullableValueAddrOffset());
 }
 
 //===============================================================================
@@ -1763,21 +1765,6 @@ void Nullable::UnBoxNoCheck(void* destPtr, OBJECTREF boxedVal, MethodTable* dest
         *dest->HasValueAddr(destMT) = true;
         CopyValueClass(dest->ValueAddr(destMT), boxedVal->UnBox(), boxedVal->GetMethodTable());
     }
-}
-
-void Nullable::UnboxNullableValue(void* destPtr, OBJECTREF boxedVal, MethodTable* destMT)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-    Nullable* dest = (Nullable*) destPtr;
-
-    *dest->HasValueAddr(destMT) = true;
-    CopyValueClass(dest->ValueAddr(destMT), boxedVal->UnBox(), boxedVal->GetMethodTable());
 }
 
 //===============================================================================
