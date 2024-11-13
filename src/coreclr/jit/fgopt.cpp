@@ -4907,6 +4907,60 @@ Compiler::ThreeOptLayout::ThreeOptLayout(Compiler* comp)
 {
 }
 
+#ifdef DEBUG
+//-----------------------------------------------------------------------------
+// Compiler::ThreeOptLayout::GetLayoutCost: Computes the cost of the layout for the region
+// bounded by 'startPos' and 'endPos'.
+//
+// Parameters:
+//   startPos - The starting index of the region
+//   endPos - The inclusive ending index of the region
+//
+// Returns:
+//   The region's layout cost
+//
+weight_t Compiler::ThreeOptLayout::GetLayoutCost(unsigned startPos, unsigned endPos)
+{
+    assert(startPos <= endPos);
+    assert(endPos < numCandidateBlocks);
+    weight_t layoutCost = BB_ZERO_WEIGHT;
+
+    for (unsigned position = startPos; position < endPos; position++)
+    {
+        layoutCost += GetCost(blockOrder[position], blockOrder[position + 1]);
+    }
+
+    layoutCost += blockOrder[endPos]->bbWeight;
+    return layoutCost;
+}
+#endif // DEBUG
+
+//-----------------------------------------------------------------------------
+// Compiler::ThreeOptLayout::GetCost: Computes the cost of placing 'next' after 'block'.
+// Layout cost is modeled as the sum of block weights, minus the weights of edges that fall through.
+//
+// Parameters:
+//   block - The block to consider creating fallthrough from
+//   next - The block to consider creating fallthrough into
+//
+weight_t Compiler::ThreeOptLayout::GetCost(BasicBlock* block, BasicBlock* next)
+{
+    assert(block != nullptr);
+    assert(next != nullptr);
+
+    const weight_t  maxCost         = block->bbWeight;
+    const FlowEdge* fallthroughEdge = compiler->fgGetPredForBlock(next, block);
+
+    if (fallthroughEdge != nullptr)
+    {
+        // The edge's weight should never exceed its source block's weight,
+        // but handle negative results from rounding errors in getLikelyWeight(), just in case
+        return max(0.0, maxCost - fallthroughEdge->getLikelyWeight());
+    }
+
+    return maxCost;
+}
+
 //-----------------------------------------------------------------------------
 // Compiler::ThreeOptLayout::ConsiderEdge: Adds 'edge' to 'cutPoints' for later consideration
 // if 'edge' looks promising, and it hasn't been considered already.
@@ -5162,6 +5216,9 @@ bool Compiler::ThreeOptLayout::RunThreeOptPass(BasicBlock* startBlock, BasicBloc
         AddNonFallthroughSuccs(position);
     }
 
+    INDEBUG(weight_t currLayoutCost = GetLayoutCost(startPos, endPos);)
+    JITDUMP("Initial layout cost: %f\n", currLayoutCost);
+
     // For each candidate edge, determine if it's profitable to partition after the source block
     // and before the destination block, and swap the partitions to create fallthrough.
     // If it is, do the swap, and for the blocks before/after each cut point that lost fallthrough,
@@ -5199,21 +5256,12 @@ bool Compiler::ThreeOptLayout::RunThreeOptPass(BasicBlock* startBlock, BasicBloc
         assert(blockOrder[dstPos] == dstBlk);
 
         // To determine if it's worth creating fallthrough from 'srcBlk' into 'dstBlk',
-        // we first sum the weights of fallthrough edges at the proposed cut points
-        // (i.e. the "score" of the current partition order).
-        // Then, we do the same for the fallthrough edges that would be created by reordering partitions.
-        // If the new score exceeds the current score, then the proposed fallthrough gains
-        // justify losing the existing fallthrough behavior.
-
-        auto getScore = [this](BasicBlock* srcBlk, BasicBlock* dstBlk) -> weight_t {
-            assert(srcBlk != nullptr);
-            assert(dstBlk != nullptr);
-            FlowEdge* const edge = compiler->fgGetPredForBlock(dstBlk, srcBlk);
-            return (edge != nullptr) ? edge->getLikelyWeight() : 0.0;
-        };
+        // we first determine the current layout cost at the proposed cut points.
+        // We then compare this to the layout cost with the partitions swapped.
+        // If the new cost improves upon the current cost, then we can justify the swap.
 
         const bool isForwardJump = (srcPos < dstPos);
-        weight_t   currScore, newScore;
+        weight_t   currCost, newCost;
         unsigned   part1Size, part2Size, part3Size;
 
         if (isForwardJump)
@@ -5233,11 +5281,12 @@ bool Compiler::ThreeOptLayout::RunThreeOptPass(BasicBlock* startBlock, BasicBloc
             part2Size = dstPos - srcPos - 1;
             part3Size = endPos - dstPos + 1;
 
-            currScore = getScore(srcBlk, blockOrder[srcPos + 1]) + getScore(blockOrder[dstPos - 1], dstBlk);
-            newScore  = candidateEdge->getLikelyWeight() + getScore(blockOrder[endPos], blockOrder[srcPos + 1]);
-
-            // Don't include branches into S4 in the cost/improvement calculation,
+            // Don't include branches into S4 in the cost calculation,
             // since we're only considering branches within this region.
+            currCost = GetCost(srcBlk, blockOrder[srcPos + 1]) + GetCost(blockOrder[dstPos - 1], dstBlk) +
+                       blockOrder[endPos]->bbWeight;
+            newCost = GetCost(srcBlk, dstBlk) + GetCost(blockOrder[endPos], blockOrder[srcPos + 1]) +
+                      blockOrder[dstPos - 1]->bbWeight;
         }
         else
         {
@@ -5258,26 +5307,31 @@ bool Compiler::ThreeOptLayout::RunThreeOptPass(BasicBlock* startBlock, BasicBloc
             part2Size = srcPos - dstPos;
             part3Size = 1;
 
-            currScore = getScore(blockOrder[srcPos - 1], srcBlk) + getScore(blockOrder[dstPos - 1], dstBlk);
-            newScore  = candidateEdge->getLikelyWeight() + getScore(blockOrder[dstPos - 1], srcBlk);
+            currCost = GetCost(blockOrder[srcPos - 1], srcBlk) + GetCost(blockOrder[dstPos - 1], dstBlk);
+            newCost  = GetCost(srcBlk, dstBlk) + GetCost(blockOrder[dstPos - 1], srcBlk);
 
             if (srcPos != endPos)
             {
-                currScore += getScore(srcBlk, blockOrder[srcPos + 1]);
-                newScore += getScore(blockOrder[srcPos - 1], blockOrder[srcPos + 1]);
+                currCost += GetCost(srcBlk, blockOrder[srcPos + 1]);
+                newCost += GetCost(blockOrder[srcPos - 1], blockOrder[srcPos + 1]);
+            }
+            else
+            {
+                currCost += srcBlk->bbWeight;
+                newCost += blockOrder[srcPos - 1]->bbWeight;
             }
         }
 
-        // Continue evaluating candidates if this one isn't profitable
-        if ((newScore <= currScore) || Compiler::fgProfileWeightsEqual(newScore, currScore, 0.001))
+        // Continue evaluating partitions if this one isn't profitable
+        if ((newCost >= currCost) || Compiler::fgProfileWeightsEqual(currCost, newCost, 0.001))
         {
             continue;
         }
 
         // We've found a profitable cut point. Continue with the swap.
         JITDUMP("Creating fallthrough for " FMT_BB " -> " FMT_BB
-                " (current partition score = %f, new partition score = %f)\n",
-                srcBlk->bbNum, dstBlk->bbNum, currScore, newScore);
+                " (current partition cost = %f, new partition cost = %f)\n",
+                srcBlk->bbNum, dstBlk->bbNum, currCost, newCost);
 
         // Swap the partitions
         BasicBlock** const regionStart = blockOrder + startPos;
@@ -5319,6 +5373,13 @@ bool Compiler::ThreeOptLayout::RunThreeOptPass(BasicBlock* startBlock, BasicBloc
         {
             AddNonFallthroughPreds(startPos + part1Size + part2Size + part3Size);
         }
+
+#ifdef DEBUG
+        // Ensure the swap improved the overall layout
+        const weight_t newLayoutCost = GetLayoutCost(startPos, endPos);
+        assert(newLayoutCost < currLayoutCost);
+        currLayoutCost = newLayoutCost;
+#endif // DEBUG
     }
 
     // Write back to 'tempOrder' so changes to this region aren't lost next time we swap 'tempOrder' and 'blockOrder'
@@ -5327,6 +5388,7 @@ bool Compiler::ThreeOptLayout::RunThreeOptPass(BasicBlock* startBlock, BasicBloc
         memcpy(tempOrder + startPos, blockOrder + startPos, sizeof(BasicBlock*) * numBlocks);
     }
 
+    JITDUMP("Final layout cost: %f\n", currLayoutCost);
     return modified;
 }
 
