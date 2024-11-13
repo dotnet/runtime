@@ -175,11 +175,9 @@ namespace System.Globalization
         }
 
         private static bool IndexingOptionsNotSupported(CompareOptions options) =>
-            (options & CompareOptions.IgnoreSymbols) == CompareOptions.IgnoreSymbols;
+            (options & (CompareOptions.IgnoreSymbols | CompareOptions.NumericOrdering)) != 0;
 
-        private static bool CompareOptionsNotSupported(CompareOptions options) =>
-            (options & CompareOptions.IgnoreWidth) == CompareOptions.IgnoreWidth ||
-            ((options & CompareOptions.IgnoreNonSpace) == CompareOptions.IgnoreNonSpace && (options & CompareOptions.IgnoreKanaType) != CompareOptions.IgnoreKanaType);
+        private static bool CompareOptionsNotSupported(CompareOptions options) => (options & CompareOptions.IgnoreWidth) != 0;
 
         private static string GetPNSE(CompareOptions options) =>
             SR.Format(SR.PlatformNotSupported_HybridGlobalizationWithCompareOptions, options);

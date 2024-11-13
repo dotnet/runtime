@@ -3,6 +3,8 @@
 
 using System.Buffers;
 using System.Collections.Generic;
+using System.Linq;
+using System.Text;
 using Xunit;
 
 namespace System.Globalization.Tests
@@ -41,6 +43,47 @@ namespace System.Globalization.Tests
 
         public static IEnumerable<object[]> Compare_TestData()
         {
+            #region Numeric ordering
+            var isNls = PlatformDetection.IsNlsGlobalization;
+
+            yield return new object[] { s_invariantCompare, "1234567890", "1234567890", CompareOptions.NumericOrdering, 0 };
+            yield return new object[] { s_invariantCompare, "1234567890", "1234567890", CompareOptions.NumericOrdering, 0 };
+
+            // Leading zero
+            yield return new object[] { s_invariantCompare, "02", "1", CompareOptions.NumericOrdering, 1 };
+            yield return new object[] { s_invariantCompare, "a02", "a1", CompareOptions.NumericOrdering, 1 };
+            yield return new object[] { s_invariantCompare, "02a", "1a", CompareOptions.NumericOrdering, 1 };
+
+            // NLS treats equivalent numbers differing by leading zeros as unequal
+            yield return new object[] { s_invariantCompare, "01", "1", CompareOptions.NumericOrdering, isNls ? -1 : 0 };
+            yield return new object[] { s_invariantCompare, "a01", "a1", CompareOptions.NumericOrdering, isNls ? -1 : 0 };
+            yield return new object[] { s_invariantCompare, "01a", "1a", CompareOptions.NumericOrdering, isNls ? -1 : 0 };
+
+            // But they are closer in sort order than unequal numbers: 1 < 02 < 2 < 03
+            // Unlike non-numerical sort which bookends them: 02 < 03 < 1 < 2
+            yield return new object[] { s_invariantCompare, "1", "02", CompareOptions.NumericOrdering, -1 };
+            yield return new object[] { s_invariantCompare, "02", "2", CompareOptions.NumericOrdering, isNls ? -1 : 0 };
+            yield return new object[] { s_invariantCompare, "2", "03", CompareOptions.NumericOrdering, -1 };
+
+            // 2 < 10
+            yield return new object[] { s_invariantCompare, "2", "10", CompareOptions.NumericOrdering, -1 };
+            yield return new object[] { s_invariantCompare, "a2", "a10", CompareOptions.NumericOrdering, -1 };
+            yield return new object[] { s_invariantCompare, "2a", "10a", CompareOptions.NumericOrdering, -1 };
+
+            // With casing
+            yield return new object[] { s_invariantCompare, "1A02", "1a02", CompareOptions.NumericOrdering | CompareOptions.IgnoreCase, 0 };
+            yield return new object[] { s_invariantCompare, "A1", "a2", CompareOptions.NumericOrdering, -1 }; // Numerical differences have higher precedence
+            yield return new object[] { s_invariantCompare, "A01", "a1", CompareOptions.NumericOrdering, isNls ? -1 : 1 }; // ICU treats 01 == 1
+
+            // With diacritics
+            yield return new object[] { s_invariantCompare, "1\u00E102", "1a02", CompareOptions.NumericOrdering | CompareOptions.IgnoreNonSpace, 0 };
+            yield return new object[] { s_invariantCompare, "\u00E11", "a2", CompareOptions.NumericOrdering, -1 }; // Numerical differences have higher precedence
+            yield return new object[] { s_invariantCompare, "\u00E101", "a1", CompareOptions.NumericOrdering, isNls ? -1 : 1 }; // ICU treats 01 == 1
+
+            // Period is NOT part of the numeric value
+            yield return new object[] { s_invariantCompare, "0.1", "0.02", CompareOptions.NumericOrdering, -1 };
+            #endregion
+
             // PlatformDetection.IsHybridGlobalizationOnBrowser does not support IgnoreKanaType alone, it needs to be e.g. with IgnoreCase
             CompareOptions validIgnoreKanaTypeOption = PlatformDetection.IsHybridGlobalizationOnBrowser ?
                 CompareOptions.IgnoreKanaType | CompareOptions.IgnoreCase :                
@@ -105,6 +148,7 @@ namespace System.Globalization.Tests
                 yield return new object[] { s_invariantCompare, "'", "\uFF07", CompareOptions.IgnoreWidth, 0 };
                 yield return new object[] { s_invariantCompare, "\"", "\uFF02", CompareOptions.IgnoreWidth, 0 };
             }
+
             yield return new object[] { s_invariantCompare, "\u3042", "\u30A1", CompareOptions.None, PlatformDetection.IsHybridGlobalizationOnApplePlatform ? 1 : s_expectedHiraganaToKatakanaCompare };
             yield return new object[] { s_invariantCompare, "\u3042", "\u30A2", CompareOptions.None, s_expectedHiraganaToKatakanaCompare };
             yield return new object[] { s_invariantCompare, "\u3042", "\uFF71", CompareOptions.None, s_expectedHiraganaToKatakanaCompare };
@@ -463,6 +507,14 @@ namespace System.Globalization.Tests
             AssertExtensions.Throws<ArgumentException>("options", () => s_invariantCompare.Compare("Tests", 0, "Tests", 0, CompareOptions.OrdinalIgnoreCase | CompareOptions.IgnoreWidth));
             AssertExtensions.Throws<ArgumentException>("options", () => s_invariantCompare.Compare("Tests", 0, 2, "Tests", 0, 2, CompareOptions.OrdinalIgnoreCase | CompareOptions.IgnoreWidth));
 
+            AssertExtensions.Throws<ArgumentException>("options", () => s_invariantCompare.Compare("Tests", "Tests", CompareOptions.Ordinal | CompareOptions.NumericOrdering));
+            AssertExtensions.Throws<ArgumentException>("options", () => s_invariantCompare.Compare("Tests", 0, "Tests", 0, CompareOptions.Ordinal | CompareOptions.NumericOrdering));
+            AssertExtensions.Throws<ArgumentException>("options", () => s_invariantCompare.Compare("Tests", 0, 2, "Tests", 0, 2, CompareOptions.Ordinal | CompareOptions.NumericOrdering));
+
+            AssertExtensions.Throws<ArgumentException>("options", () => s_invariantCompare.Compare("Tests", "Tests", CompareOptions.OrdinalIgnoreCase | CompareOptions.NumericOrdering));
+            AssertExtensions.Throws<ArgumentException>("options", () => s_invariantCompare.Compare("Tests", 0, "Tests", 0, CompareOptions.OrdinalIgnoreCase | CompareOptions.NumericOrdering));
+            AssertExtensions.Throws<ArgumentException>("options", () => s_invariantCompare.Compare("Tests", 0, 2, "Tests", 0, 2, CompareOptions.OrdinalIgnoreCase | CompareOptions.NumericOrdering));
+
             // Offset1 < 0
             AssertExtensions.Throws<ArgumentOutOfRangeException>("offset1", () => s_invariantCompare.Compare("Test", -1, "Test", 0));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("offset1", () => s_invariantCompare.Compare("Test", -1, "Test", 0, CompareOptions.None));
@@ -512,6 +564,70 @@ namespace System.Globalization.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("string2", () => s_invariantCompare.Compare("Test", 0, 2, "Test", 2, 3, CompareOptions.None));
         }
 
+        public static IEnumerable<object[]> Compare_Numeric_TestData()
+        {
+            if (!PlatformDetection.IsNlsGlobalization)
+            { 
+                // '1' in different languages. Not exhaustive.
+                Rune[] numberOnes =
+                [
+                    new Rune(0x0031), new Rune(0x0661), new Rune(0x06F1), new Rune(0x07C1), new Rune(0x0967),
+                    new Rune(0x09E7), new Rune(0x0A67), new Rune(0x0AE7), new Rune(0x0B67), new Rune(0x0BE7),
+                    new Rune(0x0C67), new Rune(0x0CE7), new Rune(0x0D67), new Rune(0x0DE7), new Rune(0x0E51),
+                    new Rune(0x0ED1), new Rune(0x0F21), new Rune(0x1041), new Rune(0x1091), new Rune(0x17E1),
+                    new Rune(0x1811), new Rune(0x1947), new Rune(0x19D1), new Rune(0x1A81), new Rune(0x1A91),
+                    new Rune(0x1B51), new Rune(0x1BB1), new Rune(0x1C41), new Rune(0x1C51), new Rune(0xA621),
+                    new Rune(0xA8D1), new Rune(0xA901), new Rune(0xA9D1), new Rune(0xA9F1), new Rune(0xAA51),
+                    new Rune(0xABF1), new Rune(0xFF11), new Rune(0x104A1), new Rune(0x10D31), new Rune(0x11067),
+                    new Rune(0x110F1), new Rune(0x11137), new Rune(0x111D1), new Rune(0x112F1), new Rune(0x11451),
+                    new Rune(0x114D1), new Rune(0x11651), new Rune(0x116C1), new Rune(0x11731), new Rune(0x118E1),
+                    new Rune(0x11951), new Rune(0x11C51),
+                ];
+
+                StringBuilder sb = new();
+                Span<char> buffer = stackalloc char[2];
+                foreach (var r in numberOnes)
+                {
+                    sb.Append(buffer.Slice(0, r.EncodeToUtf16(buffer)));
+                }
+                string numberOnesString = sb.ToString();
+
+                // 111...110 vs 111...111
+                yield return new object[] {
+                    s_invariantCompare,
+                    new string('1', numberOnes.Length - 1) + "0",
+                    numberOnesString,
+                    CompareOptions.NumericOrdering,
+                    -1
+                };
+
+                // 111...111 vs 111...111
+                yield return new object[] {
+                    s_invariantCompare,
+                    new string('1', numberOnes.Length),
+                    numberOnesString,
+                    CompareOptions.NumericOrdering,
+                    0
+                };
+
+                // 111...112 vs 111...111
+                yield return new object[] {
+                    s_invariantCompare,
+                    new string('1', numberOnes.Length - 1) + "2",
+                    numberOnesString,
+                    CompareOptions.NumericOrdering,
+                    1
+                };
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(Compare_Numeric_TestData))]
+        public void CompareNumericLanguages(CompareInfo compareInfo, string string1, string string2, CompareOptions options, int expected)
+        {
+            Compare_Advanced(compareInfo, string1, 0, string1?.Length ?? 0, string2, 0, string2?.Length ?? 0, options, expected);
+        }
+
         [Fact]
         public void TestIgnoreKanaAndWidthCases()
         {
@@ -550,6 +666,10 @@ namespace System.Globalization.Tests
                     CompareOptions.None,
                     CompareOptions.IgnoreCase,
                     CompareOptions.IgnoreSymbols,
+                    CompareOptions.IgnoreNonSpace,
+                    CompareOptions.IgnoreNonSpace | CompareOptions.IgnoreCase,
+                    CompareOptions.IgnoreSymbols | CompareOptions.IgnoreNonSpace,
+                    CompareOptions.IgnoreSymbols | CompareOptions.IgnoreNonSpace | CompareOptions.IgnoreCase,
                     CompareOptions.IgnoreSymbols | CompareOptions.IgnoreCase,
                     CompareOptions.IgnoreKanaType | CompareOptions.IgnoreSymbols,
                     CompareOptions.IgnoreKanaType | CompareOptions.IgnoreCase,
@@ -600,10 +720,6 @@ namespace System.Globalization.Tests
                 };
             CompareOptions[] optionsNegative = PlatformDetection.IsHybridGlobalizationOnBrowser ?
             new[] {
-                    CompareOptions.IgnoreNonSpace,
-                    CompareOptions.IgnoreNonSpace | CompareOptions.IgnoreCase,
-                    CompareOptions.IgnoreSymbols | CompareOptions.IgnoreNonSpace,
-                    CompareOptions.IgnoreSymbols | CompareOptions.IgnoreNonSpace | CompareOptions.IgnoreCase,
                     CompareOptions.IgnoreWidth,
                     CompareOptions.IgnoreWidth | CompareOptions.IgnoreCase,
                     CompareOptions.IgnoreWidth | CompareOptions.IgnoreNonSpace,

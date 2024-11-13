@@ -12,6 +12,7 @@ namespace System.Globalization
         IgnoreSymbols = 0x00000004,
         IgnoreKanaType = 0x00000008,
         IgnoreWidth = 0x00000010,
+        NumericOrdering = 0x00000020,
         OrdinalIgnoreCase = 0x10000000, // This flag can not be used with other flags.
         StringSort = 0x20000000,
         Ordinal = 0x40000000, // This flag can not be used with other flags.
