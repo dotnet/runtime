@@ -677,6 +677,11 @@ namespace System
                 case RuntimeImports.GCConfigurationType.Boolean:
                     configurationDictionary![nameAsString] = data != 0;
                     break;
+
+                case RuntimeImports.GCConfigurationType.Double:
+                    double dataAsDouble = BitConverter.Int64BitsToDouble(data);
+                    configurationDictionary[nameAsString] = dataAsDouble;
+                    break;
             }
         }
 

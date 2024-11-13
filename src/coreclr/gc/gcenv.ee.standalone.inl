@@ -222,6 +222,12 @@ inline bool GCToEEInterface::GetIntConfigValue(const char* privateKey, const cha
     return g_theGCToCLR->GetIntConfigValue(privateKey, publicKey, value);
 }
 
+inline bool GCToEEInterface::GetFloatingPointConfigValue(const char* privateKey, const char* publicKey, double* value)
+{
+    assert(g_theGCToCLR != nullptr);
+    return g_theGCToCLR->GetFloatingPointConfigValue(privateKey, publicKey, value);
+}
+
 inline bool GCToEEInterface::GetStringConfigValue(const char* privateKey, const char* publicKey, const char** value)
 {
     assert(g_theGCToCLR != nullptr);

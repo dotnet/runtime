@@ -167,11 +167,20 @@ class GCConfig
 #define STRING_CONFIG(name, unused_private_key, unused_public_key, unused_doc) \
   public: static GCConfigStringHolder Get##name();
 
+#define FLOATINGPOINT_CONFIG(name, unused_private_key, unused_public_key, unused_default, unused_doc) \
+  public: static double Get##name();                             \
+  public: static double Get##name(double defaultValue);          \
+  public: static void Set##name(double value);                   \
+  private: static double s_##name;                               \
+  private: static bool s_##name##Provided;                       \
+  private: static double s_Updated##name;                        \
+
 GC_CONFIGURATION_KEYS
 
 #undef BOOL_CONFIG
 #undef INT_CONFIG
 #undef STRING_CONFIG
+#undef FLOATINGPOINT_CONFIG
 
 public:
 

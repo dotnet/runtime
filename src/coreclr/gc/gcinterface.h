@@ -597,7 +597,8 @@ enum class GCConfigurationType
 {
     Int64,
     StringUtf8,
-    Boolean
+    Boolean,
+    Double
 };
 
 using ConfigurationValueFunc = void (*)(void* context, void* name, void* publicKey, GCConfigurationType type, int64_t data);

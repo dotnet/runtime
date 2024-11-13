@@ -1308,6 +1308,66 @@ bool GCToEEInterface::GetIntConfigValue(const char* privateKey, const char* publ
     return false;
 }
 
+bool GCToEEInterface::GetFloatingPointConfigValue(const char* privateKey, const char* publicKey, double* value)
+{
+    CONTRACTL {
+      NOTHROW;
+      GC_NOTRIGGER;
+    } CONTRACTL_END;
+
+    WCHAR configKey[MaxConfigKeyLength];
+    if (MultiByteToWideChar(CP_ACP, 0, privateKey, -1 /* key is null-terminated */, configKey, MaxConfigKeyLength) == 0)
+    {
+        // whatever this is... it's not something we care about. (It was too long, wasn't unicode, etc.)
+        return false;
+    }
+
+    // There is no ConfigDOUBLEInfo, and the GC uses 64 bit values for things like GCTrimYoungestDividerValue,
+    // so have to fake it with getting the string and converting to double
+    if (CLRConfig::IsConfigOptionSpecified(configKey))
+    {
+        CLRConfig::ConfigStringInfo info { configKey, CLRConfig::LookupOptions::Default };
+        LPWSTR out = CLRConfig::GetConfigValue(info);
+        if (!out)
+        {
+            // config not found
+            CLRConfig::FreeConfigString(out);
+            return false;
+        }
+
+        WCHAR *end;
+        double result;
+        errno = 0;
+        result = u16_strtod(out, &end);
+        // errno is ERANGE if the number is out of range, and end is set to pvalue if
+        // no valid conversion exists.
+        if (errno == ERANGE || end == out)
+        {
+            CLRConfig::FreeConfigString(out);
+            return false;
+        }
+
+        *value = result;
+        CLRConfig::FreeConfigString(out);
+        return true;
+    }
+    else if (publicKey != NULL)
+    {
+        if (MultiByteToWideChar(CP_ACP, 0, publicKey, -1 /* key is null-terminated */, configKey, MaxConfigKeyLength) == 0)
+        {
+            // whatever this is... it's not something we care about. (It was too long, wasn't unicode, etc.)
+            return false;
+        }
+        if (Configuration::GetKnobStringValue(configKey) != NULL)
+        {
+            *value = Configuration::GetKnobDoubleValue(configKey, 0);
+            return true;
+        }
+    }
+
+    return false;
+}
+
 bool GCToEEInterface::GetStringConfigValue(const char* privateKey, const char* publicKey, const char** value)
 {
     CONTRACTL {

@@ -212,7 +212,8 @@ namespace System.Runtime
         {
             Int64,
             StringUtf8,
-            Boolean
+            Boolean,
+            Double
         }
 
         [LibraryImport(RuntimeLibrary)]

@@ -74,6 +74,7 @@ public:
     static MethodTable* GetFreeObjectMethodTable();
     static bool GetBooleanConfigValue(const char* privateKey, const char* publicKey, bool* value);
     static bool GetIntConfigValue(const char* privateKey, const char* publicKey, int64_t* value);
+    static bool GetFloatingPointConfigValue(const char* privateKey, const char* publicKey, double* value);
     static bool GetStringConfigValue(const char* privateKey, const char* publicKey, const char** value);
     static void FreeStringConfigValue(const char* key);
     static bool IsGCThread();
