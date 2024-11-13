@@ -27,7 +27,7 @@ public class ChangeMatchUse
     // Create a mask. Use it as a mask.
     // Conversion of mask1 will be removed.
     [Fact]
-    public static void ChangeMatchUseTests()
+    public static void TestEntryPoint()
     {
         for (int i = 0; i < 4; i++)
         {

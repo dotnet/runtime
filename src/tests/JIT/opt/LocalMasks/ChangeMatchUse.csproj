@@ -1,16 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <Optimize>True</Optimize>
-    <DebugType>None</DebugType>
-    <NoWarn>$(NoWarn);SYSLIB5003</NoWarn>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <!-- Needed for CLRTestEnvironmentVariable -->
-    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <NoWarn>$(NoWarn),SYSLIB5003</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildProjectName).cs" />
-
-    <CLRTestEnvironmentVariable Include="DOTNET_TieredCompilation" Value="1" />
-    <CLRTestEnvironmentVariable Include="DOTNET_TieredPGO" Value="1" />
   </ItemGroup>
 </Project>
