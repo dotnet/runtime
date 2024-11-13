@@ -25,10 +25,9 @@ public class ExecutionManagerTests
         }
 
         public ExecutionManagerTestTarget(int version, MockTarget.Architecture arch, ReadFromTargetDelegate dataReader, TargetPointer topRangeSectionMap, Dictionary<DataType, TypeInfo> typeInfoCache)
-            : base(arch, dataReader)
+            : base(arch, dataReader, typeInfoCache)
         {
             _topRangeSectionMap = topRangeSectionMap;
-            SetTypeInfoCache(typeInfoCache);
             IContractFactory<IExecutionManager> emfactory = new ExecutionManagerFactory();
             SetContracts(new TestRegistry() {
                 ExecutionManagerContract = new (() => emfactory.CreateContract(this, version)),

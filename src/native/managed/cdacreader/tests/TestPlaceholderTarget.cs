@@ -16,32 +16,31 @@ namespace Microsoft.Diagnostics.DataContractReader.UnitTests;
 internal class TestPlaceholderTarget : Target
 {
     private protected ContractRegistry contractRegistry;
-    private protected Target.IDataCache dataCache;
-    private protected Dictionary<DataType, Target.TypeInfo> typeInfoCache;
+    private readonly Target.IDataCache dataCache;
+    private readonly Dictionary<DataType, Target.TypeInfo> typeInfoCache;
 
     internal delegate int ReadFromTargetDelegate(ulong address, Span<byte> buffer);
 
-    protected ReadFromTargetDelegate _dataReader = (address, buffer) => throw new NotImplementedException();
+    private readonly ReadFromTargetDelegate _dataReader;
 
 #region Setup
     public TestPlaceholderTarget(MockTarget.Architecture arch, ReadFromTargetDelegate reader)
+        : this(arch, reader, [])
+    { }
+
+    public TestPlaceholderTarget(MockTarget.Architecture arch, ReadFromTargetDelegate reader, Dictionary<DataType, Target.TypeInfo> types)
     {
         IsLittleEndian = arch.IsLittleEndian;
         PointerSize = arch.Is64Bit ? 8 : 4;
         contractRegistry = new TestRegistry();
         dataCache = new DefaultDataCache(this);
-        typeInfoCache = null;
+        typeInfoCache = types;
         _dataReader = reader;
     }
 
     internal void SetContracts(ContractRegistry contracts)
     {
         contractRegistry = contracts;
-    }
-
-    internal void SetTypeInfoCache(Dictionary<DataType, Target.TypeInfo> cache)
-    {
-        typeInfoCache = cache;
     }
 
 #endregion Setup

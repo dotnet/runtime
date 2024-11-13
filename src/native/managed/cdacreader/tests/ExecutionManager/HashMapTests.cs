@@ -14,10 +14,9 @@ public class HashMapTests
         private readonly (string Name, ulong Value, string? Type)[] _globals;
 
         public HashMapTestTarget(MockTarget.Architecture arch, MockMemorySpace.ReadContext readContext, MockDescriptors.HashMap hashMap)
-            : base (arch, readContext.ReadFromTarget)
+            : base (arch, readContext.ReadFromTarget, hashMap.Types)
         {
             _globals = hashMap.Globals;
-            SetTypeInfoCache(hashMap.Types);
         }
 
         public override T ReadGlobal<T>(string name)

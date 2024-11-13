@@ -290,10 +290,9 @@ public class PrecodeStubsTests
             return new PrecodeTestTarget(arch, reader, precodeBuilder.CodePointerFlags, precodeBuilder.MachineDescriptorAddress, typeInfo);
         }
         public PrecodeTestTarget(MockTarget.Architecture arch, ReadFromTargetDelegate reader, CodePointerFlags codePointerFlags, TargetPointer platformMetadataAddress, Dictionary<DataType, TypeInfo> typeInfoCache)
-            : base(arch, reader)
+            : base(arch, reader, typeInfoCache)
         {
             PrecodeMachineDescriptorAddress = platformMetadataAddress;
-            SetTypeInfoCache(typeInfoCache);
             IContractFactory<IPrecodeStubs> precodeFactory = new PrecodeStubsFactory();
 
             Mock<IPlatformMetadata> platformMetadata = new(MockBehavior.Strict);

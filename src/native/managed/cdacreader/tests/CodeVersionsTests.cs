@@ -241,13 +241,11 @@ public class CodeVersionsTests
                             IReadOnlyCollection<MockModule>? modules = null,
                             ReadFromTargetDelegate reader = null,
                             Dictionary<DataType, TypeInfo>? typeInfoCache = null)
-            : base(arch, reader)
+            : base(arch, reader, typeInfoCache ?? [])
         {
             IExecutionManager mockExecutionManager = new MockExecutionManager(codeBlocks ?? []);
             IRuntimeTypeSystem mockRuntimeTypeSystem = new MockRuntimeTypeSystem(this, methodDescs ?? [], methodTables ?? []);
             ILoader loader = new MockLoader(modules ?? []);
-            if (typeInfoCache != null)
-                SetTypeInfoCache(typeInfoCache);
             IContractFactory<ICodeVersions> cvfactory = new CodeVersionsFactory();
             SetContracts(new TestRegistry() {
                 CodeVersionsContract = new (() => cvfactory.CreateContract(this, 1)),
