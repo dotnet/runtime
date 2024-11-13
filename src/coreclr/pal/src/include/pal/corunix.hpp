@@ -150,23 +150,6 @@ namespace CorUnix
         bool            // fShutdown
         );
 
-    //
-    // Signature of the initialization routine that is to be called
-    // when the first reference within a process to an existing
-    // object comes into existence. This routine is responsible for
-    // initializing the object's process local data, based on the
-    // immutable and shared data. The thread that this routine is
-    // called on holds an implicit read lock on the shared data.
-    //
-
-    typedef PAL_ERROR (*OBJECTINITROUTINE) (
-        CPalThread *,   // pThread
-        CObjectType *,  // pObjectType
-        void *,         // pImmutableData
-        void *,         // pSharedData
-        void *          // pProcessLocalData
-        );
-
     typedef void (*OBJECT_IMMUTABLE_DATA_COPY_ROUTINE) (
         void *,
         void *);
@@ -316,7 +299,6 @@ namespace CorUnix
 
         PalObjectTypeId m_eTypeId;
         OBJECTCLEANUPROUTINE m_pCleanupRoutine;
-        OBJECTINITROUTINE m_pInitRoutine;
         DWORD m_dwImmutableDataSize;
         OBJECT_IMMUTABLE_DATA_COPY_ROUTINE m_pImmutableDataCopyRoutine;
         OBJECT_IMMUTABLE_DATA_CLEANUP_ROUTINE m_pImmutableDataCleanupRoutine;
@@ -338,7 +320,6 @@ namespace CorUnix
         CObjectType(
             PalObjectTypeId eTypeId,
             OBJECTCLEANUPROUTINE pCleanupRoutine,
-            OBJECTINITROUTINE pInitRoutine,
             DWORD dwImmutableDataSize,
             OBJECT_IMMUTABLE_DATA_COPY_ROUTINE pImmutableDataCopyRoutine,
             OBJECT_IMMUTABLE_DATA_CLEANUP_ROUTINE pImmutableDataCleanupRoutine,
@@ -357,7 +338,6 @@ namespace CorUnix
             :
             m_eTypeId(eTypeId),
             m_pCleanupRoutine(pCleanupRoutine),
-            m_pInitRoutine(pInitRoutine),
             m_dwImmutableDataSize(dwImmutableDataSize),
             m_pImmutableDataCopyRoutine(pImmutableDataCopyRoutine),
             m_pImmutableDataCleanupRoutine(pImmutableDataCleanupRoutine),
@@ -399,14 +379,6 @@ namespace CorUnix
             )
         {
             return m_pCleanupRoutine;
-        };
-
-        OBJECTINITROUTINE
-        GetObjectInitRoutine(
-            void
-            )
-        {
-            return  m_pInitRoutine;
         };
 
         DWORD

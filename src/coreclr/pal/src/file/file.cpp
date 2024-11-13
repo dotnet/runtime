@@ -68,7 +68,6 @@ FileCleanupRoutine(
 CObjectType CorUnix::otFile(
                 otiFile,
                 FileCleanupRoutine,
-                NULL,   // No initialization routine
                 0,      // No immutable data
                 NULL,   // No immutable data copy routine
                 NULL,   // No immutable data cleanup routine

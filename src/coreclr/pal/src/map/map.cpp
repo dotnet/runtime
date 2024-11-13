@@ -114,15 +114,6 @@ FileMappingCleanupRoutine(
     bool fShutdown
     );
 
-PAL_ERROR
-FileMappingInitializationRoutine(
-    CPalThread *pThread,
-    CObjectType *pObjectType,
-    void *pImmutableData,
-    void *pSharedData,
-    void *pProcessLocalData
-    );
-
 void
 CFileMappingImmutableDataCopyRoutine(
     void *pImmData,
@@ -137,7 +128,6 @@ CFileMappingImmutableDataCleanupRoutine(
 CObjectType CorUnix::otFileMapping(
                 otiFileMapping,
                 FileMappingCleanupRoutine,
-                FileMappingInitializationRoutine,
                 sizeof(CFileMappingImmutableData),
                 CFileMappingImmutableDataCopyRoutine,
                 CFileMappingImmutableDataCleanupRoutine,
@@ -252,52 +242,6 @@ FileMappingCleanupRoutine(
     // there's no way for a view to exist against this mapping, since each
     // view holds a reference against the mapping object.
     //
-}
-
-PAL_ERROR
-FileMappingInitializationRoutine(
-    CPalThread *pThread,
-    CObjectType *pObjectType,
-    void *pvImmutableData,
-    void *pvSharedData,
-    void *pvProcessLocalData
-    )
-{
-    PAL_ERROR palError = NO_ERROR;
-
-    CFileMappingImmutableData *pImmutableData =
-        reinterpret_cast<CFileMappingImmutableData *>(pvImmutableData);
-    CFileMappingProcessLocalData *pProcessLocalData =
-        reinterpret_cast<CFileMappingProcessLocalData *>(pvProcessLocalData);
-
-    pProcessLocalData->UnixFd = InternalOpen(
-        pImmutableData->lpFileName,
-        MAPProtectionToFileOpenFlags(pImmutableData->flProtect) | O_CLOEXEC
-        );
-
-    if (-1 == pProcessLocalData->UnixFd)
-    {
-        palError = ERROR_INTERNAL_ERROR;
-        goto ExitFileMappingInitializationRoutine;
-    }
-
-#if ONE_SHARED_MAPPING_PER_FILEREGION_PER_PROCESS
-    struct stat st;
-
-    if (0 == fstat(pProcessLocalData->UnixFd, &st))
-    {
-        pProcessLocalData->MappedFileDevNum = st.st_dev;
-        pProcessLocalData->MappedFileInodeNum = st.st_ino;
-    }
-    else
-    {
-        ERROR("Couldn't get inode info for fd=%d to be stored in mapping object\n", pProcessLocalData->UnixFd);
-    }
-#endif
-
-ExitFileMappingInitializationRoutine:
-
-    return palError;
 }
 
 /*++

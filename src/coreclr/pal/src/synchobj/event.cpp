@@ -32,7 +32,6 @@ SET_DEFAULT_DEBUG_CHANNEL(SYNC);
 CObjectType CorUnix::otManualResetEvent(
                 otiManualResetEvent,
                 NULL,   // No cleanup routine
-                NULL,   // No initialization routine
                 0,      // No immutable data
                 NULL,   // No immutable data copy routine
                 NULL,   // No immutable data cleanup routine
@@ -52,7 +51,6 @@ CObjectType CorUnix::otManualResetEvent(
 CObjectType CorUnix::otAutoResetEvent(
                 otiAutoResetEvent,
                 NULL,   // No cleanup routine
-                NULL,   // No initialization routine
                 0,      // No immutable data
                 NULL,   // No immutable data copy routine
                 NULL,   // No immutable data cleanup routine

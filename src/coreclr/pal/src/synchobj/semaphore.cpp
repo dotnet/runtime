@@ -32,7 +32,6 @@ SET_DEFAULT_DEBUG_CHANNEL(SYNC);
 CObjectType CorUnix::otSemaphore(
                 otiSemaphore,
                 NULL,   // No cleanup routine
-                NULL,   // No initialization routine
                 sizeof(SemaphoreImmutableData),
                 NULL,   // No immutable data copy routine
                 NULL,   // No immutable data cleanup routine
