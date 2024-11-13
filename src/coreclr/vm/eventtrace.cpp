@@ -2328,6 +2328,69 @@ enum CallbackProviderIndex
     DotNETRuntimePrivate = 3
 };
 
+#if !defined(HOST_UNIX)
+// EventFilterType identifies the filter type used by the PEVENT_FILTER_DESCRIPTOR
+enum EventFilterType
+{
+    // data should be pairs of UTF8 null terminated strings all concatenated together.
+    // The first element of the pair is the key and the 2nd is the value. We expect one of the
+    // keys to be the string "GCSeqNumber" and the value to be a number encoded as text.
+    // This is the standard way EventPipe encodes filter values
+    StringKeyValueEncoding = 0,
+    // data should be an 8 byte binary LONGLONG value
+    // this is the historic encoding defined by .NET Framework for use with ETW
+    LongBinaryClientSequenceNumber = 1
+};
+
+VOID ParseFilterDataClientSequenceNumber(
+    PEVENT_FILTER_DESCRIPTOR FilterData,
+    LONGLONG * pClientSequenceNumber)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    if (FilterData == NULL)
+        return;
+
+    if (FilterData->Type == LongBinaryClientSequenceNumber && FilterData->Size == sizeof(LONGLONG))
+    {
+        *pClientSequenceNumber = *(LONGLONG *) (FilterData->Ptr);
+    }
+    else if (FilterData->Type == StringKeyValueEncoding)
+    {
+        const char* buffer = reinterpret_cast<const char*>(FilterData->Ptr);
+        const char* buffer_end = buffer + FilterData->Size;
+
+        while (buffer < buffer_end)
+        {
+            const char* key = buffer;
+            size_t key_len = strnlen(key, buffer_end - buffer);
+            buffer += key_len + 1;
+
+            if (buffer >= buffer_end)
+                break;
+
+            const char* value = buffer;
+            size_t value_len = strnlen(value, buffer_end - buffer);
+            buffer += value_len + 1;
+
+            if (buffer > buffer_end)
+                break;
+
+            if (strcmp(key, "GCSeqNumber") != 0)
+                continue;
+
+            char* endPtr = nullptr;
+            long parsedValue = strtol(value, &endPtr, 10);
+            if (endPtr != value && *endPtr == '\0')
+            {
+                *pClientSequenceNumber = static_cast<LONGLONG>(parsedValue);
+                break;
+            }
+        }
+    }
+}
+#endif // !defined(HOST_UNIX)
+
 // Common handler for all ETW or EventPipe event notifications. Based on the provider that
 // was enabled/disabled, this implementation forwards the event state change onto GCHeapUtilities
 // which will inform the GC to update its local state about what events are enabled.
@@ -2412,13 +2475,7 @@ VOID EtwCallbackCommon(
         // to log with the GCStart event.
         LONGLONG l64ClientSequenceNumber = 0;
 #if !defined(HOST_UNIX)
-        PEVENT_FILTER_DESCRIPTOR FilterData = (PEVENT_FILTER_DESCRIPTOR)pFilterData;
-        if ((FilterData != NULL) &&
-           (FilterData->Type == 1) &&
-           (FilterData->Size == sizeof(l64ClientSequenceNumber)))
-        {
-            l64ClientSequenceNumber = *(LONGLONG *) (FilterData->Ptr);
-        }
+        ParseFilterDataClientSequenceNumber((PEVENT_FILTER_DESCRIPTOR)pFilterData, &l64ClientSequenceNumber);
 #endif // !defined(HOST_UNIX)
         ETW::GCLog::ForceGC(l64ClientSequenceNumber);
     }
