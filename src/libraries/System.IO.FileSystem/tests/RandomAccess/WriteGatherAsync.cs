@@ -202,7 +202,7 @@ namespace System.IO.Tests
             Assert.Equal(FileSize, bytesRead);
             for (int i = 0; i < BufferCount; i++)
             {
-                Assert.Equal(writeBuffer, readBuffers[i]);
+                AssertExtensions.SequenceEqual(writeBuffer.Span, readBuffers[i].Span);
             }
         }
 
@@ -256,7 +256,7 @@ namespace System.IO.Tests
 
             for (int i = 0; i < BufferCount; ++i)
             {
-                Assert.Equal(writeBuffers[i], readBuffers[i]);
+                AssertExtensions.SequenceEqual(writeBuffers[i].Span, readBuffers[i].Span);
             }
         }
     }
