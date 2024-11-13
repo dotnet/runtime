@@ -184,11 +184,18 @@ public:
                 weight->InvalidateWeight();
                 return fgWalkResult::WALK_CONTINUE;
             }
-            // TODO: For both parameters and OSR locals, these could potentially be converted.
-            //       Instead of retyping the existing locals, for each def create a new local store
-            //       in the new type and update all the uses to use the new store. For parameters
-            //       and OSR locals add a single initial conversion in an initial basic block. Take
-            //       this into account in the weighting.
+            // TODO: Converting to a mask loses data - as each field is only a single bit.
+            // For parameters, OSR locals, and locals which are used as vectors, then they
+            // cannot be stored as a mask as data will be lost.
+            // For all of these, conversions could be done by creating a new store of type mask.
+            // Then uses as mask could be converted to type mask and pointed to use the new
+            // definition. Tbe weighting would need updating to take this into account.
+            else if (isLocalUse && !hasConversion)
+            {
+                JITDUMP("is used as vector. ");
+                weight->InvalidateWeight();
+                return fgWalkResult::WALK_CONTINUE;
+            }
             else if (varDsc->lvIsParam)
             {
                 JITDUMP("is parameter. ");

@@ -22,7 +22,7 @@ public class ChangeMaskUse
     private static void Consume<T, T2>(T value, T2 value2) { }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    private static void ConsumrAddressExposed<T>(ref Vector<T> value) {}
+    private static void ConsumeAddressExposed<T>(ref Vector<T> value) {}
 
     [Fact]
     public static void TestEntryPoint()
@@ -35,7 +35,6 @@ public class ChangeMaskUse
             {
                 for (int j = 0; j < 200; j++)
                 {
-                    UseMaskAsMask();
                     UseMaskAsVector();
                     UseMaskAsMaskAndVector();
                     UseMaskAsMaskAndVectorInsideLoop();
@@ -48,7 +47,6 @@ public class ChangeMaskUse
 
                 Thread.Sleep(100);
             }
-            UseMaskAsMask();
             UseMaskAsVector();
             UseMaskAsMaskAndVector();
             UseMaskAsMaskAndVectorInsideLoop();
@@ -60,19 +58,8 @@ public class ChangeMaskUse
         }
     }
 
-    // Create a mask. Use it as a mask.
-    // Conversion of mask1 will be removed.
-    [MethodImpl(MethodImplOptions.NoInlining)]
-    private static void UseMaskAsMask()
-    {
-        Vector<ulong> mask1 = Sve.CreateWhileLessThanMask64Bit(2, 9); // Create lcl mask
-        Vector<ulong> vec1  = Vector.Create<ulong>(5);
-        Vector<ulong> vec2  = Sve.Compact(mask1, vec1); // Use as mask
-        Consume(vec2);
-    }
-
     // Create a mask. Use it as a vector.
-    // No conversions will be changed: Mask->Vector is optimal.
+    // No conversions will be changed: use as vector.
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static void UseMaskAsVector()
     {
@@ -83,7 +70,7 @@ public class ChangeMaskUse
     }
 
     // Create a mask. Use it as a mask, then use as a vector.
-    // Mask1 conversions will be switched.
+    // No conversions will be changed: use as vector.
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static void UseMaskAsMaskAndVector()
     {
@@ -96,7 +83,7 @@ public class ChangeMaskUse
     }
 
     // Create a mask. Use it as a mask, then use as a vector inside a loop.
-    // No conversions will be changed: vector use inside the loop dominates.
+    // No conversions will be changed: use as vector.
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static void UseMaskAsMaskAndVectorInsideLoop()
     {
@@ -113,7 +100,7 @@ public class ChangeMaskUse
     }
 
     // Create a mask. Use it as a vector, then use as a mask inside a loop.
-    // Will be converted: mask use inside the loop dominates.
+    // No conversions will be changed: use as vector.
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static void UseMaskAsVectorAndMaskInsideLoop()
     {
@@ -164,7 +151,7 @@ public class ChangeMaskUse
     {
         Vector<double> mask1 = Sve.CreateFalseMaskDouble(); // Create lcl mask
         Vector<double> vec1  = Vector.Create<double>(1.3);
-        ConsumrAddressExposed(ref mask1); // Use as ref
+        ConsumeAddressExposed(ref mask1); // Use as ref
         Vector<double> vec2  = Sve.Compact(mask1, vec1); // Use as mask
         Consume(vec2);
     }
