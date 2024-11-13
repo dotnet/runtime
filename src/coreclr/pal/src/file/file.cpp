@@ -18,7 +18,6 @@ SET_DEFAULT_DEBUG_CHANNEL(FILE); // some headers have code with asserts, so do t
 
 #include "pal/thread.hpp"
 #include "pal/file.hpp"
-#include "pal/malloc.hpp"
 #include "pal/stackstring.hpp"
 
 #include "pal/palinternal.h"
