@@ -285,6 +285,66 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0015</DiagnosticId>
+    <Target>M:System.Reflection.Emit.EnumBuilder.InvokeMember(System.String,System.Reflection.BindingFlags,System.Reflection.Binder,System.Object,System.Object[],System.Reflection.ParameterModifier[],System.Globalization.CultureInfo,System.String[]):[T:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute]</Target>
+    <Left>net9.0/mscorlib.dll</Left>
+    <Right>net10.0/mscorlib.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0015</DiagnosticId>
+    <Target>M:System.Reflection.Emit.GenericTypeParameterBuilder.InvokeMember(System.String,System.Reflection.BindingFlags,System.Reflection.Binder,System.Object,System.Object[],System.Reflection.ParameterModifier[],System.Globalization.CultureInfo,System.String[]):[T:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute]</Target>
+    <Left>net9.0/mscorlib.dll</Left>
+    <Right>net10.0/mscorlib.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0015</DiagnosticId>
+    <Target>M:System.Reflection.Emit.TypeBuilder.InvokeMember(System.String,System.Reflection.BindingFlags,System.Reflection.Binder,System.Object,System.Object[],System.Reflection.ParameterModifier[],System.Globalization.CultureInfo,System.String[]):[T:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute]</Target>
+    <Left>net9.0/mscorlib.dll</Left>
+    <Right>net10.0/mscorlib.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0015</DiagnosticId>
+    <Target>M:System.Reflection.IReflect.InvokeMember(System.String,System.Reflection.BindingFlags,System.Reflection.Binder,System.Object,System.Object[],System.Reflection.ParameterModifier[],System.Globalization.CultureInfo,System.String[]):[T:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute]</Target>
+    <Left>net9.0/mscorlib.dll</Left>
+    <Right>net10.0/mscorlib.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0015</DiagnosticId>
+    <Target>M:System.Reflection.TypeDelegator.InvokeMember(System.String,System.Reflection.BindingFlags,System.Reflection.Binder,System.Object,System.Object[],System.Reflection.ParameterModifier[],System.Globalization.CultureInfo,System.String[]):[T:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute]</Target>
+    <Left>net9.0/mscorlib.dll</Left>
+    <Right>net10.0/mscorlib.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0015</DiagnosticId>
+    <Target>M:System.Reflection.TypeInfo.get_DeclaredMembers:[T:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute]</Target>
+    <Left>net9.0/mscorlib.dll</Left>
+    <Right>net10.0/mscorlib.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0015</DiagnosticId>
+    <Target>M:System.Type.FindMembers(System.Reflection.MemberTypes,System.Reflection.BindingFlags,System.Reflection.MemberFilter,System.Object):[T:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute]</Target>
+    <Left>net9.0/mscorlib.dll</Left>
+    <Right>net10.0/mscorlib.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0015</DiagnosticId>
+    <Target>M:System.Type.InvokeMember(System.String,System.Reflection.BindingFlags,System.Reflection.Binder,System.Object,System.Object[],System.Globalization.CultureInfo):[T:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute]</Target>
+    <Left>net9.0/mscorlib.dll</Left>
+    <Right>net10.0/mscorlib.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0015</DiagnosticId>
+    <Target>M:System.Type.InvokeMember(System.String,System.Reflection.BindingFlags,System.Reflection.Binder,System.Object,System.Object[],System.Reflection.ParameterModifier[],System.Globalization.CultureInfo,System.String[]):[T:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute]</Target>
+    <Left>net9.0/mscorlib.dll</Left>
+    <Right>net10.0/mscorlib.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0015</DiagnosticId>
+    <Target>M:System.Type.InvokeMember(System.String,System.Reflection.BindingFlags,System.Reflection.Binder,System.Object,System.Object[]):[T:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute]</Target>
+    <Left>net9.0/mscorlib.dll</Left>
+    <Right>net10.0/mscorlib.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0015</DiagnosticId>
     <Target>M:System.Delegate.#ctor(System.Type,System.String)$0:[T:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute]</Target>
     <Left>net9.0/netstandard.dll</Left>
     <Right>net10.0/netstandard.dll</Right>
@@ -310,6 +370,66 @@
   <Suppression>
     <DiagnosticId>CP0015</DiagnosticId>
     <Target>M:System.MulticastDelegate.#ctor(System.Type,System.String)$0:[T:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute]</Target>
+    <Left>net9.0/netstandard.dll</Left>
+    <Right>net10.0/netstandard.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0015</DiagnosticId>
+    <Target>M:System.Reflection.Emit.EnumBuilder.InvokeMember(System.String,System.Reflection.BindingFlags,System.Reflection.Binder,System.Object,System.Object[],System.Reflection.ParameterModifier[],System.Globalization.CultureInfo,System.String[]):[T:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute]</Target>
+    <Left>net9.0/netstandard.dll</Left>
+    <Right>net10.0/netstandard.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0015</DiagnosticId>
+    <Target>M:System.Reflection.Emit.GenericTypeParameterBuilder.InvokeMember(System.String,System.Reflection.BindingFlags,System.Reflection.Binder,System.Object,System.Object[],System.Reflection.ParameterModifier[],System.Globalization.CultureInfo,System.String[]):[T:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute]</Target>
+    <Left>net9.0/netstandard.dll</Left>
+    <Right>net10.0/netstandard.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0015</DiagnosticId>
+    <Target>M:System.Reflection.Emit.TypeBuilder.InvokeMember(System.String,System.Reflection.BindingFlags,System.Reflection.Binder,System.Object,System.Object[],System.Reflection.ParameterModifier[],System.Globalization.CultureInfo,System.String[]):[T:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute]</Target>
+    <Left>net9.0/netstandard.dll</Left>
+    <Right>net10.0/netstandard.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0015</DiagnosticId>
+    <Target>M:System.Reflection.IReflect.InvokeMember(System.String,System.Reflection.BindingFlags,System.Reflection.Binder,System.Object,System.Object[],System.Reflection.ParameterModifier[],System.Globalization.CultureInfo,System.String[]):[T:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute]</Target>
+    <Left>net9.0/netstandard.dll</Left>
+    <Right>net10.0/netstandard.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0015</DiagnosticId>
+    <Target>M:System.Reflection.TypeDelegator.InvokeMember(System.String,System.Reflection.BindingFlags,System.Reflection.Binder,System.Object,System.Object[],System.Reflection.ParameterModifier[],System.Globalization.CultureInfo,System.String[]):[T:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute]</Target>
+    <Left>net9.0/netstandard.dll</Left>
+    <Right>net10.0/netstandard.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0015</DiagnosticId>
+    <Target>M:System.Reflection.TypeInfo.get_DeclaredMembers:[T:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute]</Target>
+    <Left>net9.0/netstandard.dll</Left>
+    <Right>net10.0/netstandard.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0015</DiagnosticId>
+    <Target>M:System.Type.FindMembers(System.Reflection.MemberTypes,System.Reflection.BindingFlags,System.Reflection.MemberFilter,System.Object):[T:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute]</Target>
+    <Left>net9.0/netstandard.dll</Left>
+    <Right>net10.0/netstandard.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0015</DiagnosticId>
+    <Target>M:System.Type.InvokeMember(System.String,System.Reflection.BindingFlags,System.Reflection.Binder,System.Object,System.Object[],System.Globalization.CultureInfo):[T:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute]</Target>
+    <Left>net9.0/netstandard.dll</Left>
+    <Right>net10.0/netstandard.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0015</DiagnosticId>
+    <Target>M:System.Type.InvokeMember(System.String,System.Reflection.BindingFlags,System.Reflection.Binder,System.Object,System.Object[],System.Reflection.ParameterModifier[],System.Globalization.CultureInfo,System.String[]):[T:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute]</Target>
+    <Left>net9.0/netstandard.dll</Left>
+    <Right>net10.0/netstandard.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0015</DiagnosticId>
+    <Target>M:System.Type.InvokeMember(System.String,System.Reflection.BindingFlags,System.Reflection.Binder,System.Object,System.Object[]):[T:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute]</Target>
     <Left>net9.0/netstandard.dll</Left>
     <Right>net10.0/netstandard.dll</Right>
   </Suppression>
@@ -321,6 +441,30 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0015</DiagnosticId>
+    <Target>M:System.Reflection.TypeInfo.get_DeclaredMembers:[T:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute]</Target>
+    <Left>net9.0/System.Reflection.dll</Left>
+    <Right>net10.0/System.Reflection.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0015</DiagnosticId>
+    <Target>M:System.Reflection.Emit.EnumBuilder.InvokeMember(System.String,System.Reflection.BindingFlags,System.Reflection.Binder,System.Object,System.Object[],System.Reflection.ParameterModifier[],System.Globalization.CultureInfo,System.String[]):[T:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute]</Target>
+    <Left>net9.0/System.Reflection.Emit.dll</Left>
+    <Right>net10.0/System.Reflection.Emit.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0015</DiagnosticId>
+    <Target>M:System.Reflection.Emit.GenericTypeParameterBuilder.InvokeMember(System.String,System.Reflection.BindingFlags,System.Reflection.Binder,System.Object,System.Object[],System.Reflection.ParameterModifier[],System.Globalization.CultureInfo,System.String[]):[T:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute]</Target>
+    <Left>net9.0/System.Reflection.Emit.dll</Left>
+    <Right>net10.0/System.Reflection.Emit.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0015</DiagnosticId>
+    <Target>M:System.Reflection.Emit.TypeBuilder.InvokeMember(System.String,System.Reflection.BindingFlags,System.Reflection.Binder,System.Object,System.Object[],System.Reflection.ParameterModifier[],System.Globalization.CultureInfo,System.String[]):[T:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute]</Target>
+    <Left>net9.0/System.Reflection.Emit.dll</Left>
+    <Right>net10.0/System.Reflection.Emit.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0015</DiagnosticId>
     <Target>M:System.Delegate.#ctor(System.Type,System.String)$0:[T:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute]</Target>
     <Left>net9.0/System.Runtime.dll</Left>
     <Right>net10.0/System.Runtime.dll</Right>
@@ -346,6 +490,48 @@
   <Suppression>
     <DiagnosticId>CP0015</DiagnosticId>
     <Target>M:System.MulticastDelegate.#ctor(System.Type,System.String)$0:[T:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute]</Target>
+    <Left>net9.0/System.Runtime.dll</Left>
+    <Right>net10.0/System.Runtime.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0015</DiagnosticId>
+    <Target>M:System.Reflection.IReflect.InvokeMember(System.String,System.Reflection.BindingFlags,System.Reflection.Binder,System.Object,System.Object[],System.Reflection.ParameterModifier[],System.Globalization.CultureInfo,System.String[]):[T:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute]</Target>
+    <Left>net9.0/System.Runtime.dll</Left>
+    <Right>net10.0/System.Runtime.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0015</DiagnosticId>
+    <Target>M:System.Reflection.TypeDelegator.InvokeMember(System.String,System.Reflection.BindingFlags,System.Reflection.Binder,System.Object,System.Object[],System.Reflection.ParameterModifier[],System.Globalization.CultureInfo,System.String[]):[T:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute]</Target>
+    <Left>net9.0/System.Runtime.dll</Left>
+    <Right>net10.0/System.Runtime.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0015</DiagnosticId>
+    <Target>M:System.Reflection.TypeInfo.get_DeclaredMembers:[T:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute]</Target>
+    <Left>net9.0/System.Runtime.dll</Left>
+    <Right>net10.0/System.Runtime.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0015</DiagnosticId>
+    <Target>M:System.Type.FindMembers(System.Reflection.MemberTypes,System.Reflection.BindingFlags,System.Reflection.MemberFilter,System.Object):[T:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute]</Target>
+    <Left>net9.0/System.Runtime.dll</Left>
+    <Right>net10.0/System.Runtime.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0015</DiagnosticId>
+    <Target>M:System.Type.InvokeMember(System.String,System.Reflection.BindingFlags,System.Reflection.Binder,System.Object,System.Object[],System.Globalization.CultureInfo):[T:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute]</Target>
+    <Left>net9.0/System.Runtime.dll</Left>
+    <Right>net10.0/System.Runtime.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0015</DiagnosticId>
+    <Target>M:System.Type.InvokeMember(System.String,System.Reflection.BindingFlags,System.Reflection.Binder,System.Object,System.Object[],System.Reflection.ParameterModifier[],System.Globalization.CultureInfo,System.String[]):[T:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute]</Target>
+    <Left>net9.0/System.Runtime.dll</Left>
+    <Right>net10.0/System.Runtime.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0015</DiagnosticId>
+    <Target>M:System.Type.InvokeMember(System.String,System.Reflection.BindingFlags,System.Reflection.Binder,System.Object,System.Object[]):[T:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute]</Target>
     <Left>net9.0/System.Runtime.dll</Left>
     <Right>net10.0/System.Runtime.dll</Right>
   </Suppression>
