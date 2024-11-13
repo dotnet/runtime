@@ -1105,7 +1105,26 @@ PhaseStatus Compiler::fgCloneFinally()
         BasicBlock*     insertAfter     = nullptr;
         BlockToBlockMap blockMap(getAllocator());
         unsigned        cloneBBCount   = 0;
-        weight_t const  originalWeight = firstBlock->hasProfileWeight() ? firstBlock->bbWeight : BB_ZERO_WEIGHT;
+        weight_t originalWeight;
+
+        // When distributing weight between the original and cloned regions,
+        // ensure only weight from region entries is considered.
+        // Flow from loop backedges within the region should not influence the weight distribution ratio.
+        if (firstBlock->hasProfileWeight())
+        {
+            originalWeight = firstBlock->bbWeight;
+            for (BasicBlock* const predBlock : firstBlock->PredBlocks())
+            {
+                if (!predBlock->KindIs(BBJ_CALLFINALLY))
+                {
+                    originalWeight = max(0.0, originalWeight - predBlock->bbWeight);
+                }
+            }
+        }
+        else
+        {
+            originalWeight = BB_ZERO_WEIGHT;
+        }
 
         for (BasicBlock* block = firstBlock; block != nextBlock; block = block->Next())
         {
