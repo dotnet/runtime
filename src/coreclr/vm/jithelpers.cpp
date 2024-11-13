@@ -2610,7 +2610,7 @@ HRESULT EEToProfInterfaceImpl::SetEnterLeaveFunctionHooksForJit(FunctionEnter3 *
 // Slow helper to tailcall from the fast one
 extern "C" void QCALLTYPE PollGC_Native()
 {
-    // Empty function to p/invoke to in order to allow the GC to suspend on transition
+    // Empty function to p/invoke into in order to allow the GC to suspend on transition
 }
 
 /*************************************************************/
