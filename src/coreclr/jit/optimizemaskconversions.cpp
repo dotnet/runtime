@@ -444,7 +444,7 @@ PhaseStatus Compiler::fgOptimizeMaskConversions()
         return PhaseStatus::MODIFIED_NOTHING;
     }
 
-    MaskConversionsWeightTable weightsTable(getAllocator());
+    MaskConversionsWeightTable weightsTable(getAllocator(CMK_MaskConversionOpt));
 
     // Find every local and add them to weightsTable.
     bool foundConversion = false;
