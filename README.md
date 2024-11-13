@@ -48,7 +48,7 @@ This repo should contain issues that are tied to the runtime, the class librarie
 
 For other issues, please file them to their appropriate sibling repos. We have links to many of them on [our new issue page](https://github.com/dotnet/runtime/issues/new/choose).
 
-## Useful Links
+## Useful Links 
 
 * [.NET source index](https://source.dot.net) / [.NET Framework source index](https://referencesource.microsoft.com)
 * [API Reference docs](https://learn.microsoft.com/dotnet/api)
