@@ -239,7 +239,6 @@ internal class ExecutionManagerTestBuilder
         Fields =
         [
             new(nameof(Data.RuntimeFunction.BeginAddress), DataType.uint32),
-            new(nameof(Data.RuntimeFunction.EndAddress), DataType.uint32),
         ]
     };
 
@@ -423,7 +422,7 @@ internal class ExecutionManagerTestBuilder
         return codeStart;
     }
 
-    public TargetPointer AddReadyToRunInfo((uint BeginAddress, uint EndAddress)[] runtimeFunctions)
+    public TargetPointer AddReadyToRunInfo(uint[] runtimeFunctions)
     {
         TargetTestHelpers helpers = Builder.TargetTestHelpers;
 
@@ -435,10 +434,8 @@ internal class ExecutionManagerTestBuilder
         Builder.AddHeapFragment(runtimeFunctionsFragment);
         for (uint i = 0; i < numRuntimeFunctions; i++)
         {
-            (uint beginAddress, uint endAddress) = runtimeFunctions[i];
             Span<byte> func = Builder.BorrowAddressRange(runtimeFunctionsFragment.Address + i * runtimeFunctionSize, (int)runtimeFunctionSize);
-            helpers.Write(func.Slice(runtimeFunctionType.Fields[nameof(Data.RuntimeFunction.BeginAddress)].Offset, sizeof(uint)), beginAddress);
-            helpers.Write(func.Slice(runtimeFunctionType.Fields[nameof(Data.RuntimeFunction.EndAddress)].Offset, sizeof(uint)), endAddress);
+            helpers.Write(func.Slice(runtimeFunctionType.Fields[nameof(Data.RuntimeFunction.BeginAddress)].Offset, sizeof(uint)), runtimeFunctions[i]);
         }
 
         // Runtime function entries are terminated by a sentinel value of -1

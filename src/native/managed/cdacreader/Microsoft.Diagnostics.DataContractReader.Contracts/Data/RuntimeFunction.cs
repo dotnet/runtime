@@ -13,9 +13,7 @@ internal sealed class RuntimeFunction : IData<RuntimeFunction>
         Target.TypeInfo type = target.GetTypeInfo(DataType.RuntimeFunction);
 
         BeginAddress = target.Read<uint>(address + (ulong)type.Fields[nameof(BeginAddress)].Offset);
-        EndAddress = target.Read<uint>(address + (ulong)type.Fields[nameof(EndAddress)].Offset);
      }
 
     public uint BeginAddress { get; }
-    public uint EndAddress { get; }
 }

@@ -62,7 +62,6 @@ Data descriptors used:
 | `ImageDataDirectory` | `VirtualAddress` | Virtual address of the image data directory |
 | `ImageDataDirectory` | `Size` | Size of the data |
 | `RuntimeFunction` | `BeginAddress` | Begin address of the function |
-| `RuntimeFunction` | `EndAddress` | End address of the function |
 | `HashMap` | `Buckets` | Pointer to the buckets of a `HashMap` |
 | `Bucket` | `Keys` | Array of keys of `HashMapSlotsPerBucket` length |
 | `Bucket` | `Values` | Array of values of `HashMapSlotsPerBucket` length |

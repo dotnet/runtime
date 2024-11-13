@@ -431,7 +431,6 @@ CDAC_TYPE_END(ImageDataDirectory)
 CDAC_TYPE_BEGIN(RuntimeFunction)
 CDAC_TYPE_SIZE(sizeof(RUNTIME_FUNCTION))
 CDAC_TYPE_FIELD(RuntimeFunction, /*uint32*/, BeginAddress, offsetof(RUNTIME_FUNCTION, BeginAddress))
-CDAC_TYPE_FIELD(RuntimeFunction, /*uint32*/, EndAddress, offsetof(RUNTIME_FUNCTION, EndAddress))
 CDAC_TYPE_END(RuntimeFunction)
 
 CDAC_TYPE_BEGIN(HashMap)
