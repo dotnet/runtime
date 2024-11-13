@@ -392,22 +392,22 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
             internal IEnumerable<string> EnumerateCapiUserKeys()
             {
-                return Directory.EnumerateFiles(_capiUserRsa).Concat(Directory.EnumerateFiles(_capiUserDsa));
+                return EnumerateFiles(_capiUserRsa).Concat(EnumerateFiles(_capiUserDsa));
             }
 
             internal IEnumerable<string> EnumerateCapiMachineKeys()
             {
-                return Directory.EnumerateFiles(_capiMachineRsa).Concat(Directory.EnumerateFiles(_capiMachineDsa));
+                return EnumerateFiles(_capiMachineRsa).Concat(EnumerateFiles(_capiMachineDsa));
             }
 
             internal IEnumerable<string> EnumerateCngUserKeys()
             {
-                return Directory.EnumerateFiles(_cngUser);
+                return EnumerateFiles(_cngUser);
             }
 
             internal IEnumerable<string> EnumerateCngMachineKeys()
             {
-                return Directory.EnumerateFiles(_cngMachine);
+                return EnumerateFiles(_cngMachine);
             }
 
             internal IEnumerable<string> EnumerateUserKeys()
@@ -423,6 +423,19 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             internal IEnumerable<string> EnumerateAllKeys()
             {
                 return EnumerateUserKeys().Concat(EnumerateMachineKeys());
+            }
+
+            private static IEnumerable<string> EnumerateFiles(string directory)
+            {
+                try
+                {
+                    return Directory.EnumerateFiles(directory);
+                }
+                catch (DirectoryNotFoundException)
+                {
+                }
+
+                return [];
             }
 
             internal static KeyPaths GetKeyPaths()
