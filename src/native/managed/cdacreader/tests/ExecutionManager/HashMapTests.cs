@@ -11,16 +11,12 @@ public class HashMapTests
 {
     internal class HashMapTestTarget : TestPlaceholderTarget
     {
-        private readonly MockMemorySpace.ReadContext _readContext;
         private readonly (string Name, ulong Value, string? Type)[] _globals;
 
         public HashMapTestTarget(MockTarget.Architecture arch, MockMemorySpace.ReadContext readContext, MockDescriptors.HashMap hashMap)
-            : base (arch)
+            : base (arch, readContext.ReadFromTarget)
         {
-            _readContext = readContext;
             _globals = hashMap.Globals;
-            SetDataCache(new DefaultDataCache(this));
-            SetDataReader(_readContext.ReadFromTarget);
             SetTypeInfoCache(hashMap.Types);
         }
 

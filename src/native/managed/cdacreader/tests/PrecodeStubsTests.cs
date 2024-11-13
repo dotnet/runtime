@@ -2,11 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Xunit;
+using Moq;
 
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 using System.Collections.Generic;
 using System;
 using System.Reflection;
+
 namespace Microsoft.Diagnostics.DataContractReader.UnitTests;
 
 public class PrecodeStubsTests
@@ -276,17 +278,6 @@ public class PrecodeStubsTests
 
     internal class PrecodeTestTarget : TestPlaceholderTarget
     {
-        private class TestPlatformMetadata : IPlatformMetadata
-        {
-            private readonly CodePointerFlags _codePointerFlags;
-            private readonly TargetPointer _precodeMachineDescriptorAddress;
-            public TestPlatformMetadata(CodePointerFlags codePointerFlags, TargetPointer precodeMachineDescriptorAddress) {
-                _codePointerFlags = codePointerFlags;
-                _precodeMachineDescriptorAddress = precodeMachineDescriptorAddress;
-            }
-            TargetPointer IPlatformMetadata.GetPrecodeMachineDescriptor() => _precodeMachineDescriptorAddress;
-            CodePointerFlags IPlatformMetadata.GetCodePointerFlags() => _codePointerFlags;
-        }
         internal readonly TargetPointer PrecodeMachineDescriptorAddress;
         // hack for this test put the precode machine descriptor at the same address as the PlatformMetadata
         internal TargetPointer PlatformMetadataAddress => PrecodeMachineDescriptorAddress;
@@ -298,16 +289,20 @@ public class PrecodeStubsTests
             var typeInfo = precodeBuilder.TypeInfoCache;
             return new PrecodeTestTarget(arch, reader, precodeBuilder.CodePointerFlags, precodeBuilder.MachineDescriptorAddress, typeInfo);
         }
-        public PrecodeTestTarget(MockTarget.Architecture arch, ReadFromTargetDelegate reader, CodePointerFlags codePointerFlags, TargetPointer platformMetadataAddress, Dictionary<DataType, TypeInfo> typeInfoCache) : base(arch) {
+        public PrecodeTestTarget(MockTarget.Architecture arch, ReadFromTargetDelegate reader, CodePointerFlags codePointerFlags, TargetPointer platformMetadataAddress, Dictionary<DataType, TypeInfo> typeInfoCache)
+            : base(arch, reader)
+        {
             PrecodeMachineDescriptorAddress = platformMetadataAddress;
             SetTypeInfoCache(typeInfoCache);
-            SetDataCache(new DefaultDataCache(this));
-            SetDataReader(reader);
             IContractFactory<IPrecodeStubs> precodeFactory = new PrecodeStubsFactory();
-            SetContracts(new TestRegistry() {
-                PlatformMetadataContract = new (() => new TestPlatformMetadata(codePointerFlags, PrecodeMachineDescriptorAddress)),
-                PrecodeStubsContract = new (() => precodeFactory.CreateContract(this, 1)),
 
+            Mock<IPlatformMetadata> platformMetadata = new(MockBehavior.Strict);
+            platformMetadata.Setup(p => p.GetCodePointerFlags()).Returns(codePointerFlags);
+            platformMetadata.Setup(p => p.GetPrecodeMachineDescriptor()).Returns(PrecodeMachineDescriptorAddress);
+
+            SetContracts(new TestRegistry() {
+                PlatformMetadataContract = new (() => platformMetadata.Object),
+                PrecodeStubsContract = new (() => precodeFactory.CreateContract(this, 1)),
             });
         }
 

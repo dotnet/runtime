@@ -24,16 +24,15 @@ public class ExecutionManagerTests
             return new ExecutionManagerTestTarget(emBuilder.Version, arch, reader, topRangeSectionMap, typeInfo);
         }
 
-        public ExecutionManagerTestTarget(int version, MockTarget.Architecture arch, ReadFromTargetDelegate dataReader, TargetPointer topRangeSectionMap, Dictionary<DataType, TypeInfo> typeInfoCache) : base(arch)
+        public ExecutionManagerTestTarget(int version, MockTarget.Architecture arch, ReadFromTargetDelegate dataReader, TargetPointer topRangeSectionMap, Dictionary<DataType, TypeInfo> typeInfoCache)
+            : base(arch, dataReader)
         {
             _topRangeSectionMap = topRangeSectionMap;
-            SetDataReader(dataReader);
             SetTypeInfoCache(typeInfoCache);
-            SetDataCache(new DefaultDataCache(this));
             IContractFactory<IExecutionManager> emfactory = new ExecutionManagerFactory();
             SetContracts(new TestRegistry() {
                 ExecutionManagerContract = new (() => emfactory.CreateContract(this, version)),
-                PlatformMetadataContract = new (() => new Mock<IPlatformMetadata>().Object),
+                PlatformMetadataContract = new (() => new Mock<IPlatformMetadata>().Object)
             });
         }
         public override TargetPointer ReadGlobalPointer(string global)
