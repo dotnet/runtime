@@ -10258,6 +10258,11 @@ void emitter::emitIns_Call(EmitCallType          callType,
         id->idAddr()->iiaAddr = (BYTE*)addr;
         sz                    = 6;
 
+        if (TakesRex2Prefix(id))
+        {
+            sz += 2;
+        }
+
         // Since this is an indirect call through a pointer and we don't
         // currently pass in emitAttr into this function, we query codegen
         // whether addr needs a reloc.
@@ -13216,6 +13221,7 @@ BYTE* emitter::emitOutputAM(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
     // For INS_call the instruction size is actually the return value size
     if ((ins == INS_call) || (ins == INS_tail_i_jmp))
     {
+        code = AddX86PrefixIfNeeded(id, code, size);
         if (ins == INS_tail_i_jmp)
         {
             // tail call with addressing mode (or through register) needs rex.w
@@ -17258,6 +17264,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 assert((ins == INS_call) || (ins == INS_tail_i_jmp));
 
                 code = insCodeMR(ins);
+                code = AddX86PrefixIfNeeded(id, code, size);
 
                 if (id->idIsDspReloc())
                 {

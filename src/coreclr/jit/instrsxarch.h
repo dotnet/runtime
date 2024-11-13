@@ -899,7 +899,7 @@ INST3(popcnt,           "popcnt",           IUM_WR, BAD_CODE,     BAD_CODE,     
 //    id                nm                  um      mr            mi                                                     flags
 INST2(ret,              "ret",              IUM_RD, 0x0000C3,     0x0000C2,                                              INS_TT_NONE,    INS_FLAGS_None)
 INST2(loop,             "loop",             IUM_RD, BAD_CODE,     0x0000E2,                                              INS_TT_NONE,    INS_FLAGS_None)
-INST2(call,             "call",             IUM_RD, 0x0010FF,     0x0000E8,                                              INS_TT_NONE,    INS_FLAGS_None)
+INST2(call,             "call",             IUM_RD, 0x0010FF,     0x0000E8,                                              INS_TT_NONE,    Encoding_REX2)
 
 INST2(rol,              "rol",              IUM_RW, 0x0000D2,     BAD_CODE,                                              INS_TT_NONE,    Undefined_OF                                                                   | Writes_CF             | INS_FLAGS_Has_Wbit | Encoding_REX2)
 INST2(rol_1,            "rol",              IUM_RW, 0x0000D0,     0x0000D0,                                              INS_TT_NONE,    Writes_OF                                                                      | Writes_CF             | INS_FLAGS_Has_Wbit | Encoding_REX2)
