@@ -1166,7 +1166,7 @@ void ConfigMethodSet::init(const CLRConfig::ConfigStringInfo & info)
 }
 
 /**************************************************************************/
-bool ConfigMethodSet::contains(LPCUTF8 methodName, LPCUTF8 className, PCCOR_SIGNATURE sig)
+bool ConfigMethodSet::contains(LPCUTF8 methodName, LPCUTF8 className, int argCount)
 {
     CONTRACTL
     {
@@ -1178,7 +1178,7 @@ bool ConfigMethodSet::contains(LPCUTF8 methodName, LPCUTF8 className, PCCOR_SIGN
 
     if (m_list.IsEmpty())
         return false;
-    return(m_list.IsInList(methodName, className, sig));
+    return(m_list.IsInList(methodName, className, argCount));
 }
 
 /**************************************************************************/
@@ -1509,25 +1509,6 @@ void MethodNamesListBase::Destroy()
         pName = pName->next;
         delete curName;
     }
-}
-
-/**************************************************************/
-bool MethodNamesListBase::IsInList(LPCUTF8 methName, LPCUTF8 clsName, PCCOR_SIGNATURE sig)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-    }
-    CONTRACTL_END;
-
-    int numArgs = -1;
-    if (sig != NULL)
-    {
-        sig++;      // Skip calling convention
-        numArgs = CorSigUncompressData(sig);
-    }
-
-    return IsInList(methName, clsName, numArgs);
 }
 
 /**************************************************************/

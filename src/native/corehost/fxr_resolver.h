@@ -37,7 +37,7 @@ int load_fxr_and_get_delegate(hostfxr_delegate_type type, THostPathToConfigCallb
     if (!pal::get_own_module_path(&host_path) || !pal::fullpath(&host_path))
     {
         trace::error(_X("Failed to resolve full path of the current host module [%s]"), host_path.c_str());
-        return StatusCode::CoreHostCurHostFindFailure;
+        return StatusCode::CurrentHostFindFailure;
     }
 
     pal::string_t dotnet_root;

@@ -1021,6 +1021,8 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
                         secondAllocatedRegArgNum = varDscInfo->allocRegArg(argRegTypeInStruct2, 1);
                         varDsc->SetOtherArgReg(
                             genMapRegArgNumToRegNum(secondAllocatedRegArgNum, argRegTypeInStruct2, info.compCallConv));
+
+                        varDsc->lvIsMultiRegArg = true;
                     }
                     else if (cSlotsToEnregister > 1)
                     {
@@ -1042,6 +1044,8 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
                     {
                         varDsc->SetOtherArgReg(
                             genMapRegArgNumToRegNum(firstAllocatedRegArgNum + 1, TYP_I_IMPL, info.compCallConv));
+
+                        varDsc->lvIsMultiRegArg = true;
                     }
 
                     assert(cSlots <= 2);
@@ -1741,9 +1745,8 @@ void Compiler::lvaClassifyParameterABI()
                 }
             }
 
-            for (unsigned i = 0; i < abiInfo.NumSegments; i++)
+            for (const ABIPassingSegment& segment : abiInfo.Segments())
             {
-                const ABIPassingSegment& segment = abiInfo.Segment(i);
                 if (segment.IsPassedInRegister())
                 {
                     argRegs |= segment.GetRegisterMask();
@@ -2110,13 +2113,6 @@ bool Compiler::StructPromotionHelper::TryPromoteStructVar(unsigned lclNum)
 {
     if (CanPromoteStructVar(lclNum))
     {
-#if 0
-            // Often-useful debugging code: if you've narrowed down a struct-promotion problem to a single
-            // method, this allows you to select a subset of the vars to promote (by 1-based ordinal number).
-            static int structPromoVarNum = 0;
-            structPromoVarNum++;
-            if (atoi(getenv("structpromovarnumlo")) <= structPromoVarNum && structPromoVarNum <= atoi(getenv("structpromovarnumhi")))
-#endif // 0
         if (ShouldPromoteStructVar(lclNum))
         {
             PromoteStructVar(lclNum);
@@ -5959,9 +5955,8 @@ bool Compiler::lvaGetRelativeOffsetToCallerAllocatedSpaceForParameter(unsigned l
 {
     const ABIPassingInformation& abiInfo = lvaGetParameterABIInfo(lclNum);
 
-    for (unsigned i = 0; i < abiInfo.NumSegments; i++)
+    for (const ABIPassingSegment& segment : abiInfo.Segments())
     {
-        const ABIPassingSegment& segment = abiInfo.Segment(i);
         if (!segment.IsPassedOnStack())
         {
 #if defined(WINDOWS_AMD64_ABI)

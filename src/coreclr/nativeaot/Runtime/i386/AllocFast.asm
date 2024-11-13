@@ -29,7 +29,7 @@ FASTCALL_FUNC   RhpNewFast, 4
         ;;
 
         add         eax, [edx + OFFSETOF__Thread__m_alloc_context__alloc_ptr]
-        cmp         eax, [edx + OFFSETOF__Thread__m_alloc_context__alloc_limit]
+        cmp         eax, [edx + OFFSETOF__Thread__m_eeAllocContext__combined_limit]
         ja          AllocFailed
 
         ;; set the new alloc pointer
@@ -165,7 +165,7 @@ FASTCALL_FUNC   RhNewString, 8
         mov         ecx, eax
         add         eax, [edx + OFFSETOF__Thread__m_alloc_context__alloc_ptr]
         jc          StringAllocContextOverflow
-        cmp         eax, [edx + OFFSETOF__Thread__m_alloc_context__alloc_limit]
+        cmp         eax, [edx + OFFSETOF__Thread__m_eeAllocContext__combined_limit]
         ja          StringAllocContextOverflow
 
         ; ECX == allocation size
@@ -282,7 +282,7 @@ ArrayAlignSize:
         mov         ecx, eax
         add         eax, [edx + OFFSETOF__Thread__m_alloc_context__alloc_ptr]
         jc          ArrayAllocContextOverflow
-        cmp         eax, [edx + OFFSETOF__Thread__m_alloc_context__alloc_limit]
+        cmp         eax, [edx + OFFSETOF__Thread__m_eeAllocContext__combined_limit]
         ja          ArrayAllocContextOverflow
 
         ; ECX == array size

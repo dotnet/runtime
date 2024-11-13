@@ -393,38 +393,26 @@ namespace IDynamicInterfaceCastableTests
             Console.WriteLine(" -- Validate cast");
 
             // ITestGeneric<int, int> -> ITestGenericIntImpl
-            if (!TestLibrary.Utilities.IsNativeAot) // https://github.com/dotnet/runtime/issues/108229
-            {
-                Assert.True(castableObj is ITestGeneric<int, int>, $"Should be castable to {nameof(ITestGeneric<int, int>)} via is");
-                Assert.NotNull(castableObj as ITestGeneric<int, int>);
-            }
+            Assert.True(castableObj is ITestGeneric<int, int>, $"Should be castable to {nameof(ITestGeneric<int, int>)} via is");
+            Assert.NotNull(castableObj as ITestGeneric<int, int>);
             ITestGeneric<int, int> testInt = (ITestGeneric<int, int>)castableObj;
 
             // ITestGeneric<string, string> -> ITestGenericImpl<string, string>
-            if (!TestLibrary.Utilities.IsNativeAot) // https://github.com/dotnet/runtime/issues/108229
-            {
-                Assert.True(castableObj is ITestGeneric<string, string>, $"Should be castable to {nameof(ITestGeneric<string, string>)} via is");
-                Assert.NotNull(castableObj as ITestGeneric<string, string>);
-            }
+            Assert.True(castableObj is ITestGeneric<string, string>, $"Should be castable to {nameof(ITestGeneric<string, string>)} via is");
+            Assert.NotNull(castableObj as ITestGeneric<string, string>);
             ITestGeneric<string, string> testStr = (ITestGeneric<string, string>)castableObj;
 
             // Validate Variance
             // ITestGeneric<string, object> -> ITestGenericImpl<object, string>
-            if (!TestLibrary.Utilities.IsNativeAot) // https://github.com/dotnet/runtime/issues/108229
-            {
-                Assert.True(castableObj is ITestGeneric<string, object>, $"Should be castable to {nameof(ITestGeneric<string, object>)} via is");
-                Assert.NotNull(castableObj as ITestGeneric<string, object>);
-            }
+            Assert.True(castableObj is ITestGeneric<string, object>, $"Should be castable to {nameof(ITestGeneric<string, object>)} via is");
+            Assert.NotNull(castableObj as ITestGeneric<string, object>);
             ITestGeneric<string, object> testVar = (ITestGeneric<string, object>)castableObj;
 
-            if (!TestLibrary.Utilities.IsNativeAot) // https://github.com/dotnet/runtime/issues/108229
-            {
-                // ITestGeneric<bool, bool> is not recognized
-                Assert.False(castableObj is ITestGeneric<bool, bool>, $"Should not be castable to {nameof(ITestGeneric<bool, bool>)} via is");
-                Assert.Null(castableObj as ITestGeneric<bool, bool>);
-                var ex = Assert.Throws<DynamicInterfaceCastableException>(() => { var _ = (ITestGeneric<bool, bool>)castableObj; });
-                Assert.Equal(string.Format(DynamicInterfaceCastableException.ErrorFormat, typeof(ITestGeneric<bool, bool>)), ex.Message);
-            }
+            // ITestGeneric<bool, bool> is not recognized
+            Assert.False(castableObj is ITestGeneric<bool, bool>, $"Should not be castable to {nameof(ITestGeneric<bool, bool>)} via is");
+            Assert.Null(castableObj as ITestGeneric<bool, bool>);
+            var ex = Assert.Throws<DynamicInterfaceCastableException>(() => { var _ = (ITestGeneric<bool, bool>)castableObj; });
+            Assert.Equal(string.Format(DynamicInterfaceCastableException.ErrorFormat, typeof(ITestGeneric<bool, bool>)), ex.Message);
 
             int expectedInt = 42;
             string expectedStr = "str";

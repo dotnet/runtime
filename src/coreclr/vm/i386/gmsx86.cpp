@@ -1124,7 +1124,7 @@ void LazyMachState::unwindLazyState(LazyMachState* baseState,
 
 #ifndef DACCESS_COMPILE
             case 0xCC:
-                if (IsDebuggerPresent())
+                if (minipal_is_native_debugger_present())
                 {
                     OutputDebugStringA("CLR: Invalid breakpoint in a helpermethod frame epilog\n");
                     DebugBreak();

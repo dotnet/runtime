@@ -1,0 +1,44 @@
+WASM Transition wrappers and trampolines
+When running managed code in the browser there are multiple scenarios that call for JITcode or pre-compiled wrappers/trampolines. I'll attempt to enumerate them here and describe how we could address each scenario. The following does not apply to WASI since it has no facilities for JIT, but the same motivations apply due to similar platform constraints.
+
+Interpreter to native code
+Unlike every other target, it's not possible to call a target function of an unknown signature in WASM. The call instruction encodes an exact signature (number of parameters, parameter types, and return type). The call instruction is also variadic, so it expects a set number of parameters on the stack.
+
+If you know there are a limited set of signatures you need to call, you can pre-generate a bunch of individual wrappers at compile time, or have a switch statement that dispatches to a call with the appropriate signature. Mono WASM currently uses a combination of both approaches to address these scenarios. The jiterpreter has support for optimizing a subset of these wrappers on-the-fly.
+
+With a JIT facility, you can generate a small WASM helper function on-the-fly that can load parameter values from the stack/heap and then pass them to a target function pointer with the appropriate signature. The jiterpreter already has support for doing this, which could be generalized or (ideally) reimplemented in a simpler form to support all scenarios for these interpreter->native transitions.
+
+Native code to interpreter
+Similarly, if a native function expects a function pointer with a given signature, we can't hand it a generic dispatch helper (the signature will not match) or a trampoline (we don't know in advance every possible signature that the user might want to make a function pointer for). There are multiple solutions:
+
+Restrict the set of native->interp transitions at build time. This is what we do in Mono WASM, using attributes like UnmanagedCallersOnly.
+JIT trampolines on demand with the appropriate signature. Each target managed function would need a dedicated trampoline, which is unfortunate.
+Change the call signature on the native side to accept a userdata parameter which contains the managed function to call. In this case, we could reuse a generic trampoline for all call targets, and only need one trampoline per signature. This is currently how native-to-interp transition wrappers work in Mono WASM, and the jiterpreter has support for generating optimized trampolines with matching signatures on-the-fly.
+Native code to arbitrary managed code directly
+In Mono Wasm AOT we currently try to compile every managed method into a native wasm function. The calling convention for these methods does not match C, so any transition from native code directly into managed code requires a calling convention wrapper for each signature. These are generated at compile time, and it is feasible to know all the possible signatures since we know every signature in the managed binary, and the wasm type system's expressiveness is so limited that a significant % of managed signatures all map to the same wasm signature.
+
+These transition wrappers are somewhat expensive as-is and have similar constraints at present (you need to annotate the method(s) you expect to call so we can generate dedicated wrappers, because we don't have a way to generate dedicated trampolines.) The jiterpreter could address this if necessary, but currently doesn't.
+
+This means that at present converting a delegate to a function pointer does not work in WASM. As said above, this is fixable.
+
+Arbitrary managed code to arbitrary native code
+This can be done seamlessly at AOT compile time as long as we know the target signature - we perform a wasm indirect call, specifying the signature and loading the right arguments onto the stack.
+
+Delegate invocations are more complex and typically bounce through a helper, with arguments temporarily stored on the stack or in the heap and flowing through a calling convention helper like mentioned above. More on this below.
+
+Delegates
+A given delegate can point to various things:
+
+External native code (i.e. libc)
+Internal native code (i.e. an icall)
+AOT'd managed code
+Interpreted managed code
+JITted managed code
+At present in Mono WASM we solve this by making all delegate invocations go through a helper which knows how to dispatch to the right kind of handler for each scenario, and we store the arguments on the stack/in the heap. At present for WASM we don't have the 'JITted managed code' scenario and some of the others may not work as expected, due to the ftnptr problem (explained below.)
+
+The ftnptr problem
+On other targets, it's possible to create a unique function pointer value for any call target, managed or native, by jitting a little trampoline on demand. On WASM it is presently not straightforward to do this (we could do it with the jiterpreter), so we don't. With the interpreter in the picture it gets more complex.
+
+There are two types of function pointer; one is a 'real' native function pointer to i.e. a libc function, the other is a 'fake' function pointer which points to an interpreted method (which somewhat obviously has no dedicated trampoline or callable function pointer). As a result, any time a ftnptr is used, we need to know what 'kind' of pointer it is and invoke it appropriately.
+
+If a ftnptr 'leaks' from the managed world into the native world, or vice versa, we have to be careful to do something appropriate to convert one type to the other, or detect this unsafe operation and abort. At present we have some known deficiencies in this area.

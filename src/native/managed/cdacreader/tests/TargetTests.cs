@@ -17,14 +17,14 @@ public unsafe class TargetTests
         // Size and fields
         [DataType.Thread] = new(){
             Size = 56,
-            Fields = {
+            Fields = new Dictionary<string, Target.FieldInfo> {
                 { "Field1", new(){ Offset = 8, Type = DataType.uint16, TypeName = DataType.uint16.ToString() }},
                 { "Field2", new(){ Offset = 16, Type = DataType.GCHandle, TypeName = DataType.GCHandle.ToString() }},
                 { "Field3", new(){ Offset = 32 }}
             }},
         // Fields only
         [DataType.ThreadStore] = new(){
-            Fields = {
+            Fields = new Dictionary<string, Target.FieldInfo> {
                 { "Field1", new(){ Offset = 0, TypeName = "FieldType" }},
                 { "Field2", new(){ Offset = 8 }}
             }},
@@ -44,7 +44,7 @@ public unsafe class TargetTests
             .SetGlobals(Array.Empty<(string, ulong, string?)>())
             .SetContracts(Array.Empty<string>());
 
-        bool success = builder.TryCreateTarget(out Target? target);
+        bool success = builder.TryCreateTarget(out ContractDescriptorTarget? target);
         Assert.True(success);
 
         foreach ((DataType type, Target.TypeInfo info) in TestTypes)
@@ -90,7 +90,7 @@ public unsafe class TargetTests
             .SetGlobals(TestGlobals)
             .SetContracts([]);
 
-        bool success = builder.TryCreateTarget(out Target? target);
+        bool success = builder.TryCreateTarget(out ContractDescriptorTarget? target);
         Assert.True(success);
 
         ValidateGlobals(target, TestGlobals);
@@ -107,7 +107,7 @@ public unsafe class TargetTests
             .SetGlobals(TestGlobals.Select(MakeGlobalToIndirect).ToArray(),
                         TestGlobals.Select((g) => g.Value).ToArray());
 
-        bool success = builder.TryCreateTarget(out Target? target);
+        bool success = builder.TryCreateTarget(out ContractDescriptorTarget? target);
         Assert.True(success);
 
         // Indirect values are pointer-sized, so max 32-bits for a 32-bit target
@@ -123,8 +123,52 @@ public unsafe class TargetTests
         }
     }
 
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void ReadUtf8String(MockTarget.Architecture arch)
+    {
+        TargetTestHelpers targetTestHelpers = new(arch);
+        MockMemorySpace.Builder builder = new(targetTestHelpers);
+
+        string expected = "UTF-8 string ✓";
+        ulong addr = 0x1000;
+
+        MockMemorySpace.HeapFragment fragment = new() { Address = addr, Data = new byte[Encoding.UTF8.GetByteCount(expected) + 1] };
+        Encoding.UTF8.GetBytes(expected).AsSpan().CopyTo(fragment.Data);
+        fragment.Data[^1] = 0;
+        builder.AddHeapFragment(fragment);
+
+        bool success = builder.TryCreateTarget(out ContractDescriptorTarget? target);
+        Assert.True(success);
+
+        string actual = target.ReadUtf8String(addr);
+        Assert.Equal(expected, actual);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void ReadUtf16String(MockTarget.Architecture arch)
+    {
+        TargetTestHelpers targetTestHelpers = new(arch);
+        MockMemorySpace.Builder builder = new(targetTestHelpers);
+
+        string expected = "UTF-16 string ✓";
+        ulong addr = 0x1000;
+
+        Encoding encoding = arch.IsLittleEndian ? Encoding.Unicode : Encoding.BigEndianUnicode;
+        MockMemorySpace.HeapFragment fragment = new() { Address = addr, Data = new byte[encoding.GetByteCount(expected) + sizeof(char)] };
+        targetTestHelpers.WriteUtf16String(fragment.Data, expected);
+        builder.AddHeapFragment(fragment);
+
+        bool success = builder.TryCreateTarget(out ContractDescriptorTarget? target);
+        Assert.True(success);
+
+        string actual = target.ReadUtf16String(addr);
+        Assert.Equal(expected, actual);
+    }
+
     private static void ValidateGlobals(
-        Target target,
+        ContractDescriptorTarget target,
         (string Name, ulong Value, string? Type)[] globals,
         [CallerMemberName] string caller = "",
         [CallerFilePath] string filePath = "",
@@ -203,5 +247,4 @@ public unsafe class TargetTests
             Assert.True((expected is null && actual is null) || expected.Equals(actual), $"Expected: {expected}. Actual: {actual}. [test case: {caller} in {filePath}:{lineNumber}]");
         }
     }
-
 }
