@@ -7,7 +7,6 @@ SET_DEFAULT_DEBUG_CHANNEL(SHMEM); // some headers have code with asserts, so do 
 #include "pal/sharedmemory.h"
 
 #include "pal/file.hpp"
-#include "pal/malloc.hpp"
 #include "pal/thread.hpp"
 #include "pal/virtual.h"
 #include "pal/process.h"
@@ -1227,7 +1226,7 @@ void SharedMemoryProcessDataHeader::Close()
     {
         if (m_data != nullptr)
         {
-            InternalDelete(m_data);
+            delete m_data;
         }
 
         if (releaseSharedData)
@@ -1338,7 +1337,7 @@ void SharedMemoryProcessDataHeader::DecRefCount()
         return;
     }
 
-    InternalDelete(this);
+    delete this;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1360,8 +1359,8 @@ bool SharedMemoryManager::StaticInitialize()
 {
     InitializeCriticalSection(&s_creationDeletionProcessLock);
 
-    s_runtimeTempDirectoryPath = InternalNew<PathCharString>();
-    s_sharedMemoryDirectoryPath = InternalNew<PathCharString>();
+    s_runtimeTempDirectoryPath = new(std::nothrow) PathCharString();
+    s_sharedMemoryDirectoryPath = new(std::nothrow) PathCharString();
 
     if (s_runtimeTempDirectoryPath && s_sharedMemoryDirectoryPath)
     {

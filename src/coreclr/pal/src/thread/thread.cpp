@@ -203,7 +203,7 @@ Return:
 --*/
 CPalThread* AllocTHREAD()
 {
-    return InternalNew<CPalThread>();
+    return new(std::nothrow) CPalThread();
 }
 
 /*++
@@ -216,19 +216,7 @@ Abstract:
 --*/
 static void FreeTHREAD(CPalThread *pThread)
 {
-    //
-    // Run the destructors for this object
-    //
-
-    pThread->~CPalThread();
-
-#ifdef _DEBUG
-    // Fill value so we can find code re-using threads after they're dead. We
-    // check against pThread->dwGuard when getting the current thread's data.
-    memset((void*)pThread, 0xcc, sizeof(*pThread));
-#endif
-
-    free(pThread);
+    delete pThread;
 }
 
 
