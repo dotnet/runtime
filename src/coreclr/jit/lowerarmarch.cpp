@@ -1885,8 +1885,7 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
         DISPTREERANGE(BlockRange(), node);
         JITDUMP("\n");
 
-        // Use lastOp to verify if it's a ConditionlSelectNode. For AddSequentialAcross intrinsic, we can absorb the
-        // ConditionalSelect node only when it's Op2.
+        // Use lastOp to verify if it's a ConditionlSelectNode.
         size_t lastOpNum = node->GetOperandCount();
 
         if (node->Op(lastOpNum)->OperIsHWIntrinsic() &&

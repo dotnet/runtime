@@ -299,13 +299,25 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public void RunScenario_AbsorbConditionalSelectOp()
         {
-            TestLibrary.TestFramework.BeginScenario("RunScenario_AbsorbConditionalSelectOp - zero in falseValue");
+            TestLibrary.TestFramework.BeginScenario("AbsorbConditionalSelectOpTest_mask - zero in falseValue");
+            AbsorbConditionalSelectOpTest(_mask, _fld1);
+
+            TestLibrary.TestFramework.BeginScenario("AbsorbConditionalSelectOpTest_zero - zero in falseValue");
+            AbsorbConditionalSelectOpTest({RetVectorType}<{RetBaseType}>.Zero, _fld1);
+
+            TestLibrary.TestFramework.BeginScenario("AbsorbConditionalSelectOpTest_all - zero in falseValue");
+            AbsorbConditionalSelectOpTest({RetVectorType}<{RetBaseType}>.AllBitsSet, _fld1);
+
+        }
+
+        public void AbsorbConditionalSelectOpTest({RetVectorType}<{RetBaseType}> _mask, {Op1VectorType}<{Op1BaseType}> op1)
+        {
             var mask = Vector.As<{RetBaseType}, {Op1BaseType}>(_mask);
             var zeroVec = {Op1VectorType}<{Op1BaseType}>.Zero;
-            var result = {Isa}.{Method}(Sve.ConditionalSelect(mask, _fld1, zeroVec));
+            var result = {Isa}.{Method}(Sve.ConditionalSelect(mask, op1, zeroVec));
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateAbsorbConditionalSelectResult(mask, _fld1, _dataTable.outArrayPtr);
+            ValidateAbsorbConditionalSelectResult(mask, op1, _dataTable.outArrayPtr);
         }
 
         [method: MethodImpl(MethodImplOptions.AggressiveInlining)]
