@@ -622,12 +622,7 @@ if (CLR_CMAKE_HOST_UNIX)
     add_compile_options(-Wno-switch-default)
 
     # clang 20 suppressions
-    if (CMAKE_CXX_COMPILER_ID)
-      check_cxx_compiler_flag(-Wnontrivial-memaccess COMPILER_SUPPORTS_W_NONTRIVIAL_MEMACCESS)
-      if (COMPILER_SUPPORTS_W_NONTRIVIAL_MEMACCESS)
-        add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wno-nontrivial-memaccess>)
-      endif()
-    endif()
+    add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wno-nontrivial-memaccess>)
   else()
     add_compile_options(-Wno-uninitialized)
     add_compile_options(-Wno-strict-aliasing)
