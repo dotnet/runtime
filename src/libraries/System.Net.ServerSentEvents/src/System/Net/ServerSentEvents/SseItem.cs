@@ -15,6 +15,7 @@ namespace System.Net.ServerSentEvents
         /// <summary>Initializes the server-sent event.</summary>
         /// <param name="data">The event's payload.</param>
         /// <param name="eventType">The event's type.</param>
+        /// <exception cref="ArgumentException">Thrown when <paramref name="eventType"/> contains a line break.</exception>
         public SseItem(T data, string? eventType = null)
         {
             Helpers.ValidateParameterDoesNotContainLineBreaks(eventType, nameof(eventType));
@@ -30,6 +31,7 @@ namespace System.Net.ServerSentEvents
         public string EventType => _eventType ?? SseParser.EventTypeDefault;
 
         /// <summary>Gets the event's id.</summary>
+        /// <exception cref="ArgumentException">Thrown when the value contains a line break.</exception>
         public string? EventId
         {
             get => _eventId;
