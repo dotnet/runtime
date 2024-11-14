@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <!-- Needed for top level statements -->
+    <RequiresProcessIsolation>True</RequiresProcessIsolation>
     <Optimize>True</Optimize>
   </PropertyGroup>
   <ItemGroup>
