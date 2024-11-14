@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using ILLink.Shared;
-using ILLink.Shared.TrimAnalysis;
 using Mono.Cecil;
 
 namespace Mono.Linker
@@ -74,7 +73,7 @@ namespace Mono.Linker
 				bool withInherited = !declaredOnly && memberTypes.HasFlag (DynamicallyAccessedMemberTypesEx.NonPublicNestedTypesWithInherited);
 				foreach (var nested in typeDefinition.ApplyIncludeInherited (context, t => t.GetNestedTypesOnType (context, filter: null, bindingFlags: BindingFlags.NonPublic), withInherited)) {
 					yield return nested;
-					foreach (var m in nested.GetDynamicallyAccessedMembers (context, HandleCallAction.ImplicitNestedTypeAccessLevel, declaredOnly: false))
+					foreach (var m in nested.GetDynamicallyAccessedMembers (context, DynamicallyAccessedMemberTypesEx.ImplicitNestedTypeAccessLevel, declaredOnly: false))
 						yield return m;
 				}
 			}
@@ -83,7 +82,7 @@ namespace Mono.Linker
 				bool withInherited = !declaredOnly && memberTypes.HasFlag (DynamicallyAccessedMemberTypesEx.PublicNestedTypesWithInherited);
 				foreach (var nested in typeDefinition.ApplyIncludeInherited (context, t => t.GetNestedTypesOnType (context, filter: null, bindingFlags: BindingFlags.Public), withInherited)) {
 					yield return nested;
-					foreach (var m in nested.GetDynamicallyAccessedMembers (context, HandleCallAction.ImplicitNestedTypeAccessLevel, declaredOnly: false))
+					foreach (var m in nested.GetDynamicallyAccessedMembers (context, DynamicallyAccessedMemberTypesEx.ImplicitNestedTypeAccessLevel, declaredOnly: false))
 						yield return m;
 				}
 			}
