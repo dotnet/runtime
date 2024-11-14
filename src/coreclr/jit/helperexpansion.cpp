@@ -1222,9 +1222,14 @@ PhaseStatus Compiler::fgExpandHelper(bool skipRarelyRunBlocks)
         }
     }
 
-    if ((result == PhaseStatus::MODIFIED_EVERYTHING) && opts.OptimizationEnabled())
+    if (result == PhaseStatus::MODIFIED_EVERYTHING)
     {
-        fgRenumberBlocks();
+        fgInvalidateDfsTree();
+
+        if (opts.OptimizationEnabled())
+        {
+            fgRenumberBlocks();
+        }
     }
 
     return result;
@@ -2462,7 +2467,7 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
         GenTree* storeCseVal = nullptr;
         if (candidateId == 0)
         {
-            GenTree*& castArg = call->gtArgs.GetUserArgByIndex(0)->LateNodeRef();
+            GenTree*& castArg = call->gtArgs.GetUserArgByIndex(0)->NodeRef();
             if (GenTree::Compare(castArg, expectedClsNode))
             {
                 const unsigned clsTmp = lvaGrabTemp(true DEBUGARG("CSE for expectedClsNode"));

@@ -34,7 +34,7 @@ namespace System.Collections
         internal static void ThrowVersionCheckFailed() =>
             throw new InvalidOperationException(SR.InvalidOperation_EnumFailedVersion);
 
-#if !NET8_0_OR_GREATER
+#if !NET
         /// <summary>Throws an <see cref="ArgumentNullException"/> if <paramref name="argument"/> is null.</summary>
         /// <param name="argument">The reference type argument to validate as non-null.</param>
         /// <param name="paramName">The name of the parameter with which <paramref name="argument"/> corresponds.</param>

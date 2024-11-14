@@ -17,7 +17,6 @@ Abstract:
 --*/
 
 #include "palobjbase.hpp"
-#include "pal/malloc.hpp"
 #include "pal/dbgmsg.h"
 
 SET_DEFAULT_DEBUG_CHANNEL(PAL);
@@ -323,7 +322,7 @@ CPalObjectBase::ReleaseReference(
             (*m_pot->GetProcessLocalDataCleanupRoutine())(pthr, static_cast<IPalObject*>(this));
         }
 
-        InternalDelete(this);
+        delete this;
 
         pthr->ReleaseThreadReference();
     }

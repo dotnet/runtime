@@ -5756,8 +5756,11 @@ check_get_virtual_method_assumptions (MonoClass* klass, MonoMethod* method)
  * Returns null, if the optimization cannot be performed.
  */
 static MonoMethod*
-try_prepare_objaddr_callvirt_optimization (MonoCompile *cfg, guchar *next_ip, guchar* end, MonoMethod *method, MonoGenericContext* generic_context, MonoClass *klass)
+try_prepare_objaddr_callvirt_optimization (MonoCompile *cfg, guchar *next_ip, guchar* end, MonoMethod *method, MonoGenericContext* generic_context, MonoType *param_type)
 {
+	g_assert(param_type);
+	MonoClass *klass = mono_class_from_mono_type_internal (param_type);
+
 	// TODO: relax the _is_def requirement?
 	if (cfg->compile_aot || cfg->compile_llvm || !klass || !mono_class_is_def (klass))
 		return NULL;
@@ -7255,7 +7258,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			}
 			*sp++ = ins;
 			/*if (!m_method_is_icall (method)) */{
-				MonoMethod* callvirt_target = try_prepare_objaddr_callvirt_optimization (cfg, next_ip, end, method, generic_context, param_types [n]->data.klass);
+				MonoMethod* callvirt_target = try_prepare_objaddr_callvirt_optimization (cfg, next_ip, end, method, generic_context, param_types [n]);
 				if (callvirt_target)
 					cmethod_override = callvirt_target;
 			}

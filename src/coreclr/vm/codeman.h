@@ -1848,8 +1848,10 @@ public:
 
 #ifndef DACCESS_COMPILE
 	// Heap Management functions
-    void NibbleMapSet(HeapList * pHp, TADDR pCode, BOOL bSet);
-    void NibbleMapSetUnlocked(HeapList * pHp, TADDR pCode, BOOL bSet);
+    void NibbleMapSet(HeapList * pHp, TADDR pCode, size_t codeSize);
+    void NibbleMapSetUnlocked(HeapList * pHp, TADDR pCode, size_t codeSize);
+    void NibbleMapDelete(HeapList* pHp, TADDR pCode);
+    void NibbleMapDeleteUnlocked(HeapList* pHp, TADDR pCode);
 #endif  // !DACCESS_COMPILE
 
     static TADDR FindMethodCode(RangeSection * pRangeSection, PCODE currentPC);
@@ -2570,10 +2572,6 @@ public:
 
     void         GetOffsetsFromUnwindInfo(ULONG* pRSPOffset, ULONG* pRBPOffset);
     ULONG        GetFrameOffsetFromUnwindInfo();
-#if defined(_DEBUG) && defined(HAVE_GCCOVER)
-    // Find first funclet inside (pvFuncletStart, pvFuncletStart + cbCode)
-    static LPVOID findNextFunclet (LPVOID pvFuncletStart, SIZE_T cbCode, LPVOID *ppvFuncletEnd);
-#endif // _DEBUG && HAVE_GCCOVER
 #endif // TARGET_AMD64
 
 private:
