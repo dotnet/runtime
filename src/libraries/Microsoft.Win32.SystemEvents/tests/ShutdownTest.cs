@@ -14,6 +14,9 @@ public class ShutdownTest : SystemEventsTest
     [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
     public void ShutdownThroughRestartManager()
     {
+        if (!RemoteExecutor.IsSupported)
+            return;
+            
         RemoteExecutor.Invoke(() =>
         {
             // Register any event to ensure that SystemEvents get initialized
@@ -28,6 +31,9 @@ public class ShutdownTest : SystemEventsTest
     [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
     public void ShutdownSuccessDespiteThreadBlock()
     {
+        if (!RemoteExecutor.IsSupported)
+            return;
+    
         RemoteExecutor.Invoke(() =>
         {
             // Block the SystemEvents thread. Regression test for https://github.com/dotnet/winforms/issues/11944
