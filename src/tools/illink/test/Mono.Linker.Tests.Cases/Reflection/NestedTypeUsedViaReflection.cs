@@ -281,7 +281,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		{
 			[ExpectedWarning ("IL2072", nameof (DataFlowTypeExtensions) + "." + nameof (DataFlowTypeExtensions.RequiresAll))]
 			[Kept]
-			public static void Test ([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicNestedTypes)] Type t)
+			public static void Test ([KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute)), DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicNestedTypes)] Type t)
 			{
 				t.GetNestedType ("DoesntMatter").RequiresPublicConstructors ();
 				t.GetNestedType ("DoesntMatter").RequiresNonPublicMethodsWithInherited ();
