@@ -167,6 +167,8 @@ void ParseFilterDataClientSequenceNumber(
 }
 #endif // FEATURE_ETW
 
+// NOTE: When multiple ETW or EventPipe sessions are enabled, the ControlCode will be
+// EVENT_CONTROL_CODE_ENABLE_PROVIDER even if the session invoking this callback is being disabled.
 void EtwCallbackCommon(
     CallbackProviderIndex ProviderIndex,
     ULONG ControlCode,
@@ -233,14 +235,16 @@ void EtwCallbackCommon(
     // 1. The GC Heap is initialized.
     // 2. The public provider is requesting GC.
     // 3. The provider's ManagedHeapCollectKeyword is enabled.
-    // 4. For an ETW provider, the control code is to enable or capture the state of the provider.
+    // 4. If it is an ETW provider, the control code is to enable or capture the state of the provider.
+    // 5. If it is an EventPipe provider, the session is not being disabled.
     bool bValidGCRequest =
         GCHeapUtilities::IsGCHeapInitialized() &&
         bIsPublicTraceHandle &&
         ((MatchAnyKeyword & CLR_MANAGEDHEAPCOLLECT_KEYWORD) != 0) &&
         ((ControlCode == EVENT_CONTROL_CODE_ENABLE_PROVIDER) ||
          (ControlCode == EVENT_CONTROL_CODE_CAPTURE_STATE)) &&
-        ((Change == EtwSessionChangeUnknown));
+        ((Change == EtwSessionChangeUnknown) ||
+         (Change == EventPipeSessionEnable));
 
     if (bValidGCRequest)
     {

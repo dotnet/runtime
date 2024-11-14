@@ -2401,6 +2401,8 @@ VOID ParseFilterDataClientSequenceNumber(
 // Common handler for all ETW or EventPipe event notifications. Based on the provider that
 // was enabled/disabled, this implementation forwards the event state change onto GCHeapUtilities
 // which will inform the GC to update its local state about what events are enabled.
+// NOTE: When multiple ETW or EventPipe sessions are enabled, the ControlCode will be
+// EVENT_CONTROL_CODE_ENABLE_PROVIDER even if the session invoking this callback is being disabled.
 VOID EtwCallbackCommon(
     CallbackProviderIndex ProviderIndex,
     ULONG ControlCode,
