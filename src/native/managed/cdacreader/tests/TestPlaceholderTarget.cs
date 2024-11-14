@@ -15,7 +15,7 @@ namespace Microsoft.Diagnostics.DataContractReader.UnitTests;
 /// </summary>
 internal class TestPlaceholderTarget : Target
 {
-    private protected ContractRegistry contractRegistry;
+    private ContractRegistry _contractRegistry;
     private readonly Target.IDataCache _dataCache;
     private readonly Dictionary<DataType, Target.TypeInfo> _typeInfoCache;
     private readonly (string Name, ulong Value)[] _globals;
@@ -28,7 +28,7 @@ internal class TestPlaceholderTarget : Target
     {
         IsLittleEndian = arch.IsLittleEndian;
         PointerSize = arch.Is64Bit ? 8 : 4;
-        contractRegistry = new TestRegistry();
+        _contractRegistry = new Mock<ContractRegistry>().Object;
         _dataCache = new DefaultDataCache(this);
         _typeInfoCache = types ?? [];
         _dataReader = reader;
@@ -37,7 +37,7 @@ internal class TestPlaceholderTarget : Target
 
     internal void SetContracts(ContractRegistry contracts)
     {
-        contractRegistry = contracts;
+        _contractRegistry = contracts;
     }
 
     public override int PointerSize { get; }
@@ -201,37 +201,7 @@ internal class TestPlaceholderTarget : Target
     }
 
     public override Target.IDataCache ProcessedData => _dataCache;
-    public override ContractRegistry Contracts => contractRegistry;
-
-    internal class TestRegistry : ContractRegistry
-    {
-        public TestRegistry() { }
-        internal Lazy<Contracts.IException>? ExceptionContract { get; set; }
-        internal Lazy<Contracts.ILoader>? LoaderContract { get; set; }
-        internal Lazy<Contracts.IEcmaMetadata>? EcmaMetadataContract { get; set; }
-        internal Lazy<Contracts.IObject>? ObjectContract { get; set; }
-        internal Lazy<Contracts.IThread>? ThreadContract { get; set; }
-        internal Lazy<Contracts.IRuntimeTypeSystem>? RuntimeTypeSystemContract { get; set; }
-        internal Lazy<Contracts.IDacStreams>? DacStreamsContract { get; set; }
-        internal Lazy<Contracts.IExecutionManager> ExecutionManagerContract { get; set; }
-        internal Lazy<Contracts.ICodeVersions>? CodeVersionsContract { get; set; }
-        internal Lazy<Contracts.IPlatformMetadata>? PlatformMetadataContract { get; set; }
-        internal Lazy<Contracts.IPrecodeStubs>? PrecodeStubsContract { get; set; }
-        internal Lazy<Contracts.IReJIT>? ReJITContract { get; set; }
-
-        public override Contracts.IException Exception => ExceptionContract.Value ?? throw new NotImplementedException();
-        public override Contracts.ILoader Loader => LoaderContract.Value ?? throw new NotImplementedException();
-        public override Contracts.IEcmaMetadata EcmaMetadata => EcmaMetadataContract.Value ?? throw new NotImplementedException();
-        public override Contracts.IObject Object => ObjectContract.Value ?? throw new NotImplementedException();
-        public override Contracts.IThread Thread => ThreadContract.Value ?? throw new NotImplementedException();
-        public override Contracts.IRuntimeTypeSystem RuntimeTypeSystem => RuntimeTypeSystemContract.Value ?? throw new NotImplementedException();
-        public override Contracts.IDacStreams DacStreams => DacStreamsContract.Value ?? throw new NotImplementedException();
-        public override Contracts.IExecutionManager ExecutionManager => ExecutionManagerContract.Value ?? throw new NotImplementedException();
-        public override Contracts.ICodeVersions CodeVersions => CodeVersionsContract.Value ?? throw new NotImplementedException();
-        public override Contracts.IPlatformMetadata PlatformMetadata => PlatformMetadataContract.Value ?? throw new NotImplementedException();
-        public override Contracts.IPrecodeStubs PrecodeStubs => PrecodeStubsContract.Value ?? throw new NotImplementedException();
-        public override Contracts.IReJIT ReJIT => ReJITContract.Value ?? throw new NotImplementedException();
-    }
+    public override ContractRegistry Contracts => _contractRegistry;
 
     // A data cache that stores data in a dictionary and calls IData.Create to construct the data.
     private class DefaultDataCache : Target.IDataCache

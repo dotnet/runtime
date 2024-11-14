@@ -284,14 +284,17 @@ public class PrecodeStubsTests
         var target = new TestPlaceholderTarget(arch, reader, precodeBuilder.Types, globals);
 
         IContractFactory<IPrecodeStubs> precodeFactory = new PrecodeStubsFactory();
-        Mock<IPlatformMetadata> platformMetadata = new(MockBehavior.Strict);
+        Mock<IPlatformMetadata> platformMetadata = new();
         platformMetadata.Setup(p => p.GetCodePointerFlags()).Returns(precodeBuilder.CodePointerFlags);
         platformMetadata.Setup(p => p.GetPrecodeMachineDescriptor()).Returns(precodeBuilder.MachineDescriptorAddress);
 
-        target.SetContracts(new TestPlaceholderTarget.TestRegistry() {
-            PlatformMetadataContract = new (() => platformMetadata.Object),
-            PrecodeStubsContract = new (() => precodeFactory.CreateContract(target, 1)),
-        });
+        // Creating the PrecodeStubs contract depends on the PlatformMetadata contract, so we need
+        // to set it up such that it will only be created after the target's targets are set up
+        Mock<ContractRegistry> reg = new();
+        reg.SetupGet(c => c.PlatformMetadata).Returns(platformMetadata.Object);
+        reg.SetupGet(c => c.PrecodeStubs).Returns(() => precodeFactory.CreateContract(target, 1));
+        target.SetContracts(reg.Object);
+
         return target;
     }
 

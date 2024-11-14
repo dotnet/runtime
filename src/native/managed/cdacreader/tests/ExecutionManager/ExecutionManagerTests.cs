@@ -17,10 +17,10 @@ public class ExecutionManagerTests
         TestPlaceholderTarget.ReadFromTargetDelegate reader = emBuilder.Builder.GetReadContext().ReadFromTarget;
         var target = new TestPlaceholderTarget(arch, reader, emBuilder.Types, emBuilder.Globals);
         IContractFactory<IExecutionManager> emfactory = new ExecutionManagerFactory();
-        target.SetContracts(new TestPlaceholderTarget.TestRegistry() {
-            ExecutionManagerContract = new (() => emfactory.CreateContract(target, emBuilder.Version)),
-            PlatformMetadataContract = new (() => new Mock<IPlatformMetadata>().Object)
-        });
+        ContractRegistry reg = Mock.Of<ContractRegistry>(
+            c => c.ExecutionManager == emfactory.CreateContract(target, emBuilder.Version)
+                && c.PlatformMetadata == new Mock<IPlatformMetadata>().Object);
+        target.SetContracts(reg);
         return target;
     }
 

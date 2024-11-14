@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
+using Moq;
 using Xunit;
 
 namespace Microsoft.Diagnostics.DataContractReader.UnitTests;
@@ -242,12 +243,12 @@ public class CodeVersionsTests
         IRuntimeTypeSystem mockRuntimeTypeSystem = new MockRuntimeTypeSystem(target, methodDescs ?? [], methodTables ?? []);
         ILoader loader = new MockLoader(modules ?? []);
         IContractFactory<ICodeVersions> cvfactory = new CodeVersionsFactory();
-        target.SetContracts(new TestPlaceholderTarget.TestRegistry() {
-            CodeVersionsContract = new (() => cvfactory.CreateContract(target, 1)),
-            ExecutionManagerContract = new (() => mockExecutionManager),
-            RuntimeTypeSystemContract = new (() => mockRuntimeTypeSystem),
-            LoaderContract = new (() => loader),
-        });
+        ContractRegistry reg = Mock.Of<ContractRegistry>(
+            c => c.CodeVersions == cvfactory.CreateContract(target, 1)
+                && c.ExecutionManager == mockExecutionManager
+                && c.RuntimeTypeSystem == mockRuntimeTypeSystem
+                && c.Loader == loader);
+        target.SetContracts(reg);
         return target;
     }
 
