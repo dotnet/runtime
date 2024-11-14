@@ -649,7 +649,8 @@ GenTree* Compiler::impUtf16SpanComparison(StringComparisonKind kind, CORINFO_SIG
             return nullptr;
         }
 
-        JITDUMP("Trying to unroll MemoryExtensions.Equals|SequenceEqual|StartsWith(op1, \"%s\")...\n", convertUtf16ToUtf8ForPrinting((WCHAR*)str));
+        JITDUMP("Trying to unroll MemoryExtensions.Equals|SequenceEqual|StartsWith(op1, \"%s\")...\n",
+                convertUtf16ToUtf8ForPrinting((WCHAR*)str));
     }
 
     unsigned spanLclNum;
