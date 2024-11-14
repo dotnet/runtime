@@ -18,7 +18,8 @@ Linux/macOS: `$ make -C src/mono/(browser|wasi) run-build-tests`
 Windows: `.\dotnet.cmd build .\src\mono\wasm\Wasm.Build.Tests\Wasm.Build.Tests.csproj -c Release -t:Test -p:TargetOS=browser -p:TargetArchitecture=wasm`
 
 - Specific tests can be run via `XUnitClassName`, and `XUnitMethodName`
-  - eg. `XUnitClassName=Wasm.Build.Tests.BlazorWasmTests`
+  - e.g. `XUnitClassName=Wasm.Build.Tests.BlazorWasmTests` for running class of tests
+  - e.g. `XUnitMethodName=Wasm.Build.Tests.Blazor.MiscTests3.WithDllImportInMainAssembly` for running a specific test.
 
 ## Running on helix
 
@@ -53,10 +54,15 @@ For this, the builds get cached using `ProjectInfo` as the key.
   use the build bits from the usual locations in artifacts, without requiring
   regenerating the nugets, and workload re-install.
 
-- Each test gets a randomly generated "id". This `id` can be used to find the
-  binlogs, or the test directories.
+- Each test is saved in directory with randomly generated name and unique `ProjectInfo`. `ProjectInfo` can be used to find the binlogs, or cached builds.
 
 ## Useful environment variables
 
 - `SHOW_BUILD_OUTPUT` - will show the build output to the console
 - `SKIP_PROJECT_CLEANUP` - won't remove the temporary project directories generated for the tests
+
+## How to add tests
+
+Blazor specific tests should be located in `Blazor` directory. If you are adding a new class with tests, list it in `eng/testing/scenarios/BuildWasmAppsJobsList.txt`. If you are adding a new test to existing class, make sure it does not prolong the execution time significantly. Tests run on parallel on CI and having one class running much longer than the average prolongs the total execution time.
+
+If you want to test templating mechanism, use `CreateWasmTemplateProject`. Otherwise, use `CopyTestAsset` with either `WasmBasicTestApp` or `BlazorBasicTestApp`, adding your custom `TestScenario` or using a generic `DotnetRun` scenario in case of WASM app and adding a page with test in case of Blazor app. Bigger snippets of code should be saved in `src/mono/wasm/testassets` and placed in the application using methods: `ReplaceFile` or `File.Move`. Replacing existing small parts of code with custom lines is done with `UpdateFile`.
