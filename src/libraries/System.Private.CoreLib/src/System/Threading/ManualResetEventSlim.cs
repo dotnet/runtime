@@ -484,6 +484,10 @@ namespace System.Threading
 #endif
         public bool Wait(int millisecondsTimeout, CancellationToken cancellationToken)
         {
+#if TARGET_WASI
+            _ = s_cancellationTokenCallback;
+            throw new PlatformNotSupportedException("ManualResetEventSlim.Wait not supported on WASI");
+#else // not TARGET_WASI
             ObjectDisposedException.ThrowIf(IsDisposed, this);
             cancellationToken.ThrowIfCancellationRequested(); // an early convenience check
 
@@ -595,6 +599,7 @@ namespace System.Threading
             } // automatically disposes (and unregisters) the callback
 
             return true; // done. The wait was satisfied.
+#endif // not TARGET_WASI
         }
 
         /// <summary>
