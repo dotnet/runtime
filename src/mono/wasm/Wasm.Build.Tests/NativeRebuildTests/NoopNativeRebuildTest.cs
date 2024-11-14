@@ -21,11 +21,7 @@ namespace Wasm.Build.NativeRebuild.Tests
         [MemberData(nameof(NativeBuildData))]
         public async void NoOpRebuildForNativeBuilds(string config, bool aot, bool nativeRelink, bool invariant)
         {
-            string prefix = $"rebuild_noop_{config}";
-            ProjectInfo info = CreateWasmTemplateProject(Template.WasmBrowser, config, aot, prefix);
-            UpdateBrowserProgramFile();
-            UpdateBrowserMainJs();
-
+            ProjectInfo info = CopyTestAsset(config, aot, "WasmBasicTestApp", "rebuild_noop", "App");
             BuildPaths paths = await FirstNativeBuildAndRun(info, nativeRelink, invariant);
 
             var pathsDict = GetFilesTable(info, paths, unchanged: true);
@@ -35,7 +31,7 @@ namespace Wasm.Build.NativeRebuild.Tests
             var newStat = StatFiles(pathsDict);
 
             CompareStat(originalStat, newStat, pathsDict);
-            await RunForPublishWithWebServer(new (info.Configuration, ExpectedExitCode: 42));
+            await RunForPublishWithWebServer(new(info.Configuration, TestScenario: "DotnetRun"));
         }
 
         [Fact]
@@ -48,7 +44,7 @@ namespace Wasm.Build.NativeRebuild.Tests
                 $"-p:WasmBuildNative={nativeRelink}",
                 $"-p:InvariantGlobalization=true",
             };
-            ProjectInfo info = CreateWasmTemplateProject(Template.WasmBrowser, "Release", aot: true, "relink_fails");
+            ProjectInfo info = CopyTestAsset("Release", aot: true, "WasmBasicTestApp", "relink_fails", "App");
             bool isPublish = true;
             (string _, string buildOutput) = BuildTemplateProject(info,
                 new BuildProjectOptions(

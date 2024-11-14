@@ -23,7 +23,7 @@ namespace Wasm.Build.NativeRebuild.Tests
             => ConfigWithAOTData(aot, config: "Release").Multiply(
                         new object[] { /*cflags*/ "/p:EmccExtraCFlags=-g", /*ldflags*/ "" }
                         // File sizes don't match: dotnet.native.wasm size should be same as from obj/for-publish but is not
-                        // new object[] { /*cflags*/ "",                      /*ldflags*/ "/p:EmccExtraLDFlags=-g" }
+                        // new object[] { /*cflags*/ "",                      /*ldflags*/ "/p:EmccExtraLDFlags=-g" },
                         // new object[] { /*cflags*/ "/p:EmccExtraCFlags=-g", /*ldflags*/ "/p:EmccExtraLDFlags=-g" }
             ).UnwrapItemsAsArrays();
 
@@ -33,10 +33,7 @@ namespace Wasm.Build.NativeRebuild.Tests
         // [MemberData(nameof(FlagsChangesForNativeRelinkingData), parameters: /*aot*/ true)]
         public async void ExtraEmccFlagsSetButNoRealChange(string config, bool aot, string extraCFlags, string extraLDFlags)
         {
-            string prefix = $"rebuild_flags_{config}";
-            ProjectInfo info = CreateWasmTemplateProject(Template.WasmBrowser, config, aot, prefix);
-            UpdateBrowserProgramFile();
-            UpdateBrowserMainJs();
+            ProjectInfo info = CopyTestAsset(config, aot, "WasmBasicTestApp", "rebuild_flags", "App");
             BuildPaths paths = await FirstNativeBuildAndRun(info, nativeRelink: true, invariant: false);
             var pathsDict = GetFilesTable(info, paths, unchanged: true);
             if (extraLDFlags.Length > 0)
@@ -66,7 +63,7 @@ namespace Wasm.Build.NativeRebuild.Tests
                 Assert.DoesNotContain("Compiling assembly bitcode files", output);
             }
             
-            RunResult runOutput = await RunForPublishWithWebServer(new (info.Configuration, ExpectedExitCode: 42));
+            RunResult runOutput = await RunForPublishWithWebServer(new (info.Configuration, TestScenario: "DotnetRun"));
             TestUtils.AssertSubstring($"Found statically linked AOT module '{Path.GetFileNameWithoutExtension(mainAssembly)}'", runOutput.TestOutput,
                                 contains: info.AOT);
         }

@@ -24,11 +24,7 @@ namespace Wasm.Build.NativeRebuild.Tests
         [ActiveIssue("File sizes don't match: dotnet.native.wasm size should be same as from obj/for-publish but is not")]
         public async void ReferenceNewAssembly(string config, bool aot, bool nativeRelink, bool invariant)
         {
-            string prefix = $"rebuild_tasks_{config}";
-            ProjectInfo info = CreateWasmTemplateProject(Template.WasmBrowser, config, aot, prefix);
-            UpdateBrowserProgramFile();
-            UpdateBrowserMainJs();
-
+            ProjectInfo info = CopyTestAsset(config, aot, "WasmBasicTestApp", "rebuild_tasks", "App");     
             BuildPaths paths = await FirstNativeBuildAndRun(info, nativeRelink, invariant);
 
             var pathsDict = GetFilesTable(info, paths, unchanged: false);
@@ -39,13 +35,13 @@ namespace Wasm.Build.NativeRebuild.Tests
 
             var originalStat = StatFiles(pathsDict);
 
-            ReplaceFile("Program.cs", Path.Combine(BuildEnvironment.TestAssetsPath, "Wasm.Build.Tests.Programs", "NativeRebuildNewAssembly.cs"));
+            ReplaceFile(Path.Combine("Common", "Program.cs"), Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "NativeRebuildNewAssembly.cs"));
 
             Rebuild(info, nativeRelink, invariant);
             var newStat = StatFiles(pathsDict);
 
             CompareStat(originalStat, newStat, pathsDict);
-            await RunForPublishWithWebServer(new (info.Configuration, ExpectedExitCode: 42));
+            await RunForPublishWithWebServer(new (info.Configuration, ExpectedExitCode: 42, TestScenario: "DotnetRun"));
         }
     }
 }

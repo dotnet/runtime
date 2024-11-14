@@ -66,7 +66,7 @@ namespace Wasm.Build.NativeRebuild.Tests
                             GlobalizationMode: invariant ? GlobalizationMode.Invariant : GlobalizationMode.Sharded
                         ),
                         extraArgs);
-            await RunForPublishWithWebServer(new (info.Configuration, ExpectedExitCode: 42));
+            await RunForPublishWithWebServer(new (info.Configuration, TestScenario: "DotnetRun"));
             return GetBuildPaths(info, isPublish);
         }
 

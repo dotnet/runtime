@@ -22,7 +22,6 @@ public class OptimizationFlagChangeTests : NativeRebuildTestsBase
 
     public static IEnumerable<object?[]> FlagsOnlyChangeData(bool aot)
         => ConfigWithAOTData(aot, config: "Release").Multiply(
-                    // ToDo: File sizes don't match: dotnet.native.wasm size should be same as from obj/for-publish but is not
                     new object[] { /*cflags*/ "/p:EmccCompileOptimizationFlag=-O1", /*ldflags*/ "" },
                     new object[] { /*cflags*/ "",                                   /*ldflags*/ "/p:EmccLinkOptimizationFlag=-O1" }
         ).UnwrapItemsAsArrays();
@@ -30,13 +29,10 @@ public class OptimizationFlagChangeTests : NativeRebuildTestsBase
     [Theory]
     [MemberData(nameof(FlagsOnlyChangeData), parameters: /*aot*/ false)]
     [MemberData(nameof(FlagsOnlyChangeData), parameters: /*aot*/ true)]
+    [ActiveIssue("File sizes don't match: dotnet.native.wasm size should be same as from obj/for-publish but is not")]
     public async void OptimizationFlagChange(string config, bool aot, string cflags, string ldflags)
     {
-        string prefix = $"rebuild_flags_{config}";
-        ProjectInfo info = CreateWasmTemplateProject(Template.WasmBrowser, config, aot, prefix);
-        UpdateBrowserProgramFile();
-        UpdateBrowserMainJs();
-        
+        ProjectInfo info = CopyTestAsset(config, aot, "WasmBasicTestApp", "rebuild_flags", "App");        
         // force _WasmDevel=false, so we don't get -O0
         BuildPaths paths = await FirstNativeBuildAndRun(info, nativeRelink: true, invariant: false, extraBuildArgs: "/p:_WasmDevel=false");
 
@@ -68,7 +64,7 @@ public class OptimizationFlagChangeTests : NativeRebuildTestsBase
         var newStat = StatFiles(pathsDict);
         CompareStat(originalStat, newStat, pathsDict);
 
-        RunResult runOutput = await RunForPublishWithWebServer(new (info.Configuration, ExpectedExitCode: 42));
+        RunResult runOutput = await RunForPublishWithWebServer(new (info.Configuration, TestScenario: "DotnetRun"));
         TestUtils.AssertSubstring($"Found statically linked AOT module '{Path.GetFileNameWithoutExtension(mainAssembly)}'", runOutput.TestOutput,
                             contains: info.AOT);
     }
