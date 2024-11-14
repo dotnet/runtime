@@ -2208,6 +2208,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             break;
 
         case GT_ASYNC_CONTINUATION:
+            genCodeForAsyncContinuation(treeNode);
             break;
 
 #if defined(FEATURE_EH_WINDOWS_X86)

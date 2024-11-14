@@ -152,13 +152,16 @@ NESTED_ENTRY OnHijackTripThread, _TEXT, NoHandler
 
     PUSH_CALLEE_SAVED_REGISTERS
 
+    // Push rcx for the async continuation
+    push_register rcx
+    // Push rdx for the second half of the return value
     push_register rdx
     // Push rax again - this is where integer/pointer return values are returned
     push_register rax
 
     mov                 rdi, rsp
 
-    alloc_stack         0x28
+    alloc_stack         0x20
 
     // First float return register
     movdqa              [rsp], xmm0
@@ -171,9 +174,11 @@ NESTED_ENTRY OnHijackTripThread, _TEXT, NoHandler
 
     movdqa              xmm0, [rsp]
     movdqa              xmm1, [rsp+0x10]
-    free_stack          0x28
+    free_stack          0x20
+
     pop_register        rax
     pop_register        rdx
+    pop_register        rcx
 
     POP_CALLEE_SAVED_REGISTERS
     ret
