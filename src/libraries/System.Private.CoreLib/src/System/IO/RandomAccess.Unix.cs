@@ -171,35 +171,27 @@ namespace System.IO
                 stackalloc Interop.Sys.IOVector[IovStackThreshold] :
                 new Interop.Sys.IOVector[buffersCount];
 
+            long totalBytesToWrite = 0;
+            for (int i = 0; i < buffersCount; i++)
+            {
+                ReadOnlyMemory<byte> buffer = buffers[i];
+                totalBytesToWrite += buffer.Length;
+
+                MemoryHandle memoryHandle = buffer.Pin();
+                vectors[i] = new Interop.Sys.IOVector { Base = (byte*)memoryHandle.Pointer, Count = (UIntPtr)buffer.Length };
+                handles[i] = memoryHandle;
+            }
+
             try
             {
-                int buffersOffset = 0, firstBufferOffset = 0;
-                while (true)
+                int buffersOffset = 0;
+                while (totalBytesToWrite > 0)
                 {
-                    long totalBytesToWrite = 0;
-
-                    for (int i = buffersOffset; i < buffersCount; i++)
-                    {
-                        ReadOnlyMemory<byte> buffer = buffers[i];
-                        totalBytesToWrite += buffer.Length;
-
-                        MemoryHandle memoryHandle = buffer.Pin();
-                        vectors[i] = new Interop.Sys.IOVector { Base = firstBufferOffset + (byte*)memoryHandle.Pointer, Count = (UIntPtr)(buffer.Length - firstBufferOffset) };
-                        handles[i] = memoryHandle;
-
-                        firstBufferOffset = 0;
-                    }
-
-                    if (totalBytesToWrite == 0)
-                    {
-                        break;
-                    }
-
                     long bytesWritten;
-                    Span<Interop.Sys.IOVector> left = vectors.Slice(buffersOffset);
+                    Span<Interop.Sys.IOVector> left = vectors.Slice(buffersOffset, buffersCount - buffersOffset);
                     fixed (Interop.Sys.IOVector* pinnedVectors = &MemoryMarshal.GetReference(left))
                     {
-                        bytesWritten = Interop.Sys.PWriteV(handle, pinnedVectors, buffersCount - buffersOffset, fileOffset);
+                        bytesWritten = Interop.Sys.PWriteV(handle, pinnedVectors, left.Length, fileOffset);
                     }
 
                     FileStreamHelpers.CheckFileCall(bytesWritten, handle.Path);
@@ -211,22 +203,29 @@ namespace System.IO
                     // The write completed successfully but for fewer bytes than requested.
                     // We need to perform next write where the previous one has finished.
                     fileOffset += bytesWritten;
+                    totalBytesToWrite -= bytesWritten;
                     // We need to try again for the remainder.
-                    for (int i = 0; i < buffersCount; i++)
+                    while (buffersOffset < buffersCount && bytesWritten > 0)
                     {
-                        int n = buffers[i].Length;
+                        int n = buffers[buffersOffset].Length;
                         if (n <= bytesWritten)
                         {
-                            buffersOffset++;
                             bytesWritten -= n;
-                            if (bytesWritten == 0)
-                            {
-                                break;
-                            }
+                            buffersOffset++;
                         }
                         else
                         {
-                            firstBufferOffset = (int)(bytesWritten - n);
+                            // A partial read: the vector needs to point to the new offset.
+                            // But that offset needs to be relative to the previous attempt.
+                            // Example: we have a single buffer with 30 bytes and the first read returned 10.
+                            // The next read should try to read the remaining 20 bytes, but in case it also reads just 10,
+                            // the third attempt should read last 10 bytes (not 20 again).
+                            Interop.Sys.IOVector current = vectors[buffersOffset];
+                            vectors[buffersOffset] = new Interop.Sys.IOVector
+                            {
+                                Base = current.Base + (int)(bytesWritten),
+                                Count = current.Count - (UIntPtr)(bytesWritten)
+                            };
                             break;
                         }
                     }
