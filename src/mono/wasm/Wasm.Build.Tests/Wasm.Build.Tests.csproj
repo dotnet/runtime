@@ -135,7 +135,7 @@
     </ItemGroup>
 
     <PropertyGroup>
-      <!-- Wasm.Build.Tests are not a shipping project, PackageVersion will have a version suffix even for release branch, where actual runtime pack version doesn't have version suffix -->
+      <!-- Wasm.Build.Tests are not a shipping project, PackageVersion will have a version suffix even for release branch, where actual runtime pack version doesn't have version suffix. Copy & paste to Wasi.Build.Tests -->
       <_RuntimePackCurrentVersion Condition="'$(StabilizePackageVersion)' == 'true'">$(ProductVersion)</_RuntimePackCurrentVersion>
       <_RuntimePackCurrentVersion Condition="'$(StabilizePackageVersion)' != 'true'">$(PackageVersion)</_RuntimePackCurrentVersion>
     </PropertyGroup>
