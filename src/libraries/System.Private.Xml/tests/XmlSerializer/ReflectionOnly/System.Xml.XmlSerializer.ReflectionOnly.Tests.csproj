@@ -3,6 +3,12 @@
     <DefineConstants>$(DefineConstants);ReflectionOnly</DefineConstants>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
   </PropertyGroup>
+
+  <PropertyGroup Condition="'$(TargetsAppleMobile)' == 'true' and '$(EnableAggressiveTrimming)' == 'true' and '$(UseNativeAotRuntime)' != 'true'">
+    <_DefaultValueAttributeSupport>true</_DefaultValueAttributeSupport>
+    <_DesignerHostSupport>true</_DesignerHostSupport>
+  </PropertyGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\..\..\..\Microsoft.XmlSerializer.Generator\tests\SerializableAssembly.csproj" />
     <TrimmerRootAssembly Include="SerializableAssembly" />
