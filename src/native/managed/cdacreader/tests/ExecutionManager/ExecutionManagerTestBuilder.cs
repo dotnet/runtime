@@ -161,10 +161,6 @@ internal class ExecutionManagerTestBuilder
                 cur = new TargetCodePointer(cur.Value + (ulong)BytesAtLastLevel); // FIXME: round ?
             } while (cur.Value < end);
         }
-        public void MarkCreated()
-        {
-            _builder.MarkCreated();
-        }
 
         public MockMemorySpace.ReadContext GetReadContext()
         {
@@ -480,6 +476,4 @@ internal class ExecutionManagerTestBuilder
 
         return r2rModule.Address;
     }
-
-    public void MarkCreated() => Builder.MarkCreated();
 }

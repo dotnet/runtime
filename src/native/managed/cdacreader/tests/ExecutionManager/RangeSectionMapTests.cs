@@ -15,7 +15,6 @@ public class RangeSectionMapTests
     public void TestLookupFail(MockTarget.Architecture arch)
     {
         var builder = ExecutionManagerTestBuilder.CreateRangeSection(arch);
-        builder.MarkCreated();
         var target = new TestPlaceholderTarget(arch, builder.GetReadContext().ReadFromTarget);
 
         var rsla = RangeSectionMap.Create(target);
@@ -34,7 +33,6 @@ public class RangeSectionMapTests
         var length = 0x1000u;
         var value = 0x0a0a_0a0au;
         builder.InsertAddressRange(inputPC, length, value);
-        builder.MarkCreated();
         var target = new TestPlaceholderTarget(arch, builder.GetReadContext().ReadFromTarget);
 
         var rsla = RangeSectionMap.Create(target);

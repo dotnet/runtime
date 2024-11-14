@@ -11,7 +11,7 @@ using Moq;
 namespace Microsoft.Diagnostics.DataContractReader.UnitTests;
 
 /// <summary>
-/// A base class implementation of Target that throws NotImplementedException for all methods.
+/// A mock implementation of Target that has basic implementations of getting types/globals and reading data
 /// </summary>
 internal class TestPlaceholderTarget : Target
 {

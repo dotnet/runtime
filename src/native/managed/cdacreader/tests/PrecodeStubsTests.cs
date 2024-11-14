@@ -273,8 +273,6 @@ public class PrecodeStubsTests
             }
             return address;
         }
-
-        public void MarkCreated() => Builder.MarkCreated();
     }
 
     private static Target CreateTarget(PrecodeBuilder precodeBuilder)
@@ -283,7 +281,6 @@ public class PrecodeStubsTests
         TestPlaceholderTarget.ReadFromTargetDelegate reader = precodeBuilder.Builder.GetReadContext().ReadFromTarget;
         // hack for this test put the precode machine descriptor at the same address as the PlatformMetadata
         (string Name, ulong Value)[] globals = [(Constants.Globals.PlatformMetadata, precodeBuilder.MachineDescriptorAddress)];
-        precodeBuilder.MarkCreated();
         var target = new TestPlaceholderTarget(arch, reader, precodeBuilder.Types, globals);
 
         IContractFactory<IPrecodeStubs> precodeFactory = new PrecodeStubsFactory();

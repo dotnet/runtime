@@ -234,16 +234,9 @@ public class CodeVersionsTests
         IReadOnlyCollection<MockModule> modules = null,
         MockCodeVersions builder = null)
     {
-        TestPlaceholderTarget target;
-        if (builder != null)
-        {
-            builder.MarkCreated();
-            target = new TestPlaceholderTarget(arch, builder.Builder.GetReadContext().ReadFromTarget, builder.Types);
-        }
-        else
-        {
-            target = new TestPlaceholderTarget(arch, null);
-        }
+        TestPlaceholderTarget target = builder != null
+            ? new TestPlaceholderTarget(arch, builder.Builder.GetReadContext().ReadFromTarget, builder.Types)
+            : new TestPlaceholderTarget(arch, null);
 
         IExecutionManager mockExecutionManager = new MockExecutionManager(codeBlocks ?? []);
         IRuntimeTypeSystem mockRuntimeTypeSystem = new MockRuntimeTypeSystem(target, methodDescs ?? [], methodTables ?? []);

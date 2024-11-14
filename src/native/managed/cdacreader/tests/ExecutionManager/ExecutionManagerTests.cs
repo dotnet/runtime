@@ -13,7 +13,6 @@ public class ExecutionManagerTests
 {
     private static Target CreateTarget(ExecutionManagerTestBuilder emBuilder)
     {
-        emBuilder.MarkCreated();
         var arch = emBuilder.Builder.TargetTestHelpers.Arch;
         TestPlaceholderTarget.ReadFromTargetDelegate reader = emBuilder.Builder.GetReadContext().ReadFromTarget;
         var target = new TestPlaceholderTarget(arch, reader, emBuilder.Types, emBuilder.Globals);

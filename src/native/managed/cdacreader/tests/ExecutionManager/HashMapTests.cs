@@ -9,13 +9,6 @@ namespace Microsoft.Diagnostics.DataContractReader.UnitTests.ExecutionManager;
 
 public class HashMapTests
 {
-    private static Target CreateTarget(MockDescriptors.HashMap hashMap)
-    {
-        MockMemorySpace.Builder builder = hashMap.Builder;
-        builder.MarkCreated();
-        return new TestPlaceholderTarget(builder.TargetTestHelpers.Arch, builder.GetReadContext().ReadFromTarget, hashMap.Types, hashMap.Globals);
-    }
-
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
     public void GetValue(MockTarget.Architecture arch)
@@ -32,7 +25,7 @@ public class HashMapTests
         TargetPointer mapAddress = hashMap.CreateMap(entries);
         TargetPointer ptrMapAddress = hashMap.CreatePtrMap(entries);
 
-        Target target = CreateTarget(hashMap);
+        Target target = new TestPlaceholderTarget(builder.TargetTestHelpers.Arch, builder.GetReadContext().ReadFromTarget, hashMap.Types, hashMap.Globals);
 
         var lookup = HashMapLookup.Create(target);
         var ptrLookup = PtrHashMapLookup.Create(target);
@@ -68,7 +61,7 @@ public class HashMapTests
         TargetPointer mapAddress = hashMap.CreateMap(entries);
         TargetPointer ptrMapAddress = hashMap.CreatePtrMap(entries);
 
-        Target target = CreateTarget(hashMap);
+        Target target = new TestPlaceholderTarget(builder.TargetTestHelpers.Arch, builder.GetReadContext().ReadFromTarget, hashMap.Types, hashMap.Globals);
 
         var lookup = HashMapLookup.Create(target);
         var ptrLookup = PtrHashMapLookup.Create(target);
@@ -93,7 +86,7 @@ public class HashMapTests
         TargetPointer mapAddress = hashMap.CreateMap(entries);
         TargetPointer ptrMapAddress = hashMap.CreatePtrMap(entries);
 
-        Target target = CreateTarget(hashMap);
+        Target target = new TestPlaceholderTarget(builder.TargetTestHelpers.Arch, builder.GetReadContext().ReadFromTarget, hashMap.Types, hashMap.Globals);
 
         {
             var lookup = HashMapLookup.Create(target);
