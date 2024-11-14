@@ -123,7 +123,7 @@ class ReadyToRunInfo
     PTR_READYTORUN_IMPORT_SECTION   m_pImportSections;
     DWORD                           m_nImportSections;
 
-    bool                            m_readyToRunCodeDisabled; // Is
+    bool                            m_readyToRunCodeDisabled;
 
     NativeFormat::NativeReader      m_nativeReader;
     NativeFormat::NativeArray       m_methodDefEntryPoints;
