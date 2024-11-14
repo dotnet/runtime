@@ -352,6 +352,6 @@
     </ItemGroup>
   </Target>
 
-  <Import Project="$([MSBuild]::NormalizeDirectory('$(RepoRoot)'))\unity\unityaot-props\System.Private.CoreLib.props"  Condition="'$(UnityAot)' == 'true'" />
+  <Import Project="$([MSBuild]::NormalizeDirectory('$(RepoRoot)'))\unity\unity-aot\System.Private.CoreLib\System.Private.CoreLib.props"  Condition="'$(UnityAot)' == 'true'" />
 
 </Project>
