@@ -648,7 +648,9 @@ GenTree* Compiler::impUtf16SpanComparison(StringComparisonKind kind, CORINFO_SIG
             JITDUMP("UTF16 data is too long to unroll - bail out.\n");
             return nullptr;
         }
-        JITDUMP("Trying to unroll MemoryExtensions.Equals|SequenceEqual|StartsWith(op1, \"%ws\")...\n", str)
+
+        JITDUMP("Trying to unroll MemoryExtensions.Equals|SequenceEqual|StartsWith(op1, \"%s\")...\n",
+                convertUtf16ToUtf8ForPrinting((WCHAR*)str));
     }
 
     unsigned spanLclNum;

@@ -47,20 +47,6 @@ namespace System.Net.ServerSentEvents.Tests
             Assert.Throws<InvalidOperationException>(() => e.MoveNext());
         }
 
-        [Fact]
-        public void SseItem_Roundtrips()
-        {
-            SseItem<string> item;
-
-            item = new SseItem<string>();
-            Assert.Null(item.EventType);
-            Assert.Null(item.Data);
-
-            item = new SseItem<string>("some data", "eventType");
-            Assert.Equal("eventType", item.EventType);
-            Assert.Equal("some data", item.Data);
-        }
-
         [Theory]
         [MemberData(nameof(NewlineTrickleAsyncData))]
         public async Task Parse_Empty_NoItems(string newline, bool trickle, bool useAsync)

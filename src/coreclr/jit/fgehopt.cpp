@@ -877,12 +877,11 @@ PhaseStatus Compiler::fgCloneFinally()
         assert(bbInTryRegions(XTnum, lastTryBlock));
         BasicBlock* const beforeTryBlock = firstTryBlock->Prev();
 
-        BasicBlock* normalCallFinallyBlock   = nullptr;
-        BasicBlock* normalCallFinallyReturn  = nullptr;
-        BasicBlock* cloneInsertAfter         = HBtab->ebdTryLast;
-        bool        tryToRelocateCallFinally = false;
-        const bool  usingProfileWeights      = fgIsUsingProfileWeights();
-        weight_t    currentWeight            = BB_ZERO_WEIGHT;
+        BasicBlock* normalCallFinallyBlock  = nullptr;
+        BasicBlock* normalCallFinallyReturn = nullptr;
+        BasicBlock* cloneInsertAfter        = HBtab->ebdTryLast;
+        const bool  usingProfileWeights     = fgIsUsingProfileWeights();
+        weight_t    currentWeight           = BB_ZERO_WEIGHT;
 
         for (BasicBlock* block = lastTryBlock; block != beforeTryBlock; block = block->Prev())
         {
@@ -985,10 +984,6 @@ PhaseStatus Compiler::fgCloneFinally()
                 // call always pair.
                 cloneInsertAfter = finallyReturnBlock;
 
-                // We will consider moving the callfinally so we can fall
-                // through from the try into the clone.
-                tryToRelocateCallFinally = true;
-
                 JITDUMP("%s path to clone: try block " FMT_BB " jumps to callfinally at " FMT_BB ";"
                         " the call returns to " FMT_BB " which jumps to " FMT_BB "\n",
                         isUpdate ? "Updating" : "Choosing", block->bbNum, jumpDest->bbNum, finallyReturnBlock->bbNum,
@@ -1022,70 +1017,9 @@ PhaseStatus Compiler::fgCloneFinally()
                 " clone will jump to " FMT_BB "\n",
                 normalCallFinallyBlock->bbNum, normalCallFinallyReturn->bbNum);
 
-        // If there are multiple callfinallys and we're in the
-        // callfinally thunk model, all the callfinallys are placed
-        // just outside the try region. We'd like our chosen
-        // callfinally to come first after the try, so we can fall out of the try
-        // into the clone.
         BasicBlock* firstCallFinallyRangeBlock = nullptr;
         BasicBlock* lastCallFinallyRangeBlock  = nullptr;
         ehGetCallFinallyBlockRange(XTnum, &firstCallFinallyRangeBlock, &lastCallFinallyRangeBlock);
-
-        if (tryToRelocateCallFinally)
-        {
-            BasicBlock* firstCallFinallyBlock = nullptr;
-
-            for (BasicBlock* const block : Blocks(firstCallFinallyRangeBlock, lastCallFinallyRangeBlock))
-            {
-                if (block->isBBCallFinallyPair() && block->TargetIs(firstBlock))
-                {
-                    firstCallFinallyBlock = block;
-                    break;
-                }
-            }
-
-            // We better have found at least one call finally.
-            assert(firstCallFinallyBlock != nullptr);
-
-            // If there is more than one callfinally, we'd like to move
-            // the one we are going to retarget to be first in the callfinally,
-            // but only if it's targeted by the last block in the try range.
-            if (firstCallFinallyBlock != normalCallFinallyBlock)
-            {
-                BasicBlock* const placeToMoveAfter = firstCallFinallyBlock->Prev();
-
-                if (placeToMoveAfter->KindIs(BBJ_ALWAYS) && placeToMoveAfter->TargetIs(normalCallFinallyBlock))
-                {
-                    JITDUMP("Moving callfinally " FMT_BB " to be first in line, before " FMT_BB "\n",
-                            normalCallFinallyBlock->bbNum, firstCallFinallyBlock->bbNum);
-
-                    BasicBlock* const firstToMove = normalCallFinallyBlock;
-                    BasicBlock* const lastToMove  = normalCallFinallyBlock->Next();
-
-                    fgUnlinkRange(firstToMove, lastToMove);
-                    fgMoveBlocksAfter(firstToMove, lastToMove, placeToMoveAfter);
-
-#ifdef DEBUG
-                    // Sanity checks
-                    fgDebugCheckBBlist(false, false);
-                    fgVerifyHandlerTab();
-#endif // DEBUG
-
-                    assert(lastBlock->NextIs(nextBlock));
-
-                    // Update where the callfinally range begins, since we might
-                    // have altered this with callfinally rearrangement, and/or
-                    // the range begin might have been pretty loose to begin with.
-                    firstCallFinallyRangeBlock = normalCallFinallyBlock;
-                }
-                else
-                {
-                    JITDUMP("Can't move callfinally " FMT_BB " to be first in line"
-                            " -- last finally block " FMT_BB " doesn't jump to it\n",
-                            normalCallFinallyBlock->bbNum, placeToMoveAfter->bbNum);
-                }
-            }
-        }
 
         // Clone the finally and retarget the normal return path and
         // any other path that happens to share that same return

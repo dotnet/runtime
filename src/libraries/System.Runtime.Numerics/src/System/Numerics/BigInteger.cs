@@ -546,7 +546,7 @@ namespace System.Numerics
 
                 if ((length == 0) || ((int)value[length - 1] >= 0))
                 {
-                    // We ne need to preserve the sign bit
+                    // We need to preserve the sign bit
                     length++;
                 }
                 Debug.Assert((int)value[length - 1] < 0);

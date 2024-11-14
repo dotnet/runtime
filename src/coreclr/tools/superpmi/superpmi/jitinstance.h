@@ -71,9 +71,9 @@ public:
 
     ReplayResults CompileMethod(MethodContext* MethodToCompile, int mcIndex, bool collectThroughput);
 
-    const WCHAR* getForceOption(const WCHAR* key);
-    const WCHAR* getOption(const WCHAR* key);
-    const WCHAR* getOption(const WCHAR* key, LightWeightMap<DWORD, DWORD>* options);
+    const char* getForceOption(const char* key);
+    const char* getOption(const char* key);
+    const char* getOption(const char* key, LightWeightMap<DWORD, DWORD>* options);
 
     const MethodContext::Environment& getEnvironment();
 
