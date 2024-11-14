@@ -90,7 +90,8 @@ jobs:
         - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
           parameters:
             creator: dotnet-bot
-            testBuildArgs: /p:DevTeamProvisioning=- /p:RunAOTCompilation=true /p:MonoForceInterpreter=true
+            testBuildArgs: /p:DevTeamProvisioning=- /p:RunAOTCompilation=true /p:MonoForceInterpreter=true /p:BuildTestsOnHelix=true
+            compileOnHelix: true
             testRunNamePrefixSuffix: Mono_$(_BuildConfig)
             extraHelixArguments: /p:NeedsToBuildAppsOnHelix=true
 
