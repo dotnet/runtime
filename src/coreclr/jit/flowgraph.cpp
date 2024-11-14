@@ -1420,10 +1420,15 @@ void Compiler::fgAddSyncMethodEnterExit()
         // Add the new EH region at the end, since it is the least nested,
         // and thus should be last.
 
-        EHblkDsc* newEntry;
-        unsigned  XTnew = compHndBBtabCount;
+        EHblkDsc* newEntry = nullptr;
+        unsigned  XTnew    = compHndBBtabCount;
 
-        newEntry = fgAddEHTableEntry(XTnew);
+        newEntry = fgAddEHTableEntries(XTnew);
+
+        if (newEntry == nullptr)
+        {
+            IMPL_LIMITATION("too many exception clauses");
+        }
 
         // Initialize the new entry
 
@@ -5972,16 +5977,73 @@ bool FlowGraphNaturalLoop::CanDuplicate(INDEBUG(const char** reason))
     }
 #endif
 
-    Compiler*       comp   = m_dfsTree->GetCompiler();
-    BasicBlockVisit result = VisitLoopBlocks([=](BasicBlock* block) {
-        if (!BasicBlock::sameEHRegion(block, GetHeader()))
+    Compiler*         comp   = m_dfsTree->GetCompiler();
+    BasicBlock* const header = GetHeader();
+
+    const bool              allowEHCloning = JitConfig.JitCloneLoopsWithEH() > 0;
+    CompAllocator           alloc          = comp->getAllocator(CMK_LoopClone);
+    ArrayStack<BasicBlock*> tryRegionsToClone(alloc);
+
+    BasicBlockVisit result = VisitLoopBlocks([=, &tryRegionsToClone](BasicBlock* block) {
+        const bool inSameRegionAsHeader = BasicBlock::sameEHRegion(block, header);
+
+        if (inSameRegionAsHeader)
         {
-            INDEBUG(*reason = "Loop not entirely within one EH region");
-            return BasicBlockVisit::Abort;
+            return BasicBlockVisit::Continue;
         }
 
-        return BasicBlockVisit::Continue;
+        if (allowEHCloning)
+        {
+            if (comp->bbIsTryBeg(block))
+            {
+                // Check if this is an "outermost" try within the loop.
+                // If so, we have more checking to do later on.
+                //
+                const bool headerInTry         = header->hasTryIndex();
+                unsigned   blockIndex          = block->getTryIndex();
+                unsigned   outermostBlockIndex = comp->ehTrueEnclosingTryIndexIL(blockIndex);
+
+                if ((headerInTry && (outermostBlockIndex == header->getTryIndex())) ||
+                    !headerInTry && (outermostBlockIndex == EHblkDsc::NO_ENCLOSING_INDEX))
+                {
+                    tryRegionsToClone.Push(block);
+                }
+            }
+
+            return BasicBlockVisit::Continue;
+        }
+
+        INDEBUG(*reason = "Loop not entirely within one EH region");
+        return BasicBlockVisit::Abort;
     });
+
+    // Check any enclosed try regions to make sure they can be cloned
+    // (note this is potentially misleading with multiple trys as
+    // we are considering cloning each in isolation).
+    //
+    const unsigned numberOfTryRegions = tryRegionsToClone.Height();
+    if ((result != BasicBlockVisit::Abort) && (numberOfTryRegions > 0))
+    {
+        assert(allowEHCloning);
+
+        // Possibly limit to just 1 region...?
+        //
+        JITDUMP(FMT_LP " contains %u top-level try region%s\n", GetIndex(), numberOfTryRegions,
+                numberOfTryRegions > 1 ? "s" : "");
+
+        while (tryRegionsToClone.Height() > 0)
+        {
+            BasicBlock* const tryEntry    = tryRegionsToClone.Pop();
+            bool const        canCloneTry = comp->fgCanCloneTryRegion(tryEntry);
+
+            if (!canCloneTry)
+            {
+                INDEBUG(*reason = "Loop contains uncloneable try region");
+                result = BasicBlockVisit::Abort;
+                break;
+            }
+        }
+    }
 
     return result != BasicBlockVisit::Abort;
 }
@@ -5998,37 +6060,181 @@ void FlowGraphNaturalLoop::Duplicate(BasicBlock** insertAfter, BlockToBlockMap* 
 {
     assert(CanDuplicate(nullptr));
 
-    Compiler* comp = m_dfsTree->GetCompiler();
+    Compiler*         comp           = m_dfsTree->GetCompiler();
+    const bool        canCloneTry    = JitConfig.JitCloneLoopsWithEH() > 0;
+    bool              clonedTry      = false;
+    BasicBlock* const insertionPoint = *insertAfter;
 
-    BasicBlock* bottom = GetLexicallyBottomMostBlock();
+    // If the insertion point is within an EH region, remember all the EH regions
+    // current that end at the insertion point, so we can properly extend them
+    // when we're done cloning.
+    //
+    struct RegionEnd
+    {
+        RegionEnd(unsigned regionIndex, BasicBlock* block, bool isTryEnd)
+            : m_regionIndex(regionIndex)
+            , m_block(block)
+            , m_isTryEnd(isTryEnd)
+        {
+        }
+        unsigned    m_regionIndex;
+        BasicBlock* m_block;
+        bool        m_isTryEnd;
+    };
 
-    VisitLoopBlocksLexical([=](BasicBlock* blk) {
-        // Initialize newBlk as BBJ_ALWAYS without jump target, and fix up jump target later
-        // with BasicBlock::CopyTarget().
-        BasicBlock* newBlk = comp->fgNewBBafter(BBJ_ALWAYS, *insertAfter, /*extendRegion*/ true);
+    ArrayStack<RegionEnd> regionEnds(comp->getAllocator(CMK_LoopClone));
+
+    // Record enclosing EH region block references,
+    // so we can keep track of what the "before" picture looked like.
+    //
+    if (insertionPoint->hasTryIndex() || insertionPoint->hasHndIndex())
+    {
+        bool     inTry  = false;
+        unsigned region = comp->ehGetMostNestedRegionIndex(insertionPoint, &inTry);
+
+        if (region != 0)
+        {
+            // Convert to true region index
+            region--;
+
+            while (true)
+            {
+                EHblkDsc* const ebd = comp->ehGetDsc(region);
+
+                if (inTry)
+                {
+                    JITDUMP("Noting that enclosing try EH#%02u ends at " FMT_BB "\n", region, ebd->ebdTryLast->bbNum);
+                    regionEnds.Emplace(region, ebd->ebdTryLast, true);
+                }
+                else
+                {
+                    JITDUMP("Noting that enclsoing handler EH#%02u ends at " FMT_BB "\n", region,
+                            ebd->ebdHndLast->bbNum);
+                    regionEnds.Emplace(region, ebd->ebdHndLast, false);
+                }
+
+                region = comp->ehGetEnclosingRegionIndex(region, &inTry);
+
+                if (region == EHblkDsc::NO_ENCLOSING_INDEX)
+                {
+                    break;
+                }
+            }
+        }
+    }
+
+    // Keep track of how much the region end EH indices change because of EH region cloning.
+    //
+    unsigned ehRegionShift = 0;
+    comp->EnsureBasicBlockEpoch();
+    BlockSet visited(BlockSetOps::MakeEmpty(comp));
+
+    VisitLoopBlocksLexical([=, &visited, &clonedTry, &ehRegionShift](BasicBlock* blk) {
+        if (canCloneTry)
+        {
+            // If we allow cloning loops with EH, we may have already handled
+            // this loop block as part of a containing try region.
+            //
+            if (BlockSetOps::IsMember(comp, visited, blk->bbNum))
+            {
+                return BasicBlockVisit::Continue;
+            }
+
+            // If this is a try region entry, clone the entire region now.
+            // Defer adding edges and extending EH regions until later.
+            //
+            // Updates map, visited, and insertAfter.
+            //
+            if (comp->bbIsTryBeg(blk))
+            {
+                unsigned          regionShift = 0;
+                BasicBlock* const clonedBlock = comp->fgCloneTryRegion(blk, visited, map, /* addEdges */ false,
+                                                                       weightScale, insertAfter, &regionShift);
+                assert(clonedBlock != nullptr);
+                ehRegionShift += regionShift;
+                clonedTry = true;
+                return BasicBlockVisit::Continue;
+            }
+        }
+        else
+        {
+            // We're not expecting to find enclosed EH regions
+            //
+            assert(!comp->bbIsTryBeg(blk));
+            assert(!comp->bbIsHandlerBeg(blk));
+            assert(!BlockSetOps::IsMember(comp, visited, blk->bbNum));
+        }
+
+        // `blk` was not in loop-enclosed try region or companion region.
+        //
+        // Initialize newBlk as BBJ_ALWAYS without jump target; these are fixed up subsequently.
+        //
+        // CloneBlockState puts newBlk in the proper EH region. We will fix enclosing region extents
+        // once cloning is done.
+        //
+        BasicBlock* newBlk = comp->fgNewBBafter(BBJ_ALWAYS, *insertAfter, /* extendRegion */ false);
         JITDUMP("Adding " FMT_BB " (copy of " FMT_BB ") after " FMT_BB "\n", newBlk->bbNum, blk->bbNum,
                 (*insertAfter)->bbNum);
-
         BasicBlock::CloneBlockState(comp, newBlk, blk);
 
-        // We're going to create the preds below, which will set the bbRefs properly,
-        // so clear out the cloned bbRefs field.
-        newBlk->bbRefs = 0;
-
+        assert(newBlk->bbRefs == 0);
         newBlk->scaleBBWeight(weightScale);
-
-        *insertAfter = newBlk;
         map->Set(blk, newBlk, BlockToBlockMap::Overwrite);
+        *insertAfter = newBlk;
 
         return BasicBlockVisit::Continue;
     });
 
+    // Note the EH table may have grown, if we cloned try regions. If there was
+    // an enclosing EH entry, then its EH table entries will have shifted to
+    // higher index values.
+    //
+    // Update the enclosing EH region ends to reflect the new blocks we added.
+    // (here we assume cloned blocks are placed lexically after their originals, so if a
+    // region-ending block was cloned, the new region end is the last block cloned).
+    //
+    // Note we don't consult the block references in EH table here, since they
+    // may reflect interim updates to the region endpoints.
+    //
+    BasicBlock* const lastClonedBlock = *insertAfter;
+    while (regionEnds.Height() > 0)
+    {
+        RegionEnd       r   = regionEnds.Pop();
+        EHblkDsc* const ebd = comp->ehGetDsc(r.m_regionIndex + ehRegionShift);
+
+        if (r.m_block == insertionPoint)
+        {
+            if (r.m_isTryEnd)
+            {
+                comp->fgSetTryEnd(ebd, lastClonedBlock);
+            }
+            else
+            {
+                comp->fgSetHndEnd(ebd, lastClonedBlock);
+            }
+        }
+        else
+        {
+            if (r.m_isTryEnd)
+            {
+                comp->fgSetTryEnd(ebd, r.m_block);
+            }
+            else
+            {
+                comp->fgSetHndEnd(ebd, r.m_block);
+            }
+        }
+    }
+
     // Now go through the new blocks, remapping their jump targets within the loop
     // and updating the preds lists.
+    //
     VisitLoopBlocks([=](BasicBlock* blk) {
         BasicBlock* newBlk = nullptr;
         bool        b      = map->Lookup(blk, &newBlk);
         assert(b && newBlk != nullptr);
+
+        JITDUMP("Updating targets: " FMT_BB " mapped to " FMT_BB "\n", blk->bbNum, newBlk->bbNum);
 
         // Jump target should not be set yet
         assert(!newBlk->HasInitializedTarget());
@@ -6039,6 +6245,23 @@ void FlowGraphNaturalLoop::Duplicate(BasicBlock** insertAfter, BlockToBlockMap* 
 
         return BasicBlockVisit::Continue;
     });
+
+    // If we cloned any EH regions, we may have some non-loop blocks to process as well.
+    //
+    if (clonedTry)
+    {
+        for (BasicBlock* const blk : BlockToBlockMap::KeyIteration(map))
+        {
+            if (!this->ContainsBlock(blk))
+            {
+                BasicBlock* newBlk = nullptr;
+                bool        b      = map->Lookup(blk, &newBlk);
+                assert(b && newBlk != nullptr);
+                assert(!newBlk->HasInitializedTarget());
+                comp->optSetMappedBlockTargets(blk, newBlk, map);
+            }
+        }
+    }
 }
 
 //------------------------------------------------------------------------

@@ -3002,7 +3002,7 @@ public:
 
     void fgRemoveEHTableEntry(unsigned XTnum);
 
-    EHblkDsc* fgAddEHTableEntry(unsigned XTnum);
+    EHblkDsc* fgAddEHTableEntries(unsigned XTnum, unsigned count = 1, bool deferAdding = false);
 
     void fgSortEHTable();
 
@@ -5417,6 +5417,11 @@ public:
     PhaseStatus fgMergeFinallyChains();
 
     PhaseStatus fgCloneFinally();
+
+    bool fgCanCloneTryRegion(BasicBlock* tryEntry);
+
+    BasicBlock* fgCloneTryRegion(BasicBlock* tryEntry, BlockSet& visited, BlockToBlockMap* map, bool addEdges, 
+        weight_t profileScale, BasicBlock** insertAfter, unsigned* ehRegionShift);
 
     void fgCleanupContinuation(BasicBlock* continuation);
 

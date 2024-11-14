@@ -2094,12 +2094,21 @@ void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* contex
     // loop itself. All failed conditions will branch to the slow preheader.
     // The slow preheader will unconditionally branch to the slow loop header.
     // This puts the slow loop in the canonical loop form.
+    //
+    // The slow preheader needs to go in the same EH region as the preheader.
+    // If we don't extend, we will fix up region extents when the loop is duplicated.
+    //
     JITDUMP("Create unique preheader for slow path loop\n");
-    BasicBlock* slowPreheader = fgNewBBafter(BBJ_ALWAYS, newPred, /*extendRegion*/ true);
+    const bool  extendRegion  = BasicBlock::sameEHRegion(bottom, preheader);
+    BasicBlock* slowPreheader = fgNewBBafter(BBJ_ALWAYS, newPred, extendRegion);
     JITDUMP("Adding " FMT_BB " after " FMT_BB "\n", slowPreheader->bbNum, newPred->bbNum);
     slowPreheader->bbWeight = newPred->isRunRarely() ? BB_ZERO_WEIGHT : ambientWeight;
     slowPreheader->CopyFlags(newPred, (BBF_PROF_WEIGHT | BBF_RUN_RARELY));
     slowPreheader->scaleBBWeight(LoopCloneContext::slowPathWeightScaleFactor);
+    if (!extendRegion)
+    {
+        slowPreheader->copyEHRegion(preheader);
+    }
     newPred = slowPreheader;
 
     // Now we'll clone the blocks of the loop body. These cloned blocks will be the slow path.
