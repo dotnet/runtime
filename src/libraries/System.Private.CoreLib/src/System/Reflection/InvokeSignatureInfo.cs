@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using static System.Reflection.MethodBase;
 
 namespace System.Reflection
@@ -14,13 +15,13 @@ namespace System.Reflection
         internal readonly Type _returnType;
         internal readonly bool _isStatic;
 
-        public static InvokeSignatureInfo Create(in InvokeSignatureInfoKey InvokeSignatureInfoKey)
+        public static InvokeSignatureInfo Create(in InvokeSignatureInfoKey key)
         {
             return new InvokeSignatureInfo(
-                InvokeSignatureInfoKey._declaringType,
-                InvokeSignatureInfoKey._parameterTypes,
-                InvokeSignatureInfoKey._returnType,
-                InvokeSignatureInfoKey._isStatic);
+                key._declaringType,
+                key._parameterTypes,
+                key._returnType,
+                key._isStatic);
         }
 
         public InvokeSignatureInfo(Type declaringType, Type[] parameterTypes, Type returnType, bool isStatic)
@@ -97,9 +98,9 @@ namespace System.Reflection
         public static InvokeSignatureInfoKey CreateNormalized(Type declaringType, Type[] parameterTypes, Type returnType, bool isStatic)
         {
             return new InvokeSignatureInfoKey(
-                isStatic ? typeof(void) : NormalizeType(declaringType),
+                isStatic ? typeof(void) : MakeNormalized(declaringType),
                 GetNormalizedParameterTypes(parameterTypes),
-                NormalizeType(returnType),
+                MakeNormalized(returnType),
                 isStatic);
         }
 
@@ -137,10 +138,7 @@ namespace System.Reflection
             return true;
         }
 
-        public int AlternativeGetHashCode() => InvokeSignatureInfo.GetHashCode(
-            _declaringType,
-            _parameterTypes,
-            _returnType);
+        public int AlternativeGetHashCode() => InvokeSignatureInfo.GetHashCode(_declaringType, _parameterTypes, _returnType);
 
         /// <summary>
         /// Return an array of normalized types for a calli signature.
@@ -156,40 +154,64 @@ namespace System.Reflection
 
             Type[]? normalizedParameterTypes = null;
 
-            // Check if we can re-use the existing array if it is already normalized.
             for (int i = 0; i < parameterTypes.Length; i++)
             {
-                if (!IsNormalized(parameterTypes[i]))
+                // Check if we can re-use the existing array if it is already normalized.
+                if (TryMakeNormalized(parameterTypes[i], out Type normalizedType))
                 {
+                    // Once we found a type that needs normalization, we need to create a new array
+                    // and copy the normalized types into it.
                     normalizedParameterTypes = new Type[parameterTypes.Length];
+                    for (int j = 0; j < i; j++)
+                    {
+                        normalizedParameterTypes[j] = parameterTypes[j];
+                    }
+
+                    normalizedParameterTypes[i] = normalizedType;
+
+                    for (int j = i + 1; j < parameterTypes.Length; j++)
+                    {
+                        normalizedParameterTypes[j] = MakeNormalized(parameterTypes[j]);
+                    }
+
                     break;
                 }
             }
 
-            if (normalizedParameterTypes is null)
-            {
-                return parameterTypes;
-            }
-
-            for (int i = 0; i < parameterTypes.Length; i++)
-            {
-                normalizedParameterTypes[i] = NormalizeType(parameterTypes[i]);
-            }
-
-            return normalizedParameterTypes;
+            return normalizedParameterTypes is null ? parameterTypes : normalizedParameterTypes;
         }
 
         /// <summary>
         /// Normalize the type for a calli signature.
         /// </summary>
-        private static Type NormalizeType(Type type) => IsNormalized(type) ? type : typeof(object);
+        private static bool TryMakeNormalized(Type type, out Type normalizedType)
+        {
+            // Todo:We can't normalize enums since the type would be lost.
+            //if (type.IsEnum)
+            //{
+            //    normalizedType = type.GetEnumUnderlyingType();
+            //    return true;
+            //}
 
-        private static bool IsNormalized(Type type) =>
-            type == typeof(object) ||
-            type == typeof(void) ||
-            type.IsValueType ||
-            type.IsByRef ||
-            type.IsPointer ||
-            type.IsFunctionPointer;
+            if (type.IsValueType ||
+                type.IsByRef ||
+                type.IsPointer ||
+                type.IsFunctionPointer)
+            {
+                // These can't be normalized.
+                normalizedType = type;
+                return false;
+            }
+
+            // All other reference types are normalized to object.
+            normalizedType = typeof(object);
+            return true;
+        }
+
+        private static Type MakeNormalized(Type type)
+        {
+            TryMakeNormalized(type, out Type normalizedType);
+            return normalizedType;
+        }
     }
 }
