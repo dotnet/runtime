@@ -4,6 +4,7 @@
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <!-- Test requires EH-clean Main -->
     <ReferenceXUnitWrapperGenerator>false</ReferenceXUnitWrapperGenerator>    
+    <CLRTestPriority>0</CLRTestPriority>
     <MonoAotIncompatible>true</MonoAotIncompatible>
   </PropertyGroup>
   <ItemGroup>
