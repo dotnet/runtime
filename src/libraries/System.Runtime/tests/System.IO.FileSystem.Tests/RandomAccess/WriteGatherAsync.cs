@@ -181,29 +181,50 @@ namespace System.IO.Tests
                 throw new SkipTestException("Not enough disk space.");
             }
 
-            long fileOffset = 0, bytesRead = 0;
-            try
+            using (sfh)
             {
                 if (asyncMethod)
                 {
-                    await RandomAccess.WriteAsync(sfh, writeBuffers, fileOffset);
-                    bytesRead = await RandomAccess.ReadAsync(sfh, readBuffers, fileOffset);
+                    await RandomAccess.WriteAsync(sfh, writeBuffers, 0);
                 }
                 else
                 {
-                    RandomAccess.Write(sfh, writeBuffers, fileOffset);
-                    bytesRead = RandomAccess.Read(sfh, readBuffers, fileOffset);
+                    RandomAccess.Write(sfh, writeBuffers, 0);
                 }
-            }
-            finally
-            {
-                sfh.Dispose(); // delete the file ASAP to avoid running out of resources in CI
-            }
 
-            Assert.Equal(FileSize, bytesRead);
-            for (int i = 0; i < BufferCount; i++)
-            {
-                Assert.Equal(writeBuffer, readBuffers[i]);
+                Assert.Equal(FileSize, RandomAccess.GetLength(sfh));
+
+                long fileOffset = 0;
+                while (fileOffset < FileSize)
+                {
+                    long bytesRead = asyncMethod
+                        ? await RandomAccess.ReadAsync(sfh, readBuffers, fileOffset)
+                        : RandomAccess.Read(sfh, readBuffers, fileOffset);
+
+                    Assert.InRange(bytesRead, 0, FileSize);
+
+                    while (bytesRead > 0)
+                    {
+                        Memory<byte> readBuffer = readBuffers[0];
+                        if (bytesRead >= readBuffer.Length)
+                        {
+                            AssertExtensions.SequenceEqual(writeBuffer.Span, readBuffer.Span);
+
+                            bytesRead -= readBuffer.Length;
+                            fileOffset += readBuffer.Length;
+
+                            readBuffers.RemoveAt(0);
+                        }
+                        else
+                        {
+                            // A read has finished somewhere in the middle of one of the read buffers.
+                            // Example: buffer had 30 bytes and only 10 were read.
+                            // We don't read the missing part, but try to read the whole buffer again.
+                            // It's not optimal from performance perspective, but it keeps the test logic simple.
+                            break;
+                        }
+                    }
+                }
             }
         }
 
