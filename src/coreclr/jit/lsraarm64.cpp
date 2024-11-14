@@ -1314,6 +1314,17 @@ int LinearScan::BuildNode(GenTree* tree)
             BuildDef(tree, RBM_EXCEPTION_OBJECT.GetIntRegSet());
             break;
 
+        case GT_ASYNC_CONTINUATION:
+            srcCount = 0;
+            assert(dstCount == 1);
+            // We kill the continuation arg here to communicate to the
+            // selection phase that the argument is no longer busy. This is a
+            // hack to make sure we do not overwrite the continuation between
+            // the call and this node.
+            addKillForRegs(RBM_ASYNC_CONTINUATION_RET, currentLoc);
+            BuildDef(tree, RBM_ASYNC_CONTINUATION_RET.GetIntRegSet());
+            break;
+
         case GT_INDEX_ADDR:
             assert(dstCount == 1);
             srcCount = BuildBinaryUses(tree->AsOp());

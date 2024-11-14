@@ -7333,6 +7333,20 @@ void CodeGen::genReturnSuspend(GenTreeUnOp* treeNode)
         }
     }
 }
+
+void CodeGen::genCodeForAsyncContinuation(GenTree* tree)
+{
+    assert(tree->OperIs(GT_ASYNC_CONTINUATION));
+
+    var_types targetType = tree->TypeGet();
+    regNumber targetReg  = tree->GetRegNum();
+
+    inst_Mov(targetType, targetReg, REG_ASYNC_CONTINUATION_RET, /* canSkip */ true);
+    genTransferRegGCState(targetReg, REG_ASYNC_CONTINUATION_RET);
+
+    genProduceReg(tree);
+}
+
 //------------------------------------------------------------------------
 // isStructReturn: Returns whether the 'treeNode' is returning a struct.
 //

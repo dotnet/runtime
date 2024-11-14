@@ -289,6 +289,10 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             break;
 #endif // SWIFT_SUPPORT
 
+        case GT_RETURN_SUSPEND:
+            genReturnSuspend(treeNode->AsUnOp());
+            break;
+
         case GT_LEA:
             // If we are here, it is the case where there is an LEA that cannot be folded into a parent instruction.
             genLeaInstruction(treeNode->AsAddrMode());
@@ -502,6 +506,10 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 
             noway_assert(gcInfo.gcRegGCrefSetCur & RBM_EXCEPTION_OBJECT);
             genConsumeReg(treeNode);
+            break;
+
+        case GT_ASYNC_CONTINUATION:
+            genCodeForAsyncContinuation(treeNode);
             break;
 
         case GT_PINVOKE_PROLOG:
