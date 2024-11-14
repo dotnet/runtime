@@ -121,6 +121,6 @@
     <value>The enumerable may be enumerated only once.</value>
   </data>
   <data name="ArgumentException_MustNotContainLineBreaks" xml:space="preserve">
-    <value>Parameter should not contain any line breaks.</value>
+    <value>Argument must not contain line breaks.</value>
   </data>
 </root>
