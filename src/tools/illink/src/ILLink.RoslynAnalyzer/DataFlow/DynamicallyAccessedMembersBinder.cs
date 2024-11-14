@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
+using ILLink.Shared.TrimAnalysis;
 using Microsoft.CodeAnalysis;
 
 namespace ILLink.RoslynAnalyzer.DataFlow
@@ -72,9 +73,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 				bool withInherited = !declaredOnly && memberTypes.HasFlag (DynamicallyAccessedMemberTypesEx.NonPublicNestedTypesWithInherited);
 				foreach (var nested in typeDefinition.ApplyIncludeInherited (t => t.GetNestedTypesOnType (filter: null, bindingFlags: BindingFlags.NonPublic), withInherited)) {
 					yield return nested;
-					var members = new List<ISymbol> ();
-					nested.GetAllOnType (declaredOnly: false, members);
-					foreach (var m in members)
+					foreach (var m in nested.GetDynamicallyAccessedMembers (HandleCallAction.ImplicitNestedTypeAccessLevel, declaredOnly: false))
 						yield return m;
 				}
 			}
@@ -83,9 +82,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 				bool withInherited = !declaredOnly && memberTypes.HasFlag (DynamicallyAccessedMemberTypesEx.PublicNestedTypesWithInherited);
 				foreach (var nested in typeDefinition.ApplyIncludeInherited (t => t.GetNestedTypesOnType (filter: null, bindingFlags: BindingFlags.Public), withInherited)) {
 					yield return nested;
-					var members = new List<ISymbol> ();
-					nested.GetAllOnType (declaredOnly: false, members);
-					foreach (var m in members)
+					foreach (var m in nested.GetDynamicallyAccessedMembers (HandleCallAction.ImplicitNestedTypeAccessLevel, declaredOnly: false))
 						yield return m;
 				}
 			}
