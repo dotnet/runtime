@@ -121,8 +121,7 @@
     <NetFrameworkToolCurrent Condition="'$(DotNetBuildSourceOnly)' == 'true'" />
     <NetFrameworkCurrent Condition="'$(DotNetBuildSourceOnly)' == 'true'" />
 
-    <!-- Important: Set this to the GA version (or a close approximation) during servicing and adjust the TFM property below. -->
-    <ApiCompatNetCoreAppBaselineVersion>9.0.0-rtm.24516.5</ApiCompatNetCoreAppBaselineVersion>
+    <ApiCompatNetCoreAppBaselineVersion>9.0.0</ApiCompatNetCoreAppBaselineVersion>
     <ApiCompatNetCoreAppBaselineTFM>net9.0</ApiCompatNetCoreAppBaselineTFM>
   </PropertyGroup>
 
