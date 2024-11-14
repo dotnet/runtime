@@ -39,9 +39,9 @@ internal partial class ExecutionManagerBase<T> : IExecutionManager
                 return false;
 
             // Find the relative address that we are looking for
-            TargetCodePointer code = CodePointerUtils.CodePointerFromAddress(jittedCodeAddress.AsTargetPointer, Target);
+            TargetPointer addr = CodePointerUtils.AddressFromCodePointer(jittedCodeAddress, Target);
             TargetPointer imageBase = rangeSection.Data.RangeBegin;
-            TargetPointer relativeAddr = code - imageBase;
+            TargetPointer relativeAddr = addr - imageBase;
 
             int index = GetRuntimeFunctionIndexForAddress(r2rInfo, relativeAddr);
             if (index < 0)
@@ -62,15 +62,15 @@ internal partial class ExecutionManagerBase<T> : IExecutionManager
             Data.RuntimeFunction function = Target.ProcessedData.GetOrAdd<Data.RuntimeFunction>(functionEntry);
 
             // ReadyToRunInfo::GetMethodDescForEntryPointInNativeImage
-            TargetPointer startAddress = imageBase + function.BeginAddress;
-            TargetPointer entryPoint = CodePointerUtils.CodePointerFromAddress(startAddress, Target).AsTargetPointer;
+            TargetCodePointer startAddress = imageBase + function.BeginAddress;
+            TargetPointer entryPoint = CodePointerUtils.AddressFromCodePointer(startAddress, Target);
 
             TargetPointer methodDesc = _lookup.GetValue(r2rInfo.EntryPointToMethodDescMap, entryPoint);
             Debug.Assert(methodDesc != TargetPointer.Null);
 
             // TODO: [cdac] Handle method with cold code when computing relative offset
             // ReadyToRunJitManager::JitTokenToMethodRegionInfo
-            TargetNUInt relativeOffset = new TargetNUInt(code - startAddress);
+            TargetNUInt relativeOffset = new TargetNUInt(addr - startAddress);
 
             info = new CodeBlock(startAddress.Value, methodDesc, relativeOffset, rangeSection.Data!.JitManager);
             return true;
@@ -92,6 +92,7 @@ internal partial class ExecutionManagerBase<T> : IExecutionManager
             // NativeUnwindInfoLookupTable::LookupUnwindInfoForMethod
             uint start = 0;
             uint end = r2rInfo.NumRuntimeFunctions - 1;
+            relativeAddress = CodePointerUtils.CodePointerFromAddress(relativeAddress, Target).AsTargetPointer;
 
             // Entries are sorted. Binary search until we get to 10 or fewer items.
             while (end - start > 10)
