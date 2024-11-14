@@ -11,24 +11,9 @@ public class HashMapTests
 {
     internal class HashMapTestTarget : TestPlaceholderTarget
     {
-        private readonly (string Name, ulong Value, string? Type)[] _globals;
-
         public HashMapTestTarget(MockTarget.Architecture arch, MockMemorySpace.ReadContext readContext, MockDescriptors.HashMap hashMap)
-            : base (arch, readContext.ReadFromTarget, hashMap.Types)
-        {
-            _globals = hashMap.Globals;
-        }
-
-        public override T ReadGlobal<T>(string name)
-        {
-            foreach (var global in _globals)
-            {
-                if (global.Name == name)
-                    return T.CreateChecked(global.Value);
-            }
-
-            return base.ReadGlobal<T>(name);
-        }
+            : base (arch, readContext.ReadFromTarget, hashMap.Types, hashMap.Globals)
+        { }
     }
 
     [Theory]

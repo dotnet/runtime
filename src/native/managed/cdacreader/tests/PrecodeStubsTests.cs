@@ -179,7 +179,8 @@ public class PrecodeStubsTests
         public readonly MockMemorySpace.Builder Builder;
         public readonly MockMemorySpace.BumpAllocator PrecodeAllocator;
         public readonly MockMemorySpace.BumpAllocator StubDataPageAllocator;
-        public readonly Dictionary<DataType, Target.TypeInfo>? TypeInfoCache;
+
+        internal Dictionary<DataType, Target.TypeInfo>? Types { get; }
 
         public TargetPointer MachineDescriptorAddress;
         public CodePointerFlags CodePointerFlags {get; private set;}
@@ -189,7 +190,7 @@ public class PrecodeStubsTests
             Builder = builder;
             PrecodeAllocator = builder.CreateAllocator(allocationRange.PrecodeDescriptorStart, allocationRange.PrecodeDescriptorEnd);
             StubDataPageAllocator = builder.CreateAllocator(allocationRange.StubDataPageStart, allocationRange.StubDataPageEnd);
-            TypeInfoCache = typeInfoCache ?? CreateTypeInfoCache(Builder.TargetTestHelpers);
+            Types = typeInfoCache ?? CreateTypeInfoCache(Builder.TargetTestHelpers);
         }
 
         public Dictionary<DataType, Target.TypeInfo> CreateTypeInfoCache(TargetTestHelpers targetTestHelpers) {
@@ -234,7 +235,7 @@ public class PrecodeStubsTests
 
         public void AddPlatformMetadata(PrecodeTestDescriptor descriptor) {
             SetCodePointerFlags(descriptor);
-            var typeInfo = TypeInfoCache[DataType.PrecodeMachineDescriptor];
+            var typeInfo = Types[DataType.PrecodeMachineDescriptor];
             var fragment = PrecodeAllocator.Allocate((ulong)typeInfo.Size, $"{descriptor.Name} Precode Machine Descriptor");
             Builder.AddHeapFragment(fragment);
             MachineDescriptorAddress = fragment.Address;
@@ -250,7 +251,7 @@ public class PrecodeStubsTests
         public TargetCodePointer AddStubPrecodeEntry(string name, PrecodeTestDescriptor test, TargetPointer methodDesc) {
             // TODO[cdac]: allow writing other kinds of stub precode subtypes
             ulong stubCodeSize = (ulong)test.StubPrecodeSize;
-            var stubDataTypeInfo  = TypeInfoCache[DataType.StubPrecodeData];
+            var stubDataTypeInfo  = Types[DataType.StubPrecodeData];
             MockMemorySpace.HeapFragment stubDataFragment = StubDataPageAllocator.Allocate((ulong)stubDataTypeInfo.Size, $"Stub data for {name} on {test.Name}");
             Builder.AddHeapFragment(stubDataFragment);
             // allocate the code one page before the stub data
@@ -286,11 +287,11 @@ public class PrecodeStubsTests
             precodeBuilder.MarkCreated();
             var arch = precodeBuilder.Builder.TargetTestHelpers.Arch;
             ReadFromTargetDelegate reader = precodeBuilder.Builder.GetReadContext().ReadFromTarget;
-            var typeInfo = precodeBuilder.TypeInfoCache;
+            var typeInfo = precodeBuilder.Types;
             return new PrecodeTestTarget(arch, reader, precodeBuilder.CodePointerFlags, precodeBuilder.MachineDescriptorAddress, typeInfo);
         }
         public PrecodeTestTarget(MockTarget.Architecture arch, ReadFromTargetDelegate reader, CodePointerFlags codePointerFlags, TargetPointer platformMetadataAddress, Dictionary<DataType, TypeInfo> typeInfoCache)
-            : base(arch, reader, typeInfoCache)
+            : base(arch, reader, typeInfoCache, [(Constants.Globals.PlatformMetadata, platformMetadataAddress)])
         {
             PrecodeMachineDescriptorAddress = platformMetadataAddress;
             IContractFactory<IPrecodeStubs> precodeFactory = new PrecodeStubsFactory();
@@ -303,14 +304,6 @@ public class PrecodeStubsTests
                 PlatformMetadataContract = new (() => platformMetadata.Object),
                 PrecodeStubsContract = new (() => precodeFactory.CreateContract(this, 1)),
             });
-        }
-
-        public override TargetPointer ReadGlobalPointer (string name)
-        {
-            if (name == Constants.Globals.PlatformMetadata) {
-                return PlatformMetadataAddress;
-            }
-            return base.ReadGlobalPointer(name);
         }
     }
 

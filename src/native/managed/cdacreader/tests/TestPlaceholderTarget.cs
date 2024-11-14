@@ -16,26 +16,24 @@ namespace Microsoft.Diagnostics.DataContractReader.UnitTests;
 internal class TestPlaceholderTarget : Target
 {
     private protected ContractRegistry contractRegistry;
-    private readonly Target.IDataCache dataCache;
-    private readonly Dictionary<DataType, Target.TypeInfo> typeInfoCache;
+    private readonly Target.IDataCache _dataCache;
+    private readonly Dictionary<DataType, Target.TypeInfo> _typeInfoCache;
+    private readonly (string Name, ulong Value)[] _globals;
 
     internal delegate int ReadFromTargetDelegate(ulong address, Span<byte> buffer);
 
     private readonly ReadFromTargetDelegate _dataReader;
 
 #region Setup
-    public TestPlaceholderTarget(MockTarget.Architecture arch, ReadFromTargetDelegate reader)
-        : this(arch, reader, [])
-    { }
-
-    public TestPlaceholderTarget(MockTarget.Architecture arch, ReadFromTargetDelegate reader, Dictionary<DataType, Target.TypeInfo> types)
+    public TestPlaceholderTarget(MockTarget.Architecture arch, ReadFromTargetDelegate reader, Dictionary<DataType, Target.TypeInfo> types = null, (string Name, ulong Value)[] globals = null)
     {
         IsLittleEndian = arch.IsLittleEndian;
         PointerSize = arch.Is64Bit ? 8 : 4;
         contractRegistry = new TestRegistry();
-        dataCache = new DefaultDataCache(this);
-        typeInfoCache = types;
+        _dataCache = new DefaultDataCache(this);
+        _typeInfoCache = types ?? [];
         _dataReader = reader;
+        _globals = globals ?? [];
     }
 
     internal void SetContracts(ContractRegistry contracts)
@@ -53,14 +51,34 @@ internal class TestPlaceholderTarget : Target
         return (pointer.Value & (ulong)(PointerSize - 1)) == 0;
     }
 
-    public override TargetPointer ReadGlobalPointer(string global) => throw new NotImplementedException();
+    public override TargetPointer ReadGlobalPointer(string name)
+    {
+        foreach (var global in _globals)
+        {
+            if (global.Name == name)
+                return new TargetPointer(global.Value);
+        }
+
+        throw new NotImplementedException();
+    }
+
     public override TargetPointer ReadPointer(ulong address) => DefaultReadPointer(address);
     public override TargetCodePointer ReadCodePointer(ulong address) => DefaultReadCodePointer(address);
     public override void ReadBuffer(ulong address, Span<byte> buffer) => throw new NotImplementedException();
     public override string ReadUtf8String(ulong address) => throw new NotImplementedException();
     public override string ReadUtf16String(ulong address) => throw new NotImplementedException();
     public override TargetNUInt ReadNUInt(ulong address) => DefaultReadNUInt(address);
-    public override T ReadGlobal<T>(string name) => throw new NotImplementedException();
+    public override T ReadGlobal<T>(string name)
+    {
+        foreach (var global in _globals)
+        {
+            if (global.Name == name)
+                return T.CreateChecked(global.Value);
+        }
+
+        throw new NotImplementedException();
+    }
+
     public override T Read<T>(ulong address) => DefaultRead<T>(address);
 
 #region subclass reader helpers
@@ -177,18 +195,15 @@ internal class TestPlaceholderTarget : Target
 
     public override TargetPointer ReadPointerFromSpan(ReadOnlySpan<byte> bytes) => throw new NotImplementedException();
 
-    public override Target.TypeInfo GetTypeInfo(DataType dataType) => typeInfoCache != null ? GetTypeInfoImpl(dataType) : throw new NotImplementedException();
-
-    private protected virtual Target.TypeInfo GetTypeInfoImpl(DataType dataType)
+    public override Target.TypeInfo GetTypeInfo(DataType dataType)
     {
-        if (typeInfoCache!.TryGetValue(dataType, out var info))
-        {
+        if (_typeInfoCache.TryGetValue(dataType, out var info))
             return info;
-        }
+
         throw new NotImplementedException();
     }
 
-    public override Target.IDataCache ProcessedData => dataCache;
+    public override Target.IDataCache ProcessedData => _dataCache;
     public override ContractRegistry Contracts => contractRegistry;
 
     internal class TestRegistry : ContractRegistry

@@ -241,7 +241,7 @@ public class CodeVersionsTests
                             IReadOnlyCollection<MockModule>? modules = null,
                             ReadFromTargetDelegate reader = null,
                             Dictionary<DataType, TypeInfo>? typeInfoCache = null)
-            : base(arch, reader, typeInfoCache ?? [])
+            : base(arch, reader, typeInfoCache)
         {
             IExecutionManager mockExecutionManager = new MockExecutionManager(codeBlocks ?? []);
             IRuntimeTypeSystem mockRuntimeTypeSystem = new MockRuntimeTypeSystem(this, methodDescs ?? [], methodTables ?? []);

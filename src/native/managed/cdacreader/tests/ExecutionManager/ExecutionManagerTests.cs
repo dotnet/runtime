@@ -13,62 +13,21 @@ public class ExecutionManagerTests
 {
     internal class ExecutionManagerTestTarget : TestPlaceholderTarget
     {
-        private readonly ulong _topRangeSectionMap;
-
         public static ExecutionManagerTestTarget FromBuilder(ExecutionManagerTestBuilder emBuilder)
         {
             var arch = emBuilder.Builder.TargetTestHelpers.Arch;
             ReadFromTargetDelegate reader = emBuilder.Builder.GetReadContext().ReadFromTarget;
-            var topRangeSectionMap = ExecutionManagerTestBuilder.ExecutionManagerCodeRangeMapAddress;
-            var typeInfo = emBuilder.Types;
-            return new ExecutionManagerTestTarget(emBuilder.Version, arch, reader, topRangeSectionMap, typeInfo);
+            return new ExecutionManagerTestTarget(emBuilder.Version, arch, reader, emBuilder.Types, emBuilder.Globals);
         }
 
-        public ExecutionManagerTestTarget(int version, MockTarget.Architecture arch, ReadFromTargetDelegate dataReader, TargetPointer topRangeSectionMap, Dictionary<DataType, TypeInfo> typeInfoCache)
-            : base(arch, dataReader, typeInfoCache)
+        public ExecutionManagerTestTarget(int version, MockTarget.Architecture arch, ReadFromTargetDelegate dataReader, Dictionary<DataType, TypeInfo> typeInfoCache, (string Name, ulong Value)[] globals)
+            : base(arch, dataReader, typeInfoCache, globals)
         {
-            _topRangeSectionMap = topRangeSectionMap;
             IContractFactory<IExecutionManager> emfactory = new ExecutionManagerFactory();
             SetContracts(new TestRegistry() {
                 ExecutionManagerContract = new (() => emfactory.CreateContract(this, version)),
                 PlatformMetadataContract = new (() => new Mock<IPlatformMetadata>().Object)
             });
-        }
-        public override TargetPointer ReadGlobalPointer(string global)
-        {
-            switch (global)
-            {
-            case Constants.Globals.ExecutionManagerCodeRangeMapAddress:
-                return new TargetPointer(_topRangeSectionMap);
-            default:
-                return base.ReadGlobalPointer(global);
-            }
-        }
-
-        public override T ReadGlobal<T>(string name)
-        {
-            switch (name)
-            {
-            case Constants.Globals.StubCodeBlockLast:
-                if (typeof(T) == typeof(byte))
-                    return (T)(object)(byte)0x0Fu;
-                break;
-            case Constants.Globals.FeatureEHFunclets:
-                if (typeof(T) == typeof(byte))
-                    return (T)(object)(byte)1;
-                break;
-            case Constants.Globals.HashMapValueMask:
-                if (typeof(T) == typeof(ulong))
-                    return (T)(object)(PointerSize == 4 ? 0x7FFFFFFFu : 0x7FFFFFFFFFFFFFFFu);
-                break;
-            case Constants.Globals.HashMapSlotsPerBucket:
-                if (typeof(T) == typeof(uint))
-                    return (T)(object)4u;
-                break;
-            default:
-                break;
-            }
-            return base.ReadGlobal<T>(name);
         }
     }
 

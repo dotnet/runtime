@@ -33,7 +33,7 @@ internal partial class MockDescriptors
         };
 
         internal Dictionary<DataType, Target.TypeInfo> Types { get; }
-        internal (string Name, ulong Value, string? Type)[] Globals { get; }
+        internal (string Name, ulong Value)[] Globals { get; }
 
         private const ulong DefaultAllocationRangeStart = 0x0003_0000;
         private const ulong DefaultAllocationRangeEnd = 0x0004_0000;
@@ -52,22 +52,26 @@ internal partial class MockDescriptors
         {
             _builder = builder;
             _allocator = _builder.CreateAllocator(allocationRange.Start, allocationRange.End);
-            Types = GetTypes();
-            Globals =
-            [
-                (nameof(Constants.Globals.HashMapSlotsPerBucket), HashMapSlotsPerBucket, "uint32"),
-                (nameof(Constants.Globals.HashMapValueMask), _builder.TargetTestHelpers.PointerSize == 4 ? 0x7FFFFFFFu : 0x7FFFFFFFFFFFFFFFu, "uint64"),
-            ];
+            Types = GetTypes(builder.TargetTestHelpers);
+            Globals = GetGlobals(builder.TargetTestHelpers);
         }
 
-        private Dictionary<DataType, Target.TypeInfo> GetTypes()
+        internal static Dictionary<DataType, Target.TypeInfo> GetTypes(TargetTestHelpers helpers)
         {
             return GetTypesForTypeFields(
-                _builder.TargetTestHelpers,
+                helpers,
                 [
                     HashMapFields,
-                    BucketFields(_builder.TargetTestHelpers),
+                    BucketFields(helpers),
                 ]);
+        }
+
+        internal static (string Name, ulong Value)[] GetGlobals(TargetTestHelpers helpers)
+        {
+            return [
+                (nameof(Constants.Globals.HashMapSlotsPerBucket), HashMapSlotsPerBucket),
+                (nameof(Constants.Globals.HashMapValueMask), helpers.PointerSize == 4 ? 0x7FFFFFFFu : 0x7FFFFFFFFFFFFFFFu),
+            ];
         }
 
         public TargetPointer CreateMap((TargetPointer Key, TargetPointer Value)[] entries)
