@@ -10713,6 +10713,33 @@ const char* Compiler::printfAlloc(const char* format, ...)
     return resultStr;
 }
 
+//------------------------------------------------------------------------
+// convertUtf16ToUtf8ForPrinting:
+//   Convert a string from UTF16 to UTF8 to be printed to output.
+//
+// Arguments:
+//    utf16String - The string
+//
+// Returns:
+//    Converted string, or a marker string if conversion failed.
+//
+const char* Compiler::convertUtf16ToUtf8ForPrinting(const WCHAR* utf16String)
+{
+    const char* utf8Str = "<utf8 conversion failure>";
+    int         utf8Len = WideCharToMultiByte(CP_UTF8, 0, utf16String, -1, nullptr, 0, nullptr, nullptr);
+    if (utf8Len == 0)
+    {
+        char* allocated = new (this, CMK_DebugOnly) char[utf8Len];
+
+        if (WideCharToMultiByte(CP_UTF8, 0, (WCHAR*)utf16String, -1, allocated, utf8Len, nullptr, nullptr) != 0)
+        {
+            utf8Str = allocated;
+        }
+    }
+
+    return utf8Str;
+}
+
 #endif // defined(DEBUG)
 
 #if TRACK_ENREG_STATS

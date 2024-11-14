@@ -649,23 +649,7 @@ GenTree* Compiler::impUtf16SpanComparison(StringComparisonKind kind, CORINFO_SIG
             return nullptr;
         }
 
-#ifdef DEBUG
-        if (verbose)
-        {
-            const char* utf8Str = "<utf8 conversion failure>";
-            int         utf8Len = WideCharToMultiByte(CP_UTF8, 0, (WCHAR*)str, -1, nullptr, 0, nullptr, nullptr);
-            if (utf8Len != 0)
-            {
-                char* allocated = new (this, CMK_DebugOnly) char[utf8Len];
-
-                if (WideCharToMultiByte(CP_UTF8, 0, (WCHAR*)str, -1, allocated, utf8Len, nullptr, nullptr) != 0)
-                {
-                    utf8Str = allocated;
-                }
-            }
-            printf("Trying to unroll MemoryExtensions.Equals|SequenceEqual|StartsWith(op1, \"%s\")...\n", utf8Str);
-        }
-#endif
+        JITDUMP("Trying to unroll MemoryExtensions.Equals|SequenceEqual|StartsWith(op1, \"%s\")...\n", convertUtf16ToUtf8ForPrinting((WCHAR*)str));
     }
 
     unsigned spanLclNum;

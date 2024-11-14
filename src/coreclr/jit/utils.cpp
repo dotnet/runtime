@@ -1881,9 +1881,9 @@ AssemblyNamesList2::AssemblyNamesList2(const char* list, HostAllocator alloc)
 
                 AssemblyName* newName = new (m_alloc) AssemblyName();
 
-                size_t nameLen          = listWalk - nameStart;
+                ptrdiff_t nameLen       = listWalk - nameStart;
                 newName->m_assemblyName = new (m_alloc) char[nameLen + 1];
-                memcpy(newName->m_assemblyName, nameStart, (listWalk - nameStart) * sizeof(char));
+                memcpy(newName->m_assemblyName, nameStart, nameLen * sizeof(char));
                 newName->m_assemblyName[nameLen] = '\0';
 
                 *ppPrevLink = newName;
