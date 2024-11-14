@@ -3684,6 +3684,14 @@ bool Lowering::TryContainingCselOp(GenTreeHWIntrinsic* parentNode, GenTreeHWIntr
 {
     assert(childNode->GetHWIntrinsicId() == NI_Sve_ConditionalSelect);
 
+    if (childNode->Op(2)->IsEmbMaskOp())
+    {
+        // Do not optimise if the conditional select node is added to embed the mask for its op2. Such conditional
+        // select nodes are optimised out while emitting the embedded variant of an instruction associated with op2.
+        assert(childNode->Op(2)->isContained());
+        return false;
+    }
+
     bool canContain = false;
 
     var_types simdBaseType = parentNode->GetSimdBaseType();
