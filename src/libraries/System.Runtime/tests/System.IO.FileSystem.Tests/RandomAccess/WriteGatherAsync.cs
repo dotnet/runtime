@@ -13,6 +13,7 @@ using Xunit;
 namespace System.IO.Tests
 {
     [SkipOnPlatform(TestPlatforms.Browser, "async file IO is not supported on browser")]
+    [Collection(nameof(DisableParallelization))] // don't run in parallel, as some of these tests use a LOT of resources
     public class RandomAccess_WriteGatherAsync : RandomAccess_Base<ValueTask>
     {
         protected override ValueTask MethodUnderTest(SafeFileHandle handle, byte[] bytes, long fileOffset)
