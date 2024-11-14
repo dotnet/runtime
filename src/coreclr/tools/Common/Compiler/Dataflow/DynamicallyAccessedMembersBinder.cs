@@ -6,6 +6,8 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 
+using ILLink.Shared.TrimAnalysis;
+
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
@@ -84,7 +86,7 @@ namespace ILCompiler.Dataflow
                 foreach (var t in typeDefinition.ApplyIncludeInherited(t => t.GetNestedTypesOnType(filter: null, bindingFlags: BindingFlags.NonPublic), withInherited))
                 {
                     yield return t;
-                    foreach (var m in t.GetDynamicallyAccessedMembers(DynamicallyAccessedMemberTypesEx.ImplicitNestedTypeAccessLevel, declaredOnly: false))
+                    foreach (var m in t.GetDynamicallyAccessedMembers(HandleCallAction.ImplicitNestedTypeAccessLevel, declaredOnly: false))
                         yield return m;
                 }
             }
@@ -95,7 +97,7 @@ namespace ILCompiler.Dataflow
                 foreach (var t in typeDefinition.ApplyIncludeInherited(t => t.GetNestedTypesOnType(filter: null, bindingFlags: BindingFlags.Public), withInherited))
                 {
                     yield return t;
-                    foreach (var m in t.GetDynamicallyAccessedMembers(DynamicallyAccessedMemberTypesEx.ImplicitNestedTypeAccessLevel, declaredOnly: false))
+                    foreach (var m in t.GetDynamicallyAccessedMembers(HandleCallAction.ImplicitNestedTypeAccessLevel, declaredOnly: false))
                         yield return m;
                 }
             }

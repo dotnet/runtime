@@ -46,14 +46,5 @@ namespace System.Diagnostics.CodeAnalysis
 		/// Specifies all public nested types, including those inherited from base classes.
 		/// </summary>
 		public const DynamicallyAccessedMemberTypes PublicNestedTypesWithInherited = DynamicallyAccessedMemberTypes.PublicNestedTypes | (DynamicallyAccessedMemberTypes) 0x200000;
-
-		internal const DynamicallyAccessedMemberTypes ImplicitNestedTypeAccessLevel =
-						DynamicallyAccessedMemberTypesEx.PublicConstructorsWithInherited | DynamicallyAccessedMemberTypesEx.NonPublicConstructorsWithInherited |
-						DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypesEx.NonPublicMethodsWithInherited |
-						DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypesEx.NonPublicFieldsWithInherited |
-						DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypesEx.NonPublicPropertiesWithInherited |
-						DynamicallyAccessedMemberTypes.PublicEvents | DynamicallyAccessedMemberTypesEx.NonPublicEventsWithInherited |
-						DynamicallyAccessedMemberTypesEx.PublicNestedTypesWithInherited | DynamicallyAccessedMemberTypesEx.NonPublicNestedTypesWithInherited |
-						DynamicallyAccessedMemberTypes.Interfaces;
 	}
 }

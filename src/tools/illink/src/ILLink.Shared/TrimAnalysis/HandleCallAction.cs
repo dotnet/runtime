@@ -21,6 +21,15 @@ namespace ILLink.Shared.TrimAnalysis
 	[StructLayout (LayoutKind.Auto)] // A good way to avoid CS0282, we don't really care about field order
 	internal partial struct HandleCallAction
 	{
+		internal const DynamicallyAccessedMemberTypes ImplicitNestedTypeAccessLevel =
+						DynamicallyAccessedMemberTypesEx.PublicConstructorsWithInherited | DynamicallyAccessedMemberTypesEx.NonPublicConstructorsWithInherited |
+						DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypesEx.NonPublicMethodsWithInherited |
+						DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypesEx.NonPublicFieldsWithInherited |
+						DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypesEx.NonPublicPropertiesWithInherited |
+						DynamicallyAccessedMemberTypes.PublicEvents | DynamicallyAccessedMemberTypesEx.NonPublicEventsWithInherited |
+						DynamicallyAccessedMemberTypesEx.PublicNestedTypesWithInherited | DynamicallyAccessedMemberTypesEx.NonPublicNestedTypesWithInherited |
+						DynamicallyAccessedMemberTypes.Interfaces;
+
 		private static ValueSetLattice<SingleValue> MultiValueLattice => default;
 
 		private readonly DiagnosticContext _diagnosticContext;
@@ -555,7 +564,7 @@ namespace ILLink.Shared.TrimAnalysis
 
 									// We only applied the annotation based on binding flags, so we will keep the necessary types
 									// and we keep the set of implicitly available members on them.
-									AddReturnValue (_annotations.GetMethodReturnValue (calledMethod, _isNewObj, DynamicallyAccessedMemberTypesEx.ImplicitNestedTypeAccessLevel));
+									AddReturnValue (_annotations.GetMethodReturnValue (calledMethod, _isNewObj, ImplicitNestedTypeAccessLevel));
 								}
 							}
 						} else if (value is NullValue) {
@@ -571,7 +580,7 @@ namespace ILLink.Shared.TrimAnalysis
 							if (value is ValueWithDynamicallyAccessedMembers { DynamicallyAccessedMemberTypes: DynamicallyAccessedMemberTypes.All })
 								AddReturnValue (_annotations.GetMethodReturnValue (calledMethod, _isNewObj, DynamicallyAccessedMemberTypes.All));
 							else
-								AddReturnValue (_annotations.GetMethodReturnValue (calledMethod, _isNewObj, DynamicallyAccessedMemberTypesEx.ImplicitNestedTypeAccessLevel));
+								AddReturnValue (_annotations.GetMethodReturnValue (calledMethod, _isNewObj, ImplicitNestedTypeAccessLevel));
 						}
 					}
 				}
