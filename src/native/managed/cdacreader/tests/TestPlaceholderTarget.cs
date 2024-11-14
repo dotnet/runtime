@@ -24,7 +24,6 @@ internal class TestPlaceholderTarget : Target
 
     private readonly ReadFromTargetDelegate _dataReader;
 
-#region Setup
     public TestPlaceholderTarget(MockTarget.Architecture arch, ReadFromTargetDelegate reader, Dictionary<DataType, Target.TypeInfo> types = null, (string Name, ulong Value)[] globals = null)
     {
         IsLittleEndian = arch.IsLittleEndian;
@@ -40,8 +39,6 @@ internal class TestPlaceholderTarget : Target
     {
         contractRegistry = contracts;
     }
-
-#endregion Setup
 
     public override int PointerSize { get; }
     public override bool IsLittleEndian { get; }

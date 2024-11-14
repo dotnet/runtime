@@ -226,41 +226,43 @@ public class CodeVersionsTests
         }
     }
 
-    internal class CVTestTarget : TestPlaceholderTarget
+    internal static Target CreateTarget(
+        MockTarget.Architecture arch,
+        IReadOnlyCollection<MockMethodDesc> methodDescs = null,
+        IReadOnlyCollection<MockMethodTable> methodTables = null,
+        IReadOnlyCollection<MockCodeBlockStart> codeBlocks = null,
+        IReadOnlyCollection<MockModule> modules = null,
+        MockCodeVersions builder = null)
     {
-        public static CVTestTarget FromBuilder(MockTarget.Architecture arch, IReadOnlyCollection<MockMethodDesc> methodDescs, IReadOnlyCollection<MockMethodTable> methodTables, IReadOnlyCollection<MockCodeBlockStart> codeBlocks, IReadOnlyCollection<MockModule> modules, MockCodeVersions builder)
+        TestPlaceholderTarget target;
+        if (builder != null)
         {
             builder.MarkCreated();
-            return new CVTestTarget(arch, reader: builder.Builder.GetReadContext().ReadFromTarget, typeInfoCache: builder.Types,
-                                    methodDescs: methodDescs, methodTables: methodTables, codeBlocks: codeBlocks, modules: modules);
+            target = new TestPlaceholderTarget(arch, builder.Builder.GetReadContext().ReadFromTarget, builder.Types);
+        }
+        else
+        {
+            target = new TestPlaceholderTarget(arch, null);
         }
 
-        public CVTestTarget(MockTarget.Architecture arch, IReadOnlyCollection<MockMethodDesc>? methodDescs = null,
-                            IReadOnlyCollection<MockMethodTable>? methodTables = null,
-                            IReadOnlyCollection<MockCodeBlockStart>? codeBlocks = null,
-                            IReadOnlyCollection<MockModule>? modules = null,
-                            ReadFromTargetDelegate reader = null,
-                            Dictionary<DataType, TypeInfo>? typeInfoCache = null)
-            : base(arch, reader, typeInfoCache)
-        {
-            IExecutionManager mockExecutionManager = new MockExecutionManager(codeBlocks ?? []);
-            IRuntimeTypeSystem mockRuntimeTypeSystem = new MockRuntimeTypeSystem(this, methodDescs ?? [], methodTables ?? []);
-            ILoader loader = new MockLoader(modules ?? []);
-            IContractFactory<ICodeVersions> cvfactory = new CodeVersionsFactory();
-            SetContracts(new TestRegistry() {
-                CodeVersionsContract = new (() => cvfactory.CreateContract(this, 1)),
-                ExecutionManagerContract = new (() => mockExecutionManager),
-                RuntimeTypeSystemContract = new (() => mockRuntimeTypeSystem),
-                LoaderContract = new (() => loader),
-            });
-        }
+        IExecutionManager mockExecutionManager = new MockExecutionManager(codeBlocks ?? []);
+        IRuntimeTypeSystem mockRuntimeTypeSystem = new MockRuntimeTypeSystem(target, methodDescs ?? [], methodTables ?? []);
+        ILoader loader = new MockLoader(modules ?? []);
+        IContractFactory<ICodeVersions> cvfactory = new CodeVersionsFactory();
+        target.SetContracts(new TestPlaceholderTarget.TestRegistry() {
+            CodeVersionsContract = new (() => cvfactory.CreateContract(target, 1)),
+            ExecutionManagerContract = new (() => mockExecutionManager),
+            RuntimeTypeSystemContract = new (() => mockRuntimeTypeSystem),
+            LoaderContract = new (() => loader),
+        });
+        return target;
     }
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
     public void GetNativeCodeVersion_Null(MockTarget.Architecture arch)
     {
-        var target = new CVTestTarget(arch);
+        var target = CreateTarget(arch);
         var codeVersions = target.Contracts.CodeVersions;
 
         Assert.NotNull(codeVersions);
@@ -284,7 +286,7 @@ public class CodeVersionsTests
             MethodDesc = oneMethod,
         };
 
-        var target = new CVTestTarget(arch, methodDescs: [oneMethod], codeBlocks: [oneBlock]);
+        var target = CreateTarget(arch, methodDescs: [oneMethod], codeBlocks: [oneBlock]);
         var codeVersions = target.Contracts.CodeVersions;
 
         Assert.NotNull(codeVersions);
@@ -318,7 +320,7 @@ public class CodeVersionsTests
         };
         builder.FillNativeCodeVersionNode(nativeCodeVersionNode, methodDesc: oneMethod.Address, nativeCode: codeBlockStart, next: TargetPointer.Null, isActive: false, ilVersionId: default);
 
-        var target = CVTestTarget.FromBuilder(arch, [oneMethod], [], [oneBlock], [], builder);
+        var target = CreateTarget(arch, [oneMethod], [], [oneBlock], [], builder);
 
         // TEST
 
@@ -365,7 +367,7 @@ public class CodeVersionsTests
         oneMethod.MethodTable = oneMethodTable;
         oneMethod.RowId = methodRowId;
 
-        var target = CVTestTarget.FromBuilder(arch, [oneMethod], [oneMethodTable], [], [oneModule], builder);
+        var target = CreateTarget(arch, [oneMethod], [oneMethodTable], [], [oneModule], builder);
 
         // TEST
 
@@ -428,7 +430,7 @@ public class CodeVersionsTests
         methodDesc.MethodTable = methodTable;
         methodDesc.RowId = methodRowId;
 
-        var target = CVTestTarget.FromBuilder(arch, [methodDesc], [methodTable], [], [module], builder);
+        var target = CreateTarget(arch, [methodDesc], [methodTable], [], [module], builder);
 
         // TEST
 
@@ -499,7 +501,7 @@ public class CodeVersionsTests
         oneMethod.MethodTable = methodTable;
         oneMethod.RowId = methodRowId;
 
-        var target = CVTestTarget.FromBuilder(arch, [oneMethod], [methodTable], [], [module], builder);
+        var target = CreateTarget(arch, [oneMethod], [methodTable], [], [module], builder);
 
         // TEST
 

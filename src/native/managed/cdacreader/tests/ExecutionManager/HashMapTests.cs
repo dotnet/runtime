@@ -9,11 +9,11 @@ namespace Microsoft.Diagnostics.DataContractReader.UnitTests.ExecutionManager;
 
 public class HashMapTests
 {
-    internal class HashMapTestTarget : TestPlaceholderTarget
+    private static Target CreateTarget(MockDescriptors.HashMap hashMap)
     {
-        public HashMapTestTarget(MockTarget.Architecture arch, MockMemorySpace.ReadContext readContext, MockDescriptors.HashMap hashMap)
-            : base (arch, readContext.ReadFromTarget, hashMap.Types, hashMap.Globals)
-        { }
+        MockMemorySpace.Builder builder = hashMap.Builder;
+        builder.MarkCreated();
+        return new TestPlaceholderTarget(builder.TargetTestHelpers.Arch, builder.GetReadContext().ReadFromTarget, hashMap.Types, hashMap.Globals);
     }
 
     [Theory]
@@ -31,9 +31,8 @@ public class HashMapTests
         ];
         TargetPointer mapAddress = hashMap.CreateMap(entries);
         TargetPointer ptrMapAddress = hashMap.CreatePtrMap(entries);
-        builder.MarkCreated();
 
-        Target target = new HashMapTestTarget(arch, builder.GetReadContext(), hashMap);
+        Target target = CreateTarget(hashMap);
 
         var lookup = HashMapLookup.Create(target);
         var ptrLookup = PtrHashMapLookup.Create(target);
@@ -68,9 +67,8 @@ public class HashMapTests
         ];
         TargetPointer mapAddress = hashMap.CreateMap(entries);
         TargetPointer ptrMapAddress = hashMap.CreatePtrMap(entries);
-        builder.MarkCreated();
 
-        Target target = new HashMapTestTarget(arch, builder.GetReadContext(), hashMap);
+        Target target = CreateTarget(hashMap);
 
         var lookup = HashMapLookup.Create(target);
         var ptrLookup = PtrHashMapLookup.Create(target);
@@ -94,9 +92,8 @@ public class HashMapTests
         (TargetPointer Key, TargetPointer Value)[] entries = [(0x100, 0x010)];
         TargetPointer mapAddress = hashMap.CreateMap(entries);
         TargetPointer ptrMapAddress = hashMap.CreatePtrMap(entries);
-        builder.MarkCreated();
 
-        Target target = new HashMapTestTarget(arch, builder.GetReadContext(), hashMap);
+        Target target = CreateTarget(hashMap);
 
         {
             var lookup = HashMapLookup.Create(target);

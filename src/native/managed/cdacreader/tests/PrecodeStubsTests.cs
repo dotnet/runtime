@@ -277,34 +277,25 @@ public class PrecodeStubsTests
         public void MarkCreated() => Builder.MarkCreated();
     }
 
-    internal class PrecodeTestTarget : TestPlaceholderTarget
+    private static Target CreateTarget(PrecodeBuilder precodeBuilder)
     {
-        internal readonly TargetPointer PrecodeMachineDescriptorAddress;
+        var arch = precodeBuilder.Builder.TargetTestHelpers.Arch;
+        TestPlaceholderTarget.ReadFromTargetDelegate reader = precodeBuilder.Builder.GetReadContext().ReadFromTarget;
         // hack for this test put the precode machine descriptor at the same address as the PlatformMetadata
-        internal TargetPointer PlatformMetadataAddress => PrecodeMachineDescriptorAddress;
-        public static PrecodeTestTarget FromBuilder(PrecodeBuilder precodeBuilder)
-        {
-            precodeBuilder.MarkCreated();
-            var arch = precodeBuilder.Builder.TargetTestHelpers.Arch;
-            ReadFromTargetDelegate reader = precodeBuilder.Builder.GetReadContext().ReadFromTarget;
-            var typeInfo = precodeBuilder.Types;
-            return new PrecodeTestTarget(arch, reader, precodeBuilder.CodePointerFlags, precodeBuilder.MachineDescriptorAddress, typeInfo);
-        }
-        public PrecodeTestTarget(MockTarget.Architecture arch, ReadFromTargetDelegate reader, CodePointerFlags codePointerFlags, TargetPointer platformMetadataAddress, Dictionary<DataType, TypeInfo> typeInfoCache)
-            : base(arch, reader, typeInfoCache, [(Constants.Globals.PlatformMetadata, platformMetadataAddress)])
-        {
-            PrecodeMachineDescriptorAddress = platformMetadataAddress;
-            IContractFactory<IPrecodeStubs> precodeFactory = new PrecodeStubsFactory();
+        (string Name, ulong Value)[] globals = [(Constants.Globals.PlatformMetadata, precodeBuilder.MachineDescriptorAddress)];
+        precodeBuilder.MarkCreated();
+        var target = new TestPlaceholderTarget(arch, reader, precodeBuilder.Types, globals);
 
-            Mock<IPlatformMetadata> platformMetadata = new(MockBehavior.Strict);
-            platformMetadata.Setup(p => p.GetCodePointerFlags()).Returns(codePointerFlags);
-            platformMetadata.Setup(p => p.GetPrecodeMachineDescriptor()).Returns(PrecodeMachineDescriptorAddress);
+        IContractFactory<IPrecodeStubs> precodeFactory = new PrecodeStubsFactory();
+        Mock<IPlatformMetadata> platformMetadata = new(MockBehavior.Strict);
+        platformMetadata.Setup(p => p.GetCodePointerFlags()).Returns(precodeBuilder.CodePointerFlags);
+        platformMetadata.Setup(p => p.GetPrecodeMachineDescriptor()).Returns(precodeBuilder.MachineDescriptorAddress);
 
-            SetContracts(new TestRegistry() {
-                PlatformMetadataContract = new (() => platformMetadata.Object),
-                PrecodeStubsContract = new (() => precodeFactory.CreateContract(this, 1)),
-            });
-        }
+        target.SetContracts(new TestPlaceholderTarget.TestRegistry() {
+            PlatformMetadataContract = new (() => platformMetadata.Object),
+            PrecodeStubsContract = new (() => precodeFactory.CreateContract(target, 1)),
+        });
+        return target;
     }
 
     [Theory]
@@ -317,7 +308,7 @@ public class PrecodeStubsTests
         TargetPointer expectedMethodDesc = new TargetPointer(0xeeee_eee0u); // arbitrary
         TargetCodePointer stub1 = builder.AddStubPrecodeEntry("Stub 1", test, expectedMethodDesc);
 
-        var target = PrecodeTestTarget.FromBuilder(builder);
+        var target = CreateTarget(builder);
         Assert.NotNull(target);
 
         var precodeContract = target.Contracts.PrecodeStubs;
@@ -326,7 +317,5 @@ public class PrecodeStubsTests
 
         var actualMethodDesc = precodeContract.GetMethodDescFromStubAddress(stub1);
         Assert.Equal(expectedMethodDesc, actualMethodDesc);
-
-
     }
 }
