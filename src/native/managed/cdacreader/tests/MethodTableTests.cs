@@ -2,7 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Microsoft.Diagnostics.DataContractReader.RuntimeTypeSystemHelpers;
+using Moq;
 using Xunit;
 
 namespace Microsoft.Diagnostics.DataContractReader.UnitTests;
@@ -15,17 +17,13 @@ public class MethodTableTests
     {
         TargetTestHelpers targetTestHelpers = new(arch);
         MockMemorySpace.Builder builder = new(targetTestHelpers);
-
         MockRTS rtsBuilder = new(builder);
-        builder
-            .SetContracts([ nameof(Contracts.RuntimeTypeSystem) ])
-            .SetTypes(rtsBuilder.Types)
-            .SetGlobals(rtsBuilder.Globals);
 
         configure?.Invoke(rtsBuilder);
 
-        bool success = builder.TryCreateTarget(out ContractDescriptorTarget? target);
-        Assert.True(success);
+        var target = new TestPlaceholderTarget(arch, builder.GetReadContext().ReadFromTarget, rtsBuilder.Types, rtsBuilder.Globals);
+        target.SetContracts(Mock.Of<ContractRegistry>(
+            c => c.RuntimeTypeSystem == ((IContractFactory<IRuntimeTypeSystem>)new RuntimeTypeSystemFactory()).CreateContract(target, 1)));
 
         testCase(target);
     }
