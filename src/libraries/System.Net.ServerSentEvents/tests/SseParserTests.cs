@@ -121,9 +121,9 @@ namespace System.Net.ServerSentEvents.Tests
             Assert.Equal(stream.Length, stream.Position);
 
             Assert.Equal(3, items.Count);
-            AssertSseItemEqual(new SseItem<string>("1", "A"), items[0]);
-            AssertSseItemEqual(new SseItem<string>("4", "B"), items[1]);
-            AssertSseItemEqual(new SseItem<string>("7", "C"), items[2]);
+            AssertSseItemEqual(new SseItem<string>("1", "A") { EventId = "2" }, items[0]);
+            AssertSseItemEqual(new SseItem<string>("4", "B") { EventId = "5" }, items[1]);
+            AssertSseItemEqual(new SseItem<string>("7", "C") { EventId = "8" }, items[2]);
         }
 
         [Theory]
@@ -217,11 +217,11 @@ namespace System.Net.ServerSentEvents.Tests
                 using IEnumerator<SseItem<string>> e = parser.Enumerate().GetEnumerator();
 
                 Assert.True(e.MoveNext());
-                AssertSseItemEqual(new SseItem<string>("first event", "message"), e.Current);
+                AssertSseItemEqual(new SseItem<string>("first event", "message") { EventId = "1" }, e.Current);
                 Assert.Equal("1", parser.LastEventId);
 
                 Assert.True(e.MoveNext());
-                AssertSseItemEqual(new SseItem<string>("second event", "message"), e.Current);
+                AssertSseItemEqual(new SseItem<string>("second event", "message") { EventId = "" }, e.Current);
                 Assert.Equal(string.Empty, parser.LastEventId);
 
                 Assert.True(e.MoveNext());
@@ -235,11 +235,11 @@ namespace System.Net.ServerSentEvents.Tests
                 await using IAsyncEnumerator<SseItem<string>> e = parser.EnumerateAsync().GetAsyncEnumerator();
 
                 Assert.True(await e.MoveNextAsync());
-                AssertSseItemEqual(new SseItem<string>("first event", "message"), e.Current);
+                AssertSseItemEqual(new SseItem<string>("first event", "message") { EventId = "1" }, e.Current);
                 Assert.Equal("1", parser.LastEventId);
 
                 Assert.True(await e.MoveNextAsync());
-                AssertSseItemEqual(new SseItem<string>("second event", "message"), e.Current);
+                AssertSseItemEqual(new SseItem<string>("second event", "message") { EventId = "" }, e.Current);
                 Assert.Equal(string.Empty, parser.LastEventId);
 
                 Assert.True(await e.MoveNextAsync());
@@ -273,7 +273,7 @@ namespace System.Net.ServerSentEvents.Tests
                 using IEnumerator<SseItem<string>> e = parser.Enumerate().GetEnumerator();
 
                 Assert.True(e.MoveNext());
-                AssertSseItemEqual(new SseItem<string>("first event", "message"), e.Current);
+                AssertSseItemEqual(new SseItem<string>("first event", "message") { EventId = "1" }, e.Current);
                 Assert.Equal("1", parser.LastEventId);
 
                 Assert.True(e.MoveNext());
@@ -281,7 +281,7 @@ namespace System.Net.ServerSentEvents.Tests
                 Assert.Equal("1", parser.LastEventId);
 
                 Assert.True(e.MoveNext());
-                AssertSseItemEqual(new SseItem<string>(" third event", "message"), e.Current);
+                AssertSseItemEqual(new SseItem<string>(" third event", "message") { EventId = "42" }, e.Current);
                 Assert.Equal("42", parser.LastEventId);
             }
             else
@@ -291,7 +291,7 @@ namespace System.Net.ServerSentEvents.Tests
                 await using IAsyncEnumerator<SseItem<string>> e = parser.EnumerateAsync().GetAsyncEnumerator();
 
                 Assert.True(await e.MoveNextAsync());
-                AssertSseItemEqual(new SseItem<string>("first event", "message"), e.Current);
+                AssertSseItemEqual(new SseItem<string>("first event", "message") { EventId = "1" }, e.Current);
                 Assert.Equal("1", parser.LastEventId);
 
                 Assert.True(await e.MoveNextAsync());
@@ -299,7 +299,7 @@ namespace System.Net.ServerSentEvents.Tests
                 Assert.Equal("1", parser.LastEventId);
 
                 Assert.True(await e.MoveNextAsync());
-                AssertSseItemEqual(new SseItem<string>(" third event", "message"), e.Current);
+                AssertSseItemEqual(new SseItem<string>(" third event", "message") { EventId = "42" }, e.Current);
                 Assert.Equal("42", parser.LastEventId);
             }
         }
@@ -865,14 +865,8 @@ namespace System.Net.ServerSentEvents.Tests
         private static void AssertSseItemEqual<T>(SseItem<T> left, SseItem<T> right)
         {
             Assert.Equal(left.EventType, right.EventType);
-            if (left.Data is string leftData && right.Data is string rightData)
-            {
-                Assert.Equal($"{leftData.Length} {leftData}", $"{rightData.Length} {rightData}");
-            }
-            else
-            {
-                Assert.Equal(left.Data, right.Data);
-            }
+            Assert.Equal(left.EventId, right.EventId);
+            Assert.Equal(left.Data, right.Data);
         }
 
         public static IEnumerable<object[]> NewlineTrickleAsyncData() =>

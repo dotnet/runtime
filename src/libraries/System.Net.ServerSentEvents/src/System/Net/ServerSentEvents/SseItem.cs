@@ -9,12 +9,16 @@ namespace System.Net.ServerSentEvents
     {
         /// <summary>The event's type.</summary>
         internal readonly string? _eventType;
+        /// <summary>The event's id.</summary>
+        private readonly string? _eventId;
 
         /// <summary>Initializes the server-sent event.</summary>
         /// <param name="data">The event's payload.</param>
         /// <param name="eventType">The event's type.</param>
-        public SseItem(T data, string? eventType)
+        public SseItem(T data, string? eventType = null)
         {
+            Helpers.ValidateParameterDoesNotContainLineBreaks(eventType, nameof(eventType));
+
             Data = data;
             _eventType = eventType;
         }
@@ -24,5 +28,17 @@ namespace System.Net.ServerSentEvents
 
         /// <summary>Gets the event's type.</summary>
         public string EventType => _eventType ?? SseParser.EventTypeDefault;
+
+        /// <summary>Gets the event's id.</summary>
+        public string? EventId
+        {
+            get => _eventId;
+            init
+            {
+                Helpers.ValidateParameterDoesNotContainLineBreaks(value, nameof(EventId));
+
+                _eventId = value;
+            }
+        }
     }
 }

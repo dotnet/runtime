@@ -71,7 +71,10 @@ namespace System.Net.ServerSentEvents
         private bool _dataAppended;
 
         /// <summary>The event type for the next event.</summary>
-        private string _eventType = SseParser.EventTypeDefault;
+        private string? _eventType;
+
+        /// <summary>The event id for the next event.</summary>
+        private string? _eventId;
 
         /// <summary>Initialize the enumerable.</summary>
         /// <param name="stream">The stream to parse.</param>
@@ -314,8 +317,9 @@ namespace System.Net.ServerSentEvents
 
                 if (_dataAppended)
                 {
-                    sseItem = new SseItem<T>(_itemParser(_eventType, _dataBuffer.AsSpan(0, _dataLength)), _eventType);
-                    _eventType = SseParser.EventTypeDefault;
+                    sseItem = new SseItem<T>(_itemParser(_eventType ?? SseParser.EventTypeDefault, _dataBuffer.AsSpan(0, _dataLength)), _eventType) { EventId = _eventId };
+                    _eventType = null;
+                    _eventId = null;
                     _dataLength = 0;
                     _dataAppended = false;
                     return true;
@@ -365,8 +369,9 @@ namespace System.Net.ServerSentEvents
                         (remainder[0] is LF || (remainder[0] is CR && remainder.Length > 1)))
                     {
                         advance = line.Length + newlineLength + (remainder.StartsWith(CRLF) ? 2 : 1);
-                        sseItem = new SseItem<T>(_itemParser(_eventType, fieldValue), _eventType);
-                        _eventType = SseParser.EventTypeDefault;
+                        sseItem = new SseItem<T>(_itemParser(_eventType ?? SseParser.EventTypeDefault, fieldValue), _eventType) { EventId = _eventId };
+                        _eventType = null;
+                        _eventId = null;
                         return true;
                     }
                 }
@@ -398,7 +403,7 @@ namespace System.Net.ServerSentEvents
                 if (fieldValue.IndexOf((byte)'\0') < 0)
                 {
                     // Note that fieldValue might be empty, in which case LastEventId will naturally be reset to the empty string. This is per spec.
-                    LastEventId = SseParser.Utf8GetString(fieldValue);
+                    LastEventId = _eventId = SseParser.Utf8GetString(fieldValue);
                 }
             }
             else if (fieldName.SequenceEqual("retry"u8))
