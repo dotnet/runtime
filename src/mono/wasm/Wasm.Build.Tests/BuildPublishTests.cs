@@ -80,10 +80,7 @@ namespace Wasm.Build.Tests
         [BuildAndRun(config: "Release", aot: true)]
         public async Task BuildThenPublishWithAOT(string config, bool aot)
         {
-            ProjectInfo info = CreateWasmTemplateProject(Template.WasmBrowser, config, aot, "build_publish");
-
-            UpdateBrowserProgramFile();
-            UpdateBrowserMainJs();
+            ProjectInfo info = CopyTestAsset(config, aot, "WasmBasicTestApp", "build_publish", "App");
             
             bool isPublish = false;
             (_, string output) = BuildTemplateProject(info,
@@ -105,12 +102,12 @@ namespace Wasm.Build.Tests
             Assert.False(firstBuildStat["pinvoke.o"].Exists);
             Assert.False(firstBuildStat[$"{mainDll}.bc"].Exists);
             
-            CheckOutputForNativeBuild(expectAOT: false, expectRelinking: isPublish, info, output);
+            CheckOutputForNativeBuild(expectAOT: false, expectRelinking: isPublish, info.ProjectName, output);
 
             if (!_buildContext.TryGetBuildFor(info, out BuildProduct? product))
                 throw new XunitException($"Test bug: could not get the build product in the cache");
 
-            RunOptions runOptions = new(info.Configuration, ExpectedExitCode: 42);
+            RunOptions runOptions = new(info.Configuration, TestScenario: "DotnetRun");
             await RunForBuildWithDotnetRun(runOptions);
 
             File.Move(product!.LogFile, Path.ChangeExtension(product.LogFile!, ".first.binlog"));
@@ -136,7 +133,7 @@ namespace Wasm.Build.Tests
             IDictionary<string, FileStat> publishStat = StatFiles(pathsDict);
             Assert.True(publishStat["pinvoke.o"].Exists);
             Assert.True(publishStat[$"{mainDll}.bc"].Exists);
-            CheckOutputForNativeBuild(expectAOT: true, expectRelinking: isPublish, info, output);
+            CheckOutputForNativeBuild(expectAOT: true, expectRelinking: isPublish, info.ProjectName, output);
             
             // source maps are created for build but not for publish, make sure CompareStat won't expect them in publish:
             pathsDict["dotnet.js.map"] = (pathsDict["dotnet.js.map"].fullPath, unchanged: false);
@@ -159,18 +156,17 @@ namespace Wasm.Build.Tests
             var secondBuildStat = StatFiles(pathsDict);
             
             // no relinking, or AOT
-            CheckOutputForNativeBuild(expectAOT: false, expectRelinking: isPublish, info, output);
+            CheckOutputForNativeBuild(expectAOT: false, expectRelinking: isPublish, info.ProjectName, output);
 
             // no native files changed
             pathsDict.UpdateTo(unchanged: true);
             CompareStat(publishStat, secondBuildStat, pathsDict);
         }
 
-        void CheckOutputForNativeBuild(bool expectAOT, bool expectRelinking, ProjectInfo buildArgs, string buildOutput)
+        void CheckOutputForNativeBuild(bool expectAOT, bool expectRelinking, string projectName, string buildOutput)
         {
-            string projectNameCore = buildArgs.ProjectName.Replace(s_unicodeChars, "");
-            TestUtils.AssertMatches(@$"{projectNameCore}\S+.dll -> {projectNameCore}\S+.dll.bc", buildOutput, contains: expectAOT);
-            TestUtils.AssertMatches(@$"{projectNameCore}\S+.dll.bc -> {projectNameCore}\S+.dll.o", buildOutput, contains: expectAOT);
+            TestUtils.AssertMatches(@$"{projectName}.dll -> {projectName}.dll.bc", buildOutput, contains: expectAOT);
+            TestUtils.AssertMatches(@$"{projectName}.dll.bc -> {projectName}.dll.o", buildOutput, contains: expectAOT);
             TestUtils.AssertMatches("pinvoke.c -> pinvoke.o", buildOutput, contains: expectRelinking || expectAOT);
         }
     }
