@@ -433,7 +433,8 @@ void CodeGen::instGen_Set_Reg_To_Imm(emitAttr       size,
             else
             {
                 // For section constant, the immediate will be relocatable
-                GetEmitter()->emitIns_R_I(INS_mov, size, reg, imm, INS_OPTS_NONE DEBUGARG(targetHandle) DEBUGARG(gtFlags));
+                GetEmitter()->emitIns_R_I(INS_mov, size, reg, imm,
+                                          INS_OPTS_NONE DEBUGARG(targetHandle) DEBUGARG(gtFlags));
             }
         }
         else
@@ -769,8 +770,8 @@ void CodeGen::genCodeForNegNot(GenTree* tree)
     {
         GenTree* operand = tree->gtGetOp1();
         assert(operand->isUsedFromReg());
-        regNumber operandReg = genConsumeReg(operand);
-        instruction ins = genGetInsForOper(tree->OperGet(), targetType);
+        regNumber   operandReg = genConsumeReg(operand);
+        instruction ins        = genGetInsForOper(tree->OperGet(), targetType);
 
         if (JitConfig.JitEnableApxNDD() && GetEmitter()->IsApxNDDEncodableInstruction(ins) && (targetReg != operandReg))
         {
@@ -1202,7 +1203,7 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
             // TODO-xarch-apx:
             // APX can provide optimal code gen in this case using NDD feature:
             // reg3 = op1 op op2 without extra mov
-            
+
             // see if it can be optimized by inc/dec
             if (oper == GT_ADD && op2->isContainedIntOrIImmed() && !treeNode->gtOverflowEx())
             {
@@ -1231,7 +1232,7 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
             genProduceReg(treeNode);
             return;
         }
-        else 
+        else
         {
             var_types op1Type = op1->TypeGet();
             inst_Mov(op1Type, targetReg, op1reg, /* canSkip */ false);
@@ -1372,7 +1373,8 @@ void CodeGen::genCodeForMul(GenTreeOp* treeNode)
         }
         assert(regOp->isUsedFromReg());
 
-        if (JitConfig.JitEnableApxNDD() && emit->IsApxNDDEncodableInstruction(ins) && regOp->GetRegNum() != mulTargetReg)
+        if (JitConfig.JitEnableApxNDD() && emit->IsApxNDDEncodableInstruction(ins) &&
+            regOp->GetRegNum() != mulTargetReg)
         {
             // use NDD form to optimize this form:
             // mov  targetReg, regOp
@@ -1389,7 +1391,6 @@ void CodeGen::genCodeForMul(GenTreeOp* treeNode)
             genProduceReg(treeNode);
             return;
         }
-
 
         // Setup targetReg when neither of the source operands was a matching register
         inst_Mov(targetType, mulTargetReg, regOp->GetRegNum(), /* canSkip */ true);
@@ -1639,6 +1640,46 @@ instruction CodeGen::JumpKindToCmov(emitJumpKind condition)
     static_assert_no_msg(s_table[EJ_jge] == INS_cmovge);
     static_assert_no_msg(s_table[EJ_jle] == INS_cmovle);
     static_assert_no_msg(s_table[EJ_jg] == INS_cmovg);
+
+    assert((condition >= EJ_NONE) && (condition < EJ_COUNT));
+    return s_table[condition];
+}
+
+//------------------------------------------------------------------------
+// JumpKindToCcmp:
+//   Convert an emitJumpKind to the corresponding ccmp instruction.
+//
+// Arguments:
+//    condition - the condition
+//
+// Returns:
+//    A ccmp instruction.
+//
+instruction CodeGen::JumpKindToCcmp(emitJumpKind condition)
+{
+    static constexpr instruction s_table[EJ_COUNT] = {
+        INS_none,  INS_none,  INS_ccmpo,  INS_ccmpno, INS_ccmpb, INS_ccmpae, INS_ccmpe,  INS_ccmpne, INS_ccmpbe,
+        INS_ccmpa, INS_ccmps, INS_ccmpns, INS_none,   INS_none,  INS_ccmpl,  INS_ccmpge, INS_ccmple, INS_ccmpg,
+    };
+
+    static_assert_no_msg(s_table[EJ_NONE] == INS_none);
+    static_assert_no_msg(s_table[EJ_jmp] == INS_none);
+    static_assert_no_msg(s_table[EJ_jo] == INS_ccmpo);
+    static_assert_no_msg(s_table[EJ_jno] == INS_ccmpno);
+    static_assert_no_msg(s_table[EJ_jb] == INS_ccmpb);
+    static_assert_no_msg(s_table[EJ_jae] == INS_ccmpae);
+    static_assert_no_msg(s_table[EJ_je] == INS_ccmpe);
+    static_assert_no_msg(s_table[EJ_jne] == INS_ccmpne);
+    static_assert_no_msg(s_table[EJ_jbe] == INS_ccmpbe);
+    static_assert_no_msg(s_table[EJ_ja] == INS_ccmpa);
+    static_assert_no_msg(s_table[EJ_js] == INS_ccmps);
+    static_assert_no_msg(s_table[EJ_jns] == INS_ccmpns);
+    static_assert_no_msg(s_table[EJ_jp] == INS_none);
+    static_assert_no_msg(s_table[EJ_jnp] == INS_none);
+    static_assert_no_msg(s_table[EJ_jl] == INS_ccmpl);
+    static_assert_no_msg(s_table[EJ_jge] == INS_ccmpge);
+    static_assert_no_msg(s_table[EJ_jle] == INS_ccmple);
+    static_assert_no_msg(s_table[EJ_jg] == INS_ccmpg);
 
     assert((condition >= EJ_NONE) && (condition < EJ_COUNT));
     return s_table[condition];
@@ -2330,6 +2371,12 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
         case GT_IL_OFFSET:
             // Do nothing; these nodes are simply markers for debug info.
             break;
+
+#if defined(TARGET_AMD64)
+        case GT_CCMP:
+            genCodeForCCMP(treeNode->AsCCMP());
+            break;
+#endif
 
         default:
         {
@@ -4939,8 +4986,8 @@ void CodeGen::genCodeForShift(GenTree* tree)
                 return;
             }
 
-            
-            if (JitConfig.JitEnableApxNDD() && GetEmitter()->IsApxNDDEncodableInstruction(ins) && (tree->GetRegNum() != operandReg))
+            if (JitConfig.JitEnableApxNDD() && GetEmitter()->IsApxNDDEncodableInstruction(ins) &&
+                (tree->GetRegNum() != operandReg))
             {
                 ins = genMapShiftInsToShiftByConstantIns(ins, shiftByValue);
                 // If APX is available, we can use NDD to optimize the case when LSRA failed to avoid explicit mov.
@@ -4951,7 +4998,8 @@ void CodeGen::genCodeForShift(GenTree* tree)
                 }
                 else
                 {
-                    GetEmitter()->emitIns_R_R_I(ins, emitTypeSize(tree), tree->GetRegNum(), operandReg, shiftByValue, INS_OPTS_EVEX_nd);
+                    GetEmitter()->emitIns_R_R_I(ins, emitTypeSize(tree), tree->GetRegNum(), operandReg, shiftByValue,
+                                                INS_OPTS_EVEX_nd);
                 }
                 genProduceReg(tree);
                 return;
@@ -5002,7 +5050,8 @@ void CodeGen::genCodeForShift(GenTree* tree)
         // The operand to be shifted must not be in ECX
         noway_assert(operandReg != REG_RCX);
 
-        if (JitConfig.JitEnableApxNDD() && GetEmitter()->IsApxNDDEncodableInstruction(ins) && (tree->GetRegNum() != operandReg))
+        if (JitConfig.JitEnableApxNDD() && GetEmitter()->IsApxNDDEncodableInstruction(ins) &&
+            (tree->GetRegNum() != operandReg))
         {
             // If APX is available, we can use NDD to optimize the case when LSRA failed to avoid explicit mov.
             // this case might be rarely hit.
@@ -9060,7 +9109,140 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
     regSet.verifyRegistersUsed(killMask);
 }
 
+#ifdef TARGET_AMD64
+
+insOpts CodeGen::OptsFromCFlags(insCflags flags)
+{
+    unsigned opts = 0x0;
+    if (flags & INS_FLAGS_CF)
+        opts |= INS_OPTS_EVEX_dfv_cf;
+    if (flags & INS_FLAGS_ZF)
+        opts |= INS_OPTS_EVEX_dfv_zf;
+    if (flags & INS_FLAGS_SF)
+        opts |= INS_OPTS_EVEX_dfv_sf;
+    if (flags & INS_FLAGS_OF)
+        opts |= INS_OPTS_EVEX_dfv_of;
+    return (insOpts)opts;
+}
+
+void CodeGen::genCodeForCCMP(GenTreeCCMP* ccmp)
+{
+    emitter* emit = GetEmitter();
+    assert(emit->UsePromotedEVEXEncoding());
+
+    genConsumeOperands(ccmp);
+    GenTree*  op1     = ccmp->gtGetOp1();
+    GenTree*  op2     = ccmp->gtGetOp2();
+    var_types op1Type = genActualType(op1->TypeGet());
+    var_types op2Type = genActualType(op2->TypeGet());
+    emitAttr  cmpSize = emitActualTypeSize(op1Type);
+    regNumber srcReg1 = op1->GetRegNum();
+
+    // No float support or swapping op1 and op2 to generate cmp reg, imm.
+    assert(!varTypeIsFloating(op2Type));
+    assert(!op1->isContainedIntOrIImmed());
+
+    // For the ccmp flags, invert the condition of the compare.
+    // For the condition, use the previous compare.
+    const GenConditionDesc& condDesc = GenConditionDesc::Get(ccmp->gtCondition);
+    instruction             ccmpIns  = JumpKindToCcmp(condDesc.jumpKind1);
+    insOpts                 opts     = OptsFromCFlags(ccmp->gtFlagsVal);
+
+    if (op2->isContainedIntOrIImmed())
+    {
+        GenTreeIntConCommon* intConst = op2->AsIntConCommon();
+        emit->emitIns_R_I(ccmpIns, cmpSize, srcReg1, (int)intConst->IconValue(), opts);
+    }
+    else
+    {
+        regNumber srcReg2 = op2->GetRegNum();
+        emit->emitIns_R_R(ccmpIns, cmpSize, srcReg1, srcReg2, opts);
+    }
+}
+#endif // TARGET_AMD64
+
 #if defined(DEBUG) && defined(TARGET_AMD64)
+
+/*****************************************************************************
+ * Unit tests for the CCMP instructions.
+ */
+
+void CodeGen::genAmd64EmitterUnitTestsCCMP()
+{
+    emitter* theEmitter = GetEmitter();
+    genDefineTempLabel(genCreateTempLabel());
+
+    // #ifdef COMMENTOUT
+
+    // ============
+    // Test RR form
+    // ============
+
+    // Test all sizes
+    theEmitter->emitIns_R_R(INS_ccmpe, EA_4BYTE, REG_RAX, REG_RCX, INS_OPTS_EVEX_dfv_cf);
+    theEmitter->emitIns_R_R(INS_ccmpe, EA_8BYTE, REG_RAX, REG_RCX, INS_OPTS_EVEX_dfv_cf);
+    theEmitter->emitIns_R_R(INS_ccmpe, EA_2BYTE, REG_RAX, REG_RCX, INS_OPTS_EVEX_dfv_cf);
+    theEmitter->emitIns_R_R(INS_ccmpe, EA_1BYTE, REG_RAX, REG_RCX, INS_OPTS_EVEX_dfv_cf);
+
+    // Test all CC codes
+    for (uint32_t ins = INS_FIRST_CCMP_INSTRUCTION + 1; ins < INS_LAST_CCMP_INSTRUCTION; ins++)
+    {
+        theEmitter->emitIns_R_R((instruction)ins, EA_4BYTE, REG_RAX, REG_RCX, INS_OPTS_EVEX_dfv_cf);
+    }
+
+    // Test all dfv
+    for (int i = 0; i < 16; i++)
+    {
+        theEmitter->emitIns_R_R(INS_ccmpe, EA_4BYTE, REG_RAX, REG_RCX, (insOpts)(i << INS_OPTS_EVEX_dfv_byte_offset));
+    }
+
+    // ============
+    // Test RS form
+    // ============
+
+    // Test all sizes
+    theEmitter->emitIns_R_S(INS_ccmpe, EA_4BYTE, REG_RAX, 0, 0, INS_OPTS_EVEX_dfv_cf);
+    theEmitter->emitIns_R_S(INS_ccmpe, EA_8BYTE, REG_RAX, 0, 0, INS_OPTS_EVEX_dfv_cf);
+    theEmitter->emitIns_R_S(INS_ccmpe, EA_2BYTE, REG_RAX, 0, 0, INS_OPTS_EVEX_dfv_cf);
+    theEmitter->emitIns_R_S(INS_ccmpe, EA_1BYTE, REG_RAX, 0, 0, INS_OPTS_EVEX_dfv_cf);
+
+    // Test all CC codes
+    for (uint32_t ins = INS_FIRST_CCMP_INSTRUCTION + 1; ins < INS_LAST_CCMP_INSTRUCTION; ins++)
+    {
+        theEmitter->emitIns_R_S((instruction)ins, EA_4BYTE, REG_RAX, 0, 0, INS_OPTS_EVEX_dfv_cf);
+    }
+
+    // Test all dfv
+    for (int i = 0; i < 16; i++)
+    {
+        theEmitter->emitIns_R_S(INS_ccmpe, EA_4BYTE, REG_RAX, 0, 0, (insOpts)(i << INS_OPTS_EVEX_dfv_byte_offset));
+    }
+
+    // ============
+    // Test RI form (test small and large sizes and constants)
+    // ============
+
+    theEmitter->emitIns_R_I(INS_ccmpe, EA_4BYTE, REG_RAX, 123, INS_OPTS_EVEX_dfv_cf);
+    theEmitter->emitIns_R_I(INS_ccmpe, EA_4BYTE, REG_RAX, 270, INS_OPTS_EVEX_dfv_cf);
+
+    theEmitter->emitIns_R_I(INS_ccmpe, EA_8BYTE, REG_RAX, 123, INS_OPTS_EVEX_dfv_cf);
+    theEmitter->emitIns_R_I(INS_ccmpe, EA_8BYTE, REG_RAX, 270, INS_OPTS_EVEX_dfv_cf);
+
+    theEmitter->emitIns_R_I(INS_ccmpe, EA_2BYTE, REG_RAX, 123, INS_OPTS_EVEX_dfv_cf);
+    theEmitter->emitIns_R_I(INS_ccmpe, EA_2BYTE, REG_RAX, 270, INS_OPTS_EVEX_dfv_cf);
+
+    theEmitter->emitIns_R_I(INS_ccmpe, EA_1BYTE, REG_RAX, 123, INS_OPTS_EVEX_dfv_cf);
+    theEmitter->emitIns_R_I(INS_ccmpe, EA_1BYTE, REG_RAX, 270, INS_OPTS_EVEX_dfv_cf);
+
+    // ============
+    // Test RC form
+    // ============
+
+    CORINFO_FIELD_HANDLE hnd = theEmitter->emitFltOrDblConst(1.0f, EA_4BYTE);
+    theEmitter->emitIns_R_C(INS_ccmpe, EA_4BYTE, REG_RAX, hnd, 0, INS_OPTS_EVEX_dfv_cf);
+    theEmitter->emitIns_R_C(INS_ccmpe, EA_4BYTE, REG_RAX, hnd, 4, INS_OPTS_EVEX_dfv_cf);
+    // #endif
+}
 
 /*****************************************************************************
  * Unit tests for the SSE2 instructions.
@@ -9367,14 +9549,14 @@ void CodeGen::genAmd64EmitterUnitTestsApx()
 
     theEmitter->emitIns_R_R_R(INS_add, EA_8BYTE, REG_R10, REG_EAX, REG_ECX, INS_OPTS_EVEX_nd);
     theEmitter->emitIns_R_R_R(INS_sub, EA_2BYTE, REG_R10, REG_EAX, REG_ECX, INS_OPTS_EVEX_nd);
-    theEmitter->emitIns_R_R_R(INS_or,  EA_2BYTE, REG_R10, REG_EAX, REG_ECX, INS_OPTS_EVEX_nd);
+    theEmitter->emitIns_R_R_R(INS_or, EA_2BYTE, REG_R10, REG_EAX, REG_ECX, INS_OPTS_EVEX_nd);
     theEmitter->emitIns_R_R_R(INS_and, EA_2BYTE, REG_R10, REG_EAX, REG_ECX, INS_OPTS_EVEX_nd);
     theEmitter->emitIns_R_R_R(INS_xor, EA_1BYTE, REG_R10, REG_EAX, REG_ECX, INS_OPTS_EVEX_nd);
 
     theEmitter->emitIns_R_R_I(INS_or, EA_2BYTE, REG_R10, REG_EAX, 10565, INS_OPTS_EVEX_nd);
     theEmitter->emitIns_R_R_I(INS_or, EA_8BYTE, REG_R10, REG_EAX, 10, INS_OPTS_EVEX_nd);
     theEmitter->emitIns_R_R_S(INS_or, EA_8BYTE, REG_R10, REG_EAX, 0, 1, INS_OPTS_EVEX_nd);
-    
+
     theEmitter->emitIns_R_R(INS_neg, EA_2BYTE, REG_R10, REG_ECX, INS_OPTS_EVEX_nd);
 
     theEmitter->emitIns_R_R(INS_shl, EA_2BYTE, REG_R11, REG_EAX, INS_OPTS_EVEX_nd);
@@ -9401,13 +9583,13 @@ void CodeGen::genAmd64EmitterUnitTestsApx()
     theEmitter->emitIns_R_I(INS_add, EA_4BYTE, REG_R12, 5, INS_OPTS_EVEX_nf);
     theEmitter->emitIns_R_I(INS_sub, EA_4BYTE, REG_R12, 5, INS_OPTS_EVEX_nf);
     theEmitter->emitIns_R_I(INS_and, EA_4BYTE, REG_R12, 5, INS_OPTS_EVEX_nf);
-    theEmitter->emitIns_R_I(INS_or,  EA_4BYTE, REG_R12, 5, INS_OPTS_EVEX_nf);
+    theEmitter->emitIns_R_I(INS_or, EA_4BYTE, REG_R12, 5, INS_OPTS_EVEX_nf);
     theEmitter->emitIns_R_I(INS_xor, EA_4BYTE, REG_R12, 5, INS_OPTS_EVEX_nf);
 
     theEmitter->emitIns_R_S(INS_add, EA_4BYTE, REG_R12, 0, 1, INS_OPTS_EVEX_nf);
     theEmitter->emitIns_R_S(INS_sub, EA_4BYTE, REG_R12, 0, 1, INS_OPTS_EVEX_nf);
     theEmitter->emitIns_R_S(INS_and, EA_4BYTE, REG_R12, 0, 1, INS_OPTS_EVEX_nf);
-    theEmitter->emitIns_R_S(INS_or,  EA_4BYTE, REG_R12, 0, 1, INS_OPTS_EVEX_nf);
+    theEmitter->emitIns_R_S(INS_or, EA_4BYTE, REG_R12, 0, 1, INS_OPTS_EVEX_nf);
     theEmitter->emitIns_R_S(INS_xor, EA_4BYTE, REG_R12, 0, 1, INS_OPTS_EVEX_nf);
 
     theEmitter->emitIns_R(INS_neg, EA_2BYTE, REG_R11, INS_OPTS_EVEX_nf);
@@ -9426,22 +9608,23 @@ void CodeGen::genAmd64EmitterUnitTestsApx()
     theEmitter->emitIns_R(INS_div, EA_8BYTE, REG_R12, INS_OPTS_EVEX_nf);
     theEmitter->emitIns_R(INS_idiv, EA_8BYTE, REG_R12, INS_OPTS_EVEX_nf);
 
-    theEmitter->emitIns_R_R(INS_tzcnt_evex,  EA_8BYTE, REG_R12, REG_R11, INS_OPTS_EVEX_nf);
-    theEmitter->emitIns_R_R(INS_lzcnt_evex,  EA_8BYTE, REG_R12, REG_R11, INS_OPTS_EVEX_nf);
+    theEmitter->emitIns_R_R(INS_tzcnt_evex, EA_8BYTE, REG_R12, REG_R11, INS_OPTS_EVEX_nf);
+    theEmitter->emitIns_R_R(INS_lzcnt_evex, EA_8BYTE, REG_R12, REG_R11, INS_OPTS_EVEX_nf);
     theEmitter->emitIns_R_R(INS_popcnt_evex, EA_8BYTE, REG_R12, REG_R11, INS_OPTS_EVEX_nf);
-    
-    theEmitter->emitIns_R_S(INS_tzcnt_evex,  EA_8BYTE, REG_R12, 0, 1, INS_OPTS_EVEX_nf);
-    theEmitter->emitIns_R_S(INS_lzcnt_evex,  EA_8BYTE, REG_R12, 0, 1, INS_OPTS_EVEX_nf);
+
+    theEmitter->emitIns_R_S(INS_tzcnt_evex, EA_8BYTE, REG_R12, 0, 1, INS_OPTS_EVEX_nf);
+    theEmitter->emitIns_R_S(INS_lzcnt_evex, EA_8BYTE, REG_R12, 0, 1, INS_OPTS_EVEX_nf);
     theEmitter->emitIns_R_S(INS_popcnt_evex, EA_8BYTE, REG_R12, 0, 1, INS_OPTS_EVEX_nf);
 
-    theEmitter->emitIns_R_R_R(INS_add, EA_2BYTE, REG_R12, REG_R13, REG_R11, (insOpts)(INS_OPTS_EVEX_nf | INS_OPTS_EVEX_nd));
+    theEmitter->emitIns_R_R_R(INS_add, EA_2BYTE, REG_R12, REG_R13, REG_R11,
+                              (insOpts)(INS_OPTS_EVEX_nf | INS_OPTS_EVEX_nd));
 
-    theEmitter->emitIns_R_R_R(INS_andn,  EA_8BYTE, REG_R11, REG_R13, REG_R11, INS_OPTS_EVEX_nf);
+    theEmitter->emitIns_R_R_R(INS_andn, EA_8BYTE, REG_R11, REG_R13, REG_R11, INS_OPTS_EVEX_nf);
     theEmitter->emitIns_R_R_R(INS_bextr, EA_8BYTE, REG_R11, REG_R13, REG_R11, INS_OPTS_EVEX_nf);
-    
-    theEmitter->emitIns_R_R(INS_blsi,    EA_8BYTE, REG_R11, REG_R13, INS_OPTS_EVEX_nf);
-    theEmitter->emitIns_R_R(INS_blsmsk,  EA_8BYTE, REG_R11, REG_R13, INS_OPTS_EVEX_nf);
-    theEmitter->emitIns_R_S(INS_blsr,    EA_8BYTE, REG_R11, 0, 1);
+
+    theEmitter->emitIns_R_R(INS_blsi, EA_8BYTE, REG_R11, REG_R13, INS_OPTS_EVEX_nf);
+    theEmitter->emitIns_R_R(INS_blsmsk, EA_8BYTE, REG_R11, REG_R13, INS_OPTS_EVEX_nf);
+    theEmitter->emitIns_R_S(INS_blsr, EA_8BYTE, REG_R11, 0, 1);
 }
 
 #endif // defined(DEBUG) && defined(TARGET_AMD64)

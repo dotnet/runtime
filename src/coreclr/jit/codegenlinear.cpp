@@ -2702,6 +2702,10 @@ void CodeGen::genEmitterUnitTests()
     {
         genAmd64EmitterUnitTestsApx();
     }
+    if (unitTestSectionAll || (strstr(unitTestSection, "ccmp") != nullptr))
+    {
+        genAmd64EmitterUnitTestsCCMP();
+    }
 
 #elif defined(TARGET_ARM64)
     if (unitTestSectionAll || (strstr(unitTestSection, "general") != nullptr))

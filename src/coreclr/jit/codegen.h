@@ -649,6 +649,7 @@ protected:
 #if defined(TARGET_AMD64)
     void genAmd64EmitterUnitTestsSse2();
     void genAmd64EmitterUnitTestsApx();
+    void genAmd64EmitterUnitTestsCCMP();
 #endif
 
 #endif // defined(DEBUG)
@@ -911,6 +912,9 @@ protected:
 #ifdef TARGET_ARM64
     void genCodeForCCMP(GenTreeCCMP* ccmp);
 #endif
+#ifdef TARGET_AMD64
+    void genCodeForCCMP(GenTreeCCMP* ccmp);
+#endif // TARGET_AMD64
     void genCodeForSelect(GenTreeOp* select);
     void genIntrinsic(GenTreeIntrinsic* treeNode);
     void genPutArgStk(GenTreePutArgStk* treeNode);
@@ -1655,6 +1659,8 @@ public:
     static insOpts ShiftOpToInsOpts(genTreeOps op);
 #elif defined(TARGET_XARCH)
     static instruction JumpKindToCmov(emitJumpKind condition);
+    static instruction JumpKindToCcmp(emitJumpKind condition);
+    static insOpts     OptsFromCFlags(insCflags flags);
 #endif
 
 #if !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)

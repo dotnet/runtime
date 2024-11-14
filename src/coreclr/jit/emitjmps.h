@@ -8,6 +8,8 @@
 
 #if defined(TARGET_XARCH)
 
+// todo-anthony : should we define the cc for ccmp here?
+
 //       jump   reverse instruction
 JMP_SMALL(jmp   , jmp   , jmp    )
 JMP_SMALL(jo    , jno   , jo     )

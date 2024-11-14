@@ -89,7 +89,8 @@ private:
     void ContainCheckReturnTrap(GenTreeOp* node);
     void ContainCheckLclHeap(GenTreeOp* node);
     void ContainCheckRet(GenTreeUnOp* ret);
-#ifdef TARGET_ARM64
+#if defined(TARGET_ARM64) || defined(TARGET_AMD64)
+    bool      ProducesPotentialConsumableFlagsForCCMP(GenTree* op);
     bool      TryLowerAndOrToCCMP(GenTreeOp* tree, GenTree** next);
     insCflags TruthifyingFlags(GenCondition cond);
     void      ContainCheckConditionalCompare(GenTreeCCMP* ccmp);

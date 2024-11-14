@@ -1937,7 +1937,7 @@ PhaseStatus Compiler::optOptimizeBools()
                     retry  = true;
                     numCond++;
                 }
-#ifdef TARGET_ARM64
+#if defined(TARGET_ARM64)
                 else if (optBoolsDsc.optOptimizeCompareChainCondBlock())
                 {
                     // The optimization will have merged b1 and b2. Retry the loop so that
@@ -1946,6 +1946,22 @@ PhaseStatus Compiler::optOptimizeBools()
                     retry  = true;
                     numCond++;
                 }
+#elif defined(TARGET_AMD64)
+                // todo-xarch-apx: when we have proper CPUID (hardware) support, we can switch the below from an OR
+                // condition to an AND, for now, `JitConfig.JitEnableApxIfConv` will drive whether the optimization
+                // trigger or not
+                // else if ((compOpportunisticallyDependsOn(InstructionSet_APX) || JitConfig.JitEnableApxIfConv()) &&
+                // optBoolsDsc.optOptimizeCompareChainCondBlock())
+                else if (JitConfig.JitEnableApxIfConv() && !optSwitchDetectLikely(b1) &&
+                         optBoolsDsc.optOptimizeCompareChainCondBlock())
+                {
+                    // The optimization will have merged b1 and b2. Retry the loop so that
+                    // b1 and b2->bbNext can be tested.
+                    change = true;
+                    retry  = true;
+                    numCond++;
+                }
+
 #endif
             }
             else if (b2->KindIs(BBJ_RETURN))

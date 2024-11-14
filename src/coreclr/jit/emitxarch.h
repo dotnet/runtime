@@ -128,23 +128,24 @@ static bool IsAVXVNNIInstruction(instruction ins);
 static bool IsBMIInstruction(instruction ins);
 static bool IsKInstruction(instruction ins);
 static bool IsKInstructionWithLBit(instruction ins);
+static bool IsApxOnlyInstruction(instruction ins);
 
 static regNumber getBmiRegNumber(instruction ins);
 static regNumber getSseShiftRegNumber(instruction ins);
-bool HasVexEncoding(instruction ins) const;
-bool HasEvexEncoding(instruction ins) const;
-bool HasRex2Encoding(instruction ins) const;
-bool HasApxNdd(instruction ins) const;
-bool HasApxNf(instruction ins) const;
-bool IsVexEncodableInstruction(instruction ins) const;
-bool IsEvexEncodableInstruction(instruction ins) const;
-bool IsRex2EncodableInstruction(instruction ins) const;
-bool IsApxNDDEncodableInstruction(instruction ins) const;
-bool IsApxNFEncodableInstruction(instruction ins) const;
-bool IsApxExtendedEvexInstruction(instruction ins) const;
-bool IsShiftInstruction(instruction ins) const;
-bool IsLegacyMap1(code_t code) const;
-bool IsVexOrEvexEncodableInstruction(instruction ins) const;
+bool             HasVexEncoding(instruction ins) const;
+bool             HasEvexEncoding(instruction ins) const;
+bool             HasRex2Encoding(instruction ins) const;
+bool             HasApxNdd(instruction ins) const;
+bool             HasApxNf(instruction ins) const;
+bool             IsVexEncodableInstruction(instruction ins) const;
+bool             IsEvexEncodableInstruction(instruction ins) const;
+bool             IsRex2EncodableInstruction(instruction ins) const;
+bool             IsApxNDDEncodableInstruction(instruction ins) const;
+bool             IsApxNFEncodableInstruction(instruction ins) const;
+bool             IsApxExtendedEvexInstruction(instruction ins) const;
+bool             IsShiftInstruction(instruction ins) const;
+bool             IsLegacyMap1(code_t code) const;
+bool             IsVexOrEvexEncodableInstruction(instruction ins) const;
 
 code_t insEncodeMIreg(const instrDesc* id, regNumber reg, emitAttr size, code_t code);
 
@@ -569,6 +570,23 @@ void SetEvexNfIfNeeded(instrDesc* id, insOpts instOptions)
 }
 
 //------------------------------------------------------------------------
+// SetEvexDFVIfNeeded: set default flag values on an instrDesc
+//
+// Arguments:
+//    id          - instruction descriptor
+//    instOptions - emit options
+//
+void SetEvexDFVIfNeeded(instrDesc* id, insOpts instOptions)
+{
+    if ((instOptions & INS_OPTS_EVEX_dfv_MASK) != 0)
+    {
+        assert(UsePromotedEVEXEncoding());
+        assert(IsCCMP(id->idIns()));
+        id->idSetEvexDFV(instOptions);
+    }
+}
+
+//------------------------------------------------------------------------
 // AddSimdPrefixIfNeeded: Add the correct SIMD prefix.
 // Check if the prefix already exists befpre adding.
 //
@@ -679,6 +697,9 @@ static bool IsRexW0Instruction(instruction ins);
 static bool IsRexW1Instruction(instruction ins);
 static bool IsRexWXInstruction(instruction ins);
 static bool IsRexW1EvexInstruction(instruction ins);
+
+static bool  IsCCMP(instruction ins);
+static insCC GetCCFromCCMP(instruction ins);
 
 bool isAvx512Blendv(instruction ins)
 {
@@ -819,9 +840,9 @@ void emitIns_A(instruction ins, emitAttr attr, GenTreeIndir* indir);
 void emitIns_R_I(instruction ins,
                  emitAttr    attr,
                  regNumber   reg,
-                 ssize_t val,
-                 insOpts instOptions = INS_OPTS_NONE DEBUGARG(size_t targetHandle = 0) DEBUGARG(GenTreeFlags gtFlags = GTF_EMPTY)
-                 );
+                 ssize_t     val,
+                 insOpts instOptions = INS_OPTS_NONE DEBUGARG(size_t targetHandle = 0)
+                     DEBUGARG(GenTreeFlags gtFlags = GTF_EMPTY));
 
 void emitIns_Mov(instruction ins, emitAttr attr, regNumber dstReg, regNumber srgReg, bool canSkip);
 
