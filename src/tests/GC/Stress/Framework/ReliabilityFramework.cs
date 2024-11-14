@@ -157,9 +157,20 @@ public class ReliabilityFramework
         string configFile = null;
         bool okToContinue = true, doReplay = false;
         string sTests = "tests", sSeed = "seed", exectime = "maximumExecutionTime";
+        string output = "";
 
         ReliabilityFramework rf = new ReliabilityFramework();
         rf._logger.WriteToInstrumentationLog(null, LoggingLevels.StartupShutdown, "Started");
+
+        IReadOnlyDictionary<string, object> configVars = GC.GetConfigurationVariables();
+        foreach (KeyValuePair<string, object> entry in configVars)
+        {
+            string key = entry.Key;
+            object value = entry.Value;
+            output += $"{entry.Key}: {entry.Value}\n";
+        }
+        rf._logger.WriteToInstrumentationLog(null, LoggingLevels.StartupShutdown, String.Format("Get GC Configuration Variables\n{0}",output));
+
         foreach (string arg in args)
         {
             rf._logger.WriteToInstrumentationLog(null, LoggingLevels.StartupShutdown, String.Format("Argument: {0}", arg));
