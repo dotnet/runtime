@@ -42,9 +42,6 @@ namespace System.Reflection.Emit
         public abstract void EmitCalli(OpCode opcode, CallingConventions callingConvention,
             Type? returnType, Type[]? parameterTypes, Type[]? optionalParameterTypes);
 
-        internal virtual void EmitCalli(OpCode opcode, CallingConventions callingConvention,
-            Type? returnType, ReadOnlySpan<Type> parameterTypes, Type[]? optionalParameterTypes) => throw new NotImplementedException();
-
         public abstract void EmitCalli(OpCode opcode, CallingConvention unmanagedCallConv, Type? returnType, Type[]? parameterTypes);
 
         public abstract void EmitCall(OpCode opcode, MethodInfo methodInfo, Type[]? optionalParameterTypes);

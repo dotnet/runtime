@@ -207,7 +207,8 @@ namespace System.Reflection
         {
             IsValueType = 0x1,
             IsValueType_ByRef_Or_Pointer = 0x2,
-            IsNullableOfT = 0x4,
+            IsByRefForValueType = 0x4,
+            IsNullableOfT = 0x8,
         }
 
         [InlineArray(MaxStackAllocArgCount)]

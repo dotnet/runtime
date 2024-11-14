@@ -18,7 +18,7 @@ namespace System.Reflection
         internal delegate object? InvokeFunc_ObjSpanArgs(object? obj, IntPtr functionPointer, Span<object?> arguments);
         internal unsafe delegate object? InvokeFunc_RefArgs(object? obj, IntPtr functionPointer, IntPtr* refArguments);
 
-        public static unsafe InvokeFunc_Obj0Args CreateInvokeDelegate_Obj0Args(MethodBase? method, InvokeSignatureInfo signatureInfo, bool backwardsCompat)
+        public static unsafe InvokeFunc_Obj0Args CreateInvokeDelegate_Obj0Args(MethodBase? method, in InvokeSignatureInfoKey signatureInfo, bool backwardsCompat)
         {
             DynamicMethod dm = CreateDynamicMethod(method, signatureInfo, [typeof(object), typeof(IntPtr)]);
             ILGenerator il = dm.GetILGenerator();
@@ -29,7 +29,7 @@ namespace System.Reflection
             return (InvokeFunc_Obj0Args)dm.CreateDelegate(typeof(InvokeFunc_Obj0Args), target: null);
         }
 
-        public static unsafe InvokeFunc_Obj1Arg CreateInvokeDelegate_Obj1Arg(MethodBase? method, InvokeSignatureInfo signatureInfo, bool backwardsCompat)
+        public static unsafe InvokeFunc_Obj1Arg CreateInvokeDelegate_Obj1Arg(MethodBase? method, in InvokeSignatureInfoKey signatureInfo, bool backwardsCompat)
         {
             DynamicMethod dm = CreateDynamicMethod(method, signatureInfo, [typeof(object), typeof(IntPtr), typeof(object)]);
             ILGenerator il = dm.GetILGenerator();
@@ -45,7 +45,7 @@ namespace System.Reflection
             return (InvokeFunc_Obj1Arg)dm.CreateDelegate(typeof(InvokeFunc_Obj1Arg), target: null);
         }
 
-        public static unsafe InvokeFunc_Obj4Args CreateInvokeDelegate_Obj4Args(MethodBase? method, InvokeSignatureInfo signatureInfo, bool backwardsCompat)
+        public static unsafe InvokeFunc_Obj4Args CreateInvokeDelegate_Obj4Args(MethodBase? method, in InvokeSignatureInfoKey signatureInfo, bool backwardsCompat)
         {
             DynamicMethod dm = CreateDynamicMethod(method, signatureInfo, [typeof(object), typeof(IntPtr), typeof(object), typeof(object), typeof(object), typeof(object)]);
             ILGenerator il = dm.GetILGenerator();
@@ -78,7 +78,7 @@ namespace System.Reflection
             return (InvokeFunc_Obj4Args)dm.CreateDelegate(typeof(InvokeFunc_Obj4Args), target: null);
         }
 
-        public static unsafe InvokeFunc_ObjSpanArgs CreateInvokeDelegate_ObjSpanArgs(MethodBase? method, InvokeSignatureInfo signatureInfo, bool backwardsCompat)
+        public static unsafe InvokeFunc_ObjSpanArgs CreateInvokeDelegate_ObjSpanArgs(MethodBase? method, in InvokeSignatureInfoKey signatureInfo, bool backwardsCompat)
         {
             DynamicMethod dm = CreateDynamicMethod(method, signatureInfo, [typeof(object), typeof(IntPtr), typeof(Span<object>)]);
             ILGenerator il = dm.GetILGenerator();
@@ -103,7 +103,7 @@ namespace System.Reflection
             return (InvokeFunc_ObjSpanArgs)dm.CreateDelegate(typeof(InvokeFunc_ObjSpanArgs), target: null);
         }
 
-        public static unsafe InvokeFunc_RefArgs CreateInvokeDelegate_RefArgs(MethodBase? method, InvokeSignatureInfo signatureInfo, bool backwardsCompat)
+        public static unsafe InvokeFunc_RefArgs CreateInvokeDelegate_RefArgs(MethodBase? method, in InvokeSignatureInfoKey signatureInfo, bool backwardsCompat)
         {
             DynamicMethod dm = CreateDynamicMethod(method, signatureInfo, [typeof(object), typeof(IntPtr), typeof(IntPtr*)]);
             ILGenerator il = dm.GetILGenerator();
@@ -155,7 +155,7 @@ namespace System.Reflection
             }
         }
 
-        private static DynamicMethod CreateDynamicMethod(MethodBase? method, InvokeSignatureInfo signatureInfo, Type[] delegateParameters)
+        private static DynamicMethod CreateDynamicMethod(MethodBase? method, in InvokeSignatureInfoKey signatureInfo, Type[] delegateParameters)
         {
             return new DynamicMethod(
                 GetInvokeStubName(method, signatureInfo),
@@ -167,7 +167,7 @@ namespace System.Reflection
 
         private static void EmitLdargForInstance(ILGenerator il, MethodBase? method, bool isStatic, Type declaringType)
         {
-            if (!isStatic && method is not RuntimeConstructorInfo)
+            if (method is not RuntimeConstructorInfo && !isStatic)
             {
                 il.Emit(OpCodes.Ldarg_0);
                 if (declaringType.IsValueType)
@@ -177,10 +177,12 @@ namespace System.Reflection
             }
         }
 
-        private static void EmitCall(ILGenerator il, MethodBase? method, InvokeSignatureInfo signatureInfo, bool isStatic, bool backwardsCompat)
+        private static void EmitCall(ILGenerator il, MethodBase? method, in InvokeSignatureInfoKey signatureInfo, bool isStatic, bool backwardsCompat)
         {
             if (method is null)
             {
+                // Use calli
+
                 CallingConventions callingConventions = CallingConventions.Standard;
                 if (!isStatic)
                 {
@@ -189,33 +191,34 @@ namespace System.Reflection
 
                 il.Emit(OpCodes.Ldarg_1);
                 il.EmitCalli(OpCodes.Calli, callingConventions, signatureInfo.ReturnType, signatureInfo.ParameterTypes, optionalParameterTypes: null);
+                return;
+            }
+
+            // Use Call\CallVirt\NewObj
+
+            // For CallStack reasons, don't inline target method.
+            // EmitCalli above and Mono interpreter do not need this.
+            if (backwardsCompat && RuntimeFeature.IsDynamicCodeCompiled)
+            {
+#if MONO
+                il.Emit(OpCodes.Call, Methods.DisableInline());
+#else
+                il.Emit(OpCodes.Call, Methods.NextCallReturnAddress());
+                il.Emit(OpCodes.Pop);
+#endif
+            }
+
+            if (method is RuntimeConstructorInfo rci)
+            {
+                il.Emit(OpCodes.Newobj, rci);
+            }
+            else if (method.IsStatic || method.DeclaringType!.IsValueType)
+            {
+                il.Emit(OpCodes.Call, (MethodInfo)method);
             }
             else
             {
-                // For CallStack reasons, don't inline target method.
-                // EmitCalli above and Mono interpreter do not need this.
-                if (backwardsCompat && RuntimeFeature.IsDynamicCodeCompiled)
-                {
-#if MONO
-                    il.Emit(OpCodes.Call, Methods.DisableInline());
-#else
-                    il.Emit(OpCodes.Call, Methods.NextCallReturnAddress());
-                    il.Emit(OpCodes.Pop);
-#endif
-                }
-
-                if (method is RuntimeConstructorInfo)
-                {
-                    il.Emit(OpCodes.Newobj, (ConstructorInfo)method);
-                }
-                else if (method.IsStatic || method.DeclaringType!.IsValueType)
-                {
-                    il.Emit(OpCodes.Call, (MethodInfo)method);
-                }
-                else
-                {
-                    il.Emit(OpCodes.Callvirt, (MethodInfo)method);
-                }
+                il.Emit(OpCodes.Callvirt, (MethodInfo)method);
             }
         }
 
@@ -280,7 +283,7 @@ namespace System.Reflection
         /// Return the name of the dynamic method that will be created using the function pointer syntax
         /// of listing the parameter types and then the return type.
         /// </summary>
-        private static string GetInvokeStubName(MethodBase? method, InvokeSignatureInfo signatureInfo)
+        private static string GetInvokeStubName(MethodBase? method, in InvokeSignatureInfoKey signatureInfo)
         {
             if (method is not null)
             {
@@ -290,7 +293,7 @@ namespace System.Reflection
 
             return GetInvokeStubName(signatureInfo);
 
-            static string GetInvokeStubName(InvokeSignatureInfo signatureInfo)
+            static string GetInvokeStubName(in InvokeSignatureInfoKey signatureInfo)
             {
                 const int MaxChars = 256;
                 Span<char> value = stackalloc char[MaxChars];

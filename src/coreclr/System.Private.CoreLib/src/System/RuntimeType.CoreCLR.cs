@@ -4524,5 +4524,32 @@ namespace System.Reflection
                 m_Table.Insert(key, value);
             }
         }
+
+        public unsafe V GetValue<TAlternativeKey>(int hashcode, in TAlternativeKey alternative, delegate*<in TAlternativeKey, K, bool> equals) where TAlternativeKey : allows ref struct
+        {
+            Table table = m_Table;
+            if (table is null)
+                return default!;
+            if (hashcode < 0)
+                hashcode = ~hashcode;
+            K[] keys = table.m_keys;
+            int index = hashcode % keys.Length;
+            while (true)
+            {
+                K hit = Volatile.Read(ref keys[index]);
+                if (hit != null)
+                {
+                    if (equals(alternative, hit))
+                        return table.m_values[index];
+                    index++;
+                    if (index >= keys.Length)
+                        index -= keys.Length;
+                }
+                else
+                {
+                    return default!;
+                }
+            }
+        }
     }
 }

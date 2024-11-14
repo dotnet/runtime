@@ -119,6 +119,14 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
+        public void Invoke_String()
+        {
+            ConstructorInfo c = typeof(string).GetConstructor(BindingFlags.Public | BindingFlags.Instance, new Type[] { typeof(char[]), typeof(int), typeof(int) });
+            string s = (string)Invoke(c, new object[] { "Hello".ToCharArray(), 0, 5 });
+            Assert.Equal("Hello", s);
+        }
+
+        [Fact]
         public void Invoke_ExistingInstance()
         {
             // Should not produce a second object.

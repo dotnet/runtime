@@ -17,16 +17,51 @@ namespace System.Reflection
         private static object? s_invokerFuncsLock;
 
         internal static void Initialize(
-            InvokeSignatureInfo signatureInfo,
-            out bool needsByRefStrategy,
+            bool isForArrayInput,
+            MethodBase method,
+            Type declaringType,
+            RuntimeType[] parameterTypes,
+            Type returnType,
+            out bool allocateObject,
+            out IntPtr functionPointer,
+            out Delegate invokeFunc,
+            out InvokerStrategy strategy,
+            out InvokerArgFlags[] invokerArgFlags)
+        {
+            functionPointer = method.MethodHandle.GetFunctionPointer();
+            strategy = GetStrategy(parameterTypes, out invokerArgFlags);
+
+            if (UseCalli(method))
+            {
+                allocateObject = method is RuntimeConstructorInfo;
+                if (CanCache(method))
+                {
+                    // For constructors we allocate before calling invokeFunc so invokeFunc will be cacheable.
+                    invokeFunc = GetOrCreateInvokeFunc(isForArrayInput, strategy, declaringType, parameterTypes, returnType, method.IsStatic);
+                }
+                else
+                {
+                    InvokeSignatureInfoKey signatureInfo = new(declaringType, parameterTypes, returnType, method.IsStatic);
+                    invokeFunc = CreateInvokeFunc(isForArrayInput, method: null, signatureInfo, strategy);
+                }
+            }
+            else
+            {
+                // Use Call\Callvirt\Newobj path.
+                allocateObject = false;
+                InvokeSignatureInfoKey signatureInfo = new(declaringType, parameterTypes, returnType, method.IsStatic);
+                invokeFunc = CreateInvokeFunc(isForArrayInput, method, signatureInfo, strategy);
+            }
+        }
+
+        private static InvokerStrategy GetStrategy(
+            RuntimeType[] parameterTypes,
             out InvokerArgFlags[] invokerFlags)
         {
-            needsByRefStrategy = false;
-            ReadOnlySpan<Type> parameterTypes = signatureInfo.ParameterTypes;
+            bool needsByRefStrategy = false;
             int argCount = parameterTypes.Length;
             invokerFlags = new InvokerArgFlags[argCount];
 
-            // Set invokerFlags[] and needsByRefStrategy.
             for (int i = 0; i < argCount; i++)
             {
                 RuntimeType type = (RuntimeType)parameterTypes[i];
@@ -35,9 +70,14 @@ namespace System.Reflection
                     type = (RuntimeType)type.GetElementType();
                     invokerFlags[i] |= InvokerArgFlags.IsValueType_ByRef_Or_Pointer;
                     needsByRefStrategy = true;
-                    if (type.IsNullableOfT)
+                    if (type.IsValueType)
                     {
-                        invokerFlags[i] |= InvokerArgFlags.IsNullableOfT;
+                        invokerFlags[i] |= InvokerArgFlags.IsByRefForValueType;
+
+                        if (type.IsNullableOfT)
+                        {
+                            invokerFlags[i] |= InvokerArgFlags.IsNullableOfT;
+                        }
                     }
                 }
 
@@ -59,50 +99,95 @@ namespace System.Reflection
                     }
                 }
             }
+
+            return GetInvokerStrategy(argCount, needsByRefStrategy);
         }
 
-        public static InvokerStrategy GetInvokerStrategyForSpanInput(int argCount, bool needsByRefStrategy)
+        internal static bool UseCalli(MethodBase method)
+        {
+            Type declaringType = method.DeclaringType!;
+
+            if (method is RuntimeConstructorInfo)
+            {
+                // Constructors are not polymorphic but avoid calli for constructors that require initialization through newobj.
+                return !ReferenceEquals(declaringType, typeof(string)) && !declaringType.IsArray;
+            }
+
+            if (declaringType.IsValueType)
+            {
+                // For value types, calli is not supported for virtual methods (e.g. ToString()).
+                return !method.IsVirtual;
+            }
+
+            // If not polymorphic and thus can be called with a calli instruction.
+            return !method.IsVirtual || declaringType.IsSealed || method.IsFinal;
+        }
+
+        internal static bool CanCache(MethodBase method)
+        {
+            return CanCacheDynamicMethod(method) &&
+                !HasDefaultParameterValues(method);
+
+            static bool CanCacheDynamicMethod(MethodBase method) =>
+                // The cache method's DeclaringType and other collectible parameters would be referenced.
+                !method.DeclaringType!.Assembly.IsCollectible &&
+                // An instance method on a value type needs to be unbox which requires its type in IL, so caching would not be very sharable.
+                !(method.DeclaringType!.IsValueType && !method.IsStatic);
+
+            // Supporting default values would increase cache memory usage and slow down the common case
+            // since the default values would have to be cached as well.
+            static bool HasDefaultParameterValues(MethodBase method)
+            {
+                ReadOnlySpan<ParameterInfo> parameters = method.GetParametersAsSpan();
+
+                for (int i = 0; i < parameters.Length; i++)
+                {
+                    if (parameters[i].HasDefaultValue)
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+        }
+
+        private static InvokerStrategy GetInvokerStrategy(int argCount, bool needsByRefStrategy)
         {
             if (needsByRefStrategy)
             {
-                return InvokerStrategy.RefMany;
+                return argCount <= 4 ? InvokerStrategy.Ref4 : InvokerStrategy.RefMany;
             }
 
-            return argCount <= 4 ? InvokerStrategy.Obj4 : InvokerStrategy.ObjSpan;
+            return argCount switch
+            {
+                0 => InvokerStrategy.Obj0,
+                1 => InvokerStrategy.Obj1,
+                2 or 3 or 4 => InvokerStrategy.Obj4,
+                _ => InvokerStrategy.ObjSpan
+            };
         }
 
-        internal static Delegate CreateInvokeFunc(MethodBase? method, InvokeSignatureInfo signatureInfo, InvokerStrategy strategy, bool isForArrayInput, bool backwardsCompat)
+        internal static Delegate CreateInvokeFunc(bool isForArrayInput, MethodBase? method, in InvokeSignatureInfoKey signatureInfo, InvokerStrategy strategy)
         {
             Delegate? invokeFunc;
+            bool backwardsCompat = isForArrayInput && method is not null;
 
             if (!TryCreateWellKnownInvokeFunc(method, signatureInfo, strategy, out invokeFunc))
             {
-                if (isForArrayInput)
+                invokeFunc = strategy switch
                 {
-                    invokeFunc = strategy switch
-                    {
-                        InvokerStrategy.Obj0 => CreateInvokeDelegate_Obj0Args(method, signatureInfo, backwardsCompat),
-                        InvokerStrategy.Obj1 => CreateInvokeDelegate_Obj1Arg(method, signatureInfo, backwardsCompat),
-                        InvokerStrategy.Obj4 or InvokerStrategy.ObjSpan => CreateInvokeDelegate_ObjSpanArgs(method, signatureInfo, backwardsCompat),
-                        _ => CreateInvokeDelegate_RefArgs(method, signatureInfo, backwardsCompat)
-                    };
-                }
-                else
-                {
-                    invokeFunc = strategy switch
-                    {
-                        InvokerStrategy.Obj0 => CreateInvokeDelegate_Obj0Args(method, signatureInfo, backwardsCompat),
-                        InvokerStrategy.Obj1 => CreateInvokeDelegate_Obj1Arg(method, signatureInfo, backwardsCompat),
-                        InvokerStrategy.Obj4 => CreateInvokeDelegate_Obj4Args(method, signatureInfo, backwardsCompat),
-                        InvokerStrategy.ObjSpan => CreateInvokeDelegate_ObjSpanArgs(method, signatureInfo, backwardsCompat),
-                        _ => CreateInvokeDelegate_RefArgs(method, signatureInfo, backwardsCompat)
-                    };
-                }
+                    InvokerStrategy.Obj0 => CreateInvokeDelegate_Obj0Args(method, signatureInfo, backwardsCompat),
+                    InvokerStrategy.Obj1 => CreateInvokeDelegate_Obj1Arg(method, signatureInfo, backwardsCompat),
+                    InvokerStrategy.Obj4 => CreateInvokeDelegate_Obj4Args(method, signatureInfo, backwardsCompat),
+                    InvokerStrategy.ObjSpan => CreateInvokeDelegate_ObjSpanArgs(method, signatureInfo, backwardsCompat),
+                    _ => CreateInvokeDelegate_RefArgs(method, signatureInfo, backwardsCompat)
+                };
             }
 
             return invokeFunc;
 
-            static bool TryCreateWellKnownInvokeFunc(MethodBase? method, InvokeSignatureInfo signatureInfo, InvokerStrategy strategy, [NotNullWhen(true)] out Delegate? wellKnown)
+            static bool TryCreateWellKnownInvokeFunc(MethodBase? method, in InvokeSignatureInfoKey signatureInfo, InvokerStrategy strategy, [NotNullWhen(true)] out Delegate? wellKnown)
             {
                 if (method is null)
                 {
@@ -123,59 +208,54 @@ namespace System.Reflection
             }
         }
 
-        internal static bool CanCacheDynamicMethod(MethodBase method) =>
-            // The cache method's DeclaringType and other collectible parameters would be referenced.
-            !method.IsCollectible &&
-            // Value types need to be unboxed which requires its type, so a cached value would not be very sharable.
-            !(method.DeclaringType!.IsValueType && !method.IsStatic);
-
-        /// <summary>
-        /// Determines if the method is not polymorphic and thus can be called with a calli instruction.
-        /// </summary>
-        internal static bool SupportsCalli(MethodBase method)
-        {
-            return method.IsStatic ||
-                method.DeclaringType!.IsSealed ||
-                method.IsFinal ||
-                (
-                    method is ConstructorInfo &&
-                    // A string cannot be allocated with an uninitialized value, so we use NewObj.
-                    !ReferenceEquals(method.DeclaringType, typeof(string))
-                );
-        }
-
         internal static Delegate GetOrCreateInvokeFunc(
-            InvokeSignatureInfo signatureInfo,
-            InvokerStrategy strategy,
             bool isForArrayInput,
-            bool backwardsCompat)
+            InvokerStrategy strategy,
+            Type declaringType,
+            RuntimeType[] parameterTypes,
+            Type returnType,
+            bool isStatic)
         {
-            // Get the cached dynamic method.
-            Delegate invokeFunc = s_invokerFuncs[signatureInfo];
-            if (invokeFunc is null)
-            {
-                if (s_invokerFuncsLock is null)
-                {
-                    Interlocked.CompareExchange(ref s_invokerFuncsLock!, new object(), null);
-                }
+            InvokeSignatureInfoKey key = InvokeSignatureInfoKey.CreateNormalized(declaringType, parameterTypes, returnType, isStatic);
 
-                bool lockTaken = false;
-                try
+            int hashcode = key.AlternativeGetHashCode();
+            Delegate invokeFunc;
+            unsafe
+            {
+                invokeFunc = s_invokerFuncs.GetValue<InvokeSignatureInfoKey>(hashcode, key, &InvokeSignatureInfoKey.AlternativeEquals);
+            }
+
+            if (invokeFunc is not null)
+            {
+                return invokeFunc;
+            }
+
+            if (s_invokerFuncsLock is null)
+            {
+                Interlocked.CompareExchange(ref s_invokerFuncsLock!, new object(), null);
+            }
+
+            // To minimize the lock scope, create the new delegate outside the lock even though it may not be used.
+            Delegate newInvokeFunc = CreateInvokeFunc(isForArrayInput, method: null, key, strategy);
+            bool lockTaken = false;
+            try
+            {
+                Monitor.Enter(s_invokerFuncsLock, ref lockTaken);
+                unsafe
                 {
-                    Monitor.Enter(s_invokerFuncsLock, ref lockTaken);
-                    invokeFunc = s_invokerFuncs[signatureInfo];
-                    if (invokeFunc is null)
-                    {
-                        invokeFunc = CreateInvokeFunc(method: null, signatureInfo, strategy, isForArrayInput, backwardsCompat);
-                        s_invokerFuncs[signatureInfo] = invokeFunc;
-                    }
+                    invokeFunc = s_invokerFuncs.GetValue<InvokeSignatureInfoKey>(hashcode, key, &InvokeSignatureInfoKey.AlternativeEquals);
                 }
-                finally
+                if (invokeFunc is null)
                 {
-                    if (lockTaken)
-                    {
-                        Monitor.Exit(s_invokerFuncsLock);
-                    }
+                    s_invokerFuncs[InvokeSignatureInfo.Create(key)] = newInvokeFunc;
+                    invokeFunc = newInvokeFunc;
+                }
+            }
+            finally
+            {
+                if (lockTaken)
+                {
+                    Monitor.Exit(s_invokerFuncsLock);
                 }
             }
 
