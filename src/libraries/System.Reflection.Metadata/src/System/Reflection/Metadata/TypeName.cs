@@ -312,6 +312,8 @@ namespace System.Reflection.Metadata
         /// </list>
         /// </para>
         /// </remarks>
+        /// <exception cref="OverflowException">The total number of <see cref="TypeName"/> instances that are used to describe
+        /// this instance exceed <see cref="int.MaxValue"/>.</exception>
         public int GetNodeCount()
         {
             // This method uses checked arithmetic to avoid silent overflows.

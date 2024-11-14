@@ -397,7 +397,7 @@ static void regenLog(unsigned codeDelta,
 
     if (logFile == NULL)
     {
-        logFile = fopen("regen.txt", "a");
+        logFile = fopen_utf8("regen.txt", "a");
         InitializeCriticalSection(&logFileLock);
     }
 
@@ -424,7 +424,7 @@ static void regenLog(unsigned encoding, InfoHdr* header, InfoHdr* state)
 {
     if (logFile == NULL)
     {
-        logFile = fopen("regen.txt", "a");
+        logFile = fopen_utf8("regen.txt", "a");
         InitializeCriticalSection(&logFileLock);
     }
 

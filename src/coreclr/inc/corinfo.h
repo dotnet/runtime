@@ -480,6 +480,7 @@ enum CorInfoHelpFunc
     CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED,
     CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED,
     CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2,
+    CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2_NOJITOPT,
 
     /* Debugger */
 
@@ -2960,9 +2961,6 @@ public:
     virtual void getEEInfo(
             CORINFO_EE_INFO            *pEEInfoOut
             ) = 0;
-
-    // Returns name of the JIT timer log
-    virtual const char16_t *getJitTimeLogFilename() = 0;
 
     /*********************************************************************************/
     //

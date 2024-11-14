@@ -783,46 +783,6 @@ void ep_rt_aot_os_environment_get_utf16 (dn_vector_ptr_t *env_array)
 #endif
 }
 
-void ep_rt_aot_create_activity_id (uint8_t *activity_id, uint32_t activity_id_len)
-{
-    // We call CoCreateGuid for windows, and use a random generator for non-windows
-    STATIC_CONTRACT_NOTHROW;
-    EP_ASSERT (activity_id != NULL);
-    EP_ASSERT (activity_id_len == EP_ACTIVITY_ID_SIZE);
-#ifdef HOST_WIN32
-    CoCreateGuid (reinterpret_cast<GUID *>(activity_id));
-#else
-    if(minipal_get_cryptographically_secure_random_bytes(activity_id, activity_id_len)==-1)
-    {
-        *activity_id=0;
-        return;
-    }
-
-    const uint16_t version_mask = 0xF000;
-    const uint16_t random_guid_version = 0x4000;
-    const uint8_t clock_seq_hi_and_reserved_mask = 0xC0;
-    const uint8_t clock_seq_hi_and_reserved_value = 0x80;
-
-    // Modify bits indicating the type of the GUID
-    uint8_t *activity_id_c = activity_id + sizeof (uint32_t) + sizeof (uint16_t);
-    uint8_t *activity_id_d = activity_id + sizeof (uint32_t) + sizeof (uint16_t) + sizeof (uint16_t);
-
-    uint16_t c;
-    memcpy (&c, activity_id_c, sizeof (c));
-
-    uint8_t d;
-    memcpy (&d, activity_id_d, sizeof (d));
-
-    // time_hi_and_version
-    c = ((c & ~version_mask) | random_guid_version);
-    // clock_seq_hi_and_reserved
-    d = ((d & ~clock_seq_hi_and_reserved_mask) | clock_seq_hi_and_reserved_value);
-
-    memcpy (activity_id_c, &c, sizeof (c));
-    memcpy (activity_id_d, &d, sizeof (d));
-#endif
-}
-
 ep_rt_thread_handle_t ep_rt_aot_thread_get_handle (void)
 {
     return ThreadStore::GetCurrentThreadIfAvailable();
