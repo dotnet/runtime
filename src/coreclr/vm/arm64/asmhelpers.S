@@ -806,3 +806,14 @@ LEAF_ENTRY GetTLSResolverAddress, _TEXT
 LEAF_END GetTLSResolverAddress, _TEXT
 // ------------------------------------------------------------------
 #endif // !TARGET_OSX
+
+LEAF_ENTRY  JIT_PollGC, _TEXT
+        PREPARE_EXTERNAL_VAR g_TrapReturningThreads, x9
+        ldr     w9, [x9]
+        cbnz    w9, LOCAL_LABEL(JIT_PollGCRarePath)
+        ret
+LOCAL_LABEL(JIT_PollGCRarePath):
+        PREPARE_EXTERNAL_VAR g_pPollGC, x9
+        ldr     x9, [x9]
+        br x9
+LEAF_END  JIT_PollGC, _TEXT

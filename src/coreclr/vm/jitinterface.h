@@ -109,6 +109,12 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
 // The portable helper is used if the platform does not provide optimized implementation.
 //
 
+#ifdef JIT_PollGC
+EXTERN_C FCDECL0(void, JIT_PollGC);
+#else
+#define JIT_PollGC NULL
+#endif
+
 #ifndef JIT_MonEnter
 #define JIT_MonEnter JIT_MonEnter_Portable
 #endif

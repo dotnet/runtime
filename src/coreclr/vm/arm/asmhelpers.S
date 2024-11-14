@@ -914,3 +914,14 @@ ProbeLoop:
     NESTED_END OnCallCountThresholdReachedStub, _TEXT
 
 #endif // FEATURE_TIERED_COMPILATION
+
+    LEAF_ENTRY JIT_PollGC, _TEXT
+        PREPARE_EXTERNAL_VAR g_TrapReturningThreads, r12
+        ldr     r12, [r12]
+        cbnz    r12, LOCAL_LABEL(JIT_PollGCRarePath)
+        ret
+LOCAL_LABEL(JIT_PollGCRarePath):
+        PREPARE_EXTERNAL_VAR g_pPollGC, r12
+        ldr     r12, [r12]
+        EPILOG_BRANCH_REG r12
+    LEAF_END JIT_PollGC, _TEXT

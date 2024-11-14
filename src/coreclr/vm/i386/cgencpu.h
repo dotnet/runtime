@@ -482,5 +482,8 @@ inline BOOL ClrFlushInstructionCache(LPCVOID pCodeAddr, size_t sizeOfCode, bool 
 // #define JIT_GetSharedNonGCStaticBase
 // #define JIT_GetSharedGCStaticBaseNoCtor
 // #define JIT_GetSharedNonGCStaticBaseNoCtor
+#ifdef TARGET_WINDOWS
+#define JIT_PollGC                           JIT_PollGC
+#endif
 
 #endif // __cgenx86_h__

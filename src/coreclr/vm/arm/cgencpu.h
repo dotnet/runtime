@@ -102,6 +102,8 @@ EXTERN_C void setFPReturn(int fpSize, INT64 retVal);
 
 #define FLOAT_REGISTER_SIZE 4 // each register in FloatArgumentRegisters is 4 bytes.
 
+#define JIT_PollGC                           JIT_PollGC
+
 //**********************************************************************
 // Parameter size
 //**********************************************************************

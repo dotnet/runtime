@@ -133,6 +133,7 @@ inline unsigned StackElemSize(unsigned parmSize, bool isValueType, bool isFloatH
 //
 #define JIT_GetDynamicGCStaticBase           JIT_GetDynamicGCStaticBase_SingleAppDomain
 #define JIT_GetDynamicNonGCStaticBase        JIT_GetDynamicNonGCStaticBase_SingleAppDomain
+#define JIT_PollGC                           JIT_PollGC
 
 //**********************************************************************
 // Frames
