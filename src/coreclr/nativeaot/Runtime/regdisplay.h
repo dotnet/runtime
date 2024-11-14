@@ -238,6 +238,8 @@ struct REGDISPLAY
     PTR_uintptr_t pR0;
     PTR_uintptr_t pRA;
 
+    uintptr_t   SP;
+
     PTR_uintptr_t pGP;
     PTR_uintptr_t pTP;
     PTR_uintptr_t pT0;
@@ -268,7 +270,6 @@ struct REGDISPLAY
     PTR_uintptr_t pT5;
     PTR_uintptr_t pT6;
 
-    uintptr_t   SP;
     PCODE        IP;
 
     uint64_t F[32];  // Expanded to cover all F registers

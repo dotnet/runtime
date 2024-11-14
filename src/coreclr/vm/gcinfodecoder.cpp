@@ -1902,7 +1902,6 @@ OBJECTREF* GcInfoDecoder::GetRegisterSlot(
 #ifdef FEATURE_NATIVEAOT
     PTR_uintptr_t* ppReg = &pRD->pR0;
 
-    if (regNum >= 3) regNum--; // sp is skipped in NativeAOT RegDisplay
     return (OBJECTREF*)*(ppReg + regNum);
 #else
     if(regNum == 1)
