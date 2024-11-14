@@ -2934,6 +2934,7 @@ int gc_heap::last_total_bgc_threads = 0;
 
 #ifdef STRESS_DYNAMIC_HEAP_COUNT
 int gc_heap::heaps_in_this_gc = 0;
+int gc_heap::bgc_to_ngc2_ratio = 0;
 #endif //STRESS_DYNAMIC_HEAP_COUNT
 #endif // DYNAMIC_HEAP_COUNT
 
@@ -14262,6 +14263,11 @@ HRESULT gc_heap::initialize_gc (size_t soh_segment_size,
 
     if ((dynamic_adaptation_mode == dynamic_adaptation_to_application_sizes) && (conserve_mem_setting == 0))
         conserve_mem_setting = 5;
+
+#ifdef STRESS_DYNAMIC_HEAP_COUNT
+    bgc_to_ngc2_ratio = (int)GCConfig::GetGCDBGCRatio();
+    dprintf (1, ("bgc_to_ngc2_ratio is %d", bgc_to_ngc2_ratio));
+#endif
 #endif //DYNAMIC_HEAP_COUNT
 
     if (conserve_mem_setting < 0)
@@ -21151,6 +21157,18 @@ int gc_heap::joined_generation_to_condemn (BOOL should_evaluate_elevation,
             if (!((n == max_generation) && *blocking_collection_p))
             {
                 n = max_generation;
+
+#ifdef STRESS_DYNAMIC_HEAP_COUNT
+                if (bgc_to_ngc2_ratio)
+                {
+                    int r = (int)gc_rand::get_rand ((bgc_to_ngc2_ratio + 1) * 10);
+                    dprintf (6666, ("%d - making this full GC %s", r, ((r < 10) ? "NGC2" : "BGC")));
+                    if (r < 10)
+                    {
+                        *blocking_collection_p = TRUE;
+                    }
+                }
+#endif //STRESS_DYNAMIC_HEAP_COUNT
             }
         }
     }
@@ -39823,10 +39841,23 @@ void gc_heap::bgc_thread_function()
                 continue;
             }
         }
+
+#ifdef STRESS_DYNAMIC_HEAP_COUNT
+        if (n_heaps <= heap_number)
+        {
+            uint32_t delay_ms = (uint32_t)gc_rand::get_rand (200);
+            GCToOSInterface::Sleep (delay_ms);
+        }
+#endif //STRESS_DYNAMIC_HEAP_COUNT
+
         // if we signal the thread with no concurrent work to do -> exit
         if (!settings.concurrent)
         {
             dprintf (3, ("no concurrent GC needed, exiting"));
+
+#ifdef STRESS_DYNAMIC_HEAP_COUNT
+            GCToOSInterface::DebugBreak();
+#endif
             break;
         }
 

@@ -5362,6 +5362,9 @@ private:
 
 #ifdef DYNAMIC_HEAP_COUNT
     PER_HEAP_ISOLATED_FIELD_INIT_ONLY int dynamic_adaptation_mode;
+#ifdef STRESS_DYNAMIC_HEAP_COUNT
+    PER_HEAP_ISOLATED_FIELD_INIT_ONLY int bgc_to_ngc2_ratio;
+#endif //STRESS_DYNAMIC_HEAP_COUNT
 #endif //DYNAMIC_HEAP_COUNT
 
     /********************************************/
