@@ -1954,15 +1954,22 @@ static int GetAllowedVectorCount(int32_t vectorCount)
 {
     int allowedCount = (int)vectorCount;
 
+    // We need to respect the limit of items that can be passed in iov.
+    // In case of writes, the managed code is responsible for handling incomplete writes.
+    // In case of reads, we simply returns the number of bytes read and it's up to the users.
 #if defined(IOV_MAX)
     if (IOV_MAX < allowedCount)
     {
-        // We need to respect the limit of items that can be passed in iov.
-        // In case of writes, the managed code is reponsible for handling incomplete writes.
-        // In case of reads, we simply returns the number of bytes read and it's up to the users.
         allowedCount = IOV_MAX;
     }
+#elif defined(UIO_MAXIOV) // macOS and iOS
+    if (UIO_MAXIOV < allowedCount)
+    {
+        allowedCount = UIO_MAXIOV;
+    }
 #endif
+
+
     return allowedCount;
 }
 #endif // (HAVE_PREADV || HAVE_PWRITEV) && !defined(TARGET_WASM)
