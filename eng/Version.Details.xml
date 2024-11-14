@@ -64,14 +64,14 @@
       <Sha>b897087e8b76481a9213ae422f5dc16f64a124b5</Sha>
       <SourceBuild RepoName="cecil" ManagedOnly="true" />
     </Dependency>
-    <Dependency Name="Microsoft.NET.Workload.Emscripten.Current.Manifest-10.0.100.Transport" Version="10.0.0-alpha.1.24561.2">
+    <Dependency Name="Microsoft.NET.Workload.Emscripten.Current.Manifest-10.0.100.Transport" Version="10.0.0-alpha.1.24563.1">
       <Uri>https://github.com/dotnet/emsdk</Uri>
-      <Sha>a26fd165d09d2623b8186ec4751b481cee1c634e</Sha>
+      <Sha>8808f75f212bcec6a2050fe045a7e07ab8a5a8c1</Sha>
     </Dependency>
     <!-- Intermediate is necessary for source build. -->
-    <Dependency Name="Microsoft.SourceBuild.Intermediate.emsdk" Version="10.0.0-alpha.1.24561.2">
+    <Dependency Name="Microsoft.SourceBuild.Intermediate.emsdk" Version="10.0.0-alpha.1.24563.1">
       <Uri>https://github.com/dotnet/emsdk</Uri>
-      <Sha>a26fd165d09d2623b8186ec4751b481cee1c634e</Sha>
+      <Sha>8808f75f212bcec6a2050fe045a7e07ab8a5a8c1</Sha>
       <SourceBuild RepoName="emsdk" ManagedOnly="true" />
     </Dependency>
     <!-- Intermediate is necessary for source build. -->
