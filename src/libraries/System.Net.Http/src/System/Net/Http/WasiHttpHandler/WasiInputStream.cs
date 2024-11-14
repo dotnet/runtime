@@ -18,6 +18,7 @@ namespace System.Net.Http
         private WasiRequestWrapper wrapper; // owned by this instance
         private IncomingBody body; // owned by this instance
         private InputStream stream; // owned by this instance
+        private HttpResponseMessage response;
 
         private int offset;
         private byte[]? buffer;
@@ -28,11 +29,16 @@ namespace System.Net.Http
         public override bool CanWrite => false;
         public override bool CanSeek => false;
 
-        public WasiInputStream(WasiRequestWrapper wrapper, IncomingBody body)
+        public WasiInputStream(
+            WasiRequestWrapper wrapper,
+            IncomingBody body,
+            HttpResponseMessage response
+        )
         {
             this.wrapper = wrapper;
             this.body = body;
             this.stream = body.Stream();
+            this.response = response;
         }
 
         ~WasiInputStream()
@@ -111,6 +117,7 @@ namespace System.Net.Http
                         if (((StreamError)e.Value).Tag == StreamError.CLOSED)
                         {
                             otherSideClosed = true;
+                            await ReadTrailingHeaders(cancellationToken).ConfigureAwait(false);
                             return 0;
                         }
                         else
@@ -156,6 +163,46 @@ namespace System.Net.Http
 #pragma warning restore CA1835
             new ReadOnlySpan<byte>(dst, 0, result).CopyTo(buffer.Span);
             return result;
+        }
+
+        private async Task ReadTrailingHeaders(CancellationToken cancellationToken)
+        {
+            isClosed = true;
+            stream.Dispose();
+            using var futureTrailers = IncomingBody.Finish(body);
+            while (true)
+            {
+                var trailers = futureTrailers.Get();
+                if (trailers is null)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    await WasiHttpInterop
+                        .RegisterWasiPollable(futureTrailers.Subscribe(), cancellationToken)
+                        .ConfigureAwait(false);
+                }
+                else
+                {
+                    var inner = ((Result<Result<Fields?, ErrorCode>, None>)trailers!).AsOk;
+                    if (inner.IsOk)
+                    {
+                        using var headers = inner.AsOk;
+                        if (headers is not null)
+                        {
+                            response.StoreReceivedTrailingHeaders(
+                                WasiHttpInterop.ConvertTrailingResponseHeaders(headers)
+                            );
+                        }
+
+                        break;
+                    }
+                    else
+                    {
+                        throw new HttpRequestException(
+                            WasiHttpInterop.ErrorCodeToString(inner.AsErr)
+                        );
+                    }
+                }
+            }
         }
 
         #region PlatformNotSupported

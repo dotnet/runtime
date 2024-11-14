@@ -60,7 +60,7 @@ namespace System.Net.Http
                 // we will leave scope of this method
                 // we need to pass the ownership of the request and this wrapper to the response (via response content stream)
                 // unless we know that we are not streaming anymore
-                incomingStream = new WasiInputStream(this, incomingResponse.Consume());// passing self ownership, passing body ownership
+                incomingStream = new WasiInputStream(this, incomingResponse.Consume(), response);// passing self ownership, passing body ownership
                 response.Content = new StreamContent(incomingStream); // passing incomingStream ownership to SendAsync() caller
                 WasiHttpInterop.ConvertResponseHeaders(incomingResponse, response);
 
