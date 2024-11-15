@@ -240,15 +240,14 @@ public class CodeVersionsTests
                             IReadOnlyCollection<MockCodeBlockStart>? codeBlocks = null,
                             IReadOnlyCollection<MockModule>? modules = null,
                             ReadFromTargetDelegate reader = null,
-                            Dictionary<DataType, TypeInfo>? typeInfoCache = null) : base(arch) {
+                            Dictionary<DataType, TypeInfo>? typeInfoCache = null)
+            : base(arch, reader)
+        {
             IExecutionManager mockExecutionManager = new MockExecutionManager(codeBlocks ?? []);
             IRuntimeTypeSystem mockRuntimeTypeSystem = new MockRuntimeTypeSystem(this, methodDescs ?? [], methodTables ?? []);
             ILoader loader = new MockLoader(modules ?? []);
-            if (reader != null)
-                SetDataReader(reader);
             if (typeInfoCache != null)
                 SetTypeInfoCache(typeInfoCache);
-            SetDataCache(new DefaultDataCache(this));
             IContractFactory<ICodeVersions> cvfactory = new CodeVersionsFactory();
             SetContracts(new TestRegistry() {
                 CodeVersionsContract = new (() => cvfactory.CreateContract(this, 1)),
