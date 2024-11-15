@@ -59,6 +59,7 @@
   <ItemGroup>
     <Compile Include="Internal\Runtime\CompilerHelpers\DelegateHelpers.cs" />
     <Compile Include="Internal\Runtime\CompilerHelpers\LibraryInitializer.cs" />
+    <Compile Include="Internal\Runtime\CompilerHelpers\ReachabilityInstrumentationSupport.cs" />
     <Compile Include="Internal\Runtime\CompilerHelpers\ReflectionHelpers.cs" />
     <Compile Include="Internal\Runtime\CompilerHelpers\SharedCodeHelpers.cs" />
     <Compile Include="Internal\Runtime\CompilerHelpers\StartupCode\StartupCodeHelpers.Reflection.cs" />

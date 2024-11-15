@@ -73,6 +73,10 @@
 
 #include <olectl.h>
 
+#ifdef HOST_AMD64
+#include <xmmintrin.h>
+#endif
+
 using std::max;
 using std::min;
 
