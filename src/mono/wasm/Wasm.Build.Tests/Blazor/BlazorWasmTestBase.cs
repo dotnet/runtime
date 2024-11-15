@@ -154,57 +154,6 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestsBase
         );
     }
 
-    protected (CommandResult, string) BlazorPublish(BuildProjectOptions options, params string[] extraArgs)
-    {
-        if (options.WarnAsError)
-            extraArgs = extraArgs.Append("/warnaserror").ToArray();
-
-        (CommandResult res, string logPath) = BlazorBuildInternal(options.Id, options.Configuration, publish: true, setWasmDevel: false, expectSuccess: options.ExpectSuccess, extraArgs);
-
-        if (options.ExpectSuccess && options.AssertAppBundle)
-        {
-            // Because we do relink in Release publish by default
-            if (options.Configuration == "Release")
-                options = options with { ExpectedFileType = NativeFilesType.Relinked };
-
-            AssertBundle(res.Output, options with { IsPublish = true });
-        }
-
-        return (res, logPath);
-    }
-
-    protected (CommandResult res, string logPath) BlazorBuildInternal(
-        string id,
-        string config,
-        bool publish = false,
-        bool setWasmDevel = true, // always used with false
-        bool expectSuccess = true,
-        params string[] extraArgs)
-    {
-        try
-        {
-            return BuildProjectWithoutAssert(
-                        new BuildProjectOptions(
-                            id,
-                            config,
-                            GetBlazorBinFrameworkDir(config, forPublish: publish),
-                            UseCache: false,
-                            IsPublish: publish,
-                            ExpectSuccess: expectSuccess),
-                        extraArgs.Concat(new[]
-                        {
-                            "-p:BlazorEnableCompression=false", // use it in BuildTemplateProject overload
-                            setWasmDevel ? "-p:_WasmDevel=true" : string.Empty
-                        }).ToArray());
-        }
-        catch (XunitException xe)
-        {
-            if (xe.Message.Contains("error CS1001: Identifier expected"))
-                Utils.DirectoryCopy(_projectDir!, Path.Combine(s_buildEnv.LogRootPath, id), testOutput: _testOutput);
-            throw;
-        }
-    }
-
     public void AssertBundle(string buildOutput, BuildProjectOptions buildOptions)
     {
         if (IsUsingWorkloads)

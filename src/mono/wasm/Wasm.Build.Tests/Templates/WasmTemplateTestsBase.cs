@@ -113,7 +113,6 @@ public class WasmTemplateTestsBase : BuildTestBase
         AddItemsPropertiesToProject(projectFilePath, extraProperties, extraItems, insertAtEnd);
     }
 
-
     public virtual (string projectDir, string buildOutput) BuildTemplateProject(
         ProjectInfo projectInfo,
         BuildProjectOptions buildOptions,
@@ -190,21 +189,6 @@ public class WasmTemplateTestsBase : BuildTestBase
         {
             File.Delete(deletedFilePath);
         }
-    }
-
-    protected void RemoveContentsFromProjectFile(string pathRelativeToProjectDir, string afterMarker, string beforeMarker)
-    {
-        var path = Path.Combine(_projectDir!, pathRelativeToProjectDir);
-        string text = File.ReadAllText(path);
-        int start = text.IndexOf(afterMarker);
-        int end = text.IndexOf(beforeMarker, start);
-        if (start == -1 || end == -1)
-            throw new XunitException($"Start or end marker not found in '{path}'");
-        start += afterMarker.Length;
-        text = text.Remove(start, end - start);
-        // separate the markers with a new line
-        text = text.Insert(start, "\n");
-        File.WriteAllText(path, text);
     }
 
     protected void UpdateBrowserMainJs(string targetFramework = DefaultTargetFramework, string runtimeAssetsRelativePath = DefaultRuntimeAssetsRelativePath)
