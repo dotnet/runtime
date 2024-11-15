@@ -1,0 +1,22 @@
+<Project>
+    <PropertyGroup>
+        <DefineConstants>$(DefineConstants);UNITY_AOT</DefineConstants>
+        <NativeAotSourcesRoot>$(CoreClrProjectRoot)\nativeaot</NativeAotSourcesRoot>
+        <NativeAotBclSourcesRoot>$(NativeAotSourcesRoot)\System.Private.CoreLib\src</NativeAotBclSourcesRoot>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <Compile Remove="$(BclSourcesRoot)\System\Collections\Generic\ArraySortHelper.Mono.cs" />
+        <Compile Include="$(NativeAotBclSourcesRoot)\System\Collections\Generic\ArraySortHelper.NativeAot.cs" />
+
+        <Compile Remove="$(BclSourcesRoot)\System\Runtime\JitInfo.Mono.cs" />
+        <Compile Include="$(NativeAotBclSourcesRoot)\System\Runtime\JitInfo.NativeAot.cs" />
+
+        <Compile Remove="$(CoreLibSharedDir)\System\Runtime\CompilerServices\RuntimeFeature.NonNativeAot.cs" />
+        <Compile Include="$(NativeAotBclSourcesRoot)\System\Runtime\CompilerServices\RuntimeFeature.NativeAot.cs" />
+
+    </ItemGroup>
+    <ItemGroup>
+        <ILLinkSubstitutionsXmls Include="$(MSBuildThisFileDirectory)\src\ILLink\ILLink.Substitutions.UnityAot.xml" />
+    </ItemGroup>
+</Project>
