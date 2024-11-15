@@ -13,7 +13,7 @@ using Xunit.Abstractions;
 
 namespace DebuggerTests
 {
-
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/109870")]
     public class BreakpointTests : DebuggerTests
     {
         public BreakpointTests(ITestOutputHelper testOutput) : base(testOutput)

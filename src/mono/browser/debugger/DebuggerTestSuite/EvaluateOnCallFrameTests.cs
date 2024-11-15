@@ -12,6 +12,7 @@ using Xunit.Abstractions;
 namespace DebuggerTests
 {
     // TODO: static async, static method args
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/109870")]
     public class EvaluateOnCallFrameTests : DebuggerTests
     {
         public EvaluateOnCallFrameTests(ITestOutputHelper testOutput) : base(testOutput)
@@ -648,9 +649,9 @@ namespace DebuggerTests
                     ("cc.indexedByBool[false]", TString("FALSE"))
                 );
                 var (_, res) = await EvaluateOnCallFrame(id,"cc.indexedByStr[\"invalid\"]", expect_ok: false);
-                Assert.True(res.Error["result"]?["description"]?.Value<string>().StartsWith("Cannot evaluate '(cc.indexedByStr[\"invalid\"]", StringComparison.Ordinal)); 
+                Assert.True(res.Error["result"]?["description"]?.Value<string>().StartsWith("Cannot evaluate '(cc.indexedByStr[\"invalid\"]", StringComparison.Ordinal));
                 (_, res) = await EvaluateOnCallFrame(id,"cc.indexedByStr[null]", expect_ok: false);
-                Assert.True(res.Error["result"]?["description"]?.Value<string>().StartsWith("Cannot evaluate '(cc.indexedByStr[null]", StringComparison.Ordinal)); 
+                Assert.True(res.Error["result"]?["description"]?.Value<string>().StartsWith("Cannot evaluate '(cc.indexedByStr[null]", StringComparison.Ordinal));
             });
 
         [Fact]

@@ -12,6 +12,7 @@ using Xunit.Abstractions;
 namespace DebuggerTests
 {
     // TODO: static async, static method args
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/109870")]
     public class EvaluateOnCallFrame2Tests : DebuggerTests
     {
         public EvaluateOnCallFrame2Tests(ITestOutputHelper testOutput) : base(testOutput)
@@ -713,7 +714,7 @@ namespace DebuggerTests
                    ("instance.str[3]", TChar('c'))
                 );
            });
-        
+
         [Fact]
         public async Task EvaluateStaticGetterInValueType() => await CheckInspectLocalsAtBreakpointSite(
              $"DebuggerTests.TypeProperties", "Run", 3, "DebuggerTests.TypeProperties.Run",
@@ -776,7 +777,7 @@ namespace DebuggerTests
                    ("c[cc.numArray[j], cc.numArray[0]]", TNumber("3")), //multiple ElementAccessExpressionSyntaxes
                    ("c[cc.numArray[cc.numList[0]], cc.numArray[i]]", TNumber("3")),
                    ("c[cc.numArray[cc.numList[0]], cc.numArray[cc.numArray[i]]]", TNumber("4"))
-                ); 
+                );
            });
 
         [Fact]
@@ -795,10 +796,10 @@ namespace DebuggerTests
                    ("s[cc.numArray[j], cc.numArray[0]]", TNumber("3")), //multiple ElementAccessExpressionSyntaxes
                    ("s[cc.numArray[cc.numList[0]], cc.numArray[i]]", TNumber("3")),
                    ("s[cc.numArray[cc.numList[0]], cc.numArray[cc.numArray[i]]]", TNumber("4"))
-                ); 
+                );
            });
 
-        
+
         [Fact]
         public async Task EvaluateMethodsWithObjectParams() => await CheckInspectLocalsAtBreakpointSite(
             "DebuggerTests.FastCheck", "run", 6, "DebuggerTests.FastCheck.run",
@@ -814,7 +815,7 @@ namespace DebuggerTests
                     ("mc.Method(EvaluateStaticFieldsInInstanceClass.StaticField)", TNumber(70)),
                     ("mc.Method(instance.StaticField)", TNumber(70)),
                     ("mc.Method(instance2.propInt)", TNumber(12))
-                ); 
+                );
            });
 
         // https://github.com/dotnet/runtime/issues/98086
@@ -841,7 +842,7 @@ namespace DebuggerTests
                await RuntimeEvaluateAndCheck(
                    ("myVar.MyMethod()", TNumber(10)));
            });
-        
+
         // https://github.com/dotnet/runtime/issues/106311
         [ConditionalFact(nameof(RunningOnChrome))]
         public async Task EvaluateOnValueTypeWithoutExtraSpace() => await CheckInspectLocalsAtBreakpointSite(
