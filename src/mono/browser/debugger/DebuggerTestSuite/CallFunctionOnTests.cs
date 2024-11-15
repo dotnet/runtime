@@ -11,7 +11,7 @@ using Xunit.Abstractions;
 
 namespace DebuggerTests
 {
-
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/109870")]
     public class CallFunctionOnTests : DebuggerTests
     {
         public CallFunctionOnTests(ITestOutputHelper testOutput) : base(testOutput)
