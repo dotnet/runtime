@@ -7,8 +7,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
 
-using Microsoft.Diagnostics.DataContractReader.UnitTests;
-
 namespace Microsoft.Diagnostics.DataContractReader.Tests.ContractDescriptor;
 
 internal unsafe class ContractDescriptorHelpers

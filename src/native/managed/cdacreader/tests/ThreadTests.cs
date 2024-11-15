@@ -6,7 +6,7 @@ using Xunit;
 
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 
-namespace Microsoft.Diagnostics.DataContractReader.UnitTests;
+namespace Microsoft.Diagnostics.DataContractReader.Tests;
 
 public unsafe class ThreadTests
 {

@@ -7,7 +7,7 @@ using System.Collections.Generic;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Moq;
 
-namespace Microsoft.Diagnostics.DataContractReader.UnitTests.ExecutionManager;
+namespace Microsoft.Diagnostics.DataContractReader.Tests.ExecutionManager;
 
 public class ExecutionManagerTests
 {

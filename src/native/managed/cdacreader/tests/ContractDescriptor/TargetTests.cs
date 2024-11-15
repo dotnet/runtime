@@ -8,8 +8,6 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using Xunit;
 
-using Microsoft.Diagnostics.DataContractReader.UnitTests;
-
 namespace Microsoft.Diagnostics.DataContractReader.Tests.ContractDescriptor;
 
 public unsafe class TargetTests
