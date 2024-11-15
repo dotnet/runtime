@@ -47,6 +47,7 @@ public:
     bool ReadConfigValue(_In_z_ const char* wszName, uint64_t* pValue, bool decimal = false);
     bool ReadKnobUInt64Value(_In_z_ const char* wszName, uint64_t* pValue);
     bool ReadKnobBooleanValue(_In_z_ const char* wszName, bool* pValue);
+    bool ReadKnobDoubleValue(_In_z_ const char* wszName, double* pValue);
 
     char** GetKnobNames();
     char** GetKnobValues();

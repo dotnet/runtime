@@ -163,6 +163,18 @@ bool RhConfig::ReadKnobBooleanValue(_In_z_ const char *name, bool* pValue)
     return false;
 }
 
+bool RhConfig::ReadKnobDoubleValue(_In_z_ const char *name, double* pValue)
+{
+    const char *embeddedValue = nullptr;
+    if (GetEmbeddedVariable(&g_compilerEmbeddedKnobsBlob, name, false, &embeddedValue))
+    {
+        *pValue = strtod(embeddedValue, NULL);
+        return true;
+    }
+
+    return false;
+}
+
 char** RhConfig::GetKnobNames()
 {
     return g_compilerEmbeddedKnobsBlob.GetKeys();
