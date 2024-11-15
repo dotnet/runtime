@@ -17,11 +17,6 @@ using System.Numerics;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
 
-public class C2
-{
-    public Vector<double> F3;
-}
-
 public class Runtime_109218
 {
     public static sbyte s_1;
@@ -41,7 +36,7 @@ public class Runtime_109218
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    private static void Consume<T>(Vector<T> v)
+    private static void Consume<T>(T v)
     {
     }
 }
