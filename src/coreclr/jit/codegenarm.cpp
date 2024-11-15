@@ -2087,7 +2087,16 @@ regMaskTP CodeGen::genStackAllocRegisterMask(unsigned frameSize, regMaskTP maskC
     // We can't do this optimization with callee saved floating point registers because
     // the stack would be allocated in a wrong spot.
     if (maskCalleeSavedFloat != RBM_NONE)
+    {
         return RBM_NONE;
+    }
+
+    // We similarly skip it for async2 due to the extra async continuation
+    // return that may be overridden by the pop.
+    if (compiler->compIsAsync2())
+    {
+        return RBM_NONE;
+    }
 
     // Allocate space for small frames by pushing extra registers. It generates smaller and faster code
     // that extra sub sp,XXX/add sp,XXX.

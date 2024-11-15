@@ -704,6 +704,7 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_JCC:
         case GT_SETCC:
         case GT_MEMORYBARRIER:
+        case GT_RETURN_SUSPEND:
             srcCount = BuildSimple(tree);
             break;
 
