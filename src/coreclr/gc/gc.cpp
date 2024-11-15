@@ -39880,15 +39880,15 @@ void gc_heap::bgc_thread_function()
         {
             if (heap_number == 0)
             {
-                int spin_count = 1024;
+                const int spin_count = 1024;
                 int idle_bgc_thread_count = total_bgc_threads - n_heaps;
                 dprintf (9999, ("n_heaps %d, total %d bgc threads, bgc idle should be %d and is %d",
                     n_heaps, total_bgc_threads, idle_bgc_thread_count, VolatileLoadWithoutBarrier (&dynamic_heap_count_data.idle_bgc_thread_count)));
                 if (idle_bgc_thread_count != dynamic_heap_count_data.idle_bgc_thread_count)
                 {
-                    spin_and_wait (spin_count, (idle_bgc_thread_count == dynamic_heap_count_data.idle_bgc_thread_count));
                     dprintf (9999, ("current idle is %d, trying to get to %d",
                         VolatileLoadWithoutBarrier (&dynamic_heap_count_data.idle_bgc_thread_count), idle_bgc_thread_count));
+                    spin_and_wait (spin_count, (idle_bgc_thread_count == dynamic_heap_count_data.idle_bgc_thread_count));
                 }
             }
 
