@@ -35,12 +35,10 @@ namespace System.Xml.Serialization
         public readonly string Arg;
         public readonly MemberInfo? MemberInfo;
 
-        [DynamicallyAccessedMembers(TrimmerConstants.AllMethods)]
         public readonly Type? Type;
         public readonly CodeGenerator ILG;
 
-        public SourceInfo(string source, string? arg, MemberInfo? memberInfo,
-            [DynamicallyAccessedMembers(TrimmerConstants.AllMethods)] Type? type, CodeGenerator ilg)
+        public SourceInfo(string source, string? arg, MemberInfo? memberInfo, Type? type, CodeGenerator ilg)
         {
             this.Source = source;
             this.Arg = arg ?? source;

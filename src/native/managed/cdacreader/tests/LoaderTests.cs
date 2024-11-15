@@ -18,14 +18,14 @@ public unsafe class LoaderTests
         // Set up the target
         TargetTestHelpers helpers = new(arch);
         MockMemorySpace.Builder builder = new(helpers);
+        MockLoader loader = new(builder);
         builder = builder
             .SetContracts([nameof(Contracts.Loader)])
-            .SetTypes(MockLoader.Types(helpers));
+            .SetTypes(loader.Types);
 
         string expected = $"{AppContext.BaseDirectory}{Path.DirectorySeparatorChar}TestModule.dll";
 
         // Add the modules
-        MockLoader loader = new(builder);
         TargetPointer moduleAddr = loader.AddModule(path: expected);
         TargetPointer moduleAddrEmptyPath = loader.AddModule();
 
@@ -54,14 +54,14 @@ public unsafe class LoaderTests
         // Set up the target
         TargetTestHelpers helpers = new(arch);
         MockMemorySpace.Builder builder = new(helpers);
+        MockLoader loader = new(builder);
         builder = builder
             .SetContracts([nameof(Contracts.Loader)])
-            .SetTypes(MockLoader.Types(helpers));
+            .SetTypes(loader.Types);
 
         string expected = $"TestModule.dll";
 
         // Add the modules
-        MockLoader loader = new(builder);
         TargetPointer moduleAddr = loader.AddModule(fileName: expected);
         TargetPointer moduleAddrEmptyName = loader.AddModule();
 
