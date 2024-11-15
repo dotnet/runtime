@@ -22,7 +22,7 @@ namespace Microsoft.Extensions.DependencyInjection
         /// Gets or sets a value that indicates whether validation is performed to ensure all services can be created when <see cref="ServiceCollectionContainerBuilderExtensions.BuildServiceProvider(IServiceCollection, ServiceProviderOptions)" /> is called.
         /// </summary>
         /// <value>
-        /// <see langword="true" /> if validation is performed to ensure all services can be created during a <see cref="ServiceCollectionContainerBuilderExtensions.BuildServiceProvider(IServiceCollection, ServiceProviderOptions)" /> call; otherwise, <see langword="false" />. The default is the value of <see cref="Hosting.HostingEnvironmentExtensions.IsDevelopment(Hosting.IHostingEnvironment)" />.
+        /// <see langword="true" /> if validation is performed to ensure all services can be created during a <see cref="ServiceCollectionContainerBuilderExtensions.BuildServiceProvider(IServiceCollection, ServiceProviderOptions)" /> call; otherwise, <see langword="false" />. The default is the value of <see cref="Microsoft.Extensions.Hosting.HostingEnvironmentExtensions.IsDevelopment(Microsoft.Extensions.Hosting.IHostingEnvironment)" />.
         /// </value>
         /// <remarks>
         /// Open generics services aren't validated.

@@ -13,7 +13,7 @@ namespace Microsoft.Extensions.Hosting
     public interface IHost : IDisposable
     {
         /// <summary>
-        /// Gets the services configured for the program (for example, using <see cref="HostBuilder.ConfigureServices(Action{HostBuilderContext,DependencyInjection.IServiceCollection})" />).
+        /// Gets the services configured for the program (for example, using <see cref="HostBuilder.ConfigureServices(Action{HostBuilderContext,Microsoft.Extensions.DependencyInjection.IServiceCollection})" />).
         /// </summary>
         IServiceProvider Services { get; }
 
