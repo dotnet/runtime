@@ -28,8 +28,8 @@ namespace Wasm.Build.Tests
             ProjectInfo info = CopyTestAsset(config, aot, "WasmBasicTestApp", "rebuild", "App");
             UpdateFile(Path.Combine("Common", "Program.cs"), s_mainReturns42);
             bool isPublish = true;
-            BuildTemplateProject(info,
-                new BuildProjectOptions(
+            BuildProject(info,
+                new BuildOptions(
                     info.Configuration,
                     info.ProjectName,
                     BinFrameworkDir: GetBinFrameworkDir(info.Configuration, isPublish),
@@ -40,10 +40,10 @@ namespace Wasm.Build.Tests
             RunOptions runOptions = new(info.Configuration, TestScenario: "DotnetRun", ExpectedExitCode: 42);
             await RunForPublishWithWebServer(runOptions);
 
-            if (!_buildContext.TryGetBuildFor(info, out BuildProduct? product))
-                throw new XunitException($"Test bug: could not get the build product in the cache");
+            if (!_buildContext.TryGetBuildFor(info, out BuildResult? result))
+                throw new XunitException($"Test bug: could not get the build result in the cache");
 
-            File.Move(product!.LogFile, Path.ChangeExtension(product.LogFile!, ".first.binlog"));
+            File.Move(result!.LogFile, Path.ChangeExtension(result.LogFile!, ".first.binlog"));
 
             // artificial delay to have new enough timestamps
             await Task.Delay(5000);
@@ -51,8 +51,8 @@ namespace Wasm.Build.Tests
             _testOutput.WriteLine($"{Environment.NewLine}Rebuilding with no changes ..{Environment.NewLine}");
 
             // no-op Rebuild
-            BuildTemplateProject(info,
-                new BuildProjectOptions(
+            BuildProject(info,
+                new BuildOptions(
                     info.Configuration,
                     info.ProjectName,
                     BinFrameworkDir: GetBinFrameworkDir(info.Configuration, isPublish),

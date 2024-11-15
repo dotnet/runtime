@@ -89,8 +89,8 @@ public class IcuTests : IcuTestsBase
     
         ProjectInfo info = CreateIcuProject(config, Template.WasmBrowser, aot: false, "Array.Empty<Locale>()", extraProperties);
         bool isPublish = false;
-        (string _, string output) = BuildTemplateProject(info,
-                        new BuildProjectOptions(
+        (string _, string output) = BuildProject(info,
+                        new BuildOptions(
                             config,
                             info.ProjectName,
                             BinFrameworkDir: GetBinFrameworkDir(config, isPublish),

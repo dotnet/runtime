@@ -58,9 +58,9 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestsBase
             }
         };
 
-    public override (string projectDir, string buildOutput) BuildTemplateProject(
+    public override (string projectDir, string buildOutput) BuildProject(
         ProjectInfo projectInfo,
-        BuildProjectOptions buildOptions,
+        BuildOptions buildOptions,
         params string[] extraArgs)
     {
         try
@@ -69,7 +69,7 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestsBase
                 ? new[] { "-p:BlazorEnableCompression=false", "/warnaserror" }
                 : new[] { "-p:BlazorEnableCompression=false" };
     
-            (string projectDir, string buildOutput) = base.BuildTemplateProject(
+            (string projectDir, string buildOutput) = base.BuildProject(
                 projectInfo,
                 buildOptions with { AssertAppBundle = false },
                 extraArgs.Concat(additionalOptiont).ToArray());
@@ -126,8 +126,8 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestsBase
         ProjectInfo info, bool isNativeBuild = false, bool useCache = true, params string[] extraArgs)
     {
         bool isPublish = false;
-        return BuildTemplateProject(info,
-            new BuildProjectOptions(
+        return BuildProject(info,
+            new BuildOptions(
                 info.Configuration,
                 info.ProjectName,
                 BinFrameworkDir: GetBlazorBinFrameworkDir(info.Configuration, isPublish),
@@ -142,8 +142,8 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestsBase
         ProjectInfo info, bool isNativeBuild = false, bool useCache = true, params string[] extraArgs)
     {
         bool isPublish = true;
-        return BuildTemplateProject(info,
-            new BuildProjectOptions(
+        return BuildProject(info,
+            new BuildOptions(
                 info.Configuration,
                 info.ProjectName,
                 BinFrameworkDir: GetBlazorBinFrameworkDir(info.Configuration, isPublish),
@@ -154,7 +154,7 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestsBase
         );
     }
 
-    public void AssertBundle(string buildOutput, BuildProjectOptions buildOptions)
+    public void AssertBundle(string buildOutput, BuildOptions buildOptions)
     {
         if (IsUsingWorkloads)
         {

@@ -87,8 +87,8 @@ namespace Wasm.Build.Tests
             ProjectInfo info = PrepreProjectForBlittableTests(
                 config, aot, "not_blittable", disableRuntimeMarshalling: false, useAutoLayout: true);
             bool isPublish = false;
-            (_, string output) = BuildTemplateProject(info,
-                new BuildProjectOptions(
+            (_, string output) = BuildProject(info,
+                new BuildOptions(
                     info.Configuration,
                     info.ProjectName,
                     BinFrameworkDir: GetBinFrameworkDir(info.Configuration, isPublish),
@@ -106,8 +106,8 @@ namespace Wasm.Build.Tests
             ProjectInfo info = PrepreProjectForBlittableTests(
                 config, aot, "blittable", disableRuntimeMarshalling: false, useAutoLayout: false);
             bool isPublish = false;
-            (_, string output) = BuildTemplateProject(info,
-                new BuildProjectOptions(
+            (_, string output) = BuildProject(info,
+                new BuildOptions(
                     info.Configuration,
                     info.ProjectName,
                     BinFrameworkDir: GetBinFrameworkDir(info.Configuration, isPublish),
@@ -125,8 +125,8 @@ namespace Wasm.Build.Tests
             ProjectInfo info = PrepreProjectForBlittableTests(
                 config, aot, "blittable", disableRuntimeMarshalling: true, useAutoLayout: true);
             bool isPublish = false;
-            (_, string output) = BuildTemplateProject(info,
-                new BuildProjectOptions(
+            (_, string output) = BuildProject(info,
+                new BuildOptions(
                     info.Configuration,
                     info.ProjectName,
                     BinFrameworkDir: GetBinFrameworkDir(info.Configuration, isPublish),
@@ -194,8 +194,8 @@ namespace Wasm.Build.Tests
                 UpdateFile(programRelativePath, new Dictionary<string, string> { { "[assembly: DisableRuntimeMarshalling]", "" } });
             }
             bool isPublish = false;
-            (_, string output) = BuildTemplateProject(info,
-                new BuildProjectOptions(
+            (_, string output) = BuildProject(info,
+                new BuildOptions(
                     info.Configuration,
                     info.ProjectName,
                     BinFrameworkDir: GetBinFrameworkDir(info.Configuration, isPublish),
@@ -337,8 +337,8 @@ namespace Wasm.Build.Tests
             // libraries do not have framework dirs
             string hypotheticalFrameworkDir = Path.Combine(GetBinFrameworkDir(info.Configuration, isPublish));
             string libAssemblyPath = Path.Combine(hypotheticalFrameworkDir, "..", "..");
-            BuildTemplateProject(info,
-                new BuildProjectOptions(
+            BuildProject(info,
+                new BuildOptions(
                     info.Configuration,
                     "Library.csproj",
                     // library project does not have it but it's a required parameter. It's not used when assert: false
@@ -400,8 +400,8 @@ namespace Wasm.Build.Tests
             });
 
             // Build a project with ManagedToNativeGenerator task reading icalls from the above library and runtime-icall-table.h
-            (_, string output) = BuildTemplateProject(info,
-                new BuildProjectOptions(
+            (_, string output) = BuildProject(info,
+                new BuildOptions(
                     info.Configuration,
                     info.ProjectName,
                     BinFrameworkDir: frameworkDir,
@@ -433,8 +433,8 @@ namespace Wasm.Build.Tests
                 { "LC_ALL", culture },
             };
             bool isPublish = true;
-            (_, string output) = BuildTemplateProject(info,
-                new BuildProjectOptions(
+            (_, string output) = BuildProject(info,
+                new BuildOptions(
                     info.Configuration,
                     info.ProjectName,
                     BinFrameworkDir: GetBinFrameworkDir(info.Configuration, isPublish),
@@ -468,8 +468,8 @@ namespace Wasm.Build.Tests
             int baseArg = 10;
             GenerateSourceFiles(_projectDir!, baseArg);
             bool isPublish = aot;
-            (_, string output) = BuildTemplateProject(info,
-                new BuildProjectOptions(
+            (_, string output) = BuildProject(info,
+                new BuildOptions(
                     info.Configuration,
                     info.ProjectName,
                     BinFrameworkDir: GetBinFrameworkDir(info.Configuration, isPublish),
@@ -529,8 +529,8 @@ namespace Wasm.Build.Tests
         {
             string verbosityArg = verbosity == null ? string.Empty : $" -v:{verbosity}";
             var extraArgs = new string[] { verbosityArg };
-            (_, string output) = BuildTemplateProject(info,
-                new BuildProjectOptions(
+            (_, string output) = BuildProject(info,
+                new BuildOptions(
                     info.Configuration,
                     info.ProjectName,
                     BinFrameworkDir: GetBinFrameworkDir(info.Configuration, isPublish),
@@ -552,7 +552,7 @@ namespace Wasm.Build.Tests
             File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "native-libs", cCodeFilename), Path.Combine(_projectDir!, cCodeFilename));
 
             bool isPublish = aot;
-            var buildOptions = new BuildProjectOptions(
+            var buildOptions = new BuildOptions(
                 info.Configuration,
                 info.ProjectName,
                 BinFrameworkDir: GetBinFrameworkDir(info.Configuration, isPublish),
@@ -560,7 +560,7 @@ namespace Wasm.Build.Tests
                 ExpectedFileType: GetExpectedFileType(info, isPublish: isPublish, isNativeBuild: true),
                 IsPublish: isPublish
             );
-            BuildTemplateProject(info, buildOptions);
+            BuildProject(info, buildOptions);
 
             string objDir = Path.Combine(_projectDir!, "obj", config, buildOptions.TargetFramework, "wasm", isPublish ? "for-publish" : "for-build");
 
@@ -607,8 +607,8 @@ namespace Wasm.Build.Tests
             ProjectInfo info = CopyTestAsset(config, aot, "WasmBasicTestApp", "com", "App");
             ReplaceFile(Path.Combine("Common", "Program.cs"), Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "PInvoke", "ComInterop.cs"));
             bool isPublish = aot;
-            (string libraryDir, string output) = BuildTemplateProject(info,
-                new BuildProjectOptions(
+            (string libraryDir, string output) = BuildProject(info,
+                new BuildOptions(
                     info.Configuration,
                     info.ProjectName,
                     BinFrameworkDir: GetBinFrameworkDir(info.Configuration, isPublish),
@@ -630,8 +630,8 @@ namespace Wasm.Build.Tests
             File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "native-libs", cCodeFilename), Path.Combine(_projectDir!, cCodeFilename));
 
             bool isPublish = true;
-            BuildTemplateProject(info,
-                new BuildProjectOptions(
+            BuildProject(info,
+                new BuildOptions(
                     info.Configuration,
                     info.ProjectName,
                     BinFrameworkDir: GetBinFrameworkDir(info.Configuration, isPublish),

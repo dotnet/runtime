@@ -70,8 +70,8 @@ public class BuildPublishTests : BlazorWasmTestBase
         BlazorBuild(info);
 
         bool isPublish = true;
-        BuildTemplateProject(info,
-            new BuildProjectOptions(
+        BuildProject(info,
+            new BuildOptions(
                 info.Configuration,
                 info.ProjectName,
                 BinFrameworkDir: GetBlazorBinFrameworkDir(info.Configuration, isPublish),
@@ -108,14 +108,14 @@ public class BuildPublishTests : BlazorWasmTestBase
     //CreateBlazorWasmTemplateProject(id);
 
     //// No relinking, no AOT
-    //BlazorBuild(new BuildProjectOptions(id, config, NativeFilesType.FromRuntimePack);
+    //BlazorBuild(new BuildOptions(id, config, NativeFilesType.FromRuntimePack);
 
     //// AOT=true only for the publish command line, similar to what
     //// would happen when setting it in Publish dialog for VS
-    //BlazorPublish(new BuildProjectOptions(id, config, expectedFileType: NativeFilesType.AOT, "-p:RunAOTCompilation=true");
+    //BlazorPublish(new BuildOptions(id, config, expectedFileType: NativeFilesType.AOT, "-p:RunAOTCompilation=true");
 
     //// publish again, no AOT
-    //BlazorPublish(new BuildProjectOptions(id, config, NativeFilesType.Relinked);
+    //BlazorPublish(new BuildOptions(id, config, NativeFilesType.Relinked);
     //}
 
     [Theory]
@@ -181,8 +181,8 @@ public class BuildPublishTests : BlazorWasmTestBase
             config, aot: true, "BlazorBasicTestApp", "blazorwasm", "App", extraProperties: "<RunAOTCompilation>true</RunAOTCompilation>");
 
         bool isPublish = true;
-        (string _, string output) = BuildTemplateProject(info,
-            new BuildProjectOptions(
+        (string _, string output) = BuildProject(info,
+            new BuildOptions(
                 info.Configuration,
                 info.ProjectName,
                 BinFrameworkDir: GetBlazorBinFrameworkDir(info.Configuration, isPublish),

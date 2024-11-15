@@ -23,8 +23,8 @@ public class SignalRTestsBase : WasmTemplateTestsBase
     {
         ProjectInfo info = CopyTestAsset(config, false, "WasmBasicTestApp", "SignalRClientTests", "AspNetCoreServer");
         bool isPublish = true;
-        BuildTemplateProject(info,
-            new BuildProjectOptions(
+        BuildProject(info,
+            new BuildOptions(
                 info.Configuration,
                 info.ProjectName,
                 BinFrameworkDir: GetBinFrameworkDir(info.Configuration, isPublish),

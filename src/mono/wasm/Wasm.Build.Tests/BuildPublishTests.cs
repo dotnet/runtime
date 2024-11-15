@@ -28,8 +28,8 @@ namespace Wasm.Build.Tests
             ProjectInfo info = CopyTestAsset(config, aot, "WasmBasicTestApp", "no_aot_in_debug", "App");
 
             bool isPublish = true;
-            (string _, string buildOutput) = BuildTemplateProject(info,
-                        new BuildProjectOptions(
+            (string _, string buildOutput) = BuildProject(info,
+                        new BuildOptions(
                             config,
                             info.ProjectName,
                             BinFrameworkDir: GetBinFrameworkDir(config, isPublish),
@@ -48,8 +48,8 @@ namespace Wasm.Build.Tests
             ProjectInfo info = CopyTestAsset(config, aot, "WasmBasicTestApp", "build_publish", "App");
 
             bool isPublish = false;
-            BuildTemplateProject(info,
-                        new BuildProjectOptions(
+            BuildProject(info,
+                        new BuildOptions(
                             info.Configuration,
                             info.ProjectName,
                             BinFrameworkDir: GetBinFrameworkDir(info.Configuration, isPublish),
@@ -57,15 +57,15 @@ namespace Wasm.Build.Tests
                             IsPublish: isPublish
                         ));
 
-            if (!_buildContext.TryGetBuildFor(info, out BuildProduct? product))
-                throw new XunitException($"Test bug: could not get the build product in the cache");
+            if (!_buildContext.TryGetBuildFor(info, out BuildResult? result))
+                throw new XunitException($"Test bug: could not get the build result in the cache");
 
             RunOptions runOptions = new(info.Configuration, TestScenario: "DotnetRun");
             await RunForBuildWithDotnetRun(runOptions);
 
             isPublish = true;
-            BuildTemplateProject(info,
-                        new BuildProjectOptions(
+            BuildProject(info,
+                        new BuildOptions(
                             info.Configuration,
                             info.ProjectName,
                             BinFrameworkDir: GetBinFrameworkDir(info.Configuration, isPublish),
@@ -83,8 +83,8 @@ namespace Wasm.Build.Tests
             ProjectInfo info = CopyTestAsset(config, aot, "WasmBasicTestApp", "build_publish", "App");
             
             bool isPublish = false;
-            (_, string output) = BuildTemplateProject(info,
-                        new BuildProjectOptions(
+            (_, string output) = BuildProject(info,
+                        new BuildOptions(
                             config,
                             info.ProjectName,
                             BinFrameworkDir: GetBinFrameworkDir(config, isPublish),
@@ -104,20 +104,20 @@ namespace Wasm.Build.Tests
             
             CheckOutputForNativeBuild(expectAOT: false, expectRelinking: isPublish, info.ProjectName, output);
 
-            if (!_buildContext.TryGetBuildFor(info, out BuildProduct? product))
-                throw new XunitException($"Test bug: could not get the build product in the cache");
+            if (!_buildContext.TryGetBuildFor(info, out BuildResult? result))
+                throw new XunitException($"Test bug: could not get the build result in the cache");
 
             RunOptions runOptions = new(info.Configuration, TestScenario: "DotnetRun");
             await RunForBuildWithDotnetRun(runOptions);
 
-            File.Move(product!.LogFile, Path.ChangeExtension(product.LogFile!, ".first.binlog"));
+            File.Move(result!.LogFile, Path.ChangeExtension(result.LogFile!, ".first.binlog"));
     
             _testOutput.WriteLine($"{Environment.NewLine}Publishing with no changes ..{Environment.NewLine}");
 
             // relink by default for Release+publish
             isPublish = true;
-            (_, output) = BuildTemplateProject(info,
-                        new BuildProjectOptions(
+            (_, output) = BuildProject(info,
+                        new BuildOptions(
                             config,
                             info.ProjectName,
                             BinFrameworkDir: GetBinFrameworkDir(config, isPublish),
@@ -143,8 +143,8 @@ namespace Wasm.Build.Tests
 
             // second build
             isPublish = false;
-            (_, output) = BuildTemplateProject(info,
-                        new BuildProjectOptions(
+            (_, output) = BuildProject(info,
+                        new BuildOptions(
                             config,
                             info.ProjectName,
                             BinFrameworkDir: GetBinFrameworkDir(config, isPublish),

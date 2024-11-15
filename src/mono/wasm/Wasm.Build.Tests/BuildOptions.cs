@@ -7,10 +7,7 @@ using System.Collections.Generic;
 
 namespace Wasm.Build.Tests;
 
-// Attention: CreateProject that got remved was "true" by default,
-// so each build expects to create the app,
-// unless stated otherwise
-public record BuildProjectOptions
+public record BuildOptions
 (
     string                          Configuration,
     string                          Id,

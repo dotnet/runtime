@@ -136,7 +136,7 @@ namespace Wasm.Build.Tests
         }
 
         public (CommandResult res, string logPath) BuildProjectWithoutAssert(
-            BuildProjectOptions buildOptions,
+            BuildOptions buildOptions,
             params string[] extraArgs)
         {
             string buildType = buildOptions.IsPublish ? "publish" : "build";

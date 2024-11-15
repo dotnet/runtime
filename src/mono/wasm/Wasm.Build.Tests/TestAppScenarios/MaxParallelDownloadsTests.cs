@@ -27,8 +27,8 @@ public class MaxParallelDownloadsTests : WasmTemplateTestsBase
     {
          ProjectInfo info = CopyTestAsset(config, false, "WasmBasicTestApp", "MaxParallelDownloadsTests", "App");
         bool isPublish = false;
-        BuildTemplateProject(info,
-            new BuildProjectOptions(
+        BuildProject(info,
+            new BuildOptions(
                 info.Configuration,
                 info.ProjectName,
                 BinFrameworkDir: GetBinFrameworkDir(info.Configuration, isPublish),

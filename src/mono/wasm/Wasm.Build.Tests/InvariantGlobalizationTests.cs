@@ -54,8 +54,8 @@ namespace Wasm.Build.Tests
             bool isPublish = true;
             // invariantGlobalization triggers native build
             isNativeBuild = isNativeBuild || invariantGlobalization == true;
-            BuildTemplateProject(info,
-                        new BuildProjectOptions(
+            BuildProject(info,
+                        new BuildOptions(
                             config,
                             info.ProjectName,
                             BinFrameworkDir: GetBinFrameworkDir(config, isPublish),

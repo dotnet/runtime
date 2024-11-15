@@ -46,8 +46,8 @@ namespace Wasm.Build.NativeRebuild.Tests
             };
             ProjectInfo info = CopyTestAsset("Release", aot: true, "WasmBasicTestApp", "relink_fails", "App");
             bool isPublish = true;
-            (string _, string buildOutput) = BuildTemplateProject(info,
-                new BuildProjectOptions(
+            (string _, string buildOutput) = BuildProject(info,
+                new BuildOptions(
                     info.Configuration,
                     info.ProjectName,
                     BinFrameworkDir: GetBinFrameworkDir(info.Configuration, isPublish),

@@ -14,15 +14,15 @@ namespace Wasm.Build.Tests
 {
     public class SharedBuildPerTestClassFixture : IDisposable
     {
-        public Dictionary<ProjectInfo, BuildProduct> _buildPaths = new();
+        public Dictionary<ProjectInfo, BuildResult> _buildPaths = new();
 
-        public void CacheBuild(ProjectInfo buildArgs, BuildProduct product)
+        public void CacheBuild(ProjectInfo buildArgs, BuildResult result)
         {
-            if (product == null)
-                throw new ArgumentNullException(nameof(product));
+            if (result == null)
+                throw new ArgumentNullException(nameof(result));
             if (buildArgs == null)
                 throw new ArgumentNullException(nameof(buildArgs));
-            _buildPaths.Add(buildArgs, product);
+            _buildPaths.Add(buildArgs, result);
         }
 
         public void RemoveFromCache(string buildPath, bool keepDir=true)
@@ -35,7 +35,7 @@ namespace Wasm.Build.Tests
                 RemoveDirectory(buildPath);
         }
 
-        public bool TryGetBuildFor(ProjectInfo buildArgs, [NotNullWhen(true)] out BuildProduct? product)
+        public bool TryGetBuildFor(ProjectInfo buildArgs, [NotNullWhen(true)] out BuildResult? product)
             => _buildPaths.TryGetValue(buildArgs, out product);
 
         public void Dispose()

@@ -5,9 +5,9 @@
 
 namespace Wasm.Build.Tests;
 
-public record BuildProduct(
+public record BuildResult(
     string ProjectDir,
     string LogFile,
-    bool Result,
+    bool Success,
     string BuildOutput
 );

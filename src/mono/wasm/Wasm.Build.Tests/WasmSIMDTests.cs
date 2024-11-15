@@ -31,8 +31,8 @@ namespace Wasm.Build.Tests
             ProjectInfo info = CopyTestAsset(config, aot, "WasmBasicTestApp", "build_with_workload_no_aot", "App");
             UpdateFile(Path.Combine("Common", "Program.cs"), s_simdProgramText);
             bool isPublish = false;
-            (string _, string output) = BuildTemplateProject(info,
-                new BuildProjectOptions(
+            (string _, string output) = BuildProject(info,
+                new BuildOptions(
                     info.Configuration,
                     info.ProjectName,
                     BinFrameworkDir: GetBinFrameworkDir(info.Configuration, isPublish),
@@ -63,8 +63,8 @@ namespace Wasm.Build.Tests
             ProjectInfo info = CopyTestAsset(config, aot, "WasmBasicTestApp", "simd_publish", "App");
             UpdateFile(Path.Combine("Common", "Program.cs"), s_simdProgramText);
             bool isPublish = true;
-            (string _, string output) = BuildTemplateProject(info,
-                new BuildProjectOptions(
+            (string _, string output) = BuildProject(info,
+                new BuildOptions(
                     info.Configuration,
                     info.ProjectName,
                     BinFrameworkDir: GetBinFrameworkDir(info.Configuration, isPublish),

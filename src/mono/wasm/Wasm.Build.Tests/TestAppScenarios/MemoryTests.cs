@@ -32,8 +32,8 @@ public class MemoryTests : WasmTemplateTestsBase
         ProjectInfo info = CopyTestAsset(config, false, "WasmBasicTestApp", "MemoryTests", "App");
         bool isPublish = false;
         string extraArgs = "-p:EmccMaximumHeapSize=4294901760";
-        BuildTemplateProject(info,
-            new BuildProjectOptions(
+        BuildProject(info,
+            new BuildOptions(
                 info.Configuration,
                 info.ProjectName,
                 BinFrameworkDir: GetBinFrameworkDir(info.Configuration, isPublish),
@@ -59,8 +59,8 @@ public class MemoryTests : WasmTemplateTestsBase
         bool isPublish = false;
         // are are linking all 3 profilers, but below we only initialize log profiler and test it
         string extraArgs = $"-p:WasmProfilers=\"aot+browser+log\" -p:WasmBuildNative=true";
-        BuildTemplateProject(info,
-            new BuildProjectOptions(
+        BuildProject(info,
+            new BuildOptions(
                 info.Configuration,
                 info.ProjectName,
                 BinFrameworkDir: GetBinFrameworkDir(info.Configuration, isPublish),

@@ -28,8 +28,8 @@ public class OptimizationFlagChangeTests : NativeRebuildTestsBase
 
     [Theory]
     [MemberData(nameof(FlagsOnlyChangeData), parameters: /*aot*/ false)]
-    [MemberData(nameof(FlagsOnlyChangeData), parameters: /*aot*/ true)]
-    [ActiveIssue("File sizes don't match: dotnet.native.wasm size should be same as from obj/for-publish but is not")]
+    // [MemberData(nameof(FlagsOnlyChangeData), parameters: /*aot*/ true)]
+    // [ActiveIssue("File sizes don't match: dotnet.native.wasm size should be same as from obj/for-publish but is not")]
     public async void OptimizationFlagChange(string config, bool aot, string cflags, string ldflags)
     {
         ProjectInfo info = CopyTestAsset(config, aot, "WasmBasicTestApp", "rebuild_flags", "App");        

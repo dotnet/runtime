@@ -33,8 +33,8 @@ namespace Wasm.Build.Tests
             DeleteFile(Path.Combine(_projectDir!, "Common", "Program.cs"));
 
             bool isPublish = true;
-            (string _, string buildOutput) = BuildTemplateProject(info,
-                        new BuildProjectOptions(
+            (string _, string buildOutput) = BuildProject(info,
+                        new BuildOptions(
                             info.Configuration,
                             info.ProjectName,
                             BinFrameworkDir: GetBinFrameworkDir(info.Configuration, isPublish),
@@ -62,8 +62,8 @@ namespace Wasm.Build.Tests
             ReplaceFile(Path.Combine("Common", "Program.cs"), Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "SkiaSharp.cs"));
 
             bool isPublish = true;
-            BuildTemplateProject(info,
-                        new BuildProjectOptions(
+            BuildProject(info,
+                        new BuildOptions(
                             info.Configuration,
                             info.ProjectName,
                             BinFrameworkDir: GetBinFrameworkDir(info.Configuration, isPublish),
@@ -85,8 +85,8 @@ namespace Wasm.Build.Tests
             ReplaceFile(Path.Combine("Common", "Program.cs"), Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "NativeCrypto.cs"));
 
             bool isPublish = true;
-            (string _, string buildOutput) = BuildTemplateProject(info,
-                        new BuildProjectOptions(
+            (string _, string buildOutput) = BuildProject(info,
+                        new BuildOptions(
                             info.Configuration,
                             info.ProjectName,
                             BinFrameworkDir: GetBinFrameworkDir(info.Configuration, isPublish),
@@ -115,8 +115,8 @@ namespace Wasm.Build.Tests
             File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "native-libs", "native-lib.o"), Path.Combine(_projectDir!, "native-lib.o"));
 
             bool isPublish = true;
-            (string _, string buildOutput) = BuildTemplateProject(info,
-                        new BuildProjectOptions(
+            (string _, string buildOutput) = BuildProject(info,
+                        new BuildOptions(
                             info.Configuration,
                             info.ProjectName,
                             BinFrameworkDir: GetBinFrameworkDir(info.Configuration, isPublish),

@@ -56,8 +56,8 @@ namespace Wasm.Build.NativeRebuild.Tests
                 extraBuildArgs
             };
             bool isPublish = true;
-            BuildTemplateProject(info,
-                        new BuildProjectOptions(
+            BuildProject(info,
+                        new BuildOptions(
                             info.Configuration,
                             info.ProjectName,
                             BinFrameworkDir: GetBinFrameworkDir(info.Configuration, isPublish),
@@ -72,10 +72,10 @@ namespace Wasm.Build.NativeRebuild.Tests
 
         protected string Rebuild(ProjectInfo info, bool nativeRelink, bool invariant, string extraBuildArgs="", string verbosity="normal")
         {
-            if (!_buildContext.TryGetBuildFor(info, out BuildProduct? product))
-                throw new XunitException($"Test bug: could not get the build product in the cache");
+            if (!_buildContext.TryGetBuildFor(info, out BuildResult? result))
+                throw new XunitException($"Test bug: could not get the build result in the cache");
 
-            File.Move(product!.LogFile, Path.ChangeExtension(product.LogFile!, ".first.binlog"));
+            File.Move(result!.LogFile, Path.ChangeExtension(result.LogFile!, ".first.binlog"));
             
             var extraArgs = new string[] {
                 "-p:_WasmDevel=true",
@@ -85,10 +85,13 @@ namespace Wasm.Build.NativeRebuild.Tests
                 extraBuildArgs
             };
 
+            // artificial delay to have new enough timestamps
+            Thread.Sleep(5000);
+
             bool isNativeBuild = nativeRelink || invariant;
             bool isPublish = true;
-            (string _, string output) = BuildTemplateProject(info,
-                        new BuildProjectOptions(
+            (string _, string output) = BuildProject(info,
+                        new BuildOptions(
                             info.Configuration,
                             info.ProjectName,
                             BinFrameworkDir: GetBinFrameworkDir(info.Configuration, isPublish),

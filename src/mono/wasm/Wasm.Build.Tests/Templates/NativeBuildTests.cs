@@ -48,8 +48,8 @@ namespace Wasm.Build.Templates.Tests
             File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "native-libs", "undefined-symbol.c"), Path.Combine(_projectDir!, "undefined_xyz.c"));
 
             bool isPublish = false;
-            (string _, string buildOutput) = BuildTemplateProject(info,
-                new BuildProjectOptions(
+            (string _, string buildOutput) = BuildProject(info,
+                new BuildOptions(
                     config,
                     info.ProjectName,
                     BinFrameworkDir: GetBinFrameworkDir(config, isPublish),
@@ -85,8 +85,8 @@ namespace Wasm.Build.Templates.Tests
             ReplaceFile("Program.cs", Path.Combine(BuildEnvironment.TestAssetsPath, "marshal_ilgen_test.cs"));
 
             bool isPublish = false;
-            (string _, string buildOutput) = BuildTemplateProject(info,
-                new BuildProjectOptions(
+            (string _, string buildOutput) = BuildProject(info,
+                new BuildOptions(
                     config,
                     info.ProjectName,
                     BinFrameworkDir: GetBinFrameworkDir(config, isPublish),

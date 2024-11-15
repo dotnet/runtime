@@ -33,8 +33,8 @@ public class LazyLoadingTests : WasmTemplateTestsBase
         string config = "Debug";
         ProjectInfo info = CopyTestAsset(config, false, "WasmBasicTestApp", "LazyLoadingTests", "App");
         bool isPublish = false;
-        BuildTemplateProject(info,
-            new BuildProjectOptions(
+        BuildProject(info,
+            new BuildOptions(
                 info.Configuration,
                 info.ProjectName,
                 BinFrameworkDir: GetBinFrameworkDir(info.Configuration, isPublish),
@@ -65,8 +65,8 @@ public class LazyLoadingTests : WasmTemplateTestsBase
         string config = "Debug";
         ProjectInfo info = CopyTestAsset(config, false, "WasmBasicTestApp", "LazyLoadingTests", "App");
         bool isPublish = true;
-        BuildTemplateProject(info,
-            new BuildProjectOptions(
+        BuildProject(info,
+            new BuildOptions(
                 info.Configuration,
                 info.ProjectName,
                 BinFrameworkDir: GetBinFrameworkDir(info.Configuration, isPublish),

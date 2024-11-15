@@ -39,8 +39,8 @@ namespace Wasm.Build.Tests
                 UpdateFile("runtimeconfig.template.json", new Dictionary<string, string> { {  "}\n}", runtimeConfigContents } });
             }
             bool isPublish = true;
-            BuildTemplateProject(info,
-                new BuildProjectOptions(
+            BuildProject(info,
+                new BuildOptions(
                     info.Configuration,
                     info.ProjectName,
                     BinFrameworkDir: GetBinFrameworkDir(info.Configuration, isPublish),

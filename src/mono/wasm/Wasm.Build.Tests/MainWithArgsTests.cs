@@ -55,8 +55,8 @@ namespace Wasm.Build.Tests
             _testOutput.WriteLine ($"-- args: {argsStr}, name: {projectContentsName}");
 
             bool isPublish = true;
-            BuildTemplateProject(info,
-                        new BuildProjectOptions(
+            BuildProject(info,
+                        new BuildOptions(
                             config,
                             info.ProjectName,
                             BinFrameworkDir: GetBinFrameworkDir(config, isPublish),

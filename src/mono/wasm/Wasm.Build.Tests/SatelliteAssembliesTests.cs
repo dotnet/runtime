@@ -44,8 +44,8 @@ namespace Wasm.Build.Tests
             CreateProgramForCultureTest($"{info.ProjectName}.resx.words", "TestClass");
 
             bool isPublish = true;
-            (_, string output) = BuildTemplateProject(info,
-                new BuildProjectOptions(
+            (_, string output) = BuildProject(info,
+                new BuildOptions(
                     info.Configuration,
                     info.ProjectName,
                     BinFrameworkDir: Path.Combine(GetBinFrameworkDir(info.Configuration, isPublish)),
@@ -91,8 +91,8 @@ namespace Wasm.Build.Tests
             File.WriteAllText(Path.Combine(_projectDir!, "..", "Directory.Build.targets"), "<Project />");
             NativeFilesType dotnetWasmFileType = nativeRelink ? NativeFilesType.Relinked : aot ? NativeFilesType.AOT : NativeFilesType.FromRuntimePack;
             bool isPublish = true;
-            BuildTemplateProject(info,
-                new BuildProjectOptions(
+            BuildProject(info,
+                new BuildOptions(
                     info.Configuration,
                     info.ProjectName,
                     BinFrameworkDir: GetBinFrameworkDir(info.Configuration, isPublish),
@@ -117,8 +117,8 @@ namespace Wasm.Build.Tests
             CreateProgramForCultureTest($"{info.ProjectName}.words", "TestClass");
 
             bool isPublish = true;
-            BuildTemplateProject(info,
-                new BuildProjectOptions(
+            BuildProject(info,
+                new BuildOptions(
                     info.Configuration,
                     info.ProjectName,
                     BinFrameworkDir: GetBinFrameworkDir(info.Configuration, isPublish),

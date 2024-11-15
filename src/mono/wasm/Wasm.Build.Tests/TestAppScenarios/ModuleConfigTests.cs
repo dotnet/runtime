@@ -28,8 +28,8 @@ public class ModuleConfigTests : WasmTemplateTestsBase
         string config = "Debug";
         ProjectInfo info = CopyTestAsset(config, false, "WasmBasicTestApp", $"ModuleConfigTests_DownloadProgressFinishes_{failAssemblyDownload}", "App");
         bool isPublish = true;
-        BuildTemplateProject(info,
-            new BuildProjectOptions(
+        BuildProject(info,
+            new BuildOptions(
                 info.Configuration,
                 info.ProjectName,
                 BinFrameworkDir: GetBinFrameworkDir(info.Configuration, isPublish),
@@ -70,8 +70,8 @@ public class ModuleConfigTests : WasmTemplateTestsBase
         string config = "Debug";
         ProjectInfo info = CopyTestAsset(config, false, "WasmBasicTestApp", "ModuleConfigTests_OutErrOverrideWorks", "App");
         bool isPublish = true;
-        BuildTemplateProject(info,
-            new BuildProjectOptions(
+        BuildProject(info,
+            new BuildOptions(
                 info.Configuration,
                 info.ProjectName,
                 BinFrameworkDir: GetBinFrameworkDir(info.Configuration, isPublish),
@@ -99,8 +99,8 @@ public class ModuleConfigTests : WasmTemplateTestsBase
     public async Task OverrideBootConfigName(string config, bool isPublish)
     {
         ProjectInfo info = CopyTestAsset(config, false, "WasmBasicTestApp", "OverrideBootConfigName", "App");
-        BuildTemplateProject(info,
-            new BuildProjectOptions(
+        BuildProject(info,
+            new BuildOptions(
                 info.Configuration,
                 info.ProjectName,
                 BinFrameworkDir: GetBinFrameworkDir(info.Configuration, isPublish),
@@ -109,8 +109,8 @@ public class ModuleConfigTests : WasmTemplateTestsBase
         ));
 
         string[] extraArgs = ["-p:WasmBootConfigFileName=boot.json"];
-        BuildTemplateProject(info,
-            new BuildProjectOptions(
+        BuildProject(info,
+            new BuildOptions(
                 info.Configuration,
                 info.ProjectName,
                 BinFrameworkDir: GetBinFrameworkDir(info.Configuration, isPublish),

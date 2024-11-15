@@ -24,8 +24,8 @@ public class DebugLevelTests : WasmTemplateTestsBase
         => Assert.Contains(result, m => m.Contains($"WasmDebugLevel: {value}"));
 
     private void BuildPublishProject(ProjectInfo info, bool isPublish = false, params string[] extraArgs)
-       => BuildTemplateProject(info,
-            new BuildProjectOptions(
+       => BuildProject(info,
+            new BuildOptions(
                 info.Configuration,
                 info.ProjectName,
                 BinFrameworkDir: GetBinFrameworkDir(info.Configuration, isPublish),

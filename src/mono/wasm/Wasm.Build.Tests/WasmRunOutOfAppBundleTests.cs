@@ -22,8 +22,8 @@ public class WasmRunOutOfAppBundleTests : WasmTemplateTestsBase
         UpdateFile(Path.Combine("Common", "Program.cs"), s_mainReturns42);
         bool isPublish = true;
         string binFrameworkDir = GetBinFrameworkDir(info.Configuration, isPublish);
-        (string _, string output) = BuildTemplateProject(info,
-            new BuildProjectOptions(
+        (string _, string output) = BuildProject(info,
+            new BuildOptions(
                 info.Configuration,
                 info.ProjectName,
                 BinFrameworkDir: binFrameworkDir,

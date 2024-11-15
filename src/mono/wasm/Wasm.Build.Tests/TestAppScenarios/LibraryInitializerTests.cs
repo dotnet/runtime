@@ -29,8 +29,8 @@ public partial class LibraryInitializerTests : WasmTemplateTestsBase
         string config = "Debug";        
         ProjectInfo info = CopyTestAsset(config, false, "WasmBasicTestApp", "LibraryInitializerTests_LoadLibraryInitializer", "App");
         bool isPublish = true;
-        BuildTemplateProject(info,
-            new BuildProjectOptions(
+        BuildProject(info,
+            new BuildOptions(
                 info.Configuration,
                 info.ProjectName,
                 BinFrameworkDir: GetBinFrameworkDir(info.Configuration, isPublish),
@@ -53,8 +53,8 @@ public partial class LibraryInitializerTests : WasmTemplateTestsBase
         string config = "Debug";        
         ProjectInfo info = CopyTestAsset(config, false, "WasmBasicTestApp", "LibraryInitializerTests_AbortStartupOnError", "App");
         bool isPublish = true;
-        BuildTemplateProject(info,
-            new BuildProjectOptions(
+        BuildProject(info,
+            new BuildOptions(
                 info.Configuration,
                 info.ProjectName,
                 BinFrameworkDir: GetBinFrameworkDir(info.Configuration, isPublish),

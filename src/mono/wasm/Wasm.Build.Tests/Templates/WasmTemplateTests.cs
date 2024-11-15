@@ -40,8 +40,8 @@ namespace Wasm.Build.Tests
             UpdateBrowserMainJs();
 
             bool isPublish = false;
-            BuildTemplateProject(info,
-                new BuildProjectOptions(
+            BuildProject(info,
+                new BuildOptions(
                     config,
                     info.ProjectName,
                     BinFrameworkDir: GetBinFrameworkDir(config, isPublish),
@@ -49,16 +49,16 @@ namespace Wasm.Build.Tests
                     IsPublish: isPublish
             ));
 
-            if (!_buildContext.TryGetBuildFor(info, out BuildProduct? product))
-                throw new XunitException($"Test bug: could not get the build product in the cache");
+            if (!_buildContext.TryGetBuildFor(info, out BuildResult? result))
+                throw new XunitException($"Test bug: could not get the build result in the cache");
 
-            File.Move(product!.LogFile, Path.ChangeExtension(product.LogFile!, ".first.binlog"));
+            File.Move(result!.LogFile, Path.ChangeExtension(result.LogFile!, ".first.binlog"));
 
             _testOutput.WriteLine($"{Environment.NewLine}Publishing with no changes ..{Environment.NewLine}");
 
             isPublish = true;
-            BuildTemplateProject(info,
-                new BuildProjectOptions(
+            BuildProject(info,
+                new BuildOptions(
                     config,
                     info.ProjectName,
                     BinFrameworkDir: GetBinFrameworkDir(config, isPublish),
@@ -158,8 +158,8 @@ namespace Wasm.Build.Tests
             UpdateBrowserMainJs(targetFramework, runtimeAssetsRelativePath);
 
             bool isPublish = true;
-            BuildTemplateProject(info,
-                new BuildProjectOptions(
+            BuildProject(info,
+                new BuildOptions(
                     config,
                     info.ProjectName,
                     BinFrameworkDir: GetBinFrameworkDir(config, isPublish),
@@ -204,8 +204,8 @@ namespace Wasm.Build.Tests
             string propsPath = Path.Combine(projectDirectory, "Directory.Build.props");
             AddItemsPropertiesToProject(propsPath, extraPropertiesForDBP);
 
-            BuildTemplateProject(info,
-                new BuildProjectOptions(
+            BuildProject(info,
+                new BuildOptions(
                     config,
                     info.ProjectName,
                     BinFrameworkDir: frameworkDir,
@@ -233,8 +233,8 @@ namespace Wasm.Build.Tests
 
             bool isPublish = true;
             string frameworkDir = GetBinFrameworkDir(config, forPublish: true);
-            BuildTemplateProject(info,
-                new BuildProjectOptions(
+            BuildProject(info,
+                new BuildOptions(
                     config,
                     info.ProjectName,
                     BinFrameworkDir: frameworkDir,
@@ -314,8 +314,8 @@ namespace Wasm.Build.Tests
 
             bool isPublish = true;
             string publishPath = GetBinFrameworkDir(config, forPublish: true);
-            BuildTemplateProject(info,
-                new BuildProjectOptions(
+            BuildProject(info,
+                new BuildOptions(
                     config,
                     info.ProjectName,
                     BinFrameworkDir: publishPath,

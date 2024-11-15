@@ -50,8 +50,8 @@ namespace Wasm.Build.Tests
             bool isPublish = true;
             // invariantTimezone triggers native build
             isNativeBuild = isNativeBuild || invariantTimezone == true;
-            BuildTemplateProject(info,
-                        new BuildProjectOptions(
+            BuildProject(info,
+                        new BuildOptions(
                             config,
                             info.ProjectName,
                             BinFrameworkDir: GetBinFrameworkDir(config, isPublish),

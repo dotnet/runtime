@@ -35,8 +35,8 @@ namespace Wasm.Build.Tests
             UpdateBrowserMainJs();
 
             bool isPublish = true;
-            (string _, string buildOutput) = BuildTemplateProject(info,
-                        new BuildProjectOptions(
+            (string _, string buildOutput) = BuildProject(info,
+                        new BuildOptions(
                             info.Configuration,
                             info.ProjectName,
                             BinFrameworkDir: GetBinFrameworkDir(info.Configuration, isPublish),
@@ -61,8 +61,8 @@ namespace Wasm.Build.Tests
             UpdateBrowserMainJs();
 
             bool isPublish = true;
-            (string _, string output) = BuildTemplateProject(info,
-                        new BuildProjectOptions(
+            (string _, string output) = BuildProject(info,
+                        new BuildOptions(
                             info.Configuration,
                             info.ProjectName,
                             BinFrameworkDir: GetBinFrameworkDir(info.Configuration, isPublish),
@@ -100,8 +100,8 @@ namespace Wasm.Build.Tests
                 insertAtEnd: printFileTypeTarget);
 
             bool isPublish = true;
-            (string _, string output) = BuildTemplateProject(info,
-                        new BuildProjectOptions(
+            (string _, string output) = BuildProject(info,
+                        new BuildOptions(
                             info.Configuration,
                             info.ProjectName,
                             BinFrameworkDir: GetBinFrameworkDir(info.Configuration, isPublish),
@@ -126,8 +126,8 @@ namespace Wasm.Build.Tests
                 extraProperties: "<WasmBuildNative>false</WasmBuildNative><WasmSingleFileBundle>true</WasmSingleFileBundle>");
 
             bool isPublish = true;
-            (string _, string output) = BuildTemplateProject(info,
-                        new BuildProjectOptions(
+            (string _, string output) = BuildProject(info,
+                        new BuildOptions(
                             info.Configuration,
                             info.ProjectName,
                             BinFrameworkDir: GetBinFrameworkDir(info.Configuration, isPublish),

@@ -32,8 +32,8 @@ public class SatelliteLoadingTests : WasmTemplateTestsBase
         string config = "Debug";
         ProjectInfo info = CopyTestAsset(config, false, "WasmBasicTestApp", "SatelliteLoadingTests", "App");
         bool isPublish = false;
-        BuildTemplateProject(info,
-            new BuildProjectOptions(
+        BuildProject(info,
+            new BuildOptions(
                 info.Configuration,
                 info.ProjectName,
                 BinFrameworkDir: GetBinFrameworkDir(info.Configuration, isPublish),
@@ -95,8 +95,8 @@ public class SatelliteLoadingTests : WasmTemplateTestsBase
             .EnsureSuccessful();
 
         // Publish the app and assert
-        BuildTemplateProject(info,
-            new BuildProjectOptions(
+        BuildProject(info,
+            new BuildOptions(
                 info.Configuration,
                 info.ProjectName,
                 BinFrameworkDir: GetBinFrameworkDir(info.Configuration, isPublish),

@@ -152,8 +152,8 @@ public abstract class IcuTestsBase : WasmTemplateTestsBase
                 config, templateType, aot, testedLocales, extraProperties, onlyPredefinedCultures);
             bool isPublish = true;
             bool triggersNativeBuild = globalizationMode == GlobalizationMode.Invariant;
-            (string _, string buildOutput) = BuildTemplateProject(info,
-                        new BuildProjectOptions(
+            (string _, string buildOutput) = BuildProject(info,
+                        new BuildOptions(
                             config,
                             info.ProjectName,
                             BinFrameworkDir: GetBinFrameworkDir(config, isPublish),

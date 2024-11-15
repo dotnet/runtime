@@ -69,7 +69,7 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
     }
 
 
-    public void AssertBundle(BuildProjectOptions buildOptions)
+    public void AssertBundle(BuildOptions buildOptions)
     {
         AssertBundle(new AssertBundleOptions(
             BuildOptions: buildOptions,
@@ -148,7 +148,7 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
         }
     }
 
-    public void AssertWasmSdkBundle(BuildProjectOptions buildOptions, string? buildOutput = null)
+    public void AssertWasmSdkBundle(BuildOptions buildOptions, string? buildOutput = null)
     {
         if (buildOutput is not null)
             ProjectProviderBase.AssertRuntimePackPath(buildOutput, buildOptions.TargetFramework ?? _defaultTargetFramework);

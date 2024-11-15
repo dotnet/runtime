@@ -38,8 +38,8 @@ public class InterpPgoTests : WasmTemplateTestsBase
 
         _testOutput.WriteLine("/// Building");
         bool isPublish = false;
-        BuildTemplateProject(info,
-            new BuildProjectOptions(
+        BuildProject(info,
+            new BuildOptions(
                 info.Configuration,
                 info.ProjectName,
                 BinFrameworkDir: GetBinFrameworkDir(info.Configuration, isPublish),

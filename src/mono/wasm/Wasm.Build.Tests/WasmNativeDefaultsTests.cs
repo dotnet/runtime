@@ -212,8 +212,8 @@ namespace Wasm.Build.Tests
                     insertAtEnd: printValueTarget);
             UpdateFile(Path.Combine("Common", "Program.cs"), s_mainReturns42);
 
-            (string _, string output) = BuildTemplateProject(info,
-                new BuildProjectOptions(
+            (string _, string output) = BuildProject(info,
+                new BuildOptions(
                     info.Configuration,
                     info.ProjectName,
                     BinFrameworkDir: GetBinFrameworkDir(info.Configuration, isPublish),

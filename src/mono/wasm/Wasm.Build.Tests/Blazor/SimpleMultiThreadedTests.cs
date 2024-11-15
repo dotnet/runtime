@@ -31,8 +31,8 @@ public class SimpleMultiThreadedTests : BlazorWasmTestBase
         ProjectInfo info = CopyTestAsset(config, aot: false, "BlazorBasicTestApp", "blazorwasm", "App", extraProperties: extraProperties);
         bool isPublish = false;
         string frameworkDir = GetBlazorBinFrameworkDir(info.Configuration, isPublish);
-        BuildTemplateProject(info,
-            new BuildProjectOptions(
+        BuildProject(info,
+            new BuildOptions(
                 info.Configuration,
                 info.ProjectName,
                 BinFrameworkDir: frameworkDir,
@@ -69,8 +69,8 @@ public class SimpleMultiThreadedTests : BlazorWasmTestBase
         );
 
         bool isPublish = true;
-        BuildTemplateProject(info,
-            new BuildProjectOptions(
+        BuildProject(info,
+            new BuildOptions(
                 info.Configuration,
                 info.ProjectName,
                 BinFrameworkDir: GetBlazorBinFrameworkDir(info.Configuration, isPublish),

@@ -28,8 +28,8 @@ public class AppSettingsTests : WasmTemplateTestsBase
         string config = "Debug";
         ProjectInfo info = CopyTestAsset(config, aot: false, "WasmBasicTestApp", "AppSettingsTest", "App");
         bool isPublish = true;
-        BuildTemplateProject(info,
-            new BuildProjectOptions(
+        BuildProject(info,
+            new BuildOptions(
                 info.Configuration,
                 info.ProjectName,
                 BinFrameworkDir: GetBinFrameworkDir(info.Configuration, isPublish),

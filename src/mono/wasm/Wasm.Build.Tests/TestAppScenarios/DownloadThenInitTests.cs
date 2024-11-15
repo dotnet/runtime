@@ -26,8 +26,8 @@ public class DownloadThenInitTests : WasmTemplateTestsBase
     {
         ProjectInfo info = CopyTestAsset(config, aot: false, "WasmBasicTestApp", "DownloadThenInitTests", "App");
         bool isPublish = false;
-        BuildTemplateProject(info,
-            new BuildProjectOptions(
+        BuildProject(info,
+            new BuildOptions(
                 info.Configuration,
                 info.ProjectName,
                 BinFrameworkDir: GetBinFrameworkDir(info.Configuration, isPublish),

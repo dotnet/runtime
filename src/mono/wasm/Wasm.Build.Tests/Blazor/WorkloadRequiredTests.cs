@@ -91,8 +91,8 @@ public class WorkloadRequiredTests : BlazorWasmTestBase
         string allText = File.ReadAllText(counterPath);
         _testOutput.WriteLine($"Updated counter.razor: {allText}");
 
-        BuildTemplateProject(info,
-            new BuildProjectOptions(
+        BuildProject(info,
+            new BuildOptions(
                 info.Configuration,
                 info.ProjectName,
                 BinFrameworkDir: GetBlazorBinFrameworkDir(info.Configuration, publish),
@@ -134,8 +134,8 @@ public class WorkloadRequiredTests : BlazorWasmTestBase
                     <Error Text=""Stopping the build"" />
             </Target>";
         ProjectInfo info = CopyTestAsset(config, aot: false, "BlazorBasicTestApp", prefix, "App", extraProperties: extraProperties, insertAtEnd: insertAtEnd);
-        (string _, string output) = BuildTemplateProject(info,
-            new BuildProjectOptions(
+        (string _, string output) = BuildProject(info,
+            new BuildOptions(
                 info.Configuration,
                 info.ProjectName,
                 BinFrameworkDir: GetBlazorBinFrameworkDir(info.Configuration, publish),

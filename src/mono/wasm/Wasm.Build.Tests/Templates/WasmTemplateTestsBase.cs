@@ -113,9 +113,9 @@ public class WasmTemplateTestsBase : BuildTestBase
         AddItemsPropertiesToProject(projectFilePath, extraProperties, extraItems, insertAtEnd);
     }
 
-    public virtual (string projectDir, string buildOutput) BuildTemplateProject(
+    public virtual (string projectDir, string buildOutput) BuildProject(
         ProjectInfo projectInfo,
-        BuildProjectOptions buildOptions,
+        BuildOptions buildOptions,
         params string[] extraArgs)
     {
         if (buildOptions.ExtraBuildEnvironmentVariables is null)
@@ -127,7 +127,7 @@ public class WasmTemplateTestsBase : BuildTestBase
         (CommandResult res, string logFilePath) = BuildProjectWithoutAssert(buildOptions, extraArgs);
 
         if (buildOptions.UseCache)
-            _buildContext.CacheBuild(projectInfo, new BuildProduct(_projectDir!, logFilePath, true, res.Output));
+            _buildContext.CacheBuild(projectInfo, new BuildResult(_projectDir!, logFilePath, true, res.Output));
 
         if (!buildOptions.ExpectSuccess)
         {

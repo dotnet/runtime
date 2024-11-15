@@ -59,8 +59,8 @@ public class NativeTests : BlazorWasmTestBase
         ProjectInfo info = CopyTestAsset(config, aot: true, "BlazorBasicTestApp", "blazorwasm_aot", "App", extraProperties: extraProperties);
 
         bool isPublish = true;
-        (string _, string output) = BuildTemplateProject(info,
-            new BuildProjectOptions(
+        (string _, string output) = BuildProject(info,
+            new BuildOptions(
                 info.Configuration,
                 info.ProjectName,
                 BinFrameworkDir: GetBlazorBinFrameworkDir(info.Configuration, isPublish),
