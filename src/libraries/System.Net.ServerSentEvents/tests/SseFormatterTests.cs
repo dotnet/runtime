@@ -143,7 +143,8 @@ namespace System.Net.ServerSentEvents.Tests
 
             static void FormatJson(IBufferWriter<byte> writer, SseItem<MyPoco> item)
             {
-                using Utf8JsonWriter jsonWriter = new Utf8JsonWriter(writer);
+                JsonWriterOptions writerOptions = new() { Indented = true };
+                using Utf8JsonWriter jsonWriter = new(writer, writerOptions);
                 JsonSerializer.Serialize(jsonWriter, item.Data, JsonContext.Default.MyPoco);
             }
 
@@ -155,7 +156,6 @@ namespace System.Net.ServerSentEvents.Tests
 
         public record MyPoco(int Value);
 
-        [JsonSourceGenerationOptions(WriteIndented = true)]
         [JsonSerializable(typeof(MyPoco))]
         partial class JsonContext : JsonSerializerContext;
     }

@@ -36,7 +36,7 @@ namespace System.Net.ServerSentEvents
                 throw new ArgumentNullException(nameof(destination));
             }
 
-            return WriteAsyncCore(source, destination, static (writer, item) => writer.WriteAsUtf8String(item.Data), cancellationToken);
+            return WriteAsyncCore(source, destination, static (writer, item) => writer.WriteUtf8String(item.Data), cancellationToken);
         }
 
         /// <summary>
@@ -75,7 +75,13 @@ namespace System.Net.ServerSentEvents
 
             await foreach (SseItem<T> item in source.WithCancellation(cancellationToken).ConfigureAwait(false))
             {
-                FormatSseEvent(bufferWriter, userDataBufferWriter, itemFormatter, item);
+                itemFormatter(userDataBufferWriter, item);
+
+                FormatSseEvent(
+                    bufferWriter,
+                    eventType: item._eventType, // Do not use the public property since it normalizes to "message" if null
+                    data: userDataBufferWriter.WrittenMemory.Span,
+                    eventId: item.EventId);
 
                 await destination.WriteAsync(bufferWriter.WrittenMemory, cancellationToken).ConfigureAwait(false);
 
@@ -84,69 +90,61 @@ namespace System.Net.ServerSentEvents
             }
         }
 
-        private static void FormatSseEvent<T>(
+        private static void FormatSseEvent(
             PooledByteBufferWriter bufferWriter,
-            PooledByteBufferWriter userDataBufferWriter,
-            Action<IBufferWriter<byte>, SseItem<T>> itemFormatter,
-            SseItem<T> sseItem)
+            string? eventType,
+            ReadOnlySpan<byte> data,
+            string? eventId)
         {
-            Debug.Assert(bufferWriter.WrittenCount is 0, "Must not contain any data");
-            Debug.Assert(userDataBufferWriter.WrittenCount is 0, "Must not contain any data");
+            Debug.Assert(bufferWriter.WrittenCount is 0);
 
-            if (sseItem._eventType is { } eventType)
+            if (eventType is not null)
             {
-                Debug.Assert(!eventType.Contains('\n'), "Event type must not contain line breaks");
+                Debug.Assert(!eventType.Contains('\n'));
 
-                bufferWriter.Write("event: "u8);
-                bufferWriter.WriteAsUtf8String(eventType);
-                bufferWriter.Write(s_newLine);
+                bufferWriter.WriteUtf8String("event: "u8);
+                bufferWriter.WriteUtf8String(eventType);
+                bufferWriter.WriteUtf8String(s_newLine);
             }
 
-            itemFormatter(userDataBufferWriter, sseItem);
-            WriteDataWithLineBreakHandling(bufferWriter, userDataBufferWriter.WrittenMemory.Span);
-
-            if (sseItem.EventId is { } eventId)
-            {
-                Debug.Assert(!eventId.Contains('\n'), "Event id must not contain line breaks");
-
-                bufferWriter.Write("id: "u8);
-                bufferWriter.WriteAsUtf8String(eventId);
-                bufferWriter.Write(s_newLine);
-            }
-
+            WriteLinesWithPrefix(bufferWriter, prefix: "data: "u8, data);
             bufferWriter.Write(s_newLine);
+
+            if (eventId is not null)
+            {
+                Debug.Assert(!eventId.Contains('\n'));
+
+                bufferWriter.WriteUtf8String("id: "u8);
+                bufferWriter.WriteUtf8String(eventId);
+                bufferWriter.WriteUtf8String(s_newLine);
+            }
+
+            bufferWriter.WriteUtf8String(s_newLine);
         }
 
-        private static void WriteDataWithLineBreakHandling(PooledByteBufferWriter bufferWriter, ReadOnlySpan<byte> data)
+        private static void WriteLinesWithPrefix(PooledByteBufferWriter writer, ReadOnlySpan<byte> prefix, ReadOnlySpan<byte> data)
         {
-            // The data field can contain multiple lines, each line must be prefixed with "data: " and suffixed with a line break.
+            // Writes a potentially multi-line string, prefixing each line with the given prefix.
+            // Both \n and \r\n sequences are normalized to \n.
 
-            ReadOnlySpan<byte> nextLine;
-            int lineBreak;
-
-            do
+            while (true)
             {
-                lineBreak = data.IndexOf((byte)'\n');
-                if (lineBreak < 0)
-                {
-                    nextLine = data;
-                    data = default;
-                }
-                else
-                {
-                    int lineLength = lineBreak > 0 && data[lineBreak - 1] == '\r'
-                        ? lineBreak - 1
-                        : lineBreak;
+                writer.WriteUtf8String(prefix);
 
-                    nextLine = data.Slice(0, lineLength);
-                    data = data.Slice(lineBreak + 1);
+                int i = data.IndexOf((byte)'\n');
+                if (i is -1)
+                {
+                    writer.WriteUtf8String(data);
+                    return;
                 }
 
-                bufferWriter.Write("data: "u8);
-                bufferWriter.Write(nextLine);
-                bufferWriter.Write(s_newLine);
+                int lineLength = i > 0 && data[i - 1] == '\r' ? i - 1 : i;
+                ReadOnlySpan<byte> nextLine = data.Slice(0, lineLength);
+                data = data.Slice(i + 1);
 
-            } while (lineBreak >= 0);
+                writer.WriteUtf8String(nextLine);
+                writer.WriteUtf8String(s_newLine);
+            }
         }
     }
 }

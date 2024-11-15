@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
+using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -12,7 +13,20 @@ namespace System.Net.ServerSentEvents
 {
     internal static class Helpers
     {
-        public static unsafe void WriteAsUtf8String(this IBufferWriter<byte> bufferWriter, ReadOnlySpan<char> value)
+        public static void WriteUtf8String(this IBufferWriter<byte> writer, ReadOnlySpan<byte> value)
+        {
+            if (value.IsEmpty)
+            {
+                return;
+            }
+
+            Span<byte> buffer = writer.GetSpan(value.Length);
+            Debug.Assert(value.Length <= buffer.Length);
+            value.CopyTo(buffer);
+            writer.Advance(value.Length);
+        }
+
+        public static unsafe void WriteUtf8String(this IBufferWriter<byte> writer, ReadOnlySpan<char> value)
         {
             if (value.IsEmpty)
             {
@@ -20,7 +34,8 @@ namespace System.Net.ServerSentEvents
             }
 
             int maxByteCount = Encoding.UTF8.GetMaxByteCount(value.Length);
-            Span<byte> buffer = bufferWriter.GetSpan(maxByteCount);
+            Span<byte> buffer = writer.GetSpan(maxByteCount);
+            Debug.Assert(maxByteCount <= buffer.Length);
             int bytesWritten;
 #if NET
             bytesWritten = Encoding.UTF8.GetBytes(value, buffer);
@@ -31,7 +46,7 @@ namespace System.Net.ServerSentEvents
                 bytesWritten = Encoding.UTF8.GetBytes(chars, value.Length, bytes, maxByteCount);
             }
 #endif
-            bufferWriter.Advance(bytesWritten);
+            writer.Advance(bytesWritten);
         }
 
         public static void ValidateParameterDoesNotContainLineBreaks(string? input, string paramName)
