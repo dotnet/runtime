@@ -36,7 +36,7 @@ namespace System.Net.ServerSentEvents
                 throw new ArgumentNullException(nameof(destination));
             }
 
-            return WriteAsyncCore(source, destination, static (writer, item) => writer.WriteUtf8String(item.Data), cancellationToken);
+            return WriteAsyncCore(source, destination, static (item, writer) => writer.WriteUtf8String(item.Data), cancellationToken);
         }
 
         /// <summary>
@@ -48,7 +48,7 @@ namespace System.Net.ServerSentEvents
         /// <param name="itemFormatter">The formatter for the data field of given event.</param>
         /// <param name="cancellationToken">The <see cref="CancellationToken"/> that can be used to cancel the write operation.</param>
         /// <returns>A task that represents the asynchronous write operation.</returns>
-        public static Task WriteAsync<T>(IAsyncEnumerable<SseItem<T>> source, Stream destination, Action<IBufferWriter<byte>, SseItem<T>> itemFormatter, CancellationToken cancellationToken = default)
+        public static Task WriteAsync<T>(IAsyncEnumerable<SseItem<T>> source, Stream destination, Action<SseItem<T>, IBufferWriter<byte>> itemFormatter, CancellationToken cancellationToken = default)
         {
             if (source is null)
             {
@@ -68,14 +68,14 @@ namespace System.Net.ServerSentEvents
             return WriteAsyncCore(source, destination, itemFormatter, cancellationToken);
         }
 
-        private static async Task WriteAsyncCore<T>(IAsyncEnumerable<SseItem<T>> source, Stream destination, Action<IBufferWriter<byte>, SseItem<T>> itemFormatter, CancellationToken cancellationToken)
+        private static async Task WriteAsyncCore<T>(IAsyncEnumerable<SseItem<T>> source, Stream destination, Action<SseItem<T>, IBufferWriter<byte>> itemFormatter, CancellationToken cancellationToken)
         {
             using PooledByteBufferWriter bufferWriter = new();
             using PooledByteBufferWriter userDataBufferWriter = new();
 
             await foreach (SseItem<T> item in source.WithCancellation(cancellationToken).ConfigureAwait(false))
             {
-                itemFormatter(userDataBufferWriter, item);
+                itemFormatter(item, userDataBufferWriter);
 
                 FormatSseEvent(
                     bufferWriter,

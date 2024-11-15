@@ -67,7 +67,7 @@ namespace System.Net.ServerSentEvents.Tests
             using MemoryStream stream = new();
 
             // Act
-            await SseFormatter.WriteAsync(GetItemsAsync(), stream, (writer, item) => writer.Write(Encoding.UTF8.GetBytes(item.Data + "_suffix")));
+            await SseFormatter.WriteAsync(GetItemsAsync(), stream, (item, writer) => writer.Write(Encoding.UTF8.GetBytes(item.Data + "_suffix")));
 
             // Assert
             string actualFormat = Encoding.UTF8.GetString(stream.ToArray());
@@ -97,7 +97,7 @@ namespace System.Net.ServerSentEvents.Tests
                 SseFormatter.WriteAsync(
                     GetItemsAsync(),
                     new MemoryStream(),
-                    (writer, item) => writer.Write(Encoding.UTF8.GetBytes(item.Data)),
+                    (item, writer) => writer.Write(Encoding.UTF8.GetBytes(item.Data)),
                     token));
 
             async IAsyncEnumerable<SseItem<string>> GetItemsAsync([EnumeratorCancellation] CancellationToken token = default)
@@ -141,7 +141,7 @@ namespace System.Net.ServerSentEvents.Tests
                 }
             }
 
-            static void FormatJson(IBufferWriter<byte> writer, SseItem<MyPoco> item)
+            static void FormatJson(SseItem<MyPoco> item, IBufferWriter<byte> writer)
             {
                 JsonWriterOptions writerOptions = new() { Indented = true };
                 using Utf8JsonWriter jsonWriter = new(writer, writerOptions);
