@@ -32,24 +32,13 @@ namespace System
         /// <returns>A new <see cref="RuntimeTypeHandle"/> object that corresponds to the value parameter.</returns>
         public static RuntimeTypeHandle FromIntPtr(IntPtr value) => new RuntimeTypeHandle(GetTypeFromHandle(value));
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_GetTypeObjectSlow")]
-        private static partial void GetTypeObjectSlow(
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_GetTypeObjectFromHandleSlow")]
+        private static partial void GetTypeObjectFromHandleSlow(
             IntPtr handle,
             ObjectHandleOnStack typeObject);
 
-        // This is the slow path for a number of cases.
-        // Being the slow path means it shouldn't be inlined to avoid
-        // the cost of a P/Invoke frame being inserted when the fast path is taken.
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        internal static RuntimeType GetTypeObjectSlow(IntPtr handle)
-        {
-            RuntimeType? typeObject = null;
-            GetTypeObjectSlow(handle, ObjectHandleOnStack.Create(ref typeObject));
-            return typeObject!;
-        }
-
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern RuntimeType? GetTypeObject(IntPtr handle);
+        private static extern RuntimeType? GetTypeObjectFromHandleInternal(IntPtr handle);
 
         private static RuntimeType? GetTypeFromHandle(IntPtr handle)
         {
@@ -58,7 +47,31 @@ namespace System
                 return null;
             }
 
-            return GetTypeObject(handle) ?? GetTypeObjectSlow(handle);
+            return GetTypeObjectFromHandleInternal(handle) ?? GetTypeObjectFromHandleSlowWorker(handle);
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static RuntimeType GetTypeObjectFromHandleSlowWorker(IntPtr handle)
+            {
+                RuntimeType? typeObject = null;
+                GetTypeObjectFromHandleSlow(handle, ObjectHandleOnStack.Create(ref typeObject));
+                return typeObject!;
+            }
+        }
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_GetTypeObject")]
+        private static unsafe partial void GetTypeObject(
+            MethodTable* pMT,
+            ObjectHandleOnStack typeObject);
+
+        // This is the slow path for a number of cases.
+        // Being the slow path means it shouldn't be inlined to avoid
+        // the cost of a P/Invoke frame being inserted when the fast path is taken.
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static unsafe RuntimeType GetTypeObject(MethodTable* pMT)
+        {
+            RuntimeType? typeObject = null;
+            GetTypeObject(pMT, ObjectHandleOnStack.Create(ref typeObject));
+            return typeObject!;
         }
 
         /// <summary>
@@ -384,8 +397,30 @@ namespace System
             return new ModuleHandle(GetModule(m_type));
         }
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern RuntimeType GetBaseType(RuntimeType type);
+        internal static RuntimeType? GetBaseType(RuntimeType type)
+        {
+            if (IsGenericVariable(type))
+            {
+                throw new ArgumentException(SR.Arg_InvalidHandle);
+            }
+
+            TypeHandle typeHandle = type.GetNativeTypeHandle();
+            if (typeHandle.IsTypeDesc)
+            {
+                return null;
+            }
+
+            MethodTable* pParentMT = typeHandle.AsMethodTable()->ParentMethodTable;
+            if (pParentMT == null)
+            {
+                return null;
+            }
+
+            RuntimeType? result = null;
+            GetTypeObject(pParentMT, ObjectHandleOnStack.Create(ref result));
+            GC.KeepAlive(type);
+            return result!;
+        }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern TypeAttributes GetAttributes(RuntimeType type);

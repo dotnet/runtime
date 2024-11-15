@@ -138,8 +138,29 @@ extern "C" BOOL QCALLTYPE RuntimeMethodHandle_IsCAVisibleFromDecoratedType(
     return bResult;
 }
 
-extern "C" void QCALLTYPE RuntimeTypeHandle_GetTypeObjectSlow(
-    void* typeHandleRaw,
+extern "C" void QCALLTYPE RuntimeTypeHandle_GetTypeObject(
+    MethodTable* pMT,
+    QCall::ObjectHandleOnStack result)
+{
+    QCALL_CONTRACT;
+
+    _ASSERTE(pMT != NULL);
+
+    BEGIN_QCALL;
+
+    GCX_COOP();
+
+    result.Set(pMT->GetManagedClassObjectIfExists());
+    if (result.Get() == NULL)
+        result.Set(pMT->GetManagedClassObject());
+
+    _ASSERTE(result.Get() != NULL);
+
+    END_QCALL;
+}
+
+extern "C" void QCALLTYPE RuntimeTypeHandle_GetTypeObjectFromHandleSlow(
+    EnregisteredTypeHandle typeHandleRaw,
     QCall::ObjectHandleOnStack result)
 {
     QCALL_CONTRACT;
@@ -152,8 +173,6 @@ extern "C" void QCALLTYPE RuntimeTypeHandle_GetTypeObjectSlow(
 
     TypeHandle typeHandle = TypeHandle::FromPtr(typeHandleRaw);
 
-    // RuntimeTypeHandle::GetTypeObject has picked off the most common case, but does not cover array types.
-    // Before we do the really heavy weight option of setting up a helper method frame, check if we have to.
     result.Set(typeHandle.GetManagedClassObjectIfExists());
     if (result.Get() == NULL)
         result.Set(typeHandle.GetManagedClassObject());
@@ -184,7 +203,7 @@ NOINLINE static ReflectClassBaseObject* GetRuntimeTypeHelper(LPVOID __me, TypeHa
 
 #define RETURN_CLASS_OBJECT(typeHandle, keepAlive) FC_INNER_RETURN(ReflectClassBaseObject*, GetRuntimeTypeHelper(__me, typeHandle, keepAlive))
 
-FCIMPL1(ReflectClassBaseObject*, RuntimeTypeHandle::GetTypeObject, EnregisteredTypeHandle th)
+FCIMPL1(ReflectClassBaseObject*, RuntimeTypeHandle::GetTypeObjectFromHandleInternal, EnregisteredTypeHandle th)
 {
     FCALL_CONTRACT;
 
@@ -358,30 +377,6 @@ extern "C" void QCALLTYPE RuntimeTypeHandle_GetModuleSlow(QCall::ObjectHandleOnS
     module.Set(pModule->GetExposedObject());
     END_QCALL;
 }
-
-FCIMPL1(ReflectClassBaseObject *, RuntimeTypeHandle::GetBaseType, ReflectClassBaseObject *pTypeUNSAFE) {
-    CONTRACTL {
-        FCALL_CHECK;
-    }
-    CONTRACTL_END;
-
-    REFLECTCLASSBASEREF refType = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(pTypeUNSAFE);
-
-    if (refType == NULL)
-        FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
-
-    TypeHandle typeHandle = refType->GetType();
-
-    if (typeHandle.IsGenericVariable())
-        FCThrowRes(kArgumentException, W("Arg_InvalidHandle"));
-
-    if (typeHandle.IsTypeDesc()) {
-        return NULL;
-    }
-
-    RETURN_CLASS_OBJECT(typeHandle.GetParent(), refType);
-}
-FCIMPLEND
 
 FCIMPL1(ReflectClassBaseObject *, RuntimeTypeHandle::GetElementType, ReflectClassBaseObject *pTypeUNSAFE) {
     CONTRACTL {
