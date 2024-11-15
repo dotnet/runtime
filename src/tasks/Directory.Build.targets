@@ -16,12 +16,7 @@
   <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net462'))">
     <!-- These assemblies and their dependencies are made available by MSBuild on .NET Framework -->
     <PackageReference Include="System.Reflection.Metadata" Version="$(SystemReflectionMetadataToolsetVersion)" ExcludeAssets="Runtime" PrivateAssets="All" />
-    <PackageReference Include="System.Text.Json" Version="$(SystemTextJsonToolsetVersion)" ExcludeAssets="Runtime" PrivateAssets="All" />
-  </ItemGroup>
-
-  <!-- Suppress System.Text.Json/8.0.4 advisory as desktop msbuild doesn't yet provide binding redirects for the non-vulnerable version (8.0.5). -->
-  <ItemGroup>
-    <NuGetAuditSuppress Include="https://github.com/advisories/GHSA-8g4q-xg66-9fp4" />
+    <PackageReference Include="System.Text.Json" Version="$(SystemTextJsonToolsetVersion)" ExcludeAssets="Runtime" PrivateAssets="All" NoWarn="NU1903" />
   </ItemGroup>
 
   <Import Project="$(RepositoryEngineeringDir)PackageDownloadAndReference.targets" />
