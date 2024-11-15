@@ -4950,12 +4950,16 @@ weight_t Compiler::ThreeOptLayout::GetCost(BasicBlock* block, BasicBlock* next)
 
     const weight_t  maxCost         = block->bbWeight;
     const FlowEdge* fallthroughEdge = compiler->fgGetPredForBlock(next, block);
+    assert(maxCost >= BB_ZERO_WEIGHT);
 
     if (fallthroughEdge != nullptr)
     {
         // The edge's weight should never exceed its source block's weight,
         // but handle negative results from rounding errors in getLikelyWeight(), just in case
-        return max(0.0, maxCost - fallthroughEdge->getLikelyWeight());
+        const weight_t edgeWeight = fallthroughEdge->getLikelyWeight();
+        assert(edgeWeight >= BB_ZERO_WEIGHT);
+        assert(edgeWeight <= maxCost);
+        return maxCost - edgeWeight;
     }
 
     return maxCost;
