@@ -13,9 +13,6 @@ namespace System.Collections.Generic
 {
     public abstract partial class Comparer<T> : IComparer, IComparer<T>
     {
-        [FeatureSwitchDefinition("System.Collections.Generic.DefaultComparers")]
-        private static bool SupportsGenericIComparableInterfaces => true;
-
         [Intrinsic]
         private static Comparer<T> Create()
         {
@@ -24,11 +21,7 @@ namespace System.Collections.Generic
             // This body serves as a fallback when instantiation-specific implementation is unavailable.
             // If that happens, the compiler ensures we generate data structures to make the fallback work
             // when this method is compiled.
-            if (SupportsGenericIComparableInterfaces)
-            {
-                return Unsafe.As<Comparer<T>>(ComparerHelpers.GetComparer(typeof(T).TypeHandle));
-            }
-            return new ObjectComparer<T>();
+            return Unsafe.As<Comparer<T>>(ComparerHelpers.GetComparer(typeof(T).TypeHandle));
         }
 
         public static Comparer<T> Default { [Intrinsic] get; } = Create();
