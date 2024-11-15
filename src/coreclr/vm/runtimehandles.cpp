@@ -2519,30 +2519,29 @@ FCIMPL1(LPCUTF8, RuntimeFieldHandle::GetUtf8Name, FieldDesc *pField)
 }
 FCIMPLEND
 
-FCIMPL1(INT32, RuntimeFieldHandle::GetAttributes, FieldDesc *pField) {
-    CONTRACTL {
+FCIMPL1(INT32, RuntimeFieldHandle::GetAttributesInternal, FieldDesc *pField)
+{
+    CONTRACTL
+    {
         FCALL_CHECK;
+        PRECONDITION(pField != NULL);
     }
     CONTRACTL_END;
-
-    if (!pField)
-        FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
 
     return (INT32)pField->GetAttributes();
 }
 FCIMPLEND
 
-FCIMPL1(ReflectClassBaseObject*, RuntimeFieldHandle::GetApproxDeclaringType, FieldDesc *pField) {
-    CONTRACTL {
+FCIMPL1(MethodTable*, RuntimeFieldHandle::GetApproxDeclaringMethodTable, FieldDesc *pField)
+{
+    CONTRACTL
+    {
         FCALL_CHECK;
+        PRECONDITION(pField != NULL);
     }
     CONTRACTL_END;
 
-    if (!pField)
-        FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
-
-    TypeHandle th = TypeHandle(pField->GetApproxEnclosingMethodTable());  // <REVISIT_TODO> this needs to be checked - see bug 184355 </REVISIT_TODO>
-    RETURN_CLASS_OBJECT(th, NULL);
+    return pField->GetApproxEnclosingMethodTable();
 }
 FCIMPLEND
 

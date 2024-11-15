@@ -63,15 +63,17 @@ namespace System
             MethodTable* pMT,
             ObjectHandleOnStack typeObject);
 
-        // This is the slow path for a number of cases.
-        // Being the slow path means it shouldn't be inlined to avoid
-        // the cost of a P/Invoke frame being inserted when the fast path is taken.
-        [MethodImpl(MethodImplOptions.NoInlining)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static unsafe RuntimeType GetTypeObject(MethodTable* pMT)
         {
-            RuntimeType? typeObject = null;
-            GetTypeObject(pMT, ObjectHandleOnStack.Create(ref typeObject));
-            return typeObject!;
+            return pMT->AuxiliaryData->ExposedClassObject ?? GetTypeObjectWorker(pMT);
+
+            static RuntimeType GetTypeObjectWorker(MethodTable* pMT)
+            {
+                RuntimeType? typeObject = null;
+                GetTypeObject(pMT, ObjectHandleOnStack.Create(ref typeObject));
+                return typeObject!;
+            }
         }
 
         /// <summary>
@@ -1286,10 +1288,33 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern FieldAttributes GetAttributes(RuntimeFieldHandleInternal field);
+        private static extern FieldAttributes GetAttributesInternal(RuntimeFieldHandleInternal field);
+
+        internal static FieldAttributes GetAttributes(RuntimeFieldHandleInternal field)
+        {
+            if (field.IsNullHandle())
+            {
+                throw new ArgumentNullException(SR.Arg_InvalidHandle);
+            }
+
+            return GetAttributesInternal(field);
+        }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern RuntimeType GetApproxDeclaringType(RuntimeFieldHandleInternal field);
+        private static extern MethodTable* GetApproxDeclaringMethodTable(RuntimeFieldHandleInternal field);
+
+        internal static RuntimeType GetApproxDeclaringType(RuntimeFieldHandleInternal field)
+        {
+            if (field.IsNullHandle())
+            {
+                throw new ArgumentNullException(SR.Arg_InvalidHandle);
+            }
+
+            MethodTable* pMT = GetApproxDeclaringMethodTable(field);
+            Debug.Assert(pMT != null);
+
+            return RuntimeTypeHandle.GetTypeObject(pMT);
+        }
 
         internal static RuntimeType GetApproxDeclaringType(IRuntimeFieldInfo field)
         {
