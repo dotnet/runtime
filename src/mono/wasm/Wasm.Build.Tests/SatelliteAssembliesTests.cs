@@ -39,7 +39,7 @@ namespace Wasm.Build.Tests
                                         // make ASSERTIONS=1 so that we test with it
                                         + $"<EmccCompileOptimizationFlag>-O0 -sASSERTIONS=1</EmccCompileOptimizationFlag>"
                                         + $"<EmccLinkOptimizationFlag>-O1</EmccLinkOptimizationFlag>";
-            ProjectInfo info = CopyTestAsset(config, aot, "WasmBasicTestApp", prefix, "App", extraProperties: extraProperties);
+            ProjectInfo info = CopyTestAsset(config, aot, BasicTestApp, prefix, extraProperties: extraProperties);
             Utils.DirectoryCopy(Path.Combine(BuildEnvironment.TestAssetsPath, "resx"), Path.Combine(_projectDir!, "resx"));
             CreateProgramForCultureTest($"{info.ProjectName}.resx.words", "TestClass");
 
@@ -74,7 +74,7 @@ namespace Wasm.Build.Tests
                                         + $"<EmccCompileOptimizationFlag>-O0 -sASSERTIONS=1</EmccCompileOptimizationFlag>"
                                         + $"<EmccLinkOptimizationFlag>-O1</EmccLinkOptimizationFlag>";
             string extraItems = $"<ProjectReference Include=\"..\\LibraryWithResources\\LibraryWithResources.csproj\" />";
-            ProjectInfo info = CopyTestAsset(config, aot, "WasmBasicTestApp", prefix, "App", extraProperties: extraProperties, extraItems: extraItems);
+            ProjectInfo info = CopyTestAsset(config, aot, BasicTestApp, prefix, extraProperties: extraProperties, extraItems: extraItems);
             // D.B.* used for wasm projects should be moved next to the wasm project, so it doesn't
             // affect the non-wasm library project
             File.Move(Path.Combine(_projectDir!, "..", "Directory.Build.props"), Path.Combine(_projectDir!, "Directory.Build.props"));
@@ -113,7 +113,7 @@ namespace Wasm.Build.Tests
                                         <EmccLinkOptimizationFlag>-O1</EmccLinkOptimizationFlag>
                                         <WasmDedup>false</WasmDedup>"; // -O0 can cause aot-instances.dll to blow up, and fail to compile, and it is not really needed here
             string extraItems = $"<EmbeddedResource Include=\"{BuildEnvironment.RelativeTestAssetsPath}resx\\*\" />";
-            ProjectInfo info = CopyTestAsset(config, aot, "WasmBasicTestApp", "check_sat_asm_not_aot", "App", extraProperties: extraProperties, extraItems: extraItems);
+            ProjectInfo info = CopyTestAsset(config, aot, BasicTestApp, "check_sat_asm_not_aot", extraProperties: extraProperties, extraItems: extraItems);
             CreateProgramForCultureTest($"{info.ProjectName}.words", "TestClass");
 
             bool isPublish = true;

@@ -56,7 +56,7 @@ public class NativeTests : BlazorWasmTestBase
     public void BlazorWasm_CannotAOT_WithNoTrimming(string config)
     {
         string extraProperties = "<PublishTrimmed>false</PublishTrimmed><RunAOTCompilation>true</RunAOTCompilation>";
-        ProjectInfo info = CopyTestAsset(config, aot: true, "BlazorBasicTestApp", "blazorwasm_aot", "App", extraProperties: extraProperties);
+        ProjectInfo info = CopyTestAsset(config, aot: true, BasicTestApp, "blazorwasm_aot", extraProperties: extraProperties);
 
         bool isPublish = true;
         (string _, string output) = BuildProject(info,

@@ -23,7 +23,7 @@ namespace Wasm.Build.NativeRebuild.Tests
         [ActiveIssue("File sizes don't match: dotnet.native.wasm size should be same as from obj/for-publish but is not")]
         public async void SimpleStringChangeInSource(string config, bool aot, bool nativeRelink, bool invariant)
         {
-            ProjectInfo info = CopyTestAsset(config, aot, "WasmBasicTestApp", "rebuild_simple", "App");  
+            ProjectInfo info = CopyTestAsset(config, aot, BasicTestApp, "rebuild_simple");  
             BuildPaths paths = await FirstNativeBuildAndRun(info, nativeRelink, invariant);
 
             string mainAssembly = $"{info.ProjectName}{ProjectProviderBase.WasmAssemblyExtension}";

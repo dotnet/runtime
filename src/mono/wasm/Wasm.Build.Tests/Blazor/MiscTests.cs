@@ -32,7 +32,7 @@ public class MiscTests : BlazorWasmTestBase
                                     : string.Empty;
         if (!nativeRelink)
             extraProperties += "<RunAOTCompilation>true</RunAOTCompilation>";
-        ProjectInfo info = CopyTestAsset(config, aot: true, "BlazorBasicTestApp", "blz_deploy_on_build", "App", extraProperties: extraProperties);
+        ProjectInfo info = CopyTestAsset(config, aot: true, BasicTestApp, "blz_deploy_on_build", extraProperties: extraProperties);
 
         // build with -p:DeployOnBuild=true, and that will trigger a publish
         (string _, string buildOutput) = BlazorBuild(info, isNativeBuild: true, extraArgs: "-p:DeployBuild=true");
@@ -54,7 +54,7 @@ public class MiscTests : BlazorWasmTestBase
                                     ? ("<EmccLinkOptimizationFlag>-O1</EmccLinkOptimizationFlag>" +
                                         "<EmccCompileOptimizationFlag>-O1</EmccCompileOptimizationFlag>")
                                     : string.Empty;
-        ProjectInfo info = CopyTestAsset(config, aot: true, "BlazorBasicTestApp", "blz_aot_prj_file", "App", extraProperties: extraProperties);
+        ProjectInfo info = CopyTestAsset(config, aot: true, BasicTestApp, "blz_aot_prj_file", extraProperties: extraProperties);
 
         // No relinking, no AOT
         BlazorBuild(info);

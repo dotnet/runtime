@@ -48,7 +48,7 @@ namespace Wasm.Build.Tests
                 extraProperties = $"{extraProperties}<InvariantGlobalization>{invariantGlobalization}</InvariantGlobalization>";
 
             string prefix = $"invariant_{invariantGlobalization?.ToString() ?? "unset"}";
-            ProjectInfo info = CopyTestAsset(config, aot, "WasmBasicTestApp", prefix, "App", extraProperties: extraProperties);
+            ProjectInfo info = CopyTestAsset(config, aot, BasicTestApp, prefix, extraProperties: extraProperties);
             ReplaceFile(Path.Combine("Common", "Program.cs"), Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "InvariantGlobalization.cs"));
 
             bool isPublish = true;

@@ -144,7 +144,7 @@ namespace Wasm.Build.Tests
         private ProjectInfo PrepreProjectForBlittableTests(string config, bool aot, string prefix, bool disableRuntimeMarshalling, bool useAutoLayout = false)
         {
             string extraProperties = aot ? string.Empty : "<WasmBuildNative>true</WasmBuildNative>";
-            ProjectInfo info = CopyTestAsset(config, aot, "WasmBasicTestApp", prefix, "App", extraProperties: extraProperties);
+            ProjectInfo info = CopyTestAsset(config, aot, BasicTestApp, prefix, extraProperties: extraProperties);
             string programRelativePath = Path.Combine("Common", "Program.cs");
             ReplaceFile(programRelativePath, Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "PInvoke", "BittableSameAssembly.cs"));
             
@@ -182,7 +182,7 @@ namespace Wasm.Build.Tests
             string extraItems =  @$"<ProjectReference Include=""..\\Library\\Library.csproj"" />";
             string libRelativePath = Path.Combine("..", "Library", "Library.cs");
             string programRelativePath = Path.Combine("Common", "Program.cs");
-            ProjectInfo info = CopyTestAsset(config, aot, "WasmBasicTestApp", "blittable_different_library", "App", extraProperties: extraProperties, extraItems: extraItems);
+            ProjectInfo info = CopyTestAsset(config, aot, BasicTestApp, "blittable_different_library", extraProperties: extraProperties, extraItems: extraItems);
             ReplaceFile(libRelativePath, Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "PInvoke", "BittableDifferentAssembly_Lib.cs"));
             ReplaceFile(programRelativePath, Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "PInvoke", "BittableDifferentAssembly.cs"));
             if (!libraryHasAttribute)
@@ -224,7 +224,7 @@ namespace Wasm.Build.Tests
         public async void DllImportWithFunctionPointers_WarningsAsMessages(string config, bool aot)
         {
             string extraProperties = "<MSBuildWarningsAsMessages>$(MSBuildWarningsAsMessage);WASM0001</MSBuildWarningsAsMessages>";
-            ProjectInfo info = CopyTestAsset(config, aot, "WasmBasicTestApp", "fnptr", "App", extraProperties: extraProperties);
+            ProjectInfo info = CopyTestAsset(config, aot, BasicTestApp, "fnptr", extraProperties: extraProperties);
             ReplaceFile(Path.Combine("Common", "Program.cs"), Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "PInvoke", "FunctionPointers.cs"));
 
             string output = BuildForVariadicFunctionTests(info, isNativeBuild: false);
@@ -242,7 +242,7 @@ namespace Wasm.Build.Tests
         [BuildAndRun()]
         public void UnmanagedCallback_WithFunctionPointers_CompilesWithWarnings(string config, bool aot)
         {
-            ProjectInfo info = CopyTestAsset(config, aot, "WasmBasicTestApp", "cb_fnptr", "App");
+            ProjectInfo info = CopyTestAsset(config, aot, BasicTestApp, "cb_fnptr");
             string programRelativePath = Path.Combine("Common", "Program.cs");
             ReplaceFile(programRelativePath, Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "PInvoke", "FunctionPointers.cs"));
             UpdateFile(programRelativePath, new Dictionary<string, string> { { "[DllImport(\"someting\")]", "[UnmanagedCallersOnly]" } });
@@ -254,7 +254,7 @@ namespace Wasm.Build.Tests
         [BuildAndRun()]
         public async void UnmanagedCallback_InFileType(string config, bool aot)
         {
-            ProjectInfo info = CopyTestAsset(config, aot, "WasmBasicTestApp", "cb_filetype", "App");
+            ProjectInfo info = CopyTestAsset(config, aot, BasicTestApp, "cb_filetype");
             string programRelativePath = Path.Combine("Common", "Program.cs");
             ReplaceFile(programRelativePath, Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "PInvoke", "UnmanagedCallbackInFile.cs"));
 
@@ -274,7 +274,7 @@ namespace Wasm.Build.Tests
         [ActiveIssue("RuntimeError: null function or function signature mismatch")]
         public async void UnmanagedCallersOnly_Namespaced(string config, bool aot)
         {
-            ProjectInfo info = CopyTestAsset(config, aot, "WasmBasicTestApp", "cb_namespace", "App");
+            ProjectInfo info = CopyTestAsset(config, aot, BasicTestApp, "cb_namespace");
             string programRelativePath = Path.Combine("Common", "Program.cs");
             ReplaceFile(programRelativePath, Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "PInvoke", "UnmanagedCallbackNamespaced.cs"));
 
@@ -328,7 +328,7 @@ namespace Wasm.Build.Tests
                 </Target>
             """;
 
-            ProjectInfo info = CopyTestAsset(config, aot, "WasmBasicTestApp", "icall_enum", "App", insertAtEnd: appendToTheEnd);
+            ProjectInfo info = CopyTestAsset(config, aot, BasicTestApp, "icall_enum", insertAtEnd: appendToTheEnd);
             // build a library containing icalls with overloaded parameters.
             ReplaceFile(Path.Combine("..", "Library", "Library.cs"), Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "PInvoke", "ICall_Lib.cs"));
             // temporarily change the project directory to build the library
@@ -348,7 +348,7 @@ namespace Wasm.Build.Tests
                     AssertAppBundle: false
             ));
             // restore the project directory
-            _projectDir = Path.Combine(_projectDir!, "..", "App");
+            _projectDir = Path.Combine(_projectDir!, "..");
             
             string icallTable =
             """
@@ -422,7 +422,7 @@ namespace Wasm.Build.Tests
 
             string extraItems = @$"<NativeFileReference Include=""simple.c"" />";
             string extraProperties = aot ? string.Empty : "<WasmBuildNative>true</WasmBuildNative>";
-            ProjectInfo info = CopyTestAsset(config, aot, "WasmBasicTestApp", "buildNativeNonEng", "App", extraItems: extraItems);
+            ProjectInfo info = CopyTestAsset(config, aot, BasicTestApp, "buildNativeNonEng", extraItems: extraItems);
             string programRelativePath = Path.Combine("Common", "Program.cs");
             ReplaceFile(programRelativePath, Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "PInvoke", "BuildNative.cs"));
             string cCodeFilename = "simple.c";
@@ -463,7 +463,7 @@ namespace Wasm.Build.Tests
         {
             var extraItems = @"<NativeFileReference Include=""*.c"" />";
             string extraProperties = aot ? string.Empty : "<WasmBuildNative>true</WasmBuildNative>";
-            ProjectInfo info = CopyTestAsset(config, aot, "WasmBasicTestApp", "abi", "App", extraItems: extraItems, extraProperties: extraProperties);
+            ProjectInfo info = CopyTestAsset(config, aot, BasicTestApp, "abi", extraItems: extraItems, extraProperties: extraProperties);
             
             int baseArg = 10;
             GenerateSourceFiles(_projectDir!, baseArg);
@@ -520,7 +520,7 @@ namespace Wasm.Build.Tests
             string objectFilename = "variadic.o";
             extraProperties += "<AllowUnsafeBlocks>true</AllowUnsafeBlocks><_WasmDevel>true</_WasmDevel>";
             string extraItems = $"<NativeFileReference Include=\"{objectFilename}\" />";
-            ProjectInfo info = CopyTestAsset(config, aot, "WasmBasicTestApp", prefix, "App", extraItems: extraItems, extraProperties: extraProperties);
+            ProjectInfo info = CopyTestAsset(config, aot, BasicTestApp, prefix, extraItems: extraItems, extraProperties: extraProperties);
             File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "native-libs", objectFilename), Path.Combine(_projectDir!, objectFilename));
             return info;
         }
@@ -546,7 +546,7 @@ namespace Wasm.Build.Tests
         {
             var extraItems = @"<NativeFileReference Include=""wasm-abi.c"" />";
             var extraProperties = "<AllowUnsafeBlocks>true</AllowUnsafeBlocks><_WasmDevel>false</_WasmDevel><WasmNativeStrip>false</WasmNativeStrip>";
-            ProjectInfo info = CopyTestAsset(config, aot, "WasmBasicTestApp", "abi", "App", extraItems: extraItems, extraProperties: extraProperties);
+            ProjectInfo info = CopyTestAsset(config, aot, BasicTestApp, "abi", extraItems: extraItems, extraProperties: extraProperties);
             ReplaceFile(Path.Combine("Common", "Program.cs"), Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "PInvoke", "AbiRules.cs"));
             string cCodeFilename = "wasm-abi.c";
             File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "native-libs", cCodeFilename), Path.Combine(_projectDir!, cCodeFilename));
@@ -604,7 +604,7 @@ namespace Wasm.Build.Tests
         [ActiveIssue("WasmGenerateAppBundle = false, so _WasmGenerateAppBundle is not triggered. Is the change expected?")]
         public void EnsureComInteropCompilesInAOT(string config, bool aot)
         {
-            ProjectInfo info = CopyTestAsset(config, aot, "WasmBasicTestApp", "com", "App");
+            ProjectInfo info = CopyTestAsset(config, aot, BasicTestApp, "com");
             ReplaceFile(Path.Combine("Common", "Program.cs"), Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "PInvoke", "ComInterop.cs"));
             bool isPublish = aot;
             (string libraryDir, string output) = BuildProject(info,
@@ -624,7 +624,7 @@ namespace Wasm.Build.Tests
         {
             var extraProperties = "<AllowUnsafeBlocks>true</AllowUnsafeBlocks>";
             var extraItems = @"<NativeFileReference Include=""local.c"" />";
-            ProjectInfo info = CopyTestAsset(config, aot, "WasmBasicTestApp", "uoc", "App", extraItems: extraItems, extraProperties: extraProperties);
+            ProjectInfo info = CopyTestAsset(config, aot, BasicTestApp, "uoc", extraItems: extraItems, extraProperties: extraProperties);
             ReplaceFile(Path.Combine("Common", "Program.cs"), Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "PInvoke", "UnmanagedCallback.cs"));
             string cCodeFilename = "local.c";
             File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "native-libs", cCodeFilename), Path.Combine(_projectDir!, cCodeFilename));

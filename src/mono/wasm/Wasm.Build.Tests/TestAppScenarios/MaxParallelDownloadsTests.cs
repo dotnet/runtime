@@ -25,7 +25,7 @@ public class MaxParallelDownloadsTests : WasmTemplateTestsBase
     [InlineData("Release", "4")]
     public async Task NeverFetchMoreThanMaxAllowed(string config, string maxParallelDownloads)
     {
-         ProjectInfo info = CopyTestAsset(config, false, "WasmBasicTestApp", "MaxParallelDownloadsTests", "App");
+         ProjectInfo info = CopyTestAsset(config, false, BasicTestApp, "MaxParallelDownloadsTests");
         bool isPublish = false;
         BuildProject(info,
             new BuildOptions(

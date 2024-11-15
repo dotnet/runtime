@@ -26,7 +26,7 @@ public class AppSettingsTests : WasmTemplateTestsBase
     public async Task LoadAppSettingsBasedOnApplicationEnvironment(string applicationEnvironment)
     {
         string config = "Debug";
-        ProjectInfo info = CopyTestAsset(config, aot: false, "WasmBasicTestApp", "AppSettingsTest", "App");
+        ProjectInfo info = CopyTestAsset(config, aot: false, BasicTestApp, "AppSettingsTest");
         bool isPublish = true;
         BuildProject(info,
             new BuildOptions(

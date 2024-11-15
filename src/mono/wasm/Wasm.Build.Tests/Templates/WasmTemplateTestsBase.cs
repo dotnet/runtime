@@ -19,7 +19,9 @@ namespace Wasm.Build.Tests;
 public class WasmTemplateTestsBase : BuildTestBase
 {
     private readonly WasmSdkBasedProjectProvider _provider;
-    protected const string DefaultRuntimeAssetsRelativePath = "./_framework/";
+    protected const string DefaultRuntimeAssetsRelativePath = "./_framework/";    
+    protected virtual TestAsset BasicTestApp => new() { Name = "WasmBasicTestApp", RunnableProjectSubPath = "App" };
+    
     public WasmTemplateTestsBase(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext, ProjectProviderBase? provider = null)
         : base(provider ?? new WasmSdkBasedProjectProvider(output, DefaultTargetFramework), output, buildContext)
     {
@@ -80,9 +82,8 @@ public class WasmTemplateTestsBase : BuildTestBase
     protected ProjectInfo CopyTestAsset(
         string config,
         bool aot,
-        string assetDirName,
+        TestAsset asset,
         string idPrefix,
-        string projectDirRelativeToAssetDir = "",
         bool appendUnicodeToPath = true,
         bool runAnalyzers = true,
         string extraProperties = "",
@@ -90,14 +91,14 @@ public class WasmTemplateTestsBase : BuildTestBase
         string insertAtEnd = "")
     {
         InitProjectLocation(idPrefix, config, aot, appendUnicodeToPath, avoidAotLongPathIssue: s_isWindows && aot);
-        Utils.DirectoryCopy(Path.Combine(BuildEnvironment.TestAssetsPath, assetDirName), Path.Combine(_projectDir!));
-        if (!string.IsNullOrEmpty(projectDirRelativeToAssetDir))
+        Utils.DirectoryCopy(Path.Combine(BuildEnvironment.TestAssetsPath, asset.Name), Path.Combine(_projectDir!));
+        if (!string.IsNullOrEmpty(asset.RunnableProjectSubPath))
         {
-            _projectDir = Path.Combine(_projectDir!, projectDirRelativeToAssetDir);
+            _projectDir = Path.Combine(_projectDir!, asset.RunnableProjectSubPath);
         }
-        string projectFilePath = Path.Combine(_projectDir!, $"{assetDirName}.csproj");
+        string projectFilePath = Path.Combine(_projectDir!, $"{asset.Name}.csproj");
         UpdateProjectFile(projectFilePath, aot, runAnalyzers, extraProperties, extraItems, insertAtEnd);
-        return new ProjectInfo(config, aot, assetDirName, projectFilePath);
+        return new ProjectInfo(config, aot, asset.Name, projectFilePath);
     }
 
     private void UpdateProjectFile(string projectFilePath, bool aot, bool runAnalyzers, string extraProperties, string extraItems, string insertAtEnd)

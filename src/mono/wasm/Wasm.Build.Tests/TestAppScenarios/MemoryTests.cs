@@ -29,7 +29,7 @@ public class MemoryTests : WasmTemplateTestsBase
     public async Task AllocateLargeHeapThenRepeatedlyInterop()
     {
         string config = "Release";
-        ProjectInfo info = CopyTestAsset(config, false, "WasmBasicTestApp", "MemoryTests", "App");
+        ProjectInfo info = CopyTestAsset(config, false, BasicTestApp, "MemoryTests");
         bool isPublish = false;
         string extraArgs = "-p:EmccMaximumHeapSize=4294901760";
         BuildProject(info,
@@ -55,7 +55,7 @@ public class MemoryTests : WasmTemplateTestsBase
     public async Task RunSimpleAppWithProfiler()
     {
         string config = "Release";
-        ProjectInfo info = CopyTestAsset(config, false, "WasmBasicTestApp", "ProfilerTest", "App");
+        ProjectInfo info = CopyTestAsset(config, false, BasicTestApp, "ProfilerTest");
         bool isPublish = false;
         // are are linking all 3 profilers, but below we only initialize log profiler and test it
         string extraArgs = $"-p:WasmProfilers=\"aot+browser+log\" -p:WasmBuildNative=true";

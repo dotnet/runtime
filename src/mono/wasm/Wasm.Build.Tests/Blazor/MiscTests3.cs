@@ -39,7 +39,7 @@ public class MiscTests3 : BlazorWasmTestBase
         else
             prefix += "publish";
         string extraItems = @"<NativeFileReference Include=""mylib.cpp"" />";
-        ProjectInfo info = CopyTestAsset(config, aot: false, "BlazorBasicTestApp", prefix, "App", extraItems: extraItems);
+        ProjectInfo info = CopyTestAsset(config, aot: false, BasicTestApp, prefix, extraItems: extraItems);
         File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "MyDllImport.cs"), Path.Combine(_projectDir!, "Pages", "MyDllImport.cs"));
         File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "native-libs", "mylib.cpp"), Path.Combine(_projectDir!, "mylib.cpp"));
         UpdateFile(Path.Combine("Pages", "MyDllImport.cs"), new Dictionary<string, string> { { "##NAMESPACE##", info.ProjectName } });
@@ -77,7 +77,7 @@ public class MiscTests3 : BlazorWasmTestBase
         string extraItems = @$"
             <ProjectReference Include=""..\\RazorClassLibrary\\RazorClassLibrary.csproj"" />
             <BlazorWebAssemblyLazyLoad Include=""{razorClassLibraryName}{ProjectProviderBase.WasmAssemblyExtension}"" />";
-        ProjectInfo info = CopyTestAsset(config, aot: true, "BlazorBasicTestApp", "blz_razor_lib_top", "App", extraItems: extraItems);
+        ProjectInfo info = CopyTestAsset(config, aot: true, BasicTestApp, "blz_razor_lib_top", extraItems: extraItems);
 
         // No relinking, no AOT
         BlazorBuild(info);

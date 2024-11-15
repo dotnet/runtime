@@ -27,7 +27,7 @@ public partial class LibraryInitializerTests : WasmTemplateTestsBase
     public async Task LoadLibraryInitializer()
     {
         string config = "Debug";        
-        ProjectInfo info = CopyTestAsset(config, false, "WasmBasicTestApp", "LibraryInitializerTests_LoadLibraryInitializer", "App");
+        ProjectInfo info = CopyTestAsset(config, false, BasicTestApp, "LibraryInitializerTests_LoadLibraryInitializer");
         bool isPublish = true;
         BuildProject(info,
             new BuildOptions(
@@ -51,7 +51,7 @@ public partial class LibraryInitializerTests : WasmTemplateTestsBase
     public async Task AbortStartupOnError()
     {
         string config = "Debug";        
-        ProjectInfo info = CopyTestAsset(config, false, "WasmBasicTestApp", "LibraryInitializerTests_AbortStartupOnError", "App");
+        ProjectInfo info = CopyTestAsset(config, false, BasicTestApp, "LibraryInitializerTests_AbortStartupOnError");
         bool isPublish = true;
         BuildProject(info,
             new BuildOptions(

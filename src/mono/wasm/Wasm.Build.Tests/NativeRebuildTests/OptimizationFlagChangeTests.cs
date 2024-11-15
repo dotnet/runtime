@@ -32,7 +32,7 @@ public class OptimizationFlagChangeTests : NativeRebuildTestsBase
     // [ActiveIssue("File sizes don't match: dotnet.native.wasm size should be same as from obj/for-publish but is not")]
     public async void OptimizationFlagChange(string config, bool aot, string cflags, string ldflags)
     {
-        ProjectInfo info = CopyTestAsset(config, aot, "WasmBasicTestApp", "rebuild_flags", "App");        
+        ProjectInfo info = CopyTestAsset(config, aot, BasicTestApp, "rebuild_flags");        
         // force _WasmDevel=false, so we don't get -O0
         BuildPaths paths = await FirstNativeBuildAndRun(info, nativeRelink: true, invariant: false, extraBuildArgs: "/p:_WasmDevel=false");
 

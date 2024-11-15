@@ -28,7 +28,7 @@ namespace Wasm.Build.Tests
         [MemberData(nameof(MainMethodSimdTestData), parameters: new object[] { /*aot*/ false, /* simd */ true })]
         public async void Build_NoAOT_ShouldNotRelink(string config, bool aot, bool simd)
         {
-            ProjectInfo info = CopyTestAsset(config, aot, "WasmBasicTestApp", "build_with_workload_no_aot", "App");
+            ProjectInfo info = CopyTestAsset(config, aot, BasicTestApp, "build_with_workload_no_aot");
             UpdateFile(Path.Combine("Common", "Program.cs"), s_simdProgramText);
             bool isPublish = false;
             (string _, string output) = BuildProject(info,
@@ -60,7 +60,7 @@ namespace Wasm.Build.Tests
         [MemberData(nameof(MainMethodSimdTestData), parameters: new object[] { /*aot*/ true, /* simd */ false })]
         public async void PublishSIMD_AOT(string config, bool aot, bool simd)
         {
-            ProjectInfo info = CopyTestAsset(config, aot, "WasmBasicTestApp", "simd_publish", "App");
+            ProjectInfo info = CopyTestAsset(config, aot, BasicTestApp, "simd_publish");
             UpdateFile(Path.Combine("Common", "Program.cs"), s_simdProgramText);
             bool isPublish = true;
             (string _, string output) = BuildProject(info,

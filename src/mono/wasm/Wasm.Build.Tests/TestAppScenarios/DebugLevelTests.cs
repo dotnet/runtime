@@ -43,9 +43,8 @@ public class DebugLevelTests : WasmTemplateTestsBase
         ProjectInfo info = CopyTestAsset(
             configuration,
             aot: false,
-            assetDirName: "WasmBasicTestApp",
-            idPrefix: "DebugLevelTests_BuildWithDefaultLevel",
-            projectDirRelativeToAssetDir: "App"
+            asset: BasicTestApp,
+            idPrefix: "DebugLevelTests_BuildWithDefaultLevel"
         );
         BuildPublishProject(info);
         RunOptions options = new(info.Configuration, TestScenario: "DebugLevelTest", ExpectedExitCode: 42);
@@ -63,9 +62,8 @@ public class DebugLevelTests : WasmTemplateTestsBase
         ProjectInfo info = CopyTestAsset(
             configuration,
             aot: false,
-            assetDirName: "WasmBasicTestApp",
-            idPrefix: "DebugLevelTests_BuildWithExplicitValue",
-            projectDirRelativeToAssetDir: "App"
+            asset: BasicTestApp,
+            idPrefix: "DebugLevelTests_BuildWithExplicitValue"
         );
         BuildPublishProject(info, extraArgs: $"-p:WasmDebugLevel={debugLevel}");
         RunOptions options = new(info.Configuration, TestScenario: "DebugLevelTest", ExpectedExitCode: 42);
@@ -81,9 +79,8 @@ public class DebugLevelTests : WasmTemplateTestsBase
         ProjectInfo info = CopyTestAsset(
             configuration,
             aot: false,
-            assetDirName: "WasmBasicTestApp",
-            idPrefix: "DebugLevelTests_PublishWithDefaultLevel",
-            projectDirRelativeToAssetDir: "App"
+            asset: BasicTestApp,
+            idPrefix: "DebugLevelTests_PublishWithDefaultLevel"
         );
         BuildPublishProject(info, isPublish: true);
         RunOptions options = new(info.Configuration, TestScenario: "DebugLevelTest", ExpectedExitCode: 42);
@@ -101,9 +98,8 @@ public class DebugLevelTests : WasmTemplateTestsBase
         ProjectInfo info = CopyTestAsset(
             configuration,
             aot: false,
-            assetDirName: "WasmBasicTestApp",
-            idPrefix: "DebugLevelTests_PublishWithExplicitValue",
-            projectDirRelativeToAssetDir: "App"
+            asset: BasicTestApp,
+            idPrefix: "DebugLevelTests_PublishWithExplicitValue"
         );
         BuildPublishProject(info, isPublish: true, extraArgs: $"-p:WasmDebugLevel={debugLevel}");
         RunOptions options = new(info.Configuration, TestScenario: "DebugLevelTest", ExpectedExitCode: 42);
@@ -120,9 +116,8 @@ public class DebugLevelTests : WasmTemplateTestsBase
         ProjectInfo info = CopyTestAsset(
             configuration,
             aot: false,
-            assetDirName: "WasmBasicTestApp",
-            idPrefix: "DebugLevelTests_PublishWithDefaultLevelAndPdbs",
-            projectDirRelativeToAssetDir: "App"
+            asset: BasicTestApp,
+            idPrefix: "DebugLevelTests_PublishWithDefaultLevelAndPdbs"
         );
         BuildPublishProject(info, isPublish: true, extraArgs: $"-p:CopyOutputSymbolsToPublishDirectory=true");
         RunOptions options = new(info.Configuration, TestScenario: "DebugLevelTest", ExpectedExitCode: 42);

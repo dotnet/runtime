@@ -31,7 +31,7 @@ public class LazyLoadingTests : WasmTemplateTestsBase
     public async Task LoadLazyAssemblyBeforeItIsNeeded(string lazyLoadingTestExtension, string[] allLazyLoadingTestExtensions)
     {
         string config = "Debug";
-        ProjectInfo info = CopyTestAsset(config, false, "WasmBasicTestApp", "LazyLoadingTests", "App");
+        ProjectInfo info = CopyTestAsset(config, false, BasicTestApp, "LazyLoadingTests");
         bool isPublish = false;
         BuildProject(info,
             new BuildOptions(
@@ -63,7 +63,7 @@ public class LazyLoadingTests : WasmTemplateTestsBase
     public async Task FailOnMissingLazyAssembly()
     {
         string config = "Debug";
-        ProjectInfo info = CopyTestAsset(config, false, "WasmBasicTestApp", "LazyLoadingTests", "App");
+        ProjectInfo info = CopyTestAsset(config, false, BasicTestApp, "LazyLoadingTests");
         bool isPublish = true;
         BuildProject(info,
             new BuildOptions(

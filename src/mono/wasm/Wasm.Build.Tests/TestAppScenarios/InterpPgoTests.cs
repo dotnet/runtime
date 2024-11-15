@@ -34,7 +34,7 @@ public class InterpPgoTests : WasmTemplateTestsBase
         const int iterationCount = 70;
 
         _testOutput.WriteLine("/// Creating project");
-        ProjectInfo info = CopyTestAsset(config, false, "WasmBasicTestApp", "InterpPgoTest", "App");
+        ProjectInfo info = CopyTestAsset(config, false, BasicTestApp, "InterpPgoTest");
 
         _testOutput.WriteLine("/// Building");
         bool isPublish = false;

@@ -21,7 +21,8 @@ public class SignalRTestsBase : WasmTemplateTestsBase
 
     protected async Task SignalRPassMessage(string staticWebAssetBasePath, string config, string transport)
     {
-        ProjectInfo info = CopyTestAsset(config, false, "WasmBasicTestApp", "SignalRClientTests", "AspNetCoreServer");
+        TestAsset asset = new() { Name = "WasmBasicTestApp", RunnableProjectSubPath = "AspNetCoreServer" };
+        ProjectInfo info = CopyTestAsset(config, false, asset, "SignalRClientTests");
         bool isPublish = true;
         BuildProject(info,
             new BuildOptions(

@@ -204,9 +204,8 @@ namespace Wasm.Build.Tests
             ProjectInfo info = CopyTestAsset(
                     config,
                     aot,
-                    "WasmBasicTestApp",
-                    projectPrefix, 
-                    "App",
+                    BasicTestApp,
+                    projectPrefix,
                     extraProperties: extraProperties,
                     extraItems: extraItems,
                     insertAtEnd: printValueTarget);

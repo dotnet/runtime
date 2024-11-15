@@ -79,7 +79,7 @@ public class WorkloadRequiredTests : BlazorWasmTestBase
     {
         string prefix = $"props_req_workload_{(publish ? "publish" : "build")}";
         string extraProperties = invariant ? $"<InvariantGlobalization>true</InvariantGlobalization>" : "";
-        ProjectInfo info = CopyTestAsset(config, aot: false, "BlazorBasicTestApp", prefix, "App", extraProperties: extraProperties);
+        ProjectInfo info = CopyTestAsset(config, aot: false, BasicTestApp, prefix, extraProperties: extraProperties);
         string ccText = "currentCount++;";
         // UpdateFile throws if code that is to be replaced does not exist
         UpdateFile(Path.Combine("Pages", "Counter.razor"), new Dictionary<string, string>
@@ -133,7 +133,7 @@ public class WorkloadRequiredTests : BlazorWasmTestBase
         string insertAtEnd = @"<Target Name=""StopBuildBeforeCompile"" BeforeTargets=""Compile"">
                     <Error Text=""Stopping the build"" />
             </Target>";
-        ProjectInfo info = CopyTestAsset(config, aot: false, "BlazorBasicTestApp", prefix, "App", extraProperties: extraProperties, insertAtEnd: insertAtEnd);
+        ProjectInfo info = CopyTestAsset(config, aot: false, BasicTestApp, prefix, extraProperties: extraProperties, insertAtEnd: insertAtEnd);
         (string _, string output) = BuildProject(info,
             new BuildOptions(
                 info.Configuration,

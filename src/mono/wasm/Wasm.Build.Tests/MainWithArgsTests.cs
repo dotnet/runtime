@@ -48,7 +48,7 @@ namespace Wasm.Build.Tests
                                 string projectContentsName,
                                 string[] args)
         {
-            ProjectInfo info = CopyTestAsset(config, aot, "WasmBasicTestApp", projectNamePrefix, "App");
+            ProjectInfo info = CopyTestAsset(config, aot, BasicTestApp, projectNamePrefix);
             ReplaceFile(Path.Combine("Common", "Program.cs"), Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", projectContentsName));
 
             string argsStr = string.Join(" ", args);

@@ -25,7 +25,7 @@ namespace Wasm.Build.Tests
         [BuildAndRun(config: "Debug", aot: true)]
         public void Wasm_CannotAOT_InDebug(string config, bool aot)
         {
-            ProjectInfo info = CopyTestAsset(config, aot, "WasmBasicTestApp", "no_aot_in_debug", "App");
+            ProjectInfo info = CopyTestAsset(config, aot, BasicTestApp, "no_aot_in_debug");
 
             bool isPublish = true;
             (string _, string buildOutput) = BuildProject(info,
@@ -45,7 +45,7 @@ namespace Wasm.Build.Tests
         [BuildAndRun(config: "Debug")]
         public async Task BuildThenPublishNoAOT(string config, bool aot)
         {
-            ProjectInfo info = CopyTestAsset(config, aot, "WasmBasicTestApp", "build_publish", "App");
+            ProjectInfo info = CopyTestAsset(config, aot, BasicTestApp, "build_publish");
 
             bool isPublish = false;
             BuildProject(info,
@@ -80,7 +80,7 @@ namespace Wasm.Build.Tests
         [BuildAndRun(config: "Release", aot: true)]
         public async Task BuildThenPublishWithAOT(string config, bool aot)
         {
-            ProjectInfo info = CopyTestAsset(config, aot, "WasmBasicTestApp", "build_publish", "App");
+            ProjectInfo info = CopyTestAsset(config, aot, BasicTestApp, "build_publish");
             
             bool isPublish = false;
             (_, string output) = BuildProject(info,

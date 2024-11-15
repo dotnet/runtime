@@ -30,7 +30,7 @@ public class SatelliteLoadingTests : WasmTemplateTestsBase
     public async Task LoadSatelliteAssembly(bool loadAllSatelliteResources)
     {
         string config = "Debug";
-        ProjectInfo info = CopyTestAsset(config, false, "WasmBasicTestApp", "SatelliteLoadingTests", "App");
+        ProjectInfo info = CopyTestAsset(config, false, BasicTestApp, "SatelliteLoadingTests");
         bool isPublish = false;
         BuildProject(info,
             new BuildOptions(
@@ -69,7 +69,7 @@ public class SatelliteLoadingTests : WasmTemplateTestsBase
     public async Task LoadSatelliteAssemblyFromReference()
     {
         string config = "Release";
-        ProjectInfo info = CopyTestAsset(config, false, "WasmBasicTestApp", "SatelliteLoadingTestsFromReference", "App");
+        ProjectInfo info = CopyTestAsset(config, false, BasicTestApp, "SatelliteLoadingTestsFromReference");
         bool isPublish = true;
 
         // Replace ProjectReference with Reference

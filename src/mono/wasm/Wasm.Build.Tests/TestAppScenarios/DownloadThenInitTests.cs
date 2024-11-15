@@ -24,7 +24,7 @@ public class DownloadThenInitTests : WasmTemplateTestsBase
     [InlineData("Release")]
     public async Task NoResourcesReFetchedAfterDownloadFinished(string config)
     {
-        ProjectInfo info = CopyTestAsset(config, aot: false, "WasmBasicTestApp", "DownloadThenInitTests", "App");
+        ProjectInfo info = CopyTestAsset(config, aot: false, BasicTestApp, "DownloadThenInitTests");
         bool isPublish = false;
         BuildProject(info,
             new BuildOptions(

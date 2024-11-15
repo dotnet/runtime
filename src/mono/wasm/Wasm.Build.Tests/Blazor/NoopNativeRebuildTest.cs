@@ -24,7 +24,7 @@ namespace Wasm.Build.Tests.Blazor
         public void BlazorNoopRebuild(string config)
         {
             string extraProperties = "<WasmBuildNative>true</WasmBuildNative>";
-            ProjectInfo info = CopyTestAsset(config, aot: false, "BlazorBasicTestApp", "blz_rebuild", "App", extraProperties: extraProperties);
+            ProjectInfo info = CopyTestAsset(config, aot: false, BasicTestApp, "blz_rebuild", extraProperties: extraProperties);
             BlazorBuild(info, isNativeBuild: true);
             string projectDir = Path.GetFileName(Path.GetDirectoryName(Path.GetDirectoryName(info.ProjectFilePath)))!;
             File.Move(Path.Combine(s_buildEnv.LogRootPath, projectDir, $"{info.ProjectName}-build.binlog"),
@@ -49,7 +49,7 @@ namespace Wasm.Build.Tests.Blazor
         public void BlazorOnlyLinkRebuild(string config)
         {
             string extraProperties = "<WasmBuildNative>true</WasmBuildNative>";
-            ProjectInfo info = CopyTestAsset(config, aot: false, "BlazorBasicTestApp", "blz_relink", "App", extraProperties: extraProperties);
+            ProjectInfo info = CopyTestAsset(config, aot: false, BasicTestApp, "blz_relink", extraProperties: extraProperties);
             BlazorBuild(info, isNativeBuild: true, extraArgs: "-p:EmccLinkOptimizationFlag=-O2");
             string projectDir = Path.GetFileName(Path.GetDirectoryName(Path.GetDirectoryName(info.ProjectFilePath)))!;
             File.Move(Path.Combine(s_buildEnv.LogRootPath, projectDir, $"{info.ProjectName}-build.binlog"),

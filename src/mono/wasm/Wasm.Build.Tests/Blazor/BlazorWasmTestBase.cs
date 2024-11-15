@@ -18,7 +18,9 @@ namespace Wasm.Build.Tests;
 
 public abstract class BlazorWasmTestBase : WasmTemplateTestsBase
 {
-    protected readonly WasmSdkBasedProjectProvider _provider;
+    protected readonly WasmSdkBasedProjectProvider _provider;    
+    protected override TestAsset BasicTestApp => new() { Name = "BlazorBasicTestApp", RunnableProjectSubPath = "App" };
+    
     protected BlazorWasmTestBase(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
                 : base(output, buildContext, new WasmSdkBasedProjectProvider(output, DefaultTargetFrameworkForBlazor))
     {
@@ -193,7 +195,7 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestsBase
             <WasmFilesToIncludeInFileSystem Include=""{Path.Combine(BuildEnvironment.TestAssetsPath, "mono.png")}"" />
         ";
         return CopyTestAsset(
-            config, aot, "BlazorBasicTestApp", "blz_nativeref_aot", "App", extraItems: extraItems, extraProperties: extraProperties);
+            config, aot, BasicTestApp, "blz_nativeref_aot", extraItems: extraItems, extraProperties: extraProperties);
     }
 
     // Keeping these methods with explicit Build/Publish in the name
