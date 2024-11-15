@@ -67,7 +67,7 @@ namespace System
         // Being the slow path means it shouldn't be inlined to avoid
         // the cost of a P/Invoke frame being inserted when the fast path is taken.
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static unsafe RuntimeType GetTypeObject(MethodTable* pMT)
+        internal static unsafe RuntimeType GetTypeObject(MethodTable* pMT)
         {
             RuntimeType? typeObject = null;
             GetTypeObject(pMT, ObjectHandleOnStack.Create(ref typeObject));
