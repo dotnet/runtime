@@ -138,27 +138,6 @@ extern "C" BOOL QCALLTYPE RuntimeMethodHandle_IsCAVisibleFromDecoratedType(
     return bResult;
 }
 
-extern "C" void QCALLTYPE RuntimeTypeHandle_GetTypeObject(
-    MethodTable* pMT,
-    QCall::ObjectHandleOnStack result)
-{
-    QCALL_CONTRACT;
-
-    _ASSERTE(pMT != NULL);
-
-    BEGIN_QCALL;
-
-    GCX_COOP();
-
-    result.Set(pMT->GetManagedClassObjectIfExists());
-    if (result.Get() == NULL)
-        result.Set(pMT->GetManagedClassObject());
-
-    _ASSERTE(result.Get() != NULL);
-
-    END_QCALL;
-}
-
 extern "C" void QCALLTYPE RuntimeTypeHandle_GetTypeObjectFromHandleSlow(
     EnregisteredTypeHandle typeHandleRaw,
     QCall::ObjectHandleOnStack result)
@@ -172,11 +151,7 @@ extern "C" void QCALLTYPE RuntimeTypeHandle_GetTypeObjectFromHandleSlow(
     GCX_COOP();
 
     TypeHandle typeHandle = TypeHandle::FromPtr(typeHandleRaw);
-
-    result.Set(typeHandle.GetManagedClassObjectIfExists());
-    if (result.Get() == NULL)
-        result.Set(typeHandle.GetManagedClassObject());
-
+    result.Set(typeHandle.GetManagedClassObject());
     _ASSERTE(result.Get() != NULL);
 
     END_QCALL;
@@ -203,23 +178,14 @@ NOINLINE static ReflectClassBaseObject* GetRuntimeTypeHelper(LPVOID __me, TypeHa
 
 #define RETURN_CLASS_OBJECT(typeHandle, keepAlive) FC_INNER_RETURN(ReflectClassBaseObject*, GetRuntimeTypeHelper(__me, typeHandle, keepAlive))
 
-FCIMPL1(ReflectClassBaseObject*, RuntimeTypeHandle::GetTypeObjectFromHandleInternal, EnregisteredTypeHandle th)
+FCIMPL1(ReflectClassBaseObject*, RuntimeTypeHandle::GetTypeObjectFromHandleIfExists, EnregisteredTypeHandle th)
 {
     FCALL_CONTRACT;
 
     _ASSERTE(th != NULL);
 
     TypeHandle typeHandle = TypeHandle::FromPtr(th);
-    if (!typeHandle.IsTypeDesc())
-    {
-        OBJECTREF typePtr = typeHandle.AsMethodTable()->GetManagedClassObjectIfExists();
-        if (typePtr != NULL)
-        {
-            return (ReflectClassBaseObject*)OBJECTREFToObject(typePtr);
-        }
-    }
-
-    return NULL;
+    return (ReflectClassBaseObject*)OBJECTREFToObject(typeHandle.GetManagedClassObjectIfExists());
 }
 FCIMPLEND
 
@@ -369,9 +335,6 @@ extern "C" void QCALLTYPE RuntimeTypeHandle_GetModuleSlow(QCall::ObjectHandleOnS
 
     BEGIN_QCALL;
     GCX_COOP();
-
-    if (type.Get() == NULL)
-        COMPlusThrow(kArgumentNullException, W("Arg_InvalidHandle"));
 
     Module* pModule = ((REFLECTCLASSBASEREF)type.Get())->GetType().GetModule();
     module.Set(pModule->GetExposedObject());

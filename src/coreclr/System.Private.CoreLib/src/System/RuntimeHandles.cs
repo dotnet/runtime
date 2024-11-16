@@ -38,7 +38,7 @@ namespace System
             ObjectHandleOnStack typeObject);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern RuntimeType? GetTypeObjectFromHandleInternal(IntPtr handle);
+        private static extern RuntimeType? GetTypeObjectFromHandleIfExists(IntPtr handle);
 
         private static RuntimeType? GetTypeFromHandle(IntPtr handle)
         {
@@ -47,7 +47,7 @@ namespace System
                 return null;
             }
 
-            return GetTypeObjectFromHandleInternal(handle) ?? GetTypeObjectFromHandleSlowWorker(handle);
+            return GetTypeObjectFromHandleIfExists(handle) ?? GetTypeObjectFromHandleSlowWorker(handle);
 
             [MethodImpl(MethodImplOptions.NoInlining)]
             static RuntimeType GetTypeObjectFromHandleSlowWorker(IntPtr handle)
@@ -58,20 +58,16 @@ namespace System
             }
         }
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_GetTypeObject")]
-        private static unsafe partial void GetTypeObject(
-            MethodTable* pMT,
-            ObjectHandleOnStack typeObject);
-
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static unsafe RuntimeType GetTypeObject(MethodTable* pMT)
         {
             return pMT->AuxiliaryData->ExposedClassObject ?? GetTypeObjectWorker(pMT);
 
+            [MethodImpl(MethodImplOptions.NoInlining)]
             static RuntimeType GetTypeObjectWorker(MethodTable* pMT)
             {
                 RuntimeType? typeObject = null;
-                GetTypeObject(pMT, ObjectHandleOnStack.Create(ref typeObject));
+                GetTypeObjectFromHandleSlow((IntPtr)pMT, ObjectHandleOnStack.Create(ref typeObject));
                 return typeObject!;
             }
         }
@@ -114,11 +110,6 @@ namespace System
         internal bool IsNullHandle()
         {
             return m_type == null;
-        }
-
-        internal TypeHandle GetNativeTypeHandle()
-        {
-            return m_type!.GetNativeTypeHandle();
         }
 
         internal static bool IsTypeDefinition(RuntimeType type)
@@ -393,7 +384,7 @@ namespace System
         {
             if (m_type is null)
             {
-                throw new ArgumentException(SR.Arg_InvalidHandle);
+                throw new ArgumentNullException(SR.Arg_InvalidHandle);
             }
 
             return new ModuleHandle(GetModule(m_type));
@@ -403,7 +394,7 @@ namespace System
         {
             if (IsGenericVariable(type))
             {
-                throw new ArgumentException(SR.Arg_InvalidHandle);
+                throw new ArgumentNullException(SR.Arg_InvalidHandle);
             }
 
             TypeHandle typeHandle = type.GetNativeTypeHandle();
@@ -418,8 +409,7 @@ namespace System
                 return null;
             }
 
-            RuntimeType? result = null;
-            GetTypeObject(pParentMT, ObjectHandleOnStack.Create(ref result));
+            RuntimeType result = GetTypeObject(pParentMT);
             GC.KeepAlive(type);
             return result!;
         }
@@ -1292,11 +1282,7 @@ namespace System
 
         internal static FieldAttributes GetAttributes(RuntimeFieldHandleInternal field)
         {
-            if (field.IsNullHandle())
-            {
-                throw new ArgumentNullException(SR.Arg_InvalidHandle);
-            }
-
+            Debug.Assert(!field.IsNullHandle());
             return GetAttributesInternal(field);
         }
 
@@ -1305,11 +1291,7 @@ namespace System
 
         internal static RuntimeType GetApproxDeclaringType(RuntimeFieldHandleInternal field)
         {
-            if (field.IsNullHandle())
-            {
-                throw new ArgumentNullException(SR.Arg_InvalidHandle);
-            }
-
+            Debug.Assert(!field.IsNullHandle());
             MethodTable* pMT = GetApproxDeclaringMethodTable(field);
             Debug.Assert(pMT != null);
 

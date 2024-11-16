@@ -109,7 +109,7 @@ public:
     ReflectClassBaseObject *pRuntimeTypeDONOTUSEDIRECTLY;
 
     // Static method on RuntimeTypeHandle
-    static FCDECL1(ReflectClassBaseObject*, GetTypeObjectFromHandleInternal, EnregisteredTypeHandle th);
+    static FCDECL1(ReflectClassBaseObject*, GetTypeObjectFromHandleIfExists, EnregisteredTypeHandle th);
 
     static FCDECL2(FC_BOOL_RET, IsEquivalentTo, ReflectClassBaseObject *rtType1UNSAFE, ReflectClassBaseObject *rtType2UNSAFE);
 
@@ -157,7 +157,6 @@ public:
     static void ValidateTypeAbleToBeInstantiated(TypeHandle typeHandle, bool fGetUninitializedObject);
 };
 
-extern "C" void QCALLTYPE RuntimeTypeHandle_GetTypeObject(MethodTable* pMT, QCall::ObjectHandleOnStack result);
 extern "C" void QCALLTYPE RuntimeTypeHandle_GetTypeObjectFromHandleSlow(void* typeHandleRaw, QCall::ObjectHandleOnStack result);
 
 extern "C" void QCALLTYPE RuntimeTypeHandle_CreateInstanceForAnotherGenericParameter(QCall::TypeHandle pTypeHandle, TypeHandle *pInstArray, INT32 cInstArray, QCall::ObjectHandleOnStack pInstantiatedObject);
