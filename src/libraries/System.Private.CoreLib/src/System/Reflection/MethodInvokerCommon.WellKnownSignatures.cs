@@ -2,221 +2,113 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
-using System.Reflection.Emit;
 using static System.Reflection.InvokerEmitUtil;
 
 namespace System.Reflection
 {
     internal static partial class MethodInvokerCommon
     {
-        public static bool TryGetWellKnownSignatureFor0Args(in InvokeSignatureInfoKey signatureInfo, [NotNullWhen(true)] out Delegate? func)
+        /// <summary>
+        /// Returns a delegate that can be used to invoke a method with no arguments which are typically property getters.
+        /// </summary>
+        public static Delegate? GetWellKnownSignatureFor0Args(in InvokeSignatureInfoKey signatureInfo)
         {
             Debug.Assert(signatureInfo.ParameterTypes.Length == 0);
 
-            func = null!;
-
             if (signatureInfo.DeclaringType != typeof(object))
             {
-                return false;
+                // Only reference types are supported.
+                return null;
             }
 
-            Type returnType = signatureInfo.ReturnType;
+            Type retType = signatureInfo.ReturnType;
 
-            if (returnType == typeof(void))
+            if (!ReferenceEquals(retType.Assembly, typeof(object).Assembly))
             {
-                func = new InvokeFunc_Obj0Args(CallInstanceVoid);
-            }
-            else if (returnType == typeof(bool))
-            {
-                func = new InvokeFunc_Obj0Args(CallInstanceAny<bool>);
-            }
-            else if (returnType == typeof(byte))
-            {
-                func = new InvokeFunc_Obj0Args(CallInstanceAny<byte>);
-            }
-            else if (returnType == typeof(char))
-            {
-                func = new InvokeFunc_Obj0Args(CallInstanceAny<char>);
-            }
-            else if (returnType == typeof(DateTime))
-            {
-                func = new InvokeFunc_Obj0Args(CallInstanceAny<DateTime>);
-            }
-            else if (returnType == typeof(DateTimeOffset))
-            {
-                func = new InvokeFunc_Obj0Args(CallInstanceAny<DateTimeOffset>);
-            }
-            else if (returnType == typeof(decimal))
-            {
-                func = new InvokeFunc_Obj0Args(CallInstanceAny<decimal>);
-            }
-            else if (returnType == typeof(double))
-            {
-                func = new InvokeFunc_Obj0Args(CallInstanceAny<double>);
-            }
-            else if (returnType == typeof(float))
-            {
-                func = new InvokeFunc_Obj0Args(CallInstanceAny<float>);
-            }
-            else if (returnType == typeof(Guid))
-            {
-                func = new InvokeFunc_Obj0Args(CallInstanceAny<Guid>);
-            }
-            else if (returnType == typeof(int))
-            {
-                func = new InvokeFunc_Obj0Args(CallInstanceAny<int>);
-            }
-            else if (returnType == typeof(IntPtr))
-            {
-                func = new InvokeFunc_Obj0Args(CallInstanceAny<IntPtr>);
-            }
-            else if (returnType == typeof(long))
-            {
-                func = new InvokeFunc_Obj0Args(CallInstanceAny<long>);
-            }
-            else if (returnType == typeof(object))
-            {
-                func = new InvokeFunc_Obj0Args(CallInstanceAny<object>);
-            }
-            else if (returnType == typeof(short))
-            {
-                func = new InvokeFunc_Obj0Args(CallInstanceAny<short>);
-            }
-            else if (returnType == typeof(sbyte))
-            {
-                func = new InvokeFunc_Obj0Args(CallInstanceAny<sbyte>);
-            }
-            else if (returnType == typeof(string))
-            {
-                func = new InvokeFunc_Obj0Args(CallInstanceAny<string>);
-            }
-            else if (returnType == typeof(ushort))
-            {
-                func = new InvokeFunc_Obj0Args(CallInstanceAny<ushort>);
-            }
-            else if (returnType == typeof(uint))
-            {
-                func = new InvokeFunc_Obj0Args(CallInstanceAny<uint>);
-            }
-            else if (returnType == typeof(UIntPtr))
-            {
-                func = new InvokeFunc_Obj0Args(CallInstanceAny<UIntPtr>);
-            }
-            else if (returnType == typeof(ulong))
-            {
-                func = new InvokeFunc_Obj0Args(CallInstanceAny<ulong>);
+                // We can only hard-code types in this assembly.
+                return null;
             }
 
-            return func != null;
+            if (retType == typeof(bool)) return new InvokeFunc_Obj0Args(CallFunc0<bool>);
+            if (retType == typeof(byte)) return new InvokeFunc_Obj0Args(CallFunc0<byte>);
+            if (retType == typeof(char)) return new InvokeFunc_Obj0Args(CallFunc0<char>);
+            if (retType == typeof(DateTime)) return new InvokeFunc_Obj0Args(CallFunc0<DateTime>);
+            if (retType == typeof(DateTimeOffset)) return new InvokeFunc_Obj0Args(CallFunc0<DateTimeOffset>);
+            if (retType == typeof(decimal)) return new InvokeFunc_Obj0Args(CallFunc0<decimal>);
+            if (retType == typeof(double)) return new InvokeFunc_Obj0Args(CallFunc0<double>);
+            if (retType == typeof(float)) return new InvokeFunc_Obj0Args(CallFunc0<float>);
+            if (retType == typeof(Guid)) return new InvokeFunc_Obj0Args(CallFunc0<Guid>);
+            if (retType == typeof(int)) return new InvokeFunc_Obj0Args(CallFunc0<int>);
+            if (retType == typeof(IntPtr)) return new InvokeFunc_Obj0Args(CallFunc0<IntPtr>);
+            if (retType == typeof(long)) return new InvokeFunc_Obj0Args(CallFunc0<long>);
+            if (retType == typeof(object)) return new InvokeFunc_Obj0Args(CallFunc0<object>);
+            if (retType == typeof(sbyte)) return new InvokeFunc_Obj0Args(CallFunc0<sbyte>);
+            if (retType == typeof(short)) return new InvokeFunc_Obj0Args(CallFunc0<short>);
+            if (retType == typeof(uint)) return new InvokeFunc_Obj0Args(CallFunc0<uint>);
+            if (retType == typeof(UIntPtr)) return new InvokeFunc_Obj0Args(CallFunc0<UIntPtr>);
+            if (retType == typeof(ulong)) return new InvokeFunc_Obj0Args(CallFunc0<ulong>);
+            if (retType == typeof(ushort)) return new InvokeFunc_Obj0Args(CallFunc0<ushort>);
+            if (retType == typeof(void)) return new InvokeFunc_Obj0Args(CallAction0);
+            // System.Diagnostics.Tracing is used during startup.
+            if (retType == typeof(System.Diagnostics.Tracing.EventKeywords)) return new InvokeFunc_Obj0Args(CallFunc0<System.Diagnostics.Tracing.EventKeywords>);
+            if (retType == typeof(System.Diagnostics.Tracing.EventLevel)) return new InvokeFunc_Obj0Args(CallFunc0<System.Diagnostics.Tracing.EventLevel>);
+            if (retType == typeof(System.Diagnostics.Tracing.EventOpcode)) return new InvokeFunc_Obj0Args(CallFunc0<System.Diagnostics.Tracing.EventOpcode>);
+            if (retType == typeof(System.Diagnostics.Tracing.EventTask)) return new InvokeFunc_Obj0Args(CallFunc0<System.Diagnostics.Tracing.EventTask>);
+
+            return null;
         }
 
-        public static bool TryGetWellKnownSignatureFor1Arg(in InvokeSignatureInfoKey signatureInfo, [NotNullWhen(true)] out Delegate? func)
+        /// <summary>
+        /// Returns a delegate that can be used to invoke a method with a single argument and no return which are typically property setters.
+        /// </summary>
+        public static Delegate? GetWellKnownSignatureFor1Arg(in InvokeSignatureInfoKey signatureInfo)
         {
             Debug.Assert(signatureInfo.ParameterTypes.Length == 1);
 
-            func = null!;
-
             if (signatureInfo.DeclaringType != typeof(object) || signatureInfo.ReturnType != typeof(void))
             {
-                return false;
+                // Only reference types and methods with no return are supported.
+                return null;
             }
 
-            Type arg1Type = signatureInfo.ParameterTypes[0];
-            if (arg1Type == typeof(int))
+            Type argType = signatureInfo.ParameterTypes[0];
+
+            if (!ReferenceEquals(argType.Assembly, typeof(object).Assembly))
             {
-                func = new InvokeFunc_Obj1Arg(CallInstanceAnyVoid<int>);
-            }
-            else if (arg1Type == typeof(object))
-            {
-                func = new InvokeFunc_Obj1Arg(CallInstanceAnyVoid<object>);
-            }
-            else if (arg1Type == typeof(bool))
-            {
-                func = new InvokeFunc_Obj1Arg(CallInstanceAnyVoid<bool>);
-            }
-            else if (arg1Type == typeof(byte))
-            {
-                func = new InvokeFunc_Obj1Arg(CallInstanceAnyVoid<byte>);
-            }
-            else if (arg1Type == typeof(char))
-            {
-                func = new InvokeFunc_Obj1Arg(CallInstanceAnyVoid<char>);
-            }
-            else if (arg1Type == typeof(DateTime))
-            {
-                func = new InvokeFunc_Obj1Arg(CallInstanceAnyVoid<DateTime>);
-            }
-            else if (arg1Type == typeof(DateTimeOffset))
-            {
-                func = new InvokeFunc_Obj1Arg(CallInstanceAnyVoid<DateTimeOffset>);
-            }
-            else if (arg1Type == typeof(decimal))
-            {
-                func = new InvokeFunc_Obj1Arg(CallInstanceAnyVoid<decimal>);
-            }
-            else if (arg1Type == typeof(double))
-            {
-                func = new InvokeFunc_Obj1Arg(CallInstanceAnyVoid<double>);
-            }
-            else if (arg1Type == typeof(float))
-            {
-                func = new InvokeFunc_Obj1Arg(CallInstanceAnyVoid<float>);
-            }
-            else if (arg1Type == typeof(Guid))
-            {
-                func = new InvokeFunc_Obj1Arg(CallInstanceAnyVoid<Guid>);
-            }
-            else if (arg1Type == typeof(int))
-            {
-                func = new InvokeFunc_Obj1Arg(CallInstanceAnyVoid<int>);
-            }
-            else if (arg1Type == typeof(IntPtr))
-            {
-                func = new InvokeFunc_Obj1Arg(CallInstanceAnyVoid<IntPtr>);
-            }
-            else if (arg1Type == typeof(long))
-            {
-                func = new InvokeFunc_Obj1Arg(CallInstanceAnyVoid<long>);
-            }
-            else if (arg1Type == typeof(object))
-            {
-                func = new InvokeFunc_Obj1Arg(CallInstanceAnyVoid<object>);
-            }
-            else if (arg1Type == typeof(short))
-            {
-                func = new InvokeFunc_Obj1Arg(CallInstanceAnyVoid<short>);
-            }
-            else if (arg1Type == typeof(sbyte))
-            {
-                func = new InvokeFunc_Obj1Arg(CallInstanceAnyVoid<sbyte>);
-            }
-            else if (arg1Type == typeof(string))
-            {
-                func = new InvokeFunc_Obj1Arg(CallInstanceAnyVoid<string>);
-            }
-            else if (arg1Type == typeof(ushort))
-            {
-                func = new InvokeFunc_Obj1Arg(CallInstanceAnyVoid<ushort>);
-            }
-            else if (arg1Type == typeof(uint))
-            {
-                func = new InvokeFunc_Obj1Arg(CallInstanceAnyVoid<uint>);
-            }
-            else if (arg1Type == typeof(UIntPtr))
-            {
-                func = new InvokeFunc_Obj1Arg(CallInstanceAnyVoid<UIntPtr>);
-            }
-            else if (arg1Type == typeof(ulong))
-            {
-                func = new InvokeFunc_Obj1Arg(CallInstanceAnyVoid<ulong>);
+                // We can only hard-code types in this assembly.
+                return null;
             }
 
-            return func != null;
+            if (argType == typeof(bool)) return new InvokeFunc_Obj1Arg(CallAction1<bool>);
+            if (argType == typeof(byte)) return new InvokeFunc_Obj1Arg(CallAction1<byte>);
+            if (argType == typeof(char)) return new InvokeFunc_Obj1Arg(CallAction1<char>);
+            if (argType == typeof(DateTime)) return new InvokeFunc_Obj1Arg(CallAction1<DateTime>);
+            if (argType == typeof(DateTimeOffset)) return new InvokeFunc_Obj1Arg(CallAction1<DateTimeOffset>);
+            if (argType == typeof(decimal)) return new InvokeFunc_Obj1Arg(CallAction1<decimal>);
+            if (argType == typeof(double)) return new InvokeFunc_Obj1Arg(CallAction1<double>);
+            if (argType == typeof(float)) return new InvokeFunc_Obj1Arg(CallAction1<float>);
+            if (argType == typeof(Guid)) return new InvokeFunc_Obj1Arg(CallAction1<Guid>);
+            if (argType == typeof(int)) return new InvokeFunc_Obj1Arg(CallAction1<int>);
+            if (argType == typeof(IntPtr)) return new InvokeFunc_Obj1Arg(CallAction1<IntPtr>);
+            if (argType == typeof(long)) return new InvokeFunc_Obj1Arg(CallAction1<long>);
+            if (argType == typeof(object)) return new InvokeFunc_Obj1Arg(CallAction1<object>);
+            if (argType == typeof(sbyte)) return new InvokeFunc_Obj1Arg(CallAction1<sbyte>);
+            if (argType == typeof(short)) return new InvokeFunc_Obj1Arg(CallAction1<short>);
+            if (argType == typeof(uint)) return new InvokeFunc_Obj1Arg(CallAction1<uint>);
+            if (argType == typeof(UIntPtr)) return new InvokeFunc_Obj1Arg(CallAction1<UIntPtr>);
+            if (argType == typeof(ulong)) return new InvokeFunc_Obj1Arg(CallAction1<ulong>);
+            if (argType == typeof(ushort)) return new InvokeFunc_Obj1Arg(CallAction1<ushort>);
+            // System.Diagnostics.Tracing is used during startup.
+            if (argType == typeof(Diagnostics.Tracing.EventKeywords)) return new InvokeFunc_Obj1Arg(CallAction1<Diagnostics.Tracing.EventKeywords>);
+            if (argType == typeof(Diagnostics.Tracing.EventLevel)) return new InvokeFunc_Obj1Arg(CallAction1<Diagnostics.Tracing.EventLevel>);
+            if (argType == typeof(Diagnostics.Tracing.EventOpcode)) return new InvokeFunc_Obj1Arg(CallAction1<Diagnostics.Tracing.EventOpcode>);
+            if (argType == typeof(Diagnostics.Tracing.EventTask)) return new InvokeFunc_Obj1Arg(CallAction1<Diagnostics.Tracing.EventTask>);
+
+            return null;
         }
 
-        private static unsafe object? CallInstanceVoid(object? obj, IntPtr functionPointer) { ((delegate* managed<object?, void>)functionPointer)(obj); return null; }
-        private static unsafe object? CallInstanceAny<TReturn>(object? obj, IntPtr functionPointer) => ((delegate* managed<object?, TReturn>)functionPointer)(obj);
-        private static unsafe object? CallInstanceAnyVoid<TArg1>(object? obj, IntPtr functionPointer, object? arg1) { ((delegate* managed<object?, TArg1, void>)functionPointer)(obj, (TArg1)arg1!); return null; }
+        private static unsafe object? CallAction0(object? o, IntPtr f) { ((delegate* managed<object?, void>)f)(o); return null; }
+        private static unsafe object? CallAction1<TArg1>(object? o, IntPtr f, object? a) { ((delegate* managed<object?, TArg1, void>)f)(o, (TArg1)a!); return null; }
+        private static unsafe object? CallFunc0<TReturn>(object? o, IntPtr f) => ((delegate* managed<object?, TReturn>)f)(o);
     }
 }

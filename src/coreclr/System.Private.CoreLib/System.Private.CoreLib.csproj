@@ -179,6 +179,7 @@
     <Compile Include="$(BclSourcesRoot)\System\Reflection\MethodBase.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\MethodBaseInvoker.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\MethodInvoker.CoreCLR.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\MethodInvokerCommon.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\ModifiedType.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\RtFieldInfo.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\RuntimeAssembly.cs" />

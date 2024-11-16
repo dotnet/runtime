@@ -18,7 +18,7 @@ namespace System.Reflection
         internal delegate object? InvokeFunc_ObjSpanArgs(object? obj, IntPtr functionPointer, Span<object?> arguments);
         internal unsafe delegate object? InvokeFunc_RefArgs(object? obj, IntPtr functionPointer, IntPtr* refArguments);
 
-        public static unsafe InvokeFunc_Obj0Args CreateInvokeDelegate_Obj0Args(MethodBase? method, in InvokeSignatureInfoKey signatureInfo, bool backwardsCompat)
+        public static unsafe InvokeFunc_Obj0Args CreateInvokeDelegateForObj0Args(MethodBase? method, in InvokeSignatureInfoKey signatureInfo, bool backwardsCompat)
         {
             DynamicMethod dm = CreateDynamicMethod(method, signatureInfo, [typeof(object), typeof(IntPtr)]);
             ILGenerator il = dm.GetILGenerator();
@@ -29,7 +29,7 @@ namespace System.Reflection
             return (InvokeFunc_Obj0Args)dm.CreateDelegate(typeof(InvokeFunc_Obj0Args), target: null);
         }
 
-        public static unsafe InvokeFunc_Obj1Arg CreateInvokeDelegate_Obj1Arg(MethodBase? method, in InvokeSignatureInfoKey signatureInfo, bool backwardsCompat)
+        public static unsafe InvokeFunc_Obj1Arg CreateInvokeDelegateForObj1Arg(MethodBase? method, in InvokeSignatureInfoKey signatureInfo, bool backwardsCompat)
         {
             DynamicMethod dm = CreateDynamicMethod(method, signatureInfo, [typeof(object), typeof(IntPtr), typeof(object)]);
             ILGenerator il = dm.GetILGenerator();
@@ -45,7 +45,7 @@ namespace System.Reflection
             return (InvokeFunc_Obj1Arg)dm.CreateDelegate(typeof(InvokeFunc_Obj1Arg), target: null);
         }
 
-        public static unsafe InvokeFunc_Obj4Args CreateInvokeDelegate_Obj4Args(MethodBase? method, in InvokeSignatureInfoKey signatureInfo, bool backwardsCompat)
+        public static unsafe InvokeFunc_Obj4Args CreateInvokeDelegateForObj4Args(MethodBase? method, in InvokeSignatureInfoKey signatureInfo, bool backwardsCompat)
         {
             DynamicMethod dm = CreateDynamicMethod(method, signatureInfo, [typeof(object), typeof(IntPtr), typeof(object), typeof(object), typeof(object), typeof(object)]);
             ILGenerator il = dm.GetILGenerator();
@@ -78,7 +78,7 @@ namespace System.Reflection
             return (InvokeFunc_Obj4Args)dm.CreateDelegate(typeof(InvokeFunc_Obj4Args), target: null);
         }
 
-        public static unsafe InvokeFunc_ObjSpanArgs CreateInvokeDelegate_ObjSpanArgs(MethodBase? method, in InvokeSignatureInfoKey signatureInfo, bool backwardsCompat)
+        public static unsafe InvokeFunc_ObjSpanArgs CreateInvokeDelegateForObjSpanArgs(MethodBase? method, in InvokeSignatureInfoKey signatureInfo, bool backwardsCompat)
         {
             DynamicMethod dm = CreateDynamicMethod(method, signatureInfo, [typeof(object), typeof(IntPtr), typeof(Span<object>)]);
             ILGenerator il = dm.GetILGenerator();
@@ -103,7 +103,7 @@ namespace System.Reflection
             return (InvokeFunc_ObjSpanArgs)dm.CreateDelegate(typeof(InvokeFunc_ObjSpanArgs), target: null);
         }
 
-        public static unsafe InvokeFunc_RefArgs CreateInvokeDelegate_RefArgs(MethodBase? method, in InvokeSignatureInfoKey signatureInfo, bool backwardsCompat)
+        public static unsafe InvokeFunc_RefArgs CreateInvokeDelegateForRefArgs(MethodBase? method, in InvokeSignatureInfoKey signatureInfo, bool backwardsCompat)
         {
             DynamicMethod dm = CreateDynamicMethod(method, signatureInfo, [typeof(object), typeof(IntPtr), typeof(IntPtr*)]);
             ILGenerator il = dm.GetILGenerator();
@@ -193,8 +193,6 @@ namespace System.Reflection
                 il.EmitCalli(OpCodes.Calli, callingConventions, signatureInfo.ReturnType, signatureInfo.ParameterTypes, optionalParameterTypes: null);
                 return;
             }
-
-            // Use Call\CallVirt\NewObj
 
             // For CallStack reasons, don't inline target method.
             // EmitCalli above and Mono interpreter do not need this.

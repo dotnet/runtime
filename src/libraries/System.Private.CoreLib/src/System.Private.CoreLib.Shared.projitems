@@ -667,6 +667,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Binder.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\BindingFlags.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\CallingConventions.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\CerHashtable.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\ConstructorInfo.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\ConstructorInvoker.cs" Condition="'$(FeatureNativeAot)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\CorElementType.cs" />

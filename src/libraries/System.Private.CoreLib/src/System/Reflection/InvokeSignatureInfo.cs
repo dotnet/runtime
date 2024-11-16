@@ -186,13 +186,6 @@ namespace System.Reflection
         /// </summary>
         private static bool TryMakeNormalized(Type type, out Type normalizedType)
         {
-            // Todo:We can't normalize enums since the type would be lost.
-            //if (type.IsEnum)
-            //{
-            //    normalizedType = type.GetEnumUnderlyingType();
-            //    return true;
-            //}
-
             if (type.IsValueType ||
                 type.IsByRef ||
                 type.IsPointer ||

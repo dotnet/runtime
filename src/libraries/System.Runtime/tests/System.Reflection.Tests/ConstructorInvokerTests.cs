@@ -270,8 +270,9 @@ namespace System.Reflection.Tests
             ConstructorInfo[] constructors = GetConstructors(typeof(ClassWithStaticConstructor));
             Assert.Equal(1, constructors.Length);
 
-            // Invoker classes do not support calling class constructors; use standard reflection for that.
-            Assert.Throws<MemberAccessException>(() => Invoke(constructors[0], null, new object[] { }));
+            int before = ClassWithStaticConstructor._intValue;
+            Invoke(constructors[0], null, new object[] { });
+            Assert.Equal(before + 1, ClassWithStaticConstructor._intValue);
         }
 
         private class TestClass

@@ -316,6 +316,25 @@ FCIMPL4(Object*, RuntimeMethodHandle::InvokeMethod,
 
     BOOL fCtorOfVariableSizedObject = FALSE;
 
+    if (FC_ACCESS_BOOL(fConstructor))
+    {
+        // If we are invoking a constructor on an array then we must
+        // handle this specially.
+        if (ownerType.IsArray()) {
+            gc.retVal = InvokeArrayConstructor(ownerType,
+                                               args,
+                                               gc.pSig->NumFixedArgs());
+            goto Done;
+        }
+
+        // Variable sized objects, like String instances, allocate themselves
+        // so they are a special case.
+        MethodTable * pMT = ownerType.AsMethodTable();
+        fCtorOfVariableSizedObject = pMT->HasComponentSize();
+        if (!fCtorOfVariableSizedObject)
+            gc.retVal = pMT->Allocate();
+    }
+
     {
     ArgIteratorForMethodInvoke argit(&gc.pSig, fCtorOfVariableSizedObject);
 
@@ -404,7 +423,17 @@ FCIMPL4(Object*, RuntimeMethodHandle::InvokeMethod,
     if (!pMeth->IsStatic() && !fCtorOfVariableSizedObject) {
         PVOID pThisPtr;
 
-        if (!pMeth->GetMethodTable()->IsValueType())
+        if (FC_ACCESS_BOOL(fConstructor))
+        {
+            // Copy "this" pointer: only unbox if type is value type and method is not unboxing stub
+            if (ownerType.IsValueType() && !pMeth->IsUnboxingStub()) {
+                // Note that we create a true boxed nullabe<T> and then convert it to a T below
+                pThisPtr = gc.retVal->GetData();
+            }
+            else
+                pThisPtr = OBJECTREFToObject(gc.retVal);
+        }
+        else if (!pMeth->GetMethodTable()->IsValueType())
             pThisPtr = OBJECTREFToObject(gc.target);
         else {
             if (pMeth->IsUnboxingStub())
@@ -516,6 +545,19 @@ FCIMPL4(Object*, RuntimeMethodHandle::InvokeMethod,
     CallDescrWorkerWithHandler(&callDescrData);
 
     // It is still illegal to do a GC here.  The return type might have/contain GC pointers.
+    if (FC_ACCESS_BOOL(fConstructor))
+    {
+        // We have a special case for Strings...The object is returned...
+        if (fCtorOfVariableSizedObject) {
+            PVOID pReturnValue = &callDescrData.returnValue;
+            gc.retVal = *(OBJECTREF *)pReturnValue;
+        }
+
+        // If it is a Nullable<T>, box it using Nullable<T> conventions.
+        // TODO: this double allocates on constructions which is wasteful
+        gc.retVal = Nullable::NormalizeBox(gc.retVal);
+    }
+    else
     if (hasValueTypeReturn || hasRefReturnAndNeedsBoxing)
     {
         _ASSERTE(gc.retVal != NULL);
@@ -565,10 +607,6 @@ FCIMPL4(Object*, RuntimeMethodHandle::InvokeMethod,
 
         gc.retVal = InvokeUtil::CreateObjectAfterInvoke(refReturnTargetTH, pReturnedReference);
     }
-    else if (fConstructor)
-    {
-        gc.retVal = ObjectToOBJECTREF(target);
-    }
     else
     {
         gc.retVal = InvokeUtil::CreateObjectAfterInvoke(retTH, &callDescrData.returnValue);
@@ -579,6 +617,7 @@ FCIMPL4(Object*, RuntimeMethodHandle::InvokeMethod,
 
     }
 
+Done:
     ;
     HELPER_METHOD_FRAME_END();
 

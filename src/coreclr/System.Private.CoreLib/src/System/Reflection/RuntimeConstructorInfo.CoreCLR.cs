@@ -52,7 +52,7 @@ namespace System.Reflection
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
-                return m_invoker ??= new MethodBaseInvoker(this, DeclaringType!, ArgumentTypes, GetReturnType());
+                return m_invoker ??= new MethodBaseInvoker(this, ArgumentTypes, GetReturnType());
             }
         }
         #endregion

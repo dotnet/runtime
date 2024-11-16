@@ -122,7 +122,7 @@ namespace System.Reflection
 
             return Invoker.Strategy switch
             {
-                MethodBase.InvokerStrategy.Obj0 => Invoker.InvokeWith0Args(obj, invokeAttr),
+                MethodBase.InvokerStrategy.Obj0 => Invoker.InvokeWithNoArgs(obj, invokeAttr),
                 MethodBase.InvokerStrategy.Obj1 => Invoker.InvokeWith1Arg(obj, invokeAttr, binder, parameters!, culture),
                 MethodBase.InvokerStrategy.Obj4 => Invoker.InvokeWith4Args(obj, invokeAttr, binder, parameters!, culture),
                 MethodBase.InvokerStrategy.ObjSpan => Invoker.InvokeWithSpanArgs(obj, invokeAttr, binder, parameters!, culture),

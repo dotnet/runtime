@@ -1,31 +1,30 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Reflection.Emit;
+using static System.Reflection.InvokerEmitUtil;
+using static System.Reflection.MethodBase;
 
 namespace System.Reflection
 {
     public partial class MethodInvoker
     {
-        private unsafe MethodInvoker(RuntimeMethodInfo method) : this(method, method.ArgumentTypes)
+        private unsafe Delegate CreateInvokeDelegateForInterpreted()
         {
-            _invokeFunc_RefArgs = InterpretedInvoke_Method;
-            _invocationFlags = method.ComputeAndUpdateInvocationFlags();
+            Debug.Assert(MethodInvokerCommon.UseInterpretedPath);
+            Debug.Assert(_strategy == InvokerStrategy.Ref4 || _strategy == InvokerStrategy.RefMany);
+
+            if (_method is RuntimeMethodInfo)
+            {
+                return (InvokeFunc_RefArgs)InterpretedInvoke_Method;
+            }
+
+            Debug.Assert(_method is RuntimeConstructorInfo);
+            return (InvokeFunc_RefArgs)InterpretedInvoke_Constructor;
         }
 
-        private unsafe MethodInvoker(DynamicMethod method) : this(method.GetRuntimeMethodInfo(), method.ArgumentTypes)
-        {
-            _invokeFunc_RefArgs = InterpretedInvoke_Method;
-            // No _invocationFlags for DynamicMethod.
-        }
-
-        private unsafe MethodInvoker(RuntimeConstructorInfo constructor) : this(constructor, constructor.ArgumentTypes)
-        {
-            _invokeFunc_RefArgs = InterpretedInvoke_Constructor;
-            _invocationFlags = constructor.ComputeAndUpdateInvocationFlags();
-        }
-
-        private unsafe object? InterpretedInvoke_Method(object? obj, IntPtr *args)
+        private unsafe object? InterpretedInvoke_Method(object? obj, IntPtr _, IntPtr *args)
         {
             object? o = ((RuntimeMethodInfo)_method).InternalInvoke(obj, args, out Exception? exc);
 
@@ -35,7 +34,7 @@ namespace System.Reflection
             return o;
         }
 
-        private unsafe object? InterpretedInvoke_Constructor(object? obj, IntPtr *args)
+        private unsafe object? InterpretedInvoke_Constructor(object? obj, IntPtr _, IntPtr *args)
         {
             object? o = ((RuntimeConstructorInfo)_method).InternalInvoke(obj, args, out Exception? exc);
 

@@ -197,6 +197,7 @@
       <Compile Include="$(BclSourcesRoot)\System\Reflection\MethodBase.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\MethodBaseInvoker.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\MethodInvoker.Mono.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Reflection\MethodInvokerCommon.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\ModifiedType.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\RuntimeAssembly.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\RuntimeCustomAttributeData.cs" />

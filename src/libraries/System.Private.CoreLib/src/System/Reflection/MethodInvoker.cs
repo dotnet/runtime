@@ -28,9 +28,8 @@ namespace System.Reflection
     public sealed partial class MethodInvoker
     {
         private readonly int _argCount; // For perf, to avoid calling _signatureInfo.ParameterTypes.Length in fast path.
-        private readonly Type _declaringType;
         private readonly IntPtr _functionPointer;
-        private readonly Delegate? _invokeFunc; // todo: use GetMethodImpl and fcnptr?
+        private readonly Delegate? _invokeFunc;
         private readonly InvokerArgFlags[] _invokerArgFlags;
         private readonly RuntimeType[] _parameterTypes;
         private readonly MethodBase _method;
@@ -75,28 +74,26 @@ namespace System.Reflection
 
             if ((invocationFlags & (InvocationFlags.NoInvoke | InvocationFlags.ContainsStackPointers)) != 0)
             {
-                _declaringType = null!;
                 _invokeFunc = null!;
                 _invokerArgFlags = null!;
                 _parameterTypes = null!;
                 return;
             }
 
-            _declaringType = method.DeclaringType!;
             _parameterTypes = parameterTypes;
             _argCount = _parameterTypes.Length;
 
             Initialize(
-                isForArrayInput: false,
+                isForInvokerClasses: true,
                 method,
-                _declaringType,
                 _parameterTypes,
                 returnType,
-                out bool _,
                 out _functionPointer,
-                out _invokeFunc,
+                out _invokeFunc!,
                 out _strategy,
                 out _invokerArgFlags);
+
+            _invokeFunc ??= CreateInvokeDelegateForInterpreted();
         }
 
         /// <summary>

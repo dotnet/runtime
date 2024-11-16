@@ -2,12 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Reflection.Emit;
-using System.Runtime.CompilerServices;
 using System.Threading;
 using static System.Reflection.InvokerEmitUtil;
 using static System.Reflection.MethodBase;
+using static System.RuntimeType;
 
 namespace System.Reflection
 {
@@ -17,50 +16,47 @@ namespace System.Reflection
         private static object? s_invokerFuncsLock;
 
         internal static void Initialize(
-            bool isForArrayInput,
+            bool isForInvokerClasses,
             MethodBase method,
-            Type declaringType,
             RuntimeType[] parameterTypes,
             Type returnType,
-            out bool allocateObject,
             out IntPtr functionPointer,
-            out Delegate invokeFunc,
+            out Delegate? invokeFunc,
             out InvokerStrategy strategy,
             out InvokerArgFlags[] invokerArgFlags)
         {
-            functionPointer = method.MethodHandle.GetFunctionPointer();
-            strategy = GetStrategy(parameterTypes, out invokerArgFlags);
+            invokerArgFlags = GetInvokerArgFlags(parameterTypes, out bool needsByRefStrategy);
+            strategy = GetInvokerStrategy(parameterTypes.Length, needsByRefStrategy);
+            RuntimeType declaringType = (RuntimeType)method.DeclaringType!;
 
             if (UseCalli(method))
             {
-                allocateObject = method is RuntimeConstructorInfo;
+                functionPointer = method.MethodHandle.GetFunctionPointer();
                 if (CanCache(method))
                 {
-                    // For constructors we allocate before calling invokeFunc so invokeFunc will be cacheable.
-                    invokeFunc = GetOrCreateInvokeFunc(isForArrayInput, strategy, declaringType, parameterTypes, returnType, method.IsStatic);
+                    InvokeSignatureInfoKey key = InvokeSignatureInfoKey.CreateNormalized(declaringType, parameterTypes, returnType, method.IsStatic);
+                    invokeFunc = GetWellKnownInvokeFunc(key, strategy);
+                    invokeFunc ??= GetOrCreateInvokeFunc(isForInvokerClasses, key, strategy);
                 }
                 else
                 {
                     InvokeSignatureInfoKey signatureInfo = new(declaringType, parameterTypes, returnType, method.IsStatic);
-                    invokeFunc = CreateInvokeFunc(isForArrayInput, method: null, signatureInfo, strategy);
+                    invokeFunc = CreateInvokeFunc(isForInvokerClasses, method: null, signatureInfo, strategy);
                 }
             }
             else
             {
-                // Use Call\Callvirt\Newobj path.
-                allocateObject = false;
+                functionPointer = IntPtr.Zero;
                 InvokeSignatureInfoKey signatureInfo = new(declaringType, parameterTypes, returnType, method.IsStatic);
-                invokeFunc = CreateInvokeFunc(isForArrayInput, method, signatureInfo, strategy);
+                invokeFunc = CreateInvokeFunc(isForInvokerClasses, method, signatureInfo, strategy);
             }
         }
 
-        private static InvokerStrategy GetStrategy(
-            RuntimeType[] parameterTypes,
-            out InvokerArgFlags[] invokerFlags)
+        private static InvokerArgFlags[] GetInvokerArgFlags(RuntimeType[] parameterTypes, out bool needsByRefStrategy)
         {
-            bool needsByRefStrategy = false;
+            needsByRefStrategy = false;
             int argCount = parameterTypes.Length;
-            invokerFlags = new InvokerArgFlags[argCount];
+            InvokerArgFlags[] invokerFlags = new InvokerArgFlags[argCount];
 
             for (int i = 0; i < argCount; i++)
             {
@@ -100,16 +96,21 @@ namespace System.Reflection
                 }
             }
 
-            return GetInvokerStrategy(argCount, needsByRefStrategy);
+            return invokerFlags;
         }
 
         internal static bool UseCalli(MethodBase method)
         {
+            if (UseInterpretedPath)
+            {
+                return false;
+            }
+
             Type declaringType = method.DeclaringType!;
 
             if (method is RuntimeConstructorInfo)
             {
-                // Constructors are not polymorphic but avoid calli for constructors that require initialization through newobj.
+                // Strings and arrays require initialization through newobj.
                 return !ReferenceEquals(declaringType, typeof(string)) && !declaringType.IsArray;
             }
 
@@ -123,10 +124,9 @@ namespace System.Reflection
             return !method.IsVirtual || declaringType.IsSealed || method.IsFinal;
         }
 
-        internal static bool CanCache(MethodBase method)
+        private static bool CanCache(MethodBase method)
         {
-            return CanCacheDynamicMethod(method) &&
-                !HasDefaultParameterValues(method);
+            return CanCacheDynamicMethod(method) && !HasDefaultParameterValues(method);
 
             static bool CanCacheDynamicMethod(MethodBase method) =>
                 // The cache method's DeclaringType and other collectible parameters would be referenced.
@@ -154,8 +154,9 @@ namespace System.Reflection
 
         private static InvokerStrategy GetInvokerStrategy(int argCount, bool needsByRefStrategy)
         {
-            if (needsByRefStrategy)
+            if (needsByRefStrategy || UseInterpretedPath)
             {
+                // Always use the native interpreted invoke.
                 return argCount <= 4 ? InvokerStrategy.Ref4 : InvokerStrategy.RefMany;
             }
 
@@ -168,55 +169,47 @@ namespace System.Reflection
             };
         }
 
-        internal static Delegate CreateInvokeFunc(bool isForArrayInput, MethodBase? method, in InvokeSignatureInfoKey signatureInfo, InvokerStrategy strategy)
+        internal static Delegate? CreateInvokeFunc(bool isForInvokerClasses, MethodBase? method, in InvokeSignatureInfoKey signatureInfo, InvokerStrategy strategy)
         {
-            Delegate? invokeFunc;
-            bool backwardsCompat = isForArrayInput && method is not null;
-
-            if (!TryCreateWellKnownInvokeFunc(method, signatureInfo, strategy, out invokeFunc))
+            if (UseInterpretedPath)
             {
-                invokeFunc = strategy switch
-                {
-                    InvokerStrategy.Obj0 => CreateInvokeDelegate_Obj0Args(method, signatureInfo, backwardsCompat),
-                    InvokerStrategy.Obj1 => CreateInvokeDelegate_Obj1Arg(method, signatureInfo, backwardsCompat),
-                    InvokerStrategy.Obj4 => CreateInvokeDelegate_Obj4Args(method, signatureInfo, backwardsCompat),
-                    InvokerStrategy.ObjSpan => CreateInvokeDelegate_ObjSpanArgs(method, signatureInfo, backwardsCompat),
-                    _ => CreateInvokeDelegate_RefArgs(method, signatureInfo, backwardsCompat)
-                };
+                // The interpreted invoke function is created by the invoker classes since each one has different logic.
+                return null;
             }
 
-            return invokeFunc;
+            bool backwardsCompat = method is null ? false : !isForInvokerClasses;
 
-            static bool TryCreateWellKnownInvokeFunc(MethodBase? method, in InvokeSignatureInfoKey signatureInfo, InvokerStrategy strategy, [NotNullWhen(true)] out Delegate? wellKnown)
+            // // IL Path
+            return strategy switch
             {
-                if (method is null)
-                {
-                    // Check if the method has a well-known signature that can be invoked directly using calli and a function pointer.
-                    switch (strategy)
-                    {
-                        case InvokerStrategy.Obj0:
-                            if (TryGetWellKnownSignatureFor0Args(signatureInfo, out wellKnown)) return true;
-                            break;
-                        case InvokerStrategy.Obj1:
-                            if (TryGetWellKnownSignatureFor1Arg(signatureInfo, out wellKnown)) return true;
-                            break;
-                    }
-                }
+                InvokerStrategy.Obj0 => CreateInvokeDelegateForObj0Args(method, signatureInfo, backwardsCompat),
+                InvokerStrategy.Obj1 => CreateInvokeDelegateForObj1Arg(method, signatureInfo, backwardsCompat),
+                InvokerStrategy.Obj4 => CreateInvokeDelegateForObj4Args(method, signatureInfo, backwardsCompat),
+                InvokerStrategy.ObjSpan => CreateInvokeDelegateForObjSpanArgs(method, signatureInfo, backwardsCompat),
+                _ => CreateInvokeDelegateForRefArgs(method, signatureInfo, backwardsCompat)
+            };
+        }
 
-                wellKnown = null;
-                return false;
+        internal static Delegate? GetWellKnownInvokeFunc(in InvokeSignatureInfoKey signatureInfo, InvokerStrategy strategy)
+        {
+            // Check if the method has a well-known signature that can be invoked directly using calli and a function pointer.
+            switch (strategy)
+            {
+                case InvokerStrategy.Obj0:
+                    return GetWellKnownSignatureFor0Args(signatureInfo);
+                case InvokerStrategy.Obj1:
+                    return GetWellKnownSignatureFor1Arg(signatureInfo);
             }
+
+            return null;
         }
 
         internal static Delegate GetOrCreateInvokeFunc(
-            bool isForArrayInput,
-            InvokerStrategy strategy,
-            Type declaringType,
-            RuntimeType[] parameterTypes,
-            Type returnType,
-            bool isStatic)
+            bool isForInvokerClasses,
+            InvokeSignatureInfoKey key,
+            InvokerStrategy strategy)
         {
-            InvokeSignatureInfoKey key = InvokeSignatureInfoKey.CreateNormalized(declaringType, parameterTypes, returnType, isStatic);
+            Debug.Assert(!UseInterpretedPath);
 
             int hashcode = key.AlternativeGetHashCode();
             Delegate invokeFunc;
@@ -236,7 +229,7 @@ namespace System.Reflection
             }
 
             // To minimize the lock scope, create the new delegate outside the lock even though it may not be used.
-            Delegate newInvokeFunc = CreateInvokeFunc(isForArrayInput, method: null, key, strategy);
+            Delegate newInvokeFunc = CreateInvokeFunc(isForInvokerClasses, method: null, key, strategy)!;
             bool lockTaken = false;
             try
             {
@@ -263,7 +256,7 @@ namespace System.Reflection
         }
 
         /// <summary>
-        /// Confirm member invocation has an instance and is of the correct type
+        /// Confirm member invocation has an instance and is of the correct type.
         /// </summary>
         internal static void ValidateInvokeTarget(object? target, MethodBase method)
         {

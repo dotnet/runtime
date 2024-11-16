@@ -15,6 +15,7 @@ using static System.Reflection.InvokerEmitUtil;
 using static System.Reflection.InvokeSignatureInfo;
 using static System.Reflection.MethodBase;
 using static System.Reflection.MethodInvokerCommon;
+using static System.RuntimeType;
 
 namespace System.Reflection
 {
@@ -29,34 +30,40 @@ namespace System.Reflection
         internal const int MaxStackAllocArgCount = 4;
 
         private readonly int _argCount; // For perf, to avoid calling _signatureInfo.ParameterTypes.Length in fast path.
-        private readonly Type _declaringType;
+        private readonly RuntimeType _declaringType;
         private readonly IntPtr _functionPointer; // This will be Zero when not using calli.
         private readonly Delegate _invokeFunc;
         private readonly InvokerArgFlags[] _invokerArgFlags;
         private readonly MethodBase _method;
         private readonly RuntimeType[] _parameterTypes;
         private readonly InvokerStrategy _strategy;
-        private readonly bool _allocateObject; // True for constructors when using calli.
-        // todo: CreateUninitializedCache
 
-        public MethodBaseInvoker(MethodBase method, Type declaringType, RuntimeType[] parameterTypes, Type returnType)
+        public MethodBaseInvoker(MethodBase method, RuntimeType[] parameterTypes, Type returnType)
         {
             _method = method;
-            _declaringType = declaringType;
+            _declaringType = (RuntimeType)method.DeclaringType!;
             _parameterTypes = parameterTypes;
             _argCount = parameterTypes.Length;
 
             Initialize(
-                isForArrayInput: true,
+                isForInvokerClasses: false,
                 method,
-                declaringType,
                 parameterTypes,
                 returnType,
-                out _allocateObject,
                 out _functionPointer,
-                out _invokeFunc,
+                out _invokeFunc!,
                 out _strategy,
                 out _invokerArgFlags);
+
+            _invokeFunc ??= CreateInvokeDelegateForInterpreted();
+
+#if MONO
+            _shouldAllocate = _functionPointer != IntPtr.Zero && method is RuntimeConstructorInfo;
+#else
+            _allocator = _functionPointer != IntPtr.Zero && method is RuntimeConstructorInfo ?
+                _declaringType.GetOrCreateCacheEntry<CreateUninitializedCache>() :
+                null;
+#endif
         }
 
         internal InvokerStrategy Strategy => _strategy;
@@ -67,15 +74,15 @@ namespace System.Reflection
             throw new TargetParameterCountException(SR.Arg_ParmCnt);
         }
 
-        internal unsafe object? InvokeWith0Args(object? obj, BindingFlags invokeAttr)
+        internal unsafe object? InvokeWithNoArgs(object? obj, BindingFlags invokeAttr)
         {
             Debug.Assert(_argCount == 0);
 
             try
             {
-                if (_allocateObject)
+                if (ShouldAllocate)
                 {
-                    obj ??= ((RuntimeType)_declaringType).GetUninitializedObject();
+                    obj ??= CreateUninitializedObject();
                     ((InvokeFunc_Obj0Args)_invokeFunc)(obj, _functionPointer);
                     return obj;
                 }
@@ -104,10 +111,11 @@ namespace System.Reflection
 
             try
             {
-                if (_allocateObject)
+                if (ShouldAllocate)
                 {
-                    obj ??= ((RuntimeType)_declaringType).GetUninitializedObject();
-                    return ((InvokeFunc_Obj1Arg)_invokeFunc)!(obj, _functionPointer, parameter);
+                    obj ??= CreateUninitializedObject();
+                    ((InvokeFunc_Obj1Arg)_invokeFunc)!(obj, _functionPointer, parameter);
+                    return obj;
                 }
                 return obj = ((InvokeFunc_Obj1Arg)_invokeFunc)!(obj, _functionPointer, parameter);
             }
@@ -135,9 +143,9 @@ namespace System.Reflection
 
             try
             {
-                if (_allocateObject)
+                if (ShouldAllocate)
                 {
-                    obj ??= ((RuntimeType)_declaringType).GetUninitializedObject();
+                    obj ??= CreateUninitializedObject();
                     ((InvokeFunc_Obj1Arg)_invokeFunc)!(obj, _functionPointer, arg1);
                 }
                 else
@@ -179,9 +187,9 @@ namespace System.Reflection
 
             try
             {
-                if (_allocateObject)
+                if (ShouldAllocate)
                 {
-                    obj ??= ((RuntimeType)_declaringType).GetUninitializedObject();
+                    obj ??= CreateUninitializedObject();
                     ((InvokeFunc_Obj4Args)_invokeFunc)(obj, _functionPointer, copyOfArgs[0], copyOfArgs[1], copyOfArgs[2], copyOfArgs[3]);
                 }
                 else
@@ -222,14 +230,13 @@ namespace System.Reflection
             try
             {
                 GCFrameRegistration.RegisterForGCReporting(&regArgStorage);
-
                 CheckArguments(parameters, copyOfArgs, shouldCopyBack, binder, culture, invokeAttr);
 
                 try
                 {
-                    if (_allocateObject)
+                    if (ShouldAllocate)
                     {
-                        obj ??= ((RuntimeType)_declaringType).GetUninitializedObject();
+                        obj ??= CreateUninitializedObject();
                         ((InvokeFunc_ObjSpanArgs)_invokeFunc)(obj, _functionPointer, copyOfArgs);
                         ret = obj;
                     }
@@ -282,9 +289,9 @@ namespace System.Reflection
             object? ret;
             try
             {
-                if (_allocateObject)
+                if (ShouldAllocate)
                 {
-                    obj ??= ((RuntimeType)_declaringType).GetUninitializedObject();
+                    obj ??= CreateUninitializedObject();
                     ((InvokeFunc_RefArgs)_invokeFunc)(obj, _functionPointer, pByRefFixedStorage);
                     ret = obj;
                 }
@@ -337,9 +344,9 @@ namespace System.Reflection
 
                 try
                 {
-                    if (_allocateObject)
+                    if (ShouldAllocate)
                     {
-                        obj ??= ((RuntimeType)_declaringType).GetUninitializedObject();
+                        obj ??= CreateUninitializedObject();
                         ((InvokeFunc_RefArgs)_invokeFunc)(obj, _functionPointer, pByRefStorage);
                         ret = obj;
                     }
@@ -387,27 +394,6 @@ namespace System.Reflection
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal void CopyBack(ref object? dest, object? copy, bool shouldCopyBack, int i)
-        {
-            if (shouldCopyBack)
-            {
-                if ((_invokerArgFlags[i] & InvokerArgFlags.IsNullableOfT) != 0)
-                {
-                    Debug.Assert(copy != null);
-                    Debug.Assert(((RuntimeType)copy!.GetType()).IsNullableOfT);
-                    dest = RuntimeMethodHandle.ReboxFromNullable(copy);
-                }
-                else
-                {
-                    dest = copy;
-                }
-            }
-        }
-
-
-        // todo: add versions that don't take refs for performance
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void CheckArgument(
              ref object? arg,
              ref bool shouldCopyBack,
@@ -450,7 +436,7 @@ namespace System.Reflection
             }
         }
 
-        //[MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void CheckArguments(
              ReadOnlySpan<object?> parameters,
              Span<object?> copyOfParameters,
