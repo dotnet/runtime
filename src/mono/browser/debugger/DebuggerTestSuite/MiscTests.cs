@@ -13,7 +13,7 @@ using Xunit.Abstractions;
 
 namespace DebuggerTests
 {
-
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/109870")]
     public class MiscTests : DebuggerTests
     {
         public MiscTests(ITestOutputHelper testOutput) : base(testOutput)
