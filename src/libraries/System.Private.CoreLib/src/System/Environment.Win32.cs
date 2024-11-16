@@ -222,14 +222,8 @@ namespace System
             {
                 // Special-cased values to not use SHGetFolderPath when we have a more direct option available.
                 case SpecialFolder.System:
-                    if (!string.IsNullOrEmpty(SystemDirectory))
-                        return SystemDirectory;
-
-                    string? windir = Environment.GetEnvironmentVariable("windir");
-                    if (string.IsNullOrEmpty(windir))
-                        return string.Empty;
-
-                    return Path.Combine(windir, "system32");
+                    // This assumes the system directory always exists and thus we don't need to do anything special for any SpecialFolderOption.
+                    return SystemDirectory;
                 default:
                     return string.Empty;
 
@@ -250,7 +244,6 @@ namespace System
                     break;
                 case SpecialFolder.Desktop:
                     folderGuid = Interop.Shell32.KnownFolders.Desktop;
-                    fallbackEnv = "PUBLIC";
                     break;
                 case SpecialFolder.Favorites:
                     folderGuid = Interop.Shell32.KnownFolders.Favorites;
@@ -361,7 +354,7 @@ namespace System
                     break;
                 case SpecialFolder.CommonProgramFilesX86:
                     folderGuid = Interop.Shell32.KnownFolders.ProgramFilesCommonX86;
-                    fallbackEnv = "ProgramFiles(x86)";
+                    fallbackEnv = "CommonProgramFiles(x86)";
                     break;
                 case SpecialFolder.ProgramFilesX86:
                     folderGuid = Interop.Shell32.KnownFolders.ProgramFilesX86;
