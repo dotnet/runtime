@@ -318,39 +318,31 @@ namespace System.Globalization.Tests
             yield return new object[] { "1234567890", "1234567890", CompareOptions.NumericOrdering, 0 };
             yield return new object[] { "1234567890", "1234567890", CompareOptions.NumericOrdering, 0 };
 
-            // Leading zero
-            yield return new object[] { "02", "1", CompareOptions.NumericOrdering, 1 };
-            yield return new object[] { "a02", "a1", CompareOptions.NumericOrdering, 1 };
-            yield return new object[] { "02a", "1a", CompareOptions.NumericOrdering, 1 };
+            yield return new object[] { "02", "1", CompareOptions.NumericOrdering, -1 };
+            yield return new object[] { "a02", "a1", CompareOptions.NumericOrdering, -1 };
+            yield return new object[] { "02a", "1a", CompareOptions.NumericOrdering, -1 };
 
-            // NLS treats equivalent numading zeros as unequal
-            yield return new object[] { "01", "1", CompareOptions.NumericOrdering, isNls ? -1 : 0 };
-            yield return new object[] { "a01", "a1", CompareOptions.NumericOrdering, isNls ? -1 : 0 };
-            yield return new object[] { "01a", "1a", CompareOptions.NumericOrdering, isNls ? -1 : 0 };
+            yield return new object[] { "01", "1", CompareOptions.NumericOrdering, -1 };
+            yield return new object[] { "a01", "a1", CompareOptions.NumericOrdering, -1 };
+            yield return new object[] { "01a", "1a", CompareOptions.NumericOrdering, -1 };
 
-            // But they are closer in sol numbers: 1 < 02 < 2 < 03
-            // Unlike non-numerical sort: 02 < 03 < 1 < 2
-            yield return new object[] { "1", "02", CompareOptions.NumericOrdering, -1 };
-            yield return new object[] { "02", "2", CompareOptions.NumericOrdering, isNls ? -1 : 0 };
-            yield return new object[] { "2", "03", CompareOptions.NumericOrdering, -1 };
+            yield return new object[] { "1", "02", CompareOptions.NumericOrdering, 1 };
+            yield return new object[] { "02", "2", CompareOptions.NumericOrdering, -1 };
+            yield return new object[] { "2", "03", CompareOptions.NumericOrdering, 1 };
 
-            // 2 < 10
-            yield return new object[] { "2", "10", CompareOptions.NumericOrdering, -1 };
-            yield return new object[] { "a2", "a10", CompareOptions.NumericOrdering, -1 };
-            yield return new object[] { "2a", "10a", CompareOptions.NumericOrdering, -1 };
+            yield return new object[] { "2", "10", CompareOptions.NumericOrdering, 1 };
+            yield return new object[] { "a2", "a10", CompareOptions.NumericOrdering, 1 };
+            yield return new object[] { "2a", "10a", CompareOptions.NumericOrdering, 1 };
 
-            // With casing
             yield return new object[] { "1A02", "1a02", CompareOptions.NumericOrdering | CompareOptions.IgnoreCase, 0 };
-            yield return new object[] { "A1", "a2", CompareOptions.NumericOrdering, -1 }; // Numerical differences have higher precedence
-            yield return new object[] { "A01", "a1", CompareOptions.NumericOrdering, isNls ? -1 : 1 }; // ICU treats 01 == 1
+            yield return new object[] { "A1", "a2", CompareOptions.NumericOrdering, -1 };
+            yield return new object[] { "A01", "a1", CompareOptions.NumericOrdering, -1 };
 
-            // With diacritics
-            yield return new object[] { "1\u00E102", "1a02", CompareOptions.NumericOrdering | CompareOptions.IgnoreNonSpace, 0 };
-            yield return new object[] { "\u00E11", "a2", CompareOptions.NumericOrdering, -1 }; // Numerical differences have higher precedence
-            yield return new object[] { "\u00E101", "a1", CompareOptions.NumericOrdering, isNls ? -1 : 1 }; // ICU treats 01 == 1
+            yield return new object[] { "1\u00E102", "1a02", CompareOptions.NumericOrdering | CompareOptions.IgnoreNonSpace, 1 };
+            yield return new object[] { "\u00E11", "a2", CompareOptions.NumericOrdering, 1 };
+            yield return new object[] { "\u00E101", "a1", CompareOptions.NumericOrdering, 1 };
 
-            // Period is NOT part of the numeric value
-            yield return new object[] { "0.1", "0.02", CompareOptions.NumericOrdering, -1 };
+            yield return new object[] { "0.1", "0.02", CompareOptions.NumericOrdering, 1 };
             #endregion
 
             CompareOptions ignoreKanaIgnoreWidthIgnoreCase = CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth | CompareOptions.IgnoreCase;
