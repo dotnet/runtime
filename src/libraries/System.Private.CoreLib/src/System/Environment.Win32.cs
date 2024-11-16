@@ -227,6 +227,7 @@ namespace System
                 default:
                     return string.Empty;
 
+                // Map the SpecialFolder to the appropriate Guid
                 case SpecialFolder.ApplicationData:
                     folderGuid = Interop.Shell32.KnownFolders.RoamingAppData;
                     fallbackEnv = "APPDATA";
