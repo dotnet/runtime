@@ -137,15 +137,21 @@ namespace System.Tests
             Assert.Equal(1, c.Compare("42", null));
             Assert.Throws<ArgumentException>(() => c.Compare(42, "84"));
 
+            c = StringComparer.Create(CultureInfo.InvariantCulture, CompareOptions.NumericOrdering);
             if (PlatformDetection.IsHybridGlobalizationOnApplePlatform)
             {
-                Assert.Throws<PlatformNotSupportedException>(() => StringComparer.Create(CultureInfo.InvariantCulture, CompareOptions.NumericOrdering));
+                Assert.Throws<PlatformNotSupportedException>(() => c.Compare("2", "10"));
+                Assert.Throws<PlatformNotSupportedException>(() => c.GetHashCode("42"));
             }
             else
             {
-                c = StringComparer.Create(CultureInfo.InvariantCulture, CompareOptions.NumericOrdering);
                 Assert.Equal(-1, c.Compare("2", "10"));
-                if (!PlatformDetection.IsNlsGlobalization)
+                if (PlatformDetection.IsNlsGlobalization)
+                {
+                    Assert.NotEqual(0, c.Compare("2", "02"));
+                    Assert.NotEqual(c.GetHashCode("2"), c.GetHashCode("02"));
+                }
+                else
                 {
                     Assert.Equal(0, c.Compare("2", "02"));
                     Assert.Equal(c.GetHashCode("2"), c.GetHashCode("02"));

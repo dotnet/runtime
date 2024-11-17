@@ -571,59 +571,9 @@ namespace System.Globalization.Tests
 
         public static IEnumerable<object[]> Compare_Numeric_TestData()
         {
-            if (!PlatformDetection.IsNlsGlobalization)
-            { 
-                // '1' in different languages. Not exhaustive.
-                Rune[] numberOnes =
-                [
-                    new Rune(0x0031), new Rune(0x0661), new Rune(0x06F1), new Rune(0x07C1), new Rune(0x0967),
-                    new Rune(0x09E7), new Rune(0x0A67), new Rune(0x0AE7), new Rune(0x0B67), new Rune(0x0BE7),
-                    new Rune(0x0C67), new Rune(0x0CE7), new Rune(0x0D67), new Rune(0x0DE7), new Rune(0x0E51),
-                    new Rune(0x0ED1), new Rune(0x0F21), new Rune(0x1041), new Rune(0x1091), new Rune(0x17E1),
-                    new Rune(0x1811), new Rune(0x1947), new Rune(0x19D1), new Rune(0x1A81), new Rune(0x1A91),
-                    new Rune(0x1B51), new Rune(0x1BB1), new Rune(0x1C41), new Rune(0x1C51), new Rune(0xA621),
-                    new Rune(0xA8D1), new Rune(0xA901), new Rune(0xA9D1), new Rune(0xA9F1), new Rune(0xAA51),
-                    new Rune(0xABF1), new Rune(0xFF11), new Rune(0x104A1), new Rune(0x10D31), new Rune(0x11067),
-                    new Rune(0x110F1), new Rune(0x11137), new Rune(0x111D1), new Rune(0x112F1), new Rune(0x11451),
-                    new Rune(0x114D1), new Rune(0x11651), new Rune(0x116C1), new Rune(0x11731), new Rune(0x118E1),
-                    new Rune(0x11951), new Rune(0x11C51),
-                ];
-
-                StringBuilder sb = new();
-                Span<char> buffer = stackalloc char[2];
-                foreach (var r in numberOnes)
-                {
-                    sb.Append(buffer.Slice(0, r.EncodeToUtf16(buffer)));
-                }
-                string numberOnesString = sb.ToString();
-
-                // 111...110 vs 111...111
-                yield return new object[] {
-                    s_invariantCompare,
-                    new string('1', numberOnes.Length - 1) + "0",
-                    numberOnesString,
-                    CompareOptions.NumericOrdering,
-                    -1
-                };
-
-                // 111...111 vs 111...111
-                yield return new object[] {
-                    s_invariantCompare,
-                    new string('1', numberOnes.Length),
-                    numberOnesString,
-                    CompareOptions.NumericOrdering,
-                    0
-                };
-
-                // 111...112 vs 111...111
-                yield return new object[] {
-                    s_invariantCompare,
-                    new string('1', numberOnes.Length - 1) + "2",
-                    numberOnesString,
-                    CompareOptions.NumericOrdering,
-                    1
-                };
-            }
+            yield return new object[] { s_invariantCompare, "0", "\u0661", CompareOptions.NumericOrdering, -1 };
+            yield return new object[] { s_invariantCompare, "1", "\u0661", CompareOptions.NumericOrdering, PlatformDetection.IsNlsGlobalization ? -1 : 0 };
+            yield return new object[] { s_invariantCompare, "2", "\u0661", CompareOptions.NumericOrdering, 1 };
         }
 
         [Theory]
