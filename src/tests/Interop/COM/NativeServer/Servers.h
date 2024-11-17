@@ -23,6 +23,10 @@ class DECLSPEC_UUID("66DB7882-E2B0-471D-92C7-B2B52A0EA535") LicenseTesting;
 class DECLSPEC_UUID("FAEF42AE-C1A4-419F-A912-B768AC2679EA") DefaultInterfaceTesting;
 class DECLSPEC_UUID("CE137261-6F19-44F5-A449-EF963B3F987E") InspectableTesting;
 class DECLSPEC_UUID("4F54231D-9E11-4C0B-8E0B-2EBD8B0E5811") TrackMyLifetimeTesting;
+class DECLSPEC_UUID("B8314D5A-DE70-435B-AD97-8F88820D1F3C") ClassInterfaceNotSetTesting;
+class DECLSPEC_UUID("ED4D9C70-1C9F-406B-B51F-87DD977AF3B2") ClassInterfaceNoneTesting;
+class DECLSPEC_UUID("C1A0AE72-791B-4380-946E-B7BABDEA1701") ClassInterfaceAutoDispatchTesting;
+class DECLSPEC_UUID("95696E2C-742F-4639-A9D4-5D36EE021C49") ClassInterfaceAutoDualTesting;
 
 #define CLSID_NumericTesting __uuidof(NumericTesting)
 #define CLSID_ArrayTesting __uuidof(ArrayTesting)
@@ -38,6 +42,10 @@ class DECLSPEC_UUID("4F54231D-9E11-4C0B-8E0B-2EBD8B0E5811") TrackMyLifetimeTesti
 #define CLSID_DefaultInterfaceTesting __uuidof(DefaultInterfaceTesting)
 #define CLSID_InspectableTesting __uuidof(InspectableTesting)
 #define CLSID_TrackMyLifetimeTesting __uuidof(TrackMyLifetimeTesting)
+#define CLSID_ClassInterfaceNotSetTesting __uuidof(ClassInterfaceNotSetTesting)
+#define CLSID_ClassInterfaceNoneTesting __uuidof(ClassInterfaceNoneTesting)
+#define CLSID_ClassInterfaceAutoDispatchTesting __uuidof(ClassInterfaceAutoDispatchTesting)
+#define CLSID_ClassInterfaceAutoDualTesting  __uuidof(ClassInterfaceAutoDualTesting)
 
 #define IID_INumericTesting __uuidof(INumericTesting)
 #define IID_IArrayTesting __uuidof(IArrayTesting)

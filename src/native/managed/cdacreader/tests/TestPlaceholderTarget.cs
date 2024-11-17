@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Runtime.CompilerServices;
+using Moq;
 
 namespace Microsoft.Diagnostics.DataContractReader.UnitTests;
 
@@ -23,13 +24,14 @@ internal class TestPlaceholderTarget : Target
     protected ReadFromTargetDelegate _dataReader = (address, buffer) => throw new NotImplementedException();
 
 #region Setup
-    public TestPlaceholderTarget(MockTarget.Architecture arch)
+    public TestPlaceholderTarget(MockTarget.Architecture arch, ReadFromTargetDelegate reader)
     {
         IsLittleEndian = arch.IsLittleEndian;
         PointerSize = arch.Is64Bit ? 8 : 4;
-        contractRegistry = new TestRegistry();;
-        dataCache = new TestDataCache();
+        contractRegistry = new TestRegistry();
+        dataCache = new DefaultDataCache(this);
         typeInfoCache = null;
+        _dataReader = reader;
     }
 
     internal void SetContracts(ContractRegistry contracts)
@@ -37,20 +39,11 @@ internal class TestPlaceholderTarget : Target
         contractRegistry = contracts;
     }
 
-    internal void SetDataCache(Target.IDataCache cache)
-    {
-        dataCache = cache;
-    }
-
     internal void SetTypeInfoCache(Dictionary<DataType, Target.TypeInfo> cache)
     {
         typeInfoCache = cache;
     }
 
-    internal void SetDataReader(ReadFromTargetDelegate reader)
-    {
-        _dataReader = reader;
-    }
 #endregion Setup
 
     public override int PointerSize { get; }
@@ -63,7 +56,7 @@ internal class TestPlaceholderTarget : Target
 
     public override TargetPointer ReadGlobalPointer(string global) => throw new NotImplementedException();
     public override TargetPointer ReadPointer(ulong address) => DefaultReadPointer(address);
-    public override TargetCodePointer ReadCodePointer(ulong address) => throw new NotImplementedException();
+    public override TargetCodePointer ReadCodePointer(ulong address) => DefaultReadCodePointer(address);
     public override void ReadBuffer(ulong address, Span<byte> buffer) => throw new NotImplementedException();
     public override string ReadUtf8String(ulong address) => throw new NotImplementedException();
     public override string ReadUtf16String(ulong address) => throw new NotImplementedException();
@@ -176,6 +169,11 @@ internal class TestPlaceholderTarget : Target
 
         return new TargetNUInt(value);
     }
+
+    protected TargetCodePointer DefaultReadCodePointer(ulong address)
+    {
+        return new TargetCodePointer(DefaultReadPointer(address));
+    }
 #endregion subclass reader helpers
 
     public override TargetPointer ReadPointerFromSpan(ReadOnlySpan<byte> bytes) => throw new NotImplementedException();
@@ -205,6 +203,10 @@ internal class TestPlaceholderTarget : Target
         internal Lazy<Contracts.IRuntimeTypeSystem>? RuntimeTypeSystemContract { get; set; }
         internal Lazy<Contracts.IDacStreams>? DacStreamsContract { get; set; }
         internal Lazy<Contracts.IExecutionManager> ExecutionManagerContract { get; set; }
+        internal Lazy<Contracts.ICodeVersions>? CodeVersionsContract { get; set; }
+        internal Lazy<Contracts.IPlatformMetadata>? PlatformMetadataContract { get; set; }
+        internal Lazy<Contracts.IPrecodeStubs>? PrecodeStubsContract { get; set; }
+        internal Lazy<Contracts.IReJIT>? ReJITContract { get; set; }
 
         public override Contracts.IException Exception => ExceptionContract.Value ?? throw new NotImplementedException();
         public override Contracts.ILoader Loader => LoaderContract.Value ?? throw new NotImplementedException();
@@ -214,36 +216,14 @@ internal class TestPlaceholderTarget : Target
         public override Contracts.IRuntimeTypeSystem RuntimeTypeSystem => RuntimeTypeSystemContract.Value ?? throw new NotImplementedException();
         public override Contracts.IDacStreams DacStreams => DacStreamsContract.Value ?? throw new NotImplementedException();
         public override Contracts.IExecutionManager ExecutionManager => ExecutionManagerContract.Value ?? throw new NotImplementedException();
-    }
-
-    // a data cache that throws NotImplementedException for all methods,
-    // useful for subclassing to override specific methods
-    internal class TestDataCache : Target.IDataCache
-    {
-        public TestDataCache() {}
-
-        public virtual T GetOrAdd<T>(TargetPointer address) where T : Data.IData<T>
-        {
-            if (TryGet(address.Value, out T? data))
-            {
-                return data;
-            }
-            return Add<T>(address.Value);
-        }
-
-        public virtual bool TryGet<T>(ulong address, [NotNullWhen(true)] out T? data)
-        {
-            throw new NotImplementedException();
-        }
-
-        protected virtual T Add<T>(ulong address) where T : Data.IData<T>
-        {
-            throw new NotImplementedException();
-        }
+        public override Contracts.ICodeVersions CodeVersions => CodeVersionsContract.Value ?? throw new NotImplementedException();
+        public override Contracts.IPlatformMetadata PlatformMetadata => PlatformMetadataContract.Value ?? throw new NotImplementedException();
+        public override Contracts.IPrecodeStubs PrecodeStubs => PrecodeStubsContract.Value ?? throw new NotImplementedException();
+        public override Contracts.IReJIT ReJIT => ReJITContract.Value ?? throw new NotImplementedException();
     }
 
     // A data cache that stores data in a dictionary and calls IData.Create to construct the data.
-    internal class DefaultDataCache : Target.IDataCache
+    private class DefaultDataCache : Target.IDataCache
     {
         protected readonly Target _target;
         protected readonly Dictionary<(ulong, Type), object?> _readDataByAddress = [];
