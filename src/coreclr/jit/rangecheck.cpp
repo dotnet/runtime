@@ -1066,7 +1066,7 @@ Range RangeCheck::ComputeRangeForBinOp(BasicBlock* block, GenTreeOp* binop, bool
 
             // Calculate max possible value of op1, e.g. UINT_MAX for TYP_INT/TYP_UINT
             uint64_t maxValue = (1ULL << op1Width) - 1;
-            icon = (int)(maxValue >> static_cast<int>(op2->AsIntCon()->IconValue()));
+            icon              = (int)(maxValue >> static_cast<int>(op2->AsIntCon()->IconValue()));
         }
 
         if (icon >= 0)
