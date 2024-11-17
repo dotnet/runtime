@@ -67,7 +67,7 @@ namespace System.Globalization.Tests
             new object[] { "abc", CompareOptions.None, "abc", CompareOptions.None, true },
             new object[] { "", CompareOptions.None, "\u200c", CompareOptions.None, true }, // see comment at bottom of SortKey_TestData
             new object[] { "1", CompareOptions.NumericOrdering, "01", CompareOptions.NumericOrdering, PlatformDetection.IsNlsGlobalization ? false : true },
-            new object[] { "1", CompareOptions.NumericOrdering, "\u0661", CompareOptions.NumericOrdering, PlatformDetection.IsIcuGlobalization ? false : true },
+            new object[] { "1", CompareOptions.NumericOrdering, "\u0661", CompareOptions.NumericOrdering, PlatformDetection.IsNlsGlobalization ? false : true },
         };
 
         [Theory]
