@@ -35,7 +35,7 @@ namespace System.Text.Encodings.Web
             {
                 value = BinaryPrimitives.ReverseEndianness(value);
             }
-            return MemoryMarshal.TryWrite(span.Slice(offset), value);
+            return MemoryMarshal.TryWrite(span.Slice(offset), ref value);
         }
     }
 }
