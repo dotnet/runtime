@@ -17,7 +17,7 @@ namespace System.Reflection
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2072:UnrecognizedReflectionPattern", Justification = "Internal reflection implementation")]
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2077:UnrecognizedReflectionPattern", Justification = "Internal reflection implementation")]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private object CreateUninitializedObject() => RuntimeHelpers.GetUninitializedObject(_declaringType);
+        private object CreateUninitializedObject() => RuntimeHelpers.GetUninitializedObject(_declaringType!);
 
         private unsafe Delegate CreateInvokeDelegateForInterpreted()
         {

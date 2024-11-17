@@ -27,27 +27,31 @@ namespace System.Reflection
         {
             invokerArgFlags = GetInvokerArgFlags(parameterTypes, out bool needsByRefStrategy);
             strategy = GetInvokerStrategy(parameterTypes.Length, needsByRefStrategy);
-            RuntimeType declaringType = (RuntimeType)method.DeclaringType!;
 
-            if (UseCalli(method))
+            if (UseInterpretedPath)
+            {
+                functionPointer = IntPtr.Zero;
+                invokeFunc = null; // This will be created differently by each invoker class.
+            }
+            else if (UseCalli(method))
             {
                 functionPointer = method.MethodHandle.GetFunctionPointer();
                 if (CanCache(method))
                 {
-                    InvokeSignatureInfoKey key = InvokeSignatureInfoKey.CreateNormalized(declaringType, parameterTypes, returnType, method.IsStatic);
+                    InvokeSignatureInfoKey key = InvokeSignatureInfoKey.CreateNormalized((RuntimeType)method.DeclaringType!, parameterTypes, returnType, method.IsStatic);
                     invokeFunc = GetWellKnownInvokeFunc(key, strategy);
                     invokeFunc ??= GetOrCreateInvokeFunc(isForInvokerClasses, key, strategy);
                 }
                 else
                 {
-                    InvokeSignatureInfoKey signatureInfo = new(declaringType, parameterTypes, returnType, method.IsStatic);
+                    InvokeSignatureInfoKey signatureInfo = new((RuntimeType)method.DeclaringType!, parameterTypes, returnType, method.IsStatic);
                     invokeFunc = CreateInvokeFunc(isForInvokerClasses, method: null, signatureInfo, strategy);
                 }
             }
             else
             {
                 functionPointer = IntPtr.Zero;
-                InvokeSignatureInfoKey signatureInfo = new(declaringType, parameterTypes, returnType, method.IsStatic);
+                InvokeSignatureInfoKey signatureInfo = new((RuntimeType?)method.DeclaringType, parameterTypes, returnType, method.IsStatic);
                 invokeFunc = CreateInvokeFunc(isForInvokerClasses, method, signatureInfo, strategy);
             }
         }
@@ -101,7 +105,9 @@ namespace System.Reflection
 
         internal static bool UseCalli(MethodBase method)
         {
-            if (UseInterpretedPath)
+            Debug.Assert(!UseInterpretedPath);
+
+            if (method is DynamicMethod)
             {
                 return false;
             }
@@ -156,7 +162,6 @@ namespace System.Reflection
         {
             if (needsByRefStrategy || UseInterpretedPath)
             {
-                // Always use the native interpreted invoke.
                 return argCount <= 4 ? InvokerStrategy.Ref4 : InvokerStrategy.RefMany;
             }
 
@@ -171,15 +176,10 @@ namespace System.Reflection
 
         internal static Delegate? CreateInvokeFunc(bool isForInvokerClasses, MethodBase? method, in InvokeSignatureInfoKey signatureInfo, InvokerStrategy strategy)
         {
-            if (UseInterpretedPath)
-            {
-                // The interpreted invoke function is created by the invoker classes since each one has different logic.
-                return null;
-            }
+            Debug.Assert(!UseInterpretedPath);
 
             bool backwardsCompat = method is null ? false : !isForInvokerClasses;
 
-            // // IL Path
             return strategy switch
             {
                 InvokerStrategy.Obj0 => CreateInvokeDelegateForObj0Args(method, signatureInfo, backwardsCompat),

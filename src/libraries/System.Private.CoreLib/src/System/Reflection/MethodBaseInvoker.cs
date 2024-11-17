@@ -1,7 +1,6 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
@@ -10,7 +9,6 @@ using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
-using System.Collections.Concurrent;
 using static System.Reflection.InvokerEmitUtil;
 using static System.Reflection.InvokeSignatureInfo;
 using static System.Reflection.MethodBase;
@@ -30,7 +28,7 @@ namespace System.Reflection
         internal const int MaxStackAllocArgCount = 4;
 
         private readonly int _argCount; // For perf, to avoid calling _signatureInfo.ParameterTypes.Length in fast path.
-        private readonly RuntimeType _declaringType;
+        private readonly RuntimeType? _declaringType;
         private readonly IntPtr _functionPointer; // This will be Zero when not using calli.
         private readonly Delegate _invokeFunc;
         private readonly InvokerArgFlags[] _invokerArgFlags;
@@ -41,7 +39,7 @@ namespace System.Reflection
         public MethodBaseInvoker(MethodBase method, RuntimeType[] parameterTypes, Type returnType)
         {
             _method = method;
-            _declaringType = (RuntimeType)method.DeclaringType!;
+            _declaringType = (RuntimeType?)_method.DeclaringType;
             _parameterTypes = parameterTypes;
             _argCount = parameterTypes.Length;
 
@@ -57,13 +55,14 @@ namespace System.Reflection
 
             _invokeFunc ??= CreateInvokeDelegateForInterpreted();
 
+            if (_functionPointer != IntPtr.Zero && method is RuntimeConstructorInfo)
+            {
 #if MONO
-            _shouldAllocate = _functionPointer != IntPtr.Zero && method is RuntimeConstructorInfo;
+            _shouldAllocate = true;
 #else
-            _allocator = _functionPointer != IntPtr.Zero && method is RuntimeConstructorInfo ?
-                _declaringType.GetOrCreateCacheEntry<CreateUninitializedCache>() :
-                null;
+            _allocator = _declaringType!.GetOrCreateCacheEntry<CreateUninitializedCache>();
 #endif
+            }
         }
 
         internal InvokerStrategy Strategy => _strategy;
@@ -111,18 +110,47 @@ namespace System.Reflection
 
             try
             {
-                if (ShouldAllocate)
+                if (_strategy == InvokerStrategy.Obj1)
                 {
-                    obj ??= CreateUninitializedObject();
-                    ((InvokeFunc_Obj1Arg)_invokeFunc)!(obj, _functionPointer, parameter);
-                    return obj;
+                    if (ShouldAllocate)
+                    {
+                        obj ??= CreateUninitializedObject();
+                        ((InvokeFunc_Obj1Arg)_invokeFunc)!(obj, _functionPointer, parameter);
+                        return obj;
+                    }
+
+                    return obj = ((InvokeFunc_Obj1Arg)_invokeFunc)!(obj, _functionPointer, parameter);
                 }
-                return obj = ((InvokeFunc_Obj1Arg)_invokeFunc)!(obj, _functionPointer, parameter);
+
+                // This method may be called directly, and the interpreted path needs to use the byref strategies.
+                return InvokeWith1Arg(obj, parameter);
             }
             catch (Exception e) when ((invokeAttr & BindingFlags.DoNotWrapExceptions) == 0)
             {
                 throw new TargetInvocationException(e);
             }
+        }
+
+        private unsafe object? InvokeWith1Arg(object? obj, object? parameter)
+        {
+            Debug.Assert(UseInterpretedPath);
+            Debug.Assert(_strategy == InvokerStrategy.Ref4);
+
+            StackAllocatedByRefs byrefs = default;
+            IntPtr* pByRefFixedStorage = (IntPtr*)&byrefs;
+
+            *(ByReference*)(pByRefFixedStorage) = (_invokerArgFlags[0] & InvokerArgFlags.IsValueType) != 0 ?
+                ByReference.Create(ref parameter!.GetRawData()) :
+                ByReference.Create(ref Unsafe.AsRef<object?>(ref parameter));
+
+            if (ShouldAllocate)
+            {
+                obj ??= CreateUninitializedObject();
+                ((InvokeFunc_RefArgs) _invokeFunc) (obj, _functionPointer, pByRefFixedStorage);
+                return obj;
+            }
+
+            return ((InvokeFunc_RefArgs) _invokeFunc) (obj, _functionPointer, pByRefFixedStorage);
         }
 
         internal unsafe object? InvokeWith1Arg(
@@ -263,10 +291,25 @@ namespace System.Reflection
             object? obj,
             BindingFlags invokeAttr,
             Binder? binder,
-            object?[] parameters,
+            object?[]? parameters,
             CultureInfo? culture)
         {
             Debug.Assert(_argCount <= MaxStackAllocArgCount);
+
+            if (_argCount == 0)
+            {
+                // This method may be called from the interpreted path for a property getter with parameters==null.
+                Debug.Assert(UseInterpretedPath);
+                Debug.Assert(_strategy == InvokerStrategy.Ref4);
+                try
+                {
+                    return ((InvokeFunc_RefArgs)_invokeFunc)(obj, _functionPointer, refArguments: null);
+                }
+                catch (Exception e) when ((invokeAttr & BindingFlags.DoNotWrapExceptions) == 0)
+                {
+                    throw new TargetInvocationException(e);
+                }
+            }
 
             StackAllocatedArgumentsWithCopyBack stackArgStorage = default;
             Span<object?> copyOfArgs = (Span<object?>)stackArgStorage._args;
@@ -281,9 +324,7 @@ namespace System.Reflection
             {
                 *(ByReference*)(pByRefFixedStorage + i) = (_invokerArgFlags[i] & InvokerArgFlags.IsValueType) != 0 ?
                     ByReference.Create(ref copyOfArgs[i]!.GetRawData()) :
-#pragma warning disable CS9080
-                    ByReference.Create(ref copyOfArgs[i]);
-#pragma warning restore CS9080
+                    ByReference.Create(ref Unsafe.AsRef<object?>(ref copyOfArgs[i]));
             }
 
             object? ret;
@@ -305,7 +346,7 @@ namespace System.Reflection
                 throw new TargetInvocationException(e);
             }
 
-            CopyBack(parameters, copyOfArgs, shouldCopyBack);
+            CopyBack(parameters!, copyOfArgs, shouldCopyBack);
             return ret;
         }
 

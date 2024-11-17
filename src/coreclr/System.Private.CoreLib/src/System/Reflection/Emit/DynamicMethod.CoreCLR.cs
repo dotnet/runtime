@@ -139,7 +139,7 @@ namespace System.Reflection.Emit
                 MethodBase.InvokerStrategy.Obj1 => Invoker.InvokeWith1Arg(obj, invokeAttr, binder, parameters!, culture),
                 MethodBase.InvokerStrategy.Obj4 => Invoker.InvokeWith4Args(obj, invokeAttr, binder, parameters!, culture),
                 MethodBase.InvokerStrategy.ObjSpan => Invoker.InvokeWithSpanArgs(obj, invokeAttr, binder, parameters!, culture),
-                MethodBase.InvokerStrategy.Ref4 => Invoker.InvokeWith4RefArgs(obj, invokeAttr, binder, parameters!, culture),
+                MethodBase.InvokerStrategy.Ref4 => Invoker.InvokeWith4RefArgs(obj, invokeAttr, binder, parameters, culture),
                 _ => Invoker.InvokeWithManyRefArgs(obj, invokeAttr, binder, parameters!, culture)
             };
 

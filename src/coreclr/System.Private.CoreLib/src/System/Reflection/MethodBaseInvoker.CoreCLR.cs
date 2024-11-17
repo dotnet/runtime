@@ -15,7 +15,7 @@ namespace System.Reflection
         private readonly CreateUninitializedCache? _allocator;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private object CreateUninitializedObject() => _allocator!.CreateUninitializedObject(_declaringType);
+        private object CreateUninitializedObject() => _allocator!.CreateUninitializedObject(_declaringType!);
 
         private bool ShouldAllocate => _allocator is not null;
 

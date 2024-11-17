@@ -165,12 +165,12 @@ namespace System.Reflection
                 skipVisibility: true); // Supports creating the delegate immediately when calling CreateDelegate().
         }
 
-        private static void EmitLdargForInstance(ILGenerator il, MethodBase? method, bool isStatic, Type declaringType)
+        private static void EmitLdargForInstance(ILGenerator il, MethodBase? method, bool isStatic, Type? declaringType)
         {
             if (method is not RuntimeConstructorInfo && !isStatic)
             {
                 il.Emit(OpCodes.Ldarg_0);
-                if (declaringType.IsValueType)
+                if (declaringType!.IsValueType)
                 {
                     il.Emit(OpCodes.Unbox, declaringType);
                 }

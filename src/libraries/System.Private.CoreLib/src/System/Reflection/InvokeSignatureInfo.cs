@@ -10,7 +10,7 @@ namespace System.Reflection
 {
     internal sealed class InvokeSignatureInfo
     {
-        internal readonly Type _declaringType;
+        internal readonly Type? _declaringType;
         internal readonly Type[] _parameterTypes;
         internal readonly Type _returnType;
         internal readonly bool _isStatic;
@@ -24,7 +24,7 @@ namespace System.Reflection
                 key._isStatic);
         }
 
-        public InvokeSignatureInfo(Type declaringType, Type[] parameterTypes, Type returnType, bool isStatic)
+        public InvokeSignatureInfo(Type? declaringType, Type[] parameterTypes, Type returnType, bool isStatic)
         {
             _declaringType = declaringType;
             _parameterTypes = parameterTypes;
@@ -66,18 +66,19 @@ namespace System.Reflection
 
         public override int GetHashCode() => GetHashCode(_declaringType, _parameterTypes, _returnType);
 
-        public static int GetHashCode(Type declaringType, Type[] parameterTypes, Type returnType)
+        public static int GetHashCode(Type? declaringType, Type[] parameterTypes, Type returnType)
         {
-            int hashcode = declaringType.GetHashCode();
-            hashcode = int.RotateLeft(hashcode, 5);
+            int hashcode = 0;
+            if (declaringType is not null)
+            {
+                hashcode = int.RotateLeft(declaringType.GetHashCode(), 5);
+            }
 
-            hashcode ^= returnType.GetHashCode();
-            hashcode = int.RotateLeft(hashcode, 5);
+            hashcode = int.RotateLeft(hashcode ^ returnType.GetHashCode(), 5);
 
             for (int i = 0; i < parameterTypes.Length; i++)
             {
-                hashcode ^= parameterTypes[i].GetHashCode();
-                hashcode = int.RotateLeft(hashcode, 5);
+                hashcode = int.RotateLeft(hashcode ^ parameterTypes[i].GetHashCode(), 5);
             }
 
             // We don't include _isStatic in the hashcode because it is already included with _declaringType==typeof(void).
@@ -90,7 +91,7 @@ namespace System.Reflection
     /// </summary>
     internal readonly ref struct InvokeSignatureInfoKey
     {
-        internal readonly Type _declaringType;
+        internal readonly Type? _declaringType;
         internal readonly Type[] _parameterTypes;
         internal readonly Type _returnType;
         internal readonly bool _isStatic;
@@ -104,7 +105,7 @@ namespace System.Reflection
                 isStatic);
         }
 
-        public InvokeSignatureInfoKey(Type declaringType, Type[] parameterTypes, Type returnType, bool isStatic)
+        public InvokeSignatureInfoKey(Type? declaringType, Type[] parameterTypes, Type returnType, bool isStatic)
         {
             _declaringType = declaringType;
             _parameterTypes = parameterTypes;
@@ -112,7 +113,7 @@ namespace System.Reflection
             _isStatic = isStatic;
         }
 
-        public Type DeclaringType => _declaringType;
+        public Type? DeclaringType => _declaringType;
         public Type[] ParameterTypes => _parameterTypes;
         public Type ReturnType => _returnType;
         public bool IsStatic => _isStatic;

@@ -65,7 +65,7 @@ namespace System.Reflection
         {
             _method = constructor;
 
-            if ((constructor.InvocationFlags & InvocationFlags.NoInvoke) != 0)
+            if ((constructor.InvocationFlags & (InvocationFlags.NoInvoke | InvocationFlags.ContainsStackPointers | InvocationFlags.NoConstructorInvoke)) != 0)
             {
                 _declaringType = null!;
                 _invokeFunc = null!;
@@ -92,11 +92,14 @@ namespace System.Reflection
 
             _invokeFunc ??= CreateInvokeDelegateForInterpreted();
 
+            if (_functionPointer != IntPtr.Zero)
+            {
 #if MONO
-            _shouldAllocate = _functionPointer != IntPtr.Zero;
+                _shouldAllocate = true;
 #else
-            _allocator = _functionPointer != IntPtr.Zero ? _declaringType.GetOrCreateCacheEntry<CreateUninitializedCache>() : null;
+                _allocator = _declaringType.GetOrCreateCacheEntry<CreateUninitializedCache>();
 #endif
+            }
         }
 
         /// <summary>
@@ -131,6 +134,11 @@ namespace System.Reflection
                 object obj = CreateUninitializedObject();
                 ((InvokeFunc_Obj0Args)_invokeFunc)(obj, _functionPointer);
                 return obj;
+            }
+
+            if (_strategy == InvokerStrategy.Ref4)
+            {
+                return InvokeWithRefArgs4(Span<object?>.Empty);
             }
 
             return ((InvokeFunc_Obj0Args)_invokeFunc)(obj: null, _functionPointer)!;

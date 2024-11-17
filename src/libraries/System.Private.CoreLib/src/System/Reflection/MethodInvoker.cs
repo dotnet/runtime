@@ -139,6 +139,11 @@ namespace System.Reflection
                 MethodBaseInvoker.ThrowTargetParameterCountException();
             }
 
+            if (_strategy == InvokerStrategy.Ref4)
+            {
+                return InvokeWithRefArgs4(obj, Span<object?>.Empty);
+            }
+
             return ((InvokeFunc_Obj0Args)_invokeFunc!)(obj, _functionPointer);
         }
 
