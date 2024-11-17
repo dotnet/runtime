@@ -134,22 +134,22 @@ namespace System.Text.Encodings.Web
             {
                 if (value.Value == '<')
                 {
-                    if (!"&lt;".TryCopyTo(destination)) { goto OutOfSpace; }
+                    if (!"&lt;".AsSpan().TryCopyTo(destination)) { goto OutOfSpace; }
                     return 4;
                 }
                 else if (value.Value == '>')
                 {
-                    if (!"&gt;".TryCopyTo(destination)) { goto OutOfSpace; }
+                    if (!"&gt;".AsSpan().TryCopyTo(destination)) { goto OutOfSpace; }
                     return 4;
                 }
                 else if (value.Value == '&')
                 {
-                    if (!"&amp;".TryCopyTo(destination)) { goto OutOfSpace; }
+                    if (!"&amp;".AsSpan().TryCopyTo(destination)) { goto OutOfSpace; }
                     return 5;
                 }
                 else if (value.Value == '\"')
                 {
-                    if (!"&quot;".TryCopyTo(destination)) { goto OutOfSpace; }
+                    if (!"&quot;".AsSpan().TryCopyTo(destination)) { goto OutOfSpace; }
                     return 6;
                 }
                 else
@@ -186,7 +186,7 @@ namespace System.Text.Encodings.Web
 
                     // It's more efficient to write 4 chars at a time instead of 1 char.
                     // The '0' at the end will be overwritten.
-                    if ("&#x0".TryCopyTo(destination))
+                    if ("&#x0".AsSpan().TryCopyTo(destination))
                     {
                         Debug.Fail("We should've had enough room to write 4 chars.");
                     }
