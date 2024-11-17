@@ -609,6 +609,7 @@ namespace System.Globalization
                                           CompareOptions.IgnoreNonSpace |
                                           CompareOptions.IgnoreSymbols |
                                           CompareOptions.IgnoreWidth |
+                                          CompareOptions.NumericOrdering |
                                           CompareOptions.StringSort)) == 0) ||
                              (options == CompareOptions.Ordinal), "[CompareInfo.GetNativeCompareFlags]Expected all flags to be handled");
 

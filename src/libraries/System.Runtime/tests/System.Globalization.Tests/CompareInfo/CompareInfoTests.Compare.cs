@@ -76,7 +76,12 @@ namespace System.Globalization.Tests
             yield return new object[] { s_invariantCompare, "A01", "a1", CompareOptions.NumericOrdering, isNls ? -1 : 1 }; // ICU treats 01 == 1
 
             // With diacritics
-            yield return new object[] { s_invariantCompare, "1\u00E102", "1a02", CompareOptions.NumericOrdering | CompareOptions.IgnoreNonSpace, 0 };
+            // PlatformDetection.IsHybridGlobalizationOnBrowser does not support IgnoreNonSpace alone, it needs to be with IgnoreKanaType
+            CompareOptions validIgnoreNonSpaceOption =
+                PlatformDetection.IsHybridGlobalizationOnBrowser
+                ? CompareOptions.IgnoreNonSpace | CompareOptions.IgnoreKanaType
+                : CompareOptions.IgnoreNonSpace;
+            yield return new object[] { s_invariantCompare, "1\u00E102", "1a02", CompareOptions.NumericOrdering | validIgnoreNonSpaceOption, 0 };
             yield return new object[] { s_invariantCompare, "\u00E11", "a2", CompareOptions.NumericOrdering, -1 }; // Numerical differences have higher precedence
             yield return new object[] { s_invariantCompare, "\u00E101", "a1", CompareOptions.NumericOrdering, isNls ? -1 : 1 }; // ICU treats 01 == 1
 
@@ -239,7 +244,7 @@ namespace System.Globalization.Tests
             yield return new object[] { s_invariantCompare, "\u00C0", "a\u0300", CompareOptions.Ordinal, 1 };
             yield return new object[] { s_invariantCompare, "\u00C0", "a\u0300", CompareOptions.OrdinalIgnoreCase, 1 };
             yield return new object[] { s_invariantCompare, "FooBar", "Foo\u0400Bar", CompareOptions.Ordinal, -1 };
-            yield return new object[] { s_invariantCompare, "FooBA\u0300R", "FooB\u00C0R", supportedIgnoreNonSpaceOption, 0 };
+            yield return new object[] { s_invariantCompare, "FooBA\u0300R", "FooB\u00C0R", validIgnoreNonSpaceOption, 0 };
 
             // In HybridGlobalization on Apple platforms IgnoreSymbols is not supported
             if (PlatformDetection.IsNotHybridGlobalizationOnApplePlatform)
@@ -261,9 +266,9 @@ namespace System.Globalization.Tests
 
             yield return new object[] { s_invariantCompare, new string('a', 5555), new string('a', 5555), CompareOptions.None, 0 };
             yield return new object[] { s_invariantCompare, "foobar", "FooB\u00C0R", supportedIgnoreCaseIgnoreNonSpaceOptions, 0 };
-            yield return new object[] { s_invariantCompare, "foobar", "FooB\u00C0R", supportedIgnoreNonSpaceOption, -1 };
+            yield return new object[] { s_invariantCompare, "foobar", "FooB\u00C0R", validIgnoreNonSpaceOption, -1 };
 
-            yield return new object[] { s_invariantCompare, "\uFF9E", "\u3099", supportedIgnoreNonSpaceOption, 0 };
+            yield return new object[] { s_invariantCompare, "\uFF9E", "\u3099", validIgnoreNonSpaceOption, 0 };
             yield return new object[] { s_invariantCompare, "\uFF9E", "\u3099", CompareOptions.IgnoreCase, PlatformDetection.IsHybridGlobalizationOnBrowser ? 1 : 0 };
             yield return new object[] { s_invariantCompare, "\u20A9", "\uFFE6", CompareOptions.IgnoreCase, -1 };
             yield return new object[] { s_invariantCompare, "\u20A9", "\uFFE6", CompareOptions.None, -1 };
@@ -316,12 +321,12 @@ namespace System.Globalization.Tests
             yield return new object[] { s_invariantCompare, "\u30CF", "\u30D0", CompareOptions.IgnoreCase, -1 };
             yield return new object[] { s_invariantCompare, "\u30CF", "\u30D1", CompareOptions.IgnoreCase, -1 };
             yield return new object[] { s_invariantCompare, "\u30D0", "\u30D1", CompareOptions.IgnoreCase, -1 };
-            yield return new object[] { s_invariantCompare, "\u306F", "\u3070", supportedIgnoreNonSpaceOption, 0 };
-            yield return new object[] { s_invariantCompare, "\u306F", "\u3071", supportedIgnoreNonSpaceOption, 0 };
-            yield return new object[] { s_invariantCompare, "\u3070", "\u3071", supportedIgnoreNonSpaceOption, 0 };
-            yield return new object[] { s_invariantCompare, "\u30CF", "\u30D0", supportedIgnoreNonSpaceOption, 0 };
-            yield return new object[] { s_invariantCompare, "\u30CF", "\u30D1", supportedIgnoreNonSpaceOption, 0 };
-            yield return new object[] { s_invariantCompare, "\u30D0", "\u30D1", supportedIgnoreNonSpaceOption, 0 };
+            yield return new object[] { s_invariantCompare, "\u306F", "\u3070", validIgnoreNonSpaceOption, 0 };
+            yield return new object[] { s_invariantCompare, "\u306F", "\u3071", validIgnoreNonSpaceOption, 0 };
+            yield return new object[] { s_invariantCompare, "\u3070", "\u3071", validIgnoreNonSpaceOption, 0 };
+            yield return new object[] { s_invariantCompare, "\u30CF", "\u30D0", validIgnoreNonSpaceOption, 0 };
+            yield return new object[] { s_invariantCompare, "\u30CF", "\u30D1", validIgnoreNonSpaceOption, 0 };
+            yield return new object[] { s_invariantCompare, "\u30D0", "\u30D1", validIgnoreNonSpaceOption, 0 };
 
             // Spanish
             yield return new object[] { new CultureInfo("es-ES").CompareInfo, "llegar", "lugar", CompareOptions.None, -1 };
@@ -666,10 +671,6 @@ namespace System.Globalization.Tests
                     CompareOptions.None,
                     CompareOptions.IgnoreCase,
                     CompareOptions.IgnoreSymbols,
-                    CompareOptions.IgnoreNonSpace,
-                    CompareOptions.IgnoreNonSpace | CompareOptions.IgnoreCase,
-                    CompareOptions.IgnoreSymbols | CompareOptions.IgnoreNonSpace,
-                    CompareOptions.IgnoreSymbols | CompareOptions.IgnoreNonSpace | CompareOptions.IgnoreCase,
                     CompareOptions.IgnoreSymbols | CompareOptions.IgnoreCase,
                     CompareOptions.IgnoreKanaType | CompareOptions.IgnoreSymbols,
                     CompareOptions.IgnoreKanaType | CompareOptions.IgnoreCase,
@@ -720,6 +721,10 @@ namespace System.Globalization.Tests
                 };
             CompareOptions[] optionsNegative = PlatformDetection.IsHybridGlobalizationOnBrowser ?
             new[] {
+                    CompareOptions.IgnoreNonSpace,
+                    CompareOptions.IgnoreNonSpace | CompareOptions.IgnoreCase,
+                    CompareOptions.IgnoreSymbols | CompareOptions.IgnoreNonSpace,
+                    CompareOptions.IgnoreSymbols | CompareOptions.IgnoreNonSpace | CompareOptions.IgnoreCase,
                     CompareOptions.IgnoreWidth,
                     CompareOptions.IgnoreWidth | CompareOptions.IgnoreCase,
                     CompareOptions.IgnoreWidth | CompareOptions.IgnoreNonSpace,
@@ -739,6 +744,11 @@ namespace System.Globalization.Tests
                     CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth | CompareOptions.IgnoreSymbols | CompareOptions.IgnoreNonSpace | CompareOptions.IgnoreCase,
                 } :
             Array.Empty<CompareOptions>();
+
+            // Adding NumericOrdering does not affect whether an option set is supported or not
+            optionsPositive = optionsPositive.Concat(from opt in optionsPositive where opt != CompareOptions.Ordinal && opt != CompareOptions.OrdinalIgnoreCase select opt | CompareOptions.NumericOrdering).ToArray();
+            optionsNegative = optionsNegative.Concat(from opt in optionsNegative where opt != CompareOptions.Ordinal && opt != CompareOptions.OrdinalIgnoreCase select opt | CompareOptions.NumericOrdering).ToArray();
+
             yield return new object[] { optionsPositive, optionsNegative };
         }
 

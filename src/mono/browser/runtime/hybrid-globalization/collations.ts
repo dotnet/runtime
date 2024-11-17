@@ -153,64 +153,102 @@ export function mono_wasm_index_of (culture: number, cultureLength: number, need
 }
 
 function compareStrings (string1: string, string2: string, locale: string | undefined, compareOptions: number): number {
-    // 0: None - default algorithm for the platform OR
-    //    StringSort - for ICU it gives the same result as None, see: https://github.com/dotnet/dotnet-api-docs/issues
-    if (compareOptions === 0) {
-        // does not work for "ja"
-        if (locale && locale.split("-")[0].toLowerCase() === "ja") {
-            return COMPARISON_ERROR;
-        }
+    let options: Intl.CollatorOptions | undefined = undefined;
 
-        return string1.localeCompare(string2, locale);
+    const numericOrderingFlag = 0x20;
+    if (compareOptions & numericOrderingFlag) {
+        options = { numeric: true };
     }
 
-    // If the user passed in only IgnoreKanaType then make sure locale supports it
-    // JS supports kana type ignore if and only if ja, but we will only enforce this
-    // if the options === CompareOptions.IgnoreKanaType to avoid erroring out too often.
-    const ignoreKanaTypeKey = compareOptions & 0x8;
-    if (compareOptions === ignoreKanaTypeKey) {
-        // IgnoreKanaType works only for "ja"
-        if (locale && locale.split("-")[0] !== "ja") {
-            return COMPARISON_ERROR;
-        }
-
-        return string1.localeCompare(string2, locale);
+    switch (compareOptions & (~numericOrderingFlag)) {
+        case 0:
+            // 0: None - default algorithm for the platform OR
+            //    StringSort - for ICU it gives the same result as None, see: https://github.com/dotnet/dotnet-api-docs/issues
+            //    does not work for "ja"
+            if (locale && locale.split("-")[0] === "ja")
+                return COMPARISON_ERROR;
+            return string1.localeCompare(string2, locale, options); // a ≠ b, a ≠ á, a ≠ A
+        case 8:
+            // 8: IgnoreKanaType works only for "ja"
+            if (locale && locale.split("-")[0] !== "ja")
+                return COMPARISON_ERROR;
+            return string1.localeCompare(string2, locale, options); // a ≠ b, a ≠ á, a ≠ A
+        case 1:
+            // 1: IgnoreCase
+            string1 = string1.toLocaleLowerCase(locale);
+            string2 = string2.toLocaleLowerCase(locale);
+            return string1.localeCompare(string2, locale, options); // a ≠ b, a ≠ á, a ≠ A
+        case 4:
+        case 12:
+            // 4: IgnoreSymbols
+            // 12: IgnoreKanaType | IgnoreSymbols
+            return string1.localeCompare(string2, locale, { ignorePunctuation: true, ...options }); // by default ignorePunctuation: false
+        case 5:
+            // 5: IgnoreSymbols | IgnoreCase
+            string1 = string1.toLocaleLowerCase(locale);
+            string2 = string2.toLocaleLowerCase(locale);
+            return string1.localeCompare(string2, locale, { ignorePunctuation: true, ...options }); // a ≠ b, a ≠ á, a ≠ A
+        case 9:
+            // 9: IgnoreKanaType | IgnoreCase
+            return string1.localeCompare(string2, locale, { sensitivity: "accent", ...options }); // a ≠ b, a ≠ á, a = A
+        case 10:
+            // 10: IgnoreKanaType | IgnoreNonSpace
+            return string1.localeCompare(string2, locale, { sensitivity: "case", ...options }); // a ≠ b, a = á, a ≠ A
+        case 11:
+            // 11: IgnoreKanaType | IgnoreNonSpace | IgnoreCase
+            return string1.localeCompare(string2, locale, { sensitivity: "base", ...options }); // a ≠ b, a = á, a = A
+        case 13:
+            // 13: IgnoreKanaType | IgnoreCase | IgnoreSymbols
+            return string1.localeCompare(string2, locale, { sensitivity: "accent", ignorePunctuation: true, ...options }); // a ≠ b, a ≠ á, a = A
+        case 14:
+            // 14: IgnoreKanaType | IgnoreSymbols | IgnoreNonSpace
+            return string1.localeCompare(string2, locale, { sensitivity: "case", ignorePunctuation: true, ...options });// a ≠ b, a = á, a ≠ A
+        case 15:
+            // 15: IgnoreKanaType | IgnoreSymbols | IgnoreNonSpace | IgnoreCase
+            return string1.localeCompare(string2, locale, { sensitivity: "base", ignorePunctuation: true, ...options }); // a ≠ b, a = á, a = A
+        case 2:
+        case 3:
+        case 6:
+        case 7:
+        case 16:
+        case 17:
+        case 18:
+        case 19:
+        case 20:
+        case 21:
+        case 22:
+        case 23:
+        case 24:
+        case 25:
+        case 26:
+        case 27:
+        case 28:
+        case 29:
+        case 30:
+        case 31:
+        default:
+            // 2: IgnoreNonSpace
+            // 3: IgnoreNonSpace | IgnoreCase
+            // 6: IgnoreSymbols | IgnoreNonSpace
+            // 7: IgnoreSymbols | IgnoreNonSpace | IgnoreCase
+            // 16: IgnoreWidth
+            // 17: IgnoreWidth | IgnoreCase
+            // 18: IgnoreWidth | IgnoreNonSpace
+            // 19: IgnoreWidth | IgnoreNonSpace | IgnoreCase
+            // 20: IgnoreWidth | IgnoreSymbols
+            // 21: IgnoreWidth | IgnoreSymbols | IgnoreCase
+            // 22: IgnoreWidth | IgnoreSymbols | IgnoreNonSpace
+            // 23: IgnoreWidth | IgnoreSymbols | IgnoreNonSpace | IgnoreCase
+            // 24: IgnoreKanaType | IgnoreWidth
+            // 25: IgnoreKanaType | IgnoreWidth | IgnoreCase
+            // 26: IgnoreKanaType | IgnoreWidth | IgnoreNonSpace
+            // 27: IgnoreKanaType | IgnoreWidth | IgnoreNonSpace | IgnoreCase
+            // 28: IgnoreKanaType | IgnoreWidth | IgnoreSymbols
+            // 29: IgnoreKanaType | IgnoreWidth | IgnoreSymbols | IgnoreCase
+            // 30: IgnoreKanaType | IgnoreWidth | IgnoreSymbols | IgnoreNonSpace
+            // 31: IgnoreKanaType | IgnoreWidth | IgnoreSymbols | IgnoreNonSpace | IgnoreCase
+            throw new Error(`Invalid comparison option. Option=${compareOptions}`);
     }
-
-    // IgnoreWidth is not supported
-    const ignoreWidth = (compareOptions & 0x10) != 0;
-    if (ignoreWidth) {
-        return COMPARISON_ERROR;
-    }
-
-    let options: Intl.CollatorOptions | undefined;
-
-    const ignoreCaseFlag = 0x1;
-    const ignoreNonSpaceFlag = 0x2;
-    switch (compareOptions & (ignoreCaseFlag | ignoreNonSpaceFlag)) {
-        case (ignoreCaseFlag | ignoreNonSpaceFlag):
-            options = { sensitivity: "base" }; // a ≠ b, a = á, a = A
-            break;
-        case ignoreCaseFlag:
-            options = { sensitivity: "accent" }; // a ≠ b, a ≠ á, a = A
-            break;
-        case ignoreNonSpaceFlag:
-            options = { sensitivity: "case" }; // a ≠ b, a = á, a ≠ A
-            break;
-        // Default is options = { sensitivity: "variant" } := a ≠ b, a ≠ á, a ≠ A
-    }
-
-    const ignoreSymbols = (compareOptions & 0x4) != 0;
-    if (ignoreSymbols) {
-        (options ??= {}).ignorePunctuation = true;
-    }
-
-    const numericalOrdering = (compareOptions & 0x20) != 0;
-    if (numericalOrdering) {
-        (options ??= {}).numeric = true;
-    }
-
-    return string1.localeCompare(string2, locale, options);
 }
 
 function decodeToCleanString (strPtr: number, strLen: number) {
