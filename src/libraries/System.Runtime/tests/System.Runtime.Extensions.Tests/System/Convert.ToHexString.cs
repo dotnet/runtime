@@ -193,7 +193,7 @@ namespace System.Tests
         [MemberData(nameof(ToHexStringTestData))]
         public static unsafe void TryToHexString(byte[] input, string expected)
         {
-            Span<char> output = stackalloc char[expected.Length];
+            Span<char> output = new char[expected.Length];
             Assert.True(Convert.TryToHexString(input, output, out int charsWritten));
             Assert.Equal(expected.Length, charsWritten);
             Assert.Equal(expected, output.ToString());
@@ -212,7 +212,7 @@ namespace System.Tests
         [MemberData(nameof(ToHexStringTestData))]
         public static unsafe void TryToHexStringLower(byte[] input, string expected)
         {
-            Span<char> output = stackalloc char[expected.Length];
+            Span<char> output = new char[expected.Length];
             Assert.True(Convert.TryToHexStringLower(input, output, out int charsWritten));
             Assert.Equal(expected.Length, charsWritten);
             Assert.Equal(expected.ToLower(), output.ToString());
