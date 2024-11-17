@@ -68,22 +68,22 @@ namespace System.Text.Encodings.Web
             {
                 if (value.Value == '<')
                 {
-                    if (!SpanUtility.TryWriteBytes(destination, (byte)'&', (byte)'l', (byte)'t', (byte)';')) { goto OutOfSpace; }
+                    if (!"&lt;"u8.TryCopyTo(destination)) { goto OutOfSpace; }
                     return 4;
                 }
                 else if (value.Value == '>')
                 {
-                    if (!SpanUtility.TryWriteBytes(destination, (byte)'&', (byte)'g', (byte)'t', (byte)';')) { goto OutOfSpace; }
+                    if (!"&gt;"u8.TryCopyTo(destination)) { goto OutOfSpace; }
                     return 4;
                 }
                 else if (value.Value == '&')
                 {
-                    if (!SpanUtility.TryWriteBytes(destination, (byte)'&', (byte)'a', (byte)'m', (byte)'p', (byte)';')) { goto OutOfSpace; }
+                    if (!"&amp;"u8.TryCopyTo(destination)) { goto OutOfSpace; }
                     return 5;
                 }
                 else if (value.Value == '\"')
                 {
-                    if (!SpanUtility.TryWriteBytes(destination, (byte)'&', (byte)'q', (byte)'u', (byte)'o', (byte)'t', (byte)';')) { goto OutOfSpace; }
+                    if (!"&quot;"u8.TryCopyTo(destination)) { goto OutOfSpace; }
                     return 6;
                 }
                 else
@@ -109,7 +109,7 @@ namespace System.Text.Encodings.Web
                     if (!SpanUtility.IsValidIndex(destination, idxOfSemicolon)) { goto OutOfSpaceInner; }
                     destination[idxOfSemicolon] = (byte)';';
 
-                    if (!SpanUtility.TryWriteBytes(destination, (byte)'&', (byte)'#', (byte)'x', (byte)'0'))
+                    if (!"&#x0"u8.TryCopyTo(destination))
                     {
                         Debug.Fail("We should've had enough room to write 4 bytes.");
                     }
@@ -134,22 +134,22 @@ namespace System.Text.Encodings.Web
             {
                 if (value.Value == '<')
                 {
-                    if (!SpanUtility.TryWriteChars(destination, '&', 'l', 't', ';')) { goto OutOfSpace; }
+                    if (!"&lt;".TryCopyTo(destination)) { goto OutOfSpace; }
                     return 4;
                 }
                 else if (value.Value == '>')
                 {
-                    if (!SpanUtility.TryWriteChars(destination, '&', 'g', 't', ';')) { goto OutOfSpace; }
+                    if (!"&gt;".TryCopyTo(destination)) { goto OutOfSpace; }
                     return 4;
                 }
                 else if (value.Value == '&')
                 {
-                    if (!SpanUtility.TryWriteChars(destination, '&', 'a', 'm', 'p', ';')) { goto OutOfSpace; }
+                    if (!"&amp;".TryCopyTo(destination)) { goto OutOfSpace; }
                     return 5;
                 }
                 else if (value.Value == '\"')
                 {
-                    if (!SpanUtility.TryWriteChars(destination, '&', 'q', 'u', 'o', 't', ';')) { goto OutOfSpace; }
+                    if (!"&quot;".TryCopyTo(destination)) { goto OutOfSpace; }
                     return 6;
                 }
                 else
@@ -186,7 +186,7 @@ namespace System.Text.Encodings.Web
 
                     // It's more efficient to write 4 chars at a time instead of 1 char.
                     // The '0' at the end will be overwritten.
-                    if (!SpanUtility.TryWriteChars(destination, '&', '#', 'x', '0'))
+                    if ("&#x0".TryCopyTo(destination))
                     {
                         Debug.Fail("We should've had enough room to write 4 chars.");
                     }
