@@ -23,23 +23,5 @@ namespace System.Text.Encodings.Web
         {
             return ((uint)index < (uint)span.Length) ? true : false;
         }
-
-        /// <summary>
-        /// Tries writing a 64-bit value as little endian to the span. If success, returns true. If
-        /// the span is not large enough to hold 8 bytes, leaves the span unchanged and returns false.
-        /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool TryWriteUInt64LittleEndian(Span<byte> span, int offset, ulong value)
-        {
-            if (!BitConverter.IsLittleEndian)
-            {
-                value = BinaryPrimitives.ReverseEndianness(value);
-            }
-#if NET8_0_OR_GREATER
-            return MemoryMarshal.TryWrite(span.Slice(offset), value);
-#else
-            return MemoryMarshal.TryWrite(span.Slice(offset), ref value);
-#endif
-        }
     }
 }

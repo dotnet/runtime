@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
+using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
@@ -258,7 +259,7 @@ namespace System.Text.Encodings.Web
                 // to 6 bytes of output, so we'll only bump dstIdx by the number of useful bytes we
                 // wrote.
 
-                if (SpanUtility.TryWriteUInt64LittleEndian(destination, dstIdx, preescapedEntry))
+                if (BinaryPrimitives.TryWriteUInt64LittleEndian(destination.Slice(dstIdx), preescapedEntry))
                 {
                     dstIdx += (int)(preescapedEntry >> 56); // predicted taken
                     srcIdx++;
