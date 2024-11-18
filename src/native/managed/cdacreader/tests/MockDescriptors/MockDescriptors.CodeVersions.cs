@@ -19,8 +19,8 @@ internal partial class MockDescriptors
             DataType = DataType.MethodDescVersioningState,
             Fields =
             [
-                (nameof(Data.MethodDescVersioningState.NativeCodeVersionNode), DataType.pointer),
-                (nameof(Data.MethodDescVersioningState.Flags), DataType.uint8),
+                new(nameof(Data.MethodDescVersioningState.NativeCodeVersionNode), DataType.pointer),
+                new(nameof(Data.MethodDescVersioningState.Flags), DataType.uint8),
             ]
         };
 
@@ -29,11 +29,11 @@ internal partial class MockDescriptors
             DataType = DataType.NativeCodeVersionNode,
             Fields =
             [
-                (nameof(Data.NativeCodeVersionNode.Next), DataType.pointer),
-                (nameof(Data.NativeCodeVersionNode.MethodDesc), DataType.pointer),
-                (nameof(Data.NativeCodeVersionNode.NativeCode), DataType.pointer),
-                (nameof(Data.NativeCodeVersionNode.Flags), DataType.uint32),
-                (nameof(Data.NativeCodeVersionNode.ILVersionId), DataType.nuint),
+                new(nameof(Data.NativeCodeVersionNode.Next), DataType.pointer),
+                new(nameof(Data.NativeCodeVersionNode.MethodDesc), DataType.pointer),
+                new(nameof(Data.NativeCodeVersionNode.NativeCode), DataType.pointer),
+                new(nameof(Data.NativeCodeVersionNode.Flags), DataType.uint32),
+                new(nameof(Data.NativeCodeVersionNode.ILVersionId), DataType.nuint),
             ]
         };
 
@@ -42,10 +42,10 @@ internal partial class MockDescriptors
             DataType = DataType.ILCodeVersioningState,
             Fields =
             [
-                (nameof(Data.ILCodeVersioningState.ActiveVersionMethodDef), DataType.uint32),
-                (nameof(Data.ILCodeVersioningState.ActiveVersionModule), DataType.pointer),
-                (nameof(Data.ILCodeVersioningState.ActiveVersionKind), DataType.uint32),
-                (nameof(Data.ILCodeVersioningState.ActiveVersionNode), DataType.pointer),
+                new(nameof(Data.ILCodeVersioningState.ActiveVersionMethodDef), DataType.uint32),
+                new(nameof(Data.ILCodeVersioningState.ActiveVersionModule), DataType.pointer),
+                new(nameof(Data.ILCodeVersioningState.ActiveVersionKind), DataType.uint32),
+                new(nameof(Data.ILCodeVersioningState.ActiveVersionNode), DataType.pointer),
             ]
         };
 
@@ -54,7 +54,7 @@ internal partial class MockDescriptors
             DataType = DataType.ILCodeVersionNode,
             Fields =
             [
-                (nameof(Data.ILCodeVersionNode.VersionId), DataType.nuint),
+                new(nameof(Data.ILCodeVersionNode.VersionId), DataType.nuint),
             ]
         };
 
