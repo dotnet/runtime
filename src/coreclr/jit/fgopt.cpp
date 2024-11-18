@@ -5375,9 +5375,10 @@ bool Compiler::ThreeOptLayout::RunThreeOptPass(BasicBlock* startBlock, BasicBloc
         }
 
 #ifdef DEBUG
-        // Ensure the swap improved the overall layout
+        // Ensure the swap improved the overall layout. Tolerate some imprecision.
         const weight_t newLayoutCost = GetLayoutCost(startPos, endPos);
-        assert(newLayoutCost < currLayoutCost);
+        assert((newLayoutCost < currLayoutCost) ||
+               Compiler::fgProfileWeightsEqual(newLayoutCost, currLayoutCost, 0.001));
         currLayoutCost = newLayoutCost;
 #endif // DEBUG
     }
