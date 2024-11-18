@@ -743,7 +743,7 @@ namespace System
                                 #endregion
                             }
 
-                            declaringType = RuntimeTypeHandle.GetBaseType(declaringType);
+                            declaringType = declaringType.GetParentType()!;
                         } while (declaringType != null);
                         #endregion
                     }
@@ -814,13 +814,14 @@ namespace System
                     while (RuntimeTypeHandle.IsGenericVariable(declaringType))
                         declaringType = declaringType.GetBaseType()!;
 
-                    while (declaringType != null)
+                    RuntimeType? populatingType = declaringType;
+                    while (populatingType != null)
                     {
-                        PopulateRtFields(filter, declaringType, ref list);
+                        PopulateRtFields(filter, populatingType, ref list);
 
-                        PopulateLiteralFields(filter, declaringType, ref list);
+                        PopulateLiteralFields(filter, populatingType, ref list);
 
-                        declaringType = RuntimeTypeHandle.GetBaseType(declaringType);
+                        populatingType = populatingType.GetParentType();
                     }
                     #endregion
 
@@ -1152,10 +1153,11 @@ namespace System
                             declaringType = declaringType.GetBaseType()!;
 
                         // Populate associates off of the class hierarchy
-                        while (declaringType != null)
+                        RuntimeType? populatingType = declaringType;
+                        while (populatingType != null)
                         {
-                            PopulateEvents(filter, declaringType, csEventInfos, ref list);
-                            declaringType = RuntimeTypeHandle.GetBaseType(declaringType);
+                            PopulateEvents(filter, populatingType, csEventInfos, ref list);
+                            populatingType = populatingType.GetParentType();
                         }
                     }
                     else
@@ -1261,11 +1263,12 @@ namespace System
                         }
 
                         // Populate associates off of the class hierarchy
-                        do
+                        RuntimeType? populatingType = declaringType;
+                        while (populatingType != null)
                         {
-                            PopulateProperties(filter, declaringType, csPropertyInfos, usedSlots, isInterface: false, ref list);
-                            declaringType = RuntimeTypeHandle.GetBaseType(declaringType);
-                        } while (declaringType != null);
+                            PopulateProperties(filter, populatingType, csPropertyInfos, usedSlots, isInterface: false, ref list);
+                            populatingType = populatingType.GetParentType();
+                        }
                     }
                     else
                     {
@@ -1778,6 +1781,28 @@ namespace System
         #region Static Members
 
         #region Internal
+
+        // Returns the type from which the current type directly inherits from (without reflection quirks).
+        // The parent type is null for interfaces, pointers, byrefs and generic parameters.
+        internal unsafe RuntimeType? GetParentType()
+        {
+            TypeHandle typeHandle = GetNativeTypeHandle();
+            if (typeHandle.IsTypeDesc)
+            {
+                return null;
+            }
+
+            MethodTable* pParentMT = typeHandle.AsMethodTable()->ParentMethodTable;
+            if (pParentMT == null)
+            {
+                return null;
+            }
+
+            RuntimeType result = RuntimeTypeHandle.GetRuntimeType(pParentMT);
+            GC.KeepAlive(this);
+            return result;
+        }
+
         [RequiresUnreferencedCode("Trimming changes metadata tokens")]
         internal static MethodBase? GetMethodBase(RuntimeModule scope, int typeMetadataToken)
         {

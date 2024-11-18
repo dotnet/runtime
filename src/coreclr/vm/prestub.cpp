@@ -1498,7 +1498,7 @@ namespace
 
             TokenPairList list { nullptr };
             MetaSig::CompareState state{ &list };
-            state.IgnoreCustomModifiers = false;
+            state.IgnoreCustomModifiers = true;
             if (!DoesFieldMatchUnsafeAccessorDeclaration(cxt, pField, state))
                 continue;
 

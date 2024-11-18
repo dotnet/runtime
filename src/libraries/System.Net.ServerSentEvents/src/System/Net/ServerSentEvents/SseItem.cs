@@ -7,19 +7,22 @@ namespace System.Net.ServerSentEvents
     /// <typeparam name="T">Specifies the type of data payload in the event.</typeparam>
     public readonly struct SseItem<T>
     {
+        /// <summary>The event's type.</summary>
+        internal readonly string? _eventType;
+
         /// <summary>Initializes the server-sent event.</summary>
         /// <param name="data">The event's payload.</param>
         /// <param name="eventType">The event's type.</param>
-        public SseItem(T data, string eventType)
+        public SseItem(T data, string? eventType)
         {
             Data = data;
-            EventType = eventType;
+            _eventType = eventType;
         }
 
         /// <summary>Gets the event's payload.</summary>
         public T Data { get; }
 
         /// <summary>Gets the event's type.</summary>
-        public string EventType { get; }
+        public string EventType => _eventType ?? SseParser.EventTypeDefault;
     }
 }
