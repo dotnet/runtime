@@ -194,6 +194,13 @@ namespace System.IO
                         bytesWritten = Interop.Sys.PWriteV(handle, pinnedVectors, left.Length, fileOffset);
                     }
 
+#if TARGET_OSX && TARGET_ARM64
+                    if (bytesWritten < 0)
+                    {
+                        throw new Exception($"PWriteV has failed and IOV_MAX was {bytesWritten}.");
+                    }
+#endif
+
                     FileStreamHelpers.CheckFileCall(bytesWritten, handle.Path);
                     if (bytesWritten == totalBytesToWrite)
                     {

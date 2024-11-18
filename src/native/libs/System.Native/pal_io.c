@@ -2017,6 +2017,14 @@ int64_t SystemNative_PWriteV(intptr_t fd, IOVector* vectors, int32_t vectorCount
 #if HAVE_PWRITEV && !defined(TARGET_WASM) // pwritev is buggy on WASM
     int allowedVectorCount = GetAllowedVectorCount(vectorCount);
     while ((count = pwritev(fileDescriptor, (struct iovec*)vectors, allowedVectorCount, (off_t)fileOffset)) < 0 && errno == EINTR);
+
+#if defined(TARGET_APPLE) && (defined(__arm__) || defined(__aarch64__))
+    if (count < 0 && errno == EINVAL)
+    {
+        count = -1 * IOV_MAX;
+    }
+#endif
+
 #else
     int64_t current;
     for (int i = 0; i < vectorCount; i++)
@@ -2044,6 +2052,6 @@ int64_t SystemNative_PWriteV(intptr_t fd, IOVector* vectors, int32_t vectorCount
     }
 #endif
 
-    assert(count >= -1);
+    // assert(count >= -1);
     return count;
 }
