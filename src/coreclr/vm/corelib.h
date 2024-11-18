@@ -346,10 +346,15 @@ DEFINE_METHOD(TASK, FROM_EXCEPTION, FromException, SM_Exception_RetTask)
 DEFINE_METHOD(TASK, FROM_EXCEPTION_1, FromException, GM_Exception_RetTaskOfT)
 DEFINE_METHOD(TASK, FROM_RESULT_T, FromResult, GM_T_RetTaskOfT)
 DEFINE_METHOD(TASK, GET_COMPLETED_TASK, get_CompletedTask, SM_RetTask)
+DEFINE_METHOD(TASK, GET_AWAITER, GetAwaiter, NoSig)
 
 DEFINE_CLASS(TASK_AWAITER_1, CompilerServices, TaskAwaiter`1)
 DEFINE_METHOD(TASK_AWAITER_1, GET_ISCOMPLETED, get_IsCompleted, NoSig)
 DEFINE_METHOD(TASK_AWAITER_1, GET_RESULT, GetResult, NoSig)
+
+DEFINE_CLASS(TASK_AWAITER, CompilerServices, TaskAwaiter)
+DEFINE_METHOD(TASK_AWAITER, GET_ISCOMPLETED, get_IsCompleted, NoSig)
+DEFINE_METHOD(TASK_AWAITER, GET_RESULT, GetResult, NoSig)
 
 DEFINE_CLASS(TYPE_HANDLE,           System,                 RuntimeTypeHandle)
 DEFINE_CLASS(RT_TYPE_HANDLE,        System,                 RuntimeTypeHandle)
