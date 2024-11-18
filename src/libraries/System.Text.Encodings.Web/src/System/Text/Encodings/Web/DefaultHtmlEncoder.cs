@@ -186,7 +186,7 @@ namespace System.Text.Encodings.Web
 
                     // It's more efficient to write 4 chars at a time instead of 1 char.
                     // The '0' at the end will be overwritten.
-                    if ("&#x0".AsSpan().TryCopyTo(destination))
+                    if (!"&#x0".AsSpan().TryCopyTo(destination))
                     {
                         Debug.Fail("We should've had enough room to write 4 chars.");
                     }
