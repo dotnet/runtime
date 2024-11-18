@@ -348,7 +348,7 @@ namespace Wasm.Build.Tests
                     AssertAppBundle: false
             ));
             // restore the project directory
-            _projectDir = Path.Combine(_projectDir!, "..");
+            _projectDir = Path.Combine(_projectDir!, "..", "App");
             
             string icallTable =
             """
