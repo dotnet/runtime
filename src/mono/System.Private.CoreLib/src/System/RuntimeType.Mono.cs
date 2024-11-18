@@ -143,11 +143,12 @@ namespace System
 
         #region Internal
 
-        internal static unsafe RuntimeType? GetParentType(RuntimeType type)
+        internal RuntimeType? GetParentType()
         {
+            RuntimeType _this = this;
             RuntimeType? res = null;
-            GetParentType(new QCallTypeHandle(ref type), ObjectHandleOnStack.Create(ref res));
-            return res!;
+            GetParentType(new QCallTypeHandle(ref _this), ObjectHandleOnStack.Create(ref res));
+            return res;
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
@@ -1334,7 +1335,7 @@ namespace System
                 TypeCache cache = Cache;
                 if ((cache.Cached & (int)TypeCacheEntries.IsActualEnum) != 0)
                     return (cache.Flags & (int)TypeCacheEntries.IsActualEnum) != 0;
-                bool res = !IsGenericParameter && RuntimeType.GetParentType(this) == EnumType;
+                bool res = !IsGenericParameter && GetParentType() == EnumType;
                 CacheFlag(TypeCacheEntries.IsActualEnum, res);
                 return res;
             }

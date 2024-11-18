@@ -743,7 +743,7 @@ namespace System
                                 #endregion
                             }
 
-                            declaringType = RuntimeType.GetParentType(declaringType)!;
+                            declaringType = declaringType.GetParentType()!;
                         } while (declaringType != null);
                         #endregion
                     }
@@ -821,7 +821,7 @@ namespace System
 
                         PopulateLiteralFields(filter, populatingType, ref list);
 
-                        populatingType = RuntimeType.GetParentType(populatingType);
+                        populatingType = populatingType.GetParentType();
                     }
                     #endregion
 
@@ -1157,7 +1157,7 @@ namespace System
                         while (populatingType != null)
                         {
                             PopulateEvents(filter, populatingType, csEventInfos, ref list);
-                            populatingType = RuntimeType.GetParentType(populatingType);
+                            populatingType = populatingType.GetParentType();
                         }
                     }
                     else
@@ -1267,7 +1267,7 @@ namespace System
                         while (populatingType != null)
                         {
                             PopulateProperties(filter, populatingType, csPropertyInfos, usedSlots, isInterface: false, ref list);
-                            populatingType = RuntimeType.GetParentType(populatingType);
+                            populatingType = populatingType.GetParentType();
                         }
                     }
                     else
@@ -1781,9 +1781,9 @@ namespace System
         #region Static Members
 
         #region Internal
-        internal static unsafe RuntimeType? GetParentType(RuntimeType type)
+        internal unsafe RuntimeType? GetParentType()
         {
-            TypeHandle typeHandle = type.GetNativeTypeHandle();
+            TypeHandle typeHandle = GetNativeTypeHandle();
             if (typeHandle.IsTypeDesc)
             {
                 return null;
@@ -1796,7 +1796,7 @@ namespace System
             }
 
             RuntimeType result = RuntimeTypeHandle.GetRuntimeType(pParentMT);
-            GC.KeepAlive(type);
+            GC.KeepAlive(this);
             return result;
         }
 

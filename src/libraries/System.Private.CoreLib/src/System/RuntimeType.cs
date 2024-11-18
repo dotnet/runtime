@@ -708,7 +708,7 @@ namespace System
                 return baseType;
             }
 
-            return RuntimeType.GetParentType(this);
+            return GetParentType();
         }
 
         private static void ThrowIfTypeNeverValidGenericArgument(RuntimeType type)
