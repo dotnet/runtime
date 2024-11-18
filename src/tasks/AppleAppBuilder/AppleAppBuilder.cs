@@ -323,7 +323,14 @@ public class AppleAppBuilderTask : Task
 
         if (targetRuntime == TargetRuntime.CoreCLR)
         {
-            extraLinkerArgs.Add("-rpath @executable_path");
+            if (targetOS == TargetNames.MacCatalyst)
+            {
+                extraLinkerArgs.Add("-rpath @executable_path/../Resources");
+            }
+            else
+            {
+                extraLinkerArgs.Add("-rpath @executable_path");
+            }
             shouldStaticLink = false;
         }
 
