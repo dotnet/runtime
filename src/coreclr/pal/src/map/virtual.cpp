@@ -1261,7 +1261,7 @@ static struct jit_write_protect_helper
 
 #define pthread_jit_write_protect_np jit_write_protect_np
 
-#endif
+#endif // defined(TARGET_APPLE) && !defined(TARGET_OSX)
 
 PALAPI VOID PAL_JitWriteProtect(bool writeEnable)
 {

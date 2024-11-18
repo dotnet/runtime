@@ -27,7 +27,7 @@
 #else
 #include "pal_keychain_ios.h"
 #include "pal_x509_ios.h"
-#endif
+#endif // defined(TARGET_OSX)
 
 static const Entry s_cryptoAppleNative[] =
 {
@@ -144,7 +144,7 @@ static const Entry s_cryptoAppleNative[] =
     DllImportEntry(AppleCryptoNative_X509ExportData)
     DllImportEntry(AppleCryptoNative_X509CopyWithPrivateKey)
     DllImportEntry(AppleCryptoNative_X509MoveToKeychain)
-#endif
+#endif // defined(TARGET_OSX)
 };
 
 EXTERN_C const void* CryptoAppleResolveDllImport(const char* name);

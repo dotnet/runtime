@@ -75,7 +75,7 @@ namespace
         {
             return CryptoResolveDllImport(entry_point_name);
         }
-#endif
+#endif // !defined(TARGET_APPLE) || defined(TARGET_OSX)
 #endif
 
         if (strcmp(library_name, LIB_NAME("System.IO.Compression.Native")) == 0)
