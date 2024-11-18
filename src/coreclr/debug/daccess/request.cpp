@@ -921,11 +921,11 @@ void CopyNativeCodeVersionToReJitData(NativeCodeVersion nativeCodeVersion, Nativ
             pReJitData->flags = DacpReJitData::kUnknown;
             break;
 
-        case ILCodeVersion::kStateRequested:
+        case ILCodeVersion::RejitFlags::kStateRequested:
             pReJitData->flags = DacpReJitData::kRequested;
             break;
 
-        case ILCodeVersion::kStateActive:
+        case ILCodeVersion::RejitFlags::kStateActive:
             pReJitData->flags = DacpReJitData::kActive;
             break;
         }
@@ -4618,7 +4618,7 @@ HRESULT ClrDataAccess::GetPendingReJITID(CLRDATA_ADDRESS methodDesc, int *pRejit
     {
         hr = E_INVALIDARG;
     }
-    else if (ilVersion.GetRejitState() == ILCodeVersion::kStateRequested)
+    else if (ilVersion.GetRejitState() == ILCodeVersion::RejitFlags::kStateRequested)
     {
         *pRejitId = (int)ilVersion.GetVersionId();
     }
@@ -4661,11 +4661,11 @@ HRESULT ClrDataAccess::GetReJITInformation(CLRDATA_ADDRESS methodDesc, int rejit
             pReJitData->flags = DacpReJitData2::kUnknown;
             break;
 
-        case ILCodeVersion::kStateRequested:
+        case ILCodeVersion::RejitFlags::kStateRequested:
             pReJitData->flags = DacpReJitData2::kRequested;
             break;
 
-        case ILCodeVersion::kStateActive:
+        case ILCodeVersion::RejitFlags::kStateActive:
             pReJitData->flags = DacpReJitData2::kActive;
             break;
         }
@@ -4698,7 +4698,7 @@ HRESULT ClrDataAccess::GetProfilerModifiedILInformation(CLRDATA_ADDRESS methodDe
     CodeVersionManager* pCodeVersionManager = pMD->GetCodeVersionManager();
     CodeVersionManager::LockHolder codeVersioningLockHolder;
     ILCodeVersion ilVersion = pCodeVersionManager->GetActiveILCodeVersion(pMD);
-    if (ilVersion.GetRejitState() != ILCodeVersion::kStateActive || !ilVersion.HasDefaultIL())
+    if (ilVersion.GetRejitState() != ILCodeVersion::RejitFlags::kStateActive || !ilVersion.HasDefaultIL())
     {
         pILData->type = DacpProfilerILData::ReJITModified;
         pILData->rejitID = static_cast<ULONG>(pCodeVersionManager->GetActiveILCodeVersion(pMD).GetVersionId());
@@ -4748,7 +4748,7 @@ HRESULT ClrDataAccess::GetMethodsWithProfilerModifiedIL(CLRDATA_ADDRESS mod, CLR
 
                 TADDR pDynamicIL = pModule->GetDynamicIL(pMD->GetMemberDef());
                 ILCodeVersion ilVersion = pCodeVersionManager->GetActiveILCodeVersion(pMD);
-                if (ilVersion.GetRejitState() != ILCodeVersion::kStateActive || !ilVersion.HasDefaultIL() || pDynamicIL != (TADDR)NULL)
+                if (ilVersion.GetRejitState() != ILCodeVersion::RejitFlags::kStateActive || !ilVersion.HasDefaultIL() || pDynamicIL != (TADDR)NULL)
                 {
                     methodDescs[*pcMethodDescs] = PTR_CDADDR(pMD);
                     ++(*pcMethodDescs);

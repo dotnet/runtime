@@ -184,7 +184,7 @@ public:
     HRESULT SetActiveNativeCodeVersion(NativeCodeVersion activeNativeCodeVersion);
 #endif //DACCESS_COMPILE
 
-    enum RejitFlags
+    enum class RejitFlags : uint32_t
     {
         // The profiler has requested a ReJit, so we've allocated stuff, but we haven't
         // called back to the profiler to get any info or indicate that the ReJit has
@@ -208,7 +208,9 @@ public:
         // Indicates that the method being ReJITted is an inliner of the actual
         // ReJIT request and we should not issue the GetReJITParameters for this
         // method.
-        kSuppressParams = 0x80000000
+        kSuppressParams = 0x80000000,
+
+        support_use_as_flags // Enable the template functions in enum_class_flags.h
     };
 
     RejitFlags GetRejitState() const;
