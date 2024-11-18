@@ -162,12 +162,12 @@ public class ReliabilityFramework
         ReliabilityFramework rf = new ReliabilityFramework();
         rf._logger.WriteToInstrumentationLog(null, LoggingLevels.StartupShutdown, "Started");
 
-        IReadOnlyDictionary<string, object> configVars = GC.GetConfigurationVariables();
-        foreach (KeyValuePair<string, object> entry in configVars)
+        var configVars = GC.GetConfigurationVariables();
+        foreach (var kvp in configVars)
         {
-            string key = entry.Key;
-            object value = entry.Value;
-            output += $"{entry.Key}: {entry.Value}\n";
+            string key = kvp.Key;
+            object value = kvp.Value;
+            output += $"{kvp.Key}: {kvp.Value}\n";
         }
         rf._logger.WriteToInstrumentationLog(null, LoggingLevels.StartupShutdown, String.Format("Get GC Configuration Variables\n{0}",output));
 
