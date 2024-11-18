@@ -5375,10 +5375,9 @@ bool Compiler::ThreeOptLayout::RunThreeOptPass(BasicBlock* startBlock, BasicBloc
         }
 
 #ifdef DEBUG
-        // Ensure the swap improved the overall layout, or at least didn't regress it
-        // (rounding errors might cause nearly-tied scores to be equal)
+        // Ensure the swap improved the overall layout
         const weight_t newLayoutCost = GetLayoutCost(startPos, endPos);
-        assert(newLayoutCost <= currLayoutCost);
+        assert(newLayoutCost < currLayoutCost);
         currLayoutCost = newLayoutCost;
 #endif // DEBUG
     }
