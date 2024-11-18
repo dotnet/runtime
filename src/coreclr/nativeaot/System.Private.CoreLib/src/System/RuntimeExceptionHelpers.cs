@@ -40,9 +40,6 @@ namespace System
         [RuntimeExport("GetRuntimeException")]
         public static Exception? GetRuntimeException(ExceptionIDs id)
         {
-            if (!SafeToPerformRichExceptionSupport)
-                return null;
-
             // This method is called by the runtime's EH dispatch code and is not allowed to leak exceptions
             // back into the dispatcher.
             try
@@ -151,9 +148,6 @@ namespace System
         [RuntimeExport("RuntimeFailFast")]
         internal static void RuntimeFailFast(RhFailFastReason reason, Exception? exception, IntPtr pExAddress, IntPtr pExContext)
         {
-            if (!SafeToPerformRichExceptionSupport)
-                return;
-
             // This method is called by the runtime's EH dispatch code and is not allowed to leak exceptions
             // back into the dispatcher.
             try
@@ -319,17 +313,6 @@ namespace System
             RuntimeImports.RhCreateCrashDumpIfEnabled(new IntPtr(&exceptionRecord), pExContext);
             Interop.Sys.Abort();
 #endif
-        }
-
-        // This returns "true" once enough of the framework has been initialized to safely perform operations
-        // such as filling in the stack frame and generating diagnostic support.
-        public static bool SafeToPerformRichExceptionSupport
-        {
-            get
-            {
-                // Reflection needs to work as the exception code calls GetType() and GetType().ToString()
-                return ReflectionAugments.IsInitialized;
-            }
         }
     }
 }

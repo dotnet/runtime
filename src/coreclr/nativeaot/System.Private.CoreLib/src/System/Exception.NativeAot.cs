@@ -111,9 +111,6 @@ namespace System
                 if (ex == null)
                     Environment.FailFast("Exceptions must derive from the System.Exception class");
 
-                if (!RuntimeExceptionHelpers.SafeToPerformRichExceptionSupport)
-                    return;
-
                 bool isFirstFrame = (flags & (int)RhEHFrameType.RH_EH_FIRST_FRAME) != 0;
                 bool isFirstRethrowFrame = (flags & (int)RhEHFrameType.RH_EH_FIRST_RETHROW_FRAME) != 0;
 
