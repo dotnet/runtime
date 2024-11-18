@@ -484,15 +484,14 @@ namespace System.Threading
 #endif
         public bool Wait(int millisecondsTimeout, CancellationToken cancellationToken)
         {
-#if TARGET_WASI
-            _ = s_cancellationTokenCallback;
-            throw new PlatformNotSupportedException("ManualResetEventSlim.Wait not supported on WASI");
-#else // not TARGET_WASI
             ObjectDisposedException.ThrowIf(IsDisposed, this);
             cancellationToken.ThrowIfCancellationRequested(); // an early convenience check
 
             ArgumentOutOfRangeException.ThrowIfLessThan(millisecondsTimeout, -1);
 
+#if TARGET_WASI
+            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+#endif
 #if FEATURE_WASM_MANAGED_THREADS
             Thread.AssureBlockingPossible();
 #endif
@@ -599,7 +598,6 @@ namespace System.Threading
             } // automatically disposes (and unregisters) the callback
 
             return true; // done. The wait was satisfied.
-#endif // not TARGET_WASI
         }
 
         /// <summary>
