@@ -50,7 +50,7 @@ We continued using this tooling, and extended its use to x64 builds which were n
 
 ## Host toolchain setup
 
-Our build images are based on the latest release of [Azure Linux](https://github.com/microsoft/azurelinux) (CBL-Mariner 2.0 in earlier versions), where we have full control over the supply chain of our build tools, without sacrificing compatibility. We strive to use the latest versions of our toolchain components, installing them from the Azure Linux package sources where available, or building them from source where we need more control.
+Our build images are based on the latest release of [Azure Linux](https://github.com/microsoft/azurelinux) (CBL-Mariner 2.0 in [earlier](#evolution-of-libc-targeting) versions), where we have full control over the supply chain of our build tools, without sacrificing compatibility. We strive to use the latest versions of our toolchain components, installing them from the Azure Linux package sources where available, or building them from source where we need more control.
 
 Tools that we install as Azure Linux packages include CMake, debootstrap, and header files needed to build the crosscomponents (tools designed to run on the build host but produce code for the target, like the crossgen compiler used to produce ready-to-run code for the framework libraries).
 
@@ -83,7 +83,7 @@ Our intent is to reduce and remove cases where code from the package sources use
 
   We build using header files for runtime dependencies, including openssl, icu, and the Linux kernel, that are taken from the target distribution. The actual implementation of the shared libraries will be dynamically loaded (not dynamically linked), and do not contribute to the shipping product. The header files could be patched after creating the sysroot if needed.
 
-We believe that vulnerabilities are far more likely to occur in the code that is dynamically linked/loaded, for example in glibc, which would be naturally patched by users in their environments.
+We've reduced the amount of code we statically link to minimize the risk of vulnerabilities in our shipped code. We believe this will result in most vulnerabilities being naturally patched by users in their environment, when they take updates to dynamically linked dependencies such as glibc.
 
 ## Docker image composition
 
