@@ -15,6 +15,8 @@ public class Interfaces
 
     public static int Run()
     {
+        TestRuntime109893Regression.Run();
+
         if (TestInterfaceCache() == Fail)
             return Fail;
 
@@ -59,6 +61,37 @@ public class Interfaces
         TestDynamicStaticGenericVirtualMethods.Run();
 
         return Pass;
+    }
+
+    class TestRuntime109893Regression
+    {
+        class Type<T> : IType<T>;
+
+        class MyVisitor : IVisitor
+        {
+            public object? Visit<T>(IType<T> _) => typeof(T);
+        }
+
+        interface IType
+        {
+            object? Accept(IVisitor visitor);
+        }
+
+        interface IType<T> : IType
+        {
+            object? IType.Accept(IVisitor visitor) => visitor.Visit(this);
+        }
+
+        interface IVisitor
+        {
+            object? Visit<T>(IType<T> type);
+        }
+
+        public static void Run()
+        {
+            IType type = new Type<object>();
+            type.Accept(new MyVisitor());
+        }
     }
 
     private static MyInterface[] MakeInterfaceArray()
