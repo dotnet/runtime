@@ -114,10 +114,16 @@ namespace System.Reflection
 
             RuntimeType declaringType = (RuntimeType)method.DeclaringType!;
 
+            if (declaringType.IsGenericType)
+            {
+                // Generic types require newobj\call\callvirt.
+                return false;
+            }
+
             if (method is RuntimeConstructorInfo)
             {
-                // Strings, arrays and Nullable<T> require initialization through newobj.
-                return !ReferenceEquals(declaringType, typeof(string)) && !declaringType.IsArray && !declaringType.IsNullableOfT;
+                // Strings and arrays require initialization through newobj.
+                return !ReferenceEquals(declaringType, typeof(string)) && !declaringType.IsArray;
             }
 
             if (declaringType.IsValueType)
