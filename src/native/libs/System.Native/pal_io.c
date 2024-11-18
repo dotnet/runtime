@@ -2021,7 +2021,13 @@ int64_t SystemNative_PWriteV(intptr_t fd, IOVector* vectors, int32_t vectorCount
 #if defined(TARGET_APPLE) && (defined(__arm__) || defined(__aarch64__))
     if (count < 0 && errno == EINVAL)
     {
-        count = -1 * IOV_MAX;
+        do
+        {
+            allowedVectorCount = allowedVectorCount / 2;
+        }
+        while ((count = pwritev(fileDescriptor, (struct iovec*)vectors, allowedVectorCount, (off_t)fileOffset)) < 0 && errno == EINVAL);
+
+        count = -1 * allowedVectorCount;
     }
 #endif
 

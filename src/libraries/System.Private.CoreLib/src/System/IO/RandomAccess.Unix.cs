@@ -197,7 +197,7 @@ namespace System.IO
 #if TARGET_OSX && TARGET_ARM64
                     if (bytesWritten < 0)
                     {
-                        throw new Exception($"PWriteV has failed and IOV_MAX was {bytesWritten}.");
+                        throw new Exception($"PWriteV succeeded for {bytesWritten} vectors.");
                     }
 #endif
 
