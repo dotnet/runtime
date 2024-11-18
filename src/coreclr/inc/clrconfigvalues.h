@@ -309,7 +309,6 @@ RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_JitFramed, W("JitFramed"), 0, "Forces EBP f
 CONFIG_DWORD_INFO(INTERNAL_JitThrowOnAssertionFailure, W("JitThrowOnAssertionFailure"), 0, "Throw managed exception on assertion failures during JIT instead of failfast")
 CONFIG_DWORD_INFO(INTERNAL_JitGCStress, W("JitGCStress"), 0, "GC stress mode for jit")
 CONFIG_DWORD_INFO(INTERNAL_JitHeartbeat, W("JitHeartbeat"), 0, "")
-CONFIG_DWORD_INFO(INTERNAL_JitHelperLogging, W("JitHelperLogging"), 0, "")
 RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_JITMinOpts, W("JITMinOpts"), 0, "Forces MinOpts")
 
 // *Some* relocs are just opportunistic optimizations and can be non-deterministic - it might produce
@@ -330,8 +329,6 @@ RETAIL_CONFIG_DWORD_INFO(EXTERNAL_JitHostMaxSlabCache, W("JitHostMaxSlabCache"),
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_JitOptimizeType, W("JitOptimizeType"), 0 /* OPT_DEFAULT */, "")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_JitPrintInlinedMethods, W("JitPrintInlinedMethods"), 0, "")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_JitTelemetry, W("JitTelemetry"), 1, "If non-zero, gather JIT telemetry data")
-RETAIL_CONFIG_STRING_INFO(INTERNAL_JitTimeLogFile, W("JitTimeLogFile"), "If set, gather JIT throughput data and write to this file.")
-RETAIL_CONFIG_STRING_INFO(INTERNAL_JitTimeLogCsv, W("JitTimeLogCsv"), "If set, gather JIT throughput data and write to a CSV file. This mode must be used in internal retail builds.")
 RETAIL_CONFIG_STRING_INFO(INTERNAL_JitFuncInfoLogFile, W("JitFuncInfoLogFile"), "If set, gather JIT function info and write to this file.")
 CONFIG_DWORD_INFO(INTERNAL_JitVerificationDisable, W("JitVerificationDisable"), 0, "")
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_JitLockWrite, W("JitLockWrite"), 0, "Force all volatile writes to be 'locked'")
@@ -508,7 +505,6 @@ CONFIG_DWORD_INFO(INTERNAL_DiagnosticSuspend, W("DiagnosticSuspend"), 0, "")
 CONFIG_DWORD_INFO(INTERNAL_SuspendDeadlockTimeout, W("SuspendDeadlockTimeout"), 40000, "")
 CONFIG_DWORD_INFO(INTERNAL_SuspendThreadDeadlockTimeoutMs, W("SuspendThreadDeadlockTimeoutMs"), 2000, "")
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_ThreadSuspendInjection, W("INTERNAL_ThreadSuspendInjection"), 1, "Specifies whether to inject activations for thread suspension on Unix")
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_InterruptibleCallSites, W("InterruptibleCallSites"), 1, "Specifies whether to allow asynchronous thread interruptions at call sites (requires GCInfo v3)")
 
 ///
 /// Thread (miscellaneous)
@@ -853,7 +849,6 @@ CONFIG_DWORD_INFO(INTERNAL_SBDumpOnNewIndex, W("SBDumpOnNewIndex"), 0, "Used for
 CONFIG_DWORD_INFO(INTERNAL_SBDumpOnResize, W("SBDumpOnResize"), 0, "Used for Syncblock debugging. It's been a while since any of those have been used.")
 CONFIG_DWORD_INFO(INTERNAL_SBDumpStyle, W("SBDumpStyle"), 0, "Used for Syncblock debugging. It's been a while since any of those have been used.")
 RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_SleepOnExit, W("SleepOnExit"), 0, "Used for lrak detection. I'd say deprecated by umdh.")
-CONFIG_DWORD_INFO(INTERNAL_StubLinkerUnwindInfoVerificationOn, W("StubLinkerUnwindInfoVerificationOn"), 0, "")
 RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_SuccessExit, W("SuccessExit"), 0, "")
 RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_TestDataConsistency, W("TestDataConsistency"), FALSE, "Allows ensuring the left side is not holding locks (and may thus be in an inconsistent state) when inspection occurs")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_ThreadGuardPages, W("ThreadGuardPages"), 0, "")

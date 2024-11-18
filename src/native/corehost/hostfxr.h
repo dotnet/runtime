@@ -130,7 +130,7 @@ typedef int32_t(HOSTFXR_CALLTYPE *hostfxr_initialize_for_dotnet_command_line_fn)
 //    Success                            - Hosting components were successfully initialized
 //    Success_HostAlreadyInitialized     - Config is compatible with already initialized hosting components
 //    Success_DifferentRuntimeProperties - Config has runtime properties that differ from already initialized hosting components
-//    CoreHostIncompatibleConfig         - Config is incompatible with already initialized hosting components
+//    HostIncompatibleConfig             - Config is incompatible with already initialized hosting components
 //
 // This function will process the .runtimeconfig.json to resolve frameworks and prepare everything needed
 // to load the runtime. It will only process the .deps.json from frameworks (not any app/component that

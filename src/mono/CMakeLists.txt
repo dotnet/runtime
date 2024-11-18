@@ -130,15 +130,9 @@ if(NOT AOT_TARGET_TRIPLE STREQUAL "")
   if(AOT_TARGET_TRIPLE STREQUAL "x86_64-apple-darwin10")
     set(TARGET_SYSTEM_NAME "ios")
     set(TARGET_ARCH "x86_64")
-  elseif(AOT_TARGET_TRIPLE STREQUAL "i386-apple-darwin10")
-    set(TARGET_SYSTEM_NAME "ios")
-    set(TARGET_ARCH "x86")
   elseif(AOT_TARGET_TRIPLE STREQUAL "aarch64-apple-darwin10")
     set(TARGET_SYSTEM_NAME "ios")
     set(TARGET_ARCH "arm64")
-  elseif(AOT_TARGET_TRIPLE STREQUAL "arm-apple-darwin10")
-    set(TARGET_SYSTEM_NAME "ios")
-    set(TARGET_ARCH "arm")
   elseif(AOT_TARGET_TRIPLE STREQUAL "x86_64-apple-maccatalyst")
     set(TARGET_SYSTEM_NAME "darwin")
     set(TARGET_ARCH "x86_64")
@@ -565,7 +559,7 @@ if(GCC)
 
   if(HOST_WASI)
     # When building under WASI SDK, it's stricter about discarding 'const' qualifiers, causing some existing
-    # code (e.g., mono-rand.c:315) to be rejected
+    # code to be rejected
     set(WERROR_C "${WERROR_C} -Wno-incompatible-pointer-types-discards-qualifiers")
   endif()
 
@@ -650,6 +644,9 @@ if(LLVM_PREFIX)
   elseif(HOST_OSX)
     # llvm-config --system-libs
     list(APPEND llvm_system_libs "-lm")
+  elseif(HOST_WIN32)
+    # llvm-config --system-libs
+    list(APPEND llvm_system_libs "psapi.lib" "shell32.lib" "ole32.lib" "uuid.lib" "advapi32.lib" "ws2_32.lib" "ntdll.lib")
   endif()
 
   if (CLR_CMAKE_USE_SYSTEM_ZLIB AND (HOST_LINUX OR HOST_OSX))
@@ -886,6 +883,7 @@ endif()
 ### End of OS specific checks
 
 include_directories("${CLR_SRC_NATIVE_DIR}")
+add_subdirectory(${CLR_SRC_NATIVE_DIR}/minipal minipal)
 
 if(NOT DISABLE_LIBS)
   set(INSTALL_MONO_API 1)

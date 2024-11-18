@@ -260,7 +260,7 @@ namespace System.Reflection.Runtime.General
         }
 
         // V1 api: Creates open delegates to static methods only, relaxed signature checking disallowed.
-        public sealed override Delegate CreateDelegate(Type type, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type target, string method, bool ignoreCase, bool throwOnBindFailure)
+        public sealed override Delegate CreateDelegate(Type type, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.AllMethods)] Type target, string method, bool ignoreCase, bool throwOnBindFailure)
         {
             ArgumentNullException.ThrowIfNull(type);
             ArgumentNullException.ThrowIfNull(target);
@@ -372,8 +372,6 @@ namespace System.Reflection.Runtime.General
                     throw new MissingMemberException(SR.MissingMemberTypeRef); // MissingMemberException is a strange exception to throw, but it is the compatible exception.
 
                 Type fieldType = field.FieldType;
-                if (fieldType.IsPrimitive)
-                    throw new ArgumentException(SR.Arg_TypeRefPrimitive);  // This check exists for compatibility (why such an ad-hoc restriction?)
                 if (i < (flds.Length - 1) && !fieldType.IsValueType)
                     throw new MissingMemberException(SR.MissingMemberNestErr); // MissingMemberException is a strange exception to throw, but it is the compatible exception.
 

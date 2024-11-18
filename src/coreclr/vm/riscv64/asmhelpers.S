@@ -806,14 +806,17 @@ LEAF_END setFPReturn, _TEXT
 LEAF_ENTRY JIT_GetDynamicNonGCStaticBase_SingleAppDomain, _TEXT
     // If class is not initialized, bail to C++ helper
     ld a1, OFFSETOF__DynamicStaticsInfo__m_pNonGCStatics(a0)
+    fence r,rw
     bnez a1, LOCAL_LABEL(JIT_GetDynamicNonGCStaticBase_SingleAppDomain_CallHelper)
     mv  a0, a1
     ret
 
 LOCAL_LABEL(JIT_GetDynamicNonGCStaticBase_SingleAppDomain_CallHelper):
-    // Tail call JIT_GetDynamicNonGCStaticBase_Portable
-    la a1, JIT_GetDynamicNonGCStaticBase_Portable
-    jr a1
+    // Tail call GetNonGCStaticBase
+    ld a0, OFFSETOF__DynamicStaticsInfo__m_pMethodTable(a0)
+    PREPARE_EXTERNAL_VAR g_pGetNonGCStaticBase, t4
+    ld t4, 0(t4)
+    EPILOG_BRANCH_REG        t4
 LEAF_END JIT_GetDynamicNonGCStaticBase_SingleAppDomain, _TEXT
 
 // ------------------------------------------------------------------
@@ -822,14 +825,17 @@ LEAF_END JIT_GetDynamicNonGCStaticBase_SingleAppDomain, _TEXT
 LEAF_ENTRY JIT_GetDynamicGCStaticBase_SingleAppDomain, _TEXT
     // If class is not initialized, bail to C++ helper
     ld a1, OFFSETOF__DynamicStaticsInfo__m_pGCStatics(a0)
+    fence r,rw
     bnez a1, LOCAL_LABEL(JIT_GetDynamicGCStaticBase_SingleAppDomain_CallHelper)
     mv  a0, a1
     ret
 
 LOCAL_LABEL(JIT_GetDynamicGCStaticBase_SingleAppDomain_CallHelper):
-    // Tail call JIT_GetDynamicGCStaticBase_Portable
-    la a1, JIT_GetDynamicGCStaticBase_Portable
-    jr a1
+    // Tail call GetGCStaticBase
+    ld a0, OFFSETOF__DynamicStaticsInfo__m_pMethodTable(a0)
+    PREPARE_EXTERNAL_VAR g_pGetGCStaticBase, t4
+    ld t4, 0(t4)
+    EPILOG_BRANCH_REG        t4
 LEAF_END JIT_GetDynamicGCStaticBase_SingleAppDomain, _TEXT
 
 #ifdef FEATURE_READYTORUN
@@ -848,7 +854,6 @@ C_FUNC(DelayLoad_MethodCall):
     addi  t4, a0, 0
 
     EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
-    PATCH_LABEL ExternalMethodFixupPatchLabel
     EPILOG_BRANCH_REG   t4
 NESTED_END DelayLoad_MethodCall_FakeProlog, _TEXT
 

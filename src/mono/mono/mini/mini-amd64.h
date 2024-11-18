@@ -493,7 +493,7 @@ typedef struct {
 // FIXME: Doesn't work on windows
 //#define MONO_ARCH_HAVE_INIT_MRGCTX 1
 
-#if defined(TARGET_OSX) || defined(__linux__)
+#if defined(TARGET_OSX) || (defined(__linux__) && !defined(TARGET_ANDROID))
 #define MONO_ARCH_HAVE_UNWIND_BACKTRACE 1
 #endif
 

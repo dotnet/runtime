@@ -66,50 +66,12 @@ namespace System.Security.Cryptography
 
         public override ECParameters ExportExplicitParameters(bool includePrivateParameters)
         {
-            byte[] blob = ExportFullKeyBlob(includePrivateParameters);
-
-            try
-            {
-                ECParameters ecparams = default;
-                ECCng.ExportPrimeCurveParameters(ref ecparams, blob, includePrivateParameters);
-                return ecparams;
-            }
-            finally
-            {
-                Array.Clear(blob);
-            }
+            return ECCng.ExportExplicitParameters(Key, includePrivateParameters);
         }
 
         public override ECParameters ExportParameters(bool includePrivateParameters)
         {
-            ECParameters ecparams = default;
-
-            string? curveName = GetCurveName(out string? oidValue);
-            byte[]? blob = null;
-
-            try
-            {
-                if (string.IsNullOrEmpty(curveName))
-                {
-                    blob = ExportFullKeyBlob(includePrivateParameters);
-                    ECCng.ExportPrimeCurveParameters(ref ecparams, blob, includePrivateParameters);
-                }
-                else
-                {
-                    blob = ExportKeyBlob(includePrivateParameters);
-                    ECCng.ExportNamedCurveParameters(ref ecparams, blob, includePrivateParameters);
-                    ecparams.Curve = ECCurve.CreateFromOid(new Oid(oidValue, curveName));
-                }
-
-                return ecparams;
-            }
-            finally
-            {
-                if (blob != null)
-                {
-                    Array.Clear(blob);
-                }
-            }
+            return ECCng.ExportParameters(Key, includePrivateParameters);
         }
 
         public override void ImportPkcs8PrivateKey(ReadOnlySpan<byte> source, out int bytesRead)

@@ -340,7 +340,7 @@ struct MethodTableAuxiliaryData
         enum_flag_HasCheckedStreamOverride  = 0x0400,
         enum_flag_StreamOverriddenRead      = 0x0800,
         enum_flag_StreamOverriddenWrite     = 0x1000,
-        // unused enum                      = 0x2000,
+        enum_flag_EnsuredInstanceActive     = 0x2000,
         // unused enum                      = 0x4000,
         // unused enum                      = 0x8000,
     };
@@ -457,6 +457,12 @@ public:
         return VolatileLoad(&m_dwFlags) & enum_flag_Initialized;
     }
 
+    inline BOOL IsEnsuredInstanceActive() const
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return VolatileLoad(&m_dwFlags) & enum_flag_EnsuredInstanceActive;
+    }
+
     inline bool IsClassInitedOrPreinitedDecided(bool *initResult) const
     {
         LIMITED_METHOD_DAC_CONTRACT;
@@ -471,6 +477,12 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         InterlockedOr((LONG*)&m_dwFlags, (LONG)enum_flag_Initialized);
+    }
+
+    inline void SetEnsuredInstanceActive()
+    {
+        LIMITED_METHOD_CONTRACT;
+        InterlockedOr((LONG*)&m_dwFlags, (LONG)enum_flag_EnsuredInstanceActive);
     }
 #endif
 
@@ -577,7 +589,6 @@ public:
 // find the normal (non-thread) static variables of the type.
 struct DynamicStaticsInfo
 {
-private:
     // The detail of whether or not the class has been initialized is stored in the statics pointers as well as in
     // its normal flag location. This is done so that when getting the statics base for a class, we can get the statics
     // base address and check to see if it is initialized without needing a barrier between reading the flag and reading
@@ -585,6 +596,7 @@ private:
     static constexpr TADDR ISCLASSNOTINITED = 1;
     static constexpr TADDR ISCLASSNOTINITEDMASK = ISCLASSNOTINITED;
     static constexpr TADDR STATICSPOINTERMASK = ~ISCLASSNOTINITEDMASK;
+private:
 
     void InterlockedSetClassInited(bool isGC)
     {
@@ -603,12 +615,12 @@ public:
     TADDR m_pGCStatics; // Always access through helper methods to properly handle the ISCLASSNOTINITED bit
     TADDR m_pNonGCStatics; // Always access through helper methods to properly handle the ISCLASSNOTINITED bit
     PTR_MethodTable m_pMethodTable;
-    PTR_OBJECTREF GetGCStaticsPointer() { TADDR staticsVal = VolatileLoadWithoutBarrier(&m_pGCStatics); return dac_cast<PTR_OBJECTREF>(staticsVal & STATICSPOINTERMASK); }
-    PTR_BYTE GetNonGCStaticsPointer() { TADDR staticsVal = VolatileLoadWithoutBarrier(&m_pNonGCStatics); return dac_cast<PTR_BYTE>(staticsVal & STATICSPOINTERMASK); }
+    PTR_OBJECTREF GetGCStaticsPointer() { TADDR staticsVal = VolatileLoad(&m_pGCStatics); return dac_cast<PTR_OBJECTREF>(staticsVal & STATICSPOINTERMASK); }
+    PTR_BYTE GetNonGCStaticsPointer() { TADDR staticsVal = VolatileLoad(&m_pNonGCStatics); return dac_cast<PTR_BYTE>(staticsVal & STATICSPOINTERMASK); }
     PTR_OBJECTREF GetGCStaticsPointerAssumeIsInited() { TADDR staticsVal = m_pGCStatics; _ASSERTE(staticsVal != 0); _ASSERTE((staticsVal & (ISCLASSNOTINITEDMASK)) == 0); return dac_cast<PTR_OBJECTREF>(staticsVal); }
     PTR_BYTE GetNonGCStaticsPointerAssumeIsInited() { TADDR staticsVal = m_pNonGCStatics; _ASSERTE(staticsVal != 0); _ASSERTE((staticsVal & (ISCLASSNOTINITEDMASK)) == 0); return dac_cast<PTR_BYTE>(staticsVal); }
-    bool GetIsInitedAndGCStaticsPointerIfInited(PTR_OBJECTREF *ptrResult) { TADDR staticsVal = VolatileLoadWithoutBarrier(&m_pGCStatics); *ptrResult = dac_cast<PTR_OBJECTREF>(staticsVal); return !(staticsVal & ISCLASSNOTINITED); }
-    bool GetIsInitedAndNonGCStaticsPointerIfInited(PTR_BYTE *ptrResult) { TADDR staticsVal = VolatileLoadWithoutBarrier(&m_pNonGCStatics); *ptrResult = dac_cast<PTR_BYTE>(staticsVal); return !(staticsVal & ISCLASSNOTINITED); }
+    bool GetIsInitedAndGCStaticsPointerIfInited(PTR_OBJECTREF *ptrResult) { TADDR staticsVal = VolatileLoad(&m_pGCStatics); *ptrResult = dac_cast<PTR_OBJECTREF>(staticsVal); return !(staticsVal & ISCLASSNOTINITED); }
+    bool GetIsInitedAndNonGCStaticsPointerIfInited(PTR_BYTE *ptrResult) { TADDR staticsVal = VolatileLoad(&m_pNonGCStatics); *ptrResult = dac_cast<PTR_BYTE>(staticsVal); return !(staticsVal & ISCLASSNOTINITED); }
 
     // This function sets the pointer portion of a statics pointer. It returns false if the statics value was already set.
     bool InterlockedUpdateStaticsPointer(bool isGC, TADDR newVal, bool isClassInitedByUpdatingStaticPointer)
@@ -1376,18 +1388,6 @@ public:
     Instantiation GetClassOrArrayInstantiation();
     Instantiation GetArrayInstantiation();
 
-    // Does this method table require that additional modules be loaded?
-    inline BOOL HasModuleDependencies()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return GetFlag(enum_flag_HasModuleDependencies);
-    }
-
-    inline void SetHasModuleDependencies()
-    {
-        SetFlag(enum_flag_HasModuleDependencies);
-    }
-
     inline BOOL IsIntrinsicType()
     {
         LIMITED_METHOD_DAC_CONTRACT;;
@@ -1483,9 +1483,6 @@ public:
         LIMITED_METHOD_CONTRACT;
         SetFlag(enum_flag_IsByRefLike);
     }
-
-    // class is a com object class
-    Module* GetDefiningModuleForOpenType();
 
     inline BOOL IsTypicalTypeDefinition()
     {
@@ -3732,7 +3729,7 @@ private:
         enum_flag_HasDispatchMapSlot        = 0x0004,
 
         enum_flag_wflags2_unused_2          = 0x0008,
-        enum_flag_HasModuleDependencies     = 0x0010,
+        //unused                            = 0x0010,
         enum_flag_IsIntrinsicType           = 0x0020,
         enum_flag_HasCctor                  = 0x0040,
         enum_flag_HasVirtualStaticMethods   = 0x0080,
@@ -3980,7 +3977,7 @@ public:
 
     static void GetStaticsOffsets(StaticsOffsetType staticsOffsetType, bool fGenericsStatics, uint32_t *dwGCOffset, uint32_t *dwNonGCOffset);
 
-    template<typename T> friend struct ::cdac_data;
+    friend struct ::cdac_data<MethodTable>;
 };  // class MethodTable
 
 template<> struct cdac_data<MethodTable>
@@ -4017,5 +4014,10 @@ void ThrowAmbiguousResolutionException(
     MethodTable* pTargetClass,
     MethodTable* pInterfaceMT,
     MethodDesc* pInterfaceMD);
+
+
+#ifndef DACCESS_COMPILE
+void DoNotRecordTheResultOfEnsureLoadLevel();
+#endif
 
 #endif // !_METHODTABLE_H_

@@ -1587,23 +1587,13 @@ CHECK PEDecoder::CheckILOnlyBaseRelocations() const
 
         UINT16 *pRelocEntry = (UINT16 *) (pReloc + 1);
         UINT16 *pRelocEntryEnd = (UINT16 *) ((BYTE *) pReloc + VAL32(pReloc->SizeOfBlock));
-        if(FindNTHeaders()->FileHeader.Machine == VAL16(IMAGE_FILE_MACHINE_IA64))
-        {
-            // Exactly 2 Reloc records, both IMAGE_REL_BASED_DIR64
-            CHECK(VAL32(pReloc->SizeOfBlock) >= (sizeof(IMAGE_BASE_RELOCATION)+2*sizeof(UINT16)));
+
+        // Only one Reloc record is expected
+        CHECK(VAL32(pReloc->SizeOfBlock) >= (sizeof(IMAGE_BASE_RELOCATION)+sizeof(UINT16)));
+        if(FindNTHeaders()->FileHeader.Machine == VAL16(IMAGE_FILE_MACHINE_AMD64))
             CHECK((VAL16(pRelocEntry[0]) & 0xF000) == (IMAGE_REL_BASED_DIR64 << 12));
-            pRelocEntry++;
-            CHECK((VAL16(pRelocEntry[0]) & 0xF000) == (IMAGE_REL_BASED_DIR64 << 12));
-        }
         else
-        {
-            // Only one Reloc record is expected
-            CHECK(VAL32(pReloc->SizeOfBlock) >= (sizeof(IMAGE_BASE_RELOCATION)+sizeof(UINT16)));
-            if(FindNTHeaders()->FileHeader.Machine == VAL16(IMAGE_FILE_MACHINE_AMD64))
-                CHECK((VAL16(pRelocEntry[0]) & 0xF000) == (IMAGE_REL_BASED_DIR64 << 12));
-            else
-                CHECK((VAL16(pRelocEntry[0]) & 0xF000) == (IMAGE_REL_BASED_HIGHLOW << 12));
-        }
+            CHECK((VAL16(pRelocEntry[0]) & 0xF000) == (IMAGE_REL_BASED_HIGHLOW << 12));
 
         while (++pRelocEntry < pRelocEntryEnd)
         {
@@ -2591,6 +2581,8 @@ ErrExit:
 MethodSectionIterator::MethodSectionIterator(const void *code, SIZE_T codeSize,
                                              const void *codeTable, SIZE_T codeTableSize)
 {
+    using namespace NibbleMap;
+
     //For DAC builds,we'll read the table one DWORD at a time.  Note that m_code IS
     //NOT a host pointer.
     m_codeTableStart = PTR_DWORD(TADDR(codeTable));
@@ -2605,6 +2597,11 @@ MethodSectionIterator::MethodSectionIterator(const void *code, SIZE_T codeSize,
     {
         m_dword = *m_codeTable++;
         m_index = 0;
+        while(m_codeTable < m_codeTableEnd && IsPointer(m_dword))
+        {
+            m_dword = *m_codeTable++;
+            m_code += BYTES_PER_DWORD;
+        }
     }
     else
     {
@@ -2614,6 +2611,8 @@ MethodSectionIterator::MethodSectionIterator(const void *code, SIZE_T codeSize,
 
 BOOL MethodSectionIterator::Next()
 {
+    using namespace NibbleMap;
+
     while (m_codeTable < m_codeTableEnd || m_index < (int)NIBBLES_PER_DWORD)
     {
         while (m_index++ < (int)NIBBLES_PER_DWORD)
@@ -2624,7 +2623,7 @@ BOOL MethodSectionIterator::Next()
             if (nibble != 0)
             {
                 // We have found a method start
-                m_current = m_code + ((nibble-1)*CODE_ALIGN);
+                m_current = m_code + ((nibble-1) << LOG2_CODE_ALIGN);
                 m_code += BYTES_PER_BUCKET;
                 return TRUE;
             }
@@ -2636,6 +2635,11 @@ BOOL MethodSectionIterator::Next()
         {
             m_dword = *m_codeTable++;
             m_index = 0;
+            while(m_codeTable < m_codeTableEnd && (IsPointer(m_dword) || m_dword == 0))
+            {
+                m_dword = *m_codeTable++;
+                m_code += BYTES_PER_DWORD;
+            }
         }
     }
     return FALSE;

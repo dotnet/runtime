@@ -192,6 +192,17 @@
     <WasmCommonTargetsPath>$([MSBuild]::NormalizeDirectory($(WasmProjectRoot), 'build'))</WasmCommonTargetsPath>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(DotNetBuildRuntimeNativeAOTRuntimePack)' == 'true'">
+    <BuildNativeAOTRuntimePack>true</BuildNativeAOTRuntimePack>
+    <SkipLibrariesNativeRuntimePackages>true</SkipLibrariesNativeRuntimePackages>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(DotNetBuildMonoCrossAOT)' == 'true'">
+    <BuildMonoAOTCrossCompilerOnly>true</BuildMonoAOTCrossCompilerOnly>
+    <MonoCrossAOTTargetOS>android+browser+wasi</MonoCrossAOTTargetOS>
+    <MonoCrossAOTTargetOS Condition="'$(TargetOS)' == 'osx'">$(MonoCrossAOTTargetOS)+tvos+ios+maccatalyst</MonoCrossAOTTargetOS>
+  </PropertyGroup>
+
   <PropertyGroup Label="CalculatePortableBuild">
     <PortableBuild Condition="'$(PortableBuild)' == '' and '$(DotNetBuildSourceOnly)' == 'true'">false</PortableBuild>
     <PortableBuild Condition="'$(PortableBuild)' == ''">true</PortableBuild>
@@ -276,6 +287,7 @@
     <TargetsLinux Condition="'$(TargetOS)' == 'linux' or '$(TargetOS)' == 'android'">true</TargetsLinux>
     <TargetsLinuxBionic Condition="'$(_portableOS)' == 'linux-bionic'">true</TargetsLinuxBionic>
     <TargetsLinuxMusl Condition="'$(_portableOS)' == 'linux-musl'">true</TargetsLinuxMusl>
+    <TargetsLinuxGlibc Condition="'$(TargetsLinux)' == 'true' and '$(TargetsLinuxMusl)' != 'true' and '$(TargetsLinuxBionic)' != 'true'">true</TargetsLinuxGlibc>
     <TargetsNetBSD Condition="'$(TargetOS)' == 'netbsd'">true</TargetsNetBSD>
     <TargetsOSX Condition="'$(TargetOS)' == 'osx'">true</TargetsOSX>
     <TargetsMacCatalyst Condition="'$(TargetOS)' == 'maccatalyst'">true</TargetsMacCatalyst>
@@ -387,6 +399,8 @@
     <!-- Enables Strict mode for Roslyn compiler -->
     <Features>strict;nullablePublicOnly</Features>
     <TreatWarningsAsErrors Condition="'$(TreatWarningsAsErrors)' == ''">true</TreatWarningsAsErrors>
+    <!-- Only upgrade NuGetAudit warnings to errors for official builds. -->
+    <WarningsNotAsErrors Condition="'$(OfficialBuild)' != 'true' OR '$(NuGetAuditWarnNotError)' == 'true'">$(WarningsNotAsErrors);NU1901;NU1902;NU1903;NU1904</WarningsNotAsErrors>
     <!-- Warnings to always disable -->
     <NoWarn>$(NoWarn);CS8500;CS8969</NoWarn>
     <!-- Suppress "CS1591 - Missing XML comment for publicly visible type or member" compiler errors for private assemblies. -->

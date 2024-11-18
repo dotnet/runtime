@@ -351,13 +351,17 @@ namespace Microsoft.DotNet.CoreSetup.Test
                 WithRuntimeFallbacks("win10-x64", "win10", "win-x64", "win", "any")
                 .WithRuntimeFallbacks("win10-x86", "win10", "win-x86", "win", "any")
                 .WithRuntimeFallbacks("win10", "win", "any")
+                .WithRuntimeFallbacks("win-arm64", "win", "any")
                 .WithRuntimeFallbacks("win-x64", "win", "any")
                 .WithRuntimeFallbacks("win-x86", "win", "any")
                 .WithRuntimeFallbacks("win", "any")
+                .WithRuntimeFallbacks("linux-arm64", "linux", "any")
                 .WithRuntimeFallbacks("linux-x64", "linux", "any")
-                .WithRuntimeFallbacks("linux-musl-x64", "linux", "any")
+                .WithRuntimeFallbacks("linux-musl-arm64", "linux-musl", "linux", "any")
+                .WithRuntimeFallbacks("linux-musl-x64", "linux-musl", "linux", "any")
                 .WithRuntimeFallbacks("linux", "any")
                 .WithRuntimeFallbacks("osx.10.12-x64", "osx-x64", "osx", "any")
+                .WithRuntimeFallbacks("osx-arm64", "osx", "any")
                 .WithRuntimeFallbacks("osx-x64", "osx", "any");
         }
 
