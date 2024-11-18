@@ -4,7 +4,6 @@
 using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Globalization;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -126,19 +125,8 @@ namespace System.Net.ServerSentEvents
             {
                 Debug.Assert(retry >= TimeSpan.Zero);
 
-                long retryMs = (long)retry.TotalMilliseconds;
-
                 bufferWriter.WriteUtf8String("retry: "u8);
-#if NET
-                const int MaxDigits = 20;
-                Span<byte> buffer = stackalloc byte[MaxDigits];
-                bool success = retryMs.TryFormat(buffer, out int bytesWritten, provider: CultureInfo.InvariantCulture);
-                Debug.Assert(success);
-
-                bufferWriter.Write(buffer.Slice(0, bytesWritten));
-#else
-                bufferWriter.WriteUtf8String(retryMs.ToString(CultureInfo.InvariantCulture));
-#endif
+                bufferWriter.WriteUtf8Number((long)retry.TotalMilliseconds);
                 bufferWriter.WriteUtf8String(s_newLine);
             }
 
