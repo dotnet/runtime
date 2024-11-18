@@ -21,7 +21,7 @@ The most important aspect of compatibility across Linux distributions is the ver
    The Python ecosystem's [manylinux](https://github.com/pypa/manylinux) project uses this approach. They provide docker images that use Linux distributions based on specific versions glibc or musl libc, and come with a standardized set of build tools from that distribution preinstalled.
 
    The [Red Hat Developer Toolset](https://docs.redhat.com/en/documentation/red_hat_developer_toolset/12/html/user_guide/chap-Red_Hat_Developer_Toolset#sect-Red_Hat_Developer_Toolset-About) also takes this approach. It provides backports of more recent compiler toolchains to older Linux distributions, allowing these distributions to target the distribution-provided C library using newer compilers.
-   
+
 2. Build on a new distribution, targeting an old C library
 
    The tensorflow project uses this approach. The tensorflow [build](https://github.com/tensorflow/tensorflow/blame/7c58e6d06fd16415bef73ba90ef1b012ad419d3e/tensorflow/tools/ci_build/devtoolset/build_devtoolset.sh#L47-L70) sets up a build environment that points to an old glibc obtained from the target Linux distribution, rather than the glibc included in the distribution performing the build. They construct the build's target environment from a combination of downloaded binaries, patches to header files, and symlinks for header files that point back to header files from the host environment.
@@ -70,13 +70,13 @@ Our intent is to reduce and remove cases where code from the package sources use
 - C standard library
 
   We build against the C library from the sysroot's libc. The implementation is dynamically linked, so the impact of the shared object is limited to the library name and symbol versions, but it does not contribute code to the product. The header files can be patched in the sysroot if needed. The low-level C library helpers are statically linked into the product. The amount of code that these contribute is small. In the event we need to service these, we would need to start building them from source with our patches applied, and copy them into the sysroot.
-  
+
   To reduce this servicing risk, we could explore using LLVM's low-level C library helpers (compiler-rt builtins) as an alternative.
 
 - C++ standard library
 
   We build against the C++ standard library from the sysroot's installation of libstdc++. The implementation is dynamically linked so does not contribute code to the product. The C++ standard library headers are more likely to contribute code than the C headers because they include standard library templates. Our coding guidelines [recommend](https://github.com/dotnet/runtime/blob/main/docs/coding-guidelines/clr-code-guide.md#-2114-limit-usage-of-standard-template-types-in-shipping-executables) limiting usage of standard template types for this reason. The header files can be patched in the sysroot if necessary.
-  
+
   To reduce this servicing risk, we could statically link in LLVM's libc++ as an alternative. Initial [exploration](https://github.com/dotnet/runtime/pull/102279) of this approach looks promising.
 
 - Header files for runtime dependencies
