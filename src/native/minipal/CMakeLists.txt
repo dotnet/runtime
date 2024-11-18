@@ -9,6 +9,7 @@ set(SOURCES
     time.c
     unicodedata.c
     utf8.c
+    xoshiro128pp.c
 )
 
 # Provide an object library for scenarios where we ship static libraries

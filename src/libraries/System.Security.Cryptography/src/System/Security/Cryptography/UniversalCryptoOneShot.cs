@@ -20,6 +20,15 @@ namespace System.Security.Cryptography
             if (input.Length % cipher.PaddingSizeInBytes != 0)
                 throw new CryptographicException(SR.Cryptography_PartialBlock);
 
+            bool depaddingRequired = SymmetricPadding.DepaddingRequired(paddingMode);
+
+            // If depadding is required and we have no input, treat it as a invalid padding. This means its impossible
+            // to remove the padding, so fail early.
+            if (input.IsEmpty && depaddingRequired)
+            {
+                throw new CryptographicException(SR.Cryptography_InvalidPadding);
+            }
+
             // The internal implementation of the one-shots are never expected to create
             // a plaintext larger than the ciphertext. If the buffer supplied is large enough
             // to do the transform, use it directly.
@@ -57,8 +66,7 @@ namespace System.Security.Cryptography
             // The second condition is where the output length is short by more than a whole block.
             // All valid padding is at most one complete block. If the difference between the
             // output and the input is more than a whole block then we know the output is too small.
-            if (!SymmetricPadding.DepaddingRequired(paddingMode) ||
-                input.Length - cipher.BlockSizeInBytes > output.Length)
+            if (!depaddingRequired || input.Length - cipher.BlockSizeInBytes > output.Length)
             {
                 bytesWritten = 0;
                 return false;

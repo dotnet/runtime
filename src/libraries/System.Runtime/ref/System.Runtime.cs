@@ -2313,7 +2313,7 @@ namespace System
     {
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The target method might be removed")]
         protected Delegate(object target, string method) { }
-        protected Delegate([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type target, string method) { }
+        protected Delegate([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.AllMethods)] System.Type target, string method) { }
         public bool HasSingleTarget { get { throw null; } }
         public System.Reflection.MethodInfo Method { get { throw null; } }
         public object? Target { get { throw null; } }
@@ -2334,9 +2334,9 @@ namespace System
         public static System.Delegate? CreateDelegate(System.Type type, object target, string method, bool ignoreCase, bool throwOnBindFailure) { throw null; }
         public static System.Delegate CreateDelegate(System.Type type, System.Reflection.MethodInfo method) { throw null; }
         public static System.Delegate? CreateDelegate(System.Type type, System.Reflection.MethodInfo method, bool throwOnBindFailure) { throw null; }
-        public static System.Delegate CreateDelegate(System.Type type, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type target, string method) { throw null; }
-        public static System.Delegate CreateDelegate(System.Type type, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type target, string method, bool ignoreCase) { throw null; }
-        public static System.Delegate? CreateDelegate(System.Type type, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type target, string method, bool ignoreCase, bool throwOnBindFailure) { throw null; }
+        public static System.Delegate CreateDelegate(System.Type type, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.AllMethods)] System.Type target, string method) { throw null; }
+        public static System.Delegate CreateDelegate(System.Type type, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.AllMethods)] System.Type target, string method, bool ignoreCase) { throw null; }
+        public static System.Delegate? CreateDelegate(System.Type type, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.AllMethods)] System.Type target, string method, bool ignoreCase, bool throwOnBindFailure) { throw null; }
         public object? DynamicInvoke(params object?[]? args) { throw null; }
         protected virtual object? DynamicInvokeImpl(object?[]? args) { throw null; }
         public static System.Delegate.InvocationListEnumerator<TDelegate> EnumerateInvocationList<TDelegate>(TDelegate? d) where TDelegate : System.Delegate { throw null; }
@@ -4755,7 +4755,7 @@ namespace System
     {
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The target method might be removed")]
         protected MulticastDelegate(object target, string method) : base (default(object), default(string)) { }
-        protected MulticastDelegate([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type target, string method) : base (default(object), default(string)) { }
+        protected MulticastDelegate([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.AllMethods)] System.Type target, string method) : base (default(object), default(string)) { }
         protected sealed override System.Delegate CombineImpl(System.Delegate? follow) { throw null; }
         public sealed override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public sealed override int GetHashCode() { throw null; }
@@ -8846,6 +8846,20 @@ namespace System.Diagnostics.CodeAnalysis
         PublicEvents = 2048,
         NonPublicEvents = 4096,
         Interfaces = 8192,
+        NonPublicConstructorsWithInherited = 16388,
+        NonPublicMethodsWithInherited = 32784,
+        AllMethods = 32792,
+        NonPublicFieldsWithInherited = 65600,
+        AllFields = 65632,
+        NonPublicNestedTypesWithInherited = 131328,
+        NonPublicPropertiesWithInherited = 263168,
+        AllProperties = 263680,
+        NonPublicEventsWithInherited = 528384,
+        AllEvents = 530432,
+        PublicConstructorsWithInherited = 1048579,
+        AllConstructors = 1064967,
+        PublicNestedTypesWithInherited = 2097280,
+        AllNestedTypes = 2228608,
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Constructor | System.AttributeTargets.Field | System.AttributeTargets.Method, AllowMultiple=true, Inherited=false)]
     public sealed partial class DynamicDependencyAttribute : System.Attribute
