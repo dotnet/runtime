@@ -221,7 +221,7 @@ namespace System.Text.Json.Serialization.Metadata
         private JsonObjectCreationHandling? _objectCreationHandling;
         internal JsonObjectCreationHandling EffectiveObjectCreationHandling { get; private set; }
 
-        internal string? MemberName { get; set; }
+        internal string? MemberName { get; set; } // Do not rename (legacy schema generation)
         internal MemberTypes MemberType { get; set; }
         internal bool IsVirtual { get; set; }
 

@@ -1881,17 +1881,31 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
     if (HWIntrinsicInfo::IsEmbeddedMaskedOperation(intrinsicId))
     {
         LIR::Use use;
-        bool     foundUse = BlockRange().TryGetUse(node, &use);
         JITDUMP("lowering EmbeddedMasked HWIntrinisic (before):\n");
         DISPTREERANGE(BlockRange(), node);
         JITDUMP("\n");
 
+        // Use lastOp to verify if it's a ConditionlSelectNode.
+        size_t lastOpNum = node->GetOperandCount();
+
+        if (node->Op(lastOpNum)->OperIsHWIntrinsic() &&
+            node->Op(lastOpNum)->AsHWIntrinsic()->GetHWIntrinsicId() == NI_Sve_ConditionalSelect &&
+            TryContainingCselOp(node, node->Op(lastOpNum)->AsHWIntrinsic()))
+        {
+            JITDUMP("lowering EmbeddedMasked HWIntrinisic (after):\n");
+            DISPTREERANGE(BlockRange(), node);
+            JITDUMP("\n");
+            return node->gtNext;
+        }
+
         CorInfoType simdBaseJitType = node->GetSimdBaseJitType();
         unsigned    simdSize        = node->GetSimdSize();
         var_types   simdType        = Compiler::getSIMDTypeForSize(simdSize);
-        GenTree*    trueMask        = comp->gtNewSimdAllTrueMaskNode(simdBaseJitType, simdSize);
-        GenTree*    falseVal        = comp->gtNewZeroConNode(simdType);
-        var_types   nodeType        = simdType;
+
+        bool      foundUse = BlockRange().TryGetUse(node, &use);
+        GenTree*  trueMask = comp->gtNewSimdAllTrueMaskNode(simdBaseJitType, simdSize);
+        GenTree*  falseVal = comp->gtNewZeroConNode(simdType);
+        var_types nodeType = simdType;
 
         if (HWIntrinsicInfo::ReturnsPerElementMask(node->GetHWIntrinsicId()))
         {
@@ -3655,6 +3669,66 @@ bool Lowering::TryLowerNegToMulLongOp(GenTreeOp* op, GenTree** next)
     *next = outOp;
     return true;
 }
+
+//----------------------------------------------------------------------------------------------
+// TryContainingCselOp: Attempt contain a condition select node in a parent node.
+//
+// Arguments:
+//    parentNode   - The node to attempt an optimisation on.
+//    childNode   - The child conditional select node that we try to contain.
+//
+// Return Value:
+//    true if the conditional select can be contained
+//
+bool Lowering::TryContainingCselOp(GenTreeHWIntrinsic* parentNode, GenTreeHWIntrinsic* childNode)
+{
+    assert(childNode->GetHWIntrinsicId() == NI_Sve_ConditionalSelect);
+
+    if (childNode->Op(2)->IsEmbMaskOp())
+    {
+        // Do not optimise if the conditional select node is added to embed the mask for its op2. Such conditional
+        // select nodes are optimised out while emitting the embedded variant of an instruction associated with op2.
+        assert(childNode->Op(2)->isContained());
+        return false;
+    }
+
+    bool canContain = false;
+
+    var_types simdBaseType = parentNode->GetSimdBaseType();
+    if (childNode->Op(3)->IsVectorZero())
+    {
+        switch (parentNode->GetHWIntrinsicId())
+        {
+            case NI_Sve_AddAcross:
+            case NI_Sve_OrAcross:
+            case NI_Sve_XorAcross:
+            {
+                canContain = true;
+                break;
+            }
+
+            case NI_Sve_MaxAcross:
+            {
+                canContain = varTypeIsUnsigned(simdBaseType);
+                break;
+            }
+
+            default:
+                break;
+        }
+
+        if (canContain)
+        {
+            // Contain the zero op in conditional select
+            MakeSrcContained(childNode, childNode->Op(3));
+            // Contain the embedded conditional select in the parent
+            MakeSrcContained(parentNode, childNode);
+        }
+    }
+
+    return canContain;
+}
+
 #endif // TARGET_ARM64
 
 //------------------------------------------------------------------------

@@ -705,6 +705,8 @@ namespace System.Text.Json.Nodes
         public void Insert(int index, System.Text.Json.Nodes.JsonNode? item) { }
         public bool Remove(System.Text.Json.Nodes.JsonNode? item) { throw null; }
         public void RemoveAt(int index) { }
+        public int RemoveAll(System.Func<System.Text.Json.Nodes.JsonNode?, bool> match) { throw null; }
+        public void RemoveRange(int index, int count) { }
         void System.Collections.Generic.ICollection<System.Text.Json.Nodes.JsonNode?>.CopyTo(System.Text.Json.Nodes.JsonNode?[]? array, int index) { }
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
         public override void WriteTo(System.Text.Json.Utf8JsonWriter writer, System.Text.Json.JsonSerializerOptions? options = null) { }
@@ -1028,6 +1030,8 @@ namespace System.Text.Json.Serialization
         Always = 1,
         WhenWritingDefault = 2,
         WhenWritingNull = 3,
+        WhenWriting = 4,
+        WhenReading = 5,
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Property, AllowMultiple=false)]
     public sealed partial class JsonIncludeAttribute : System.Text.Json.Serialization.JsonAttribute

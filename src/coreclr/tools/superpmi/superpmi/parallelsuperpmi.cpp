@@ -410,10 +410,10 @@ void addJitOptionArgument(LightWeightMap<DWORD, DWORD>* jitOptions,
     {
         for (unsigned i = 0; i < jitOptions->GetCount(); i++)
         {
-            std::string key   = ConvertToUtf8((WCHAR*)jitOptions->GetBuffer(jitOptions->GetKey(i)));
-            std::string value = ConvertToUtf8((WCHAR*)jitOptions->GetBuffer(jitOptions->GetItem(i)));
+            const char* key   = (const char*)jitOptions->GetBuffer(jitOptions->GetKey(i));
+            const char* value = (const char*)jitOptions->GetBuffer(jitOptions->GetItem(i));
             bytesWritten += sprintf_s(spmiArgs + bytesWritten, MAX_CMDLINE_SIZE - bytesWritten, " -%s %s=%s",
-                                      optionName, key.c_str(), value.c_str());
+                                      optionName, key, value);
         }
     }
 }

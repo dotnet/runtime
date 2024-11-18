@@ -189,13 +189,34 @@ namespace Wasm.Build.Tests
                 buildRoot.VisitAllChildren<TextNode>(m =>
                 {
                     if (m is Message || m is Error || m is Warning)
-                        outputBuilder.AppendLine(m.Title);
+                    {
+                        var context = GetBinlogMessageContext(m);
+                        outputBuilder.AppendLine($"{context}{m.Title}");
+                    }
                 });
 
                 res = new CommandResult(res.StartInfo, res.ExitCode, outputBuilder.ToString());
             }
 
             return (res, logFilePath);
+        }
+
+        private string GetBinlogMessageContext(TextNode node)
+        {
+            var currentNode = node;
+            while (currentNode != null)
+            {
+                if (currentNode is Error error)
+                {
+                    return $"{error.File}({error.LineNumber},{error.ColumnNumber}): error {error.Code}: ";
+                }
+                else if (currentNode is Warning warning)
+                {
+                    return $"{warning.File}({warning.LineNumber},{warning.ColumnNumber}): warning {warning.Code}: ";
+                }
+                currentNode = currentNode.Parent as TextNode;
+            }
+            return string.Empty;
         }
 
         protected bool IsDotnetWasmFromRuntimePack(BuildArgs buildArgs) =>
