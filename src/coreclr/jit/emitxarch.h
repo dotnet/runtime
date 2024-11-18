@@ -131,14 +131,14 @@ static bool IsKInstructionWithLBit(instruction ins);
 
 static regNumber getBmiRegNumber(instruction ins);
 static regNumber getSseShiftRegNumber(instruction ins);
-bool HasVexEncoding(instruction ins) const;
-bool HasEvexEncoding(instruction ins) const;
-bool HasRex2Encoding(instruction ins) const;
-bool IsVexEncodableInstruction(instruction ins) const;
-bool IsEvexEncodableInstruction(instruction ins) const;
-bool IsRex2EncodableInstruction(instruction ins) const;
-bool IsLegacyMap1(code_t code) const;
-bool IsVexOrEvexEncodableInstruction(instruction ins) const;
+bool             HasVexEncoding(instruction ins) const;
+bool             HasEvexEncoding(instruction ins) const;
+bool             HasRex2Encoding(instruction ins) const;
+bool             IsVexEncodableInstruction(instruction ins) const;
+bool             IsEvexEncodableInstruction(instruction ins) const;
+bool             IsRex2EncodableInstruction(instruction ins) const;
+bool             IsLegacyMap1(code_t code) const;
+bool             IsVexOrEvexEncodableInstruction(instruction ins) const;
 
 code_t insEncodeMIreg(const instrDesc* id, regNumber reg, emitAttr size, code_t code);
 

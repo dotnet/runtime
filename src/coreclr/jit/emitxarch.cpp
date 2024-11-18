@@ -276,7 +276,7 @@ bool emitter::IsRex2EncodableInstruction(instruction ins) const
 {
     // TODO-Xarch-apx: we have special stress mode for REX2 on non-compatible machine, that will
     //                 force UseRex2Encoding return true regardless of the CPUID results.
-    if(!UseRex2Encoding())
+    if (!UseRex2Encoding())
     {
         return false;
     }
@@ -301,29 +301,28 @@ bool emitter::IsLegacyMap1(code_t code) const
     // 3-byte: 0F00XX
     // 4-byte: 0FPP00XX
 
-    if((code & 0xFFFF00FF) == 0x0000000F)
+    if ((code & 0xFFFF00FF) == 0x0000000F)
     {
         // 2-byte
         return true;
     }
-    if((code & 0xFF0000) == 0x0F0000)
+    if ((code & 0xFF0000) == 0x0F0000)
     {
         // 3-byte
         return true;
     }
 
-    if((code & 0xFF000000) == 0x0F000000)
+    if ((code & 0xFF000000) == 0x0F000000)
     {
         // 4-byte, need to check if PP is prefixs
         BYTE prefix = (BYTE)((code & 0xFF0000) >> 16);
         return ((prefix == 0xF2) || (prefix == 0xF3) || (prefix == 0x66));
     }
-    
+
     return false;
 #endif //  TARGET_AMD64
     return false;
 }
-
 
 //------------------------------------------------------------------------
 // Answer the question: Is this a SIMD instruction.
@@ -336,7 +335,7 @@ bool emitter::IsLegacyMap1(code_t code) const
 //
 bool emitter::IsVexOrEvexEncodableInstruction(instruction ins) const
 {
-    if (!UseVEXEncoding()) 
+    if (!UseVEXEncoding())
     {
         return false;
     }
@@ -1370,23 +1369,23 @@ bool emitter::TakesRex2Prefix(const instrDesc* id) const
     // Return true iff the instruction supports REX2 encoding, and it requires to access EGPRs.
 
     // TODO-xarch-apx:
-    // At this stage, we are only using REX2 in the case that non-simd integer instructions 
+    // At this stage, we are only using REX2 in the case that non-simd integer instructions
     // with EGPRs being used in its operands, it could be either direct register uses, or
     // memory addresssig operands, i.e. index and base.
     instruction ins = id->idIns();
-    if(!IsRex2EncodableInstruction(ins))
+    if (!IsRex2EncodableInstruction(ins))
     {
         return false;
     }
 
-    if(TakesEvexPrefix(id))
+    if (TakesEvexPrefix(id))
     {
         return false;
     }
 
     // TODO-apx:
     // there are duplicated stress logics here and in HasExtendedGPReg()
-    // need to clean up later. 
+    // need to clean up later.
 #if defined(DEBUG)
     if (emitComp->DoJitStressRex2Encoding())
     {
@@ -1636,9 +1635,9 @@ emitter::code_t emitter::AddVexPrefix(instruction ins, code_t code, emitAttr att
 }
 
 // Add base REX2 prefix without setting higher register index bits
-#define DEFAULT_2BYTE_REX2_PREFIX 0xD50000000000ULL
+#define DEFAULT_2BYTE_REX2_PREFIX      0xD50000000000ULL
 #define DEFAULT_2BYTE_REX2_PREFIX_MASK 0xFFFF00000000ULL
-#define REX2_MAP1_PREFIX 0x008000000000ULL
+#define REX2_MAP1_PREFIX               0x008000000000ULL
 emitter::code_t emitter::AddRex2Prefix(instruction ins, code_t code)
 {
     assert(IsRex2EncodableInstruction(ins));
@@ -1647,7 +1646,7 @@ emitter::code_t emitter::AddRex2Prefix(instruction ins, code_t code)
     // So we don't check if the code has REX2 prefix already or not.
 
     code |= DEFAULT_2BYTE_REX2_PREFIX;
-    if(IsLegacyMap1(code)) // 2-byte opcode on Map-1
+    if (IsLegacyMap1(code)) // 2-byte opcode on Map-1
     {
         code |= REX2_MAP1_PREFIX;
     }
@@ -1809,11 +1808,9 @@ bool emitter::HasExtendedGPReg(const instrDesc* id) const
     {
         return true;
     }
-    
-    if ((id->idHasReg1() && IsExtendedGPReg(id->idReg1())) ||
-        (id->idHasReg2() && IsExtendedGPReg(id->idReg2())) || 
-        (id->idHasReg3() && IsExtendedGPReg(id->idReg3())) || 
-        (id->idHasReg4() && IsExtendedGPReg(id->idReg4())))
+
+    if ((id->idHasReg1() && IsExtendedGPReg(id->idReg1())) || (id->idHasReg2() && IsExtendedGPReg(id->idReg2())) ||
+        (id->idHasReg3() && IsExtendedGPReg(id->idReg3())) || (id->idHasReg4() && IsExtendedGPReg(id->idReg4())))
     {
         return true;
     }
@@ -1899,7 +1896,7 @@ bool emitter::IsExtendedGPReg(regNumber reg) const
         /*
             include EGPR checks here.
         */
-       // return (reg >= REG_R16) && (reg <= REG_31)
+        // return (reg >= REG_R16) && (reg <= REG_31)
     }
 #endif
     return false;
@@ -2588,7 +2585,7 @@ unsigned emitter::emitOutputRexOrSimdPrefixIfNeeded(instruction ins, BYTE* dst, 
         code &= 0x00000000FFFFFFFFLL;
         int emittedSize = 0;
 
-        if((code & 0xFF) == 0x0F)
+        if ((code & 0xFF) == 0x0F)
         {
             // some map-1 instructions have opcode in forms like:
             // XX0F, remove the leading 0x0F byte as it have been recoreded in REX2.
@@ -2608,7 +2605,7 @@ unsigned emitter::emitOutputRexOrSimdPrefixIfNeeded(instruction ins, BYTE* dst, 
                 dst += 1;
             }
 
-            if(check == 0x0F)
+            if (check == 0x0F)
             {
                 // REX2 does not need 0F in the opcode.
                 code &= 0x00000000FF00FFFFLL;
@@ -2876,15 +2873,16 @@ unsigned emitter::emitGetAdjustedSize(instrDesc* id, code_t code) const
         if (TakesRex2Prefix(id))
         {
             prefixAdjustedSize = 2;
-            // If the opcode will be prefixed by REX2, then all the map-1-legacy instructions can remove the escape prefix
-            if(IsLegacyMap1(code))
+            // If the opcode will be prefixed by REX2, then all the map-1-legacy instructions can remove the escape
+            // prefix
+            if (IsLegacyMap1(code))
             {
                 prefixAdjustedSize -= 1;
             }
         }
 
         adjustedSize = prefixAdjustedSize;
-        
+
         emitAttr attr = id->idOpSize();
 
         if ((attr == EA_2BYTE) && (ins != INS_movzx) && (ins != INS_movsx))
@@ -3612,7 +3610,6 @@ inline unsigned emitter::insEncodeReg345(const instrDesc* id, regNumber reg, emi
     // If reg is an extended reg, instruction needs to be prefixed with 'REX'
     // which would require code != NULL.
     assert(code != nullptr || !IsExtendedReg(reg));
-
 
     if (IsExtendedReg(reg))
     {
@@ -6274,7 +6271,6 @@ void emitter::emitIns_I(instruction ins, emitAttr attr, cnsval_ssize_t val)
         default:
             NO_WAY("unexpected instruction");
     }
-
 
     id = emitNewInstrSC(attr, val);
     id->idIns(ins);
@@ -15282,12 +15278,13 @@ BYTE* emitter::emitOutputR(BYTE* dst, instrDesc* id)
 
             // Register...
             unsigned regcode = insEncodeReg012(id, reg, size, &code);
-            
+
             // Output the REX prefix
             dst += emitOutputRexOrSimdPrefixIfNeeded(ins, dst, code);
 
             // If the instruction is prefixed by REX2, then 0x0F has been removed, just need to emit the opcode byte.
-            dst += TakesRex2Prefix(id)? emitOutputByte(dst, code | regcode) : emitOutputWord(dst, code | (regcode << 8));
+            dst +=
+                TakesRex2Prefix(id) ? emitOutputByte(dst, code | regcode) : emitOutputWord(dst, code | (regcode << 8));
             break;
         }
 
@@ -15522,7 +15519,7 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
     {
         assert(!TakesSimdPrefix(id));
         code = insCodeMR(ins);
-        if(TakesRex2Prefix(id))
+        if (TakesRex2Prefix(id))
         {
             code = AddRex2Prefix(ins, code);
         }
@@ -16122,7 +16119,7 @@ BYTE* emitter::emitOutputRI(BYTE* dst, instrDesc* id)
         code = insCodeACC(ins);
         // TODO-xarch-apx:
         // There is a case that instructions with 0xA* opcode cannot be prefixed by REX2.
-        code = (ins == INS_test)? code : AddX86PrefixIfNeeded(id, code, size);
+        code = (ins == INS_test) ? code : AddX86PrefixIfNeeded(id, code, size);
     }
     else
     {
@@ -16374,9 +16371,9 @@ BYTE* emitter::emitOutputIV(BYTE* dst, instrDesc* id)
             // Does the operand fit in a byte?
             if (valInByte)
             {
-                if(TakesRex2Prefix(id))
+                if (TakesRex2Prefix(id))
                 {
-                    dst  += emitOutputRexOrSimdPrefixIfNeeded(ins, dst, code);
+                    dst += emitOutputRexOrSimdPrefixIfNeeded(ins, dst, code);
                 }
 
                 dst += emitOutputByte(dst, code | 2);
@@ -17576,7 +17573,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 code = insCodeMR(ins);
                 // Emit the VEX prefix if it exists
                 code = AddX86PrefixIfNeeded(id, code, size);
-                if((size == EA_2BYTE) && TakesRex2Prefix(id))
+                if ((size == EA_2BYTE) && TakesRex2Prefix(id))
                 {
                     // REX2 needs explicit pp prefix.
                     dst += emitOutputByte(dst, 0x66);

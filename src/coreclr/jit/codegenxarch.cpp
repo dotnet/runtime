@@ -9070,7 +9070,7 @@ void CodeGen::genAmd64EmitterUnitTestsApx()
     theEmitter->emitIns_R_R(INS_add, EA_2BYTE, REG_EAX, REG_ECX);
     theEmitter->emitIns_R_R(INS_add, EA_4BYTE, REG_EAX, REG_ECX);
     theEmitter->emitIns_R_R(INS_add, EA_8BYTE, REG_EAX, REG_ECX);
-    theEmitter->emitIns_R_R(INS_or,  EA_4BYTE, REG_EAX, REG_ECX);
+    theEmitter->emitIns_R_R(INS_or, EA_4BYTE, REG_EAX, REG_ECX);
     theEmitter->emitIns_R_R(INS_adc, EA_4BYTE, REG_EAX, REG_ECX);
     theEmitter->emitIns_R_R(INS_sbb, EA_4BYTE, REG_EAX, REG_ECX);
     theEmitter->emitIns_R_R(INS_and, EA_4BYTE, REG_EAX, REG_ECX);
@@ -9086,14 +9086,14 @@ void CodeGen::genAmd64EmitterUnitTestsApx()
     theEmitter->emitIns_Mov(INS_mov, EA_4BYTE, REG_EAX, REG_ECX, false);
     theEmitter->emitIns_Mov(INS_movsx, EA_2BYTE, REG_EAX, REG_ECX, false);
     theEmitter->emitIns_Mov(INS_movzx, EA_2BYTE, REG_EAX, REG_ECX, false);
-    
+
     theEmitter->emitIns_R_R(INS_popcnt, EA_4BYTE, REG_EAX, REG_ECX);
     theEmitter->emitIns_R_R(INS_lzcnt, EA_4BYTE, REG_EAX, REG_ECX);
     theEmitter->emitIns_R_R(INS_tzcnt, EA_4BYTE, REG_EAX, REG_ECX);
 
     theEmitter->emitIns_R_I(INS_add, EA_4BYTE, REG_ECX, 0x05);
     theEmitter->emitIns_R_I(INS_add, EA_2BYTE, REG_ECX, 0x05);
-    theEmitter->emitIns_R_I(INS_or,  EA_4BYTE, REG_EAX, 0x05);
+    theEmitter->emitIns_R_I(INS_or, EA_4BYTE, REG_EAX, 0x05);
     theEmitter->emitIns_R_I(INS_adc, EA_4BYTE, REG_EAX, 0x05);
     theEmitter->emitIns_R_I(INS_sbb, EA_4BYTE, REG_EAX, 0x05);
     theEmitter->emitIns_R_I(INS_and, EA_4BYTE, REG_EAX, 0x05);
@@ -9146,7 +9146,7 @@ void CodeGen::genAmd64EmitterUnitTestsApx()
     theEmitter->emitIns_R_AR(INS_add, EA_2BYTE, REG_EAX, REG_ECX, 4);
     theEmitter->emitIns_R_AR(INS_add, EA_4BYTE, REG_EAX, REG_ECX, 4);
     theEmitter->emitIns_R_AR(INS_add, EA_8BYTE, REG_EAX, REG_ECX, 4);
-    theEmitter->emitIns_R_AR(INS_or,  EA_4BYTE, REG_EAX, REG_ECX, 4);
+    theEmitter->emitIns_R_AR(INS_or, EA_4BYTE, REG_EAX, REG_ECX, 4);
     theEmitter->emitIns_R_AR(INS_adc, EA_4BYTE, REG_EAX, REG_ECX, 4);
     theEmitter->emitIns_R_AR(INS_sbb, EA_4BYTE, REG_EAX, REG_ECX, 4);
     theEmitter->emitIns_R_AR(INS_and, EA_4BYTE, REG_EAX, REG_ECX, 4);
@@ -9164,7 +9164,7 @@ void CodeGen::genAmd64EmitterUnitTestsApx()
     theEmitter->emitIns_AR_R(INS_add, EA_2BYTE, REG_EAX, REG_ECX, 4);
     theEmitter->emitIns_AR_R(INS_add, EA_4BYTE, REG_EAX, REG_ECX, 4);
     theEmitter->emitIns_AR_R(INS_add, EA_8BYTE, REG_EAX, REG_ECX, 4);
-    theEmitter->emitIns_AR_R(INS_or,  EA_4BYTE, REG_EAX, REG_ECX, 4);
+    theEmitter->emitIns_AR_R(INS_or, EA_4BYTE, REG_EAX, REG_ECX, 4);
     theEmitter->emitIns_AR_R(INS_adc, EA_4BYTE, REG_EAX, REG_ECX, 4);
     theEmitter->emitIns_AR_R(INS_sbb, EA_4BYTE, REG_EAX, REG_ECX, 4);
     theEmitter->emitIns_AR_R(INS_and, EA_4BYTE, REG_EAX, REG_ECX, 4);
@@ -9181,7 +9181,7 @@ void CodeGen::genAmd64EmitterUnitTestsApx()
     theEmitter->emitIns_R_S(INS_add, EA_2BYTE, REG_EAX, 0, 0);
     theEmitter->emitIns_R_S(INS_add, EA_4BYTE, REG_EAX, 0, 0);
     theEmitter->emitIns_R_S(INS_add, EA_8BYTE, REG_EAX, 0, 0);
-    theEmitter->emitIns_R_S(INS_or,  EA_4BYTE, REG_EAX, 0, 0);
+    theEmitter->emitIns_R_S(INS_or, EA_4BYTE, REG_EAX, 0, 0);
     theEmitter->emitIns_R_S(INS_adc, EA_4BYTE, REG_EAX, 0, 0);
     theEmitter->emitIns_R_S(INS_sbb, EA_4BYTE, REG_EAX, 0, 0);
     theEmitter->emitIns_R_S(INS_and, EA_4BYTE, REG_EAX, 0, 0);
@@ -9192,7 +9192,7 @@ void CodeGen::genAmd64EmitterUnitTestsApx()
 
     theEmitter->emitIns_S_I(INS_shl_N, EA_4BYTE, 0, 0, 4);
     theEmitter->emitIns_S(INS_shl_1, EA_4BYTE, 0, 4);
-    
+
     // theEmitter->emitIns_R_S(INS_movsx, EA_2BYTE, REG_ECX, 1, 2);
     // theEmitter->emitIns_R_S(INS_movzx, EA_2BYTE, REG_EAX, 1, 2);
     theEmitter->emitIns_R_S(INS_cmovo, EA_4BYTE, REG_EAX, 1, 2);
@@ -9224,8 +9224,8 @@ void CodeGen::genAmd64EmitterUnitTestsApx()
 
     theEmitter->emitIns_R_R_I(INS_shld, EA_4BYTE, REG_EAX, REG_ECX, 5);
     theEmitter->emitIns_R_R_I(INS_shrd, EA_2BYTE, REG_EAX, REG_ECX, 5);
-    // TODO-XArch-apx: S_R_I path only accepts SEE or VEX instructions, 
-    //                 so I assuem shld/shrd will not be taking the first argument from stack.   
+    // TODO-XArch-apx: S_R_I path only accepts SEE or VEX instructions,
+    //                 so I assuem shld/shrd will not be taking the first argument from stack.
     // theEmitter->emitIns_S_R_I(INS_shld, EA_2BYTE, 1, 2, REG_EAX, 5);
     // theEmitter->emitIns_S_R_I(INS_shrd, EA_2BYTE, 1, 2, REG_EAX, 5);
 
@@ -9244,7 +9244,6 @@ void CodeGen::genAmd64EmitterUnitTestsApx()
 
     theEmitter->emitIns_R(INS_div, EA_8BYTE, REG_EDX);
     theEmitter->emitIns_R(INS_mulEAX, EA_8BYTE, REG_EDX);
-    
 }
 
 #endif // defined(DEBUG) && defined(TARGET_AMD64)

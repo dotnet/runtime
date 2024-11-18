@@ -2300,8 +2300,8 @@ void Compiler::compSetProcessor()
         if (canUseRex2Encoding() || DoJitStressRex2Encoding())
         {
             // TODO-Xarch-apx:
-            //   At this stage, since no machine will pass the CPUID check for APX, we need a special stress mode that enables
-            //   REX2 on incompatible platform, `DoJitStressRex2Encoding` is expected to be removed eventually.
+            //   At this stage, since no machine will pass the CPUID check for APX, we need a special stress mode that
+            //   enables REX2 on incompatible platform, `DoJitStressRex2Encoding` is expected to be removed eventually.
             codeGen->GetEmitter()->SetUseRex2Encoding(true);
         }
     }
