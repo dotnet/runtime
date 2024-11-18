@@ -807,6 +807,8 @@ static const HWIntrinsicIsaRange hwintrinsicIsaRangeArray[] = {
     { NI_Illegal, NI_Illegal },                                 // VectorT256
     { NI_Illegal, NI_Illegal },                                 // VectorT512
     { NI_Illegal, NI_Illegal },                                 // APX
+    { NI_Illegal, NI_Illegal },                                 // AVX10v2
+    { NI_Illegal, NI_Illegal },                                 // AVX10v2_V512
     { FIRST_NI_X86Base_X64, LAST_NI_X86Base_X64 },
     { FIRST_NI_SSE_X64, LAST_NI_SSE_X64 },
     { FIRST_NI_SSE2_X64, LAST_NI_SSE2_X64 },
@@ -832,6 +834,9 @@ static const HWIntrinsicIsaRange hwintrinsicIsaRangeArray[] = {
     { NI_Illegal, NI_Illegal },                                 // AVX512VBMI_X64
     { FIRST_NI_AVX10v1_X64, LAST_NI_AVX10v1_X64 },
     { NI_Illegal, NI_Illegal },                                 // AVX10v1_V512_X64
+    { NI_Illegal, NI_Illegal },                                 // APX_X64
+    { NI_Illegal, NI_Illegal },                                 // AVX10v2_X64
+    { NI_Illegal, NI_Illegal },                                 // AVX10v2_V512_X64
 #elif defined (TARGET_ARM64)
     { FIRST_NI_ArmBase, LAST_NI_ArmBase },
     { FIRST_NI_AdvSimd, LAST_NI_AdvSimd },

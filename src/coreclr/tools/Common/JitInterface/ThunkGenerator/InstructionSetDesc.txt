@@ -68,6 +68,8 @@ instructionset     ,X86   ,VectorT128           ,        ,39 ,VectorT128        
 instructionset     ,X86   ,VectorT256           ,        ,40 ,VectorT256            ,vectort256
 instructionset     ,X86   ,VectorT512           ,        ,41 ,VectorT512            ,vectort512
 instructionset     ,X86   ,Apx                  ,        ,48 ,APX                   ,apx
+instructionset     ,X86   ,Avx10v2              ,        ,51 ,AVX10v2               ,avx10v2
+instructionset     ,X86   ,Avx10v2_V512         ,        ,52 ,AVX10v2_V512          ,avx10v2_v512
 
 instructionset64bit,X86   ,X86Base
 instructionset64bit,X86   ,SSE
@@ -94,6 +96,9 @@ instructionset64bit,X86   ,AVX512DQ
 instructionset64bit,X86   ,AVX512VBMI
 instructionset64bit,X86   ,AVX10v1
 instructionset64bit,X86   ,AVX10v1_V512
+instructionset64bit,X86   ,APX
+instructionset64bit,X86   ,AVX10v2
+instructionset64bit,X86   ,AVX10v2_V512
 
 vectorinstructionset,X86  ,Vector128
 vectorinstructionset,X86  ,Vector256
@@ -164,6 +169,8 @@ implication        ,X86   ,AVX10v1_V512         ,AVX512DQ
 implication        ,X86   ,AVX10v1_V512         ,AVX512DQ_VL
 implication        ,X86   ,AVX10v1_V512         ,AVX512VBMI
 implication        ,X86   ,AVX10v1_V512         ,AVX512VBMI_VL
+implication        ,X86   ,AVX10v2              ,AVX10v1
+implication        ,X86   ,AVX10v2_V512         ,AVX10v1_V512
 
 ; These synthetic ISAs need to appear after the core ISAs
 ; as they depend on the other implications being correct first
