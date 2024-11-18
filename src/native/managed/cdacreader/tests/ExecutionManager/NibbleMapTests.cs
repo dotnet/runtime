@@ -11,13 +11,10 @@ public class NibbleMapTestsBase
 {
     internal class NibbleMapTestTarget : TestPlaceholderTarget
     {
-        private readonly MockMemorySpace.ReadContext _readContext;
-        public NibbleMapTestTarget(MockTarget.Architecture arch, MockMemorySpace.ReadContext readContext) : base(arch)
+        public NibbleMapTestTarget(MockTarget.Architecture arch, MockMemorySpace.ReadContext readContext)
+            : base(arch, readContext.ReadFromTarget)
         {
-            _readContext = readContext;
-            SetDataReader(_readContext.ReadFromTarget);
         }
-
     }
 
     internal static NibbleMapTestTarget CreateTarget(NibbleMapTestBuilderBase nibbleMapTestBuilder)
