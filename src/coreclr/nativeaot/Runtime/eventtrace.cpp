@@ -205,7 +205,7 @@ void EtwCallbackCommon(
         ctxToUpdate->EventPipeProvider.IsEnabled = ControlCode;
 
         // For EventPipe, ControlCode can only be either 0 or 1.
-        _ASSERTE(ControlCode == 0 || ControlCode == 1);
+        _ASSERTE(ControlCode == EVENT_CONTROL_CODE_DISABLE_PROVIDER || ControlCode == EVENT_CONTROL_CODE_ENABLE_PROVIDER);
     }
 
     if (
