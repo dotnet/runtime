@@ -40,7 +40,7 @@ using EETypeElementType = Internal.Runtime.EETypeElementType;
 
 namespace Internal.Reflection.Augments
 {
-    public static class ReflectionAugments
+    internal static class ReflectionAugments
     {
         internal static unsafe TypeCode GetRuntimeTypeCode(RuntimeType type)
         {
