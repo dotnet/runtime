@@ -2766,12 +2766,12 @@ void LinearScan::buildIntervals()
                     {
                         calleeSaveCount = CNT_CALLEE_ENREG;
                     }
-#if defined(TARGET_XARCH) && defined(FEATURE_SIMD)
+#if (defined(TARGET_XARCH) || defined(TARGET_ARM64)) && defined(FEATURE_SIMD)
                     else if (varTypeUsesMaskReg(interval->registerType))
                     {
                         calleeSaveCount = CNT_CALLEE_SAVED_MASK;
                     }
-#endif // TARGET_XARCH && FEATURE_SIMD
+#endif // (TARGET_XARCH || TARGET_ARM64) && FEATURE_SIMD
                     else
                     {
                         assert(varTypeUsesFloatReg(interval->registerType));
