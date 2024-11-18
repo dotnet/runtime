@@ -1781,6 +1781,9 @@ namespace System
         #region Static Members
 
         #region Internal
+
+        // Returns the type from which the current type directly inherits from (without reflection quirks).
+        // The parent type is null for interfaces, pointers, byrefs and generic parameters.
         internal unsafe RuntimeType? GetParentType()
         {
             TypeHandle typeHandle = GetNativeTypeHandle();

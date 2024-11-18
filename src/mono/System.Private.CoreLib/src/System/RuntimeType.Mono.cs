@@ -143,6 +143,8 @@ namespace System
 
         #region Internal
 
+        // Returns the type from which the current type directly inherits from (without reflection quirks).
+        // The parent type is null for interfaces, pointers, byrefs and generic parameters.
         internal RuntimeType? GetParentType()
         {
             RuntimeType _this = this;
