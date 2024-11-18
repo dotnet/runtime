@@ -1952,14 +1952,32 @@ int32_t SystemNative_PWrite(intptr_t fd, void* buffer, int32_t bufferSize, int64
 #if (HAVE_PREADV || HAVE_PWRITEV) && !defined(TARGET_WASM)
 static int GetAllowedVectorCount(int32_t vectorCount)
 {
+    static volatile int s_iovMax = 0;
+
+    int iovMax = s_iovMax;
+    if (iovMax == 0)
+    {
+#if defined(_SC_IOV_MAX)
+        // For macOS arm64 the IOV_MAX reports 1024, but fails with EINVAL for such inputs.
+        // That is why we prefer _SC_IOV_MAX over IOV_MAX.
+        iovMax = sysconf(_SC_IOV_MAX);
+#elif defined(IOV_MAX)
+        iovMax = IOV_MAX;
+#else
+        // 16 is low, but supported on every platform.
+        iovMax = 16;
+#endif
+        s_iovMax = iovMax;
+    }
+
     int allowedCount = (int)vectorCount;
 
     // We need to respect the limit of items that can be passed in iov.
     // In case of writes, the managed code is responsible for handling incomplete writes.
     // In case of reads, we simply returns the number of bytes read and it's up to the users.
-    if (IOV_MAX < allowedCount)
+    if (iovMax < allowedCount)
     {
-        allowedCount = IOV_MAX;
+        allowedCount = iovMax;
     }
 
     return allowedCount;
@@ -2017,20 +2035,6 @@ int64_t SystemNative_PWriteV(intptr_t fd, IOVector* vectors, int32_t vectorCount
 #if HAVE_PWRITEV && !defined(TARGET_WASM) // pwritev is buggy on WASM
     int allowedVectorCount = GetAllowedVectorCount(vectorCount);
     while ((count = pwritev(fileDescriptor, (struct iovec*)vectors, allowedVectorCount, (off_t)fileOffset)) < 0 && errno == EINTR);
-
-#if defined(TARGET_APPLE) && (defined(__arm__) || defined(__aarch64__))
-    if (count < 0 && errno == EINVAL)
-    {
-        do
-        {
-            allowedVectorCount = allowedVectorCount / 2;
-        }
-        while ((count = pwritev(fileDescriptor, (struct iovec*)vectors, allowedVectorCount, (off_t)fileOffset)) < 0 && errno == EINVAL);
-
-        count = -1 * allowedVectorCount;
-    }
-#endif
-
 #else
     int64_t current;
     for (int i = 0; i < vectorCount; i++)
