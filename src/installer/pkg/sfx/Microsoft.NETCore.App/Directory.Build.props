@@ -175,7 +175,6 @@
     <PlatformManifestFileEntry Include="System.IO.Compression.Native.Aot.GuardCF.lib" IsNative="true" />
     <PlatformManifestFileEntry Include="aotminipal.lib" IsNative="true" />
     <!-- NativeAOT managed specific files -->
-    <PlatformManifestFileEntry Include="System.Private.DisabledReflection.dll" />
     <PlatformManifestFileEntry Include="System.Private.Reflection.Execution.dll" />
     <PlatformManifestFileEntry Include="System.Private.StackTraceMetadata.dll" />
     <PlatformManifestFileEntry Include="System.Private.TypeLoader.dll" />

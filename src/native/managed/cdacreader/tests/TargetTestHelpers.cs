@@ -333,26 +333,28 @@ internal unsafe class TargetTestHelpers
         public readonly uint MaxAlign { get; init; }
     }
 
+    internal record Field(string Name, DataType Type, uint? Size = null);
+
     // Implements a simple layout algorithm that aligns fields to their size
     // and aligns the structure to the largest field size.
-    public LayoutResult LayoutFields((string Name, DataType Type)[] fields)
+    public LayoutResult LayoutFields(Field[] fields)
         => LayoutFields(FieldLayout.CIsh, fields);
 
     // Layout the fields of a structure according to the specified layout style.
-    public LayoutResult  LayoutFields(FieldLayout style, (string Name, DataType Type)[] fields)
+    public LayoutResult  LayoutFields(FieldLayout style, Field[] fields)
     {
         int offset = 0;
         int maxAlign = 1;
         return LayoutFieldsWorker(style, fields, ref offset, ref maxAlign);
     }
 
-    private LayoutResult LayoutFieldsWorker(FieldLayout style, (string Name, DataType Type)[] fields, ref int offset, ref int maxAlign)
+    private LayoutResult LayoutFieldsWorker(FieldLayout style, Field[] fields, ref int offset, ref int maxAlign)
     {
         Dictionary<string,Target.FieldInfo> fieldInfos = new ();
         for (int i = 0; i < fields.Length; i++)
         {
-            var (name, type) = fields[i];
-            int size = SizeOfPrimitive(type);
+            var (name, type, sizeMaybe) = fields[i];
+            int size = sizeMaybe.HasValue ? (int)sizeMaybe.Value : SizeOfPrimitive(type);
             int align = size;
             if (align > maxAlign)
             {
@@ -379,9 +381,9 @@ internal unsafe class TargetTestHelpers
     }
 
     // Extend the layout of a base class with additional fields.
-    public LayoutResult ExtendLayout((string Name, DataType Type)[] fields, LayoutResult baseClass) => ExtendLayout(FieldLayout.CIsh, fields, baseClass);
+    public LayoutResult ExtendLayout(Field[] fields, LayoutResult baseClass) => ExtendLayout(FieldLayout.CIsh, fields, baseClass);
 
-    public LayoutResult ExtendLayout(FieldLayout fieldLayout, (string Name, DataType Type)[] fields, LayoutResult baseClass)
+    public LayoutResult ExtendLayout(FieldLayout fieldLayout, Field[] fields, LayoutResult baseClass)
     {
         int offset = (int)baseClass.Stride;
         int maxAlign = (int)baseClass.MaxAlign;

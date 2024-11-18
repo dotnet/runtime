@@ -28,30 +28,57 @@ struct CodeBlockHandle
 ## Version 1
 
 The execution manager uses two data structures to map the entire target address space to native executable code.
-The range section map is used to partition the address space into large chunks which point to range section fragments.  Each chunk is relatively large.  If there is any executable code in the chunk, the chunk will contain one or more range section fragments that cover subsets of the chunk.  Conversely if a massive method is JITed a single range section fragment may span multiple adjacent chunks.
+The [range section map](#rangesectionmap) is used to partition the address space into large chunks which point to range section fragments.  Each chunk is relatively large.  If there is any executable code in the chunk, the chunk will contain one or more range section fragments that cover subsets of the chunk.  Conversely if a massive method is JITed a single range section fragment may span multiple adjacent chunks.
 
-Within a range section fragment, a nibble map structure is used to map arbitrary IP addresses back to the start of the method (and to the code header which immediately preceeeds the entrypoint to the code).
+Within a range section fragment, a [nibble map](#nibblemap) structure is used to map arbitrary IP addresses back to the start of the method (and to the code header which immediately preceeeds the entrypoint to the code).
 
 Data descriptors used:
 | Data Descriptor Name | Field | Meaning |
 | --- | --- | --- |
-| RangeSectionMap | TopLevelData | pointer to the outermost RangeSection |
-| RangeSectionFragment| ? | ? |
-| RangeSection | ? | ? |
-| RealCodeHeader | ? | ? |
-| HeapList | ? | ? |
-
-
+| `RangeSectionMap` | `TopLevelData` | Pointer to the outermost RangeSection |
+| `RangeSectionFragment`| `RangeBegin` | Begin address of the fragment |
+| `RangeSectionFragment`| `RangeEndOpen` | End address of the fragment |
+| `RangeSectionFragment`| `RangeSection` | Pointer to the corresponding `RangeSection` |
+| `RangeSectionFragment`| `Next` | Pointer to the next fragment |
+| `RangeSection` | `RangeBegin` | Begin address of the range section |
+| `RangeSection` | `RangeEndOpen` | End address of the range section |
+| `RangeSection` | `NextForDelete` | Pointer to next range section for deletion |
+| `RangeSection` | `JitManager` | Pointer to the JIT manager |
+| `RangeSection` | `Flags` | Flags for the range section |
+| `RangeSection` | `HeapList` | Pointer to the heap list |
+| `RangeSection` | `R2RModule` | ReadyToRun module |
+| `CodeHeapListNode` | `Next` | Next node |
+| `CodeHeapListNode` | `StartAddress` | Start address of the used portion of the code heap |
+| `CodeHeapListNode` | `EndAddress` | End address of the used portion of the code heap |
+| `CodeHeapListNode` | `MapBase` | Start of the map - start address rounded down based on OS page size |
+| `CodeHeapListNode` | `HeaderMap` | Bit array used to find the start of methods - relative to `MapBase` |
+| `RealCodeHeader` | `MethodDesc` | Pointer to the corresponding `MethodDesc` |
+| `Module` | `ReadyToRunInfo` | Pointer to the `ReadyToRunInfo` for the module |
+| `ReadyToRunInfo` | `CompositeInfo` | Pointer to composite R2R info - or itself for non-composite |
+| `ReadyToRunInfo` | `NumRuntimeFunctions` | Number of `RuntimeFunctions` |
+| `ReadyToRunInfo` | `RuntimeFunctions` | Pointer to an array of `RuntimeFunctions` |
+| `ReadyToRunInfo` | `DelayLoadMethodCallThunks` | Pointer to an `ImageDataDirectory` for the delay load method call thunks |
+| `ReadyToRunInfo` | `EntryPointToMethodDescMap` | `HashMap` of entry point addresses to `MethodDesc` pointers |
+| `ImageDataDirectory` | `VirtualAddress` | Virtual address of the image data directory |
+| `ImageDataDirectory` | `Size` | Size of the data |
+| `RuntimeFunction` | `BeginAddress` | Begin address of the function |
+| `HashMap` | `Buckets` | Pointer to the buckets of a `HashMap` |
+| `Bucket` | `Keys` | Array of keys of `HashMapSlotsPerBucket` length |
+| `Bucket` | `Values` | Array of values of `HashMapSlotsPerBucket` length |
 
 Global variables used:
 | Global Name | Type | Purpose |
 | --- | --- | --- |
-| ExecutionManagerCodeRangeMapAddress | TargetPointer | Pointer to the global RangeSectionMap
-| StubCodeBlockLast | uint8 | Maximum sentinel code header value indentifying a stub code block
+| `ExecutionManagerCodeRangeMapAddress` | TargetPointer | Pointer to the global RangeSectionMap |
+| `StubCodeBlockLast` | uint8 | Maximum sentinel code header value indentifying a stub code block |
+| `HashMapSlotsPerBucket` | uint32 | Number of slots in each bucket of a `HashMap` |
+| `HashMapValueMask` | uint64 | Bitmask used when storing values in a `HashMap` |
+| `FeatureEHFunclets` | uint8 | 1 if EH funclets are enabled, 0 otherwise |
 
 Contracts used:
 | Contract Name |
 | --- |
+| `PlatformMetadata` |
 
 The bulk of the work is done by the `GetCodeBlockHandle` API that maps a code pointer to information about the containing jitted method.
 
@@ -97,28 +124,78 @@ There are two `JitManager`s: the "EE JitManager" for jitted code and "R2R JitMan
 The EE JitManager `GetMethodInfo` implements the nibble map lookup, summarized below, followed by returning the `RealCodeHeader` data:
 
 ```csharp
-    bool GetMethodInfo(RangeSection rangeSection, TargetCodePointer jittedCodeAddress, [NotNullWhen(true)] out CodeBlock? info)
+bool GetMethodInfo(RangeSection rangeSection, TargetCodePointer jittedCodeAddress, [NotNullWhen(true)] out CodeBlock? info)
+{
+    TargetPointer start = FindMethodCode(rangeSection, jittedCodeAddress); // nibble map lookup
+    if (start == TargetPointer.Null)
     {
-        TargetPointer start = FindMethodCode(rangeSection, jittedCodeAddress); // nibble map lookup
-        if (start == TargetPointer.Null)
-        {
-            return false;
-        }
-        TargetNUInt relativeOffset = jittedCodeAddress - start;
-        int codeHeaderOffset = Target.PointerSize;
-        TargetPointer codeHeaderIndirect = start - codeHeaderOffset;
-        if (RangeSection.IsStubCodeBlock(Target, codeHeaderIndirect))
-        {
-            return false;
-        }
-        TargetPointer codeHeaderAddress = Target.ReadPointer(codeHeaderIndirect);
-        Data.RealCodeHeader realCodeHeader = Target.ProcessedData.GetOrAdd<Data.RealCodeHeader>(codeHeaderAddress);
-        info = new CodeBlock(jittedCodeAddress, codeHeaderOffset, relativeOffset, realCodeHeader, rangeSection.Data!.JitManager);
-        return true;
+        return false;
     }
+    TargetNUInt relativeOffset = jittedCodeAddress - start;
+    int codeHeaderOffset = Target.PointerSize;
+    TargetPointer codeHeaderIndirect = start - codeHeaderOffset;
+    if (RangeSection.IsStubCodeBlock(Target, codeHeaderIndirect))
+    {
+        return false;
+    }
+    TargetPointer codeHeaderAddress = Target.ReadPointer(codeHeaderIndirect);
+    Data.RealCodeHeader realCodeHeader = Target.ProcessedData.GetOrAdd<Data.RealCodeHeader>(codeHeaderAddress);
+    info = new CodeBlock(jittedCodeAddress, realCodeHeader.MethodDesc, relativeOffset, rangeSection.Data!.JitManager);
+    return true;
+}
 ```
 
-The `CodeBlock` encapsulates the `RealCodeHeader` data from the target runtime together with the start of the jitted method
+The R2R JitManager `GetMethodInfo` finds the runtime function corresponding to an address and maps its entry point pack to a method:
+
+```csharp
+bool GetMethodInfo(RangeSection rangeSection, TargetCodePointer jittedCodeAddress, [NotNullWhen(true)] out CodeBlock? info)
+{
+    if (rangeSection.Data == null)
+        throw new ArgumentException(nameof(rangeSection));
+
+    info = default;
+
+    TargetPointer r2rModule = Target.ReadPointer(/* range section address + RangeSection::R2RModule offset */);
+    TargetPointer r2rInfo = Target.ReadPointer(r2rModule + /* Module::ReadyToRunInfo offset */);
+
+    // Check if address is in a thunk
+    if (IsStubCodeBlockThunk(rangeSection.Data, r2rInfo, jittedCodeAddress))
+        return false;
+
+    // Find the relative address that we are looking for
+    TargetCodePointer code = /* code pointer from jittedCodeAddress using PlatformMetadata.GetCodePointerFlags */
+    TargetPointer imageBase = Target.ReadPointer(/* range section address + RangeSection::RangeBegin offset */);
+    TargetPointer relativeAddr = code - imageBase;
+
+    TargetPointer runtimeFunctions = Target.ReadPointer(r2rInfo + /* ReadyToRunInfo::RuntimeFunctions offset */);
+    int index = // Iterate through runtimeFunctions and find index of function with relativeAddress
+    if (index < 0)
+        return false;
+
+    bool featureEHFunclets = Target.ReadGlobal<byte>(Constants.Globals.FeatureEHFunclets) != 0;
+    if (featureEHFunclets)
+    {
+        // TODO: [cdac] Look up in hot/cold mapping lookup table and if the method is in the cold block,
+        // get the index of the associated hot block.
+    }
+
+    TargetPointer function = runtimeFunctions + (ulong)(index * /* size of RuntimeFunction */);
+
+    TargetPointer startAddress = imageBase + Target.Read<uint>(function + /* RuntimeFunction::BeginAddress offset */);
+    TargetPointer entryPoint = /* code pointer from startAddress using PlatformMetadata.GetCodePointerFlags */
+
+    TargetPointer mapAddress = r2rInfo + /* ReadyToRunInfo::EntryPointToMethodDescMap offset */;
+    TargetPointer methodDesc = /* look up entryPoint in HashMap at mapAddress */;
+
+    // TODO: [cdac] Handle method with cold code when computing relative offset
+    TargetNUInt relativeOffset = new TargetNUInt(code - startAddress);
+
+    info = new CodeBlock(startAddress.Value, methodDesc, relativeOffset, rangeSection.Data!.JitManager);
+    return true;
+}
+```
+
+The `CodeBlock` encapsulates the `MethodDesc` data from the target runtime together with the start of the jitted method
 
 ```csharp
 class CodeBlock
@@ -126,17 +203,14 @@ class CodeBlock
     private readonly int _codeHeaderOffset;
 
     public TargetCodePointer StartAddress { get; }
-    // note: this is the address of the pointer to the "real code header", you need to
-    // dereference it to get the address of _codeHeaderData
-    public TargetPointer CodeHeaderAddress => StartAddress - _codeHeaderOffset;
-    private Data.RealCodeHeader _codeHeaderData;
+    public TargetPointer MethodDesc { get; }
     public TargetPointer JitManagerAddress { get; }
     public TargetNUInt RelativeOffset { get; }
-    public CodeBlock(TargetCodePointer startAddress, int codeHeaderOffset, TargetNUInt relativeOffset, Data.RealCodeHeader codeHeaderData, TargetPointer jitManagerAddress)
+
+    public CodeBlock(TargetCodePointer startAddress, TargetPointer methodDesc, TargetNUInt relativeOffset, TargetPointer jitManagerAddress)
     {
-        _codeHeaderOffset = codeHeaderOffset;
         StartAddress = startAddress;
-        _codeHeaderData = codeHeaderData;
+        MethodDesc = methodDesc;
         RelativeOffset = relativeOffset;
         JitManagerAddress = jitManagerAddress;
     }
@@ -151,13 +225,13 @@ The remaining contract APIs extract fields of the `CodeBlock`:
 ```csharp
     TargetPointer IExecutionManager.GetMethodDesc(CodeBlockHandle codeInfoHandle)
     {
-        /* find EECodeBlock info for codeInfoHandle.Address*/
+        /* find CodeBlock info for codeInfoHandle.Address*/
         return info.MethodDescAddress;
     }
 
     TargetCodePointer IExecutionManager.GetStartAddress(CodeBlockHandle codeInfoHandle)
     {
-        /* find EECodeBlock info for codeInfoHandle.Address*/
+        /* find CodeBlock info for codeInfoHandle.Address*/
         return info.StartAddress;
     }
 ```
