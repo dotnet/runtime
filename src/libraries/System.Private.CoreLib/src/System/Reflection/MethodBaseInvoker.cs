@@ -166,7 +166,6 @@ namespace System.Reflection
 
             bool copyBack = false;
             object? arg1 = parameters[0];
-            object? copyBackArg1 = arg1;
             CheckArgument(ref arg1, ref copyBack, 0, binder, culture, invokeAttr);
 
             try

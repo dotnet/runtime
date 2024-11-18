@@ -72,7 +72,7 @@ namespace System.Reflection
         {
             _method = method;
 
-            if ((invocationFlags & (InvocationFlags.NoInvoke | InvocationFlags.ContainsStackPointers)) != 0)
+            if ((invocationFlags & (InvocationFlags.NoInvoke | InvocationFlags.ContainsStackPointers | InvocationFlags.NoConstructorInvoke)) != 0)
             {
                 _invokeFunc = null!;
                 _invokerArgFlags = null!;

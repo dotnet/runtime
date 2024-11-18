@@ -37,10 +37,12 @@ namespace System.Diagnostics.Tests
 
         [Theory]
         [ActiveIssue("https://github.com/mono/mono/issues/15183", TestRuntimes.Mono)]
-        [InlineData(StackFrame.OFFSET_UNKNOWN)]
-        [InlineData(0)]
-        [InlineData(1)]
-        public void Ctor_SkipFrames(int skipFrames)
+        [InlineData(StackFrame.OFFSET_UNKNOWN, false)]
+        [InlineData(0, false)]
+        [InlineData(1, false)]
+        // This is highly dependent on reflection implementation and may not be consistent across runtimes.
+        // The extra 'bool _' parameter is to avoid a reflection optimization that would have added an extra frame.
+        public void Ctor_SkipFrames(int skipFrames, bool _)
         {
             var stackFrame = new StackFrame(skipFrames);
             VerifyStackFrame(stackFrame, true, skipFrames, typeof(StackFrameTests).GetMethod(nameof(Ctor_SkipFrames)), isCurrentFrame: skipFrames == 0);

@@ -112,12 +112,12 @@ namespace System.Reflection
                 return false;
             }
 
-            Type declaringType = method.DeclaringType!;
+            RuntimeType declaringType = (RuntimeType)method.DeclaringType!;
 
             if (method is RuntimeConstructorInfo)
             {
-                // Strings and arrays require initialization through newobj.
-                return !ReferenceEquals(declaringType, typeof(string)) && !declaringType.IsArray;
+                // Strings, arrays and Nullable<T> require initialization through newobj.
+                return !ReferenceEquals(declaringType, typeof(string)) && !declaringType.IsArray && !declaringType.IsNullableOfT;
             }
 
             if (declaringType.IsValueType)
