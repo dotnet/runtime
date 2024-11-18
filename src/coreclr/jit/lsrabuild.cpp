@@ -3695,11 +3695,12 @@ int LinearScan::BuildOperandUses(GenTree* node, SingleTypeRegSet candidates)
 #ifdef TARGET_ARM64
             if (HWIntrinsicInfo::IsScalable(hwintrinsic->GetHWIntrinsicId()))
             {
+                int count = 0;
                 for (size_t argNum = 1; argNum <= numArgs; argNum++)
                 {
-                    BuildOperandUses(hwintrinsic->Op(argNum), candidates);
+                    count += BuildOperandUses(hwintrinsic->Op(argNum), candidates);
                 }
-                return (int)numArgs;
+                return count;
             }
 #endif
             assert(numArgs == 2);
