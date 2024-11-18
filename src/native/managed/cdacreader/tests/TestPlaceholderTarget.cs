@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Runtime.CompilerServices;
+using Moq;
 
 namespace Microsoft.Diagnostics.DataContractReader.UnitTests;
 
@@ -23,13 +24,14 @@ internal class TestPlaceholderTarget : Target
     protected ReadFromTargetDelegate _dataReader = (address, buffer) => throw new NotImplementedException();
 
 #region Setup
-    public TestPlaceholderTarget(MockTarget.Architecture arch)
+    public TestPlaceholderTarget(MockTarget.Architecture arch, ReadFromTargetDelegate reader)
     {
         IsLittleEndian = arch.IsLittleEndian;
         PointerSize = arch.Is64Bit ? 8 : 4;
-        contractRegistry = new TestRegistry();;
-        dataCache = new TestDataCache();
+        contractRegistry = new TestRegistry();
+        dataCache = new DefaultDataCache(this);
         typeInfoCache = null;
+        _dataReader = reader;
     }
 
     internal void SetContracts(ContractRegistry contracts)
@@ -37,20 +39,11 @@ internal class TestPlaceholderTarget : Target
         contractRegistry = contracts;
     }
 
-    internal void SetDataCache(Target.IDataCache cache)
-    {
-        dataCache = cache;
-    }
-
     internal void SetTypeInfoCache(Dictionary<DataType, Target.TypeInfo> cache)
     {
         typeInfoCache = cache;
     }
 
-    internal void SetDataReader(ReadFromTargetDelegate reader)
-    {
-        _dataReader = reader;
-    }
 #endregion Setup
 
     public override int PointerSize { get; }
@@ -229,34 +222,8 @@ internal class TestPlaceholderTarget : Target
         public override Contracts.IReJIT ReJIT => ReJITContract.Value ?? throw new NotImplementedException();
     }
 
-    // a data cache that throws NotImplementedException for all methods,
-    // useful for subclassing to override specific methods
-    internal class TestDataCache : Target.IDataCache
-    {
-        public TestDataCache() {}
-
-        public virtual T GetOrAdd<T>(TargetPointer address) where T : Data.IData<T>
-        {
-            if (TryGet(address.Value, out T? data))
-            {
-                return data;
-            }
-            return Add<T>(address.Value);
-        }
-
-        public virtual bool TryGet<T>(ulong address, [NotNullWhen(true)] out T? data)
-        {
-            throw new NotImplementedException();
-        }
-
-        protected virtual T Add<T>(ulong address) where T : Data.IData<T>
-        {
-            throw new NotImplementedException();
-        }
-    }
-
     // A data cache that stores data in a dictionary and calls IData.Create to construct the data.
-    internal class DefaultDataCache : Target.IDataCache
+    private class DefaultDataCache : Target.IDataCache
     {
         protected readonly Target _target;
         protected readonly Dictionary<(ulong, Type), object?> _readDataByAddress = [];
