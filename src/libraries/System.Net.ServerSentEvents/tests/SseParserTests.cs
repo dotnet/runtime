@@ -478,6 +478,40 @@ namespace System.Net.ServerSentEvents.Tests
         }
 
         [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(922337203685477)] // TimeSpan.MaxValue.TotalMilliseconds
+        [InlineData(922337203685476)]
+        public async Task Retry_ValidRetryField_IsReturned(long retryValue)
+        {
+            // Workaround for TimeSpan.FromMillisecond not being able to roundtrip TimeSpan.MaxValue
+            TimeSpan expectedInterval = retryValue == TimeSpan.MaxValue.TotalMilliseconds ? TimeSpan.MaxValue : TimeSpan.FromMilliseconds(retryValue);
+            using Stream stream = GetStream($"data: test\nretry: {retryValue}\n\n", trickle: false);
+
+            List<SseItem<string>> items = await ReadAllEventsAsync(stream);
+
+            Assert.Equal(1, items.Count);
+            Assert.Equal(expectedInterval, items[0].ReconnectionInterval);
+        }
+
+        [Theory]
+        [InlineData("")]
+        [InlineData("-1")]
+        [InlineData("-922337203685477")] // TimeSpan.MinValue.TotalMilliseconds
+        [InlineData("922337203685478")] // TimeSpan.MaxValue.TotalMilliseconds + 1
+        [InlineData("9223372036854775807")] // long.MaxValue
+        [InlineData("invalidmilliseconds")]
+        public async Task Retry_InvalidRetryField_IsIgnored(string retryValue)
+        {
+            using Stream stream = GetStream($"data: test\nretry: {retryValue}\n\n", trickle: false);
+
+            List<SseItem<string>> items = await ReadAllEventsAsync(stream);
+
+            Assert.Equal(1, items.Count);
+            Assert.Null(items[0].ReconnectionInterval);
+        }
+
+        [Theory]
         [MemberData(nameof(NewlineTrickleAsyncData))]
         public async Task JsonContent_DelegateInvoked(string newline, bool trickle, bool useAsync)
         {
