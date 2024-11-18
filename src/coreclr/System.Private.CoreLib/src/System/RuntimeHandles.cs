@@ -32,13 +32,21 @@ namespace System
         /// <returns>A new <see cref="RuntimeTypeHandle"/> object that corresponds to the value parameter.</returns>
         public static RuntimeTypeHandle FromIntPtr(IntPtr value) => new RuntimeTypeHandle(GetTypeFromHandle(value));
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_GetTypeObjectFromHandleSlow")]
-        private static partial void GetTypeObjectFromHandleSlow(
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_GetTypeFromHandleSlow")]
+        private static partial void GetTypeFromHandleSlow(
             IntPtr handle,
             ObjectHandleOnStack typeObject);
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static RuntimeType GetTypeFromHandleSlow(IntPtr handle)
+        {
+            RuntimeType? typeObject = null;
+            GetTypeFromHandleSlow(handle, ObjectHandleOnStack.Create(ref typeObject));
+            return typeObject!;
+        }
+
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern RuntimeType? GetTypeObjectFromHandleIfExists(IntPtr handle);
+        private static extern RuntimeType? GetTypeFromHandleIfExists(IntPtr handle);
 
         private static RuntimeType? GetTypeFromHandle(IntPtr handle)
         {
@@ -47,29 +55,13 @@ namespace System
                 return null;
             }
 
-            return GetTypeObjectFromHandleIfExists(handle) ?? GetTypeObjectFromHandleSlowWorker(handle);
-
-            [MethodImpl(MethodImplOptions.NoInlining)]
-            static RuntimeType GetTypeObjectFromHandleSlowWorker(IntPtr handle)
-            {
-                RuntimeType? typeObject = null;
-                GetTypeObjectFromHandleSlow(handle, ObjectHandleOnStack.Create(ref typeObject));
-                return typeObject!;
-            }
+            return GetTypeFromHandleIfExists(handle) ?? GetTypeFromHandleSlow(handle);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static unsafe RuntimeType GetTypeObject(MethodTable* pMT)
+        internal static unsafe RuntimeType GetRuntimeType(MethodTable* pMT)
         {
-            return pMT->AuxiliaryData->ExposedClassObject ?? GetTypeObjectWorker(pMT);
-
-            [MethodImpl(MethodImplOptions.NoInlining)]
-            static RuntimeType GetTypeObjectWorker(MethodTable* pMT)
-            {
-                RuntimeType? typeObject = null;
-                GetTypeObjectFromHandleSlow((IntPtr)pMT, ObjectHandleOnStack.Create(ref typeObject));
-                return typeObject!;
-            }
+            return pMT->AuxiliaryData->ExposedClassObject ?? GetTypeFromHandleSlow((IntPtr)pMT);
         }
 
         /// <summary>
@@ -388,30 +380,6 @@ namespace System
             }
 
             return new ModuleHandle(GetModule(m_type));
-        }
-
-        internal static RuntimeType? GetBaseType(RuntimeType type)
-        {
-            if (IsGenericVariable(type))
-            {
-                throw new ArgumentNullException(SR.Arg_InvalidHandle);
-            }
-
-            TypeHandle typeHandle = type.GetNativeTypeHandle();
-            if (typeHandle.IsTypeDesc)
-            {
-                return null;
-            }
-
-            MethodTable* pParentMT = typeHandle.AsMethodTable()->ParentMethodTable;
-            if (pParentMT == null)
-            {
-                return null;
-            }
-
-            RuntimeType result = GetTypeObject(pParentMT);
-            GC.KeepAlive(type);
-            return result!;
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -1278,13 +1246,7 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern FieldAttributes GetAttributesInternal(RuntimeFieldHandleInternal field);
-
-        internal static FieldAttributes GetAttributes(RuntimeFieldHandleInternal field)
-        {
-            Debug.Assert(!field.IsNullHandle());
-            return GetAttributesInternal(field);
-        }
+        internal static extern FieldAttributes GetAttributes(RuntimeFieldHandleInternal field);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern MethodTable* GetApproxDeclaringMethodTable(RuntimeFieldHandleInternal field);
@@ -1295,7 +1257,7 @@ namespace System
             MethodTable* pMT = GetApproxDeclaringMethodTable(field);
             Debug.Assert(pMT != null);
 
-            return RuntimeTypeHandle.GetTypeObject(pMT);
+            return RuntimeTypeHandle.GetRuntimeType(pMT);
         }
 
         internal static RuntimeType GetApproxDeclaringType(IRuntimeFieldInfo field)

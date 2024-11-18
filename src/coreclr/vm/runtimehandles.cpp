@@ -138,7 +138,7 @@ extern "C" BOOL QCALLTYPE RuntimeMethodHandle_IsCAVisibleFromDecoratedType(
     return bResult;
 }
 
-extern "C" void QCALLTYPE RuntimeTypeHandle_GetTypeObjectFromHandleSlow(
+extern "C" void QCALLTYPE RuntimeTypeHandle_GetTypeFromHandleSlow(
     EnregisteredTypeHandle typeHandleRaw,
     QCall::ObjectHandleOnStack result)
 {
@@ -178,7 +178,7 @@ NOINLINE static ReflectClassBaseObject* GetRuntimeTypeHelper(LPVOID __me, TypeHa
 
 #define RETURN_CLASS_OBJECT(typeHandle, keepAlive) FC_INNER_RETURN(ReflectClassBaseObject*, GetRuntimeTypeHelper(__me, typeHandle, keepAlive))
 
-FCIMPL1(ReflectClassBaseObject*, RuntimeTypeHandle::GetTypeObjectFromHandleIfExists, EnregisteredTypeHandle th)
+FCIMPL1(ReflectClassBaseObject*, RuntimeTypeHandle::GetTypeFromHandleIfExists, EnregisteredTypeHandle th)
 {
     FCALL_CONTRACT;
 
@@ -2482,7 +2482,7 @@ FCIMPL1(LPCUTF8, RuntimeFieldHandle::GetUtf8Name, FieldDesc *pField)
 }
 FCIMPLEND
 
-FCIMPL1(INT32, RuntimeFieldHandle::GetAttributesInternal, FieldDesc *pField)
+FCIMPL1(INT32, RuntimeFieldHandle::GetAttributes, FieldDesc *pField)
 {
     CONTRACTL
     {

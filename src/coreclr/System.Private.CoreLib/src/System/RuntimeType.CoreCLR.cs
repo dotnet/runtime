@@ -743,7 +743,7 @@ namespace System
                                 #endregion
                             }
 
-                            declaringType = RuntimeTypeHandle.GetBaseType(declaringType)!;
+                            declaringType = RuntimeType.GetParentType(declaringType)!;
                         } while (declaringType != null);
                         #endregion
                     }
@@ -821,7 +821,7 @@ namespace System
 
                         PopulateLiteralFields(filter, populatingType, ref list);
 
-                        populatingType = RuntimeTypeHandle.GetBaseType(populatingType);
+                        populatingType = RuntimeType.GetParentType(populatingType);
                     }
                     #endregion
 
@@ -1157,7 +1157,7 @@ namespace System
                         while (populatingType != null)
                         {
                             PopulateEvents(filter, populatingType, csEventInfos, ref list);
-                            populatingType = RuntimeTypeHandle.GetBaseType(populatingType);
+                            populatingType = RuntimeType.GetParentType(populatingType);
                         }
                     }
                     else
@@ -1267,7 +1267,7 @@ namespace System
                         while (populatingType != null)
                         {
                             PopulateProperties(filter, populatingType, csPropertyInfos, usedSlots, isInterface: false, ref list);
-                            populatingType = RuntimeTypeHandle.GetBaseType(populatingType);
+                            populatingType = RuntimeType.GetParentType(populatingType);
                         }
                     }
                     else
@@ -1781,6 +1781,25 @@ namespace System
         #region Static Members
 
         #region Internal
+        internal static unsafe RuntimeType? GetParentType(RuntimeType type)
+        {
+            TypeHandle typeHandle = type.GetNativeTypeHandle();
+            if (typeHandle.IsTypeDesc)
+            {
+                return null;
+            }
+
+            MethodTable* pParentMT = typeHandle.AsMethodTable()->ParentMethodTable;
+            if (pParentMT == null)
+            {
+                return null;
+            }
+
+            RuntimeType result = RuntimeTypeHandle.GetRuntimeType(pParentMT);
+            GC.KeepAlive(type);
+            return result;
+        }
+
         [RequiresUnreferencedCode("Trimming changes metadata tokens")]
         internal static MethodBase? GetMethodBase(RuntimeModule scope, int typeMetadataToken)
         {
