@@ -754,7 +754,7 @@ extends:
 
               - publish: '$(Build.SourcesDirectory)/artifacts/obj/mono/offsetfiles'
                 condition: failed()
-                artifact: Mono_Offsets_$(osGroup)$(osSubGroup)
+                artifact: MonoAOTOffsets_$(osGroup)$(osSubGroup)
                 displayName: Upload offset files
             condition: >-
               or(

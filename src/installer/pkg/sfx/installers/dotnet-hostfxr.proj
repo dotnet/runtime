@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.Build.NoTargets">
   <PropertyGroup>
     <SkipBuild Condition="'$(RuntimeFlavor)' != '$(PrimaryRuntimeFlavor)' or '$(TargetsMobile)' == 'true'">true</SkipBuild>
-    <GenerateInstallers>true</GenerateInstallers>
+    <GenerateInstallers Condition="'$(DotNetBuildSourceOnly)' != 'true'">true</GenerateInstallers>
     <InstallerName>dotnet-hostfxr</InstallerName>
     <InstallerName Condition="'$(TargetOS)' == 'osx'">dotnet-hostfxr-internal</InstallerName>
     <PackageBrandNameSuffix>Host FX Resolver</PackageBrandNameSuffix>

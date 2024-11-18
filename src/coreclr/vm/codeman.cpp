@@ -1416,6 +1416,12 @@ void EEJitManager::SetCpuInfo()
             }
         }
     }
+    #if defined(TARGET_AMD64)
+    if ((cpuFeatures & XArchIntrinsicConstants_Apx) != 0)
+    {
+        CPUCompileFlags.Set(InstructionSet_APX);
+    }
+    #endif  // TARGET_AMD64
 #elif defined(TARGET_ARM64)
 
 #if !defined(TARGET_WINDOWS)
@@ -5887,8 +5893,6 @@ BOOL ReadyToRunJitManager::JitCodeToMethodInfo(RangeSection * pRangeSection,
 #ifdef FEATURE_EH_FUNCLETS
     // Save the raw entry
     PTR_RUNTIME_FUNCTION RawFunctionEntry = pRuntimeFunctions + MethodIndex;
-
-    ULONG UMethodIndex = (ULONG)MethodIndex;
 
     const int lookupIndex = HotColdMappingLookupTable::LookupMappingForMethod(pInfo, (ULONG)MethodIndex);
     if ((lookupIndex != -1) && ((lookupIndex & 1) == 1))
