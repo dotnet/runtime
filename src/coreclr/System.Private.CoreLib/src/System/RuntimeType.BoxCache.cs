@@ -37,7 +37,7 @@ namespace System
                 _originalRuntimeType = rt;
 #endif
 
-                TypeHandle handle = rt.TypeHandle.GetNativeTypeHandle();
+                TypeHandle handle = rt.GetNativeTypeHandle();
 
                 if (handle.IsTypeDesc)
                     throw new ArgumentException(SR.Arg_TypeNotSupported);
