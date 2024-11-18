@@ -22,6 +22,8 @@
 
 ; DO NOT CHANGE R2R NUMERIC VALUES OF THE EXISTING SETS. Changing R2R numeric values definitions would be R2R format breaking change.
 
+; The ISA definitions should also be mapped to `hwintrinsicIsaRangeArray` in hwintrinsic.cpp.
+
 ; Definition of X86 instruction sets
 definearch         ,X86   ,32Bit                ,X64, X64
 
@@ -40,8 +42,8 @@ instructionset     ,X86   ,Bmi2                 ,        ,11 ,BMI2              
 instructionset     ,X86   ,Fma                  ,        ,12 ,FMA                   ,fma
 instructionset     ,X86   ,Lzcnt                ,        ,13 ,LZCNT                 ,lzcnt
 instructionset     ,X86   ,Pclmulqdq            ,        ,14 ,PCLMULQDQ             ,pclmul
-instructionset     ,X86   ,Pclmulqdq_V256       ,        ,48 ,PCLMULQDQ_V256        ,vpclmul
-instructionset     ,X86   ,Pclmulqdq_V512       ,        ,49 ,PCLMULQDQ_V512        ,vpclmul_v512
+instructionset     ,X86   ,Pclmulqdq_V256       ,        ,49 ,PCLMULQDQ_V256        ,vpclmul
+instructionset     ,X86   ,Pclmulqdq_V512       ,        ,50 ,PCLMULQDQ_V512        ,vpclmul_v512
 instructionset     ,X86   ,Popcnt               ,        ,15 ,POPCNT                ,popcnt
 instructionset     ,X86   ,                     ,        ,   ,Vector128             ,
 instructionset     ,X86   ,                     ,        ,   ,Vector256             ,
@@ -65,6 +67,7 @@ instructionset     ,X86   ,Avx10v1_V512         ,        ,46 ,AVX10v1_V512      
 instructionset     ,X86   ,VectorT128           ,        ,39 ,VectorT128            ,vectort128
 instructionset     ,X86   ,VectorT256           ,        ,40 ,VectorT256            ,vectort256
 instructionset     ,X86   ,VectorT512           ,        ,41 ,VectorT512            ,vectort512
+instructionset     ,X86   ,Apx                  ,        ,48 ,APX                   ,apx
 
 instructionset64bit,X86   ,X86Base
 instructionset64bit,X86   ,SSE
