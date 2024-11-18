@@ -156,7 +156,7 @@
 
     <WasmDedup Condition="'$(WasmDedup)' == ''">true</WasmDedup>
     <_IsLibraryMode Condition="'$(OutputType)' == 'Library' and '$(UsingMicrosoftNETSdkWebAssembly)' == 'true'">true</_IsLibraryMode>
-    <IsWasiProject Condition="'$(IsWasiProject)' == '' and '$(RuntimeIdentifier)' == 'wasi-wasm' and '$(OutputType)' != 'Library' and '$(_IsLibraryMode)' != 'true'">true</IsWasiProject>
+    <IsWasiProject Condition="'$(IsWasiProject)' == '' and '$(RuntimeIdentifier)' == 'wasi-wasm' and ('$(OutputType)' != 'Library' or '$(_IsLibraryMode)' == 'true')">true</IsWasiProject>
     <IsBrowserWasmProject Condition="'$(IsBrowserWasmProject)' == '' and '$(RuntimeIdentifier)' == 'browser-wasm' and '$(OutputType)' != 'Library' and '$(_IsLibraryMode)' != 'true'">true</IsBrowserWasmProject>
     <IsWasmProject Condition="'$(IsWasmProject)' == '' and ('$(IsWasiProject)' == 'true' or '$(IsBrowserWasmProject)' == 'true')">true</IsWasmProject>
     <WasmBuildAppAfterThisTarget Condition="'$(WasmBuildAppAfterThisTarget)' == '' and '$(DisableAutoWasmBuildApp)' != 'true'">Build</WasmBuildAppAfterThisTarget>
