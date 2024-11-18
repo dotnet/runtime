@@ -106,7 +106,7 @@ namespace System.Text.Encodings.Web
                     int idxOfSemicolon = (int)((uint)BitOperations.Log2(scalarValue) / 4) + 4;
                     Debug.Assert(4 <= idxOfSemicolon && idxOfSemicolon <= 9, "Expected '&#x0;'..'&#x10FFFF;'.");
 
-                    if (!SpanUtility.IsValidIndex(destination, idxOfSemicolon)) { goto OutOfSpaceInner; }
+                    if ((uint)destination.Length <= (uint)idxOfSemicolon) { goto OutOfSpaceInner; }
                     destination[idxOfSemicolon] = (byte)';';
 
                     if (!"&#x0"u8.TryCopyTo(destination))
@@ -115,7 +115,7 @@ namespace System.Text.Encodings.Web
                     }
 
                     destination = destination.Slice(3, idxOfSemicolon - 3);
-                    for (int i = destination.Length - 1; SpanUtility.IsValidIndex(destination, i); i--)
+                    for (int i = destination.Length - 1; (uint)destination.Length > (uint)i; i--)
                     {
                         char asUpperHex = HexConverter.ToCharUpper((int)scalarValue);
                         destination[i] = (byte)asUpperHex;
@@ -181,7 +181,7 @@ namespace System.Text.Encodings.Web
                     int idxOfSemicolon = (int)((uint)BitOperations.Log2(scalarValue) / 4) + 4;
                     Debug.Assert(4 <= idxOfSemicolon && idxOfSemicolon <= 9, "Expected '&#x0;'..'&#x10FFFF;'.");
 
-                    if (!SpanUtility.IsValidIndex(destination, idxOfSemicolon)) { goto OutOfSpaceInner; }
+                    if ((uint)destination.Length <= (uint)idxOfSemicolon) { goto OutOfSpaceInner; }
                     destination[idxOfSemicolon] = ';';
 
                     // It's more efficient to write 4 chars at a time instead of 1 char.
@@ -192,7 +192,7 @@ namespace System.Text.Encodings.Web
                     }
 
                     destination = destination.Slice(3, idxOfSemicolon - 3);
-                    for (int i = destination.Length - 1; SpanUtility.IsValidIndex(destination, i); i--)
+                    for (int i = destination.Length - 1; (uint)destination.Length > (uint)i; i--)
                     {
                         char asUpperHex = HexConverter.ToCharUpper((int)scalarValue);
                         destination[i] = asUpperHex;
