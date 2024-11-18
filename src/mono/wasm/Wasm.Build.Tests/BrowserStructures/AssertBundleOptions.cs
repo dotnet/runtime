@@ -8,8 +8,9 @@ using System.IO;
 namespace Wasm.Build.Tests;
 
 public record AssertBundleOptions(
-    BuildOptions BuildOptions,
+    MSBuildOptions BuildOptions,
     bool ExpectSymbolsFile = true,
     bool AssertIcuAssets = true,
-    bool AssertSymbolsFile = true
+    bool AssertSymbolsFile = true,
+    NativeFilesType ExpectedFileType
 );

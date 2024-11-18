@@ -106,7 +106,7 @@ public abstract class IcuTestsBase : WasmTemplateTestsBase
         public record Locale(string Code, string? SundayName);
         ";
 
-    protected async Task TestIcuShards(string config, Template templateType, bool aot, string shardName, string testedLocales, GlobalizationMode globalizationMode, bool onlyPredefinedCultures=false)
+    protected async Task TestIcuShards(Configuration config, Template templateType, bool aot, string shardName, string testedLocales, GlobalizationMode globalizationMode, bool onlyPredefinedCultures=false)
     {
         string icuProperty = "BlazorIcuDataFileName"; // https://github.com/dotnet/runtime/issues/94133
         // by default, we remove resource strings from an app. ICU tests are checking exception messages contents -> resource string keys are not enough
@@ -117,7 +117,7 @@ public abstract class IcuTestsBase : WasmTemplateTestsBase
     }
 
     protected ProjectInfo CreateIcuProject(
-        string config,
+        Configuration config,
         Template templateType,
         bool aot,
         string testedLocales,
@@ -136,7 +136,7 @@ public abstract class IcuTestsBase : WasmTemplateTestsBase
     }
 
     protected async Task<string> PublishAndRunIcuTest(
-        string config,
+        Configuration config,
         Template templateType,
         bool aot,
         string testedLocales,
@@ -150,19 +150,13 @@ public abstract class IcuTestsBase : WasmTemplateTestsBase
         {
             ProjectInfo info = CreateIcuProject(
                 config, templateType, aot, testedLocales, extraProperties, onlyPredefinedCultures);
-            bool isPublish = true;
             bool triggersNativeBuild = globalizationMode == GlobalizationMode.Invariant;
-            (string _, string buildOutput) = BuildProject(info,
-                        new BuildOptions(
-                            config,
-                            info.ProjectName,
-                            BinFrameworkDir: GetBinFrameworkDir(config, isPublish),
-                            ExpectedFileType: GetExpectedFileType(info, isPublish, triggersNativeBuild),
-                            IsPublish: isPublish,
-                            GlobalizationMode: globalizationMode,
-                            CustomIcuFile: icuFileName
-                        ));
-            RunOptions runOptions = new(info.Configuration, Locale: locale, ExpectedExitCode: 42);
+            (string _, string buildOutput) = PublishProject(info,
+                config,
+                new PublishOptions(GlobalizationMode: globalizationMode, CustomIcuFile: icuFileName),
+                isNativeBuild: triggersNativeBuild);
+
+            RunOptions runOptions = new(config, Locale: locale, ExpectedExitCode: 42);
             RunResult runOutput = await RunForPublishWithWebServer(runOptions);
             return $"{buildOutput}\n{runOutput.TestOutput}";
         }

@@ -19,6 +19,8 @@ namespace Wasm.Build.Tests;
 public class WasmTemplateTestsBase : BuildTestBase
 {
     private readonly WasmSdkBasedProjectProvider _provider;
+    protected readonly PublishOptions _defaultPublishOptions = new PublishOptions();
+    protected readonly BuildOptions _defaultBuildOptions = new BuildOptions();
     protected const string DefaultRuntimeAssetsRelativePath = "./_framework/";    
     protected virtual TestAsset BasicTestApp => new() { Name = "WasmBasicTestApp", RunnableProjectSubPath = "App" };
     
@@ -35,24 +37,24 @@ public class WasmTemplateTestsBase : BuildTestBase
             { "Hello, Browser!", "TestOutput -> Hello, Browser!" }
         };
 
-    private string GetProjectName(string idPrefix, string config, bool aot, bool appendUnicodeToPath, bool avoidAotLongPathIssue = false) =>
+    private string GetProjectName(string idPrefix, Configuration config, bool aot, bool appendUnicodeToPath, bool avoidAotLongPathIssue = false) =>
         avoidAotLongPathIssue ? // https://github.com/dotnet/runtime/issues/103625
             $"{GetRandomId()}" :
             appendUnicodeToPath ?
                 $"{idPrefix}_{config}_{aot}_{GetRandomId()}_{s_unicodeChars}" :
                 $"{idPrefix}_{config}_{aot}_{GetRandomId()}";
 
-    private string InitProjectLocation(string idPrefix, string config, bool aot, bool appendUnicodeToPath, bool avoidAotLongPathIssue = false)
+    private string InitProjectLocation(string idPrefix, Configuration config, bool aot, bool appendUnicodeToPath, bool avoidAotLongPathIssue = false)
     {
         string projectName = GetProjectName(idPrefix, config, aot, appendUnicodeToPath, avoidAotLongPathIssue);
-        InitPaths(projectName);
+        (string logPath, string nugetDir) = InitPaths(projectName);
         InitProjectDir(_projectDir, addNuGetSourceForLocalPackages: true);
-        return projectName;
+        return (projectName, logPath, nugetDir);
     }
 
     public ProjectInfo CreateWasmTemplateProject(
         Template template,
-        string config,
+        Configuration config,
         bool aot,
         string idPrefix = "wbt",
         bool appendUnicodeToPath = true,
@@ -63,7 +65,8 @@ public class WasmTemplateTestsBase : BuildTestBase
         string extraItems = "",
         string insertAtEnd = "")
     {
-        string projectName = InitProjectLocation(idPrefix, config, aot, appendUnicodeToPath);
+        (string projectName, string logPath, string nugetDir) =
+            InitProjectLocation(idPrefix, config, aot, appendUnicodeToPath);
 
         if (addFrameworkArg)
             extraArgs += $" -f {DefaultTargetFramework}";
@@ -75,12 +78,12 @@ public class WasmTemplateTestsBase : BuildTestBase
             .EnsureSuccessful();
 
         string projectFilePath = Path.Combine(_projectDir!, $"{projectName}.csproj");
-        UpdateProjectFile(projectFilePath, aot, runAnalyzers, extraProperties, extraItems, insertAtEnd);
-        return new ProjectInfo(config, aot, projectName, projectFilePath);
+        UpdateProjectFile(projectFilePath, runAnalyzers, extraProperties, extraItems, insertAtEnd);
+        return new ProjectInfo(projectName, projectFilePath, logPath, nugetDir);
     }
 
     protected ProjectInfo CopyTestAsset(
-        string config,
+        Configuration config,
         bool aot,
         TestAsset asset,
         string idPrefix,
@@ -90,45 +93,54 @@ public class WasmTemplateTestsBase : BuildTestBase
         string extraItems = "",
         string insertAtEnd = "")
     {
-        InitProjectLocation(idPrefix, config, aot, appendUnicodeToPath, avoidAotLongPathIssue: s_isWindows && aot);
+        (string projectName, string logPath, string nugetDir) =
+            InitProjectLocation(idPrefix, config, aot, appendUnicodeToPath, avoidAotLongPathIssue: s_isWindows && aot);
         Utils.DirectoryCopy(Path.Combine(BuildEnvironment.TestAssetsPath, asset.Name), Path.Combine(_projectDir!));
         if (!string.IsNullOrEmpty(asset.RunnableProjectSubPath))
         {
             _projectDir = Path.Combine(_projectDir!, asset.RunnableProjectSubPath);
         }
         string projectFilePath = Path.Combine(_projectDir!, $"{asset.Name}.csproj");
-        UpdateProjectFile(projectFilePath, aot, runAnalyzers, extraProperties, extraItems, insertAtEnd);
-        return new ProjectInfo(config, aot, asset.Name, projectFilePath);
+        UpdateProjectFile(projectFilePath, runAnalyzers, extraProperties, extraItems, insertAtEnd);
+        return new ProjectInfo(asset.Name, projectFilePath, logPath, nugetDir);
     }
 
-    private void UpdateProjectFile(string projectFilePath, bool aot, bool runAnalyzers, string extraProperties, string extraItems, string insertAtEnd)
+    private void UpdateProjectFile(string projectFilePath, bool runAnalyzers, string extraProperties, string extraItems, string insertAtEnd)
     {
-        if (aot)
-        {
-            extraProperties += $"\n<RunAOTCompilation>true</RunAOTCompilation>";
-            extraProperties += $"\n<EmccVerbose>{s_isWindows}</EmccVerbose>";
-        }
         extraProperties += "<TreatWarningsAsErrors>true</TreatWarningsAsErrors>";
         if (runAnalyzers)
             extraProperties += "<RunAnalyzers>true</RunAnalyzers>";
         AddItemsPropertiesToProject(projectFilePath, extraProperties, extraItems, insertAtEnd);
     }
 
+    public virtual (string projectDir, string buildOutput) PublishProject(
+        ProjectInfo info,
+        Configuration configuration,
+        PublishOptions buildOptions = _defaultPublishOptions,
+        bool expectNativeBuild = false) =>
+        BuildProject(info, configuration, buildOptions, expectNativeBuild);
+
     public virtual (string projectDir, string buildOutput) BuildProject(
-        ProjectInfo projectInfo,
-        BuildOptions buildOptions,
-        params string[] extraArgs)
+        ProjectInfo info,
+        Configuration configuration,
+        MSBuildOptions buildOptions = _defaultBuildOptions,
+        bool expectNativeBuild = false)
     {
+        if (buildOptions.AOT)
+        {
+            buildOptions.ExtraMSBuildArgs += "-p:RunAOTCompilation=true -p:EmccVerbose=true";
+        }
+
         if (buildOptions.ExtraBuildEnvironmentVariables is null)
             buildOptions = buildOptions with { ExtraBuildEnvironmentVariables = new Dictionary<string, string>() };
 
         // TODO: reenable this when the SDK supports targetting net10.0
         //buildOptions.ExtraBuildEnvironmentVariables["TreatPreviousAsCurrent"] = "false";
 
-        (CommandResult res, string logFilePath) = BuildProjectWithoutAssert(buildOptions, extraArgs);
+        (CommandResult res, string logFilePath) = BuildProjectWithoutAssert(configuration, info.ProjectName, buildOptions);
 
         if (buildOptions.UseCache)
-            _buildContext.CacheBuild(projectInfo, new BuildResult(_projectDir!, logFilePath, true, res.Output));
+            _buildContext.CacheBuild(info, new BuildResult(_projectDir!, logFilePath, true, res.Output));
 
         if (!buildOptions.ExpectSuccess)
         {
@@ -136,14 +148,14 @@ public class WasmTemplateTestsBase : BuildTestBase
             return (_projectDir!, res.Output);
         }
 
-        if (string.IsNullOrEmpty(buildOptions.BinFrameworkDir))
-        {
-            buildOptions = buildOptions with { BinFrameworkDir = GetBinFrameworkDir(buildOptions.Configuration, buildOptions.IsPublish) };
-        }
+        string frameworkDir = string.IsNullOrEmpty(buildOptions.NonDefaultFrameworkDir) ?
+            GetBinFrameworkDir(configuration, buildOptions.IsPublish) :
+            buildOptions.NonDefaultFrameworkDir;
+        buildOptions = buildOptions with { BinFrameworkDir = frameworkDir };
 
         if (buildOptions.AssertAppBundle)
         {
-            _provider.AssertWasmSdkBundle(buildOptions, res.Output);
+            _provider.AssertWasmSdkBundle(configuration, buildOptions, res.Output, expectNativeBuild);
         }
         return (_projectDir!, res.Output);
     }
@@ -325,14 +337,14 @@ public class WasmTemplateTestsBase : BuildTestBase
         }
     }
 
-    public string GetBinFrameworkDir(string config, bool forPublish, string framework = DefaultTargetFramework, string? projectDir = null) =>
+    public string GetBinFrameworkDir(Configuration config, bool forPublish, string framework = DefaultTargetFramework, string? projectDir = null) =>
         _provider.GetBinFrameworkDir(config, forPublish, framework, projectDir);
 
     public BuildPaths GetBuildPaths(ProjectInfo info, bool forPublish) =>
         _provider.GetBuildPaths(info, forPublish);
 
-    public IDictionary<string, (string fullPath, bool unchanged)> GetFilesTable(ProjectInfo info, BuildPaths paths, bool unchanged) =>
-        _provider.GetFilesTable(info, paths, unchanged);
+    public IDictionary<string, (string fullPath, bool unchanged)> GetFilesTable(string projectName, bool isAOT, BuildPaths paths, bool unchanged) =>
+        _provider.GetFilesTable(projectName, isAOT, paths, unchanged);
 
     public IDictionary<string, FileStat> StatFiles(IDictionary<string, (string fullPath, bool unchanged)> fullpaths) =>
         _provider.StatFiles(fullpaths);

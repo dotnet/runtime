@@ -19,7 +19,7 @@ public class IcuShardingTests2 : IcuTestsBase
     public IcuShardingTests2(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
         : base(output, buildContext) { }
 
-    public static IEnumerable<object[]> IcuExpectedAndMissingShardFromRuntimePackTestData(string config)
+    public static IEnumerable<object[]> IcuExpectedAndMissingShardFromRuntimePackTestData(Configuration config)
     {
         var locales = new Dictionary<string, string>
         {
@@ -37,7 +37,7 @@ public class IcuShardingTests2 : IcuTestsBase
     }
 
     [Theory]
-    [MemberData(nameof(IcuExpectedAndMissingShardFromRuntimePackTestData), parameters: new object[] { "Release" })]
-    public async Task DefaultAvailableIcuShardsFromRuntimePack(string config, bool aot, string shardName, string testedLocales) =>
+    [MemberData(nameof(IcuExpectedAndMissingShardFromRuntimePackTestData), parameters: new object[] { Configuration.Release })]
+    public async Task DefaultAvailableIcuShardsFromRuntimePack(Configuration config, bool aot, string shardName, string testedLocales) =>
         await TestIcuShards(config, Template.WasmBrowser, aot, shardName, testedLocales, GlobalizationMode.Custom);
 }

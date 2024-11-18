@@ -15,7 +15,7 @@ namespace Wasm.Build.Tests
     {
         public static IEnumerable<object?[]> MainMethodTestData(bool aot)
             => ConfigWithAOTData(aot)
-                .Where(item => !(item.ElementAt(0) is string config && config == "Debug" && item.ElementAt(1) is bool aotValue && aotValue))
+                .Where(item => !(item.ElementAt(0) is Configuration config && config == Configuration.Debug && item.ElementAt(1) is bool aotValue && aotValue))
                 .UnwrapItemsAsArrays();
 
         public WasmBuildAppBase(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext) : base(output, buildContext)
@@ -24,7 +24,7 @@ namespace Wasm.Build.Tests
 
         protected async void TestMain(string projectName,
               string programText,
-              string config,
+              Configuration config,
               bool aot,
               bool isNativeBuild = false,
               int expectedExitCode = 42,
@@ -38,19 +38,9 @@ namespace Wasm.Build.Tests
             {
                 UpdateFile("runtimeconfig.template.json", new Dictionary<string, string> { {  "}\n}", runtimeConfigContents } });
             }
-            bool isPublish = true;
-            BuildProject(info,
-                new BuildOptions(
-                    info.Configuration,
-                    info.ProjectName,
-                    BinFrameworkDir: GetBinFrameworkDir(info.Configuration, isPublish),
-                    ExpectedFileType: GetExpectedFileType(info, isPublish: isPublish, isNativeBuild),
-                    IsPublish: isPublish
-                    ),
-                extraArgs
-            );
+            PublishProject(info, config, new PublishOptions(AOT: aot, ExtraMSBuildArgs: extraArgs), isNativeBuild: isNativeBuild);
             RunResult result = await RunForPublishWithWebServer(new(
-                info.Configuration,
+                config,
                 TestScenario: "DotnetRun",
                 ExpectedExitCode: expectedExitCode)
             );

@@ -18,7 +18,10 @@ namespace Wasm.Build.Tests;
 
 public abstract class BlazorWasmTestBase : WasmTemplateTestsBase
 {
-    protected readonly WasmSdkBasedProjectProvider _provider;    
+    protected readonly WasmSdkBasedProjectProvider _provider;
+    private readonly string _blazorExtraBuildArgs = "-p:BlazorEnableCompression=false /warnaserror";
+    protected readonly PublishOptions _defaultBlazorPublishOptions = _defaultPublishOptions with { ExtraMSBuildArgs = _blazorExtraBuildArgs };
+    private readonly BuildOptions _defaultBlazorBuildOptions = _defaultBlazorBuildOptions with { ExtraMSBuildArgs = _blazorExtraBuildArgs };
     protected override TestAsset BasicTestApp => new() { Name = "BlazorBasicTestApp", RunnableProjectSubPath = "App" };
     
     protected BlazorWasmTestBase(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
@@ -60,37 +63,6 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestsBase
             }
         };
 
-    public override (string projectDir, string buildOutput) BuildProject(
-        ProjectInfo projectInfo,
-        BuildOptions buildOptions,
-        params string[] extraArgs)
-    {
-        try
-        {
-            var additionalOptiont = buildOptions.WarnAsError
-                ? new[] { "-p:BlazorEnableCompression=false", "/warnaserror" }
-                : new[] { "-p:BlazorEnableCompression=false" };
-    
-            (string projectDir, string buildOutput) = base.BuildProject(
-                projectInfo,
-                buildOptions with { AssertAppBundle = false },
-                extraArgs.Concat(additionalOptiont).ToArray());
-
-            if (buildOptions.ExpectSuccess && buildOptions.AssertAppBundle)
-            {
-                AssertBundle(buildOutput, buildOptions);
-            }
-
-            return (projectDir, buildOutput);
-        }
-        catch (XunitException xe)
-        {
-            if (xe.Message.Contains("error CS1001: Identifier expected"))
-                Utils.DirectoryCopy(_projectDir!, _logPath, testOutput: _testOutput);
-            throw;
-        }
-    }
-
     protected void UpdateHomePage() =>
         UpdateFile(Path.Combine("Pages", "Home.razor"), blazorHomePageReplacements);
 
@@ -125,38 +97,59 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestsBase
     }
 
     protected (string projectDir, string buildOutput) BlazorBuild(
-        ProjectInfo info, bool isNativeBuild = false, bool useCache = true, params string[] extraArgs)
+        ProjectInfo info, Configuration config, MSBuildOptions buildOptions = _defaultBlazorBuildOptions, bool isNativeBuild = false)
     {
-        bool isPublish = false;
-        return BuildProject(info,
-            new BuildOptions(
-                info.Configuration,
-                info.ProjectName,
-                BinFrameworkDir: GetBlazorBinFrameworkDir(info.Configuration, isPublish),
-                ExpectedFileType: GetExpectedFileType(info, isPublish, isNativeBuild),
-                IsPublish: isPublish,
-                UseCache: useCache),
-            extraArgs
-        );
+        try
+        {
+            if (publishOptions != _defaultBlazorPublishOptions)
+                buildOptions = buildOptions with { ExtraMSBuildArgs = $"{buildOptions.ExtraMSBuildArgs} {_blazorExtraBuildArgs}" };
+            (string projectDir, string buildOutput) = BuildProject(
+                info,
+                config,
+                buildOptions,
+                isNativeBuild);
+            if (buildOptions.ExpectSuccess && buildOptions.AssertAppBundle)
+            {
+                AssertBundle(configuration, buildOutput, buildOptions, expectNativeBuild);
+            }
+            return (projectDir, buildOutput);
+        }
+        catch (XunitException xe)
+        {
+            if (xe.Message.Contains("error CS1001: Identifier expected"))
+                Utils.DirectoryCopy(_projectDir!, _logPath, testOutput: _testOutput);
+            throw;
+        }
     }
+        
 
     protected (string projectDir, string buildOutput) BlazorPublish(
-        ProjectInfo info, bool isNativeBuild = false, bool useCache = true, params string[] extraArgs)
+        ProjectInfo info, Configuration config, PublishOptions publishOptions = _defaultBlazorPublishOptions, bool isNativeBuild = false)
     {
-        bool isPublish = true;
-        return BuildProject(info,
-            new BuildOptions(
-                info.Configuration,
-                info.ProjectName,
-                BinFrameworkDir: GetBlazorBinFrameworkDir(info.Configuration, isPublish),
-                ExpectedFileType: GetExpectedFileType(info, isPublish, isNativeBuild),
-                IsPublish: isPublish,
-                UseCache: useCache),
-            extraArgs
-        );
+        try
+        {
+            if (publishOptions != _defaultBlazorPublishOptions)
+                buildOptions = buildOptions with { ExtraMSBuildArgs = $"{buildOptions.ExtraMSBuildArgs} {_blazorExtraBuildArgs}" };
+            (string projectDir, string buildOutput) = PublishProject(
+                info,
+                config,
+                publishOptions,
+                isNativeBuild);
+            if (publishOptions.ExpectSuccess && publishOptions.AssertAppBundle)
+            {
+                AssertBundle(configuration, buildOutput, publishOptions, expectNativeBuild);
+            }
+            return (projectDir, buildOutput);
+        }
+        catch (XunitException xe)
+        {
+            if (xe.Message.Contains("error CS1001: Identifier expected"))
+                Utils.DirectoryCopy(_projectDir!, _logPath, testOutput: _testOutput);
+            throw;
+        }
     }
 
-    public void AssertBundle(string buildOutput, BuildOptions buildOptions)
+    public void AssertBundle(Configuration config, string buildOutput, MSBuildOptions buildOptions, bool expectNativeBuild)
     {
         if (IsUsingWorkloads)
         {
@@ -164,13 +157,14 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestsBase
             ProjectProviderBase.AssertRuntimePackPath(buildOutput, buildOptions.TargetFramework ?? DefaultTargetFramework, buildOptions.RuntimeType);
         }
 
-        _provider.AssertBundle(buildOptions);
+        _provider.AssertBundle(config, buildOptions, expectNativeBuild);
 
         if (!buildOptions.IsPublish)
             return;
 
+        var expectedFileType = GetExpectedFileType(config, buildOptions.AOT, buildOptions.IsPublish, expectNativeBuild);
         // Publish specific checks
-        if (buildOptions.ExpectedFileType == NativeFilesType.AOT)
+        if (expectedFileType == NativeFilesType.AOT)
         {
             // check for this too, so we know the format is correct for the negative
             // test for jsinterop.webassembly.dll
@@ -182,13 +176,13 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestsBase
 
         string objBuildDir = Path.Combine(_projectDir!, "obj", buildOptions.Configuration, buildOptions.TargetFramework!, "wasm", "for-build");
         // Check that we linked only for publish
-        if (buildOptions.ExpectRelinkDirWhenPublishing)
+        if (buildOptions is PublishOptions publishOptions && publishOptions.ExpectRelinkDirWhenPublishing)
             Assert.True(Directory.Exists(objBuildDir), $"Could not find expected {objBuildDir}, which gets created when relinking during Build. This is likely a test authoring error");
         else
             Assert.False(File.Exists(Path.Combine(objBuildDir, "emcc-link.rsp")), $"Found unexpected `emcc-link.rsp` in {objBuildDir}, which gets created when relinking during Build.");
     }
 
-    protected ProjectInfo CreateProjectWithNativeReference(string config, bool aot, string extraProperties)
+    protected ProjectInfo CreateProjectWithNativeReference(Configuration config, bool aot, string extraProperties)
     {
         string extraItems = @$"
             {GetSkiaSharpReferenceItems()}
@@ -210,6 +204,6 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestsBase
             ExecuteAfterLoaded = runOptions.ExecuteAfterLoaded ?? _executeAfterLoaded
         });
 
-    public string GetBlazorBinFrameworkDir(string config, bool forPublish, string framework = DefaultTargetFrameworkForBlazor, string? projectDir = null)
+    public string GetBlazorBinFrameworkDir(Configuration config, bool forPublish, string framework = DefaultTargetFrameworkForBlazor, string? projectDir = null)
         => _provider.GetBinFrameworkDir(config: config, forPublish: forPublish, framework: framework, projectDir: projectDir);
 }

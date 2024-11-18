@@ -22,15 +22,15 @@ namespace Wasm.Build.NativeRebuild.Tests
         [Theory]
         [MemberData(nameof(NativeBuildData))]
         [ActiveIssue("File sizes don't match: dotnet.native.wasm size should be same as from obj/for-publish but is not")]
-        public async void ReferenceNewAssembly(string config, bool aot, bool nativeRelink, bool invariant)
+        public async void ReferenceNewAssembly(Configuration config, bool aot, bool nativeRelink, bool invariant)
         {
             ProjectInfo info = CopyTestAsset(config, aot, BasicTestApp, "rebuild_tasks");     
             BuildPaths paths = await FirstNativeBuildAndRun(info, nativeRelink, invariant);
 
-            var pathsDict = GetFilesTable(info, paths, unchanged: false);
+            var pathsDict = GetFilesTable(info.ProjectName, aot, paths, unchanged: false);
             pathsDict.UpdateTo(unchanged: true, "corebindings.o");
             pathsDict.UpdateTo(unchanged: true, "driver.o");
-            if (!info.AOT) // relinking
+            if (!aot) // relinking
                 pathsDict.UpdateTo(unchanged: true, "driver-gen.c");
 
             var originalStat = StatFiles(pathsDict);

@@ -23,21 +23,21 @@ public class SimpleRunTests : BlazorWasmTestBase
     }
 
     [Theory]
-    [InlineData("Debug")]
-    [InlineData("Release")]
-    public async Task BlazorBuildRunTest(string config)
+    [InlineData(Configuration.Debug)]
+    [InlineData(Configuration.Release)]
+    public async Task BlazorBuildRunTest(Configuration config)
     {
         ProjectInfo info = CopyTestAsset(config, aot: false, BasicTestApp, "blazor");
-        BlazorBuild(info);
+        BlazorBuild(info, config);
         await RunForBuildWithDotnetRun(new(config));
     }
 
     [Theory]
-    [InlineData("Debug", /*appendRID*/ true, /*useArtifacts*/ false)]
-    [InlineData("Debug", /*appendRID*/ true, /*useArtifacts*/ true)]
-    [InlineData("Debug", /*appendRID*/ false, /*useArtifacts*/ true)]
-    [InlineData("Debug", /*appendRID*/ false, /*useArtifacts*/ false)]
-    public async Task BlazorBuildAndRunForDifferentOutputPaths(string config, bool appendRID, bool useArtifacts)
+    [InlineData(Configuration.Debug, /*appendRID*/ true, /*useArtifacts*/ false)]
+    [InlineData(Configuration.Debug, /*appendRID*/ true, /*useArtifacts*/ true)]
+    [InlineData(Configuration.Debug, /*appendRID*/ false, /*useArtifacts*/ true)]
+    [InlineData(Configuration.Debug, /*appendRID*/ false, /*useArtifacts*/ false)]
+    public async Task BlazorBuildAndRunForDifferentOutputPaths(Configuration config, bool appendRID, bool useArtifacts)
     {
         ProjectInfo info = CopyTestAsset(config, aot: false, BasicTestApp, "blazor");
         string extraPropertiesForDBP = "";
@@ -56,25 +56,18 @@ public class SimpleRunTests : BlazorWasmTestBase
                 Path.Combine(
                     projectDir, "bin", info.ProjectName, config.ToLower(), "wwwroot", "_framework") :
                 GetBinFrameworkDir(config, isPublish);
-        BuildProject(info,
-                new BuildOptions(
-                    config,
-                    info.ProjectName,
-                    BinFrameworkDir: frameworkDir,
-                    ExpectedFileType: GetExpectedFileType(info, isPublish),
-                    IsPublish: isPublish
-            ));
+        BuildProject(info, config);
         await RunForBuildWithDotnetRun(new(config));
     }
 
     [Theory]
-    [InlineData("Debug", false)]
-    [InlineData("Release", false)]
-    [InlineData("Release", true)]
-    public async Task BlazorPublishRunTest(string config, bool aot)
+    [InlineData(Configuration.Debug, false)]
+    [InlineData(Configuration.Release, false)]
+    [InlineData(Configuration.Release, true)]
+    public async Task BlazorPublishRunTest(Configuration config, bool aot)
     {
         ProjectInfo info = CopyTestAsset(config, aot, BasicTestApp, "blazor_publish");
-        BlazorPublish(info);
+        BlazorPublish(info, config);
         await RunForPublishWithWebServer(new(config));
     }
 }

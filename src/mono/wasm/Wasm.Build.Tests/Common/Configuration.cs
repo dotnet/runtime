@@ -5,11 +5,8 @@
 
 namespace Wasm.Build.Tests;
 
-public record ProjectInfo(
-    // string Configuration,
-    // bool AOT,
-    string ProjectName,
-    string ProjectFilePath,
-    string LogPath,
-    string NugetDir
-);
+public enum Configuration
+{
+    Release,
+    Debug,
+}

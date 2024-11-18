@@ -22,76 +22,40 @@ namespace Wasm.Build.Tests
         }
 
         [Theory]
-        [BuildAndRun(config: "Debug", aot: true)]
-        public void Wasm_CannotAOT_InDebug(string config, bool aot)
+        [BuildAndRun(config: Configuration.Debug, aot: true)]
+        public void Wasm_CannotAOT_InDebug(Configuration config, bool aot)
         {
             ProjectInfo info = CopyTestAsset(config, aot, BasicTestApp, "no_aot_in_debug");
-
-            bool isPublish = true;
-            (string _, string buildOutput) = BuildProject(info,
-                        new BuildOptions(
-                            config,
-                            info.ProjectName,
-                            BinFrameworkDir: GetBinFrameworkDir(config, isPublish),
-                            ExpectedFileType: GetExpectedFileType(info, isPublish),
-                            IsPublish: isPublish,
-                            ExpectSuccess: false
-                        ));
+            (string _, string buildOutput) = PublishProject(info, config, PublishOptions(AOT: aot, ExpectSuccess: false));
             Assert.Contains("AOT is not supported in debug configuration", buildOutput);
         }
 
         [Theory]
-        [BuildAndRun(config: "Release")]
-        [BuildAndRun(config: "Debug")]
-        public async Task BuildThenPublishNoAOT(string config, bool aot)
+        [BuildAndRun(config: Configuration.Release)]
+        [BuildAndRun(config: Configuration.Debug)]
+        public async Task BuildThenPublishNoAOT(Configuration config, bool aot)
         {
             ProjectInfo info = CopyTestAsset(config, aot, BasicTestApp, "build_publish");
-
-            bool isPublish = false;
-            BuildProject(info,
-                        new BuildOptions(
-                            info.Configuration,
-                            info.ProjectName,
-                            BinFrameworkDir: GetBinFrameworkDir(info.Configuration, isPublish),
-                            ExpectedFileType: GetExpectedFileType(info, isPublish),
-                            IsPublish: isPublish
-                        ));
+            BuildProject(info, config);
 
             if (!_buildContext.TryGetBuildFor(info, out BuildResult? result))
                 throw new XunitException($"Test bug: could not get the build result in the cache");
 
-            RunOptions runOptions = new(info.Configuration, TestScenario: "DotnetRun");
+            RunOptions runOptions = new(config, TestScenario: "DotnetRun");
             await RunForBuildWithDotnetRun(runOptions);
 
-            isPublish = true;
-            BuildProject(info,
-                        new BuildOptions(
-                            info.Configuration,
-                            info.ProjectName,
-                            BinFrameworkDir: GetBinFrameworkDir(info.Configuration, isPublish),
-                            ExpectedFileType: GetExpectedFileType(info, isPublish),
-                            IsPublish: isPublish,
-                            UseCache: false
-                        ));
+            PublishProject(info, config, PublishOptions(UseCache: false));
             await RunForPublishWithWebServer(runOptions);
         }
 
         [Theory]
-        [BuildAndRun(config: "Release", aot: true)]
-        public async Task BuildThenPublishWithAOT(string config, bool aot)
+        [BuildAndRun(config: Configuration.Release, aot: true)]
+        public async Task BuildThenPublishWithAOT(Configuration config, bool aot)
         {
             ProjectInfo info = CopyTestAsset(config, aot, BasicTestApp, "build_publish");
             
             bool isPublish = false;
-            (_, string output) = BuildProject(info,
-                        new BuildOptions(
-                            config,
-                            info.ProjectName,
-                            BinFrameworkDir: GetBinFrameworkDir(config, isPublish),
-                            ExpectedFileType: GetExpectedFileType(info, isPublish),
-                            IsPublish: isPublish,
-                            Label: "first_build"
-                        ));
+            (_, string output) = BuildProject(info, config, BuildOptions(Label: "first_build", AOT: aot));
             
             BuildPaths paths = GetBuildPaths(info, forPublish: isPublish);
             IDictionary<string, (string fullPath, bool unchanged)> pathsDict =
@@ -107,7 +71,7 @@ namespace Wasm.Build.Tests
             if (!_buildContext.TryGetBuildFor(info, out BuildResult? result))
                 throw new XunitException($"Test bug: could not get the build result in the cache");
 
-            RunOptions runOptions = new(info.Configuration, TestScenario: "DotnetRun");
+            RunOptions runOptions = new(config, TestScenario: "DotnetRun");
             await RunForBuildWithDotnetRun(runOptions);
 
             File.Move(result!.LogFile, Path.ChangeExtension(result.LogFile!, ".first.binlog"));
@@ -116,16 +80,7 @@ namespace Wasm.Build.Tests
 
             // relink by default for Release+publish
             isPublish = true;
-            (_, output) = BuildProject(info,
-                        new BuildOptions(
-                            config,
-                            info.ProjectName,
-                            BinFrameworkDir: GetBinFrameworkDir(config, isPublish),
-                            ExpectedFileType: GetExpectedFileType(info, isPublish),
-                            IsPublish: isPublish,
-                            UseCache: false,
-                            Label: "first_publish"
-                        ));
+            (_, output) = PublishProject(info, config, PublishOptions(Label: "first_publish", UseCache: false, AOT: aot));
             
             // publish has different paths ("for-publish", not "for-build")
             paths = GetBuildPaths(info, forPublish: isPublish);
@@ -143,16 +98,7 @@ namespace Wasm.Build.Tests
 
             // second build
             isPublish = false;
-            (_, output) = BuildProject(info,
-                        new BuildOptions(
-                            config,
-                            info.ProjectName,
-                            BinFrameworkDir: GetBinFrameworkDir(config, isPublish),
-                            ExpectedFileType: GetExpectedFileType(info, isPublish),
-                            IsPublish: isPublish,
-                            UseCache: false,
-                            Label: "second_build"
-                        ));
+            (_, output) = BuildProject(info, config, BuildOptions(Label: "second_build", UseCache: false, AOT: aot));
             var secondBuildStat = StatFiles(pathsDict);
             
             // no relinking, or AOT

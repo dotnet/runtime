@@ -30,19 +30,10 @@ public class LazyLoadingTests : WasmTemplateTestsBase
     [MemberData(nameof(LoadLazyAssemblyBeforeItIsNeededData))]
     public async Task LoadLazyAssemblyBeforeItIsNeeded(string lazyLoadingTestExtension, string[] allLazyLoadingTestExtensions)
     {
-        string config = "Debug";
+        Configuration config = Configuration.Debug;
         ProjectInfo info = CopyTestAsset(config, false, BasicTestApp, "LazyLoadingTests");
         bool isPublish = false;
-        BuildProject(info,
-            new BuildOptions(
-                info.Configuration,
-                info.ProjectName,
-                BinFrameworkDir: GetBinFrameworkDir(info.Configuration, isPublish),
-                ExpectedFileType: GetExpectedFileType(info, isPublish: isPublish),
-                IsPublish: isPublish
-            ),
-            extraArgs: $"-p:LazyLoadingTestExtension={lazyLoadingTestExtension} -p:TestLazyLoading=true"
-        );
+        BuildProject(info, config, new BuildOptions(ExtraMSBuildArgs: $"-p:LazyLoadingTestExtension={lazyLoadingTestExtension} -p:TestLazyLoading=true"));
 
         // We are running the app and passing all possible lazy extensions to test matrix of all possibilities.
         // We don't need to rebuild the application to test how client is trying to load the assembly.
@@ -62,19 +53,10 @@ public class LazyLoadingTests : WasmTemplateTestsBase
     [Fact]
     public async Task FailOnMissingLazyAssembly()
     {
-        string config = "Debug";
+        Configuration config = Configuration.Debug;
         ProjectInfo info = CopyTestAsset(config, false, BasicTestApp, "LazyLoadingTests");
         bool isPublish = true;
-        BuildProject(info,
-            new BuildOptions(
-                info.Configuration,
-                info.ProjectName,
-                BinFrameworkDir: GetBinFrameworkDir(info.Configuration, isPublish),
-                ExpectedFileType: GetExpectedFileType(info, isPublish: isPublish),
-                IsPublish: isPublish
-            ),
-            extraArgs: $"-p:TestLazyLoading=true"
-        );
+        PublishProject(info, config, new PublishOptions(ExtraMSBuildArgs: "-p:TestLazyLoading=true"));
         RunOptions options = new(
             info.Configuration,
             TestScenario: "LazyLoadingTest",

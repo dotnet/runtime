@@ -25,17 +25,9 @@ public class ModuleConfigTests : WasmTemplateTestsBase
     [InlineData(true)]
     public async Task DownloadProgressFinishes(bool failAssemblyDownload)
     {
-        string config = "Debug";
+        Configuration config = Configuration.Debug;
         ProjectInfo info = CopyTestAsset(config, false, BasicTestApp, $"ModuleConfigTests_DownloadProgressFinishes_{failAssemblyDownload}");
-        bool isPublish = true;
-        BuildProject(info,
-            new BuildOptions(
-                info.Configuration,
-                info.ProjectName,
-                BinFrameworkDir: GetBinFrameworkDir(info.Configuration, isPublish),
-                ExpectedFileType: GetExpectedFileType(info, isPublish: isPublish),
-                IsPublish: isPublish
-        ));
+        PublishProject(info, config);
 
         var result = await RunForPublishWithWebServer(new(
             Configuration: info.Configuration,
@@ -67,20 +59,12 @@ public class ModuleConfigTests : WasmTemplateTestsBase
     [Fact]
     public async Task OutErrOverrideWorks()
     {
-        string config = "Debug";
+        Configuration config = Configuration.Debug;
         ProjectInfo info = CopyTestAsset(config, false, BasicTestApp, "ModuleConfigTests_OutErrOverrideWorks");
-        bool isPublish = true;
-        BuildProject(info,
-            new BuildOptions(
-                info.Configuration,
-                info.ProjectName,
-                BinFrameworkDir: GetBinFrameworkDir(info.Configuration, isPublish),
-                ExpectedFileType: GetExpectedFileType(info, isPublish: isPublish),
-                IsPublish: isPublish
-        ));
+        PublishProject(info, config);
 
         var result = await RunForPublishWithWebServer(new(
-            Configuration: "Debug",
+            Configuration: Configuration.Debug,
             TestScenario: "OutErrOverrideWorks"
         ));
         Assert.True(
@@ -94,33 +78,19 @@ public class ModuleConfigTests : WasmTemplateTestsBase
     }
 
     [Theory]
-    [InlineData("Release", true)]
-    [InlineData("Release", false)]
-    public async Task OverrideBootConfigName(string config, bool isPublish)
+    [InlineData(Configuration.Release, true)]
+    [InlineData(Configuration.Release, false)]
+    public async Task OverrideBootConfigName(Configuration config, bool isPublish)
     {
         ProjectInfo info = CopyTestAsset(config, false, BasicTestApp, "OverrideBootConfigName");
-        BuildProject(info,
-            new BuildOptions(
-                info.Configuration,
-                info.ProjectName,
-                BinFrameworkDir: GetBinFrameworkDir(info.Configuration, isPublish),
-                ExpectedFileType: GetExpectedFileType(info, isPublish: isPublish),
-                IsPublish: isPublish
-        ));
+        (string _, string _) = isPublish ?
+            PublishProject(info, config) :
+            BuildProject(info, config);
 
         string[] extraArgs = ["-p:WasmBootConfigFileName=boot.json"];
-        BuildProject(info,
-            new BuildOptions(
-                info.Configuration,
-                info.ProjectName,
-                BinFrameworkDir: GetBinFrameworkDir(info.Configuration, isPublish),
-                ExpectedFileType: GetExpectedFileType(info, isPublish: isPublish),
-                IsPublish: isPublish,
-                BootConfigFileName: "boot.json",
-                UseCache: false
-            ),
-            extraArgs: extraArgs
-        );
+        (string _, string _) = isPublish ?
+            PublishProject(info, config, new PublishOptions(BootConfigFileName: "boot.json", UseCache: false, ExtraMSBuildArgs: extraArgs)) :
+            BuildProject(info, config, new BuildOptions(BootConfigFileName: "boot.json", UseCache: false, ExtraMSBuildArgs: extraArgs));
 
         var runOptions = new RunOptions(
             Configuration: config,

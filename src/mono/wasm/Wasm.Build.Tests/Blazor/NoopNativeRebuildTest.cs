@@ -19,13 +19,13 @@ namespace Wasm.Build.Tests.Blazor
         }
 
         [Theory]
-        [InlineData("Debug")]
-        [InlineData("Release")]
-        public void BlazorNoopRebuild(string config)
+        [InlineData(Configuration.Debug)]
+        [InlineData(Configuration.Release)]
+        public void BlazorNoopRebuild(Configuration config)
         {
             string extraProperties = "<WasmBuildNative>true</WasmBuildNative>";
             ProjectInfo info = CopyTestAsset(config, aot: false, BasicTestApp, "blz_rebuild", extraProperties: extraProperties);
-            BlazorBuild(info, isNativeBuild: true);
+            BlazorBuild(info, config, isNativeBuild: true);
             string projectDir = Path.GetFileName(Path.GetDirectoryName(Path.GetDirectoryName(info.ProjectFilePath)))!;
             File.Move(Path.Combine(s_buildEnv.LogRootPath, projectDir, $"{info.ProjectName}-build.binlog"),
                         Path.Combine(s_buildEnv.LogRootPath, projectDir, $"{info.ProjectName}-build-first.binlog"));
@@ -36,7 +36,7 @@ namespace Wasm.Build.Tests.Blazor
             var originalStat = _provider.StatFiles(pathsDict);
 
             // build again
-            BlazorBuild(info, useCache: false, isNativeBuild: true);
+            BlazorBuild(info, config, new BuildOptions(UseCache: false), isNativeBuild: true);
             var newStat = _provider.StatFiles(pathsDict);
 
             _provider.CompareStat(originalStat, newStat, pathsDict);
@@ -44,13 +44,14 @@ namespace Wasm.Build.Tests.Blazor
 
 
         [Theory]
-        [InlineData("Debug")]
-        [InlineData("Release")]
-        public void BlazorOnlyLinkRebuild(string config)
+        [InlineData(Configuration.Debug)]
+        [InlineData(Configuration.Release)]
+        public void BlazorOnlyLinkRebuild(Configuration config)
         {
             string extraProperties = "<WasmBuildNative>true</WasmBuildNative>";
             ProjectInfo info = CopyTestAsset(config, aot: false, BasicTestApp, "blz_relink", extraProperties: extraProperties);
-            BlazorBuild(info, isNativeBuild: true, extraArgs: "-p:EmccLinkOptimizationFlag=-O2");
+            var buildOptions = new BuildOptions(ExtraMSBuildArgs: "-p:EmccLinkOptimizationFlag=-O2");
+            BlazorBuild(info, config, new BuildOptions(ExtraMSBuildArgs: "-p:EmccLinkOptimizationFlag=-O2"), isNativeBuild: true);
             string projectDir = Path.GetFileName(Path.GetDirectoryName(Path.GetDirectoryName(info.ProjectFilePath)))!;
             File.Move(Path.Combine(s_buildEnv.LogRootPath, projectDir, $"{info.ProjectName}-build.binlog"),
                         Path.Combine(s_buildEnv.LogRootPath, projectDir, $"{info.ProjectName}-build-first.binlog"));
@@ -62,7 +63,7 @@ namespace Wasm.Build.Tests.Blazor
             var originalStat = _provider.StatFiles(pathsDict);
 
             // build again
-            BlazorBuild(info, useCache: false, isNativeBuild: true, extraArgs: "-p:EmccLinkOptimizationFlag=-O1");
+            BlazorBuild(info, config, new BuildOptions(ExtraMSBuildArgs: "-p:EmccLinkOptimizationFlag=-O1", UseCache: false), isNativeBuild: true);
             var newStat = _provider.StatFiles(pathsDict);
 
             _provider.CompareStat(originalStat, newStat, pathsDict);

@@ -24,11 +24,11 @@ public class MiscTests3 : BlazorWasmTestBase
     }
 
     [Theory]
-    [InlineData("Debug", /*build*/true, /*publish*/false)]
-    [InlineData("Release", /*build*/true, /*publish*/false)]
-    [InlineData("Release", /*build*/false, /*publish*/true)]
-    [InlineData("Release", /*build*/true, /*publish*/true)]
-    public async Task WithDllImportInMainAssembly(string config, bool build, bool publish)
+    [InlineData(Configuration.Debug, /*build*/true, /*publish*/false)]
+    [InlineData(Configuration.Release, /*build*/true, /*publish*/false)]
+    [InlineData(Configuration.Release, /*build*/false, /*publish*/true)]
+    [InlineData(Configuration.Release, /*build*/true, /*publish*/true)]
+    public async Task WithDllImportInMainAssembly(Configuration config, bool build, bool publish)
     {
         // Based on https://github.com/dotnet/runtime/issues/59255
         string prefix = $"blz_dllimp_{config}_{s_unicodeChars}";
@@ -50,10 +50,10 @@ public class MiscTests3 : BlazorWasmTestBase
         """);
 
         if (build)
-            BlazorBuild(info, isNativeBuild: true);
+            BlazorBuild(info, config, isNativeBuild: true);
 
         if (publish)
-            BlazorPublish(info, useCache: false, isNativeBuild: true);
+            BlazorPublish(info, config, new PublishOptions(UseCache: false), isNativeBuild: true);
 
         RunOptions runOptions = new(config, Test: TestDllImport);
         if (publish)
@@ -72,7 +72,7 @@ public class MiscTests3 : BlazorWasmTestBase
     [Fact]
     public void BugRegression_60479_WithRazorClassLib()
     {
-        string config = "Release";
+        Configuration config = Configuration.Release;
         string razorClassLibraryName = "RazorClassLibrary";
         string extraItems = @$"
             <ProjectReference Include=""..\\RazorClassLibrary\\RazorClassLibrary.csproj"" />
@@ -80,10 +80,10 @@ public class MiscTests3 : BlazorWasmTestBase
         ProjectInfo info = CopyTestAsset(config, aot: true, BasicTestApp, "blz_razor_lib_top", extraItems: extraItems);
 
         // No relinking, no AOT
-        BlazorBuild(info);
+        BlazorBuild(info, config);
 
         // will relink
-        BlazorPublish(info, useCache: false);
+        BlazorPublish(info, config, new PublishOptions(UseCache: false));
 
         // publish/wwwroot/_framework/blazor.boot.json
         string frameworkDir = GetBlazorBinFrameworkDir(config, forPublish: true);

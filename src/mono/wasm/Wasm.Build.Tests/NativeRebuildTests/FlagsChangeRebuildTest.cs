@@ -20,7 +20,7 @@ namespace Wasm.Build.NativeRebuild.Tests
         }
 
         public static IEnumerable<object?[]> FlagsChangesForNativeRelinkingData(bool aot)
-            => ConfigWithAOTData(aot, config: "Release").Multiply(
+            => ConfigWithAOTData(aot, config: Configuration.Release).Multiply(
                         new object[] { /*cflags*/ "/p:EmccExtraCFlags=-g", /*ldflags*/ "" }
                         // File sizes don't match: dotnet.native.wasm size should be same as from obj/for-publish but is not
                         // new object[] { /*cflags*/ "",                      /*ldflags*/ "/p:EmccExtraLDFlags=-g" },
@@ -31,11 +31,11 @@ namespace Wasm.Build.NativeRebuild.Tests
         [MemberData(nameof(FlagsChangesForNativeRelinkingData), parameters: /*aot*/ false)]
         // Found statically linked AOT module: failed
         // [MemberData(nameof(FlagsChangesForNativeRelinkingData), parameters: /*aot*/ true)]
-        public async void ExtraEmccFlagsSetButNoRealChange(string config, bool aot, string extraCFlags, string extraLDFlags)
+        public async void ExtraEmccFlagsSetButNoRealChange(Configuration config, bool aot, string extraCFlags, string extraLDFlags)
         {
             ProjectInfo info = CopyTestAsset(config, aot, BasicTestApp, "rebuild_flags");
             BuildPaths paths = await FirstNativeBuildAndRun(info, nativeRelink: true, invariant: false);
-            var pathsDict = GetFilesTable(info, paths, unchanged: true);
+            var pathsDict = GetFilesTable(info.ProjectName, aot, paths, unchanged: true);
             if (extraLDFlags.Length > 0)
                 pathsDict.UpdateTo(unchanged: false, "dotnet.native.wasm", "dotnet.native.js");
 
@@ -46,7 +46,7 @@ namespace Wasm.Build.NativeRebuild.Tests
             string extraBuildArgs = $" {extraCFlags} {extraLDFlags}";
             string output = Rebuild(info, nativeRelink: true, invariant: false, extraBuildArgs: extraBuildArgs, verbosity: "normal");
             
-            pathsDict = GetFilesTable(info, paths, unchanged: true);
+            pathsDict = GetFilesTable(info.ProjectName, aot, paths, unchanged: true);
             var newStat = StatFiles(pathsDict);
             CompareStat(originalStat, newStat, pathsDict);
             
@@ -57,7 +57,7 @@ namespace Wasm.Build.NativeRebuild.Tests
             // ldflags: link step args change, so it should trigger relink
             TestUtils.AssertSubstring("Linking with emcc", output, contains: extraLDFlags.Length > 0);
             
-            if (info.AOT)
+            if (aot)
             {
                 // ExtraEmccLDFlags does not affect .bc files
                 Assert.DoesNotContain("Compiling assembly bitcode files", output);
@@ -65,7 +65,7 @@ namespace Wasm.Build.NativeRebuild.Tests
             
             RunResult runOutput = await RunForPublishWithWebServer(new (info.Configuration, TestScenario: "DotnetRun"));
             TestUtils.AssertSubstring($"Found statically linked AOT module '{Path.GetFileNameWithoutExtension(mainAssembly)}'", runOutput.TestOutput,
-                                contains: info.AOT);
+                                contains: aot);
         }
     }
 }

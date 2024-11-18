@@ -19,21 +19,11 @@ public class SignalRTestsBase : WasmTemplateTestsBase
     {
     }
 
-    protected async Task SignalRPassMessage(string staticWebAssetBasePath, string config, string transport)
+    protected async Task SignalRPassMessage(string staticWebAssetBasePath, Configuration config, string transport)
     {
         TestAsset asset = new() { Name = "WasmBasicTestApp", RunnableProjectSubPath = "AspNetCoreServer" };
         ProjectInfo info = CopyTestAsset(config, false, asset, "SignalRClientTests");
-        bool isPublish = true;
-        BuildProject(info,
-            new BuildOptions(
-                info.Configuration,
-                info.ProjectName,
-                BinFrameworkDir: GetBinFrameworkDir(info.Configuration, isPublish),
-                ExpectedFileType: GetExpectedFileType(info, isPublish: isPublish),
-                IsPublish: isPublish,
-                RuntimeType: RuntimeVariant.MultiThreaded,
-                AssertAppBundle: false
-        ));
+        PublishProject(info, config, new PublishOptions(RuntimeType: RuntimeVariant.MultiThreaded, AssertAppBundle: false));
 
         var result = await RunForPublishWithWebServer(new(
             Configuration: config,

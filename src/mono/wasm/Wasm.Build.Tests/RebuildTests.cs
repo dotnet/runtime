@@ -22,22 +22,15 @@ namespace Wasm.Build.Tests
         }
 
         [Theory]
-        [BuildAndRun(aot: false, config: "Debug")]
-        public async Task NoOpRebuild(string config, bool aot)
+        [BuildAndRun(aot: false, config: Configuration.Debug)]
+        public async Task NoOpRebuild(Configuration config, bool aot)
         {
             ProjectInfo info = CopyTestAsset(config, aot, BasicTestApp, "rebuild");
             UpdateFile(Path.Combine("Common", "Program.cs"), s_mainReturns42);
             bool isPublish = true;
-            BuildProject(info,
-                new BuildOptions(
-                    info.Configuration,
-                    info.ProjectName,
-                    BinFrameworkDir: GetBinFrameworkDir(info.Configuration, isPublish),
-                    ExpectedFileType: GetExpectedFileType(info, isPublish),
-                    IsPublish: isPublish
-            ));
+            PublishProject(info, config);
 
-            RunOptions runOptions = new(info.Configuration, TestScenario: "DotnetRun", ExpectedExitCode: 42);
+            RunOptions runOptions = new(config, TestScenario: "DotnetRun", ExpectedExitCode: 42);
             await RunForPublishWithWebServer(runOptions);
 
             if (!_buildContext.TryGetBuildFor(info, out BuildResult? result))
@@ -51,16 +44,7 @@ namespace Wasm.Build.Tests
             _testOutput.WriteLine($"{Environment.NewLine}Rebuilding with no changes ..{Environment.NewLine}");
 
             // no-op Rebuild
-            BuildProject(info,
-                new BuildOptions(
-                    info.Configuration,
-                    info.ProjectName,
-                    BinFrameworkDir: GetBinFrameworkDir(info.Configuration, isPublish),
-                    ExpectedFileType: GetExpectedFileType(info, isPublish),
-                    IsPublish: isPublish,
-                    UseCache: false
-            ));
-
+            PublishProject(info, config, new PublishOptions(UseCache: false));
             await RunForPublishWithWebServer(runOptions);
         }
     }

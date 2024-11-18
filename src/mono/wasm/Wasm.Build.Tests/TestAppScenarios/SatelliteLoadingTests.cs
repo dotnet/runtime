@@ -29,17 +29,9 @@ public class SatelliteLoadingTests : WasmTemplateTestsBase
     [InlineData(true)]
     public async Task LoadSatelliteAssembly(bool loadAllSatelliteResources)
     {
-        string config = "Debug";
+        Configuration config = Configuration.Debug;
         ProjectInfo info = CopyTestAsset(config, false, BasicTestApp, "SatelliteLoadingTests");
-        bool isPublish = false;
-        BuildProject(info,
-            new BuildOptions(
-                info.Configuration,
-                info.ProjectName,
-                BinFrameworkDir: GetBinFrameworkDir(info.Configuration, isPublish),
-                ExpectedFileType: GetExpectedFileType(info, isPublish: isPublish),
-                IsPublish: isPublish
-        ));
+        BuildProject(info, config);
 
         var result = await RunForBuildWithDotnetRun(new(
             Configuration: info.Configuration, 
@@ -68,7 +60,7 @@ public class SatelliteLoadingTests : WasmTemplateTestsBase
     [Fact]
     public async Task LoadSatelliteAssemblyFromReference()
     {
-        string config = "Release";
+        Configuration config = Configuration.Release;
         ProjectInfo info = CopyTestAsset(config, false, BasicTestApp, "SatelliteLoadingTestsFromReference");
         bool isPublish = true;
 
@@ -95,16 +87,9 @@ public class SatelliteLoadingTests : WasmTemplateTestsBase
             .EnsureSuccessful();
 
         // Publish the app and assert
-        BuildProject(info,
-            new BuildOptions(
-                info.Configuration,
-                info.ProjectName,
-                BinFrameworkDir: GetBinFrameworkDir(info.Configuration, isPublish),
-                ExpectedFileType: GetExpectedFileType(info, isPublish: isPublish),
-                IsPublish: isPublish
-        ));
+        BuildProject(info, config);
 
-        var result = await RunForPublishWithWebServer(new(Configuration: "Release", TestScenario: "SatelliteAssembliesTest"));
+        var result = await RunForPublishWithWebServer(new(Configuration: Configuration.Release, TestScenario: "SatelliteAssembliesTest"));
         Assert.Collection(
             result.TestOutput,
             m => Assert.Equal("default: hello", m),

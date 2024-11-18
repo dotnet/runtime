@@ -25,9 +25,9 @@ public class InterpPgoTests : WasmTemplateTestsBase
     [Theory]
     // Interpreter PGO is not meaningful to enable in debug builds - tiering is inactive there so all methods
     //  would get added to the PGO table instead of just hot ones.
-    [InlineData("Release")]
+    [InlineData(Configuration.Release)]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/105733")]
-    public async Task FirstRunGeneratesTableAndSecondRunLoadsIt(string config)
+    public async Task FirstRunGeneratesTableAndSecondRunLoadsIt(Configuration config)
     {
         // We need to invoke Greeting enough times to cause BCL code to tier so we can exercise interpreter PGO
         // Invoking it too many times makes the test meaningfully slower.
@@ -37,17 +37,7 @@ public class InterpPgoTests : WasmTemplateTestsBase
         ProjectInfo info = CopyTestAsset(config, false, BasicTestApp, "InterpPgoTest");
 
         _testOutput.WriteLine("/// Building");
-        bool isPublish = false;
-        BuildProject(info,
-            new BuildOptions(
-                info.Configuration,
-                info.ProjectName,
-                BinFrameworkDir: GetBinFrameworkDir(info.Configuration, isPublish),
-                ExpectedFileType: GetExpectedFileType(info, isPublish: isPublish),
-                IsPublish: isPublish
-            ),
-            extraArgs: "-p:WasmDebugLevel=0"
-        );
+        BuildProject(info, config, new BuildOptions(ExtraMSBuildArgs: "-p:WasmDebugLevel=0"));
 
         _testOutput.WriteLine("/// Starting server");
 

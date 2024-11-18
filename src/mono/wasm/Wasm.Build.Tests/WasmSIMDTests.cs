@@ -21,31 +21,22 @@ namespace Wasm.Build.Tests
         public static IEnumerable<object?[]> MainMethodSimdTestData(bool aot, bool simd)
             => ConfigWithAOTData(aot)
                 .Multiply(new object[] { simd })
-                .Where(item => !(item.ElementAt(0) is string config && config == "Debug" && item.ElementAt(1) is bool aotValue && aotValue))
+                .Where(item => !(item.ElementAt(0) is Configuration config && config == Configuration.Debug && item.ElementAt(1) is bool aotValue && aotValue))
                 .UnwrapItemsAsArrays();
 
         [Theory]
         [MemberData(nameof(MainMethodSimdTestData), parameters: new object[] { /*aot*/ false, /* simd */ true })]
-        public async void Build_NoAOT_ShouldNotRelink(string config, bool aot, bool simd)
+        public async void Build_NoAOT_ShouldNotRelink(Configuration config, bool aot, bool simd)
         {
             ProjectInfo info = CopyTestAsset(config, aot, BasicTestApp, "build_with_workload_no_aot");
             UpdateFile(Path.Combine("Common", "Program.cs"), s_simdProgramText);
-            bool isPublish = false;
-            (string _, string output) = BuildProject(info,
-                new BuildOptions(
-                    info.Configuration,
-                    info.ProjectName,
-                    BinFrameworkDir: GetBinFrameworkDir(info.Configuration, isPublish),
-                    ExpectedFileType: GetExpectedFileType(info, isPublish: isPublish),
-                    IsPublish: isPublish
-                    ),
-                extraArgs: $"-p:WasmEnableSIMD={simd}"
-            );
+            (string _, string output) = BuildProject(info, config, new BuildOptions(ExtraMSBuildArgs: "-p:WasmEnableSIMD=true"));
+
             // Confirm that we didn't relink
             Assert.DoesNotContain("Compiling native assets with emcc", output);
 
             RunResult result = await RunForBuildWithDotnetRun(new(
-                info.Configuration,
+                config,
                 TestScenario: "DotnetRun",
                 ExpectedExitCode: 42)
             );
@@ -58,24 +49,14 @@ namespace Wasm.Build.Tests
         [MemberData(nameof(MainMethodSimdTestData), parameters: new object[] { /*aot*/ true, /* simd */ true })]
         [MemberData(nameof(MainMethodSimdTestData), parameters: new object[] { /*aot*/ false, /* simd */ true })]
         [MemberData(nameof(MainMethodSimdTestData), parameters: new object[] { /*aot*/ true, /* simd */ false })]
-        public async void PublishSIMD_AOT(string config, bool aot, bool simd)
+        public async void PublishSIMD_AOT(Configuration config, bool aot, bool simd)
         {
             ProjectInfo info = CopyTestAsset(config, aot, BasicTestApp, "simd_publish");
             UpdateFile(Path.Combine("Common", "Program.cs"), s_simdProgramText);
-            bool isPublish = true;
-            (string _, string output) = BuildProject(info,
-                new BuildOptions(
-                    info.Configuration,
-                    info.ProjectName,
-                    BinFrameworkDir: GetBinFrameworkDir(info.Configuration, isPublish),
-                    ExpectedFileType: GetExpectedFileType(info, isPublish: isPublish),
-                    IsPublish: isPublish
-                    ),
-                extraArgs: $"-p:WasmEnableSIMD={simd}"
-            );
+            (string _, string output) = PublishProject(info, config, new PublishOptions(ExtraMSBuildArgs: "-p:WasmEnableSIMD=true", AOT: aot));
 
             RunResult result = await RunForPublishWithWebServer(new(
-                info.Configuration,
+                config,
                 TestScenario: "DotnetRun",
                 ExpectedExitCode: 42)
             );

@@ -112,7 +112,7 @@ namespace Wasm.Build.Tests
             _providerOfBaseType = providerBase;
         }
 
-        public static IEnumerable<IEnumerable<object?>> ConfigWithAOTData(bool aot, string? config = null)
+        public static IEnumerable<IEnumerable<object?>> ConfigWithAOTData(bool aot, Configuration config = Configuration.Release)
         {
             if (config == null)
             {
@@ -120,10 +120,10 @@ namespace Wasm.Build.Tests
                     {
     #if TEST_DEBUG_CONFIG_ALSO
                         // list of each member data - for Debug+@aot
-                        new object?[] { "Debug", aot }.AsEnumerable(),
+                        new object?[] { Configuration.Debug, aot }.AsEnumerable(),
     #endif
                         // list of each member data - for Release+@aot
-                        new object?[] { "Release", aot }.AsEnumerable()
+                        new object?[] { Configuration.Release, aot }.AsEnumerable()
                     }.AsEnumerable();
             }
             else
@@ -136,12 +136,13 @@ namespace Wasm.Build.Tests
         }
 
         public (CommandResult res, string logPath) BuildProjectWithoutAssert(
-            BuildOptions buildOptions,
-            params string[] extraArgs)
+            Configuration configuration,
+            string projectName,
+            BuildOptions buildOptions)
         {
             string buildType = buildOptions.IsPublish ? "publish" : "build";
             string logFileSuffix = string.IsNullOrEmpty(buildOptions.Label) ? string.Empty : buildOptions.Label.Replace(' ', '_') + "-";
-            string logFilePath = Path.Combine(_logPath, $"{buildOptions.Id}-{logFileSuffix}{buildType}.binlog");
+            string logFilePath = Path.Combine(_logPath, $"{projectName}-{logFileSuffix}{buildType}.binlog");
 
             _testOutput.WriteLine($"{Environment.NewLine}** -------- {buildType} -------- **{Environment.NewLine}");
             _testOutput.WriteLine($"Binlog path: {logFilePath}");
@@ -150,10 +151,10 @@ namespace Wasm.Build.Tests
             {
                 buildType,
                 $"-bl:{logFilePath}",
-                $"-p:Configuration={buildOptions.Configuration}",
+                $"-p:Configuration={configuration}",
                 "-nr:false"
             };
-            commandLineArgs.AddRange(extraArgs);
+            commandLineArgs.AddRange(buildOptions.ExtraMSBuildArgs);
 
             if (buildOptions.IsPublish && buildOptions.BuildOnlyAfterPublish)
                 commandLineArgs.Append("-p:WasmBuildOnlyAfterPublish=true");
@@ -195,11 +196,11 @@ namespace Wasm.Build.Tests
             return (res, logFilePath);
         }
 
-        protected NativeFilesType GetExpectedFileType(ProjectInfo info, bool isPublish, bool isNativeBuild=false) =>
+        protected NativeFilesType GetExpectedFileType(Configuration config, bool isAOT, bool isPublish, bool isNativeBuild=false) =>
             isNativeBuild ? NativeFilesType.Relinked :
             !isPublish ? NativeFilesType.FromRuntimePack :
-            info.AOT ? NativeFilesType.AOT :
-                (info.Configuration == "Debug" || !IsUsingWorkloads) ?
+            isAOT ? NativeFilesType.AOT :
+                (config == Configuration.Debug || !IsUsingWorkloads) ?
                     NativeFilesType.FromRuntimePack :
                     NativeFilesType.Relinked;
 
@@ -222,7 +223,7 @@ namespace Wasm.Build.Tests
         }
 
         [MemberNotNull(nameof(_projectDir), nameof(_logPath))]
-        protected void InitPaths(string id)
+        protected (string, string) InitPaths(string id)
         {
             if (_projectDir == null)
                 _projectDir = Path.Combine(BuildEnvironment.TmpPath, id);
@@ -234,6 +235,7 @@ namespace Wasm.Build.Tests
 
             Directory.CreateDirectory(_nugetPackagesDir!);
             Directory.CreateDirectory(_logPath);
+            return (_logPath, _nugetPackagesDir);
         }
 
         protected void InitProjectDir(string dir, bool addNuGetSourceForLocalPackages = true, string targetFramework = DefaultTargetFramework)

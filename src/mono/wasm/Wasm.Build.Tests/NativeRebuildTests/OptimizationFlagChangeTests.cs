@@ -21,7 +21,7 @@ public class OptimizationFlagChangeTests : NativeRebuildTestsBase
     }
 
     public static IEnumerable<object?[]> FlagsOnlyChangeData(bool aot)
-        => ConfigWithAOTData(aot, config: "Release").Multiply(
+        => ConfigWithAOTData(aot, config: Configuration.Release).Multiply(
                     new object[] { /*cflags*/ "/p:EmccCompileOptimizationFlag=-O1", /*ldflags*/ "" },
                     new object[] { /*cflags*/ "",                                   /*ldflags*/ "/p:EmccLinkOptimizationFlag=-O1" }
         ).UnwrapItemsAsArrays();
@@ -30,20 +30,20 @@ public class OptimizationFlagChangeTests : NativeRebuildTestsBase
     [MemberData(nameof(FlagsOnlyChangeData), parameters: /*aot*/ false)]
     // [MemberData(nameof(FlagsOnlyChangeData), parameters: /*aot*/ true)]
     // [ActiveIssue("File sizes don't match: dotnet.native.wasm size should be same as from obj/for-publish but is not")]
-    public async void OptimizationFlagChange(string config, bool aot, string cflags, string ldflags)
+    public async void OptimizationFlagChange(Configuration config, bool aot, string cflags, string ldflags)
     {
         ProjectInfo info = CopyTestAsset(config, aot, BasicTestApp, "rebuild_flags");        
         // force _WasmDevel=false, so we don't get -O0
         BuildPaths paths = await FirstNativeBuildAndRun(info, nativeRelink: true, invariant: false, extraBuildArgs: "/p:_WasmDevel=false");
 
         string mainAssembly = $"{info.ProjectName}{ProjectProviderBase.WasmAssemblyExtension}";
-        var pathsDict = GetFilesTable(info, paths, unchanged: false);
+        var pathsDict = GetFilesTable(info.ProjectName, aot, paths, unchanged: false);
         pathsDict.UpdateTo(unchanged: true, mainAssembly, "icall-table.h", "pinvoke-table.h", "driver-gen.c");
         if (cflags.Length == 0)
             pathsDict.UpdateTo(unchanged: true, "pinvoke.o", "corebindings.o", "driver.o", "runtime.o");
 
         pathsDict.Remove(mainAssembly);
-        if (info.AOT)
+        if (aot)
         {
             // link optimization flag change affects .bc->.o files too, but
             // it might result in only *some* files being *changed,
@@ -66,6 +66,6 @@ public class OptimizationFlagChangeTests : NativeRebuildTestsBase
 
         RunResult runOutput = await RunForPublishWithWebServer(new (info.Configuration, TestScenario: "DotnetRun"));
         TestUtils.AssertSubstring($"Found statically linked AOT module '{Path.GetFileNameWithoutExtension(mainAssembly)}'", runOutput.TestOutput,
-                            contains: info.AOT);
+                            contains: aot);
     }
 }

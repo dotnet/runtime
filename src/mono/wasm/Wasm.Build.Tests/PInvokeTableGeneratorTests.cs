@@ -23,18 +23,18 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun(aot: false)]
-        public async void NativeLibraryWithVariadicFunctions(string config, bool aot)
+        public async void NativeLibraryWithVariadicFunctions(Configuration config, bool aot)
         {
             ProjectInfo info = PrepreProjectForVariadicFuntion(config, aot, "variadic");
             ReplaceFile(Path.Combine("Common", "Program.cs"), Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "PInvoke", "VariadicFunctions.cs"));
-            string output = BuildForVariadicFunctionTests(info);
+            string output = PublishForVariadicFunctionTests(info, config, aot);
             Assert.Matches("warning.*native function.*sum.*varargs", output);
             Assert.Contains("System.Int32 sum_one(System.Int32)", output);
             Assert.Contains("System.Int32 sum_two(System.Int32, System.Int32)", output);
             Assert.Contains("System.Int32 sum_three(System.Int32, System.Int32, System.Int32)", output);
 
             RunResult result = await RunForPublishWithWebServer(new(
-                info.Configuration,
+                config,
                 TestScenario: "DotnetRun",
                 ExpectedExitCode: 42
             ));
@@ -43,17 +43,17 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun()]
-        public async void DllImportWithFunctionPointersCompilesWithoutWarning(string config, bool aot)
+        public async void DllImportWithFunctionPointersCompilesWithoutWarning(Configuration config, bool aot)
         {
             ProjectInfo info = PrepreProjectForVariadicFuntion(config, aot, "fnptr");
             ReplaceFile(Path.Combine("Common", "Program.cs"), Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "PInvoke", "DllImportNoWarning.cs"));
-            string output = BuildForVariadicFunctionTests(info);
+            string output = PublishForVariadicFunctionTests(info, config, aot);
 
             Assert.DoesNotMatch("warning\\sWASM0001.*Could\\snot\\sget\\spinvoke.*Parsing\\sfunction\\spointer\\stypes", output);
             Assert.DoesNotMatch("warning\\sWASM0001.*Skipping.*using_sum_one.*because.*function\\spointer", output);
 
             RunResult result = await RunForPublishWithWebServer(new(
-                info.Configuration,
+                config,
                 TestScenario: "DotnetRun",
                 ExpectedExitCode: 42
             ));
@@ -62,17 +62,17 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun()]
-        public async void DllImportWithFunctionPointers_ForVariadicFunction_CompilesWithWarning(string config, bool aot)
+        public async void DllImportWithFunctionPointers_ForVariadicFunction_CompilesWithWarning(Configuration config, bool aot)
         {
             ProjectInfo info = PrepreProjectForVariadicFuntion(config, aot, "fnptr_variadic");
             ReplaceFile(Path.Combine("Common", "Program.cs"), Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "PInvoke", "DllImportWarning.cs"));
-            string output = BuildForVariadicFunctionTests(info);
+            string output = PublishForVariadicFunctionTests(info, config, aot);
 
             Assert.DoesNotMatch("warning\\sWASM0001.*Could\\snot\\sget\\spinvoke.*Parsing\\sfunction\\spointer\\stypes", output);
             Assert.DoesNotMatch("warning\\sWASM0001.*Skipping.*using_sum_one.*because.*function\\spointer", output);
 
             RunResult result = await RunForPublishWithWebServer(new(
-                info.Configuration,
+                config,
                 TestScenario: "DotnetRun",
                 ExpectedExitCode: 42
             ));
@@ -82,66 +82,42 @@ namespace Wasm.Build.Tests
         [Theory]
         [BuildAndRun()]
         public void UnmanagedStructAndMethodIn_SameAssembly_WithoutDisableRuntimeMarshallingAttribute_NotConsideredBlittable
-                        (string config, bool aot)
+                        (Configuration config, bool aot)
         {
             ProjectInfo info = PrepreProjectForBlittableTests(
                 config, aot, "not_blittable", disableRuntimeMarshalling: false, useAutoLayout: true);
-            bool isPublish = false;
-            (_, string output) = BuildProject(info,
-                new BuildOptions(
-                    info.Configuration,
-                    info.ProjectName,
-                    BinFrameworkDir: GetBinFrameworkDir(info.Configuration, isPublish),
-                    IsPublish: isPublish,
-                    ExpectSuccess: false
-            ));
+            (_, string output) = BuildProject(info, config, new PublishOptions(ExpectSuccess: false, AOT: aot));
             Assert.Matches("error.*Parameter.*types.*pinvoke.*.*blittable", output);
         }
 
         [Theory]
         [BuildAndRun()]
         public void UnmanagedStructAndMethodIn_SameAssembly_WithoutDisableRuntimeMarshallingAttribute_WithStructLayout_ConsideredBlittable
-                        (string config, bool aot)
+                        (Configuration config, bool aot)
         {
             ProjectInfo info = PrepreProjectForBlittableTests(
                 config, aot, "blittable", disableRuntimeMarshalling: false, useAutoLayout: false);
-            bool isPublish = false;
-            (_, string output) = BuildProject(info,
-                new BuildOptions(
-                    info.Configuration,
-                    info.ProjectName,
-                    BinFrameworkDir: GetBinFrameworkDir(info.Configuration, isPublish),
-                    ExpectedFileType: GetExpectedFileType(info, isPublish: isPublish, isNativeBuild: true),
-                    IsPublish: isPublish
-            ));
+            (_, string output) = BuildProject(info, config, isNativeBuild: true, AOT: aot);
             Assert.DoesNotMatch("error.*Parameter.*types.*pinvoke.*.*blittable", output);
         }
 
         [Theory]
         [BuildAndRun()]
         public async void UnmanagedStructAndMethodIn_SameAssembly_WithDisableRuntimeMarshallingAttribute_ConsideredBlittable
-                        (string config, bool aot)
+                        (Configuration config, bool aot)
         {
             ProjectInfo info = PrepreProjectForBlittableTests(
                 config, aot, "blittable", disableRuntimeMarshalling: true, useAutoLayout: true);
-            bool isPublish = false;
-            (_, string output) = BuildProject(info,
-                new BuildOptions(
-                    info.Configuration,
-                    info.ProjectName,
-                    BinFrameworkDir: GetBinFrameworkDir(info.Configuration, isPublish),
-                    ExpectedFileType: GetExpectedFileType(info, isPublish: isPublish, isNativeBuild: true),
-                    IsPublish: isPublish
-            ));
+            (_, string output) = BuildProject(info, config, isNativeBuild: true, AOT: aot);
             RunResult result = await RunForBuildWithDotnetRun(new(
-                info.Configuration,
+                config,
                 TestScenario: "DotnetRun",
                 ExpectedExitCode: 42
             ));
             Assert.Contains(result.TestOutput, m => m.Contains("Main running"));
         }
 
-        private ProjectInfo PrepreProjectForBlittableTests(string config, bool aot, string prefix, bool disableRuntimeMarshalling, bool useAutoLayout = false)
+        private ProjectInfo PrepreProjectForBlittableTests(Configuration config, bool aot, string prefix, bool disableRuntimeMarshalling, bool useAutoLayout = false)
         {
             string extraProperties = aot ? string.Empty : "<WasmBuildNative>true</WasmBuildNative>";
             ProjectInfo info = CopyTestAsset(config, aot, BasicTestApp, prefix, extraProperties: extraProperties);
@@ -164,7 +140,7 @@ namespace Wasm.Build.Tests
             return info;
         }
 
-        public static IEnumerable<object?[]> SeparateAssemblyWithDisableMarshallingAttributeTestData(string config)
+        public static IEnumerable<object?[]> SeparateAssemblyWithDisableMarshallingAttributeTestData(Configuration config)
             => ConfigWithAOTData(aot: false, config: config).Multiply(
                     new object[] { /*libraryHasAttribute*/ false, /*appHasAttribute*/ false, /*expectSuccess*/ false },
                     new object[] { /*libraryHasAttribute*/ true, /*appHasAttribute*/ false, /*expectSuccess*/ false },
@@ -173,10 +149,10 @@ namespace Wasm.Build.Tests
                 ).UnwrapItemsAsArrays();
 
         [Theory]
-        [MemberData(nameof(SeparateAssemblyWithDisableMarshallingAttributeTestData), parameters: "Debug")]
-        [MemberData(nameof(SeparateAssemblyWithDisableMarshallingAttributeTestData), parameters: "Release")]
+        [MemberData(nameof(SeparateAssemblyWithDisableMarshallingAttributeTestData), parameters: Configuration.Debug)]
+        [MemberData(nameof(SeparateAssemblyWithDisableMarshallingAttributeTestData), parameters: Configuration.Release)]
         public async void UnmanagedStructsAreConsideredBlittableFromDifferentAssembly
-                        (string config, bool aot, bool libraryHasAttribute, bool appHasAttribute, bool expectSuccess)
+                        (Configuration config, bool aot, bool libraryHasAttribute, bool appHasAttribute, bool expectSuccess)
         {
             string extraProperties = aot ? string.Empty : "<WasmBuildNative>true</WasmBuildNative>";
             string extraItems =  @$"<ProjectReference Include=""..\\Library\\Library.csproj"" />";
@@ -193,20 +169,14 @@ namespace Wasm.Build.Tests
             {
                 UpdateFile(programRelativePath, new Dictionary<string, string> { { "[assembly: DisableRuntimeMarshalling]", "" } });
             }
-            bool isPublish = false;
             (_, string output) = BuildProject(info,
-                new BuildOptions(
-                    info.Configuration,
-                    info.ProjectName,
-                    BinFrameworkDir: GetBinFrameworkDir(info.Configuration, isPublish),
-                    ExpectedFileType: GetExpectedFileType(info, isPublish: isPublish, isNativeBuild: true),
-                    IsPublish: isPublish,
-                    ExpectSuccess: expectSuccess
-            ));
+                config,
+                new BuildOptions(expectSuccess: expectSuccess, AOT: aot),
+                isNativeBuild: true);
             if (expectSuccess)
             {
                 RunResult result = await RunForBuildWithDotnetRun(new(
-                    info.Configuration,
+                    config,
                     TestScenario: "DotnetRun",
                     ExpectedExitCode: 42
                 ));
@@ -221,17 +191,17 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun()]
-        public async void DllImportWithFunctionPointers_WarningsAsMessages(string config, bool aot)
+        public async void DllImportWithFunctionPointers_WarningsAsMessages(Configuration config, bool aot)
         {
             string extraProperties = "<MSBuildWarningsAsMessages>$(MSBuildWarningsAsMessage);WASM0001</MSBuildWarningsAsMessages>";
             ProjectInfo info = CopyTestAsset(config, aot, BasicTestApp, "fnptr", extraProperties: extraProperties);
             ReplaceFile(Path.Combine("Common", "Program.cs"), Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "PInvoke", "FunctionPointers.cs"));
 
-            string output = BuildForVariadicFunctionTests(info, isNativeBuild: false);
+            string output = PublishForVariadicFunctionTests(info, config, aot, isNativeBuild: false);
             Assert.DoesNotContain("warning WASM0001", output);
 
             RunResult result = await RunForPublishWithWebServer(new(
-                info.Configuration,
+                config,
                 TestScenario: "DotnetRun",
                 ExpectedExitCode: 42
             ));
@@ -240,29 +210,29 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun()]
-        public void UnmanagedCallback_WithFunctionPointers_CompilesWithWarnings(string config, bool aot)
+        public void UnmanagedCallback_WithFunctionPointers_CompilesWithWarnings(Configuration config, bool aot)
         {
             ProjectInfo info = CopyTestAsset(config, aot, BasicTestApp, "cb_fnptr");
             string programRelativePath = Path.Combine("Common", "Program.cs");
             ReplaceFile(programRelativePath, Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "PInvoke", "FunctionPointers.cs"));
             UpdateFile(programRelativePath, new Dictionary<string, string> { { "[DllImport(\"someting\")]", "[UnmanagedCallersOnly]" } });
-            string output = BuildForVariadicFunctionTests(info, isNativeBuild: false);
+            string output = PublishForVariadicFunctionTests(info, config, aot, isNativeBuild: false);
             Assert.DoesNotMatch("warning\\sWASM0001.*Skipping.*Test::SomeFunction1.*because.*function\\spointer", output);
         }
 
         [Theory]
         [BuildAndRun()]
-        public async void UnmanagedCallback_InFileType(string config, bool aot)
+        public async void UnmanagedCallback_InFileType(Configuration config, bool aot)
         {
             ProjectInfo info = CopyTestAsset(config, aot, BasicTestApp, "cb_filetype");
             string programRelativePath = Path.Combine("Common", "Program.cs");
             ReplaceFile(programRelativePath, Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "PInvoke", "UnmanagedCallbackInFile.cs"));
 
-            string output = BuildForVariadicFunctionTests(info, isNativeBuild: false);
+            string output = PublishForVariadicFunctionTests(info, config, aot, isNativeBuild: false);
             Assert.DoesNotMatch(".*(warning|error).*>[A-Z0-9]+__Foo", output);
 
             RunResult result = await RunForPublishWithWebServer(new(
-                info.Configuration,
+                config,
                 TestScenario: "DotnetRun",
                 ExpectedExitCode: 42
             ));
@@ -272,17 +242,17 @@ namespace Wasm.Build.Tests
         [Theory]
         [BuildAndRun()]
         [ActiveIssue("RuntimeError: null function or function signature mismatch")]
-        public async void UnmanagedCallersOnly_Namespaced(string config, bool aot)
+        public async void UnmanagedCallersOnly_Namespaced(Configuration config, bool aot)
         {
             ProjectInfo info = CopyTestAsset(config, aot, BasicTestApp, "cb_namespace");
             string programRelativePath = Path.Combine("Common", "Program.cs");
             ReplaceFile(programRelativePath, Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "PInvoke", "UnmanagedCallbackNamespaced.cs"));
 
-            string output = BuildForVariadicFunctionTests(info, isNativeBuild: false);
+            string output = PublishForVariadicFunctionTests(info, config, aot, isNativeBuild: false);
             Assert.DoesNotMatch(".*(warning|error).*>[A-Z0-9]+__Foo", output);
 
             RunResult result = await RunForPublishWithWebServer(new(
-                info.Configuration,
+                config,
                 TestScenario: "DotnetRun",
                 ExpectedExitCode: 42
             ));
@@ -300,7 +270,7 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun()]
-        public void IcallWithOverloadedParametersAndEnum(string config, bool aot)
+        public void IcallWithOverloadedParametersAndEnum(Configuration config, bool aot)
         {
             string appendToTheEnd =
             """
@@ -335,18 +305,9 @@ namespace Wasm.Build.Tests
             _projectDir = Path.Combine(_projectDir!, "..", "Library");
             bool isPublish = false;
             // libraries do not have framework dirs
-            string hypotheticalFrameworkDir = Path.Combine(GetBinFrameworkDir(info.Configuration, isPublish));
+            string hypotheticalFrameworkDir = Path.Combine(GetBinFrameworkDir(config, isPublish));
             string libAssemblyPath = Path.Combine(hypotheticalFrameworkDir, "..", "..");
-            BuildProject(info,
-                new BuildOptions(
-                    info.Configuration,
-                    "Library.csproj",
-                    // library project does not have it but it's a required parameter. It's not used when assert: false
-                    BinFrameworkDir: hypotheticalFrameworkDir,
-                    ExpectedFileType: GetExpectedFileType(info, isPublish: isPublish),
-                    IsPublish: isPublish,
-                    AssertAppBundle: false
-            ));
+            BuildProject(info, config, new BuildOptions(AssertAppBundle: false, AOT: aot));
             // restore the project directory
             _projectDir = Path.Combine(_projectDir!, "..", "App");
             
@@ -388,7 +349,7 @@ namespace Wasm.Build.Tests
             _testOutput.WriteLine ("Using WasmAppBuilder.dll from {0}", taskPath);
             
             string AddAssembly(string assemblyLocation, string name) => $"<WasmPInvokeAssembly Include=\"{Path.Combine(assemblyLocation, name + ".dll")}\" />";
-            string frameworkDir = Path.Combine(GetBinFrameworkDir(info.Configuration, isPublish));
+            string frameworkDir = Path.Combine(GetBinFrameworkDir(config, isPublish));
             string appAssemblyPath = Path.Combine(frameworkDir, "..", "..");
             string pinvokeReplacement =
                 AddAssembly(appAssemblyPath, "System.Private.CoreLib") +
@@ -400,22 +361,13 @@ namespace Wasm.Build.Tests
             });
 
             // Build a project with ManagedToNativeGenerator task reading icalls from the above library and runtime-icall-table.h
-            (_, string output) = BuildProject(info,
-                new BuildOptions(
-                    info.Configuration,
-                    info.ProjectName,
-                    BinFrameworkDir: frameworkDir,
-                    ExpectedFileType: GetExpectedFileType(info, isPublish: isPublish),
-                    IsPublish: isPublish,
-                    UseCache: false
-            ));
-
+            (_, string output) = BuildProject(info, config, new BuildOptions(UseCache: false, AOT: aot));
             Assert.DoesNotMatch(".*warning.*Numbers", output);
         }
 
         [Theory]
         [BuildAndRun(parameters: new object[] { "tr_TR.UTF-8" })]
-        public async void BuildNativeInNonEnglishCulture(string config, bool aot, string culture)
+        public async void BuildNativeInNonEnglishCulture(Configuration config, bool aot, string culture)
         {
             // Check that we can generate interp tables in non-english cultures
             // Prompted by https://github.com/dotnet/runtime/issues/71149
@@ -433,18 +385,13 @@ namespace Wasm.Build.Tests
                 { "LC_ALL", culture },
             };
             bool isPublish = true;
-            (_, string output) = BuildProject(info,
-                new BuildOptions(
-                    info.Configuration,
-                    info.ProjectName,
-                    BinFrameworkDir: GetBinFrameworkDir(info.Configuration, isPublish),
-                    ExpectedFileType: GetExpectedFileType(info, isPublish: isPublish, isNativeBuild: true),
-                    IsPublish: isPublish,
-                    ExtraBuildEnvironmentVariables: extraEnvVars
-            ));
+            (_, string output) = PublishProject(info,
+                config,
+                new PublishOptions(ExtraBuildEnvironmentVariables: extraEnvVars, AOT: aot),
+                isNativeBuild: true);
 
             RunResult result = await RunForPublishWithWebServer(new(
-                info.Configuration,
+                config,
                 TestScenario: "DotnetRun",
                 ExpectedExitCode: 42,
                 Locale: culture
@@ -459,7 +406,7 @@ namespace Wasm.Build.Tests
                 "with.per.iod",
                 "with🚀unicode#"
             } })]
-        public async void CallIntoLibrariesWithNonAlphanumericCharactersInTheirNames(string config, bool aot, string[] libraryNames)
+        public async void CallIntoLibrariesWithNonAlphanumericCharactersInTheirNames(Configuration config, bool aot, string[] libraryNames)
         {
             var extraItems = @"<NativeFileReference Include=""*.c"" />";
             string extraProperties = aot ? string.Empty : "<WasmBuildNative>true</WasmBuildNative>";
@@ -468,16 +415,11 @@ namespace Wasm.Build.Tests
             int baseArg = 10;
             GenerateSourceFiles(_projectDir!, baseArg);
             bool isPublish = aot;
-            (_, string output) = BuildProject(info,
-                new BuildOptions(
-                    info.Configuration,
-                    info.ProjectName,
-                    BinFrameworkDir: GetBinFrameworkDir(info.Configuration, isPublish),
-                    ExpectedFileType: GetExpectedFileType(info, isPublish: isPublish, isNativeBuild: true),
-                    IsPublish: isPublish
-            ));
+            (_, string output) = isPublish ?
+                PublishProject(info, config, new BuildOptions(AOT: aot), isNativeBuild: true):
+                BuildProject(info, config, new PublishOptions(AOT: aot), isNativeBuild: true);
 
-            var runOptions = new RunOptions(info.Configuration, TestScenario: "DotnetRun", ExpectedExitCode: 42);
+            var runOptions = new RunOptions(config, TestScenario: "DotnetRun", ExpectedExitCode: 42);
             RunResult result = isPublish ? await RunForPublishWithWebServer(runOptions) : await RunForBuildWithDotnetRun(runOptions);
 
             for (int i = 0; i < libraryNames.Length; i ++)
@@ -515,7 +457,7 @@ namespace Wasm.Build.Tests
             }
         }
 
-        private ProjectInfo PrepreProjectForVariadicFuntion(string config, bool aot, string prefix, string extraProperties = "")
+        private ProjectInfo PrepreProjectForVariadicFuntion(Configuration config, bool aot, string prefix, string extraProperties = "")
         {
             string objectFilename = "variadic.o";
             extraProperties += "<AllowUnsafeBlocks>true</AllowUnsafeBlocks><_WasmDevel>true</_WasmDevel>";
@@ -525,24 +467,19 @@ namespace Wasm.Build.Tests
             return info;
         }
 
-        private string BuildForVariadicFunctionTests(ProjectInfo info, bool isPublish = true, string? verbosity = null, bool isNativeBuild = true)
+        private string PublishForVariadicFunctionTests(ProjectInfo info, Configuration config, bool aot, string? verbosity = null, bool isNativeBuild = true)
         {
             string verbosityArg = verbosity == null ? string.Empty : $" -v:{verbosity}";
             var extraArgs = new string[] { verbosityArg };
-            (_, string output) = BuildProject(info,
-                new BuildOptions(
-                    info.Configuration,
-                    info.ProjectName,
-                    BinFrameworkDir: GetBinFrameworkDir(info.Configuration, isPublish),
-                    // NativeFileReference forces native build
-                    ExpectedFileType: GetExpectedFileType(info, isPublish: isPublish, isNativeBuild: isNativeBuild),
-                    IsPublish: isPublish
-                ),
-                extraArgs: extraArgs);
+            // NativeFileReference forces native build
+            (_, string output) = PublishProject(info,
+                config,
+                new PublishOptions(ExtraMSBuildArgs: extraArgs, AOT: aot),
+                isNativeBuild: isNativeBuild);
             return output;
         }
 
-        private async Task EnsureWasmAbiRulesAreFollowed(string config, bool aot)
+        private async Task EnsureWasmAbiRulesAreFollowed(Configuration config, bool aot)
         {
             var extraItems = @"<NativeFileReference Include=""wasm-abi.c"" />";
             var extraProperties = "<AllowUnsafeBlocks>true</AllowUnsafeBlocks><_WasmDevel>false</_WasmDevel><WasmNativeStrip>false</WasmNativeStrip>";
@@ -552,15 +489,8 @@ namespace Wasm.Build.Tests
             File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "native-libs", cCodeFilename), Path.Combine(_projectDir!, cCodeFilename));
 
             bool isPublish = aot;
-            var buildOptions = new BuildOptions(
-                info.Configuration,
-                info.ProjectName,
-                BinFrameworkDir: GetBinFrameworkDir(info.Configuration, isPublish),
-                // NativeFileReference forces native build
-                ExpectedFileType: GetExpectedFileType(info, isPublish: isPublish, isNativeBuild: true),
-                IsPublish: isPublish
-            );
-            BuildProject(info, buildOptions);
+            var options = isPublish ? PublishOptions(AOT: aot) : new BuildOptions(AOT: aot);
+            (string _, string _) = isPublish ? PublishProject(info, options, isNativeBuild: true) : BuildProject(info, options, isNativeBuild: true);
 
             string objDir = Path.Combine(_projectDir!, "obj", config, buildOptions.TargetFramework, "wasm", isPublish ? "for-publish" : "for-build");
 
@@ -576,7 +506,7 @@ namespace Wasm.Build.Tests
             Assert.Contains("float accept_double_struct_and_return_float_struct (double);", pinvokeTable);
             Assert.Contains("int64_t accept_and_return_i64_struct (int64_t);", pinvokeTable);
 
-            var runOptions = new RunOptions(info.Configuration, TestScenario: "DotnetRun", ExpectedExitCode: 3);
+            var runOptions = new RunOptions(config, TestScenario: "DotnetRun", ExpectedExitCode: 3);
             RunResult result = isPublish ? await RunForPublishWithWebServer(runOptions) : await RunForBuildWithDotnetRun(runOptions);
             Assert.Contains("l (l)=-1148435428713435121", result.TestOutput);
             Assert.Contains("s (s)=-1148435428713435121", result.TestOutput);
@@ -590,37 +520,33 @@ namespace Wasm.Build.Tests
         }
 
         [Theory]
-        [BuildAndRun(aot: true, config: "Release")]
-        public async void EnsureWasmAbiRulesAreFollowedInAOT(string config, bool aot) =>
+        [BuildAndRun(aot: true, config: Configuration.Release)]
+        public async void EnsureWasmAbiRulesAreFollowedInAOT(Configuration config, bool aot) =>
             await EnsureWasmAbiRulesAreFollowed(config, aot);
 
         [Theory]
         [BuildAndRun(aot: false)]
-        public async void EnsureWasmAbiRulesAreFollowedInInterpreter(string config, bool aot) =>
+        public async void EnsureWasmAbiRulesAreFollowedInInterpreter(Configuration config, bool aot) =>
             await EnsureWasmAbiRulesAreFollowed(config, aot);
 
         [Theory]
-        [BuildAndRun(aot: true, config: "Release")]
+        [BuildAndRun(aot: true, config: Configuration.Release)]
         [ActiveIssue("WasmGenerateAppBundle = false, so _WasmGenerateAppBundle is not triggered. Is the change expected?")]
-        public void EnsureComInteropCompilesInAOT(string config, bool aot)
+        public void EnsureComInteropCompilesInAOT(Configuration config, bool aot)
         {
             ProjectInfo info = CopyTestAsset(config, aot, BasicTestApp, "com");
             ReplaceFile(Path.Combine("Common", "Program.cs"), Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "PInvoke", "ComInterop.cs"));
             bool isPublish = aot;
-            (string libraryDir, string output) = BuildProject(info,
-                new BuildOptions(
-                    info.Configuration,
-                    info.ProjectName,
-                    BinFrameworkDir: GetBinFrameworkDir(info.Configuration, isPublish),
-                    ExpectedFileType: GetExpectedFileType(info, isPublish: isPublish, isNativeBuild: true),
-                    IsPublish: isPublish
-            ));
+            var options = isPublish ? PublishOptions(AOT: aot) : new BuildOptions(AOT: aot);
+            (string libraryDir, string output) = isPublish ?
+                PublishProject(info, options, new PublishOptions(AOT: aot), isNativeBuild) :
+                BuildProject(info, options, new BuildOptions(AOT: aot), isNativeBuild: true);
             Assert.Contains("Generated app bundle at " + libraryDir, output);
         }
 
         [Theory]
         [BuildAndRun(aot: false)]
-        public async void UCOWithSpecialCharacters(string config, bool aot)
+        public async void UCOWithSpecialCharacters(Configuration config, bool aot)
         {
             var extraProperties = "<AllowUnsafeBlocks>true</AllowUnsafeBlocks>";
             var extraItems = @"<NativeFileReference Include=""local.c"" />";
@@ -629,19 +555,9 @@ namespace Wasm.Build.Tests
             string cCodeFilename = "local.c";
             File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "native-libs", cCodeFilename), Path.Combine(_projectDir!, cCodeFilename));
 
-            bool isPublish = true;
-            BuildProject(info,
-                new BuildOptions(
-                    info.Configuration,
-                    info.ProjectName,
-                    BinFrameworkDir: GetBinFrameworkDir(info.Configuration, isPublish),
-                    // NativeFileReference forces native build
-                    ExpectedFileType: GetExpectedFileType(info, isPublish: isPublish, isNativeBuild: true),
-                    IsPublish: isPublish
-            ));
-            
+            PublishProject(info, config, new PublishOptions(AOT: aot), isNativeBuild: true);
             RunResult result = await RunForPublishWithWebServer(new(
-                info.Configuration,
+                config,
                 TestScenario: "DotnetRun",
                 ExpectedExitCode: 42
             ));

@@ -25,17 +25,9 @@ public class AppSettingsTests : WasmTemplateTestsBase
     [InlineData("Production")]
     public async Task LoadAppSettingsBasedOnApplicationEnvironment(string applicationEnvironment)
     {
-        string config = "Debug";
+        Configuration config = Configuration.Debug;
         ProjectInfo info = CopyTestAsset(config, aot: false, BasicTestApp, "AppSettingsTest");
-        bool isPublish = true;
-        BuildProject(info,
-            new BuildOptions(
-                info.Configuration,
-                info.ProjectName,
-                BinFrameworkDir: GetBinFrameworkDir(info.Configuration, isPublish),
-                ExpectedFileType: GetExpectedFileType(info, isPublish: isPublish),
-                IsPublish: isPublish
-        ));
+        PublishProject(info, config);
         RunOptions options = new(
             info.Configuration,
             TestScenario: "AppSettingsTest",

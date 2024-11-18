@@ -38,10 +38,10 @@ public class WorkloadRequiredTests : BlazorWasmTestBase
     {
         TheoryData<string, string, bool> data = new();
 
-        string[] configs = new[] { "Debug", "Release" };
+        string[] configs = new[] { Configuration.Debug, Configuration.Release };
         foreach (var defaultPair in PropertiesWithTriggerValues)
         {
-            foreach (string config in configs)
+            foreach (Configuration config in configs)
             {
                 data.Add(config, $"<{defaultPair.propertyName}>{defaultPair.triggerValue}</{defaultPair.propertyName}>", true);
                 data.Add(config, $"<{defaultPair.propertyName}>{!defaultPair.triggerValue}</{defaultPair.propertyName}>", false);
@@ -53,18 +53,18 @@ public class WorkloadRequiredTests : BlazorWasmTestBase
 
     [Theory, TestCategory("no-workload")]
     [MemberData(nameof(SettingDifferentFromValuesInRuntimePack))]
-    public void WorkloadRequiredForBuild(string config, string extraProperties, bool workloadNeeded)
+    public void WorkloadRequiredForBuild(Configuration config, string extraProperties, bool workloadNeeded)
         => CheckWorkloadRequired(config, extraProperties, workloadNeeded, publish: false);
 
     [Theory, TestCategory("no-workload")]
     [MemberData(nameof(SettingDifferentFromValuesInRuntimePack))]
-    public void WorkloadRequiredForPublish(string config, string extraProperties, bool workloadNeeded)
+    public void WorkloadRequiredForPublish(Configuration config, string extraProperties, bool workloadNeeded)
         => CheckWorkloadRequired(config, extraProperties, workloadNeeded, publish: true);
 
     public static TheoryData<string, bool, bool> InvariantGlobalizationTestData(bool publish)
     {
         TheoryData<string, bool, bool> data = new();
-        foreach (string config in new[] { "Debug", "Release" })
+        foreach (Configuration config in new[] { Configuration.Debug, Configuration.Release })
         {
             data.Add(config, /*invariant*/ true, /*publish*/ publish);
             data.Add(config, /*invariant*/ false, /*publish*/ publish);
@@ -75,7 +75,7 @@ public class WorkloadRequiredTests : BlazorWasmTestBase
     [Theory, TestCategory("no-workload")]
     [MemberData(nameof(InvariantGlobalizationTestData), parameters: /*publish*/ false)]
     [MemberData(nameof(InvariantGlobalizationTestData), parameters: /*publish*/ true)]
-    public async Task WorkloadNotRequiredForInvariantGlobalization(string config, bool invariant, bool publish)
+    public async Task WorkloadNotRequiredForInvariantGlobalization(Configuration config, bool invariant, bool publish)
     {
         string prefix = $"props_req_workload_{(publish ? "publish" : "build")}";
         string extraProperties = invariant ? $"<InvariantGlobalization>true</InvariantGlobalization>" : "";
@@ -91,15 +91,10 @@ public class WorkloadRequiredTests : BlazorWasmTestBase
         string allText = File.ReadAllText(counterPath);
         _testOutput.WriteLine($"Updated counter.razor: {allText}");
 
-        BuildProject(info,
-            new BuildOptions(
-                info.Configuration,
-                info.ProjectName,
-                BinFrameworkDir: GetBlazorBinFrameworkDir(info.Configuration, publish),
-                ExpectedFileType: GetExpectedFileType(info, publish),
-                IsPublish: publish,
-                GlobalizationMode: invariant ? GlobalizationMode.Invariant : GlobalizationMode.Sharded
-        ));
+        var globalizationMode = invariant ? GlobalizationMode.Invariant : GlobalizationMode.Sharded;
+        _ = publish ?
+            PublishProject(info, config, new PublishOptions(GlobalizationMode: globalizationMode)) :
+            BuildProject(info, config, new BuildOptions(GlobalizationMode: globalizationMode));
 
         RunOptions runOptions = new(config);
         RunResult result = publish ? await RunForPublishWithWebServer(runOptions) : await RunForBuildWithDotnetRun(runOptions);
@@ -127,22 +122,16 @@ public class WorkloadRequiredTests : BlazorWasmTestBase
         }
     }
 
-    private void CheckWorkloadRequired(string config, string extraProperties, bool workloadNeeded, bool publish)
+    private void CheckWorkloadRequired(Configuration config, string extraProperties, bool workloadNeeded, bool publish)
     {
         string prefix = $"props_req_workload_{(publish ? "publish" : "build")}";
         string insertAtEnd = @"<Target Name=""StopBuildBeforeCompile"" BeforeTargets=""Compile"">
                     <Error Text=""Stopping the build"" />
             </Target>";
         ProjectInfo info = CopyTestAsset(config, aot: false, BasicTestApp, prefix, extraProperties: extraProperties, insertAtEnd: insertAtEnd);
-        (string _, string output) = BuildProject(info,
-            new BuildOptions(
-                info.Configuration,
-                info.ProjectName,
-                BinFrameworkDir: GetBlazorBinFrameworkDir(info.Configuration, publish),
-                ExpectedFileType: GetExpectedFileType(info, publish),
-                IsPublish: publish,
-                ExpectSuccess: false
-        ));
+        (string _, string output) = publish ?
+            PublishProject(info, config, new PublishOptions(ExpectSuccess: false)) :
+            BuildProject(info, config, new BuildOptions(ExpectSuccess: false));
 
         if (workloadNeeded)
         {

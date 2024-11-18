@@ -17,9 +17,9 @@ public class MiscTests2 : BlazorWasmTestBase
     }
 
     [Theory, TestCategory("no-workload")]
-    [InlineData("Debug")]
-    [InlineData("Release")]
-    public void NativeRef_EmitsWarningBecauseItRequiresWorkload(string config)
+    [InlineData(Configuration.Debug)]
+    [InlineData(Configuration.Release)]
+    public void NativeRef_EmitsWarningBecauseItRequiresWorkload(Configuration config)
     {
         CommandResult res = PublishForRequiresWorkloadTest(config, extraItems: "<NativeFileReference Include=\"native-lib.o\" />");
         res.EnsureSuccessful();
@@ -27,9 +27,9 @@ public class MiscTests2 : BlazorWasmTestBase
     }
 
     [Theory, TestCategory("no-workload")]
-    [InlineData("Debug")]
-    [InlineData("Release")]
-    public void AOT_FailsBecauseItRequiresWorkload(string config)
+    [InlineData(Configuration.Debug)]
+    [InlineData(Configuration.Release)]
+    public void AOT_FailsBecauseItRequiresWorkload(Configuration config)
     {
         CommandResult res = PublishForRequiresWorkloadTest(config, extraProperties: "<RunAOTCompilation>true</RunAOTCompilation>");
         Assert.NotEqual(0, res.ExitCode);
@@ -37,9 +37,9 @@ public class MiscTests2 : BlazorWasmTestBase
     }
 
     [Theory, TestCategory("no-workload")]
-    [InlineData("Debug")]
-    [InlineData("Release")]
-    public void AOT_And_NativeRef_FailBecauseTheyRequireWorkload(string config)
+    [InlineData(Configuration.Debug)]
+    [InlineData(Configuration.Release)]
+    public void AOT_And_NativeRef_FailBecauseTheyRequireWorkload(Configuration config)
     {
         CommandResult res = PublishForRequiresWorkloadTest(config,
                                 extraProperties: "<RunAOTCompilation>true</RunAOTCompilation>",
@@ -49,7 +49,7 @@ public class MiscTests2 : BlazorWasmTestBase
         Assert.Contains("following workloads must be installed: wasm-tools", res.Output);
     }
 
-    private CommandResult PublishForRequiresWorkloadTest(string config, string extraItems="", string extraProperties="")
+    private CommandResult PublishForRequiresWorkloadTest(Configuration config, string extraItems="", string extraProperties="")
     {
         ProjectInfo info = CopyTestAsset(
             config, aot: false, BasicTestApp, "needs_workload", extraProperties: extraProperties, extraItems: extraItems);

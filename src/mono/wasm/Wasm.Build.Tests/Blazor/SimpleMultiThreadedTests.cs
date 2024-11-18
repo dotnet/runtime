@@ -22,24 +22,16 @@ public class SimpleMultiThreadedTests : BlazorWasmTestBase
 
     // dotnet-run needed for running with *build* so wwwroot has the index.html etc
     [Theory]
-    [InlineData("Debug")]
-    [InlineData("Release")]
+    [InlineData(Configuration.Debug)]
+    [InlineData(Configuration.Release)]
     [ActiveIssue("run fails with timeout")]
-    public async Task BlazorBuildRunTest(string config)
+    public async Task BlazorBuildRunTest(Configuration config)
     {
         string extraProperties = "<WasmEnableThreads>true</WasmEnableThreads>";
         ProjectInfo info = CopyTestAsset(config, aot: false, BasicTestApp, "blazorwasm", extraProperties: extraProperties);
         bool isPublish = false;
         string frameworkDir = GetBlazorBinFrameworkDir(info.Configuration, isPublish);
-        BuildProject(info,
-            new BuildOptions(
-                info.Configuration,
-                info.ProjectName,
-                BinFrameworkDir: frameworkDir,
-                ExpectedFileType: GetExpectedFileType(info, isPublish),
-                IsPublish: isPublish,
-                RuntimeType: RuntimeVariant.MultiThreaded
-        ));
+        BuildProject(info, config, new BuildOptions(RuntimeType: RuntimeVariant.MultiThreaded));
         // we wan to use "xharness wasm webserver" but from non-publish location
         string extraArgs = " --web-server-use-cors --web-server-use-cop --web-server-use-https --timeout=15:00:00";
         await RunForPublishWithWebServer(new(config, ExtraArgs: extraArgs, CustomBundleDir: Path.Combine(frameworkDir, "..")));
@@ -47,11 +39,11 @@ public class SimpleMultiThreadedTests : BlazorWasmTestBase
 
     [ConditionalTheory(typeof(BuildTestBase), nameof(IsWorkloadWithMultiThreadingForDefaultFramework))]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/100373")] // to be fixed by: "https://github.com/dotnet/aspnetcore/issues/54365"
-    // [InlineData("Debug", false)] // ActiveIssue https://github.com/dotnet/runtime/issues/98758
-    // [InlineData("Debug", true)]
-    [InlineData("Release", false)]
-    // [InlineData("Release", true)]
-    public async Task BlazorPublishRunTest(string config, bool aot)
+    // [InlineData(Configuration.Debug, false)] // ActiveIssue https://github.com/dotnet/runtime/issues/98758
+    // [InlineData(Configuration.Debug, true)]
+    [InlineData(Configuration.Release, false)]
+    // [InlineData(Configuration.Release, true)]
+    public async Task BlazorPublishRunTest(Configuration config, bool aot)
     {
         string extraProperties = "<WasmEnableThreads>true</WasmEnableThreads>";
         ProjectInfo info = CopyTestAsset(config, aot, BasicTestApp, "blazor_mt", extraProperties: extraProperties);
@@ -68,16 +60,7 @@ public class SimpleMultiThreadedTests : BlazorWasmTestBase
             """
         );
 
-        bool isPublish = true;
-        BuildProject(info,
-            new BuildOptions(
-                info.Configuration,
-                info.ProjectName,
-                BinFrameworkDir: GetBlazorBinFrameworkDir(info.Configuration, isPublish),
-                ExpectedFileType: GetExpectedFileType(info, isPublish),
-                IsPublish: isPublish,
-                RuntimeType: RuntimeVariant.MultiThreaded
-        ));
+        BuildProject(info, config, new PublishOptions(RuntimeType: RuntimeVariant.MultiThreaded, AOT: aot));
 
         bool hasEmittedWasmEnableThreads = false;
         StringBuilder errorOutput = new();

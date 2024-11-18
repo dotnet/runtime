@@ -26,17 +26,9 @@ public partial class LibraryInitializerTests : WasmTemplateTestsBase
     [Fact]
     public async Task LoadLibraryInitializer()
     {
-        string config = "Debug";        
+        Configuration config = Configuration.Debug;        
         ProjectInfo info = CopyTestAsset(config, false, BasicTestApp, "LibraryInitializerTests_LoadLibraryInitializer");
-        bool isPublish = true;
-        BuildProject(info,
-            new BuildOptions(
-                info.Configuration,
-                info.ProjectName,
-                BinFrameworkDir: GetBinFrameworkDir(info.Configuration, isPublish),
-                ExpectedFileType: GetExpectedFileType(info, isPublish: isPublish),
-                IsPublish: isPublish
-        ));
+        PublishProject(info, config);
         RunResult result = await RunForPublishWithWebServer(new(info.Configuration, TestScenario: "LibraryInitializerTest"));
         Assert.Collection(
             result.TestOutput,
@@ -50,17 +42,9 @@ public partial class LibraryInitializerTests : WasmTemplateTestsBase
     [Fact]
     public async Task AbortStartupOnError()
     {
-        string config = "Debug";        
+        Configuration config = Configuration.Debug;        
         ProjectInfo info = CopyTestAsset(config, false, BasicTestApp, "LibraryInitializerTests_AbortStartupOnError");
-        bool isPublish = true;
-        BuildProject(info,
-            new BuildOptions(
-                info.Configuration,
-                info.ProjectName,
-                BinFrameworkDir: GetBinFrameworkDir(info.Configuration, isPublish),
-                ExpectedFileType: GetExpectedFileType(info, isPublish: isPublish),
-                IsPublish: isPublish
-        ));
+        PublishProject(info, config);
 
         RunOptions options = new(
             info.Configuration,

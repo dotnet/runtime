@@ -21,13 +21,13 @@ public class CleanTests : BlazorWasmTestBase
     }
 
     [Theory]
-    [InlineData("Debug")]
-    [InlineData("Release")]
-    public void Blazor_BuildThenClean_NativeRelinking(string config)
+    [InlineData(Configuration.Debug)]
+    [InlineData(Configuration.Release)]
+    public void Blazor_BuildThenClean_NativeRelinking(Configuration config)
     {
         string extraProperties = @"<_WasmDevel>true</_WasmDevel><WasmBuildNative>true</WasmBuildNative>";
         ProjectInfo info = CopyTestAsset(config, aot: true, BasicTestApp, "clean", extraProperties: extraProperties);
-        BlazorBuild(info, isNativeBuild: true);
+        BlazorBuild(info, config, isNativeBuild: true);
 
         string relinkDir = Path.Combine(_projectDir!, "obj", config, DefaultTargetFrameworkForBlazor, "wasm", "for-build");
         Assert.True(Directory.Exists(relinkDir), $"Could not find expected relink dir: {relinkDir}");
@@ -43,31 +43,37 @@ public class CleanTests : BlazorWasmTestBase
     }
 
     [Theory]
-    [InlineData("Debug")]
-    [InlineData("Release")]
-    public void Blazor_BuildNoNative_ThenBuildNative_ThenClean(string config)
+    [InlineData(Configuration.Debug)]
+    [InlineData(Configuration.Release)]
+    public void Blazor_BuildNoNative_ThenBuildNative_ThenClean(Configuration config)
         => Blazor_BuildNativeNonNative_ThenCleanTest(config, firstBuildNative: false);
 
     [Theory]
-    [InlineData("Debug")]
-    [InlineData("Release")]
-    public void Blazor_BuildNative_ThenBuildNonNative_ThenClean(string config)
+    [InlineData(Configuration.Debug)]
+    [InlineData(Configuration.Release)]
+    public void Blazor_BuildNative_ThenBuildNonNative_ThenClean(Configuration config)
         => Blazor_BuildNativeNonNative_ThenCleanTest(config, firstBuildNative: true);
 
-    private void Blazor_BuildNativeNonNative_ThenCleanTest(string config, bool firstBuildNative)
+    private void Blazor_BuildNativeNonNative_ThenCleanTest(Configuration config, bool firstBuildNative)
     {
         string extraProperties = @"<_WasmDevel>true</_WasmDevel>";
         ProjectInfo info = CopyTestAsset(config, aot: true, BasicTestApp, "clean_native", extraProperties: extraProperties);
 
         bool relink = firstBuildNative;
-        BlazorBuild(info, isNativeBuild: relink, extraArgs: relink ? "-p:WasmBuildNative=true" : string.Empty);
+        BlazorBuild(info,
+            config,
+            new BuildOptions(ExtraMSBuildArgs: relink ? "-p:WasmBuildNative=true" : string.Empty),
+            isNativeBuild: relink);
 
         string relinkDir = Path.Combine(_projectDir!, "obj", config, DefaultTargetFrameworkForBlazor, "wasm", "for-build");
         if (relink)
             Assert.True(Directory.Exists(relinkDir), $"Could not find expected relink dir: {relinkDir}");
 
         relink = !firstBuildNative;
-        BlazorBuild(info, useCache: false, isNativeBuild: relink, extraArgs: relink ? "-p:WasmBuildNative=true" : string.Empty);
+        BlazorBuild(info,
+            config,
+            new BuildOptions(useCache: false, ExtraMSBuildArgs: relink ? "-p:WasmBuildNative=true" : string.Empty),
+            isNativeBuild: relink);
 
         if (relink)
             Assert.True(Directory.Exists(relinkDir), $"Could not find expected relink dir: {relinkDir}");

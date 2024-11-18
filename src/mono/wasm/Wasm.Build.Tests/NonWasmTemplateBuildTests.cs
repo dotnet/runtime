@@ -55,8 +55,8 @@ public class NonWasmTemplateBuildTests : WasmTemplateTestsBase
     public static IEnumerable<object?[]> GetTestData() =>
         new IEnumerable<object?>[]
         {
-            new object?[] { "Debug" },
-            new object?[] { "Release" }
+            new object?[] { Configuration.Debug },
+            new object?[] { Configuration.Release }
         }
         .AsEnumerable()
         .MultiplyWithSingleArgs
@@ -75,7 +75,7 @@ public class NonWasmTemplateBuildTests : WasmTemplateTestsBase
 
     [Theory, TestCategory("no-workload")]
     [MemberData(nameof(GetTestData))]
-    public void NonWasmConsoleBuild_WithoutWorkload(string config, string extraBuildArgs, string targetFramework)
+    public void NonWasmConsoleBuild_WithoutWorkload(Configuration config, string extraBuildArgs, string targetFramework)
         => NonWasmConsoleBuild(config,
                                extraBuildArgs,
                                targetFramework,
@@ -84,14 +84,14 @@ public class NonWasmTemplateBuildTests : WasmTemplateTestsBase
 
     [Theory]
     [MemberData(nameof(GetTestData))]
-    public void NonWasmConsoleBuild_WithWorkload(string config, string extraBuildArgs, string targetFramework)
+    public void NonWasmConsoleBuild_WithWorkload(Configuration config, string extraBuildArgs, string targetFramework)
         => NonWasmConsoleBuild(config,
                                extraBuildArgs,
                                targetFramework,
                                // net6 is sdk would be needed to run the app
                                shouldRun: targetFramework == s_latestTargetFramework);
 
-    private void NonWasmConsoleBuild(string config,
+    private void NonWasmConsoleBuild(Configuration config,
                                      string extraBuildArgs,
                                      string targetFramework,
                                      string? directoryBuildTargets = null,

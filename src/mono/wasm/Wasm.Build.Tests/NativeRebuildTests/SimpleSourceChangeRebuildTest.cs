@@ -21,17 +21,17 @@ namespace Wasm.Build.NativeRebuild.Tests
         [Theory]
         [MemberData(nameof(NativeBuildData))]
         [ActiveIssue("File sizes don't match: dotnet.native.wasm size should be same as from obj/for-publish but is not")]
-        public async void SimpleStringChangeInSource(string config, bool aot, bool nativeRelink, bool invariant)
+        public async void SimpleStringChangeInSource(Configuration config, bool aot, bool nativeRelink, bool invariant)
         {
             ProjectInfo info = CopyTestAsset(config, aot, BasicTestApp, "rebuild_simple");  
             BuildPaths paths = await FirstNativeBuildAndRun(info, nativeRelink, invariant);
 
             string mainAssembly = $"{info.ProjectName}{ProjectProviderBase.WasmAssemblyExtension}";
-            var pathsDict = GetFilesTable(info, paths, unchanged: true);
+            var pathsDict = GetFilesTable(info.ProjectName, aot, paths, unchanged: true);
             pathsDict.UpdateTo(unchanged: false, mainAssembly);
-            pathsDict.UpdateTo(unchanged: !info.AOT, "dotnet.native.wasm", "dotnet.native.js");
+            pathsDict.UpdateTo(unchanged: !aot, "dotnet.native.wasm", "dotnet.native.js");
         
-            if (info.AOT)
+            if (aot)
                 pathsDict.UpdateTo(unchanged: false, $"{mainAssembly}.bc", $"{mainAssembly}.o");
 
             var originalStat = StatFiles(pathsDict);

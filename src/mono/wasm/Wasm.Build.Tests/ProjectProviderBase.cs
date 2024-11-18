@@ -275,11 +275,11 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
         return dict;
     }
 
-    public IDictionary<string, (string fullPath, bool unchanged)> GetFilesTable(ProjectInfo projectInfo, BuildPaths paths, bool unchanged)
+    public IDictionary<string, (string fullPath, bool unchanged)> GetFilesTable(string projectName, bool isAOT, BuildPaths paths, bool unchanged)
     {
         List<string> files = new()
         {
-            Path.Combine(paths.BinDir, "publish", BundleDirName, "_framework", $"{projectInfo.ProjectName}{WasmAssemblyExtension}"),
+            Path.Combine(paths.BinDir, "publish", BundleDirName, "_framework", $"{projectName}{WasmAssemblyExtension}"),
             Path.Combine(paths.ObjWasmDir, "driver.o"),
             Path.Combine(paths.ObjWasmDir, "runtime.o"),
             Path.Combine(paths.ObjWasmDir, "corebindings.o"),
@@ -294,12 +294,12 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
             Path.Combine(paths.BinFrameworkDir, "dotnet.globalization.js"),
         };
 
-        if (projectInfo.AOT)
+        if (isAOT)
         {
             files.AddRange(new[]
             {
-                Path.Combine(paths.ObjWasmDir, $"{projectInfo.ProjectName}.dll.bc"),
-                Path.Combine(paths.ObjWasmDir, $"{projectInfo.ProjectName}.dll.o"),
+                Path.Combine(paths.ObjWasmDir, $"{projectName}.dll.bc"),
+                Path.Combine(paths.ObjWasmDir, $"{projectName}.dll.o"),
 
                 Path.Combine(paths.ObjWasmDir, "System.Private.CoreLib.dll.bc"),
                 Path.Combine(paths.ObjWasmDir, "System.Private.CoreLib.dll.o"),
@@ -547,7 +547,7 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
         Assert.Equal(expected, actualFileNames);
     }
 
-    public virtual string GetBinFrameworkDir(string config, bool forPublish, string framework, string? projectDir = null)
+    public virtual string GetBinFrameworkDir(Configuration config, bool forPublish, string framework, string? projectDir = null)
     {
         throw new NotImplementedException();
     }

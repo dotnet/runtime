@@ -20,20 +20,13 @@ public class DownloadThenInitTests : WasmTemplateTestsBase
     }
 
     [Theory]
-    [InlineData("Debug")]
-    [InlineData("Release")]
-    public async Task NoResourcesReFetchedAfterDownloadFinished(string config)
+    [InlineData(Configuration.Debug)]
+    [InlineData(Configuration.Release)]
+    public async Task NoResourcesReFetchedAfterDownloadFinished(Configuration config)
     {
         ProjectInfo info = CopyTestAsset(config, aot: false, BasicTestApp, "DownloadThenInitTests");
         bool isPublish = false;
-        BuildProject(info,
-            new BuildOptions(
-                info.Configuration,
-                info.ProjectName,
-                BinFrameworkDir: GetBinFrameworkDir(info.Configuration, isPublish),
-                ExpectedFileType: GetExpectedFileType(info, isPublish: isPublish),
-                IsPublish: isPublish
-        ));
+        BuildProject(info, config);
         RunOptions options = new(info.Configuration, TestScenario: "DownloadThenInit");
         RunResult result = await RunForBuildWithDotnetRun(options);
         var resultTestOutput = result.TestOutput.ToList();

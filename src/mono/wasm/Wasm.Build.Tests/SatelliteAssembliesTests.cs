@@ -25,14 +25,14 @@ namespace Wasm.Build.Tests
                         new object?[] { relinking, "es-ES" },
                         new object?[] { relinking, null },
                         new object?[] { relinking, "ja-JP" })
-                    .Where(item => !(item.ElementAt(0) is string config && config == "Debug" && item.ElementAt(1) is bool aotValue && aotValue))
+                    .Where(item => !(item.ElementAt(0) is Configuration config && config == Configuration.Debug && item.ElementAt(1) is bool aotValue && aotValue))
                     .UnwrapItemsAsArrays();
 
         [Theory]
         [MemberData(nameof(SatelliteAssemblyTestData), parameters: new object[] { /*aot*/ false, /*relinking*/ false })]
         [MemberData(nameof(SatelliteAssemblyTestData), parameters: new object[] { /*aot*/ false, /*relinking*/ true })]
         [MemberData(nameof(SatelliteAssemblyTestData), parameters: new object[] { /*aot*/ true,  /*relinking*/ false })]
-        public async void ResourcesFromMainAssembly(string config, bool aot, bool nativeRelink, string? argCulture)
+        public async void ResourcesFromMainAssembly(Configuration config, bool aot, bool nativeRelink, string? argCulture)
         {
             string prefix = $"sat_asm_from_main_asm";
             string extraProperties = (nativeRelink ? $"<WasmBuildNative>true</WasmBuildNative>" : string.Empty)
@@ -44,16 +44,9 @@ namespace Wasm.Build.Tests
             CreateProgramForCultureTest($"{info.ProjectName}.resx.words", "TestClass");
 
             bool isPublish = true;
-            (_, string output) = BuildProject(info,
-                new BuildOptions(
-                    info.Configuration,
-                    info.ProjectName,
-                    BinFrameworkDir: Path.Combine(GetBinFrameworkDir(info.Configuration, isPublish)),
-                    ExpectedFileType: GetExpectedFileType(info, isPublish: isPublish, isNativeBuild: nativeRelink),
-                    IsPublish: isPublish
-            ));
+            (_, string output) = PublishProject(info, config, new PublishOptions(UseCache: false, AOT: aot), isNativeBuild: nativeRelink);
             RunResult result = await RunForPublishWithWebServer(new(
-                info.Configuration,
+                config,
                 TestScenario: "DotnetRun",
                 ExpectedExitCode: 42,
                 Locale: argCulture ?? "en-US",
@@ -66,7 +59,7 @@ namespace Wasm.Build.Tests
         [MemberData(nameof(SatelliteAssemblyTestData), parameters: new object[] { /*aot*/ false, /*relinking*/ false })]
         [MemberData(nameof(SatelliteAssemblyTestData), parameters: new object[] { /*aot*/ false, /*relinking*/ true })]
         [MemberData(nameof(SatelliteAssemblyTestData), parameters: new object[] { /*aot*/ true,  /*relinking*/ false })]
-        public async void ResourcesFromProjectReference(string config, bool aot, bool nativeRelink, string? argCulture)
+        public async void ResourcesFromProjectReference(Configuration config, bool aot, bool nativeRelink, string? argCulture)
         {
             string prefix = $"SatelliteAssemblyFromProjectRef";
             string extraProperties = $"<WasmBuildNative>{(nativeRelink ? "true" : "false")}</WasmBuildNative>"
@@ -89,25 +82,18 @@ namespace Wasm.Build.Tests
             // The root D.B* should be empty
             File.WriteAllText(Path.Combine(_projectDir!, "..", "Directory.Build.props"), "<Project />");
             File.WriteAllText(Path.Combine(_projectDir!, "..", "Directory.Build.targets"), "<Project />");
-            NativeFilesType dotnetWasmFileType = nativeRelink ? NativeFilesType.Relinked : aot ? NativeFilesType.AOT : NativeFilesType.FromRuntimePack;
+            // NativeFilesType dotnetWasmFileType = nativeRelink ? NativeFilesType.Relinked : aot ? NativeFilesType.AOT : NativeFilesType.FromRuntimePack;
             bool isPublish = true;
-            BuildProject(info,
-                new BuildOptions(
-                    info.Configuration,
-                    info.ProjectName,
-                    BinFrameworkDir: GetBinFrameworkDir(info.Configuration, isPublish),
-                    ExpectedFileType: dotnetWasmFileType,
-                    IsPublish: isPublish
-            ));
+            PublishProject(info, config, new PublishOptions(AOT: aot), isNativeBuild: nativeRelink);
 
             await RunForPublishWithWebServer(
-                new(Configuration: info.Configuration, TestScenario: "DotnetRun", ExpectedExitCode: 42, Locale: argCulture ?? "en-US"));
+                new(Configuration: config, TestScenario: "DotnetRun", ExpectedExitCode: 42, Locale: argCulture ?? "en-US"));
         }
 
 #pragma warning disable xUnit1026
         [Theory]
-        [BuildAndRun(aot: true, config: "Release")]
-        public void CheckThatSatelliteAssembliesAreNotAOTed(string config, bool aot)
+        [BuildAndRun(aot: true, config: Configuration.Release)]
+        public void CheckThatSatelliteAssembliesAreNotAOTed(Configuration config, bool aot)
         {
             string extraProperties = $@"<EmccCompileOptimizationFlag>-O1</EmccCompileOptimizationFlag>
                                         <EmccLinkOptimizationFlag>-O1</EmccLinkOptimizationFlag>
@@ -117,14 +103,7 @@ namespace Wasm.Build.Tests
             CreateProgramForCultureTest($"{info.ProjectName}.words", "TestClass");
 
             bool isPublish = true;
-            BuildProject(info,
-                new BuildOptions(
-                    info.Configuration,
-                    info.ProjectName,
-                    BinFrameworkDir: GetBinFrameworkDir(info.Configuration, isPublish),
-                    ExpectedFileType: GetExpectedFileType(info, isPublish: isPublish),
-                    IsPublish: isPublish
-            ));
+            PublishProject(info, config, new PublishOptions(AOT: aot));
 
             var bitCodeFileNames = Directory.GetFileSystemEntries(Path.Combine(_projectDir!, "obj"), "*.dll.bc", SearchOption.AllDirectories)
                                     .Select(path => Path.GetFileName(path))

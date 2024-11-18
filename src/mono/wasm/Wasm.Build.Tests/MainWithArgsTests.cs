@@ -26,23 +26,23 @@ namespace Wasm.Build.Tests
                         // ActiveIssue - passing args to the program does not work, possible error in the test logic
                         // new object?[] { new object?[] { "abc", "foobar"} },
                         new object?[] { new object?[0] })
-                .Where(item => !(item.ElementAt(0) is string config && config == "Debug" && item.ElementAt(1) is bool aotValue && aotValue))
+                .Where(item => !(item.ElementAt(0) is Configuration config && config == Configuration.Debug && item.ElementAt(1) is bool aotValue && aotValue))
                 .UnwrapItemsAsArrays();
 
         [Theory]
         [MemberData(nameof(MainWithArgsTestData), parameters: new object[] { /*aot*/ false })]
         [MemberData(nameof(MainWithArgsTestData), parameters: new object[] { /*aot*/ true })]
-        public async Task AsyncMainWithArgs(string config, bool aot, string[] args)
+        public async Task AsyncMainWithArgs(Configuration config, bool aot, string[] args)
             => await TestMainWithArgs(config, aot, "async_main_with_args", "AsyncMainWithArgs.cs", args);
 
         [Theory]
         [ActiveIssue("ToDo: passing args to the program does not work, possible error in the test logic")]
         [MemberData(nameof(MainWithArgsTestData), parameters: new object[] { /*aot*/ false })]
         [MemberData(nameof(MainWithArgsTestData), parameters: new object[] { /*aot*/ true })]
-        public async Task NonAsyncMainWithArgs(string config, bool aot, string[] args)
+        public async Task NonAsyncMainWithArgs(Configuration config, bool aot, string[] args)
             => await TestMainWithArgs(config, aot, "non_async_main_args", "SyncMainWithArgs.cs", args);
 
-        async Task TestMainWithArgs(string config,
+        async Task TestMainWithArgs(Configuration config,
                                 bool aot,
                                 string projectNamePrefix,
                                 string projectContentsName,
@@ -53,21 +53,12 @@ namespace Wasm.Build.Tests
 
             string argsStr = string.Join(" ", args);
             _testOutput.WriteLine ($"-- args: {argsStr}, name: {projectContentsName}");
-
-            bool isPublish = true;
-            BuildProject(info,
-                        new BuildOptions(
-                            config,
-                            info.ProjectName,
-                            BinFrameworkDir: GetBinFrameworkDir(config, isPublish),
-                            ExpectedFileType: GetExpectedFileType(info, isPublish: isPublish),
-                            IsPublish: isPublish
-                        ));
+            PublishProject(info, config, new PublishOptions(AOT: aot));
 
             int argsCount = args.Length;
             int expectedCode = 42 + argsCount;
             RunResult output = await RunForPublishWithWebServer(
-                new(info.Configuration, TestScenario: "DotnetRun", ExtraArgs: argsStr, ExpectedExitCode: expectedCode));
+                new(config, TestScenario: "DotnetRun", ExtraArgs: argsStr, ExpectedExitCode: expectedCode));
             Assert.Contains(output.TestOutput, m => m.Contains($"args#: {argsCount}"));
             foreach (var arg in args)
                 Assert.Contains(output.TestOutput, m => m.Contains($"arg: {arg}"));

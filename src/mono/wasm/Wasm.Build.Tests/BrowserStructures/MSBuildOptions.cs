@@ -7,24 +7,22 @@ using System.Collections.Generic;
 
 namespace Wasm.Build.Tests;
 
-public record BuildOptions
+public abstract record MSBuildOptions
 (
-    string                          Configuration,
-    string                          Id,
-    string                          BinFrameworkDir,
+    bool                            IsPublish,
+    bool                            AOT                             = false,
     NativeFilesType                 ExpectedFileType                = NativeFilesType.FromRuntimePack,
     string                          TargetFramework                 = BuildTestBase.DefaultTargetFramework,
     GlobalizationMode               GlobalizationMode               = GlobalizationMode.Sharded,
-    bool                            IsPublish                       = true,
     string                          CustomIcuFile                   = "",
     bool                            UseCache                        = true,
     bool                            ExpectSuccess                   = true,
     bool                            AssertAppBundle                 = true,
-    bool                            BuildOnlyAfterPublish           = true,
     string                          Label                           = "",
     bool                            WarnAsError                     = true,
     RuntimeVariant                  RuntimeType                     = RuntimeVariant.SingleThreaded,
     IDictionary<string, string>?    ExtraBuildEnvironmentVariables  = null,
     string                          BootConfigFileName              = "blazor.boot.json",
-    bool                            ExpectRelinkDirWhenPublishing   = false
+    string                          NonDefaultFrameworkDir          = "",
+    string                          ExtraMSBuildArgs                = ""
 );

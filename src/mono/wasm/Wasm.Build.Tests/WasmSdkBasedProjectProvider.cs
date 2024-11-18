@@ -69,13 +69,14 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
     }
 
 
-    public void AssertBundle(BuildOptions buildOptions)
+    public void AssertBundle(Configuration config, MSBuildOptions buildOptions, bool expectNativeBuild=false)
     {
         AssertBundle(new AssertBundleOptions(
             BuildOptions: buildOptions,
             ExpectSymbolsFile: true,
             AssertIcuAssets: true,
-            AssertSymbolsFile: false
+            AssertSymbolsFile: false,
+            ExpectedFileType: GetExpectedFileType(config, buildOptions.AOT, buildOptions.IsPublish, expectNativeBuild)
         ));
     }
 
@@ -103,7 +104,7 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
 
         string runtimeNativeDir = BuildTestBase.s_buildEnv.GetRuntimeNativeDir(assertOptions.BuildOptions.TargetFramework, assertOptions.BuildOptions.RuntimeType);
 
-        string srcDirForNativeFileToCompareAgainst = assertOptions.BuildOptions.ExpectedFileType switch
+        string srcDirForNativeFileToCompareAgainst = assertOptions.ExpectedFileType switch
         {
             NativeFilesType.FromRuntimePack => runtimeNativeDir,
             NativeFilesType.Relinked => objBuildDir,
@@ -148,29 +149,29 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
         }
     }
 
-    public void AssertWasmSdkBundle(BuildOptions buildOptions, string? buildOutput = null)
+    public void AssertWasmSdkBundle(Configuration config, MSBuildOptions buildOptions, bool expectNativeBuild = false, string? buildOutput = null)
     {
         if (buildOutput is not null)
             ProjectProviderBase.AssertRuntimePackPath(buildOutput, buildOptions.TargetFramework ?? _defaultTargetFramework);
-        AssertBundle(buildOptions);
+        AssertBundle(config, buildOptions, expectNativeBuild);
     }
     
-    public BuildPaths GetBuildPaths(ProjectInfo info, bool forPublish)
+    public BuildPaths GetBuildPaths(Configuration configuration, bool forPublish)
     {
         Assert.NotNull(ProjectDir);
-        string objDir = Path.Combine(ProjectDir, "obj", info.Configuration, _defaultTargetFramework);
-        string binDir = Path.Combine(ProjectDir, "bin", info.Configuration, _defaultTargetFramework);
-        string binFrameworkDir = GetBinFrameworkDir(info.Configuration, forPublish, _defaultTargetFramework);
+        string objDir = Path.Combine(ProjectDir, "obj", configuration, _defaultTargetFramework);
+        string binDir = Path.Combine(ProjectDir, "bin", configuration, _defaultTargetFramework);
+        string binFrameworkDir = GetBinFrameworkDir(configuration, forPublish, _defaultTargetFramework);
         
         string objWasmDir = Path.Combine(objDir, "wasm", forPublish ? "for-publish" : "for-build");
         // for build: we should take from runtime pack?
         return new BuildPaths(objWasmDir, objDir, binDir, binFrameworkDir);
     }
     
-    public override string GetBinFrameworkDir(string config, bool forPublish, string framework, string? projectDir = null)
+    public override string GetBinFrameworkDir(Configuration config, bool forPublish, string framework, string? projectDir = null)
     {
         EnsureProjectDirIsSet();
-        string basePath = Path.Combine(projectDir ?? ProjectDir!, "bin", config, framework);
+        string basePath = Path.Combine(projectDir ?? ProjectDir!, "bin", config.ToString(), framework);
         if (forPublish)
             basePath = Path.Combine(basePath, "publish");
 

@@ -42,7 +42,7 @@ namespace Wasm.Build.NativeRebuild.Tests
                 => ConfigWithAOTData(aot)
                         .Multiply(new object[] { nativeRelinking, invariant })
                         // AOT in Debug is switched off
-                        .Where(item => !(item.ElementAt(0) is string config && config == "Debug" && item.ElementAt(1) is bool aotValue && aotValue))
+                        .Where(item => !(item.ElementAt(0) is Configuration config && config == Configuration.Debug && item.ElementAt(1) is bool aotValue && aotValue))
                         .UnwrapItemsAsArrays().ToList();
         }
 
@@ -55,17 +55,10 @@ namespace Wasm.Build.NativeRebuild.Tests
                 $"-p:InvariantGlobalization={invariant}",
                 extraBuildArgs
             };
-            bool isPublish = true;
-            BuildProject(info,
-                        new BuildOptions(
-                            info.Configuration,
-                            info.ProjectName,
-                            BinFrameworkDir: GetBinFrameworkDir(info.Configuration, isPublish),
-                            ExpectedFileType: GetExpectedFileType(info, isPublish: isPublish, isNativeBuild: nativeRelink),
-                            IsPublish: isPublish,
-                            GlobalizationMode: invariant ? GlobalizationMode.Invariant : GlobalizationMode.Sharded
-                        ),
-                        extraArgs);
+            PublishProject(info,
+                config,
+                new PublishOptions(GlobalizationMode: invariant ? GlobalizationMode.Invariant : GlobalizationMode.Sharded, ExtraMSBuildArgs: extraArgs),
+                isNativeBuild: nativeRelink);
             await RunForPublishWithWebServer(new (info.Configuration, TestScenario: "DotnetRun"));
             return GetBuildPaths(info, isPublish);
         }
@@ -89,19 +82,11 @@ namespace Wasm.Build.NativeRebuild.Tests
             Thread.Sleep(5000);
 
             bool isNativeBuild = nativeRelink || invariant;
-            bool isPublish = true;
-            (string _, string output) = BuildProject(info,
-                        new BuildOptions(
-                            info.Configuration,
-                            info.ProjectName,
-                            BinFrameworkDir: GetBinFrameworkDir(info.Configuration, isPublish),
-                            ExpectedFileType: GetExpectedFileType(info, isPublish, isNativeBuild),
-                            IsPublish: isPublish,
-                            GlobalizationMode: invariant ? GlobalizationMode.Invariant : GlobalizationMode.Sharded,
-                            UseCache: false
-                        ),
-                        extraArgs);
-
+            var globalizationMode = invariant ? GlobalizationMode.Invariant : GlobalizationMode.Sharded;
+            (string _, string output) = PublishProject(info,
+                config,
+                new PublishOptions(globalizationMode, ExtraMSBuildArgs: extraArgs, UseCache: false),
+                isNativeBuild: nativeRelink);
             return output;
         }
 

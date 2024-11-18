@@ -29,15 +29,15 @@ namespace Wasm.Build.Tests
         [Theory]
         [MemberData(nameof(InvariantTimezoneTestData), parameters: new object[] { /*aot*/ false, })]
         [MemberData(nameof(InvariantTimezoneTestData), parameters: new object[] { /*aot*/ true })]
-        public async Task AOT_InvariantTimezone(string config, bool aot, bool? invariantTimezone)
+        public async Task AOT_InvariantTimezone(Configuration config, bool aot, bool? invariantTimezone)
             => await TestInvariantTimezone(config, aot, invariantTimezone);
 
         [Theory]
         [MemberData(nameof(InvariantTimezoneTestData), parameters: new object[] { /*aot*/ false })]
-        public async Task RelinkingWithoutAOT(string config, bool aot, bool? invariantTimezone)
+        public async Task RelinkingWithoutAOT(Configuration config, bool aot, bool? invariantTimezone)
             => await TestInvariantTimezone(config, aot, invariantTimezone, isNativeBuild: true);
 
-        private async Task TestInvariantTimezone(string config, bool aot, bool? invariantTimezone, bool isNativeBuild = false)
+        private async Task TestInvariantTimezone(Configuration config, bool aot, bool? invariantTimezone, bool isNativeBuild = false)
         {
             string extraProperties = isNativeBuild ? "<WasmBuildNative>true</WasmBuildNative>" : "";
             if (invariantTimezone != null)
@@ -47,19 +47,11 @@ namespace Wasm.Build.Tests
             ProjectInfo info = CopyTestAsset(config, aot, BasicTestApp, prefix, extraProperties: extraProperties);
             ReplaceFile(Path.Combine("Common", "Program.cs"), Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "InvariantTimezone.cs"));
 
-            bool isPublish = true;
             // invariantTimezone triggers native build
             isNativeBuild = isNativeBuild || invariantTimezone == true;
-            BuildProject(info,
-                        new BuildOptions(
-                            config,
-                            info.ProjectName,
-                            BinFrameworkDir: GetBinFrameworkDir(config, isPublish),
-                            ExpectedFileType: GetExpectedFileType(info, isPublish: isPublish, isNativeBuild: isNativeBuild),
-                            IsPublish: isPublish
-                        ));
+            PublishProject(info, config, isNativeBuild: isNativeBuild);
 
-            RunResult output = await RunForPublishWithWebServer(new(info.Configuration, TestScenario: "DotnetRun", ExpectedExitCode: 42));
+            RunResult output = await RunForPublishWithWebServer(new(config, TestScenario: "DotnetRun", ExpectedExitCode: 42));
             Assert.Contains(output.TestOutput, m => m.Contains("UTC BaseUtcOffset is 0"));
             if (invariantTimezone == true)
             {

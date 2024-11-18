@@ -21,20 +21,12 @@ public class MaxParallelDownloadsTests : WasmTemplateTestsBase
     }
 
     [Theory]
-    [InlineData("Release", "1")]
-    [InlineData("Release", "4")]
-    public async Task NeverFetchMoreThanMaxAllowed(string config, string maxParallelDownloads)
+    [InlineData(Configuration.Release, "1")]
+    [InlineData(Configuration.Release, "4")]
+    public async Task NeverFetchMoreThanMaxAllowed(Configuration config, string maxParallelDownloads)
     {
-         ProjectInfo info = CopyTestAsset(config, false, BasicTestApp, "MaxParallelDownloadsTests");
-        bool isPublish = false;
-        BuildProject(info,
-            new BuildOptions(
-                info.Configuration,
-                info.ProjectName,
-                BinFrameworkDir: GetBinFrameworkDir(info.Configuration, isPublish),
-                ExpectedFileType: GetExpectedFileType(info, isPublish: isPublish),
-                IsPublish: isPublish
-        ));
+        ProjectInfo info = CopyTestAsset(config, false, BasicTestApp, "MaxParallelDownloadsTests");
+        BuildProject(info, config);
         RunResult result = await RunForBuildWithDotnetRun(new(
             info.Configuration,
             TestScenario: "MaxParallelDownloads",

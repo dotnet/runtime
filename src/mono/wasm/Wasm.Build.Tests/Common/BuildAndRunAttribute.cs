@@ -22,7 +22,7 @@ namespace Wasm.Build.Tests
     {
         private readonly IEnumerable<object?[]> _data;
 
-        public BuildAndRunAttribute(bool aot=false, string? config=null, params object?[] parameters)
+        public BuildAndRunAttribute(bool aot=false, Configuration? config=null, params object?[] parameters)
         {
             _data = BuildTestBase.ConfigWithAOTData(aot, config)
                     .Multiply(parameters)

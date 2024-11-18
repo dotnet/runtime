@@ -16,21 +16,13 @@ public class WasmRunOutOfAppBundleTests : WasmTemplateTestsBase
 
     [Theory]
     [BuildAndRun]
-    public async void RunOutOfAppBundle(string config, bool aot)
+    public async void RunOutOfAppBundle(Configuration config, bool aot)
     {
         ProjectInfo info = CopyTestAsset(config, aot, BasicTestApp, "outofappbundle");
         UpdateFile(Path.Combine("Common", "Program.cs"), s_mainReturns42);
-        bool isPublish = true;
-        string binFrameworkDir = GetBinFrameworkDir(info.Configuration, isPublish);
-        (string _, string output) = BuildProject(info,
-            new BuildOptions(
-                info.Configuration,
-                info.ProjectName,
-                BinFrameworkDir: binFrameworkDir,
-                ExpectedFileType: GetExpectedFileType(info, isPublish: isPublish),
-                IsPublish: isPublish
-        ));
+        (string _, string output) = PublishProject(info, config, new PublishOptions(AOT: aot));
         
+        string binFrameworkDir = GetBinFrameworkDir(config, isPublish: true);
         string appBundleDir = Path.Combine(binFrameworkDir, "..");
         string outerDir = Path.GetFullPath(Path.Combine(appBundleDir, ".."));        
         string indexHtmlPath = Path.Combine(appBundleDir, "index.html");
@@ -47,7 +39,7 @@ public class WasmRunOutOfAppBundleTests : WasmTemplateTestsBase
         }
 
         RunResult result = await RunForPublishWithWebServer(new(
-                info.Configuration,
+                config,
                 TestScenario: "DotnetRun",
                 CustomBundleDir: outerDir,
                 ExpectedExitCode: 42)

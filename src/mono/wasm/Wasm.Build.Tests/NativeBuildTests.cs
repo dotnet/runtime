@@ -22,7 +22,7 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun(aot: false)]
-        public async Task SimpleNativeBuild(string config, bool aot)
+        public async Task SimpleNativeBuild(Configuration config, bool aot)
         {
             ProjectInfo info = CreateWasmTemplateProject(
                 Template.WasmBrowser,
@@ -35,20 +35,13 @@ namespace Wasm.Build.Tests
             UpdateBrowserMainJs();
 
             bool isPublish = true;
-            (string _, string buildOutput) = BuildProject(info,
-                        new BuildOptions(
-                            info.Configuration,
-                            info.ProjectName,
-                            BinFrameworkDir: GetBinFrameworkDir(info.Configuration, isPublish),
-                            ExpectedFileType: GetExpectedFileType(info, isPublish, isNativeBuild: true),
-                            IsPublish: isPublish
-                        ));
+            (string _, string buildOutput) = PublishProject(info, config, isNativeBuild: true);
             await RunForPublishWithWebServer(new(config, ExpectedExitCode: 42));
         }
 
         [Theory]
         [BuildAndRun(aot: true)]
-        public void AOTNotSupportedWithNoTrimming(string config, bool aot)
+        public void AOTNotSupportedWithNoTrimming(Configuration config, bool aot)
         {
             ProjectInfo info = CreateWasmTemplateProject(
                 Template.WasmBrowser,
@@ -60,22 +53,13 @@ namespace Wasm.Build.Tests
             UpdateBrowserProgramFile();
             UpdateBrowserMainJs();
 
-            bool isPublish = true;
-            (string _, string output) = BuildProject(info,
-                        new BuildOptions(
-                            info.Configuration,
-                            info.ProjectName,
-                            BinFrameworkDir: GetBinFrameworkDir(info.Configuration, isPublish),
-                            ExpectedFileType: GetExpectedFileType(info, isPublish, isNativeBuild: false),
-                            IsPublish: isPublish,
-                            ExpectSuccess: false
-                        ));
+            (string _, string output) = PublishProject(info, config, new PublishOptions(ExpectSuccess: false, AOT: aot));
             Assert.Contains("AOT is not supported without IL trimming", output);
         }
 
         [Theory]
-        [BuildAndRun(config: "Release", aot: true)]
-        public void IntermediateBitcodeToObjectFilesAreNotLLVMIR(string config, bool aot)
+        [BuildAndRun(config: Configuration.Release, aot: true)]
+        public void IntermediateBitcodeToObjectFilesAreNotLLVMIR(Configuration config, bool aot)
         {
             string printFileTypeTarget = @"
                 <Target Name=""PrintIntermediateFileType"" AfterTargets=""WasmNestedPublishApp"">
@@ -100,23 +84,15 @@ namespace Wasm.Build.Tests
                 insertAtEnd: printFileTypeTarget);
 
             bool isPublish = true;
-            (string _, string output) = BuildProject(info,
-                        new BuildOptions(
-                            info.Configuration,
-                            info.ProjectName,
-                            BinFrameworkDir: GetBinFrameworkDir(info.Configuration, isPublish),
-                            ExpectedFileType: GetExpectedFileType(info, isPublish, isNativeBuild: false),
-                            IsPublish: isPublish
-                        ));
-
+            (string _, string output) = PublishProject(info, config, new PublishOptions(AOT: aot));
             if (!output.Contains("** wasm-dis exit code: 0"))
                 throw new XunitException($"Expected to successfully run wasm-dis on System.Private.CoreLib.dll.o ."
                                             + " It might fail if it was incorrectly compiled to a bitcode file, instead of wasm.");
         }
 
         [Theory]
-        [BuildAndRun(config: "Release", aot: true)]
-        public void NativeBuildIsRequired(string config, bool aot)
+        [BuildAndRun(config: Configuration.Release, aot: true)]
+        public void NativeBuildIsRequired(Configuration config, bool aot)
         {
             ProjectInfo info = CreateWasmTemplateProject(
                 Template.WasmBrowser,
@@ -125,17 +101,7 @@ namespace Wasm.Build.Tests
                 "native_build",
                 extraProperties: "<WasmBuildNative>false</WasmBuildNative><WasmSingleFileBundle>true</WasmSingleFileBundle>");
 
-            bool isPublish = true;
-            (string _, string output) = BuildProject(info,
-                        new BuildOptions(
-                            info.Configuration,
-                            info.ProjectName,
-                            BinFrameworkDir: GetBinFrameworkDir(info.Configuration, isPublish),
-                            ExpectedFileType: GetExpectedFileType(info, isPublish, isNativeBuild: false),
-                            IsPublish: isPublish,
-                            ExpectSuccess: false
-                        ));
-
+            (string _, string output) = PublishProject(info, config, new PublishOptions(ExpectSuccess: false, AOT: aot));
             Assert.Contains("WasmBuildNative is required", output);
         }
     }

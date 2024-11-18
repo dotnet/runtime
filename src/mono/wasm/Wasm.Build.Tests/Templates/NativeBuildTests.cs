@@ -23,7 +23,7 @@ namespace Wasm.Build.Templates.Tests
         [InlineData(false)]
         public void BuildWithUndefinedNativeSymbol(bool allowUndefined)
         {
-            string config = "Release";
+            Configuration config = Configuration.Release;
             string code = @"
                 using System;
                 using System.Runtime.InteropServices;
@@ -46,17 +46,7 @@ namespace Wasm.Build.Templates.Tests
             );
             UpdateFile("Program.cs", code);
             File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "native-libs", "undefined-symbol.c"), Path.Combine(_projectDir!, "undefined_xyz.c"));
-
-            bool isPublish = false;
-            (string _, string buildOutput) = BuildProject(info,
-                new BuildOptions(
-                    config,
-                    info.ProjectName,
-                    BinFrameworkDir: GetBinFrameworkDir(config, isPublish),
-                    ExpectedFileType: GetExpectedFileType(info, isPublish, isNativeBuild: true),
-                    IsPublish: isPublish,
-                    ExpectSuccess: allowUndefined
-            ));
+            (string _, string buildOutput) = BuildProject(info, config, new BuildOptions(ExpectSuccess: allowUndefined), isNativeBuild: true);
 
             if (!allowUndefined)
             {
@@ -66,9 +56,9 @@ namespace Wasm.Build.Templates.Tests
         }
 
         [Theory]
-        [InlineData("Debug")]
-        [InlineData("Release")]
-        public async Task ProjectWithDllImportsRequiringMarshalIlGen_ArrayTypeParameter(string config)
+        [InlineData(Configuration.Debug)]
+        [InlineData(Configuration.Release)]
+        public async Task ProjectWithDllImportsRequiringMarshalIlGen_ArrayTypeParameter(Configuration config)
         {
             string nativeSourceFilename = "incompatible_type.c";
             string extraItems = "<NativeFileReference Include=\"" + nativeSourceFilename + "\" />";
@@ -84,17 +74,7 @@ namespace Wasm.Build.Templates.Tests
             UpdateBrowserMainJs();
             ReplaceFile("Program.cs", Path.Combine(BuildEnvironment.TestAssetsPath, "marshal_ilgen_test.cs"));
 
-            bool isPublish = false;
-            (string _, string buildOutput) = BuildProject(info,
-                new BuildOptions(
-                    config,
-                    info.ProjectName,
-                    BinFrameworkDir: GetBinFrameworkDir(config, isPublish),
-                    ExpectedFileType: GetExpectedFileType(info, isPublish, isNativeBuild: true),
-                    IsPublish: isPublish,
-                    AssertAppBundle: false
-            ));
-
+            (string _, string buildOutput) = BuildProject(info, config, new BuildOptions(AssertAppBundle: false), isNativeBuild: true);
             var runOutput = await RunForBuildWithDotnetRun(new(info.Configuration, ExpectedExitCode: 42));
             Assert.Contains("call_needing_marhsal_ilgen got called", runOutput.TestOutput);
         }

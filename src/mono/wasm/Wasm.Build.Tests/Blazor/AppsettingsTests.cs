@@ -22,7 +22,7 @@ public class AppsettingsTests : BlazorWasmTestBase
     [Fact]
     public async Task FileInVfs()
     {
-        string config = "debug";
+        Configuration config = "debug";
         ProjectInfo info = CreateWasmTemplateProject(Template.BlazorWasm, config, aot: false, "blazor");
         UpdateHomePage();
         string projectDirectory = Path.GetDirectoryName(info.ProjectFilePath)!;
@@ -39,11 +39,11 @@ public class AppsettingsTests : BlazorWasmTestBase
             }
         });
 
-        (string _, string buildOutput) = BlazorBuild(info);
+        (string _, string buildOutput) = BlazorBuild(info, config);
         bool existsChecked = false;
         bool contentChecked = false;
         await RunForBuildWithDotnetRun(new(
-            info.Configuration,
+            config,
             OnConsoleMessage: (_, msg) => {
                 if (msg.Contains("appSettings Exists 'True'"))
                     existsChecked = true;

@@ -23,9 +23,9 @@ namespace Wasm.Build.Tests
         }
 
         [Theory, TestCategory("no-fingerprinting")]
-        [InlineData("Debug")]
-        [InlineData("Release")]
-        public void BrowserBuildThenPublish(string config)
+        [InlineData(Configuration.Debug)]
+        [InlineData(Configuration.Release)]
+        public void BrowserBuildThenPublish(Configuration config)
         {
             string atEnd = """
                     <Target Name="CheckLinkedFiles" AfterTargets="ILLink">
@@ -39,15 +39,7 @@ namespace Wasm.Build.Tests
             UpdateBrowserProgramFile();
             UpdateBrowserMainJs();
 
-            bool isPublish = false;
-            BuildProject(info,
-                new BuildOptions(
-                    config,
-                    info.ProjectName,
-                    BinFrameworkDir: GetBinFrameworkDir(config, isPublish),
-                    ExpectedFileType: GetExpectedFileType(info, isPublish),
-                    IsPublish: isPublish
-            ));
+            BuildProject(info, config);
 
             if (!_buildContext.TryGetBuildFor(info, out BuildResult? result))
                 throw new XunitException($"Test bug: could not get the build result in the cache");
@@ -56,16 +48,7 @@ namespace Wasm.Build.Tests
 
             _testOutput.WriteLine($"{Environment.NewLine}Publishing with no changes ..{Environment.NewLine}");
 
-            isPublish = true;
-            BuildProject(info,
-                new BuildOptions(
-                    config,
-                    info.ProjectName,
-                    BinFrameworkDir: GetBinFrameworkDir(config, isPublish),
-                    ExpectedFileType: GetExpectedFileType(info, isPublish),
-                    IsPublish: isPublish,
-                    UseCache: false
-            ));
+            PublishProject(info, config, new PublishOptions(UseCache: false));
         }
 
         public static TheoryData<bool, string> TestDataForAppBundleDir()
@@ -91,9 +74,9 @@ namespace Wasm.Build.Tests
         [MemberData(nameof(TestDataForAppBundleDir))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/108107")]
         public async Task RunWithDifferentAppBundleLocations(bool runOutsideProjectDirectory, string extraProperties)
-            => await BrowserRunTwiceWithAndThenWithoutBuildAsync("Release", extraProperties, runOutsideProjectDirectory);
+            => await BrowserRunTwiceWithAndThenWithoutBuildAsync(Configuration.Release, extraProperties, runOutsideProjectDirectory);
 
-        private async Task BrowserRunTwiceWithAndThenWithoutBuildAsync(string config, string extraProperties = "", bool runOutsideProjectDirectory = false)
+        private async Task BrowserRunTwiceWithAndThenWithoutBuildAsync(Configuration config, string extraProperties = "", bool runOutsideProjectDirectory = false)
         {
             ProjectInfo info = CreateWasmTemplateProject(Template.WasmBrowser, config, aot: false, "browser", extraProperties: extraProperties);
             UpdateBrowserProgramFile();
@@ -139,7 +122,7 @@ namespace Wasm.Build.Tests
         [MemberData(nameof(BrowserBuildAndRunTestData))]
         public async Task BrowserBuildAndRun(string extraNewArgs, string targetFramework, string runtimeAssetsRelativePath) 
         {
-            string config = "Debug";
+            Configuration config = Configuration.Debug;
             string extraProperties = runtimeAssetsRelativePath == DefaultRuntimeAssetsRelativePath ?
                 "" :
                 $"<WasmRuntimeAssetsLocation>{runtimeAssetsRelativePath}</WasmRuntimeAssetsLocation>";
@@ -157,27 +140,18 @@ namespace Wasm.Build.Tests
                 UpdateBrowserProgramFile();
             UpdateBrowserMainJs(targetFramework, runtimeAssetsRelativePath);
 
-            bool isPublish = true;
-            BuildProject(info,
-                new BuildOptions(
-                    config,
-                    info.ProjectName,
-                    BinFrameworkDir: GetBinFrameworkDir(config, isPublish),
-                    ExpectedFileType: GetExpectedFileType(info, isPublish),
-                    IsPublish: isPublish,
-                    UseCache: false
-            ));
+            PublishProject(info, config, new PublishOptions(UseCache: false));
 
             var runOutput = await RunForPublishWithWebServer(new(info.Configuration, ExpectedExitCode: 42));
             Assert.Contains("Hello, Browser!", runOutput.TestOutput);
         }
 
         [Theory]
-        [InlineData("Debug", /*appendRID*/ true, /*useArtifacts*/ false)]
-        [InlineData("Debug", /*appendRID*/ true, /*useArtifacts*/ true)]
-        [InlineData("Debug", /*appendRID*/ false, /*useArtifacts*/ true)]
-        [InlineData("Debug", /*appendRID*/ false, /*useArtifacts*/ false)]
-        public async Task BuildAndRunForDifferentOutputPaths(string config, bool appendRID, bool useArtifacts)
+        [InlineData(Configuration.Debug, /*appendRID*/ true, /*useArtifacts*/ false)]
+        [InlineData(Configuration.Debug, /*appendRID*/ true, /*useArtifacts*/ true)]
+        [InlineData(Configuration.Debug, /*appendRID*/ false, /*useArtifacts*/ true)]
+        [InlineData(Configuration.Debug, /*appendRID*/ false, /*useArtifacts*/ false)]
+        public async Task BuildAndRunForDifferentOutputPaths(Configuration config, bool appendRID, bool useArtifacts)
         {
             ProjectInfo info = CreateWasmTemplateProject(Template.WasmBrowser, config, aot: false);
             UpdateBrowserProgramFile();
@@ -204,15 +178,7 @@ namespace Wasm.Build.Tests
             string propsPath = Path.Combine(projectDirectory, "Directory.Build.props");
             AddItemsPropertiesToProject(propsPath, extraPropertiesForDBP);
 
-            BuildProject(info,
-                new BuildOptions(
-                    config,
-                    info.ProjectName,
-                    BinFrameworkDir: frameworkDir,
-                    ExpectedFileType: GetExpectedFileType(info, isPublish),
-                    IsPublish: isPublish
-            ));
-
+            BuildProject(info, config, new BuildOptions(NonDefaultFrameworkDir: frameworkDir));
             await RunForBuildWithDotnetRun(new(info.Configuration, ExpectedExitCode: 42, ExtraArgs: "x y z"));
         }
 
@@ -221,7 +187,7 @@ namespace Wasm.Build.Tests
         [InlineData("false", false)] // the other case
         public async Task Test_WasmStripILAfterAOT(string stripILAfterAOT, bool expectILStripping)
         {
-            string config = "Release";
+            Configuration config = Configuration.Release;
             bool aot = true;
             string extraProperties = "<RunAOTCompilation>true</RunAOTCompilation>";
             if (!string.IsNullOrEmpty(stripILAfterAOT))
@@ -231,21 +197,13 @@ namespace Wasm.Build.Tests
             UpdateBrowserProgramFile();
             UpdateBrowserMainJs();
 
-            bool isPublish = true;
-            string frameworkDir = GetBinFrameworkDir(config, forPublish: true);
-            BuildProject(info,
-                new BuildOptions(
-                    config,
-                    info.ProjectName,
-                    BinFrameworkDir: frameworkDir,
-                    ExpectedFileType: GetExpectedFileType(info, isPublish),
-                    IsPublish: isPublish,
-                    UseCache: false,
-                    AssertAppBundle: false
-            ));
+            PublishProject(info, config, new PublishOptions(UseCache: false, AssertAppBundle: false));
             await RunForBuildWithDotnetRun(new(info.Configuration, ExpectedExitCode: 42));
+
             string projectDirectory = Path.GetDirectoryName(info.ProjectFilePath)!;
             string objBuildDir = Path.Combine(projectDirectory, "obj", config, BuildTestBase.DefaultTargetFramework, "wasm", "for-publish");
+            bool isPublish = true;
+            string frameworkDir = GetBinFrameworkDir(config, forPublish: true);
             TestWasmStripILAfterAOTOutput(objBuildDir, frameworkDir, expectILStripping, _testOutput);
         }
 
@@ -307,21 +265,13 @@ namespace Wasm.Build.Tests
         [InlineData(true)]
         public void PublishPdb(bool copyOutputSymbolsToPublishDirectory)
         {
-            string config = "Release";
+            Configuration config = Configuration.Release;
             string shouldCopy = copyOutputSymbolsToPublishDirectory.ToString().ToLower();
             string extraProperties = $"<CopyOutputSymbolsToPublishDirectory>{shouldCopy}</CopyOutputSymbolsToPublishDirectory>";
             ProjectInfo info = CreateWasmTemplateProject(Template.WasmBrowser, config, aot: false, "publishpdb", extraProperties: extraProperties);
 
-            bool isPublish = true;
+            BuildProject(info, config);
             string publishPath = GetBinFrameworkDir(config, forPublish: true);
-            BuildProject(info,
-                new BuildOptions(
-                    config,
-                    info.ProjectName,
-                    BinFrameworkDir: publishPath,
-                    ExpectedFileType: GetExpectedFileType(info, isPublish),
-                    IsPublish: isPublish
-            ));
             AssertFile(".pdb");
             AssertFile(".pdb.gz");
             AssertFile(".pdb.br");
