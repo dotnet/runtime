@@ -4,6 +4,7 @@
 using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -28,12 +29,12 @@ namespace System.Net.ServerSentEvents
         {
             if (source is null)
             {
-                throw new ArgumentNullException(nameof(source));
+                ThrowHelper.ThrowArgumentNullException(nameof(source));
             }
 
             if (destination is null)
             {
-                throw new ArgumentNullException(nameof(destination));
+                ThrowHelper.ThrowArgumentNullException(nameof(destination));
             }
 
             return WriteAsyncCore(source, destination, static (item, writer) => writer.WriteUtf8String(item.Data), cancellationToken);
@@ -52,17 +53,17 @@ namespace System.Net.ServerSentEvents
         {
             if (source is null)
             {
-                throw new ArgumentNullException(nameof(source));
+                ThrowHelper.ThrowArgumentNullException(nameof(source));
             }
 
             if (destination is null)
             {
-                throw new ArgumentNullException(nameof(destination));
+                ThrowHelper.ThrowArgumentNullException(nameof(destination));
             }
 
             if (itemFormatter is null)
             {
-                throw new ArgumentNullException(nameof(itemFormatter));
+                ThrowHelper.ThrowArgumentNullException(nameof(itemFormatter));
             }
 
             return WriteAsyncCore(source, destination, itemFormatter, cancellationToken);
@@ -81,7 +82,8 @@ namespace System.Net.ServerSentEvents
                     bufferWriter,
                     eventType: item._eventType, // Do not use the public property since it normalizes to "message" if null
                     data: userDataBufferWriter.WrittenMemory.Span,
-                    eventId: item.EventId);
+                    eventId: item.EventId,
+                    reconnectionInterval: item.ReconnectionInterval);
 
                 await destination.WriteAsync(bufferWriter.WrittenMemory, cancellationToken).ConfigureAwait(false);
 
@@ -94,7 +96,8 @@ namespace System.Net.ServerSentEvents
             PooledByteBufferWriter bufferWriter,
             string? eventType,
             ReadOnlySpan<byte> data,
-            string? eventId)
+            string? eventId,
+            TimeSpan? reconnectionInterval)
         {
             Debug.Assert(bufferWriter.WrittenCount is 0);
 
@@ -116,6 +119,26 @@ namespace System.Net.ServerSentEvents
 
                 bufferWriter.WriteUtf8String("id: "u8);
                 bufferWriter.WriteUtf8String(eventId);
+                bufferWriter.WriteUtf8String(s_newLine);
+            }
+
+            if (reconnectionInterval is { } retry)
+            {
+                Debug.Assert(retry >= TimeSpan.Zero);
+
+                long retryMs = (long)retry.TotalMilliseconds;
+
+                bufferWriter.WriteUtf8String("retry: "u8);
+#if NET
+                const int MaxDigits = 20;
+                Span<byte> buffer = stackalloc byte[MaxDigits];
+                bool success = retryMs.TryFormat(buffer, out int bytesWritten, provider: CultureInfo.InvariantCulture);
+                Debug.Assert(success);
+
+                bufferWriter.Write(buffer.Slice(0, bytesWritten));
+#else
+                bufferWriter.WriteUtf8String(retryMs.ToString(CultureInfo.InvariantCulture));
+#endif
                 bufferWriter.WriteUtf8String(s_newLine);
             }
 

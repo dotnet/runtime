@@ -76,6 +76,9 @@ namespace System.Net.ServerSentEvents
         /// <summary>The event id for the next event.</summary>
         private string? _eventId;
 
+        /// <summary>The reconnection interval for the next event.</summary>
+        private TimeSpan? _nextReconnectionInterval;
+
         /// <summary>Initialize the enumerable.</summary>
         /// <param name="stream">The stream to parse.</param>
         /// <param name="itemParser">The function to use to parse payload bytes into a <typeparamref name="T"/>.</param>
@@ -317,9 +320,11 @@ namespace System.Net.ServerSentEvents
 
                 if (_dataAppended)
                 {
-                    sseItem = new SseItem<T>(_itemParser(_eventType ?? SseParser.EventTypeDefault, _dataBuffer.AsSpan(0, _dataLength)), _eventType) { EventId = _eventId };
+                    T data = _itemParser(_eventType ?? SseParser.EventTypeDefault, _dataBuffer.AsSpan(0, _dataLength));
+                    sseItem = new SseItem<T>(data, _eventType) { EventId = _eventId, ReconnectionInterval = _nextReconnectionInterval };
                     _eventType = null;
                     _eventId = null;
+                    _nextReconnectionInterval = null;
                     _dataLength = 0;
                     _dataAppended = false;
                     return true;
@@ -369,9 +374,11 @@ namespace System.Net.ServerSentEvents
                         (remainder[0] is LF || (remainder[0] is CR && remainder.Length > 1)))
                     {
                         advance = line.Length + newlineLength + (remainder.StartsWith(CRLF) ? 2 : 1);
-                        sseItem = new SseItem<T>(_itemParser(_eventType ?? SseParser.EventTypeDefault, fieldValue), _eventType) { EventId = _eventId };
+                        T data = _itemParser(_eventType ?? SseParser.EventTypeDefault, fieldValue);
+                        sseItem = new SseItem<T>(data, _eventType) { EventId = _eventId, ReconnectionInterval = _nextReconnectionInterval };
                         _eventType = null;
                         _eventId = null;
+                        _nextReconnectionInterval = null;
                         return true;
                     }
                 }
@@ -418,7 +425,7 @@ namespace System.Net.ServerSentEvents
 #endif
                     NumberStyles.None, CultureInfo.InvariantCulture, out long milliseconds))
                 {
-                    ReconnectionInterval = TimeSpan.FromMilliseconds(milliseconds);
+                    _nextReconnectionInterval = ReconnectionInterval = TimeSpan.FromMilliseconds(milliseconds);
                 }
             }
             else

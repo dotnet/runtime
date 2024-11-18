@@ -49,15 +49,6 @@ namespace System.Net.ServerSentEvents
             writer.Advance(bytesWritten);
         }
 
-        public static void ValidateParameterDoesNotContainLineBreaks(string? input, string paramName)
-        {
-            if (input?.Contains('\n') is true)
-            {
-                Throw(paramName);
-                static void Throw(string parameterName) => throw new ArgumentException(SR.ArgumentException_MustNotContainLineBreaks, parameterName);
-            }
-        }
-
 #if !NET
         public static bool Contains(this string text, char character) => text.IndexOf(character) >= 0;
 

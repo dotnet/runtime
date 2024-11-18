@@ -16,16 +16,19 @@ namespace System.Net.ServerSentEvents.Tests
             Assert.Null(item.Data);
             Assert.Equal(SseParser.EventTypeDefault, item.EventType);
             Assert.Null(item.EventId);
+            Assert.Null(item.ReconnectionInterval);
 
             item = new SseItem<string>("some data", null);
             Assert.Equal("some data", item.Data);
             Assert.Equal(SseParser.EventTypeDefault, item.EventType);
             Assert.Null(item.EventId);
+            Assert.Null(item.ReconnectionInterval);
 
-            item = new SseItem<string>("some data", "eventType") { EventId = "eventId" };
+            item = new SseItem<string>("some data", "eventType") { EventId = "eventId", ReconnectionInterval = TimeSpan.FromSeconds(3) };
             Assert.Equal("some data", item.Data);
             Assert.Equal("eventType", item.EventType);
             Assert.Equal("eventId", item.EventId);
+            Assert.Equal(TimeSpan.FromSeconds(3), item.ReconnectionInterval);
         }
 
         [Theory]
@@ -34,8 +37,14 @@ namespace System.Net.ServerSentEvents.Tests
         [InlineData("Hello, \r\nWorld!")]
         public void SseItem_MetadataWithLineBreak_ThrowsArgumentException(string metadataWithLineBreak)
         {
-            Assert.Throws<ArgumentException>(() => new SseItem<string>("data", eventType: metadataWithLineBreak));
-            Assert.Throws<ArgumentException>(() => new SseItem<string>("data", "eventType") { EventId = metadataWithLineBreak });
+            Assert.Throws<ArgumentException>("eventType", () => new SseItem<string>("data", eventType: metadataWithLineBreak));
+            Assert.Throws<ArgumentException>("EventId", () => new SseItem<string>("data", "eventType") { EventId = metadataWithLineBreak });
+        }
+
+        [Fact]
+        public void SseItem_ReconnectionInterval_NegativeTimeSpan_ThrowsArgumentException()
+        {
+            Assert.Throws<ArgumentException>("ReconnectionInterval", () => new SseItem<string>("data") { ReconnectionInterval = TimeSpan.FromSeconds(-1) });
         }
     }
 }

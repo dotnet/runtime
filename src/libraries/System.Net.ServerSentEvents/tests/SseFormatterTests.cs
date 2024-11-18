@@ -34,7 +34,7 @@ namespace System.Net.ServerSentEvents.Tests
             // Arrange
             string expectedFormat =
                 "event: eventType1\ndata: data1\n\n" +
-                "event: eventType2\ndata: data2\n\n" +
+                "event: eventType2\ndata: data2\nretry: 300\n\n" +
                 "data: data3\n\n" +
                 "data: \n\n" +
                 "event: eventType4\ndata: data4\nid: id4\n\n" +
@@ -57,7 +57,7 @@ namespace System.Net.ServerSentEvents.Tests
             // Arrange
             string expectedFormat =
                 "event: eventType1\ndata: data1_suffix\n\n" +
-                "event: eventType2\ndata: data2_suffix\n\n" +
+                "event: eventType2\ndata: data2_suffix\nretry: 300\n\n" +
                 "data: data3_suffix\n\n" +
                 "data: _suffix\n\n" +
                 "event: eventType4\ndata: data4_suffix\nid: id4\n\n" +
@@ -77,7 +77,7 @@ namespace System.Net.ServerSentEvents.Tests
         private static async IAsyncEnumerable<SseItem<string>> GetItemsAsync()
         {
             yield return new SseItem<string>("data1", "eventType1");
-            yield return new SseItem<string>("data2", "eventType2");
+            yield return new SseItem<string>("data2", "eventType2") { ReconnectionInterval = TimeSpan.FromMilliseconds(300) };
             await Task.Yield();
             yield return new SseItem<string>("data3", null);
             yield return new SseItem<string>(data: null!, null);
@@ -124,7 +124,8 @@ namespace System.Net.ServerSentEvents.Tests
                 {
                     string? eventType = i % 2 == 0 ? null : "eventType";
                     string? eventId = i % 3 == 2 ? i.ToString() : null;
-                    yield return new SseItem<MyPoco>(new MyPoco(i), eventType) { EventId = eventId };
+                    TimeSpan? reconnectionInterval = i % 5 == 4 ? TimeSpan.FromSeconds(i) : null;
+                    yield return new SseItem<MyPoco>(new MyPoco(i), eventType) { EventId = eventId, ReconnectionInterval = reconnectionInterval };
                     await Task.Yield();
                 }
             }
@@ -136,6 +137,7 @@ namespace System.Net.ServerSentEvents.Tests
                 {
                     Assert.Equal(i % 2 == 0 ? "message" : "eventType", item.EventType);
                     Assert.Equal(i % 3 == 2 ? i.ToString() : null, item.EventId);
+                    Assert.Equal(i % 5 == 4 ? TimeSpan.FromSeconds(i) : null, item.ReconnectionInterval);
                     Assert.Equal(i, item.Data.Value);
                     i++;
                 }

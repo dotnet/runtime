@@ -11,6 +11,8 @@ namespace System.Net.ServerSentEvents
         internal readonly string? _eventType;
         /// <summary>The event's id.</summary>
         private readonly string? _eventId;
+        /// <summary>The event's reconnection interval.</summary>
+        private readonly TimeSpan? _reconnectionInterval;
 
         /// <summary>Initializes the server-sent event.</summary>
         /// <param name="data">The event's payload.</param>
@@ -18,7 +20,10 @@ namespace System.Net.ServerSentEvents
         /// <exception cref="ArgumentException">Thrown when <paramref name="eventType"/> contains a line break.</exception>
         public SseItem(T data, string? eventType = null)
         {
-            Helpers.ValidateParameterDoesNotContainLineBreaks(eventType, nameof(eventType));
+            if (eventType?.Contains('\n') is true)
+            {
+                ThrowHelper.ThrowArgumentException_CannotContainLineBreaks(nameof(eventType));
+            }
 
             Data = data;
             _eventType = eventType;
@@ -37,9 +42,30 @@ namespace System.Net.ServerSentEvents
             get => _eventId;
             init
             {
-                Helpers.ValidateParameterDoesNotContainLineBreaks(value, nameof(EventId));
+                if (value?.Contains('\n') is true)
+                {
+                    ThrowHelper.ThrowArgumentException_CannotContainLineBreaks(nameof(EventId));
+                }
 
                 _eventId = value;
+            }
+        }
+
+        /// <summary>Gets the event's retry interval.</summary>
+        /// <remarks>
+        /// When specified on an event, instructs the client to update its reconnection time to the specified value.
+        /// </remarks>
+        public TimeSpan? ReconnectionInterval
+        {
+            get => _reconnectionInterval;
+            init
+            {
+                if (value < TimeSpan.Zero)
+                {
+                    ThrowHelper.ThrowArgumentException_CannotBeNegative(nameof(ReconnectionInterval));
+                }
+
+                _reconnectionInterval = value;
             }
         }
     }

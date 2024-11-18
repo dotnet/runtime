@@ -21,6 +21,7 @@ namespace System.Net.ServerSentEvents
         public T Data { get { throw null; } }
         public string? EventId { get { throw null; } init { } }
         public string EventType { get { throw null; } }
+        public System.TimeSpan? ReconnectionInterval { get { throw null; } init { } }
     }
     public static partial class SseParser
     {
