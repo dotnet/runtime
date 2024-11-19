@@ -5,6 +5,7 @@ using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
@@ -99,16 +100,20 @@ namespace Build.Tasks
             var list = new List<ITaskItem>();
             var assembliesToSkipPublish = new List<ITaskItem>();
             var satelliteAssemblies = new List<ITaskItem>();
-            var nativeAotFrameworkAssembliesToUse = new HashSet<string>();
+            var nativeAotFrameworkAssembliesToUse = new Dictionary<string, ITaskItem>();
 
             foreach (ITaskItem taskItem in SdkAssemblies)
             {
-                nativeAotFrameworkAssembliesToUse.Add(Path.GetFileName(taskItem.ItemSpec));
+                var fileName = Path.GetFileName(taskItem.ItemSpec);
+                if (!nativeAotFrameworkAssembliesToUse.ContainsKey(fileName))
+                    nativeAotFrameworkAssembliesToUse.Add(fileName, taskItem);
             }
 
             foreach (ITaskItem taskItem in FrameworkAssemblies)
             {
-                nativeAotFrameworkAssembliesToUse.Add(Path.GetFileName(taskItem.ItemSpec));
+                var fileName = Path.GetFileName(taskItem.ItemSpec);
+                if (!nativeAotFrameworkAssembliesToUse.ContainsKey(fileName))
+                    nativeAotFrameworkAssembliesToUse.Add(fileName, taskItem);
             }
 
             foreach (ITaskItem taskItem in Assemblies)
@@ -153,8 +158,14 @@ namespace Build.Tasks
 
                 // Remove any assemblies whose implementation we want to come from NativeAOT's package.
                 // Currently that's System.Private.* SDK assemblies and a bunch of framework assemblies.
-                if (nativeAotFrameworkAssembliesToUse.Contains(assemblyFileName))
+                if (nativeAotFrameworkAssembliesToUse.TryGetValue(assemblyFileName, out ITaskItem frameworkItem))
                 {
+                    if (GetFileVersion(itemSpec).CompareTo(GetFileVersion(frameworkItem.ItemSpec)) > 0)
+                    {
+                        // Allow OOB references with higher version to take precedence over the framework assemblies.
+                        list.Add(taskItem);
+                    }
+
                     assembliesToSkipPublish.Add(taskItem);
                     continue;
                 }
@@ -196,6 +207,12 @@ namespace Build.Tasks
             SatelliteAssemblies = satelliteAssemblies.ToArray();
 
             return true;
+
+            static Version GetFileVersion(string path)
+            {
+                var versionInfo = FileVersionInfo.GetVersionInfo(path);
+                return new Version(versionInfo.FileMajorPart, versionInfo.FileMinorPart, versionInfo.FileBuildPart, versionInfo.FilePrivatePart);
+            }
         }
     }
 }
