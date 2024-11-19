@@ -1950,24 +1950,16 @@ int32_t SystemNative_PWrite(intptr_t fd, void* buffer, int32_t bufferSize, int64
 }
 
 #if (HAVE_PREADV || HAVE_PWRITEV) && !defined(TARGET_WASM)
-static int GetAllowedVectorCount(int32_t vectorCount)
+static int GetAllowedVectorCount(IOVector* vectors, int32_t vectorCount)
 {
-#if defined(_SC_IOV_MAX)
-    static volatile int s_iovMax = 0;
-
-    int iovMax = s_iovMax;
-    if (iovMax == 0)
-    {
-        // For macOS arm64 the IOV_MAX reports 1024, but fails with EINVAL for such inputs.
-        // That is why we prefer _SC_IOV_MAX over IOV_MAX.
-        iovMax = (int)sysconf(_SC_IOV_MAX);
-        s_iovMax = iovMax;
-    }
-#elif defined(IOV_MAX)
-    int iovMax = IOV_MAX;
+#if defined(IOV_MAX)
+    const int IovMax = IOV_MAX;
 #else
+    // In theory all the platforms that we support define IOV_MAX,
+    // but we want to be extra safe and provde a fallback
+    // in case it turns out to not be true.
     // 16 is low, but supported on every platform.
-    int iovMax = 16;
+    const int IovMax = 16;
 #endif
 
     int allowedCount = (int)vectorCount;
@@ -1975,10 +1967,28 @@ static int GetAllowedVectorCount(int32_t vectorCount)
     // We need to respect the limit of items that can be passed in iov.
     // In case of writes, the managed code is responsible for handling incomplete writes.
     // In case of reads, we simply returns the number of bytes read and it's up to the users.
-    if (iovMax < allowedCount)
+    if (IovMax < allowedCount)
     {
-        allowedCount = iovMax;
+        allowedCount = IovMax;
     }
+
+#if defined(TARGET_APPLE)
+    // For macOS preadv and pwritev can fail with EINVAL when the total length
+    // of all vectors overflows a 32-bit integer.
+    size_t totalLength = 0;
+    for (int i = 0; i < allowedCount; i++) 
+    {
+        totalLength += vectors[i].Count;
+
+        if (totalLength > INT_MAX && i > 0)
+        {
+            allowedCount = i;
+            break;
+        }
+    }
+#else
+    (void)vectors;
+#endif
 
     return allowedCount;
 }
@@ -1992,7 +2002,7 @@ int64_t SystemNative_PReadV(intptr_t fd, IOVector* vectors, int32_t vectorCount,
     int64_t count = 0;
     int fileDescriptor = ToFileDescriptor(fd);
 #if HAVE_PREADV && !defined(TARGET_WASM) // preadv is buggy on WASM
-    int allowedVectorCount = GetAllowedVectorCount(vectorCount);
+    int allowedVectorCount = GetAllowedVectorCount(vectors, vectorCount);
     while ((count = preadv(fileDescriptor, (struct iovec*)vectors, allowedVectorCount, (off_t)fileOffset)) < 0 && errno == EINTR);
 #else
     int64_t current;
@@ -2033,7 +2043,7 @@ int64_t SystemNative_PWriteV(intptr_t fd, IOVector* vectors, int32_t vectorCount
     int64_t count = 0;
     int fileDescriptor = ToFileDescriptor(fd);
 #if HAVE_PWRITEV && !defined(TARGET_WASM) // pwritev is buggy on WASM
-    int allowedVectorCount = GetAllowedVectorCount(vectorCount);
+    int allowedVectorCount = GetAllowedVectorCount(vectors, vectorCount);
     while ((count = pwritev(fileDescriptor, (struct iovec*)vectors, allowedVectorCount, (off_t)fileOffset)) < 0 && errno == EINTR);
 #else
     int64_t current;
@@ -2062,6 +2072,6 @@ int64_t SystemNative_PWriteV(intptr_t fd, IOVector* vectors, int32_t vectorCount
     }
 #endif
 
-    // assert(count >= -1);
+    assert(count >= -1);
     return count;
 }
