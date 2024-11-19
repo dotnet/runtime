@@ -143,7 +143,7 @@ namespace System.Net.ServerSentEvents
                 writer.WriteUtf8String(prefix);
 
                 int i = data.IndexOf((byte)'\n');
-                if (i is -1)
+                if (i < 0)
                 {
                     writer.WriteUtf8String(data);
                     return;
