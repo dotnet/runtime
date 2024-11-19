@@ -1952,23 +1952,23 @@ int32_t SystemNative_PWrite(intptr_t fd, void* buffer, int32_t bufferSize, int64
 #if (HAVE_PREADV || HAVE_PWRITEV) && !defined(TARGET_WASM)
 static int GetAllowedVectorCount(int32_t vectorCount)
 {
+#if defined(_SC_IOV_MAX)
     static volatile int s_iovMax = 0;
 
     int iovMax = s_iovMax;
     if (iovMax == 0)
     {
-#if defined(_SC_IOV_MAX)
         // For macOS arm64 the IOV_MAX reports 1024, but fails with EINVAL for such inputs.
         // That is why we prefer _SC_IOV_MAX over IOV_MAX.
-        iovMax = sysconf(_SC_IOV_MAX);
-#elif defined(IOV_MAX)
-        iovMax = IOV_MAX;
-#else
-        // 16 is low, but supported on every platform.
-        iovMax = 16;
-#endif
+        iovMax = (int)sysconf(_SC_IOV_MAX);
         s_iovMax = iovMax;
     }
+#elif defined(IOV_MAX)
+    int iovMax = IOV_MAX;
+#else
+    // 16 is low, but supported on every platform.
+    int iovMax = 16;
+#endif
 
     int allowedCount = (int)vectorCount;
 
