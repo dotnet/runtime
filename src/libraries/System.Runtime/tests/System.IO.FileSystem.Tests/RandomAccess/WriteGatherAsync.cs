@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography;
@@ -152,21 +153,6 @@ namespace System.IO.Tests
             const int BufferSize = int.MaxValue / 1000;
             const long FileSize = (long)BufferCount * BufferSize;
             string filePath = GetTestFilePath();
-            ReadOnlyMemory<byte> writeBuffer = RandomNumberGenerator.GetBytes(BufferSize);
-            List<ReadOnlyMemory<byte>> writeBuffers = Enumerable.Repeat(writeBuffer, BufferCount).ToList();
-            List<Memory<byte>> readBuffers = new List<Memory<byte>>(BufferCount);
-
-            try
-            {
-                for (int i = 0; i < BufferCount; i++)
-                {
-                    readBuffers.Add(new byte[BufferSize]);
-                }
-            }
-            catch (OutOfMemoryException)
-            {
-                throw new SkipTestException("Not enough memory.");
-            }
 
             FileOptions options = asyncFile ? FileOptions.Asynchronous : FileOptions.None; // we need to test both code paths
             options |= FileOptions.DeleteOnClose;
@@ -182,6 +168,42 @@ namespace System.IO.Tests
             }
 
             using (sfh)
+            {
+                ReadOnlyMemory<byte> writeBuffer = RandomNumberGenerator.GetBytes(BufferSize);
+                List<ReadOnlyMemory<byte>> writeBuffers = Enumerable.Repeat(writeBuffer, BufferCount).ToList();
+
+                List<NativeMemoryManager> memoryManagers = new List<NativeMemoryManager>(BufferCount);
+                List<Memory<byte>> readBuffers = new List<Memory<byte>>(BufferCount);
+
+                try
+                {
+                    try
+                    {
+                        for (int i = 0; i < BufferCount; i++)
+                        {
+                            // We are using native memory here to get OOM as soon as possible.
+                            NativeMemoryManager nativeMemoryManager = new(BufferSize);
+                            memoryManagers.Add(nativeMemoryManager);
+                            readBuffers.Add(nativeMemoryManager.Memory);
+                        }
+                    }
+                    catch (OutOfMemoryException)
+                    {
+                        throw new SkipTestException("Not enough memory.");
+                    }
+
+                    await Verify(asyncMethod, FileSize, sfh, writeBuffer, writeBuffers, readBuffers);
+                }
+                finally
+                {
+                    foreach (IDisposable memoryManager in memoryManagers)
+                    {
+                        memoryManager.Dispose();
+                    }
+                }
+            }
+
+            static async Task Verify(bool asyncMethod, long FileSize, SafeFileHandle sfh, ReadOnlyMemory<byte> writeBuffer, List<ReadOnlyMemory<byte>> writeBuffers, List<Memory<byte>> readBuffers)
             {
                 if (asyncMethod)
                 {
