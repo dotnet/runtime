@@ -46,10 +46,6 @@ SET_DEFAULT_DEBUG_CHANNEL(VIRTUAL); // some headers have code with asserts, so d
 #include <mach/mach_init.h>
 #endif // HAVE_VM_ALLOCATE
 
-#if defined(TARGET_APPLE) && !defined(TARGET_OSX)
-#include <dlfcn.h>
-#endif
-
 using namespace CorUnix;
 
 CRITICAL_SECTION virtual_critsec;
