@@ -111,9 +111,8 @@ enum CORINFO_InstructionSet
     InstructionSet_AVX512VBMI_X64=66,
     InstructionSet_AVX10v1_X64=67,
     InstructionSet_AVX10v1_V512_X64=68,
-    InstructionSet_APX_X64=69,
-    InstructionSet_AVX10v2_X64=70,
-    InstructionSet_AVX10v2_V512_X64=71,
+    InstructionSet_AVX10v2_X64=69,
+    InstructionSet_AVX10v2_V512_X64=70,
 #endif // TARGET_AMD64
 #ifdef TARGET_X86
     InstructionSet_X86Base=1,
@@ -184,9 +183,8 @@ enum CORINFO_InstructionSet
     InstructionSet_AVX512VBMI_X64=66,
     InstructionSet_AVX10v1_X64=67,
     InstructionSet_AVX10v1_V512_X64=68,
-    InstructionSet_APX_X64=69,
-    InstructionSet_AVX10v2_X64=70,
-    InstructionSet_AVX10v2_V512_X64=71,
+    InstructionSet_AVX10v2_X64=69,
+    InstructionSet_AVX10v2_V512_X64=70,
 #endif // TARGET_X86
 
 };
@@ -352,8 +350,6 @@ public:
             AddInstructionSet(InstructionSet_AVX10v1_X64);
         if (HasInstructionSet(InstructionSet_AVX10v1_V512))
             AddInstructionSet(InstructionSet_AVX10v1_V512_X64);
-        if (HasInstructionSet(InstructionSet_APX))
-            AddInstructionSet(InstructionSet_APX_X64);
         if (HasInstructionSet(InstructionSet_AVX10v2))
             AddInstructionSet(InstructionSet_AVX10v2_X64);
         if (HasInstructionSet(InstructionSet_AVX10v2_V512))
@@ -538,10 +534,6 @@ inline CORINFO_InstructionSetFlags EnsureInstructionSetFlagsAreValid(CORINFO_Ins
             resultflags.RemoveInstructionSet(InstructionSet_AVX10v1_V512);
         if (resultflags.HasInstructionSet(InstructionSet_AVX10v1_V512_X64) && !resultflags.HasInstructionSet(InstructionSet_AVX10v1_V512))
             resultflags.RemoveInstructionSet(InstructionSet_AVX10v1_V512_X64);
-        if (resultflags.HasInstructionSet(InstructionSet_APX) && !resultflags.HasInstructionSet(InstructionSet_APX_X64))
-            resultflags.RemoveInstructionSet(InstructionSet_APX);
-        if (resultflags.HasInstructionSet(InstructionSet_APX_X64) && !resultflags.HasInstructionSet(InstructionSet_APX))
-            resultflags.RemoveInstructionSet(InstructionSet_APX_X64);
         if (resultflags.HasInstructionSet(InstructionSet_AVX10v2) && !resultflags.HasInstructionSet(InstructionSet_AVX10v2_X64))
             resultflags.RemoveInstructionSet(InstructionSet_AVX10v2);
         if (resultflags.HasInstructionSet(InstructionSet_AVX10v2_X64) && !resultflags.HasInstructionSet(InstructionSet_AVX10v2))
@@ -984,8 +976,6 @@ inline const char *InstructionSetToString(CORINFO_InstructionSet instructionSet)
             return "VectorT512";
         case InstructionSet_APX :
             return "APX";
-        case InstructionSet_APX_X64 :
-            return "APX_X64";
         case InstructionSet_AVX10v2 :
             return "AVX10v2";
         case InstructionSet_AVX10v2_X64 :

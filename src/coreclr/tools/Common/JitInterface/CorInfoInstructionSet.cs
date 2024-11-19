@@ -109,7 +109,6 @@ namespace Internal.JitInterface
         X64_AVX512VBMI_X64 = InstructionSet_X64.AVX512VBMI_X64,
         X64_AVX10v1_X64 = InstructionSet_X64.AVX10v1_X64,
         X64_AVX10v1_V512_X64 = InstructionSet_X64.AVX10v1_V512_X64,
-        X64_APX_X64 = InstructionSet_X64.APX_X64,
         X64_AVX10v2_X64 = InstructionSet_X64.AVX10v2_X64,
         X64_AVX10v2_V512_X64 = InstructionSet_X64.AVX10v2_V512_X64,
         X86_X86Base = InstructionSet_X86.X86Base,
@@ -180,7 +179,6 @@ namespace Internal.JitInterface
         X86_AVX512VBMI_X64 = InstructionSet_X86.AVX512VBMI_X64,
         X86_AVX10v1_X64 = InstructionSet_X86.AVX10v1_X64,
         X86_AVX10v1_V512_X64 = InstructionSet_X86.AVX10v1_V512_X64,
-        X86_APX_X64 = InstructionSet_X86.APX_X64,
         X86_AVX10v2_X64 = InstructionSet_X86.AVX10v2_X64,
         X86_AVX10v2_V512_X64 = InstructionSet_X86.AVX10v2_V512_X64,
     }
@@ -287,9 +285,8 @@ namespace Internal.JitInterface
         AVX512VBMI_X64 = 66,
         AVX10v1_X64 = 67,
         AVX10v1_V512_X64 = 68,
-        APX_X64 = 69,
-        AVX10v2_X64 = 70,
-        AVX10v2_V512_X64 = 71,
+        AVX10v2_X64 = 69,
+        AVX10v2_V512_X64 = 70,
     }
 
     public enum InstructionSet_X86
@@ -364,9 +361,8 @@ namespace Internal.JitInterface
         AVX512VBMI_X64 = 66,
         AVX10v1_X64 = 67,
         AVX10v1_V512_X64 = 68,
-        APX_X64 = 69,
-        AVX10v2_X64 = 70,
-        AVX10v2_V512_X64 = 71,
+        AVX10v2_X64 = 69,
+        AVX10v2_V512_X64 = 70,
     }
 
     public unsafe struct InstructionSetFlags : IEnumerable<InstructionSet>
@@ -686,10 +682,6 @@ namespace Internal.JitInterface
                         resultflags.AddInstructionSet(InstructionSet.X64_AVX10v1_V512_X64);
                     if (resultflags.HasInstructionSet(InstructionSet.X64_AVX10v1_V512_X64))
                         resultflags.AddInstructionSet(InstructionSet.X64_AVX10v1_V512);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_APX))
-                        resultflags.AddInstructionSet(InstructionSet.X64_APX_X64);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_APX_X64))
-                        resultflags.AddInstructionSet(InstructionSet.X64_APX);
                     if (resultflags.HasInstructionSet(InstructionSet.X64_AVX10v2))
                         resultflags.AddInstructionSet(InstructionSet.X64_AVX10v2_X64);
                     if (resultflags.HasInstructionSet(InstructionSet.X64_AVX10v2_X64))
@@ -1049,8 +1041,6 @@ namespace Internal.JitInterface
                         resultflags.AddInstructionSet(InstructionSet.X64_AVX10v1);
                     if (resultflags.HasInstructionSet(InstructionSet.X64_AVX10v1_V512_X64))
                         resultflags.AddInstructionSet(InstructionSet.X64_AVX10v1_V512);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_APX_X64))
-                        resultflags.AddInstructionSet(InstructionSet.X64_APX);
                     if (resultflags.HasInstructionSet(InstructionSet.X64_AVX10v2_X64))
                         resultflags.AddInstructionSet(InstructionSet.X64_AVX10v2);
                     if (resultflags.HasInstructionSet(InstructionSet.X64_AVX10v2_V512_X64))
@@ -1536,8 +1526,6 @@ namespace Internal.JitInterface
                         AddInstructionSet(InstructionSet.X64_AVX10v1_X64);
                     if (HasInstructionSet(InstructionSet.X64_AVX10v1_V512))
                         AddInstructionSet(InstructionSet.X64_AVX10v1_V512_X64);
-                    if (HasInstructionSet(InstructionSet.X64_APX))
-                        AddInstructionSet(InstructionSet.X64_APX_X64);
                     if (HasInstructionSet(InstructionSet.X64_AVX10v2))
                         AddInstructionSet(InstructionSet.X64_AVX10v2_X64);
                     if (HasInstructionSet(InstructionSet.X64_AVX10v2_V512))
@@ -1592,7 +1580,6 @@ namespace Internal.JitInterface
                     AddInstructionSet(InstructionSet.X64_AVX512VBMI_X64);
                     AddInstructionSet(InstructionSet.X64_AVX10v1_X64);
                     AddInstructionSet(InstructionSet.X64_AVX10v1_V512_X64);
-                    AddInstructionSet(InstructionSet.X64_APX_X64);
                     AddInstructionSet(InstructionSet.X64_AVX10v2_X64);
                     AddInstructionSet(InstructionSet.X64_AVX10v2_V512_X64);
                     break;
@@ -1623,7 +1610,6 @@ namespace Internal.JitInterface
                     AddInstructionSet(InstructionSet.X86_AVX512VBMI_X64);
                     AddInstructionSet(InstructionSet.X86_AVX10v1_X64);
                     AddInstructionSet(InstructionSet.X86_AVX10v1_V512_X64);
-                    AddInstructionSet(InstructionSet.X86_APX_X64);
                     AddInstructionSet(InstructionSet.X86_AVX10v2_X64);
                     AddInstructionSet(InstructionSet.X86_AVX10v2_V512_X64);
                     break;
@@ -1928,9 +1914,6 @@ namespace Internal.JitInterface
                         { return InstructionSet.X64_VectorT512; }
 
                     case "Apx":
-                        if (nestedTypeName == "X64")
-                        { return InstructionSet.X64_APX_X64; }
-                        else
                         { return InstructionSet.X64_APX; }
 
                     case "Avx10v2":

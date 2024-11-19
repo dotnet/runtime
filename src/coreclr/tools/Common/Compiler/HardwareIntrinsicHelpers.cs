@@ -215,7 +215,6 @@ namespace ILCompiler
                     InstructionSet.X64_APX => Apx,
                     InstructionSet.X64_PCLMULQDQ_V256 => Vpclmulqdq,
                     InstructionSet.X64_PCLMULQDQ_V512 => (Vpclmulqdq | Avx512),
-                    InstructionSet.X64_APX_X64 => Apx,
                     InstructionSet.X64_AVX10v2 => Avx10v2,
                     InstructionSet.X64_AVX10v2_X64 => Avx10v2,
                     InstructionSet.X64_AVX10v2_V512 => (Avx10v2 | Avx512),
