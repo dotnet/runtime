@@ -3921,6 +3921,18 @@ void Compiler::optAssertionProp_RangeProperties(ASSERT_VALARG_TP assertions,
             continue;
         }
 
+        // Same for Length, example:
+        //
+        //  array[idx] = 42;
+        //  array.Length is known to be non-negative and non-zero here
+        //
+        if (curAssertion->IsBoundsCheckNoThrow() && (curAssertion->op1.bnd.vnLen == treeVN))
+        {
+            *isKnownNonNegative = true;
+            *isKnownNonZero     = true;
+            return; // both properties are known, no need to check other assertions
+        }
+
         // First, analyze possible X ==/!= CNS assertions.
         if (curAssertion->IsConstantInt32Assertion() && (curAssertion->op1.vn == treeVN))
         {
@@ -4278,23 +4290,9 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions, Gen
         }
 #endif
 
-        // Bail out if tree is not side effect free.
-        if ((tree->gtFlags & GTF_SIDE_EFFECT) != 0)
-        {
-            JITDUMP("sorry, blocked by side effects\n");
-            return nullptr;
-        }
-
-        if (curAssertion->assertionKind == OAK_EQUAL)
-        {
-            tree->BashToConst(0);
-        }
-        else
-        {
-            tree->BashToConst(1);
-        }
-
-        newTree = fgMorphTree(tree);
+        newTree = curAssertion->assertionKind == OAK_EQUAL ? gtNewIconNode(1) : gtNewIconNode(0);
+        newTree = gtWrapWithSideEffects(newTree, tree, GTF_ALL_EFFECT);
+        newTree = fgMorphTree(newTree);
         DISPTREE(newTree);
         return optAssertionProp_Update(newTree, tree, stmt);
     }
@@ -6219,33 +6217,15 @@ struct VNAssertionPropVisitorInfo
 
 //------------------------------------------------------------------------------
 // optVNConstantPropOnJTrue
-//    Constant propagate on the JTrue node by extracting side effects and moving
-//    them into their own statements. The relop node is then modified to yield
-//    true or false, so the branch can be folded.
+//    Constant propagate on the JTrue node.
 //
 // Arguments:
 //    block - The block that contains the JTrue.
 //    test  - The JTrue node whose relop evaluates to 0 or non-zero value.
 //
 // Return Value:
-//    The jmpTrue tree node that has relop of the form "0 =/!= 0".
-//    If "tree" evaluates to "true" relop is "0 == 0". Else relop is "0 != 0".
-//
-// Description:
-//    Special treatment for JTRUE nodes' constant propagation. This is because
-//    for JTRUE(1) or JTRUE(0), if there are side effects they need to be put
-//    in separate statements. This is to prevent relop's constant
-//    propagation from doing a simple minded conversion from
-//    (1) STMT(JTRUE(RELOP(COMMA(sideEffect, OP1), OP2)), S.T. op1 =/!= op2 to
-//    (2) STMT(JTRUE(COMMA(sideEffect, 1/0)).
-//
-//    fgFoldConditional doesn't fold (2), a side-effecting JTRUE's op1. So, let us,
-//    here, convert (1) as two statements: STMT(sideEffect), STMT(JTRUE(1/0)),
-//    so that the JTRUE will get folded by fgFoldConditional.
-//
-//  Note: fgFoldConditional is called from other places as well, which may be
-//  sensitive to adding new statements. Hence the change is not made directly
-//  into fgFoldConditional.
+//    nullptr if no constant propagation is done, else the modified JTrue node
+//    containing "true" or "false" op1 wrapped with side-effects.
 //
 GenTree* Compiler::optVNConstantPropOnJTrue(BasicBlock* block, GenTree* test)
 {
@@ -6266,49 +6246,15 @@ GenTree* Compiler::optVNConstantPropOnJTrue(BasicBlock* block, GenTree* test)
 
     // We want to use the Normal ValueNumber when checking for constants.
     ValueNum vnCns = vnStore->VNConservativeNormalValue(relop->gtVNPair);
-    ValueNum vnLib = vnStore->VNLiberalNormalValue(relop->gtVNPair);
     if (!vnStore->IsVNConstant(vnCns))
     {
         return nullptr;
     }
 
-    // Prepare the tree for replacement so any side effects can be extracted.
-    GenTree* sideEffList = nullptr;
-    gtExtractSideEffList(relop, &sideEffList, GTF_SIDE_EFFECT, true);
-
-    // Transform the relop's operands to be both zeroes.
-    ValueNum vnZero                = vnStore->VNZeroForType(TYP_INT);
-    relop->AsOp()->gtOp1           = gtNewIconNode(0);
-    relop->AsOp()->gtOp1->gtVNPair = ValueNumPair(vnZero, vnZero);
-    relop->AsOp()->gtOp2           = gtNewIconNode(0);
-    relop->AsOp()->gtOp2->gtVNPair = ValueNumPair(vnZero, vnZero);
-
-    // Update the oper and restore the value numbers.
-    bool evalsToTrue = (vnStore->CoercedConstantValue<INT64>(vnCns) != 0);
-    relop->SetOper(evalsToTrue ? GT_EQ : GT_NE);
-    relop->gtVNPair = ValueNumPair(vnLib, vnCns);
-
-    // Insert side effects back after they were removed from the JTrue stmt.
-    // It is important not to allow duplicates exist in the IR, that why we delete
-    // these side effects from the JTrue stmt before insert them back here.
-    while (sideEffList != nullptr)
-    {
-        Statement* newStmt;
-        if (sideEffList->OperGet() == GT_COMMA)
-        {
-            newStmt     = fgNewStmtNearEnd(block, sideEffList->gtGetOp1());
-            sideEffList = sideEffList->gtGetOp2();
-        }
-        else
-        {
-            newStmt     = fgNewStmtNearEnd(block, sideEffList);
-            sideEffList = nullptr;
-        }
-        // fgMorphBlockStmt could potentially affect stmts after the current one,
-        // for example when it decides to fgRemoveRestOfBlock.
-        fgMorphBlockStmt(block, newStmt DEBUGARG(__FUNCTION__));
-    }
-
+    const bool evalsToTrue = (vnStore->CoercedConstantValue<INT64>(vnCns) != 0);
+    GenTree*   result      = evalsToTrue ? gtNewTrue() : gtNewFalse();
+    fgUpdateConstTreeValueNumber(result);
+    test->AsOp()->gtOp1 = gtWrapWithSideEffects(result, relop);
     return test;
 }
 
