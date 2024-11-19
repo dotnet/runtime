@@ -6,6 +6,7 @@ using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace Microsoft.Diagnostics.DataContractReader.UnitTests;
 internal unsafe class TargetTestHelpers
@@ -171,9 +172,6 @@ internal unsafe class TargetTestHelpers
 
     #endregion Data descriptor json formatting
 
-
-
-
     #region Mock memory initialization
 
     internal uint ObjHeaderSize => (uint)(Arch.Is64Bit ? 2 * sizeof(uint) /*alignpad + syncblock*/: sizeof(uint) /* syncblock */);
@@ -197,6 +195,18 @@ internal unsafe class TargetTestHelpers
         else
         {
             BinaryPrimitives.WriteUInt16BigEndian(dest, u);
+        }
+    }
+
+    internal void Write(Span<byte> dest, int i)
+    {
+        if (Arch.IsLittleEndian)
+        {
+            BinaryPrimitives.WriteInt32LittleEndian(dest, i);
+        }
+        else
+        {
+            BinaryPrimitives.WriteInt32BigEndian(dest, i);
         }
     }
 
@@ -224,7 +234,6 @@ internal unsafe class TargetTestHelpers
         }
     }
 
-
     internal void WritePointer(Span<byte> dest, ulong value)
     {
         if (Arch.Is64Bit)
@@ -251,6 +260,8 @@ internal unsafe class TargetTestHelpers
         }
     }
 
+    internal void WriteNUInt(Span<byte> dest, TargetNUInt targetNUInt) => WritePointer(dest, targetNUInt.Value);
+
     internal TargetPointer ReadPointer(ReadOnlySpan<byte> src)
     {
         if (Arch.Is64Bit)
@@ -261,6 +272,19 @@ internal unsafe class TargetTestHelpers
         {
             return Arch.IsLittleEndian ? BinaryPrimitives.ReadUInt32LittleEndian(src) : BinaryPrimitives.ReadUInt32BigEndian(src);
         }
+    }
+
+    internal void WriteUtf16String(Span<byte> dest, string value)
+    {
+        Encoding encoding = Arch.IsLittleEndian ? Encoding.Unicode : Encoding.BigEndianUnicode;
+        byte[] valueBytes = encoding.GetBytes(value);
+        int len = valueBytes.Length + sizeof(char);
+        if (dest.Length < len)
+            throw new InvalidOperationException($"Destination is too short to write '{value}'. Required length: {len}, actual: {dest.Length}");
+
+        valueBytes.AsSpan().CopyTo(dest);
+        dest[^2] = 0;
+        dest[^1] = 0;
     }
 
     internal int SizeOfPrimitive(DataType type)
@@ -309,20 +333,28 @@ internal unsafe class TargetTestHelpers
         public readonly uint MaxAlign { get; init; }
     }
 
-    public LayoutResult LayoutFields((string Name, DataType Type)[] fields)
-        => LayoutFields(FieldLayout.CIsh, fields);
+    internal record Field(string Name, DataType Type, uint? Size = null);
 
     // Implements a simple layout algorithm that aligns fields to their size
     // and aligns the structure to the largest field size.
-    public LayoutResult  LayoutFields(FieldLayout style, (string Name, DataType Type)[] fields)
+    public LayoutResult LayoutFields(Field[] fields)
+        => LayoutFields(FieldLayout.CIsh, fields);
+
+    // Layout the fields of a structure according to the specified layout style.
+    public LayoutResult  LayoutFields(FieldLayout style, Field[] fields)
+    {
+        int offset = 0;
+        int maxAlign = 1;
+        return LayoutFieldsWorker(style, fields, ref offset, ref maxAlign);
+    }
+
+    private LayoutResult LayoutFieldsWorker(FieldLayout style, Field[] fields, ref int offset, ref int maxAlign)
     {
         Dictionary<string,Target.FieldInfo> fieldInfos = new ();
-        int maxAlign = 1;
-        int offset = 0;
         for (int i = 0; i < fields.Length; i++)
         {
-            var (name, type) = fields[i];
-            int size = SizeOfPrimitive(type);
+            var (name, type, sizeMaybe) = fields[i];
+            int size = sizeMaybe.HasValue ? (int)sizeMaybe.Value : SizeOfPrimitive(type);
             int align = size;
             if (align > maxAlign)
             {
@@ -336,6 +368,7 @@ internal unsafe class TargetTestHelpers
             };
             fieldInfos[name] = new Target.FieldInfo {
                 Offset = offset,
+                Type = type,
             };
             offset += size;
         }
@@ -345,6 +378,16 @@ internal unsafe class TargetTestHelpers
             _ => throw new InvalidOperationException("Unknown layout style"),
         };
         return new LayoutResult() { Fields = fieldInfos, Stride = (uint)stride, MaxAlign = (uint)maxAlign};
+    }
+
+    // Extend the layout of a base class with additional fields.
+    public LayoutResult ExtendLayout(Field[] fields, LayoutResult baseClass) => ExtendLayout(FieldLayout.CIsh, fields, baseClass);
+
+    public LayoutResult ExtendLayout(FieldLayout fieldLayout, Field[] fields, LayoutResult baseClass)
+    {
+        int offset = (int)baseClass.Stride;
+        int maxAlign = (int)baseClass.MaxAlign;
+        return LayoutFieldsWorker(fieldLayout, fields, ref offset, ref maxAlign);
     }
 
 }

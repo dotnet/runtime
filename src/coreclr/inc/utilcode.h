@@ -2887,7 +2887,6 @@ class MethodNamesListBase
 
     MethodName     *pNames;         // List of names
 
-    bool IsInList(LPCUTF8 methodName, LPCUTF8 className, int numArgs);
 
 public:
     void Init()
@@ -2896,7 +2895,7 @@ public:
         pNames = 0;
     }
 
-    void Init(_In_ _In_z_ LPWSTR list)
+    void Init(_In_z_ LPWSTR list)
     {
         WRAPPER_NO_CONTRACT;
         pNames = 0;
@@ -2905,9 +2904,9 @@ public:
 
     void Destroy();
 
-    void Insert(_In_ _In_z_ LPWSTR list);
+    void Insert(_In_z_ LPWSTR list);
 
-    bool IsInList(LPCUTF8 methodName, LPCUTF8 className, PCCOR_SIGNATURE sig = NULL);
+    bool IsInList(LPCUTF8 methodName, LPCUTF8 className, int numArgs = -1);
     bool IsInList(LPCUTF8 methodName, LPCUTF8 className, CORINFO_SIG_INFO* pSigInfo);
     bool IsEmpty()
     {
@@ -3011,7 +3010,7 @@ public:
         return m_list.IsEmpty();
     }
 
-    bool contains(LPCUTF8 methodName, LPCUTF8 className, PCCOR_SIGNATURE sig = NULL);
+    bool contains(LPCUTF8 methodName, LPCUTF8 className, int argCount = -1);
     bool contains(LPCUTF8 methodName, LPCUTF8 className, CORINFO_SIG_INFO* pSigInfo);
 
     inline void ensureInit(const CLRConfig::ConfigStringInfo & info)

@@ -3934,7 +3934,7 @@ inline bool Compiler::IsSharedStaticHelper(GenTree* tree)
         helper == CORINFO_HELP_GETSTATICFIELDADDR_TLS ||
 
         (helper >= CORINFO_HELP_GET_GCSTATIC_BASE &&
-         helper <= CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2)
+         helper <= CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2_NOJITOPT)
 #ifdef FEATURE_READYTORUN
         || helper == CORINFO_HELP_READYTORUN_GENERIC_STATIC_BASE || helper == CORINFO_HELP_READYTORUN_GCSTATIC_BASE ||
         helper == CORINFO_HELP_READYTORUN_NONGCSTATIC_BASE || helper == CORINFO_HELP_READYTORUN_THREADSTATIC_BASE ||
@@ -4365,8 +4365,12 @@ void GenTree::VisitOperands(TVisitor visitor)
         case GT_CNS_LNG:
         case GT_CNS_DBL:
         case GT_CNS_STR:
+#if defined(FEATURE_SIMD)
         case GT_CNS_VEC:
+#endif // FEATURE_SIMD
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
         case GT_CNS_MSK:
+#endif // FEATURE_MASKED_HW_INTRINSICS
         case GT_MEMORYBARRIER:
         case GT_JMP:
         case GT_JCC:
