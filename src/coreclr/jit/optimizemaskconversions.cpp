@@ -174,7 +174,7 @@ public:
             MaskConversionsWeight  defaultWeight;
             MaskConversionsWeight* weight = weightsTable->LookupPointerOrAdd(lclOp->GetLclNum(), defaultWeight);
 
-            JITDUMP("Local %s V%02d at [%06u] ", isLocalStore ? "store" : "var", lclOp->GetLclNum(),
+            JITDUMP("Local %s V%02d at [%06u] ", isLocalStore ? "store" : "use", lclOp->GetLclNum(),
                     m_compiler->dspTreeID(lclOp));
 
             // Cannot convert any locals with an exposed address.
@@ -189,7 +189,7 @@ public:
             // cannot be stored as a mask as data will be lost.
             // For all of these, conversions could be done by creating a new store of type mask.
             // Then uses as mask could be converted to type mask and pointed to use the new
-            // definition. Tbe weighting would need updating to take this into account.
+            // definition. The weighting would need updating to take this into account.
             else if (isLocalUse && !hasConversion)
             {
                 JITDUMP("is used as vector. ");
@@ -310,13 +310,13 @@ public:
         // Quit if the cost of changing is higher or is invalid.
         if (weight.currentCost <= weight.switchCost || weight.invalid)
         {
-            JITDUMP("Local %s V%02d at [%06u] will not be converted. ", isLocalStore ? "store" : "var",
+            JITDUMP("Local %s V%02d at [%06u] will not be converted. ", isLocalStore ? "store" : "use",
                     lclOp->GetLclNum(), Compiler::dspTreeID(lclOp));
             weight.DumpTotalWeight();
             return fgWalkResult::WALK_CONTINUE;
         }
 
-        JITDUMP("Local %s V%02d at [%06u] will be converted. ", isLocalStore ? "store" : "var", lclOp->GetLclNum(),
+        JITDUMP("Local %s V%02d at [%06u] will be converted. ", isLocalStore ? "store" : "use", lclOp->GetLclNum(),
                 Compiler::dspTreeID(lclOp));
         weight.DumpTotalWeight();
 
@@ -377,7 +377,7 @@ public:
                 m_compiler->gtNewSimdCvtMaskToVectorNode(lclOrigType, lclOp, weight.simdBaseJitType, weight.simdSize);
         }
 
-        JITDUMP("Updated %s V%02d at [%06u] to mask (%s conversion)\n", isLocalStore ? "store" : "var",
+        JITDUMP("Updated %s V%02d at [%06u] to mask (%s conversion)\n", isLocalStore ? "store" : "use",
                 lclOp->GetLclNum(), m_compiler->dspTreeID(lclOp), addConversion ? "added" : "removed");
         DISPTREE(*use);
 
@@ -420,11 +420,10 @@ private:
 // To optimize this, the pass searches every local variable definition (GT_STORE_LCL_VAR)
 // and use (GT_LCL_VAR). A weighting is calculated and kept in a hash table - one entry
 // for each lclvar number. The weighting contains two values. The first value is the count of
-// of every convert node for the var, each instance multiplied by the number of instructions
+// of every convert node for the var - each instance multiplied by the number of instructions
 // in the convert and the weighting of the block it exists in. The second value assumes the
-// local var has been switched to store as a mask and performs the same count. The switch
-// will count removes every existing convert and add a convert where there isn't currently
-// a convert.
+// local var has been switched to the mask during the store and performs a similar count
+// calculation to see what the cost of loading the "converted mask" values are.
 //
 // Once every definition and use has been parsed, the parsing runs again. At each step,
 // if the weighting for switching that var is lower than the current weighting then switch
@@ -433,7 +432,7 @@ private:
 // Limitations:
 //
 // Local variables that are defined then immediately used just once may not be saved to a
-// store. Here a convert to to vector will be used by a convert to mask. These instances will
+// store. Here a convert to vector will be used by a convert to mask. These instances will
 // be caught in the lowering phase.
 //
 // This weighting does not account for re-definition. A variable may first be created as a
