@@ -6289,9 +6289,13 @@ public:
 #endif // DEBUG
 
         weight_t GetCost(BasicBlock* block, BasicBlock* next);
+        bool TrySwappingPartitions(unsigned s1Start, unsigned s2Start, unsigned s3Start, unsigned s3End, unsigned s4End);
+
         void ConsiderEdge(FlowEdge* edge);
         void AddNonFallthroughSuccs(unsigned blockPos);
         void AddNonFallthroughPreds(unsigned blockPos);
+        bool RunGreedyThreeOptPass(unsigned startPos, unsigned endPos);
+
         bool RunThreeOptPass(BasicBlock* startBlock, BasicBlock* endBlock);
 
     public:
