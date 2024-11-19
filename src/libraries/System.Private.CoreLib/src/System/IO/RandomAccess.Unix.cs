@@ -171,19 +171,19 @@ namespace System.IO
                 stackalloc Interop.Sys.IOVector[IovStackThreshold] :
                 new Interop.Sys.IOVector[buffersCount];
 
-            long totalBytesToWrite = 0;
-            for (int i = 0; i < buffersCount; i++)
-            {
-                ReadOnlyMemory<byte> buffer = buffers[i];
-                totalBytesToWrite += buffer.Length;
-
-                MemoryHandle memoryHandle = buffer.Pin();
-                vectors[i] = new Interop.Sys.IOVector { Base = (byte*)memoryHandle.Pointer, Count = (UIntPtr)buffer.Length };
-                handles[i] = memoryHandle;
-            }
-
             try
             {
+                long totalBytesToWrite = 0;
+                for (int i = 0; i < buffersCount; i++)
+                {
+                    ReadOnlyMemory<byte> buffer = buffers[i];
+                    totalBytesToWrite += buffer.Length;
+
+                    MemoryHandle memoryHandle = buffer.Pin();
+                    vectors[i] = new Interop.Sys.IOVector { Base = (byte*)memoryHandle.Pointer, Count = (UIntPtr)buffer.Length };
+                    handles[i] = memoryHandle;
+                }
+
                 int buffersOffset = 0;
                 while (totalBytesToWrite > 0)
                 {
