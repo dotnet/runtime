@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.Build.NoTargets">
   <PropertyGroup>
     <SkipBuild Condition="'$(RuntimeFlavor)' != '$(PrimaryRuntimeFlavor)' or '$(TargetsMobile)' == 'true'">true</SkipBuild>
-    <GenerateInstallers>true</GenerateInstallers>
+    <GenerateInstallers Condition="'$(DotNetBuildSourceOnly)' != 'true'">true</GenerateInstallers>
     <InstallerName>dotnet-hostfxr</InstallerName>
     <InstallerName Condition="'$(TargetOS)' == 'osx'">dotnet-hostfxr-internal</InstallerName>
     <PackageBrandNameSuffix>Host FX Resolver</PackageBrandNameSuffix>
@@ -45,7 +45,7 @@
     </ItemGroup>
     <ItemGroup>
       <LinuxPackageDependency Include="dotnet-host" Version="$(InstallerPackageVersion)" />
-      <RpmJsonProperty Include="directories" Object="[ &quot;/usr/share/dotnet&quot;, &quot;/usr/share/doc/$(VersionedInstallerName)&quot; ]" />
+      <RpmOwnedDirectory Include="/usr/share/dotnet/host;/usr/share/dotnet/host/fxr;/usr/share/dotnet/host/fxr/$(Version)" />
     </ItemGroup>
   </Target>
 </Project>

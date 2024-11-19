@@ -328,6 +328,8 @@ struct cdac_data<NativeCodeVersionNode>
     static constexpr size_t Next = offsetof(NativeCodeVersionNode, m_pNextMethodDescSibling);
     static constexpr size_t MethodDesc = offsetof(NativeCodeVersionNode, m_pMethodDesc);
     static constexpr size_t NativeCode = offsetof(NativeCodeVersionNode, m_pNativeCode);
+    static constexpr size_t Flags = offsetof(NativeCodeVersionNode, m_flags);
+    static constexpr size_t ILVersionId = offsetof(NativeCodeVersionNode, m_parentId);
 };
 
 class NativeCodeVersionCollection
@@ -409,6 +411,14 @@ private:
     Volatile<DWORD> m_jitFlags;
     InstrumentedILOffsetMapping m_instrumentedILMap;
     BOOL m_deoptimized;
+
+    friend struct ::cdac_data<ILCodeVersionNode>;
+};
+
+template<>
+struct cdac_data<ILCodeVersionNode>
+{
+    static constexpr size_t VersionId = offsetof(ILCodeVersionNode, m_rejitId);
 };
 
 class ILCodeVersionCollection

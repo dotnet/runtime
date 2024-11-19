@@ -21,6 +21,8 @@
 #cmakedefine01 HAVE_PTHREAD_NP_H
 #cmakedefine01 HAVE_AUXV_HWCAP_H
 #cmakedefine01 HAVE_SYS_PTRACE_H
+#cmakedefine01 HAVE_SYS_UCONTEXT_H
+#cmakedefine01 HAVE_SYS_MOUNT_H
 #cmakedefine01 HAVE_UCONTEXT_H
 #cmakedefine01 HAVE_GETAUXVAL
 
