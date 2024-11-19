@@ -62,13 +62,14 @@
       <InnerBuildArgs Condition="'$(RuntimeOS)' != ''">$(InnerBuildArgs) /p:PackageOS=$(RuntimeOS) /p:ToolsOS=$(RuntimeOS)</InnerBuildArgs>
       <!-- BaseOS is an expected known rid in the graph that TargetRid is compatible with.
            It's used to add TargetRid in the graph if the parent can't be detected. -->
-      <InnerBuildArgs>$(InnerBuildArgs) /p:AdditionalRuntimeIdentifierParent=$(BaseOS)</InnerBuildArgs>
+      <InnerBuildArgs>$(InnerBuildArgs) /p:AdditionalRuntimeIdentifierParent=$(BaseOS) /p:BaseOS=$(BaseOS)</InnerBuildArgs>
       <!-- Pass through special build modes controlled by properties -->
       <InnerBuildArgs Condition="'$(DotNetBuildRuntimeWasmEnableThreads)' == 'true'">$(InnerBuildArgs) /p:WasmEnableThreads=true</InnerBuildArgs>
-      <InnerBuildArgs Condition="'$(DotNetBuildRuntimeNativeAOTRuntimePack)' == 'true'">$(InnerBuildArgs) $(FlagParameterPrefix)s clr.nativeaotlibs+clr.nativeaotruntime+libs+packs /p:BuildNativeAOTRuntimePack=true /p:SkipLibrariesNativeRuntimePackages=true</InnerBuildArgs>
+      <InnerBuildArgs Condition="'$(DotNetBuildRuntimeNativeAOTRuntimePack)' != ''">$(InnerBuildArgs) /p:DotNetBuildRuntimeNativeAOTRuntimePack=$(DotNetBuildRuntimeNativeAOTRuntimePack)</InnerBuildArgs>
       <InnerBuildArgs Condition="'$(DotNetBuildMonoEnableLLVM)' != ''">$(InnerBuildArgs) /p:MonoEnableLLVM=$(DotNetBuildMonoEnableLLVM)</InnerBuildArgs>
       <InnerBuildArgs Condition="'$(DotNetBuildMonoAOTEnableLLVM)' != ''">$(InnerBuildArgs) /p:MonoAOTEnableLLVM=$(DotNetBuildMonoAOTEnableLLVM)</InnerBuildArgs>
       <InnerBuildArgs Condition="'$(DotNetBuildMonoBundleLLVMOptimizer)' != ''">$(InnerBuildArgs) /p:MonoBundleLLVMOptimizer=$(DotNetBuildMonoBundleLLVMOptimizer)</InnerBuildArgs>
+      <InnerBuildArgs Condition="'$(DotNetBuildMonoCrossAOT)' != ''">$(InnerBuildArgs) /p:DotNetBuildMonoCrossAOT=$(DotNetBuildMonoCrossAOT)</InnerBuildArgs>
       <InnerBuildArgs Condition="'$(PgoInstrument)' == 'true'">$(InnerBuildArgs) $(FlagParameterPrefix)pgoinstrument</InnerBuildArgs>
 
       <!-- This prop needs to be passed to the inner build manually as the BaseInnerSourceBuildCommand gets overridden above -->

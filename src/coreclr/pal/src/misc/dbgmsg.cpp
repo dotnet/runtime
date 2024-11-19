@@ -16,7 +16,6 @@ Abstract:
 /* PAL headers */
 
 #include "pal/thread.hpp"
-#include "pal/malloc.hpp"
 #include "pal/file.hpp"
 
 #include "config.h"
