@@ -209,6 +209,7 @@
       <EmccExportedFunction Include="_malloc" />
       <EmccExportedFunction Include="_sbrk" />
       <EmccExportedFunction Include="_memalign" />
+      <EmccExportedFunction Include="_posix_memalign" />
       <EmccExportedFunction Include="_memset" />
       <EmccExportedFunction Include="_ntohs" />
       <EmccExportedFunction Include="stackAlloc" />
@@ -385,8 +386,8 @@
       <PInvokeTableFile>$(ArtifactsObjDir)wasm/pinvoke-table.h</PInvokeTableFile>
       <InterpToNativeTableFile>$(ArtifactsObjDir)wasm/wasm_m2n_invoke.g.h</InterpToNativeTableFile>
 
-      <CMakeConfigurationEmccFlags Condition="'$(Configuration)' == 'Debug'">-g -Os -DDEBUG=1 -DENABLE_AOT_PROFILER=1 -DENABLE_BROWSER_PROFILER=1</CMakeConfigurationEmccFlags>
-      <CMakeConfigurationEmccFlags Condition="'$(Configuration)' == 'Release'">-Oz -DENABLE_BROWSER_PROFILER=1</CMakeConfigurationEmccFlags>
+      <CMakeConfigurationEmccFlags Condition="'$(Configuration)' == 'Debug'">-g -Os -DDEBUG=1 -DENABLE_AOT_PROFILER=1 -DENABLE_BROWSER_PROFILER=1 -DENABLE_LOG_PROFILER=1</CMakeConfigurationEmccFlags>
+      <CMakeConfigurationEmccFlags Condition="'$(Configuration)' == 'Release'">-Oz</CMakeConfigurationEmccFlags>
 
       <CMakeConfigurationLinkFlags Condition="'$(Configuration)' == 'Debug'"  >$(CMakeConfigurationEmccFlags) -s ASSERTIONS=1 </CMakeConfigurationLinkFlags>
       <CMakeConfigurationLinkFlags Condition="'$(Configuration)' == 'Release'">-O2</CMakeConfigurationLinkFlags>
@@ -432,6 +433,9 @@
       <_CmakeEnvironmentVariable Include="WASM_ENABLE_EH=0" Condition="'$(WasmEnableExceptionHandling)' == 'false'" />
       <_CmakeEnvironmentVariable Include="RUN_AOT_COMPILATION=1" Condition="'$(RunAOTCompilation)' == 'true'" />
       <_CmakeEnvironmentVariable Include="RUN_AOT_COMPILATION=0" Condition="'$(RunAOTCompilation)' != 'true'" />
+      <_CmakeEnvironmentVariable Include="EM_CACHE=$(WasmCachePath)" Condition="'$(WasmCachePath)' != ''" />
+      <_CmakeEnvironmentVariable Include="EM_FROZEN_CACHE=1" Condition="'$(WasmCachePath)' == '$(EmscriptenCacheSdkCacheDir)'" />
+      <_CmakeEnvironmentVariable Include="EM_FROZEN_CACHE=0" Condition="'$(WasmCachePath)' != '' and '$(WasmCachePath)' != '$(EmscriptenCacheSdkCacheDir)'" />
     </ItemGroup>
 
     <Copy SourceFiles="$(PInvokeTableFile)"
@@ -555,12 +559,19 @@
     <_RollupInputs Include="$(BrowserProjectRoot)runtime/*.js"/>
   </ItemGroup>
 
-  <Target Name="SetMonoRollupEnvironment" DependsOnTargets="GetProductVersions">
+  <Target Name="SetMonoRollupEnvironment">
+    <!-- Retrieve the runtime pack product version. -->
+    <MSBuild Projects="$(RepoRoot)src/installer/pkg/sfx/Microsoft.NETCore.App/Microsoft.NETCore.App.Runtime.sfxproj"
+             Targets="ReturnProductVersion"
+             Properties="Crossgen2SdkOverridePropsPath=;
+                         Crossgen2SdkOverrideTargetsPath=">
+      <Output TaskParameter="TargetOutputs" PropertyName="RuntimePackProductVersion" />
+    </MSBuild>
     <ItemGroup>
       <_MonoRollupEnvironmentVariable Include="Configuration:$(Configuration)" />
       <_MonoRollupEnvironmentVariable Include="NativeBinDir:$(NativeBinDir)" />
       <_MonoRollupEnvironmentVariable Include="WasmObjDir:$(WasmObjDir)" />
-      <_MonoRollupEnvironmentVariable Include="ProductVersion:$(ProductVersion)" />
+      <_MonoRollupEnvironmentVariable Include="ProductVersion:$(RuntimePackProductVersion)" />
       <_MonoRollupEnvironmentVariable Include="WasmEnableThreads:$(WasmEnableThreads)" />
       <_MonoRollupEnvironmentVariable Include="WASM_ENABLE_SIMD:1" Condition="'$(WasmEnableSIMD)' != 'false'" />
       <_MonoRollupEnvironmentVariable Include="WASM_ENABLE_SIMD:0" Condition="'$(WasmEnableSIMD)' == 'false'" />

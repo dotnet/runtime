@@ -78,9 +78,11 @@ bool Compiler::eeIsFieldStatic(CORINFO_FIELD_HANDLE fldHnd)
 }
 
 FORCEINLINE
-var_types Compiler::eeGetFieldType(CORINFO_FIELD_HANDLE fldHnd, CORINFO_CLASS_HANDLE* pStructHnd)
+var_types Compiler::eeGetFieldType(CORINFO_FIELD_HANDLE  fldHnd,
+                                   CORINFO_CLASS_HANDLE* pStructHnd,
+                                   CORINFO_CLASS_HANDLE  fieldOwnerHint)
 {
-    return JITtype2varType(info.compCompHnd->getFieldType(fldHnd, pStructHnd));
+    return JITtype2varType(info.compCompHnd->getFieldType(fldHnd, pStructHnd, fieldOwnerHint));
 }
 
 FORCEINLINE

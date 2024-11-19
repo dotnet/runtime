@@ -375,24 +375,6 @@ void MethodTable::SetComObjectType()
     SetFlag(enum_flag_ComObject);
 }
 
-#ifdef FEATURE_ICASTABLE
-void MethodTable::SetICastable()
-{
-    LIMITED_METHOD_CONTRACT;
-    SetFlag(enum_flag_ICastable);
-}
-#endif
-
-BOOL MethodTable::IsICastable()
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-#ifdef FEATURE_ICASTABLE
-    return GetFlag(enum_flag_ICastable);
-#else
-    return FALSE;
-#endif
-}
-
 void MethodTable::SetIDynamicInterfaceCastable()
 {
     LIMITED_METHOD_CONTRACT;
@@ -499,41 +481,21 @@ PTR_MethodTable InterfaceInfo_t::GetApproxMethodTable(Module * pContainingModule
     MethodTable *pServerMT = (*pServer)->GetMethodTable();
     PREFIX_ASSUME(pServerMT != NULL);
 
-#ifdef FEATURE_ICASTABLE
-    // In case of ICastable, instead of trying to find method implementation in the real object type
-    // we call GetMethodDescForInterfaceMethod() again with whatever type it returns.
-    // It allows objects that implement ICastable to mimic behavior of other types.
-    if (pServerMT->IsICastable() &&
-        !pItfMD->HasMethodInstantiation() &&
-        !TypeHandle(pServerMT).CanCastTo(ownerType)) // we need to make sure object doesn't implement this interface in a natural way
+#ifdef FEATURE_COMINTEROP
+    if (pServerMT->IsComObjectType() && !pItfMD->HasMethodInstantiation())
     {
-        GCStress<cfg_any>::MaybeTrigger();
+        // interop needs an exact MethodDesc
+        pItfMD = MethodDesc::FindOrCreateAssociatedMethodDesc(
+            pItfMD,
+            ownerType.GetMethodTable(),
+            FALSE,              // forceBoxedEntryPoint
+            Instantiation(),    // methodInst
+            FALSE,              // allowInstParam
+            TRUE);              // forceRemotableMethod
 
-        // Make call to ICastableHelpers.GetImplType(obj, interfaceTypeObj)
-        PREPARE_NONVIRTUAL_CALLSITE(METHOD__ICASTABLEHELPERS__GETIMPLTYPE);
-
-        OBJECTREF ownerManagedType = ownerType.GetManagedClassObject(); //GC triggers
-
-        DECLARE_ARGHOLDER_ARRAY(args, 2);
-        args[ARGNUM_0] = OBJECTREF_TO_ARGHOLDER(*pServer);
-        args[ARGNUM_1] = OBJECTREF_TO_ARGHOLDER(ownerManagedType);
-
-        OBJECTREF impTypeObj = NULL;
-        CALL_MANAGED_METHOD_RETREF(impTypeObj, OBJECTREF, args);
-
-        INDEBUG(ownerManagedType = NULL); //ownerManagedType wasn't protected during the call
-        if (impTypeObj == NULL) // GetImplType returns default(RuntimeTypeHandle)
-        {
-            COMPlusThrow(kEntryPointNotFoundException);
-        }
-
-        ReflectClassBaseObject* resultTypeObj = ((ReflectClassBaseObject*)OBJECTREFToObject(impTypeObj));
-        TypeHandle resultTypeHnd = resultTypeObj->GetType();
-        MethodTable *pResultMT = resultTypeHnd.GetMethodTable();
-
-        RETURN(pResultMT->GetMethodDescForInterfaceMethod(ownerType, pItfMD, TRUE /* throwOnConflict */));
+        RETURN(pServerMT->GetMethodDescForComInterfaceMethod(pItfMD, false));
     }
-#endif
+#endif // !FEATURE_COMINTEROP
 
     // For IDynamicInterfaceCastable, instead of trying to find method implementation in the real object type
     // we call GetInterfaceImplementation on the object and call GetMethodDescForInterfaceMethod
@@ -554,22 +516,6 @@ PTR_MethodTable InterfaceInfo_t::GetApproxMethodTable(Module * pContainingModule
 
         RETURN(implTypeHandle.GetMethodTable()->GetMethodDescForInterfaceMethod(ownerType, pItfMD, TRUE /* throwOnConflict */));
     }
-
-#ifdef FEATURE_COMINTEROP
-    if (pServerMT->IsComObjectType() && !pItfMD->HasMethodInstantiation())
-    {
-        // interop needs an exact MethodDesc
-        pItfMD = MethodDesc::FindOrCreateAssociatedMethodDesc(
-            pItfMD,
-            ownerType.GetMethodTable(),
-            FALSE,              // forceBoxedEntryPoint
-            Instantiation(),    // methodInst
-            FALSE,              // allowInstParam
-            TRUE);              // forceRemotableMethod
-
-        RETURN(pServerMT->GetMethodDescForComInterfaceMethod(pItfMD, false));
-    }
-#endif // !FEATURE_COMINTEROP
 
     // Handle pure COM+ types.
     RETURN (pServerMT->GetMethodDescForInterfaceMethod(ownerType, pItfMD, TRUE /* throwOnConflict */));
@@ -1462,8 +1408,8 @@ BOOL MethodTable::CanCastTo(MethodTable* pTargetMT, TypeHandlePairList* pVisited
                                 CanCastToClass(pTargetMT, pVisited);
 
     // We only consider type-based conversion rules here.
-    // Therefore a negative result cannot rule out convertibility for ICastable, IDynamicInterfaceCastable, and COM objects
-    if (result || !(pTargetMT->IsInterface() && (this->IsComObjectType() || this->IsICastable() || this->IsIDynamicInterfaceCastable())))
+    // Therefore a negative result cannot rule out convertibility for IDynamicInterfaceCastable and COM objects
+    if (result || !(pTargetMT->IsInterface() && (this->IsComObjectType() || this->IsIDynamicInterfaceCastable())))
     {
         CastCache::TryAddToCache(this, pTargetMT, (BOOL)result);
     }
@@ -2764,7 +2710,7 @@ static bool HandleInlineArray(int elementTypeIndex, int nElements, FpStructInReg
     int nFlattenedFieldsPerElement = typeIndex - elementTypeIndex;
     if (nFlattenedFieldsPerElement == 0)
     {
-        assert(nElements == 1); // HasImpliedRepeatedFields must have returned a false positive
+        assert(nElements == 1); // HasImpliedRepeatedFields must have returned a false positive, it can't be an array
         LOG((LF_JIT, LL_EVERYTHING, "FpStructInRegistersInfo:%*s  * ignoring empty struct\n",
             nestingLevel * 4, ""));
         return true;
@@ -2873,6 +2819,17 @@ static bool FlattenFields(TypeHandle th, uint32_t offset, FpStructInRegistersInf
         {
             assert(nFields == 1);
             int nElements = pMT->GetNumInstanceFieldBytes() / fields[0].GetSize();
+
+            // Only InlineArrays can have element type of empty struct, fixed-size buffers take only primitives
+            if ((typeIndex - elementTypeIndex) == 0 && pMT->GetClass()->IsInlineArray())
+            {
+                assert(nElements > 0); // InlineArray length must be > 0
+                LOG((LF_JIT, LL_EVERYTHING, "FpStructInRegistersInfo:%*s "
+                    " * struct %s containing a %i-element array of empty structs %s is passed by integer calling convention\n",
+                    nestingLevel * 4, "", pMT->GetDebugClassName(), nElements, fields[0].GetDebugName()));
+                return false;
+            }
+
             if (!HandleInlineArray(elementTypeIndex, nElements, info, typeIndex DEBUG_ARG(nestingLevel + 1)))
                 return false;
         }
@@ -3840,8 +3797,8 @@ void MethodTable::CheckRunClassInitThrowing()
     // To find GC hole easier...
     TRIGGERSGC();
 
-    // Don't initialize shared generic instantiations (e.g. MyClass<__Canon>)
-    if (IsSharedByGenericInstantiations())
+    // Don't initialize shared generic instantiations (e.g. MyClass<__Canon>), or an already initialized MethodTable
+    if (IsClassInited() || IsSharedByGenericInstantiations())
         return;
 
     _ASSERTE(!ContainsGenericVariables());
@@ -3946,7 +3903,11 @@ void MethodTable::EnsureTlsIndexAllocated()
     CONTRACTL_END;
 
     PTR_MethodTableAuxiliaryData pAuxiliaryData = GetAuxiliaryDataForWrite();
-    if (!pAuxiliaryData->IsTlsIndexAllocated() && GetNumThreadStaticFields() > 0)
+
+    if (pAuxiliaryData->IsTlsIndexAllocated())
+        return;
+
+    if (GetNumThreadStaticFields() > 0)
     {
         ThreadStaticsInfo *pThreadStaticsInfo = MethodTableAuxiliaryData::GetThreadStaticsInfo(GetAuxiliaryDataForWrite());
         // Allocate space for normal statics if we might have them
@@ -5188,12 +5149,12 @@ BOOL MethodTable::FindDispatchEntry(UINT32 typeID,
 
 #ifndef DACCESS_COMPILE
 
-void ThrowExceptionForAbstractOverride(
+void ThrowEntryPointNotFoundException(
     MethodTable *pTargetClass,
     MethodTable *pInterfaceMT,
     MethodDesc *pInterfaceMD)
 {
-    LIMITED_METHOD_CONTRACT;
+    STANDARD_VM_CONTRACT;
 
     SString assemblyName;
 
@@ -5240,9 +5201,7 @@ MethodTable::FindDispatchImpl(
 {
     CONTRACT (BOOL) {
         INSTANCE_CHECK;
-        MODE_ANY;
-        THROWS;
-        GC_TRIGGERS;
+        STANDARD_VM_CHECK;
         PRECONDITION(CheckPointer(pImplSlot));
         POSTCONDITION(!RETVAL || !pImplSlot->IsNull() || IsComObjectType());
     } CONTRACT_END;
@@ -5352,9 +5311,7 @@ MethodTable::FindDispatchImpl(
                     if (pDefaultMethod->IsAbstract())
                     {
                         if (throwOnConflict)
-                        {
-                            ThrowExceptionForAbstractOverride(this, pIfcMT, pIfcMD);
-                        }
+                            ThrowEntryPointNotFoundException(this, pIfcMT, pIfcMD);
                     }
                     else
                     {
@@ -5395,18 +5352,12 @@ MethodTable::FindDispatchImpl(
 
 #ifndef DACCESS_COMPILE
 
-struct MatchCandidate
-{
-    MethodTable *pMT;
-    MethodDesc *pMD;
-};
-
-void ThrowExceptionForConflictingOverride(
+void ThrowAmbiguousResolutionException(
     MethodTable *pTargetClass,
     MethodTable *pInterfaceMT,
     MethodDesc *pInterfaceMD)
 {
-    LIMITED_METHOD_CONTRACT;
+    STANDARD_VM_CONTRACT;
 
     SString assemblyName;
 
@@ -5591,7 +5542,6 @@ BOOL MethodTable::FindDefaultInterfaceImplementation(
 {
     CONTRACT(BOOL) {
         INSTANCE_CHECK;
-        MODE_ANY;
         THROWS;
         GC_TRIGGERS;
         PRECONDITION(CheckPointer(pInterfaceMD));
@@ -5601,6 +5551,11 @@ BOOL MethodTable::FindDefaultInterfaceImplementation(
     } CONTRACT_END;
 
 #ifdef FEATURE_DEFAULT_INTERFACES
+    struct MatchCandidate
+    {
+        MethodTable *pMT;
+        MethodDesc *pMD;
+    };
     bool allowVariance = (findDefaultImplementationFlags & FindDefaultInterfaceImplementationFlags::AllowVariance) != FindDefaultInterfaceImplementationFlags::None;
     CQuickArray<MatchCandidate> candidates;
     unsigned candidatesCount = 0;
@@ -5746,7 +5701,7 @@ BOOL MethodTable::FindDefaultInterfaceImplementation(
             bool throwOnConflict = (findDefaultImplementationFlags & FindDefaultInterfaceImplementationFlags::ThrowOnConflict) != FindDefaultInterfaceImplementationFlags::None;
 
             if (throwOnConflict)
-                ThrowExceptionForConflictingOverride(this, pInterfaceMT, pInterfaceMD);
+                ThrowAmbiguousResolutionException(this, pInterfaceMT, pInterfaceMD);
 
             *ppDefaultMethod = pBestCandidateMD;
             RETURN(FALSE);
@@ -5777,6 +5732,7 @@ DispatchSlot MethodTable::FindDispatchSlot(UINT32 typeID, UINT32 slotNumber, BOO
     }
     CONTRACTL_END;
 
+    GCX_PREEMP();
     DispatchSlot implSlot(0);
     FindDispatchImpl(typeID, slotNumber, &implSlot, throwOnConflict);
     return implSlot;
@@ -6057,7 +6013,7 @@ void MethodTable::GetGuid(GUID *pGuid, BOOL bGenerateIfNotFound, BOOL bClassic /
     GuidInfo *pInfo = GetClass()->GetGuidInfo();
 
     // First check to see if we have already cached the guid for this type.
-    // We currently only cache guids on interfaces and WinRT delegates.
+    // We currently only cache guids on interfaces.
     // In classic mode, though, ensure we don't retrieve the GuidInfo for redirected interfaces
     if ((IsInterface()) && pInfo != NULL
         && (!bClassic))
@@ -7390,6 +7346,129 @@ CHECK MethodTable::CheckActivated()
 //==========================================================================================
 
 #ifndef DACCESS_COMPILE
+
+struct ShouldEnsureInstanceActiveBeRecorded
+{
+    bool ShouldRecord = true;
+    ShouldEnsureInstanceActiveBeRecorded *Next;
+
+    ShouldEnsureInstanceActiveBeRecorded();
+    ~ShouldEnsureInstanceActiveBeRecorded();
+};
+
+static thread_local ShouldEnsureInstanceActiveBeRecorded* t_shouldEnsureInstanceActiveBeRecorded = nullptr;
+
+ShouldEnsureInstanceActiveBeRecorded::ShouldEnsureInstanceActiveBeRecorded()
+{
+    Next = t_shouldEnsureInstanceActiveBeRecorded;
+    t_shouldEnsureInstanceActiveBeRecorded = this;
+}
+
+ShouldEnsureInstanceActiveBeRecorded::~ShouldEnsureInstanceActiveBeRecorded()
+{
+    if (ShouldRecord)
+    {
+        t_shouldEnsureInstanceActiveBeRecorded = Next;
+    }
+}
+
+struct EnsureInstanceActiveRecursionDetector
+{
+    MethodTable *pMTBeingEnsured;
+    EnsureInstanceActiveRecursionDetector *Next;
+
+    EnsureInstanceActiveRecursionDetector(MethodTable* pMT, EnsureInstanceActiveRecursionDetector* next)
+        : pMTBeingEnsured(pMT), Next(next)
+    {
+    }
+
+    bool IsMethodTableBeingEnsured(MethodTable *pMT)
+    {
+        EnsureInstanceActiveRecursionDetector* current = this;
+        while (current != NULL)
+        {
+            if (current->pMTBeingEnsured == pMT)
+            {
+                return true;
+            }
+            current = current->Next;
+        }
+        return false;
+    }
+};
+
+void DoNotRecordTheResultOfEnsureLoadLevel()
+{
+    LIMITED_METHOD_CONTRACT;
+
+    // Mark all current ensure instance active calls on the stack as not to be recorded, and
+    // then remove them all from the stack, so that later calls to the this function don't need
+    // to walk the list.
+    ShouldEnsureInstanceActiveBeRecorded* current = t_shouldEnsureInstanceActiveBeRecorded;
+    while (current != NULL)
+    {
+        current->ShouldRecord = false;
+        current = current->Next;
+    }
+
+    t_shouldEnsureInstanceActiveBeRecorded = NULL;
+}
+
+void MethodTable_EnsureInstanceActiveHelper(MethodTable *pMT, EnsureInstanceActiveRecursionDetector* recursionDetectorInput)
+{
+    CONTRACTL
+    {
+        GC_TRIGGERS;
+        THROWS;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    if (pMT->GetAuxiliaryData()->IsEnsuredInstanceActive())
+    {
+        return;
+    }
+
+    if (recursionDetectorInput != NULL && recursionDetectorInput->IsMethodTableBeingEnsured(pMT))
+    {
+        return;
+    }
+
+    EnsureInstanceActiveRecursionDetector recursionDetector(pMT, recursionDetectorInput);
+    ShouldEnsureInstanceActiveBeRecorded shouldEnsureInstanceActiveBeRecorded;
+
+    Module * pModule = pMT->GetModule();
+    pModule->EnsureActive();
+
+    MethodTable * pMTInteritanceHierarchy = pMT->GetParentMethodTable();
+    while(pMTInteritanceHierarchy != NULL && !pMTInteritanceHierarchy->GetAuxiliaryData()->IsEnsuredInstanceActive())
+    {
+        MethodTable_EnsureInstanceActiveHelper(pMTInteritanceHierarchy, &recursionDetector);
+        pMTInteritanceHierarchy = pMTInteritanceHierarchy->GetParentMethodTable();
+    }
+
+    if (pMT->HasInstantiation())
+    {
+        Instantiation inst = pMT->GetInstantiation();
+        for (DWORD i = 0; i < inst.GetNumArgs(); i++)
+        {
+            TypeHandle thArg = inst[i];
+            if (!thArg.IsTypeDesc())
+            {
+                MethodTable_EnsureInstanceActiveHelper(thArg.AsMethodTable(), &recursionDetector);
+            }
+        }
+    }
+
+    // The EnsureInstanceActive function may be called during the final stage of assembly load in the module constructor
+    // in which case we are permitted to not actually raise the load level of an assembly all the way
+    // to FILE_ACTIVE. In that case, it isn't safe to record that the MethodTable instance is active.
+    if (shouldEnsureInstanceActiveBeRecorded.ShouldRecord)
+    {
+        pMT->GetAuxiliaryDataForWrite()->SetEnsuredInstanceActive();
+    }
+}
+
 VOID MethodTable::EnsureInstanceActive()
 {
     CONTRACTL
@@ -7400,38 +7479,7 @@ VOID MethodTable::EnsureInstanceActive()
     }
     CONTRACTL_END;
 
-    Module * pModule = GetModule();
-    pModule->EnsureActive();
-
-    MethodTable * pMT = this;
-    while (pMT->HasModuleDependencies())
-    {
-        pMT = pMT->GetParentMethodTable();
-        _ASSERTE(pMT != NULL);
-
-        Module * pParentModule = pMT->GetModule();
-        if (pParentModule != pModule)
-        {
-            pModule = pParentModule;
-            pModule->EnsureActive();
-        }
-    }
-
-    if (HasInstantiation())
-    {
-        {
-            Instantiation inst = GetInstantiation();
-            for (DWORD i = 0; i < inst.GetNumArgs(); i++)
-            {
-                TypeHandle thArg = inst[i];
-                if (!thArg.IsTypeDesc())
-                {
-                    thArg.AsMethodTable()->EnsureInstanceActive();
-                }
-            }
-        }
-    }
-
+    MethodTable_EnsureInstanceActiveHelper(this, NULL);
 }
 #endif //!DACCESS_COMPILE
 
@@ -7457,20 +7505,32 @@ CHECK MethodTable::CheckInstanceActivated()
     if (IsArray())
         CHECK_OK;
 
-    Module * pModule = GetModule();
-    CHECK(pModule->CheckActivated());
 
     MethodTable * pMT = this;
-    while (pMT->HasModuleDependencies())
-    {
-        pMT = pMT->GetParentMethodTable();
-        _ASSERTE(pMT != NULL);
 
-        Module * pParentModule = pMT->GetModule();
-        if (pParentModule != pModule)
+    if (pMT->GetAuxiliaryData()->IsEnsuredInstanceActive())
+    {
+        CHECK_OK;
+    }
+    else
+    {
+        Module * pModule = GetModule();
+        CHECK(pModule->CheckActivated());
+
+        while (pMT->GetModule()->IsSystem())
         {
-            pModule = pParentModule;
-            CHECK(pModule->CheckActivated());
+            pMT = pMT->GetParentMethodTable();
+            if (pMT == NULL)
+            {
+                CHECK_OK;
+            }
+
+            Module * pParentModule = pMT->GetModule();
+            if (pParentModule != pModule)
+            {
+                pModule = pParentModule;
+                CHECK(pModule->CheckActivated());
+            }
         }
     }
 
@@ -7629,33 +7689,6 @@ BOOL MethodTable::ContainsGenericMethodVariables()
     }
 
     return FALSE;
-}
-
-//==========================================================================================
-Module *MethodTable::GetDefiningModuleForOpenType()
-{
-    CONTRACT(Module*)
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        FORBID_FAULT;
-        POSTCONDITION((ContainsGenericVariables() != 0) == (RETVAL != NULL));
-        SUPPORTS_DAC;
-    }
-    CONTRACT_END
-
-    if (ContainsGenericVariables())
-    {
-        Instantiation inst = GetInstantiation();
-        for (DWORD i = 0; i < inst.GetNumArgs(); i++)
-        {
-            Module *pModule = inst[i].GetDefiningModuleForOpenType();
-            if (pModule != NULL)
-                RETURN pModule;
-        }
-    }
-
-    RETURN NULL;
 }
 
 //==========================================================================================
@@ -7872,6 +7905,12 @@ MethodTable::ResolveVirtualStaticMethod(
     BOOL* uniqueResolution,
     ClassLoadLevel level)
 {
+    CONTRACTL{
+        MODE_ANY;
+        THROWS;
+        GC_TRIGGERS;
+    } CONTRACTL_END;
+
     bool verifyImplemented = (resolveVirtualStaticMethodFlags & ResolveVirtualStaticMethodFlags::VerifyImplemented) != ResolveVirtualStaticMethodFlags::None;
     bool allowVariantMatches = (resolveVirtualStaticMethodFlags & ResolveVirtualStaticMethodFlags::AllowVariantMatches) != ResolveVirtualStaticMethodFlags::None;
     bool instantiateMethodParameters = (resolveVirtualStaticMethodFlags & ResolveVirtualStaticMethodFlags::InstantiateResultOverFinalMethodDesc) != ResolveVirtualStaticMethodFlags::None;
@@ -8029,6 +8068,12 @@ MethodTable::ResolveVirtualStaticMethod(
 MethodDesc*
 MethodTable::TryResolveVirtualStaticMethodOnThisType(MethodTable* pInterfaceType, MethodDesc* pInterfaceMD, ResolveVirtualStaticMethodFlags resolveVirtualStaticMethodFlags, ClassLoadLevel level)
 {
+    CONTRACTL{
+        MODE_ANY;
+        THROWS;
+        GC_TRIGGERS;
+    } CONTRACTL_END;
+
     bool instantiateMethodParameters = (resolveVirtualStaticMethodFlags & ResolveVirtualStaticMethodFlags::InstantiateResultOverFinalMethodDesc) != ResolveVirtualStaticMethodFlags::None;
     bool allowVariance = (resolveVirtualStaticMethodFlags & ResolveVirtualStaticMethodFlags::AllowVariantMatches) != ResolveVirtualStaticMethodFlags::None;
     bool verifyImplemented = (resolveVirtualStaticMethodFlags & ResolveVirtualStaticMethodFlags::VerifyImplemented) != ResolveVirtualStaticMethodFlags::None;
@@ -8084,7 +8129,7 @@ MethodTable::TryResolveVirtualStaticMethodOnThisType(MethodTable* pInterfaceType
         {
             // Allow variant, but not equivalent interface match
             if (!pInterfaceType->HasSameTypeDefAs(pInterfaceMT) ||
-                !pInterfaceMT->CanCastTo(pInterfaceType, NULL))
+                !TypeHandle(pInterfaceMT).CanCastTo(pInterfaceType, NULL))
             {
                 continue;
             }

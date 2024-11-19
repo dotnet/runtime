@@ -33,76 +33,6 @@ unsigned Compiler::s_lvaDoubleAlignedProcsCount = 0;
 
 /*****************************************************************************/
 
-void Compiler::lvaInit()
-{
-    lvaParameterPassingInfo = nullptr;
-    lvaParameterStackSize   = 0;
-
-    /* We haven't allocated stack variables yet */
-    lvaRefCountState = RCS_INVALID;
-
-    lvaGenericsContextInUse = false;
-
-    lvaTrackedToVarNumSize = 0;
-    lvaTrackedToVarNum     = nullptr;
-
-    lvaTrackedFixed = false; // false: We can still add new tracked variables
-
-    lvaDoneFrameLayout = NO_FRAME_LAYOUT;
-#if defined(FEATURE_EH_WINDOWS_X86)
-    lvaShadowSPslotsVar = BAD_VAR_NUM;
-#endif // FEATURE_EH_WINDOWS_X86
-    lvaInlinedPInvokeFrameVar = BAD_VAR_NUM;
-    lvaReversePInvokeFrameVar = BAD_VAR_NUM;
-#if FEATURE_FIXED_OUT_ARGS
-    lvaOutgoingArgSpaceVar  = BAD_VAR_NUM;
-    lvaOutgoingArgSpaceSize = PhasedVar<unsigned>();
-#endif // FEATURE_FIXED_OUT_ARGS
-#ifdef JIT32_GCENCODER
-    lvaLocAllocSPvar = BAD_VAR_NUM;
-#endif // JIT32_GCENCODER
-    lvaNewObjArrayArgs  = BAD_VAR_NUM;
-    lvaGSSecurityCookie = BAD_VAR_NUM;
-#ifdef TARGET_ARM64
-    lvaFfrRegister = BAD_VAR_NUM;
-#endif
-#ifdef TARGET_X86
-    lvaVarargsBaseOfStkArgs = BAD_VAR_NUM;
-#endif // TARGET_X86
-    lvaVarargsHandleArg = BAD_VAR_NUM;
-    lvaStubArgumentVar  = BAD_VAR_NUM;
-    lvaArg0Var          = BAD_VAR_NUM;
-    lvaMonAcquired      = BAD_VAR_NUM;
-    lvaRetAddrVar       = BAD_VAR_NUM;
-
-#ifdef SWIFT_SUPPORT
-    lvaSwiftSelfArg           = BAD_VAR_NUM;
-    lvaSwiftIndirectResultArg = BAD_VAR_NUM;
-    lvaSwiftErrorArg          = BAD_VAR_NUM;
-#endif
-
-    lvaInlineeReturnSpillTemp = BAD_VAR_NUM;
-
-    gsShadowVarInfo = nullptr;
-    lvaPSPSym       = BAD_VAR_NUM;
-#if FEATURE_SIMD
-    lvaSIMDInitTempVarNum = BAD_VAR_NUM;
-#endif // FEATURE_SIMD
-    lvaCurEpoch = 0;
-
-#if defined(DEBUG) && defined(TARGET_XARCH)
-    lvaReturnSpCheck = BAD_VAR_NUM;
-#endif
-
-#if defined(DEBUG) && defined(TARGET_X86)
-    lvaCallSpCheck = BAD_VAR_NUM;
-#endif
-
-    structPromotionHelper = new (this, CMK_Promotion) StructPromotionHelper(this);
-}
-
-/*****************************************************************************/
-
 void Compiler::lvaInitTypeRef()
 {
 
@@ -653,6 +583,19 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
         CorInfoTypeWithMod corInfoType = info.compCompHnd->getArgType(&info.compMethodInfo->args, argLst, &typeHnd);
         varDsc->lvIsParam              = 1;
 
+#if defined(TARGET_X86) && defined(FEATURE_IJW)
+        if ((corInfoType & CORINFO_TYPE_MOD_COPY_WITH_HELPER) != 0)
+        {
+            CorInfoType typeWithoutMod = strip(corInfoType);
+            if (typeWithoutMod == CORINFO_TYPE_VALUECLASS || typeWithoutMod == CORINFO_TYPE_PTR ||
+                typeWithoutMod == CORINFO_TYPE_BYREF)
+            {
+                JITDUMP("Marking user arg%02u as requiring special copy semantics\n", i);
+                recordArgRequiresSpecialCopy(i);
+            }
+        }
+#endif // TARGET_X86 && FEATURE_IJW
+
         lvaInitVarDsc(varDsc, varDscInfo->varNum, strip(corInfoType), typeHnd, argLst, &info.compMethodInfo->args);
 
         if (strip(corInfoType) == CORINFO_TYPE_CLASS)
@@ -914,40 +857,37 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
         if ((lowering != nullptr) && !lowering->byIntegerCallConv)
         {
             assert(varTypeIsStruct(argType));
-            int floatNum = 0;
+            assert((lowering->numLoweredElements == 1) || (lowering->numLoweredElements == 2));
             if (lowering->numLoweredElements == 1)
-            {
-                assert(argSize <= 8);
                 assert(varDsc->lvExactSize() <= argSize);
 
-                floatNum              = 1;
-                canPassArgInRegisters = varDscInfo->canEnreg(TYP_DOUBLE, 1);
+            cSlotsToEnregister  = lowering->numLoweredElements;
+            argRegTypeInStruct1 = JITtype2varType(lowering->loweredElements[0]);
+            if (lowering->numLoweredElements == 2)
+                argRegTypeInStruct2 = JITtype2varType(lowering->loweredElements[1]);
 
-                argRegTypeInStruct1 = JITtype2varType(lowering->loweredElements[0]);
-                assert(varTypeIsFloating(argRegTypeInStruct1));
-            }
-            else
+            int floatNum = (int)varTypeIsFloating(argRegTypeInStruct1) + (int)varTypeIsFloating(argRegTypeInStruct2);
+            assert(floatNum > 0);
+
+            canPassArgInRegisters = varDscInfo->canEnreg(TYP_DOUBLE, floatNum);
+            if (canPassArgInRegisters && (floatNum < lowering->numLoweredElements))
             {
+                assert(floatNum == 1);
                 assert(lowering->numLoweredElements == 2);
-                argRegTypeInStruct1 = genActualType(JITtype2varType(lowering->loweredElements[0]));
-                argRegTypeInStruct2 = genActualType(JITtype2varType(lowering->loweredElements[1]));
-                floatNum = (int)varTypeIsFloating(argRegTypeInStruct1) + (int)varTypeIsFloating(argRegTypeInStruct2);
-                canPassArgInRegisters = varDscInfo->canEnreg(TYP_DOUBLE, floatNum);
-                if (floatNum == 1)
-                    canPassArgInRegisters = canPassArgInRegisters && varDscInfo->canEnreg(TYP_I_IMPL, 1);
+                assert(varTypeIsIntegralOrI(argRegTypeInStruct1) || varTypeIsIntegralOrI(argRegTypeInStruct2));
+                canPassArgInRegisters = varDscInfo->canEnreg(TYP_I_IMPL, 1);
             }
-
-            assert((floatNum == 1) || (floatNum == 2));
 
             if (!canPassArgInRegisters)
             {
-                // On LoongArch64 and RISCV64, if there aren't any remaining floating-point registers to pass the
-                // argument, integer registers (if any) are used instead.
-                canPassArgInRegisters = varDscInfo->canEnreg(argType, cSlotsToEnregister);
-
+                // If a struct eligible for passing according to floating-point calling convention cannot be fully
+                // enregistered, it is passed according to integer calling convention -- in up to two integer registers
+                // and/or stack slots, as a lump of bits laid out like in memory.
+                cSlotsToEnregister  = cSlots;
                 argRegTypeInStruct1 = TYP_UNKNOWN;
                 argRegTypeInStruct2 = TYP_UNKNOWN;
 
+                canPassArgInRegisters = varDscInfo->canEnreg(argType, cSlotsToEnregister);
                 if (cSlotsToEnregister == 2)
                 {
                     if (!canPassArgInRegisters && varDscInfo->canEnreg(TYP_I_IMPL, 1))
@@ -1081,8 +1021,10 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
                         secondAllocatedRegArgNum = varDscInfo->allocRegArg(argRegTypeInStruct2, 1);
                         varDsc->SetOtherArgReg(
                             genMapRegArgNumToRegNum(secondAllocatedRegArgNum, argRegTypeInStruct2, info.compCallConv));
+
+                        varDsc->lvIsMultiRegArg = true;
                     }
-                    else if (cSlots > 1)
+                    else if (cSlotsToEnregister > 1)
                     {
                         // Here a struct-arg which needs two registers but only one integer register available,
                         // it has to be split. But we reserved extra 8-bytes for the whole struct.
@@ -1102,6 +1044,8 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
                     {
                         varDsc->SetOtherArgReg(
                             genMapRegArgNumToRegNum(firstAllocatedRegArgNum + 1, TYP_I_IMPL, info.compCallConv));
+
+                        varDsc->lvIsMultiRegArg = true;
                     }
 
                     assert(cSlots <= 2);
@@ -1801,9 +1745,8 @@ void Compiler::lvaClassifyParameterABI()
                 }
             }
 
-            for (unsigned i = 0; i < abiInfo.NumSegments; i++)
+            for (const ABIPassingSegment& segment : abiInfo.Segments())
             {
-                const ABIPassingSegment& segment = abiInfo.Segment(i);
                 if (segment.IsPassedInRegister())
                 {
                     argRegs |= segment.GetRegisterMask();
@@ -2170,13 +2113,6 @@ bool Compiler::StructPromotionHelper::TryPromoteStructVar(unsigned lclNum)
 {
     if (CanPromoteStructVar(lclNum))
     {
-#if 0
-            // Often-useful debugging code: if you've narrowed down a struct-promotion problem to a single
-            // method, this allows you to select a subset of the vars to promote (by 1-based ordinal number).
-            static int structPromoVarNum = 0;
-            structPromoVarNum++;
-            if (atoi(getenv("structpromovarnumlo")) <= structPromoVarNum && structPromoVarNum <= atoi(getenv("structpromovarnumhi")))
-#endif // 0
         if (ShouldPromoteStructVar(lclNum))
         {
             PromoteStructVar(lclNum);
@@ -6019,9 +5955,8 @@ bool Compiler::lvaGetRelativeOffsetToCallerAllocatedSpaceForParameter(unsigned l
 {
     const ABIPassingInformation& abiInfo = lvaGetParameterABIInfo(lclNum);
 
-    for (unsigned i = 0; i < abiInfo.NumSegments; i++)
+    for (const ABIPassingSegment& segment : abiInfo.Segments())
     {
-        const ABIPassingSegment& segment = abiInfo.Segment(i);
         if (!segment.IsPassedOnStack())
         {
 #if defined(WINDOWS_AMD64_ABI)
@@ -8074,6 +8009,14 @@ Compiler::fgWalkResult Compiler::lvaStressLclFldCB(GenTree** pTree, fgWalkData* 
         if (lcl->OperIs(GT_LCL_FLD, GT_STORE_LCL_FLD) ||
             (lcl->OperIs(GT_LCL_ADDR) && (lcl->AsLclFld()->GetLclOffs() != 0)))
         {
+            varDsc->lvNoLclFldStress = true;
+            return WALK_CONTINUE;
+        }
+
+        // Ignore locals used in runtime lookups
+        if ((tree->gtFlags & GTF_VAR_CONTEXT) != 0)
+        {
+            assert(tree->OperIs(GT_LCL_VAR));
             varDsc->lvNoLclFldStress = true;
             return WALK_CONTINUE;
         }

@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppPrevious);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
@@ -20,10 +20,6 @@ The System.Text.Json library is built-in as part of the shared framework in .NET
   </PropertyGroup>
 
   <ItemGroup>
-    <ILLinkSubstitutionsXmls Include="ILLink\ILLink.Substitutions.xml" />
-  </ItemGroup>
-
-  <ItemGroup>
     <Compile Include="$(CommonPath)System\HexConverter.cs" Link="Common\System\HexConverter.cs" />
     <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs" Link="Common\ValueStringBuilder.cs" />
     <Compile Include="$(CommonPath)System\Text\Json\PooledByteBufferWriter.cs" Link="Common\System\Text\Json\PooledByteBufferWriter.cs" />
@@ -37,9 +33,9 @@ The System.Text.Json library is built-in as part of the shared framework in .NET
     <Compile Include="..\Common\JsonKebabCaseLowerNamingPolicy.cs" Link="Common\System\Text\Json\Serialization\JsonKebabCaseLowerNamingPolicy.cs" />
     <Compile Include="..\Common\JsonKebabCaseUpperNamingPolicy.cs" Link="Common\System\Text\Json\Serialization\JsonKebabCaseUpperNamingPolicy.cs" />
     <Compile Include="..\Common\JsonKnownNamingPolicy.cs" Link="Common\System\Text\Json\Serialization\JsonKnownNamingPolicy.cs" />
+    <Compile Include="..\Common\JsonKnownReferenceHandler.cs" Link="Common\System\Text\Json\Serialization\JsonKnownReferenceHandler.cs" />
     <Compile Include="..\Common\JsonNumberHandling.cs" Link="Common\System\Text\Json\Serialization\JsonNumberHandling.cs" />
     <Compile Include="..\Common\JsonObjectCreationHandling.cs" Link="Common\System\Text\Json\Serialization\JsonObjectCreationHandling.cs" />
-    <Compile Include="..\Common\JsonUnmappedMemberHandling.cs" Link="Common\System\Text\Json\Serialization\JsonUnmappedMemberHandling.cs" />
     <Compile Include="..\Common\JsonSeparatorNamingPolicy.cs" Link="Common\System\Text\Json\Serialization\JsonSeparatorNamingPolicy.cs" />
     <Compile Include="..\Common\JsonSerializableAttribute.cs" Link="Common\System\Text\Json\Serialization\JsonSerializableAttribute.cs" />
     <Compile Include="..\Common\JsonSerializerDefaults.cs" Link="Common\System\Text\Json\Serialization\JsonSerializerDefaults.cs" />
@@ -48,6 +44,7 @@ The System.Text.Json library is built-in as part of the shared framework in .NET
     <Compile Include="..\Common\JsonSourceGenerationMode.cs" Link="Common\System\Text\Json\Serialization\JsonSourceGenerationMode.cs" />
     <Compile Include="..\Common\JsonSourceGenerationOptionsAttribute.cs" Link="Common\System\Text\Json\Serialization\JsonSourceGenerationOptionsAttribute.cs" />
     <Compile Include="..\Common\JsonUnknownTypeHandling.cs" Link="Common\System\Text\Json\Serialization\JsonUnknownTypeHandling.cs" />
+    <Compile Include="..\Common\JsonUnmappedMemberHandling.cs" Link="Common\System\Text\Json\Serialization\JsonUnmappedMemberHandling.cs" />
     <Compile Include="..\Common\ReflectionExtensions.cs" Link="Common\System\Text\Json\Serialization\ReflectionExtensions.cs" />
     <Compile Include="..\Common\ThrowHelper.cs" Link="Common\System\Text\Json\ThrowHelper.cs" />
     <Compile Include="System\Runtime\InteropServices\JsonMarshal.cs" />
@@ -299,7 +296,6 @@ The System.Text.Json library is built-in as part of the shared framework in .NET
     <Compile Include="System\Text\Json\Serialization\ReadStackFrame.cs" />
     <Compile Include="System\Text\Json\Serialization\ReferenceHandler.cs" />
     <Compile Include="System\Text\Json\Serialization\ReferenceHandlerOfT.cs" />
-    <Compile Include="System\Text\Json\Serialization\ReferenceHandlingStrategy.cs" />
     <Compile Include="System\Text\Json\Serialization\ReferenceResolver.cs" />
     <Compile Include="System\Text\Json\Serialization\StackFrameObjectState.cs" />
     <Compile Include="System\Text\Json\Serialization\StackFramePropertyState.cs" />
@@ -369,6 +365,8 @@ The System.Text.Json library is built-in as part of the shared framework in .NET
     <Compile Include="$(CommonPath)System\Collections\Generic\EnumerableHelpers.cs" Link="Common\System\Collections\Generic\EnumerableHelpers.cs" />
     <Compile Include="$(LibrariesProjectRoot)System.Collections\src\System\Collections\Generic\OrderedDictionary.cs" Link="Common\System\Collections\Generic\OrderedDictionary.cs" />
     <Compile Include="$(LibrariesProjectRoot)System.Collections\src\System\Collections\ThrowHelper.cs" Link="Common\System\Collections\ThrowHelper.cs" />
+    
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\FeatureSwitchDefinitionAttribute.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and $([MSBuild]::VersionGreaterThanOrEquals('$(TargetFrameworkVersion)', '7.0'))">
@@ -395,7 +393,7 @@ The System.Text.Json library is built-in as part of the shared framework in .NET
   </ItemGroup>
 
   <!-- Application tfms (.NETCoreApp, .NETFramework) need to use the same or higher version of .NETStandard's dependencies. -->
-  <ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' != '$(NetCoreAppCurrent)'">
     <ProjectReference Include="$(LibrariesProjectRoot)System.Text.Encodings.Web\src\System.Text.Encodings.Web.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.IO.Pipelines\src\System.IO.Pipelines.csproj" />
   </ItemGroup>
@@ -403,6 +401,7 @@ The System.Text.Json library is built-in as part of the shared framework in .NET
   <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
     <Reference Include="System.Collections" />
     <Reference Include="System.Collections.Concurrent" />
+    <Reference Include="System.IO.Pipelines" />
     <Reference Include="System.Memory" />
     <Reference Include="System.Numerics.Vectors" />
     <Reference Include="System.Reflection.Emit.ILGeneration" />
@@ -413,8 +412,9 @@ The System.Text.Json library is built-in as part of the shared framework in .NET
     <Reference Include="System.Runtime.Intrinsics" />
     <Reference Include="System.Runtime.Loader" />
     <Reference Include="System.Text.Encoding.Extensions" />
-    <Reference Include="System.Threading" />
+    <Reference Include="System.Text.Encodings.Web" />
     <Reference Include="System.Text.RegularExpressions" />
+    <Reference Include="System.Threading" />
   </ItemGroup>
   
   <ItemGroup>

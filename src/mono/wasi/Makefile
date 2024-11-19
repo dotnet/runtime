@@ -70,7 +70,7 @@ run-build-tests:
 build-debugger-tests-helix:
 	$(DOTNET) build -restore -bl:$(TOP)/artifacts/log/$(CONFIG)/Wasm.Debugger.Tests.binlog \
 	/p:ContinuousIntegrationBuild=true /p:ArchiveTests=true \
-	$(TOP)/src/mono/wasm/debugger/Wasm.Debugger.Tests/Wasm.Debugger.Tests.csproj \
+	$(TOP)/src/mono/browser/debugger/Wasm.Debugger.Tests/Wasm.Debugger.Tests.csproj \
 	$(_MSBUILD_WASM_BUILD_ARGS) $(MSBUILD_ARGS)
 
 submit-debugger-tests-helix: build-debugger-tests-helix
@@ -108,14 +108,14 @@ submit-tests-helix:
 run-debugger-tests:
 	rm -f $(TOP)/artifacts/bin/DebuggerTestSuite/x64/Debug/*log; \
 	if [ ! -z "$(TEST_FILTER)" ]; then \
-	$(DOTNET) test  $(TOP)/src/mono/wasm/debugger/DebuggerTestSuite $(MSBUILD_ARGS) "-l:trx;LogFileName=DebuggerTestsResults.xml" --results-directory $(TOP)/artifacts/log/$(CONFIG) --filter "category!=failing&FullyQualifiedName$(TEST_FILTER)" $(TEST_ARGS); \
+	$(DOTNET) test  $(TOP)/src/mono/browser/debugger/DebuggerTestSuite $(MSBUILD_ARGS) "-l:trx;LogFileName=DebuggerTestsResults.xml" --results-directory $(TOP)/artifacts/log/$(CONFIG) --filter "category!=failing&FullyQualifiedName$(TEST_FILTER)" $(TEST_ARGS); \
 	else \
-		$(DOTNET) test  $(TOP)/src/mono/wasm/debugger/DebuggerTestSuite $(MSBUILD_ARGS) "-l:trx;LogFileName=DebuggerTestsResults.xml" --results-directory $(TOP)/artifacts/log/$(CONFIG) --filter "category!=failing" $(TEST_ARGS); \
+		$(DOTNET) test  $(TOP)/src/mono/browser/debugger/DebuggerTestSuite $(MSBUILD_ARGS) "-l:trx;LogFileName=DebuggerTestsResults.xml" --results-directory $(TOP)/artifacts/log/$(CONFIG) --filter "category!=failing" $(TEST_ARGS); \
 	fi
 
 build-dbg-proxy:
-	$(DOTNET) build $(TOP)/src/mono/wasm/debugger/wasiDebugHost $(MSBUILD_ARGS)
+	$(DOTNET) build $(TOP)/src/mono/browser/debugger/wasiDebugHost $(MSBUILD_ARGS)
 build-dbg-testsuite:
-	$(DOTNET) build $(TOP)/src/mono/wasm/debugger/DebuggerTestSuite $(MSBUILD_ARGS)
+	$(DOTNET) build $(TOP)/src/mono/browser/debugger/DebuggerTestSuite $(MSBUILD_ARGS)
 build-app-host:
 	$(DOTNET) build $(TOP)/src/mono/wasm/host $(_MSBUILD_WASM_BUILD_ARGS) $(MSBUILD_ARGS)

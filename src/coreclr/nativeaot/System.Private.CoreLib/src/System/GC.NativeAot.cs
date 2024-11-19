@@ -111,10 +111,7 @@ namespace System
             object? obj = RuntimeImports.RhHandleGet(wo.WeakHandle);
             KeepAlive(wo);
 
-            if (obj == null)
-            {
-                throw new ArgumentNullException(nameof(wo));
-            }
+            ArgumentNullException.ThrowIfNull(obj, nameof(wo));
 
             return RuntimeImports.RhGetGeneration(obj);
         }

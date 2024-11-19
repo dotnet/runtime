@@ -708,8 +708,6 @@ typedef struct _T_KNONVOLATILE_CONTEXT_POINTERS {
 #define DAC_CS_NATIVE_DATA_SIZE 96
 #elif defined(TARGET_LINUX) && defined(TARGET_S390X)
 #define DAC_CS_NATIVE_DATA_SIZE 96
-#elif defined(TARGET_LINUX) && defined(TARGET_LOONGARCH64)
-#define DAC_CS_NATIVE_DATA_SIZE 96
 #elif defined(TARGET_LINUX) && defined(TARGET_RISCV64)
 #define DAC_CS_NATIVE_DATA_SIZE 96
 #elif defined(TARGET_LINUX) && defined(TARGET_POWERPC64)

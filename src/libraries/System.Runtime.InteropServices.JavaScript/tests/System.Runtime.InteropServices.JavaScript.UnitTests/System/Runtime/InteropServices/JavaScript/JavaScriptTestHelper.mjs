@@ -246,6 +246,15 @@ export function invoke2(arg1, name) {
     return res;
 }
 
+export function returnResolvedPromise() {
+    return Promise.resolve();
+}
+
+export async function invokeReturnCompletedTask() {
+    await dllExports.System.Runtime.InteropServices.JavaScript.Tests.JavaScriptTestHelper.ReturnCompletedTask();
+    return "resolved";
+}
+
 export function invokeStructClassRecords(arg1) {
     return [
         dllExports.JavaScriptTestHelperNamespace.JavaScriptTestHelper.EchoString(arg1),

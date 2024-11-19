@@ -7,7 +7,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 using EditorBrowsableAttribute = System.ComponentModel.EditorBrowsableAttribute;
 using EditorBrowsableState = System.ComponentModel.EditorBrowsableState;
 
@@ -16,7 +15,7 @@ using EditorBrowsableState = System.ComponentModel.EditorBrowsableState;
 namespace System.Numerics.Tensors
 {
     /// <summary>
-    /// ReadOnlyTensorSpan represents a contiguous region of arbitrary memory. Unlike arrays, it can point to either managed
+    /// Represents a contiguous region of arbitrary memory. Unlike arrays, it can point to either managed
     /// or native memory, or to memory allocated on the stack. It is type-safe and memory-safe.
     /// </summary>
     [DebuggerTypeProxy(typeof(TensorSpanDebugView<>))]
@@ -34,7 +33,7 @@ namespace System.Numerics.Tensors
         /// </summary>
         /// <param name="array">The target array.</param>
         /// <remarks>Returns default when <paramref name="array"/> is null.</remarks>
-        /// <exception cref="ArrayTypeMismatchException">Thrown when <paramref name="array"/> is covariant and array's type is not exactly T[].</exception>
+        /// <exception cref="ArrayTypeMismatchException"><paramref name="array"/> is covariant and its type is not exactly T[].</exception>
         public ReadOnlyTensorSpan(T[]? array) : this(array, 0, [array?.Length ?? 0], [])
         {
         }
@@ -45,12 +44,11 @@ namespace System.Numerics.Tensors
         /// </summary>
         /// <param name="array">The target array.</param>
         /// <param name="startIndex">The index at which to begin the span.</param>
-        /// <param name="lengths">The lengths of the dimensions. If default is provided its assumed to have 1 dimension with a length equal to the length of the data.</param>
-        /// <param name="strides">The strides of each dimension. If default or span of length 0 is provided then strides will be automatically calculated.</param>
+        /// <param name="lengths">The lengths of the dimensions. If default is provided, it's assumed to have one dimension with a length equal to the length of the data.</param>
+        /// <param name="strides">The strides of each dimension. If default or span of length 0 is provided, then strides will be automatically calculated.</param>
         /// <remarks>Returns default when <paramref name="array"/> is null.</remarks>
-        /// <exception cref="ArrayTypeMismatchException">Thrown when <paramref name="array"/> is covariant and array's type is not exactly T[].</exception>
-        /// <exception cref="ArgumentOutOfRangeException">
-        /// Thrown when the specified <paramref name="startIndex"/> or end index is not in the range (&lt;0 or &gt;FlattenedLength).
+        /// <exception cref="ArrayTypeMismatchException"><paramref name="array"/> is covariant and its type is not exactly T[].</exception>
+        /// <exception cref="ArgumentOutOfRangeException">The specified <paramref name="startIndex"/> or end index is not in the range (&lt;0 or &gt;FlattenedLength).
         /// </exception>
         public ReadOnlyTensorSpan(T[]? array, Index startIndex, scoped ReadOnlySpan<nint> lengths, scoped ReadOnlySpan<nint> strides)
             : this(array, startIndex.GetOffset(array?.Length ?? 0), lengths, strides)
@@ -63,10 +61,10 @@ namespace System.Numerics.Tensors
         /// </summary>
         /// <param name="array">The target array.</param>
         /// <param name="start">The index at which to begin the span.</param>
-        /// <param name="lengths">The lengths of the dimensions. If default is provided its assumed to have 1 dimension with a length equal to the length of the data.</param>
-        /// <param name="strides">The strides of each dimension. If default or span of length 0 is provided then strides will be automatically calculated.</param>
+        /// <param name="lengths">The lengths of the dimensions. If default is provided, it's assumed to have one dimension with a length equal to the length of the data.</param>
+        /// <param name="strides">The strides of each dimension. If default or span of length 0 is provided, then strides will be automatically calculated.</param>
         /// <remarks>Returns default when <paramref name="array"/> is null.</remarks>
-        /// <exception cref="ArrayTypeMismatchException">Thrown when <paramref name="array"/> is covariant and array's type is not exactly T[].</exception>
+        /// <exception cref="ArrayTypeMismatchException"><paramref name="array"/> is covariant and its type is not exactly T[].</exception>
         /// <exception cref="ArgumentOutOfRangeException">
         /// Thrown when the specified <paramref name="start"/> or end index is not in the range (&lt;0 or &gt;FlattenedLength).
         /// </exception>
@@ -84,6 +82,7 @@ namespace System.Numerics.Tensors
                 this = default;
                 return; // returns default
             }
+
             if (!typeof(T).IsValueType && array.GetType() != typeof(T[]))
                 ThrowHelper.ThrowArrayTypeMismatchException();
 
@@ -116,11 +115,10 @@ namespace System.Numerics.Tensors
 
         /// <summary>
         /// Creates a new <see cref="ReadOnlyTensorSpan{T}"/> over the provided <see cref="Span{T}"/> using the specified lengths and strides.
-        /// If the strides are not provided, they will be automatically calculated.
         /// </summary>
         /// <param name="span">The target span.</param>
         /// <param name="lengths">The lengths of each dimension.</param>
-        /// <param name="strides">The strides for each dimension. Will be automatically calculated if not provided.</param>
+        /// <param name="strides">The strides for each dimension. The strides will be automatically calculated if not provided.</param>
         public ReadOnlyTensorSpan(ReadOnlySpan<T> span, scoped ReadOnlySpan<nint> lengths, scoped ReadOnlySpan<nint> strides)
         {
             if (lengths.IsEmpty)
@@ -131,7 +129,7 @@ namespace System.Numerics.Tensors
             strides = strides.IsEmpty ? (ReadOnlySpan<nint>)TensorSpanHelpers.CalculateStrides(lengths, linearLength) : strides;
             TensorSpanHelpers.ValidateStrides(strides, lengths);
             nint maxElements = TensorSpanHelpers.ComputeMaxLinearIndex(strides, lengths);
-            if (maxElements >= span.Length && span.Length != 0)
+            if (span.IsEmpty ? maxElements != 0 : maxElements >= span.Length)
                 ThrowHelper.ThrowArgument_InvalidStridesAndLengths();
 
             _shape = new TensorShape(span.Length, lengths, strides);
@@ -147,12 +145,11 @@ namespace System.Numerics.Tensors
 
         /// <summary>
         /// Creates a new <see cref="ReadOnlyTensorSpan{T}"/> over the provided <see cref="Array"/> using the specified start offsets, lengths, and strides.
-        /// If the strides are not provided, they will be automatically calculated.
         /// </summary>
         /// <param name="array">The target array.</param>
         /// <param name="start">The starting offset for each dimension.</param>
         /// <param name="lengths">The lengths of each dimension.</param>
-        /// <param name="strides">The strides for each dimension. Will be automatically calculated if not provided.</param>
+        /// <param name="strides">The strides for each dimension. This strides will be automatically calculated if not provided.</param>
         public ReadOnlyTensorSpan(Array? array, scoped ReadOnlySpan<int> start, scoped ReadOnlySpan<nint> lengths, scoped ReadOnlySpan<nint> strides)
         {
             if (lengths.IsEmpty && array != null)
@@ -166,7 +163,7 @@ namespace System.Numerics.Tensors
                 this = default;
                 return; // returns default
             }
-            if (!typeof(T).IsValueType && array.GetType() != typeof(T[]))
+            if (array.GetType().GetElementType() != typeof(T))
                 ThrowHelper.ThrowArrayTypeMismatchException();
 
             strides = strides.IsEmpty ? (ReadOnlySpan<nint>)TensorSpanHelpers.CalculateStrides(lengths, linearLength) : strides;
@@ -192,12 +189,11 @@ namespace System.Numerics.Tensors
 
         /// <summary>
         /// Creates a new <see cref="ReadOnlyTensorSpan{T}"/> over the provided <see cref="Array"/> using the specified start offsets, lengths, and strides.
-        /// If the strides are not provided, they will be automatically calculated.
         /// </summary>
         /// <param name="array">The target array.</param>
         /// <param name="startIndex">The starting offset for each dimension.</param>
         /// <param name="lengths">The lengths of each dimension.</param>
-        /// <param name="strides">The strides for each dimension. Will be automatically calculated if not provided.</param>
+        /// <param name="strides">The strides for each dimension. The strides will be automatically calculated if not provided.</param>
         public ReadOnlyTensorSpan(Array? array, scoped ReadOnlySpan<NIndex> startIndex, scoped ReadOnlySpan<nint> lengths, scoped ReadOnlySpan<nint> strides)
         {
             if (lengths.IsEmpty && array != null)
@@ -211,7 +207,7 @@ namespace System.Numerics.Tensors
                 this = default;
                 return; // returns default
             }
-            if (!typeof(T).IsValueType && array.GetType() != typeof(T[]))
+            if (array.GetType().GetElementType() != typeof(T))
                 ThrowHelper.ThrowArrayTypeMismatchException();
 
             strides = strides.IsEmpty ? (ReadOnlySpan<nint>)TensorSpanHelpers.CalculateStrides(lengths, linearLength) : strides;
@@ -236,30 +232,34 @@ namespace System.Numerics.Tensors
         }
 
         /// <summary>
-        /// Creates a new span over the target unmanaged buffer.  Clearly this
-        /// is quite dangerous the length is not checked.
-        /// But if this creation is correct, then all subsequent uses are correct.
+        /// Creates a new span over the target unmanaged buffer.
         /// </summary>
-        /// <param name="data">An unmanaged data to memory.</param>
+        /// <param name="data">An unmanaged data that points to memory.</param>
         /// <param name="dataLength">The number of elements the unmanaged memory can hold.</param>
+        /// <remarks>
+        /// This constructor is quite dangerous, because the length is not checked.
+        /// But if this creation is correct, then all subsequent uses are correct.
+        /// </remarks>
         [CLSCompliant(false)]
         public unsafe ReadOnlyTensorSpan(T* data, nint dataLength) : this(data, dataLength, [dataLength], []) { }
 
         /// <summary>
-        /// Creates a new span over the target unmanaged buffer.  Clearly this
-        /// is quite dangerous, because the length is not checked.
-        /// But if this creation is correct, then all subsequent uses are correct.
+        /// Creates a new span over the target unmanaged buffer.
         /// </summary>
-        /// <param name="data">An unmanaged data to memory.</param>
+        /// <param name="data">An unmanaged data that points to memory.</param>
         /// <param name="dataLength">The number of elements the unmanaged memory can hold.</param>
-        /// <param name="lengths">The lengths of the dimensions. If default is provided its assumed to have 1 dimension with a length equal to the length of the data.</param>
-        /// <param name="strides">The lengths of the strides. If nothing is provided it figures out the default stride configuration.</param>
+        /// <param name="lengths">The lengths of the dimensions. If default is provided, it's assumed to have one dimension with a length equal to the length of the data.</param>
+        /// <param name="strides">The lengths of the strides. If nothing is provided, it figures out the default stride configuration.</param>
         /// <exception cref="ArgumentException">
-        /// Thrown when <typeparamref name="T"/> is reference type or contains pointers and hence cannot be stored in unmanaged memory.
+        /// <typeparamref name="T"/> is a reference type or contains pointers and hence cannot be stored in unmanaged memory.
         /// </exception>
         /// <exception cref="ArgumentOutOfRangeException">
-        /// Thrown when the specified length is negative.
+        /// The specified length is negative.
         /// </exception>
+        /// <remarks>
+        /// This constructor is quite dangerous, because the length is not checked.
+        /// But if this creation is correct, then all subsequent uses are correct.
+        /// </remarks>
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public unsafe ReadOnlyTensorSpan(T* data, nint dataLength, scoped ReadOnlySpan<nint> lengths, scoped ReadOnlySpan<nint> strides)
@@ -301,7 +301,7 @@ namespace System.Numerics.Tensors
         /// <param name="indexes"></param>
         /// <returns></returns>
         /// <exception cref="IndexOutOfRangeException">
-        /// Thrown when any index is less than 0 or any index is greater than or equal to FlattenedLength
+        /// Any index is less than 0 or any index is greater than or equal to FlattenedLength.
         /// </exception>
         public ref readonly T this[params scoped ReadOnlySpan<nint> indexes]
         {
@@ -325,7 +325,7 @@ namespace System.Numerics.Tensors
         /// <param name="indexes"></param>
         /// <returns></returns>
         /// <exception cref="IndexOutOfRangeException">
-        /// Thrown when any index is less than 0 or any index is greater than or equal to FlattenedLength
+        /// Any index is less than 0 or any index is greater than or equal to FlattenedLength.
         /// </exception>
         public ref readonly T this[params scoped ReadOnlySpan<NIndex> indexes]
         {
@@ -348,7 +348,7 @@ namespace System.Numerics.Tensors
         /// <param name="ranges"></param>
         /// <returns></returns>
         /// <exception cref="IndexOutOfRangeException">
-        /// Thrown when any index is less than 0 or any index is greater than or equal to FlattenedLength
+        /// Any index is less than 0 or any index is greater than or equal to FlattenedLength.
         /// </exception>
         public ReadOnlyTensorSpan<T> this[params scoped ReadOnlySpan<NRange> ranges]
         {
@@ -362,7 +362,7 @@ namespace System.Numerics.Tensors
         }
 
         /// <summary>
-        /// The number of items in the span.
+        /// Gets the number of items in the span.
         /// </summary>
         public nint FlattenedLength => _shape.FlattenedLength;
 
@@ -379,25 +379,25 @@ namespace System.Numerics.Tensors
         public ReadOnlySpan<nint> Lengths => _shape.Lengths;
 
         /// <summary>
-        /// Gets the rank, aka the number of dimensions, of this <see cref="TensorSpan{T}"/>.
+        /// Gets the rank, or number of dimensions, of this <see cref="TensorSpan{T}"/>.
         /// </summary>
         public int Rank => Lengths.Length;
 
         /// <summary>
-        /// Gets the strides of this <see cref="TensorSpan{T}"/>
+        /// Gets the strides of this <see cref="TensorSpan{T}"/>.
         /// </summary>
         [UnscopedRef]
         public ReadOnlySpan<nint> Strides => _shape.Strides;
 
         /// <summary>
-        /// Returns false if left and right point at the same memory and have the same length.  Note that
-        /// this does *not* check to see if the *contents* are equal.
+        /// Compares the given spans and returns false if left and right point at the same memory and have the same length.
+        /// This opertor does *not* check to see if the *contents* are equal.
         /// </summary>
         public static bool operator !=(ReadOnlyTensorSpan<T> left, ReadOnlyTensorSpan<T> right) => !(left == right);
 
         /// <summary>
-        /// Returns true if left and right point at the same memory and have the same length.  Note that
-        /// this does *not* check to see if the *contents* are equal.
+        /// Compares the given spans and returns true if left and right point at the same memory and have the same length.
+        /// This operator does *not* check to see if the *contents* are equal.
         /// </summary>
         public static bool operator ==(ReadOnlyTensorSpan<T> left, ReadOnlyTensorSpan<T> right) =>
             left._shape.FlattenedLength == right._shape.FlattenedLength &&
@@ -406,10 +406,10 @@ namespace System.Numerics.Tensors
             Unsafe.AreSame(ref left._reference, ref right._reference);
 
         /// <summary>
-        /// This method is not supported as spans cannot be boxed. To compare two spans, use operator==.
+        /// This method is not supported as spans cannot be boxed. To compare two spans, use operator ==.
         /// </summary>
         /// <exception cref="NotSupportedException">
-        /// Always thrown by this method.
+        /// In all cases.
         /// </exception>
 #pragma warning disable CS0809 // Obsolete member overrides non-obsolete member
         [Obsolete("Equals() on ReadOnlyTensorSpan will always throw an exception. Use the equality operator instead.")]
@@ -421,7 +421,7 @@ namespace System.Numerics.Tensors
         /// This method is not supported as spans cannot be boxed.
         /// </summary>
         /// <exception cref="NotSupportedException">
-        /// Always thrown by this method.
+        /// In all cases.
         /// </exception>
         [Obsolete("GetHashCode() on ReadOnlyTensorSpan will always throw an exception.")]
         [EditorBrowsable(EditorBrowsableState.Never)]
@@ -459,7 +459,7 @@ namespace System.Numerics.Tensors
             /// <summary>The total item count.</summary>
             private nint _items;
 
-            /// <summary>Initialize the enumerator.</summary>
+            /// <summary>Initializes the enumerator.</summary>
             /// <param name="span">The span to enumerate.</param>
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             internal Enumerator(ReadOnlyTensorSpan<T> span)
@@ -492,8 +492,10 @@ namespace System.Numerics.Tensors
 
         /// <summary>
         /// Returns a reference to the 0th element of the ReadOnlyTensorSpan. If the ReadOnlyTensorSpan is empty, returns null reference.
-        /// It can be used for pinning and is required to support the use of span within a fixed statement.
         /// </summary>
+        /// <remarks>
+        /// This method can be used for pinning and is required to support the use of span within a fixed statement.
+        /// </remarks>
         [EditorBrowsable(EditorBrowsableState.Never)]
         public ref readonly T GetPinnableReference()
         {
@@ -505,12 +507,12 @@ namespace System.Numerics.Tensors
 
         /// <summary>
         /// Copies the contents of this read-only span into destination span. If the source
-        /// and destinations overlap, this method behaves as if the original values in
+        /// and destinations overlap, this method behaves as if the original values are in
         /// a temporary location before the destination is overwritten.
         /// </summary>
         /// <param name="destination">The span to copy items into.</param>
         /// <exception cref="ArgumentException">
-        /// Thrown when the destination ReadOnlyTensorSpan is shorter than the source ReadOnlyTensorSpan.
+        /// The destination ReadOnlyTensorSpan is shorter than the source ReadOnlyTensorSpan.
         /// </exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void CopyTo(scoped TensorSpan<T> destination)
@@ -518,31 +520,39 @@ namespace System.Numerics.Tensors
             // Using "if (!TryCopyTo(...))" results in two branches: one for the length
             // check, and one for the result of TryCopyTo. Since these checks are equivalent,
             // we can optimize by performing the check once ourselves then calling Memmove directly.
-            if (_shape.FlattenedLength <= destination.FlattenedLength)
+            if (TensorHelpers.IsBroadcastableTo(Lengths, destination.Lengths))
             {
                 scoped Span<nint> curIndexes;
                 nint[]? curIndexesArray;
+
                 if (Rank > TensorShape.MaxInlineRank)
                 {
-                    curIndexesArray = ArrayPool<nint>.Shared.Rent(Rank);
-                    curIndexes = curIndexesArray;
-                    curIndexes = curIndexes.Slice(0, Rank);
+                    curIndexesArray = ArrayPool<nint>.Shared.Rent(destination.Rank);
+                    curIndexes = curIndexesArray.AsSpan(0, destination.Rank);
+
                 }
                 else
                 {
                     curIndexesArray = null;
-                    curIndexes = stackalloc nint[Rank];
+                    curIndexes = stackalloc nint[destination.Rank];
                 }
+                curIndexes.Clear();
 
                 nint copiedValues = 0;
-                TensorSpan<T> slice = destination.Slice(_shape.Lengths);
-                while (copiedValues < _shape.FlattenedLength)
+                nint[] tempLengths = Tensor.GetSmallestBroadcastableLengths(Lengths, destination.Lengths);
+
+                TensorSpan<T> destinationSlice = destination.Slice(tempLengths);
+                ReadOnlyTensorSpan<T> srcSlice = Tensor.LazyBroadcast(this, tempLengths);
+                nint copyLength = srcSlice.Strides[^1] == 1 && TensorHelpers.IsContiguousAndDense(srcSlice) ? srcSlice.Lengths[^1] : 1;
+                int indexToAdjust = srcSlice.Strides[^1] == 1 && TensorHelpers.IsContiguousAndDense(srcSlice) ? srcSlice.Rank - 2 : srcSlice.Rank - 1;
+
+                while (copiedValues < destination.FlattenedLength)
                 {
-                    TensorSpanHelpers.Memmove(ref Unsafe.Add(ref slice._reference, TensorSpanHelpers.ComputeLinearIndex(curIndexes, Strides, Lengths)), ref Unsafe.Add(ref _reference, TensorSpanHelpers.ComputeLinearIndex(curIndexes, Strides, Lengths)), Lengths[Rank - 1]);
-                    TensorSpanHelpers.AdjustIndexes(Rank - 2, 1, curIndexes, _shape.Lengths);
-                    copiedValues += Lengths[Rank - 1];
+                    TensorSpanHelpers.Memmove(ref Unsafe.Add(ref destinationSlice._reference, TensorSpanHelpers.ComputeLinearIndex(curIndexes, destinationSlice.Strides, destinationSlice.Lengths)), ref Unsafe.Add(ref srcSlice._reference, TensorSpanHelpers.ComputeLinearIndex(curIndexes, srcSlice.Strides, srcSlice.Lengths)), copyLength);
+                    TensorSpanHelpers.AdjustIndexes(indexToAdjust, 1, curIndexes, tempLengths);
+                    copiedValues += copyLength;
                 }
-                Debug.Assert(copiedValues == _shape.FlattenedLength, "Didn't copy the right amount to the array.");
+                Debug.Assert(copiedValues == destination.FlattenedLength, "Didn't copy the right amount to the array.");
 
                 if (curIndexesArray != null)
                     ArrayPool<nint>.Shared.Return(curIndexesArray);
@@ -554,43 +564,52 @@ namespace System.Numerics.Tensors
         }
 
         /// <summary>
-        /// Copies the contents of this read-only span into destination span. If the source
-        /// and destinations overlap, this method behaves as if the original values in
-        /// a temporary location before the destination is overwritten.
+        /// Copies the contents of this read-only span into destination span.
         /// </summary>
-        /// <returns>If the destination span is shorter than the source span, this method
-        /// return false and no data is written to the destination.</returns>
+        /// <returns><see langword="true"/> if the copy succeeded; <see langword="false"/> if the destination span is shorter than the source span and no data is written to the destination.</returns>
         /// <param name="destination">The span to copy items into.</param>
+        /// <remarks>
+        /// If the source and destinations overlap, this method behaves as if
+        /// the original values are in a temporary location before the destination is overwritten.
+        /// </remarks>
         public bool TryCopyTo(scoped TensorSpan<T> destination)
         {
             bool retVal = false;
 
-            if (_shape.FlattenedLength <= destination.FlattenedLength)
+            if (TensorHelpers.IsBroadcastableTo(Lengths, destination.Lengths))
             {
                 scoped Span<nint> curIndexes;
                 nint[]? curIndexesArray;
+
                 if (Rank > TensorShape.MaxInlineRank)
                 {
-                    curIndexesArray = ArrayPool<nint>.Shared.Rent(Rank);
-                    curIndexes = curIndexesArray;
-                    curIndexes = curIndexes.Slice(0, Rank);
+                    curIndexesArray = ArrayPool<nint>.Shared.Rent(destination.Rank);
+                    curIndexes = curIndexesArray.AsSpan(0, destination.Rank);
+
                 }
                 else
                 {
                     curIndexesArray = null;
-                    curIndexes = stackalloc nint[Rank];
+                    curIndexes = stackalloc nint[destination.Rank];
                 }
+                curIndexes.Clear();
 
                 nint copiedValues = 0;
-                TensorSpan<T> slice = destination.Slice(_shape.Lengths);
-                while (copiedValues < _shape.FlattenedLength)
+                nint[] tempLengths = Tensor.GetSmallestBroadcastableLengths(Lengths, destination.Lengths);
+
+                TensorSpan<T> destinationSlice = destination.Slice(tempLengths);
+                ReadOnlyTensorSpan<T> srcSlice = Tensor.LazyBroadcast(this, tempLengths);
+                nint copyLength = srcSlice.Strides[^1] == 1 && TensorHelpers.IsContiguousAndDense(srcSlice) ? srcSlice.Lengths[^1] : 1;
+                int indexToAdjust = srcSlice.Strides[^1] == 1 && TensorHelpers.IsContiguousAndDense(srcSlice) ? srcSlice.Rank - 2 : srcSlice.Rank - 1;
+
+                while (copiedValues < destination.FlattenedLength)
                 {
-                    TensorSpanHelpers.Memmove(ref Unsafe.Add(ref slice._reference, TensorSpanHelpers.ComputeLinearIndex(curIndexes, Strides, Lengths)), ref Unsafe.Add(ref _reference, TensorSpanHelpers.ComputeLinearIndex(curIndexes, Strides, Lengths)), Lengths[Rank - 1]);
-                    TensorSpanHelpers.AdjustIndexes(Rank - 2, 1, curIndexes, _shape.Lengths);
-                    copiedValues += Lengths[Rank - 1];
+                    TensorSpanHelpers.Memmove(ref Unsafe.Add(ref destinationSlice._reference, TensorSpanHelpers.ComputeLinearIndex(curIndexes, destinationSlice.Strides, destinationSlice.Lengths)), ref Unsafe.Add(ref srcSlice._reference, TensorSpanHelpers.ComputeLinearIndex(curIndexes, srcSlice.Strides, srcSlice.Lengths)), copyLength);
+                    TensorSpanHelpers.AdjustIndexes(indexToAdjust, 1, curIndexes, tempLengths);
+                    copiedValues += copyLength;
                 }
+                Debug.Assert(copiedValues == destination.FlattenedLength, "Didn't copy the right amount to the array.");
                 retVal = true;
-                Debug.Assert(copiedValues == _shape.FlattenedLength, "Didn't copy the right amount to the array.");
 
                 if (curIndexesArray != null)
                     ArrayPool<nint>.Shared.Return(curIndexesArray);
@@ -599,7 +618,9 @@ namespace System.Numerics.Tensors
             return retVal;
         }
 
-        //public static explicit operator TensorSpan<T>(Array? array);
+        /// <summary>
+        /// Defines an implicit conversion of an array to a <see cref="TensorSpan{T}"/>.
+        /// </summary>
         public static implicit operator ReadOnlyTensorSpan<T>(T[]? array) => new ReadOnlyTensorSpan<T>(array);
 
         /// <summary>
@@ -612,8 +633,7 @@ namespace System.Numerics.Tensors
         /// </summary>
         /// <param name="indexes">The indexes for the slice.</param>
         /// <returns></returns>
-        /// <exception cref="IndexOutOfRangeException">
-        /// Thrown when any index is less than 0 or any index is greater than or equal to FlattenedLength
+        /// <exception cref="IndexOutOfRangeException">Any index is less than 0 or greater than or equal to FlattenedLength.
         /// </exception>
         public ReadOnlyTensorSpan<T> Slice(params scoped ReadOnlySpan<NIndex> indexes)
         {
@@ -628,8 +648,8 @@ namespace System.Numerics.Tensors
         /// <summary>
         /// Takes in the lengths of the dimensions and slices according to them.
         /// </summary>
-        /// <param name="lengths">The dimension lengths</param>
-        /// <returns>A <see cref="ReadOnlyTensorSpan{T}"/> based on the provided <paramref name="lengths"/></returns>
+        /// <param name="lengths">The dimension lengths.</param>
+        /// <returns>A <see cref="ReadOnlyTensorSpan{T}"/> based on the provided <paramref name="lengths"/>.</returns>
         internal ReadOnlyTensorSpan<T> Slice(scoped ReadOnlySpan<nint> lengths)
         {
             NRange[] ranges = new NRange[lengths.Length];
@@ -641,44 +661,68 @@ namespace System.Numerics.Tensors
         }
 
         /// <summary>
-        /// Forms a slice out of the given span
+        /// Forms a slice out of the given span.
         /// </summary>
-        /// <param name="ranges">The ranges for the slice</param>
-        /// <returns>A <see cref="ReadOnlyTensorSpan{T}"/> based on the provided <paramref name="ranges"/></returns>
+        /// <param name="ranges">The ranges for the slice.</param>
+        /// <returns>A <see cref="ReadOnlyTensorSpan{T}"/> based on the provided <paramref name="ranges"/>.</returns>
 
         public ReadOnlyTensorSpan<T> Slice(params scoped ReadOnlySpan<NRange> ranges)
         {
             if (ranges.Length != Lengths.Length)
                 throw new ArgumentOutOfRangeException(nameof(ranges), "Number of dimensions to slice does not equal the number of dimensions in the span");
 
+            ReadOnlyTensorSpan<T> toReturn;
             scoped Span<nint> lengths;
             scoped Span<nint> offsets;
+            nint[]? lengthsArray;
+            nint[]? offsetsArray;
             if (Rank > TensorShape.MaxInlineRank)
             {
-                lengths = stackalloc nint[Rank];
-                offsets = stackalloc nint[Rank];
+                lengthsArray = ArrayPool<nint>.Shared.Rent(Rank);
+                lengths = lengthsArray.AsSpan(0, Rank);
+
+                offsetsArray = ArrayPool<nint>.Shared.Rent(Rank);
+                offsets = offsetsArray.AsSpan(0, Rank);
             }
             else
             {
-                lengths = new nint[Rank];
-                offsets = new nint[Rank];
+                lengths = stackalloc nint[Rank];
+                offsets = stackalloc nint[Rank];
+
+                lengthsArray = null;
+                offsetsArray = null;
             }
+            lengths.Clear();
+            offsets.Clear();
 
             for (int i = 0; i < ranges.Length; i++)
             {
                 (offsets[i], lengths[i]) = ranges[i].GetOffsetAndLength(Lengths[i]);
             }
 
+            // FlattenedLength is computed everytime so using a local to cache the value.
+            nint flattenedLength = FlattenedLength;
             nint index = 0;
-            for (int i = 0; i < offsets.Length; i++)
+
+            if (flattenedLength != 0)
             {
-                index += Strides[i] * (offsets[i]);
+                for (int i = 0; i < offsets.Length; i++)
+                {
+                    index += Strides[i] * (offsets[i]);
+                }
             }
 
-            if (index >= _shape._memoryLength || index < 0)
+            if ((index >= _shape._memoryLength || index < 0) && flattenedLength != 0)
                 ThrowHelper.ThrowIndexOutOfRangeException();
 
-            return new ReadOnlyTensorSpan<T>(ref Unsafe.Add(ref _reference, index), lengths, _shape.Strides, _shape._memoryLength - index);
+            toReturn = new ReadOnlyTensorSpan<T>(ref Unsafe.Add(ref _reference, index), lengths, _shape.Strides, _shape._memoryLength - index);
+
+            if (offsetsArray != null)
+                ArrayPool<nint>.Shared.Return(offsetsArray);
+            if (lengthsArray != null)
+                ArrayPool<nint>.Shared.Return(lengthsArray);
+
+            return toReturn;
         }
 
         /// <summary>
@@ -695,14 +739,14 @@ namespace System.Numerics.Tensors
                 if (Rank > TensorShape.MaxInlineRank)
                 {
                     curIndexesArray = ArrayPool<nint>.Shared.Rent(Rank);
-                    curIndexes = curIndexesArray;
-                    curIndexes = curIndexes.Slice(0, Rank);
+                    curIndexes = curIndexesArray.AsSpan(0, Rank);
                 }
                 else
                 {
                     curIndexesArray = null;
                     curIndexes = stackalloc nint[Rank];
                 }
+                curIndexes.Clear();
 
                 nint copiedValues = 0;
                 while (copiedValues < _shape.FlattenedLength)
@@ -736,14 +780,14 @@ namespace System.Numerics.Tensors
             if (Rank > TensorShape.MaxInlineRank)
             {
                 curIndexesArray = ArrayPool<nint>.Shared.Rent(Rank);
-                curIndexes = curIndexesArray;
-                curIndexes = curIndexes.Slice(0, Rank);
+                curIndexes = curIndexesArray.AsSpan(0, Rank);
             }
             else
             {
                 curIndexesArray = null;
                 curIndexes = stackalloc nint[Rank];
             }
+            curIndexes.Clear();
 
             nint copiedValues = 0;
             while (copiedValues < _shape.FlattenedLength)

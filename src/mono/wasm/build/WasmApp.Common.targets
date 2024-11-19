@@ -321,7 +321,7 @@
     <PropertyGroup Condition="'$(WasmMainAssemblyFileName)' != '' and '$(_WasmOutputFileName)' == ''">
       <_WasmOutputFileName Condition="'$(WasmSingleFileBundle)' == 'true'">$([System.IO.Path]::GetFileNameWithoutExtension('$(WasmMainAssemblyFileName)')).wasm</_WasmOutputFileName>
       <_WasmOutputFileName Condition="'$(WasmSingleFileBundle)' != 'true'">dotnet.wasm</_WasmOutputFileName>
-      <_WasmOutputFileName Condition="'$(_WasmOutputFileName)' != ''">$([System.IO.Path]::Combine($(_WasiIntermediateOutputPath), $(_WasmOutputFileName)))</_WasmOutputFileName>
+      <_WasmOutputFileName Condition="'$(_WasmOutputFileName)' != ''">$([System.IO.Path]::Combine($(_WasmIntermediateOutputPath), $(_WasmOutputFileName)))</_WasmOutputFileName>
     </PropertyGroup>
 
     <MakeDir Directories="$(_WasmIntermediateOutputPath)" />
@@ -442,7 +442,7 @@
     <!-- Use a unique property, so the already run wasm targets can also run -->
     <MSBuild Projects="$(MSBuildProjectFile)"
              Targets="WasmNestedPublishApp"
-             Properties="_WasmInNestedPublish_UniqueProperty_XYZ=true;;WasmBuildingForNestedPublish=true;DeployOnBuild=;_IsPublishing=;_WasmIsPublishing=$(_IsPublishing)">
+             Properties="_WasmInNestedPublish_UniqueProperty_XYZ=true;;WasmBuildingForNestedPublish=true;DeployOnBuild=;_IsPublishing=;_WasmIsPublishing=$(_IsPublishing);ResolveAssemblyReferencesFindRelatedSatellites=true">
       <Output TaskParameter="TargetOutputs" ItemName="WasmNestedPublishAppResultItems" />
     </MSBuild>
 
@@ -621,7 +621,7 @@
 
     <Error Condition="'$(RunAOTCompilation)' == 'true' and '$(PublishTrimmed)' != 'true'"
            Text="AOT is not supported without IL trimming (PublishTrimmed=true required)." />
-    <Error Condition="'$(RunAOTCompilation)' == 'true' and '$(Configuration)' == 'Debug'"
+    <Error Condition="'$(RunAOTCompilation)' == 'true' and '$(Configuration)' == 'Debug' and '$(_WasmAllowAOTDebug)' != 'true'"
            Text="AOT is not supported in debug configuration (Configuration=Release required)." />
     <Error Condition="'@(_WasmAssembliesInternal)' == ''" Text="Item _WasmAssembliesInternal is empty" />
     <Error Condition="'$(_IsToolchainMissing)' == 'true'"
@@ -706,7 +706,7 @@
       DisableParallelAot="$(DisableParallelAot)"
       DedupAssembly="$(_WasmDedupAssembly)"
       CacheFilePath="$(_AOTCompilerCacheFile)"
-      LLVMDebug="dwarfdebug"
+      UseDwarfDebug="$(WasmNativeDebugSymbols)"
       LLVMPath="$(_WasmLLVMPathForAOT)"
       CollectTrimmingEligibleMethods="$(WasmStripILAfterAOT)"
       TrimmingEligibleMethodsOutputDirectory="$(_WasmIntermediateOutputPath)tokens"

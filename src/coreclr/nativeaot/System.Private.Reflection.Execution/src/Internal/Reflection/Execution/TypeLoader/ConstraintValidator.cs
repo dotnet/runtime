@@ -38,7 +38,7 @@ namespace Internal.Reflection.Execution
 
             if ((attributes & GenericParameterAttributes.DefaultConstructorConstraint) != 0)
             {
-                if (!typeArg.HasExplicitOrImplicitPublicDefaultConstructor())
+                if (!typeArg.HasExplicitOrImplicitPublicDefaultConstructor() || typeArg.IsAbstract)
                     return false;
             }
 

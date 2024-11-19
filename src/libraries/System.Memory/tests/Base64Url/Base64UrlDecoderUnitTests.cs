@@ -23,6 +23,7 @@ namespace System.Buffers.Text.Tests
 
                 Span<byte> source = new byte[numBytes];
                 Base64TestHelper.InitializeUrlDecodableBytes(source, numBytes);
+                source[numBytes - 1] = 65; // make sure unused bits set 0
 
                 Span<byte> decodedBytes = new byte[Base64Url.GetMaxDecodedLength(source.Length)];
                 Assert.Equal(OperationStatus.Done, Base64Url.DecodeFromUtf8(source, decodedBytes, out int consumed, out int decodedByteCount));
@@ -46,6 +47,7 @@ namespace System.Buffers.Text.Tests
 
                 Span<byte> source = new byte[numBytes];
                 Base64TestHelper.InitializeUrlDecodableBytes(source, numBytes);
+                source[numBytes - 1] = 65; // make sure unused bits set 0
 
                 Span<byte> decodedBytes = Base64Url.DecodeFromUtf8(source);
                 Assert.Equal(decodedBytes.Length, Base64Url.GetMaxDecodedLength(source.Length));
@@ -197,6 +199,7 @@ namespace System.Buffers.Text.Tests
             {
                 Span<byte> source = new byte[12];
                 Base64TestHelper.InitializeUrlDecodableBytes(source);
+                source[9] = 65; // make sure unused bits set 0
                 source[10] = Base64TestHelper.EncodingPad;
                 source[11] = Base64TestHelper.EncodingPad;
 
@@ -211,6 +214,7 @@ namespace System.Buffers.Text.Tests
             {
                 Span<byte> source = new byte[12];
                 Base64TestHelper.InitializeUrlDecodableBytes(source);
+                source[10] = 77; // make sure unused bits set 0
                 source[11] = Base64TestHelper.EncodingPad;
 
                 Span<byte> decodedBytes = new byte[7];
@@ -285,6 +289,23 @@ namespace System.Buffers.Text.Tests
 
             Assert.Equal(expectedWritten, Base64Url.DecodeFromUtf8(source, decodedBytes));
             Assert.True(Base64TestHelper.VerifyUrlDecodingCorrectness(inputString.Length, expectedWritten, source, decodedBytes));
+        }
+
+        [Theory]
+        [InlineData("AR")]
+        [InlineData("AQJ")]
+        [InlineData("AQIDBB%%")]
+        [InlineData("AQIDBAV%")]
+        [InlineData("AQIDBAUHCAkKCwwNDz")]
+        [InlineData("AQIDBAUHCAkKCwwNDxD")]
+        public void BasicDecodingWithNonZeroUnusedBits(string inputString)
+        {
+            byte[] source = Encoding.ASCII.GetBytes(inputString);
+            Span<byte> decodedBytes = new byte[Base64Url.GetMaxDecodedLength(source.Length)];
+
+            Assert.False(Base64Url.IsValid(inputString.AsSpan()));
+            Assert.Equal(OperationStatus.InvalidData, Base64Url.DecodeFromUtf8(source, decodedBytes, out int _, out int _));
+            Assert.Throws<FormatException>(() => Base64Url.DecodeFromUtf8InPlace(source));
         }
 
         [Theory]
@@ -460,7 +481,7 @@ namespace System.Buffers.Text.Tests
             // When isFinalBlock = true input that is not a multiple of 4 is invalid for Base64, but valid for Base64Url
             if (isFinalBlock)
             {
-                Span<byte> source = "2222PPP"u8.ToArray(); // incomplete input
+                Span<byte> source = "2222PPM"u8.ToArray(); // incomplete input
                 Span<byte> decodedBytes = new byte[Base64Url.GetMaxDecodedLength(source.Length)];
                 Assert.Equal(5, Base64Url.DecodeFromUtf8(source, decodedBytes));
                 Assert.True(Base64TestHelper.VerifyUrlDecodingCorrectness(7, 5, source, decodedBytes));
@@ -517,10 +538,9 @@ namespace System.Buffers.Text.Tests
 
             // The last byte or the last 2 bytes being the padding character is valid, if isFinalBlock = true
             {
-                Span<byte> source = new byte[] { 50, 50, 50, 50, 80, 80, 80, 80 };
+                Span<byte> source = new byte[] { 50, 50, 50, 50, 80, 65,
+                    Base64TestHelper.EncodingPad, Base64TestHelper.EncodingPad }; // valid input - "2222PA=="
                 Span<byte> decodedBytes = new byte[Base64Url.GetMaxDecodedLength(source.Length)];
-                source[6] = Base64TestHelper.EncodingPad;
-                source[7] = Base64TestHelper.EncodingPad; // valid input - "2222PP=="
 
                 OperationStatus expectedStatus = isFinalBlock ? OperationStatus.Done : OperationStatus.InvalidData;
                 int expectedConsumed = isFinalBlock ? source.Length : 4;
@@ -531,9 +551,9 @@ namespace System.Buffers.Text.Tests
                 Assert.Equal(expectedWritten, decodedByteCount);
                 Assert.True(Base64TestHelper.VerifyUrlDecodingCorrectness(expectedConsumed, expectedWritten, source, decodedBytes));
 
-                source = new byte[] { 50, 50, 50, 50, 80, 80, 80, 80 };
+                source = new byte[] { 50, 50, 50, 50, 80, 80, 77, 80 };
                 decodedBytes = new byte[Base64Url.GetMaxDecodedLength(source.Length)];
-                source[7] = Base64TestHelper.UrlEncodingPad; // valid input - "2222PPP="
+                source[7] = Base64TestHelper.UrlEncodingPad; // valid input - "2222PPM="
 
                 expectedConsumed = isFinalBlock ? source.Length : 4;
                 expectedWritten = isFinalBlock ? 5 : 3;
@@ -685,9 +705,8 @@ namespace System.Buffers.Text.Tests
 
             // The last byte or the last 2 bytes being the padding character is valid
             {
-                Span<byte> buffer = new byte[] { 50, 50, 50, 50, 80, 80, 80, 80 };
-                buffer[6] = Base64TestHelper.UrlEncodingPad;
-                buffer[7] = Base64TestHelper.EncodingPad; // valid input - "2222PP=="
+                Span<byte> buffer = new byte[] { 50, 50, 50, 50, 80, 65,
+                    Base64TestHelper.UrlEncodingPad, Base64TestHelper.EncodingPad }; // valid input - "2222PA=="
                 string sourceString = Encoding.ASCII.GetString(buffer.ToArray());
                 int bytesWritten = Base64Url.DecodeFromUtf8InPlace(buffer);
 
@@ -696,8 +715,7 @@ namespace System.Buffers.Text.Tests
             }
 
             {
-                Span<byte> buffer = new byte[] { 50, 50, 50, 50, 80, 80, 80, 80 };
-                buffer[7] = Base64TestHelper.EncodingPad; // valid input - "2222PPP="
+                Span<byte> buffer = new byte[] { 50, 50, 50, 50, 80, 80, 77, Base64TestHelper.EncodingPad }; // valid input - "2222PPM="
                 string sourceString = Encoding.ASCII.GetString(buffer.ToArray());
                 int bytesWritten = Base64Url.DecodeFromUtf8InPlace(buffer);
 
@@ -707,7 +725,7 @@ namespace System.Buffers.Text.Tests
 
             // The last byte or the last 2 bytes being the padding character is valid
             {
-                Span<byte> buffer = new byte[] { 50, 50, 50, 50, 80, 80 }; // valid input without padding "2222PP"
+                Span<byte> buffer = new byte[] { 50, 50, 50, 50, 80, 65 }; // valid input without padding "2222PA"
 
                 string sourceString = Encoding.ASCII.GetString(buffer.ToArray());
                 int bytesWritten = Base64Url.DecodeFromUtf8InPlace(buffer);
@@ -775,12 +793,12 @@ namespace System.Buffers.Text.Tests
         }
 
         [Theory]
-        [InlineData(new byte[] { 0xa, 0xa, 0x2d, 0x2d }, 251)]
-        [InlineData(new byte[] { 0xa, 0x5f, 0xa, 0x2d }, 255)]
-        [InlineData(new byte[] { 0x5f, 0x5f, 0xa, 0xa }, 255)]
-        [InlineData(new byte[] { 0x70, 0xa, 0x61, 0xa }, 165)]
-        [InlineData(new byte[] { 0xa, 0x70, 0xa, 0x61, 0xa }, 165)]
-        [InlineData(new byte[] { 0x70, 0xa, 0x61, 0xa, 0x3d, 0x3d }, 165)]
+        [InlineData(new byte[] { 0xa, 0xa, 0x2d, 0x77 }, 251)]
+        [InlineData(new byte[] { 0xa, 0x5f, 0xa, 0x77 }, 255)]
+        [InlineData(new byte[] { 0x5f, 0x77, 0xa, 0xa }, 255)]
+        [InlineData(new byte[] { 0x70, 0xa, 0x51, 0xa }, 165)]
+        [InlineData(new byte[] { 0xa, 0x70, 0xa, 0x51, 0xa }, 165)]
+        [InlineData(new byte[] { 0x70, 0xa, 0x51, 0xa, 0x3d, 0x3d }, 165)]
         public void DecodingLessThan4BytesWithWhiteSpaces(byte[] utf8Bytes, byte decoded)
         {
             Assert.True(Base64Url.IsValid(utf8Bytes, out int decodedLength));
@@ -802,12 +820,12 @@ namespace System.Buffers.Text.Tests
         }
 
         [Theory]
-        [InlineData(new char[] { '\r', '\r', '-', '-' }, 251)]
-        [InlineData(new char[] { '\r', '_', '\r', '-' }, 255)]
-        [InlineData(new char[] { '_', '_', '\r', '\r' }, 255)]
-        [InlineData(new char[] { 'p', '\r', 'a', '\r' }, 165)]
-        [InlineData(new char[] { '\r', 'p', '\r', 'a', '\r' }, 165)]
-        [InlineData(new char[] { 'p', '\r', 'a', '\r', '=', '=' }, 165)]
+        [InlineData(new char[] { '\r', '\r', '-', 'w' }, 251)]
+        [InlineData(new char[] { '\r', '_', '\r', 'w' }, 255)]
+        [InlineData(new char[] { '_', 'w', '\r', '\r' }, 255)]
+        [InlineData(new char[] { 'p', '\r', 'Q', '\r' }, 165)]
+        [InlineData(new char[] { '\r', 'p', '\r', 'Q', '\r' }, 165)]
+        [InlineData(new char[] { 'p', '\r', 'Q', '\r', '=', '=' }, 165)]
         public void DecodingLessThan4CharsWithWhiteSpaces(char[] utf8Bytes, byte decoded)
         {
             Assert.True(Base64Url.IsValid(utf8Bytes, out int decodedLength));
@@ -825,8 +843,8 @@ namespace System.Buffers.Text.Tests
         }
 
         [Theory]
-        [InlineData(new byte[] { 0x4a, 0x74, 0xa, 0x4a, 0x4a, 0x74, 0xa, 0x4a }, new byte[] { 38, 210, 73, 180 })]
-        [InlineData(new byte[] { 0xa, 0x2d, 0x56, 0xa, 0xa, 0xa, 0x2d, 0x4a, 0x4a, 0x4a, }, new byte[] { 249, 95, 137, 36 })]
+        [InlineData(new byte[] { 0x4a, 0x74, 0xa, 0x4a, 0x4a, 0x74, 0xa, 0x41 }, new byte[] { 38, 210, 73, 180 })]
+        [InlineData(new byte[] { 0xa, 0x2d, 0x56, 0xa, 0xa, 0xa, 0x2d, 0x4a, 0x4a, 0x41, }, new byte[] { 249, 95, 137, 36 })]
         public void DecodingNotMultipleOf4WithWhiteSpace(byte[] utf8Bytes, byte[] decoded)
         {
             Assert.True(Base64Url.IsValid(utf8Bytes, out int decodedLength));
@@ -847,8 +865,8 @@ namespace System.Buffers.Text.Tests
         }
 
         [Theory]
-        [InlineData(new char[] { 'J', 't', '\r', 'J', 'J', 't', '\r', 'J' }, new byte[] { 38, 210, 73, 180 })]
-        [InlineData(new char[] { '\r', '-', 'V', '\r', '\r', '\r', '-', 'J', 'J', 'J', }, new byte[] { 249, 95, 137, 36 })]
+        [InlineData(new char[] { 'J', 't', '\r', 'J', 'J', 't', '\r', 'A' }, new byte[] { 38, 210, 73, 180 })]
+        [InlineData(new char[] { '\r', '-', 'V', '\r', '\r', '\r', '-', 'J', 'J', 'A', }, new byte[] { 249, 95, 137, 36 })]
         public void DecodingNotMultipleOf4CharsWithWhiteSpace(char[] utf8Bytes, byte[] decoded)
         {
             Assert.True(Base64Url.IsValid(utf8Bytes, out int decodedLength));

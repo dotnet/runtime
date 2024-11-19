@@ -2397,7 +2397,7 @@ namespace System
 
             ArgumentOutOfRangeException.ThrowIfGreaterThan(offsetIn, inArrayLength - length);
 
-            if (inArrayLength == 0)
+            if (length == 0)
                 return 0;
 
             // This is the maximally required length that must be available in the char array
@@ -2798,7 +2798,7 @@ namespace System
             ArgumentOutOfRangeException.ThrowIfNegative(offset);
             ArgumentOutOfRangeException.ThrowIfGreaterThan(offset, inArray.Length - length);
 
-            if (inArray.Length == 0)
+            if (length == 0)
             {
                 return Array.Empty<byte>();
             }
@@ -2999,7 +2999,7 @@ namespace System
                 return remainder == 1 ? OperationStatus.NeedMoreData : OperationStatus.Done;
             }
 
-            var result = OperationStatus.Done;
+            OperationStatus result;
 
             if (destination.Length < quotient)
             {
@@ -3007,11 +3007,19 @@ namespace System
                 quotient = destination.Length;
                 result = OperationStatus.DestinationTooSmall;
             }
-            else if (remainder == 1)
+            else
             {
-                source = source.Slice(0, source.Length - 1);
-                destination = destination.Slice(0, destination.Length - 1);
-                result = OperationStatus.NeedMoreData;
+                if (remainder == 1)
+                {
+                    source = source.Slice(0, source.Length - 1);
+                    result = OperationStatus.NeedMoreData;
+                }
+                else
+                {
+                    result = OperationStatus.Done;
+                }
+
+                destination = destination.Slice(0, quotient);
             }
 
             if (!HexConverter.TryDecodeFromUtf16(source, destination, out charsConsumed))

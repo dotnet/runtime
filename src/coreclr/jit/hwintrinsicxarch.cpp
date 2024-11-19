@@ -38,24 +38,14 @@ static CORINFO_InstructionSet X64VersionOfIsa(CORINFO_InstructionSet isa)
             return InstructionSet_AVX2_X64;
         case InstructionSet_AVX512BW:
             return InstructionSet_AVX512BW_X64;
-        case InstructionSet_AVX512BW_VL:
-            return InstructionSet_AVX512BW_VL_X64;
         case InstructionSet_AVX512CD:
             return InstructionSet_AVX512CD_X64;
-        case InstructionSet_AVX512CD_VL:
-            return InstructionSet_AVX512CD_VL_X64;
         case InstructionSet_AVX512DQ:
             return InstructionSet_AVX512DQ_X64;
-        case InstructionSet_AVX512DQ_VL:
-            return InstructionSet_AVX512DQ_VL_X64;
         case InstructionSet_AVX512F:
             return InstructionSet_AVX512F_X64;
-        case InstructionSet_AVX512F_VL:
-            return InstructionSet_AVX512F_VL_X64;
         case InstructionSet_AVX512VBMI:
             return InstructionSet_AVX512VBMI_X64;
-        case InstructionSet_AVX512VBMI_VL:
-            return InstructionSet_AVX512VBMI_VL_X64;
         case InstructionSet_AVX10v1:
             return InstructionSet_AVX10v1_X64;
         case InstructionSet_AVX10v1_V512:
@@ -126,6 +116,8 @@ static CORINFO_InstructionSet V512VersionOfIsa(CORINFO_InstructionSet isa)
     {
         case InstructionSet_AVX10v1:
             return InstructionSet_AVX10v1_V512;
+        case InstructionSet_AVX10v1_X64:
+            return InstructionSet_AVX10v1_V512_X64;
         default:
             return InstructionSet_NONE;
     }
@@ -313,15 +305,18 @@ static CORINFO_InstructionSet lookupInstructionSet(const char* className)
 //
 // Arguments:
 //    className -- The name of the class associated with the InstructionSet to lookup
-//    enclosingClassName -- The name of the enclosing class of X64 classes
+//    innerEnclosingClassName -- The name of the inner enclosing class of X64 classes
+//    outerEnclosingClassName -- The name of the outer enclosing class of X64 classes
 //
 // Return Value:
 //    The InstructionSet associated with className and enclosingClassName
-CORINFO_InstructionSet HWIntrinsicInfo::lookupIsa(const char* className, const char* enclosingClassName)
+CORINFO_InstructionSet HWIntrinsicInfo::lookupIsa(const char* className,
+                                                  const char* innerEnclosingClassName,
+                                                  const char* outerEnclosingClassName)
 {
     assert(className != nullptr);
 
-    if (enclosingClassName == nullptr)
+    if (innerEnclosingClassName == nullptr)
     {
         // No nested class is the most common, so fast path it
         return lookupInstructionSet(className);
@@ -331,7 +326,7 @@ CORINFO_InstructionSet HWIntrinsicInfo::lookupIsa(const char* className, const c
     // or intrinsics in the platform specific namespace, we assume
     // that it will be one we can handle and don't try to early out.
 
-    CORINFO_InstructionSet enclosingIsa = lookupInstructionSet(enclosingClassName);
+    CORINFO_InstructionSet enclosingIsa = lookupIsa(innerEnclosingClassName, outerEnclosingClassName, nullptr);
 
     if (className[0] == 'V')
     {
@@ -827,23 +822,18 @@ bool HWIntrinsicInfo::isFullyImplementedIsa(CORINFO_InstructionSet isa)
         case InstructionSet_AVX2_X64:
         case InstructionSet_AVX512F:
         case InstructionSet_AVX512F_VL:
-        case InstructionSet_AVX512F_VL_X64:
         case InstructionSet_AVX512F_X64:
         case InstructionSet_AVX512BW:
         case InstructionSet_AVX512BW_VL:
-        case InstructionSet_AVX512BW_VL_X64:
         case InstructionSet_AVX512BW_X64:
         case InstructionSet_AVX512CD:
         case InstructionSet_AVX512CD_VL:
-        case InstructionSet_AVX512CD_VL_X64:
         case InstructionSet_AVX512CD_X64:
         case InstructionSet_AVX512DQ:
         case InstructionSet_AVX512DQ_VL:
-        case InstructionSet_AVX512DQ_VL_X64:
         case InstructionSet_AVX512DQ_X64:
         case InstructionSet_AVX512VBMI:
         case InstructionSet_AVX512VBMI_VL:
-        case InstructionSet_AVX512VBMI_VL_X64:
         case InstructionSet_AVX512VBMI_X64:
         case InstructionSet_AVXVNNI:
         case InstructionSet_AVXVNNI_X64:
@@ -879,7 +869,9 @@ bool HWIntrinsicInfo::isFullyImplementedIsa(CORINFO_InstructionSet isa)
         case InstructionSet_X86Serialize:
         case InstructionSet_X86Serialize_X64:
         case InstructionSet_AVX10v1:
+        case InstructionSet_AVX10v1_X64:
         case InstructionSet_AVX10v1_V512:
+        case InstructionSet_AVX10v1_V512_X64:
         case InstructionSet_EVEX:
         {
             return true;
@@ -1264,8 +1256,7 @@ GenTree* Compiler::impNonConstFallback(NamedIntrinsic intrinsic, var_types simdT
         {
             // These intrinsics have overloads that take op2 in a simd register and just read the lowest 8-bits
 
-            impSpillSideEffect(true,
-                               verCurrentState.esStackDepth - 2 DEBUGARG("Spilling op1 side effects for HWIntrinsic"));
+            impSpillSideEffect(true, stackState.esStackDepth - 2 DEBUGARG("Spilling op1 side effects for HWIntrinsic"));
 
             GenTree* op2 = impPopStack().val;
             GenTree* op1 = impSIMDPopStack();
@@ -1293,8 +1284,7 @@ GenTree* Compiler::impNonConstFallback(NamedIntrinsic intrinsic, var_types simdT
             static_assert_no_msg(NI_AVX10v1_RotateLeftVariable == (NI_AVX10v1_RotateLeft + 1));
             static_assert_no_msg(NI_AVX10v1_RotateRightVariable == (NI_AVX10v1_RotateRight + 1));
 
-            impSpillSideEffect(true,
-                               verCurrentState.esStackDepth - 2 DEBUGARG("Spilling op1 side effects for HWIntrinsic"));
+            impSpillSideEffect(true, stackState.esStackDepth - 2 DEBUGARG("Spilling op1 side effects for HWIntrinsic"));
 
             GenTree* op2 = impPopStack().val;
             GenTree* op1 = impSIMDPopStack();
@@ -2331,16 +2321,19 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                     }
                 }
 
-                if (varTypeIsLong(simdBaseType) && !impStackTop(0).val->OperIsConst())
+                if (varTypeIsLong(simdBaseType))
                 {
-                    // When op2 is a constant, we can skip the multiplication allowing us to always
-                    // generate better code. However, if it isn't then we need to fallback in the
-                    // cases where multiplication isn't supported.
-
-                    if ((simdSize != 64) && !canUseEvexEncoding())
+                    if (!impStackTop(0).val->OperIsConst())
                     {
-                        // TODO-XARCH-CQ: We should support long/ulong multiplication
-                        break;
+                        // When op2 is a constant, we can skip the multiplication allowing us to always
+                        // generate better code. However, if it isn't then we need to fallback in the
+                        // cases where multiplication isn't supported.
+
+                        if ((simdSize != 64) && !canUseEvexEncoding())
+                        {
+                            // TODO-XARCH-CQ: We should support long/ulong multiplication
+                            break;
+                        }
                     }
 
 #if defined(TARGET_X86)
@@ -2350,8 +2343,8 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 }
             }
 
-            impSpillSideEffect(true, verCurrentState.esStackDepth -
-                                         2 DEBUGARG("Spilling op1 side effects for SimdAsHWIntrinsic"));
+            impSpillSideEffect(true, stackState.esStackDepth -
+                                         2 DEBUGARG("Spilling op1 side effects for vector CreateSequence"));
 
             op2 = impPopStack().val;
             op1 = impPopStack().val;
@@ -3240,6 +3233,38 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 break;
             }
 
+            if ((simdSize == 32) && !varTypeIsFloating(simdBaseType) &&
+                !compOpportunisticallyDependsOn(InstructionSet_AVX2))
+            {
+                // We can't deal with TYP_SIMD32 for integral types if the compiler doesn't support AVX2
+                break;
+            }
+
+            assert(simdSize != 64 || IsBaselineVector512IsaSupportedDebugOnly());
+
+            if (varTypeIsLong(simdBaseType))
+            {
+                if (TARGET_POINTER_SIZE == 4)
+                {
+                    // TODO-XARCH-CQ: 32bit support
+                    break;
+                }
+
+                if ((simdSize == 32) && compOpportunisticallyDependsOn(InstructionSet_AVX2))
+                {
+                    // Emulate NI_AVX512DQ_VL_MultiplyLow with AVX2 for SIMD32
+                }
+                else if ((simdSize == 16) && compOpportunisticallyDependsOn(InstructionSet_SSE41))
+                {
+                    // Emulate NI_AVX512DQ_VL_MultiplyLow with SSE41 for SIMD16
+                }
+                else
+                {
+                    // Software fallback
+                    break;
+                }
+            }
+
             op3 = impSIMDPopStack();
             op2 = impSIMDPopStack();
             op1 = impSIMDPopStack();
@@ -3366,12 +3391,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector512_op_LeftShift:
         {
             assert(sig->numArgs == 2);
-
-            if (varTypeIsByte(simdBaseType))
-            {
-                // byte and sbyte would require more work to support
-                break;
-            }
 
             if ((simdSize != 32) || compOpportunisticallyDependsOn(InstructionSet_AVX2))
             {
@@ -3544,8 +3563,8 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             if (sig->numArgs == 3)
             {
-                impSpillSideEffect(true, verCurrentState.esStackDepth -
-                                             3 DEBUGARG("Spilling op1 side effects for HWIntrinsic"));
+                impSpillSideEffect(true,
+                                   stackState.esStackDepth - 3 DEBUGARG("Spilling op1 side effects for HWIntrinsic"));
 
                 op3 = impPopStack().val;
             }
@@ -3553,8 +3572,8 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             {
                 assert(sig->numArgs == 2);
 
-                impSpillSideEffect(true, verCurrentState.esStackDepth -
-                                             2 DEBUGARG("Spilling op1 side effects for HWIntrinsic"));
+                impSpillSideEffect(true,
+                                   stackState.esStackDepth - 2 DEBUGARG("Spilling op1 side effects for HWIntrinsic"));
             }
 
             op2 = impPopStack().val;
@@ -3587,8 +3606,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             var_types simdType = getSIMDTypeForSize(simdSize);
 
-            impSpillSideEffect(true,
-                               verCurrentState.esStackDepth - 2 DEBUGARG("Spilling op1 side effects for HWIntrinsic"));
+            impSpillSideEffect(true, stackState.esStackDepth - 2 DEBUGARG("Spilling op1 side effects for HWIntrinsic"));
 
             op2 = impPopStack().val;
 
@@ -3613,8 +3631,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             var_types simdType = getSIMDTypeForSize(simdSize);
 
-            impSpillSideEffect(true,
-                               verCurrentState.esStackDepth - 2 DEBUGARG("Spilling op1 side effects for HWIntrinsic"));
+            impSpillSideEffect(true, stackState.esStackDepth - 2 DEBUGARG("Spilling op1 side effects for HWIntrinsic"));
 
             op2 = impPopStack().val;
 
@@ -3977,8 +3994,8 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             if (!supportsAvx)
             {
-                impSpillSideEffect(true, verCurrentState.esStackDepth -
-                                             2 DEBUGARG("Spilling op1 side effects for HWIntrinsic"));
+                impSpillSideEffect(true,
+                                   stackState.esStackDepth - 2 DEBUGARG("Spilling op1 side effects for HWIntrinsic"));
             }
 
             op2             = impSIMDPopStack();
@@ -4069,8 +4086,8 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             if (!supportsAvx)
             {
-                impSpillSideEffect(true, verCurrentState.esStackDepth -
-                                             2 DEBUGARG("Spilling op1 side effects for HWIntrinsic"));
+                impSpillSideEffect(true,
+                                   stackState.esStackDepth - 2 DEBUGARG("Spilling op1 side effects for HWIntrinsic"));
             }
 
             op2 = impSIMDPopStack();
@@ -4176,8 +4193,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         {
             simdBaseJitType = getBaseJitTypeOfSIMDType(sig->retTypeSigClass);
 
-            impSpillSideEffect(true,
-                               verCurrentState.esStackDepth - 2 DEBUGARG("Spilling op1 side effects for HWIntrinsic"));
+            impSpillSideEffect(true, stackState.esStackDepth - 2 DEBUGARG("Spilling op1 side effects for HWIntrinsic"));
 
             // swap the two operands
             GenTree* idxVector = impSIMDPopStack();
@@ -4432,13 +4448,13 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
                     if (spillOp1)
                     {
-                        impSpillSideEffect(true, verCurrentState.esStackDepth -
+                        impSpillSideEffect(true, stackState.esStackDepth -
                                                      3 DEBUGARG("Spilling op1 side effects for HWIntrinsic"));
                     }
 
                     if (spillOp2)
                     {
-                        impSpillSideEffect(true, verCurrentState.esStackDepth -
+                        impSpillSideEffect(true, stackState.esStackDepth -
                                                      2 DEBUGARG("Spilling op2 side effects for HWIntrinsic"));
                     }
 
@@ -4793,7 +4809,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             int immUpperBound = HWIntrinsicInfo::lookupImmUpperBound(intrinsic);
 
             op3 = impPopStack().val;
-            op3 = addRangeCheckIfNeeded(intrinsic, op3, mustExpand, immLowerBound, immUpperBound);
+            op3 = addRangeCheckIfNeeded(intrinsic, op3, immLowerBound, immUpperBound);
             op2 = impSIMDPopStack();
             op1 = impSIMDPopStack();
 
@@ -5051,6 +5067,8 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 2);
 
+            impSpillSideEffect(true, stackState.esStackDepth - 2 DEBUGARG("Spilling op1 for ZeroHighBits"));
+
             GenTree* op2 = impPopStack().val;
             GenTree* op1 = impPopStack().val;
             // Instruction BZHI requires to encode op2 (3rd register) in VEX.vvvv and op1 maybe memory operand,
@@ -5067,6 +5085,8 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 return nullptr;
             }
             assert(sig->numArgs == 2);
+
+            impSpillSideEffect(true, stackState.esStackDepth - 2 DEBUGARG("Spilling op1 for BitFieldExtract"));
 
             GenTree* op2 = impPopStack().val;
             GenTree* op1 = impPopStack().val;

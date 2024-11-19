@@ -58,14 +58,22 @@ namespace ILCompiler
 
             var libraryInitializers = new LibraryInitializers(context, assembliesWithInitializers);
 
-            return libraryInitializers.LibraryInitializerMethods;
+            IReadOnlyCollection<MethodDesc> result = libraryInitializers.LibraryInitializerMethods;
+
+            if (Get(_command.InstrumentReachability))
+            {
+                List<MethodDesc> instrumentedResult = new List<MethodDesc>(result);
+                instrumentedResult.Add(ReachabilityInstrumentationProvider.CreateInitializerMethod(context));
+                result = instrumentedResult;
+            }
+            return result;
         }
 
         public int Run()
         {
             string outputFilePath = Get(_command.OutputFilePath);
             if (outputFilePath == null)
-                throw new CommandLineException("Output filename must be specified (/out <file>)");
+                throw new CommandLineException("Output filename must be specified (--out <file>)");
 
             var suppressedWarningCategories = new List<string>();
             if (Get(_command.NoTrimWarn))
@@ -377,11 +385,16 @@ namespace ILCompiler
                         logger, typeSystemContext, XmlReader.Create(fs), substitutionFilePath, featureSwitches));
             }
 
+            CompilerGeneratedState compilerGeneratedState = new CompilerGeneratedState(ilProvider, logger);
+
+            if (Get(_command.UseReachability) is string reachabilityInstrumentationFileName)
+            {
+                ilProvider = new ReachabilityInstrumentationFilter(reachabilityInstrumentationFileName, ilProvider);
+            }
+
             SubstitutionProvider substitutionProvider = new SubstitutionProvider(logger, featureSwitches, substitutions);
             ILProvider unsubstitutedILProvider = ilProvider;
             ilProvider = new SubstitutedILProvider(ilProvider, substitutionProvider, new DevirtualizationManager());
-
-            CompilerGeneratedState compilerGeneratedState = new CompilerGeneratedState(ilProvider, logger);
 
             var stackTracePolicy = Get(_command.EmitStackTraceData) ?
                 (StackTraceEmissionPolicy)new EcmaMethodStackTraceEmissionPolicy() : new NoStackTraceEmissionPolicy();
@@ -499,7 +512,7 @@ namespace ILCompiler
 
                 interopStubManager = scanResults.GetInteropStubManager(interopStateManager, pinvokePolicy);
 
-                ilProvider = new SubstitutedILProvider(unsubstitutedILProvider, substitutionProvider, devirtualizationManager);
+                ilProvider = new SubstitutedILProvider(unsubstitutedILProvider, substitutionProvider, devirtualizationManager, metadataManager);
 
                 // Use a more precise IL provider that uses whole program analysis for dead branch elimination
                 builder.UseILProvider(ilProvider);
@@ -546,6 +559,14 @@ namespace ILCompiler
                 {
                     builder.UseInlinedThreadStatics(scanResults.GetInlinedThreadStatics());
                 }
+            }
+
+            if (Get(_command.InstrumentReachability))
+            {
+                ReachabilityInstrumentationProvider reachabilityProvider = new ReachabilityInstrumentationProvider(ilProvider);
+                ilProvider = reachabilityProvider;
+                builder.UseILProvider(ilProvider);
+                compilationRoots.Add(reachabilityProvider);
             }
 
             string ilDump = Get(_command.IlDump);

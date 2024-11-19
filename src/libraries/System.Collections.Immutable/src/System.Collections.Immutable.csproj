@@ -11,7 +11,6 @@ The System.Collections.Immutable library is built-in as part of the shared frame
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="Properties\InternalsVisibleTo.cs" />
     <Compile Include="System\Polyfills.cs" />
     <Compile Include="System\Collections\ThrowHelper.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Collections\HashHelpers.cs" Link="System\Collections\HashHelpers.cs" />
@@ -68,18 +67,13 @@ The System.Collections.Immutable library is built-in as part of the shared frame
     <Compile Include="System\Collections\Frozen\String\OrdinalStringFrozenSet_RightJustifiedSubstring.cs" />
     <Compile Include="System\Collections\Frozen\String\OrdinalStringFrozenSet_RightJustifiedSingleChar.cs" />
 
-    <Compile Include="System\Collections\Generic\IHashKeyCollection.cs" />
-    <Compile Include="System\Collections\Generic\ISortKeyCollection.cs" />
-
     <Compile Include="System\Collections\Immutable\AllocFreeConcurrentStack.cs" />
     <Compile Include="System\Collections\Immutable\DictionaryEnumerator.cs" />
     <Compile Include="System\Collections\Immutable\DisposableEnumeratorAdapter_2.cs" />
-    <Compile Include="System\Collections\Immutable\IBinaryTree.cs" />
     <Compile Include="System\Collections\Immutable\IImmutableArray.cs" />
     <Compile Include="System\Collections\Immutable\IImmutableDictionary.cs" />
     <Compile Include="System\Collections\Immutable\IImmutableDictionaryInternal.cs" />
     <Compile Include="System\Collections\Immutable\IImmutableList.cs" />
-    <Compile Include="System\Collections\Immutable\IImmutableListQueries.cs" />
     <Compile Include="System\Collections\Immutable\IImmutableQueue.cs" />
     <Compile Include="System\Collections\Immutable\IImmutableSet.cs" />
     <Compile Include="System\Collections\Immutable\IImmutableStack.cs" />
@@ -87,7 +81,6 @@ The System.Collections.Immutable library is built-in as part of the shared frame
     <Compile Include="System\Collections\Immutable\ImmutableHashSet_1.HashBucketByRefEqualityComparer.cs" />
     <Compile Include="System\Collections\Immutable\IStrongEnumerable_2.cs" />
     <Compile Include="System\Collections\Immutable\IStrongEnumerator_1.cs" />
-    <Compile Include="System\Collections\Immutable\IOrderedCollection.cs" />
     <Compile Include="System\Collections\Immutable\ImmutableArray.cs" />
     <Compile Include="System\Collections\Immutable\ImmutableArray_1.Builder.cs" />
     <Compile Include="System\Collections\Immutable\ImmutableArray_1.Builder.DebuggerProxy.cs" />
@@ -161,6 +154,10 @@ The System.Collections.Immutable library is built-in as part of the shared frame
     <Compile Include="System\Collections\Frozen\String\LengthBucketsFrozenSet.AlternateLookup.cs" />
     <Compile Include="System\Collections\Frozen\String\OrdinalStringFrozenDictionary.AlternateLookup.cs" />
     <Compile Include="System\Collections\Frozen\String\OrdinalStringFrozenSet.AlternateLookup.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net9.0'))">
+    <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\OverloadResolutionPriorityAttribute.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">

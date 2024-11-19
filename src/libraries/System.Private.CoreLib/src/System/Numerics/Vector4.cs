@@ -369,6 +369,7 @@ namespace System.Numerics
 
         /// <summary>Constructs a vector from the given <see cref="ReadOnlySpan{Single}" />. The span must contain at least 4 elements.</summary>
         /// <param name="values">The span of elements to assign to the vector.</param>
+        /// <returns>A new <see cref="Vector4" /> whose elements have the specified values.</returns>
         [Intrinsic]
         public static Vector4 Create(ReadOnlySpan<float> values) => Vector128.Create(values).AsVector4();
 
@@ -723,14 +724,14 @@ namespace System.Numerics
 
         /// <summary>Returns the length of this vector object.</summary>
         /// <returns>The vector's length.</returns>
-        /// <altmember cref="LengthSquared"/>
+        /// <altmember cref="LengthSquared" />
         [Intrinsic]
         public readonly float Length() => float.Sqrt(LengthSquared());
 
         /// <summary>Returns the length of the vector squared.</summary>
         /// <returns>The vector's length squared.</returns>
         /// <remarks>This operation offers better performance than a call to the <see cref="Length" /> method.</remarks>
-        /// <altmember cref="Length"/>
+        /// <altmember cref="Length" />
         [Intrinsic]
         public readonly float LengthSquared() => Dot(this, this);
 

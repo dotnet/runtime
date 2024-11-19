@@ -22,6 +22,15 @@ namespace System.Security.Cryptography.X509Certificates
         private const int NTE_FAIL = unchecked((int)0x80090020);
 #endif
 
+#pragma warning disable CA1805
+        private static readonly AttributeAsn? s_syntheticKspAttribute =
+#if NET
+            null;
+#else
+            BuildSyntheticKspAttribute();
+#endif
+#pragma warning restore CA1805
+
         static partial void LoadPkcs12NoLimits(
             ReadOnlyMemory<byte> data,
             ReadOnlySpan<char> password,
@@ -366,6 +375,13 @@ namespace System.Security.Cryptography.X509Certificates
                                 });
                     }
 
+                    if (!loaderLimits.PreserveStorageProvider && s_syntheticKspAttribute.HasValue)
+                    {
+                        int newCount = (bag.BagAttributes?.Length).GetValueOrDefault(0) + 1;
+                        Array.Resize(ref bag.BagAttributes, newCount);
+                        bag.BagAttributes[newCount - 1] = s_syntheticKspAttribute.GetValueOrDefault();
+                    }
+
                     bagState.AddKey(bag);
                 }
             }
@@ -551,6 +567,20 @@ namespace System.Security.Cryptography.X509Certificates
                 }
             }
         }
+
+#if !NET
+        private static AttributeAsn? BuildSyntheticKspAttribute()
+        {
+            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+            writer.WriteCharacterString(UniversalTagNumber.BMPString, "Microsoft Software Key Storage Provider");
+
+            return new AttributeAsn
+            {
+                AttrType = Oids.MsPkcs12KeyProviderName,
+                AttrValues = new[] { new ReadOnlyMemory<byte>(writer.Encode()) }
+            };
+        }
+#endif
 
         private readonly partial struct Pkcs12Return
         {

@@ -22,7 +22,10 @@ namespace ILCompiler
             if (owningType.IsIntrinsic && !owningType.HasInstantiation)
             {
                 var owningMdType = (MetadataType)owningType;
-                string ns = owningMdType.ContainingType?.Namespace ?? owningMdType.Namespace;
+                DefType containingType = owningMdType.ContainingType;
+                string ns = containingType?.ContainingType?.Namespace ??
+                            containingType?.Namespace ??
+                            owningMdType.Namespace;
                 return method.Context.Target.Architecture switch
                 {
                     TargetArchitecture.ARM64 => ns == "System.Runtime.Intrinsics.Arm",
@@ -75,6 +78,7 @@ namespace ILCompiler
             public const int Serialize = 0x20000;
             public const int Avx10v1 = 0x40000;
             public const int Evex = 0x80000;
+            public const int Apx = 0x100000;
 
             public static void AddToBuilder(InstructionSetSupportBuilder builder, int flags)
             {
@@ -132,6 +136,8 @@ namespace ILCompiler
                     builder.AddSupportedInstructionSet("avx10v1_v512");
                 if ((flags & Evex) != 0)
                     builder.AddSupportedInstructionSet("evex");
+                if ((flags & Apx) != 0)
+                    builder.AddSupportedInstructionSet("apx");
             }
 
             public static int FromInstructionSet(InstructionSet instructionSet)
@@ -176,23 +182,18 @@ namespace ILCompiler
                     InstructionSet.X64_AVX512F => Avx512,
                     InstructionSet.X64_AVX512F_X64 => Avx512,
                     InstructionSet.X64_AVX512F_VL => Avx512,
-                    InstructionSet.X64_AVX512F_VL_X64 => Avx512,
                     InstructionSet.X64_AVX512BW => Avx512,
                     InstructionSet.X64_AVX512BW_X64 => Avx512,
                     InstructionSet.X64_AVX512BW_VL => Avx512,
-                    InstructionSet.X64_AVX512BW_VL_X64 => Avx512,
                     InstructionSet.X64_AVX512CD => Avx512,
                     InstructionSet.X64_AVX512CD_X64 => Avx512,
                     InstructionSet.X64_AVX512CD_VL => Avx512,
-                    InstructionSet.X64_AVX512CD_VL_X64 => Avx512,
                     InstructionSet.X64_AVX512DQ => Avx512,
                     InstructionSet.X64_AVX512DQ_X64 => Avx512,
                     InstructionSet.X64_AVX512DQ_VL => Avx512,
-                    InstructionSet.X64_AVX512DQ_VL_X64 => Avx512,
                     InstructionSet.X64_AVX512VBMI => Avx512Vbmi,
                     InstructionSet.X64_AVX512VBMI_X64 => Avx512Vbmi,
                     InstructionSet.X64_AVX512VBMI_VL => Avx512Vbmi,
-                    InstructionSet.X64_AVX512VBMI_VL_X64 => Avx512Vbmi,
                     InstructionSet.X64_X86Serialize => Serialize,
                     InstructionSet.X64_X86Serialize_X64 => Serialize,
                     InstructionSet.X64_AVX10v1 => Avx10v1,
@@ -201,6 +202,8 @@ namespace ILCompiler
                     InstructionSet.X64_AVX10v1_V512_X64 => (Avx10v1 | Avx512),
                     InstructionSet.X64_EVEX => Evex,
                     InstructionSet.X64_EVEX_X64 => Evex,
+                    InstructionSet.X64_APX => Apx,
+                    InstructionSet.X64_APX_X64 => Apx,
 
                     // Baseline ISAs - they're always available
                     InstructionSet.X64_SSE => 0,

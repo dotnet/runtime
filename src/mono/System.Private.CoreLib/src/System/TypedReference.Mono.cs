@@ -16,10 +16,15 @@ namespace System
         #pragma warning restore CA1823
         #endregion
 
-        public static unsafe object? ToObject(TypedReference value)
+        private TypedReference(ref byte target, RuntimeType targetType)
         {
-            return InternalToObject(&value);
+            type = new RuntimeTypeHandle(targetType);
+            _value = ref target;
+            _type = RuntimeTypeHandle.GetMonoClass(targetType);
         }
+
+        public static unsafe object? ToObject(TypedReference value)
+            => InternalToObject(&value);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern unsafe object InternalToObject(void* value);

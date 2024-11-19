@@ -4,15 +4,8 @@
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppPrevious);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants>$(DefineConstants);CP_NO_ZEROMEMORY</DefineConstants>
-    <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
     <IsPackable>true</IsPackable>
-    <PackageDescription>Provides classes that can read and write the ASN.1 BER, CER, and DER data formats.
-
-Commonly Used Types:
-System.Formats.Asn1.AsnReader
-System.Formats.Asn1.AsnWriter</PackageDescription>
-    <!-- TODO: Add package README file: https://github.com/dotnet/runtime/issues/99358 -->
-    <EnableDefaultPackageReadmeFile>false</EnableDefaultPackageReadmeFile>
+    <PackageDescription>Provides classes that can read and write the ASN.1 BER, CER, and DER data formats.</PackageDescription>
   </PropertyGroup>
 
   <ItemGroup>
@@ -70,7 +63,6 @@ System.Formats.Asn1.AsnWriter</PackageDescription>
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
-    <PackageReference Include="System.Buffers" Version="$(SystemBuffersVersion)" />
     <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
   </ItemGroup>
 

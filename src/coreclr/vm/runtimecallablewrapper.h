@@ -62,7 +62,6 @@
 #include "vars.hpp"
 #include "spinlock.h"
 #include "interoputil.h"
-#include "mngstdinterfaces.h"
 #include "excep.h"
 #include "comcache.h"
 #include "threads.h"
@@ -124,7 +123,7 @@ struct RCW
 
             if (m_InlineCacheIndex >= INTERFACE_ENTRY_CACHE_SIZE)
                 return FALSE;
-    
+
             // stop incrementing m_InlineCacheIndex once we reach INTERFACE_ENTRY_CACHE_SIZE
             if (++m_InlineCacheIndex < INTERFACE_ENTRY_CACHE_SIZE)
                 return TRUE;
@@ -175,9 +174,8 @@ struct RCW
     enum MarshalingType
      {
          MarshalingType_Unknown = 0,      /* The MarshalingType has not been set*/
-         MarshalingType_Inhibit = 1,      /* This value is same as the MarshalingType.Inhibit*/
-         MarshalingType_FreeThreaded = 2, /* This value is same as the MarshalingType.FreeThreaded*/
-         MarshalingType_Standard = 3      /* This value is same as the MarshalingType.Standard*/
+         MarshalingType_Inhibit = 1,      /* Type implements INoMarshal */
+         MarshalingType_FreeThreaded = 2, /* Type aggregates the FreeThreaded marshaller */
      };
 
     //-------------------------------------------------
@@ -452,12 +450,6 @@ struct RCW
         return CachedInterfaceEntryIterator(dac_cast<PTR_RCW>(this));
     }
 
-    //---------------------------------------------------------------------
-    // Returns true iff pItfMT is a "standard managed" interface, such as
-    // IEnumerator, and the RCW supports the interface through classic COM
-    // interop mechanisms.
-    bool SupportsMngStdInterface(MethodTable *pItfMT);
-
 #ifdef _DEBUG
     // Does not throw if m_UnkEntry.m_pUnknown is no longer valid, debug only.
     IUnknown *GetRawIUnknown_NoAddRef_NoThrow()
@@ -564,8 +556,8 @@ public:
             static_assert((1 << 3) >= GCPressureSize_COUNT, "m_GCPressure needs a bigger data type");
             DWORD       m_GCPressure:3;            // index into s_rGCPressureTable
 
-            // Reserve 2 bits for marshaling behavior
-            DWORD       m_MarshalingType:2;        // MarshalingBehavior of the COM object.
+            // Reserve 2 bits for marshaling type
+            DWORD       m_MarshalingType:2;        // Marshaling type of the COM object.
 
             DWORD       m_Detached:1;              // set if the RCW was found dead during GC
         };
@@ -1325,7 +1317,7 @@ class RCWCleanupList
 public:
     RCWCleanupList()
         : m_pFirstBucket(NULL), m_lock(CrstRCWCleanupList, CRST_UNSAFE_ANYMODE),
-          m_pCurCleanupThread(NULL), m_doCleanupInContexts(FALSE)         
+          m_pCurCleanupThread(NULL), m_doCleanupInContexts(FALSE)
     {
         WRAPPER_NO_CONTRACT;
     }

@@ -16,7 +16,7 @@ namespace Microsoft.Extensions.Options
         /// Initializes a new instance of the <see cref="ValidateObjectMembersAttribute"/> class.
         /// </summary>
         /// <remarks>
-        /// Using this constructor for a field/property tells the code generator to
+        /// Using this constructor for a field or property tells the code generator to
         /// generate validation for the individual members of the field/property's type.
         /// </remarks>
         public ValidateObjectMembersAttribute()
@@ -28,8 +28,8 @@ namespace Microsoft.Extensions.Options
         /// </summary>
         /// <param name="validator">A type that implements <see cref="IValidateOptions{T}" /> for the field/property's type.</param>
         /// <remarks>
-        /// Using this constructor for a field/property tells the code generator to use the given type to validate
-        /// the object held by the field/property.
+        /// Using this constructor for a field or property tells the code generator to use the given type to validate
+        /// the object held by the field or property.
         /// </remarks>
         public ValidateObjectMembersAttribute(Type validator)
         {

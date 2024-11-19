@@ -74,11 +74,11 @@ PhaseStatus Compiler::fgRemoveEmptyFinally()
     {
         EHblkDsc* const HBtab = &compHndBBtab[XTnum];
 
-        // Check if this is a try/finally.  We could also look for empty
-        // try/fault but presumably those are rare.
-        if (!HBtab->HasFinallyHandler())
+        // Check if this is a try/finally or try/fault.
+        //
+        if (!HBtab->HasFinallyOrFaultHandler())
         {
-            JITDUMP("EH#%u is not a try-finally; skipping.\n", XTnum);
+            JITDUMP("EH#%u is not a try-finally or try-fault; skipping.\n", XTnum);
             XTnum++;
             continue;
         }
@@ -89,18 +89,18 @@ PhaseStatus Compiler::fgRemoveEmptyFinally()
         BasicBlock* const firstBlock = HBtab->ebdHndBeg;
         BasicBlock* const lastBlock  = HBtab->ebdHndLast;
 
-        // Limit for now to finallys that are single blocks.
+        // Limit for now to handlers that are single blocks.
         if (firstBlock != lastBlock)
         {
-            JITDUMP("EH#%u finally has multiple basic blocks; skipping.\n", XTnum);
+            JITDUMP("EH#%u handler has multiple basic blocks; skipping.\n", XTnum);
             XTnum++;
             continue;
         }
 
-        // If the finally's block jumps back to itself, then it is not empty.
+        // If the handler's block jumps back to itself, then it is not empty.
         if (firstBlock->KindIs(BBJ_ALWAYS) && firstBlock->TargetIs(firstBlock))
         {
-            JITDUMP("EH#%u finally has basic block that jumps to itself; skipping.\n", XTnum);
+            JITDUMP("EH#%u handler has basic block that jumps to itself; skipping.\n", XTnum);
             XTnum++;
             continue;
         }
@@ -121,63 +121,69 @@ PhaseStatus Compiler::fgRemoveEmptyFinally()
 
         if (!isEmpty)
         {
-            JITDUMP("EH#%u finally is not empty; skipping.\n", XTnum);
+            JITDUMP("EH#%u handler is not empty; skipping.\n", XTnum);
             XTnum++;
             continue;
         }
 
-        assert(lastBlock->KindIs(BBJ_EHFINALLYRET));
+        // Note we may see single empty BBJ_THROW handler blocks for EH regions
+        // deemed unreachable.
+        //
+        assert(lastBlock->KindIs(BBJ_EHFINALLYRET, BBJ_EHFAULTRET, BBJ_THROW));
 
-        JITDUMP("EH#%u has empty finally, removing the region.\n", XTnum);
+        JITDUMP("EH#%u has empty handler, removing the region.\n", XTnum);
 
-        // Find all the call finallys that invoke this finally,
-        // and modify them to jump to the return point.
-        BasicBlock* firstCallFinallyRangeBlock = nullptr;
-        BasicBlock* lastCallFinallyRangeBlock  = nullptr;
-        ehGetCallFinallyBlockRange(XTnum, &firstCallFinallyRangeBlock, &lastCallFinallyRangeBlock);
-
-        BasicBlock*       currentBlock             = firstCallFinallyRangeBlock;
-        BasicBlock* const endCallFinallyRangeBlock = lastCallFinallyRangeBlock->Next();
-
-        while (currentBlock != endCallFinallyRangeBlock)
+        if (HBtab->HasFinallyHandler())
         {
-            BasicBlock* nextBlock = currentBlock->Next();
+            // Find all the call finallys that invoke this finally,
+            // and modify them to jump to the return point.
+            BasicBlock* firstCallFinallyRangeBlock = nullptr;
+            BasicBlock* lastCallFinallyRangeBlock  = nullptr;
+            ehGetCallFinallyBlockRange(XTnum, &firstCallFinallyRangeBlock, &lastCallFinallyRangeBlock);
 
-            if (currentBlock->KindIs(BBJ_CALLFINALLY) && currentBlock->TargetIs(firstBlock))
+            BasicBlock*       currentBlock             = firstCallFinallyRangeBlock;
+            BasicBlock* const endCallFinallyRangeBlock = lastCallFinallyRangeBlock->Next();
+
+            while (currentBlock != endCallFinallyRangeBlock)
             {
-                // Retarget the call finally to jump to the return point.
-                //
-                // We don't expect to see retless finallys here, since
-                // the finally is empty.
-                noway_assert(currentBlock->isBBCallFinallyPair());
+                BasicBlock* nextBlock = currentBlock->Next();
 
-                BasicBlock* const leaveBlock          = currentBlock->Next();
-                BasicBlock* const postTryFinallyBlock = leaveBlock->GetFinallyContinuation();
+                if (currentBlock->KindIs(BBJ_CALLFINALLY) && currentBlock->TargetIs(firstBlock))
+                {
+                    // Retarget the call finally to jump to the return point.
+                    //
+                    // We don't expect to see retless finallys here, since
+                    // the finally is empty.
+                    noway_assert(currentBlock->isBBCallFinallyPair());
 
-                JITDUMP("Modifying callfinally " FMT_BB " leave " FMT_BB " finally " FMT_BB " continuation " FMT_BB
-                        "\n",
-                        currentBlock->bbNum, leaveBlock->bbNum, firstBlock->bbNum, postTryFinallyBlock->bbNum);
-                JITDUMP("so that " FMT_BB " jumps to " FMT_BB "; then remove " FMT_BB "\n", currentBlock->bbNum,
-                        postTryFinallyBlock->bbNum, leaveBlock->bbNum);
+                    BasicBlock* const leaveBlock          = currentBlock->Next();
+                    BasicBlock* const postTryFinallyBlock = leaveBlock->GetFinallyContinuation();
 
-                // Remove the `leaveBlock` first.
-                nextBlock = leaveBlock->Next();
-                fgPrepareCallFinallyRetForRemoval(leaveBlock);
-                fgRemoveBlock(leaveBlock, /* unreachable */ true);
+                    JITDUMP("Modifying callfinally " FMT_BB " leave " FMT_BB " finally " FMT_BB " continuation " FMT_BB
+                            "\n",
+                            currentBlock->bbNum, leaveBlock->bbNum, firstBlock->bbNum, postTryFinallyBlock->bbNum);
+                    JITDUMP("so that " FMT_BB " jumps to " FMT_BB "; then remove " FMT_BB "\n", currentBlock->bbNum,
+                            postTryFinallyBlock->bbNum, leaveBlock->bbNum);
 
-                // Ref count updates.
-                fgRedirectTargetEdge(currentBlock, postTryFinallyBlock);
-                currentBlock->SetKind(BBJ_ALWAYS);
-                currentBlock->RemoveFlags(BBF_RETLESS_CALL); // no longer a BBJ_CALLFINALLY
+                    // Remove the `leaveBlock` first.
+                    nextBlock = leaveBlock->Next();
+                    fgPrepareCallFinallyRetForRemoval(leaveBlock);
+                    fgRemoveBlock(leaveBlock, /* unreachable */ true);
 
-                // Cleanup the postTryFinallyBlock
-                fgCleanupContinuation(postTryFinallyBlock);
+                    // Ref count updates.
+                    fgRedirectTargetEdge(currentBlock, postTryFinallyBlock);
+                    currentBlock->SetKind(BBJ_ALWAYS);
+                    currentBlock->RemoveFlags(BBF_RETLESS_CALL); // no longer a BBJ_CALLFINALLY
 
-                // Make sure iteration isn't going off the deep end.
-                assert(leaveBlock != endCallFinallyRangeBlock);
+                    // Cleanup the postTryFinallyBlock
+                    fgCleanupContinuation(postTryFinallyBlock);
+
+                    // Make sure iteration isn't going off the deep end.
+                    assert(leaveBlock != endCallFinallyRangeBlock);
+                }
+
+                currentBlock = nextBlock;
             }
-
-            currentBlock = nextBlock;
         }
 
         JITDUMP("Remove now-unreachable handler " FMT_BB "\n", firstBlock->bbNum);
@@ -219,16 +225,102 @@ PhaseStatus Compiler::fgRemoveEmptyFinally()
             }
         }
 
+        // Likewise, look for ACDs within this try, and update their try regions.
+        // And look for ACDs within the now-removed handler, and remove them.
+        //
+        if (fgHasAddCodeDscMap())
+        {
+            AddCodeDscMap* const map = fgGetAddCodeDscMap();
+            for (AddCodeDsc* const add : AddCodeDscMap::ValueIteration(map))
+            {
+                JITDUMP("Considering ");
+                JITDUMPEXEC(add->Dump());
+
+                // Remember the old lookup key
+                //
+                AddCodeDscKey oldKey(add);
+
+                // If this ACD is in the handler we just removed,
+                // it must no longer be needed.
+                //
+                const bool inHnd = add->acdHndIndex > 0;
+                if (inHnd && ((unsigned)(add->acdHndIndex - 1) == XTnum))
+                {
+                    bool const removed = map->Remove(oldKey);
+                    assert(removed);
+                    JITDUMP("ACD%u was in EH#%u handler region: removing\n", add->acdNum, XTnum);
+                    JITDUMPEXEC(add->Dump());
+                    continue;
+                }
+
+                // If this ACD is NOT in the try we just removed,
+                // it is unaffected (though it may get updated
+                // when the EH region is removed).
+                //
+                bool inTry = add->acdTryIndex > 0;
+
+                if (!inTry || ((unsigned)(add->acdTryIndex - 1) != XTnum))
+                {
+                    JITDUMP("ACD%u not affected\n", add->acdNum);
+                    continue;
+                }
+
+                // This ACD is in the try we just removed,
+                // update it to belong to the enclosing try region,
+                // which is the enclosing try of the associated handler.
+                //
+                // Then see if there is already an equivalent ACD in
+                // that region, and if so, "merge" this ACD into
+                // that one (by removing this ACD from the map).
+                //
+                // If there is no equivalent ACD, re-add this current ACD
+                // with an updated key.
+                //
+                add->acdTryIndex = firstBlock->bbTryIndex;
+                add->UpdateKeyDesignator(this);
+
+                // Remove the ACD from the map via its old key
+                //
+                bool const removed = map->Remove(oldKey);
+                assert(removed);
+
+                // Compute the new key an see if there's an existing
+                // ACD with that key.
+                //
+                AddCodeDscKey newKey(add);
+                AddCodeDsc*   existing = nullptr;
+                if (map->Lookup(newKey, &existing))
+                {
+                    // If so, this ACD is now redundant
+                    //
+                    JITDUMP("ACD%u merged into ACD%u\n", add->acdNum, existing->acdNum);
+                    JITDUMPEXEC(existing->Dump());
+                }
+                else
+                {
+                    // If not, re-enter this ACD in the map with the updated key
+                    //
+                    JITDUMP("ACD%u updated\n", add->acdNum);
+                    map->Set(newKey, add);
+                    JITDUMPEXEC(add->Dump());
+                }
+            }
+        }
+
         // Remove the try-finally EH region. This will compact the EH table
         // so XTnum now points at the next entry.
         fgRemoveEHTableEntry(XTnum);
+
+        // First block of the former try no longer needs special protection.
+        firstTryBlock->RemoveFlags(BBF_DONT_REMOVE);
 
         emptyCount++;
     }
 
     if (emptyCount > 0)
     {
-        JITDUMP("fgRemoveEmptyFinally() removed %u try-finally clauses from %u finallys\n", emptyCount, finallyCount);
+        JITDUMP("fgRemoveEmptyFinally() removed %u try-finally/fault clauses from %u finally/fault(s)\n", emptyCount,
+                finallyCount);
         fgOptimizedFinally = true;
 
 #ifdef DEBUG
@@ -785,12 +877,11 @@ PhaseStatus Compiler::fgCloneFinally()
         assert(bbInTryRegions(XTnum, lastTryBlock));
         BasicBlock* const beforeTryBlock = firstTryBlock->Prev();
 
-        BasicBlock* normalCallFinallyBlock   = nullptr;
-        BasicBlock* normalCallFinallyReturn  = nullptr;
-        BasicBlock* cloneInsertAfter         = HBtab->ebdTryLast;
-        bool        tryToRelocateCallFinally = false;
-        const bool  usingProfileWeights      = fgIsUsingProfileWeights();
-        weight_t    currentWeight            = BB_ZERO_WEIGHT;
+        BasicBlock* normalCallFinallyBlock  = nullptr;
+        BasicBlock* normalCallFinallyReturn = nullptr;
+        BasicBlock* cloneInsertAfter        = HBtab->ebdTryLast;
+        const bool  usingProfileWeights     = fgIsUsingProfileWeights();
+        weight_t    currentWeight           = BB_ZERO_WEIGHT;
 
         for (BasicBlock* block = lastTryBlock; block != beforeTryBlock; block = block->Prev())
         {
@@ -893,10 +984,6 @@ PhaseStatus Compiler::fgCloneFinally()
                 // call always pair.
                 cloneInsertAfter = finallyReturnBlock;
 
-                // We will consider moving the callfinally so we can fall
-                // through from the try into the clone.
-                tryToRelocateCallFinally = true;
-
                 JITDUMP("%s path to clone: try block " FMT_BB " jumps to callfinally at " FMT_BB ";"
                         " the call returns to " FMT_BB " which jumps to " FMT_BB "\n",
                         isUpdate ? "Updating" : "Choosing", block->bbNum, jumpDest->bbNum, finallyReturnBlock->bbNum,
@@ -930,70 +1017,9 @@ PhaseStatus Compiler::fgCloneFinally()
                 " clone will jump to " FMT_BB "\n",
                 normalCallFinallyBlock->bbNum, normalCallFinallyReturn->bbNum);
 
-        // If there are multiple callfinallys and we're in the
-        // callfinally thunk model, all the callfinallys are placed
-        // just outside the try region. We'd like our chosen
-        // callfinally to come first after the try, so we can fall out of the try
-        // into the clone.
         BasicBlock* firstCallFinallyRangeBlock = nullptr;
         BasicBlock* lastCallFinallyRangeBlock  = nullptr;
         ehGetCallFinallyBlockRange(XTnum, &firstCallFinallyRangeBlock, &lastCallFinallyRangeBlock);
-
-        if (tryToRelocateCallFinally)
-        {
-            BasicBlock* firstCallFinallyBlock = nullptr;
-
-            for (BasicBlock* const block : Blocks(firstCallFinallyRangeBlock, lastCallFinallyRangeBlock))
-            {
-                if (block->isBBCallFinallyPair() && block->TargetIs(firstBlock))
-                {
-                    firstCallFinallyBlock = block;
-                    break;
-                }
-            }
-
-            // We better have found at least one call finally.
-            assert(firstCallFinallyBlock != nullptr);
-
-            // If there is more than one callfinally, we'd like to move
-            // the one we are going to retarget to be first in the callfinally,
-            // but only if it's targeted by the last block in the try range.
-            if (firstCallFinallyBlock != normalCallFinallyBlock)
-            {
-                BasicBlock* const placeToMoveAfter = firstCallFinallyBlock->Prev();
-
-                if (placeToMoveAfter->KindIs(BBJ_ALWAYS) && placeToMoveAfter->TargetIs(normalCallFinallyBlock))
-                {
-                    JITDUMP("Moving callfinally " FMT_BB " to be first in line, before " FMT_BB "\n",
-                            normalCallFinallyBlock->bbNum, firstCallFinallyBlock->bbNum);
-
-                    BasicBlock* const firstToMove = normalCallFinallyBlock;
-                    BasicBlock* const lastToMove  = normalCallFinallyBlock->Next();
-
-                    fgUnlinkRange(firstToMove, lastToMove);
-                    fgMoveBlocksAfter(firstToMove, lastToMove, placeToMoveAfter);
-
-#ifdef DEBUG
-                    // Sanity checks
-                    fgDebugCheckBBlist(false, false);
-                    fgVerifyHandlerTab();
-#endif // DEBUG
-
-                    assert(lastBlock->NextIs(nextBlock));
-
-                    // Update where the callfinally range begins, since we might
-                    // have altered this with callfinally rearrangement, and/or
-                    // the range begin might have been pretty loose to begin with.
-                    firstCallFinallyRangeBlock = normalCallFinallyBlock;
-                }
-                else
-                {
-                    JITDUMP("Can't move callfinally " FMT_BB " to be first in line"
-                            " -- last finally block " FMT_BB " doesn't jump to it\n",
-                            normalCallFinallyBlock->bbNum, placeToMoveAfter->bbNum);
-                }
-            }
-        }
 
         // Clone the finally and retarget the normal return path and
         // any other path that happens to share that same return
@@ -1056,6 +1082,9 @@ PhaseStatus Compiler::fgCloneFinally()
             {
                 // Mark the block as the start of the cloned finally.
                 newBlock->SetFlags(BBF_CLONED_FINALLY_BEGIN);
+
+                // Cloned finally entry block does not need any special protection.
+                newBlock->RemoveFlags(BBF_DONT_REMOVE);
             }
 
             if (block == lastBlock)
@@ -1063,6 +1092,8 @@ PhaseStatus Compiler::fgCloneFinally()
                 // Mark the block as the end of the cloned finally.
                 newBlock->SetFlags(BBF_CLONED_FINALLY_END);
             }
+
+            newBlock->RemoveFlags(BBF_DONT_REMOVE);
 
             // Make sure clone block state hasn't munged the try region.
             assert(newBlock->bbTryIndex == finallyTryIndex);

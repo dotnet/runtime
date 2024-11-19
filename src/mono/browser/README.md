@@ -121,7 +121,7 @@ XHarness consists of two pieces for WASM
 
 #### 1. CLI/host
 
-* set `XHARNESS_CLI_PATH=/path/to/xharness/artifacts/bin/Microsoft.DotNet.XHarness.CLI/Debug/net7.0/Microsoft.DotNet.XHarness.CLI.dll`
+* set `XHARNESS_CLI_PATH=/path/to/xharness/artifacts/bin/Microsoft.DotNet.XHarness.CLI/Debug/net9.0/Microsoft.DotNet.XHarness.CLI.dll`
 
 **Note:** Additional msbuild arguments can be passed with: `make ..  MSBUILD_ARGS="/p:a=b"`
 
@@ -198,7 +198,7 @@ Example use of the `wasmconsole` template:
 ```console
 > dotnet new wasmconsole
 > dotnet publish
-> cd bin/Debug/net7.0/browser-wasm/AppBundle
+> cd bin/Debug/net9.0/browser-wasm/AppBundle
 > node main.mjs
 Hello World!
 Args:
@@ -232,7 +232,7 @@ There is also the [wa-edit](https://github.com/radekdoulik/wa-info#wa-edit) tool
 
 Bumping Emscripten version involves these steps:
 
-* update https://github.com/dotnet/runtime/blob/main/src/mono/wasm/emscripten-version.txt
+* update https://github.com/dotnet/runtime/blob/main/src/mono/browser/emscripten-version.txt
 * bump emscripten versions in docker images in https://github.com/dotnet/dotnet-buildtools-prereqs-docker
 * bump emscripten in https://github.com/dotnet/emsdk
 * bump docker images in https://github.com/dotnet/icu, update emscripten files in eng/patches/
@@ -244,7 +244,7 @@ Bumping Emscripten version involves these steps:
 
 Two things to keep in mind:
 
-1. We use the Azure DevOps NPM registry (configured in `src/mono/wasm/runtime/.npmrc`).  When
+1. We use the Azure DevOps NPM registry (configured in `src/mono/browser/runtime/.npmrc`).  When
    updating `package.json`, you will need to be logged in (see instructions for Windows and
    mac/Linux, below) in order for the registry to populate with the correct package versions.
    Otherwise, CI builds will fail.
@@ -275,7 +275,7 @@ npm update --lockfile-version=1
 Go to https://dev.azure.com/dnceng/public/_artifacts/feed/dotnet-public-npm/connect/npm and log in and click on the "Other" tab.
 Follow the instructions to set up your `~/.npmrc` with a personal authentication token.
 
-In folder `src/mono/wasm/runtime/`
+In folder `src/mono/browser/runtime/`
 
 ```sh
 rm -rf node_modules
@@ -288,7 +288,7 @@ npm update --lockfile-version=1
 ## Code style
 
 * Is enforced via [eslint](https://eslint.org/) and rules are in `./.eslintrc.js`
-* You could check the style by running `npm run lint` in `src/mono/wasm/runtime` directory
+* You could check the style by running `npm run lint` in `src/mono/browser/runtime` directory
 * You can install [plugin into your VS Code](https://marketplace.visualstudio.com/items?itemName=dbaeumer.vscode-eslint) to show you the errors as you type
 
 ## Builds on CI

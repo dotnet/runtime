@@ -591,7 +591,7 @@ namespace Internal.Reflection.Execution
             NativeParser invokeMapParser = new NativeParser(invokeMapReader, 0);
             NativeHashtable invokeHashtable = new NativeHashtable(invokeMapParser);
 
-            LowLevelList<FunctionPointerOffsetPair> functionPointers = new LowLevelList<FunctionPointerOffsetPair>();
+            ArrayBuilder<FunctionPointerOffsetPair> functionPointers = default;
 
             var lookup = invokeHashtable.EnumerateAllEntries();
             NativeParser entryParser;

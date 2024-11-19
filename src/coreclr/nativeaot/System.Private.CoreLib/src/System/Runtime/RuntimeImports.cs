@@ -24,7 +24,7 @@ namespace System.Runtime
     //            optional library, those methods can be moved to a different file/namespace/dll
     internal static partial class RuntimeImports
     {
-        private const string RuntimeLibrary = "*";
+        internal const string RuntimeLibrary = "*";
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhGetCrashInfoBuffer")]
@@ -425,7 +425,7 @@ namespace System.Runtime
         // Yield the cpu to another thread ready to process, if one is available.
         [LibraryImport(RuntimeLibrary, EntryPoint = "RhYield")]
         private static partial int _RhYield();
-        internal static bool RhYield() { return (_RhYield() != 0); }
+        internal static bool RhYield() => _RhYield() != 0;
 
         [LibraryImport(RuntimeLibrary, EntryPoint = "RhFlushProcessWriteBuffers")]
         internal static partial void RhFlushProcessWriteBuffers();
@@ -469,12 +469,15 @@ namespace System.Runtime
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhResolveDispatchOnType")]
-        internal static extern unsafe IntPtr RhResolveDispatchOnType(MethodTable* instanceType, MethodTable* interfaceType, ushort slot, MethodTable** pGenericContext);
+        internal static extern unsafe IntPtr RhResolveDispatchOnType(MethodTable* instanceType, MethodTable* interfaceType, ushort slot);
 
-        internal static unsafe IntPtr RhResolveDispatchOnType(MethodTable* instanceType, MethodTable* interfaceType, ushort slot)
-        {
-            return RhResolveDispatchOnType(instanceType, interfaceType, slot, null);
-        }
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhResolveStaticDispatchOnType")]
+        internal static extern unsafe IntPtr RhResolveStaticDispatchOnType(MethodTable* instanceType, MethodTable* interfaceType, ushort slot, MethodTable** pGenericContext);
+
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhResolveDynamicInterfaceCastableDispatchOnType")]
+        internal static extern unsafe IntPtr RhResolveDynamicInterfaceCastableDispatchOnType(MethodTable* instanceType, MethodTable* interfaceType, ushort slot, MethodTable** pGenericContext);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhGetRuntimeHelperForType")]
@@ -648,6 +651,10 @@ namespace System.Runtime
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhpLockCmpXchg32")]
         internal static extern int InterlockedCompareExchange(ref int location1, int value, int comparand);
+
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhpLockCmpXchg32")]
+        internal static extern unsafe int InterlockedCompareExchange(int* location1, int value, int comparand);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhpLockCmpXchg64")]
@@ -872,6 +879,14 @@ namespace System.Runtime
 #if TARGET_X86 || TARGET_AMD64
         [LibraryImport(RuntimeLibrary)]
         internal static unsafe partial void RhCpuIdEx(int* cpuInfo, int functionId, int subFunctionId);
+#endif
+
+#if TARGET_UNIX
+        [LibraryImport(RuntimeLibrary, StringMarshalling = StringMarshalling.Utf8)]
+        internal static partial void RhSetCurrentThreadName(string name);
+#else
+        [LibraryImport(RuntimeLibrary, StringMarshalling = StringMarshalling.Utf16)]
+        internal static partial void RhSetCurrentThreadName(string name);
 #endif
     }
 }

@@ -373,6 +373,11 @@ namespace ILLink.Shared.TrimAnalysis
                 //
                 case IntrinsicId.Object_GetType:
                     {
+                        if (instanceValue.IsEmpty ()) {
+                            AddReturnValue (MultiValueLattice.Top);
+                            break;
+                        }
+
                         foreach (var valueNode in instanceValue.AsEnumerable ())
                         {
                             // Note that valueNode can be statically typed in IL as some generic argument type.
@@ -390,6 +395,10 @@ namespace ILLink.Shared.TrimAnalysis
                             // currently it won't do.
 
                             TypeDesc? staticType = (valueNode as IValueWithStaticType)?.StaticType?.Type;
+                            if (staticType?.IsByRef == true)
+                            {
+                                staticType = ((ByRefType)staticType).ParameterType;
+                            }
                             if (staticType is null || (!staticType.IsDefType && !staticType.IsArray))
                             {
                                 DynamicallyAccessedMemberTypes annotation = default;
@@ -431,6 +440,10 @@ namespace ILLink.Shared.TrimAnalysis
                                 // where a parameter is annotated and if something in the method sets a specific known type to it
                                 // we will also make it just work, even if the annotation doesn't match the usage.
                                 AddReturnValue(new SystemTypeValue(staticType));
+                            }
+                            else if (staticType.IsTypeOf("System", "Enum"))
+                            {
+                                AddReturnValue(_reflectionMarker.Annotations.GetMethodReturnValue(calledMethod, _isNewObj, DynamicallyAccessedMemberTypes.PublicFields));
                             }
                             else
                             {

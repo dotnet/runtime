@@ -2457,15 +2457,57 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 	} else if (in_corlib && !strcmp (klass_name_space, "System.Threading") && !strcmp (klass_name, "Interlocked")) {
 		if (!strcmp (tm, "MemoryBarrier") && csignature->param_count == 0)
 			*op = MINT_MONO_MEMORY_BARRIER;
-		else if (!strcmp (tm, "Exchange") && csignature->param_count == 2 && csignature->params [0]->type == MONO_TYPE_I8 && csignature->params [1]->type == MONO_TYPE_I8)
-			*op = MINT_MONO_EXCHANGE_I8;
-		else if (!strcmp (tm, "CompareExchange") && csignature->param_count == 3 &&
-			 (csignature->params[1]->type == MONO_TYPE_I4 ||
-			  csignature->params[1]->type == MONO_TYPE_I8)) {
-			if (csignature->params[1]->type == MONO_TYPE_I4)
+		else if (!strcmp (tm, "Exchange") && csignature->param_count == 2  && m_type_is_byref (csignature->params[0])) {
+			MonoType *t = mini_get_underlying_type (csignature->params[1]);
+			switch (t->type) {
+			case MONO_TYPE_I1:
+				*op = MINT_MONO_EXCHANGE_I1;
+				break;
+			case MONO_TYPE_U1:
+				*op = MINT_MONO_EXCHANGE_U1;
+				break;
+			case MONO_TYPE_I2:
+				*op = MINT_MONO_EXCHANGE_I2;
+				break;
+			case MONO_TYPE_U2:
+				*op = MINT_MONO_EXCHANGE_U2;
+				break;
+			case MONO_TYPE_I4:
+				*op = MINT_MONO_EXCHANGE_I4;
+				break;
+			case MONO_TYPE_I8:
+				*op = MINT_MONO_EXCHANGE_I8;
+				break;
+			default:
+				// no intrinsic
+				break;
+			}
+		}
+		else if (!strcmp (tm, "CompareExchange") && csignature->param_count == 3) {
+			MonoType *t = mini_get_underlying_type (csignature->params[1]);
+			switch (t->type) {
+			case MONO_TYPE_U1:
+				*op = MINT_MONO_CMPXCHG_U1;
+				break;
+			case MONO_TYPE_I1:
+				*op = MINT_MONO_CMPXCHG_I1;
+				break;
+			case MONO_TYPE_U2:
+				*op = MINT_MONO_CMPXCHG_U2;
+				break;
+			case MONO_TYPE_I2:
+				*op = MINT_MONO_CMPXCHG_I2;
+				break;
+			case MONO_TYPE_I4:
 				*op = MINT_MONO_CMPXCHG_I4;
-			else
+				break;
+			case MONO_TYPE_I8:
 				*op = MINT_MONO_CMPXCHG_I8;
+				break;
+			default:
+				/* no intrinsic */
+				break;
+			}
 		}
 	} else if (in_corlib && !strcmp (klass_name_space, "System.Threading") && !strcmp (klass_name, "Thread")) {
 		if (!strcmp (tm, "MemoryBarrier") && csignature->param_count == 0)
@@ -3322,7 +3364,7 @@ interp_try_devirt (MonoClass *this_klass, MonoMethod *target_method)
 	if (m_class_is_valuetype (new_target_method->klass))
 		return NULL;
 
-	// final methods can still be overriden with explicit overrides
+	// final methods can still be overridden with explicit overrides
 	if (m_class_is_sealed (this_klass))
 		return new_target_method;
 
@@ -9199,6 +9241,12 @@ opcode_emit:
 		} else if (opcode == MINT_LDLOCA_S) {
 			// This opcode receives a local but it is not viewed as a sreg since we don't load the value
 			*ip++ = GINT_TO_UINT16 (get_var_offset (td, ins->sregs [0]));
+
+#if HOST_BROWSER
+			// We reserve an extra 2 bytes at the end of ldloca_s so the jiterpreter knows how large
+			//  the var is when taking its address so that it can invalidate a properly sized range.
+			*ip++ = GINT_TO_UINT16 (td->vars [ins->sregs [0]].size);
+#endif
 		}
 
 		int left = interp_get_ins_length (ins) - GPTRDIFF_TO_INT(ip - start_ip);

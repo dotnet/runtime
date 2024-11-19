@@ -104,7 +104,7 @@ namespace System.Diagnostics.Tracing
             ulong sessionID = EventPipeInternal.Enable(null, EventPipeSerializationFormat.NetTrace, DefaultEventListenerCircularMBSize, providerConfiguration);
             if (sessionID == 0)
             {
-                throw new EventSourceException(SR.EventSource_CouldNotEnableEventPipe);
+                return;
             }
 
             // Get the session information that is required to properly dispatch events.

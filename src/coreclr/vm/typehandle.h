@@ -27,7 +27,6 @@ class MethodTable;
 class EEClass;
 class Module;
 class Assembly;
-class BaseDomain;
 class MethodDesc;
 class TypeKey;
 class TypeHandleList;
@@ -469,8 +468,6 @@ public:
     // True if this type *is* a formal generic type parameter or any component of it is a formal generic type parameter
     BOOL ContainsGenericVariables(BOOL methodOnly=FALSE) const;
 
-    Module* GetDefiningModuleForOpenType() const;
-
     // Is type that has a type parameter (ARRAY, SZARRAY, BYREF, PTR)
     BOOL HasTypeParam() const;
 
@@ -513,9 +510,8 @@ public:
     static TypeHandle MergeTypeHandlesToCommonParent(
         TypeHandle ta, TypeHandle tb);
 
-
-    BOOL NotifyDebuggerLoad(AppDomain *domain, BOOL attaching) const;
-    void NotifyDebuggerUnload(AppDomain *domain) const;
+    BOOL NotifyDebuggerLoad(BOOL attaching) const;
+    void NotifyDebuggerUnload() const;
 
     // Execute the callback functor for each MethodTable that makes up the given type handle.  This method
     // does not invoke the functor for generic variables

@@ -61,7 +61,8 @@ namespace System.Runtime
             Debug.Assert(pEEType->IsArray || pEEType->IsString);
 
 #if FEATURE_64BIT_ALIGNMENT
-            if (pEEType->RequiresAlign8)
+            MethodTable* pEEElementType = pEEType->RelatedParameterType;
+            if (pEEElementType->IsValueType && pEEElementType->RequiresAlign8)
             {
                 return InternalCalls.RhpNewArrayAlign8(pEEType, length);
             }
@@ -381,7 +382,8 @@ namespace System.Runtime
 
                 case RuntimeHelperKind.AllocateArray:
 #if FEATURE_64BIT_ALIGNMENT
-                    if (pEEType->RequiresAlign8)
+                    MethodTable* pEEElementType = pEEType->RelatedParameterType;
+                    if (pEEElementType->IsValueType && pEEElementType->RequiresAlign8)
                         return (IntPtr)(delegate*<MethodTable*, int, object>)&InternalCalls.RhpNewArrayAlign8;
 #endif // FEATURE_64BIT_ALIGNMENT
 

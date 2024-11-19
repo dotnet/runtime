@@ -82,7 +82,7 @@ namespace System.Reflection
 
             // No pseudo attributes for RuntimeAssembly
 
-            return GetCustomAttributes((RuntimeModule)target.ManifestModule, RuntimeAssembly.GetToken(target.GetNativeHandle()));
+            return GetCustomAttributes((RuntimeModule)target.ManifestModule, RuntimeAssembly.GetToken(target));
         }
 
         internal static IList<CustomAttributeData> GetCustomAttributesInternal(RuntimeParameterInfo target)
@@ -1227,7 +1227,7 @@ namespace System.Reflection
             Debug.Assert(caType is not null);
 
             // No pseudo attributes for RuntimeAssembly
-            return IsCustomAttributeDefined((assembly.ManifestModule as RuntimeModule)!, RuntimeAssembly.GetToken(assembly.GetNativeHandle()), caType);
+            return IsCustomAttributeDefined((assembly.ManifestModule as RuntimeModule)!, RuntimeAssembly.GetToken(assembly), caType);
         }
 
         internal static bool IsDefined(RuntimeModule module, RuntimeType caType)
@@ -1388,7 +1388,7 @@ namespace System.Reflection
 
             // No pseudo attributes for RuntimeAssembly
 
-            int assemblyToken = RuntimeAssembly.GetToken(assembly.GetNativeHandle());
+            int assemblyToken = RuntimeAssembly.GetToken(assembly);
             return GetCustomAttributes((assembly.ManifestModule as RuntimeModule)!, assemblyToken, 0, caType);
         }
 
@@ -1879,7 +1879,7 @@ namespace System.Reflection
         {
             if (module is null)
             {
-                throw new ArgumentNullException(SR.Arg_InvalidHandle);
+                throw new ArgumentNullException(null, SR.Arg_InvalidHandle);
             }
 
             object? result = null;
@@ -1909,7 +1909,7 @@ namespace System.Reflection
         {
             if (module is null)
             {
-                throw new ArgumentNullException(SR.Arg_InvalidHandle);
+                throw new ArgumentNullException(null, SR.Arg_InvalidHandle);
             }
 
             string? nameLocal = null;

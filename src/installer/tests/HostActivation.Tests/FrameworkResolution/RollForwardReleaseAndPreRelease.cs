@@ -5,6 +5,8 @@ using Microsoft.DotNet.Cli.Build;
 using Microsoft.DotNet.Cli.Build.Framework;
 using Xunit;
 
+using static Microsoft.DotNet.CoreSetup.Test.Constants;
+
 namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
 {
     /// <summary>

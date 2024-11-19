@@ -789,6 +789,7 @@ namespace System.Net.Http
             _socketHandler!.SslOptions = _socketHandler!.SslOptions;
         }
 
+        [FeatureSwitchDefinition("System.Net.Http.UseNativeHttpHandler")]
         private static bool IsNativeHandlerEnabled => RuntimeSettingParser.QueryRuntimeSettingSwitch(
                 "System.Net.Http.UseNativeHttpHandler",
                 false);

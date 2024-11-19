@@ -293,6 +293,8 @@ namespace ILLink.Shared.TrimAnalysis
 					} else if (typeHandleValue is RuntimeTypeHandleForValueWithDynamicallyAccessedMembers damAnnotatedHandle
 						&& (damAnnotatedHandle.UnderlyingTypeValue.DynamicallyAccessedMemberTypes & DynamicallyAccessedMemberTypes.NonPublicConstructors) != 0) {
 						// No action needed, NonPublicConstructors keeps the static constructor on the type
+					} else if (typeHandleValue is RuntimeTypeHandleForNullableSystemTypeValue) {
+						// No action needed, RunClassConstructor does not run the class constructor of the underlying type of Nullable<T>
 					} else {
 						_diagnosticContext.AddDiagnostic (DiagnosticId.UnrecognizedTypeInRuntimeHelpersRunClassConstructor, calledMethod.GetDisplayName ());
 					}
@@ -945,21 +947,45 @@ namespace ILLink.Shared.TrimAnalysis
 							else {
 								// PublicConstructors are not propagated to base type
 
+								if (valueWithDynamicallyAccessedMembers.DynamicallyAccessedMemberTypes.HasFlag (DynamicallyAccessedMemberTypesEx.PublicConstructorsWithInherited))
+									propagatedMemberTypes |= DynamicallyAccessedMemberTypesEx.PublicConstructorsWithInherited;
+
+								if (valueWithDynamicallyAccessedMembers.DynamicallyAccessedMemberTypes.HasFlag (DynamicallyAccessedMemberTypesEx.NonPublicConstructorsWithInherited))
+									propagatedMemberTypes |= DynamicallyAccessedMemberTypesEx.NonPublicConstructorsWithInherited;
+
 								if (valueWithDynamicallyAccessedMembers.DynamicallyAccessedMemberTypes.HasFlag (DynamicallyAccessedMemberTypes.PublicEvents))
 									propagatedMemberTypes |= DynamicallyAccessedMemberTypes.PublicEvents;
+
+								if (valueWithDynamicallyAccessedMembers.DynamicallyAccessedMemberTypes.HasFlag (DynamicallyAccessedMemberTypesEx.NonPublicEventsWithInherited))
+									propagatedMemberTypes |= DynamicallyAccessedMemberTypesEx.NonPublicEventsWithInherited;
 
 								if (valueWithDynamicallyAccessedMembers.DynamicallyAccessedMemberTypes.HasFlag (DynamicallyAccessedMemberTypes.PublicFields))
 									propagatedMemberTypes |= DynamicallyAccessedMemberTypes.PublicFields;
 
+								if (valueWithDynamicallyAccessedMembers.DynamicallyAccessedMemberTypes.HasFlag (DynamicallyAccessedMemberTypesEx.NonPublicFieldsWithInherited))
+									propagatedMemberTypes |= DynamicallyAccessedMemberTypesEx.NonPublicFieldsWithInherited;
+
 								if (valueWithDynamicallyAccessedMembers.DynamicallyAccessedMemberTypes.HasFlag (DynamicallyAccessedMemberTypes.PublicMethods))
 									propagatedMemberTypes |= DynamicallyAccessedMemberTypes.PublicMethods;
 
+								if (valueWithDynamicallyAccessedMembers.DynamicallyAccessedMemberTypes.HasFlag (DynamicallyAccessedMemberTypesEx.NonPublicMethodsWithInherited))
+									propagatedMemberTypes |= DynamicallyAccessedMemberTypesEx.NonPublicMethodsWithInherited;
+
 								// PublicNestedTypes are not propagated to base type
+
+								if (valueWithDynamicallyAccessedMembers.DynamicallyAccessedMemberTypes.HasFlag (DynamicallyAccessedMemberTypesEx.PublicNestedTypesWithInherited))
+									propagatedMemberTypes |= DynamicallyAccessedMemberTypesEx.PublicNestedTypesWithInherited;
+
+								if (valueWithDynamicallyAccessedMembers.DynamicallyAccessedMemberTypes.HasFlag (DynamicallyAccessedMemberTypesEx.NonPublicNestedTypesWithInherited))
+									propagatedMemberTypes |= DynamicallyAccessedMemberTypesEx.NonPublicNestedTypesWithInherited;
 
 								// PublicParameterlessConstructor is not propagated to base type
 
 								if (valueWithDynamicallyAccessedMembers.DynamicallyAccessedMemberTypes.HasFlag (DynamicallyAccessedMemberTypes.PublicProperties))
 									propagatedMemberTypes |= DynamicallyAccessedMemberTypes.PublicProperties;
+
+								if (valueWithDynamicallyAccessedMembers.DynamicallyAccessedMemberTypes.HasFlag (DynamicallyAccessedMemberTypesEx.NonPublicPropertiesWithInherited))
+									propagatedMemberTypes |= DynamicallyAccessedMemberTypesEx.NonPublicPropertiesWithInherited;
 
 								if (valueWithDynamicallyAccessedMembers.DynamicallyAccessedMemberTypes.HasFlag (DynamicallyAccessedMemberTypes.Interfaces))
 									propagatedMemberTypes |= DynamicallyAccessedMemberTypes.Interfaces;

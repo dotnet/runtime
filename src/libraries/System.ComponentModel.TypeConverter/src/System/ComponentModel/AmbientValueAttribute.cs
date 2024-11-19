@@ -18,6 +18,7 @@ namespace System.ComponentModel
         /// This is the default value.
         /// </summary>
         private object? _value;
+        private static readonly object? s_throwSentinel = IDesignerHost.IsSupported ? null : new();
 
         /// <summary>
         /// Initializes a new instance of the <see cref='System.ComponentModel.AmbientValueAttribute'/> class, converting the
@@ -32,6 +33,7 @@ namespace System.ComponentModel
             Debug.Assert(IDesignerHost.IsSupported, "Runtime instantiation of this attribute is not allowed with trimming.");
             if (!IDesignerHost.IsSupported)
             {
+                _value = s_throwSentinel;
                 return;
             }
 
@@ -142,7 +144,7 @@ namespace System.ComponentModel
         public object? Value {
             get
             {
-                if (!IDesignerHost.IsSupported)
+                if (!IDesignerHost.IsSupported  && ReferenceEquals(_value, s_throwSentinel))
                 {
                     throw new ArgumentException(SR.RuntimeInstanceNotAllowed);
                 }

@@ -254,10 +254,6 @@ namespace System
 
         protected override bool IsPointerImpl() => RuntimeTypeHandle.IsPointer(this);
 
-        protected override bool IsCOMObjectImpl() => RuntimeTypeHandle.IsComObject(this, false);
-
-        public override bool IsInstanceOfType([NotNullWhen(true)] object? o) => RuntimeTypeHandle.IsInstanceOfType(this, o);
-
         public override bool IsAssignableFrom([NotNullWhen(true)] TypeInfo? typeInfo)
             => typeInfo != null && IsAssignableFrom(typeInfo.AsType());
 
@@ -672,6 +668,12 @@ namespace System
             throw new MissingMethodException(FullName, name);
         }
 
+        // Returns the type from which the current type directly inherits from with reflection quirks.
+        // The base type is null for interfaces, pointers, byrefs.
+        // The base type of a generic argument with a direct class constraint is the class constrain type, `System.Object` otherwise. For example:
+        // `class G1<T> where T:Stream`: `typeof(G1<>).GetGenericArguments()[0].BaseType` is Stream
+        // `class G2<T> where T:IDisposable`: typeof(G2<>).GetGenericArguments()[0].BaseType is Object
+        // `class G3<T,U> where T:U where U:Stream`: typeof(G3<,>).GetGenericArguments()[0].BaseType is Object (!)
         private RuntimeType? GetBaseType()
         {
             if (IsInterface)
@@ -712,7 +714,7 @@ namespace System
                 return baseType;
             }
 
-            return RuntimeTypeHandle.GetBaseType(this);
+            return GetParentType();
         }
 
         private static void ThrowIfTypeNeverValidGenericArgument(RuntimeType type)
@@ -737,22 +739,22 @@ namespace System
                     SR.Format(SR.Argument_NotEnoughGenArguments, genericArguments.Length, genericParameters.Length));
         }
 
-        internal static CorElementType GetUnderlyingType(RuntimeType type)
+        internal CorElementType GetUnderlyingCorElementType()
         {
+            RuntimeType type = this;
             if (type.IsActualEnum)
             {
                 type = (RuntimeType)Enum.GetUnderlyingType(type);
             }
 
-            return RuntimeTypeHandle.GetCorElementType(type);
+            return type.GetCorElementType();
         }
-
 
         // AggressiveInlining used since on hot path for reflection.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static bool TryGetByRefElementType(RuntimeType type, [NotNullWhen(true)] out RuntimeType? elementType)
         {
-            CorElementType corElemType = RuntimeTypeHandle.GetCorElementType(type);
+            CorElementType corElemType = type.GetCorElementType();
             if (corElemType == CorElementType.ELEMENT_TYPE_BYREF)
             {
                 elementType = RuntimeTypeHandle.GetElementType(type);

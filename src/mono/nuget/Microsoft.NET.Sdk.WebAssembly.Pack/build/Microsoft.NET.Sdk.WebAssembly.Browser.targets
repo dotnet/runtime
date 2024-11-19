@@ -199,6 +199,9 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_WasmFingerprintAssets Condition="'$(_WasmFingerprintAssets)' == ''">false</_WasmFingerprintAssets>
       <_WasmFingerprintDotnetJs>$(WasmFingerprintDotnetJs)</_WasmFingerprintDotnetJs>
       <_WasmFingerprintDotnetJs Condition="'$(_WasmFingerprintDotnetJs)' == ''">false</_WasmFingerprintDotnetJs>
+      <_WasmBootConfigFileName>$(WasmBootConfigFileName)</_WasmBootConfigFileName>
+      <_WasmBootConfigFileName Condition="'$(_WasmBootConfigFileName)' == ''">blazor.boot.json</_WasmBootConfigFileName>
+      <_WasmPublishBootConfigFileName>publish.$(_WasmBootConfigFileName)</_WasmPublishBootConfigFileName>
 
       <!-- Workaround for https://github.com/dotnet/sdk/issues/12114-->
       <PublishDir Condition="'$(AppendRuntimeIdentifierToOutputPath)' != 'true' AND '$(PublishDir)' == '$(OutputPath)$(RuntimeIdentifier)\$(PublishDirName)\'">$(OutputPath)$(PublishDirName)\</PublishDir>
@@ -327,7 +330,7 @@ Copyright (c) .NET Foundation. All rights reserved.
 
   <Target Name="_GenerateBuildWasmBootJson" DependsOnTargets="$(GenerateBuildWasmBootJsonDependsOn)">
     <PropertyGroup>
-      <_WasmBuildBootJsonPath>$(IntermediateOutputPath)blazor.boot.json</_WasmBuildBootJsonPath>
+      <_WasmBuildBootJsonPath>$(IntermediateOutputPath)$(_WasmBootConfigFileName)</_WasmBuildBootJsonPath>
     </PropertyGroup>
 
     <ItemGroup>
@@ -392,13 +395,13 @@ Copyright (c) .NET Foundation. All rights reserved.
     </ItemGroup>
 
     <PropertyGroup>
-      <_WasmBuildBootJsonPath>$(IntermediateOutputPath)blazor.boot.json</_WasmBuildBootJsonPath>
+      <_WasmBuildBootJsonPath>$(IntermediateOutputPath)$(_WasmBootConfigFileName)</_WasmBuildBootJsonPath>
     </PropertyGroup>
 
     <ItemGroup>
       <_BuildWasmBootJson
         Include="$(_WasmBuildBootJsonPath)"
-        RelativePath="_framework/blazor.boot.json" />
+        RelativePath="_framework/$(_WasmBootConfigFileName)" />
     </ItemGroup>
 
     <DefineStaticWebAssets
@@ -460,10 +463,10 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_WasmEmitSourceMapPublish Condition="'$(_WasmEmitSourceMapPublish)' == ''">false</_WasmEmitSourceMapPublish>
     </PropertyGroup>
 
-    <ItemGroup Condition="@(WasmAssembliesFinal->Count()) == 0">
+    <ItemGroup Condition="@(WasmAssembliesFinal->Count()) == 0 or '$(TargetFrameworkVersion)' == 'v6.0'">
       <_WasmResolvedFilesToPublish Include="@(ResolvedFileToPublish)" />
     </ItemGroup>
-    <ItemGroup Condition="@(WasmAssembliesFinal->Count()) > 0">
+    <ItemGroup Condition="@(WasmAssembliesFinal->Count()) > 0 and '$(TargetFrameworkVersion)' != 'v6.0'">
       <_WasmResolvedFilesToPublish Include="@(WasmAssembliesFinal)" />
       <!-- Ensure we have 'RelativePath' required by ComputeWasmPublishAssets. 9+ version of MonoAOTCompiler is copying this metadata, but when targeting downlevel versions it doesn't. -->
       <_WasmResolvedFilesToPublish RelativePath="%(FileName)%(Extension)" Condition="'%(_WasmResolvedFilesToPublish.RelativePath)' == ''" />
@@ -589,8 +592,8 @@ Copyright (c) .NET Foundation. All rights reserved.
   <Target Name="_AddPublishWasmBootJsonToStaticWebAssets" DependsOnTargets="GeneratePublishWasmBootJson">
     <ItemGroup>
       <_PublishWasmBootJson
-        Include="$(IntermediateOutputPath)blazor.publish.boot.json"
-        RelativePath="_framework/blazor.boot.json" />
+        Include="$(IntermediateOutputPath)$(_WasmPublishBootConfigFileName)"
+        RelativePath="_framework/$(_WasmBootConfigFileName)" />
     </ItemGroup>
 
     <DefineStaticWebAssets
@@ -659,7 +662,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       DebugLevel="$(WasmDebugLevel)"
       LinkerEnabled="$(PublishTrimmed)"
       CacheBootResources="$(BlazorCacheBootResources)"
-      OutputPath="$(IntermediateOutputPath)blazor.publish.boot.json"
+      OutputPath="$(IntermediateOutputPath)$(_WasmPublishBootConfigFileName)"
       ConfigurationFiles="@(_WasmPublishConfigFile)"
       LazyLoadedAssemblies="@(BlazorWebAssemblyLazyLoad)"
       InvariantGlobalization="$(InvariantGlobalization)"
@@ -679,7 +682,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       FingerprintAssets="$(_WasmFingerprintAssets)" />
 
     <ItemGroup>
-      <FileWrites Include="$(IntermediateOutputPath)blazor.publish.boot.json" />
+      <FileWrites Include="$(IntermediateOutputPath)$(_WasmPublishBootConfigFileName)" />
     </ItemGroup>
 
   </Target>

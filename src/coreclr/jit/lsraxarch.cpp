@@ -151,8 +151,12 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_CNS_INT:
         case GT_CNS_LNG:
         case GT_CNS_DBL:
+#if defined(FEATURE_SIMD)
         case GT_CNS_VEC:
+#endif // FEATURE_SIMD
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
         case GT_CNS_MSK:
+#endif // FEATURE_MASKED_HW_INTRINSICS
         {
             srcCount = 0;
 
@@ -1226,9 +1230,8 @@ int LinearScan::BuildCall(GenTreeCall* call)
     {
         for (CallArg& arg : call->gtArgs.LateArgs())
         {
-            for (unsigned i = 0; i < arg.NewAbiInfo.NumSegments; i++)
+            for (const ABIPassingSegment& seg : arg.NewAbiInfo.Segments())
             {
-                const ABIPassingSegment& seg = arg.NewAbiInfo.Segment(i);
                 if (seg.IsPassedInRegister() && genIsValidFloatReg(seg.GetRegister()))
                 {
                     regNumber argReg           = seg.GetRegister();
@@ -1257,7 +1260,8 @@ int LinearScan::BuildCall(GenTreeCall* call)
             ctrlExprCandidates = RBM_INT_CALLEE_TRASH.GetIntRegSet();
         }
 #ifdef TARGET_X86
-        else if (call->IsVirtualStub() && (call->gtCallType == CT_INDIRECT))
+        else if (call->IsVirtualStub() && (call->gtCallType == CT_INDIRECT) &&
+                 !compiler->IsTargetAbi(CORINFO_NATIVEAOT_ABI))
         {
             // On x86, we need to generate a very specific pattern for indirect VSD calls:
             //

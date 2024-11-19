@@ -8,7 +8,7 @@ using System.Collections.Generic;
 namespace Microsoft.Extensions.Configuration.EnvironmentVariables
 {
     /// <summary>
-    /// An environment variable based <see cref="ConfigurationProvider"/>.
+    /// Provides configuration key-value pairs that are obtained from environment variables.
     /// </summary>
     public class EnvironmentVariablesConfigurationProvider : ConfigurationProvider
     {
@@ -48,7 +48,7 @@ namespace Microsoft.Extensions.Configuration.EnvironmentVariables
         /// <summary>
         /// Generates a string representing this provider name and relevant details.
         /// </summary>
-        /// <returns> The configuration name. </returns>
+        /// <returns>The configuration name.</returns>
         public override string ToString()
         {
             string s = GetType().Name;
