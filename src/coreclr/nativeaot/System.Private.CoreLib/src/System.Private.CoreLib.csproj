@@ -8,7 +8,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ILLinkSubstitutionsXmls Include="ILLink\ILLink.Substitutions.xml" />
     <ILLinkLinkAttributesXmls Include="ILLink\ILLink.LinkAttributes.xml" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)'=='true'">
@@ -426,7 +425,6 @@
     <Compile Include="System\Reflection\Runtime\General\Assignability.cs" />
     <Compile Include="System\Reflection\Runtime\General\Dispensers.NativeFormat.cs" />
     <Compile Include="System\Reflection\Runtime\General\Helpers.NativeFormat.cs" />
-    <Compile Include="System\Reflection\Runtime\General\ReflectionCoreCallbacksImplementation.cs" />
     <Compile Include="System\Reflection\Runtime\General\Dispensers.cs" />
     <Compile Include="System\Reflection\Runtime\General\Helpers.cs" />
     <Compile Include="System\Reflection\Runtime\General\IRuntimeMemberInfoWithNoMetadataDefinition.cs" />
