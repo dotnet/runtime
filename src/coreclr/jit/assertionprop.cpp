@@ -4290,7 +4290,7 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions, Gen
         }
 #endif
 
-        newTree = curAssertion->assertionKind == OAK_EQUAL ? gtNewIconNode(1) : gtNewIconNode(0);
+        newTree = curAssertion->assertionKind == OAK_EQUAL ? gtNewIconNode(0) : gtNewIconNode(1);
         newTree = gtWrapWithSideEffects(newTree, tree, GTF_ALL_EFFECT);
         newTree = fgMorphTree(newTree);
         DISPTREE(newTree);
