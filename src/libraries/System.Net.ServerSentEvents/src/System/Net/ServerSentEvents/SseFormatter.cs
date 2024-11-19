@@ -102,7 +102,7 @@ namespace System.Net.ServerSentEvents
 
             if (eventType is not null)
             {
-                Debug.Assert(!eventType.Contains('\n'));
+                Debug.Assert(!eventType.ContainsLineBreaks());
 
                 bufferWriter.WriteUtf8String("event: "u8);
                 bufferWriter.WriteUtf8String(eventType);
@@ -114,7 +114,7 @@ namespace System.Net.ServerSentEvents
 
             if (eventId is not null)
             {
-                Debug.Assert(!eventId.Contains('\n'));
+                Debug.Assert(!eventId.ContainsLineBreaks());
 
                 bufferWriter.WriteUtf8String("id: "u8);
                 bufferWriter.WriteUtf8String(eventId);
@@ -142,16 +142,21 @@ namespace System.Net.ServerSentEvents
             {
                 writer.WriteUtf8String(prefix);
 
-                int i = data.IndexOf((byte)'\n');
+                int i = data.IndexOfAny((byte)'\r', (byte)'\n');
                 if (i < 0)
                 {
                     writer.WriteUtf8String(data);
                     return;
                 }
 
-                int lineLength = i > 0 && data[i - 1] == '\r' ? i - 1 : i;
+                int lineLength = i;
+                if (data[i++] == '\r' && i < data.Length && data[i] == '\n')
+                {
+                    i++;
+                }
+
                 ReadOnlySpan<byte> nextLine = data.Slice(0, lineLength);
-                data = data.Slice(i + 1);
+                data = data.Slice(i);
 
                 writer.WriteUtf8String(nextLine);
                 writer.WriteUtf8String(s_newLine);

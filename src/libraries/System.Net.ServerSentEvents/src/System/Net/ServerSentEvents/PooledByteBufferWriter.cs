@@ -125,8 +125,7 @@ namespace System.Net.ServerSentEvents
                     newSize = currentLength + sizeHint;
                     if ((uint)newSize > MaximumBufferSize)
                     {
-                        Throw();
-                        static void Throw() => throw new OutOfMemoryException();
+                        throw new OutOfMemoryException();
                     }
                 }
 

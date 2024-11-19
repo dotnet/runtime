@@ -65,8 +65,10 @@ namespace System.Net.ServerSentEvents
             writer.Advance(bytesWritten);
         }
 
+        public static bool ContainsLineBreaks(this ReadOnlySpan<char> text) =>
+            text.IndexOfAny('\r', '\n') >= 0;
+
 #if !NET
-        public static bool Contains(this string text, char character) => text.IndexOf(character) >= 0;
 
         public static ValueTask WriteAsync(this Stream stream, ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
         {

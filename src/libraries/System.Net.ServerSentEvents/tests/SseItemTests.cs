@@ -35,6 +35,7 @@ namespace System.Net.ServerSentEvents.Tests
         [InlineData("\n")]
         [InlineData("Hello, World!\n")]
         [InlineData("Hello, \r\nWorld!")]
+        [InlineData("Hello, \rWorld!")]
         public void SseItem_MetadataWithLineBreak_ThrowsArgumentException(string metadataWithLineBreak)
         {
             Assert.Throws<ArgumentException>("eventType", () => new SseItem<string>("data", eventType: metadataWithLineBreak));

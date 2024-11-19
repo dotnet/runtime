@@ -38,8 +38,11 @@ namespace System.Net.ServerSentEvents.Tests
                 "data: data3\n\n" +
                 "data: \n\n" +
                 "event: eventType4\ndata: data4\nid: id4\n\n" +
-                "event: eventType4\ndata: data with\ndata: multiple \rline\ndata: breaks\n\n" +
-                "data: line break at end\ndata: \n\n";
+                "event: eventType4\ndata: data\ndata: \ndata:  with\ndata: multiple \ndata: line\ndata: breaks\n\n" +
+                "data: LF at end\ndata: \n\n" +
+                "data: CR at end\ndata: \n\n" +
+                "data: CRLF at end\ndata: \n\n" +
+                "data: LFCR at end\ndata: \ndata: \n\n";
 
             using MemoryStream stream = new();
 
@@ -61,8 +64,11 @@ namespace System.Net.ServerSentEvents.Tests
                 "data: data3_suffix\n\n" +
                 "data: _suffix\n\n" +
                 "event: eventType4\ndata: data4_suffix\nid: id4\n\n" +
-                "event: eventType4\ndata: data with\ndata: multiple \rline\ndata: breaks_suffix\n\n" +
-                "data: line break at end\ndata: _suffix\n\n";
+                "event: eventType4\ndata: data\ndata: \ndata:  with\ndata: multiple \ndata: line\ndata: breaks_suffix\n\n" +
+                "data: LF at end\ndata: _suffix\n\n" +
+                "data: CR at end\ndata: _suffix\n\n" +
+                "data: CRLF at end\ndata: _suffix\n\n" +
+                "data: LFCR at end\ndata: \ndata: _suffix\n\n";
 
             using MemoryStream stream = new();
 
@@ -83,8 +89,11 @@ namespace System.Net.ServerSentEvents.Tests
             yield return new SseItem<string>(data: null!, null);
             yield return new SseItem<string>("data4", "eventType4") { EventId = "id4" };
             await Task.Yield();
-            yield return new SseItem<string>("data with\nmultiple \rline\r\nbreaks", "eventType4");
-            yield return new SseItem<string>("line break at end\n", null);
+            yield return new SseItem<string>("data\n\r with\nmultiple \rline\r\nbreaks", "eventType4");
+            yield return new SseItem<string>("LF at end\n", null);
+            yield return new SseItem<string>("CR at end\r", null);
+            yield return new SseItem<string>("CRLF at end\r\n", null);
+            yield return new SseItem<string>("LFCR at end\n\r", null);
         }
 
         [Fact]
