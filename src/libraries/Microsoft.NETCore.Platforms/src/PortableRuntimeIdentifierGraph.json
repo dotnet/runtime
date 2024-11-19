@@ -397,6 +397,11 @@
           "unix"
         ]
       },
+      "unix-riscv64": {
+        "#import": [
+          "unix"
+        ]
+      },
       "unix-armel": {
         "#import": [
           "unix"

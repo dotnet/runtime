@@ -356,6 +356,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
                 .WithRuntimeFallbacks("win-x86", "win", "any")
                 .WithRuntimeFallbacks("win", "any")
                 .WithRuntimeFallbacks("linux-arm64", "linux", "any")
+                .WithRuntimeFallbacks("linux-riscv64", "linux", "any")
                 .WithRuntimeFallbacks("linux-x64", "linux", "any")
                 .WithRuntimeFallbacks("linux-musl-arm64", "linux-musl", "linux", "any")
                 .WithRuntimeFallbacks("linux-musl-x64", "linux-musl", "linux", "any")
