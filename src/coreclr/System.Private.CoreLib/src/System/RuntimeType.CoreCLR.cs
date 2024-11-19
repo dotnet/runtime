@@ -1038,7 +1038,7 @@ namespace System
 
                         if (ReflectedType.IsSZArray)
                         {
-                            RuntimeType arrayType = (RuntimeType)ReflectedType.GetElementType();
+                            RuntimeType arrayType = (RuntimeType)ReflectedType.GetElementType()!;
 
                             if (!arrayType.IsPointer)
                             {

@@ -382,7 +382,20 @@ namespace System
         internal static extern TypeAttributes GetAttributes(RuntimeType type);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern RuntimeType GetElementType(RuntimeType type);
+        private static extern IntPtr GetElementTypeHandleFromHandle(IntPtr handle);
+
+        internal static RuntimeType? GetElementType(RuntimeType type)
+        {
+            IntPtr handle = GetElementTypeHandleFromHandle(type.GetUnderlyingNativeHandle());
+            if (handle == IntPtr.Zero)
+            {
+                return null;
+            }
+
+            RuntimeType result = GetRuntimeTypeFromHandle(handle);
+            GC.KeepAlive(type);
+            return result;
+        }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern bool CompareCanonicalHandles(RuntimeType left, RuntimeType right);

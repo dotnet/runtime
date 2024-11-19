@@ -341,36 +341,31 @@ extern "C" void QCALLTYPE RuntimeTypeHandle_GetModuleSlow(QCall::ObjectHandleOnS
     END_QCALL;
 }
 
-FCIMPL1(ReflectClassBaseObject *, RuntimeTypeHandle::GetElementType, ReflectClassBaseObject *pTypeUNSAFE) {
-    CONTRACTL {
-        FCALL_CHECK;
-    }
-    CONTRACTL_END;
+FCIMPL1(TADDR, RuntimeTypeHandle::GetElementTypeHandleFromHandle, EnregisteredTypeHandle th)
+{
+    FCALL_CONTRACT;
 
-    REFLECTCLASSBASEREF refType = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(pTypeUNSAFE);
+    _ASSERTE(th != NULL);
 
-    if (refType == NULL)
-        FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
-
-    TypeHandle typeHandle = refType->GetType();
+    TypeHandle typeHandle = TypeHandle::FromPtr(th);
     TypeHandle typeReturn;
 
     if (!typeHandle.IsTypeDesc())
     {
         if (!typeHandle.AsMethodTable()->IsArray())
-            return NULL;
+            return (TADDR)NULL;
 
         typeReturn = typeHandle.GetArrayElementTypeHandle();
     }
     else
     {
         if (typeHandle.IsGenericVariable())
-            return NULL;
+            return (TADDR)NULL;
 
         typeReturn = typeHandle.AsTypeDesc()->GetTypeParam();
     }
 
-    RETURN_CLASS_OBJECT(typeReturn, refType);
+    return typeReturn.AsTAddr();
 }
 FCIMPLEND
 

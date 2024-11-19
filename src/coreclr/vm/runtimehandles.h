@@ -144,7 +144,7 @@ public:
 
     static FCDECL1(PtrArray*, GetInterfaces, ReflectClassBaseObject *pType);
 
-    static FCDECL1(ReflectClassBaseObject*, GetElementType, ReflectClassBaseObject* pType);
+    static FCDECL1(TADDR, GetElementTypeHandleFromHandle, EnregisteredTypeHandle th);
     static FCDECL1(INT32, GetNumVirtuals, ReflectClassBaseObject *pType);
     static FCDECL2(MethodDesc*, GetMethodAt, PTR_ReflectClassBaseObject pType, INT32 slot);
     static FCDECL3(FC_BOOL_RET, GetFields, ReflectClassBaseObject *pType, INT32 **result, INT32 *pCount);
