@@ -1684,7 +1684,7 @@ bool IncrementalSsaBuilder::FinalizeDefs()
         JITDUMP("  [%06u] d:%u\n", Compiler::dspTreeID(def.Tree), ssaNum);
         dsc->lvInSsa                         = true;
         dsc->GetPerSsaData(ssaNum)->m_vnPair = m_comp->vnStore->VNPNormalPair(def.Tree->Data()->gtVNPair);
-        m_finalizedDefs                      = true;
+        INDEBUG(m_finalizedDefs = true);
         return true;
     }
 
@@ -1751,8 +1751,8 @@ bool IncrementalSsaBuilder::FinalizeDefs()
         JITDUMP("  [%06u] d:%u\n", Compiler::dspTreeID(def.Tree), ssaNum);
     }
 
-    dsc->lvInSsa    = true;
-    m_finalizedDefs = true;
+    dsc->lvInSsa = true;
+    INDEBUG(m_finalizedDefs = true);
     return true;
 }
 
