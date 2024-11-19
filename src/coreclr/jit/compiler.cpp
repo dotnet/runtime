@@ -6274,6 +6274,11 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
             instructionSetFlags.AddInstructionSet(InstructionSet_AVX10v1_V512);
             instructionSetFlags.AddInstructionSet(InstructionSet_EVEX);
         }
+
+        if (JitConfig.EnableAPX() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_APX);
+        }
 #endif
 
         // These calls are important and explicitly ordered to ensure that the flags are correct in
