@@ -127,6 +127,13 @@ bool DotNETRuntimeProvider_IsEnabled(unsigned char level, unsigned long long key
     DotNETRuntimeProvider_IsEnabled(Level, Keyword)
 #endif // FEATURE_ETW
 
+//
+// ETW and EventPipe Event Notification Callback Control Code Keywords
+//
+#define EVENT_CONTROL_CODE_DISABLE_PROVIDER 0
+#define EVENT_CONTROL_CODE_ENABLE_PROVIDER 1
+#define EVENT_CONTROL_CODE_CAPTURE_STATE 2
+
 #else // FEATURE_EVENT_TRACE
 
 #include "etmdummy.h"
