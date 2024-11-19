@@ -3188,7 +3188,7 @@ public:
 #endif // HOST_64BIT
 
         // For debugging, you may want to make this number very large, (8K)
-        // should basically insure that no collisions happen
+        // should basically ensure that no collisions happen
 #define OBJREF_TABSIZE              256
         DWORD_PTR dangerousObjRefs[OBJREF_TABSIZE];      // Really objectRefs with lower bit stolen
         // m_allObjRefEntriesBad is TRUE iff dangerousObjRefs are all marked as GC happened
