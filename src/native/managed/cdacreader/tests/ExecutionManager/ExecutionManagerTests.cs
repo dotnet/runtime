@@ -147,7 +147,7 @@ public class ExecutionManagerTests
 
         uint runtimeFunction = 0x100;
 
-        TargetPointer r2rInfo = emBuilder.AddReadyToRunInfo([runtimeFunction]);
+        TargetPointer r2rInfo = emBuilder.AddReadyToRunInfo([runtimeFunction], []);
         MockDescriptors.HashMap hashMapBuilder = new(emBuilder.Builder);
         hashMapBuilder.PopulatePtrMap(
             r2rInfo + (uint)emBuilder.Types[DataType.ReadyToRunInfo].Fields[nameof(Data.ReadyToRunInfo.EntryPointToMethodDescMap)].Offset,
@@ -182,7 +182,7 @@ public class ExecutionManagerTests
 
         uint expectedRuntimeFunction = 0x100;
 
-        TargetPointer r2rInfo = emBuilder.AddReadyToRunInfo([expectedRuntimeFunction]);
+        TargetPointer r2rInfo = emBuilder.AddReadyToRunInfo([expectedRuntimeFunction], []);
         MockDescriptors.HashMap hashMapBuilder = new(emBuilder.Builder);
         hashMapBuilder.PopulatePtrMap(
             r2rInfo + (uint)emBuilder.Types[DataType.ReadyToRunInfo].Fields[nameof(Data.ReadyToRunInfo.EntryPointToMethodDescMap)].Offset,
@@ -228,7 +228,7 @@ public class ExecutionManagerTests
 
         uint[] runtimeFunctions = [ 0x100, 0xc00 ];
 
-        TargetPointer r2rInfo = emBuilder.AddReadyToRunInfo(runtimeFunctions);
+        TargetPointer r2rInfo = emBuilder.AddReadyToRunInfo(runtimeFunctions, []);
         MockDescriptors.HashMap hashMapBuilder = new(emBuilder.Builder);
         hashMapBuilder.PopulatePtrMap(
             r2rInfo + (uint)emBuilder.Types[DataType.ReadyToRunInfo].Fields[nameof(Data.ReadyToRunInfo.EntryPointToMethodDescMap)].Offset,
