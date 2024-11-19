@@ -71,7 +71,7 @@ internal partial class MockDescriptors
         {
             return [
                 (nameof(Constants.Globals.HashMapSlotsPerBucket), HashMapSlotsPerBucket),
-                (nameof(Constants.Globals.HashMapValueMask), helpers.PointerSize == 4 ? 0x7FFFFFFFu : 0x7FFFFFFFFFFFFFFFu),
+                (nameof(Constants.Globals.HashMapValueMask), helpers.MaxSignedTargetAddress),
             ];
         }
 

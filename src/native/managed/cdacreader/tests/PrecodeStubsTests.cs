@@ -180,7 +180,7 @@ public class PrecodeStubsTests
         public readonly MockMemorySpace.BumpAllocator PrecodeAllocator;
         public readonly MockMemorySpace.BumpAllocator StubDataPageAllocator;
 
-        internal Dictionary<DataType, Target.TypeInfo>? Types { get; }
+        internal Dictionary<DataType, Target.TypeInfo> Types { get; }
 
         public TargetPointer MachineDescriptorAddress;
         public CodePointerFlags CodePointerFlags {get; private set;}
@@ -190,16 +190,11 @@ public class PrecodeStubsTests
             Builder = builder;
             PrecodeAllocator = builder.CreateAllocator(allocationRange.PrecodeDescriptorStart, allocationRange.PrecodeDescriptorEnd);
             StubDataPageAllocator = builder.CreateAllocator(allocationRange.StubDataPageStart, allocationRange.StubDataPageEnd);
-            Types = typeInfoCache ?? CreateTypeInfoCache(Builder.TargetTestHelpers);
+            Types = typeInfoCache ?? GetTypes(Builder.TargetTestHelpers);
         }
 
-        public Dictionary<DataType, Target.TypeInfo> CreateTypeInfoCache(TargetTestHelpers targetTestHelpers) {
-            var typeInfo = new Dictionary<DataType, Target.TypeInfo>();
-            AddToTypeInfoCache(typeInfo, targetTestHelpers);
-            return typeInfo;
-        }
-
-        public void AddToTypeInfoCache(Dictionary<DataType, Target.TypeInfo> typeInfoCache, TargetTestHelpers targetTestHelpers) {
+        public Dictionary<DataType, Target.TypeInfo> GetTypes(TargetTestHelpers targetTestHelpers) {
+            Dictionary<DataType, Target.TypeInfo> types = new();
             var layout = targetTestHelpers.LayoutFields([
                 new(nameof(Data.PrecodeMachineDescriptor.StubCodePageSize), DataType.uint32),
                 new(nameof(Data.PrecodeMachineDescriptor.OffsetOfPrecodeType), DataType.uint8),
@@ -211,7 +206,7 @@ public class PrecodeStubsTests
                 new(nameof(Data.PrecodeMachineDescriptor.FixupPrecodeType), DataType.uint8),
                 new(nameof(Data.PrecodeMachineDescriptor.ThisPointerRetBufPrecodeType), DataType.uint8),
             ]);
-            typeInfoCache[DataType.PrecodeMachineDescriptor] = new Target.TypeInfo() {
+            types[DataType.PrecodeMachineDescriptor] = new Target.TypeInfo() {
                 Fields = layout.Fields,
                 Size = layout.Stride,
             };
@@ -219,10 +214,11 @@ public class PrecodeStubsTests
                 new(nameof(Data.StubPrecodeData.Type), DataType.uint8),
                 new(nameof(Data.StubPrecodeData.MethodDesc), DataType.pointer),
             ]);
-            typeInfoCache[DataType.StubPrecodeData] = new Target.TypeInfo() {
+            types[DataType.StubPrecodeData] = new Target.TypeInfo() {
                 Fields = layout.Fields,
                 Size = layout.Stride,
             };
+            return types;
         }
 
         private void SetCodePointerFlags(PrecodeTestDescriptor test)
