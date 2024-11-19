@@ -11,6 +11,7 @@ System.Net.ServerSentEvents.SseParser</PackageDescription>
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="$(CommonPath)System\Net\ArrayBuffer.cs" Link="ProductionCode\Common\System\Net\ArrayBuffer.cs" />
     <Compile Include="System\Net\ServerSentEvents\Helpers.cs" />
     <Compile Include="System\Net\ServerSentEvents\PooledByteBufferWriter.cs" />
     <Compile Include="System\Net\ServerSentEvents\SseFormatter.cs" />
