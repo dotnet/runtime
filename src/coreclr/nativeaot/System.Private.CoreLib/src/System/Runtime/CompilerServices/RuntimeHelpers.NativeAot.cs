@@ -45,7 +45,7 @@ namespace System.Runtime.CompilerServices
             if (type.IsNull)
                 throw new ArgumentException(SR.InvalidOperation_HandleIsNotInitialized);
 
-            ReflectionAugments.ReflectionCoreCallbacks.RunClassConstructor(type);
+            ReflectionAugments.RunClassConstructor(type);
         }
 
         public static void RunModuleConstructor(ModuleHandle module)
