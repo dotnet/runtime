@@ -360,6 +360,10 @@ namespace ILCompiler
 
                 if (_supportedInstructionSets.Contains("vpclmul"))
                     _supportedInstructionSets.Add("vpclmul_v512");
+
+                // Having AVX10V1-V512 enabled, means having AVX10V2-V512 enabled as well.
+                if (_supportedInstructionSets.Contains("avx10v1_v512"))
+                    _supportedInstructionSets.Add("avx10v2_v512");
             }
 
             foreach (string supported in _supportedInstructionSets)
