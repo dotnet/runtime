@@ -5130,7 +5130,8 @@ void CSE_HeuristicCommon::InsertUseIntoSsa(IncrementalSsaBuilder& ssaBuilder, co
     // If the old VN was flagged as a checked bound then propagate that to the
     // new VN to make sure assertion prop will pay attention to this VN.
     if ((oldConservativeVN != ssaDsc->m_vnPair.GetConservative()) &&
-        m_pCompiler->vnStore->IsVNCheckedBound(oldConservativeVN))
+        m_pCompiler->vnStore->IsVNCheckedBound(oldConservativeVN) &&
+        !m_pCompiler->vnStore->IsVNConstant(ssaDsc->m_vnPair.GetConservative()))
     {
         m_pCompiler->vnStore->SetVNIsCheckedBound(ssaDsc->m_vnPair.GetConservative());
     }
