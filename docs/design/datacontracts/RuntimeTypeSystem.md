@@ -621,7 +621,7 @@ The contract additionally depends on these data descriptors
 
 ### MethodDesc
 
-The version 1 `MethodDesc` APIs depend on the `MethodDescAlignment` global and the `MethodDesc` and `MethodDescChunk` data descriptors.
+The version 1 `MethodDesc` APIs depend on the following globals:
 
 | Global name | Meaning |
 | --- | --- |
@@ -644,7 +644,9 @@ We depend on the following data descriptors:
 | `MethodDescChunk` | `Size` | The size of this `MethodDescChunk`  following this `MethodDescChunk` header, minus 1. In multiples of `MethodDescAlignment` |
 | `MethodDescChunk` | `Count` | The number of `MethodDesc` entries in this chunk, minus 1. |
 | `MethodDescChunk` | `FlagsAndTokenRange` | `MethodDescChunk` flags, and the upper bits of the method token's RID |
+| `MethodTable` | `AuxiliaryData` | Auxiliary data associated with the method table. See `MethodTableAuxiliaryData` |
 | `MethodTableAuxiliaryData` | `LoaderModule` | The loader module associated with a method table
+| `MethodTableAuxiliaryData` | `OffsetToNonVirtualSlots` | Offset from the auxiliary data address to the array of non-virtual slots |
 | `InstantiatedMethodDesc` | `PerInstInfo` | The pointer to the method's type arguments |
 | `InstantiatedMethodDesc` | `Flags2` | Flags for the `InstantiatedMethodDesc` |
 | `InstantiatedMethodDesc` | `NumGenericArgs` | How many generic args the method has |
@@ -1123,7 +1125,10 @@ Getting the native code pointer for methods with a NativeCodeSlot or a stable en
         }
         else
         {
-            // TODO[cdac]: GetNonVirtualSlotsArray from MethodTableAuxiliaryData
+            // Non-virtual slots < GetNumVtableSlots live before the MethodTableAuxiliaryData. The array grows backwards
+            TargetPointer auxDataPtr = _target.ReadPointer(typeHandle.Address + /* MethodTable::AuxiliaryData offset */);
+            TargetPointer nonVirtualSlotsArray = auxDataPtr + _target.Read<short>(/* MethodTableAuxiliaryData::OffsetToNonVirtualSlots offset */);
+            return nonVirtualSlotsArray - (1 + (slotNum - mt.NumVirtuals));
         }
 
     }

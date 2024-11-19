@@ -98,7 +98,7 @@ namespace System.Runtime.CompilerServices
             if (!RuntimeFieldHandle.GetRVAFieldInfo(fldInfo.Value, out void* data, out uint totalSize))
                 throw new ArgumentException(SR.Argument_BadFieldForInitializeArray);
 
-            TypeHandle th = targetTypeHandle.GetNativeTypeHandle();
+            TypeHandle th = targetTypeHandle.GetRuntimeType().GetNativeTypeHandle();
             Debug.Assert(!th.IsTypeDesc); // TypeDesc can't be used as generic parameter
             MethodTable* targetMT = th.AsMethodTable();
 

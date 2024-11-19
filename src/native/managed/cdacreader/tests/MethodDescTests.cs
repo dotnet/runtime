@@ -2,9 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Generic;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
-using Microsoft.Diagnostics.DataContractReader.Data;
 using Xunit;
 
 namespace Microsoft.Diagnostics.DataContractReader.UnitTests;
@@ -16,17 +14,10 @@ public class MethodDescTests
         TargetTestHelpers targetTestHelpers = new(arch);
 
         MockMemorySpace.Builder builder = new(targetTestHelpers);
-        MockDescriptors.RuntimeTypeSystem rtsBuilder = new(builder) {
-            // arbtrary address range
-            TypeSystemAllocator = builder.CreateAllocator(start: 0x00000000_4a000000, end: 0x00000000_4b000000),
-        };
+        MockDescriptors.RuntimeTypeSystem rtsBuilder = new(builder);
+        MockDescriptors.Loader loaderBuilder = new(builder);
 
-        var loaderBuilder = new MockDescriptors.Loader(builder);
-
-        MockDescriptors.Object objectBuilder = new(rtsBuilder) {
-            // arbtrary adress range
-            ManagedObjectAllocator = builder.CreateAllocator(start: 0x00000000_10000000, end: 0x00000000_20000000),
-        };
+        MockDescriptors.Object objectBuilder = new(rtsBuilder);
         var methodDescChunkAllocator = builder.CreateAllocator(start: 0x00000000_20002000, end: 0x00000000_20003000);
         var methodDescBuilder = new MockDescriptors.MethodDescriptors(rtsBuilder, loaderBuilder)
         {
@@ -35,10 +26,8 @@ public class MethodDescTests
 
         builder = builder
             .SetContracts([ nameof (Contracts.Object), nameof (Contracts.RuntimeTypeSystem), nameof (Contracts.Loader) ])
-            .SetGlobals(MockDescriptors.MethodDescriptors.Globals(targetTestHelpers))
+            .SetGlobals(methodDescBuilder.Globals)
             .SetTypes(methodDescBuilder.Types);
-
-        methodDescBuilder.AddGlobalPointers();
 
         configure?.Invoke(methodDescBuilder);
 
@@ -95,7 +84,8 @@ public class MethodDescTests
             Assert.Equal(objectMethodTable, mt);
             bool isCollectible = rts.IsCollectibleMethod(handle);
             Assert.False(isCollectible);
-
+            TargetPointer versioning = rts.GetMethodDescVersioningState(handle);
+            Assert.Equal(TargetPointer.Null, versioning);
         });
     }
 }

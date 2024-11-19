@@ -391,8 +391,10 @@ bool Compiler::optCanSinkWidenedIV(unsigned lclNum, FlowGraphNaturalLoop* loop)
 {
     LclVarDsc* dsc = lvaGetDesc(lclNum);
 
+    assert(dsc->lvInSsa);
+
     BasicBlockVisit result = loop->VisitRegularExitBlocks([=](BasicBlock* exit) {
-        if (!VarSetOps::IsMember(this, exit->bbLiveIn, dsc->lvVarIndex))
+        if (!optLocalIsLiveIntoBlock(lclNum, exit))
         {
             JITDUMP("  Exit " FMT_BB " does not need a sink; V%02u is not live-in\n", exit->bbNum, lclNum);
             return BasicBlockVisit::Continue;
@@ -422,7 +424,7 @@ bool Compiler::optCanSinkWidenedIV(unsigned lclNum, FlowGraphNaturalLoop* loop)
         block->VisitAllSuccs(this, [=](BasicBlock* succ) {
             if (!loop->ContainsBlock(succ) && bbIsHandlerBeg(succ))
             {
-                assert(!VarSetOps::IsMember(this, succ->bbLiveIn, dsc->lvVarIndex) &&
+                assert(!optLocalIsLiveIntoBlock(lclNum, succ) &&
                        "Candidate IV for widening is live into exceptional exit");
             }
 
@@ -534,8 +536,10 @@ bool Compiler::optIsIVWideningProfitable(unsigned              lclNum,
 
     // Now account for the cost of sinks.
     LclVarDsc* dsc = lvaGetDesc(lclNum);
+    assert(dsc->lvInSsa);
+
     loop->VisitRegularExitBlocks([&](BasicBlock* exit) {
-        if (VarSetOps::IsMember(this, exit->bbLiveIn, dsc->lvVarIndex))
+        if (optLocalIsLiveIntoBlock(lclNum, exit))
         {
             savedSize -= ExtensionSize;
             savedCost -= exit->getBBWeight(this) * ExtensionCost;
@@ -583,8 +587,10 @@ bool Compiler::optIsIVWideningProfitable(unsigned              lclNum,
 void Compiler::optSinkWidenedIV(unsigned lclNum, unsigned newLclNum, FlowGraphNaturalLoop* loop)
 {
     LclVarDsc* dsc = lvaGetDesc(lclNum);
+    assert(dsc->lvInSsa);
+
     loop->VisitRegularExitBlocks([=](BasicBlock* exit) {
-        if (!VarSetOps::IsMember(this, exit->bbLiveIn, dsc->lvVarIndex))
+        if (!optLocalIsLiveIntoBlock(lclNum, exit))
         {
             return BasicBlockVisit::Continue;
         }
@@ -1284,8 +1290,14 @@ bool Compiler::optLocalHasNonLoopUses(unsigned lclNum, FlowGraphNaturalLoop* loo
         return true;
     }
 
+    if (!varDsc->lvTracked && !varDsc->lvInSsa)
+    {
+        // We do not have liveness we can use for this untracked local.
+        return true;
+    }
+
     BasicBlockVisit visitResult = loop->VisitRegularExitBlocks([=](BasicBlock* block) {
-        if (VarSetOps::IsMember(this, block->bbLiveIn, varDsc->lvVarIndex))
+        if (optLocalIsLiveIntoBlock(lclNum, block))
         {
             return BasicBlockVisit::Abort;
         }
@@ -1303,6 +1315,30 @@ bool Compiler::optLocalHasNonLoopUses(unsigned lclNum, FlowGraphNaturalLoop* loo
     }
 
     return false;
+}
+
+//------------------------------------------------------------------------
+// optLocalIsLiveIntoBlock:
+//   Check if a local is live into a block. Required liveness information for the local to be present
+//   (either because of it being tracked, or from being an SSA-inserted local).
+//
+// Parameters:
+//   lclNum - The local
+//   block  - The block
+//
+// Returns:
+//   True if the local is live into that block.
+//
+bool Compiler::optLocalIsLiveIntoBlock(unsigned lclNum, BasicBlock* block)
+{
+    LclVarDsc* dsc = lvaGetDesc(lclNum);
+    if (dsc->lvTracked)
+    {
+        return VarSetOps::IsMember(this, block->bbLiveIn, dsc->lvVarIndex);
+    }
+
+    assert(dsc->lvInSsa);
+    return IsInsertedSsaLiveIn(block, lclNum);
 }
 
 struct CursorInfo
@@ -2574,9 +2610,21 @@ PhaseStatus Compiler::optInductionVariables()
     bool changed = false;
 
     optReachableBitVecTraits = nullptr;
-    m_dfsTree                = fgComputeDfs();
-    m_domTree                = FlowGraphDominatorTree::Build(m_dfsTree);
-    m_loops                  = FlowGraphNaturalLoops::Find(m_dfsTree);
+
+    if (m_dfsTree == nullptr)
+    {
+        m_dfsTree = fgComputeDfs();
+    }
+
+    if (m_domTree == nullptr)
+    {
+        m_domTree = FlowGraphDominatorTree::Build(m_dfsTree);
+    }
+
+    if (m_loops == nullptr)
+    {
+        m_loops = FlowGraphNaturalLoops::Find(m_dfsTree);
+    }
 
     LoopLocalOccurrences loopLocals(m_loops);
 
