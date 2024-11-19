@@ -18,12 +18,12 @@ internal partial class MockDescriptors
             DataType = DataType.MethodDesc,
             Fields =
             [
-                (nameof(Data.MethodDesc.ChunkIndex), DataType.uint8),
-                (nameof(Data.MethodDesc.Slot), DataType.uint16),
-                (nameof(Data.MethodDesc.Flags), DataType.uint16),
-                (nameof(Data.MethodDesc.Flags3AndTokenRemainder), DataType.uint16),
-                (nameof(Data.MethodDesc.EntryPointFlags), DataType.uint8),
-                (nameof(Data.MethodDesc.CodeData), DataType.pointer),
+                new(nameof(Data.MethodDesc.ChunkIndex), DataType.uint8),
+                new(nameof(Data.MethodDesc.Slot), DataType.uint16),
+                new(nameof(Data.MethodDesc.Flags), DataType.uint16),
+                new(nameof(Data.MethodDesc.Flags3AndTokenRemainder), DataType.uint16),
+                new(nameof(Data.MethodDesc.EntryPointFlags), DataType.uint8),
+                new(nameof(Data.MethodDesc.CodeData), DataType.pointer),
             ]
         };
 
@@ -32,11 +32,11 @@ internal partial class MockDescriptors
             DataType = DataType.MethodDescChunk,
             Fields =
             [
-                (nameof(Data.MethodDescChunk.MethodTable), DataType.pointer),
-                (nameof(Data.MethodDescChunk.Next), DataType.pointer),
-                (nameof(Data.MethodDescChunk.Size), DataType.uint8),
-                (nameof(Data.MethodDescChunk.Count), DataType.uint8),
-                (nameof(Data.MethodDescChunk.FlagsAndTokenRange), DataType.uint16)
+                new(nameof(Data.MethodDescChunk.MethodTable), DataType.pointer),
+                new(nameof(Data.MethodDescChunk.Next), DataType.pointer),
+                new(nameof(Data.MethodDescChunk.Size), DataType.uint8),
+                new(nameof(Data.MethodDescChunk.Count), DataType.uint8),
+                new(nameof(Data.MethodDescChunk.FlagsAndTokenRange), DataType.uint16)
             ]
         };
 
@@ -59,7 +59,7 @@ internal partial class MockDescriptors
             Types = GetTypes();
             Globals = rtsBuilder.Globals.Concat(
             [
-                (nameof(Constants.Globals.MethodDescTokenRemainderBitCount), TokenRemainderBitCount, "uint8"),
+                new(nameof(Constants.Globals.MethodDescTokenRemainderBitCount), TokenRemainderBitCount, "uint8"),
             ]).ToArray();
         }
 

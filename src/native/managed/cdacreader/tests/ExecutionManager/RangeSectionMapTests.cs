@@ -13,16 +13,11 @@ public class RangeSectionMapTests
 {
     internal class RSMTestTarget : TestPlaceholderTarget
     {
-        private readonly MockMemorySpace.ReadContext _readContext;
         public RSMTestTarget(MockTarget.Architecture arch, MockMemorySpace.ReadContext readContext)
-            : base (arch)
+            : base (arch, readContext.ReadFromTarget)
         {
-            _readContext = readContext;
-            SetDataReader(_readContext.ReadFromTarget);
         }
     }
-
-
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]

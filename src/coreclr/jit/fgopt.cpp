@@ -5049,7 +5049,7 @@ bool Compiler::ThreeOptLayout::TrySwappingPartitions(
     std::swap(blockOrder, tempOrder);
 
 #ifdef DEBUG
-    // Ensure the swap improved the overall layout
+    // Ensure the swap improved the overall layout. Tolerate some imprecision.
     const weight_t newLayoutCost = GetLayoutCost(s1Start, s4End);
     assert((newLayoutCost < currLayoutCost) || Compiler::fgProfileWeightsEqual(newLayoutCost, currLayoutCost, 0.001));
 #endif // DEBUG
