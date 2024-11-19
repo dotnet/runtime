@@ -234,7 +234,7 @@ public:
 
     static FCDECL1(INT32, GetAttributes, MethodDesc *pMethod);
     static FCDECL1(INT32, GetImplAttributes, ReflectMethodObject *pMethodUNSAFE);
-    static FCDECL1(ReflectClassBaseObject*, GetDeclaringType, MethodDesc *pMethod);
+    static FCDECL1(MethodTable*, GetMethodTable, MethodDesc *pMethod);
     static FCDECL1(INT32, GetSlot, MethodDesc *pMethod);
     static FCDECL1(INT32, GetMethodDef, ReflectMethodObject *pMethodUNSAFE);
     static FCDECL1(LPCUTF8, GetUtf8Name, MethodDesc *pMethod);
@@ -282,6 +282,7 @@ extern "C" void QCALLTYPE RuntimeMethodHandle_GetMethodInstantiation(MethodDesc 
 extern "C" void QCALLTYPE RuntimeMethodHandle_ConstructInstantiation(MethodDesc * pMethod, DWORD format, QCall::StringHandleOnStack retString);
 extern "C" void* QCALLTYPE RuntimeMethodHandle_GetFunctionPointer(MethodDesc * pMethod);
 extern "C" BOOL QCALLTYPE RuntimeMethodHandle_GetIsCollectible(MethodDesc * pMethod);
+extern "C" TADDR QCALLTYPE RuntimeMethodHandle_GetHandleForArray(MethodTable* pMT);
 extern "C" void QCALLTYPE RuntimeMethodHandle_GetTypicalMethodDefinition(MethodDesc * pMethod, QCall::ObjectHandleOnStack refMethod);
 extern "C" void QCALLTYPE RuntimeMethodHandle_StripMethodInstantiation(MethodDesc * pMethod, QCall::ObjectHandleOnStack refMethod);
 extern "C" void QCALLTYPE RuntimeMethodHandle_Destroy(MethodDesc * pMethod);

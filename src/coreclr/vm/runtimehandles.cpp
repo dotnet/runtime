@@ -1462,7 +1462,7 @@ extern "C" void * QCALLTYPE RuntimeMethodHandle_GetFunctionPointer(MethodDesc * 
     return funcPtr;
 }
 
-extern "C" BOOL QCALLTYPE RuntimeMethodHandle_GetIsCollectible(MethodDesc * pMethod)
+extern "C" BOOL QCALLTYPE RuntimeMethodHandle_GetIsCollectible(MethodDesc* pMethod)
 {
     QCALL_CONTRACT;
 
@@ -1475,6 +1475,27 @@ extern "C" BOOL QCALLTYPE RuntimeMethodHandle_GetIsCollectible(MethodDesc * pMet
     END_QCALL;
 
     return isCollectible;
+}
+
+extern "C" TADDR QCALLTYPE RuntimeMethodHandle_GetHandleForArray(MethodTable* pMT)
+{
+    QCALL_CONTRACT;
+    _ASSERTE(pMT != NULL);
+    _ASSERTE(pMT->IsArray());
+
+    TypeHandle declType;
+
+    BEGIN_QCALL;
+
+    // Load the TypeDesc for the array type.  Note the returned type is approximate, i.e.
+    // if shared between reference array types then we will get object[] back.
+    DWORD rank = pMT->GetRank();
+    TypeHandle elemType = pMT->GetArrayElementTypeHandle();
+    declType = ClassLoader::LoadArrayTypeThrowing(elemType, pMT->GetInternalCorElementType(), rank);
+
+    END_QCALL;
+
+    return declType.AsTAddr();
 }
 
 FCIMPL1(LPCUTF8, RuntimeMethodHandle::GetUtf8Name, MethodDesc* pMethod)
@@ -1522,31 +1543,16 @@ FCIMPL1(INT32, RuntimeMethodHandle::GetImplAttributes, ReflectMethodObject *pMet
 }
 FCIMPLEND
 
-
-FCIMPL1(ReflectClassBaseObject*, RuntimeMethodHandle::GetDeclaringType, MethodDesc *pMethod) {
-    CONTRACTL {
+FCIMPL1(MethodTable*, RuntimeMethodHandle::GetMethodTable, MethodDesc *pMethod)
+{
+    CONTRACTL
+    {
         FCALL_CHECK;
-        PRECONDITION(CheckPointer(pMethod));
+        PRECONDITION(pMethod != NULL);
     }
     CONTRACTL_END;
 
-    if (!pMethod)
-        FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
-
-    MethodTable *pMT = pMethod->GetMethodTable();
-    TypeHandle declType(pMT);
-    if (pMT->IsArray())
-    {
-        HELPER_METHOD_FRAME_BEGIN_RET_0();
-
-        // Load the TypeDesc for the array type.  Note the returned type is approximate, i.e.
-        // if shared between reference array types then we will get object[] back.
-        DWORD rank = pMT->GetRank();
-        TypeHandle elemType = pMT->GetArrayElementTypeHandle();
-        declType = ClassLoader::LoadArrayTypeThrowing(elemType, pMT->GetInternalCorElementType(), rank);
-        HELPER_METHOD_FRAME_END();
-    }
-    RETURN_CLASS_OBJECT(declType, NULL);
+    return pMethod->GetMethodTable();
 }
 FCIMPLEND
 

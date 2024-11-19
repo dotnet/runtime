@@ -30,7 +30,8 @@ namespace System
         /// </summary>
         /// <param name="value">An IntPtr handle to a RuntimeType to create a <see cref="RuntimeTypeHandle"/> object from.</param>
         /// <returns>A new <see cref="RuntimeTypeHandle"/> object that corresponds to the value parameter.</returns>
-        public static RuntimeTypeHandle FromIntPtr(IntPtr value) => new RuntimeTypeHandle(GetTypeFromHandle(value));
+        public static RuntimeTypeHandle FromIntPtr(IntPtr value) =>
+            new RuntimeTypeHandle(value == IntPtr.Zero ? null : GetRuntimeTypeFromHandle(value));
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_GetTypeFromHandleSlow")]
         private static partial void GetTypeFromHandleSlow(
@@ -48,13 +49,8 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern RuntimeType? GetTypeFromHandleIfExists(IntPtr handle);
 
-        private static RuntimeType? GetTypeFromHandle(IntPtr handle)
+        internal static RuntimeType GetRuntimeTypeFromHandle(IntPtr handle)
         {
-            if (handle == IntPtr.Zero)
-            {
-                return null;
-            }
-
             return GetTypeFromHandleIfExists(handle) ?? GetTypeFromHandleSlow(handle);
         }
 
@@ -928,7 +924,25 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern RuntimeType GetDeclaringType(RuntimeMethodHandleInternal method);
+        private static extern unsafe MethodTable* GetMethodTable(RuntimeMethodHandleInternal method);
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeMethodHandle_GetHandleForArray")]
+        private static unsafe partial IntPtr GetHandleForArray(MethodTable* pMT);
+
+        internal static unsafe RuntimeType GetDeclaringType(RuntimeMethodHandleInternal method)
+        {
+            Debug.Assert(!method.IsNullHandle());
+            MethodTable* pMT = GetMethodTable(method);
+            if (pMT->IsArray)
+            {
+                IntPtr handle = GetHandleForArray(pMT);
+                return RuntimeTypeHandle.GetRuntimeTypeFromHandle(handle);
+            }
+            else
+            {
+                return RuntimeTypeHandle.GetRuntimeType(pMT);
+            }
+        }
 
         internal static RuntimeType GetDeclaringType(IRuntimeMethodInfo method)
         {
