@@ -705,10 +705,10 @@ namespace System.Runtime.CompilerServices
 
         /// <summary>
         /// The PerInstInfo is used to describe the generic arguments and dictionary of this type.
-        /// It points as a PerInstInfo, which is an array of pointers to generic dictionaries, which then point
-        /// to the actual type arguments + the contents of the generic dictionary. The size of the PerInstInfo is
-        /// defined in the negative space of that structure, and the size of the generic dictionary is described
-        /// in the DictionaryLayout of the associated canonical MethodTable.
+        /// It points at a structure defined as PerInstInfo in C++, which is an array of pointers to generic
+        /// dictionaries, which then point to the actual type arguments + the contents of the generic dictionary.
+        /// The size of the PerInstInfo is defined in the negative space of that structure, and the size of the
+        /// generic dictionary is described in the DictionaryLayout of the associated canonical MethodTable.
         /// </summary>
         [FieldOffset(ElementTypeOffset)]
         public MethodTable*** PerInstInfo;
@@ -922,6 +922,8 @@ namespace System.Runtime.CompilerServices
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public uint GetNumInstanceFieldBytesIfContainsGCPointers()
         {
+            // If the type ContainsGCPointers, we can compute the size without resorting to loading the BaseSizePadding field from the EEClass
+
             Debug.Assert(ContainsGCPointers);
             Debug.Assert((BaseSize - (nuint)(2 * sizeof(IntPtr)) == GetNumInstanceFieldBytes()));
             return BaseSize - (uint)(2 * sizeof(IntPtr));

@@ -1896,7 +1896,7 @@ MethodTableBuilder::BuildMethodTableThrowing(
         if (pMT->IsValueType())
         {
             DWORD baseSizePadding = pMT->GetClass()->GetBaseSizePadding();
-            _ASSERTE(baseSizePadding == (sizeof(TADDR) * 2)); // This is dependended on by the System.Runtime.CompilerServices.CastHelpers.IsNullableForType code
+            _ASSERTE(baseSizePadding == (sizeof(TADDR) * 2)); // This is dependended on by GetNumInstanceFieldBytesIfContainsGCPointers.
         }
 #endif // _DEBUG
         CGCDesc* gcDesc = CGCDesc::GetCGCDescFromMT(pMT);
