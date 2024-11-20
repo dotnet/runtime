@@ -4919,9 +4919,11 @@ void CSE_HeuristicCommon::PerformCSE(CSE_Candidate* successfulCandidate)
 
         // Create a comma node for the CSE assignment
         GenTree* cse = m_pCompiler->gtNewOperNode(GT_COMMA, genActualType(exp), origStore, cseUse);
-        // The comma's value is the same as 'val' as the store to the CSE
-        // LclVar cannot add any new exceptions
-        cse->gtVNPair = val->gtVNPair;
+
+        // Compute new VN for the store. It usually matches 'val', but it may
+        // not for shared-constant CSE.
+        ValueNumPair sideEffExcSet = m_pCompiler->vnStore->VNPExceptionSet(origStore->gtVNPair);
+        cse->gtVNPair              = m_pCompiler->vnStore->VNPWithExc(cseUse->gtVNPair, sideEffExcSet);
 
         ReplaceCSENode(stmt, exp, cse);
 
