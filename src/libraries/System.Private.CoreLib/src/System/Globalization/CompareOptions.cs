@@ -49,13 +49,15 @@ namespace System.Globalization
         /// <summary>
         /// Indicates that the string comparison must sort sequences of digits (Unicode general category "Nd") based on their numeric value.
         /// For example, "2" comes before "10". Non-digit characters such as decimal points, minus or plus signs, etc.
-        /// are not considered as part of the sequence and will terminate it.
+        /// are not considered as part of the sequence and will terminate it. This flag is not valid for indexing
+        /// (such as <see cref="CompareInfo.IndexOf(string, string, CompareOptions)"/>, <see cref="CompareInfo.IsPrefix(string, string, CompareOptions)"/>, etc.).
         /// </summary>
         NumericOrdering = 0x00000020,
 
         /// <summary>
         /// String comparison must ignore case, then perform an ordinal comparison. This technique is equivalent to
         /// converting the string to uppercase using the invariant culture and then performing an ordinal comparison on the result.
+        /// This value cannot be combined with other <see cref="CompareOptions" /> values and must be used alone.
         /// </summary>
         OrdinalIgnoreCase = 0x10000000, // This flag can not be used with other flags.
 
