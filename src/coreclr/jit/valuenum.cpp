@@ -6553,6 +6553,16 @@ bool ValueNumStore::IsVNInt32Constant(ValueNum vn)
     return TypeOfVN(vn) == TYP_INT;
 }
 
+//------------------------------------------------------------------------
+// IsVNNeverNegative: Determines if the given value number can never take on a negative value
+// in a signed context (i.e. when the most-significant bit represents signedness).
+//
+// Parameters:
+//    vn - Value number to query
+//
+// Returns:
+//    True if the most-significant bit is never set, false otherwise.
+//
 bool ValueNumStore::IsVNNeverNegative(ValueNum vn)
 {
     auto vnVisitor = [this](ValueNum vn) -> VNVisit {
@@ -6595,15 +6605,10 @@ bool ValueNumStore::IsVNNeverNegative(ValueNum vn)
                 case VNF_LE:
                 case VNF_EQ:
                 case VNF_NE:
-                case VNF_UMOD:
-                case VNF_UDIV:
                 case VNF_GE_UN:
                 case VNF_GT_UN:
                 case VNF_LE_UN:
                 case VNF_LT_UN:
-                case VNF_ADD_UN_OVF:
-                case VNF_SUB_UN_OVF:
-                case VNF_MUL_UN_OVF:
                 case VNF_MDArrLowerBound:
 #ifdef FEATURE_HW_INTRINSICS
 #ifdef TARGET_XARCH
@@ -10801,6 +10806,9 @@ PhaseStatus Compiler::fgValueNumber()
         }
     }
 
+    assert(m_dfsTree != nullptr);
+    assert(m_loops != nullptr);
+
     m_blockToLoop = BlockToNaturalLoopMap::Build(m_loops);
     // Compute the side effects of loops.
     optComputeLoopSideEffects();
@@ -10904,6 +10912,7 @@ PhaseStatus Compiler::fgValueNumber()
 #endif // DEBUG
 
     fgVNPassesCompleted++;
+    vnState = nullptr;
 
     return PhaseStatus::MODIFIED_EVERYTHING;
 }
@@ -11191,7 +11200,7 @@ void Compiler::fgValueNumberPhiDef(GenTreeLclVar* newSsaDef, BasicBlock* blk, bo
     for (GenTreePhi::Use& use : phiNode->Uses())
     {
         GenTreePhiArg* phiArg = use.GetNode()->AsPhiArg();
-        if (!vnState->IsReachableThroughPred(blk, phiArg->gtPredBB))
+        if ((vnState != nullptr) && !vnState->IsReachableThroughPred(blk, phiArg->gtPredBB))
         {
             JITDUMP("  Phi arg [%06u] is unnecessary; path through pred " FMT_BB " cannot be taken\n",
                     dspTreeID(phiArg), phiArg->gtPredBB->bbNum);

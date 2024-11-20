@@ -507,7 +507,7 @@
     <value>Members '{0}' and '{1}' on type '{2}' cannot both bind with parameter '{3}' in the deserialization constructor.</value>
   </data>
   <data name="ConstructorParamIncompleteBinding" xml:space="preserve">
-    <value>Each parameter in the deserialization constructor on type '{0}' must bind to an object property or field on deserialization. Each parameter name must match with a property or field on the object. Fields are only considered when 'JsonSerializerOptions.IncludeFields' is enabled. The match can be case-insensitive.</value>
+    <value>Each parameter in the deserialization constructor on type '{0}' must bind to an object property or field on deserialization. Each parameter name and type must match with a property or field on the object. Fields are only considered when 'JsonSerializerOptions.IncludeFields' is enabled. The name match can be case-insensitive.</value>
   </data>
   <data name="ObjectWithParameterizedCtorRefMetadataNotSupported" xml:space="preserve">
     <value>Reference metadata is not supported when deserializing constructor parameters. See type '{0}'.</value>
@@ -806,5 +806,8 @@
   </data>
   <data name="Arg_HTCapacityOverflow" xml:space="preserve">
     <value>Hashtable's capacity overflowed and went negative. Check load factor, capacity and the current size of the table.</value>
+  </data>
+  <data name="Argument_InvalidOffLen" xml:space="preserve">
+    <value>Offset and length were out of bounds for the array or count is greater than the number of elements from index to the end of the source collection.</value>
   </data>
 </root>
