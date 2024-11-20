@@ -55,8 +55,17 @@ namespace WebAssemblyInfo
 
                 switch (subsectionType)
                 {
-                    // case LinkingSubsectionType.WasmSegmentInfo:
-                    //     break;
+                    case LinkingSubsectionType.WasmSegmentInfo:
+                        var count = ReadU32();
+                        for (var i = 0; i < count; i++)
+                        {
+                            var name = ReadString();
+                            var alignment = ReadU32();
+                            var flags = ReadU32();
+                            if (Context.Verbose)
+                                Console.WriteLine($"Segment {i} name: {name} alignment: {alignment} flags: {flags}");
+                        }
+                        break;
                     // case LinkingSubsectionType.WasmInitFunctions:
                     //     break;
                     // case LinkingSubsectionType.WasmComdatInfo:
