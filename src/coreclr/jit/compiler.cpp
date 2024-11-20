@@ -5888,8 +5888,6 @@ void Compiler::RecomputeFlowGraphAnnotations()
     // Recompute reachability sets, dominators, and loops.
     optResetLoopInfo();
 
-    fgRenumberBlocks();
-    fgInvalidateDfsTree();
     fgDfsBlocksAndRemove();
     optFindLoops();
 
