@@ -9,6 +9,7 @@ using System.Globalization;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.Loader;
+using System.Threading;
 
 using Xunit;
 
@@ -184,6 +185,7 @@ namespace BinderTracingTests
             }
 
             Console.WriteLine($"Test {method.Name} finished.");
+            Thread.Sleep(60000);
             return true;
         }
 
