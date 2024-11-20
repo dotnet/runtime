@@ -9231,27 +9231,32 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
                             widenFactor = 1;
                             break;
                         }
+
                         case INS_TT_HALF:
                         case INS_TT_HALF_MEM:
                         {
                             widenFactor = 2;
                             break;
                         }
+
                         case INS_TT_QUARTER_MEM:
                         {
                             widenFactor = 4;
                             break;
                         }
+
                         case INS_TT_EIGHTH_MEM:
                         {
                             widenFactor = 8;
                             break;
                         }
+
                         case INS_TT_MOVDDUP:
                         {
                             widenFactor = parentSize == 16 ? 2 : 1;
                             break;
                         }
+
                         default:
                         {
                             unreached();
