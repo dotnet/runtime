@@ -17,7 +17,6 @@ internal partial class MockDescriptors
     {
         public const ulong ExecutionManagerCodeRangeMapAddress = 0x000a_fff0;
 
-        const bool UseFunclets = true;
         const int RealCodeHeaderSize = 0x08; // must be big enough for the offsets of RealCodeHeader size in ExecutionManagerTestTarget, below
 
         public struct AllocationRange
@@ -295,11 +294,14 @@ internal partial class MockDescriptors
                 MockDescriptors.ModuleFields,
                 ]).Concat(MockDescriptors.HashMap.GetTypes(Builder.TargetTestHelpers))
                 .ToDictionary();
+
+            // Tests are currently always set to use funclets
+            bool useFunclets = true;
             Globals =
             [
                 (nameof(Constants.Globals.ExecutionManagerCodeRangeMapAddress), ExecutionManagerCodeRangeMapAddress),
                 (nameof(Constants.Globals.StubCodeBlockLast), 0x0Fu),
-                (nameof(Constants.Globals.FeatureEHFunclets), UseFunclets ? 1 : 0),
+                (nameof(Constants.Globals.FeatureEHFunclets), useFunclets ? 1u : 0u),
             ];
             Globals = Globals
                 .Concat(MockDescriptors.HashMap.GetGlobals(Builder.TargetTestHelpers))
