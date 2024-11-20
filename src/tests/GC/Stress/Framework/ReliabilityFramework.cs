@@ -166,7 +166,7 @@ public class ReliabilityFramework
         {
             sb.AppendLine($"{kvp.Key}: {kvp.Value}");
         }
-        rf._logger.WriteToInstrumentationLog(null, LoggingLevels.StartupShutdown, String.Format("Get GC Configuration Variables\n{0}",sb));
+        rf._logger.WriteToInstrumentationLog(null, LoggingLevels.StartupShutdown, $"GC Configuration Variables:\n{sb}");
 
         foreach (string arg in args)
         {
