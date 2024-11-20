@@ -778,9 +778,8 @@ namespace System.Net.Http
         /// </summary>
         internal sealed class LimitArrayPoolWriteStream : Stream
         {
-            /// <summary>Applies when a Content-Length header was not specified.
-            /// <para>These buffers are pooled and we're only holding onto them while downloading, so we start with a relatively large size.</para></summary>
-            private const int MinInitialBufferSize = 256 * 1024; // 256 KB
+            /// <summary>Applies when a Content-Length header was not specified.</summary>
+            private const int MinInitialBufferSize = 16 * 1024; // 16 KB
 
             /// <summary>Applies when a Content-Length header was set. If it's &lt;= this limit, we'll allocate an exact-sized buffer upfront.</summary>
             private const int MaxInitialBufferSize = 16 * 1024 * 1024; // 16 MB
@@ -1009,7 +1008,7 @@ namespace System.Net.Http
                     if (_pooledBuffers is null)
                     {
                         // Starting with 4 buffers means we'll have capacity for at least
-                        // 256 KB + 512 KB + 1 MB + 2 MB + 4 MB (last buffer) ~= 8 MB
+                        // 16 KB + 32 KB + 64 KB + 128 KB + 256 KB (last buffer) = 496 KB
                         _pooledBuffers = new byte[]?[4];
                     }
                     else
@@ -1022,10 +1021,10 @@ namespace System.Net.Http
 
                         if (bufferCount == buffers.Length)
                         {
-                            Debug.Assert(bufferCount <= 12);
+                            Debug.Assert(bufferCount <= 16);
 
-                            // After the first resize, we should have enough capacity for at least ~128 MB.
-                            // After the second resize, for ~2 GB.
+                            // After the first resize, we should have enough capacity for at least ~8 MB.
+                            // ~128 MB after the second, ~2 GB after the third.
                             Array.Resize(ref _pooledBuffers, bufferCount + 4);
                         }
                     }
