@@ -406,6 +406,7 @@ RELEASE_CONFIG_INTEGER(EnableBMI2,                  "EnableBMI2",               
 RELEASE_CONFIG_INTEGER(EnableFMA,                   "EnableFMA",                 1) // Allows FMA+ hardware intrinsics to be disabled
 RELEASE_CONFIG_INTEGER(EnableLZCNT,                 "EnableLZCNT",               1) // Allows LZCNT+ hardware intrinsics to be disabled
 RELEASE_CONFIG_INTEGER(EnablePCLMULQDQ,             "EnablePCLMULQDQ",           1) // Allows PCLMULQDQ+ hardware intrinsics to be disabled
+RELEASE_CONFIG_INTEGER(EnableVPCLMULQDQ,            "EnableVPCLMULQDQ",          1) // Allows VPCLMULQDQ+ hardware intrinsics to be disabled
 RELEASE_CONFIG_INTEGER(EnablePOPCNT,                "EnablePOPCNT",              1) // Allows POPCNT+ hardware intrinsics to be disabled
 RELEASE_CONFIG_INTEGER(EnableSSE,                   "EnableSSE",                 1) // Allows SSE+ hardware intrinsics to be disabled
 RELEASE_CONFIG_INTEGER(EnableSSE2,                  "EnableSSE2",                1) // Allows SSE2+ hardware intrinsics to be disabled
