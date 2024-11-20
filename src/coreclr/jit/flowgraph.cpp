@@ -5977,13 +5977,13 @@ bool FlowGraphNaturalLoop::CanDuplicate(INDEBUG(const char** reason))
     }
 #endif
 
-    bool              allowEHCloning = false;
+    bool allowEHCloning = false;
     INDEBUG(allowEHCloning = (JitConfig.JitCloneLoopsWithEH() > 0);)
 
     Compiler*         comp   = m_dfsTree->GetCompiler();
     BasicBlock* const header = GetHeader();
 
-    CompAllocator           alloc          = comp->getAllocator(CMK_LoopClone);
+    CompAllocator           alloc = comp->getAllocator(CMK_LoopClone);
     ArrayStack<BasicBlock*> tryRegionsToClone(alloc);
 
     BasicBlockVisit result = VisitLoopBlocks([=, &tryRegionsToClone](BasicBlock* block) {
@@ -6062,9 +6062,9 @@ void FlowGraphNaturalLoop::Duplicate(BasicBlock** insertAfter, BlockToBlockMap* 
 {
     assert(CanDuplicate(nullptr));
 
-    Compiler*         comp           = m_dfsTree->GetCompiler();
+    Compiler* comp = m_dfsTree->GetCompiler();
 
-    bool              canCloneTry = false;
+    bool canCloneTry = false;
     INDEBUG(canCloneTry = (JitConfig.JitCloneLoopsWithEH() > 0);)
 
     bool              clonedTry      = false;
