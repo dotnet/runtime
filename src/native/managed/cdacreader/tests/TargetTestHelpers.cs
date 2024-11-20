@@ -19,6 +19,9 @@ internal unsafe class TargetTestHelpers
     }
 
     public int PointerSize => Arch.Is64Bit ? sizeof(ulong) : sizeof(uint);
+
+    public ulong MaxSignedTargetAddress => (ulong)(Arch.Is64Bit ? long.MaxValue : int.MaxValue);
+
     public int ContractDescriptorSize => ContractDescriptor.Size(Arch.Is64Bit);
 
 
