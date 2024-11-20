@@ -11,66 +11,17 @@ namespace Microsoft.Diagnostics.DataContractReader.UnitTests.ExecutionManager;
 
 public class ExecutionManagerTests
 {
-    internal class ExecutionManagerTestTarget : TestPlaceholderTarget
+    private static Target CreateTarget(ExecutionManagerTestBuilder emBuilder)
     {
-        private readonly ulong _topRangeSectionMap;
-
-        public static ExecutionManagerTestTarget FromBuilder(ExecutionManagerTestBuilder emBuilder)
-        {
-            var arch = emBuilder.Builder.TargetTestHelpers.Arch;
-            ReadFromTargetDelegate reader = emBuilder.Builder.GetReadContext().ReadFromTarget;
-            var topRangeSectionMap = ExecutionManagerTestBuilder.ExecutionManagerCodeRangeMapAddress;
-            var typeInfo = emBuilder.Types;
-            return new ExecutionManagerTestTarget(emBuilder.Version, arch, reader, topRangeSectionMap, typeInfo);
-        }
-
-        public ExecutionManagerTestTarget(int version, MockTarget.Architecture arch, ReadFromTargetDelegate dataReader, TargetPointer topRangeSectionMap, Dictionary<DataType, TypeInfo> typeInfoCache)
-            : base(arch, dataReader)
-        {
-            _topRangeSectionMap = topRangeSectionMap;
-            SetTypeInfoCache(typeInfoCache);
-            IContractFactory<IExecutionManager> emfactory = new ExecutionManagerFactory();
-            SetContracts(new TestRegistry() {
-                ExecutionManagerContract = new (() => emfactory.CreateContract(this, version)),
-                PlatformMetadataContract = new (() => new Mock<IPlatformMetadata>().Object)
-            });
-        }
-        public override TargetPointer ReadGlobalPointer(string global)
-        {
-            switch (global)
-            {
-            case Constants.Globals.ExecutionManagerCodeRangeMapAddress:
-                return new TargetPointer(_topRangeSectionMap);
-            default:
-                return base.ReadGlobalPointer(global);
-            }
-        }
-
-        public override T ReadGlobal<T>(string name)
-        {
-            switch (name)
-            {
-            case Constants.Globals.StubCodeBlockLast:
-                if (typeof(T) == typeof(byte))
-                    return (T)(object)(byte)0x0Fu;
-                break;
-            case Constants.Globals.FeatureEHFunclets:
-                if (typeof(T) == typeof(byte))
-                    return (T)(object)(byte)1;
-                break;
-            case Constants.Globals.HashMapValueMask:
-                if (typeof(T) == typeof(ulong))
-                    return (T)(object)(PointerSize == 4 ? 0x7FFFFFFFu : 0x7FFFFFFFFFFFFFFFu);
-                break;
-            case Constants.Globals.HashMapSlotsPerBucket:
-                if (typeof(T) == typeof(uint))
-                    return (T)(object)4u;
-                break;
-            default:
-                break;
-            }
-            return base.ReadGlobal<T>(name);
-        }
+        var arch = emBuilder.Builder.TargetTestHelpers.Arch;
+        TestPlaceholderTarget.ReadFromTargetDelegate reader = emBuilder.Builder.GetReadContext().ReadFromTarget;
+        var target = new TestPlaceholderTarget(arch, reader, emBuilder.Types, emBuilder.Globals);
+        IContractFactory<IExecutionManager> emfactory = new ExecutionManagerFactory();
+        ContractRegistry reg = Mock.Of<ContractRegistry>(
+            c => c.ExecutionManager == emfactory.CreateContract(target, emBuilder.Version)
+                && c.PlatformMetadata == new Mock<IPlatformMetadata>().Object);
+        target.SetContracts(reg);
+        return target;
     }
 
     [Theory]
@@ -78,8 +29,7 @@ public class ExecutionManagerTests
     public void GetCodeBlockHandle_Null(int version, MockTarget.Architecture arch)
     {
         ExecutionManagerTestBuilder emBuilder = new (version, arch, ExecutionManagerTestBuilder.DefaultAllocationRange);
-        emBuilder.MarkCreated();
-        var target = ExecutionManagerTestTarget.FromBuilder (emBuilder);
+        var target = CreateTarget(emBuilder);
 
         var em = target.Contracts.ExecutionManager;
         Assert.NotNull(em);
@@ -92,8 +42,7 @@ public class ExecutionManagerTests
     public void GetCodeBlockHandle_NoRangeSections(int version, MockTarget.Architecture arch)
     {
         ExecutionManagerTestBuilder emBuilder = new (version, arch, ExecutionManagerTestBuilder.DefaultAllocationRange);
-        emBuilder.MarkCreated();
-        var target = ExecutionManagerTestTarget.FromBuilder (emBuilder);
+        var target = CreateTarget(emBuilder);
 
         var em = target.Contracts.ExecutionManager;
         Assert.NotNull(em);
@@ -125,9 +74,7 @@ public class ExecutionManagerTests
         TargetPointer rangeSectionAddress = emBuilder.AddRangeSection(jittedCode, jitManagerAddress: jitManagerAddress, codeHeapListNodeAddress: codeHeapListNodeAddress);
         TargetPointer rangeSectionFragmentAddress = emBuilder.AddRangeSectionFragment(jittedCode, rangeSectionAddress);
 
-        emBuilder.MarkCreated();
-
-        var target = ExecutionManagerTestTarget.FromBuilder(emBuilder);
+        var target = CreateTarget(emBuilder);
 
         var em = target.Contracts.ExecutionManager;
         Assert.NotNull(em);
@@ -169,9 +116,7 @@ public class ExecutionManagerTests
         TargetPointer rangeSectionAddress = emBuilder.AddRangeSection(jittedCode, jitManagerAddress: jitManagerAddress, codeHeapListNodeAddress: codeHeapListNodeAddress);
         TargetPointer rangeSectionFragmentAddress = emBuilder.AddRangeSectionFragment(jittedCode, rangeSectionAddress);
 
-        emBuilder.MarkCreated();
-
-        var target = ExecutionManagerTestTarget.FromBuilder(emBuilder);
+        var target = CreateTarget(emBuilder);
 
         var em = target.Contracts.ExecutionManager;
         Assert.NotNull(em);
@@ -212,9 +157,7 @@ public class ExecutionManagerTests
         TargetPointer rangeSectionAddress = emBuilder.AddReadyToRunRangeSection(jittedCode, jitManagerAddress, r2rModule);
         _ = emBuilder.AddRangeSectionFragment(jittedCode, rangeSectionAddress);
 
-        emBuilder.MarkCreated();
-
-        Target target = ExecutionManagerTestTarget.FromBuilder(emBuilder);
+        Target target = CreateTarget(emBuilder);
 
         IExecutionManager em = target.Contracts.ExecutionManager;
         Assert.NotNull(em);
@@ -249,9 +192,7 @@ public class ExecutionManagerTests
         TargetPointer rangeSectionAddress = emBuilder.AddReadyToRunRangeSection(jittedCode, jitManagerAddress, r2rModule);
         _ = emBuilder.AddRangeSectionFragment(jittedCode, rangeSectionAddress);
 
-        emBuilder.MarkCreated();
-
-        Target target = ExecutionManagerTestTarget.FromBuilder(emBuilder);
+        Target target = CreateTarget(emBuilder);
 
         IExecutionManager em = target.Contracts.ExecutionManager;
         Assert.NotNull(em);
@@ -300,9 +241,7 @@ public class ExecutionManagerTests
         TargetPointer rangeSectionAddress = emBuilder.AddReadyToRunRangeSection(jittedCode, jitManagerAddress, r2rModule);
         _ = emBuilder.AddRangeSectionFragment(jittedCode, rangeSectionAddress);
 
-        emBuilder.MarkCreated();
-
-        Target target = ExecutionManagerTestTarget.FromBuilder(emBuilder);
+        Target target = CreateTarget(emBuilder);
 
         IExecutionManager em = target.Contracts.ExecutionManager;
         Assert.NotNull(em);

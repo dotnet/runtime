@@ -7,6 +7,7 @@ using System.Runtime;
 using System.Threading;
 
 using Internal.Reflection.Augments;
+using Internal.Reflection.Core.Execution;
 
 namespace System
 {
@@ -328,7 +329,7 @@ namespace System
             get
             {
                 // Reflection needs to work as the exception code calls GetType() and GetType().ToString()
-                return ReflectionAugments.IsInitialized;
+                return ReflectionCoreExecution.ExecutionEnvironment != null;
             }
         }
     }
