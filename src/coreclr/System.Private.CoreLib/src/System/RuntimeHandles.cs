@@ -575,7 +575,40 @@ namespace System
         internal static extern bool CanCastTo(RuntimeType type, RuntimeType target);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern RuntimeType GetDeclaringType(RuntimeType type);
+        private static extern RuntimeType GetDeclaringType(RuntimeType type, int a);
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_GetDeclaringTypeHandleForGenericVariable")]
+        private static partial IntPtr GetDeclaringTypeHandleForGenericVariable(IntPtr typeHandle);
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_GetDeclaringTypeHandle")]
+        private static partial IntPtr GetDeclaringTypeHandle(IntPtr typeHandle);
+
+        internal static unsafe RuntimeType? GetDeclaringType(RuntimeType type)
+        {
+            IntPtr retTypeHandle = IntPtr.Zero;
+            TypeHandle typeHandle = type.GetNativeTypeHandle();
+            if (typeHandle.IsTypeDesc)
+            {
+                CorElementType elementType = (CorElementType)typeHandle.GetCorElementType();
+                if (elementType is CorElementType.ELEMENT_TYPE_VAR or CorElementType.ELEMENT_TYPE_MVAR)
+                {
+                    retTypeHandle = GetDeclaringTypeHandleForGenericVariable(type.GetUnderlyingNativeHandle());
+                }
+            }
+            else
+            {
+                retTypeHandle = GetDeclaringTypeHandle(type.GetUnderlyingNativeHandle());
+            }
+
+            if (retTypeHandle == IntPtr.Zero)
+            {
+                return null;
+            }
+
+            RuntimeType result = GetRuntimeTypeFromHandle(retTypeHandle);
+            GC.KeepAlive(type);
+            return result;
+        }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern IRuntimeMethodInfo GetDeclaringMethod(RuntimeType type);

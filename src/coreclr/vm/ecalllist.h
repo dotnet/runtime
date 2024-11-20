@@ -83,7 +83,6 @@ FCFuncEnd()
 
 FCFuncStart(gCOMTypeHandleFuncs)
     FCFuncElement("GetDeclaringMethod", RuntimeTypeHandle::GetDeclaringMethod)
-    FCFuncElement("GetDeclaringType", RuntimeTypeHandle::GetDeclaringType)
     FCFuncElement("GetFirstIntroducedMethod", RuntimeTypeHandle::GetFirstIntroducedMethod)
     FCFuncElement("GetNextIntroducedMethod", RuntimeTypeHandle::GetNextIntroducedMethod)
     FCFuncElement("GetAssemblyIfExists", RuntimeTypeHandle::GetAssemblyIfExists)

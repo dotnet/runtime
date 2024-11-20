@@ -127,6 +127,8 @@ static const Entry s_QCall[] =
     DllImportEntry(RuntimeTypeHandle_GetNumVirtualsAndStaticVirtuals)
     DllImportEntry(RuntimeTypeHandle_VerifyInterfaceIsImplemented)
     DllImportEntry(RuntimeTypeHandle_GetInterfaceMethodImplementation)
+    DllImportEntry(RuntimeTypeHandle_GetDeclaringTypeHandleForGenericVariable)
+    DllImportEntry(RuntimeTypeHandle_GetDeclaringTypeHandle)
     DllImportEntry(RuntimeTypeHandle_IsVisible)
     DllImportEntry(RuntimeTypeHandle_ConstructName)
     DllImportEntry(RuntimeTypeHandle_GetInstantiation)

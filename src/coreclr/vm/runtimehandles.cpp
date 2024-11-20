@@ -1002,117 +1002,84 @@ FCIMPL1(ReflectMethodObject*, RuntimeTypeHandle::GetDeclaringMethod, ReflectClas
 }
 FCIMPLEND
 
-FCIMPL1(ReflectClassBaseObject*, RuntimeTypeHandle::GetDeclaringType, ReflectClassBaseObject *pTypeUNSAFE) {
-    CONTRACTL {
-        FCALL_CHECK;
-    }
-    CONTRACTL_END;
+extern "C" TADDR QCALLTYPE RuntimeTypeHandle_GetDeclaringTypeHandleForGenericVariable(EnregisteredTypeHandle pTypeHandle)
+{
+    QCALL_CONTRACT;
 
     TypeHandle retTypeHandle;
 
-    BOOL fThrowException = FALSE;
-    LPCWSTR argName = W("Arg_InvalidHandle");
-    RuntimeExceptionKind reKind = kArgumentNullException;
+    BEGIN_QCALL;
 
-    REFLECTCLASSBASEREF refType = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(pTypeUNSAFE);
+    TypeHandle typeHandle = TypeHandle::FromPtr(pTypeHandle);
+    _ASSERTE(typeHandle.IsGenericVariable());
 
-    if (refType == NULL)
-        FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
-
-    TypeHandle typeHandle = refType->GetType();
-
-    MethodTable* pMT = NULL;
-    mdTypeDef tkTypeDef = mdTokenNil;
-
-    if (typeHandle.IsTypeDesc()) {
-
-        if (typeHandle.IsGenericVariable()) {
-            TypeVarTypeDesc* pGenericVariable = typeHandle.AsGenericVariable();
-            mdToken defToken = pGenericVariable->GetTypeOrMethodDef();
-
-            // Try the fast way first (if the declaring type has been loaded already).
-            if (TypeFromToken(defToken) == mdtMethodDef)
-            {
-                MethodDesc * retMethod = pGenericVariable->GetModule()->LookupMethodDef(defToken);
-                if (retMethod != NULL)
-                    retTypeHandle = retMethod->GetMethodTable();
-            }
-            else
-            {
-                retTypeHandle = pGenericVariable->GetModule()->LookupTypeDef(defToken);
-            }
-
-            if (!retTypeHandle.IsNull() && retTypeHandle.IsFullyLoaded())
-                goto Exit;
-
-            // OK, need to go the slow way and load the type first.
-            HELPER_METHOD_FRAME_BEGIN_RET_1(refType);
-            {
-                if (TypeFromToken(defToken) == mdtMethodDef)
-                {
-                    retTypeHandle = pGenericVariable->LoadOwnerMethod()->GetMethodTable();
-                }
-                else
-                {
-                    retTypeHandle = pGenericVariable->LoadOwnerType();
-                }
-                retTypeHandle.CheckRestore();
-            }
-            HELPER_METHOD_FRAME_END();
-            goto Exit;
-        }
-
-        retTypeHandle = TypeHandle();
-        goto Exit;
-    }
-
-    pMT = typeHandle.GetMethodTable();
-
-    if (pMT == NULL)
-    {
-        fThrowException = TRUE;
-        goto Exit;
-    }
-
-    if(!pMT->GetClass()->IsNested())
-    {
-        retTypeHandle = TypeHandle();
-        goto Exit;
-    }
-
-    tkTypeDef = pMT->GetCl();
-
-    if (FAILED(typeHandle.GetModule()->GetMDImport()->GetNestedClassProps(tkTypeDef, &tkTypeDef)))
-    {
-        fThrowException = TRUE;
-        reKind = kBadImageFormatException;
-        argName = NULL;
-        goto Exit;
-    }
+    TypeVarTypeDesc* pGenericVariable = typeHandle.AsGenericVariable();
+    mdToken defToken = pGenericVariable->GetTypeOrMethodDef();
 
     // Try the fast way first (if the declaring type has been loaded already).
-    retTypeHandle = typeHandle.GetModule()->LookupTypeDef(tkTypeDef);
-    if (retTypeHandle.IsNull())
+    if (TypeFromToken(defToken) == mdtMethodDef)
     {
-         // OK, need to go the slow way and load the type first.
-        HELPER_METHOD_FRAME_BEGIN_RET_1(refType);
+        MethodDesc* retMethod = pGenericVariable->GetModule()->LookupMethodDef(defToken);
+        if (retMethod != NULL)
+            retTypeHandle = retMethod->GetMethodTable();
+    }
+    else
+    {
+        retTypeHandle = pGenericVariable->GetModule()->LookupTypeDef(defToken);
+    }
+
+    // Check if we need to go the slow way and load the type first.
+    if (retTypeHandle.IsNull() || !retTypeHandle.IsFullyLoaded())
+    {
+        if (TypeFromToken(defToken) == mdtMethodDef)
         {
-            retTypeHandle = ClassLoader::LoadTypeDefThrowing(typeHandle.GetModule(), tkTypeDef,
-                                                             ClassLoader::ThrowIfNotFound,
-                                                             ClassLoader::PermitUninstDefOrRef);
+            retTypeHandle = pGenericVariable->LoadOwnerMethod()->GetMethodTable();
         }
-        HELPER_METHOD_FRAME_END();
+        else
+        {
+            retTypeHandle = pGenericVariable->LoadOwnerType();
+        }
+        retTypeHandle.CheckRestore();
     }
-Exit:
 
-    if (fThrowException)
+    END_QCALL;
+
+    return retTypeHandle.AsTAddr();
+}
+
+extern "C" TADDR QCALLTYPE RuntimeTypeHandle_GetDeclaringTypeHandle(EnregisteredTypeHandle pTypeHandle)
+{
+    QCALL_CONTRACT;
+
+    TypeHandle retTypeHandle;
+
+    BEGIN_QCALL;
+
+    TypeHandle typeHandle = TypeHandle::FromPtr(pTypeHandle);
+    _ASSERTE(!typeHandle.IsTypeDesc());
+
+    MethodTable* pMT = typeHandle.GetMethodTable();
+    if (pMT->GetClass()->IsNested())
     {
-        FCThrowRes(reKind, argName);
+        mdTypeDef tkTypeDef = pMT->GetCl();
+        if (FAILED(typeHandle.GetModule()->GetMDImport()->GetNestedClassProps(tkTypeDef, &tkTypeDef)))
+            COMPlusThrow(kBadImageFormatException);
+
+        // Try the fast way first (if the declaring type has been loaded already).
+        retTypeHandle = typeHandle.GetModule()->LookupTypeDef(tkTypeDef);
+        if (retTypeHandle.IsNull())
+        {
+            // OK, need to go the slow way and load the type first.
+            retTypeHandle = ClassLoader::LoadTypeDefThrowing(typeHandle.GetModule(), tkTypeDef,
+                                                            ClassLoader::ThrowIfNotFound,
+                                                            ClassLoader::PermitUninstDefOrRef);
+        }
     }
 
-    RETURN_CLASS_OBJECT(retTypeHandle, refType);
-  }
-FCIMPLEND
+    END_QCALL;
+
+    return retTypeHandle.AsTAddr();
+}
 
 FCIMPL2(FC_BOOL_RET, RuntimeTypeHandle::CanCastTo, ReflectClassBaseObject *pTypeUNSAFE, ReflectClassBaseObject *pTargetUNSAFE) {
     CONTRACTL {
