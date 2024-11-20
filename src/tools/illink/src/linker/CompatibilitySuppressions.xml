@@ -3,6 +3,10 @@
 <Suppressions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypesEx</Target>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:ILLink.Shared.DataFlow.Box`1</Target>
   </Suppression>
   <Suppression>
