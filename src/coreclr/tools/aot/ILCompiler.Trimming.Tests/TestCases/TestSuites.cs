@@ -75,6 +75,7 @@ namespace Mono.Linker.Tests.TestCases
 			case "UnsafeAccessor":
 			case "TypeUsedViaReflection":
 			case "RunClassConstructor":
+			case "NestedTypeUsedViaReflection":
 				Run (t);
 				break;
 			default:

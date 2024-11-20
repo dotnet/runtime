@@ -685,7 +685,7 @@ extends:
           jobParameters:
             timeoutInMinutes: 120
             nameSuffix: CLR_Tools_Tests
-            buildArgs: -s clr.aot+clr.iltools+libs.sfx+clr.toolstests+tools.cdacreadertests -c $(_BuildConfig) -test
+            buildArgs: -s clr.aot+clr.iltools+libs.sfx+clr.toolstests+tools.cdacreader+tools.cdacreadertests -c $(_BuildConfig) -test
             enablePublishTestResults: true
             testResultsFormat: 'xunit'
             # We want to run AOT tests when illink changes because there's share code and tests from illink which are used by AOT
@@ -754,7 +754,7 @@ extends:
 
               - publish: '$(Build.SourcesDirectory)/artifacts/obj/mono/offsetfiles'
                 condition: failed()
-                artifact: Mono_Offsets_$(osGroup)$(osSubGroup)
+                artifact: MonoAOTOffsets_$(osGroup)$(osSubGroup)
                 displayName: Upload offset files
             condition: >-
               or(
@@ -891,15 +891,6 @@ extends:
 
       # Browser Wasm.Build.Tests
       - template: /eng/pipelines/common/templates/browser-wasm-build-tests.yml
-        parameters:
-          platforms:
-            - browser_wasm
-            - browser_wasm_win
-          alwaysRun: ${{ variables.isRollingBuild }}
-          extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
-
-      # Wasm Debugger tests
-      - template: /eng/pipelines/common/templates/wasm-debugger-tests.yml
         parameters:
           platforms:
             - browser_wasm
@@ -1179,6 +1170,7 @@ extends:
 
       #
       # Build Mono release AOT cross-compilers
+      # Only when mono changed
       #
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
@@ -1190,51 +1182,12 @@ extends:
           - linux_musl_x64
           - linux_arm64
           - linux_musl_arm64
-          jobParameters:
-            buildArgs: -s mono+packs -c $(_BuildConfig)
-                      /p:MonoCrossAOTTargetOS=android+browser+wasi /p:BuildMonoAOTCrossCompilerOnly=true
-            nameSuffix: CrossAOT_Mono
-            runtimeVariant: crossaot
-            condition: >-
-              or(
-                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
-                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
-                eq(variables['isRollingBuild'], true))
-
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/common/global-build-job.yml
-          runtimeFlavor: mono
-          buildConfig: release
-          platforms:
           - windows_arm64
           - windows_x64
-          jobParameters:
-            buildArgs: -s mono+packs -c $(_BuildConfig)
-                      /p:MonoCrossAOTTargetOS=android+browser+wasi /p:BuildMonoAOTCrossCompilerOnly=true
-            nameSuffix: CrossAOT_Mono
-            runtimeVariant: crossaot
-            condition: >-
-              or(
-                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
-                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
-                eq(variables['isRollingBuild'], true))
-      #
-      # Build Mono release AOT cross-compilers
-      # Only when mono changed
-      #
-
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/common/global-build-job.yml
-          runtimeFlavor: mono
-          buildConfig: release
-          platforms:
           - osx_x64
           - osx_arm64
           jobParameters:
-            buildArgs: -s mono+packs -c $(_BuildConfig)
-                      /p:MonoCrossAOTTargetOS=android+browser+wasi+tvos+ios+maccatalyst /p:BuildMonoAOTCrossCompilerOnly=true
+            buildArgs: -c $(_BuildConfig) /p:DotNetBuildMonoCrossAOT=true
             nameSuffix: CrossAOT_Mono
             runtimeVariant: crossaot
             condition: >-

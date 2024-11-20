@@ -21,6 +21,6 @@ namespace System.Text.Json.Serialization.Converters
             throw new NotSupportedException(ErrorMessage);
 
         internal override JsonSchema? GetSchema(JsonNumberHandling _) =>
-            new JsonSchema { Comment = "Unsupported .NET type", Not = JsonSchema.True };
+            new JsonSchema { Comment = "Unsupported .NET type", Not = JsonSchema.CreateTrueSchema() };
     }
 }

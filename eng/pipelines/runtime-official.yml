@@ -281,10 +281,16 @@ extends:
           - windows_arm64
           jobParameters:
             templatePath: 'templates-official'
-            buildArgs: -s clr.nativeaotlibs+clr.nativeaotruntime+libs+packs -c $(_BuildConfig) /p:BuildNativeAOTRuntimePack=true /p:SkipLibrariesNativeRuntimePackages=true
+            buildArgs: -c $(_BuildConfig) /p:DotNetBuildRuntimeNativeAOTRuntimePack=true
             nameSuffix: NativeAOT
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             postBuildSteps:
+              # delete Microsoft.NETCore.App.Ref package to prevent upload conflict
+              - task: DeleteFiles@1
+                displayName: 'Delete Microsoft.NETCore.App.Ref package'
+                inputs:
+                  SourceFolder: $(Build.SourcesDirectory)/artifacts/packages/$(_BuildConfig)/Shipping
+                  Contents: 'Microsoft.NETCore.App.Ref.*.nupkg'
               - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
                 parameters:
                   name: NativeAOTRuntimePacks
@@ -329,6 +335,12 @@ extends:
             nameSuffix: Mono
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             postBuildSteps:
+              # delete Microsoft.NETCore.App.Ref package to prevent upload conflict
+              - task: DeleteFiles@1
+                displayName: 'Delete Microsoft.NETCore.App.Ref package'
+                inputs:
+                  SourceFolder: $(Build.SourcesDirectory)/artifacts/packages/$(_BuildConfig)/Shipping
+                  Contents: 'Microsoft.NETCore.App.Ref.*.nupkg'
               - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
                 parameters:
                   name: MonoRuntimePacks
@@ -347,6 +359,12 @@ extends:
             nameSuffix: Mono
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             postBuildSteps:
+              # delete Microsoft.NETCore.App.Ref package to prevent upload conflict
+              - task: DeleteFiles@1
+                displayName: 'Delete Microsoft.NETCore.App.Ref package'
+                inputs:
+                  SourceFolder: $(Build.SourcesDirectory)/artifacts/packages/$(_BuildConfig)/Shipping
+                  Contents: 'Microsoft.NETCore.App.Ref.*.nupkg'
               - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
                 parameters:
                   name: MonoRuntimePacks
@@ -365,6 +383,12 @@ extends:
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             runtimeVariant: multithread
             postBuildSteps:
+              # delete Microsoft.NETCore.App.Ref package to prevent upload conflict
+              - task: DeleteFiles@1
+                displayName: 'Delete Microsoft.NETCore.App.Ref package'
+                inputs:
+                  SourceFolder: $(Build.SourcesDirectory)/artifacts/packages/$(_BuildConfig)/Shipping
+                  Contents: 'Microsoft.NETCore.App.Ref.*.nupkg'
               - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
                 parameters:
                   name: MonoRuntimePacks
@@ -382,50 +406,13 @@ extends:
           - linux_musl_x64
           - linux_arm64
           - linux_musl_arm64
-          jobParameters:
-            templatePath: 'templates-official'
-            buildArgs: -s mono+packs -c $(_BuildConfig)
-                      /p:MonoCrossAOTTargetOS=android+browser+wasi /p:BuildMonoAOTCrossCompilerOnly=true
-            nameSuffix: CrossAOT_Mono
-            runtimeVariant: crossaot
-            isOfficialBuild: ${{ variables.isOfficialBuild }}
-            postBuildSteps:
-              - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
-                parameters:
-                  name: MonoRuntimePacks
-
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/common/global-build-job.yml
-          runtimeFlavor: mono
-          buildConfig: release
-          platforms:
           - windows_arm64
           - windows_x64
-          jobParameters:
-            templatePath: 'templates-official'
-            buildArgs: -s mono+packs -c $(_BuildConfig)
-                      /p:MonoCrossAOTTargetOS=android+browser+wasi /p:BuildMonoAOTCrossCompilerOnly=true
-            nameSuffix: CrossAOT_Mono
-            runtimeVariant: crossaot
-            isOfficialBuild: ${{ variables.isOfficialBuild }}
-            postBuildSteps:
-              - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
-                parameters:
-                  name: MonoRuntimePacks
-
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/common/global-build-job.yml
-          runtimeFlavor: mono
-          buildConfig: release
-          platforms:
           - osx_x64
           - osx_arm64
           jobParameters:
             templatePath: 'templates-official'
-            buildArgs: -s mono+packs -c $(_BuildConfig)
-                      /p:MonoCrossAOTTargetOS=android+browser+wasi+tvos+ios+maccatalyst /p:BuildMonoAOTCrossCompilerOnly=true
+            buildArgs: -c $(_BuildConfig) /p:DotNetBuildMonoCrossAOT=true
             nameSuffix: CrossAOT_Mono
             runtimeVariant: crossaot
             isOfficialBuild: ${{ variables.isOfficialBuild }}
@@ -580,24 +567,37 @@ extends:
             buildArgs: -s mono.workloads -c $(_BuildConfig) /p:PackageSource=$(Build.SourcesDirectory)/artifacts/workloadPackages /p:WorkloadOutputPath=$(Build.SourcesDirectory)/artifacts/workloads
             
             postBuildSteps:
-            # Upload packages wrapping msis
-            - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
-              parameters:
-                name: workloads
-
-            # Delete wixpdb files before they are uploaded to artifacts
-            - task: DeleteFiles@1
-              displayName: Delete wixpdb's
+            # Prepare packages wrapping msis
+            - task: CopyFiles@2
+              displayName: Prepare package artifacts
               inputs:
-                SourceFolder: $(Build.SourcesDirectory)/artifacts/workloads
-                Contents: '*.wixpdb'
+                SourceFolder: '$(Build.SourcesDirectory)/artifacts/packages/$(_BuildConfig)'
+                Contents: |
+                  Shipping/**/*
+                  NonShipping/**/*
+                TargetFolder: '$(Build.ArtifactStagingDirectory)/IntermediateArtifacts1/workloads'
+                CleanTargetFolder: true
 
-            # Upload artifacts to be used for generating VS components
-            - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
-              parameters:
-                name: workloads-vs
-                publishPackagesCondition: false
-                publishVSSetupCondition: always()
+            # Prepare artifacts to be used for generating VS components
+            - task: CopyFiles@2
+              displayName: Prepare VS Insertion artifacts
+              inputs:
+                SourceFolder: '$(Build.SourcesDirectory)/artifacts/VSSetup/$(_BuildConfig)'
+                Contents: |
+                  Insertion/**/*
+                TargetFolder: '$(Build.ArtifactStagingDirectory)/IntermediateArtifacts2/workloads-vs'
+                CleanTargetFolder: true
+
+            templateContext:
+              outputs:
+              - output: buildArtifacts
+                PathtoPublish: '$(Build.ArtifactStagingDirectory)/IntermediateArtifacts1'
+                ArtifactName: IntermediateArtifacts
+                displayName: 'Publish workload packages'
+              - output: buildArtifacts
+                PathtoPublish: '$(Build.ArtifactStagingDirectory)/IntermediateArtifacts2'
+                ArtifactName: IntermediateArtifacts
+                displayName: 'Publish workload VS Insertion artifacts'
 
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             timeoutInMinutes: 120
