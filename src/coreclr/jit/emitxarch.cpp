@@ -3177,6 +3177,7 @@ unsigned emitter::emitGetAdjustedSize(instrDesc* id, code_t code) const
 
         adjustedSize = prefixAdjustedSize;
     }
+#endif // TARGET_AMD64
     else
     {
         if (ins == INS_crc32)
@@ -3946,7 +3947,7 @@ inline emitter::code_t emitter::insEncodeReg3456(const instrDesc* id, regNumber 
     instruction ins = id->idIns();
 
     assert(reg < REG_STK);
-    assert(IsVexOrEvexEncodableInstruction(ins) || IsApxNDDEncodableInstruction(ins));
+    assert(IsVexOrEvexEncodableInstruction(ins) || IsApxExtendedEvexInstruction(ins));
     assert(hasVexOrEvexPrefix(code));
 
     // Get 4-bit register encoding
