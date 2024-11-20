@@ -33,7 +33,9 @@ internal partial class MockDescriptors
         };
 
         internal Dictionary<DataType, Target.TypeInfo> Types { get; }
-        internal (string Name, ulong Value, string? Type)[] Globals { get; }
+        internal (string Name, ulong Value)[] Globals { get; }
+
+        internal MockMemorySpace.Builder Builder { get; }
 
         private const ulong DefaultAllocationRangeStart = 0x0003_0000;
         private const ulong DefaultAllocationRangeEnd = 0x0004_0000;
@@ -41,7 +43,6 @@ internal partial class MockDescriptors
         // See g_rgPrimes in hash.cpp
         private static readonly uint[] PossibleSizes = [5, 11, 17, 23, 29, 37];
 
-        private readonly MockMemorySpace.Builder _builder;
         private readonly MockMemorySpace.BumpAllocator _allocator;
 
         public HashMap(MockMemorySpace.Builder builder)
@@ -50,38 +51,42 @@ internal partial class MockDescriptors
 
         public HashMap(MockMemorySpace.Builder builder, (ulong Start, ulong End) allocationRange)
         {
-            _builder = builder;
-            _allocator = _builder.CreateAllocator(allocationRange.Start, allocationRange.End);
-            Types = GetTypes();
-            Globals =
-            [
-                (nameof(Constants.Globals.HashMapSlotsPerBucket), HashMapSlotsPerBucket, "uint32"),
-                (nameof(Constants.Globals.HashMapValueMask), _builder.TargetTestHelpers.PointerSize == 4 ? 0x7FFFFFFFu : 0x7FFFFFFFFFFFFFFFu, "uint64"),
-            ];
+            Builder = builder;
+            _allocator = Builder.CreateAllocator(allocationRange.Start, allocationRange.End);
+            Types = GetTypes(builder.TargetTestHelpers);
+            Globals = GetGlobals(builder.TargetTestHelpers);
         }
 
-        private Dictionary<DataType, Target.TypeInfo> GetTypes()
+        internal static Dictionary<DataType, Target.TypeInfo> GetTypes(TargetTestHelpers helpers)
         {
             return GetTypesForTypeFields(
-                _builder.TargetTestHelpers,
+                helpers,
                 [
                     HashMapFields,
-                    BucketFields(_builder.TargetTestHelpers),
+                    BucketFields(helpers),
                 ]);
+        }
+
+        internal static (string Name, ulong Value)[] GetGlobals(TargetTestHelpers helpers)
+        {
+            return [
+                (nameof(Constants.Globals.HashMapSlotsPerBucket), HashMapSlotsPerBucket),
+                (nameof(Constants.Globals.HashMapValueMask), helpers.MaxSignedTargetAddress),
+            ];
         }
 
         public TargetPointer CreateMap((TargetPointer Key, TargetPointer Value)[] entries)
         {
             Target.TypeInfo hashMapType = Types[DataType.HashMap];
             MockMemorySpace.HeapFragment map = _allocator.Allocate(hashMapType.Size!.Value, "HashMap");
-            _builder.AddHeapFragment(map);
+            Builder.AddHeapFragment(map);
             PopulateMap(map.Address, entries);
             return map.Address;
         }
 
         public void PopulateMap(TargetPointer mapAddress, (TargetPointer Key, TargetPointer Value)[] entries)
         {
-            TargetTestHelpers helpers = _builder.TargetTestHelpers;
+            TargetTestHelpers helpers = Builder.TargetTestHelpers;
 
             // HashMap::NewSize
             int requiredSlots = entries.Length * 3 / 2;
@@ -95,7 +100,7 @@ internal partial class MockDescriptors
             uint numBuckets = size + 1;
             uint totalBucketsSize = bucketSize * numBuckets;
             MockMemorySpace.HeapFragment buckets = _allocator.Allocate(totalBucketsSize, $"Buckets[{numBuckets}]");
-            _builder.AddHeapFragment(buckets);
+            Builder.AddHeapFragment(buckets);
             helpers.Write(buckets.Data.AsSpan().Slice(0, sizeof(uint)), size);
 
             const int maxRetry = 8;
@@ -120,7 +125,7 @@ internal partial class MockDescriptors
 
             // Update the map to point at the buckets
             Target.TypeInfo hashMapType = Types[DataType.HashMap];
-            Span<byte> map = _builder.BorrowAddressRange(mapAddress, (int)hashMapType.Size!.Value);
+            Span<byte> map = Builder.BorrowAddressRange(mapAddress, (int)hashMapType.Size!.Value);
             helpers.WritePointer(map.Slice(hashMapType.Fields[nameof(Data.HashMap.Buckets)].Offset, helpers.PointerSize), buckets.Address);
         }
 
@@ -144,7 +149,7 @@ internal partial class MockDescriptors
 
         private bool TryAddEntryToBucket(Span<byte> bucket, TargetPointer key, TargetPointer value)
         {
-            TargetTestHelpers helpers = _builder.TargetTestHelpers;
+            TargetTestHelpers helpers = Builder.TargetTestHelpers;
             Target.TypeInfo bucketType = Types[DataType.Bucket];
             for (int i = 0; i < HashMapSlotsPerBucket; i++)
             {
