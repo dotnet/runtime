@@ -40,7 +40,7 @@ DataFlow::DataFlow(Compiler* pCompiler)
 PhaseStatus Compiler::optSetBlockWeights()
 {
     noway_assert(opts.OptimizationEnabled());
-    bool madeChanges = fgRenumberBlocks();
+    bool madeChanges = false;
 
     assert(m_dfsTree != nullptr);
     if (m_domTree == nullptr)
@@ -54,6 +54,7 @@ PhaseStatus Compiler::optSetBlockWeights()
 
     if (m_dfsTree->HasCycle())
     {
+        madeChanges = fgRenumberBlocks();
         optMarkLoopHeads();
         optFindAndScaleGeneralLoopBlocks();
     }
@@ -1335,13 +1336,11 @@ PhaseStatus Compiler::optUnrollLoops()
             m_loops   = FlowGraphNaturalLoops::Find(m_dfsTree);
         }
 
-        fgRenumberBlocks();
-
         DBEXEC(verbose, fgDispBasicBlocks());
     }
 
 #ifdef DEBUG
-    fgDebugCheckBBlist(true);
+    fgDebugCheckBBlist();
 #endif // DEBUG
 
     return anyIRchange ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;

@@ -4761,13 +4761,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     };
     DoPhase(this, PHASE_POST_MORPH, postMorphPhase);
 
-    // If we needed to create any new BasicBlocks then renumber the blocks
-    //
-    if (fgBBcount > preMorphBBCount)
-    {
-        fgRenumberBlocks();
-    }
-
     // GS security checks for unsafe buffers
     //
     DoPhase(this, PHASE_GS_COOKIE, &Compiler::gsPhase);
@@ -4928,6 +4921,15 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
             if (doLoopHoisting)
             {
+                if (doBranchOpt)
+                {
+                    // bbNum quirk: RBO uses the current BB epoch size to determine if loop hoisting created blocks.
+                    // Ensure the BB epoch is up to date before running loop hoisting to avoid false positives.
+                    // TODO-bbNum: Either replace this check with a breadcrumb like 'fgModified',
+                    // or relax jump threading's prerequisites.
+                    EnsureBasicBlockEpoch();
+                }
+
                 // Hoist invariant code out of loops
                 //
                 DoPhase(this, PHASE_HOIST_LOOP_CODE, &Compiler::optHoistLoopCode);
