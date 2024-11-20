@@ -866,11 +866,17 @@ CORINFO_CLASS_HANDLE interceptor_ICJI::getBuiltinClass(CorInfoClassId classId)
 }
 
 // returns the class handle for the special builtin classes
-CORINFO_METHOD_HANDLE interceptor_ICJI::getMethodFromDelegate(void* address, bool indirect)
+CORINFO_METHOD_HANDLE interceptor_ICJI::getMethodFromDelegate(CORINFO_CLASS_HANDLE calledCls, CORINFO_OBJECT_HANDLE delegateObj, CORINFO_CLASS_HANDLE* methodCls, CORINFO_CLASS_HANDLE* targetCls)
 {
     mc->cr->AddCall("getMethodFromDelegate");
-    CORINFO_METHOD_HANDLE temp   = original_ICorJitInfo->getMethodFromDelegate(address, indirect);
-    mc->recGetMethodFromDelegate(address, indirect, temp);
+    CORINFO_CLASS_HANDLE methodType = nullptr;
+    CORINFO_CLASS_HANDLE targetType = nullptr;
+    CORINFO_METHOD_HANDLE temp = original_ICorJitInfo->getMethodFromDelegate(calledCls, delegateObj, &methodType, &targetType);
+    mc->recGetMethodFromDelegate(calledCls, delegateObj, methodType, targetType, temp);
+    if (methodCls != nullptr)
+        *methodCls = methodType;
+    if (targetCls != nullptr)
+        *targetCls = targetType;
     return temp;
 }
 

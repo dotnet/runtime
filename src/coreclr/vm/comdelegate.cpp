@@ -1645,7 +1645,7 @@ extern "C" PCODE QCALLTYPE Delegate_AdjustTarget(QCall::ObjectHandleOnStack targ
 extern "C" void * _ReturnAddress(void);
 #endif // _MSC_VER && !TARGET_UNIX
 
-uint32_t MethodDescToNumFixedArgs(MethodDesc *pMD)
+uint32_t COMDelegate::MethodDescToNumFixedArgs(MethodDesc *pMD)
 {
     WRAPPER_NO_CONTRACT;
 
@@ -1716,8 +1716,8 @@ extern "C" void QCALLTYPE Delegate_Construct(QCall::ObjectHandleOnStack _this, Q
 
     MethodDesc* pDelegateInvoke = COMDelegate::FindDelegateInvokeMethod(pDelMT);
 
-    UINT invokeArgCount = MethodDescToNumFixedArgs(pDelegateInvoke);
-    UINT methodArgCount = MethodDescToNumFixedArgs(pMeth);
+    UINT invokeArgCount = COMDelegate::MethodDescToNumFixedArgs(pDelegateInvoke);
+    UINT methodArgCount = COMDelegate::MethodDescToNumFixedArgs(pMeth);
     BOOL isStatic = pMeth->IsStatic();
     if (!isStatic)
         methodArgCount++; // count 'this'
@@ -2990,7 +2990,6 @@ MethodDesc* COMDelegate::GetDelegateCtor(TypeHandle delegateType, MethodDesc *pT
 
     return pRealCtor;
 }
-
 
 BOOL COMDelegate::IsWrapperDelegate(DELEGATEREF dRef)
 {

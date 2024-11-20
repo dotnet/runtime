@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 using Internal.IL;
@@ -2401,14 +2402,54 @@ namespace Internal.JitInterface
             return ObjectToHandle(HandleToObject(objPtr).ObjectType);
         }
 
-        private CORINFO_METHOD_STRUCT_* getMethodFromDelegate(void* address, bool indirect)
+        private CORINFO_METHOD_STRUCT_* getMethodFromDelegate(CORINFO_CLASS_STRUCT_* calledCls, CORINFO_OBJECT_STRUCT_* delegateObj, CORINFO_CLASS_STRUCT_** methodCls, CORINFO_CLASS_STRUCT_** targetCls)
         {
-            Debug.Assert(address != null);
+            Debug.Assert(calledCls != null);
+            Debug.Assert(delegateObj != null);
 
-            // it should be impossible to see unpinned delegates during AOT
-            Debug.Assert(!indirect);
+            FrozenObjectNode frozenObject = HandleToObject(delegateObj);
+            MethodDesc method = frozenObject.DelegateMethod;
 
-            return ObjectToHandle(HandleToObject((CORINFO_OBJECT_STRUCT_*)address).DelegateMethod);
+            TypeDesc calledType = HandleToObject(calledCls);
+            if (!frozenObject.ObjectType.CanCastTo(calledType))
+            {
+                return null;
+            }
+
+            if (methodCls != null)
+            {
+                *methodCls = ObjectToHandle(method.OwningType);
+            }
+
+            if (targetCls != null)
+            {
+                DelegateInfo delegateInfo = _compilation.TypeSystemContext.GetDelegateInfo(calledType);
+                int paramCountDelegateClosed = delegateInfo.Signature.Length + 1;
+                int paramCountTargetMethod = method.Signature.Length;
+                if (!method.Signature.IsStatic)
+                {
+                    paramCountTargetMethod++;
+                }
+
+                CORINFO_CLASS_STRUCT_* target = null;
+                if (paramCountDelegateClosed != paramCountTargetMethod)
+                {
+                    TypeDesc targetType = frozenObject.DelegateTargetType;
+                    if (targetType == null)
+                    {
+                        // avoid delegates closed over null
+                        Debug.Assert(method.Signature.IsStatic);
+                    }
+                    else
+                    {
+                        target = ObjectToHandle(targetType);
+                    }
+                }
+
+                *targetCls = target;
+            }
+
+            return ObjectToHandle(method);
         }
 
         private CORINFO_OBJECT_STRUCT_* getRuntimeTypePointer(CORINFO_CLASS_STRUCT_* cls)

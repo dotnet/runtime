@@ -2611,10 +2611,12 @@ public:
             CorInfoClassId              classId
             ) = 0;
 
-    // returns the class handle for the special builtin classes
+    // returns the method the delegate object calls
     virtual CORINFO_METHOD_HANDLE getMethodFromDelegate (
-            void*                       address,
-            bool                        indirect
+            CORINFO_CLASS_HANDLE        calledCls,
+            CORINFO_OBJECT_HANDLE       delObj,
+            CORINFO_CLASS_HANDLE*       methodCls,
+            CORINFO_CLASS_HANDLE*       targetCls
             ) = 0;
 
     // "System.Int32" ==> CORINFO_TYPE_INT..

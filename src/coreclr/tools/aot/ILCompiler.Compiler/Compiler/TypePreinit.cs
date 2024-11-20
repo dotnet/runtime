@@ -2211,6 +2211,7 @@ namespace ILCompiler
             bool IsKnownImmutable { get; }
             int ArrayLength { get; }
             MethodDesc DelegateMethod { get; }
+            TypeDesc DelegateTargetType { get; }
         }
 
         /// <summary>
@@ -2853,6 +2854,8 @@ namespace ILCompiler
 
             public bool IsKnownImmutable => DelegateMethod.Signature.IsStatic;
 
+            public TypeDesc DelegateTargetType => _firstParameter?.Type;
+
             public int ArrayLength => throw new NotSupportedException();
         }
 
@@ -2957,6 +2960,7 @@ namespace ILCompiler
             public int ArrayLength => Length;
 
             public MethodDesc DelegateMethod => throw new NotSupportedException();
+            public TypeDesc DelegateTargetType => throw new NotSupportedException();
         }
 
         private sealed class ForeignTypeInstance : AllocatedReferenceTypeValue
@@ -3125,6 +3129,7 @@ namespace ILCompiler
 
             public int ArrayLength => throw new NotSupportedException();
             public MethodDesc DelegateMethod => throw new NotSupportedException();
+            public TypeDesc DelegateTargetType => throw new NotSupportedException();
         }
 
         private struct FieldAccessor

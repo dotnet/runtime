@@ -4559,7 +4559,7 @@ protected:
     void impPopArgsForUnmanagedCall(GenTreeCall* call, CORINFO_SIG_INFO* sig, GenTree** swiftErrorNode);
     void impPopArgsForSwiftCall(GenTreeCall* call, CORINFO_SIG_INFO* sig, GenTree** swiftErrorNode);
     void impRetypeUnmanagedCallArgs(GenTreeCall* call);
-    bool impCanSubstituteSig(CORINFO_SIG_INFO* sourceSig, CORINFO_SIG_INFO* targetSig, bool* removeInstance);
+    bool impCanSubstituteSig(CORINFO_SIG_INFO* sourceSig, CORINFO_SIG_INFO* targetSig);
 
 #ifdef SWIFT_SUPPORT
     void impAppendSwiftErrorStore(GenTree* const swiftErrorNode);

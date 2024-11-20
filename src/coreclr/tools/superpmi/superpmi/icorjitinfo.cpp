@@ -731,10 +731,11 @@ CORINFO_CLASS_HANDLE MyICJI::getBuiltinClass(CorInfoClassId classId)
 }
 
 // returns the class handle for the special builtin classes
-CORINFO_METHOD_HANDLE MyICJI::getMethodFromDelegate(void* address, bool indirect)
+CORINFO_METHOD_HANDLE MyICJI::getMethodFromDelegate(CORINFO_CLASS_HANDLE calledCls, CORINFO_OBJECT_HANDLE delegateObj,
+    CORINFO_CLASS_HANDLE* methodCls, CORINFO_CLASS_HANDLE* targetCls)
 {
     jitInstance->mc->cr->AddCall("getMethodFromDelegate");
-    return jitInstance->mc->repGetMethodFromDelegate(address, indirect);
+    return jitInstance->mc->repGetMethodFromDelegate(calledCls, delegateObj, methodCls, targetCls);
 }
 
 // "System.Int32" ==> CORINFO_TYPE_INT..

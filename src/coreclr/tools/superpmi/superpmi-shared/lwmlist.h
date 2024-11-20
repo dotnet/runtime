@@ -135,7 +135,7 @@ LWM(GetThreadTLSIndex, DWORD, DLD)
 LWM(GetTokenTypeAsHandle, GetTokenTypeAsHandleValue, DWORDLONG)
 LWM(GetTypeForBox, DWORDLONG, DWORDLONG)
 LWM(GetTypeForBoxOnStack, DWORDLONG, DWORDLONG)
-LWM(GetMethodFromDelegate, DLD, DWORDLONG)
+LWM(GetMethodFromDelegate, DLDL, DLDLDL)
 LWM(GetTypeForPrimitiveValueClass, DWORDLONG, DWORD)
 LWM(GetTypeForPrimitiveNumericClass, DWORDLONG, DWORD)
 LWM(GetUnboxedEntry, DWORDLONG, DLD);

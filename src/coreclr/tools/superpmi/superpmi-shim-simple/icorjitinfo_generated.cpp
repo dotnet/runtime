@@ -552,10 +552,12 @@ CORINFO_CLASS_HANDLE interceptor_ICJI::getBuiltinClass(
 }
 
 CORINFO_METHOD_HANDLE interceptor_ICJI::getMethodFromDelegate(
-          void* address,
-          bool indirect)
+          CORINFO_CLASS_HANDLE calledCls,
+          CORINFO_OBJECT_HANDLE delegateObj,
+          CORINFO_CLASS_HANDLE* methodCls,
+          CORINFO_CLASS_HANDLE* targetCls)
 {
-    return original_ICorJitInfo->getMethodFromDelegate(address, indirect);
+    return original_ICorJitInfo->getMethodFromDelegate(calledCls, delegateObj, methodCls, targetCls);
 }
 
 CorInfoType interceptor_ICJI::getTypeForPrimitiveValueClass(

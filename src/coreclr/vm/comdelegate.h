@@ -68,6 +68,7 @@ public:
     // Get the cpu stub for a delegate invoke.
     static Stub* GetInvokeMethodStub(EEImplMethodDesc* pMD);
 
+    static uint32_t MethodDescToNumFixedArgs(MethodDesc* pMD);
     static MethodDesc * __fastcall GetMethodDesc(OBJECTREF obj);
     static OBJECTREF GetTargetObject(OBJECTREF obj);
 

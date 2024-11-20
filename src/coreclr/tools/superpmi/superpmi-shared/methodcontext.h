@@ -250,9 +250,9 @@ public:
     void dmpGetBuiltinClass(DWORD key, DWORDLONG value);
     CORINFO_CLASS_HANDLE repGetBuiltinClass(CorInfoClassId classId);
 
-    void recGetMethodFromDelegate(void* address, bool indirect, CORINFO_METHOD_HANDLE method);
-    void dmpGetMethodFromDelegate(DLD key, DWORDLONG value);
-    CORINFO_METHOD_HANDLE repGetMethodFromDelegate(void* address, bool indirect);
+    void recGetMethodFromDelegate(CORINFO_CLASS_HANDLE calledCls, CORINFO_OBJECT_HANDLE delegateObj, CORINFO_CLASS_HANDLE methodCls, CORINFO_CLASS_HANDLE targetCls, CORINFO_METHOD_HANDLE result);
+    void dmpGetMethodFromDelegate(DLDL key, DLDLDL value);
+    CORINFO_METHOD_HANDLE repGetMethodFromDelegate(CORINFO_CLASS_HANDLE calledCls, CORINFO_OBJECT_HANDLE delegateObj, CORINFO_CLASS_HANDLE* methodCls, CORINFO_CLASS_HANDLE* targetCls);
 
     void recGetTypeForPrimitiveValueClass(CORINFO_CLASS_HANDLE cls, CorInfoType result);
     void dmpGetTypeForPrimitiveValueClass(DWORDLONG key, DWORD value);

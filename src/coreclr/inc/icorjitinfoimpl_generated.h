@@ -330,8 +330,10 @@ CORINFO_CLASS_HANDLE getBuiltinClass(
           CorInfoClassId classId) override;
 
 CORINFO_METHOD_HANDLE getMethodFromDelegate(
-          void* address,
-          bool indirect) override;
+          CORINFO_CLASS_HANDLE calledCls,
+          CORINFO_OBJECT_HANDLE delegateObj,
+          CORINFO_CLASS_HANDLE* methodCls,
+          CORINFO_CLASS_HANDLE* targetCls) override;
 
 CorInfoType getTypeForPrimitiveValueClass(
           CORINFO_CLASS_HANDLE cls) override;

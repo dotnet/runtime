@@ -64,6 +64,13 @@ struct DLDL
     DWORDLONG B;
 };
 
+struct DLDLDL
+{
+    DWORDLONG A;
+    DWORDLONG B;
+    DWORDLONG C;
+};
+
 struct Agnostic_CanInline
 {
     DWORD result;

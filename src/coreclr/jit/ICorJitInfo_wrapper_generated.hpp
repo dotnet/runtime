@@ -766,11 +766,13 @@ CORINFO_CLASS_HANDLE WrapICorJitInfo::getBuiltinClass(
 }
 
 CORINFO_METHOD_HANDLE WrapICorJitInfo::getMethodFromDelegate(
-          void* address,
-          bool indirect)
+          CORINFO_CLASS_HANDLE calledCls,
+          CORINFO_OBJECT_HANDLE delegateObj,
+          CORINFO_CLASS_HANDLE* methodCls,
+          CORINFO_CLASS_HANDLE* targetCls)
 {
     API_ENTER(getMethodFromDelegate);
-    CORINFO_METHOD_HANDLE temp = wrapHnd->getMethodFromDelegate(address, indirect);
+    CORINFO_METHOD_HANDLE temp = wrapHnd->getMethodFromDelegate(calledCls, delegateObj, methodCls, targetCls);
     API_LEAVE(getMethodFromDelegate);
     return temp;
 }

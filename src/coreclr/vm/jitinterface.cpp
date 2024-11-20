@@ -3986,7 +3986,8 @@ CORINFO_CLASS_HANDLE CEEInfo::getBuiltinClass(CorInfoClassId classId)
 }
 
 /*********************************************************************/
-CORINFO_METHOD_HANDLE CEEInfo::getMethodFromDelegate(void* address, bool indirect)
+CORINFO_METHOD_HANDLE CEEInfo::getMethodFromDelegate(CORINFO_CLASS_HANDLE calledCls, CORINFO_OBJECT_HANDLE delegateObj,
+    CORINFO_CLASS_HANDLE* methodCls, CORINFO_CLASS_HANDLE* targetCls)
 {
     CONTRACTL {
         THROWS;
@@ -3994,11 +3995,11 @@ CORINFO_METHOD_HANDLE CEEInfo::getMethodFromDelegate(void* address, bool indirec
         MODE_PREEMPTIVE;
     } CONTRACTL_END;
 
-    CORINFO_METHOD_HANDLE result = 0;
+    CORINFO_METHOD_HANDLE result = NULL;
 
     JIT_TO_EE_TRANSITION();
 
-    _ASSERTE (address != nullptr);
+    _ASSERTE (delegateObj != nullptr);
 
     {
         // We get a direct pointer for frozen delegates
@@ -4007,14 +4008,63 @@ CORINFO_METHOD_HANDLE CEEInfo::getMethodFromDelegate(void* address, bool indirec
         // We technically don't need to care about the GC
         // for frozen delegates, but APIs used here require COOP.
         GCX_COOP();
-        DELEGATEREF delegate = (DELEGATEREF)ObjectToOBJECTREF(indirect ?
-            *(DelegateObject**)address : (DelegateObject*)address);
+        DELEGATEREF delegate = (DELEGATEREF)getObjectFromJitHandle(delegateObj);
         _ASSERTE (delegate != nullptr);
 
-        GCPROTECT_BEGIN(delegate);
-        if (delegate->GetInvocationCount() == 0)
-            result = (CORINFO_METHOD_HANDLE)COMDelegate::GetMethodDesc(delegate);
-        GCPROTECT_END();
+        TypeHandle delegateType(delegate->GetMethodTable());
+        TypeHandle calledType(calledCls);
+        if (delegateType.CanCastTo(calledType))
+        {
+            GCPROTECT_BEGIN(delegate);
+            if (delegate->GetInvocationCount() == 0)
+            {
+                MethodDesc* method = COMDelegate::GetMethodDesc(delegate);
+
+                PTR_MethodTable targetTable = NULL;
+                MethodDesc* pDelegateInvoke = COMDelegate::FindDelegateInvokeMethod(calledType.GetMethodTable());
+
+                UINT invokeArgCount = COMDelegate::MethodDescToNumFixedArgs(pDelegateInvoke);
+                UINT methodArgCount = COMDelegate::MethodDescToNumFixedArgs(method);
+                if (!method->IsStatic())
+                    methodArgCount++; // count 'this'
+
+                if (invokeArgCount != methodArgCount)
+                {
+                    OBJECTREF target = COMDelegate::GetTargetObject(delegate);
+                    if (target == NULL)
+                    {
+                        // avoid delegates closed over null
+                        method = NULL;
+                    }
+                    else
+                    {
+                        targetTable = target->GetMethodTable();
+                    }
+                }
+
+                if (targetCls != NULL)
+                {
+                    *targetCls = CORINFO_CLASS_HANDLE(targetTable);
+                }
+
+                if (method != NULL && methodCls != NULL)
+                {
+                    PTR_MethodTable method_table;
+                    if (!method->IsStatic() && targetCls != NULL)
+                    {
+                        method_table = method->GetExactDeclaringType(targetTable);
+                    }
+                    else
+                    {
+                        method_table = method->GetMethodTable();
+                    }
+                    *methodCls = CORINFO_CLASS_HANDLE(method_table);
+                }
+
+                result = (CORINFO_METHOD_HANDLE)method;
+            }
+            GCPROTECT_END();
+        }
     }
 
     EE_TO_JIT_TRANSITION();
@@ -5101,7 +5151,7 @@ void CEEInfo::getCallInfo(
     }
     else
     {
-        if (!exactType.IsTypeDesc() && !pTargetMD->IsArray() && !pTargetMD->IsDynamicMethod())
+        if (!exactType.IsTypeDesc() && !pTargetMD->IsArray())
         {
             // Because of .NET's notion of base calls, exactType may point to a sub-class
             // of the actual class that defines pTargetMD.  If the JIT decides to inline, it is

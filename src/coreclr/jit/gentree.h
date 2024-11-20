@@ -3288,6 +3288,20 @@ struct GenTreeIntCon : public GenTreeIntConCommon
     {
     }
 #endif
+
+    CORINFO_OBJECT_HANDLE GetFrozenObject()
+    {
+        assert(IsIconHandle(GTF_ICON_OBJ_HDL));
+        return (CORINFO_OBJECT_HANDLE)IconValue();
+    }
+
+    CORINFO_FIELD_HANDLE GetStaticFieldHandle()
+    {
+        assert(IsIconHandle(GTF_ICON_STATIC_BOX_PTR) || IsIconHandle(GTF_ICON_CONST_PTR) ||
+               IsIconHandle(GTF_ICON_STATIC_HDL));
+        assert(gtFieldSeq != nullptr);
+        return gtFieldSeq->GetFieldHandle();
+    }
 };
 
 /* gtLngCon -- long    constant (GT_CNS_LNG) */

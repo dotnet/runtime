@@ -1954,37 +1954,53 @@ CORINFO_CLASS_HANDLE MethodContext::repGetBuiltinClass(CorInfoClassId classId)
     return result;
 }
 
-void MethodContext::recGetMethodFromDelegate(void* address, bool indirect, CORINFO_METHOD_HANDLE method)
+void MethodContext::recGetMethodFromDelegate(CORINFO_CLASS_HANDLE  calledCls,
+                                             CORINFO_OBJECT_HANDLE delegateObj,
+                                             CORINFO_CLASS_HANDLE  methodCls,
+                                             CORINFO_CLASS_HANDLE  targetCls,
+                                             CORINFO_METHOD_HANDLE result)
 {
     if (GetMethodFromDelegate == nullptr)
-        GetMethodFromDelegate = new LightWeightMap<DLD, DWORDLONG>();
+        GetMethodFromDelegate = new LightWeightMap<DLDL, DLDLDL>();
 
-    DLD key;
+    DLDL key;
     ZeroMemory(&key, sizeof(key));
-    key.A = (DWORDLONG)address;
-    key.B = indirect ? 1 : 0;
+    key.A = CastHandle(calledCls);
+    key.B = CastHandle(delegateObj);
 
-    DWORDLONG value = CastHandle(method);
+    DLDLDL value;
+    ZeroMemory(&value, sizeof(value));
+    value.A = CastHandle(methodCls);
+    value.B = CastHandle(targetCls);
+    value.C = CastHandle(result);
 
     GetMethodFromDelegate->Add(key, value);
     DEBUG_REC(dmpGetMethodFromDelegate(key, value));
 }
-void MethodContext::dmpGetMethodFromDelegate(DLD key, DWORDLONG value)
+void MethodContext::dmpGetMethodFromDelegate(DLDL key, DLDLDL value)
 {
-    printf("GetMethodFromDelegate key address-%016" PRIX64 " indirect-%u, value method-%016" PRIX64 "",
-        key.A, key.B, value);
+    printf("GetMethodFromDelegate key type-%016" PRIX64 " object-%016" PRIX64 ", value type-%016" PRIX64
+           " target type-%016" PRIX64 " method-%016" PRIX64,
+        key.A, key.B, value.A, value.B, value.C);
 }
-CORINFO_METHOD_HANDLE MethodContext::repGetMethodFromDelegate(void* address, bool indirect)
+CORINFO_METHOD_HANDLE MethodContext::repGetMethodFromDelegate(CORINFO_CLASS_HANDLE  calledCls,
+                                                              CORINFO_OBJECT_HANDLE delegateObj,
+                                                              CORINFO_CLASS_HANDLE* methodCls,
+                                                              CORINFO_CLASS_HANDLE* targetCls)
 {
-    DLD key;
+    DLDL key;
     ZeroMemory(&key, sizeof(key));
-    key.A = (DWORDLONG)address;
-    key.B = indirect ? 1 : 0;
+    key.A = (DWORDLONG)calledCls;
+    key.B = (DWORDLONG)delegateObj;
 
-    DWORDLONG value =
-        LookupByKeyOrMiss(GetMethodFromDelegate, key, ": key address-%016" PRIX64 " indirect-%u", key.A, key.B);
+    DLDLDL value = LookupByKeyOrMiss(GetMethodFromDelegate, key, ": key type-%016" PRIX64 " object-%016" PRIX64,
+                                    key.A, key.B);
     DEBUG_REP(dmpGetMethodFromDelegate(key, value));
-    return (CORINFO_METHOD_HANDLE)value;
+    if (methodCls != nullptr)
+        *methodCls = (CORINFO_CLASS_HANDLE)value.A;
+    if (targetCls != nullptr)
+        *targetCls = (CORINFO_CLASS_HANDLE)value.B;
+    return (CORINFO_METHOD_HANDLE)value.C;
 }
 
 void MethodContext::recGetTypeForPrimitiveValueClass(CORINFO_CLASS_HANDLE cls, CorInfoType result)

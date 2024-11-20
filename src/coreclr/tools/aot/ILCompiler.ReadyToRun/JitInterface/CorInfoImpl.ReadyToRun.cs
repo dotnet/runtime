@@ -3301,7 +3301,7 @@ namespace Internal.JitInterface
             throw new NotSupportedException();
         }
 
-        private CORINFO_METHOD_STRUCT_* getMethodFromDelegate(void* address, bool indirect)
+        private CORINFO_METHOD_STRUCT_* getMethodFromDelegate(CORINFO_CLASS_STRUCT_* calledCls, CORINFO_OBJECT_STRUCT_* delegateObj, CORINFO_CLASS_STRUCT_** methodCls, CORINFO_CLASS_STRUCT_** targetCls)
         {
             throw new NotSupportedException();
         }

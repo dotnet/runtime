@@ -241,7 +241,7 @@ FUNCTIONS
     CorInfoInitClassResult initClass(CORINFO_FIELD_HANDLE field, CORINFO_METHOD_HANDLE method, CORINFO_CONTEXT_HANDLE context)
     void classMustBeLoadedBeforeCodeIsRun(CORINFO_CLASS_HANDLE cls)
     CORINFO_CLASS_HANDLE getBuiltinClass(CorInfoClassId classId)
-    CORINFO_METHOD_HANDLE getMethodFromDelegate(void* address, bool indirect)
+    CORINFO_METHOD_HANDLE getMethodFromDelegate(CORINFO_CLASS_HANDLE calledCls, CORINFO_OBJECT_HANDLE delegateObj, CORINFO_CLASS_HANDLE* methodCls, CORINFO_CLASS_HANDLE* targetCls)
     CorInfoType getTypeForPrimitiveValueClass(CORINFO_CLASS_HANDLE cls)
     CorInfoType getTypeForPrimitiveNumericClass(CORINFO_CLASS_HANDLE cls)
     bool canCast(CORINFO_CLASS_HANDLE child, CORINFO_CLASS_HANDLE parent)

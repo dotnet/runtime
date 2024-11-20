@@ -106,7 +106,6 @@ namespace Internal.IL
         public DelegateInfo(TypeDesc delegateType, DelegateFeature features)
         {
             Debug.Assert(delegateType.IsDelegate);
-            Debug.Assert(delegateType.IsTypeDefinition);
 
             _delegateType = delegateType;
             _supportedFeatures = features;

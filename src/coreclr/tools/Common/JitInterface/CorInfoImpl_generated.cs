@@ -1151,12 +1151,12 @@ namespace Internal.JitInterface
         }
 
         [UnmanagedCallersOnly]
-        private static CORINFO_METHOD_STRUCT_* _getMethodFromDelegate(IntPtr thisHandle, IntPtr* ppException, void* address, byte indirect)
+        private static CORINFO_METHOD_STRUCT_* _getMethodFromDelegate(IntPtr thisHandle, IntPtr* ppException, CORINFO_CLASS_STRUCT_* calledCls, CORINFO_OBJECT_STRUCT_* delegateObj, CORINFO_CLASS_STRUCT_** methodCls, CORINFO_CLASS_STRUCT_** targetCls)
         {
             var _this = GetThis(thisHandle);
             try
             {
-                return _this.getMethodFromDelegate(address, indirect != 0);
+                return _this.getMethodFromDelegate(calledCls, delegateObj, methodCls, targetCls);
             }
             catch (Exception ex)
             {
@@ -2717,7 +2717,7 @@ namespace Internal.JitInterface
             callbacks[74] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_FIELD_STRUCT_*, CORINFO_METHOD_STRUCT_*, CORINFO_CONTEXT_STRUCT*, CorInfoInitClassResult>)&_initClass;
             callbacks[75] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, void>)&_classMustBeLoadedBeforeCodeIsRun;
             callbacks[76] = (delegate* unmanaged<IntPtr, IntPtr*, CorInfoClassId, CORINFO_CLASS_STRUCT_*>)&_getBuiltinClass;
-            callbacks[77] = (delegate* unmanaged<IntPtr, IntPtr*, void*, byte, CORINFO_METHOD_STRUCT_*>)&_getMethodFromDelegate;
+            callbacks[77] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, CORINFO_OBJECT_STRUCT_*, CORINFO_CLASS_STRUCT_**, CORINFO_CLASS_STRUCT_**, CORINFO_METHOD_STRUCT_*>)&_getMethodFromDelegate;
             callbacks[78] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, CorInfoType>)&_getTypeForPrimitiveValueClass;
             callbacks[79] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, CorInfoType>)&_getTypeForPrimitiveNumericClass;
             callbacks[80] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, CORINFO_CLASS_STRUCT_*, byte>)&_canCast;
