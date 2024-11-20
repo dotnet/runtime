@@ -1302,7 +1302,7 @@ PhaseStatus Compiler::optUnrollLoops()
         }
 
         JITDUMP("A nested loop was unrolled. Doing another pass (pass %d)\n", passes + 1);
-        fgRenumberBlocks();
+        // fgRenumberBlocks();
         fgInvalidateDfsTree();
         m_dfsTree = fgComputeDfs();
         m_loops   = FlowGraphNaturalLoops::Find(m_dfsTree);
@@ -1335,7 +1335,7 @@ PhaseStatus Compiler::optUnrollLoops()
             m_loops   = FlowGraphNaturalLoops::Find(m_dfsTree);
         }
 
-        fgRenumberBlocks();
+        // fgRenumberBlocks();
 
         DBEXEC(verbose, fgDispBasicBlocks());
     }
