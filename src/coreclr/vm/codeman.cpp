@@ -4149,9 +4149,11 @@ void EEJitManager::NibbleMapDeleteUnlocked(HeapList* pHp, TADDR pCode)
 
     PTR_DWORD pMap = pHp->pHdrMap;
 
-    // assert that the nibble is not empty and the DWORD is not a pointer
+    // Assert that the DWORD is not a pointer. Deleting a portion of a pointer
+    // would cause the state of the map to be invalid. Deleting empty nibbles,
+    // a no-op, is allowed and can occur when removing JIT data.
     pMap += index;
-    _ASSERTE(((*pMap) & ~mask) && !IsPointer(*pMap));
+    _ASSERTE(!IsPointer(*pMap));
 
     // delete the relevant nibble
     VolatileStore<DWORD>(pMap, (*pMap) & mask);
