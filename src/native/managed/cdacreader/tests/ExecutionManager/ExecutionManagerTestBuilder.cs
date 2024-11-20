@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Microsoft.Diagnostics.DataContractReader.ExecutionManagerHelpers;
 
 using InteriorMapValue = Microsoft.Diagnostics.DataContractReader.ExecutionManagerHelpers.RangeSectionMap.InteriorMapValue;
@@ -13,6 +14,7 @@ internal class ExecutionManagerTestBuilder
 {
     public const ulong ExecutionManagerCodeRangeMapAddress = 0x000a_fff0;
 
+    const bool UseFunclets = true;
     const int RealCodeHeaderSize = 0x08; // must be big enough for the offsets of RealCodeHeader size in ExecutionManagerTestTarget, below
 
     public struct AllocationRange
@@ -159,10 +161,6 @@ internal class ExecutionManagerTestBuilder
                 cur = new TargetCodePointer(cur.Value + (ulong)BytesAtLastLevel); // FIXME: round ?
             } while (cur.Value < end);
         }
-        public void MarkCreated()
-        {
-            _builder.MarkCreated();
-        }
 
         public MockMemorySpace.ReadContext GetReadContext()
         {
@@ -259,6 +257,7 @@ internal class ExecutionManagerTestBuilder
 
     internal MockMemorySpace.Builder Builder { get; }
     internal Dictionary<DataType, Target.TypeInfo> Types { get; }
+    internal (string Name, ulong Value)[] Globals { get; }
 
     private readonly RangeSectionMapTestBuilder _rsmBuilder;
 
@@ -287,11 +286,19 @@ internal class ExecutionManagerTestBuilder
                 CodeHeapListNodeFields,
                 RealCodeHeaderFields,
                 RuntimeFunctionFields,
-                MockDescriptors.HashMap.HashMapFields,
-                MockDescriptors.HashMap.BucketFields(Builder.TargetTestHelpers),
                 ReadyToRunInfoFields(Builder.TargetTestHelpers),
                 MockDescriptors.ModuleFields,
-            ]);
+            ]).Concat(MockDescriptors.HashMap.GetTypes(Builder.TargetTestHelpers))
+            .ToDictionary();
+        Globals =
+        [
+            (nameof(Constants.Globals.ExecutionManagerCodeRangeMapAddress), ExecutionManagerCodeRangeMapAddress),
+            (nameof(Constants.Globals.StubCodeBlockLast), 0x0Fu),
+            (nameof(Constants.Globals.FeatureEHFunclets), UseFunclets ? 1 : 0),
+        ];
+        Globals = Globals
+            .Concat(MockDescriptors.HashMap.GetGlobals(Builder.TargetTestHelpers))
+            .ToArray();
     }
 
     internal NibbleMapTestBuilderBase CreateNibbleMap(ulong codeRangeStart, uint codeRangeSize)
@@ -469,6 +476,4 @@ internal class ExecutionManagerTestBuilder
 
         return r2rModule.Address;
     }
-
-    public void MarkCreated() => Builder.MarkCreated();
 }

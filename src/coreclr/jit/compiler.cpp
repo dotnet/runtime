@@ -4609,11 +4609,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     // Record "start" values for post-inlining cycles and elapsed time.
     RecordStateAtEndOfInlining();
 
-    // Drop back to just checking profile likelihoods.
-    //
-    activePhaseChecks &= ~PhaseChecks::CHECK_PROFILE;
-    activePhaseChecks |= PhaseChecks::CHECK_LIKELIHOODS;
-
     if (opts.OptimizationEnabled())
     {
         // Build post-order and remove dead blocks
@@ -4657,6 +4652,11 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     // Clone code in finallys to reduce overhead for non-exceptional paths
     //
     DoPhase(this, PHASE_CLONE_FINALLY, &Compiler::fgCloneFinally);
+
+    // Drop back to just checking profile likelihoods.
+    //
+    activePhaseChecks &= ~PhaseChecks::CHECK_PROFILE;
+    activePhaseChecks |= PhaseChecks::CHECK_LIKELIHOODS;
 
     // Do some flow-related optimizations
     //
