@@ -254,7 +254,19 @@ bool emitter::IsEvexEncodableInstruction(instruction ins) const
     {
         return false;
     }
-    return HasEvexEncoding(ins);
+
+    switch (ins)
+    {
+        case INS_pclmulqdq:
+        {
+            return emitComp->compOpportunisticallyDependsOn(InstructionSet_PCLMULQDQ_V256);
+        }
+
+        default:
+        {
+            return HasEvexEncoding(ins);
+        }
+    }
 }
 
 //------------------------------------------------------------------------

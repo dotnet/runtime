@@ -68,8 +68,6 @@ static CORINFO_InstructionSet X64VersionOfIsa(CORINFO_InstructionSet isa)
             return InstructionSet_POPCNT_X64;
         case InstructionSet_X86Serialize:
             return InstructionSet_X86Serialize_X64;
-        case InstructionSet_EVEX:
-            return InstructionSet_EVEX_X64;
         default:
             return InstructionSet_NONE;
     }
@@ -116,6 +114,8 @@ static CORINFO_InstructionSet V256VersionOfIsa(CORINFO_InstructionSet isa)
     {
         case InstructionSet_GFNI:
             return InstructionSet_GFNI_V256;
+        case InstructionSet_PCLMULQDQ:
+            return InstructionSet_PCLMULQDQ_V256;
         default:
             return InstructionSet_NONE;
     }
@@ -139,6 +139,8 @@ static CORINFO_InstructionSet V512VersionOfIsa(CORINFO_InstructionSet isa)
             return InstructionSet_AVX10v1_V512_X64;
         case InstructionSet_GFNI:
             return InstructionSet_GFNI_V512;
+        case InstructionSet_PCLMULQDQ:
+            return InstructionSet_PCLMULQDQ_V512;
         default:
             return InstructionSet_NONE;
     }
@@ -879,6 +881,8 @@ bool HWIntrinsicInfo::isFullyImplementedIsa(CORINFO_InstructionSet isa)
         case InstructionSet_LZCNT_X64:
         case InstructionSet_PCLMULQDQ:
         case InstructionSet_PCLMULQDQ_X64:
+        case InstructionSet_PCLMULQDQ_V256:
+        case InstructionSet_PCLMULQDQ_V512:
         case InstructionSet_POPCNT:
         case InstructionSet_POPCNT_X64:
         case InstructionSet_SSE:
@@ -3266,6 +3270,38 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             if (BlockNonDeterministicIntrinsics(mustExpand))
             {
                 break;
+            }
+
+            if ((simdSize == 32) && !varTypeIsFloating(simdBaseType) &&
+                !compOpportunisticallyDependsOn(InstructionSet_AVX2))
+            {
+                // We can't deal with TYP_SIMD32 for integral types if the compiler doesn't support AVX2
+                break;
+            }
+
+            assert(simdSize != 64 || IsBaselineVector512IsaSupportedDebugOnly());
+
+            if (varTypeIsLong(simdBaseType))
+            {
+                if (TARGET_POINTER_SIZE == 4)
+                {
+                    // TODO-XARCH-CQ: 32bit support
+                    break;
+                }
+
+                if ((simdSize == 32) && compOpportunisticallyDependsOn(InstructionSet_AVX2))
+                {
+                    // Emulate NI_AVX512DQ_VL_MultiplyLow with AVX2 for SIMD32
+                }
+                else if ((simdSize == 16) && compOpportunisticallyDependsOn(InstructionSet_SSE41))
+                {
+                    // Emulate NI_AVX512DQ_VL_MultiplyLow with SSE41 for SIMD16
+                }
+                else
+                {
+                    // Software fallback
+                    break;
+                }
             }
 
             op3 = impSIMDPopStack();

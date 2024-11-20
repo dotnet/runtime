@@ -4,6 +4,7 @@
 using System;
 using System.Text;
 using System.Collections.Generic;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Diagnostics.CodeAnalysis;
@@ -45,6 +46,7 @@ public class Interfaces
         TestSharedInterfaceMethods.Run();
         TestGenericAnalysis.Run();
         TestRuntime108229Regression.Run();
+        TestRuntime109893Regression.Run();
         TestCovariantReturns.Run();
         TestDynamicInterfaceCastable.Run();
         TestStaticInterfaceMethodsAnalysis.Run();
@@ -60,6 +62,7 @@ public class Interfaces
         TestDefaultDynamicStaticNonGeneric.Run();
         TestDefaultDynamicStaticGeneric.Run();
         TestDynamicStaticGenericVirtualMethods.Run();
+        TestRuntime109496Regression.Run();
 
         return Pass;
     }
@@ -867,6 +870,37 @@ public class Interfaces
             // Call multiple times in case we just flushed the cast cache (when we flush we don't store).
             if (!Is(o) || !Is(o) || !Is(o))
                 throw new Exception();
+        }
+    }
+
+    class TestRuntime109893Regression
+    {
+        class Type<T> : IType<T>;
+
+        class MyVisitor : IVisitor
+        {
+            public object? Visit<T>(IType<T> _) => typeof(T);
+        }
+
+        interface IType
+        {
+            object? Accept(IVisitor visitor);
+        }
+
+        interface IType<T> : IType
+        {
+            object? IType.Accept(IVisitor visitor) => visitor.Visit(this);
+        }
+
+        interface IVisitor
+        {
+            object? Visit<T>(IType<T> type);
+        }
+
+        public static void Run()
+        {
+            IType type = new Type<object>();
+            type.Accept(new MyVisitor());
         }
     }
 
@@ -1888,6 +1922,59 @@ public class Interfaces
             Console.WriteLine(s_entry.Enter1<SimpleCallClass>("One"));
             //Console.WriteLine(s_entry.Enter1<SimpleCallGenericClass<object>>("One"));
             Console.WriteLine(s_entry.Enter1<SimpleCallStruct<object>>("One"));
+        }
+    }
+
+    class TestRuntime109496Regression
+    {
+        class CastableThing : IDynamicInterfaceCastable
+        {
+            RuntimeTypeHandle IDynamicInterfaceCastable.GetInterfaceImplementation(RuntimeTypeHandle interfaceType)
+                => Type.GetTypeFromHandle(interfaceType).GetCustomAttribute<TypeAttribute>().TheType.TypeHandle;
+            bool IDynamicInterfaceCastable.IsInterfaceImplemented(RuntimeTypeHandle interfaceType, bool throwIfNotImplemented)
+                => Type.GetTypeFromHandle(interfaceType).IsDefined(typeof(TypeAttribute));
+        }
+
+        [Type(typeof(IMyInterfaceImpl))]
+        interface IMyInterface
+        {
+            int Method();
+        }
+
+        [DynamicInterfaceCastableImplementation]
+        interface IMyInterfaceImpl : IMyInterface
+        {
+            int IMyInterface.Method() => 42;
+        }
+
+        [Type(typeof(IMyGenericInterfaceImpl<int>))]
+        interface IMyGenericInterface
+        {
+            int Method();
+        }
+
+        [DynamicInterfaceCastableImplementation]
+        interface IMyGenericInterfaceImpl<T> : IMyGenericInterface
+        {
+            int IMyGenericInterface.Method() => typeof(T).Name.Length;
+        }
+
+        class TypeAttribute : Attribute
+        {
+            public Type TheType { get; }
+
+            public TypeAttribute(Type t) => TheType = t;
+        }
+
+        public static void Run()
+        {
+            object o = new CastableThing();
+
+            if (((IMyInterface)o).Method() != 42)
+                throw new Exception();
+
+            if (((IMyGenericInterface)o).Method() != 5)
+                throw new Exception();
         }
     }
 }

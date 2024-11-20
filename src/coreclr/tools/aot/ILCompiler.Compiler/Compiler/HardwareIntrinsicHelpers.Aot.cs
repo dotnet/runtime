@@ -49,7 +49,7 @@ namespace ILCompiler
             var emit = new ILEmitter();
             ILCodeStream codeStream = emit.NewCodeStream();
 
-            if(!uint.IsPow2((uint)flag))
+            if (!uint.IsPow2((uint)flag))
             {
                 // These are the ISAs managed by multiple-bit flags.
                 // We need to emit different IL to handle the checks.

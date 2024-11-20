@@ -2269,6 +2269,12 @@
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/Pclmulqdq/**">
             <Issue>https://github.com/dotnet/runtime/issues/75767</Issue>
         </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/Pclmulqdq.V256/**">
+            <Issue>https://github.com/dotnet/runtime/issues/91392</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/Pclmulqdq.V512/**">
+            <Issue>https://github.com/dotnet/runtime/issues/91392</Issue>
+        </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/Sse1/Shuffle_r/**">
             <Issue>https://github.com/dotnet/runtime/issues/75767</Issue>
         </ExcludeList>

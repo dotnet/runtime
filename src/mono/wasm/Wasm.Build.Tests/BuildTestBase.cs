@@ -189,13 +189,34 @@ namespace Wasm.Build.Tests
                 buildRoot.VisitAllChildren<TextNode>(m =>
                 {
                     if (m is Message || m is Error || m is Warning)
-                        outputBuilder.AppendLine(m.Title);
+                    {
+                        var context = GetBinlogMessageContext(m);
+                        outputBuilder.AppendLine($"{context}{m.Title}");
+                    }
                 });
 
                 res = new CommandResult(res.StartInfo, res.ExitCode, outputBuilder.ToString());
             }
 
             return (res, logFilePath);
+        }
+
+        private string GetBinlogMessageContext(TextNode node)
+        {
+            var currentNode = node;
+            while (currentNode != null)
+            {
+                if (currentNode is Error error)
+                {
+                    return $"{error.File}({error.LineNumber},{error.ColumnNumber}): error {error.Code}: ";
+                }
+                else if (currentNode is Warning warning)
+                {
+                    return $"{warning.File}({warning.LineNumber},{warning.ColumnNumber}): warning {warning.Code}: ";
+                }
+                currentNode = currentNode.Parent as TextNode;
+            }
+            return string.Empty;
         }
 
         protected bool IsDotnetWasmFromRuntimePack(BuildArgs buildArgs) =>
@@ -629,8 +650,8 @@ namespace Wasm.Build.Tests
         }
 
         protected static string GetSkiaSharpReferenceItems()
-            => @"<PackageReference Include=""SkiaSharp"" Version=""2.88.6"" />
-                <PackageReference Include=""SkiaSharp.NativeAssets.WebAssembly"" Version=""2.88.6"" />
+            => @"<PackageReference Include=""SkiaSharp"" Version=""2.88.9-preview.2.2"" />
+                <PackageReference Include=""SkiaSharp.NativeAssets.WebAssembly"" Version=""2.88.9-preview.2.2"" />
                 <NativeFileReference Include=""$(SkiaSharpStaticLibraryPath)\3.1.56\st\*.a"" />";
 
         protected static string s_mainReturns42 = @"
