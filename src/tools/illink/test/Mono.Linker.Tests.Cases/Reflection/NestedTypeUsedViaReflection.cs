@@ -2,8 +2,10 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
+using Mono.Linker.Tests.Cases.Expectations.Helpers;
 
 namespace Mono.Linker.Tests.Cases.Reflection
 {
@@ -28,6 +30,9 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			UnsupportedBindingFlags.Test ();
 
 			MemberOnNestedType.Test ();
+			MemberOnUnknownBindingFlagsAndName.Test (BindingFlags.Public, "DoesntMatter");
+
+			GetNestedTypeOnAnnotatedLocation.Test (null);
 		}
 
 		[Kept]
@@ -202,6 +207,31 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			}
 		}
 
+		static class MemberOnUnknownBindingFlagsAndName
+		{
+			[Kept]
+			public static class PublicNestedType
+			{
+				[Kept]
+				public static int SomeField;
+
+				[Kept]
+				private static void SomeMethod() { }
+			}
+
+			[Kept]
+			[ExpectedWarning ("IL2072", nameof (DataFlowTypeExtensions) + "." + nameof (DataFlowTypeExtensions.RequiresAll))]
+			public static void Test (BindingFlags bindingFlags, string name)
+			{
+				// Since the binding flags and name are not known trimming tools should mark all nested types on the type
+				// It should also mark the members that are expected and satisfy the requirements
+				typeof (MemberOnUnknownBindingFlagsAndName).GetNestedType (name, bindingFlags).RequiresPublicFields ();
+
+				// Should warn
+				typeof (MemberOnUnknownBindingFlagsAndName).GetNestedType (name, bindingFlags).RequiresAll ();
+			}
+		}
+
 		[Kept]
 		static class IgnoreCaseBindingFlags
 		{
@@ -243,6 +273,19 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			public static void Test ()
 			{
 				_ = typeof (UnsupportedBindingFlags).GetNestedType ("SuppressChangeTypeNestedType", BindingFlags.SuppressChangeType);
+			}
+		}
+
+		[Kept]
+		private class GetNestedTypeOnAnnotatedLocation
+		{
+			[ExpectedWarning ("IL2072", nameof (DataFlowTypeExtensions) + "." + nameof (DataFlowTypeExtensions.RequiresAll))]
+			[Kept]
+			public static void Test ([KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute)), DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicNestedTypes)] Type t)
+			{
+				t.GetNestedType ("DoesntMatter").RequiresPublicConstructors ();
+				t.GetNestedType ("DoesntMatter").RequiresNonPublicMethodsWithInherited ();
+				t.GetNestedType ("DoesntMatter").RequiresAll ();
 			}
 		}
 	}
