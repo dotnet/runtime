@@ -6006,7 +6006,7 @@ bool FlowGraphNaturalLoop::CanDuplicate(INDEBUG(const char** reason))
                 unsigned   outermostBlockIndex = comp->ehTrueEnclosingTryIndexIL(blockIndex);
 
                 if ((headerInTry && (outermostBlockIndex == header->getTryIndex())) ||
-                    !headerInTry && (outermostBlockIndex == EHblkDsc::NO_ENCLOSING_INDEX))
+                    (!headerInTry && (outermostBlockIndex == EHblkDsc::NO_ENCLOSING_INDEX)))
                 {
                     tryRegionsToClone.Push(block);
                 }
