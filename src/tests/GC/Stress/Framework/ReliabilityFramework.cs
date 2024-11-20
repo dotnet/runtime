@@ -164,8 +164,6 @@ public class ReliabilityFramework
         var configVars = GC.GetConfigurationVariables();
         foreach (var kvp in configVars)
         {
-            string key = kvp.Key;
-            object value = kvp.Value;
             sb.AppendLine($"{kvp.Key}: {kvp.Value}");
         }
         rf._logger.WriteToInstrumentationLog(null, LoggingLevels.StartupShutdown, String.Format("Get GC Configuration Variables\n{0}",sb));
