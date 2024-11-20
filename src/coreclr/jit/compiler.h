@@ -9951,14 +9951,8 @@ public:
     // Returns:
     //    `true` if Rex2 encoding is supported, `false` if not.
     //
-    bool canUseRex2Encoding() const
+    bool canUseApxEncoding() const
     {
-#ifdef DEBUG
-        if (JitConfig.JitBypassAPXCheck())
-        {
-            return true;
-        }
-#endif // DEBUG
         return compOpportunisticallyDependsOn(InstructionSet_APX);
     }
 
@@ -10007,7 +10001,7 @@ private:
     bool DoJitStressRex2Encoding() const
     {
 #ifdef DEBUG
-        if (JitConfig.JitStressRex2Encoding())
+        if (JitConfig.JitStressRex2Encoding() && compOpportunisticallyDependsOn(InstructionSet_APX))
         {
             return true;
         }
