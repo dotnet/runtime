@@ -14,13 +14,13 @@ namespace System.Net.ServerSentEvents
 
         public Memory<byte> GetMemory(int sizeHint = 0)
         {
-            _buffer.EnsureAvailableSpace(sizeHint);
+            _buffer.EnsureAvailableSpace(Math.Max(sizeHint, 1));
             return _buffer.AvailableMemory;
         }
 
         public Span<byte> GetSpan(int sizeHint = 0)
         {
-            _buffer.EnsureAvailableSpace(sizeHint);
+            _buffer.EnsureAvailableSpace(Math.Max(sizeHint, 1));
             return _buffer.AvailableSpan;
         }
 
