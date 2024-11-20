@@ -277,6 +277,57 @@ public class ExecutionManagerTests
         }
     }
 
+    [Theory]
+    [MemberData(nameof(StdArchAllVersions))]
+    public void GetMethodDesc_R2R_HotColdBlock(int version, MockTarget.Architecture arch)
+    {
+        const ulong codeRangeStart = 0x0a0a_0000u; // arbitrary
+        const uint codeRangeSize = 0xc000u; // arbitrary
+        TargetPointer jitManagerAddress = new(0x000b_ff00); // arbitrary
+
+        TargetPointer[] methodDescAddresses = [0x0101_aaa0, 0x0201_aaa0];
+
+        MockDescriptors.ExecutionManager emBuilder = new(version, arch, MockDescriptors.ExecutionManager.DefaultAllocationRange);
+        var jittedCode = emBuilder.AllocateJittedCodeRange(codeRangeStart, codeRangeSize);
+
+        uint[] runtimeFunctions = [0x100, 0x200, 0x300, 0x400, 0x500];
+        uint[] hotColdMap = [3, 0, 4, 1];
+
+        TargetPointer r2rInfo = emBuilder.AddReadyToRunInfo(runtimeFunctions, hotColdMap);
+        MockDescriptors.HashMap hashMapBuilder = new(emBuilder.Builder);
+        hashMapBuilder.PopulatePtrMap(
+            r2rInfo + (uint)emBuilder.Types[DataType.ReadyToRunInfo].Fields[nameof(Data.ReadyToRunInfo.EntryPointToMethodDescMap)].Offset,
+            [
+                (jittedCode.RangeStart + runtimeFunctions[hotColdMap[1]], methodDescAddresses[0]),
+                (jittedCode.RangeStart + runtimeFunctions[hotColdMap[3]], methodDescAddresses[1]),
+            ]);
+
+        TargetPointer r2rModule = emBuilder.AddReadyToRunModule(r2rInfo);
+        TargetPointer rangeSectionAddress = emBuilder.AddReadyToRunRangeSection(jittedCode, jitManagerAddress, r2rModule);
+        _ = emBuilder.AddRangeSectionFragment(jittedCode, rangeSectionAddress);
+
+        Target target = CreateTarget(emBuilder);
+
+        IExecutionManager em = target.Contracts.ExecutionManager;
+        Assert.NotNull(em);
+
+        // Hot and cold parts should map to the same method desc
+        for (int i = 0; i < hotColdMap.Length; i++)
+        {
+            // Function start
+            var handle = em.GetCodeBlockHandle(codeRangeStart + runtimeFunctions[hotColdMap[i]]);
+            Assert.NotNull(handle);
+            TargetPointer actualMethodDesc = em.GetMethodDesc(handle.Value);
+            Assert.Equal(methodDescAddresses[i / 2], actualMethodDesc);
+
+            // Past function start
+            handle = em.GetCodeBlockHandle(codeRangeStart + runtimeFunctions[hotColdMap[i]] + 8);
+            Assert.NotNull(handle);
+            actualMethodDesc = em.GetMethodDesc(handle.Value);
+            Assert.Equal(methodDescAddresses[i / 2], actualMethodDesc);
+        }
+    }
+
     public static IEnumerable<object[]> StdArchAllVersions()
     {
         const int highestVersion = 2;
