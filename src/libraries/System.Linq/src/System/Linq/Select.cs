@@ -60,7 +60,7 @@ namespace System.Linq
             // same for reference types because reference types are trim friendly with GVMs
             // and it is preferable to call the GVM as it allows the select implementation to be
             // specialized.
-            if (IteratorOptions.ValueTypeTrimFriendlySelect && typeof(TResult).IsValueType)
+            if (/*IteratorOptions.ValueTypeTrimFriendlySelect && */typeof(TResult).IsValueType)
             {
 #if OPTIMIZE_FOR_SIZE
                 return new IEnumerableSelectIterator<TSource, TResult>(iterator, selector);
