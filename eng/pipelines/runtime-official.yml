@@ -281,7 +281,7 @@ extends:
           - windows_arm64
           jobParameters:
             templatePath: 'templates-official'
-            buildArgs: -s clr.nativeaotlibs+clr.nativeaotruntime+libs+packs -c $(_BuildConfig) /p:BuildNativeAOTRuntimePack=true /p:SkipLibrariesNativeRuntimePackages=true
+            buildArgs: -c $(_BuildConfig) /p:DotNetBuildRuntimeNativeAOTRuntimePack=true
             nameSuffix: NativeAOT
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             postBuildSteps:
@@ -406,50 +406,13 @@ extends:
           - linux_musl_x64
           - linux_arm64
           - linux_musl_arm64
-          jobParameters:
-            templatePath: 'templates-official'
-            buildArgs: -s mono+packs -c $(_BuildConfig)
-                      /p:MonoCrossAOTTargetOS=android+browser+wasi /p:BuildMonoAOTCrossCompilerOnly=true
-            nameSuffix: CrossAOT_Mono
-            runtimeVariant: crossaot
-            isOfficialBuild: ${{ variables.isOfficialBuild }}
-            postBuildSteps:
-              - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
-                parameters:
-                  name: MonoRuntimePacks
-
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/common/global-build-job.yml
-          runtimeFlavor: mono
-          buildConfig: release
-          platforms:
           - windows_arm64
           - windows_x64
-          jobParameters:
-            templatePath: 'templates-official'
-            buildArgs: -s mono+packs -c $(_BuildConfig)
-                      /p:MonoCrossAOTTargetOS=android+browser+wasi /p:BuildMonoAOTCrossCompilerOnly=true
-            nameSuffix: CrossAOT_Mono
-            runtimeVariant: crossaot
-            isOfficialBuild: ${{ variables.isOfficialBuild }}
-            postBuildSteps:
-              - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
-                parameters:
-                  name: MonoRuntimePacks
-
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/common/global-build-job.yml
-          runtimeFlavor: mono
-          buildConfig: release
-          platforms:
           - osx_x64
           - osx_arm64
           jobParameters:
             templatePath: 'templates-official'
-            buildArgs: -s mono+packs -c $(_BuildConfig)
-                      /p:MonoCrossAOTTargetOS=android+browser+wasi+tvos+ios+maccatalyst /p:BuildMonoAOTCrossCompilerOnly=true
+            buildArgs: -c $(_BuildConfig) /p:DotNetBuildMonoCrossAOT=true
             nameSuffix: CrossAOT_Mono
             runtimeVariant: crossaot
             isOfficialBuild: ${{ variables.isOfficialBuild }}
