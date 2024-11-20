@@ -6300,7 +6300,7 @@ public:
     };
 
     template <bool hasEH>
-    void fgMoveHotJumps();
+    void fgMoveHotJumps(FlowGraphDfsTree* dfsTree);
 
     bool fgFuncletsAreCold();
 

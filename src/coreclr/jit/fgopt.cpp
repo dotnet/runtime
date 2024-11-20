@@ -4463,8 +4463,11 @@ bool Compiler::fgReorderBlocks(bool useProfile)
 // Template parameters:
 //    hasEH - If true, method has EH regions, so check that we don't try to move blocks in different regions
 //
+// Parameters:
+//    dfsTree - The depth-first traversal of the flowgraph
+//
 template <bool hasEH>
-void Compiler::fgMoveHotJumps()
+void Compiler::fgMoveHotJumps(FlowGraphDfsTree* dfsTree)
 {
 #ifdef DEBUG
     if (verbose)
@@ -4477,9 +4480,9 @@ void Compiler::fgMoveHotJumps()
     }
 #endif // DEBUG
 
-    EnsureBasicBlockEpoch();
-    BlockSet visitedBlocks(BlockSetOps::MakeEmpty(this));
-    BlockSetOps::AddElemD(this, visitedBlocks, fgFirstBB->bbNum);
+    assert(dfsTree != nullptr);
+    BitVecTraits traits(dfsTree->PostOrderTraits());
+    BitVec visitedBlocks = BitVecOps::MakeEmpty(&traits);
 
     // If we have a funclet region, don't bother reordering anything in it.
     //
@@ -4487,7 +4490,12 @@ void Compiler::fgMoveHotJumps()
     for (BasicBlock* block = fgFirstBB; block != fgFirstFuncletBB; block = next)
     {
         next = block->Next();
-        BlockSetOps::AddElemD(this, visitedBlocks, block->bbNum);
+        if (!dfsTree->Contains(block))
+        {
+            continue;
+        }
+
+        BitVecOps::AddElemD(&traits, visitedBlocks, block->bbPostorderNum);
 
         // Don't bother trying to move cold blocks
         //
@@ -4534,7 +4542,8 @@ void Compiler::fgMoveHotJumps()
         }
 
         BasicBlock* target         = targetEdge->getDestinationBlock();
-        bool        isBackwardJump = BlockSetOps::IsMember(this, visitedBlocks, target->bbNum);
+        bool        isBackwardJump = BitVecOps::IsMember(&traits, visitedBlocks, target->bbPostorderNum);
+        assert(dfsTree->Contains(target));
 
         if (isBackwardJump)
         {
@@ -4553,7 +4562,8 @@ void Compiler::fgMoveHotJumps()
                 //
                 targetEdge     = unlikelyEdge;
                 target         = targetEdge->getDestinationBlock();
-                isBackwardJump = BlockSetOps::IsMember(this, visitedBlocks, target->bbNum);
+                isBackwardJump = BitVecOps::IsMember(&traits, visitedBlocks, target->bbPostorderNum);
+                assert(dfsTree->Contains(target));
 
                 if (isBackwardJump)
                 {
@@ -4696,7 +4706,7 @@ void Compiler::fgDoReversePostOrderLayout()
             }
         }
 
-        fgMoveHotJumps</* hasEH */ false>();
+        fgMoveHotJumps</* hasEH */ false>(dfsTree);
 
         return;
     }
@@ -4769,7 +4779,7 @@ void Compiler::fgDoReversePostOrderLayout()
         fgInsertBBafter(pair.callFinally, pair.callFinallyRet);
     }
 
-    fgMoveHotJumps</* hasEH */ true>();
+    fgMoveHotJumps</* hasEH */ true>(dfsTree);
 }
 
 //-----------------------------------------------------------------------------
