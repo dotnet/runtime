@@ -162,8 +162,15 @@ namespace Build.Tasks
                 {
                     if (GetFileVersion(itemSpec).CompareTo(GetFileVersion(frameworkItem.ItemSpec)) > 0)
                     {
-                        // Allow OOB references with higher version to take precedence over the framework assemblies.
-                        list.Add(taskItem);
+                        if (assemblyFileName == "System.Private.CoreLib.dll")
+                        {
+                            Log.LogError($"Overriding System.Private.CoreLib.dll with a newer version is not supported. Attempted to use {itemSpec} instead of {frameworkItem.ItemSpec}.");
+                        }
+                        else
+                        {
+                            // Allow OOB references with higher version to take precedence over the framework assemblies.
+                            list.Add(taskItem);
+                        }
                     }
 
                     assembliesToSkipPublish.Add(taskItem);
