@@ -110,6 +110,7 @@ namespace Internal.JitInterface
         X64_AVX512VBMI_X64 = InstructionSet_X64.AVX512VBMI_X64,
         X64_AVX10v1_X64 = InstructionSet_X64.AVX10v1_X64,
         X64_AVX10v1_V512_X64 = InstructionSet_X64.AVX10v1_V512_X64,
+        X64_GFNI_X64 = InstructionSet_X64.GFNI_X64,
         X86_X86Base = InstructionSet_X86.X86Base,
         X86_SSE = InstructionSet_X86.SSE,
         X86_SSE2 = InstructionSet_X86.SSE2,
@@ -179,6 +180,7 @@ namespace Internal.JitInterface
         X86_AVX512VBMI_X64 = InstructionSet_X86.AVX512VBMI_X64,
         X86_AVX10v1_X64 = InstructionSet_X86.AVX10v1_X64,
         X86_AVX10v1_V512_X64 = InstructionSet_X86.AVX10v1_V512_X64,
+        X86_GFNI_X64 = InstructionSet_X86.GFNI_X64,
     }
     public enum InstructionSet_ARM64
     {
@@ -284,6 +286,7 @@ namespace Internal.JitInterface
         AVX512VBMI_X64 = 67,
         AVX10v1_X64 = 68,
         AVX10v1_V512_X64 = 69,
+        GFNI_X64 = 70,
     }
 
     public enum InstructionSet_X86
@@ -359,6 +362,7 @@ namespace Internal.JitInterface
         AVX512VBMI_X64 = 67,
         AVX10v1_X64 = 68,
         AVX10v1_V512_X64 = 69,
+        GFNI_X64 = 70,
     }
 
     public unsafe struct InstructionSetFlags : IEnumerable<InstructionSet>
@@ -678,6 +682,10 @@ namespace Internal.JitInterface
                         resultflags.AddInstructionSet(InstructionSet.X64_AVX10v1_V512_X64);
                     if (resultflags.HasInstructionSet(InstructionSet.X64_AVX10v1_V512_X64))
                         resultflags.AddInstructionSet(InstructionSet.X64_AVX10v1_V512);
+                    if (resultflags.HasInstructionSet(InstructionSet.X64_GFNI))
+                        resultflags.AddInstructionSet(InstructionSet.X64_GFNI_X64);
+                    if (resultflags.HasInstructionSet(InstructionSet.X64_GFNI_X64))
+                        resultflags.AddInstructionSet(InstructionSet.X64_GFNI);
                     if (resultflags.HasInstructionSet(InstructionSet.X64_SSE))
                         resultflags.AddInstructionSet(InstructionSet.X64_X86Base);
                     if (resultflags.HasInstructionSet(InstructionSet.X64_SSE2))
@@ -1041,6 +1049,8 @@ namespace Internal.JitInterface
                         resultflags.AddInstructionSet(InstructionSet.X64_AVX10v1);
                     if (resultflags.HasInstructionSet(InstructionSet.X64_AVX10v1_V512_X64))
                         resultflags.AddInstructionSet(InstructionSet.X64_AVX10v1_V512);
+                    if (resultflags.HasInstructionSet(InstructionSet.X64_GFNI_X64))
+                        resultflags.AddInstructionSet(InstructionSet.X64_GFNI);
                     if (resultflags.HasInstructionSet(InstructionSet.X64_X86Base))
                         resultflags.AddInstructionSet(InstructionSet.X64_SSE);
                     if (resultflags.HasInstructionSet(InstructionSet.X64_SSE))
@@ -1536,6 +1546,8 @@ namespace Internal.JitInterface
                         AddInstructionSet(InstructionSet.X64_AVX10v1_X64);
                     if (HasInstructionSet(InstructionSet.X64_AVX10v1_V512))
                         AddInstructionSet(InstructionSet.X64_AVX10v1_V512_X64);
+                    if (HasInstructionSet(InstructionSet.X64_GFNI))
+                        AddInstructionSet(InstructionSet.X64_GFNI_X64);
                     break;
 
                 case TargetArchitecture.X86:
@@ -1586,6 +1598,7 @@ namespace Internal.JitInterface
                     AddInstructionSet(InstructionSet.X64_AVX512VBMI_X64);
                     AddInstructionSet(InstructionSet.X64_AVX10v1_X64);
                     AddInstructionSet(InstructionSet.X64_AVX10v1_V512_X64);
+                    AddInstructionSet(InstructionSet.X64_GFNI_X64);
                     break;
 
                 case TargetArchitecture.X86:
@@ -1614,6 +1627,7 @@ namespace Internal.JitInterface
                     AddInstructionSet(InstructionSet.X86_AVX512VBMI_X64);
                     AddInstructionSet(InstructionSet.X86_AVX10v1_X64);
                     AddInstructionSet(InstructionSet.X86_AVX10v1_V512_X64);
+                    AddInstructionSet(InstructionSet.X86_GFNI_X64);
                     break;
             }
         }
@@ -1919,6 +1933,9 @@ namespace Internal.JitInterface
                         { return InstructionSet.X64_APX; }
 
                     case "Gfni":
+                        if (nestedTypeName == "X64")
+                        { return InstructionSet.X64_GFNI_X64; }
+                        else
                         if (nestedTypeName == "V256")
                         { return InstructionSet.X64_GFNI_V256; }
                         else

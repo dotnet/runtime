@@ -124,6 +124,7 @@ namespace Internal.ReadyToRunConstants
                             case InstructionSet.X64_VectorT512: return ReadyToRunInstructionSet.VectorT512;
                             case InstructionSet.X64_APX: return ReadyToRunInstructionSet.Apx;
                             case InstructionSet.X64_GFNI: return ReadyToRunInstructionSet.Gfni;
+                            case InstructionSet.X64_GFNI_X64: return ReadyToRunInstructionSet.Gfni;
                             case InstructionSet.X64_GFNI_V256: return ReadyToRunInstructionSet.Gfni_V256;
                             case InstructionSet.X64_GFNI_V512: return ReadyToRunInstructionSet.Gfni_V512;
 
@@ -202,6 +203,7 @@ namespace Internal.ReadyToRunConstants
                             case InstructionSet.X86_VectorT512: return ReadyToRunInstructionSet.VectorT512;
                             case InstructionSet.X86_APX: return ReadyToRunInstructionSet.Apx;
                             case InstructionSet.X86_GFNI: return ReadyToRunInstructionSet.Gfni;
+                            case InstructionSet.X86_GFNI_X64: return null;
                             case InstructionSet.X86_GFNI_V256: return ReadyToRunInstructionSet.Gfni_V256;
                             case InstructionSet.X86_GFNI_V512: return ReadyToRunInstructionSet.Gfni_V512;
 

@@ -112,6 +112,7 @@ enum CORINFO_InstructionSet
     InstructionSet_AVX512VBMI_X64=67,
     InstructionSet_AVX10v1_X64=68,
     InstructionSet_AVX10v1_V512_X64=69,
+    InstructionSet_GFNI_X64=70,
 #endif // TARGET_AMD64
 #ifdef TARGET_X86
     InstructionSet_X86Base=1,
@@ -183,6 +184,7 @@ enum CORINFO_InstructionSet
     InstructionSet_AVX512VBMI_X64=67,
     InstructionSet_AVX10v1_X64=68,
     InstructionSet_AVX10v1_V512_X64=69,
+    InstructionSet_GFNI_X64=70,
 #endif // TARGET_X86
 
 };
@@ -348,6 +350,8 @@ public:
             AddInstructionSet(InstructionSet_AVX10v1_X64);
         if (HasInstructionSet(InstructionSet_AVX10v1_V512))
             AddInstructionSet(InstructionSet_AVX10v1_V512_X64);
+        if (HasInstructionSet(InstructionSet_GFNI))
+            AddInstructionSet(InstructionSet_GFNI_X64);
 #endif // TARGET_AMD64
 #ifdef TARGET_X86
 #endif // TARGET_X86
@@ -528,6 +532,10 @@ inline CORINFO_InstructionSetFlags EnsureInstructionSetFlagsAreValid(CORINFO_Ins
             resultflags.RemoveInstructionSet(InstructionSet_AVX10v1_V512);
         if (resultflags.HasInstructionSet(InstructionSet_AVX10v1_V512_X64) && !resultflags.HasInstructionSet(InstructionSet_AVX10v1_V512))
             resultflags.RemoveInstructionSet(InstructionSet_AVX10v1_V512_X64);
+        if (resultflags.HasInstructionSet(InstructionSet_GFNI) && !resultflags.HasInstructionSet(InstructionSet_GFNI_X64))
+            resultflags.RemoveInstructionSet(InstructionSet_GFNI);
+        if (resultflags.HasInstructionSet(InstructionSet_GFNI_X64) && !resultflags.HasInstructionSet(InstructionSet_GFNI))
+            resultflags.RemoveInstructionSet(InstructionSet_GFNI_X64);
         if (resultflags.HasInstructionSet(InstructionSet_SSE) && !resultflags.HasInstructionSet(InstructionSet_X86Base))
             resultflags.RemoveInstructionSet(InstructionSet_SSE);
         if (resultflags.HasInstructionSet(InstructionSet_SSE2) && !resultflags.HasInstructionSet(InstructionSet_SSE))
@@ -976,6 +984,8 @@ inline const char *InstructionSetToString(CORINFO_InstructionSet instructionSet)
             return "APX";
         case InstructionSet_GFNI :
             return "GFNI";
+        case InstructionSet_GFNI_X64 :
+            return "GFNI_X64";
         case InstructionSet_GFNI_V256 :
             return "GFNI_V256";
         case InstructionSet_GFNI_V512 :

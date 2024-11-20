@@ -60,6 +60,8 @@ static CORINFO_InstructionSet X64VersionOfIsa(CORINFO_InstructionSet isa)
             return InstructionSet_BMI2_X64;
         case InstructionSet_FMA:
             return InstructionSet_FMA_X64;
+        case InstructionSet_GFNI:
+            return InstructionSet_GFNI_X64;
         case InstructionSet_LZCNT:
             return InstructionSet_LZCNT_X64;
         case InstructionSet_PCLMULQDQ:
@@ -910,6 +912,7 @@ bool HWIntrinsicInfo::isFullyImplementedIsa(CORINFO_InstructionSet isa)
         case InstructionSet_AVX10v1_V512_X64:
         case InstructionSet_EVEX:
         case InstructionSet_GFNI:
+        case InstructionSet_GFNI_X64:
         case InstructionSet_GFNI_V256:
         case InstructionSet_GFNI_V512:
         {
