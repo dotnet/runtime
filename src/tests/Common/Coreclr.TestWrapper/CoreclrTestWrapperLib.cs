@@ -787,14 +787,18 @@ namespace CoreclrTestLib
                         outputWriter.WriteLine("\ncmdLine:{0} Timed Out (timeout in milliseconds: {1}{2}{3}, start: {4}, end: {5})",
                                 executable, timeout, (environmentVar != null) ? " from variable " : "", (environmentVar != null) ? TIMEOUT_ENVIRONMENT_VAR : "",
                                 startTime.ToString(), endTime.ToString());
+                        outputWriter.Flush();
                         errorWriter.WriteLine("\ncmdLine:{0} Timed Out (timeout in milliseconds: {1}{2}{3}, start: {4}, end: {5})",
                                 executable, timeout, (environmentVar != null) ? " from variable " : "", (environmentVar != null) ? TIMEOUT_ENVIRONMENT_VAR : "",
                                 startTime.ToString(), endTime.ToString());
+                        errorWriter.Flush();
 
-                        Console.WriteLine("Timed Out with Active Processes:");
-                        foreach (var process in Process.GetProcesses())
+                        Console.WriteLine("Collecting diagnostic information...");
+                        Console.WriteLine("Snapshot of processes currently running:");
+                        Console.WriteLine($"\t{"ID",-6} ProcessName");
+                        foreach (var activeProcess in Process.GetProcesses())
                         {
-                            Console.WriteLine($"{process.ProcessName} (ID: {process.Id})");
+                            Console.WriteLine($"\t{activeProcess.Id,-6} {activeProcess.ProcessName}");
                         }
 
                         if (collectCrashDumps)
