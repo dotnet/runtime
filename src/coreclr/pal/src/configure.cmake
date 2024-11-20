@@ -615,7 +615,7 @@ endif()
 
 check_c_source_compiles("
 #include <libunwind.h>
-#include <ucontext.h>
+#include <sys/ucontext.h>
 int main(int argc, char **argv)
 {
         unw_context_t libUnwindContext;

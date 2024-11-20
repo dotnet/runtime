@@ -34,9 +34,13 @@ extern "C" {
 
 #include <inttypes.h>
 #include <stddef.h>
-#include <ucontext.h>
 #include <stdalign.h>
 #include <stdint.h>
+#ifdef __APPLE__
+#include <sys/ucontext.h>
+#else
+#include <ucontext.h>
+#endif
 
 #ifndef UNW_EMPTY_STRUCT
 #  define UNW_EMPTY_STRUCT uint8_t unused;
