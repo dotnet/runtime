@@ -117,6 +117,10 @@ namespace ILCompiler
             new("--preinitstatics") { Description = "Interpret static constructors at compile time if possible (implied by -O)" };
         public CliOption<bool> NoPreinitStatics { get; } =
             new("--nopreinitstatics") { Description = "Do not interpret static constructors at compile time" };
+        public CliOption<bool> InstrumentReachability { get; } =
+            new("--reachabilityinstrument") { Description = "Instrument code for dynamic reachability" };
+        public CliOption<string> UseReachability { get; } =
+            new("--reachabilityuse") { Description = "Use dynamic reachability instrumentation data to produce minimal output" };
         public CliOption<string[]> SuppressedWarnings { get; } =
             new("--nowarn") { DefaultValueFactory = _ => Array.Empty<string>(), Description = "Disable specific warning messages" };
         public CliOption<bool> SingleWarn { get; } =
@@ -226,6 +230,8 @@ namespace ILCompiler
             Options.Add(Dehydrate);
             Options.Add(PreinitStatics);
             Options.Add(NoPreinitStatics);
+            Options.Add(InstrumentReachability);
+            Options.Add(UseReachability);
             Options.Add(SuppressedWarnings);
             Options.Add(SingleWarn);
             Options.Add(NoTrimWarn);
