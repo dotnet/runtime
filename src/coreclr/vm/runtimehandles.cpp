@@ -157,27 +157,6 @@ extern "C" void QCALLTYPE RuntimeTypeHandle_GetTypeFromHandleSlow(
     END_QCALL;
 }
 
-// static
-NOINLINE static ReflectClassBaseObject* GetRuntimeTypeHelper(LPVOID __me, TypeHandle typeHandle, OBJECTREF keepAlive)
-{
-    FC_INNER_PROLOG_NO_ME_SETUP();
-    if (typeHandle.AsPtr() == NULL)
-        return NULL;
-
-    OBJECTREF refType = typeHandle.GetManagedClassObjectIfExists();
-    if (refType != NULL)
-        return (ReflectClassBaseObject*)OBJECTREFToObject(refType);
-
-    HELPER_METHOD_FRAME_BEGIN_RET_ATTRIB_1(Frame::FRAME_ATTR_EXACT_DEPTH|Frame::FRAME_ATTR_CAPTURE_DEPTH_2, keepAlive);
-    refType = typeHandle.GetManagedClassObject();
-    HELPER_METHOD_FRAME_END();
-
-    FC_INNER_EPILOG();
-    return (ReflectClassBaseObject*)OBJECTREFToObject(refType);
-}
-
-#define RETURN_CLASS_OBJECT(typeHandle, keepAlive) FC_INNER_RETURN(ReflectClassBaseObject*, GetRuntimeTypeHelper(__me, typeHandle, keepAlive))
-
 FCIMPL1(ReflectClassBaseObject*, RuntimeTypeHandle::GetTypeFromHandleIfExists, EnregisteredTypeHandle th)
 {
     FCALL_CONTRACT;
