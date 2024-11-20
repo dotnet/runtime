@@ -9954,7 +9954,7 @@ public:
     bool canUseApxEncodings() const
     {
 #ifdef DEBUG
-        if(JitConfig.JitBypassAPXCheck())
+        if(JitConfig.JitBypassApxCheck())
         {
             return true;
         }

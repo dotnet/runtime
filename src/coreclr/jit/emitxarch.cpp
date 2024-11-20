@@ -2177,17 +2177,17 @@ emitter::code_t emitter::AddRexWPrefix(const instrDesc* id, code_t code)
         }
     }
 #ifdef TARGET_AMD64
-    else if (hasRex2Prefix(code))
-    {
-        return emitter::code_t(code | 0x000800000000ULL);
-    }
-    else if (TakesApxExtendedEvexPrefix(code))
+    else if (TakesApxExtendedEvexPrefix(id))
     {
         // If the instruction is not VEX/EVEX encodable, and has EVEX prefix,
         // then it is legacy promoted EVEX.
         assert(hasEvexPrefix(code));
         assert(IsApxExtendedEvexInstruction(ins));
         return emitter::code_t(code | 0x0000800000000000ULL);
+    }
+    else if (hasRex2Prefix(code))
+    {
+        return emitter::code_t(code | 0x000800000000ULL);
     }
     return emitter::code_t(code | 0x4800000000ULL);
 #else
