@@ -187,12 +187,13 @@ def build_and_run(coreclr_args, output_mch_name):
         env_copy["NUGET_EXPERIMENTAL_CHAIN_BUILD_RETRY_POLICY"] = "9,2000"
 
     # If `dotnet restore` fails, retry.
+    tfm = "net9.0"
     num_tries = 3
     for try_num in range(num_tries):
         # On the last try, exit on fail
         exit_on_fail = try_num + 1 == num_tries
         (_, _, return_code) = run_command(
-            [dotnet_exe, "restore", project_file, "--packages", artifacts_packages_directory],
+            [dotnet_exe, "restore", project_file, "--packages", artifacts_packages_directory, "-p:TargetFramework=" + tfm],
             _exit_on_fail=exit_on_fail, _env=env_copy)
         if return_code == 0:
             # It succeeded!
@@ -203,7 +204,7 @@ def build_and_run(coreclr_args, output_mch_name):
 
     run_command(
         [dotnet_exe, "build", project_file, "--configuration", "Release",
-         "--framework", "net9.0", "--no-restore", "/p:NuGetPackageRoot=" + artifacts_packages_directory,
+         "--framework", tfm, "--no-restore", "/p:NuGetPackageRoot=" + artifacts_packages_directory,
          "-o", artifacts_directory], _exit_on_fail=True)
 
     # This is specifically for PowerShell.Benchmarks.
