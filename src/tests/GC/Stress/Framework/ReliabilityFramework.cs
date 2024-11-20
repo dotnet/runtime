@@ -157,19 +157,18 @@ public class ReliabilityFramework
         string configFile = null;
         bool okToContinue = true, doReplay = false;
         string sTests = "tests", sSeed = "seed", exectime = "maximumExecutionTime";
-        string output = "";
+        StringBuilder sb = new StringBuilder();
 
         ReliabilityFramework rf = new ReliabilityFramework();
         rf._logger.WriteToInstrumentationLog(null, LoggingLevels.StartupShutdown, "Started");
-
         var configVars = GC.GetConfigurationVariables();
         foreach (var kvp in configVars)
         {
             string key = kvp.Key;
             object value = kvp.Value;
-            output += $"{kvp.Key}: {kvp.Value}\n";
+            sb.AppendLine($"{kvp.Key}: {kvp.Value}");
         }
-        rf._logger.WriteToInstrumentationLog(null, LoggingLevels.StartupShutdown, String.Format("Get GC Configuration Variables\n{0}",output));
+        rf._logger.WriteToInstrumentationLog(null, LoggingLevels.StartupShutdown, String.Format("Get GC Configuration Variables\n{0}",sb));
 
         foreach (string arg in args)
         {
