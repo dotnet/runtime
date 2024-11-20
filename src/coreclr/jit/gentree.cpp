@@ -7630,6 +7630,14 @@ GenTreeIntCon* Compiler::gtNewIconNode(ssize_t value, var_types type)
     return new (this, GT_CNS_INT) GenTreeIntCon(type, value);
 }
 
+GenTreeIntCon* Compiler::gtNewIconNodeWithVN(Compiler* comp, ssize_t value, var_types type)
+{
+    assert(genActualType(type) == type);
+    GenTreeIntCon* cns = new (this, GT_CNS_INT) GenTreeIntCon(type, value);
+    comp->fgUpdateConstTreeValueNumber(cns);
+    return cns;
+}
+
 GenTreeIntCon* Compiler::gtNewIconNode(unsigned fieldOffset, FieldSeq* fieldSeq)
 {
     return new (this, GT_CNS_INT) GenTreeIntCon(TYP_I_IMPL, static_cast<ssize_t>(fieldOffset), fieldSeq);

@@ -3069,6 +3069,7 @@ public:
                                 GenTree*   op2  = nullptr);
 
     GenTreeIntCon* gtNewIconNode(ssize_t value, var_types type = TYP_INT);
+    GenTreeIntCon* gtNewIconNodeWithVN(Compiler* comp, ssize_t value, var_types type = TYP_INT);
     GenTreeIntCon* gtNewIconNode(unsigned fieldOffset, FieldSeq* fieldSeq);
     GenTreeIntCon* gtNewNull();
     GenTreeIntCon* gtNewTrue();
