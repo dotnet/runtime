@@ -50,24 +50,24 @@ CONFIG_INTEGER(DisplayLoopHoistStats, "JitLoopHoistStats", 0) // Display JIT loo
 // Recommended to use with JitStdOutFile flag.
 CONFIG_INTEGER(DisplayLsraStats, "JitLsraStats", 0)
 
-CONFIG_STRING(JitLsraOrdering, W("JitLsraOrdering"))        // LSRA heuristics ordering
-CONFIG_INTEGER(EnablePCRelAddr, W("JitEnablePCRelAddr"), 1) // Whether absolute addr be encoded as PC-rel offset by
-                                                            // RyuJIT where possible
-CONFIG_INTEGER(JitAssertOnMaxRAPasses, W("JitAssertOnMaxRAPasses"), 0)
-CONFIG_INTEGER(JitBreakEmitOutputInstr, W("JitBreakEmitOutputInstr"), -1)
-CONFIG_INTEGER(JitBreakMorphTree, W("JitBreakMorphTree"), 0xffffffff)
-CONFIG_INTEGER(JitBreakOnBadCode, W("JitBreakOnBadCode"), 0)
-CONFIG_INTEGER(JitBreakOnMinOpts, W("JITBreakOnMinOpts"), 0) // Halt if jit switches to MinOpts
-CONFIG_INTEGER(JitCloneLoops, W("JitCloneLoops"), 1) // If 0, don't clone. Otherwise clone loops for optimizations.
-CONFIG_INTEGER(JitCloneLoopsWithGdvTests, W("JitCloneLoopsWithGdvTests"), 1) // If 0, don't clone loops based on
-                                                                             // invariant type/method address tests
-CONFIG_INTEGER(JitCloneLoopsWithEH, W("JitCloneLoopsWithEH"), 1) // If 0, don't clone loops containing EH regions
-RELEASE_CONFIG_INTEGER(JitCloneLoopsSizeLimit, W("JitCloneLoopsSizeLimit"), 400) // limit cloning to loops with less
-                                                                                 // than this many tree nodes
-CONFIG_INTEGER(JitDebugLogLoopCloning, W("JitDebugLogLoopCloning"), 0) // In debug builds log places where loop cloning
-                                                                       // optimizations are performed on the fast path.
-CONFIG_INTEGER(JitDefaultFill, W("JitDefaultFill"), 0xdd) // In debug builds, initialize the memory allocated by the nra
-                                                          // with this byte.
+CONFIG_STRING(JitLsraOrdering, "JitLsraOrdering")        // LSRA heuristics ordering
+CONFIG_INTEGER(EnablePCRelAddr, "JitEnablePCRelAddr", 1) // Whether absolute addr be encoded as PC-rel offset by
+                                                         // RyuJIT where possible
+CONFIG_INTEGER(JitAssertOnMaxRAPasses, "JitAssertOnMaxRAPasses", 0)
+CONFIG_INTEGER(JitBreakEmitOutputInstr, "JitBreakEmitOutputInstr", -1)
+CONFIG_INTEGER(JitBreakMorphTree, "JitBreakMorphTree", 0xffffffff)
+CONFIG_INTEGER(JitBreakOnBadCode, "JitBreakOnBadCode", 0)
+CONFIG_INTEGER(JitBreakOnMinOpts, "JITBreakOnMinOpts", 0) // Halt if jit switches to MinOpts
+CONFIG_INTEGER(JitCloneLoops, "JitCloneLoops", 1)         // If 0, don't clone. Otherwise clone loops for optimizations.
+CONFIG_INTEGER(JitCloneLoopsWithEH, "JitCloneLoopsWithEH", 1) // If 0, don't clone loops containing EH regions
+CONFIG_INTEGER(JitCloneLoopsWithGdvTests, "JitCloneLoopsWithGdvTests", 1)     // If 0, don't clone loops based on
+                                                                              // invariant type/method address tests
+RELEASE_CONFIG_INTEGER(JitCloneLoopsSizeLimit, "JitCloneLoopsSizeLimit", 400) // limit cloning to loops with less
+                                                                              // than this many tree nodes
+CONFIG_INTEGER(JitDebugLogLoopCloning, "JitDebugLogLoopCloning", 0) // In debug builds log places where loop cloning
+                                                                    // optimizations are performed on the fast path.
+CONFIG_INTEGER(JitDefaultFill, "JitDefaultFill", 0xdd) // In debug builds, initialize the memory allocated by the nra
+                                                       // with this byte.
 
 // Minimum weight needed for the first block of a loop to make it a candidate for alignment.
 CONFIG_INTEGER(JitAlignLoopMinBlockWeight, "JitAlignLoopMinBlockWeight", DEFAULT_ALIGN_LOOP_MIN_BLOCK_WEIGHT)
