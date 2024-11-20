@@ -1138,9 +1138,6 @@ namespace WebAssemblyInfo
 
             var remainingSize = size - (UInt32)(Reader.BaseStream.Position - start);
 
-            if (Context.Verbose2)
-                DumpBytes(remainingSize, true);
-
             switch(name)
             {
                 case "name":
@@ -1148,6 +1145,12 @@ namespace WebAssemblyInfo
                     break;
                 case "linking":
                     ReadCustomLinkingSection(remainingSize);
+                    break;
+                default:
+                    if (name.StartsWith("reloc."))
+                        ReadCustomRelocSection(remainingSize, name.Substring(6));
+                    else if (Context.Verbose2)
+                        DumpBytes(remainingSize, true);
                     break;
             }
         }

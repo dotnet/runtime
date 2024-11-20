@@ -50,8 +50,10 @@ namespace WebAssemblyInfo
             {
                 var subsectionType = (LinkingSubsectionType)Reader.ReadByte();
                 var len = ReadU32();
-                if (Context.Verbose)
+                if (Context.Verbose) {
+                    Console.WriteLine();
                     Console.WriteLine($"Reading custom linking sub section type: {subsectionType} length: {len}");
+                }
 
                 switch (subsectionType)
                 {
@@ -78,6 +80,71 @@ namespace WebAssemblyInfo
                             Console.WriteLine($"Unknown custom linking sub section type: {subsectionType}");
                         Reader.BaseStream.Seek(len, SeekOrigin.Current);
                         break;
+                }
+            }
+        }
+
+        enum RelocationType : byte
+        {
+            FunctionIndexLEB = 0,
+            TableIndexSLEB = 1,
+            TableIndexI32 = 2,
+            MemoryAddressLEB = 3,
+            MemoryAddressSLEB = 4,
+            MemoryAddressI32 = 5,
+            TypeIndexLEB = 6,
+            GlobalIndexLEB = 7,
+            FunctionOffsetI32 = 8,
+            SectionOffsetI32 = 9,
+            EventIndexLEB = 10,
+            GlobalIndexI32 = 13,
+            MemoryAddressLEB64 = 14,
+            MemoryAddressSLEB64 = 15,
+            MemoryAddressI64 = 16,
+            TableIndexSLEB64 = 18,
+            TableIndexI64 = 19,
+            TableNumberLEB = 20,
+            FunctionOffsetI64 = 22,
+            MemoryAddressLocRelI32 = 23,
+            TableIndexRelSLEB = 24,
+            FunctionIndexI32 = 26,
+        };
+
+        void ReadCustomRelocSection(UInt32 size, string name)
+        {
+            if (Context.Verbose) {
+                Console.WriteLine();
+                Console.WriteLine($"Reading custom reloc section: {name}");
+            }
+
+            var start = Reader.BaseStream.Position;
+            var sectionIndex = ReadU32();
+            var count = ReadU32();
+            if (Context.Verbose2)
+                Console.WriteLine($"Section index: {sectionIndex} count: {count}");
+
+            for (var i = 0; i < count; i++) {
+                var type = (RelocationType)Reader.ReadByte();
+                var offset = ReadU32();
+                var index = ReadU32();
+                int addend = 0;
+                switch(type) {
+                    case RelocationType.MemoryAddressLEB:
+                    case RelocationType.MemoryAddressSLEB:
+                    case RelocationType.MemoryAddressI32:
+                    case RelocationType.MemoryAddressLEB64:
+                    case RelocationType.MemoryAddressSLEB64:
+                    case RelocationType.MemoryAddressI64:
+                    case RelocationType.MemoryAddressLocRelI32:
+                    case RelocationType.FunctionOffsetI32:
+                    case RelocationType.FunctionOffsetI64:
+                    case RelocationType.SectionOffsetI32:
+                        addend = (int)ReadI32();
+                        break;
+                }
+                if (Context.Verbose2) {
+                    var addendStr = addend != 0 ? $" addend: {addend}" : "";
+                    Console.WriteLine($"  type: {type} offset: {offset} index: {index}{addendStr}");
                 }
             }
         }
