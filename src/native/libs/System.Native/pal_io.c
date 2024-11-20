@@ -1978,9 +1978,11 @@ static int GetAllowedVectorCount(IOVector* vectors, int32_t vectorCount)
     size_t totalLength = 0;
     for (int i = 0; i < allowedCount; i++) 
     {
+        assert(INT_MAX >= vectors[i].Count);
+
         totalLength += vectors[i].Count;
 
-        if (totalLength > INT_MAX && i > 0)
+        if (totalLength > INT_MAX)
         {
             allowedCount = i;
             break;
