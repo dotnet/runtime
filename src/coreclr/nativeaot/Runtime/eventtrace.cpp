@@ -37,6 +37,11 @@ DOTNET_TRACE_CONTEXT MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_DOTNET_Con
     MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_EVENTPIPE_Context
 };
 
+bool IsRuntimeProviderEnabled(uint8_t level, uint64_t keyword)
+{
+    return RUNTIME_PROVIDER_CATEGORY_ENABLED(level, keyword);
+}
+
 volatile LONGLONG ETW::GCLog::s_l64LastClientSequenceNumber = 0;
 
 //---------------------------------------------------------------------------------------
@@ -92,6 +97,13 @@ enum CallbackProviderIndex
     DotNETRuntimeRundown = 1,
     DotNETRuntimeStress = 2,
     DotNETRuntimePrivate = 3
+};
+
+enum SessionChange
+{
+    EventPipeSessionDisable = 0,
+    EventPipeSessionEnable = 1,
+    EtwSessionChangeUnknown = 2
 };
 
 #ifdef FEATURE_ETW
@@ -155,13 +167,15 @@ void ParseFilterDataClientSequenceNumber(
 }
 #endif // FEATURE_ETW
 
+// NOTE: When multiple ETW or EventPipe sessions are enabled, the ControlCode will be
+// EVENT_CONTROL_CODE_ENABLE_PROVIDER even if the session invoking this callback is being disabled.
 void EtwCallbackCommon(
     CallbackProviderIndex ProviderIndex,
     ULONG ControlCode,
     unsigned char Level,
     ULONGLONG MatchAnyKeyword,
     PVOID pFilterData,
-    BOOL isEventPipeCallback)
+    SessionChange Change)
 {
 //     LIMITED_METHOD_CONTRACT;
 
@@ -184,14 +198,14 @@ void EtwCallbackCommon(
     // This callback gets called on both ETW/EventPipe session enable/disable.
     // We need toupdate the EventPipe provider context if we are in a callback
     // from EventPipe, but not from ETW.
-    if (isEventPipeCallback)
+    if (Change == EventPipeSessionEnable || Change == EventPipeSessionDisable)
     {
         ctxToUpdate->EventPipeProvider.Level = Level;
         ctxToUpdate->EventPipeProvider.EnabledKeywordsBitmask = MatchAnyKeyword;
         ctxToUpdate->EventPipeProvider.IsEnabled = ControlCode;
 
         // For EventPipe, ControlCode can only be either 0 or 1.
-        _ASSERTE(ControlCode == 0 || ControlCode == 1);
+        _ASSERTE(ControlCode == EVENT_CONTROL_CODE_DISABLE_PROVIDER || ControlCode == EVENT_CONTROL_CODE_ENABLE_PROVIDER);
     }
 
     if (
@@ -216,11 +230,23 @@ void EtwCallbackCommon(
 
 // NativeAOT currently only supports forcing a GC with ManagedHeapCollectKeyword via ETW
 #ifdef FEATURE_ETW
-    // Special check for the runtime provider's ManagedHeapCollectKeyword.  Profilers
-    // flick this to force a full GC.
-    if (ControlCode && ProviderIndex == DotNETRuntime
-        && GCHeapUtilities::IsGCHeapInitialized()
-        && (MatchAnyKeyword & CLR_MANAGEDHEAPCOLLECT_KEYWORD) != 0)
+    // Special check for a profiler requested GC.
+    // A full GC will be forced if:
+    // 1. The GC Heap is initialized.
+    // 2. The public provider is requesting GC.
+    // 3. The provider's ManagedHeapCollectKeyword is enabled.
+    // 4. If it is an ETW provider, the control code is to enable or capture the state of the provider.
+    // 5. If it is an EventPipe provider, the session is not being disabled.
+    bool bValidGCRequest =
+        GCHeapUtilities::IsGCHeapInitialized() &&
+        bIsPublicTraceHandle &&
+        ((MatchAnyKeyword & CLR_MANAGEDHEAPCOLLECT_KEYWORD) != 0) &&
+        ((ControlCode == EVENT_CONTROL_CODE_ENABLE_PROVIDER) ||
+         (ControlCode == EVENT_CONTROL_CODE_CAPTURE_STATE)) &&
+        ((Change == EtwSessionChangeUnknown) ||
+         (Change == EventPipeSessionEnable));
+
+    if (bValidGCRequest)
     {
         // Profilers may (optionally) specify extra data in the filter parameter
         // to log with the GCStart event.
@@ -264,7 +290,7 @@ void EtwCallback(
         return;
     }
 
-    EtwCallbackCommon(providerIndex, IsEnabled, Level, MatchAnyKeyword, FilterData, /*isEventPipeCallback*/ false);
+    EtwCallbackCommon(providerIndex, IsEnabled, Level, MatchAnyKeyword, FilterData, EtwSessionChangeUnknown);
 
     if (IsEnabled &&
         (context->RegistrationHandle == Microsoft_Windows_DotNETRuntimePrivateHandle) &&
@@ -287,7 +313,9 @@ void EventPipeEtwCallbackDotNETRuntime(
     _In_opt_ EventFilterDescriptor* FilterData,
     _Inout_opt_ PVOID CallbackContext)
 {
-    EtwCallbackCommon(DotNETRuntime, ControlCode, Level, MatchAnyKeyword, FilterData, /*isEventPipeCallback*/ true);
+    SessionChange change = SourceId == NULL ? EventPipeSessionDisable : EventPipeSessionEnable;
+
+    EtwCallbackCommon(DotNETRuntime, ControlCode, Level, MatchAnyKeyword, FilterData, change);
 }
 
 void EventPipeEtwCallbackDotNETRuntimePrivate(
@@ -299,5 +327,7 @@ void EventPipeEtwCallbackDotNETRuntimePrivate(
     _In_opt_ EventFilterDescriptor* FilterData,
     _Inout_opt_ PVOID CallbackContext)
 {
-    EtwCallbackCommon(DotNETRuntimePrivate, ControlCode, Level, MatchAnyKeyword, FilterData, true);
+    SessionChange change = SourceId == NULL ? EventPipeSessionDisable : EventPipeSessionEnable;
+
+    EtwCallbackCommon(DotNETRuntimePrivate, ControlCode, Level, MatchAnyKeyword, FilterData, change);
 }

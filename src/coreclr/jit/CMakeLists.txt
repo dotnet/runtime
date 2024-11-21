@@ -156,6 +156,7 @@ set( JIT_SOURCES
   objectalloc.cpp
   optcse.cpp
   optimizebools.cpp
+  optimizemaskconversions.cpp
   optimizer.cpp
   patchpoint.cpp
   phase.cpp
