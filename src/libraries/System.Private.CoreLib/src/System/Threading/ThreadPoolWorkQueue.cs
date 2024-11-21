@@ -707,7 +707,7 @@ namespace System.Threading
                 queue.highPriorityWorkItems.Enqueue(workItem);
             }
 
-            Volatile.Write(ref queue._mayHaveHighPriorityWorkItems, true);
+            Volatile.Write(ref queue._mayHaveHighPriorityWorkItems, 1);
 
             queue.EnsureThreadRequested();
         }
