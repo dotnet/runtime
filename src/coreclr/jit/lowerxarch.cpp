@@ -9217,9 +9217,7 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
                     const var_types   parentBaseType    = parentNode->GetSimdBaseType();
                     const instruction parentInstruction = HWIntrinsicInfo::lookupIns(parentIntrinsicId, parentBaseType);
 
-                    assert(emitter::hasTupleTypeInfo(parentInstruction));
-
-                    const insTupleType tupleType   = emitter::insTupleTypeInfo(parentInstruction);
+                    const insTupleType tupleType   = comp->GetEmitter()->insTupleTypeInfo(parentInstruction);
                     const unsigned     parentSize  = parentNode->GetSimdSize();
                     unsigned           widenFactor = 0;
 

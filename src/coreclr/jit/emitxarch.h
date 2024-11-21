@@ -200,8 +200,7 @@ code_t AddVexPrefixIfNeededAndNotPresent(instruction ins, code_t code, emitAttr 
     return code;
 }
 
-static bool         hasTupleTypeInfo(instruction ins);
-static insTupleType insTupleTypeInfo(instruction ins);
+insTupleType insTupleTypeInfo(instruction ins) const;
 
 //------------------------------------------------------------------------
 // HasKMaskRegisterDest: Temporary check to identify instructions that can
