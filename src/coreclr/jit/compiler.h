@@ -3069,6 +3069,7 @@ public:
                                 GenTree*   op2  = nullptr);
 
     GenTreeIntCon* gtNewIconNode(ssize_t value, var_types type = TYP_INT);
+    GenTreeIntCon* gtNewIconNodeWithVN(Compiler* comp, ssize_t value, var_types type = TYP_INT);
     GenTreeIntCon* gtNewIconNode(unsigned fieldOffset, FieldSeq* fieldSeq);
     GenTreeIntCon* gtNewNull();
     GenTreeIntCon* gtNewTrue();
@@ -6284,9 +6285,18 @@ public:
         unsigned numCandidateBlocks;
         unsigned currEHRegion;
 
+#ifdef DEBUG
+        weight_t GetLayoutCost(unsigned startPos, unsigned endPos);
+#endif // DEBUG
+
+        weight_t GetCost(BasicBlock* block, BasicBlock* next);
+        bool TrySwappingPartitions(unsigned s1Start, unsigned s2Start, unsigned s3Start, unsigned s3End, unsigned s4End);
+
         void ConsiderEdge(FlowEdge* edge);
         void AddNonFallthroughSuccs(unsigned blockPos);
         void AddNonFallthroughPreds(unsigned blockPos);
+        bool RunGreedyThreeOptPass(unsigned startPos, unsigned endPos);
+
         bool RunThreeOptPass(BasicBlock* startBlock, BasicBlock* endBlock);
 
     public:
@@ -6916,6 +6926,7 @@ public:
     AddCodeDsc* fgFindExcptnTarget(SpecialCodeKind kind, BasicBlock* fromBlock);
     bool fgUseThrowHelperBlocks();
     void fgCreateThrowHelperBlockCode(AddCodeDsc* add);
+    void fgSequenceLocals(Statement* stmt);
 
 private:
     bool fgIsThrowHlpBlk(BasicBlock* block);
@@ -6960,9 +6971,10 @@ private:
     void fgMarkDemotedImplicitByRefArgs();
 
     PhaseStatus fgMarkAddressExposedLocals();
-    void fgSequenceLocals(Statement* stmt);
     bool fgExposeUnpropagatedLocals(bool propagatedAny, class LocalEqualsLocalAddrAssertions* assertions);
     void fgExposeLocalsInBitVec(BitVec_ValArg_T bitVec);
+
+    PhaseStatus fgOptimizeMaskConversions();
 
     PhaseStatus PhysicalPromotion();
 
@@ -9568,6 +9580,7 @@ public:
         Memset,
         Memcpy,
         Memmove,
+        MemcmpU16,
         ProfiledMemmove,
         ProfiledMemcmp
     };
@@ -9642,6 +9655,14 @@ public:
             // NOTE: Memmove's unrolling is currently limited with LSRA -
             // up to LinearScan::MaxInternalCount number of temp regs, e.g. 5*16=80 bytes on arm64
             threshold = maxRegSize * 4;
+        }
+
+        if (type == UnrollKind::MemcmpU16)
+        {
+            threshold = maxRegSize * 2;
+#ifdef TARGET_ARM64
+            threshold = maxRegSize * 6;
+#endif
         }
 
         // For profiled memcmp/memmove we don't want to unroll too much as it's just a guess,
@@ -10012,6 +10033,7 @@ public:
     bool compSwitchedToOptimized      = false; // Codegen initially was Tier0 but jit switched to FullOpts
     bool compSwitchedToMinOpts        = false; // Codegen initially was Tier1/FullOpts but jit switched to MinOpts
     bool compSuppressedZeroInit       = false; // There are vars with lvSuppressedZeroInit set
+    bool compMaskConvertUsed          = false; // Does the method have Convert Mask To Vector nodes.
 
     // NOTE: These values are only reliable after
     //       the importing is completely finished.
@@ -10540,6 +10562,8 @@ public:
 
     const char* printfAlloc(const char* format, ...);
 
+    const char* convertUtf16ToUtf8ForPrinting(const WCHAR* utf16String);
+
 #endif // DEBUG
 
     // clang-format off
@@ -10619,9 +10643,8 @@ public:
     // clang-format on
 
 #ifdef DEBUG
-    static const LPCWSTR s_compStressModeNamesW[STRESS_COUNT + 1];
-    static const char*   s_compStressModeNames[STRESS_COUNT + 1];
-    BYTE                 compActiveStressModes[STRESS_COUNT];
+    static const char* s_compStressModeNames[STRESS_COUNT + 1];
+    BYTE               compActiveStressModes[STRESS_COUNT];
 #endif // DEBUG
 
 #define MAX_STRESS_WEIGHT 100
@@ -11431,8 +11454,8 @@ private:
     JitTimer*                  pCompJitTimer = nullptr; // Timer data structure (by phases) for current compilation.
     static CompTimeSummaryInfo s_compJitTimerSummary;   // Summary of the Timer information for the whole run.
 
-    static LPCWSTR JitTimeLogCsv();        // Retrieve the file name for CSV from ConfigDWORD.
-    static LPCWSTR compJitTimeLogFilename; // If a log file for JIT time is desired, filename to write it to.
+    static const char* JitTimeLogCsv();        // Retrieve the file name for CSV from ConfigDWORD.
+    static const char* compJitTimeLogFilename; // If a log file for JIT time is desired, filename to write it to.
 #endif
     void BeginPhase(Phases phase); // Indicate the start of the given phase.
     void EndPhase(Phases phase);   // Indicate the end of the given phase.
@@ -11467,10 +11490,10 @@ private:
 
 public:
 #if FUNC_INFO_LOGGING
-    static LPCWSTR compJitFuncInfoFilename; // If a log file for per-function information is required, this is the
-                                            // filename to write it to.
-    static FILE* compJitFuncInfoFile;       // And this is the actual FILE* to write to.
-#endif                                      // FUNC_INFO_LOGGING
+    static const char* compJitFuncInfoFilename; // If a log file for per-function information is required, this is the
+                                                // filename to write it to.
+    static FILE* compJitFuncInfoFile;           // And this is the actual FILE* to write to.
+#endif                                          // FUNC_INFO_LOGGING
 
 #if MEASURE_NOWAY
     void RecordNowayAssert(const char* filename, unsigned line, const char* condStr);

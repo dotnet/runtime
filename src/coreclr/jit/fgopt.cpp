@@ -4907,6 +4907,156 @@ Compiler::ThreeOptLayout::ThreeOptLayout(Compiler* comp)
 {
 }
 
+#ifdef DEBUG
+//-----------------------------------------------------------------------------
+// Compiler::ThreeOptLayout::GetLayoutCost: Computes the cost of the layout for the region
+// bounded by 'startPos' and 'endPos'.
+//
+// Parameters:
+//   startPos - The starting index of the region
+//   endPos - The inclusive ending index of the region
+//
+// Returns:
+//   The region's layout cost
+//
+weight_t Compiler::ThreeOptLayout::GetLayoutCost(unsigned startPos, unsigned endPos)
+{
+    assert(startPos <= endPos);
+    assert(endPos < numCandidateBlocks);
+    weight_t layoutCost = BB_ZERO_WEIGHT;
+
+    for (unsigned position = startPos; position < endPos; position++)
+    {
+        layoutCost += GetCost(blockOrder[position], blockOrder[position + 1]);
+    }
+
+    layoutCost += blockOrder[endPos]->bbWeight;
+    return layoutCost;
+}
+#endif // DEBUG
+
+//-----------------------------------------------------------------------------
+// Compiler::ThreeOptLayout::GetCost: Computes the cost of placing 'next' after 'block'.
+// Layout cost is modeled as the sum of block weights, minus the weights of edges that fall through.
+//
+// Parameters:
+//   block - The block to consider creating fallthrough from
+//   next - The block to consider creating fallthrough into
+//
+weight_t Compiler::ThreeOptLayout::GetCost(BasicBlock* block, BasicBlock* next)
+{
+    assert(block != nullptr);
+    assert(next != nullptr);
+
+    const weight_t  maxCost         = block->bbWeight;
+    const FlowEdge* fallthroughEdge = compiler->fgGetPredForBlock(next, block);
+
+    if (fallthroughEdge != nullptr)
+    {
+        // The edge's weight should never exceed its source block's weight,
+        // but handle negative results from rounding errors in getLikelyWeight(), just in case
+        return max(0.0, maxCost - fallthroughEdge->getLikelyWeight());
+    }
+
+    return maxCost;
+}
+
+//-----------------------------------------------------------------------------
+// Compiler::ThreeOptLayout::TrySwappingPartitions: Evaluates the cost of swapping the given partitions.
+// If it is profitable, write the swapped partitions back to 'blockOrder'.
+//
+// Parameters:
+//   s1Start - The starting position of the first partition
+//   s2Start - The starting position of the second partition
+//   s3Start - The starting position of the third partition
+//   s3End - The ending position (inclusive) of the third partition
+//   s4End - The ending position (inclusive) of the fourth partition
+//
+// Returns:
+//   True if the swap was performed, false otherwise
+//
+// Notes:
+//   Here is the proposed partition:
+//   S1: s1Start ~ s2Start-1
+//   S2: s2Start ~ s3Start-1
+//   S3: s3Start ~ s3End
+//   S4: remaining blocks
+//
+//   After the swap:
+//   S1: s1Start ~ s2Start-1
+//   S3: s3Start ~ s3End
+//   S2: s2Start ~ s3Start-1
+//   S4: remaining blocks
+//
+//   If 's3End' and 's4End' are the same, the fourth partition doesn't exist.
+//
+bool Compiler::ThreeOptLayout::TrySwappingPartitions(
+    unsigned s1Start, unsigned s2Start, unsigned s3Start, unsigned s3End, unsigned s4End)
+{
+    BasicBlock* const s2Block     = blockOrder[s2Start];
+    BasicBlock* const s2BlockPrev = blockOrder[s2Start - 1];
+    BasicBlock* const s3Block     = blockOrder[s3Start];
+    BasicBlock* const s3BlockPrev = blockOrder[s3Start - 1];
+    BasicBlock* const lastBlock   = blockOrder[s3End];
+
+    // Evaluate the cost of swapping S2 and S3
+    weight_t currCost = GetCost(s2BlockPrev, s2Block) + GetCost(s3BlockPrev, s3Block);
+    weight_t newCost  = GetCost(s2BlockPrev, s3Block) + GetCost(lastBlock, s2Block);
+
+    // Consider flow into S4, if the partition exists
+    if (s3End < s4End)
+    {
+        BasicBlock* const s4StartBlock = blockOrder[s3End + 1];
+        currCost += GetCost(lastBlock, s4StartBlock);
+        newCost += GetCost(s3BlockPrev, s4StartBlock);
+    }
+    else
+    {
+        assert(s3End == s4End);
+        currCost += lastBlock->bbWeight;
+        newCost += s3BlockPrev->bbWeight;
+    }
+
+    // Check if the swap is profitable
+    if ((newCost >= currCost) || Compiler::fgProfileWeightsEqual(newCost, currCost, 0.001))
+    {
+        return false;
+    }
+
+    // We've found a profitable cut point. Continue with the swap.
+    JITDUMP("Swapping partitions [" FMT_BB ", " FMT_BB "] and [" FMT_BB ", " FMT_BB
+            "] (current partition cost = %f, new partition cost = %f)\n",
+            s2Block->bbNum, s3BlockPrev->bbNum, s3Block->bbNum, lastBlock->bbNum, currCost, newCost);
+    INDEBUG(const weight_t currLayoutCost = GetLayoutCost(s1Start, s4End));
+
+    // Swap the partitions
+    const unsigned     s1Size      = s2Start - s1Start;
+    const unsigned     s2Size      = s3Start - s2Start;
+    const unsigned     s3Size      = (s3End + 1) - s3Start;
+    BasicBlock** const regionStart = blockOrder + s1Start;
+    BasicBlock** const tempStart   = tempOrder + s1Start;
+    memcpy(tempStart, regionStart, sizeof(BasicBlock*) * s1Size);
+    memcpy(tempStart + s1Size, regionStart + s1Size + s2Size, sizeof(BasicBlock*) * s3Size);
+    memcpy(tempStart + s1Size + s3Size, regionStart + s1Size, sizeof(BasicBlock*) * s2Size);
+
+    // Copy remaining blocks in S4 over
+    const unsigned numBlocks     = (s4End - s1Start) + 1;
+    const unsigned swappedSize   = s1Size + s2Size + s3Size;
+    const unsigned remainingSize = numBlocks - swappedSize;
+    assert(numBlocks >= swappedSize);
+    memcpy(tempStart + swappedSize, regionStart + swappedSize, sizeof(BasicBlock*) * remainingSize);
+
+    std::swap(blockOrder, tempOrder);
+
+#ifdef DEBUG
+    // Ensure the swap improved the overall layout. Tolerate some imprecision.
+    const weight_t newLayoutCost = GetLayoutCost(s1Start, s4End);
+    assert((newLayoutCost < currLayoutCost) || Compiler::fgProfileWeightsEqual(newLayoutCost, currLayoutCost, 0.001));
+#endif // DEBUG
+
+    return true;
+}
+
 //-----------------------------------------------------------------------------
 // Compiler::ThreeOptLayout::ConsiderEdge: Adds 'edge' to 'cutPoints' for later consideration
 // if 'edge' looks promising, and it hasn't been considered already.
@@ -5131,30 +5281,30 @@ void Compiler::ThreeOptLayout::Run()
 }
 
 //-----------------------------------------------------------------------------
-// Compiler::ThreeOptLayout::RunThreeOptPass: Runs 3-opt for the given block range.
+// Compiler::ThreeOptLayout::RunGreedyThreeOptPass: Runs 3-opt for the given block range,
+// using a greedy strategy for finding partitions to swap.
 //
 // Parameters:
 //   startBlock - The first block of the range to reorder
 //   endBlock - The last block (inclusive) of the range to reorder
 //
-bool Compiler::ThreeOptLayout::RunThreeOptPass(BasicBlock* startBlock, BasicBlock* endBlock)
+// Returns:
+//   True if we reordered anything, false otherwise
+//
+// Notes:
+//   For methods with more than a trivial number of basic blocks,
+//   iteratively trying every cut point is prohibitively expensive.
+//   Instead, add the non-fallthrough successor edges of each block to a priority queue,
+//   and try to create fallthrough on each edge via partition swaps, starting with the hottest edges.
+//   For each swap, repopulate the priority queue with edges along the modified cut points.
+//
+bool Compiler::ThreeOptLayout::RunGreedyThreeOptPass(unsigned startPos, unsigned endPos)
 {
-    assert(startBlock != nullptr);
-    assert(endBlock != nullptr);
     assert(cutPoints.Empty());
+    assert(startPos < endPos);
+    bool modified = false;
 
-    bool           modified  = false;
-    const unsigned startPos  = ordinals[startBlock->bbNum];
-    const unsigned endPos    = ordinals[endBlock->bbNum];
-    const unsigned numBlocks = (endPos - startPos + 1);
-    assert((startPos != 0) || startBlock->IsFirst());
-    assert(startPos <= endPos);
-
-    if (numBlocks < 3)
-    {
-        JITDUMP("Not enough blocks to partition anything. Skipping reordering.\n");
-        return false;
-    }
+    JITDUMP("Using greedy strategy for finding cut points.\n");
 
     // Initialize cutPoints with candidate branches in this section
     for (unsigned position = startPos; position <= endPos; position++)
@@ -5199,22 +5349,12 @@ bool Compiler::ThreeOptLayout::RunThreeOptPass(BasicBlock* startBlock, BasicBloc
         assert(blockOrder[dstPos] == dstBlk);
 
         // To determine if it's worth creating fallthrough from 'srcBlk' into 'dstBlk',
-        // we first sum the weights of fallthrough edges at the proposed cut points
-        // (i.e. the "score" of the current partition order).
-        // Then, we do the same for the fallthrough edges that would be created by reordering partitions.
-        // If the new score exceeds the current score, then the proposed fallthrough gains
-        // justify losing the existing fallthrough behavior.
-
-        auto getScore = [this](BasicBlock* srcBlk, BasicBlock* dstBlk) -> weight_t {
-            assert(srcBlk != nullptr);
-            assert(dstBlk != nullptr);
-            FlowEdge* const edge = compiler->fgGetPredForBlock(dstBlk, srcBlk);
-            return (edge != nullptr) ? edge->getLikelyWeight() : 0.0;
-        };
+        // we first determine the current layout cost at the proposed cut points.
+        // We then compare this to the layout cost with the partitions swapped.
+        // If the new cost improves upon the current cost, then we can justify the swap.
 
         const bool isForwardJump = (srcPos < dstPos);
-        weight_t   currScore, newScore;
-        unsigned   part1Size, part2Size, part3Size;
+        unsigned   s2Start, s3Start, s3End;
 
         if (isForwardJump)
         {
@@ -5229,19 +5369,12 @@ bool Compiler::ThreeOptLayout::RunThreeOptPass(BasicBlock* startBlock, BasicBloc
             // S3: dstPos ~ endPos
             // S2: srcPos+1 ~ dstPos-1
             // S4: remaining blocks
-            part1Size = srcPos - startPos + 1;
-            part2Size = dstPos - srcPos - 1;
-            part3Size = endPos - dstPos + 1;
-
-            currScore = getScore(srcBlk, blockOrder[srcPos + 1]) + getScore(blockOrder[dstPos - 1], dstBlk);
-            newScore  = candidateEdge->getLikelyWeight() + getScore(blockOrder[endPos], blockOrder[srcPos + 1]);
-
-            // Don't include branches into S4 in the cost/improvement calculation,
-            // since we're only considering branches within this region.
+            s2Start = srcPos + 1;
+            s3Start = dstPos;
+            s3End   = endPos;
         }
         else
         {
-            assert(dstPos < srcPos);
 
             // Here is the proposed partition:
             // S1: startPos ~ dstPos-1
@@ -5254,77 +5387,85 @@ bool Compiler::ThreeOptLayout::RunThreeOptPass(BasicBlock* startBlock, BasicBloc
             // S3: srcPos
             // S2: dstPos ~ srcPos-1
             // S4: srcPos+1 ~ endPos
-            part1Size = dstPos - startPos;
-            part2Size = srcPos - dstPos;
-            part3Size = 1;
-
-            currScore = getScore(blockOrder[srcPos - 1], srcBlk) + getScore(blockOrder[dstPos - 1], dstBlk);
-            newScore  = candidateEdge->getLikelyWeight() + getScore(blockOrder[dstPos - 1], srcBlk);
-
-            if (srcPos != endPos)
-            {
-                currScore += getScore(srcBlk, blockOrder[srcPos + 1]);
-                newScore += getScore(blockOrder[srcPos - 1], blockOrder[srcPos + 1]);
-            }
+            s2Start = dstPos;
+            s3Start = srcPos;
+            s3End   = srcPos;
         }
 
-        // Continue evaluating candidates if this one isn't profitable
-        if ((newScore <= currScore) || Compiler::fgProfileWeightsEqual(newScore, currScore, 0.001))
+        // Continue evaluating partitions if this one isn't profitable
+        if (!TrySwappingPartitions(startPos, s2Start, s3Start, s3End, endPos))
         {
             continue;
         }
 
-        // We've found a profitable cut point. Continue with the swap.
-        JITDUMP("Creating fallthrough for " FMT_BB " -> " FMT_BB
-                " (current partition score = %f, new partition score = %f)\n",
-                srcBlk->bbNum, dstBlk->bbNum, currScore, newScore);
-
-        // Swap the partitions
-        BasicBlock** const regionStart = blockOrder + startPos;
-        BasicBlock** const tempStart   = tempOrder + startPos;
-        memcpy(tempStart, regionStart, sizeof(BasicBlock*) * part1Size);
-        memcpy(tempStart + part1Size, regionStart + part1Size + part2Size, sizeof(BasicBlock*) * part3Size);
-        memcpy(tempStart + part1Size + part3Size, regionStart + part1Size, sizeof(BasicBlock*) * part2Size);
-
-        // For backward jumps, there might be additional blocks after 'srcBlk' that need to be copied over.
-        const unsigned swappedSize   = part1Size + part2Size + part3Size;
-        const unsigned remainingSize = numBlocks - swappedSize;
-        assert(numBlocks >= swappedSize);
-        assert((remainingSize == 0) || !isForwardJump);
-        memcpy(tempStart + swappedSize, regionStart + swappedSize, sizeof(BasicBlock*) * remainingSize);
-
-        std::swap(blockOrder, tempOrder);
-
         // Update the ordinals for the blocks we moved
-        for (unsigned i = (startPos + part1Size); i <= endPos; i++)
+        for (unsigned i = s2Start; i <= endPos; i++)
         {
             ordinals[blockOrder[i]->bbNum] = i;
         }
 
         // Ensure this move created fallthrough from 'srcBlk' to 'dstBlk'
         assert((ordinals[srcBlk->bbNum] + 1) == ordinals[dstBlk->bbNum]);
-        modified = true;
 
         // At every cut point is an opportunity to consider more candidate edges.
         // To the left of each cut point, consider successor edges that don't fall through.
         // Ditto predecessor edges to the right of each cut point.
-        AddNonFallthroughSuccs(startPos + part1Size - 1);
-        AddNonFallthroughSuccs(startPos + part1Size + part2Size - 1);
-        AddNonFallthroughSuccs(startPos + part1Size + part2Size + part3Size - 1);
+        AddNonFallthroughSuccs(s2Start - 1);
+        AddNonFallthroughPreds(s2Start);
+        AddNonFallthroughSuccs(s3Start - 1);
+        AddNonFallthroughPreds(s3Start);
+        AddNonFallthroughSuccs(s3End);
 
-        AddNonFallthroughPreds(startPos + part1Size);
-        AddNonFallthroughPreds(startPos + part1Size + part2Size);
-
-        if (remainingSize != 0)
+        if (s3End < endPos)
         {
-            AddNonFallthroughPreds(startPos + part1Size + part2Size + part3Size);
+            AddNonFallthroughPreds(s3End + 1);
         }
+
+        modified = true;
     }
+
+    return modified;
+}
+
+//-----------------------------------------------------------------------------
+// Compiler::ThreeOptLayout::RunThreeOptPass: Runs 3-opt for the given block range.
+//
+// Parameters:
+//   startBlock - The first block of the range to reorder
+//   endBlock - The last block (inclusive) of the range to reorder
+//
+// Returns:
+//   True if we reordered anything, false otherwise
+//
+bool Compiler::ThreeOptLayout::RunThreeOptPass(BasicBlock* startBlock, BasicBlock* endBlock)
+{
+    assert(startBlock != nullptr);
+    assert(endBlock != nullptr);
+
+    const unsigned startPos  = ordinals[startBlock->bbNum];
+    const unsigned endPos    = ordinals[endBlock->bbNum];
+    const unsigned numBlocks = (endPos - startPos + 1);
+    assert((startPos != 0) || startBlock->IsFirst());
+    assert(startPos <= endPos);
+
+    if (numBlocks < 3)
+    {
+        JITDUMP("Not enough blocks to partition anything. Skipping reordering.\n");
+        return false;
+    }
+
+    JITDUMP("Initial layout cost: %f\n", GetLayoutCost(startPos, endPos));
+    const bool modified = RunGreedyThreeOptPass(startPos, endPos);
 
     // Write back to 'tempOrder' so changes to this region aren't lost next time we swap 'tempOrder' and 'blockOrder'
     if (modified)
     {
         memcpy(tempOrder + startPos, blockOrder + startPos, sizeof(BasicBlock*) * numBlocks);
+        JITDUMP("Final layout cost: %f\n", GetLayoutCost(startPos, endPos));
+    }
+    else
+    {
+        JITDUMP("No changes made.\n");
     }
 
     return modified;
@@ -6276,9 +6417,20 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
         {
             matchedPredInfo.Reset();
             matchedPredInfo.Emplace(predInfo.TopRef(i));
-            Statement* const baseStmt = predInfo.TopRef(i).m_stmt;
+            Statement* const  baseStmt  = predInfo.TopRef(i).m_stmt;
+            BasicBlock* const baseBlock = predInfo.TopRef(i).m_block;
+
             for (int j = i + 1; j < predInfo.Height(); j++)
             {
+                BasicBlock* const otherBlock = predInfo.TopRef(j).m_block;
+
+                // Consider: bypass this for statements that can't cause exceptions.
+                //
+                if (!BasicBlock::sameEHRegion(baseBlock, otherBlock))
+                {
+                    continue;
+                }
+
                 Statement* const otherStmt = predInfo.TopRef(j).m_stmt;
 
                 // Consider: compute and cache hashes to make this faster
@@ -6296,12 +6448,18 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
                 continue;
             }
 
-            // We have some number of preds that have identical last statements.
-            // If all preds of block have a matching last stmt, move that statement to the start of block.
+            // We can move the identical last statements to commSucc, if it exists,
+            // and all preds have matching last statements, and we're not changing EH behavior.
             //
-            if ((commSucc != nullptr) && (matchedPredInfo.Height() == (int)commSucc->countOfInEdges()))
+            bool const hasCommSucc               = (commSucc != nullptr);
+            bool const predsInSameEHRegionAsSucc = hasCommSucc && BasicBlock::sameEHRegion(baseBlock, commSucc);
+            bool const canMergeAllPreds = hasCommSucc && (matchedPredInfo.Height() == (int)commSucc->countOfInEdges());
+            bool const canMergeIntoSucc = predsInSameEHRegionAsSucc && canMergeAllPreds;
+
+            if (canMergeIntoSucc)
             {
-                JITDUMP("All preds of " FMT_BB " end with the same tree, moving\n", commSucc->bbNum);
+                JITDUMP("All %d preds of " FMT_BB " end with the same tree, moving\n", matchedPredInfo.Height(),
+                        commSucc->bbNum);
                 JITDUMPEXEC(gtDispStmt(matchedPredInfo.TopRef(0).m_stmt));
 
                 for (int j = 0; j < matchedPredInfo.Height(); j++)
@@ -6329,14 +6487,19 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
                 return true;
             }
 
-            // A subset of preds have matching last stmt, we will cross-jump.
-            // Pick one block as the victim -- preferably a block with just one
+            // All or a subset of preds have matching last stmt, we will cross-jump.
+            // Pick one pred block as the victim -- preferably a block with just one
             // statement or one that falls through to block (or both).
             //
-            if (commSucc != nullptr)
+            if (predsInSameEHRegionAsSucc)
             {
-                JITDUMP("A set of %d preds of " FMT_BB " end with the same tree\n", matchedPredInfo.Height(),
+                JITDUMP("A subset of %d preds of " FMT_BB " end with the same tree\n", matchedPredInfo.Height(),
                         commSucc->bbNum);
+            }
+            else if (commSucc != nullptr)
+            {
+                JITDUMP("%s %d preds of " FMT_BB " end with the same tree but are in a different EH region\n",
+                        canMergeAllPreds ? "All" : "A subset of", matchedPredInfo.Height(), commSucc->bbNum);
             }
             else
             {
@@ -6492,11 +6655,6 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
                 continue;
             }
 
-            if (!BasicBlock::sameEHRegion(block, predBlock))
-            {
-                continue;
-            }
-
             Statement* lastStmt = predBlock->lastStmt();
 
             // Block might be empty.
@@ -6560,10 +6718,21 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
     {
         iterateTailMerge(block);
 
-        // TODO: consider removing hasSingleStmt(), it should find more opportunities
-        // (with size and TP regressions)
-        if (block->KindIs(BBJ_RETURN) && block->hasSingleStmt() && (block != genReturnBB))
+        if (block->KindIs(BBJ_RETURN) && !block->isEmpty() && (block != genReturnBB))
         {
+            // Avoid spitting a return away from a possible tail call
+            //
+            if (!block->hasSingleStmt())
+            {
+                Statement* const lastStmt = block->lastStmt();
+                Statement* const prevStmt = lastStmt->GetPrevStmt();
+                GenTree* const   prevTree = prevStmt->GetRootNode();
+                if (prevTree->IsCall() && prevTree->AsCall()->CanTailCall())
+                {
+                    continue;
+                }
+            }
+
             retBlocks.Push(block);
         }
     }

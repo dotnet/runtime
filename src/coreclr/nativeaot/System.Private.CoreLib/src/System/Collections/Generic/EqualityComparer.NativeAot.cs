@@ -13,9 +13,6 @@ namespace System.Collections.Generic
 {
     public abstract partial class EqualityComparer<T> : IEqualityComparer, IEqualityComparer<T>
     {
-        [FeatureSwitchDefinition("System.Collections.Generic.DefaultComparers")]
-        private static bool SupportsGenericIEquatableInterfaces => true;
-
         [Intrinsic]
         private static EqualityComparer<T> Create()
         {
@@ -30,11 +27,7 @@ namespace System.Collections.Generic
                 return Unsafe.As<EqualityComparer<T>>(new StringEqualityComparer());
             }
 
-            if (SupportsGenericIEquatableInterfaces)
-            {
-                return Unsafe.As<EqualityComparer<T>>(EqualityComparerHelpers.GetComparer(typeof(T).TypeHandle));
-            }
-            return new ObjectEqualityComparer<T>();
+            return Unsafe.As<EqualityComparer<T>>(EqualityComparerHelpers.GetComparer(typeof(T).TypeHandle));
         }
 
         public static EqualityComparer<T> Default { [Intrinsic] get; } = Create();

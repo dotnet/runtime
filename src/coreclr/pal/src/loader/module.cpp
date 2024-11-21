@@ -21,7 +21,6 @@ Abstract:
 SET_DEFAULT_DEBUG_CHANNEL(LOADER); // some headers have code with asserts, so do this first
 
 #include "pal/thread.hpp"
-#include "pal/malloc.hpp"
 #include "pal/file.hpp"
 #include "pal/palinternal.h"
 #include "pal/module.h"
