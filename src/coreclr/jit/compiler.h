@@ -12333,6 +12333,13 @@ public:
         assert((m_begin != nullptr) || (m_begin == m_end));
     }
 
+    EHClauses(Compiler* comp, EHblkDsc* begin)
+        : m_begin(begin)
+        , m_end(comp->compHndBBtab + comp->compHndBBtabCount)
+    {
+        assert((m_begin != nullptr) || (m_begin == m_end));
+    }
+
     iterator begin() const
     {
         return iterator(m_begin);

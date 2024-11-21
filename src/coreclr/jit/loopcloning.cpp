@@ -2096,7 +2096,6 @@ void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* contex
     // This puts the slow loop in the canonical loop form.
     //
     // The slow preheader needs to go in the same EH region as the preheader.
-    // If we don't extend, we will fix up region extents when the loop is duplicated.
     //
     JITDUMP("Create unique preheader for slow path loop\n");
     const bool  extendRegion  = BasicBlock::sameEHRegion(bottom, preheader);
@@ -2105,9 +2104,32 @@ void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* contex
     slowPreheader->bbWeight = newPred->isRunRarely() ? BB_ZERO_WEIGHT : ambientWeight;
     slowPreheader->CopyFlags(newPred, (BBF_PROF_WEIGHT | BBF_RUN_RARELY));
     slowPreheader->scaleBBWeight(LoopCloneContext::slowPathWeightScaleFactor);
+
+    // If we didn't extend the region above (because the last loop
+    // block was in some enclosed EH region), put the slow preheader
+    // into the appropriate region, and make appropriate extent updates.
+    //
     if (!extendRegion)
     {
         slowPreheader->copyEHRegion(preheader);
+        bool     isTry           = false;
+        unsigned enclosingRegion = ehGetMostNestedRegionIndex(slowPreheader, &isTry);
+
+        if (enclosingRegion != 0)
+        {
+            EHblkDsc* const ebd = ehGetDsc(enclosingRegion - 1);
+            for (EHblkDsc* const HBtab : EHClauses(this, ebd))
+            {
+                if (HBtab->ebdTryLast == bottom)
+                {
+                    fgSetTryEnd(HBtab, slowPreheader);
+                }
+                if (HBtab->ebdHndLast == bottom)
+                {
+                    fgSetHndEnd(HBtab, slowPreheader);
+                }
+            }
+        }
     }
     newPred = slowPreheader;
 

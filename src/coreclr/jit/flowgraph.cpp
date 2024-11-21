@@ -6062,13 +6062,12 @@ void FlowGraphNaturalLoop::Duplicate(BasicBlock** insertAfter, BlockToBlockMap* 
 {
     assert(CanDuplicate(nullptr));
 
-    Compiler* comp = m_dfsTree->GetCompiler();
-
-    bool canCloneTry = false;
-    INDEBUG(canCloneTry = (JitConfig.JitCloneLoopsWithEH() > 0);)
-
+    Compiler* const   comp           = m_dfsTree->GetCompiler();
+    bool              canCloneTry    = false;
     bool              clonedTry      = false;
     BasicBlock* const insertionPoint = *insertAfter;
+
+    INDEBUG(canCloneTry = (JitConfig.JitCloneLoopsWithEH() > 0);)
 
     // If the insertion point is within an EH region, remember all the EH regions
     // current that end at the insertion point, so we can properly extend them
@@ -6199,9 +6198,11 @@ void FlowGraphNaturalLoop::Duplicate(BasicBlock** insertAfter, BlockToBlockMap* 
     // region-ending block was cloned, the new region end is the last block cloned).
     //
     // Note we don't consult the block references in EH table here, since they
-    // may reflect interim updates to the region endpoints.
+    // may reflect interim updates to region endpoints (by fgCloneTry). Otherwise
+    // we could simply call ehUpdateLastBlocks.
     //
     BasicBlock* const lastClonedBlock = *insertAfter;
+
     while (regionEnds.Height() > 0)
     {
         RegionEnd       r   = regionEnds.Pop();
