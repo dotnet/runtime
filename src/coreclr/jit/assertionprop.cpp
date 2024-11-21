@@ -6225,7 +6225,8 @@ struct VNAssertionPropVisitorInfo
 //
 // Return Value:
 //    nullptr if no constant propagation is done, else the modified JTrue node
-//    containing "true" or "false" op1 wrapped with side-effects.
+//    containing "0==0" or "0!=0" relop node
+//    (where op1 is wrapped with side effects if any).
 //
 GenTree* Compiler::optVNConstantPropOnJTrue(BasicBlock* block, GenTree* test)
 {
@@ -6251,10 +6252,18 @@ GenTree* Compiler::optVNConstantPropOnJTrue(BasicBlock* block, GenTree* test)
         return nullptr;
     }
 
+    GenTree* sideEffects = gtWrapWithSideEffects(gtNewNothingNode(), relop);
+    if (!sideEffects->IsNothingNode())
+    {
+        // Insert side effects before the JTRUE stmt.
+        Statement* newStmt = fgNewStmtNearEnd(block, sideEffects);
+        fgMorphBlockStmt(block, newStmt DEBUGARG(__FUNCTION__));
+    }
+
+    // Let's maintain the invariant that JTRUE's operand is always a relop.
+    // and if we have side effects, we wrap one of the operands with them, not the relop.
     const bool evalsToTrue = (vnStore->CoercedConstantValue<INT64>(vnCns) != 0);
-    GenTree*   result      = evalsToTrue ? gtNewTrue() : gtNewFalse();
-    fgUpdateConstTreeValueNumber(result);
-    test->AsOp()->gtOp1 = gtWrapWithSideEffects(result, relop);
+    test->AsOp()->gtOp1    = gtNewOperNode(evalsToTrue ? GT_EQ : GT_NE, relop->TypeGet(), gtNewFalse(), gtNewFalse());
     return test;
 }
 
