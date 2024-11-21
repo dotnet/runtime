@@ -5400,30 +5400,6 @@ bool Compiler::fgRenumberBlocks()
         JITDUMP("=============== No blocks renumbered!\n");
     }
 
-    // Now update the BlockSet epoch, which depends on the block numbers.
-    // If any blocks have been renumbered then create a new BlockSet epoch.
-    // Even if we have not renumbered any blocks, we might still need to force
-    // a new BlockSet epoch, for one of several reasons. If there are any new
-    // blocks with higher numbers than the former maximum numbered block, then we
-    // need a new epoch with a new size matching the new largest numbered block.
-    // Also, if the number of blocks is different from the last time we set the
-    // BlockSet epoch, then we need a new epoch. This wouldn't happen if we
-    // renumbered blocks after every block addition/deletion, but it might be
-    // the case that we can change the number of blocks, then set the BlockSet
-    // epoch without renumbering, then change the number of blocks again, then
-    // renumber.
-    if (renumbered || newMaxBBNum)
-    {
-        NewBasicBlockEpoch();
-
-        // The key in the unique switch successor map is dependent on the block number, so invalidate that cache.
-        InvalidateUniqueSwitchSuccMap();
-    }
-    else
-    {
-        EnsureBasicBlockEpoch();
-    }
-
     // Tell our caller if any blocks actually were renumbered.
     return renumbered || newMaxBBNum;
 }
