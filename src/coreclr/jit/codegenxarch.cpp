@@ -4503,23 +4503,23 @@ void CodeGen::genCodeForLockAdd(GenTreeOp* node)
         if (imm == 1)
         {
             // inc [addr]
-            GetEmitter()->emitIns_AR(INS_inc, size, addr->GetRegNum(), 0, INS_OPTS_EVEX_NoPromotion);
+            GetEmitter()->emitIns_AR(INS_inc, size, addr->GetRegNum(), 0);
         }
         else if (imm == -1)
         {
             // dec [addr]
-            GetEmitter()->emitIns_AR(INS_dec, size, addr->GetRegNum(), 0, INS_OPTS_EVEX_NoPromotion);
+            GetEmitter()->emitIns_AR(INS_dec, size, addr->GetRegNum(), 0);
         }
         else
         {
             // add [addr], imm
-            GetEmitter()->emitIns_I_AR(INS_add, size, imm, addr->GetRegNum(), 0, INS_OPTS_EVEX_NoPromotion);
+            GetEmitter()->emitIns_I_AR(INS_add, size, imm, addr->GetRegNum(), 0);
         }
     }
     else
     {
         // add [addr], data
-        GetEmitter()->emitIns_AR_R(INS_add, size, data->GetRegNum(), addr->GetRegNum(), 0, INS_OPTS_EVEX_NoPromotion);
+        GetEmitter()->emitIns_AR_R(INS_add, size, data->GetRegNum(), addr->GetRegNum(), 0);
     }
 }
 
@@ -4556,7 +4556,7 @@ void CodeGen::genLockedInstructions(GenTreeOp* node)
             //    or/and  dword ptr [addrReg], val
             //
             instGen(INS_lock);
-            GetEmitter()->emitIns_AR_R(ins, size, data->GetRegNum(), addr->GetRegNum(), 0, INS_OPTS_EVEX_NoPromotion);
+            GetEmitter()->emitIns_AR_R(ins, size, data->GetRegNum(), addr->GetRegNum(), 0);
         }
         else
         {
@@ -4609,8 +4609,7 @@ void CodeGen::genLockedInstructions(GenTreeOp* node)
     }
 
     regNumber targetReg = node->GetRegNum();
-    insOpts instOptions = (ins != INS_xchg) ? INS_OPTS_EVEX_NoPromotion : INS_OPTS_NONE;
-    GetEmitter()->emitIns_AR_R(ins, size, targetReg, addr->GetRegNum(), 0, instOptions);
+    GetEmitter()->emitIns_AR_R(ins, size, targetReg, addr->GetRegNum(), 0);
 
     if (varTypeIsSmall(node->TypeGet()))
     {
@@ -9414,10 +9413,7 @@ void CodeGen::genAmd64EmitterUnitTestsApx()
     
     // theEmitter->emitIns_R_R(INS_blsi,    EA_8BYTE, REG_R11, REG_R13, INS_OPTS_EVEX_nf);
     // theEmitter->emitIns_R_R(INS_blsmsk,  EA_8BYTE, REG_R11, REG_R13, INS_OPTS_EVEX_nf);
-    // theEmitter->emitIns_R_S(INS_blsr,    EA_8BYTE, REG_R11, 0, 1);
-
-    theEmitter->emitIns(INS_lock);
-    theEmitter->emitIns_AR(INS_inc, EA_4BYTE, REG_R11, 0, INS_OPTS_EVEX_NoPromotion);
+    theEmitter->emitIns_R_S(INS_blsr,    EA_8BYTE, REG_R11, 0, 1);
 }
 
 #endif // defined(DEBUG) && defined(TARGET_AMD64)
@@ -11462,7 +11458,7 @@ void CodeGen::instGen_MemoryBarrier(BarrierKind barrierKind)
     if (barrierKind == BARRIER_FULL)
     {
         instGen(INS_lock);
-        GetEmitter()->emitIns_I_AR(INS_or, EA_4BYTE, 0, REG_SPBASE, 0, INS_OPTS_EVEX_NoPromotion);
+        GetEmitter()->emitIns_I_AR(INS_or, EA_4BYTE, 0, REG_SPBASE, 0);
     }
 }
 

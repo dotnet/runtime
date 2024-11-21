@@ -1554,11 +1554,6 @@ bool emitter::TakesApxExtendedEvexPrefix(const instrDesc* id) const
         return false;
     }
 
-    if (id->idIsNoEvexPromotion())
-    {
-        return false;
-    }
-
 #if defined(DEBUG)
     if (emitComp->DoJitStressPromotedEvexEncoding())
     {
@@ -1575,6 +1570,9 @@ bool emitter::TakesApxExtendedEvexPrefix(const instrDesc* id) const
     {
         return true;
     }
+
+    // TODO-XArch-apx:
+    // better keep a table there to confirm the instruction should be emitted with NDD form.
 
     return false;
 }
@@ -7462,17 +7460,12 @@ void emitter::emitIns_R_R_I(
     emitCurIGsize += sz;
 }
 
-void emitter::emitIns_AR(instruction ins, emitAttr attr, regNumber base, int offs, insOpts instOptions)
+void emitter::emitIns_AR(instruction ins, emitAttr attr, regNumber base, int offs)
 {
     assert(ins == INS_prefetcht0 || ins == INS_prefetcht1 || ins == INS_prefetcht2 || ins == INS_prefetchnta ||
            ins == INS_inc || ins == INS_dec);
 
     instrDesc* id = emitNewInstrAmd(attr, offs);
-
-    if ((instOptions & INS_OPTS_EVEX_NoPromotion) != 0)
-    {
-        id->idSetNoEvexPromotion();
-    }
 
     id->idIns(ins);
 
@@ -8550,7 +8543,7 @@ void emitter::emitIns_R_L(instruction ins, emitAttr attr, BasicBlock* dst, regNu
  *  The following adds instructions referencing address modes.
  */
 
-void emitter::emitIns_I_AR(instruction ins, emitAttr attr, int val, regNumber reg, int disp, insOpts instOptions)
+void emitter::emitIns_I_AR(instruction ins, emitAttr attr, int val, regNumber reg, int disp)
 {
     assert((CodeGen::instIsFP(ins) == false) && (EA_SIZE(attr) <= EA_8BYTE));
 
@@ -8596,11 +8589,6 @@ void emitter::emitIns_I_AR(instruction ins, emitAttr attr, int val, regNumber re
 
     id->idAddr()->iiaAddrMode.amBaseReg = reg;
     id->idAddr()->iiaAddrMode.amIndxReg = REG_NA;
-
-    if ((instOptions & INS_OPTS_EVEX_NoPromotion) != 0)
-    {
-        id->idSetNoEvexPromotion();
-    }
 
     assert(emitGetInsAmdAny(id) == disp); // make sure "disp" is stored properly
 
@@ -8709,9 +8697,9 @@ void emitter::emitIns_R_AI(instruction  ins,
     emitCurIGsize += sz;
 }
 
-void emitter::emitIns_AR_R(instruction ins, emitAttr attr, regNumber reg, regNumber base, cnsval_ssize_t disp, insOpts instOptions)
+void emitter::emitIns_AR_R(instruction ins, emitAttr attr, regNumber reg, regNumber base, cnsval_ssize_t disp)
 {
-    emitIns_ARX_R(ins, attr, reg, base, REG_NA, 1, disp, instOptions);
+    emitIns_ARX_R(ins, attr, reg, base, REG_NA, 1, disp);
 }
 
 //------------------------------------------------------------------------
@@ -8995,7 +8983,7 @@ void emitter::emitIns_R_ARX(
 }
 
 void emitter::emitIns_ARX_R(
-    instruction ins, emitAttr attr, regNumber reg, regNumber base, regNumber index, unsigned scale, cnsval_ssize_t disp, insOpts instOptions)
+    instruction ins, emitAttr attr, regNumber reg, regNumber base, regNumber index, unsigned scale, cnsval_ssize_t disp)
 {
     UNATIVE_OFFSET sz;
     instrDesc*     id = emitNewInstrAmd(attr, disp);
@@ -9021,11 +9009,6 @@ void emitter::emitIns_ARX_R(
     id->idAddr()->iiaAddrMode.amBaseReg = base;
     id->idAddr()->iiaAddrMode.amIndxReg = index;
     id->idAddr()->iiaAddrMode.amScale   = emitEncodeScale(scale);
-
-    if ((instOptions & INS_OPTS_EVEX_NoPromotion) != 0)
-    {
-        id->idSetNoEvexPromotion();
-    }
 
     assert(emitGetInsAmdAny(id) == disp); // make sure "disp" is stored properly
 

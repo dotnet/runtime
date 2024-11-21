@@ -267,13 +267,14 @@ enum insOpts: unsigned
     INS_OPTS_EVEX_em_zero = 1 << 5, // Embedded mask merges with zero
 
     // One-bit:  0b0100_0000
+    INS_OPTS_EVEX_nd_MASK = 0x40,   // mask for APX-EVEX.nd related features
+
     INS_OPTS_EVEX_nd = 1 << 6,      // NDD form for legacy instructions
 
     // One-bit:  0b1000_0000
-    INS_OPTS_EVEX_nf = 1 << 7,      // NDD form for legacy instructions
+    INS_OPTS_EVEX_nf_MASK = 0x80,   // mask for APX-EVEX.nf related features
 
-    // One-bit:  0b1_0000_0000
-    INS_OPTS_EVEX_NoPromotion = 1 << 8,      // special filter for LOCK prefix in front of APX-EVEX (only useful under APX-EVEX stress mode.)
+    INS_OPTS_EVEX_nf = 1 << 7,      // NDD form for legacy instructions
 
 };
 

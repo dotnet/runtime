@@ -785,9 +785,8 @@ protected:
 #if !defined(TARGET_ARMARCH)
         unsigned _idCustom4 : 1;
 
-#define _idCallRegPtr      _idCustom4 /* IL indirect calls : addr in reg */
-#define _idNoEvexPromotion _idCustom4 /* promoted EVEX cannot be prefixed by LOCK, 66, F2, F3 */
-#define _idEvexZContext    _idCustom4 /* bits used for the EVEX.z context */
+#define _idCallRegPtr   _idCustom4 /* IL indirect calls : addr in reg */
+#define _idEvexZContext _idCustom4 /* bits used for the EVEX.z context */
 #endif                             // !TARGET_ARMARCH
 
 #if defined(TARGET_XARCH)
@@ -1736,17 +1735,6 @@ protected:
         {
             assert(!idIsEvexNfContextSet());
             _idEvexNfContext = 1;
-        }
-
-        bool idIsNoEvexPromotion() const
-        {
-            return _idNoEvexPromotion != 0;
-        }
-
-        void idSetNoEvexPromotion()
-        {
-            assert(!idIsNoEvexPromotion());
-            _idNoEvexPromotion = 1;
         }
 #endif
 
