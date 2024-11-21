@@ -532,11 +532,11 @@ Compiler::SwitchUniqueSuccSet Compiler::GetDescriptorForSwitch(BasicBlock* switc
         // We create a temporary bitset of blocks to compute the unique set of successor blocks,
         // since adding a block's number twice leaves just one "copy" in the bitset.
 
-        BitVecTraits blockVecTraits(compBasicBlockID, this);
+        BitVecTraits blockVecTraits(fgBBNumMax + 1, this);
         BitVec       uniqueSuccBlocks(BitVecOps::MakeEmpty(&blockVecTraits));
         for (BasicBlock* const targ : switchBlk->SwitchTargets())
         {
-            BitVecOps::AddElemD(&blockVecTraits, uniqueSuccBlocks, targ->bbID);
+            BitVecOps::AddElemD(&blockVecTraits, uniqueSuccBlocks, targ->bbNum);
         }
         // Now we have a set of unique successors.
         unsigned numNonDups = BitVecOps::Count(&blockVecTraits, uniqueSuccBlocks);
@@ -552,11 +552,11 @@ Compiler::SwitchUniqueSuccSet Compiler::GetDescriptorForSwitch(BasicBlock* switc
         {
             FlowEdge* const   succEdge = swtDesc->bbsDstTab[i];
             BasicBlock* const targ     = succEdge->getDestinationBlock();
-            if (BitVecOps::IsMember(&blockVecTraits, uniqueSuccBlocks, targ->bbID))
+            if (BitVecOps::IsMember(&blockVecTraits, uniqueSuccBlocks, targ->bbNum))
             {
                 nonDups[nonDupInd] = succEdge;
                 nonDupInd++;
-                BitVecOps::RemoveElemD(&blockVecTraits, uniqueSuccBlocks, targ->bbID);
+                BitVecOps::RemoveElemD(&blockVecTraits, uniqueSuccBlocks, targ->bbNum);
             }
         }
 
