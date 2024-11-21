@@ -4001,6 +4001,9 @@ CORINFO_METHOD_HANDLE CEEInfo::getMethodFromDelegate(CORINFO_CLASS_HANDLE called
 
     _ASSERTE (delegateObj != nullptr);
 
+    MethodDesc* method = NULL;
+    PTR_MethodTable targetTable = NULL;
+
     {
         // We get a direct pointer for frozen delegates
         // and a pointer to a static location for normal ones.
@@ -4018,12 +4021,11 @@ CORINFO_METHOD_HANDLE CEEInfo::getMethodFromDelegate(CORINFO_CLASS_HANDLE called
             GCPROTECT_BEGIN(delegate);
             if (delegate->GetInvocationCount() == 0)
             {
-                MethodDesc* method = COMDelegate::GetMethodDesc(delegate);
+                method = COMDelegate::GetMethodDesc(delegate);
 
-                PTR_MethodTable targetTable = NULL;
                 MethodDesc* pDelegateInvoke = COMDelegate::FindDelegateInvokeMethod(calledType.GetMethodTable());
-
                 UINT invokeArgCount = COMDelegate::MethodDescToNumFixedArgs(pDelegateInvoke);
+
                 UINT methodArgCount = COMDelegate::MethodDescToNumFixedArgs(method);
                 if (!method->IsStatic())
                     methodArgCount++; // count 'this'
@@ -4041,31 +4043,34 @@ CORINFO_METHOD_HANDLE CEEInfo::getMethodFromDelegate(CORINFO_CLASS_HANDLE called
                         targetTable = target->GetMethodTable();
                     }
                 }
-
-                if (targetCls != NULL)
-                {
-                    *targetCls = CORINFO_CLASS_HANDLE(targetTable);
-                }
-
-                if (method != NULL && methodCls != NULL)
-                {
-                    PTR_MethodTable method_table;
-                    if (!method->IsStatic() && targetCls != NULL)
-                    {
-                        method_table = method->GetExactDeclaringType(targetTable);
-                    }
-                    else
-                    {
-                        method_table = method->GetMethodTable();
-                    }
-                    *methodCls = CORINFO_CLASS_HANDLE(method_table);
-                }
-
-                result = (CORINFO_METHOD_HANDLE)method;
             }
             GCPROTECT_END();
         }
     }
+
+    if (method != NULL)
+    {
+        if (targetCls != NULL)
+        {
+            *targetCls = CORINFO_CLASS_HANDLE(targetTable);
+        }
+
+        if (methodCls != NULL)
+        {
+            PTR_MethodTable method_table;
+            if (!method->IsStatic() && targetTable != NULL)
+            {
+                method_table = method->GetExactDeclaringType(targetTable);
+            }
+            else
+            {
+                method_table = method->GetMethodTable();
+            }
+            *methodCls = CORINFO_CLASS_HANDLE(method_table);
+        }
+    }
+
+    result = (CORINFO_METHOD_HANDLE)method;
 
     EE_TO_JIT_TRANSITION();
 

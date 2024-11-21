@@ -2423,30 +2423,11 @@ namespace Internal.JitInterface
 
             if (targetCls != null)
             {
-                DelegateInfo delegateInfo = _compilation.TypeSystemContext.GetDelegateInfo(calledType);
-                int paramCountDelegateClosed = delegateInfo.Signature.Length + 1;
-                int paramCountTargetMethod = method.Signature.Length;
-                if (!method.Signature.IsStatic)
-                {
-                    paramCountTargetMethod++;
-                }
+                TypeDesc targetType = frozenObject.DelegateTargetType;
+                Debug.Assert(method.Signature.IsStatic == (targetType == null));
 
-                CORINFO_CLASS_STRUCT_* target = null;
-                if (paramCountDelegateClosed != paramCountTargetMethod)
-                {
-                    TypeDesc targetType = frozenObject.DelegateTargetType;
-                    if (targetType == null)
-                    {
-                        // avoid delegates closed over null
-                        Debug.Assert(method.Signature.IsStatic);
-                    }
-                    else
-                    {
-                        target = ObjectToHandle(targetType);
-                    }
-                }
-
-                *targetCls = target;
+                // NativeAOT doesn't support delegates closed over null so we don't need to do signature checks
+                *targetCls = targetType == null ? null : ObjectToHandle(targetType);
             }
 
             return ObjectToHandle(method);

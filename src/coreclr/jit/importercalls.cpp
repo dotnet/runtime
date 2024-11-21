@@ -143,7 +143,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
             // As such, we can't handle static readonly function pointers here.
             if (originalSig.hasImplicitThis())
             {
-                JITDUMP("impImportCall failed to import calli as call - implicit this not supported\n");
+                JITDUMP("impImportCall failed to transform calli - implicit this not supported\n");
             }
             else if (fptr->OperIs(GT_FTN_ADDR))
             {
@@ -153,11 +153,11 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                 info.compCompHnd->getMethodSig(method, &replacementSig, replacementClass);
                 if (replacementSig.hasThis() && eeIsValueClass(replacementClass))
                 {
-                    JITDUMP("impImportCall aborting transformation - value type instance methods are not supported\n");
+                    JITDUMP("impImportCall failed to transform calli - value type instance methods are not supported\n");
                 }
                 else if (!impCanSubstituteSig(&originalSig, &replacementSig))
                 {
-                    JITDUMP("impImportCall aborting transformation - incompatible signature\n");
+                    JITDUMP("impImportCall failed to transform calli - incompatible signature\n");
                 }
                 else
                 {
@@ -166,12 +166,12 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
             }
             else
             {
-                JITDUMP("impImportCall failed to import calli as call - address node not found\n");
+                JITDUMP("impImportCall failed to transform calli - address node not found\n");
             }
         }
         else
         {
-            JITDUMP("\n\nimpImportCall failed to import calli as call - call conv %u is not managed\n",
+            JITDUMP("\n\nimpImportCall failed to transform calli - call conv %u is not managed\n",
                     originalSig.getCallConv());
         }
     }
@@ -203,22 +203,35 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                 // This lets us inline DynamicMethods.
                 CORINFO_FIELD_HANDLE field = address->AsIntCon()->GetStaticFieldHandle();
                 JITDUMP("impImportCall trying to transform delegate - found field %s\n", eeGetFieldName(field, true));
-                if (info.compCompHnd->getStaticFieldContent(field, (uint8_t*)&object,
-                                                            sizeof(CORINFO_OBJECT_HANDLE), 0, false))
+                if (info.compCompHnd->getStaticFieldContent(field, (uint8_t*)&object, sizeof(CORINFO_OBJECT_HANDLE), 0,
+                                                            false))
                 {
                     JITDUMP("impImportCall trying to transform delegate - found static readonly value\n");
+                }
+                else
+                {
+                    object = NO_OBJECT_HANDLE;
+                    JITDUMP("impImportCall trying to transform delegate - failed to read field value\n");
                 }
             }
         }
         // TODO-Perf: Handle unloadable delegates in the same context.
 
-        if (object != NO_OBJECT_HANDLE)
+        if (object == NO_OBJECT_HANDLE)
+        {
+            JITDUMP("impImportCall failed to transform delegate - target delegate not found\n");
+        }
+        else
         {
             JITDUMP("impImportCall trying to transform delegate - found delegate at 0x%llx\n", object);
             replacementMethod = info.compCompHnd->getMethodFromDelegate(pResolvedToken->hClass, object,
                                                                         &replacementClass, &newThisClass);
 
-            if (replacementMethod != NO_METHOD_HANDLE)
+            if (replacementMethod == NO_METHOD_HANDLE)
+            {
+                JITDUMP("impImportCall failed to transform delegate - failed to obtain method from delegate\n");
+            }
+            else
             {
                 firstArgPos = (int)(stackState.esStackDepth - originalSig.numArgs);
                 assert(firstArgPos >= 0);
@@ -240,18 +253,20 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
     if (replacementMethod != NO_METHOD_HANDLE)
     {
         assert(replacementClass != NO_CLASS_HANDLE);
+        assert(firstArgPos >= -1);
 
-        JITDUMP("impImportCall trying to transform call - found target method %s:%s\n", eeGetClassName(replacementClass),
-                eeGetMethodName(replacementMethod));
+        JITDUMP("impImportCall trying to transform call - found target method %s:%s\n",
+                eeGetClassName(replacementClass), eeGetMethodName(replacementMethod));
 
         unsigned replacementFlags = info.compCompHnd->getMethodAttribs(replacementMethod);
 
         if ((replacementFlags & CORINFO_FLG_PINVOKE) != 0)
         {
-            JITDUMP("impImportCall aborting transformation - found PInvoke\n");
+            JITDUMP("impImportCall failed call transformation - found PInvoke\n");
         }
         else
         {
+#ifdef DEBUG
             if (firstArgPos >= 0)
             {
                 // check if we are at a valid position and
@@ -260,8 +275,21 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                 assert(stackState.esStack[firstArgPos - 1].seTypeInfo.GetType() == TYP_REF);
             }
 
+            if ((newThisClass != NO_CLASS_HANDLE) || (firstArgPos < 0))
+            {
+                // for closed delegates and calli those should be equal
+                assert(originalSig.totalILArgs() == replacementSig.totalILArgs());
+            }
+            else
+            {
+                // for open delegates there should be 1 less arg since we remove the instance
+                assert((originalSig.totalILArgs() - 1) == replacementSig.totalILArgs());
+            }
+#endif
+
             if (newThisClass != NO_CLASS_HANDLE)
             {
+                // closed delegates
                 assert(firstArgPos >= 0);
                 assert(newThis != nullptr);
                 assert(newThis->TypeGet() == TYP_REF);
@@ -271,6 +299,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
             }
             else
             {
+                // open delegates and calli
                 // shift args if needed
                 if (firstArgPos > 0)
                 {
