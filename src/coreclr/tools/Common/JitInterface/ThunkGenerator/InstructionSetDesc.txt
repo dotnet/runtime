@@ -42,6 +42,8 @@ instructionset     ,X86   ,Bmi2                 ,        ,11 ,BMI2              
 instructionset     ,X86   ,Fma                  ,        ,12 ,FMA                   ,fma
 instructionset     ,X86   ,Lzcnt                ,        ,13 ,LZCNT                 ,lzcnt
 instructionset     ,X86   ,Pclmulqdq            ,        ,14 ,PCLMULQDQ             ,pclmul
+instructionset     ,X86   ,Pclmulqdq_V256       ,        ,49 ,PCLMULQDQ_V256        ,vpclmul
+instructionset     ,X86   ,Pclmulqdq_V512       ,        ,50 ,PCLMULQDQ_V512        ,vpclmul_v512
 instructionset     ,X86   ,Popcnt               ,        ,15 ,POPCNT                ,popcnt
 instructionset     ,X86   ,                     ,        ,   ,Vector128             ,
 instructionset     ,X86   ,                     ,        ,   ,Vector256             ,
@@ -84,9 +86,7 @@ instructionset64bit,X86   ,LZCNT
 instructionset64bit,X86   ,PCLMULQDQ
 instructionset64bit,X86   ,POPCNT
 instructionset64bit,X86   ,AVXVNNI
-instructionset64bit,X86   ,MOVBE
 instructionset64bit,X86   ,X86Serialize
-instructionset64bit,X86   ,EVEX
 instructionset64bit,X86   ,AVX512F
 instructionset64bit,X86   ,AVX512BW
 instructionset64bit,X86   ,AVX512CD
@@ -94,7 +94,6 @@ instructionset64bit,X86   ,AVX512DQ
 instructionset64bit,X86   ,AVX512VBMI
 instructionset64bit,X86   ,AVX10v1
 instructionset64bit,X86   ,AVX10v1_V512
-instructionset64bit,X86   ,APX
 
 vectorinstructionset,X86  ,Vector128
 vectorinstructionset,X86  ,Vector256
@@ -146,6 +145,10 @@ implication        ,X86   ,AVX512VBMI_VL        ,AVX512BW_VL
 
 implication        ,X86   ,AES                  ,SSE2
 implication        ,X86   ,PCLMULQDQ            ,SSE2
+implication        ,X86   ,PCLMULQDQ_V256       ,PCLMULQDQ
+implication        ,X86   ,PCLMULQDQ_V256       ,AVX
+implication        ,X86   ,PCLMULQDQ_V512       ,PCLMULQDQ_V256
+implication        ,X86   ,PCLMULQDQ_V512       ,AVX512F
 implication        ,X86   ,AVXVNNI              ,AVX2
 implication        ,X86   ,X86Serialize         ,X86Base
 

@@ -6172,6 +6172,12 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
             instructionSetFlags.AddInstructionSet(InstructionSet_PCLMULQDQ);
         }
 
+        if (JitConfig.EnableVPCLMULQDQ() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_PCLMULQDQ_V256);
+            instructionSetFlags.AddInstructionSet(InstructionSet_PCLMULQDQ_V512);
+        }
+
         if (JitConfig.EnablePOPCNT() != 0)
         {
             instructionSetFlags.AddInstructionSet(InstructionSet_POPCNT);
