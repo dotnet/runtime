@@ -1547,7 +1547,7 @@ uint32_t StackTraceArray::CopyDataFrom(StackTraceArray const & src)
 
 #ifdef _DEBUG
 //===============================================================================
-// Code that insures that our unmanaged version of Nullable is consistant with
+// Code that ensures that our unmanaged version of Nullable is consistant with
 // the managed version Nullable<T> for all T.
 
 void Nullable::CheckFieldOffsets(TypeHandle nullableType)
@@ -1564,7 +1564,7 @@ void Nullable::CheckFieldOffsets(TypeHandle nullableType)
 
     MethodTable* nullableMT = nullableType.GetMethodTable();
 
-        // insure that the managed version of the table is the same as the
+        // ensure that the managed version of the table is the same as the
         // unmanaged.  Note that we can't do this in corelib.h because this
         // class is generic and field layout depends on the instantiation.
 

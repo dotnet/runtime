@@ -7,7 +7,7 @@
 /* DESIGN NOTES DESIGN NOTES DESIGN NOTES DESIGN NOTES */
 // DESIGN NOTES
 // Over the years EventSource has become more complex and so it is important to understand
-// the basic structure of the code to insure that it does not grow more complex.
+// the basic structure of the code to ensure that it does not grow more complex.
 //
 // Basic Model
 //
