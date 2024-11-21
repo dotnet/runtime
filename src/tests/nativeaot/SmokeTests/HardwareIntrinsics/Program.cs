@@ -71,7 +71,7 @@ unsafe class Program
         bool? ExpectedAvx512DQ = false;
         bool? ExpectedAvx512Vbmi = false;
         bool? ExpectedX86Serialize = null;
-        bool? ExpectedGfni = false;
+        bool? ExpectedGfni = null;
         bool? ExpectedGfniV256 = false;
         bool? ExpectedGfniV512 = false;
 #elif SSE42_INTRINSICS
