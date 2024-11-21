@@ -248,9 +248,17 @@ namespace System.Text.Json.Nodes
 
             OrderedDictionary<string, JsonNode?> dict = Dictionary;
 
-            if (!dict.TryAdd(propertyName, value))
+            if (
+#if NET10_0_OR_GREATER
+                !dict.TryAdd(propertyName, value, out int index)
+#else
+                !dict.TryAdd(propertyName, value)
+#endif
+                )
             {
+#if !NET10_0_OR_GREATER
                 int index = dict.IndexOf(propertyName);
+#endif
                 Debug.Assert(index >= 0);
                 JsonNode? replacedValue = dict.GetAt(index).Value;
 

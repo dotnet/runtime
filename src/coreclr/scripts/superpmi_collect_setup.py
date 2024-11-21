@@ -406,9 +406,9 @@ def setup_benchmark(workitem_directory, arch):
 
         # Sometimes the dotnet version installed by the script is latest and expect certain versions of SDK that
         # have not published yet. As a result, we hit errors of "dotnet restore". As a workaround, hard code the
-        # working version until we move to ".NET 8" in the script.
+        # working version until we move to ".NET 9" in the script.
         run_command(
-            get_python_name() + [dotnet_install_script, "install", "--channels", "9.0", "--architecture", arch, "--install-dir",
+            get_python_name() + [dotnet_install_script, "install", "--dotnet-versions", "9.0.100-rc.2.24474.11", "--architecture", arch, "--install-dir",
                                  dotnet_directory, "--verbose"])
 
 
