@@ -358,6 +358,9 @@ namespace ILCompiler
                 if (_supportedInstructionSets.Contains("avx10v1"))
                     _supportedInstructionSets.Add("avx10v1_v512");
 
+                if (_supportedInstructionSets.Contains("avx10v2"))
+                    _supportedInstructionSets.Add("avx10v2_v512");
+
                 if (_supportedInstructionSets.Contains("gfni"))
                     _supportedInstructionSets.Add("gfni_v512");
 

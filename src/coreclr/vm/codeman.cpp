@@ -1425,6 +1425,16 @@ void EEJitManager::SetCpuInfo()
             CPUCompileFlags.Set(InstructionSet_AVX10v1_V512);
         }
     }
+
+    if ((cpuFeatures & XArchIntrinsicConstants_Avx10v2) != 0)
+    {
+        if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX10v2))
+        {
+            CPUCompileFlags.Set(InstructionSet_AVX10v2);
+            CPUCompileFlags.Set(InstructionSet_AVX10v2_V512);
+        }
+    }
+
     #if defined(TARGET_AMD64)
     if ((cpuFeatures & XArchIntrinsicConstants_Apx) != 0)
     {

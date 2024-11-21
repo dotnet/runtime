@@ -80,7 +80,8 @@ namespace ILCompiler
             public const int Evex = 0x80000;
             public const int Apx = 0x100000;
             public const int Vpclmulqdq = 0x200000;
-            public const int Gfni = 0x400000;
+            public const int Avx10v2 = 0x400000;
+            public const int Gfni = 0x800000;
 
             public static void AddToBuilder(InstructionSetSupportBuilder builder, int flags)
             {
@@ -146,6 +147,10 @@ namespace ILCompiler
                     if ((flags & Avx512) != 0)
                         builder.AddSupportedInstructionSet("vpclmul_v512");
                 }
+                if ((flags & Avx10v2) != 0)
+                    builder.AddSupportedInstructionSet("avx10v2");
+                if (((flags & Avx10v2) != 0) && ((flags & Avx512) != 0))
+                    builder.AddSupportedInstructionSet("avx10v2_v512");
                 if ((flags & Gfni) != 0)
                 {
                     builder.AddSupportedInstructionSet("gfni");
@@ -219,7 +224,12 @@ namespace ILCompiler
                     InstructionSet.X64_APX => Apx,
                     InstructionSet.X64_PCLMULQDQ_V256 => Vpclmulqdq,
                     InstructionSet.X64_PCLMULQDQ_V512 => (Vpclmulqdq | Avx512),
+                    InstructionSet.X64_AVX10v2 => Avx10v2,
+                    InstructionSet.X64_AVX10v2_X64 => Avx10v2,
+                    InstructionSet.X64_AVX10v2_V512 => (Avx10v2 | Avx512),
+                    InstructionSet.X64_AVX10v2_V512_X64 => (Avx10v2 | Avx512),
                     InstructionSet.X64_GFNI => Gfni,
+                    InstructionSet.X64_GFNI_X64 => Gfni,
                     InstructionSet.X64_GFNI_V256 => (Gfni | Avx),
                     InstructionSet.X64_GFNI_V512 => (Gfni | Avx512),
 

@@ -230,6 +230,8 @@ namespace System.CommandLine
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avx10v1");
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avx10v1_v512");
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("vpclmul_v512");
+                    optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avx10v2");
+                    optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avx10v2_v512");
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("gfni_v512");
                 }
             }
