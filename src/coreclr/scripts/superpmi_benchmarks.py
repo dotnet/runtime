@@ -193,7 +193,7 @@ def build_and_run(coreclr_args, output_mch_name):
         # On the last try, exit on fail
         exit_on_fail = try_num + 1 == num_tries
         (_, _, return_code) = run_command(
-            [dotnet_exe, "restore", project_file, "--packages", artifacts_packages_directory, "-p:TargetFramework=" + tfm],
+            [dotnet_exe, "restore", project_file, "--packages", artifacts_packages_directory, "-p:TargetFrameworks=netstandard2.0;" + tfm],
             _exit_on_fail=exit_on_fail, _env=env_copy)
         if return_code == 0:
             # It succeeded!
