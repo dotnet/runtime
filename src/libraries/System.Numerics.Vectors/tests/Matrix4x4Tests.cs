@@ -819,7 +819,26 @@ namespace System.Numerics.Tests
                     Vector3 v = point - pp;
                     float d = Vector3.Dot(v, plane.Normal);
                     Vector3 vp = point - 2.0f * d * plane.Normal;
-                    Assert.True(MathHelper.Equal(rp, vp), "Matrix4x4.CreateReflection did not provide expected value.");
+
+                    Assert.Equal(vp.M11, rp.M11, 0.0f);
+                    Assert.Equal(vp.M12, rp.M12, 0.0f);
+                    Assert.Equal(vp.M13, rp.M13, 0.0f);
+                    Assert.Equal(vp.M14, rp.M14, 0.0f);
+
+                    Assert.Equal(vp.M21, rp.M21, 0.0f);
+                    Assert.Equal(vp.M22, rp.M22, 0.0f);
+                    Assert.Equal(vp.M23, rp.M23, 0.0f);
+                    Assert.Equal(vp.M24, rp.M24, 0.0f);
+
+                    Assert.Equal(vp.M31, rp.M31, 0.0f);
+                    Assert.Equal(vp.M32, rp.M32, 0.0f);
+                    Assert.Equal(vp.M33, rp.M33, 0.0f);
+                    Assert.Equal(vp.M34, rp.M34, 0.0f);
+
+                    Assert.Equal(vp.M41, rp.M41, 0.0f);
+                    Assert.Equal(vp.M42, rp.M42, 0.0f);
+                    Assert.Equal(vp.M43, rp.M43, 0.0f);
+                    Assert.Equal(vp.M44, rp.M44, 0.0f);
                 }
             }
         }
@@ -830,28 +849,25 @@ namespace System.Numerics.Tests
             Plane plane = new Plane(0, 1, 0, 60);
             Matrix4x4 actual = Matrix4x4.CreateReflection(plane);
 
-            Matrix4x4 expected = new Matrix4x4();
-            expected.M11 = 1;
-            expected.M12 = 0;
-            expected.M13 = 0;
-            expected.M14 = 0;
+            Assert.Equal(1.0f, actual.M11, 0.0f);
+            Assert.Equal(0.0f, actual.M12, 0.0f);
+            Assert.Equal(0.0f, actual.M13, 0.0f);
+            Assert.Equal(0.0f, actual.M14, 0.0f);
 
-            expected.M21 = 0;
-            expected.M22 = -1;
-            expected.M23 = 0;
-            expected.M24 = 0;
+            Assert.Equal(0.0f, actual.M21, 0.0f);
+            Assert.Equal(-1.0f, actual.M22, 0.0f);
+            Assert.Equal(0.0f, actual.M23, 0.0f);
+            Assert.Equal(0.0f, actual.M24, 0.0f);
 
-            expected.M31 = 0;
-            expected.M32 = 0;
-            expected.M33 = 1;
-            expected.M34 = 0;
+            Assert.Equal(0.0f, actual.M31, 0.0f);
+            Assert.Equal(0.0f, actual.M32, 0.0f);
+            Assert.Equal(1.0f, actual.M33, 0.0f);
+            Assert.Equal(0.0f, actual.M34, 0.0f);
 
-            expected.M41 = -0;
-            expected.M42 = -120;
-            expected.M43 = -0;
-            expected.M44 = 1;
-
-            Assert.True(MathHelper.Equal(expected, actual), "Matrix4x4.CreateReflection did not return the expected value.");
+            Assert.Equal(-0.0f, actual.M41, 0.0f);
+            Assert.Equal(-120.0f, actual.M42, 0.0f);
+            Assert.Equal(-0.0f, actual.M43, 0.0f);
+            Assert.Equal(1.0f, actual.M44, 0.0f);
         }
 
         // A test for CreateRotationZ (float)
