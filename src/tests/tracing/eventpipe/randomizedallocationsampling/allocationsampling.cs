@@ -69,7 +69,10 @@ namespace Tracing.Tests
                     AllocationSampledData payload = new AllocationSampledData(eventData, source.PointerSize);
                     // uncomment to see the allocation events payload
                     //Logger.logger.Log($"{payload.AllocationKind} | ({payload.ObjectSize}) {payload.TypeName}  = 0x{payload.Address}");
-                    if (payload.TypeName == "Tracing.Tests.Object128")
+                    if (payload.TypeName == "Tracing.Tests.Object128" ||
+                        (payload.TypeName == "NULL" && payload.ObjectSize >= 128))  // NativeAOT doesn't report type names but we can use the size as a good proxy
+                                                                                    // A real profiler would resolve the TypeID from PDBs but replicating that would
+                                                                                    // make the test more complicated
                     {
                         Object128Count++;
                     }

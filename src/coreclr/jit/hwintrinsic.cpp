@@ -781,6 +781,8 @@ static const HWIntrinsicIsaRange hwintrinsicIsaRangeArray[] = {
     { FIRST_NI_FMA, LAST_NI_FMA },
     { FIRST_NI_LZCNT, LAST_NI_LZCNT },
     { FIRST_NI_PCLMULQDQ, LAST_NI_PCLMULQDQ },
+    { FIRST_NI_PCLMULQDQ_V256, LAST_NI_PCLMULQDQ_V256 },
+    { FIRST_NI_PCLMULQDQ_V512, LAST_NI_PCLMULQDQ_V512 },
     { FIRST_NI_POPCNT, LAST_NI_POPCNT },
     { FIRST_NI_Vector128, LAST_NI_Vector128 },
     { FIRST_NI_Vector256, LAST_NI_Vector256 },
@@ -822,9 +824,7 @@ static const HWIntrinsicIsaRange hwintrinsicIsaRangeArray[] = {
     { NI_Illegal, NI_Illegal },                                 // PCLMULQDQ_X64
     { FIRST_NI_POPCNT_X64, LAST_NI_POPCNT_X64 },
     { NI_Illegal, NI_Illegal },                                 // AVXVNNI_X64
-    { NI_Illegal, NI_Illegal },                                 // MOVBE_X64
     { NI_Illegal, NI_Illegal },                                 // X86Serialize_X64
-    { NI_Illegal, NI_Illegal },                                 // EVEX_X64
     { FIRST_NI_AVX512F_X64, LAST_NI_AVX512F_X64 },
     { NI_Illegal, NI_Illegal },                                 // AVX512BW_X64
     { NI_Illegal, NI_Illegal },                                 // AVX512CD_X64

@@ -46,6 +46,7 @@ public class Interfaces
         TestSharedInterfaceMethods.Run();
         TestGenericAnalysis.Run();
         TestRuntime108229Regression.Run();
+        TestRuntime109893Regression.Run();
         TestCovariantReturns.Run();
         TestDynamicInterfaceCastable.Run();
         TestStaticInterfaceMethodsAnalysis.Run();
@@ -869,6 +870,37 @@ public class Interfaces
             // Call multiple times in case we just flushed the cast cache (when we flush we don't store).
             if (!Is(o) || !Is(o) || !Is(o))
                 throw new Exception();
+        }
+    }
+
+    class TestRuntime109893Regression
+    {
+        class Type<T> : IType<T>;
+
+        class MyVisitor : IVisitor
+        {
+            public object? Visit<T>(IType<T> _) => typeof(T);
+        }
+
+        interface IType
+        {
+            object? Accept(IVisitor visitor);
+        }
+
+        interface IType<T> : IType
+        {
+            object? IType.Accept(IVisitor visitor) => visitor.Visit(this);
+        }
+
+        interface IVisitor
+        {
+            object? Visit<T>(IType<T> type);
+        }
+
+        public static void Run()
+        {
+            IType type = new Type<object>();
+            type.Accept(new MyVisitor());
         }
     }
 

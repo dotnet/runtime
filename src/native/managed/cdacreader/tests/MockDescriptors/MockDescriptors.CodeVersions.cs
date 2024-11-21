@@ -90,8 +90,6 @@ internal partial class MockDescriptors
                 ]);
         }
 
-        public void MarkCreated() => Builder.MarkCreated();
-
         public TargetPointer AddMethodDescVersioningState(TargetPointer nativeCodeVersionNode, bool isDefaultVersionActive)
         {
             Target.TypeInfo info = Types[DataType.MethodDescVersioningState];
