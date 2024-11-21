@@ -5223,29 +5223,6 @@ public:
         return getAllocator(cmk).allocate<T>(fgBBNumMax + 1);
     }
 
-    // BlockSets are relative to a specific set of BasicBlock numbers. If that changes
-    // (if the blocks are renumbered), this changes. BlockSets from different epochs
-    // cannot be meaningfully combined. Note that new blocks can be created with higher
-    // block numbers without changing the basic block epoch. These blocks *cannot*
-    // participate in a block set until the blocks are all renumbered, causing the epoch
-    // to change. This is useful if continuing to use previous block sets is valuable.
-    // If the epoch is zero, then it is uninitialized, and block sets can't be used.
-    unsigned fgCurBBEpoch = 0;
-
-    unsigned GetCurBasicBlockEpoch()
-    {
-        return fgCurBBEpoch;
-    }
-
-    // The number of basic blocks in the current epoch. When the blocks are renumbered,
-    // this is fgBBcount. As blocks are added, fgBBcount increases, fgCurBBEpochSize remains
-    // the same, until a new BasicBlock epoch is created, such as when the blocks are all renumbered.
-    unsigned fgCurBBEpochSize = 0;
-
-    // The number of "size_t" elements required to hold a bitset large enough for fgCurBBEpochSize
-    // bits. This is precomputed to avoid doing math every time BasicBlockBitSetTraits::GetArrSize() is called.
-    unsigned fgBBSetCountInSizeTUnits = 0;
-
     bool fgEnsureFirstBBisScratch();
     bool fgFirstBBisScratch();
     bool fgBBisScratch(BasicBlock* block);
