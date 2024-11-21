@@ -216,21 +216,12 @@ internal unsafe static partial class MockMemorySpace
             if (pointerData.Data.Length > 0)
                 AddHeapFragment(pointerData);
 
-            MarkCreated();
-            return descriptor.Address;
-        }
-
-        internal void MarkCreated()
-        {
-            if (_created)
-                throw new InvalidOperationException("Context already created");
             _created = true;
+            return descriptor.Address;
         }
 
         internal ReadContext GetReadContext()
         {
-            if (!_created)
-                throw new InvalidOperationException("Context not created");
             ReadContext context = new ReadContext
             {
                 HeapFragments = _heapFragments,

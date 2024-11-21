@@ -4451,8 +4451,11 @@ bool Compiler::fgReorderBlocks(bool useProfile)
 // Template parameters:
 //    hasEH - If true, method has EH regions, so check that we don't try to move blocks in different regions
 //
+// Parameters:
+//    dfsTree - The depth-first traversal of the flowgraph
+//
 template <bool hasEH>
-void Compiler::fgMoveHotJumps()
+void Compiler::fgMoveHotJumps(FlowGraphDfsTree* dfsTree)
 {
 #ifdef DEBUG
     if (verbose)
@@ -4465,9 +4468,9 @@ void Compiler::fgMoveHotJumps()
     }
 #endif // DEBUG
 
-    EnsureBasicBlockEpoch();
-    BlockSet visitedBlocks(BlockSetOps::MakeEmpty(this));
-    BlockSetOps::AddElemD(this, visitedBlocks, fgFirstBB->bbNum);
+    assert(dfsTree != nullptr);
+    BitVecTraits traits(dfsTree->PostOrderTraits());
+    BitVec       visitedBlocks = BitVecOps::MakeEmpty(&traits);
 
     // If we have a funclet region, don't bother reordering anything in it.
     //
@@ -4475,7 +4478,12 @@ void Compiler::fgMoveHotJumps()
     for (BasicBlock* block = fgFirstBB; block != fgFirstFuncletBB; block = next)
     {
         next = block->Next();
-        BlockSetOps::AddElemD(this, visitedBlocks, block->bbNum);
+        if (!dfsTree->Contains(block))
+        {
+            continue;
+        }
+
+        BitVecOps::AddElemD(&traits, visitedBlocks, block->bbPostorderNum);
 
         // Don't bother trying to move cold blocks
         //
@@ -4522,7 +4530,8 @@ void Compiler::fgMoveHotJumps()
         }
 
         BasicBlock* target         = targetEdge->getDestinationBlock();
-        bool        isBackwardJump = BlockSetOps::IsMember(this, visitedBlocks, target->bbNum);
+        bool        isBackwardJump = BitVecOps::IsMember(&traits, visitedBlocks, target->bbPostorderNum);
+        assert(dfsTree->Contains(target));
 
         if (isBackwardJump)
         {
@@ -4541,7 +4550,8 @@ void Compiler::fgMoveHotJumps()
                 //
                 targetEdge     = unlikelyEdge;
                 target         = targetEdge->getDestinationBlock();
-                isBackwardJump = BlockSetOps::IsMember(this, visitedBlocks, target->bbNum);
+                isBackwardJump = BitVecOps::IsMember(&traits, visitedBlocks, target->bbPostorderNum);
+                assert(dfsTree->Contains(target));
 
                 if (isBackwardJump)
                 {
@@ -4684,7 +4694,7 @@ void Compiler::fgDoReversePostOrderLayout()
             }
         }
 
-        fgMoveHotJumps</* hasEH */ false>();
+        fgMoveHotJumps</* hasEH */ false>(dfsTree);
 
         return;
     }
@@ -4757,7 +4767,7 @@ void Compiler::fgDoReversePostOrderLayout()
         fgInsertBBafter(pair.callFinally, pair.callFinallyRet);
     }
 
-    fgMoveHotJumps</* hasEH */ true>();
+    fgMoveHotJumps</* hasEH */ true>(dfsTree);
 }
 
 //-----------------------------------------------------------------------------
@@ -4947,6 +4957,102 @@ weight_t Compiler::ThreeOptLayout::GetCost(BasicBlock* block, BasicBlock* next)
     }
 
     return maxCost;
+}
+
+//-----------------------------------------------------------------------------
+// Compiler::ThreeOptLayout::TrySwappingPartitions: Evaluates the cost of swapping the given partitions.
+// If it is profitable, write the swapped partitions back to 'blockOrder'.
+//
+// Parameters:
+//   s1Start - The starting position of the first partition
+//   s2Start - The starting position of the second partition
+//   s3Start - The starting position of the third partition
+//   s3End - The ending position (inclusive) of the third partition
+//   s4End - The ending position (inclusive) of the fourth partition
+//
+// Returns:
+//   True if the swap was performed, false otherwise
+//
+// Notes:
+//   Here is the proposed partition:
+//   S1: s1Start ~ s2Start-1
+//   S2: s2Start ~ s3Start-1
+//   S3: s3Start ~ s3End
+//   S4: remaining blocks
+//
+//   After the swap:
+//   S1: s1Start ~ s2Start-1
+//   S3: s3Start ~ s3End
+//   S2: s2Start ~ s3Start-1
+//   S4: remaining blocks
+//
+//   If 's3End' and 's4End' are the same, the fourth partition doesn't exist.
+//
+bool Compiler::ThreeOptLayout::TrySwappingPartitions(
+    unsigned s1Start, unsigned s2Start, unsigned s3Start, unsigned s3End, unsigned s4End)
+{
+    BasicBlock* const s2Block     = blockOrder[s2Start];
+    BasicBlock* const s2BlockPrev = blockOrder[s2Start - 1];
+    BasicBlock* const s3Block     = blockOrder[s3Start];
+    BasicBlock* const s3BlockPrev = blockOrder[s3Start - 1];
+    BasicBlock* const lastBlock   = blockOrder[s3End];
+
+    // Evaluate the cost of swapping S2 and S3
+    weight_t currCost = GetCost(s2BlockPrev, s2Block) + GetCost(s3BlockPrev, s3Block);
+    weight_t newCost  = GetCost(s2BlockPrev, s3Block) + GetCost(lastBlock, s2Block);
+
+    // Consider flow into S4, if the partition exists
+    if (s3End < s4End)
+    {
+        BasicBlock* const s4StartBlock = blockOrder[s3End + 1];
+        currCost += GetCost(lastBlock, s4StartBlock);
+        newCost += GetCost(s3BlockPrev, s4StartBlock);
+    }
+    else
+    {
+        assert(s3End == s4End);
+        currCost += lastBlock->bbWeight;
+        newCost += s3BlockPrev->bbWeight;
+    }
+
+    // Check if the swap is profitable
+    if ((newCost >= currCost) || Compiler::fgProfileWeightsEqual(newCost, currCost, 0.001))
+    {
+        return false;
+    }
+
+    // We've found a profitable cut point. Continue with the swap.
+    JITDUMP("Swapping partitions [" FMT_BB ", " FMT_BB "] and [" FMT_BB ", " FMT_BB
+            "] (current partition cost = %f, new partition cost = %f)\n",
+            s2Block->bbNum, s3BlockPrev->bbNum, s3Block->bbNum, lastBlock->bbNum, currCost, newCost);
+    INDEBUG(const weight_t currLayoutCost = GetLayoutCost(s1Start, s4End));
+
+    // Swap the partitions
+    const unsigned     s1Size      = s2Start - s1Start;
+    const unsigned     s2Size      = s3Start - s2Start;
+    const unsigned     s3Size      = (s3End + 1) - s3Start;
+    BasicBlock** const regionStart = blockOrder + s1Start;
+    BasicBlock** const tempStart   = tempOrder + s1Start;
+    memcpy(tempStart, regionStart, sizeof(BasicBlock*) * s1Size);
+    memcpy(tempStart + s1Size, regionStart + s1Size + s2Size, sizeof(BasicBlock*) * s3Size);
+    memcpy(tempStart + s1Size + s3Size, regionStart + s1Size, sizeof(BasicBlock*) * s2Size);
+
+    // Copy remaining blocks in S4 over
+    const unsigned numBlocks     = (s4End - s1Start) + 1;
+    const unsigned swappedSize   = s1Size + s2Size + s3Size;
+    const unsigned remainingSize = numBlocks - swappedSize;
+    assert(numBlocks >= swappedSize);
+    memcpy(tempStart + swappedSize, regionStart + swappedSize, sizeof(BasicBlock*) * remainingSize);
+
+    std::swap(blockOrder, tempOrder);
+
+#ifdef DEBUG
+    // Ensure the swap improved the overall layout. Tolerate some imprecision.
+    const weight_t newLayoutCost = GetLayoutCost(s1Start, s4End);
+    assert((newLayoutCost < currLayoutCost) || Compiler::fgProfileWeightsEqual(newLayoutCost, currLayoutCost, 0.001));
+#endif // DEBUG
+
+    return true;
 }
 
 //-----------------------------------------------------------------------------
@@ -5173,39 +5279,36 @@ void Compiler::ThreeOptLayout::Run()
 }
 
 //-----------------------------------------------------------------------------
-// Compiler::ThreeOptLayout::RunThreeOptPass: Runs 3-opt for the given block range.
+// Compiler::ThreeOptLayout::RunGreedyThreeOptPass: Runs 3-opt for the given block range,
+// using a greedy strategy for finding partitions to swap.
 //
 // Parameters:
 //   startBlock - The first block of the range to reorder
 //   endBlock - The last block (inclusive) of the range to reorder
 //
-bool Compiler::ThreeOptLayout::RunThreeOptPass(BasicBlock* startBlock, BasicBlock* endBlock)
+// Returns:
+//   True if we reordered anything, false otherwise
+//
+// Notes:
+//   For methods with more than a trivial number of basic blocks,
+//   iteratively trying every cut point is prohibitively expensive.
+//   Instead, add the non-fallthrough successor edges of each block to a priority queue,
+//   and try to create fallthrough on each edge via partition swaps, starting with the hottest edges.
+//   For each swap, repopulate the priority queue with edges along the modified cut points.
+//
+bool Compiler::ThreeOptLayout::RunGreedyThreeOptPass(unsigned startPos, unsigned endPos)
 {
-    assert(startBlock != nullptr);
-    assert(endBlock != nullptr);
     assert(cutPoints.Empty());
+    assert(startPos < endPos);
+    bool modified = false;
 
-    bool           modified  = false;
-    const unsigned startPos  = ordinals[startBlock->bbNum];
-    const unsigned endPos    = ordinals[endBlock->bbNum];
-    const unsigned numBlocks = (endPos - startPos + 1);
-    assert((startPos != 0) || startBlock->IsFirst());
-    assert(startPos <= endPos);
-
-    if (numBlocks < 3)
-    {
-        JITDUMP("Not enough blocks to partition anything. Skipping reordering.\n");
-        return false;
-    }
+    JITDUMP("Using greedy strategy for finding cut points.\n");
 
     // Initialize cutPoints with candidate branches in this section
     for (unsigned position = startPos; position <= endPos; position++)
     {
         AddNonFallthroughSuccs(position);
     }
-
-    INDEBUG(weight_t currLayoutCost = GetLayoutCost(startPos, endPos);)
-    JITDUMP("Initial layout cost: %f\n", currLayoutCost);
 
     // For each candidate edge, determine if it's profitable to partition after the source block
     // and before the destination block, and swap the partitions to create fallthrough.
@@ -5249,8 +5352,7 @@ bool Compiler::ThreeOptLayout::RunThreeOptPass(BasicBlock* startBlock, BasicBloc
         // If the new cost improves upon the current cost, then we can justify the swap.
 
         const bool isForwardJump = (srcPos < dstPos);
-        weight_t   currCost, newCost;
-        unsigned   part1Size, part2Size, part3Size;
+        unsigned   s2Start, s3Start, s3End;
 
         if (isForwardJump)
         {
@@ -5265,20 +5367,12 @@ bool Compiler::ThreeOptLayout::RunThreeOptPass(BasicBlock* startBlock, BasicBloc
             // S3: dstPos ~ endPos
             // S2: srcPos+1 ~ dstPos-1
             // S4: remaining blocks
-            part1Size = srcPos - startPos + 1;
-            part2Size = dstPos - srcPos - 1;
-            part3Size = endPos - dstPos + 1;
-
-            // Don't include branches into S4 in the cost calculation,
-            // since we're only considering branches within this region.
-            currCost = GetCost(srcBlk, blockOrder[srcPos + 1]) + GetCost(blockOrder[dstPos - 1], dstBlk) +
-                       blockOrder[endPos]->bbWeight;
-            newCost = GetCost(srcBlk, dstBlk) + GetCost(blockOrder[endPos], blockOrder[srcPos + 1]) +
-                      blockOrder[dstPos - 1]->bbWeight;
+            s2Start = srcPos + 1;
+            s3Start = dstPos;
+            s3End   = endPos;
         }
         else
         {
-            assert(dstPos < srcPos);
 
             // Here is the proposed partition:
             // S1: startPos ~ dstPos-1
@@ -5291,93 +5385,87 @@ bool Compiler::ThreeOptLayout::RunThreeOptPass(BasicBlock* startBlock, BasicBloc
             // S3: srcPos
             // S2: dstPos ~ srcPos-1
             // S4: srcPos+1 ~ endPos
-            part1Size = dstPos - startPos;
-            part2Size = srcPos - dstPos;
-            part3Size = 1;
-
-            currCost = GetCost(blockOrder[srcPos - 1], srcBlk) + GetCost(blockOrder[dstPos - 1], dstBlk);
-            newCost  = GetCost(srcBlk, dstBlk) + GetCost(blockOrder[dstPos - 1], srcBlk);
-
-            if (srcPos != endPos)
-            {
-                currCost += GetCost(srcBlk, blockOrder[srcPos + 1]);
-                newCost += GetCost(blockOrder[srcPos - 1], blockOrder[srcPos + 1]);
-            }
-            else
-            {
-                currCost += srcBlk->bbWeight;
-                newCost += blockOrder[srcPos - 1]->bbWeight;
-            }
+            s2Start = dstPos;
+            s3Start = srcPos;
+            s3End   = srcPos;
         }
 
         // Continue evaluating partitions if this one isn't profitable
-        if ((newCost >= currCost) || Compiler::fgProfileWeightsEqual(currCost, newCost, 0.001))
+        if (!TrySwappingPartitions(startPos, s2Start, s3Start, s3End, endPos))
         {
             continue;
         }
 
-        // We've found a profitable cut point. Continue with the swap.
-        JITDUMP("Creating fallthrough for " FMT_BB " -> " FMT_BB
-                " (current partition cost = %f, new partition cost = %f)\n",
-                srcBlk->bbNum, dstBlk->bbNum, currCost, newCost);
-
-        // Swap the partitions
-        BasicBlock** const regionStart = blockOrder + startPos;
-        BasicBlock** const tempStart   = tempOrder + startPos;
-        memcpy(tempStart, regionStart, sizeof(BasicBlock*) * part1Size);
-        memcpy(tempStart + part1Size, regionStart + part1Size + part2Size, sizeof(BasicBlock*) * part3Size);
-        memcpy(tempStart + part1Size + part3Size, regionStart + part1Size, sizeof(BasicBlock*) * part2Size);
-
-        // For backward jumps, there might be additional blocks after 'srcBlk' that need to be copied over.
-        const unsigned swappedSize   = part1Size + part2Size + part3Size;
-        const unsigned remainingSize = numBlocks - swappedSize;
-        assert(numBlocks >= swappedSize);
-        assert((remainingSize == 0) || !isForwardJump);
-        memcpy(tempStart + swappedSize, regionStart + swappedSize, sizeof(BasicBlock*) * remainingSize);
-
-        std::swap(blockOrder, tempOrder);
-
         // Update the ordinals for the blocks we moved
-        for (unsigned i = (startPos + part1Size); i <= endPos; i++)
+        for (unsigned i = s2Start; i <= endPos; i++)
         {
             ordinals[blockOrder[i]->bbNum] = i;
         }
 
         // Ensure this move created fallthrough from 'srcBlk' to 'dstBlk'
         assert((ordinals[srcBlk->bbNum] + 1) == ordinals[dstBlk->bbNum]);
-        modified = true;
 
         // At every cut point is an opportunity to consider more candidate edges.
         // To the left of each cut point, consider successor edges that don't fall through.
         // Ditto predecessor edges to the right of each cut point.
-        AddNonFallthroughSuccs(startPos + part1Size - 1);
-        AddNonFallthroughSuccs(startPos + part1Size + part2Size - 1);
-        AddNonFallthroughSuccs(startPos + part1Size + part2Size + part3Size - 1);
+        AddNonFallthroughSuccs(s2Start - 1);
+        AddNonFallthroughPreds(s2Start);
+        AddNonFallthroughSuccs(s3Start - 1);
+        AddNonFallthroughPreds(s3Start);
+        AddNonFallthroughSuccs(s3End);
 
-        AddNonFallthroughPreds(startPos + part1Size);
-        AddNonFallthroughPreds(startPos + part1Size + part2Size);
-
-        if (remainingSize != 0)
+        if (s3End < endPos)
         {
-            AddNonFallthroughPreds(startPos + part1Size + part2Size + part3Size);
+            AddNonFallthroughPreds(s3End + 1);
         }
 
-#ifdef DEBUG
-        // Ensure the swap improved the overall layout. Tolerate some imprecision.
-        const weight_t newLayoutCost = GetLayoutCost(startPos, endPos);
-        assert((newLayoutCost < currLayoutCost) ||
-               Compiler::fgProfileWeightsEqual(newLayoutCost, currLayoutCost, 0.001));
-        currLayoutCost = newLayoutCost;
-#endif // DEBUG
+        modified = true;
     }
+
+    return modified;
+}
+
+//-----------------------------------------------------------------------------
+// Compiler::ThreeOptLayout::RunThreeOptPass: Runs 3-opt for the given block range.
+//
+// Parameters:
+//   startBlock - The first block of the range to reorder
+//   endBlock - The last block (inclusive) of the range to reorder
+//
+// Returns:
+//   True if we reordered anything, false otherwise
+//
+bool Compiler::ThreeOptLayout::RunThreeOptPass(BasicBlock* startBlock, BasicBlock* endBlock)
+{
+    assert(startBlock != nullptr);
+    assert(endBlock != nullptr);
+
+    const unsigned startPos  = ordinals[startBlock->bbNum];
+    const unsigned endPos    = ordinals[endBlock->bbNum];
+    const unsigned numBlocks = (endPos - startPos + 1);
+    assert((startPos != 0) || startBlock->IsFirst());
+    assert(startPos <= endPos);
+
+    if (numBlocks < 3)
+    {
+        JITDUMP("Not enough blocks to partition anything. Skipping reordering.\n");
+        return false;
+    }
+
+    JITDUMP("Initial layout cost: %f\n", GetLayoutCost(startPos, endPos));
+    const bool modified = RunGreedyThreeOptPass(startPos, endPos);
 
     // Write back to 'tempOrder' so changes to this region aren't lost next time we swap 'tempOrder' and 'blockOrder'
     if (modified)
     {
         memcpy(tempOrder + startPos, blockOrder + startPos, sizeof(BasicBlock*) * numBlocks);
+        JITDUMP("Final layout cost: %f\n", GetLayoutCost(startPos, endPos));
+    }
+    else
+    {
+        JITDUMP("No changes made.\n");
     }
 
-    JITDUMP("Final layout cost: %f\n", currLayoutCost);
     return modified;
 }
 
