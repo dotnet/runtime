@@ -24,11 +24,26 @@ namespace System.Runtime.CompilerServices
             throw null!; // Provide hint to the inliner that this method does not return
         }
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern object IsInstanceOfAny_NoCacheLookup(void* toTypeHnd, object obj);
+        [LibraryImport(RuntimeHelpers.QCall)]
+        private static partial bool IsInstanceOf_NoCacheLookup(void *toTypeHnd, bool throwCastException, ObjectHandleOnStack obj);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern object ChkCastAny_NoCacheLookup(void* toTypeHnd, object obj);
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static extern object? IsInstanceOfAny_NoCacheLookup(void* toTypeHnd, object obj)
+        {
+            ObjectHandleOfStack objHandleOnStack = default;
+            if (IsInstanceOf_NoCacheLookup(toTypeHnd, false, ObjectHandleOnStack.Create(ref obj)))
+            {
+                return obj;
+            }
+            return null;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static extern object ChkCastAny_NoCacheLookup(void* toTypeHnd, object obj)
+        {
+            IsInstanceOf_NoCacheLookup(toTypeHnd, true, ObjectHandleOnStack.Create(ref obj));
+            return obj;
+        }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern void WriteBarrier(ref object? dst, object? obj);
