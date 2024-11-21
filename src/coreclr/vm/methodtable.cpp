@@ -7692,33 +7692,6 @@ BOOL MethodTable::ContainsGenericMethodVariables()
 }
 
 //==========================================================================================
-Module *MethodTable::GetDefiningModuleForOpenType()
-{
-    CONTRACT(Module*)
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        FORBID_FAULT;
-        POSTCONDITION((ContainsGenericVariables() != 0) == (RETVAL != NULL));
-        SUPPORTS_DAC;
-    }
-    CONTRACT_END
-
-    if (ContainsGenericVariables())
-    {
-        Instantiation inst = GetInstantiation();
-        for (DWORD i = 0; i < inst.GetNumArgs(); i++)
-        {
-            Module *pModule = inst[i].GetDefiningModuleForOpenType();
-            if (pModule != NULL)
-                RETURN pModule;
-        }
-    }
-
-    RETURN NULL;
-}
-
-//==========================================================================================
 PCODE MethodTable::GetRestoredSlot(DWORD slotNumber)
 {
     CONTRACTL {

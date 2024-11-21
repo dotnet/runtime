@@ -2313,7 +2313,7 @@ namespace System
     {
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The target method might be removed")]
         protected Delegate(object target, string method) { }
-        protected Delegate([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type target, string method) { }
+        protected Delegate([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.AllMethods)] System.Type target, string method) { }
         public bool HasSingleTarget { get { throw null; } }
         public System.Reflection.MethodInfo Method { get { throw null; } }
         public object? Target { get { throw null; } }
@@ -2334,9 +2334,9 @@ namespace System
         public static System.Delegate? CreateDelegate(System.Type type, object target, string method, bool ignoreCase, bool throwOnBindFailure) { throw null; }
         public static System.Delegate CreateDelegate(System.Type type, System.Reflection.MethodInfo method) { throw null; }
         public static System.Delegate? CreateDelegate(System.Type type, System.Reflection.MethodInfo method, bool throwOnBindFailure) { throw null; }
-        public static System.Delegate CreateDelegate(System.Type type, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type target, string method) { throw null; }
-        public static System.Delegate CreateDelegate(System.Type type, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type target, string method, bool ignoreCase) { throw null; }
-        public static System.Delegate? CreateDelegate(System.Type type, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type target, string method, bool ignoreCase, bool throwOnBindFailure) { throw null; }
+        public static System.Delegate CreateDelegate(System.Type type, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.AllMethods)] System.Type target, string method) { throw null; }
+        public static System.Delegate CreateDelegate(System.Type type, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.AllMethods)] System.Type target, string method, bool ignoreCase) { throw null; }
+        public static System.Delegate? CreateDelegate(System.Type type, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.AllMethods)] System.Type target, string method, bool ignoreCase, bool throwOnBindFailure) { throw null; }
         public object? DynamicInvoke(params object?[]? args) { throw null; }
         protected virtual object? DynamicInvokeImpl(object?[]? args) { throw null; }
         public static System.Delegate.InvocationListEnumerator<TDelegate> EnumerateInvocationList<TDelegate>(TDelegate? d) where TDelegate : System.Delegate { throw null; }
@@ -4755,7 +4755,7 @@ namespace System
     {
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The target method might be removed")]
         protected MulticastDelegate(object target, string method) : base (default(object), default(string)) { }
-        protected MulticastDelegate([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type target, string method) : base (default(object), default(string)) { }
+        protected MulticastDelegate([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.AllMethods)] System.Type target, string method) : base (default(object), default(string)) { }
         protected sealed override System.Delegate CombineImpl(System.Delegate? follow) { throw null; }
         public sealed override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public sealed override int GetHashCode() { throw null; }
@@ -6503,7 +6503,7 @@ namespace System
         public virtual bool Equals(System.Type? o) { throw null; }
         [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.Interfaces)]
         public virtual System.Type[] FindInterfaces(System.Reflection.TypeFilter filter, object? filterCriteria) { throw null; }
-        [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)]
+        [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicConstructors | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicEvents | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicFields | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicMethods | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicNestedTypes | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicProperties | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicEvents | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicFields | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicMethods | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicNestedTypes | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties)]
         public virtual System.Reflection.MemberInfo[] FindMembers(System.Reflection.MemberTypes memberType, System.Reflection.BindingFlags bindingAttr, System.Reflection.MemberFilter? filter, object? filterCriteria) { throw null; }
         public virtual int GetArrayRank() { throw null; }
         protected abstract System.Reflection.TypeAttributes GetAttributeFlagsImpl();
@@ -6670,11 +6670,11 @@ namespace System
         public static System.Type? GetTypeFromProgID(string progID, string? server, bool throwOnError) { throw null; }
         public static System.RuntimeTypeHandle GetTypeHandle(object o) { throw null; }
         protected abstract bool HasElementTypeImpl();
-        [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)]
+        [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicConstructors | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicFields | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicMethods | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicProperties | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicFields | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicMethods | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties)]
         public object? InvokeMember(string name, System.Reflection.BindingFlags invokeAttr, System.Reflection.Binder? binder, object? target, object?[]? args) { throw null; }
-        [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)]
+        [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicConstructors | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicFields | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicMethods | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicProperties | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicFields | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicMethods | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties)]
         public object? InvokeMember(string name, System.Reflection.BindingFlags invokeAttr, System.Reflection.Binder? binder, object? target, object?[]? args, System.Globalization.CultureInfo? culture) { throw null; }
-        [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)]
+        [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicConstructors | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicFields | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicMethods | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicProperties | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicFields | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicMethods | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties)]
         public abstract object? InvokeMember(string name, System.Reflection.BindingFlags invokeAttr, System.Reflection.Binder? binder, object? target, object?[]? args, System.Reflection.ParameterModifier[]? modifiers, System.Globalization.CultureInfo? culture, string[]? namedParameters);
         protected abstract bool IsArrayImpl();
         public virtual bool IsAssignableFrom([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] System.Type? c) { throw null; }
@@ -7740,7 +7740,7 @@ namespace System
         public override int GetHashCode() { throw null; }
         public override string? ToString() { throw null; }
     }
-    public sealed partial class Version : System.ICloneable, System.IComparable, System.IComparable<System.Version?>, System.IEquatable<System.Version?>, System.IFormattable, System.ISpanFormattable, System.IUtf8SpanFormattable
+    public sealed partial class Version : System.ICloneable, System.IComparable, System.IComparable<System.Version?>, System.IEquatable<System.Version?>, System.IFormattable, System.ISpanFormattable, System.IUtf8SpanFormattable, System.IUtf8SpanParsable<System.Version>
     {
         public Version() { }
         public Version(int major, int minor) { }
@@ -7765,17 +7765,21 @@ namespace System
         public static bool operator !=(System.Version? v1, System.Version? v2) { throw null; }
         public static bool operator <(System.Version? v1, System.Version? v2) { throw null; }
         public static bool operator <=(System.Version? v1, System.Version? v2) { throw null; }
+        public static System.Version Parse(System.ReadOnlySpan<byte> utf8Text) { throw null; }
         public static System.Version Parse(System.ReadOnlySpan<char> input) { throw null; }
         public static System.Version Parse(string input) { throw null; }
         string System.IFormattable.ToString(string? format, System.IFormatProvider? formatProvider) { throw null; }
         bool System.ISpanFormattable.TryFormat(System.Span<char> destination, out int charsWritten, System.ReadOnlySpan<char> format, System.IFormatProvider? provider) { throw null; }
         bool System.IUtf8SpanFormattable.TryFormat(System.Span<byte> utf8Destination, out int bytesWritten, System.ReadOnlySpan<char> format, System.IFormatProvider? provider) { throw null; }
+        static System.Version System.IUtf8SpanParsable<System.Version>.Parse(System.ReadOnlySpan<byte> utf8Text, System.IFormatProvider? provider) { throw null; }
+        static bool System.IUtf8SpanParsable<System.Version>.TryParse(System.ReadOnlySpan<byte> utf8Text, System.IFormatProvider? provider, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Version result) { throw null; }
         public override string ToString() { throw null; }
         public string ToString(int fieldCount) { throw null; }
         public bool TryFormat(System.Span<byte> utf8Destination, int fieldCount, out int bytesWritten) { throw null; }
         public bool TryFormat(System.Span<byte> utf8Destination, out int bytesWritten) { throw null; }
         public bool TryFormat(System.Span<char> destination, int fieldCount, out int charsWritten) { throw null; }
         public bool TryFormat(System.Span<char> destination, out int charsWritten) { throw null; }
+        public static bool TryParse(System.ReadOnlySpan<byte> utf8Text, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Version? result) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> input, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Version? result) { throw null; }
         public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? input, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Version? result) { throw null; }
     }
@@ -8842,6 +8846,20 @@ namespace System.Diagnostics.CodeAnalysis
         PublicEvents = 2048,
         NonPublicEvents = 4096,
         Interfaces = 8192,
+        NonPublicConstructorsWithInherited = 16388,
+        NonPublicMethodsWithInherited = 32784,
+        AllMethods = 32792,
+        NonPublicFieldsWithInherited = 65600,
+        AllFields = 65632,
+        NonPublicNestedTypesWithInherited = 131328,
+        NonPublicPropertiesWithInherited = 263168,
+        AllProperties = 263680,
+        NonPublicEventsWithInherited = 528384,
+        AllEvents = 530432,
+        PublicConstructorsWithInherited = 1048579,
+        AllConstructors = 1064967,
+        PublicNestedTypesWithInherited = 2097280,
+        AllNestedTypes = 2228608,
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Constructor | System.AttributeTargets.Field | System.AttributeTargets.Method, AllowMultiple=true, Inherited=false)]
     public sealed partial class DynamicDependencyAttribute : System.Attribute
@@ -12141,7 +12159,7 @@ namespace System.Reflection
         System.Reflection.PropertyInfo? GetProperty(string name, System.Reflection.BindingFlags bindingAttr);
         [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicProperties | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties)]
         System.Reflection.PropertyInfo? GetProperty(string name, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder? binder, System.Type? returnType, System.Type[] types, System.Reflection.ParameterModifier[]? modifiers);
-        [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)]
+        [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicConstructors | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicFields | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicMethods | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicProperties | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicFields | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicMethods | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties)]
         object? InvokeMember(string name, System.Reflection.BindingFlags invokeAttr, System.Reflection.Binder? binder, object? target, object?[]? args, System.Reflection.ParameterModifier[]? modifiers, System.Globalization.CultureInfo? culture, string[]? namedParameters);
     }
     public partial interface IReflectableType
@@ -12783,7 +12801,7 @@ namespace System.Reflection
         [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicProperties | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties)]
         protected override System.Reflection.PropertyInfo? GetPropertyImpl(string name, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder? binder, System.Type? returnType, System.Type[]? types, System.Reflection.ParameterModifier[]? modifiers) { throw null; }
         protected override bool HasElementTypeImpl() { throw null; }
-        [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)]
+        [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicConstructors | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicFields | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicMethods | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicProperties | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicFields | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicMethods | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties)]
         public override object? InvokeMember(string name, System.Reflection.BindingFlags invokeAttr, System.Reflection.Binder? binder, object? target, object?[]? args, System.Reflection.ParameterModifier[]? modifiers, System.Globalization.CultureInfo? culture, string[]? namedParameters) { throw null; }
         protected override bool IsArrayImpl() { throw null; }
         public override bool IsAssignableFrom([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] System.Reflection.TypeInfo? typeInfo) { throw null; }
@@ -12801,7 +12819,7 @@ namespace System.Reflection
         public virtual System.Collections.Generic.IEnumerable<System.Reflection.ConstructorInfo> DeclaredConstructors { [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicConstructors | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] get { throw null; } }
         public virtual System.Collections.Generic.IEnumerable<System.Reflection.EventInfo> DeclaredEvents { [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicEvents | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicEvents)] get { throw null; } }
         public virtual System.Collections.Generic.IEnumerable<System.Reflection.FieldInfo> DeclaredFields { [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicFields | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicFields)] get { throw null; } }
-        public virtual System.Collections.Generic.IEnumerable<System.Reflection.MemberInfo> DeclaredMembers { [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] get { throw null; } }
+        public virtual System.Collections.Generic.IEnumerable<System.Reflection.MemberInfo> DeclaredMembers { [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicConstructors | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicEvents | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicFields | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicMethods | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicNestedTypes | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicProperties | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicEvents | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicFields | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicMethods | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicNestedTypes | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties)] get { throw null; } }
         public virtual System.Collections.Generic.IEnumerable<System.Reflection.MethodInfo> DeclaredMethods { [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicMethods | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicMethods)] get { throw null; } }
         public virtual System.Collections.Generic.IEnumerable<System.Reflection.TypeInfo> DeclaredNestedTypes { [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicNestedTypes | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicNestedTypes)] get { throw null; } }
         public virtual System.Collections.Generic.IEnumerable<System.Reflection.PropertyInfo> DeclaredProperties { [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicProperties | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties)] get { throw null; } }

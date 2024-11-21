@@ -18,12 +18,12 @@
 
 .assembly svm_diamondshape
 {
-  .custom instance void [mscorlib]System.Runtime.CompilerServices.CompilationRelaxationsAttribute::.ctor(int32) = ( 01 00 08 00 00 00 00 00 ) 
+  .custom instance void [mscorlib]System.Runtime.CompilerServices.CompilationRelaxationsAttribute::.ctor(int32) = ( 01 00 08 00 00 00 00 00 )
   .custom instance void [mscorlib]System.Runtime.CompilerServices.RuntimeCompatibilityAttribute::.ctor() = ( 01 00 01 00 54 02 16 57 72 61 70 4E 6F 6E 45 78   // ....T..WrapNonEx
                                                                                                              63 65 70 74 69 6F 6E 54 68 72 6F 77 73 01 )       // ceptionThrows.
 
   // --- The following custom attribute is added automatically, do not uncomment -------
-  //  .custom instance void [mscorlib]System.Diagnostics.DebuggableAttribute::.ctor(valuetype [mscorlib]System.Diagnostics.DebuggableAttribute/DebuggingModes) = ( 01 00 07 01 00 00 00 00 ) 
+  //  .custom instance void [mscorlib]System.Diagnostics.DebuggableAttribute::.ctor(valuetype [mscorlib]System.Diagnostics.DebuggableAttribute/DebuggingModes) = ( 01 00 07 01 00 00 00 00 )
 
   .hash algorithm 0x00008004
   .ver 0:0:0:0
@@ -53,7 +53,7 @@
     IL_0003:  br.s       IL_0005
 
     IL_0005:  ldloc.0
-    IL_0006:  ret                 
+    IL_0006:  ret
   } // end of method IFoo::Foo
 
 } // end of class IFoo
@@ -145,7 +145,7 @@
 
 .class interface private abstract auto ansi I1
 {
-  .method public hidebysig newslot abstract virtual 
+  .method public hidebysig newslot abstract virtual
           static int32  Func(int32 a) cil managed
   {
   } // end of method I1::Func
@@ -226,7 +226,7 @@
 
     IL_0012:  ldloc.0
     IL_0013:  ret
-  } // end of method I4::I1.Func   
+  } // end of method I4::I1.Func
 } // end of class I4
 
 .class interface private abstract auto ansi I4Reabstract
@@ -313,7 +313,7 @@
 
     IL_0012:  ldloc.0
     IL_0013:  ret
-  } // end of method I5::I1.Func  
+  } // end of method I5::I1.Func
 } // end of class I5
 
 .class interface private abstract auto ansi I6
@@ -338,7 +338,7 @@
 
     IL_0012:  ldloc.0
     IL_0013:  ret
-  } // end of method I6::I1.Func  
+  } // end of method I6::I1.Func
 } // end of class I6
 
 .class interface private abstract auto ansi I7
@@ -365,7 +365,7 @@
 
     IL_0012:  ldloc.0
     IL_0013:  ret
-  } // end of method I7::I1.Func  
+  } // end of method I7::I1.Func
 } // end of class I7
 
 .class interface private abstract auto ansi I8
@@ -396,7 +396,7 @@
 
     IL_0012:  ldloc.0
     IL_0013:  ret
-  } // end of method I8::I1.Func  
+  } // end of method I8::I1.Func
 } // end of class I8
 
 .class private auto ansi beforefieldinit I47Class
@@ -432,9 +432,9 @@
                   I3,
                   I7,
                   I5,
-                  I6 
+                  I6
 {
-} // end of class I8Class  
+} // end of class I8Class
 
 .class private auto ansi sealed beforefieldinit I8Struct
        extends [mscorlib]System.ValueType
@@ -445,16 +445,16 @@
                   I3,
                   I7,
                   I5,
-                  I6 
+                  I6
 {
 } // end of class I8Struct
 
 .class interface private abstract auto ansi GI1`1<T>
 {
-  .method public hidebysig newslot abstract virtual 
+  .method public hidebysig newslot abstract virtual
           static int32  Func<S>([out] class [mscorlib]System.Type[]& types) cil managed
   {
-  } // end of method GI1`1::'GI1<T>.Func' 
+  } // end of method GI1`1::'GI1<T>.Func'
 
 } // end of class GI1`1
 
@@ -512,7 +512,7 @@
 
     IL_0062:  ldloc.0
     IL_0063:  ret
-  } // end of method G2`1::'GI1<T>.Func' 
+  } // end of method G2`1::'GI1<T>.Func'
 } // end of class GI2`1
 
 .class interface private abstract auto ansi GI3`1<T>
@@ -569,7 +569,7 @@
 
     IL_0062:  ldloc.0
     IL_0063:  ret
-  } // end of method GI3`1::'GI1<T>.Func' 
+  } // end of method GI3`1::'GI1<T>.Func'
 } // end of class GI3`1
 
 .class interface private abstract auto ansi GI4`1<T>
@@ -628,7 +628,7 @@
 
     IL_0062:  ldloc.0
     IL_0063:  ret
-  } // end of method GI4`1::'GI1<T>.Func' 
+  } // end of method GI4`1::'GI1<T>.Func'
 } // end of class GI4`1
 
 .class private auto ansi beforefieldinit GI23Class`1<T>
@@ -705,14 +705,14 @@
 .class private auto ansi beforefieldinit ResolutionAtRuntimeThisObj`2<(class IResolutionAtRuntime`1<!V>) T, V>
        extends [mscorlib]System.Object
 {
-  .method public hidebysig specialname rtspecialname 
+  .method public hidebysig specialname rtspecialname
             instance void .ctor() il managed
   {
               ldarg.0
               call       instance void [mscorlib]System.Object::.ctor()
               ret
   } // end of method 'Test::.ctor'
-    
+
 
   .method public hidebysig instance int32 RuntimeResolvedFunc(int32 arg)
   {
@@ -721,7 +721,7 @@
               nop
               ldarg.1
               constrained. !T
-              call       int32 class [svm_diamondshape]IResolutionAtRuntime`1<!V>::Func(int32)
+              call       int32 class IResolutionAtRuntime`1<!V>::Func(int32)
               ret
   }
 
@@ -737,7 +737,7 @@
               nop
               ldarg.0
               constrained. !T
-              call       int32 class [svm_diamondshape]IResolutionAtRuntime`1<!V>::Func(int32)
+              call       int32 class IResolutionAtRuntime`1<!V>::Func(int32)
               ret
   }
 
@@ -752,7 +752,7 @@
               nop
               ldarg.0
               constrained. !!T
-              call       int32 class [svm_diamondshape]IResolutionAtRuntime`1<!!V>::Func(int32)
+              call       int32 class IResolutionAtRuntime`1<!!V>::Func(int32)
               ret
   }
 
@@ -778,7 +778,7 @@
     {
       IL_0014:  nop
       IL_0016:  ldc.i4.s   10
-                constrained. class [svm_diamondshape]FooClass
+                constrained. class FooClass
       IL_0018:  call         int32 IFoo::Foo(int32)
       IL_001d:  pop
       IL_001e:  ldc.i4.0
@@ -813,7 +813,7 @@
     {
                 nop
                 ldc.i4.s   10
-                constrained. class [svm_diamondshape]FooClass
+                constrained. class FooClass
                 ldftn        int32 IFoo::Foo(int32)
                 pop
                 ldc.i4.0
@@ -845,7 +845,7 @@
     {
                 nop
                 ldc.i4.s   10
-                constrained. class [svm_diamondshape]FooClassReabstract
+                constrained. class FooClassReabstract
                 call         int32 IFoo::Foo(int32)
                 pop
                 ldc.i4.0
@@ -879,7 +879,7 @@
     {
                 nop
                 ldc.i4.s   10
-                constrained. valuetype [svm_diamondshape]FooStruct
+                constrained. valuetype FooStruct
                 call         int32 IFoo::Foo(int32)
                 pop
                 ldc.i4.0
@@ -913,7 +913,7 @@
     {
                 nop
                 ldc.i4.s   10
-                constrained. valuetype [svm_diamondshape]FooStruct
+                constrained. valuetype FooStruct
                 ldftn        int32 IFoo::Foo(int32)
                 pop
                 ldc.i4.0
@@ -946,7 +946,7 @@
     {
       IL_005d:  nop
       IL_005f:  ldc.i4.s   10
-                constrained. class [svm_diamondshape]I47Class
+                constrained. class I47Class
       IL_0061:  call         int32 I1::Func(int32)
       IL_0066:  pop
       IL_0067:  ldc.i4.0
@@ -981,7 +981,7 @@
     {
                 nop
                 ldc.i4.s   10
-                constrained. class [svm_diamondshape]I47Class
+                constrained. class I47Class
                 ldftn        int32 I1::Func(int32)
                 pop
                 ldc.i4.0
@@ -1014,7 +1014,7 @@
     {
                 nop
                 ldc.i4.s   10
-                constrained. valuetype [svm_diamondshape]I47Struct
+                constrained. valuetype I47Struct
                 call         int32 I1::Func(int32)
                 pop
                 ldc.i4.0
@@ -1047,7 +1047,7 @@
     {
                 nop
                 ldc.i4.s   10
-                constrained. valuetype [svm_diamondshape]I47Struct
+                constrained. valuetype I47Struct
                 ldftn        int32 I1::Func(int32)
                 pop
                 ldc.i4.0
@@ -1080,7 +1080,7 @@
     {
       IL_00a9:  nop
       IL_00ac:  ldloca.s   V_8
-                constrained. class [svm_diamondshape]GI23Class`1<object>
+                constrained. class GI23Class`1<object>
       IL_00ae:  call         int32 class GI1`1<object>::Func<string>(class [mscorlib]System.Type[]&)
       IL_00b3:  pop
       IL_00b4:  ldc.i4.0
@@ -1112,7 +1112,7 @@
     {
                 nop
                 ldloca.s   V_8
-                constrained. class [svm_diamondshape]GI23Class`1<object>
+                constrained. class GI23Class`1<object>
                 ldftn        int32 class GI1`1<object>::Func<string>(class [mscorlib]System.Type[]&)
                 pop
                 ldc.i4.0
@@ -1146,7 +1146,7 @@
     {
                 nop
                 ldloca.s   V_8
-                constrained. valuetype [svm_diamondshape]GI23Struct`1<object>
+                constrained. valuetype GI23Struct`1<object>
                 call         int32 class GI1`1<object>::Func<string>(class [mscorlib]System.Type[]&)
                 pop
                 ldc.i4.0
@@ -1180,7 +1180,7 @@
     {
                 nop
                 ldloca.s   V_8
-                constrained. valuetype [svm_diamondshape]GI23Struct`1<object>
+                constrained. valuetype GI23Struct`1<object>
                 ldftn        int32 class GI1`1<object>::Func<string>(class [mscorlib]System.Type[]&)
                 pop
                 ldc.i4.0
@@ -1207,7 +1207,7 @@
 
     }  // end handler
 
-    IL_00e0:  ret 
+    IL_00e0:  ret
   } // end of method Program::Negative
 
   .method public hidebysig static void  Positive() cil managed
@@ -1282,7 +1282,7 @@
     IL_0030:  call       void [mscorlib]System.Console::WriteLine(string)
     IL_0035:  nop
     IL_003f:  ldc.i4.s   10
-              constrained. class [svm_diamondshape]I8Class
+              constrained. class I8Class
     IL_0041:  call       int32 I1::Func(int32)
     IL_0046:  ldc.i4.s   18
     IL_0048:  ceq
@@ -1294,7 +1294,7 @@
               call       void [mscorlib]System.Console::WriteLine(string)
               nop
               ldc.i4.s   10
-              constrained. class [svm_diamondshape]I8Class
+              constrained. class I8Class
               ldftn      int32 I1::Func(int32)
               calli      int32(int32)
               ldc.i4.s   18
@@ -1307,7 +1307,7 @@
               call       void [mscorlib]System.Console::WriteLine(string)
               nop
               ldc.i4.s   10
-              constrained. valuetype [svm_diamondshape]I8Struct
+              constrained. valuetype I8Struct
               call       int32 I1::Func(int32)
               ldc.i4.s   18
               ceq
@@ -1319,7 +1319,7 @@
               call       void [mscorlib]System.Console::WriteLine(string)
               nop
               ldc.i4.s   10
-              constrained. valuetype [svm_diamondshape]I8Struct
+              constrained. valuetype I8Struct
               ldftn      int32 I1::Func(int32)
               calli      int32(int32)
               ldc.i4.s   18
@@ -1332,7 +1332,7 @@
     IL_005a:  call       void [mscorlib]System.Console::WriteLine(string)
     IL_005f:  nop
     IL_006b:  ldloca.s   V_4
-              constrained. class [svm_diamondshape]GI4Class`1<object>
+              constrained. class GI4Class`1<object>
     IL_006d:  call       int32 class GI1`1<object>::Func<string>(class [mscorlib]System.Type[]&)
     IL_0072:  ldc.i4.4
     IL_0073:  ceq
@@ -1363,7 +1363,7 @@
               call       void [mscorlib]System.Console::WriteLine(string)
               nop
               ldloca.s   V_4
-              constrained. class [svm_diamondshape]GI4Class`1<object>
+              constrained. class GI4Class`1<object>
               ldftn      int32 class GI1`1<object>::Func<string>(class [mscorlib]System.Type[]&)
               calli      int32(class [mscorlib]System.Type[]&)
               ldc.i4.4
@@ -1395,7 +1395,7 @@
               call       void [mscorlib]System.Console::WriteLine(string)
               nop
               ldloca.s   V_4
-              constrained. valuetype [svm_diamondshape]GI4Struct`1<object>
+              constrained. valuetype GI4Struct`1<object>
               call       int32 class GI1`1<object>::Func<string>(class [mscorlib]System.Type[]&)
               ldc.i4.4
               ceq
@@ -1426,7 +1426,7 @@
               call       void [mscorlib]System.Console::WriteLine(string)
               nop
               ldloca.s   V_4
-              constrained. valuetype [svm_diamondshape]GI4Struct`1<object>
+              constrained. valuetype GI4Struct`1<object>
               ldftn      int32 class GI1`1<object>::Func<string>(class [mscorlib]System.Type[]&)
               calli      int32(class [mscorlib]System.Type[]&)
               ldc.i4.4
@@ -1543,7 +1543,7 @@
     IL_0016:  ret
   } // end of method Program::Main
 
-  .method public hidebysig specialname rtspecialname 
+  .method public hidebysig specialname rtspecialname
           instance void  .ctor() cil managed
   {
     // Code size       8 (0x8)
@@ -1612,7 +1612,7 @@
     IL_002e:  ret
   } // end of method Test::Assert
 
-  .method public hidebysig specialname rtspecialname 
+  .method public hidebysig specialname rtspecialname
           instance void  .ctor() cil managed
   {
     // Code size       8 (0x8)
@@ -1623,7 +1623,7 @@
     IL_0007:  ret
   } // end of method Test::.ctor
 
-  .method private hidebysig specialname rtspecialname static 
+  .method private hidebysig specialname rtspecialname static
           void  .cctor() cil managed
   {
     // Code size       7 (0x7)

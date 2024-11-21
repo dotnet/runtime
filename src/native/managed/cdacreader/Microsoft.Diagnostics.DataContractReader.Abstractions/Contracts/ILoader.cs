@@ -41,6 +41,7 @@ internal interface ILoader : IContract
     public virtual TargetPointer GetAssembly(ModuleHandle handle) => throw new NotImplementedException();
     public virtual ModuleFlags GetFlags(ModuleHandle handle) => throw new NotImplementedException();
     public virtual string GetPath(ModuleHandle handle) => throw new NotImplementedException();
+    public virtual string GetFileName(ModuleHandle handle) => throw new NotImplementedException();
 
     public virtual TargetPointer GetLoaderAllocator(ModuleHandle handle) => throw new NotImplementedException();
     public virtual TargetPointer GetThunkHeap(ModuleHandle handle) => throw new NotImplementedException();
@@ -48,6 +49,7 @@ internal interface ILoader : IContract
     public virtual ModuleLookupTables GetLookupTables(ModuleHandle handle) => throw new NotImplementedException();
 
     public virtual TargetPointer GetModuleLookupMapElement(TargetPointer table, uint token, out TargetNUInt flags) => throw new NotImplementedException();
+    public virtual bool IsCollectible(ModuleHandle handle) => throw new NotImplementedException();
 }
 
 internal readonly struct Loader : ILoader

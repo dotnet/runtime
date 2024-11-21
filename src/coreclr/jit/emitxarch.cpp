@@ -254,7 +254,19 @@ bool emitter::IsEvexEncodableInstruction(instruction ins) const
     {
         return false;
     }
-    return HasEvexEncoding(ins);
+
+    switch (ins)
+    {
+        case INS_pclmulqdq:
+        {
+            return emitComp->compOpportunisticallyDependsOn(InstructionSet_PCLMULQDQ_V256);
+        }
+
+        default:
+        {
+            return HasEvexEncoding(ins);
+        }
+    }
 }
 
 //------------------------------------------------------------------------
@@ -1585,20 +1597,6 @@ bool emitter::TakesRexWPrefix(const instrDesc* id) const
                 // TODO-Cleanup: This should really only ever be EA_4BYTE
                 assert((attr == EA_4BYTE) || (attr == EA_16BYTE));
                 return false;
-            }
-
-            case INS_vbroadcastsd:
-            case INS_vpbroadcastq:
-            {
-                // TODO-XARCH-AVX512: These use W1 if a kmask is involved
-                return TakesEvexPrefix(id);
-            }
-
-            case INS_vpermilpd:
-            case INS_vpermilpdvar:
-            {
-                // TODO-XARCH-AVX512: These use W1 if a kmask or broaadcast from memory is involved
-                return TakesEvexPrefix(id);
             }
 
             default:

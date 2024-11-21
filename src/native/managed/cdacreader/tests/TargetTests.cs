@@ -123,6 +123,50 @@ public unsafe class TargetTests
         }
     }
 
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void ReadUtf8String(MockTarget.Architecture arch)
+    {
+        TargetTestHelpers targetTestHelpers = new(arch);
+        MockMemorySpace.Builder builder = new(targetTestHelpers);
+
+        string expected = "UTF-8 string ✓";
+        ulong addr = 0x1000;
+
+        MockMemorySpace.HeapFragment fragment = new() { Address = addr, Data = new byte[Encoding.UTF8.GetByteCount(expected) + 1] };
+        Encoding.UTF8.GetBytes(expected).AsSpan().CopyTo(fragment.Data);
+        fragment.Data[^1] = 0;
+        builder.AddHeapFragment(fragment);
+
+        bool success = builder.TryCreateTarget(out ContractDescriptorTarget? target);
+        Assert.True(success);
+
+        string actual = target.ReadUtf8String(addr);
+        Assert.Equal(expected, actual);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void ReadUtf16String(MockTarget.Architecture arch)
+    {
+        TargetTestHelpers targetTestHelpers = new(arch);
+        MockMemorySpace.Builder builder = new(targetTestHelpers);
+
+        string expected = "UTF-16 string ✓";
+        ulong addr = 0x1000;
+
+        Encoding encoding = arch.IsLittleEndian ? Encoding.Unicode : Encoding.BigEndianUnicode;
+        MockMemorySpace.HeapFragment fragment = new() { Address = addr, Data = new byte[encoding.GetByteCount(expected) + sizeof(char)] };
+        targetTestHelpers.WriteUtf16String(fragment.Data, expected);
+        builder.AddHeapFragment(fragment);
+
+        bool success = builder.TryCreateTarget(out ContractDescriptorTarget? target);
+        Assert.True(success);
+
+        string actual = target.ReadUtf16String(addr);
+        Assert.Equal(expected, actual);
+    }
+
     private static void ValidateGlobals(
         ContractDescriptorTarget target,
         (string Name, ulong Value, string? Type)[] globals,
@@ -203,5 +247,4 @@ public unsafe class TargetTests
             Assert.True((expected is null && actual is null) || expected.Equals(actual), $"Expected: {expected}. Actual: {actual}. [test case: {caller} in {filePath}:{lineNumber}]");
         }
     }
-
 }

@@ -30,7 +30,6 @@ public:
 };
 
 extern "C" INT32 QCALLTYPE ObjectNative_GetHashCodeSlow(QCall::ObjectHandleOnStack objHandle);
-extern "C" void QCALLTYPE ObjectNative_GetTypeSlow(MethodTable* pMT, QCall::ObjectHandleOnStack ret);
 extern "C" void QCALLTYPE ObjectNative_AllocateUninitializedClone(QCall::ObjectHandleOnStack objHandle);
 extern "C" BOOL QCALLTYPE Monitor_Wait(QCall::ObjectHandleOnStack pThis, INT32 Timeout);
 extern "C" void QCALLTYPE Monitor_Pulse(QCall::ObjectHandleOnStack pThis);

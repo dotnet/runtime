@@ -52,6 +52,8 @@ unsafe class Program
         bool? ExpectedAes = null;
         bool? ExpectedLzcnt = null;
         bool? ExpectedPclmulqdq = null;
+        bool? ExpectedPclmulqdqV256 = false;
+        bool? ExpectedPclmulqdqV512 = false;
         bool? ExpectedSse41 = null;
         bool? ExpectedSse42 = null;
         bool? ExpectedPopcnt = null;
@@ -75,6 +77,8 @@ unsafe class Program
         bool? ExpectedAes = null;
         bool? ExpectedLzcnt = null;
         bool? ExpectedPclmulqdq = null;
+        bool? ExpectedPclmulqdqV256 = false;
+        bool? ExpectedPclmulqdqV512 = false;
         bool? ExpectedSse41 = true;
         bool? ExpectedSse42 = true;
         bool? ExpectedPopcnt = null;
@@ -98,6 +102,8 @@ unsafe class Program
         bool? ExpectedAes = null;
         bool? ExpectedLzcnt = null;
         bool? ExpectedPclmulqdq = null;
+        bool? ExpectedPclmulqdqV256 = null;
+        bool? ExpectedPclmulqdqV512 = false;
         bool? ExpectedSse41 = true;
         bool? ExpectedSse42 = true;
         bool? ExpectedPopcnt = null;
@@ -121,6 +127,8 @@ unsafe class Program
         bool? ExpectedAes = null;
         bool? ExpectedLzcnt = null;
         bool? ExpectedPclmulqdq = null;
+        bool? ExpectedPclmulqdqV256 = null;
+        bool? ExpectedPclmulqdqV512 = false;
         bool? ExpectedSse41 = true;
         bool? ExpectedSse42 = true;
         bool? ExpectedPopcnt = null;
@@ -144,6 +152,8 @@ unsafe class Program
         bool? ExpectedAes = null;
         bool? ExpectedLzcnt = null;
         bool? ExpectedPclmulqdq = null;
+        bool? ExpectedPclmulqdqV256 = null;
+        bool? ExpectedPclmulqdqV512 = null;
         bool? ExpectedSse41 = true;
         bool? ExpectedSse42 = true;
         bool? ExpectedPopcnt = null;
@@ -223,6 +233,8 @@ unsafe class Program
         Check("Lzcnt.X64", ExpectedLzcnt, &LzcntX64IsSupported, Lzcnt.X64.IsSupported, () => Lzcnt.X64.LeadingZeroCount(0) == 64);
 
         Check("Pclmulqdq", ExpectedPclmulqdq, &PclmulqdqIsSupported, Pclmulqdq.IsSupported, () => Pclmulqdq.CarrylessMultiply(Vector128<long>.Zero, Vector128<long>.Zero, 0).Equals(Vector128<long>.Zero));
+        Check("Pclmulqdq.V256", ExpectedPclmulqdqV256, &PclmulqdqV256IsSupported, Pclmulqdq.V256.IsSupported, () => Pclmulqdq.V256.CarrylessMultiply(Vector256<long>.Zero, Vector256<long>.Zero, 0).Equals(Vector256<long>.Zero));
+        Check("Pclmulqdq.V512", ExpectedPclmulqdqV512, &PclmulqdqV512IsSupported, Pclmulqdq.V512.IsSupported, () => Pclmulqdq.V512.CarrylessMultiply(Vector512<long>.Zero, Vector512<long>.Zero, 0).Equals(Vector512<long>.Zero));
         Check("Pclmulqdq.X64", ExpectedPclmulqdq, &PclmulqdqX64IsSupported, Pclmulqdq.X64.IsSupported, null);
 
         Check("Popcnt", ExpectedPopcnt, &PopcntIsSupported, Popcnt.IsSupported, () => Popcnt.PopCount(0) == 0);
@@ -293,6 +305,8 @@ unsafe class Program
     static bool LzcntIsSupported() => Lzcnt.IsSupported;
     static bool LzcntX64IsSupported() => Lzcnt.X64.IsSupported;
     static bool PclmulqdqIsSupported() => Pclmulqdq.IsSupported;
+    static bool PclmulqdqV256IsSupported() => Pclmulqdq.V256.IsSupported;
+    static bool PclmulqdqV512IsSupported() => Pclmulqdq.V512.IsSupported;
     static bool PclmulqdqX64IsSupported() => Pclmulqdq.X64.IsSupported;
     static bool PopcntIsSupported() => Popcnt.IsSupported;
     static bool PopcntX64IsSupported() => Popcnt.X64.IsSupported;
