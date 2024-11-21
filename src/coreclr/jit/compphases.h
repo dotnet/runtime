@@ -46,6 +46,7 @@ CompPhaseNameMacro(PHASE_DFS_BLOCKS1,                "DFS blocks and remove dead
 CompPhaseNameMacro(PHASE_DFS_BLOCKS2,                "DFS blocks and remove dead code 2",false, -1, false)
 CompPhaseNameMacro(PHASE_DFS_BLOCKS3,                "DFS blocks and remove dead code 3",false, -1, false)
 CompPhaseNameMacro(PHASE_STR_ADRLCL,                 "Morph - Structs/AddrExp",        false, -1, false)
+CompPhaseNameMacro(PHASE_OPTIMIZE_MASK_CONVERSIONS,  "Optimize mask conversions",      false, -1, false)
 CompPhaseNameMacro(PHASE_EARLY_LIVENESS,             "Early liveness",                 false, -1, false)
 CompPhaseNameMacro(PHASE_PHYSICAL_PROMOTION,         "Physical promotion",             false, -1, false)
 CompPhaseNameMacro(PHASE_FWD_SUB,                    "Forward Substitution",           false, -1, false)

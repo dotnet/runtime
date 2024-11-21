@@ -398,7 +398,7 @@ Here is an annotated list of the stubs implemented for Unix on Arm64.
         methods). These work in tandem with the logic in virtualcallstubcpu.h to
         implement the logic described in [Virtual Stub Dispatch](virtual-stub-dispatch.md)
 
-    14. `ProfileEnter`/ `ProfileeLeave`/ `ProfileTailcall` – Used to call function
+    14. `ProfileEnter`/ `ProfileLeave`/ `ProfileTailcall` – Used to call function
         entry/exit profile functions acquired through the ICorProfiler
         interface. Used in VERY rare circumstances. It is reasonable to wait to
         implement these until the final stages of productization. Most profilers
