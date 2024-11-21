@@ -617,20 +617,23 @@ void BasicBlock::dspSuccs(Compiler* compiler)
     // compute it ourselves here.
     if (bbKind == BBJ_SWITCH)
     {
-        // Create a set with all the successors.
-        BitVecTraits bitVecTraits(compiler->compBasicBlockID, compiler);
-        BitVec       uniqueSuccBlocks(BitVecOps::MakeEmpty(&bitVecTraits));
+        unsigned* const targetNums  = new unsigned[NumSucc()];
+        unsigned        targetCount = 0;
         for (BasicBlock* const bTarget : SwitchTargets())
         {
-            BitVecOps::AddElemD(&bitVecTraits, uniqueSuccBlocks, bTarget->bbID);
+            targetNums[targetCount++] = bTarget->bbNum;
         }
-        BitVecOps::Iter iter(&bitVecTraits, uniqueSuccBlocks);
-        unsigned        bbNum = 0;
-        while (iter.NextElem(&bbNum))
+
+        // Note that we will output switch successors in increasing numerical bbNum order, which is
+        // not related to their order in the bbSwtTargets->bbsDstTab table.
+        assert(targetCount == NumSucc());
+        jitstd::sort(targetNums, targetNums + targetCount, [](unsigned left, unsigned right) {
+            return left < right;
+        });
+
+        for (unsigned i = 0; i < targetCount; i++)
         {
-            // Note that we will output switch successors in increasing numerical bbNum order, which is
-            // not related to their order in the bbSwtTargets->bbsDstTab table.
-            printf("%s" FMT_BB, first ? "" : ",", bbNum);
+            printf("%s" FMT_BB, first ? "" : ",", targetNums[i]);
             first = false;
         }
     }
