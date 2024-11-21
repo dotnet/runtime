@@ -41,6 +41,8 @@ internal partial class MockDescriptors
         private const ulong DefaultAllocationRangeStart = 0x0004_0000;
         private const ulong DefaultAllocationRangeEnd = 0x0005_0000;
 
+        internal const uint DefaultFunctionLength = 0x100;
+
         private readonly MockMemorySpace.BumpAllocator _allocator;
 
         public RuntimeFunctions(MockMemorySpace.Builder builder, bool includeEndAddress = true, bool unwindInfoIsFunctionLength = false)
@@ -75,10 +77,10 @@ internal partial class MockDescriptors
                 Span<byte> func = Builder.BorrowAddressRange(runtimeFunctionsFragment.Address + i * runtimeFunctionSize, (int)runtimeFunctionSize);
                 helpers.Write(func.Slice(runtimeFunctionType.Fields[nameof(Data.RuntimeFunction.BeginAddress)].Offset, sizeof(uint)), runtimeFunctions[i]);
 
-                // Set the function length at halfway to the start of the next function (or 0x100 for the last function)
+                // Set the function length to the default function length or up to the next function start
                 uint functionLength = i < numRuntimeFunctions - 1
-                    ? (runtimeFunctions[i + 1] - runtimeFunctions[i]) / 2
-                    : 0x100;
+                    ? Math.Min(runtimeFunctions[i + 1] - runtimeFunctions[i], DefaultFunctionLength)
+                    : DefaultFunctionLength;
                 if (runtimeFunctionType.Fields.ContainsKey(nameof(Data.RuntimeFunction.EndAddress)))
                     helpers.Write(func.Slice(runtimeFunctionType.Fields[nameof(Data.RuntimeFunction.EndAddress)].Offset, sizeof(uint)), runtimeFunctions[i] + functionLength);
 
