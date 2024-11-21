@@ -2103,52 +2103,44 @@ PhaseStatus Compiler::fgTailMergeThrows()
 //
 // Arguments:
 //    tryEntry     -- try entry block
-//    visited      -- [in, out] blocks visited during cloning
-//    map          -- [in, out] block mapping original try region blocks to their clones
-//    addEdges     -- if true, add flow edges to the cloned blocks
-//    profileScale -- scale profile weight by this factor
+//    info         -- [in, out] information about the cloning
 //    insertAfter  -- [in, out] pointer to block to insert new blocks after
-//    ehIndexShift -- [out]amount by which indices of enclosing EH regions have shifted
 //
 // Returns:
-//    If map == nullptr, check if cloning is possible
+//    If insertAfter == nullptr, check if cloning is possible
 //      return nullptr if not, tryEntry if so
 //    else
 //      Return the cloned try entry, or nullptr if cloning failed
-//      map will be modified to contain keys and for the blocks to cloned.
-//      insertionPoint will point at the lexcially last block cloned
-//      ehIndexShift will indicate the amount by whcih enclosing EH region indices have changed
+//         cloned blocks will be created and scaled by profile weight
+//         and if info.m_addEdges is true have proper bbkinds and flow edges
+//      info data will be updated:
+//         m_map will be modified to contain keys and for the blocks cloned
+//         m_visited will include bits for each newly cloned block
+//         m_ehRegionShift will describe number of EH regions added
+//      insertAfter will point at the lexcially last block cloned
 //
 // Notes:
-//   * If map is nullptr, this call only checks if cloning is possible
+//   * if insertAfter is non null, map must also be non null
 //
-//   * If map is not nullptr, it is not modified unless cloning succeeds
+//   * If info.m_map is not nullptr, it is not modified unless cloning succeeds
 //     When cloning succeeds, entries for the try blocks and related blocks
 //     (handler, filter, callfinally) will be updated; other map entries will
 //     be left as they were
 //
-//   * insertAfter can be nullptr, if map is nullptr
-//     The insertion point must be lexically after the original try region
-//     and be in the enclosing region for the original try
-//
-//   * ehRegionShift can be nullptr, if map is nullptr
+//   * the insertion point must be lexically after the original try region
+//     and be a block in the enclosing region for the original try.
 //
 //   * If cloning and adding edges,
 //     The new try region entry will not be reachable by any uncloned block.
 //     The new try region exits will target the same uncloned blocks as the original,
 //       or as directed by pre-existing map entries.
 //
-BasicBlock* Compiler::fgCloneTryRegion(BasicBlock*      tryEntry,
-                                       BlockSet&        visited,
-                                       BlockToBlockMap* map,
-                                       bool             addEdges,
-                                       weight_t         profileScale,
-                                       BasicBlock**     insertAfter,
-                                       unsigned*        ehRegionShift)
+BasicBlock* Compiler::fgCloneTryRegion(BasicBlock* tryEntry, CloneTryInfo& info, BasicBlock** insertAfter)
+
 {
     assert(bbIsTryBeg(tryEntry));
-    bool const deferCloning = (map == nullptr);
-    assert(deferCloning || ((insertAfter != nullptr) && (*insertAfter != nullptr)));
+    bool const deferCloning = (insertAfter == nullptr);
+    assert(deferCloning || ((*insertAfter != nullptr) && (info.m_map != nullptr)));
     INDEBUG(const char* msg = deferCloning ? "Checking if it is possible" : "Attempting";)
     JITDUMP("%s to clone the try region EH#%02u headed by " FMT_BB "\n", msg, tryEntry->getTryIndex(), tryEntry->bbNum);
 
@@ -2167,9 +2159,12 @@ BasicBlock* Compiler::fgCloneTryRegion(BasicBlock*      tryEntry,
     unsigned const              tryIndex = tryEntry->getTryIndex();
     jitstd::vector<BasicBlock*> blocks(alloc);
     unsigned                    regionCount = 0;
+    BitVecTraits* const         traits      = &info.m_traits;
+    BitVec&                     visited     = info.m_visited;
+    BlockToBlockMap* const      map         = info.m_map;
 
     auto addBlockToClone = [=, &blocks, &visited](BasicBlock* block, const char* msg) {
-        if (!BlockSetOps::TryAddElemD(this, visited, block->bbNum))
+        if (!BitVecOps::TryAddElemD(traits, visited, block->bbNum))
         {
             return false;
         }
@@ -2196,10 +2191,10 @@ BasicBlock* Compiler::fgCloneTryRegion(BasicBlock*      tryEntry,
         BasicBlock* const firstTryBlock = ebd->ebdTryBeg;
         BasicBlock* const lastTryBlock  = ebd->ebdTryLast;
 
-        if (BlockSetOps::IsMember(this, visited, firstTryBlock->bbNum))
+        if (BitVecOps::IsMember(traits, visited, firstTryBlock->bbNum))
         {
             JITDUMP("already walked try region for EH#%02u\n", regionIndex);
-            assert(BlockSetOps::IsMember(this, visited, lastTryBlock->bbNum));
+            assert(BitVecOps::IsMember(traits, visited, lastTryBlock->bbNum));
         }
         else
         {
@@ -2251,10 +2246,10 @@ BasicBlock* Compiler::fgCloneTryRegion(BasicBlock*      tryEntry,
             BasicBlock* const firstFltBlock = ebd->ebdFilter;
             BasicBlock* const lastFltBlock  = ebd->BBFilterLast();
 
-            if (BlockSetOps::IsMember(this, visited, firstFltBlock->bbNum))
+            if (BitVecOps::IsMember(traits, visited, firstFltBlock->bbNum))
             {
                 JITDUMP("already walked filter region for EH#%02u\n", regionIndex);
-                assert(BlockSetOps::IsMember(this, visited, lastFltBlock->bbNum));
+                assert(BitVecOps::IsMember(traits, visited, lastFltBlock->bbNum));
             }
             else
             {
@@ -2274,10 +2269,10 @@ BasicBlock* Compiler::fgCloneTryRegion(BasicBlock*      tryEntry,
         BasicBlock* const firstHndBlock = ebd->ebdHndBeg;
         BasicBlock* const lastHndBlock  = ebd->ebdHndLast;
 
-        if (BlockSetOps::IsMember(this, visited, firstHndBlock->bbNum))
+        if (BitVecOps::IsMember(traits, visited, firstHndBlock->bbNum))
         {
             JITDUMP("already walked handler region for EH#%02u\n", regionIndex);
-            assert(BlockSetOps::IsMember(this, visited, lastHndBlock->bbNum));
+            assert(BitVecOps::IsMember(traits, visited, lastHndBlock->bbNum));
         }
         else
         {
@@ -2392,7 +2387,7 @@ BasicBlock* Compiler::fgCloneTryRegion(BasicBlock*      tryEntry,
 
     // Callers will see enclosing EH region indices shift by this much
     //
-    *ehRegionShift = regionCount;
+    info.m_ehRegionShift = regionCount;
 
     // The EH table now looks like the following, for a middle insertion:
     //
@@ -2499,7 +2494,7 @@ BasicBlock* Compiler::fgCloneTryRegion(BasicBlock*      tryEntry,
                 (*insertAfter)->bbNum);
         map->Set(block, newBlock, BlockToBlockMap::SetKind::Overwrite);
         BasicBlock::CloneBlockState(this, newBlock, block);
-        newBlock->scaleBBWeight(profileScale);
+        newBlock->scaleBBWeight(info.m_profileScale);
         *insertAfter = newBlock;
     }
     JITDUMP("Done cloning blocks for try...\n");
@@ -2604,7 +2599,7 @@ BasicBlock* Compiler::fgCloneTryRegion(BasicBlock*      tryEntry,
     // Redirect any branches within the newly-cloned blocks or
     // from cloned blocks to non-cloned blocks
     //
-    if (addEdges)
+    if (info.m_addEdges)
     {
         JITDUMP("Adding edges in the newly cloned try\n");
         for (BasicBlock* const block : BlockToBlockMap::KeyIteration(map))
@@ -2741,11 +2736,10 @@ BasicBlock* Compiler::fgCloneTryRegion(BasicBlock*      tryEntry,
 bool Compiler::fgCanCloneTryRegion(BasicBlock* tryEntry)
 {
     assert(bbIsTryBeg(tryEntry));
-    EnsureBasicBlockEpoch();
-    BlockSet          visited(BlockSetOps::MakeEmpty(this));
-    BasicBlock* const result =
-        fgCloneTryRegion(tryEntry, visited, /* map */ nullptr, /* addEdges */ false, /* scaleProfile */ 0.0,
-                         /* insertAfter */ nullptr, /* ehRegionShift */ nullptr);
 
+    BitVecTraits      traits(compBasicBlockID, this);
+    BitVec            visited = BitVecOps::MakeEmpty(&traits);
+    CloneTryInfo      info(traits, visited);
+    BasicBlock* const result = fgCloneTryRegion(tryEntry, info);
     return result != nullptr;
 }

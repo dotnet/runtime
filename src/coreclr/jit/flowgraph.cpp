@@ -6130,16 +6130,19 @@ void FlowGraphNaturalLoop::Duplicate(BasicBlock** insertAfter, BlockToBlockMap* 
     // Keep track of how much the region end EH indices change because of EH region cloning.
     //
     unsigned ehRegionShift = 0;
-    comp->EnsureBasicBlockEpoch();
-    BlockSet visited(BlockSetOps::MakeEmpty(comp));
 
-    VisitLoopBlocksLexical([=, &visited, &clonedTry, &ehRegionShift](BasicBlock* blk) {
+    // Keep track of which blocks were handled by EH region cloning
+    //
+    BitVecTraits traits(comp->compBasicBlockID, comp);
+    BitVec       visited(BitVecOps::MakeEmpty(&traits));
+
+    VisitLoopBlocksLexical([=, &traits, &visited, &clonedTry, &ehRegionShift](BasicBlock* blk) {
         if (canCloneTry)
         {
             // If we allow cloning loops with EH, we may have already handled
             // this loop block as part of a containing try region.
             //
-            if (BlockSetOps::IsMember(comp, visited, blk->bbNum))
+            if (BitVecOps::IsMember(&traits, visited, blk->bbNum))
             {
                 return BasicBlockVisit::Continue;
             }
@@ -6151,11 +6154,15 @@ void FlowGraphNaturalLoop::Duplicate(BasicBlock** insertAfter, BlockToBlockMap* 
             //
             if (comp->bbIsTryBeg(blk))
             {
-                unsigned          regionShift = 0;
-                BasicBlock* const clonedBlock = comp->fgCloneTryRegion(blk, visited, map, /* addEdges */ false,
-                                                                       weightScale, insertAfter, &regionShift);
+                Compiler::CloneTryInfo info(traits, visited);
+                info.m_map          = map;
+                info.m_addEdges     = false;
+                info.m_profileScale = weightScale;
+
+                BasicBlock* const clonedBlock = comp->fgCloneTryRegion(blk, info, insertAfter);
+
                 assert(clonedBlock != nullptr);
-                ehRegionShift += regionShift;
+                ehRegionShift += info.m_ehRegionShift;
                 clonedTry = true;
                 return BasicBlockVisit::Continue;
             }
@@ -6166,7 +6173,7 @@ void FlowGraphNaturalLoop::Duplicate(BasicBlock** insertAfter, BlockToBlockMap* 
             //
             assert(!comp->bbIsTryBeg(blk));
             assert(!comp->bbIsHandlerBeg(blk));
-            assert(!BlockSetOps::IsMember(comp, visited, blk->bbNum));
+            assert(!BitVecOps::IsMember(&traits, visited, blk->bbNum));
         }
 
         // `blk` was not in loop-enclosed try region or companion region.

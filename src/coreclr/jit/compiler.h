@@ -5418,10 +5418,20 @@ public:
 
     PhaseStatus fgCloneFinally();
 
+    struct CloneTryInfo
+    {
+        CloneTryInfo(BitVecTraits& traits, BitVec& visited) : m_traits(traits), m_visited(visited) {}
+        BitVecTraits m_traits;
+        BitVec& m_visited;
+        BlockToBlockMap* m_map = nullptr;
+        bool m_addEdges = false;
+        weight_t m_profileScale = 0.0;
+        unsigned m_ehRegionShift = 0;
+    };
+
     bool fgCanCloneTryRegion(BasicBlock* tryEntry);
 
-    BasicBlock* fgCloneTryRegion(BasicBlock* tryEntry, BlockSet& visited, BlockToBlockMap* map, bool addEdges, 
-        weight_t profileScale, BasicBlock** insertAfter, unsigned* ehRegionShift);
+    BasicBlock* fgCloneTryRegion(BasicBlock* tryEntry, CloneTryInfo& info, BasicBlock** insertAfter = nullptr);
 
     void fgCleanupContinuation(BasicBlock* continuation);
 
