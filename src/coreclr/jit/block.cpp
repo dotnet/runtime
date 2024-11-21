@@ -617,14 +617,12 @@ void BasicBlock::dspSuccs(Compiler* compiler)
     // compute it ourselves here.
     if (bbKind == BBJ_SWITCH)
     {
-        // Create a set with all the successors. Don't use BlockSet, so we don't need to worry
-        // about the BlockSet epoch.
-        unsigned     bbNumMax = compiler->fgBBNumMax;
-        BitVecTraits bitVecTraits(bbNumMax + 1, compiler);
+        // Create a set with all the successors.
+        BitVecTraits bitVecTraits(compiler->compBasicBlockID, compiler);
         BitVec       uniqueSuccBlocks(BitVecOps::MakeEmpty(&bitVecTraits));
         for (BasicBlock* const bTarget : SwitchTargets())
         {
-            BitVecOps::AddElemD(&bitVecTraits, uniqueSuccBlocks, bTarget->bbNum);
+            BitVecOps::AddElemD(&bitVecTraits, uniqueSuccBlocks, bTarget->bbID);
         }
         BitVecOps::Iter iter(&bitVecTraits, uniqueSuccBlocks);
         unsigned        bbNum = 0;

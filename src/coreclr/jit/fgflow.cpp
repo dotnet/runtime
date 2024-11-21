@@ -530,17 +530,13 @@ Compiler::SwitchUniqueSuccSet Compiler::GetDescriptorForSwitch(BasicBlock* switc
     {
         // We must compute the descriptor. Find which are dups, by creating a bit set with the unique successors.
         // We create a temporary bitset of blocks to compute the unique set of successor blocks,
-        // since adding a block's number twice leaves just one "copy" in the bitset. Note that
-        // we specifically don't use the BlockSet type, because doing so would require making a
-        // call to EnsureBasicBlockEpoch() to make sure the epoch is up-to-date. However, that
-        // can create a new epoch, thus invalidating all existing BlockSet objects, such as
-        // reachability information stored in the blocks. To avoid that, we just use a local BitVec.
+        // since adding a block's number twice leaves just one "copy" in the bitset.
 
-        BitVecTraits blockVecTraits(fgBBNumMax + 1, this);
+        BitVecTraits blockVecTraits(compBasicBlockID, this);
         BitVec       uniqueSuccBlocks(BitVecOps::MakeEmpty(&blockVecTraits));
         for (BasicBlock* const targ : switchBlk->SwitchTargets())
         {
-            BitVecOps::AddElemD(&blockVecTraits, uniqueSuccBlocks, targ->bbNum);
+            BitVecOps::AddElemD(&blockVecTraits, uniqueSuccBlocks, targ->bbID);
         }
         // Now we have a set of unique successors.
         unsigned numNonDups = BitVecOps::Count(&blockVecTraits, uniqueSuccBlocks);
@@ -556,11 +552,11 @@ Compiler::SwitchUniqueSuccSet Compiler::GetDescriptorForSwitch(BasicBlock* switc
         {
             FlowEdge* const   succEdge = swtDesc->bbsDstTab[i];
             BasicBlock* const targ     = succEdge->getDestinationBlock();
-            if (BitVecOps::IsMember(&blockVecTraits, uniqueSuccBlocks, targ->bbNum))
+            if (BitVecOps::IsMember(&blockVecTraits, uniqueSuccBlocks, targ->bbID))
             {
                 nonDups[nonDupInd] = succEdge;
                 nonDupInd++;
-                BitVecOps::RemoveElemD(&blockVecTraits, uniqueSuccBlocks, targ->bbNum);
+                BitVecOps::RemoveElemD(&blockVecTraits, uniqueSuccBlocks, targ->bbID);
             }
         }
 
