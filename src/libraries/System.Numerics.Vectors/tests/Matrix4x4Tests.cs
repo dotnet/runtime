@@ -820,25 +820,9 @@ namespace System.Numerics.Tests
                     float d = Vector3.Dot(v, plane.Normal);
                     Vector3 vp = point - 2.0f * d * plane.Normal;
 
-                    AssertExtensions.Equal(vp.M11, rp.M11, 0.0f);
-                    AssertExtensions.Equal(vp.M12, rp.M12, 0.0f);
-                    AssertExtensions.Equal(vp.M13, rp.M13, 0.0f);
-                    AssertExtensions.Equal(vp.M14, rp.M14, 0.0f);
-
-                    AssertExtensions.Equal(vp.M21, rp.M21, 0.0f);
-                    AssertExtensions.Equal(vp.M22, rp.M22, 0.0f);
-                    AssertExtensions.Equal(vp.M23, rp.M23, 0.0f);
-                    AssertExtensions.Equal(vp.M24, rp.M24, 0.0f);
-
-                    AssertExtensions.Equal(vp.M31, rp.M31, 0.0f);
-                    AssertExtensions.Equal(vp.M32, rp.M32, 0.0f);
-                    AssertExtensions.Equal(vp.M33, rp.M33, 0.0f);
-                    AssertExtensions.Equal(vp.M34, rp.M34, 0.0f);
-
-                    AssertExtensions.Equal(vp.M41, rp.M41, 0.0f);
-                    AssertExtensions.Equal(vp.M42, rp.M42, 0.0f);
-                    AssertExtensions.Equal(vp.M43, rp.M43, 0.0f);
-                    AssertExtensions.Equal(vp.M44, rp.M44, 0.0f);
+                    AssertExtensions.Equal(vp.X, rp.X, 0.0f);
+                    AssertExtensions.Equal(vp.Y, rp.Y, 0.0f);
+                    AssertExtensions.Equal(vp.Z, rp.Z, 0.0f);
                 }
             }
         }
