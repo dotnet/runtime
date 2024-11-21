@@ -819,9 +819,39 @@ namespace System.Numerics.Tests
                     Vector3 v = point - pp;
                     float d = Vector3.Dot(v, plane.Normal);
                     Vector3 vp = point - 2.0f * d * plane.Normal;
-                    Assert.True(MathHelper.Equal(rp, vp), "Matrix4x4.Reflection did not provide expected value.");
+                    Assert.True(MathHelper.Equal(rp, vp), "Matrix4x4.CreateReflection did not provide expected value.");
                 }
             }
+        }
+
+        [Fact]
+        public void Matrix4x4CreateReflectionTest02()
+        {
+            Plane plane = new Plane(0, 1, 0, 60);
+            Matrix4x4 actual = Matrix4x4.CreateReflection(plane);
+
+            Matrix4x4 expected = new Matrix4x4();
+            expected.M11 = 1;
+            expected.M12 = 0;
+            expected.M13 = 0;
+            expected.M14 = 0;
+
+            expected.M21 = 0;
+            expected.M22 = -1;
+            expected.M23 = 0;
+            expected.M24 = 0;
+
+            expected.M31 = 0;
+            expected.M32 = 0;
+            expected.M33 = 1;
+            expected.M34 = 0;
+
+            expected.M41 = -0;
+            expected.M42 = -120;
+            expected.M43 = -0;
+            expected.M44 = 1;
+
+            Assert.True(MathHelper.Equal(expected, actual), "Matrix4x4.CreateReflection did not return the expected value.");
         }
 
         // A test for CreateRotationZ (float)
