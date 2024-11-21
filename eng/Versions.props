@@ -159,7 +159,7 @@
     <MicrosoftDotNetXHarnessTestRunnersCommonVersion>10.0.0-prerelease.24564.1</MicrosoftDotNetXHarnessTestRunnersCommonVersion>
     <MicrosoftDotNetXHarnessTestRunnersXunitVersion>10.0.0-prerelease.24564.1</MicrosoftDotNetXHarnessTestRunnersXunitVersion>
     <MicrosoftDotNetXHarnessCLIVersion>10.0.0-prerelease.24564.1</MicrosoftDotNetXHarnessCLIVersion>
-    <! hotreload-utils dependencies-->
+    <!-- hotreload-utils dependencies -->
     <MicrosoftDotNetHotReloadUtilsGeneratorBuildToolVersion>10.0.0-alpha.0.24568.1</MicrosoftDotNetHotReloadUtilsGeneratorBuildToolVersion>
     <!-- dotnet-optimization dependencies -->
     <optimizationwindows_ntx64MIBCRuntimeVersion>1.0.0-prerelease.24462.2</optimizationwindows_ntx64MIBCRuntimeVersion>
