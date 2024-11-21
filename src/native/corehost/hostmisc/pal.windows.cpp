@@ -898,8 +898,12 @@ bool pal::realpath(pal::string_t* path, bool skip_error_logging)
                 }
             }
 
-            // Remove the \\?\ prefix, unless it is necessary or was already there
-            if (LongFile::IsExtended(str) && !LongFile::IsExtended(*path) &&
+            // Remove the UNC prefix (\\?\UNC\) or extended prefix (\\?\) unless it is necessary or was already there
+            if (LongFile::IsUNCExtended(str) && !LongFile::IsUNCExtended(*path) && !LongFile::ShouldNormalize(*path))
+            {
+                str = *path;
+            }
+            else if (LongFile::IsExtended(str) && !LongFile::IsExtended(*path) &&
                 !LongFile::ShouldNormalize(str.substr(LongFile::ExtendedPrefix.size())))
             {
                 str.erase(0, LongFile::ExtendedPrefix.size());
