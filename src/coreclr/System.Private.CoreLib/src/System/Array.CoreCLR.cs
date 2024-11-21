@@ -253,7 +253,7 @@ namespace System
 
                 if (pDestMT->IsNullable)
                 {
-                    RuntimeHelpers.Unbox_Nullable(ref dest, pDestMT, obj);
+                    CastHelpers.Unbox_Nullable(ref dest, pDestMT, obj);
                 }
                 else if (obj is null || RuntimeHelpers.GetMethodTable(obj) != pDestMT)
                 {
@@ -518,11 +518,16 @@ namespace System
                 if (pElementMethodTable->IsValueType)
                 {
                     ref byte offsetDataRef = ref Unsafe.Add(ref arrayDataRef, flattenedIndex * pMethodTable->ComponentSize);
-                    nuint elementSize = pElementMethodTable->GetNumInstanceFieldBytes();
                     if (pElementMethodTable->ContainsGCPointers)
+                    {
+                        nuint elementSize = pElementMethodTable->GetNumInstanceFieldBytesIfContainsGCPointers();
                         SpanHelpers.ClearWithReferences(ref Unsafe.As<byte, nint>(ref offsetDataRef), elementSize / (nuint)sizeof(IntPtr));
+                    }
                     else
+                    {
+                        nuint elementSize = pElementMethodTable->GetNumInstanceFieldBytes();
                         SpanHelpers.ClearWithoutReferences(ref offsetDataRef, elementSize);
+                    }
                 }
                 else
                 {
@@ -546,17 +551,18 @@ namespace System
                 {
                     if (pElementMethodTable->IsNullable)
                     {
-                        RuntimeHelpers.Unbox_Nullable(ref offsetDataRef, pElementMethodTable, value);
+                        CastHelpers.Unbox_Nullable(ref offsetDataRef, pElementMethodTable, value);
                     }
                     else
                     {
-                        nuint elementSize = pElementMethodTable->GetNumInstanceFieldBytes();
                         if (pElementMethodTable->ContainsGCPointers)
                         {
+                            nuint elementSize = pElementMethodTable->GetNumInstanceFieldBytesIfContainsGCPointers();
                             Buffer.BulkMoveWithWriteBarrier(ref offsetDataRef, ref value.GetRawData(), elementSize);
                         }
                         else
                         {
+                            nuint elementSize = pElementMethodTable->GetNumInstanceFieldBytes();
                             SpanHelpers.Memmove(ref offsetDataRef, ref value.GetRawData(), elementSize);
                         }
                     }
