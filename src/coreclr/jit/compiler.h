@@ -3068,6 +3068,7 @@ public:
                                 GenTree*   op2  = nullptr);
 
     GenTreeIntCon* gtNewIconNode(ssize_t value, var_types type = TYP_INT);
+    GenTreeIntCon* gtNewIconNodeWithVN(Compiler* comp, ssize_t value, var_types type = TYP_INT);
     GenTreeIntCon* gtNewIconNode(unsigned fieldOffset, FieldSeq* fieldSeq);
     GenTreeIntCon* gtNewNull();
     GenTreeIntCon* gtNewTrue();
@@ -6229,9 +6230,13 @@ public:
 #endif // DEBUG
 
         weight_t GetCost(BasicBlock* block, BasicBlock* next);
+        bool TrySwappingPartitions(unsigned s1Start, unsigned s2Start, unsigned s3Start, unsigned s3End, unsigned s4End);
+
         void ConsiderEdge(FlowEdge* edge);
         void AddNonFallthroughSuccs(unsigned blockPos);
         void AddNonFallthroughPreds(unsigned blockPos);
+        bool RunGreedyThreeOptPass(unsigned startPos, unsigned endPos);
+
         bool RunThreeOptPass(BasicBlock* startBlock, BasicBlock* endBlock);
 
     public:
@@ -9513,6 +9518,7 @@ public:
         Memset,
         Memcpy,
         Memmove,
+        MemcmpU16,
         ProfiledMemmove,
         ProfiledMemcmp
     };
@@ -9587,6 +9593,14 @@ public:
             // NOTE: Memmove's unrolling is currently limited with LSRA -
             // up to LinearScan::MaxInternalCount number of temp regs, e.g. 5*16=80 bytes on arm64
             threshold = maxRegSize * 4;
+        }
+
+        if (type == UnrollKind::MemcmpU16)
+        {
+            threshold = maxRegSize * 2;
+#ifdef TARGET_ARM64
+            threshold = maxRegSize * 6;
+#endif
         }
 
         // For profiled memcmp/memmove we don't want to unroll too much as it's just a guess,

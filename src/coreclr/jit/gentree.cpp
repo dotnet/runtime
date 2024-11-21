@@ -7630,6 +7630,14 @@ GenTreeIntCon* Compiler::gtNewIconNode(ssize_t value, var_types type)
     return new (this, GT_CNS_INT) GenTreeIntCon(type, value);
 }
 
+GenTreeIntCon* Compiler::gtNewIconNodeWithVN(Compiler* comp, ssize_t value, var_types type)
+{
+    assert(genActualType(type) == type);
+    GenTreeIntCon* cns = new (this, GT_CNS_INT) GenTreeIntCon(type, value);
+    comp->fgUpdateConstTreeValueNumber(cns);
+    return cns;
+}
+
 GenTreeIntCon* Compiler::gtNewIconNode(unsigned fieldOffset, FieldSeq* fieldSeq)
 {
     return new (this, GT_CNS_INT) GenTreeIntCon(TYP_I_IMPL, static_cast<ssize_t>(fieldOffset), fieldSeq);
@@ -20572,11 +20580,30 @@ bool GenTree::isRMWHWIntrinsic(Compiler* comp)
 // EVEX form for its intended lowering instruction.
 //
 // Return Value:
-// true if the intrisic node lowering instruction has an EVEX form
+// true if the intrinsic node lowering instruction has an EVEX form
 //
-bool GenTree::isEvexCompatibleHWIntrinsic() const
+bool GenTree::isEvexCompatibleHWIntrinsic(Compiler* comp) const
 {
-    return OperIsHWIntrinsic() && HWIntrinsicInfo::HasEvexSemantics(AsHWIntrinsic()->GetHWIntrinsicId());
+#if defined(TARGET_XARCH)
+    if (OperIsHWIntrinsic())
+    {
+        NamedIntrinsic intrinsicId = AsHWIntrinsic()->GetHWIntrinsicId();
+
+        switch (intrinsicId)
+        {
+            case NI_PCLMULQDQ_CarrylessMultiply:
+            {
+                return comp->compOpportunisticallyDependsOn(InstructionSet_PCLMULQDQ_V256);
+            }
+
+            default:
+            {
+                return HWIntrinsicInfo::HasEvexSemantics(intrinsicId);
+            }
+        }
+    }
+#endif
+    return false;
 }
 
 //------------------------------------------------------------------------
@@ -20584,7 +20611,7 @@ bool GenTree::isEvexCompatibleHWIntrinsic() const
 // with the EVEX embedded masking form for its intended lowering instruction.
 //
 // Return Value:
-// true if the intrisic node lowering instruction has an EVEX embedded masking
+// true if the intrinsic node lowering instruction has an EVEX embedded masking
 //
 bool GenTree::isEmbeddedMaskingCompatibleHWIntrinsic() const
 {

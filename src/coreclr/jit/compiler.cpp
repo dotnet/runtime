@@ -4609,11 +4609,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     // Record "start" values for post-inlining cycles and elapsed time.
     RecordStateAtEndOfInlining();
 
-    // Drop back to just checking profile likelihoods.
-    //
-    activePhaseChecks &= ~PhaseChecks::CHECK_PROFILE;
-    activePhaseChecks |= PhaseChecks::CHECK_LIKELIHOODS;
-
     if (opts.OptimizationEnabled())
     {
         // Build post-order and remove dead blocks
@@ -4657,6 +4652,11 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     // Clone code in finallys to reduce overhead for non-exceptional paths
     //
     DoPhase(this, PHASE_CLONE_FINALLY, &Compiler::fgCloneFinally);
+
+    // Drop back to just checking profile likelihoods.
+    //
+    activePhaseChecks &= ~PhaseChecks::CHECK_PROFILE;
+    activePhaseChecks |= PhaseChecks::CHECK_LIKELIHOODS;
 
     // Do some flow-related optimizations
     //
@@ -6170,6 +6170,12 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
         if (JitConfig.EnablePCLMULQDQ() != 0)
         {
             instructionSetFlags.AddInstructionSet(InstructionSet_PCLMULQDQ);
+        }
+
+        if (JitConfig.EnableVPCLMULQDQ() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_PCLMULQDQ_V256);
+            instructionSetFlags.AddInstructionSet(InstructionSet_PCLMULQDQ_V512);
         }
 
         if (JitConfig.EnablePOPCNT() != 0)
