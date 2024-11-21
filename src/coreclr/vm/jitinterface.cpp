@@ -4014,11 +4014,11 @@ CORINFO_METHOD_HANDLE CEEInfo::getMethodFromDelegate(CORINFO_CLASS_HANDLE called
         DELEGATEREF delegate = (DELEGATEREF)getObjectFromJitHandle(delegateObj);
         _ASSERTE (delegate != nullptr);
 
+        GCPROTECT_BEGIN(delegate);
         TypeHandle delegateType(delegate->GetMethodTable());
         TypeHandle calledType(calledCls);
         if (delegateType.CanCastTo(calledType))
         {
-            GCPROTECT_BEGIN(delegate);
             if (delegate->GetInvocationCount() == 0)
             {
                 method = COMDelegate::GetMethodDesc(delegate);
@@ -4044,8 +4044,8 @@ CORINFO_METHOD_HANDLE CEEInfo::getMethodFromDelegate(CORINFO_CLASS_HANDLE called
                     }
                 }
             }
-            GCPROTECT_END();
         }
+        GCPROTECT_END();
     }
 
     if (method != NULL)

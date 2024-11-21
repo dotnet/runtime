@@ -153,7 +153,8 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                 info.compCompHnd->getMethodSig(method, &replacementSig, replacementClass);
                 if (replacementSig.hasThis() && eeIsValueClass(replacementClass))
                 {
-                    JITDUMP("impImportCall failed to transform calli - value type instance methods are not supported\n");
+                    JITDUMP(
+                        "impImportCall failed to transform calli - value type instance methods are not supported\n");
                 }
                 else if (!impCanSubstituteSig(&originalSig, &replacementSig))
                 {
