@@ -3150,7 +3150,7 @@ unsigned emitter::emitGetAdjustedSize(instrDesc* id, code_t code) const
         unsigned prefixAdjustedSize = 0;
         if(TakesApxExtendedEvexPrefix(id))
         {
-            prefixAdjustedSize = 2;
+            prefixAdjustedSize = 4;
             // If the opcode will be prefixed by REX2, then all the map-1-legacy instructions can remove the escape
             // prefix
             if (IsLegacyMap1(code))
