@@ -43,9 +43,6 @@ PhaseStatus Compiler::fgMorphInit()
         // compLocallocUsed            = true;
     }
 
-    // Initialize the BlockSet epoch
-    NewBasicBlockEpoch();
-
     fgAvailableOutgoingArgTemps = hashBv::Create(this);
 
     // Insert call to class constructor as the first basic block if
