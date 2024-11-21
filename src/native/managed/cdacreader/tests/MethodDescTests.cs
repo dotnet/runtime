@@ -3,9 +3,10 @@
 
 using System;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
+using Moq;
 using Xunit;
 
-namespace Microsoft.Diagnostics.DataContractReader.UnitTests;
+namespace Microsoft.Diagnostics.DataContractReader.Tests;
 
 public class MethodDescTests
 {
@@ -17,22 +18,19 @@ public class MethodDescTests
         MockDescriptors.RuntimeTypeSystem rtsBuilder = new(builder);
         MockDescriptors.Loader loaderBuilder = new(builder);
 
-        MockDescriptors.Object objectBuilder = new(rtsBuilder);
         var methodDescChunkAllocator = builder.CreateAllocator(start: 0x00000000_20002000, end: 0x00000000_20003000);
         var methodDescBuilder = new MockDescriptors.MethodDescriptors(rtsBuilder, loaderBuilder)
         {
             MethodDescChunkAllocator = methodDescChunkAllocator,
         };
 
-        builder = builder
-            .SetContracts([ nameof (Contracts.Object), nameof (Contracts.RuntimeTypeSystem), nameof (Contracts.Loader) ])
-            .SetGlobals(methodDescBuilder.Globals)
-            .SetTypes(methodDescBuilder.Types);
-
         configure?.Invoke(methodDescBuilder);
 
-        bool success = builder.TryCreateTarget(out ContractDescriptorTarget? target);
-        Assert.True(success);
+        var target = new TestPlaceholderTarget(arch, builder.GetReadContext().ReadFromTarget, methodDescBuilder.Types, methodDescBuilder.Globals);
+        target.SetContracts(Mock.Of<ContractRegistry>(
+            c => c.RuntimeTypeSystem == ((IContractFactory<IRuntimeTypeSystem>)new RuntimeTypeSystemFactory()).CreateContract(target, 1)
+                && c.Loader == ((IContractFactory<ILoader>)new LoaderFactory()).CreateContract(target, 1)));
+
         testCase(target);
     }
 

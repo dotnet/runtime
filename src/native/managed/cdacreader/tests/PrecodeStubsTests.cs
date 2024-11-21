@@ -9,7 +9,7 @@ using System.Collections.Generic;
 using System;
 using System.Reflection;
 
-namespace Microsoft.Diagnostics.DataContractReader.UnitTests;
+namespace Microsoft.Diagnostics.DataContractReader.Tests;
 
 public class PrecodeStubsTests
 {

@@ -7,7 +7,7 @@ using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Moq;
 using Xunit;
 
-namespace Microsoft.Diagnostics.DataContractReader.UnitTests;
+namespace Microsoft.Diagnostics.DataContractReader.Tests;
 
 using MockCodeVersions = MockDescriptors.CodeVersions;
 
