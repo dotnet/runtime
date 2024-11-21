@@ -295,14 +295,14 @@ namespace XarchHardwareIntrinsicTest._CpuId
 
             isHierarchyDisabled = isAvxHierarchyDisabled;
 
-            if (IsBitIncorrect(ecx, 8, typeof(GFNI.V256), Gfni.V256.IsSupported, "GFNI", ref isHierarchyDisabled))
+            if (IsBitIncorrect(ecx, 8, typeof(Gfni.V256), Gfni.V256.IsSupported, "GFNI", ref isHierarchyDisabled))
             {
                 testResult = Fail;
             }
 
             isHierarchyDisabled = isAvx512HierarchyDisabled;
 
-            if (IsBitIncorrect(ecx, 10, typeof(Gfni.V512), Gfni.V512.IsSupported, "GFNI", ref isHierarchyDisabled))
+            if (IsBitIncorrect(ecx, 8, typeof(Gfni.V512), Gfni.V512.IsSupported, "GFNI", ref isHierarchyDisabled))
             {
                 testResult = Fail;
             }
