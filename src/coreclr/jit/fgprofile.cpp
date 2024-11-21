@@ -822,7 +822,7 @@ void Compiler::WalkSpanningTree(SpanningTreeVisitor* visitor)
     // We will track visited or queued nodes with a bit vector.
     //
     BitVecTraits traits(compBasicBlockID, this);
-    BitVec marked = BitVecOps::MakeEmpty(&traits);
+    BitVec       marked = BitVecOps::MakeEmpty(&traits);
 
     // And nodes to visit with a bit vector and stack.
     //

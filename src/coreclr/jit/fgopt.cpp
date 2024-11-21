@@ -4482,7 +4482,7 @@ void Compiler::fgMoveHotJumps(FlowGraphDfsTree* dfsTree)
 
     assert(dfsTree != nullptr);
     BitVecTraits traits(dfsTree->PostOrderTraits());
-    BitVec visitedBlocks = BitVecOps::MakeEmpty(&traits);
+    BitVec       visitedBlocks = BitVecOps::MakeEmpty(&traits);
 
     // If we have a funclet region, don't bother reordering anything in it.
     //
