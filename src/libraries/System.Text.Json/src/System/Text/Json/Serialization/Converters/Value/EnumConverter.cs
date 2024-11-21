@@ -13,7 +13,7 @@ using System.Text.Json.Schema;
 
 namespace System.Text.Json.Serialization.Converters
 {
-    internal sealed class EnumConverter<T> : JsonPrimitiveConverter<T>
+    internal sealed class EnumConverter<T> : JsonPrimitiveConverter<T> // Do not rename FQN (legacy schema generation)
         where T : struct, Enum
     {
         private static readonly TypeCode s_enumTypeCode = Type.GetTypeCode(typeof(T));
@@ -22,9 +22,8 @@ namespace System.Text.Json.Serialization.Converters
         private static readonly bool s_isSignedEnum = ((int)s_enumTypeCode % 2) == 1;
         private static readonly bool s_isFlagsEnum = typeof(T).IsDefined(typeof(FlagsAttribute), inherit: false);
 
-        private readonly EnumConverterOptions _converterOptions;
-
-        private readonly JsonNamingPolicy? _namingPolicy;
+        private readonly EnumConverterOptions _converterOptions; // Do not rename (legacy schema generation)
+        private readonly JsonNamingPolicy? _namingPolicy; // Do not rename (legacy schema generation)
 
         /// <summary>
         /// Stores metadata for the individual fields declared on the enum.
@@ -56,7 +55,7 @@ namespace System.Text.Json.Serialization.Converters
 
         public EnumConverter(EnumConverterOptions converterOptions, JsonNamingPolicy? namingPolicy, JsonSerializerOptions options)
         {
-            Debug.Assert(EnumConverterFactory.IsSupportedTypeCode(s_enumTypeCode));
+            Debug.Assert(EnumConverterFactory.Helpers.IsSupportedTypeCode(s_enumTypeCode));
 
             _converterOptions = converterOptions;
             _namingPolicy = namingPolicy;

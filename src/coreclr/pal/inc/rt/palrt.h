@@ -274,10 +274,6 @@ typedef union _ULARGE_INTEGER {
 } ULARGE_INTEGER, *PULARGE_INTEGER;
 
 /******************* OLE, BSTR, VARIANT *************************/
-
-STDAPI_VIS(DLLEXPORT, LPVOID) CoTaskMemAlloc(SIZE_T cb);
-STDAPI_VIS(DLLEXPORT, void) CoTaskMemFree(LPVOID pv);
-
 typedef SHORT VARIANT_BOOL;
 #define VARIANT_TRUE ((VARIANT_BOOL)-1)
 #define VARIANT_FALSE ((VARIANT_BOOL)0)
@@ -1068,33 +1064,6 @@ typedef LONG (WINAPI *PTOP_LEVEL_EXCEPTION_FILTER)(
     IN struct _EXCEPTION_POINTERS *ExceptionInfo
     );
 typedef PTOP_LEVEL_EXCEPTION_FILTER LPTOP_LEVEL_EXCEPTION_FILTER;
-
-/******************** PAL RT APIs *******************************/
-
-typedef struct _HSATELLITE *HSATELLITE;
-
-EXTERN_C HSATELLITE PALAPI PAL_LoadSatelliteResourceW(LPCWSTR SatelliteResourceFileName);
-EXTERN_C HSATELLITE PALAPI PAL_LoadSatelliteResourceA(LPCSTR SatelliteResourceFileName);
-EXTERN_C BOOL PALAPI PAL_FreeSatelliteResource(HSATELLITE SatelliteResource);
-EXTERN_C UINT PALAPI PAL_LoadSatelliteStringW(HSATELLITE SatelliteResource,
-             UINT uID,
-             LPWSTR lpBuffer,
-             UINT nBufferMax);
-EXTERN_C UINT PALAPI PAL_LoadSatelliteStringA(HSATELLITE SatelliteResource,
-             UINT uID,
-             LPSTR lpBuffer,
-             UINT nBufferMax);
-
-EXTERN_C HRESULT PALAPI PAL_CoCreateInstance(REFCLSID   rclsid,
-                             REFIID     riid,
-                             void     **ppv);
-
-// So we can have CoCreateInstance in most of the code base,
-// instead of spreading around of if'def FEATURE_PALs for PAL_CoCreateInstance.
-#define CoCreateInstance(rclsid, pUnkOuter, dwClsContext, riid, ppv) PAL_CoCreateInstance(rclsid, riid, ppv)
-
-STDAPI
-CoCreateGuid(OUT GUID * pguid);
 
 /************** Byte swapping & unaligned access ******************/
 

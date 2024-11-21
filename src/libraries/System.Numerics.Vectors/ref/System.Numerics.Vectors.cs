@@ -762,6 +762,7 @@ namespace System.Numerics
         private readonly int _dummyPrimitive;
         public Vector(System.ReadOnlySpan<byte> values) { throw null; }
         public Vector(System.ReadOnlySpan<T> values) { throw null; }
+        [System.Runtime.CompilerServices.OverloadResolutionPriorityAttribute(-1)]
         public Vector(System.Span<T> values) { throw null; }
         public Vector(T value) { throw null; }
         public Vector(T[] values) { throw null; }
