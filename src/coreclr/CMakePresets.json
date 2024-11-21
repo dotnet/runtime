@@ -275,6 +275,33 @@
         "Checked",
         "x64"
       ]
+    },
+    {
+      "name": "linux.arm64.Debug",
+      "displayName": "linux.arm64.Debug",
+      "inherits": [
+        "linux-base",
+        "Debug",
+        "ARM64"
+      ]
+    },
+    {
+      "name": "linux.arm64.Release",
+      "displayName": "linux.arm64.Release",
+      "inherits": [
+        "linux-base",
+        "Release",
+        "ARM64"
+      ]
+    },
+    {
+      "name": "linux.arm64.Checked",
+      "displayName": "linux.arm64.Checked",
+      "inherits": [
+        "linux-base",
+        "Checked",
+        "ARM64"
+      ]
     }
   ]
 }
