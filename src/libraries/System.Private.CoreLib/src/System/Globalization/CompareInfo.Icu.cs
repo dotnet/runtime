@@ -716,17 +716,19 @@ namespace System.Globalization
                     throw new PlatformNotSupportedException(GetPNSEWithReason("CreateSortKey", "non-invariant culture"));
                 return InvariantCreateSortKey(source, options);
             }
-#elif TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
-            if (GlobalizationMode.Hybrid)
-            {
-                AssertComparisonSupported(options);
-            }
 #endif
 
             if ((options & ValidCompareMaskOffFlags) != 0)
             {
                 throw new ArgumentException(SR.Argument_InvalidFlag, nameof(options));
             }
+
+#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+            if (GlobalizationMode.Hybrid)
+            {
+                AssertComparisonSupported(options);
+            }
+#endif
 
             byte[] keyData;
             fixed (char* pSource = source)
