@@ -9,6 +9,7 @@ using System.IO.Compression;
 using System.Linq;
 using System.Reflection.PortableExecutable;
 using System.Runtime.InteropServices;
+using Microsoft.DotNet.CoreSetup;
 using Microsoft.NET.HostModel.AppHost;
 
 namespace Microsoft.NET.HostModel.Bundle
@@ -272,9 +273,9 @@ namespace Microsoft.NET.HostModel.Bundle
 
             BinaryUtils.CopyFile(hostSource, bundlePath);
 
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX) && HostModelUtils.IsCodesignAvailable())
+            if (_target.IsOSX && RuntimeInformation.IsOSPlatform(OSPlatform.OSX) && Codesign.IsAvailable)
             {
-                RemoveCodesignIfNecessary(bundlePath);
+                Codesign.Run("--remove-signature", bundlePath);
             }
 
             // Note: We're comparing file paths both on the OS we're running on as well as on the target OS for the app
@@ -346,9 +347,10 @@ namespace Microsoft.NET.HostModel.Bundle
             HostWriter.SetAsBundle(bundlePath, headerOffset);
 
             // Sign the bundle if requested
-            if (_macosCodesign && RuntimeInformation.IsOSPlatform(OSPlatform.OSX) && HostModelUtils.IsCodesignAvailable())
+            // TODO: use managed code signing
+            if (_macosCodesign && RuntimeInformation.IsOSPlatform(OSPlatform.OSX) && Codesign.IsAvailable)
             {
-                var (exitCode, stdErr) = HostModelUtils.RunCodesign("-s -", bundlePath);
+                var (exitCode, stdErr) = Codesign.Run("-s -", bundlePath);
                 if (exitCode != 0)
                 {
                     throw new InvalidOperationException($"Failed to codesign '{bundlePath}': {stdErr}");
@@ -356,23 +358,6 @@ namespace Microsoft.NET.HostModel.Bundle
             }
 
             return bundlePath;
-
-            // Remove mac code signature if applied before bundling
-            static void RemoveCodesignIfNecessary(string bundlePath)
-            {
-                Debug.Assert(RuntimeInformation.IsOSPlatform(OSPlatform.OSX));
-                Debug.Assert(HostModelUtils.IsCodesignAvailable());
-
-                // `codesign -v` returns 0 if app is signed
-                if (HostModelUtils.RunCodesign("-v", bundlePath).ExitCode == 0)
-                {
-                    var (exitCode, stdErr) = HostModelUtils.RunCodesign("--remove-signature", bundlePath);
-                    if (exitCode != 0)
-                    {
-                        throw new InvalidOperationException($"Removing codesign from '{bundlePath}' failed: {stdErr}");
-                    }
-                }
-            }
         }
     }
 }

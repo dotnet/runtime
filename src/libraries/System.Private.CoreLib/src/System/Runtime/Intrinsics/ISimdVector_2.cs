@@ -126,7 +126,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of the elements in the vector (<typeparamref name="T" />) is not supported.</exception>
         static abstract TSelf Clamp(TSelf value, TSelf min, TSelf max);
 
-        /// <summary>Restricts a vector between a minimum and a maximum value using platform specific behavior for <c>NaN</c> and <c>NegativeZero</c>..</summary>
+        /// <summary>Restricts a vector between a minimum and a maximum value using platform-specific behavior for <c>NaN</c> and <c>NegativeZero</c>.</summary>
         /// <param name="value">The vector to restrict.</param>
         /// <param name="min">The minimum value.</param>
         /// <param name="max">The maximum value.</param>

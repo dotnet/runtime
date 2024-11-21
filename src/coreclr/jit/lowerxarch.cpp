@@ -9341,6 +9341,8 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
                 case NI_SSE41_MultipleSumAbsoluteDifferences:
                 case NI_AES_KeygenAssist:
                 case NI_PCLMULQDQ_CarrylessMultiply:
+                case NI_PCLMULQDQ_V256_CarrylessMultiply:
+                case NI_PCLMULQDQ_V512_CarrylessMultiply:
                 case NI_AVX_Blend:
                 case NI_AVX_Compare:
                 case NI_AVX_DotProduct:
@@ -10155,6 +10157,34 @@ void Lowering::TryCompressConstVecData(GenTreeStoreInd* node)
     LowerNode(broadcast);
 }
 
+//------------------------------------------------------------------------
+// TryMakeSrcContainedOrRegOptional: Tries to make "childNode" a contained or regOptional node
+//
+//  Arguments:
+//     parentNode - The hardware intrinsic node which is the parent of 'childNode'
+//     childNode  - The node to check if it can be contained by 'parentNode'
+//
+void Lowering::TryMakeSrcContainedOrRegOptional(GenTreeHWIntrinsic* parentNode, GenTree* childNode)
+{
+    bool supportsRegOptional = false;
+
+    if (IsContainableHWIntrinsicOp(parentNode, childNode, &supportsRegOptional))
+    {
+        if (childNode->IsCnsVec() && parentNode->OperIsEmbBroadcastCompatible() && comp->canUseEvexEncoding())
+        {
+            TryFoldCnsVecForEmbeddedBroadcast(parentNode, childNode->AsVecCon());
+        }
+        else
+        {
+            MakeSrcContained(parentNode, childNode);
+        }
+    }
+    else if (supportsRegOptional)
+    {
+        MakeSrcRegOptional(parentNode, childNode);
+    }
+}
+
 //----------------------------------------------------------------------------------------------
 // ContainCheckHWIntrinsicAddr: Perform containment analysis for an address operand of a hardware
 //                              intrinsic node.
@@ -10446,16 +10476,8 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                 }
 
                 assert(!node->OperIsMemoryLoad());
-                bool supportsRegOptional = false;
 
-                if (IsContainableHWIntrinsicOp(node, op1, &supportsRegOptional))
-                {
-                    MakeSrcContained(node, op1);
-                }
-                else if (supportsRegOptional)
-                {
-                    MakeSrcRegOptional(node, op1);
-                }
+                TryMakeSrcContainedOrRegOptional(node, op1);
                 break;
             }
 
@@ -10557,7 +10579,6 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                 {
                     // We don't currently have any IMM intrinsics which are also commutative
                     assert(!isCommutative);
-                    bool supportsRegOptional = false;
 
                     switch (intrinsicId)
                     {
@@ -10601,14 +10622,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
 
                             if (!HWIntrinsicInfo::isImmOp(intrinsicId, op2))
                             {
-                                if (IsContainableHWIntrinsicOp(node, op2, &supportsRegOptional))
-                                {
-                                    MakeSrcContained(node, op2);
-                                }
-                                else if (supportsRegOptional)
-                                {
-                                    MakeSrcRegOptional(node, op2);
-                                }
+                                TryMakeSrcContainedOrRegOptional(node, op2);
                             }
                             break;
                         }
@@ -10620,16 +10634,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                                 // byte and sbyte are: pshufb ymm1, ymm2, ymm3/m256
                                 assert(!isCommutative);
 
-                                bool supportsRegOptional = false;
-
-                                if (IsContainableHWIntrinsicOp(node, op2, &supportsRegOptional))
-                                {
-                                    MakeSrcContained(node, op2);
-                                }
-                                else if (supportsRegOptional)
-                                {
-                                    MakeSrcRegOptional(node, op2);
-                                }
+                                TryMakeSrcContainedOrRegOptional(node, op2);
                                 break;
                             }
                             FALLTHROUGH;
@@ -10656,14 +10661,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                                 break;
                             }
 
-                            if (IsContainableHWIntrinsicOp(node, op1, &supportsRegOptional))
-                            {
-                                MakeSrcContained(node, op1);
-                            }
-                            else if (supportsRegOptional)
-                            {
-                                MakeSrcRegOptional(node, op1);
-                            }
+                            TryMakeSrcContainedOrRegOptional(node, op1);
                             break;
                         }
 
@@ -10690,22 +10688,11 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                                     break;
                                 }
 
-                                if (IsContainableHWIntrinsicOp(node, op1, &supportsRegOptional))
-                                {
-                                    MakeSrcContained(node, op1);
-                                }
-                                else if (supportsRegOptional)
-                                {
-                                    MakeSrcRegOptional(node, op1);
-                                }
+                                TryMakeSrcContainedOrRegOptional(node, op1);
                             }
-                            else if (IsContainableHWIntrinsicOp(node, op2, &supportsRegOptional))
+                            else
                             {
-                                MakeSrcContained(node, op2);
-                            }
-                            else if (supportsRegOptional)
-                            {
-                                MakeSrcRegOptional(node, op2);
+                                TryMakeSrcContainedOrRegOptional(node, op2);
                             }
                             break;
                         }
@@ -10728,14 +10715,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                                 break;
                             }
 
-                            if (IsContainableHWIntrinsicOp(node, op1, &supportsRegOptional))
-                            {
-                                MakeSrcContained(node, op1);
-                            }
-                            else if (supportsRegOptional)
-                            {
-                                MakeSrcRegOptional(node, op1);
-                            }
+                            TryMakeSrcContainedOrRegOptional(node, op1);
                             break;
                         }
 
@@ -10754,14 +10734,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                                 break;
                             }
 
-                            if (IsContainableHWIntrinsicOp(node, op1, &supportsRegOptional))
-                            {
-                                MakeSrcContained(node, op1);
-                            }
-                            else if (supportsRegOptional)
-                            {
-                                MakeSrcRegOptional(node, op1);
-                            }
+                            TryMakeSrcContainedOrRegOptional(node, op1);
                             break;
                         }
 
@@ -11139,22 +11112,13 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                     }
                     else
                     {
-                        bool supportsRegOptional = false;
-
                         switch (intrinsicId)
                         {
                             case NI_SSE41_BlendVariable:
                             case NI_AVX_BlendVariable:
                             case NI_AVX2_BlendVariable:
                             {
-                                if (IsContainableHWIntrinsicOp(node, op2, &supportsRegOptional))
-                                {
-                                    MakeSrcContained(node, op2);
-                                }
-                                else if (supportsRegOptional)
-                                {
-                                    MakeSrcRegOptional(node, op2);
-                                }
+                                TryMakeSrcContainedOrRegOptional(node, op2);
                                 break;
                             }
 
@@ -11224,28 +11188,14 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                                     }
                                 }
 
-                                if (IsContainableHWIntrinsicOp(node, op2, &supportsRegOptional))
-                                {
-                                    MakeSrcContained(node, op2);
-                                }
-                                else if (supportsRegOptional)
-                                {
-                                    MakeSrcRegOptional(node, op2);
-                                }
+                                TryMakeSrcContainedOrRegOptional(node, op2);
                                 break;
                             }
 
                             case NI_AVXVNNI_MultiplyWideningAndAdd:
                             case NI_AVXVNNI_MultiplyWideningAndAddSaturate:
                             {
-                                if (IsContainableHWIntrinsicOp(node, op3, &supportsRegOptional))
-                                {
-                                    MakeSrcContained(node, op3);
-                                }
-                                else if (supportsRegOptional)
-                                {
-                                    MakeSrcRegOptional(node, op3);
-                                }
+                                TryMakeSrcContainedOrRegOptional(node, op3);
                                 break;
                             }
 
@@ -11308,14 +11258,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                             case NI_X86Base_X64_DivRem:
                             {
                                 // DIV only allows divisor (op3) in memory
-                                if (IsContainableHWIntrinsicOp(node, op3, &supportsRegOptional))
-                                {
-                                    MakeSrcContained(node, op3);
-                                }
-                                else if (supportsRegOptional)
-                                {
-                                    MakeSrcRegOptional(node, op3);
-                                }
+                                TryMakeSrcContainedOrRegOptional(node, op3);
                                 break;
                             }
 
@@ -11331,8 +11274,6 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
 
                 case HW_Category_IMM:
                 {
-                    bool supportsRegOptional = false;
-
                     switch (intrinsicId)
                     {
                         case NI_SSE_Shuffle:
@@ -11377,6 +11318,8 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                         case NI_AVX512DQ_VL_Range:
                         case NI_AVX512DQ_ReduceScalar:
                         case NI_PCLMULQDQ_CarrylessMultiply:
+                        case NI_PCLMULQDQ_V256_CarrylessMultiply:
+                        case NI_PCLMULQDQ_V512_CarrylessMultiply:
                         case NI_AVX10v1_AlignRight32:
                         case NI_AVX10v1_AlignRight64:
                         case NI_AVX10v1_GetMantissaScalar:
@@ -11396,14 +11339,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                                 break;
                             }
 
-                            if (IsContainableHWIntrinsicOp(node, op2, &supportsRegOptional))
-                            {
-                                MakeSrcContained(node, op2);
-                            }
-                            else if (supportsRegOptional)
-                            {
-                                MakeSrcRegOptional(node, op2);
-                            }
+                            TryMakeSrcContainedOrRegOptional(node, op2);
                             break;
                         }
 
@@ -11474,14 +11410,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                                 }
                             }
 
-                            if (IsContainableHWIntrinsicOp(node, op2, &supportsRegOptional))
-                            {
-                                MakeSrcContained(node, op2);
-                            }
-                            else if (supportsRegOptional)
-                            {
-                                op2->SetRegOptional();
-                            }
+                            TryMakeSrcContainedOrRegOptional(node, op2);
                             break;
                         }
 
@@ -11516,8 +11445,6 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
             {
                 case HW_Category_IMM:
                 {
-                    bool supportsRegOptional = false;
-
                     switch (intrinsicId)
                     {
                         case NI_AVX512F_Fixup:
@@ -11532,14 +11459,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                                 break;
                             }
 
-                            if (IsContainableHWIntrinsicOp(node, op3, &supportsRegOptional))
-                            {
-                                MakeSrcContained(node, op3);
-                            }
-                            else if (supportsRegOptional)
-                            {
-                                MakeSrcRegOptional(node, op3);
-                            }
+                            TryMakeSrcContainedOrRegOptional(node, op3);
 
                             if (!node->isRMWHWIntrinsic(comp))
                             {
