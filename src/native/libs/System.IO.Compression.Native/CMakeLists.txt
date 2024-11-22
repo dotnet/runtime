@@ -18,6 +18,9 @@ if (NOT CLR_CMAKE_TARGET_BROWSER AND NOT CLR_CMAKE_TARGET_WASI)
 
     if (CLR_CMAKE_USE_SYSTEM_BROTLI)
         add_definitions(-DFEATURE_USE_SYSTEM_BROTLI)
+        find_package(PkgConfig REQUIRED)
+        pkg_check_modules(BROTLI REQUIRED libbrotlicommon)
+        include_directories(${BROTLI_INCLUDE_DIRS})
     else ()
         include(${CLR_SRC_NATIVE_DIR}/external/brotli.cmake)
 
