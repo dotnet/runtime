@@ -1464,7 +1464,7 @@ StepWithCompactEncodingFrameless(const libunwindInfo* info, compact_unwind_encod
         }
     }
 
-    uint64_t savedRegisters = context->Rsp + stack_size - 8 - (8 * register_count);
+    unw_word_t savedRegisters = context->Rsp + stack_size - 8 - (8 * register_count);
     for (int i = 0; i < register_count; i++)
     {
         uint64_t reg;
