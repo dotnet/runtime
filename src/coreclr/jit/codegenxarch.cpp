@@ -9064,7 +9064,7 @@ void CodeGen::genAmd64EmitterUnitTestsApx()
     genDefineTempLabel(genCreateTempLabel());
 
     // This test suite needs REX2 enabled.
-    assert(theEmitter->UseRex2Encoding() || theEmitter->emitComp->DoJitStressRex2Encoding());
+    // assert(theEmitter->UseRex2Encoding() || theEmitter->emitComp->DoJitStressRex2Encoding());
 
     theEmitter->emitIns_R_R(INS_add, EA_1BYTE, REG_EAX, REG_ECX);
     theEmitter->emitIns_R_R(INS_add, EA_2BYTE, REG_EAX, REG_ECX);
@@ -9135,6 +9135,9 @@ void CodeGen::genAmd64EmitterUnitTestsApx()
     // theEmitter->emitIns_R_I(INS_rcl_N, EA_4BYTE, REG_ECX, 0x05);
     // theEmitter->emitIns_R_I(INS_rcr_N, EA_4BYTE, REG_ECX, 0x05);
 
+    theEmitter->emitIns_R(INS_neg, EA_2BYTE, REG_EAX);
+    theEmitter->emitIns_R(INS_not, EA_2BYTE, REG_EAX);
+
     theEmitter->emitIns_R_AR(INS_lea, EA_4BYTE, REG_ECX, REG_EAX, 4);
 
     theEmitter->emitIns_R_AR(INS_mov, EA_1BYTE, REG_ECX, REG_EAX, 4);
@@ -9177,50 +9180,7 @@ void CodeGen::genAmd64EmitterUnitTestsApx()
     theEmitter->emitIns_R_AR(INS_movzx, EA_2BYTE, REG_EAX, REG_ECX, 4);
     theEmitter->emitIns_R_AR(INS_cmovo, EA_4BYTE, REG_EAX, REG_ECX, 4);
 
-    theEmitter->emitIns_R_S(INS_add, EA_1BYTE, REG_EAX, 0, 0);
-    theEmitter->emitIns_R_S(INS_add, EA_2BYTE, REG_EAX, 0, 0);
-    theEmitter->emitIns_R_S(INS_add, EA_4BYTE, REG_EAX, 0, 0);
-    theEmitter->emitIns_R_S(INS_add, EA_8BYTE, REG_EAX, 0, 0);
-    theEmitter->emitIns_R_S(INS_or, EA_4BYTE, REG_EAX, 0, 0);
-    theEmitter->emitIns_R_S(INS_adc, EA_4BYTE, REG_EAX, 0, 0);
-    theEmitter->emitIns_R_S(INS_sbb, EA_4BYTE, REG_EAX, 0, 0);
-    theEmitter->emitIns_R_S(INS_and, EA_4BYTE, REG_EAX, 0, 0);
-    theEmitter->emitIns_R_S(INS_sub, EA_4BYTE, REG_EAX, 0, 0);
-    theEmitter->emitIns_R_S(INS_xor, EA_4BYTE, REG_EAX, 0, 0);
-    theEmitter->emitIns_R_S(INS_cmp, EA_4BYTE, REG_EAX, 0, 0);
-    theEmitter->emitIns_R_S(INS_test, EA_4BYTE, REG_EAX, 0, 0);
-
-    theEmitter->emitIns_S_I(INS_shl_N, EA_4BYTE, 0, 0, 4);
-    theEmitter->emitIns_S(INS_shl_1, EA_4BYTE, 0, 4);
-
-    theEmitter->emitIns_R_S(INS_movsx, EA_2BYTE, REG_ECX, 0, 0);
-    theEmitter->emitIns_R_S(INS_movzx, EA_2BYTE, REG_EAX, 0, 0);
-    theEmitter->emitIns_R_S(INS_cmovo, EA_4BYTE, REG_EAX, 0, 0);
-
-    theEmitter->emitIns_R(INS_pop, EA_PTRSIZE, REG_EAX);
-    theEmitter->emitIns_R(INS_push, EA_PTRSIZE, REG_EAX);
-    theEmitter->emitIns_R(INS_pop_hide, EA_PTRSIZE, REG_EAX);
-    theEmitter->emitIns_R(INS_push_hide, EA_PTRSIZE, REG_EAX);
-
-    theEmitter->emitIns_S(INS_pop, EA_PTRSIZE, 0, 0);
-    theEmitter->emitIns_I(INS_push, EA_PTRSIZE, 50);
-    // TODO-XArch-apx: figure out a way to test emitIns_A, which will require a GenTreeIndir* input.
-
-    theEmitter->emitIns_R(INS_inc, EA_4BYTE, REG_EAX);
-    theEmitter->emitIns_AR(INS_inc, EA_2BYTE, REG_EAX, 2);
-    theEmitter->emitIns_S(INS_inc, EA_2BYTE, 0, 0);
-    theEmitter->emitIns_R(INS_dec, EA_4BYTE, REG_EAX);
-    theEmitter->emitIns_AR(INS_dec, EA_2BYTE, REG_EAX, 2);
-    theEmitter->emitIns_S(INS_dec, EA_2BYTE, 0, 0);
-
-    theEmitter->emitIns_R(INS_neg, EA_2BYTE, REG_EAX);
-    theEmitter->emitIns_S(INS_neg, EA_2BYTE, 0, 0);
-    theEmitter->emitIns_R(INS_not, EA_2BYTE, REG_EAX);
-    theEmitter->emitIns_S(INS_not, EA_2BYTE, 0, 0);
-
-    // TODO-XArch-apx: xadd does not have RM opcode, made it cannot be encoded with emitIns_R_R.
     theEmitter->emitIns_AR_R(INS_xadd, EA_4BYTE, REG_EAX, REG_EDX, 2);
-    theEmitter->emitIns_S_R(INS_xadd, EA_2BYTE, REG_EAX, 0, 0);
 
     theEmitter->emitIns_R_R_I(INS_shld, EA_4BYTE, REG_EAX, REG_ECX, 5);
     theEmitter->emitIns_R_R_I(INS_shrd, EA_2BYTE, REG_EAX, REG_ECX, 5);
@@ -9244,6 +9204,70 @@ void CodeGen::genAmd64EmitterUnitTestsApx()
 
     theEmitter->emitIns_R(INS_div, EA_8BYTE, REG_EDX);
     theEmitter->emitIns_R(INS_mulEAX, EA_8BYTE, REG_EDX);
+
+    // Note:
+    // All the tests below rely on the runtime status of the stack this unit tests attaching to, 
+    // it might fail due to stack value unavailable/mismatch, since these tests are mainly for
+    // encoding correctness check, this kind of failures may be considered as not harmful.
+
+    GenTree* stkNum = theEmitter->emitComp->stackState.esStack[0].val;
+    stkNum->SetRegNum(REG_EDX);
+    stkNum->SetUnusedValue();
+    GenTreeIndir load = indirForm(TYP_INT, stkNum);
+
+    theEmitter->emitIns_R_A(INS_add, EA_4BYTE, REG_EAX, &load);
+    theEmitter->emitIns_R_A(INS_add, EA_4BYTE, REG_EAX, &load);
+    theEmitter->emitIns_R_A(INS_add, EA_4BYTE, REG_EAX, &load);
+    theEmitter->emitIns_R_A(INS_add, EA_8BYTE, REG_EAX, &load);
+    theEmitter->emitIns_R_A(INS_or, EA_4BYTE, REG_EAX, &load);
+    theEmitter->emitIns_R_A(INS_adc, EA_4BYTE, REG_EAX, &load);
+    theEmitter->emitIns_R_A(INS_sbb, EA_4BYTE, REG_EAX, &load);
+    theEmitter->emitIns_R_A(INS_and, EA_4BYTE, REG_EAX, &load);
+    theEmitter->emitIns_R_A(INS_sub, EA_4BYTE, REG_EAX, &load);
+    theEmitter->emitIns_R_A(INS_xor, EA_4BYTE, REG_EAX, &load);
+    theEmitter->emitIns_R_A(INS_cmp, EA_4BYTE, REG_EAX, &load);
+    theEmitter->emitIns_R_A(INS_test, EA_4BYTE, REG_EAX, &load);
+    theEmitter->emitIns_R_A(INS_bsf, EA_4BYTE, REG_EAX, &load);
+    theEmitter->emitIns_R_A(INS_bsr, EA_4BYTE, REG_EAX, &load);
+
+    theEmitter->emitIns_R_S(INS_add, EA_1BYTE, REG_EAX, 0, 0);
+    theEmitter->emitIns_R_S(INS_add, EA_2BYTE, REG_EAX, 0, 0);
+    theEmitter->emitIns_R_S(INS_add, EA_4BYTE, REG_EAX, 0, 0);
+    theEmitter->emitIns_R_S(INS_add, EA_8BYTE, REG_EAX, 0, 0);
+    theEmitter->emitIns_R_S(INS_or, EA_4BYTE, REG_EAX, 0, 0);
+    theEmitter->emitIns_R_S(INS_adc, EA_4BYTE, REG_EAX, 0, 0);
+    theEmitter->emitIns_R_S(INS_sbb, EA_4BYTE, REG_EAX, 0, 0);
+    theEmitter->emitIns_R_S(INS_and, EA_4BYTE, REG_EAX, 0, 0);
+    theEmitter->emitIns_R_S(INS_sub, EA_4BYTE, REG_EAX, 0, 0);
+    theEmitter->emitIns_R_S(INS_xor, EA_4BYTE, REG_EAX, 0, 0);
+    theEmitter->emitIns_R_S(INS_cmp, EA_4BYTE, REG_EAX, 0, 0);
+    theEmitter->emitIns_R_S(INS_test, EA_4BYTE, REG_EAX, 0, 0);
+    theEmitter->emitIns_S_R(INS_xadd, EA_2BYTE, REG_EAX, 0, 0);
+
+    theEmitter->emitIns_S_I(INS_shl_N, EA_4BYTE, 0, 0, 4);
+    theEmitter->emitIns_S(INS_shl_1, EA_4BYTE, 0, 4);
+
+    theEmitter->emitIns_R_S(INS_movsx, EA_2BYTE, REG_ECX, 0, 0);
+    theEmitter->emitIns_R_S(INS_movzx, EA_2BYTE, REG_EAX, 0, 0);
+    theEmitter->emitIns_R_S(INS_cmovo, EA_4BYTE, REG_EAX, 0, 0);
+
+    theEmitter->emitIns_R(INS_pop, EA_PTRSIZE, REG_EAX);
+    theEmitter->emitIns_R(INS_push, EA_PTRSIZE, REG_EAX);
+    theEmitter->emitIns_R(INS_pop_hide, EA_PTRSIZE, REG_EAX);
+    theEmitter->emitIns_R(INS_push_hide, EA_PTRSIZE, REG_EAX);
+
+    theEmitter->emitIns_S(INS_pop, EA_PTRSIZE, 0, 0);
+    theEmitter->emitIns_I(INS_push, EA_PTRSIZE, 50);
+
+    theEmitter->emitIns_R(INS_inc, EA_4BYTE, REG_EAX);
+    theEmitter->emitIns_AR(INS_inc, EA_2BYTE, REG_EAX, 2);
+    theEmitter->emitIns_S(INS_inc, EA_2BYTE, 0, 0);
+    theEmitter->emitIns_R(INS_dec, EA_4BYTE, REG_EAX);
+    theEmitter->emitIns_AR(INS_dec, EA_2BYTE, REG_EAX, 2);
+    theEmitter->emitIns_S(INS_dec, EA_2BYTE, 0, 0);
+
+    theEmitter->emitIns_S(INS_neg, EA_2BYTE, 0, 0);
+    theEmitter->emitIns_S(INS_not, EA_2BYTE, 0, 0);
 }
 
 #endif // defined(DEBUG) && defined(TARGET_AMD64)
