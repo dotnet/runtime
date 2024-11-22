@@ -146,7 +146,6 @@ static const Entry s_QCall[] =
     DllImportEntry(RuntimeMethodHandle_ConstructInstantiation)
     DllImportEntry(RuntimeMethodHandle_GetFunctionPointer)
     DllImportEntry(RuntimeMethodHandle_GetIsCollectible)
-    DllImportEntry(RuntimeMethodHandle_GetHandleForArray)
     DllImportEntry(RuntimeMethodHandle_GetMethodInstantiation)
     DllImportEntry(RuntimeMethodHandle_GetTypicalMethodDefinition)
     DllImportEntry(RuntimeMethodHandle_StripMethodInstantiation)

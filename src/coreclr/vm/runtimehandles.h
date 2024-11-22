@@ -282,7 +282,6 @@ extern "C" void QCALLTYPE RuntimeMethodHandle_GetMethodInstantiation(MethodDesc 
 extern "C" void QCALLTYPE RuntimeMethodHandle_ConstructInstantiation(MethodDesc * pMethod, DWORD format, QCall::StringHandleOnStack retString);
 extern "C" void* QCALLTYPE RuntimeMethodHandle_GetFunctionPointer(MethodDesc * pMethod);
 extern "C" BOOL QCALLTYPE RuntimeMethodHandle_GetIsCollectible(MethodDesc * pMethod);
-extern "C" EnregisteredTypeHandle QCALLTYPE RuntimeMethodHandle_GetHandleForArray(MethodTable* pMT);
 extern "C" void QCALLTYPE RuntimeMethodHandle_GetTypicalMethodDefinition(MethodDesc * pMethod, QCall::ObjectHandleOnStack refMethod);
 extern "C" void QCALLTYPE RuntimeMethodHandle_StripMethodInstantiation(MethodDesc * pMethod, QCall::ObjectHandleOnStack refMethod);
 extern "C" void QCALLTYPE RuntimeMethodHandle_Destroy(MethodDesc * pMethod);

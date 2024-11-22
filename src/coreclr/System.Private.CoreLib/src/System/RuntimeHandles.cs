@@ -969,9 +969,6 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern unsafe MethodTable* GetMethodTable(RuntimeMethodHandleInternal method);
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeMethodHandle_GetHandleForArray")]
-        private static unsafe partial IntPtr GetHandleForArray(MethodTable* pMT);
-
         internal static unsafe RuntimeType GetDeclaringType(RuntimeMethodHandleInternal method)
         {
             Debug.Assert(!method.IsNullHandle());

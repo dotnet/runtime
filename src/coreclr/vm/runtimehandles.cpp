@@ -1418,27 +1418,6 @@ extern "C" BOOL QCALLTYPE RuntimeMethodHandle_GetIsCollectible(MethodDesc* pMeth
     return isCollectible;
 }
 
-extern "C" EnregisteredTypeHandle QCALLTYPE RuntimeMethodHandle_GetHandleForArray(MethodTable* pMT)
-{
-    QCALL_CONTRACT;
-    _ASSERTE(pMT != NULL);
-    _ASSERTE(pMT->IsArray());
-
-    TypeHandle declType;
-
-    BEGIN_QCALL;
-
-    // Load the TypeDesc for the array type.  Note the returned type is approximate, i.e.
-    // if shared between reference array types then we will get object[] back.
-    DWORD rank = pMT->GetRank();
-    TypeHandle elemType = pMT->GetArrayElementTypeHandle();
-    declType = ClassLoader::LoadArrayTypeThrowing(elemType, pMT->GetInternalCorElementType(), rank);
-
-    END_QCALL;
-
-    return (EnregisteredTypeHandle)declType.AsTAddr();
-}
-
 FCIMPL1(LPCUTF8, RuntimeMethodHandle::GetUtf8Name, MethodDesc* pMethod)
 {
     CONTRACTL
