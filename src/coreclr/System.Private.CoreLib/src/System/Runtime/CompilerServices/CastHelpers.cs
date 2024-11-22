@@ -28,7 +28,7 @@ namespace System.Runtime.CompilerServices
         private static partial bool IsInstanceOf_NoCacheLookup(void *toTypeHnd, bool throwCastException, ObjectHandleOnStack obj);
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static extern object? IsInstanceOfAny_NoCacheLookup(void* toTypeHnd, object obj)
+        private static object? IsInstanceOfAny_NoCacheLookup(void* toTypeHnd, object obj)
         {
             ObjectHandleOfStack objHandleOnStack = default;
             if (IsInstanceOf_NoCacheLookup(toTypeHnd, false, ObjectHandleOnStack.Create(ref obj)))
