@@ -2307,7 +2307,7 @@ BasicBlock* Compiler::fgCloneTryRegion(BasicBlock* tryEntry, CloneTryInfo& info,
         JITDUMP("<== finished try EH#%02u\n", regionIndex);
     }
 
-    // Find the outermost mututal-protect try egion that begins at tryEntry
+    // Find the outermost mututal-protect try region that begins at tryEntry
     //
     EHblkDsc* const tryEbd            = ehGetDsc(tryIndex);
     unsigned        outermostTryIndex = tryIndex;
@@ -2336,8 +2336,7 @@ BasicBlock* Compiler::fgCloneTryRegion(BasicBlock* tryEntry, CloneTryInfo& info,
         enclosingHndIndex = tryEntry->getHndIndex();
     }
 
-    // Now blocks contains an entry for each block to clone,
-    // and maps (if non-null) contains a key for each block to clone, with nullptr value
+    // Now blocks contains an entry for each block to clone.
     //
     JITDUMP("Will need to clone %u EH regions (outermost: EH#%02u) and %u blocks\n", regionCount, outermostTryIndex,
             blocks.size());
@@ -2392,10 +2391,10 @@ BasicBlock* Compiler::fgCloneTryRegion(BasicBlock* tryEntry, CloneTryInfo& info,
     // The EH table now looks like the following, for a middle insertion:
     //
     // ===================
-    // EH 0                    -- unrelated regions
+    // EH 0                     -- unrelated regions
     // ...
     // ---------------
-    // EH x                    -- innermost region to clone
+    // EH x                     -- innermost region to clone
     // ...
     // EH x + regionCount - 1   -- outermost region to clone
     // ---------------
@@ -2412,20 +2411,20 @@ BasicBlock* Compiler::fgCloneTryRegion(BasicBlock* tryEntry, CloneTryInfo& info,
     // And like this, for an end insertion:
     //
     // ===================
-    // EH 0                    -- unrelated regions
+    // EH 0                     -- unrelated regions
     // ...
     // ---------------
-    // EH x                    -- innermost region to clone
+    // EH x                     -- innermost region to clone
     // ...
     // EH x + regionCount - 1   -- outermost region to clone
     // ---------------
     // ...
-    // EH k                    -- unrelated regions
+    // EH k                     -- unrelated regions
     // ...
     // ---------------
-    // EH x + regionCount       -- innermost cloned region
+    // EH c                     -- innermost cloned region
     // ...
-    // EH x + 2*regionCount - 1 -- outermost cloned region
+    // EH c + regionCount - 1   -- outermost cloned region
     // ---------------
     // ===================
     //
