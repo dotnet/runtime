@@ -4272,7 +4272,7 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions, Gen
     GenTree* op1     = tree->AsOp()->gtOp1;
     GenTree* op2     = tree->AsOp()->gtOp2;
 
-    // Can we can fold "X relop 0" based on assertions?
+    // Can we fold "X relop 0" based on assertions?
     if (op2->IsIntegralConst(0) && tree->OperIsCmpCompare())
     {
         bool isNonZero, isNeverNegative;
