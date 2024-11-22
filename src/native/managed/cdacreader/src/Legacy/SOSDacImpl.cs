@@ -2,12 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 using System.Text;
 
 using Microsoft.Diagnostics.DataContractReader.Contracts;
+using Microsoft.Diagnostics.DataContractReader.Contracts.Extensions;
 
 namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 
@@ -194,13 +197,10 @@ internal sealed unsafe partial class SOSDacImpl
         int hr = HResults.E_NOTIMPL;
         try
         {
-            if (cRevertedRejitVersions != 0)
-            {
-                throw new NotImplementedException(); // TODO[cdac]: rejit
-            }
             Contracts.IRuntimeTypeSystem rtsContract = _target.Contracts.RuntimeTypeSystem;
             Contracts.MethodDescHandle methodDescHandle = rtsContract.GetMethodDescHandle(methodDesc);
             Contracts.ICodeVersions nativeCodeContract = _target.Contracts.CodeVersions;
+            Contracts.IReJIT rejitContract = _target.Contracts.ReJIT;
 
             if (rgRevertedRejitData != null)
             {
@@ -256,11 +256,100 @@ internal sealed unsafe partial class SOSDacImpl
             TypeHandle typeHandle = rtsContract.GetTypeHandle(methodTableAddr);
             data->ModulePtr = rtsContract.GetModule(typeHandle);
 
-            // TODO[cdac]: everything in the ReJIT TRY/CATCH in GetMethodDescDataImpl in request.cpp
-            if (pcNeededRevertedRejitData != null)
+            // If rejit info is appropriate, get the following:
+            //     * ReJitInfo for the current, active version of the method
+            //     * ReJitInfo for the requested IP (for !ip2md and !u)
+            //     * ReJitInfos for all reverted versions of the method (up to
+            //         cRevertedRejitVersions)
+            //
+            // Minidumps will not have all this rejit info, and failure to get rejit info
+            // should not be fatal.  So enclose all rejit stuff in a try.
+            try
             {
+                if (activeNativeCodeVersion is null || !activeNativeCodeVersion.Value.Valid)
+                {
+                    activeNativeCodeVersion = nativeCodeContract.GetActiveNativeCodeVersion(new TargetPointer(methodDesc));
+                }
 
-                throw new NotImplementedException(); // TODO[cdac]: rejit stuff
+                if (activeNativeCodeVersion is null || !activeNativeCodeVersion.Value.Valid)
+                {
+                    throw new InvalidOperationException("No active native code version found");
+                }
+
+                // Active ReJitInfo
+                CopyNativeCodeVersionToReJitData(
+                    activeNativeCodeVersion.Value,
+                    activeNativeCodeVersion.Value,
+                    &data->rejitDataCurrent);
+
+                // Requested ReJitInfo
+                Debug.Assert(data->rejitDataRequested.rejitID == 0);
+                if (ip != 0 && requestedNativeCodeVersion.Valid)
+                {
+                    CopyNativeCodeVersionToReJitData(
+                        requestedNativeCodeVersion,
+                        activeNativeCodeVersion.Value,
+                        &data->rejitDataRequested);
+                }
+
+                // Total number of jitted rejit versions
+                int cJittedRejitVersions = rejitContract.GetRejitIds(_target, methodDescHandle.Address).Count();
+                data->cJittedRejitVersions = (uint)cJittedRejitVersions;
+
+                // Reverted ReJitInfos
+                if (rgRevertedRejitData == null)
+                {
+                    // No reverted rejit versions will be returned, but maybe caller wants a
+                    // count of all versions
+                    if (pcNeededRevertedRejitData != null)
+                    {
+                        *pcNeededRevertedRejitData = data->cJittedRejitVersions;
+                    }
+                }
+                else
+                {
+                    // Caller wants some reverted rejit versions.  Gather reverted rejit version data to return
+
+                    // Prepare array to populate with rejitids.  "+ 1" because GetReJITIDs
+                    // returns all available rejitids, including the rejitid for the one non-reverted
+                    // current version.
+                    List<TargetNUInt> reJitIds = rejitContract.GetRejitIds(_target, methodDescHandle.Address).ToList();
+
+                    // Go through rejitids.  For each reverted one, populate a entry in rgRevertedRejitData
+                    uint iRejitDataReverted = 0;
+                    ILCodeVersionHandle activeVersion = nativeCodeContract.GetActiveILCodeVersion(methodDesc);
+                    TargetNUInt activeVersionId = rejitContract.GetRejitId(activeVersion);
+                    for (uint i = 0; (i < reJitIds.Count) && (iRejitDataReverted < cRevertedRejitVersions); i++)
+                    {
+                        ILCodeVersionHandle ilCodeVersion = nativeCodeContract.GetILCodeVersions(methodDesc)
+                            .FirstOrDefault(ilcode => rejitContract.GetRejitId(ilcode) == reJitIds[(int)i],
+                                ILCodeVersionHandle.Invalid);
+
+
+                        if (!ilCodeVersion.IsValid || rejitContract.GetRejitId(ilCodeVersion) == activeVersionId)
+                        {
+                            continue;
+                        }
+
+                        NativeCodeVersionHandle activeRejitChild = nativeCodeContract.GetActiveNativeCodeVersionForILCodeVersion(methodDesc, ilCodeVersion);
+                        CopyNativeCodeVersionToReJitData(
+                            activeRejitChild,
+                            activeNativeCodeVersion.Value,
+                            &rgRevertedRejitData[iRejitDataReverted]);
+
+                        iRejitDataReverted++;
+                    }
+                    // pcNeededRevertedRejitData != NULL as per condition at top of function (cuz rgRevertedRejitData !=
+                    // NULL).
+                    *pcNeededRevertedRejitData = iRejitDataReverted;
+                }
+            }
+            catch (global::System.Exception)
+            {
+                if (pcNeededRevertedRejitData != null)
+                {
+                    *pcNeededRevertedRejitData = 0;
+                }
             }
 
 #if false // TODO[cdac]: HAVE_GCCOVER
@@ -297,7 +386,7 @@ internal sealed unsafe partial class SOSDacImpl
                     rgRevertedRejitDataLocal = new DacpReJitData[cRevertedRejitVersions];
                 }
                 uint cNeededRevertedRejitDataLocal = 0;
-                uint *pcNeededRevertedRejitDataLocal = null;
+                uint* pcNeededRevertedRejitDataLocal = null;
                 if (pcNeededRevertedRejitData != null)
                 {
                     pcNeededRevertedRejitDataLocal = &cNeededRevertedRejitDataLocal;
@@ -321,12 +410,22 @@ internal sealed unsafe partial class SOSDacImpl
                 Debug.Assert(data->GCStressCodeCopy == dataLocal.GCStressCodeCopy);
                 Debug.Assert(data->managedDynamicMethodObject == dataLocal.managedDynamicMethodObject);
                 Debug.Assert(data->requestedIP == dataLocal.requestedIP);
-                // TODO[cdac]: cdacreader always returns 0 currently
-                Debug.Assert(data->cJittedRejitVersions == 0 || data->cJittedRejitVersions == dataLocal.cJittedRejitVersions);
-                // TODO[cdac]: compare rejitDataCurrent and rejitDataRequested, too
+                Debug.Assert(data->cJittedRejitVersions == dataLocal.cJittedRejitVersions);
+
+                // rejitDataCurrent
+                Debug.Assert(data->rejitDataCurrent.rejitID == dataLocal.rejitDataCurrent.rejitID);
+                Debug.Assert(data->rejitDataCurrent.NativeCodeAddr == dataLocal.rejitDataCurrent.NativeCodeAddr);
+                Debug.Assert(data->rejitDataCurrent.flags == dataLocal.rejitDataCurrent.flags);
+
+                // rejitDataRequested
+                Debug.Assert(data->rejitDataRequested.rejitID == dataLocal.rejitDataRequested.rejitID);
+                Debug.Assert(data->rejitDataRequested.NativeCodeAddr == dataLocal.rejitDataRequested.NativeCodeAddr);
+                Debug.Assert(data->rejitDataRequested.flags == dataLocal.rejitDataRequested.flags);
+
+                // rgRevertedRejitData
                 if (rgRevertedRejitData != null && rgRevertedRejitDataLocal != null)
                 {
-                    Debug.Assert (cNeededRevertedRejitDataLocal == *pcNeededRevertedRejitData);
+                    Debug.Assert(cNeededRevertedRejitDataLocal == *pcNeededRevertedRejitData);
                     for (ulong i = 0; i < cNeededRevertedRejitDataLocal; i++)
                     {
                         Debug.Assert(rgRevertedRejitData[i].rejitID == rgRevertedRejitDataLocal[i].rejitID);
@@ -341,6 +440,45 @@ internal sealed unsafe partial class SOSDacImpl
         }
 #endif
         return hr;
+    }
+
+    private void CopyNativeCodeVersionToReJitData(
+        NativeCodeVersionHandle nativeCodeVersion,
+        NativeCodeVersionHandle activeNativeCodeVersion,
+        DacpReJitData* pReJitData)
+    {
+        ICodeVersions cv = _target.Contracts.CodeVersions;
+        IReJIT rejit = _target.Contracts.ReJIT;
+
+        ILCodeVersionHandle ilCodeVersion = cv.GetILCodeVersion(nativeCodeVersion);
+
+        pReJitData->rejitID = rejit.GetRejitId(ilCodeVersion).Value;
+        pReJitData->NativeCodeAddr = cv.GetNativeCode(nativeCodeVersion);
+
+        if (nativeCodeVersion.CodeVersionNodeAddress != activeNativeCodeVersion.CodeVersionNodeAddress ||
+            nativeCodeVersion.MethodDescAddress != activeNativeCodeVersion.MethodDescAddress)
+        {
+            pReJitData->flags = DacpReJitData.Flags.kReverted;
+        }
+        else
+        {
+            DacpReJitData.Flags flags = DacpReJitData.Flags.kUnknown;
+            switch (rejit.GetRejitState(ilCodeVersion))
+            {
+                // kStateRequested
+                case RejitState.Requested:
+                    flags = DacpReJitData.Flags.kRequested;
+                    break;
+                // kStateActive
+                case RejitState.Active:
+                    flags = DacpReJitData.Flags.kActive;
+                    break;
+                default:
+                    Debug.Fail("Unknown SharedRejitInfo state. cDAC should be updated to understand this new state.");
+                    break;
+            }
+            pReJitData->flags = flags;
+        }
     }
 
     int ISOSDacInterface.GetMethodDescFromToken(ulong moduleAddr, uint token, ulong* methodDesc)
