@@ -43,11 +43,8 @@
   <!-- When tests are built on Helix, override default trimming switches  -->
   <PropertyGroup Condition="'$(EnableAggressiveTrimming)' == 'true' and '$(BuildTestsOnHelix)' == 'true'">
     <DynamicCodeSupport Condition="'$(DynamicCodeSupport)' == '' and '$(MonoForceInterpreter)' != 'true'">false</DynamicCodeSupport>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(EnableAggressiveTrimming)' == 'true' and '$(BuildTestsOnHelix)' == 'true' and '$(OverrideDefaultValueAndDesignerHostSupport)' == 'true'">
-    <_DefaultValueAttributeSupport>true</_DefaultValueAttributeSupport>
-    <_DesignerHostSupport>true</_DesignerHostSupport>
+    <_DefaultValueAttributeSupport Condition="'$(OverrideDefaultValueAndDesignerHostSupport)' == 'true'">true</_DefaultValueAttributeSupport>
+    <_DesignerHostSupport Condition="'$(OverrideDefaultValueAndDesignerHostSupport)' == 'true'">true</_DesignerHostSupport>
   </PropertyGroup>
 
   <!-- When trimming non-exe projects, root the whole intermediate assembly.
