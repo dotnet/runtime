@@ -83,7 +83,7 @@ internal sealed class HotColdLookup
 
         // Index used for the search is the logical index of hot/cold pairs. We double it to index
         // into the HotColdMap array.
-        if (BinaryThenLinearSeach.Search(start, end, Compare, Match, out uint index))
+        if (BinaryThenLinearSearch.Search(start, end, Compare, Match, out uint index))
         {
             hotIndex = index * 2 + 1;
             coldIndex = index * 2;

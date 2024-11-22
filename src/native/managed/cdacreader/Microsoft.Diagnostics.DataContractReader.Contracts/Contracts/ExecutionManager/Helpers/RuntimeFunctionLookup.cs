@@ -44,7 +44,7 @@ internal sealed class RuntimeFunctionLookup
         relativeAddress = CodePointerUtils.CodePointerFromAddress(relativeAddress, _target).AsTargetPointer;
 
         // Entries are sorted.
-        return BinaryThenLinearSeach.Search(start, end, Compare, Match, out index);
+        return BinaryThenLinearSearch.Search(start, end, Compare, Match, out index);
 
         bool Compare(uint index)
         {

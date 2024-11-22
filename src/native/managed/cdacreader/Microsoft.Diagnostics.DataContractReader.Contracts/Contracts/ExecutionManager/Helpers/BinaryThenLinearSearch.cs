@@ -5,7 +5,7 @@ using System;
 
 namespace Microsoft.Diagnostics.DataContractReader.ExecutionManagerHelpers;
 
-internal static class BinaryThenLinearSeach
+internal static class BinaryThenLinearSearch
 {
     private const uint BinarySearchCountThreshold = 10;
 
