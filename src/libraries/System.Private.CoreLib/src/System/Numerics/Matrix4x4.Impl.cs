@@ -214,8 +214,12 @@ namespace System.Numerics
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static Impl CreateBillboard(in Vector3 objectPosition, in Vector3 cameraPosition, in Vector3 cameraUpVector, in Vector3 cameraForwardVector)
             {
+                // In a right-handed coordinate system, the object's positive z-axis is in the opposite direction as its forward vector,
+                // and spherical billboards by construction always face the camera.
                 Vector3 axisZ = objectPosition - cameraPosition;
 
+                // When object and camera position are approximately the same, the object should just face the
+                // same direction as the camera is facing.
                 if (axisZ.LengthSquared() < BillboardEpsilon)
                 {
                     axisZ = -cameraForwardVector;
@@ -272,9 +276,12 @@ namespace System.Numerics
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static Impl CreateConstrainedBillboard(in Vector3 objectPosition, in Vector3 cameraPosition, in Vector3 rotateAxis, in Vector3 cameraForwardVector, in Vector3 objectForwardVector)
             {
-                // Treat the case when object and camera positions are too close.
+                // First find the Z-axis of the spherical/unconstrained rotation. We call this faceDir and in a right-handed coordinate system
+                // it will be in the opposite direction as from the object to the camera.
                 Vector3 faceDir = objectPosition - cameraPosition;
 
+                // When object and camera position are approximately the same this indicates that the object should also just face the
+                // same direction as the camera is facing.
                 if (faceDir.LengthSquared() < BillboardEpsilon)
                 {
                     faceDir = -cameraForwardVector;
@@ -286,18 +293,30 @@ namespace System.Numerics
 
                 Vector3 axisY = rotateAxis;
 
-                // Treat the case when angle between faceDir and rotateAxis is too close to 0.
                 float dot = Vector3.Dot(axisY, faceDir);
 
+                // Generally the approximation for small angles is cos theta = 1 - theta^2 / 2,
+                // but it seems that here we are using cos theta = 1 - theta. Letting theta be the angle
+                // between the rotate axis and the faceDir,
+                //
+                // dot = cos theta ~ 1 - theta > 1 - .1 * pi/180 = 1 - (.1 degree) => theta < .1 degree
+                //
+                // So this condition checks if the faceDir is approximately the same as the rotate axis
+                // by checking if the angle between them is less than .1 degree.
                 if (float.Abs(dot) > BillboardMinAngle)
                 {
+                    // If the faceDir is approximately the same as the rotate axis, then fallback to using object forward vector
+                    // as the faceDir.
                     faceDir = objectForwardVector;
 
-                    // Make sure passed values are useful for compute.
                     dot = Vector3.Dot(axisY, faceDir);
 
+                    // Similar to before, check if the faceDir is still is approximately the rotate axis.
+                    // If so, then use either -UnitZ or UnitX as the fallback faceDir.
                     if (float.Abs(dot) > BillboardMinAngle)
                     {
+                        // |axisY.Z| = |dot(axisY, -UnitZ)|, so this is checking if the rotate axis is approximately the same as -UnitZ.
+                        // If is, then use UnitX as the fallback.
                         faceDir = (float.Abs(axisY.Z) > BillboardMinAngle) ? Vector3.UnitX : Vector3.Create(0, 0, -1);
                     }
                 }
@@ -353,11 +372,11 @@ namespace System.Numerics
                     dot = Vector3.Dot(axisY, faceDir);
 
                     // Similar to before, check if the faceDir is still is approximately the rotate axis.
-                    // If so, then use either UnitZ or UnitX as the fallback faceDir.
+                    // If so, then use either -UnitZ or -UnitX as the fallback faceDir.
                     if (float.Abs(dot) > BillboardMinAngle)
                     {
-                        // axisY.Z = dot(axisY, (0, 0, -1)), so this is checking if the rotate axis is approximately the same as UnitZ.
-                        // If is, then use the global X axis as the fallback.
+                        // |axisY.Z| = |dot(axisY, -UnitZ)|, so this is checking if the rotate axis is approximately the same as -UnitZ.
+                        // If is, then use -UnitX as the fallback.
                         faceDir = (float.Abs(axisY.Z) > BillboardMinAngle) ? Vector3.Create(-1, 0, 0) : Vector3.Create(0, 0, -1);
                     }
                 }

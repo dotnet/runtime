@@ -33,7 +33,7 @@ namespace System.Numerics.Tests
             expected.M44 = +1.0f;
 
             Matrix4x4 actual = CreateLookAt(cameraPosition, cameraTarget, cameraUpVector);
-            Assert.True(MathHelper.Equal(expected, actual), $"{CreateLookAtMethodName} did not return the expected value.");
+            Matrix4x4Tests.AssertEqual(expected, actual, Matrix4x4Tests.DefaultVarianceMatrix);
         }
 
         [Fact]
@@ -62,7 +62,7 @@ namespace System.Numerics.Tests
             expected.M44 = +1.0f;
 
             Matrix4x4 actual = CreateLookTo(cameraPosition, cameraDirection, cameraUpVector);
-            Assert.True(MathHelper.Equal(expected, actual), $"{CreateLookToMethodName} did not return the expected value.");
+            Matrix4x4Tests.AssertEqual(expected, actual, Matrix4x4Tests.DefaultVarianceMatrix);
         }
 
         [Fact]
@@ -81,26 +81,20 @@ namespace System.Numerics.Tests
             expected.M43 = minDepth;
 
             Matrix4x4 actual = CreateViewport(x, y, width, height, minDepth, maxDepth);
-            Assert.True(MathHelper.Equal(expected, actual), $"{CreateViewportMethodName} did not return the expected value.");
+            Matrix4x4Tests.AssertEqual(expected, actual, Matrix4x4Tests.DefaultVarianceMatrix);
         }
 
-        protected override string CreateLookAtMethodName => $"{nameof(Matrix4x4)}.{nameof(Matrix4x4.CreateLookAtLeftHanded)}";
         protected override Matrix4x4 CreateLookAt(Vector3 cameraPosition, Vector3 cameraTarget, Vector3 cameraUpVector)
             => Matrix4x4.CreateLookAtLeftHanded(cameraPosition, cameraTarget, cameraUpVector);
 
-        protected override string CreateLookToMethodName => $"{nameof(Matrix4x4)}.{nameof(Matrix4x4.CreateLookToLeftHanded)}";
         protected override Matrix4x4 CreateLookTo(Vector3 cameraPosition, Vector3 cameraDirection, Vector3 cameraUpVector)
             => Matrix4x4.CreateLookToLeftHanded(cameraPosition, cameraDirection, cameraUpVector);
 
-        protected override string CreateViewportMethodName => $"{nameof(Matrix4x4)}.{nameof(Matrix4x4.CreateViewportLeftHanded)}";
         protected override Matrix4x4 CreateViewport(float x, float y, float width, float height, float minDepth, float maxDepth)
             => Matrix4x4.CreateViewportLeftHanded(x, y, width, height, minDepth, maxDepth);
 
-        protected override string CreateBillboardMethodName => $"{nameof(Matrix4x4)}.{nameof(Matrix4x4.CreateBillboardLeftHanded)}";
         protected override Matrix4x4 CreateBillboard(Vector3 objectPosition, Vector3 cameraPosition, Vector3 cameraUpVector, Vector3 cameraForwardVector)
             => Matrix4x4.CreateBillboardLeftHanded(objectPosition, cameraPosition, cameraUpVector, cameraForwardVector);
-
-        protected override string CreateConstrainedBillboardMethodName => $"{nameof(Matrix4x4)}.{nameof(Matrix4x4.CreateConstrainedBillboardLeftHanded)}";
 
         protected override Matrix4x4 CreateConstrainedBillboard(
             Vector3 objectPosition,

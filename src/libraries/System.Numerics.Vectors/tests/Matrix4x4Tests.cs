@@ -9,6 +9,26 @@ namespace System.Numerics.Tests
 {
     public sealed class Matrix4x4Tests : Matrix4x4RightHandTests
     {
+        static Matrix4x4 GenerateFilledMatrix(float value) => new Matrix4x4
+        {
+            M11 = value,
+            M12 = value,
+            M13 = value,
+            M14 = value,
+            M21 = value,
+            M22 = value,
+            M23 = value,
+            M24 = value,
+            M31 = value,
+            M32 = value,
+            M33 = value,
+            M34 = value,
+            M41 = value,
+            M42 = value,
+            M43 = value,
+            M44 = value
+        };
+
         static Matrix4x4 GenerateIncrementalMatrixNumber(float value = 0.0f)
         {
             Matrix4x4 a = new Matrix4x4();
@@ -39,6 +59,15 @@ namespace System.Numerics.Tests
                 Matrix4x4.CreateRotationZ(MathHelper.ToRadians(30.0f));
             m.Translation = new Vector3(111.0f, 222.0f, 333.0f);
             return m;
+        }
+
+        internal static Matrix4x4 DefaultVarianceMatrix = GenerateFilledMatrix(1e-5f);
+
+        internal static void AssertEqual(Matrix4x4 expected, Matrix4x4 actual, Matrix4x4 variance)
+        {
+            for (var i = 0; i < 4; i++)
+                for (var j = 0; j < 4; j++)
+                    AssertExtensions.Equal(expected[i, j], actual[i, j], variance[i, j], $"Values differ at Matrix4x4.M{i+1}{j+1}");
         }
 
         [Theory]
