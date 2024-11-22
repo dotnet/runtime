@@ -5114,10 +5114,7 @@ void CSE_HeuristicCommon::ReplaceCSENode(Statement* stmt, GenTree* exp, GenTree*
 //
 void CSE_HeuristicCommon::InsertUseIntoSsa(IncrementalSsaBuilder& ssaBuilder, const UseDefLocation& useDefLoc)
 {
-    if (!ssaBuilder.InsertUse(useDefLoc))
-    {
-        return;
-    }
+    ssaBuilder.InsertUse(useDefLoc);
 
     GenTreeLclVar* lcl = useDefLoc.Tree;
     assert(lcl->HasSsaName());
