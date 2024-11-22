@@ -79,38 +79,32 @@ internal sealed class HotColdLookup
         uint end = (numHotColdMap - 1) / 2;
 
         bool isColdCode = IsColdCode(numHotColdMap, hotColdMap, runtimeFunctionIndex);
-        int indexCorrection = isColdCode ? 0 : 1;
+        uint indexCorrection = isColdCode ? 0u : 1u;
 
-        // Entries are sorted by the hot part runtime function indices. This also means they are sorted
-        // by the cold part indices, as the cold part is emitted in the same order as hot parts.
-        // Binary search until we get to 10 or fewer items.
-        while (end - start > 10)
+        // Index used for the search is the logical index of hot/cold pairs. We double it to index
+        // into the HotColdMap array.
+        if (BinaryThenLinearSeach.Search(start, end, Compare, Match, out uint index))
         {
-            uint middle = start + (end - start) / 2;
-            long index = middle * 2 + indexCorrection;
-
-            if (runtimeFunctionIndex < _target.Read<uint>(hotColdMap + (ulong)(index * sizeof(uint))))
-            {
-                end = middle - 1;
-            }
-            else
-            {
-                start = middle;
-            }
+            hotIndex = index * 2 + 1;
+            coldIndex = index * 2;
+            return true;
         }
 
-        // Find the hot/cold map index corresponding to the cold/hot runtime function index
-        for (uint i = start; i <= end; ++i)
+        return false;
+
+        bool Compare(uint index)
         {
-            uint index = i * 2;
+            index = index * 2 + indexCorrection;
+            return runtimeFunctionIndex < _target.Read<uint>(hotColdMap + (index * sizeof(uint)));
+        }
+
+        bool Match(uint index)
+        {
+            index *= 2;
 
             uint value = _target.Read<uint>(hotColdMap + (ulong)(index + indexCorrection) * sizeof(uint));
             if (value == runtimeFunctionIndex)
-            {
-                hotIndex = index + 1;
-                coldIndex = index;
                 return true;
-            }
 
             // If function index is a cold funclet from a cold block, the above check for equality will fail.
             // To get its corresponding hot block, find the cold block containing the funclet,
@@ -123,13 +117,11 @@ internal sealed class HotColdLookup
                     || runtimeFunctionIndex < _target.Read<uint>(hotColdMap + (ulong)(index + 2) * sizeof(uint));
                 if (isFuncletIndex)
                 {
-                    hotIndex = index + 1;
-                    coldIndex = index;
                     return true;
                 }
             }
-        }
 
-        return false;
+            return false;
+        }
     }
 }

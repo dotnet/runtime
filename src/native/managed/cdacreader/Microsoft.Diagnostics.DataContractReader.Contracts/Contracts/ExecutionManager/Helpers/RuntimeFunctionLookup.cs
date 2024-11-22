@@ -43,41 +43,30 @@ internal sealed class RuntimeFunctionLookup
         uint end = numRuntimeFunctions - 1;
         relativeAddress = CodePointerUtils.CodePointerFromAddress(relativeAddress, _target).AsTargetPointer;
 
-        // Entries are sorted. Binary search until we get to 10 or fewer items.
-        while (end - start > 10)
-        {
-            uint middle = start + (end - start) / 2;
-            Data.RuntimeFunction func = GetRuntimeFunction(runtimeFunctions, middle);
-            if (relativeAddress < func.BeginAddress)
-            {
-                end = middle - 1;
-            }
-            else
-            {
-                start = middle;
-            }
-        }
+        // Entries are sorted.
+        return BinaryThenLinearSeach.Search(start, end, Compare, Match, out index);
 
-        // Find the runtime function that contains the address of interest
-        for (uint i = start; i <= end; ++i)
+        bool Compare(uint index)
+        {
+            Data.RuntimeFunction func = GetRuntimeFunction(runtimeFunctions, index);
+            return relativeAddress < func.BeginAddress;
+        };
+
+        bool Match(uint index)
         {
             // Entries are terminated by a sentinel value of -1, so we can index one past the end safely.
             // Read as a runtime function, its begin address is 0xffffffff (always > relative address).
             // See RuntimeFunctionsTableNode.GetData in RuntimeFunctionsTableNode.cs
-            Data.RuntimeFunction nextFunc = GetRuntimeFunction(runtimeFunctions, i + 1);
+            Data.RuntimeFunction nextFunc = GetRuntimeFunction(runtimeFunctions, index + 1);
             if (relativeAddress >= nextFunc.BeginAddress)
-                continue;
+                return false;
 
-            Data.RuntimeFunction func = GetRuntimeFunction(runtimeFunctions, i);
+            Data.RuntimeFunction func = GetRuntimeFunction(runtimeFunctions, index);
             if (relativeAddress >= func.BeginAddress)
-            {
-                index = i;
                 return true;
-            }
-        }
 
-        index = ~0u;
-        return false;
+            return false;
+        }
     }
 
     public Data.RuntimeFunction GetRuntimeFunction(TargetPointer runtimeFunctions, uint index)
