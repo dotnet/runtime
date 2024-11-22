@@ -187,30 +187,22 @@ def build_and_run(coreclr_args, output_mch_name):
         env_copy["NUGET_EXPERIMENTAL_CHAIN_BUILD_RETRY_POLICY"] = "9,2000"
 
     # If `dotnet restore` fails, retry.
-    tfm = "net9.0"
-    tfms_to_restore = [tfm, "netstandard2.0"]
     num_tries = 3
     for try_num in range(num_tries):
         # On the last try, exit on fail
         exit_on_fail = try_num + 1 == num_tries
-        all_succeeded = True
-        for tfm_to_restore in tfms_to_restore:
-            (_, _, return_code) = run_command(
-                [dotnet_exe, "restore", project_file, "--packages", artifacts_packages_directory, "-p:TargetFramework=" + tfm_to_restore],
-                _exit_on_fail=exit_on_fail, _env=env_copy)
-            if return_code != 0:
-                all_succeeded = False
-                print("Restoring {} try {} of {} failed with error code {}: trying again".format(tfm_to_restore, try_num + 1, num_tries, return_code))
+        (_, _, return_code) = run_command(
+            [dotnet_exe, "build", project_file, "--configuration", "Release",
+            "--framework", "net9.0", "/p:NuGetPackageRoot=" + artifacts_packages_directory,
+            "-o", artifacts_directory], _exit_on_fail=exit_on_fail)
 
-        if all_succeeded:
+        if return_code == 0:
             break
+
+        print("Build try {} of {} failed with error code {}: trying again".format(try_num + 1, num_tries, return_code))
+
         # Sleep 5 seconds before trying again
         time.sleep(5)
-
-    run_command(
-        [dotnet_exe, "build", project_file, "--configuration", "Release",
-         "--framework", tfm, "--no-restore", "/p:NuGetPackageRoot=" + artifacts_packages_directory,
-         "-o", artifacts_directory], _exit_on_fail=True)
 
     # This is specifically for PowerShell.Benchmarks.
     # Because we are using '--corerun' when running the benchmarks, it is not able to resolve the PowerShell dependent assemblies.
