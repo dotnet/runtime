@@ -71,24 +71,17 @@ internal partial class ExecutionManagerBase<T> : IExecutionManager
             TargetCodePointer startAddress = imageBase + function.BeginAddress;
             TargetNUInt relativeOffset = new TargetNUInt(addr - startAddress);
 
-            // Take any cold code into account for the relative offset
-            if (_hotCold.TryGetColdFunctionIndex(r2rInfo.NumHotColdMap, r2rInfo.HotColdMap, index, out uint hotColdMapIndex, out uint coldFunctionIndex))
+            // Take hot/cold splitting into account for the relative offset
+            if (_hotCold.TryGetColdFunctionIndex(r2rInfo.NumHotColdMap, r2rInfo.HotColdMap, index, out uint coldFunctionIndex))
             {
-                // ReadyToRunJitManager::JitTokenToMethodRegionInfo
                 Data.RuntimeFunction coldFunction = _runtimeFunctions.GetRuntimeFunction(r2rInfo.RuntimeFunctions, coldFunctionIndex);
                 TargetPointer coldStart = imageBase + coldFunction.BeginAddress;
                 if (addr >= coldStart)
                 {
-                    uint nextColdFunctionIndex = hotColdMapIndex == r2rInfo.NumHotColdMap - 2
-                        ? r2rInfo.NumRuntimeFunctions - 1
-                        : Target.Read<uint>(r2rInfo.HotColdMap + (hotColdMapIndex + 2) * sizeof(uint)) - 1;
-                    Data.RuntimeFunction nextColdFunction = _runtimeFunctions.GetRuntimeFunction(r2rInfo.RuntimeFunctions, nextColdFunctionIndex);
-                    uint coldSize = nextColdFunction.BeginAddress + _runtimeFunctions.GetFunctionLength(nextColdFunction) - coldFunction.BeginAddress;
-                    if (coldSize > 0)
-                    {
-                        uint hotSize = _runtimeFunctions.GetFunctionLength(function);
-                        relativeOffset = new TargetNUInt(hotSize + addr - coldStart);
-                    }
+                    // If the address is in the cold part, the relative offset is the size of the
+                    // hot part plus the offset from the address to the start of the cold part
+                    uint hotSize = _runtimeFunctions.GetFunctionLength(function);
+                    relativeOffset = new TargetNUInt(hotSize + addr - coldStart);
                 }
             }
 

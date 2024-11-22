@@ -31,17 +31,15 @@ internal sealed class HotColdLookup
         return _target.Read<uint>(hotColdMap + (ulong)hotIndex * sizeof(uint));
     }
 
-    public bool TryGetColdFunctionIndex(uint numHotColdMap, TargetPointer hotColdMap, uint runtimeFunctionIndex, out uint lookupIndex, out uint functionIndex)
+    public bool TryGetColdFunctionIndex(uint numHotColdMap, TargetPointer hotColdMap, uint runtimeFunctionIndex, out uint functionIndex)
     {
-        lookupIndex = ~0u;
         functionIndex = ~0u;
 
         uint coldIndex;
         if (!TryLookupHotColdMappingForMethod(numHotColdMap, hotColdMap, runtimeFunctionIndex, out uint _, out coldIndex))
             return false;
 
-        lookupIndex = coldIndex;
-        functionIndex = _target.Read<uint>(hotColdMap + (ulong)lookupIndex * sizeof(uint));
+        functionIndex = _target.Read<uint>(hotColdMap + (ulong)coldIndex * sizeof(uint));
         return true;
     }
 

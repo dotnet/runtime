@@ -129,20 +129,16 @@ public class HotColdLookupTests
         Target target = CreateMockTarget(entries);
 
         var lookup = HotColdLookup.Create(target);
-        for (uint i = 0; i < entries.Length; i++)
+        foreach (var entry in entries)
         {
-            var entry = entries[i];
-
             // Hot part as input
-            bool res = lookup.TryGetColdFunctionIndex(numHotColdMap, HotColdMapAddr, entry.Hot, out uint lookupIndex, out uint coldFunctionIndex);
+            bool res = lookup.TryGetColdFunctionIndex(numHotColdMap, HotColdMapAddr, entry.Hot, out uint coldFunctionIndex);
             Assert.True(res);
-            Assert.Equal(i * 2, lookupIndex);
             Assert.Equal(entry.Cold, coldFunctionIndex);
 
             // Cold part as input
-            res = lookup.TryGetColdFunctionIndex(numHotColdMap, HotColdMapAddr, entry.Cold, out lookupIndex, out coldFunctionIndex);
+            res = lookup.TryGetColdFunctionIndex(numHotColdMap, HotColdMapAddr, entry.Cold, out coldFunctionIndex);
             Assert.True(res);
-            Assert.Equal(i * 2, lookupIndex);
             Assert.Equal(entry.Cold, coldFunctionIndex);
         }
     }
@@ -163,9 +159,8 @@ public class HotColdLookupTests
 
         // Cold funclet - between two cold blocks' indexes
         uint functionIndex = 0x110;
-        bool res = lookup.TryGetColdFunctionIndex(numHotColdMap, HotColdMapAddr, functionIndex, out uint lookupIndex, out uint coldFunctionIndex);
+        bool res = lookup.TryGetColdFunctionIndex(numHotColdMap, HotColdMapAddr, functionIndex, out uint coldFunctionIndex);
         Assert.True(res);
-        Assert.Equal(0u, lookupIndex);
         Assert.Equal(entries[0].Cold, coldFunctionIndex);
     }
 
@@ -178,7 +173,7 @@ public class HotColdLookupTests
 
         // Function has no cold part if map is empty
         uint functionIndex = 0x110;
-        bool res = lookup.TryGetColdFunctionIndex(0, HotColdMapAddr, functionIndex, out _, out _);
+        bool res = lookup.TryGetColdFunctionIndex(0, HotColdMapAddr, functionIndex, out _);
         Assert.False(res);
     }
 
@@ -198,7 +193,7 @@ public class HotColdLookupTests
 
         // Function has no cold part if it is not in the map
         uint functionIndex = 0x30;
-        bool res = lookup.TryGetColdFunctionIndex(numHotColdMap, HotColdMapAddr, functionIndex, out _, out _);
+        bool res = lookup.TryGetColdFunctionIndex(numHotColdMap, HotColdMapAddr, functionIndex, out _);
         Assert.False(res);
     }
 }
