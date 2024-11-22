@@ -25,7 +25,7 @@ namespace System.Runtime.CompilerServices
         }
 
         [LibraryImport(RuntimeHelpers.QCall)]
-        private static partial bool IsInstanceOf_NoCacheLookup(void *toTypeHnd, bool throwCastException, ObjectHandleOnStack obj);
+        private static partial bool IsInstanceOf_NoCacheLookup(void *toTypeHnd, [MarshalAs(UnmanagedType.Bool)] bool throwCastException, ObjectHandleOnStack obj);
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static object? IsInstanceOfAny_NoCacheLookup(void* toTypeHnd, object obj)
