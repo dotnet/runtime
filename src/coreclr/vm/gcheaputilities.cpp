@@ -43,6 +43,8 @@ bool g_sw_ww_enabled_for_gc_heap = false;
 
 GVAL_IMPL_INIT(ee_alloc_context, g_global_alloc_context, {});
 
+thread_local ee_alloc_context::PerThreadRandom ee_alloc_context::t_random = PerThreadRandom();
+
 enum GC_LOAD_STATUS {
     GC_LOAD_STATUS_BEFORE_START,
     GC_LOAD_STATUS_START,

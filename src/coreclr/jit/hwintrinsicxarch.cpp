@@ -68,8 +68,6 @@ static CORINFO_InstructionSet X64VersionOfIsa(CORINFO_InstructionSet isa)
             return InstructionSet_POPCNT_X64;
         case InstructionSet_X86Serialize:
             return InstructionSet_X86Serialize_X64;
-        case InstructionSet_EVEX:
-            return InstructionSet_EVEX_X64;
         default:
             return InstructionSet_NONE;
     }
@@ -103,13 +101,32 @@ static CORINFO_InstructionSet VLVersionOfIsa(CORINFO_InstructionSet isa)
 }
 
 //------------------------------------------------------------------------
-// V512VersionOfIsa: Gets the corresponding AVX10V512 only InstructionSet for a given InstructionSet
+// V256VersionOfIsa: Gets the corresponding V256 only InstructionSet for a given InstructionSet
 //
 // Arguments:
 //    isa -- The InstructionSet ID
 //
 // Return Value:
-//    The AVX10V512 only InstructionSet associated with isa
+//    The V256 only InstructionSet associated with isa
+static CORINFO_InstructionSet V256VersionOfIsa(CORINFO_InstructionSet isa)
+{
+    switch (isa)
+    {
+        case InstructionSet_PCLMULQDQ:
+            return InstructionSet_PCLMULQDQ_V256;
+        default:
+            return InstructionSet_NONE;
+    }
+}
+
+//------------------------------------------------------------------------
+// V512VersionOfIsa: Gets the corresponding V512 only InstructionSet for a given InstructionSet
+//
+// Arguments:
+//    isa -- The InstructionSet ID
+//
+// Return Value:
+//    The V512 only InstructionSet associated with isa
 static CORINFO_InstructionSet V512VersionOfIsa(CORINFO_InstructionSet isa)
 {
     switch (isa)
@@ -118,6 +135,8 @@ static CORINFO_InstructionSet V512VersionOfIsa(CORINFO_InstructionSet isa)
             return InstructionSet_AVX10v1_V512;
         case InstructionSet_AVX10v1_X64:
             return InstructionSet_AVX10v1_V512_X64;
+        case InstructionSet_PCLMULQDQ:
+            return InstructionSet_PCLMULQDQ_V512;
         default:
             return InstructionSet_NONE;
     }
@@ -330,7 +349,11 @@ CORINFO_InstructionSet HWIntrinsicInfo::lookupIsa(const char* className,
 
     if (className[0] == 'V')
     {
-        if (strcmp(className, "V512") == 0)
+        if (strcmp(className, "V256") == 0)
+        {
+            return V256VersionOfIsa(enclosingIsa);
+        }
+        else if (strcmp(className, "V512") == 0)
         {
             return V512VersionOfIsa(enclosingIsa);
         }
@@ -847,6 +870,8 @@ bool HWIntrinsicInfo::isFullyImplementedIsa(CORINFO_InstructionSet isa)
         case InstructionSet_LZCNT_X64:
         case InstructionSet_PCLMULQDQ:
         case InstructionSet_PCLMULQDQ_X64:
+        case InstructionSet_PCLMULQDQ_V256:
+        case InstructionSet_PCLMULQDQ_V512:
         case InstructionSet_POPCNT:
         case InstructionSet_POPCNT_X64:
         case InstructionSet_SSE:
@@ -3231,6 +3256,38 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             if (BlockNonDeterministicIntrinsics(mustExpand))
             {
                 break;
+            }
+
+            if ((simdSize == 32) && !varTypeIsFloating(simdBaseType) &&
+                !compOpportunisticallyDependsOn(InstructionSet_AVX2))
+            {
+                // We can't deal with TYP_SIMD32 for integral types if the compiler doesn't support AVX2
+                break;
+            }
+
+            assert(simdSize != 64 || IsBaselineVector512IsaSupportedDebugOnly());
+
+            if (varTypeIsLong(simdBaseType))
+            {
+                if (TARGET_POINTER_SIZE == 4)
+                {
+                    // TODO-XARCH-CQ: 32bit support
+                    break;
+                }
+
+                if ((simdSize == 32) && compOpportunisticallyDependsOn(InstructionSet_AVX2))
+                {
+                    // Emulate NI_AVX512DQ_VL_MultiplyLow with AVX2 for SIMD32
+                }
+                else if ((simdSize == 16) && compOpportunisticallyDependsOn(InstructionSet_SSE41))
+                {
+                    // Emulate NI_AVX512DQ_VL_MultiplyLow with SSE41 for SIMD16
+                }
+                else
+                {
+                    // Software fallback
+                    break;
+                }
             }
 
             op3 = impSIMDPopStack();
