@@ -4927,7 +4927,7 @@ Compiler::ThreeOptLayout::ThreeOptLayout(Compiler* comp)
 //   endPos - The inclusive ending index of the region
 //
 // Returns:
-//   The region's layout cost, or 'BB_MAX_WEIGHT' for pathalogically costly layouts
+//   The region's layout cost
 //
 weight_t Compiler::ThreeOptLayout::GetLayoutCost(unsigned startPos, unsigned endPos)
 {
@@ -4935,25 +4935,13 @@ weight_t Compiler::ThreeOptLayout::GetLayoutCost(unsigned startPos, unsigned end
     assert(endPos < numCandidateBlocks);
     weight_t layoutCost = BB_ZERO_WEIGHT;
 
-    // As 'layoutCost' grows, we may begin to incur noticeable floating-point imprecision,
-    // which complicates comparing layout costs.
-    // Detect this, and return 'BB_MAX_WEIGHT'.
-    auto sumAndCheckForImprecision = [&layoutCost](weight_t cost) -> bool {
-        assert(cost >= BB_ZERO_WEIGHT);
-        const weight_t oldLayoutCost = layoutCost;
-        layoutCost += cost;
-        return !Compiler::fgProfileWeightsEqual(cost, layoutCost - oldLayoutCost, 0.001);
-    };
-
     for (unsigned position = startPos; position < endPos; position++)
     {
-        if (sumAndCheckForImprecision(GetCost(blockOrder[position], blockOrder[position + 1])))
-        {
-            return BB_MAX_WEIGHT;
-        }
+        layoutCost += GetCost(blockOrder[position], blockOrder[position + 1]);
     }
 
-    return sumAndCheckForImprecision(blockOrder[endPos]->bbWeight) ? BB_MAX_WEIGHT : layoutCost;
+    layoutCost += blockOrder[endPos]->bbWeight;
+    return layoutCost;
 }
 #endif // DEBUG
 
