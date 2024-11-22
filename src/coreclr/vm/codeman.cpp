@@ -1408,6 +1408,13 @@ void EEJitManager::SetCpuInfo()
         CPUCompileFlags.Set(InstructionSet_X86Serialize);
     }
 
+    if (((cpuFeatures & XArchIntrinsicConstants_Gfni) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableGFNI))
+    {
+        CPUCompileFlags.Set(InstructionSet_GFNI);
+        CPUCompileFlags.Set(InstructionSet_GFNI_V256);
+        CPUCompileFlags.Set(InstructionSet_GFNI_V512);
+    }
+
     if (((cpuFeatures & XArchIntrinsicConstants_Evex) != 0) &&
         ((cpuFeatures & XArchIntrinsicConstants_Avx10v1) != 0))
     {
@@ -1415,11 +1422,7 @@ void EEJitManager::SetCpuInfo()
         {
             CPUCompileFlags.Set(InstructionSet_EVEX);
             CPUCompileFlags.Set(InstructionSet_AVX10v1);
-
-            if((cpuFeatures & XArchIntrinsicConstants_Avx512) != 0)
-            {
-                CPUCompileFlags.Set(InstructionSet_AVX10v1_V512);
-            }
+            CPUCompileFlags.Set(InstructionSet_AVX10v1_V512);
         }
     }
 
@@ -1428,10 +1431,7 @@ void EEJitManager::SetCpuInfo()
         if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX10v2))
         {
             CPUCompileFlags.Set(InstructionSet_AVX10v2);
-            if((cpuFeatures & XArchIntrinsicConstants_Avx512) != 0)
-            {
-                CPUCompileFlags.Set(InstructionSet_AVX10v2_V512);
-            }
+            CPUCompileFlags.Set(InstructionSet_AVX10v2_V512);
         }
     }
 
