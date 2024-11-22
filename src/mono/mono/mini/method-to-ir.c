@@ -6263,6 +6263,9 @@ method_make_alwaysthrow_typeloadfailure (MonoCompile* cfg, MonoClass* klass)
 	mono_link_bblock (cfg, bb, cfg->bb_exit);
 
 	cfg->disable_inline = TRUE;
+
+	for (guint i = 0; i < cfg->header->num_clauses; i++)
+		cfg->clause_is_dead [i] = TRUE;
 }
 
 typedef union _MonoOpcodeParameter {
