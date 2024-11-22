@@ -188,17 +188,22 @@ def build_and_run(coreclr_args, output_mch_name):
 
     # If `dotnet restore` fails, retry.
     tfm = "net9.0"
+    tfms_to_restore = [tfm, "netstandard2.0"]
     num_tries = 3
     for try_num in range(num_tries):
         # On the last try, exit on fail
         exit_on_fail = try_num + 1 == num_tries
-        (_, _, return_code) = run_command(
-            [dotnet_exe, "restore", project_file, "--packages", artifacts_packages_directory, "-p:TargetFrameworks=netstandard2.0;" + tfm],
-            _exit_on_fail=exit_on_fail, _env=env_copy)
-        if return_code == 0:
-            # It succeeded!
+        all_succeeded = True
+        for tfm_to_restore in tfms_to_restore:
+            (_, _, return_code) = run_command(
+                [dotnet_exe, "restore", project_file, "--packages", artifacts_packages_directory, "-p:TargetFramework=" + tfm_to_restore],
+                _exit_on_fail=exit_on_fail, _env=env_copy)
+            if return_code != 0:
+                all_succeeded = False
+                print("Restoring {} try {} of {} failed with error code {}: trying again".format(tfm_to_restore, try_num + 1, num_tries, return_code))
+
+        if all_succeeded:
             break
-        print("Try {} of {} failed with error code {}: trying again".format(try_num + 1, num_tries, return_code))
         # Sleep 5 seconds before trying again
         time.sleep(5)
 
