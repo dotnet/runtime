@@ -893,9 +893,20 @@ static pfnSetThreadDescription g_pfnSetThreadDescription = SET_THREAD_DESCRIPTIO
 
 REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalStartBackgroundWork(_In_ BackgroundCallback callback, _In_opt_ void* pCallbackContext, BOOL highPriority)
 {
+    // Keep the same arbitrary minimum and maximum from the coreclr\vm layer.
+    const size_t minStack = 0x10000;     // 64K
+    const size_t maxStack = 0x80000000;  //  2G
+
+    uint64_t stacksize = g_pRhConfig->GetDefaultStackSize();
+
+    if (stacksize >= maxStack || stacksize < minStack)
+    {
+        stacksize = 0;
+    }
+
     HANDLE hThread = CreateThread(
         NULL,
-        0,
+        (DWORD)stacksize,
         (LPTHREAD_START_ROUTINE)callback,
         pCallbackContext,
         highPriority ? CREATE_SUSPENDED : 0,

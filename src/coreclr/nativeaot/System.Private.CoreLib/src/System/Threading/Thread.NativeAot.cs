@@ -483,6 +483,41 @@ namespace System.Threading
             }
         }
 
+
+        private static int StackSizeFromConfig
+        {
+            get => _stackSizeFromConfig ??= GetDefaultStackSize();
+        }
+
+        private static int? _stackSizeFromConfig;
+
+        internal static int GetDefaultStackSize()
+        {
+            // Keep the same arbitrary minimum and maximum from the coreclr\vm layer.
+            const uint minStack = 0x10000;     // 64K
+            const uint maxStack = 0x80000000;  //  2G
+
+            const string stackSizeVar = "DefaultStackSize";
+            const string stackSizeEnvVar = "DOTNET_DefaultStackSize";
+
+            // Values in RuntimeHostConfigurationOptions get mapped as knobs, knobs get exposed through
+            // the AppContext class.
+            // To have similar behavior as RhConfig, also read from environment variables, which have priority.
+
+            string? valueFromConfig = Environment.GetEnvironmentVariable(stackSizeEnvVar) ?? AppContext.GetData(stackSizeVar)?.ToString();
+
+            if (!string.IsNullOrEmpty(valueFromConfig) &&
+                uint.TryParse(valueFromConfig, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out uint sizeFromConfig) &&
+                sizeFromConfig >= minStack &&
+                sizeFromConfig < maxStack)
+            {
+                // Less than the maxStack size means it will fit in a signed int32.
+                return (int)sizeFromConfig;
+            }
+
+            return 0;
+        }
+
         internal static void IncrementRunningForeground()
         {
             Interlocked.Increment(ref s_foregroundRunningCount);
