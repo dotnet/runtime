@@ -197,10 +197,9 @@ def build_and_run(coreclr_args, output_mch_name):
             "-o", artifacts_directory], _exit_on_fail=exit_on_fail)
 
         if return_code == 0:
+            # It succeeded!
             break
-
-        print("Build try {} of {} failed with error code {}: trying again".format(try_num + 1, num_tries, return_code))
-
+        print("Try {} of {} failed with error code {}: trying again".format(try_num + 1, num_tries, return_code))
         # Sleep 5 seconds before trying again
         time.sleep(5)
 
