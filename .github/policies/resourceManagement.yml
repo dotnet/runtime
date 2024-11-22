@@ -1589,9 +1589,7 @@ configuration:
         then:
         - mentionUsers:
             mentionees:
-            - agocke
-            - sbomer
-            - vitek-karas
+            - dotnet/illink
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 

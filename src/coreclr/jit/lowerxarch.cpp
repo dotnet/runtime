@@ -9155,13 +9155,6 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
     // read more than sizeof(T) bytes).
     bool supportsSIMDScalarLoads = false;
 
-    // parentNode supports nodes that read from an unaligned memory address
-    //
-    // This will generally be an explicit Load instruction and is generally false for machines
-    // without VEX support. This is because older hardware required that the SIMD operand always
-    // be aligned to the 'natural alignment' of the type.
-    bool supportsUnalignedSIMDLoads = false;
-
     switch (category)
     {
         case HW_Category_MemoryLoad:
@@ -9190,112 +9183,112 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
                     break;
                 }
 
+                case NI_SSE2_ConvertToVector128Double:
+                case NI_SSE3_MoveAndDuplicate:
                 case NI_SSE41_ConvertToVector128Int16:
                 case NI_SSE41_ConvertToVector128Int32:
                 case NI_SSE41_ConvertToVector128Int64:
+                case NI_AVX_ConvertToVector256Double:
                 case NI_AVX2_ConvertToVector256Int16:
                 case NI_AVX2_ConvertToVector256Int32:
                 case NI_AVX2_ConvertToVector256Int64:
-                {
-                    assert(!supportsSIMDScalarLoads);
-
-                    if (!parentNode->OperIsMemoryLoad())
-                    {
-                        // The containable form is the one that takes a SIMD value, that may be in memory.
-
-                        if (!comp->canUseVexEncoding())
-                        {
-                            supportsAlignedSIMDLoads   = true;
-                            supportsUnalignedSIMDLoads = !supportsAlignedSIMDLoads;
-                        }
-                        else
-                        {
-                            supportsAlignedSIMDLoads   = !comp->opts.MinOpts();
-                            supportsUnalignedSIMDLoads = true;
-                        }
-
-                        // General loads are a bit special where we need at least `sizeof(simdType) / (sizeof(baseType)
-                        // * 2)` elements
-                        // For example:
-                        //  * ConvertToVector128Int16 - sizeof(simdType) = 16; sizeof(baseType) = 1; expectedSize =  8
-                        //  * ConvertToVector128Int32 - sizeof(simdType) = 16; sizeof(baseType) = 1 | 2;
-                        //  expectedSize =  8 | 4
-                        //  * ConvertToVector128Int64 - sizeof(simdType) = 16; sizeof(baseType) = 1 | 2 | 4;
-                        //  expectedSize =  8 | 4 | 2
-                        //  * ConvertToVector256Int16 - sizeof(simdType) = 32; sizeof(baseType) = 1; expectedSize = 16
-                        //  * ConvertToVector256Int32 - sizeof(simdType) = 32; sizeof(baseType) = 1 | 2;
-                        //  expectedSize = 16 | 8
-                        //  * ConvertToVector256Int64 - sizeof(simdType) = 32; sizeof(baseType) = 1 | 2 | 4;
-                        //  expectedSize = 16 | 8 | 4
-
-                        const unsigned sizeof_simdType = genTypeSize(parentNode->TypeGet());
-                        const unsigned sizeof_baseType = genTypeSize(parentNode->GetSimdBaseType());
-
-                        assert((sizeof_simdType == 16) || (sizeof_simdType == 32));
-                        assert((sizeof_baseType == 1) || (sizeof_baseType == 2) || (sizeof_baseType == 4));
-
-                        const unsigned expectedSize = sizeof_simdType / (sizeof_baseType * 2);
-                        const unsigned operandSize  = genTypeSize(childNode->TypeGet());
-
-                        assert((sizeof_simdType != 16) || (expectedSize == 8) || (expectedSize == 4) ||
-                               (expectedSize == 2));
-                        assert((sizeof_simdType != 32) || (expectedSize == 16) || (expectedSize == 8) ||
-                               (expectedSize == 4));
-
-                        supportsGeneralLoads = (operandSize >= expectedSize);
-                    }
-                    else
-                    {
-                        // The memory form of this already takes a pointer and should be treated like a MemoryLoad
-                        supportsGeneralLoads = !childNode->OperIsHWIntrinsic();
-                    }
-                    break;
-                }
-
-                case NI_SSE2_ConvertToVector128Double:
-                case NI_AVX_ConvertToVector256Double:
+                case NI_AVX512BW_ConvertToVector512Int16:
+                case NI_AVX512BW_ConvertToVector512UInt16:
                 case NI_AVX512F_ConvertToVector512Double:
+                case NI_AVX512F_ConvertToVector512Int32:
+                case NI_AVX512F_ConvertToVector512UInt32:
+                case NI_AVX512F_ConvertToVector512Int64:
+                case NI_AVX512F_ConvertToVector512UInt64:
                 case NI_AVX512F_VL_ConvertToVector128Double:
                 case NI_AVX512F_VL_ConvertToVector256Double:
                 case NI_AVX10v1_ConvertToVector128Double:
                 case NI_AVX10v1_ConvertToVector256Double:
                 {
-                    assert(!supportsSIMDScalarLoads);
-
-                    // Most instructions under the non-VEX encoding require aligned operands.
-                    // Those used for Sse2.ConvertToVector128Double (CVTDQ2PD and CVTPS2PD)
-                    // are exceptions and don't fail for unaligned inputs as they read half
-                    // the vector width instead
-
-                    supportsAlignedSIMDLoads   = !comp->opts.MinOpts();
-                    supportsUnalignedSIMDLoads = true;
-
-                    const unsigned expectedSize = genTypeSize(parentNode->TypeGet()) / 2;
-                    const unsigned operandSize  = genTypeSize(childNode->TypeGet());
-
-                    if (childNode->OperIsConst() || childNode->isMemoryOp())
+                    // Some of these intrinsics have pointer overloads. Treat those as normal memory loads.
+                    if (parentNode->OperIsMemoryLoad())
                     {
-                        // For broadcasts we can only optimize constants and memory operands
-                        // since we're going from a smaller base type to a larger base type
-                        supportsGeneralLoads = supportsUnalignedSIMDLoads && (operandSize >= expectedSize);
+                        supportsGeneralLoads = !childNode->OperIsHWIntrinsic();
+                        break;
                     }
-                    break;
-                }
 
-                case NI_SSE3_MoveAndDuplicate:
-                {
-                    // Most instructions under the non-VEX encoding require aligned operands.
-                    // Those used for Sse3.MoveAndDuplicate (MOVDDUP) are exceptions and don't
-                    // fail for unaligned inputs as they read half the vector width instead
+                    // These are widening instructions. A load can be contained if the source is large enough
+                    // after taking into account the multiplier of source to target element size.
 
-                    supportsAlignedSIMDLoads   = !comp->opts.MinOpts();
-                    supportsUnalignedSIMDLoads = true;
+                    const var_types   parentBaseType    = parentNode->GetSimdBaseType();
+                    const instruction parentInstruction = HWIntrinsicInfo::lookupIns(parentIntrinsicId, parentBaseType);
 
-                    const unsigned expectedSize = genTypeSize(parentNode->TypeGet()) / 2;
+                    const insTupleType tupleType   = comp->GetEmitter()->insTupleTypeInfo(parentInstruction);
+                    const unsigned     parentSize  = parentNode->GetSimdSize();
+                    unsigned           widenFactor = 0;
+
+                    switch (tupleType)
+                    {
+                        case INS_TT_FULL:
+                        case INS_TT_FULL_MEM:
+                        {
+                            widenFactor = 1;
+                            break;
+                        }
+
+                        case INS_TT_HALF:
+                        case INS_TT_HALF_MEM:
+                        {
+                            widenFactor = 2;
+                            break;
+                        }
+
+                        case INS_TT_QUARTER_MEM:
+                        {
+                            widenFactor = 4;
+                            break;
+                        }
+
+                        case INS_TT_EIGHTH_MEM:
+                        {
+                            widenFactor = 8;
+                            break;
+                        }
+
+                        case INS_TT_MOVDDUP:
+                        {
+                            widenFactor = parentSize == 16 ? 2 : 1;
+                            break;
+                        }
+
+                        default:
+                        {
+                            unreached();
+                            break;
+                        }
+                    }
+
+                    const unsigned expectedSize = parentSize / widenFactor;
                     const unsigned operandSize  = genTypeSize(childNode->TypeGet());
 
-                    supportsGeneralLoads    = supportsUnalignedSIMDLoads && (operandSize >= expectedSize);
-                    supportsSIMDScalarLoads = true;
+                    if (expectedSize < 16)
+                    {
+                        // We do not need to consider alignment for non-VEX encoding here because we're
+                        // loading less than a full vector.
+                        //
+                        // We can also contain a SIMD scalar load, provided the element type is large enough.
+
+                        supportsAlignedSIMDLoads = !comp->opts.MinOpts();
+                        supportsGeneralLoads     = (operandSize >= expectedSize);
+
+                        if (childNode->OperIsHWIntrinsic())
+                        {
+                            GenTreeHWIntrinsic* childIntrinsic       = childNode->AsHWIntrinsic();
+                            const unsigned      sizeof_childBaseType = genTypeSize(childIntrinsic->GetSimdBaseType());
+
+                            supportsSIMDScalarLoads = (sizeof_childBaseType >= expectedSize);
+                        }
+                    }
+                    else
+                    {
+                        supportsAlignedSIMDLoads = !comp->canUseVexEncoding() || !comp->opts.MinOpts();
+                        supportsGeneralLoads     = comp->canUseVexEncoding() && (operandSize >= expectedSize);
+                    }
+
                     break;
                 }
 
@@ -9303,21 +9296,11 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
                 {
                     assert(!supportsSIMDScalarLoads);
 
-                    if (!comp->canUseVexEncoding())
-                    {
-                        assert(!supportsUnalignedSIMDLoads);
-                        supportsAlignedSIMDLoads = true;
-                    }
-                    else
-                    {
-                        supportsAlignedSIMDLoads   = !comp->opts.MinOpts();
-                        supportsUnalignedSIMDLoads = true;
-                    }
-
                     const unsigned expectedSize = genTypeSize(parentNode->TypeGet());
                     const unsigned operandSize  = genTypeSize(childNode->TypeGet());
 
-                    supportsGeneralLoads = supportsUnalignedSIMDLoads && (operandSize >= expectedSize);
+                    supportsAlignedSIMDLoads = !comp->canUseVexEncoding() || !comp->opts.MinOpts();
+                    supportsGeneralLoads     = comp->canUseVexEncoding() && (operandSize >= expectedSize);
                     break;
                 }
             }
@@ -9341,6 +9324,8 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
                 case NI_SSE41_MultipleSumAbsoluteDifferences:
                 case NI_AES_KeygenAssist:
                 case NI_PCLMULQDQ_CarrylessMultiply:
+                case NI_PCLMULQDQ_V256_CarrylessMultiply:
+                case NI_PCLMULQDQ_V512_CarrylessMultiply:
                 case NI_AVX_Blend:
                 case NI_AVX_Compare:
                 case NI_AVX_DotProduct:
@@ -9418,9 +9403,8 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
                     const unsigned expectedSize = genTypeSize(parentNode->GetSimdBaseType());
                     const unsigned operandSize  = genTypeSize(childNode->TypeGet());
 
-                    supportsAlignedSIMDLoads   = !comp->canUseVexEncoding() || !comp->opts.MinOpts();
-                    supportsUnalignedSIMDLoads = comp->canUseVexEncoding();
-                    supportsGeneralLoads       = supportsUnalignedSIMDLoads && (operandSize >= expectedSize);
+                    supportsAlignedSIMDLoads = !comp->canUseVexEncoding() || !comp->opts.MinOpts();
+                    supportsGeneralLoads     = comp->canUseVexEncoding() && (operandSize >= expectedSize);
                     break;
                 }
 
@@ -9438,16 +9422,14 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
                         const unsigned expectedSize = genTypeSize(parentNode->GetSimdBaseType());
                         const unsigned operandSize  = genTypeSize(childNode->TypeGet());
 
-                        supportsAlignedSIMDLoads   = !comp->canUseVexEncoding() || !comp->opts.MinOpts();
-                        supportsUnalignedSIMDLoads = comp->canUseVexEncoding();
-                        supportsGeneralLoads       = supportsUnalignedSIMDLoads && (operandSize >= expectedSize);
+                        supportsAlignedSIMDLoads = !comp->canUseVexEncoding() || !comp->opts.MinOpts();
+                        supportsGeneralLoads     = comp->canUseVexEncoding() && (operandSize >= expectedSize);
                     }
                     else
                     {
                         assert(supportsAlignedSIMDLoads == false);
                         assert(supportsGeneralLoads == false);
                         assert(supportsSIMDScalarLoads == false);
-                        assert(supportsUnalignedSIMDLoads == false);
                     }
                     break;
                 }
@@ -9464,9 +9446,8 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
                     const unsigned expectedSize = 16;
                     const unsigned operandSize  = genTypeSize(childNode->TypeGet());
 
-                    supportsAlignedSIMDLoads   = !comp->canUseVexEncoding() || !comp->opts.MinOpts();
-                    supportsUnalignedSIMDLoads = comp->canUseVexEncoding();
-                    supportsGeneralLoads       = supportsUnalignedSIMDLoads && (operandSize >= expectedSize);
+                    supportsAlignedSIMDLoads = !comp->opts.MinOpts();
+                    supportsGeneralLoads     = (operandSize >= expectedSize);
                     break;
                 }
 
@@ -9480,9 +9461,8 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
                     const unsigned expectedSize = 32;
                     const unsigned operandSize  = genTypeSize(childNode->TypeGet());
 
-                    supportsAlignedSIMDLoads   = !comp->canUseEvexEncoding() || !comp->opts.MinOpts();
-                    supportsUnalignedSIMDLoads = comp->canUseEvexEncoding();
-                    supportsGeneralLoads       = supportsUnalignedSIMDLoads && (operandSize >= expectedSize);
+                    supportsAlignedSIMDLoads = !comp->opts.MinOpts();
+                    supportsGeneralLoads     = (operandSize >= expectedSize);
                     break;
                 }
 
@@ -9491,7 +9471,6 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
                 case NI_SSE41_X64_Insert:
                 {
                     assert(supportsAlignedSIMDLoads == false);
-                    assert(supportsUnalignedSIMDLoads == false);
 
                     if (parentNode->GetSimdBaseType() == TYP_FLOAT)
                     {
@@ -9553,7 +9532,6 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
                 case NI_AVX10v1_RoundScaleScalar:
                 {
                     assert(supportsAlignedSIMDLoads == false);
-                    assert(supportsUnalignedSIMDLoads == false);
 
                     supportsSIMDScalarLoads = true;
                     supportsGeneralLoads    = supportsSIMDScalarLoads;
@@ -9565,7 +9543,6 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
                     assert(supportsAlignedSIMDLoads == false);
                     assert(supportsGeneralLoads == false);
                     assert(supportsSIMDScalarLoads == false);
-                    assert(supportsUnalignedSIMDLoads == false);
                     break;
                 }
             }
@@ -9575,7 +9552,6 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
         case HW_Category_SIMDScalar:
         {
             assert(supportsAlignedSIMDLoads == false);
-            assert(supportsUnalignedSIMDLoads == false);
 
             switch (parentIntrinsicId)
             {
@@ -9675,13 +9651,12 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
             assert(varTypeIsIntegral(childNode->TypeGet()));
 
             assert(supportsAlignedSIMDLoads == false);
-            assert(supportsUnalignedSIMDLoads == false);
             assert(supportsSIMDScalarLoads == false);
 
             unsigned       expectedSize = genTypeSize(parentNode->TypeGet());
             const unsigned operandSize  = genTypeSize(childNode->TypeGet());
 
-            // CRC32 codegen depends on its second oprand's type.
+            // CRC32 codegen depends on its second operand's type.
             // Currently, we are using SIMDBaseType to store the op2Type info.
             if (parentIntrinsicId == NI_SSE42_Crc32)
             {
@@ -9698,7 +9673,6 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
             assert(supportsAlignedSIMDLoads == false);
             assert(supportsGeneralLoads == false);
             assert(supportsSIMDScalarLoads == false);
-            assert(supportsUnalignedSIMDLoads == false);
             break;
         }
     }
@@ -11316,6 +11290,8 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                         case NI_AVX512DQ_VL_Range:
                         case NI_AVX512DQ_ReduceScalar:
                         case NI_PCLMULQDQ_CarrylessMultiply:
+                        case NI_PCLMULQDQ_V256_CarrylessMultiply:
+                        case NI_PCLMULQDQ_V512_CarrylessMultiply:
                         case NI_AVX10v1_AlignRight32:
                         case NI_AVX10v1_AlignRight64:
                         case NI_AVX10v1_GetMantissaScalar:
