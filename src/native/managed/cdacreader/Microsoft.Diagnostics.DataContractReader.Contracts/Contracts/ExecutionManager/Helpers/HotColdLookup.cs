@@ -27,7 +27,7 @@ internal sealed class HotColdLookup
             return runtimeFunctionIndex;
 
         // If runtime function is in the cold part, get the associated hot part
-        Debug.Assert((hotIndex & 1) == 1);
+        Debug.Assert(hotIndex % 2 != 0, "Hot part index should be an odd number");
         return _target.Read<uint>(hotColdMap + (ulong)hotIndex * sizeof(uint));
     }
 
@@ -39,6 +39,7 @@ internal sealed class HotColdLookup
         if (!TryLookupHotColdMappingForMethod(numHotColdMap, hotColdMap, runtimeFunctionIndex, out uint _, out coldIndex))
             return false;
 
+        Debug.Assert(coldIndex % 2 == 0, "Cold part index should be an even number");
         functionIndex = _target.Read<uint>(hotColdMap + (ulong)coldIndex * sizeof(uint));
         return true;
     }

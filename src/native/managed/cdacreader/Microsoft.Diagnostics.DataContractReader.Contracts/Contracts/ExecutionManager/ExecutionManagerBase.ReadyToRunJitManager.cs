@@ -56,11 +56,15 @@ internal partial class ExecutionManagerBase<T> : IExecutionManager
             {
                 // Look up index in hot/cold map - if the function is in the cold part, get the index of the hot part.
                 index = _hotCold.GetHotFunctionIndex(r2rInfo.NumHotColdMap, r2rInfo.HotColdMap, index);
+                Debug.Assert(index < r2rInfo.NumRuntimeFunctions);
             }
 
             TargetPointer methodDesc = GetMethodDescForRuntimeFunction(r2rInfo, imageBase, index);
             while (featureEHFunclets && methodDesc == TargetPointer.Null)
             {
+                // Funclets won't have a direct entry in the map of runtime function entry point to method desc.
+                // The funclet's address (and index) will be greater than that of the corresponding function, so
+                // we decrement the index to find the actual function / method desc for the funclet.
                 index--;
                 methodDesc = GetMethodDescForRuntimeFunction(r2rInfo, imageBase, index);
             }
@@ -74,6 +78,7 @@ internal partial class ExecutionManagerBase<T> : IExecutionManager
             // Take hot/cold splitting into account for the relative offset
             if (_hotCold.TryGetColdFunctionIndex(r2rInfo.NumHotColdMap, r2rInfo.HotColdMap, index, out uint coldFunctionIndex))
             {
+                Debug.Assert(coldFunctionIndex < r2rInfo.NumRuntimeFunctions);
                 Data.RuntimeFunction coldFunction = _runtimeFunctions.GetRuntimeFunction(r2rInfo.RuntimeFunctions, coldFunctionIndex);
                 TargetPointer coldStart = imageBase + coldFunction.BeginAddress;
                 if (addr >= coldStart)
