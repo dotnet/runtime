@@ -776,6 +776,7 @@ RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAVXVNNI,                W("EnableAVXVNNI
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableBMI1,                   W("EnableBMI1"),                1, "Allows BMI1+ hardware intrinsics to be disabled")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableBMI2,                   W("EnableBMI2"),                1, "Allows BMI2+ hardware intrinsics to be disabled")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableFMA,                    W("EnableFMA"),                 1, "Allows FMA+ hardware intrinsics to be disabled")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableGFNI,                   W("EnableGFNI"),                1, "Allows GFNI+ hardware intrinsics to be disabled")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableLZCNT,                  W("EnableLZCNT"),               1, "Allows LZCNT+ hardware intrinsics to be disabled")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnablePCLMULQDQ,              W("EnablePCLMULQDQ"),           1, "Allows PCLMULQDQ+ hardware intrinsics to be disabled")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableVPCLMULQDQ,             W("EnableVPCLMULQDQ"),          1, "Allows VPCLMULQDQ+ hardware intrinsics to be disabled")
