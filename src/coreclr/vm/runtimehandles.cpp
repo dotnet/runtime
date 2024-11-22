@@ -138,7 +138,7 @@ extern "C" BOOL QCALLTYPE RuntimeMethodHandle_IsCAVisibleFromDecoratedType(
     return bResult;
 }
 
-extern "C" void QCALLTYPE RuntimeTypeHandle_GetTypeFromHandleSlow(
+extern "C" void QCALLTYPE RuntimeTypeHandle_GetRuntimeTypeFromHandleSlow(
     EnregisteredTypeHandle typeHandleRaw,
     QCall::ObjectHandleOnStack result)
 {
@@ -157,7 +157,7 @@ extern "C" void QCALLTYPE RuntimeTypeHandle_GetTypeFromHandleSlow(
     END_QCALL;
 }
 
-FCIMPL1(ReflectClassBaseObject*, RuntimeTypeHandle::GetTypeFromHandleIfExists, EnregisteredTypeHandle th)
+FCIMPL1(ReflectClassBaseObject*, RuntimeTypeHandle::GetRuntimeTypeFromHandleIfExists, EnregisteredTypeHandle th)
 {
     FCALL_CONTRACT;
 

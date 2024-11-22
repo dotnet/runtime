@@ -138,7 +138,7 @@ static const Entry s_QCall[] =
 #ifdef FEATURE_COMINTEROP
     DllImportEntry(RuntimeTypeHandle_AllocateComObject)
 #endif // FEATURE_COMINTEROP
-    DllImportEntry(RuntimeTypeHandle_GetTypeFromHandleSlow)
+    DllImportEntry(RuntimeTypeHandle_GetRuntimeTypeFromHandleSlow)
     DllImportEntry(RuntimeTypeHandle_CreateInstanceForAnotherGenericParameter)
     DllImportEntry(RuntimeTypeHandle_AllocateTypeAssociatedMemory)
     DllImportEntry(RuntimeTypeHandle_RegisterCollectibleTypeDependency)

@@ -22,7 +22,7 @@ namespace System
             new RuntimeTypeHandle(m_type ?? throw new ArgumentNullException(null, SR.Arg_InvalidHandle));
 
         // Returns type for interop with EE. The type is guaranteed to be non-null.
-        internal RuntimeType GetTypeChecked() =>
+        internal RuntimeType GetRuntimeTypeChecked() =>
             m_type ?? throw new ArgumentNullException(null, SR.Arg_InvalidHandle);
 
         /// <summary>
@@ -33,31 +33,31 @@ namespace System
         public static RuntimeTypeHandle FromIntPtr(IntPtr value) =>
             new RuntimeTypeHandle(value == IntPtr.Zero ? null : GetRuntimeTypeFromHandle(value));
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_GetTypeFromHandleSlow")]
-        private static partial void GetTypeFromHandleSlow(
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_GetRuntimeTypeFromHandleSlow")]
+        private static partial void GetRuntimeTypeFromHandleSlow(
             IntPtr handle,
             ObjectHandleOnStack typeObject);
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static RuntimeType GetTypeFromHandleSlow(IntPtr handle)
+        private static RuntimeType GetRuntimeTypeFromHandleSlow(IntPtr handle)
         {
             RuntimeType? typeObject = null;
-            GetTypeFromHandleSlow(handle, ObjectHandleOnStack.Create(ref typeObject));
+            GetRuntimeTypeFromHandleSlow(handle, ObjectHandleOnStack.Create(ref typeObject));
             return typeObject!;
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern RuntimeType? GetTypeFromHandleIfExists(IntPtr handle);
+        private static extern RuntimeType? GetRuntimeTypeFromHandleIfExists(IntPtr handle);
 
         private static RuntimeType GetRuntimeTypeFromHandle(IntPtr handle)
         {
-            return GetTypeFromHandleIfExists(handle) ?? GetTypeFromHandleSlow(handle);
+            return GetRuntimeTypeFromHandleIfExists(handle) ?? GetRuntimeTypeFromHandleSlow(handle);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static unsafe RuntimeType GetRuntimeType(MethodTable* pMT)
         {
-            return pMT->AuxiliaryData->ExposedClassObject ?? GetTypeFromHandleSlow((IntPtr)pMT);
+            return pMT->AuxiliaryData->ExposedClassObject ?? GetRuntimeTypeFromHandleSlow((IntPtr)pMT);
         }
 
         /// <summary>
@@ -715,7 +715,7 @@ namespace System
 
         internal int GetGenericVariableIndex()
         {
-            RuntimeType type = GetTypeChecked();
+            RuntimeType type = GetRuntimeTypeChecked();
 
             if (!IsGenericVariable(type))
                 throw new InvalidOperationException(SR.Arg_NotGenericParameter);
@@ -728,7 +728,7 @@ namespace System
 
         internal bool ContainsGenericVariables()
         {
-            return ContainsGenericVariables(GetTypeChecked());
+            return ContainsGenericVariables(GetRuntimeTypeChecked());
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -796,7 +796,7 @@ namespace System
             m_handle = value;
         }
 
-        internal IntPtr m_handle;
+        private IntPtr m_handle;
     }
 
     internal sealed class RuntimeMethodInfoStub : IRuntimeMethodInfo
