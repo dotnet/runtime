@@ -788,10 +788,10 @@ bool GCToEEInterface::GetIntConfigValue(const char* privateKey, const char* publ
 
 bool GCToEEInterface::GetFloatingPointConfigValue(const char* privateKey, const char* publicKey, double* value)
 {
-    uint64_t uiValue;
-    if (g_pRhConfig->ReadConfigValue(privateKey, &uiValue))
+    double dValue;
+    if (g_pRhConfig->ReadConfigDoubleValue(privateKey, &dValue))
     {
-        memcpy(value, &uiValue, sizeof(double));
+        *value = dValue;
         return true;
     }
 
