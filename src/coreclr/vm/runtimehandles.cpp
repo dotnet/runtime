@@ -320,7 +320,7 @@ extern "C" void QCALLTYPE RuntimeTypeHandle_GetModuleSlow(QCall::ObjectHandleOnS
     END_QCALL;
 }
 
-FCIMPL1(TADDR, RuntimeTypeHandle::GetElementTypeHandleFromHandle, EnregisteredTypeHandle th)
+FCIMPL1(EnregisteredTypeHandle, RuntimeTypeHandle::GetElementTypeHandle, EnregisteredTypeHandle th)
 {
     FCALL_CONTRACT;
 
@@ -332,19 +332,19 @@ FCIMPL1(TADDR, RuntimeTypeHandle::GetElementTypeHandleFromHandle, EnregisteredTy
     if (!typeHandle.IsTypeDesc())
     {
         if (!typeHandle.AsMethodTable()->IsArray())
-            return (TADDR)NULL;
+            return NULL;
 
         typeReturn = typeHandle.GetArrayElementTypeHandle();
     }
     else
     {
         if (typeHandle.IsGenericVariable())
-            return (TADDR)NULL;
+            return NULL;
 
         typeReturn = typeHandle.AsTypeDesc()->GetTypeParam();
     }
 
-    return typeReturn.AsTAddr();
+    return (EnregisteredTypeHandle)typeReturn.AsTAddr();
 }
 FCIMPLEND
 
@@ -981,7 +981,7 @@ FCIMPL1(ReflectMethodObject*, RuntimeTypeHandle::GetDeclaringMethod, ReflectClas
 }
 FCIMPLEND
 
-extern "C" TADDR QCALLTYPE RuntimeTypeHandle_GetDeclaringTypeHandleForGenericVariable(EnregisteredTypeHandle pTypeHandle)
+extern "C" EnregisteredTypeHandle QCALLTYPE RuntimeTypeHandle_GetDeclaringTypeHandleForGenericVariable(EnregisteredTypeHandle pTypeHandle)
 {
     QCALL_CONTRACT;
 
@@ -1023,10 +1023,10 @@ extern "C" TADDR QCALLTYPE RuntimeTypeHandle_GetDeclaringTypeHandleForGenericVar
 
     END_QCALL;
 
-    return retTypeHandle.AsTAddr();
+    return (EnregisteredTypeHandle)retTypeHandle.AsTAddr();
 }
 
-extern "C" TADDR QCALLTYPE RuntimeTypeHandle_GetDeclaringTypeHandle(EnregisteredTypeHandle pTypeHandle)
+extern "C" EnregisteredTypeHandle QCALLTYPE RuntimeTypeHandle_GetDeclaringTypeHandle(EnregisteredTypeHandle pTypeHandle)
 {
     QCALL_CONTRACT;
 
@@ -1057,7 +1057,7 @@ extern "C" TADDR QCALLTYPE RuntimeTypeHandle_GetDeclaringTypeHandle(Enregistered
 
     END_QCALL;
 
-    return retTypeHandle.AsTAddr();
+    return (EnregisteredTypeHandle)retTypeHandle.AsTAddr();
 }
 
 FCIMPL2(FC_BOOL_RET, RuntimeTypeHandle::CanCastTo, ReflectClassBaseObject *pTypeUNSAFE, ReflectClassBaseObject *pTargetUNSAFE) {
@@ -1418,7 +1418,7 @@ extern "C" BOOL QCALLTYPE RuntimeMethodHandle_GetIsCollectible(MethodDesc* pMeth
     return isCollectible;
 }
 
-extern "C" TADDR QCALLTYPE RuntimeMethodHandle_GetHandleForArray(MethodTable* pMT)
+extern "C" EnregisteredTypeHandle QCALLTYPE RuntimeMethodHandle_GetHandleForArray(MethodTable* pMT)
 {
     QCALL_CONTRACT;
     _ASSERTE(pMT != NULL);
@@ -1436,7 +1436,7 @@ extern "C" TADDR QCALLTYPE RuntimeMethodHandle_GetHandleForArray(MethodTable* pM
 
     END_QCALL;
 
-    return declType.AsTAddr();
+    return (EnregisteredTypeHandle)declType.AsTAddr();
 }
 
 FCIMPL1(LPCUTF8, RuntimeMethodHandle::GetUtf8Name, MethodDesc* pMethod)

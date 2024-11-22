@@ -49,7 +49,7 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern RuntimeType? GetTypeFromHandleIfExists(IntPtr handle);
 
-        internal static RuntimeType GetRuntimeTypeFromHandle(IntPtr handle)
+        private static RuntimeType GetRuntimeTypeFromHandle(IntPtr handle)
         {
             return GetTypeFromHandleIfExists(handle) ?? GetTypeFromHandleSlow(handle);
         }
@@ -382,11 +382,11 @@ namespace System
         internal static extern TypeAttributes GetAttributes(RuntimeType type);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern IntPtr GetElementTypeHandleFromHandle(IntPtr handle);
+        private static extern IntPtr GetElementTypeHandle(IntPtr handle);
 
         internal static RuntimeType? GetElementType(RuntimeType type)
         {
-            IntPtr handle = GetElementTypeHandleFromHandle(type.GetUnderlyingNativeHandle());
+            IntPtr handle = GetElementTypeHandle(type.GetUnderlyingNativeHandle());
             if (handle == IntPtr.Zero)
             {
                 return null;
@@ -976,15 +976,7 @@ namespace System
         {
             Debug.Assert(!method.IsNullHandle());
             MethodTable* pMT = GetMethodTable(method);
-            if (pMT->IsArray)
-            {
-                IntPtr handle = GetHandleForArray(pMT);
-                return RuntimeTypeHandle.GetRuntimeTypeFromHandle(handle);
-            }
-            else
-            {
-                return RuntimeTypeHandle.GetRuntimeType(pMT);
-            }
+            return RuntimeTypeHandle.GetRuntimeType(pMT);
         }
 
         internal static RuntimeType GetDeclaringType(IRuntimeMethodInfo method)
