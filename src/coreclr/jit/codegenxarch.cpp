@@ -4503,23 +4503,23 @@ void CodeGen::genCodeForLockAdd(GenTreeOp* node)
         if (imm == 1)
         {
             // inc [addr]
-            GetEmitter()->emitIns_AR(INS_inc, size, addr->GetRegNum(), 0);
+            GetEmitter()->emitIns_AR(INS_inc_no_evex, size, addr->GetRegNum(), 0);
         }
         else if (imm == -1)
         {
             // dec [addr]
-            GetEmitter()->emitIns_AR(INS_dec, size, addr->GetRegNum(), 0);
+            GetEmitter()->emitIns_AR(INS_dec_no_evex, size, addr->GetRegNum(), 0);
         }
         else
         {
             // add [addr], imm
-            GetEmitter()->emitIns_I_AR(INS_add, size, imm, addr->GetRegNum(), 0);
+            GetEmitter()->emitIns_I_AR(INS_add_no_evex, size, imm, addr->GetRegNum(), 0);
         }
     }
     else
     {
         // add [addr], data
-        GetEmitter()->emitIns_AR_R(INS_add, size, data->GetRegNum(), addr->GetRegNum(), 0);
+        GetEmitter()->emitIns_AR_R(INS_add_no_evex, size, data->GetRegNum(), addr->GetRegNum(), 0);
     }
 }
 
@@ -4546,7 +4546,7 @@ void CodeGen::genLockedInstructions(GenTreeOp* node)
 
     if (node->OperIs(GT_XORR, GT_XAND))
     {
-        const instruction ins = node->OperIs(GT_XORR) ? INS_or : INS_and;
+        const instruction ins = node->OperIs(GT_XORR) ? INS_or_no_evex : INS_and_no_evex;
 
         if (node->IsUnusedValue())
         {
@@ -11458,7 +11458,7 @@ void CodeGen::instGen_MemoryBarrier(BarrierKind barrierKind)
     if (barrierKind == BARRIER_FULL)
     {
         instGen(INS_lock);
-        GetEmitter()->emitIns_I_AR(INS_or, EA_4BYTE, 0, REG_SPBASE, 0);
+        GetEmitter()->emitIns_I_AR(INS_or_no_evex, EA_4BYTE, 0, REG_SPBASE, 0);
     }
 }
 
