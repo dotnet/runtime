@@ -214,7 +214,7 @@ namespace System.Net.NetworkInformation.Tests
             IPGlobalProperties gp = IPGlobalProperties.GetIPGlobalProperties();
 
             // [ActiveIssue("https://github.com/dotnet/runtime/issues/109280")]
-            string expectedDomainName = PlatformDetection.IsLinuxBionic || PlatformDetection.IsAndroid ? "localdomain" : string.Empty;
+            string expectedDomainName = PlatformDetection.IsAndroid ? "localdomain" : string.Empty;
             Assert.Equal(expectedDomainName, gp.DomainName);
         }
     }
