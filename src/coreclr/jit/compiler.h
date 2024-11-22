@@ -6235,8 +6235,9 @@ public:
         void ConsiderEdge(FlowEdge* edge);
         void AddNonFallthroughSuccs(unsigned blockPos);
         void AddNonFallthroughPreds(unsigned blockPos);
-        bool RunGreedyThreeOptPass(unsigned startPos, unsigned endPos);
 
+        bool RunGreedyThreeOptPass(unsigned startPos, unsigned endPos);
+        bool RunGlobalThreeOptPass(unsigned startPos, unsigned endPos);
         bool RunThreeOptPass(BasicBlock* startBlock, BasicBlock* endBlock);
 
     public:

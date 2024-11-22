@@ -5438,6 +5438,69 @@ bool Compiler::ThreeOptLayout::RunGreedyThreeOptPass(unsigned startPos, unsigned
 }
 
 //-----------------------------------------------------------------------------
+// Compiler::ThreeOptLayout::RunGlobalThreeOptPass: Runs 3-opt for the given block range,
+// trying every possible cut point until convergence.
+//
+// Parameters:
+//   startBlock - The first block of the range to reorder
+//   endBlock - The last block (inclusive) of the range to reorder
+//
+// Returns:
+//   True if we reordered anything, false otherwise
+//
+// Notes:
+//   The search for cut points is quadratic on the number of blocks in the region being reordered.
+//   This search is repeated until the cost model converges.
+//   This approach is impractically expensive unless the region is small, or already close to an optimal layout.
+//
+bool Compiler::ThreeOptLayout::RunGlobalThreeOptPass(unsigned startPos, unsigned endPos)
+{
+    assert(startPos < endPos);
+    bool modified = false, foundPartition;
+
+    JITDUMP("Using global strategy for finding cut points.\n");
+
+    do
+    {
+        foundPartition = false;
+        for (unsigned s2Start = startPos + 1; !foundPartition && (s2Start < endPos); s2Start++)
+        {
+            BasicBlock* const s2Block = blockOrder[s2Start];
+            if (s2Block->isBBCallFinallyPairTail())
+            {
+                continue;
+            }
+
+            for (unsigned s3Start = s2Start + 1; s3Start <= endPos; s3Start++)
+            {
+                BasicBlock* const s3Block = blockOrder[s3Start];
+                if (s3Block->isBBCallFinallyPairTail())
+                {
+                    continue;
+                }
+
+                if (TrySwappingPartitions(startPos, s2Start, s3Start, endPos, endPos))
+                {
+                    foundPartition = true;
+                    modified       = true;
+                    break;
+                }
+            }
+        }
+    } while (foundPartition);
+
+    if (modified)
+    {
+        for (unsigned i = startPos; i <= endPos; i++)
+        {
+            ordinals[blockOrder[i]->bbNum] = i;
+        }
+    }
+
+    return modified;
+}
+
+//-----------------------------------------------------------------------------
 // Compiler::ThreeOptLayout::RunThreeOptPass: Runs 3-opt for the given block range.
 //
 // Parameters:
@@ -5465,7 +5528,7 @@ bool Compiler::ThreeOptLayout::RunThreeOptPass(BasicBlock* startBlock, BasicBloc
     }
 
     JITDUMP("Initial layout cost: %f\n", GetLayoutCost(startPos, endPos));
-    const bool modified = RunGreedyThreeOptPass(startPos, endPos);
+    const bool modified = RunGlobalThreeOptPass(startPos, endPos);
 
     // Write back to 'tempOrder' so changes to this region aren't lost next time we swap 'tempOrder' and 'blockOrder'
     if (modified)
