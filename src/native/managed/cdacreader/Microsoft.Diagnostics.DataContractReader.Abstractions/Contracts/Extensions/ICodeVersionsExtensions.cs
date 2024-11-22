@@ -7,7 +7,7 @@ internal static class ICodeVersionsExtensions
 {
     internal static NativeCodeVersionHandle GetActiveNativeCodeVersion(this ICodeVersions cv, TargetPointer methodDesc)
     {
-        ILCodeVersionHandle iLCodeVersionHandle = cv.GetActiveILCodeVersion(methodDesc);
-        return cv.GetActiveNativeCodeVersionForILCodeVersion(methodDesc, iLCodeVersionHandle);
+        ILCodeVersionHandle ilCodeVersionHandle = cv.GetActiveILCodeVersion(methodDesc);
+        return cv.GetActiveNativeCodeVersionForILCodeVersion(methodDesc, ilCodeVersionHandle);
     }
 }
