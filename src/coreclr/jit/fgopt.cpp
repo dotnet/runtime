@@ -5059,9 +5059,16 @@ bool Compiler::ThreeOptLayout::TrySwappingPartitions(
     std::swap(blockOrder, tempOrder);
 
 #ifdef DEBUG
-    // Ensure the swap improved the overall layout. Tolerate some imprecision.
-    const weight_t newLayoutCost = GetLayoutCost(s1Start, s4End);
-    assert((newLayoutCost < currLayoutCost) || Compiler::fgProfileWeightsEqual(newLayoutCost, currLayoutCost, 0.001));
+    // Don't bother checking if the cost improved for exceptionally costly layouts.
+    // Imprecision from summing large floating-point values can falsely trigger the below assert.
+    constexpr weight_t maxLayoutCostToCheck = (weight_t)UINT32_MAX;
+    if (currLayoutCost < maxLayoutCostToCheck)
+    {
+        // Ensure the swap improved the overall layout. Tolerate some imprecision.
+        const weight_t newLayoutCost = GetLayoutCost(s1Start, s4End);
+        assert((newLayoutCost < currLayoutCost) ||
+               Compiler::fgProfileWeightsEqual(newLayoutCost, currLayoutCost, 0.001));
+    }
 #endif // DEBUG
 
     return true;
