@@ -143,7 +143,7 @@ unw_get_proc_info_in_range(
     unw_addr_space_t as,
     unw_word_t ip,
     unw_proc_info_t *pi,
-    int need_unwind_info,
+    int unwind_info,
     void *arg);
 #endif // FEATURE_USE_SYSTEM_LIBUNWIND
 
@@ -887,8 +887,7 @@ static bool
 ExtractProcInfoFromFde(
     const libunwindInfo* info,
     unw_word_t* addrp,
-    unw_proc_info_t *pip,
-    int need_unwind_info)
+    unw_proc_info_t *pip)
 {
     unw_word_t addr = *addrp;
 
@@ -915,35 +914,6 @@ ExtractProcInfoFromFde(
     // Read language specific data area address
     if (!ReadEncodedPointer(info, &addr, dci.lsda_encoding, pip->start_ip, &pip->lsda)) {
         return false;
-    }
-
-    // Now fill out the proc info if requested
-    if (need_unwind_info)
-    {
-        if (dci.have_abi_marker)
-        {
-            if (!ReadValue16(info, &addr, &dci.abi)) {
-                return false;
-            }
-            if (!ReadValue16(info, &addr, &dci.tag)) {
-                return false;
-            }
-        }
-        if (dci.sized_augmentation) {
-            dci.fde_instr_start = augmentationEndAddr;
-        }
-        else {
-            dci.fde_instr_start = addr;
-        }
-        dci.fde_instr_end = fdeEndAddr;
-
-        pip->format = UNW_INFO_FORMAT_TABLE;
-        pip->unwind_info_size = sizeof(dci);
-        pip->unwind_info = malloc(sizeof(dci));
-        if (pip->unwind_info == nullptr) {
-            return -UNW_ENOMEM;
-        }
-        memcpy(pip->unwind_info, &dci, sizeof(dci));
     }
 
     return true;
@@ -1157,8 +1127,7 @@ SearchDwarfSection(
     unw_word_t dwarfSectionAddr,
     unw_word_t dwarfSectionSize,
     uint32_t fdeSectionHint,
-    unw_proc_info_t *pip,
-    int need_unwind_info)
+    unw_proc_info_t *pip)
 {
     unw_word_t addr = dwarfSectionAddr + fdeSectionHint;
     unw_word_t fdeAddr;
@@ -1175,7 +1144,7 @@ SearchDwarfSection(
         }
 
         if (ip >= ipStart && ip < ipEnd) {
-            if (!ExtractProcInfoFromFde(info, &fdeAddr, pip, need_unwind_info)) {
+            if (!ExtractProcInfoFromFde(info, &fdeAddr, pip)) {
                 ERROR("ExtractProcInfoFromFde FAILED for ip %p\n", (void*)ip);
                 break;
             }
@@ -1188,7 +1157,7 @@ SearchDwarfSection(
 
 
 static bool
-GetProcInfo(unw_word_t ip, unw_proc_info_t *pip, libunwindInfo* info, bool* step, int need_unwind_info)
+GetProcInfo(unw_word_t ip, unw_proc_info_t *pip, libunwindInfo* info, bool* step)
 {
     memset(pip, 0, sizeof(*pip));
     *step = false;
@@ -1278,7 +1247,7 @@ GetProcInfo(unw_word_t ip, unw_proc_info_t *pip, libunwindInfo* info, bool* step
 #else
 #error unsupported architecture
 #endif
-                    if (SearchDwarfSection(info, ip, ehframeSectionAddr, ehframeSectionSize, dwarfOffsetHint, pip, need_unwind_info)) {
+                    if (SearchDwarfSection(info, ip, ehframeSectionAddr, ehframeSectionSize, dwarfOffsetHint, pip)) {
                         TRACE("SUCCESS: found in eh frame from compact hint for %p\n", (void*)ip);
                         return true;
                     }
@@ -1294,7 +1263,7 @@ GetProcInfo(unw_word_t ip, unw_proc_info_t *pip, libunwindInfo* info, bool* step
     // Look in dwarf unwind info next
     if (ehframeSectionAddr != 0)
     {
-        if (SearchDwarfSection(info, ip, ehframeSectionAddr, ehframeSectionSize, 0, pip, need_unwind_info)) {
+        if (SearchDwarfSection(info, ip, ehframeSectionAddr, ehframeSectionSize, 0, pip)) {
             TRACE("SUCCESS: found in eh frame for %p\n", (void*)ip);
             return true;
         }
@@ -2033,6 +2002,7 @@ static void UnwindContextToContext(unw_cursor_t *cursor, CONTEXT *winContext)
 #endif
 }
 
+#ifndef __APPLE__
 static int
 get_dyn_info_list_addr(unw_addr_space_t as, unw_word_t *dilap, void *arg)
 {
@@ -2217,14 +2187,6 @@ static int
 find_proc_info(unw_addr_space_t as, unw_word_t ip, unw_proc_info_t *pip, int need_unwind_info, void *arg)
 {
     auto *info = (libunwindInfo*)arg;
-#ifdef __APPLE__
-    bool step;
-    if (!GetProcInfo(ip, pip, info, &step, need_unwind_info)) {
-        return -UNW_EINVAL;
-    }
-    _ASSERTE(!step);
-    return UNW_ESUCCESS;
-#else
     memset(pip, 0, sizeof(*pip));
 
     Ehdr ehdr;
@@ -2395,7 +2357,7 @@ find_proc_info(unw_addr_space_t as, unw_word_t ip, unw_proc_info_t *pip, int nee
     }
 
     // Now get the unwind info
-    if (!ExtractProcInfoFromFde(info, &fdeAddr, pip, need_unwind_info)) {
+    if (!ExtractProcInfoFromFde(info, &fdeAddr, pip)) {
         ERROR("ExtractProcInfoFromFde\n");
         return -UNW_EINVAL;
     }
@@ -2407,8 +2369,6 @@ find_proc_info(unw_addr_space_t as, unw_word_t ip, unw_proc_info_t *pip, int nee
     info->FunctionStart = pip->start_ip;
     return UNW_ESUCCESS;
 #endif // HAVE_GET_PROC_INFO_IN_RANGE || !defined(HOST_UNIX)
-
-#endif // __APPLE__
 }
 
 static void
@@ -2439,6 +2399,7 @@ static unw_accessors_t init_unwind_accessors()
 };
 
 static unw_accessors_t unwind_accessors = init_unwind_accessors();
+#endif // __APPLE__
 
 /*++
 Function:
@@ -2476,10 +2437,10 @@ PAL_VirtualUnwindOutOfProc(CONTEXT *context, KNONVOLATILE_CONTEXT_POINTERS *cont
     bool step;
 #if defined(TARGET_AMD64)
     TRACE("Unwind: rip %p rsp %p rbp %p\n", (void*)context->Rip, (void*)context->Rsp, (void*)context->Rbp);
-    result = GetProcInfo(context->Rip, &procInfo, &info, &step, false);
+    result = GetProcInfo(context->Rip, &procInfo, &info, &step);
 #elif defined(TARGET_ARM64)
     TRACE("Unwind: pc %p sp %p fp %p\n", (void*)context->Pc, (void*)context->Sp, (void*)context->Fp);
-    result = GetProcInfo(context->Pc, &procInfo, &info, &step, false);
+    result = GetProcInfo(context->Pc, &procInfo, &info, &step);
     if (result && step)
     {
         // If the PC is at the start of the function, the previous instruction is BL and the unwind encoding is frameless
@@ -2498,7 +2459,7 @@ PAL_VirtualUnwindOutOfProc(CONTEXT *context, KNONVOLATILE_CONTEXT_POINTERS *cont
                     (opcode & ARM64_BLRA_OPCODE_MASK) == ARM64_BLRA_OPCODE)
                 {
                     TRACE("Unwind: getting unwind info for PC - 1 opcode %08x\n", opcode);
-                    result = GetProcInfo(context->Pc - 1, &procInfo, &info, &step, false);
+                    result = GetProcInfo(context->Pc - 1, &procInfo, &info, &step);
                 }
                 else
                 {
@@ -2519,8 +2480,7 @@ PAL_VirtualUnwindOutOfProc(CONTEXT *context, KNONVOLATILE_CONTEXT_POINTERS *cont
         result = StepWithCompactEncoding(&info, procInfo.format, procInfo.start_ip);
         goto exit;
     }
-#endif
-
+#else
     addrSpace = unw_create_addr_space(&unwind_accessors, 0);
 
     st = unw_init_remote(&cursor, addrSpace, &info);
@@ -2544,16 +2504,19 @@ PAL_VirtualUnwindOutOfProc(CONTEXT *context, KNONVOLATILE_CONTEXT_POINTERS *cont
         GetContextPointers(&cursor, NULL, contextPointers);
     }
     result = TRUE;
+#endif // __APPLE__
 
 exit:
     if (functionStart)
     {
         *functionStart = info.FunctionStart;
     }
+#ifndef __APPLE__
     if (addrSpace != 0)
     {
         unw_destroy_addr_space(addrSpace);
     }
+#endif // !__APPLE__
     return result;
 }
 
