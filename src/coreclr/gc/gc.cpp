@@ -24430,12 +24430,37 @@ void gc_heap::garbage_collect (int n)
             size_t saved_bgc_th_count_creation_failed = bgc_th_count_creation_failed;
 #endif //DYNAMIC_HEAP_COUNT
 
+            // This is the count of threads that GCToEEInterface::CreateThread reported successful for.
+            int total_bgc_threads_running = 0;
             for (int i = 0; i < n_heaps; i++)
             {
-                prepare_bgc_thread (g_heaps[i]);
+                gc_heap* hp = g_heaps[i];
+                if (prepare_bgc_thread (hp))
+                {
+                    assert (hp->bgc_thread_running);
+                    if (!hp->bgc_thread_running)
+                    {
+                        dprintf (6666, ("h%d prepare succeeded but running is still false!", i));
+                        GCToOSInterface::DebugBreak();
+                    }
+                    total_bgc_threads_running++;
+                }
+                else
+                {
+                    break;
+                }
             }
 
 #ifdef DYNAMIC_HEAP_COUNT
+            // Even if we don't do a BGC, we need to record how many threads were successfully created because those will
+            // be running.
+            total_bgc_threads = max (total_bgc_threads, total_bgc_threads_running);
+
+            if (total_bgc_threads_running != n_heaps)
+            {
+                dprintf (6666, ("wanted to have %d BGC threads but only have %d", n_heaps, total_bgc_threads_running));
+            }
+
             add_to_bgc_th_creation_history (current_gc_index,
                 (bgc_th_count_created - saved_bgc_th_count_created),
                 (bgc_th_count_created_th_existed - saved_bgc_th_count_created_th_existed),
@@ -24464,10 +24489,30 @@ void gc_heap::garbage_collect (int n)
 #ifdef MULTIPLE_HEAPS
             dprintf(2, ("Joined to perform a background GC"));
 
+            int total_bgc_threads_running = 0;
+            int total_bgc_threads_with_obj = 0;
             for (int i = 0; i < n_heaps; i++)
             {
                 gc_heap* hp = g_heaps[i];
-                if (!(hp->bgc_thread) || !hp->commit_mark_array_bgc_init())
+                if (hp->bgc_thread_running)
+                {
+                    total_bgc_threads_running++;
+                }
+
+                if (hp->bgc_thread)
+                {
+                    total_bgc_threads_with_obj++;
+                }
+            }
+
+            dprintf (6666, ("n_heaps %d, %d bgc threads set to running, %d with obj set", n_heaps, total_bgc_threads_running, total_bgc_threads_with_obj));
+
+            for (int i = 0; i < n_heaps; i++)
+            {
+                gc_heap* hp = g_heaps[i];
+                // In theory we could be in a situation where bgc_thread_running is false but bgc_thread is non NULL. We don't
+                // support this scenario so don't do a BGC.
+                if (!(hp->bgc_thread_running && hp->bgc_thread && hp->commit_mark_array_bgc_init()))
                 {
                     do_concurrent_p = FALSE;
                     break;
@@ -24487,11 +24532,14 @@ void gc_heap::garbage_collect (int n)
             }
 #endif //MULTIPLE_HEAPS
 
+#ifdef DYNAMIC_HEAP_COUNT
+            dprintf (6666, ("last BGC saw %d heaps and %d total threads, currently %d heaps and %d total threads, %s BGC",
+                last_bgc_n_heaps, last_total_bgc_threads, n_heaps, total_bgc_threads, (do_concurrent_p ? "doing" : "not doing")));
+#endif //DYNAMIC_HEAP_COUNT
+
             if (do_concurrent_p)
             {
 #ifdef DYNAMIC_HEAP_COUNT
-                total_bgc_threads = max (total_bgc_threads, n_heaps);
-
                 int diff = n_heaps - last_bgc_n_heaps;
                 if (diff > 0)
                 {
@@ -37756,6 +37804,19 @@ void gc_heap::gc_thread_stub (void* arg)
 void gc_heap::bgc_thread_stub (void* arg)
 {
     gc_heap* heap = (gc_heap*)arg;
+
+#ifdef STRESS_DYNAMIC_HEAP_COUNT
+    // We should only do this every so often; otherwise we'll never be able to do a BGC
+    int r = (int)gc_rand::get_rand (30);
+    bool wait_p = (r < 10);
+
+    if (wait_p)
+    {
+        GCToOSInterface::Sleep (100);
+    }
+    dprintf (6666, ("h%d %s", heap->heap_number, (wait_p ? "waited" : "did not wait")));
+#endif
+
     heap->bgc_thread = GCToEEInterface::GetThread();
     assert(heap->bgc_thread != nullptr);
     heap->bgc_thread_function();
@@ -39564,6 +39625,8 @@ void gc_heap::add_to_bgc_th_creation_history (size_t gc_index, size_t count_crea
 }
 #endif //DYNAMIC_HEAP_COUNT
 
+// If this returns TRUE, we are saying we expect that thread to be there. However, when that thread is available to work is indeterministic.
+// But when we actually start a BGC, naturally we'll need to wait till it gets to the point it can work.
 BOOL gc_heap::prepare_bgc_thread(gc_heap* gh)
 {
     BOOL success = FALSE;
@@ -39575,7 +39638,19 @@ BOOL gc_heap::prepare_bgc_thread(gc_heap* gh)
         dprintf (2, ("GC thread not running"));
         if (gh->bgc_thread == 0)
         {
+#ifdef STRESS_DYNAMIC_HEAP_COUNT
+            // to stress, we just don't actually try to create the thread to simulate a failure
+            int r = (int)gc_rand::get_rand (100);
+            bool try_to_create_p = (r > 10);
+            BOOL thread_created_p = (try_to_create_p ? create_bgc_thread (gh) : FALSE);
+            if (!thread_created_p)
+            {
+                dprintf (6666, ("h%d we failed to create the thread, %s", gh->heap_number, (try_to_create_p ? "tried" : "didn't try")));
+            }
+            if (thread_created_p)
+#else //STRESS_DYNAMIC_HEAP_COUNT
             if (create_bgc_thread(gh))
+#endif //STRESS_DYNAMIC_HEAP_COUNT
             {
                 success = TRUE;
                 thread_created = TRUE;
@@ -39593,7 +39668,11 @@ BOOL gc_heap::prepare_bgc_thread(gc_heap* gh)
         else
         {
 #ifdef DYNAMIC_HEAP_COUNT
+            // This would be a very unusual scenario where GCToEEInterface::CreateThread told us it failed yet the thread was created.
             bgc_th_count_created_th_existed++;
+
+            dprintf (6666, ("h%d fatal error - we cannot have a thread that runs yet CreateThread reported it failed to create it", gh->heap_number));
+            FATAL_GC_ERROR();
 #endif //DYNAMIC_HEAP_COUNT
         }
     }
@@ -39792,7 +39871,7 @@ void gc_heap::bgc_thread_function()
     while (1)
     {
         // Wait for work to do...
-        dprintf (3, ("bgc thread: waiting..."));
+        dprintf (6666, ("h%d bgc thread: waiting...", heap_number));
 
         cooperative_mode = enable_preemptive ();
         //current_thread->m_fPreemptiveGCDisabled = 0;
@@ -39853,9 +39932,10 @@ void gc_heap::bgc_thread_function()
         // if we signal the thread with no concurrent work to do -> exit
         if (!settings.concurrent)
         {
-            dprintf (3, ("no concurrent GC needed, exiting"));
+            dprintf (6666, ("h%d no concurrent GC needed, exiting", heap_number));
 
 #ifdef STRESS_DYNAMIC_HEAP_COUNT
+            flush_gc_log (true);
             GCToOSInterface::DebugBreak();
 #endif
             break;
@@ -39869,10 +39949,10 @@ void gc_heap::bgc_thread_function()
 
             // this is the case where we have more background GC threads than heaps
             // - wait until we're told to continue...
-            dprintf (9999, ("(BGC%Id h%d going idle (%d heaps), idle count is now %d",
+            dprintf (6666, ("BGC%Id h%d going idle (%d heaps), idle count is now %d",
                 VolatileLoadWithoutBarrier (&settings.gc_index), heap_number, n_heaps, VolatileLoadWithoutBarrier (&dynamic_heap_count_data.idle_bgc_thread_count)));
             bgc_idle_thread_event.Wait(INFINITE, FALSE);
-            dprintf (9999, ("(BGC%Id h%d woke from idle (%d heaps), idle count is now %d",
+            dprintf (6666, ("BGC%Id h%d woke from idle (%d heaps), idle count is now %d",
                 VolatileLoadWithoutBarrier (&settings.gc_index), heap_number, n_heaps, VolatileLoadWithoutBarrier (&dynamic_heap_count_data.idle_bgc_thread_count)));
             continue;
         }
@@ -39882,11 +39962,11 @@ void gc_heap::bgc_thread_function()
             {
                 const int spin_count = 1024;
                 int idle_bgc_thread_count = total_bgc_threads - n_heaps;
-                dprintf (9999, ("n_heaps %d, total %d bgc threads, bgc idle should be %d and is %d",
+                dprintf (6666, ("n_heaps %d, total %d bgc threads, bgc idle should be %d and is %d",
                     n_heaps, total_bgc_threads, idle_bgc_thread_count, VolatileLoadWithoutBarrier (&dynamic_heap_count_data.idle_bgc_thread_count)));
                 if (idle_bgc_thread_count != dynamic_heap_count_data.idle_bgc_thread_count)
                 {
-                    dprintf (9999, ("current idle is %d, trying to get to %d",
+                    dprintf (6666, ("current idle is %d, trying to get to %d",
                         VolatileLoadWithoutBarrier (&dynamic_heap_count_data.idle_bgc_thread_count), idle_bgc_thread_count));
                     spin_and_wait (spin_count, (idle_bgc_thread_count == dynamic_heap_count_data.idle_bgc_thread_count));
                 }
