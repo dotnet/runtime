@@ -42,7 +42,9 @@ namespace System.IO.Pipes
     }
     public sealed partial class NamedPipeClientStream : System.IO.Pipes.PipeStream
     {
-        public NamedPipeClientStream(System.IO.Pipes.PipeDirection direction, bool isAsync, bool isConnected, Microsoft.Win32.SafeHandles.SafePipeHandle safePipeHandle) : base (default(System.IO.Pipes.PipeDirection), default(int)) { }
+        [System.Obsolete]
+        public NamedPipeClientStream(System.IO.Pipes.PipeDirection direction, bool isAsync, bool isConnected, Microsoft.Win32.SafeHandles.SafePipeHandle safePipeHandle) : this (default(System.IO.Pipes.PipeDirection), default(bool), default(Microsoft.Win32.SafeHandles.SafePipeHandle)) { }
+        public NamedPipeClientStream(System.IO.Pipes.PipeDirection direction, bool isAsync, Microsoft.Win32.SafeHandles.SafePipeHandle safePipeHandle) : base (default(System.IO.Pipes.PipeDirection), default(int)) { }
         public NamedPipeClientStream(string pipeName) : base (default(System.IO.Pipes.PipeDirection), default(int)) { }
         public NamedPipeClientStream(string serverName, string pipeName) : base (default(System.IO.Pipes.PipeDirection), default(int)) { }
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
