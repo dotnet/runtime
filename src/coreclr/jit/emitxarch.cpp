@@ -1599,6 +1599,12 @@ bool emitter::TakesRexWPrefix(const instrDesc* id) const
                 return false;
             }
 
+            case INS_gf2p8affineinvqb:
+            case INS_gf2p8affineqb:
+            {
+                return TakesVexPrefix(ins);
+            }
+
             default:
             {
                 unreached();
@@ -19836,6 +19842,9 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_vpdpwssd:
         case INS_vpdpbusds:
         case INS_vpdpwssds:
+        case INS_gf2p8affineinvqb:
+        case INS_gf2p8affineqb:
+        case INS_gf2p8mulb:
             result.insThroughput = PERFSCORE_THROUGHPUT_2X;
             result.insLatency += PERFSCORE_LATENCY_5C;
             break;
