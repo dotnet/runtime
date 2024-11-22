@@ -12722,7 +12722,8 @@ void Compiler::fgValueNumberTree(GenTree* tree)
 
                         // Record non-constant value numbers that are used as the length argument to bounds checks, so
                         // that assertion prop will know that comparisons against them are worth analyzing.
-                        ValueNum lengthVN = tree->AsBoundsChk()->GetArrayLength()->gtVNPair.GetConservative();
+                        ValueNum lengthVN =
+                            vnStore->VNNormalValue(tree->AsBoundsChk()->GetArrayLength()->gtVNPair.GetConservative());
                         if ((lengthVN != ValueNumStore::NoVN) && !vnStore->IsVNConstant(lengthVN))
                         {
                             vnStore->SetVNIsCheckedBound(lengthVN);
