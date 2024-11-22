@@ -5,8 +5,7 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetsAppleMobile)' == 'true' and '$(EnableAggressiveTrimming)' == 'true' and '$(UseNativeAotRuntime)' != 'true'">
-    <_DefaultValueAttributeSupport>true</_DefaultValueAttributeSupport>
-    <_DesignerHostSupport>true</_DesignerHostSupport>
+    <OverrideDefaultValueAndDesignerHostSupport>true</OverrideDefaultValueAndDesignerHostSupport>
   </PropertyGroup>
 
   <ItemGroup>

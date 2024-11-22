@@ -45,6 +45,11 @@
     <DynamicCodeSupport Condition="'$(DynamicCodeSupport)' == '' and '$(MonoForceInterpreter)' != 'true'">false</DynamicCodeSupport>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(EnableAggressiveTrimming)' == 'true' and '$(BuildTestsOnHelix)' == 'true' and '$(OverrideDefaultValueAndDesignerHostSupport)' == 'true'">
+    <_DefaultValueAttributeSupport>true</_DefaultValueAttributeSupport>
+    <_DesignerHostSupport>true</_DesignerHostSupport>
+  </PropertyGroup>
+
   <!-- When trimming non-exe projects, root the whole intermediate assembly.
        The SDK settings root only the entry point by default. These targets are used not only for standard
        console apps, but also for test projects without an entry point. -->
