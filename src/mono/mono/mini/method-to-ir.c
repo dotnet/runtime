@@ -12111,13 +12111,12 @@ mono_ldptr:
 			break;
 		case MONO_CEE_INITOBJ:
 			klass = mini_get_class (method, token, generic_context);
+			--sp;
 			if (CLASS_HAS_FAILURE (klass)) {
 				HANDLE_TYPELOAD_ERROR (cfg, klass);
 				inline_costs += 10;
 				break; // reached only in AOT
 			}
-
-			--sp;
 
 			if (mini_class_is_reference (klass))
 				MONO_EMIT_NEW_STORE_MEMBASE_IMM (cfg, OP_STORE_MEMBASE_IMM, sp [0]->dreg, 0, 0);
