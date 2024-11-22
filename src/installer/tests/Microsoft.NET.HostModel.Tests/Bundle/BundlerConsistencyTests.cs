@@ -334,6 +334,7 @@ namespace Microsoft.NET.HostModel.Bundle.Tests
             if (!RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
             {
                 SigningTests.IsSigned(bundledApp).Should().BeFalse();
+                return;
             }
 
             // Check if the file is signed
