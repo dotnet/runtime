@@ -120,9 +120,7 @@
     <NetFrameworkToolCurrent Condition="'$(DotNetBuildSourceOnly)' == 'true'" />
     <NetFrameworkCurrent Condition="'$(DotNetBuildSourceOnly)' == 'true'" />
 
-    <!-- Important: Set this to the GA version (or a close approximation) during servicing and adjust the TFM property below. -->
-    <!-- TODO: Update to 9.0.0 when .NET 9 is generally available. https://github.com/dotnet/runtime/issues/106598 -->
-    <ApiCompatNetCoreAppBaselineVersion>9.0.0-preview.7.24405.7</ApiCompatNetCoreAppBaselineVersion>
+    <ApiCompatNetCoreAppBaselineVersion>9.0.0</ApiCompatNetCoreAppBaselineVersion>
     <ApiCompatNetCoreAppBaselineTFM>net9.0</ApiCompatNetCoreAppBaselineTFM>
   </PropertyGroup>
 
@@ -190,6 +188,17 @@
     <WasmtimeDir Condition="'$(WasmtimeDir)' == ''">$([MSBuild]::NormalizeDirectory($(ArtifactsObjDir), 'wasmtime'))</WasmtimeDir>
     <InstallWasmtimeForTests Condition="'$(InstallWasmtimeForTests)' == '' and !Exists($(WasmtimeDir))">true</InstallWasmtimeForTests>
     <WasmCommonTargetsPath>$([MSBuild]::NormalizeDirectory($(WasmProjectRoot), 'build'))</WasmCommonTargetsPath>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(DotNetBuildRuntimeNativeAOTRuntimePack)' == 'true'">
+    <BuildNativeAOTRuntimePack>true</BuildNativeAOTRuntimePack>
+    <SkipLibrariesNativeRuntimePackages>true</SkipLibrariesNativeRuntimePackages>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(DotNetBuildMonoCrossAOT)' == 'true'">
+    <BuildMonoAOTCrossCompilerOnly>true</BuildMonoAOTCrossCompilerOnly>
+    <MonoCrossAOTTargetOS>android+browser+wasi</MonoCrossAOTTargetOS>
+    <MonoCrossAOTTargetOS Condition="'$(TargetOS)' == 'osx'">$(MonoCrossAOTTargetOS)+tvos+ios+maccatalyst</MonoCrossAOTTargetOS>
   </PropertyGroup>
 
   <PropertyGroup Label="CalculatePortableBuild">

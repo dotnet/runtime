@@ -1374,12 +1374,14 @@ typedef struct _KNONVOLATILE_CONTEXT_POINTERS {
 #define XSTATE_AVX512_KMASK (5)
 #define XSTATE_AVX512_ZMM_H (6)
 #define XSTATE_AVX512_ZMM (7)
+#define XSTATE_APX (19)
 
 #define XSTATE_MASK_GSSE (UI64(1) << (XSTATE_GSSE))
 #define XSTATE_MASK_AVX (XSTATE_MASK_GSSE)
 #define XSTATE_MASK_AVX512 ((UI64(1) << (XSTATE_AVX512_KMASK)) | \
                             (UI64(1) << (XSTATE_AVX512_ZMM_H)) | \
                             (UI64(1) << (XSTATE_AVX512_ZMM)))
+#define XSTATE_MASK_APX (UI64(1) << (XSTATE_APX))
 
 typedef struct DECLSPEC_ALIGN(16) _M128A {
     ULONGLONG Low;
@@ -1616,6 +1618,27 @@ typedef struct DECLSPEC_ALIGN(16) _CONTEXT {
         M512 Zmm30;
         M512 Zmm31;
     };
+    
+    struct
+    {
+        DWORD64 Egpr16;
+        DWORD64 Egpr17;
+        DWORD64 Egpr18;
+        DWORD64 Egpr19;
+        DWORD64 Egpr20;
+        DWORD64 Egpr21;
+        DWORD64 Egpr22;
+        DWORD64 Egpr23;
+        DWORD64 Egpr24;
+        DWORD64 Egpr25;
+        DWORD64 Egpr26;
+        DWORD64 Egpr27;
+        DWORD64 Egpr28;
+        DWORD64 Egpr29;
+        DWORD64 Egpr30;
+        DWORD64 Egpr31;
+    };
+    
 } CONTEXT, *PCONTEXT, *LPCONTEXT;
 
 //

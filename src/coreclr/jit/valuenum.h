@@ -1342,6 +1342,24 @@ public:
         return ConstantValueInternal<T>(vn DEBUGARG(true));
     }
 
+    template <typename T>
+    bool IsVNIntegralConstant(ValueNum vn, T* value)
+    {
+        if (!IsVNConstant(vn) || !varTypeIsIntegral(TypeOfVN(vn)))
+        {
+            *value = 0;
+            return false;
+        }
+        ssize_t val = CoercedConstantValue<ssize_t>(vn);
+        if (FitsIn<T>(val))
+        {
+            *value = static_cast<T>(val);
+            return true;
+        }
+        *value = 0;
+        return false;
+    }
+
     CORINFO_OBJECT_HANDLE ConstantObjHandle(ValueNum vn)
     {
         assert(IsVNObjHandle(vn));
