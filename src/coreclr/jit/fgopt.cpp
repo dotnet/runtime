@@ -5465,6 +5465,7 @@ bool Compiler::ThreeOptLayout::RunGlobalThreeOptPass(unsigned startPos, unsigned
         foundPartition = false;
         for (unsigned s2Start = startPos + 1; !foundPartition && (s2Start < endPos); s2Start++)
         {
+            // Don't partition between call-finally pairs
             BasicBlock* const s2Block = blockOrder[s2Start];
             if (s2Block->isBBCallFinallyPairTail())
             {
@@ -5473,6 +5474,7 @@ bool Compiler::ThreeOptLayout::RunGlobalThreeOptPass(unsigned startPos, unsigned
 
             for (unsigned s3Start = s2Start + 1; s3Start <= endPos; s3Start++)
             {
+                // Don't partition between call-finally pairs
                 BasicBlock* const s3Block = blockOrder[s3Start];
                 if (s3Block->isBBCallFinallyPairTail())
                 {
@@ -5528,7 +5530,8 @@ bool Compiler::ThreeOptLayout::RunThreeOptPass(BasicBlock* startBlock, BasicBloc
     }
 
     JITDUMP("Initial layout cost: %f\n", GetLayoutCost(startPos, endPos));
-    const bool modified = RunGlobalThreeOptPass(startPos, endPos);
+    const bool modified = JitConfig.JitDoGlobalThreeOpt() ? RunGlobalThreeOptPass(startPos, endPos)
+                                                          : RunGreedyThreeOptPass(startPos, endPos);
 
     // Write back to 'tempOrder' so changes to this region aren't lost next time we swap 'tempOrder' and 'blockOrder'
     if (modified)

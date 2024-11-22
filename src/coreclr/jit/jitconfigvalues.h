@@ -784,6 +784,9 @@ RELEASE_CONFIG_INTEGER(JitEnableCrossBlockLocalAssertionProp, "JitEnableCrossBlo
 // Do greedy RPO-based layout in Compiler::fgReorderBlocks.
 RELEASE_CONFIG_INTEGER(JitDoReversePostOrderLayout, "JitDoReversePostOrderLayout", 1);
 
+// Globally search for cut points in 3-opt layout instead of using the greedy strategy.
+CONFIG_INTEGER(JitDoGlobalThreeOpt, "JitDoGlobalThreeOpt", 1);
+
 // Enable strength reduction
 RELEASE_CONFIG_INTEGER(JitEnableStrengthReduction, "JitEnableStrengthReduction", 1)
 
