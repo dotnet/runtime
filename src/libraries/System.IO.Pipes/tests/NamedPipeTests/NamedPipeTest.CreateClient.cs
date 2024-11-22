@@ -97,6 +97,15 @@ namespace System.IO.Pipes.Tests
         [InlineData(PipeDirection.In)]
         [InlineData(PipeDirection.InOut)]
         [InlineData(PipeDirection.Out)]
+        public static void NotConnected_Throws_ArgumentOutOfRangeException(PipeDirection direction)
+        {
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("isConnected", () => new NamedPipeClientStream(direction, false, false, null));
+        }
+
+        [Theory]
+        [InlineData(PipeDirection.In)]
+        [InlineData(PipeDirection.InOut)]
+        [InlineData(PipeDirection.Out)]
         public static void NullHandle_Throws_ArgumentNullException(PipeDirection direction)
         {
             AssertExtensions.Throws<ArgumentNullException>("safePipeHandle", () => new NamedPipeClientStream(direction, false, true, null));
