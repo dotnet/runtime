@@ -3143,7 +3143,7 @@ unsigned emitter::emitGetAdjustedSize(instrDesc* id, code_t code) const
         adjustedSize++;
     }
 #ifdef TARGET_AMD64
-    else if (IsRex2EncodableInstruction(ins) || IsApxNDDEncodableInstruction(ins))
+    else if (IsRex2EncodableInstruction(ins) || IsApxExtendedEvexInstruction(ins))
     {
         unsigned prefixAdjustedSize = 0;
         if(TakesApxExtendedEvexPrefix(id))
@@ -7463,7 +7463,7 @@ void emitter::emitIns_R_R_I(
 void emitter::emitIns_AR(instruction ins, emitAttr attr, regNumber base, int offs)
 {
     assert(ins == INS_prefetcht0 || ins == INS_prefetcht1 || ins == INS_prefetcht2 || ins == INS_prefetchnta ||
-           ins == INS_inc || ins == INS_dec);
+           ins == INS_inc || ins == INS_dec || ins == INS_inc_no_evex || ins == INS_dec_no_evex);
 
     instrDesc* id = emitNewInstrAmd(attr, offs);
 
@@ -19747,7 +19747,9 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             break;
 
         case INS_inc:
+        case INS_inc_no_evex:
         case INS_dec:
+        case INS_dec_no_evex:
         case INS_neg:
         case INS_not:
             if (memFmt == IF_NONE)
@@ -19832,10 +19834,13 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             break;
 
         case INS_add:
+        case INS_add_no_evex:
         case INS_sub:
         case INS_sub_hide:
         case INS_and:
+        case INS_and_no_evex:
         case INS_or:
+        case INS_or_no_evex:
         case INS_xor:
             if (memFmt == IF_NONE)
             {
