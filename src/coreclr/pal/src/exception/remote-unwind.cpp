@@ -143,7 +143,7 @@ unw_get_proc_info_in_range(
     unw_addr_space_t as,
     unw_word_t ip,
     unw_proc_info_t *pi,
-    int unwind_info,
+    int need_unwind_info,
     void *arg);
 #endif // FEATURE_USE_SYSTEM_LIBUNWIND
 

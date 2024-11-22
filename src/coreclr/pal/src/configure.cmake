@@ -625,7 +625,7 @@ int main(int argc, char **argv)
 }" UNWIND_CONTEXT_IS_UCONTEXT_T)
 
 check_symbol_exists(unw_get_save_loc libunwind.h HAVE_UNW_GET_SAVE_LOC)
-check_symbol_exists(unw_create_addr_space libunwind.h HAVE_UNW_CREATE_ADDR_SPACE)
+check_symbol_exists(unw_get_accessors libunwind.h HAVE_UNW_GET_ACCESSORS)
 check_symbol_exists(unw_get_proc_info_in_range libunwind.h HAVE_GET_PROC_INFO_IN_RANGE)
 
 check_cxx_source_compiles("
