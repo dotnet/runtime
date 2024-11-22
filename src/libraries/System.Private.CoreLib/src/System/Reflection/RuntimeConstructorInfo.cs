@@ -127,14 +127,15 @@ namespace System.Reflection
                 return null;
             }
 
-            _ = Invoker.Strategy switch
+            MethodBaseInvoker invoker = Invoker.GetInvokerForCallingCtorAsMethod();
+            _ = invoker.Strategy switch
             {
-                MethodBase.InvokerStrategy.Obj0 => Invoker.InvokeWithNoArgs(obj, invokeAttr),
-                MethodBase.InvokerStrategy.Obj1 => Invoker.InvokeWith1Arg(obj, invokeAttr, binder, parameters!, culture),
-                MethodBase.InvokerStrategy.Obj4 => Invoker.InvokeWith4Args(obj, invokeAttr, binder, parameters!, culture),
-                MethodBase.InvokerStrategy.ObjSpan => Invoker.InvokeWithSpanArgs(obj, invokeAttr, binder, parameters!, culture),
-                MethodBase.InvokerStrategy.Ref4 => Invoker.InvokeWith4RefArgs(obj, invokeAttr, binder, parameters, culture),
-                _ => Invoker.InvokeWithManyRefArgs(obj, invokeAttr, binder, parameters!, culture)
+                MethodBase.InvokerStrategy.Obj0 => invoker.InvokeWithNoArgs(obj, invokeAttr),
+                MethodBase.InvokerStrategy.Obj1 => invoker.InvokeWith1Arg(obj, invokeAttr, binder, parameters!, culture),
+                MethodBase.InvokerStrategy.Obj4 => invoker.InvokeWith4Args(obj, invokeAttr, binder, parameters!, culture),
+                MethodBase.InvokerStrategy.ObjSpan => invoker.InvokeWithSpanArgs(obj, invokeAttr, binder, parameters!, culture),
+                MethodBase.InvokerStrategy.Ref4 => invoker.InvokeWith4RefArgs(obj, invokeAttr, binder, parameters, culture),
+                _ => invoker.InvokeWithManyRefArgs(obj, invokeAttr, binder, parameters!, culture)
             };
 
             return null;

@@ -30,29 +30,22 @@ namespace System.Reflection
 
             if (UseInterpretedPath)
             {
+                // The caller will create the invokeFunc; each of the 3 invoker classes have a different implementation.
+                invokeFunc = null;
                 functionPointer = IntPtr.Zero;
-                invokeFunc = null; // This will be created differently by each invoker class.
             }
             else if (UseCalli(method))
             {
+                InvokeSignatureInfoKey key = InvokeSignatureInfoKey.CreateNormalized((RuntimeType)method.DeclaringType!, parameterTypes, returnType, method.IsStatic);
+                invokeFunc = GetWellKnownInvokeFunc(key, strategy);
+                invokeFunc ??= GetOrCreateInvokeFunc(isForInvokerClasses, key, strategy);
                 functionPointer = method.MethodHandle.GetFunctionPointer();
-                if (CanCache(method))
-                {
-                    InvokeSignatureInfoKey key = InvokeSignatureInfoKey.CreateNormalized((RuntimeType)method.DeclaringType!, parameterTypes, returnType, method.IsStatic);
-                    invokeFunc = GetWellKnownInvokeFunc(key, strategy);
-                    invokeFunc ??= GetOrCreateInvokeFunc(isForInvokerClasses, key, strategy);
-                }
-                else
-                {
-                    InvokeSignatureInfoKey signatureInfo = new((RuntimeType)method.DeclaringType!, parameterTypes, returnType, method.IsStatic);
-                    invokeFunc = CreateInvokeFunc(isForInvokerClasses, method: null, signatureInfo, strategy);
-                }
             }
             else
             {
-                functionPointer = IntPtr.Zero;
                 InvokeSignatureInfoKey signatureInfo = new((RuntimeType?)method.DeclaringType, parameterTypes, returnType, method.IsStatic);
-                invokeFunc = CreateInvokeFunc(isForInvokerClasses, method, signatureInfo, strategy);
+                invokeFunc = CreateIlInvokeFunc(isForInvokerClasses, method, callCtorAsMethod: false, signatureInfo, strategy);
+                functionPointer = IntPtr.Zero;
             }
         }
 
@@ -103,64 +96,48 @@ namespace System.Reflection
             return invokerFlags;
         }
 
-        internal static bool UseCalli(MethodBase method)
+        private static bool UseCalli(MethodBase method)
         {
-            Debug.Assert(!UseInterpretedPath);
+            return SupportsCalli(method) && CanCache(method);
 
-            if (method is DynamicMethod)
+            static bool SupportsCalli(MethodBase method)
             {
-                return false;
-            }
-
-            RuntimeType declaringType = (RuntimeType)method.DeclaringType!;
-
-            if (declaringType.IsGenericType)
-            {
-                // Generic types require newobj\call\callvirt.
-                return false;
-            }
-
-            if (method is RuntimeConstructorInfo)
-            {
-                // Strings and arrays require initialization through newobj.
-                return !ReferenceEquals(declaringType, typeof(string)) && !declaringType.IsArray;
-            }
-
-            if (declaringType.IsValueType)
-            {
-                // For value types, calli is not supported for virtual methods (e.g. ToString()).
-                return !method.IsVirtual;
-            }
-
-            // If not polymorphic and thus can be called with a calli instruction.
-            return !method.IsVirtual || declaringType.IsSealed || method.IsFinal;
-        }
-
-        private static bool CanCache(MethodBase method)
-        {
-            return CanCacheDynamicMethod(method) && !HasDefaultParameterValues(method);
-
-            static bool CanCacheDynamicMethod(MethodBase method) =>
-                // The cache method's DeclaringType and other collectible parameters would be referenced.
-                !method.DeclaringType!.Assembly.IsCollectible &&
-                // An instance method on a value type needs to be unbox which requires its type in IL, so caching would not be very sharable.
-                !(method.DeclaringType!.IsValueType && !method.IsStatic);
-
-            // Supporting default values would increase cache memory usage and slow down the common case
-            // since the default values would have to be cached as well.
-            static bool HasDefaultParameterValues(MethodBase method)
-            {
-                ReadOnlySpan<ParameterInfo> parameters = method.GetParametersAsSpan();
-
-                for (int i = 0; i < parameters.Length; i++)
+                if (method is DynamicMethod)
                 {
-                    if (parameters[i].HasDefaultValue)
-                    {
-                        return true;
-                    }
+                    return false;
                 }
 
-                return false;
+                RuntimeType declaringType = (RuntimeType)method.DeclaringType!;
+
+                if (declaringType.IsGenericType || method.IsGenericMethod)
+                {
+                    // Generic types require newobj\call\callvirt.
+                    return false;
+                }
+
+                if (method is RuntimeConstructorInfo)
+                {
+                    // Strings and arrays require initialization through newobj.
+                    return !ReferenceEquals(declaringType, typeof(string)) && !declaringType.IsArray;
+                }
+
+                if (declaringType.IsValueType)
+                {
+                    // For value types, calli is not supported for virtual methods (e.g. ToString()).
+                    return !method.IsVirtual;
+                }
+
+                // If not polymorphic and thus can be called with a calli instruction.
+                return !method.IsVirtual || declaringType.IsSealed || method.IsFinal;
+            }
+
+            static bool CanCache(MethodBase method)
+            {
+                return
+                    // The cache method's DeclaringType and other collectible parameters would be referenced.
+                    !method.DeclaringType!.Assembly.IsCollectible &&
+                    // An instance method on a value type needs to be unbox which requires its type in IL, so caching would not be very sharable.
+                    !(method.DeclaringType!.IsValueType && !method.IsStatic);
             }
         }
 
@@ -180,7 +157,7 @@ namespace System.Reflection
             };
         }
 
-        internal static Delegate? CreateInvokeFunc(bool isForInvokerClasses, MethodBase? method, in InvokeSignatureInfoKey signatureInfo, InvokerStrategy strategy)
+        internal static Delegate CreateIlInvokeFunc(bool isForInvokerClasses, MethodBase? method, bool callCtorAsMethod, in InvokeSignatureInfoKey signatureInfo, InvokerStrategy strategy)
         {
             Debug.Assert(!UseInterpretedPath);
 
@@ -188,11 +165,11 @@ namespace System.Reflection
 
             return strategy switch
             {
-                InvokerStrategy.Obj0 => CreateInvokeDelegateForObj0Args(method, signatureInfo, backwardsCompat),
-                InvokerStrategy.Obj1 => CreateInvokeDelegateForObj1Arg(method, signatureInfo, backwardsCompat),
-                InvokerStrategy.Obj4 => CreateInvokeDelegateForObj4Args(method, signatureInfo, backwardsCompat),
-                InvokerStrategy.ObjSpan => CreateInvokeDelegateForObjSpanArgs(method, signatureInfo, backwardsCompat),
-                _ => CreateInvokeDelegateForRefArgs(method, signatureInfo, backwardsCompat)
+                InvokerStrategy.Obj0 => CreateInvokeDelegateForObj0Args(method, callCtorAsMethod, signatureInfo, backwardsCompat),
+                InvokerStrategy.Obj1 => CreateInvokeDelegateForObj1Arg(method, callCtorAsMethod, signatureInfo, backwardsCompat),
+                InvokerStrategy.Obj4 => CreateInvokeDelegateForObj4Args(method, callCtorAsMethod, signatureInfo, backwardsCompat),
+                InvokerStrategy.ObjSpan => CreateInvokeDelegateForObjSpanArgs(method, callCtorAsMethod, signatureInfo, backwardsCompat),
+                _ => CreateInvokeDelegateForRefArgs(method, callCtorAsMethod, signatureInfo, backwardsCompat)
             };
         }
 
@@ -235,7 +212,7 @@ namespace System.Reflection
             }
 
             // To minimize the lock scope, create the new delegate outside the lock even though it may not be used.
-            Delegate newInvokeFunc = CreateInvokeFunc(isForInvokerClasses, method: null, key, strategy)!;
+            Delegate newInvokeFunc = CreateIlInvokeFunc(isForInvokerClasses, method: null, callCtorAsMethod: false, key, strategy)!;
             bool lockTaken = false;
             try
             {

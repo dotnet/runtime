@@ -31,12 +31,13 @@ namespace System.Reflection
         private readonly RuntimeType? _declaringType;
         private readonly IntPtr _functionPointer; // This will be Zero when not using calli.
         private readonly Delegate _invokeFunc;
+        private volatile MethodBaseInvoker? _invokerForCallingCtorAsMethod;
         private readonly InvokerArgFlags[] _invokerArgFlags;
         private readonly MethodBase _method;
         private readonly RuntimeType[] _parameterTypes;
         private readonly InvokerStrategy _strategy;
 
-        public MethodBaseInvoker(MethodBase method, RuntimeType[] parameterTypes, Type returnType)
+        public MethodBaseInvoker(MethodBase method, RuntimeType[] parameterTypes, Type returnType, bool callCtorAsMethod = false)
         {
             _method = method;
             _declaringType = (RuntimeType?)_method.DeclaringType;
@@ -65,6 +66,48 @@ namespace System.Reflection
             }
         }
 
+        // A clone constructor for calling a constructor as a method where the incoming obj parameter is specified.
+        private MethodBaseInvoker(MethodBaseInvoker other)
+        {
+            Debug.Assert(other._method is RuntimeConstructorInfo);
+
+            _argCount = other._argCount;
+            _declaringType = other._declaringType;
+            _functionPointer = other._functionPointer;
+            _invokeFunc = other._invokeFunc;
+            _invokerArgFlags = other._invokerArgFlags;
+            _method = other._method;
+            _parameterTypes = other._parameterTypes;
+            _strategy = other._strategy;
+
+            if (_functionPointer != IntPtr.Zero)
+            {
+#if MONO
+                _shouldAllocate = false;
+#else
+                _allocator = null;
+#endif
+            }
+            else
+            {
+                InvokeSignatureInfoKey signatureInfo = new((RuntimeType?)_method.DeclaringType, _parameterTypes, returnType: typeof(void), isStatic: false);
+                _invokeFunc = CreateIlInvokeFunc(isForInvokerClasses: false, _method, callCtorAsMethod: true, signatureInfo, _strategy);
+            }
+        }
+
+        public MethodBaseInvoker GetInvokerForCallingCtorAsMethod()
+        {
+            Debug.Assert(_method is RuntimeConstructorInfo);
+
+            MethodBaseInvoker? invoker = _invokerForCallingCtorAsMethod;
+            if (invoker is null)
+            {
+                _invokerForCallingCtorAsMethod = invoker = new MethodBaseInvoker(this);
+            }
+
+            return invoker;
+        }
+
         internal InvokerStrategy Strategy => _strategy;
 
         [DoesNotReturn]
@@ -81,7 +124,8 @@ namespace System.Reflection
             {
                 if (ShouldAllocate)
                 {
-                    obj ??= CreateUninitializedObject();
+                    Debug.Assert(obj is null);
+                    obj = CreateUninitializedObject();
                     ((InvokeFunc_Obj0Args)_invokeFunc)(obj, _functionPointer);
                     return obj;
                 }
@@ -94,36 +138,27 @@ namespace System.Reflection
             }
         }
 
-        internal unsafe object? InvokeWith1Arg(
+        internal unsafe object? InvokePropertySetter(
             object? obj,
             BindingFlags invokeAttr,
             Binder? binder,
-            object? parameter,
+            object? arg,
             CultureInfo? culture)
         {
             Debug.Assert(_argCount == 1);
 
-            RuntimeType sigType = (RuntimeType)_parameterTypes[0];
-
             bool _ = false;
-            CheckArgument(ref parameter, ref _, 0, binder, culture, invokeAttr);
+            CheckArgument(ref arg, ref _, 0, binder, culture, invokeAttr);
 
             try
             {
                 if (_strategy == InvokerStrategy.Obj1)
                 {
-                    if (ShouldAllocate)
-                    {
-                        obj ??= CreateUninitializedObject();
-                        ((InvokeFunc_Obj1Arg)_invokeFunc)!(obj, _functionPointer, parameter);
-                        return obj;
-                    }
-
-                    return obj = ((InvokeFunc_Obj1Arg)_invokeFunc)!(obj, _functionPointer, parameter);
+                    return ((InvokeFunc_Obj1Arg)_invokeFunc)!(obj, _functionPointer, arg);
                 }
 
                 // This method may be called directly, and the interpreted path needs to use the byref strategies.
-                return InvokeWith1Arg(obj, parameter);
+                return InvokePropertySetter(obj, arg);
             }
             catch (Exception e) when ((invokeAttr & BindingFlags.DoNotWrapExceptions) == 0)
             {
@@ -131,7 +166,8 @@ namespace System.Reflection
             }
         }
 
-        private unsafe object? InvokeWith1Arg(object? obj, object? parameter)
+        // Slower path that removes the stack allocs from the caller.
+        private unsafe object? InvokePropertySetter(object? obj, object? arg)
         {
             Debug.Assert(UseInterpretedPath);
             Debug.Assert(_strategy == InvokerStrategy.Ref4);
@@ -140,15 +176,8 @@ namespace System.Reflection
             IntPtr* pByRefFixedStorage = (IntPtr*)&byrefs;
 
             *(ByReference*)(pByRefFixedStorage) = (_invokerArgFlags[0] & InvokerArgFlags.IsValueType) != 0 ?
-                ByReference.Create(ref parameter!.GetRawData()) :
-                ByReference.Create(ref Unsafe.AsRef<object?>(ref parameter));
-
-            if (ShouldAllocate)
-            {
-                obj ??= CreateUninitializedObject();
-                ((InvokeFunc_RefArgs) _invokeFunc) (obj, _functionPointer, pByRefFixedStorage);
-                return obj;
-            }
+                ByReference.Create(ref arg!.GetRawData()) :
+                ByReference.Create(ref Unsafe.AsRef<object?>(ref arg));
 
             return ((InvokeFunc_RefArgs) _invokeFunc) (obj, _functionPointer, pByRefFixedStorage);
         }
@@ -157,22 +186,21 @@ namespace System.Reflection
             object? obj,
             BindingFlags invokeAttr,
             Binder? binder,
-            object?[] parameters,
+            object?[] arguments,
             CultureInfo? culture)
         {
             Debug.Assert(_argCount == 1);
 
-            RuntimeType sigType = (RuntimeType)_parameterTypes[0];
-
             bool copyBack = false;
-            object? arg1 = parameters[0];
+            object? arg1 = arguments[0];
             CheckArgument(ref arg1, ref copyBack, 0, binder, culture, invokeAttr);
 
             try
             {
                 if (ShouldAllocate)
                 {
-                    obj ??= CreateUninitializedObject();
+                    Debug.Assert(obj is null);
+                    obj = CreateUninitializedObject();
                     ((InvokeFunc_Obj1Arg)_invokeFunc)!(obj, _functionPointer, arg1);
                 }
                 else
@@ -187,7 +215,7 @@ namespace System.Reflection
 
             if (copyBack)
             {
-                CopyBack(parameters, new Span<object?>(ref arg1), new Span<bool>(ref copyBack));
+                CopyBack(arguments, new Span<object?>(ref arg1), new Span<bool>(ref copyBack));
             }
 
             return obj;
@@ -197,7 +225,7 @@ namespace System.Reflection
             object? obj,
             BindingFlags invokeAttr,
             Binder? binder,
-            object?[] parameters,
+            object?[] arguments,
             CultureInfo? culture)
         {
             Debug.Assert(_argCount <= MaxStackAllocArgCount);
@@ -206,9 +234,9 @@ namespace System.Reflection
             Span<object?> copyOfArgs = (Span<object?>)stackArgStorage._args;
             Span<bool> shouldCopyBack = (Span<bool>)stackArgStorage._shouldCopyBack;
 
-            for (int i = 0; i < parameters.Length; i++)
+            for (int i = 0; i < arguments.Length; i++)
             {
-                copyOfArgs[i] = parameters[i];
+                copyOfArgs[i] = arguments[i];
                 CheckArgument(ref copyOfArgs[i], ref shouldCopyBack[i], i, binder, culture, invokeAttr);
             }
 
@@ -216,7 +244,8 @@ namespace System.Reflection
             {
                 if (ShouldAllocate)
                 {
-                    obj ??= CreateUninitializedObject();
+                    Debug.Assert(obj is null);
+                    obj = CreateUninitializedObject();
                     ((InvokeFunc_Obj4Args)_invokeFunc)(obj, _functionPointer, copyOfArgs[0], copyOfArgs[1], copyOfArgs[2], copyOfArgs[3]);
                 }
                 else
@@ -229,7 +258,7 @@ namespace System.Reflection
                 throw new TargetInvocationException(e);
             }
 
-            CopyBack(parameters, copyOfArgs, shouldCopyBack);
+            CopyBack(arguments, copyOfArgs, shouldCopyBack);
 
             return obj;
         }
@@ -238,7 +267,7 @@ namespace System.Reflection
             object? obj,
             BindingFlags invokeAttr,
             Binder? binder,
-            object?[] parameters,
+            object?[] arguments,
             CultureInfo? culture)
         {
             Debug.Assert(_argCount > MaxStackAllocArgCount);
@@ -257,13 +286,14 @@ namespace System.Reflection
             try
             {
                 GCFrameRegistration.RegisterForGCReporting(&regArgStorage);
-                CheckArguments(parameters, copyOfArgs, shouldCopyBack, binder, culture, invokeAttr);
+                CheckArguments(arguments, copyOfArgs, shouldCopyBack, binder, culture, invokeAttr);
 
                 try
                 {
                     if (ShouldAllocate)
                     {
-                        obj ??= CreateUninitializedObject();
+                        Debug.Assert(obj is null);
+                        obj = CreateUninitializedObject();
                         ((InvokeFunc_ObjSpanArgs)_invokeFunc)(obj, _functionPointer, copyOfArgs);
                         ret = obj;
                     }
@@ -277,7 +307,7 @@ namespace System.Reflection
                     throw new TargetInvocationException(e);
                 }
 
-                CopyBack(parameters, copyOfArgs, shouldCopyBack);
+                CopyBack(arguments, copyOfArgs, shouldCopyBack);
                 return ret;
             }
             finally
@@ -290,14 +320,14 @@ namespace System.Reflection
             object? obj,
             BindingFlags invokeAttr,
             Binder? binder,
-            object?[]? parameters,
+            object?[]? arguments,
             CultureInfo? culture)
         {
             Debug.Assert(_argCount <= MaxStackAllocArgCount);
 
             if (_argCount == 0)
             {
-                // This method may be called from the interpreted path for a property getter with parameters==null.
+                // This method may be called from the interpreted path for a property getter with arguments==null.
                 Debug.Assert(UseInterpretedPath);
                 Debug.Assert(_strategy == InvokerStrategy.Ref4);
                 try
@@ -317,7 +347,7 @@ namespace System.Reflection
             StackAllocatedByRefs byrefs = default;
             IntPtr* pByRefFixedStorage = (IntPtr*)&byrefs;
 
-            CheckArguments(parameters, copyOfArgs, shouldCopyBack, binder, culture, invokeAttr);
+            CheckArguments(arguments, copyOfArgs, shouldCopyBack, binder, culture, invokeAttr);
 
             for (int i = 0; i < _argCount; i++)
             {
@@ -331,7 +361,8 @@ namespace System.Reflection
             {
                 if (ShouldAllocate)
                 {
-                    obj ??= CreateUninitializedObject();
+                    Debug.Assert(obj is null);
+                    obj = CreateUninitializedObject();
                     ((InvokeFunc_RefArgs)_invokeFunc)(obj, _functionPointer, pByRefFixedStorage);
                     ret = obj;
                 }
@@ -345,7 +376,7 @@ namespace System.Reflection
                 throw new TargetInvocationException(e);
             }
 
-            CopyBack(parameters!, copyOfArgs, shouldCopyBack);
+            CopyBack(arguments!, copyOfArgs, shouldCopyBack);
             return ret;
         }
 
@@ -353,7 +384,7 @@ namespace System.Reflection
             object? obj,
             BindingFlags invokeAttr,
             Binder? binder,
-            object?[] parameters,
+            object?[] arguments,
             CultureInfo? culture)
         {
             Debug.Assert(_argCount > MaxStackAllocArgCount);
@@ -373,7 +404,7 @@ namespace System.Reflection
                 GCFrameRegistration.RegisterForGCReporting(&regArgStorage);
                 GCFrameRegistration.RegisterForGCReporting(&regByRefStorage);
 
-                CheckArguments(parameters, copyOfArgs, shouldCopyBack, binder, culture, invokeAttr);
+                CheckArguments(arguments, copyOfArgs, shouldCopyBack, binder, culture, invokeAttr);
 
                 for (int i = 0; i < _argCount; i++)
                 {
@@ -386,7 +417,8 @@ namespace System.Reflection
                 {
                     if (ShouldAllocate)
                     {
-                        obj ??= CreateUninitializedObject();
+                        Debug.Assert(obj is null);
+                        obj = CreateUninitializedObject();
                         ((InvokeFunc_RefArgs)_invokeFunc)(obj, _functionPointer, pByRefStorage);
                         ret = obj;
                     }
@@ -400,7 +432,7 @@ namespace System.Reflection
                     throw new TargetInvocationException(e);
                 }
 
-                CopyBack(parameters, copyOfArgs, shouldCopyBack);
+                CopyBack(arguments, copyOfArgs, shouldCopyBack);
             }
             finally
             {
@@ -411,7 +443,7 @@ namespace System.Reflection
             return ret;
         }
 
-        // Copy modified values out. This is done with ByRef, Type.Missing and parameters changed by the Binder.
+        // Copy modified values out. This is done with ByRef, Type.Missing and arguments changed by the Binder.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void CopyBack(object?[] dest, Span<object?> copyOfParameters, Span<bool> shouldCopyBack)
         {
@@ -478,16 +510,16 @@ namespace System.Reflection
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void CheckArguments(
-             ReadOnlySpan<object?> parameters,
+             ReadOnlySpan<object?> arguments,
              Span<object?> copyOfParameters,
              Span<bool> shouldCopyBack,
              Binder? binder,
              CultureInfo? culture,
              BindingFlags invokeAttr)
         {
-            for (int i = 0; i < parameters.Length; i++)
+            for (int i = 0; i < arguments.Length; i++)
             {
-                object? arg = parameters[i];
+                object? arg = arguments[i];
                 RuntimeType sigType = (RuntimeType)_parameterTypes[i];
 
                 // Convert a Type.Missing to the default value.

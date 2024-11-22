@@ -145,7 +145,7 @@ namespace System.Reflection
         }
 
         /// <summary>
-        /// Invokes the constructor using the specified parameters.
+        /// Invokes the constructor using the specified arguments.
         /// </summary>
         /// <inheritdoc cref="Invoke()"/>
         /// <param name="arg1">The first argument for the invoked method.</param>
@@ -168,7 +168,7 @@ namespace System.Reflection
 
             if (_strategy == InvokerStrategy.Ref4)
             {
-                return InvokeWithRefArgs4(new Span<object?>(new object?[] { arg1 }));
+                return InvokeWithRefArgs4(arg1);
             }
 
             if (ShouldAllocate)
@@ -198,7 +198,7 @@ namespace System.Reflection
 
             if (_strategy == InvokerStrategy.Ref4)
             {
-                return InvokeWithRefArgs4(new Span<object?>(new object?[] { arg1, arg2 }));
+                return InvokeWithRefArgs4(arg1, arg2);
             }
 
             return InvokeImpl(arg1, arg2, null, null);
@@ -222,7 +222,7 @@ namespace System.Reflection
 
             if (_strategy == InvokerStrategy.Ref4)
             {
-                return InvokeWithRefArgs4(new Span<object?>(new object?[] { arg1, arg2, arg3 }));
+                return InvokeWithRefArgs4(arg1, arg2, arg3);
             }
 
             return InvokeImpl(arg1, arg2, arg3, null);
@@ -247,7 +247,7 @@ namespace System.Reflection
 
             if (_strategy == InvokerStrategy.Ref4)
             {
-                return InvokeWithRefArgs4(new Span<object?>(new object?[] { arg1, arg2, arg3, arg4 }));
+                return InvokeWithRefArgs4(arg1, arg2, arg3, arg4);
             }
 
             return InvokeImpl(arg1, arg2, arg3, arg4);
@@ -255,11 +255,6 @@ namespace System.Reflection
 
         private object InvokeImpl(object? arg1, object? arg2, object? arg3, object? arg4)
         {
-            if (_invokeFunc is null)
-            {
-                _method.ThrowNoInvokeException();
-            }
-
             switch (_argCount)
             {
                 case 4:
@@ -345,7 +340,8 @@ namespace System.Reflection
             }
         }
 
-        internal unsafe object InvokeWithSpanArgs(Span<object?> arguments)
+        // Version with no copy-back.
+        private unsafe object InvokeWithSpanArgs(Span<object?> arguments)
         {
             if (_invokeFunc is null)
             {
@@ -356,7 +352,6 @@ namespace System.Reflection
 
             Span<object?> copyOfArgs;
             GCFrameRegistration regArgStorage;
-
             IntPtr* pArgStorage = stackalloc IntPtr[_argCount];
             NativeMemory.Clear(pArgStorage, (nuint)_argCount * (nuint)sizeof(IntPtr));
             copyOfArgs = new(ref Unsafe.AsRef<object?>(pArgStorage), _argCount);
@@ -393,7 +388,45 @@ namespace System.Reflection
             return obj;
         }
 
-        internal unsafe object InvokeWithRefArgs4(Span<object?> arguments)
+        // Version with no copy-back
+        private unsafe object InvokeWithRefArgs4(object? arg1, object? arg2 = null, object? arg3 = null, object? arg4 = null)
+        {
+            if (_invokeFunc is null)
+            {
+                _method.ThrowNoInvokeException();
+            }
+
+            StackAllocatedArguments stackStorage = new(arg1, arg2, arg3, arg4);
+            Span<object?> arguments = ((Span<object?>)(stackStorage._args)).Slice(0, _argCount);
+            StackAllocatedByRefs byrefs = default;
+            IntPtr* pByRefFixedStorage = (IntPtr*)&byrefs;
+
+            for (int i = 0; i < _argCount; i++)
+            {
+                CheckArgument(ref arguments[i], i);
+
+                *(ByReference*)(pByRefFixedStorage + i) = (_invokerArgFlags[i] & InvokerArgFlags.IsValueType) != 0 ?
+                    ByReference.Create(ref arguments[i]!.GetRawData()) :
+#pragma warning disable CS9080
+                    ByReference.Create(ref arguments[i]);
+#pragma warning restore CS9080
+            }
+
+            object obj;
+            if (ShouldAllocate)
+            {
+                obj = CreateUninitializedObject();
+                ((InvokeFunc_RefArgs)_invokeFunc)(obj, _functionPointer, pByRefFixedStorage);
+            }
+            else
+            {
+                obj = ((InvokeFunc_RefArgs)_invokeFunc)(obj: null, _functionPointer, pByRefFixedStorage)!;
+            }
+
+            return obj;
+        }
+
+        private unsafe object InvokeWithRefArgs4(Span<object?> arguments)
         {
             if (_invokeFunc is null)
             {
@@ -436,7 +469,7 @@ namespace System.Reflection
             return obj;
         }
 
-        internal unsafe object InvokeWithRefArgsMany(Span<object?> arguments)
+        private unsafe object InvokeWithRefArgsMany(Span<object?> arguments)
         {
             if (_invokeFunc is null)
             {
@@ -495,8 +528,8 @@ namespace System.Reflection
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        // Copy modified values out. This is only done with ByRef parameters.
-        internal void CopyBack(Span<object?> dest, ReadOnlySpan<object?> copyOfParameters, ReadOnlySpan<bool> shouldCopyBack)
+        // Copy modified values out. This is only done with ByRef arguments.
+        private void CopyBack(Span<object?> dest, ReadOnlySpan<object?> copyOfParameters, ReadOnlySpan<bool> shouldCopyBack)
         {
             for (int i = 0; i < dest.Length; i++)
             {

@@ -18,39 +18,39 @@ namespace System.Reflection
         internal delegate object? InvokeFunc_ObjSpanArgs(object? obj, IntPtr functionPointer, Span<object?> arguments);
         internal unsafe delegate object? InvokeFunc_RefArgs(object? obj, IntPtr functionPointer, IntPtr* refArguments);
 
-        public static unsafe InvokeFunc_Obj0Args CreateInvokeDelegateForObj0Args(MethodBase? method, in InvokeSignatureInfoKey signatureInfo, bool backwardsCompat)
+        public static unsafe InvokeFunc_Obj0Args CreateInvokeDelegateForObj0Args(MethodBase? method, bool callCtorAsMethod, in InvokeSignatureInfoKey signatureInfo, bool backwardsCompat)
         {
             DynamicMethod dm = CreateDynamicMethod(method, signatureInfo, [typeof(object), typeof(IntPtr)]);
             ILGenerator il = dm.GetILGenerator();
 
-            EmitLdargForInstance(il, method, signatureInfo.IsStatic, signatureInfo.DeclaringType);
-            EmitCall(il, method, signatureInfo, signatureInfo.IsStatic, backwardsCompat);
+            EmitLdargForInstance(il, method, callCtorAsMethod, signatureInfo);
+            EmitCall(il, method, callCtorAsMethod, signatureInfo, backwardsCompat);
             EmitReturnHandling(il, method is RuntimeConstructorInfo ? method.DeclaringType! : signatureInfo.ReturnType);
             return (InvokeFunc_Obj0Args)dm.CreateDelegate(typeof(InvokeFunc_Obj0Args), target: null);
         }
 
-        public static unsafe InvokeFunc_Obj1Arg CreateInvokeDelegateForObj1Arg(MethodBase? method, in InvokeSignatureInfoKey signatureInfo, bool backwardsCompat)
+        public static unsafe InvokeFunc_Obj1Arg CreateInvokeDelegateForObj1Arg(MethodBase? method, bool callCtorAsMethod, in InvokeSignatureInfoKey signatureInfo, bool backwardsCompat)
         {
             DynamicMethod dm = CreateDynamicMethod(method, signatureInfo, [typeof(object), typeof(IntPtr), typeof(object)]);
             ILGenerator il = dm.GetILGenerator();
 
-            EmitLdargForInstance(il, method, signatureInfo.IsStatic, signatureInfo.DeclaringType);
+            EmitLdargForInstance(il, method, callCtorAsMethod, signatureInfo);
 
             Debug.Assert(signatureInfo.ParameterTypes.Length == 1);
             il.Emit(OpCodes.Ldarg_2);
             UnboxSpecialType(il, (RuntimeType)signatureInfo.ParameterTypes[0]);
 
-            EmitCall(il, method, signatureInfo, signatureInfo.IsStatic, backwardsCompat);
-            EmitReturnHandling(il, method is RuntimeConstructorInfo ? method.DeclaringType! : signatureInfo.ReturnType);
+            EmitCall(il, method, callCtorAsMethod, signatureInfo, backwardsCompat);
+            EmitReturnHandling(il, GetReturnType(method, callCtorAsMethod, signatureInfo));
             return (InvokeFunc_Obj1Arg)dm.CreateDelegate(typeof(InvokeFunc_Obj1Arg), target: null);
         }
 
-        public static unsafe InvokeFunc_Obj4Args CreateInvokeDelegateForObj4Args(MethodBase? method, in InvokeSignatureInfoKey signatureInfo, bool backwardsCompat)
+        public static unsafe InvokeFunc_Obj4Args CreateInvokeDelegateForObj4Args(MethodBase? method, bool callCtorAsMethod, in InvokeSignatureInfoKey signatureInfo, bool backwardsCompat)
         {
             DynamicMethod dm = CreateDynamicMethod(method, signatureInfo, [typeof(object), typeof(IntPtr), typeof(object), typeof(object), typeof(object), typeof(object)]);
             ILGenerator il = dm.GetILGenerator();
 
-            EmitLdargForInstance(il, method, signatureInfo.IsStatic, signatureInfo.DeclaringType);
+            EmitLdargForInstance(il, method, callCtorAsMethod, signatureInfo);
 
             ReadOnlySpan<Type> parameterTypes = signatureInfo.ParameterTypes;
             for (int i = 0; i < parameterTypes.Length; i++)
@@ -73,17 +73,17 @@ namespace System.Reflection
                 UnboxSpecialType(il, parameterType);
             }
 
-            EmitCall(il, method, signatureInfo, signatureInfo.IsStatic, backwardsCompat);
-            EmitReturnHandling(il, method is RuntimeConstructorInfo ? method.DeclaringType! : signatureInfo.ReturnType);
+            EmitCall(il, method, callCtorAsMethod, signatureInfo, backwardsCompat);
+            EmitReturnHandling(il, GetReturnType(method, callCtorAsMethod, signatureInfo));
             return (InvokeFunc_Obj4Args)dm.CreateDelegate(typeof(InvokeFunc_Obj4Args), target: null);
         }
 
-        public static unsafe InvokeFunc_ObjSpanArgs CreateInvokeDelegateForObjSpanArgs(MethodBase? method, in InvokeSignatureInfoKey signatureInfo, bool backwardsCompat)
+        public static unsafe InvokeFunc_ObjSpanArgs CreateInvokeDelegateForObjSpanArgs(MethodBase? method, bool callCtorAsMethod, in InvokeSignatureInfoKey signatureInfo, bool backwardsCompat)
         {
             DynamicMethod dm = CreateDynamicMethod(method, signatureInfo, [typeof(object), typeof(IntPtr), typeof(Span<object>)]);
             ILGenerator il = dm.GetILGenerator();
 
-            EmitLdargForInstance(il, method, signatureInfo.IsStatic, signatureInfo.DeclaringType);
+            EmitLdargForInstance(il, method, callCtorAsMethod, signatureInfo);
 
             ReadOnlySpan<Type> parameterTypes = signatureInfo.ParameterTypes;
             for (int i = 0; i < parameterTypes.Length; i++)
@@ -98,17 +98,17 @@ namespace System.Reflection
                 UnboxSpecialType(il, parameterType);
             }
 
-            EmitCall(il, method, signatureInfo, signatureInfo.IsStatic, backwardsCompat);
-            EmitReturnHandling(il, method is RuntimeConstructorInfo ? method.DeclaringType! : signatureInfo.ReturnType);
+            EmitCall(il, method, callCtorAsMethod, signatureInfo, backwardsCompat);
+            EmitReturnHandling(il, GetReturnType(method, callCtorAsMethod, signatureInfo));
             return (InvokeFunc_ObjSpanArgs)dm.CreateDelegate(typeof(InvokeFunc_ObjSpanArgs), target: null);
         }
 
-        public static unsafe InvokeFunc_RefArgs CreateInvokeDelegateForRefArgs(MethodBase? method, in InvokeSignatureInfoKey signatureInfo, bool backwardsCompat)
+        public static unsafe InvokeFunc_RefArgs CreateInvokeDelegateForRefArgs(MethodBase? method, bool callCtorAsMethod, in InvokeSignatureInfoKey signatureInfo, bool backwardsCompat)
         {
             DynamicMethod dm = CreateDynamicMethod(method, signatureInfo, [typeof(object), typeof(IntPtr), typeof(IntPtr*)]);
             ILGenerator il = dm.GetILGenerator();
 
-            EmitLdargForInstance(il, method, signatureInfo.IsStatic, signatureInfo.DeclaringType);
+            EmitLdargForInstance(il, method, callCtorAsMethod, signatureInfo);
 
             ReadOnlySpan<Type> parameterTypes = signatureInfo.ParameterTypes;
             for (int i = 0; i < parameterTypes.Length; i++)
@@ -129,8 +129,8 @@ namespace System.Reflection
                 }
             }
 
-            EmitCall(il, method, signatureInfo, signatureInfo.IsStatic, backwardsCompat);
-            EmitReturnHandling(il, method is RuntimeConstructorInfo ? method.DeclaringType! : signatureInfo.ReturnType);
+            EmitCall(il, method, callCtorAsMethod, signatureInfo, backwardsCompat);
+            EmitReturnHandling(il, GetReturnType(method, callCtorAsMethod, signatureInfo));
             return (InvokeFunc_RefArgs)dm.CreateDelegate(typeof(InvokeFunc_RefArgs), target: null);
         }
 
@@ -165,26 +165,37 @@ namespace System.Reflection
                 skipVisibility: true); // Supports creating the delegate immediately when calling CreateDelegate().
         }
 
-        private static void EmitLdargForInstance(ILGenerator il, MethodBase? method, bool isStatic, Type? declaringType)
+        private static void EmitLdargForInstance(ILGenerator il, MethodBase? method, bool callCtorAsMethod, in InvokeSignatureInfoKey signatureInfo)
         {
-            if (method is not RuntimeConstructorInfo && !isStatic)
+            if (method is RuntimeConstructorInfo)
+            {
+                if (callCtorAsMethod)
+                {
+                    EmitLdArg0(signatureInfo);
+                }
+            }
+            else if (!signatureInfo.IsStatic)
+            {
+                EmitLdArg0(signatureInfo);
+            }
+
+            void EmitLdArg0(in InvokeSignatureInfoKey signatureInfo)
             {
                 il.Emit(OpCodes.Ldarg_0);
-                if (declaringType!.IsValueType)
+                if (signatureInfo.DeclaringType!.IsValueType)
                 {
-                    il.Emit(OpCodes.Unbox, declaringType);
+                    il.Emit(OpCodes.Unbox, signatureInfo.DeclaringType);
                 }
             }
         }
 
-        private static void EmitCall(ILGenerator il, MethodBase? method, in InvokeSignatureInfoKey signatureInfo, bool isStatic, bool backwardsCompat)
+        private static void EmitCall(ILGenerator il, MethodBase? method, bool callCtorAsMethod, in InvokeSignatureInfoKey signatureInfo, bool backwardsCompat)
         {
             if (method is null)
             {
                 // Use calli
-
                 CallingConventions callingConventions = CallingConventions.Standard;
-                if (!isStatic)
+                if (!signatureInfo.IsStatic)
                 {
                     callingConventions |= CallingConventions.HasThis;
                 }
@@ -208,7 +219,15 @@ namespace System.Reflection
 
             if (method is RuntimeConstructorInfo rci)
             {
-                il.Emit(OpCodes.Newobj, rci);
+                if (callCtorAsMethod)
+                {
+                    il.Emit(OpCodes.Call, rci);
+                    il.Emit(OpCodes.Ldnull);
+                }
+                else
+                {
+                    il.Emit(OpCodes.Newobj, rci);
+                }
             }
             else if (method.IsStatic || method.DeclaringType!.IsValueType)
             {
@@ -218,6 +237,22 @@ namespace System.Reflection
             {
                 il.Emit(OpCodes.Callvirt, (MethodInfo)method);
             }
+        }
+
+        private static Type GetReturnType(MethodBase? method, bool callCtorAsMethod, in InvokeSignatureInfoKey signatureInfo)
+        {
+            if (method is RuntimeConstructorInfo rci)
+            {
+                if (callCtorAsMethod)
+                {
+                    // We return null in in this case.
+                    return typeof(object);
+                }
+
+                return rci.DeclaringType!;
+            }
+
+            return signatureInfo.ReturnType;
         }
 
         private static void EmitReturnHandling(ILGenerator il, Type returnType)

@@ -15,6 +15,14 @@ namespace System.Reflection
         {
             Debug.Assert(signatureInfo.ParameterTypes.Length == 0);
 
+            return null;
+
+            // This approach uses function pointers to call an instance method, which isn't supported
+            // due to the HasThis calling convention not present in the function pointer signature and
+            // currently no support by the delegate* syntax to specify that calling convention.
+            // Todo: change to hard-coding the startup-specific types and methods.
+
+            /*
             if (signatureInfo.DeclaringType != typeof(object))
             {
                 // Only reference types are supported.
@@ -56,6 +64,7 @@ namespace System.Reflection
             if (retType == typeof(System.Diagnostics.Tracing.EventTask)) return new InvokeFunc_Obj0Args(CallFunc0<System.Diagnostics.Tracing.EventTask>);
 
             return null;
+            */
         }
 
         /// <summary>
@@ -65,6 +74,14 @@ namespace System.Reflection
         {
             Debug.Assert(signatureInfo.ParameterTypes.Length == 1);
 
+            return null;
+
+            // This approach uses function pointers to call an instance method, which isn't supported
+            // due to the HasThis calling convention not present in the function pointer signature and
+            // currently no support by the delegate* syntax to specify that calling convention.
+            // Todo: change to hard-coding the startup-specific types and methods.
+
+            /*
             if (signatureInfo.DeclaringType != typeof(object) || signatureInfo.ReturnType != typeof(void))
             {
                 // Only reference types and methods with no return are supported.
@@ -105,10 +122,11 @@ namespace System.Reflection
             if (argType == typeof(Diagnostics.Tracing.EventTask)) return new InvokeFunc_Obj1Arg(CallAction1<Diagnostics.Tracing.EventTask>);
 
             return null;
+            */
         }
 
-        private static unsafe object? CallAction0(object? o, IntPtr f) { ((delegate* managed<object?, void>)f)(o); return null; }
-        private static unsafe object? CallAction1<TArg1>(object? o, IntPtr f, object? a) { ((delegate* managed<object?, TArg1, void>)f)(o, (TArg1)a!); return null; }
-        private static unsafe object? CallFunc0<TReturn>(object? o, IntPtr f) => ((delegate* managed<object?, TReturn>)f)(o);
+        //private static unsafe object? CallAction0(object? o, IntPtr f) { ((delegate* managed<object?, void>)f)(o); return null; }
+        //private static unsafe object? CallAction1<TArg1>(object? o, IntPtr f, object? a) { ((delegate* managed<object?, TArg1, void>)f)(o, (TArg1)a!); return null; }
+        //private static unsafe object? CallFunc0<TReturn>(object? o, IntPtr f) => ((delegate* managed<object?, TReturn>)f)(o);
     }
 }

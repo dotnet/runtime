@@ -311,7 +311,7 @@ namespace System.Reflection
                 throw new TargetParameterCountException(SR.Arg_ParmCnt);
             }
 
-            Invoker.InvokeWith1Arg(obj, invokeAttr, binder, parameter, culture);
+            Invoker.InvokePropertySetter(obj, invokeAttr, binder, parameter, culture);
         }
 
         #endregion
