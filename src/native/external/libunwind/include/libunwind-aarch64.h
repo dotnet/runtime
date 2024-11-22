@@ -34,9 +34,9 @@ extern "C" {
 
 #include <inttypes.h>
 #include <stddef.h>
+#include <ucontext.h>
 #include <stdalign.h>
 #include <stdint.h>
-#include <ucontext.h>
 
 #ifndef UNW_EMPTY_STRUCT
 #  define UNW_EMPTY_STRUCT uint8_t unused;
