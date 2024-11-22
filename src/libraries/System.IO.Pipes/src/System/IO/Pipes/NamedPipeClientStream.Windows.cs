@@ -110,7 +110,7 @@ namespace System.IO.Pipes
                 _pipeFlags |= (((int)_impersonationLevel - 1) << 16);
             }
 
-            SafePipeHandle handle = CreateNamedPipeClient(_normalizedPipePath, ref secAttrs, _pipeFlags, _accessRights);
+            SafePipeHandle handle = CreateNamedPipeClient(_normalizedPipePath!, ref secAttrs, _pipeFlags, _accessRights);
 
             if (handle.IsInvalid)
             {
@@ -133,7 +133,7 @@ namespace System.IO.Pipes
                     throw Win32Marshal.GetExceptionForWin32Error(errorCode);
                 }
 
-                if (!Interop.Kernel32.WaitNamedPipe(_normalizedPipePath, timeout))
+                if (!Interop.Kernel32.WaitNamedPipe(_normalizedPipePath!, timeout))
                 {
                     errorCode = Marshal.GetLastPInvokeError();
 
@@ -147,7 +147,7 @@ namespace System.IO.Pipes
                 }
 
                 // Pipe server should be free. Let's try to connect to it.
-                handle = CreateNamedPipeClient(_normalizedPipePath, ref secAttrs, _pipeFlags, _accessRights);
+                handle = CreateNamedPipeClient(_normalizedPipePath!, ref secAttrs, _pipeFlags, _accessRights);
 
                 if (handle.IsInvalid)
                 {
@@ -173,7 +173,7 @@ namespace System.IO.Pipes
             ValidateRemotePipeUser();
             return true;
 
-            static SafePipeHandle CreateNamedPipeClient(string? path, ref Interop.Kernel32.SECURITY_ATTRIBUTES secAttrs, int pipeFlags, int access)
+            static SafePipeHandle CreateNamedPipeClient(string path, ref Interop.Kernel32.SECURITY_ATTRIBUTES secAttrs, int pipeFlags, int access)
                 => Interop.Kernel32.CreateNamedPipeClient(path, access, FileShare.None, ref secAttrs, FileMode.Open, pipeFlags, hTemplateFile: IntPtr.Zero);
         }
 
