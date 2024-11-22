@@ -4280,35 +4280,33 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions, Gen
 
         if (tree->OperIs(GT_GE, GT_LT) && isNeverNegative)
         {
-            // X is never negative:
+            // Assertions: X >= 0
             //
-            //   X >= 0 --> true
-            //   X < 0  --> false
-            //
+            // X >= 0 --> true
+            // X < 0  --> false
             newTree = tree->OperIs(GT_GE) ? gtNewTrue() : gtNewFalse();
         }
         else if (tree->OperIs(GT_GT, GT_LE) && isNeverNegative && isNonZero)
         {
-            // X is never negative and is never zero:
+            // Assertions: X > 0
             //
-            //   X > 0 --> true
-            //   X <= 0 --> false
-            //
-            newTree = tree->OperIs(GT_GT) ? gtNewIconNode(1) : gtNewFalse();
+            // X > 0  --> true
+            // X <= 0 --> false
+            newTree = tree->OperIs(GT_GT) ? gtNewTrue() : gtNewFalse();
         }
         else if (tree->OperIs(GT_EQ, GT_NE) && isNonZero)
         {
-            // X is never zero:
+            // Assertions: X != 0
             //
-            //   X == 0 --> false
-            //   X != 0 --> true
-            //
-            newTree = tree->OperIs(GT_EQ) ? gtNewFalse() : gtNewTrue();
+            // X != 0 --> true
+            // X == 0 --> false
+            newTree = tree->OperIs(GT_NE) ? gtNewTrue() : gtNewFalse();
         }
 
         if (newTree != tree)
         {
-            return optAssertionProp_Update(gtWrapWithSideEffects(newTree, tree, GTF_ALL_EFFECT), tree, stmt);
+            newTree = gtWrapWithSideEffects(newTree, tree, GTF_ALL_EFFECT);
+            return optAssertionProp_Update(newTree, tree, stmt);
         }
     }
 
