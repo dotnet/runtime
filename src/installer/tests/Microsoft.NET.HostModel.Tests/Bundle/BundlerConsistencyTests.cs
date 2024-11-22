@@ -333,6 +333,7 @@ namespace Microsoft.NET.HostModel.Bundle.Tests
 
             if (!RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
             {
+                // SingleFile is still only signed on MacOS with codesign
                 SigningTests.IsSigned(bundledApp).Should().BeFalse();
                 return;
             }

@@ -10,6 +10,7 @@ using System.IO.MemoryMappedFiles;
 using System.Linq;
 using System.Reflection.PortableExecutable;
 using System.Runtime.InteropServices;
+using System.Text;
 using Microsoft.DotNet.CoreSetup;
 using Microsoft.NET.HostModel.AppHost;
 using Microsoft.NET.HostModel.MachO;
@@ -282,18 +283,18 @@ namespace Microsoft.NET.HostModel.Bundle
 
             long headerOffset = 0;
             using (FileStream bundle = File.Open(bundlePath, FileMode.Open, FileAccess.ReadWrite))
-            using (BinaryWriter writer = new BinaryWriter(bundle))
+            using (BinaryWriter writer = new BinaryWriter(bundle, Encoding.Default, leaveOpen: true))
             {
                 long? newLength;
                 using (MemoryMappedFile mmap = MemoryMappedFile.CreateFromFile(bundle, null, 0, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, true))
                 using (MemoryMappedViewAccessor accessor = mmap.CreateViewAccessor(0, 0, MemoryMappedFileAccess.ReadWrite))
                 {
-                    MachObjectFile.TryRemoveCodesign(accessor, out newLength);
+                    if(MachObjectFile.TryRemoveCodesign(accessor, out newLength))
+                    {
+                        bundle.SetLength(newLength.Value);
+                    }
                 }
-                newLength ??= new FileInfo(bundlePath).Length;
-                bundle.SetLength(newLength.Value);
                 bundle.Position = bundle.Length;
-
                 foreach (var fileSpec in fileSpecs)
                 {
                     string relativePath = fileSpec.BundleRelativePath;
