@@ -2015,10 +2015,13 @@ HANDLE Thread::CreateUtilityThread(Thread::StackSizeBucket stackSizeBucket, LPTH
     DWORD threadId;
     HANDLE hThread = CreateThread(NULL, stackSize, start, args, flags, &threadId);
 
-    SetThreadName(hThread, pName);
+    if (hThread != INVALID_HANDLE_VALUE)
+    {
+        SetThreadName(hThread, pName);
 
-    if (pThreadId)
-        *pThreadId = threadId;
+        if (pThreadId)
+            *pThreadId = threadId;
+    }
 
     return hThread;
 }
