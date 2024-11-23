@@ -147,7 +147,7 @@ typedef void* FARPROC;
 typedef void* HANDLE;
 typedef HANDLE HMODULE;
 typedef void* ULONG_PTR;
-typedef int error_t;
+typedef unsigned int error_t;
 typedef void* LPVOID;
 typedef unsigned char BYTE;
 typedef WCHAR OLECHAR;

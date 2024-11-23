@@ -12,9 +12,6 @@ public delegate void MyCallback();
 public class PInvokeRevPInvokeUnhandled
 {
     [DllImport("ForeignThreadRevPInvokeUnhandled")]
-    public static extern void InvokeCallback(MyCallback callback);
-
-    [DllImport("ForeignThreadRevPInvokeUnhandled")]
     public static extern void InvokeCallbackOnNewThread(MyCallback callback);
 
     [ThreadStatic]

@@ -14,9 +14,6 @@ public class PInvokeRevPInvokeUnhandled
     [DllImport("PInvokeRevPInvokeUnhandledNative")]
     public static extern void InvokeCallback(MyCallback callback);
 
-    [DllImport("PInvokeRevPInvokeUnhandledNative")]
-    public static extern void InvokeCallbackOnNewThread(MyCallback callback);
-
     [ThreadStatic]
     private static Exception lastEx;
     private static bool expectUnhandledException = false;
