@@ -324,7 +324,7 @@ namespace System
                 {
                     ((delegate*<object, void>)fptr)(target!);
                 }
-                catch (Exception ex) when (ExceptionHandling.s_handler != null && ExceptionHandling.s_handler(ex))
+                catch (Exception ex) when (ExceptionHandling.s_handler?.Invoke(ex) == true)
                 {
                     // the handler returned "true" means the exception is now "handled" and we should continue.
                 }
