@@ -347,7 +347,7 @@ extern "C" void QCALLTYPE TypeBuilder_SetMethodIL(QCall::ModuleHandle pModule,
 
     unsigned codeSizeAligned     = fatHeader.GetCodeSize();
     if (moreSections)
-        codeSizeAligned = AlignUp(codeSizeAligned, 4); // to insure EH section aligned
+        codeSizeAligned = AlignUp(codeSizeAligned, 4); // to ensure EH section aligned
     unsigned headerSize          = COR_ILMETHOD::Size(&fatHeader, numExceptions != 0);
 
     //Create the exception handlers.
