@@ -871,6 +871,22 @@ namespace System.IO.Compression.Tests
             Assert.Null(exception);
         }
 
+        [Theory]
+        [InlineData("HuffmanTreeException.zip")]
+        public static async Task ZipArchive_InvalidHuffmanData(string zipname)
+        {
+            string filename = bad(zipname);
+            using (ZipArchive archive = new ZipArchive(await StreamHelpers.CreateTempCopyStream(filename), ZipArchiveMode.Read))
+            {
+                ZipArchiveEntry e = archive.Entries[0];
+                using (MemoryStream ms = new MemoryStream())
+                using (Stream s = e.Open())
+                {
+                    Assert.Throws<InvalidDataException>(() => s.CopyTo(ms)); //"Should throw on creating Huffman tree"
+                }
+            }
+        }
+
         private static readonly byte[] s_slightlyIncorrectZip64 =
         {
             // ===== Local file header signature 0x04034b50
