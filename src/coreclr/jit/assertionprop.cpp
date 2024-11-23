@@ -3623,7 +3623,17 @@ GenTree* Compiler::optAssertionProp_LclVar(ASSERT_VALARG_TP assertions, GenTreeL
         return nullptr;
     }
 
-    BitVecOps::Iter iter(apTraits, assertions);
+    // For local assertion prop we can filter the assertion set down.
+    //
+    const unsigned lclNum = tree->GetLclNum();
+
+    ASSERT_TP filteredAssertions = assertions;
+    if (optLocalAssertionProp)
+    {
+        filteredAssertions = BitVecOps::Intersection(apTraits, GetAssertionDep(lclNum), filteredAssertions);
+    }
+
+    BitVecOps::Iter iter(apTraits, filteredAssertions);
     unsigned        index = 0;
     while (iter.NextElem(&index))
     {
@@ -3672,7 +3682,7 @@ GenTree* Compiler::optAssertionProp_LclVar(ASSERT_VALARG_TP assertions, GenTreeL
         // gtFoldExpr, specifically the case of a cast, where the fold operation changes the type of the LclVar
         // node.  In such a case is not safe to perform the substitution since later on the JIT will assert mismatching
         // types between trees.
-        const unsigned lclNum = tree->GetLclNum();
+        //
         if (curAssertion->op1.lcl.lclNum == lclNum)
         {
             LclVarDsc* const lclDsc = lvaGetDesc(lclNum);
@@ -3729,7 +3739,10 @@ GenTree* Compiler::optAssertionProp_LclFld(ASSERT_VALARG_TP assertions, GenTreeL
         return nullptr;
     }
 
-    BitVecOps::Iter iter(apTraits, assertions);
+    const unsigned lclNum             = tree->GetLclNum();
+    ASSERT_TP      filteredAssertions = BitVecOps::Intersection(apTraits, GetAssertionDep(lclNum), assertions);
+
+    BitVecOps::Iter iter(apTraits, filteredAssertions);
     unsigned        index = 0;
     while (iter.NextElem(&index))
     {
