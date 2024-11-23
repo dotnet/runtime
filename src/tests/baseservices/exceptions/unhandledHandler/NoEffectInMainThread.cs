@@ -78,12 +78,3 @@ public class NoEffectInMainThread
         return 42;
     }
 }
-
-
-
-
-
-
-
-
-

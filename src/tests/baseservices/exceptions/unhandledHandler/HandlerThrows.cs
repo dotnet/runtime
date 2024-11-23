@@ -85,12 +85,3 @@ public class HandlerThrows
         th.Join();
     }
 }
-
-
-
-
-
-
-
-
-
