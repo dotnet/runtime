@@ -3623,7 +3623,17 @@ GenTree* Compiler::optAssertionProp_LclVar(ASSERT_VALARG_TP assertions, GenTreeL
         return nullptr;
     }
 
-    BitVecOps::Iter iter(apTraits, assertions);
+    // For local assertion prop we can filter the assertion set down.
+    //
+    const unsigned lclNum = tree->GetLclNum();
+
+    ASSERT_TP filteredAssertions = assertions;
+    if (optLocalAssertionProp)
+    {
+        filteredAssertions = BitVecOps::Intersection(apTraits, GetAssertionDep(lclNum), filteredAssertions);
+    }
+
+    BitVecOps::Iter iter(apTraits, filteredAssertions);
     unsigned        index = 0;
     while (iter.NextElem(&index))
     {
@@ -3672,7 +3682,7 @@ GenTree* Compiler::optAssertionProp_LclVar(ASSERT_VALARG_TP assertions, GenTreeL
         // gtFoldExpr, specifically the case of a cast, where the fold operation changes the type of the LclVar
         // node.  In such a case is not safe to perform the substitution since later on the JIT will assert mismatching
         // types between trees.
-        const unsigned lclNum = tree->GetLclNum();
+        //
         if (curAssertion->op1.lcl.lclNum == lclNum)
         {
             LclVarDsc* const lclDsc = lvaGetDesc(lclNum);
@@ -3729,7 +3739,10 @@ GenTree* Compiler::optAssertionProp_LclFld(ASSERT_VALARG_TP assertions, GenTreeL
         return nullptr;
     }
 
-    BitVecOps::Iter iter(apTraits, assertions);
+    const unsigned lclNum             = tree->GetLclNum();
+    ASSERT_TP      filteredAssertions = BitVecOps::Intersection(apTraits, GetAssertionDep(lclNum), assertions);
+
+    BitVecOps::Iter iter(apTraits, filteredAssertions);
     unsigned        index = 0;
     while (iter.NextElem(&index))
     {
@@ -4272,6 +4285,44 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions, Gen
     GenTree* op1     = tree->AsOp()->gtOp1;
     GenTree* op2     = tree->AsOp()->gtOp2;
 
+    // Can we fold "X relop 0" based on assertions?
+    if (op2->IsIntegralConst(0) && tree->OperIsCmpCompare())
+    {
+        bool isNonZero, isNeverNegative;
+        optAssertionProp_RangeProperties(assertions, op1, &isNonZero, &isNeverNegative);
+
+        if (tree->OperIs(GT_GE, GT_LT) && isNeverNegative)
+        {
+            // Assertions: X >= 0
+            //
+            // X >= 0 --> true
+            // X < 0  --> false
+            newTree = tree->OperIs(GT_GE) ? gtNewTrue() : gtNewFalse();
+        }
+        else if (tree->OperIs(GT_GT, GT_LE) && isNeverNegative && isNonZero)
+        {
+            // Assertions: X > 0
+            //
+            // X > 0  --> true
+            // X <= 0 --> false
+            newTree = tree->OperIs(GT_GT) ? gtNewTrue() : gtNewFalse();
+        }
+        else if (tree->OperIs(GT_EQ, GT_NE) && isNonZero)
+        {
+            // Assertions: X != 0
+            //
+            // X != 0 --> true
+            // X == 0 --> false
+            newTree = tree->OperIs(GT_NE) ? gtNewTrue() : gtNewFalse();
+        }
+
+        if (newTree != tree)
+        {
+            newTree = gtWrapWithSideEffects(newTree, tree, GTF_ALL_EFFECT);
+            return optAssertionProp_Update(newTree, tree, stmt);
+        }
+    }
+
     // Look for assertions of the form (tree EQ/NE 0)
     AssertionIndex index = optGlobalAssertionIsEqualOrNotEqualZero(assertions, tree);
 
@@ -4292,7 +4343,6 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions, Gen
 
         newTree = curAssertion->assertionKind == OAK_EQUAL ? gtNewIconNode(0) : gtNewIconNode(1);
         newTree = gtWrapWithSideEffects(newTree, tree, GTF_ALL_EFFECT);
-        newTree = fgMorphTree(newTree);
         DISPTREE(newTree);
         return optAssertionProp_Update(newTree, tree, stmt);
     }
