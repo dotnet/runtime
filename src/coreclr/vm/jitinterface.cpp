@@ -12920,7 +12920,7 @@ BOOL g_fAllowRel32 = TRUE;
 // The reason that this is named UnsafeJitFunction is that this helper
 // method is not thread safe!  When multiple threads get in here for
 // the same pMD, ALL of them MUST return the SAME value.
-// To insure that this happens you must call MakeJitWorker.
+// To ensure that this happens you must call MakeJitWorker.
 // It creates a DeadlockAware list of methods being jitted and prevents us
 // from trying to jit the same method more that once.
 //
