@@ -8,28 +8,33 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using Xunit;
 
-namespace Microsoft.Diagnostics.DataContractReader.UnitTests;
+namespace Microsoft.Diagnostics.DataContractReader.Tests.ContractDescriptor;
 
 public unsafe class TargetTests
 {
     private static readonly Dictionary<DataType, Target.TypeInfo> TestTypes = new()
     {
         // Size and fields
-        [DataType.Thread] = new(){
+        [DataType.Thread] = new()
+        {
             Size = 56,
             Fields = new Dictionary<string, Target.FieldInfo> {
                 { "Field1", new(){ Offset = 8, Type = DataType.uint16, TypeName = DataType.uint16.ToString() }},
                 { "Field2", new(){ Offset = 16, Type = DataType.GCHandle, TypeName = DataType.GCHandle.ToString() }},
                 { "Field3", new(){ Offset = 32 }}
-            }},
+            }
+        },
         // Fields only
-        [DataType.ThreadStore] = new(){
+        [DataType.ThreadStore] = new()
+        {
             Fields = new Dictionary<string, Target.FieldInfo> {
                 { "Field1", new(){ Offset = 0, TypeName = "FieldType" }},
                 { "Field2", new(){ Offset = 8 }}
-            }},
+            }
+        },
         // Size only
-        [DataType.GCHandle] = new(){
+        [DataType.GCHandle] = new()
+        {
             Size = 8
         }
     };
@@ -39,7 +44,7 @@ public unsafe class TargetTests
     public void GetTypeInfo(MockTarget.Architecture arch)
     {
         TargetTestHelpers targetTestHelpers = new(arch);
-        MockMemorySpace.Builder builder = new (targetTestHelpers);
+        ContractDescriptorBuilder builder = new(targetTestHelpers);
         builder.SetTypes(TestTypes)
             .SetGlobals(Array.Empty<(string, ulong, string?)>())
             .SetContracts(Array.Empty<string>());
@@ -85,7 +90,7 @@ public unsafe class TargetTests
     public void ReadGlobalValue(MockTarget.Architecture arch)
     {
         TargetTestHelpers targetTestHelpers = new(arch);
-        MockMemorySpace.Builder builder = new (targetTestHelpers);
+        ContractDescriptorBuilder builder = new(targetTestHelpers);
         builder.SetTypes(new Dictionary<DataType, Target.TypeInfo>())
             .SetGlobals(TestGlobals)
             .SetContracts([]);
@@ -101,7 +106,7 @@ public unsafe class TargetTests
     public void ReadIndirectGlobalValue(MockTarget.Architecture arch)
     {
         TargetTestHelpers targetTestHelpers = new(arch);
-        MockMemorySpace.Builder builder = new (targetTestHelpers);
+        ContractDescriptorBuilder builder = new(targetTestHelpers);
         builder.SetTypes(new Dictionary<DataType, Target.TypeInfo>())
             .SetContracts([])
             .SetGlobals(TestGlobals.Select(MakeGlobalToIndirect).ToArray(),
@@ -128,7 +133,7 @@ public unsafe class TargetTests
     public void ReadUtf8String(MockTarget.Architecture arch)
     {
         TargetTestHelpers targetTestHelpers = new(arch);
-        MockMemorySpace.Builder builder = new(targetTestHelpers);
+        ContractDescriptorBuilder builder = new(targetTestHelpers);
 
         string expected = "UTF-8 string ✓";
         ulong addr = 0x1000;
@@ -150,7 +155,7 @@ public unsafe class TargetTests
     public void ReadUtf16String(MockTarget.Architecture arch)
     {
         TargetTestHelpers targetTestHelpers = new(arch);
-        MockMemorySpace.Builder builder = new(targetTestHelpers);
+        ContractDescriptorBuilder builder = new(targetTestHelpers);
 
         string expected = "UTF-16 string ✓";
         ulong addr = 0x1000;

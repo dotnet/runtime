@@ -7,11 +7,11 @@ using System.Collections.Generic;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Moq;
 
-namespace Microsoft.Diagnostics.DataContractReader.UnitTests.ExecutionManager;
+namespace Microsoft.Diagnostics.DataContractReader.Tests.ExecutionManager;
 
 public class ExecutionManagerTests
 {
-    private static Target CreateTarget(ExecutionManagerTestBuilder emBuilder)
+    private static Target CreateTarget(MockDescriptors.ExecutionManager emBuilder)
     {
         var arch = emBuilder.Builder.TargetTestHelpers.Arch;
         TestPlaceholderTarget.ReadFromTargetDelegate reader = emBuilder.Builder.GetReadContext().ReadFromTarget;
@@ -28,7 +28,7 @@ public class ExecutionManagerTests
     [MemberData(nameof(StdArchAllVersions))]
     public void GetCodeBlockHandle_Null(int version, MockTarget.Architecture arch)
     {
-        ExecutionManagerTestBuilder emBuilder = new (version, arch, ExecutionManagerTestBuilder.DefaultAllocationRange);
+        MockDescriptors.ExecutionManager emBuilder = new (version, arch, MockDescriptors.ExecutionManager.DefaultAllocationRange);
         var target = CreateTarget(emBuilder);
 
         var em = target.Contracts.ExecutionManager;
@@ -41,7 +41,7 @@ public class ExecutionManagerTests
     [MemberData(nameof(StdArchAllVersions))]
     public void GetCodeBlockHandle_NoRangeSections(int version, MockTarget.Architecture arch)
     {
-        ExecutionManagerTestBuilder emBuilder = new (version, arch, ExecutionManagerTestBuilder.DefaultAllocationRange);
+        MockDescriptors.ExecutionManager emBuilder = new (version, arch, MockDescriptors.ExecutionManager.DefaultAllocationRange);
         var target = CreateTarget(emBuilder);
 
         var em = target.Contracts.ExecutionManager;
@@ -62,7 +62,7 @@ public class ExecutionManagerTests
 
         TargetPointer expectedMethodDescAddress = new TargetPointer(0x0101_aaa0);
 
-        ExecutionManagerTestBuilder emBuilder = new(version, arch, ExecutionManagerTestBuilder.DefaultAllocationRange);
+        MockDescriptors.ExecutionManager emBuilder = new(version, arch, MockDescriptors.ExecutionManager.DefaultAllocationRange);
         var jittedCode = emBuilder.AllocateJittedCodeRange(codeRangeStart, codeRangeSize);
 
         TargetCodePointer methodStart = emBuilder.AddJittedMethod(jittedCode, methodSize, expectedMethodDescAddress);
@@ -107,7 +107,7 @@ public class ExecutionManagerTests
 
         TargetPointer jitManagerAddress = new (0x000b_ff00); // arbitrary
 
-        ExecutionManagerTestBuilder emBuilder = new(version, arch, ExecutionManagerTestBuilder.DefaultAllocationRange);
+        MockDescriptors.ExecutionManager emBuilder = new(version, arch, MockDescriptors.ExecutionManager.DefaultAllocationRange);
         var jittedCode = emBuilder.AllocateJittedCodeRange(codeRangeStart, codeRangeSize);
 
         NibbleMapTestBuilderBase nibBuilder = emBuilder.CreateNibbleMap(codeRangeStart, codeRangeSize);
@@ -142,7 +142,7 @@ public class ExecutionManagerTests
         const uint codeRangeSize = 0xc000u; // arbitrary
         TargetPointer jitManagerAddress = new(0x000b_ff00); // arbitrary
 
-        ExecutionManagerTestBuilder emBuilder = new(version, arch, ExecutionManagerTestBuilder.DefaultAllocationRange);
+        MockDescriptors.ExecutionManager emBuilder = new(version, arch, MockDescriptors.ExecutionManager.DefaultAllocationRange);
         var jittedCode = emBuilder.AllocateJittedCodeRange(codeRangeStart, codeRangeSize);
 
         uint runtimeFunction = 0x100;
@@ -177,7 +177,7 @@ public class ExecutionManagerTests
 
         TargetPointer expectedMethodDescAddress = new TargetPointer(0x0101_aaa0);
 
-        ExecutionManagerTestBuilder emBuilder = new(version, arch, ExecutionManagerTestBuilder.DefaultAllocationRange);
+        MockDescriptors.ExecutionManager emBuilder = new(version, arch, MockDescriptors.ExecutionManager.DefaultAllocationRange);
         var jittedCode = emBuilder.AllocateJittedCodeRange(codeRangeStart, codeRangeSize);
 
         uint expectedRuntimeFunction = 0x100;
@@ -223,7 +223,7 @@ public class ExecutionManagerTests
 
         TargetPointer[] methodDescAddresses = [ 0x0101_aaa0, 0x0201_aaa0];
 
-        ExecutionManagerTestBuilder emBuilder = new(version, arch, ExecutionManagerTestBuilder.DefaultAllocationRange);
+        MockDescriptors.ExecutionManager emBuilder = new(version, arch, MockDescriptors.ExecutionManager.DefaultAllocationRange);
         var jittedCode = emBuilder.AllocateJittedCodeRange(codeRangeStart, codeRangeSize);
 
         uint[] runtimeFunctions = [ 0x100, 0xc00 ];

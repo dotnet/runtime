@@ -5,9 +5,9 @@ using System;
 using System.Text.Json;
 using Xunit;
 
-namespace Microsoft.Diagnostics.DataContractReader.UnitTests;
+namespace Microsoft.Diagnostics.DataContractReader.Tests.ContractDescriptor;
 
-public class ContractDescriptorParserTests
+public class ParserTests
 {
     [Fact]
     public void ParsesEmptyContract()

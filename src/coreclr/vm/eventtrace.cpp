@@ -2696,7 +2696,7 @@ extern "C"
         } CONTRACTL_END;
 
         // Mark that we are the special ETWRundown thread.  Currently all this does
-        // is insure that AVs thrown in this thread are treated as normal exceptions.
+        // is ensure that AVs thrown in this thread are treated as normal exceptions.
         // This allows us to catch and swallow them.   We can do this because we have
         // a reasonably strong belief that doing ETW Rundown does not change runtime state
         // and thus if an AV happens it is better to simply give up logging ETW and
