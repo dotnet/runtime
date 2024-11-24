@@ -2,8 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection.Emit;
+using System.Runtime.InteropServices;
 using System.Threading;
+using Internal;
+using static System.Reflection.Associates;
 using static System.Reflection.InvokerEmitUtil;
 using static System.Reflection.MethodBase;
 using static System.RuntimeType;
@@ -13,7 +17,8 @@ namespace System.Reflection
     internal static partial class MethodInvokerCommon
     {
         private static CerHashtable<InvokeSignatureInfo, Delegate> s_invokerFuncs;
-        private static object? s_invokerFuncsLock;
+        private static object s_invokerFuncsLock = new object();
+        private static bool s_wellKnownCacheAbandoned;
 
         internal static void Initialize(
             bool isForInvokerClasses,
@@ -26,6 +31,19 @@ namespace System.Reflection
             out InvokerArgFlags[] invokerArgFlags)
         {
             invokerArgFlags = GetInvokerArgFlags(parameterTypes, out bool needsByRefStrategy);
+
+            // The well-known cache it is abandoned after a miss to avoid the cost of checking each time.
+            if (!s_wellKnownCacheAbandoned)
+            {
+                if (TryGetWellKnownInvokeFunc(method, out invokeFunc, out strategy))
+                {
+                    functionPointer = IntPtr.Zero;
+                    return;
+                }
+
+                s_wellKnownCacheAbandoned = true;
+            }
+
             strategy = GetInvokerStrategy(parameterTypes.Length, needsByRefStrategy);
 
             if (UseInterpretedPath)
@@ -36,13 +54,13 @@ namespace System.Reflection
             }
             else if (UseCalli(method))
             {
-                InvokeSignatureInfoKey key = InvokeSignatureInfoKey.CreateNormalized((RuntimeType)method.DeclaringType!, parameterTypes, returnType, method.IsStatic);
-                invokeFunc = GetWellKnownInvokeFunc(key, strategy);
-                invokeFunc ??= GetOrCreateInvokeFunc(isForInvokerClasses, key, strategy);
+                // Re-purpose ForceEmitInvoke to mean "do not use calli"; useful for debugging and performance comparisons.
+                invokeFunc = GetOrCreateInvokeFunc(isForInvokerClasses, method, parameterTypes, returnType, strategy);
                 functionPointer = method.MethodHandle.GetFunctionPointer();
             }
             else
             {
+                //ReflectionInvokeEventSource.Log.NewMemberNotCached(method.DeclaringType!.Name, method.Name);
                 InvokeSignatureInfoKey signatureInfo = new((RuntimeType?)method.DeclaringType, parameterTypes, returnType, method.IsStatic);
                 invokeFunc = CreateIlInvokeFunc(isForInvokerClasses, method, callCtorAsMethod: false, signatureInfo, strategy);
                 functionPointer = IntPtr.Zero;
@@ -109,26 +127,37 @@ namespace System.Reflection
 
                 RuntimeType declaringType = (RuntimeType)method.DeclaringType!;
 
+                // Generic types require newobj\call\callvirt.
                 if (declaringType.IsGenericType || method.IsGenericMethod)
                 {
-                    // Generic types require newobj\call\callvirt.
                     return false;
                 }
 
+                // Strings and arrays require initialization through newobj.
                 if (method is RuntimeConstructorInfo)
                 {
-                    // Strings and arrays require initialization through newobj.
-                    return !ReferenceEquals(declaringType, typeof(string)) && !declaringType.IsArray;
+                    if (ReferenceEquals(declaringType, typeof(string)) || declaringType.IsArray)
+                    {
+                        return false;
+                    }
                 }
-
-                if (declaringType.IsValueType)
+                else
                 {
-                    // For value types, calli is not supported for virtual methods (e.g. ToString()).
-                    return !method.IsVirtual;
+                    // If not polymorphic.
+                    // For value types, calli is not supported for object-based virtual methods (e.g. ToString()).
+                    if (method.IsVirtual && (declaringType.IsValueType || (!declaringType.IsSealed && !method.IsFinal)))
+                    {
+                        return false;
+                    }
+
+                    // Error case; let the runtime handle it.
+                    if (method.IsStatic && method.GetCustomAttribute<UnmanagedCallersOnlyAttribute>() is not null)
+                    {
+                        return false;
+                    }
                 }
 
-                // If not polymorphic and thus can be called with a calli instruction.
-                return !method.IsVirtual || declaringType.IsSealed || method.IsFinal;
+                return true;
             }
 
             static bool CanCache(MethodBase method)
@@ -173,26 +202,14 @@ namespace System.Reflection
             };
         }
 
-        internal static Delegate? GetWellKnownInvokeFunc(in InvokeSignatureInfoKey signatureInfo, InvokerStrategy strategy)
-        {
-            // Check if the method has a well-known signature that can be invoked directly using calli and a function pointer.
-            switch (strategy)
-            {
-                case InvokerStrategy.Obj0:
-                    return GetWellKnownSignatureFor0Args(signatureInfo);
-                case InvokerStrategy.Obj1:
-                    return GetWellKnownSignatureFor1Arg(signatureInfo);
-            }
-
-            return null;
-        }
-
-        internal static Delegate GetOrCreateInvokeFunc(
+        private static Delegate GetOrCreateInvokeFunc(
             bool isForInvokerClasses,
-            InvokeSignatureInfoKey key,
+            MethodBase method,
+            RuntimeType[] parameterTypes,
+            Type returnType,
             InvokerStrategy strategy)
         {
-            Debug.Assert(!UseInterpretedPath);
+            InvokeSignatureInfoKey key = InvokeSignatureInfoKey.CreateNormalized((RuntimeType)method.DeclaringType!, parameterTypes, returnType, method.IsStatic);
 
             int hashcode = key.AlternativeGetHashCode();
             Delegate invokeFunc;
@@ -201,37 +218,30 @@ namespace System.Reflection
                 invokeFunc = s_invokerFuncs.GetValue<InvokeSignatureInfoKey>(hashcode, key, &InvokeSignatureInfoKey.AlternativeEquals);
             }
 
-            if (invokeFunc is not null)
+            if (invokeFunc is null)
             {
-                return invokeFunc;
-            }
-
-            if (s_invokerFuncsLock is null)
-            {
-                Interlocked.CompareExchange(ref s_invokerFuncsLock!, new object(), null);
-            }
-
-            // To minimize the lock scope, create the new delegate outside the lock even though it may not be used.
-            Delegate newInvokeFunc = CreateIlInvokeFunc(isForInvokerClasses, method: null, callCtorAsMethod: false, key, strategy)!;
-            bool lockTaken = false;
-            try
-            {
-                Monitor.Enter(s_invokerFuncsLock, ref lockTaken);
-                unsafe
+                // To minimize the lock scope, create the new delegate outside the lock even though it may not be used.
+                Delegate newInvokeFunc = CreateIlInvokeFunc(isForInvokerClasses, method: null, callCtorAsMethod: false, key, strategy)!;
+                bool lockTaken = false;
+                try
                 {
-                    invokeFunc = s_invokerFuncs.GetValue<InvokeSignatureInfoKey>(hashcode, key, &InvokeSignatureInfoKey.AlternativeEquals);
+                    Monitor.Enter(s_invokerFuncsLock, ref lockTaken);
+                    unsafe
+                    {
+                        invokeFunc = s_invokerFuncs.GetValue<InvokeSignatureInfoKey>(hashcode, key, &InvokeSignatureInfoKey.AlternativeEquals);
+                    }
+                    if (invokeFunc is null)
+                    {
+                        s_invokerFuncs[InvokeSignatureInfo.Create(key)] = newInvokeFunc;
+                        invokeFunc = newInvokeFunc;
+                    }
                 }
-                if (invokeFunc is null)
+                finally
                 {
-                    s_invokerFuncs[InvokeSignatureInfo.Create(key)] = newInvokeFunc;
-                    invokeFunc = newInvokeFunc;
-                }
-            }
-            finally
-            {
-                if (lockTaken)
-                {
-                    Monitor.Exit(s_invokerFuncsLock);
+                    if (lockTaken)
+                    {
+                        Monitor.Exit(s_invokerFuncsLock);
+                    }
                 }
             }
 

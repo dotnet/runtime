@@ -171,35 +171,37 @@ namespace System.Reflection
 
         internal enum InvokerStrategy
         {
+            Uninitialized = 0,
+
             /// <summary>
             /// Optimized for no arguments.
             /// </summary>
-            Obj0 = 0,
+            Obj0 = 1,
 
             /// <summary>
             /// Optimized for 1 argument.
             /// </summary>
-            Obj1 = 1,
+            Obj1 = 2,
 
             /// <summary>
             /// Optimized for 4 arguments or less.
             /// </summary>
-            Obj4 = 2,
+            Obj4 = 3,
 
             /// <summary>
             /// Optimized for 5 arguments or more.
             /// </summary>
-            ObjSpan = 3,
+            ObjSpan = 4,
 
             /// <summary>
             /// Slower approach that handles copy back for 4 arguments or less.
             /// </summary>
-            Ref4 = 4,
+            Ref4 = 5,
 
             /// <summary>
             /// Slower approach that handles copy back for 5 or more arguments.
             /// </summary>
-            RefMany = 5,
+            RefMany = 6,
         }
 
         [Flags]

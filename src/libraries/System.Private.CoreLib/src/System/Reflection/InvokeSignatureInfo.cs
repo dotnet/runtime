@@ -81,7 +81,8 @@ namespace System.Reflection
                 hashcode = int.RotateLeft(hashcode ^ parameterTypes[i].GetHashCode(), 5);
             }
 
-            // We don't include _isStatic in the hashcode because it is already included with _declaringType==typeof(void).
+            // We don't include _isStatic because for normalized methods it is already included with _declaringType==typeof(void)
+            // and for unnormalized methods it is not possible to have an instance and static method with the same name.
             return hashcode;
         }
     }
