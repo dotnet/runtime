@@ -352,7 +352,8 @@ namespace System.Runtime.Serialization
                 ignoreExtensionDataObject: false, preserveObjectReferences: true);
             serializer.WriteObject(xmlWriter, surrogateData);
             xmlWriter.Flush();
-            return (XmlElement?)XmlDoc.ReadNode(XmlReader.Create(new StringReader(stringWriter.ToString())));
+            using var xmlReader = XmlReader.Create(new StringReader(stringWriter.ToString()));
+            return (XmlElement?)XmlDoc.ReadNode(xmlReader);
         }
 
         [RequiresDynamicCode(DataContract.SerializerAOTWarning)]

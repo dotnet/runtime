@@ -34,6 +34,7 @@ namespace System.Text.Json.Serialization.Converters
             state.Current.ReturnValue = new List<Tuple<TKey, TValue>>();
         }
 
+        internal sealed override bool IsConvertibleCollection => true;
         protected override void ConvertCollection(ref ReadStack state, JsonSerializerOptions options)
         {
             state.Current.ReturnValue = _mapConstructor((List<Tuple<TKey, TValue>>)state.Current.ReturnValue!);

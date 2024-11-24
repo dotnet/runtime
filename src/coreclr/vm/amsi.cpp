@@ -9,7 +9,7 @@
 
 namespace
 {
-    // https://docs.microsoft.com/en-us/windows/desktop/api/amsi/
+    // https://learn.microsoft.com/windows/desktop/api/amsi/
     DECLARE_HANDLE(HAMSICONTEXT);
     DECLARE_HANDLE(HAMSISESSION);
 

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #nullable enable
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
@@ -12,9 +13,6 @@ namespace System.Collections.Generic
 {
     public abstract partial class EqualityComparer<T> : IEqualityComparer, IEqualityComparer<T>
     {
-        // The AOT compiler can flip this to false under certain circumstances.
-        private static bool SupportsGenericIEquatableInterfaces => true;
-
         [Intrinsic]
         private static EqualityComparer<T> Create()
         {
@@ -23,11 +21,13 @@ namespace System.Collections.Generic
             // This body serves as a fallback when instantiation-specific implementation is unavailable.
             // If that happens, the compiler ensures we generate data structures to make the fallback work
             // when this method is compiled.
-            if (SupportsGenericIEquatableInterfaces)
+
+            if (typeof(T) == typeof(string))
             {
-                return Unsafe.As<EqualityComparer<T>>(EqualityComparerHelpers.GetComparer(typeof(T).TypeHandle));
+                return Unsafe.As<EqualityComparer<T>>(new StringEqualityComparer());
             }
-            return new ObjectEqualityComparer<T>();
+
+            return Unsafe.As<EqualityComparer<T>>(EqualityComparerHelpers.GetComparer(typeof(T).TypeHandle));
         }
 
         public static EqualityComparer<T> Default { [Intrinsic] get; } = Create();

@@ -163,8 +163,6 @@ enum CORCOMPILE_FIXUP_BLOB_KIND
     ENCODE_VERIFY_IL_BODY,                          /* Verify an IL body is defined the same at compile time and runtime. A failed match will cause a hard runtime failure. */
 
     ENCODE_MODULE_HANDLE                = 0x50,     /* Module token */
-    ENCODE_MODULE_ID_FOR_GENERIC_STATICS,           /* For accessing static fields */
-    ENCODE_CLASS_ID_FOR_STATICS,                    /* For accessing static fields */
     ENCODE_SYNC_LOCK,                               /* For synchronizing access to a type */
     ENCODE_PROFILING_HANDLE,                        /* For the method's profiling counter */
     ENCODE_VARARGS_METHODDEF,                       /* For calling a varargs method */

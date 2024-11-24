@@ -26,7 +26,7 @@ class AllocMemTracker;
 // Each persisted Module has an InstMethodHashTable used for such methods that
 // were ngen'ed into that module. See ceeload.hpp for more information about ngen modules.
 //
-// Methods created at runtime are placed in an InstMethHashTable in BaseDomain.
+// Methods created at runtime are placed in an InstMethHashTable in Module.
 //
 // Keys are always derivable from the data stored in the table (MethodDesc)
 //

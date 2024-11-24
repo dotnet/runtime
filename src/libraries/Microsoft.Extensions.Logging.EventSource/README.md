@@ -2,7 +2,7 @@
 
 `Microsoft.Extensions.Logging.EventSource` provides a basic implementation for the built-in event source logger provider. Using `Microsoft.Extensions.Logging.EventSource.LoggingEventSource` which is the bridge from all ILogger-based logging to EventSource/EventListener logging, logging can be enabled by enabling the event source called "Microsoft-Extensions-Logging".
 
-Documentation can be found at https://learn.microsoft.com/en-us/dotnet/core/extensions/logging.
+Documentation can be found at https://learn.microsoft.com/dotnet/core/extensions/logging.
 
 ## Contribution Bar
 - [x] [We consider new features, new APIs, bug fixes, and performance changes](../../libraries/README.md#primary-bar)

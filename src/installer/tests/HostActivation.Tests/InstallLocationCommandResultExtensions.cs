@@ -43,7 +43,17 @@ namespace HostActivation.Tests
 
         public static AndConstraint<CommandResultAssertions> HaveUsedGlobalInstallLocation(this CommandResultAssertions assertion, string installLocation)
         {
-            return assertion.HaveStdErrContaining($"Using global installation location [{installLocation}]");
+            return assertion.HaveStdErrContaining($"Using global install location [{installLocation}]");
+        }
+
+        public static AndConstraint<CommandResultAssertions> HaveUsedAppLocalInstallLocation(this CommandResultAssertions assertion, string installLocation)
+        {
+            return assertion.HaveStdErrContaining($"Using app-local location [{installLocation}]");
+        }
+
+        public static AndConstraint<CommandResultAssertions> HaveUsedAppRelativeInstallLocation(this CommandResultAssertions assertion, string installLocation)
+        {
+            return assertion.HaveStdErrContaining($"Using app-relative location [{installLocation}]");
         }
 
         public static AndConstraint<CommandResultAssertions> HaveLookedForDefaultInstallLocation(this CommandResultAssertions assertion, string installLocationPath)

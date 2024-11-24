@@ -119,6 +119,11 @@ extern "C"
 #include <sys/user.h>
 #endif
 
+#ifdef __HAIKU__
+#include <image.h>
+#include <OS.h>
+#endif
+
 extern char *g_szCoreCLRPath;
 extern bool g_running_in_exe;
 
@@ -1397,7 +1402,7 @@ PALIMPORT
 VOID
 PALAPI
 PAL_SetCreateDumpCallback(
-    IN PCREATEDUMP_CALLBACK callback) 
+    IN PCREATEDUMP_CALLBACK callback)
 {
     _ASSERTE(g_createdumpCallback == nullptr);
     g_createdumpCallback = callback;
@@ -1629,7 +1634,7 @@ GetProcessIdDisambiguationKey(DWORD processId, UINT64 *disambiguationKey)
     // since the start of the Unix epoch).
     struct kinfo_proc info = {};
     size_t size = sizeof(info);
-    int mib[4] = { CTL_KERN, KERN_PROC, KERN_PROC_PID, processId };
+    int mib[4] = { CTL_KERN, KERN_PROC, KERN_PROC_PID, (int)processId };
     int ret = ::sysctl(mib, sizeof(mib)/sizeof(*mib), &info, &size, nullptr, 0);
 
     if (ret == 0)
@@ -1679,6 +1684,23 @@ GetProcessIdDisambiguationKey(DWORD processId, UINT64 *disambiguationKey)
     *disambiguationKey = secondsSinceEpoch;
 
     return TRUE;
+
+#elif defined(__HAIKU__)
+
+    // On Haiku, we return the process start time expressed in microseconds since boot time.
+
+    team_info info;
+
+    if (get_team_info(processId, &info) == B_OK)
+    {
+        *disambiguationKey = info.start_time;
+        return TRUE;
+    }
+    else
+    {
+        WARN("Failed to get start time of a process.");
+        return FALSE;
+    }
 
 #elif HAVE_PROCFS_STAT
 
@@ -2257,7 +2279,7 @@ PROCCreateCrashDump(
         if (g_createdumpCallback != nullptr)
         {
             // Remove the signal handlers inherited from the runtime process
-            SEHCleanupSignals();
+            SEHCleanupSignals(true /* isChildProcess */);
 
             // Call the statically linked createdump code
             g_createdumpCallback(argv.size(), argv.data());
@@ -2556,7 +2578,7 @@ PROCAbort(int signal, siginfo_t* siginfo)
 
     // Restore all signals; the SIGABORT handler to prevent recursion and
     // the others to prevent multiple core dumps from being generated.
-    SEHCleanupSignals();
+    SEHCleanupSignals(false /* isChildProcess */);
 
     // Abort the process after waiting for the core dump to complete
     abort();
@@ -3368,6 +3390,11 @@ PROCGetProcessStatus(
                 *pdwExitCode = WEXITSTATUS(status);
                 TRACE("Exit code was %d\n", *pdwExitCode);
             }
+            else if ( WIFSIGNALED( status ) )
+            {
+                *pdwExitCode = 128 + WTERMSIG(status);
+                TRACE("Exit code was signal %d = exit code %d\n", WTERMSIG(status), *pdwExitCode);
+            }
             else
             {
                 WARN("process terminated without exiting; can't get exit "
@@ -3625,10 +3652,16 @@ getFileName(
         wcEnd = *lpEnd;
         *lpEnd = 0x0000;
 
-        /* Convert to ASCII */
+        /* Convert to UTF-8 */
         int size = 0;
-        int length = (PAL_wcslen(lpCommandLine)+1) * sizeof(WCHAR);
-        lpFileName = lpFileNamePS.OpenStringBuffer(length);
+        int length = WideCharToMultiByte(CP_ACP, 0, lpCommandLine, -1, NULL, 0, NULL, NULL);
+        if (length == 0)
+        {
+            ERROR("Failed to calculate the required buffer length.\n");
+            return FALSE;
+        };
+
+        lpFileName = lpFileNamePS.OpenStringBuffer(length - 1);
         if (NULL == lpFileName)
         {
             ERROR("Not Enough Memory!\n");

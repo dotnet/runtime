@@ -93,9 +93,7 @@ namespace System.Reflection
                 throw new ArgumentException(SR.Arg_TypedReference_Null);
 
             // Passing TypedReference by reference is easier to make correct in native code
-#pragma warning disable CS8500 // Takes a pointer to a managed type
-            return RuntimeFieldHandle.GetValueDirect(this, (RuntimeType)FieldType, &obj, (RuntimeType?)DeclaringType);
-#pragma warning restore CS8500
+            return RuntimeFieldHandle.GetValueDirect(this, (RuntimeType)FieldType, obj, (RuntimeType?)DeclaringType);
         }
 
         [DebuggerStepThrough]
@@ -111,14 +109,12 @@ namespace System.Reflection
                 throw new ArgumentException(SR.Arg_TypedReference_Null);
 
             // Passing TypedReference by reference is easier to make correct in native code
-#pragma warning disable CS8500 // Takes a pointer to a managed type
-            RuntimeFieldHandle.SetValueDirect(this, (RuntimeType)FieldType, &obj, value, (RuntimeType?)DeclaringType);
-#pragma warning restore CS8500
+            RuntimeFieldHandle.SetValueDirect(this, (RuntimeType)FieldType, obj, value, (RuntimeType?)DeclaringType);
         }
 
         public override RuntimeFieldHandle FieldHandle => new RuntimeFieldHandle(this);
 
-        internal IntPtr GetFieldHandle()
+        internal IntPtr GetFieldDesc()
         {
             return m_fieldHandle;
         }

@@ -658,9 +658,9 @@ namespace Internal.TypeSystem
         private void EncodeMethodSignature(BlobBuilder signatureBuilder, MethodSignature sig, EmbeddedSignatureDataEmitter signatureDataEmitter)
         {
             signatureDataEmitter.Push();
-            BlobEncoder signatureEncoder = new BlobEncoder(signatureBuilder);
             int genericParameterCount = sig.GenericParameterCount;
             bool isInstanceMethod = !sig.IsStatic;
+            bool isExplicitThis = sig.IsExplicitThis;
             SignatureCallingConvention sigCallingConvention = SignatureCallingConvention.Default;
             switch (sig.Flags & MethodSignatureFlags.UnmanagedCallingConventionMask)
             {
@@ -685,7 +685,15 @@ namespace Internal.TypeSystem
             if (sigCallingConvention != SignatureCallingConvention.Default)
                 signatureDataEmitter.UpdateSignatureCallingConventionAtCurrentIndexStack(ref sigCallingConvention);
 
-            signatureEncoder.MethodSignature(sigCallingConvention, genericParameterCount, isInstanceMethod);
+            SignatureAttributes attributes =
+                (genericParameterCount != 0 ? SignatureAttributes.Generic : 0) |
+                (isInstanceMethod ? SignatureAttributes.Instance : 0) |
+                (isExplicitThis ? SignatureAttributes.ExplicitThis : 0);
+
+            signatureBuilder.WriteByte(new SignatureHeader(SignatureKind.Method, sigCallingConvention, attributes).RawValue);
+            if (genericParameterCount != 0)
+                signatureBuilder.WriteCompressedInteger(genericParameterCount);
+
             signatureBuilder.WriteCompressedInteger(sig.Length);
             EncodeType(signatureBuilder, sig.ReturnType, signatureDataEmitter);
             for (int i = 0; i < sig.Length; i++)

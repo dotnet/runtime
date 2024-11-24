@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk.IL">
+  <PropertyGroup>
+    <!-- Needed for SynthesizedPgoIncompatible -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <!-- Synthesized PGO may cause the expected TypeLoadExceptions in this test to appear at unexpected places -->
+    <SynthesizedPgoIncompatible>true</SynthesizedPgoIncompatible>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="CompatibleWithTest_TypeLoadException.il" />
+  </ItemGroup>
+</Project>

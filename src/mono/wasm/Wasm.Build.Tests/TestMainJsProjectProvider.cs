@@ -14,9 +14,8 @@ public class TestMainJsProjectProvider : ProjectProviderBase
 {
     public TestMainJsProjectProvider(ITestOutputHelper _testOutput, string? _projectDir = null)
             : base(_testOutput, _projectDir)
-    {
-        BundleDirName = "AppBundle";
-    }
+    { }
+    protected override string BundleDirName { get { return "AppBundle"; } }
 
     // no fingerprinting
     protected override IReadOnlyDictionary<string, bool> GetAllKnownDotnetFilesToFingerprintMap(AssertBundleOptionsBase assertOptions)
@@ -28,7 +27,7 @@ public class TestMainJsProjectProvider : ProjectProviderBase
                { "dotnet.native.js.symbols", false },
                { "dotnet.globalization.js", false },
                { "dotnet.native.wasm", false },
-               { "dotnet.native.worker.js", false },
+               { "dotnet.native.worker.mjs", false },
                { "dotnet.runtime.js", false },
                { "dotnet.runtime.js.map", false }
             };
@@ -52,13 +51,13 @@ public class TestMainJsProjectProvider : ProjectProviderBase
             res.Add("dotnet.native.wasm");
             res.Add("dotnet.native.js");
             res.Add("dotnet.runtime.js");
-            res.Add("dotnet.native.worker.js");
+            res.Add("dotnet.native.worker.mjs");
 
             if (!assertOptions.IsPublish)
             {
                 res.Add("dotnet.js.map");
                 res.Add("dotnet.runtime.js.map");
-                res.Add("dotnet.native.worker.js.map");
+                res.Add("dotnet.native.worker.mjs.map");
             }
         }
 
@@ -105,16 +104,16 @@ public class TestMainJsProjectProvider : ProjectProviderBase
                                         MainJS: buildProjectOptions.MainJS ?? "test-main.js",
                                         GlobalizationMode: buildProjectOptions.GlobalizationMode,
                                         HasV8Script: buildProjectOptions.HasV8Script,
-                                        PredefinedIcudt: buildProjectOptions.PredefinedIcudt ?? string.Empty,
+                                        CustomIcuFile: buildProjectOptions.CustomIcuFile ?? string.Empty,
                                         IsBrowserProject: buildProjectOptions.IsBrowserProject,
                                         ExpectedFileType: expectedFileType,
                                         ExpectSymbolsFile: !buildArgs.AOT);
         AssertBundle(assertOptions);
     }
 
-    public override string FindBinFrameworkDir(string config, bool forPublish, string framework, string? bundleDirName = null, string? projectDir = null)
+    public override string FindBinFrameworkDir(string config, bool forPublish, string framework, string? projectDir = null)
     {
         EnsureProjectDirIsSet();
-        return Path.Combine(projectDir ?? ProjectDir!, "bin", config, framework, "browser-wasm", bundleDirName ?? this.BundleDirName, "_framework");
+        return Path.Combine(projectDir ?? ProjectDir!, "bin", config, framework, "browser-wasm", BundleDirName, "_framework");
     }
 }

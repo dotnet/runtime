@@ -16,7 +16,7 @@ namespace System.Security.Cryptography.X509Certificates
             X509ChainStatusFlags.Revoked |
             X509ChainStatusFlags.OfflineRevocation;
 
-        private static readonly SafeCreateHandle s_emptyArray = Interop.CoreFoundation.CFArrayCreate(Array.Empty<IntPtr>(), UIntPtr.Zero);
+        private static readonly SafeCreateHandle s_emptyArray = Interop.CoreFoundation.CFArrayCreate([], UIntPtr.Zero);
         private Stack<SafeHandle> _extraHandles;
         private SafeX509ChainHandle? _chainHandle;
         public X509ChainElement[]? ChainElements { get; private set; }

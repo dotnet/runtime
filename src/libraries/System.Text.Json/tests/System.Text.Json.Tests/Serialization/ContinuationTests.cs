@@ -291,7 +291,7 @@ namespace System.Text.Json.Serialization.Tests
         private class TestClass<TNested> : ITestObject where TNested : INestedObject
         {
             public string A { get; set; }
-            public string B { get; set; }
+            public string? B { get; set; }
             public int C { get; set; }
             public int? D { get; set; }
             public float E { get; set; }
@@ -330,7 +330,7 @@ namespace System.Text.Json.Serialization.Tests
         private class TestValueType<TNested> : ITestObject where TNested : INestedObject
         {
             public string A { get; set; }
-            public string B { get; set; }
+            public string? B { get; set; }
             public int C { get; set; }
             public int? D { get; set; }
             public float E { get; set; }
@@ -368,7 +368,7 @@ namespace System.Text.Json.Serialization.Tests
 
         private class NestedClass : INestedObject
         {
-            public string A { get; set; }
+            public string? A { get; set; }
             public int B { get; set; }
 
             void INestedObject.Initialize()
@@ -386,7 +386,7 @@ namespace System.Text.Json.Serialization.Tests
 
         private struct NestedValueType : INestedObject
         {
-            public string A { get; set; }
+            public string? A { get; set; }
             public int B { get; set; }
 
             void INestedObject.Initialize()
@@ -404,7 +404,7 @@ namespace System.Text.Json.Serialization.Tests
 
         private class NestedClassWithParamCtor : NestedClass
         {
-            public NestedClassWithParamCtor(string a)
+            public NestedClassWithParamCtor(string? a)
                 => A = a;
         }
 

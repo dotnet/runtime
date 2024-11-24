@@ -26,11 +26,19 @@ namespace System.Collections
             throw new ArgumentNullException(paramName);
 
         [DoesNotReturn]
+        public static void ThrowKeyNotFoundException() =>
+            throw new KeyNotFoundException();
+
+        [DoesNotReturn]
         public static void ThrowKeyNotFoundException<TKey>(TKey key) =>
             throw new KeyNotFoundException(SR.Format(SR.Arg_KeyNotFoundWithKey, key));
 
         [DoesNotReturn]
         public static void ThrowInvalidOperationException() =>
             throw new InvalidOperationException();
+
+        [DoesNotReturn]
+        internal static void ThrowIncompatibleComparer() =>
+            throw new InvalidOperationException(SR.InvalidOperation_IncompatibleComparer);
     }
 }

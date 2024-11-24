@@ -74,13 +74,8 @@ private:
     bool rsModifiedRegsMaskInitialized; // Has rsModifiedRegsMask been initialized? Guards against illegal use.
 #endif                                  // DEBUG
 
-#ifdef SWIFT_SUPPORT
-    regMaskTP rsAllCalleeSavedMask;
-    regMaskTP rsIntCalleeSavedMask;
-#else  // !SWIFT_SUPPORT
-    static constexpr regMaskTP rsAllCalleeSavedMask = RBM_CALLEE_SAVED;
-    static constexpr regMaskTP rsIntCalleeSavedMask = RBM_INT_CALLEE_SAVED;
-#endif // !SWIFT_SUPPORT
+    regMaskTP rsAllCalleeSavedMask = RBM_CALLEE_SAVED;
+    regMaskTP rsIntCalleeSavedMask = RBM_INT_CALLEE_SAVED;
 
 public:
     regMaskTP rsGetModifiedRegsMask() const
@@ -124,7 +119,7 @@ public:
     bool rsRegsModified(regMaskTP mask) const
     {
         assert(rsModifiedRegsMaskInitialized);
-        return (rsModifiedRegsMask & mask) != 0;
+        return (rsModifiedRegsMask & mask).IsNonEmpty();
     }
 
     void verifyRegUsed(regNumber reg);

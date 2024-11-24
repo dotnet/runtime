@@ -933,9 +933,9 @@ namespace System.Text.Json.SourceGeneration.Tests
 
         public class ClassWithNullableProperties
         {
-            public Uri Uri { get; set; }
-            public int[] Array { get; set; }
-            public MyPoco Poco { get; set; }
+            public Uri? Uri { get; set; }
+            public int[]? Array { get; set; }
+            public MyPoco? Poco { get; set; }
 
             public Uri? NullableUri { get; set; }
             public int[]? NullableArray { get; set; }

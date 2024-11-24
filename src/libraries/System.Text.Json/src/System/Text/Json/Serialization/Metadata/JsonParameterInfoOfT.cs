@@ -13,20 +13,21 @@ namespace System.Text.Json.Serialization.Metadata
     {
         public new JsonConverter<T> EffectiveConverter => MatchingProperty.EffectiveConverter;
         public new JsonPropertyInfo<T> MatchingProperty { get; }
-        public new T? DefaultValue { get; }
+        public new T? EffectiveDefaultValue { get; }
 
         public JsonParameterInfo(JsonParameterInfoValues parameterInfoValues, JsonPropertyInfo<T> matchingPropertyInfo)
             : base(parameterInfoValues, matchingPropertyInfo)
         {
             Debug.Assert(parameterInfoValues.ParameterType == typeof(T));
-            Debug.Assert(matchingPropertyInfo.IsConfigured);
+            Debug.Assert(!matchingPropertyInfo.IsConfigured);
+
+            if (parameterInfoValues is { HasDefaultValue: true, DefaultValue: object defaultValue })
+            {
+                EffectiveDefaultValue = (T)defaultValue;
+            }
 
             MatchingProperty = matchingPropertyInfo;
-            DefaultValue = parameterInfoValues.HasDefaultValue && parameterInfoValues.DefaultValue is not null
-                ? (T)parameterInfoValues.DefaultValue
-                : default;
-
-            base.DefaultValue = DefaultValue;
+            base.EffectiveDefaultValue = EffectiveDefaultValue;
         }
     }
 }

@@ -46,7 +46,14 @@ namespace ILCompiler
 
         public void AddReflectionRoot(TypeDesc type, string reason)
         {
-            _factory.TypeSystemContext.EnsureLoadableType(type);
+            TypeDesc lookedAtType = type;
+            do
+            {
+                _factory.TypeSystemContext.EnsureLoadableType(lookedAtType);
+                lookedAtType = (lookedAtType as MetadataType)?.ContainingType;
+            }
+            while (lookedAtType != null);
+
             _rootAdder(_factory.ReflectedType(type), reason);
         }
 
@@ -64,6 +71,7 @@ namespace ILCompiler
             if (!_factory.MetadataManager.IsReflectionBlocked(field))
             {
                 _factory.TypeSystemContext.EnsureLoadableType(field.OwningType);
+                _factory.TypeSystemContext.EnsureLoadableType(field.FieldType);
                 _rootAdder(_factory.ReflectedField(field), reason);
             }
         }

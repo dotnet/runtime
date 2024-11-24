@@ -53,7 +53,7 @@ namespace System.Globalization
 
         internal static StrongBidiCategory GetBidiCategory(StringBuilder s, int index)
         {
-            Debug.Assert(s != null, "s != null");
+            Debug.Assert(s != null);
             Debug.Assert(index >= 0 && index < s.Length, "index < s.Length");
 
             // The logic below follows Table 3-5 in the Unicode Standard, Sec. 3.9.
@@ -363,7 +363,7 @@ namespace System.Globalization
         internal static UnicodeCategory GetUnicodeCategoryInternal(string value, int index)
         {
             Debug.Assert(value != null, "value can not be null");
-            Debug.Assert(index < value.Length, "index < value.Length");
+            Debug.Assert(index < value.Length);
 
             return GetUnicodeCategoryNoBoundsChecks((uint)GetCodePointFromString(value, index));
         }
@@ -375,8 +375,8 @@ namespace System.Globalization
         internal static UnicodeCategory GetUnicodeCategoryInternal(string str, int index, out int charLength)
         {
             Debug.Assert(str != null, "str can not be null");
-            Debug.Assert(str.Length > 0, "str.Length > 0");
-            Debug.Assert(index >= 0 && index < str.Length, "index >= 0 && index < str.Length");
+            Debug.Assert(str.Length > 0);
+            Debug.Assert(index >= 0 && index < str.Length);
 
             uint codePoint = (uint)GetCodePointFromString(str, index);
             UnicodeDebug.AssertIsValidCodePoint(codePoint);
@@ -408,7 +408,7 @@ namespace System.Globalization
         /// </summary>
         private static int GetCodePointFromString(string s, int index)
         {
-            Debug.Assert(s != null, "s != null");
+            Debug.Assert(s != null);
             Debug.Assert((uint)index < (uint)s.Length, "index < s.Length");
 
             int codePoint = 0;

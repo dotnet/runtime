@@ -181,7 +181,7 @@ both the JIT and VM.
 
 2.  Architecture specific relocation information (to represent generation of
     relocations for use by load, store, jmp and call instructions) See
-    <https://docs.microsoft.com/en-us/windows/win32/debug/pe-format#coff-relocations-object-only>
+    <https://learn.microsoft.com/windows/win32/debug/pe-format#coff-relocations-object-only>
     for the sort of details that need to be defined.
 
 3.  Behavior and accessibility of processor single step features from within a
@@ -398,7 +398,7 @@ Here is an annotated list of the stubs implemented for Unix on Arm64.
         methods). These work in tandem with the logic in virtualcallstubcpu.h to
         implement the logic described in [Virtual Stub Dispatch](virtual-stub-dispatch.md)
 
-    14. `ProfileEnter`/ `ProfileeLeave`/ `ProfileTailcall` – Used to call function
+    14. `ProfileEnter`/ `ProfileLeave`/ `ProfileTailcall` – Used to call function
         entry/exit profile functions acquired through the ICorProfiler
         interface. Used in VERY rare circumstances. It is reasonable to wait to
         implement these until the final stages of productization. Most profilers

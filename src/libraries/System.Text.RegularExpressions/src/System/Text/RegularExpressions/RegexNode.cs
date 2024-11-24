@@ -1702,7 +1702,10 @@ namespace System.Text.RegularExpressions
                             break;
 
                         // Coalescing a loop with a subsequent string
-                        case RegexNodeKind.Oneloop or RegexNodeKind.Onelazy when nextNode.Kind == RegexNodeKind.Multi && currentNode.Ch == nextNode.Str![0]:
+                        case RegexNodeKind.Oneloop or RegexNodeKind.Onelazy when
+                                nextNode.Kind == RegexNodeKind.Multi &&
+                                (nextNode.Options & RegexOptions.RightToLeft) == 0 && // RTL multi nodes don't have their text reversed, and it's not worth the code to optimize further
+                                currentNode.Ch == nextNode.Str![0]:
                             {
                                 // Determine how many of the multi's characters can be combined.
                                 // We already checked for the first, so we know it's at least one.

@@ -24,8 +24,8 @@ namespace System.Text.Json.Serialization.Tests.Schemas.OrderPayload
         public DateTime Confirmed { get; set; }
         public DateTime ShippingDate { get; set; }
         public DateTime EstimatedDelivery { get; set; }
-        public IEnumerable<Order> RelatedOrder { get; set; }
-        public User ReviewedBy { get; set; }
+        public IEnumerable<Order>? RelatedOrder { get; set; }
+        public User? ReviewedBy { get; set; }
     }
     
     public class Product
@@ -64,8 +64,8 @@ namespace System.Text.Json.Serialization.Tests.Schemas.OrderPayload
         public DateTime Created { get; set; }
         public DateTime Updated { get; set; }
         public bool IsActive { get; set; }
-        public IEnumerable<Product> SimilarProducts { get; set; }
-        public IEnumerable<Product> RelatedProducts { get; set; }
+        public IEnumerable<Product>? SimilarProducts { get; set; }
+        public IEnumerable<Product>? RelatedProducts { get; set; }
     }
 
     public class Review
@@ -85,7 +85,7 @@ namespace System.Text.Json.Serialization.Tests.Schemas.OrderPayload
         public long Id { get; set; }
         public long OrderNumber { get; set; }
         public User Customer { get; set; }
-        public User Employee { get; set; }
+        public User? Employee { get; set; }
         public IEnumerable<Comment> Responses { get; set; }
         public string Title { get; set; }
         public string Message { get; set; }
@@ -94,7 +94,7 @@ namespace System.Text.Json.Serialization.Tests.Schemas.OrderPayload
     public class ShippingInfo
     {
         public long OrderNumber { get; set; }
-        public User Employee { get; set; }
+        public User? Employee { get; set; }
         public string CarrierId { get; set; }
         public string ShippingType { get; set; }
         public DateTime EstimatedDelivery { get; set; }
@@ -107,7 +107,7 @@ namespace System.Text.Json.Serialization.Tests.Schemas.OrderPayload
 
     public class Price
     {
-        public Product Product { get; set; }
+        public Product? Product { get; set; }
         public bool AllowDiscount { get; set; }
         public decimal OriginalPrice { get; set; }
         public decimal RecommendedPrice { get; set; }
@@ -117,19 +117,19 @@ namespace System.Text.Json.Serialization.Tests.Schemas.OrderPayload
 
     public class PreviewImage
     {
-        public string Id { get; set; }
-        public string Filter { get; set; }
-        public string Size { get; set; }
+        public string? Id { get; set; }
+        public string? Filter { get; set; }
+        public string? Size { get; set; }
         public int Width { get; set; }
         public int Height { get; set; }
     }
 
     public class FeaturedImage
     {
-        public string Id { get; set; }
+        public string? Id { get; set; }
         public int Width { get; set; }
         public int Height { get; set; }
-        public string PhotoId { get; set; }
+        public string? PhotoId { get; set; }
     }
 
     public class Image
@@ -141,15 +141,15 @@ namespace System.Text.Json.Serialization.Tests.Schemas.OrderPayload
 
     public class User
     {
-        public BasicPerson PersonalInfo { get; set; }
+        public BasicPerson? PersonalInfo { get; set; }
         public string UserId { get; set; }
         public string Name { get; set; }
         public string Username { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
         public string ImageId { get; set; }
-        public string TwitterId { get; set; }
-        public string FacebookId { get; set; }
+        public string? TwitterId { get; set; }
+        public string? FacebookId { get; set; }
         public int SubscriptionType { get; set; }
         public bool IsNew { get; set; }
         public bool IsEmployee { get; set; }

@@ -214,7 +214,7 @@ namespace System.Reflection.Runtime.PropertyInfos
         {
             StringBuilder sb = new StringBuilder(30);
 
-            sb.Append(PropertyType.FormatTypeNameForReflection());
+            sb.Append(PropertyType.FormatTypeName());
             sb.Append(' ');
             sb.Append(this.Name);
             ParameterInfo[] indexParameters = this.GetIndexParameters();

@@ -482,7 +482,7 @@ int LinearScan::BuildNode(GenTree* tree)
             {
                 assert(tree->TypeGet() == TYP_INT);
                 srcCount = 1;
-                BuildUse(tree->gtGetOp1(), RBM_INTRET);
+                BuildUse(tree->gtGetOp1(), RBM_INTRET.GetIntRegSet());
             }
             break;
 
@@ -628,7 +628,7 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_CATCH_ARG:
             srcCount = 0;
             assert(dstCount == 1);
-            BuildDef(tree, RBM_EXCEPTION_OBJECT);
+            BuildDef(tree, RBM_EXCEPTION_OBJECT.GetIntRegSet());
             break;
 
         case GT_COPY:
@@ -660,28 +660,18 @@ int LinearScan::BuildNode(GenTree* tree)
 
         case GT_PUTARG_REG:
             srcCount = BuildPutArgReg(tree->AsUnOp());
-            dstCount = tree->AsMultiRegOp()->GetRegCount();
             break;
 
         case GT_BITCAST:
         {
             assert(dstCount == 1);
-            regNumber argReg  = tree->GetRegNum();
-            regMaskTP argMask = RBM_NONE;
+            regNumber        argReg  = tree->GetRegNum();
+            SingleTypeRegSet argMask = RBM_NONE;
             if (argReg != REG_COUNT)
             {
-                argMask = genRegMask(argReg);
+                argMask = genSingleTypeRegMask(argReg);
             }
 
-            // If type of node is `long` then it is actually `double`.
-            // The actual `long` types must have been transformed as a field list with two fields.
-            if (tree->TypeGet() == TYP_LONG)
-            {
-                dstCount++;
-                assert(genRegArgNext(argReg) == REG_NEXT(argReg));
-                argMask |= genRegMask(REG_NEXT(argReg));
-                dstCount = 2;
-            }
             if (!tree->gtGetOp1()->isContained())
             {
                 BuildUse(tree->gtGetOp1());

@@ -438,6 +438,77 @@ namespace Wasm.Build.Tests
         }
 
         [Theory]
+        [BuildAndRun(host: RunHost.Chrome)]
+        public void UnmanagedCallersOnly_Namespaced(BuildArgs buildArgs, RunHost host, string id)
+        {
+            string code =
+                """
+                    using System;
+                    using System.Runtime.InteropServices;
+
+                    public class Test
+                    {
+                        public unsafe static int Main()
+                        {
+                            ((delegate* unmanaged<void>)&A.Conflict.C)();
+                            ((delegate* unmanaged<void>)&B.Conflict.C)();
+                            ((delegate* unmanaged<void>)&A.Conflict.C\u733f)();
+                            ((delegate* unmanaged<void>)&B.Conflict.C\u733f)();
+                            return 42;
+                        }
+                    }
+
+                    namespace A {
+                        public class Conflict {
+                            [UnmanagedCallersOnly(EntryPoint = "A_Conflict_C")]
+                            public static void C() {
+                                Console.WriteLine("A.Conflict.C");
+                            }
+
+                            [UnmanagedCallersOnly(EntryPoint = "A_Conflict_C\u733f")]
+                            public static void C\u733f() {
+                                Console.WriteLine("A.Conflict.C_\U0001F412");
+                            }
+                        }
+                    }
+
+                    namespace B {
+                        public class Conflict {
+                            [UnmanagedCallersOnly(EntryPoint = "B_Conflict_C")]
+                            public static void C() {
+                                Console.WriteLine("B.Conflict.C");
+                            }
+
+                            [UnmanagedCallersOnly(EntryPoint = "B_Conflict_C\u733f")]
+                            public static void C\u733f() {
+                                Console.WriteLine("B.Conflict.C_\U0001F412");
+                            }
+                        }
+                    }
+                """;
+
+            (buildArgs, string output) = BuildForVariadicFunctionTests(
+                code,
+                buildArgs with { ProjectName = $"cb_namespace_{buildArgs.Config}" },
+                id
+            );
+
+            Assert.DoesNotMatch(".*(warning|error).*>[A-Z0-9]+__Foo", output);
+
+            output = RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 42, host: host, id: id);
+            Assert.Contains("A.Conflict.C", output);
+            Assert.Contains("B.Conflict.C", output);
+            if (OperatingSystem.IsWindows()) {
+                // Windows console unicode support is not great
+                Assert.Contains("A.Conflict.C_", output);
+                Assert.Contains("B.Conflict.C_", output);
+            } else {
+                Assert.Contains("A.Conflict.C_\U0001F412", output);
+                Assert.Contains("B.Conflict.C_\U0001F412", output);
+            }
+        }
+
+        [Theory]
         [BuildAndRun(host: RunHost.None)]
         public void IcallWithOverloadedParametersAndEnum(BuildArgs buildArgs, string id)
         {
@@ -719,6 +790,44 @@ namespace Wasm.Build.Tests
             return (buildArgs, output);
         }
 
+        private void EnsureComInteropCompiles(BuildArgs buildArgs, RunHost host, string id)
+        {
+            string programText = @"
+                using System;
+                using System.Runtime.CompilerServices;
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.ComTypes;
+
+                public class Test
+                {
+                    public static int Main(string[] args)
+                    {
+                        var s = new STGMEDIUM();
+                        ReleaseStgMedium(ref s);
+                        return 42;
+                    }
+
+                    [DllImport(""ole32.dll"")]
+                    internal static extern void ReleaseStgMedium(ref STGMEDIUM medium);
+                }
+
+            ";
+
+            buildArgs = ExpandBuildArgs(buildArgs);
+
+            (string libraryDir, string output) = BuildProject(buildArgs,
+                                        id: id,
+                                        new BuildProjectOptions(
+                                            InitProject: () =>
+                                            {
+                                                File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), programText);
+                                            },
+                                            Publish: buildArgs.AOT,
+                                            DotnetWasmFromRuntimePack: true));
+
+            Assert.Contains("Generated app bundle at " + libraryDir, output);
+        }
+
         private void EnsureWasmAbiRulesAreFollowed(BuildArgs buildArgs, RunHost host, string id)
         {
             string programText = @"
@@ -886,6 +995,11 @@ namespace Wasm.Build.Tests
             EnsureWasmAbiRulesAreFollowed(buildArgs, host, id);
 
         [Theory]
+        [BuildAndRun(host: RunHost.Chrome, aot: true)]
+        public void EnsureComInteropCompilesInAOT(BuildArgs buildArgs, RunHost host, string id) =>
+            EnsureComInteropCompiles(buildArgs, host, id);
+
+        [Theory]
         [BuildAndRun(host: RunHost.Chrome, aot: false)]
         public void UCOWithSpecialCharacters(BuildArgs buildArgs, RunHost host, string id)
         {
@@ -908,6 +1022,7 @@ namespace Wasm.Build.Tests
                                             DotnetWasmFromRuntimePack: false));
 
             var runOutput = RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 42, host: host, id: id);
+            Assert.DoesNotContain("Conflict.A.Managed8\u4F60Func(123) -> 123", runOutput);
             Assert.Contains("ManagedFunc returned 42", runOutput);
         }
     }

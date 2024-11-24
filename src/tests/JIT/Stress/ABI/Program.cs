@@ -408,6 +408,11 @@ namespace ABIStress
                     Console.WriteLine("Selecting armhf ABI.");
                     return new Arm32Abi();
                 }
+                if (RuntimeInformation.ProcessArchitecture == Architecture.RiscV64)
+                {
+                    Console.WriteLine("Selecting riscv64 ABI.");
+                    return new Riscv64Abi();
+                }
 
                 Trace.Assert(RuntimeInformation.ProcessArchitecture == Architecture.X64);
                 Console.WriteLine("Selecting SysV ABI");

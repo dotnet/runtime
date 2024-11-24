@@ -17,13 +17,13 @@ namespace System.Data.Common
 
         // differences between OleDb and Odbc
         // ODBC:
-        //     https://docs.microsoft.com/en-us/sql/odbc/reference/syntax/sqldriverconnect-function
+        //     https://learn.microsoft.com/sql/odbc/reference/syntax/sqldriverconnect-function
         //     do not support == -> = in keywords
         //     first key-value pair wins
         //     quote values using \{ and \}, only driver= and pwd= appear to generically allow quoting
         //     do not strip quotes from value, or add quotes except for driver keyword
         // OLEDB:
-        //     https://docs.microsoft.com/en-us/dotnet/framework/data/adonet/connection-string-syntax#oledb-connection-string-syntax
+        //     https://learn.microsoft.com/dotnet/framework/data/adonet/connection-string-syntax#oledb-connection-string-syntax
         //     support == -> = in keywords
         //     last key-value pair wins
         //     quote values using \" or \'

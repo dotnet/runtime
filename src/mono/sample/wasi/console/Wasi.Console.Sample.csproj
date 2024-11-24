@@ -5,6 +5,9 @@
     <WasmSingleFileBundle>true</WasmSingleFileBundle>
     <InvariantGlobalization>true</InvariantGlobalization>
     -->
+    <!-- to strip wasi:http dependency -->
+    <PublishTrimmed>true</PublishTrimmed>
+    <WasmBuildNative>true</WasmBuildNative>
   </PropertyGroup>
 
   <Target Name="RunSample" DependsOnTargets="RunSampleWithWasmtime" />

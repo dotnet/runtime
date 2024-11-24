@@ -210,12 +210,40 @@ internal sealed class PInvokeCollector {
     }
 }
 
+internal sealed class PInvokeCallbackComparer : IComparer<PInvokeCallback>
+{
+    public int Compare(PInvokeCallback? x, PInvokeCallback? y)
+    {
+        int compare = string.Compare(x!.Key, y!.Key, StringComparison.Ordinal);
+        return compare != 0 ? compare : (int)(x.Token - y.Token);
+    }
+}
+
 #pragma warning disable CS0649
 internal sealed class PInvokeCallback
 {
     public PInvokeCallback(MethodInfo method)
     {
         Method = method;
+        TypeName = method.DeclaringType!.Name!;
+        AssemblyName = method.DeclaringType!.Module!.Assembly!.GetName()!.Name!;
+        Namespace = method.DeclaringType!.Namespace;
+        MethodName = method.Name!;
+        ReturnType = method.ReturnType!;
+        IsVoid = ReturnType.Name == "Void";
+        Token = (uint)method.MetadataToken;
+
+        // FIXME: this is a hack, we need to encode this better and allow reflection in the interp case
+        // but either way it needs to match the key generated in get_native_to_interp since the key is
+        // used to look up the interp entry function. It must be unique for each callback runtime errors
+        // can occur since it is used to look up the index in the wasm_native_to_interp_ftndescs and
+        // the signature of the interp entry function must match the native signature
+        //
+        // the key also needs to survive being encoded in C literals, if in doubt
+        // add something like "\U0001F412" to the key on both the managed and unmanaged side
+        Key = $"{MethodName}#{Method.GetParameters().Length}:{AssemblyName}:{Namespace}:{TypeName}";
+
+        IsExport = false;
         foreach (var attr in method.CustomAttributes)
         {
             if (attr.AttributeType.Name == "UnmanagedCallersOnlyAttribute")
@@ -225,6 +253,7 @@ internal sealed class PInvokeCallback
                     if (arg.MemberName == "EntryPoint")
                     {
                         EntryPoint = arg.TypedValue.Value!.ToString();
+                        IsExport = true;
                         return;
                     }
                 }
@@ -232,8 +261,19 @@ internal sealed class PInvokeCallback
         }
     }
 
-    public string? EntryPoint;
-    public MethodInfo Method;
-    public string? EntryName;
+
+    public ParameterInfo[] Parameters => Method.GetParameters();
+    public string? EntryPoint { get; }
+    public MethodInfo Method { get; }
+    public string? EntrySymbol { get; set; }
+    public string AssemblyName { get; }
+    public string TypeName { get; }
+    public string? Namespace { get;}
+    public string MethodName { get; }
+    public Type ReturnType { get;}
+    public bool IsExport { get; }
+    public bool IsVoid { get; }
+    public uint Token { get; }
+    public string Key { get; }
 }
 #pragma warning restore CS0649

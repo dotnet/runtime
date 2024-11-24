@@ -110,15 +110,15 @@ namespace
     * Given a version and probing paths, find if package layout
     *    directory containing hostpolicy exists.
     */
-    bool resolve_hostpolicy_dir_from_probe_paths(const pal::string_t& version, const std::vector<pal::string_t>& probe_realpaths, pal::string_t* candidate)
+    bool resolve_hostpolicy_dir_from_probe_paths(const pal::string_t& version, const std::vector<pal::string_t>& probe_fullpaths, pal::string_t* candidate)
     {
-        if (probe_realpaths.empty() || version.empty())
+        if (probe_fullpaths.empty() || version.empty())
         {
             return false;
         }
 
         // Check if the package relative directory containing hostpolicy exists.
-        for (const auto& probe_path : probe_realpaths)
+        for (const auto& probe_path : probe_fullpaths)
         {
             trace::verbose(_X("Considering %s to probe for %s"), probe_path.c_str(), LIBHOSTPOLICY_NAME);
             if (to_hostpolicy_package_dir(probe_path, version, candidate))
@@ -129,8 +129,8 @@ namespace
 
         // Print detailed message about the file not found in the probe paths.
         trace::error(_X("Could not find required library %s in %d probing paths:"),
-            LIBHOSTPOLICY_NAME, probe_realpaths.size());
-        for (const auto& path : probe_realpaths)
+            LIBHOSTPOLICY_NAME, probe_fullpaths.size());
+        for (const auto& path : probe_fullpaths)
         {
             trace::error(_X("  %s"), path.c_str());
         }
@@ -233,7 +233,7 @@ bool hostpolicy_resolver::try_get_dir(
     const fx_definition_vector_t& fx_definitions,
     const pal::string_t& app_candidate,
     const pal::string_t& specified_deps_file,
-    const std::vector<pal::string_t>& probe_realpaths,
+    const std::vector<pal::string_t>& probe_fullpaths,
     pal::string_t* impl_dir)
 {
     bool is_framework_dependent = get_app(fx_definitions).get_runtime_config().get_is_framework_dependent();
@@ -299,7 +299,7 @@ bool hostpolicy_resolver::try_get_dir(
 
     // Start probing for hostpolicy in the specified probe paths.
     pal::string_t candidate;
-    if (resolve_hostpolicy_dir_from_probe_paths(version, probe_realpaths, &candidate))
+    if (resolve_hostpolicy_dir_from_probe_paths(version, probe_fullpaths, &candidate))
     {
         impl_dir->assign(candidate);
         return true;

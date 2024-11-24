@@ -15,7 +15,7 @@ namespace System.Collections.Frozen
     /// <remarks>
     /// No hashing here, just a straight-up linear scan that compares all the keys.
     /// </remarks>
-    internal sealed class SmallFrozenDictionary<TKey, TValue> : FrozenDictionary<TKey, TValue>
+    internal sealed partial class SmallFrozenDictionary<TKey, TValue> : FrozenDictionary<TKey, TValue>
         where TKey : notnull
     {
         private readonly TKey[] _keys;

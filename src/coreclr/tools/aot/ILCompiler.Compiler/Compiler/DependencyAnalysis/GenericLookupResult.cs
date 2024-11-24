@@ -447,7 +447,8 @@ namespace ILCompiler.DependencyAnalysis
         public override ISymbolNode GetTarget(NodeFactory factory, GenericLookupResultContext dictionary)
         {
             MethodDesc instantiatedMethod = _method.GetNonRuntimeDeterminedMethodFromRuntimeDeterminedMethodViaSubstitution(dictionary.TypeInstantiation, dictionary.MethodInstantiation);
-            return factory.FatFunctionPointer(instantiatedMethod, _isUnboxingThunk);
+            // TODO-SIZE: this is address taken only in the delegate target case
+            return factory.FatAddressTakenFunctionPointer(instantiatedMethod, _isUnboxingThunk);
         }
 
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
@@ -473,10 +474,11 @@ namespace ILCompiler.DependencyAnalysis
             //
             bool getUnboxingStubNode = _isUnboxingThunk && !canonMethod.IsCanonicalMethod(CanonicalFormKind.Universal);
 
+            // TODO-SIZE: this is address taken only in the delegate target case
             return factory.NativeLayout.MethodEntrypointDictionarySlot(
                 _method,
                 _isUnboxingThunk,
-                factory.MethodEntrypoint(canonMethod, getUnboxingStubNode));
+                factory.AddressTakenMethodEntrypoint(canonMethod, getUnboxingStubNode));
         }
 
         protected override int CompareToImpl(GenericLookupResult other, TypeSystemComparer comparer)
@@ -884,20 +886,21 @@ namespace ILCompiler.DependencyAnalysis
 
             factory.MetadataManager.NoteOverridingMethod(_constrainedMethod, implMethod);
 
+            // TODO-SIZE: this is address taken only in the delegate target case
             if (implMethod.Signature.IsStatic)
             {
                 if (implMethod.GetCanonMethodTarget(CanonicalFormKind.Specific).IsSharedByGenericInstantiations)
-                    return factory.ExactCallableAddress(implMethod);
+                    return factory.ExactCallableAddressTakenAddress(implMethod);
                 else
-                    return factory.MethodEntrypoint(implMethod);
+                    return factory.AddressTakenMethodEntrypoint(implMethod);
             }
             else if (implMethod.HasInstantiation)
             {
-                return factory.ExactCallableAddress(implMethod);
+                return factory.ExactCallableAddressTakenAddress(implMethod);
             }
             else
             {
-                return factory.CanonicalEntrypoint(implMethod);
+                return factory.AddressTakenMethodEntrypoint(implMethod.GetCanonMethodTarget(CanonicalFormKind.Specific));
             }
         }
 

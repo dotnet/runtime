@@ -30,6 +30,10 @@
 #include <mono/utils/mono-threads-debug.h>
 #include <mono/utils/mono-errno.h>
 
+#if defined (HAVE_PTHREAD_SETNAME_NP) || defined(__HAIKU__)
+#include <minipal/thread.h>
+#endif
+
 #include <errno.h>
 
 #if defined(_POSIX_VERSION) && !defined (HOST_WASM)
@@ -255,64 +259,16 @@ mono_native_thread_get_name (MonoNativeThreadId tid, char *name_out, size_t max_
 void
 mono_native_thread_set_name (MonoNativeThreadId tid, const char *name)
 {
-#ifdef __MACH__
-	/*
-	 * We can't set the thread name for other threads, but we can at least make
-	 * it work for threads that try to change their own name.
-	 */
-	if (tid != mono_native_thread_id_get ())
-		return;
-
-	if (!name) {
-		pthread_setname_np ("");
-	} else {
-		char n [63];
-
-		strncpy (n, name, sizeof (n) - 1);
-		n [sizeof (n) - 1] = '\0';
-		pthread_setname_np (n);
-	}
-#elif defined (__HAIKU__)
-	thread_id haiku_tid;
-	haiku_tid = get_pthread_thread_id (tid);
-	if (!name) {
-		rename_thread (haiku_tid, "");
-	} else {
-		rename_thread (haiku_tid, name);
-	}
-#elif defined (__NetBSD__)
-	if (!name) {
-		pthread_setname_np (tid, "%s", (void*)"");
-	} else {
-		char n [PTHREAD_MAX_NAMELEN_NP];
-
-		strncpy (n, name, sizeof (n) - 1);
-		n [sizeof (n) - 1] = '\0';
-		pthread_setname_np (tid, "%s", (void*)n);
-	}
-#elif defined (HAVE_PTHREAD_SETNAME_NP)
-#if defined (__linux__)
-	/* Ignore requests to set the main thread name because it causes the
-	 * value returned by Process.ProcessName to change.
-	 */
+#if defined (HAVE_PTHREAD_SETNAME_NP) || defined(__HAIKU__)
+	// Ignore requests to set the main thread name because
+	// it causes the value returned by Process.ProcessName to change.
 	MonoNativeThreadId main_thread_tid;
 	if (mono_native_thread_id_main_thread_known (&main_thread_tid) &&
 	    mono_native_thread_id_equals (tid, main_thread_tid))
 		return;
-#endif
-	if (!name) {
-		pthread_setname_np (tid, "");
-	} else {
-#if defined(__FreeBSD__)
-		char n [20];
-#else
-		char n [16];
-#endif
 
-		strncpy (n, name, sizeof (n) - 1);
-		n [sizeof (n) - 1] = '\0';
-		pthread_setname_np (tid, n);
-	}
+	int setNameResult = minipal_set_thread_name(tid, name);
+	g_assert(setNameResult == 0);
 #endif
 }
 

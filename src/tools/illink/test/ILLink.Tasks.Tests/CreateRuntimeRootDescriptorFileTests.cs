@@ -39,7 +39,9 @@ namespace ILLink.Tasks.Tests
 				"#endif // FEATURE_BOTH",
 				"#if FOR_ILLINK",
 				"DEFINE_METHOD(TESTCLASS, TESTMETHODFORILLINK, TestMethodForILLink, 5)",
-				"#endif"
+				"#endif",
+				"DEFINE_CLASS(NESTEDTESTCLASS, TestNS, TestClass+Nested)",
+				"DEFINE_METHOD(NESTEDTESTCLASS, TESTMETHOD, TestMethod, 0)"
 				});
 
 			File.WriteAllText ("namespace.h",
@@ -90,6 +92,8 @@ namespace ILLink.Tasks.Tests
 						new XElement ("method", new XAttribute ("name", "TestMethodIfNotBoth")),
 						new XElement ("method", new XAttribute ("name", "TestMethodIfNotBothForILLink")),
 						new XElement ("method", new XAttribute ("name", "TestMethodForILLink"))),
+					new XElement ("type", new XAttribute("fullname", "TestNS.TestClass/Nested"),
+						new XElement ("method", new XAttribute("name", "TestMethod"))),
 					new XElement ("type", new XAttribute ("fullname", "TestNS.TestAlwaysException"),
 						new XElement ("method", new XAttribute ("name", ".ctor"))),
 					new XElement ("type", new XAttribute ("fullname", "TestNS.TestFeatureOnException"),

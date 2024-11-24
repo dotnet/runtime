@@ -225,7 +225,7 @@ namespace System.Runtime.InteropServices
         /// <param name="libraryName">The native library to load.</param>
         /// <param name="assembly">The assembly trying load the native library.</param>
         /// <param name="hasDllImportSearchPathFlags">If the pInvoke has DefaultDllImportSearchPathAttribute.</param>
-        /// <param name="dllImportSearchPathFlags">If hasdllImportSearchPathFlags is true, the flags in
+        /// <param name="dllImportSearchPathFlags">If <paramref name="hasDllImportSearchPathFlags"/> is true, the flags in
         ///                                       DefaultDllImportSearchPathAttribute; meaningless otherwise </param>
         /// <returns>The handle for the loaded library on success. Null on failure.</returns>
         internal static IntPtr LoadLibraryCallbackStub(string libraryName, Assembly assembly,

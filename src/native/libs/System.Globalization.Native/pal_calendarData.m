@@ -130,7 +130,7 @@ const char* GlobalizationNative_GetCalendarInfoNative(const char* localeName, Ca
                 NSString *longFormatString = [dateFormat dateFormat];
                 [dateFormat setDateStyle:NSDateFormatterFullStyle];
                 NSString *fullFormatString = [dateFormat dateFormat];
-                result = @[longFormatString, fullFormatString];
+                result = @[fullFormatString, longFormatString];
                 break;
             }
             case CalendarData_DayNames:

@@ -1042,7 +1042,7 @@ namespace System.Text.RegularExpressions
         /// <summary>Gets whether the specified span contains only ASCII.</summary>
         public static bool IsAscii(ReadOnlySpan<char> s)
         {
-#if NET8_0_OR_GREATER
+#if NET
             return Ascii.IsValid(s);
 #else
             foreach (char c in s)
@@ -1541,7 +1541,7 @@ namespace System.Text.RegularExpressions
         /// <param name="c">The character for which to create the set.</param>
         /// <returns>The create set string.</returns>
         public static string OneToStringClass(char c)
-            => CharsToStringClass(stackalloc char[1] { c });
+            => CharsToStringClass([c]);
 
         internal static unsafe string CharsToStringClass(ReadOnlySpan<char> chars)
         {
@@ -1591,7 +1591,6 @@ namespace System.Text.RegularExpressions
             }
 
             // Get the pointer/length of the span to be able to pass it into string.Create.
-#pragma warning disable CS8500 // takes address of managed type
             ReadOnlySpan<char> tmpChars = chars; // avoid address exposing the span and impacting the other code in the method that uses it
             return
 #if NET
@@ -1616,7 +1615,6 @@ namespace System.Text.RegularExpressions
                 }
                 Debug.Assert(i == span.Length);
             });
-#pragma warning restore CS8500
         }
 
         /// <summary>

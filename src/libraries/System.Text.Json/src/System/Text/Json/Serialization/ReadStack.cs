@@ -96,7 +96,7 @@ namespace System.Text.Json
         internal void Initialize(JsonTypeInfo jsonTypeInfo, bool supportContinuation = false)
         {
             JsonSerializerOptions options = jsonTypeInfo.Options;
-            if (options.ReferenceHandlingStrategy == ReferenceHandlingStrategy.Preserve)
+            if (options.ReferenceHandlingStrategy == JsonKnownReferenceHandler.Preserve)
             {
                 ReferenceResolver = options.ReferenceHandler!.CreateResolver(writing: false);
                 PreserveReferences = true;
@@ -355,7 +355,7 @@ namespace System.Text.Json
                     {
                         // Attempt to get the JSON property name from the JsonPropertyInfo or JsonParameterInfo.
                         utf8PropertyName = frame.JsonPropertyInfo?.NameAsUtf8Bytes ??
-                            frame.CtorArgumentState?.JsonParameterInfo?.NameAsUtf8Bytes;
+                            frame.CtorArgumentState?.JsonParameterInfo?.JsonNameAsUtf8Bytes;
                     }
                 }
 

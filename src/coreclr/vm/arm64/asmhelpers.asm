@@ -9,7 +9,6 @@
     IMPORT PreStubWorker
     IMPORT NDirectImportWorker
     IMPORT VSD_ResolveWorker
-    IMPORT JIT_InternalThrow
     IMPORT ComPreStubWorker
     IMPORT COMToCLRWorker
     IMPORT CallDescrWorkerUnwindFrameChainHandler
@@ -37,6 +36,9 @@
     IMPORT  g_highest_address
     IMPORT  g_card_table
     IMPORT  g_dispatch_cache_chain_success_counter
+    IMPORT  g_pGetGCStaticBase
+    IMPORT  g_pGetNonGCStaticBase
+
 #ifdef WRITE_BARRIER_CHECK
     SETALIAS g_GCShadow, ?g_GCShadow@@3PEAEEA
     SETALIAS g_GCShadowEnd, ?g_GCShadowEnd@@3PEAEEA
@@ -45,9 +47,6 @@
     IMPORT $g_GCShadow
     IMPORT $g_GCShadowEnd
 #endif // WRITE_BARRIER_CHECK
-
-    IMPORT JIT_GetSharedNonGCStaticBase_Helper
-    IMPORT JIT_GetSharedGCStaticBase_Helper
 
 #ifdef FEATURE_COMINTEROP
     IMPORT CLRToCOMWorker
@@ -75,6 +74,12 @@
     LEAF_ENTRY GetDataCacheZeroIDReg
         mrs     x0, dczid_el0
         and     x0, x0, 31
+        ret     lr
+    LEAF_END
+
+;; uint64_t GetSveLengthFromOS(void);
+    LEAF_ENTRY GetSveLengthFromOS
+        rdvl    x0, 1
         ret     lr
     LEAF_END
 
@@ -311,22 +316,6 @@ EphemeralCheckEnabled
 
     LEAF_END JIT_UpdateWriteBarrierState
 
-; void SinglecastDelegateInvokeStub(Delegate *pThis)
-    LEAF_ENTRY SinglecastDelegateInvokeStub
-        cmp     x0, #0
-        beq     LNullThis
-
-        ldr     x16, [x0, #DelegateObject___methodPtr]
-        ldr     x0, [x0, #DelegateObject___target]
-
-        br      x16
-
-LNullThis
-        mov     x0, #CORINFO_NullReferenceException_ASM
-        b       JIT_InternalThrow
-
-    LEAF_END
-
 #ifdef FEATURE_COMINTEROP
 
 ; ------------------------------------------------------------------
@@ -387,7 +376,7 @@ NoFloatingPointRetVal
     LEAF_END
 
 ; ------------------------------------------------------------------
-; GenericComPlusCallStub that erects a ComPlusMethodFrame and calls into the runtime
+; GenericCLRToCOMCallStub that erects a CLRToCOMMethodFrame and calls into the runtime
 ; (CLRToCOMWorker) to dispatch rare cases of the interface call.
 ;
 ; On entry:
@@ -398,14 +387,14 @@ NoFloatingPointRetVal
 ; On exit:
 ;   x0/x1/s0-s3/d0-d3 set to return value of the call as appropriate
 ;
-    NESTED_ENTRY GenericComPlusCallStub
+    NESTED_ENTRY GenericCLRToCOMCallStub
 
         PROLOG_WITH_TRANSITION_BLOCK ASM_ENREGISTERED_RETURNTYPE_MAXSIZE
 
         add         x0, sp, #__PWTB_TransitionBlock ; pTransitionBlock
         mov         x1, x12                         ; pMethodDesc
 
-        ; Call CLRToCOMWorker(TransitionBlock *, ComPlusCallMethodDesc *).
+        ; Call CLRToCOMWorker(TransitionBlock *, CLRToCOMCallMethodDesc *).
         ; This call will set up the rest of the frame (including the vfptr, the GS cookie and
         ; linking to the thread), make the client call and return with correct registers set
         ; (x0/x1/s0-s3/d0-d3 as appropriate).
@@ -534,7 +523,7 @@ GenericComCallStub_FirstStackAdjust     SETA GenericComCallStub_FirstStackAdjust
     SAVE_FLOAT_ARGUMENT_REGISTERS  sp, 0
 
     str x12, [sp, #(GenericComCallStub_FrameOffset + UnmanagedToManagedFrame__m_pvDatum)]
-    add x1, sp, #GenericComCallStub_FrameOffset
+    add x0, sp, #GenericComCallStub_FrameOffset
     bl COMToCLRWorker
 
     ; pop the stack
@@ -947,7 +936,6 @@ Fail
     mov x12, x0
 
     EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
-    PATCH_LABEL ExternalMethodFixupPatchLabel
     EPILOG_BRANCH_REG   x12
 
     NESTED_END
@@ -1018,58 +1006,42 @@ Fail
 ;
 
 ; ------------------------------------------------------------------
-; void* JIT_GetSharedNonGCStaticBase(SIZE_T moduleDomainID, DWORD dwClassDomainID)
 
-    LEAF_ENTRY JIT_GetSharedNonGCStaticBase_SingleAppDomain
+; void* JIT_GetDynamicNonGCStaticBase(DynamicStaticsInfo *dynamicInfo)
+
+    LEAF_ENTRY JIT_GetDynamicNonGCStaticBase_SingleAppDomain
     ; If class is not initialized, bail to C++ helper
-    add x2, x0, #DomainLocalModule__m_pDataBlob
-    ldrb w2, [x2, w1]
-    tst w2, #1
-    beq CallHelper1
-
+    add x1, x0, #OFFSETOF__DynamicStaticsInfo__m_pNonGCStatics
+    ldar x1, [x1]
+    tbnz x1, #0, CallHelper1
+    mov x0, x1
     ret lr
 
 CallHelper1
-    ; Tail call JIT_GetSharedNonGCStaticBase_Helper
-    b JIT_GetSharedNonGCStaticBase_Helper
+    ; Tail call GetNonGCStaticBase
+    ldr x0, [x0, #OFFSETOF__DynamicStaticsInfo__m_pMethodTable]
+    adrp     x1, g_pGetNonGCStaticBase
+    ldr      x1, [x1, g_pGetNonGCStaticBase]
+    br       x1
     LEAF_END
 
+; void* JIT_GetDynamicGCStaticBase(DynamicStaticsInfo *dynamicInfo)
 
-; ------------------------------------------------------------------
-; void* JIT_GetSharedNonGCStaticBaseNoCtor(SIZE_T moduleDomainID, DWORD dwClassDomainID)
-
-    LEAF_ENTRY JIT_GetSharedNonGCStaticBaseNoCtor_SingleAppDomain
-    ret lr
-    LEAF_END
-
-
-; ------------------------------------------------------------------
-; void* JIT_GetSharedGCStaticBase(SIZE_T moduleDomainID, DWORD dwClassDomainID)
-
-    LEAF_ENTRY JIT_GetSharedGCStaticBase_SingleAppDomain
+    LEAF_ENTRY JIT_GetDynamicGCStaticBase_SingleAppDomain
     ; If class is not initialized, bail to C++ helper
-    add x2, x0, #DomainLocalModule__m_pDataBlob
-    ldrb w2, [x2, w1]
-    tst w2, #1
-    beq CallHelper2
-
-    ldr x0, [x0, #DomainLocalModule__m_pGCStatics]
+    add x1, x0, #OFFSETOF__DynamicStaticsInfo__m_pGCStatics
+    ldar x1, [x1]
+    tbnz x1, #0, CallHelper2
+    mov x0, x1
     ret lr
 
 CallHelper2
-    ; Tail call Jit_GetSharedGCStaticBase_Helper
-    b JIT_GetSharedGCStaticBase_Helper
+    ; Tail call GetGCStaticBase
+    ldr x0, [x0, #OFFSETOF__DynamicStaticsInfo__m_pMethodTable]
+    adrp     x1, g_pGetGCStaticBase
+    ldr      x1, [x1, g_pGetGCStaticBase]
+    br       x1
     LEAF_END
-
-
-; ------------------------------------------------------------------
-; void* JIT_GetSharedGCStaticBaseNoCtor(SIZE_T moduleDomainID, DWORD dwClassDomainID)
-
-    LEAF_ENTRY JIT_GetSharedGCStaticBaseNoCtor_SingleAppDomain
-    ldr x0, [x0, #DomainLocalModule__m_pGCStatics]
-    ret lr
-    LEAF_END
-
 
 ; ------------------------------------------------------------------
 ; __declspec(naked) void F_CALL_CONV JIT_WriteBarrier_Callable(Object **dst, Object* val)

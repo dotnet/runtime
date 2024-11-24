@@ -2,8 +2,7 @@
 
 namespace Mono.Linker.Tests.Cases.Tracing.Individual
 {
-
-	[SetupLinkerArgument ("--dump-dependencies")]
+	[DumpDependencies]
 	[SetupLinkerArgument ("--dependencies-file", "linker-dependencies.xml")]
 	public class CanDumpDependenciesToUncompressedXml
 	{

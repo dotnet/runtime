@@ -328,7 +328,7 @@ int32_t GlobalizationNative_GetSortKeyNative(const uint16_t* localeName, int32_t
     @autoreleasepool {
         if (cwStrLength == 0)
         {
-            if (sortKey != NULL)
+            if (sortKey != NULL && cbSortKeyLength > 0)
                 sortKey[0] = '\0';
             return 1;
         }
@@ -343,7 +343,7 @@ int32_t GlobalizationNative_GetSortKeyNative(const uint16_t* localeName, int32_t
         // If the string is empty after removing weightless characters, return 1
         if(sourceStringCleaned.length == 0)
         {
-            if (sortKey != NULL)
+            if (sortKey != NULL && cbSortKeyLength > 0)
                 sortKey[0] = '\0';
             return 1;
         }
@@ -357,13 +357,16 @@ int32_t GlobalizationNative_GetSortKeyNative(const uint16_t* localeName, int32_t
         NSUInteger transformedStringBytes = [transformedString lengthOfBytesUsingEncoding: NSUTF16StringEncoding];
         if (sortKey == NULL)
             return (int32_t)transformedStringBytes;
+
+        // If the buffer is too small, return the required buffer size
+        // and throw exception in managed code
+        if (cbSortKeyLength < (int32_t)transformedStringBytes)
+            return (int32_t)transformedStringBytes;
         NSRange range = NSMakeRange(0, [transformedString length]);
         NSUInteger usedLength = 0;
         BOOL result = [transformedString getBytes:sortKey maxLength:transformedStringBytes usedLength:&usedLength encoding:NSUTF16StringEncoding options:0 range:range remainingRange:NULL];
         if (result)
             return (int32_t)usedLength;
-
-        (void)cbSortKeyLength; // ignore unused parameter
         return 0;
     }
 }

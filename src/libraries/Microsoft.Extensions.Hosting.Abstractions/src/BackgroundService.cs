@@ -29,7 +29,7 @@ namespace Microsoft.Extensions.Hosting
         /// </summary>
         /// <param name="stoppingToken">Triggered when <see cref="IHostedService.StopAsync(CancellationToken)"/> is called.</param>
         /// <returns>A <see cref="Task"/> that represents the long running operations.</returns>
-        /// <remarks>See <see href="https://docs.microsoft.com/dotnet/core/extensions/workers">Worker Services in .NET</see> for implementation guidelines.</remarks>
+        /// <remarks>See <see href="https://learn.microsoft.com/dotnet/core/extensions/workers">Worker Services in .NET</see> for implementation guidelines.</remarks>
         protected abstract Task ExecuteAsync(CancellationToken stoppingToken);
 
         /// <summary>

@@ -116,6 +116,21 @@ namespace System.Text.Json.Serialization
         public JsonCommentHandling ReadCommentHandling { get; set; }
 
         /// <summary>
+        /// Specifies the default value of <see cref="JsonSerializerOptions.ReferenceHandler"/> when set.
+        /// </summary>
+        public JsonKnownReferenceHandler ReferenceHandler { get; set; }
+
+        /// <summary>
+        /// Specifies the default value of <see cref="JsonSerializerOptions.RespectNullableAnnotations"/> when set.
+        /// </summary>
+        public bool RespectNullableAnnotations { get; set; }
+
+        /// <summary>
+        /// Specifies the default value of <see cref="JsonSerializerOptions.RespectRequiredConstructorParameters"/> when set.
+        /// </summary>
+        public bool RespectRequiredConstructorParameters { get; set; }
+
+        /// <summary>
         /// Specifies the default value of <see cref="JsonSerializerOptions.UnknownTypeHandling"/> when set.
         /// </summary>
         public JsonUnknownTypeHandling UnknownTypeHandling { get; set; }

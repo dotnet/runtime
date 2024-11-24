@@ -8,6 +8,7 @@ using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Loader;
+using System.Threading;
 using Xunit;
 
 public class Program
@@ -64,6 +65,48 @@ public class Program
             return 14;
         if (val5Obj != obj5)
             return 15;
+
+        int otherThreadResult = 0;
+        Thread t = new ((ThreadStart)delegate {
+            
+            object obj1 = new object();
+            object obj2 = new object();
+            object obj3 = new object();
+            object obj4 = new object();
+            object obj5 = new object();
+            accessor.SetStaticObject(obj1, obj2, obj3, obj4, obj5);
+            accessor.GetStaticObject(out object val1Obj, out object val2Obj, out object val3Obj, out object val4Obj, out object val5Obj);
+            if (val1Obj != obj1)
+            {
+                otherThreadResult = 111;
+                return;
+            }
+            if (val2Obj != obj2)
+            {
+                otherThreadResult = 112;
+                return;
+            }
+            if (val3Obj != obj3)
+            {
+                otherThreadResult = 113;
+                return;
+            }
+            if (val4Obj != obj4)
+            {
+                otherThreadResult = 114;
+                return;
+            }
+            if (val5Obj != obj5)
+            {
+                otherThreadResult = 115;
+                return;
+            }
+        });
+
+        t.Start();
+        t.Join();
+        if (otherThreadResult != 0)
+            return otherThreadResult;
 
         GC.KeepAlive(accessor);
         return 100;

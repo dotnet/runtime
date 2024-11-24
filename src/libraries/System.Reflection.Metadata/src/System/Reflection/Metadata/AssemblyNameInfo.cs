@@ -81,6 +81,10 @@ namespace System.Reflection.Metadata
         /// <summary>
         /// Gets the name of the culture associated with the assembly.
         /// </summary>
+        /// <remarks>
+        /// Do not create a <see cref="System.Globalization.CultureInfo"/> instance from this string unless
+        /// you know the string has originated from a trustworthy source.
+        /// </remarks>
         public string? CultureName { get; }
 
         /// <summary>
@@ -108,7 +112,9 @@ namespace System.Reflection.Metadata
             {
                 if (_fullName is null)
                 {
-                    byte[]? publicKeyToken = ((Flags & AssemblyNameFlags.PublicKey) != 0) ? null :
+                    bool isPublicKey = (Flags & AssemblyNameFlags.PublicKey) != 0;
+
+                    byte[]? publicKeyOrToken =
 #if SYSTEM_PRIVATE_CORELIB
                     PublicKeyOrToken;
 #elif NET8_0_OR_GREATER
@@ -116,8 +122,10 @@ namespace System.Reflection.Metadata
 #else
                     !PublicKeyOrToken.IsDefault ? PublicKeyOrToken.ToArray() : null;
 #endif
-                    _fullName = AssemblyNameFormatter.ComputeDisplayName(Name, Version, CultureName, publicKeyToken,
-                        ExtractAssemblyNameFlags(_flags), ExtractAssemblyContentType(_flags));
+                    _fullName = AssemblyNameFormatter.ComputeDisplayName(Name, Version, CultureName,
+                        pkt: isPublicKey ? null : publicKeyOrToken,
+                        ExtractAssemblyNameFlags(_flags), ExtractAssemblyContentType(_flags),
+                        pk: isPublicKey ? publicKeyOrToken : null);
                 }
 
                 return _fullName;
@@ -127,6 +135,10 @@ namespace System.Reflection.Metadata
         /// <summary>
         /// Initializes a new instance of the <seealso cref="AssemblyName"/> class based on the stored information.
         /// </summary>
+        /// <remarks>
+        /// Do not create an <see cref="AssemblyName"/> instance with <see cref="CultureName"/> string unless
+        /// you know the string has originated from a trustworthy source.
+        /// </remarks>
         public AssemblyName ToAssemblyName()
         {
             AssemblyName assemblyName = new();
@@ -189,7 +201,7 @@ namespace System.Reflection.Metadata
         public static bool TryParse(ReadOnlySpan<char> assemblyName, [NotNullWhen(true)] out AssemblyNameInfo? result)
         {
             AssemblyNameParser.AssemblyNameParts parts = default;
-            if (AssemblyNameParser.TryParse(assemblyName, ref parts))
+            if (!assemblyName.IsEmpty && AssemblyNameParser.TryParse(assemblyName, ref parts))
             {
                 result = new(parts);
                 return true;

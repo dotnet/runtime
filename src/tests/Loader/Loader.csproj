@@ -13,6 +13,7 @@
     <MergedWrapperProjectReference Remove="classloader/TypeGeneratorTests/**/*.??proj" />
     <MergedWrapperProjectReference Remove="classloader/StaticVirtualMethods/GenericContext/Generator/**/*.??proj" />
     <MergedWrapperProjectReference Remove="classloader/StaticVirtualMethods/TypeHierarchy/Generator/**/*.??proj" />
+    <MergedWrapperProjectReference Remove="classloader/SequentialLayout/ManagedSequential/LargeStructSize_Mono.csproj" />
   </ItemGroup>
 
   <Import Project="$(TestSourceDir)MergedTestRunner.targets" />

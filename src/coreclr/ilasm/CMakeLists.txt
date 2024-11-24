@@ -34,7 +34,17 @@ set(ILASM_HEADERS
   nvpair.h
   typar.hpp
   portable_pdb.h
+  sha256.h
 )
+
+if(CLR_CMAKE_TARGET_UNIX AND NOT CLR_CMAKE_TARGET_APPLE)
+  configure_file(
+    ../../native/libs/System.Security.Cryptography.Native/pal_crypto_config.h.in
+    ${CMAKE_CURRENT_BINARY_DIR}/pal_crypto_config.h)
+  include_directories(../../native/libs/Common)
+  include_directories(../../native/libs/System.Security.Cryptography.Native)
+  include_directories(${CMAKE_CURRENT_BINARY_DIR})
+endif(CLR_CMAKE_TARGET_UNIX AND NOT CLR_CMAKE_TARGET_APPLE)
 
 if(CLR_CMAKE_TARGET_WIN32)
   list(APPEND ILASM_SOURCES ${ILASM_HEADERS})
@@ -103,10 +113,19 @@ else()
     list(APPEND ILASM_LINK_LIBRARIES
         coreclrpal
         mscorrc
-        palrt
         coreclrminipal
     )
 endif(CLR_CMAKE_TARGET_WIN32)
+
+if(CLR_CMAKE_TARGET_UNIX AND NOT CLR_CMAKE_TARGET_APPLE)
+  list(APPEND ILASM_LINK_LIBRARIES System.Security.Cryptography.Native.OpenSsl-Static)
+  if(NOT FEATURE_DISTRO_AGNOSTIC_SSL)
+    find_package(OpenSSL QUIET)
+    if(OPENSSL_FOUND)
+      list(APPEND ILASM_LINK_LIBRARIES OpenSSL::SSL OpenSSL::Crypto)
+    endif(OPENSSL_FOUND)
+  endif(NOT FEATURE_DISTRO_AGNOSTIC_SSL)
+endif(CLR_CMAKE_TARGET_UNIX AND NOT CLR_CMAKE_TARGET_APPLE)
 
 
 if(CLR_CMAKE_HOST_UNIX)
@@ -116,7 +135,6 @@ if(CLR_CMAKE_HOST_UNIX)
     utilcodestaticnohost
     mscorrc
     coreclrpal
-    palrt
     ${CMAKE_DL_LIBS}
   )
 else()

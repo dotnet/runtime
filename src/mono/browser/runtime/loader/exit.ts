@@ -229,6 +229,7 @@ async function flush_node_streams () {
 
 function abort_promises (reason: any) {
     loaderHelpers.allDownloadsQueued.promise_control.reject(reason);
+    loaderHelpers.allDownloadsFinished.promise_control.reject(reason);
     loaderHelpers.afterConfigLoaded.promise_control.reject(reason);
     loaderHelpers.wasmCompilePromise.promise_control.reject(reason);
     loaderHelpers.runtimeModuleLoaded.promise_control.reject(reason);
@@ -290,11 +291,11 @@ function logOnExit (exit_code: number, reason: any) {
         }
     }
 }
-function unhandledrejection_handler (event: any) {
+function unhandledrejection_handler (event: PromiseRejectionEvent) {
     fatal_handler(event, event.reason, "rejection");
 }
 
-function error_handler (event: any) {
+function error_handler (event: ErrorEvent) {
     fatal_handler(event, event.error, "error");
 }
 

@@ -7,6 +7,7 @@
     <JsonSerializerIsReflectionEnabledByDefault>false</JsonSerializerIsReflectionEnabledByDefault>
     <!-- SYSLIB0020: JsonSerializerOptions.IgnoreNullValues is obsolete -->
     <!-- SYSLIB0049: JsonSerializerOptions.AddContext is obsolete -->
+    <!-- SYSLIB1030: Suppress warnings from unsupported types -->
     <!-- SYSLIB1034: Suppress JsonStringEnumConverter use warnings -->
     <!-- SYSLIB1037: Suppress init-only property deserialization warning -->
     <!-- SYSLIB1038: Suppress JsonInclude on inaccessible members warning -->
@@ -14,7 +15,8 @@
     <!-- SYSLIB1220: Suppress invalid JsonConverterAttribute argument warnings -->
     <!-- SYSLIB1222: Suppress inacessible JsonConstructorAttribute annotations -->
     <!-- SYSLIB1223: Suppress derived JsonConverterAttribute warnings -->
-    <NoWarn>$(NoWarn);SYSLIB0020;SYSLIB0049;SYSLIB1034;SYSLIB1037;SYSLIB1038;SYSLIB1039;SYSLIB1220;SYSLIB1222;SYSLIB1223</NoWarn>
+    <!-- SYSLIB1030: Suppress warnings from skipped ref struct members -->
+    <NoWarn>$(NoWarn);SYSLIB0020;SYSLIB0049;SYSLIB1030;SYSLIB1034;SYSLIB1037;SYSLIB1038;SYSLIB1039;SYSLIB1220;SYSLIB1222;SYSLIB1223;SYSLIB1225</NoWarn>
     <IgnoreForCI Condition="'$(TargetsMobile)' == 'true' or '$(TargetsLinuxBionic)' == 'true' or '$(TargetArchitecture)' == 'ARMv6'">true</IgnoreForCI> 
   </PropertyGroup>
 
@@ -83,7 +85,13 @@
     <Compile Include="..\Common\JsonCreationHandlingTests.Generic.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\JsonCreationHandlingTests.Generic.cs" />
     <Compile Include="..\Common\JsonCreationHandlingTests.Object.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\JsonCreationHandlingTests.Object.cs" />
     <Compile Include="..\Common\JsonNumberTestData.cs" Link="CommonTest\System\Text\Json\Tests\JsonNumberTestData" />
+    <Compile Include="..\Common\JsonSchemaExporterTests.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\JsonSchemaExporterTests.cs" />
+    <Compile Include="..\Common\JsonSchemaExporterTests.TestTypes.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\JsonSchemaExporterTests.TestTypes.cs" />
+    <Compile Include="..\Common\MetadataTests.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\MetadataTests\MetadataTests.cs" />
+    <Compile Include="..\Common\MetadataTests.JsonSerializer.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\MetadataTests\MetadataTests.JsonSerializer.cs" />
+    <Compile Include="..\Common\MetadataTests.Options.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\MetadataTests\MetadataTests.Options.cs"/>
     <Compile Include="..\Common\NodeInteropTests.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\NodeInteropTests.cs" />
+    <Compile Include="..\Common\NullableAnnotationsTests.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\NullableAnnotationsTests.cs" />
     <Compile Include="..\Common\NumberHandlingTests.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\NumberHandlingTests.cs" />
     <Compile Include="..\Common\PropertyNameTests.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\PropertyNameTests.cs" />
     <Compile Include="..\Common\PropertyVisibilityTests.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\PropertyVisibilityTests.cs" />
@@ -118,9 +126,12 @@
     <Compile Include="Serialization\ExtensionDataTests.cs" />
     <Compile Include="JsonSourceGenerationOptionsTests.cs" />
     <Compile Include="Serialization\JsonCreationHandlingTests.cs" />
+    <Compile Include="Serialization\JsonSchemaExporterTests.cs" />
     <Compile Include="Serialization\ReferenceHandlerTests.cs" />
     <Compile Include="Serialization\ReferenceHandlerTests.IgnoreCycles.cs" />
+    <Compile Include="Serialization\MetadataTests.cs" />
     <Compile Include="Serialization\NodeInteropTests.cs" />
+    <Compile Include="Serialization\NullableAnnotationsTests.cs" />
     <Compile Include="Serialization\NumberHandlingTests.cs" />
     <Compile Include="Serialization\PropertyNameTests.cs" />
     <Compile Include="Serialization\PropertyVisibilityTests.cs" />
@@ -138,6 +149,11 @@
     <ProjectReference Include="..\..\src\System.Text.Json.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Collections.Immutable\src\System.Collections.Immutable.csproj" />
     <Reference Include="System.ComponentModel.DataAnnotations" />
+    <PackageReference Include="System.ComponentModel.Annotations" Version="$(SystemComponentModelAnnotationsVersion)"/>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="JsonSchema.Net" Version="$(JsonSchemaNetVersion)" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' != '$(NetCoreAppCurrent)'">

@@ -694,6 +694,44 @@ PCCOR_SIGNATURE PrettyPrintType(
                 appendStr(out, sz);
                 break;
             }
+            case ELEMENT_TYPE_CMOD_INTERNAL :
+            {
+                // ELEMENT_TYPE_CMOD_INTERNAL <required> <TypeHandle>
+                bool required = *typePtr++ != 0;
+                _ASSERTE(sizeof(TypeHandle) == sizeof(void *));
+                TypeHandle typeHandle;
+                typePtr += CorSigUncompressPointer(typePtr, (void **)&typeHandle);
+
+                MethodTable *pMT = NULL;
+                if (typeHandle.IsTypeDesc())
+                {
+                    pMT = typeHandle.AsTypeDesc()->GetMethodTable();
+                    if (pMT)
+                    {
+                        PrettyPrintClass(out, pMT->GetCl(), pMT->GetMDImport());
+
+                        // It could be a "native version" of the managed type used in interop
+                        if (typeHandle.AsTypeDesc()->IsNativeValueType())
+                            appendStr(out, "_NativeValueType");
+                    }
+                    else
+                        appendStr(out, "(null)");
+                }
+                else
+                {
+                    pMT = typeHandle.AsMethodTable();
+                    if (pMT)
+                        PrettyPrintClass(out, pMT->GetCl(), pMT->GetMDImport());
+                    else
+                        appendStr(out, "(null)");
+                }
+
+                const char fmt[] = " mod%s(/* MT: %p */)";
+                char sz[Max64BitHexString + ARRAY_SIZE(fmt) + ARRAY_SIZE("req")];
+                sprintf_s(sz, ARRAY_SIZE(sz), fmt, required ? "req" : "opt", pMT);
+                appendStr(out, sz);
+                break;
+            }
 #endif
 
 

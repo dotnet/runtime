@@ -2,7 +2,7 @@
 
 This assembly exposes the System.Diagnostics.EventLog class, which allows the applications to use the Windows event log service.
 
-Documentation can be found at https://learn.microsoft.com/en-us/dotnet/api/system.diagnostics.eventlog.
+Documentation can be found at https://learn.microsoft.com/dotnet/api/system.diagnostics.eventlog.
 
 ## Contribution Bar
 

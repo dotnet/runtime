@@ -10,7 +10,7 @@ namespace System.Threading
 {
     public abstract partial class WaitHandle
     {
-        private static unsafe int WaitMultipleIgnoringSyncContextCore(Span<IntPtr> handles, bool waitAll, int millisecondsTimeout)
+        private static unsafe int WaitMultipleIgnoringSyncContextCore(ReadOnlySpan<IntPtr> handles, bool waitAll, int millisecondsTimeout)
         {
             fixed (IntPtr* pHandles = &MemoryMarshal.GetReference(handles))
             {
@@ -26,7 +26,7 @@ namespace System.Threading
             if (numHandles == 1)
                 waitAll = false;
 
-#if NATIVEAOT // TODO: reentrant wait support https://github.com/dotnet/runtime/issues/49518
+#if NATIVEAOT // TODO: reentrant wait support in Mono https://github.com/dotnet/runtime/issues/49518
             // Trivial waits don't allow reentrance
             bool reentrantWait = !useTrivialWaits && Thread.ReentrantWaitsEnabled;
 

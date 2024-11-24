@@ -186,7 +186,7 @@ namespace System.IO.Strategies
 
         protected unsafe void SetLengthCore(long value)
         {
-            Debug.Assert(value >= 0, "value >= 0");
+            Debug.Assert(value >= 0);
 
             RandomAccess.SetFileLength(_fileHandle, value);
             Debug.Assert(!_fileHandle.TryGetCachedLength(out _), "If length can be cached (file opened for reading, not shared for writing), it should be impossible to modify file length");

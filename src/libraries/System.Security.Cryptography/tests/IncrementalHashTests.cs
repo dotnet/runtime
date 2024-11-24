@@ -123,6 +123,83 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
+        [Theory]
+        [MemberData(nameof(GetHMACs))]
+        [SkipOnPlatform(TestPlatforms.Android, "Android doesn't support cloning the current state for HMAC, so it doesn't support Clone.")]
+        public static void Verify_Clone_HMAC(HMAC referenceAlgorithm, HashAlgorithmName hashAlgorithmName)
+        {
+            referenceAlgorithm.Key = s_hmacKey;
+            VerifyCloneResult(referenceAlgorithm, () => IncrementalHash.CreateHMAC(hashAlgorithmName, s_hmacKey));
+        }
+
+        [Theory]
+        [MemberData(nameof(GetHashAlgorithms))]
+        public static void Verify_Clone_Hash(HashAlgorithm referenceAlgorithm, HashAlgorithmName hashAlgorithmName)
+        {
+            VerifyCloneResult(referenceAlgorithm, () => IncrementalHash.CreateHash(hashAlgorithmName));
+        }
+
+        private static void VerifyCloneResult(HashAlgorithm reference, Func<IncrementalHash> originalFactory)
+        {
+            IncrementalHash original = originalFactory();
+            IncrementalHash clone = original.Clone();
+            byte[] originalHash;
+            byte[] cloneHash;
+            byte[] referenceHash;
+
+            // Simple case for starting from nothing, appending to same, should get the same.
+            original.AppendData("potato"u8);
+            clone.AppendData("potato"u8);
+            originalHash = original.GetHashAndReset();
+            cloneHash = clone.GetHashAndReset();
+            Assert.Equal(originalHash, cloneHash);
+            clone.Dispose();
+
+            // Clone with something appended to the original.
+            original.AppendData("tomato"u8);
+            clone = original.Clone();
+            originalHash = original.GetHashAndReset();
+            cloneHash = clone.GetHashAndReset();
+            Assert.Equal(originalHash, cloneHash);
+            clone.Dispose();
+
+            // Clone with something appended to the original and same appended after the clone.
+            original.AppendData("tomato"u8);
+            clone = original.Clone();
+            original.AppendData("carrot"u8);
+            clone.AppendData("carrot"u8);
+            originalHash = original.GetHashAndReset();
+            cloneHash = clone.GetHashAndReset();
+            Assert.Equal(originalHash, cloneHash);
+            clone.Dispose();
+
+            // Clone with something appended to the original and different appended after the clone.
+            original.AppendData("tomato"u8);
+            clone = original.Clone();
+            original.AppendData("carrot"u8);
+            clone.AppendData("banana"u8);
+            originalHash = original.GetHashAndReset();
+            cloneHash = clone.GetHashAndReset();
+            Assert.NotEqual(originalHash, cloneHash);
+            clone.Dispose();
+
+            // Independent life, clone disposed.
+            clone = original.Clone();
+            clone.Dispose();
+            original.AppendData("orange"u8);
+            referenceHash = reference.ComputeHash("orange"u8.ToArray());
+            originalHash = original.GetHashAndReset();
+            Assert.Equal(referenceHash, originalHash);
+
+            // Independent life, original disposed.
+            clone = original.Clone();
+            original.Dispose();
+            clone.AppendData("orange"u8);
+            referenceHash = reference.ComputeHash("orange"u8.ToArray());
+            cloneHash = clone.GetHashAndReset();
+            Assert.Equal(referenceHash, cloneHash);
+        }
+
         private static void VerifyIncrementalResult(HashAlgorithm referenceAlgorithm, IncrementalHash incrementalHash)
         {
             byte[] referenceHash = referenceAlgorithm.ComputeHash(s_inputBytes);
@@ -493,6 +570,8 @@ namespace System.Security.Cryptography.Tests
             Assert.Throws<ObjectDisposedException>(() => incrementalHash.GetCurrentHash());
             Assert.Throws<ObjectDisposedException>(() => incrementalHash.GetCurrentHash(tmpDest));
             Assert.Throws<ObjectDisposedException>(() => incrementalHash.TryGetCurrentHash(tmpDest, out int _));
+
+            Assert.Throws<ObjectDisposedException>(() => incrementalHash.Clone());
         }
 
         [Theory]
@@ -516,6 +595,8 @@ namespace System.Security.Cryptography.Tests
             Assert.Throws<ObjectDisposedException>(() => incrementalHash.GetCurrentHash());
             Assert.Throws<ObjectDisposedException>(() => incrementalHash.GetCurrentHash(tmpDest));
             Assert.Throws<ObjectDisposedException>(() => incrementalHash.TryGetCurrentHash(tmpDest, out int _));
+
+            Assert.Throws<ObjectDisposedException>(() => incrementalHash.Clone());
         }
 
         [Theory]
