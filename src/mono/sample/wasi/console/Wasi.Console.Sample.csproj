@@ -4,6 +4,7 @@
     <!-- 
     <WasmSingleFileBundle>true</WasmSingleFileBundle>
     <InvariantGlobalization>true</InvariantGlobalization>
+    <_WasiDebugger>true</_WasiDebugger>
     -->
     <!-- to strip wasi:http dependency -->
     <PublishTrimmed>true</PublishTrimmed>
