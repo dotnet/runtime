@@ -210,7 +210,7 @@ internal unsafe partial interface ISOSDacInterface
 
     // Modules
     [PreserveSig]
-    int GetModule(ulong addr, /*IXCLRDataModule*/ void** mod);
+    int GetModule(ulong addr, out IXCLRDataModule? mod);
     [PreserveSig]
     int GetModuleData(ulong moduleAddr, DacpModuleData* data);
     [PreserveSig]

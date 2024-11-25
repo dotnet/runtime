@@ -98,7 +98,7 @@ namespace System.Runtime.CompilerServices
             if (!RuntimeFieldHandle.GetRVAFieldInfo(fldInfo.Value, out void* data, out uint totalSize))
                 throw new ArgumentException(SR.Argument_BadFieldForInitializeArray);
 
-            TypeHandle th = targetTypeHandle.GetNativeTypeHandle();
+            TypeHandle th = targetTypeHandle.GetRuntimeType().GetNativeTypeHandle();
             Debug.Assert(!th.IsTypeDesc); // TypeDesc can't be used as generic parameter
             MethodTable* targetMT = th.AsMethodTable();
 
@@ -355,7 +355,7 @@ namespace System.Runtime.CompilerServices
         [Intrinsic]
         internal static bool IsBitwiseEquatable<T>()
         {
-            // The body of this function will be replaced by the EE with unsafe code!!!
+            // The body of this function will be replaced by the EE.
             // See getILIntrinsicImplementationForRuntimeHelpers for how this happens.
             throw new InvalidOperationException();
         }
@@ -363,23 +363,28 @@ namespace System.Runtime.CompilerServices
         [Intrinsic]
         internal static bool EnumEquals<T>(T x, T y) where T : struct, Enum
         {
-            // The body of this function will be replaced by the EE with unsafe code
-            // See getILIntrinsicImplementation for how this happens.
+            // The body of this function will be replaced by the EE.
+            // See getILIntrinsicImplementationForRuntimeHelpers for how this happens.
             return x.Equals(y);
         }
 
         [Intrinsic]
         internal static int EnumCompareTo<T>(T x, T y) where T : struct, Enum
         {
-            // The body of this function will be replaced by the EE with unsafe code
-            // See getILIntrinsicImplementation for how this happens.
+            // The body of this function will be replaced by the EE.
+            // See getILIntrinsicImplementationForRuntimeHelpers for how this happens.
             return x.CompareTo(y);
         }
 
-        // The body of this function will be created by the EE for the specific type.
-        // See getILIntrinsicImplementation for how this happens.
+#if FEATURE_IJW
         [Intrinsic]
-        internal static extern unsafe void CopyConstruct<T>(T* dest, T* src) where T : unmanaged;
+        internal static unsafe void CopyConstruct<T>(T* dest, T* src) where T : unmanaged
+        {
+            // The body of this function will be replaced by the EE.
+            // See getILIntrinsicImplementationForRuntimeHelpers for how this happens.
+            throw new InvalidOperationException();
+        }
+#endif
 
         internal static ref byte GetRawData(this object obj) =>
             ref Unsafe.As<RawData>(obj).Data;
@@ -442,9 +447,6 @@ namespace System.Runtime.CompilerServices
         /// <remarks>This method includes proper handling for nullable value types as well.</remarks>
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern unsafe object? Box(MethodTable* methodTable, ref byte data);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern unsafe void Unbox_Nullable(ref byte destination, MethodTable* toTypeHnd, object? obj);
 
         // Given an object reference, returns its MethodTable*.
         //
@@ -702,10 +704,39 @@ namespace System.Runtime.CompilerServices
         public void* ElementType;
 
         /// <summary>
+        /// The PerInstInfo is used to describe the generic arguments and dictionary of this type.
+        /// It points at a structure defined as PerInstInfo in C++, which is an array of pointers to generic
+        /// dictionaries, which then point to the actual type arguments + the contents of the generic dictionary.
+        /// The size of the PerInstInfo is defined in the negative space of that structure, and the size of the
+        /// generic dictionary is described in the DictionaryLayout of the associated canonical MethodTable.
+        /// </summary>
+        [FieldOffset(ElementTypeOffset)]
+        public MethodTable*** PerInstInfo;
+
+        /// <summary>
         /// This interface map used to list out the set of interfaces. Only meaningful if InterfaceCount is non-zero.
         /// </summary>
         [FieldOffset(InterfaceMapOffset)]
         public MethodTable** InterfaceMap;
+
+        /// <summary>
+        /// This is used to hold the nullable unbox data for nullable value types.
+        /// </summary>
+        [FieldOffset(InterfaceMapOffset)]
+#if TARGET_64BIT
+        public uint NullableValueAddrOffset;
+#else
+        public byte NullableValueAddrOffset;
+#endif
+
+#if TARGET_64BIT
+        [FieldOffset(InterfaceMapOffset + 4)]
+        public uint NullableValueSize;
+#else
+        [FieldOffset(InterfaceMapOffset)]
+        private uint NullableValueSizeEncoded;
+        public uint NullableValueSize => NullableValueSizeEncoded >> 8;
+#endif
 
         // WFLAGS_LOW_ENUM
         private const uint enum_flag_GenericsMask = 0x00000030;
@@ -725,6 +756,7 @@ namespace System.Runtime.CompilerServices
         private const uint enum_flag_Category_Mask = 0x000F0000;
         private const uint enum_flag_Category_ValueType = 0x00040000;
         private const uint enum_flag_Category_Nullable = 0x00050000;
+        private const uint enum_flag_Category_IsPrimitiveMask = 0x000E0000;
         private const uint enum_flag_Category_PrimitiveValueType = 0x00060000; // sub-category of ValueType, Enum or primitive value type
         private const uint enum_flag_Category_TruePrimitive = 0x00070000; // sub-category of ValueType, Primitive (ELEMENT_TYPE_I, etc.)
         private const uint enum_flag_Category_Array = 0x00080000;
@@ -775,7 +807,9 @@ namespace System.Runtime.CompilerServices
 
         public bool NonTrivialInterfaceCast => (Flags & enum_flag_NonTrivialInterfaceCast) != 0;
 
+#if FEATURE_TYPEEQUIVALENCE
         public bool HasTypeEquivalence => (Flags & enum_flag_HasTypeEquivalence) != 0;
+#endif // FEATURE_TYPEEQUIVALENCE
 
         public bool HasFinalizer => (Flags & enum_flag_HasFinalizer) != 0;
 
@@ -810,12 +844,13 @@ namespace System.Runtime.CompilerServices
 
         public bool IsValueType => (Flags & enum_flag_Category_ValueType_Mask) == enum_flag_Category_ValueType;
 
-        public bool IsNullable => (Flags & enum_flag_Category_Mask) == enum_flag_Category_Nullable;
+
+        public bool IsNullable { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return (Flags & enum_flag_Category_Mask) == enum_flag_Category_Nullable; } }
 
         public bool IsByRefLike => (Flags & (enum_flag_HasComponentSize | enum_flag_IsByRefLike)) == enum_flag_IsByRefLike;
 
         // Warning! UNLIKE the similarly named Reflection api, this method also returns "true" for Enums.
-        public bool IsPrimitive => (Flags & enum_flag_Category_Mask) is enum_flag_Category_PrimitiveValueType or enum_flag_Category_TruePrimitive;
+        public bool IsPrimitive => (Flags & enum_flag_Category_IsPrimitiveMask) == enum_flag_Category_PrimitiveValueType;
 
         public bool IsTruePrimitive => (Flags & enum_flag_Category_Mask) is enum_flag_Category_TruePrimitive;
 
@@ -872,7 +907,67 @@ namespace System.Runtime.CompilerServices
         /// </summary>
         [MethodImpl(MethodImplOptions.InternalCall)]
         public extern MethodTable* GetMethodTableMatchingParentClass(MethodTable* parent);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public extern MethodTable* InstantiationArg0();
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public uint GetNullableNumInstanceFieldBytes()
+        {
+            Debug.Assert(IsNullable);
+            Debug.Assert((NullableValueAddrOffset + NullableValueSize) == GetNumInstanceFieldBytes());
+            return NullableValueAddrOffset + NullableValueSize;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public uint GetNumInstanceFieldBytesIfContainsGCPointers()
+        {
+            // If the type ContainsGCPointers, we can compute the size without resorting to loading the BaseSizePadding field from the EEClass
+
+            Debug.Assert(ContainsGCPointers);
+            Debug.Assert((BaseSize - (nuint)(2 * sizeof(IntPtr)) == GetNumInstanceFieldBytes()));
+            return BaseSize - (uint)(2 * sizeof(IntPtr));
+        }
     }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal unsafe ref struct DynamicStaticsInfo
+    {
+        internal const int ISCLASSNOTINITED = 1;
+        internal IntPtr _pGCStatics; // The ISCLASSNOTINITED bit is set when the class is NOT initialized
+        internal IntPtr _pNonGCStatics; // The ISCLASSNOTINITED bit is set when the class is NOT initialized
+
+        /// <summary>
+        /// Given a statics pointer in the DynamicStaticsInfo, get the actual statics pointer.
+        /// If the class it initialized, this mask is not necessary
+        /// </summary>
+        internal static ref byte MaskStaticsPointer(ref byte staticsPtr)
+        {
+            fixed (byte* p = &staticsPtr)
+            {
+                 return ref Unsafe.AsRef<byte>((byte*)((nuint)p & ~(nuint)DynamicStaticsInfo.ISCLASSNOTINITED));
+            }
+        }
+
+        internal unsafe MethodTable* _methodTable;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal unsafe ref struct GenericsStaticsInfo
+    {
+        // Pointer to field descs for statics
+        internal IntPtr _pFieldDescs;
+        internal DynamicStaticsInfo _dynamicStatics;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal unsafe ref struct ThreadStaticsInfo
+    {
+        internal int _nonGCTlsIndex;
+        internal int _gcTlsIndex;
+        internal GenericsStaticsInfo _genericStatics;
+    }
+
 
     // Subset of src\vm\methodtable.h
     [StructLayout(LayoutKind.Sequential)]
@@ -934,6 +1029,18 @@ namespace System.Runtime.CompilerServices
         public bool IsClassInited => (Volatile.Read(ref Flags) & enum_flag_Initialized) != 0;
 
         public bool IsClassInitedAndActive => (Volatile.Read(ref Flags) & (enum_flag_Initialized | enum_flag_EnsuredInstanceActive)) == (enum_flag_Initialized | enum_flag_EnsuredInstanceActive);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public ref DynamicStaticsInfo GetDynamicStaticsInfo()
+        {
+            return ref Unsafe.Subtract(ref Unsafe.As<MethodTableAuxiliaryData, DynamicStaticsInfo>(ref this), 1);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public ref ThreadStaticsInfo GetThreadStaticsInfo()
+        {
+            return ref Unsafe.Subtract(ref Unsafe.As<MethodTableAuxiliaryData, ThreadStaticsInfo>(ref this), 1);
+        }
     }
 
     /// <summary>

@@ -659,11 +659,21 @@ void Compiler::optAssertionInit(bool isLocalProp)
 
         if (optCrossBlockLocalAssertionProp)
         {
-            // We may need a fairly large table.
-            // Allow for roughly one assertion per local, up to the tracked limit.
-            // (empirical studies show about 0.6 asserions/local)
+            // We may need a fairly large table. Keep size a multiple of 64.
+            // Empirical studies show about 1.16 asserions/ tracked local.
             //
-            optMaxAssertionCount = (AssertionIndex)min(maxTrackedLocals, ((lvaCount / 64) + 1) * 64);
+            if (lvaTrackedCount < 24)
+            {
+                optMaxAssertionCount = 64;
+            }
+            else if (lvaTrackedCount < 64)
+            {
+                optMaxAssertionCount = 128;
+            }
+            else
+            {
+                optMaxAssertionCount = (AssertionIndex)min(maxTrackedLocals, ((3 * lvaTrackedCount / 128) + 1) * 64);
+            }
         }
         else
         {
@@ -2643,7 +2653,7 @@ GenTree* Compiler::optVNBasedFoldExpr_Call_Memmove(GenTreeCall* call)
 
     // if dstArg is not simple, we replace the arg directly with a temp assignment and
     // continue using that temp - it allows us reliably extract all side effects.
-    GenTree* dst = fgMakeMultiUse(&dstArg->LateNodeRef());
+    GenTree* dst = fgMakeMultiUse(&dstArg->NodeRef());
 
     // Now we're going to emit a chain of STOREIND via COMMA nodes.
     // the very first tree is expected to be side-effects from the original call (including all args)
@@ -2714,7 +2724,7 @@ GenTree* Compiler::optVNBasedFoldExpr_Call(BasicBlock* block, GenTree* parent, G
             {
                 // if castObjArg is not simple, we replace the arg with a temp assignment and
                 // continue using that temp - it allows us reliably extract all side effects
-                castObjArg = fgMakeMultiUse(&castObjCallArg->LateNodeRef());
+                castObjArg = fgMakeMultiUse(&castObjCallArg->NodeRef());
                 return gtWrapWithSideEffects(castObjArg, call, GTF_ALL_EFFECT, true);
             }
 
@@ -2731,7 +2741,7 @@ GenTree* Compiler::optVNBasedFoldExpr_Call(BasicBlock* block, GenTree* parent, G
                     {
                         // if castObjArg is not simple, we replace the arg with a temp assignment and
                         // continue using that temp - it allows us reliably extract all side effects
-                        castObjArg = fgMakeMultiUse(&castObjCallArg->LateNodeRef());
+                        castObjArg = fgMakeMultiUse(&castObjCallArg->NodeRef());
                         return gtWrapWithSideEffects(castObjArg, call, GTF_ALL_EFFECT, true);
                     }
                 }
@@ -3007,7 +3017,7 @@ GenTree* Compiler::optVNBasedFoldConstExpr(BasicBlock* block, GenTree* parent, G
         }
         break;
 
-#if FEATURE_SIMD
+#if defined(FEATURE_SIMD)
         case TYP_SIMD8:
         {
             simd8_t value = vnStore->ConstantValue<simd8_t>(vnCns);
@@ -3066,6 +3076,7 @@ GenTree* Compiler::optVNBasedFoldConstExpr(BasicBlock* block, GenTree* parent, G
         break;
 
 #endif // TARGET_XARCH
+#endif // FEATURE_SIMD
 
 #if defined(FEATURE_MASKED_HW_INTRINSICS)
         case TYP_MASK:
@@ -3080,7 +3091,6 @@ GenTree* Compiler::optVNBasedFoldConstExpr(BasicBlock* block, GenTree* parent, G
         }
         break;
 #endif // FEATURE_MASKED_HW_INTRINSICS
-#endif // FEATURE_SIMD
 
         case TYP_BYREF:
             // Do not support const byref optimization.
@@ -3623,7 +3633,17 @@ GenTree* Compiler::optAssertionProp_LclVar(ASSERT_VALARG_TP assertions, GenTreeL
         return nullptr;
     }
 
-    BitVecOps::Iter iter(apTraits, assertions);
+    // For local assertion prop we can filter the assertion set down.
+    //
+    const unsigned lclNum = tree->GetLclNum();
+
+    ASSERT_TP filteredAssertions = assertions;
+    if (optLocalAssertionProp)
+    {
+        filteredAssertions = BitVecOps::Intersection(apTraits, GetAssertionDep(lclNum), filteredAssertions);
+    }
+
+    BitVecOps::Iter iter(apTraits, filteredAssertions);
     unsigned        index = 0;
     while (iter.NextElem(&index))
     {
@@ -3672,7 +3692,7 @@ GenTree* Compiler::optAssertionProp_LclVar(ASSERT_VALARG_TP assertions, GenTreeL
         // gtFoldExpr, specifically the case of a cast, where the fold operation changes the type of the LclVar
         // node.  In such a case is not safe to perform the substitution since later on the JIT will assert mismatching
         // types between trees.
-        const unsigned lclNum = tree->GetLclNum();
+        //
         if (curAssertion->op1.lcl.lclNum == lclNum)
         {
             LclVarDsc* const lclDsc = lvaGetDesc(lclNum);
@@ -3729,7 +3749,10 @@ GenTree* Compiler::optAssertionProp_LclFld(ASSERT_VALARG_TP assertions, GenTreeL
         return nullptr;
     }
 
-    BitVecOps::Iter iter(apTraits, assertions);
+    const unsigned lclNum             = tree->GetLclNum();
+    ASSERT_TP      filteredAssertions = BitVecOps::Intersection(apTraits, GetAssertionDep(lclNum), assertions);
+
+    BitVecOps::Iter iter(apTraits, filteredAssertions);
     unsigned        index = 0;
     while (iter.NextElem(&index))
     {
@@ -3919,6 +3942,18 @@ void Compiler::optAssertionProp_RangeProperties(ASSERT_VALARG_TP assertions,
         {
             *isKnownNonNegative = true;
             continue;
+        }
+
+        // Same for Length, example:
+        //
+        //  array[idx] = 42;
+        //  array.Length is known to be non-negative and non-zero here
+        //
+        if (curAssertion->IsBoundsCheckNoThrow() && (curAssertion->op1.bnd.vnLen == treeVN))
+        {
+            *isKnownNonNegative = true;
+            *isKnownNonZero     = true;
+            return; // both properties are known, no need to check other assertions
         }
 
         // First, analyze possible X ==/!= CNS assertions.
@@ -4278,23 +4313,9 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions, Gen
         }
 #endif
 
-        // Bail out if tree is not side effect free.
-        if ((tree->gtFlags & GTF_SIDE_EFFECT) != 0)
-        {
-            JITDUMP("sorry, blocked by side effects\n");
-            return nullptr;
-        }
-
-        if (curAssertion->assertionKind == OAK_EQUAL)
-        {
-            tree->BashToConst(0);
-        }
-        else
-        {
-            tree->BashToConst(1);
-        }
-
-        newTree = fgMorphTree(tree);
+        newTree = curAssertion->assertionKind == OAK_EQUAL ? gtNewIconNode(0) : gtNewIconNode(1);
+        newTree = gtWrapWithSideEffects(newTree, tree, GTF_ALL_EFFECT);
+        newTree = fgMorphTree(newTree);
         DISPTREE(newTree);
         return optAssertionProp_Update(newTree, tree, stmt);
     }
@@ -5217,7 +5238,7 @@ GenTree* Compiler::optAssertionProp_Call(ASSERT_VALARG_TP assertions, GenTreeCal
 
                 // if castObjArg is not simple, we replace the arg with a temp assignment and
                 // continue using that temp - it allows us reliably extract all side effects
-                objArg = fgMakeMultiUse(&objCallArg->LateNodeRef());
+                objArg = fgMakeMultiUse(&objCallArg->NodeRef());
                 objArg = gtWrapWithSideEffects(objArg, call, GTF_SIDE_EFFECT, true);
                 return optAssertionProp_Update(objArg, call, stmt);
             }
@@ -6219,33 +6240,16 @@ struct VNAssertionPropVisitorInfo
 
 //------------------------------------------------------------------------------
 // optVNConstantPropOnJTrue
-//    Constant propagate on the JTrue node by extracting side effects and moving
-//    them into their own statements. The relop node is then modified to yield
-//    true or false, so the branch can be folded.
+//    Constant propagate on the JTrue node.
 //
 // Arguments:
 //    block - The block that contains the JTrue.
 //    test  - The JTrue node whose relop evaluates to 0 or non-zero value.
 //
 // Return Value:
-//    The jmpTrue tree node that has relop of the form "0 =/!= 0".
-//    If "tree" evaluates to "true" relop is "0 == 0". Else relop is "0 != 0".
-//
-// Description:
-//    Special treatment for JTRUE nodes' constant propagation. This is because
-//    for JTRUE(1) or JTRUE(0), if there are side effects they need to be put
-//    in separate statements. This is to prevent relop's constant
-//    propagation from doing a simple minded conversion from
-//    (1) STMT(JTRUE(RELOP(COMMA(sideEffect, OP1), OP2)), S.T. op1 =/!= op2 to
-//    (2) STMT(JTRUE(COMMA(sideEffect, 1/0)).
-//
-//    fgFoldConditional doesn't fold (2), a side-effecting JTRUE's op1. So, let us,
-//    here, convert (1) as two statements: STMT(sideEffect), STMT(JTRUE(1/0)),
-//    so that the JTRUE will get folded by fgFoldConditional.
-//
-//  Note: fgFoldConditional is called from other places as well, which may be
-//  sensitive to adding new statements. Hence the change is not made directly
-//  into fgFoldConditional.
+//    nullptr if no constant propagation is done, else the modified JTrue node
+//    containing "0==0" or "0!=0" relop node
+//    (where op1 is wrapped with side effects if any).
 //
 GenTree* Compiler::optVNConstantPropOnJTrue(BasicBlock* block, GenTree* test)
 {
@@ -6266,49 +6270,23 @@ GenTree* Compiler::optVNConstantPropOnJTrue(BasicBlock* block, GenTree* test)
 
     // We want to use the Normal ValueNumber when checking for constants.
     ValueNum vnCns = vnStore->VNConservativeNormalValue(relop->gtVNPair);
-    ValueNum vnLib = vnStore->VNLiberalNormalValue(relop->gtVNPair);
     if (!vnStore->IsVNConstant(vnCns))
     {
         return nullptr;
     }
 
-    // Prepare the tree for replacement so any side effects can be extracted.
-    GenTree* sideEffList = nullptr;
-    gtExtractSideEffList(relop, &sideEffList, GTF_SIDE_EFFECT, true);
-
-    // Transform the relop's operands to be both zeroes.
-    ValueNum vnZero                = vnStore->VNZeroForType(TYP_INT);
-    relop->AsOp()->gtOp1           = gtNewIconNode(0);
-    relop->AsOp()->gtOp1->gtVNPair = ValueNumPair(vnZero, vnZero);
-    relop->AsOp()->gtOp2           = gtNewIconNode(0);
-    relop->AsOp()->gtOp2->gtVNPair = ValueNumPair(vnZero, vnZero);
-
-    // Update the oper and restore the value numbers.
-    bool evalsToTrue = (vnStore->CoercedConstantValue<INT64>(vnCns) != 0);
-    relop->SetOper(evalsToTrue ? GT_EQ : GT_NE);
-    relop->gtVNPair = ValueNumPair(vnLib, vnCns);
-
-    // Insert side effects back after they were removed from the JTrue stmt.
-    // It is important not to allow duplicates exist in the IR, that why we delete
-    // these side effects from the JTrue stmt before insert them back here.
-    while (sideEffList != nullptr)
+    GenTree* sideEffects = gtWrapWithSideEffects(gtNewNothingNode(), relop);
+    if (!sideEffects->IsNothingNode())
     {
-        Statement* newStmt;
-        if (sideEffList->OperGet() == GT_COMMA)
-        {
-            newStmt     = fgNewStmtNearEnd(block, sideEffList->gtGetOp1());
-            sideEffList = sideEffList->gtGetOp2();
-        }
-        else
-        {
-            newStmt     = fgNewStmtNearEnd(block, sideEffList);
-            sideEffList = nullptr;
-        }
-        // fgMorphBlockStmt could potentially affect stmts after the current one,
-        // for example when it decides to fgRemoveRestOfBlock.
+        // Insert side effects before the JTRUE stmt.
+        Statement* newStmt = fgNewStmtNearEnd(block, sideEffects);
         fgMorphBlockStmt(block, newStmt DEBUGARG(__FUNCTION__));
     }
 
+    // Let's maintain the invariant that JTRUE's operand is always a relop.
+    // and if we have side effects, we wrap one of the operands with them, not the relop.
+    const bool evalsToTrue = (vnStore->CoercedConstantValue<INT64>(vnCns) != 0);
+    test->AsOp()->gtOp1    = gtNewOperNode(evalsToTrue ? GT_EQ : GT_NE, relop->TypeGet(), gtNewFalse(), gtNewFalse());
     return test;
 }
 

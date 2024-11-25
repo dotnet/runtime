@@ -681,7 +681,7 @@ HRESULT EEConfig::sync()
 
         tieredCompilation_CallCountingDelayMs =
             Configuration::GetKnobDWORDValue(W("System.Runtime.TieredCompilation.CallCountingDelayMs"), CLRConfig::EXTERNAL_TC_CallCountingDelayMs);
-        
+
         bool hasSingleProcessor = GetCurrentProcessCpuCount() == 1;
         if (hasSingleProcessor)
         {
@@ -847,25 +847,24 @@ bool EEConfig::IsInMethList(MethodNamesList* list, MethodDesc* pMD)
     } CONTRACTL_END;
 
     if (list == 0)
-        return(false);
-    else
-    {
-        DefineFullyQualifiedNameForClass();
+        return false;
 
-        LPCUTF8 name = pMD->GetName();
-        if (name == NULL)
-        {
-            return false;
-        }
-        LPCUTF8 className = GetFullyQualifiedNameForClass(pMD->GetMethodTable());
-        if (className == NULL)
-        {
-            return false;
-        }
-        PCCOR_SIGNATURE sig = pMD->GetSig();
+    DefineFullyQualifiedNameForClass();
 
-        return list->IsInList(name, className, sig);
-    }
+    LPCUTF8 name = pMD->GetName();
+    if (name == NULL)
+        return false;
+
+    LPCUTF8 className = GetFullyQualifiedNameForClass(pMD->GetMethodTable());
+    if (className == NULL)
+        return false;
+
+    SigPointer sig = pMD->GetSigPointer();
+    uint32_t argCount = 0;
+    if (FAILED(sig.SkipMethodHeaderSignature(&argCount)))
+        return false;
+
+    return list->IsInList(name, className, (int32_t)argCount);
 }
 
 // Ownership of the string buffer passes to ParseTypeList
