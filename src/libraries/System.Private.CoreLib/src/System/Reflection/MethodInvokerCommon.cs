@@ -2,14 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Reflection.Emit;
 using System.Runtime.InteropServices;
 using System.Threading;
-using Internal;
 using static System.Reflection.InvokerEmitUtil;
 using static System.Reflection.MethodBase;
-using static System.RuntimeType;
 
 namespace System.Reflection
 {
@@ -53,13 +50,11 @@ namespace System.Reflection
             }
             else if (UseCalli(method))
             {
-                // Re-purpose ForceEmitInvoke to mean "do not use calli"; useful for debugging and performance comparisons.
                 invokeFunc = GetOrCreateInvokeFunc(isForInvokerClasses, method, parameterTypes, returnType, strategy);
                 functionPointer = method.MethodHandle.GetFunctionPointer();
             }
             else
             {
-                //ReflectionInvokeEventSource.Log.NewMemberNotCached(method.DeclaringType!.Name, method.Name);
                 InvokeSignatureInfoKey signatureInfo = new((RuntimeType?)method.DeclaringType, parameterTypes, returnType, method.IsStatic);
                 invokeFunc = CreateIlInvokeFunc(isForInvokerClasses, method, callCtorAsMethod: false, signatureInfo, strategy);
                 functionPointer = IntPtr.Zero;
@@ -132,18 +127,23 @@ namespace System.Reflection
                     return false;
                 }
 
-                // Strings and arrays require initialization through newobj.
+                // Arrays have element types that are not supported by calli plus the constructor is special.
+                if (declaringType.IsArray)
+                {
+                    return false;
+                }
+
                 if (method is RuntimeConstructorInfo)
                 {
-                    if (ReferenceEquals(declaringType, typeof(string)) || declaringType.IsArray)
+                    // Strings require initialization through newobj.
+                    if (ReferenceEquals(declaringType, typeof(string)))
                     {
                         return false;
                     }
                 }
                 else
                 {
-                    // If not polymorphic.
-                    // For value types, calli is not supported for object-based virtual methods (e.g. ToString()).
+                    // Check if polymorphic. For value types, calli is not supported for object-based virtual methods (e.g. ToString()).
                     if (method.IsVirtual && (declaringType.IsValueType || (!declaringType.IsSealed && !method.IsFinal)))
                     {
                         return false;
@@ -221,10 +221,8 @@ namespace System.Reflection
             {
                 // To minimize the lock scope, create the new delegate outside the lock even though it may not be used.
                 Delegate newInvokeFunc = CreateIlInvokeFunc(isForInvokerClasses, method: null, callCtorAsMethod: false, key, strategy)!;
-                bool lockTaken = false;
-                try
+                lock (s_invokerFuncsLock)
                 {
-                    Monitor.Enter(s_invokerFuncsLock, ref lockTaken);
                     unsafe
                     {
                         invokeFunc = s_invokerFuncs.GetValue<InvokeSignatureInfoKey>(hashcode, key, &InvokeSignatureInfoKey.AlternativeEquals);
@@ -233,13 +231,6 @@ namespace System.Reflection
                     {
                         s_invokerFuncs[InvokeSignatureInfo.Create(key)] = newInvokeFunc;
                         invokeFunc = newInvokeFunc;
-                    }
-                }
-                finally
-                {
-                    if (lockTaken)
-                    {
-                        Monitor.Exit(s_invokerFuncsLock);
                     }
                 }
             }

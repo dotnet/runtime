@@ -4,13 +4,10 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
-using System.Reflection.Emit;
 using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Threading;
 using static System.Reflection.InvokerEmitUtil;
-using static System.Reflection.InvokeSignatureInfo;
 using static System.Reflection.MethodBase;
 using static System.Reflection.MethodInvokerCommon;
 using static System.RuntimeType;
@@ -87,6 +84,11 @@ namespace System.Reflection
 #else
                 _allocator = null;
 #endif
+            }
+            else if (UseInterpretedPath)
+            {
+                // The same interpreted func can be used; the incoming 'obj' parameter checked for null to determine if an alloc is needed.
+                _invokeFunc = other._invokeFunc;
             }
             else
             {
