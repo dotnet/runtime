@@ -30101,7 +30101,7 @@ regNumber ReturnTypeDesc::GetABIReturnReg(unsigned idx, CorInfoCallConvExtension
     var_types regType = GetReturnRegType(idx);
     if (idx == 0)
     {
-        resultReg = varTypeIsIntegralOrI(regType) ? REG_INTRET : REG_FLOATRET; // A0 or F0
+        resultReg = varTypeIsIntegralOrI(regType) ? REG_INTRET : REG_FLOATRET; // A0 or FA0
     }
     else
     {
@@ -30115,7 +30115,7 @@ regNumber ReturnTypeDesc::GetABIReturnReg(unsigned idx, CorInfoCallConvExtension
         else
         {
             assert(varTypeUsesFloatReg(regType));
-            resultReg = varTypeIsIntegralOrI(GetReturnRegType(0)) ? REG_FLOATRET : REG_FLOATRET_1; // F0 or F1
+            resultReg = varTypeIsIntegralOrI(GetReturnRegType(0)) ? REG_FLOATRET : REG_FLOATRET_1; // FA0 or FA1
         }
     }
 
