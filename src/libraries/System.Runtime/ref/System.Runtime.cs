@@ -8470,6 +8470,35 @@ namespace System.Collections.ObjectModel
             System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
         }
     }
+    public partial class ReadOnlySet<T> : System.Collections.Generic.ICollection<T>, System.Collections.Generic.IEnumerable<T>, System.Collections.Generic.IReadOnlyCollection<T>, System.Collections.Generic.IReadOnlySet<T>, System.Collections.Generic.ISet<T>, System.Collections.ICollection, System.Collections.IEnumerable
+    {
+        public ReadOnlySet(System.Collections.Generic.ISet<T> @set) { }
+        public int Count { get { throw null; } }
+        public static System.Collections.ObjectModel.ReadOnlySet<T> Empty { get { throw null; } }
+        protected System.Collections.Generic.ISet<T> Set { get { throw null; } }
+        bool System.Collections.Generic.ICollection<T>.IsReadOnly { get { throw null; } }
+        bool System.Collections.ICollection.IsSynchronized { get { throw null; } }
+        object System.Collections.ICollection.SyncRoot { get { throw null; } }
+        public bool Contains(T item) { throw null; }
+        public System.Collections.Generic.IEnumerator<T> GetEnumerator() { throw null; }
+        public bool IsProperSubsetOf(System.Collections.Generic.IEnumerable<T> other) { throw null; }
+        public bool IsProperSupersetOf(System.Collections.Generic.IEnumerable<T> other) { throw null; }
+        public bool IsSubsetOf(System.Collections.Generic.IEnumerable<T> other) { throw null; }
+        public bool IsSupersetOf(System.Collections.Generic.IEnumerable<T> other) { throw null; }
+        public bool Overlaps(System.Collections.Generic.IEnumerable<T> other) { throw null; }
+        public bool SetEquals(System.Collections.Generic.IEnumerable<T> other) { throw null; }
+        void System.Collections.Generic.ICollection<T>.Add(T item) { }
+        void System.Collections.Generic.ICollection<T>.Clear() { }
+        void System.Collections.Generic.ICollection<T>.CopyTo(T[] array, int arrayIndex) { }
+        bool System.Collections.Generic.ICollection<T>.Remove(T item) { throw null; }
+        bool System.Collections.Generic.ISet<T>.Add(T item) { throw null; }
+        void System.Collections.Generic.ISet<T>.ExceptWith(System.Collections.Generic.IEnumerable<T> other) { }
+        void System.Collections.Generic.ISet<T>.IntersectWith(System.Collections.Generic.IEnumerable<T> other) { }
+        void System.Collections.Generic.ISet<T>.SymmetricExceptWith(System.Collections.Generic.IEnumerable<T> other) { }
+        void System.Collections.Generic.ISet<T>.UnionWith(System.Collections.Generic.IEnumerable<T> other) { }
+        void System.Collections.ICollection.CopyTo(System.Array array, int index) { }
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
+    }
 }
 namespace System.ComponentModel
 {
