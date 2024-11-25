@@ -7,7 +7,6 @@ using System.Reflection.Emit;
 using System.Runtime.InteropServices;
 using System.Threading;
 using Internal;
-using static System.Reflection.Associates;
 using static System.Reflection.InvokerEmitUtil;
 using static System.Reflection.MethodBase;
 using static System.RuntimeType;
