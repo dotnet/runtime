@@ -77,13 +77,13 @@
       <_Scenarios Include="$(_Scenarios.Split(','))" />
 
       <!-- MSBuild creates a new instance of the project for each %(_Scenarios.Identity) and can build them in parallel. -->
-      <_BaseProjectsToBuild Include="$(PerScenarioProjectFile)" Condition="'%(_Scenarios.Identity)' != 'buildwasmapps' and '%(_Scenarios.Identity)' != 'buildiosapps' and '%(_Scenarios.Identity)' != 'wasmdebuggertests'">
+      <_BaseProjectsToBuild Include="$(PerScenarioProjectFile)" Condition="'%(_Scenarios.Identity)' != 'buildwasmapps' and '%(_Scenarios.Identity)' != 'buildiosapps'">
         <AdditionalProperties>$(_PropertiesToPass);Scenario=%(_Scenarios.Identity);TestArchiveRuntimeFile=$(TestArchiveRuntimeFile)</AdditionalProperties>
         <AdditionalProperties Condition="'$(NeedsToBuildWasmAppsOnHelix)' != ''">%(_BaseProjectsToBuild.AdditionalProperties);NeedsToBuildWasmAppsOnHelix=$(NeedsToBuildWasmAppsOnHelix)</AdditionalProperties>
       </_BaseProjectsToBuild>
     </ItemGroup>
 
-    <!-- For BuildWasmApps we want to build the project 4 times, with: TestUsingWorkloads=true, and TestUsingWorkloads=false and TestUsingWebcil=true and TestUsingWebcil=false-->
+    <!-- For BuildWasmApps we want to build the project 4 times, with: TestUsingWorkloads=true, and TestUsingWorkloads=false and WasmEnableWebcil=true and WasmEnableWebcil=false-->
     <ItemGroup Condition="'@(_Scenarios -> AnyHaveMetadataValue('Identity', 'buildwasmapps'))' == 'true'">
       <_TestUsingWorkloadsValues Include="true;false" />
       <_TestUsingWebcilValues Include="true;false" Condition="'$(TargetOS)' == 'browser'" />
@@ -104,17 +104,9 @@
       <_TestUsingCrossProductValues Remove="@(_TestUsingCrossProductValues)" Condition="'%(_TestUsingCrossProductValues.Workloads)' == 'false' and '%(_TestUsingCrossProductValues.Fingerprinting)' == 'false'" />
 
       <_BuildWasmAppsProjectsToBuild Include="$(PerScenarioProjectFile)">
-        <AdditionalProperties>$(_PropertiesToPass);Scenario=BuildWasmApps;TestArchiveRuntimeFile=$(TestArchiveRuntimeFile);TestUsingWorkloads=%(_TestUsingCrossProductValues.Workloads);TestUsingWebcil=%(_TestUsingCrossProductValues.Webcil);TestUsingFingerprinting=%(_TestUsingCrossProductValues.Fingerprinting)</AdditionalProperties>
+        <AdditionalProperties>$(_PropertiesToPass);Scenario=BuildWasmApps;TestArchiveRuntimeFile=$(TestArchiveRuntimeFile);TestUsingWorkloads=%(_TestUsingCrossProductValues.Workloads);WasmEnableWebcil=%(_TestUsingCrossProductValues.Webcil);WasmFingerprintAssets=%(_TestUsingCrossProductValues.Fingerprinting)</AdditionalProperties>
         <AdditionalProperties Condition="'$(NeedsToBuildWasmAppsOnHelix)' != ''">%(_BuildWasmAppsProjectsToBuild.AdditionalProperties);NeedsToBuildWasmAppsOnHelix=$(NeedsToBuildWasmAppsOnHelix)</AdditionalProperties>
       </_BuildWasmAppsProjectsToBuild>
-    </ItemGroup>
-
-    <ItemGroup Condition="'@(_Scenarios -> AnyHaveMetadataValue('Identity', 'wasmdebuggertests'))' == 'true'">
-      <_DebuggerHostsItem Include="$(_DebuggerHosts.Split('/'))" />
-
-      <_WasmDebuggerTestsProjectsToBuild Include="$(PerScenarioProjectFile)">
-        <AdditionalProperties>$(_PropertiesToPass);Scenario=WasmDebuggerTests;TestArchiveRuntimeFile=$(TestArchiveRuntimeFile);DebuggerHost=%(_DebuggerHostsItem.Identity)</AdditionalProperties>
-      </_WasmDebuggerTestsProjectsToBuild>
     </ItemGroup>
 
     <!-- For BuildWasmApps we want to build the project twice, with: TestUsingWorkloads=true, and TestUsingWorkloads=false -->
@@ -128,7 +120,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <_ProjectsToBuild Include="@(_BuildWasmAppsProjectsToBuild);@(_WasmDebuggerTestsProjectsToBuild);@(_BuildiOSAppsProjectsToBuild);@(_BaseProjectsToBuild)" />
+      <_ProjectsToBuild Include="@(_BuildWasmAppsProjectsToBuild);@(_BuildiOSAppsProjectsToBuild);@(_BaseProjectsToBuild)" />
     </ItemGroup>
 
     <PropertyGroup>

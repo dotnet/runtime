@@ -1418,7 +1418,12 @@ private:
         return nextConsecutiveRefPositionMap;
     }
     FORCEINLINE RefPosition* getNextConsecutiveRefPosition(RefPosition* refPosition);
-    void getLowVectorOperandAndCandidates(HWIntrinsic intrin, size_t* operandNum, SingleTypeRegSet* candidates);
+    SingleTypeRegSet         getOperandCandidates(GenTreeHWIntrinsic* intrinsicTree, HWIntrinsic intrin, size_t opNum);
+    GenTree*                 getDelayFreeOperand(GenTreeHWIntrinsic* intrinsicTree, bool embedded = false);
+    GenTree*                 getVectorAddrOperand(GenTreeHWIntrinsic* intrinsicTree);
+    GenTree*                 getConsecutiveRegistersOperand(const HWIntrinsic intrin, bool* destIsConsecutive);
+    GenTreeHWIntrinsic*      getEmbeddedMaskOperand(const HWIntrinsic intrin);
+    GenTreeHWIntrinsic*      getContainedCselOperand(GenTreeHWIntrinsic* intrinsicTree);
 #endif
 
 #ifdef DEBUG
@@ -1607,18 +1612,19 @@ private:
     Interval** localVarIntervals;
 
     // Set of blocks that have been visited.
-    BlockSet bbVisitedSet;
-    void     markBlockVisited(BasicBlock* block)
+    BitVecTraits* traits;
+    BitVec        bbVisitedSet;
+    void          markBlockVisited(BasicBlock* block)
     {
-        BlockSetOps::AddElemD(compiler, bbVisitedSet, block->bbNum);
+        BitVecOps::AddElemD(traits, bbVisitedSet, block->bbPostorderNum);
     }
     void clearVisitedBlocks()
     {
-        BlockSetOps::ClearD(compiler, bbVisitedSet);
+        BitVecOps::ClearD(traits, bbVisitedSet);
     }
     bool isBlockVisited(BasicBlock* block)
     {
-        return BlockSetOps::IsMember(compiler, bbVisitedSet, block->bbNum);
+        return BitVecOps::IsMember(traits, bbVisitedSet, block->bbPostorderNum);
     }
 
 #if DOUBLE_ALIGN
@@ -1635,10 +1641,6 @@ private:
     BasicBlock** blockSequence;
     void         setBlockSequence();
     bool         blockSequencingDone;
-#ifdef DEBUG
-    // LSRA must not change number of blocks and blockEpoch that it initializes at start.
-    unsigned blockEpoch;
-#endif // DEBUG
 
     // Indicates whether the allocation pass has been completed.
     bool allocationPassComplete;
@@ -2031,6 +2033,11 @@ private:
 #ifdef TARGET_ARM64
     int  BuildConsecutiveRegistersForUse(GenTree* treeNode, GenTree* rmwNode = nullptr);
     void BuildConsecutiveRegistersForDef(GenTree* treeNode, int fieldCount);
+    void BuildHWIntrinsicImmediate(GenTreeHWIntrinsic* intrinsicTree, const HWIntrinsic intrin);
+    int  BuildEmbeddedOperandUses(GenTreeHWIntrinsic* embeddedOpNode, GenTree* embeddedDelayFreeOp);
+    int  BuildContainedCselUses(GenTreeHWIntrinsic* containedCselOpNode,
+                                GenTree*            delayFreeOp,
+                                SingleTypeRegSet    candidates);
 #endif // TARGET_ARM64
 #endif // FEATURE_HW_INTRINSICS
 

@@ -11,29 +11,18 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Xml.Schema;
 
-// UnconditionalSuppressMessage that specify a Target need to be at the assembly or module level for now. Also,
-// they won't consider Target unless you also specify Scope to be either "member" or "type"
-[assembly: UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-    Target = "M:System.Xml.Serialization.ReflectionXmlSerializationReader.#cctor",
-    Scope = "member",
-    Justification = "The reason why this warns is because the two static properties call GetTypeDesc() which internally will call " +
-        "ImportTypeDesc() when the passed in type is not considered a primitive type. That said, for both properties here we are passing in string " +
-        "and XmlQualifiedName which are considered primitive, so they are trim safe.")]
-
 namespace System.Xml.Serialization
 {
     internal delegate void UnknownNodeAction(object? o);
 
+    [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
+    [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
     internal sealed class ReflectionXmlSerializationReader : XmlSerializationReader
     {
         private readonly XmlMapping _mapping;
 
-        // Suppressed for ILLink by the assembly-level UnconditionalSuppressMessageAttribute
-        // https://github.com/dotnet/linker/issues/2648
-#pragma warning disable IL2026
         internal static TypeDesc StringTypeDesc { get; set; } = (new TypeScope()).GetTypeDesc(typeof(string));
         internal static TypeDesc QnameTypeDesc { get; set; } = (new TypeScope()).GetTypeDesc(typeof(XmlQualifiedName));
-#pragma warning restore IL2026
 
         public ReflectionXmlSerializationReader(XmlMapping mapping, XmlReader xmlReader, XmlDeserializationEvents events, string? encodingStyle)
         {
@@ -41,7 +30,6 @@ namespace System.Xml.Serialization
             _mapping = mapping;
         }
 
-        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         protected override void InitCallbacks()
         {
             TypeScope scope = _mapping.Scope!;
@@ -64,7 +52,6 @@ namespace System.Xml.Serialization
         {
         }
 
-        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         public object? ReadObject()
         {
             XmlMapping xmlMapping = _mapping;
@@ -88,7 +75,6 @@ namespace System.Xml.Serialization
             }
         }
 
-        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         private object?[] GenerateMembersElement(XmlMembersMapping xmlMembersMapping)
         {
             if (xmlMembersMapping.Accessor.IsSoap)
@@ -101,7 +87,6 @@ namespace System.Xml.Serialization
             }
         }
 
-        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         private object[] GenerateLiteralMembersElement(XmlMembersMapping xmlMembersMapping)
         {
             ElementAccessor element = xmlMembersMapping.Accessor;
@@ -145,7 +130,6 @@ namespace System.Xml.Serialization
             return p;
         }
 
-        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         private bool GenerateLiteralMembersElementInternal(MemberMapping[] mappings, bool hasWrapperElement, object?[] p)
         {
             Member? anyText = null;
@@ -321,7 +305,6 @@ namespace System.Xml.Serialization
             }
         }
 
-        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         private object?[] GenerateEncodedMembersElement(XmlMembersMapping xmlMembersMapping)
         {
             ElementAccessor element = xmlMembersMapping.Accessor;
@@ -409,9 +392,7 @@ namespace System.Xml.Serialization
                 }
                 else
                 {
-                    unrecognizedElementSource = Wrapper;
-                    [RequiresUnreferencedCode("calls ReadReferencedElement")]
-                    void Wrapper(object? _)
+                    unrecognizedElementSource = (_) =>
                     {
                         if (Reader.GetAttribute("id", null) != null)
                         {
@@ -421,7 +402,7 @@ namespace System.Xml.Serialization
                         {
                             UnknownNode(p);
                         }
-                    }
+                    };
                 }
 
                 WriteMemberElements(members, unrecognizedElementSource, (_) => UnknownNode(p), null, null, fixup: fixup, checkTypeHrefsSource: checkTypeHrefSource);
@@ -464,7 +445,6 @@ namespace System.Xml.Serialization
             return p;
         }
 
-        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         private object? GenerateTypeElement(XmlTypeMapping xmlTypeMapping)
         {
             ElementAccessor element = xmlTypeMapping.Accessor;
@@ -494,7 +474,6 @@ namespace System.Xml.Serialization
             return o;
         }
 
-        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         private void WriteMemberElements(Member[] expectedMembers, UnknownNodeAction elementElseAction, UnknownNodeAction elseAction, Member? anyElement, Member? anyText, Fixup? fixup = null, List<CheckTypeSource>? checkTypeHrefsSource = null)
         {
             bool checkType = checkTypeHrefsSource != null;
@@ -524,7 +503,6 @@ namespace System.Xml.Serialization
             }
         }
 
-        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         private void WriteMemberElementsCheckType(List<CheckTypeSource> checkTypeHrefsSource)
         {
             object? RefElememnt = ReadReferencingElement(null, null, true, out string? refElemId);
@@ -548,7 +526,6 @@ namespace System.Xml.Serialization
             action?.Invoke(null);
         }
 
-        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         private void WriteMembers(Member[] members, UnknownNodeAction elementElseAction, UnknownNodeAction elseAction, Member? anyElement, Member? anyText)
         {
             Reader.MoveToContent();
@@ -619,7 +596,6 @@ namespace System.Xml.Serialization
 
         private static readonly ContextAwareTables<Hashtable> s_setMemberValueDelegateCache = new ContextAwareTables<Hashtable>();
 
-        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         private static ReflectionXmlSerializationReaderHelper.SetMemberValueDelegate GetSetMemberValueDelegate(object o, string memberName)
         {
             Debug.Assert(o != null, "Object o should not be null");
@@ -695,7 +671,6 @@ namespace System.Xml.Serialization
             throw new InvalidOperationException(SR.XmlInternalError);
         }
 
-        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         private bool WriteMemberText(Member anyText)
         {
             object? value;
@@ -758,7 +733,6 @@ namespace System.Xml.Serialization
             return false;
         }
 
-        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         private void WriteMemberElementsIf(Member[] expectedMembers, Member? anyElementMember, UnknownNodeAction elementElseAction, Fixup? fixup = null, CheckTypeSource? checkTypeSource = null)
         {
             bool checkType = checkTypeSource != null;
@@ -867,7 +841,6 @@ namespace System.Xml.Serialization
             }
         }
 
-        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         private object? WriteElement(ElementAccessor element, bool checkForNull, bool readOnly, string? defaultNamespace, int fixupIndex = -1, Fixup? fixup = null, Member? member = null)
         {
             object? value = null;
@@ -1045,13 +1018,11 @@ namespace System.Xml.Serialization
             return value;
         }
 
-        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         private XmlSerializationReadCallback CreateXmlSerializationReadCallback(TypeMapping mapping)
         {
             if (mapping is StructMapping structMapping)
             {
-                [RequiresUnreferencedCode("calls WriteStructMethod")]
-                object? WriteStruct() => WriteStructMethod(structMapping, mapping.TypeDesc!.IsNullable, true, defaultNamespace: null);
+                                object? WriteStruct() => WriteStructMethod(structMapping, mapping.TypeDesc!.IsNullable, true, defaultNamespace: null);
                 return WriteStruct;
             }
             else if (mapping is EnumMapping enumMapping)
@@ -1060,9 +1031,7 @@ namespace System.Xml.Serialization
             }
             else if (mapping is NullableMapping nullableMapping)
             {
-                [RequiresUnreferencedCode("calls WriteNullableMethod")]
-                object? Wrapper() => WriteNullableMethod(nullableMapping, null);
-                return Wrapper;
+                return () => WriteNullableMethod(nullableMapping, null);
             }
 
             return DummyReadArrayMethod;
@@ -1106,7 +1075,6 @@ namespace System.Xml.Serialization
             return mapping.TypeDesc!.CanBeElementValue;
         }
 
-        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         private object? WriteArray(ArrayMapping arrayMapping, bool readOnly, int fixupIndex = -1, Fixup? fixup = null, Member? member = null)
         {
             object? o = null;
@@ -1195,7 +1163,6 @@ namespace System.Xml.Serialization
             return o;
         }
 
-        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         private object WritePrimitive(TypeMapping mapping, Func<object, string> readFunc, object funcState)
         {
             if (mapping is EnumMapping enumMapping)
@@ -1258,7 +1225,6 @@ namespace System.Xml.Serialization
             }
         }
 
-        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         private object? WriteStructMethod(StructMapping mapping, bool isNullable, bool checkType, string? defaultNamespace)
         {
             if (mapping.IsSoap)
@@ -1267,7 +1233,6 @@ namespace System.Xml.Serialization
                 return WriteLiteralStructMethod(mapping, isNullable, checkType, defaultNamespace);
         }
 
-        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         private object? WriteNullableMethod(NullableMapping nullableMapping, string? defaultNamespace)
         {
             object? o = Activator.CreateInstance(nullableMapping.TypeDesc!.Type!);
@@ -1360,7 +1325,6 @@ namespace System.Xml.Serialization
             type.IsValueType ? null :
             type.GetConstructor(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly, null, Type.EmptyTypes, null);
 
-        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         private object? WriteEncodedStructMethod(StructMapping structMapping)
         {
             if (structMapping.TypeDesc!.IsRoot)
@@ -1386,12 +1350,7 @@ namespace System.Xml.Serialization
                     TypeDesc td = member.Mapping.TypeDesc!;
                     if (td.IsCollection || td.IsEnumerable)
                     {
-                        member.Source = Wrapper;
-                        [RequiresUnreferencedCode("Calls WriteAddCollectionFixup")]
-                        void Wrapper(object? value)
-                        {
-                            WriteAddCollectionFixup(o!, member, value!);
-                        }
+                        member.Source = (value) => WriteAddCollectionFixup(o!, member, value!);
                     }
                     else if (!member.Mapping.ReadOnly)
                     {
@@ -1480,7 +1439,6 @@ namespace System.Xml.Serialization
             };
         }
 
-        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         private void WriteAddCollectionFixup(object o, Member member, object memberValue)
         {
             TypeDesc typeDesc = member.Mapping.TypeDesc!;
@@ -1491,7 +1449,6 @@ namespace System.Xml.Serialization
             WriteAddCollectionFixup(getSource, setSource, memberValue, typeDesc, readOnly);
         }
 
-        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         private object? WriteAddCollectionFixup(Func<object?> getSource, Action<object?> setSource, object memberValue, TypeDesc typeDesc, bool readOnly)
         {
             object? memberSource = getSource();
@@ -1515,12 +1472,9 @@ namespace System.Xml.Serialization
             return memberSource;
         }
 
-        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
-        private XmlSerializationCollectionFixupCallback GetCreateCollectionOfObjectsCallback(Type collectionType)
+        private static XmlSerializationCollectionFixupCallback GetCreateCollectionOfObjectsCallback(Type collectionType)
         {
-            return Wrapper;
-            [RequiresUnreferencedCode("Calls AddObjectsIntoTargetCollection")]
-            void Wrapper(object? collection, object? collectionItems)
+            return (object? collection, object? collectionItems) =>
             {
                 if (collectionItems == null)
                     return;
@@ -1542,10 +1496,9 @@ namespace System.Xml.Serialization
                 }
 
                 AddObjectsIntoTargetCollection(collection, listOfItems, collectionType);
-            }
+            };
         }
 
-        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         private object? WriteLiteralStructMethod(StructMapping structMapping, bool isNullable, bool checkType, string? defaultNamespace)
         {
             XmlQualifiedName? xsiType = checkType ? GetXsiType() : null;
@@ -1650,9 +1603,7 @@ namespace System.Xml.Serialization
 
                     if (mapping.Attribute != null)
                     {
-                        member.Source = Wrapper;
-                        [RequiresUnreferencedCode("calls SetOrAddValueToMember")]
-                        void Wrapper(object? value) { SetOrAddValueToMember(o!, value!, member.Mapping.MemberInfo!); }
+                        member.Source = (value) => SetOrAddValueToMember(o!, value!, member.Mapping.MemberInfo!);
 
                         if (mapping.Attribute.Any)
                         {
@@ -1733,22 +1684,18 @@ namespace System.Xml.Serialization
 
                     if (member.Mapping.CheckSpecified == SpecifiedAccessor.ReadWrite)
                     {
-                        member.CheckSpecifiedSource = Wrapper;
-                        [RequiresUnreferencedCode("calls GetType on object")]
-                        void Wrapper(object? _)
+                        member.CheckSpecifiedSource = (_) =>
                         {
                             string specifiedMemberName = $"{member.Mapping.Name}Specified";
                             MethodInfo? specifiedMethodInfo = o!.GetType().GetMethod($"set_{specifiedMemberName}");
                             specifiedMethodInfo?.Invoke(o, new object[] { true });
-                        }
+                        };
                     }
 
                     ChoiceIdentifierAccessor? choice = mapping.ChoiceIdentifier;
                     if (choice != null && o != null)
                     {
-                        member.ChoiceSource = Wrapper;
-                        [RequiresUnreferencedCode("Calls SetOrAddValueToMember")]
-                        void Wrapper(object elementNameObject)
+                        member.ChoiceSource = (elementNameObject) =>
                         {
                             string? elementName = elementNameObject as string;
                             foreach (var name in choice.MemberIds!)
@@ -1761,7 +1708,7 @@ namespace System.Xml.Serialization
                                     break;
                                 }
                             }
-                        }
+                        };
                     }
 
                     allMembersList.Add(member);
@@ -1817,7 +1764,6 @@ namespace System.Xml.Serialization
             }
         }
 
-        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         private bool WriteEnumAndArrayTypes(out object? o, XmlQualifiedName xsiType, string? defaultNamespace)
         {
             foreach (var m in _mapping.Scope!.TypeMappings)
@@ -1856,7 +1802,6 @@ namespace System.Xml.Serialization
             return false;
         }
 
-        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         private bool WriteDerivedTypes(out object? o, StructMapping mapping, XmlQualifiedName xsiType, string? defaultNamespace, bool checkType, bool isNullable)
         {
             for (StructMapping? derived = mapping.DerivedMappings; derived != null; derived = derived.NextDerivedMapping)
@@ -1877,7 +1822,6 @@ namespace System.Xml.Serialization
             return false;
         }
 
-        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         private void WriteAttributes(Member[] members, Member? anyAttribute, UnknownNodeAction elseCall, ref object? o)
         {
             Member? xmlnsMember = null;
@@ -1964,7 +1908,6 @@ namespace System.Xml.Serialization
             }
         }
 
-        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         private void WriteAttribute(Member member, object? attr = null)
         {
             AttributeAccessor attribute = member.Mapping.Attribute!;
@@ -2012,7 +1955,6 @@ namespace System.Xml.Serialization
             }
         }
 
-        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         private static void SetOrAddValueToMember(object o, object value, MemberInfo memberInfo)
         {
             Type memberType = GetMemberType(memberInfo);
@@ -2033,7 +1975,6 @@ namespace System.Xml.Serialization
             }
         }
 
-        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         private static void AddItemInArrayMember(object o, MemberInfo memberInfo, Type memberType, object item)
         {
             var currentArray = (Array?)GetMemberValue(o, memberInfo);

@@ -5,12 +5,12 @@
     <EnableDefaultItems>true</EnableDefaultItems>
     <CLSCompliant>false</CLSCompliant>
     <IsPackable>true</IsPackable>
+    <PackageDescription>Provides a safe reader for .NET Remoting Binary Format (NRBF) payloads.</PackageDescription>
 
     <!-- Disabling baseline validation since this is a brand new package.
          Once this package has shipped a stable version, the following line
          should be removed in order to re-enable validation. -->
     <DisablePackageBaselineValidation>true</DisablePackageBaselineValidation>
-    <EnableDefaultPackageReadmeFile>true</EnableDefaultPackageReadmeFile>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CommonPath)System\Experimentals.cs"

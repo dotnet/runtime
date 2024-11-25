@@ -12,6 +12,7 @@ using Xunit;
 
 namespace System.Net.Sockets.Tests
 {
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
     public partial class SocketOptionNameTest
     {
         private static bool SocketsReuseUnicastPortSupport => Capability.SocketsReuseUnicastPortSupport().HasValue;
@@ -720,6 +721,7 @@ namespace System.Net.Sockets.Tests
 
     [Collection(nameof(DisableParallelization))]
     // Set of tests to not run  together with any other tests.
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
     public class NoParallelTests
     {
         [Fact]
