@@ -152,7 +152,9 @@ namespace System.DirectoryServices.Protocols
                 for (int i = 0; i < controls.Length; i++)
                 {
                     Debug.Assert(controls[i] != null);
-                    byte[] value = controls[i]._directoryControlValue ?? Array.Empty<byte>();
+                    Debug.Assert(controls[i]._directoryControlValue != null);
+
+                    byte[] value = controls[i]._directoryControlValue;
                     Span<byte> asnSpan = value;
                     bool asnReadSuccessful;
 
