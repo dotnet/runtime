@@ -4,8 +4,6 @@
 // Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
-using System.Numerics;
-
 namespace Microsoft.Win32.SafeHandles
 {
     public abstract partial class CriticalHandleMinusOneIsInvalid : System.Runtime.InteropServices.CriticalHandle
@@ -2418,8 +2416,8 @@ namespace System
         public static double Clamp(double value, double min, double max) { throw null; }
         public int CompareTo(double value) { throw null; }
         public int CompareTo(object? value) { throw null; }
-        public static TInteger ConvertToInteger<TInteger>(double value) where TInteger : System.Numerics.IBinaryInteger<TInteger> { throw null; }
         public static TInteger ConvertToIntegerNative<TInteger>(double value) where TInteger : System.Numerics.IBinaryInteger<TInteger> { throw null; }
+        public static TInteger ConvertToInteger<TInteger>(double value) where TInteger : System.Numerics.IBinaryInteger<TInteger> { throw null; }
         public static double CopySign(double value, double sign) { throw null; }
         public static double Cos(double x) { throw null; }
         public static double Cosh(double x) { throw null; }
@@ -2666,14 +2664,12 @@ namespace System
     }
     public static partial class Environment
     {
-        public readonly struct ProcessCpuUsage
-        {
-            public System.TimeSpan UserTime { get { throw null; } }
-            public System.TimeSpan PrivilegedTime { get { throw null; } }
-            public System.TimeSpan TotalTime { get { throw null; } }
-        }
-
         public static string CommandLine { get { throw null; } }
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("maccatalyst")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
+        public static System.Environment.ProcessCpuUsage CpuUsage { get { throw null; } }
         public static string CurrentDirectory { get { throw null; } set { } }
         public static int CurrentManagedThreadId { get { throw null; } }
         public static int ExitCode { get { throw null; } set { } }
@@ -2686,11 +2682,6 @@ namespace System
         public static System.OperatingSystem OSVersion { get { throw null; } }
         public static int ProcessId { get { throw null; } }
         public static int ProcessorCount { get { throw null; } }
-        [System.Runtime.Versioning.UnsupportedOSPlatform("ios")]
-        [System.Runtime.Versioning.UnsupportedOSPlatform("tvos")]
-        [System.Runtime.Versioning.SupportedOSPlatform("maccatalyst")]
-        [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
-        public static ProcessCpuUsage CpuUsage { get { throw null; } }
         public static string? ProcessPath { get { throw null; } }
         public static string StackTrace { get { throw null; } }
         public static string SystemDirectory { get { throw null; } }
@@ -2719,6 +2710,13 @@ namespace System
         public static string[] GetLogicalDrives() { throw null; }
         public static void SetEnvironmentVariable(string variable, string? value) { }
         public static void SetEnvironmentVariable(string variable, string? value, System.EnvironmentVariableTarget target) { }
+        public readonly partial struct ProcessCpuUsage
+        {
+            private readonly int _dummyPrimitive;
+            public System.TimeSpan PrivilegedTime { get { throw null; } }
+            public System.TimeSpan TotalTime { get { throw null; } }
+            public System.TimeSpan UserTime { get { throw null; } }
+        }
         public enum SpecialFolder
         {
             Desktop = 0,
@@ -3150,13 +3148,13 @@ namespace System
         public Guid(string g) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public Guid(uint a, ushort b, ushort c, byte d, byte e, byte f, byte g, byte h, byte i, byte j, byte k) { throw null; }
-        public static Guid AllBitsSet { get { throw null; } }
+        public static System.Guid AllBitsSet { get { throw null; } }
         public int Variant { get { throw null; } }
         public int Version { get { throw null; } }
         public int CompareTo(System.Guid value) { throw null; }
         public int CompareTo(object? value) { throw null; }
-        public static Guid CreateVersion7() { throw null; }
-        public static Guid CreateVersion7(DateTimeOffset timestamp) { throw null; }
+        public static System.Guid CreateVersion7() { throw null; }
+        public static System.Guid CreateVersion7(System.DateTimeOffset timestamp) { throw null; }
         public bool Equals(System.Guid g) { throw null; }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? o) { throw null; }
         public override int GetHashCode() { throw null; }
@@ -3230,8 +3228,8 @@ namespace System
         public static System.Half Clamp(System.Half value, System.Half min, System.Half max) { throw null; }
         public int CompareTo(System.Half other) { throw null; }
         public int CompareTo(object? obj) { throw null; }
-        public static TInteger ConvertToInteger<TInteger>(System.Half value) where TInteger : System.Numerics.IBinaryInteger<TInteger> { throw null; }
         public static TInteger ConvertToIntegerNative<TInteger>(System.Half value) where TInteger : System.Numerics.IBinaryInteger<TInteger> { throw null; }
+        public static TInteger ConvertToInteger<TInteger>(System.Half value) where TInteger : System.Numerics.IBinaryInteger<TInteger> { throw null; }
         public static System.Half CopySign(System.Half value, System.Half sign) { throw null; }
         public static System.Half Cos(System.Half x) { throw null; }
         public static System.Half Cosh(System.Half x) { throw null; }
@@ -4446,12 +4444,12 @@ namespace System
         public static double Atan2(double y, double x) { throw null; }
         public static double Atanh(double d) { throw null; }
         public static long BigMul(int a, int b) { throw null; }
-        public static Int128 BigMul(long a, long b) { throw null; }
+        public static System.Int128 BigMul(long a, long b) { throw null; }
+        public static long BigMul(long a, long b, out long low) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static ulong BigMul(uint a, uint b) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static UInt128 BigMul(ulong a, ulong b) { throw null; }
-        public static long BigMul(long a, long b, out long low) { throw null; }
+        public static System.UInt128 BigMul(ulong a, ulong b) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static ulong BigMul(ulong a, ulong b, out ulong low) { throw null; }
         public static double BitDecrement(double x) { throw null; }
@@ -5363,8 +5361,8 @@ namespace System
         public static float Clamp(float value, float min, float max) { throw null; }
         public int CompareTo(object? value) { throw null; }
         public int CompareTo(float value) { throw null; }
-        public static TInteger ConvertToInteger<TInteger>(float value) where TInteger : System.Numerics.IBinaryInteger<TInteger> { throw null; }
         public static TInteger ConvertToIntegerNative<TInteger>(float value) where TInteger : System.Numerics.IBinaryInteger<TInteger> { throw null; }
+        public static TInteger ConvertToInteger<TInteger>(float value) where TInteger : System.Numerics.IBinaryInteger<TInteger> { throw null; }
         public static float CopySign(float value, float sign) { throw null; }
         public static float Cos(float x) { throw null; }
         public static float Cosh(float x) { throw null; }
@@ -5952,31 +5950,30 @@ namespace System
     public readonly partial struct TimeSpan : System.IComparable, System.IComparable<System.TimeSpan>, System.IEquatable<System.TimeSpan>, System.IFormattable, System.IParsable<System.TimeSpan>, System.ISpanFormattable, System.ISpanParsable<System.TimeSpan>, System.IUtf8SpanFormattable
     {
         private readonly int _dummyPrimitive;
+        public const int HoursPerDay = 24;
         public static readonly System.TimeSpan MaxValue;
+        public const long MicrosecondsPerDay = (long)86400000000;
+        public const long MicrosecondsPerHour = (long)3600000000;
+        public const long MicrosecondsPerMillisecond = (long)1000;
+        public const long MicrosecondsPerMinute = (long)60000000;
+        public const long MicrosecondsPerSecond = (long)1000000;
+        public const long MillisecondsPerDay = (long)86400000;
+        public const long MillisecondsPerHour = (long)3600000;
+        public const long MillisecondsPerMinute = (long)60000;
+        public const long MillisecondsPerSecond = (long)1000;
+        public const long MinutesPerDay = (long)1440;
+        public const long MinutesPerHour = (long)60;
         public static readonly System.TimeSpan MinValue;
         public const long NanosecondsPerTick = (long)100;
+        public const long SecondsPerDay = (long)86400;
+        public const long SecondsPerHour = (long)3600;
+        public const long SecondsPerMinute = (long)60;
         public const long TicksPerDay = (long)864000000000;
         public const long TicksPerHour = (long)36000000000;
         public const long TicksPerMicrosecond = (long)10;
         public const long TicksPerMillisecond = (long)10000;
         public const long TicksPerMinute = (long)600000000;
         public const long TicksPerSecond = (long)10000000;
-        public const long MicrosecondsPerMillisecond = (long)1000;
-        public const long MicrosecondsPerSecond = (long)1000000;
-        public const long MicrosecondsPerMinute = (long)60000000;
-        public const long MicrosecondsPerHour = (long)3600000000;
-        public const long MicrosecondsPerDay = (long)86400000000;
-        public const long MillisecondsPerSecond = (long)1000;
-        public const long MillisecondsPerMinute = (long)60000;
-        public const long MillisecondsPerHour = (long)3600000;
-        public const long MillisecondsPerDay = (long)86400000;
-        public const long SecondsPerMinute = (long)60;
-        public const long SecondsPerHour = (long)3600;
-        public const long SecondsPerDay = (long)86400;
-        public const long MinutesPerHour = (long)60;
-        public const long MinutesPerDay = (long)1440;
-        public const int HoursPerDay = 24;
-
         public static readonly System.TimeSpan Zero;
         public TimeSpan(int hours, int minutes, int seconds) { throw null; }
         public TimeSpan(int days, int hours, int minutes, int seconds) { throw null; }
@@ -6008,22 +6005,22 @@ namespace System
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? value) { throw null; }
         public bool Equals(System.TimeSpan obj) { throw null; }
         public static bool Equals(System.TimeSpan t1, System.TimeSpan t2) { throw null; }
-        public static System.TimeSpan FromDays(int days) { throw null; }
-        public static System.TimeSpan FromDays(int days, int hours = 0, long minutes = 0, long seconds = 0, long milliseconds = 0, long microseconds = 0) { throw null; }
-        public static System.TimeSpan FromHours(int hours) { throw null; }
-        public static System.TimeSpan FromHours(int hours, long minutes = 0, long seconds = 0, long milliseconds = 0, long microseconds = 0) { throw null; }
-        public static System.TimeSpan FromMinutes(long minutes) { throw null; }
-        public static System.TimeSpan FromMinutes(long minutes, long seconds = 0, long milliseconds = 0, long microseconds = 0) { throw null; }
-        public static System.TimeSpan FromSeconds(long seconds) { throw null; }
-        public static System.TimeSpan FromSeconds(long seconds, long milliseconds = 0, long microseconds = 0) { throw null; }
-        public static System.TimeSpan FromMilliseconds(long milliseconds, long microseconds = 0) { throw null; }
-        public static System.TimeSpan FromMicroseconds(long microseconds) { throw null; }
         public static System.TimeSpan FromDays(double value) { throw null; }
+        public static System.TimeSpan FromDays(int days) { throw null; }
+        public static System.TimeSpan FromDays(int days, int hours = 0, long minutes = (long)0, long seconds = (long)0, long milliseconds = (long)0, long microseconds = (long)0) { throw null; }
         public static System.TimeSpan FromHours(double value) { throw null; }
+        public static System.TimeSpan FromHours(int hours) { throw null; }
+        public static System.TimeSpan FromHours(int hours, long minutes = (long)0, long seconds = (long)0, long milliseconds = (long)0, long microseconds = (long)0) { throw null; }
         public static System.TimeSpan FromMicroseconds(double value) { throw null; }
+        public static System.TimeSpan FromMicroseconds(long microseconds) { throw null; }
         public static System.TimeSpan FromMilliseconds(double value) { throw null; }
+        public static System.TimeSpan FromMilliseconds(long milliseconds, long microseconds = (long)0) { throw null; }
         public static System.TimeSpan FromMinutes(double value) { throw null; }
+        public static System.TimeSpan FromMinutes(long minutes) { throw null; }
+        public static System.TimeSpan FromMinutes(long minutes, long seconds = (long)0, long milliseconds = (long)0, long microseconds = (long)0) { throw null; }
         public static System.TimeSpan FromSeconds(double value) { throw null; }
+        public static System.TimeSpan FromSeconds(long seconds) { throw null; }
+        public static System.TimeSpan FromSeconds(long seconds, long milliseconds = (long)0, long microseconds = (long)0) { throw null; }
         public static System.TimeSpan FromTicks(long value) { throw null; }
         public override int GetHashCode() { throw null; }
         public System.TimeSpan Multiply(double factor) { throw null; }
@@ -7268,7 +7265,7 @@ namespace System
         static ulong System.Numerics.INumberBase<System.UInt64>.One { get { throw null; } }
         static int System.Numerics.INumberBase<System.UInt64>.Radix { get { throw null; } }
         static ulong System.Numerics.INumberBase<System.UInt64>.Zero { get { throw null; } }
-        public static UInt128 BigMul(ulong left, ulong right) { throw null; }
+        public static System.UInt128 BigMul(ulong left, ulong right) { throw null; }
         public static ulong Clamp(ulong value, ulong min, ulong max) { throw null; }
         public int CompareTo(object? value) { throw null; }
         public int CompareTo(ulong value) { throw null; }
@@ -7892,7 +7889,7 @@ namespace System.Buffers.Text
         public static bool IsValid(System.ReadOnlySpan<char> base64Text) { throw null; }
         public static bool IsValid(System.ReadOnlySpan<char> base64Text, out int decodedLength) { throw null; }
     }
-    public static class Base64Url
+    public static partial class Base64Url
     {
         public static byte[] DecodeFromChars(System.ReadOnlySpan<char> source) { throw null; }
         public static int DecodeFromChars(System.ReadOnlySpan<char> source, System.Span<byte> destination) { throw null; }
@@ -7910,10 +7907,10 @@ namespace System.Buffers.Text
         public static System.Buffers.OperationStatus EncodeToUtf8(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesConsumed, out int bytesWritten, bool isFinalBlock = true) { throw null; }
         public static int GetEncodedLength(int bytesLength) { throw null; }
         public static int GetMaxDecodedLength(int base64Length) { throw null; }
-        public static bool IsValid(System.ReadOnlySpan<char> base64UrlText) { throw null; }
-        public static bool IsValid(System.ReadOnlySpan<char> base64UrlText, out int decodedLength) { throw null; }
         public static bool IsValid(System.ReadOnlySpan<byte> utf8Base64UrlText) { throw null; }
         public static bool IsValid(System.ReadOnlySpan<byte> utf8Base64UrlText, out int decodedLength) { throw null; }
+        public static bool IsValid(System.ReadOnlySpan<char> base64UrlText) { throw null; }
+        public static bool IsValid(System.ReadOnlySpan<char> base64UrlText, out int decodedLength) { throw null; }
         public static bool TryDecodeFromChars(System.ReadOnlySpan<char> source, System.Span<byte> destination, out int bytesWritten) { throw null; }
         public static bool TryDecodeFromUtf8(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten) { throw null; }
         public static bool TryEncodeToChars(System.ReadOnlySpan<byte> source, System.Span<char> destination, out int charsWritten) { throw null; }
@@ -8204,7 +8201,7 @@ namespace System.Collections
 }
 namespace System.Collections.Generic
 {
-    public interface IAlternateEqualityComparer<in TAlternate, T> where TAlternate : allows ref struct where T : allows ref struct
+    public partial interface IAlternateEqualityComparer<in TAlternate, T> where TAlternate : allows ref struct where T : allows ref struct
     {
         bool Equals(TAlternate alternate, T other);
         int GetHashCode(TAlternate alternate);
@@ -8698,8 +8695,8 @@ namespace System.Diagnostics
         Collapsed = 2,
         RootHidden = 3,
     }
-    [System.AttributeUsage(System.AttributeTargets.Method)]
-    public sealed class DebuggerDisableUserUnhandledExceptionsAttribute : System.Attribute
+    [System.AttributeUsageAttribute(System.AttributeTargets.Method)]
+    public sealed partial class DebuggerDisableUserUnhandledExceptionsAttribute : System.Attribute
     {
         public DebuggerDisableUserUnhandledExceptionsAttribute() { }
     }
@@ -8889,14 +8886,14 @@ namespace System.Diagnostics.CodeAnalysis
         public string DiagnosticId { get { throw null; } }
         public string? UrlFormat { get { throw null; } set { } }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Property, Inherited = false, AllowMultiple = true)]
-    public sealed class FeatureGuardAttribute : System.Attribute
+    [System.AttributeUsageAttribute(System.AttributeTargets.Property, Inherited=false, AllowMultiple=true)]
+    public sealed partial class FeatureGuardAttribute : System.Attribute
     {
         public FeatureGuardAttribute(System.Type featureType) { }
         public System.Type FeatureType { get { throw null; } }
     }
-    [System.AttributeUsage(System.AttributeTargets.Property, Inherited = false)]
-    public sealed class FeatureSwitchDefinitionAttribute : Attribute
+    [System.AttributeUsageAttribute(System.AttributeTargets.Property, Inherited=false)]
+    public sealed partial class FeatureSwitchDefinitionAttribute : System.Attribute
     {
         public FeatureSwitchDefinitionAttribute(string switchName) { }
         public string SwitchName { get { throw null; } }
@@ -9931,7 +9928,6 @@ namespace System.IO
         public virtual int Read(char[] buffer, int index, int count) { throw null; }
         public virtual int Read(System.Span<byte> buffer) { throw null; }
         public virtual int Read(System.Span<char> buffer) { throw null; }
-        public virtual void ReadExactly(System.Span<byte> buffer) { throw null; }
         public int Read7BitEncodedInt() { throw null; }
         public long Read7BitEncodedInt64() { throw null; }
         public virtual bool ReadBoolean() { throw null; }
@@ -9941,6 +9937,7 @@ namespace System.IO
         public virtual char[] ReadChars(int count) { throw null; }
         public virtual decimal ReadDecimal() { throw null; }
         public virtual double ReadDouble() { throw null; }
+        public virtual void ReadExactly(System.Span<byte> buffer) { }
         public virtual System.Half ReadHalf() { throw null; }
         public virtual short ReadInt16() { throw null; }
         public virtual int ReadInt32() { throw null; }
@@ -10159,19 +10156,19 @@ namespace System.IO
         public static void AppendAllBytes(string path, byte[] bytes) { }
         public static void AppendAllBytes(string path, System.ReadOnlySpan<byte> bytes) { }
         public static System.Threading.Tasks.Task AppendAllBytesAsync(string path, byte[] bytes, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
-        public static System.Threading.Tasks.Task AppendAllBytesAsync(string path, System.ReadOnlyMemory<byte> bytes, System.Threading.CancellationToken cancellationToken = default) { throw null; }
+        public static System.Threading.Tasks.Task AppendAllBytesAsync(string path, System.ReadOnlyMemory<byte> bytes, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public static void AppendAllLines(string path, System.Collections.Generic.IEnumerable<string> contents) { }
         public static void AppendAllLines(string path, System.Collections.Generic.IEnumerable<string> contents, System.Text.Encoding encoding) { }
         public static System.Threading.Tasks.Task AppendAllLinesAsync(string path, System.Collections.Generic.IEnumerable<string> contents, System.Text.Encoding encoding, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public static System.Threading.Tasks.Task AppendAllLinesAsync(string path, System.Collections.Generic.IEnumerable<string> contents, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
-        public static void AppendAllText(string path, string? contents) { }
-        public static void AppendAllText(string path, string? contents, System.Text.Encoding encoding) { }
         public static void AppendAllText(string path, System.ReadOnlySpan<char> contents) { }
         public static void AppendAllText(string path, System.ReadOnlySpan<char> contents, System.Text.Encoding encoding) { }
+        public static void AppendAllText(string path, string? contents) { }
+        public static void AppendAllText(string path, string? contents, System.Text.Encoding encoding) { }
+        public static System.Threading.Tasks.Task AppendAllTextAsync(string path, System.ReadOnlyMemory<char> contents, System.Text.Encoding encoding, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static System.Threading.Tasks.Task AppendAllTextAsync(string path, System.ReadOnlyMemory<char> contents, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public static System.Threading.Tasks.Task AppendAllTextAsync(string path, string? contents, System.Text.Encoding encoding, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public static System.Threading.Tasks.Task AppendAllTextAsync(string path, string? contents, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
-        public static System.Threading.Tasks.Task AppendAllTextAsync(string path, System.ReadOnlyMemory<char> contents, System.Threading.CancellationToken cancellationToken = default) { throw null; }
-        public static System.Threading.Tasks.Task AppendAllTextAsync(string path, System.ReadOnlyMemory<char> contents, System.Text.Encoding encoding, System.Threading.CancellationToken cancellationToken = default) { throw null; }
         public static System.IO.StreamWriter AppendText(string path) { throw null; }
         public static void Copy(string sourceFileName, string destFileName) { }
         public static void Copy(string sourceFileName, string destFileName, bool overwrite) { }
@@ -10252,21 +10249,21 @@ namespace System.IO
         public static void WriteAllBytes(string path, byte[] bytes) { }
         public static void WriteAllBytes(string path, System.ReadOnlySpan<byte> bytes) { }
         public static System.Threading.Tasks.Task WriteAllBytesAsync(string path, byte[] bytes, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
-        public static System.Threading.Tasks.Task WriteAllBytesAsync(string path, System.ReadOnlyMemory<byte> bytes, System.Threading.CancellationToken cancellationToken = default) { throw null; }
+        public static System.Threading.Tasks.Task WriteAllBytesAsync(string path, System.ReadOnlyMemory<byte> bytes, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public static void WriteAllLines(string path, System.Collections.Generic.IEnumerable<string> contents) { }
         public static void WriteAllLines(string path, System.Collections.Generic.IEnumerable<string> contents, System.Text.Encoding encoding) { }
         public static void WriteAllLines(string path, string[] contents) { }
         public static void WriteAllLines(string path, string[] contents, System.Text.Encoding encoding) { }
         public static System.Threading.Tasks.Task WriteAllLinesAsync(string path, System.Collections.Generic.IEnumerable<string> contents, System.Text.Encoding encoding, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public static System.Threading.Tasks.Task WriteAllLinesAsync(string path, System.Collections.Generic.IEnumerable<string> contents, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
-        public static void WriteAllText(string path, string? contents) { }
-        public static void WriteAllText(string path, string? contents, System.Text.Encoding encoding) { }
         public static void WriteAllText(string path, System.ReadOnlySpan<char> contents) { }
         public static void WriteAllText(string path, System.ReadOnlySpan<char> contents, System.Text.Encoding encoding) { }
+        public static void WriteAllText(string path, string? contents) { }
+        public static void WriteAllText(string path, string? contents, System.Text.Encoding encoding) { }
+        public static System.Threading.Tasks.Task WriteAllTextAsync(string path, System.ReadOnlyMemory<char> contents, System.Text.Encoding encoding, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static System.Threading.Tasks.Task WriteAllTextAsync(string path, System.ReadOnlyMemory<char> contents, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public static System.Threading.Tasks.Task WriteAllTextAsync(string path, string? contents, System.Text.Encoding encoding, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public static System.Threading.Tasks.Task WriteAllTextAsync(string path, string? contents, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
-        public static System.Threading.Tasks.Task WriteAllTextAsync(string path, System.ReadOnlyMemory<char> contents, System.Threading.CancellationToken cancellationToken = default) { throw null; }
-        public static System.Threading.Tasks.Task WriteAllTextAsync(string path, System.ReadOnlyMemory<char> contents, System.Text.Encoding encoding, System.Threading.CancellationToken cancellationToken = default) { throw null; }
     }
     [System.FlagsAttribute]
     public enum FileAccess
@@ -11612,7 +11609,7 @@ namespace System.Reflection
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Types and members the loaded assembly depends on might be removed")]
         [System.ObsoleteAttribute("ReflectionOnly loading is not supported and throws PlatformNotSupportedException.", DiagnosticId="SYSLIB0018", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public static System.Reflection.Assembly ReflectionOnlyLoadFrom(string assemblyFile) { throw null; }
-        public static void SetEntryAssembly(System.Reflection.Assembly? assembly) { throw null; }
+        public static void SetEntryAssembly(System.Reflection.Assembly? assembly) { }
         public override string ToString() { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Types and members the loaded assembly depends on might be removed")]
         public static System.Reflection.Assembly UnsafeLoadFrom(string assemblyFile) { throw null; }
@@ -13547,13 +13544,13 @@ namespace System.Runtime.CompilerServices
         public readonly bool IncludesInternals;
         public NullablePublicOnlyAttribute(bool value) { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Method | System.AttributeTargets.Constructor | System.AttributeTargets.Property, AllowMultiple=false, Inherited=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Constructor | System.AttributeTargets.Method | System.AttributeTargets.Property, AllowMultiple=false, Inherited=false)]
     public sealed partial class OverloadResolutionPriorityAttribute : System.Attribute
     {
         public OverloadResolutionPriorityAttribute(int priority) { }
-		public int Priority { get { throw null; } }
+        public int Priority { get { throw null; } }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Parameter, Inherited = true, AllowMultiple = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Parameter, Inherited=true, AllowMultiple=false)]
     public sealed partial class ParamCollectionAttribute : System.Attribute
     {
         public ParamCollectionAttribute() { }
@@ -13632,9 +13629,9 @@ namespace System.Runtime.CompilerServices
         public const string PortablePdb = "PortablePdb";
         public const string UnmanagedSignatureCallingConvention = "UnmanagedSignatureCallingConvention";
         public const string VirtualStaticsInInterfaces = "VirtualStaticsInInterfaces";
-        [System.Diagnostics.CodeAnalysis.FeatureGuard(typeof(System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute))]
+        [System.Diagnostics.CodeAnalysis.FeatureGuardAttribute(typeof(System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute))]
         public static bool IsDynamicCodeCompiled { get { throw null; } }
-        [System.Diagnostics.CodeAnalysis.FeatureSwitchDefinition("System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported")]
+        [System.Diagnostics.CodeAnalysis.FeatureSwitchDefinitionAttribute("System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported")]
         public static bool IsDynamicCodeSupported { get { throw null; } }
         public static bool IsSupported(string feature) { throw null; }
     }
@@ -13944,6 +13941,10 @@ namespace System.Runtime.ExceptionServices
         [System.Diagnostics.CodeAnalysis.DoesNotReturnAttribute]
         public static void Throw(System.Exception source) => throw null;
     }
+    public static partial class ExceptionHandling
+    {
+        public static void SetUnhandledExceptionHandler(System.Runtime.ExceptionServices.UnhandledExceptionHandler handler) { }
+    }
     public partial class FirstChanceExceptionEventArgs : System.EventArgs
     {
         public FirstChanceExceptionEventArgs(System.Exception exception) { }
@@ -13956,10 +13957,6 @@ namespace System.Runtime.ExceptionServices
         public HandleProcessCorruptedStateExceptionsAttribute() { }
     }
     public delegate bool UnhandledExceptionHandler(System.Exception exception);
-    public static partial class ExceptionHandling
-    {
-        public static void SetUnhandledExceptionHandler(UnhandledExceptionHandler handler) { throw null; }
-    }
 }
 namespace System.Runtime.InteropServices
 {
@@ -14068,14 +14065,14 @@ namespace System.Runtime.InteropServices
         public static System.ReadOnlySpan<TTo> Cast<TFrom, TTo>(System.ReadOnlySpan<TFrom> span) where TFrom : struct where TTo : struct { throw null; }
         public static System.Span<TTo> Cast<TFrom, TTo>(System.Span<TFrom> span) where TFrom : struct where TTo : struct { throw null; }
         public static System.Memory<T> CreateFromPinnedArray<T>(T[]? array, int start, int length) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public unsafe static System.ReadOnlySpan<byte> CreateReadOnlySpanFromNullTerminated(byte* value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public unsafe static System.ReadOnlySpan<char> CreateReadOnlySpanFromNullTerminated(char* value) { throw null; }
         public static System.ReadOnlySpan<T> CreateReadOnlySpan<T>(scoped ref readonly T reference, int length) { throw null; }
-        [System.CLSCompliant(false)]
-        public static unsafe ReadOnlySpan<byte> CreateReadOnlySpanFromNullTerminated(byte* value) { throw null; }
-        [System.CLSCompliant(false)]
-        public static unsafe ReadOnlySpan<char> CreateReadOnlySpanFromNullTerminated(char* value) { throw null; }
         public static System.Span<T> CreateSpan<T>(scoped ref T reference, int length) { throw null; }
-        public static ref T GetArrayDataReference<T>(T[] array) { throw null; }
         public static ref byte GetArrayDataReference(System.Array array) { throw null; }
+        public static ref T GetArrayDataReference<T>(T[] array) { throw null; }
         public static ref T GetReference<T>(System.ReadOnlySpan<T> span) { throw null; }
         public static ref T GetReference<T>(System.Span<T> span) { throw null; }
         public static T Read<T>(System.ReadOnlySpan<byte> source) where T : struct { throw null; }
@@ -14294,11 +14291,11 @@ namespace System.Runtime.InteropServices.Marshalling
         {
             private object _dummy;
             private int _dummyPrimitive;
-            public void FromUnmanaged(TUnmanagedElement* unmanaged) { throw null; }
-            public System.ReadOnlySpan<T> ToManaged() { throw null; }
-            public System.ReadOnlySpan<TUnmanagedElement> GetUnmanagedValuesSource(int numElements) { throw null; }
+            public void Free() { }
+            public unsafe void FromUnmanaged(TUnmanagedElement* unmanaged) { }
             public System.Span<T> GetManagedValuesDestination(int numElements) { throw null; }
-            public void Free() { throw null; }
+            public System.ReadOnlySpan<TUnmanagedElement> GetUnmanagedValuesSource(int numElements) { throw null; }
+            public System.ReadOnlySpan<T> ToManaged() { throw null; }
         }
         public static partial class UnmanagedToManagedOut
         {
@@ -14380,6 +14377,13 @@ namespace System.Runtime.InteropServices.Swift
         public unsafe void* Value { get { throw null; } }
     }
     [System.CLSCompliantAttribute(false)]
+    public readonly partial struct SwiftIndirectResult
+    {
+        private readonly int _dummyPrimitive;
+        public unsafe SwiftIndirectResult(void* value) { throw null; }
+        public unsafe void* Value { get { throw null; } }
+    }
+    [System.CLSCompliantAttribute(false)]
     public readonly partial struct SwiftSelf
     {
         private readonly int _dummyPrimitive;
@@ -14389,15 +14393,8 @@ namespace System.Runtime.InteropServices.Swift
     public readonly partial struct SwiftSelf<T> where T: unmanaged
     {
         private readonly T _dummyPrimitive;
-        public unsafe SwiftSelf(T value) { throw null; }
-        public unsafe T Value { get { throw null; } }
-    }
-    [System.CLSCompliantAttribute(false)]
-    public readonly partial struct SwiftIndirectResult
-    {
-        private readonly int _dummyPrimitive;
-        public unsafe SwiftIndirectResult(void* value) { throw null; }
-        public unsafe void* Value { get { throw null; } }
+        public SwiftSelf(T value) { throw null; }
+        public T Value { get { throw null; } }
     }
 }
 namespace System.Runtime.Remoting
@@ -15867,7 +15864,7 @@ namespace System.Threading.Tasks
         public bool Wait(System.TimeSpan timeout) { throw null; }
         public bool Wait(System.TimeSpan timeout, System.Threading.CancellationToken cancellationToken) { throw null; }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
-        public static void WaitAll(System.Collections.Generic.IEnumerable<Task> tasks, System.Threading.CancellationToken cancellationToken = default) { }
+        public static void WaitAll(System.Collections.Generic.IEnumerable<System.Threading.Tasks.Task> tasks, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public static void WaitAll(params System.ReadOnlySpan<System.Threading.Tasks.Task> tasks) { }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
@@ -16379,7 +16376,7 @@ namespace System
     {
         public NewsStyleUriParser() { }
     }
-    public partial class Uri : System.IFormattable, System.ISpanFormattable, System.IEquatable<Uri>, System.Runtime.Serialization.ISerializable
+    public partial class Uri : System.IEquatable<System.Uri>, System.IFormattable, System.ISpanFormattable, System.Runtime.Serialization.ISerializable
     {
         public static readonly string SchemeDelimiter;
         public static readonly string UriSchemeFile;
@@ -16440,12 +16437,11 @@ namespace System
         protected virtual void CheckSecurity() { }
         public static int Compare(System.Uri? uri1, System.Uri? uri2, System.UriComponents partsToCompare, System.UriFormat compareFormat, System.StringComparison comparisonType) { throw null; }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? comparand) { throw null; }
-        public bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] Uri? other) { throw null; }
+        public bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] System.Uri? other) { throw null; }
         [System.ObsoleteAttribute("Uri.Escape has been deprecated and is not supported.")]
         protected virtual void Escape() { }
-        public static string EscapeDataString(string stringToEscape) { throw null; }
         public static string EscapeDataString(System.ReadOnlySpan<char> charsToEscape) { throw null; }
-        public static bool TryEscapeDataString(System.ReadOnlySpan<char> charsToEscape, System.Span<char> destination, out int charsWritten) { throw null; }
+        public static string EscapeDataString(string stringToEscape) { throw null; }
         [System.ObsoleteAttribute("Uri.EscapeString has been deprecated. Use GetComponents() or Uri.EscapeDataString to escape a Uri component or a string.")]
         protected static string EscapeString(string? str) { throw null; }
         [System.ObsoleteAttribute("Uri.EscapeUriString can corrupt the Uri string in some cases. Consider using Uri.EscapeDataString for query string components instead.", DiagnosticId="SYSLIB0013", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
@@ -16483,12 +16479,13 @@ namespace System
         public static bool TryCreate([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true), System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Uri", new object[]{ "uriKind"})] string? uriString, System.UriKind uriKind, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Uri? result) { throw null; }
         public static bool TryCreate(System.Uri? baseUri, string? relativeUri, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Uri? result) { throw null; }
         public static bool TryCreate(System.Uri? baseUri, System.Uri? relativeUri, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Uri? result) { throw null; }
+        public static bool TryEscapeDataString(System.ReadOnlySpan<char> charsToEscape, System.Span<char> destination, out int charsWritten) { throw null; }
         public bool TryFormat(System.Span<char> destination, out int charsWritten) { throw null; }
+        public static bool TryUnescapeDataString(System.ReadOnlySpan<char> charsToUnescape, System.Span<char> destination, out int charsWritten) { throw null; }
         [System.ObsoleteAttribute("Uri.Unescape has been deprecated. Use GetComponents() or Uri.UnescapeDataString() to unescape a Uri component or a string.")]
         protected virtual string Unescape(string path) { throw null; }
-        public static string UnescapeDataString(string stringToUnescape) { throw null; }
         public static string UnescapeDataString(System.ReadOnlySpan<char> charsToUnescape) { throw null; }
-        public static bool TryUnescapeDataString(System.ReadOnlySpan<char> charsToUnescape, System.Span<char> destination, out int charsWritten) { throw null; }
+        public static string UnescapeDataString(string stringToUnescape) { throw null; }
     }
     public partial class UriBuilder
     {
