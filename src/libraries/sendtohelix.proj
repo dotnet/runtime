@@ -77,7 +77,7 @@
       <_Scenarios Include="$(_Scenarios.Split(','))" />
 
       <!-- MSBuild creates a new instance of the project for each %(_Scenarios.Identity) and can build them in parallel. -->
-      <_BaseProjectsToBuild Include="$(PerScenarioProjectFile)" Condition="'%(_Scenarios.Identity)' != 'buildwasmapps' and '%(_Scenarios.Identity)' != 'buildiosapps' and '%(_Scenarios.Identity)' != 'wasmdebuggertests'">
+      <_BaseProjectsToBuild Include="$(PerScenarioProjectFile)" Condition="'%(_Scenarios.Identity)' != 'buildwasmapps' and '%(_Scenarios.Identity)' != 'buildiosapps'">
         <AdditionalProperties>$(_PropertiesToPass);Scenario=%(_Scenarios.Identity);TestArchiveRuntimeFile=$(TestArchiveRuntimeFile)</AdditionalProperties>
         <AdditionalProperties Condition="'$(NeedsToBuildWasmAppsOnHelix)' != ''">%(_BaseProjectsToBuild.AdditionalProperties);NeedsToBuildWasmAppsOnHelix=$(NeedsToBuildWasmAppsOnHelix)</AdditionalProperties>
       </_BaseProjectsToBuild>
@@ -109,14 +109,6 @@
       </_BuildWasmAppsProjectsToBuild>
     </ItemGroup>
 
-    <ItemGroup Condition="'@(_Scenarios -> AnyHaveMetadataValue('Identity', 'wasmdebuggertests'))' == 'true'">
-      <_DebuggerHostsItem Include="$(_DebuggerHosts.Split('/'))" />
-
-      <_WasmDebuggerTestsProjectsToBuild Include="$(PerScenarioProjectFile)">
-        <AdditionalProperties>$(_PropertiesToPass);Scenario=WasmDebuggerTests;TestArchiveRuntimeFile=$(TestArchiveRuntimeFile);DebuggerHost=%(_DebuggerHostsItem.Identity)</AdditionalProperties>
-      </_WasmDebuggerTestsProjectsToBuild>
-    </ItemGroup>
-
     <!-- For BuildWasmApps we want to build the project twice, with: TestUsingWorkloads=true, and TestUsingWorkloads=false -->
     <ItemGroup Condition="'@(_Scenarios -> AnyHaveMetadataValue('Identity', 'buildiosapps'))' == 'true'">
       <_TestUsingWorkloadsValues Include="false" />
@@ -128,7 +120,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <_ProjectsToBuild Include="@(_BuildWasmAppsProjectsToBuild);@(_WasmDebuggerTestsProjectsToBuild);@(_BuildiOSAppsProjectsToBuild);@(_BaseProjectsToBuild)" />
+      <_ProjectsToBuild Include="@(_BuildWasmAppsProjectsToBuild);@(_BuildiOSAppsProjectsToBuild);@(_BaseProjectsToBuild)" />
     </ItemGroup>
 
     <PropertyGroup>

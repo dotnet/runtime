@@ -1083,7 +1083,7 @@ namespace Internal.JitInterface
         //      invariant is `resolveVirtualMethod(...) == (devirtualizedMethod != nullptr)`.
         // - exactContext is set to wrapped CORINFO_CLASS_HANDLE of devirt'ed method table.
         // - detail describes the computation done by the jit host
-        // - requiresInstMethodTableArg is set to TRUE if the devirtualized method requires a type handle arg.
+        // - isInstantiatingStub is set to TRUE if the devirtualized method is a method instantiation stub
         // - wasArrayInterfaceDevirt is set TRUE for array interface method devirtualization
         //     (in which case the method handle and context will be a generic method)
         //
@@ -1092,8 +1092,8 @@ namespace Internal.JitInterface
         public CORINFO_DEVIRTUALIZATION_DETAIL detail;
         public CORINFO_RESOLVED_TOKEN resolvedTokenDevirtualizedMethod;
         public CORINFO_RESOLVED_TOKEN resolvedTokenDevirtualizedUnboxedMethod;
-        public byte _requiresInstMethodTableArg;
-        public bool requiresInstMethodTableArg { get { return _requiresInstMethodTableArg != 0; } set { _requiresInstMethodTableArg = value ? (byte)1 : (byte)0; } }
+        public byte _isInstantiatingStub;
+        public bool isInstantiatingStub { get { return _isInstantiatingStub != 0; } set { _isInstantiatingStub = value ? (byte)1 : (byte)0; } }
         public byte _wasArrayInterfaceDevirt;
         public bool wasArrayInterfaceDevirt { get { return _wasArrayInterfaceDevirt != 0; } set { _wasArrayInterfaceDevirt = value ? (byte)1 : (byte)0; } }
     }
