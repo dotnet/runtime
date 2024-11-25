@@ -5458,6 +5458,13 @@ bool Compiler::ThreeOptLayout::RunGlobalThreeOptPass(unsigned startPos, unsigned
     assert(startPos < endPos);
     bool modified = false, foundPartition;
 
+    auto isValidCutPoint = [this](BasicBlock* block) -> bool {
+        // Don't split up call-finally pairs.
+        // Also, don't bother reordering handler blocks.
+        // Finally, don't reorder nested try regions -- we order each region individually.
+        return !block->isBBCallFinallyPairTail() && !block->hasHndIndex() && (block->bbTryIndex == currEHRegion);
+    };
+
     JITDUMP("Using global strategy for finding cut points.\n");
 
     do
@@ -5465,18 +5472,16 @@ bool Compiler::ThreeOptLayout::RunGlobalThreeOptPass(unsigned startPos, unsigned
         foundPartition = false;
         for (unsigned s2Start = startPos + 1; !foundPartition && (s2Start < endPos); s2Start++)
         {
-            // Don't partition between call-finally pairs
             BasicBlock* const s2Block = blockOrder[s2Start];
-            if (s2Block->isBBCallFinallyPairTail())
+            if (!isValidCutPoint(s2Block))
             {
                 continue;
             }
 
             for (unsigned s3Start = s2Start + 1; s3Start <= endPos; s3Start++)
             {
-                // Don't partition between call-finally pairs
                 BasicBlock* const s3Block = blockOrder[s3Start];
-                if (s3Block->isBBCallFinallyPairTail())
+                if (!isValidCutPoint(s3Block))
                 {
                     continue;
                 }
