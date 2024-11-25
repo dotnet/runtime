@@ -138,7 +138,7 @@ extern "C" BOOL QCALLTYPE RuntimeMethodHandle_IsCAVisibleFromDecoratedType(
     return bResult;
 }
 
-extern "C" void QCALLTYPE RuntimeTypeHandle_GetTypeFromHandleSlow(
+extern "C" void QCALLTYPE RuntimeTypeHandle_GetRuntimeTypeFromHandleSlow(
     EnregisteredTypeHandle typeHandleRaw,
     QCall::ObjectHandleOnStack result)
 {
@@ -157,28 +157,7 @@ extern "C" void QCALLTYPE RuntimeTypeHandle_GetTypeFromHandleSlow(
     END_QCALL;
 }
 
-// static
-NOINLINE static ReflectClassBaseObject* GetRuntimeTypeHelper(LPVOID __me, TypeHandle typeHandle, OBJECTREF keepAlive)
-{
-    FC_INNER_PROLOG_NO_ME_SETUP();
-    if (typeHandle.AsPtr() == NULL)
-        return NULL;
-
-    OBJECTREF refType = typeHandle.GetManagedClassObjectIfExists();
-    if (refType != NULL)
-        return (ReflectClassBaseObject*)OBJECTREFToObject(refType);
-
-    HELPER_METHOD_FRAME_BEGIN_RET_ATTRIB_1(Frame::FRAME_ATTR_EXACT_DEPTH|Frame::FRAME_ATTR_CAPTURE_DEPTH_2, keepAlive);
-    refType = typeHandle.GetManagedClassObject();
-    HELPER_METHOD_FRAME_END();
-
-    FC_INNER_EPILOG();
-    return (ReflectClassBaseObject*)OBJECTREFToObject(refType);
-}
-
-#define RETURN_CLASS_OBJECT(typeHandle, keepAlive) FC_INNER_RETURN(ReflectClassBaseObject*, GetRuntimeTypeHelper(__me, typeHandle, keepAlive))
-
-FCIMPL1(ReflectClassBaseObject*, RuntimeTypeHandle::GetTypeFromHandleIfExists, EnregisteredTypeHandle th)
+FCIMPL1(ReflectClassBaseObject*, RuntimeTypeHandle::GetRuntimeTypeFromHandleIfExists, EnregisteredTypeHandle th)
 {
     FCALL_CONTRACT;
 
@@ -341,18 +320,13 @@ extern "C" void QCALLTYPE RuntimeTypeHandle_GetModuleSlow(QCall::ObjectHandleOnS
     END_QCALL;
 }
 
-FCIMPL1(ReflectClassBaseObject *, RuntimeTypeHandle::GetElementType, ReflectClassBaseObject *pTypeUNSAFE) {
-    CONTRACTL {
-        FCALL_CHECK;
-    }
-    CONTRACTL_END;
+FCIMPL1(EnregisteredTypeHandle, RuntimeTypeHandle::GetElementTypeHandle, EnregisteredTypeHandle th)
+{
+    FCALL_CONTRACT;
 
-    REFLECTCLASSBASEREF refType = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(pTypeUNSAFE);
+    _ASSERTE(th != NULL);
 
-    if (refType == NULL)
-        FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
-
-    TypeHandle typeHandle = refType->GetType();
+    TypeHandle typeHandle = TypeHandle::FromPtr(th);
     TypeHandle typeReturn;
 
     if (!typeHandle.IsTypeDesc())
@@ -370,7 +344,7 @@ FCIMPL1(ReflectClassBaseObject *, RuntimeTypeHandle::GetElementType, ReflectClas
         typeReturn = typeHandle.AsTypeDesc()->GetTypeParam();
     }
 
-    RETURN_CLASS_OBJECT(typeReturn, refType);
+    return (EnregisteredTypeHandle)typeReturn.AsTAddr();
 }
 FCIMPLEND
 
@@ -1007,117 +981,84 @@ FCIMPL1(ReflectMethodObject*, RuntimeTypeHandle::GetDeclaringMethod, ReflectClas
 }
 FCIMPLEND
 
-FCIMPL1(ReflectClassBaseObject*, RuntimeTypeHandle::GetDeclaringType, ReflectClassBaseObject *pTypeUNSAFE) {
-    CONTRACTL {
-        FCALL_CHECK;
-    }
-    CONTRACTL_END;
+extern "C" EnregisteredTypeHandle QCALLTYPE RuntimeTypeHandle_GetDeclaringTypeHandleForGenericVariable(EnregisteredTypeHandle pTypeHandle)
+{
+    QCALL_CONTRACT;
 
     TypeHandle retTypeHandle;
 
-    BOOL fThrowException = FALSE;
-    LPCWSTR argName = W("Arg_InvalidHandle");
-    RuntimeExceptionKind reKind = kArgumentNullException;
+    BEGIN_QCALL;
 
-    REFLECTCLASSBASEREF refType = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(pTypeUNSAFE);
+    TypeHandle typeHandle = TypeHandle::FromPtr(pTypeHandle);
+    _ASSERTE(typeHandle.IsGenericVariable());
 
-    if (refType == NULL)
-        FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
-
-    TypeHandle typeHandle = refType->GetType();
-
-    MethodTable* pMT = NULL;
-    mdTypeDef tkTypeDef = mdTokenNil;
-
-    if (typeHandle.IsTypeDesc()) {
-
-        if (typeHandle.IsGenericVariable()) {
-            TypeVarTypeDesc* pGenericVariable = typeHandle.AsGenericVariable();
-            mdToken defToken = pGenericVariable->GetTypeOrMethodDef();
-
-            // Try the fast way first (if the declaring type has been loaded already).
-            if (TypeFromToken(defToken) == mdtMethodDef)
-            {
-                MethodDesc * retMethod = pGenericVariable->GetModule()->LookupMethodDef(defToken);
-                if (retMethod != NULL)
-                    retTypeHandle = retMethod->GetMethodTable();
-            }
-            else
-            {
-                retTypeHandle = pGenericVariable->GetModule()->LookupTypeDef(defToken);
-            }
-
-            if (!retTypeHandle.IsNull() && retTypeHandle.IsFullyLoaded())
-                goto Exit;
-
-            // OK, need to go the slow way and load the type first.
-            HELPER_METHOD_FRAME_BEGIN_RET_1(refType);
-            {
-                if (TypeFromToken(defToken) == mdtMethodDef)
-                {
-                    retTypeHandle = pGenericVariable->LoadOwnerMethod()->GetMethodTable();
-                }
-                else
-                {
-                    retTypeHandle = pGenericVariable->LoadOwnerType();
-                }
-                retTypeHandle.CheckRestore();
-            }
-            HELPER_METHOD_FRAME_END();
-            goto Exit;
-        }
-
-        retTypeHandle = TypeHandle();
-        goto Exit;
-    }
-
-    pMT = typeHandle.GetMethodTable();
-
-    if (pMT == NULL)
-    {
-        fThrowException = TRUE;
-        goto Exit;
-    }
-
-    if(!pMT->GetClass()->IsNested())
-    {
-        retTypeHandle = TypeHandle();
-        goto Exit;
-    }
-
-    tkTypeDef = pMT->GetCl();
-
-    if (FAILED(typeHandle.GetModule()->GetMDImport()->GetNestedClassProps(tkTypeDef, &tkTypeDef)))
-    {
-        fThrowException = TRUE;
-        reKind = kBadImageFormatException;
-        argName = NULL;
-        goto Exit;
-    }
+    TypeVarTypeDesc* pGenericVariable = typeHandle.AsGenericVariable();
+    mdToken defToken = pGenericVariable->GetTypeOrMethodDef();
 
     // Try the fast way first (if the declaring type has been loaded already).
-    retTypeHandle = typeHandle.GetModule()->LookupTypeDef(tkTypeDef);
-    if (retTypeHandle.IsNull())
+    if (TypeFromToken(defToken) == mdtMethodDef)
     {
-         // OK, need to go the slow way and load the type first.
-        HELPER_METHOD_FRAME_BEGIN_RET_1(refType);
+        MethodDesc* retMethod = pGenericVariable->GetModule()->LookupMethodDef(defToken);
+        if (retMethod != NULL)
+            retTypeHandle = retMethod->GetMethodTable();
+    }
+    else
+    {
+        retTypeHandle = pGenericVariable->GetModule()->LookupTypeDef(defToken);
+    }
+
+    // Check if we need to go the slow way and load the type first.
+    if (retTypeHandle.IsNull() || !retTypeHandle.IsFullyLoaded())
+    {
+        if (TypeFromToken(defToken) == mdtMethodDef)
         {
-            retTypeHandle = ClassLoader::LoadTypeDefThrowing(typeHandle.GetModule(), tkTypeDef,
-                                                             ClassLoader::ThrowIfNotFound,
-                                                             ClassLoader::PermitUninstDefOrRef);
+            retTypeHandle = pGenericVariable->LoadOwnerMethod()->GetMethodTable();
         }
-        HELPER_METHOD_FRAME_END();
+        else
+        {
+            retTypeHandle = pGenericVariable->LoadOwnerType();
+        }
+        retTypeHandle.CheckRestore();
     }
-Exit:
 
-    if (fThrowException)
+    END_QCALL;
+
+    return (EnregisteredTypeHandle)retTypeHandle.AsTAddr();
+}
+
+extern "C" EnregisteredTypeHandle QCALLTYPE RuntimeTypeHandle_GetDeclaringTypeHandle(EnregisteredTypeHandle pTypeHandle)
+{
+    QCALL_CONTRACT;
+
+    TypeHandle retTypeHandle;
+
+    BEGIN_QCALL;
+
+    TypeHandle typeHandle = TypeHandle::FromPtr(pTypeHandle);
+    _ASSERTE(!typeHandle.IsTypeDesc());
+
+    MethodTable* pMT = typeHandle.GetMethodTable();
+    if (pMT->GetClass()->IsNested())
     {
-        FCThrowRes(reKind, argName);
+        mdTypeDef tkTypeDef = pMT->GetCl();
+        if (FAILED(typeHandle.GetModule()->GetMDImport()->GetNestedClassProps(tkTypeDef, &tkTypeDef)))
+            COMPlusThrow(kBadImageFormatException);
+
+        // Try the fast way first (if the declaring type has been loaded already).
+        retTypeHandle = typeHandle.GetModule()->LookupTypeDef(tkTypeDef);
+        if (retTypeHandle.IsNull())
+        {
+            // OK, need to go the slow way and load the type first.
+            retTypeHandle = ClassLoader::LoadTypeDefThrowing(typeHandle.GetModule(), tkTypeDef,
+                                                            ClassLoader::ThrowIfNotFound,
+                                                            ClassLoader::PermitUninstDefOrRef);
+        }
     }
 
-    RETURN_CLASS_OBJECT(retTypeHandle, refType);
-  }
-FCIMPLEND
+    END_QCALL;
+
+    return (EnregisteredTypeHandle)retTypeHandle.AsTAddr();
+}
 
 FCIMPL2(FC_BOOL_RET, RuntimeTypeHandle::CanCastTo, ReflectClassBaseObject *pTypeUNSAFE, ReflectClassBaseObject *pTargetUNSAFE) {
     CONTRACTL {
@@ -1462,7 +1403,7 @@ extern "C" void * QCALLTYPE RuntimeMethodHandle_GetFunctionPointer(MethodDesc * 
     return funcPtr;
 }
 
-extern "C" BOOL QCALLTYPE RuntimeMethodHandle_GetIsCollectible(MethodDesc * pMethod)
+extern "C" BOOL QCALLTYPE RuntimeMethodHandle_GetIsCollectible(MethodDesc* pMethod)
 {
     QCALL_CONTRACT;
 
@@ -1522,31 +1463,16 @@ FCIMPL1(INT32, RuntimeMethodHandle::GetImplAttributes, ReflectMethodObject *pMet
 }
 FCIMPLEND
 
-
-FCIMPL1(ReflectClassBaseObject*, RuntimeMethodHandle::GetDeclaringType, MethodDesc *pMethod) {
-    CONTRACTL {
+FCIMPL1(MethodTable*, RuntimeMethodHandle::GetMethodTable, MethodDesc *pMethod)
+{
+    CONTRACTL
+    {
         FCALL_CHECK;
-        PRECONDITION(CheckPointer(pMethod));
+        PRECONDITION(pMethod != NULL);
     }
     CONTRACTL_END;
 
-    if (!pMethod)
-        FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
-
-    MethodTable *pMT = pMethod->GetMethodTable();
-    TypeHandle declType(pMT);
-    if (pMT->IsArray())
-    {
-        HELPER_METHOD_FRAME_BEGIN_RET_0();
-
-        // Load the TypeDesc for the array type.  Note the returned type is approximate, i.e.
-        // if shared between reference array types then we will get object[] back.
-        DWORD rank = pMT->GetRank();
-        TypeHandle elemType = pMT->GetArrayElementTypeHandle();
-        declType = ClassLoader::LoadArrayTypeThrowing(elemType, pMT->GetInternalCorElementType(), rank);
-        HELPER_METHOD_FRAME_END();
-    }
-    RETURN_CLASS_OBJECT(declType, NULL);
+    return pMethod->GetMethodTable();
 }
 FCIMPLEND
 
