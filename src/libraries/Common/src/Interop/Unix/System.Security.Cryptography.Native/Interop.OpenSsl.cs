@@ -21,8 +21,12 @@ internal static partial class Interop
 {
     internal static partial class OpenSsl
     {
+        // This cache size affects number of TLS Session Tickets each SslCtx will cache, not the number of SslCtx instances.
+        // Special value of 0 means unlimited, -1 means the implementation (OpenSSL) default, which is currently 20 * 1024.
         private const string TlsCacheSizeCtxName = "System.Net.Security.TlsCacheSize";
         private const string TlsCacheSizeEnvironmentVariable = "DOTNET_SYSTEM_NET_SECURITY_TLSCACHESIZE";
+        private const int DefaultTlsCacheSizeClient = 500; // since we keep only one TLS Session per hostname, 500 should be enough to cover most scenarios
+        private const int DefaultTlsCacheSizeServer = -1; // use implementation default
         private const SslProtocols FakeAlpnSslProtocol = (SslProtocols)1;   // used to distinguish server sessions with ALPN
 
         private sealed class SafeSslContextCache : SafeHandleCache<SslContextCacheKey, SafeSslContextHandle> { }
@@ -85,7 +89,7 @@ internal static partial class Interop
             return bindingHandle;
         }
 
-        private static readonly int s_cacheSize = GetCacheSize();
+        private static readonly int s_cacheSizeOverride = GetCacheSize();
 
         private static int GetCacheSize()
         {
@@ -250,11 +254,13 @@ internal static partial class Interop
                     {
                         Span<byte> contextId = stackalloc byte[32];
                         RandomNumberGenerator.Fill(contextId);
-                        Ssl.SslCtxSetCaching(sslCtx, 1, s_cacheSize, contextId.Length, contextId, null, null);
+                        int cacheSize = s_cacheSizeOverride >= 0 ? s_cacheSizeOverride : DefaultTlsCacheSizeServer;
+                        Ssl.SslCtxSetCaching(sslCtx, 1, cacheSize, contextId.Length, contextId, null, null);
                     }
                     else
                     {
-                        int result = Ssl.SslCtxSetCaching(sslCtx, 1, s_cacheSize, 0, null, &NewSessionCallback, &RemoveSessionCallback);
+                        int cacheSize = s_cacheSizeOverride >= 0 ? s_cacheSizeOverride : DefaultTlsCacheSizeClient;
+                        int result = Ssl.SslCtxSetCaching(sslCtx, 1, cacheSize, 0, null, &NewSessionCallback, &RemoveSessionCallback);
                         Debug.Assert(result == 1);
                         sslCtx.EnableSessionCache();
                     }
