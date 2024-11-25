@@ -9215,6 +9215,7 @@ namespace System.Globalization
         IgnoreSymbols = 4,
         IgnoreKanaType = 8,
         IgnoreWidth = 16,
+        NumericOrdering = 32,
         OrdinalIgnoreCase = 268435456,
         StringSort = 536870912,
         Ordinal = 1073741824,
