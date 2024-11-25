@@ -3957,7 +3957,8 @@ void Compiler::optAssertionProp_RangeProperties(ASSERT_VALARG_TP assertions,
         }
 
         // First, analyze possible X ==/!= CNS assertions.
-        if (curAssertion->IsConstantInt32Assertion() && (curAssertion->op1.vn == treeVN))
+        if (curAssertion->IsConstantInt32Assertion() && (curAssertion->op1.kind == O1K_LCLVAR) &&
+            (curAssertion->op1.vn == treeVN))
         {
             if ((curAssertion->assertionKind == OAK_NOT_EQUAL) && (curAssertion->op2.u1.iconVal == 0))
             {
@@ -4295,6 +4296,44 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions, Gen
     GenTree* op1     = tree->AsOp()->gtOp1;
     GenTree* op2     = tree->AsOp()->gtOp2;
 
+    // Can we fold "X relop 0" based on assertions?
+    if (op2->IsIntegralConst(0) && tree->OperIsCmpCompare())
+    {
+        bool isNonZero, isNeverNegative;
+        optAssertionProp_RangeProperties(assertions, op1, &isNonZero, &isNeverNegative);
+
+        if (tree->OperIs(GT_GE, GT_LT) && isNeverNegative)
+        {
+            // Assertions: X >= 0
+            //
+            // X >= 0 --> true
+            // X < 0  --> false
+            newTree = tree->OperIs(GT_GE) ? gtNewTrue() : gtNewFalse();
+        }
+        else if (tree->OperIs(GT_GT, GT_LE) && isNeverNegative && isNonZero)
+        {
+            // Assertions: X > 0
+            //
+            // X > 0  --> true
+            // X <= 0 --> false
+            newTree = tree->OperIs(GT_GT) ? gtNewTrue() : gtNewFalse();
+        }
+        else if (tree->OperIs(GT_EQ, GT_NE) && isNonZero)
+        {
+            // Assertions: X != 0
+            //
+            // X != 0 --> true
+            // X == 0 --> false
+            newTree = tree->OperIs(GT_NE) ? gtNewTrue() : gtNewFalse();
+        }
+
+        if (newTree != tree)
+        {
+            newTree = gtWrapWithSideEffects(newTree, tree, GTF_ALL_EFFECT);
+            return optAssertionProp_Update(newTree, tree, stmt);
+        }
+    }
+
     // Look for assertions of the form (tree EQ/NE 0)
     AssertionIndex index = optGlobalAssertionIsEqualOrNotEqualZero(assertions, tree);
 
@@ -4315,7 +4354,6 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions, Gen
 
         newTree = curAssertion->assertionKind == OAK_EQUAL ? gtNewIconNode(0) : gtNewIconNode(1);
         newTree = gtWrapWithSideEffects(newTree, tree, GTF_ALL_EFFECT);
-        newTree = fgMorphTree(newTree);
         DISPTREE(newTree);
         return optAssertionProp_Update(newTree, tree, stmt);
     }
