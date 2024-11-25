@@ -285,14 +285,9 @@ namespace Microsoft.NET.HostModel.Bundle
             using (FileStream bundle = File.Open(bundlePath, FileMode.Open, FileAccess.ReadWrite))
             using (BinaryWriter writer = new BinaryWriter(bundle, Encoding.Default, leaveOpen: true))
             {
-                long? newLength;
-                using (MemoryMappedFile mmap = MemoryMappedFile.CreateFromFile(bundle, null, 0, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, true))
-                using (MemoryMappedViewAccessor accessor = mmap.CreateViewAccessor(0, 0, MemoryMappedFileAccess.ReadWrite))
+                if (_target.IsOSX)
                 {
-                    if(MachObjectFile.TryRemoveCodesign(accessor, out newLength))
-                    {
-                        bundle.SetLength(newLength.Value);
-                    }
+                    MachObjectFile.TryRemoveCodesign(bundle);
                 }
                 bundle.Position = bundle.Length;
                 foreach (var fileSpec in fileSpecs)

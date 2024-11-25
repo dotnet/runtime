@@ -167,6 +167,27 @@ internal unsafe partial class MachObjectFile
     }
 
     /// <summary>
+    /// Removes the code signature load command and signature, and resizes the file if necessary.
+    /// Returns true if the signature was removed, false otherwise.
+    /// </summary>
+    public static bool TryRemoveCodesign(FileStream bundle)
+    {
+        long? newLength;
+        bool resized;
+        // Windows doesn't allow a FileStream to be resized while the file is memory mapped, so we must dispose of the memory mapped file first.
+        using (MemoryMappedFile mmap = MemoryMappedFile.CreateFromFile(bundle, null, 0, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, true))
+        using (MemoryMappedViewAccessor accessor = mmap.CreateViewAccessor(0, 0, MemoryMappedFileAccess.ReadWrite))
+        {
+            resized = TryRemoveCodesign(accessor, out newLength);
+        }
+        if (resized)
+        {
+            bundle.SetLength(newLength.Value);
+        }
+        return resized;
+    }
+
+    /// <summary>
     /// Returns true if the two signed MachObjectFiles are equivalent.
     /// Since the entire file isn't store in the object, the code signature is required.
     /// The __LINKEDIT segment size is allowed to be different since codesign adds additional padding at the end.
