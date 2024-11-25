@@ -247,7 +247,7 @@ namespace System.DirectoryServices.Protocols
                             }
                             else
                             {
-                                attributeNameBuffer = AsnDecoder.ReadOctetString(asnSpan, AsnEncodingRules.BER, out bytesConsumed);
+                                attributeNameBuffer = AsnDecoder.ReadOctetString(asnSpan, AsnEncodingRules.BER, out bytesConsumed, SortResponseControl.AttributeNameTag);
                             }
                             asnSpan = asnSpan.Slice(bytesConsumed);
 
