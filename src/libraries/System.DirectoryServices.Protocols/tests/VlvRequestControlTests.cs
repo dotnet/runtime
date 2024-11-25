@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using System.Text;
 using Xunit;
 
 namespace System.DirectoryServices.Protocols.Tests
@@ -141,6 +142,12 @@ namespace System.DirectoryServices.Protocols.Tests
         public void Ctor_NegativeOffset_ThrowsArgumentException()
         {
             AssertExtensions.Throws<ArgumentException>("value", () => new VlvRequestControl(0, 0, -1));
+        }
+
+        [Fact]
+        public void Ctor_InvalidUtf8Target_ThrowsEncoderFallbackException()
+        {
+            AssertExtensions.Throws<EncoderFallbackException>(() => new VlvRequestControl(0, 0, "\uDD74\uD800"));
         }
 
         [Fact]
