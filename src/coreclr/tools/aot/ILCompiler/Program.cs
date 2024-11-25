@@ -285,7 +285,7 @@ namespace ILCompiler
                 {
                     const string hiddenSuffix = ",HIDDEN";
                     bool hidden = unmanagedEntryPointsAssemblyValue.EndsWith(hiddenSuffix, StringComparison.Ordinal);
-                    string unmanagedEntryPointsAssembly = hidden ? unmanagedEntryPointsAssemblyValue.Remove(unmanagedEntryPointsAssemblyValue.Length - hiddenSuffix.Length) : unmanagedEntryPointsAssemblyValue;
+                    string unmanagedEntryPointsAssembly = hidden ? unmanagedEntryPointsAssemblyValue[..^hiddenSuffix.Length] : unmanagedEntryPointsAssemblyValue;
 
                     if (typeSystemContext.InputFilePaths.ContainsKey(unmanagedEntryPointsAssembly))
                     {
