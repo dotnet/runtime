@@ -19,7 +19,7 @@ namespace System
     {
         // Returns handle for interop with EE. The handle is guaranteed to be non-null.
         internal RuntimeTypeHandle GetNativeHandle() =>
-            new RuntimeTypeHandle(m_type ?? throw new ArgumentNullException(null, SR.Arg_InvalidHandle));
+            new RuntimeTypeHandle(GetRuntimeTypeChecked());
 
         // Returns type for interop with EE. The type is guaranteed to be non-null.
         internal RuntimeType GetRuntimeTypeChecked() =>
