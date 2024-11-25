@@ -35,6 +35,7 @@ export function mono_wasm_start_deputy_thread_async () {
 
                 pthread_self.addEventListenerFromBrowser((message) => {
                     if (message.data.cmd == MainToWorkerMessageType.allAssetsLoaded) {
+                        forceThreadMemoryViewRefresh();
                         runtimeHelpers.allAssetsInMemory.promise_control.resolve();
                     }
                 });
@@ -49,6 +50,8 @@ export function mono_wasm_start_deputy_thread_async () {
                 await runtimeHelpers.allAssetsInMemory.promise;
 
                 runtimeHelpers.proxyGCHandle = install_main_synchronization_context(runtimeHelpers.config.jsThreadBlockingMode!);
+
+                forceThreadMemoryViewRefresh();
 
                 postMessageToMain({
                     monoCmd: WorkerToMainMessageType.deputyReady,

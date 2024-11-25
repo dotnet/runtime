@@ -28,7 +28,7 @@ import { populateEmscriptenPool, mono_wasm_init_threads } from "./pthreads";
 import { currentWorkerThreadEvents, dotnetPthreadCreated, initWorkerThreadEvents, monoThreadInfo } from "./pthreads";
 import { mono_wasm_pthread_ptr, update_thread_info } from "./pthreads";
 import { jiterpreter_allocate_tables } from "./jiterpreter-support";
-import { localHeapViewU8, malloc } from "./memory";
+import { forceThreadMemoryViewRefresh, localHeapViewU8, malloc } from "./memory";
 import { assertNoProxies } from "./gc-handles";
 import { runtimeList } from "./exports";
 import { nativeAbort, nativeExit } from "./run";
@@ -322,6 +322,7 @@ async function onRuntimeInitializedAsync (userOnRuntimeInitialized: (module:Emsc
         await wait_for_all_assets();
 
         if (WasmEnableThreads) {
+            forceThreadMemoryViewRefresh();
             runtimeHelpers.deputyWorker.thread!.postMessageToWorker({
                 type:"deputyThread",
                 cmd: MainToWorkerMessageType.allAssetsLoaded,
