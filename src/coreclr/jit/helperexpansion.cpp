@@ -1225,11 +1225,6 @@ PhaseStatus Compiler::fgExpandHelper(bool skipRarelyRunBlocks)
     if (result == PhaseStatus::MODIFIED_EVERYTHING)
     {
         fgInvalidateDfsTree();
-
-        if (opts.OptimizationEnabled())
-        {
-            fgRenumberBlocks();
-        }
     }
 
     return result;
