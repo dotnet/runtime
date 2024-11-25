@@ -126,9 +126,12 @@ switch (testCase) {
         };
         dotnet.withConfig({ maxParallelDownloads: maxParallelDownloads });
         break;
+    case "OverrideBootConfigName":
+        dotnet.withConfigSrc("boot.json");
+        break;
 }
 
-const { setModuleImports, getAssemblyExports, getConfig, INTERNAL } = await dotnet.create();
+const { setModuleImports, Module, getAssemblyExports, getConfig, INTERNAL } = await dotnet.create();
 const config = getConfig();
 const exports = await getAssemblyExports(config.mainAssemblyName);
 const assemblyExtension = Object.keys(config.resources.coreAssembly)[0].endsWith('.wasm') ? ".wasm" : ".dll";
@@ -206,6 +209,11 @@ try {
             exports.MemoryTest.Run();
             exit(0);
             break;
+            break;
+        case "OverrideBootConfigName":
+            testOutput("ConfigSrc: " + Module.configSrc);
+            exports.OverrideBootConfigNameTest.Run();
+            exit(0);
         default:
             console.error(`Unknown test case: ${testCase}`);
             exit(3);

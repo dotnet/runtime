@@ -650,6 +650,9 @@ if(LLVM_PREFIX)
   elseif(HOST_OSX)
     # llvm-config --system-libs
     list(APPEND llvm_system_libs "-lm")
+  elseif(HOST_WIN32)
+    # llvm-config --system-libs
+    list(APPEND llvm_system_libs "psapi.lib" "shell32.lib" "ole32.lib" "uuid.lib" "advapi32.lib" "ws2_32.lib" "ntdll.lib")
   endif()
 
   if (CLR_CMAKE_USE_SYSTEM_ZLIB AND (HOST_LINUX OR HOST_OSX))

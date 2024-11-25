@@ -579,12 +579,6 @@
     <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Threading.Timer.Tests\System.Threading.Timer.Tests.csproj" />
   </ItemGroup>
 
-  <!-- wasi/aot smoke tests -->
-  <ItemGroup Condition="'$(TargetOS)' == 'wasi' and '$(BuildAOTTestsOnHelix)' == 'true' and '$(RunDisabledWasiTests)' != 'true' and '$(RunAOTCompilation)' == 'true' and '$(RunSmokeTestsOnly)' == 'true'">
-    <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Globalization.Tests\Invariant\Invariant.Tests.csproj" />
-    <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Collections.Specialized\tests\System.Collections.Specialized.Tests.csproj" />
-  </ItemGroup>
-
   <!-- wasi/aot non-smoke tests -->
   <ItemGroup Condition="'$(TargetOS)' == 'wasi' and '$(BuildAOTTestsOnHelix)' == 'true' and '$(RunDisabledWasiTests)' != 'true' and '$(RunAOTCompilation)' == 'true' and '$(RunSmokeTestsOnly)' != 'true'">
     <ProjectReference Include="$(MSBuildThisFileDirectory)Microsoft.XmlSerializer.Generator\tests\Microsoft.XmlSerializer.Generator.Tests.csproj" />

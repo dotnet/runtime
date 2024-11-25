@@ -3714,9 +3714,9 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, 
 						break;
 					} else if (param_klass == swift_error || param_klass == swift_error_ptr) {
 						swift_error_args++;
-					} else if (param_gklass && (param_gklass->container_class == swift_self_t) && i > 0) {
+					} else if (param_gklass && (param_gklass->container_class == swift_self_t) && (i != method->signature->param_count - 1)) {
 						swift_error_args = swift_self_args = 0;
-						mono_error_set_generic_error (emitted_error, "System", "InvalidProgramException", "SwiftSelf<T> must be the first argument in the signature.");
+						mono_error_set_generic_error (emitted_error, "System", "InvalidProgramException", "SwiftSelf<T> must be the last argument in the signature.");
 						break;
 					} else if (param_gklass && (param_gklass->container_class == swift_self_t) && m_type_is_byref (method->signature->params [i])) {
 						swift_error_args = swift_self_args = 0;
