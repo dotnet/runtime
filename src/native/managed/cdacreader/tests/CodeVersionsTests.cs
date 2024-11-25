@@ -571,7 +571,7 @@ public class CodeVersionsTests
 
         TargetPointer methodDescVersioningStateAddress = builder.AddMethodDescVersioningState(nativeCodeVersionNode: firstNode, isDefaultVersionActive: false);
 
-        var oneMethod = MockMethodDesc.CreateVersionable(selfAddress: methodDescAddress, methodDescVersioningState: methodDescVersioningStateAddress, nativeCode: expectedExplicitCodePointer);
+        var oneMethod = MockMethodDesc.CreateVersionable(selfAddress: methodDescAddress, methodDescVersioningState: methodDescVersioningStateAddress);
         oneMethod.MethodTable = methodTable;
         oneMethod.RowId = methodRowId;
 
@@ -599,7 +599,7 @@ public class CodeVersionsTests
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
-    public void GetILCodeVersionFromNativeCodeVersion_SyntheticAndExplicit(MockTarget.Architecture arch)
+    public void IlToNativeToIlCodeVersion_SyntheticAndExplicit(MockTarget.Architecture arch)
     {
         uint methodRowId = 0x25; // arbitrary
         TargetCodePointer expectedSyntheticCodePointer = new TargetCodePointer(0x0700_abc0);
@@ -635,7 +635,7 @@ public class CodeVersionsTests
 
         TargetPointer methodDescVersioningStateAddress = builder.AddMethodDescVersioningState(nativeCodeVersionNode: firstNode, isDefaultVersionActive: false);
 
-        var oneMethod = MockMethodDesc.CreateVersionable(selfAddress: methodDescAddress, methodDescVersioningState: methodDescVersioningStateAddress, nativeCode: expectedExplicitCodePointer);
+        var oneMethod = MockMethodDesc.CreateVersionable(selfAddress: methodDescAddress, methodDescVersioningState: methodDescVersioningStateAddress);
         oneMethod.MethodTable = methodTable;
         oneMethod.RowId = methodRowId;
 
@@ -653,6 +653,7 @@ public class CodeVersionsTests
         // Get the explicit ILCodeVersion and assert that it is in the list of ILCodeVersions
         ILCodeVersionHandle explicitILcodeVersion = codeVersions.GetActiveILCodeVersion(methodDescAddress);
         Assert.Contains(ilCodeVersions, ilcodeVersion => ilcodeVersion.Equals(explicitILcodeVersion));
+        Assert.True(explicitILcodeVersion.IsValid);
 
         // Find the other ILCodeVersion (synthetic) and assert that it is valid.
         ILCodeVersionHandle syntheticILcodeVersion = ilCodeVersions.Find(ilCodeVersion => !ilCodeVersion.Equals(explicitILcodeVersion));

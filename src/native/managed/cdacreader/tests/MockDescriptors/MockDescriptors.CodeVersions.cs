@@ -127,7 +127,7 @@ internal partial class MockDescriptors
             Builder.TargetTestHelpers.WriteNUInt(ncvn.Slice(info.Fields[nameof(Data.NativeCodeVersionNode.ILVersionId)].Offset, Builder.TargetTestHelpers.PointerSize), ilVersionId);
         }
 
-        public (TargetPointer First, TargetPointer Active) AddNativeCodeVersionNodesForMethod(TargetPointer methodDesc, int count, int activeIndex, TargetCodePointer activeNativeCode, TargetNUInt explicitILVersion, TargetPointer? firstNode = null)
+        public (TargetPointer First, TargetPointer Active) AddNativeCodeVersionNodesForMethod(TargetPointer methodDesc, int count, int activeIndex, TargetCodePointer activeNativeCode, TargetNUInt ilVersion, TargetPointer? firstNode = null)
         {
             TargetPointer activeVersionNode = TargetPointer.Null;
             TargetPointer next = firstNode != null ? firstNode.Value : TargetPointer.Null;
@@ -136,7 +136,7 @@ internal partial class MockDescriptors
                 TargetPointer node = AddNativeCodeVersionNode();
                 bool isActive = i == activeIndex;
                 TargetCodePointer nativeCode = isActive ? activeNativeCode : 0;
-                TargetNUInt ilVersionId = explicitILVersion;
+                TargetNUInt ilVersionId = ilVersion;
                 FillNativeCodeVersionNode(node, methodDesc, nativeCode, next, isActive, ilVersionId);
                 next = node;
                 if (isActive)
