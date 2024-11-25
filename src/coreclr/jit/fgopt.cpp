@@ -752,25 +752,13 @@ PhaseStatus Compiler::fgPostImportationCleanup()
         }
     }
 
-    // Did we alter any flow or EH?
-    //
-    const bool madeFlowChanges = (addedBlocks > 0) || (delCnt > 0) || (removedBlks > 0);
-
-    // Renumber the basic blocks if so.
-    //
-    if (madeFlowChanges)
-    {
-        JITDUMP("\nRenumbering the basic blocks for fgPostImportationCleanup\n");
-        fgRenumberBlocks();
-    }
-
 #ifdef DEBUG
     fgVerifyHandlerTab();
 #endif // DEBUG
 
     // Did we make any changes?
     //
-    const bool madeChanges = madeFlowChanges || addedTemps;
+    const bool madeChanges = (addedBlocks > 0) || (delCnt > 0) || (removedBlks > 0) || addedTemps;
 
     // Note that we have now run post importation cleanup,
     // so we can enable more stringent checking.
