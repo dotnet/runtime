@@ -122,6 +122,8 @@ namespace System.Collections.Tests
             ISet<string> set = new HashSet<string> { "A", "B" };
             ReadOnlySet<string> readOnlySet = set.AsReadOnly();
             Assert.NotNull(readOnlySet);
+            Assert.NotSame(set, readOnlySet);
+            Assert.NotSame(readOnlySet, set.AsReadOnly());
             CollectionAsserts.Equal(set, readOnlySet);
         }
 
