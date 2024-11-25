@@ -24489,27 +24489,15 @@ void gc_heap::garbage_collect (int n)
 #ifdef MULTIPLE_HEAPS
             dprintf(2, ("Joined to perform a background GC"));
 
-            int total_bgc_threads_running = 0;
-            int total_bgc_threads_with_obj = 0;
             for (int i = 0; i < n_heaps; i++)
             {
                 gc_heap* hp = g_heaps[i];
-                if (hp->bgc_thread_running)
+
+                if (!(hp->bgc_thread_running))
                 {
-                    total_bgc_threads_running++;
+                    assert (!(hp->bgc_thread));
                 }
 
-                if (hp->bgc_thread)
-                {
-                    total_bgc_threads_with_obj++;
-                }
-            }
-
-            dprintf (6666, ("n_heaps %d, %d bgc threads set to running, %d with obj set", n_heaps, total_bgc_threads_running, total_bgc_threads_with_obj));
-
-            for (int i = 0; i < n_heaps; i++)
-            {
-                gc_heap* hp = g_heaps[i];
                 // In theory we could be in a situation where bgc_thread_running is false but bgc_thread is non NULL. We don't
                 // support this scenario so don't do a BGC.
                 if (!(hp->bgc_thread_running && hp->bgc_thread && hp->commit_mark_array_bgc_init()))
@@ -39670,10 +39658,9 @@ BOOL gc_heap::prepare_bgc_thread(gc_heap* gh)
 #ifdef DYNAMIC_HEAP_COUNT
             // This would be a very unusual scenario where GCToEEInterface::CreateThread told us it failed yet the thread was created.
             bgc_th_count_created_th_existed++;
-
-            dprintf (6666, ("h%d fatal error - we cannot have a thread that runs yet CreateThread reported it failed to create it", gh->heap_number));
-            FATAL_GC_ERROR();
+            dprintf (6666, ("h%d we cannot have a thread that runs yet CreateThread reported it failed to create it", gh->heap_number));
 #endif //DYNAMIC_HEAP_COUNT
+            assert (!"GCToEEInterface::CreateThread returned FALSE yet the thread was created!");
         }
     }
     else
