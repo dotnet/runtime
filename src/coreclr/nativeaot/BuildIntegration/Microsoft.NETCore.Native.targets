@@ -102,7 +102,7 @@ The .NET Foundation licenses this file to you under the MIT license.
   </PropertyGroup>
 
   <ItemGroup Condition="$(IlcSystemModule) == ''">
-    <UnmanagedEntryPointsAssembly Include="System.Private.CoreLib" />
+    <UnmanagedEntryPointsAssembly Include="System.Private.CoreLib,HIDDEN" />
     <AutoInitializedAssemblies Include="System.Private.CoreLib" />
     <AutoInitializedAssemblies Include="System.Private.StackTraceMetadata" Condition="$(StackTraceSupport) != 'false'" />
     <AutoInitializedAssemblies Include="System.Private.TypeLoader" />
