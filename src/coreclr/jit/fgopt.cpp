@@ -5480,7 +5480,7 @@ bool Compiler::ThreeOptLayout::RunGlobalThreeOptPass(unsigned startPos, unsigned
                 continue;
             }
 
-            for (unsigned s3Start = s2Start + 1; s3Start <= endPos; s3Start++)
+            for (unsigned s3Start = s2Start + 1; !foundPartition && (s3Start <= endPos); s3Start++)
             {
                 BasicBlock* const s3Block = blockOrder[s3Start];
                 if (!isValidCutPoint(s3Block))
@@ -5488,11 +5488,26 @@ bool Compiler::ThreeOptLayout::RunGlobalThreeOptPass(unsigned startPos, unsigned
                     continue;
                 }
 
-                if (TrySwappingPartitions(startPos, s2Start, s3Start, endPos, endPos))
+                for (unsigned s3End = s3Start; s3End < endPos; s3End++)
+                {
+                    BasicBlock* const s4Block = blockOrder[s3End + 1];
+                    if (!isValidCutPoint(s4Block))
+                    {
+                        continue;
+                    }
+
+                    if (TrySwappingPartitions(startPos, s2Start, s3Start, s3End, endPos))
+                    {
+                        foundPartition = true;
+                        modified       = true;
+                        break;
+                    }
+                }
+
+                if (!foundPartition && TrySwappingPartitions(startPos, s2Start, s3Start, endPos, endPos))
                 {
                     foundPartition = true;
                     modified       = true;
-                    break;
                 }
             }
         }
