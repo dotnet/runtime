@@ -5494,9 +5494,11 @@ bool Compiler::ThreeOptLayout::RunGlobalThreeOptPass(unsigned startPos, unsigned
                 }
             }
         }
+    // Keep searching for cut points until the cost model converges
     } while (foundPartition);
 
-    if (modified)
+    // Update ordinals, but only if we reordered anything, and if we will do another pass
+    if (modified && (currEHRegion != 0))
     {
         for (unsigned i = startPos; i <= endPos; i++)
         {
