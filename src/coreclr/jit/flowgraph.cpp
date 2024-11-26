@@ -1423,7 +1423,7 @@ void Compiler::fgAddSyncMethodEnterExit()
         EHblkDsc* newEntry = nullptr;
         unsigned  XTnew    = compHndBBtabCount;
 
-        newEntry = fgAddEHTableEntries(XTnew);
+        newEntry = fgTryAddEHTableEntries(XTnew);
 
         if (newEntry == nullptr)
         {

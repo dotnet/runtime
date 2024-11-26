@@ -1463,7 +1463,7 @@ void Compiler::fgAllocEHTable()
         // the maximum number of clauses we will need might be very large. We allocate
         // twice the number of EH clauses in the IL, which should be good in practice.
         // In extreme cases, we might need to abandon this and reallocate. See
-        // fgAddEHTableEntries() for more details.
+        // fgTryAddEHTableEntries() for more details.
 
 #ifdef DEBUG
         compHndBBtabAllocCount = info.compXcptnsCount; // force the resizing code to hit more frequently in DEBUG
@@ -1677,7 +1677,7 @@ void Compiler::fgRemoveEHTableEntry(unsigned XTnum)
 }
 
 //------------------------------------------------------------------------
-// fgAddEHTableEntries: add new EH table entries
+// fgTryAddEHTableEntries: try to add new EH table entries
 //
 // Arguments:
 //   XTnum  -- new entries will be added before this entry
@@ -1703,7 +1703,7 @@ void Compiler::fgRemoveEHTableEntry(unsigned XTnum)
 //  are making room for cloned EH must take pains to find and clone these
 //  as well...
 //
-EHblkDsc* Compiler::fgAddEHTableEntries(unsigned XTnum, unsigned count, bool deferAdding)
+EHblkDsc* Compiler::fgTryAddEHTableEntries(unsigned XTnum, unsigned count, bool deferAdding)
 {
     bool           reallocate = false;
     bool const     insert     = (XTnum != compHndBBtabCount);
@@ -1823,7 +1823,7 @@ EHblkDsc* Compiler::fgAddEHTableEntries(unsigned XTnum, unsigned count, bool def
             newHndBBtabAllocCount = MAX_XCPTN_INDEX; // increase to the maximum size we allow
         }
 
-        JITDUMP("*********** fgAddEHTableEntries: increasing EH table size from %d to %d\n", compHndBBtabAllocCount,
+        JITDUMP("*********** fgTryAddEHTableEntries: increasing EH table size from %d to %d\n", compHndBBtabAllocCount,
                 newHndBBtabAllocCount);
 
         compHndBBtabAllocCount = newHndBBtabAllocCount;

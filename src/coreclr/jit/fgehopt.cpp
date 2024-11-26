@@ -2319,7 +2319,7 @@ BasicBlock* Compiler::fgCloneTryRegion(BasicBlock* tryEntry, CloneTryInfo& info,
         JITDUMP("<== finished try EH#%02u\n", regionIndex);
     }
 
-    // Find the outermost mututal-protect try region that begins at tryEntry
+    // Find the outermost mutual-protect try region that begins at tryEntry
     //
     EHblkDsc* const tryEbd            = ehGetDsc(tryIndex);
     unsigned        outermostTryIndex = tryIndex;
@@ -2350,7 +2350,7 @@ BasicBlock* Compiler::fgCloneTryRegion(BasicBlock* tryEntry, CloneTryInfo& info,
 
     // Now blocks contains an entry for each block to clone.
     //
-    JITDUMP("Will need to clone %u EH regions (outermost: EH#%02u) and %u blocks\n", regionCount, outermostTryIndex,
+    JITDUMP("Will need to clone %u EH regions (outermost: EH#%02u) and %zu blocks\n", regionCount, outermostTryIndex,
             blocks->size());
 
     // Allocate the new EH clauses. First, find the enclosing EH clause, if any...
@@ -2370,13 +2370,12 @@ BasicBlock* Compiler::fgCloneTryRegion(BasicBlock* tryEntry, CloneTryInfo& info,
         JITDUMP("Cloned EH clauses will go before enclosing region EH#%02u\n", enclosingTryIndex);
     }
 
-    // Once we call fgAddEHTableEntries, all the EH indicies at or above insertBeforeIndex
-    // will shift, and the EH table may reallocate.
-    //
-    // This addition may also fail, if the table would become too large...
+    // Once we call fgTryAddEHTableEntries with deferCloning = false,
+    // all the EH indicies at or above insertBeforeIndex will shift,
+    // and the EH table may reallocate.
     //
     EHblkDsc* const clonedOutermostEbd =
-        fgAddEHTableEntries(insertBeforeIndex, regionCount, /* deferAdding */ deferCloning);
+        fgTryAddEHTableEntries(insertBeforeIndex, regionCount, /* deferAdding */ deferCloning);
 
     if (clonedOutermostEbd == nullptr)
     {
