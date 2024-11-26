@@ -5494,7 +5494,7 @@ bool Compiler::ThreeOptLayout::RunGlobalThreeOptPass(unsigned startPos, unsigned
                 }
             }
         }
-    // Keep searching for cut points until the cost model converges
+        // Keep searching for cut points until the cost model converges
     } while (foundPartition);
 
     // Update ordinals, but only if we reordered anything, and if we will do another pass
