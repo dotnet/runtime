@@ -8913,6 +8913,7 @@ namespace System.Diagnostics.CodeAnalysis
     {
         public ExperimentalAttribute(string diagnosticId) { }
         public string DiagnosticId { get { throw null; } }
+        public string? Message { get { throw null; } set { } }
         public string? UrlFormat { get { throw null; } set { } }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Property, Inherited=false, AllowMultiple=true)]
