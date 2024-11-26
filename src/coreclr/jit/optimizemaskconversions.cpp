@@ -259,6 +259,12 @@ public:
 
     Compiler::fgWalkResult PostOrderVisit(GenTree** use, GenTree* user)
     {
+#if defined(TARGET_ARM64)
+        static constexpr const int ConvertVectorToMaskValueOp = 2;
+#else
+        static constexpr const int ConvertVectorToMaskValueOp = 1;
+#endif
+
         GenTreeLclVarCommon* lclOp            = nullptr;
         bool                 isLocalStore     = false;
         bool                 isLocalUse       = false;
@@ -281,11 +287,12 @@ public:
             isLocalStore  = true;
             addConversion = true;
         }
-        else if ((*use)->OperIsConvertVectorToMask() && (*use)->AsHWIntrinsic()->Op(2)->OperIs(GT_LCL_VAR))
+        else if ((*use)->OperIsConvertVectorToMask() &&
+                 (*use)->AsHWIntrinsic()->Op(ConvertVectorToMaskValueOp)->OperIs(GT_LCL_VAR))
         {
             // Found
             //      user(use:ConvertVectorToMask(LCL_VAR(x)))
-            lclOp            = (*use)->AsHWIntrinsic()->Op(2)->AsLclVarCommon();
+            lclOp            = (*use)->AsHWIntrinsic()->Op(ConvertVectorToMaskValueOp)->AsLclVarCommon();
             isLocalUse       = true;
             removeConversion = true;
         }
