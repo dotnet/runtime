@@ -384,7 +384,7 @@ struct hostfxr_resolve_frameworks_result
 };
 
 typedef void (HOSTFXR_CALLTYPE* hostfxr_resolve_frameworks_result_fn)(
-    const hostfxr_resolve_frameworks_result* result,
+    const struct hostfxr_resolve_frameworks_result* result,
     void* result_context);
 
 //
@@ -411,7 +411,7 @@ typedef void (HOSTFXR_CALLTYPE* hostfxr_resolve_frameworks_result_fn)(
 //
 typedef int32_t(HOSTFXR_CALLTYPE* hostfxr_resolve_frameworks_for_runtime_config_fn)(
     const char_t* runtime_config_path,
-    /*opt*/ const hostfxr_initialize_parameters* parameters,
+    /*opt*/ const struct hostfxr_initialize_parameters* parameters,
     /*opt*/ hostfxr_resolve_frameworks_result_fn callback,
     /*opt*/ void* result_context);
 

@@ -11,12 +11,12 @@
        the same layout as the NuGet package. -->
   <!-- This must be done after the usual nuget props imports, to override the implicitly referenced
        Microsoft.NET.ILLink.Tasks.props from the SDK. -->
-  <Import Project="$(ToolsILLinkDir)$(NetCoreAppToolCurrent)/build/Microsoft.NET.ILLink.Tasks.props" />
+  <Import Project="$(ToolsILLinkDir)net/build/Microsoft.NET.ILLink.Tasks.props" />
 
   <PropertyGroup>
     <!-- Don't use SDK's trimming functionality. -->
     <_RequiresILLinkPack>false</_RequiresILLinkPack>
-    <ILLinkTasksAssembly>$(ToolsILLinkDir)$(NetCoreAppToolCurrent)/ILLink.Tasks.dll</ILLinkTasksAssembly>
+    <ILLinkTasksAssembly>$(ToolsILLinkDir)net/ILLink.Tasks.dll</ILLinkTasksAssembly>
   </PropertyGroup>
 
   <PropertyGroup>
