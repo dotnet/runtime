@@ -143,7 +143,7 @@ internal unsafe partial class MachObjectFile
     /// <param name="memoryMappedViewAccessor">The file to remove the signature from.</param>
     /// <param name="newLength">The new length of the file if the signature is remove and the method returns true</param>
     /// <returns>True if a signature was present and removed, false otherwise</returns>
-    public static bool TryRemoveCodesign(MemoryMappedViewAccessor memoryMappedViewAccessor, out long? newLength)
+    public static bool RemoveCodeSignatureIfPresent(MemoryMappedViewAccessor memoryMappedViewAccessor, out long? newLength)
     {
         newLength = null;
         if (!IsMachOImage(memoryMappedViewAccessor))
@@ -168,9 +168,8 @@ internal unsafe partial class MachObjectFile
 
     /// <summary>
     /// Removes the code signature load command and signature, and resizes the file if necessary.
-    /// Returns true if the signature was removed, false otherwise.
     /// </summary>
-    public static void RemoveCodesign(FileStream bundle)
+    public static void RemoveCodeSignatureIfPresent(FileStream bundle)
     {
         long? newLength;
         bool resized;
@@ -178,7 +177,7 @@ internal unsafe partial class MachObjectFile
         using (MemoryMappedFile mmap = MemoryMappedFile.CreateFromFile(bundle, null, 0, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, true))
         using (MemoryMappedViewAccessor accessor = mmap.CreateViewAccessor(0, 0, MemoryMappedFileAccess.ReadWrite))
         {
-            resized = TryRemoveCodesign(accessor, out newLength);
+            resized = RemoveCodeSignatureIfPresent(accessor, out newLength);
         }
         if (resized)
         {

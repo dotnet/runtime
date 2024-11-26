@@ -28,8 +28,8 @@ namespace Microsoft.NET.HostModel.Bundle.Tests
         }
 
         private static string BundlerHostName = Binaries.GetExeName(SharedTestState.AppName);
-        private Bundler CreateBundlerInstance(BundleOptions bundleOptions = BundleOptions.None, Version version = null, bool macosCodesign = true)
-            => new Bundler(BundlerHostName, sharedTestState.App.GetUniqueSubdirectory("bundle"), bundleOptions, targetFrameworkVersion: version, macosCodesign: macosCodesign);
+        private Bundler CreateBundlerInstance(BundleOptions bundleOptions = BundleOptions.None, Version version = null, bool macosCodesign = true, OSPlatform? targetOS = null)
+            => new Bundler(BundlerHostName, sharedTestState.App.GetUniqueSubdirectory("bundle"), bundleOptions, targetFrameworkVersion: version, macosCodesign: macosCodesign, targetOS: targetOS);
 
         [Fact]
         public void EnableCompression_Before60_Fails()
@@ -328,7 +328,7 @@ namespace Microsoft.NET.HostModel.Bundle.Tests
                 new FileSpec(app.RuntimeConfigJson, Path.GetRelativePath(app.Location, app.RuntimeConfigJson)),
             };
 
-            Bundler bundler = CreateBundlerInstance(macosCodesign: shouldCodesign);
+            Bundler bundler = CreateBundlerInstance(targetOS: OSPlatform.OSX, macosCodesign: shouldCodesign);
             string bundledApp = bundler.GenerateBundle(fileSpecs);
 
             if (!RuntimeInformation.IsOSPlatform(OSPlatform.OSX))

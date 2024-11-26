@@ -287,7 +287,7 @@ namespace Microsoft.NET.HostModel.Bundle
             {
                 if (_target.IsOSX)
                 {
-                    MachObjectFile.RemoveCodesign(bundle);
+                    MachObjectFile.RemoveCodeSignatureIfPresent(bundle);
                 }
                 bundle.Position = bundle.Length;
                 foreach (var fileSpec in fileSpecs)
