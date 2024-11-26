@@ -56,9 +56,9 @@ namespace System.Reflection
             if (_functionPointer != IntPtr.Zero && method is RuntimeConstructorInfo)
             {
 #if MONO
-            _shouldAllocate = true;
+                _shouldAllocate = true;
 #else
-            _allocator = _declaringType!.GetOrCreateCacheEntry<CreateUninitializedCache>();
+                _allocator = _declaringType!.GetOrCreateCacheEntry<CreateUninitializedCache>();
 #endif
             }
         }
@@ -132,6 +132,13 @@ namespace System.Reflection
                     return obj;
                 }
 
+#if MONO
+                // Mono calls this method when invoking a constructor with no arguments.
+                if (_strategy == InvokerStrategy.Ref4)
+                {
+                    return ((InvokeFunc_RefArgs)_invokeFunc)(obj, _functionPointer, refArguments: null);
+                }
+#endif
                 return ((InvokeFunc_Obj0Args)_invokeFunc)(obj, _functionPointer);
             }
             catch (Exception e) when ((invokeAttr & BindingFlags.DoNotWrapExceptions) == 0)

@@ -12,22 +12,20 @@ namespace System.Reflection.Tests
         public static void VerifyInvokeIsUsingEmit_Method()
         {
             MethodInfo method = typeof(TestClassThatThrows).GetMethod(nameof(TestClassThatThrows.Throw))!;
-            TargetInvocationException ex = Assert.Throws<TargetInvocationException>(() => method.Invoke(null, null));
+            TargetInvocationException ex = Assert.Throws<TargetInvocationException>(() => method.Invoke(null, new object[] { "" }));
             Exception exInner = ex.InnerException;
-
-            Assert.Contains("Here", exInner.ToString());
-            Assert.Contains("InvokeStub_<Void> (Object, IntPtr)", exInner.ToString());
+            Assert.Contains("Here", ex.ToString());
+            Assert.Contains("InvokeStub_<Object, Void>", exInner.ToString());
         }
 
         [ConditionalFact(typeof(InvokeEmitTests), nameof(IsEmitInvokeSupported))]
         public static void VerifyInvokeIsUsingEmit_Constructor()
         {
-            ConstructorInfo ctor = typeof(TestClassThatThrows).GetConstructor(Type.EmptyTypes)!;
-            TargetInvocationException ex = Assert.Throws<TargetInvocationException>(() => ctor.Invoke(null));
+            ConstructorInfo ctor = typeof(TestClassThatThrows).GetConstructor(new Type[] {typeof(string)})!;
+            TargetInvocationException ex = Assert.Throws<TargetInvocationException>(() => ctor.Invoke(new object[] { "" }));
             Exception exInner = ex.InnerException;
-
             Assert.Contains("Here", exInner.ToString());
-            Assert.Contains("InvokeStub_<Void> (Object, IntPtr)", exInner.ToString());
+            Assert.Contains("InvokeStub_<Object, Object>", exInner.ToString());
         }
 
         private static bool IsEmitInvokeSupported()
@@ -38,12 +36,12 @@ namespace System.Reflection.Tests
 
         private class TestClassThatThrows
         {
-            public TestClassThatThrows()
+            public TestClassThatThrows(string _)
             {
                 throw new Exception("Here");
             }
 
-            public static void Throw() => throw new Exception("Here");
+            public static void Throw(string _) => throw new Exception("Here");
         }
     }
 }

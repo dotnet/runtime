@@ -161,7 +161,7 @@ namespace System.Reflection
                 GetInvokeStubName(method, signatureInfo),
                 returnType: typeof(object),
                 delegateParameters,
-                typeof(object).Module, // Use system module to identify our DynamicMethods.
+                method is null ? typeof(object).Module : method.DeclaringType!.Module,
                 skipVisibility: true); // Supports creating the delegate immediately when calling CreateDelegate().
         }
 
