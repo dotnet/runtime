@@ -330,6 +330,8 @@ collect_parser.add_argument("--skip_collect_mc_files", action="store_true", help
 
 replay_common_parser = argparse.ArgumentParser(add_help=False)
 
+# NOTE: When adding arguments here, also make sure that they are set when collect does its replay:
+# see the "collect" case in setup_args.
 replay_common_parser.add_argument("-mch_files", metavar="MCH_FILE", nargs='+', help=replay_mch_files_help)
 replay_common_parser.add_argument("-filter", nargs='+', help=filter_help)
 replay_common_parser.add_argument("-product_location", help=product_location_help)
@@ -4753,6 +4755,11 @@ def setup_args(args):
                             "produce_repro",  # The replay code checks this, so make sure it's set
                             lambda unused: True,
                             "Unable to set produce_repro")
+
+        coreclr_args.verify(args,
+                            "details",  # The replay code checks this, so make sure it's set
+                            lambda unused: True,
+                            "Unable to set details")
 
         coreclr_args.verify(args,
                             "collection_command",
