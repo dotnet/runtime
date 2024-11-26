@@ -13,12 +13,16 @@ internal partial class ExecutionManagerBase<T> : IExecutionManager
     private class ReadyToRunJitManager : JitManager
     {
         private readonly uint _runtimeFunctionSize;
-        private readonly PtrHashMapLookup _lookup;
+        private readonly PtrHashMapLookup _hashMap;
+        private readonly HotColdLookup _hotCold;
+        private readonly RuntimeFunctionLookup _runtimeFunctions;
 
         public ReadyToRunJitManager(Target target) : base(target)
         {
             _runtimeFunctionSize = Target.GetTypeInfo(DataType.RuntimeFunction).Size!.Value;
-            _lookup = PtrHashMapLookup.Create(target);
+            _hashMap = PtrHashMapLookup.Create(target);
+            _hotCold = HotColdLookup.Create(target);
+            _runtimeFunctions = RuntimeFunctionLookup.Create(target);
         }
 
         public override bool GetMethodInfo(RangeSection rangeSection, TargetCodePointer jittedCodeAddress, [NotNullWhen(true)] out CodeBlock? info)
@@ -43,34 +47,48 @@ internal partial class ExecutionManagerBase<T> : IExecutionManager
             TargetPointer imageBase = rangeSection.Data.RangeBegin;
             TargetPointer relativeAddr = addr - imageBase;
 
-            int index = GetRuntimeFunctionIndexForAddress(r2rInfo, relativeAddr);
-            if (index < 0)
+            uint index;
+            if (!_runtimeFunctions.TryGetRuntimeFunctionIndexForAddress(r2rInfo.RuntimeFunctions, r2rInfo.NumRuntimeFunctions, relativeAddr, out index))
                 return false;
 
             bool featureEHFunclets = Target.ReadGlobal<byte>(Constants.Globals.FeatureEHFunclets) != 0;
             if (featureEHFunclets)
             {
-                // TODO: [cdac] Look up in hot/cold mapping lookup table and if the method is in the cold block,
-                // get the index of the associated hot block.
-                //   HotColdMappingLookupTable::LookupMappingForMethod
-                //
-                // while GetMethodDescForEntryPoint for the begin address of function at index is null
-                //   index--
+                // Look up index in hot/cold map - if the function is in the cold part, get the index of the hot part.
+                index = _hotCold.GetHotFunctionIndex(r2rInfo.NumHotColdMap, r2rInfo.HotColdMap, index);
+                Debug.Assert(index < r2rInfo.NumRuntimeFunctions);
             }
 
-            TargetPointer functionEntry = r2rInfo.RuntimeFunctions + (ulong)(index * _runtimeFunctionSize);
-            Data.RuntimeFunction function = Target.ProcessedData.GetOrAdd<Data.RuntimeFunction>(functionEntry);
+            TargetPointer methodDesc = GetMethodDescForRuntimeFunction(r2rInfo, imageBase, index);
+            while (featureEHFunclets && methodDesc == TargetPointer.Null)
+            {
+                // Funclets won't have a direct entry in the map of runtime function entry point to method desc.
+                // The funclet's address (and index) will be greater than that of the corresponding function, so
+                // we decrement the index to find the actual function / method desc for the funclet.
+                index--;
+                methodDesc = GetMethodDescForRuntimeFunction(r2rInfo, imageBase, index);
+            }
 
-            // ReadyToRunInfo::GetMethodDescForEntryPointInNativeImage
-            TargetCodePointer startAddress = imageBase + function.BeginAddress;
-            TargetPointer entryPoint = CodePointerUtils.AddressFromCodePointer(startAddress, Target);
-
-            TargetPointer methodDesc = _lookup.GetValue(r2rInfo.EntryPointToMethodDescMap, entryPoint);
             Debug.Assert(methodDesc != TargetPointer.Null);
+            Data.RuntimeFunction function = _runtimeFunctions.GetRuntimeFunction(r2rInfo.RuntimeFunctions, index);
 
-            // TODO: [cdac] Handle method with cold code when computing relative offset
-            // ReadyToRunJitManager::JitTokenToMethodRegionInfo
+            TargetCodePointer startAddress = imageBase + function.BeginAddress;
             TargetNUInt relativeOffset = new TargetNUInt(addr - startAddress);
+
+            // Take hot/cold splitting into account for the relative offset
+            if (_hotCold.TryGetColdFunctionIndex(r2rInfo.NumHotColdMap, r2rInfo.HotColdMap, index, out uint coldFunctionIndex))
+            {
+                Debug.Assert(coldFunctionIndex < r2rInfo.NumRuntimeFunctions);
+                Data.RuntimeFunction coldFunction = _runtimeFunctions.GetRuntimeFunction(r2rInfo.RuntimeFunctions, coldFunctionIndex);
+                TargetPointer coldStart = imageBase + coldFunction.BeginAddress;
+                if (addr >= coldStart)
+                {
+                    // If the address is in the cold part, the relative offset is the size of the
+                    // hot part plus the offset from the address to the start of the cold part
+                    uint hotSize = _runtimeFunctions.GetFunctionLength(function);
+                    relativeOffset = new TargetNUInt(hotSize + addr - coldStart);
+                }
+            }
 
             info = new CodeBlock(startAddress.Value, methodDesc, relativeOffset, rangeSection.Data!.JitManager);
             return true;
@@ -87,51 +105,19 @@ internal partial class ExecutionManagerBase<T> : IExecutionManager
             return thunksData.VirtualAddress <= rva && rva < thunksData.VirtualAddress + thunksData.Size;
         }
 
-        private int GetRuntimeFunctionIndexForAddress(Data.ReadyToRunInfo r2rInfo, TargetPointer relativeAddress)
+        private TargetPointer GetMethodDescForRuntimeFunction(Data.ReadyToRunInfo r2rInfo, TargetPointer imageBase, uint runtimeFunctionIndex)
         {
-            // NativeUnwindInfoLookupTable::LookupUnwindInfoForMethod
-            uint start = 0;
-            uint end = r2rInfo.NumRuntimeFunctions - 1;
-            relativeAddress = CodePointerUtils.CodePointerFromAddress(relativeAddress, Target).AsTargetPointer;
+            Data.RuntimeFunction function = _runtimeFunctions.GetRuntimeFunction(r2rInfo.RuntimeFunctions, runtimeFunctionIndex);
 
-            // Entries are sorted. Binary search until we get to 10 or fewer items.
-            while (end - start > 10)
-            {
-                uint middle = start + (end - start) / 2;
-                Data.RuntimeFunction func = GetRuntimeFunction(r2rInfo, middle);
-                if (relativeAddress < func.BeginAddress)
-                {
-                    end = middle - 1;
-                }
-                else
-                {
-                    start = middle;
-                }
-            }
+            // ReadyToRunInfo::GetMethodDescForEntryPointInNativeImage
+            TargetCodePointer startAddress = imageBase + function.BeginAddress;
+            TargetPointer entryPoint = CodePointerUtils.AddressFromCodePointer(startAddress, Target);
 
-            // Find the runtime function that contains the address of interest
-            for (uint i = start; i <= end; ++i)
-            {
-                // Entries are terminated by a sentinel value of -1, so we can index one past the end safely.
-                // Read as a runtime function, its begin address is 0xffffffff (always > relative address).
-                // See RuntimeFunctionsTableNode.GetData in RuntimeFunctionsTableNode.cs
-                Data.RuntimeFunction nextFunc = GetRuntimeFunction(r2rInfo, i + 1);
-                if (relativeAddress >= nextFunc.BeginAddress)
-                    continue;
+            TargetPointer methodDesc = _hashMap.GetValue(r2rInfo.EntryPointToMethodDescMap, entryPoint);
+            if (methodDesc == (ulong)HashMapLookup.SpecialKeys.InvalidEntry)
+                return TargetPointer.Null;
 
-                Data.RuntimeFunction func = GetRuntimeFunction(r2rInfo, i);
-                if (relativeAddress >= func.BeginAddress)
-                    return (int)i;
-            }
-
-            return -1;
-        }
-
-        private Data.RuntimeFunction GetRuntimeFunction(Data.ReadyToRunInfo r2rInfo, uint index)
-        {
-            TargetPointer first = r2rInfo.RuntimeFunctions;
-            TargetPointer addr = first + (ulong)(index * _runtimeFunctionSize);
-            return Target.ProcessedData.GetOrAdd<Data.RuntimeFunction>(addr);
+            return methodDesc;
         }
     }
 }
