@@ -55,11 +55,11 @@ namespace System.Linq
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static IEnumerable<TResult> SelectImplementation<TSource, TResult>(Func<TSource, TResult> selector, Iterator<TSource> iterator)
         {
-            // In Native AOT, GVMs with Value types are not trim friendly.
-            // If the option is enabled, we don't call the GVM for value types. We don't do the
-            // same for reference types because reference types are trim friendly with GVMs
-            // and it is preferable to call the GVM as it allows the select implementation to be
-            // specialized.
+            // With native AOT, calling into the `Select` generic virtual method results in NxM
+            // expansion of native code. If the option is enabled, we don't call the generic virtual
+            // for value types. We don't do the same for reference types because reference type
+            // expansion can happen lazily at runtime and the AOT compiler does postpone it (we
+            // don't need more code, just more data structures describing the new types).
             if (/*IteratorOptions.ValueTypeTrimFriendlySelect && */typeof(TResult).IsValueType)
             {
 #if OPTIMIZE_FOR_SIZE
