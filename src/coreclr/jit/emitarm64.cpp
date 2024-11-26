@@ -15754,8 +15754,19 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case IF_PC_0A: // autia1716, autiasp, autiaz, pacia1716, paciasp, paciaz, xpaclri
         case IF_PC_1A: // autiza, paciza, xpacd, xpaci
         case IF_PC_2A: // autia, pacia
-            result.insThroughput = PERFSCORE_THROUGHPUT_ZERO;
-            result.insLatency    = PERFSCORE_LATENCY_ZERO;
+            switch (ins)
+            {
+                case INS_xpacd:
+                case INS_xpaci:
+                case INS_xpaclri:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+                    result.insLatency    = PERFSCORE_LATENCY_2C;
+                    break;
+
+                default:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+                    result.insLatency    = PERFSCORE_LATENCY_5C;
+            }
             break;
 
         case IF_SN_0A: // nop, yield, align
