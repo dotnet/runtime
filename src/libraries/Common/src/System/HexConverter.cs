@@ -145,11 +145,12 @@ namespace System
 
                 v0.StoreUnsafe(ref destRef, pos * 2);
 
-                pos += (nuint)Vector128<int>.Count;
-                if (pos == (nuint)bytes.Length)
+                if (pos == lengthSubVector128)
                 {
                     return;
                 }
+
+                pos += (nuint)Vector128<int>.Count;
 
                 // Overlap with the current chunk for trailing elements
                 if (pos > lengthSubVector128)
