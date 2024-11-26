@@ -7604,7 +7604,8 @@ static void getMethodInfoHelper(
     methInfo->options = (CorInfoOptions)(((UINT32)methInfo->options) |
                             ((ftn->AcquiresInstMethodTableFromThis() ? CORINFO_GENERICS_CTXT_FROM_THIS : 0) |
                              (ftn->RequiresInstMethodTableArg() ? CORINFO_GENERICS_CTXT_FROM_METHODTABLE : 0) |
-                             (ftn->RequiresInstMethodDescArg() ? CORINFO_GENERICS_CTXT_FROM_METHODDESC : 0)));
+                             (ftn->RequiresInstMethodDescArg() ? CORINFO_GENERICS_CTXT_FROM_METHODDESC : 0) |
+                             (ftn->IsStructMethodOperatingOnCopy() ? CORINFO_OPT_COPY_STRUCT_INSTANCE : 0)));
 
     // EEJitManager::ResolveEHClause and CrawlFrame::GetExactGenericInstantiations
     // need to be able to get to CORINFO_GENERICS_CTXT_MASK if there are any
@@ -14366,7 +14367,7 @@ static Signature BuildResumptionStubSignature(LoaderAllocator* alloc)
     return AllocateSignature(alloc, sigBuilder);
 }
 
-static Signature BuildResumptionStubCalliSignature(MetaSig& msig, LoaderAllocator* alloc)
+static Signature BuildResumptionStubCalliSignature(MetaSig& msig, MethodTable* mt, LoaderAllocator* alloc)
 {
     unsigned numArgs = 0;
     if (msig.HasThis())
@@ -14384,7 +14385,7 @@ static Signature BuildResumptionStubCalliSignature(MetaSig& msig, LoaderAllocato
     numArgs += msig.NumFixedArgs();
 
     SigBuilder sigBuilder;
-    sigBuilder.AppendByte(IMAGE_CEE_CS_CALLCONV_DEFAULT);
+    sigBuilder.AppendByte(IMAGE_CEE_CS_CALLCONV_DEFAULT | IMAGE_CEE_CS_CALLCONV_HASTHIS | IMAGE_CEE_CS_CALLCONV_EXPLICITTHIS);
     sigBuilder.AppendData(numArgs);
 
     auto appendTypeHandle = [&](TypeHandle th) {
@@ -14409,7 +14410,15 @@ static Signature BuildResumptionStubCalliSignature(MetaSig& msig, LoaderAllocato
     appendTypeHandle(msig.GetRetTypeHandleThrowing()); // return type
     if (msig.HasThis())
     {
-        sigBuilder.AppendElementType(ELEMENT_TYPE_OBJECT);
+        if (mt->IsValueType())
+        {
+            sigBuilder.AppendElementType(ELEMENT_TYPE_BYREF);
+            appendTypeHandle(TypeHandle(mt));
+        }
+        else
+        {
+            sigBuilder.AppendElementType(ELEMENT_TYPE_OBJECT);
+        }
     }
 #ifndef TARGET_X86
     if (msig.HasGenericContextArg())
@@ -14455,7 +14464,7 @@ CORINFO_METHOD_HANDLE CEEJitInfo::getAsyncResumptionStub()
     Signature stubSig = BuildResumptionStubSignature(md->GetLoaderAllocator());
 
     MetaSig msig(md);
-    Signature calliSig = BuildResumptionStubCalliSignature(msig, md->GetLoaderAllocator());
+    Signature calliSig = BuildResumptionStubCalliSignature(msig, md->GetMethodTable(), md->GetLoaderAllocator());
 
     SigTypeContext emptyCtx;
     ILStubLinker sl(md->GetModule(), stubSig, &emptyCtx, NULL, ILSTUB_LINKER_FLAG_NONE);
@@ -14466,8 +14475,16 @@ CORINFO_METHOD_HANDLE CEEJitInfo::getAsyncResumptionStub()
 
     if (msig.HasThis())
     {
-        _ASSERTE(!md->GetMethodTable()->IsValueType());
-        pCode->EmitLDNULL();
+        if (md->GetMethodTable()->IsValueType())
+        {
+            pCode->EmitLDC(0);
+            pCode->EmitCONV_U();
+        }
+        else
+        {
+            pCode->EmitLDNULL();
+        }
+
         numArgs++;
     }
 

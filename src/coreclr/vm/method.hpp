@@ -1818,7 +1818,7 @@ public:
         LIMITED_METHOD_DAC_CONTRACT;
         if (!HasAsyncMethodData())
             return false;
-        auto asyncType = GetAddrOfAsyncMethodData()->type;
+        AsyncMethodType asyncType = GetAddrOfAsyncMethodData()->type;
         return asyncType == AsyncMethodType::AsyncToTask || asyncType == AsyncMethodType::TaskToAsync;
     }
 
@@ -1826,9 +1826,24 @@ public:
     {
         if (!HasAsyncMethodData())
             return false;
-        auto asyncType = GetAddrOfAsyncMethodData()->type;
+        AsyncMethodType asyncType = GetAddrOfAsyncMethodData()->type;
 
         return asyncType == AsyncMethodType::Async || asyncType == AsyncMethodType::AsyncToTask;
+    }
+
+    inline bool IsStructMethodOperatingOnCopy()
+    {
+        if (!GetMethodTable()->IsValueType() || IsStatic())
+            return false;
+
+        if (!HasAsyncMethodData())
+            return false;
+
+        // Only user runtimeasync methods operate on copies. runtime-async ->
+        // compiler-async thunks do not.
+        AsyncMethodType asyncType = GetAddrOfAsyncMethodData()->type;
+
+        return asyncType == AsyncMethodType::Async;
     }
 
     inline bool RequiresAsyncContinuationArg()

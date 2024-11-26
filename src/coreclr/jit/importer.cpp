@@ -6750,6 +6750,11 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 if (compIsForInlining())
                 {
+                    if ((lclNum == 0) && compIsStructMethodThatOperatesOnCopy())
+                    {
+                        BADCODE("Illegal starg 0 in function");
+                    }
+
                     op1 = impInlineFetchArg(impInlineInfo->inlArgInfo[lclNum], impInlineInfo->lclVarInfo[lclNum]);
                     noway_assert(op1->gtOper == GT_LCL_VAR);
                     lclNum = op1->AsLclVar()->GetLclNum();
@@ -6763,6 +6768,11 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 if (lclNum == info.compThisArg)
                 {
                     lclNum = lvaArg0Var;
+
+                    if (compIsStructMethodThatOperatesOnCopy())
+                    {
+                        BADCODE("Illegal starg 0 in function");
+                    }
                 }
 
                 // We should have seen this arg write in the prescan
@@ -6962,6 +6972,11 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         return;
                     }
 
+                    if ((lclNum == 0) && compIsStructMethodThatOperatesOnCopy())
+                    {
+                        BADCODE("Illegal ldarga 0 in function");
+                    }
+
                     op1->ChangeType(TYP_BYREF);
                     op1->SetOper(GT_LCL_ADDR);
                     op1->AsLclFld()->SetLclOffs(0);
@@ -6974,6 +6989,11 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 if (lclNum == info.compThisArg)
                 {
                     lclNum = lvaArg0Var;
+
+                    if (compIsStructMethodThatOperatesOnCopy())
+                    {
+                        BADCODE("Illegal ldarga 0 in function");
+                    }
                 }
 
                 goto ADRVAR;
@@ -10957,6 +10977,14 @@ void Compiler::impLoadArg(unsigned ilArgNum, IL_OFFSET offset)
         if (lclNum == info.compThisArg)
         {
             lclNum = lvaArg0Var;
+
+            // Redirect to copy in some struct instance methods
+            if (lvaThisCopyVar != BAD_VAR_NUM)
+            {
+                GenTree* lclAddr = gtNewLclVarAddrNode(lvaThisCopyVar, TYP_BYREF);
+                impPushOnStack(lclAddr, verMakeTypeInfoForLocal(lclNum));
+                return;
+            }
         }
 
         impLoadVar(lclNum, offset);
@@ -13294,6 +13322,16 @@ void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
             return;
         }
 
+        if ((arg.GetWellKnownArg() == WellKnownArg::ThisPointer) && ((methInfo->options & CORINFO_OPT_COPY_STRUCT_INSTANCE) != 0))
+        {
+            // Method call to a struct instance method that operates on a copy.
+            // We will load the instance as part of copying, so set up flags to
+            // indicate that there is a side effect.
+            inlArgInfo[ilArgCnt].argIsByRefToCopy = true;
+            inlArgInfo[ilArgCnt].argHasGlobRef = true;
+            inlArgInfo[ilArgCnt].argHasSideEff = true;
+        }
+
         ilArgCnt++;
     }
 
@@ -13684,7 +13722,7 @@ GenTree* Compiler::impInlineFetchArg(InlArgInfo& argInfo, const InlLclVarInfo& l
 {
     // Cache the relevant arg and lcl info for this argument.
     // We will modify argInfo but not lclVarInfo.
-    const bool      argCanBeModified = argInfo.argHasLdargaOp || argInfo.argHasStargOp;
+    const bool      argCanBeModified = argInfo.argHasLdargaOp || argInfo.argHasStargOp || argInfo.argIsByRefToCopy;
     const var_types lclTyp           = lclInfo.lclTypeInfo;
     GenTree*        op1              = nullptr;
 
@@ -13747,7 +13785,7 @@ GenTree* Compiler::impInlineFetchArg(InlArgInfo& argInfo, const InlLclVarInfo& l
             }
         }
     }
-    else if (argInfo.argIsByRefToStructLocal && !argInfo.argHasStargOp)
+    else if (argInfo.argIsByRefToStructLocal && !argInfo.argHasStargOp && !argInfo.argIsByRefToCopy)
     {
         /* Argument is a by-ref address to a struct, a normed struct, or its field.
            In these cases, don't spill the byref to a local, simply clone the tree and use it.
@@ -13846,7 +13884,7 @@ GenTree* Compiler::impInlineFetchArg(InlArgInfo& argInfo, const InlLclVarInfo& l
             // if it is a struct, because it requires some additional handling.
 
             if ((!varTypeIsStruct(lclTyp) && !argInfo.argHasSideEff && !argInfo.argHasGlobRef &&
-                 !argInfo.argHasCallerLocalRef))
+                 !argInfo.argHasCallerLocalRef && !argInfo.argIsByRefToStructLocal))
             {
                 /* Get a *LARGE* LCL_VAR node */
                 op1 = gtNewLclLNode(tmpNum, genActualType(lclTyp));

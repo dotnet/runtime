@@ -720,6 +720,8 @@ enum CorInfoOptions
                                                CORINFO_GENERICS_CTXT_FROM_METHODDESC |
                                                CORINFO_GENERICS_CTXT_FROM_METHODTABLE),
     CORINFO_GENERICS_CTXT_KEEP_ALIVE        = 0x00000100, // Keep the generics context alive throughout the method even if there is no explicit use, and report its location to the CLR
+    CORINFO_OPT_COPY_STRUCT_INSTANCE        = 0x00000200, // Function is a struct instance method that operates on a copy of "this"
+
 
 };
 

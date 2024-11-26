@@ -5052,6 +5052,12 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
     }
 #endif
 
+    if (compIsAsync2() != call->IsAsync2())
+    {
+        failTailCall("Caller and callee do not agree on async2-ness");
+        return nullptr;
+    }
+
     // We have to ensure to pass the incoming retValBuf as the
     // outgoing one. Using a temp will not do as this function will
     // not regain control to do the copy. This can happen when inlining

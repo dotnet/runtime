@@ -3981,6 +3981,11 @@ public:
                          // However, if there is a "ldarga 0" or "starg 0" in the IL,
                          // we will redirect all "ldarg(a) 0" and "starg 0" to this temp.
 
+     // For struct instance functions with CORINFO_OPT_COPY_STRUCT_INSTANCE
+     // this is the local that has the copy of "this" to which accesses on
+     // "this" are redirected to
+    unsigned lvaThisCopyVar = BAD_VAR_NUM;
+
     unsigned lvaInlineeReturnSpillTemp = BAD_VAR_NUM; // The temp to spill the non-VOID return expression
                                         // in case there are multiple BBJ_RETURN blocks in the inlinee
                                         // or if the inlinee has GC ref locals.
@@ -6454,6 +6459,7 @@ protected:
     void fgObserveInlineConstants(OPCODE opcode, const FgStack& stack, bool isInlining);
 
     void fgAdjustForAddressExposedOrWrittenThis();
+    void fgInitializeThisCopyVar();
 
     unsigned fgStressBBProf()
     {
@@ -6901,7 +6907,7 @@ private:
 
     void fgInvokeInlineeCompiler(GenTreeCall* call, InlineResult* result, InlineContext** createdContext);
     void fgInsertInlineeBlocks(InlineInfo* pInlineInfo);
-    void fgInsertInlineeArgument(const InlArgInfo& argInfo, BasicBlock* block, Statement** afterStmt, Statement** newStmt, const DebugInfo& callDI);
+    void fgInsertInlineeArgument(InlineInfo* pInlineInfo, const InlArgInfo& argInfo, BasicBlock* block, Statement** afterStmt, Statement** newStmt, const DebugInfo& callDI);
     Statement* fgInlinePrependStatements(InlineInfo* inlineInfo);
     void fgInlineAppendStatements(InlineInfo* inlineInfo, BasicBlock* block, Statement* stmt);
 
@@ -10832,6 +10838,11 @@ public:
     bool compIsAsync2() const
     {
         return opts.jitFlags->IsSet(JitFlags::JIT_FLAG_RUNTIMEASYNCFUNCTION);
+    }
+
+    bool compIsStructMethodThatOperatesOnCopy() const
+    {
+        return (info.compMethodInfo->options & CORINFO_OPT_COPY_STRUCT_INSTANCE) != 0;
     }
 
     //------------------------------------------------------------------------
