@@ -337,16 +337,13 @@ void UnmanagedThreadTracker::Close()
 //----------------------------------------------------------------------------
 // Implementation of IDacDbiInterface::IMetaDataLookup.
 // lookup Internal Metadata Importer keyed by PEAssembly
-// isILMetaDataForNGENImage is true iff the IMDInternalImport returned represents a pointer to
-// metadata from an IL image when the module was an ngen'ed image.
-IMDInternalImport * CordbProcess::LookupMetaData(VMPTR_PEAssembly vmPEAssembly, bool &isILMetaDataForNGENImage)
+IMDInternalImport * CordbProcess::LookupMetaData(VMPTR_PEAssembly vmPEAssembly)
 {
     INTERNAL_DAC_CALLBACK(this);
 
     HASHFIND hashFindAppDomain;
     HASHFIND hashFindModule;
     IMDInternalImport * pMDII = NULL;
-    isILMetaDataForNGENImage = false;
 
     // Check to see if one of the cached modules has the metadata we need
     // If not we will do a more exhaustive search below
@@ -400,7 +397,7 @@ IMDInternalImport * CordbProcess::LookupMetaData(VMPTR_PEAssembly vmPEAssembly, 
                     // debugger if it can find the metadata elsewhere.
                     // If this was live debugging, we should have just gotten the memory contents.
                     // Thus this code is for dump debugging, when you don't have the metadata in the dump.
-                    pMDII = LookupMetaDataFromDebugger(vmPEAssembly, isILMetaDataForNGENImage, pModule);
+                    pMDII = LookupMetaDataFromDebugger(vmPEAssembly, pModule);
                 }
                 return pMDII;
             }
@@ -413,91 +410,29 @@ IMDInternalImport * CordbProcess::LookupMetaData(VMPTR_PEAssembly vmPEAssembly, 
 
 IMDInternalImport * CordbProcess::LookupMetaDataFromDebugger(
     VMPTR_PEAssembly vmPEAssembly,
-    bool &isILMetaDataForNGENImage,
     CordbModule * pModule)
 {
     DWORD dwImageTimeStamp = 0;
     DWORD dwImageSize = 0;
-    bool isNGEN = false;
     StringCopyHolder filePath;
     IMDInternalImport * pMDII = NULL;
 
     // First, see if the debugger can locate the exact metadata we want.
-    if (this->GetDAC()->GetMetaDataFileInfoFromPEFile(vmPEAssembly, dwImageTimeStamp, dwImageSize, isNGEN, &filePath))
+    if (this->GetDAC()->GetMetaDataFileInfoFromPEFile(vmPEAssembly, dwImageTimeStamp, dwImageSize, &filePath))
     {
         _ASSERTE(filePath.IsSet());
 
-        // Since we track modules by their IL images, that presents a little bit of oddness here.  The correct
-        // thing to do is preferentially load the NI content.
-        // We don't discriminate between timestamps & sizes becuase CLRv4 deterministic NGEN guarantees that the
-        // IL image and NGEN image have the same timestamp and size.  Should that guarantee change, this code
-        // will be horribly broken.
-
-        // If we happen to have an NI file path, use it instead.
-        const WCHAR * pwszFilePath = pModule->GetNGenImagePath();
-        if (pwszFilePath)
-        {
-            // Force the issue, regardless of the older codepath's opinion.
-            isNGEN = true;
-        }
-        else
-        {
-            pwszFilePath = (WCHAR *)filePath;
-        }
+        const WCHAR * pwszFilePath = (WCHAR *)filePath;
 
         ALLOW_DATATARGET_MISSING_MEMORY(
             pMDII = LookupMetaDataFromDebuggerForSingleFile(pModule, pwszFilePath, dwImageTimeStamp, dwImageSize);
         );
 
-        // If it's an ngen'ed image and the debugger couldn't find it, we can use the metadata from
-        // the corresponding IL image if the debugger can locate it.
         filePath.Clear();
-        if ((pMDII == NULL) &&
-            (isNGEN) &&
-            (this->GetDAC()->GetILImageInfoFromNgenPEFile(vmPEAssembly, dwImageTimeStamp, dwImageSize, &filePath)))
-        {
-            _ASSERTE(filePath.IsSet());
-
-            WCHAR *mutableFilePath = (WCHAR *)filePath;
-
-            size_t pathLen = u16_strlen(mutableFilePath);
-
-            const WCHAR *nidll = W(".ni.dll");
-            const WCHAR *niexe = W(".ni.exe");
-            const size_t dllLen = u16_strlen(nidll);  // used for ni.exe as well
-
-            if (pathLen > dllLen && _wcsicmp(mutableFilePath+pathLen-dllLen, nidll) == 0)
-            {
-                wcscpy_s(mutableFilePath+pathLen-dllLen, dllLen, W(".dll"));
-            }
-            else if (pathLen > dllLen && _wcsicmp(mutableFilePath+pathLen-dllLen, niexe) == 0)
-            {
-                wcscpy_s(mutableFilePath+pathLen-dllLen, dllLen, W(".exe"));
-            }
-
-            ALLOW_DATATARGET_MISSING_MEMORY(
-                pMDII = LookupMetaDataFromDebuggerForSingleFile(pModule, mutableFilePath, dwImageTimeStamp, dwImageSize);
-            );
-
-            if (pMDII != NULL)
-            {
-                isILMetaDataForNGENImage = true;
-            }
-        }
     }
     return pMDII;
 }
 
-// We do not know if the image being sent to us is an IL image or ngen image.
-// CordbProcess::LookupMetaDataFromDebugger() has this knowledge when it looks up the file to hand off
-// to this function.
-// DacDbiInterfaceImpl::GetMDImport() has this knowledge in the isNGEN flag.
-// The CLR v2 code that windbg used made a distinction whether the metadata came from
-// the exact binary or not (i.e. were we getting metadata from the IL image and using
-// it against the ngen image?) but that information was never used and so not brought forward.
-// It would probably be more interesting generally to track whether the debugger gives us back
-// a file that bears some relationship to the file we asked for, which would catch the NI/IL case
-// as well.
 IMDInternalImport * CordbProcess::LookupMetaDataFromDebuggerForSingleFile(
     CordbModule * pModule,
     LPCWSTR pwszFilePath,
@@ -1812,7 +1747,6 @@ HRESULT CordbProcess::Init()
         // a flag on the dispenser to create threadsafe readers. This is done best-effort but
         // really shouldn't ever fail. See issue 696511.
         VARIANT optionValue;
-        VariantInit(&optionValue);
         V_VT(&optionValue) = VT_UI4;
         V_UI4(&optionValue) = MDThreadSafetyOn;
         m_pMetaDispenser->SetOption(MetaDataThreadSafetyOptions, &optionValue);
@@ -11225,7 +11159,7 @@ void CordbProcess::HandleSetThreadContextNeeded(DWORD dwThreadId)
     // 3. read the thread context, and from that read the pointer to the left-side context and the size of the context
     // 4. then we can perform the actual SetThreadContext operation
     // 5. lastly, we must resume the thread
-    // For the first step of obtaining the thread handle, 
+    // For the first step of obtaining the thread handle,
     // we have previously attempted to use ::OpenThread to get a handle to the thread.
     // However, there are situations where OpenThread can fail with an Access Denied error.
     // From https://github.com/dotnet/runtime/issues/107263, the control-c handler in 
@@ -11258,8 +11192,8 @@ void CordbProcess::HandleSetThreadContextNeeded(DWORD dwThreadId)
     DT_CONTEXT context = { 0 };
     context.ContextFlags = CONTEXT_FULL;
 
-    // we originally used GetDataTarget()->GetThreadContext, but 
-    // the implementation uses ShimLocalDataTarget::GetThreadContext which 
+    // we originally used GetDataTarget()->GetThreadContext, but
+    // the implementation uses ShimLocalDataTarget::GetThreadContext which
     // depends on OpenThread which might fail with an Access Denied error (see note above)
     BOOL success = ::GetThreadContext(hThread, (CONTEXT*)(&context));
     if (!success)

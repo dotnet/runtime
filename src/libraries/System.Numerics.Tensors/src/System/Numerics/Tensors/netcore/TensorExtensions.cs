@@ -2658,8 +2658,14 @@ namespace System.Numerics.Tensors
 
                 if (dimensions.IsEmpty)
                 {
-                    lengths = tensor._lengths.Reverse().ToArray();
-                    permutation = Enumerable.Range(0, tensor.Rank).Reverse().ToArray();
+                    int[] tempPermutation = new int[tensor.Rank];
+                    for (int i = 0; i < tensor.Rank; i++)
+                    {
+                        lengths[i] = tensor._lengths[tensor.Rank - 1 - i];
+                        tempPermutation[i] = tensor.Rank - 1 - i;
+                    }
+
+                    permutation = tempPermutation;
                 }
                 else
                 {
@@ -3456,7 +3462,7 @@ namespace System.Numerics.Tensors
             Tensor<T>[] outputs = new Tensor<T>[tensors.Length];
             for (int i = 0; i < tensors.Length; i++)
             {
-                outputs[i] = Tensor.Unsqueeze(tensors[0], dimension);
+                outputs[i] = Tensor.Unsqueeze(tensors[i], dimension);
             }
             return Tensor.ConcatenateOnDimension<T>(dimension, outputs);
         }
@@ -3494,7 +3500,7 @@ namespace System.Numerics.Tensors
             Tensor<T>[] outputs = new Tensor<T>[tensors.Length];
             for (int i = 0; i < tensors.Length; i++)
             {
-                outputs[i] = Tensor.Unsqueeze(tensors[0], dimension);
+                outputs[i] = Tensor.Unsqueeze(tensors[i], dimension);
             }
             return ref Tensor.ConcatenateOnDimension<T>(dimension, tensors, destination);
         }

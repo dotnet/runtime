@@ -5897,8 +5897,8 @@ ClrDataAccess::RawGetMethodName(
     return E_NOINTERFACE;
 
 NameFromMethodDesc:
-    if (methodDesc->GetClassification() == mcDynamic &&
-        !methodDesc->GetSig())
+    if (methodDesc->GetClassification() == mcDynamic
+        && methodDesc->GetSigParser().IsNull())
     {
         return FormatCLRStubName(
             NULL,
@@ -6414,7 +6414,6 @@ ClrDataAccess::GetMetaDataFileInfoFromPEFile(PEAssembly *pPEAssembly,
                                              DWORD &dwSize,
                                              DWORD &dwDataSize,
                                              DWORD &dwRvaHint,
-                                             bool  &isNGEN,
                                              _Out_writes_(cchFilePath) LPWSTR wszFilePath,
                                              const DWORD cchFilePath)
 {
@@ -6424,7 +6423,6 @@ ClrDataAccess::GetMetaDataFileInfoFromPEFile(PEAssembly *pPEAssembly,
     IMAGE_DATA_DIRECTORY *pDir = NULL;
     COUNT_T uniPathChars = 0;
 
-    isNGEN = false;
     if (pDir == NULL || pDir->Size == 0)
     {
         mdImage = pPEAssembly->GetPEImage();
@@ -6475,58 +6473,15 @@ ClrDataAccess::GetMetaDataFileInfoFromPEFile(PEAssembly *pPEAssembly,
     return true;
 }
 
-/* static */
-bool ClrDataAccess::GetILImageInfoFromNgenPEFile(PEAssembly *pPEAssembly,
-                                                 DWORD &dwTimeStamp,
-                                                 DWORD &dwSize,
-                                                 _Out_writes_(cchFilePath) LPWSTR wszFilePath,
-                                                 const DWORD cchFilePath)
-{
-    SUPPORTS_DAC_HOST_ONLY;
-    DWORD dwWritten = 0;
-
-    // use the IL File name
-    if (!pPEAssembly->GetPath().DacGetUnicode(cchFilePath, wszFilePath, (COUNT_T *)(&dwWritten)))
-    {
-        // Use DAC hint to retrieve the IL name.
-        pPEAssembly->GetModuleFileNameHint().DacGetUnicode(cchFilePath, wszFilePath, (COUNT_T *)(&dwWritten));
-    }
-    dwTimeStamp = 0;
-    dwSize = 0;
-
-    return true;
-}
-
 void *
-ClrDataAccess::GetMetaDataFromHost(PEAssembly* pPEAssembly,
-                                   bool* isAlternate)
+ClrDataAccess::GetMetaDataFromHost(PEAssembly* pPEAssembly)
 {
     DWORD imageTimestamp, imageSize, dataSize;
     void* buffer = NULL;
     WCHAR uniPath[MAX_LONGPATH] = {0};
-    bool isAlt = false;
-    bool isNGEN = false;
     DAC_INSTANCE* inst = NULL;
     HRESULT  hr = S_OK;
     DWORD ulRvaHint;
-    //
-    // We always ask for the IL image metadata,
-    // as we expect that to be more
-    // available than others.  The drawback is that
-    // there may be differences between the IL image
-    // metadata and native image metadata, so we
-    // have to mark such alternate metadata so that
-    // we can fail unsupported usage of it.
-    //
-
-    // Microsoft - above comment seems to be an unimplemented thing.
-    // The DAC_MD_IMPORT.isAlternate field gets ultimately set, but
-    // on the searching I did, I cannot find any usage of it
-    // other than in the ctor.  Should we be doing something, or should
-    // we remove this comment and the isAlternate field?
-    // It's possible that test will want us to track whether we have
-    // an IL image's metadata loaded against an NGEN'ed image
-    // so the field remains for now.
 
     if (!ClrDataAccess::GetMetaDataFileInfoFromPEFile(
             pPEAssembly,
@@ -6534,7 +6489,6 @@ ClrDataAccess::GetMetaDataFromHost(PEAssembly* pPEAssembly,
             imageSize,
             dataSize,
             ulRvaHint,
-            isNGEN,
             uniPath,
             ARRAY_SIZE(uniPath)))
     {
@@ -6589,72 +6543,12 @@ ClrDataAccess::GetMetaDataFromHost(PEAssembly* pPEAssembly,
             (BYTE*)buffer,
             NULL);
     }
-    if (FAILED(hr) && isNGEN)
-    {
-        // We failed to locate the ngen'ed image. We should try to
-        // find the matching IL image
-        //
-        isAlt = true;
-        if (!ClrDataAccess::GetILImageInfoFromNgenPEFile(
-                pPEAssembly,
-                imageTimestamp,
-                imageSize,
-                uniPath,
-                ARRAY_SIZE(uniPath)))
-        {
-            goto ErrExit;
-        }
-
-        const WCHAR* ilExtension = W("dll");
-        WCHAR ngenImageName[MAX_LONGPATH] = {0};
-        if (wcscpy_s(ngenImageName, ARRAY_SIZE(ngenImageName), uniPath) != 0)
-        {
-            goto ErrExit;
-        }
-        if (wcscpy_s(uniPath, ARRAY_SIZE(uniPath), ngenImageName) != 0)
-        {
-            goto ErrExit;
-        }
-
-        // RVA size in ngen image and IL image is the same. Because the only
-        // different is in RVA. That is 4 bytes column fixed.
-        //
-
-        // try again
-        if (m_legacyMetaDataLocator)
-        {
-            hr = m_legacyMetaDataLocator->GetMetadata(
-                uniPath,
-                imageTimestamp,
-                imageSize,
-                NULL,           // MVID - not used yet
-                0,              // pass zero hint here... important
-                0,              // flags - reserved for future.
-                dataSize,
-                (BYTE*)buffer,
-                NULL);
-        }
-        else
-        {
-            hr = m_target3->GetMetaData(
-                uniPath,
-                imageTimestamp,
-                imageSize,
-                NULL,           // MVID - not used yet
-                0,              // pass zero hint here... important
-                0,              // flags - reserved for future.
-                dataSize,
-                (BYTE*)buffer,
-                NULL);
-        }
-    }
 
     if (FAILED(hr))
     {
         goto ErrExit;
     }
 
-    *isAlternate = isAlt;
     m_instances.AddSuperseded(inst);
     return buffer;
 
@@ -6682,7 +6576,6 @@ ClrDataAccess::GetMDImport(const PEAssembly* pPEAssembly, const ReflectionModule
     COUNT_T     mdSize;
     IMDInternalImport* mdImport = NULL;
     PVOID       mdBaseHost = NULL;
-    bool        isAlternate = false;
 
     _ASSERTE((pPEAssembly == NULL && reflectionModule != NULL) || (pPEAssembly != NULL && reflectionModule == NULL));
     TADDR     peAssemblyAddr = (pPEAssembly != NULL) ? dac_cast<TADDR>(pPEAssembly) : dac_cast<TADDR>(reflectionModule);
@@ -6755,7 +6648,7 @@ ClrDataAccess::GetMDImport(const PEAssembly* pPEAssembly, const ReflectionModule
         // We couldn't read the metadata from memory.  Ask
         // the target for metadata as it may be able to
         // provide it from some alternate means.
-        mdBaseHost = GetMetaDataFromHost(const_cast<PEAssembly *>(pPEAssembly), &isAlternate);
+        mdBaseHost = GetMetaDataFromHost(const_cast<PEAssembly *>(pPEAssembly));
     }
 
     if (mdBaseHost == NULL)
@@ -6790,7 +6683,7 @@ ClrDataAccess::GetMDImport(const PEAssembly* pPEAssembly, const ReflectionModule
     // The m_mdImports list does get cleaned up by calls to ClrDataAccess::Flush,
     // i.e. every time the process changes state.
 
-    if (m_mdImports.Add(peAssemblyAddr, mdImport, isAlternate) == NULL)
+    if (m_mdImports.Add(peAssemblyAddr, mdImport) == NULL)
     {
         mdImport->Release();
         DacError(E_OUTOFMEMORY);
