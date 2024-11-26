@@ -3462,7 +3462,7 @@ namespace System.Numerics.Tensors
             Tensor<T>[] outputs = new Tensor<T>[tensors.Length];
             for (int i = 0; i < tensors.Length; i++)
             {
-                outputs[i] = Tensor.Unsqueeze(tensors[0], dimension);
+                outputs[i] = Tensor.Unsqueeze(tensors[i], dimension);
             }
             return Tensor.ConcatenateOnDimension<T>(dimension, outputs);
         }
@@ -3500,7 +3500,7 @@ namespace System.Numerics.Tensors
             Tensor<T>[] outputs = new Tensor<T>[tensors.Length];
             for (int i = 0; i < tensors.Length; i++)
             {
-                outputs[i] = Tensor.Unsqueeze(tensors[0], dimension);
+                outputs[i] = Tensor.Unsqueeze(tensors[i], dimension);
             }
             return ref Tensor.ConcatenateOnDimension<T>(dimension, tensors, destination);
         }

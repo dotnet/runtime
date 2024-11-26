@@ -167,22 +167,6 @@ internal class MethodValidation
         return methodDescPointer.Value + offset;
     }
 
-    // FIXME[cdac]: this is copypasted from RuntimeTypeSystem_1 - put it in a a shared class instead
-    private TargetCodePointer CodePointerFromAddress(TargetPointer address)
-    {
-        IPlatformMetadata metadata = _target.Contracts.PlatformMetadata;
-        CodePointerFlags flags = metadata.GetCodePointerFlags();
-        if (flags.HasFlag(CodePointerFlags.HasArm32ThumbBit))
-        {
-            return new TargetCodePointer(address.Value | 1);
-        } else if (flags.HasFlag(CodePointerFlags.HasArm64PtrAuth))
-        {
-            throw new NotImplementedException("CodePointerFromAddress: ARM64 with pointer authentication");
-        }
-        Debug.Assert(flags == default);
-        return new TargetCodePointer(address.Value);
-    }
-
     private TargetCodePointer GetCodePointer(TargetPointer methodDescPointer, NonValidatedMethodDesc umd)
     {
         // TODO(cdac): _ASSERTE(!IsDefaultInterfaceMethod() || HasNativeCodeSlot());
@@ -194,7 +178,7 @@ internal class MethodValidation
             TargetPointer ppCode = GetAddrOfNativeCodeSlot(methodDescPointer, umd);
             TargetCodePointer pCode = _target.ReadCodePointer(ppCode);
 
-            return CodePointerFromAddress(pCode.AsTargetPointer);
+            return CodePointerUtils.CodePointerFromAddress(pCode.AsTargetPointer, _target);
         }
 
         if (!umd.HasStableEntryPoint || umd.HasPrecode)
