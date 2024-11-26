@@ -781,7 +781,7 @@ RELEASE_CONFIG_INTEGER(JitEnablePhysicalPromotion, "JitEnablePhysicalPromotion",
 // Enable cross-block local assertion prop
 RELEASE_CONFIG_INTEGER(JitEnableCrossBlockLocalAssertionProp, "JitEnableCrossBlockLocalAssertionProp", 1)
 
-// Do greedy RPO-based layout in Compiler::fgReorderBlocks.
+// Do greedy RPO-based block layout.
 RELEASE_CONFIG_INTEGER(JitDoReversePostOrderLayout, "JitDoReversePostOrderLayout", 1);
 
 // Globally search for cut points in 3-opt layout instead of using the greedy strategy.

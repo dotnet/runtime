@@ -5288,6 +5288,8 @@ void Compiler::ThreeOptLayout::Run()
             }
         }
     }
+
+    INDEBUG(compiler->Metrics.BasicBlockLayoutCost = GetLayoutCost(0, numCandidateBlocks - 1));
 }
 
 //-----------------------------------------------------------------------------
