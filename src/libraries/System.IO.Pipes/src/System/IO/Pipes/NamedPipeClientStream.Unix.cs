@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
@@ -39,7 +40,8 @@ namespace System.IO.Pipes
             SafePipeHandle? clientHandle = null;
             try
             {
-                socket.Connect(new UnixDomainSocketEndPoint(_normalizedPipePath!));
+                Debug.Assert(_normalizedPipePath != null);
+                socket.Connect(new UnixDomainSocketEndPoint(_normalizedPipePath));
                 clientHandle = new SafePipeHandle(socket);
                 ConfigureSocket(socket, clientHandle, _direction, 0, 0, _inheritability);
             }

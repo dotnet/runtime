@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -110,7 +111,8 @@ namespace System.IO.Pipes
                 _pipeFlags |= (((int)_impersonationLevel - 1) << 16);
             }
 
-            SafePipeHandle handle = CreateNamedPipeClient(_normalizedPipePath!, ref secAttrs, _pipeFlags, _accessRights);
+            Debug.Assert(_normalizedPipePath != null);
+            SafePipeHandle handle = CreateNamedPipeClient(_normalizedPipePath, ref secAttrs, _pipeFlags, _accessRights);
 
             if (handle.IsInvalid)
             {
@@ -133,7 +135,7 @@ namespace System.IO.Pipes
                     throw Win32Marshal.GetExceptionForWin32Error(errorCode);
                 }
 
-                if (!Interop.Kernel32.WaitNamedPipe(_normalizedPipePath!, timeout))
+                if (!Interop.Kernel32.WaitNamedPipe(_normalizedPipePath, timeout))
                 {
                     errorCode = Marshal.GetLastPInvokeError();
 
@@ -147,7 +149,7 @@ namespace System.IO.Pipes
                 }
 
                 // Pipe server should be free. Let's try to connect to it.
-                handle = CreateNamedPipeClient(_normalizedPipePath!, ref secAttrs, _pipeFlags, _accessRights);
+                handle = CreateNamedPipeClient(_normalizedPipePath, ref secAttrs, _pipeFlags, _accessRights);
 
                 if (handle.IsInvalid)
                 {
