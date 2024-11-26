@@ -151,5 +151,5 @@ public:
 
     void InsertDef(const UseDefLocation& def);
     bool FinalizeDefs();
-    bool InsertUse(const UseDefLocation& use);
+    void InsertUse(const UseDefLocation& use);
 };
