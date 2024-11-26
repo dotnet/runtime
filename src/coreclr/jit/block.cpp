@@ -329,6 +329,60 @@ FlowEdge* Compiler::BlockDominancePreds(BasicBlock* blk)
 }
 
 //------------------------------------------------------------------------
+// IsInsertedSsaLiveIn: See if a local is marked as being live-in to a block in
+// the side table with locals inserted into SSA.
+//
+// Arguments:
+//   block - The block
+//   lclNum - The local
+//
+// Returns:
+//    True if the local is marked as live-in to that block
+//
+bool Compiler::IsInsertedSsaLiveIn(BasicBlock* block, unsigned lclNum)
+{
+    assert(lvaGetDesc(lclNum)->lvInSsa);
+
+    if (m_insertedSsaLocalsLiveIn == nullptr)
+    {
+        return false;
+    }
+
+    return m_insertedSsaLocalsLiveIn->Lookup(BasicBlockLocalPair(block, lclNum));
+}
+
+//------------------------------------------------------------------------
+// AddInsertedSsaLiveIn: Mark as local that was inserted into SSA as being
+// live-in to a block.
+//
+// Arguments:
+//   block - The block
+//   lclNum - The local
+//
+// Returns:
+//    True if this was added anew; false if the local was already marked as such.
+//
+bool Compiler::AddInsertedSsaLiveIn(BasicBlock* block, unsigned lclNum)
+{
+    // SSA-inserted locals always have explicit reaching defs for all uses, so
+    // it never makes sense for them to be live into the first block.
+    assert(block != fgFirstBB);
+
+    if (m_insertedSsaLocalsLiveIn == nullptr)
+    {
+        m_insertedSsaLocalsLiveIn = new (this, CMK_SSA) BasicBlockLocalPairSet(getAllocator(CMK_SSA));
+    }
+
+    if (m_insertedSsaLocalsLiveIn->Set(BasicBlockLocalPair(block, lclNum), true, BasicBlockLocalPairSet::Overwrite))
+    {
+        return false;
+    }
+
+    JITDUMP("Marked V%02u as live into " FMT_BB "\n", lclNum, block->bbNum);
+    return true;
+}
+
+//------------------------------------------------------------------------
 // IsLastHotBlock: see if this is the last block before the cold section
 //
 // Arguments:
@@ -462,7 +516,6 @@ void BasicBlock::dspFlags() const
         {BBF_REMOVED, "del"},
         {BBF_DONT_REMOVE, "keep"},
         {BBF_INTERNAL, "internal"},
-        {BBF_FAILED_VERIFICATION, "failV"},
         {BBF_HAS_SUPPRESSGC_CALL, "sup-gc"},
         {BBF_LOOP_HEAD, "loophead"},
         {BBF_HAS_LABEL, "label"},
@@ -565,8 +618,7 @@ void BasicBlock::dspSuccs(Compiler* compiler)
     // compute it ourselves here.
     if (bbKind == BBJ_SWITCH)
     {
-        // Create a set with all the successors. Don't use BlockSet, so we don't need to worry
-        // about the BlockSet epoch.
+        // Create a set with all the successors.
         unsigned     bbNumMax = compiler->fgBBNumMax;
         BitVecTraits bitVecTraits(bbNumMax + 1, compiler);
         BitVec       uniqueSuccBlocks(BitVecOps::MakeEmpty(&bitVecTraits));
@@ -984,10 +1036,10 @@ unsigned JitPtrKeyFuncs<BasicBlock>::GetHashCode(const BasicBlock* ptr)
     unsigned hash = SsaStressHashHelper();
     if (hash != 0)
     {
-        return (hash ^ (ptr->bbNum << 16) ^ ptr->bbNum);
+        return (hash ^ (ptr->bbID << 16) ^ ptr->bbID);
     }
 #endif
-    return ptr->bbNum;
+    return ptr->bbID;
 }
 
 //------------------------------------------------------------------------

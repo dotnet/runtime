@@ -230,7 +230,7 @@ int main(int argc, char* argv[])
 // the linker can detect that we have ASAN components early enough in the build.
 // Include our asan support sources for executable projects here to ensure they
 // are compiled into the bootstrapper object.
-#include "minipal/asansupport.cpp"
+#include "minipal/sansupport.c"
 #endif // HAS_ADDRESS_SANITIZER
 
 #endif // !NATIVEAOT_DLL

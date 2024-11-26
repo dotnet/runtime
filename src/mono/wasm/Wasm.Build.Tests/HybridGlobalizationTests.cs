@@ -44,7 +44,7 @@ namespace Wasm.Build.Tests
             buildArgs = ExpandBuildArgs(buildArgs, extraProperties);
 
             if (dotnetWasmFromRuntimePack == null)
-                dotnetWasmFromRuntimePack = !(buildArgs.AOT || buildArgs.Config == "Release");
+                dotnetWasmFromRuntimePack = IsDotnetWasmFromRuntimePack(buildArgs);
 
             string programText = File.ReadAllText(Path.Combine(BuildEnvironment.TestAssetsPath, "Wasm.Buid.Tests.Programs", "HybridGlobalization.cs"));
 

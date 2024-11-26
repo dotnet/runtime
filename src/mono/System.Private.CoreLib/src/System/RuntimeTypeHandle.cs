@@ -231,22 +231,6 @@ namespace System
             return HasInstantiation(new QCallTypeHandle(ref type));
         }
 
-#pragma warning disable IDE0060
-        internal static bool IsComObject(RuntimeType type, bool isGenericCOM)
-        {
-            // Mono runtime doesn't support built-in COM.
-            return false;
-        }
-#pragma warning restore IDE0060
-
-#pragma warning disable IDE0060
-        internal static bool IsEquivalentTo(RuntimeType rtType1, RuntimeType rtType2)
-        {
-            // reference check is done earlier and we don't recognize anything else
-            return false;
-        }
-#pragma warning restore IDE0060
-
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern int GetArrayRank(QCallTypeHandle type);
 
@@ -260,7 +244,7 @@ namespace System
         internal static extern void GetModule(QCallTypeHandle type, ObjectHandleOnStack res);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern void GetBaseType(QCallTypeHandle type, ObjectHandleOnStack res);
+        private static extern IntPtr GetMonoClass(QCallTypeHandle type);
 
         internal static int GetArrayRank(RuntimeType type)
         {
@@ -281,18 +265,16 @@ namespace System
             return res!;
         }
 
-        internal static RuntimeType GetElementType(RuntimeType type)
+        internal static RuntimeType? GetElementType(RuntimeType type)
         {
             RuntimeType? res = null;
             GetElementType(new QCallTypeHandle(ref type), ObjectHandleOnStack.Create(ref res));
-            return res!;
+            return res;
         }
 
-        internal static RuntimeType GetBaseType(RuntimeType type)
+        internal static IntPtr GetMonoClass(RuntimeType type)
         {
-            RuntimeType? res = null;
-            GetBaseType(new QCallTypeHandle(ref type), ObjectHandleOnStack.Create(ref res));
-            return res!;
+            return GetMonoClass(new QCallTypeHandle(ref type));
         }
 
         internal static bool CanCastTo(RuntimeType type, RuntimeType target)

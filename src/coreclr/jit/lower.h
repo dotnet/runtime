@@ -98,6 +98,7 @@ private:
     void      TryLowerCselToCSOp(GenTreeOp* select, GenTree* cond);
     bool      TryLowerAddSubToMulLongOp(GenTreeOp* op, GenTree** next);
     bool      TryLowerNegToMulLongOp(GenTreeOp* op, GenTree** next);
+    bool      TryContainingCselOp(GenTreeHWIntrinsic* parentNode, GenTreeHWIntrinsic* childNode);
 #endif
     void ContainCheckSelect(GenTreeOp* select);
     void ContainCheckBitCast(GenTree* node);
@@ -566,7 +567,7 @@ private:
 
 #if defined(FEATURE_HW_INTRINSICS)
     // Tries to make 'childNode' contained or regOptional in the 'parentNode'
-    void TryMakeSrcContainedOrRegOptional(GenTreeHWIntrinsic* parentNode, GenTree* childNode) const;
+    void TryMakeSrcContainedOrRegOptional(GenTreeHWIntrinsic* parentNode, GenTree* childNode);
 #endif
 
     // Checks and makes 'childNode' contained in the 'parentNode'

@@ -7,22 +7,43 @@
 **
 ** Purpose: Implements classes used to bind to assemblies
 **
-**
-
-
-**
 ===========================================================*/
+
 #ifndef _ASSEMBLYSPEC_H
 #define _ASSEMBLYSPEC_H
+
 #include "hash.h"
 #include "assemblyspecbase.h"
 #include "domainassembly.h"
 #include "holder.h"
 
-class AppDomain;
-class Assembly;
-class DomainAssembly;
-enum FileLoadLevel;
+enum FileLoadLevel
+{
+    // These states are tracked by FileLoadLock
+
+    // Note: This enum must match the static array fileLoadLevelName[]
+    //       which contains the printable names of the enum values
+
+    // Note that semantics here are description is the LAST step done, not what is
+    // currently being done.
+
+    FILE_LOAD_CREATE,
+    FILE_LOAD_BEGIN,
+    FILE_LOAD_BEFORE_TYPE_LOAD,
+    FILE_LOAD_EAGER_FIXUPS,
+    FILE_LOAD_DELIVER_EVENTS,
+    FILE_LOAD_VTABLE_FIXUPS,
+    FILE_LOADED,                    // Loaded by not yet active
+    FILE_ACTIVE                     // Fully active (constructors run & security checked)
+};
+
+enum NotificationStatus
+{
+    NOT_NOTIFIED=0,
+    PROFILER_NOTIFIED=1,
+    DEBUGGER_NEEDNOTIFICATION=2,
+    DEBUGGER_NOTIFIED=4
+};
 
 class AssemblySpec  : public BaseAssemblySpec
 {
