@@ -147,7 +147,6 @@ FCFuncEnd()
 
 FCFuncStart(gRuntimeMethodHandle)
     FCFuncElement("InvokeMethod", RuntimeMethodHandle::InvokeMethod)
-    FCFuncElement("ReboxFromNullable", RuntimeMethodHandle::ReboxFromNullable)
     FCFuncElement("GetImplAttributes", RuntimeMethodHandle::GetImplAttributes)
     FCFuncElement("GetAttributes", RuntimeMethodHandle::GetAttributes)
     FCFuncElement("GetMethodTable", RuntimeMethodHandle::GetMethodTable)

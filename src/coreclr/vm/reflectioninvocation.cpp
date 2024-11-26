@@ -642,36 +642,6 @@ Done:
 }
 FCIMPLEND
 
-/// <summary>
-/// For a true boxed Nullable{T}, re-box to a boxed {T} or null, otherwise just return the input.
-/// </summary>
-FCIMPL1(Object*, RuntimeMethodHandle::ReboxFromNullable, Object* pBoxedValUNSAFE)
-{
-    FCALL_CONTRACT;
-
-    struct {
-        OBJECTREF pBoxed;
-        OBJECTREF retVal;
-    } gc;
-
-    if (pBoxedValUNSAFE == NULL)
-        return NULL;
-
-    gc.pBoxed = ObjectToOBJECTREF(pBoxedValUNSAFE);
-    MethodTable* retMT = gc.pBoxed->GetMethodTable();
-    if (!Nullable::IsNullableType(retMT))
-        return pBoxedValUNSAFE;
-
-    gc.retVal = NULL;
-
-    HELPER_METHOD_FRAME_BEGIN_RET_PROTECT(gc);
-    gc.retVal = Nullable::Box(gc.pBoxed->GetData(), retMT);
-    HELPER_METHOD_FRAME_END();
-
-    return OBJECTREFToObject(gc.retVal);
-}
-FCIMPLEND
-
 struct SkipStruct {
     StackCrawlMark* pStackMark;
     MethodDesc*     pMeth;

@@ -200,8 +200,6 @@ class RuntimeMethodHandle
 public:
     static FCDECL4(Object*, InvokeMethod, Object *target, PVOID* args, SignatureNative* pSig, FC_BOOL_ARG fConstructor);
 
-    static FCDECL1(Object*, ReboxFromNullable, Object *pBoxedValUNSAFE);
-
     struct StreamingContextData {
         Object * additionalContext;  // additionalContex was changed from OBJECTREF to Object to avoid having a
         INT32 contextStates;         // constructor in this struct. GCC doesn't allow structs with constructors to be

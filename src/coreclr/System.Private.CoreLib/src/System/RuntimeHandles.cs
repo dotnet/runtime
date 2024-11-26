@@ -269,14 +269,19 @@ namespace System
             int cTypeHandles,
             ObjectHandleOnStack instantiatedObject);
 
+        internal static unsafe object InternalAlloc(MethodTable* pMT, bool checkTypeFullyInitialized = true)
+        {
+            object? result = null;
+            InternalAlloc(pMT, checkTypeFullyInitialized ? Interop.BOOL.TRUE : Interop.BOOL.FALSE, ObjectHandleOnStack.Create(ref result));
+            return result!;
+        }
+
         internal static object InternalAlloc(RuntimeType type, bool checkTypeFullyInitialized = true)
         {
             Debug.Assert(!type.GetNativeTypeHandle().IsTypeDesc);
-
-            object? result = null;
-            InternalAlloc(type.GetNativeTypeHandle().AsMethodTable(), checkTypeFullyInitialized ? Interop.BOOL.TRUE : Interop.BOOL.FALSE, ObjectHandleOnStack.Create(ref result));
+            object result = InternalAlloc(type.GetNativeTypeHandle().AsMethodTable(), checkTypeFullyInitialized);
             GC.KeepAlive(type);
-            return result!;
+            return result;
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_InternalAlloc")]
@@ -1042,16 +1047,39 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern object? InvokeMethod(object? target, void** arguments, Signature sig, bool isConstructor);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern object? ReboxFromNullable(object? src);
+        /// <summary>
+        /// For a true boxed Nullable{T}, re-box to a boxed {T} or null, otherwise just return the input.
+        /// </summary>
+        internal static object? ReboxFromNullable(object? src)
+        {
+            // If src is null or not NullableOfT, just return that state.
+            if (src is null)
+            {
+                return null;
+            }
 
+            MethodTable* pMT = RuntimeHelpers.GetMethodTable(src);
+            if (!pMT->IsNullable)
+            {
+                return src;
+            }
+
+            return CastHelpers.ReboxFromNullable(pMT, src);
+        }
+
+        /// <summary>
+        /// Convert a boxed value of {T} (which is either {T} or null) to a true boxed Nullable{T}.
+        /// </summary>
         internal static object ReboxToNullable(object? src, RuntimeType destNullableType)
         {
             Debug.Assert(destNullableType.IsNullableOfT);
-            object obj = RuntimeTypeHandle.InternalAlloc(destNullableType);
+            MethodTable* pMT = destNullableType.GetNativeTypeHandle().AsMethodTable();
+            object obj = RuntimeTypeHandle.InternalAlloc(pMT);
+            GC.KeepAlive(destNullableType); // The obj instance will keep the type alive.
+
             CastHelpers.Unbox_Nullable(
                 ref obj.GetRawData(),
-                destNullableType.GetNativeTypeHandle().AsMethodTable(),
+                pMT,
                 src);
             return obj;
         }
