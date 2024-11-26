@@ -170,7 +170,7 @@ internal unsafe partial class MachObjectFile
     /// Removes the code signature load command and signature, and resizes the file if necessary.
     /// Returns true if the signature was removed, false otherwise.
     /// </summary>
-    public static bool TryRemoveCodesign(FileStream bundle)
+    public static void RemoveCodesign(FileStream bundle)
     {
         long? newLength;
         bool resized;
@@ -184,7 +184,6 @@ internal unsafe partial class MachObjectFile
         {
             bundle.SetLength(newLength.Value);
         }
-        return resized;
     }
 
     /// <summary>
