@@ -269,6 +269,19 @@ namespace System
             int cTypeHandles,
             ObjectHandleOnStack instantiatedObject);
 
+        internal static object InternalAlloc(RuntimeType type, bool checkTypeFullyInitialized = true)
+        {
+            Debug.Assert(!type.GetNativeTypeHandle().IsTypeDesc);
+
+            object? result = null;
+            InternalAlloc(type.GetNativeTypeHandle().AsMethodTable(), checkTypeFullyInitialized ? Interop.BOOL.TRUE : Interop.BOOL.FALSE, ObjectHandleOnStack.Create(ref result));
+            GC.KeepAlive(type);
+            return result!;
+        }
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_InternalAlloc")]
+        private static unsafe partial void InternalAlloc(MethodTable* pMT, Interop.BOOL check, ObjectHandleOnStack result);
+
         /// <summary>
         /// Given a RuntimeType, returns information about how to activate it via calli
         /// semantics. This method will ensure the type object is fully initialized within

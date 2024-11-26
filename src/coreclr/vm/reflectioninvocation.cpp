@@ -116,6 +116,23 @@ extern "C" void QCALLTYPE RuntimeTypeHandle_CreateInstanceForAnotherGenericParam
     END_QCALL;
 }
 
+extern "C" void QCALLTYPE RuntimeTypeHandle_InternalAlloc(MethodTable* pMT, BOOL check, QCall::ObjectHandleOnStack allocated)
+{
+    QCALL_CONTRACT;
+
+    _ASSERTE(pMT != NULL);
+
+    BEGIN_QCALL;
+
+    GCX_COOP();
+
+    allocated.Set(check == FALSE
+        ? pMT->AllocateNoChecks()
+        : pMT->Allocate());
+
+    END_QCALL;
+}
+
 static OBJECTREF InvokeArrayConstructor(TypeHandle th, PVOID* args, int argCnt)
 {
     CONTRACTL
