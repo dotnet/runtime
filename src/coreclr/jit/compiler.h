@@ -5364,6 +5364,7 @@ public:
         BitVecTraits m_traits;
         BitVec& m_visited;
         BlockToBlockMap* m_map = nullptr;
+        jitstd::vector<BasicBlock*>* m_blocksToClone = nullptr;
         bool m_addEdges = false;
         weight_t m_profileScale = 0.0;
         unsigned m_ehRegionShift = 0;

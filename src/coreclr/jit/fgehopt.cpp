@@ -2136,13 +2136,12 @@ PhaseStatus Compiler::fgTailMergeThrows()
 //       or as directed by pre-existing map entries.
 //
 BasicBlock* Compiler::fgCloneTryRegion(BasicBlock* tryEntry, CloneTryInfo& info, BasicBlock** insertAfter)
-
 {
     assert(bbIsTryBeg(tryEntry));
     bool const deferCloning = (insertAfter == nullptr);
     assert(deferCloning || ((*insertAfter != nullptr) && (info.m_map != nullptr)));
-    INDEBUG(const char* msg = deferCloning ? "Checking if it is possible" : "Attempting";)
-    JITDUMP("%s to clone the try region EH#%02u headed by " FMT_BB "\n", msg, tryEntry->getTryIndex(), tryEntry->bbNum);
+    INDEBUG(const char* msg = deferCloning ? "Checking if it is possible to clone" : "Cloning";)
+    JITDUMP("%s the try region EH#%02u headed by " FMT_BB "\n", msg, tryEntry->getTryIndex(), tryEntry->bbNum);
 
     // Determine the extent of cloning.
     //
@@ -2154,14 +2153,23 @@ BasicBlock* Compiler::fgCloneTryRegion(BasicBlock* tryEntry, CloneTryInfo& info,
     // This is necessary because try regions can't have multiple entries, or
     // share parts in any meaningful way.
     //
-    CompAllocator               alloc = getAllocator(CMK_TryRegionClone);
-    ArrayStack<unsigned>        regionsToProcess(alloc);
-    unsigned const              tryIndex = tryEntry->getTryIndex();
-    jitstd::vector<BasicBlock*> blocks(alloc);
-    unsigned                    regionCount = 0;
-    BitVecTraits* const         traits      = &info.m_traits;
-    BitVec&                     visited     = info.m_visited;
-    BlockToBlockMap* const      map         = info.m_map;
+    CompAllocator        alloc = getAllocator(CMK_TryRegionClone);
+    ArrayStack<unsigned> regionsToProcess(alloc);
+    unsigned const       tryIndex = tryEntry->getTryIndex();
+
+    // Track blocks to clone for caller, or if we are cloning and
+    // caller doesn't care.
+    //
+    jitstd::vector<BasicBlock*>* blocks = info.m_blocksToClone;
+    if (!deferCloning && (blocks == nullptr))
+    {
+        blocks = new (alloc) jitstd::vector<BasicBlock*>(alloc);
+    }
+
+    unsigned               regionCount = 0;
+    BitVecTraits* const    traits      = &info.m_traits;
+    BitVec&                visited     = info.m_visited;
+    BlockToBlockMap* const map         = info.m_map;
 
     auto addBlockToClone = [=, &blocks, &visited](BasicBlock* block, const char* msg) {
         if (!BitVecOps::TryAddElemD(traits, visited, block->bbNum))
@@ -2170,7 +2178,11 @@ BasicBlock* Compiler::fgCloneTryRegion(BasicBlock* tryEntry, CloneTryInfo& info,
         }
 
         JITDUMP("  %s block " FMT_BB "\n", msg, block->bbNum);
-        blocks.push_back(block);
+
+        if (blocks != nullptr)
+        {
+            blocks->push_back(block);
+        }
         return true;
     };
 
@@ -2339,7 +2351,7 @@ BasicBlock* Compiler::fgCloneTryRegion(BasicBlock* tryEntry, CloneTryInfo& info,
     // Now blocks contains an entry for each block to clone.
     //
     JITDUMP("Will need to clone %u EH regions (outermost: EH#%02u) and %u blocks\n", regionCount, outermostTryIndex,
-            blocks.size());
+            blocks->size());
 
     // Allocate the new EH clauses. First, find the enclosing EH clause, if any...
     // we will want to allocate the new clauses just "before" this point.
@@ -2486,7 +2498,7 @@ BasicBlock* Compiler::fgCloneTryRegion(BasicBlock* tryEntry, CloneTryInfo& info,
     // appropriate cloned region and fixes up region extents.
     //
     JITDUMP("Cloning blocks for try...\n");
-    for (BasicBlock* const block : blocks)
+    for (BasicBlock* const block : *blocks)
     {
         BasicBlock* const newBlock = fgNewBBafter(BBJ_ALWAYS, *insertAfter, /* extendRegion */ false);
         JITDUMP("Adding " FMT_BB " (copy of " FMT_BB ") after " FMT_BB "\n", newBlock->bbNum, block->bbNum,
@@ -2505,7 +2517,7 @@ BasicBlock* Compiler::fgCloneTryRegion(BasicBlock* tryEntry, CloneTryInfo& info,
     // the new end point of the enclosing try is in the cloned try.
     //
     JITDUMP("Fixing region indices...\n");
-    for (BasicBlock* const block : blocks)
+    for (BasicBlock* const block : *blocks)
     {
         BasicBlock* newBlock = nullptr;
         bool        found    = map->Lookup(block, &newBlock);
