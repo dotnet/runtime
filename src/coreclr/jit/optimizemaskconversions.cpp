@@ -3,7 +3,7 @@
 
 #include "jitpch.h"
 
-#if defined(TARGET_ARM64)
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
 
 struct MaskConversionsWeight
 {
@@ -19,8 +19,13 @@ struct MaskConversionsWeight
     // Conversion of mask to vector is one instruction.
     static constexpr const weight_t costOfConvertMaskToVector = 1.0;
 
+#if defined(TARGET_ARM64)
     // Conversion of vector to mask is two instructions.
     static constexpr const weight_t costOfConvertVectorToMask = 2.0;
+#else
+    // Conversion of vector to mask is one instructions.
+    static constexpr const weight_t costOfConvertVectorToMask = 1.0;
+#endif
 
     // The simd types of the Lcl Store after conversion to vector.
     CorInfoType simdBaseJitType = CORINFO_TYPE_UNDEF;
@@ -393,7 +398,7 @@ private:
     MaskConversionsWeightTable* weightsTable;
 };
 
-#endif // TARGET_ARM64
+#endif // FEATURE_MASKED_HW_INTRINSICS
 
 //------------------------------------------------------------------------
 // fgOptimizeMaskConversions: Allow locals to be of Mask type
@@ -446,7 +451,7 @@ private:
 //
 PhaseStatus Compiler::fgOptimizeMaskConversions()
 {
-#if defined(TARGET_ARM64)
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
 
     if (opts.OptimizationDisabled())
     {
@@ -477,10 +482,10 @@ PhaseStatus Compiler::fgOptimizeMaskConversions()
     {
         for (Statement* const stmt : block->Statements())
         {
-            // Only check statements where there is a local of type TYP_SIMD16/TYP_MASK.
+            // Only check statements where there is a local of type TYP_SIMD/TYP_MASK.
             for (GenTreeLclVarCommon* lcl : stmt->LocalsTreeList())
             {
-                if (lcl->TypeIs(TYP_SIMD16, TYP_MASK))
+                if (varTypeIsSIMDOrMask(lcl))
                 {
                     // Parse the entire statement.
                     MaskConversionsCheckVisitor ev(this, block->getBBWeight(this), &weightsTable);
@@ -505,10 +510,10 @@ PhaseStatus Compiler::fgOptimizeMaskConversions()
     {
         for (Statement* const stmt : block->Statements())
         {
-            // Only check statements where there is a local of type TYP_SIMD16/TYP_MASK.
+            // Only check statements where there is a local of type TYP_SIMD/TYP_MASK.
             for (GenTreeLclVarCommon* lcl : stmt->LocalsTreeList())
             {
-                if (lcl->TypeIs(TYP_SIMD16, TYP_MASK))
+                if (varTypeIsSIMDOrMask(lcl))
                 {
                     // Parse the entire statement.
                     MaskConversionsUpdateVisitor ev(this, stmt, &weightsTable);
@@ -525,8 +530,7 @@ PhaseStatus Compiler::fgOptimizeMaskConversions()
     }
 
     return PhaseStatus::MODIFIED_EVERYTHING;
-
 #else
     return PhaseStatus::MODIFIED_NOTHING;
-#endif // TARGET_ARM64
+#endif // FEATURE_MASKED_HW_INTRINSICS
 }
