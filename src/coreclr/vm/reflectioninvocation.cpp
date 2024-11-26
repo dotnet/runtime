@@ -643,38 +643,6 @@ Done:
 FCIMPLEND
 
 /// <summary>
-/// Convert a boxed value of {T} (which is either {T} or null) to a true boxed Nullable{T}.
-/// </summary>
-FCIMPL2(Object*, RuntimeMethodHandle::ReboxToNullable, Object* pBoxedValUNSAFE, ReflectClassBaseObject *pDestUNSAFE)
-{
-    FCALL_CONTRACT;
-
-    struct {
-        OBJECTREF pBoxed;
-        REFLECTCLASSBASEREF destType;
-        OBJECTREF retVal;
-    } gc;
-
-    gc.pBoxed = ObjectToOBJECTREF(pBoxedValUNSAFE);
-    gc.destType = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(pDestUNSAFE);
-    gc.retVal = NULL;
-
-    HELPER_METHOD_FRAME_BEGIN_RET_PROTECT(gc);
-
-    MethodTable* destMT = gc.destType->GetType().AsMethodTable();
-
-    gc.retVal = destMT->Allocate();
-    void* buffer = gc.retVal->GetData();
-    BOOL result = Nullable::UnBox(buffer, gc.pBoxed, destMT);
-    _ASSERTE(result == TRUE);
-
-    HELPER_METHOD_FRAME_END();
-
-    return OBJECTREFToObject(gc.retVal);
-}
-FCIMPLEND
-
-/// <summary>
 /// For a true boxed Nullable{T}, re-box to a boxed {T} or null, otherwise just return the input.
 /// </summary>
 FCIMPL1(Object*, RuntimeMethodHandle::ReboxFromNullable, Object* pBoxedValUNSAFE)

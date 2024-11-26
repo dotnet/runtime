@@ -200,7 +200,6 @@ class RuntimeMethodHandle
 public:
     static FCDECL4(Object*, InvokeMethod, Object *target, PVOID* args, SignatureNative* pSig, FC_BOOL_ARG fConstructor);
 
-    static FCDECL2(Object*, ReboxToNullable, Object *pBoxedValUNSAFE, ReflectClassBaseObject *pDestUNSAFE);
     static FCDECL1(Object*, ReboxFromNullable, Object *pBoxedValUNSAFE);
 
     struct StreamingContextData {

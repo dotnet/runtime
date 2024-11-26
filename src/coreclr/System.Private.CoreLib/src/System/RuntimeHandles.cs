@@ -1045,8 +1045,16 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern object? ReboxFromNullable(object? src);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern object ReboxToNullable(object? src, RuntimeType destNullableType);
+        internal static object ReboxToNullable(object? src, RuntimeType destNullableType)
+        {
+            Debug.Assert(destNullableType.IsNullableOfT);
+            object obj = RuntimeTypeHandle.InternalAlloc(destNullableType);
+            CastHelpers.Unbox_Nullable(
+                ref obj.GetRawData(),
+                destNullableType.GetNativeTypeHandle().AsMethodTable(),
+                src);
+            return obj;
+        }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeMethodHandle_GetMethodInstantiation")]
         private static partial void GetMethodInstantiation(RuntimeMethodHandleInternal method, ObjectHandleOnStack types, Interop.BOOL fAsRuntimeTypeArray);
