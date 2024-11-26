@@ -12,39 +12,37 @@ namespace System.SpanTests
         {
             int[] a = new int[3];
 
-            ReadOnlySpan<int> first = new ReadOnlySpan<int>(a, 1, 0);
-            ReadOnlySpan<int> second = new ReadOnlySpan<int>(a, 2, 0);
-            bool b = first.StartsWith(second);
-            Assert.True(b);
+            Assert.True(new ReadOnlySpan<int>(a, 1, 0).StartsWith(new ReadOnlySpan<int>(a, 2, 0)));
+            Assert.All(GetDefaultEqualityComparers<int>(), comparer => Assert.True(new ReadOnlySpan<int>(a, 1, 0).StartsWith(new ReadOnlySpan<int>(a, 2, 0), comparer)));
+            Assert.True(new ReadOnlySpan<int>(a, 1, 0).StartsWith(new ReadOnlySpan<int>(a, 2, 0), GetFalseEqualityComparer<int>()));
         }
 
         [Fact]
         public static void SameSpanStartsWith()
         {
             int[] a = { 4, 5, 6 };
-            ReadOnlySpan<int> span = new ReadOnlySpan<int>(a);
-            bool b = span.StartsWith(span);
-            Assert.True(b);
+            Assert.True(new ReadOnlySpan<int>(a).StartsWith(a));
+            Assert.All(GetDefaultEqualityComparers<int>(), comparer => Assert.True(new ReadOnlySpan<int>(a).StartsWith(a, comparer)));
+            Assert.False(new ReadOnlySpan<int>(a).StartsWith(a, GetFalseEqualityComparer<int>()));
         }
 
         [Fact]
         public static void LengthMismatchStartsWith()
         {
             int[] a = { 4, 5, 6 };
-            ReadOnlySpan<int> first = new ReadOnlySpan<int>(a, 0, 2);
-            ReadOnlySpan<int> second = new ReadOnlySpan<int>(a, 0, 3);
-            bool b = first.StartsWith(second);
-            Assert.False(b);
+
+            Assert.False(new ReadOnlySpan<int>(a, 0, 2).StartsWith(new ReadOnlySpan<int>(a, 0, 3)));
+            Assert.All(GetDefaultEqualityComparers<int>(), comparer => Assert.False(new ReadOnlySpan<int>(a, 0, 2).StartsWith(new ReadOnlySpan<int>(a, 0, 3), comparer)));
         }
 
         [Fact]
         public static void StartsWithMatch()
         {
             int[] a = { 4, 5, 6 };
-            ReadOnlySpan<int> span = new ReadOnlySpan<int>(a, 0, 3);
-            ReadOnlySpan<int> slice = new ReadOnlySpan<int>(a, 0, 2);
-            bool b = span.StartsWith(slice);
-            Assert.True(b);
+
+            Assert.True(new ReadOnlySpan<int>(a, 0, 3).StartsWith(new ReadOnlySpan<int>(a, 0, 2)));
+            Assert.All(GetDefaultEqualityComparers<int>(), comparer => Assert.True(new ReadOnlySpan<int>(a, 0, 3).StartsWith(new ReadOnlySpan<int>(a, 0, 2), comparer)));
+            Assert.False(new ReadOnlySpan<int>(a, 0, 3).StartsWith(new ReadOnlySpan<int>(a, 0, 2), GetFalseEqualityComparer<int>()));
         }
 
         [Fact]
@@ -52,10 +50,10 @@ namespace System.SpanTests
         {
             int[] a = { 4, 5, 6 };
             int[] b = { 4, 5, 6 };
-            ReadOnlySpan<int> span = new ReadOnlySpan<int>(a, 0, 3);
-            ReadOnlySpan<int> slice = new ReadOnlySpan<int>(b, 0, 3);
-            bool c = span.StartsWith(slice);
-            Assert.True(c);
+
+            Assert.True(new ReadOnlySpan<int>(a, 0, 3).StartsWith(new ReadOnlySpan<int>(b, 0, 3)));
+            Assert.All(GetDefaultEqualityComparers<int>(), comparer => Assert.True(new ReadOnlySpan<int>(a, 0, 3).StartsWith(new ReadOnlySpan<int>(b, 0, 3), comparer)));
+            Assert.False(new ReadOnlySpan<int>(a, 0, 3).StartsWith(new ReadOnlySpan<int>(b, 0, 3), GetFalseEqualityComparer<int>()));
         }
 
         [Fact]
@@ -144,10 +142,8 @@ namespace System.SpanTests
                     first[GuardLength + i] = second[GuardLength + i] = new TInt(10 * (i + 1), checkForOutOfRangeAccess);
                 }
 
-                ReadOnlySpan<TInt> firstSpan = new ReadOnlySpan<TInt>(first, GuardLength, length);
-                ReadOnlySpan<TInt> secondSpan = new ReadOnlySpan<TInt>(second, GuardLength, length);
-                bool b = firstSpan.StartsWith(secondSpan);
-                Assert.True(b);
+                Assert.True(new ReadOnlySpan<TInt>(first, GuardLength, length).StartsWith(new ReadOnlySpan<TInt>(second, GuardLength, length)));
+                Assert.All(GetDefaultEqualityComparers<TInt>(), comparer => Assert.True(new ReadOnlySpan<TInt>(first, GuardLength, length).StartsWith(new ReadOnlySpan<TInt>(second, GuardLength, length), comparer)));
             }
         }
     }
