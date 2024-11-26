@@ -5,7 +5,11 @@ $env:DOTNET_DbgEnableMiniDump = '1'
 $env:DOTNET_DbgMiniDumpType = "MiniDumpWithFullMemory"
 $env:DOTNET_DbgMiniDumpName = "$env:DUMPS_SHARE_MOUNT_ROOT/$env:STRESS_ROLE/coredump.%p.%t"
 
-& "C:/live-runtime-artifacts/testhost/net$env:VERSION-windows-$env:CONFIGURATION-x64/dotnet" exec --roll-forward Major ./bin/$env:CONFIGURATION/net$env:VERSION/HttpStress.dll $env:STRESS_ARGS.Split(' ',[System.StringSplitOptions]::RemoveEmptyEntries)
+gi "C:/live-runtime-artifacts/testhost/net$ENV:VERSION-windows-$ENV:CONFIGURATION-x64/shared/Microsoft.AspNetCore.App/*/" | % {
+    cp $PSScriptRoot/Microsoft.AspNetCore.Server.Kestrel.Core.* $_
+}
+
+& "C:/live-runtime-artifacts/testhost/net$env:VERSION-windows-$env:CONFIGURATION-x64/dotnet" exec --roll-forward Major ./bin/$env:CONFIGURATION/net$env:VERSION/HttpStress.dll $env:STRESS_ARGS.Split(' ', [System.StringSplitOptions]::RemoveEmptyEntries)
 
 $ExitCode = $LASTEXITCODE
 

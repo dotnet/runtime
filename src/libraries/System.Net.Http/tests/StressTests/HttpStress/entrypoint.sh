@@ -7,6 +7,8 @@ export DOTNET_DbgEnableMiniDump=1
 export DOTNET_DbgMiniDumpType=MiniDumpWithFullMemory
 export DOTNET_DbgMiniDumpName="$DUMPS_SHARE_MOUNT_ROOT/$STRESS_ROLE/coredump.%p.%t"
 
+cp ./Microsoft.AspNetCore.Server.Kestrel.Core.* /live-runtime-artifacts/testhost/net$VERSION-linux-$CONFIGURATION-x64/shared/Microsoft.AspNetCore.App/*/
+
 /live-runtime-artifacts/testhost/net$VERSION-linux-$CONFIGURATION-x64/dotnet exec --roll-forward Major ./bin/$CONFIGURATION/net$VERSION/HttpStress.dll $STRESS_ARGS
 
 exit_code=$?

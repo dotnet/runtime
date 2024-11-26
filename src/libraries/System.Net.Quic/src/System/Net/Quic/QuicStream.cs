@@ -457,6 +457,21 @@ public sealed partial class QuicStream
         }
         ThrowHelper.ValidateErrorCode(nameof(errorCode), errorCode, $"{nameof(Abort)}.{nameof(errorCode)}");
 
+        switch (errorCode)
+        {
+            case 0x0100 /*H3_NO_ERROR*/:
+            case 0x0102 /*H3_INTERNAL_ERROR*/:
+            case 0x010d /*H3_REQUEST_INCOMPLETE*/:
+            case 0x010c /*H3_REQUEST_CANCELLED*/:
+                break;
+
+            default:
+                {
+                    System.Console.WriteLine($"Aborting stream with error code: {errorCode} from {new System.Diagnostics.StackTrace()}");
+                    break;
+                }
+        }
+
         QUIC_STREAM_SHUTDOWN_FLAGS flags = QUIC_STREAM_SHUTDOWN_FLAGS.NONE;
         if (abortDirection.HasFlag(QuicAbortDirection.Read) && !_receiveTcs.IsCompleted)
         {

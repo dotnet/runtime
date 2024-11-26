@@ -1,0 +1,472 @@
+{
+  "runtimeTarget": {
+    "name": ".NETCoreApp,Version=v10.0",
+    "signature": ""
+  },
+  "compilationOptions": {},
+  "targets": {
+    ".NETCoreApp,Version=v10.0": {
+      "Microsoft.AspNetCore.Server.Kestrel.Core/10.0.0-dev": {
+        "dependencies": {
+          "Microsoft.AspNetCore.Connections.Abstractions": "10.0.0-dev",
+          "Microsoft.AspNetCore.Hosting.Abstractions": "10.0.0-dev",
+          "Microsoft.AspNetCore.Http": "10.0.0-dev",
+          "Microsoft.AspNetCore.WebUtilities": "10.0.0-dev",
+          "Microsoft.CodeAnalysis.PublicApiAnalyzers": "3.3.3",
+          "Microsoft.Extensions.Configuration.Binder": "10.0.0-alpha.1.24572.1",
+          "Microsoft.Extensions.Diagnostics": "10.0.0-alpha.1.24572.1",
+          "Microsoft.Extensions.Logging.Abstractions": "10.0.0-alpha.1.24572.1",
+          "Microsoft.Extensions.Options": "10.0.0-alpha.1.24572.1",
+          "Microsoft.Internal.Runtime.AspNetCore.Transport": "10.0.0-alpha.1.24572.1",
+          "Microsoft.NET.ILLink.Tasks": "10.0.0-alpha.1.24570.9",
+          "Microsoft.Net.Http.Headers": "10.0.0-dev"
+        },
+        "runtime": {
+          "Microsoft.AspNetCore.Server.Kestrel.Core.dll": {}
+        }
+      },
+      "Microsoft.CodeAnalysis.PublicApiAnalyzers/3.3.3": {},
+      "Microsoft.Extensions.Configuration/10.0.0-alpha.1.24572.1": {
+        "dependencies": {
+          "Microsoft.Extensions.Configuration.Abstractions": "10.0.0-alpha.1.24572.1",
+          "Microsoft.Extensions.Primitives": "10.0.0-alpha.1.24572.1"
+        },
+        "runtime": {
+          "lib/net10.0/Microsoft.Extensions.Configuration.dll": {
+            "assemblyVersion": "10.0.0.0",
+            "fileVersion": "10.0.24.57201"
+          }
+        }
+      },
+      "Microsoft.Extensions.Configuration.Abstractions/10.0.0-alpha.1.24572.1": {
+        "dependencies": {
+          "Microsoft.Extensions.Primitives": "10.0.0-alpha.1.24572.1"
+        },
+        "runtime": {
+          "lib/net10.0/Microsoft.Extensions.Configuration.Abstractions.dll": {
+            "assemblyVersion": "10.0.0.0",
+            "fileVersion": "10.0.24.57201"
+          }
+        }
+      },
+      "Microsoft.Extensions.Configuration.Binder/10.0.0-alpha.1.24572.1": {
+        "dependencies": {
+          "Microsoft.Extensions.Configuration.Abstractions": "10.0.0-alpha.1.24572.1"
+        },
+        "runtime": {
+          "lib/net10.0/Microsoft.Extensions.Configuration.Binder.dll": {
+            "assemblyVersion": "10.0.0.0",
+            "fileVersion": "10.0.24.57201"
+          }
+        }
+      },
+      "Microsoft.Extensions.DependencyInjection.Abstractions/10.0.0-alpha.1.24572.1": {
+        "runtime": {
+          "lib/net10.0/Microsoft.Extensions.DependencyInjection.Abstractions.dll": {
+            "assemblyVersion": "10.0.0.0",
+            "fileVersion": "10.0.24.57201"
+          }
+        }
+      },
+      "Microsoft.Extensions.Diagnostics/10.0.0-alpha.1.24572.1": {
+        "dependencies": {
+          "Microsoft.Extensions.Configuration": "10.0.0-alpha.1.24572.1",
+          "Microsoft.Extensions.Diagnostics.Abstractions": "10.0.0-alpha.1.24572.1",
+          "Microsoft.Extensions.Options.ConfigurationExtensions": "10.0.0-alpha.1.24572.1"
+        },
+        "runtime": {
+          "lib/net10.0/Microsoft.Extensions.Diagnostics.dll": {
+            "assemblyVersion": "10.0.0.0",
+            "fileVersion": "10.0.24.57201"
+          }
+        }
+      },
+      "Microsoft.Extensions.Diagnostics.Abstractions/10.0.0-alpha.1.24572.1": {
+        "dependencies": {
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "10.0.0-alpha.1.24572.1",
+          "Microsoft.Extensions.Options": "10.0.0-alpha.1.24572.1"
+        },
+        "runtime": {
+          "lib/net10.0/Microsoft.Extensions.Diagnostics.Abstractions.dll": {
+            "assemblyVersion": "10.0.0.0",
+            "fileVersion": "10.0.24.57201"
+          }
+        }
+      },
+      "Microsoft.Extensions.FileProviders.Abstractions/10.0.0-alpha.1.24572.1": {
+        "dependencies": {
+          "Microsoft.Extensions.Primitives": "10.0.0-alpha.1.24572.1"
+        },
+        "runtime": {
+          "lib/net10.0/Microsoft.Extensions.FileProviders.Abstractions.dll": {
+            "assemblyVersion": "10.0.0.0",
+            "fileVersion": "10.0.24.57201"
+          }
+        }
+      },
+      "Microsoft.Extensions.Hosting.Abstractions/10.0.0-alpha.1.24572.1": {
+        "dependencies": {
+          "Microsoft.Extensions.Configuration.Abstractions": "10.0.0-alpha.1.24572.1",
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "10.0.0-alpha.1.24572.1",
+          "Microsoft.Extensions.Diagnostics.Abstractions": "10.0.0-alpha.1.24572.1",
+          "Microsoft.Extensions.FileProviders.Abstractions": "10.0.0-alpha.1.24572.1",
+          "Microsoft.Extensions.Logging.Abstractions": "10.0.0-alpha.1.24572.1"
+        },
+        "runtime": {
+          "lib/net10.0/Microsoft.Extensions.Hosting.Abstractions.dll": {
+            "assemblyVersion": "10.0.0.0",
+            "fileVersion": "10.0.24.57201"
+          }
+        }
+      },
+      "Microsoft.Extensions.Logging.Abstractions/10.0.0-alpha.1.24572.1": {
+        "dependencies": {
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "10.0.0-alpha.1.24572.1"
+        },
+        "runtime": {
+          "lib/net10.0/Microsoft.Extensions.Logging.Abstractions.dll": {
+            "assemblyVersion": "10.0.0.0",
+            "fileVersion": "10.0.24.57201"
+          }
+        }
+      },
+      "Microsoft.Extensions.Options/10.0.0-alpha.1.24572.1": {
+        "dependencies": {
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "10.0.0-alpha.1.24572.1",
+          "Microsoft.Extensions.Primitives": "10.0.0-alpha.1.24572.1"
+        },
+        "runtime": {
+          "lib/net10.0/Microsoft.Extensions.Options.dll": {
+            "assemblyVersion": "10.0.0.0",
+            "fileVersion": "10.0.24.57201"
+          }
+        }
+      },
+      "Microsoft.Extensions.Options.ConfigurationExtensions/10.0.0-alpha.1.24572.1": {
+        "dependencies": {
+          "Microsoft.Extensions.Configuration.Abstractions": "10.0.0-alpha.1.24572.1",
+          "Microsoft.Extensions.Configuration.Binder": "10.0.0-alpha.1.24572.1",
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "10.0.0-alpha.1.24572.1",
+          "Microsoft.Extensions.Options": "10.0.0-alpha.1.24572.1",
+          "Microsoft.Extensions.Primitives": "10.0.0-alpha.1.24572.1"
+        },
+        "runtime": {
+          "lib/net10.0/Microsoft.Extensions.Options.ConfigurationExtensions.dll": {
+            "assemblyVersion": "10.0.0.0",
+            "fileVersion": "10.0.24.57201"
+          }
+        }
+      },
+      "Microsoft.Extensions.Primitives/10.0.0-alpha.1.24572.1": {
+        "runtime": {
+          "lib/net10.0/Microsoft.Extensions.Primitives.dll": {
+            "assemblyVersion": "10.0.0.0",
+            "fileVersion": "10.0.24.57201"
+          }
+        }
+      },
+      "Microsoft.Internal.Runtime.AspNetCore.Transport/10.0.0-alpha.1.24572.1": {},
+      "Microsoft.NET.ILLink.Tasks/10.0.0-alpha.1.24570.9": {},
+      "Microsoft.AspNetCore.Connections.Abstractions/10.0.0-dev": {
+        "dependencies": {
+          "Microsoft.Extensions.Features": "10.0.0-dev"
+        },
+        "runtime": {
+          "Microsoft.AspNetCore.Connections.Abstractions.dll": {
+            "assemblyVersion": "10.0.0-dev",
+            "fileVersion": "42.42.42.42424"
+          }
+        }
+      },
+      "Microsoft.AspNetCore.Hosting.Abstractions/10.0.0-dev": {
+        "dependencies": {
+          "Microsoft.AspNetCore.Hosting.Server.Abstractions": "10.0.0-dev",
+          "Microsoft.AspNetCore.Http.Abstractions": "10.0.0-dev",
+          "Microsoft.Extensions.Hosting.Abstractions": "10.0.0-alpha.1.24572.1"
+        },
+        "runtime": {
+          "Microsoft.AspNetCore.Hosting.Abstractions.dll": {
+            "assemblyVersion": "10.0.0-dev",
+            "fileVersion": "42.42.42.42424"
+          }
+        }
+      },
+      "Microsoft.AspNetCore.Hosting.Server.Abstractions/10.0.0-dev": {
+        "dependencies": {
+          "Microsoft.AspNetCore.Http.Features": "10.0.0-dev",
+          "Microsoft.Extensions.Configuration.Abstractions": "10.0.0-alpha.1.24572.1"
+        },
+        "runtime": {
+          "Microsoft.AspNetCore.Hosting.Server.Abstractions.dll": {
+            "assemblyVersion": "10.0.0-dev",
+            "fileVersion": "42.42.42.42424"
+          }
+        }
+      },
+      "Microsoft.AspNetCore.Http/10.0.0-dev": {
+        "dependencies": {
+          "Microsoft.AspNetCore.Connections.Abstractions": "10.0.0-dev",
+          "Microsoft.AspNetCore.Http.Abstractions": "10.0.0-dev",
+          "Microsoft.AspNetCore.Http.Extensions": "10.0.0-dev",
+          "Microsoft.AspNetCore.WebUtilities": "10.0.0-dev",
+          "Microsoft.Extensions.ObjectPool": "10.0.0-dev",
+          "Microsoft.Extensions.Options": "10.0.0-alpha.1.24572.1",
+          "Microsoft.Net.Http.Headers": "10.0.0-dev"
+        },
+        "runtime": {
+          "Microsoft.AspNetCore.Http.dll": {
+            "assemblyVersion": "10.0.0-dev",
+            "fileVersion": "42.42.42.42424"
+          }
+        }
+      },
+      "Microsoft.AspNetCore.Http.Abstractions/10.0.0-dev": {
+        "dependencies": {
+          "Microsoft.AspNetCore.Http.Features": "10.0.0-dev",
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "10.0.0-alpha.1.24572.1",
+          "Microsoft.Extensions.Logging.Abstractions": "10.0.0-alpha.1.24572.1",
+          "Microsoft.Net.Http.Headers": "10.0.0-dev"
+        },
+        "runtime": {
+          "Microsoft.AspNetCore.Http.Abstractions.dll": {
+            "assemblyVersion": "10.0.0-dev",
+            "fileVersion": "42.42.42.42424"
+          }
+        }
+      },
+      "Microsoft.AspNetCore.Http.Extensions/10.0.0-dev": {
+        "dependencies": {
+          "Microsoft.AspNetCore.Http.Abstractions": "10.0.0-dev",
+          "Microsoft.AspNetCore.WebUtilities": "10.0.0-dev",
+          "Microsoft.Extensions.FileProviders.Abstractions": "10.0.0-alpha.1.24572.1",
+          "Microsoft.Net.Http.Headers": "10.0.0-dev"
+        },
+        "runtime": {
+          "Microsoft.AspNetCore.Http.Extensions.dll": {
+            "assemblyVersion": "10.0.0-dev",
+            "fileVersion": "42.42.42.42424"
+          }
+        }
+      },
+      "Microsoft.AspNetCore.Http.Features/10.0.0-dev": {
+        "dependencies": {
+          "Microsoft.AspNetCore.Connections.Abstractions": "10.0.0-dev",
+          "Microsoft.Extensions.Features": "10.0.0-dev",
+          "Microsoft.Extensions.Primitives": "10.0.0-alpha.1.24572.1",
+          "Microsoft.Net.Http.Headers": "10.0.0-dev"
+        },
+        "runtime": {
+          "Microsoft.AspNetCore.Http.Features.dll": {
+            "assemblyVersion": "10.0.0-dev",
+            "fileVersion": "42.42.42.42424"
+          }
+        }
+      },
+      "Microsoft.AspNetCore.WebUtilities/10.0.0-dev": {
+        "dependencies": {
+          "Microsoft.Net.Http.Headers": "10.0.0-dev"
+        },
+        "runtime": {
+          "Microsoft.AspNetCore.WebUtilities.dll": {
+            "assemblyVersion": "10.0.0-dev",
+            "fileVersion": "42.42.42.42424"
+          }
+        }
+      },
+      "Microsoft.Extensions.Features/10.0.0-dev": {
+        "runtime": {
+          "Microsoft.Extensions.Features.dll": {
+            "assemblyVersion": "10.0.0-dev",
+            "fileVersion": "42.42.42.42424"
+          }
+        }
+      },
+      "Microsoft.Extensions.ObjectPool/10.0.0-dev": {
+        "runtime": {
+          "Microsoft.Extensions.ObjectPool.dll": {
+            "assemblyVersion": "10.0.0-dev",
+            "fileVersion": "42.42.42.42424"
+          }
+        }
+      },
+      "Microsoft.Net.Http.Headers/10.0.0-dev": {
+        "dependencies": {
+          "Microsoft.Extensions.Primitives": "10.0.0-alpha.1.24572.1"
+        },
+        "runtime": {
+          "Microsoft.Net.Http.Headers.dll": {
+            "assemblyVersion": "10.0.0-dev",
+            "fileVersion": "42.42.42.42424"
+          }
+        }
+      }
+    }
+  },
+  "libraries": {
+    "Microsoft.AspNetCore.Server.Kestrel.Core/10.0.0-dev": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "Microsoft.CodeAnalysis.PublicApiAnalyzers/3.3.3": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-DWLeZtw2jszmzAh/MZXVo/Dy8fD9vcRaCIRZTaf2ppqaug8BGIV81dQdZfaYFlNuw7FyuZLVC5SZPZsCcePZhQ==",
+      "path": "microsoft.codeanalysis.publicapianalyzers/3.3.3",
+      "hashPath": "microsoft.codeanalysis.publicapianalyzers.3.3.3.nupkg.sha512"
+    },
+    "Microsoft.Extensions.Configuration/10.0.0-alpha.1.24572.1": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-jU1yTiJoU/795KvRpZOCxBxjOtk/KG2b0mUWgMz2AqOXoU7GyEa1kJLXM78Tv2ec41Sf08R3xDzUdORR0PyjZQ==",
+      "path": "microsoft.extensions.configuration/10.0.0-alpha.1.24572.1",
+      "hashPath": "microsoft.extensions.configuration.10.0.0-alpha.1.24572.1.nupkg.sha512"
+    },
+    "Microsoft.Extensions.Configuration.Abstractions/10.0.0-alpha.1.24572.1": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-FaIJSwVfvG8D4nYDJMpAto/hPRaT/lCmWSqZTDvHU525NGvS89dpExBfdq9rJ/EsKr12v67BcDvd1IJlKLibag==",
+      "path": "microsoft.extensions.configuration.abstractions/10.0.0-alpha.1.24572.1",
+      "hashPath": "microsoft.extensions.configuration.abstractions.10.0.0-alpha.1.24572.1.nupkg.sha512"
+    },
+    "Microsoft.Extensions.Configuration.Binder/10.0.0-alpha.1.24572.1": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-Okbi0cRnABepdJyNyB6bLUxBUwm8VmG+9E4g/7fZH7uhHDbaniBjvL9PAS9N7AElpzixLZCL9MVM1FkCfSBaQw==",
+      "path": "microsoft.extensions.configuration.binder/10.0.0-alpha.1.24572.1",
+      "hashPath": "microsoft.extensions.configuration.binder.10.0.0-alpha.1.24572.1.nupkg.sha512"
+    },
+    "Microsoft.Extensions.DependencyInjection.Abstractions/10.0.0-alpha.1.24572.1": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-FGumolzpIuD5LBIV6J7IYHWIIMDt4C6pomQeUm3qWtkyCEgBYcqC5BiO8ggFGomjlLNCd9o1hiV6N29Shi4Esw==",
+      "path": "microsoft.extensions.dependencyinjection.abstractions/10.0.0-alpha.1.24572.1",
+      "hashPath": "microsoft.extensions.dependencyinjection.abstractions.10.0.0-alpha.1.24572.1.nupkg.sha512"
+    },
+    "Microsoft.Extensions.Diagnostics/10.0.0-alpha.1.24572.1": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-qLmwPFp0DI/v1WYl1NKPQvfCtbT4n3qNW+kZyABp+GqgRgRHN1CtWlNu6+tpPwrMLo0Km3eJBsAN88kMU3wAlQ==",
+      "path": "microsoft.extensions.diagnostics/10.0.0-alpha.1.24572.1",
+      "hashPath": "microsoft.extensions.diagnostics.10.0.0-alpha.1.24572.1.nupkg.sha512"
+    },
+    "Microsoft.Extensions.Diagnostics.Abstractions/10.0.0-alpha.1.24572.1": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-GKGak+eztoj4pR0sgklIX8iD9UTGINsqwSs/HEFfEhobPlla8N+onbhUiDKoYboBkMLLx7U9YWvoMwNQSjCRDQ==",
+      "path": "microsoft.extensions.diagnostics.abstractions/10.0.0-alpha.1.24572.1",
+      "hashPath": "microsoft.extensions.diagnostics.abstractions.10.0.0-alpha.1.24572.1.nupkg.sha512"
+    },
+    "Microsoft.Extensions.FileProviders.Abstractions/10.0.0-alpha.1.24572.1": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-pfTCzVcgxDcC6skgKzgdkigtSk7pmnznpDHQZNljiZgdZOBiCRGZ3gZJOm3BWXbvVJzcYLfTJsvLiVmyCh3Rcg==",
+      "path": "microsoft.extensions.fileproviders.abstractions/10.0.0-alpha.1.24572.1",
+      "hashPath": "microsoft.extensions.fileproviders.abstractions.10.0.0-alpha.1.24572.1.nupkg.sha512"
+    },
+    "Microsoft.Extensions.Hosting.Abstractions/10.0.0-alpha.1.24572.1": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-1nXUdi8UwCmq4OmigZHsxfQnmiPlvb10B6b6lso31uyUOG3w95TUpBhsxzUbnghqsPDrR25bajDXJwITDYW7oQ==",
+      "path": "microsoft.extensions.hosting.abstractions/10.0.0-alpha.1.24572.1",
+      "hashPath": "microsoft.extensions.hosting.abstractions.10.0.0-alpha.1.24572.1.nupkg.sha512"
+    },
+    "Microsoft.Extensions.Logging.Abstractions/10.0.0-alpha.1.24572.1": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-n5T5L9Iljw0niSwCFCYarBxMsJA7gUbWrhrOJcyD0ymMpmrbUobDO4EEGyainj6jJuyj3v53/22wOu+XYaqrnw==",
+      "path": "microsoft.extensions.logging.abstractions/10.0.0-alpha.1.24572.1",
+      "hashPath": "microsoft.extensions.logging.abstractions.10.0.0-alpha.1.24572.1.nupkg.sha512"
+    },
+    "Microsoft.Extensions.Options/10.0.0-alpha.1.24572.1": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-QvGGHBMosPXRdNwsxWOrcg63ilzTkj3XNfy0f6hCGqKbEvUR+Tqcwyq0aeqGgzPb8gy1QRijcwbkois0WvgJNg==",
+      "path": "microsoft.extensions.options/10.0.0-alpha.1.24572.1",
+      "hashPath": "microsoft.extensions.options.10.0.0-alpha.1.24572.1.nupkg.sha512"
+    },
+    "Microsoft.Extensions.Options.ConfigurationExtensions/10.0.0-alpha.1.24572.1": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-0wisPeWs0cAKG4FvR2L85EKIqTWbYHV7jGKz5HegQhbMez7jLWhN9i+xuW88qmZ6mLh2QgQEyVsg0mEz9UsmUQ==",
+      "path": "microsoft.extensions.options.configurationextensions/10.0.0-alpha.1.24572.1",
+      "hashPath": "microsoft.extensions.options.configurationextensions.10.0.0-alpha.1.24572.1.nupkg.sha512"
+    },
+    "Microsoft.Extensions.Primitives/10.0.0-alpha.1.24572.1": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-OVCSI4Lk+J4dFBji38wvjwIl17fL1QwBYnDdmIvATvqIXNS5saexaiGENVUWVZ6J3j0t6Fya9vGXus5NH96AxQ==",
+      "path": "microsoft.extensions.primitives/10.0.0-alpha.1.24572.1",
+      "hashPath": "microsoft.extensions.primitives.10.0.0-alpha.1.24572.1.nupkg.sha512"
+    },
+    "Microsoft.Internal.Runtime.AspNetCore.Transport/10.0.0-alpha.1.24572.1": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-Jfl0+9sLd3z/DaujWO+73eioVLqsRbXzaJzuHqiO/wSqjMWFSniTJXzG+YGnusp+63rkfd7mg6tF3a70B1mmyA==",
+      "path": "microsoft.internal.runtime.aspnetcore.transport/10.0.0-alpha.1.24572.1",
+      "hashPath": "microsoft.internal.runtime.aspnetcore.transport.10.0.0-alpha.1.24572.1.nupkg.sha512"
+    },
+    "Microsoft.NET.ILLink.Tasks/10.0.0-alpha.1.24570.9": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-lEp5gvo4ktsxBrbnAxM12BbEJzfJY3iu5c2KkVES5/puMR6u1hb4f1y/Rbe4Fdd42PFy0NFinQG40qeDFFTBFQ==",
+      "path": "microsoft.net.illink.tasks/10.0.0-alpha.1.24570.9",
+      "hashPath": "microsoft.net.illink.tasks.10.0.0-alpha.1.24570.9.nupkg.sha512"
+    },
+    "Microsoft.AspNetCore.Connections.Abstractions/10.0.0-dev": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "Microsoft.AspNetCore.Hosting.Abstractions/10.0.0-dev": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "Microsoft.AspNetCore.Hosting.Server.Abstractions/10.0.0-dev": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "Microsoft.AspNetCore.Http/10.0.0-dev": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "Microsoft.AspNetCore.Http.Abstractions/10.0.0-dev": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "Microsoft.AspNetCore.Http.Extensions/10.0.0-dev": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "Microsoft.AspNetCore.Http.Features/10.0.0-dev": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "Microsoft.AspNetCore.WebUtilities/10.0.0-dev": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "Microsoft.Extensions.Features/10.0.0-dev": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "Microsoft.Extensions.ObjectPool/10.0.0-dev": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "Microsoft.Net.Http.Headers/10.0.0-dev": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    }
+  }
+}
