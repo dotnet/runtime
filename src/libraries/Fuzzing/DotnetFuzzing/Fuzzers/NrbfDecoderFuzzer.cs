@@ -124,7 +124,7 @@ namespace DotnetFuzzing.Fuzzers
 
                     try
                     {
-                        // THIS IS VERY BAD IDEAD FOR ANY KIND OF PRODUCT CODE!!
+                        // THIS IS VERY BAD IDEA FOR ANY KIND OF PRODUCT CODE!!
                         // IT'S USED ONLY FOR THE PURPOSE OF TESTING, DO NOT COPY IT.
                         type = Type.GetType(arrayRecord.TypeName.AssemblyQualifiedName, throwOnError: false);
                         if (type is null)
@@ -158,9 +158,13 @@ namespace DotnetFuzzing.Fuzzers
                         Assert.Equal(lengths[i], array.GetLength(i));
                         totalElementsCount *= lengths[i];
                     }
+
+                    // This array contains indices that are used to get values of multi-dimensional array.
+                    // At the beginning, all values are set to 0, so we start from the first element.
                     int[] indices = new int[arrayRecord.Rank];
 
-                    for (long i = 0; i < totalElementsCount; i++)
+                    long flatIndex = 0;
+                    for (; flatIndex < totalElementsCount; flatIndex++)
                     {
                         object? rawValue = array.GetValue(indices);
                         if (rawValue is not null)
@@ -175,6 +179,8 @@ namespace DotnetFuzzing.Fuzzers
                             }
                         }
 
+                        // The loop below is responsible for incrementing the multi-dimensional indices.
+                        // It finds the dimension and then performs an increment.
                         int dimension = indices.Length - 1;
                         while (dimension >= 0)
                         {
@@ -186,12 +192,10 @@ namespace DotnetFuzzing.Fuzzers
                             indices[dimension] = 0;
                             dimension--;
                         }
-
-                        if (dimension < 0)
-                        {
-                            break;
-                        }
                     }
+
+                    // We track the flat index to ensure that we have enumerated over all elements.
+                    Assert.Equal(totalElementsCount, flatIndex);
                 }
                 else
                 {
