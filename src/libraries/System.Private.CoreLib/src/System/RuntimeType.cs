@@ -34,12 +34,6 @@ namespace System
 
         public object Clone() => this;
 
-        public override bool Equals(object? obj)
-        {
-            // ComObjects are identified by the instance of the Type object and not the TypeHandle.
-            return obj == (object)this;
-        }
-
         public override int GetArrayRank()
         {
             if (!IsArrayImpl())
@@ -164,8 +158,6 @@ namespace System
 
             return Enum.InternalGetUnderlyingType(this);
         }
-
-        public override int GetHashCode() => RuntimeHelpers.GetHashCode(this);
 
         internal RuntimeModule GetRuntimeModule() => RuntimeTypeHandle.GetModule(this);
 

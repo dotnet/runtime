@@ -539,7 +539,7 @@ namespace System
         {
             ArgumentNullException.ThrowIfNull(value);
 
-            if ((object)this == (object)value)
+            if (ReferenceEquals(this, value))
             {
                 CheckStringComparison(comparisonType);
                 return true;
@@ -580,7 +580,7 @@ namespace System
         {
             ArgumentNullException.ThrowIfNull(value);
 
-            if ((object)this == (object)value)
+            if (ReferenceEquals(this, value))
             {
                 return true;
             }
@@ -1108,7 +1108,7 @@ namespace System
         {
             ArgumentNullException.ThrowIfNull(value);
 
-            if ((object)this == (object)value)
+            if (ReferenceEquals(this, value))
             {
                 CheckStringComparison(comparisonType);
                 return true;
@@ -1158,7 +1158,7 @@ namespace System
         {
             ArgumentNullException.ThrowIfNull(value);
 
-            if ((object)this == (object)value)
+            if (ReferenceEquals(this, value))
             {
                 return true;
             }
