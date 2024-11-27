@@ -12251,7 +12251,7 @@ HRESULT Debugger::DeoptimizeMethodHelper(Module* pModule, mdMethodDef methodDef)
         // call back in to anything so set it all here to match the original IL and debug codegen flags
         ilCodeVersion.SetIL(ILCodeVersion(pModule, methodDef).GetIL());
         ilCodeVersion.SetJitFlags(COR_PRF_CODEGEN_DISABLE_ALL_OPTIMIZATIONS | COR_PRF_CODEGEN_DEBUG_INFO);
-        ilCodeVersion.SetRejitState(ILCodeVersion::kStateActive);
+        ilCodeVersion.SetRejitState(RejitFlags::kStateActive);
         ilCodeVersion.SetEnableReJITCallback(false);
     }
 

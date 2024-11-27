@@ -1383,172 +1383,6 @@ HCIMPL2(Object*, JIT_Box, CORINFO_CLASS_HANDLE type, void* unboxedData)
 HCIMPLEND
 
 /*************************************************************/
-NOINLINE HCIMPL3(VOID, JIT_Unbox_Nullable_Framed, void * destPtr, MethodTable* typeMT, OBJECTREF objRef)
-{
-    FCALL_CONTRACT;
-
-    HELPER_METHOD_FRAME_BEGIN_1(objRef);
-    if (!Nullable::UnBox(destPtr, objRef, typeMT))
-    {
-        COMPlusThrowInvalidCastException(&objRef, TypeHandle(typeMT));
-    }
-    HELPER_METHOD_POLL();
-    HELPER_METHOD_FRAME_END();
-}
-HCIMPLEND
-
-/*************************************************************/
-HCIMPL3(VOID, JIT_Unbox_Nullable, void * destPtr, CORINFO_CLASS_HANDLE type, Object* obj)
-{
-    FCALL_CONTRACT;
-
-    TypeHandle typeHnd(type);
-    _ASSERTE(Nullable::IsNullableType(typeHnd));
-
-    MethodTable* typeMT = typeHnd.AsMethodTable();
-
-    OBJECTREF objRef = ObjectToOBJECTREF(obj);
-
-    if (Nullable::UnBoxNoGC(destPtr, objRef, typeMT))
-    {
-        // exact match (type equivalence not needed)
-        FC_GC_POLL();
-        return;
-    }
-
-    // Fall back to a framed helper that handles type equivalence.
-    ENDFORBIDGC();
-    HCCALL3(JIT_Unbox_Nullable_Framed, destPtr, typeMT, objRef);
-}
-HCIMPLEND
-
-/*************************************************************/
-/* framed Unbox helper that handles enums and full-blown type equivalence */
-NOINLINE HCIMPL2(LPVOID, Unbox_Helper_Framed, MethodTable* pMT1, Object* obj)
-{
-    FCALL_CONTRACT;
-
-    LPVOID result = NULL;
-    MethodTable* pMT2 = obj->GetMethodTable();
-
-    OBJECTREF objRef = ObjectToOBJECTREF(obj);
-    HELPER_METHOD_FRAME_BEGIN_RET_1(objRef);
-    HELPER_METHOD_POLL();
-
-    if (pMT1->GetInternalCorElementType() == pMT2->GetInternalCorElementType() &&
-            (pMT1->IsEnum() || pMT1->IsTruePrimitive()) &&
-            (pMT2->IsEnum() || pMT2->IsTruePrimitive()))
-    {
-        // we allow enums and their primitive type to be interchangeable
-        result = objRef->GetData();
-    }
-    else if (pMT1->IsEquivalentTo(pMT2))
-    {
-        // the structures are equivalent
-        result = objRef->GetData();
-    }
-    else
-    {
-        COMPlusThrowInvalidCastException(&objRef, TypeHandle(pMT1));
-    }
-    HELPER_METHOD_FRAME_END();
-
-    return result;
-}
-HCIMPLEND
-
-/*************************************************************/
-/* Unbox helper that handles enums */
-HCIMPL2(LPVOID, Unbox_Helper, CORINFO_CLASS_HANDLE type, Object* obj)
-{
-    FCALL_CONTRACT;
-
-    TypeHandle typeHnd(type);
-    // boxable types have method tables
-    _ASSERTE(!typeHnd.IsTypeDesc());
-
-    MethodTable* pMT1 = typeHnd.AsMethodTable();
-    // must be a value type
-    _ASSERTE(pMT1->IsValueType());
-
-    MethodTable* pMT2 = obj->GetMethodTable();
-
-    // we allow enums and their primitive type to be interchangeable.
-    // if suspension is requested, defer to the framed helper.
-    if (pMT1->GetInternalCorElementType() == pMT2->GetInternalCorElementType() &&
-            (pMT1->IsEnum() || pMT1->IsTruePrimitive()) &&
-            (pMT2->IsEnum() || pMT2->IsTruePrimitive()) &&
-            g_TrapReturningThreads == 0)
-    {
-        return obj->GetData();
-    }
-
-    // Fall back to a framed helper that can also handle GC suspension and type equivalence.
-    ENDFORBIDGC();
-    return HCCALL2(Unbox_Helper_Framed, pMT1, obj);
-}
-HCIMPLEND
-
-/* framed Unbox type test helper that handles enums and full-blown type equivalence */
-NOINLINE HCIMPL2(void, JIT_Unbox_TypeTest_Framed, MethodTable* pMT1, MethodTable* pMT2)
-{
-    FCALL_CONTRACT;
-
-    HELPER_METHOD_FRAME_BEGIN_0();
-    HELPER_METHOD_POLL();
-
-    if (pMT1->GetInternalCorElementType() == pMT2->GetInternalCorElementType() &&
-            (pMT1->IsEnum() || pMT1->IsTruePrimitive()) &&
-            (pMT2->IsEnum() || pMT2->IsTruePrimitive()))
-    {
-        // type test test passes
-    }
-    else if (pMT1->IsEquivalentTo(pMT2))
-    {
-        // the structures are equivalent
-    }
-    else
-    {
-        COMPlusThrowInvalidCastException(TypeHandle(pMT2), TypeHandle(pMT1));
-    }
-    HELPER_METHOD_FRAME_END();
-}
-HCIMPLEND
-
-/*************************************************************/
-/* Unbox type test that handles enums */
-HCIMPL2(void, JIT_Unbox_TypeTest, CORINFO_CLASS_HANDLE type, CORINFO_CLASS_HANDLE boxType)
-{
-    FCALL_CONTRACT;
-
-    TypeHandle typeHnd(type);
-    // boxable types have method tables
-    _ASSERTE(!typeHnd.IsTypeDesc());
-
-    MethodTable* pMT1 = typeHnd.AsMethodTable();
-    // must be a value type
-    _ASSERTE(pMT1->IsValueType());
-
-    TypeHandle boxTypeHnd(boxType);
-    MethodTable* pMT2 = boxTypeHnd.AsMethodTable();
-
-    // we allow enums and their primitive type to be interchangeable.
-    // if suspension is requested, defer to the framed helper.
-    if (pMT1->GetInternalCorElementType() == pMT2->GetInternalCorElementType() &&
-            (pMT1->IsEnum() || pMT1->IsTruePrimitive()) &&
-            (pMT2->IsEnum() || pMT2->IsTruePrimitive()) &&
-            g_TrapReturningThreads == 0)
-    {
-        return;
-    }
-
-    // Fall back to a framed helper that can also handle GC suspension and type equivalence.
-    ENDFORBIDGC();
-    HCCALL2(JIT_Unbox_TypeTest_Framed, pMT1, pMT2);
-}
-HCIMPLEND
-
-/*************************************************************/
 HCIMPL2_IV(LPVOID, JIT_GetRefAny, CORINFO_CLASS_HANDLE type, TypedByRef typedByRef)
 {
     FCALL_CONTRACT;
@@ -1575,6 +1409,21 @@ HCIMPL2(BOOL, JIT_IsInstanceOfException, CORINFO_CLASS_HANDLE type, Object* obj)
 }
 HCIMPLEND
 
+extern "C" void QCALLTYPE ThrowInvalidCastException(CORINFO_CLASS_HANDLE pTargetType, CORINFO_CLASS_HANDLE pSourceType)
+{
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+
+    TypeHandle targetType(pTargetType);
+    TypeHandle sourceType(pSourceType);
+
+    GCX_COOP();
+
+    COMPlusThrowInvalidCastException(sourceType, targetType);
+
+    END_QCALL;
+}
 
 //========================================================================
 //

@@ -7630,6 +7630,14 @@ GenTreeIntCon* Compiler::gtNewIconNode(ssize_t value, var_types type)
     return new (this, GT_CNS_INT) GenTreeIntCon(type, value);
 }
 
+GenTreeIntCon* Compiler::gtNewIconNodeWithVN(Compiler* comp, ssize_t value, var_types type)
+{
+    assert(genActualType(type) == type);
+    GenTreeIntCon* cns = new (this, GT_CNS_INT) GenTreeIntCon(type, value);
+    comp->fgUpdateConstTreeValueNumber(cns);
+    return cns;
+}
+
 GenTreeIntCon* Compiler::gtNewIconNode(unsigned fieldOffset, FieldSeq* fieldSeq)
 {
     return new (this, GT_CNS_INT) GenTreeIntCon(TYP_I_IMPL, static_cast<ssize_t>(fieldOffset), fieldSeq);
@@ -20431,6 +20439,8 @@ bool GenTree::isContainableHWIntrinsic() const
             return false;
         }
     }
+#elif defined(TARGET_ARM64)
+    return (AsHWIntrinsic()->GetHWIntrinsicId() == NI_Sve_ConditionalSelect);
 #else
     return false;
 #endif // TARGET_XARCH
@@ -20570,11 +20580,30 @@ bool GenTree::isRMWHWIntrinsic(Compiler* comp)
 // EVEX form for its intended lowering instruction.
 //
 // Return Value:
-// true if the intrisic node lowering instruction has an EVEX form
+// true if the intrinsic node lowering instruction has an EVEX form
 //
-bool GenTree::isEvexCompatibleHWIntrinsic() const
+bool GenTree::isEvexCompatibleHWIntrinsic(Compiler* comp) const
 {
-    return OperIsHWIntrinsic() && HWIntrinsicInfo::HasEvexSemantics(AsHWIntrinsic()->GetHWIntrinsicId());
+#if defined(TARGET_XARCH)
+    if (OperIsHWIntrinsic())
+    {
+        NamedIntrinsic intrinsicId = AsHWIntrinsic()->GetHWIntrinsicId();
+
+        switch (intrinsicId)
+        {
+            case NI_PCLMULQDQ_CarrylessMultiply:
+            {
+                return comp->compOpportunisticallyDependsOn(InstructionSet_PCLMULQDQ_V256);
+            }
+
+            default:
+            {
+                return HWIntrinsicInfo::HasEvexSemantics(intrinsicId);
+            }
+        }
+    }
+#endif
+    return false;
 }
 
 //------------------------------------------------------------------------
@@ -20582,15 +20611,15 @@ bool GenTree::isEvexCompatibleHWIntrinsic() const
 // with the EVEX embedded masking form for its intended lowering instruction.
 //
 // Return Value:
-// true if the intrisic node lowering instruction has an EVEX embedded masking
+// true if the intrinsic node lowering instruction has an EVEX embedded masking
 //
 bool GenTree::isEmbeddedMaskingCompatibleHWIntrinsic() const
 {
     if (OperIsHWIntrinsic())
     {
+        NamedIntrinsic intrinsicId = AsHWIntrinsic()->GetHWIntrinsicId();
 #if defined(TARGET_XARCH)
-        NamedIntrinsic intrinsicId  = AsHWIntrinsic()->GetHWIntrinsicId();
-        var_types      simdBaseType = AsHWIntrinsic()->GetSimdBaseType();
+        var_types simdBaseType = AsHWIntrinsic()->GetSimdBaseType();
 
         switch (intrinsicId)
         {
@@ -20610,8 +20639,8 @@ bool GenTree::isEmbeddedMaskingCompatibleHWIntrinsic() const
             }
         }
 #elif defined(TARGET_ARM64)
-        return HWIntrinsicInfo::IsEmbeddedMaskedOperation(AsHWIntrinsic()->GetHWIntrinsicId()) ||
-               HWIntrinsicInfo::IsOptionalEmbeddedMaskedOperation(AsHWIntrinsic()->GetHWIntrinsicId());
+        return HWIntrinsicInfo::IsEmbeddedMaskedOperation(intrinsicId) ||
+               HWIntrinsicInfo::IsOptionalEmbeddedMaskedOperation(intrinsicId);
 #endif
     }
     return false;
@@ -21496,6 +21525,7 @@ GenTree* Compiler::gtNewSimdCvtMaskToVectorNode(var_types   type,
 {
     assert(varTypeIsMask(op1));
     assert(varTypeIsSIMD(type));
+    compMaskConvertUsed = true;
 
 #if defined(TARGET_XARCH)
     return gtNewSimdHWIntrinsicNode(type, op1, NI_EVEX_ConvertMaskToVector, simdBaseJitType, simdSize);
@@ -21888,6 +21918,7 @@ GenTree* Compiler::gtNewSimdCvtVectorToMaskNode(var_types   type,
 {
     assert(varTypeIsMask(type));
     assert(varTypeIsSIMD(op1));
+    compMaskConvertUsed = true;
 
 #if defined(TARGET_XARCH)
     return gtNewSimdHWIntrinsicNode(TYP_MASK, op1, NI_EVEX_ConvertVectorToMask, simdBaseJitType, simdSize);
@@ -30070,7 +30101,7 @@ regNumber ReturnTypeDesc::GetABIReturnReg(unsigned idx, CorInfoCallConvExtension
     var_types regType = GetReturnRegType(idx);
     if (idx == 0)
     {
-        resultReg = varTypeIsIntegralOrI(regType) ? REG_INTRET : REG_FLOATRET; // A0 or F0
+        resultReg = varTypeIsIntegralOrI(regType) ? REG_INTRET : REG_FLOATRET; // A0 or FA0
     }
     else
     {
@@ -30084,7 +30115,7 @@ regNumber ReturnTypeDesc::GetABIReturnReg(unsigned idx, CorInfoCallConvExtension
         else
         {
             assert(varTypeUsesFloatReg(regType));
-            resultReg = varTypeIsIntegralOrI(GetReturnRegType(0)) ? REG_FLOATRET : REG_FLOATRET_1; // F0 or F1
+            resultReg = varTypeIsIntegralOrI(GetReturnRegType(0)) ? REG_FLOATRET : REG_FLOATRET_1; // FA0 or FA1
         }
     }
 
@@ -30539,8 +30570,17 @@ bool GenTree::IsNeverNegative(Compiler* comp) const
         }
     }
 
-    // TODO-Casts: extend IntegralRange to handle constants
-    return IntegralRange::ForNode(const_cast<GenTree*>(this), comp).IsNonNegative();
+    if (IntegralRange::ForNode(const_cast<GenTree*>(this), comp).IsNonNegative())
+    {
+        return true;
+    }
+
+    if ((comp->vnStore != nullptr) && comp->vnStore->IsVNNeverNegative(gtVNPair.GetConservative()))
+    {
+        return true;
+    }
+
+    return false;
 }
 
 //------------------------------------------------------------------------

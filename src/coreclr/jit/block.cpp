@@ -617,8 +617,7 @@ void BasicBlock::dspSuccs(Compiler* compiler)
     // compute it ourselves here.
     if (bbKind == BBJ_SWITCH)
     {
-        // Create a set with all the successors. Don't use BlockSet, so we don't need to worry
-        // about the BlockSet epoch.
+        // Create a set with all the successors.
         unsigned     bbNumMax = compiler->fgBBNumMax;
         BitVecTraits bitVecTraits(bbNumMax + 1, compiler);
         BitVec       uniqueSuccBlocks(BitVecOps::MakeEmpty(&bitVecTraits));
@@ -1036,10 +1035,10 @@ unsigned JitPtrKeyFuncs<BasicBlock>::GetHashCode(const BasicBlock* ptr)
     unsigned hash = SsaStressHashHelper();
     if (hash != 0)
     {
-        return (hash ^ (ptr->bbNum << 16) ^ ptr->bbNum);
+        return (hash ^ (ptr->bbID << 16) ^ ptr->bbID);
     }
 #endif
-    return ptr->bbNum;
+    return ptr->bbID;
 }
 
 //------------------------------------------------------------------------

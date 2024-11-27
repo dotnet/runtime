@@ -53,10 +53,6 @@ public:
     // variable are stored in the "per SSA data" on the local descriptor.
     void Build();
 
-    static bool InsertInSsa(Compiler*                   comp,
-                            unsigned                    lclNum,
-                            ArrayStack<UseDefLocation>& defs,
-                            ArrayStack<UseDefLocation>& uses);
 private:
     // Insert a new GT_PHI statement.
     static Statement* InsertPhi(Compiler* comp, BasicBlock* block, unsigned lclNum);
@@ -108,4 +104,52 @@ private:
     Compiler*      m_pCompiler;
     CompAllocator  m_allocator;
     SsaRenameState m_renameStack;
+};
+
+class IncrementalLiveInBuilder
+{
+    Compiler*               m_comp;
+    ArrayStack<BasicBlock*> m_queue;
+
+public:
+    IncrementalLiveInBuilder(Compiler* comp)
+        : m_comp(comp)
+        , m_queue(comp->getAllocator(CMK_SSA))
+    {
+    }
+
+    void MarkLiveInBackwards(unsigned lclNum, const UseDefLocation& use, const UseDefLocation& reachingDef);
+};
+
+class IncrementalSsaBuilder
+{
+    Compiler*                  m_comp;
+    unsigned                   m_lclNum;
+    ArrayStack<UseDefLocation> m_defs;
+    BitVecTraits               m_poTraits;
+    BitVec                     m_defBlocks                  = BitVecOps::UninitVal();
+    BitVec                     m_iteratedDominanceFrontiers = BitVecOps::UninitVal();
+    IncrementalLiveInBuilder   m_liveInBuilder;
+
+#ifdef DEBUG
+    bool m_finalizedDefs = false;
+#endif
+
+    UseDefLocation FindOrCreateReachingDef(const UseDefLocation& use);
+    bool           FindReachingDefInBlock(const UseDefLocation& use, BasicBlock* block, UseDefLocation* def);
+    bool           FindReachingDefInSameStatement(const UseDefLocation& use, UseDefLocation* def);
+    Statement*     LatestStatement(Statement* stmt1, Statement* stmt2);
+public:
+    IncrementalSsaBuilder(Compiler* comp, unsigned lclNum)
+        : m_comp(comp)
+        , m_lclNum(lclNum)
+        , m_defs(comp->getAllocator(CMK_SSA))
+        , m_poTraits(0, comp)
+        , m_liveInBuilder(comp)
+    {
+    }
+
+    void InsertDef(const UseDefLocation& def);
+    bool FinalizeDefs();
+    void InsertUse(const UseDefLocation& use);
 };

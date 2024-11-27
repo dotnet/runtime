@@ -330,6 +330,8 @@ collect_parser.add_argument("--skip_collect_mc_files", action="store_true", help
 
 replay_common_parser = argparse.ArgumentParser(add_help=False)
 
+# NOTE: When adding arguments here, also make sure that they are set when collect does its replay:
+# see the "collect" case in setup_args.
 replay_common_parser.add_argument("-mch_files", metavar="MCH_FILE", nargs='+', help=replay_mch_files_help)
 replay_common_parser.add_argument("-filter", nargs='+', help=filter_help)
 replay_common_parser.add_argument("-product_location", help=product_location_help)
@@ -338,6 +340,7 @@ replay_common_parser.add_argument("-jit_ee_version", help=jit_ee_version_help)
 replay_common_parser.add_argument("-private_store", action="append", help=private_store_help)
 replay_common_parser.add_argument("-compile", "-c", help=compile_help)
 replay_common_parser.add_argument("--produce_repro", action="store_true", help=produce_repro_help)
+replay_common_parser.add_argument("-details", help="Specify full path to details file")
 
 # subparser for replay
 replay_parser = subparsers.add_parser("replay", description=replay_description, parents=[core_root_parser, target_parser, superpmi_common_parser, replay_common_parser])
@@ -1734,7 +1737,11 @@ class SuperPMIReplay:
                 flags = common_flags.copy()
 
                 fail_mcl_file = os.path.join(temp_location, os.path.basename(mch_file) + "_fail.mcl")
-                details_info_file = os.path.join(temp_location, os.path.basename(mch_file) + "_details.csv")
+
+                if self.coreclr_args.details:
+                  details_info_file = self.coreclr_args.details
+                else:
+                  details_info_file = os.path.join(temp_location, os.path.basename(mch_file) + "_details.csv")
 
                 flags += [
                     "-f", fail_mcl_file,  # Failing mc List
@@ -4755,6 +4762,11 @@ def setup_args(args):
                             "Unable to set produce_repro")
 
         coreclr_args.verify(args,
+                            "details",  # The replay code checks this, so make sure it's set
+                            lambda unused: True,
+                            "Unable to set details")
+
+        coreclr_args.verify(args,
                             "collection_command",
                             lambda unused: True,
                             "Unable to set collection_command.")
@@ -4984,6 +4996,11 @@ def setup_args(args):
                             "jitoption",
                             lambda unused: True,
                             "Unable to set jitoption")
+
+        coreclr_args.verify(args,
+                            "details",
+                            lambda unused: True,
+                            "Unable to set details")
 
         jit_in_product_location = False
         if coreclr_args.product_location.lower() in coreclr_args.jit_path.lower():
