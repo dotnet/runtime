@@ -1,8 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-// hostfxr.h is a public API. When included in .c files, it may fail to compile
-// if C++-specific syntax is used within the extern "C" block. Since all usage of
-// this API in runtime repo is within C++ code, such breakages are not encountered
-// during normal development or testing.
-#include "hostfxr.h"
+// These headers provide access to the public hosting APIs. This file tests that
+// they can be included in pure C code without causing compilation errors.
+// Since the runtime repository primarily uses these APIs in C++ code, such issues
+// might not be caught during regular development or testing.
+#include <coreclr_delegates.h>
+#include <hostfxr.h>
+#include <nethost/nethost.h>
