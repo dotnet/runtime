@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.Linq.Tests
@@ -62,14 +63,33 @@ namespace System.Linq.Tests
             Assert.Equal(Enumerable.Range(10, 10), Enumerable.Range(0, 20).RunOnce().SkipWhile((i, idx) => idx < 10));
         }
 
-        [Fact]
-        public void SkipErrorWhenSourceErrors()
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public static void SkipErrorWhenSourceErrors_TrimFriendlySelectTrue()
         {
-            var source = NumberRangeGuaranteedNotCollectionType(-2, 5).Select(i => (decimal)i).Select(m => 1 / m).Skip(4);
-            using(var en = source.GetEnumerator())
+            RemoteExecutor.Invoke(() =>
             {
-                Assert.Throws<DivideByZeroException>(() => en.MoveNext());
-            }
+                AppContext.SetSwitch("System.Linq.Enumerable.ValueTypeTrimFriendlySelect", true);
+
+                var source = NumberRangeGuaranteedNotCollectionType(-2, 5).Select(i => (decimal)i).Select(m => 1 / m).Skip(4);
+                var valuesFromEnumerable = source.ToList();
+                List<decimal> expectedValues = [(decimal)1/2];
+                Assert.Equal(expectedValues, valuesFromEnumerable);
+            }).Dispose();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void SkipErrorWhenSourceErrors_TrimFriendlySelectFalse()
+        {
+            RemoteExecutor.Invoke(() =>
+            {
+                AppContext.SetSwitch("System.Linq.Enumerable.ValueTypeTrimFriendlySelect", false);
+
+                var source = NumberRangeGuaranteedNotCollectionType(-2, 5).Select(i => (decimal)i).Select(m => 1 / m).Skip(4);
+                using (var en = source.GetEnumerator())
+                {
+                    Assert.Throws<DivideByZeroException>(() => en.MoveNext());
+                }
+            }).Dispose();
         }
 
         [Fact]
