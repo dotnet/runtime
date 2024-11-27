@@ -566,7 +566,7 @@ namespace System.Reflection
 
         private static bool HandleByRefForValueType(RuntimeType type, ref object arg)
         {
-            RuntimeType elementType = RuntimeTypeHandle.GetElementType(type);
+            RuntimeType elementType = RuntimeTypeHandle.GetElementType(type)!;
             Debug.Assert(RuntimeTypeHandle.IsByRef(type) && elementType.IsValueType);
             if (ReferenceEquals(elementType, arg.GetType()))
             {
