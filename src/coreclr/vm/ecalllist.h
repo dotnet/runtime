@@ -104,7 +104,6 @@ FCFuncStart(gCOMTypeHandleFuncs)
     FCFuncElement("GetArgumentTypesFromFunctionPointer", RuntimeTypeHandle::GetArgumentTypesFromFunctionPointer)
     FCFuncElement("IsUnmanagedFunctionPointer", RuntimeTypeHandle::IsUnmanagedFunctionPointer)
     FCFuncElement("CompareCanonicalHandles", RuntimeTypeHandle::CompareCanonicalHandles)
-    FCFuncElement("IsEquivalentTo", RuntimeTypeHandle::IsEquivalentTo)
     FCFuncElement("GetRuntimeTypeFromHandleIfExists", RuntimeTypeHandle::GetRuntimeTypeFromHandleIfExists)
 FCFuncEnd()
 

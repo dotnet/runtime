@@ -168,24 +168,22 @@ FCIMPL1(ReflectClassBaseObject*, RuntimeTypeHandle::GetRuntimeTypeFromHandleIfEx
 }
 FCIMPLEND
 
-FCIMPL2(FC_BOOL_RET, RuntimeTypeHandle::IsEquivalentTo, ReflectClassBaseObject *rtType1UNSAFE, ReflectClassBaseObject *rtType2UNSAFE)
+#ifdef FEATURE_TYPEEQUIVALENCE
+extern "C" BOOL QCALLTYPE RuntimeTypeHandle_IsEquivalentTo(QCall::TypeHandle rtType1, QCall::TypeHandle rtType2)
 {
-    FCALL_CONTRACT;
-
-    REFLECTCLASSBASEREF rtType1 = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(rtType1UNSAFE);
-    REFLECTCLASSBASEREF rtType2 = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(rtType2UNSAFE);
+    QCALL_CONTRACT;
 
     BOOL areEquivalent = FALSE;
-    HELPER_METHOD_FRAME_BEGIN_RET_2(rtType1, rtType2);
 
-    if (rtType1 != NULL && rtType2 != NULL)
-        areEquivalent = rtType1->GetType().IsEquivalentTo(rtType2->GetType());
+    BEGIN_QCALL;
 
-    HELPER_METHOD_FRAME_END();
+    areEquivalent = rtType1.AsTypeHandle().IsEquivalentTo(rtType2.AsTypeHandle());
 
-    FC_RETURN_BOOL(areEquivalent);
+    END_QCALL;
+
+    return areEquivalent;
 }
-FCIMPLEND
+#endif // FEATURE_TYPEEQUIVALENCE
 
 FCIMPL1(MethodDesc *, RuntimeTypeHandle::GetFirstIntroducedMethod, ReflectClassBaseObject *pTypeUNSAFE) {
     CONTRACTL {

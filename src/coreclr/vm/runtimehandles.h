@@ -111,8 +111,6 @@ public:
     // Static method on RuntimeTypeHandle
     static FCDECL1(ReflectClassBaseObject*, GetRuntimeTypeFromHandleIfExists, EnregisteredTypeHandle th);
 
-    static FCDECL2(FC_BOOL_RET, IsEquivalentTo, ReflectClassBaseObject *rtType1UNSAFE, ReflectClassBaseObject *rtType2UNSAFE);
-
     static FCDECL1(AssemblyBaseObject*, GetAssemblyIfExists, ReflectClassBaseObject *pType);
     static FCDECL1(ReflectModuleBaseObject*, GetModuleIfExists, ReflectClassBaseObject* pType);
     static FCDECL1(INT32, GetAttributes, ReflectClassBaseObject* pType);
@@ -156,7 +154,9 @@ public:
 };
 
 extern "C" void QCALLTYPE RuntimeTypeHandle_GetRuntimeTypeFromHandleSlow(void* typeHandleRaw, QCall::ObjectHandleOnStack result);
-
+#ifdef FEATURE_TYPEEQUIVALENCE
+extern "C" BOOL QCALLTYPE RuntimeTypeHandle_IsEquivalentTo(QCall::TypeHandle rtType1, QCall::TypeHandle rtType2);
+#endif // FEATURE_TYPEEQUIVALENCE
 extern "C" void QCALLTYPE RuntimeTypeHandle_CreateInstanceForAnotherGenericParameter(QCall::TypeHandle pTypeHandle, TypeHandle *pInstArray, INT32 cInstArray, QCall::ObjectHandleOnStack pInstantiatedObject);
 extern "C" void QCALLTYPE RuntimeTypeHandle_InternalAlloc(MethodTable* pMT, QCall::ObjectHandleOnStack allocated);
 extern "C" void QCALLTYPE RuntimeTypeHandle_InternalAllocNoChecks(MethodTable* pMT, QCall::ObjectHandleOnStack allocated);

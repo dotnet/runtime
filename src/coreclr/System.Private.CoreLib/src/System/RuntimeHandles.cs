@@ -796,8 +796,11 @@ namespace System
         }
 
 #if FEATURE_TYPEEQUIVALENCE
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern bool IsEquivalentTo(RuntimeType rtType1, RuntimeType rtType2);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_IsEquivalentTo")]
+        private static partial Interop.BOOL IsEquivalentTo(QCallTypeHandle rtType1, QCallTypeHandle rtType2);
+
+        internal static bool IsEquivalentTo(RuntimeType rtType1, RuntimeType rtType2)
+            => IsEquivalentTo(new QCallTypeHandle(ref rtType1), new QCallTypeHandle(ref rtType2)) == Interop.BOOL.TRUE;
 #endif // FEATURE_TYPEEQUIVALENCE
     }
 
