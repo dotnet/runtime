@@ -141,6 +141,7 @@ public:
         switch ((*use)->OperGet())
         {
             case GT_STORE_LCL_VAR:
+            {
                 isLocalStore = true;
 
                 // Look for:
@@ -152,8 +153,10 @@ public:
                     hasConversion = true;
                 }
                 break;
+            }
 
             case GT_LCL_VAR:
+            {
                 isLocalUse = true;
 
                 // Look for:
@@ -161,46 +164,37 @@ public:
                 // -or-
                 //      user: ConditionalSelect(use:LCL_VAR(x), y, z)
 
-                if (user->OperIsConvertVectorToMask())
-                {
-                    convertOp     = user->AsHWIntrinsic();
-                    hasConversion = true;
-                }
-                else if (user->OperIsHWIntrinsic())
+                if (user->OperIsHWIntrinsic())
                 {
                     GenTreeHWIntrinsic* hwintrin = user->AsHWIntrinsic();
                     NamedIntrinsic      ni       = hwintrin->GetHWIntrinsicId();
 
-                    switch (ni)
+                    if (hwintrin->OperIsConvertVectorToMask())
                     {
-#if defined(TARGET_XARCH)
-                        case NI_Vector128_ConditionalSelect:
-                        case NI_Vector256_ConditionalSelect:
-                        case NI_Vector512_ConditionalSelect:
-#elif defined(TARGET_ARM64)
-                        case NI_Sve_ConditionalSelect:
-#endif
-                        {
-                            // We don't actually have a convert here, but we do have a case where
-                            // the mask is being used in a ConditionalSelect and therefore can be
-                            // consumed directly as a mask. While the IR shows TYP_SIMD, it gets
-                            // handled in lowering as part of the general embedded-mask support.
+                        convertOp     = user->AsHWIntrinsic();
+                        hasConversion = true;
+                    }
+                    else if (hwintrin->OperIsVectorConditionalSelect())
+                    {
+                        // We don't actually have a convert here, but we do have a case where
+                        // the mask is being used in a ConditionalSelect and therefore can be
+                        // consumed directly as a mask. While the IR shows TYP_SIMD, it gets
+                        // handled in lowering as part of the general embedded-mask support.
 
-                            if (hwintrin->Op(1) == (*use))
-                            {
-                                convertOp     = user->AsHWIntrinsic();
-                                hasConversion = true;
-                            }
-                            break;
-                        }
+                        // We notably don't check that op2->isEmbeddedMaskingCompatibleHWIntrinsic()
+                        // because we can still consume the mask directly in such cases. We'll just
+                        // emit `vblendmps zmm1 {k1}, zmm2, zmm3` instead  of containing the CndSel
+                        // as part of something like `vaddps zmm1 {k1}, zmm2, zmm3`
 
-                        default:
+                        if (hwintrin->Op(1) == (*use))
                         {
-                            break;
+                            convertOp     = user->AsHWIntrinsic();
+                            hasConversion = true;
                         }
                     }
                 }
                 break;
+            }
 
             default:
                 break;
