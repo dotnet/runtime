@@ -3916,6 +3916,7 @@ mono_interp_exec_method (InterpFrame *frame, ThreadContext *context, FrameClause
 		if (method_entry_ex)
 			THROW_EX (method_entry_ex, NULL);
 		EXCEPTION_CHECKPOINT;
+		CHECK_RESUME_STATE (context);
 	}
 
 	if (!clause_args) {
@@ -4372,6 +4373,7 @@ interp_call:
 				if (call_ex)
 					THROW_EX (call_ex, NULL);
 				EXCEPTION_CHECKPOINT;
+				CHECK_RESUME_STATE (context);
 			}
 
 			context->stack_pointer = (guchar*)frame->stack + cmethod->alloca_size;

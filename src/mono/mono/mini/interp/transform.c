@@ -9790,6 +9790,8 @@ mono_interp_transform_method (InterpMethod *imethod, ThreadContext *context, Mon
 		if ((method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL && (! mono_method_signature_internal (method)->hasthis || m_class_get_rank (method->klass) == 0)) ||
 				(method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL)) {
 			nm = mono_marshal_get_native_wrapper (method, FALSE, FALSE);
+			if (context->has_resume_state)
+				return;
 		} else {
 			const char *name = method->name;
 			if (m_class_get_parent (method->klass) == mono_defaults.multicastdelegate_class) {
