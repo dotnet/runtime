@@ -405,32 +405,19 @@ extern "C" INT32 QCALLTYPE RuntimeTypeHandle_GetNumVirtualsAndStaticVirtuals(QCa
     return numVirtuals;
 }
 
-FCIMPL2(MethodDesc *, RuntimeTypeHandle::GetMethodAt, ReflectClassBaseObject *pTypeUNSAFE, INT32 slot) {
-    CONTRACTL {
-        FCALL_CHECK;
-    }
-    CONTRACTL_END;
+extern "C" MethodDesc* QCALLTYPE RuntimeTypeHandle_GetMethodAt(MethodTable* pMT, INT32 slot)
+{
+    QCALL_CONTRACT;
 
-    REFLECTCLASSBASEREF refType = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(pTypeUNSAFE);
-
-    if (refType == NULL)
-        FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
-
-    TypeHandle typeHandle = refType->GetType();
+    _ASSERTE(pMT != NULL);
+    _ASSERTE(slot >= 0);
 
     MethodDesc* pRetMethod = NULL;
 
-    if (typeHandle.IsGenericVariable())
-        FCThrowRes(kArgumentException, W("Arg_InvalidHandle"));
+    BEGIN_QCALL;
 
-    HELPER_METHOD_FRAME_BEGIN_RET_1(refType);
-
-    MethodTable *pMT = typeHandle.GetMethodTable();
     INT32 numVirtuals = (INT32)pMT->GetNumVirtuals();
-
-    if (slot < 0)
-        COMPlusThrow(kArgumentException, W("Arg_ArgumentOutOfRangeException"));
-    else if (slot < numVirtuals)
+    if (slot < numVirtuals)
     {
         pRetMethod = pMT->GetMethodDescForSlot((DWORD)slot);
     }
@@ -463,12 +450,10 @@ FCIMPL2(MethodDesc *, RuntimeTypeHandle::GetMethodAt, ReflectClassBaseObject *pT
         }
     }
 
-    HELPER_METHOD_FRAME_END();
+    END_QCALL;
 
     return pRetMethod;
 }
-
-FCIMPLEND
 
 FCIMPL3(FC_BOOL_RET, RuntimeTypeHandle::GetFields, ReflectClassBaseObject *pTypeUNSAFE, INT32 **result, INT32 *pCount) {
     CONTRACTL {

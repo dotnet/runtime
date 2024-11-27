@@ -123,6 +123,7 @@ static const Entry s_QCall[] =
     DllImportEntry(RuntimeTypeHandle_GetAssemblySlow)
     DllImportEntry(RuntimeTypeHandle_GetModuleSlow)
     DllImportEntry(RuntimeTypeHandle_GetNumVirtualsAndStaticVirtuals)
+    DllImportEntry(RuntimeTypeHandle_GetMethodAt)
     DllImportEntry(RuntimeTypeHandle_VerifyInterfaceIsImplemented)
     DllImportEntry(RuntimeTypeHandle_GetInterfaceMethodImplementation)
     DllImportEntry(RuntimeTypeHandle_GetDeclaringTypeHandleForGenericVariable)

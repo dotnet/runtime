@@ -436,8 +436,24 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern int GetToken(RuntimeType type);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern RuntimeMethodHandleInternal GetMethodAt(RuntimeType type, int slot);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_GetMethodAt")]
+        private static unsafe partial IntPtr GetMethodAt(MethodTable* pMT, int slot);
+
+        internal static RuntimeMethodHandleInternal GetMethodAt(RuntimeType type, int slot)
+        {
+            TypeHandle typeHandle = type.GetNativeTypeHandle();
+            if (typeHandle.IsTypeDesc)
+            {
+                throw new ArgumentException(SR.Arg_InvalidHandle);
+            }
+
+            if (slot < 0)
+            {
+                throw new ArgumentException(SR.Arg_ArgumentOutOfRangeException);
+            }
+
+            return new RuntimeMethodHandleInternal(GetMethodAt(typeHandle.AsMethodTable(), slot));
+        }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern Type[] GetArgumentTypesFromFunctionPointer(RuntimeType type);
