@@ -16,6 +16,7 @@ namespace System.Reflection.Tests
             Exception exInner = ex.InnerException;
 
             Assert.Contains("Here", exInner.ToString());
+            Assert.Contains(InterpretedMethodName, exInner.ToString());
             Assert.DoesNotContain("InvokeStub_TestClassThatThrows", exInner.ToString());
         }
 
@@ -28,8 +29,17 @@ namespace System.Reflection.Tests
             Exception exInner = ex.InnerException;
 
             Assert.Contains("Here", exInner.ToString());
+            Assert.Contains(InterpretedConstructorName, exInner.ToString());
             Assert.DoesNotContain("InvokeStub_TestClassThatThrows", exInner.ToString());
         }
+
+        private static string InterpretedConstructorName => PlatformDetection.IsMonoRuntime ?
+            "InterpretedInvoke_Constructor" :
+            "System.RuntimeMethodHandle.InvokeMethod";
+
+        private static string InterpretedMethodName => PlatformDetection.IsMonoRuntime ?
+            "InterpretedInvoke_Method" :
+            "System.RuntimeMethodHandle.InvokeMethod";
 
         private class TestClassThatThrows
         {
