@@ -938,7 +938,7 @@ bool Compiler::optWidenPrimaryIV(FlowGraphNaturalLoop* loop,
     GenTree* initVal;
     if (initToConstant)
     {
-        initVal = gtNewIconNode((int64_t)(uint32_t)startConstant, TYP_LONG);
+        initVal = gtNewLconNode((int64_t)(uint32_t)startConstant);
     }
     else
     {
@@ -2161,7 +2161,7 @@ GenTree* StrengthReductionContext::RephraseIV(ScevAddRec* iv, ScevAddRec* source
     {
         assert(ivStep % sourceIVStep == 0);
         int64_t scale = ivStep / sourceIVStep;
-        return m_comp->gtNewOperNode(GT_MUL, TYP_LONG, sourceTree, m_comp->gtNewIconNode(scale, TYP_LONG));
+        return m_comp->gtNewOperNode(GT_MUL, TYP_LONG, sourceTree, m_comp->gtNewLconNode(scale));
     }
 
     unreached();
