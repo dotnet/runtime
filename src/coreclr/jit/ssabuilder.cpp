@@ -1362,21 +1362,6 @@ void Compiler::JitTestCheckSSA()
 }
 #endif // DEBUG
 
-class IncrementalLiveInBuilder
-{
-    Compiler*               m_comp;
-    ArrayStack<BasicBlock*> m_queue;
-
-public:
-    IncrementalLiveInBuilder(Compiler* comp)
-        : m_comp(comp)
-        , m_queue(comp->getAllocator(CMK_SSA))
-    {
-    }
-
-    void MarkLiveInBackwards(unsigned lclNum, const UseDefLocation& use, const UseDefLocation& reachingDef);
-};
-
 //------------------------------------------------------------------------
 // MarkLiveInBackwards: Given a use and its reaching definition, mark that
 // local as live-in into all blocks on the path from the reaching definition to
@@ -1426,45 +1411,6 @@ void IncrementalLiveInBuilder::MarkLiveInBackwards(unsigned              lclNum,
         }
     }
 }
-
-class IncrementalSsaBuilder
-{
-    Compiler*                   m_comp;
-    unsigned                    m_lclNum;
-    ArrayStack<UseDefLocation>& m_defs;
-    ArrayStack<UseDefLocation>& m_uses;
-    BitVecTraits                m_poTraits;
-    BitVec                      m_defBlocks;
-    BitVec                      m_iteratedDominanceFrontiers;
-    IncrementalLiveInBuilder    m_liveInBuilder;
-
-    UseDefLocation FindOrCreateReachingDef(const UseDefLocation& use);
-    bool           FindReachingDefInBlock(const UseDefLocation& use, BasicBlock* block, UseDefLocation* def);
-    bool           FindReachingDefInSameStatement(const UseDefLocation& use, UseDefLocation* def);
-    Statement*     LatestStatement(Statement* stmt1, Statement* stmt2);
-public:
-    IncrementalSsaBuilder(Compiler*                   comp,
-                          unsigned                    lclNum,
-                          ArrayStack<UseDefLocation>& defs,
-                          ArrayStack<UseDefLocation>& uses)
-        : m_comp(comp)
-        , m_lclNum(lclNum)
-        , m_defs(defs)
-        , m_uses(uses)
-        , m_poTraits(comp->m_dfsTree->PostOrderTraits())
-        , m_defBlocks(BitVecOps::MakeEmpty(&m_poTraits))
-        , m_iteratedDominanceFrontiers(BitVecOps::MakeEmpty(&m_poTraits))
-        , m_liveInBuilder(comp)
-    {
-    }
-
-    bool        Insert();
-    static void MarkLiveInBackwards(Compiler*             comp,
-                                    unsigned              lclNum,
-                                    const UseDefLocation& use,
-                                    const UseDefLocation& reachingDef,
-                                    BitVec&               visitedSet);
-};
 
 //------------------------------------------------------------------------
 // FindOrCreateReachingDef: Given a use indicated by a block and potentially a
@@ -1687,15 +1633,79 @@ Statement* IncrementalSsaBuilder::LatestStatement(Statement* stmt1, Statement* s
 }
 
 //------------------------------------------------------------------------
-// Insert: Insert the uses and definitions in SSA.
+// InsertDef: Record a definition.
+//
+// Parameters:
+//   def - The location of the definition
+//
+void IncrementalSsaBuilder::InsertDef(const UseDefLocation& def)
+{
+    assert(!m_finalizedDefs);
+    m_defs.Push(def);
+}
+
+//------------------------------------------------------------------------
+// FinalizeDefs:
+//   Finalize information about defs after all definitions for the local have
+//   been added with "InsertDef".
 //
 // Returns:
-//   True if we were able to insert the local into SSA. False if we gave up
-//   (due to hitting internal limits).
+//   True if the local can be inserted into SSA (in which case calling
+//   InsertUse is allowed).
 //
-bool IncrementalSsaBuilder::Insert()
+bool IncrementalSsaBuilder::FinalizeDefs()
 {
-    FlowGraphDfsTree* dfsTree = m_comp->m_dfsTree;
+    assert(!m_finalizedDefs);
+
+#ifdef DEBUG
+    if (m_comp->verbose)
+    {
+        printf("Finalizing defs for SSA insertion of V%02u\n", m_lclNum);
+        printf("  %d defs:", m_defs.Height());
+        for (int i = 0; i < m_defs.Height(); i++)
+        {
+            printf(" [%06u]", Compiler::dspTreeID(m_defs.Bottom(i).Tree));
+        }
+        printf("\n");
+    }
+#endif
+
+    LclVarDsc* dsc = m_comp->lvaGetDesc(m_lclNum);
+
+    if (m_defs.Height() == 1)
+    {
+        // Single-def case, no need to compute flow graph annotations
+        JITDUMP("  Single-def local; putting into SSA directly\n");
+
+        UseDefLocation& def = m_defs.BottomRef(0);
+
+        unsigned ssaNum = dsc->lvPerSsaData.AllocSsaNum(m_comp->getAllocator(CMK_SSA), def.Block, def.Tree);
+        def.Tree->SetSsaNum(ssaNum);
+        JITDUMP("  [%06u] d:%u\n", Compiler::dspTreeID(def.Tree), ssaNum);
+        dsc->lvInSsa                         = true;
+        dsc->GetPerSsaData(ssaNum)->m_vnPair = m_comp->vnStore->VNPNormalPair(def.Tree->Data()->gtVNPair);
+        INDEBUG(m_finalizedDefs = true);
+        return true;
+    }
+
+    if (m_comp->m_dfsTree == nullptr)
+    {
+        m_comp->m_dfsTree = m_comp->fgComputeDfs();
+    }
+
+    if (m_comp->m_domTree == nullptr)
+    {
+        m_comp->m_domTree = FlowGraphDominatorTree::Build(m_comp->m_dfsTree);
+    }
+
+    if (m_comp->m_domFrontiers == nullptr)
+    {
+        m_comp->m_domFrontiers = FlowGraphDominanceFrontiers::Build(m_comp->m_domTree);
+    }
+
+    m_poTraits                   = BitVecTraits(m_comp->m_dfsTree->PostOrderTraits());
+    m_defBlocks                  = BitVecOps::MakeEmpty(&m_poTraits);
+    m_iteratedDominanceFrontiers = BitVecOps::MakeEmpty(&m_poTraits);
 
     // Compute iterated dominance frontiers of all real definitions. These are
     // the blocks that unpruned phi definitions would be inserted into. We
@@ -1723,137 +1733,70 @@ bool IncrementalSsaBuilder::Insert()
         return false;
     }
 
-    LclVarDsc* dsc = m_comp->lvaGetDesc(m_lclNum);
     // Alloc SSA numbers for all real definitions.
     for (int i = 0; i < m_defs.Height(); i++)
     {
         UseDefLocation& def = m_defs.BottomRef(i);
-        if (!dfsTree->Contains(def.Block))
+        if (m_comp->m_dfsTree->Contains(def.Block))
         {
-            continue;
+            BitVecOps::AddElemD(&m_poTraits, m_defBlocks, def.Block->bbPostorderNum);
         }
-
-        BitVecOps::AddElemD(&m_poTraits, m_defBlocks, def.Block->bbPostorderNum);
 
         unsigned ssaNum = dsc->lvPerSsaData.AllocSsaNum(m_comp->getAllocator(CMK_SSA), def.Block, def.Tree);
         def.Tree->SetSsaNum(ssaNum);
         LclSsaVarDsc* ssaDsc = dsc->GetPerSsaData(ssaNum);
-        ssaDsc->m_vnPair     = def.Tree->Data()->gtVNPair;
+        ssaDsc->m_vnPair     = m_comp->vnStore->VNPNormalPair(def.Tree->Data()->gtVNPair);
         JITDUMP("  [%06u] d:%u\n", Compiler::dspTreeID(def.Tree), ssaNum);
     }
 
-    // Finally compute all the reaching defs for the uses.
-    for (int i = 0; i < m_uses.Height(); i++)
-    {
-        UseDefLocation& use = m_uses.BottomRef(i);
-        if (!dfsTree->Contains(use.Block))
-        {
-            continue;
-        }
-
-        UseDefLocation def = FindOrCreateReachingDef(use);
-        use.Tree->SetSsaNum(def.Tree->GetSsaNum());
-        dsc->GetPerSsaData(def.Tree->GetSsaNum())->AddUse(use.Block);
-        JITDUMP("  [%06u] u:%u\n", Compiler::dspTreeID(use.Tree), def.Tree->GetSsaNum());
-
-        m_liveInBuilder.MarkLiveInBackwards(m_lclNum, use, def);
-    }
-
+    dsc->lvInSsa = true;
+    INDEBUG(m_finalizedDefs = true);
     return true;
 }
 
 //------------------------------------------------------------------------
-// InsertInSsa: Insert a specified local in SSA given its local number and all
-// of its definitions and uses in the IR.
+// InsertUse:
+//   Insert a use into SSA.
 //
 // Parameters:
-//   comp   - Compiler instance
-//   lclNum - The local that is being inserted into SSA
-//   defs   - All STORE_LCL_VAR definitions of the local
-//   uses   - All LCL_VAR uses of the local
-//
-// Returns:
-//   True if we were able to insert the local into SSA. False if we gave up
-//   (due to hitting internal limits).
+//   use - Location of the use
 //
 // Remarks:
 //   All uses are required to never read an uninitialized value of the local.
 //   That is, this function requires that all paths through the function go
-//   through one of the defs in "defs" before any use in "uses".
+//   through one of the defs in "defs" before any use in "uses" for uses that
+//   are statically reachable.
 //
-bool SsaBuilder::InsertInSsa(Compiler*                   comp,
-                             unsigned                    lclNum,
-                             ArrayStack<UseDefLocation>& defs,
-                             ArrayStack<UseDefLocation>& uses)
+void IncrementalSsaBuilder::InsertUse(const UseDefLocation& use)
 {
-    LclVarDsc* dsc = comp->lvaGetDesc(lclNum);
-    assert(!dsc->lvInSsa);
+    assert(m_finalizedDefs);
 
-    JITDUMP("Putting V%02u into SSA form\n", lclNum);
-    JITDUMP("  %d defs:", defs.Height());
-    for (int i = 0; i < defs.Height(); i++)
+    JITDUMP("Inserting use [%06u] into SSA\n", Compiler::dspTreeID(use.Tree));
+
+    UseDefLocation reachingDef;
+    if (m_defs.Height() == 1)
     {
-        JITDUMP(" [%06u]", Compiler::dspTreeID(defs.Bottom(i).Tree));
+        reachingDef = m_defs.BottomRef(0);
     }
-
-    JITDUMP("\n  %d uses:", uses.Height());
-    for (int i = 0; i < uses.Height(); i++)
+    else
     {
-        JITDUMP(" [%06u]", Compiler::dspTreeID(uses.Bottom(i).Tree));
-    }
-
-    JITDUMP("\n");
-
-    if (defs.Height() == 1)
-    {
-        JITDUMP("  Single-def local; putting into SSA directly\n");
-
-        UseDefLocation& def = defs.BottomRef(0);
-
-        unsigned ssaNum = dsc->lvPerSsaData.AllocSsaNum(comp->getAllocator(CMK_SSA), def.Block, def.Tree);
-        def.Tree->SetSsaNum(ssaNum);
-        JITDUMP("  [%06u] d:%u\n", Compiler::dspTreeID(def.Tree), ssaNum);
-
-        LclSsaVarDsc* ssaDsc = dsc->GetPerSsaData(ssaNum);
-        ssaDsc->m_vnPair     = def.Tree->Data()->gtVNPair;
-
-        IncrementalLiveInBuilder liveIn(comp);
-
-        for (int i = 0; i < uses.Height(); i++)
+        if (!m_comp->m_dfsTree->Contains(use.Block))
         {
-            UseDefLocation& use = uses.BottomRef(i);
-            use.Tree->SetSsaNum(ssaNum);
-            ssaDsc->AddUse(use.Block);
-            JITDUMP("  [%06u] u:%u\n", Compiler::dspTreeID(use.Tree), ssaNum);
-
-            liveIn.MarkLiveInBackwards(lclNum, use, def);
+            reachingDef = m_defs.Bottom(0);
+            JITDUMP("  Use is in unreachable block " FMT_BB ", using first def [%06u] in " FMT_BB "\n",
+                    use.Block->bbNum, Compiler::dspTreeID(reachingDef.Tree), reachingDef.Block->bbNum);
         }
-
-        dsc->lvInSsa = true;
-        return true;
+        else
+        {
+            reachingDef = FindOrCreateReachingDef(use);
+        }
     }
 
-    if (comp->m_dfsTree == nullptr)
-    {
-        comp->m_dfsTree = comp->fgComputeDfs();
-    }
+    JITDUMP("  Reaching def is [%06u] d:%d\n", Compiler::dspTreeID(reachingDef.Tree), reachingDef.Tree->GetSsaNum());
 
-    if (comp->m_domTree == nullptr)
-    {
-        comp->m_domTree = FlowGraphDominatorTree::Build(comp->m_dfsTree);
-    }
+    use.Tree->SetSsaNum(reachingDef.Tree->GetSsaNum());
+    m_liveInBuilder.MarkLiveInBackwards(m_lclNum, use, reachingDef);
 
-    if (comp->m_domFrontiers == nullptr)
-    {
-        comp->m_domFrontiers = FlowGraphDominanceFrontiers::Build(comp->m_domTree);
-    }
-
-    IncrementalSsaBuilder builder(comp, lclNum, defs, uses);
-    if (builder.Insert())
-    {
-        dsc->lvInSsa = true;
-        return true;
-    }
-
-    return false;
+    LclVarDsc* dsc = m_comp->lvaGetDesc(m_lclNum);
+    dsc->GetPerSsaData(reachingDef.Tree->GetSsaNum())->AddUse(use.Block);
 }

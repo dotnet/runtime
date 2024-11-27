@@ -1,5 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  
+
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppPrevious);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -146,6 +146,8 @@
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
     <Compile Include="System\Numerics\Tensors\netstandard\TensorPrimitives.Single.netstandard.cs" />
     <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
+    <!--  Workaround https://github.com/dotnet/roslyn/issues/71442 by aliasing Vectors, which contains an internal MathF -->
+    <PackageReference Include="System.Numerics.Vectors" Version="$(SystemNumericsVectorsVersion)" Aliases="Vectors" />
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Bcl.Numerics\src\Microsoft.Bcl.Numerics.csproj" />
   </ItemGroup>
 

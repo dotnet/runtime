@@ -152,13 +152,8 @@ PhaseStatus Compiler::fgInsertGCPolls()
         block = curBasicBlock;
     }
 
-    // If we split a block to create a GC Poll, call fgUpdateChangedFlowGraph.
     // We should never split blocks unless we're optimizing.
-    if (createdPollBlocks)
-    {
-        noway_assert(opts.OptimizationEnabled());
-        fgRenumberBlocks();
-    }
+    assert(!createdPollBlocks || opts.OptimizationEnabled());
 
     return result;
 }
@@ -1401,14 +1396,7 @@ void Compiler::fgAddSyncMethodEnterExit()
     // Create a block for the start of the try region, where the monitor enter call
     // will go.
     BasicBlock* const tryBegBB  = fgSplitBlockAtEnd(fgFirstBB);
-    BasicBlock* const tryNextBB = tryBegBB->Next();
     BasicBlock* const tryLastBB = fgLastBB;
-
-    // If we have profile data the new block will inherit the next block's weight
-    if (tryNextBB->hasProfileWeight())
-    {
-        tryBegBB->inheritWeight(tryNextBB);
-    }
 
     // Create a block for the fault.
     // It gets an artificial ref count.
