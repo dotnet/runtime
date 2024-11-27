@@ -66,7 +66,7 @@ stub_mono_wasm_single_step_hit (void);
 static void
 stub_send_enc_delta (MonoImage *image, gconstpointer dmeta_bytes, int32_t dmeta_len, gconstpointer dpdb_bytes, int32_t dpdb_len);
 
-static void 
+static gboolean 
 stub_receive_and_process_command_from_debugger_agent (void);
 
 static gboolean
@@ -215,9 +215,10 @@ stub_send_enc_delta (MonoImage *image, gconstpointer dmeta_bytes, int32_t dmeta_
 {
 }
 
-static void 
+static gboolean 
 stub_receive_and_process_command_from_debugger_agent (void)
 {
+	return FALSE;
 }
 
 static gboolean
