@@ -161,7 +161,7 @@ namespace System.Reflection
                 GetInvokeStubName(method, signatureInfo),
                 returnType: typeof(object),
                 delegateParameters,
-                method is null ? typeof(object).Module : method.DeclaringType!.Module,
+                method?.DeclaringType is Type declaringType ? declaringType.Module : typeof(object).Module,
                 skipVisibility: true); // Supports creating the delegate immediately when calling CreateDelegate().
         }
 

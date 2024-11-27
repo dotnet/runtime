@@ -25,7 +25,6 @@ namespace System.Reflection
     /// <seealso cref="MethodInvoker"/>
     public sealed partial class ConstructorInvoker
     {
-        private readonly int _argCount; // For perf, to avoid calling _signatureInfo.ParameterTypes.Length in fast path.
         private readonly RuntimeType _declaringType;
         private readonly IntPtr _functionPointer;
         private readonly Delegate _invokeFunc; // todo: use GetMethodImpl and fcnptr?
@@ -72,7 +71,6 @@ namespace System.Reflection
 
             _declaringType = (RuntimeType)constructor.DeclaringType!;
             _parameterTypes = constructor.ArgumentTypes;
-            _argCount = _parameterTypes.Length;
 
             MethodBase _ = constructor;
 
@@ -120,7 +118,7 @@ namespace System.Reflection
                 _method.ThrowNoInvokeException();
             }
 
-            if (_argCount != 0)
+            if (_parameterTypes.Length != 0)
             {
                 MethodBaseInvoker.ThrowTargetParameterCountException();
             }
@@ -155,7 +153,7 @@ namespace System.Reflection
                 _method.ThrowNoInvokeException();
             }
 
-            if (_argCount != 1)
+            if (_parameterTypes.Length != 1)
             {
                 MethodBaseInvoker.ThrowTargetParameterCountException();
             }
@@ -187,7 +185,7 @@ namespace System.Reflection
                 _method.ThrowNoInvokeException();
             }
 
-            if (_argCount != 2)
+            if (_parameterTypes.Length != 2)
             {
                 MethodBaseInvoker.ThrowTargetParameterCountException();
             }
@@ -211,7 +209,7 @@ namespace System.Reflection
                 _method.ThrowNoInvokeException();
             }
 
-            if (_argCount != 3)
+            if (_parameterTypes.Length != 3)
             {
                 MethodBaseInvoker.ThrowTargetParameterCountException();
             }
@@ -236,7 +234,7 @@ namespace System.Reflection
                 _method.ThrowNoInvokeException();
             }
 
-            if (_argCount != 4)
+            if (_parameterTypes.Length != 4)
             {
                 MethodBaseInvoker.ThrowTargetParameterCountException();
             }
@@ -251,7 +249,7 @@ namespace System.Reflection
 
         private object InvokeImpl(object? arg1, object? arg2, object? arg3, object? arg4)
         {
-            switch (_argCount)
+            switch (_parameterTypes.Length)
             {
                 case 4:
                     CheckArgument(ref arg4, 3);
@@ -289,7 +287,7 @@ namespace System.Reflection
                 _method.ThrowNoInvokeException();
             }
 
-            if (arguments.Length != _argCount)
+            if (arguments.Length != _parameterTypes.Length)
             {
                 MethodBaseInvoker.ThrowTargetParameterCountException();
             }
@@ -316,14 +314,14 @@ namespace System.Reflection
                     }
                     return ((InvokeFunc_Obj1Arg)_invokeFunc)(obj: null, _functionPointer, arg1)!;
                 case InvokerStrategy.Obj4:
-                    switch (_argCount)
+                    switch (_parameterTypes.Length)
                     {
                         case 2:
                             return InvokeImpl(arguments[0], arguments[1], null, null);
                         case 3:
                             return InvokeImpl(arguments[0], arguments[1], arguments[2], null);
                         default:
-                            Debug.Assert(_argCount == 4);
+                            Debug.Assert(_parameterTypes.Length == 4);
                             return InvokeImpl(arguments[0], arguments[1], arguments[2], arguments[3]);
                     }
                 case InvokerStrategy.ObjSpan:
@@ -345,19 +343,20 @@ namespace System.Reflection
             }
 
             object? obj;
+            int argCount = _parameterTypes.Length;
 
             Span<object?> copyOfArgs;
             GCFrameRegistration regArgStorage;
-            IntPtr* pArgStorage = stackalloc IntPtr[_argCount];
-            NativeMemory.Clear(pArgStorage, (nuint)_argCount * (nuint)sizeof(IntPtr));
-            copyOfArgs = new(ref Unsafe.AsRef<object?>(pArgStorage), _argCount);
-            regArgStorage = new((void**)pArgStorage, (uint)_argCount, areByRefs: false);
+            IntPtr* pArgStorage = stackalloc IntPtr[argCount];
+            NativeMemory.Clear(pArgStorage, (nuint)argCount * (nuint)sizeof(IntPtr));
+            copyOfArgs = new(ref Unsafe.AsRef<object?>(pArgStorage), argCount);
+            regArgStorage = new((void**)pArgStorage, (uint)argCount, areByRefs: false);
 
             try
             {
                 GCFrameRegistration.RegisterForGCReporting(&regArgStorage);
 
-                for (int i = 0; i < _argCount; i++)
+                for (int i = 0; i < argCount; i++)
                 {
                     object? arg = arguments[i];
                     CheckArgument(ref arg, i);
@@ -392,12 +391,13 @@ namespace System.Reflection
                 _method.ThrowNoInvokeException();
             }
 
+            int argCount = _parameterTypes.Length;
             StackAllocatedArguments stackStorage = new(arg1, arg2, arg3, arg4);
-            Span<object?> arguments = ((Span<object?>)(stackStorage._args)).Slice(0, _argCount);
+            Span<object?> arguments = ((Span<object?>)(stackStorage._args)).Slice(0, argCount);
             StackAllocatedByRefs byrefs = default;
             IntPtr* pByRefFixedStorage = (IntPtr*)&byrefs;
 
-            for (int i = 0; i < _argCount; i++)
+            for (int i = 0; i < argCount; i++)
             {
                 CheckArgument(ref arguments[i], i);
 
@@ -429,15 +429,16 @@ namespace System.Reflection
                 _method.ThrowNoInvokeException();
             }
 
-            Debug.Assert(_argCount <= MaxStackAllocArgCount);
+            Debug.Assert(_parameterTypes.Length <= MaxStackAllocArgCount);
 
+            int argCount = _parameterTypes.Length;
             StackAllocatedArgumentsWithCopyBack stackArgStorage = default;
-            Span<object?> copyOfArgs = ((Span<object?>)stackArgStorage._args).Slice(0, _argCount);
-            Span<bool> shouldCopyBack = ((Span<bool>)stackArgStorage._shouldCopyBack).Slice(0, _argCount);
+            Span<object?> copyOfArgs = ((Span<object?>)stackArgStorage._args).Slice(0, argCount);
+            Span<bool> shouldCopyBack = ((Span<bool>)stackArgStorage._shouldCopyBack).Slice(0, argCount);
             StackAllocatedByRefs byrefs = default;
             IntPtr* pByRefFixedStorage = (IntPtr*)&byrefs;
 
-            for (int i = 0; i < _argCount; i++)
+            for (int i = 0; i < _parameterTypes.Length; i++)
             {
                 object? arg = arguments[i];
                 shouldCopyBack[i] = CheckArgument(ref arg, i);
@@ -473,26 +474,27 @@ namespace System.Reflection
             }
 
             object? obj;
+            int argCount = _parameterTypes.Length;
 
             Span<object?> copyOfArgs;
             GCFrameRegistration regArgStorage;
 
-            IntPtr* pStorage = stackalloc IntPtr[2 * _argCount];
-            NativeMemory.Clear(pStorage, (nuint)(2 * _argCount) * (nuint)sizeof(IntPtr));
-            copyOfArgs = new(ref Unsafe.AsRef<object?>(pStorage), _argCount);
+            IntPtr* pStorage = stackalloc IntPtr[2 * argCount];
+            NativeMemory.Clear(pStorage, (nuint)(2 * argCount) * (nuint)sizeof(IntPtr));
+            copyOfArgs = new(ref Unsafe.AsRef<object?>(pStorage), argCount);
 
-            IntPtr* pByRefStorage = pStorage + _argCount;
-            scoped Span<bool> shouldCopyBack = stackalloc bool[_argCount];
+            IntPtr* pByRefStorage = pStorage + argCount;
+            scoped Span<bool> shouldCopyBack = stackalloc bool[argCount];
 
-            regArgStorage = new((void**)pStorage, (uint)_argCount, areByRefs: false);
-            GCFrameRegistration regByRefStorage = new((void**)pByRefStorage, (uint)_argCount, areByRefs: true);
+            regArgStorage = new((void**)pStorage, (uint)argCount, areByRefs: false);
+            GCFrameRegistration regByRefStorage = new((void**)pByRefStorage, (uint)argCount, areByRefs: true);
 
             try
             {
                 GCFrameRegistration.RegisterForGCReporting(&regArgStorage);
                 GCFrameRegistration.RegisterForGCReporting(&regByRefStorage);
 
-                for (int i = 0; i < _argCount; i++)
+                for (int i = 0; i < argCount; i++)
                 {
                     object? arg = arguments[i];
                     shouldCopyBack[i] = CheckArgument(ref arg, i);

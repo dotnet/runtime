@@ -24,7 +24,6 @@ namespace System.Reflection
     {
         internal const int MaxStackAllocArgCount = 4;
 
-        private readonly int _argCount; // For perf, to avoid calling _signatureInfo.ParameterTypes.Length in fast path.
         private readonly RuntimeType? _declaringType;
         private readonly IntPtr _functionPointer; // This will be Zero when not using calli.
         private readonly Delegate _invokeFunc;
@@ -39,7 +38,6 @@ namespace System.Reflection
             _method = method;
             _declaringType = (RuntimeType?)_method.DeclaringType;
             _parameterTypes = parameterTypes;
-            _argCount = parameterTypes.Length;
 
             Initialize(
                 isForInvokerClasses: false,
@@ -68,7 +66,6 @@ namespace System.Reflection
         {
             Debug.Assert(other._method is RuntimeConstructorInfo);
 
-            _argCount = other._argCount;
             _declaringType = other._declaringType;
             _functionPointer = other._functionPointer;
             _invokeFunc = other._invokeFunc;
@@ -120,7 +117,7 @@ namespace System.Reflection
 
         internal unsafe object? InvokeWithNoArgs(object? obj, BindingFlags invokeAttr)
         {
-            Debug.Assert(_argCount == 0);
+            Debug.Assert(_parameterTypes.Length == 0);
 
             try
             {
@@ -154,7 +151,7 @@ namespace System.Reflection
             object? arg,
             CultureInfo? culture)
         {
-            Debug.Assert(_argCount == 1);
+            Debug.Assert(_parameterTypes.Length == 1);
 
             bool _ = false;
             CheckArgument(ref arg, ref _, 0, binder, culture, invokeAttr);
@@ -198,7 +195,7 @@ namespace System.Reflection
             object?[] arguments,
             CultureInfo? culture)
         {
-            Debug.Assert(_argCount == 1);
+            Debug.Assert(_parameterTypes.Length == 1);
 
             bool copyBack = false;
             object? arg1 = arguments[0];
@@ -237,7 +234,7 @@ namespace System.Reflection
             object?[] arguments,
             CultureInfo? culture)
         {
-            Debug.Assert(_argCount <= MaxStackAllocArgCount);
+            Debug.Assert(_parameterTypes.Length <= MaxStackAllocArgCount);
 
             StackAllocatedArgumentsWithCopyBack stackArgStorage = default;
             Span<object?> copyOfArgs = (Span<object?>)stackArgStorage._args;
@@ -279,18 +276,19 @@ namespace System.Reflection
             object?[] arguments,
             CultureInfo? culture)
         {
-            Debug.Assert(_argCount > MaxStackAllocArgCount);
+            Debug.Assert(_parameterTypes.Length > MaxStackAllocArgCount);
 
+            int argCount = _parameterTypes.Length;
             Span<object?> copyOfArgs;
             object? ret;
             GCFrameRegistration regArgStorage;
             Span<bool> shouldCopyBack;
 
-            IntPtr* pArgStorage = stackalloc IntPtr[_argCount * 2];
-            NativeMemory.Clear(pArgStorage, (nuint)_argCount * (nuint)sizeof(IntPtr) * 2);
-            copyOfArgs = new(ref Unsafe.AsRef<object?>(pArgStorage), _argCount);
-            regArgStorage = new((void**)pArgStorage, (uint)_argCount, areByRefs: false);
-            shouldCopyBack = new Span<bool>(pArgStorage + _argCount, _argCount);
+            IntPtr* pArgStorage = stackalloc IntPtr[argCount * 2];
+            NativeMemory.Clear(pArgStorage, (nuint)argCount * (nuint)sizeof(IntPtr) * 2);
+            copyOfArgs = new(ref Unsafe.AsRef<object?>(pArgStorage), argCount);
+            regArgStorage = new((void**)pArgStorage, (uint)argCount, areByRefs: false);
+            shouldCopyBack = new Span<bool>(pArgStorage + argCount, argCount);
 
             try
             {
@@ -332,9 +330,9 @@ namespace System.Reflection
             object?[]? arguments,
             CultureInfo? culture)
         {
-            Debug.Assert(_argCount <= MaxStackAllocArgCount);
+            Debug.Assert(_parameterTypes.Length <= MaxStackAllocArgCount);
 
-            if (_argCount == 0)
+            if (_parameterTypes.Length == 0)
             {
                 // This method may be called from the interpreted path for a property getter with arguments==null.
                 Debug.Assert(UseInterpretedPath);
@@ -358,7 +356,7 @@ namespace System.Reflection
 
             CheckArguments(arguments, copyOfArgs, shouldCopyBack, binder, culture, invokeAttr);
 
-            for (int i = 0; i < _argCount; i++)
+            for (int i = 0; i < _parameterTypes.Length; i++)
             {
                 *(ByReference*)(pByRefFixedStorage + i) = (_invokerArgFlags[i] & InvokerArgFlags.IsValueType) != 0 ?
                     ByReference.Create(ref copyOfArgs[i]!.GetRawData()) :
@@ -396,17 +394,18 @@ namespace System.Reflection
             object?[] arguments,
             CultureInfo? culture)
         {
-            Debug.Assert(_argCount > MaxStackAllocArgCount);
+            Debug.Assert(_parameterTypes.Length > MaxStackAllocArgCount);
 
             object? ret;
+            int argCount = _parameterTypes.Length;
 
-            IntPtr* pStorage = stackalloc IntPtr[3 * _argCount];
-            NativeMemory.Clear(pStorage, (nuint)(3 * _argCount) * (nuint)sizeof(IntPtr));
-            IntPtr* pByRefStorage = pStorage + _argCount;
-            Span<object?> copyOfArgs = new(ref Unsafe.AsRef<object?>(pStorage), _argCount);
-            GCFrameRegistration regArgStorage = new((void**)pStorage, (uint)_argCount, areByRefs: false);
-            GCFrameRegistration regByRefStorage = new((void**)pByRefStorage, (uint)_argCount, areByRefs: true);
-            Span<bool> shouldCopyBack = new Span<bool>(pStorage + _argCount * 2, _argCount);
+            IntPtr* pStorage = stackalloc IntPtr[3 * argCount];
+            NativeMemory.Clear(pStorage, (nuint)(3 * argCount) * (nuint)sizeof(IntPtr));
+            IntPtr* pByRefStorage = pStorage + argCount;
+            Span<object?> copyOfArgs = new(ref Unsafe.AsRef<object?>(pStorage), argCount);
+            GCFrameRegistration regArgStorage = new((void**)pStorage, (uint)argCount, areByRefs: false);
+            GCFrameRegistration regByRefStorage = new((void**)pByRefStorage, (uint)argCount, areByRefs: true);
+            Span<bool> shouldCopyBack = new Span<bool>(pStorage + argCount * 2, argCount);
 
             try
             {
@@ -415,7 +414,7 @@ namespace System.Reflection
 
                 CheckArguments(arguments, copyOfArgs, shouldCopyBack, binder, culture, invokeAttr);
 
-                for (int i = 0; i < _argCount; i++)
+                for (int i = 0; i < argCount; i++)
                 {
                     *(ByReference*)(pByRefStorage + i) = (_invokerArgFlags[i] & InvokerArgFlags.IsValueType) != 0 ?
                         ByReference.Create(ref Unsafe.AsRef<object>(pStorage + i).GetRawData()) :
