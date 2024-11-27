@@ -1376,6 +1376,10 @@ class StrengthReductionContext
     void        AdvanceCursors(ArrayStack<CursorInfo>* cursors, ArrayStack<CursorInfo>* nextCursors);
     void        ExpandStoredCursors(ArrayStack<CursorInfo>* cursors, ArrayStack<CursorInfo>* otherCursors);
     bool        CheckAdvancedCursors(ArrayStack<CursorInfo>* cursors, ScevAddRec** nextIV);
+    ScevAddRec* ComputeRephrasableIV(ScevAddRec* iv1, ScevAddRec* iv2);
+    template <typename T>
+    ScevAddRec* ComputeRephrasableIVWithDifferentStep(ScevAddRec* iv1, ScevAddRec* iv2);
+    GenTree*    RephraseIV(ScevAddRec* iv, ScevAddRec* sourceIV, GenTree* sourceTree);
     bool        StaysWithinManagedObject(ArrayStack<CursorInfo>* cursors, ScevAddRec* addRec);
     bool        TryReplaceUsesWithNewPrimaryIV(ArrayStack<CursorInfo>* cursors, ScevAddRec* iv);
     BasicBlock* FindUpdateInsertionPoint(ArrayStack<CursorInfo>* cursors, Statement** afterStmt);
@@ -1508,6 +1512,10 @@ bool StrengthReductionContext::TryStrengthReduce()
             {
                 break;
             }
+
+            JITDUMP("  Next IV is: ");
+            DBEXEC(VERBOSE, nextIV->Dump(m_comp));
+            JITDUMP("\n");
 
             assert(nextIV != nullptr);
 
@@ -1951,6 +1959,30 @@ void StrengthReductionContext::ExpandStoredCursors(ArrayStack<CursorInfo>* curso
 }
 
 //------------------------------------------------------------------------
+// Gcd: Compute the greatest common divisor of two values.
+//
+// Parameters:
+//   a - First value
+//   b - Second value
+//
+// Returns:
+//   Greatest common divisor.
+//
+template <typename T>
+static T Gcd(T a, T b)
+{
+    while (a != 0)
+    {
+        T newA = b % a;
+        T newB = a;
+        a      = newA;
+        b      = newB;
+    }
+
+    return b;
+}
+
+//------------------------------------------------------------------------
 // CheckAdvancedCursors: Check whether the specified advanced cursors still
 // represent a valid set of cursors to introduce a new primary IV for.
 //
@@ -1975,10 +2007,20 @@ bool StrengthReductionContext::CheckAdvancedCursors(ArrayStack<CursorInfo>* curs
     {
         CursorInfo& cursor = cursors->BottomRef(i);
 
-        if ((cursor.IV != nullptr) && ((*nextIV == nullptr) || Scev::Equals(cursor.IV, *nextIV)))
+        if (cursor.IV != nullptr)
         {
-            *nextIV = cursor.IV;
-            continue;
+            if (*nextIV == nullptr)
+            {
+                *nextIV = cursor.IV;
+                continue;
+            }
+
+            ScevAddRec* rephrasableAddRec = ComputeRephrasableIV(cursor.IV, *nextIV);
+            if (rephrasableAddRec != nullptr)
+            {
+                *nextIV = rephrasableAddRec;
+                continue;
+            }
         }
 
         JITDUMP("    [%d] does not match; will not advance\n", i);
@@ -1986,6 +2028,143 @@ bool StrengthReductionContext::CheckAdvancedCursors(ArrayStack<CursorInfo>* curs
     }
 
     return *nextIV != nullptr;
+}
+
+//------------------------------------------------------------------------
+// ComputeRephrasableIVWithDifferentStep:
+//   Compute an IV that both "iv1" and "iv2" can be rephrased in terms of, when
+//   their step values do not match.
+//
+// Parameters:
+//   iv1 - First IV
+//   iv2 - Second IV
+//
+// Returns:
+//   The IV, or nullptr if no IV could be computed.
+//
+template <typename T>
+ScevAddRec* StrengthReductionContext::ComputeRephrasableIVWithDifferentStep(ScevAddRec* iv1, ScevAddRec* iv2)
+{
+    // To rephrase the IVs we will need to scale them up. This requires the
+    // start value to be 0 since that starting value will be scaled too.
+    int64_t start;
+    if (!iv1->Start->GetConstantValue(m_comp, &start) || ((T)start != 0) ||
+        !iv2->Start->GetConstantValue(m_comp, &start) || ((T)start != 0))
+    {
+        return nullptr;
+    }
+
+    int64_t iv1Step;
+    int64_t iv2Step;
+    if (!iv1->Step->GetConstantValue(m_comp, &iv1Step) || !iv2->Step->GetConstantValue(m_comp, &iv2Step))
+    {
+        return nullptr;
+    }
+
+    T gcd = Gcd((T)iv1Step, (T)iv2Step);
+
+    // Commonly one step value divides the other.
+    if (gcd == (T)iv1Step)
+    {
+        return iv1;
+    }
+    if (gcd == (T)iv2Step)
+    {
+        return iv2;
+    }
+    if ((gcd == 1) || (gcd == -1))
+    {
+        return nullptr;
+    }
+
+    return m_scevContext.NewAddRec(iv1->Start, m_scevContext.NewConstant(iv1->Type, gcd));
+}
+
+//------------------------------------------------------------------------
+// ComputeRephrasableIV:
+//   Compute an IV that both "iv1" and "iv2" can be rephrased in terms of.
+//
+// Parameters:
+//   iv1 - First IV
+//   iv2 - Second IV
+//
+// Returns:
+//   The IV, or nullptr if no IV could be computed.
+//
+ScevAddRec* StrengthReductionContext::ComputeRephrasableIV(ScevAddRec* iv1, ScevAddRec* iv2)
+{
+    if (!Scev::Equals(iv1->Start, iv2->Start))
+    {
+        return nullptr;
+    }
+
+    if (Scev::Equals(iv1->Step, iv2->Step))
+    {
+        return iv1;
+    }
+
+    // Steps are not equal. However, if they have gcd > 1 it is still expected
+    // to be profitable to rewrite in terms of such a new IV.
+    if (iv1->Type == TYP_INT)
+    {
+        return ComputeRephrasableIVWithDifferentStep<int32_t>(iv1, iv2);
+    }
+
+    if (iv2->Type == TYP_LONG)
+    {
+        return ComputeRephrasableIVWithDifferentStep<int64_t>(iv1, iv2);
+    }
+
+    return nullptr;
+}
+
+//------------------------------------------------------------------------
+// RephraseIV:
+//   Given an IV and a source IV with a tree that computes that source IV,
+//   compute a tree that calculates "iv" based on the source IV. Requires the
+//   source IV to have been computed via ComputeRephrasableIV.
+//
+// Parameters:
+//   iv         - IV to rephrase in terms of the source IV
+//   sourceIV   - Source IV
+//   sourceTree - Tree computing the source IV
+//
+// Returns:
+//   A tree computing "iv" via "sourceTree".
+//
+GenTree* StrengthReductionContext::RephraseIV(ScevAddRec* iv, ScevAddRec* sourceIV, GenTree* sourceTree)
+{
+    assert(Scev::Equals(iv->Start, sourceIV->Start));
+
+    if (Scev::Equals(iv->Step, sourceIV->Step))
+    {
+        return sourceTree;
+    }
+
+    int64_t ivStep       = 0;
+    int64_t sourceIVStep = 0;
+    if (!iv->Step->GetConstantValue(m_comp, &ivStep) || !sourceIV->Step->GetConstantValue(m_comp, &sourceIVStep))
+    {
+        unreached();
+    }
+
+    assert(iv->Type == sourceIV->Type);
+
+    if (iv->Type == TYP_INT)
+    {
+        assert((int32_t)ivStep % (int32_t)sourceIVStep == 0);
+        int32_t scale = (int32_t)ivStep / (int32_t)sourceIVStep;
+        return m_comp->gtNewOperNode(GT_MUL, TYP_INT, sourceTree, m_comp->gtNewIconNode(scale));
+    }
+
+    if (iv->Type == TYP_LONG)
+    {
+        assert(ivStep % sourceIVStep == 0);
+        int64_t scale = ivStep / sourceIVStep;
+        return m_comp->gtNewOperNode(GT_MUL, TYP_LONG, sourceTree, m_comp->gtNewIconNode(scale, TYP_LONG));
+    }
+
+    unreached();
 }
 
 //------------------------------------------------------------------------
@@ -2211,6 +2390,7 @@ bool StrengthReductionContext::TryReplaceUsesWithNewPrimaryIV(ArrayStack<CursorI
     {
         CursorInfo& cursor = cursors->BottomRef(i);
         GenTree*    newUse = m_comp->gtNewLclVarNode(newPrimaryIV, iv->Type);
+        newUse             = RephraseIV(cursor.IV, iv, newUse);
 
         JITDUMP("    Replacing use [%06u] with [%06u]. Before:\n", Compiler::dspTreeID(cursor.Tree),
                 Compiler::dspTreeID(newUse));
