@@ -94,7 +94,7 @@ winget install -e --id Kitware.CMake
 winget install -e --id Python.Python.3.11
 winget install -e --id Git.Git
 winget install -e --id Ninja-build.Ninja
-winget install -e --id Microsoft.VisualStudio.2022.Community --override "--add Microsoft.VisualStudio.Workload.NativeDesktop --add Microsoft.VisualStudio.Workload.ManagedDesktop"
+winget install -e --id Microsoft.VisualStudio.2022.Community --override "--add Microsoft.VisualStudio.Workload.NativeDesktop --add Microsoft.VisualStudio.Workload.ManagedDesktop --includeRecommended"
 ```
 
 ## Setting Environment Variables on Windows
