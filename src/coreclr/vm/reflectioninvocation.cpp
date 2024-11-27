@@ -296,28 +296,34 @@ public:
     }
 };
 
-FCIMPL4(Object*, RuntimeMethodHandle::InvokeMethod,
-    Object *target,
+extern "C" void QCALLTYPE RuntimeMethodHandle_InvokeMethod(
+    QCall::ObjectHandleOnStack target,
     PVOID* args, // An array of byrefs
-    SignatureNative* pSigUNSAFE,
-    FC_BOOL_ARG fConstructor)
+    QCall::ObjectHandleOnStack pSig,
+    BOOL fConstructor,
+    QCall::ObjectHandleOnStack result)
 {
-    FCALL_CONTRACT;
+    QCALL_CONTRACT;
 
-    struct {
+    BEGIN_QCALL;
+
+    GCX_COOP();
+
+    struct
+    {
         OBJECTREF target;
         SIGNATURENATIVEREF pSig;
         OBJECTREF retVal;
     } gc;
-
-    gc.target = ObjectToOBJECTREF(target);
-    gc.pSig = (SIGNATURENATIVEREF)pSigUNSAFE;
+    gc.target = NULL;
+    gc.pSig = NULL;
     gc.retVal = NULL;
+    GCPROTECT_BEGIN(gc);
+    gc.target = target.Get();
+    gc.pSig = (SIGNATURENATIVEREF)pSig.Get();
 
     MethodDesc* pMeth = gc.pSig->GetMethod();
     TypeHandle ownerType = gc.pSig->GetDeclaringType();
-
-    HELPER_METHOD_FRAME_BEGIN_RET_PROTECT(gc);
 
     if (ownerType.IsSharedByGenericInstantiations())
     {
@@ -333,7 +339,7 @@ FCIMPL4(Object*, RuntimeMethodHandle::InvokeMethod,
 
     BOOL fCtorOfVariableSizedObject = FALSE;
 
-    if (FC_ACCESS_BOOL(fConstructor))
+    if (fConstructor)
     {
         // If we are invoking a constructor on an array then we must
         // handle this specially.
@@ -440,7 +446,7 @@ FCIMPL4(Object*, RuntimeMethodHandle::InvokeMethod,
     if (!pMeth->IsStatic() && !fCtorOfVariableSizedObject) {
         PVOID pThisPtr;
 
-        if (FC_ACCESS_BOOL(fConstructor))
+        if (fConstructor)
         {
             // Copy "this" pointer: only unbox if type is value type and method is not unboxing stub
             if (ownerType.IsValueType() && !pMeth->IsUnboxingStub()) {
@@ -562,7 +568,7 @@ FCIMPL4(Object*, RuntimeMethodHandle::InvokeMethod,
     CallDescrWorkerWithHandler(&callDescrData);
 
     // It is still illegal to do a GC here.  The return type might have/contain GC pointers.
-    if (FC_ACCESS_BOOL(fConstructor))
+    if (fConstructor)
     {
         // We have a special case for Strings...The object is returned...
         if (fCtorOfVariableSizedObject) {
@@ -635,12 +641,12 @@ FCIMPL4(Object*, RuntimeMethodHandle::InvokeMethod,
     }
 
 Done:
-    ;
-    HELPER_METHOD_FRAME_END();
+    result.Set(gc.retVal);
 
-    return OBJECTREFToObject(gc.retVal);
+    GCPROTECT_END();
+
+    END_QCALL;
 }
-FCIMPLEND
 
 struct SkipStruct {
     StackCrawlMark* pStackMark;

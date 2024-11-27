@@ -146,7 +146,6 @@ FCFuncStart(gSignatureNative)
 FCFuncEnd()
 
 FCFuncStart(gRuntimeMethodHandle)
-    FCFuncElement("InvokeMethod", RuntimeMethodHandle::InvokeMethod)
     FCFuncElement("GetImplAttributes", RuntimeMethodHandle::GetImplAttributes)
     FCFuncElement("GetAttributes", RuntimeMethodHandle::GetAttributes)
     FCFuncElement("GetMethodTable", RuntimeMethodHandle::GetMethodTable)
