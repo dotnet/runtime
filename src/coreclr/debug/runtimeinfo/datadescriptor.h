@@ -418,6 +418,8 @@ CDAC_TYPE_INDETERMINATE(ReadyToRunInfo)
 CDAC_TYPE_FIELD(ReadyToRunInfo, /*pointer*/, CompositeInfo, cdac_data<ReadyToRunInfo>::CompositeInfo)
 CDAC_TYPE_FIELD(ReadyToRunInfo, /*uint32*/, NumRuntimeFunctions, cdac_data<ReadyToRunInfo>::NumRuntimeFunctions)
 CDAC_TYPE_FIELD(ReadyToRunInfo, /*pointer*/, RuntimeFunctions, cdac_data<ReadyToRunInfo>::RuntimeFunctions)
+CDAC_TYPE_FIELD(ReadyToRunInfo, /*uint32*/, NumHotColdMap, cdac_data<ReadyToRunInfo>::NumHotColdMap)
+CDAC_TYPE_FIELD(ReadyToRunInfo, /*pointer*/, HotColdMap, cdac_data<ReadyToRunInfo>::HotColdMap)
 CDAC_TYPE_FIELD(ReadyToRunInfo, /*pointer*/, DelayLoadMethodCallThunks, cdac_data<ReadyToRunInfo>::DelayLoadMethodCallThunks)
 CDAC_TYPE_FIELD(ReadyToRunInfo, /*HashMap*/, EntryPointToMethodDescMap, cdac_data<ReadyToRunInfo>::EntryPointToMethodDescMap)
 CDAC_TYPE_END(ReadyToRunInfo)
@@ -431,7 +433,18 @@ CDAC_TYPE_END(ImageDataDirectory)
 CDAC_TYPE_BEGIN(RuntimeFunction)
 CDAC_TYPE_SIZE(sizeof(RUNTIME_FUNCTION))
 CDAC_TYPE_FIELD(RuntimeFunction, /*uint32*/, BeginAddress, offsetof(RUNTIME_FUNCTION, BeginAddress))
+#ifdef TARGET_AMD64
+CDAC_TYPE_FIELD(RuntimeFunction, /*uint32*/, EndAddress, offsetof(RUNTIME_FUNCTION, EndAddress))
+#endif
+CDAC_TYPE_FIELD(RuntimeFunction, /*uint32*/, UnwindData, offsetof(RUNTIME_FUNCTION, UnwindData))
 CDAC_TYPE_END(RuntimeFunction)
+
+CDAC_TYPE_BEGIN(UnwindInfo)
+CDAC_TYPE_INDETERMINATE(UnwindInfo)
+#ifdef TARGET_X86
+CDAC_TYPE_FIELD(UnwindInfo, /*uint32*/, FunctionLength, offsetof(UNWIND_INFO, FunctionLength))
+#endif
+CDAC_TYPE_END(UnwindInfo)
 
 CDAC_TYPE_BEGIN(HashMap)
 CDAC_TYPE_INDETERMINATE(HashMap)
