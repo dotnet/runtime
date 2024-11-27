@@ -157,12 +157,48 @@ public:
                 isLocalUse = true;
 
                 // Look for:
-                //      user:ConvertVectorToMask(use:LCL_VAR(x)))
+                //      user: ConvertVectorToMask(use:LCL_VAR(x)))
+                // -or-
+                //      user: ConditionalSelect(use:LCL_VAR(x), y, z)
 
                 if (user->OperIsConvertVectorToMask())
                 {
                     convertOp     = user->AsHWIntrinsic();
                     hasConversion = true;
+                }
+                else if (user->OperIsHWIntrinsic())
+                {
+                    GenTreeHWIntrinsic* hwintrin = user->AsHWIntrinsic();
+                    NamedIntrinsic      ni       = hwintrin->GetHWIntrinsicId();
+
+                    switch (ni)
+                    {
+#if defined(TARGET_XARCH)
+                        case NI_Vector128_ConditionalSelect:
+                        case NI_Vector256_ConditionalSelect:
+                        case NI_Vector512_ConditionalSelect:
+#elif defined(TARGET_ARM64)
+                        case NI_Sve_ConditionalSelect:
+#endif
+                        {
+                            // We don't actually have a convert here, but we do have a case where
+                            // the mask is being used in a ConditionalSelect and therefore can be
+                            // consumed directly as a mask. While the IR shows TYP_SIMD, it gets
+                            // handled in lowering as part of the general embedded-mask support.
+
+                            if (hwintrin->Op(1) == (*use))
+                            {
+                                convertOp     = user->AsHWIntrinsic();
+                                hasConversion = true;
+                            }
+                            break;
+                        }
+
+                        default:
+                        {
+                            break;
+                        }
+                    }
                 }
                 break;
 
