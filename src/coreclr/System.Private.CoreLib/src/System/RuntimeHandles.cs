@@ -1213,7 +1213,17 @@ namespace System
         internal static extern bool IsConstructor(RuntimeMethodHandleInternal method);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern LoaderAllocator GetLoaderAllocator(RuntimeMethodHandleInternal method);
+        private static extern LoaderAllocator GetLoaderAllocatorInternal(RuntimeMethodHandleInternal method);
+
+        internal static LoaderAllocator GetLoaderAllocator(RuntimeMethodHandleInternal method)
+        {
+            if (method.IsNullHandle())
+            {
+                throw new ArgumentNullException(SR.Arg_InvalidHandle);
+            }
+
+            return GetLoaderAllocatorInternal(method);
+        }
     }
 
     // This type is used to remove the expense of having a managed reference object that is dynamically
@@ -1519,7 +1529,17 @@ namespace System
         internal static extern bool AcquiresContextFromThis(RuntimeFieldHandleInternal field);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern LoaderAllocator GetLoaderAllocator(RuntimeFieldHandleInternal method);
+        private static extern LoaderAllocator GetLoaderAllocatorInternal(RuntimeFieldHandleInternal field);
+
+        internal static LoaderAllocator GetLoaderAllocator(RuntimeFieldHandleInternal field)
+        {
+            if (field.IsNullHandle())
+            {
+                throw new ArgumentNullException(SR.Arg_InvalidHandle);
+            }
+
+            return GetLoaderAllocatorInternal(field);
+        }
 
         // ISerializable interface
         [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]

@@ -271,25 +271,17 @@ FCIMPL1(FC_BOOL_RET, RuntimeFieldHandle::AcquiresContextFromThis, FieldDesc* pFi
 }
 FCIMPLEND
 
-FCIMPL1(Object*, RuntimeFieldHandle::GetLoaderAllocator, FieldDesc* pField)
+FCIMPL1(Object*, RuntimeFieldHandle::GetLoaderAllocatorInternal, FieldDesc* pField)
 {
-    CONTRACTL {
+    CONTRACTL
+    {
         FCALL_CHECK;
+        PRECONDITION(pField != NULL);
     }
     CONTRACTL_END;
 
-    OBJECTREF loaderAllocator = NULL;
-
-    if (!pField)
-        FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
-
-    HELPER_METHOD_FRAME_BEGIN_RET_PROTECT(loaderAllocator);
-
     LoaderAllocator *pLoaderAllocator = pField->GetApproxEnclosingMethodTable()->GetLoaderAllocator();
-    loaderAllocator = pLoaderAllocator->GetExposedObject();
-
-    HELPER_METHOD_FRAME_END();
-
+    OBJECTREF loaderAllocator = pLoaderAllocator->GetExposedObject();
     return OBJECTREFToObject(loaderAllocator);
 }
 FCIMPLEND
@@ -2364,25 +2356,17 @@ FCIMPL1(FC_BOOL_RET, RuntimeMethodHandle::IsConstructor, MethodDesc *pMethod)
 }
 FCIMPLEND
 
-FCIMPL1(Object*, RuntimeMethodHandle::GetLoaderAllocator, MethodDesc *pMethod)
+FCIMPL1(Object*, RuntimeMethodHandle::GetLoaderAllocatorInternal, MethodDesc *pMethod)
 {
-    CONTRACTL {
+    CONTRACTL
+    {
         FCALL_CHECK;
+        PRECONDITION(pMethod != NULL);
     }
     CONTRACTL_END;
 
-    OBJECTREF loaderAllocator = NULL;
-
-    if (!pMethod)
-        FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
-
-    HELPER_METHOD_FRAME_BEGIN_RET_PROTECT(loaderAllocator);
-
     LoaderAllocator *pLoaderAllocator = pMethod->GetLoaderAllocator();
-    loaderAllocator = pLoaderAllocator->GetExposedObject();
-
-    HELPER_METHOD_FRAME_END();
-
+    OBJECTREF loaderAllocator = pLoaderAllocator->GetExposedObject();
     return OBJECTREFToObject(loaderAllocator);
 }
 FCIMPLEND

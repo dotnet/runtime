@@ -232,7 +232,7 @@ public:
 
     static FCDECL1(FC_BOOL_RET, IsConstructor, MethodDesc *pMethod);
 
-    static FCDECL1(Object*, GetLoaderAllocator, MethodDesc *pMethod);
+    static FCDECL1(Object*, GetLoaderAllocatorInternal, MethodDesc *pMethod);
 };
 
 extern "C" MethodDesc* QCALLTYPE MethodBase_GetCurrentMethod(QCall::StackCrawlMarkHandle stackMark);
@@ -272,7 +272,7 @@ public:
     static FCDECL1(INT32, GetToken, FieldDesc* pField);
     static FCDECL2(FieldDesc*, GetStaticFieldForGenericType, FieldDesc *pField, ReflectClassBaseObject *pDeclaringType);
     static FCDECL1(FC_BOOL_RET, AcquiresContextFromThis, FieldDesc *pField);
-    static FCDECL1(Object*, GetLoaderAllocator, FieldDesc *pField);
+    static FCDECL1(Object*, GetLoaderAllocatorInternal, FieldDesc *pField);
 };
 
 extern "C" void QCALLTYPE RuntimeFieldHandle_GetValue(FieldDesc* fieldDesc, QCall::ObjectHandleOnStack instance, QCall::TypeHandle fieldType, QCall::TypeHandle declaringType, BOOL *pIsClassInitialized, QCall::ObjectHandleOnStack result);
