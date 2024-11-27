@@ -465,9 +465,14 @@ namespace Microsoft.Extensions.Configuration
             }
             else
             {
-                if (isParentCollection && bindingPoint.Value is null && string.IsNullOrEmpty(configValue))
+                // Reaching this point indicates that the configuration section is a leaf node with a string value.
+                // Typically, configValue will be an empty string if the value in the configuration is empty or null.
+                // While configValue could be any other string, we already know it cannot be converted to the required type, as TryConvertValue has already failed.
+                if (isParentCollection && bindingPoint.Value is null && (string.IsNullOrEmpty(configValue) || options.ErrorOnUnknownConfiguration))
                 {
-                    // If we don't have an instance, try to create one
+                    // If configValue is an empty string, we attempt to create a default instance of the required type.
+                    // If configValue is not an empty string and options.ErrorOnUnknownConfiguration is true,
+                    // we continue processing the configuration and throw an exception at the appropriate point.
                     bindingPoint.TrySetValue(CreateInstance(type, config, options, out _));
                 }
             }
