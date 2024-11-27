@@ -66,6 +66,6 @@ namespace System.Linq
         }
 
         [FeatureSwitchDefinition("System.Linq.Enumerable.ValueTypeTrimFriendlySelect")]
-        internal static bool ValueTypeTrimFriendlySelect { get; } = AppContext.TryGetSwitch("System.Linq.Enumerable.ValueTypeTrimFriendlySelect", out bool isEnabled) ? isEnabled : false;
+        internal static bool ValueTypeTrimFriendlySelect { get; } = AppContext.TryGetSwitch("System.Linq.Enumerable.ValueTypeTrimFriendlySelect", out bool isEnabled) ? isEnabled : true;
     }
 }
