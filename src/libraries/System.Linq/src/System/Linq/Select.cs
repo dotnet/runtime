@@ -60,7 +60,7 @@ namespace System.Linq
             // for value types. We don't do the same for reference types because reference type
             // expansion can happen lazily at runtime and the AOT compiler does postpone it (we
             // don't need more code, just more data structures describing the new types).
-            if (/*IteratorOptions.ValueTypeTrimFriendlySelect && */typeof(TResult).IsValueType)
+            if (/*ValueTypeTrimFriendlySelect &&*/ typeof(TResult).IsValueType)
             {
 #if OPTIMIZE_FOR_SIZE
                 return new IEnumerableSelectIterator<TSource, TResult>(iterator, selector);
