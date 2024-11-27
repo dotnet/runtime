@@ -888,8 +888,14 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			if (!linkedAttrs.SetEquals (expectedAttrs)) {
 				var missing = $"Missing: {string.Join (", ", expectedAttrs.Except (linkedAttrs))}";
 				var extra = $"Extra: {string.Join (", ", linkedAttrs.Except (expectedAttrs))}";
+				string name = src switch {
+					MethodReturnType m => $"return type of '{m.Method}'",
+					ParameterDefinition p => $"parameter '{p}' of method {p.Method}",
+					GenericParameter g => $"generic parameter '{g}' of {g.Owner}",
+					_ => src.ToString ()
+				};
 
-				yield return string.Join (Environment.NewLine, $"Custom attributes on `{src}' are not matching:", missing, extra);
+				yield return string.Join (Environment.NewLine, $"Custom attributes on `{name}` are not matching:", missing, extra);
 			}
 		}
 
@@ -1186,7 +1192,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				yield return $"Mismatch in generic parameter constraints on {src} of {src.Owner}. Input has constraints?: {src.HasConstraints}, Output has constraints?: {linked.HasConstraints}";
 				yield break;
 			}
-			
+
 			if (!src.HasConstraints)
 				yield break;
 
