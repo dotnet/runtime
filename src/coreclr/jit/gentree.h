@@ -6590,8 +6590,8 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
     bool OperIsVectorConditionalSelect() const
     {
 #if defined(TARGET_XARCH)
-        return OperIsHWIntrinsic(NI_Vector128_ConditionalSelect) ||
-               OperIsHWIntrinsic(NI_Vector256_ConditionalSelect) || OperIsHWIntrinsic(NI_Vector512_ConditionalSelect);
+        return OperIsHWIntrinsic(NI_Vector128_ConditionalSelect) || OperIsHWIntrinsic(NI_Vector256_ConditionalSelect) ||
+               OperIsHWIntrinsic(NI_Vector512_ConditionalSelect);
 #elif defined(TARGET_ARM64)
         return OperIsHWIntrinsic(NI_AdvSimd_BitwiseSelect) || OperIsHWIntrinsic(NI_Sve_ConditionalSelect);
 #else
