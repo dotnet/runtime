@@ -5,18 +5,16 @@ using System.Threading;
 
 namespace System.Runtime.ExceptionServices
 {
-    public delegate bool UnhandledExceptionHandler(System.Exception exception);
-
     public static class ExceptionHandling
     {
-        internal static UnhandledExceptionHandler? s_handler;
+        internal static Func<Exception, bool>? s_handler;
 
         /// <summary>
         /// Sets a handler for unhandled exceptions.
         /// </summary>
         /// <exception cref="ArgumentNullException">If handler is null</exception>
         /// <exception cref="InvalidOperationException">If a handler is already set</exception>
-        public static void SetUnhandledExceptionHandler(UnhandledExceptionHandler handler)
+        public static void SetUnhandledExceptionHandler(Func<Exception, bool> handler)
         {
             ArgumentNullException.ThrowIfNull(handler);
 

@@ -302,7 +302,7 @@ namespace System
         public event System.ResolveEventHandler? ReflectionOnlyAssemblyResolve { add { } remove { } }
         public event System.ResolveEventHandler? ResourceResolve { add { } remove { } }
         public event System.ResolveEventHandler? TypeResolve { add { } remove { } }
-        public event System.UnhandledExceptionEventHandler? UnhandledException { add { } remove { } }
+        public event Func<Exception, bool>? UnhandledException { add { } remove { } }
         [System.ObsoleteAttribute("AppDomain.AppendPrivatePath has been deprecated and is not supported.")]
         public void AppendPrivatePath(string? path) { }
         public string ApplyPolicy(string assemblyName) { throw null; }
@@ -7551,7 +7551,6 @@ namespace System
         public object ExceptionObject { get { throw null; } }
         public bool IsTerminating { get { throw null; } }
     }
-    public delegate void UnhandledExceptionEventHandler(object sender, System.UnhandledExceptionEventArgs e);
     public partial struct ValueTuple : System.Collections.IStructuralComparable, System.Collections.IStructuralEquatable, System.IComparable, System.IComparable<System.ValueTuple>, System.IEquatable<System.ValueTuple>, System.Runtime.CompilerServices.ITuple
     {
         object? System.Runtime.CompilerServices.ITuple.this[int index] { get { throw null; } }
