@@ -344,7 +344,7 @@ namespace System.DirectoryServices.Protocols
              */
             using (writer.PushSequence())
             {
-                writer.WriteLdapString(AttributeName, s_utf8Encoding);
+                writer.WriteStringAsOctetString(AttributeName, s_utf8Encoding);
             }
             _directoryControlValue = writer.Encode();
             writer.Reset();
@@ -586,7 +586,7 @@ namespace System.DirectoryServices.Protocols
             {
                 writer.WriteInteger(Flag);
 
-                writer.WriteLdapString(ServerName, Encoding.Unicode);
+                writer.WriteStringAsOctetString(ServerName, Encoding.Unicode);
             }
             _directoryControlValue = writer.Encode();
             writer.Reset();
@@ -875,7 +875,7 @@ namespace System.DirectoryServices.Protocols
              *                  attributeType   AttributeDescription,
              *                  orderingRule    [0] MatchingRuleId OPTIONAL,
              *                  reverseOrder    [1] BOOLEAN DEFAULT FALSE }
-             * */
+             **/
             using (writer.PushSequence())
             {
                 for (int i = 0; i < _keys.Length; i++)
@@ -884,8 +884,11 @@ namespace System.DirectoryServices.Protocols
 
                     using (writer.PushSequence())
                     {
-                        writer.WriteLdapString(key.AttributeName, s_utf8Encoding, mandatory: true);
-                        writer.WriteLdapString(key.MatchingRule, s_utf8Encoding, mandatory: false, tag: s_orderingRuleTag);
+                        writer.WriteStringAsOctetString(key.AttributeName, s_utf8Encoding);
+                        if (!string.IsNullOrEmpty(key.MatchingRule))
+                        {
+                            writer.WriteStringAsOctetString(key.MatchingRule, s_utf8Encoding, tag: s_orderingRuleTag);
+                        }
 
                         if (key.ReverseOrder)
                         {

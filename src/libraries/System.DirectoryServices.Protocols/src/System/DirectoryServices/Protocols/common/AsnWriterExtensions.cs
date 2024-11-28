@@ -8,7 +8,7 @@ namespace System.DirectoryServices.Protocols
 {
     internal static class AsnWriterExtensions
     {
-        public static void WriteLdapString(this AsnWriter writer, string value, Encoding stringEncoding, bool mandatory = true, Asn1Tag? tag = null)
+        public static void WriteStringAsOctetString(this AsnWriter writer, string value, Encoding stringEncoding, Asn1Tag? tag = null)
         {
             // A typical stack allocation threshold would be 256 bytes. A higher threshold has been chosen because an LdapString can be
             // used to serialize server names. A server name is defined by RF1035, which specifies that a label in a domain name should
@@ -27,7 +27,7 @@ namespace System.DirectoryServices.Protocols
                 stringEncoding.GetBytes(value, tmpValue);
                 writer.WriteOctetString(tmpValue, tag);
             }
-            else if (mandatory)
+            else
             {
                 writer.WriteOctetString([], tag);
             }
