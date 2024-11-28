@@ -1088,7 +1088,6 @@ void SystemDomain::LoadBaseSystemClasses()
         // further loading of nonprimitive types may need casting support.
         // initialize cast cache here.
         CastCache::Initialize();
-        ECall::PopulateAsyncHelpers();
 
         // used by IsImplicitInterfaceOfSZArray
         CoreLibBinder::GetClass(CLASS__IENUMERABLEGENERIC);

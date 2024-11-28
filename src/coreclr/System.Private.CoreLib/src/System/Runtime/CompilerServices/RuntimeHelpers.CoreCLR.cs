@@ -583,6 +583,44 @@ namespace System.Runtime.CompilerServices
             return newContinuation;
         }
 
+        private static unsafe Continuation AllocContinuationMethod(Continuation prevContinuation, nuint numGCRefs, nuint dataSize, MethodDesc* method)
+        {
+            LoaderAllocator loaderAllocator = RuntimeMethodHandle.GetLoaderAllocator(new RuntimeMethodHandleInternal((IntPtr)method));
+            object?[] gcData;
+            if (loaderAllocator != null)
+            {
+                gcData = new object[numGCRefs + 1];
+                gcData[numGCRefs] = loaderAllocator;
+            }
+            else
+            {
+                gcData = new object[numGCRefs];
+            }
+
+            Continuation newContinuation = new Continuation { Data = new byte[dataSize], GCData = gcData };
+            prevContinuation.Next = newContinuation;
+            return newContinuation;
+        }
+
+        private static unsafe Continuation AllocContinuationClass(Continuation prevContinuation, nuint numGCRefs, nuint dataSize, MethodTable* methodTable)
+        {
+            IntPtr loaderAllocatorHandle = methodTable->GetLoaderAllocatorHandle();
+            object?[] gcData;
+            if (loaderAllocatorHandle != IntPtr.Zero)
+            {
+                gcData = new object[numGCRefs + 1];
+                gcData[numGCRefs] = GCHandle.FromIntPtr(loaderAllocatorHandle).Target;
+            }
+            else
+            {
+                gcData = new object[numGCRefs];
+            }
+
+            Continuation newContinuation = new Continuation { Data = new byte[dataSize], GCData = gcData };
+            prevContinuation.Next = newContinuation;
+            return newContinuation;
+        }
+
         private struct RuntimeAsyncAwaitState
         {
             public Continuation? SentinelContinuation;
@@ -640,7 +678,7 @@ namespace System.Runtime.CompilerServices
             return head;
         }
 
-        private static async Task<T> FinalizeTaskReturningThunk<T>(Continuation continuation)
+        private static async Task<T?> FinalizeTaskReturningThunk<T>(Continuation continuation)
         {
             Continuation finalContinuation = new Continuation();
 
@@ -670,7 +708,7 @@ namespace System.Runtime.CompilerServices
                     Debug.Assert(finalResult == finalContinuation);
                     if (IsReferenceOrContainsReferences<T>())
                     {
-                        return (T)finalResult.GCData![0];
+                        return (T?)finalResult.GCData![0];
                     }
                     else
                     {
@@ -701,7 +739,7 @@ namespace System.Runtime.CompilerServices
             }
         }
 
-        private static async ValueTask<T> FinalizeValueTaskReturningThunk<T>(Continuation continuation)
+        private static async ValueTask<T?> FinalizeValueTaskReturningThunk<T>(Continuation continuation)
         {
             Continuation finalContinuation = new Continuation();
 
@@ -731,7 +769,7 @@ namespace System.Runtime.CompilerServices
                     Debug.Assert(finalResult == finalContinuation);
                     if (IsReferenceOrContainsReferences<T>())
                     {
-                        return (T)finalResult.GCData![0];
+                        return (T?)finalResult.GCData![0];
                     }
                     else
                     {
@@ -1148,6 +1186,9 @@ namespace System.Runtime.CompilerServices
         /// </summary>
         [MethodImpl(MethodImplOptions.InternalCall)]
         public extern MethodTable* GetMethodTableMatchingParentClass(MethodTable* parent);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public extern IntPtr GetLoaderAllocatorHandle();
     }
 
     // Subset of src\vm\methodtable.h
@@ -1353,6 +1394,6 @@ namespace System.Runtime.CompilerServices
         // set, and otherwise at GCData[1].
         //
         public byte[]? Data;
-        public object[]? GCData;
+        public object?[]? GCData;
     }
 }

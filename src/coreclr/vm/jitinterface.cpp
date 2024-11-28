@@ -10188,6 +10188,7 @@ void CEEInfo::getAsync2Info(CORINFO_ASYNC2_INFO* pAsync2InfoOut)
     pAsync2InfoOut->continuationFlagsFldHnd = CORINFO_FIELD_HANDLE(CoreLibBinder::GetField(FIELD__CONTINUATION__FLAGS));
     pAsync2InfoOut->continuationDataFldHnd = CORINFO_FIELD_HANDLE(CoreLibBinder::GetField(FIELD__CONTINUATION__DATA));
     pAsync2InfoOut->continuationGCDataFldHnd = CORINFO_FIELD_HANDLE(CoreLibBinder::GetField(FIELD__CONTINUATION__GCDATA));
+    pAsync2InfoOut->continuationsNeedMethodHandle = m_pMethodBeingCompiled->GetLoaderAllocator()->CanUnload();
 }
 
 const char16_t * CEEInfo::getJitTimeLogFilename()

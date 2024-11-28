@@ -164,7 +164,7 @@ PhaseStatus Async2Transformation::Run()
     {
         for (GenTree* tree : LIR::AsRange(block))
         {
-            if (tree->IsCall() && tree->AsCall()->IsAsync2())
+            if (tree->IsCall() && tree->AsCall()->IsAsync2() && !tree->AsCall()->IsTailCall())
             {
                 JITDUMP(FMT_BB " contains await(s)\n", block->bbNum);
                 worklist.Push(block);
@@ -588,11 +588,9 @@ void Async2Transformation::Transform(
     block->GetFalseEdge()->setLikelihood(1 - RESUME_SUSPEND_LIKELIHOOD);
 
     // Allocate continuation
-    returnedContinuation           = m_comp->gtNewLclvNode(m_returnedContinuationVar, TYP_REF);
-    GenTree*     gcRefsCountNode   = m_comp->gtNewIconNode((ssize_t)gcRefsCount, TYP_I_IMPL);
-    GenTree*     dataSizeNode      = m_comp->gtNewIconNode((ssize_t)dataSize, TYP_I_IMPL);
-    GenTreeCall* allocContinuation = m_comp->gtNewHelperCallNode(CORINFO_HELP_ALLOC_CONTINUATION, TYP_REF,
-                                                                 returnedContinuation, gcRefsCountNode, dataSizeNode);
+    returnedContinuation = m_comp->gtNewLclvNode(m_returnedContinuationVar, TYP_REF);
+
+    GenTreeCall* allocContinuation = CreateAllocContinuationCall(life, returnedContinuation, gcRefsCount, dataSize);
 
     m_comp->compCurBB = suspendBB;
     m_comp->fgMorphTree(allocContinuation);
@@ -1099,6 +1097,50 @@ void Async2Transformation::Transform(
 
     m_resumptionBBs.push_back(resumeBB);
 }
+
+GenTreeCall* Async2Transformation::CreateAllocContinuationCall(AsyncLiveness& life, GenTree* prevContinuation, unsigned gcRefsCount, unsigned dataSize)
+{
+    GenTree* gcRefsCountNode = m_comp->gtNewIconNode((ssize_t)gcRefsCount, TYP_I_IMPL);
+    GenTree* dataSizeNode = m_comp->gtNewIconNode((ssize_t)dataSize, TYP_I_IMPL);
+    // If VM requests that we report the method handle, or if we have a shared generic context method handle
+    // that is live here, then we need to call a different helper.
+    GenTree* methodHandleArg = nullptr;
+    GenTree* classHandleArg = nullptr;
+    if (((m_comp->info.compMethodInfo->options & CORINFO_GENERICS_CTXT_FROM_METHODDESC) != 0) && life.IsLive(m_comp->info.compTypeCtxtArg))
+    {
+        methodHandleArg = m_comp->gtNewLclvNode(m_comp->info.compTypeCtxtArg, TYP_I_IMPL);
+    }
+    else if (((m_comp->info.compMethodInfo->options & CORINFO_GENERICS_CTXT_FROM_METHODTABLE) != 0) && life.IsLive(m_comp->info.compTypeCtxtArg))
+    {
+        classHandleArg = m_comp->gtNewLclvNode(m_comp->info.compTypeCtxtArg, TYP_I_IMPL);
+    }
+    else if (m_async2Info.continuationsNeedMethodHandle)
+    {
+        methodHandleArg = m_comp->gtNewIconEmbMethHndNode(m_comp->info.compMethodHnd);
+    }
+
+    if (methodHandleArg != nullptr)
+    {
+        return m_comp->gtNewHelperCallNode(
+            CORINFO_HELP_ALLOC_CONTINUATION_METHOD,
+            TYP_REF,
+            prevContinuation, gcRefsCountNode, dataSizeNode, methodHandleArg);
+    }
+
+    if (classHandleArg != nullptr)
+    {
+        return m_comp->gtNewHelperCallNode(
+            CORINFO_HELP_ALLOC_CONTINUATION_CLASS,
+            TYP_REF,
+            prevContinuation, gcRefsCountNode, dataSizeNode, classHandleArg);
+    }
+
+    return m_comp->gtNewHelperCallNode(
+        CORINFO_HELP_ALLOC_CONTINUATION,
+        TYP_REF,
+        prevContinuation, gcRefsCountNode, dataSizeNode);
+}
+
 
 GenTreeIndir* Async2Transformation::LoadFromOffset(GenTree*     base,
                                                    unsigned     offset,

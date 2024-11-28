@@ -204,6 +204,7 @@ struct Agnostic_CORINFO_ASYNC2_INFO
     DWORDLONG continuationFlagsFldHnd;
     DWORDLONG continuationDataFldHnd;
     DWORDLONG continuationGCDataFldHnd;
+    DWORD continuationsNeedMethodHandle;
 };
 
 struct Agnostic_GetOSRInfo

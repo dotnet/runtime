@@ -983,6 +983,9 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_66624/Runtime_66624/*">
             <Issue>https://github.com/dotnet/runtimelab/issues/155: Collectible assemblies</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/async/collectible-alc/collectible-alc/*">
+            <Issue>https://github.com/dotnet/runtimelab/issues/155: Collectible assemblies</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Loader/ContextualReflection/ContextualReflection/*">
             <Issue>https://github.com/dotnet/runtimelab/issues/165</Issue>
         </ExcludeList>
@@ -3128,6 +3131,9 @@
             <Issue>Loads an assembly from file</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_66624/Runtime_66624/*">
+            <Issue>Loads an assembly from file</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/async/collectible-alc/collectible-alc/*">
             <Issue>Loads an assembly from file</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Loader/StartupHooks/**">

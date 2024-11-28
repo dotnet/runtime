@@ -1818,6 +1818,14 @@ FCIMPL2(MethodTable*, MethodTableNative::GetMethodTableMatchingParentClass, Meth
 }
 FCIMPLEND
 
+FCIMPL1(OBJECTHANDLE, MethodTableNative::GetLoaderAllocatorHandle, MethodTable *mt)
+{
+    FCALL_CONTRACT;
+
+    return mt->GetLoaderAllocatorObjectHandle();
+}
+FCIMPLEND
+
 extern "C" BOOL QCALLTYPE MethodTable_AreTypesEquivalent(MethodTable* mta, MethodTable* mtb)
 {
     QCALL_CONTRACT;

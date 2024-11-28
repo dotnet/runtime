@@ -596,6 +596,8 @@ enum CorInfoHelpFunc
     CORINFO_HELP_DISPATCH_INDIRECT_CALL,    // CFG: Validate and dispatch to pointer
 
     CORINFO_HELP_ALLOC_CONTINUATION,
+    CORINFO_HELP_ALLOC_CONTINUATION_METHOD,
+    CORINFO_HELP_ALLOC_CONTINUATION_CLASS,
     CORINFO_HELP_RESUME_OSR,
 
     CORINFO_HELP_COUNT,
@@ -1730,6 +1732,9 @@ struct CORINFO_ASYNC2_INFO
     CORINFO_FIELD_HANDLE continuationDataFldHnd;
     // 'GCData' field
     CORINFO_FIELD_HANDLE continuationGCDataFldHnd;
+    // Whether or not the continuation needs to be alloated through the
+    // helper that also takes a method handle
+    bool continuationsNeedMethodHandle;
 };
 
 // Flags passed from JIT to runtime.

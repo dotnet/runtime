@@ -4432,6 +4432,8 @@ void MethodContext::recGetAsync2Info(const CORINFO_ASYNC2_INFO* pAsync2Info)
         GetAsync2Info = new LightWeightMap<DWORD, Agnostic_CORINFO_ASYNC2_INFO>();
 
     Agnostic_CORINFO_ASYNC2_INFO value;
+    ZeroMemory(&value, sizeof(value));
+
     value.continuationClsHnd = CastHandle(pAsync2Info->continuationClsHnd);
     value.continuationNextFldHnd = CastHandle(pAsync2Info->continuationNextFldHnd);
     value.continuationResumeFldHnd = CastHandle(pAsync2Info->continuationResumeFldHnd);
@@ -4439,6 +4441,7 @@ void MethodContext::recGetAsync2Info(const CORINFO_ASYNC2_INFO* pAsync2Info)
     value.continuationFlagsFldHnd = CastHandle(pAsync2Info->continuationFlagsFldHnd);
     value.continuationDataFldHnd = CastHandle(pAsync2Info->continuationDataFldHnd);
     value.continuationGCDataFldHnd = CastHandle(pAsync2Info->continuationGCDataFldHnd);
+    value.continuationsNeedMethodHandle = pAsync2Info->continuationsNeedMethodHandle ? 1 : 0;
 
     GetAsync2Info->Add(0, value);
     DEBUG_REC(dmpGetAsync2Info(0, value));
@@ -4446,10 +4449,10 @@ void MethodContext::recGetAsync2Info(const CORINFO_ASYNC2_INFO* pAsync2Info)
 void MethodContext::dmpGetAsync2Info(DWORD key, const Agnostic_CORINFO_ASYNC2_INFO& value)
 {
     printf("GetAsync2Info key %u value contClsHnd-%016" PRIX64 " contNextFldHnd-%016" PRIX64 " contResumeFldHnd-%016" PRIX64
-           " contStateFldHnd-%016" PRIX64 " contFlagsFldHnd-%016" PRIX64 " contDataFldHnd-%016" PRIX64 " contGCDataFldHnd-%016" PRIX64,
+           " contStateFldHnd-%016" PRIX64 " contFlagsFldHnd-%016" PRIX64 " contDataFldHnd-%016" PRIX64 " contGCDataFldHnd-%016" PRIX64 " contsNeedMethodHandle-%d",
         key, value.continuationClsHnd, value.continuationNextFldHnd, value.continuationResumeFldHnd,
         value.continuationStateFldHnd, value.continuationFlagsFldHnd, value.continuationDataFldHnd,
-        value.continuationGCDataFldHnd);
+        value.continuationGCDataFldHnd, value.continuationsNeedMethodHandle);
 }
 void MethodContext::repGetAsync2Info(CORINFO_ASYNC2_INFO* pAsync2InfoOut)
 {
@@ -4461,6 +4464,7 @@ void MethodContext::repGetAsync2Info(CORINFO_ASYNC2_INFO* pAsync2InfoOut)
     pAsync2InfoOut->continuationFlagsFldHnd = (CORINFO_FIELD_HANDLE)value.continuationFlagsFldHnd;
     pAsync2InfoOut->continuationDataFldHnd = (CORINFO_FIELD_HANDLE)value.continuationDataFldHnd;
     pAsync2InfoOut->continuationGCDataFldHnd = (CORINFO_FIELD_HANDLE)value.continuationGCDataFldHnd;
+    pAsync2InfoOut->continuationsNeedMethodHandle = value.continuationsNeedMethodHandle != 0;
     DEBUG_REP(dmpGetAsync2Info(0, value));
 }
 

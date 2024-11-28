@@ -96,14 +96,6 @@ void ECall::PopulateManagedStringConstructors()
     INDEBUG(fInitialized = true);
 }
 
-void ECall::PopulateAsyncHelpers()
-{
-    STANDARD_VM_CONTRACT;
-
-    MethodDesc* pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__RUNTIME_HELPERS__ALLOC_CONTINUATION));
-    PCODE pDest = pMD->GetMultiCallableAddrOfCode();
-    SetJitHelperFunction(CORINFO_HELP_ALLOC_CONTINUATION, pDest);
-}
 static CrstStatic gFCallLock;
 
 // This variable is used to force the compiler not to tailcall a function.
