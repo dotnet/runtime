@@ -6,52 +6,40 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Runtime.CompilerServices;
+using System.Text;
+using Moq;
 
-namespace Microsoft.Diagnostics.DataContractReader.UnitTests;
+namespace Microsoft.Diagnostics.DataContractReader.Tests;
 
 /// <summary>
-/// A base class implementation of Target that throws NotImplementedException for all methods.
+/// A mock implementation of Target that has basic implementations of getting types/globals and reading data
 /// </summary>
 internal class TestPlaceholderTarget : Target
 {
-    private protected ContractRegistry contractRegistry;
-    private protected Target.IDataCache dataCache;
-    private protected Dictionary<DataType, Target.TypeInfo> typeInfoCache;
+    private ContractRegistry _contractRegistry;
+    private readonly Target.IDataCache _dataCache;
+    private readonly Dictionary<DataType, Target.TypeInfo> _typeInfoCache;
+    private readonly (string Name, ulong Value)[] _globals;
 
     internal delegate int ReadFromTargetDelegate(ulong address, Span<byte> buffer);
 
-    protected ReadFromTargetDelegate _dataReader = (address, buffer) => throw new NotImplementedException();
+    private readonly ReadFromTargetDelegate _dataReader;
 
-#region Setup
-    public TestPlaceholderTarget(MockTarget.Architecture arch)
+    public TestPlaceholderTarget(MockTarget.Architecture arch, ReadFromTargetDelegate reader, Dictionary<DataType, Target.TypeInfo> types = null, (string Name, ulong Value)[] globals = null)
     {
         IsLittleEndian = arch.IsLittleEndian;
         PointerSize = arch.Is64Bit ? 8 : 4;
-        contractRegistry = new TestRegistry();;
-        dataCache = new TestDataCache();
-        typeInfoCache = null;
+        _contractRegistry = new Mock<ContractRegistry>().Object;
+        _dataCache = new DefaultDataCache(this);
+        _typeInfoCache = types ?? [];
+        _dataReader = reader;
+        _globals = globals ?? [];
     }
 
     internal void SetContracts(ContractRegistry contracts)
     {
-        contractRegistry = contracts;
+        _contractRegistry = contracts;
     }
-
-    internal void SetDataCache(Target.IDataCache cache)
-    {
-        dataCache = cache;
-    }
-
-    internal void SetTypeInfoCache(Dictionary<DataType, Target.TypeInfo> cache)
-    {
-        typeInfoCache = cache;
-    }
-
-    internal void SetDataReader(ReadFromTargetDelegate reader)
-    {
-        _dataReader = reader;
-    }
-#endregion Setup
 
     public override int PointerSize { get; }
     public override bool IsLittleEndian { get; }
@@ -61,14 +49,59 @@ internal class TestPlaceholderTarget : Target
         return (pointer.Value & (ulong)(PointerSize - 1)) == 0;
     }
 
-    public override TargetPointer ReadGlobalPointer(string global) => throw new NotImplementedException();
+    public override TargetPointer ReadGlobalPointer(string name)
+    {
+        foreach (var global in _globals)
+        {
+            if (global.Name == name)
+                return new TargetPointer(global.Value);
+        }
+
+        throw new NotImplementedException();
+    }
+
     public override TargetPointer ReadPointer(ulong address) => DefaultReadPointer(address);
     public override TargetCodePointer ReadCodePointer(ulong address) => DefaultReadCodePointer(address);
-    public override void ReadBuffer(ulong address, Span<byte> buffer) => throw new NotImplementedException();
+    public override void ReadBuffer(ulong address, Span<byte> buffer)
+    {
+        if (_dataReader(address, buffer) < 0)
+            throw new InvalidOperationException($"Failed to read {buffer.Length} bytes at 0x{address:x8}.");
+    }
+
     public override string ReadUtf8String(ulong address) => throw new NotImplementedException();
-    public override string ReadUtf16String(ulong address) => throw new NotImplementedException();
+    public override string ReadUtf16String(ulong address)
+    {
+        // Read characters until we find the null terminator
+        ulong end = address;
+        while (Read<char>(end) != 0)
+        {
+            end += sizeof(char);
+        }
+
+        int length = (int)(end - address);
+        if (length == 0)
+            return string.Empty;
+
+        Span<byte> span = new byte[length];
+        ReadBuffer(address, span);
+        string result = IsLittleEndian
+            ? Encoding.Unicode.GetString(span)
+            : Encoding.BigEndianUnicode.GetString(span);
+        return result;
+    }
+
     public override TargetNUInt ReadNUInt(ulong address) => DefaultReadNUInt(address);
-    public override T ReadGlobal<T>(string name) => throw new NotImplementedException();
+    public override T ReadGlobal<T>(string name)
+    {
+        foreach (var global in _globals)
+        {
+            if (global.Name == name)
+                return T.CreateChecked(global.Value);
+        }
+
+        throw new NotImplementedException();
+    }
+
     public override T Read<T>(ulong address) => DefaultRead<T>(address);
 
 #region subclass reader helpers
@@ -185,78 +218,19 @@ internal class TestPlaceholderTarget : Target
 
     public override TargetPointer ReadPointerFromSpan(ReadOnlySpan<byte> bytes) => throw new NotImplementedException();
 
-    public override Target.TypeInfo GetTypeInfo(DataType dataType) => typeInfoCache != null ? GetTypeInfoImpl(dataType) : throw new NotImplementedException();
-
-    private protected virtual Target.TypeInfo GetTypeInfoImpl(DataType dataType)
+    public override Target.TypeInfo GetTypeInfo(DataType dataType)
     {
-        if (typeInfoCache!.TryGetValue(dataType, out var info))
-        {
+        if (_typeInfoCache.TryGetValue(dataType, out var info))
             return info;
-        }
+
         throw new NotImplementedException();
     }
 
-    public override Target.IDataCache ProcessedData => dataCache;
-    public override ContractRegistry Contracts => contractRegistry;
-
-    internal class TestRegistry : ContractRegistry
-    {
-        public TestRegistry() { }
-        internal Lazy<Contracts.IException>? ExceptionContract { get; set; }
-        internal Lazy<Contracts.ILoader>? LoaderContract { get; set; }
-        internal Lazy<Contracts.IEcmaMetadata>? EcmaMetadataContract { get; set; }
-        internal Lazy<Contracts.IObject>? ObjectContract { get; set; }
-        internal Lazy<Contracts.IThread>? ThreadContract { get; set; }
-        internal Lazy<Contracts.IRuntimeTypeSystem>? RuntimeTypeSystemContract { get; set; }
-        internal Lazy<Contracts.IDacStreams>? DacStreamsContract { get; set; }
-        internal Lazy<Contracts.IExecutionManager> ExecutionManagerContract { get; set; }
-        internal Lazy<Contracts.ICodeVersions>? CodeVersionsContract { get; set; }
-        internal Lazy<Contracts.IPlatformMetadata>? PlatformMetadataContract { get; set; }
-        internal Lazy<Contracts.IPrecodeStubs>? PrecodeStubsContract { get; set; }
-        internal Lazy<Contracts.IReJIT>? ReJITContract { get; set; }
-
-        public override Contracts.IException Exception => ExceptionContract.Value ?? throw new NotImplementedException();
-        public override Contracts.ILoader Loader => LoaderContract.Value ?? throw new NotImplementedException();
-        public override Contracts.IEcmaMetadata EcmaMetadata => EcmaMetadataContract.Value ?? throw new NotImplementedException();
-        public override Contracts.IObject Object => ObjectContract.Value ?? throw new NotImplementedException();
-        public override Contracts.IThread Thread => ThreadContract.Value ?? throw new NotImplementedException();
-        public override Contracts.IRuntimeTypeSystem RuntimeTypeSystem => RuntimeTypeSystemContract.Value ?? throw new NotImplementedException();
-        public override Contracts.IDacStreams DacStreams => DacStreamsContract.Value ?? throw new NotImplementedException();
-        public override Contracts.IExecutionManager ExecutionManager => ExecutionManagerContract.Value ?? throw new NotImplementedException();
-        public override Contracts.ICodeVersions CodeVersions => CodeVersionsContract.Value ?? throw new NotImplementedException();
-        public override Contracts.IPlatformMetadata PlatformMetadata => PlatformMetadataContract.Value ?? throw new NotImplementedException();
-        public override Contracts.IPrecodeStubs PrecodeStubs => PrecodeStubsContract.Value ?? throw new NotImplementedException();
-        public override Contracts.IReJIT ReJIT => ReJITContract.Value ?? throw new NotImplementedException();
-    }
-
-    // a data cache that throws NotImplementedException for all methods,
-    // useful for subclassing to override specific methods
-    internal class TestDataCache : Target.IDataCache
-    {
-        public TestDataCache() {}
-
-        public virtual T GetOrAdd<T>(TargetPointer address) where T : Data.IData<T>
-        {
-            if (TryGet(address.Value, out T? data))
-            {
-                return data;
-            }
-            return Add<T>(address.Value);
-        }
-
-        public virtual bool TryGet<T>(ulong address, [NotNullWhen(true)] out T? data)
-        {
-            throw new NotImplementedException();
-        }
-
-        protected virtual T Add<T>(ulong address) where T : Data.IData<T>
-        {
-            throw new NotImplementedException();
-        }
-    }
+    public override Target.IDataCache ProcessedData => _dataCache;
+    public override ContractRegistry Contracts => _contractRegistry;
 
     // A data cache that stores data in a dictionary and calls IData.Create to construct the data.
-    internal class DefaultDataCache : Target.IDataCache
+    private class DefaultDataCache : Target.IDataCache
     {
         protected readonly Target _target;
         protected readonly Dictionary<(ulong, Type), object?> _readDataByAddress = [];
@@ -270,8 +244,6 @@ internal class TestPlaceholderTarget : Target
 
         protected T DefaultGetOrAdd<T>(TargetPointer address) where T : Data.IData<T>
         {
-            if (address == TargetPointer.Null)
-                throw new ArgumentNullException(nameof(address));
             if (TryGet(address, out T? result))
                 return result;
 

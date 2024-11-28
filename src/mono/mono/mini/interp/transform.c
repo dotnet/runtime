@@ -757,8 +757,7 @@ handle_branch (TransformData *td, int long_op, int offset)
 	}
 
 	fixup_newbb_stack_locals (td, target_bb);
-	if (offset > 0)
-		init_bb_stack_state (td, target_bb);
+	init_bb_stack_state (td, target_bb);
 
 	if (long_op != MINT_CALL_HANDLER) {
 		if (td->cbb->no_inlining)
@@ -3072,16 +3071,27 @@ interp_inline_method (TransformData *td, MonoMethod *target_method, MonoMethodHe
 			g_print ("Inline end method %s.%s\n", m_class_get_name (target_method->klass), target_method->name);
 		UnlockedIncrement (&mono_interp_stats.inlined_methods);
 
-		interp_link_bblocks (td, prev_cbb, td->entry_bb);
-		prev_cbb->next_bb = td->entry_bb;
-
 		// Make sure all bblocks that were added will now be offset from the original method that
 		// is being transformed.
 		InterpBasicBlock *tmp_bb = td->entry_bb;
+		int call_offset = GPTRDIFF_TO_INT (prev_ip - prev_il_code);
 		while (tmp_bb != NULL) {
-			tmp_bb->il_offset = GPTRDIFF_TO_INT (prev_ip - prev_il_code);
+			tmp_bb->il_offset = call_offset;
 			tmp_bb = tmp_bb->next_bb;
 		}
+
+		// exit_bb will have the il offset of the instruction following the call
+		td->cbb->il_offset = call_offset + 5;
+		if (prev_cbb->il_offset != call_offset) {
+			// previous cbb doesn't include the inlined call, update the offset_to_bb
+			// so it no longer points to prev_cbb
+			prev_offset_to_bb [call_offset] = td->entry_bb;
+		}
+
+		interp_link_bblocks (td, prev_cbb, td->entry_bb);
+		td->cbb->next_bb = prev_cbb->next_bb;
+		prev_cbb->next_bb = td->entry_bb;
+		prev_cbb->emit_state = BB_STATE_EMITTED;
 	}
 
 	td->ip = prev_ip;
@@ -3173,12 +3183,17 @@ interp_inline_newobj (TransformData *td, MonoMethod *target_method, MonoMethodSi
 	mheader = interp_method_get_header (target_method, error);
 	goto_if_nok (error, fail);
 
+	// FIXME In interp_transform_call this method is called with td->ip pointing to call instruction
+	// We should have same convention between the two inlining locations.
+	td->ip -= 5;
 	if (!interp_inline_method (td, target_method, mheader, error))
 		goto fail;
+	td->ip += 5;
 
 	push_var (td, dreg);
 	return TRUE;
 fail:
+	td->ip += 5;
 	mono_metadata_free_mh (mheader);
 	// Restore the state
 	td->sp = td->stack + prev_sp_offset;
@@ -5191,6 +5206,8 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 	InterpInst *last_seq_point = NULL;
 	gboolean save_last_error = FALSE;
 	gboolean link_bblocks = TRUE;
+	gboolean needs_retry_emit = FALSE;
+	gboolean emitted_bblocks;
 	gboolean inlining = td->method != method;
 	gboolean generate_enc_seq_points_without_debug_info = FALSE;
 	InterpBasicBlock *exit_bb = NULL;
@@ -5204,6 +5221,8 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 	end = td->ip + header->code_size;
 
 	td->cbb = td->entry_bb = interp_alloc_bb (td);
+	td->entry_bb->emit_state = BB_STATE_EMITTING;
+
 	if (td->gen_sdb_seq_points)
 		td->basic_blocks = g_list_prepend_mempool (td->mempool, td->basic_blocks, td->cbb);
 
@@ -5377,6 +5396,9 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 	}
 
 	td->dont_inline = g_list_prepend (td->dont_inline, method);
+
+retry_emit:
+	emitted_bblocks = FALSE;
 	while (td->ip < end) {
 		// Check here for every opcode to avoid code bloat
 		if (td->has_invalid_code)
@@ -5387,6 +5409,33 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 
 		InterpBasicBlock *new_bb = td->offset_to_bb [in_offset];
 		if (new_bb != NULL && td->cbb != new_bb) {
+			if (td->verbose_level)
+				g_print ("BB%d (IL_%04lx):\n", new_bb->index, new_bb->il_offset);
+			// If we were emitting into previous bblock, we are finished now
+			if (td->cbb->emit_state == BB_STATE_EMITTING)
+				td->cbb->emit_state = BB_STATE_EMITTED;
+			// If the new bblock was already emitted, skip its instructions
+			if (new_bb->emit_state == BB_STATE_EMITTED) {
+				if (link_bblocks) {
+					interp_link_bblocks (td, td->cbb, new_bb);
+					// Further emitting can only start at a point where the bblock is not fallthrough
+					link_bblocks = FALSE;
+				}
+				// If the bblock was fully emitted it means we already iterated at least once over
+				// all instructions so we have `next_bb` initialized, unless it is the last bblock.
+				// Skip through all emitted bblocks.
+				td->cbb = new_bb;
+				while (td->cbb->next_bb && td->cbb->next_bb->emit_state == BB_STATE_EMITTED)
+					td->cbb = td->cbb->next_bb;
+				if (td->cbb->next_bb)
+					td->ip = header->code + td->cbb->next_bb->il_offset;
+				else
+					td->ip = end;
+				continue;
+			} else {
+				g_assert (new_bb->emit_state == BB_STATE_NOT_EMITTED);
+			}
+
 			/* We are starting a new basic block. Change cbb and link them together */
 			if (link_bblocks) {
 				if (!new_bb->jump_targets && td->cbb->no_inlining) {
@@ -5402,31 +5451,53 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				 */
 				interp_link_bblocks (td, td->cbb, new_bb);
 				fixup_newbb_stack_locals (td, new_bb);
-			} else if (!new_bb->jump_targets) {
-				// This is a bblock that is not branched to and it is not linked to the
-				// predecessor. It means it is dead.
-				new_bb->no_inlining = TRUE;
-				if (td->verbose_level)
-					g_print ("Disable inlining in BB%d\n", new_bb->index);
-			} else {
-				g_assert (new_bb->jump_targets > 0);
-			}
-			td->cbb->next_bb = new_bb;
-			td->cbb = new_bb;
-
-			if (new_bb->stack_height >= 0) {
-				if (new_bb->stack_height > 0) {
-					if (link_bblocks)
-						merge_stack_type_information (td->stack, new_bb->stack_state, new_bb->stack_height);
+				new_bb->emit_state = BB_STATE_EMITTING;
+				emitted_bblocks = TRUE;
+				if (new_bb->stack_height >= 0) {
+					merge_stack_type_information (td->stack, new_bb->stack_state, new_bb->stack_height);
 					// This is relevant only for copying the vars associated with the values on the stack
 					memcpy (td->stack, new_bb->stack_state, new_bb->stack_height * sizeof(td->stack [0]));
+					td->sp = td->stack + new_bb->stack_height;
+				} else {
+					/* This bblock is not branched to. Initialize its stack state */
+					init_bb_stack_state (td, new_bb);
 				}
-				td->sp = td->stack + new_bb->stack_height;
-			} else if (link_bblocks) {
-				/* This bblock is not branched to. Initialize its stack state */
-				init_bb_stack_state (td, new_bb);
+				// link_bblocks remains true, which is the default
+			} else {
+				if (!new_bb->jump_targets) {
+					// This is a bblock that is not branched to and it is not linked to the
+					// predecessor. It means it is dead.
+					new_bb->no_inlining = TRUE;
+					if (td->verbose_level)
+						g_print ("Disable inlining in BB%d\n", new_bb->index);
+				} else {
+					g_assert (new_bb->jump_targets > 0);
+				}
+
+				if (new_bb->stack_height >= 0) {
+					// This is relevant only for copying the vars associated with the values on the stack
+					memcpy (td->stack, new_bb->stack_state, new_bb->stack_height * sizeof(td->stack [0]));
+					td->sp = td->stack + new_bb->stack_height;
+					new_bb->emit_state = BB_STATE_EMITTING;
+					emitted_bblocks = TRUE;
+					link_bblocks = TRUE;
+				} else {
+					g_assert (new_bb->emit_state == BB_STATE_NOT_EMITTED);
+					if (td->verbose_level) {
+						g_print ("BB%d without initialized stack\n", new_bb->index);
+					}
+					needs_retry_emit = TRUE;
+					// linking to its next bblock, if its the case, will only happen
+					// after we actually emit the bblock
+					link_bblocks = FALSE;
+					// If we had new_bb->next_bb initialized, here we could skip to its il offset directly.
+					// We will just skip all instructions instead, since it doesn't seem that problematic.
+				}
 			}
-			link_bblocks = TRUE;
+			if (!td->cbb->next_bb)
+				td->cbb->next_bb = new_bb;
+			td->cbb = new_bb;
+
 			// Unoptimized code cannot access exception object directly from the exvar, we need
 			// to push it explicitly on the execution stack
 			if (!td->optimized) {
@@ -5442,7 +5513,6 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
                                 }
                         }
 		}
-		td->offset_to_bb [in_offset] = td->cbb;
 		td->in_start = td->ip;
 
 		if (in_offset == bb->end)
@@ -5456,15 +5526,23 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				goto exit;
 			}
 		}
+
+		if (td->cbb->emit_state != BB_STATE_EMITTING) {
+			// If we are not really emitting, just skip the instructions in the bblock
+			td->ip += op_size;
+			continue;
+		}
+
 		if (bb->dead || td->cbb->dead) {
 			g_assert (op_size > 0); /* The BB formation pass must catch all bad ops */
-
 			if (td->verbose_level > 1)
 				g_print ("SKIPPING DEAD OP at %x\n", in_offset);
 			link_bblocks = FALSE;
 			td->ip += op_size;
 			continue;
 		}
+
+		td->offset_to_bb [in_offset] = td->cbb;
 
 		if (td->verbose_level > 1) {
 			g_print ("IL_%04lx %-10s, sp %ld, %s %-12s\n",
@@ -6030,14 +6108,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				ptrdiff_t target = next_ip - td->il_code + offset;
 				InterpBasicBlock *target_bb = td->offset_to_bb [target];
 				g_assert (target_bb);
-				if (offset < 0) {
-#if DEBUG_INTERP
-					if (stack_height > 0 && stack_height != target_bb->stack_height)
-						g_warning ("SWITCH with back branch and non-empty stack");
-#endif
-				} else {
-					init_bb_stack_state (td, target_bb);
-				}
+				init_bb_stack_state (td, target_bb);
 				target_bb_table [i] = target_bb;
 				interp_link_bblocks (td, td->cbb, target_bb);
 				td->ip += 4;
@@ -8652,6 +8723,24 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 
 	g_assert (td->ip == end);
 
+	if (td->cbb->emit_state == BB_STATE_EMITTING)
+		td->cbb->emit_state = BB_STATE_EMITTED;
+
+	// If no bblocks were emitted during the last iteration, there is no point to try again
+	// Some bblocks are just unreachable in the code.
+	if (needs_retry_emit && emitted_bblocks) {
+		td->ip = header->code;
+		td->cbb = td->entry_bb;
+		bb = original_bb;
+
+		if (td->verbose_level)
+			g_print ("retry emit in method %s\n", mono_method_full_name (td->method, 1));
+
+		link_bblocks = FALSE;
+		needs_retry_emit = FALSE;
+		goto retry_emit;
+	}
+
 	if (inlining) {
 		// When inlining, all return points branch to this bblock. Code generation inside the caller
 		// method continues in this bblock. exit_bb is not necessarily an out bb for cbb. We need to
@@ -8667,6 +8756,24 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 		// method that does the inlining no longer generates code for the following IL opcodes.
 		if (exit_bb->in_count == 0)
 			exit_bb->dead = TRUE;
+		else
+			exit_bb->emit_state = BB_STATE_EMITTING;
+	}
+
+	// Unlink unreachable bblocks
+	InterpBasicBlock *prev_bb = td->entry_bb;
+	InterpBasicBlock *next_bb = prev_bb->next_bb;
+	while (next_bb != NULL) {
+		if (next_bb->emit_state == BB_STATE_NOT_EMITTED && next_bb != exit_bb) {
+			if (td->verbose_level)
+				g_print ("Unlink BB%d\n", next_bb->index);
+			td->offset_to_bb [next_bb->il_offset] = NULL;
+			prev_bb->next_bb = next_bb->next_bb;
+			next_bb = prev_bb->next_bb;
+		} else {
+			prev_bb = next_bb;
+			next_bb = next_bb->next_bb;
+		}
 	}
 
 	if (sym_seq_points) {
@@ -9406,18 +9513,31 @@ interp_squash_initlocals (TransformData *td)
 	}
 }
 
+// If precise is true, il_offset should point to the offset of a bblock
+// If precise is false, il_offset points to the end of a block, so we just
+// return the native offset of the first live bblock that we can find after it
 static int
-get_native_offset (TransformData *td, int il_offset)
+get_native_offset (TransformData *td, int il_offset, gboolean precise)
 {
-	// We can't access offset_to_bb for header->code_size IL offset. Also, offset_to_bb
-	// is not set for dead bblocks at method end.
-	if (GINT_TO_UINT32(il_offset) < td->header->code_size && td->offset_to_bb [il_offset]) {
+	if (GINT_TO_UINT32(il_offset) < td->header->code_size) {
 		InterpBasicBlock *bb = td->offset_to_bb [il_offset];
-		g_assert (!bb->dead);
-		return bb->native_offset;
-	} else {
-		return GPTRDIFF_TO_INT (td->new_code_end - td->new_code);
+		if (bb) {
+			g_assert (!bb->dead);
+			return bb->native_offset;
+		} else {
+			if (precise)
+				return -1;
+			while (GINT_TO_UINT32(il_offset) < td->header->code_size) {
+				bb = td->offset_to_bb [il_offset];
+				if (bb) {
+					g_assert (!bb->dead);
+					return bb->native_offset;
+				}
+				il_offset++;
+			}
+		}
 	}
+	return GPTRDIFF_TO_INT (td->new_code_end - td->new_code);
 }
 
 static void
@@ -9589,15 +9709,23 @@ retry:
 	for (guint i = 0; i < header->num_clauses; i++) {
 		MonoExceptionClause *c = rtm->clauses + i;
 		int end_off = c->try_offset + c->try_len;
-		c->try_offset = get_native_offset (td, c->try_offset);
-		c->try_len = get_native_offset (td, end_off) - c->try_offset;
+		int try_native_offset = get_native_offset (td, c->try_offset, TRUE);
+		// Try block could have been unreachable code, skip clause
+		if (try_native_offset == -1) {
+			// reset try range so nothing is protected
+			c->try_offset = code_len_u16;
+			c->try_len = 0;
+			continue;
+		}
+		c->try_offset = try_native_offset;
+		c->try_len = get_native_offset (td, end_off, FALSE) - c->try_offset;
 		g_assert ((c->try_offset + c->try_len) <= code_len_u16);
 		end_off = c->handler_offset + c->handler_len;
-		c->handler_offset = get_native_offset (td, c->handler_offset);
-		c->handler_len = get_native_offset (td, end_off) - c->handler_offset;
+		c->handler_offset = get_native_offset (td, c->handler_offset, TRUE);
+		c->handler_len = get_native_offset (td, end_off, FALSE) - c->handler_offset;
 		g_assert (c->handler_len >= 0 && (c->handler_offset + c->handler_len) <= code_len_u16);
 		if (c->flags & MONO_EXCEPTION_CLAUSE_FILTER)
-			c->data.filter_offset = get_native_offset (td, c->data.filter_offset);
+			c->data.filter_offset = get_native_offset (td, c->data.filter_offset, TRUE);
 	}
 	// When optimized (using the var offset allocator), total_locals_size contains also the param area.
 	// When unoptimized, the param area is stored in the same order, within the IL execution stack.

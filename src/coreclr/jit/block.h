@@ -23,7 +23,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 // Defines VARSET_TP
 #include "varset.h"
 
-#include "blockset.h"
 #include "jitstd.h"
 #include "bitvec.h"
 #include "jithashtable.h"

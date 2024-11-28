@@ -2545,14 +2545,12 @@ public:
     static void CheckFieldOffsets(TypeHandle nullableType);
     static BOOL IsNullableType(TypeHandle nullableType);
     static BOOL IsNullableForType(TypeHandle nullableType, MethodTable* paramMT);
-    static BOOL IsNullableForTypeNoGC(TypeHandle nullableType, MethodTable* paramMT);
 
     static OBJECTREF Box(void* src, MethodTable* nullable);
     static BOOL UnBox(void* dest, OBJECTREF boxedVal, MethodTable* destMT);
     static BOOL UnBoxNoGC(void* dest, OBJECTREF boxedVal, MethodTable* destMT);
     static void UnBoxNoCheck(void* dest, OBJECTREF boxedVal, MethodTable* destMT);
     static OBJECTREF BoxedNullableNull(TypeHandle nullableType) { return NULL; }
-
     // if 'Obj' is a true boxed nullable, return the form we want (either null or a boxed T)
     static OBJECTREF NormalizeBox(OBJECTREF obj);
 
@@ -2572,7 +2570,6 @@ public:
 
 private:
     static BOOL IsNullableForTypeHelper(MethodTable* nullableMT, MethodTable* paramMT);
-    static BOOL IsNullableForTypeHelperNoGC(MethodTable* nullableMT, MethodTable* paramMT);
 
     CLR_BOOL* HasValueAddr(MethodTable* nullableMT);
     void* ValueAddr(MethodTable* nullableMT);

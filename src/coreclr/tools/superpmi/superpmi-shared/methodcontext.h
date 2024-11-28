@@ -174,10 +174,6 @@ public:
     void dmpGetJitFlags(DWORD key, DD value);
     DWORD repGetJitFlags(CORJIT_FLAGS* jitFlags, DWORD sizeInBytes);
 
-    void recGetJitTimeLogFilename(LPCWSTR tempFileName);
-    void dmpGetJitTimeLogFilename(DWORD key, DWORD value);
-    LPCWSTR repGetJitTimeLogFilename();
-
     void recCanInline(CORINFO_METHOD_HANDLE callerHnd,
                       CORINFO_METHOD_HANDLE calleeHnd,
                       CorInfoInline         response,
@@ -899,13 +895,13 @@ public:
     void dmpGetArrayOrStringLength(DWORDLONG key, DWORD value);
     int repGetArrayOrStringLength(CORINFO_OBJECT_HANDLE objHnd);
 
-    void recGetIntConfigValue(const WCHAR* name, int defaultValue, int result);
+    void recGetIntConfigValue(const char* name, int defaultValue, int result);
     void dmpGetIntConfigValue(const Agnostic_ConfigIntInfo& key, int value);
-    int repGetIntConfigValue(const WCHAR* name, int defaultValue);
+    int repGetIntConfigValue(const char* name, int defaultValue);
 
-    void recGetStringConfigValue(const WCHAR* name, const WCHAR* result);
+    void recGetStringConfigValue(const char* name, const char* result);
     void dmpGetStringConfigValue(DWORD nameIndex, DWORD result);
-    const WCHAR* repGetStringConfigValue(const WCHAR* name);
+    const char* repGetStringConfigValue(const char* name);
 
     void recGetSpecialCopyHelper(CORINFO_CLASS_HANDLE type, CORINFO_METHOD_HANDLE helper);
     void dmpGetSpecialCopyHelper(DWORDLONG key, DWORDLONG value);
@@ -1047,7 +1043,7 @@ enum mcPackets
     Packet_GetHelperFtn = 63,
     //Packet_GetInlinedCallFrameVptr = 65,
     Packet_GetArrayIntrinsicID = 66,
-    Packet_GetJitTimeLogFilename = 67,
+    //Packet_GetJitTimeLogFilename = 67,
     Packet_GetJustMyCodeHandle = 68,
     Packet_GetLocationOfThisType = 69,
     Packet_GetMethodAttribs = 70,
