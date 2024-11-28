@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using Microsoft.NET.HostModel.MachO;
 using Microsoft.NET.HostModel.AppHost;
 using System;
 using System.Diagnostics;
@@ -77,7 +78,7 @@ namespace Microsoft.NET.HostModel.Bundle
 
         public bool IsNativeBinary(string filePath)
         {
-            return IsWindows ? PEUtils.IsPEImage(filePath) : IsOSX ? MachOUtils.IsMachOImage(filePath) : ElfUtils.IsElfImage(filePath);
+            return IsWindows ? PEUtils.IsPEImage(filePath) : IsOSX ? MachObjectFile.IsMachOImage(filePath) : ElfUtils.IsElfImage(filePath);
         }
 
         public string GetAssemblyName(string hostName)

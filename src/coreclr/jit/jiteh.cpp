@@ -2123,8 +2123,8 @@ void Compiler::fgNormalizeEH()
     if (modified)
     {
         JITDUMP("Added at least one basic block in fgNormalizeEH.\n");
-        fgRenumberBlocks();
-        // fgRenumberBlocks() will dump all the blocks and the handler table, so we don't need to do it here.
+        JITDUMPEXEC(fgDispBasicBlocks());
+        JITDUMPEXEC(fgDispHandlerTab());
         INDEBUG(fgVerifyHandlerTab());
     }
     else

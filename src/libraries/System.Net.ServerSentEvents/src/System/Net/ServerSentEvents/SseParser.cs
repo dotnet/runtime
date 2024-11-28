@@ -34,10 +34,20 @@ namespace System.Net.ServerSentEvents
         /// <param name="itemParser">The parser to use to transform each payload of bytes into a data element.</param>
         /// <returns>The enumerable, which can be enumerated synchronously or asynchronously.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="sseStream"/> or <paramref name="itemParser"/> is null.</exception>
-        public static SseParser<T> Create<T>(Stream sseStream, SseItemParser<T> itemParser) =>
-            new SseParser<T>(
-                sseStream ?? throw new ArgumentNullException(nameof(sseStream)),
-                itemParser ?? throw new ArgumentNullException(nameof(itemParser)));
+        public static SseParser<T> Create<T>(Stream sseStream, SseItemParser<T> itemParser)
+        {
+            if (sseStream is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(sseStream));
+            }
+
+            if (itemParser is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(itemParser));
+            }
+
+            return new SseParser<T>(sseStream, itemParser);
+        }
 
         /// <summary>Encoding.UTF8.GetString(bytes)</summary>
         internal static unsafe string Utf8GetString(ReadOnlySpan<byte> bytes)

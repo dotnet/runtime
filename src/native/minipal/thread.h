@@ -67,6 +67,8 @@ static inline size_t minipal_get_current_thread_id(void)
         tid = (size_t)pthread_getthreadid_np();
 #elif defined(__NetBSD__)
         tid = (size_t)_lwp_self();
+#elif defined(__HAIKU__)
+        tid = (size_t)find_thread(NULL);
 #else
         tid = (size_t)(void*)pthread_self();
 #endif

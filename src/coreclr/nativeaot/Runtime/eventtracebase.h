@@ -30,6 +30,8 @@ void InitializeEventTracing();
 
 #ifdef FEATURE_EVENT_TRACE
 
+bool IsRuntimeProviderEnabled(uint8_t level, uint64_t keyword);
+
 // !!!!!!! NOTE !!!!!!!!
 // The flags must match those in the ETW manifest exactly
 // !!!!!!! NOTE !!!!!!!!
@@ -102,6 +104,7 @@ struct ProfilingScanContext;
 #define CLR_GCHEAPSURVIVALANDMOVEMENT_KEYWORD 0x400000
 #define CLR_MANAGEDHEAPCOLLECT_KEYWORD 0x800000
 #define CLR_GCHEAPANDTYPENAMES_KEYWORD 0x1000000
+#define CLR_ALLOCATIONSAMPLING_KEYWORD 0x80000000000
 
 //
 // Using KEYWORDZERO means when checking the events category ignore the keyword
@@ -123,6 +126,13 @@ bool DotNETRuntimeProvider_IsEnabled(unsigned char level, unsigned long long key
 #define RUNTIME_PROVIDER_CATEGORY_ENABLED(Level, Keyword) \
     DotNETRuntimeProvider_IsEnabled(Level, Keyword)
 #endif // FEATURE_ETW
+
+//
+// ETW and EventPipe Event Notification Callback Control Code Keywords
+//
+#define EVENT_CONTROL_CODE_DISABLE_PROVIDER 0
+#define EVENT_CONTROL_CODE_ENABLE_PROVIDER 1
+#define EVENT_CONTROL_CODE_CAPTURE_STATE 2
 
 #else // FEATURE_EVENT_TRACE
 

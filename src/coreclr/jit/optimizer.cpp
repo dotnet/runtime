@@ -40,6 +40,7 @@ DataFlow::DataFlow(Compiler* pCompiler)
 PhaseStatus Compiler::optSetBlockWeights()
 {
     noway_assert(opts.OptimizationEnabled());
+    bool madeChanges = false;
 
     assert(m_dfsTree != nullptr);
     if (m_domTree == nullptr)
@@ -53,11 +54,11 @@ PhaseStatus Compiler::optSetBlockWeights()
 
     if (m_dfsTree->HasCycle())
     {
+        madeChanges = fgRenumberBlocks();
         optMarkLoopHeads();
         optFindAndScaleGeneralLoopBlocks();
     }
 
-    bool       madeChanges                = false;
     bool       firstBBDominatesAllReturns = true;
     const bool usingProfileWeights        = fgIsUsingProfileWeights();
 
@@ -1335,13 +1336,11 @@ PhaseStatus Compiler::optUnrollLoops()
             m_loops   = FlowGraphNaturalLoops::Find(m_dfsTree);
         }
 
-        fgRenumberBlocks();
-
         DBEXEC(verbose, fgDispBasicBlocks());
     }
 
 #ifdef DEBUG
-    fgDebugCheckBBlist(true);
+    fgDebugCheckBBlist();
 #endif // DEBUG
 
     return anyIRchange ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
@@ -2687,8 +2686,6 @@ PhaseStatus Compiler::optFindLoopsPhase()
     }
 #endif
 
-    fgRenumberBlocks();
-
     assert(m_dfsTree != nullptr);
     optFindLoops();
 
@@ -2712,8 +2709,6 @@ void Compiler::optFindLoops()
         m_dfsTree = fgComputeDfs();
         m_loops   = FlowGraphNaturalLoops::Find(m_dfsTree);
     }
-
-    fgRenumberBlocks();
 
     // Starting now we require all loops to be in canonical form.
     optLoopsCanonical = true;
@@ -3687,34 +3682,6 @@ PhaseStatus Compiler::optHoistLoopCode()
     }
 #endif
 
-#if 0
-    // The code in this #if has been useful in debugging loop hoisting issues, by
-    // enabling selective enablement of the loop hoisting optimization according to
-    // method hash.
-#ifdef DEBUG
-    unsigned methHash = info.compMethodHash();
-    char* lostr = getenv("loophoisthashlo");
-    unsigned methHashLo = 0;
-    if (lostr != NULL)
-    {
-        sscanf_s(lostr, "%x", &methHashLo);
-        // methHashLo = (unsigned(atoi(lostr)) << 2);  // So we don't have to use negative numbers.
-    }
-    char* histr = getenv("loophoisthashhi");
-    unsigned methHashHi = UINT32_MAX;
-    if (histr != NULL)
-    {
-        sscanf_s(histr, "%x", &methHashHi);
-        // methHashHi = (unsigned(atoi(histr)) << 2);  // So we don't have to use negative numbers.
-    }
-    if (methHash < methHashLo || methHash > methHashHi)
-    {
-        return PhaseStatus::MODIFIED_NOTHING;
-    }
-    printf("Doing loop hoisting in %s (0x%x).\n", info.compFullName, methHash);
-#endif // DEBUG
-#endif // 0     -- debugging loop hoisting issues
-
 #ifdef DEBUG
     if (verbose)
     {
@@ -4189,7 +4156,7 @@ void Compiler::optRecordLoopMemoryDependence(GenTree* tree, BasicBlock* block, V
 
         JITDUMP("      ==> Not updating loop memory dependence of [%06u]/" FMT_LP ", memory definition " FMT_VN
                 "/" FMT_LP " is not dependent on an ancestor loop\n",
-                dspTreeID(tree), blockLoop->GetIndex(), memoryVN, updateLoop->GetIndex());
+                dspTreeID(tree), blockLoop->GetIndex(), memoryVN, vnStore->LoopOfVN(memoryVN)->GetIndex());
 #endif
         return;
     }
