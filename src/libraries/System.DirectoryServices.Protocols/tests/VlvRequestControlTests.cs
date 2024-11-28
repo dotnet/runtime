@@ -144,11 +144,13 @@ namespace System.DirectoryServices.Protocols.Tests
             AssertExtensions.Throws<ArgumentException>("value", () => new VlvRequestControl(0, 0, -1));
         }
 
+#if NET
         [Fact]
         public void Ctor_InvalidUtf8Target_ThrowsEncoderFallbackException()
         {
             AssertExtensions.Throws<EncoderFallbackException>(() => new VlvRequestControl(0, 0, "\uDD74\uD800"));
         }
+#endif
 
         [Fact]
         public void EstimateCount_SetValid_GetReturnsExpected()
