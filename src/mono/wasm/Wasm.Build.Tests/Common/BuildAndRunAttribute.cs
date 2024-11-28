@@ -22,13 +22,23 @@ namespace Wasm.Build.Tests
     {
         private readonly IEnumerable<object?[]> _data;
 
+
+#if TARGET_WASI
+        // remove when wasi is refectored and use Configuration
+        public BuildAndRunAttribute(bool aot=false, string? config=null, params object?[] parameters)
+        {
+            _data = BuildTestBase.ConfigWithAOTData(aot, config)
+                    .Multiply(parameters)
+                    .UnwrapItemsAsArrays().ToList();
+        }
+#else
         public BuildAndRunAttribute(bool aot=false, Configuration config=Configuration.Undefined, params object?[] parameters)
         {
             _data = BuildTestBase.ConfigWithAOTData(aot, config)
                     .Multiply(parameters)
                     .UnwrapItemsAsArrays().ToList();
         }
-
+#endif
         public override IEnumerable<object?[]> GetData(MethodInfo testMethod) => _data;
     }
 }
