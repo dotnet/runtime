@@ -2204,6 +2204,7 @@ SyncBlock *ObjHeader::GetSyncBlock()
                             {
                                 // The lock is orphaned.
                                 pThread = (Thread*) -1;
+                                threadId = -1;
                                 osThreadId = (SIZE_T)-1;
                             }
                             else
