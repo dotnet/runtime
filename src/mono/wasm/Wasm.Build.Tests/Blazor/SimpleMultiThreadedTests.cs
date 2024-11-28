@@ -34,7 +34,7 @@ public class SimpleMultiThreadedTests : BlazorWasmTestBase
         BuildProject(info, config, new BuildOptions(RuntimeType: RuntimeVariant.MultiThreaded));
         // we wan to use "xharness wasm webserver" but from non-publish location
         string extraArgs = " --web-server-use-cors --web-server-use-cop --web-server-use-https --timeout=15:00:00";
-        await RunForPublishWithWebServer(new(config, ExtraArgs: extraArgs, CustomBundleDir: Path.Combine(frameworkDir, "..")));
+        await RunForPublishWithWebServer(new BlazorRunOptions(config, ExtraArgs: extraArgs, CustomBundleDir: Path.Combine(frameworkDir, "..")));
     }
 
     [ConditionalTheory(typeof(BuildTestBase), nameof(IsWorkloadWithMultiThreadingForDefaultFramework))]
@@ -65,7 +65,7 @@ public class SimpleMultiThreadedTests : BlazorWasmTestBase
         bool hasEmittedWasmEnableThreads = false;
         StringBuilder errorOutput = new();
         await RunForPublishWithWebServer(
-                runOptions: new RunOptions(
+                runOptions: new BlazorRunOptions(
                     Configuration: config,
                     ExtraArgs: "--web-server-use-cors --web-server-use-cop",
                     OnConsoleMessage: (type, message) =>

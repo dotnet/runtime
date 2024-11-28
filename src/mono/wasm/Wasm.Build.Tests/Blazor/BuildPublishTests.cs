@@ -30,10 +30,10 @@ public class BuildPublishTests : BlazorWasmTestBase
     {
         ProjectInfo info = CopyTestAsset(config, aot: false, BasicTestApp, "blz_no_workload");
         BlazorBuild(info, config);
-        await RunForBuildWithDotnetRun(new(config));
+        await RunForBuildWithDotnetRun(new BlazorRunOptions(config));
 
         BlazorPublish(info, config, new PublishOptions(UseCache: false));
-        await RunForPublishWithWebServer(new(config));
+        await RunForPublishWithWebServer(new BlazorRunOptions(config));
     }
 
 
@@ -156,7 +156,7 @@ public class BuildPublishTests : BlazorWasmTestBase
         ProjectInfo info = CopyTestAsset(config, aot: true, BasicTestApp, "blz_WasmStripILAfterAOT", extraProperties: extraProperties);
 
         BlazorPublish(info, config);
-        await RunForPublishWithWebServer(new(config));
+        await RunForPublishWithWebServer(new BlazorRunOptions(config));
 
         string frameworkDir = Path.Combine(_projectDir, "bin", config.ToString(), BuildTestBase.DefaultTargetFrameworkForBlazor, "publish", "wwwroot", "_framework");
         string objBuildDir = Path.Combine(_projectDir, "obj", config.ToString(), BuildTestBase.DefaultTargetFrameworkForBlazor, "wasm", "for-publish");

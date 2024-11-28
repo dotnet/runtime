@@ -54,7 +54,7 @@ namespace Wasm.Build.NativeRebuild.Tests
                 config,
                 new PublishOptions(GlobalizationMode: invariant ? GlobalizationMode.Invariant : GlobalizationMode.Sharded, ExtraMSBuildArgs: extraArgs),
                 isNativeBuild: nativeRelink);
-            await RunForPublishWithWebServer(new (config, TestScenario: "DotnetRun"));
+            await RunForPublishWithWebServer(new BrowserRunOptions(config, TestScenario: "DotnetRun"));
             return GetBuildPaths(config, forPublish: true);
         }
 

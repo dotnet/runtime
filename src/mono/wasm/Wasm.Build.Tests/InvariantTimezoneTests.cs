@@ -51,7 +51,7 @@ namespace Wasm.Build.Tests
             isNativeBuild = isNativeBuild || invariantTimezone == true;
             PublishProject(info, config, isNativeBuild: isNativeBuild);
 
-            RunResult output = await RunForPublishWithWebServer(new(config, TestScenario: "DotnetRun", ExpectedExitCode: 42));
+            RunResult output = await RunForPublishWithWebServer(new BrowserRunOptions(config, TestScenario: "DotnetRun", ExpectedExitCode: 42));
             Assert.Contains(output.TestOutput, m => m.Contains("UTC BaseUtcOffset is 0"));
             if (invariantTimezone == true)
             {

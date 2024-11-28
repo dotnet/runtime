@@ -29,7 +29,7 @@ namespace Wasm.Build.Tests
             UpdateFile(Path.Combine("Common", "Program.cs"), s_mainReturns42);
             PublishProject(info, config);
 
-            RunOptions runOptions = new(config, TestScenario: "DotnetRun", ExpectedExitCode: 42);
+            BrowserRunOptions runOptions = new(config, TestScenario: "DotnetRun", ExpectedExitCode: 42);
             await RunForPublishWithWebServer(runOptions);
 
             if (!_buildContext.TryGetBuildFor(info, out BuildResult? result))

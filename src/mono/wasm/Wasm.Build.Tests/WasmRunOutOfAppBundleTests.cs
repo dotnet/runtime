@@ -38,7 +38,7 @@ public class WasmRunOutOfAppBundleTests : WasmTemplateTestsBase
             File.WriteAllText(indexHtmlPath, html);
         }
 
-        RunResult result = await RunForPublishWithWebServer(new(
+        RunResult result = await RunForPublishWithWebServer(new BrowserRunOptions(
                 config,
                 TestScenario: "DotnetRun",
                 CustomBundleDir: outerDir,

@@ -31,7 +31,7 @@ namespace Wasm.Build.NativeRebuild.Tests
             var newStat = StatFiles(pathsDict);
 
             CompareStat(originalStat, newStat, pathsDict);
-            await RunForPublishWithWebServer(new(config, TestScenario: "DotnetRun"));
+            await RunForPublishWithWebServer(new BrowserRunOptions(config, TestScenario: "DotnetRun"));
         }
 
         [Fact]

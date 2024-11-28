@@ -271,8 +271,8 @@ public class WasmTemplateTestsBase : BuildTestBase
         ToolCommand cmd = runCommand.WithWorkingDirectory(workingDirectory);
 
         var query = runOptions.BrowserQueryString ?? new Dictionary<string, string>();
-        if (!string.IsNullOrEmpty(runOptions.TestScenario))
-            query.Add("test", runOptions.TestScenario);
+        if (runOptions is BrowserRunOptions browserOp && !string.IsNullOrEmpty(browserOp.TestScenario))
+            query.Add("test", browserOp.TestScenario);
         var queryString = query.Any() ? "?" + string.Join("&", query.Select(kvp => $"{kvp.Key}={kvp.Value}")) : "";
 
         List<string> testOutput = new();
@@ -296,8 +296,8 @@ public class WasmTemplateTestsBase : BuildTestBase
             await runOptions.ExecuteAfterLoaded(runOptions, page);
         }
 
-        if (runOptions.Test is not null)
-            await runOptions.Test(page);
+        if (runOptions is BlazorRunOptions blazorOp && blazorOp.Test is not null)
+            await blazorOp.Test(page);
 
         _testOutput.WriteLine($"Waiting for additional 10secs to see if any errors are reported");
         int exitCode = await runner.WaitForExitMessageAsync(TimeSpan.FromSeconds(10));

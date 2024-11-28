@@ -75,7 +75,7 @@ namespace Wasm.Build.Templates.Tests
             ReplaceFile("Program.cs", Path.Combine(BuildEnvironment.TestAssetsPath, "marshal_ilgen_test.cs"));
 
             (string _, string buildOutput) = BuildProject(info, config, new BuildOptions(AssertAppBundle: false), isNativeBuild: true);
-            var runOutput = await RunForBuildWithDotnetRun(new(config, ExpectedExitCode: 42));
+            var runOutput = await RunForBuildWithDotnetRun(new BrowserRunOptions(config, ExpectedExitCode: 42));
             Assert.Contains("call_needing_marhsal_ilgen got called", runOutput.TestOutput);
         }
     }

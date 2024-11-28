@@ -35,7 +35,7 @@ namespace Wasm.Build.Tests
             // Confirm that we didn't relink
             Assert.DoesNotContain("Compiling native assets with emcc", output);
 
-            RunResult result = await RunForBuildWithDotnetRun(new(
+            RunResult result = await RunForBuildWithDotnetRun(new BrowserRunOptions(
                 config,
                 TestScenario: "DotnetRun",
                 ExpectedExitCode: 42)
@@ -55,7 +55,7 @@ namespace Wasm.Build.Tests
             UpdateFile(Path.Combine("Common", "Program.cs"), s_simdProgramText);
             (string _, string output) = PublishProject(info, config, new PublishOptions(ExtraMSBuildArgs: $"-p:WasmEnableSIMD={simd}", AOT: aot));
 
-            RunResult result = await RunForPublishWithWebServer(new(
+            RunResult result = await RunForPublishWithWebServer(new BrowserRunOptions(
                 config,
                 TestScenario: "DotnetRun",
                 ExpectedExitCode: 42)

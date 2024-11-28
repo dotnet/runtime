@@ -38,7 +38,7 @@ public class LazyLoadingTests : WasmTemplateTestsBase
         // We don't need to rebuild the application to test how client is trying to load the assembly.
         foreach (var clientLazyLoadingTestExtension in allLazyLoadingTestExtensions)
         {
-            RunResult result = await RunForBuildWithDotnetRun(new(
+            RunResult result = await RunForBuildWithDotnetRun(new BrowserRunOptions(
                 config,
                 TestScenario: "LazyLoadingTest",
                 BrowserQueryString: new Dictionary<string, string> { ["lazyLoadingTestExtension"] = clientLazyLoadingTestExtension }
@@ -56,7 +56,7 @@ public class LazyLoadingTests : WasmTemplateTestsBase
         ProjectInfo info = CopyTestAsset(config, false, BasicTestApp, "LazyLoadingTests");
 
         PublishProject(info, config, new PublishOptions(ExtraMSBuildArgs: "-p:TestLazyLoading=true"));
-        RunOptions options = new(
+        BrowserRunOptions options = new(
             config,
             TestScenario: "LazyLoadingTest",
             BrowserQueryString: new Dictionary<string, string> { ["loadRequiredAssembly"] = "false" },

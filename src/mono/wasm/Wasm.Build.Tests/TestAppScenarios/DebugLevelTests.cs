@@ -35,7 +35,7 @@ public class DebugLevelTests : WasmTemplateTestsBase
             idPrefix: "DebugLevelTests_BuildWithDefaultLevel"
         );
         BuildProject(info, configuration);
-        RunOptions options = new(configuration, TestScenario: "DebugLevelTest", ExpectedExitCode: 42);
+        BrowserRunOptions options = new(configuration, TestScenario: "DebugLevelTest", ExpectedExitCode: 42);
         RunResult result = await RunForBuildWithDotnetRun(options);
         AssertDebugLevel(result.TestOutput, -1);
     }
@@ -54,7 +54,7 @@ public class DebugLevelTests : WasmTemplateTestsBase
             idPrefix: "DebugLevelTests_BuildWithExplicitValue"
         );
         BuildProject(info, configuration, new BuildOptions(ExtraMSBuildArgs: $"-p:WasmDebugLevel={debugLevel}"));
-        RunOptions options = new(configuration, TestScenario: "DebugLevelTest", ExpectedExitCode: 42);
+        BrowserRunOptions options = new(configuration, TestScenario: "DebugLevelTest", ExpectedExitCode: 42);
         RunResult result = await RunForBuildWithDotnetRun(options);
         AssertDebugLevel(result.TestOutput, debugLevel);
     }
@@ -71,7 +71,7 @@ public class DebugLevelTests : WasmTemplateTestsBase
             idPrefix: "DebugLevelTests_PublishWithDefaultLevel"
         );
         PublishProject(info, configuration);
-        RunOptions options = new(configuration, TestScenario: "DebugLevelTest", ExpectedExitCode: 42);
+        BrowserRunOptions options = new(configuration, TestScenario: "DebugLevelTest", ExpectedExitCode: 42);
         RunResult result = await RunForPublishWithWebServer(options);
         AssertDebugLevel(result.TestOutput, 0);
     }
@@ -90,7 +90,7 @@ public class DebugLevelTests : WasmTemplateTestsBase
             idPrefix: "DebugLevelTests_PublishWithExplicitValue"
         );
         PublishProject(info, configuration, new PublishOptions(ExtraMSBuildArgs: $"-p:WasmDebugLevel={debugLevel}"));
-        RunOptions options = new(configuration, TestScenario: "DebugLevelTest", ExpectedExitCode: 42);
+        BrowserRunOptions options = new(configuration, TestScenario: "DebugLevelTest", ExpectedExitCode: 42);
         RunResult result = await RunForPublishWithWebServer(options);
         AssertDebugLevel(result.TestOutput, debugLevel);
     }
@@ -108,7 +108,7 @@ public class DebugLevelTests : WasmTemplateTestsBase
             idPrefix: "DebugLevelTests_PublishWithDefaultLevelAndPdbs"
         );
         PublishProject(info, configuration, new PublishOptions(ExtraMSBuildArgs: $"-p:CopyOutputSymbolsToPublishDirectory=true"));
-        RunOptions options = new(configuration, TestScenario: "DebugLevelTest", ExpectedExitCode: 42);
+        BrowserRunOptions options = new(configuration, TestScenario: "DebugLevelTest", ExpectedExitCode: 42);
         RunResult result = await RunForPublishWithWebServer(options);
         AssertDebugLevel(result.TestOutput, -1);
     }

@@ -29,7 +29,7 @@ public class SimpleRunTests : BlazorWasmTestBase
     {
         ProjectInfo info = CopyTestAsset(config, aot: false, BasicTestApp, "blazor");
         BlazorBuild(info, config);
-        await RunForBuildWithDotnetRun(new(config));
+        await RunForBuildWithDotnetRun(new BlazorRunOptions(config));
     }
 
     [Theory]
@@ -57,7 +57,7 @@ public class SimpleRunTests : BlazorWasmTestBase
                     projectDir, "bin", info.ProjectName, config.ToString().ToLower(), "wwwroot", "_framework") :
                 GetBinFrameworkDir(config, isPublish);
         BuildProject(info, config);
-        await RunForBuildWithDotnetRun(new(config));
+        await RunForBuildWithDotnetRun(new BlazorRunOptions(config));
     }
 
     [Theory]
@@ -68,6 +68,6 @@ public class SimpleRunTests : BlazorWasmTestBase
     {
         ProjectInfo info = CopyTestAsset(config, aot, BasicTestApp, "blazor_publish");
         BlazorPublish(info, config);
-        await RunForPublishWithWebServer(new(config));
+        await RunForPublishWithWebServer(new BlazorRunOptions(config));
     }
 }

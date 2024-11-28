@@ -28,7 +28,7 @@ public class AppSettingsTests : WasmTemplateTestsBase
         Configuration config = Configuration.Debug;
         ProjectInfo info = CopyTestAsset(config, aot: false, BasicTestApp, "AppSettingsTest");
         PublishProject(info, config);
-        RunOptions options = new(
+        BrowserRunOptions options = new(
             config,
             TestScenario: "AppSettingsTest",
             BrowserQueryString: new Dictionary<string, string> { ["applicationEnvironment"] = applicationEnvironment }

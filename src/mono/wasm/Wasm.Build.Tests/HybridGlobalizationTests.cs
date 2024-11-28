@@ -49,7 +49,7 @@ namespace Wasm.Build.Tests
             UpdateBrowserMainJs();
 
             PublishProject(info, config, new PublishOptions(GlobalizationMode: GlobalizationMode.Hybrid), isNativeBuild: isNativeBuild);
-            RunResult output = await RunForPublishWithWebServer(new(config, ExpectedExitCode: 42));
+            RunResult output = await RunForPublishWithWebServer(new BrowserRunOptions(config, ExpectedExitCode: 42));
             Assert.Contains(output.TestOutput, m => m.Contains("HybridGlobalization works, thrown exception as expected"));
         }
     }

@@ -39,7 +39,10 @@ public class MemoryTests : WasmTemplateTestsBase
 
         if (BuildTestBase.IsUsingWorkloads)
         {
-            await RunForBuildWithDotnetRun(new (Configuration: config, TestScenario: "AllocateLargeHeapThenInterop"));
+            await RunForBuildWithDotnetRun(new BrowserRunOptions(
+                Configuration: config,
+                TestScenario: "AllocateLargeHeapThenInterop"
+            ));
         }
     }
 
@@ -52,8 +55,7 @@ public class MemoryTests : WasmTemplateTestsBase
         string extraArgs = $"-p:WasmProfilers=\"aot+browser+log\" -p:WasmBuildNative=true";
         BuildProject(info, config, new BuildOptions(ExtraMSBuildArgs: extraArgs, AssertAppBundle: false), isNativeBuild: true);
 
-
-        var result = await RunForBuildWithDotnetRun(new (Configuration: config, TestScenario: "ProfilerTest"));
+        var result = await RunForBuildWithDotnetRun(new BrowserRunOptions(Configuration: config, TestScenario: "ProfilerTest"));
         Regex regex = new Regex(@"Profile data of size (\d+) bytes");
         var match = result.TestOutput
             .Select(line => regex.Match(line))

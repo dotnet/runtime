@@ -33,7 +33,7 @@ namespace Wasm.Build.Tests
             Assert.Contains("System.Int32 sum_two(System.Int32, System.Int32)", output);
             Assert.Contains("System.Int32 sum_three(System.Int32, System.Int32, System.Int32)", output);
 
-            RunResult result = await RunForPublishWithWebServer(new(
+            RunResult result = await RunForPublishWithWebServer(new BrowserRunOptions(
                 config,
                 TestScenario: "DotnetRun",
                 ExpectedExitCode: 42
@@ -52,7 +52,7 @@ namespace Wasm.Build.Tests
             Assert.DoesNotMatch("warning\\sWASM0001.*Could\\snot\\sget\\spinvoke.*Parsing\\sfunction\\spointer\\stypes", output);
             Assert.DoesNotMatch("warning\\sWASM0001.*Skipping.*using_sum_one.*because.*function\\spointer", output);
 
-            RunResult result = await RunForPublishWithWebServer(new(
+            RunResult result = await RunForPublishWithWebServer(new BrowserRunOptions(
                 config,
                 TestScenario: "DotnetRun",
                 ExpectedExitCode: 42
@@ -71,7 +71,7 @@ namespace Wasm.Build.Tests
             Assert.DoesNotMatch("warning\\sWASM0001.*Could\\snot\\sget\\spinvoke.*Parsing\\sfunction\\spointer\\stypes", output);
             Assert.DoesNotMatch("warning\\sWASM0001.*Skipping.*using_sum_one.*because.*function\\spointer", output);
 
-            RunResult result = await RunForPublishWithWebServer(new(
+            RunResult result = await RunForPublishWithWebServer(new BrowserRunOptions(
                 config,
                 TestScenario: "DotnetRun",
                 ExpectedExitCode: 42
@@ -109,7 +109,7 @@ namespace Wasm.Build.Tests
             ProjectInfo info = PrepreProjectForBlittableTests(
                 config, aot, "blittable", disableRuntimeMarshalling: true, useAutoLayout: true);
             (_, string output) = BuildProject(info, config, new BuildOptions(AOT: aot), isNativeBuild: true);
-            RunResult result = await RunForBuildWithDotnetRun(new(
+            RunResult result = await RunForBuildWithDotnetRun(new BrowserRunOptions(
                 config,
                 TestScenario: "DotnetRun",
                 ExpectedExitCode: 42
@@ -175,7 +175,7 @@ namespace Wasm.Build.Tests
                 isNativeBuild: true);
             if (expectSuccess)
             {
-                RunResult result = await RunForBuildWithDotnetRun(new(
+                RunResult result = await RunForBuildWithDotnetRun(new BrowserRunOptions(
                     config,
                     TestScenario: "DotnetRun",
                     ExpectedExitCode: 42
@@ -200,7 +200,7 @@ namespace Wasm.Build.Tests
             string output = PublishForVariadicFunctionTests(info, config, aot, isNativeBuild: false);
             Assert.DoesNotContain("warning WASM0001", output);
 
-            RunResult result = await RunForPublishWithWebServer(new(
+            RunResult result = await RunForPublishWithWebServer(new BrowserRunOptions(
                 config,
                 TestScenario: "DotnetRun",
                 ExpectedExitCode: 42
@@ -231,7 +231,7 @@ namespace Wasm.Build.Tests
             string output = PublishForVariadicFunctionTests(info, config, aot, isNativeBuild: false);
             Assert.DoesNotMatch(".*(warning|error).*>[A-Z0-9]+__Foo", output);
 
-            RunResult result = await RunForPublishWithWebServer(new(
+            RunResult result = await RunForPublishWithWebServer(new BrowserRunOptions(
                 config,
                 TestScenario: "DotnetRun",
                 ExpectedExitCode: 42
@@ -251,7 +251,7 @@ namespace Wasm.Build.Tests
             string output = PublishForVariadicFunctionTests(info, config, aot, isNativeBuild: false);
             Assert.DoesNotMatch(".*(warning|error).*>[A-Z0-9]+__Foo", output);
 
-            RunResult result = await RunForPublishWithWebServer(new(
+            RunResult result = await RunForPublishWithWebServer(new BrowserRunOptions(
                 config,
                 TestScenario: "DotnetRun",
                 ExpectedExitCode: 42
@@ -390,7 +390,7 @@ namespace Wasm.Build.Tests
                 new PublishOptions(ExtraBuildEnvironmentVariables: extraEnvVars, AOT: aot),
                 isNativeBuild: true);
 
-            RunResult result = await RunForPublishWithWebServer(new(
+            RunResult result = await RunForPublishWithWebServer(new BrowserRunOptions(
                 config,
                 TestScenario: "DotnetRun",
                 ExpectedExitCode: 42,
@@ -419,7 +419,7 @@ namespace Wasm.Build.Tests
                 PublishProject(info, config, new PublishOptions(AOT: aot), isNativeBuild: true):
                 BuildProject(info, config, new BuildOptions(AOT: aot), isNativeBuild: true);
 
-            var runOptions = new RunOptions(config, TestScenario: "DotnetRun", ExpectedExitCode: 42);
+            var runOptions = new BrowserRunOptions(config, TestScenario: "DotnetRun", ExpectedExitCode: 42);
             RunResult result = isPublish ? await RunForPublishWithWebServer(runOptions) : await RunForBuildWithDotnetRun(runOptions);
 
             for (int i = 0; i < libraryNames.Length; i ++)
@@ -506,7 +506,7 @@ namespace Wasm.Build.Tests
             Assert.Contains("float accept_double_struct_and_return_float_struct (double);", pinvokeTable);
             Assert.Contains("int64_t accept_and_return_i64_struct (int64_t);", pinvokeTable);
 
-            var runOptions = new RunOptions(config, TestScenario: "DotnetRun", ExpectedExitCode: 3);
+            var runOptions = new BrowserRunOptions(config, TestScenario: "DotnetRun", ExpectedExitCode: 3);
             RunResult result = isPublish ? await RunForPublishWithWebServer(runOptions) : await RunForBuildWithDotnetRun(runOptions);
             Assert.Contains("l (l)=-1148435428713435121", result.TestOutput);
             Assert.Contains("s (s)=-1148435428713435121", result.TestOutput);
@@ -555,7 +555,7 @@ namespace Wasm.Build.Tests
             File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "native-libs", cCodeFilename), Path.Combine(_projectDir, cCodeFilename));
 
             PublishProject(info, config, new PublishOptions(AOT: aot), isNativeBuild: true);
-            RunResult result = await RunForPublishWithWebServer(new(
+            RunResult result = await RunForPublishWithWebServer(new BrowserRunOptions(
                 config,
                 TestScenario: "DotnetRun",
                 ExpectedExitCode: 42

@@ -41,7 +41,7 @@ namespace Wasm.Build.Tests
             if (!_buildContext.TryGetBuildFor(info, out BuildResult? result))
                 throw new XunitException($"Test bug: could not get the build result in the cache");
 
-            RunOptions runOptions = new(config, TestScenario: "DotnetRun");
+            BrowserRunOptions runOptions = new(config, TestScenario: "DotnetRun");
             await RunForBuildWithDotnetRun(runOptions);
 
             PublishProject(info, config, new PublishOptions(UseCache: false));
@@ -71,7 +71,7 @@ namespace Wasm.Build.Tests
             if (!_buildContext.TryGetBuildFor(info, out BuildResult? result))
                 throw new XunitException($"Test bug: could not get the build result in the cache");
 
-            RunOptions runOptions = new(config, TestScenario: "DotnetRun");
+            BrowserRunOptions runOptions = new(config, TestScenario: "DotnetRun");
             await RunForBuildWithDotnetRun(runOptions);
 
             File.Move(result!.LogFile, Path.ChangeExtension(result.LogFile!, ".first.binlog"));

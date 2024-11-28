@@ -26,7 +26,7 @@ public class DownloadThenInitTests : WasmTemplateTestsBase
     {
         ProjectInfo info = CopyTestAsset(config, aot: false, BasicTestApp, "DownloadThenInitTests");
         BuildProject(info, config);
-        RunOptions options = new(config, TestScenario: "DownloadThenInit");
+        BrowserRunOptions options = new(config, TestScenario: "DownloadThenInit");
         RunResult result = await RunForBuildWithDotnetRun(options);
         var resultTestOutput = result.TestOutput.ToList();
         int index = resultTestOutput.FindIndex(s => s.Contains("download finished"));

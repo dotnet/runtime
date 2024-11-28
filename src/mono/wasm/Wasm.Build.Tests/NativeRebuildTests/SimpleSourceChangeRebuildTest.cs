@@ -43,7 +43,7 @@ namespace Wasm.Build.NativeRebuild.Tests
             var newStat = StatFiles(pathsDict);
 
             CompareStat(originalStat, newStat, pathsDict);
-            await RunForPublishWithWebServer(new (config, TestScenario: "DotnetRun", ExpectedExitCode: 55));
+            await RunForPublishWithWebServer(new BrowserRunOptions(config, TestScenario: "DotnetRun", ExpectedExitCode: 55));
         }
     }
 }

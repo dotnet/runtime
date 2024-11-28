@@ -9,8 +9,8 @@ namespace Wasm.Build.Tests;
 
 public record PublishOptions : MSBuildOptions
 {
-    public bool BuildOnlyAfterPublish { get; init; } = true;
-    public bool ExpectRelinkDirWhenPublishing { get; init; } = false;
+    public bool BuildOnlyAfterPublish { get; init; }
+    public bool ExpectRelinkDirWhenPublishing { get; init; }
 
     public PublishOptions(
         bool IsPublish                                              = true,
@@ -28,7 +28,9 @@ public record PublishOptions : MSBuildOptions
         IDictionary<string, string>? ExtraBuildEnvironmentVariables = null,
         string BootConfigFileName                                   = "blazor.boot.json",
         string NonDefaultFrameworkDir                               = "",
-        string ExtraMSBuildArgs                                     = ""
+        string ExtraMSBuildArgs                                     = "",
+        bool BuildOnlyAfterPublish                                  = true,
+        bool ExpectRelinkDirWhenPublishing                          = false
     ) : base(
         IsPublish,
         AOT,
@@ -49,5 +51,7 @@ public record PublishOptions : MSBuildOptions
     )
     {
         this.IsPublish = IsPublish;
+        this.BuildOnlyAfterPublish = BuildOnlyAfterPublish;
+        this.ExpectRelinkDirWhenPublishing = ExpectRelinkDirWhenPublishing;
     }
 }

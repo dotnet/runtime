@@ -39,7 +39,7 @@ namespace Wasm.Build.Tests
                 UpdateFile("runtimeconfig.template.json", new Dictionary<string, string> { {  "}\n}", runtimeConfigContents } });
             }
             PublishProject(info, config, new PublishOptions(AOT: aot, ExtraMSBuildArgs: extraArgs), isNativeBuild: isNativeBuild);
-            RunResult result = await RunForPublishWithWebServer(new(
+            RunResult result = await RunForPublishWithWebServer(new BrowserRunOptions(
                 config,
                 TestScenario: "DotnetRun",
                 ExpectedExitCode: expectedExitCode)

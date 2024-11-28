@@ -52,7 +52,7 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestsBase
 
     private Func<RunOptions, IPage, Task>? _executeAfterLoaded = async (runOptions, page) =>
         {
-            if (runOptions.CheckCounter)
+            if (runOptions is BlazorRunOptions bro && bro.CheckCounter)
             {
                 await page.Locator("text=Counter").ClickAsync();
                 var txt = await page.Locator("p[role='status']").InnerHTMLAsync();

@@ -25,7 +25,7 @@ public class SignalRTestsBase : WasmTemplateTestsBase
         ProjectInfo info = CopyTestAsset(config, false, asset, "SignalRClientTests");
         PublishProject(info, config, new PublishOptions(RuntimeType: RuntimeVariant.MultiThreaded, AssertAppBundle: false));
 
-        var result = await RunForPublishWithWebServer(new(
+        var result = await RunForPublishWithWebServer(new BrowserRunOptions(
             Configuration: config,
             ServerEnvironment: new Dictionary<string, string> { ["ASPNETCORE_ENVIRONMENT"] = "Development" },
             BrowserPath: staticWebAssetBasePath,

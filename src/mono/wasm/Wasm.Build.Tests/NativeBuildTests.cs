@@ -35,7 +35,7 @@ namespace Wasm.Build.Tests
             UpdateBrowserMainJs();
 
             (string _, string buildOutput) = PublishProject(info, config, isNativeBuild: true);
-            await RunForPublishWithWebServer(new(config, ExpectedExitCode: 42));
+            await RunForPublishWithWebServer(new BrowserRunOptions(config, ExpectedExitCode: 42));
         }
 
         [Theory]

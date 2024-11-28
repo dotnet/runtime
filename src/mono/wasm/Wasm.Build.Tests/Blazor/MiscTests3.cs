@@ -55,7 +55,7 @@ public class MiscTests3 : BlazorWasmTestBase
         if (publish)
             BlazorPublish(info, config, new PublishOptions(UseCache: false), isNativeBuild: true);
 
-        RunOptions runOptions = new(config, Test: TestDllImport);
+        BlazorRunOptions runOptions = new(config, Test: TestDllImport);
         if (publish)
             await RunForPublishWithWebServer(runOptions);
         else

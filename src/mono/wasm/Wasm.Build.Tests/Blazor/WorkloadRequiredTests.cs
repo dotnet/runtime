@@ -96,7 +96,7 @@ public class WorkloadRequiredTests : BlazorWasmTestBase
             PublishProject(info, config, new PublishOptions(GlobalizationMode: globalizationMode)) :
             BuildProject(info, config, new BuildOptions(GlobalizationMode: globalizationMode));
 
-        RunOptions runOptions = new(config);
+        BlazorRunOptions runOptions = new(config);
         RunResult result = publish ? await RunForPublishWithWebServer(runOptions) : await RunForBuildWithDotnetRun(runOptions);
 
         if (invariant)

@@ -33,7 +33,7 @@ public class SatelliteLoadingTests : WasmTemplateTestsBase
         ProjectInfo info = CopyTestAsset(config, false, BasicTestApp, "SatelliteLoadingTests");
         BuildProject(info, config);
 
-        var result = await RunForBuildWithDotnetRun(new(
+        var result = await RunForBuildWithDotnetRun(new BrowserRunOptions(
             Configuration: config, 
             TestScenario: "SatelliteAssembliesTest",
             BrowserQueryString: new Dictionary<string, string> { ["loadAllSatelliteResources"] = loadAllSatelliteResources.ToString().ToLowerInvariant() }
@@ -88,7 +88,7 @@ public class SatelliteLoadingTests : WasmTemplateTestsBase
         // Publish the app and assert
         BuildProject(info, config);
 
-        var result = await RunForPublishWithWebServer(new(Configuration: Configuration.Release, TestScenario: "SatelliteAssembliesTest"));
+        var result = await RunForPublishWithWebServer(new BrowserRunOptions(Configuration: Configuration.Release, TestScenario: "SatelliteAssembliesTest"));
         Assert.Collection(
             result.TestOutput,
             m => Assert.Equal("default: hello", m),

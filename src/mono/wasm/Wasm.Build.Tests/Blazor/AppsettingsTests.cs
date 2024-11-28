@@ -42,7 +42,7 @@ public class AppsettingsTests : BlazorWasmTestBase
         (string _, string buildOutput) = BlazorBuild(info, config);
         bool existsChecked = false;
         bool contentChecked = false;
-        await RunForBuildWithDotnetRun(new(
+        await RunForBuildWithDotnetRun(new BlazorRunOptions(
             config,
             OnConsoleMessage: (_, msg) => {
                 if (msg.Contains("appSettings Exists 'True'"))

@@ -44,7 +44,7 @@ namespace Wasm.Build.Tests
             CreateProgramForCultureTest($"{info.ProjectName}.resx.words", "TestClass");
 
             (_, string output) = PublishProject(info, config, new PublishOptions(UseCache: false, AOT: aot), isNativeBuild: nativeRelink);
-            RunResult result = await RunForPublishWithWebServer(new(
+            RunResult result = await RunForPublishWithWebServer(new BrowserRunOptions(
                 config,
                 TestScenario: "DotnetRun",
                 ExpectedExitCode: 42,
@@ -86,7 +86,7 @@ namespace Wasm.Build.Tests
             PublishProject(info, config, new PublishOptions(AOT: aot), isNativeBuild: nativeRelink);
 
             await RunForPublishWithWebServer(
-                new(Configuration: config, TestScenario: "DotnetRun", ExpectedExitCode: 42, Locale: argCulture ?? "en-US"));
+                new BrowserRunOptions(Configuration: config, TestScenario: "DotnetRun", ExpectedExitCode: 42, Locale: argCulture ?? "en-US"));
         }
 
 #pragma warning disable xUnit1026
@@ -101,7 +101,6 @@ namespace Wasm.Build.Tests
             ProjectInfo info = CopyTestAsset(config, aot, BasicTestApp, "check_sat_asm_not_aot", extraProperties: extraProperties, extraItems: extraItems);
             CreateProgramForCultureTest($"{info.ProjectName}.words", "TestClass");
 
-            
             PublishProject(info, config, new PublishOptions(AOT: aot));
 
             var bitCodeFileNames = Directory.GetFileSystemEntries(Path.Combine(_projectDir, "obj"), "*.dll.bc", SearchOption.AllDirectories)

@@ -29,7 +29,7 @@ public class ModuleConfigTests : WasmTemplateTestsBase
         ProjectInfo info = CopyTestAsset(config, false, BasicTestApp, $"ModuleConfigTests_DownloadProgressFinishes_{failAssemblyDownload}");
         PublishProject(info, config);
 
-        var result = await RunForPublishWithWebServer(new(
+        var result = await RunForPublishWithWebServer(new BrowserRunOptions(
             Configuration: config,
             TestScenario: "DownloadResourceProgressTest",
             BrowserQueryString: new Dictionary<string, string> { ["failAssemblyDownload"] = failAssemblyDownload.ToString().ToLowerInvariant() }
@@ -63,7 +63,7 @@ public class ModuleConfigTests : WasmTemplateTestsBase
         ProjectInfo info = CopyTestAsset(config, false, BasicTestApp, "ModuleConfigTests_OutErrOverrideWorks");
         PublishProject(info, config);
 
-        var result = await RunForPublishWithWebServer(new(
+        var result = await RunForPublishWithWebServer(new BrowserRunOptions(
             Configuration: Configuration.Debug,
             TestScenario: "OutErrOverrideWorks"
         ));
@@ -92,7 +92,7 @@ public class ModuleConfigTests : WasmTemplateTestsBase
             PublishProject(info, config, new PublishOptions(BootConfigFileName: "boot.json", UseCache: false, ExtraMSBuildArgs: extraArgs)) :
             BuildProject(info, config, new BuildOptions(BootConfigFileName: "boot.json", UseCache: false, ExtraMSBuildArgs: extraArgs));
 
-        var runOptions = new RunOptions(
+        var runOptions = new BrowserRunOptions(
             Configuration: config,
             TestScenario: "OverrideBootConfigName"
         );
