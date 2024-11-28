@@ -323,9 +323,16 @@ bool Compiler::optSwitchConvert(
 
     // Find the last block in the chain
     const BasicBlock* lastBlock = firstBlock;
-    for (int i = 0; i < testsCount - 1; i++)
+    for (int i = 0; i < (testsCount - 1); i++)
     {
-        lastBlock = lastBlock->Next();
+        const GenTree* rootNode = lastBlock->lastStmt()->GetRootNode();
+        assert(lastBlock->KindIs(BBJ_COND));
+        assert(rootNode->OperIs(GT_JTRUE));
+
+        // We only support reversed tests (GT_NE) in the last block of the chain.
+        // TODO: Remove this restriction.
+        assert(rootNode->gtGetOp1()->OperIs(GT_EQ));
+        lastBlock = lastBlock->GetFalseTarget();
     }
 
     BasicBlock* blockIfTrue  = nullptr;
@@ -360,9 +367,14 @@ bool Compiler::optSwitchConvert(
     fgRemoveRefPred(falseEdge);
     BasicBlock* blockToRemove = falseEdge->getDestinationBlock();
     assert(firstBlock->NextIs(blockToRemove));
-    while (!lastBlock->NextIs(blockToRemove))
+    for (int i = 0; i < (testsCount - 1); i++)
     {
-        blockToRemove = fgRemoveBlock(blockToRemove, true);
+        // We always follow the false target because reversed tests are only supported for the last block.
+        // TODO: Lift this restriction, and follow the true target if the test is reversed.
+        assert(blockToRemove->KindIs(BBJ_COND));
+        BasicBlock* const nextBlockToRemove = blockToRemove->GetFalseTarget();
+        fgRemoveBlock(blockToRemove, true);
+        blockToRemove = nextBlockToRemove;
     }
 
     const unsigned jumpCount = static_cast<unsigned>(maxValue - minValue + 1);
@@ -404,6 +416,8 @@ bool Compiler::optSwitchConvert(
             switchTrueEdge = newEdge;
         }
     }
+
+    assert(switchTrueEdge != nullptr);
 
     // Link the 'default' case
     FlowEdge* const switchDefaultEdge = fgAddRefPred(blockIfFalse, firstBlock);
