@@ -34,11 +34,11 @@ public class WorkloadRequiredTests : BlazorWasmTestBase
     {
     }
 
-    public static TheoryData<string, string, bool> SettingDifferentFromValuesInRuntimePack()
+    public static TheoryData<Configuration, string, bool> SettingDifferentFromValuesInRuntimePack()
     {
-        TheoryData<string, string, bool> data = new();
+        TheoryData<Configuration, string, bool> data = new();
 
-        string[] configs = new[] { Configuration.Debug, Configuration.Release };
+        var configs = new[] { Configuration.Debug, Configuration.Release };
         foreach (var defaultPair in PropertiesWithTriggerValues)
         {
             foreach (Configuration config in configs)
@@ -61,9 +61,9 @@ public class WorkloadRequiredTests : BlazorWasmTestBase
     public void WorkloadRequiredForPublish(Configuration config, string extraProperties, bool workloadNeeded)
         => CheckWorkloadRequired(config, extraProperties, workloadNeeded, publish: true);
 
-    public static TheoryData<string, bool, bool> InvariantGlobalizationTestData(bool publish)
+    public static TheoryData<Configuration, bool, bool> InvariantGlobalizationTestData(bool publish)
     {
-        TheoryData<string, bool, bool> data = new();
+        TheoryData<Configuration, bool, bool> data = new();
         foreach (Configuration config in new[] { Configuration.Debug, Configuration.Release })
         {
             data.Add(config, /*invariant*/ true, /*publish*/ publish);

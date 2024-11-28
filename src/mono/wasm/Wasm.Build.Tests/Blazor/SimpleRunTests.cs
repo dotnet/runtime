@@ -54,7 +54,7 @@ public class SimpleRunTests : BlazorWasmTestBase
         bool isPublish = false;
         string frameworkDir = useArtifacts ?
                 Path.Combine(
-                    projectDir, "bin", info.ProjectName, config.ToLower(), "wwwroot", "_framework") :
+                    projectDir, "bin", info.ProjectName, config.ToString().ToLower(), "wwwroot", "_framework") :
                 GetBinFrameworkDir(config, isPublish);
         BuildProject(info, config);
         await RunForBuildWithDotnetRun(new(config));

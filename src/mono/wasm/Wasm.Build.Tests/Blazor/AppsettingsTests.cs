@@ -22,7 +22,7 @@ public class AppsettingsTests : BlazorWasmTestBase
     [Fact]
     public async Task FileInVfs()
     {
-        Configuration config = "debug";
+        Configuration config = Configuration.Debug;
         ProjectInfo info = CreateWasmTemplateProject(Template.BlazorWasm, config, aot: false, "blazor");
         UpdateHomePage();
         string projectDirectory = Path.GetDirectoryName(info.ProjectFilePath)!;

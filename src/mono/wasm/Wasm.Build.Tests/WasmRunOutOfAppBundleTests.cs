@@ -22,7 +22,7 @@ public class WasmRunOutOfAppBundleTests : WasmTemplateTestsBase
         UpdateFile(Path.Combine("Common", "Program.cs"), s_mainReturns42);
         (string _, string output) = PublishProject(info, config, new PublishOptions(AOT: aot));
         
-        string binFrameworkDir = GetBinFrameworkDir(config, isPublish: true);
+        string binFrameworkDir = GetBinFrameworkDir(config, forPublish: true);
         string appBundleDir = Path.Combine(binFrameworkDir, "..");
         string outerDir = Path.GetFullPath(Path.Combine(appBundleDir, ".."));        
         string indexHtmlPath = Path.Combine(appBundleDir, "index.html");

@@ -9,4 +9,5 @@ public enum Configuration
 {
     Release,
     Debug,
+    Undefined
 }

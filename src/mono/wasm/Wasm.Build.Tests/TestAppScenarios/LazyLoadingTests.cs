@@ -32,7 +32,6 @@ public class LazyLoadingTests : WasmTemplateTestsBase
     {
         Configuration config = Configuration.Debug;
         ProjectInfo info = CopyTestAsset(config, false, BasicTestApp, "LazyLoadingTests");
-        bool isPublish = false;
         BuildProject(info, config, new BuildOptions(ExtraMSBuildArgs: $"-p:LazyLoadingTestExtension={lazyLoadingTestExtension} -p:TestLazyLoading=true"));
 
         // We are running the app and passing all possible lazy extensions to test matrix of all possibilities.
@@ -40,7 +39,7 @@ public class LazyLoadingTests : WasmTemplateTestsBase
         foreach (var clientLazyLoadingTestExtension in allLazyLoadingTestExtensions)
         {
             RunResult result = await RunForBuildWithDotnetRun(new(
-                info.Configuration,
+                config,
                 TestScenario: "LazyLoadingTest",
                 BrowserQueryString: new Dictionary<string, string> { ["lazyLoadingTestExtension"] = clientLazyLoadingTestExtension }
             ));
@@ -55,10 +54,10 @@ public class LazyLoadingTests : WasmTemplateTestsBase
     {
         Configuration config = Configuration.Debug;
         ProjectInfo info = CopyTestAsset(config, false, BasicTestApp, "LazyLoadingTests");
-        bool isPublish = true;
+
         PublishProject(info, config, new PublishOptions(ExtraMSBuildArgs: "-p:TestLazyLoading=true"));
         RunOptions options = new(
-            info.Configuration,
+            config,
             TestScenario: "LazyLoadingTest",
             BrowserQueryString: new Dictionary<string, string> { ["loadRequiredAssembly"] = "false" },
             ExpectedExitCode: 1);

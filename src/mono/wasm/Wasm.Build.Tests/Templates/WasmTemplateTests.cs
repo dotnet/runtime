@@ -142,7 +142,7 @@ namespace Wasm.Build.Tests
 
             PublishProject(info, config, new PublishOptions(UseCache: false));
 
-            var runOutput = await RunForPublishWithWebServer(new(info.Configuration, ExpectedExitCode: 42));
+            var runOutput = await RunForPublishWithWebServer(new(config, ExpectedExitCode: 42));
             Assert.Contains("Hello, Browser!", runOutput.TestOutput);
         }
 
@@ -161,8 +161,7 @@ namespace Wasm.Build.Tests
             string projectDirectory = Path.GetDirectoryName(info.ProjectFilePath) ?? "";
             // browser app does not allow appending RID
             string frameworkDir = useArtifacts ?
-                Path.Combine(
-                    projectDirectory, "bin", info.ProjectName, config.ToLower(), "wwwroot", "_framework") :
+                Path.Combine(projectDirectory, "bin", info.ProjectName, config.ToString().ToLower(), "wwwroot", "_framework") :
                 GetBinFrameworkDir(config, isPublish);
 
             string extraPropertiesForDBP = string.Empty;            
@@ -179,7 +178,7 @@ namespace Wasm.Build.Tests
             AddItemsPropertiesToProject(propsPath, extraPropertiesForDBP);
 
             BuildProject(info, config, new BuildOptions(NonDefaultFrameworkDir: frameworkDir));
-            await RunForBuildWithDotnetRun(new(info.Configuration, ExpectedExitCode: 42, ExtraArgs: "x y z"));
+            await RunForBuildWithDotnetRun(new(config, ExpectedExitCode: 42, ExtraArgs: "x y z"));
         }
 
         [Theory]
@@ -198,11 +197,11 @@ namespace Wasm.Build.Tests
             UpdateBrowserMainJs();
 
             PublishProject(info, config, new PublishOptions(UseCache: false, AssertAppBundle: false));
-            await RunForBuildWithDotnetRun(new(info.Configuration, ExpectedExitCode: 42));
+            await RunForBuildWithDotnetRun(new(config, ExpectedExitCode: 42));
 
             string projectDirectory = Path.GetDirectoryName(info.ProjectFilePath)!;
-            string objBuildDir = Path.Combine(projectDirectory, "obj", config, BuildTestBase.DefaultTargetFramework, "wasm", "for-publish");
-            bool isPublish = true;
+            string objBuildDir = Path.Combine(projectDirectory, "obj", config.ToString(), BuildTestBase.DefaultTargetFramework, "wasm", "for-publish");
+
             string frameworkDir = GetBinFrameworkDir(config, forPublish: true);
             TestWasmStripILAfterAOTOutput(objBuildDir, frameworkDir, expectILStripping, _testOutput);
         }

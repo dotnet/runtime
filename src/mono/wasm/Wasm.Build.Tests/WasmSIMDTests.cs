@@ -30,7 +30,7 @@ namespace Wasm.Build.Tests
         {
             ProjectInfo info = CopyTestAsset(config, aot, BasicTestApp, "build_with_workload_no_aot");
             UpdateFile(Path.Combine("Common", "Program.cs"), s_simdProgramText);
-            (string _, string output) = BuildProject(info, config, new BuildOptions(ExtraMSBuildArgs: "-p:WasmEnableSIMD=true"));
+            (string _, string output) = BuildProject(info, config, new BuildOptions(ExtraMSBuildArgs: $"-p:WasmEnableSIMD={simd}"));
 
             // Confirm that we didn't relink
             Assert.DoesNotContain("Compiling native assets with emcc", output);
@@ -53,7 +53,7 @@ namespace Wasm.Build.Tests
         {
             ProjectInfo info = CopyTestAsset(config, aot, BasicTestApp, "simd_publish");
             UpdateFile(Path.Combine("Common", "Program.cs"), s_simdProgramText);
-            (string _, string output) = PublishProject(info, config, new PublishOptions(ExtraMSBuildArgs: "-p:WasmEnableSIMD=true", AOT: aot));
+            (string _, string output) = PublishProject(info, config, new PublishOptions(ExtraMSBuildArgs: $"-p:WasmEnableSIMD={simd}", AOT: aot));
 
             RunResult result = await RunForPublishWithWebServer(new(
                 config,

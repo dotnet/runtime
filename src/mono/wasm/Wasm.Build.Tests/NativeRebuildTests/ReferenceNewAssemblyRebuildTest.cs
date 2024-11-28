@@ -25,7 +25,7 @@ namespace Wasm.Build.NativeRebuild.Tests
         public async void ReferenceNewAssembly(Configuration config, bool aot, bool nativeRelink, bool invariant)
         {
             ProjectInfo info = CopyTestAsset(config, aot, BasicTestApp, "rebuild_tasks");     
-            BuildPaths paths = await FirstNativeBuildAndRun(info, nativeRelink, invariant);
+            BuildPaths paths = await FirstNativeBuildAndRun(info, config, nativeRelink, invariant);
 
             var pathsDict = GetFilesTable(info.ProjectName, aot, paths, unchanged: false);
             pathsDict.UpdateTo(unchanged: true, "corebindings.o");
@@ -37,11 +37,11 @@ namespace Wasm.Build.NativeRebuild.Tests
 
             ReplaceFile(Path.Combine("Common", "Program.cs"), Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "NativeRebuildNewAssembly.cs"));
 
-            Rebuild(info, nativeRelink, invariant);
+            Rebuild(info, config, nativeRelink, invariant);
             var newStat = StatFiles(pathsDict);
 
             CompareStat(originalStat, newStat, pathsDict);
-            await RunForPublishWithWebServer(new (info.Configuration, ExpectedExitCode: 42, TestScenario: "DotnetRun"));
+            await RunForPublishWithWebServer(new (config, ExpectedExitCode: 42, TestScenario: "DotnetRun"));
         }
     }
 }

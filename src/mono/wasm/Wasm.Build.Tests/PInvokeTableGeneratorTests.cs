@@ -97,7 +97,7 @@ namespace Wasm.Build.Tests
         {
             ProjectInfo info = PrepreProjectForBlittableTests(
                 config, aot, "blittable", disableRuntimeMarshalling: false, useAutoLayout: false);
-            (_, string output) = BuildProject(info, config, isNativeBuild: true, AOT: aot);
+            (_, string output) = BuildProject(info, config, new BuildOptions(AOT: aot), isNativeBuild: true);
             Assert.DoesNotMatch("error.*Parameter.*types.*pinvoke.*.*blittable", output);
         }
 
@@ -108,7 +108,7 @@ namespace Wasm.Build.Tests
         {
             ProjectInfo info = PrepreProjectForBlittableTests(
                 config, aot, "blittable", disableRuntimeMarshalling: true, useAutoLayout: true);
-            (_, string output) = BuildProject(info, config, isNativeBuild: true, AOT: aot);
+            (_, string output) = BuildProject(info, config, new BuildOptions(AOT: aot), isNativeBuild: true);
             RunResult result = await RunForBuildWithDotnetRun(new(
                 config,
                 TestScenario: "DotnetRun",
@@ -171,7 +171,7 @@ namespace Wasm.Build.Tests
             }
             (_, string output) = BuildProject(info,
                 config,
-                new BuildOptions(expectSuccess: expectSuccess, AOT: aot),
+                new BuildOptions(ExpectSuccess: expectSuccess, AOT: aot),
                 isNativeBuild: true);
             if (expectSuccess)
             {
@@ -384,7 +384,7 @@ namespace Wasm.Build.Tests
                 { "LANG", culture },
                 { "LC_ALL", culture },
             };
-            bool isPublish = true;
+            
             (_, string output) = PublishProject(info,
                 config,
                 new PublishOptions(ExtraBuildEnvironmentVariables: extraEnvVars, AOT: aot),
@@ -416,8 +416,8 @@ namespace Wasm.Build.Tests
             GenerateSourceFiles(_projectDir!, baseArg);
             bool isPublish = aot;
             (_, string output) = isPublish ?
-                PublishProject(info, config, new BuildOptions(AOT: aot), isNativeBuild: true):
-                BuildProject(info, config, new PublishOptions(AOT: aot), isNativeBuild: true);
+                PublishProject(info, config, new PublishOptions(AOT: aot), isNativeBuild: true):
+                BuildProject(info, config, new BuildOptions(AOT: aot), isNativeBuild: true);
 
             var runOptions = new RunOptions(config, TestScenario: "DotnetRun", ExpectedExitCode: 42);
             RunResult result = isPublish ? await RunForPublishWithWebServer(runOptions) : await RunForBuildWithDotnetRun(runOptions);
@@ -470,11 +470,10 @@ namespace Wasm.Build.Tests
         private string PublishForVariadicFunctionTests(ProjectInfo info, Configuration config, bool aot, string? verbosity = null, bool isNativeBuild = true)
         {
             string verbosityArg = verbosity == null ? string.Empty : $" -v:{verbosity}";
-            var extraArgs = new string[] { verbosityArg };
             // NativeFileReference forces native build
             (_, string output) = PublishProject(info,
                 config,
-                new PublishOptions(ExtraMSBuildArgs: extraArgs, AOT: aot),
+                new PublishOptions(ExtraMSBuildArgs: verbosityArg, AOT: aot),
                 isNativeBuild: isNativeBuild);
             return output;
         }
@@ -489,10 +488,11 @@ namespace Wasm.Build.Tests
             File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "native-libs", cCodeFilename), Path.Combine(_projectDir!, cCodeFilename));
 
             bool isPublish = aot;
-            var options = isPublish ? PublishOptions(AOT: aot) : new BuildOptions(AOT: aot);
-            (string _, string _) = isPublish ? PublishProject(info, options, isNativeBuild: true) : BuildProject(info, options, isNativeBuild: true);
+            (string _, string _) = isPublish ?
+                PublishProject(info, config, new PublishOptions(AOT: aot), isNativeBuild: true) :
+                BuildProject(info, config, new BuildOptions(AOT: aot), isNativeBuild: true);
 
-            string objDir = Path.Combine(_projectDir!, "obj", config, buildOptions.TargetFramework, "wasm", isPublish ? "for-publish" : "for-build");
+            string objDir = Path.Combine(_projectDir!, "obj", config.ToString(), DefaultTargetFramework, "wasm", isPublish ? "for-publish" : "for-build");
 
             // Verify that the right signature was added for the pinvoke. We can't determine this by examining the m2n file
             // FIXME: Not possible in in-process mode for some reason, even with verbosity at "diagnostic"
@@ -537,10 +537,9 @@ namespace Wasm.Build.Tests
             ProjectInfo info = CopyTestAsset(config, aot, BasicTestApp, "com");
             ReplaceFile(Path.Combine("Common", "Program.cs"), Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "PInvoke", "ComInterop.cs"));
             bool isPublish = aot;
-            var options = isPublish ? PublishOptions(AOT: aot) : new BuildOptions(AOT: aot);
             (string libraryDir, string output) = isPublish ?
-                PublishProject(info, options, new PublishOptions(AOT: aot), isNativeBuild) :
-                BuildProject(info, options, new BuildOptions(AOT: aot), isNativeBuild: true);
+                PublishProject(info, config, new PublishOptions(AOT: aot)) :
+                BuildProject(info, config, new BuildOptions(AOT: aot));
             Assert.Contains("Generated app bundle at " + libraryDir, output);
         }
 

@@ -22,16 +22,16 @@ namespace Wasm.Build.NativeRebuild.Tests
         public async void NoOpRebuildForNativeBuilds(Configuration config, bool aot, bool nativeRelink, bool invariant)
         {
             ProjectInfo info = CopyTestAsset(config, aot, BasicTestApp, "rebuild_noop");
-            BuildPaths paths = await FirstNativeBuildAndRun(info, nativeRelink, invariant);
+            BuildPaths paths = await FirstNativeBuildAndRun(info, config, nativeRelink, invariant);
 
             var pathsDict = GetFilesTable(info.ProjectName, aot, paths, unchanged: true);
             var originalStat = StatFiles(pathsDict);
 
-            Rebuild(info, nativeRelink, invariant);
+            Rebuild(info, config, nativeRelink, invariant);
             var newStat = StatFiles(pathsDict);
 
             CompareStat(originalStat, newStat, pathsDict);
-            await RunForPublishWithWebServer(new(info.Configuration, TestScenario: "DotnetRun"));
+            await RunForPublishWithWebServer(new(config, TestScenario: "DotnetRun"));
         }
 
         [Fact]

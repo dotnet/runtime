@@ -29,7 +29,7 @@ public partial class LibraryInitializerTests : WasmTemplateTestsBase
         Configuration config = Configuration.Debug;        
         ProjectInfo info = CopyTestAsset(config, false, BasicTestApp, "LibraryInitializerTests_LoadLibraryInitializer");
         PublishProject(info, config);
-        RunResult result = await RunForPublishWithWebServer(new(info.Configuration, TestScenario: "LibraryInitializerTest"));
+        RunResult result = await RunForPublishWithWebServer(new(config, TestScenario: "LibraryInitializerTest"));
         Assert.Collection(
             result.TestOutput,
             m => Assert.Equal("LIBRARY_INITIALIZER_TEST = 1", m)
@@ -47,7 +47,7 @@ public partial class LibraryInitializerTests : WasmTemplateTestsBase
         PublishProject(info, config);
 
         RunOptions options = new(
-            info.Configuration,
+            config,
             TestScenario: "LibraryInitializerTest",
             BrowserQueryString: new Dictionary<string, string> { ["throwError"] = "true" },
             ExpectedExitCode: 1);

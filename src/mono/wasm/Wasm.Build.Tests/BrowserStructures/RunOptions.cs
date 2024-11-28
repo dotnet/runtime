@@ -11,7 +11,7 @@ using Microsoft.Playwright;
 namespace Wasm.Build.Tests;
 public record RunOptions
 (
-    string Configuration,
+    Configuration Configuration,
     RunHost Host = RunHost.DotnetRun,
     bool DetectRuntimeFailures = true,
     bool CheckCounter = true,

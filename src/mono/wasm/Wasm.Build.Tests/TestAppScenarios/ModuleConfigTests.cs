@@ -30,7 +30,7 @@ public class ModuleConfigTests : WasmTemplateTestsBase
         PublishProject(info, config);
 
         var result = await RunForPublishWithWebServer(new(
-            Configuration: info.Configuration,
+            Configuration: config,
             TestScenario: "DownloadResourceProgressTest",
             BrowserQueryString: new Dictionary<string, string> { ["failAssemblyDownload"] = failAssemblyDownload.ToString().ToLowerInvariant() }
         ));
@@ -87,7 +87,7 @@ public class ModuleConfigTests : WasmTemplateTestsBase
             PublishProject(info, config) :
             BuildProject(info, config);
 
-        string[] extraArgs = ["-p:WasmBootConfigFileName=boot.json"];
+        string extraArgs = "-p:WasmBootConfigFileName=boot.json";
         (string _, string _) = isPublish ?
             PublishProject(info, config, new PublishOptions(BootConfigFileName: "boot.json", UseCache: false, ExtraMSBuildArgs: extraArgs)) :
             BuildProject(info, config, new BuildOptions(BootConfigFileName: "boot.json", UseCache: false, ExtraMSBuildArgs: extraArgs));

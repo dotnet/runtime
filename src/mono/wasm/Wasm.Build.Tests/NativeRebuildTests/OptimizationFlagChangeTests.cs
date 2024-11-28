@@ -34,7 +34,7 @@ public class OptimizationFlagChangeTests : NativeRebuildTestsBase
     {
         ProjectInfo info = CopyTestAsset(config, aot, BasicTestApp, "rebuild_flags");        
         // force _WasmDevel=false, so we don't get -O0
-        BuildPaths paths = await FirstNativeBuildAndRun(info, nativeRelink: true, invariant: false, extraBuildArgs: "/p:_WasmDevel=false");
+        BuildPaths paths = await FirstNativeBuildAndRun(info, config, nativeRelink: true, invariant: false, extraBuildArgs: "/p:_WasmDevel=false");
 
         string mainAssembly = $"{info.ProjectName}{ProjectProviderBase.WasmAssemblyExtension}";
         var pathsDict = GetFilesTable(info.ProjectName, aot, paths, unchanged: false);
@@ -60,11 +60,11 @@ public class OptimizationFlagChangeTests : NativeRebuildTestsBase
 
         // Rebuild
 
-        string output = Rebuild(info, nativeRelink: true, invariant: false, extraBuildArgs: $" {cflags} {ldflags}", verbosity: "normal");
+        string output = Rebuild(info, config, nativeRelink: true, invariant: false, extraBuildArgs: $" {cflags} {ldflags}", verbosity: "normal");
         var newStat = StatFiles(pathsDict);
         CompareStat(originalStat, newStat, pathsDict);
 
-        RunResult runOutput = await RunForPublishWithWebServer(new (info.Configuration, TestScenario: "DotnetRun"));
+        RunResult runOutput = await RunForPublishWithWebServer(new (config, TestScenario: "DotnetRun"));
         TestUtils.AssertSubstring($"Found statically linked AOT module '{Path.GetFileNameWithoutExtension(mainAssembly)}'", runOutput.TestOutput,
                             contains: aot);
     }

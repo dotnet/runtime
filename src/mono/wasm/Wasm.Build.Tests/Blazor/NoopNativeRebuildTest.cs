@@ -30,7 +30,7 @@ namespace Wasm.Build.Tests.Blazor
             File.Move(Path.Combine(s_buildEnv.LogRootPath, projectDir, $"{info.ProjectName}-build.binlog"),
                         Path.Combine(s_buildEnv.LogRootPath, projectDir, $"{info.ProjectName}-build-first.binlog"));
 
-            string objDir = Path.Combine(_projectDir!, "obj", config, DefaultTargetFrameworkForBlazor, "wasm");
+            string objDir = Path.Combine(_projectDir!, "obj", config.ToString(), DefaultTargetFrameworkForBlazor, "wasm");
             var pathsDict = _provider.GetFilesTable(true, objDir);
             pathsDict.Remove("runtime-icall-table.h");
             var originalStat = _provider.StatFiles(pathsDict);
@@ -56,7 +56,7 @@ namespace Wasm.Build.Tests.Blazor
             File.Move(Path.Combine(s_buildEnv.LogRootPath, projectDir, $"{info.ProjectName}-build.binlog"),
                         Path.Combine(s_buildEnv.LogRootPath, projectDir, $"{info.ProjectName}-build-first.binlog"));
 
-            string objDir = Path.Combine(_projectDir!, "obj", config, DefaultTargetFrameworkForBlazor, "wasm");
+            string objDir = Path.Combine(_projectDir!, "obj", config.ToString(), DefaultTargetFrameworkForBlazor, "wasm");
             var pathsDict = _provider.GetFilesTable(true, objDir);
             pathsDict.Remove("runtime-icall-table.h");
             pathsDict.UpdateTo(unchanged: false, "dotnet.native.wasm", "dotnet.native.js", "emcc-link.rsp");

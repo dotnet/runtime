@@ -29,7 +29,7 @@ public class CleanTests : BlazorWasmTestBase
         ProjectInfo info = CopyTestAsset(config, aot: true, BasicTestApp, "clean", extraProperties: extraProperties);
         BlazorBuild(info, config, isNativeBuild: true);
 
-        string relinkDir = Path.Combine(_projectDir!, "obj", config, DefaultTargetFrameworkForBlazor, "wasm", "for-build");
+        string relinkDir = Path.Combine(_projectDir!, "obj", config.ToString(), DefaultTargetFrameworkForBlazor, "wasm", "for-build");
         Assert.True(Directory.Exists(relinkDir), $"Could not find expected relink dir: {relinkDir}");
 
         string logPath = Path.Combine(s_buildEnv.LogRootPath, info.ProjectName, $"{info.ProjectName}-clean.binlog");
@@ -65,14 +65,14 @@ public class CleanTests : BlazorWasmTestBase
             new BuildOptions(ExtraMSBuildArgs: relink ? "-p:WasmBuildNative=true" : string.Empty),
             isNativeBuild: relink);
 
-        string relinkDir = Path.Combine(_projectDir!, "obj", config, DefaultTargetFrameworkForBlazor, "wasm", "for-build");
+        string relinkDir = Path.Combine(_projectDir!, "obj", config.ToString(), DefaultTargetFrameworkForBlazor, "wasm", "for-build");
         if (relink)
             Assert.True(Directory.Exists(relinkDir), $"Could not find expected relink dir: {relinkDir}");
 
         relink = !firstBuildNative;
         BlazorBuild(info,
             config,
-            new BuildOptions(useCache: false, ExtraMSBuildArgs: relink ? "-p:WasmBuildNative=true" : string.Empty),
+            new BuildOptions(UseCache: false, ExtraMSBuildArgs: relink ? "-p:WasmBuildNative=true" : string.Empty),
             isNativeBuild: relink);
 
         if (relink)

@@ -24,7 +24,7 @@ namespace Wasm.Build.NativeRebuild.Tests
         public async void SimpleStringChangeInSource(Configuration config, bool aot, bool nativeRelink, bool invariant)
         {
             ProjectInfo info = CopyTestAsset(config, aot, BasicTestApp, "rebuild_simple");  
-            BuildPaths paths = await FirstNativeBuildAndRun(info, nativeRelink, invariant);
+            BuildPaths paths = await FirstNativeBuildAndRun(info, config, nativeRelink, invariant);
 
             string mainAssembly = $"{info.ProjectName}{ProjectProviderBase.WasmAssemblyExtension}";
             var pathsDict = GetFilesTable(info.ProjectName, aot, paths, unchanged: true);
@@ -39,11 +39,11 @@ namespace Wasm.Build.NativeRebuild.Tests
             ReplaceFile(Path.Combine("Common", "Program.cs"), Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "SimpleSourceChange.cs"));
 
             // Rebuild
-            Rebuild(info, nativeRelink, invariant);
+            Rebuild(info, config, nativeRelink, invariant);
             var newStat = StatFiles(pathsDict);
 
             CompareStat(originalStat, newStat, pathsDict);
-            await RunForPublishWithWebServer(new (info.Configuration, TestScenario: "DotnetRun", ExpectedExitCode: 55));
+            await RunForPublishWithWebServer(new (config, TestScenario: "DotnetRun", ExpectedExitCode: 55));
         }
     }
 }

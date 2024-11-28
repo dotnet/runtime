@@ -26,7 +26,7 @@ public class DebugLevelTests : WasmTemplateTestsBase
     [Theory]
     [InlineData(Configuration.Debug)]
     [InlineData(Configuration.Release)]
-    public async Task BuildWithDefaultLevel(string configuration)
+    public async Task BuildWithDefaultLevel(Configuration configuration)
     {
         ProjectInfo info = CopyTestAsset(
             configuration,
@@ -34,8 +34,8 @@ public class DebugLevelTests : WasmTemplateTestsBase
             asset: BasicTestApp,
             idPrefix: "DebugLevelTests_BuildWithDefaultLevel"
         );
-        BuildProject(info, config);
-        RunOptions options = new(info.Configuration, TestScenario: "DebugLevelTest", ExpectedExitCode: 42);
+        BuildProject(info, configuration);
+        RunOptions options = new(configuration, TestScenario: "DebugLevelTest", ExpectedExitCode: 42);
         RunResult result = await RunForBuildWithDotnetRun(options);
         AssertDebugLevel(result.TestOutput, -1);
     }
@@ -45,7 +45,7 @@ public class DebugLevelTests : WasmTemplateTestsBase
     [InlineData(Configuration.Release, 1)]
     [InlineData(Configuration.Debug, 0)]
     [InlineData(Configuration.Release, 0)]
-    public async Task BuildWithExplicitValue(string configuration, int debugLevel)
+    public async Task BuildWithExplicitValue(Configuration configuration, int debugLevel)
     {
         ProjectInfo info = CopyTestAsset(
             configuration,
@@ -53,8 +53,8 @@ public class DebugLevelTests : WasmTemplateTestsBase
             asset: BasicTestApp,
             idPrefix: "DebugLevelTests_BuildWithExplicitValue"
         );
-        BuildProject(info, config, new BuildOptions(ExtraMSBuildArgs: $"-p:WasmDebugLevel={debugLevel}"));
-        RunOptions options = new(info.Configuration, TestScenario: "DebugLevelTest", ExpectedExitCode: 42);
+        BuildProject(info, configuration, new BuildOptions(ExtraMSBuildArgs: $"-p:WasmDebugLevel={debugLevel}"));
+        RunOptions options = new(configuration, TestScenario: "DebugLevelTest", ExpectedExitCode: 42);
         RunResult result = await RunForBuildWithDotnetRun(options);
         AssertDebugLevel(result.TestOutput, debugLevel);
     }
@@ -62,7 +62,7 @@ public class DebugLevelTests : WasmTemplateTestsBase
     [Theory]
     [InlineData(Configuration.Debug)]
     [InlineData(Configuration.Release)]
-    public async Task PublishWithDefaultLevel(string configuration)
+    public async Task PublishWithDefaultLevel(Configuration configuration)
     {
         ProjectInfo info = CopyTestAsset(
             configuration,
@@ -70,8 +70,8 @@ public class DebugLevelTests : WasmTemplateTestsBase
             asset: BasicTestApp,
             idPrefix: "DebugLevelTests_PublishWithDefaultLevel"
         );
-        PublishProject(info, config);
-        RunOptions options = new(info.Configuration, TestScenario: "DebugLevelTest", ExpectedExitCode: 42);
+        PublishProject(info, configuration);
+        RunOptions options = new(configuration, TestScenario: "DebugLevelTest", ExpectedExitCode: 42);
         RunResult result = await RunForPublishWithWebServer(options);
         AssertDebugLevel(result.TestOutput, 0);
     }
@@ -81,7 +81,7 @@ public class DebugLevelTests : WasmTemplateTestsBase
     [InlineData(Configuration.Release, 1)]
     [InlineData(Configuration.Debug, -1)]
     [InlineData(Configuration.Release, -1)]
-    public async Task PublishWithExplicitValue(string configuration, int debugLevel)
+    public async Task PublishWithExplicitValue(Configuration configuration, int debugLevel)
     {
         ProjectInfo info = CopyTestAsset(
             configuration,
@@ -89,8 +89,8 @@ public class DebugLevelTests : WasmTemplateTestsBase
             asset: BasicTestApp,
             idPrefix: "DebugLevelTests_PublishWithExplicitValue"
         );
-        PublishProject(info, isPublish: true, extraArgs: $"-p:WasmDebugLevel={debugLevel}");
-        RunOptions options = new(info.Configuration, TestScenario: "DebugLevelTest", ExpectedExitCode: 42);
+        PublishProject(info, configuration, new PublishOptions(ExtraMSBuildArgs: $"-p:WasmDebugLevel={debugLevel}"));
+        RunOptions options = new(configuration, TestScenario: "DebugLevelTest", ExpectedExitCode: 42);
         RunResult result = await RunForPublishWithWebServer(options);
         AssertDebugLevel(result.TestOutput, debugLevel);
     }
@@ -99,7 +99,7 @@ public class DebugLevelTests : WasmTemplateTestsBase
     [Theory]
     [InlineData(Configuration.Debug)]
     [InlineData(Configuration.Release)]
-    public async Task PublishWithDefaultLevelAndPdbs(string configuration)
+    public async Task PublishWithDefaultLevelAndPdbs(Configuration configuration)
     {
         ProjectInfo info = CopyTestAsset(
             configuration,
@@ -107,8 +107,8 @@ public class DebugLevelTests : WasmTemplateTestsBase
             asset: BasicTestApp,
             idPrefix: "DebugLevelTests_PublishWithDefaultLevelAndPdbs"
         );
-        PublishProject(info, isPublish: true, extraArgs: $"-p:CopyOutputSymbolsToPublishDirectory=true");
-        RunOptions options = new(info.Configuration, TestScenario: "DebugLevelTest", ExpectedExitCode: 42);
+        PublishProject(info, configuration, new PublishOptions(ExtraMSBuildArgs: $"-p:CopyOutputSymbolsToPublishDirectory=true"));
+        RunOptions options = new(configuration, TestScenario: "DebugLevelTest", ExpectedExitCode: 42);
         RunResult result = await RunForPublishWithWebServer(options);
         AssertDebugLevel(result.TestOutput, -1);
     }

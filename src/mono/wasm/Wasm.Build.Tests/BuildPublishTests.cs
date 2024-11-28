@@ -26,7 +26,7 @@ namespace Wasm.Build.Tests
         public void Wasm_CannotAOT_InDebug(Configuration config, bool aot)
         {
             ProjectInfo info = CopyTestAsset(config, aot, BasicTestApp, "no_aot_in_debug");
-            (string _, string buildOutput) = PublishProject(info, config, PublishOptions(AOT: aot, ExpectSuccess: false));
+            (string _, string buildOutput) = PublishProject(info, config, new PublishOptions(AOT: aot, ExpectSuccess: false));
             Assert.Contains("AOT is not supported in debug configuration", buildOutput);
         }
 
@@ -44,7 +44,7 @@ namespace Wasm.Build.Tests
             RunOptions runOptions = new(config, TestScenario: "DotnetRun");
             await RunForBuildWithDotnetRun(runOptions);
 
-            PublishProject(info, config, PublishOptions(UseCache: false));
+            PublishProject(info, config, new PublishOptions(UseCache: false));
             await RunForPublishWithWebServer(runOptions);
         }
 
@@ -55,11 +55,11 @@ namespace Wasm.Build.Tests
             ProjectInfo info = CopyTestAsset(config, aot, BasicTestApp, "build_publish");
             
             bool isPublish = false;
-            (_, string output) = BuildProject(info, config, BuildOptions(Label: "first_build", AOT: aot));
+            (_, string output) = BuildProject(info, config, new BuildOptions(Label: "first_build", AOT: aot));
             
-            BuildPaths paths = GetBuildPaths(info, forPublish: isPublish);
+            BuildPaths paths = GetBuildPaths(config, forPublish: isPublish);
             IDictionary<string, (string fullPath, bool unchanged)> pathsDict =
-                GetFilesTable(info, paths, unchanged: false);
+                GetFilesTable(info.ProjectName, aot, paths, unchanged: false);
             
             string mainDll = $"{info.ProjectName}.dll";
             var firstBuildStat = StatFiles(pathsDict);
@@ -80,11 +80,11 @@ namespace Wasm.Build.Tests
 
             // relink by default for Release+publish
             isPublish = true;
-            (_, output) = PublishProject(info, config, PublishOptions(Label: "first_publish", UseCache: false, AOT: aot));
+            (_, output) = PublishProject(info, config, new PublishOptions(Label: "first_publish", UseCache: false, AOT: aot));
             
             // publish has different paths ("for-publish", not "for-build")
-            paths = GetBuildPaths(info, forPublish: isPublish);
-            pathsDict = GetFilesTable(info, paths, unchanged: false);    
+            paths = GetBuildPaths(config, forPublish: isPublish);
+            pathsDict = GetFilesTable(info.ProjectName, aot, paths, unchanged: false);  
             IDictionary<string, FileStat> publishStat = StatFiles(pathsDict);
             Assert.True(publishStat["pinvoke.o"].Exists);
             Assert.True(publishStat[$"{mainDll}.bc"].Exists);
@@ -98,7 +98,7 @@ namespace Wasm.Build.Tests
 
             // second build
             isPublish = false;
-            (_, output) = BuildProject(info, config, BuildOptions(Label: "second_build", UseCache: false, AOT: aot));
+            (_, output) = BuildProject(info, config, new BuildOptions(Label: "second_build", UseCache: false, AOT: aot));
             var secondBuildStat = StatFiles(pathsDict);
             
             // no relinking, or AOT

@@ -46,37 +46,26 @@ namespace Wasm.Build.NativeRebuild.Tests
                         .UnwrapItemsAsArrays().ToList();
         }
 
-        internal async Task<BuildPaths> FirstNativeBuildAndRun(ProjectInfo info, bool nativeRelink, bool invariant, string extraBuildArgs="")
+        internal async Task<BuildPaths> FirstNativeBuildAndRun(ProjectInfo info, Configuration config, bool nativeRelink, bool invariant, string extraBuildArgs="")
         {
             bool isNativeBuild = nativeRelink || invariant;
-            var extraArgs = new string[] {
-                "-p:_WasmDevel=true",
-                $"-p:WasmBuildNative={nativeRelink}",
-                $"-p:InvariantGlobalization={invariant}",
-                extraBuildArgs
-            };
+            var extraArgs = $"-p:_WasmDevel=true -p:WasmBuildNative={nativeRelink} -p:InvariantGlobalization={invariant} {extraBuildArgs}";
             PublishProject(info,
                 config,
                 new PublishOptions(GlobalizationMode: invariant ? GlobalizationMode.Invariant : GlobalizationMode.Sharded, ExtraMSBuildArgs: extraArgs),
                 isNativeBuild: nativeRelink);
-            await RunForPublishWithWebServer(new (info.Configuration, TestScenario: "DotnetRun"));
-            return GetBuildPaths(info, isPublish);
+            await RunForPublishWithWebServer(new (config, TestScenario: "DotnetRun"));
+            return GetBuildPaths(config, forPublish: true);
         }
 
-        protected string Rebuild(ProjectInfo info, bool nativeRelink, bool invariant, string extraBuildArgs="", string verbosity="normal")
+        protected string Rebuild(ProjectInfo info, Configuration config, bool nativeRelink, bool invariant, string extraBuildArgs="", string verbosity="normal")
         {
             if (!_buildContext.TryGetBuildFor(info, out BuildResult? result))
                 throw new XunitException($"Test bug: could not get the build result in the cache");
 
             File.Move(result!.LogFile, Path.ChangeExtension(result.LogFile!, ".first.binlog"));
             
-            var extraArgs = new string[] {
-                "-p:_WasmDevel=true",
-                $"-p:WasmBuildNative={nativeRelink}",
-                $"-p:InvariantGlobalization={invariant}",
-                $"-v:{verbosity}",
-                extraBuildArgs
-            };
+            var extraArgs = $"-p:_WasmDevel=true -p:WasmBuildNative={nativeRelink} -p:InvariantGlobalization={invariant} -v:{verbosity} {extraBuildArgs}";
 
             // artificial delay to have new enough timestamps
             Thread.Sleep(5000);
@@ -85,7 +74,7 @@ namespace Wasm.Build.NativeRebuild.Tests
             var globalizationMode = invariant ? GlobalizationMode.Invariant : GlobalizationMode.Sharded;
             (string _, string output) = PublishProject(info,
                 config,
-                new PublishOptions(globalizationMode, ExtraMSBuildArgs: extraArgs, UseCache: false),
+                new PublishOptions(GlobalizationMode: globalizationMode, ExtraMSBuildArgs: extraArgs, UseCache: false),
                 isNativeBuild: nativeRelink);
             return output;
         }

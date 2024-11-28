@@ -44,7 +44,7 @@ public class WasmTemplateTestsBase : BuildTestBase
                 $"{idPrefix}_{config}_{aot}_{GetRandomId()}_{s_unicodeChars}" :
                 $"{idPrefix}_{config}_{aot}_{GetRandomId()}";
 
-    private string InitProjectLocation(string idPrefix, Configuration config, bool aot, bool appendUnicodeToPath, bool avoidAotLongPathIssue = false)
+    private (string projectName, string logPath, string nugetDir) InitProjectLocation(string idPrefix, Configuration config, bool aot, bool appendUnicodeToPath, bool avoidAotLongPathIssue = false)
     {
         string projectName = GetProjectName(idPrefix, config, aot, appendUnicodeToPath, avoidAotLongPathIssue);
         (string logPath, string nugetDir) = InitPaths(projectName);
@@ -116,19 +116,31 @@ public class WasmTemplateTestsBase : BuildTestBase
     public virtual (string projectDir, string buildOutput) PublishProject(
         ProjectInfo info,
         Configuration configuration,
-        PublishOptions buildOptions = _defaultPublishOptions,
-        bool expectNativeBuild = false) =>
-        BuildProject(info, configuration, buildOptions, expectNativeBuild);
+        bool isNativeBuild = false) =>
+        BuildProject(info, configuration, _defaultPublishOptions, isNativeBuild);
+
+    public virtual (string projectDir, string buildOutput) PublishProject(
+        ProjectInfo info,
+        Configuration configuration,
+        PublishOptions publishOptions,
+        bool isNativeBuild = false) =>
+        BuildProject(info, configuration, publishOptions, isNativeBuild);
 
     public virtual (string projectDir, string buildOutput) BuildProject(
         ProjectInfo info,
         Configuration configuration,
-        MSBuildOptions buildOptions = _defaultBuildOptions,
-        bool expectNativeBuild = false)
+        bool isNativeBuild = false) =>
+        BuildProject(info, configuration, _defaultBuildOptions, isNativeBuild);
+
+    public virtual (string projectDir, string buildOutput) BuildProject(
+        ProjectInfo info,
+        Configuration configuration,
+        MSBuildOptions buildOptions,
+        bool isNativeBuild = false)
     {
         if (buildOptions.AOT)
         {
-            buildOptions.ExtraMSBuildArgs += "-p:RunAOTCompilation=true -p:EmccVerbose=true";
+            buildOptions = buildOptions with { ExtraMSBuildArgs = $"{buildOptions.ExtraMSBuildArgs} -p:RunAOTCompilation=true -p:EmccVerbose=true" };
         }
 
         if (buildOptions.ExtraBuildEnvironmentVariables is null)
@@ -148,14 +160,9 @@ public class WasmTemplateTestsBase : BuildTestBase
             return (_projectDir!, res.Output);
         }
 
-        string frameworkDir = string.IsNullOrEmpty(buildOptions.NonDefaultFrameworkDir) ?
-            GetBinFrameworkDir(configuration, buildOptions.IsPublish) :
-            buildOptions.NonDefaultFrameworkDir;
-        buildOptions = buildOptions with { BinFrameworkDir = frameworkDir };
-
         if (buildOptions.AssertAppBundle)
         {
-            _provider.AssertWasmSdkBundle(configuration, buildOptions, res.Output, expectNativeBuild);
+            _provider.AssertWasmSdkBundle(configuration, buildOptions, IsUsingWorkloads, isNativeBuild, res.Output);
         }
         return (_projectDir!, res.Output);
     }
@@ -340,8 +347,8 @@ public class WasmTemplateTestsBase : BuildTestBase
     public string GetBinFrameworkDir(Configuration config, bool forPublish, string framework = DefaultTargetFramework, string? projectDir = null) =>
         _provider.GetBinFrameworkDir(config, forPublish, framework, projectDir);
 
-    public BuildPaths GetBuildPaths(ProjectInfo info, bool forPublish) =>
-        _provider.GetBuildPaths(info, forPublish);
+    public BuildPaths GetBuildPaths(Configuration config, bool forPublish) =>
+        _provider.GetBuildPaths(config, forPublish);
 
     public IDictionary<string, (string fullPath, bool unchanged)> GetFilesTable(string projectName, bool isAOT, BuildPaths paths, bool unchanged) =>
         _provider.GetFilesTable(projectName, isAOT, paths, unchanged);

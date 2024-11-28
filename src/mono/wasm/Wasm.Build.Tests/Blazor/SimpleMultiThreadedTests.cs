@@ -30,7 +30,7 @@ public class SimpleMultiThreadedTests : BlazorWasmTestBase
         string extraProperties = "<WasmEnableThreads>true</WasmEnableThreads>";
         ProjectInfo info = CopyTestAsset(config, aot: false, BasicTestApp, "blazorwasm", extraProperties: extraProperties);
         bool isPublish = false;
-        string frameworkDir = GetBlazorBinFrameworkDir(info.Configuration, isPublish);
+        string frameworkDir = GetBlazorBinFrameworkDir(config, isPublish);
         BuildProject(info, config, new BuildOptions(RuntimeType: RuntimeVariant.MultiThreaded));
         // we wan to use "xharness wasm webserver" but from non-publish location
         string extraArgs = " --web-server-use-cors --web-server-use-cop --web-server-use-https --timeout=15:00:00";

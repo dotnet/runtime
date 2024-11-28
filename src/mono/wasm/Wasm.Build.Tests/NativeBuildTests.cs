@@ -34,7 +34,6 @@ namespace Wasm.Build.Tests
             UpdateBrowserProgramFile();
             UpdateBrowserMainJs();
 
-            bool isPublish = true;
             (string _, string buildOutput) = PublishProject(info, config, isNativeBuild: true);
             await RunForPublishWithWebServer(new(config, ExpectedExitCode: 42));
         }
@@ -83,7 +82,6 @@ namespace Wasm.Build.Tests
                 "bc_to_o",
                 insertAtEnd: printFileTypeTarget);
 
-            bool isPublish = true;
             (string _, string output) = PublishProject(info, config, new PublishOptions(AOT: aot));
             if (!output.Contains("** wasm-dis exit code: 0"))
                 throw new XunitException($"Expected to successfully run wasm-dis on System.Private.CoreLib.dll.o ."

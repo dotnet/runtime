@@ -30,7 +30,7 @@ namespace Wasm.Build.Tests
               int expectedExitCode = 42,
               string expectedOutput = "Hello, World!",
               string runtimeConfigContents = "",
-              params string[] extraArgs)
+              string extraArgs = "")
         {
             ProjectInfo info = CopyTestAsset(config, aot, BasicTestApp, "DotnetRun");
             UpdateFile(Path.Combine("Common", "Program.cs"), programText);

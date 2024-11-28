@@ -51,7 +51,6 @@ namespace Wasm.Build.Tests
             ProjectInfo info = CopyTestAsset(config, aot, BasicTestApp, prefix, extraProperties: extraProperties);
             ReplaceFile(Path.Combine("Common", "Program.cs"), Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "InvariantGlobalization.cs"));
 
-            bool isPublish = true;
             // invariantGlobalization triggers native build
             isNativeBuild = isNativeBuild || invariantGlobalization == true;
             var globalizationMode = invariantGlobalization == true ? GlobalizationMode.Invariant : GlobalizationMode.Sharded;

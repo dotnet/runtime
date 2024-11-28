@@ -34,7 +34,7 @@ public class SatelliteLoadingTests : WasmTemplateTestsBase
         BuildProject(info, config);
 
         var result = await RunForBuildWithDotnetRun(new(
-            Configuration: info.Configuration, 
+            Configuration: config, 
             TestScenario: "SatelliteAssembliesTest",
             BrowserQueryString: new Dictionary<string, string> { ["loadAllSatelliteResources"] = loadAllSatelliteResources.ToString().ToLowerInvariant() }
         ));
@@ -62,7 +62,6 @@ public class SatelliteLoadingTests : WasmTemplateTestsBase
     {
         Configuration config = Configuration.Release;
         ProjectInfo info = CopyTestAsset(config, false, BasicTestApp, "SatelliteLoadingTestsFromReference");
-        bool isPublish = true;
 
         // Replace ProjectReference with Reference
         var appCsprojPath = Path.Combine(_projectDir!, "WasmBasicTestApp.csproj");

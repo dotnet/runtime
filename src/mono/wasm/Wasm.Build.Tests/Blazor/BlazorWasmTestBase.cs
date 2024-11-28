@@ -20,14 +20,16 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestsBase
 {
     protected readonly WasmSdkBasedProjectProvider _provider;
     private readonly string _blazorExtraBuildArgs = "-p:BlazorEnableCompression=false /warnaserror";
-    protected readonly PublishOptions _defaultBlazorPublishOptions = _defaultPublishOptions with { ExtraMSBuildArgs = _blazorExtraBuildArgs };
-    private readonly BuildOptions _defaultBlazorBuildOptions = _defaultBlazorBuildOptions with { ExtraMSBuildArgs = _blazorExtraBuildArgs };
+    protected readonly PublishOptions _defaultBlazorPublishOptions;
+    private readonly BuildOptions _defaultBlazorBuildOptions;
     protected override TestAsset BasicTestApp => new() { Name = "BlazorBasicTestApp", RunnableProjectSubPath = "App" };
     
     protected BlazorWasmTestBase(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
                 : base(output, buildContext, new WasmSdkBasedProjectProvider(output, DefaultTargetFrameworkForBlazor))
     {
         _provider = GetProvider<WasmSdkBasedProjectProvider>();
+        _defaultBlazorPublishOptions = _defaultPublishOptions with { ExtraMSBuildArgs = _blazorExtraBuildArgs };
+        _defaultBlazorBuildOptions = _defaultBuildOptions with { ExtraMSBuildArgs = _blazorExtraBuildArgs };
     }
 
     private Dictionary<string, string> blazorHomePageReplacements = new Dictionary<string, string>
@@ -96,12 +98,15 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestsBase
         return Path.Combine(_projectDir!, $"{id}.csproj");
     }
 
+    protected (string projectDir, string buildOutput) BlazorBuild(ProjectInfo info, Configuration config, bool isNativeBuild = false) =>
+        BlazorBuild(info, config, _defaultBlazorBuildOptions, isNativeBuild);
+
     protected (string projectDir, string buildOutput) BlazorBuild(
-        ProjectInfo info, Configuration config, MSBuildOptions buildOptions = _defaultBlazorBuildOptions, bool isNativeBuild = false)
+        ProjectInfo info, Configuration config, MSBuildOptions buildOptions, bool isNativeBuild = false)
     {
         try
         {
-            if (publishOptions != _defaultBlazorPublishOptions)
+            if (buildOptions != _defaultBlazorPublishOptions)
                 buildOptions = buildOptions with { ExtraMSBuildArgs = $"{buildOptions.ExtraMSBuildArgs} {_blazorExtraBuildArgs}" };
             (string projectDir, string buildOutput) = BuildProject(
                 info,
@@ -110,7 +115,7 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestsBase
                 isNativeBuild);
             if (buildOptions.ExpectSuccess && buildOptions.AssertAppBundle)
             {
-                AssertBundle(configuration, buildOutput, buildOptions, expectNativeBuild);
+                AssertBundle(config, buildOutput, buildOptions, isNativeBuild);
             }
             return (projectDir, buildOutput);
         }
@@ -121,15 +126,17 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestsBase
             throw;
         }
     }
-        
+    
+    protected (string projectDir, string buildOutput) BlazorPublish(ProjectInfo info, Configuration config, bool isNativeBuild = false) =>
+        BlazorPublish(info, config, _defaultBlazorPublishOptions, isNativeBuild);
 
     protected (string projectDir, string buildOutput) BlazorPublish(
-        ProjectInfo info, Configuration config, PublishOptions publishOptions = _defaultBlazorPublishOptions, bool isNativeBuild = false)
+        ProjectInfo info, Configuration config, PublishOptions publishOptions, bool isNativeBuild = false)
     {
         try
         {
             if (publishOptions != _defaultBlazorPublishOptions)
-                buildOptions = buildOptions with { ExtraMSBuildArgs = $"{buildOptions.ExtraMSBuildArgs} {_blazorExtraBuildArgs}" };
+                publishOptions = publishOptions with { ExtraMSBuildArgs = $"{publishOptions.ExtraMSBuildArgs} {_blazorExtraBuildArgs}" };
             (string projectDir, string buildOutput) = PublishProject(
                 info,
                 config,
@@ -137,7 +144,7 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestsBase
                 isNativeBuild);
             if (publishOptions.ExpectSuccess && publishOptions.AssertAppBundle)
             {
-                AssertBundle(configuration, buildOutput, publishOptions, expectNativeBuild);
+                AssertBundle(config, buildOutput, publishOptions, isNativeBuild);
             }
             return (projectDir, buildOutput);
         }
@@ -157,12 +164,12 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestsBase
             ProjectProviderBase.AssertRuntimePackPath(buildOutput, buildOptions.TargetFramework ?? DefaultTargetFramework, buildOptions.RuntimeType);
         }
 
-        _provider.AssertBundle(config, buildOptions, expectNativeBuild);
+        _provider.AssertBundle(config, buildOptions, IsUsingWorkloads, expectNativeBuild);
 
         if (!buildOptions.IsPublish)
             return;
 
-        var expectedFileType = GetExpectedFileType(config, buildOptions.AOT, buildOptions.IsPublish, expectNativeBuild);
+        var expectedFileType = _provider.GetExpectedFileType(config, buildOptions.AOT, buildOptions.IsPublish, IsUsingWorkloads, expectNativeBuild);
         // Publish specific checks
         if (expectedFileType == NativeFilesType.AOT)
         {
@@ -174,7 +181,7 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestsBase
             Assert.DoesNotContain("Microsoft.JSInterop.WebAssembly.dll -> Microsoft.JSInterop.WebAssembly.dll.bc", buildOutput);
         }
 
-        string objBuildDir = Path.Combine(_projectDir!, "obj", buildOptions.Configuration, buildOptions.TargetFramework!, "wasm", "for-build");
+        string objBuildDir = Path.Combine(_projectDir!, "obj", config.ToString(), buildOptions.TargetFramework!, "wasm", "for-build");
         // Check that we linked only for publish
         if (buildOptions is PublishOptions publishOptions && publishOptions.ExpectRelinkDirWhenPublishing)
             Assert.True(Directory.Exists(objBuildDir), $"Could not find expected {objBuildDir}, which gets created when relinking during Build. This is likely a test authoring error");

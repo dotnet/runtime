@@ -28,7 +28,7 @@ public class MaxParallelDownloadsTests : WasmTemplateTestsBase
         ProjectInfo info = CopyTestAsset(config, false, BasicTestApp, "MaxParallelDownloadsTests");
         BuildProject(info, config);
         RunResult result = await RunForBuildWithDotnetRun(new(
-            info.Configuration,
+            config,
             TestScenario: "MaxParallelDownloads",
             BrowserQueryString: new Dictionary<string, string> { ["maxParallelDownloads"] = maxParallelDownloads }
         ));

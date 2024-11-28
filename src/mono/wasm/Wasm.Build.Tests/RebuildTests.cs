@@ -27,7 +27,6 @@ namespace Wasm.Build.Tests
         {
             ProjectInfo info = CopyTestAsset(config, aot, BasicTestApp, "rebuild");
             UpdateFile(Path.Combine("Common", "Program.cs"), s_mainReturns42);
-            bool isPublish = true;
             PublishProject(info, config);
 
             RunOptions runOptions = new(config, TestScenario: "DotnetRun", ExpectedExitCode: 42);

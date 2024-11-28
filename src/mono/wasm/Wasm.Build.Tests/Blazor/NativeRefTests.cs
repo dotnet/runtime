@@ -28,11 +28,11 @@ public class NativeTests : BlazorWasmTestBase
                                         "<EmccCompileOptimizationFlag>-O1</EmccCompileOptimizationFlag>" +
                                         "<RunAOTCompilation>true</RunAOTCompilation>")
                                     : "<RunAOTCompilation>true</RunAOTCompilation>";
-        ProjectInfo info = CreateProjectWithNativeReference(extraProperties: extraProperties);
+        ProjectInfo info = CreateProjectWithNativeReference(config, aot: true, extraProperties: extraProperties);
         BlazorBuild(info, config, isNativeBuild: true);
         BlazorPublish(info, config, new PublishOptions(UseCache: false), isNativeBuild: true);
         // will relink
-        BlazorBuild(info, config, new BuilldOptions(UseCache: false), isNativeBuild: true);
+        BlazorBuild(info, config, new BuildOptions(UseCache: false), isNativeBuild: true);
     }
 
     [Theory]
@@ -59,7 +59,7 @@ public class NativeTests : BlazorWasmTestBase
         string extraProperties = "<PublishTrimmed>false</PublishTrimmed><RunAOTCompilation>true</RunAOTCompilation>";
         ProjectInfo info = CopyTestAsset(config, aot: true, BasicTestApp, "blazorwasm_aot", extraProperties: extraProperties);
 
-        (string _, string output) = PublishProject(info, new BuildOptions(ExpectSuccess: false));
+        (string _, string output) = BlazorPublish(info, config, new PublishOptions(ExpectSuccess: false));
         Assert.Contains("AOT is not supported without IL trimming", output);
     }
 }

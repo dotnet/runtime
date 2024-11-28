@@ -49,10 +49,10 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
         EnsureProjectDirIsSet();
         var dotnetFiles = FindAndAssertDotnetFiles(assertOptions);
 
-        TestUtils.AssertFilesExist(assertOptions.BuildOptions.BinFrameworkDir,
+        TestUtils.AssertFilesExist(assertOptions.BinFrameworkDir,
                                    new[] { "System.Private.CoreLib.dll" },
                                    expectToExist: IsFingerprintingEnabled ? false : !BuildTestBase.UseWebcil);
-        TestUtils.AssertFilesExist(assertOptions.BuildOptions.BinFrameworkDir,
+        TestUtils.AssertFilesExist(assertOptions.BinFrameworkDir,
                                    new[] { "System.Private.CoreLib.wasm" },
                                    expectToExist: IsFingerprintingEnabled ? false : BuildTestBase.UseWebcil);
 
@@ -81,7 +81,7 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
     public IReadOnlyDictionary<string, DotNetFileName> FindAndAssertDotnetFiles(AssertBundleOptions assertOptions)
     {
         EnsureProjectDirIsSet();
-        return FindAndAssertDotnetFiles(binFrameworkDir: assertOptions.BuildOptions.BinFrameworkDir,
+        return FindAndAssertDotnetFiles(binFrameworkDir: assertOptions.BinFrameworkDir,
                                         expectFingerprintOnDotnetJs: IsFingerprintingOnDotnetJsEnabled,
                                         superSet: GetAllKnownDotnetFilesToFingerprintMap(assertOptions),
                                         expected: GetDotNetFilesExpectedSet(assertOptions));
@@ -364,13 +364,13 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
 
     public static void AssertDotNetJsSymbols(AssertBundleOptions assertOptions)
     {
-        TestUtils.AssertFilesExist(assertOptions.BuildOptions.BinFrameworkDir, new[] { "dotnet.native.js.symbols" }, expectToExist: assertOptions.ExpectSymbolsFile);
+        TestUtils.AssertFilesExist(assertOptions.BinFrameworkDir, new[] { "dotnet.native.js.symbols" }, expectToExist: assertOptions.ExpectSymbolsFile);
 
         if (assertOptions.BuildOptions.ExpectedFileType == NativeFilesType.FromRuntimePack)
         {
             TestUtils.AssertFile(
                     Path.Combine(BuildTestBase.s_buildEnv.GetRuntimeNativeDir(assertOptions.BuildOptions.TargetFramework, assertOptions.BuildOptions.RuntimeType), "dotnet.native.js.symbols"),
-                    Path.Combine(assertOptions.BuildOptions.BinFrameworkDir, "dotnet.native.js.symbols"),
+                    Path.Combine(assertOptions.BinFrameworkDir, "dotnet.native.js.symbols"),
                     same: true);
         }
     }
@@ -406,9 +406,9 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
                 throw new NotImplementedException($"Unknown {nameof(assertOptions.BuildOptions.GlobalizationMode)} = {assertOptions.BuildOptions.GlobalizationMode}");
         }
 
-        IEnumerable<string> actual = Directory.EnumerateFiles(assertOptions.BuildOptions.BinFrameworkDir, "icudt*dat");
+        IEnumerable<string> actual = Directory.EnumerateFiles(assertOptions.BinFrameworkDir, "icudt*dat");
         if (assertOptions.BuildOptions.GlobalizationMode == GlobalizationMode.Hybrid)
-            actual = actual.Union(Directory.EnumerateFiles(assertOptions.BuildOptions.BinFrameworkDir, "segmentation-rules*json"));
+            actual = actual.Union(Directory.EnumerateFiles(assertOptions.BinFrameworkDir, "segmentation-rules*json"));
 
         if (IsFingerprintingEnabled)
         {
@@ -445,7 +445,7 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
     public BootJsonData AssertBootJson(AssertBundleOptions options)
     {
         EnsureProjectDirIsSet();
-        string bootJsonPath = Path.Combine(options.BuildOptions.BinFrameworkDir, options.BuildOptions.BootConfigFileName);
+        string bootJsonPath = Path.Combine(options.BinFrameworkDir, options.BuildOptions.BootConfigFileName);
         BootJsonData bootJson = GetBootJson(bootJsonPath);
         string spcExpectedFilename = $"System.Private.CoreLib{WasmAssemblyExtension}";
 

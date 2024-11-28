@@ -112,9 +112,9 @@ namespace Wasm.Build.Tests
             _providerOfBaseType = providerBase;
         }
 
-        public static IEnumerable<IEnumerable<object?>> ConfigWithAOTData(bool aot, Configuration config = Configuration.Release)
+        public static IEnumerable<IEnumerable<object?>> ConfigWithAOTData(bool aot, Configuration config = Configuration.Undefined)
         {
-            if (config == null)
+            if (config == Configuration.Undefined)
             {
                 return new IEnumerable<object?>[]
                     {
@@ -138,7 +138,7 @@ namespace Wasm.Build.Tests
         public (CommandResult res, string logPath) BuildProjectWithoutAssert(
             Configuration configuration,
             string projectName,
-            BuildOptions buildOptions)
+            MSBuildOptions buildOptions)
         {
             string buildType = buildOptions.IsPublish ? "publish" : "build";
             string logFileSuffix = string.IsNullOrEmpty(buildOptions.Label) ? string.Empty : buildOptions.Label.Replace(' ', '_') + "-";
@@ -156,7 +156,7 @@ namespace Wasm.Build.Tests
             };
             commandLineArgs.AddRange(buildOptions.ExtraMSBuildArgs);
 
-            if (buildOptions.IsPublish && buildOptions.BuildOnlyAfterPublish)
+            if (buildOptions.IsPublish && buildOptions is PublishOptions po && po.BuildOnlyAfterPublish)
                 commandLineArgs.Append("-p:WasmBuildOnlyAfterPublish=true");
 
             using ToolCommand cmd = new DotNetCommand(s_buildEnv, _testOutput)
@@ -195,14 +195,6 @@ namespace Wasm.Build.Tests
 
             return (res, logFilePath);
         }
-
-        protected NativeFilesType GetExpectedFileType(Configuration config, bool isAOT, bool isPublish, bool isNativeBuild=false) =>
-            isNativeBuild ? NativeFilesType.Relinked :
-            !isPublish ? NativeFilesType.FromRuntimePack :
-            isAOT ? NativeFilesType.AOT :
-                (config == Configuration.Debug || !IsUsingWorkloads) ?
-                    NativeFilesType.FromRuntimePack :
-                    NativeFilesType.Relinked;
 
         private string GetBinlogMessageContext(TextNode node)
         {

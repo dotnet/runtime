@@ -19,7 +19,7 @@ namespace Wasm.Build.Tests
         {
         }
 
-        public static TheoryData<string, string, bool, bool, bool> SettingDifferentFromValuesInRuntimePack(bool forPublish)
+        public static TheoryData<Configuration, string, bool, bool, bool> SettingDifferentFromValuesInRuntimePack(bool forPublish)
         {
             List<(string propertyName, bool defaultValueInRuntimePack)> defaults = new()
             {
@@ -30,9 +30,9 @@ namespace Wasm.Build.Tests
                 // ("WasmNativeStrip", true) -- tested separately because it has special handling in targets
             };
 
-            TheoryData<string, string, bool, bool, bool> data = new();
+            TheoryData<Configuration, string, bool, bool, bool> data = new();
 
-            string[] configs = new[] { Configuration.Debug, Configuration.Release };
+            var configs = new[] { Configuration.Debug, Configuration.Release };
             foreach (var defaultPair in defaults)
             {
                 foreach (Configuration config in configs)
@@ -54,9 +54,9 @@ namespace Wasm.Build.Tests
             return data;
         }
 
-        public static TheoryData<string, string, bool, bool, bool> DefaultsTestData(bool forPublish)
+        public static TheoryData<Configuration, string, bool, bool, bool> DefaultsTestData(bool forPublish)
         {
-            TheoryData<string, string, bool, bool, bool> data = new()
+            TheoryData<Configuration, string, bool, bool, bool> data = new()
             {
                 /* relink by default for publish+Release */
                 { Configuration.Release,   "",                                         /*aot*/ false,   /*build*/ false, /*publish*/      true },
@@ -117,7 +117,7 @@ namespace Wasm.Build.Tests
         }
 #pragma warning restore xunit1026
 
-        public static TheoryData<string, string, bool, bool> SetWasmNativeStripExplicitlyTestData(bool publish) => new()
+        public static TheoryData<Configuration, string, bool, bool> SetWasmNativeStripExplicitlyTestData(bool publish) => new()
         {
             {Configuration.Debug, "<WasmNativeStrip>true</WasmNativeStrip>",    /*wasmBuildNative*/ false,   /*wasmNativeStrip*/ true },
             {Configuration.Release, "<WasmNativeStrip>true</WasmNativeStrip>",  /*wasmBuildNative*/ publish, /*wasmNativeStrip*/ true },
@@ -125,7 +125,7 @@ namespace Wasm.Build.Tests
             {Configuration.Release, "<WasmNativeStrip>false</WasmNativeStrip>", /*wasmBuildNative*/ true,    /*wasmNativeStrip*/ false }
         };
 
-        public static TheoryData<string, string, bool, bool> SetWasmNativeStripExplicitlyWithWasmBuildNativeTestData() => new()
+        public static TheoryData<Configuration, string, bool, bool> SetWasmNativeStripExplicitlyWithWasmBuildNativeTestData() => new()
         {
             { Configuration.Debug,   "<WasmNativeStrip>false</WasmNativeStrip><InvariantTimezone>true</InvariantTimezone>", true, false },
             { Configuration.Release, "<WasmNativeStrip>false</WasmNativeStrip><InvariantTimezone>true</InvariantTimezone>", true, false },

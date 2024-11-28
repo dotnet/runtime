@@ -43,7 +43,6 @@ namespace Wasm.Build.Tests
             Utils.DirectoryCopy(Path.Combine(BuildEnvironment.TestAssetsPath, "resx"), Path.Combine(_projectDir!, "resx"));
             CreateProgramForCultureTest($"{info.ProjectName}.resx.words", "TestClass");
 
-            bool isPublish = true;
             (_, string output) = PublishProject(info, config, new PublishOptions(UseCache: false, AOT: aot), isNativeBuild: nativeRelink);
             RunResult result = await RunForPublishWithWebServer(new(
                 config,
@@ -83,7 +82,7 @@ namespace Wasm.Build.Tests
             File.WriteAllText(Path.Combine(_projectDir!, "..", "Directory.Build.props"), "<Project />");
             File.WriteAllText(Path.Combine(_projectDir!, "..", "Directory.Build.targets"), "<Project />");
             // NativeFilesType dotnetWasmFileType = nativeRelink ? NativeFilesType.Relinked : aot ? NativeFilesType.AOT : NativeFilesType.FromRuntimePack;
-            bool isPublish = true;
+            
             PublishProject(info, config, new PublishOptions(AOT: aot), isNativeBuild: nativeRelink);
 
             await RunForPublishWithWebServer(
@@ -102,7 +101,7 @@ namespace Wasm.Build.Tests
             ProjectInfo info = CopyTestAsset(config, aot, BasicTestApp, "check_sat_asm_not_aot", extraProperties: extraProperties, extraItems: extraItems);
             CreateProgramForCultureTest($"{info.ProjectName}.words", "TestClass");
 
-            bool isPublish = true;
+            
             PublishProject(info, config, new PublishOptions(AOT: aot));
 
             var bitCodeFileNames = Directory.GetFileSystemEntries(Path.Combine(_projectDir!, "obj"), "*.dll.bc", SearchOption.AllDirectories)

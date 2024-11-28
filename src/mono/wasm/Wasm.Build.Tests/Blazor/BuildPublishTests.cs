@@ -30,16 +30,16 @@ public class BuildPublishTests : BlazorWasmTestBase
     {
         ProjectInfo info = CopyTestAsset(config, aot: false, BasicTestApp, "blz_no_workload");
         BlazorBuild(info, config);
-        await RunForBuildWithDotnetRun(new(info.Configuration));
+        await RunForBuildWithDotnetRun(new(config));
 
         BlazorPublish(info, config, new PublishOptions(UseCache: false));
-        await RunForPublishWithWebServer(new(info.Configuration));
+        await RunForPublishWithWebServer(new(config));
     }
 
 
-    public static TheoryData<string, bool> TestDataForDefaultTemplate_WithWorkload(bool isAot)
+    public static TheoryData<Configuration, bool> TestDataForDefaultTemplate_WithWorkload(bool isAot)
     {
-        var data = new TheoryData<string, bool>();
+        var data = new TheoryData<Configuration, bool>();
         if (!isAot)
         {
             // AOT does not support managed debugging, is disabled by design
@@ -70,7 +70,7 @@ public class BuildPublishTests : BlazorWasmTestBase
         BlazorBuild(info, config);
 
         // NativeFilesType.AOT??
-        PublishProject(info, config, PublishOptions(AOT: true, UseCache: false));
+        PublishProject(info, config, new PublishOptions(AOT: true, UseCache: false));
     }
 
     [Theory]
@@ -129,7 +129,7 @@ public class BuildPublishTests : BlazorWasmTestBase
         AssertResourcesDlls(GetBlazorBinFrameworkDir(config, forPublish: false));
 
         // Publish and assert resource dlls
-        BlazorPublish(info, config, new PublisOptions(UseCache: false));
+        BlazorPublish(info, config, new PublishOptions(UseCache: false));
         AssertResourcesDlls(GetBlazorBinFrameworkDir(config, forPublish: true));
 
         void AssertResourcesDlls(string basePath)
@@ -158,8 +158,8 @@ public class BuildPublishTests : BlazorWasmTestBase
         BlazorPublish(info, config);
         await RunForPublishWithWebServer(new(config));
 
-        string frameworkDir = Path.Combine(_projectDir!, "bin", config, BuildTestBase.DefaultTargetFrameworkForBlazor, "publish", "wwwroot", "_framework");
-        string objBuildDir = Path.Combine(_projectDir!, "obj", config, BuildTestBase.DefaultTargetFrameworkForBlazor, "wasm", "for-publish");
+        string frameworkDir = Path.Combine(_projectDir!, "bin", config.ToString(), BuildTestBase.DefaultTargetFrameworkForBlazor, "publish", "wwwroot", "_framework");
+        string objBuildDir = Path.Combine(_projectDir!, "obj", config.ToString(), BuildTestBase.DefaultTargetFrameworkForBlazor, "wasm", "for-publish");
 
         WasmTemplateTests.TestWasmStripILAfterAOTOutput(objBuildDir, frameworkDir, expectILStripping, _testOutput);
     }

@@ -25,9 +25,8 @@ public class DownloadThenInitTests : WasmTemplateTestsBase
     public async Task NoResourcesReFetchedAfterDownloadFinished(Configuration config)
     {
         ProjectInfo info = CopyTestAsset(config, aot: false, BasicTestApp, "DownloadThenInitTests");
-        bool isPublish = false;
         BuildProject(info, config);
-        RunOptions options = new(info.Configuration, TestScenario: "DownloadThenInit");
+        RunOptions options = new(config, TestScenario: "DownloadThenInit");
         RunResult result = await RunForBuildWithDotnetRun(options);
         var resultTestOutput = result.TestOutput.ToList();
         int index = resultTestOutput.FindIndex(s => s.Contains("download finished"));
