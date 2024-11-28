@@ -4,7 +4,6 @@
 using System.Collections;
 using System.ComponentModel;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Formats.Asn1;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -109,9 +108,13 @@ namespace System.DirectoryServices.Protocols
         [ThreadStatic]
         private static AsnWriter? t_writer;
 
-        [MemberNotNull(nameof(t_writer))]
         internal static AsnWriter GetWriter()
-            => t_writer ??= new AsnWriter(AsnEncodingRules.BER);
+        {
+            t_writer ??= new AsnWriter(AsnEncodingRules.BER);
+            t_writer.Reset();
+
+            return t_writer;
+        }
 
         public DirectoryControl(string type, byte[] value, bool isCritical, bool serverSide)
         {
@@ -335,7 +338,6 @@ namespace System.DirectoryServices.Protocols
         {
             AsnWriter writer = GetWriter();
 
-            writer.Reset();
             /* This is as laid out in MS-ADTS, 3.1.1.3.4.1.18.
              * ASQRequestValue ::= SEQUENCE {
              *                      sourceAttribute     OCTET STRING }
@@ -431,7 +433,6 @@ namespace System.DirectoryServices.Protocols
         {
             AsnWriter writer = GetWriter();
 
-            writer.Reset();
             /* This is as laid out in MS-ADTS, 3.1.1.3.4.1.5.
              * ExtendedDNRequestValue ::= SEQUENCE {
              *                              Flag     INTEGER }
@@ -479,7 +480,6 @@ namespace System.DirectoryServices.Protocols
         {
             AsnWriter writer = GetWriter();
 
-            writer.Reset();
             /* This is as laid out in MS-ADTS, 3.1.1.3.4.1.11.
              * SDFlagsRequestValue ::= SEQUENCE {
              *                          Flags     INTEGER }
@@ -523,7 +523,6 @@ namespace System.DirectoryServices.Protocols
         {
             AsnWriter writer = GetWriter();
 
-            writer.Reset();
             /* This is as laid out in MS-ADTS, 3.1.1.3.4.1.12.
              * SearchOptionsRequestValue ::= SEQUENCE {
              *                                  Flags     INTEGER }
@@ -578,7 +577,6 @@ namespace System.DirectoryServices.Protocols
         {
             AsnWriter writer = GetWriter();
 
-            writer.Reset();
             /* This is as laid out in MS-ADTS, 3.1.1.3.4.1.16.
              * VerifyNameRequestValue ::= SEQUENCE {
              *                              Flags       INTEGER,
@@ -654,7 +652,6 @@ namespace System.DirectoryServices.Protocols
         {
             AsnWriter writer = GetWriter();
 
-            writer.Reset();
             /* This is as laid out in MS-ADTS, 3.1.1.3.4.1.3.
              * DirSyncRequestValue ::= SEQUENCE {
              *                          Flags       INTEGER,
@@ -752,7 +749,6 @@ namespace System.DirectoryServices.Protocols
         {
             AsnWriter writer = GetWriter();
 
-            writer.Reset();
             /* This is as laid out in RFC2696.
              * realSearchControlValue ::= SEQUENCE {
              *                              size    INTEGER,
@@ -874,7 +870,6 @@ namespace System.DirectoryServices.Protocols
         {
             AsnWriter writer = GetWriter();
 
-            writer.Reset();
             /* This is as laid out in RFC2891.
              * SortKeyList ::= SEQUENCE OF SEQUENCE {
              *                  attributeType   AttributeDescription,
@@ -1047,7 +1042,6 @@ namespace System.DirectoryServices.Protocols
         {
             AsnWriter writer = GetWriter();
 
-            writer.Reset();
             /* This is as laid out in MS-ADTS, 3.1.1.3.4.1.17.
              * VLVRequestValue ::= SEQUENCE {
              *                      beforeCount     INTEGER,
@@ -1141,7 +1135,6 @@ namespace System.DirectoryServices.Protocols
         {
             AsnWriter writer = GetWriter();
 
-            writer.Reset();
             /* This is as laid out in MS-ADTS, 3.1.1.3.4.1.19.
              * QuotaRequestValue ::= SEQUENCE {
              *                          querySID OCTET STRING }
