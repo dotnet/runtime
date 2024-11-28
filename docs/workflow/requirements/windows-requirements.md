@@ -88,7 +88,7 @@ This will set the `DOTNET_ROOT` and `PATH` environment variables to point to the
 
 ## Installing dependencies with winget
 
-All the tools mentioned above can be installed with the [Windows Package Manager](https://learn.microsoft.com/windows/package-manager/winget/) or `winget`:
+All the tools mentioned above can be installed with the [Windows Package Manager](https://learn.microsoft.com/windows/package-manager/winget/):
 ```ps1
 winget install -e --id Kitware.CMake
 winget install -e --id Python.Python.3.11
