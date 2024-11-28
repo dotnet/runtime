@@ -90,12 +90,12 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestsBase
     {
         InitBlazorWasmProjectDir(id);
         using DotNetCommand dotnetCommand = new DotNetCommand(s_buildEnv, _testOutput, useDefaultArgs: false);
-        CommandResult result = dotnetCommand.WithWorkingDirectory(_projectDir!)
+        CommandResult result = dotnetCommand.WithWorkingDirectory(_projectDir)
             .WithEnvironmentVariable("NUGET_PACKAGES", _nugetPackagesDir)
             .ExecuteWithCapturedOutput("new blazorwasm")
             .EnsureSuccessful();
 
-        return Path.Combine(_projectDir!, $"{id}.csproj");
+        return Path.Combine(_projectDir, $"{id}.csproj");
     }
 
     protected (string projectDir, string buildOutput) BlazorBuild(ProjectInfo info, Configuration config, bool isNativeBuild = false) =>
@@ -122,7 +122,7 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestsBase
         catch (XunitException xe)
         {
             if (xe.Message.Contains("error CS1001: Identifier expected"))
-                Utils.DirectoryCopy(_projectDir!, _logPath, testOutput: _testOutput);
+                Utils.DirectoryCopy(_projectDir, _logPath, testOutput: _testOutput);
             throw;
         }
     }
@@ -151,7 +151,7 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestsBase
         catch (XunitException xe)
         {
             if (xe.Message.Contains("error CS1001: Identifier expected"))
-                Utils.DirectoryCopy(_projectDir!, _logPath, testOutput: _testOutput);
+                Utils.DirectoryCopy(_projectDir, _logPath, testOutput: _testOutput);
             throw;
         }
     }
@@ -181,7 +181,7 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestsBase
             Assert.DoesNotContain("Microsoft.JSInterop.WebAssembly.dll -> Microsoft.JSInterop.WebAssembly.dll.bc", buildOutput);
         }
 
-        string objBuildDir = Path.Combine(_projectDir!, "obj", config.ToString(), buildOptions.TargetFramework!, "wasm", "for-build");
+        string objBuildDir = Path.Combine(_projectDir, "obj", config.ToString(), buildOptions.TargetFramework!, "wasm", "for-build");
         // Check that we linked only for publish
         if (buildOptions is PublishOptions publishOptions && publishOptions.ExpectRelinkDirWhenPublishing)
             Assert.True(Directory.Exists(objBuildDir), $"Could not find expected {objBuildDir}, which gets created when relinking during Build. This is likely a test authoring error");

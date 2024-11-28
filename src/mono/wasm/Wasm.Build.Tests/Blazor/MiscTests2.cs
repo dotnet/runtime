@@ -56,7 +56,7 @@ public class MiscTests2 : BlazorWasmTestBase
 
         string publishLogPath = Path.Combine(s_buildEnv.LogRootPath, info.ProjectName, $"{info.ProjectName}.binlog");
         using DotNetCommand cmd = new DotNetCommand(s_buildEnv, _testOutput);
-        return cmd.WithWorkingDirectory(_projectDir!)
+        return cmd.WithWorkingDirectory(_projectDir)
                     .WithEnvironmentVariable("NUGET_PACKAGES", _nugetPackagesDir)
                     .ExecuteWithCapturedOutput("publish",
                                                 $"-bl:{publishLogPath}",

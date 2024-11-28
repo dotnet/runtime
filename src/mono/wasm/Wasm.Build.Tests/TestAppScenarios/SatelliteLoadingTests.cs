@@ -64,7 +64,7 @@ public class SatelliteLoadingTests : WasmTemplateTestsBase
         ProjectInfo info = CopyTestAsset(config, false, BasicTestApp, "SatelliteLoadingTestsFromReference");
 
         // Replace ProjectReference with Reference
-        var appCsprojPath = Path.Combine(_projectDir!, "WasmBasicTestApp.csproj");
+        var appCsprojPath = Path.Combine(_projectDir, "WasmBasicTestApp.csproj");
         var appCsproj = XDocument.Load(appCsprojPath);
 
         var projectReference = appCsproj.Descendants("ProjectReference").Where(pr => pr.Attribute("Include")?.Value?.Contains("ResourceLibrary") ?? false).Single();
@@ -78,7 +78,7 @@ public class SatelliteLoadingTests : WasmTemplateTestsBase
         appCsproj.Save(appCsprojPath);
 
         // Build the library
-        var libraryCsprojPath = Path.GetFullPath(Path.Combine(_projectDir!, "..", "ResourceLibrary"));
+        var libraryCsprojPath = Path.GetFullPath(Path.Combine(_projectDir, "..", "ResourceLibrary"));
         using DotNetCommand cmd = new DotNetCommand(s_buildEnv, _testOutput);
         CommandResult res = cmd.WithWorkingDirectory(libraryCsprojPath)
             .WithEnvironmentVariable("NUGET_PACKAGES", _nugetPackagesDir)

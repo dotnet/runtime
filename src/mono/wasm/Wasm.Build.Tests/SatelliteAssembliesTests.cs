@@ -40,7 +40,7 @@ namespace Wasm.Build.Tests
                                         + $"<EmccCompileOptimizationFlag>-O0 -sASSERTIONS=1</EmccCompileOptimizationFlag>"
                                         + $"<EmccLinkOptimizationFlag>-O1</EmccLinkOptimizationFlag>";
             ProjectInfo info = CopyTestAsset(config, aot, BasicTestApp, prefix, extraProperties: extraProperties);
-            Utils.DirectoryCopy(Path.Combine(BuildEnvironment.TestAssetsPath, "resx"), Path.Combine(_projectDir!, "resx"));
+            Utils.DirectoryCopy(Path.Combine(BuildEnvironment.TestAssetsPath, "resx"), Path.Combine(_projectDir, "resx"));
             CreateProgramForCultureTest($"{info.ProjectName}.resx.words", "TestClass");
 
             (_, string output) = PublishProject(info, config, new PublishOptions(UseCache: false, AOT: aot), isNativeBuild: nativeRelink);
@@ -69,18 +69,18 @@ namespace Wasm.Build.Tests
             ProjectInfo info = CopyTestAsset(config, aot, BasicTestApp, prefix, extraProperties: extraProperties, extraItems: extraItems);
             // D.B.* used for wasm projects should be moved next to the wasm project, so it doesn't
             // affect the non-wasm library project
-            File.Move(Path.Combine(_projectDir!, "..", "Directory.Build.props"), Path.Combine(_projectDir!, "Directory.Build.props"));
-            File.Move(Path.Combine(_projectDir!, "..", "Directory.Build.targets"), Path.Combine(_projectDir!, "Directory.Build.targets"));
+            File.Move(Path.Combine(_projectDir, "..", "Directory.Build.props"), Path.Combine(_projectDir, "Directory.Build.props"));
+            File.Move(Path.Combine(_projectDir, "..", "Directory.Build.targets"), Path.Combine(_projectDir, "Directory.Build.targets"));
             if (UseWBTOverridePackTargets)
-                File.Move(Path.Combine(BuildEnvironment.TestDataPath, "WasmOverridePacks.targets"), Path.Combine(_projectDir!, "WasmOverridePacks.targets"));
+                File.Move(Path.Combine(BuildEnvironment.TestDataPath, "WasmOverridePacks.targets"), Path.Combine(_projectDir, "WasmOverridePacks.targets"));
             Utils.DirectoryCopy(
                 Path.Combine(BuildEnvironment.TestAssetsPath, "SatelliteAssemblyFromProjectRef/LibraryWithResources"),
-                Path.Combine(_projectDir!, "..", "LibraryWithResources"));
+                Path.Combine(_projectDir, "..", "LibraryWithResources"));
             CreateProgramForCultureTest("LibraryWithResources.resx.words", "LibraryWithResources.Class1");
             // move src/mono/wasm/testassets/SatelliteAssemblyFromProjectRef/LibraryWithResources to the test project
             // The root D.B* should be empty
-            File.WriteAllText(Path.Combine(_projectDir!, "..", "Directory.Build.props"), "<Project />");
-            File.WriteAllText(Path.Combine(_projectDir!, "..", "Directory.Build.targets"), "<Project />");
+            File.WriteAllText(Path.Combine(_projectDir, "..", "Directory.Build.props"), "<Project />");
+            File.WriteAllText(Path.Combine(_projectDir, "..", "Directory.Build.targets"), "<Project />");
             // NativeFilesType dotnetWasmFileType = nativeRelink ? NativeFilesType.Relinked : aot ? NativeFilesType.AOT : NativeFilesType.FromRuntimePack;
             
             PublishProject(info, config, new PublishOptions(AOT: aot), isNativeBuild: nativeRelink);
@@ -104,7 +104,7 @@ namespace Wasm.Build.Tests
             
             PublishProject(info, config, new PublishOptions(AOT: aot));
 
-            var bitCodeFileNames = Directory.GetFileSystemEntries(Path.Combine(_projectDir!, "obj"), "*.dll.bc", SearchOption.AllDirectories)
+            var bitCodeFileNames = Directory.GetFileSystemEntries(Path.Combine(_projectDir, "obj"), "*.dll.bc", SearchOption.AllDirectories)
                                     .Select(path => Path.GetFileName(path))
                                     .ToArray();
 

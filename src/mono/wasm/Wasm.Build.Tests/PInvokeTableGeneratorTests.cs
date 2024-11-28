@@ -302,14 +302,14 @@ namespace Wasm.Build.Tests
             // build a library containing icalls with overloaded parameters.
             ReplaceFile(Path.Combine("..", "Library", "Library.cs"), Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "PInvoke", "ICall_Lib.cs"));
             // temporarily change the project directory to build the library
-            _projectDir = Path.Combine(_projectDir!, "..", "Library");
+            _projectDir = Path.Combine(_projectDir, "..", "Library");
             bool isPublish = false;
             // libraries do not have framework dirs
             string hypotheticalFrameworkDir = Path.Combine(GetBinFrameworkDir(config, isPublish));
             string libAssemblyPath = Path.Combine(hypotheticalFrameworkDir, "..", "..");
             BuildProject(info, config, new BuildOptions(AssertAppBundle: false, AOT: aot));
             // restore the project directory
-            _projectDir = Path.Combine(_projectDir!, "..", "App");
+            _projectDir = Path.Combine(_projectDir, "..", "App");
             
             string icallTable =
             """
@@ -320,7 +320,7 @@ namespace Wasm.Build.Tests
             ]
 
             """;
-            UpdateFile(Path.Combine(_projectDir!, "runtime-icall-table.h"), icallTable);
+            UpdateFile(Path.Combine(_projectDir, "runtime-icall-table.h"), icallTable);
 
             string tasksDir = Path.Combine(s_buildEnv.WorkloadPacksDir,
                                                               "Microsoft.NET.Runtime.WebAssembly.Sdk",
@@ -378,7 +378,7 @@ namespace Wasm.Build.Tests
             string programRelativePath = Path.Combine("Common", "Program.cs");
             ReplaceFile(programRelativePath, Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "PInvoke", "BuildNative.cs"));
             string cCodeFilename = "simple.c";
-            File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "native-libs", cCodeFilename), Path.Combine(_projectDir!, cCodeFilename));
+            File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "native-libs", cCodeFilename), Path.Combine(_projectDir, cCodeFilename));
 
             var extraEnvVars = new Dictionary<string, string> {
                 { "LANG", culture },
@@ -413,7 +413,7 @@ namespace Wasm.Build.Tests
             ProjectInfo info = CopyTestAsset(config, aot, BasicTestApp, "abi", extraItems: extraItems, extraProperties: extraProperties);
             
             int baseArg = 10;
-            GenerateSourceFiles(_projectDir!, baseArg);
+            GenerateSourceFiles(_projectDir, baseArg);
             bool isPublish = aot;
             (_, string output) = isPublish ?
                 PublishProject(info, config, new PublishOptions(AOT: aot), isNativeBuild: true):
@@ -463,7 +463,7 @@ namespace Wasm.Build.Tests
             extraProperties += "<AllowUnsafeBlocks>true</AllowUnsafeBlocks><_WasmDevel>true</_WasmDevel>";
             string extraItems = $"<NativeFileReference Include=\"{objectFilename}\" />";
             ProjectInfo info = CopyTestAsset(config, aot, BasicTestApp, prefix, extraItems: extraItems, extraProperties: extraProperties);
-            File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "native-libs", objectFilename), Path.Combine(_projectDir!, objectFilename));
+            File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "native-libs", objectFilename), Path.Combine(_projectDir, objectFilename));
             return info;
         }
 
@@ -485,14 +485,14 @@ namespace Wasm.Build.Tests
             ProjectInfo info = CopyTestAsset(config, aot, BasicTestApp, "abi", extraItems: extraItems, extraProperties: extraProperties);
             ReplaceFile(Path.Combine("Common", "Program.cs"), Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "PInvoke", "AbiRules.cs"));
             string cCodeFilename = "wasm-abi.c";
-            File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "native-libs", cCodeFilename), Path.Combine(_projectDir!, cCodeFilename));
+            File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "native-libs", cCodeFilename), Path.Combine(_projectDir, cCodeFilename));
 
             bool isPublish = aot;
             (string _, string _) = isPublish ?
                 PublishProject(info, config, new PublishOptions(AOT: aot), isNativeBuild: true) :
                 BuildProject(info, config, new BuildOptions(AOT: aot), isNativeBuild: true);
 
-            string objDir = Path.Combine(_projectDir!, "obj", config.ToString(), DefaultTargetFramework, "wasm", isPublish ? "for-publish" : "for-build");
+            string objDir = Path.Combine(_projectDir, "obj", config.ToString(), DefaultTargetFramework, "wasm", isPublish ? "for-publish" : "for-build");
 
             // Verify that the right signature was added for the pinvoke. We can't determine this by examining the m2n file
             // FIXME: Not possible in in-process mode for some reason, even with verbosity at "diagnostic"
@@ -552,7 +552,7 @@ namespace Wasm.Build.Tests
             ProjectInfo info = CopyTestAsset(config, aot, BasicTestApp, "uoc", extraItems: extraItems, extraProperties: extraProperties);
             ReplaceFile(Path.Combine("Common", "Program.cs"), Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "PInvoke", "UnmanagedCallback.cs"));
             string cCodeFilename = "local.c";
-            File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "native-libs", cCodeFilename), Path.Combine(_projectDir!, cCodeFilename));
+            File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "native-libs", cCodeFilename), Path.Combine(_projectDir, cCodeFilename));
 
             PublishProject(info, config, new PublishOptions(AOT: aot), isNativeBuild: true);
             RunResult result = await RunForPublishWithWebServer(new(

@@ -67,9 +67,9 @@ namespace Wasm.Build.Tests
         public TProvider GetProvider<TProvider>() where TProvider : ProjectProviderBase
             => (TProvider)_providerOfBaseType;
 
-        protected string? _projectDir
+        protected string _projectDir
         {
-            get => _providerOfBaseType.ProjectDir;
+            get => _providerOfBaseType.ProjectDir!;
             set => _providerOfBaseType.ProjectDir = value;
         }
 
@@ -160,7 +160,7 @@ namespace Wasm.Build.Tests
                 commandLineArgs.Append("-p:WasmBuildOnlyAfterPublish=true");
 
             using ToolCommand cmd = new DotNetCommand(s_buildEnv, _testOutput)
-                                        .WithWorkingDirectory(_projectDir!);
+                                        .WithWorkingDirectory(_projectDir);
             cmd.WithEnvironmentVariable("NUGET_PACKAGES", _nugetPackagesDir)
                 .WithEnvironmentVariables(buildOptions.ExtraBuildEnvironmentVariables);
             if (UseWBTOverridePackTargets && s_buildEnv.IsWorkload)

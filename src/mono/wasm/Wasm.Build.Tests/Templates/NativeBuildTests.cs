@@ -45,7 +45,7 @@ namespace Wasm.Build.Templates.Tests
                 extraProperties: extraProperties
             );
             UpdateFile("Program.cs", code);
-            File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "native-libs", "undefined-symbol.c"), Path.Combine(_projectDir!, "undefined_xyz.c"));
+            File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "native-libs", "undefined-symbol.c"), Path.Combine(_projectDir, "undefined_xyz.c"));
             (string _, string buildOutput) = BuildProject(info, config, new BuildOptions(ExpectSuccess: allowUndefined), isNativeBuild: true);
 
             if (!allowUndefined)
@@ -70,7 +70,7 @@ namespace Wasm.Build.Templates.Tests
                 extraItems: extraItems
             );
             string nativeCode = "void call_needing_marhsal_ilgen(void *x) {}";
-            File.WriteAllText(path: Path.Combine(_projectDir!, nativeSourceFilename), nativeCode);
+            File.WriteAllText(path: Path.Combine(_projectDir, nativeSourceFilename), nativeCode);
             UpdateBrowserMainJs();
             ReplaceFile("Program.cs", Path.Combine(BuildEnvironment.TestAssetsPath, "marshal_ilgen_test.cs"));
 

@@ -72,12 +72,12 @@ public class WasmTemplateTestsBase : BuildTestBase
             extraArgs += $" -f {DefaultTargetFramework}";
 
         using DotNetCommand cmd = new DotNetCommand(s_buildEnv, _testOutput, useDefaultArgs: false);
-        CommandResult result = cmd.WithWorkingDirectory(_projectDir!)
+        CommandResult result = cmd.WithWorkingDirectory(_projectDir)
             .WithEnvironmentVariable("NUGET_PACKAGES", _nugetPackagesDir)
             .ExecuteWithCapturedOutput($"new {template.ToString().ToLower()} {extraArgs}")
             .EnsureSuccessful();
 
-        string projectFilePath = Path.Combine(_projectDir!, $"{projectName}.csproj");
+        string projectFilePath = Path.Combine(_projectDir, $"{projectName}.csproj");
         UpdateProjectFile(projectFilePath, runAnalyzers, extraProperties, extraItems, insertAtEnd);
         return new ProjectInfo(projectName, projectFilePath, logPath, nugetDir);
     }
@@ -95,12 +95,12 @@ public class WasmTemplateTestsBase : BuildTestBase
     {
         (string projectName, string logPath, string nugetDir) =
             InitProjectLocation(idPrefix, config, aot, appendUnicodeToPath, avoidAotLongPathIssue: s_isWindows && aot);
-        Utils.DirectoryCopy(Path.Combine(BuildEnvironment.TestAssetsPath, asset.Name), Path.Combine(_projectDir!));
+        Utils.DirectoryCopy(Path.Combine(BuildEnvironment.TestAssetsPath, asset.Name), Path.Combine(_projectDir));
         if (!string.IsNullOrEmpty(asset.RunnableProjectSubPath))
         {
-            _projectDir = Path.Combine(_projectDir!, asset.RunnableProjectSubPath);
+            _projectDir = Path.Combine(_projectDir, asset.RunnableProjectSubPath);
         }
-        string projectFilePath = Path.Combine(_projectDir!, $"{asset.Name}.csproj");
+        string projectFilePath = Path.Combine(_projectDir, $"{asset.Name}.csproj");
         UpdateProjectFile(projectFilePath, runAnalyzers, extraProperties, extraItems, insertAtEnd);
         return new ProjectInfo(asset.Name, projectFilePath, logPath, nugetDir);
     }
@@ -152,19 +152,19 @@ public class WasmTemplateTestsBase : BuildTestBase
         (CommandResult res, string logFilePath) = BuildProjectWithoutAssert(configuration, info.ProjectName, buildOptions);
 
         if (buildOptions.UseCache)
-            _buildContext.CacheBuild(info, new BuildResult(_projectDir!, logFilePath, true, res.Output));
+            _buildContext.CacheBuild(info, new BuildResult(_projectDir, logFilePath, true, res.Output));
 
         if (!buildOptions.ExpectSuccess)
         {
             res.EnsureFailed();
-            return (_projectDir!, res.Output);
+            return (_projectDir, res.Output);
         }
 
         if (buildOptions.AssertAppBundle)
         {
             _provider.AssertWasmSdkBundle(configuration, buildOptions, IsUsingWorkloads, isNativeBuild, res.Output);
         }
-        return (_projectDir!, res.Output);
+        return (_projectDir, res.Output);
     }
 
     private string StringReplaceWithAssert(string oldContent, string oldValue, string newValue)
@@ -181,7 +181,7 @@ public class WasmTemplateTestsBase : BuildTestBase
 
     protected void UpdateFile(string pathRelativeToProjectDir, Dictionary<string, string> replacements)
     {
-        var path = Path.Combine(_projectDir!, pathRelativeToProjectDir);
+        var path = Path.Combine(_projectDir, pathRelativeToProjectDir);
         string text = File.ReadAllText(path);
         foreach (var replacement in replacements)
         {
@@ -192,7 +192,7 @@ public class WasmTemplateTestsBase : BuildTestBase
 
     protected void UpdateFile(string pathRelativeToProjectDir, string newContent)
     {
-        var updatedFilePath = Path.Combine(_projectDir!, pathRelativeToProjectDir);
+        var updatedFilePath = Path.Combine(_projectDir, pathRelativeToProjectDir);
         File.WriteAllText(updatedFilePath, newContent);
     }
 
@@ -204,7 +204,7 @@ public class WasmTemplateTestsBase : BuildTestBase
 
     protected void DeleteFile(string pathRelativeToProjectDir)
     {
-        var deletedFilePath = Path.Combine(_projectDir!, pathRelativeToProjectDir);
+        var deletedFilePath = Path.Combine(_projectDir, pathRelativeToProjectDir);
         if(File.Exists(deletedFilePath))
         {
             File.Delete(deletedFilePath);
@@ -213,7 +213,7 @@ public class WasmTemplateTestsBase : BuildTestBase
 
     protected void UpdateBrowserMainJs(string targetFramework = DefaultTargetFramework, string runtimeAssetsRelativePath = DefaultRuntimeAssetsRelativePath)
     {
-        string mainJsPath = Path.Combine(_projectDir!, "wwwroot", "main.js");
+        string mainJsPath = Path.Combine(_projectDir, "wwwroot", "main.js");
         string mainJsContent = File.ReadAllText(mainJsPath);
 
         string updatedMainJsContent = StringReplaceWithAssert(
@@ -245,7 +245,7 @@ public class WasmTemplateTestsBase : BuildTestBase
     private async Task<RunResult> BrowserRun(RunOptions runOptions) => runOptions.Host switch
     {
         RunHost.DotnetRun =>
-                await BrowserRunTest($"run -c {runOptions.Configuration} --no-build", _projectDir!, runOptions),
+                await BrowserRunTest($"run -c {runOptions.Configuration} --no-build", _projectDir, runOptions),
 
         RunHost.WebServer =>
                 await BrowserRunTest($"{s_xharnessRunnerCommand} wasm webserver --app=. --web-server-use-default-files",

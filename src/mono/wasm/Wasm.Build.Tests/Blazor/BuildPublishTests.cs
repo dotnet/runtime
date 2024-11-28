@@ -122,7 +122,7 @@ public class BuildPublishTests : BlazorWasmTestBase
         foreach (string culture in cultures)
             Assert.True(File.Exists(Path.Combine(resxSourcePath, $"words.{culture}.resx")));
 
-        Utils.DirectoryCopy(resxSourcePath, Path.Combine(_projectDir!, "resx"));
+        Utils.DirectoryCopy(resxSourcePath, Path.Combine(_projectDir, "resx"));
 
         // Build and assert resource dlls
         BlazorBuild(info, config);
@@ -158,8 +158,8 @@ public class BuildPublishTests : BlazorWasmTestBase
         BlazorPublish(info, config);
         await RunForPublishWithWebServer(new(config));
 
-        string frameworkDir = Path.Combine(_projectDir!, "bin", config.ToString(), BuildTestBase.DefaultTargetFrameworkForBlazor, "publish", "wwwroot", "_framework");
-        string objBuildDir = Path.Combine(_projectDir!, "obj", config.ToString(), BuildTestBase.DefaultTargetFrameworkForBlazor, "wasm", "for-publish");
+        string frameworkDir = Path.Combine(_projectDir, "bin", config.ToString(), BuildTestBase.DefaultTargetFrameworkForBlazor, "publish", "wwwroot", "_framework");
+        string objBuildDir = Path.Combine(_projectDir, "obj", config.ToString(), BuildTestBase.DefaultTargetFrameworkForBlazor, "wasm", "for-publish");
 
         WasmTemplateTests.TestWasmStripILAfterAOTOutput(objBuildDir, frameworkDir, expectILStripping, _testOutput);
     }

@@ -82,7 +82,7 @@ namespace Wasm.Build.Tests
             UpdateBrowserProgramFile();
             UpdateBrowserMainJs();
 
-            string workingDir = runOutsideProjectDirectory ? BuildEnvironment.TmpPath : _projectDir!;
+            string workingDir = runOutsideProjectDirectory ? BuildEnvironment.TmpPath : _projectDir;
 
             {
                 using var runCommand = new RunCommand(s_buildEnv, _testOutput)

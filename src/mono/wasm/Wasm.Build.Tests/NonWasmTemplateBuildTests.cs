@@ -113,7 +113,7 @@ public class NonWasmTemplateBuildTests : WasmTemplateTestsBase
         File.WriteAllText(Path.Combine(_projectDir, "Directory.Build.targets"), directoryBuildTargets);
 
         using ToolCommand cmd = new DotNetCommand(s_buildEnv, _testOutput, useDefaultArgs: false)
-            .WithWorkingDirectory(_projectDir!);
+            .WithWorkingDirectory(_projectDir);
         cmd.ExecuteWithCapturedOutput("new console --no-restore")
             .EnsureSuccessful();
 

@@ -29,12 +29,12 @@ public class CleanTests : BlazorWasmTestBase
         ProjectInfo info = CopyTestAsset(config, aot: true, BasicTestApp, "clean", extraProperties: extraProperties);
         BlazorBuild(info, config, isNativeBuild: true);
 
-        string relinkDir = Path.Combine(_projectDir!, "obj", config.ToString(), DefaultTargetFrameworkForBlazor, "wasm", "for-build");
+        string relinkDir = Path.Combine(_projectDir, "obj", config.ToString(), DefaultTargetFrameworkForBlazor, "wasm", "for-build");
         Assert.True(Directory.Exists(relinkDir), $"Could not find expected relink dir: {relinkDir}");
 
         string logPath = Path.Combine(s_buildEnv.LogRootPath, info.ProjectName, $"{info.ProjectName}-clean.binlog");
         using ToolCommand cmd = new DotNetCommand(s_buildEnv, _testOutput)
-                                    .WithWorkingDirectory(_projectDir!);
+                                    .WithWorkingDirectory(_projectDir);
         cmd.WithEnvironmentVariable("NUGET_PACKAGES", _nugetPackagesDir)
             .ExecuteWithCapturedOutput("build", "-t:Clean", $"-p:Configuration={config}", $"-bl:{logPath}")
             .EnsureSuccessful();
@@ -65,7 +65,7 @@ public class CleanTests : BlazorWasmTestBase
             new BuildOptions(ExtraMSBuildArgs: relink ? "-p:WasmBuildNative=true" : string.Empty),
             isNativeBuild: relink);
 
-        string relinkDir = Path.Combine(_projectDir!, "obj", config.ToString(), DefaultTargetFrameworkForBlazor, "wasm", "for-build");
+        string relinkDir = Path.Combine(_projectDir, "obj", config.ToString(), DefaultTargetFrameworkForBlazor, "wasm", "for-build");
         if (relink)
             Assert.True(Directory.Exists(relinkDir), $"Could not find expected relink dir: {relinkDir}");
 
@@ -80,8 +80,8 @@ public class CleanTests : BlazorWasmTestBase
 
         string logPath = Path.Combine(s_buildEnv.LogRootPath, info.ProjectName, $"{info.ProjectName}-clean.binlog");
         using ToolCommand cmd = new DotNetCommand(s_buildEnv, _testOutput)
-                                    .WithWorkingDirectory(_projectDir!);
-        cmd.WithEnvironmentVariable("NUGET_PACKAGES", _projectDir!)
+                                    .WithWorkingDirectory(_projectDir);
+        cmd.WithEnvironmentVariable("NUGET_PACKAGES", _projectDir)
                 .ExecuteWithCapturedOutput("build", "-t:Clean", $"-p:Configuration={config}", $"-bl:{logPath}")
                 .EnsureSuccessful();
 

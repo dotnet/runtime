@@ -87,7 +87,7 @@ public class WorkloadRequiredTests : BlazorWasmTestBase
             { ccText, $"{ccText}\nTestInvariantCulture();" },
             { "private int currentCount = 0;", $"{s_invariantCultureMethodForBlazor}" }
         });
-        string counterPath = Path.Combine(_projectDir!, "Pages", "Counter.razor");
+        string counterPath = Path.Combine(_projectDir, "Pages", "Counter.razor");
         string allText = File.ReadAllText(counterPath);
         _testOutput.WriteLine($"Updated counter.razor: {allText}");
 

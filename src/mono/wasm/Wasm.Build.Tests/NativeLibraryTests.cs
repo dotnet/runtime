@@ -28,9 +28,9 @@ namespace Wasm.Build.Tests
             string extraProperties = "<WasmBuildNative>true</WasmBuildNative>";
 
             ProjectInfo info = CopyTestAsset(config, aot, BasicTestApp, "AppUsingNativeLib-a", extraItems: extraItems, extraProperties: extraProperties);
-            File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "native-libs", objectFilename), Path.Combine(_projectDir!, objectFilename));
-            Utils.DirectoryCopy(Path.Combine(BuildEnvironment.TestAssetsPath, "AppUsingNativeLib"), _projectDir!, overwrite: true);
-            DeleteFile(Path.Combine(_projectDir!, "Common", "Program.cs"));
+            File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "native-libs", objectFilename), Path.Combine(_projectDir, objectFilename));
+            Utils.DirectoryCopy(Path.Combine(BuildEnvironment.TestAssetsPath, "AppUsingNativeLib"), _projectDir, overwrite: true);
+            DeleteFile(Path.Combine(_projectDir, "Common", "Program.cs"));
 
             (string _, string buildOutput) = PublishProject(info, config, new PublishOptions(AOT: aot), isNativeBuild: true);
             RunResult output = await RunForPublishWithWebServer(new(config, TestScenario: "DotnetRun"));
@@ -84,9 +84,9 @@ namespace Wasm.Build.Tests
         {
             string extraItems = "<NativeLibrary Include=\"native-lib.o\" />\n<NativeLibrary Include=\"DoesNotExist.o\" />";
             ProjectInfo info = CopyTestAsset(config, aot, BasicTestApp, "AppUsingNativeLib-a", extraItems: extraItems);
-            Utils.DirectoryCopy(Path.Combine(BuildEnvironment.TestAssetsPath, "AppUsingNativeLib"), _projectDir!, overwrite: true);
-            DeleteFile(Path.Combine(_projectDir!, "Common", "Program.cs"));
-            File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "native-libs", "native-lib.o"), Path.Combine(_projectDir!, "native-lib.o"));
+            Utils.DirectoryCopy(Path.Combine(BuildEnvironment.TestAssetsPath, "AppUsingNativeLib"), _projectDir, overwrite: true);
+            DeleteFile(Path.Combine(_projectDir, "Common", "Program.cs"));
+            File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "native-libs", "native-lib.o"), Path.Combine(_projectDir, "native-lib.o"));
 
             (string _, string buildOutput) = PublishProject(info, config, new PublishOptions(AOT: aot), isNativeBuild: true);
             RunResult output = await RunForPublishWithWebServer(new(config, TestScenario: "DotnetRun", ExpectedExitCode: 0));
