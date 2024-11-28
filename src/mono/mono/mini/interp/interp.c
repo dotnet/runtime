@@ -502,8 +502,9 @@ mono_interp_get_imethod (MonoMethod *method)
 	imethod->is_invoke = (m_class_get_parent (method->klass) == mono_defaults.multicastdelegate_class) && !strcmp(method->name, "Invoke");
 	// always optimize code if tiering is disabled
 	// always optimize wrappers
-	if (!mono_interp_tiering_enabled () || method->wrapper_type != MONO_WRAPPER_NONE)
+	if (!mono_interp_tiering_enabled () || method->wrapper_type != MONO_WRAPPER_NONE || (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL))
 		imethod->optimized = TRUE;
+
 	if (imethod->method->string_ctor)
 		imethod->rtype = m_class_get_byval_arg (mono_defaults.string_class);
 	else
