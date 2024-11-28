@@ -4,11 +4,9 @@
 using System;
 using System.Buffers.Binary;
 using System.Collections.Generic;
-using System.Linq;
-using System.Runtime.InteropServices;
 using System.Text;
 
-namespace Microsoft.Diagnostics.DataContractReader.UnitTests;
+namespace Microsoft.Diagnostics.DataContractReader.Tests;
 internal unsafe class TargetTestHelpers
 {
     public MockTarget.Architecture Arch { get; init; }
@@ -19,158 +17,7 @@ internal unsafe class TargetTestHelpers
     }
 
     public int PointerSize => Arch.Is64Bit ? sizeof(ulong) : sizeof(uint);
-    public int ContractDescriptorSize => ContractDescriptor.Size(Arch.Is64Bit);
-
-
-    #region Contract and data descriptor creation
-
-    public void ContractDescriptorFill(Span<byte> dest, int jsonDescriptorSize, int pointerDataCount)
-    {
-        ContractDescriptor.Fill(dest, Arch, jsonDescriptorSize, pointerDataCount);
-    }
-
-    internal static class ContractDescriptor
-    {
-        public static int Size(bool is64Bit) => is64Bit ? sizeof(ContractDescriptor64) : sizeof(ContractDescriptor32);
-
-        public static void Fill(Span<byte> dest, MockTarget.Architecture arch, int jsonDescriptorSize, int pointerDataCount)
-        {
-            if (arch.Is64Bit)
-            {
-                ContractDescriptor64.Fill(dest, arch.IsLittleEndian, jsonDescriptorSize, pointerDataCount);
-            }
-            else
-            {
-                ContractDescriptor32.Fill(dest, arch.IsLittleEndian, jsonDescriptorSize, pointerDataCount);
-            }
-        }
-
-        private struct ContractDescriptor32
-        {
-            public ulong Magic = BitConverter.ToUInt64("DNCCDAC\0"u8);
-            public uint Flags = 0x2 /*32-bit*/ | 0x1;
-            public uint DescriptorSize;
-            public uint Descriptor = MockMemorySpace.JsonDescriptorAddr;
-            public uint PointerDataCount;
-            public uint Pad0 = 0;
-            public uint PointerData = MockMemorySpace.ContractPointerDataAddr;
-
-            public ContractDescriptor32() { }
-
-            public static void Fill(Span<byte> dest, bool isLittleEndian, int jsonDescriptorSize, int pointerDataCount)
-            {
-                ContractDescriptor32 descriptor = new()
-                {
-                    DescriptorSize = (uint)jsonDescriptorSize,
-                    PointerDataCount = (uint)pointerDataCount,
-                };
-                if (BitConverter.IsLittleEndian != isLittleEndian)
-                    descriptor.ReverseEndianness();
-
-                MemoryMarshal.AsBytes(MemoryMarshal.CreateSpan(ref descriptor, 1)).CopyTo(dest);
-            }
-
-            private void ReverseEndianness()
-            {
-                Magic = BinaryPrimitives.ReverseEndianness(Magic);
-                Flags = BinaryPrimitives.ReverseEndianness(Flags);
-                DescriptorSize = BinaryPrimitives.ReverseEndianness(DescriptorSize);
-                Descriptor = BinaryPrimitives.ReverseEndianness(Descriptor);
-                PointerDataCount = BinaryPrimitives.ReverseEndianness(PointerDataCount);
-                Pad0 = BinaryPrimitives.ReverseEndianness(Pad0);
-                PointerData = BinaryPrimitives.ReverseEndianness(PointerData);
-            }
-        }
-
-        private struct ContractDescriptor64
-        {
-            public ulong Magic = BitConverter.ToUInt64("DNCCDAC\0"u8);
-            public uint Flags = 0x1;
-            public uint DescriptorSize;
-            public ulong Descriptor = MockMemorySpace.JsonDescriptorAddr;
-            public uint PointerDataCount;
-            public uint Pad0 = 0;
-            public ulong PointerData = MockMemorySpace.ContractPointerDataAddr;
-
-            public ContractDescriptor64() { }
-
-            public static void Fill(Span<byte> dest, bool isLittleEndian, int jsonDescriptorSize, int pointerDataCount)
-            {
-                ContractDescriptor64 descriptor = new()
-                {
-                    DescriptorSize = (uint)jsonDescriptorSize,
-                    PointerDataCount = (uint)pointerDataCount,
-                };
-                if (BitConverter.IsLittleEndian != isLittleEndian)
-                    descriptor.ReverseEndianness();
-
-                MemoryMarshal.AsBytes(MemoryMarshal.CreateSpan(ref descriptor, 1)).CopyTo(dest);
-            }
-
-            private void ReverseEndianness()
-            {
-                Magic = BinaryPrimitives.ReverseEndianness(Magic);
-                Flags = BinaryPrimitives.ReverseEndianness(Flags);
-                DescriptorSize = BinaryPrimitives.ReverseEndianness(DescriptorSize);
-                Descriptor = BinaryPrimitives.ReverseEndianness(Descriptor);
-                PointerDataCount = BinaryPrimitives.ReverseEndianness(PointerDataCount);
-                Pad0 = BinaryPrimitives.ReverseEndianness(Pad0);
-                PointerData = BinaryPrimitives.ReverseEndianness(PointerData);
-            }
-        }
-    }
-
-    #endregion Contract and data descriptor creation
-
-    #region Data descriptor json formatting
-    private static string GetTypeJson(string name, Target.TypeInfo info)
-    {
-        string ret = string.Empty;
-        List<string> fields = info.Size is null ? [] : [$"\"!\":{info.Size}"];
-        fields.AddRange(info.Fields.Select(f => $"\"{f.Key}\":{(f.Value.TypeName is null ? f.Value.Offset : $"[{f.Value.Offset},\"{f.Value.TypeName}\"]")}"));
-        return $"\"{name}\":{{{string.Join(',', fields)}}}";
-    }
-
-    public static string MakeTypesJson(IDictionary<DataType, Target.TypeInfo> types)
-    {
-        return string.Join(',', types.Select(t => GetTypeJson(t.Key.ToString(), t.Value)));
-    }
-
-    public static string MakeGlobalsJson(IEnumerable<(string Name, ulong Value, string? Type)> globals)
-    {
-        return MakeGlobalsJson (globals.Select(g => (g.Name, (ulong?)g.Value, (uint?)null, g.Type)));
-    }
-    public static string MakeGlobalsJson(IEnumerable<(string Name, ulong? Value, uint? IndirectIndex, string? Type)> globals)
-    {
-        return string.Join(',', globals.Select(FormatGlobal));
-
-        static string FormatGlobal((string Name, ulong? Value, uint? IndirectIndex, string? Type) global)
-        {
-            if (global.Value is ulong value)
-            {
-                return $"\"{global.Name}\": {FormatValue(value, global.Type)}";
-            }
-            else if (global.IndirectIndex is uint index)
-            {
-                return $"\"{global.Name}\": {FormatIndirect(index, global.Type)}";
-            }
-            else
-            {
-                throw new InvalidOperationException("Global must have a value or indirect index");
-            }
-
-        }
-        static string FormatValue(ulong value, string? type)
-        {
-            return type is null ? $"{value}" : $"[{value},\"{type}\"]";
-        }
-        static string FormatIndirect(uint value, string? type)
-        {
-            return type is null ? $"[{value}]" : $"[[{value}],\"{type}\"]";
-        }
-    }
-
-    #endregion Data descriptor json formatting
+    public ulong MaxSignedTargetAddress => (ulong)(Arch.Is64Bit ? long.MaxValue : int.MaxValue);
 
     #region Mock memory initialization
 
@@ -313,7 +160,7 @@ internal unsafe class TargetTestHelpers
 
     #endregion Mock memory initialization
 
-    private int AlignUp(int offset, int align)
+    private static int AlignUp(int offset, int align)
     {
         return (offset + align - 1) & ~(align - 1);
     }
@@ -333,26 +180,28 @@ internal unsafe class TargetTestHelpers
         public readonly uint MaxAlign { get; init; }
     }
 
+    internal record Field(string Name, DataType Type, uint? Size = null);
+
     // Implements a simple layout algorithm that aligns fields to their size
     // and aligns the structure to the largest field size.
-    public LayoutResult LayoutFields((string Name, DataType Type)[] fields)
+    public LayoutResult LayoutFields(Field[] fields)
         => LayoutFields(FieldLayout.CIsh, fields);
 
     // Layout the fields of a structure according to the specified layout style.
-    public LayoutResult  LayoutFields(FieldLayout style, (string Name, DataType Type)[] fields)
+    public LayoutResult  LayoutFields(FieldLayout style, Field[] fields)
     {
         int offset = 0;
         int maxAlign = 1;
         return LayoutFieldsWorker(style, fields, ref offset, ref maxAlign);
     }
 
-    private LayoutResult LayoutFieldsWorker(FieldLayout style, (string Name, DataType Type)[] fields, ref int offset, ref int maxAlign)
+    private LayoutResult LayoutFieldsWorker(FieldLayout style, Field[] fields, ref int offset, ref int maxAlign)
     {
         Dictionary<string,Target.FieldInfo> fieldInfos = new ();
         for (int i = 0; i < fields.Length; i++)
         {
-            var (name, type) = fields[i];
-            int size = SizeOfPrimitive(type);
+            var (name, type, sizeMaybe) = fields[i];
+            int size = sizeMaybe.HasValue ? (int)sizeMaybe.Value : SizeOfPrimitive(type);
             int align = size;
             if (align > maxAlign)
             {
@@ -379,9 +228,9 @@ internal unsafe class TargetTestHelpers
     }
 
     // Extend the layout of a base class with additional fields.
-    public LayoutResult ExtendLayout((string Name, DataType Type)[] fields, LayoutResult baseClass) => ExtendLayout(FieldLayout.CIsh, fields, baseClass);
+    public LayoutResult ExtendLayout(Field[] fields, LayoutResult baseClass) => ExtendLayout(FieldLayout.CIsh, fields, baseClass);
 
-    public LayoutResult ExtendLayout(FieldLayout fieldLayout, (string Name, DataType Type)[] fields, LayoutResult baseClass)
+    public LayoutResult ExtendLayout(FieldLayout fieldLayout, Field[] fields, LayoutResult baseClass)
     {
         int offset = (int)baseClass.Stride;
         int maxAlign = (int)baseClass.MaxAlign;

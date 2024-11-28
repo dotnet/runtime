@@ -17,7 +17,6 @@ Abstract:
 --*/
 
 #include "shmobject.hpp"
-#include "pal/malloc.hpp"
 #include "pal/cs.hpp"
 #include "pal/dbgmsg.h"
 
@@ -527,7 +526,7 @@ CSharedMemoryObject::CleanupForProcessShutdown(
     m_pthrCleanup = pthr;
     pthr->AddThreadReference();
 
-    InternalDelete(this);
+    delete this;
 
     pthr->ReleaseThreadReference();
 

@@ -143,6 +143,19 @@ namespace System
 
         #region Internal
 
+        // Returns the type from which the current type directly inherits from (without reflection quirks).
+        // The parent type is null for interfaces, pointers, byrefs and generic parameters.
+        internal RuntimeType? GetParentType()
+        {
+            RuntimeType _this = this;
+            RuntimeType? res = null;
+            GetParentType(new QCallTypeHandle(ref _this), ObjectHandleOnStack.Create(ref res));
+            return res;
+        }
+
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        private static extern void GetParentType(QCallTypeHandle type, ObjectHandleOnStack res);
+
         [RequiresUnreferencedCode("Types might be removed")]
         internal static RuntimeType? GetType(string typeName, bool throwOnError, bool ignoreCase,
             ref StackCrawlMark stackMark)
@@ -1324,7 +1337,7 @@ namespace System
                 TypeCache cache = Cache;
                 if ((cache.Cached & (int)TypeCacheEntries.IsActualEnum) != 0)
                     return (cache.Flags & (int)TypeCacheEntries.IsActualEnum) != 0;
-                bool res = !IsGenericParameter && RuntimeTypeHandle.GetBaseType(this) == EnumType;
+                bool res = !IsGenericParameter && GetParentType() == EnumType;
                 CacheFlag(TypeCacheEntries.IsActualEnum, res);
                 return res;
             }
@@ -2093,7 +2106,7 @@ namespace System
                 }
 
                 if (HasElementType)
-                    return GetElementType().ContainsGenericParameters;
+                    return GetElementType()!.ContainsGenericParameters;
 
                 if (IsFunctionPointer)
                 {

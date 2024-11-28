@@ -144,7 +144,7 @@ namespace System.Diagnostics.Tracing
                 ActivityInfo? currentActivity = m_current.Value;
                 ActivityInfo? newCurrentActivity = null;               // if we have seen any live activities (orphans), at he first one we have seen.
 
-                // Search to find the activity to stop in one pass.   This insures that we don't let one mistake
+                // Search to find the activity to stop in one pass.   This ensures that we don't let one mistake
                 // (stopping something that was not started) cause all active starts to be stopped
                 // By first finding the target start to stop we are more robust.
                 ActivityInfo? activityToStop = FindActiveActivity(fullActivityName, currentActivity);

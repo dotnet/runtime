@@ -1649,6 +1649,7 @@ struct cdac_data<Module>
     static constexpr size_t DynamicMetadata = offsetof(Module, m_pDynamicMetadata);
     static constexpr size_t Path = offsetof(Module, m_path);
     static constexpr size_t FileName = offsetof(Module, m_fileName);
+    static constexpr size_t ReadyToRunInfo = offsetof(Module, m_pReadyToRunInfo);
 
     // Lookup map pointers
     static constexpr size_t FieldDefToDescMap = offsetof(Module, m_FieldDefToDescMap);

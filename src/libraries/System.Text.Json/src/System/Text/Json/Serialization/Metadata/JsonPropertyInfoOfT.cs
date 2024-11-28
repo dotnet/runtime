@@ -429,6 +429,14 @@ namespace System.Text.Json.Serialization.Metadata
                     IgnoreDefaultValuesOnWrite = true;
                     break;
 
+                case JsonIgnoreCondition.WhenWriting:
+                    ShouldSerialize = ShouldSerializeIgnoreConditionAlways;
+                    break;
+
+                case JsonIgnoreCondition.WhenReading:
+                    Set = null;
+                    break;
+
                 default:
                     Debug.Fail($"Unknown value of JsonIgnoreCondition '{ignoreCondition}'");
                     break;
