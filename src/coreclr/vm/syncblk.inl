@@ -479,6 +479,7 @@ FORCEINLINE bool AwareLock::TryEnterHelper(Thread* pCurThread)
     if (m_lockState.InterlockedTryLock())
     {
         m_HoldingThread = pCurThread;
+        m_HoldingThreadId = pCurThread->GetThreadId();
         m_HoldingOSThreadId = pCurThread->GetOSThreadId64();
         m_Recursion = 1;
         return true;
@@ -525,6 +526,7 @@ FORCEINLINE AwareLock::EnterHelperResult AwareLock::TryEnterBeforeSpinLoopHelper
 
         // Lock was acquired and the spinner was not registered
         m_HoldingThread = pCurThread;
+        m_HoldingThreadId = pCurThread->GetThreadId();
         m_HoldingOSThreadId = pCurThread->GetOSThreadId64();
         m_Recursion = 1;
         return EnterHelperResult_Entered;
@@ -557,6 +559,7 @@ FORCEINLINE AwareLock::EnterHelperResult AwareLock::TryEnterInsideSpinLoopHelper
 
     // Lock was acquired and spinner was unregistered
     m_HoldingThread = pCurThread;
+    m_HoldingThreadId = pCurThread->GetThreadId();
     m_HoldingOSThreadId = pCurThread->GetOSThreadId64();
     m_Recursion = 1;
     return EnterHelperResult_Entered;
@@ -580,6 +583,7 @@ FORCEINLINE bool AwareLock::TryEnterAfterSpinLoopHelper(Thread *pCurThread)
 
     // Spinner was unregistered and the lock was acquired
     m_HoldingThread = pCurThread;
+    m_HoldingThreadId = pCurThread->GetThreadId();
     m_HoldingOSThreadId = pCurThread->GetOSThreadId64();
     m_Recursion = 1;
     return true;
@@ -683,7 +687,7 @@ FORCEINLINE AwareLock::LeaveHelperAction AwareLock::LeaveHelper(Thread* pCurThre
         MODE_ANY;
     } CONTRACTL_END;
 
-    if (m_HoldingThread != pCurThread)
+    if (m_HoldingThreadId != pCurThread->GetThreadId())
         return AwareLock::LeaveHelperAction_Error;
 
     _ASSERTE(m_lockState.VolatileLoadWithoutBarrier().IsLocked());
