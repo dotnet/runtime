@@ -73,7 +73,7 @@ class vxsort_machine_traits<int32_t, AVX2> {
 
     static void store_compress_vec(TV* ptr, TV v, TMASK mask) { not_supported(); }
 
-    static INLINE TV partition_vector(TV v, int mask) {
+    static INLINE TV partition_vector(TV v, TMASK mask) {
         assert(mask >= 0);
         assert(mask <= 255);
         return s2i(_mm256_permutevar8x32_ps(i2s(v), _mm256_cvtepi8_epi32(_mm_loadu_si128((__m128i*)(perm_table_32 + mask * 8)))));
@@ -107,6 +107,8 @@ class vxsort_machine_traits<int32_t, AVX2> {
             add = (T) (((TU) add) << Shift);
         return add;
     }
+
+    static INLINE T mask_popcount(TMASK mask) { return _mm_popcnt_u32(mask); }
 };
 
 template <>
@@ -120,7 +122,7 @@ class vxsort_machine_traits<int64_t, AVX2> {
 
     static constexpr bool supports_compress_writes() { return false; }
 
-    static constexpr bool supports_packing() { return true; }
+    static constexpr bool supports_packing() { return false; }
 
     template <int Shift>
     static constexpr bool can_pack(T span) {
@@ -133,7 +135,7 @@ class vxsort_machine_traits<int64_t, AVX2> {
 
     static void store_compress_vec(TV* ptr, TV v, TMASK mask) { not_supported(); }
 
-    static INLINE TV partition_vector(TV v, int mask) {
+    static INLINE TV partition_vector(TV v, TMASK mask) {
         assert(mask >= 0);
         assert(mask <= 15);
         return s2i(_mm256_permutevar8x32_ps(i2s(v), _mm256_cvtepu8_epi32(_mm_loadu_si128((__m128i*)(perm_table_64 + mask * 8)))));
@@ -182,6 +184,8 @@ class vxsort_machine_traits<int64_t, AVX2> {
             add = (T) (((TU) add) << Shift);
         return add;
     }
+
+    static INLINE T mask_popcount(TMASK mask) { return _mm_popcnt_u64(mask); }
 };
 
 

@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#if defined(TARGET_AMD64)
+
 #include "common.h"
 #include "bitonic_sort.AVX512.int32_t.generated.h"
 
@@ -29,3 +31,5 @@ void vxsort::smallsort::bitonic<int32_t, vector_machine::AVX512 >::sort(int32_t 
         case 16: sort_16v_alt(ptr, remainder); break;
     }
 }
+
+#endif

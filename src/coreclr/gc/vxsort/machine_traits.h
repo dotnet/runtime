@@ -8,12 +8,15 @@
 #ifndef VXSORT_MACHINE_TRAITS_H
 #define VXSORT_MACHINE_TRAITS_H
 
+#include "alignment.h"
+
 namespace vxsort {
 
 enum vector_machine {
     NONE,
     AVX2,
     AVX512,
+    NEON,
     SVE,
 };
 
@@ -23,6 +26,8 @@ struct vxsort_machine_traits {
     typedef T TV;
     typedef T TMASK;
     typedef T TPACK;
+    typedef alignment_hint<sizeof(TV)> AH;
+    static const int N = sizeof(TV) / sizeof(T);
 
     static constexpr bool supports_compress_writes() {
         static_assert(sizeof(TV) != sizeof(TV), "func must be specialized!");
@@ -49,7 +54,7 @@ struct vxsort_machine_traits {
     static void store_compress_vec(TV* ptr, TV v, TMASK mask) {
         static_assert(sizeof(TV) != sizeof(TV), "func must be specialized!");
     }
-    static TV partition_vector(TV v, int mask);
+    static TV partition_vector(TV v, T mask);
     static TV broadcast(T pivot);
     static TMASK get_cmpgt_mask(TV a, TV b);
 
@@ -76,6 +81,10 @@ struct vxsort_machine_traits {
     static T unshift_and_add(TPACK from, T add) {
         static_assert(sizeof(TV) != sizeof(TV), "func must be specialized!");
         return add;
+    }
+
+    static T mask_popcount(TMASK mask) {
+        static_assert(sizeof(TV) != sizeof(TV), "func must be specialized!");
     }
 };
 
