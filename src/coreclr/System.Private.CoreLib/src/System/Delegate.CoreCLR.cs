@@ -435,7 +435,7 @@ namespace System
         private static MulticastDelegate InternalAlloc(RuntimeType type)
         {
             Debug.Assert(type.IsAssignableTo(typeof(MulticastDelegate)));
-            return (MulticastDelegate)RuntimeTypeHandle.InternalAlloc(type);
+            return Unsafe.As<MulticastDelegate>(RuntimeTypeHandle.InternalAlloc(type));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

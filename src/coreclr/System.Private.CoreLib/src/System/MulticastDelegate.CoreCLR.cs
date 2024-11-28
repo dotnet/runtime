@@ -167,8 +167,7 @@ namespace System
         private MulticastDelegate NewMulticastDelegate(object[] invocationList, int invocationCount, bool thisIsMultiCastAlready)
         {
             // First, allocate a new multicast delegate just like this one, i.e. same type as the this object
-            // No need to check for type being initialized since we are making a copy of an existing instance.
-            MulticastDelegate result = (MulticastDelegate)RuntimeTypeHandle.InternalAlloc((RuntimeType)GetType(), checkTypeFullyInitialized: false);
+            MulticastDelegate result = Unsafe.As<MulticastDelegate>(RuntimeTypeHandle.InternalAlloc((RuntimeType)GetType()));
 
             // Performance optimization - if this already points to a true multicast delegate,
             // copy _methodPtr and _methodPtrAux fields rather than calling into the EE to get them

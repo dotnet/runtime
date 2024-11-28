@@ -269,23 +269,23 @@ namespace System
             int cTypeHandles,
             ObjectHandleOnStack instantiatedObject);
 
-        internal static unsafe object InternalAlloc(MethodTable* pMT, bool checkTypeFullyInitialized = true)
+        internal static unsafe object InternalAlloc(MethodTable* pMT)
         {
             object? result = null;
-            InternalAlloc(pMT, checkTypeFullyInitialized ? Interop.BOOL.TRUE : Interop.BOOL.FALSE, ObjectHandleOnStack.Create(ref result));
+            InternalAlloc(pMT, ObjectHandleOnStack.Create(ref result));
             return result!;
         }
 
-        internal static object InternalAlloc(RuntimeType type, bool checkTypeFullyInitialized = true)
+        internal static object InternalAlloc(RuntimeType type)
         {
             Debug.Assert(!type.GetNativeTypeHandle().IsTypeDesc);
-            object result = InternalAlloc(type.GetNativeTypeHandle().AsMethodTable(), checkTypeFullyInitialized);
+            object result = InternalAlloc(type.GetNativeTypeHandle().AsMethodTable());
             GC.KeepAlive(type);
             return result;
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_InternalAlloc")]
-        private static unsafe partial void InternalAlloc(MethodTable* pMT, Interop.BOOL check, ObjectHandleOnStack result);
+        private static unsafe partial void InternalAlloc(MethodTable* pMT, ObjectHandleOnStack result);
 
         /// <summary>
         /// Given a RuntimeType, returns information about how to activate it via calli

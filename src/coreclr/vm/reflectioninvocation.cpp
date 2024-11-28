@@ -116,7 +116,7 @@ extern "C" void QCALLTYPE RuntimeTypeHandle_CreateInstanceForAnotherGenericParam
     END_QCALL;
 }
 
-extern "C" void QCALLTYPE RuntimeTypeHandle_InternalAlloc(MethodTable* pMT, BOOL check, QCall::ObjectHandleOnStack allocated)
+extern "C" void QCALLTYPE RuntimeTypeHandle_InternalAlloc(MethodTable* pMT, QCall::ObjectHandleOnStack allocated)
 {
     QCALL_CONTRACT;
 
@@ -126,9 +126,7 @@ extern "C" void QCALLTYPE RuntimeTypeHandle_InternalAlloc(MethodTable* pMT, BOOL
 
     GCX_COOP();
 
-    allocated.Set(check == FALSE
-        ? pMT->AllocateNoChecks()
-        : pMT->Allocate());
+    allocated.Set(pMT->Allocate());
 
     END_QCALL;
 }

@@ -2672,14 +2672,6 @@ public:
     //
 
     OBJECTREF Allocate();
-
-    // This flavor of Allocate is more efficient, but can only be used
-    // if CheckInstanceActivated(), IsClassInited() are known to be true.
-    // A sufficient condition is that another instance of the exact same type already
-    // exists in the same appdomain. It's currently called only from Delegate.Combine
-    // via COMDelegate::InternalAllocLike.
-    OBJECTREF AllocateNoChecks();
-
     OBJECTREF Box(void* data);
     OBJECTREF FastBox(void** data);
 #ifndef DACCESS_COMPILE
@@ -3921,12 +3913,11 @@ private:
         TADDR         m_ElementTypeHnd;
     };
     public:
-    union 
+    union
     {
         PTR_InterfaceInfo   m_pInterfaceMap;
         TADDR               m_encodedNullableUnboxData; // Used for Nullable<T> to represent the offset to the value field, and the size of the value field
     };
-    
 
     // VTable slots go here
 
