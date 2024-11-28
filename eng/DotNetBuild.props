@@ -23,7 +23,7 @@
     <LogVerbosity Condition="'$(LogVerbosity)' == ''">minimal</LogVerbosity>
   </PropertyGroup>
 
-  <!-- Keep this list kept in sync with https://github.com/dotnet/sdk/blob/main/src/SourceBuild/content/Directory.Build.props#L23 -->
+  <!-- Keep this list in sync with https://github.com/dotnet/sdk/blob/main/src/SourceBuild/content/Directory.Build.props#L23 -->
   <PropertyGroup Label="ShortStacks">
     <ShortStack Condition="'$(TargetOS)' == 'wasi'">true</ShortStack>
     <ShortStack Condition="'$(TargetOS)' == 'browser'">true</ShortStack>
