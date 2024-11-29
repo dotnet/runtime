@@ -14,6 +14,9 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 	{
 		// Using these as a simple way to suppress all warning in Main
 		// it causes lot of warning due to DAM marking everything in the class.
+		[UnconditionalSuppressMessage ("Reflection", "IL2123", Justification = "The RUC suppresses warnings in an entrypoint, but we don't mind")]
+		[UnconditionalSuppressMessage ("Reflection", "IL3057", Justification = "The RDC suppresses warnings in an entrypoint, but we don't mind")]
+		[UnconditionalSuppressMessage ("Reflection", "IL3005", Justification = "The RAF suppresses warnings in an entrypoint, but we don't mind")]
 		[RequiresUnreferencedCode ("main")]
 		[RequiresDynamicCode ("main")]
 		[RequiresAssemblyFiles ("main")]
