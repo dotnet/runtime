@@ -58,12 +58,12 @@ Revision History:
 #include <machine/vmparam.h>
 #endif  // HAVE_MACHINE_VMPARAM_H
 
-#if defined(TARGET_APPLE)
+#if defined(__APPLE__)
 #include <mach/vm_statistics.h>
 #include <mach/mach_types.h>
 #include <mach/mach_init.h>
 #include <mach/mach_host.h>
-#endif // defined(TARGET_APPLE)
+#endif // defined(__APPLE__)
 
 #ifdef __HAIKU__
 #include <OS.h>

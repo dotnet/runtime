@@ -73,7 +73,6 @@ if(CLR_CMAKE_TARGET_OSX)
 endif()
 
 if(CLR_CMAKE_TARGET_APPLE)
-  add_definitions(-DTARGET_APPLE)
   add_definitions(-D_XOPEN_SOURCE)
   set(PLATFORM_SOURCES
     arch/${PAL_ARCH_SOURCES_DIR}/context.S
