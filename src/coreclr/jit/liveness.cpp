@@ -1421,8 +1421,12 @@ void Compiler::fgComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VARSET_VALAR
             case GT_CNS_LNG:
             case GT_CNS_DBL:
             case GT_CNS_STR:
+#if defined(FEATURE_SIMD)
             case GT_CNS_VEC:
+#endif // FEATURE_SIMD
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
             case GT_CNS_MSK:
+#endif // FEATURE_MASKED_HW_INTRINSICS
             case GT_PHYSREG:
                 // These are all side-effect-free leaf nodes.
                 if (node->IsUnusedValue())

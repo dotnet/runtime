@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 
 //
@@ -63,10 +64,17 @@ namespace System.Runtime
 
                 finalizerCount++;
 
-                // Call the finalizer on the current target object. If the finalizer throws we'll fail
-                // fast via normal Redhawk exception semantics (since we don't attempt to catch
-                // anything).
-                ((delegate*<object, void>)target.GetMethodTable()->FinalizerCode)(target);
+                try
+                {
+                    // Call the finalizer on the current target object.
+                    ((delegate*<object, void>)target.GetMethodTable()->FinalizerCode)(target);
+                }
+                // We do not use "?." operator here like in other places.
+                // It would cause "Predefined type 'System.Nullable`1' is not defined" errors.
+                catch (Exception ex) when (ExceptionHandling.s_handler != null && ExceptionHandling.s_handler(ex))
+                {
+                    // the handler returned "true" means the exception is now "handled" and we should continue.
+                }
             }
         }
     }

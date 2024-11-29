@@ -38,24 +38,14 @@ static CORINFO_InstructionSet X64VersionOfIsa(CORINFO_InstructionSet isa)
             return InstructionSet_AVX2_X64;
         case InstructionSet_AVX512BW:
             return InstructionSet_AVX512BW_X64;
-        case InstructionSet_AVX512BW_VL:
-            return InstructionSet_AVX512BW_VL_X64;
         case InstructionSet_AVX512CD:
             return InstructionSet_AVX512CD_X64;
-        case InstructionSet_AVX512CD_VL:
-            return InstructionSet_AVX512CD_VL_X64;
         case InstructionSet_AVX512DQ:
             return InstructionSet_AVX512DQ_X64;
-        case InstructionSet_AVX512DQ_VL:
-            return InstructionSet_AVX512DQ_VL_X64;
         case InstructionSet_AVX512F:
             return InstructionSet_AVX512F_X64;
-        case InstructionSet_AVX512F_VL:
-            return InstructionSet_AVX512F_VL_X64;
         case InstructionSet_AVX512VBMI:
             return InstructionSet_AVX512VBMI_X64;
-        case InstructionSet_AVX512VBMI_VL:
-            return InstructionSet_AVX512VBMI_VL_X64;
         case InstructionSet_AVX10v1:
             return InstructionSet_AVX10v1_X64;
         case InstructionSet_AVX10v1_V512:
@@ -70,6 +60,8 @@ static CORINFO_InstructionSet X64VersionOfIsa(CORINFO_InstructionSet isa)
             return InstructionSet_BMI2_X64;
         case InstructionSet_FMA:
             return InstructionSet_FMA_X64;
+        case InstructionSet_GFNI:
+            return InstructionSet_GFNI_X64;
         case InstructionSet_LZCNT:
             return InstructionSet_LZCNT_X64;
         case InstructionSet_PCLMULQDQ:
@@ -78,8 +70,6 @@ static CORINFO_InstructionSet X64VersionOfIsa(CORINFO_InstructionSet isa)
             return InstructionSet_POPCNT_X64;
         case InstructionSet_X86Serialize:
             return InstructionSet_X86Serialize_X64;
-        case InstructionSet_EVEX:
-            return InstructionSet_EVEX_X64;
         default:
             return InstructionSet_NONE;
     }
@@ -113,13 +103,34 @@ static CORINFO_InstructionSet VLVersionOfIsa(CORINFO_InstructionSet isa)
 }
 
 //------------------------------------------------------------------------
-// V512VersionOfIsa: Gets the corresponding AVX10V512 only InstructionSet for a given InstructionSet
+// V256VersionOfIsa: Gets the corresponding V256 only InstructionSet for a given InstructionSet
 //
 // Arguments:
 //    isa -- The InstructionSet ID
 //
 // Return Value:
-//    The AVX10V512 only InstructionSet associated with isa
+//    The V256 only InstructionSet associated with isa
+static CORINFO_InstructionSet V256VersionOfIsa(CORINFO_InstructionSet isa)
+{
+    switch (isa)
+    {
+        case InstructionSet_GFNI:
+            return InstructionSet_GFNI_V256;
+        case InstructionSet_PCLMULQDQ:
+            return InstructionSet_PCLMULQDQ_V256;
+        default:
+            return InstructionSet_NONE;
+    }
+}
+
+//------------------------------------------------------------------------
+// V512VersionOfIsa: Gets the corresponding V512 only InstructionSet for a given InstructionSet
+//
+// Arguments:
+//    isa -- The InstructionSet ID
+//
+// Return Value:
+//    The V512 only InstructionSet associated with isa
 static CORINFO_InstructionSet V512VersionOfIsa(CORINFO_InstructionSet isa)
 {
     switch (isa)
@@ -128,6 +139,10 @@ static CORINFO_InstructionSet V512VersionOfIsa(CORINFO_InstructionSet isa)
             return InstructionSet_AVX10v1_V512;
         case InstructionSet_AVX10v1_X64:
             return InstructionSet_AVX10v1_V512_X64;
+        case InstructionSet_GFNI:
+            return InstructionSet_GFNI_V512;
+        case InstructionSet_PCLMULQDQ:
+            return InstructionSet_PCLMULQDQ_V512;
         default:
             return InstructionSet_NONE;
     }
@@ -213,6 +228,13 @@ static CORINFO_InstructionSet lookupInstructionSet(const char* className)
         if (strcmp(className, "Fma") == 0)
         {
             return InstructionSet_FMA;
+        }
+    }
+    else if (className[0] == 'G')
+    {
+        if (strcmp(className, "Gfni") == 0)
+        {
+            return InstructionSet_GFNI;
         }
     }
     else if (className[0] == 'L')
@@ -340,7 +362,11 @@ CORINFO_InstructionSet HWIntrinsicInfo::lookupIsa(const char* className,
 
     if (className[0] == 'V')
     {
-        if (strcmp(className, "V512") == 0)
+        if (strcmp(className, "V256") == 0)
+        {
+            return V256VersionOfIsa(enclosingIsa);
+        }
+        else if (strcmp(className, "V512") == 0)
         {
             return V512VersionOfIsa(enclosingIsa);
         }
@@ -832,23 +858,18 @@ bool HWIntrinsicInfo::isFullyImplementedIsa(CORINFO_InstructionSet isa)
         case InstructionSet_AVX2_X64:
         case InstructionSet_AVX512F:
         case InstructionSet_AVX512F_VL:
-        case InstructionSet_AVX512F_VL_X64:
         case InstructionSet_AVX512F_X64:
         case InstructionSet_AVX512BW:
         case InstructionSet_AVX512BW_VL:
-        case InstructionSet_AVX512BW_VL_X64:
         case InstructionSet_AVX512BW_X64:
         case InstructionSet_AVX512CD:
         case InstructionSet_AVX512CD_VL:
-        case InstructionSet_AVX512CD_VL_X64:
         case InstructionSet_AVX512CD_X64:
         case InstructionSet_AVX512DQ:
         case InstructionSet_AVX512DQ_VL:
-        case InstructionSet_AVX512DQ_VL_X64:
         case InstructionSet_AVX512DQ_X64:
         case InstructionSet_AVX512VBMI:
         case InstructionSet_AVX512VBMI_VL:
-        case InstructionSet_AVX512VBMI_VL_X64:
         case InstructionSet_AVX512VBMI_X64:
         case InstructionSet_AVXVNNI:
         case InstructionSet_AVXVNNI_X64:
@@ -862,6 +883,8 @@ bool HWIntrinsicInfo::isFullyImplementedIsa(CORINFO_InstructionSet isa)
         case InstructionSet_LZCNT_X64:
         case InstructionSet_PCLMULQDQ:
         case InstructionSet_PCLMULQDQ_X64:
+        case InstructionSet_PCLMULQDQ_V256:
+        case InstructionSet_PCLMULQDQ_V512:
         case InstructionSet_POPCNT:
         case InstructionSet_POPCNT_X64:
         case InstructionSet_SSE:
@@ -888,6 +911,10 @@ bool HWIntrinsicInfo::isFullyImplementedIsa(CORINFO_InstructionSet isa)
         case InstructionSet_AVX10v1_V512:
         case InstructionSet_AVX10v1_V512_X64:
         case InstructionSet_EVEX:
+        case InstructionSet_GFNI:
+        case InstructionSet_GFNI_X64:
+        case InstructionSet_GFNI_V256:
+        case InstructionSet_GFNI_V512:
         {
             return true;
         }
@@ -3246,6 +3273,38 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             if (BlockNonDeterministicIntrinsics(mustExpand))
             {
                 break;
+            }
+
+            if ((simdSize == 32) && !varTypeIsFloating(simdBaseType) &&
+                !compOpportunisticallyDependsOn(InstructionSet_AVX2))
+            {
+                // We can't deal with TYP_SIMD32 for integral types if the compiler doesn't support AVX2
+                break;
+            }
+
+            assert(simdSize != 64 || IsBaselineVector512IsaSupportedDebugOnly());
+
+            if (varTypeIsLong(simdBaseType))
+            {
+                if (TARGET_POINTER_SIZE == 4)
+                {
+                    // TODO-XARCH-CQ: 32bit support
+                    break;
+                }
+
+                if ((simdSize == 32) && compOpportunisticallyDependsOn(InstructionSet_AVX2))
+                {
+                    // Emulate NI_AVX512DQ_VL_MultiplyLow with AVX2 for SIMD32
+                }
+                else if ((simdSize == 16) && compOpportunisticallyDependsOn(InstructionSet_SSE41))
+                {
+                    // Emulate NI_AVX512DQ_VL_MultiplyLow with SSE41 for SIMD16
+                }
+                else
+                {
+                    // Software fallback
+                    break;
+                }
             }
 
             op3 = impSIMDPopStack();

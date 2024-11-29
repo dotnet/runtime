@@ -35,12 +35,6 @@ PhaseStatus Compiler::gsPhase()
             gsCopyShadowParams();
         }
 
-        // If we needed to create any new BasicBlocks then renumber the blocks
-        if (fgBBcount > prevBBCount)
-        {
-            fgRenumberBlocks();
-        }
-
         madeChanges = true;
     }
     else
