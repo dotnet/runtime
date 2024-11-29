@@ -687,7 +687,8 @@ FORCEINLINE AwareLock::LeaveHelperAction AwareLock::LeaveHelper(Thread* pCurThre
         MODE_ANY;
     } CONTRACTL_END;
 
-    if (m_HoldingThreadId != pCurThread->GetThreadId())
+    // if (m_HoldingThreadId != pCurThread->GetThreadId()) some tests failed when using this line instead
+    if (m_HoldingThread != pCurThread)
         return AwareLock::LeaveHelperAction_Error;
 
     _ASSERTE(m_lockState.VolatileLoadWithoutBarrier().IsLocked());
