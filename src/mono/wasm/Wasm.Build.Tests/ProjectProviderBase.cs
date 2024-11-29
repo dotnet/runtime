@@ -348,11 +348,11 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
         {
             files.AddRange(new[]
             {
-                Path.Combine(paths.ObjWasmDir, $"{projectName}.dll.bc"),
-                Path.Combine(paths.ObjWasmDir, $"{projectName}.dll.o"),
+                Path.Combine(paths.ObjWasmDir, $"{projectName}{WasmAssemblyExtension}.bc"),
+                Path.Combine(paths.ObjWasmDir, $"{projectName}{WasmAssemblyExtension}.o"),
 
-                Path.Combine(paths.ObjWasmDir, "System.Private.CoreLib.dll.bc"),
-                Path.Combine(paths.ObjWasmDir, "System.Private.CoreLib.dll.o"),
+                Path.Combine(paths.ObjWasmDir, $"System.Private.CoreLib{WasmAssemblyExtension}.bc"),
+                Path.Combine(paths.ObjWasmDir, $"System.Private.CoreLib{WasmAssemblyExtension}.o"),
             });
         }
 

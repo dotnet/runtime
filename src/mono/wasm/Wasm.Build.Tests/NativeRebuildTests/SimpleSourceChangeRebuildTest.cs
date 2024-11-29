@@ -20,7 +20,7 @@ namespace Wasm.Build.NativeRebuild.Tests
 
         [Theory]
         [MemberData(nameof(NativeBuildData))]
-        // [ActiveIssue(aot: True "Cannot find key named WasmBasicTestApp.wasm.bc in the dict")]
+        // [ActiveIssue(aot: True "Expected changed file: dotnet.native.wasm, dotnet.native.js, WasmBasicTestApp.wasm.bc, WasmBasicTestApp.wasm.o")]
         public async void SimpleStringChangeInSource(Configuration config, bool aot, bool nativeRelink, bool invariant)
         {
             ProjectInfo info = CopyTestAsset(config, aot, BasicTestApp, "rebuild_simple");
