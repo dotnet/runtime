@@ -2382,8 +2382,8 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
     //
     // if so, we can avoid the diamond shape and use JTRUE's targets directly.
     //
-    BasicBlock* isInstTrueBb  = nullptr;
-    BasicBlock* isInstFalseBb = nullptr;
+    BasicBlock* castSucceedsFinalBb = nullptr;
+    BasicBlock* castFailsFinalBb    = nullptr;
     if (block->KindIs(BBJ_COND) && (block->lastStmt() == stmt))
     {
         GenTree* rootNode = block->lastStmt()->GetRootNode();
@@ -2392,8 +2392,8 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
             GenTree* cmp = rootNode->gtGetOp1();
             if ((cmp->gtGetOp1() == call) && cmp->gtGetOp2()->IsIntegralConst(0))
             {
-                isInstTrueBb  = cmp->OperIs(GT_EQ) ? block->GetFalseTarget() : block->GetTrueTarget();
-                isInstFalseBb = cmp->OperIs(GT_EQ) ? block->GetTrueTarget() : block->GetFalseTarget();
+                castSucceedsFinalBb = cmp->OperIs(GT_EQ) ? block->GetFalseTarget() : block->GetTrueTarget();
+                castFailsFinalBb    = cmp->OperIs(GT_EQ) ? block->GetTrueTarget() : block->GetFalseTarget();
             }
         }
     }
@@ -2404,12 +2404,12 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
     BasicBlock*    lastBb;
     const unsigned tmpNum = SplitAtTreeAndReplaceItWithLocal(this, block, stmt, call, &firstBb, &lastBb);
 
-    if (isInstTrueBb == nullptr)
+    if (castSucceedsFinalBb == nullptr)
     {
         // Diamond shape - whether cast passes or fails, we'll have to merge back to the same block
-        assert(isInstFalseBb == nullptr);
-        isInstTrueBb  = lastBb;
-        isInstFalseBb = lastBb;
+        assert(castFailsFinalBb == nullptr);
+        castSucceedsFinalBb = lastBb;
+        castFailsFinalBb    = lastBb;
     }
 
     // TODO-InlineCast: we can't set tmp's class because it's assigned to obj before we can make any assumptions
@@ -2576,7 +2576,7 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
     BasicBlock*    typeCheckSucceedBb;
 
     {
-        FlowEdge* const trueEdge = fgAddRefPred(isInstFalseBb, nullcheckBb);
+        FlowEdge* const trueEdge = fgAddRefPred(castFailsFinalBb, nullcheckBb);
         nullcheckBb->SetTrueEdge(trueEdge);
         trueEdge->setLikelihood(nullcheckTrueLikelihood);
     }
@@ -2596,7 +2596,7 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
         falseEdge->setLikelihood(nullcheckFalseLikelihood);
 
         typeCheckSucceedBb      = fgNewBBFromTreeAfter(BBJ_ALWAYS, fallbackBb, typeCheckSucceedTree, debugInfo);
-        FlowEdge* const newEdge = fgAddRefPred(isInstTrueBb, typeCheckSucceedBb);
+        FlowEdge* const newEdge = fgAddRefPred(castSucceedsFinalBb, typeCheckSucceedBb);
         typeCheckSucceedBb->SetTargetEdge(newEdge);
     }
 
