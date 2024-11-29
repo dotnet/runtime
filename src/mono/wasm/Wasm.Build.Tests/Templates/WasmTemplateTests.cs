@@ -269,7 +269,7 @@ namespace Wasm.Build.Tests
             string extraProperties = $"<CopyOutputSymbolsToPublishDirectory>{shouldCopy}</CopyOutputSymbolsToPublishDirectory>";
             ProjectInfo info = CreateWasmTemplateProject(Template.WasmBrowser, config, aot: false, "publishpdb", extraProperties: extraProperties);
 
-            BuildProject(info, config);
+            PublishProject(info, config);
             string publishPath = GetBinFrameworkDir(config, forPublish: true);
             AssertFile(".pdb");
             AssertFile(".pdb.gz");
