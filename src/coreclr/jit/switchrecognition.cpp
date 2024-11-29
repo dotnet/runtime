@@ -329,7 +329,6 @@ bool Compiler::optSwitchConvert(
         assert(rootNode->OperIs(GT_JTRUE));
 
         // We only support reversed tests (GT_NE) in the last block of the chain.
-        // TODO: Remove this restriction.
         assert(rootNode->gtGetOp1()->OperIs(GT_EQ));
         lastBlock = lastBlock->GetFalseTarget();
     }
@@ -368,7 +367,6 @@ bool Compiler::optSwitchConvert(
     for (int i = 0; i < (testsCount - 1); i++)
     {
         // We always follow the false target because reversed tests are only supported for the last block.
-        // TODO: Lift this restriction, and follow the true target if the test is reversed.
         assert(blockToRemove->KindIs(BBJ_COND));
         BasicBlock* const nextBlockToRemove = blockToRemove->GetFalseTarget();
         fgRemoveBlock(blockToRemove, true);
