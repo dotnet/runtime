@@ -71,7 +71,7 @@ namespace System.Runtime
                 }
                 // We do not use "?." operator here like in other places.
                 // It would cause "Predefined type 'System.Nullable`1' is not defined" errors.
-                catch (Exception ex) when (ExceptionHandling.s_handler != null && ExceptionHandling.s_handler(ex))
+                catch (Exception ex) when (ExceptionHandling.IsHandledByGlobalHandler(ex))
                 {
                     // the handler returned "true" means the exception is now "handled" and we should continue.
                 }

@@ -7,6 +7,9 @@ namespace System.Runtime.ExceptionServices
 {
     public static class ExceptionHandling
     {
-        internal static Func<Exception, bool>? s_handler;
+        internal static bool IsHandledByGlobalHandler(Exception ex)
+        {
+            return false;
+        }
     }
 }

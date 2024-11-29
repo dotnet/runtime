@@ -7,7 +7,12 @@ namespace System.Runtime.ExceptionServices
 {
     public static class ExceptionHandling
     {
-        internal static Func<Exception, bool>? s_handler;
+        private static Func<Exception, bool>? s_handler;
+
+        internal static bool IsHandledByGlobalHandler(Exception ex)
+        {
+            return s_handler?.Invoke(ex) == true;
+        }
 
         /// <summary>
         /// Sets a handler for unhandled exceptions.
