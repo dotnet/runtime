@@ -915,9 +915,10 @@ int32_t* interceptor_ICJI::getAddrOfCaptureThreadGlobal(
 
 void* interceptor_ICJI::getHelperFtn(
           CorInfoHelpFunc ftnNum,
-          void** ppIndirection)
+          void** ppIndirection,
+          CORINFO_METHOD_HANDLE* pMethod)
 {
-    return original_ICorJitInfo->getHelperFtn(ftnNum, ppIndirection);
+    return original_ICorJitInfo->getHelperFtn(ftnNum, ppIndirection, pMethod);
 }
 
 void interceptor_ICJI::getFunctionEntryPoint(

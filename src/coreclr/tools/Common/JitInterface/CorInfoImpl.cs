@@ -3531,24 +3531,29 @@ namespace Internal.JitInterface
         private uint getThreadTLSIndex(ref void* ppIndirection)
         { throw new NotImplementedException("getThreadTLSIndex"); }
 
-        private Dictionary<CorInfoHelpFunc, ISymbolNode> _helperCache = new Dictionary<CorInfoHelpFunc, ISymbolNode>();
-        private void* getHelperFtn(CorInfoHelpFunc ftnNum, ref void* ppIndirection)
+        private readonly Dictionary<CorInfoHelpFunc, (ISymbolNode Symbol, MethodDesc Method)> _helperCache = new();
+        private void* getHelperFtn(CorInfoHelpFunc ftnNum, ref void* ppIndirection, CORINFO_METHOD_STRUCT_** pMethod)
         {
-            ISymbolNode entryPoint;
-            if (!_helperCache.TryGetValue(ftnNum, out entryPoint))
+            if (!_helperCache.TryGetValue(ftnNum, out var entryPointMethodDesc))
             {
-                entryPoint = GetHelperFtnUncached(ftnNum);
-                _helperCache.Add(ftnNum, entryPoint);
+                entryPointMethodDesc = (GetHelperFtnUncached(ftnNum, out MethodDesc methodDesc), methodDesc);
+                _helperCache.Add(ftnNum, entryPointMethodDesc);
             }
-            if (entryPoint.RepresentsIndirectionCell)
+
+            if (entryPointMethodDesc.Method != null)
             {
-                ppIndirection = (void*)ObjectToHandle(entryPoint);
+                *pMethod = ObjectToHandle(entryPointMethodDesc.Method);
+            }
+
+            if (entryPointMethodDesc.Symbol.RepresentsIndirectionCell)
+            {
+                ppIndirection = (void*)ObjectToHandle(entryPointMethodDesc.Symbol);
                 return null;
             }
             else
             {
                 ppIndirection = null;
-                return (void*)ObjectToHandle(entryPoint);
+                return (void*)ObjectToHandle(entryPointMethodDesc.Symbol);
             }
         }
 

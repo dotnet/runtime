@@ -868,8 +868,9 @@ public:
 
     void reportMetadata(const char* key, const void* value, size_t length) override final;
 
-    void* getHelperFtn(CorInfoHelpFunc    ftnNum,                         /* IN  */
-                       void **            ppIndirection) override final;  /* OUT */
+    void* getHelperFtn(CorInfoHelpFunc        ftnNum,                  /* IN  */
+                       void **                ppIndirection,           /* OUT */
+                       CORINFO_METHOD_HANDLE* pMethod) override final; /* OUT */
     static PCODE getHelperFtnStatic(CorInfoHelpFunc ftnNum);
 
     // Override of CEEInfo::GetProfilingHandle.  The first time this is called for a

@@ -2349,32 +2349,38 @@ void MethodContext::repGetReadyToRunDelegateCtorHelper(CORINFO_RESOLVED_TOKEN* p
     *pLookup = SpmiRecordsHelper::RestoreCORINFO_LOOKUP(value);
 }
 
-void MethodContext::recGetHelperFtn(CorInfoHelpFunc ftnNum, void** ppIndirection, void* result)
+void MethodContext::recGetHelperFtn(CorInfoHelpFunc ftnNum, void** ppIndirection, CORINFO_METHOD_HANDLE* pMethod, void* result)
 {
     if (GetHelperFtn == nullptr)
-        GetHelperFtn = new LightWeightMap<DWORD, DLDL>();
+        GetHelperFtn = new LightWeightMap<DWORD, Agnostic_GetHelperFtn>();
 
     DWORD key = (DWORD)ftnNum;
 
-    DLDL value;
-    value.A = CastPointer(*ppIndirection);
-    value.B = CastPointer(result);
+    Agnostic_GetHelperFtn value = {}; // Zero value including any struct padding
+    value.ppIndirect = CastPointer(*ppIndirection);
+    value.result = CastPointer(result);
+    value.pMethod = pMethod != nullptr ? CastHandle(*pMethod) : 0;
 
     GetHelperFtn->Add(key, value);
     DEBUG_REC(dmpGetHelperFtn(key, value));
 }
-void MethodContext::dmpGetHelperFtn(DWORD key, DLDL value)
+void MethodContext::dmpGetHelperFtn(DWORD key, Agnostic_GetHelperFtn value)
 {
-    printf("GetHelperFtn key ftn-%u, value ppi-%016" PRIX64 " res-%016" PRIX64 "", key, value.A, value.B);
+    printf("GetHelperFtn key ftn-%u, value ppi-%016" PRIX64 " mth-%016" PRIX64 "res-%016" PRIX64 "", key, value.ppIndirect, value.pMethod, value.result);
 }
-void* MethodContext::repGetHelperFtn(CorInfoHelpFunc ftnNum, void** ppIndirection)
+void* MethodContext::repGetHelperFtn(CorInfoHelpFunc ftnNum, void** ppIndirection, CORINFO_METHOD_HANDLE* pMethod)
 {
     DWORD key = (DWORD)ftnNum;
-    DLDL value = LookupByKeyOrMiss(GetHelperFtn, key, ": key %u", key);
+    Agnostic_GetHelperFtn value = LookupByKeyOrMiss(GetHelperFtn, key, ": key %u", key);
     DEBUG_REP(dmpGetHelperFtn(key, value));
 
-    *ppIndirection = (void*)value.A;
-    return (void*)value.B;
+    if (pMethod != nullptr)
+    {
+        *pMethod = (CORINFO_METHOD_HANDLE)value.pMethod;
+    }
+
+    *ppIndirection = (void*)value.ppIndirect;
+    return (void*)value.result;
 }
 
 //
@@ -2400,11 +2406,11 @@ bool MethodContext::fndGetHelperFtn(void* functionAddress, CorInfoHelpFunc* pRes
         for (unsigned int i = 0; i < GetHelperFtn->GetCount(); i++)
         {
             DWORD key = GetHelperFtn->GetKey(i);
-            DLDL  val = GetHelperFtn->GetItem(i);
+            Agnostic_GetHelperFtn val = GetHelperFtn->GetItem(i);
 
             // TODO-Cleanup: this only compares the function addresses, and doesn't account for
             // ppIndirection, which will break if the helper is a dynamic helper function.
-            if (val.B == CastPointer(functionAddress))
+            if (val.result == CastPointer(functionAddress))
             {
                 *pResult = (CorInfoHelpFunc)key;
                 return true;
