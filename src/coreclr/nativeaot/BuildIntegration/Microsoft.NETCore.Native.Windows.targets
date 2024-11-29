@@ -87,6 +87,7 @@ The .NET Foundation licenses this file to you under the MIT license.
     </ItemGroup>
 
     <ItemGroup>
+      <LinkerArg Condition="$(EnableSourceLink) == 'true'" Include="/SOURCELINK:$(NativeIntermediateOutputPath)%(ManagedBinary.Filename).sourcelink" />
       <LinkerArg Condition="'$(NativeLib)' == 'Shared'" Include="/DLL" />
       <LinkerArg Include="@(NativeLibrary->'&quot;%(Identity)&quot;')" />
       <LinkerArg Include="@(SdkNativeLibrary->'&quot;%(Identity)&quot;')" />

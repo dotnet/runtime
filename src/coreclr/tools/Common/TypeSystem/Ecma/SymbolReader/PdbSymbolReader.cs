@@ -17,5 +17,6 @@ namespace Internal.TypeSystem.Ecma
         public abstract IEnumerable<ILLocalVariable> GetLocalVariableNamesForMethod(int methodToken);
         public abstract int GetStateMachineKickoffMethod(int methodToken);
         public abstract void Dispose();
+        public abstract ReadOnlySpan<byte> GetSourceLinkData();
     }
 }
