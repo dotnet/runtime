@@ -56,7 +56,7 @@ public class SimpleRunTests : BlazorWasmTestBase
                 Path.Combine(
                     projectDir, "bin", info.ProjectName, config.ToString().ToLower(), "wwwroot", "_framework") :
                 GetBinFrameworkDir(config, isPublish);
-        BuildProject(info, config);
+        BuildProject(info, config, new BuildOptions(NonDefaultFrameworkDir: frameworkDir));
         await RunForBuildWithDotnetRun(new BlazorRunOptions(config));
     }
 
