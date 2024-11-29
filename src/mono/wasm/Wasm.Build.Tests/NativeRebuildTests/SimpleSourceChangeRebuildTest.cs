@@ -20,10 +20,10 @@ namespace Wasm.Build.NativeRebuild.Tests
 
         [Theory]
         [MemberData(nameof(NativeBuildData))]
-        [ActiveIssue("File sizes don't match: dotnet.native.wasm size should be same as from obj/for-publish but is not")]
+        // [ActiveIssue(aot: True "Cannot find key named WasmBasicTestApp.wasm.bc in the dict")]
         public async void SimpleStringChangeInSource(Configuration config, bool aot, bool nativeRelink, bool invariant)
         {
-            ProjectInfo info = CopyTestAsset(config, aot, BasicTestApp, "rebuild_simple");  
+            ProjectInfo info = CopyTestAsset(config, aot, BasicTestApp, "rebuild_simple");
             BuildPaths paths = await FirstNativeBuildAndRun(info, config, nativeRelink, invariant);
 
             string mainAssembly = $"{info.ProjectName}{ProjectProviderBase.WasmAssemblyExtension}";
@@ -40,7 +40,7 @@ namespace Wasm.Build.NativeRebuild.Tests
 
             // Rebuild
             Rebuild(info, config, nativeRelink, invariant);
-            var newStat = StatFiles(pathsDict);
+            var newStat = StatFilesAfterChange(pathsDict);
 
             CompareStat(originalStat, newStat, pathsDict);
             await RunForPublishWithWebServer(new BrowserRunOptions(config, TestScenario: "DotnetRun", ExpectedExitCode: 55));

@@ -263,6 +263,56 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
         return table;
     }
 
+    public IDictionary<string, FileStat> StatFilesAfterChange(IDictionary<string, (string fullPath, bool unchanged)> pathsDict)
+    {
+        if (!IsFingerprintingEnabled)
+            return StatFiles(pathsDict);
+
+        // files are expected to be fingerprinted, so we cannot rely on the paths that come with pathsDict, an update is needed
+        Dictionary<string, FileStat> table = new();
+        foreach (var fileInfo in pathsDict)
+        {
+            string file = fileInfo.Value.fullPath;
+            string nameNoFingerprinting = fileInfo.Key;
+            string[] filesMatchingName = GetFilesMatchingNameConsideringFingerprinting(file, nameNoFingerprinting);
+            if (filesMatchingName.Length > 1)
+            {
+                string? fileMatch = filesMatchingName.FirstOrDefault(f => f != file);
+                if (fileMatch != null)
+                {
+                    table.Add(nameNoFingerprinting, new FileStat(FullPath: fileMatch, Exists: true, LastWriteTimeUtc: File.GetLastWriteTimeUtc(fileMatch), Length: new FileInfo(fileMatch).Length));
+                }
+            }
+            if (filesMatchingName.Length == 0 || (filesMatchingName.Length == 1 && !File.Exists(file)))
+            {
+                table.Add(nameNoFingerprinting, new FileStat(FullPath: file, Exists: false, LastWriteTimeUtc: DateTime.MinValue, Length: 0));
+            }
+            if (filesMatchingName.Length == 1 && File.Exists(file))
+            {
+                table.Add(nameNoFingerprinting, new FileStat(FullPath: file, Exists: true, LastWriteTimeUtc: File.GetLastWriteTimeUtc(file), Length: new FileInfo(file).Length));
+            }
+        }
+        return table;
+    }
+
+    private string[] GetFilesMatchingNameConsideringFingerprinting(string filePath, string nameNoFingerprinting)
+    {
+        var directory = Path.GetDirectoryName(filePath);
+        if (directory == null)
+            return Array.Empty<string>();
+
+        string fileNameWithoutExtensionAndFingerprinting = Path.GetFileNameWithoutExtension(nameNoFingerprinting);
+        string fileExtension = Path.GetExtension(filePath);
+
+        // search for files that match the name in the directory, skipping fingerprinting
+        string[] files = Directory.GetFiles(directory, $"{fileNameWithoutExtensionAndFingerprinting}*{fileExtension}");
+
+        // filter files with a single fingerprint segment, e.g. "dotnet*.js" should not catch "dotnet.native.d1au9i.js" but should catch "dotnet.js"
+        string pattern = $@"^{Regex.Escape(fileNameWithoutExtensionAndFingerprinting)}(\.[^.]+)?{Regex.Escape(fileExtension)}$";
+        var tmp = files.Where(f => Regex.IsMatch(Path.GetFileName(f), pattern)).ToArray();
+        return tmp;
+    }
+
     public IDictionary<string, (string fullPath, bool unchanged)> GetFilesTable(bool unchanged, params string[] baseDirs)
     {
         var dict = new Dictionary<string, (string fullPath, bool unchanged)>();

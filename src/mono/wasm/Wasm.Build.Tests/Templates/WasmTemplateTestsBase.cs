@@ -356,6 +356,10 @@ public class WasmTemplateTestsBase : BuildTestBase
     public IDictionary<string, FileStat> StatFiles(IDictionary<string, (string fullPath, bool unchanged)> fullpaths) =>
         _provider.StatFiles(fullpaths);
 
+    // 2nd and next stats with fingerprinting require updated statistics
+    public IDictionary<string, FileStat> StatFilesAfterChange(IDictionary<string, (string fullPath, bool unchanged)> fullpaths) =>
+        _provider.StatFilesAfterChange(fullpaths);
+
     public void CompareStat(IDictionary<string, FileStat> oldStat, IDictionary<string, FileStat> newStat, IDictionary<string, (string fullPath, bool unchanged)> expected) =>
         _provider.CompareStat(oldStat, newStat, expected);
 }
