@@ -149,8 +149,11 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
             {
                 // Ldftn should never point to a method from another unloadable context
                 CORINFO_METHOD_HANDLE method = fptr->AsFptrVal()->gtFptrMethod;
-                replacementClass             = info.compCompHnd->getMethodClass(method);
+                assert(method != NO_METHOD_HANDLE);
+
+                replacementClass = info.compCompHnd->getMethodClass(method);
                 info.compCompHnd->getMethodSig(method, &replacementSig, replacementClass);
+
                 if (replacementSig.hasThis() && eeIsValueClass(replacementClass))
                 {
                     JITDUMP(
