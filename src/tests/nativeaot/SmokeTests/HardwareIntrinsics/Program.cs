@@ -71,6 +71,9 @@ unsafe class Program
         bool? ExpectedAvx512DQ = false;
         bool? ExpectedAvx512Vbmi = false;
         bool? ExpectedX86Serialize = null;
+        bool? ExpectedGfni = null;
+        bool? ExpectedGfniV256 = false;
+        bool? ExpectedGfniV512 = false;
 #elif SSE42_INTRINSICS
         bool? ExpectedSse3 = true;
         bool? ExpectedSsse3 = true;
@@ -96,6 +99,9 @@ unsafe class Program
         bool? ExpectedAvx512DQ = false;
         bool? ExpectedAvx512Vbmi = false;
         bool? ExpectedX86Serialize = null;
+        bool? ExpectedGfni = null;
+        bool? ExpectedGfniV256 = false;
+        bool? ExpectedGfniV512 = false;
 #elif AVX_INTRINSICS
         bool? ExpectedSse3 = true;
         bool? ExpectedSsse3 = true;
@@ -121,6 +127,9 @@ unsafe class Program
         bool? ExpectedAvx512DQ = false;
         bool? ExpectedAvx512Vbmi = false;
         bool? ExpectedX86Serialize = null;
+        bool? ExpectedGfni = null;
+        bool? ExpectedGfniV256 = null;
+        bool? ExpectedGfniV512 = false;
 #elif AVX2_INTRINSICS
         bool? ExpectedSse3 = true;
         bool? ExpectedSsse3 = true;
@@ -146,6 +155,9 @@ unsafe class Program
         bool? ExpectedAvx512DQ = false;
         bool? ExpectedAvx512Vbmi = false;
         bool? ExpectedX86Serialize = null;
+        bool? ExpectedGfni = null;
+        bool? ExpectedGfniV256 = null;
+        bool? ExpectedGfniV512 = false;
 #elif AVX512_INTRINSICS
         bool? ExpectedSse3 = true;
         bool? ExpectedSsse3 = true;
@@ -171,6 +183,9 @@ unsafe class Program
         bool? ExpectedAvx512DQ = true;
         bool? ExpectedAvx512Vbmi = null;
         bool? ExpectedX86Serialize = null;
+        bool? ExpectedGfni = null;
+        bool? ExpectedGfniV256 = null;
+        bool? ExpectedGfniV512 = null;
 #else
 #error Who dis?
 #endif
@@ -272,6 +287,11 @@ unsafe class Program
         Check("X86Serialize", ExpectedX86Serialize, &X86SerializeIsSupported, X86Serialize.IsSupported, () => { X86Serialize.Serialize(); return true; } );
         Check("X86Serialize.X64", ExpectedX86Serialize, &X86SerializeX64IsSupported, X86Serialize.X64.IsSupported, null);
 
+        Check("Gfni", ExpectedGfni, &GfniIsSupported, Gfni.IsSupported, () => Gfni.GaloisFieldMultiply(Vector128<byte>.Zero, Vector128<byte>.Zero).Equals(Vector128<byte>.Zero));
+        Check("Gfni.V256", ExpectedGfniV256, &GfniV256IsSupported, Gfni.V256.IsSupported, () => Gfni.V256.GaloisFieldMultiply(Vector256<byte>.Zero, Vector256<byte>.Zero).Equals(Vector256<byte>.Zero));
+        Check("Gfni.V512", ExpectedGfniV512, &GfniV512IsSupported, Gfni.V512.IsSupported, () => Gfni.V512.GaloisFieldMultiply(Vector512<byte>.Zero, Vector512<byte>.Zero).Equals(Vector512<byte>.Zero));
+        Check("Gfni.X64", ExpectedGfni, &GfniX64IsSupported, Gfni.X64.IsSupported, null);
+
         return s_success ? 100 : 1;
     }
 
@@ -333,6 +353,10 @@ unsafe class Program
     static bool Avx512VbmiX64IsSupported() => Avx512Vbmi.X64.IsSupported;
     static bool X86SerializeIsSupported() => X86Serialize.IsSupported;
     static bool X86SerializeX64IsSupported() => X86Serialize.X64.IsSupported;
+    static bool GfniIsSupported() => Gfni.IsSupported;
+    static bool GfniV256IsSupported() => Gfni.V256.IsSupported;
+    static bool GfniV512IsSupported() => Gfni.V512.IsSupported;
+    static bool GfniX64IsSupported() => Gfni.X64.IsSupported;
 
     static bool IsConstantTrue(delegate*<bool> code)
     {

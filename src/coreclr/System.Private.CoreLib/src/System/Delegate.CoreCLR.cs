@@ -456,7 +456,7 @@ namespace System
         {
             if (a.GetType() == b.GetType())
                 return true;
-
+#if FEATURE_TYPEEQUIVALENCE
             MethodTable* pMTa = RuntimeHelpers.GetMethodTable(a);
             MethodTable* pMTb = RuntimeHelpers.GetMethodTable(b);
 
@@ -472,6 +472,9 @@ namespace System
             GC.KeepAlive(b);
 
             return ret;
+#else
+            return false;
+#endif // FEATURE_TYPEEQUIVALENCE
         }
 
         // Used by the ctor. Do not call directly.
