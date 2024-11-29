@@ -3534,13 +3534,14 @@ namespace Internal.JitInterface
         private readonly Dictionary<CorInfoHelpFunc, (ISymbolNode Symbol, MethodDesc Method)> _helperCache = new();
         private void* getHelperFtn(CorInfoHelpFunc ftnNum, ref void* ppIndirection, CORINFO_METHOD_STRUCT_** pMethod)
         {
-            if (!_helperCache.TryGetValue(ftnNum, out var entryPointMethodDesc))
+            if (!_helperCache.TryGetValue(ftnNum, out (ISymbolNode Symbol, MethodDesc Method) entryPointMethodDesc))
             {
-                entryPointMethodDesc = (GetHelperFtnUncached(ftnNum, out MethodDesc methodDesc), methodDesc);
+                ISymbolNode node = GetHelperFtnUncached(ftnNum, out MethodDesc methodDesc);
+                entryPointMethodDesc = (node, methodDesc);
                 _helperCache.Add(ftnNum, entryPointMethodDesc);
             }
 
-            if (entryPointMethodDesc.Method != null)
+            if (pMethod != null && entryPointMethodDesc.Method != null)
             {
                 *pMethod = ObjectToHandle(entryPointMethodDesc.Method);
             }
@@ -3550,11 +3551,9 @@ namespace Internal.JitInterface
                 ppIndirection = (void*)ObjectToHandle(entryPointMethodDesc.Symbol);
                 return null;
             }
-            else
-            {
-                ppIndirection = null;
-                return (void*)ObjectToHandle(entryPointMethodDesc.Symbol);
-            }
+
+            ppIndirection = null;
+            return (void*)ObjectToHandle(entryPointMethodDesc.Symbol);
         }
 
         public static ReadyToRunHelperId GetReadyToRunHelperFromStaticBaseHelper(CorInfoHelpFunc helper)
