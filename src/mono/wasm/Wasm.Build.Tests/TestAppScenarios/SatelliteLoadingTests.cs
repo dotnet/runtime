@@ -86,7 +86,7 @@ public class SatelliteLoadingTests : WasmTemplateTestsBase
             .EnsureSuccessful();
 
         // Publish the app and assert
-        BuildProject(info, config);
+        PublishProject(info, config);
 
         var result = await RunForPublishWithWebServer(new BrowserRunOptions(Configuration: Configuration.Release, TestScenario: "SatelliteAssembliesTest"));
         Assert.Collection(
