@@ -5391,22 +5391,40 @@ bool Compiler::ThreeOptLayout::RunGreedyThreeOptPass(unsigned startPos, unsigned
         }
         else
         {
-
+            // For backward jumps, we will employ a greedy 4-opt approach to find the ideal cut point
+            // between the destination and source blocks.
             // Here is the proposed partition:
             // S1: startPos ~ dstPos-1
-            // S2: dstPos ~ srcPos-1
-            // S3: srcPos
+            // S2: dstPos ~ s3Start-1
+            // S3: s3Start ~ srcPos
             // S4: srcPos+1 ~ endPos
             //
             // After the swap:
             // S1: startPos ~ dstPos-1
-            // S3: srcPos
-            // S2: dstPos ~ srcPos-1
+            // S3: s3Start ~ srcPos
+            // S2: dstPos ~ s3Start-1
             // S4: srcPos+1 ~ endPos
             s2Start    = dstPos;
             s3Start    = srcPos;
             s3End      = srcPos;
-            costChange = GetPartitionCostDelta(startPos, s2Start, s3Start, s3End, endPos);
+            costChange = BB_ZERO_WEIGHT;
+
+            // Search for the ideal start to S3
+            for (unsigned position = s2Start + 1; position <= s3End; position++)
+            {
+                // Don't consider any cut points that would break up call-finally pairs
+                if (blockOrder[position]->KindIs(BBJ_CALLFINALLYRET))
+                {
+                    continue;
+                }
+
+                const weight_t delta = GetPartitionCostDelta(startPos, s2Start, position, s3End, endPos);
+                if (delta < costChange)
+                {
+                    costChange = delta;
+                    s3Start    = position;
+                }
+            }
         }
 
         // Continue evaluating partitions if this one isn't profitable
