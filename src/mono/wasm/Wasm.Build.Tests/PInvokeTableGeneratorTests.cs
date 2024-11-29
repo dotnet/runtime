@@ -86,7 +86,7 @@ namespace Wasm.Build.Tests
         {
             ProjectInfo info = PrepreProjectForBlittableTests(
                 config, aot, "not_blittable", disableRuntimeMarshalling: false, useAutoLayout: true);
-            (_, string output) = BuildProject(info, config, new PublishOptions(ExpectSuccess: false, AOT: aot));
+            (_, string output) = BuildProject(info, config, new BuildOptions(ExpectSuccess: false, AOT: aot));
             Assert.Matches("error.*Parameter.*types.*pinvoke.*.*blittable", output);
         }
 
