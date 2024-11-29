@@ -88,22 +88,22 @@ inline GCRefKind TransitionFrameFlagsToReturnKind(uint64_t transFrameFlags)
 
 #elif defined(TARGET_RISCV64)
 // Verify that we can use bitwise shifts to convert from GCRefKind to PInvokeTransitionFrameFlags and back
-C_ASSERT( PTFF_T0_IS_GCREF == ((uint64_t)GCRK_Object << 32));
-C_ASSERT(PTFF_T0_IS_BYREF == ((uint64_t)GCRK_Byref << 32));
-C_ASSERT(PTFF_T1_IS_GCREF == ((uint64_t)GCRK_Scalar_Obj << 32));
-C_ASSERT(PTFF_T1_IS_BYREF == ((uint64_t)GCRK_Scalar_Byref << 32));
+C_ASSERT(PTFF_A0_IS_GCREF == ((uint64_t)GCRK_Object << 31));
+C_ASSERT(PTFF_A0_IS_BYREF == ((uint64_t)GCRK_Byref << 31));
+C_ASSERT(PTFF_A1_IS_GCREF == ((uint64_t)GCRK_Scalar_Obj << 31));
+C_ASSERT(PTFF_A1_IS_BYREF == ((uint64_t)GCRK_Scalar_Byref << 31));
 
 inline uint64_t ReturnKindToTransitionFrameFlags(GCRefKind returnKind)
 {
     // Just need to report GC ref bits here.
     // Appropriate PTFF_SAVE_ bits will be added by the frame building routine.
-    return ((uint64_t)returnKind << 32);
+    return ((uint64_t)returnKind << 31);
 }
 
 inline GCRefKind TransitionFrameFlagsToReturnKind(uint64_t transFrameFlags)
 {
-    GCRefKind returnKind = (GCRefKind)((transFrameFlags & ( PTFF_T0_IS_GCREF | PTFF_T0_IS_BYREF | PTFF_T1_IS_GCREF | PTFF_T1_IS_BYREF)) >> 32);
-    ASSERT((returnKind == GCRK_Scalar) || ((transFrameFlags & PTFF_SAVE_T0) && (transFrameFlags & PTFF_SAVE_T1)));
+    GCRefKind returnKind = (GCRefKind)((transFrameFlags & ( PTFF_A0_IS_GCREF | PTFF_A0_IS_BYREF | PTFF_A1_IS_GCREF | PTFF_A1_IS_BYREF)) >> 31);
+    ASSERT((returnKind == GCRK_Scalar) || ((transFrameFlags & PTFF_SAVE_A0) && (transFrameFlags & PTFF_SAVE_A1)));
     return returnKind;
 }
 

@@ -38,7 +38,7 @@
 
         // Load the target address from the data block and jump to it
         ld    t1, POINTER_SIZE(t0)  // Load target address into t1 from the data block
-        jalr  t1                  // Jump to the target address in t1
+        jalr  t1                    // Jump to the target address in t1
 
     LEAF_END RhCommonStub, _TEXT
 
@@ -47,5 +47,5 @@
     //
     LEAF_ENTRY RhGetCommonStubAddress, _TEXT
         PREPARE_EXTERNAL_VAR RhCommonStub, a0
-        jalr  a0               // Return address in a0
+        jalr  zero, 0(ra)      // Return address in ra
     LEAF_END RhGetCommonStubAddress, _TEXT

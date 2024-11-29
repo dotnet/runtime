@@ -318,7 +318,7 @@ C_FUNC(\Name):
 .endm
 
 // Bit position for the flags above, to be used with tbz / tbnz instructions
-#define PTFF_THREAD_ABORT_BIT 36
+#define PTFF_THREAD_ABORT_BIT 35
 
 //
 // CONSTANTS -- INTEGER

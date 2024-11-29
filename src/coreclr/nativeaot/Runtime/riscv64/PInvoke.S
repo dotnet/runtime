@@ -32,7 +32,7 @@ NESTED_ENTRY RhpPInvoke, _TEXT, NoHandler
 
         sd    a1, OFFSETOF__PInvokeTransitionFrame__m_pThread(a0)
         sd    a0, OFFSETOF__Thread__m_pTransitionFrame(a1)
-        jalr  ra, 0
+        jalr  zero, 0(ra)
 NESTED_END RhpPInvoke, _TEXT
 
 LEAF_ENTRY RhpPInvokeReturn, _TEXT
@@ -41,9 +41,9 @@ LEAF_ENTRY RhpPInvokeReturn, _TEXT
 
         PREPARE_EXTERNAL_VAR_INDIRECT_W RhpTrapThreads, a5
 
-        beq   t0, zero, 1f   // TrapThreadsFlags_None = 0
-        jalr  ra, 0
+        bne   t0, zero, 1f   // TrapThreadsFlags_None = 0
+        jalr  zero, 0(ra)
 1:
         // passing transition frame pointer in a0
-        jal   C_FUNC(RhpWaitForGC2)
+        tail  C_FUNC(RhpWaitForGC2)
 LEAF_END RhpPInvokeReturn, _TEXT

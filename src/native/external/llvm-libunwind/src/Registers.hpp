@@ -4342,7 +4342,7 @@ inline void Registers_riscv::setRegister(int regNum, reg_t value, uint64_t locat
     return;
   else if ((regNum > 0) && (regNum < 32)) {
     _registers[regNum] = value;
-    _registerLocations[regNum - UNW_LOONGARCH_R0] = location;
+    _registerLocations[regNum - UNW_RISCV_X0] = location;
   }
   else
     _LIBUNWIND_ABORT("unsupported riscv register");

@@ -10,8 +10,8 @@
 //
 // Rename fields of nested structs
 //
-#define OFFSETOF__Thread__m_alloc_context__alloc_ptr        (OFFSETOF__Thread__m_rgbAllocContextBuffer + OFFSETOF__gc_alloc_context__alloc_ptr)
-#define OFFSETOF__Thread__m_alloc_context__alloc_limit      (OFFSETOF__Thread__m_rgbAllocContextBuffer + OFFSETOF__gc_alloc_context__alloc_limit)
+#define OFFSETOF__Thread__m_alloc_context__alloc_ptr        (OFFSETOF__Thread__m_eeAllocContext + OFFSETOF__ee_alloc_context__m_rgbAllocContextBuffer + OFFSETOF__gc_alloc_context__alloc_ptr)
+#define OFFSETOF__Thread__m_eeAllocContext__combined_limit  (OFFSETOF__Thread__m_eeAllocContext + OFFSETOF__ee_alloc_context__combined_limit)
 
 // Allocate non-array, non-finalizable object. If the allocation doesn't fit into the current thread's
 // allocation context then automatically fallback to the slow allocation path.
@@ -28,7 +28,7 @@
         //
         // a0 contains MethodTable pointer
         //
-        ld   a2, OFFSETOF__MethodTable__m_uBaseSize(a0)
+        lw  a2, OFFSETOF__MethodTable__m_uBaseSize(a0)
 
         //
         // a0: MethodTable pointer
@@ -37,35 +37,33 @@
         //
 
         // Load potential new object address into t3.
-        ld   t3, OFFSETOF__Thread__m_alloc_context__alloc_ptr(a1)
+        ld  t3, OFFSETOF__Thread__m_alloc_context__alloc_ptr(a1)
 
         // Determine whether the end of the object would lie outside of the current allocation context. If so,
         // we abandon the attempt to allocate the object directly and fall back to the slow helper.
-        add  a2, a2, t3
-        ld   t4, OFFSETOF__Thread__m_alloc_context__alloc_limit(a1)
-        bltu t4, a2, RhpNewFast_RarePath
+        add   a2, a2, t3
+        ld    t4, OFFSETOF__Thread__m_alloc_context__alloc_limit(a1)
+        bltu  t4, a2, LOCAL_LABEL(RhpNewFast_RarePath)
 
         // Update the alloc pointer to account for the allocation.
-        sd   a2, OFFSETOF__Thread__m_alloc_context__alloc_ptr(a1)
+        sd    a2, OFFSETOF__Thread__m_alloc_context__alloc_ptr(a1)
 
         // Set the new objects MethodTable pointer
-        sd   a0, OFFSETOF__Object__m_pEEType(t3)
+        sd    a0, OFFSETOF__Object__m_pEEType(t3)
 
-        mv   a0, t3
-        j    RhpNewFast_Return
+        mv    a0, t3
+        ret
 
-RhpNewFast_RarePath:
-        mv   a1, x0
-        j    RhpNewObject
-
-RhpNewFast_Return:
+LOCAL_LABEL(RhpNewFast_RarePath):
+        mv    a1, zero
+        tail  RhpNewObject
     LEAF_END RhpNewFast, _TEXT
 
 // Allocate non-array object with finalizer.
 //  a0 == MethodTable
     LEAF_ENTRY RhpNewFinalizable, _TEXT
-        li   a1, GC_ALLOC_FINALIZE
-        j    RhpNewObject
+        li    a1, GC_ALLOC_FINALIZE
+        tail  RhpNewObject
     LEAF_END RhpNewFinalizable, _TEXT
 
 // Allocate non-array object.
@@ -78,16 +76,16 @@ RhpNewFast_Return:
         // a3: transition frame
 
         // Preserve the MethodTable in s0
-        mv   s0, a0
+        mv  s0, a0
 
-        li   a2, 0 // numElements
+        li  a2, 0 // numElements
 
         // Call the rest of the allocation helper.
         // void* RhpGcAlloc(MethodTable *pEEType, uint32_t uFlags, uintptr_t numElements, void * pTransitionFrame)
         call  C_FUNC(RhpGcAlloc)
 
         // Set the new object's MethodTable pointer on success.
-        beq  a0, x0, NewOutOfMemory
+        beq  a0, zero, LOCAL_LABEL(NewOutOfMemory)
 
         .cfi_remember_state
         POP_COOP_PINVOKE_FRAME
@@ -95,15 +93,15 @@ RhpNewFast_Return:
 
         .cfi_restore_state
 
-NewOutOfMemory:
+LOCAL_LABEL(NewOutOfMemory):
         // This is the OOM failure path. We are going to tail-call to a managed helper that will throw
         // an out of memory exception that the caller of this allocator understands.
 
-        mv   a0, s0                // MethodTable pointer
-        li   a1, 0                  // Indicate that we should throw OOM.
+        mv  a0, s0                // MethodTable pointer
+        li  a1, 0                 // Indicate that we should throw OOM.
 
         POP_COOP_PINVOKE_FRAME
-        j    C_FUNC(RhExceptionHandling_FailedAllocation)
+        tail  C_FUNC(RhExceptionHandling_FailedAllocation)
 
     NESTED_END RhpNewObject, _TEXT
 
@@ -112,15 +110,14 @@ NewOutOfMemory:
 //  a1 == element/character count
     LEAF_ENTRY RhNewString, _TEXT
         // Make sure computing the overall allocation size won't overflow
-        lui  a2, ((MAX_STRING_LENGTH >> 12) & 0xFFFFF) // Load upper 20 bits of MAX_STRING_LENGTH
-        addi a2, a2, ((MAX_STRING_LENGTH & 0xFFF) - 4096) // Adjust lower 12 bits with addi
-        bltu a1, a2, StringSizeOverflow                // Branch if a1 < a2 (overflow)
+        li    a2, MAX_STRING_LENGTH
+        bltu  a2, a1, LOCAL_LABEL(StringSizeOverflow)   // Branch if a2 < a1 (overflow)
 
         // Compute overall allocation size (align(base size + (element size * elements), 8)).
-        li   a3, STRING_COMPONENT_SIZE                 // Load STRING_COMPONENT_SIZE into a3
-        mul  a2, a1, a3                                // a2 = a1 * STRING_COMPONENT_SIZE
-        addi a2, a2, STRING_BASE_SIZE + 7              // a2 = a2 + STRING_BASE_SIZE + 7
-        andi a2, a2, ~0x7                              // Clear the bits[2:0] of a2 (align to 8 bytes)
+        li    a3, STRING_COMPONENT_SIZE                 // Load STRING_COMPONENT_SIZE into a3
+        mul   a2, a1, a3                                // a2 = a1 * STRING_COMPONENT_SIZE
+        addi  a2, a2, STRING_BASE_SIZE + 7              // a2 = a2 + STRING_BASE_SIZE + 7
+        andi  a2, a2, ~0x7                              // Clear the bits[2:0] of a2 (align to 8 bytes)
 
         // a0 == MethodTable
         // a1 == element count
@@ -138,8 +135,8 @@ NewOutOfMemory:
         // Determine whether the end of the object would lie outside of the current allocation context. If so,
         // we abandon the attempt to allocate the object directly and fall back to the slow helper.
         add  a2, a2, t3
-        ld   t3, OFFSETOF__Thread__m_alloc_context__alloc_limit(a3)
-        bltu t3, a2, RhNewString_Rare
+        ld   t3, OFFSETOF__Thread__m_eeAllocContext__combined_limit(a3)
+        bltu t3, a2, LOCAL_LABEL(RhNewString_Rare)
 
         // Reload new object address into t3.
         ld   t3, OFFSETOF__Thread__m_alloc_context__alloc_ptr(a3)
@@ -154,21 +151,19 @@ NewOutOfMemory:
         // Return the object allocated in a0.
         mv   a0, t3
 
-        j    RhNewString_Return
+        ret
 
-StringSizeOverflow:
+LOCAL_LABEL(StringSizeOverflow):
         // We get here if the length of the final string object cannot be represented as an unsigned
         // 32-bit value. We are going to tail-call to a managed helper that will throw
         // an OOM exception that the caller of this allocator understands.
 
         // a0 holds MethodTable pointer already
-        li   a1, 1                  // Indicate that we should throw OverflowException
-        j    C_FUNC(RhExceptionHandling_FailedAllocation)
+        li    a1, 1                  // Indicate that we should throw OverflowException
+        tail  C_FUNC(RhExceptionHandling_FailedAllocation)
 
-RhNewString_Rare:
-        j    C_FUNC(RhpNewArrayRare)
-
-RhNewString_Return:
+LOCAL_LABEL(RhNewString_Rare):
+        tail  C_FUNC(RhpNewArrayRare)
     LEAF_END RhNewString, _TEXT
 
 // Allocate one-dimensional, zero-based array (SZARRAY).
@@ -180,9 +175,8 @@ RhNewString_Return:
         // If the element count is <= 0x7FFFFFFF, no overflow is possible because the component
         // size is <= 0xffff (it is an unsigned 16-bit value), and the base size for the worst
         // case (32-dimensional MdArray) is less than 0xffff, and thus the product fits in 64 bits.
-        lui  a2, 0x7ffff                // Load upper 20 bits of 0x7FFFFFFF into a2
-        addi a2, a2, 0x3ff              // Adjust the lower 12 bits to get 0x7FFFFFFF (maximum 32-bit int)
-        bltu a1, a2, ArraySizeOverflow  // Branch if a1 < a2 (check for overflow)
+        li  a2, 0x7fffffff
+        bltu  a2, a1, LOCAL_LABEL(ArraySizeOverflow)  // Branch if a2 < a1 (check for overflow)
 
         ld   a2, OFFSETOF__MethodTable__m_usComponentSize(a0) // Load component size
         mul  a2, a1, a2                // a2 = a1 * component size
@@ -203,8 +197,8 @@ RhNewString_Return:
         // Determine whether the end of the object would lie outside of the current allocation context. If so,
         // we abandon the attempt to allocate the object directly and fall back to the slow helper.
         add  a2, a2, t3
-        ld   t3, OFFSETOF__Thread__m_alloc_context__alloc_limit(a3)
-        bltu t3, a2, RhpNewArray_Rare
+        ld   t3, OFFSETOF__Thread__m_eeAllocContext__combined_limit(a3)
+        bltu t3, a2, LOCAL_LABEL(RhpNewArray_Rare)
 
         // Reload new object address into t3.
         ld   t3, OFFSETOF__Thread__m_alloc_context__alloc_ptr(a3)
@@ -219,21 +213,19 @@ RhNewString_Return:
         // Return the object allocated in a0.
         mv   a0, t3
 
-        j    RhpNewArray_Return
+        ret
 
-ArraySizeOverflow:
+LOCAL_LABEL(ArraySizeOverflow):
         // We get here if the size of the final array object cannot be represented as an unsigned
         // 32-bit value. We are going to tail-call to a managed helper that will throw
         // an overflow exception that the caller of this allocator understands.
 
         // a0 holds MethodTable pointer already
         li   a1, 1 // Indicate that we should throw OverflowException
-        j    C_FUNC(RhExceptionHandling_FailedAllocation)
+        tail  C_FUNC(RhExceptionHandling_FailedAllocation)
 
-RhpNewArray_Rare:
-        j    C_FUNC(RhpNewArrayRare)
-
-RhpNewArray_Return:
+LOCAL_LABEL(RhpNewArray_Rare):
+        tail  C_FUNC(RhpNewArrayRare)
     LEAF_END RhpNewArray, _TEXT
 
 // Allocate one-dimensional, zero-based array (SZARRAY) using the slow path that calls a runtime helper.
@@ -259,7 +251,7 @@ RhpNewArray_Return:
         call  C_FUNC(RhpGcAlloc)
 
         // Set the new object's MethodTable pointer and length on success.
-        beq  a0, x0, ArrayOutOfMemory
+        beq  a0, zero, LOCAL_LABEL(ArrayOutOfMemory)
 
         .cfi_remember_state
         POP_COOP_PINVOKE_FRAME
@@ -267,7 +259,7 @@ RhpNewArray_Return:
 
         .cfi_restore_state
 
-ArrayOutOfMemory:
+LOCAL_LABEL(ArrayOutOfMemory):
         // This is the OOM failure path. We are going to tail-call to a managed helper that will throw
         // an out of memory exception that the caller of this allocator understands.
 
@@ -275,6 +267,6 @@ ArrayOutOfMemory:
         li   a1, 0               // Indicate that we should throw OOM.
 
         POP_COOP_PINVOKE_FRAME
-        j    C_FUNC(RhExceptionHandling_FailedAllocation)
+        tail  C_FUNC(RhExceptionHandling_FailedAllocation)
 
     NESTED_END RhpNewArrayRare, _TEXT

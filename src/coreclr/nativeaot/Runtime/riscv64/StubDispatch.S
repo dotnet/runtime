@@ -18,10 +18,10 @@
         bne   t1, t6, 0f
         
         // Load the target address from the cache entry
-        ld    t6, (OFFSETOF__InterfaceDispatchCache__m_rgEntries + (\entry * 16) + 8)(t0)
+        ld    t0, (OFFSETOF__InterfaceDispatchCache__m_rgEntries + (\entry * 16) + 8)(t0)
         
         // Jump to the address in t6
-        jalr  t0, t6, 0
+        jalr  zero, 0(t0)
         
     0:
     .endm
@@ -34,11 +34,11 @@
         NESTED_ENTRY RhpInterfaceDispatch\entries, _TEXT, NoHandler
 
             // t0 holds the indirection cell address. Load the cache pointer.
-            ld t0, OFFSETOF__InterfaceDispatchCell__m_pCache(a1)  // Using a1 as an alternative base register
+            ld  t0, OFFSETOF__InterfaceDispatchCell__m_pCache(a1)  // Using a1 as an alternative base register
 
             // Load the MethodTable from the object instance in a0.
             ALTERNATE_ENTRY RhpInterfaceDispatchAVLocation\entries
-            ld t1, 0(a0)
+            ld  t1, 0(a0)
 
         .global CurrentEntry
         .set CurrentEntry, 0
@@ -49,7 +49,7 @@
         .endr
 
             // t0 still contains the indirection cell address.
-            jal C_FUNC(RhpInterfaceDispatchSlow)
+            tail  C_FUNC(RhpInterfaceDispatchSlow)
 
         NESTED_END RhpInterfaceDispatch\entries, _TEXT
 
@@ -75,10 +75,10 @@
         // The exception handling infrastructure is aware of the fact that this is the first
         // instruction of RhpInitialInterfaceDispatch and uses it to translate an AV here
         // to a NullReferenceException at the callsite.
-        ld    zero, 0(a0)
+        ld  zero, 0(a0)
 
         // Just tail call to the cache miss helper.
-        jal   C_FUNC(RhpInterfaceDispatchSlow)
+        tail  C_FUNC(RhpInterfaceDispatchSlow)
     LEAF_END RhpInitialInterfaceDispatch, _TEXT
 
     //
@@ -87,7 +87,7 @@
     LEAF_ENTRY RhpVTableOffsetDispatch, _TEXT
         // t2 contains the interface dispatch cell address.
         // Load t3 to point to the vtable offset (which is stored in the m_pCache field).
-        ld    t3, OFFSETOF__InterfaceDispatchCell__m_pCache(t2)
+        ld  t3, OFFSETOF__InterfaceDispatchCell__m_pCache(t2)
 
         // Load the MethodTable from the object instance in a0, and add it to the vtable offset
         // to get the address in the vtable of what we want to dereference
@@ -97,7 +97,7 @@
         // Load the target address of the vtable into t3
         ld    t3, 0(t3)
 
-        jalr  t3, 0
+        jalr  zero, 0(t3)
     LEAF_END RhpVTableOffsetDispatch, _TEXT
 
     //
@@ -110,7 +110,7 @@
         //  t3: target address for the thunk to call
         //  t4: parameter of the thunk's target
         PREPARE_EXTERNAL_VAR RhpCidResolve, t3
-        jal   C_FUNC(RhpUniversalTransition_DebugStepTailCall)
+        tail  C_FUNC(RhpUniversalTransition_DebugStepTailCall)
     LEAF_END RhpInterfaceDispatchSlow, _TEXT
 
 #endif // FEATURE_CACHED_INTERFACE_DISPATCH
