@@ -116,27 +116,27 @@ public class WasmTemplateTestsBase : BuildTestBase
     public virtual (string projectDir, string buildOutput) PublishProject(
         ProjectInfo info,
         Configuration configuration,
-        bool isNativeBuild = false) =>
+        bool? isNativeBuild = null) => // null for WasmBuildNative unset
         BuildProject(info, configuration, _defaultPublishOptions, isNativeBuild);
 
     public virtual (string projectDir, string buildOutput) PublishProject(
         ProjectInfo info,
         Configuration configuration,
         PublishOptions publishOptions,
-        bool isNativeBuild = false) =>
+        bool? isNativeBuild = null) =>
         BuildProject(info, configuration, publishOptions, isNativeBuild);
 
     public virtual (string projectDir, string buildOutput) BuildProject(
         ProjectInfo info,
         Configuration configuration,
-        bool isNativeBuild = false) =>
+        bool? isNativeBuild = null) => // null for WasmBuildNative unset
         BuildProject(info, configuration, _defaultBuildOptions, isNativeBuild);
 
     public virtual (string projectDir, string buildOutput) BuildProject(
         ProjectInfo info,
         Configuration configuration,
         MSBuildOptions buildOptions,
-        bool isNativeBuild = false)
+        bool? isNativeBuild = null)
     {
         if (buildOptions.AOT)
         {

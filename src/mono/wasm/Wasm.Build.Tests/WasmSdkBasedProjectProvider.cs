@@ -68,15 +68,15 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
         return res;
     }
 
-    public NativeFilesType GetExpectedFileType(Configuration config, bool isAOT, bool isPublish, bool isUsingWorkloads, bool isNativeBuild=false) =>
-        isNativeBuild ? NativeFilesType.Relinked :
+    public NativeFilesType GetExpectedFileType(Configuration config, bool isAOT, bool isPublish, bool isUsingWorkloads, bool? isNativeBuild=null) =>
         !isPublish ? NativeFilesType.FromRuntimePack :
         isAOT ? NativeFilesType.AOT :
-            (config == Configuration.Debug || !isUsingWorkloads) ?
-                NativeFilesType.FromRuntimePack :
-                NativeFilesType.Relinked;
+        isNativeBuild == true ? NativeFilesType.Relinked :
+        isNativeBuild == false ? NativeFilesType.FromRuntimePack :
+        (config == Configuration.Release) ? NativeFilesType.Relinked :
+        NativeFilesType.FromRuntimePack;
 
-    public void AssertBundle(Configuration config, MSBuildOptions buildOptions, bool isUsingWorkloads, bool expectNativeBuild=false)
+    public void AssertBundle(Configuration config, MSBuildOptions buildOptions, bool isUsingWorkloads, bool? expectNativeBuild = null)
     {
         string frameworkDir = string.IsNullOrEmpty(buildOptions.NonDefaultFrameworkDir) ?
             GetBinFrameworkDir(config, buildOptions.IsPublish, _defaultTargetFramework) :
@@ -162,7 +162,7 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
         }
     }
 
-    public void AssertWasmSdkBundle(Configuration config, MSBuildOptions buildOptions, bool isUsingWorkloads, bool expectNativeBuild = false, string? buildOutput = null)
+    public void AssertWasmSdkBundle(Configuration config, MSBuildOptions buildOptions, bool isUsingWorkloads, bool? expectNativeBuild = null, string? buildOutput = null)
     {
         if (buildOutput is not null)
             ProjectProviderBase.AssertRuntimePackPath(buildOutput, buildOptions.TargetFramework ?? _defaultTargetFramework);

@@ -43,7 +43,7 @@ namespace Wasm.Build.Tests
             Utils.DirectoryCopy(Path.Combine(BuildEnvironment.TestAssetsPath, "resx"), Path.Combine(_projectDir, "resx"));
             CreateProgramForCultureTest($"{info.ProjectName}.resx.words", "TestClass");
 
-            (_, string output) = PublishProject(info, config, new PublishOptions(UseCache: false, AOT: aot), isNativeBuild: nativeRelink);
+            (_, string output) = PublishProject(info, config, new PublishOptions(UseCache: false, AOT: aot), isNativeBuild: nativeRelink ? true : null);
             RunResult result = await RunForPublishWithWebServer(new BrowserRunOptions(
                 config,
                 TestScenario: "DotnetRun",
