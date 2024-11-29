@@ -10743,6 +10743,20 @@ void* CEEJitInfo::getHelperFtn(CorInfoHelpFunc        ftnNum,         /* IN  */
         }
 #endif
 
+        // Check if we already have a cached address of the final target
+        static LPVOID hlpFinalTierAddrTable[DYNAMIC_CORINFO_HELP_COUNT] = {};
+        LPVOID finalTierAddr = hlpFinalTierAddrTable[dynamicFtnNum];
+        if (finalTierAddr != NULL)
+        {
+            result = finalTierAddr;
+            if (pMethod != nullptr && HasILBasedDynamicJitHelper((DynamicCorInfoHelpFunc)dynamicFtnNum))
+            {
+                (void)LoadDynamicJitHelper((DynamicCorInfoHelpFunc)dynamicFtnNum, (MethodDesc**)pMethod);
+                _ASSERT(*pMethod != NULL);
+            }
+            goto exit;
+        }
+
         if (HasILBasedDynamicJitHelper((DynamicCorInfoHelpFunc)dynamicFtnNum))
         {
             MethodDesc* helperMD = NULL;
@@ -10752,15 +10766,6 @@ void* CEEJitInfo::getHelperFtn(CorInfoHelpFunc        ftnNum,         /* IN  */
             if (pMethod != NULL)
             {
                 *pMethod = (CORINFO_METHOD_HANDLE)helperMD;
-            }
-
-            // Check if we already have a cached address of the final target
-            static LPVOID hlpFinalTierAddrTable[DYNAMIC_CORINFO_HELP_COUNT] = {};
-            LPVOID finalTierAddr = hlpFinalTierAddrTable[dynamicFtnNum];
-            if (finalTierAddr != NULL)
-            {
-                result = finalTierAddr;
-                goto exit;
             }
 
             // Check if the target MethodDesc is already jitted to its final Tier
