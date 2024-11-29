@@ -234,6 +234,7 @@
     <Compile Include="System\Array.cs" />
     <Compile Include="System\RuntimeExceptionHelpers.cs" />
     <Compile Include="System\Object.cs" />
+    <Compile Include="System\Functions.cs" />
     <Compile Include="System\Type.cs" />
     <Compile Include="System\RuntimeTypeHandle.cs" />
     <Compile Include="$(AotCommonPath)\Internal\Runtime\TypeManagerHandle.cs">
