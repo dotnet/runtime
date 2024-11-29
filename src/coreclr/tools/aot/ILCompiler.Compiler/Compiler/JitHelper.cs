@@ -250,7 +250,7 @@ namespace ILCompiler
                     methodDesc = context.SystemModule.GetKnownType("System", "Math").GetKnownMethod("ModInt32", null);
                     break;
                 case ReadyToRunHelper.UMod:
-                    methodDesc = context.SystemModule.GetKnownType("System", "Math").GetKnownMethod("ModulUInt32", null);
+                    methodDesc = context.SystemModule.GetKnownType("System", "Math").GetKnownMethod("ModUInt32", null);
                     break;
                 case ReadyToRunHelper.LMod:
                     methodDesc = context.SystemModule.GetKnownType("System", "Math").GetKnownMethod("ModInt64", null);
