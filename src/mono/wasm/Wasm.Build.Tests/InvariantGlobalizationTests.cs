@@ -54,7 +54,7 @@ namespace Wasm.Build.Tests
             // invariantGlobalization triggers native build
             isNativeBuild = isNativeBuild || invariantGlobalization == true;
             var globalizationMode = invariantGlobalization == true ? GlobalizationMode.Invariant : GlobalizationMode.Sharded;
-            BuildProject(info, config, new BuildOptions(GlobalizationMode: globalizationMode, AOT: aot), isNativeBuild: isNativeBuild);
+            PublishProject(info, config, new PublishOptions(GlobalizationMode: globalizationMode, AOT: aot), isNativeBuild: isNativeBuild);
 
             RunResult output = await RunForPublishWithWebServer(new BrowserRunOptions(config, TestScenario: "DotnetRun", ExpectedExitCode: 42));
             if (invariantGlobalization == true)
