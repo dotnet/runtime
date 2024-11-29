@@ -1305,13 +1305,17 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			{
 			}
 
+			class RequiresNew<T> where T : new()
+			{
+			}
+
 			[RequiresUnreferencedCode ("--ClassWithRequires--")]
 			public class ClassWithRequires
 			{
 				public static RequiresAll<T> field;
 
 				// Instance fields get generic warnings but static fields don't.
-				[UnexpectedWarning ("IL2091", Tool.Trimmer, "https://github.com/dotnet/linker/issues/3142")]
+				[UnexpectedWarning ("IL2091", Tool.Trimmer, "https://github.com/dotnet/runtime/issues/108523")]
 				public RequiresAll<T> instanceField;
 
 				[RequiresOnCtor]
@@ -1351,20 +1355,36 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			}
 
 			// This warning should ideally be suppressed by the RUC on the type:
-			[UnexpectedWarning ("IL2091", Tool.TrimmerAnalyzerAndNativeAot, "https://github.com/dotnet/linker/issues/3142")]
+			[UnexpectedWarning ("IL2091", Tool.TrimmerAnalyzerAndNativeAot, "https://github.com/dotnet/runtime/issues/108523")]
 			[RequiresUnreferencedCode ("--GenericClassWithWarningWithRequires--")]
 			public class GenericClassWithWarningWithRequires<U> : RequiresAll<U>
 			{
 			}
 
 			// This warning should ideally be suppressed by the RUC on the type:
-			[UnexpectedWarning ("IL2091", Tool.TrimmerAnalyzerAndNativeAot, "https://github.com/dotnet/linker/issues/3142")]
+			[UnexpectedWarning ("IL2091", Tool.TrimmerAnalyzerAndNativeAot, "https://github.com/dotnet/runtime/issues/108523")]
 			[RequiresUnreferencedCode ("--ClassWithWarningWithRequires--")]
 			public class ClassWithWarningWithRequires : RequiresAll<T>
 			{
 			}
 
-			[UnexpectedWarning ("IL2091", Tool.TrimmerAnalyzerAndNativeAot, "https://github.com/dotnet/linker/issues/3142")]
+			[ExpectedWarning ("IL2026", "ClassWithRequires()", "--ClassWithRequires--")]
+			class ClassWithWarningOnGenericArgumentConstructor : RequiresNew<ClassWithRequires>
+			{
+				// Analyzer misses warning for implicit call to the base constructor, because the new constraint is not checked in dataflow.
+				[ExpectedWarning ("IL2026", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/108507")]
+				public ClassWithWarningOnGenericArgumentConstructor ()
+				{
+				}
+			}
+
+			[UnexpectedWarning ("IL2026", Tool.TrimmerAnalyzerAndNativeAot, "https://github.com/dotnet/runtime/issues/108507")]
+			[RequiresUnreferencedCode ("--ClassWithWarningOnGenericArgumentConstructorWithRequires--")]
+			class ClassWithWarningOnGenericArgumentConstructorWithRequires : RequiresNew<ClassWithRequires>
+			{
+			}
+
+			[UnexpectedWarning ("IL2091", Tool.TrimmerAnalyzerAndNativeAot, "https://github.com/dotnet/runtime/issues/108523")]
 			[RequiresUnreferencedCode ("--GenericAnnotatedWithWarningWithRequires--")]
 			public class GenericAnnotatedWithWarningWithRequires<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] TFields> : RequiresAll<TFields>
 			{
@@ -1376,6 +1396,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			[ExpectedWarning ("IL2026", "--ClassWithRequires--", ".ClassWithRequires", "MethodWithAttribute")]
 			[ExpectedWarning ("IL2026", "--GenericClassWithWarningWithRequires--")]
 			[ExpectedWarning ("IL2026", "--ClassWithWarningWithRequires--")]
+			[ExpectedWarning ("IL2026", "--ClassWithWarningOnGenericArgumentConstructorWithRequires--")]
 			[ExpectedWarning ("IL2026", "--GenericAnnotatedWithWarningWithRequires--")]
 			[ExpectedWarning ("IL2091", Tool.Trimmer, "")]
 			public static void Test (ClassWithRequires inst = null)
@@ -1392,7 +1413,9 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				var d = new ClassWithRequires.ClassWithAttribute ();
 				var g = new GenericClassWithWarningWithRequires<int> ();
 				var h = new ClassWithWarningWithRequires ();
-				var j = new GenericAnnotatedWithWarningWithRequires<int> ();
+				var j = new ClassWithWarningOnGenericArgumentConstructor ();
+				var k = new ClassWithWarningOnGenericArgumentConstructorWithRequires ();
+				var l = new GenericAnnotatedWithWarningWithRequires<int> ();
 			}
 		}
 

@@ -901,6 +901,15 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         }
                     case ComplexTypeSpec complexType:
                         {
+                            // Early detection of types we cannot bind to and skip it.
+                            if (!_typeIndex.HasBindableMembers(complexType) &&
+                                !_typeIndex.GetEffectiveTypeSpec(complexType).IsValueType &&
+                                complexType is not CollectionSpec &&
+                                ((ObjectSpec)complexType).InstantiationStrategy == ObjectInstantiationStrategy.ParameterizedConstructor)
+                            {
+                                return false;
+                            }
+
                             string sectionValidationCall = $"{MethodsToGen_CoreBindingHelper.AsConfigWithChildren}({sectionParseExpr})";
                             string sectionIdentifier = GetIncrementalIdentifier(Identifier.section);
 
@@ -1109,7 +1118,9 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 }
                 else
                 {
-                    EmitStartBlock($"if ({sectionValueExpr} is string {nonNull_StringValue_Identifier})");
+                    // In case of calling parsing methods, check the section value first for null or empty before calling parse.
+                    string extraCondition = typeKind == StringParsableTypeKind.AssignFromSectionValue ? "" : $" && !string.IsNullOrEmpty({nonNull_StringValue_Identifier})";
+                    EmitStartBlock($"if ({sectionValueExpr} is string {nonNull_StringValue_Identifier}{extraCondition})");
                     writeOnSuccess?.Invoke(parsedValueExpr);
                     EmitEndBlock();
                 }

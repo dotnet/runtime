@@ -15,7 +15,7 @@ using Microsoft.Extensions.Logging;
 namespace Microsoft.Extensions.Hosting
 {
     /// <summary>
-    /// Represents a hosted applications and services builder which helps manage configuration, logging, lifetime, and more.
+    /// Represents a hosted applications and services builder that helps manage configuration, logging, lifetime, and more.
     /// </summary>
     public sealed class HostApplicationBuilder : IHostApplicationBuilder
     {
@@ -226,7 +226,7 @@ namespace Microsoft.Extensions.Hosting
         }
 
         /// <summary>
-        /// Build the host. This can only be called once.
+        /// Builds the host. This method can only be called once.
         /// </summary>
         /// <returns>An initialized <see cref="IHost"/>.</returns>
         public IHost Build()

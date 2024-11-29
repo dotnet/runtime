@@ -577,7 +577,6 @@ mono_init_native_crash_info (void)
 void
 mono_runtime_setup_stat_profiler (void)
 {
-	g_error ("mono_runtime_setup_stat_profiler");
 }
 
 gboolean
@@ -749,7 +748,7 @@ mono_wasm_enable_debugging (int log_level)
 	mono_wasm_debug_level = log_level;
 }
 
-int
+MONO_API int
 mono_wasm_get_debug_level (void)
 {
 	return mono_wasm_debug_level;

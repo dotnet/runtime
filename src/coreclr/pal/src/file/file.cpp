@@ -18,7 +18,6 @@ SET_DEFAULT_DEBUG_CHANNEL(FILE); // some headers have code with asserts, so do t
 
 #include "pal/thread.hpp"
 #include "pal/file.hpp"
-#include "pal/malloc.hpp"
 #include "pal/stackstring.hpp"
 
 #include "pal/palinternal.h"
@@ -32,10 +31,13 @@ SET_DEFAULT_DEBUG_CHANNEL(FILE); // some headers have code with asserts, so do t
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/param.h>
-#include <sys/mount.h>
 #include <errno.h>
 #include <limits.h>
 #include <fcntl.h>
+
+#if HAVE_SYS_MOUNT_H
+#include <sys/mount.h>
+#endif
 
 using namespace CorUnix;
 

@@ -1,22 +1,22 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 //*****************************************************************************
 // Debug.cpp
 //
 // Helper code for debugging.
 //*****************************************************************************
-//
-
 
 #include "stdafx.h"
 #include "utilcode.h"
 #include "ex.h"
 #include "corexcep.h"
 
+#include <minipal/debugger.h>
+
 #ifdef _DEBUG
 #define LOGGING
 #endif
-
 
 #include "log.h"
 
@@ -283,7 +283,7 @@ bool _DbgBreakCheck(
         return false;       // don't stop debugger. No gui.
     }
 
-    if (IsDebuggerPresent())
+    if (minipal_is_native_debugger_present())
     {
         return true;       // like a retry
     }

@@ -14,7 +14,7 @@ namespace Microsoft.Extensions.DependencyInjection
     public static class MemoryCacheServiceCollectionExtensions
     {
         /// <summary>
-        /// Adds a non distributed in memory implementation of <see cref="IMemoryCache"/> to the
+        /// Adds a non distributed in-memory implementation of <see cref="IMemoryCache"/> to the
         /// <see cref="IServiceCollection" />.
         /// </summary>
         /// <param name="services">The <see cref="IServiceCollection" /> to add services to.</param>
@@ -30,7 +30,7 @@ namespace Microsoft.Extensions.DependencyInjection
         }
 
         /// <summary>
-        /// Adds a non distributed in memory implementation of <see cref="IMemoryCache"/> to the
+        /// Adds a non distributed in-memory implementation of <see cref="IMemoryCache"/> to the
         /// <see cref="IServiceCollection" />.
         /// </summary>
         /// <param name="services">The <see cref="IServiceCollection" /> to add services to.</param>

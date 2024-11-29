@@ -731,15 +731,14 @@ HRESULT ReJitManager::UpdateNativeInlinerActiveILVersions(
 
     // Iterate through all modules, for any that are NGEN or R2R need to check if there are inliners there and call
     // RequestReJIT on them
-    AppDomain::AssemblyIterator domainAssemblyIterator = SystemDomain::System()->DefaultDomain()->IterateAssembliesEx((AssemblyIterationFlags) (kIncludeLoaded | kIncludeExecution));
-    CollectibleAssemblyHolder<DomainAssembly *> pDomainAssembly;
+    AppDomain::AssemblyIterator assemblyIterator = AppDomain::GetCurrentDomain()->IterateAssembliesEx((AssemblyIterationFlags) (kIncludeLoaded | kIncludeExecution));
+    CollectibleAssemblyHolder<Assembly *> pAssembly;
     NativeImageInliningIterator inlinerIter;
-    while (domainAssemblyIterator.Next(pDomainAssembly.This()))
+    while (assemblyIterator.Next(pAssembly.This()))
     {
-        _ASSERTE(pDomainAssembly != NULL);
-        _ASSERTE(pDomainAssembly->GetAssembly() != NULL);
+        _ASSERTE(pAssembly != NULL);
 
-        Module * pModule = pDomainAssembly->GetModule();
+        Module * pModule = pAssembly->GetModule();
         if (pModule->HasReadyToRunInlineTrackingMap())
         {
             inlinerIter.Reset(pModule, MethodInModule(pInlineeModule, inlineeMethodDef));
@@ -875,7 +874,7 @@ HRESULT ReJitManager::BindILVersion(
     ILCodeVersion ilCodeVersion = pCodeVersionManager->GetActiveILCodeVersion(pModule, methodDef);
     BOOL fDoCallback = (flags & COR_PRF_REJIT_INLINING_CALLBACKS) == COR_PRF_REJIT_INLINING_CALLBACKS;
 
-    if (ilCodeVersion.GetRejitState() == ILCodeVersion::kStateRequested)
+    if (ilCodeVersion.GetRejitState() == RejitFlags::kStateRequested)
     {
         // We can 'reuse' this instance because the profiler doesn't know about
         // it yet. (This likely happened because a profiler called RequestReJIT
@@ -966,12 +965,12 @@ HRESULT ReJitManager::ConfigureILCodeVersion(ILCodeVersion ilCodeVersion)
         CodeVersionManager::LockHolder codeVersioningLockHolder;
         switch (ilCodeVersion.GetRejitState())
         {
-        case ILCodeVersion::kStateRequested:
-            ilCodeVersion.SetRejitState(ILCodeVersion::kStateGettingReJITParameters);
+        case RejitFlags::kStateRequested:
+            ilCodeVersion.SetRejitState(RejitFlags::kStateGettingReJITParameters);
             fNeedsParameters = TRUE;
             break;
 
-        case ILCodeVersion::kStateGettingReJITParameters:
+        case RejitFlags::kStateGettingReJITParameters:
             fWaitForParameters = TRUE;
             break;
 
@@ -1027,9 +1026,9 @@ HRESULT ReJitManager::ConfigureILCodeVersion(ILCodeVersion ilCodeVersion)
                 // This code path also happens if the GetReJITParameters callback was suppressed due to
                 // the method being ReJITted as an inliner by the runtime (instead of by the user).
                 CodeVersionManager::LockHolder codeVersioningLockHolder;
-                if (ilCodeVersion.GetRejitState() == ILCodeVersion::kStateGettingReJITParameters)
+                if (ilCodeVersion.GetRejitState() == RejitFlags::kStateGettingReJITParameters)
                 {
-                    ilCodeVersion.SetRejitState(ILCodeVersion::kStateActive);
+                    ilCodeVersion.SetRejitState(RejitFlags::kStateActive);
                     ilCodeVersion.SetIL(ILCodeVersion(pModule, methodDef).GetIL());
                 }
             }
@@ -1046,7 +1045,7 @@ HRESULT ReJitManager::ConfigureILCodeVersion(ILCodeVersion ilCodeVersion)
             _ASSERTE(pFuncControl != NULL);
 
             CodeVersionManager::LockHolder codeVersioningLockHolder;
-            if (ilCodeVersion.GetRejitState() == ILCodeVersion::kStateGettingReJITParameters)
+            if (ilCodeVersion.GetRejitState() == RejitFlags::kStateGettingReJITParameters)
             {
                 // Inside the above call to ICorProfilerCallback4::GetReJITParameters, the profiler
                 // will have used the specified pFuncControl to provide its IL and codegen flags.
@@ -1056,7 +1055,7 @@ HRESULT ReJitManager::ConfigureILCodeVersion(ILCodeVersion ilCodeVersion)
                 // ilCodeVersion is now the owner of the memory for the IL buffer
                 ilCodeVersion.SetInstrumentedILMap(pFuncControl->GetInstrumentedMapEntryCount(),
                     pFuncControl->GetInstrumentedMapEntries());
-                ilCodeVersion.SetRejitState(ILCodeVersion::kStateActive);
+                ilCodeVersion.SetRejitState(RejitFlags::kStateActive);
             }
         }
     }
@@ -1087,7 +1086,7 @@ HRESULT ReJitManager::ConfigureILCodeVersion(ILCodeVersion ilCodeVersion)
         {
             {
                 CodeVersionManager::LockHolder codeVersioningLockHolder;
-                if (ilCodeVersion.GetRejitState() == ILCodeVersion::kStateActive)
+                if (ilCodeVersion.GetRejitState() == RejitFlags::kStateActive)
                 {
                     break; // the other thread got the parameters successfully, go race to rejit
                 }
@@ -1123,42 +1122,6 @@ ReJITID ReJitManager::GetReJitId(PTR_MethodDesc pMD, PCODE pCodeStart)
     CONTRACTL
     {
         NOTHROW;
-        CAN_TAKE_LOCK;
-        GC_TRIGGERS;
-        PRECONDITION(CheckPointer(pMD));
-        PRECONDITION(pCodeStart != NULL);
-    }
-    CONTRACTL_END;
-
-    // Fast-path: If the rejit map is empty, no need to look up anything. Do this outside
-    // of a lock to impact our caller (the prestub worker) as little as possible. If the
-    // map is nonempty, we'll acquire the lock at that point and do the lookup for real.
-    CodeVersionManager* pCodeVersionManager = pMD->GetCodeVersionManager();
-    if (!pCodeVersionManager->HasNonDefaultILVersions())
-    {
-        return 0;
-    }
-
-    CodeVersionManager::LockHolder codeVersioningLockHolder;
-    return ReJitManager::GetReJitIdNoLock(pMD, pCodeStart);
-}
-
-//---------------------------------------------------------------------------------------
-//
-// See comment above code:ReJitManager::GetReJitId for main details of what this does.
-//
-// This function is basically the same as GetReJitId, except caller is expected to take
-// the ReJitManager lock directly (via ReJitManager::TableLockHolder). This exists so
-// that ETW can explicitly take the triggering ReJitManager lock up front, and in the
-// proper order, to avoid lock leveling issues, and triggering issues with other locks it
-// takes that are CRST_UNSAFE_ANYMODE
-//
-
-ReJITID ReJitManager::GetReJitIdNoLock(PTR_MethodDesc pMD, PCODE pCodeStart)
-{
-    CONTRACTL
-    {
-        NOTHROW;
         CANNOT_TAKE_LOCK;
         GC_NOTRIGGER;
         PRECONDITION(CheckPointer(pMD));
@@ -1166,10 +1129,14 @@ ReJITID ReJitManager::GetReJitIdNoLock(PTR_MethodDesc pMD, PCODE pCodeStart)
     }
     CONTRACTL_END;
 
-    // Caller must ensure this lock is taken!
-    _ASSERTE(CodeVersionManager::IsLockOwnedByCurrentThread());
+    // Fast-path: If the rejit map is empty, no need to look up anything.
+    CodeVersionManager* pCodeVersionManager = pMD->GetCodeVersionManager();
+    if (!pCodeVersionManager->HasNonDefaultILVersions())
+    {
+        return 0;
+    }
 
-    NativeCodeVersion nativeCodeVersion = pMD->GetCodeVersionManager()->GetNativeCodeVersion(pMD, pCodeStart);
+    NativeCodeVersion nativeCodeVersion = pCodeVersionManager->GetNativeCodeVersion(pMD, pCodeStart);
     if (nativeCodeVersion.IsNull())
     {
         return 0;
@@ -1221,7 +1188,7 @@ HRESULT ReJitManager::GetReJITIDs(PTR_MethodDesc pMD, ULONG cReJitIds, ULONG * p
     {
         ILCodeVersion curILVersion = *iter;
 
-        if (curILVersion.GetRejitState() == ILCodeVersion::kStateActive)
+        if (curILVersion.GetRejitState() == RejitFlags::kStateActive)
         {
             if (cnt < cReJitIds)
             {
@@ -1265,11 +1232,6 @@ HRESULT ReJitManager::RequestRevert(
 }
 
 ReJITID ReJitManager::GetReJitId(PTR_MethodDesc pMD, PCODE pCodeStart)
-{
-    return 0;
-}
-
-ReJITID ReJitManager::GetReJitIdNoLock(PTR_MethodDesc pMD, PCODE pCodeStart)
 {
     return 0;
 }

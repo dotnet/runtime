@@ -10,7 +10,7 @@ namespace System.Formats.Nrbf;
 /// Represents the record that marks the end of the binary format stream.
 /// </summary>
 /// <remarks>
-/// MessageEnd records are described in <see href="https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-nrbf/de6a574b-c596-4d83-9df7-63c0077acd32">[MS-NRBF] 2.6.3</see>.
+/// MessageEnd records are described in <see href="https://learn.microsoft.com/openspecs/windows_protocols/ms-nrbf/de6a574b-c596-4d83-9df7-63c0077acd32">[MS-NRBF] 2.6.3</see>.
 /// </remarks>
 internal sealed class MessageEndRecord : SerializationRecord
 {
@@ -24,12 +24,5 @@ internal sealed class MessageEndRecord : SerializationRecord
 
     public override SerializationRecordId Id => SerializationRecordId.NoId;
 
-    public override TypeName TypeName
-    {
-        get
-        {
-            Debug.Fail("TypeName should never be called on MessageEndRecord");
-            return TypeName.Parse(nameof(MessageEndRecord).AsSpan());
-        }
-    }
+    public override TypeName TypeName => TypeName.Parse(nameof(MessageEndRecord).AsSpan());
 }
