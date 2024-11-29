@@ -55,7 +55,7 @@ All async methods effectively have two entry points, or signatures. The first si
 
 Callers may retrieve a Task/ValueTask return type from an async method via calling its primary, definitional signature. This functionality is available in both sync and async methods.
 
-### II.23.1.11 Flags for methods [MethodImplAttributes] 
+### II.23.1.11 Flags for methods [MethodImplAttributes]
 
 | Flag  | Value | Description |
 | ------------- | ------------- | ------------- |
