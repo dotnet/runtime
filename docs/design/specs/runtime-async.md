@@ -11,7 +11,7 @@ These are proposed modifications to the ECMA-335 specification for runtime-async
 
 ### I.8.4.5 Sync and Async Methods
 
-Methods may be either 'sync' or 'async'. Async method definitions are methods with a return type of `System.Threading.Task`, `System.Threading.ValueTask`, `System.Threading.Task<T>`, or `System.Threading.ValueTask<T>`  attributed with `[System.Runtime.CompilerServices.RuntimeAsyncMethodAttribute]`. Async method definitions are only valid inside async-capable assemblies. An async-capable assembly is one which references a corlib containing an `abstract sealed class RuntimeFeature` with a `public const string` field member named `Async`, or a corelib meeting these requirements. The `RuntimeAsyncMethodAttribute` should only be applied to methods, and may be defined in any assembly. Inside async method bodies, certain methods are also invokable by a special signature encoding, described in [### I.8.6.1.5 Method signatures].
+Methods may be either 'sync' or 'async'. Async method definitions are methods with CIL implementation and with a return type of `System.Threading.Task`, `System.Threading.ValueTask`, `System.Threading.Task<T>`, or `System.Threading.ValueTask<T>` attributed with `[MethodImpl(MethodImplOptions.Async)]`. The `[MethodImpl(MethodImplOptions.Async)]` has no effect outside of this pattern. Async method definitions are only valid inside async-capable assemblies. An async-capable assembly is one which references a corlib containing an `abstract sealed class RuntimeFeature` with a `public const string` field member named `Async`, or a corelib meeting these requirements. Inside async method bodies, certain methods are also invokable by a special signature encoding, described in [### I.8.6.1.5 Method signatures].
 
 Sync methods are all other methods.
 
@@ -28,9 +28,9 @@ Async methods support the following suspension points:
   {
       public static class RuntimeHelpers
       {
-          [RuntimeAsyncMethod]
+          [MethodImpl(MethodImplOptions.Async)]
           public static Task AwaitAwaiterFromRuntimeAsync<TAwaiter>(TAwaiter awaiter) where TAwaiter : INotifyCompletion { ... }
-          [RuntimeAsyncMethod]
+          [MethodImpl(MethodImplOptions.Async)]
           public static Task UnsafeAwaitAwaiterFromRuntimeAsync<TAwaiter>(TAwaiter awaiter) where TAwaiter : ICriticalNotifyCompletion
       }
   }
@@ -54,6 +54,13 @@ Other restrictions are likely to be permanent, including
 All async methods effectively have two entry points, or signatures. The first signature is the one present in method definitions: a `Task` or `ValueTask` returning method. The second signature is a "secondary signature", described in further detail in [I.8.6.1.5 Method signatures].
 
 Callers may retrieve a Task/ValueTask return type from an async method via calling its primary, definitional signature. This functionality is available in both sync and async methods.
+
+### II.23.1.11 Flags for methods [MethodImplAttributes] 
+
+| Flag  | Value | Description |
+| ------------- | ------------- | ------------- |
+| . . . | . . . | . . . |
+|Async |0x0400 |Method is an Async Method.|
 
 ### I.8.6.1.5 Method signatures
 
