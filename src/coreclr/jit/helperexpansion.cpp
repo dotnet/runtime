@@ -2384,7 +2384,8 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
     //
     BasicBlock* castSucceedsFinalBb = nullptr;
     BasicBlock* castFailsFinalBb    = nullptr;
-    if (block->KindIs(BBJ_COND) && (block->lastStmt() == stmt))
+    if (block->KindIs(BBJ_COND) && (block->lastStmt() == stmt) &&
+        (typeCheckPassedAction == TypeCheckPassedAction::ReturnObj))
     {
         GenTree* rootNode = block->lastStmt()->GetRootNode();
         if (rootNode->OperIs(GT_JTRUE) && rootNode->gtGetOp1()->OperIs(GT_NE, GT_EQ))
@@ -2392,15 +2393,8 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
             GenTree* cmp = rootNode->gtGetOp1();
             if ((cmp->gtGetOp1() == call) && cmp->gtGetOp2()->IsIntegralConst(0))
             {
-                castSucceedsFinalBb = block->GetTrueTarget();
-                castFailsFinalBb    = block->GetFalseTarget();
-
-                // Assume we deal with "helper != null" pattern by default, we'll swap the targets
-                // if it's actually "helper == null" or if we're going to return null on success.
-                if (cmp->OperIs(GT_EQ) != (typeCheckPassedAction == TypeCheckPassedAction::ReturnNull))
-                {
-                    std::swap(castSucceedsFinalBb, castFailsFinalBb);
-                }
+                castSucceedsFinalBb = cmp->OperIs(GT_NE) ? block->GetTrueTarget() : block->GetFalseTarget();
+                castFailsFinalBb    = cmp->OperIs(GT_NE) ? block->GetFalseTarget() : block->GetTrueTarget();
             }
         }
     }
