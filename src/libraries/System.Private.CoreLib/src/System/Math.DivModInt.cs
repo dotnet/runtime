@@ -52,7 +52,7 @@ namespace System
         [StackTraceHidden]
         internal static long DivInt64(long dividend, long divisor)
         {
-            if (Is32BitSigned(divisor))
+            if ((uint)(int)((ulong)divisor >> 32) == (uint)(int)(((ulong)(int)divisor) >> 32))
             {
                 if ((int)divisor == 0)
                 {
@@ -69,7 +69,7 @@ namespace System
                 }
 
                 // Check for -ive or +ive numbers in the range -2**31 to 2**31
-                if (Is32BitSigned(dividend))
+                if ((uint)(int)((ulong)dividend >> 32) == (uint)(int)(((ulong)(int)dividend) >> 32))
                 {
                     return (int)dividend / (int)divisor;
                 }
@@ -81,14 +81,14 @@ namespace System
         [StackTraceHidden]
         internal static ulong DivUInt64(ulong dividend, ulong divisor)
         {
-            if (Hi32Bits(divisor) == 0)
+            if ((uint)(int)(divisor >> 32) == 0)
             {
                 if ((uint)divisor == 0)
                 {
                     ThrowHelper.ThrowDivideByZeroException();
                 }
 
-                if (Hi32Bits(dividend) == 0)
+                if ((uint)(int)(dividend >> 32) == 0)
                     return (uint)dividend / (uint)divisor;
             }
 
@@ -131,7 +131,7 @@ namespace System
         [StackTraceHidden]
         internal static long ModInt64(long dividend, long divisor)
         {
-            if (Is32BitSigned(divisor))
+            if ((uint)(int)((ulong)divisor >> 32) == (uint)(int)(((ulong)(int)divisor) >> 32))
             {
                 if ((int)divisor == 0)
                 {
@@ -147,7 +147,7 @@ namespace System
                     return 0;
                 }
 
-                if (Is32BitSigned(dividend))
+                if ((uint)(int)((ulong)dividend >> 32) == (uint)(int)(((ulong)(int)dividend) >> 32))
                 {
                     return (int)dividend % (int)divisor;
                 }
@@ -159,32 +159,18 @@ namespace System
         [StackTraceHidden]
         internal static ulong ModUInt64(ulong dividend, ulong divisor)
         {
-            if (Hi32Bits(divisor) == 0)
+            if ((uint)(int)(divisor >> 32) == 0)
             {
                 if ((uint)divisor == 0)
                 {
                     ThrowHelper.ThrowDivideByZeroException();
                 }
 
-                if (Hi32Bits(dividend) == 0)
+                if ((uint)(int)(dividend >> 32) == 0)
                     return (uint)dividend % (uint)divisor;
             }
 
             return ModUInt64Internal(dividend, divisor);
-        }
-
-        // helper method to get high 32-bit of 64-bit int
-        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        private static uint Hi32Bits<T>(T a) where T : INumber<T>
-        {
-            return (uint)(ulong.CreateTruncating(a) >> 32);
-        }
-
-        // helper method to check whether 64-bit signed int fits into 32-bit signed (compiles into one 32-bit compare)
-        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        private static bool Is32BitSigned<T>(T a) where T : INumber<T>
-        {
-            return Hi32Bits(a) == Hi32Bits(long.CreateTruncating(int.CreateTruncating(a)));
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
