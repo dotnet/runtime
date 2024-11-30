@@ -2392,8 +2392,15 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
             GenTree* cmp = rootNode->gtGetOp1();
             if ((cmp->gtGetOp1() == call) && cmp->gtGetOp2()->IsIntegralConst(0))
             {
-                castSucceedsFinalBb = cmp->OperIs(GT_EQ) ? block->GetFalseTarget() : block->GetTrueTarget();
-                castFailsFinalBb    = cmp->OperIs(GT_EQ) ? block->GetTrueTarget() : block->GetFalseTarget();
+                castSucceedsFinalBb = block->GetTrueTarget();
+                castFailsFinalBb    = block->GetFalseTarget();
+
+                // Assume we deal with "helper != null" pattern by default, we'll swap the targets
+                // if it's actually "helper == null" or if we're going to return null on success.
+                if (cmp->OperIs(GT_EQ) != (typeCheckPassedAction == TypeCheckPassedAction::ReturnNull))
+                {
+                    std::swap(castSucceedsFinalBb, castFailsFinalBb);
+                }
             }
         }
     }
