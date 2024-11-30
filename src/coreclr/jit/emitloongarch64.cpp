@@ -4002,7 +4002,7 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
     int       tmp;
 
     instruction ins = INS_invalid;
-    for (int i = 1; i < INS_count; i++)
+    for (int i = 1; i < static_cast<int>(INS_count); i++)
     {
         if ((code & emitGetInsMask(i)) == emitInsCode((instruction)i))
         {
