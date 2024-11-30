@@ -243,20 +243,7 @@ PhaseStatus Compiler::fgRemoveEmptyFinally()
     {
         JITDUMP("fgRemoveEmptyFinally() removed %u try-finally/fault clauses from %u finally/fault(s)\n", emptyCount,
                 finallyCount);
-
-        const bool hadDfs   = (m_dfsTree != nullptr);
-        const bool hadLoops = (m_loops != nullptr);
-
-        if (hadDfs)
-        {
-            fgInvalidateDfsTree();
-            m_dfsTree = fgComputeDfs();
-            if (hadLoops)
-            {
-                m_loops = FlowGraphNaturalLoops::Find(m_dfsTree);
-            }
-        }
-        return PhaseStatus::MODIFIED_EVERYTHING;
+        fgInvalidateDfsTree();
 
 #ifdef DEBUG
         if (verbose)
@@ -759,19 +746,7 @@ PhaseStatus Compiler::fgRemoveEmptyTry()
     if (emptyCount > 0)
     {
         JITDUMP("fgRemoveEmptyTry() optimized %u empty-try try-finally clauses\n", emptyCount);
-
-        const bool hadDfs   = (m_dfsTree != nullptr);
-        const bool hadLoops = (m_loops != nullptr);
-
-        if (hadDfs)
-        {
-            fgInvalidateDfsTree();
-            m_dfsTree = fgComputeDfs();
-            if (hadLoops)
-            {
-                m_loops = FlowGraphNaturalLoops::Find(m_dfsTree);
-            }
-        }
+        fgInvalidateDfsTree();
         return PhaseStatus::MODIFIED_EVERYTHING;
     }
 
@@ -1038,19 +1013,7 @@ PhaseStatus Compiler::fgRemoveEmptyTryCatch()
     if (emptyCount > 0)
     {
         JITDUMP("fgRemoveEmptyTryCatch() optimized %u empty-try catch clauses\n", emptyCount);
-
-        const bool hadDfs   = (m_dfsTree != nullptr);
-        const bool hadLoops = (m_loops != nullptr);
-
-        if (hadDfs)
-        {
-            fgInvalidateDfsTree();
-            m_dfsTree = fgComputeDfs();
-            if (hadLoops)
-            {
-                m_loops = FlowGraphNaturalLoops::Find(m_dfsTree);
-            }
-        }
+        fgInvalidateDfsTree();
         return PhaseStatus::MODIFIED_EVERYTHING;
     }
 
