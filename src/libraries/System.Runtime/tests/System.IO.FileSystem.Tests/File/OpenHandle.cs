@@ -95,5 +95,35 @@ namespace System.IO.Tests
             }
             Assert.False(File.Exists(path));
         }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void PreallocateLargeFileAndFail()
+        {
+            const long VeryLargeFileSize = (long)128 * 1024 * 1024 * 1024 * 1024; // 128TB, large but still allowed by NTFS
+            const int ERROR_DISK_FULL = unchecked((int)0x80070070);
+
+            string path = GetTestFilePath();
+            if (!IOServices.IsDriveNTFS(Path.GetPathRoot(path)))
+            {
+                // Skip the test for non-NTFS filesystems
+                return;
+            }
+
+            if (new DriveInfo(path).TotalFreeSpace >= VeryLargeFileSize)
+            {
+                // Skip the test if somehow the drive is really big.
+                return;
+            }
+
+            try
+            {
+                using (File.OpenHandle(path, mode: FileMode.Create, access: FileAccess.ReadWrite, preallocationSize: VeryLargeFileSize)) { }
+            }
+            catch (IOException ex)
+            {
+                Assert.Equal(ERROR_DISK_FULL, ex.HResult);
+            }
+        }
     }
 }
