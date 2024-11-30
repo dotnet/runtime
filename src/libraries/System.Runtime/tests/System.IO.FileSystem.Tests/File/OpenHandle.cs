@@ -98,7 +98,7 @@ namespace System.IO.Tests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]
-        public void PreallocateLargeFileAndFail()
+        public void PreallocationSizeVeryLargeThrowsCorrectHResult()
         {
             const long VeryLargeFileSize = (long)128 * 1024 * 1024 * 1024 * 1024; // 128TB, large but still allowed by NTFS
             const int ERROR_DISK_FULL = unchecked((int)0x80070070);
