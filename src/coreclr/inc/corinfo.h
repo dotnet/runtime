@@ -3352,6 +3352,17 @@ public:
 //
 #define IMAGE_REL_BASED_REL_THUMB_MOV32_PCREL   0x14
 
+//
+// LOONGARCH64 relocation types
+//
+#define IMAGE_REL_LOONGARCH64_PC        0x0003
+#define IMAGE_REL_LOONGARCH64_JIR       0x0004
+
+//
+// RISCV64 relocation types
+//
+#define IMAGE_REL_RISCV64_PC            0x0003
+
 /**********************************************************************************/
 #ifdef TARGET_64BIT
 #define USE_PER_FRAME_PINVOKE_INIT

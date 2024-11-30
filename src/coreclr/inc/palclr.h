@@ -612,4 +612,8 @@
 #define IMAGE_FILE_MACHINE_LOONGARCH64       0x6264  // LOONGARCH64.
 #endif
 
+#ifndef IMAGE_FILE_MACHINE_RISCV64
+#define IMAGE_FILE_MACHINE_RISCV64       0x5064  // RISCV64.
+#endif
+
 #endif // defined(HOST_WINDOWS)

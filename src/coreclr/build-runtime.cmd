@@ -44,6 +44,8 @@ set __TargetArchX64=0
 set __TargetArchX86=0
 set __TargetArchArm=0
 set __TargetArchArm64=0
+set __TargetArchLoongArch64=0
+set __TargetArchRiscV64=0
 
 set __BuildTypeDebug=0
 set __BuildTypeChecked=0
@@ -90,6 +92,8 @@ if /i "%1" == "-x64"                 (set __TargetArchX64=1&shift&goto Arg_Loop)
 if /i "%1" == "-x86"                 (set __TargetArchX86=1&shift&goto Arg_Loop)
 if /i "%1" == "-arm"                 (set __TargetArchArm=1&shift&goto Arg_Loop)
 if /i "%1" == "-arm64"               (set __TargetArchArm64=1&shift&goto Arg_Loop)
+if /i "%1" == "-loongarch64"         (set __TargetArchLoongArch64=1&shift&goto Arg_Loop)
+if /i "%1" == "-riscv64"             (set __TargetArchRiscV64=1&shift&goto Arg_Loop)
 
 if /i "%1" == "-debug"               (set __BuildTypeDebug=1&shift&goto Arg_Loop)
 if /i "%1" == "-checked"             (set __BuildTypeChecked=1&shift&goto Arg_Loop)
@@ -104,6 +108,8 @@ if /i "%1" == "x64"                 (set __TargetArchX64=1&shift&goto Arg_Loop)
 if /i "%1" == "x86"                 (set __TargetArchX86=1&shift&goto Arg_Loop)
 if /i "%1" == "arm"                 (set __TargetArchArm=1&shift&goto Arg_Loop)
 if /i "%1" == "arm64"               (set __TargetArchArm64=1&shift&goto Arg_Loop)
+if /i "%1" == "loongarch64"         (set __TargetArchLoongArch64=1&shift&goto Arg_Loop)
+if /i "%1" == "riscv64"             (set __TargetArchRiscV64=1&shift&goto Arg_Loop)
 
 if /i "%1" == "debug"               (set __BuildTypeDebug=1&shift&goto Arg_Loop)
 if /i "%1" == "checked"             (set __BuildTypeChecked=1&shift&goto Arg_Loop)
@@ -168,16 +174,18 @@ if defined VCINSTALLDIR (
 
 if defined __BuildAll goto BuildAll
 
-set /A __TotalSpecifiedTargetArch=__TargetArchX64 + __TargetArchX86 + __TargetArchArm + __TargetArchArm64
+set /A __TotalSpecifiedTargetArch=__TargetArchX64 + __TargetArchX86 + __TargetArchArm + __TargetArchArm64 + __TargetArchLoongArch64 + __TargetArchRiscV64
 if %__TotalSpecifiedTargetArch% GTR 1 (
     echo Error: more than one build architecture specified, but "all" not specified.
     goto Usage
 )
 
-if %__TargetArchX64%==1   set __TargetArch=x64
-if %__TargetArchX86%==1   set __TargetArch=x86
-if %__TargetArchArm%==1   set __TargetArch=arm
-if %__TargetArchArm64%==1 set __TargetArch=arm64
+if %__TargetArchX64%==1         set __TargetArch=x64
+if %__TargetArchX86%==1         set __TargetArch=x86
+if %__TargetArchArm%==1         set __TargetArch=arm
+if %__TargetArchArm64%==1       set __TargetArch=arm64
+if %__TargetArchLoongArch64%==1 set __TargetArch=loongarch64
+if %__TargetArchRiscV64%==1     set __TargetArch=riscv64
 if "%__HostArch%" == "" set __HostArch=%__TargetArch%
 
 set /A __TotalSpecifiedBuildType=__BuildTypeDebug + __BuildTypeChecked + __BuildTypeRelease
@@ -468,18 +476,20 @@ REM ============================================================================
 
 set __TargetArchList=
 
-set /A __TotalSpecifiedTargetArch=__TargetArchX64 + __TargetArchX86 + __TargetArchArm + __TargetArchArm64
+set /A __TotalSpecifiedTargetArch=__TargetArchX64 + __TargetArchX86 + __TargetArchArm + __TargetArchArm64 + __TargetArchLoongArch64 + __TargetArchRiscV64
 if %__TotalSpecifiedTargetArch% EQU 0 (
     REM Nothing specified means we want to build all architectures.
-    set __TargetArchList=x64 x86 arm arm64
+    set __TargetArchList=x64 x86 arm arm64 loongarch64 riscv64
 )
 
 REM Otherwise, add all the specified architectures to the list.
 
-if %__TargetArchX64%==1      set __TargetArchList=%__TargetArchList% x64
-if %__TargetArchX86%==1      set __TargetArchList=%__TargetArchList% x86
-if %__TargetArchArm%==1      set __TargetArchList=%__TargetArchList% arm
-if %__TargetArchArm64%==1    set __TargetArchList=%__TargetArchList% arm64
+if %__TargetArchX64%==1         set __TargetArchList=%__TargetArchList% x64
+if %__TargetArchX86%==1         set __TargetArchList=%__TargetArchList% x86
+if %__TargetArchArm%==1         set __TargetArchList=%__TargetArchList% arm
+if %__TargetArchArm64%==1       set __TargetArchList=%__TargetArchList% arm64
+if %__TargetArchLoongArch64%==1 set __TargetArchList=%__TargetArchList% loongarch64
+if %__TargetArchRiscV64%==1     set __TargetArchList=%__TargetArchList% riscv64
 
 set __BuildTypeList=
 
@@ -562,7 +572,7 @@ echo All arguments are optional. The options are:
 echo.
 echo.-? -h -help --help: view this message.
 echo -all: Builds all configurations and platforms.
-echo Build architecture: one of -x64, -x86, -arm, -arm64 ^(default: -x64^).
+echo Build architecture: one of -x64, -x86, -arm, -arm64, -loongarch64, -riscv64 ^(default: -x64^).
 echo Build type: one of -Debug, -Checked, -Release ^(default: -Debug^).
 echo -component ^<name^> : specify this option one or more times to limit components built to those specified.
 echo                     Allowed ^<name^>: hosts jit alljits runtime paltests iltools nativeaot spmi

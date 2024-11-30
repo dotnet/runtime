@@ -861,7 +861,7 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
             if (lowering->numLoweredElements == 1)
                 assert(varDsc->lvExactSize() <= argSize);
 
-            cSlotsToEnregister  = lowering->numLoweredElements;
+            cSlotsToEnregister  = static_cast<unsigned>(lowering->numLoweredElements);
             argRegTypeInStruct1 = JITtype2varType(lowering->loweredElements[0]);
             if (lowering->numLoweredElements == 2)
                 argRegTypeInStruct2 = JITtype2varType(lowering->loweredElements[1]);
