@@ -870,7 +870,7 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
             assert(floatNum > 0);
 
             canPassArgInRegisters = varDscInfo->canEnreg(TYP_DOUBLE, floatNum);
-            if (canPassArgInRegisters && (floatNum < lowering->numLoweredElements))
+            if (canPassArgInRegisters && ((unsigned)floatNum < lowering->numLoweredElements))
             {
                 assert(floatNum == 1);
                 assert(lowering->numLoweredElements == 2);
