@@ -175,11 +175,17 @@ namespace System
 
         // helper method to get high 32-bit of 64-bit int
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static uint Hi32Bits(ulong a) => (uint)(int)(a >> 32);
+        private static uint Hi32Bits<T>(T a) where T : INumber<T>
+        {
+            return (uint)(ulong.CreateTruncating(a) >> 32);
+        }
 
         // helper method to check whether 64-bit signed int fits into 32-bit signed (compiles into one 32-bit compare)
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool Is32BitSigned(long a) => (uint)(int)((ulong)a >> 32) == (uint)(int)(((ulong)(int)a) >> 32);
+        private static bool Is32BitSigned<T>(T a) where T : INumber<T>
+        {
+            return Hi32Bits(a) == Hi32Bits(long.CreateTruncating(int.CreateTruncating(a)));
+        }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern int DivInt32Internal(int dividend, int divisor);
