@@ -70,12 +70,10 @@ namespace
             return SystemResolveDllImport(entry_point_name);
         }
 
-#if !defined(TARGET_APPLE) || defined(TARGET_OSX)
         if (strcmp(library_name, LIB_NAME("System.Security.Cryptography.Native.OpenSsl")) == 0)
         {
             return CryptoResolveDllImport(entry_point_name);
         }
-#endif // !defined(TARGET_APPLE) || defined(TARGET_OSX)
 #endif
 
         if (strcmp(library_name, LIB_NAME("System.IO.Compression.Native")) == 0)
@@ -97,7 +95,7 @@ namespace
             }
         }
 
-#if defined(TARGET_APPLE)
+#if defined(TARGET_OSX)
         if (strcmp(library_name, LIB_NAME("System.Security.Cryptography.Native.Apple")) == 0)
         {
             return CryptoAppleResolveDllImport(entry_point_name);

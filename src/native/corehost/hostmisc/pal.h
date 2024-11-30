@@ -71,7 +71,7 @@
 #if defined(TARGET_WINDOWS)
 #define LIB_PREFIX ""
 #define LIB_FILE_EXT ".dll"
-#elif defined(TARGET_APPLE)
+#elif defined(TARGET_OSX)
 #define LIB_PREFIX "lib"
 #define LIB_FILE_EXT ".dylib"
 #else
