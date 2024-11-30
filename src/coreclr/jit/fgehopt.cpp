@@ -980,6 +980,17 @@ PhaseStatus Compiler::fgRemoveEmptyTryCatch()
              handlerBlock             = handlerBlock->Next())
         {
             assert(!bbIsTryBeg(handlerBlock));
+
+            // It's possible to see a callfinally pair in a catch, and if so
+            // there may be a pred edge into the pair tail from outside the catch.
+            // Handle this specially.
+            //
+            if (handlerBlock->isBBCallFinallyPair())
+            {
+                BasicBlock* const tailBlock = handlerBlock->Next();
+                fgPrepareCallFinallyRetForRemoval(tailBlock);
+            }
+
             fgRemoveBlockAsPred(handlerBlock);
             handlerBlock->SetKind(BBJ_THROW);
         }
