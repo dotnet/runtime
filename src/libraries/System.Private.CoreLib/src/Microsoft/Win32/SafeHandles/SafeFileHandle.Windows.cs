@@ -147,7 +147,7 @@ namespace Microsoft.Win32.SafeHandles
                     throw new IOException(SR.Format(errorCode == Interop.Errors.ERROR_DISK_FULL
                                                         ? SR.IO_DiskFull_Path_AllocationSize
                                                         : SR.IO_FileTooLarge_Path_AllocationSize,
-                                            fullPath, preallocationSize));
+                                            fullPath, preallocationSize), Win32Marshal.MakeHRFromErrorCode(errorCode));
                 }
             }
         }
