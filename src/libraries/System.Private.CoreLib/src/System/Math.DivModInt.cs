@@ -53,7 +53,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         internal static long DivInt64(long dividend, long divisor)
         {
-            if ((uint)(int)((ulong)divisor >> 32) == (uint)(int)(((ulong)(int)divisor) >> 32))
+            if ((int)((ulong)divisor >> 32) == (int)(((ulong)(int)divisor) >> 32))
             {
                 if ((int)divisor == 0)
                 {
@@ -70,7 +70,7 @@ namespace System
                 }
 
                 // Check for -ive or +ive numbers in the range -2**31 to 2**31
-                if ((uint)(int)((ulong)dividend >> 32) == (uint)(int)(((ulong)(int)dividend) >> 32))
+                if ((int)((ulong)dividend >> 32) == (int)(((ulong)(int)dividend) >> 32))
                 {
                     return (int)dividend / (int)divisor;
                 }
@@ -134,7 +134,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         internal static long ModInt64(long dividend, long divisor)
         {
-            if ((uint)(int)((ulong)divisor >> 32) == (uint)(int)(((ulong)(int)divisor) >> 32))
+            if ((int)((ulong)divisor >> 32) == (int)(((ulong)(int)divisor) >> 32))
             {
                 if ((int)divisor == 0)
                 {
@@ -150,7 +150,7 @@ namespace System
                     return 0;
                 }
 
-                if ((uint)(int)((ulong)dividend >> 32) == (uint)(int)(((ulong)(int)dividend) >> 32))
+                if ((int)((ulong)dividend >> 32) == (int)(((ulong)(int)dividend) >> 32))
                 {
                     return (int)dividend % (int)divisor;
                 }
