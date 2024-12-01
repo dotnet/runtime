@@ -2505,6 +2505,13 @@ BasicBlock* Compiler::fgCloneTryRegion(BasicBlock* tryEntry, CloneTryInfo& info,
         map->Set(block, newBlock, BlockToBlockMap::SetKind::Overwrite);
         BasicBlock::CloneBlockState(this, newBlock, block);
         newBlock->scaleBBWeight(info.m_profileScale);
+
+        if (info.m_scaleOriginal)
+        {
+            weight_t originalScale = max(0.0, 1.0 - info.m_profileScale);
+            block->scaleBBWeight(originalScale);
+        }
+
         *insertAfter = newBlock;
     }
     JITDUMP("Done cloning blocks for try...\n");
