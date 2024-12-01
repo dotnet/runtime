@@ -4,6 +4,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 
     <!-- Would have to translate Illegal instruction to PNSE -->
+    <!-- https://github.com/dotnet/runtime/issues/110293 -->
     <NativeAotIncompatible>true</NativeAotIncompatible>
   </PropertyGroup>
   <PropertyGroup>
