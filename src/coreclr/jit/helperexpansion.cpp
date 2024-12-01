@@ -2385,7 +2385,8 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
     BasicBlock* castSucceedsFinalBb = nullptr;
     BasicBlock* castFailsFinalBb    = nullptr;
     if (block->KindIs(BBJ_COND) && (block->lastStmt() == stmt) &&
-        (typeCheckPassedAction == TypeCheckPassedAction::ReturnObj))
+        ((typeCheckPassedAction == TypeCheckPassedAction::ReturnNull) ||
+         (typeCheckPassedAction == TypeCheckPassedAction::ReturnObj)))
     {
         GenTree* rootNode = block->lastStmt()->GetRootNode();
         if (rootNode->OperIs(GT_JTRUE) && rootNode->gtGetOp1()->OperIs(GT_NE, GT_EQ))
@@ -2395,6 +2396,11 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
             {
                 castSucceedsFinalBb = cmp->OperIs(GT_NE) ? block->GetTrueTarget() : block->GetFalseTarget();
                 castFailsFinalBb    = cmp->OperIs(GT_NE) ? block->GetFalseTarget() : block->GetTrueTarget();
+
+                if (typeCheckPassedAction == TypeCheckPassedAction::ReturnNull)
+                {
+                    std::swap(castSucceedsFinalBb, castFailsFinalBb);
+                }
             }
         }
     }
