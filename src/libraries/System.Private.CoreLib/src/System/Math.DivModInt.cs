@@ -50,7 +50,6 @@ namespace System
         }
 
         [StackTraceHidden]
-        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         internal static long DivInt64(long dividend, long divisor)
         {
             if ((int)((ulong)divisor >> 32) == (int)(((ulong)(int)divisor) >> 32))
@@ -74,7 +73,6 @@ namespace System
         }
 
         [StackTraceHidden]
-        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         internal static ulong DivUInt64(ulong dividend, ulong divisor)
         {
             if ((int)(divisor >> 32) == 0 && (uint)divisor == 0)
@@ -119,7 +117,6 @@ namespace System
         }
 
         [StackTraceHidden]
-        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         internal static long ModInt64(long dividend, long divisor)
         {
             if ((int)((ulong)divisor >> 32) == (int)(((ulong)(int)divisor) >> 32))
@@ -143,7 +140,6 @@ namespace System
         }
 
         [StackTraceHidden]
-        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         internal static ulong ModUInt64(ulong dividend, ulong divisor)
         {
             if ((int)(divisor >> 32) == 0 && (uint)divisor == 0)
