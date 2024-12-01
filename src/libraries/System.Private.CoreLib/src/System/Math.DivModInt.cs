@@ -68,12 +68,6 @@ namespace System
                     }
                     return -dividend;
                 }
-
-                // Check for -ive or +ive numbers in the range -2**31 to 2**31
-                if ((int)((ulong)dividend >> 32) == (int)(((ulong)(int)dividend) >> 32))
-                {
-                    return DivInt32Internal((int)dividend, (int)divisor);
-                }
             }
 
             return DivInt64Internal(dividend, divisor);
@@ -83,17 +77,9 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         internal static ulong DivUInt64(ulong dividend, ulong divisor)
         {
-            if ((int)(divisor >> 32) == 0)
+            if ((int)(divisor >> 32) == 0 && (uint)divisor == 0)
             {
-                if ((uint)divisor == 0)
-                {
-                    ThrowHelper.ThrowDivideByZeroException();
-                }
-
-                if ((int)(dividend >> 32) == 0)
-                {
-                    return DivUInt32Internal((uint)dividend, (uint)divisor);
-                }
+                ThrowHelper.ThrowDivideByZeroException();
             }
 
             return DivUInt64Internal(dividend, divisor);
@@ -151,11 +137,6 @@ namespace System
                     }
                     return 0;
                 }
-
-                if ((int)((ulong)dividend >> 32) == (int)(((ulong)(int)dividend) >> 32))
-                {
-                    return ModInt32Internal((int)dividend, (int)divisor);
-                }
             }
 
             return ModInt64Internal(dividend, divisor);
@@ -165,17 +146,9 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         internal static ulong ModUInt64(ulong dividend, ulong divisor)
         {
-            if ((int)(divisor >> 32) == 0)
+            if ((int)(divisor >> 32) == 0 && (uint)divisor == 0)
             {
-                if ((uint)divisor == 0)
-                {
-                    ThrowHelper.ThrowDivideByZeroException();
-                }
-
-                if ((int)(dividend >> 32) == 0)
-                {
-                    return ModUInt32Internal((uint)dividend, (uint)divisor);
-                }
+                ThrowHelper.ThrowDivideByZeroException();
             }
 
             return ModUInt64Internal(dividend, divisor);
