@@ -13975,7 +13975,7 @@ namespace System.Runtime.ExceptionServices
     }
     public static partial class ExceptionHandling
     {
-        public static void SetUnhandledExceptionHandler(System.Runtime.ExceptionServices.UnhandledExceptionHandler handler) { }
+        public static void SetUnhandledExceptionHandler(System.Func<System.Exception,bool> handler) { }
     }
     public partial class FirstChanceExceptionEventArgs : System.EventArgs
     {
@@ -13988,7 +13988,6 @@ namespace System.Runtime.ExceptionServices
     {
         public HandleProcessCorruptedStateExceptionsAttribute() { }
     }
-    public delegate bool UnhandledExceptionHandler(System.Exception exception);
 }
 namespace System.Runtime.InteropServices
 {

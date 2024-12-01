@@ -459,7 +459,7 @@ namespace System.Threading
 
                 startHelper.Run();
             }
-            catch (Exception ex) when (ExceptionHandling.s_handler?.Invoke(ex) == true)
+            catch (Exception ex) when (ExceptionHandling.IsHandledByGlobalHandler(ex))
             {
                 // the handler returned "true" means the exception is now "handled" and we should gracefully exit.
             }

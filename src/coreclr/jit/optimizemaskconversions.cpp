@@ -3,7 +3,7 @@
 
 #include "jitpch.h"
 
-#if defined(TARGET_ARM64)
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
 
 struct MaskConversionsWeight
 {
@@ -19,8 +19,13 @@ struct MaskConversionsWeight
     // Conversion of mask to vector is one instruction.
     static constexpr const weight_t costOfConvertMaskToVector = 1.0;
 
+#if defined(TARGET_ARM64)
     // Conversion of vector to mask is two instructions.
     static constexpr const weight_t costOfConvertVectorToMask = 2.0;
+#else
+    // Conversion of vector to mask is one instructions.
+    static constexpr const weight_t costOfConvertVectorToMask = 1.0;
+#endif
 
     // The simd types of the Lcl Store after conversion to vector.
     CorInfoType simdBaseJitType = CORINFO_TYPE_UNDEF;
@@ -136,6 +141,7 @@ public:
         switch ((*use)->OperGet())
         {
             case GT_STORE_LCL_VAR:
+            {
                 isLocalStore = true;
 
                 // Look for:
@@ -147,19 +153,48 @@ public:
                     hasConversion = true;
                 }
                 break;
+            }
 
             case GT_LCL_VAR:
+            {
                 isLocalUse = true;
 
                 // Look for:
-                //      user:ConvertVectorToMask(use:LCL_VAR(x)))
+                //      user: ConvertVectorToMask(use:LCL_VAR(x)))
+                // -or-
+                //      user: ConditionalSelect(use:LCL_VAR(x), y, z)
 
-                if (user->OperIsConvertVectorToMask())
+                if (user->OperIsHWIntrinsic())
                 {
-                    convertOp     = user->AsHWIntrinsic();
-                    hasConversion = true;
+                    GenTreeHWIntrinsic* hwintrin = user->AsHWIntrinsic();
+                    NamedIntrinsic      ni       = hwintrin->GetHWIntrinsicId();
+
+                    if (hwintrin->OperIsConvertVectorToMask())
+                    {
+                        convertOp     = user->AsHWIntrinsic();
+                        hasConversion = true;
+                    }
+                    else if (hwintrin->OperIsVectorConditionalSelect())
+                    {
+                        // We don't actually have a convert here, but we do have a case where
+                        // the mask is being used in a ConditionalSelect and therefore can be
+                        // consumed directly as a mask. While the IR shows TYP_SIMD, it gets
+                        // handled in lowering as part of the general embedded-mask support.
+
+                        // We notably don't check that op2->isEmbeddedMaskingCompatibleHWIntrinsic()
+                        // because we can still consume the mask directly in such cases. We'll just
+                        // emit `vblendmps zmm1 {k1}, zmm2, zmm3` instead  of containing the CndSel
+                        // as part of something like `vaddps zmm1 {k1}, zmm2, zmm3`
+
+                        if (hwintrin->Op(1) == (*use))
+                        {
+                            convertOp     = user->AsHWIntrinsic();
+                            hasConversion = true;
+                        }
+                    }
                 }
                 break;
+            }
 
             default:
                 break;
@@ -254,6 +289,12 @@ public:
 
     Compiler::fgWalkResult PostOrderVisit(GenTree** use, GenTree* user)
     {
+#if defined(TARGET_ARM64)
+        static constexpr const int ConvertVectorToMaskValueOp = 2;
+#else
+        static constexpr const int ConvertVectorToMaskValueOp = 1;
+#endif
+
         GenTreeLclVarCommon* lclOp            = nullptr;
         bool                 isLocalStore     = false;
         bool                 isLocalUse       = false;
@@ -276,11 +317,12 @@ public:
             isLocalStore  = true;
             addConversion = true;
         }
-        else if ((*use)->OperIsConvertVectorToMask() && (*use)->AsHWIntrinsic()->Op(2)->OperIs(GT_LCL_VAR))
+        else if ((*use)->OperIsConvertVectorToMask() &&
+                 (*use)->AsHWIntrinsic()->Op(ConvertVectorToMaskValueOp)->OperIs(GT_LCL_VAR))
         {
             // Found
             //      user(use:ConvertVectorToMask(LCL_VAR(x)))
-            lclOp            = (*use)->AsHWIntrinsic()->Op(2)->AsLclVarCommon();
+            lclOp            = (*use)->AsHWIntrinsic()->Op(ConvertVectorToMaskValueOp)->AsLclVarCommon();
             isLocalUse       = true;
             removeConversion = true;
         }
@@ -393,7 +435,7 @@ private:
     MaskConversionsWeightTable* weightsTable;
 };
 
-#endif // TARGET_ARM64
+#endif // FEATURE_MASKED_HW_INTRINSICS
 
 //------------------------------------------------------------------------
 // fgOptimizeMaskConversions: Allow locals to be of Mask type
@@ -445,7 +487,7 @@ private:
 //
 PhaseStatus Compiler::fgOptimizeMaskConversions()
 {
-#if defined(TARGET_ARM64)
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
 
     if (opts.OptimizationDisabled())
     {
@@ -476,10 +518,10 @@ PhaseStatus Compiler::fgOptimizeMaskConversions()
     {
         for (Statement* const stmt : block->Statements())
         {
-            // Only check statements where there is a local of type TYP_SIMD16/TYP_MASK.
+            // Only check statements where there is a local of type TYP_SIMD/TYP_MASK.
             for (GenTreeLclVarCommon* lcl : stmt->LocalsTreeList())
             {
-                if (lcl->TypeIs(TYP_SIMD16, TYP_MASK))
+                if (varTypeIsSIMDOrMask(lcl))
                 {
                     // Parse the entire statement.
                     MaskConversionsCheckVisitor ev(this, block->getBBWeight(this), &weightsTable);
@@ -504,10 +546,10 @@ PhaseStatus Compiler::fgOptimizeMaskConversions()
     {
         for (Statement* const stmt : block->Statements())
         {
-            // Only check statements where there is a local of type TYP_SIMD16/TYP_MASK.
+            // Only check statements where there is a local of type TYP_SIMD/TYP_MASK.
             for (GenTreeLclVarCommon* lcl : stmt->LocalsTreeList())
             {
-                if (lcl->TypeIs(TYP_SIMD16, TYP_MASK))
+                if (varTypeIsSIMDOrMask(lcl))
                 {
                     // Parse the entire statement.
                     MaskConversionsUpdateVisitor ev(this, stmt, &weightsTable);
@@ -524,8 +566,7 @@ PhaseStatus Compiler::fgOptimizeMaskConversions()
     }
 
     return PhaseStatus::MODIFIED_EVERYTHING;
-
 #else
     return PhaseStatus::MODIFIED_NOTHING;
-#endif // TARGET_ARM64
+#endif // FEATURE_MASKED_HW_INTRINSICS
 }
