@@ -72,7 +72,7 @@ namespace System
                 // Check for -ive or +ive numbers in the range -2**31 to 2**31
                 if ((int)((ulong)dividend >> 32) == (int)(((ulong)(int)dividend) >> 32))
                 {
-                    return (int)dividend / (int)divisor;
+                    return DivInt32Internal((int)dividend, (int)divisor);
                 }
             }
 
@@ -92,7 +92,7 @@ namespace System
 
                 if ((int)(dividend >> 32) == 0)
                 {
-                    return (uint)dividend / (uint)divisor;
+                    return DivUInt32Internal((uint)dividend, (uint)divisor);
                 }
             }
 
@@ -154,7 +154,7 @@ namespace System
 
                 if ((int)((ulong)dividend >> 32) == (int)(((ulong)(int)dividend) >> 32))
                 {
-                    return (int)dividend % (int)divisor;
+                    return ModInt32Internal((int)dividend, (int)divisor);
                 }
             }
 
@@ -174,7 +174,7 @@ namespace System
 
                 if ((int)(dividend >> 32) == 0)
                 {
-                    return (uint)dividend % (uint)divisor;
+                    return ModUInt32Internal((uint)dividend, (uint)divisor);
                 }
             }
 
