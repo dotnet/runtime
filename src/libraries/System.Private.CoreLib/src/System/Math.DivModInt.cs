@@ -83,15 +83,17 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         internal static ulong DivUInt64(ulong dividend, ulong divisor)
         {
-            if ((uint)(int)(divisor >> 32) == 0)
+            if ((int)(divisor >> 32) == 0)
             {
                 if ((uint)divisor == 0)
                 {
                     ThrowHelper.ThrowDivideByZeroException();
                 }
 
-                if ((uint)(int)(dividend >> 32) == 0)
+                if ((int)(dividend >> 32) == 0)
+                {
                     return (uint)dividend / (uint)divisor;
+                }
             }
 
             return DivUInt64Internal(dividend, divisor);
@@ -163,15 +165,17 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         internal static ulong ModUInt64(ulong dividend, ulong divisor)
         {
-            if ((uint)(int)(divisor >> 32) == 0)
+            if ((int)(divisor >> 32) == 0)
             {
                 if ((uint)divisor == 0)
                 {
                     ThrowHelper.ThrowDivideByZeroException();
                 }
 
-                if ((uint)(int)(dividend >> 32) == 0)
+                if ((int)(dividend >> 32) == 0)
+                {
                     return (uint)dividend % (uint)divisor;
+                }
             }
 
             return ModUInt64Internal(dividend, divisor);
