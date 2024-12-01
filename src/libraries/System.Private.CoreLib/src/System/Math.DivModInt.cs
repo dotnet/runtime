@@ -62,7 +62,7 @@ namespace System
 
                 if ((int)divisor == -1)
                 {
-                    if ((ulong)dividend == 0x8000000000000000ul)
+                    if (dividend == long.MinValue)
                     {
                         ThrowHelper.ThrowOverflowException();
                     }
@@ -145,7 +145,7 @@ namespace System
 
                 if ((int)divisor == -1)
                 {
-                    if ((ulong)dividend == 0x8000000000000000ul)
+                    if (dividend == long.MinValue)
                     {
                         ThrowHelper.ThrowOverflowException();
                     }
