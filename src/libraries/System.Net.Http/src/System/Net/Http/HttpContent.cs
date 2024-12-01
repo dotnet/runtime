@@ -166,14 +166,14 @@ namespace System.Net.Http
 
             if (firstBuffer.Length == stream.Length)
             {
-                return encoding.GetString(firstBuffer.Slice(bomLength));
+                return encoding.GetString(firstBuffer[bomLength..]);
             }
             else
             {
                 byte[] buffer = ArrayPool<byte>.Shared.Rent((int)stream.Length);
                 stream.CopyToCore(buffer);
 
-                string result = encoding.GetString(buffer.AsSpan(0, (int)stream.Length).Slice(bomLength));
+                string result = encoding.GetString(buffer.AsSpan(0, (int)stream.Length)[bomLength..]);
 
                 ArrayPool<byte>.Shared.Return(buffer);
                 return result;
@@ -784,6 +784,8 @@ namespace System.Net.Http
             /// <summary>Applies when a Content-Length header was set. If it's &lt;= this limit, we'll allocate an exact-sized buffer upfront.</summary>
             private const int MaxInitialBufferSize = 16 * 1024 * 1024; // 16 MB
 
+            private const int ResizeFactor = 2;
+
             /// <summary>Controls how quickly we're willing to expand up to <see cref="_expectedFinalSize"/> when a caller requested that the last buffer should not be pooled.
             /// <para>The factor is higher than usual to lower the number of memory copies when the caller already committed to allocating a large buffer.</para></summary>
             private const int LastResizeFactor = 4;
@@ -843,17 +845,15 @@ namespace System.Net.Http
                     Debug.Assert(_pooledBuffers is null);
                     return _lastBuffer;
                 }
-                else
-                {
-                    if (_totalLength == 0)
-                    {
-                        return [];
-                    }
 
-                    byte[] buffer = new byte[_totalLength];
-                    CopyToCore(buffer);
-                    return buffer;
+                if (_totalLength == 0)
+                {
+                    return [];
                 }
+
+                byte[] buffer = new byte[_totalLength];
+                CopyToCore(buffer);
+                return buffer;
             }
 
             /// <summary>Should only be called if <see cref="ReallocateIfPooled"/> was used to avoid exposing pooled buffers.</summary>
@@ -925,7 +925,7 @@ namespace System.Net.Http
                 int lastBufferCapacity = _lastBuffer.Length;
 
                 // Start by doubling the current array size.
-                int newBufferCapacity = (int)Math.Min((uint)lastBufferCapacity * 2, Array.MaxLength);
+                int newBufferCapacity = (int)Math.Min((uint)lastBufferCapacity * ResizeFactor, Array.MaxLength);
 
                 // If the required length is longer than Array.MaxLength, we'll let the runtime throw.
                 newBufferCapacity = Math.Max(newBufferCapacity, _totalLength + buffer.Length);
