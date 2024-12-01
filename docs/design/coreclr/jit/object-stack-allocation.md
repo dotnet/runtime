@@ -15,7 +15,7 @@ may be moved to the stack. The benefits of this optimization:
 * Some field zero-initializations may be elided by the compiler.
 
 Object stack allocation is implemented in
-various Java runtimes.  This optimization is more important for Java since it doesn't have value types.
+various Java runtimes.  This optimization is also important for Java.
 
 ## GitHub issues
 
