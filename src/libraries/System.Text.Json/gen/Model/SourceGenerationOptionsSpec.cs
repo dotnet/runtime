@@ -52,6 +52,8 @@ namespace System.Text.Json.SourceGeneration
 
         public required JsonCommentHandling? ReadCommentHandling { get; init; }
 
+        public required JsonKnownReferenceHandler? ReferenceHandler { get; init; }
+
         public required JsonUnknownTypeHandling? UnknownTypeHandling { get; init; }
 
         public required JsonUnmappedMemberHandling? UnmappedMemberHandling { get; init; }
