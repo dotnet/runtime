@@ -23,7 +23,7 @@ namespace Wasm.Build.NativeRebuild.Tests
         // [ActiveIssue(aot: True "Expected changed file: dotnet.native.wasm, dotnet.native.js, WasmBasicTestApp.dll.bc, WasmBasicTestApp.dll.o")]
         public async void SimpleStringChangeInSource(Configuration config, bool aot, bool nativeRelink, bool invariant)
         {
-            ProjectInfo info = CopyTestAsset(config, aot, BasicTestApp, "rebuild_simple");
+            ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBasicTestApp, "rebuild_simple");
             BuildPaths paths = await FirstNativeBuildAndRun(info, config, nativeRelink, invariant);
 
             string mainAssembly = $"{info.ProjectName}{ProjectProviderBase.WasmAssemblyExtension}";

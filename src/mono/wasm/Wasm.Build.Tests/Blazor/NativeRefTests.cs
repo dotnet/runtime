@@ -57,7 +57,7 @@ public class NativeTests : BlazorWasmTestBase
     public void BlazorWasm_CannotAOT_WithNoTrimming(Configuration config)
     {
         string extraProperties = "<PublishTrimmed>false</PublishTrimmed><RunAOTCompilation>true</RunAOTCompilation>";
-        ProjectInfo info = CopyTestAsset(config, aot: true, BasicTestApp, "blazorwasm_aot", extraProperties: extraProperties);
+        ProjectInfo info = CopyTestAsset(config, aot: true, TestAsset.BlazorBasicTestApp, "blazorwasm_aot", extraProperties: extraProperties);
 
         (string _, string output) = BlazorPublish(info, config, new PublishOptions(ExpectSuccess: false));
         Assert.Contains("AOT is not supported without IL trimming", output);

@@ -25,7 +25,7 @@ namespace Wasm.Build.Tests
         [BuildAndRun(aot: false, config: Configuration.Debug)]
         public async Task NoOpRebuild(Configuration config, bool aot)
         {
-            ProjectInfo info = CopyTestAsset(config, aot, BasicTestApp, "rebuild");
+            ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBasicTestApp, "rebuild");
             UpdateFile(Path.Combine("Common", "Program.cs"), s_mainReturns42);
             PublishProject(info, config);
 

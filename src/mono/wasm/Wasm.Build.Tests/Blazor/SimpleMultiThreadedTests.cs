@@ -28,7 +28,7 @@ public class SimpleMultiThreadedTests : BlazorWasmTestBase
     public async Task BlazorBuildRunTest(Configuration config)
     {
         string extraProperties = "<WasmEnableThreads>true</WasmEnableThreads>";
-        ProjectInfo info = CopyTestAsset(config, aot: false, BasicTestApp, "blazorwasm", extraProperties: extraProperties);
+        ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.BlazorBasicTestApp, "blazorwasm", extraProperties: extraProperties);
         bool isPublish = false;
         string frameworkDir = GetBlazorBinFrameworkDir(config, isPublish);
         BuildProject(info, config, new BuildOptions(RuntimeType: RuntimeVariant.MultiThreaded));
@@ -46,7 +46,7 @@ public class SimpleMultiThreadedTests : BlazorWasmTestBase
     public async Task BlazorPublishRunTest(Configuration config, bool aot)
     {
         string extraProperties = "<WasmEnableThreads>true</WasmEnableThreads>";
-        ProjectInfo info = CopyTestAsset(config, aot, BasicTestApp, "blazor_mt", extraProperties: extraProperties);
+        ProjectInfo info = CopyTestAsset(config, aot, TestAsset.BlazorBasicTestApp, "blazor_mt", extraProperties: extraProperties);
         // if (aot)
         // AddItemsPropertiesToProject(projectFile, "<RunAOTCompilation>true</RunAOTCompilation>");
 

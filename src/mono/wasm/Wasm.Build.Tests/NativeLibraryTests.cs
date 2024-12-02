@@ -27,7 +27,7 @@ namespace Wasm.Build.Tests
             string extraItems = $"<NativeFileReference Include=\"{objectFilename}\" />";
             string extraProperties = "<WasmBuildNative>true</WasmBuildNative>";
 
-            ProjectInfo info = CopyTestAsset(config, aot, BasicTestApp, "AppUsingNativeLib-a", extraItems: extraItems, extraProperties: extraProperties);
+            ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBasicTestApp, "AppUsingNativeLib-a", extraItems: extraItems, extraProperties: extraProperties);
             File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "native-libs", objectFilename), Path.Combine(_projectDir, objectFilename));
             Utils.DirectoryCopy(Path.Combine(BuildEnvironment.TestAssetsPath, "AppUsingNativeLib"), _projectDir, overwrite: true);
             DeleteFile(Path.Combine(_projectDir, "Common", "Program.cs"));
@@ -50,7 +50,7 @@ namespace Wasm.Build.Tests
                                 {GetSkiaSharpReferenceItems()}
                                 <WasmFilesToIncludeInFileSystem Include=""{Path.Combine(BuildEnvironment.TestAssetsPath, "mono.png")}"" />
                             ";
-            ProjectInfo info = CopyTestAsset(config, aot, BasicTestApp, prefix, extraItems: extraItems);
+            ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBasicTestApp, prefix, extraItems: extraItems);
             ReplaceFile(Path.Combine("Common", "Program.cs"), Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "SkiaSharp.cs"));
 
             PublishProject(info, config, new PublishOptions(AOT: aot));
@@ -64,7 +64,7 @@ namespace Wasm.Build.Tests
         [BuildAndRun(config: Configuration.Release, aot: true)]
         public async Task ProjectUsingBrowserNativeCrypto(Configuration config, bool aot)
         {
-            ProjectInfo info = CopyTestAsset(config, aot, BasicTestApp, "AppUsingBrowserNativeCrypto");
+            ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBasicTestApp, "AppUsingBrowserNativeCrypto");
             ReplaceFile(Path.Combine("Common", "Program.cs"), Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "NativeCrypto.cs"));
 
             (string _, string buildOutput) = PublishProject(info, config, new PublishOptions(AOT: aot));
@@ -83,7 +83,7 @@ namespace Wasm.Build.Tests
         public async Task ProjectWithNativeLibrary(Configuration config, bool aot)
         {
             string extraItems = "<NativeLibrary Include=\"native-lib.o\" />\n<NativeLibrary Include=\"DoesNotExist.o\" />";
-            ProjectInfo info = CopyTestAsset(config, aot, BasicTestApp, "AppUsingNativeLib-a", extraItems: extraItems);
+            ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBasicTestApp, "AppUsingNativeLib-a", extraItems: extraItems);
             Utils.DirectoryCopy(Path.Combine(BuildEnvironment.TestAssetsPath, "AppUsingNativeLib"), _projectDir, overwrite: true);
             DeleteFile(Path.Combine(_projectDir, "Common", "Program.cs"));
             File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "native-libs", "native-lib.o"), Path.Combine(_projectDir, "native-lib.o"));

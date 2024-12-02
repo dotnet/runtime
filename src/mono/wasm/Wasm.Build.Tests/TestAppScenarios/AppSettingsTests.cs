@@ -26,7 +26,7 @@ public class AppSettingsTests : WasmTemplateTestsBase
     public async Task LoadAppSettingsBasedOnApplicationEnvironment(string applicationEnvironment)
     {
         Configuration config = Configuration.Debug;
-        ProjectInfo info = CopyTestAsset(config, aot: false, BasicTestApp, "AppSettingsTest");
+        ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.WasmBasicTestApp, "AppSettingsTest");
         PublishProject(info, config);
         BrowserRunOptions options = new(
             config,

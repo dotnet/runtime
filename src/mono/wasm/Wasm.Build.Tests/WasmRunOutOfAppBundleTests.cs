@@ -18,7 +18,7 @@ public class WasmRunOutOfAppBundleTests : WasmTemplateTestsBase
     [BuildAndRun]
     public async void RunOutOfAppBundle(Configuration config, bool aot)
     {
-        ProjectInfo info = CopyTestAsset(config, aot, BasicTestApp, "outofappbundle");
+        ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBasicTestApp, "outofappbundle");
         UpdateFile(Path.Combine("Common", "Program.cs"), s_mainReturns42);
         (string _, string output) = PublishProject(info, config, new PublishOptions(AOT: aot));
         

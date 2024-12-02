@@ -27,7 +27,7 @@ public class SimpleRunTests : BlazorWasmTestBase
     [InlineData(Configuration.Release)]
     public async Task BlazorBuildRunTest(Configuration config)
     {
-        ProjectInfo info = CopyTestAsset(config, aot: false, BasicTestApp, "blazor");
+        ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.BlazorBasicTestApp, "blazor");
         BlazorBuild(info, config);
         await RunForBuildWithDotnetRun(new BlazorRunOptions(config));
     }
@@ -39,7 +39,7 @@ public class SimpleRunTests : BlazorWasmTestBase
     [InlineData(Configuration.Debug, /*appendRID*/ false, /*useArtifacts*/ false)]
     public async Task BlazorBuildAndRunForDifferentOutputPaths(Configuration config, bool appendRID, bool useArtifacts)
     {
-        ProjectInfo info = CopyTestAsset(config, aot: false, BasicTestApp, "blazor");
+        ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.BlazorBasicTestApp, "blazor");
         string extraPropertiesForDBP = "";
         if (appendRID)
             extraPropertiesForDBP += "<AppendRuntimeIdentifierToOutputPath>true</AppendRuntimeIdentifierToOutputPath>";
@@ -66,7 +66,7 @@ public class SimpleRunTests : BlazorWasmTestBase
     [InlineData(Configuration.Release, true)]
     public async Task BlazorPublishRunTest(Configuration config, bool aot)
     {
-        ProjectInfo info = CopyTestAsset(config, aot, BasicTestApp, "blazor_publish");
+        ProjectInfo info = CopyTestAsset(config, aot, TestAsset.BlazorBasicTestApp, "blazor_publish");
         BlazorPublish(info, config);
         await RunForPublishWithWebServer(new BlazorRunOptions(config));
     }

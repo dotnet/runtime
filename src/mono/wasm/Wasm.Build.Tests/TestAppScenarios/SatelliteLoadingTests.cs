@@ -30,7 +30,7 @@ public class SatelliteLoadingTests : WasmTemplateTestsBase
     public async Task LoadSatelliteAssembly(bool loadAllSatelliteResources)
     {
         Configuration config = Configuration.Debug;
-        ProjectInfo info = CopyTestAsset(config, false, BasicTestApp, "SatelliteLoadingTests");
+        ProjectInfo info = CopyTestAsset(config, false, TestAsset.WasmBasicTestApp, "SatelliteLoadingTests");
         BuildProject(info, config);
 
         var result = await RunForBuildWithDotnetRun(new BrowserRunOptions(
@@ -61,7 +61,7 @@ public class SatelliteLoadingTests : WasmTemplateTestsBase
     public async Task LoadSatelliteAssemblyFromReference()
     {
         Configuration config = Configuration.Release;
-        ProjectInfo info = CopyTestAsset(config, false, BasicTestApp, "SatelliteLoadingTestsFromReference");
+        ProjectInfo info = CopyTestAsset(config, false, TestAsset.WasmBasicTestApp, "SatelliteLoadingTestsFromReference");
 
         // Replace ProjectReference with Reference
         var appCsprojPath = Path.Combine(_projectDir, "WasmBasicTestApp.csproj");

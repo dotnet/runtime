@@ -28,7 +28,7 @@ public class BuildPublishTests : BlazorWasmTestBase
     [InlineData(Configuration.Release)]
     public async Task DefaultTemplate_WithoutWorkload(Configuration config)
     {
-        ProjectInfo info = CopyTestAsset(config, aot: false, BasicTestApp, "blz_no_workload");
+        ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.BlazorBasicTestApp, "blz_no_workload");
         BlazorBuild(info, config);
         await RunForBuildWithDotnetRun(new BlazorRunOptions(config));
 
@@ -58,7 +58,7 @@ public class BuildPublishTests : BlazorWasmTestBase
     [MemberData(nameof(TestDataForDefaultTemplate_WithWorkload), parameters: new object[] { false })]
     public void DefaultTemplate_NoAOT_WithWorkload(Configuration config, bool testUnicode)
     {
-        ProjectInfo info = CopyTestAsset(config, aot: false, BasicTestApp, "blz_no_aot", appendUnicodeToPath: testUnicode);
+        ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.BlazorBasicTestApp, "blz_no_aot", appendUnicodeToPath: testUnicode);
         BlazorPublish(info, config);
     }
 
@@ -66,7 +66,7 @@ public class BuildPublishTests : BlazorWasmTestBase
     [MemberData(nameof(TestDataForDefaultTemplate_WithWorkload), parameters: new object[] { true })]
     public void DefaultTemplate_AOT_WithWorkload(Configuration config, bool testUnicode)
     {
-        ProjectInfo info = CopyTestAsset(config, aot: false, BasicTestApp, "blz_aot", appendUnicodeToPath: testUnicode);
+        ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.BlazorBasicTestApp, "blz_aot", appendUnicodeToPath: testUnicode);
         BlazorBuild(info, config);
 
         // NativeFilesType.AOT??
@@ -83,7 +83,7 @@ public class BuildPublishTests : BlazorWasmTestBase
         var extraProperty = expectFingerprintOnDotnetJs ?
             "<WasmFingerprintDotnetJs>true</WasmFingerprintDotnetJs><WasmBuildNative>true</WasmBuildNative>" :
             "<WasmBuildNative>true</WasmBuildNative>";
-        ProjectInfo info = CopyTestAsset(config, aot: false, BasicTestApp, "blz_checkfingerprinting", extraProperties: extraProperty);
+        ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.BlazorBasicTestApp, "blz_checkfingerprinting", extraProperties: extraProperty);
         BlazorBuild(info, config, isNativeBuild: true);
         BlazorPublish(info, config, new PublishOptions(UseCache: false), isNativeBuild: true);
     }
@@ -115,7 +115,7 @@ public class BuildPublishTests : BlazorWasmTestBase
     public void DefaultTemplate_WithResources_Publish(Configuration config)
     {
         string[] cultures = ["ja-JP", "es-ES"];
-        ProjectInfo info = CopyTestAsset(config, aot: false, BasicTestApp, "blz_resources");
+        ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.BlazorBasicTestApp, "blz_resources");
 
         // Ensure we have the source data we rely on
         string resxSourcePath = Path.Combine(BuildEnvironment.TestAssetsPath, "resx");
@@ -153,7 +153,7 @@ public class BuildPublishTests : BlazorWasmTestBase
         string extraProperties = "<RunAOTCompilation>true</RunAOTCompilation>";
         if (!string.IsNullOrEmpty(stripILAfterAOT))
             extraProperties += $"<WasmStripILAfterAOT>{stripILAfterAOT}</WasmStripILAfterAOT>";
-        ProjectInfo info = CopyTestAsset(config, aot: true, BasicTestApp, "blz_WasmStripILAfterAOT", extraProperties: extraProperties);
+        ProjectInfo info = CopyTestAsset(config, aot: true, TestAsset.BlazorBasicTestApp, "blz_WasmStripILAfterAOT", extraProperties: extraProperties);
 
         BlazorPublish(info, config);
         await RunForPublishWithWebServer(new BlazorRunOptions(config));
@@ -169,7 +169,7 @@ public class BuildPublishTests : BlazorWasmTestBase
     public void BlazorWasm_CannotAOT_InDebug(Configuration config)
     {
         ProjectInfo info = CopyTestAsset(
-            config, aot: true, BasicTestApp, "blazorwasm", extraProperties: "<RunAOTCompilation>true</RunAOTCompilation>");
+            config, aot: true, TestAsset.BlazorBasicTestApp, "blazorwasm", extraProperties: "<RunAOTCompilation>true</RunAOTCompilation>");
 
         (string _, string output) = PublishProject(info, config, new PublishOptions(ExpectSuccess: false));
         Assert.Contains("AOT is not supported in debug configuration", output);

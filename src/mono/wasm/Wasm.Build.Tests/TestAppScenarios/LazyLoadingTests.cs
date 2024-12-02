@@ -31,7 +31,7 @@ public class LazyLoadingTests : WasmTemplateTestsBase
     public async Task LoadLazyAssemblyBeforeItIsNeeded(string lazyLoadingTestExtension, string[] allLazyLoadingTestExtensions)
     {
         Configuration config = Configuration.Debug;
-        ProjectInfo info = CopyTestAsset(config, false, BasicTestApp, "LazyLoadingTests");
+        ProjectInfo info = CopyTestAsset(config, false, TestAsset.WasmBasicTestApp, "LazyLoadingTests");
         BuildProject(info, config, new BuildOptions(ExtraMSBuildArgs: $"-p:LazyLoadingTestExtension={lazyLoadingTestExtension} -p:TestLazyLoading=true"));
 
         // We are running the app and passing all possible lazy extensions to test matrix of all possibilities.
@@ -53,7 +53,7 @@ public class LazyLoadingTests : WasmTemplateTestsBase
     public async Task FailOnMissingLazyAssembly()
     {
         Configuration config = Configuration.Debug;
-        ProjectInfo info = CopyTestAsset(config, false, BasicTestApp, "LazyLoadingTests");
+        ProjectInfo info = CopyTestAsset(config, false, TestAsset.WasmBasicTestApp, "LazyLoadingTests");
 
         PublishProject(info, config, new PublishOptions(ExtraMSBuildArgs: "-p:TestLazyLoading=true"));
         BrowserRunOptions options = new(

@@ -31,7 +31,7 @@ public class DebugLevelTests : WasmTemplateTestsBase
         ProjectInfo info = CopyTestAsset(
             configuration,
             aot: false,
-            asset: BasicTestApp,
+            asset: TestAsset.WasmBasicTestApp,
             idPrefix: "DebugLevelTests_BuildWithDefaultLevel"
         );
         BuildProject(info, configuration);
@@ -50,7 +50,7 @@ public class DebugLevelTests : WasmTemplateTestsBase
         ProjectInfo info = CopyTestAsset(
             configuration,
             aot: false,
-            asset: BasicTestApp,
+            asset: TestAsset.WasmBasicTestApp,
             idPrefix: "DebugLevelTests_BuildWithExplicitValue"
         );
         BuildProject(info, configuration, new BuildOptions(ExtraMSBuildArgs: $"-p:WasmDebugLevel={debugLevel}"));
@@ -67,7 +67,7 @@ public class DebugLevelTests : WasmTemplateTestsBase
         ProjectInfo info = CopyTestAsset(
             configuration,
             aot: false,
-            asset: BasicTestApp,
+            asset: TestAsset.WasmBasicTestApp,
             idPrefix: "DebugLevelTests_PublishWithDefaultLevel"
         );
         PublishProject(info, configuration);
@@ -86,7 +86,7 @@ public class DebugLevelTests : WasmTemplateTestsBase
         ProjectInfo info = CopyTestAsset(
             configuration,
             aot: false,
-            asset: BasicTestApp,
+            asset: TestAsset.WasmBasicTestApp,
             idPrefix: "DebugLevelTests_PublishWithExplicitValue"
         );
         PublishProject(info, configuration, new PublishOptions(ExtraMSBuildArgs: $"-p:WasmDebugLevel={debugLevel}"));
@@ -104,7 +104,7 @@ public class DebugLevelTests : WasmTemplateTestsBase
         ProjectInfo info = CopyTestAsset(
             configuration,
             aot: false,
-            asset: BasicTestApp,
+            asset: TestAsset.WasmBasicTestApp,
             idPrefix: "DebugLevelTests_PublishWithDefaultLevelAndPdbs"
         );
         PublishProject(info, configuration, new PublishOptions(ExtraMSBuildArgs: $"-p:CopyOutputSymbolsToPublishDirectory=true"));

@@ -21,7 +21,7 @@ namespace Wasm.Build.NativeRebuild.Tests
         [MemberData(nameof(NativeBuildData))]
         public async void NoOpRebuildForNativeBuilds(Configuration config, bool aot, bool nativeRelink, bool invariant)
         {
-            ProjectInfo info = CopyTestAsset(config, aot, BasicTestApp, "rebuild_noop");
+            ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBasicTestApp, "rebuild_noop");
             BuildPaths paths = await FirstNativeBuildAndRun(info, config, nativeRelink, invariant);
 
             var pathsDict = GetFilesTable(info.ProjectName, aot, paths, unchanged: true);
@@ -39,7 +39,7 @@ namespace Wasm.Build.NativeRebuild.Tests
         {
             Configuration config = Configuration.Release;
             string extraArgs = "-p:_WasmDevel=true -p:WasmBuildNative=false -p:InvariantGlobalization=true";
-            ProjectInfo info = CopyTestAsset(config, aot: true, BasicTestApp, "relink_fails");
+            ProjectInfo info = CopyTestAsset(config, aot: true, TestAsset.WasmBasicTestApp, "relink_fails");
             var options = new PublishOptions(ExpectSuccess: false, AOT: true, ExtraMSBuildArgs: extraArgs);
             PublishProject(info, config, options);
             Assert.Contains("WasmBuildNative is required because InvariantGlobalization=true, but WasmBuildNative is already set to 'false'", _testOutput.ToString());

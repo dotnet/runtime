@@ -21,9 +21,8 @@ public class WasmTemplateTestsBase : BuildTestBase
     private readonly WasmSdkBasedProjectProvider _provider;
     protected readonly PublishOptions _defaultPublishOptions = new PublishOptions();
     protected readonly BuildOptions _defaultBuildOptions = new BuildOptions();
-    protected const string DefaultRuntimeAssetsRelativePath = "./_framework/";    
-    protected virtual TestAsset BasicTestApp => new() { Name = "WasmBasicTestApp", RunnableProjectSubPath = "App" };
-    
+    protected const string DefaultRuntimeAssetsRelativePath = "./_framework/";
+
     public WasmTemplateTestsBase(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext, ProjectProviderBase? provider = null)
         : base(provider ?? new WasmSdkBasedProjectProvider(output, DefaultTargetFramework), output, buildContext)
     {

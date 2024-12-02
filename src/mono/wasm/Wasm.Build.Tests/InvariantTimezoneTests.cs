@@ -53,7 +53,7 @@ namespace Wasm.Build.Tests
             }
 
             string prefix = $"invariant_{invariantTimezone?.ToString() ?? "unset"}";
-            ProjectInfo info = CopyTestAsset(config, aot, BasicTestApp, prefix, extraProperties: extraProperties);
+            ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBasicTestApp, prefix, extraProperties: extraProperties);
             ReplaceFile(Path.Combine("Common", "Program.cs"), Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "InvariantTimezone.cs"));
             PublishProject(info, config, isNativeBuild: isNativeBuild);
 

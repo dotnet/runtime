@@ -25,7 +25,7 @@ namespace Wasm.Build.Tests
         [BuildAndRun(config: Configuration.Debug, aot: true)]
         public void Wasm_CannotAOT_InDebug(Configuration config, bool aot)
         {
-            ProjectInfo info = CopyTestAsset(config, aot, BasicTestApp, "no_aot_in_debug");
+            ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBasicTestApp, "no_aot_in_debug");
             (string _, string buildOutput) = PublishProject(info, config, new PublishOptions(AOT: aot, ExpectSuccess: false));
             Assert.Contains("AOT is not supported in debug configuration", buildOutput);
         }
@@ -35,7 +35,7 @@ namespace Wasm.Build.Tests
         [BuildAndRun(config: Configuration.Debug)]
         public async Task BuildThenPublishNoAOT(Configuration config, bool aot)
         {
-            ProjectInfo info = CopyTestAsset(config, aot, BasicTestApp, "build_publish");
+            ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBasicTestApp, "build_publish");
             BuildProject(info, config);
 
             if (!_buildContext.TryGetBuildFor(info, out BuildResult? result))
@@ -52,7 +52,7 @@ namespace Wasm.Build.Tests
         [BuildAndRun(config: Configuration.Release, aot: true)]
         public async Task BuildThenPublishWithAOT(Configuration config, bool aot)
         {
-            ProjectInfo info = CopyTestAsset(config, aot, BasicTestApp, "build_publish");
+            ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBasicTestApp, "build_publish");
             
             bool isPublish = false;
             (_, string output) = BuildProject(info, config, new BuildOptions(Label: "first_build", AOT: aot));

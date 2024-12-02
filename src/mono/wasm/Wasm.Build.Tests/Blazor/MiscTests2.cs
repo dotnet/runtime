@@ -52,7 +52,7 @@ public class MiscTests2 : BlazorWasmTestBase
     private CommandResult PublishForRequiresWorkloadTest(Configuration config, string extraItems="", string extraProperties="")
     {
         ProjectInfo info = CopyTestAsset(
-            config, aot: false, BasicTestApp, "needs_workload", extraProperties: extraProperties, extraItems: extraItems);
+            config, aot: false, TestAsset.BlazorBasicTestApp, "needs_workload", extraProperties: extraProperties, extraItems: extraItems);
 
         string publishLogPath = Path.Combine(s_buildEnv.LogRootPath, info.ProjectName, $"{info.ProjectName}.binlog");
         using DotNetCommand cmd = new DotNetCommand(s_buildEnv, _testOutput);

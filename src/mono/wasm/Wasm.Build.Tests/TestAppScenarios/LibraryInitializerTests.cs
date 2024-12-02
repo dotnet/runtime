@@ -27,7 +27,7 @@ public partial class LibraryInitializerTests : WasmTemplateTestsBase
     public async Task LoadLibraryInitializer()
     {
         Configuration config = Configuration.Debug;        
-        ProjectInfo info = CopyTestAsset(config, false, BasicTestApp, "LibraryInitializerTests_LoadLibraryInitializer");
+        ProjectInfo info = CopyTestAsset(config, false, TestAsset.WasmBasicTestApp, "LibraryInitializerTests_LoadLibraryInitializer");
         PublishProject(info, config);
         RunResult result = await RunForPublishWithWebServer(new BrowserRunOptions(config, TestScenario: "LibraryInitializerTest"));
         Assert.Collection(
@@ -43,7 +43,7 @@ public partial class LibraryInitializerTests : WasmTemplateTestsBase
     public async Task AbortStartupOnError()
     {
         Configuration config = Configuration.Debug;        
-        ProjectInfo info = CopyTestAsset(config, false, BasicTestApp, "LibraryInitializerTests_AbortStartupOnError");
+        ProjectInfo info = CopyTestAsset(config, false, TestAsset.WasmBasicTestApp, "LibraryInitializerTests_AbortStartupOnError");
         PublishProject(info, config);
 
         BrowserRunOptions options = new(

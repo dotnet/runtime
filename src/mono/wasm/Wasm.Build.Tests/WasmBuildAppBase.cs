@@ -32,7 +32,7 @@ namespace Wasm.Build.Tests
               string runtimeConfigContents = "",
               string extraArgs = "")
         {
-            ProjectInfo info = CopyTestAsset(config, aot, BasicTestApp, "DotnetRun");
+            ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBasicTestApp, "DotnetRun");
             UpdateFile(Path.Combine("Common", "Program.cs"), programText);
             if (!string.IsNullOrEmpty(runtimeConfigContents))
             {

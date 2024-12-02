@@ -24,7 +24,7 @@ public class DownloadThenInitTests : WasmTemplateTestsBase
     [InlineData(Configuration.Release)]
     public async Task NoResourcesReFetchedAfterDownloadFinished(Configuration config)
     {
-        ProjectInfo info = CopyTestAsset(config, aot: false, BasicTestApp, "DownloadThenInitTests");
+        ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.WasmBasicTestApp, "DownloadThenInitTests");
         BuildProject(info, config);
         BrowserRunOptions options = new(config, TestScenario: "DownloadThenInit");
         RunResult result = await RunForBuildWithDotnetRun(options);

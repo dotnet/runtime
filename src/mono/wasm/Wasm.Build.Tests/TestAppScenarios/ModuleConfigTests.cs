@@ -26,7 +26,7 @@ public class ModuleConfigTests : WasmTemplateTestsBase
     public async Task DownloadProgressFinishes(bool failAssemblyDownload)
     {
         Configuration config = Configuration.Debug;
-        ProjectInfo info = CopyTestAsset(config, false, BasicTestApp, $"ModuleConfigTests_DownloadProgressFinishes_{failAssemblyDownload}");
+        ProjectInfo info = CopyTestAsset(config, false, TestAsset.WasmBasicTestApp, $"ModuleConfigTests_DownloadProgressFinishes_{failAssemblyDownload}");
         PublishProject(info, config);
 
         var result = await RunForPublishWithWebServer(new BrowserRunOptions(
@@ -60,7 +60,7 @@ public class ModuleConfigTests : WasmTemplateTestsBase
     public async Task OutErrOverrideWorks()
     {
         Configuration config = Configuration.Debug;
-        ProjectInfo info = CopyTestAsset(config, false, BasicTestApp, "ModuleConfigTests_OutErrOverrideWorks");
+        ProjectInfo info = CopyTestAsset(config, false, TestAsset.WasmBasicTestApp, "ModuleConfigTests_OutErrOverrideWorks");
         PublishProject(info, config);
 
         var result = await RunForPublishWithWebServer(new BrowserRunOptions(
@@ -82,7 +82,7 @@ public class ModuleConfigTests : WasmTemplateTestsBase
     [InlineData(Configuration.Release, false)]
     public async Task OverrideBootConfigName(Configuration config, bool isPublish)
     {
-        ProjectInfo info = CopyTestAsset(config, false, BasicTestApp, "OverrideBootConfigName");
+        ProjectInfo info = CopyTestAsset(config, false, TestAsset.WasmBasicTestApp, "OverrideBootConfigName");
         (string _, string _) = isPublish ?
             PublishProject(info, config) :
             BuildProject(info, config);

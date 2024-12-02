@@ -24,7 +24,7 @@ namespace Wasm.Build.NativeRebuild.Tests
         // [ActiveIssue(aot: True "Expected changed file: ...")]
         public async void ReferenceNewAssembly(Configuration config, bool aot, bool nativeRelink, bool invariant)
         {
-            ProjectInfo info = CopyTestAsset(config, aot, BasicTestApp, "rebuild_tasks");     
+            ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBasicTestApp, "rebuild_tasks");     
             BuildPaths paths = await FirstNativeBuildAndRun(info, config, nativeRelink, invariant);
 
             var pathsDict = GetFilesTable(info.ProjectName, aot, paths, unchanged: false);

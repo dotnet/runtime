@@ -33,7 +33,7 @@ namespace Wasm.Build.NativeRebuild.Tests
         // [MemberData(nameof(FlagsChangesForNativeRelinkingData), parameters: /*aot*/ true)]
         public async void ExtraEmccFlagsSetButNoRealChange(Configuration config, bool aot, string extraCFlags, string extraLDFlags)
         {
-            ProjectInfo info = CopyTestAsset(config, aot, BasicTestApp, "rebuild_flags");
+            ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBasicTestApp, "rebuild_flags");
             BuildPaths paths = await FirstNativeBuildAndRun(info, config, nativeRelink: true, invariant: false);
             var pathsDict = GetFilesTable(info.ProjectName, aot, paths, unchanged: true);
             if (extraLDFlags.Length > 0)

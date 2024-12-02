@@ -22,7 +22,6 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestsBase
     private readonly string _blazorExtraBuildArgs = "-p:BlazorEnableCompression=false /warnaserror";
     protected readonly PublishOptions _defaultBlazorPublishOptions;
     private readonly BuildOptions _defaultBlazorBuildOptions;
-    protected override TestAsset BasicTestApp => new() { Name = "BlazorBasicTestApp", RunnableProjectSubPath = "App" };
     
     protected BlazorWasmTestBase(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
                 : base(output, buildContext, new WasmSdkBasedProjectProvider(output, DefaultTargetFrameworkForBlazor))
@@ -190,7 +189,7 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestsBase
             <WasmFilesToIncludeInFileSystem Include=""{Path.Combine(BuildEnvironment.TestAssetsPath, "mono.png")}"" />
         ";
         return CopyTestAsset(
-            config, aot, BasicTestApp, "blz_nativeref_aot", extraItems: extraItems, extraProperties: extraProperties);
+            config, aot, TestAsset.BlazorBasicTestApp, "blz_nativeref_aot", extraItems: extraItems, extraProperties: extraProperties);
     }
 
     // Keeping these methods with explicit Build/Publish in the name
