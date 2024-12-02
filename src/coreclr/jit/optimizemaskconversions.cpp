@@ -118,8 +118,9 @@ class MaskConversionsCheckVisitor final : public GenTreeVisitor<MaskConversionsC
 public:
     enum
     {
-        DoPostOrder       = true,
-        UseExecutionOrder = true
+        DoPreOrder        = true,
+        UseExecutionOrder = true,
+        DoLclVarsOnly     = true,
     };
 
     MaskConversionsCheckVisitor(Compiler* compiler, weight_t bbWeight, MaskConversionsWeightTable* weightsTable)
@@ -129,16 +130,29 @@ public:
     {
     }
 
-    Compiler::fgWalkResult PostOrderVisit(GenTree** use, GenTree* user)
+    Compiler::fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
     {
+        GenTreeLclVarCommon* lclOp  = (*use)->AsLclVarCommon();
+        LclVarDsc*           lclDsc = m_compiler->lvaGetDesc(lclOp);
+
+        if (!varTypeIsSIMDOrMask(lclDsc))
+        {
+            return fgWalkResult::WALK_CONTINUE;
+        }
+
+        // Get the existing weighting (if any).
+        MaskConversionsWeight* weight = weightsTable->LookupPointerOrAdd(lclOp->GetLclNum(), MaskConversionsWeight());
+
+        JITDUMP("%s V%02d at [%06u] ", GenTree::OpName(lclOp->gtOper), lclOp->GetLclNum(),
+                m_compiler->dspTreeID(lclOp));
+
         GenTreeHWIntrinsic* convertOp = nullptr;
 
         bool isLocalStore  = false;
         bool isLocalUse    = false;
-        bool isInvalid     = false;
         bool hasConversion = false;
 
-        switch ((*use)->OperGet())
+        switch (lclOp->OperGet())
         {
             case GT_STORE_LCL_VAR:
             {
@@ -147,9 +161,9 @@ public:
                 // Look for:
                 //      use:STORE_LCL_VAR(ConvertMaskToVector(x))
 
-                if ((*use)->AsLclVar()->Data()->OperIsConvertMaskToVector())
+                if (lclOp->Data()->OperIsConvertMaskToVector())
                 {
-                    convertOp     = (*use)->AsLclVar()->Data()->AsHWIntrinsic();
+                    convertOp     = lclOp->Data()->AsHWIntrinsic();
                     hasConversion = true;
                 }
                 break;
@@ -164,7 +178,7 @@ public:
                 // -or-
                 //      user: ConditionalSelect(use:LCL_VAR(x), y, z)
 
-                if (user->OperIsHWIntrinsic())
+                if ((user != nullptr) && user->OperIsHWIntrinsic())
                 {
                     GenTreeHWIntrinsic* hwintrin = user->AsHWIntrinsic();
                     NamedIntrinsic      ni       = hwintrin->GetHWIntrinsicId();
@@ -186,7 +200,7 @@ public:
                         // emit `vblendmps zmm1 {k1}, zmm2, zmm3` instead  of containing the CndSel
                         // as part of something like `vaddps zmm1 {k1}, zmm2, zmm3`
 
-                        if (hwintrin->Op(1) == (*use))
+                        if (hwintrin->Op(1) == lclOp)
                         {
                             convertOp     = user->AsHWIntrinsic();
                             hasConversion = true;
@@ -197,25 +211,21 @@ public:
             }
 
             default:
-                break;
+                // LCL_ADDR (can show up unexposed due to retbufs), or partial
+                // use/store. We do not handle these.
+                weight->InvalidateWeight();
+                JITDUMP("is unhandled. ");
+                return fgWalkResult::WALK_CONTINUE;
         }
 
         if (isLocalStore || isLocalUse)
         {
-            GenTreeLclVarCommon* lclOp  = (*use)->AsLclVarCommon();
-            LclVarDsc*           varDsc = m_compiler->lvaGetDesc(lclOp->GetLclNum());
-
-            // Get the existing weighting (if any).
-            MaskConversionsWeight  defaultWeight;
-            MaskConversionsWeight* weight = weightsTable->LookupPointerOrAdd(lclOp->GetLclNum(), defaultWeight);
-
-            JITDUMP("Local %s V%02d at [%06u] ", isLocalStore ? "store" : "use", lclOp->GetLclNum(),
-                    m_compiler->dspTreeID(lclOp));
+            LclVarDsc* varDsc = m_compiler->lvaGetDesc(lclOp->GetLclNum());
 
             // Cannot convert any locals with an exposed address.
             if (varDsc->IsAddressExposed())
             {
-                JITDUMP("is address exposed elsewhere. ");
+                JITDUMP("is address exposed. ");
                 weight->InvalidateWeight();
                 return fgWalkResult::WALK_CONTINUE;
             }
@@ -521,7 +531,7 @@ PhaseStatus Compiler::fgOptimizeMaskConversions()
             // Only check statements where there is a local of type TYP_SIMD/TYP_MASK.
             for (GenTreeLclVarCommon* lcl : stmt->LocalsTreeList())
             {
-                if (varTypeIsSIMDOrMask(lcl))
+                if (varTypeIsSIMDOrMask(lvaGetDesc(lcl)))
                 {
                     // Parse the entire statement.
                     MaskConversionsCheckVisitor ev(this, block->getBBWeight(this), &weightsTable);
