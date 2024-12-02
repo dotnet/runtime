@@ -115,6 +115,7 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestsBase
                 isNativeBuild);
             if (buildOptions.ExpectSuccess && buildOptions.AssertAppBundle)
             {
+                // additional blazor-only assert, basic assert is done in BuildProject
                 AssertBundle(config, buildOutput, buildOptions, isNativeBuild);
             }
             return (projectDir, buildOutput);
@@ -127,11 +128,11 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestsBase
         }
     }
     
-    protected (string projectDir, string buildOutput) BlazorPublish(ProjectInfo info, Configuration config, bool isNativeBuild = false) =>
+    protected (string projectDir, string buildOutput) BlazorPublish(ProjectInfo info, Configuration config, bool? isNativeBuild = null) =>
         BlazorPublish(info, config, _defaultBlazorPublishOptions, isNativeBuild);
 
     protected (string projectDir, string buildOutput) BlazorPublish(
-        ProjectInfo info, Configuration config, PublishOptions publishOptions, bool isNativeBuild = false)
+        ProjectInfo info, Configuration config, PublishOptions publishOptions, bool? isNativeBuild = null)
     {
         try
         {
@@ -144,6 +145,7 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestsBase
                 isNativeBuild);
             if (publishOptions.ExpectSuccess && publishOptions.AssertAppBundle)
             {
+                // additional blazor-only assert, basic assert is done in PublishProject
                 AssertBundle(config, buildOutput, publishOptions, isNativeBuild);
             }
             return (projectDir, buildOutput);
@@ -158,8 +160,6 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestsBase
 
     public void AssertBundle(Configuration config, string buildOutput, MSBuildOptions buildOptions, bool? isNativeBuild = null)
     {
-        _provider.AssertBundle(config, buildOptions, IsUsingWorkloads, isNativeBuild);
-
         if (!buildOptions.IsPublish)
             return;
 
