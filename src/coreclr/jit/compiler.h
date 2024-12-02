@@ -2232,8 +2232,8 @@ public:
 
     bool HasDef(unsigned lclNum);
 
-    bool CanDuplicate(INDEBUG(const char** reason));
-    void Duplicate(BasicBlock** insertAfter, BlockToBlockMap* map, weight_t weightScale);
+    bool CanDuplicate(bool allowEH DEBUGARG(const char** reason));
+    void Duplicate(BasicBlock** insertAfter, BlockToBlockMap* map, weight_t weightScale, bool allowEH);
 
     bool MayExecuteBlockMultipleTimesPerIteration(BasicBlock* block);
 
@@ -5360,15 +5360,15 @@ public:
 
     struct CloneTryInfo
     {
-        CloneTryInfo(BitVecTraits& traits, BitVec& visited) : m_traits(traits), m_visited(visited) {}
-        BitVecTraits m_traits;
-        BitVec& m_visited;
-        BlockToBlockMap* m_map = nullptr;
-        jitstd::vector<BasicBlock*>* m_blocksToClone = nullptr;
-        weight_t m_profileScale = 0.0;
-        unsigned m_ehRegionShift = 0;
-        bool m_addEdges = false;
-        bool m_scaleOriginal = false;
+        CloneTryInfo(BitVecTraits& traits, BitVec& visited) : Traits(traits), Visited(visited) {}
+        BitVecTraits Traits;
+        BitVec& Visited;
+        BlockToBlockMap* Map = nullptr;
+        jitstd::vector<BasicBlock*>* BlocksToClone = nullptr;
+        weight_t ProfileScale = 0.0;
+        unsigned EHIndexShift = 0;
+        bool AddEdges = false;
+        bool ScaleOriginalBlockProfile = false;
     };
 
     bool fgCanCloneTryRegion(BasicBlock* tryEntry);

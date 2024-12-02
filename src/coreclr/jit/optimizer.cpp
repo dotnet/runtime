@@ -1508,8 +1508,10 @@ bool Compiler::optTryUnrollLoop(FlowGraphNaturalLoop* loop, bool* changedIR)
     }
     // clang-format on
 
+    bool unrollLoopsWithEH = false;
+    INDEBUG(unrollLoopsWithEH = (JitConfig.JitUnrollLoopsWithEH() > 0);)
     INDEBUG(const char* reason);
-    if (!loop->CanDuplicate(INDEBUG(&reason)))
+    if (!loop->CanDuplicate(unrollLoopsWithEH DEBUGARG(&reason)))
     {
         JITDUMP("Failed to unroll loop " FMT_LP ": %s\n", loop->GetIndex(), reason);
         return false;
@@ -1616,7 +1618,7 @@ bool Compiler::optTryUnrollLoop(FlowGraphNaturalLoop* loop, bool* changedIR)
         // and we might not have upscaled at all, if we had profile data.
         //
         weight_t scaleWeight = 1.0 / BB_LOOP_WEIGHT_SCALE;
-        loop->Duplicate(&insertAfter, &blockMap, scaleWeight);
+        loop->Duplicate(&insertAfter, &blockMap, scaleWeight, unrollLoopsWithEH);
 
         // Replace all uses of the loop iterator with the current value.
         loop->VisitLoopBlocks([=, &blockMap](BasicBlock* block) {

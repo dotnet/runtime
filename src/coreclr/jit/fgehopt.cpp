@@ -2114,15 +2114,15 @@ PhaseStatus Compiler::fgTailMergeThrows()
 //         cloned blocks will be created and scaled by profile weight
 //         and if info.m_addEdges is true have proper bbkinds and flow edges
 //      info data will be updated:
-//         m_map will be modified to contain keys and for the blocks cloned
-//         m_visited will include bits for each newly cloned block
+//         Map will be modified to contain keys and for the blocks cloned
+//         Visited will include bits for each newly cloned block
 //         m_ehRegionShift will describe number of EH regions added
 //      insertAfter will point at the lexcially last block cloned
 //
 // Notes:
 //   * if insertAfter is non null, map must also be non null
 //
-//   * If info.m_map is not nullptr, it is not modified unless cloning succeeds
+//   * If info.Map is not nullptr, it is not modified unless cloning succeeds
 //     When cloning succeeds, entries for the try blocks and related blocks
 //     (handler, filter, callfinally) will be updated; other map entries will
 //     be left as they were
@@ -2139,7 +2139,7 @@ BasicBlock* Compiler::fgCloneTryRegion(BasicBlock* tryEntry, CloneTryInfo& info,
 {
     assert(bbIsTryBeg(tryEntry));
     bool const deferCloning = (insertAfter == nullptr);
-    assert(deferCloning || ((*insertAfter != nullptr) && (info.m_map != nullptr)));
+    assert(deferCloning || ((*insertAfter != nullptr) && (info.Map != nullptr)));
     INDEBUG(const char* msg = deferCloning ? "Checking if it is possible to clone" : "Cloning";)
     JITDUMP("%s the try region EH#%02u headed by " FMT_BB "\n", msg, tryEntry->getTryIndex(), tryEntry->bbNum);
 
@@ -2160,16 +2160,16 @@ BasicBlock* Compiler::fgCloneTryRegion(BasicBlock* tryEntry, CloneTryInfo& info,
     // Track blocks to clone for caller, or if we are cloning and
     // caller doesn't care.
     //
-    jitstd::vector<BasicBlock*>* blocks = info.m_blocksToClone;
+    jitstd::vector<BasicBlock*>* blocks = info.BlocksToClone;
     if (!deferCloning && (blocks == nullptr))
     {
         blocks = new (alloc) jitstd::vector<BasicBlock*>(alloc);
     }
 
     unsigned               regionCount = 0;
-    BitVecTraits* const    traits      = &info.m_traits;
-    BitVec&                visited     = info.m_visited;
-    BlockToBlockMap* const map         = info.m_map;
+    BitVecTraits* const    traits      = &info.Traits;
+    BitVec&                visited     = info.Visited;
+    BlockToBlockMap* const map         = info.Map;
 
     auto addBlockToClone = [=, &blocks, &visited](BasicBlock* block, const char* msg) {
         if (!BitVecOps::TryAddElemD(traits, visited, block->bbNum))
@@ -2397,7 +2397,7 @@ BasicBlock* Compiler::fgCloneTryRegion(BasicBlock* tryEntry, CloneTryInfo& info,
 
     // Callers will see enclosing EH region indices shift by this much
     //
-    info.m_ehRegionShift = regionCount;
+    info.EHIndexShift = regionCount;
 
     // The EH table now looks like the following, for a middle insertion:
     //
@@ -2504,11 +2504,11 @@ BasicBlock* Compiler::fgCloneTryRegion(BasicBlock* tryEntry, CloneTryInfo& info,
                 (*insertAfter)->bbNum);
         map->Set(block, newBlock, BlockToBlockMap::SetKind::Overwrite);
         BasicBlock::CloneBlockState(this, newBlock, block);
-        newBlock->scaleBBWeight(info.m_profileScale);
+        newBlock->scaleBBWeight(info.ProfileScale);
 
-        if (info.m_scaleOriginal)
+        if (info.ScaleOriginalBlockProfile)
         {
-            weight_t originalScale = max(0.0, 1.0 - info.m_profileScale);
+            weight_t originalScale = max(0.0, 1.0 - info.ProfileScale);
             block->scaleBBWeight(originalScale);
         }
 
@@ -2616,7 +2616,7 @@ BasicBlock* Compiler::fgCloneTryRegion(BasicBlock* tryEntry, CloneTryInfo& info,
     // Redirect any branches within the newly-cloned blocks or
     // from cloned blocks to non-cloned blocks
     //
-    if (info.m_addEdges)
+    if (info.AddEdges)
     {
         JITDUMP("Adding edges in the newly cloned try\n");
         for (BasicBlock* const block : BlockToBlockMap::KeyIteration(map))

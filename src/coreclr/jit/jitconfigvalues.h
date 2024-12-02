@@ -96,6 +96,8 @@ CONFIG_INTEGER(JitUnrollLoopMaxIterationCount,
                "JitUnrollLoopMaxIterationCount",
                DEFAULT_UNROLL_LOOP_MAX_ITERATION_COUNT)
 
+CONFIG_INTEGER(JitUnrollLoopsWithEH, "JitUnrollLoopsWithEH", 0) // If 0, don't unroll loops containing EH regions
+
 CONFIG_INTEGER(JitDirectAlloc, "JitDirectAlloc", 0)
 CONFIG_INTEGER(JitDoubleAlign, "JitDoubleAlign", 1)
 CONFIG_INTEGER(JitEmitPrintRefRegs, "JitEmitPrintRefRegs", 0)
