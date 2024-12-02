@@ -704,6 +704,7 @@ FORCEINLINE AwareLock::LeaveHelperAction AwareLock::LeaveHelper(Thread* pCurThre
     if (--m_Recursion == 0)
     {
         m_HoldingThread = NULL;
+        m_HoldingThreadId = 0;
         m_HoldingOSThreadId = 0;
 
         // Clear lock bit and determine whether we must signal a waiter to wake
