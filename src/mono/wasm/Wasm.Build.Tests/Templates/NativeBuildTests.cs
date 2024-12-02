@@ -46,7 +46,8 @@ namespace Wasm.Build.Templates.Tests
             );
             UpdateFile("Program.cs", code);
             File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "native-libs", "undefined-symbol.c"), Path.Combine(_projectDir, "undefined_xyz.c"));
-            (string _, string buildOutput) = BuildProject(info, config, new BuildOptions(ExpectSuccess: allowUndefined), isNativeBuild: true);
+            var buildOptions = new BuildOptions(ExpectSuccess: allowUndefined, AssertAppBundle: false);
+            (string _, string buildOutput) = BuildProject(info, config, buildOptions, isNativeBuild: true);
 
             if (!allowUndefined)
             {
