@@ -6068,8 +6068,7 @@ bool FlowGraphNaturalLoop::CanDuplicateWithEH(INDEBUG(const char** reason))
     Compiler*         comp   = m_dfsTree->GetCompiler();
     BasicBlock* const header = GetHeader();
 
-    CompAllocator           alloc = comp->getAllocator(CMK_LoopClone);
-    ArrayStack<BasicBlock*> tryRegionsToClone(alloc);
+    ArrayStack<BasicBlock*> tryRegionsToClone(comp->getAllocator(CMK_TryRegionClone));
 
     BasicBlockVisit result = VisitLoopBlocks([=, &tryRegionsToClone](BasicBlock* block) {
         const bool inSameRegionAsHeader = BasicBlock::sameEHRegion(block, header);
@@ -6164,7 +6163,7 @@ void FlowGraphNaturalLoop::DuplicateWithEH(BasicBlock** insertAfter, BlockToBloc
         bool        m_isTryEnd;
     };
 
-    ArrayStack<RegionEnd> regionEnds(comp->getAllocator(CMK_LoopClone));
+    ArrayStack<RegionEnd> regionEnds(comp->getAllocator(CMK_TryRegionClone));
 
     // Record enclosing EH region block references,
     // so we can keep track of what the "before" picture looked like.
