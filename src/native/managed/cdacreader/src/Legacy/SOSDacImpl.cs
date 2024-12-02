@@ -349,16 +349,22 @@ internal sealed unsafe partial class SOSDacImpl
                 }
             }
 
-#if false // TODO[cdac]: HAVE_GCCOVER
+            // HAVE_GCCOVER
             if (requestedNativeCodeVersion.Valid)
             {
-                TargetPointer gcCoverAddr = nativeCodeContract.GetGCCoverageInfo(requestedNativeCodeVersion);
-                if (gcCoverAddr != TargetPointer.Null)
+                TargetPointer? gcCoverAddr = _target.Contracts.GCCover.GetGCCoverageInfo(requestedNativeCodeVersion);
+                if (gcCoverAddr is not null)
                 {
-                    throw new NotImplementedException(); // TODO[cdac]: gc stress code copy
+                    // HAVE_GCCOVER is enabled
+                    if(gcCoverAddr.Value != TargetPointer.Null)
+                    {
+                        // In certain minidumps, we won't save the gccover information.
+                        // (it would be unwise to do so, it is heavy and not a customer scenario).
+                        Target.TypeInfo gcCoverageInfo = _target.GetTypeInfo(DataType.GCCoverageInfo);
+                        data->GCStressCodeCopy = gcCoverAddr.Value.Value + (ulong)gcCoverageInfo.Fields["SavedCode"].Offset;
+                    }
                 }
             }
-#endif
 
             if (data->bIsDynamic != 0)
             {

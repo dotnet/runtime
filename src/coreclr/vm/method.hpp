@@ -1908,6 +1908,9 @@ template<> struct cdac_data<MethodDesc>
     static constexpr size_t Flags3AndTokenRemainder = offsetof(MethodDesc, m_wFlags3AndTokenRemainder);
     static constexpr size_t EntryPointFlags = offsetof(MethodDesc, m_bFlags4);
     static constexpr size_t CodeData = offsetof(MethodDesc, m_codeData);
+#ifdef HAVE_GCCOVER
+    static constexpr size_t GCCoverageInfo = offsetof(MethodDesc, m_GcCover);
+#endif // HAVE_GCCOVER
 };
 
 #ifndef DACCESS_COMPILE

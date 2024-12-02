@@ -53,6 +53,7 @@ internal sealed class CachingContractRegistry : ContractRegistry
     public override IPlatformMetadata PlatformMetadata => GetContract<IPlatformMetadata>();
     public override IPrecodeStubs PrecodeStubs => GetContract<IPrecodeStubs>();
     public override IReJIT ReJIT => GetContract<IReJIT>();
+    public override IGCCover GCCover => GetContract<IGCCover>();
 
     private TContract GetContract<TContract>() where TContract : IContract
     {

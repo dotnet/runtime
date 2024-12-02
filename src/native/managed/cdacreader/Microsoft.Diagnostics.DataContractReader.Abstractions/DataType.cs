@@ -76,4 +76,5 @@ public enum DataType
     NonVtableSlot,
     MethodImpl,
     NativeCodeSlot,
+    GCCoverageInfo,
 }
