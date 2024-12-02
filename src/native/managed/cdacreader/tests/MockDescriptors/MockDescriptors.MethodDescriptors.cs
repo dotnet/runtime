@@ -24,6 +24,7 @@ internal partial class MockDescriptors
                 new(nameof(Data.MethodDesc.Flags3AndTokenRemainder), DataType.uint16),
                 new(nameof(Data.MethodDesc.EntryPointFlags), DataType.uint8),
                 new(nameof(Data.MethodDesc.CodeData), DataType.pointer),
+                new(nameof(Data.MethodDesc.GCCoverageInfo), DataType.pointer),
             ]
         };
 
