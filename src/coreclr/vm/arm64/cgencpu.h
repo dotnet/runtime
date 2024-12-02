@@ -131,10 +131,8 @@ inline unsigned StackElemSize(unsigned parmSize, bool isValueType, bool isFloatH
 //
 // Create alias for optimized implementations of helpers provided on this platform
 //
-#define JIT_GetSharedGCStaticBase           JIT_GetSharedGCStaticBase_SingleAppDomain
-#define JIT_GetSharedNonGCStaticBase        JIT_GetSharedNonGCStaticBase_SingleAppDomain
-#define JIT_GetSharedGCStaticBaseNoCtor     JIT_GetSharedGCStaticBaseNoCtor_SingleAppDomain
-#define JIT_GetSharedNonGCStaticBaseNoCtor  JIT_GetSharedNonGCStaticBaseNoCtor_SingleAppDomain
+#define JIT_GetDynamicGCStaticBase           JIT_GetDynamicGCStaticBase_SingleAppDomain
+#define JIT_GetDynamicNonGCStaticBase        JIT_GetDynamicNonGCStaticBase_SingleAppDomain
 
 //**********************************************************************
 // Frames
@@ -496,7 +494,6 @@ public:
     void EmitJumpRegister(IntReg regTarget);
     void EmitMovReg(IntReg dest, IntReg source);
 
-    void EmitSubImm(IntReg Xd, IntReg Xn, unsigned int value);
     void EmitAddImm(IntReg Xd, IntReg Xn, unsigned int value);
 
     void EmitLoadStoreRegPairImm(DWORD flags, IntReg Xt1, IntReg Xt2, IntReg Xn, int offset=0);
@@ -508,19 +505,11 @@ public:
     void EmitLoadRegReg(IntReg Xt, IntReg Xn, IntReg Xm, DWORD option);
 
     void EmitCallRegister(IntReg reg);
-    void EmitProlog(unsigned short cIntRegArgs,
-                    unsigned short cVecRegArgs,
-                    unsigned short cCalleeSavedRegs,
-                    unsigned short cbStackSpace = 0);
-
-    void EmitEpilog();
 
     void EmitRet(IntReg reg);
 
 
 };
-
-extern "C" void SinglecastDelegateInvokeStub();
 
 
 // preferred alignment for data

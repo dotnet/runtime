@@ -189,10 +189,8 @@ parse_optimizations (guint32 opt, const char* p, gboolean cpu_opts)
 				exit (1);
 			}
 		}
-
-		g_free (arg);
 	}
-	g_free (parts);
+	g_strfreev (parts);
 
 	return opt;
 }
@@ -1748,7 +1746,7 @@ parse_qualified_method_name (char *method_name)
  * Process the command line options in \p argv as done by the runtime executable.
  * This should be called before \c mono_jit_init.
  */
-void
+int
 mono_jit_parse_options (int argc, char * argv[])
 {
 	ERROR_DECL (error);
@@ -1784,6 +1782,10 @@ mono_jit_parse_options (int argc, char * argv[])
 			mono_debugger_agent_parse_options (g_strdup (argv [i] + 17));
 			debug_opt ->mdb_optimizations = TRUE;
 			enable_debugging = TRUE;
+#ifdef HOST_WASI
+			mono_wasm_enable_debugging (-1);
+			mono_debug_init (MONO_DEBUG_FORMAT_MONO);
+#endif
 		} else if (!strcmp (argv [i], "--soft-breakpoints")) {
 			MonoDebugOptions *debug_opt  = mini_get_debug_options ();
 			debug_opt ->soft_breakpoints = TRUE;
@@ -1859,6 +1861,8 @@ mono_jit_parse_options (int argc, char * argv[])
 
 	/* Free the copy */
 	g_free (argv);
+
+	return i;
 }
 
 static void
@@ -2208,15 +2212,13 @@ mono_main (int argc, char* argv[])
 		} else if (strncmp (argv [i], "--apply-bindings=", 17) == 0) {
 			extra_bindings_config_file = &argv[i][17];
 		} else if (strncmp (argv [i], "--aot-path=", 11) == 0) {
-			char **split;
+			char **split, **ptr;
 
 			split = g_strsplit (argv [i] + 11, G_SEARCHPATH_SEPARATOR_S, 1000);
-			while (*split) {
-				char *tmp = *split;
-				mono_aot_paths = g_list_append (mono_aot_paths, g_strdup (tmp));
-				g_free (tmp);
-				split++;
+			for (ptr = split; ptr && *ptr; ptr++) {
+				mono_aot_paths = g_list_append (mono_aot_paths, g_strdup (*ptr));
 			}
+			g_strfreev (split);
 		} else if (strncmp (argv [i], "--path=", 7) == 0) {
 			paths = g_list_append (paths, argv [i] + 7);
 		} else if (strncmp (argv [i], "--compile-all=", 14) == 0) {

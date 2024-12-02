@@ -208,7 +208,7 @@ void DisplayArchive(_In_z_ WCHAR* szFile, ULONG DumpFilter, _In_opt_z_ WCHAR* sz
     {
         if((szName = GetNameOfObj(pbLongNameAddress, (PIMAGE_ARCHIVE_MEMBER_HEADER)pbMapAddress, szBuf))!=NULL)
         {
-            if (Wsz_mbstowcs(wzName, szName, 1024) == -1)
+            if (MultiByteToWideChar(CP_ACP, 0, szName, -1, wzName, 1024) == -1)
                 MDInfo::Error("Conversion from Multi-Byte to Wide-Char failed.");
 
             // Display metadata only for object files.

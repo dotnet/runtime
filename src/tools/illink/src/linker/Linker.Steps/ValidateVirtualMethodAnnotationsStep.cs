@@ -16,8 +16,8 @@ namespace Mono.Linker.Steps
 				var baseOverrideInformations = annotations.GetBaseMethods (method);
 				if (baseOverrideInformations != null) {
 					foreach (var baseOv in baseOverrideInformations) {
-						annotations.FlowAnnotations.ValidateMethodAnnotationsAreSame (method, baseOv.Base);
-						ValidateMethodRequiresUnreferencedCodeAreSame (method, baseOv.Base);
+						annotations.FlowAnnotations.ValidateMethodAnnotationsAreSame (baseOv);
+						ValidateMethodRequiresUnreferencedCodeAreSame (baseOv);
 					}
 				}
 
@@ -30,15 +30,17 @@ namespace Mono.Linker.Steps
 						if (annotations.VirtualMethodsWithAnnotationsToValidate.Contains (overrideInformation.Override))
 							continue;
 
-						annotations.FlowAnnotations.ValidateMethodAnnotationsAreSame (overrideInformation.Override, method);
-						ValidateMethodRequiresUnreferencedCodeAreSame (overrideInformation.Override, method);
+						annotations.FlowAnnotations.ValidateMethodAnnotationsAreSame (overrideInformation);
+						ValidateMethodRequiresUnreferencedCodeAreSame (overrideInformation);
 					}
 				}
 			}
 		}
 
-		void ValidateMethodRequiresUnreferencedCodeAreSame (MethodDefinition method, MethodDefinition baseMethod)
+		void ValidateMethodRequiresUnreferencedCodeAreSame (OverrideInformation ov)
 		{
+			var method = ov.Override;
+			var baseMethod = ov.Base;
 			var annotations = Context.Annotations;
 			bool methodSatisfies = annotations.IsInRequiresUnreferencedCodeScope (method, out _);
 			bool baseRequires = annotations.DoesMethodRequireUnreferencedCode (baseMethod, out _);
@@ -49,7 +51,10 @@ namespace Mono.Linker.Steps
 					nameof (RequiresUnreferencedCodeAttribute),
 					method.GetDisplayName (),
 					baseMethod.GetDisplayName ());
-				Context.LogWarning (method, DiagnosticId.RequiresUnreferencedCodeAttributeMismatch, message);
+				IMemberDefinition origin = (ov.IsOverrideOfInterfaceMember && ov.InterfaceImplementor.Implementor != method.DeclaringType)
+					? ov.InterfaceImplementor.Implementor
+					: method;
+				Context.LogWarning (origin, DiagnosticId.RequiresUnreferencedCodeAttributeMismatch, message);
 			}
 		}
 	}

@@ -1129,7 +1129,7 @@ bool NearDiffer::compareVars(MethodContext* mc, CompileResult* cr1, CompileResul
     if (ftn_1 != ftn_2)
     {
         // We would like to find out this situation
-        __debugbreak();
+        DEBUG_BREAK;
         LogVerbose("compareVars found non-matching CORINFO_METHOD_HANDLE %p %p", ftn_1, ftn_2);
         return false;
     }

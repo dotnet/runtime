@@ -40,12 +40,8 @@ void AssertMulticoreJitAllowedModule(PCODE pTarget)
 // out of managed code.  Instead, we rely on explicit cleanup like CLRException::HandlerState::CleanupTry
 // or UMThunkUnwindFrameChainHandler.
 //
-// So most callers should call through CallDescrWorkerWithHandler (or a wrapper like MethodDesc::Call)
-// and get the platform-appropriate exception handling.  A few places try to optimize by calling direct
-// to managed methods (see ArrayInitializeWorker or FastCallFinalize).  This sort of thing is
-// dangerous.  You have to worry about marking yourself as a legal managed caller and you have to
-// worry about how exceptions will be handled on a FEATURE_EH_FUNCLETS plan.  It is generally only suitable
-// for X86.
+// So all callers should call through CallDescrWorkerWithHandler (or a wrapper like MethodDesc::Call)
+// and get the platform-appropriate exception handling.
 
 //*******************************************************************************
 void CallDescrWorkerWithHandler(
@@ -161,6 +157,37 @@ void DispatchCallDebuggerWrapper(
     }
     PAL_ENDTRY
 }
+
+#if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
+void CopyReturnedFpStructFromRegisters(void* dest, UINT64 returnRegs[2], FpStructInRegistersInfo info,
+    bool handleGcRefs)
+{
+    _ASSERTE(info.flags != FpStruct::UseIntCallConv);
+
+    auto copyReg = [handleGcRefs, dest, returnRegs](uint32_t destOffset, unsigned regIndex, bool isInt, unsigned sizeShift)
+    {
+        const UINT64* srcField = &returnRegs[regIndex];
+        void* destField = (char*)dest + destOffset;
+        int size = 1 << sizeShift;
+
+        static const int ptrShift = 3;
+        static_assert((1 << ptrShift) == TARGET_POINTER_SIZE, "");
+        bool maybeRef = handleGcRefs && isInt && sizeShift == ptrShift && (destOffset & ((1 << ptrShift) - 1)) == 0;
+
+        if (maybeRef)
+            memmoveGCRefs(destField, srcField, size);
+        else
+            memcpyNoGCRefs(destField, srcField, size);
+    };
+
+    // returnRegs contain [ fa0, fa1/a0 ]; FpStruct::IntFloat is the only case where the field order is swapped
+    bool swap = info.flags & FpStruct::IntFloat;
+
+    copyReg(info.offset1st, (swap ? 1 : 0), (info.flags & FpStruct::IntFloat), info.SizeShift1st());
+    if ((info.flags & FpStruct::OnlyOne) == 0)
+        copyReg(info.offset2nd, (swap ? 0 : 1), (info.flags & FpStruct::FloatInt), info.SizeShift2nd());
+}
+#endif // TARGET_RISCV64 || TARGET_LOONGARCH64
 
 // Helper for VM->managed calls with simple signatures.
 void * DispatchCallSimple(
@@ -478,10 +505,15 @@ void MethodDescCallSite::CallTargetWorker(const ARG_SLOT *pArguments, ARG_SLOT *
                             *((INT64*)pDest) = (INT16)pArguments[arg];
                         break;
                     case 4:
+#ifdef TARGET_RISCV64
+                        // RISC-V integer calling convention requires to sign-extend `uint` arguments as well
+                        *((INT64*)pDest) = (INT32)pArguments[arg];
+#else // TARGET_LOONGARCH64
                         if (m_argIt.GetArgType() == ELEMENT_TYPE_U4)
                             *((INT64*)pDest) = (UINT32)pArguments[arg];
                         else
                             *((INT64*)pDest) = (INT32)pArguments[arg];
+#endif // TARGET_RISCV64
                         break;
 #else
                     case 1:
@@ -553,15 +585,27 @@ void MethodDescCallSite::CallTargetWorker(const ARG_SLOT *pArguments, ARG_SLOT *
         CallDescrWorkerWithHandler(&callDescrData);
     }
 
+#ifdef FEATURE_HFA
     if (pvRetBuff != NULL)
     {
         memcpyNoGCRefs(pvRetBuff, &callDescrData.returnValue, sizeof(callDescrData.returnValue));
     }
+#endif // FEATURE_HFA
 
     if (pReturnValue != NULL)
     {
         _ASSERTE((DWORD)cbReturnValue <= sizeof(callDescrData.returnValue));
-        memcpyNoGCRefs(pReturnValue, &callDescrData.returnValue, cbReturnValue);
+#if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
+        if (callDescrData.fpReturnSize != FpStruct::UseIntCallConv)
+        {
+            FpStructInRegistersInfo info = m_argIt.GetReturnFpStructInRegistersInfo();
+            CopyReturnedFpStructFromRegisters(pReturnValue, callDescrData.returnValue, info, false);
+        }
+        else
+#endif // defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
+        {
+            memcpyNoGCRefs(pReturnValue, &callDescrData.returnValue, cbReturnValue);
+        }
 
 #if !defined(HOST_64BIT) && BIGENDIAN
         {

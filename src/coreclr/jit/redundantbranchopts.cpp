@@ -958,7 +958,7 @@ bool Compiler::optRedundantBranch(BasicBlock* const block)
 
     JITDUMP("\nRedundant branch opt in " FMT_BB ":\n", block->bbNum);
 
-    fgMorphBlockStmt(block, stmt DEBUGARG(__FUNCTION__));
+    fgMorphBlockStmt(block, stmt DEBUGARG(__FUNCTION__), /* invalidateDFSTreeOnFGChange */ false);
     Metrics.RedundantBranchesEliminated++;
     return true;
 }
@@ -976,8 +976,9 @@ struct JumpThreadInfo
         , m_trueTarget(block->GetTrueTarget())
         , m_falseTarget(block->GetFalseTarget())
         , m_ambiguousVNBlock(nullptr)
-        , m_truePreds(BlockSetOps::MakeEmpty(comp))
-        , m_ambiguousPreds(BlockSetOps::MakeEmpty(comp))
+        , traits(comp->m_dfsTree->PostOrderTraits())
+        , m_truePreds(BitVecOps::MakeEmpty(&traits))
+        , m_ambiguousPreds(BitVecOps::MakeEmpty(&traits))
         , m_numPreds(0)
         , m_numAmbiguousPreds(0)
         , m_numTruePreds(0)
@@ -995,11 +996,13 @@ struct JumpThreadInfo
     BasicBlock* const m_falseTarget;
     // Block that brings in the ambiguous VN
     BasicBlock* m_ambiguousVNBlock;
+    // Traits for the below BitVecs
+    BitVecTraits traits;
     // Pred blocks for which the predicate will be true
-    BlockSet m_truePreds;
+    BitVec m_truePreds;
     // Pred blocks that can't be threaded or for which the predicate
     // value can't be determined
-    BlockSet m_ambiguousPreds;
+    BitVec m_ambiguousPreds;
     // Total number of predecessors
     int m_numPreds;
     // Number of predecessors that can't be threaded or for which the predicate
@@ -1024,12 +1027,6 @@ struct JumpThreadInfo
 //
 bool Compiler::optJumpThreadCheck(BasicBlock* const block, BasicBlock* const domBlock)
 {
-    if (fgCurBBEpochSize != (fgBBNumMax + 1))
-    {
-        JITDUMP("Looks like we've added a new block (e.g. during optLoopHoist) since last renumber, so no threading\n");
-        return false;
-    }
-
     // If the block is the first block of try-region, then skip jump threading
     if (bbIsTryBeg(block))
     {
@@ -1286,7 +1283,7 @@ bool Compiler::optJumpThreadDom(BasicBlock* const block, BasicBlock* const domBl
         if (predBlock->KindIs(BBJ_SWITCH))
         {
             JITDUMP(FMT_BB " is a switch pred\n", predBlock->bbNum);
-            BlockSetOps::AddElemD(this, jti.m_ambiguousPreds, predBlock->bbNum);
+            BitVecOps::AddElemD(&jti.traits, jti.m_ambiguousPreds, predBlock->bbPostorderNum);
             jti.m_numAmbiguousPreds++;
             continue;
         }
@@ -1307,7 +1304,7 @@ bool Compiler::optJumpThreadDom(BasicBlock* const block, BasicBlock* const domBl
             // lead to more complications, and it isn't that common. So we tolerate it.
             //
             JITDUMP(FMT_BB " is an ambiguous pred\n", predBlock->bbNum);
-            BlockSetOps::AddElemD(this, jti.m_ambiguousPreds, predBlock->bbNum);
+            BitVecOps::AddElemD(&jti.traits, jti.m_ambiguousPreds, predBlock->bbPostorderNum);
             jti.m_numAmbiguousPreds++;
             continue;
         }
@@ -1318,12 +1315,12 @@ bool Compiler::optJumpThreadDom(BasicBlock* const block, BasicBlock* const domBl
             {
                 JITDUMP(FMT_BB " is an eh constrained pred\n", predBlock->bbNum);
                 jti.m_numAmbiguousPreds++;
-                BlockSetOps::AddElemD(this, jti.m_ambiguousPreds, predBlock->bbNum);
+                BitVecOps::AddElemD(&jti.traits, jti.m_ambiguousPreds, predBlock->bbPostorderNum);
                 continue;
             }
 
             jti.m_numTruePreds++;
-            BlockSetOps::AddElemD(this, jti.m_truePreds, predBlock->bbNum);
+            BitVecOps::AddElemD(&jti.traits, jti.m_truePreds, predBlock->bbPostorderNum);
             JITDUMP(FMT_BB " is a true pred\n", predBlock->bbNum);
         }
         else
@@ -1333,7 +1330,7 @@ bool Compiler::optJumpThreadDom(BasicBlock* const block, BasicBlock* const domBl
             if (!BasicBlock::sameEHRegion(predBlock, jti.m_falseTarget))
             {
                 JITDUMP(FMT_BB " is an eh constrained pred\n", predBlock->bbNum);
-                BlockSetOps::AddElemD(this, jti.m_ambiguousPreds, predBlock->bbNum);
+                BitVecOps::AddElemD(&jti.traits, jti.m_ambiguousPreds, predBlock->bbPostorderNum);
                 jti.m_numAmbiguousPreds++;
                 continue;
             }
@@ -1398,8 +1395,8 @@ bool Compiler::optJumpThreadPhi(BasicBlock* block, GenTree* tree, ValueNum treeN
     for (int i = 0; i < 2; i++)
     {
         const ValueNum phiDefVN = treeNormVNFuncApp.m_args[i];
-        VNFuncApp      phiDefFuncApp;
-        if (!vnStore->GetVNFunc(phiDefVN, &phiDefFuncApp) || (phiDefFuncApp.m_func != VNF_PhiDef))
+        VNPhiDef       phiDef;
+        if (!vnStore->GetPhiDef(phiDefVN, &phiDef))
         {
             // This input is not a phi def. If it's a func app it might depend on
             // transitively on a phi def; consider a general search utility.
@@ -1409,12 +1406,10 @@ bool Compiler::optJumpThreadPhi(BasicBlock* block, GenTree* tree, ValueNum treeN
 
         // The PhiDef args tell us which local and which SSA def of that local.
         //
-        assert(phiDefFuncApp.m_arity == 3);
-        const unsigned lclNum    = unsigned(phiDefFuncApp.m_args[0]);
-        const unsigned ssaDefNum = unsigned(phiDefFuncApp.m_args[1]);
-        const ValueNum phiVN     = ValueNum(phiDefFuncApp.m_args[2]);
-        JITDUMP("... JT-PHI [interestingVN] in " FMT_BB " relop %s operand VN is PhiDef for V%02u:%u " FMT_VN "\n",
-                block->bbNum, i == 0 ? "first" : "second", lclNum, ssaDefNum, phiVN);
+        const unsigned lclNum    = phiDef.LclNum;
+        const unsigned ssaDefNum = phiDef.SsaDef;
+        JITDUMP("... JT-PHI [interestingVN] in " FMT_BB " relop %s operand VN is PhiDef for V%02u\n", block->bbNum,
+                i == 0 ? "first" : "second", lclNum, ssaDefNum);
         if (!foundPhiDef)
         {
             DISPTREE(tree);
@@ -1517,7 +1512,7 @@ bool Compiler::optJumpThreadPhi(BasicBlock* block, GenTree* tree, ValueNum treeN
         {
             JITDUMP("Could not map phi inputs from pred " FMT_BB "\n", predBlock->bbNum);
             JITDUMP(FMT_BB " is an ambiguous pred\n", predBlock->bbNum);
-            BlockSetOps::AddElemD(this, jti.m_ambiguousPreds, predBlock->bbNum);
+            BitVecOps::AddElemD(&jti.traits, jti.m_ambiguousPreds, predBlock->bbPostorderNum);
             jti.m_numAmbiguousPreds++;
             continue;
         }
@@ -1549,12 +1544,12 @@ bool Compiler::optJumpThreadPhi(BasicBlock* block, GenTree* tree, ValueNum treeN
                 {
                     JITDUMP(FMT_BB " is an eh constrained pred\n", predBlock->bbNum);
                     jti.m_numAmbiguousPreds++;
-                    BlockSetOps::AddElemD(this, jti.m_ambiguousPreds, predBlock->bbNum);
+                    BitVecOps::AddElemD(&jti.traits, jti.m_ambiguousPreds, predBlock->bbPostorderNum);
                     continue;
                 }
 
                 jti.m_numTruePreds++;
-                BlockSetOps::AddElemD(this, jti.m_truePreds, predBlock->bbNum);
+                BitVecOps::AddElemD(&jti.traits, jti.m_truePreds, predBlock->bbPostorderNum);
                 JITDUMP(FMT_BB " is a true pred\n", predBlock->bbNum);
             }
             else
@@ -1562,7 +1557,7 @@ bool Compiler::optJumpThreadPhi(BasicBlock* block, GenTree* tree, ValueNum treeN
                 if (!BasicBlock::sameEHRegion(predBlock, jti.m_falseTarget))
                 {
                     JITDUMP(FMT_BB " is an eh constrained pred\n", predBlock->bbNum);
-                    BlockSetOps::AddElemD(this, jti.m_ambiguousPreds, predBlock->bbNum);
+                    BitVecOps::AddElemD(&jti.traits, jti.m_ambiguousPreds, predBlock->bbPostorderNum);
                     jti.m_numAmbiguousPreds++;
                     continue;
                 }
@@ -1574,7 +1569,7 @@ bool Compiler::optJumpThreadPhi(BasicBlock* block, GenTree* tree, ValueNum treeN
         else
         {
             JITDUMP(FMT_BB " is an ambiguous pred\n", predBlock->bbNum);
-            BlockSetOps::AddElemD(this, jti.m_ambiguousPreds, predBlock->bbNum);
+            BitVecOps::AddElemD(&jti.traits, jti.m_ambiguousPreds, predBlock->bbPostorderNum);
             jti.m_numAmbiguousPreds++;
 
             // If this was the first ambiguous pred, remember the substVN
@@ -1628,44 +1623,11 @@ bool Compiler::optJumpThreadCore(JumpThreadInfo& jti)
     //
     JITDUMP("Optimizing via jump threading\n");
 
-    // Now reroute the flow from the predecessors.
-    // If this pred is in the set that will reuse block, do nothing.
-    // Else revise pred to branch directly to the appropriate successor of block.
-    //
-    for (BasicBlock* const predBlock : jti.m_block->PredBlocksEditing())
-    {
-        // If this was an ambiguous pred, skip.
-        //
-        if (BlockSetOps::IsMember(this, jti.m_ambiguousPreds, predBlock->bbNum))
-        {
-            continue;
-        }
-
-        const bool isTruePred = BlockSetOps::IsMember(this, jti.m_truePreds, predBlock->bbNum);
-
-        // Jump to the appropriate successor.
-        //
-        if (isTruePred)
-        {
-            JITDUMP("Jump flow from pred " FMT_BB " -> " FMT_BB
-                    " implies predicate true; we can safely redirect flow to be " FMT_BB " -> " FMT_BB "\n",
-                    predBlock->bbNum, jti.m_block->bbNum, predBlock->bbNum, jti.m_trueTarget->bbNum);
-
-            fgReplaceJumpTarget(predBlock, jti.m_block, jti.m_trueTarget);
-        }
-        else
-        {
-            JITDUMP("Jump flow from pred " FMT_BB " -> " FMT_BB
-                    " implies predicate false; we can safely redirect flow to be " FMT_BB " -> " FMT_BB "\n",
-                    predBlock->bbNum, jti.m_block->bbNum, predBlock->bbNum, jti.m_falseTarget->bbNum);
-
-            fgReplaceJumpTarget(predBlock, jti.m_block, jti.m_falseTarget);
-        }
-    }
+    bool setNoCseIn = false;
 
     // If this is a phi-based threading, and the block we're bypassing has
-    // a memory phi, mark the block with BBF_NO_CSE_IN so we can block CSE propagation
-    // into the block.
+    // a memory phi, mark the successor blocks with BBF_NO_CSE_IN so we can
+    // block unsound CSE propagation.
     //
     if (jti.m_isPhiBased)
     {
@@ -1678,10 +1640,62 @@ bool Compiler::optJumpThreadCore(JumpThreadInfo& jti)
 
             if (jti.m_block->bbMemorySsaPhiFunc[memoryKind] != nullptr)
             {
-                JITDUMP(FMT_BB " has %s memory phi; marking as BBF_NO_CSE_IN\n", jti.m_block->bbNum,
+                JITDUMP(FMT_BB " has %s memory phi; will be marking blocks with BBF_NO_CSE_IN\n", jti.m_block->bbNum,
                         memoryKindNames[memoryKind]);
-                jti.m_block->SetFlags(BBF_NO_CSE_IN);
+                setNoCseIn = true;
                 break;
+            }
+        }
+    }
+
+    // Now reroute the flow from the predecessors.
+    // If this pred is in the set that will reuse block, do nothing.
+    // Else revise pred to branch directly to the appropriate successor of block.
+    //
+    for (BasicBlock* const predBlock : jti.m_block->PredBlocksEditing())
+    {
+        // If this was an ambiguous pred, skip.
+        //
+        if (BitVecOps::IsMember(&jti.traits, jti.m_ambiguousPreds, predBlock->bbPostorderNum))
+        {
+            if (setNoCseIn && !jti.m_block->HasFlag(BBF_NO_CSE_IN))
+            {
+                JITDUMP(FMT_BB " => BBF_NO_CSE_IN\n", jti.m_block->bbNum);
+                jti.m_block->SetFlags(BBF_NO_CSE_IN);
+            }
+            continue;
+        }
+
+        const bool isTruePred = BitVecOps::IsMember(&jti.traits, jti.m_truePreds, predBlock->bbPostorderNum);
+
+        // Jump to the appropriate successor.
+        //
+        if (isTruePred)
+        {
+            JITDUMP("Jump flow from pred " FMT_BB " -> " FMT_BB
+                    " implies predicate true; we can safely redirect flow to be " FMT_BB " -> " FMT_BB "\n",
+                    predBlock->bbNum, jti.m_block->bbNum, predBlock->bbNum, jti.m_trueTarget->bbNum);
+
+            fgReplaceJumpTarget(predBlock, jti.m_block, jti.m_trueTarget);
+
+            if (setNoCseIn && !jti.m_trueTarget->HasFlag(BBF_NO_CSE_IN))
+            {
+                JITDUMP(FMT_BB " => BBF_NO_CSE_IN\n", jti.m_trueTarget->bbNum);
+                jti.m_trueTarget->SetFlags(BBF_NO_CSE_IN);
+            }
+        }
+        else
+        {
+            JITDUMP("Jump flow from pred " FMT_BB " -> " FMT_BB
+                    " implies predicate false; we can safely redirect flow to be " FMT_BB " -> " FMT_BB "\n",
+                    predBlock->bbNum, jti.m_block->bbNum, predBlock->bbNum, jti.m_falseTarget->bbNum);
+
+            fgReplaceJumpTarget(predBlock, jti.m_block, jti.m_falseTarget);
+
+            if (setNoCseIn && !jti.m_falseTarget->HasFlag(BBF_NO_CSE_IN))
+            {
+                JITDUMP(FMT_BB " => BBF_NO_CSE_IN\n", jti.m_falseTarget->bbNum);
+                jti.m_falseTarget->SetFlags(BBF_NO_CSE_IN);
             }
         }
     }
@@ -2156,6 +2170,16 @@ bool Compiler::optRedundantRelop(BasicBlock* const block)
     if (!usedCopy)
     {
         fgRemoveStmt(block, candidateStmt);
+
+        // Make sure the removed store node isn't referenced by an SSA definition
+        assert(candidateStmt->GetRootNode()->OperIs(GT_STORE_LCL_VAR));
+        GenTreeLclVarCommon* const rootNode = candidateStmt->GetRootNode()->AsLclVarCommon();
+        LclVarDsc* const           varDsc   = lvaGetDesc(rootNode);
+        LclSsaVarDsc* const        defDsc   = varDsc->GetPerSsaData(rootNode->GetSsaNum());
+        assert(defDsc->GetDefNode() == rootNode);
+        defDsc->SetDefNode(nullptr);
+
+        DEBUG_DESTROY_NODE(rootNode);
     }
     else
     {
@@ -2224,12 +2248,10 @@ bool Compiler::optReachable(BasicBlock* const fromBlock, BasicBlock* const toBlo
                 return BasicBlockVisit::Abort;
             }
 
-            if (BitVecOps::IsMember(optReachableBitVecTraits, optReachableBitVec, succ->bbNum))
+            if (!BitVecOps::TryAddElemD(optReachableBitVecTraits, optReachableBitVec, succ->bbNum))
             {
                 return BasicBlockVisit::Continue;
             }
-
-            BitVecOps::AddElemD(optReachableBitVecTraits, optReachableBitVec, succ->bbNum);
 
             stack.Push(succ);
             return BasicBlockVisit::Continue;

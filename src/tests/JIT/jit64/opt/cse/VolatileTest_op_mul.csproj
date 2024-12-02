@@ -1,6 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <DebugType>PdbOnly</DebugType>
+    <!-- Needed for GCStressIncompatible -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <GCStressIncompatible>true</GCStressIncompatible>
+    <CLRTestPriority>1</CLRTestPriority>
     <DefineConstants>$(DefineConstants);OP_MUL</DefineConstants>
   </PropertyGroup>
   <ItemGroup>

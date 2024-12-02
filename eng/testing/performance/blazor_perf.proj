@@ -20,7 +20,7 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(AGENT_OS)' == 'Windows_NT'">
-    <ScenarioDirectory>%HELIX_CORRELATION_PAYLOAD%\performance\src\scenarios\</ScenarioDirectory>
+    <ScenarioDirectory>%HELIX_WORKITEM_ROOT%\performance\src\scenarios\</ScenarioDirectory>
     <BlazorMinDirectory>$(ScenarioDirectory)blazorminapp\</BlazorMinDirectory>
     <BlazorDirectory>$(ScenarioDirectory)blazor\</BlazorDirectory>
     <BlazorPizzaDirectory>$(ScenarioDirectory)blazorpizza\</BlazorPizzaDirectory>
@@ -32,7 +32,7 @@
     <PizzaAppPubLocation>pub\wwwroot</PizzaAppPubLocation>
   </PropertyGroup>
   <PropertyGroup Condition="'$(AGENT_OS)' != 'Windows_NT'">
-    <ScenarioDirectory>$HELIX_CORRELATION_PAYLOAD/performance/src/scenarios/</ScenarioDirectory>
+    <ScenarioDirectory>$HELIX_WORKITEM_ROOT/performance/src/scenarios/</ScenarioDirectory>
     <BlazorMinDirectory>$(ScenarioDirectory)blazorminapp/</BlazorMinDirectory>
     <BlazorDirectory>$(ScenarioDirectory)blazor/</BlazorDirectory>
     <BlazorPizzaDirectory>$(ScenarioDirectory)blazorpizza/</BlazorPizzaDirectory>
@@ -54,48 +54,48 @@
     <HelixWorkItem Condition="'$(hybridGlobalization)' != 'True'" Include="SOD - Minimum Blazor Template - Publish$(RunConfigsString)">
       <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
       <!-- Specifying both illink dump msbuild properties in case illink version is not updated -->
-      <Command>cd $(BlazorMinDirectory) &amp;&amp; $(PublishCommand) &amp;&amp; $(Python) test.py sod --scenario-name &quot;%(Identity)&quot;</Command>
+      <Command>cd $(BlazorMinDirectory) &amp;&amp; $(PublishCommand) &amp;&amp; $(Python) test.py sod --scenario-name &quot;%(Identity)&quot; $(ScenarioArgs)</Command>
     </HelixWorkItem>
     <HelixWorkItem Condition="'$(hybridGlobalization)' != 'True'" Include="SOD - Minimum Blazor Template - Publish - AOT$(RunConfigsString)">
       <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
       <!-- Specifying both illink dump msbuild properties in case illink version is not updated -->
-      <Command>cd $(BlazorMinAOTDirectory) &amp;&amp; $(PublishCommand) &amp;&amp; $(Python) test.py sod --scenario-name &quot;%(Identity)&quot;</Command>
+      <Command>cd $(BlazorMinAOTDirectory) &amp;&amp; $(PublishCommand) &amp;&amp; $(Python) test.py sod --scenario-name &quot;%(Identity)&quot; $(ScenarioArgs)</Command>
       <Timeout>00:30</Timeout>
     </HelixWorkItem>
     <HelixWorkItem Include="SOD - New Blazor Template - Publish$(RunConfigsString)">
         <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
-        <Command>cd $(BlazorDirectory) &amp;&amp; $(PublishCommand) &amp;&amp; $(Python) test.py sod --scenario-name &quot;%(Identity)&quot;</Command>
+        <Command>cd $(BlazorDirectory) &amp;&amp; $(PublishCommand) &amp;&amp; $(Python) test.py sod --scenario-name &quot;%(Identity)&quot; $(ScenarioArgs)</Command>
         <PostCommands>$(Python) post.py --readonly-dotnet</PostCommands>
     </HelixWorkItem>
     <HelixWorkItem Include="SOD - New Blazor Template - Publish - AOT$(RunConfigsString)">
         <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
-        <Command>cd $(BlazorAOTDirectory) &amp;&amp; $(PublishCommand) &amp;&amp; $(Python) test.py sod --scenario-name &quot;%(Identity)&quot;</Command>
+        <Command>cd $(BlazorAOTDirectory) &amp;&amp; $(PublishCommand) &amp;&amp; $(Python) test.py sod --scenario-name &quot;%(Identity)&quot; $(ScenarioArgs)</Command>
         <PostCommands>$(Python) post.py --readonly-dotnet</PostCommands>
         <Timeout>00:30</Timeout>
     </HelixWorkItem>
     <HelixWorkItem Include="SOD - Pizza App - Publish$(RunConfigsString)">
       <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
       <!-- Specifying both illink dump msbuild properties in case illink version is not updated -->
-      <Command>cd $(BlazorPizzaDirectory) &amp;&amp; $(PublishCommand) -f $(PerflabTargetFrameworks) &amp;&amp; $(Python) test.py sod --scenario-name &quot;%(Identity)&quot; --dirs $(PizzaAppPubLocation)</Command>
+      <Command>cd $(BlazorPizzaDirectory) &amp;&amp; $(PublishCommand) -f $(PerflabTargetFrameworks) &amp;&amp; $(Python) test.py sod --scenario-name &quot;%(Identity)&quot; --dirs $(PizzaAppPubLocation) $(ScenarioArgs)</Command>
       <PostCommands>$(Python) post.py --readonly-dotnet</PostCommands>
     </HelixWorkItem>
     <HelixWorkItem Include="SOD - Pizza App - Publish - AOT$(RunConfigsString)">
       <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
       <!-- Specifying both illink dump msbuild properties in case illink version is not updated -->
-      <Command>cd $(BlazorPizzaAOTDirectory) &amp;&amp; $(PublishCommand) -f $(PerflabTargetFrameworks) &amp;&amp; $(Python) test.py sod --scenario-name &quot;%(Identity)&quot; --dirs $(PizzaAppPubLocation)</Command>
+      <Command>cd $(BlazorPizzaAOTDirectory) &amp;&amp; $(PublishCommand) -f $(PerflabTargetFrameworks) &amp;&amp; $(Python) test.py sod --scenario-name &quot;%(Identity)&quot; --dirs $(PizzaAppPubLocation) $(ScenarioArgs)</Command>
       <PostCommands>$(Python) post.py --readonly-dotnet</PostCommands>
       <Timeout>1:00</Timeout>
     </HelixWorkItem>
     <HelixWorkItem Include="SOD - Localized App - Publish$(RunConfigsString)">
       <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
-      <Command>cd $(BlazorLocalizedDirectory) &amp;&amp; $(PublishCommand) -f $(PerflabTargetFrameworks) &amp;&amp; $(Python) test.py sod --scenario-name &quot;%(Identity)&quot; --dirs $(PizzaAppPubLocation)</Command>
+      <Command>cd $(BlazorLocalizedDirectory) &amp;&amp; $(PublishCommand) -f $(PerflabTargetFrameworks) &amp;&amp; $(Python) test.py sod --scenario-name &quot;%(Identity)&quot; --dirs $(PizzaAppPubLocation) $(ScenarioArgs)</Command>
       <PostCommands>$(Python) post.py --readonly-dotnet</PostCommands>
       <Timeout>1:00</Timeout>
     </HelixWorkItem>
     <HelixWorkItem Include="SOD - Localized App - Publish - AOT$(RunConfigsString)">
       <_PublishArgsWithAOT>--msbuild &quot;$(_MSBuildArgs);/p:RunAOTCompilation=true&quot;</_PublishArgsWithAOT>
       <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
-      <Command>cd $(BlazorLocalizedDirectory) &amp;&amp; $(PublishCommand) $(_PublishArgsWithAOT) -f $(PerflabTargetFrameworks) &amp;&amp; $(Python) test.py sod --scenario-name &quot;%(Identity)&quot; --dirs $(PizzaAppPubLocation)</Command>
+      <Command>cd $(BlazorLocalizedDirectory) &amp;&amp; $(PublishCommand) $(_PublishArgsWithAOT) -f $(PerflabTargetFrameworks) &amp;&amp; $(Python) test.py sod --scenario-name &quot;%(Identity)&quot; --dirs $(PizzaAppPubLocation) $(ScenarioArgs)</Command>
       <PostCommands>$(Python) post.py --readonly-dotnet</PostCommands>
       <Timeout>1:00</Timeout>
     </HelixWorkItem>

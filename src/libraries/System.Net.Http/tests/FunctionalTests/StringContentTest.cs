@@ -131,7 +131,7 @@ namespace System.Net.Http.Functional.Tests
         {
             string sourceString = "\u00C4\u00E4\u00FC\u00DC";
             Encoding defaultStringEncoding = Encoding.GetEncoding("utf-8");
-            var content = new StringContent(sourceString, defaultStringEncoding, ((Headers.MediaTypeHeaderValue)null)!);
+            var content = new StringContent(sourceString, defaultStringEncoding, (MediaTypeHeaderValue)null);
 
             // If no media header value is passed-in, there is none
             Assert.Null(content.Headers.ContentType);

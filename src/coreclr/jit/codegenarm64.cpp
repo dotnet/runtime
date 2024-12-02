@@ -2146,6 +2146,8 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
 {
     assert(block->KindIs(BBJ_CALLFINALLY));
 
+    BasicBlock* const nextBlock = block->Next();
+
     // Generate a call to the finally, like this:
     //      mov         x0,qword ptr [fp + 10H] / sp    // Load x0 with PSPSym, or sp if PSPSym is not used
     //      bl          finally-funclet
@@ -2160,12 +2162,11 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
     {
         GetEmitter()->emitIns_Mov(INS_mov, EA_PTRSIZE, REG_R0, REG_SPBASE, /* canSkip */ false);
     }
-    GetEmitter()->emitIns_J(INS_bl_local, block->GetTarget());
-
-    BasicBlock* const nextBlock = block->Next();
 
     if (block->HasFlag(BBF_RETLESS_CALL))
     {
+        GetEmitter()->emitIns_J(INS_bl_local, block->GetTarget());
+
         // We have a retless call, and the last instruction generated was a call.
         // If the next block is in a different EH region (or is the end of the code
         // block), then we need to generate a breakpoint here (since it will never
@@ -2182,12 +2183,12 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
     {
         // Because of the way the flowgraph is connected, the liveness info for this one instruction
         // after the call is not (can not be) correct in cases where a variable has a last use in the
-        // handler.  So turn off GC reporting for this single instruction.
+        // handler.  So turn off GC reporting once we execute the call and reenable after the jmp/nop
         GetEmitter()->emitDisableGC();
-
-        BasicBlock* const finallyContinuation = nextBlock->GetFinallyContinuation();
+        GetEmitter()->emitIns_J(INS_bl_local, block->GetTarget());
 
         // Now go to where the finally funclet needs to return to.
+        BasicBlock* const finallyContinuation = nextBlock->GetFinallyContinuation();
         if (nextBlock->NextIs(finallyContinuation) && !compiler->fgInDifferentRegions(nextBlock, finallyContinuation))
         {
             // Fall-through.
@@ -2214,8 +2215,19 @@ void CodeGen::genEHCatchRet(BasicBlock* block)
     GetEmitter()->emitIns_R_L(INS_adr, EA_PTRSIZE, block->GetTarget(), REG_INTRET);
 }
 
-//  move an immediate value into an integer register
+//  move an immediate value + base address into an integer register
+void CodeGen::instGen_Set_Reg_To_Base_Plus_Imm(emitAttr       size,
+                                               regNumber      dstReg,
+                                               regNumber      baseReg,
+                                               ssize_t        imm,
+                                               insFlags flags DEBUGARG(size_t targetHandle)
+                                                   DEBUGARG(GenTreeFlags gtFlags))
+{
+    instGen_Set_Reg_To_Imm(size, dstReg, imm);
+    GetEmitter()->emitIns_R_R_R(INS_add, size, dstReg, dstReg, baseReg);
+}
 
+//  move an immediate value into an integer register
 void CodeGen::instGen_Set_Reg_To_Imm(emitAttr       size,
                                      regNumber      reg,
                                      ssize_t        imm,
@@ -2223,6 +2235,7 @@ void CodeGen::instGen_Set_Reg_To_Imm(emitAttr       size,
 {
     // reg cannot be a FP register
     assert(!genIsValidFloatReg(reg));
+
     if (!compiler->opts.compReloc)
     {
         size = EA_SIZE(size); // Strip any Reloc flags from size if we aren't doing relocs
@@ -2345,6 +2358,14 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
                 attr = EA_SET_FLG(attr, EA_BYREF_FLG);
             }
 
+            if (compiler->IsTargetAbi(CORINFO_NATIVEAOT_ABI))
+            {
+                if (con->IsIconHandle(GTF_ICON_SECREL_OFFSET))
+                {
+                    attr = EA_SET_FLG(attr, EA_CNS_SEC_RELOC);
+                }
+            }
+
             instGen_Set_Reg_To_Imm(attr, targetReg, cnsVal,
                                    INS_FLAGS_DONT_CARE DEBUGARG(con->gtTargetHandle) DEBUGARG(con->gtFlags));
             regSet.verifyRegUsed(targetReg);
@@ -2384,6 +2405,7 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
         }
         break;
 
+#if defined(FEATURE_SIMD)
         case GT_CNS_VEC:
         {
             GenTreeVecCon* vecCon = tree->AsVecCon();
@@ -2393,7 +2415,6 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
 
             switch (tree->TypeGet())
             {
-#if defined(FEATURE_SIMD)
                 case TYP_SIMD8:
                 case TYP_SIMD12:
                 case TYP_SIMD16:
@@ -2449,7 +2470,6 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
                     }
                     break;
                 }
-#endif // FEATURE_SIMD
 
                 default:
                 {
@@ -2459,6 +2479,7 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
 
             break;
         }
+#endif // FEATURE_SIMD
 
         default:
             unreached();
@@ -2735,6 +2756,18 @@ void CodeGen::genCodeForBinary(GenTreeOp* tree)
         emit->emitIns_R_R_R(ins, emitActualTypeSize(tree), targetReg, a->GetRegNum(), b->GetRegNum(), opt);
 
         genProduceReg(tree);
+        return;
+    }
+    else if (compiler->IsTargetAbi(CORINFO_NATIVEAOT_ABI) && TargetOS::IsWindows &&
+             op2->IsIconHandle(GTF_ICON_SECREL_OFFSET))
+    {
+        // This emits pair of `add` instructions for TLS reloc on windows/arm64/nativeaot
+        assert(op2->AsIntCon()->ImmedValNeedsReloc(compiler));
+
+        emitAttr attr = emitActualTypeSize(targetType);
+        attr          = EA_SET_FLG(attr, EA_CNS_RELOC_FLG | EA_CNS_SEC_RELOC);
+
+        emit->emitIns_Add_Add_Tls_Reloc(attr, targetReg, op1->GetRegNum(), op2->AsIntCon()->IconValue());
         return;
     }
 
@@ -3671,8 +3704,8 @@ void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
 
     if (cpObjNode->IsVolatile())
     {
-        // issue a full memory barrier before a volatile CpObj operation
-        instGen_MemoryBarrier();
+        // issue a store barrier before a volatile CpObj operation
+        instGen_MemoryBarrier(BARRIER_STORE_ONLY);
     }
 
     emitter* emit = GetEmitter();
@@ -3845,19 +3878,21 @@ void CodeGen::genLockedInstructions(GenTreeOp* treeNode)
     {
         assert(!data->isContainedIntOrIImmed());
 
+        // These instructions change semantics when targetReg is ZR (the memory ordering becomes weaker).
+        // See atomicBarrierDroppedOnZero in LLVM
+        assert((targetReg != REG_NA) && (targetReg != REG_ZR));
+
         switch (treeNode->gtOper)
         {
             case GT_XORR:
-                GetEmitter()->emitIns_R_R_R(INS_ldsetal, dataSize, dataReg, (targetReg == REG_NA) ? REG_ZR : targetReg,
-                                            addrReg);
+                GetEmitter()->emitIns_R_R_R(INS_ldsetal, dataSize, dataReg, targetReg, addrReg);
                 break;
             case GT_XAND:
             {
                 // Grab a temp reg to perform `MVN` for dataReg first.
                 regNumber tempReg = internalRegisters.GetSingle(treeNode);
                 GetEmitter()->emitIns_R_R(INS_mvn, dataSize, tempReg, dataReg);
-                GetEmitter()->emitIns_R_R_R(INS_ldclral, dataSize, tempReg, (targetReg == REG_NA) ? REG_ZR : targetReg,
-                                            addrReg);
+                GetEmitter()->emitIns_R_R_R(INS_ldclral, dataSize, tempReg, targetReg, addrReg);
                 break;
             }
             case GT_XCHG:
@@ -3875,8 +3910,7 @@ void CodeGen::genLockedInstructions(GenTreeOp* treeNode)
                 break;
             }
             case GT_XADD:
-                GetEmitter()->emitIns_R_R_R(INS_ldaddal, dataSize, dataReg, (targetReg == REG_NA) ? REG_ZR : targetReg,
-                                            addrReg);
+                GetEmitter()->emitIns_R_R_R(INS_ldaddal, dataSize, dataReg, targetReg, addrReg);
                 break;
             default:
                 assert(!"Unexpected treeNode->gtOper");
@@ -5145,10 +5179,17 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
 
         callTarget = callTargetReg;
 
-        // adrp + add with relocations will be emitted
-        GetEmitter()->emitIns_R_AI(INS_adrp, EA_PTR_DSP_RELOC, callTarget,
-                                   (ssize_t)pAddr DEBUGARG((size_t)compiler->eeFindHelper(helper))
-                                       DEBUGARG(GTF_ICON_METHOD_HDL));
+        if (compiler->opts.compReloc)
+        {
+            // adrp + add with relocations will be emitted
+            GetEmitter()->emitIns_R_AI(INS_adrp, EA_PTR_DSP_RELOC, callTarget,
+                                       (ssize_t)pAddr DEBUGARG((size_t)compiler->eeFindHelper(helper))
+                                           DEBUGARG(GTF_ICON_METHOD_HDL));
+        }
+        else
+        {
+            instGen_Set_Reg_To_Imm(EA_PTRSIZE, callTarget, (ssize_t)addr);
+        }
         GetEmitter()->emitIns_R_R(INS_ldr, EA_PTRSIZE, callTarget, callTarget);
         callType = emitter::EC_INDIR_R;
     }
@@ -5720,6 +5761,10 @@ void CodeGen::instGen_MemoryBarrier(BarrierKind barrierKind)
         return;
     }
 #endif // DEBUG
+
+    // We cannot emit BARRIER_STORE_ONLY better than BARRIER_FULL on arm64 today
+    if (barrierKind == BARRIER_STORE_ONLY)
+        barrierKind = BARRIER_FULL;
 
     // Avoid emitting redundant memory barriers on arm64 if they belong to the same IG
     // and there were no memory accesses in-between them

@@ -31,6 +31,9 @@ internal static partial class Interop
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_HmacOneShot")]
         private static unsafe partial int HmacOneShot(IntPtr type, byte* key, int keySize, byte* source, int sourceSize, byte* md, int* mdSize);
 
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_HmacCopy")]
+        internal static partial SafeHmacCtxHandle HmacCopy(SafeHmacCtxHandle ctx);
+
         internal static unsafe int HmacOneShot(IntPtr type, ReadOnlySpan<byte> key, ReadOnlySpan<byte> source, Span<byte> destination)
         {
             int size = destination.Length;

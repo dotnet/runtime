@@ -59,7 +59,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			[ExpectedWarning ("IL3050", Tool.Analyzer, "")]
-			[ExpectedWarning ("IL2090", "'T'")]
+			[ExpectedWarning ("IL2091", "'T'")]
 			public static void Test<T> ()
 			{
 				Type[] types = new Type[1] { typeof (int) };
@@ -100,26 +100,26 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			// When this happens, we replace the ValueSet with an unknown value, producing
 			// this warning.
 			[ExpectedWarning ("IL2055", Tool.Analyzer, "")]
-			[ExpectedWarning ("IL2090", "'T'", Tool.Trimmer | Tool.NativeAot, "")]
-			[ExpectedWarning ("IL2090", "'T'", Tool.Trimmer | Tool.NativeAot, "")]
-			[ExpectedWarning ("IL2090", "'T'", Tool.Trimmer | Tool.NativeAot, "")]
-			[ExpectedWarning ("IL2090", "'T'", Tool.Trimmer | Tool.NativeAot, "")]
-			[ExpectedWarning ("IL2090", "'T'", Tool.Trimmer | Tool.NativeAot, "")]
-			[ExpectedWarning ("IL2090", "'T'", Tool.Trimmer | Tool.NativeAot, "")]
-			[ExpectedWarning ("IL2090", "'T'", Tool.Trimmer | Tool.NativeAot, "")]
-			[ExpectedWarning ("IL2090", "'T'", Tool.Trimmer | Tool.NativeAot, "")]
-			[ExpectedWarning ("IL2090", "'T'", Tool.Trimmer | Tool.NativeAot, "")]
-			[ExpectedWarning ("IL2090", "'T'", Tool.Trimmer | Tool.NativeAot, "")]
-			[ExpectedWarning ("IL2090", "'T'", Tool.Trimmer | Tool.NativeAot, "")]
-			[ExpectedWarning ("IL2090", "'T'", Tool.Trimmer | Tool.NativeAot, "")]
-			[ExpectedWarning ("IL2090", "'T'", Tool.Trimmer | Tool.NativeAot, "")]
-			[ExpectedWarning ("IL2090", "'T'", Tool.Trimmer | Tool.NativeAot, "")]
-			[ExpectedWarning ("IL2090", "'T'", Tool.Trimmer | Tool.NativeAot, "")]
-			[ExpectedWarning ("IL2090", "'T'", Tool.Trimmer | Tool.NativeAot, "")]
-			[ExpectedWarning ("IL2090", "'T'", Tool.Trimmer | Tool.NativeAot, "")]
-			[ExpectedWarning ("IL2090", "'T'", Tool.Trimmer | Tool.NativeAot, "")]
-			[ExpectedWarning ("IL2090", "'T'", Tool.Trimmer | Tool.NativeAot, "")]
-			[ExpectedWarning ("IL2090", "'T'", Tool.Trimmer | Tool.NativeAot, "")]
+			[ExpectedWarning ("IL2091", "'T'", Tool.Trimmer | Tool.NativeAot, "")]
+			[ExpectedWarning ("IL2091", "'T'", Tool.Trimmer | Tool.NativeAot, "")]
+			[ExpectedWarning ("IL2091", "'T'", Tool.Trimmer | Tool.NativeAot, "")]
+			[ExpectedWarning ("IL2091", "'T'", Tool.Trimmer | Tool.NativeAot, "")]
+			[ExpectedWarning ("IL2091", "'T'", Tool.Trimmer | Tool.NativeAot, "")]
+			[ExpectedWarning ("IL2091", "'T'", Tool.Trimmer | Tool.NativeAot, "")]
+			[ExpectedWarning ("IL2091", "'T'", Tool.Trimmer | Tool.NativeAot, "")]
+			[ExpectedWarning ("IL2091", "'T'", Tool.Trimmer | Tool.NativeAot, "")]
+			[ExpectedWarning ("IL2091", "'T'", Tool.Trimmer | Tool.NativeAot, "")]
+			[ExpectedWarning ("IL2091", "'T'", Tool.Trimmer | Tool.NativeAot, "")]
+			[ExpectedWarning ("IL2091", "'T'", Tool.Trimmer | Tool.NativeAot, "")]
+			[ExpectedWarning ("IL2091", "'T'", Tool.Trimmer | Tool.NativeAot, "")]
+			[ExpectedWarning ("IL2091", "'T'", Tool.Trimmer | Tool.NativeAot, "")]
+			[ExpectedWarning ("IL2091", "'T'", Tool.Trimmer | Tool.NativeAot, "")]
+			[ExpectedWarning ("IL2091", "'T'", Tool.Trimmer | Tool.NativeAot, "")]
+			[ExpectedWarning ("IL2091", "'T'", Tool.Trimmer | Tool.NativeAot, "")]
+			[ExpectedWarning ("IL2091", "'T'", Tool.Trimmer | Tool.NativeAot, "")]
+			[ExpectedWarning ("IL2091", "'T'", Tool.Trimmer | Tool.NativeAot, "")]
+			[ExpectedWarning ("IL2091", "'T'", Tool.Trimmer | Tool.NativeAot, "")]
+			[ExpectedWarning ("IL2091", "'T'", Tool.Trimmer | Tool.NativeAot, "")]
 			public static void Test<T> ()
 			{
 				Type[] types = new Type[20] {

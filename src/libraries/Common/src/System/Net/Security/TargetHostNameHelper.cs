@@ -55,8 +55,6 @@ namespace System.Net.Security
             {
                 // The address is parsed as IPv6 if and only if it contains a colon. This is valid because
                 // we don't support/parse a port specification at the end of an IPv4 address.
-                Span<ushort> numbers = stackalloc ushort[IPAddressParserStatics.IPv6AddressShorts];
-
                 fixed (char* ipStringPtr = &MemoryMarshal.GetReference(ipSpan))
                 {
                     return IPv6AddressHelper.IsValidStrict(ipStringPtr, 0, ref end);

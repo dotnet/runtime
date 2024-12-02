@@ -108,6 +108,8 @@ namespace XarchHardwareIntrinsicTest._CpuId
                 testResult = Fail;
             }
 
+            bool isSse41HierarchyDisabled = isHierarchyDisabled;
+
             if (IsBitIncorrect(ecx, 20, typeof(Sse42), Sse42.IsSupported, "SSE42", ref isHierarchyDisabled))
             {
                 testResult = Fail;
@@ -284,16 +286,56 @@ namespace XarchHardwareIntrinsicTest._CpuId
                 testResult = Fail;
             }
 
+            isHierarchyDisabled = isSse41HierarchyDisabled;
+
+            if (IsBitIncorrect(ecx, 8, typeof(Gfni), Gfni.IsSupported, "GFNI", ref isHierarchyDisabled))
+            {
+                testResult = Fail;
+            }
+
+            isHierarchyDisabled = isAvxHierarchyDisabled;
+
+            if (IsBitIncorrect(ecx, 8, typeof(Gfni.V256), Gfni.V256.IsSupported, "GFNI", ref isHierarchyDisabled))
+            {
+                testResult = Fail;
+            }
+
+            isHierarchyDisabled = isAvx512HierarchyDisabled;
+
+            if (IsBitIncorrect(ecx, 8, typeof(Gfni.V512), Gfni.V512.IsSupported, "GFNI", ref isHierarchyDisabled))
+            {
+                testResult = Fail;
+            }
+
+            isHierarchyDisabled = isAvxHierarchyDisabled;
+
+            if (IsBitIncorrect(ecx, 10, typeof(Pclmulqdq.V256), Pclmulqdq.V256.IsSupported, "VPCLMULQDQ", ref isHierarchyDisabled))
+            {
+                testResult = Fail;
+            }
+
+            isHierarchyDisabled = isAvx512HierarchyDisabled;
+
+            if (IsBitIncorrect(ecx, 10, typeof(Pclmulqdq.V512), Pclmulqdq.V512.IsSupported, "VPCLMULQDQ", ref isHierarchyDisabled))
+            {
+                testResult = Fail;
+            }
+
             (eax, ebx, ecx, edx) = X86Base.CpuId(0x00000007, 0x00000001);
 
             isHierarchyDisabled = isAvx2HierarchyDisabled;
 
-#pragma warning disable CA2252 // No need to opt into preview feature for an internal test
             if (IsBitIncorrect(eax, 4, typeof(AvxVnni), AvxVnni.IsSupported, "AVXVNNI", ref isHierarchyDisabled))
             {
                 testResult = Fail;
             }
-#pragma warning restore CA2252
+
+            isHierarchyDisabled = isAvxHierarchyDisabled | isFmaHierarchyDisabled;
+
+            if (IsBitIncorrect(edx, 19, typeof(Avx10v1), Avx10v1.IsSupported, "AVX10V1", ref isHierarchyDisabled))
+            {
+                testResult = Fail;
+            }
 
             (eax, ebx, ecx, edx) = X86Base.CpuId(unchecked((int)0x80000000), 0x00000000);
 

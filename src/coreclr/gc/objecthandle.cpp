@@ -471,18 +471,20 @@ void CALLBACK ScanPointerForProfilerAndETW(_UNCHECKED_OBJECTREF *pObjRef, uintpt
     case    HNDTYPE_WEAK_INTERIOR_POINTER:
 #ifdef FEATURE_WEAK_NATIVE_COM_HANDLES
     case    HNDTYPE_WEAK_NATIVE_COM:
-#endif // FEATURE_WEAK_NATIVE_COM_HANDLES
+#endif
         rootFlags |= kEtwGCRootFlagsWeakRef;
         break;
 
     case    HNDTYPE_STRONG:
+#ifdef FEATURE_SIZED_REF_HANDLES
     case    HNDTYPE_SIZEDREF:
+#endif
         break;
 
     case    HNDTYPE_PINNED:
 #ifdef FEATURE_ASYNC_PINNED_HANDLES
     case    HNDTYPE_ASYNCPINNED:
-#endif // FEATURE_ASYNC_PINNED_HANDLES
+#endif
         rootFlags |= kEtwGCRootFlagsPinning;
         break;
 
@@ -736,7 +738,6 @@ void Ref_Shutdown()
     }
 }
 
-#ifndef FEATURE_NATIVEAOT
 bool Ref_InitializeHandleTableBucket(HandleTableBucket* bucket)
 {
     CONTRACTL
@@ -825,7 +826,6 @@ bool Ref_InitializeHandleTableBucket(HandleTableBucket* bucket)
         offset = last->dwMaxIndex;
     }
 }
-#endif // !FEATURE_NATIVEAOT
 
 void Ref_RemoveHandleTableBucket(HandleTableBucket *pBucket)
 {
@@ -1105,7 +1105,12 @@ void Ref_TraceNormalRoots(uint32_t condemned, uint32_t maxgen, ScanContext* sc, 
 
     // promote objects pointed to by strong handles
     // during ephemeral GCs we also want to promote the ones pointed to by sizedref handles.
-    uint32_t types[2] = {HNDTYPE_STRONG, HNDTYPE_SIZEDREF};
+    uint32_t types[] = {
+        HNDTYPE_STRONG,
+#ifdef FEATURE_SIZED_REF_HANDLES
+        HNDTYPE_SIZEDREF
+#endif
+    };
     uint32_t uTypeCount = (((condemned >= maxgen) && !g_theGCHeap->IsConcurrentGCInProgress()) ? 1 : ARRAY_SIZE(types));
     uint32_t flags = (sc->concurrent) ? HNDGCF_ASYNC : HNDGCF_NORMAL;
 
@@ -1482,6 +1487,7 @@ void TraceDependentHandlesBySingleThread(HANDLESCANPROC pfnTrace, uintptr_t lp1,
     }
 }
 
+#ifdef FEATURE_SIZED_REF_HANDLES
 void ScanSizedRefByCPU(uint32_t maxgen, HANDLESCANPROC scanProc, ScanContext* sc, Ref_promote_func* fn, uint32_t flags)
 {
     HandleTableMap *walk = &g_HandleTableMap;
@@ -1521,6 +1527,7 @@ void Ref_ScanSizedRefHandles(uint32_t condemned, uint32_t maxgen, ScanContext* s
 
     ScanSizedRefByCPU(maxgen, CalculateSizedRefSize, sc, fn, flags);
 }
+#endif // FEATURE_SIZED_REF_HANDLES
 
 void Ref_CheckAlive(uint32_t condemned, uint32_t maxgen, ScanContext *sc)
 {
@@ -1604,7 +1611,9 @@ void Ref_UpdatePointers(uint32_t condemned, uint32_t maxgen, ScanContext* sc, Re
 #ifdef FEATURE_WEAK_NATIVE_COM_HANDLES
         HNDTYPE_WEAK_NATIVE_COM,
 #endif
+#ifdef FEATURE_SIZED_REF_HANDLES
         HNDTYPE_SIZEDREF,
+#endif
     };
 
     // perform a multi-type scan that updates pointers
@@ -1667,7 +1676,9 @@ void Ref_ScanHandlesForProfilerAndETW(uint32_t maxgen, uintptr_t lp1, handle_sca
 #ifdef FEATURE_ASYNC_PINNED_HANDLES
         HNDTYPE_ASYNCPINNED,
 #endif
+#ifdef FEATURE_SIZED_REF_HANDLES
         HNDTYPE_SIZEDREF,
+#endif
         HNDTYPE_WEAK_INTERIOR_POINTER
     };
 
@@ -1790,7 +1801,9 @@ void Ref_AgeHandles(uint32_t condemned, uint32_t maxgen, ScanContext* sc)
 #ifdef FEATURE_ASYNC_PINNED_HANDLES
         HNDTYPE_ASYNCPINNED,
 #endif
+#ifdef FEATURE_SIZED_REF_HANDLES
         HNDTYPE_SIZEDREF,
+#endif
         HNDTYPE_WEAK_INTERIOR_POINTER
     };
 
@@ -1845,7 +1858,9 @@ void Ref_RejuvenateHandles(uint32_t condemned, uint32_t maxgen, ScanContext* sc)
 #ifdef FEATURE_ASYNC_PINNED_HANDLES
         HNDTYPE_ASYNCPINNED,
 #endif
+#ifdef FEATURE_SIZED_REF_HANDLES
         HNDTYPE_SIZEDREF,
+#endif
         HNDTYPE_WEAK_INTERIOR_POINTER
     };
 
@@ -1898,7 +1913,9 @@ void Ref_VerifyHandleTable(uint32_t condemned, uint32_t maxgen, ScanContext* sc)
 #ifdef FEATURE_ASYNC_PINNED_HANDLES
         HNDTYPE_ASYNCPINNED,
 #endif
+#ifdef FEATURE_SIZED_REF_HANDLES
         HNDTYPE_SIZEDREF,
+#endif
         HNDTYPE_DEPENDENT,
         HNDTYPE_WEAK_INTERIOR_POINTER
     };

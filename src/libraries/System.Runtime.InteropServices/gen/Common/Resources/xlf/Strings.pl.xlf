@@ -4,492 +4,502 @@
     <body>
       <trans-unit id="AddGeneratedComClassAddUnsafe">
         <source>Add 'GeneratedComClassAttribute' to enable passing objects of this type to COM and allow unsafe code</source>
-        <target state="translated">Dodaj atrybut „GeneratedComClassAttribute”, aby umożliwić przekazywanie obiektów tego typu do modelu COM i zezwalać na niebezpieczny kod</target>
+        <target state="new">Add 'GeneratedComClassAttribute' to enable passing objects of this type to COM and allow unsafe code</target>
         <note />
       </trans-unit>
       <trans-unit id="AddGeneratedComClassAttributeDescription">
-        <source>This type implements at least one type with the 'GeneratedComInterfaceAttribute' attribute. Add the 'GeneratedComClassAttribute' to enable passing this type to COM and exposing the COM interfaces for the types with the 'GeneratedComInterfaceAttribute' from objects of this type.</source>
-        <target state="translated">Ten typ implementuje co najmniej jeden typ z atrybutem „GeneratedComInterfaceAttribute”. Dodaj atrybut „GeneratedComClassAttribute”, aby umożliwić przekazywanie tego typu do modelu COM i uwidacznianie interfejsów COM dla typów z atrybutem „GeneratedComInterfaceAttribute” z obiektów tego typu.</target>
+        <source>This type implements at least one type with the 'GeneratedComInterfaceAttribute' attribute or its base type has the 'GeneratedComClassAttribute' attribute. Add the 'GeneratedComClassAttribute' to enable passing this type to COM and exposing the COM interfaces for the types with the 'GeneratedComInterfaceAttribute' from objects of this type.</source>
+        <target state="new">This type implements at least one type with the 'GeneratedComInterfaceAttribute' attribute or its base type has the 'GeneratedComClassAttribute' attribute. Add the 'GeneratedComClassAttribute' to enable passing this type to COM and exposing the COM interfaces for the types with the 'GeneratedComInterfaceAttribute' from objects of this type.</target>
         <note />
       </trans-unit>
       <trans-unit id="AddGeneratedComClassAttributeMessage">
         <source>Add the 'GeneratedComClassAttribute' to '{0}' to enable passing objects of type '{0}' to COM</source>
-        <target state="translated">Dodaj atrybut „GeneratedComClassAttribute” do „{0}”, aby umożliwić przekazywanie obiektów typu „{0}” do modelu COM</target>
+        <target state="new">Add the 'GeneratedComClassAttribute' to '{0}' to enable passing objects of type '{0}' to COM</target>
         <note />
       </trans-unit>
       <trans-unit id="AddGeneratedComClassAttributeTitle">
         <source>Add 'GeneratedComClassAttribute' to enable passing objects of this type to COM</source>
-        <target state="translated">Dodaj atrybut „GeneratedComClassAttribute”, aby umożliwić przekazywanie obiektów tego typu do modelu COM</target>
+        <target state="new">Add 'GeneratedComClassAttribute' to enable passing objects of this type to COM</target>
         <note />
       </trans-unit>
       <trans-unit id="AddMissingCustomTypeMarshallerMembers">
         <source>Add missing custom type marshaller members</source>
-        <target state="translated">Dodaj brakujące składowe elementu przeprowadzającego marshalling typu niestandardowego</target>
+        <target state="new">Add missing custom type marshaller members</target>
         <note />
       </trans-unit>
       <trans-unit id="AnalysisFailedDescription">
         <source>The analysis required to generate code for this interface or method has failed due to an unexpected code pattern. If you are using new or unconventional syntax, consider using other syntax.</source>
-        <target state="translated">Analiza wymagana do wygenerowania kodu dla tego interfejsu lub metody nie powiodła się z powodu nieoczekiwanego wzorca kodu. Jeśli używasz nowej składni lub nieszablonowej składni, rozważ użycie innej składni.</target>
+        <target state="new">The analysis required to generate code for this interface or method has failed due to an unexpected code pattern. If you are using new or unconventional syntax, consider using other syntax.</target>
         <note />
       </trans-unit>
       <trans-unit id="AnalysisFailedInterfaceMessage">
         <source>Analysis of interface '{0}' has failed. ComInterfaceGenerator will not generate code for this interface.</source>
-        <target state="translated">Analiza interfejsu „{0}” nie powiodła się. Element ComInterfaceGenerator nie wygeneruje kodu dla tego interfejsu.</target>
+        <target state="new">Analysis of interface '{0}' has failed. ComInterfaceGenerator will not generate code for this interface.</target>
         <note />
       </trans-unit>
       <trans-unit id="AnalysisFailedMethodMessage">
         <source>Analysis of method '{0}' has failed. ComInterfaceGenerator will not generate code for this method.</source>
-        <target state="translated">Analiza metody „{0}” nie powiodła się. Element ComInterfaceGenerator nie wygeneruje kodu dla tej metody.</target>
+        <target state="new">Analysis of method '{0}' has failed. ComInterfaceGenerator will not generate code for this method.</target>
         <note />
       </trans-unit>
       <trans-unit id="AnalysisFailedTitle">
         <source>Analysis for COM interface generation has failed.</source>
-        <target state="translated">Analiza generowania interfejsu COM nie powiodła się.</target>
+        <target state="new">Analysis for COM interface generation has failed.</target>
         <note />
       </trans-unit>
       <trans-unit id="ArraySizeMustBeSpecified">
         <source>Marshalling an array from unmanaged to managed requires either the 'SizeParamIndex' or 'SizeConst' fields to be set on a 'MarshalAsAttribute' or the 'ConstantElementCount' or 'CountElementName' properties to be set on a 'MarshalUsingAttribute'.</source>
-        <target state="translated">Skierowanie tablicy z niezarządzanej do zarządzanej wymaga ustawienia pól „SizeParamIndex” lub „SizeConst” we właściwościach dla atrybutu„MarshalAsAttribute” lub wartości „ConstantElementCount” lub elementu „CountElementName” we właściwościach dla atrybutu „MarshalUsingAttribute”.</target>
+        <target state="new">Marshalling an array from unmanaged to managed requires either the 'SizeParamIndex' or 'SizeConst' fields to be set on a 'MarshalAsAttribute' or the 'ConstantElementCount' or 'CountElementName' properties to be set on a 'MarshalUsingAttribute'.</target>
         <note />
       </trans-unit>
       <trans-unit id="BaseInterfaceCannotBeGeneratedDescription">
         <source>COM interface source generation requires all base COM interfaces to be valid interfaces. Fix any issues on the base interface to resolve this diagnostic.</source>
-        <target state="translated">Generowanie źródła interfejsu COM wymaga, aby wszystkie podstawowe interfejsy COM były prawidłowymi interfejsami. Rozwiąż wszelkie problemy z interfejsem podstawowym, aby rozwiązać ten problem diagnostyczny.</target>
+        <target state="new">COM interface source generation requires all base COM interfaces to be valid interfaces. Fix any issues on the base interface to resolve this diagnostic.</target>
         <note />
       </trans-unit>
       <trans-unit id="BaseInterfaceCannotBeGeneratedMessage">
         <source>COM interface {0} inherits from {1}, which has errors. ComInterfaceGenerator will not generate source for {0}.</source>
-        <target state="translated">Interfejs COM {0} dziedziczy po {1}, który zawiera błędy. Program ComInterfaceGenerator nie wygeneruje źródła dla {0}.</target>
+        <target state="new">COM interface {0} inherits from {1}, which has errors. ComInterfaceGenerator will not generate source for {0}.</target>
         <note />
       </trans-unit>
       <trans-unit id="BaseInterfaceCannotBeGeneratedTitle">
         <source>The base COM interface failed to generate source. Code will not be generated for this interface.</source>
-        <target state="translated">Podstawowy interfejs COM nie może wygenerować źródła. Kod nie zostanie wygenerowany dla tego interfejsu.</target>
+        <target state="new">The base COM interface failed to generate source. Code will not be generated for this interface.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="BaseInterfaceDefinedInOtherAssemblyMessage">
+        <source>The type '{0}' has a base interface '{1}' defined in a different assembly. This can cause a variety of difficult to diagnose issues in some scenarios</source>
+        <target state="new">The type '{0}' has a base interface '{1}' defined in a different assembly. This can cause a variety of difficult to diagnose issues in some scenarios</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="BaseInterfaceDefinedInOtherAssemblyTitle">
+        <source>Specifying 'GeneratedComInterfaceAttribute' on an interface that has a base interface defined in another assembly is not supported</source>
+        <target state="new">Specifying 'GeneratedComInterfaceAttribute' on an interface that has a base interface defined in another assembly is not supported</target>
         <note />
       </trans-unit>
       <trans-unit id="BaseInterfaceMustGenerateAtLeastSameWrappers">
         <source>A 'GeneratedComInterface' cannot specify 'ComInterfaceOptions.ManagedObjectWrapper' or 'ComInterfaceOptions.ComObjectWrapper' unless the base interface type did not specify options or specified at least the same options.</source>
-        <target state="translated">Element „GeneratedComInterface” nie może określać elementu „ComInterfaceOptions.ManagedObjectWrapper” lub „ComInterfaceOptions.ComObjectWrapper”, chyba że podstawowy typ interfejsu nie określił opcji lub określił co najmniej te same opcje.</target>
+        <target state="new">A 'GeneratedComInterface' cannot specify 'ComInterfaceOptions.ManagedObjectWrapper' or 'ComInterfaceOptions.ComObjectWrapper' unless the base interface type did not specify options or specified at least the same options.</target>
         <note />
       </trans-unit>
       <trans-unit id="BidirectionalMissingRequiredMarshaller">
         <source>The specified parameter needs to be marshalled from managed to unmanaged and unmanaged to managed, but the marshaller type '{0}' does not support it.</source>
-        <target state="translated">Określony parametr musi być kierowany z zarządzanego do niezarządzanego i niezarządzanego do zarządzanego, ale typ marszałka „{0}” go nie obsługuje.</target>
+        <target state="new">The specified parameter needs to be marshalled from managed to unmanaged and unmanaged to managed, but the marshaller type '{0}' does not support it.</target>
         <note />
       </trans-unit>
       <trans-unit id="CallerAllocFromManagedMustHaveBufferSizeDescription">
         <source>When the 'Managed to Unmanaged with Caller-Allocated Buffer' shape is used by providing a 'FromManaged' method that takes a 'Span&lt;T&gt;' on the marshaller type, the type must provide a static 'BufferSize' property to provide the number of elements in the caller-allocated buffer.</source>
-        <target state="translated">Gdy kształt „Zarządzane do niezarządzanego za pomocą buforu przydzielonego przez wywołującego” jest używany przez podanie metody „FromManaged”, która przyjmuje element „Span&lt; T&gt;” w typie marshallera, typ musi udostępniać statyczną właściwość „BufferSize”, aby podać liczbę elementów w buforze przydzielonym przez wywołującego.</target>
+        <target state="new">When the 'Managed to Unmanaged with Caller-Allocated Buffer' shape is used by providing a 'FromManaged' method that takes a 'Span&lt;T&gt;' on the marshaller type, the type must provide a static 'BufferSize' property to provide the number of elements in the caller-allocated buffer.</target>
         <note />
       </trans-unit>
       <trans-unit id="CallerAllocFromManagedMustHaveBufferSizeMessage">
         <source>The marshaller type '{0}' must have a static read-only 'int' 'BufferSize' property to specify the size of the caller-allocated buffer because it has a FromManaged method that takes a caller-allocated 'Span&lt;{1}&gt;'</source>
-        <target state="translated">Typ marshallera „{0}” musi mieć statyczną właściwość „int” „BufferSize” tylko do odczytu, aby określić rozmiar buforu przydzielonego przez wywołującego, ponieważ ma metodę FromManaged, która przyjmuje przydzielony przez wywołującego element „Span&lt;{1}&gt;”</target>
+        <target state="new">The marshaller type '{0}' must have a static read-only 'int' 'BufferSize' property to specify the size of the caller-allocated buffer because it has a FromManaged method that takes a caller-allocated 'Span&lt;{1}&gt;'</target>
         <note />
       </trans-unit>
       <trans-unit id="CannotForwardToDllImportDescription">
         <source>The generated 'DllImportAttribute' will not have a value corresponding to '{0}'.</source>
-        <target state="translated">Wygenerowany atrybut „DllImportAttribute” nie będzie miał wartości odpowiadającej elementowi „{0}”.</target>
+        <target state="new">The generated 'DllImportAttribute' will not have a value corresponding to '{0}'.</target>
         <note />
       </trans-unit>
       <trans-unit id="CannotForwardToDllImportMessage">
         <source>'{0}' has no equivalent in 'DllImportAttribute' and will not be forwarded</source>
-        <target state="translated">Element „{0}” nie ma odpowiednika w atrybucie „DllImportAtttribute” i nie zostanie przekazany</target>
+        <target state="new">'{0}' has no equivalent in 'DllImportAttribute' and will not be forwarded</target>
         <note />
       </trans-unit>
       <trans-unit id="CannotForwardToDllImportTitle">
         <source>Specified 'LibraryImportAttribute' arguments cannot be forwarded to 'DllImportAttribute'</source>
-        <target state="translated">Określonych argumentów „LibraryImportAttribute” nie można przekazać do elementu „DllImportAttribute”</target>
+        <target state="new">Specified 'LibraryImportAttribute' arguments cannot be forwarded to 'DllImportAttribute'</target>
         <note />
       </trans-unit>
       <trans-unit id="CastsBetweenRuntimeComAndSourceGeneratedComNotSupportedDescription">
         <source>Casting between a 'ComImport' type and a source-generated COM type is not supported and will fail at runtime</source>
-        <target state="translated">Rzutowanie między typem „ComImport” i wygenerowanym przez źródło typem COM nie jest obsługiwane i zakończy się niepowodzeniem w czasie wykonywania</target>
+        <target state="new">Casting between a 'ComImport' type and a source-generated COM type is not supported and will fail at runtime</target>
         <note />
       </trans-unit>
       <trans-unit id="CastsBetweenRuntimeComAndSourceGeneratedComNotSupportedMessage">
         <source>Casting between a 'ComImport' type and a source-generated COM type is not supported</source>
-        <target state="translated">Rzutowanie między typem „ComImport” i wygenerowanym przez źródło typem COM nie jest obsługiwane</target>
+        <target state="new">Casting between a 'ComImport' type and a source-generated COM type is not supported</target>
         <note />
       </trans-unit>
       <trans-unit id="CastsBetweenRuntimeComAndSourceGeneratedComNotSupportedTitle">
         <source>Casting between a 'ComImport' type and a source-generated COM type is not supported</source>
-        <target state="translated">Rzutowanie między typem „ComImport” i wygenerowanym przez źródło typem COM nie jest obsługiwane</target>
+        <target state="new">Casting between a 'ComImport' type and a source-generated COM type is not supported</target>
         <note />
       </trans-unit>
       <trans-unit id="ClassDoesNotImplementAnyGeneratedComInterfacesDescription">
         <source>A class with 'GeneratedComClassAttribute' must implement at least one interface with 'GeneratedComInterfaceAttribute' or else the generated code with not have an effect.</source>
-        <target state="translated">Klasa z atrybutem „GeneratedComClassAttribute” musi implementować co najmniej jeden interfejs z atrybutem „GeneratedComInterfaceAttribute”. W przeciwnym wypadku wygenerowany kod nie będzie miał efektu.</target>
+        <target state="new">A class with 'GeneratedComClassAttribute' must implement at least one interface with 'GeneratedComInterfaceAttribute' or else the generated code with not have an effect.</target>
         <note />
       </trans-unit>
       <trans-unit id="ClassDoesNotImplementAnyGeneratedComInterfacesMessage">
         <source>Class '{0}' with 'GeneratedComClassAttribute' does not implement any interfaces with 'GeneratedComInterfaceAttribute'. Source will not be generated for '{0}'.</source>
-        <target state="translated">Klasa „{0}” z atrybutem „GeneratedComClassAttribute” nie implementuje żadnych interfejsów z atrybutem „GeneratedComInterfaceAttribute”. Źródło nie zostanie wygenerowane dla „{0}”.</target>
+        <target state="new">Class '{0}' with 'GeneratedComClassAttribute' does not implement any interfaces with 'GeneratedComInterfaceAttribute'. Source will not be generated for '{0}'.</target>
         <note />
       </trans-unit>
       <trans-unit id="CollectionSizeParamTypeMustBeIntegral">
         <source>The specified collection size parameter for an collection must be an integer type. If the size information is applied to a nested collection, the size parameter must be a collection of one less level of nesting with an integral element.</source>
-        <target state="translated">Określony parametr rozmiaru kolekcji dla kolekcji musi być liczbą całkowitą. Jeśli informacje o rozmiarze są stosowane do kolekcji zagnieżdżonej, parametr rozmiaru musi być kolekcją o jednym poziomie zagnieżdżenia mniej, o liczbie całkowitej.</target>
+        <target state="new">The specified collection size parameter for an collection must be an integer type. If the size information is applied to a nested collection, the size parameter must be a collection of one less level of nesting with an integral element.</target>
         <note />
       </trans-unit>
       <trans-unit id="ComHostingDoesNotSupportGeneratedComInterfaceDescription">
         <source>.NET COM hosting with 'EnableComHosting' only supports built-in COM interop. It does not support source-generated COM interop with 'GeneratedComInterfaceAttribute'.</source>
-        <target state="translated">Hosting modelu COM platformy .NET z elementem „EnableComHosting” obsługuje tylko wbudowaną usługę międzyoperacyjną modelu COM. Nie obsługuje usługi międzyoperacyjnej modelu COM wygenerowanej przez źródło przy użyciu atrybutu „GeneratedComInterfaceAttribute”.</target>
+        <target state="new">.NET COM hosting with 'EnableComHosting' only supports built-in COM interop. It does not support source-generated COM interop with 'GeneratedComInterfaceAttribute'.</target>
         <note />
       </trans-unit>
       <trans-unit id="ComHostingDoesNotSupportGeneratedComInterfaceMessage">
         <source>.NET COM hosting with 'EnableComHosting' does not support interfaces with the 'GeneratedComInterfaceAttribute'. Change any COM exposed interfaces implemented by '{0}' to use the 'System.Runtime.InteropServices.ComVisibleAttribute' instead</source>
-        <target state="translated">Hosting modelu COM platformy .NET z elementem „EnableComHosting” nie obsługuje interfejsów z atrybutem „GeneratedComInterfaceAttribute”. Zmień wszystkie interfejsy ujawnione przez model COM zaimplementowane przez „{0}”, aby zamiast tego użyć atrybutu „System.Runtime.InteropServices.ComVisibleAttribute”</target>
+        <target state="new">.NET COM hosting with 'EnableComHosting' does not support interfaces with the 'GeneratedComInterfaceAttribute'. Change any COM exposed interfaces implemented by '{0}' to use the 'System.Runtime.InteropServices.ComVisibleAttribute' instead</target>
         <note />
       </trans-unit>
       <trans-unit id="ComHostingDoesNotSupportGeneratedComInterfaceTitle">
         <source>.NET COM hosting with 'EnableComHosting' does not support interfaces with the 'GeneratedComInterfaceAttribute'</source>
-        <target state="translated">Hosting modelu COM platformy .NET z elementem „EnableComHosting” nie obsługuje interfejsów z atrybutem „GeneratedComInterfaceAttribute”</target>
+        <target state="new">.NET COM hosting with 'EnableComHosting' does not support interfaces with the 'GeneratedComInterfaceAttribute'</target>
         <note />
       </trans-unit>
       <trans-unit id="ComInterfaceUsageDoesNotFollowBestPracticesMessageWithDetails">
         <source>The usage of 'GeneratedComInterfaceAttribute' does not follow recommendations. {0}</source>
-        <target state="translated">Użycie atrybutu „GeneratedComInterfaceAttribute” nie jest zgodne z zaleceniami. {0}</target>
+        <target state="new">The usage of 'GeneratedComInterfaceAttribute' does not follow recommendations. {0}</target>
         <note />
       </trans-unit>
       <trans-unit id="ComInterfaceUsageDoesNotFollowBestPracticesTitle">
         <source>The usage of 'GeneratedComInterfaceAttribute' does not follow recommendations.</source>
-        <target state="translated">Użycie atrybutu „GeneratedComInterfaceAttribute” nie jest zgodne z zaleceniami.</target>
+        <target state="new">The usage of 'GeneratedComInterfaceAttribute' does not follow recommendations.</target>
         <note />
       </trans-unit>
       <trans-unit id="ComMethodReturningIntWillBeOutParameterMessage">
         <source>The return value in the managed definition will be converted to an 'out' parameter when calling the unmanaged COM method. If the return value is intended to be the HRESULT code returned by the unmanaged COM method, use '[PreserveSig]' on the method.</source>
-        <target state="translated">Wartość zwracana w definicji zarządzanej zostanie przekonwertowana na parametr „out” podczas wywoływania niezarządzanej metody COM. Jeśli wartość zwracana ma być kodem HRESULT zwracanym przez niezarządzaną metodę COM, należy użyć „[PreserveSig]” w metodzie.</target>
+        <target state="new">The return value in the managed definition will be converted to an 'out' parameter when calling the unmanaged COM method. If the return value is intended to be the HRESULT code returned by the unmanaged COM method, use '[PreserveSig]' on the method.</target>
         <note />
       </trans-unit>
       <trans-unit id="ComMethodReturningIntWillBeOutParameterTitle">
         <source>The return value in the managed definition will be converted to an additional 'out' parameter at the end of the parameter list when calling the unmanaged COM method.</source>
-        <target state="translated">Wartość zwracana w definicji zarządzanej zostanie przekonwertowana na dodatkowy parametr „out” na końcu listy parametrów podczas wywoływania niezarządzanej metody COM.</target>
+        <target state="new">The return value in the managed definition will be converted to an additional 'out' parameter at the end of the parameter list when calling the unmanaged COM method.</target>
         <note />
       </trans-unit>
       <trans-unit id="ConfigurationNotSupportedDescriptionCom">
         <source>Source-generated COM will ignore any configuration that is not supported.</source>
-        <target state="translated">COM wygenerowany przez źródło zignoruje każdą konfigurację, która nie jest obsługiwana.</target>
+        <target state="new">Source-generated COM will ignore any configuration that is not supported.</target>
         <note />
       </trans-unit>
       <trans-unit id="ConfigurationNotSupportedDescriptionLibraryImport">
         <source>Source-generated P/Invokes will ignore any configuration that is not supported.</source>
-        <target state="translated">Funkcja P/Invokes generowana przez źródło zignoruje każdą nieobsługiwaną konfigurację.</target>
+        <target state="new">Source-generated P/Invokes will ignore any configuration that is not supported.</target>
         <note />
       </trans-unit>
       <trans-unit id="ConfigurationNotSupportedMessageCom">
         <source>The '{0}' configuration is not supported by source-generated COM. If the specified configuration is required, use `ComImport` instead.</source>
-        <target state="translated">Konfiguracja „{0}” nie jest obsługiwana przez COM generowany przez źródło. Jeśli określona konfiguracja jest wymagana, użyj zamiast niej `ComImport`.</target>
+        <target state="new">The '{0}' configuration is not supported by source-generated COM. If the specified configuration is required, use `ComImport` instead.</target>
         <note />
       </trans-unit>
       <trans-unit id="ConfigurationNotSupportedMessageLibraryImport">
         <source>The '{0}' configuration is not supported by source-generated P/Invokes. If the specified configuration is required, use a regular 'DllImport' instead.</source>
-        <target state="translated">Konfiguracja „{0}” nie jest obsługiwana przez funkcję P/Invokes generowaną przez źródło. Jeśli określona konfiguracja jest wymagana, użyj zamiast tego zwykłego elementu „DllImport”.</target>
+        <target state="new">The '{0}' configuration is not supported by source-generated P/Invokes. If the specified configuration is required, use a regular 'DllImport' instead.</target>
         <note />
       </trans-unit>
       <trans-unit id="ConfigurationNotSupportedMessageMarshallingInfoCom">
         <source>The specified marshalling configuration is not supported by source-generated COM. {0}.</source>
-        <target state="translated">Określona konfiguracja skierowania nie jest obsługiwana przez COM generowany źródłowo. {0}.</target>
+        <target state="new">The specified marshalling configuration is not supported by source-generated COM. {0}.</target>
         <note />
       </trans-unit>
       <trans-unit id="ConfigurationNotSupportedMessageMarshallingInfoLibraryImport">
         <source>The specified marshalling configuration is not supported by source-generated P/Invokes. {0}.</source>
-        <target state="translated">Określona konfiguracja skierowania nie jest obsługiwana przez funkcję P/Invokes generowaną przez źródło. {0}.</target>
+        <target state="new">The specified marshalling configuration is not supported by source-generated P/Invokes. {0}.</target>
         <note />
       </trans-unit>
       <trans-unit id="ConfigurationNotSupportedMessageParameterCom">
         <source>The specified '{0}' configuration for parameter '{1}' is not supported by source-generated COM. If the specified configuration is required, use `ComImport` instead.</source>
-        <target state="translated">Określona konfiguracja „{0}” dla parametru „{1}” nie jest obsługiwana przez COM generowany przez źródło. Jeśli określona konfiguracja jest wymagana, użyj zamiast niej `ComImport`.</target>
+        <target state="new">The specified '{0}' configuration for parameter '{1}' is not supported by source-generated COM. If the specified configuration is required, use `ComImport` instead.</target>
         <note />
       </trans-unit>
       <trans-unit id="ConfigurationNotSupportedMessageParameterLibraryImport">
         <source>The specified '{0}' configuration for parameter '{1}' is not supported by source-generated P/Invokes. If the specified configuration is required, use a regular 'DllImport' instead.</source>
-        <target state="translated">Określona konfiguracja „{0}” dla parametru „{1}” nie jest obsługiwana przez funkcję P/Invokes generowaną przez źródło. Jeśli określona konfiguracja jest wymagana, użyj zamiast tego zwykłego elementu „DllImport”.</target>
+        <target state="new">The specified '{0}' configuration for parameter '{1}' is not supported by source-generated P/Invokes. If the specified configuration is required, use a regular 'DllImport' instead.</target>
         <note />
       </trans-unit>
       <trans-unit id="ConfigurationNotSupportedMessageReturnCom">
         <source>The specified '{0}' configuration for the return value of method '{1}' is not supported by source-generated COM. If the specified configuration is required, use `ComImport` instead.</source>
-        <target state="translated">Określona konfiguracja „{0}” dla wartości zwracanej metody „{1}” nie jest obsługiwana przez COM generowany przez źródło. Jeśli określona konfiguracja jest wymagana, użyj zamiast niej `ComImport`.</target>
+        <target state="new">The specified '{0}' configuration for the return value of method '{1}' is not supported by source-generated COM. If the specified configuration is required, use `ComImport` instead.</target>
         <note />
       </trans-unit>
       <trans-unit id="ConfigurationNotSupportedMessageReturnLibraryImport">
         <source>The specified '{0}' configuration for the return value of method '{1}' is not supported by source-generated P/Invokes. If the specified configuration is required, use a regular 'DllImport' instead.</source>
-        <target state="translated">Określona konfiguracja „{0}” dla wartości zwracanej metody „{1}” nie jest obsługiwana przez funkcję P/Invokes generowaną przez źródło. Jeśli określona konfiguracja jest wymagana, użyj zamiast tego zwykłego elementu „DllImport”.</target>
+        <target state="new">The specified '{0}' configuration for the return value of method '{1}' is not supported by source-generated P/Invokes. If the specified configuration is required, use a regular 'DllImport' instead.</target>
         <note />
       </trans-unit>
       <trans-unit id="ConfigurationNotSupportedMessageValueCom">
         <source>The specified value '{0}' for '{1}' is not supported by source-generated COM. If the specified configuration is required, use `ComImport` instead.</source>
-        <target state="translated">Określona wartość „{0}” dla „{1}” nie jest obsługiwana przez COM generowany przez źródło. Jeśli określona konfiguracja jest wymagana, użyj zamiast niej `ComImport`.</target>
+        <target state="new">The specified value '{0}' for '{1}' is not supported by source-generated COM. If the specified configuration is required, use `ComImport` instead.</target>
         <note />
       </trans-unit>
       <trans-unit id="ConfigurationNotSupportedMessageValueLibraryImport">
         <source>The specified value '{0}' for '{1}' is not supported by source-generated P/Invokes. If the specified value is required, use a regular 'DllImport' instead.</source>
-        <target state="translated">Określona wartość „{0}” dla parametru „{1}” nie jest obsługiwana przez funkcję P/Invokes generowaną przez źródło. Jeśli określona konfiguracja jest wymagana, użyj zamiast tego zwykłego elementu „DllImport”.</target>
+        <target state="new">The specified value '{0}' for '{1}' is not supported by source-generated P/Invokes. If the specified value is required, use a regular 'DllImport' instead.</target>
         <note />
       </trans-unit>
       <trans-unit id="ConfigurationNotSupportedTitleCom">
         <source>Specified configuration is not supported by source-generated COM.</source>
-        <target state="translated">Określona konfiguracja nie jest obsługiwana przez COM wygenerowany przez źródło.</target>
+        <target state="new">Specified configuration is not supported by source-generated COM.</target>
         <note />
       </trans-unit>
       <trans-unit id="ConfigurationNotSupportedTitleLibraryImport">
         <source>Specified configuration is not supported by source-generated P/Invokes.</source>
-        <target state="translated">Określona konfiguracja nie jest obsługiwana przez funkcję P/Invokes generowaną przez źródło.</target>
+        <target state="new">Specified configuration is not supported by source-generated P/Invokes.</target>
         <note />
       </trans-unit>
       <trans-unit id="ConstantAndElementCountInfoDisallowed">
         <source>Only one of 'ConstantElementCount' or 'ElementCountInfo' may be used in a 'MarshalUsingAttribute' for a given 'ElementIndirectionDepth'</source>
-        <target state="translated">Tylko jedna z wartości „ConstantElementCount” lub element „ElementCountInfo” może być użyty w atrybucie „MarshalUsingAttribute” dla danego elementu „ElementIndirectionDepth”</target>
+        <target state="new">Only one of 'ConstantElementCount' or 'ElementCountInfo' may be used in a 'MarshalUsingAttribute' for a given 'ElementIndirectionDepth'</target>
         <note />
       </trans-unit>
       <trans-unit id="ContainingTypeAccessibilityDetails">
         <source>Containing type '{0}' has accessibility '{1}'.</source>
-        <target state="translated">Zawierający typ „{0}” ma ułatwienia dostępu „{1}”.</target>
+        <target state="new">Containing type '{0}' has accessibility '{1}'.</target>
         <note />
       </trans-unit>
       <trans-unit id="ConvertComInterfaceMayProduceInvalidCode">
         <source>Converting this interface to use 'GeneratedComInterfaceAttribute' may produce invalid code and may require additional work</source>
-        <target state="translated">Przekonwertowanie tego interfejsu w celu użycia atrybutu „GeneratedComInterfaceAttribute” może spowodować wygenerowanie nieprawidłowego kodu i może wymagać dodatkowej pracy</target>
+        <target state="new">Converting this interface to use 'GeneratedComInterfaceAttribute' may produce invalid code and may require additional work</target>
         <note />
       </trans-unit>
       <trans-unit id="ConvertNoPreserveSigDllImportToGeneratedMayProduceInvalidCode">
         <source>Automatically converting a P/Invoke with 'PreserveSig' set to 'false' to a source-generated P/Invoke may produce invalid code</source>
-        <target state="translated">Automatyczne konwertowanie funkcji P/Invoke z parametrem „PreserveSig” ustawionym na wartość „false” na wygenerowaną przez źródło funkcję P/Invoke może spowodować utworzenie nieprawidłowego kodu</target>
+        <target state="new">Automatically converting a P/Invoke with 'PreserveSig' set to 'false' to a source-generated P/Invoke may produce invalid code</target>
         <note />
       </trans-unit>
       <trans-unit id="ConvertToGeneratedComInterfaceAddUnsafe">
         <source>Convert to 'GeneratedComInterface' and allow unsafe code</source>
-        <target state="translated">Konwertuj na element „GeneratedComInterface” i zezwalaj na niebezpieczny kod</target>
+        <target state="new">Convert to 'GeneratedComInterface' and allow unsafe code</target>
         <note />
       </trans-unit>
       <trans-unit id="ConvertToGeneratedComInterfaceDescription">
         <source>Use 'GeneratedComInterfaceAttribute' instead of 'ComImportAttribute' to generate COM marshalling code at compile time</source>
-        <target state="translated">Użyj atrybutu „GeneratedComInterfaceAttribute” zamiast „ComImportAttribute”, aby wygenerować kod marshallingu modelu COM w czasie kompilacji</target>
+        <target state="new">Use 'GeneratedComInterfaceAttribute' instead of 'ComImportAttribute' to generate COM marshalling code at compile time</target>
         <note />
       </trans-unit>
       <trans-unit id="ConvertToGeneratedComInterfaceMayRequireCustomMarshalling">
         <source>Converting this API to 'GeneratedComInterfaceAttribute' will require additional code to provide custom marshallers for some parameters.</source>
-        <target state="translated">Przekonwertowanie tego interfejsu API na atrybut „GeneratedComInterfaceAttribute” będzie wymagać dodatkowego kodu w celu udostępnienia niestandardowych organizatorów dla niektórych parametrów.</target>
+        <target state="new">Converting this API to 'GeneratedComInterfaceAttribute' will require additional code to provide custom marshallers for some parameters.</target>
         <note />
       </trans-unit>
       <trans-unit id="ConvertToGeneratedComInterfaceMessage">
         <source>Mark the type '{0}' with 'GeneratedComInterfaceAttribute' instead of 'ComImportAttribute' to generate COM marshalling code at compile time</source>
-        <target state="translated">Oznacz typ „{0}” atrybutem „GeneratedComInterfaceAttribute” zamiast „ComImportAttribute”, aby wygenerować kod marshallingu modelu COM w czasie kompilacji</target>
+        <target state="new">Mark the type '{0}' with 'GeneratedComInterfaceAttribute' instead of 'ComImportAttribute' to generate COM marshalling code at compile time</target>
         <note />
       </trans-unit>
       <trans-unit id="ConvertToGeneratedComInterfaceTitle">
         <source>Convert to 'GeneratedComInterface'</source>
-        <target state="translated">Konwertowanie na element „GeneratedComInterface”</target>
+        <target state="new">Convert to 'GeneratedComInterface'</target>
         <note />
       </trans-unit>
       <trans-unit id="ConvertToLibraryImport">
         <source>Convert to 'LibraryImport'</source>
-        <target state="translated">Konwertuj na element „LibraryImport”</target>
+        <target state="new">Convert to 'LibraryImport'</target>
         <note />
       </trans-unit>
       <trans-unit id="ConvertToLibraryImportAddUnsafe">
         <source>Convert to 'LibraryImport' and enable unsafe code</source>
-        <target state="translated">Konwertuj na element „LibraryImport” i włącz niebezpieczny kod</target>
+        <target state="new">Convert to 'LibraryImport' and enable unsafe code</target>
         <note />
       </trans-unit>
       <trans-unit id="ConvertToLibraryImportDescription">
         <source>Use 'LibraryImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time</source>
-        <target state="translated">Użyj elementu „LibraryImportAttribute” zamiast elementu „DllImportAttribute”, aby wygenerować kod skierowania funkcji P/Invoke w czasie kompilacji</target>
+        <target state="new">Use 'LibraryImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time</target>
         <note />
       </trans-unit>
       <trans-unit id="ConvertToLibraryImportMayRequireCustomMarshalling">
         <source>Converting this API to 'LibraryImport' will require additional code to provide custom marshallers for some parameters.</source>
-        <target state="translated">Przekonwertowanie tego interfejsu API na element „LibraryImport” będzie wymagać dodatkowego kodu w celu udostępnienia niestandardowych poleceń dla niektórych parametrów.</target>
+        <target state="new">Converting this API to 'LibraryImport' will require additional code to provide custom marshallers for some parameters.</target>
         <note />
       </trans-unit>
       <trans-unit id="ConvertToLibraryImportMessage">
         <source>Mark the method '{0}' with 'LibraryImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time</source>
-        <target state="translated">Oznacz metodę „{0}” za pomocą elementu „LibraryImportAttribute” zamiast elementu „DllImportAttribute”, aby wygenerować kod skierowania funkcji P/Invoke w czasie kompilacji</target>
+        <target state="new">Mark the method '{0}' with 'LibraryImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time</target>
         <note />
       </trans-unit>
       <trans-unit id="ConvertToLibraryImportTitle">
         <source>Use 'LibraryImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time</source>
-        <target state="translated">Użyj elementu „LibraryImportAttribute” zamiast elementu „DllImportAttribute”, aby wygenerować kod skierowania funkcji P/Invoke w czasie kompilacji</target>
+        <target state="new">Use 'LibraryImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time</target>
         <note />
       </trans-unit>
       <trans-unit id="ConvertToLibraryImportWithSuffix">
         <source>Convert to 'LibraryImport' with '{0}' suffix</source>
-        <target state="translated">Konwertuj na element „LibraryImport” z sufiksem „{0}”</target>
+        <target state="new">Convert to 'LibraryImport' with '{0}' suffix</target>
         <note />
       </trans-unit>
       <trans-unit id="ConvertToLibraryImportWithSuffixAddUnsafe">
         <source>Convert to 'LibraryImport' with '{0}' suffix and enable unsafe code</source>
-        <target state="translated">Konwertuj na element „LibraryImport” z sufiksem „{0}” i włącz niebezpieczny kod</target>
+        <target state="new">Convert to 'LibraryImport' with '{0}' suffix and enable unsafe code</target>
         <note />
       </trans-unit>
       <trans-unit id="CustomMarshallerTypeMustHaveRequiredShapeTitle">
         <source>Marshaller type does not have the required shape</source>
-        <target state="translated">Typ marshallera nie ma wymaganego kształtu</target>
+        <target state="new">Marshaller type does not have the required shape</target>
         <note />
       </trans-unit>
       <trans-unit id="CyclicalCountInfo">
         <source>This element cannot depend on '{0}' for collection size information without creating a dependency cycle</source>
-        <target state="translated">Ten element nie może zależeć od elementu „{0}” dla informacji o rozmiarze kolekcji bez tworzenia cyklu zależności</target>
+        <target state="new">This element cannot depend on '{0}' for collection size information without creating a dependency cycle</target>
         <note />
       </trans-unit>
       <trans-unit id="DuplicateCountInfo">
         <source>Count information for a given element at a given indirection level can only be specified once</source>
-        <target state="translated">Informacje o liczbie dla danego elementu na danym poziomie pośrednim można podać tylko raz</target>
+        <target state="new">Count information for a given element at a given indirection level can only be specified once</target>
         <note />
       </trans-unit>
       <trans-unit id="DuplicateMarshallingInfo">
         <source>Multiple marshalling attributes per element per indirection level is unsupported, but duplicate information was provided for indirection level {0}</source>
-        <target state="translated">Wiele atrybutów skierowania na element na poziomie pośrednim nie jest obsługiwanych, ale podano zduplikowane informacje dla poziomu pośredniego {0}</target>
+        <target state="new">Multiple marshalling attributes per element per indirection level is unsupported, but duplicate information was provided for indirection level {0}</target>
         <note />
       </trans-unit>
       <trans-unit id="ElementMarshallerCannotBeStatefulDescription">
         <source>A marshaller for an element scenario cannot be stateful.</source>
-        <target state="translated">Marshaller dla scenariusza elementu nie może być stanowy.</target>
+        <target state="new">A marshaller for an element scenario cannot be stateful.</target>
         <note />
       </trans-unit>
       <trans-unit id="ElementMarshallerCannotBeStatefulMessage">
         <source>The specified marshaller type '{0}' is a stateful marshaller, but stateful marshallers are not allowed in the provided marshal mode '{1}'</source>
-        <target state="translated">Określony typ marshallera „{0}” jest stanowym marshallerem, ale stanowe marshallery nie są dozwolone w podanym trybie marshalingu „{1}”</target>
+        <target state="new">The specified marshaller type '{0}' is a stateful marshaller, but stateful marshallers are not allowed in the provided marshal mode '{1}'</target>
         <note />
       </trans-unit>
       <trans-unit id="ElementTypesOfReturnTypesMustMatchDescription">
         <source>The element type of the span returned by the first method must be the same type as the element type of the span returned by the second method.</source>
-        <target state="translated">Typ elementu zakresu zwracanego przez pierwszą metodę musi być tego samego typu co typ elementu zakresu zwracanego przez drugą metodę.</target>
+        <target state="new">The element type of the span returned by the first method must be the same type as the element type of the span returned by the second method.</target>
         <note />
       </trans-unit>
       <trans-unit id="ElementTypesOfReturnTypesMustMatchMessage">
         <source>The element type of the span returned by '{0}' must be the same type as the element type of the span returned by '{1}'.</source>
-        <target state="translated">Typ elementu zakresu zwracanego przez „{0}” musi być tego samego typu co typ elementu zakresu zwracanego przez „{1}”.</target>
+        <target state="new">The element type of the span returned by '{0}' must be the same type as the element type of the span returned by '{1}'.</target>
         <note />
       </trans-unit>
       <trans-unit id="EntryPointTypeMustBeNonNullDescription">
         <source>An entry-point type for marshalling a given type must not be 'null'.</source>
-        <target state="translated">Typ punktu wejścia do przeprowadzenia marshalingu danego typu nie może mieć wartości „null”.</target>
+        <target state="new">An entry-point type for marshalling a given type must not be 'null'.</target>
         <note />
       </trans-unit>
       <trans-unit id="EntryPointTypeMustBeNonNullMessage">
         <source>The entry-point marshaller type for the type '{0}' must be not 'null'</source>
-        <target state="translated">Typ marshallera punktu wejścia dla typu „{0}” nie może mieć wartości „null”</target>
+        <target state="new">The entry-point marshaller type for the type '{0}' must be not 'null'</target>
         <note />
       </trans-unit>
       <trans-unit id="EntryPointTypeMustHaveCustomMarshallerAttributeWithMatchingManagedTypeDescription">
         <source>An entry-point type for marshalling a given type must have a 'System.Runtime.InteropServices.CustomMarshallerAttribute' that specifies this type as the managed type.</source>
-        <target state="translated">Typ punktu wejścia do przeprowadzenia marshalingu danego typu musi mieć atrybut „System.Runtime.InteropServices.CustomMarshaellerAttribute”, który określa ten typ jako typ zarządzany.</target>
+        <target state="new">An entry-point type for marshalling a given type must have a 'System.Runtime.InteropServices.CustomMarshallerAttribute' that specifies this type as the managed type.</target>
         <note />
       </trans-unit>
       <trans-unit id="EntryPointTypeMustHaveCustomMarshallerAttributeWithMatchingManagedTypeMessage">
         <source>The entry-point marshaller type '{0}' for the type '{1}' must be a type with at least one 'System.Runtime.InteropServices.CustomMarshallerAttribute' that specifies this type as the managed type</source>
-        <target state="translated">Typ marshallera punktu wejścia „{0}” dla typu „{1}” musi być typem z co najmniej jednym atrybutem „System.Runtime.InteropServices.CustomMarshaellerAttribute”, który określa ten typ jako typ zarządzany</target>
+        <target state="new">The entry-point marshaller type '{0}' for the type '{1}' must be a type with at least one 'System.Runtime.InteropServices.CustomMarshallerAttribute' that specifies this type as the managed type</target>
         <note />
       </trans-unit>
       <trans-unit id="ExtraneousMarshallingInfo">
         <source>Marshalling info was specified for 'ElementIndirectionDepth' {0}, but marshalling info was only needed for {1} level(s) of indirection</source>
-        <target state="translated">Informacje dotyczące skierowania zostały określone dla elementu „ElementIndirectionDepth” {0}, ale informacje dotyczące skierowania były potrzebne tylko dla poziomów pośrednich w liczbie {1}</target>
+        <target state="new">Marshalling info was specified for 'ElementIndirectionDepth' {0}, but marshalling info was only needed for {1} level(s) of indirection</target>
         <note />
       </trans-unit>
       <trans-unit id="FirstParameterMustMatchReturnTypeDescription">
         <source>The first parameter of the first method must be the same type as the return types of the second method.</source>
-        <target state="translated">Pierwszy parametr pierwszej metody musi być tego samego typu co zwracane typy drugiej metody.</target>
+        <target state="new">The first parameter of the first method must be the same type as the return types of the second method.</target>
         <note />
       </trans-unit>
       <trans-unit id="FirstParameterMustMatchReturnTypeMessage">
         <source>The first parameter of '{0}' must be the same type as the return type of '{1}'</source>
-        <target state="translated">Pierwszy parametr „{0}” musi być tego samego typu co zwracany typ „{1}”</target>
+        <target state="new">The first parameter of '{0}' must be the same type as the return type of '{1}'</target>
         <note />
       </trans-unit>
       <trans-unit id="FirstParametersMustMatchDescription">
         <source>The first parameters of the two methods must be the same type.</source>
-        <target state="translated">Pierwsze parametry obu tych metod muszą być tego samego typu.</target>
+        <target state="new">The first parameters of the two methods must be the same type.</target>
         <note />
       </trans-unit>
       <trans-unit id="FirstParametersMustMatchMessage">
         <source>The first parameter of '{0}' and '{1}' must be the same type</source>
-        <target state="translated">Pierwszy parametr „{0}” i „{1}” musi być tego samego typu</target>
+        <target state="new">The first parameter of '{0}' and '{1}' must be the same type</target>
         <note />
       </trans-unit>
       <trans-unit id="FromUnmanagedOverloadsNotSupportedDescription">
         <source>Overloading the 'FromUnmanaged' method is unuspported as some shapes are unable to distinguish between overloads.</source>
-        <target state="translated">Przeciążenie metody „FromUnmanaged” nie jest obsługiwane, ponieważ niektóre kształty nie mogą rozróżnić przeciążeń.</target>
+        <target state="new">Overloading the 'FromUnmanaged' method is unuspported as some shapes are unable to distinguish between overloads.</target>
         <note />
       </trans-unit>
       <trans-unit id="FromUnmanagedOverloadsNotSupportedMessage">
         <source>The type '{0}' overloads the 'FromUnmanaged' method, which is not supported in custom marshallers</source>
-        <target state="translated">Typ „{0}” przeciąża metodę „ZNiezarządzane”, która nie jest obsługiwana w niestandardowych marshalerach</target>
+        <target state="new">The type '{0}' overloads the 'FromUnmanaged' method, which is not supported in custom marshallers</target>
         <note />
       </trans-unit>
       <trans-unit id="GeneratedComInterfaceStringMarshallingMustMatchBase">
         <source>The configuration of 'StringMarshalling' and 'StringMarshallingCustomType' must match the base COM interface.</source>
-        <target state="translated">Konfiguracja elementów „StringMarssourceing” i „StringMarsxtingCustomType” musi być zgodna z podstawowym interfejsem COM.</target>
+        <target state="new">The configuration of 'StringMarshalling' and 'StringMarshallingCustomType' must match the base COM interface.</target>
         <note />
       </trans-unit>
       <trans-unit id="GenericEntryPointMarshallerTypeMustBeClosedOrMatchArityDescription">
         <source>The marshaller type must be a closed generic or have the same number of generic parameters as the managed type so the emitted code can use a specific instantiation.</source>
-        <target state="translated">Typ marshallera musi być zamkniętym typem ogólnym lub mieć taką samą liczbę parametrów ogólnych jak typ zarządzany, aby emitowany kod mógł używać określonego wystąpienia.</target>
+        <target state="new">The marshaller type must be a closed generic or have the same number of generic parameters as the managed type so the emitted code can use a specific instantiation.</target>
         <note />
       </trans-unit>
       <trans-unit id="GenericEntryPointMarshallerTypeMustBeClosedOrMatchArityMessage">
         <source>The marshaller type '{0}' for managed type '{1}' must be a closed generic type, have the same arity as the managed type if it is a value marshaller, or have one additional generic parameter if it is a collection marshaller.</source>
-        <target state="translated">Typ marshallera „{0}” dla typu zarządzanego „{1}” musi być zamkniętym typem ogólnym, mieć taką samą argumentację jak typ zarządzany, jeśli jest to marshaller wartości lub mieć jeden dodatkowy parametr ogólny, jeśli jest to marshaller kolekcji.</target>
+        <target state="new">The marshaller type '{0}' for managed type '{1}' must be a closed generic type, have the same arity as the managed type if it is a value marshaller, or have one additional generic parameter if it is a collection marshaller.</target>
         <note />
       </trans-unit>
       <trans-unit id="GetPinnableReferenceReturnTypeBlittableDescription">
         <source>The return type of 'GetPinnableReference' (after accounting for 'ref') must be blittable.</source>
-        <target state="translated">Zwracany typ elementu „GetPinnableReference” (po uwzględnieniu wartości „ref”) musi być kopiowalny.</target>
+        <target state="new">The return type of 'GetPinnableReference' (after accounting for 'ref') must be blittable.</target>
         <note />
       </trans-unit>
       <trans-unit id="GetPinnableReferenceReturnTypeBlittableMessage">
         <source>The dereferenced type of the return type of the 'GetPinnableReference' method must be blittable</source>
-        <target state="translated">Typ, do którego nie można usunąć odwołania, zwracanego typu metody „GetPinnableReference” musi być kopiowalny</target>
+        <target state="new">The dereferenced type of the return type of the 'GetPinnableReference' method must be blittable</target>
         <note />
       </trans-unit>
       <trans-unit id="GraphHasCycles">
         <source>The provided graph has cycles and cannot be topologically sorted.</source>
-        <target state="translated">Podany wykres zawiera cykle i nie można go posortować topologicznie.</target>
+        <target state="new">The provided graph has cycles and cannot be topologically sorted.</target>
         <note />
       </trans-unit>
       <trans-unit id="HResultTypeWillBeTreatedAsStructMessage">
         <source>The type '{0}' will be treated as a struct in the native signature, not as a native HRESULT. To treat this as an HRESULT, add '[return:MarshalAs(UnmanagedType.Error)]' to the method.</source>
-        <target state="translated">Typ „{0}” będzie traktowany jako struktura w podpisie natywnym, a nie jako natywny wynik HRESULT. Aby traktować to jako HRESULT, dodaj element „[return:MarshalAs(UnmanagedType.Error)]” do metody.</target>
+        <target state="new">The type '{0}' will be treated as a struct in the native signature, not as a native HRESULT. To treat this as an HRESULT, add '[return:MarshalAs(UnmanagedType.Error)]' to the method.</target>
         <note />
       </trans-unit>
       <trans-unit id="HResultTypeWillBeTreatedAsStructTitle">
         <source>This type will be treated as a struct in the native signature, not as a native HRESULT</source>
-        <target state="translated">Ten typ będzie traktowany jako struktura w podpisie natywnym, a nie jako natywny wynik HRESULT</target>
+        <target state="new">This type will be treated as a struct in the native signature, not as a native HRESULT</target>
         <note />
       </trans-unit>
       <trans-unit id="InAttributeNotSupportedOnByValueParameters">
         <source>The '[In]' attribute is only supported on array parameters. By-value parameters are considered read-only by default.</source>
-        <target state="translated">Atrybut „[In]” jest obsługiwany tylko w przypadku parametrów tablicy. Parametry według wartości są domyślnie uznawane za tylko do odczytu.</target>
+        <target state="new">The '[In]' attribute is only supported on array parameters. By-value parameters are considered read-only by default.</target>
         <note />
       </trans-unit>
       <trans-unit id="InAttributeNotSupportedWithoutOutBlittableArray">
         <source>The '[In]' attribute is not supported unless the '[Out]' attribute is also used. Blittable arrays cannot be marshalled as '[In]' only.</source>
-        <target state="translated">Atrybut „[In]” nie jest obsługiwany, chyba że używany jest również atrybut „[Out]”. Tablice kopiowalne nie mogą być kierowane tylko jako „[In]”.</target>
+        <target state="new">The '[In]' attribute is not supported unless the '[Out]' attribute is also used. Blittable arrays cannot be marshalled as '[In]' only.</target>
         <note />
       </trans-unit>
       <trans-unit id="InAttributeOnlyIsDefault">
         <source>The '[In]' attribute is not necessary unless the '[Out]' attribute is also used. The behavior of the '[In]' attribute without the '[Out]' attribute is the same as the default behavior.</source>
-        <target state="translated">Atrybut „[In]” nie jest potrzebny, chyba że używany jest również atrybut „[Out]”. Zachowanie atrybutu „[In]” bez atrybutu „[Out]” jest takie samo jak zachowanie domyślne.</target>
+        <target state="new">The '[In]' attribute is not necessary unless the '[Out]' attribute is also used. The behavior of the '[In]' attribute without the '[Out]' attribute is the same as the default behavior.</target>
         <note />
       </trans-unit>
       <trans-unit id="InOutAttributeByRefNotSupported">
         <source>The '[In]' and '[Out]' attributes are unsupported on parameters passed by reference. Use the 'in', 'ref', or 'out' keywords instead.</source>
-        <target state="translated">Atrybuty „[In]” i „[Out]” nie są obsługiwane w parametrach przekazywanych przez odwołanie. Zamiast tego użyj słów kluczowych „in”, „ref” lub „out”.</target>
+        <target state="new">The '[In]' and '[Out]' attributes are unsupported on parameters passed by reference. Use the 'in', 'ref', or 'out' keywords instead.</target>
         <note />
       </trans-unit>
       <trans-unit id="InOutAttributeMarshalerNotSupported">
         <source>The provided '[In]' and '[Out]' attributes on this parameter are unsupported on this parameter.</source>
-        <target state="translated">Podane atrybuty „[In]” i „[Out]” w tym parametrze nie są obsługiwane w tym parametrze.</target>
+        <target state="new">The provided '[In]' and '[Out]' attributes on this parameter are unsupported on this parameter.</target>
         <note />
       </trans-unit>
       <trans-unit id="InOutAttributeNotSupportedOnByValueParameters">
         <source>The '[In]' and '[Out]' attributes are only supported on array parameters. Consider using the 'ref' keyword to make the parameter mutable.</source>
-        <target state="translated">Atrybuty „[In]” i „[Out]” są obsługiwane tylko w przypadku parametrów tablicy. Rozważ użycie słowa kluczowego „ref”, aby umożliwić modyfikowanie parametru.</target>
+        <target state="new">The '[In]' and '[Out]' attributes are only supported on array parameters. Consider using the 'ref' keyword to make the parameter mutable.</target>
         <note />
       </trans-unit>
       <trans-unit id="InOutAttributes">
         <source>[In] and [Out] attributes</source>
-        <target state="translated">Atrybuty [In] i [Out]</target>
+        <target state="new">[In] and [Out] attributes</target>
         <note />
       </trans-unit>
       <trans-unit id="InVariantShouldBeRef">
@@ -499,814 +509,814 @@
       </trans-unit>
       <trans-unit id="InstanceEventDeclaredInInterfaceDescription">
         <source>Events are not a concept in COM, so no interop code will be source generated for instance events on source-generated COM interfaces.</source>
-        <target state="translated">Zdarzenia nie są koncepcją w modelu COM, więc żaden kod międzyoperacyjny nie będzie generowany dla zdarzeń wystąpień w interfejsach COM generowanych źródłowo.</target>
+        <target state="new">Events are not a concept in COM, so no interop code will be source generated for instance events on source-generated COM interfaces.</target>
         <note />
       </trans-unit>
       <trans-unit id="InstanceEventDeclaredInInterfaceMessage">
         <source>The instance event '{0}' is declared in the interface '{1}', which has the 'GeneratedComInterfaceAttribute' applied</source>
-        <target state="translated">Zdarzenie wystąpienia „{0}” jest zadeklarowane w interfejsie „{1}”, w którym zastosowano atrybut „GeneratedComInterfaceAttribute”</target>
+        <target state="new">The instance event '{0}' is declared in the interface '{1}', which has the 'GeneratedComInterfaceAttribute' applied</target>
         <note />
       </trans-unit>
       <trans-unit id="InstanceEventDeclaredInInterfaceTitle">
         <source>Declaring an instance event in a type with the 'GeneratedComInterfaceAttribute' is not supported</source>
-        <target state="translated">Deklarowanie zdarzenia wystąpienia w typie z atrybutem „GeneratedComInterfaceAttribute” nie jest obsługiwane</target>
+        <target state="new">Declaring an instance event in a type with the 'GeneratedComInterfaceAttribute' is not supported</target>
         <note />
       </trans-unit>
       <trans-unit id="InstancePropertyDeclaredInInterfaceDescription">
         <source>Properties are not a concept in COM, so no interop code will be source generated for instance properties on source-generated COM interfaces.</source>
-        <target state="translated">Te właściwości nie są koncepcją w modelu COM, dlatego nie zostanie wygenerowany kod międzyoperacyjny dla właściwości wystąpienia w interfejsach COM generowanych źródłowo.</target>
+        <target state="new">Properties are not a concept in COM, so no interop code will be source generated for instance properties on source-generated COM interfaces.</target>
         <note />
       </trans-unit>
       <trans-unit id="InstancePropertyDeclaredInInterfaceMessage">
         <source>The instance property '{0}' is declared in the interface '{1}', which has the 'GeneratedComInterfaceAttribute' applied</source>
-        <target state="translated">Właściwość wystąpienia „{0}” jest zadeklarowana w interfejsie „{1}”, do którego zastosowano atrybut „GeneratedComInterfaceAttribute”</target>
+        <target state="new">The instance property '{0}' is declared in the interface '{1}', which has the 'GeneratedComInterfaceAttribute' applied</target>
         <note />
       </trans-unit>
       <trans-unit id="InstancePropertyDeclaredInInterfaceTitle">
         <source>Declaring an instance property in a type with the 'GeneratedComInterfaceAttribute' is not supported</source>
-        <target state="translated">Deklarowanie właściwości wystąpienia w typie z atrybutem „GeneratedComInterfaceAttribute” nie jest obsługiwane</target>
+        <target state="new">Declaring an instance property in a type with the 'GeneratedComInterfaceAttribute' is not supported</target>
         <note />
       </trans-unit>
       <trans-unit id="InterfaceTypeNotSupportedMessage">
         <source>Using 'GeneratedComInterfaceAttribute' and 'InterfaceTypeAttribute' is not supported with 'ComInterfaceType' value '{0}'.</source>
-        <target state="translated">Użycie atrybutów „GeneratedComInterfaceAttribute” i „InterfaceTypeAttribute” nie jest obsługiwane w przypadku wartości „ComInterfaceType” „{0}”.</target>
+        <target state="new">Using 'GeneratedComInterfaceAttribute' and 'InterfaceTypeAttribute' is not supported with 'ComInterfaceType' value '{0}'.</target>
         <note />
       </trans-unit>
       <trans-unit id="InterfaceTypeNotSupportedTitle">
         <source>'GeneratedComInterfaceType' does not support the 'ComInterfaceType' value supplied to 'InterfaceTypeAttribute' on the same type.</source>
-        <target state="translated">Typ „GeneratedComInterfaceType” nie obsługuje wartości „ComInterfaceType” dostarczonej do atrybutu „InterfaceTypeAttribute” w tym samym typie.</target>
+        <target state="new">'GeneratedComInterfaceType' does not support the 'ComInterfaceType' value supplied to 'InterfaceTypeAttribute' on the same type.</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidAttributedMethodContainingTypeMissingModifiersMessageCom">
         <source>Method '{0}' is contained in a type '{1}' that is not marked 'partial'. COM source generation will ignore method '{0}'.</source>
-        <target state="translated">Metoda „{0}” jest zawarta w typie „{1}”, który nie jest oznaczony jako „częściowy”. Generowanie źródła COM zignoruje metodę „{0}”.</target>
+        <target state="new">Method '{0}' is contained in a type '{1}' that is not marked 'partial'. COM source generation will ignore method '{0}'.</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidAttributedMethodContainingTypeMissingModifiersMessageLibraryImport">
         <source>Method '{0}' is contained in a type '{1}' that is not marked 'partial'. P/Invoke source generation will ignore method '{0}'.</source>
-        <target state="translated">Metoda „{0}” jest zawarta w typie „{1}”, który nie jest oznaczony jako „częściowy”. Generowanie źródła funkcji P/Invoke zignoruje metodę „{0}”.</target>
+        <target state="new">Method '{0}' is contained in a type '{1}' that is not marked 'partial'. P/Invoke source generation will ignore method '{0}'.</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidAttributedMethodContainingTypeMissingUnmanagedObjectUnwrapperAttributeMessage">
         <source>Containing type of method with VirtualMethodIndexAttribute does not have a UnmanagedObjectUnwrapperAttribute. </source>
-        <target state="translated">Zawieranie typu metody z atrybutem VirtualMethodIndexAttribute nie ma atrybutu UnmanagedObjectUnwrapperAttribute. </target>
+        <target state="new">Containing type of method with VirtualMethodIndexAttribute does not have a UnmanagedObjectUnwrapperAttribute. </target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidAttributedMethodDescriptionCom">
         <source>Methods on interfaces marked with 'GeneratedComInterfaceAttribute' should be non-generic. COM source generation will ignore methods that are generic.</source>
-        <target state="translated">Metody w interfejsach oznaczone atrybutem „GeneratedComInterfaceAttribute” powinny być nie-ogólne. Generowanie źródła COM zignoruje metody, które są ogólne.</target>
+        <target state="new">Methods on interfaces marked with 'GeneratedComInterfaceAttribute' should be non-generic. COM source generation will ignore methods that are generic.</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidAttributedMethodDescriptionLibraryImport">
         <source>Methods marked with 'LibraryImportAttribute' should be 'static', 'partial', and non-generic. P/Invoke source generation will ignore methods that are non-'static', non-'partial', or generic.</source>
-        <target state="translated">Metody oznaczone jako atrybut „LibraryImportAttribute” powinny być „statyczne”, „częściowe” i nieogólne. Generowanie źródła funkcji P/Invoke zignoruje metody, które nie są „statyczne”, nie są „częściowe” lub ogólne.</target>
+        <target state="new">Methods marked with 'LibraryImportAttribute' should be 'static', 'partial', and non-generic. P/Invoke source generation will ignore methods that are non-'static', non-'partial', or generic.</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidAttributedMethodSignatureMessageCom">
         <source>Method '{0}' should be non-generic when on interfaces marked with the 'GeneratedComInterfaceAttribute'. COM source generation will ignore method '{0}'.</source>
-        <target state="translated">Metoda „{0}” powinna być nie-ogólna w interfejsach oznaczonych atrybutem „GeneratedComInterfaceAttribute”. Generowanie źródła COM zignoruje metodę „{0}”.</target>
+        <target state="new">Method '{0}' should be non-generic when on interfaces marked with the 'GeneratedComInterfaceAttribute'. COM source generation will ignore method '{0}'.</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidAttributedMethodSignatureMessageLibraryImport">
         <source>Method '{0}' should be 'static', 'partial', and non-generic when marked with 'LibraryImportAttribute'. P/Invoke source generation will ignore method '{0}'.</source>
-        <target state="translated">Metoda „{0}” powinna być „statyczna”, „częściowa” i nieogólna, gdy jest oznaczona za pomocą atrybutu „LibraryImportAttribute”. Generowanie źródła funkcji P/Invoke zignoruje metodę „{0}”.</target>
+        <target state="new">Method '{0}' should be 'static', 'partial', and non-generic when marked with 'LibraryImportAttribute'. P/Invoke source generation will ignore method '{0}'.</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidCustomMarshallerAttributeUsageTitle">
         <source>Invalid 'CustomMarshallerAttribute' usage</source>
-        <target state="translated">Nieprawidłowe użycie atrybutu „CustomMarshallerAttribute”</target>
+        <target state="new">Invalid 'CustomMarshallerAttribute' usage</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidExceptionMarshallingConfigurationDescription">
         <source>The configuration of 'ExceptionMarshalling' and 'ExceptionMarshallingCustomType' is invalid.</source>
-        <target state="translated">Konfiguracja elementów „ExceptionMarshalling” i „ExceptionMarshallingCustomType” jest nieprawidłowa.</target>
+        <target state="new">The configuration of 'ExceptionMarshalling' and 'ExceptionMarshallingCustomType' is invalid.</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidExceptionMarshallingConfigurationMessage">
         <source>The configuration of 'ExceptionMarshalling' and 'ExceptionMarshallingCustomType' on method '{0}' is invalid. {1}</source>
-        <target state="translated">Konfiguracja elementów „ExceptionMarshalling” i „ExceptionMarshallingCustomType” w metodzie „{0}” jest nieprawidłowa. {1}</target>
+        <target state="new">The configuration of 'ExceptionMarshalling' and 'ExceptionMarshallingCustomType' on method '{0}' is invalid. {1}</target>
         <note>{1} is a message containing additional details about what is not valid</note>
       </trans-unit>
       <trans-unit id="InvalidExceptionMarshallingConfigurationMissingCustomType">
         <source>'ExceptionMarshallingCustomType' must be specified when 'ExceptionMarshalling' is set to 'ExceptionMarshalling.Custom'.</source>
-        <target state="translated">Element „ExceptionMarshallingCustomType” musi być określony kiedy „ExceptionMarshalling” jest ustawiony na „ExceptionMarshalling.Custom”.</target>
+        <target state="new">'ExceptionMarshallingCustomType' must be specified when 'ExceptionMarshalling' is set to 'ExceptionMarshalling.Custom'.</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidExceptionMarshallingConfigurationNotCustom">
         <source>'ExceptionMarshalling' should be set to 'ExceptionMarshalling.Custom' when 'ExceptionMarshallingCustomType' is specified.</source>
-        <target state="translated">Element „ExceptionMarshalling” powinien być ustawiony na „ExceptionMarshalling.Custom” kiedy typ „ExceptionMarshallingCustomType” jest określony.</target>
+        <target state="new">'ExceptionMarshalling' should be set to 'ExceptionMarshalling.Custom' when 'ExceptionMarshallingCustomType' is specified.</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidExceptionMarshallingValue">
         <source>The provided value is not a known flag of the 'ExceptionMarshalling' enum.</source>
-        <target state="translated">Podana wartość nie jest znaną flagą wyliczenia „'ExceptionMarshalling”.</target>
+        <target state="new">The provided value is not a known flag of the 'ExceptionMarshalling' enum.</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidGeneratedComClassAttributeUsageDescription">
         <source>Classes with 'GeneratedComClassAttribute' must implement one or more interfaces with 'GeneratedComInterfaceAttribute', be marked partial, and be non-generic.</source>
-        <target state="translated">Klasy z atrybutem „GeneratedComClassAttribute” muszą implementować co najmniej jeden interfejs z atrybutem „GeneratedComInterfaceAttribute”, być oznaczone jako częściowe i nie być ogólne.</target>
+        <target state="new">Classes with 'GeneratedComClassAttribute' must implement one or more interfaces with 'GeneratedComInterfaceAttribute', be marked partial, and be non-generic.</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidGeneratedComClassAttributeUsageMissingPartialModifier">
         <source>Class '{0}' with 'GeneratedComClassAttribute' or one of its containing types is not marked 'partial'.</source>
-        <target state="translated">Klasa „{0}” z atrybutem „GeneratedComClassAttribute” lub jeden z jej typów zawierających nie jest oznaczony jako „częściowy”.</target>
+        <target state="new">Class '{0}' with 'GeneratedComClassAttribute' or one of its containing types is not marked 'partial'.</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidGeneratedComClassAttributeUsageTitle">
         <source>Invalid 'GeneratedComClassAttribute' usage</source>
-        <target state="translated">Nieprawidłowe użycie elementu „GeneratedComClassAttribute”</target>
+        <target state="new">Invalid 'GeneratedComClassAttribute' usage</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidGeneratedComInterfaceAttributeUsageDescription">
         <source>Interfaces attributed with 'GeneratedComInterfaceAttribute' must have 'public' or 'internal' accessibility and be partial, non-generic, and must specify a GUID with 'System.Runtime.InteropServices.GuidAttribute'.</source>
-        <target state="translated">Interfejsy z atrybutem „GeneratedComInterfaceAttribute” muszą mieć ułatwienia dostępu „publiczny” lub „wewnętrzny”, muszą być częściowe, nie być ogóle, i muszą określać identyfikator GUID z atrybutem „System.Runtime.InteropServices.GuidAttribute”.</target>
+        <target state="new">Interfaces attributed with 'GeneratedComInterfaceAttribute' must have 'public' or 'internal' accessibility and be partial, non-generic, and must specify a GUID with 'System.Runtime.InteropServices.GuidAttribute'.</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidGeneratedComInterfaceAttributeUsageInterfaceIsGeneric">
         <source>Interface '{0}' is attributed with 'GeneratedComInterfaceAttribute' but is generic.</source>
-        <target state="translated">Interfejs „{0}” ma atrybut „GeneratedComInterfaceAttribute”, ale jest ogólny.</target>
+        <target state="new">Interface '{0}' is attributed with 'GeneratedComInterfaceAttribute' but is generic.</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidGeneratedComInterfaceAttributeUsageInterfaceNotAccessible">
         <source>Interface '{0}' is attributed with 'GeneratedComInterfaceAttribute' but is not accessible by generated code. The interface and all containing types must have accessibility 'internal' or 'public' for generated code to access it. {1}</source>
-        <target state="translated">Interfejs „{0}” ma atrybut „GeneratedComInterfaceAttribute”, ale nie jest dostępny za pomocą wygenerowanego kodu. Interfejs i wszystkie zawierające go typy muszą mieć ułatwienia dostępu „wewnętrzny” lub „publiczny”, aby wygenerowany kod mógł uzyskać do niego dostęp. {1}</target>
+        <target state="new">Interface '{0}' is attributed with 'GeneratedComInterfaceAttribute' but is not accessible by generated code. The interface and all containing types must have accessibility 'internal' or 'public' for generated code to access it. {1}</target>
         <note>{1} is details about which type/containing type is not accessible</note>
       </trans-unit>
       <trans-unit id="InvalidGeneratedComInterfaceAttributeUsageMissingGuidAttribute">
         <source>Interface '{0}' is attributed with 'GeneratedComInterfaceAttribute' but is missing 'System.Runtime.InteropServices.GuidAttribute'.</source>
-        <target state="translated">Interfejs „{0}” ma atrybut „GeneratedComInterfaceAttribute”, ale brakuje atrybutu „System.Runtime.InteropServices.GuidAttribute”.</target>
+        <target state="new">Interface '{0}' is attributed with 'GeneratedComInterfaceAttribute' but is missing 'System.Runtime.InteropServices.GuidAttribute'.</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidGeneratedComInterfaceAttributeUsageTitle">
         <source>Invalid 'GeneratedComInterfaceAttribute' usage.</source>
-        <target state="translated">Nieprawidłowe użycie atrybutu „GeneratedComInterfaceAttribute”.</target>
+        <target state="new">Invalid 'GeneratedComInterfaceAttribute' usage.</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidGeneratedComInterfaceUsageMissingPartialModifier">
         <source>The interface '{0}' or one of its containing types is missing the 'partial' keyword. Code will not be generated for '{0}'.</source>
-        <target state="translated">W interfejsie „{0}” lub jednym z jego typów zawierających brakuje słowa kluczowego „partial”. Kod nie zostanie wygenerowany dla „{0}”.</target>
+        <target state="new">The interface '{0}' or one of its containing types is missing the 'partial' keyword. Code will not be generated for '{0}'.</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidLibraryImportAttributeUsageTitle">
         <source>Invalid 'LibraryImportAttribute' usage</source>
-        <target state="translated">Nieprawidłowe użycie atrybutu „LibraryImportAttribute”</target>
+        <target state="new">Invalid 'LibraryImportAttribute' usage</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidManagedTypeTitle">
         <source>Specified managed type is invalid</source>
-        <target state="translated">Określony typ zarządzany jest nieprawidłowy</target>
+        <target state="new">Specified managed type is invalid</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidMarshalModeTitle">
         <source>Invalid 'MarshalMode' value.</source>
-        <target state="translated">Nieprawidłowa wartość „MarshalMode”.</target>
+        <target state="new">Invalid 'MarshalMode' value.</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidMarshallerTypeTitle">
         <source>Specified marshaller type is invalid</source>
-        <target state="translated">Określony typ marshallera jest nieprawidłowy</target>
+        <target state="new">Specified marshaller type is invalid</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidNativeMarshallingAttributeUsageTitle">
         <source>Invalid 'NativeMarshallingAttribute' usage</source>
-        <target state="translated">Nieprawidłowe użycie atrybutu „NativeMarshallingAttribute”</target>
+        <target state="new">Invalid 'NativeMarshallingAttribute' usage</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidOptionsOnInterfaceDescription">
         <source>The specified 'ComInterfaceOptions' are invalid.</source>
-        <target state="translated">Określone opcje „ComInterfaceOptions” są nieprawidłowe.</target>
+        <target state="new">The specified 'ComInterfaceOptions' are invalid.</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidOptionsOnInterfaceMessage">
         <source>The specified 'ComInterfaceOptions' on '{0}' are invalid. {1}</source>
-        <target state="translated">Określone opcje „ComInterfaceOptions” w „{0}” są nieprawidłowe. {1}</target>
+        <target state="new">The specified 'ComInterfaceOptions' on '{0}' are invalid. {1}</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidSignaturesInMarshallerShapeTitle">
         <source>Marshaller type has incompatible method signatures</source>
-        <target state="translated">Typ marshallera ma niezgodne sygnatury metody</target>
+        <target state="new">Marshaller type has incompatible method signatures</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidStringMarshallingConfigurationDescription">
         <source>The configuration of 'StringMarshalling' and 'StringMarshallingCustomType' is invalid.</source>
-        <target state="translated">Konfiguracja elementów „StringMarshalling” i „StringMarshallingCustomType” jest nieprawidłowa.</target>
+        <target state="new">The configuration of 'StringMarshalling' and 'StringMarshallingCustomType' is invalid.</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidStringMarshallingConfigurationMessageCom">
         <source>The configuration of 'StringMarshalling' and 'StringMarshallingCustomType' on interface '{0}' is invalid. {1}</source>
-        <target state="translated">Konfiguracja elementów „StringMarshalling” i „StringMarshallingCustomType” w interfejsie „{0}” jest nieprawidłowa. {1}</target>
+        <target state="new">The configuration of 'StringMarshalling' and 'StringMarshallingCustomType' on interface '{0}' is invalid. {1}</target>
         <note>{1} is a message containing additional details about what is not valid</note>
       </trans-unit>
       <trans-unit id="InvalidStringMarshallingConfigurationMessageLibraryImport">
         <source>The configuration of 'StringMarshalling' and 'StringMarshallingCustomType' on method '{0}' is invalid. {1}</source>
-        <target state="translated">Konfiguracja elementów „StringMarshalling” i „StringMarshallingCustomType” w metodzie „{0}” jest nieprawidłowa. {1}</target>
+        <target state="new">The configuration of 'StringMarshalling' and 'StringMarshallingCustomType' on method '{0}' is invalid. {1}</target>
         <note>{1} is a message containing additional details about what is not valid</note>
       </trans-unit>
       <trans-unit id="InvalidStringMarshallingConfigurationMissingCustomType">
         <source>'StringMarshallingCustomType' must be specified when 'StringMarshalling' is set to 'StringMarshalling.Custom'.</source>
-        <target state="translated">Element „StringMarshallingCustomType” należy określić, gdy element „StringMarshalling” ma wartość „StringMarshalling.Custom”.</target>
+        <target state="new">'StringMarshallingCustomType' must be specified when 'StringMarshalling' is set to 'StringMarshalling.Custom'.</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidStringMarshallingConfigurationNotCustom">
         <source>'StringMarshalling' should be set to 'StringMarshalling.Custom' when 'StringMarshallingCustomType' is specified.</source>
-        <target state="translated">Element „StringMarshalling” należy ustawić na wartość „StringMarshalling.Custom”, gdy określono element „StringMarshallingCustomType”.</target>
+        <target state="new">'StringMarshalling' should be set to 'StringMarshalling.Custom' when 'StringMarshallingCustomType' is specified.</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidStringMarshallingConfigurationOnInterfaceMessage">
         <source>The configuration of 'StringMarshalling' and 'StringMarshallingCustomType' on interface '{0}' is invalid. {1}</source>
-        <target state="translated">Konfiguracja elementów „StringMarshalling” i „StringMarshallingCustomType” w interfejsie „{0}” jest nieprawidłowa. {1}</target>
+        <target state="new">The configuration of 'StringMarshalling' and 'StringMarshallingCustomType' on interface '{0}' is invalid. {1}</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidStringMarshallingConfigurationOnMethodMessage">
         <source>The configuration of 'StringMarshalling' and 'StringMarshallingCustomType' on method '{0}' is invalid. {1}</source>
-        <target state="translated">Konfiguracja elementów „StringMarshalling” i „StringMarshallingCustomType” w metodzie „{0}” jest nieprawidłowa. {1}</target>
+        <target state="new">The configuration of 'StringMarshalling' and 'StringMarshallingCustomType' on method '{0}' is invalid. {1}</target>
         <note>{1} is a message containing additional details about what is not valid</note>
       </trans-unit>
       <trans-unit id="InvalidVirtualMethodIndexAttributeUsage">
         <source>Invalid 'VirtualMethodIndexAttribute' usage</source>
-        <target state="translated">Nieprawidłowe użycie atrybutu „VirtualMethodIndexAttribute”</target>
+        <target state="new">Invalid 'VirtualMethodIndexAttribute' usage</target>
         <note />
       </trans-unit>
       <trans-unit id="LibraryImportUsageDoesNotFollowBestPracticesMessageWithDetails">
         <source>The usage of 'LibraryImportAttribute' does not follow recommendations. {0}</source>
-        <target state="translated">Użycie atrybutu „LibraryImportAttribute” nie jest zgodne z zaleceniami. {0}</target>
+        <target state="new">The usage of 'LibraryImportAttribute' does not follow recommendations. {0}</target>
         <note />
       </trans-unit>
       <trans-unit id="LibraryImportUsageDoesNotFollowBestPracticesTitle">
         <source>The usage of 'LibraryImportAttribute' does not follow recommendations.</source>
-        <target state="translated">Użycie atrybutu „LibraryImportAttribute” nie jest zgodne z zaleceniami.</target>
+        <target state="new">The usage of 'LibraryImportAttribute' does not follow recommendations.</target>
         <note />
       </trans-unit>
       <trans-unit id="LinearCollectionElementTypesMustMatchDescription">
         <source>The element type of the 'ReadOnlySpan' returned by 'GetManagedValuesSource' must be the same as the element type returned by 'GetManagedValuesDestination'.</source>
-        <target state="translated">Typ elementu „ReadOnlySpan” zwracany przez element „GetManagedValuesSource” musi być taki sam jak typ elementu zwracany przez element „GetManagedValuesDestination”.</target>
+        <target state="new">The element type of the 'ReadOnlySpan' returned by 'GetManagedValuesSource' must be the same as the element type returned by 'GetManagedValuesDestination'.</target>
         <note />
       </trans-unit>
       <trans-unit id="LinearCollectionElementTypesMustMatchMessage">
         <source>The element type of the 'ReadOnlySpan' returned by 'GetManagedValuesSource' must be the same as the element type returned by 'GetManagedValuesDestination'</source>
-        <target state="translated">Typ elementu „ReadOnlySpan” zwracany przez element „GetManagedValuesSource” musi być taki sam jak typ elementu zwracany przez element „GetManagedValuesDestination”</target>
+        <target state="new">The element type of the 'ReadOnlySpan' returned by 'GetManagedValuesSource' must be the same as the element type returned by 'GetManagedValuesDestination'</target>
         <note />
       </trans-unit>
       <trans-unit id="LinearCollectionInCallerAllocatedBufferRequiresSpanConstructorDescription">
         <source>A 'LinearCollection'-kind native type that supports the 'CallerAllocatedBuffer' feature must provide a three-parameter constructor taking the managed type as the first parameter, a 'Span&lt;byte&gt;' as the second parameter, and the native size of the element as the third parameter</source>
-        <target state="translated">Typ natywny rodzaju „LinearCollection”, który obsługuje funkcję „CallerAllocatedBuffer”, musi zapewniać konstruktora z trzema parametrami, przyjmującego typ zarządzany jako pierwszy parametr, wartość „Span&lt;byte&gt;” jako drugi parametr i natywny rozmiar elementu jako trzeci parametr</target>
+        <target state="new">A 'LinearCollection'-kind native type that supports the 'CallerAllocatedBuffer' feature must provide a three-parameter constructor taking the managed type as the first parameter, a 'Span&lt;byte&gt;' as the second parameter, and the native size of the element as the third parameter</target>
         <note />
       </trans-unit>
       <trans-unit id="LinearCollectionInCallerAllocatedBufferRequiresSpanConstructorMessage">
         <source>The type '{0}' specifies that it supports 'In' marshalling with the 'CallerAllocatedBuffer' feature for '{1}' but does not provide a three-parameter constructor that takes a '{1}' , a 'Span&lt;byte&gt;', and an 'int'</source>
-        <target state="translated">Typ „{0}” określa, że obsługuje funkcję skierowania „In” z funkcją „CallerAllocatedBuffer” dla elementu „{1}”, ale nie udostępnia konstruktora z trzema parametrami, który przyjmuje wartość „{1}”, \"Span&lt;byte&gt;\" i „int”</target>
+        <target state="new">The type '{0}' specifies that it supports 'In' marshalling with the 'CallerAllocatedBuffer' feature for '{1}' but does not provide a three-parameter constructor that takes a '{1}' , a 'Span&lt;byte&gt;', and an 'int'</target>
         <note />
       </trans-unit>
       <trans-unit id="LinearCollectionInRequiresCollectionMethodsDescription">
         <source>A contiguous collection marshaller that supports marshalling from managed to unmanaged must provide a 'GetManagedValuesSource' that returns a 'ReadOnlySpan&lt;&gt;' and a 'GetUnmanagedValuesDestination' method that returns a 'Span&lt;&gt;'.</source>
-        <target state="translated">Organizator zwartej kolekcji, który obsługuje przeprowadzanie marshalingu z zarządzanych do niezarządzanych, musi zapewniać metodę „GetManagedValuesSource”, która zwraca wartość „ReadOnlySpan&lt;&gt;” oraz metodę „GetUnmanagedValuesDestination”, która zwraca wartość „Span&lt;&gt;”.</target>
+        <target state="new">A contiguous collection marshaller that supports marshalling from managed to unmanaged must provide a 'GetManagedValuesSource' that returns a 'ReadOnlySpan&lt;&gt;' and a 'GetUnmanagedValuesDestination' method that returns a 'Span&lt;&gt;'.</target>
         <note />
       </trans-unit>
       <trans-unit id="LinearCollectionInRequiresCollectionMethodsMessage">
         <source>The type '{0}' specifies that it supports the '{1}' marshal mode, but it does not provide a 'GetManagedValuesSource' that returns a 'ReadOnlySpan&lt;&gt;' and a 'GetUnmanagedValuesDestination' method that returns a 'Span&lt;&gt;'</source>
-        <target state="translated">Typ „{0}” określa, że obsługuje tryb przeprowadzenia marshalingu „{1}”, ale nie zapewnia metody „GetManagedValuesSource”, która zwraca wartość „ReadOnlySpan&lt;&gt;” ani metody „GetNativeValuesDestination”, która zwraca wartość „Span&lt;&gt;”</target>
+        <target state="new">The type '{0}' specifies that it supports the '{1}' marshal mode, but it does not provide a 'GetManagedValuesSource' that returns a 'ReadOnlySpan&lt;&gt;' and a 'GetUnmanagedValuesDestination' method that returns a 'Span&lt;&gt;'</target>
         <note />
       </trans-unit>
       <trans-unit id="LinearCollectionOutRequiresCollectionMethodsDescription">
         <source>A contiguous collection marshaller that supports marshalling from unmanaged to managed must provide a 'GetManagedValuesDestination' that takes an 'int' and returns a 'Span&lt;&gt;' and a 'GetUnmanagedValuesSource' method that takes an 'int' and returns a 'ReadOnlySpan&lt;&gt;'.</source>
-        <target state="translated">Organizator zwartej kolekcji, który obsługuje przeprowadzanie marshalingu z niezarządzanych do zarządzanych, musi zapewniać metodę „GetManagedValuesDestination”, która przyjmuje wartość „int” i zwraca wartość „Span&lt;&gt;”, oraz metodę „GetUnmanagedValuesSource”, która przyjmuje wartość „int” i zwraca wartość „ReadOnlySpan&lt;&gt;”.</target>
+        <target state="new">A contiguous collection marshaller that supports marshalling from unmanaged to managed must provide a 'GetManagedValuesDestination' that takes an 'int' and returns a 'Span&lt;&gt;' and a 'GetUnmanagedValuesSource' method that takes an 'int' and returns a 'ReadOnlySpan&lt;&gt;'.</target>
         <note />
       </trans-unit>
       <trans-unit id="LinearCollectionOutRequiresCollectionMethodsMessage">
         <source>The type '{0}' specifies that it supports the '{1}' marshal mode, but it does not provide a 'GetManagedValuesDestination' that takes an 'int' and returns a 'Span&lt;&gt;' and a 'GetUnmanagedValuesSource' method that takes an 'int' and returns a 'ReadOnlySpan&lt;&gt;'</source>
-        <target state="translated">Typ „{0}” określa, że obsługuje tryb przeprowadzania marshalingu „{1}”, ale nie zapewnia metody „GetManagedValuesDestination”, która przyjmuje wartość „int” i zwraca wartość „Span&lt;&gt;”, oraz metodę „GetUnmanagedValuesSource”, która przyjmuje wartość „int” i zwraca wartość „ReadOnlySpan&lt;&gt;”</target>
+        <target state="new">The type '{0}' specifies that it supports the '{1}' marshal mode, but it does not provide a 'GetManagedValuesDestination' that takes an 'int' and returns a 'Span&lt;&gt;' and a 'GetUnmanagedValuesSource' method that takes an 'int' and returns a 'ReadOnlySpan&lt;&gt;'</target>
         <note />
       </trans-unit>
       <trans-unit id="ManagedToUnmanagedMissingRequiredMarshaller">
         <source>The specified parameter needs to be marshalled from managed to unmanaged, but the marshaller type '{0}' does not support it.</source>
-        <target state="translated">Określony parametr musi być kierowany z zarządzanego do niezarządzanego, ale typ marszałka „{0}” go nie obsługuje.</target>
+        <target state="new">The specified parameter needs to be marshalled from managed to unmanaged, but the marshaller type '{0}' does not support it.</target>
         <note />
       </trans-unit>
       <trans-unit id="ManagedTypeMustBeClosedOrMatchArityDescription">
         <source>The marshaller type must be a closed generic or have the same number of generic parameters as the managed type so the generator can determine which methods are available on the specific marshaller types.</source>
-        <target state="translated">Typ marshallera musi być zamkniętym typem ogólnym lub mieć taką samą liczbę parametrów ogólnych jak typ zarządzany, aby generator mógł określić, które metody są dostępne na określonych typach marshallerów.</target>
+        <target state="new">The marshaller type must be a closed generic or have the same number of generic parameters as the managed type so the generator can determine which methods are available on the specific marshaller types.</target>
         <note />
       </trans-unit>
       <trans-unit id="ManagedTypeMustBeClosedOrMatchArityMessage">
         <source>The managed type '{0}' for entry-point marshaller type '{1}' must be a closed generic type, have the same arity as the managed type if it is a value marshaller, or have one additional generic parameter if it is a collection marshaller.</source>
-        <target state="translated">Typ zarządzany „{0}” dla typu marshaller punktu wejścia „{1}” musi być zamkniętym typem ogólnym, mieć taką samą argumentację jak typ zarządzany, jeśli jest to marshaller wartości lub mieć jeden dodatkowy parametr ogólny, jeśli jest to marshaller kolekcji.</target>
+        <target state="new">The managed type '{0}' for entry-point marshaller type '{1}' must be a closed generic type, have the same arity as the managed type if it is a value marshaller, or have one additional generic parameter if it is a collection marshaller.</target>
         <note />
       </trans-unit>
       <trans-unit id="ManagedTypeMustBeNonNullDescription">
         <source>The managed type for a custom marshaller must be non-null.</source>
-        <target state="translated">Typ zarządzany dla niestandardowego marshallera musi mieć wartość inną niż null.</target>
+        <target state="new">The managed type for a custom marshaller must be non-null.</target>
         <note />
       </trans-unit>
       <trans-unit id="ManagedTypeMustBeNonNullMessage">
         <source>The managed type for the entry-point marshaller type '{0}' must not be 'null'</source>
-        <target state="translated">Typ zarządzany dla typu marshaller punktu wejścia „{0}” nie może mieć wartości „null”</target>
+        <target state="new">The managed type for the entry-point marshaller type '{0}' must not be 'null'</target>
         <note />
       </trans-unit>
       <trans-unit id="MarshalAsConfigurationNotSupportedMessageParameterCom">
         <source>The specified 'MarshalAsAttribute' configuration for parameter '{1}' is not supported by source-generated COM. If the specified configuration is required, use `ComImport` instead.</source>
-        <target state="translated">Określona konfiguracja atrybutu „MarshalAsAttribute” dla parametru „{1}” nie jest obsługiwana przez COM generowany przez źródło. Jeśli określona konfiguracja jest wymagana, użyj zamiast niej polecenia `ComImport`.</target>
+        <target state="new">The specified 'MarshalAsAttribute' configuration for parameter '{1}' is not supported by source-generated COM. If the specified configuration is required, use `ComImport` instead.</target>
         <note />
       </trans-unit>
       <trans-unit id="MarshalAsConfigurationNotSupportedMessageParameterLibraryImport">
         <source>The specified 'MarshalAsAttribute' configuration for parameter '{1}' is not supported by source-generated P/Invokes. If the specified configuration is required, use a regular 'DllImport' instead.</source>
-        <target state="translated">Określona konfiguracja atrybutu „MarshalAsAttribute” dla parametru „{1}” nie jest obsługiwana przez generowane źródłowo P/Invokes. Jeśli określona konfiguracja jest wymagana, należy zamiast niej użyć zwykłego elementu „DllImport”.</target>
+        <target state="new">The specified 'MarshalAsAttribute' configuration for parameter '{1}' is not supported by source-generated P/Invokes. If the specified configuration is required, use a regular 'DllImport' instead.</target>
         <note />
       </trans-unit>
       <trans-unit id="MarshalAsConfigurationNotSupportedMessageReturnCom">
         <source>The specified 'MarshalAsAttribute' configuration for the return value of method '{1}' is not supported by source-generated COM. If the specified configuration is required, use `ComImport` instead.</source>
-        <target state="translated">Określona konfiguracja atrybutu „MarshalAsAttribute” dla wartości zwracanej metody „{1}” nie jest obsługiwana przez COM generowany przez źródło. Jeśli określona konfiguracja jest wymagana, użyj zamiast niej polecenia `ComImport`.</target>
+        <target state="new">The specified 'MarshalAsAttribute' configuration for the return value of method '{1}' is not supported by source-generated COM. If the specified configuration is required, use `ComImport` instead.</target>
         <note />
       </trans-unit>
       <trans-unit id="MarshalAsConfigurationNotSupportedMessageReturnLibraryImport">
         <source>The specified 'MarshalAsAttribute' configuration for the return value of method '{1}' is not supported by source-generated P/Invokes. If the specified configuration is required, use a regular 'DllImport' instead.</source>
-        <target state="translated">Określona konfiguracja atrybutu „MarshalAsAttribute” dla wartości zwracanej metody „{1}” nie jest obsługiwana przez generowane źródłowo P/Invokes. Jeśli określona konfiguracja jest wymagana, należy zamiast niej użyć zwykłego elementu „DllImport”.</target>
+        <target state="new">The specified 'MarshalAsAttribute' configuration for the return value of method '{1}' is not supported by source-generated P/Invokes. If the specified configuration is required, use a regular 'DllImport' instead.</target>
         <note />
       </trans-unit>
       <trans-unit id="MarshalModeMustBeValidEnumValue">
         <source>The 'marshalMode' argument of 'CustomMarshallerAttribute' must be a valid enum value of 'MarshalMode'.</source>
-        <target state="translated">Argument „marshalMode” atrybutu „CustomMarshaellerAttribute” musi być prawidłową wartością wyliczenia argumentu „MarshalMode”.</target>
+        <target state="new">The 'marshalMode' argument of 'CustomMarshallerAttribute' must be a valid enum value of 'MarshalMode'.</target>
         <note />
       </trans-unit>
       <trans-unit id="MarshallerEntryPointTypeMustMatchArity">
         <source>The marshaller entry point type '{0}' for managed type '{1}' must have an arity of one greater than the managed type.</source>
-        <target state="translated">Typ punktu wejścia marshallera „{0}” dla typu zarządzanego „{1}” musi mieć liczbę argumentów o jeden większą niż typ zarządzany.</target>
+        <target state="new">The marshaller entry point type '{0}' for managed type '{1}' must have an arity of one greater than the managed type.</target>
         <note />
       </trans-unit>
       <trans-unit id="MarshallerInNativeReturnPositionMustMatchNativeReturnType">
         <source>All marshallers for values that are passed as the unmanaged return value must have the same unmanaged type.</source>
-        <target state="translated">Wszystkie elementy organizujące dla wartości przekazywanych jako niezarządzana wartość zwracana muszą mieć ten sam typ niezarządzany.</target>
+        <target state="new">All marshallers for values that are passed as the unmanaged return value must have the same unmanaged type.</target>
         <note />
       </trans-unit>
       <trans-unit id="MarshallerTypeMustBeClosedOrMatchArityDescription">
         <source>The marshaller type must be a closed generic or have the same number of generic parameters as the managed type so the emitted code can use a specific instantiation.</source>
-        <target state="translated">Typ marshallera musi być zamkniętym typem ogólnym lub mieć taką samą liczbę parametrów ogólnych jak typ zarządzany, aby emitowany kod mógł używać określonego wystąpienia.</target>
+        <target state="new">The marshaller type must be a closed generic or have the same number of generic parameters as the managed type so the emitted code can use a specific instantiation.</target>
         <note />
       </trans-unit>
       <trans-unit id="MarshallerTypeMustBeClosedOrMatchArityMessage">
         <source>The marshaller type '{0}' pointed to by the entry-point marshaller type '{1}' must be a closed generic type or have the same arity as the managed type</source>
-        <target state="translated">Typ marshallera „{0}” wskazywanego przez typ marshallera punktu wejścia „{1}” musi być zamkniętym typem ogólnym lub mieć taką samą argumentację jak typ zarządzany</target>
+        <target state="new">The marshaller type '{0}' pointed to by the entry-point marshaller type '{1}' must be a closed generic type or have the same arity as the managed type</target>
         <note />
       </trans-unit>
       <trans-unit id="MarshallerTypeMustBeNonNullDescription">
         <source>The 'marshallerType' parameter in the 'System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute' cannot be 'null'.</source>
-        <target state="translated">Parametr „marshallerType” w atrybucie „System.Runtime.InteropServices.Marshalling.CustomMarshaellerAttribute” nie może mieć wartości „null”.</target>
+        <target state="new">The 'marshallerType' parameter in the 'System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute' cannot be 'null'.</target>
         <note />
       </trans-unit>
       <trans-unit id="MarshallerTypeMustBeNonNullMessage">
         <source>The 'marshallerType' parameter in the 'System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute' cannot be 'null'</source>
-        <target state="translated">Parametr „marshallerType” w atrybucie „System.Runtime.InteropServices.Marshalling.CustomMarshaellerAttribute” nie może mieć wartości „null”</target>
+        <target state="new">The 'marshallerType' parameter in the 'System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute' cannot be 'null'</target>
         <note />
       </trans-unit>
       <trans-unit id="MarshallerTypeMustBeStaticClassOrStruct">
         <source>The marshaller type '{0}' for managed type '{1}' must be a static class or a struct.</source>
-        <target state="translated">Typ marshallera „{0}” dla typu zarządzanego „{1}” musi być statyczny.</target>
+        <target state="new">The marshaller type '{0}' for managed type '{1}' must be a static class or a struct.</target>
         <note />
       </trans-unit>
       <trans-unit id="MarshallerTypeMustBeStaticClassOrStructDescription">
         <source>A marshaller type must either be a stateless static class or a stateful value type. A non-static class is not allowed.</source>
-        <target state="translated">Typ organizatora musi być bezstanową klasą statyczną lub stanowym typem wartości. Klasa niestatyczna jest niedozwolona.</target>
+        <target state="new">A marshaller type must either be a stateless static class or a stateful value type. A non-static class is not allowed.</target>
         <note />
       </trans-unit>
       <trans-unit id="MarshallerTypeMustBeStaticClassOrStructMessage">
         <source>The type '{0}' must be a static class or a value type</source>
-        <target state="translated">Typ „{0}” musi być klasą statyczną lub typem wartości</target>
+        <target state="new">The type '{0}' must be a static class or a value type</target>
         <note />
       </trans-unit>
       <trans-unit id="MarshallerTypeMustSpecifyManagedTypeDescription">
         <source>A type with a 'System.Runtime.InteropServices.CustomMarshallerAttribute' must specify a non-'null' managed type</source>
-        <target state="translated">Typ z atrybutem „System.Runtime.InteropServices.CustomMarshaellerAttribute” musi określać typ zarządzany inny niż „null”</target>
+        <target state="new">A type with a 'System.Runtime.InteropServices.CustomMarshallerAttribute' must specify a non-'null' managed type</target>
         <note />
       </trans-unit>
       <trans-unit id="MarshallerTypeMustSpecifyManagedTypeMessage">
         <source>The type '{0}' does not specify a managed type in the 'System.Runtime.InteropServices.CustomMarshallerAttribute' applied to the type</source>
-        <target state="translated">Typ „{0}” nie określa typu zarządzanego w atrybucie „System.Runtime.InteropServices.CustomTypeMarshallerAttribute” zastosowanym do typu</target>
+        <target state="new">The type '{0}' does not specify a managed type in the 'System.Runtime.InteropServices.CustomMarshallerAttribute' applied to the type</target>
         <note />
       </trans-unit>
       <trans-unit id="MarshallingBoolAsUndefinedNotSupported">
         <source>Marshalling bool without explicit marshalling information is not supported. Specify either 'MarshalUsingAttribute' or 'MarshalAsAttribute'.</source>
-        <target state="translated">Skierowanie wartości logicznej bez wyraźnych informacji o skierowaniu nie jest obsługiwane. Określ atrybut „MarshalUsingAttribute” lub atrybut „MarshalAsAttribute”.</target>
+        <target state="new">Marshalling bool without explicit marshalling information is not supported. Specify either 'MarshalUsingAttribute' or 'MarshalAsAttribute'.</target>
         <note />
       </trans-unit>
       <trans-unit id="MarshallingCharAsSpecifiedStringMarshallingNotSupported">
         <source>Marshalling char with 'StringMarshalling.{0}' is not supported. Instead, manually convert the char type to the desired byte representation and pass to the source-generated P/Invoke.</source>
-        <target state="translated">Znak marshallingu o wartości „StringMarshalling.{0}” nie jest obsługiwany. Zamiast tego ręcznie przekonwertuj typ znaków na żądaną reprezentację bajtów i przekaż do wygenerowanego źródła funkcji P/Invoke.</target>
+        <target state="new">Marshalling char with 'StringMarshalling.{0}' is not supported. Instead, manually convert the char type to the desired byte representation and pass to the source-generated P/Invoke.</target>
         <note />
       </trans-unit>
       <trans-unit id="MarshallingCharAsStringMarshallingCustomNotSupported">
         <source>Marshalling char with 'StringMarshalling.Custom' is not supported. To use a custom type marshaller, specify 'MarshalUsingAttribute'.</source>
-        <target state="translated">Znak marshallingu o wartości „StringMarshalling.Custom” nie jest obsługiwany. Aby użyć marshallera typu niestandardowego, określ atrybut „MarshalUsingAttribute”.</target>
+        <target state="new">Marshalling char with 'StringMarshalling.Custom' is not supported. To use a custom type marshaller, specify 'MarshalUsingAttribute'.</target>
         <note />
       </trans-unit>
       <trans-unit id="MarshallingStringOrCharAsUndefinedNotSupported">
         <source>Marshalling string or char without explicit marshalling information is not supported. Specify '{0}.StringMarshalling', '{0}.StringMarshallingCustomType', 'MarshalUsingAttribute' or 'MarshalAsAttribute'.</source>
-        <target state="translated">Kierowanie ciągu lub znaku bez jawnych informacji o kierowaniu nie jest obsługiwane. Określ „{0}.StringMarshalling”, „{0}.StringMarshallingCustomType”, „MarshalUsingAttribute” lub „MarshalAsAttribute”.</target>
+        <target state="new">Marshalling string or char without explicit marshalling information is not supported. Specify '{0}.StringMarshalling', '{0}.StringMarshallingCustomType', 'MarshalUsingAttribute' or 'MarshalAsAttribute'.</target>
         <note />
       </trans-unit>
       <trans-unit id="MethodNotDeclaredInAttributedInterfaceDescription">
         <source>All methods must be declared in the same partial definition of a 'GeneratedComInterface'-attributed interface type to ensure reliable calculation for virtual method table offsets.</source>
-        <target state="translated">Wszystkie metody muszą być zadeklarowane w tej samej częściowej definicji przypisanego typu interfejsu „GeneratedComInterface” w celu zapewnienia niezawodnego obliczania przesunięć tabeli metod wirtualnych.</target>
+        <target state="new">All methods must be declared in the same partial definition of a 'GeneratedComInterface'-attributed interface type to ensure reliable calculation for virtual method table offsets.</target>
         <note />
       </trans-unit>
       <trans-unit id="MethodNotDeclaredInAttributedInterfaceMessage">
         <source>The method '{0}' is declared on a different partial definition of the interface '{1}' than the definition that has the 'GeneratedComInterface' attribute</source>
-        <target state="translated">Metoda „{0}” jest zadeklarowana w innej częściowej definicji interfejsu „{1}” niż definicja, która ma atrybut „GeneratedComInterface”</target>
+        <target state="new">The method '{0}' is declared on a different partial definition of the interface '{1}' than the definition that has the 'GeneratedComInterface' attribute</target>
         <note />
       </trans-unit>
       <trans-unit id="MethodNotDeclaredInAttributedInterfaceTitle">
         <source>Method is declared in different partial declaration than the 'GeneratedComInterface' attribute.</source>
-        <target state="translated">Metoda jest zadeklarowana w innej deklaracji częściowej niż atrybut „GeneratedComInterface”.</target>
+        <target state="new">Method is declared in different partial declaration than the 'GeneratedComInterface' attribute.</target>
         <note />
       </trans-unit>
       <trans-unit id="MultipleComInterfaceBaseTypesDescription">
         <source>A 'GeneratedComInterfaceAttribute'-attributed interface can only derive from at most one other 'GeneratedComInterfaceAttribute'-attributed interface.</source>
-        <target state="translated">Interfejs z atrybutem „GeneratedComInterfaceAttribute” może pochodzić tylko z co najwyżej jednego interfejsu z atrybutem „GeneratedComInterfaceAttribute”.</target>
+        <target state="new">A 'GeneratedComInterfaceAttribute'-attributed interface can only derive from at most one other 'GeneratedComInterfaceAttribute'-attributed interface.</target>
         <note />
       </trans-unit>
       <trans-unit id="MultipleComInterfaceBaseTypesMessage">
         <source>Interface '{0}' is derived from two or more interfaces attributed with 'GeneratedComInterfaceAttribute'.</source>
-        <target state="translated">Interfejs „{0}” pochodzi z co najmniej dwóch interfejsów z atrybutem „GeneratedComInterfaceAttribute”.</target>
+        <target state="new">Interface '{0}' is derived from two or more interfaces attributed with 'GeneratedComInterfaceAttribute'.</target>
         <note />
       </trans-unit>
       <trans-unit id="MultipleComInterfaceBaseTypesTitle">
         <source>Specified interface derives from two or more 'GeneratedComInterfaceAttribute'-attributed interfaces.</source>
-        <target state="translated">Określony interfejs pochodzi z co najmniej dwóch interfejsów z atrybutem „GeneratedComInterfaceAttribute”.</target>
+        <target state="new">Specified interface derives from two or more 'GeneratedComInterfaceAttribute'-attributed interfaces.</target>
         <note />
       </trans-unit>
       <trans-unit id="OneWrapperMustBeGenerated">
         <source>Either 'ComInterfaceOptions.ManagedObjectWrapper' or 'ComInterfaceOptions.ComObjectWrapper' must be specified.</source>
-        <target state="translated">Należy określić element „ComInterfaceOptions.ManagedObjectWrapper” lub „ComInterfaceOptions.ComObjectWrapper”.</target>
+        <target state="new">Either 'ComInterfaceOptions.ManagedObjectWrapper' or 'ComInterfaceOptions.ComObjectWrapper' must be specified.</target>
         <note />
       </trans-unit>
       <trans-unit id="OutAttributeNotSupportedOnByValueParameters">
         <source>The '[Out]' attribute is only supported on array parameters. Consider using 'out' or 'ref' keywords to make the parameter mutable.</source>
-        <target state="translated">Atrybut „[Out]” jest obsługiwany tylko w przypadku parametrów tablicy. Rozważ użycie słów kluczowych „out” lub „ref”, aby umożliwić modyfikowanie parametru.</target>
+        <target state="new">The '[Out]' attribute is only supported on array parameters. Consider using 'out' or 'ref' keywords to make the parameter mutable.</target>
         <note />
       </trans-unit>
       <trans-unit id="OutRequiresToManagedDescription">
         <source>A 'Value' or 'LinearCollection'-kind native type that supports marshalling in the 'Out' direction must provide a 'ToManaged' method that returns the managed type.</source>
-        <target state="translated">Typ natywny rodzaju „Value” lub „LinearCollection”, który obsługuje skierowanie w kierunku „Out”, musi zapewniać metodę „ToManaged”, która zwraca typ zarządzany.</target>
+        <target state="new">A 'Value' or 'LinearCollection'-kind native type that supports marshalling in the 'Out' direction must provide a 'ToManaged' method that returns the managed type.</target>
         <note />
       </trans-unit>
       <trans-unit id="OutRequiresToManagedMessage">
         <source>The type '{0}' specifies it supports marshalling in the 'Out' direction, but it does not provide a 'ToManaged' method that returns the managed type</source>
-        <target state="translated">Typ „{0}” określa, że obsługuje skierowanie w kierunku „Out”, ale nie zapewnia metody „ToManaged”, która zwraca typ zarządzany</target>
+        <target state="new">The type '{0}' specifies it supports marshalling in the 'Out' direction, but it does not provide a 'ToManaged' method that returns the managed type</target>
         <note />
       </trans-unit>
       <trans-unit id="PreferExplicitInOutAttributesOnArrays">
         <source>It is recommended to use explicit '[In]' and '[Out]' attributes on array parameters.</source>
-        <target state="translated">Zaleca się używanie jawnych atrybutów „[In]” i „[Out]” w parametrach tablicy.</target>
+        <target state="new">It is recommended to use explicit '[In]' and '[Out]' attributes on array parameters.</target>
         <note />
       </trans-unit>
       <trans-unit id="RequiresAllowUnsafeBlocksDescriptionCom">
         <source>'GeneratedComInterfaceAttribute' and 'GeneratedComClassAttribute' require unsafe code. Project must be updated with '&lt;AllowUnsafeBlocks&gt;true&lt;/AllowUnsafeBlocks&gt;'.</source>
-        <target state="translated">Atrybut „GeneratedComInterfaceAttribute” i „GeneratedComClassAttribute” wymagają niebezpiecznego kodu. Projekt musi zostać zaktualizowany za pomocą polecenia „&lt;AllowUnsafeBlocks&gt;true&lt;/AllowUnsafeBlocks&gt;”.</target>
+        <target state="new">'GeneratedComInterfaceAttribute' and 'GeneratedComClassAttribute' require unsafe code. Project must be updated with '&lt;AllowUnsafeBlocks&gt;true&lt;/AllowUnsafeBlocks&gt;'.</target>
         <note />
       </trans-unit>
       <trans-unit id="RequiresAllowUnsafeBlocksDescriptionLibraryImport">
         <source>LibraryImportAttribute requires unsafe code. Project must be updated with '&lt;AllowUnsafeBlocks&gt;true&lt;/AllowUnsafeBlocks&gt;'.</source>
-        <target state="translated">Element LibraryImportAttribute wymaga niebezpiecznego kodu. Projekt musi zostać zaktualizowany za pomocą „&lt;AllowUnsafeBlocks&gt;true&lt;/AllowUnsafeBlocks&gt;”.</target>
+        <target state="new">LibraryImportAttribute requires unsafe code. Project must be updated with '&lt;AllowUnsafeBlocks&gt;true&lt;/AllowUnsafeBlocks&gt;'.</target>
         <note />
       </trans-unit>
       <trans-unit id="RequiresAllowUnsafeBlocksMessageCom">
         <source>'GeneratedComInterfaceAttribute' and 'GeneratedComClassAttribute' require unsafe code. Project must be updated with '&lt;AllowUnsafeBlocks&gt;true&lt;/AllowUnsafeBlocks&gt;'.</source>
-        <target state="translated">Atrybut „GeneratedComInterfaceAttribute” i „GeneratedComClassAttribute” wymagają niebezpiecznego kodu. Projekt musi zostać zaktualizowany za pomocą polecenia „&lt;AllowUnsafeBlocks&gt;true&lt;/AllowUnsafeBlocks&gt;”.</target>
+        <target state="new">'GeneratedComInterfaceAttribute' and 'GeneratedComClassAttribute' require unsafe code. Project must be updated with '&lt;AllowUnsafeBlocks&gt;true&lt;/AllowUnsafeBlocks&gt;'.</target>
         <note />
       </trans-unit>
       <trans-unit id="RequiresAllowUnsafeBlocksMessageLibraryImport">
         <source>LibraryImportAttribute requires unsafe code. Project must be updated with '&lt;AllowUnsafeBlocks&gt;true&lt;/AllowUnsafeBlocks&gt;'.</source>
-        <target state="translated">Element LibraryImportAttribute wymaga niebezpiecznego kodu. Projekt musi zostać zaktualizowany za pomocą „&lt;AllowUnsafeBlocks&gt;true&lt;/AllowUnsafeBlocks&gt;”.</target>
+        <target state="new">LibraryImportAttribute requires unsafe code. Project must be updated with '&lt;AllowUnsafeBlocks&gt;true&lt;/AllowUnsafeBlocks&gt;'.</target>
         <note />
       </trans-unit>
       <trans-unit id="RequiresAllowUnsafeBlocksTitleCom">
         <source>'GeneratedComInterfaceAttribute' and 'GeneratedComClassAttribute' require unsafe code.</source>
-        <target state="translated">Atrybuty „GeneratedComInterfaceAttribute” i „GeneratedComClassAttribute” wymagają niebezpiecznego kodu.</target>
+        <target state="new">'GeneratedComInterfaceAttribute' and 'GeneratedComClassAttribute' require unsafe code.</target>
         <note />
       </trans-unit>
       <trans-unit id="RequiresAllowUnsafeBlocksTitleLibraryImport">
         <source>LibraryImportAttribute requires unsafe code.</source>
-        <target state="translated">Element LibraryImportAttribute wymaga niebezpiecznego kodu.</target>
+        <target state="new">LibraryImportAttribute requires unsafe code.</target>
         <note />
       </trans-unit>
       <trans-unit id="ReturnTypeMustBeExpectedTypeDescription">
         <source>The return type the two method must be the expected type.</source>
-        <target state="translated">Zwracany typ obu tych metod musi być oczekiwanym typem.</target>
+        <target state="new">The return type the two method must be the expected type.</target>
         <note />
       </trans-unit>
       <trans-unit id="ReturnTypeMustBeExpectedTypeMessage">
         <source>The return type of '{0}' must be '{1}'</source>
-        <target state="translated">Zwracany typ „{0}” musi być „{1}”</target>
+        <target state="new">The return type of '{0}' must be '{1}'</target>
         <note />
       </trans-unit>
       <trans-unit id="ReturnTypesMustMatchDescription">
         <source>The return types of the two methods must be the same type.</source>
-        <target state="translated">Zwracane typy obu tych metod muszą być tego samego typu.</target>
+        <target state="new">The return types of the two methods must be the same type.</target>
         <note />
       </trans-unit>
       <trans-unit id="ReturnTypesMustMatchMessage">
         <source>The return type of '{0}' must be the same type as the return type of '{1}'</source>
-        <target state="translated">Zwracany typ „{0}” musi być tego samego typu co zwracany typ „{1}”</target>
+        <target state="new">The return type of '{0}' must be the same type as the return type of '{1}'</target>
         <note />
       </trans-unit>
       <trans-unit id="RuntimeComApisDoNotSupportSourceGeneratedComDescription">
         <source>COM Interop APIs on 'System.Runtime.InteropServices.Marshal' do not support source-generated COM and will fail at runtime</source>
-        <target state="translated">Interfejsy API usługi międzyoperacyjnej modelu COM w elemencie „System.Runtime.InteropServices.Marshal” nie obsługują generowanego przez źródło modelu COM i nie będą działać w środowisku uruchomieniowym</target>
+        <target state="new">COM Interop APIs on 'System.Runtime.InteropServices.Marshal' do not support source-generated COM and will fail at runtime</target>
         <note />
       </trans-unit>
       <trans-unit id="RuntimeComApisDoNotSupportSourceGeneratedComMessage">
         <source>The method '{0}' only supports runtime-based COM interop and will not work with type '{1}'</source>
-        <target state="translated">Metoda „{0}” obsługuje tylko usługę międzyoperacyjną modelu COM opartą na środowisku uruchomieniowym i nie będzie działać z typem „{1}”</target>
+        <target state="new">The method '{0}' only supports runtime-based COM interop and will not work with type '{1}'</target>
         <note />
       </trans-unit>
       <trans-unit id="RuntimeComApisDoNotSupportSourceGeneratedComTitle">
         <source>COM Interop APIs on 'System.Runtime.InteropServices.Marshal' do not support source-generated COM</source>
-        <target state="translated">Interfejsy API usługi międzyoperacyjnej modelu COM w elemencie „System.Runtime.InteropServices.Marshal” nie obsługują generowanego przez źródło modelu COM</target>
+        <target state="new">COM Interop APIs on 'System.Runtime.InteropServices.Marshal' do not support source-generated COM</target>
         <note />
       </trans-unit>
       <trans-unit id="RuntimeMarshallingMustBeDisabled">
         <source>Runtime marshalling must be disabled in this project by applying the 'System.Runtime.CompilerServices.DisableRuntimeMarshallingAttribute' to the assembly to enable marshalling this type.</source>
-        <target state="translated">Marshalling środowiska uruchomieniowego musi być wyłączony w tym projekcie przez zastosowanie do zestawu atrybutu „System.Runtime.InteropServices.DisableRuntimeMarshallingAttribute”, aby umożliwić marshalling tego typu.</target>
+        <target state="new">Runtime marshalling must be disabled in this project by applying the 'System.Runtime.CompilerServices.DisableRuntimeMarshallingAttribute' to the assembly to enable marshalling this type.</target>
         <note />
       </trans-unit>
       <trans-unit id="SizeOfCollectionMustBeKnownAtMarshalTimeMessageOutParam">
         <source>The size of parameter '{0}' that is marshalled to the callee must be defined when the method is called, but count parameter '{1}' is an 'out' parameter.</source>
-        <target state="translated">Rozmiar parametru „{0}”, który jest kierowany do obiektu wywołującego, musi być zdefiniowany podczas wywoływania metody, ale parametr ILE.LICZB „{1}” jest parametrem „out”.</target>
+        <target state="new">The size of parameter '{0}' that is marshalled to the callee must be defined when the method is called, but count parameter '{1}' is an 'out' parameter.</target>
         <note />
       </trans-unit>
       <trans-unit id="SizeOfCollectionMustBeKnownAtMarshalTimeMessageReturnValue">
         <source>The size of parameter '{0}' that is marshalled to the callee must be defined when the method is called, but the return value is used as the size of the collection.</source>
-        <target state="translated">Rozmiar parametru „{0}”, który jest kierowany do obiektu wywołującego, musi być zdefiniowany podczas wywoływania metody, ale wartość zwracana jest używana jako rozmiar kolekcji.</target>
+        <target state="new">The size of parameter '{0}' that is marshalled to the callee must be defined when the method is called, but the return value is used as the size of the collection.</target>
         <note />
       </trans-unit>
       <trans-unit id="SizeOfCollectionMustBeKnownAtMarshalTimeTitle">
         <source>The size of a collection that is marshalled to the callee must be defined when the method is called.</source>
-        <target state="translated">Rozmiar kolekcji kierowanej do obiektu wywołującego musi być zdefiniowany podczas wywoływania metody.</target>
+        <target state="new">The size of a collection that is marshalled to the callee must be defined when the method is called.</target>
         <note />
       </trans-unit>
       <trans-unit id="StatefulMarshallerRequiresFreeDescription">
         <source>A stateful marshaller must have a zero-parameter void-returning instance method named 'Free'.</source>
-        <target state="translated">Stanowy marshaller musi mieć metodę wystąpienia zwracającą wartość nieważną o parametrze 0 o nazwie „Free”.</target>
+        <target state="new">A stateful marshaller must have a zero-parameter void-returning instance method named 'Free'.</target>
         <note />
       </trans-unit>
       <trans-unit id="StatefulMarshallerRequiresFreeMessage">
         <source>The type '{0}' is a stateful marshaller and does not have a zero-parameter void-returning instance method named 'Free'</source>
-        <target state="translated">Typ „{0}” jest stanowym marshallerem i nie ma metody wystąpienia zwracającego wartość nieważną o parametrze 0 o nazwie „Free”</target>
+        <target state="new">The type '{0}' is a stateful marshaller and does not have a zero-parameter void-returning instance method named 'Free'</target>
         <note />
       </trans-unit>
       <trans-unit id="StatefulMarshallerRequiresFromManagedDescription">
         <source>A stateful marshaller that supports marshalling from managed to unmanaged must provide a 'FromManaged' instance method that takes the managed value as a parameter and returns 'void'.</source>
-        <target state="translated">Stanowu marshaller obsługujący kierowanie z zarządzanego do niezarządzanego musi udostępniać metodę wystąpienia „ZNiezarządzane”, która przyjmuje wartość zarządzaną jako parametr i zwraca wartość „nieważne”</target>
+        <target state="new">A stateful marshaller that supports marshalling from managed to unmanaged must provide a 'FromManaged' instance method that takes the managed value as a parameter and returns 'void'.</target>
         <note />
       </trans-unit>
       <trans-unit id="StatefulMarshallerRequiresFromManagedMessage">
         <source>The type '{0}' specifies that it supports the '{1}' marshal mode for '{2}' but it does not provide a one-parameter instance method named 'FromManaged' that takes a '{2}' as a parameter and returns 'void'</source>
-        <target state="translated">Typ „{0}” określa, że obsługuje tryb marshalingu „{1}” dla „{2}”, ale nie udostępnia metody wystąpienia z jednym parametrem o nazwie „ZNiezarządzane”, która przyjmuje jako parametr „{2}” i zwraca wartość „nieważne”</target>
+        <target state="new">The type '{0}' specifies that it supports the '{1}' marshal mode for '{2}' but it does not provide a one-parameter instance method named 'FromManaged' that takes a '{2}' as a parameter and returns 'void'</target>
         <note />
       </trans-unit>
       <trans-unit id="StatefulMarshallerRequiresFromUnmanagedDescription">
         <source>A stateful marshaller that supports marshalling from unmanaged to managed must provide a 'FromUnmanaged' instance method that takes the unmanaged value as a parameter and returns 'void'.</source>
-        <target state="translated">Stanowy marshaller obsługujący kierowanie z niezarządzanego do zarządzanego musi udostępniać metodę wystąpienia „ZNiezarządzane”, która przyjmuje wartość niezarządzaną jako parametr i zwraca wartość „nieważne”.</target>
+        <target state="new">A stateful marshaller that supports marshalling from unmanaged to managed must provide a 'FromUnmanaged' instance method that takes the unmanaged value as a parameter and returns 'void'.</target>
         <note />
       </trans-unit>
       <trans-unit id="StatefulMarshallerRequiresFromUnmanagedMessage">
         <source>The type '{0}' specifies that it supports the '{1}' marshal mode for '{2}' but it does not provide a one-parameter instance method named 'FromUnmanaged' that takes the 'unmanaged' value as a parameter and returns 'void'</source>
-        <target state="translated">Typ „{0}” określa, że obsługuje tryb marshalingu „{1}” dla elementu „{2}”, ale nie udostępnia metody wystąpienia jednego parametru o nazwie „ZNiezarządzane”, która przyjmuje wartość „niezarządzane” jako parametr i zwraca wartość „nieważne”</target>
+        <target state="new">The type '{0}' specifies that it supports the '{1}' marshal mode for '{2}' but it does not provide a one-parameter instance method named 'FromUnmanaged' that takes the 'unmanaged' value as a parameter and returns 'void'</target>
         <note />
       </trans-unit>
       <trans-unit id="StatefulMarshallerRequiresToManagedDescription">
         <source>A stateful marshaller that supports marshalling from unmanaged to managed must provide a 'ToManaged' instance method that takes no parameters and returns the managed type.</source>
-        <target state="translated">Marshaller stanu obsługujący kierowanie z niezarządzanego do zarządzanego musi udostępniać metodę wystąpienia „DoZarządzane”, która nie przyjmuje parametrów i zwraca typ zarządzany.</target>
+        <target state="new">A stateful marshaller that supports marshalling from unmanaged to managed must provide a 'ToManaged' instance method that takes no parameters and returns the managed type.</target>
         <note />
       </trans-unit>
       <trans-unit id="StatefulMarshallerRequiresToManagedMessage">
         <source>The type '{0}' specifies that it supports the '{1}' marshal mode for '{2}' but it does not provide a zero-parameter instance method named 'ToManaged' that returns '{2}'</source>
-        <target state="translated">Typ „{0}” określa, że obsługuje tryb marshalingu „{1}” dla elementu „{2}”, ale nie udostępnia metody wystąpienia o wartości zero parametrów o nazwie „DoZarządzane”, która zwraca wartość „{2}”</target>
+        <target state="new">The type '{0}' specifies that it supports the '{1}' marshal mode for '{2}' but it does not provide a zero-parameter instance method named 'ToManaged' that returns '{2}'</target>
         <note />
       </trans-unit>
       <trans-unit id="StatefulMarshallerRequiresToUnmanagedDescription">
         <source>A stateful marshaller that supports marshalling from managed to unmanaged must provide a 'ToUnmanaged' instance method that takes no parameters and returns the 'unmanaged' type.</source>
-        <target state="translated">Stanowy marshaller obsługujący kierowanie z zarządzanego do niezarządzanego musi udostępniać metodę wystąpienia „DoNiezarządzane”, która nie przyjmuje parametrów i zwraca typ „niezarządzane”.</target>
+        <target state="new">A stateful marshaller that supports marshalling from managed to unmanaged must provide a 'ToUnmanaged' instance method that takes no parameters and returns the 'unmanaged' type.</target>
         <note />
       </trans-unit>
       <trans-unit id="StatefulMarshallerRequiresToUnmanagedMessage">
         <source>The type '{0}' specifies that it supports the '{1}' marshal mode for '{2}' but it does not provide a zero-parameter instance method named 'ToUnmanaged' that returns the 'unmanaged' type for the marshaller</source>
-        <target state="translated">Typ „{0}” określa, że obsługuje tryb marshalingu „{1}” dla elementu „{2}”, ale nie udostępnia metody wystąpienia o wartości zero parametrów o nazwie „DoNiezarządzane”, która zwraca typ „niezarządzane” dla marshalera</target>
+        <target state="new">The type '{0}' specifies that it supports the '{1}' marshal mode for '{2}' but it does not provide a zero-parameter instance method named 'ToUnmanaged' that returns the 'unmanaged' type for the marshaller</target>
         <note />
       </trans-unit>
       <trans-unit id="StatelessLinearCollectionCallerAllocFromManagedMustHaveBufferSizeDescription">
         <source>When the 'Managed to Unmanaged with Caller-Allocated Buffer' shape is used by providing an 'AllocateContainerForUnmanagedElements' method that takes a 'Span&lt;T&gt;' on the marshaller type, the type must provide a static 'BufferSize' property to provide the number of elements in the caller-allocated buffer.</source>
-        <target state="translated">Gdy kształt „Zarządzane do niezarządzanych za pomocą buforu przydzielonego przez wywołującego” jest używany poprzez zapewnienie metody „AllocateContainerForUnmanagedElements”, która przyjmuje wartość „Span&lt; T&gt;” w przypadku typu organizatora, typ musi zapewniać statyczną właściwość „BufferSize”, aby określić liczbę elementów w buforze przydzielonym przez wywołującego.</target>
+        <target state="new">When the 'Managed to Unmanaged with Caller-Allocated Buffer' shape is used by providing an 'AllocateContainerForUnmanagedElements' method that takes a 'Span&lt;T&gt;' on the marshaller type, the type must provide a static 'BufferSize' property to provide the number of elements in the caller-allocated buffer.</target>
         <note />
       </trans-unit>
       <trans-unit id="StatelessLinearCollectionCallerAllocFromManagedMustHaveBufferSizeMessage">
         <source>The marshaller type '{0}' must have a static read-only 'int' 'BufferSize' property to specify the size of the caller-allocated buffer because it has an 'AllocateContainerForUnmanagedElements' method that takes a caller-allocated 'Span&lt;{1}&gt;'</source>
-        <target state="translated">Typ organizatora „{0}” musi mieć statyczną właściwość „BufferSize” „int” tylko do odczytu, aby określić rozmiar buforu przydzielonego przez wywołującego, ponieważ ma metodę „AllocateContainerForUnmanagedElements”, która przyjmuje przydzieloną przez wywołującego wartość „Span&lt;{1}&gt;”</target>
+        <target state="new">The marshaller type '{0}' must have a static read-only 'int' 'BufferSize' property to specify the size of the caller-allocated buffer because it has an 'AllocateContainerForUnmanagedElements' method that takes a caller-allocated 'Span&lt;{1}&gt;'</target>
         <note />
       </trans-unit>
       <trans-unit id="StatelessLinearCollectionInRequiresCollectionMethodsDescription">
         <source>A contiguous collection marshaller that supports marshalling from managed to unmanaged must provide a 'GetManagedValuesSource' that takes the managed value as a parameter and returns a 'ReadOnlySpan&lt;&gt;' and a 'GetUnmanagedValuesDestination' method that takes the unmanaged value as a parameter and returns a 'Span&lt;&gt;'</source>
-        <target state="translated">Organizator zwartej kolekcji, który obsługuje przeprowadzanie marshalingu z niezarządzanych do zarządzanych, musi zapewniać metodę „GetManagedValuesSource”, która przyjmuje zarządzaną wartość jako parametr i zwraca wartość „ReadOnlySpan&lt;&gt;”, oraz metodę „GetUnmanagedValuesDestination”, która przyjmuje niezarządzaną wartość jako parametr i zwraca wartość „Span&lt;&gt;”.</target>
+        <target state="new">A contiguous collection marshaller that supports marshalling from managed to unmanaged must provide a 'GetManagedValuesSource' that takes the managed value as a parameter and returns a 'ReadOnlySpan&lt;&gt;' and a 'GetUnmanagedValuesDestination' method that takes the unmanaged value as a parameter and returns a 'Span&lt;&gt;'</target>
         <note />
       </trans-unit>
       <trans-unit id="StatelessLinearCollectionInRequiresCollectionMethodsMessage">
         <source>The type '{0}' specifies that it supports the '{1}' marshal mode, but it does not provide a 'GetManagedValuesSource' that takes '{2}' as a parameter and returns a 'ReadOnlySpan&lt;&gt;' and a 'GetUnmanagedValuesDestination' method that takes the unmanaged value as a parameter and returns a 'Span&lt;&gt;'</source>
-        <target state="translated">Typ „{0}” określa, że obsługuje tryb przeprowadzania marshalingu „{1}”, ale nie zapewnia metody „GetManagedValuesSource”, która przyjmuje wartość „{2}” jako parametr i zwraca wartość „ReadOnlySpan&lt;&gt;”, oraz metodę „GetUnmanagedValuesDestination”, która przyjmuje niezarządzaną wartość jako parametr i zwraca wartość „Span&lt;&gt;”</target>
+        <target state="new">The type '{0}' specifies that it supports the '{1}' marshal mode, but it does not provide a 'GetManagedValuesSource' that takes '{2}' as a parameter and returns a 'ReadOnlySpan&lt;&gt;' and a 'GetUnmanagedValuesDestination' method that takes the unmanaged value as a parameter and returns a 'Span&lt;&gt;'</target>
         <note />
       </trans-unit>
       <trans-unit id="StatelessLinearCollectionOutRequiresCollectionMethodsDescription">
         <source>A contiguous collection marshaller that supports marshalling from unmanaged to managed must provide a 'GetManagedValuesDestination' that takes the managed value and returns a 'Span&lt;&gt;' and a 'GetUnmanagedValuesSource' method that takes the unmanaged value and an 'int' and returns a 'ReadOnlySpan&lt;&gt;'.</source>
-        <target state="translated">Organizator zwartej kolekcji, który obsługuje przeprowadzanie marshalingu z niezarządzanych do zarządzanych, musi zapewniać metodę „GetManagedValuesDestination”, która przyjmuje zarządzaną wartość i zwraca wartość „Span&lt;&gt;”, oraz metodę „GetUnmanagedValuesSource”, która przyjmuje niezarządzaną wartość i wartość „int” oraz zwraca wartość „ReadOnlySpan&lt;&gt;”.</target>
+        <target state="new">A contiguous collection marshaller that supports marshalling from unmanaged to managed must provide a 'GetManagedValuesDestination' that takes the managed value and returns a 'Span&lt;&gt;' and a 'GetUnmanagedValuesSource' method that takes the unmanaged value and an 'int' and returns a 'ReadOnlySpan&lt;&gt;'.</target>
         <note />
       </trans-unit>
       <trans-unit id="StatelessLinearCollectionOutRequiresCollectionMethodsMessage">
         <source>The type '{0}' specifies that it supports the '{1}' marshal mode, but it does not provide a 'GetManagedValuesDestination' that takes '{2}' and returns a 'Span&lt;&gt;' and a 'GetUnmanagedValuesSource' method that takes the unmanaged value and an 'int' and returns a 'ReadOnlySpan&lt;&gt;'</source>
-        <target state="translated">Typ „{0}” określa, że obsługuje tryb przeprowadzania marshalingu „{1}”, ale nie zapewnia metody „GetManagedValuesDestination”, która przyjmuje wartość „{2}” i zwraca wartość „Span&lt;&gt;”, oraz metodę „GetUnmanagedValuesSource”, która przyjmuje wartość niezarządzaną i „int” oraz zwraca wartość „ReadOnlySpan&lt;&gt;”</target>
+        <target state="new">The type '{0}' specifies that it supports the '{1}' marshal mode, but it does not provide a 'GetManagedValuesDestination' that takes '{2}' and returns a 'Span&lt;&gt;' and a 'GetUnmanagedValuesSource' method that takes the unmanaged value and an 'int' and returns a 'ReadOnlySpan&lt;&gt;'</target>
         <note />
       </trans-unit>
       <trans-unit id="StatelessLinearCollectionRequiresTwoParameterAllocateContainerForManagedElementsDescription">
         <source>A stateless contiguous collection marshaller that supports marshalling from managed to unmanaged must provide an 'AllocateContainerForManagedElements' method taking the unmanaged type as the first parameter and the number of elements as an 'int' parameter</source>
-        <target state="translated">Bezstanowy organizator zwartej kolekcji, który obsługuje przeprowadzanie marshalingu z zarządzanych do niezarządzanych, musi zapewniać metodę „AllocateContainerForManagedElements”, przyjmując typ niezarządzany jako pierwszy parametr oraz liczbę elementów jako parametr „int”</target>
+        <target state="new">A stateless contiguous collection marshaller that supports marshalling from managed to unmanaged must provide an 'AllocateContainerForManagedElements' method taking the unmanaged type as the first parameter and the number of elements as an 'int' parameter</target>
         <note />
       </trans-unit>
       <trans-unit id="StatelessLinearCollectionRequiresTwoParameterAllocateContainerForManagedElementsMessage">
         <source>The type '{0}' specifies that it supports the '{1}' marshal mode for '{2}' but does not provide a two-parameter 'AllocateContainerForManagedElements' method that takes the unmanaged type as the first parameter and an 'int' as the second parameter</source>
-        <target state="translated">Typ „{0}” określa, że obsługuje tryb przeprowadzania marshalingu „{1}” dla „{2}”, ale nie zapewnia metody „AllocateContainerForManagedElements” z dwoma parametrami, która przyjmuje typ niezarządzany jako pierwszy parametr i wartość „int” jako drugi parametr</target>
+        <target state="new">The type '{0}' specifies that it supports the '{1}' marshal mode for '{2}' but does not provide a two-parameter 'AllocateContainerForManagedElements' method that takes the unmanaged type as the first parameter and an 'int' as the second parameter</target>
         <note />
       </trans-unit>
       <trans-unit id="StatelessLinearCollectionRequiresTwoParameterAllocateContainerForUnmanagedElementsDescription">
         <source>A stateless contiguous collection marshaller that supports marshalling from managed to unmanaged must provide an 'AllocateContainerForUnmanagedElements' method taking the managed type as the first parameter and providing the number of elements as an 'out int' parameter</source>
-        <target state="translated">Bezstanowy organizator zwartej kolekcji, który obsługuje przeprowadzanie marshalingu z zarządzanych do niezarządzanych, musi zapewniać metodę „AllocateContainerForUnmanagedElements”, przyjmując typ zarządzany jako pierwszy parametr oraz określając liczbę elementów jako parametr „out int”</target>
+        <target state="new">A stateless contiguous collection marshaller that supports marshalling from managed to unmanaged must provide an 'AllocateContainerForUnmanagedElements' method taking the managed type as the first parameter and providing the number of elements as an 'out int' parameter</target>
         <note />
       </trans-unit>
       <trans-unit id="StatelessLinearCollectionRequiresTwoParameterAllocateContainerForUnmanagedElementsMessage">
         <source>The type '{0}' specifies that it supports the '{1}' marshal mode for '{2}' but does not provide a two-parameter 'AllocateContainerForUnmanagedElements' method that takes a '{2}' as the first parameter and an 'out int' as the second parameter</source>
-        <target state="translated">Typ „{0}” określa, że obsługuje tryb przeprowadzania marshalingu „{1}” dla „{2}”, ale nie zapewnia metody „AllocateContainerForUnmanagedElements” z dwoma parametrami, która przyjmuje wartość „{2}” jako pierwszy parametr i wartość „out int” jako drugi parametr</target>
+        <target state="new">The type '{0}' specifies that it supports the '{1}' marshal mode for '{2}' but does not provide a two-parameter 'AllocateContainerForUnmanagedElements' method that takes a '{2}' as the first parameter and an 'out int' as the second parameter</target>
         <note />
       </trans-unit>
       <trans-unit id="StatelessRequiresConvertToManagedDescription">
         <source>A stateless value marshaller that supports marshalling from unmanaged to managed must provide a 'ConvertToManaged' method that takes the unmanaged type as a parameter and returns the the managed type.</source>
-        <target state="translated">Bezstanowy organizator wartości, który obsługuje przeprowadzanie marshalingu z zarządzanych do niezarządzanych, musi zapewniać metodę „ConvertToManaged”, która przyjmuje typ niezarządzany jako parametr i zwraca typ zarządzany.</target>
+        <target state="new">A stateless value marshaller that supports marshalling from unmanaged to managed must provide a 'ConvertToManaged' method that takes the unmanaged type as a parameter and returns the the managed type.</target>
         <note />
       </trans-unit>
       <trans-unit id="StatelessRequiresConvertToManagedMessage">
         <source>The type '{0}' specifies it supports the '{1}' marshal mode, but it does not provide a 'ConvertToManaged' method that takes the unmanaged type as a parameter and returns '{2}'</source>
-        <target state="translated">Typ „{0}” określa, że obsługuje tryb przeprowadzania marshalingu „{1}”, ale nie zapewnia metody „ConvertToManaged”, która przyjmuje typ niezarządzany jako parametr i zwraca wartość „{2}”</target>
+        <target state="new">The type '{0}' specifies it supports the '{1}' marshal mode, but it does not provide a 'ConvertToManaged' method that takes the unmanaged type as a parameter and returns '{2}'</target>
         <note />
       </trans-unit>
       <trans-unit id="StatelessValueInRequiresConvertToUnmanagedDescription">
         <source>A stateless value marshaller that supports marshalling from managed to unmanaged must provide a one-parameter 'ConvertToUnmanaged' method that takes the managed value as the parameter and returns a value of the 'unmanaged' type.</source>
-        <target state="translated">Bezstanowy organizator wartości, który obsługuje przeprowadzanie marshalingu z zarządzanych do niezarządzanych, musi zapewniać metodę „ConvertToUnmanaged” z jednym parametrem, która przyjmuje wartość zarządzaną jako parametr i zwraca wartość typu „niezarządzany”.</target>
+        <target state="new">A stateless value marshaller that supports marshalling from managed to unmanaged must provide a one-parameter 'ConvertToUnmanaged' method that takes the managed value as the parameter and returns a value of the 'unmanaged' type.</target>
         <note />
       </trans-unit>
       <trans-unit id="StatelessValueInRequiresConvertToUnmanagedMessage">
         <source>The type '{0}' specifies that it supports the '{1}' marshal mode for '{2}' but does not provide a one-parameter 'ConvertToUnmanaged' method that takes a '{2}' as a parameter and returns a value of an 'unmanaged' type</source>
-        <target state="translated">Typ „{0}” określa, że obsługuje tryb przeprowadzania marshalingu „{1}” dla „{2}”, ale nie zapewnia metody „ConvertToUnmanaged” z jednym parametrem, która przyjmuje wartość „{2}” jako parametr i zwraca wartość typu „niezarządzany”</target>
+        <target state="new">The type '{0}' specifies that it supports the '{1}' marshal mode for '{2}' but does not provide a one-parameter 'ConvertToUnmanaged' method that takes a '{2}' as a parameter and returns a value of an 'unmanaged' type</target>
         <note />
       </trans-unit>
       <trans-unit id="StringMarshallingCustomTypeNotAccessibleByGeneratedCode">
         <source>The type '{0}' specified as 'GeneratedComInterfaceAttribute.StringMarshallingCustomType' is not accessible by generated code. The type must have at least 'internal' accessibility. {1}</source>
-        <target state="translated">Typ „{0}” określony jako „GeneratedComInterfaceAttribute.StringMarshallingCustomType” jest niedostępny za pomocą wygenerowanego kodu. Typ musi mieć co najmniej ułatwienia dostępu „wewnętrzny”. {1}</target>
+        <target state="new">The type '{0}' specified as 'GeneratedComInterfaceAttribute.StringMarshallingCustomType' is not accessible by generated code. The type must have at least 'internal' accessibility. {1}</target>
         <note>{1} is details about which type/containing type is not accessible</note>
       </trans-unit>
       <trans-unit id="ToFromUnmanagedTypesMustMatchDescription">
         <source>The return type of 'ToUnmanaged' and the parameter type of 'FromUnmanaged' must be the same.</source>
-        <target state="translated">Zwracany typ elementu „ToUnmanaged” i typ parametru elementu „FromUnmanaged” muszą być takie same.</target>
+        <target state="new">The return type of 'ToUnmanaged' and the parameter type of 'FromUnmanaged' must be the same.</target>
         <note />
       </trans-unit>
       <trans-unit id="ToFromUnmanagedTypesMustMatchMessage">
         <source>The return type of 'ToUnmanaged' and the parameter type of 'FromUnmanaged' must be the same</source>
-        <target state="translated">Zwracany typ elementu „ToUnmanaged” i typ parametru elementu „FromUnmanaged” muszą być takie same</target>
+        <target state="new">The return type of 'ToUnmanaged' and the parameter type of 'FromUnmanaged' must be the same</target>
         <note />
       </trans-unit>
       <trans-unit id="ToUnmanagedFromManagedTypesMustMatchDescription">
         <source>The return type of 'ConvertToUnmanaged' and the parameter type of 'ConvertToManaged' must be the same.</source>
-        <target state="translated">Zwracany typ elementu „ConvertToUnmanaged” i typ parametru elementu „ConvertToManaged” muszą być takie same.</target>
+        <target state="new">The return type of 'ConvertToUnmanaged' and the parameter type of 'ConvertToManaged' must be the same.</target>
         <note />
       </trans-unit>
       <trans-unit id="ToUnmanagedFromManagedTypesMustMatchMessage">
         <source>The return type of 'ConvertToUnmanaged' and the parameter type of 'ConvertToManaged' must be the same</source>
-        <target state="translated">Zwracany typ elementu „ConvertToUnmanaged” i typ parametru elementu „ConvertToManaged” muszą być takie same</target>
+        <target state="new">The return type of 'ConvertToUnmanaged' and the parameter type of 'ConvertToManaged' must be the same</target>
         <note />
       </trans-unit>
       <trans-unit id="TypeAccessibilityDetails">
         <source>'{0}' has accessibility '{1}'.</source>
-        <target state="translated">„{0}” ma ułatwienia dostępu „{1}”.</target>
+        <target state="new">'{0}' has accessibility '{1}'.</target>
         <note />
       </trans-unit>
       <trans-unit id="TypeMustBeUnmanagedDescription">
         <source>The unmanaged type for a custom marshaller must be a C# unmanaged type.</source>
-        <target state="translated">Typ niezarządzany dla niestandardowego organizatora musi być niezarządzanym typem języka C#.</target>
+        <target state="new">The unmanaged type for a custom marshaller must be a C# unmanaged type.</target>
         <note />
       </trans-unit>
       <trans-unit id="TypeMustBeUnmanagedMessage">
         <source>The return type of '{0}' must be unmanaged</source>
-        <target state="translated">Zwracany typ „{0}” musi być niezarządzany</target>
+        <target state="new">The return type of '{0}' must be unmanaged</target>
         <note />
       </trans-unit>
       <trans-unit id="TypeMustHaveExplicitCastFromVoidPointerDescription">
         <source>'void*' must be castable to the type so the pinned result of the static 'GetPinnableReference' method can be passed to the native context after being pinned.</source>
-        <target state="translated">Element „void*” musi być rzutowany na typ, aby przypięty wynik statycznej metody „GetPinnableReference” mógł zostać przekazany do kontekstu macierzystego po przypięciu.</target>
+        <target state="new">'void*' must be castable to the type so the pinned result of the static 'GetPinnableReference' method can be passed to the native context after being pinned.</target>
         <note />
       </trans-unit>
       <trans-unit id="TypeMustHaveExplicitCastFromVoidPointerMessage">
         <source>'void*' must be castable to the type '{0}' because the managed type '{1}' has a static 'GetPinnableReference' method</source>
-        <target state="translated">Element „void*” musi być rzutowany na typ „{0}”, ponieważ typ zarządzany „{1}” ma statyczną metodę „GetPinnableReference”</target>
+        <target state="new">'void*' must be castable to the type '{0}' because the managed type '{1}' has a static 'GetPinnableReference' method</target>
         <note />
       </trans-unit>
       <trans-unit id="TypeNotSupportedDescriptionCom">
         <source>For types that are not supported by source-generated COM, the resulting function pointer will rely on the underlying runtime to marshal the specified type.</source>
-        <target state="translated">W przypadku typów, które nie są obsługiwane przez COM wygenerowany przez źródło, wynikowy wskaźnik funkcji będzie polegał na bazowym środowisku uruchomieniowym w celu skierowania określonego typu.</target>
+        <target state="new">For types that are not supported by source-generated COM, the resulting function pointer will rely on the underlying runtime to marshal the specified type.</target>
         <note />
       </trans-unit>
       <trans-unit id="TypeNotSupportedDescriptionLibraryImport">
         <source>For types that are not supported by source-generated P/Invokes, the resulting P/Invoke will rely on the underlying runtime to marshal the specified type.</source>
-        <target state="translated">W przypadku typów, które nie są obsługiwane przez funkcję P/Invokes generowaną przez źródło, wynikowa funkcja P/Invoke będzie polegać na bazowym środowisku uruchomieniowym, aby skierować określony typ.</target>
+        <target state="new">For types that are not supported by source-generated P/Invokes, the resulting P/Invoke will rely on the underlying runtime to marshal the specified type.</target>
         <note />
       </trans-unit>
       <trans-unit id="TypeNotSupportedMessageParameterCom">
         <source>The type '{0}' is not supported by source-generated COM. The generated source will not handle marshalling of parameter '{1}'.</source>
-        <target state="translated">Typ „{0}” nie jest obsługiwany przez COM generowany przez źródło. Wygenerowane źródło nie będzie obsługiwać skierowania parametru „{1}”.</target>
+        <target state="new">The type '{0}' is not supported by source-generated COM. The generated source will not handle marshalling of parameter '{1}'.</target>
         <note />
       </trans-unit>
       <trans-unit id="TypeNotSupportedMessageParameterLibraryImport">
         <source>The type '{0}' is not supported by source-generated P/Invokes. The generated source will not handle marshalling of parameter '{1}'.</source>
-        <target state="translated">Typ „{0}” nie jest obsługiwany przez funkcję P/Invokes generowaną przez źródło. Wygenerowane źródło nie obsługuje skierowania parametru „{1}”.</target>
+        <target state="new">The type '{0}' is not supported by source-generated P/Invokes. The generated source will not handle marshalling of parameter '{1}'.</target>
         <note />
       </trans-unit>
       <trans-unit id="TypeNotSupportedMessageParameterWithDetails">
         <source>{0} The generated source will not handle marshalling of parameter '{1}'.</source>
-        <target state="translated">{0} Wygenerowane źródło nie obsługuje skierowania parametru „{1}”.</target>
+        <target state="new">{0} The generated source will not handle marshalling of parameter '{1}'.</target>
         <note>{0} is a message containing additional details about what is not supported
 {1} is the name of the parameter</note>
       </trans-unit>
       <trans-unit id="TypeNotSupportedMessageReturnCom">
         <source>The type '{0}' is not supported by source-generated COM. The generated source will not handle marshalling of the return value of method '{1}'.</source>
-        <target state="translated">Typ „{0}” nie jest obsługiwany przez COM generowany przez źródło. Wygenerowane źródło nie będzie obsługiwać skierowania wartości zwracanej przez metodę „{1}”.</target>
+        <target state="new">The type '{0}' is not supported by source-generated COM. The generated source will not handle marshalling of the return value of method '{1}'.</target>
         <note />
       </trans-unit>
       <trans-unit id="TypeNotSupportedMessageReturnLibraryImport">
         <source>The type '{0}' is not supported by source-generated P/Invokes. The generated source will not handle marshalling of the return value of method '{1}'.</source>
-        <target state="translated">Typ „{0}” nie jest obsługiwany przez funkcję P/Invokes generowaną przez źródło. Wygenerowane źródło nie obsługuje skierowania wartości zwracanej przez metodę „{1}”.</target>
+        <target state="new">The type '{0}' is not supported by source-generated P/Invokes. The generated source will not handle marshalling of the return value of method '{1}'.</target>
         <note />
       </trans-unit>
       <trans-unit id="TypeNotSupportedMessageReturnWithDetails">
         <source>{0} The generated source will not handle marshalling of the return value of method '{1}'.</source>
-        <target state="translated">{0}Wygenerowane źródło nie obsługuje skierowania wartości zwracanej przez metodę „{1}”.</target>
+        <target state="new">{0} The generated source will not handle marshalling of the return value of method '{1}'.</target>
         <note>{0} is a message containing additional details about what is not supported
 {1} is the name of the method</note>
       </trans-unit>
       <trans-unit id="TypeNotSupportedTitle">
         <source>Specified type is not supported by source-generated P/Invokes</source>
-        <target state="translated">Określony typ nie jest obsługiwany przez funkcję P/Invokes generowaną przez źródło</target>
+        <target state="new">Specified type is not supported by source-generated P/Invokes</target>
         <note />
       </trans-unit>
       <trans-unit id="TypeNotSupportedTitleCom">
         <source>Specified type is not supported by source-generated COM</source>
-        <target state="translated">Określony typ nie jest obsługiwany przez źródłowy COM</target>
+        <target state="new">Specified type is not supported by source-generated COM</target>
         <note />
       </trans-unit>
       <trans-unit id="UnmanagedToManagedMissingRequiredMarshaller">
         <source>The specified parameter needs to be marshalled from unmanaged to managed, but the marshaller type '{0}' does not support it.</source>
-        <target state="translated">Określony parametr musi być kierowany z niezarządzanego do zarządzanego, ale typ marszałka „{0}” go nie obsługuje.</target>
+        <target state="new">The specified parameter needs to be marshalled from unmanaged to managed, but the marshaller type '{0}' does not support it.</target>
         <note />
       </trans-unit>
       <trans-unit id="UnnecessaryMarshallingInfoDescription">
         <source>Unnecesssary marshalling info was provided. This marshalling information can be removed without any change in behavior to the application.</source>
-        <target state="translated">Niepotrzebne informacje o marshallingu zostały przekazane. Te informacje o marshallingu można usunąć bez żadnych zmian w zachowaniu aplikacji.</target>
+        <target state="new">Unnecesssary marshalling info was provided. This marshalling information can be removed without any change in behavior to the application.</target>
         <note />
       </trans-unit>
       <trans-unit id="UnnecessaryMarshallingInfoTitle">
         <source>Unnecessary marshalling info was provided and can be removed.</source>
-        <target state="translated">Niepotrzebne informacje o marshallingu zostały przekazane i można je usunąć.</target>
+        <target state="new">Unnecessary marshalling info was provided and can be removed.</target>
         <note />
       </trans-unit>
       <trans-unit id="UnnecessaryParameterMarshallingInfoMessage">
         <source>Unnecessary marshalling info '{0}' was provided for parameter '{1}'. {2}</source>
-        <target state="translated">Niepotrzebne informacje o marshallingu „{0}” zostały przekazane dla parametru „{1}”. {2}</target>
+        <target state="new">Unnecessary marshalling info '{0}' was provided for parameter '{1}'. {2}</target>
         <note />
       </trans-unit>
       <trans-unit id="UnnecessaryReturnMarshallingInfoMessage">
         <source>Unnecessary marshalling info '{0}' was provided for the return type of method '{1}'. {2}</source>
-        <target state="translated">Niepotrzebne informacje o marshallingu „{0}” zostały przekazane dla zwracanego typu metody „{1}”. {2}</target>
+        <target state="new">Unnecessary marshalling info '{0}' was provided for the return type of method '{1}'. {2}</target>
         <note />
       </trans-unit>
       <trans-unit id="ValueInCallerAllocatedBufferRequiresSpanConstructorDescription">
         <source>A 'Value'-kind native type that supports the 'CallerAllocatedBuffer' feature must provide a two-parameter constructor taking the managed type and a 'Span' of an 'unmanaged' type as parameters</source>
-        <target state="translated">Typ natywny rodzaju „Value”, który obsługuje funkcję „CallerAllocatedBuffer” musi zapewniać konstruktora z dwoma parametrami przyjmującego typ zarządzany i wartość „Span” typu „unmanaged” jako parametry</target>
+        <target state="new">A 'Value'-kind native type that supports the 'CallerAllocatedBuffer' feature must provide a two-parameter constructor taking the managed type and a 'Span' of an 'unmanaged' type as parameters</target>
         <note />
       </trans-unit>
       <trans-unit id="ValueInCallerAllocatedBufferRequiresSpanConstructorMessage">
         <source>The type '{0}' specifies that it supports 'In' marshalling with the 'CallerAllocatedBuffer' feature for '{1}' but does not provide a two-parameter constructor that takes a '{1}' and 'Span' of an 'unmanaged' type as parameters</source>
-        <target state="translated">Typ „{0}” określa, że obsługuje marshalling „In” z funkcją „CallerAllocatedBuffer” dla elementu „{1}”, ale nie zapewnia konstruktora z dwoma parametrami, który przyjmuje wartośći „{1}””Span” typu „unmanaged” jako parametry</target>
+        <target state="new">The type '{0}' specifies that it supports 'In' marshalling with the 'CallerAllocatedBuffer' feature for '{1}' but does not provide a two-parameter constructor that takes a '{1}' and 'Span' of an 'unmanaged' type as parameters</target>
         <note />
       </trans-unit>
       <trans-unit id="ValueInRequiresOneParameterConstructorDescription">
         <source>A 'Value'-kind native type must provide a one-parameter constructor taking the managed type as a parameter</source>
-        <target state="translated">Typ natywny rodzaju „Value” musi zapewniać konstruktora z jednym parametrem przyjmującego typ zarządzany jako parametr</target>
+        <target state="new">A 'Value'-kind native type must provide a one-parameter constructor taking the managed type as a parameter</target>
         <note />
       </trans-unit>
       <trans-unit id="ValueInRequiresOneParameterConstructorMessage">
         <source>The type '{0}' specifies that it supports 'In' marshalling of '{1}' but does not provide a one-parameter constructor that takes a '{1}' as a parameter</source>
-        <target state="translated">Typ „{0}” określa, że obsługuje skierowanie „In” z elementu „{1}”, ale nie zapewnia konstruktora z jednym parametrem, który przyjmuje element „{1}” jako parametr</target>
+        <target state="new">The type '{0}' specifies that it supports 'In' marshalling of '{1}' but does not provide a one-parameter constructor that takes a '{1}' as a parameter</target>
         <note />
       </trans-unit>
     </body>

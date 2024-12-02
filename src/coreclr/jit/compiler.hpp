@@ -1031,17 +1031,25 @@ inline regNumber genFirstRegNumFromMask(const regMaskTP& mask)
 //
 // Arguments:
 //    mask               - the register mask
+//    type               - type of the register mask
 //
 // Return Value:
 //    The number of the first register contained in the mask.
 //
-inline regNumber genFirstRegNumFromMask(SingleTypeRegSet mask)
+inline regNumber genFirstRegNumFromMask(SingleTypeRegSet mask, var_types type)
 {
     assert(mask != RBM_NONE); // Must have one bit set, so can't have a mask of zero
 
     /* Convert the mask to a register number */
 
     regNumber regNum = (regNumber)BitOperations::BitScanForward(mask);
+
+#ifdef HAS_MORE_THAN_64_REGISTERS
+    if (varTypeIsMask(type))
+    {
+        regNum = (regNumber)(64 + regNum);
+    }
+#endif
 
     return regNum;
 }
@@ -1075,13 +1083,14 @@ inline regNumber genFirstRegNumFromMaskAndToggle(regMaskTP& mask)
 //          register number and also toggle the bit in the `mask`.
 // Arguments:
 //    mask               - the register mask
+//    type               - type of the register mask
 //
 // Return Value:
 //    The number of the first register contained in the mask and updates the `mask` to toggle
 //    the bit.
 //
 
-inline regNumber genFirstRegNumFromMaskAndToggle(SingleTypeRegSet& mask)
+inline regNumber genFirstRegNumFromMaskAndToggle(SingleTypeRegSet& mask, var_types type)
 {
     assert(mask != RBM_NONE); // Must have one bit set, so can't have a mask of zero
 
@@ -1090,6 +1099,13 @@ inline regNumber genFirstRegNumFromMaskAndToggle(SingleTypeRegSet& mask)
     regNumber regNum = (regNumber)BitOperations::BitScanForward(mask);
 
     mask ^= genSingleTypeRegMask(regNum);
+
+#ifdef HAS_MORE_THAN_64_REGISTERS
+    if (varTypeIsMask(type))
+    {
+        regNum = (regNumber)(64 + regNum);
+    }
+#endif
 
     return regNum;
 }
@@ -1856,9 +1872,9 @@ inline GenTreeCast* Compiler::gtNewCastNodeL(var_types typ, GenTree* op1, bool f
     return cast;
 }
 
-inline GenTreeIndir* Compiler::gtNewMethodTableLookup(GenTree* object)
+inline GenTreeIndir* Compiler::gtNewMethodTableLookup(GenTree* object, bool onStack)
 {
-    assert(object->TypeIs(TYP_REF));
+    assert(onStack || object->TypeIs(TYP_REF));
     GenTreeIndir* result = gtNewIndir(TYP_I_IMPL, object, GTF_IND_INVARIANT);
     return result;
 }
@@ -3213,19 +3229,23 @@ inline bool Compiler::fgIsThrowHlpBlk(BasicBlock* block)
     }
 
     // We can get to this point for blocks that we didn't create as throw helper blocks
-    // under stress, with implausible flow graph optimizations. So, walk the fgAddCodeList
+    // under stress, with implausible flow graph optimizations. So, walk the fgAddCodeDscMap
     // for the final determination.
 
-    for (AddCodeDsc* add = fgAddCodeList; add != nullptr; add = add->acdNext)
+    if (fgHasAddCodeDscMap())
     {
-        if (block == add->acdDstBlk)
+        for (AddCodeDsc* const add : AddCodeDscMap::ValueIteration(fgGetAddCodeDscMap()))
         {
-            return add->acdKind == SCK_RNGCHK_FAIL || add->acdKind == SCK_DIV_BY_ZERO || add->acdKind == SCK_OVERFLOW ||
-                   add->acdKind == SCK_ARG_EXCPN || add->acdKind == SCK_ARG_RNG_EXCPN || add->acdKind == SCK_FAIL_FAST;
+            if (block == add->acdDstBlk)
+            {
+                return add->acdKind == SCK_RNGCHK_FAIL || add->acdKind == SCK_DIV_BY_ZERO ||
+                       add->acdKind == SCK_OVERFLOW || add->acdKind == SCK_ARG_EXCPN ||
+                       add->acdKind == SCK_ARG_RNG_EXCPN || add->acdKind == SCK_FAIL_FAST;
+            }
         }
     }
 
-    // We couldn't find it in the fgAddCodeList
+    // We couldn't find it in the fgAddCodeDscMap
     return false;
 }
 
@@ -3239,7 +3259,7 @@ inline bool Compiler::fgIsThrowHlpBlk(BasicBlock* block)
 
 inline unsigned Compiler::fgThrowHlpBlkStkLevel(BasicBlock* block)
 {
-    for (AddCodeDsc* add = fgAddCodeList; add != nullptr; add = add->acdNext)
+    for (AddCodeDsc* const add : AddCodeDscMap::ValueIteration(fgGetAddCodeDscMap()))
     {
         if (block == add->acdDstBlk)
         {
@@ -3257,7 +3277,7 @@ inline unsigned Compiler::fgThrowHlpBlkStkLevel(BasicBlock* block)
     }
 
     noway_assert(!"fgThrowHlpBlkStkLevel should only be called if fgIsThrowHlpBlk() is true, but we can't find the "
-                  "block in the fgAddCodeList list");
+                  "block in the fgAddCodeDscMap");
 
     /* We couldn't find the basic block: it must not have been a throw helper block */
 
@@ -3306,7 +3326,7 @@ inline bool Compiler::IsPotentialGCSafePoint(GenTree* tree) const
     if (((tree->gtFlags & GTF_CALL) != 0))
     {
         // if this is not a No-GC helper
-        if (!tree->IsCall() || !emitter::emitNoGChelper(tree->AsCall()->GetHelperNum()))
+        if (!tree->IsHelperCall() || !s_helperCallProperties.IsNoGC(tree->AsCall()->GetHelperNum()))
         {
             // assume that we have a safe point.
             return true;
@@ -3582,7 +3602,7 @@ inline unsigned genMapFloatRegNumToRegArgNum(regNumber regNum)
 #elif defined(TARGET_LOONGARCH64)
     return regNum - REG_F0;
 #elif defined(TARGET_RISCV64)
-    return regNum - REG_FLTARG_0;
+    return regNum - REG_FA0;
 #elif defined(TARGET_ARM64)
     return regNum - REG_V0;
 #elif defined(UNIX_AMD64_ABI)
@@ -3865,13 +3885,15 @@ inline bool Compiler::IsStaticHelperEligibleForExpansion(GenTree* tree, bool* is
     switch (eeGetHelperNum(tree->AsCall()->gtCallMethHnd))
     {
         case CORINFO_HELP_READYTORUN_GCSTATIC_BASE:
-        case CORINFO_HELP_GETSHARED_GCSTATIC_BASE:
+        case CORINFO_HELP_GET_GCSTATIC_BASE:
+        case CORINFO_HELP_GETPINNED_GCSTATIC_BASE:
             result = true;
             gc     = true;
             retVal = SHRV_STATIC_BASE_PTR;
             break;
         case CORINFO_HELP_READYTORUN_NONGCSTATIC_BASE:
-        case CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE:
+        case CORINFO_HELP_GET_NONGCSTATIC_BASE:
+        case CORINFO_HELP_GETPINNED_NONGCSTATIC_BASE:
             result = true;
             gc     = false;
             retVal = SHRV_STATIC_BASE_PTR;
@@ -3909,30 +3931,17 @@ inline bool Compiler::IsSharedStaticHelper(GenTree* tree)
         helper == CORINFO_HELP_STRCNS || helper == CORINFO_HELP_BOX ||
 
         // helpers being added to IsSharedStaticHelper
-        helper == CORINFO_HELP_GETSTATICFIELDADDR_TLS || helper == CORINFO_HELP_GETGENERICS_GCSTATIC_BASE ||
-        helper == CORINFO_HELP_GETGENERICS_NONGCSTATIC_BASE || helper == CORINFO_HELP_GETGENERICS_GCTHREADSTATIC_BASE ||
-        helper == CORINFO_HELP_GETGENERICS_NONGCTHREADSTATIC_BASE ||
+        helper == CORINFO_HELP_GETSTATICFIELDADDR_TLS ||
 
-        helper == CORINFO_HELP_GETSHARED_GCSTATIC_BASE || helper == CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE ||
-        helper == CORINFO_HELP_GETSHARED_GCSTATIC_BASE_NOCTOR ||
-        helper == CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE_NOCTOR ||
-        helper == CORINFO_HELP_GETSHARED_GCSTATIC_BASE_DYNAMICCLASS ||
-        helper == CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE_DYNAMICCLASS ||
-        helper == CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE ||
-        helper == CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE ||
-        helper == CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR ||
-        helper == CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED ||
-        helper == CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR ||
-        helper == CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED ||
-        helper == CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_DYNAMICCLASS ||
-        helper == CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_DYNAMICCLASS ||
+        (helper >= CORINFO_HELP_GET_GCSTATIC_BASE &&
+         helper <= CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2_NOJITOPT)
 #ifdef FEATURE_READYTORUN
-        helper == CORINFO_HELP_READYTORUN_GENERIC_STATIC_BASE || helper == CORINFO_HELP_READYTORUN_GCSTATIC_BASE ||
+        || helper == CORINFO_HELP_READYTORUN_GENERIC_STATIC_BASE || helper == CORINFO_HELP_READYTORUN_GCSTATIC_BASE ||
         helper == CORINFO_HELP_READYTORUN_NONGCSTATIC_BASE || helper == CORINFO_HELP_READYTORUN_THREADSTATIC_BASE ||
         helper == CORINFO_HELP_READYTORUN_THREADSTATIC_BASE_NOCTOR ||
-        helper == CORINFO_HELP_READYTORUN_NONGCTHREADSTATIC_BASE ||
+        helper == CORINFO_HELP_READYTORUN_NONGCTHREADSTATIC_BASE
 #endif
-        helper == CORINFO_HELP_CLASSINIT_SHARED_DYNAMICCLASS;
+        || helper == CORINFO_HELP_INITCLASS;
 #if 0
     // See above TODO-Cleanup
     bool result2 = s_helperCallProperties.IsPure(helper) && s_helperCallProperties.NonNullReturn(helper);
@@ -4240,6 +4249,10 @@ bool Compiler::fgVarIsNeverZeroInitializedInProlog(unsigned varNum)
     bool       result = varDsc->lvIsParam || lvaIsOSRLocal(varNum) || (varNum == lvaGSSecurityCookie) ||
                   (varNum == lvaInlinedPInvokeFrameVar) || (varNum == lvaStubArgumentVar) || (varNum == lvaRetAddrVar);
 
+#ifdef TARGET_ARM64
+    result = result || (varNum == lvaFfrRegister);
+#endif
+
 #if FEATURE_FIXED_OUT_ARGS
     result = result || (varNum == lvaOutgoingArgSpaceVar);
 #endif
@@ -4352,7 +4365,12 @@ void GenTree::VisitOperands(TVisitor visitor)
         case GT_CNS_LNG:
         case GT_CNS_DBL:
         case GT_CNS_STR:
+#if defined(FEATURE_SIMD)
         case GT_CNS_VEC:
+#endif // FEATURE_SIMD
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
+        case GT_CNS_MSK:
+#endif // FEATURE_MASKED_HW_INTRINSICS
         case GT_MEMORYBARRIER:
         case GT_JMP:
         case GT_JCC:
@@ -4960,6 +4978,75 @@ unsigned Compiler::fgRunDfs(VisitPreorder visitPreorder, VisitPostorder visitPos
     return preOrderIndex;
 }
 
+//------------------------------------------------------------------------
+// fgVisitBlocksInLoopAwareRPO: Visit the blocks in 'dfsTree' in reverse post-order,
+// but ensure loop bodies are visited before loop successors.
+//
+// Type parameters:
+//   TFunc - Callback functor type
+//
+// Parameters:
+//   dfsTree - The DFS tree of the flow graph
+//   loops   - A collection of the loops in the flow graph
+//   func    - Callback functor that operates on a BasicBlock*
+//
+// Returns:
+//   A postorder traversal with compact loop bodies.
+//
+template <typename TFunc>
+void Compiler::fgVisitBlocksInLoopAwareRPO(FlowGraphDfsTree* dfsTree, FlowGraphNaturalLoops* loops, TFunc func)
+{
+    assert(dfsTree != nullptr);
+    assert(loops != nullptr);
+
+    // We will start by visiting blocks in reverse post-order.
+    // If we encounter the header of a loop, we will visit the loop's remaining blocks next
+    // to keep the loop body compact in the visitation order.
+    // We have to do this recursively to handle nested loops.
+    // Since the presence of loops implies we will try to visit some blocks more than once,
+    // we need to track visited blocks.
+    struct LoopAwareVisitor
+    {
+        BitVecTraits           traits;
+        BitVec                 visitedBlocks;
+        FlowGraphNaturalLoops* loops;
+        TFunc                  func;
+
+        LoopAwareVisitor(FlowGraphDfsTree* dfsTree, FlowGraphNaturalLoops* loops, TFunc func)
+            : traits(dfsTree->PostOrderTraits())
+            , visitedBlocks(BitVecOps::MakeEmpty(&traits))
+            , loops(loops)
+            , func(func)
+        {
+        }
+
+        void VisitBlock(BasicBlock* block)
+        {
+            if (BitVecOps::TryAddElemD(&traits, visitedBlocks, block->bbPostorderNum))
+            {
+                func(block);
+
+                FlowGraphNaturalLoop* const loop = loops->GetLoopByHeader(block);
+                if (loop != nullptr)
+                {
+                    loop->VisitLoopBlocksReversePostOrder([&](BasicBlock* block) {
+                        VisitBlock(block);
+                        return BasicBlockVisit::Continue;
+                    });
+                }
+            }
+        }
+    };
+
+    LoopAwareVisitor visitor(dfsTree, loops, func);
+
+    for (unsigned i = dfsTree->GetPostOrderCount(); i != 0; i--)
+    {
+        BasicBlock* const block = dfsTree->GetPostOrder(i - 1);
+        visitor.VisitBlock(block);
+    }
+}
+
 //------------------------------------------------------------------------------
 // FlowGraphNaturalLoop::VisitLoopBlocksReversePostOrder: Visit all of the
 // loop's blocks in reverse post order.
@@ -5058,37 +5145,18 @@ BasicBlockVisit FlowGraphNaturalLoop::VisitLoopBlocks(TFunc func)
 template <typename TFunc>
 BasicBlockVisit FlowGraphNaturalLoop::VisitLoopBlocksLexical(TFunc func)
 {
-    BasicBlock* top           = m_header;
-    unsigned    numLoopBlocks = 0;
-    VisitLoopBlocks([&](BasicBlock* block) {
-        if (block->bbNum < top->bbNum)
-        {
-            top = block;
-        }
+    BasicBlock* const top    = GetLexicallyTopMostBlock();
+    BasicBlock* const bottom = GetLexicallyBottomMostBlock();
 
-        numLoopBlocks++;
-        return BasicBlockVisit::Continue;
-    });
-
-    INDEBUG(BasicBlock* prev = nullptr);
-    BasicBlock* cur = top;
-    while (numLoopBlocks > 0)
+    for (BasicBlock* const block : m_dfsTree->GetCompiler()->Blocks(top, bottom))
     {
-        // If we run out of blocks the blocks aren't sequential.
-        assert(cur != nullptr);
-
-        if (ContainsBlock(cur))
+        if (ContainsBlock(block))
         {
-            assert((prev == nullptr) || (prev->bbNum < cur->bbNum));
-
-            if (func(cur) == BasicBlockVisit::Abort)
+            if (func(block) == BasicBlockVisit::Abort)
+            {
                 return BasicBlockVisit::Abort;
-
-            INDEBUG(prev = cur);
-            numLoopBlocks--;
+            }
         }
-
-        cur = cur->Next();
     }
 
     return BasicBlockVisit::Continue;

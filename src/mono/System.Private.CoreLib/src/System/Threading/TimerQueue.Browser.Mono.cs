@@ -9,6 +9,9 @@ using System.Runtime.InteropServices;
 
 namespace System.Threading
 {
+#if FEATURE_WASM_MANAGED_THREADS
+#error when compiled with FEATURE_WASM_MANAGED_THREADS, we use TimerQueue.Portable.cs
+#endif
     //
     // Browser-specific implementation of Timer
     // Based on TimerQueue.Portable.cs

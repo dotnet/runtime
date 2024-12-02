@@ -650,7 +650,7 @@ namespace System.Collections.Immutable
             ImmutableArray<T> self = this;
             self.ThrowNullRefIfNotInitialized();
             Requires.Range(index >= 0 && index <= self.Length, nameof(index));
-            Requires.Range(length >= 0 && index + length <= self.Length, nameof(length));
+            Requires.Range(length >= 0 && index <= self.Length - length, nameof(length));
 
             if (length == 0)
             {

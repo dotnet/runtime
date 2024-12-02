@@ -109,7 +109,6 @@ namespace System.Runtime.InteropServices
 
         private static Dictionary<(Type, string), ICustomMarshaler>? MarshalerInstanceCache;
 
-#pragma warning disable 8500
 #pragma warning disable 9080
         private static unsafe void SetInvokeArgs(ref string cookie, IntPtr *params_byref)
         {
@@ -117,7 +116,6 @@ namespace System.Runtime.InteropServices
             *(ByReference*)params_byref = objRef;
         }
 #pragma warning restore 9080
-#pragma warning restore 8500
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
             Justification = "Implementation detail of MarshalAs.CustomMarshaler")]

@@ -62,6 +62,7 @@ namespace System.Diagnostics
         private static readonly IEnumerable<ActivityEvent> s_emptyEvents = new ActivityEvent[0];
 #pragma warning restore CA1825
         private static readonly ActivitySource s_defaultSource = new ActivitySource(string.Empty);
+        private static readonly AsyncLocal<Activity?> s_current = new AsyncLocal<Activity?>();
 
         private const byte ActivityTraceFlagsIsSet = 0b_1_0000000; // Internal flag to indicate if flags have been set
         private const int RequestIdMaxLength = 1024;
@@ -129,6 +130,22 @@ namespace System.Diagnostics
         /// Gets whether the parent context was created from remote propagation.
         /// </summary>
         public bool HasRemoteParent { get; private set; }
+
+        /// <summary>
+        /// Gets or sets the current operation (Activity) for the current thread. This flows
+        /// across async calls.
+        /// </summary>
+        public static Activity? Current
+        {
+            get { return s_current.Value; }
+            set
+            {
+                if (ValidateSetCurrent(value))
+                {
+                    SetCurrent(value);
+                }
+            }
+        }
 
         /// <summary>
         /// Sets the status code and description on the current activity object.
@@ -200,7 +217,7 @@ namespace System.Diagnostics
 
         /// <summary>
         /// This is an ID that is specific to a particular request.   Filtering
-        /// to a particular ID insures that you get only one request that matches.
+        /// to a particular ID ensures that you get only one request that matches.
         /// Id has a hierarchical structure: '|root-id.id1_id2.id3_' Id is generated when
         /// <see cref="Start"/> is called by appending suffix to Parent.Id
         /// or ParentId; Activity has no Id until it started
@@ -1239,6 +1256,21 @@ namespace System.Diagnostics
             }
 
             return activity;
+        }
+
+        private static void SetCurrent(Activity? activity)
+        {
+            EventHandler<ActivityChangedEventArgs>? handler = CurrentChanged;
+            if (handler is null)
+            {
+                s_current.Value = activity;
+            }
+            else
+            {
+                Activity? previous = s_current.Value;
+                s_current.Value = activity;
+                handler.Invoke(null, new ActivityChangedEventArgs(previous, activity));
+            }
         }
 
         /// <summary>

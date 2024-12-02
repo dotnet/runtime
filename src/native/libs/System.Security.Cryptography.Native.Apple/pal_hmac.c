@@ -145,3 +145,19 @@ int32_t AppleCryptoNative_HmacOneShot(PAL_HashAlgorithm algorithm,
     CCHmac(ccAlgorithm, pKey, (size_t)cbKey, pBuf, (size_t)cbBuf, pOutput);
     return 1;
 }
+
+HmacCtx* AppleCryptoNative_HmacClone(const HmacCtx* ctx)
+{
+    if (ctx == NULL)
+        return NULL;
+
+    HmacCtx* cloneCtx = (HmacCtx*)malloc(sizeof(HmacCtx)); // Must use same allocator as AppleCryptoNative_HmacCreate
+
+    if (cloneCtx == NULL)
+    {
+        return NULL;
+    }
+
+    memcpy(cloneCtx, ctx, sizeof(HmacCtx));
+    return cloneCtx;
+}

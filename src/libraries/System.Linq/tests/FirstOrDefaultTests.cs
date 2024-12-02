@@ -174,8 +174,11 @@ namespace System.Linq.Tests
         {
             int?[] source = { };
 
-            Assert.Null(source.FirstOrDefault(x => true));
-            Assert.Null(source.FirstOrDefault(x => false));
+            Assert.All(CreateSources(source), source =>
+            {
+                Assert.Null(source.FirstOrDefault(x => true));
+                Assert.Null(source.FirstOrDefault(x => false));
+            });
         }
 
         [Fact]
@@ -185,7 +188,10 @@ namespace System.Linq.Tests
             Func<int, bool> predicate = IsEven;
             int expected = 4;
 
-            Assert.Equal(expected, source.FirstOrDefault(predicate));
+            Assert.All(CreateSources(source), source =>
+            {
+                Assert.Equal(expected, source.FirstOrDefault(predicate));
+            });
         }
 
         [Fact]
@@ -195,7 +201,10 @@ namespace System.Linq.Tests
             Func<int, bool> predicate = IsEven;
             int expected = 4;
 
-            Assert.Equal(expected, source.FirstOrDefault(predicate, 5));
+            Assert.All(CreateSources(source), source =>
+            {
+                Assert.Equal(expected, source.FirstOrDefault(predicate, 5));
+            });
         }
 
         [Fact]
@@ -205,7 +214,10 @@ namespace System.Linq.Tests
             Func<int, bool> predicate = IsEven;
             int expected = default(int);
 
-            Assert.Equal(expected, source.FirstOrDefault(predicate));
+            Assert.All(CreateSources(source), source =>
+            {
+                Assert.Equal(expected, source.FirstOrDefault(predicate));
+            });
         }
 
         [Fact]
@@ -215,7 +227,10 @@ namespace System.Linq.Tests
             Func<int, bool> predicate = IsEven;
             int expected = 5;
 
-            Assert.Equal(expected, source.FirstOrDefault(predicate, 5));
+            Assert.All(CreateSources(source), source =>
+            {
+                Assert.Equal(expected, source.FirstOrDefault(predicate, 5));
+            });
         }
 
         [Fact]
@@ -225,7 +240,10 @@ namespace System.Linq.Tests
             Func<int, bool> predicate = IsEven;
             int expected = 50;
 
-            Assert.Equal(expected, source.FirstOrDefault(predicate));
+            Assert.All(CreateSources(source), source =>
+            {
+                Assert.Equal(expected, source.FirstOrDefault(predicate));
+            });
         }
 
         [Fact]
@@ -235,7 +253,10 @@ namespace System.Linq.Tests
             Func<int, bool> predicate = IsEven;
             int expected = 50;
 
-            Assert.Equal(expected, source.FirstOrDefault(predicate, 5));
+            Assert.All(CreateSources(source), source =>
+            {
+                Assert.Equal(expected, source.FirstOrDefault(predicate, 5));
+            });
         }
 
         [Fact]
@@ -245,7 +266,10 @@ namespace System.Linq.Tests
             Func<int, bool> predicate = IsEven;
             int expected = 10;
 
-            Assert.Equal(expected, source.FirstOrDefault(predicate));
+            Assert.All(CreateSources(source), source =>
+            {
+                Assert.Equal(expected, source.FirstOrDefault(predicate));
+            });
         }
 
         [Fact]
@@ -255,7 +279,10 @@ namespace System.Linq.Tests
             Func<int, bool> predicate = IsEven;
             int expected = 10;
 
-            Assert.Equal(expected, source.FirstOrDefault(predicate, 5));
+            Assert.All(CreateSources(source), source =>
+            {
+                Assert.Equal(expected, source.FirstOrDefault(predicate, 5));
+            });
         }
 
         [Fact]
@@ -265,7 +292,10 @@ namespace System.Linq.Tests
             Func<int, bool> predicate = IsEven;
             int expected = 10;
 
-            Assert.Equal(expected, source.RunOnce().FirstOrDefault(predicate));
+            Assert.All(CreateSources(source), source =>
+            {
+                Assert.Equal(expected, source.RunOnce().FirstOrDefault(predicate));
+            });
         }
 
         [Fact]

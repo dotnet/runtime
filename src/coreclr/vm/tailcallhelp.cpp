@@ -11,23 +11,11 @@
 #include "threads.h"
 
 
-FCIMPL2(void*, TailCallHelp::AllocTailCallArgBuffer, INT32 size, void* gcDesc)
+FCIMPL2(void*, TailCallHelp::AllocTailCallArgBufferWorker, INT32 size, void* gcDesc)
 {
-    CONTRACTL
-    {
-        FCALL_CHECK;
-        INJECT_FAULT(FCThrow(kOutOfMemoryException););
-    }
-    CONTRACTL_END
-
+    FCALL_CONTRACT;
     _ASSERTE(size >= 0);
-
-    void* result = GetThread()->GetTailCallTls()->AllocArgBuffer(size, gcDesc);
-
-    if (result == NULL)
-        FCThrow(kOutOfMemoryException);
-
-    return result;
+    return GetThread()->GetTailCallTls()->AllocArgBuffer(size, gcDesc);
 }
 FCIMPLEND
 
@@ -81,7 +69,7 @@ struct TailCallInfo
     TypeHandle RetTyHnd;
     ArgBufferLayout ArgBufLayout;
     bool HasGCDescriptor;
-    GCRefMapBuilder GCRefMapBuilder;
+    class GCRefMapBuilder GCRefMapBuilder;
 
     TailCallInfo(
         MethodDesc* pCallerMD, MethodDesc* pCalleeMD,
@@ -281,7 +269,7 @@ bool TailCallHelp::GenerateGCDescriptor(
         TypeHandle tyHnd = val.TyHnd;
         if (tyHnd.IsValueType())
         {
-            if (!tyHnd.GetMethodTable()->ContainsPointers())
+            if (!tyHnd.GetMethodTable()->ContainsGCPointers())
             {
 #ifndef TARGET_X86
                 // The generic instantiation arg is right after this pointer

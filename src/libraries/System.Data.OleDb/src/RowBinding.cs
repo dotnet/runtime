@@ -54,7 +54,7 @@ namespace System.Data.OleDb
         {
             if (_haveData)
             {
-                Debug.Assert(false, "previous row not yet cleared");
+                Debug.Fail("previous row not yet cleared");
                 ResetValues();
             }
             _haveData = true;
@@ -110,7 +110,7 @@ namespace System.Data.OleDb
                         throw ODB.BadStatusRowAccessor(bindings[k].ColumnBindingOrdinal, (DBBindStatus)rowBindStatus[k]);
                     }
                     else
-                        Debug.Assert(false, "unknown accessor buffer");
+                        Debug.Fail("unknown accessor buffer");
                 }
             }
             return hr;
@@ -382,7 +382,7 @@ namespace System.Data.OleDb
                         case NativeDBType.VARIANT:
                         case NativeDBType.BSTR:
                         case NativeDBType.HCHAPTER:
-                            Debug.Assert(false, "expected _needToReset");
+                            Debug.Fail("expected _needToReset");
                             break;
                     }
                 }
@@ -458,7 +458,7 @@ namespace System.Data.OleDb
                     case NativeDBType.IUNKNOWN:
                         break; // known, releasing RowHandle will handle lifetimes correctly
                     default:
-                        Debug.Assert(false, "investigate");
+                        Debug.Fail("investigate");
                         break;
 #endif
                 }

@@ -176,6 +176,9 @@ namespace System.Net
         };
     }
 
+    // NOTE: While this class is not explicitly marked as obsolete,
+    // it effectively is by virtue of WebRequest.Create being obsolete.
+
     /// <summary>
     /// The FtpWebRequest class implements a basic FTP client interface.
     /// </summary>

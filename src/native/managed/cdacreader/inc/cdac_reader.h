@@ -22,8 +22,9 @@ int cdac_reader_free(intptr_t handle);
 
 // Get the SOS interface from the cDAC reader
 //   handle: handle to the reader
+//   legacyImpl: optional legacy implementation of the interface tha will be used as a fallback
 //   obj: returned SOS interface that can be QI'd to ISOSDacInterface*
-int cdac_reader_get_sos_interface(intptr_t handle, IUnknown** obj);
+int cdac_reader_create_sos_interface(intptr_t handle, IUnknown* legacyImpl, IUnknown** obj);
 
 #ifdef __cplusplus
 }

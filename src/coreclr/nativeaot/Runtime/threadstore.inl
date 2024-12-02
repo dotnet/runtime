@@ -3,9 +3,9 @@
 
 #ifdef _MSC_VER
 // a workaround to prevent tls_CurrentThread from becoming dynamically checked/initialized.
-EXTERN_C __declspec(selectany) __declspec(thread) ThreadBuffer tls_CurrentThread;
+EXTERN_C __declspec(selectany) __declspec(thread) RuntimeThreadLocals tls_CurrentThread;
 #else
-EXTERN_C __thread ThreadBuffer tls_CurrentThread;
+EXTERN_C __thread RuntimeThreadLocals tls_CurrentThread;
 #endif
 
 // static

@@ -155,7 +155,6 @@ namespace System.Security.Cryptography.Pkcs
                 I = IRented.AsSpan(0, ILen);
             }
 
-            KdfWorkLimiter.RecordIterations(iterationCount);
             IncrementalHash hash = IncrementalHash.CreateHash(hashAlgorithm);
 
             try
@@ -234,7 +233,7 @@ namespace System.Security.Cryptography.Pkcs
             }
         }
 
-        private static void AddPlusOne(Span<byte> into, Span<byte> addend)
+        private static void AddPlusOne(Span<byte> into, ReadOnlySpan<byte> addend)
         {
             Debug.Assert(into.Length == addend.Length);
 

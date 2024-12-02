@@ -131,16 +131,6 @@
       "extends": [ "microsoft-net-runtime-mono-tooling-net8" ],
       "platforms": [ "win-x64", "win-arm64", "osx-arm64", "osx-x64" ]
     },
-    "runtimes-windows-net8": {
-      "abstract": true,
-      "description": "Windows Runtime Packs for net8.0",
-      "packs": [
-        "Microsoft.NETCore.App.Runtime.net8.win-x64",
-        "Microsoft.NETCore.App.Runtime.net8.win-x86",
-        "Microsoft.NETCore.App.Runtime.net8.win-arm",
-        "Microsoft.NETCore.App.Runtime.net8.win-arm64"
-      ]
-    },
     "microsoft-net-runtime-mono-tooling-net8": {
       "abstract": true,
       "description": "Shared native build tooling for Mono runtime",
@@ -436,33 +426,5 @@
         "any": "Microsoft.NETCore.App.Runtime.Mono.wasi-wasm"
       }
     },
-    "Microsoft.NETCore.App.Runtime.net8.win-x64" : {
-      "kind": "framework",
-      "version": "${PackageVersionNet8}",
-      "alias-to": {
-        "any": "Microsoft.NETCore.App.Runtime.win-x64"
-      }
-    },
-    "Microsoft.NETCore.App.Runtime.net8.win-x86" : {
-      "kind": "framework",
-      "version": "${PackageVersionNet8}",
-      "alias-to": {
-        "any": "Microsoft.NETCore.App.Runtime.win-x86"
-      }
-    },
-    "Microsoft.NETCore.App.Runtime.net8.win-arm" : {
-      "kind": "framework",
-      "version": "${PackageVersionNet8}",
-      "alias-to": {
-        "any": "Microsoft.NETCore.App.Runtime.win-arm"
-      }
-    },
-    "Microsoft.NETCore.App.Runtime.net8.win-arm64" : {
-      "kind": "framework",
-      "version": "${PackageVersionNet8}",
-      "alias-to": {
-        "any": "Microsoft.NETCore.App.Runtime.win-arm64"
-      }
-    }
   }
 }

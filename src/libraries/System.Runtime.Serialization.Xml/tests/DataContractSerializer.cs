@@ -1958,18 +1958,18 @@ public static partial class DataContractSerializerTests
     }
 
     [Fact]
-    public static void DCS_ClassImplementingIXmlSerialiable()
+    public static void DCS_ClassImplementingIXmlSerializable()
     {
-        ClassImplementingIXmlSerialiable value = new ClassImplementingIXmlSerialiable() { StringValue = "Foo" };
-        var deserializedValue = DataContractSerializerHelper.SerializeAndDeserialize<ClassImplementingIXmlSerialiable>(value, @"<ClassImplementingIXmlSerialiable StringValue=""Foo"" BoolValue=""True"" xmlns=""http://schemas.datacontract.org/2004/07/SerializationTypes""/>");
+        ClassImplementingIXmlSerializable value = new ClassImplementingIXmlSerializable() { StringValue = "Foo" };
+        var deserializedValue = DataContractSerializerHelper.SerializeAndDeserialize<ClassImplementingIXmlSerializable>(value, @"<ClassImplementingIXmlSerializable StringValue=""Foo"" BoolValue=""True"" xmlns=""http://schemas.datacontract.org/2004/07/SerializationTypes""/>");
         Assert.Equal(value.StringValue, deserializedValue.StringValue);
     }
 
     [Fact]
-    public static void DCS_TypeWithNestedGenericClassImplementingIXmlSerialiable()
+    public static void DCS_TypeWithNestedGenericClassImplementingIXmlSerializable()
     {
-        TypeWithNestedGenericClassImplementingIXmlSerialiable.NestedGenericClassImplementingIXmlSerialiable<bool> value = new TypeWithNestedGenericClassImplementingIXmlSerialiable.NestedGenericClassImplementingIXmlSerialiable<bool>() { StringValue = "Foo" };
-        var deserializedValue = DataContractSerializerHelper.SerializeAndDeserialize<TypeWithNestedGenericClassImplementingIXmlSerialiable.NestedGenericClassImplementingIXmlSerialiable<bool>>(value, @"<TypeWithNestedGenericClassImplementingIXmlSerialiable.NestedGenericClassImplementingIXmlSerialiableOfbooleanRvdAXEcW StringValue=""Foo"" xmlns=""http://schemas.datacontract.org/2004/07/SerializationTypes""/>");
+        TypeWithNestedGenericClassImplementingIXmlSerializable.NestedGenericClassImplementingIXmlSerializable<bool> value = new TypeWithNestedGenericClassImplementingIXmlSerializable.NestedGenericClassImplementingIXmlSerializable<bool>() { StringValue = "Foo" };
+        var deserializedValue = DataContractSerializerHelper.SerializeAndDeserialize<TypeWithNestedGenericClassImplementingIXmlSerializable.NestedGenericClassImplementingIXmlSerializable<bool>>(value, @"<TypeWithNestedGenericClassImplementingIXmlSerializable.NestedGenericClassImplementingIXmlSerializableOfbooleanRvdAXEcW StringValue=""Foo"" xmlns=""http://schemas.datacontract.org/2004/07/SerializationTypes""/>");
         Assert.Equal(value.StringValue, deserializedValue.StringValue);
     }
 
@@ -4477,8 +4477,11 @@ public static partial class DataContractSerializerTests
         Assert.NotNull(actual);
     }
 
+    // Random OSR might cause a stack overflow on Windows x64
+    private static bool IsNotWindowsRandomOSR => !PlatformDetection.IsWindows || (Environment.GetEnvironmentVariable("DOTNET_JitRandomOnStackReplacement") == null);
+
     [SkipOnPlatform(TestPlatforms.Browser, "Causes a stack overflow")]
-    [Fact]
+    [ConditionalFact(nameof(IsNotWindowsRandomOSR))]
     public static void DCS_DeeplyLinkedData()
     {
         TypeWithLinkedProperty head = new TypeWithLinkedProperty();

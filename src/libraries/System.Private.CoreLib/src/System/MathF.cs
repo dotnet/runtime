@@ -309,8 +309,8 @@ namespace System
         /// <param name="x">The number whose reciprocal is to be estimated.</param>
         /// <returns>An estimate of the reciprocal of <paramref name="x" />.</returns>
         /// <remarks>
-        ///    <para>On x86/x64 hardware this may use the <c>RCPSS</c> instruction which has a maximum relative error of <c>1.5 * 2^-12</c>.</para>
-        ///    <para>On ARM64 hardware this may use the <c>FRECPE</c> instruction which performs a single Newton-Raphson iteration.</para>
+        ///    <para>On x86/x64 hardware, this may use the <c>RCPSS</c> instruction, which has a maximum relative error of <c>1.5 * 2^-12</c>.</para>
+        ///    <para>On ARM64 hardware, this may use the <c>FRECPE</c> instruction, which performs a single Newton-Raphson iteration.</para>
         ///    <para>On hardware without specialized support, this may just return <c>1.0 / x</c>.</para>
         /// </remarks>
         [Intrinsic]
@@ -327,8 +327,8 @@ namespace System
         /// <param name="x">The number whose reciprocal square root is to be estimated.</param>
         /// <returns>An estimate of the reciprocal square root <paramref name="x" />.</returns>
         /// <remarks>
-        ///    <para>On x86/x64 hardware this may use the <c>RSQRTSS</c> instruction which has a maximum relative error of <c>1.5 * 2^-12</c>.</para>
-        ///    <para>On ARM64 hardware this may use the <c>FRSQRTE</c> instruction which performs a single Newton-Raphson iteration.</para>
+        ///    <para>On x86/x64 hardware, this may use the <c>RSQRTSS</c> instruction, which has a maximum relative error of <c>1.5 * 2^-12</c>.</para>
+        ///    <para>On ARM64 hardware, this may use the <c>FRSQRTE</c> instruction, which performs a single Newton-Raphson iteration.</para>
         ///    <para>On hardware without specialized support, this may just return <c>1.0 / Sqrt(x)</c>.</para>
         /// </remarks>
         [Intrinsic]

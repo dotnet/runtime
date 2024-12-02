@@ -11,6 +11,7 @@ public record BlazorBuildOptions
     string Config,
     NativeFilesType ExpectedFileType = NativeFilesType.FromRuntimePack,
     string TargetFramework = BuildTestBase.DefaultTargetFrameworkForBlazor,
+    string BootConfigFileName = "blazor.boot.json",
     bool IsPublish = false,
     bool WarnAsError = true,
     bool ExpectSuccess = true,
@@ -18,7 +19,7 @@ public record BlazorBuildOptions
     bool ExpectFingerprintOnDotnetJs = false,
     RuntimeVariant RuntimeType = RuntimeVariant.SingleThreaded,
     GlobalizationMode GlobalizationMode = GlobalizationMode.Sharded,
-    string PredefinedIcudt = "",
+    string CustomIcuFile = "",
     bool AssertAppBundle = true,
     string? BinFrameworkDir = null
 );

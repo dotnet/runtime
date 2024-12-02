@@ -32,6 +32,31 @@ internal static partial class Interop
 
             return encoded;
         }
+        [LibraryImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_X509IsKeyStorePrivateKeyEntry")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static partial bool IsKeyStorePrivateKeyEntry(IntPtr handle);
+        [LibraryImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_X509GetCertificateForPrivateKeyEntry")]
+        private static partial IntPtr GetPrivateKeyEntryCertificate(IntPtr privatKeyEntryHandle);
+        internal static SafeX509Handle GetPrivateKeyEntryCertificate(SafeHandle privatKeyEntryHandle)
+        {
+            bool addedRef = false;
+            try
+            {
+                privatKeyEntryHandle.DangerousAddRef(ref addedRef);
+                IntPtr certificatePtr = GetPrivateKeyEntryCertificate(privatKeyEntryHandle.DangerousGetHandle());
+
+                SafeX509Handle certificateHandle = new();
+                Marshal.InitHandle(certificateHandle, certificatePtr);
+                return certificateHandle;
+            }
+            finally
+            {
+                if (addedRef)
+                {
+                    privatKeyEntryHandle.DangerousRelease();
+                }
+            }
+        }
 
         [LibraryImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_X509DecodeCollection")]
         private static partial int X509DecodeCollection(ref byte buf, int bufLen, IntPtr[]? ptrs, ref int handlesLen);

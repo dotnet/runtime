@@ -509,7 +509,7 @@ namespace System
                 return 1;
             }
 
-            if (!(value is string other))
+            if (value is not string other)
             {
                 throw new ArgumentException(SR.Arg_MustBeString);
             }
@@ -615,7 +615,7 @@ namespace System
             if (ReferenceEquals(this, obj))
                 return true;
 
-            if (!(obj is string str))
+            if (obj is not string str)
                 return false;
 
             if (this.Length != str.Length)
@@ -1056,7 +1056,7 @@ namespace System
         {
             int length = str.Length;
 
-            // We allocate one char more than the length to accomodate a null terminator.
+            // We allocate one char more than the length to accommodate a null terminator.
             // That lets the reading always be performed two characters at a time, as odd-length
             // inputs will have a final terminator to backstop the last read.
             char[]? borrowedArr = null;

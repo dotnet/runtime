@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Runtime.InteropServices;
+using System.IO;
 using Xunit;
 
 namespace System.Reflection.Emit.Tests
@@ -18,13 +18,13 @@ namespace System.Reflection.Emit.Tests
             yield return new object[] { "a\0b\0c", TypeAttributes.Public, typeof(int) };
             yield return new object[] { "Name", TypeAttributes.Public, typeof(uint) };
             yield return new object[] { "Name", TypeAttributes.Public, typeof(long) };
-            yield return new object[] { "Name", TypeAttributes.Public, typeof(char) };
-            yield return new object[] { "Name", TypeAttributes.Public, typeof(bool) };
-            yield return new object[] { "Name", TypeAttributes.Public, typeof(ulong) };
+            yield return new object[] { "N%ame", TypeAttributes.Public, typeof(char) };
+            yield return new object[] { "N`ame", TypeAttributes.Public, typeof(bool) };
+            yield return new object[] { "N'ame", TypeAttributes.Public, typeof(ulong) };
             yield return new object[] { "Name", TypeAttributes.Public, typeof(float) };
-            yield return new object[] { "Name", TypeAttributes.Public, typeof(double) };
-            yield return new object[] { "Name", TypeAttributes.Public, typeof(IntPtr) };
-            yield return new object[] { "Name", TypeAttributes.Public, typeof(UIntPtr) };
+            yield return new object[] { "Nam<e>", TypeAttributes.Public, typeof(double) };
+            yield return new object[] { "Nam~e", TypeAttributes.Public, typeof(IntPtr) };
+            yield return new object[] { "\rName", TypeAttributes.Public, typeof(UIntPtr) };
             yield return new object[] { "Name", TypeAttributes.Public, typeof(Int32Enum) };
         }
 
@@ -74,6 +74,45 @@ namespace System.Reflection.Emit.Tests
             // There should be a field called "value__" created
             FieldInfo createdUnderlyingField = createdEnum.AsType().GetField("value__", Helpers.AllFlags);
             Assert.Equal(FieldAttributes.Public | FieldAttributes.SpecialName | FieldAttributes.RTSpecialName, createdUnderlyingField.Attributes);
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        [MemberData(nameof(DefineEnum_TestData))]
+        public void DefineEnumPersistedAssembly(string name, TypeAttributes visibility, Type underlyingType)
+        {
+            PersistedAssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilder(new AssemblyName("MyAssembly"));
+            ModuleBuilder module = ab.DefineDynamicModule("MyModule");
+            EnumBuilder enumBuilder = module.DefineEnum(name, visibility, underlyingType);
+            enumBuilder.CreateType();
+
+            Assert.True(enumBuilder.IsEnum);
+            Assert.Equal(module.Assembly, enumBuilder.Assembly);
+            Assert.Equal(module, enumBuilder.Module);
+            Assert.Equal(name, enumBuilder.Name);
+            Assert.Equal(Helpers.GetFullName(name), enumBuilder.FullName);
+            Assert.Equal(typeof(Enum), enumBuilder.BaseType);
+            Assert.Null(enumBuilder.DeclaringType);
+            Assert.Equal(visibility | TypeAttributes.Sealed, enumBuilder.Attributes);
+            Assert.Equal("value__", enumBuilder.UnderlyingField.Name);
+            Assert.Equal(underlyingType, enumBuilder.UnderlyingField.FieldType);
+            Assert.Equal(FieldAttributes.Public | FieldAttributes.SpecialName, enumBuilder.UnderlyingField.Attributes);
+
+            using (var stream = new MemoryStream())
+            using (MetadataLoadContext mlc = new MetadataLoadContext(new CoreMetadataAssemblyResolver()))
+            {
+                ab.Save(stream);
+                Assembly assemblyFromStream = mlc.LoadFromStream(stream);
+                Type createdEnum = assemblyFromStream.GetType(name);
+                if (createdEnum != null) // null when name = "a\0b\0c" 
+                {
+                    Assert.True(createdEnum.IsEnum);
+                    Assert.Equal(Helpers.GetFullName(name), createdEnum.Name);
+                    Assert.Equal(Helpers.GetFullName(name), enumBuilder.FullName);
+                    Assert.Equal(typeof(Enum).FullName, createdEnum.BaseType.FullName);
+                    Assert.Null(createdEnum.DeclaringType);
+                    Assert.Equal(visibility | TypeAttributes.Sealed, createdEnum.Attributes);
+                }
+            }
         }
 
         [Fact]

@@ -2,6 +2,12 @@
 # wasm jobs. This file is essentially so we can point the pipeline in azdo
 # UI to this, and thus avoid any scheduled triggers
 
+parameters:
+- name: perfBranch
+  displayName: Performance Repo Branch
+  type: string
+  default: 'main'
+
 trigger: none
 
 pr:
@@ -32,9 +38,7 @@ extends:
           runProfile: 'v8'
           collectHelixLogsScript: ${{ variables._wasmCollectHelixLogsScript }}
           onlySanityCheck: true
-          #perfForkToUse: # dummy change
-            #url: https://github.com/radical/performance
-            #branch: fix-build
+          perfBranch: ${{ parameters.perfBranch }}
           #downloadSpecificBuild:
             #buildId: '1878694'
             #pipeline: 'perf-wasm'

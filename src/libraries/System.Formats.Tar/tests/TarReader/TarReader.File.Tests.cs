@@ -271,12 +271,21 @@ namespace System.Formats.Tar.Tests
         [InlineData("invalid-go17")] // Many octal fields are all zero chars
         [InlineData("issue11169")] // Checksum with null in the middle
         [InlineData("issue10968")] // Garbage chars
-        [InlineData("writer-big")] // The size field contains an euro char
         public void Throw_ArchivesWithRandomChars(string testCaseName)
         {
             using MemoryStream archiveStream = GetTarMemoryStream(CompressionMethod.Uncompressed, "golang_tar", testCaseName);
             using TarReader reader = new TarReader(archiveStream);
             Assert.Throws<InvalidDataException>(() => reader.GetNextEntry());
+        }
+
+        [Fact]
+        public void Throw_ArchiveIsShort()
+        {
+            // writer-big has a header for a 16G file but not its contents.
+            using MemoryStream archiveStream = GetTarMemoryStream(CompressionMethod.Uncompressed, "golang_tar", "writer-big");
+            using TarReader reader = new TarReader(archiveStream);
+            // MemoryStream throws when we try to change its Position past its Length.
+            Assert.Throws<ArgumentOutOfRangeException>(() => reader.GetNextEntry());
         }
 
         [Fact]

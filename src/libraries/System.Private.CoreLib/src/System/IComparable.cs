@@ -41,7 +41,7 @@ namespace System
 
     // Generic version of IComparable.
 
-    public interface IComparable<in T>
+    public interface IComparable<in T> where T : allows ref struct
     {
         // Interface does not need to be marked with the serializable attribute
 

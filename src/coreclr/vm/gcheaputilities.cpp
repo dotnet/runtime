@@ -41,7 +41,9 @@ bool g_sw_ww_enabled_for_gc_heap = false;
 
 #endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
 
-GVAL_IMPL_INIT(gc_alloc_context, g_global_alloc_context, {});
+GVAL_IMPL_INIT(ee_alloc_context, g_global_alloc_context, {});
+
+thread_local ee_alloc_context::PerThreadRandom ee_alloc_context::t_random = PerThreadRandom();
 
 enum GC_LOAD_STATUS {
     GC_LOAD_STATUS_BEFORE_START,
@@ -176,9 +178,9 @@ HMODULE LoadStandaloneGc(LPCWSTR libFileName, LPCWSTR libFilePath)
     // The libFileName originates either from an environment variable or from the runtimeconfig.json
     // These are trusted locations, and therefore even if it is a relative path, there is no security risk.
     //
-    // However, users often don't know the absolute path to their coreclr module, especially on production. 
+    // However, users often don't know the absolute path to their coreclr module, especially on production.
     // Therefore we allow referencing it from an arbitrary location through libFilePath instead. Users, however
-    // are warned that they should keep the file in a secure location such that it cannot be tampered. 
+    // are warned that they should keep the file in a secure location such that it cannot be tampered.
     //
     if (!ValidateModuleName(libFileName))
     {

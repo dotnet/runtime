@@ -27,7 +27,7 @@ BinStr* BinStrToUnicode(BinStr* pSource, bool Swap)
             if(wz)
             {
                 memset(wz,0,L);
-                WszMultiByteToWideChar(g_uCodePage,0,pb,-1,wz,l);
+                MultiByteToWideChar(g_uCodePage,0,pb,-1,wz,l);
                 tmp->remove(L-(DWORD)u16_strlen(wz)*sizeof(WCHAR));
 #if BIGENDIAN
                 if (Swap)
@@ -204,7 +204,7 @@ void    AsmMan::EmitFiles()
         if(!tmp->m_fNew) continue;
         tmp->m_fNew = FALSE;
 
-        WszMultiByteToWideChar(g_uCodePage,0,tmp->szName,-1,wzUniBuf,dwUniBuf);
+        MultiByteToWideChar(g_uCodePage,0,tmp->szName,-1,wzUniBuf,dwUniBuf);
         if(tmp->pHash==NULL) // if hash not explicitly specified
         {
             if(m_pAssembly      // and assembly is defined
@@ -245,7 +245,8 @@ void    AsmMan::EmitFiles()
 
 void    AsmMan::StartAssembly(_In_ __nullterminated char* szName, _In_opt_z_ char* szAlias, DWORD dwAttr, BOOL isRef)
 {
-    if(!isRef && (0==strcmp(szName, "mscorlib"))) ((Assembler*)m_pAssembler)->m_fIsMscorlib = TRUE;
+    Assembler *mPA = ((Assembler*)m_pAssembler);
+    if(!isRef && (0==strcmp(szName, "mscorlib"))) mPA->m_fIsMscorlib = TRUE;
     if(!isRef && (m_pAssembly != NULL))
     {
         if(strcmp(szName, m_pAssembly->szName))
@@ -257,11 +258,12 @@ void    AsmMan::StartAssembly(_In_ __nullterminated char* szName, _In_opt_z_ cha
     {
         if((m_pCurAsmRef = new (nothrow) AsmManAssembly()))
         {
+            bool hasOverride = (!isRef && mPA->m_pOverrideAssemblyName);
             m_pCurAsmRef->usVerMajor = (USHORT)0xFFFF;
             m_pCurAsmRef->usVerMinor = (USHORT)0xFFFF;
             m_pCurAsmRef->usBuild = (USHORT)0xFFFF;
             m_pCurAsmRef->usRevision = (USHORT)0xFFFF;
-            m_pCurAsmRef->szName = szName;
+            m_pCurAsmRef->szName = hasOverride ? mPA->m_pOverrideAssemblyName : szName;
             m_pCurAsmRef->szAlias = szAlias ? szAlias : szName;
             m_pCurAsmRef->dwAlias = (DWORD)strlen(m_pCurAsmRef->szAlias);
             m_pCurAsmRef->dwAttr = dwAttr;
@@ -273,9 +275,9 @@ void    AsmMan::StartAssembly(_In_ __nullterminated char* szName, _In_opt_z_ cha
         else
             report->error("Failed to allocate AsmManAssembly structure\n");
     }
-    ((Assembler*)m_pAssembler)->m_tkCurrentCVOwner = 0;
-    ((Assembler*)m_pAssembler)->m_CustomDescrListStack.PUSH(((Assembler*)m_pAssembler)->m_pCustomDescrList);
-    ((Assembler*)m_pAssembler)->m_pCustomDescrList = m_pCurAsmRef ? &(m_pCurAsmRef->m_CustomDescrList) : NULL;
+    mPA->m_tkCurrentCVOwner = 0;
+    mPA->m_CustomDescrListStack.PUSH(mPA->m_pCustomDescrList);
+    mPA->m_pCustomDescrList = m_pCurAsmRef ? &(m_pCurAsmRef->m_CustomDescrList) : NULL;
 
 }
 // copied from asmparse.y
@@ -554,7 +556,7 @@ void    AsmMan::EmitAssemblyRefs()
             dwFlags |= afPublicKey;
         }
         // Convert name to Unicode
-        WszMultiByteToWideChar(g_uCodePage,0,m_pCurAsmRef->szName,-1,wzUniBuf,dwUniBuf);
+        MultiByteToWideChar(g_uCodePage,0,m_pCurAsmRef->szName,-1,wzUniBuf,dwUniBuf);
         hr = m_pAsmEmitter->DefineAssemblyRef(       // S_OK or error.
                     pbPublicKeyOrToken,              // [IN] Public key or token of the assembly.
                     cbPublicKeyOrToken,              // [IN] Count of bytes in the key or token.
@@ -589,7 +591,7 @@ void    AsmMan::EmitAssembly()
     FillAssemblyMetadata(m_pAssembly, &md);
 
     // Convert name to Unicode
-    WszMultiByteToWideChar(g_uCodePage,0,m_pAssembly->szName,-1,wzUniBuf,dwUniBuf);
+    MultiByteToWideChar(g_uCodePage,0,m_pAssembly->szName,-1,wzUniBuf,dwUniBuf);
 
     hr = m_pAsmEmitter->DefineAssembly(              // S_OK or error.
         (const void*)(m_sStrongName.m_pbPublicKey), // [IN] Public key of the assembly.
@@ -858,7 +860,7 @@ HRESULT AsmMan::EmitManifest()
             if(!pComType->m_fNew) continue;
             pComType->m_fNew = FALSE;
 
-            WszMultiByteToWideChar(g_uCodePage,0,pComType->szName,-1,wzUniBuf,dwUniBuf);
+            MultiByteToWideChar(g_uCodePage,0,pComType->szName,-1,wzUniBuf,dwUniBuf);
             mdToken     tkImplementation = mdTokenNil;
             if(pComType->tkImpl) tkImplementation = pComType->tkImpl;
             else if(pComType->szFileName)
@@ -931,7 +933,7 @@ HRESULT AsmMan::EmitManifest()
             if(!pManRes->m_fNew) continue;
             pManRes->m_fNew = FALSE;
 
-            WszMultiByteToWideChar(g_uCodePage,0,pManRes->szAlias,-1,wzUniBuf,dwUniBuf);
+            MultiByteToWideChar(g_uCodePage,0,pManRes->szAlias,-1,wzUniBuf,dwUniBuf);
             if(pManRes->szAsmRefName)
             {
                 tkImplementation = GetAsmRefTokByName(pManRes->szAsmRefName);
@@ -1006,7 +1008,7 @@ HRESULT AsmMan::EmitManifest()
             }
             if(fOK || ((Assembler*)m_pAssembler)->OnErrGo)
             {
-                WszMultiByteToWideChar(g_uCodePage,0,pManRes->szName,-1,wzUniBuf,dwUniBuf);
+                MultiByteToWideChar(g_uCodePage,0,pManRes->szName,-1,wzUniBuf,dwUniBuf);
                 hr = m_pAsmEmitter->DefineManifestResource(         // S_OK or error.
                         (LPCWSTR)wzUniBuf,                          // [IN] Name of the resource.
                         tkImplementation,                           // [IN] mdFile or mdAssemblyRef that provides the resource.

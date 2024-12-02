@@ -432,4 +432,7 @@
   <data name="InvalidAssemblyName" xml:space="preserve">
     <value>The given assembly name was invalid.</value>
   </data>
+  <data name="Arg_NotSimpleTypeName" xml:space="preserve">
+    <value>'{0}' is not a simple TypeName.</value>
+  </data>
 </root>

@@ -1,9 +1,16 @@
 <Project>
 
+  <!-- Exclude any ProjectReferences to framework assemblies on the latest framework -->
+  <Import Project="$(LibrariesProjectRoot)NetCoreAppLibrary.props" Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'" />
+  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
+    <ProjectReferenceExclusion Include="@(NetCoreAppLibrary)" />
+  </ItemGroup>
+
+  <Target Name="GetTargetDir" Returns="$([System.IO.Path]::GetFullPath('$(TargetDir)'))" />
+
   <Target Name="SetupTestContextVariables"
           Condition="'$(IsTestProject)' == 'true'"
           DependsOnTargets="
-            GetProductVersions;
             DetermineTestOutputDirectory"
           BeforeTargets="Build">
     <PropertyGroup>

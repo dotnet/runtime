@@ -34,13 +34,27 @@ thread_local bool t_triedToCreateThreadStressLog;
    variable-speed CPUs (for power management), this is not accurate, but may
    be good enough.
 */
-__forceinline __declspec(naked) uint64_t getTimeStamp() {
+__forceinline
+#ifdef HOST_WINDOWS
+__declspec(naked)
+#else
+__attribute__((naked))
+#endif
+uint64_t getTimeStamp() {
     STATIC_CONTRACT_LEAF;
 
-   __asm {
+#ifdef HOST_WINDOWS
+    __asm {
         RDTSC   // read time stamp counter
         ret
-    };
+    }
+#else
+    __asm (
+        "rdtsc\n\t"   // read time stamp counter
+        "ret\n\t"
+    );
+#endif
+
 }
 
 #else // HOST_X86
@@ -197,7 +211,7 @@ static LPVOID CreateMemoryMappedFile(LPWSTR logFilename, size_t maxBytesTotal)
     }
 
     size_t fileSize = maxBytesTotal;
-    HandleHolder hMap = WszCreateFileMapping(hFile, NULL, PAGE_READWRITE, (DWORD)(fileSize >> 32), (DWORD)fileSize, NULL);
+    HandleHolder hMap = CreateFileMapping(hFile, NULL, PAGE_READWRITE, (DWORD)(fileSize >> 32), (DWORD)fileSize, NULL);
     if (hMap == NULL)
     {
         return nullptr;
@@ -375,9 +389,9 @@ void StressLog::Terminate(BOOL fProcessDetach) {
         lockh.Acquire(); lockh.Release();       // The Enter() Leave() forces a memory barrier on weak memory model systems
                                 // we want all the other threads to notice that facilitiesToLog is now zero
 
-                // This is not strictly threadsafe, since there is no way of insuring when all the
+                // This is not strictly threadsafe, since there is no way of ensuring when all the
                 // threads are out of logMsg.  In practice, since they can no longer enter logMsg
-                // and there are no blocking operations in logMsg, simply sleeping will insure
+                // and there are no blocking operations in logMsg, simply sleeping will ensure
                 // that everyone gets out.
         ClrSleepEx(2, FALSE);
         lockh.Acquire();

@@ -154,6 +154,7 @@ Assembler::Assembler()
     indexKeywords(&indxKeywords);
 
     m_pPortablePdbWriter = NULL;
+    m_pOverrideAssemblyName = NULL;
 }
 
 
@@ -327,7 +328,7 @@ BOOL Assembler::AddMethod(Method *pMethod)
     unsigned codeSize = m_CurPC;
     unsigned codeSizeAligned = codeSize;
     if (moreSections)
-        codeSizeAligned = (codeSizeAligned + 3) & ~3;    // to insure EH section aligned
+        codeSizeAligned = (codeSizeAligned + 3) & ~3;    // to ensure EH section aligned
 
     unsigned headerSize = COR_ILMETHOD::Size(&fatHeader, moreSections);
     unsigned ehSize     = COR_ILMETHOD_SECT_EH::Size(pMethod->m_dwNumExceptions, pMethod->m_ExceptionList);
@@ -587,7 +588,7 @@ void Assembler::EmitImports()
     mdToken tk;
     for(i=0; (pID = m_ImportList.PEEK(i)); i++)
     {
-        WszMultiByteToWideChar(g_uCodePage,0,pID->szDllName,-1,wzDllName,dwUniBuf-1);
+        MultiByteToWideChar(g_uCodePage,0,pID->szDllName,-1,wzDllName,dwUniBuf-1);
         if(FAILED(m_pEmitter->DefineModuleRef(             // S_OK or error.
                             wzDllName,            // [IN] DLL name
                             &tk)))      // [OUT] returned
@@ -601,7 +602,7 @@ HRESULT Assembler::EmitPinvokeMap(mdToken tk, PInvokeDescriptor* pDescr)
 {
     WCHAR*               wzAlias=&wzUniBuf[0];
 
-    if(pDescr->szAlias) WszMultiByteToWideChar(g_uCodePage,0,pDescr->szAlias,-1,wzAlias,dwUniBuf-1);
+    if(pDescr->szAlias) MultiByteToWideChar(g_uCodePage,0,pDescr->szAlias,-1,wzAlias,dwUniBuf-1);
 
     return m_pEmitter->DefinePinvokeMap(        // Return code.
                         tk,                     // [IN] FieldDef, MethodDef or MethodImpl.
@@ -639,7 +640,7 @@ BOOL Assembler::EmitMethod(Method *pMethod)
     ClassToken = (pMethod->IsGlobalMethod())? mdTokenNil
                                     : pMethod->m_pClass->m_cl;
     // Convert name to UNICODE
-    WszMultiByteToWideChar(g_uCodePage,0,pszMethodName,-1,wzMemberName,dwUniBuf-1);
+    MultiByteToWideChar(g_uCodePage,0,pszMethodName,-1,wzMemberName,dwUniBuf-1);
 
     if(IsMdPrivateScope(pMethod->m_Attr))
     {
@@ -783,7 +784,7 @@ BOOL Assembler::EmitMethod(Method *pMethod)
             if(pAN->dwName) strcpy_s(szPhonyName,dwUniBuf >> 1,pAN->szName);
             else sprintf_s(szPhonyName,(dwUniBuf >> 1),"A_%d",pAN->nNum);
 
-            WszMultiByteToWideChar(g_uCodePage,0,szPhonyName,-1,wzParName,dwUniBuf >> 1);
+            MultiByteToWideChar(g_uCodePage,0,szPhonyName,-1,wzParName,dwUniBuf >> 1);
 
             if(pAN->pValue)
             {
@@ -886,7 +887,7 @@ BOOL Assembler::EmitEvent(EventDescriptor* pED)
 
     if(!pED) return FALSE;
 
-    WszMultiByteToWideChar(g_uCodePage,0,pED->m_szName,-1,wzMemberName,dwUniBuf-1);
+    MultiByteToWideChar(g_uCodePage,0,pED->m_szName,-1,wzMemberName,dwUniBuf-1);
 
     mdAddOn = ResolveLocalMemberRef(pED->m_tkAddOn);
     if(TypeFromToken(mdAddOn) != mdtMethodDef)
@@ -946,7 +947,7 @@ BOOL Assembler::EmitProp(PropDescriptor* pPD)
 
     if(!pPD) return FALSE;
 
-    WszMultiByteToWideChar(g_uCodePage,0,pPD->m_szName,-1,wzMemberName,dwUniBuf-1);
+    MultiByteToWideChar(g_uCodePage,0,pPD->m_szName,-1,wzMemberName,dwUniBuf-1);
 
     mdSet = ResolveLocalMemberRef(pPD->m_tkSet);
     if((RidFromToken(mdSet)!=0)&&(TypeFromToken(mdSet) != mdtMethodDef))
@@ -1063,26 +1064,17 @@ BOOL Assembler::EmitClass(Class *pClass)
     LPCUTF8              szFullName;
     WCHAR*              wzFullName=&wzUniBuf[0];
     HRESULT             hr = E_FAIL;
-    GUID                guid;
     size_t              L;
     mdToken             tok;
 
     if(pClass == NULL) return FALSE;
-
-    hr = CoCreateGuid(&guid);
-    if (FAILED(hr))
-    {
-        printf("Unable to create GUID\n");
-        m_State = STATE_FAIL;
-        return FALSE;
-    }
 
     if(pClass->m_pEncloser)
         szFullName = strrchr(pClass->m_szFQN,NESTING_SEP) + 1;
     else
         szFullName = pClass->m_szFQN;
 
-    WszMultiByteToWideChar(g_uCodePage,0,szFullName,-1,wzFullName,dwUniBuf);
+    MultiByteToWideChar(g_uCodePage,0,szFullName,-1,wzFullName,dwUniBuf);
 
     L = u16_strlen(wzFullName);
     if((L==0)||(wzFullName[L-1]==L'.')) // Missing class name!
@@ -1355,7 +1347,7 @@ char* Assembler::ReflectionNotation(mdToken tk)
                 mdToken tkResScope;
                 if(SUCCEEDED(m_pImporter->GetTypeRefProps(tk,&tkResScope,wzUniBuf,cchUniBuf,&N)))
                 {
-                    int ret = WszWideCharToMultiByte(CP_UTF8,0,wzUniBuf,-1,sz,szSizeBytes,NULL,NULL);
+                    int ret = WideCharToMultiByte(CP_UTF8,0,wzUniBuf,-1,sz,szSizeBytes,NULL,NULL);
                     if(TypeFromToken(tkResScope)==mdtAssemblyRef)
                     {
                         AsmManAssembly *pAsmRef = m_pManifest->m_AsmRefLst.PEEK(RidFromToken(tkResScope)-1);
@@ -1394,7 +1386,7 @@ char* Assembler::ReflectionNotation(mdToken tk)
                                 {
                                     memcpy(wzUniBuf,pAsmRef->pLocale->ptr(),L);
                                     wzUniBuf[L>>1] = 0;
-                                    ret = WszWideCharToMultiByte(CP_UTF8,0,wzUniBuf,-1,pc,(int)szRemainingSizeBytes,NULL,NULL);
+                                    ret = WideCharToMultiByte(CP_UTF8,0,wzUniBuf,-1,pc,(int)szRemainingSizeBytes,NULL,NULL);
                                     if (ret <= 0)
                                     {
                                         report->error("Locale too long.\n");

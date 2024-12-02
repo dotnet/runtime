@@ -179,6 +179,12 @@ namespace System.Text.RegularExpressions
         public static System.Text.RegularExpressions.Regex.ValueMatchEnumerator EnumerateMatches(System.ReadOnlySpan<char> input, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Regex")] string pattern) { throw null; }
         public static System.Text.RegularExpressions.Regex.ValueMatchEnumerator EnumerateMatches(System.ReadOnlySpan<char> input, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Regex", new object[]{ "options"})] string pattern, System.Text.RegularExpressions.RegexOptions options) { throw null; }
         public static System.Text.RegularExpressions.Regex.ValueMatchEnumerator EnumerateMatches(System.ReadOnlySpan<char> input, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Regex", new object[]{ "options"})] string pattern, System.Text.RegularExpressions.RegexOptions options, System.TimeSpan matchTimeout) { throw null; }
+        public System.Text.RegularExpressions.Regex.ValueSplitEnumerator EnumerateSplits(System.ReadOnlySpan<char> input) { throw null; }
+        public System.Text.RegularExpressions.Regex.ValueSplitEnumerator EnumerateSplits(System.ReadOnlySpan<char> input, int count) { throw null; }
+        public System.Text.RegularExpressions.Regex.ValueSplitEnumerator EnumerateSplits(System.ReadOnlySpan<char> input, int count, int startat) { throw null; }
+        public static System.Text.RegularExpressions.Regex.ValueSplitEnumerator EnumerateSplits(System.ReadOnlySpan<char> input, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Regex")] string pattern) { throw null; }
+        public static System.Text.RegularExpressions.Regex.ValueSplitEnumerator EnumerateSplits(System.ReadOnlySpan<char> input, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Regex", new object[] { "options" })] string pattern, System.Text.RegularExpressions.RegexOptions options) { throw null; }
+        public static System.Text.RegularExpressions.Regex.ValueSplitEnumerator EnumerateSplits(System.ReadOnlySpan<char> input, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Regex", new object[] { "options" })] string pattern, System.Text.RegularExpressions.RegexOptions options, System.TimeSpan matchTimeout) { throw null; }
         public string[] GetGroupNames() { throw null; }
         public int[] GetGroupNumbers() { throw null; }
         public string GroupNameFromNumber(int i) { throw null; }
@@ -241,6 +247,14 @@ namespace System.Text.RegularExpressions
             private int _dummyPrimitive;
             public readonly System.Text.RegularExpressions.ValueMatch Current { get { throw null; } }
             public readonly System.Text.RegularExpressions.Regex.ValueMatchEnumerator GetEnumerator() { throw null; }
+            public bool MoveNext() { throw null; }
+        }
+        public ref partial struct ValueSplitEnumerator
+        {
+            private object _dummy;
+            private int _dummyPrimitive;
+            public readonly System.Range Current { get { throw null; } }
+            public readonly System.Text.RegularExpressions.Regex.ValueSplitEnumerator GetEnumerator() { throw null; }
             public bool MoveNext() { throw null; }
         }
     }

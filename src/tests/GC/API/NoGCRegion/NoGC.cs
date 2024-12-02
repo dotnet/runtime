@@ -1,5 +1,6 @@
 using System;
 using System.Runtime;
+using Xunit;
 
 public class Test
 {
@@ -131,7 +132,8 @@ public class Test
         return isCurrentTestPassed;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         arrByteArrayLen = 5000;
         arrByteArray = new byte[arrByteArrayLen][];

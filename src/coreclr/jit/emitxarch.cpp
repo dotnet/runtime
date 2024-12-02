@@ -49,6 +49,23 @@ bool emitter::IsKInstruction(instruction ins)
     return (flags & KInstruction) != 0;
 }
 
+//------------------------------------------------------------------------
+// IsKInstructionWithLBit: Does this instruction require K register and
+//    LBIT_IN_3BYTE_VEX_PREFIX bit.
+//
+// Arguments:
+//    ins - The instruction to check.
+//
+// Returns:
+//    `true` if this instruction requires K register and
+//    LBIT_IN_3BYTE_VEX_PREFIX bit.
+//
+bool emitter::IsKInstructionWithLBit(instruction ins)
+{
+    insFlags flags = CodeGenInterface::instInfo[ins];
+    return (flags & KInstructionWithLBit) != 0;
+}
+
 bool emitter::IsAVXOnlyInstruction(instruction ins)
 {
     return (ins >= INS_FIRST_AVX_INSTRUCTION) && (ins <= INS_LAST_AVX_INSTRUCTION);
@@ -237,7 +254,19 @@ bool emitter::IsEvexEncodableInstruction(instruction ins) const
     {
         return false;
     }
-    return HasEvexEncoding(ins);
+
+    switch (ins)
+    {
+        case INS_pclmulqdq:
+        {
+            return emitComp->compOpportunisticallyDependsOn(InstructionSet_PCLMULQDQ_V256);
+        }
+
+        default:
+        {
+            return HasEvexEncoding(ins);
+        }
+    }
 }
 
 //------------------------------------------------------------------------
@@ -353,6 +382,22 @@ bool emitter::DoesWriteZeroFlag(instruction ins)
 {
     insFlags flags = CodeGenInterface::instInfo[ins];
     return (flags & Writes_ZF) != 0;
+}
+
+//------------------------------------------------------------------------
+// DoesWriteParityFlag: check if the instruction write the
+//     PF flag.
+//
+// Arguments:
+//    ins - instruction to test
+//
+// Return Value:
+//    true if instruction writes the PF flag, false otherwise.
+//
+bool emitter::DoesWriteParityFlag(instruction ins)
+{
+    insFlags flags = CodeGenInterface::instInfo[ins];
+    return (flags & Writes_PF) != 0;
 }
 
 //------------------------------------------------------------------------
@@ -979,7 +1024,8 @@ bool emitter::AreFlagsSetToZeroCmp(regNumber reg, emitAttr opSize, GenCondition 
     // Certain instruction like and, or and xor modifies exactly same flags
     // as "test" instruction.
     // They reset OF and CF to 0 and modifies SF, ZF and PF.
-    if (DoesResetOverflowAndCarryFlags(lastIns))
+    if (DoesResetOverflowAndCarryFlags(lastIns) && DoesWriteSignFlag(lastIns) && DoesWriteZeroFlag(lastIns) &&
+        DoesWriteParityFlag(lastIns))
     {
         return id->idOpSize() == opSize;
     }
@@ -1478,7 +1524,7 @@ emitter::code_t emitter::AddVexPrefix(instruction ins, code_t code, emitAttr att
 
     code |= DEFAULT_3BYTE_VEX_PREFIX;
 
-    if (attr == EA_32BYTE)
+    if ((attr == EA_32BYTE) || IsKInstructionWithLBit(ins))
     {
         // Set L bit to 1 in case of instructions that operate on 256-bits.
         code |= LBIT_IN_3BYTE_VEX_PREFIX;
@@ -1553,18 +1599,10 @@ bool emitter::TakesRexWPrefix(const instrDesc* id) const
                 return false;
             }
 
-            case INS_vbroadcastsd:
-            case INS_vpbroadcastq:
+            case INS_gf2p8affineinvqb:
+            case INS_gf2p8affineqb:
             {
-                // TODO-XARCH-AVX512: These use W1 if a kmask is involved
-                return TakesEvexPrefix(id);
-            }
-
-            case INS_vpermilpd:
-            case INS_vpermilpdvar:
-            {
-                // TODO-XARCH-AVX512: These use W1 if a kmask or broaadcast from memory is involved
-                return TakesEvexPrefix(id);
+                return TakesVexPrefix(ins);
             }
 
             default:
@@ -2755,7 +2793,14 @@ bool emitter::emitInsCanOnlyWriteSSE2OrAVXReg(instrDesc* id)
             // These SSE instructions write to a general purpose integer register.
             return false;
         }
-
+        case INS_kmovb_gpr:
+        case INS_kmovw_gpr:
+        case INS_kmovd_gpr:
+        case INS_kmovq_gpr:
+        {
+            // These kmov writes to a general purpose integer register
+            return !isGeneralRegister(id->idReg1());
+        }
         default:
         {
             return true;
@@ -3133,7 +3178,6 @@ inline bool hasTupleTypeInfo(instruction ins)
 insTupleType emitter::insTupleTypeInfo(instruction ins) const
 {
     assert((unsigned)ins < ArrLen(insTupleTypeInfos));
-    assert(insTupleTypeInfos[ins] != INS_TT_NONE);
     return insTupleTypeInfos[ins];
 }
 
@@ -5620,7 +5664,7 @@ void emitter::emitIns_R(instruction ins, emitAttr attr, regNumber reg)
 //     varNum         - the variable on the stack to use as a base;
 //     offset         - the offset from the varNum;
 //     dataReg        - the src reg with SIMD12 value;
-//     tmpRegProvider - a tree to grab a tmp reg from if needed.
+//     tmpRegProvider - a tree to grab a tmp reg from if needed (can be null).
 //
 void emitter::emitStoreSimd12ToLclOffset(unsigned varNum, unsigned offset, regNumber dataReg, GenTree* tmpRegProvider)
 {
@@ -5635,7 +5679,7 @@ void emitter::emitStoreSimd12ToLclOffset(unsigned varNum, unsigned offset, regNu
         // Extract and store upper 4 bytes
         emitIns_S_R_I(INS_extractps, EA_16BYTE, varNum, offset + 8, dataReg, 2);
     }
-    else
+    else if (tmpRegProvider != nullptr)
     {
         regNumber tmpReg = codeGen->internalRegisters.GetSingle(tmpRegProvider);
         assert(isFloatReg(tmpReg));
@@ -5645,6 +5689,19 @@ void emitter::emitStoreSimd12ToLclOffset(unsigned varNum, unsigned offset, regNu
 
         // Store upper 4 bytes
         emitIns_S_R(INS_movss, EA_4BYTE, tmpReg, varNum, offset + 8);
+    }
+    else
+    {
+        // We don't have temp regs - let's do two shuffles then
+
+        // [0,1,2,3] -> [2,3,0,1]
+        emitIns_R_R_I(INS_pshufd, EA_16BYTE, dataReg, dataReg, 78);
+
+        //  Store upper 4 bytes
+        emitIns_S_R(INS_movss, EA_4BYTE, dataReg, varNum, offset + 8);
+
+        // Restore dataReg to its previous state: [2,3,0,1] -> [0,1,2,3]
+        emitIns_R_R_I(INS_pshufd, EA_16BYTE, dataReg, dataReg, 78);
     }
 }
 #endif // FEATURE_SIMD
@@ -6589,6 +6646,7 @@ void emitter::emitIns_R_R(instruction ins, emitAttr attr, regNumber reg1, regNum
         assert(UseEvexEncoding());
         id->idSetEvexbContext(instOptions);
     }
+    SetEvexEmbMaskIfNeeded(id, instOptions);
 
     UNATIVE_OFFSET sz = emitInsSizeRR(id);
     id->idCodeSize(sz);
@@ -7451,6 +7509,9 @@ void emitter::emitIns_R_C(
         else
 #endif // TARGET_X86
         {
+            SetEvexBroadcastIfNeeded(id, instOptions);
+            SetEvexEmbMaskIfNeeded(id, instOptions);
+
             sz = emitInsSizeCV(id, insCodeRM(ins));
         }
 
@@ -7464,9 +7525,6 @@ void emitter::emitIns_R_C(
             sz += 2; // Needs SIB byte as well.
         }
     }
-
-    SetEvexBroadcastIfNeeded(id, instOptions);
-    SetEvexEmbMaskIfNeeded(id, instOptions);
 
     id->idCodeSize(sz);
 
@@ -9282,8 +9340,7 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber ireg, int va
         return;
     }
 
-    instrDesc*     id = emitNewInstr(attr);
-    UNATIVE_OFFSET sz;
+    instrDesc* id = emitNewInstr(attr);
     id->idIns(ins);
     id->idInsFmt(fmt);
     id->idReg1(ireg);
@@ -9292,7 +9349,7 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber ireg, int va
     SetEvexBroadcastIfNeeded(id, instOptions);
     SetEvexEmbMaskIfNeeded(id, instOptions);
 
-    sz = emitInsSizeSV(id, insCodeRM(ins), varx, offs);
+    UNATIVE_OFFSET sz = emitInsSizeSV(id, insCodeRM(ins), varx, offs);
     id->idCodeSize(sz);
 #ifdef DEBUG
     id->idDebugOnlyInfo()->idVarRefOffs = emitVarRefOffs;
@@ -10975,7 +11032,7 @@ void emitter::emitDispEmbBroadcastCount(instrDesc* id) const
         return;
     }
     ssize_t baseSize   = GetInputSizeInBytes(id);
-    ssize_t vectorSize = (ssize_t)emitGetBaseMemOpSize(id);
+    ssize_t vectorSize = (ssize_t)emitGetMemOpSize(id, /* ignoreEmbeddedBroadcast */ true);
     printf(" {1to%d}", vectorSize / baseSize);
 }
 
@@ -19665,6 +19722,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_vpermt2pd:
         case INS_vpermt2ps:
         case INS_vpermt2q:
+        case INS_vpmultishiftqb:
         case INS_vshuff32x4:
         case INS_vshuff64x2:
         case INS_vshufi32x4:
@@ -19780,6 +19838,13 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_pmuludq:
         case INS_pmaddwd:
         case INS_pmaddubsw:
+        case INS_vpdpbusd:
+        case INS_vpdpwssd:
+        case INS_vpdpbusds:
+        case INS_vpdpwssds:
+        case INS_gf2p8affineinvqb:
+        case INS_gf2p8affineqb:
+        case INS_gf2p8mulb:
             result.insThroughput = PERFSCORE_THROUGHPUT_2X;
             result.insLatency += PERFSCORE_LATENCY_5C;
             break;
@@ -19952,10 +20017,6 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_vfnmsub132ss:
         case INS_vfnmsub213ss:
         case INS_vfnmsub231ss:
-        case INS_vpdpbusd:  // will be populated when the HW becomes publicly available
-        case INS_vpdpwssd:  // will be populated when the HW becomes publicly available
-        case INS_vpdpbusds: // will be populated when the HW becomes publicly available
-        case INS_vpdpwssds: // will be populated when the HW becomes publicly available
             // uops.info
             result.insThroughput = PERFSCORE_THROUGHPUT_2X;
             result.insLatency += PERFSCORE_LATENCY_4C;

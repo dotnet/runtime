@@ -34,5 +34,10 @@ namespace Internal.Runtime.CompilerHelpers
         {
             return new RuntimeTypeHandle(pEEType);
         }
+
+        private static Type GetRuntimeType(IntPtr pEEType)
+        {
+            return Type.GetTypeFromHandle(new RuntimeTypeHandle(pEEType));
+        }
     }
 }

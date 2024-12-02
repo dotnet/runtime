@@ -12,7 +12,7 @@ namespace System.Collections.Frozen
     /// <remarks>
     /// No hashing here, just a straight-up linear scan through the items.
     /// </remarks>
-    internal sealed class SmallFrozenSet<T> : FrozenSetInternalBase<T, SmallFrozenSet<T>.GSW>
+    internal sealed partial class SmallFrozenSet<T> : FrozenSetInternalBase<T, SmallFrozenSet<T>.GSW>
     {
         private readonly T[] _items;
 

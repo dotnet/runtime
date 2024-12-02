@@ -42,9 +42,9 @@ namespace System.Net.Security
         private int _readBufferCount;
         private ArrayBufferWriter<byte>? _writeBuffer;
 
-        private volatile int _writeInProgress;
-        private volatile int _readInProgress;
-        private volatile int _authInProgress;
+        private volatile bool _writeInProgress;
+        private volatile bool _readInProgress;
+        private volatile bool _authInProgress;
 
         private ExceptionDispatchInfo? _exception;
         private StreamFramer? _framer;
@@ -340,7 +340,7 @@ namespace System.Net.Security
         {
             Debug.Assert(_context is not null);
 
-            if (Interlocked.Exchange(ref _readInProgress, 1) == 1)
+            if (Interlocked.Exchange(ref _readInProgress, true))
             {
                 throw new NotSupportedException(SR.Format(SR.net_io_invalidnestedcall, "read"));
             }
@@ -441,7 +441,7 @@ namespace System.Net.Security
             }
             finally
             {
-                _readInProgress = 0;
+                _readInProgress = false;
             }
 
             static async ValueTask<int> ReadAllAsync(Stream stream, Memory<byte> buffer, bool allowZeroRead, CancellationToken cancellationToken)
@@ -506,7 +506,7 @@ namespace System.Net.Security
             Debug.Assert(_context is not null);
             Debug.Assert(_writeBuffer is not null);
 
-            if (Interlocked.Exchange(ref _writeInProgress, 1) == 1)
+            if (Interlocked.Exchange(ref _writeInProgress, true))
             {
                 throw new NotSupportedException(SR.Format(SR.net_io_invalidnestedcall, "write"));
             }
@@ -556,7 +556,7 @@ namespace System.Net.Security
             finally
             {
                 _writeBuffer.Clear();
-                _writeInProgress = 0;
+                _writeInProgress = false;
             }
         }
 
@@ -724,7 +724,7 @@ namespace System.Net.Security
             Debug.Assert(_context != null);
 
             ThrowIfFailed(authSuccessCheck: false);
-            if (Interlocked.Exchange(ref _authInProgress, 1) == 1)
+            if (Interlocked.Exchange(ref _authInProgress, true))
             {
                 throw new InvalidOperationException(SR.Format(SR.net_io_invalidnestedcall, "authenticate"));
             }
@@ -742,7 +742,7 @@ namespace System.Net.Security
             }
             finally
             {
-                _authInProgress = 0;
+                _authInProgress = false;
             }
         }
 

@@ -58,7 +58,7 @@ namespace System.Text.Json.Serialization.Tests
         public void DeserializeInvalidType(Type type)
         {
             InvalidOperationException ex = Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize("", type));
-            Assert.Contains(type.ToString(), ex.ToString());
+            Assert.Contains(type.ToString(), ex.Message);
         }
 
         [Theory]
@@ -107,7 +107,7 @@ namespace System.Text.Json.Serialization.Tests
         public async Task SerializeInvalidTypes_NullValue(Type type)
         {
             InvalidOperationException ex = await Assert.ThrowsAsync<InvalidOperationException>(() => Serializer.SerializeWrapper(null, type));
-            Assert.Contains(type.ToString(), ex.ToString());
+            Assert.Contains(type.ToString(), ex.Message);
         }
 
         [Fact]
@@ -117,7 +117,7 @@ namespace System.Text.Json.Serialization.Tests
             object obj = Activator.CreateInstance(openNullableType.MakeGenericType(typeof(int)));
 
             InvalidOperationException ex = await Assert.ThrowsAsync<InvalidOperationException>(() => Serializer.SerializeWrapper(obj, openNullableType));
-            Assert.Contains(openNullableType.ToString(), ex.ToString());
+            Assert.Contains(openNullableType.ToString(), ex.Message);
         }
 
         private class Test<T> { }
@@ -191,7 +191,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(@"{""ArraySegment"":[1]}", serialized);
 
             NotSupportedException ex = Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<ClassWithArraySegment>(serialized));
-            Assert.Contains(typeof(ArraySegment<byte>).ToString(), ex.ToString());
+            Assert.Contains(typeof(ArraySegment<byte>).ToString(), ex.Message);
         }
 
         private class ClassWithArraySegment

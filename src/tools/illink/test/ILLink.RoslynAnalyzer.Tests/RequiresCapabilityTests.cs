@@ -65,6 +65,12 @@ namespace ILLink.RoslynAnalyzer.Tests
 		}
 
 		[Fact]
+		public Task RequiresInRootAllAssembly ()
+		{
+			return RunTest ();
+		}
+
+		[Fact]
 		public Task RequiresOnAttribute ()
 		{
 			return RunTest (nameof (RequiresOnAttribute));
@@ -92,6 +98,12 @@ namespace ILLink.RoslynAnalyzer.Tests
 		public Task RequiresOnStaticConstructor ()
 		{
 			return RunTest (nameof (RequiresOnStaticConstructor));
+		}
+
+		[Fact]
+		public Task RequiresOnEntryPoint ()
+		{
+			return RunTest ();
 		}
 
 		[Fact]

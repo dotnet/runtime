@@ -151,7 +151,7 @@ void GCToCLREventSink::FireGCAllocationTick_V1(uint32_t allocationAmount, uint32
 {
     LIMITED_METHOD_CONTRACT;
 
-    FireEtwGCAllocationTick_V1(allocationAmount, allocationKind, GetClrInstanceId());
+    _ASSERTE(!"Superseded by FireGCAllocationTick_V4");
 }
 
 void GCToCLREventSink::FireGCAllocationTick_V4(uint64_t allocationAmount, 
@@ -161,6 +161,16 @@ void GCToCLREventSink::FireGCAllocationTick_V4(uint64_t allocationAmount,
                                                uint64_t objectSize)
 {
     LIMITED_METHOD_CONTRACT;
+
+#ifdef FEATURE_EVENT_TRACE
+    if (ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context,
+        TRACE_LEVEL_INFORMATION,
+        CLR_ALLOCATIONSAMPLING_KEYWORD))
+    {
+        // skip AllocationTick if AllocationSampled is emitted
+        return;
+    }
+#endif // FEATURE_EVENT_TRACE
 
     void * typeId = nullptr;
     const WCHAR * name = nullptr;

@@ -462,7 +462,7 @@ namespace System.Threading.Tasks
                 return null;
 
             // If it can be cast to an array, use it directly
-            if (!(activeTasksSource is Task[] activeTasksArray))
+            if (activeTasksSource is not Task[] activeTasksArray)
             {
                 activeTasksArray = (new List<Task>(activeTasksSource)).ToArray();
             }
@@ -490,7 +490,7 @@ namespace System.Threading.Tasks
             if (s_activeTaskSchedulers == null)
             {
                 // No schedulers were tracked.  Just give back the default.
-                return new TaskScheduler[] { s_defaultTaskScheduler };
+                return [s_defaultTaskScheduler];
             }
 
             List<TaskScheduler> schedulers = new List<TaskScheduler>();
