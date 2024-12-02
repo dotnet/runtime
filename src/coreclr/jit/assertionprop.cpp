@@ -659,11 +659,21 @@ void Compiler::optAssertionInit(bool isLocalProp)
 
         if (optCrossBlockLocalAssertionProp)
         {
-            // We may need a fairly large table.
-            // Allow for roughly one assertion per local, up to the tracked limit.
-            // (empirical studies show about 0.6 asserions/local)
+            // We may need a fairly large table. Keep size a multiple of 64.
+            // Empirical studies show about 1.16 asserions/ tracked local.
             //
-            optMaxAssertionCount = (AssertionIndex)min(maxTrackedLocals, ((lvaCount / 64) + 1) * 64);
+            if (lvaTrackedCount < 24)
+            {
+                optMaxAssertionCount = 64;
+            }
+            else if (lvaTrackedCount < 64)
+            {
+                optMaxAssertionCount = 128;
+            }
+            else
+            {
+                optMaxAssertionCount = (AssertionIndex)min(maxTrackedLocals, ((3 * lvaTrackedCount / 128) + 1) * 64);
+            }
         }
         else
         {
@@ -3623,7 +3633,17 @@ GenTree* Compiler::optAssertionProp_LclVar(ASSERT_VALARG_TP assertions, GenTreeL
         return nullptr;
     }
 
-    BitVecOps::Iter iter(apTraits, assertions);
+    // For local assertion prop we can filter the assertion set down.
+    //
+    const unsigned lclNum = tree->GetLclNum();
+
+    ASSERT_TP filteredAssertions = assertions;
+    if (optLocalAssertionProp)
+    {
+        filteredAssertions = BitVecOps::Intersection(apTraits, GetAssertionDep(lclNum), filteredAssertions);
+    }
+
+    BitVecOps::Iter iter(apTraits, filteredAssertions);
     unsigned        index = 0;
     while (iter.NextElem(&index))
     {
@@ -3672,7 +3692,7 @@ GenTree* Compiler::optAssertionProp_LclVar(ASSERT_VALARG_TP assertions, GenTreeL
         // gtFoldExpr, specifically the case of a cast, where the fold operation changes the type of the LclVar
         // node.  In such a case is not safe to perform the substitution since later on the JIT will assert mismatching
         // types between trees.
-        const unsigned lclNum = tree->GetLclNum();
+        //
         if (curAssertion->op1.lcl.lclNum == lclNum)
         {
             LclVarDsc* const lclDsc = lvaGetDesc(lclNum);
@@ -3729,7 +3749,10 @@ GenTree* Compiler::optAssertionProp_LclFld(ASSERT_VALARG_TP assertions, GenTreeL
         return nullptr;
     }
 
-    BitVecOps::Iter iter(apTraits, assertions);
+    const unsigned lclNum             = tree->GetLclNum();
+    ASSERT_TP      filteredAssertions = BitVecOps::Intersection(apTraits, GetAssertionDep(lclNum), assertions);
+
+    BitVecOps::Iter iter(apTraits, filteredAssertions);
     unsigned        index = 0;
     while (iter.NextElem(&index))
     {
@@ -3934,7 +3957,8 @@ void Compiler::optAssertionProp_RangeProperties(ASSERT_VALARG_TP assertions,
         }
 
         // First, analyze possible X ==/!= CNS assertions.
-        if (curAssertion->IsConstantInt32Assertion() && (curAssertion->op1.vn == treeVN))
+        if (curAssertion->IsConstantInt32Assertion() && (curAssertion->op1.kind == O1K_LCLVAR) &&
+            (curAssertion->op1.vn == treeVN))
         {
             if ((curAssertion->assertionKind == OAK_NOT_EQUAL) && (curAssertion->op2.u1.iconVal == 0))
             {

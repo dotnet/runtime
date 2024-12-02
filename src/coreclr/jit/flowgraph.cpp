@@ -152,13 +152,8 @@ PhaseStatus Compiler::fgInsertGCPolls()
         block = curBasicBlock;
     }
 
-    // If we split a block to create a GC Poll, call fgUpdateChangedFlowGraph.
     // We should never split blocks unless we're optimizing.
-    if (createdPollBlocks)
-    {
-        noway_assert(opts.OptimizationEnabled());
-        fgRenumberBlocks();
-    }
+    assert(!createdPollBlocks || opts.OptimizationEnabled());
 
     return result;
 }

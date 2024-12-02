@@ -40,6 +40,7 @@ DataFlow::DataFlow(Compiler* pCompiler)
 PhaseStatus Compiler::optSetBlockWeights()
 {
     noway_assert(opts.OptimizationEnabled());
+    bool madeChanges = false;
 
     assert(m_dfsTree != nullptr);
     if (m_domTree == nullptr)
@@ -53,11 +54,11 @@ PhaseStatus Compiler::optSetBlockWeights()
 
     if (m_dfsTree->HasCycle())
     {
+        madeChanges = fgRenumberBlocks();
         optMarkLoopHeads();
         optFindAndScaleGeneralLoopBlocks();
     }
 
-    bool       madeChanges                = false;
     bool       firstBBDominatesAllReturns = true;
     const bool usingProfileWeights        = fgIsUsingProfileWeights();
 
@@ -1294,7 +1295,6 @@ PhaseStatus Compiler::optUnrollLoops()
         }
 
         JITDUMP("A nested loop was unrolled. Doing another pass (pass %d)\n", passes + 1);
-        fgRenumberBlocks();
         fgInvalidateDfsTree();
         m_dfsTree = fgComputeDfs();
         m_loops   = FlowGraphNaturalLoops::Find(m_dfsTree);
@@ -1327,13 +1327,11 @@ PhaseStatus Compiler::optUnrollLoops()
             m_loops   = FlowGraphNaturalLoops::Find(m_dfsTree);
         }
 
-        fgRenumberBlocks();
-
         DBEXEC(verbose, fgDispBasicBlocks());
     }
 
 #ifdef DEBUG
-    fgDebugCheckBBlist(true);
+    fgDebugCheckBBlist();
 #endif // DEBUG
 
     return anyIRchange ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
@@ -2699,8 +2697,6 @@ PhaseStatus Compiler::optFindLoopsPhase()
     }
 #endif
 
-    fgRenumberBlocks();
-
     assert(m_dfsTree != nullptr);
     optFindLoops();
 
@@ -2724,8 +2720,6 @@ void Compiler::optFindLoops()
         m_dfsTree = fgComputeDfs();
         m_loops   = FlowGraphNaturalLoops::Find(m_dfsTree);
     }
-
-    fgRenumberBlocks();
 
     // Starting now we require all loops to be in canonical form.
     optLoopsCanonical = true;
@@ -4173,7 +4167,7 @@ void Compiler::optRecordLoopMemoryDependence(GenTree* tree, BasicBlock* block, V
 
         JITDUMP("      ==> Not updating loop memory dependence of [%06u]/" FMT_LP ", memory definition " FMT_VN
                 "/" FMT_LP " is not dependent on an ancestor loop\n",
-                dspTreeID(tree), blockLoop->GetIndex(), memoryVN, vnStore->LoopOfVN(memoryVN));
+                dspTreeID(tree), blockLoop->GetIndex(), memoryVN, vnStore->LoopOfVN(memoryVN)->GetIndex());
 #endif
         return;
     }

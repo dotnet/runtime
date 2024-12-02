@@ -5272,7 +5272,6 @@ public:
 
     bool fgModified = false;             // True if the flow graph has been modified recently
     bool fgPredsComputed = false;        // Have we computed the bbPreds list
-    bool fgOptimizedFinally = false;     // Did we optimize any try-finallys?
 
     bool fgHasSwitch = false; // any BBJ_SWITCH jumps?
 
@@ -5354,6 +5353,8 @@ public:
 
     PhaseStatus fgRemoveEmptyTry();
 
+    PhaseStatus fgRemoveEmptyTryCatch();
+
     PhaseStatus fgRemoveEmptyFinally();
 
     PhaseStatus fgMergeFinallyChains();
@@ -5376,6 +5377,8 @@ public:
     bool fgCanCloneTryRegion(BasicBlock* tryEntry);
 
     BasicBlock* fgCloneTryRegion(BasicBlock* tryEntry, CloneTryInfo& info, BasicBlock** insertAfter = nullptr);
+
+    void fgUpdateACDsBeforeEHTableEntryRemoval(unsigned XTnum);
 
     void fgCleanupContinuation(BasicBlock* continuation);
 

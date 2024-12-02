@@ -2716,6 +2716,10 @@ void CodeGen::genEmitterUnitTests()
     {
         genArm64EmitterUnitTestsSve();
     }
+    if (unitTestSectionAll || (strstr(unitTestSection, "pac") != nullptr))
+    {
+        genArm64EmitterUnitTestsPac();
+    }
 #endif
 
     genDefineTempLabel(skipLabel);
