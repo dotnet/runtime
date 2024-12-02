@@ -51,6 +51,7 @@ namespace System.Net.Test.Common
             private const string EmptyContentHandler = "EmptyContent.ashx";
             private const string RedirectHandler = "Redirect.ashx";
             private const string VerifyUploadHandler = "VerifyUpload.ashx";
+            private const string StatusCodeHandler = "StatusCode.ashx";
             private const string DeflateHandler = "Deflate.ashx";
             private const string GZipHandler = "GZip.ashx";
             private const string RemoteLoopHandler = "RemoteLoop";
@@ -71,6 +72,7 @@ namespace System.Net.Test.Common
             public static readonly Uri RemoteVerifyUploadServer = new Uri("http://" + Host + "/" + VerifyUploadHandler);
             public static readonly Uri SecureRemoteVerifyUploadServer = new Uri("https://" + SecureHost + "/" + VerifyUploadHandler);
             public static readonly Uri Http2RemoteVerifyUploadServer = new Uri("https://" + Http2Host + "/" + VerifyUploadHandler);
+            public static readonly Uri Http2RemoteStatusCodeServer = new Uri("https://" + Http2Host + "/" + StatusCodeHandler);
 
             public static readonly Uri RemoteEmptyContentServer = new Uri("http://" + Host + "/" + EmptyContentHandler);
             public static readonly Uri RemoteDeflateServer = new Uri("http://" + Host + "/" + DeflateHandler);

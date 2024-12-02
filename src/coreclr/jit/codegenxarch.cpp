@@ -96,14 +96,11 @@ void CodeGen::genEmitGSCookieCheck(bool pushReg)
 {
     noway_assert(compiler->gsGlobalSecurityCookieAddr || compiler->gsGlobalSecurityCookieVal);
 
-    // Make sure that EAX is reported as live GC-ref so that any GC that kicks in while
-    // executing GS cookie check will not collect the object pointed to by EAX.
-    //
-    // For Amd64 System V, a two-register-returned struct could be returned in RAX and RDX
-    // In such case make sure that the correct GC-ness of RDX is reported as well, so
-    // a GC object pointed by RDX will not be collected.
+#ifdef JIT32_GCENCODER
     if (!pushReg)
     {
+        // Make sure that EAX is reported as live GC-ref so that any GC that kicks in while
+        // executing GS cookie check will not collect the object pointed to by EAX.
         if (compiler->compMethodReturnsRetBufAddr())
         {
             // This is for returning in an implicit RetBuf.
@@ -126,6 +123,9 @@ void CodeGen::genEmitGSCookieCheck(bool pushReg)
             }
         }
     }
+#else
+    assert(GetEmitter()->emitGCDisabled());
+#endif
 
     regNumber regGSCheck;
     regMaskTP regMaskGSCheck = RBM_NONE;
@@ -487,6 +487,7 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, simd_t
             }
             break;
         }
+
         case TYP_SIMD12:
         {
             simd12_t val12 = *(simd12_t*)val;
@@ -516,6 +517,7 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, simd_t
             }
             break;
         }
+
         case TYP_SIMD16:
         {
             simd16_t val16 = *(simd16_t*)val;
@@ -543,6 +545,7 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, simd_t
             }
             break;
         }
+
         case TYP_SIMD32:
         {
             simd32_t val32 = *(simd32_t*)val;
@@ -570,6 +573,7 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, simd_t
             }
             break;
         }
+
         case TYP_SIMD64:
         {
             simd64_t val64 = *(simd64_t*)val;
@@ -595,10 +599,41 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, simd_t
             }
             break;
         }
+
         default:
         {
             unreached();
         }
+    }
+}
+
+//----------------------------------------------------------------------------------
+// genSetRegToConst: generate code to set target SIMD register to a given constant value
+//
+// Arguments:
+//    targetReg  - target SIMD register
+//    targetType - target's type
+//    simdmask_t - constant data (its width depends on type)
+//
+void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, simdmask_t* val)
+{
+    assert(varTypeIsMask(targetType));
+
+    emitter* emit = GetEmitter();
+    emitAttr attr = emitTypeSize(targetType);
+
+    if (val->IsAllBitsSet())
+    {
+        emit->emitIns_SIMD_R_R_R(INS_kxnorq, EA_8BYTE, targetReg, targetReg, targetReg, INS_OPTS_NONE);
+    }
+    else if (val->IsZero())
+    {
+        emit->emitIns_SIMD_R_R_R(INS_kxorq, EA_8BYTE, targetReg, targetReg, targetReg, INS_OPTS_NONE);
+    }
+    else
+    {
+        CORINFO_FIELD_HANDLE hnd = emit->emitSimdMaskConst(*val);
+        emit->emitIns_R_C(ins_Load(targetType), attr, targetReg, hnd, 0);
     }
 }
 #endif // FEATURE_SIMD
@@ -606,7 +641,7 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, simd_t
 /***********************************************************************************
  *
  * Generate code to set a register 'targetReg' of type 'targetType' to the constant
- * specified by the constant (GT_CNS_INT, GT_CNS_DBL, or GT_CNS_VEC) in 'tree'. This
+ * specified by the constant (GT_CNS_INT, GT_CNS_DBL, GT_CNS_VEC, or GT_CNS_MSK) in 'tree'. This
  * does not call genProduceReg() on the target register.
  */
 void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTree* tree)
@@ -689,16 +724,23 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
         }
         break;
 
+#if defined(FEATURE_SIMD)
         case GT_CNS_VEC:
         {
-#if defined(FEATURE_SIMD)
             GenTreeVecCon* vecCon = tree->AsVecCon();
             genSetRegToConst(vecCon->GetRegNum(), targetType, &vecCon->gtSimdVal);
-#else
-            unreached();
-#endif
             break;
         }
+#endif // FEATURE_SIMD
+
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
+        case GT_CNS_MSK:
+        {
+            GenTreeMskCon* mskCon = tree->AsMskCon();
+            genSetRegToConst(mskCon->GetRegNum(), targetType, &mskCon->gtSimdMaskVal);
+            break;
+        }
+#endif // FEATURE_MASKED_HW_INTRINSICS
 
         default:
             unreached();
@@ -1860,11 +1902,12 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             FALLTHROUGH;
 
         case GT_CNS_DBL:
-            genSetRegToConst(targetReg, targetType, treeNode);
-            genProduceReg(treeNode);
-            break;
-
+#if defined(FEATURE_SIMD)
         case GT_CNS_VEC:
+#endif // FEATURE_SIMD
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
+        case GT_CNS_MSK:
+#endif // FEATURE_MASKED_HW_INTRINSICS
             genSetRegToConst(targetReg, targetType, treeNode);
             genProduceReg(treeNode);
             break;
@@ -2101,8 +2144,10 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 
         case GT_MEMORYBARRIER:
         {
-            CodeGen::BarrierKind barrierKind =
-                treeNode->gtFlags & GTF_MEMORYBARRIER_LOAD ? BARRIER_LOAD_ONLY : BARRIER_FULL;
+            BarrierKind barrierKind =
+                treeNode->gtFlags & GTF_MEMORYBARRIER_LOAD
+                    ? BARRIER_LOAD_ONLY
+                    : (treeNode->gtFlags & GTF_MEMORYBARRIER_STORE ? BARRIER_STORE_ONLY : BARRIER_FULL);
 
             instGen_MemoryBarrier(barrierKind);
             break;
@@ -6153,7 +6198,6 @@ void CodeGen::genCall(GenTreeCall* call)
             switch (helperNum)
             {
                 case CORINFO_HELP_MON_ENTER:
-                case CORINFO_HELP_MON_ENTER_STATIC:
                     noway_assert(compiler->syncStartEmitCookie == nullptr);
                     compiler->syncStartEmitCookie =
                         GetEmitter()->emitAddLabel(gcInfo.gcVarPtrSetCur, gcInfo.gcRegGCrefSetCur,
@@ -6161,7 +6205,6 @@ void CodeGen::genCall(GenTreeCall* call)
                     noway_assert(compiler->syncStartEmitCookie != nullptr);
                     break;
                 case CORINFO_HELP_MON_EXIT:
-                case CORINFO_HELP_MON_EXIT_STATIC:
                     noway_assert(compiler->syncEndEmitCookie == nullptr);
                     compiler->syncEndEmitCookie =
                         GetEmitter()->emitAddLabel(gcInfo.gcVarPtrSetCur, gcInfo.gcRegGCrefSetCur,
@@ -6268,7 +6311,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call X86_ARG(target_ssize_t stackA
     if (target != nullptr)
     {
 #ifdef TARGET_X86
-        if (call->IsVirtualStub() && (call->gtCallType == CT_INDIRECT))
+        if (call->IsVirtualStub() && (call->gtCallType == CT_INDIRECT) && !compiler->IsTargetAbi(CORINFO_NATIVEAOT_ABI))
         {
             // On x86, we need to generate a very specific pattern for indirect VSD calls:
             //
@@ -6516,9 +6559,8 @@ void CodeGen::genJmpPlaceVarArgs()
     for (unsigned varNum = 0; varNum < compiler->info.compArgsCount; varNum++)
     {
         const ABIPassingInformation& abiInfo = compiler->lvaGetParameterABIInfo(varNum);
-        for (unsigned i = 0; i < abiInfo.NumSegments; i++)
+        for (const ABIPassingSegment& segment : abiInfo.Segments())
         {
-            const ABIPassingSegment& segment = abiInfo.Segment(i);
             if (segment.IsPassedOnStack())
             {
                 continue;
@@ -8197,12 +8239,15 @@ void CodeGen::genPutArgStkFieldList(GenTreePutArgStk* putArgStk)
             unsigned pushSize = genTypeSize(genActualType(fieldType));
             assert((pushSize % 4) == 0);
             adjustment -= pushSize;
+
+            // If there is padding before this argument, zero it out.
+            assert((adjustment % TARGET_POINTER_SIZE) == 0);
             while (adjustment != 0)
             {
-                inst_IV(INS_push, 0);
-                currentOffset -= pushSize;
-                AddStackLevel(pushSize);
-                adjustment -= pushSize;
+                inst_IV(INS_push, 0); // Push TARGET_POINTER_SIZE bytes of zeros.
+                currentOffset -= TARGET_POINTER_SIZE;
+                AddStackLevel(TARGET_POINTER_SIZE);
+                adjustment -= TARGET_POINTER_SIZE;
             }
 
             m_pushStkArg = true;
@@ -8838,7 +8883,7 @@ void CodeGen::genCreateAndStoreGCInfoX64(unsigned codeSize, unsigned prologSize 
     // GC Encoder automatically puts the GC info in the right spot using ICorJitInfo::allocGCInfo(size_t)
     // let's save the values anyway for debugging purposes
     compiler->compInfoBlkAddr = gcInfoEncoder->Emit();
-    compiler->compInfoBlkSize = 0; // not exposed by the GCEncoder interface
+    compiler->compInfoBlkSize = gcInfoEncoder->GetEncodedGCInfoSize();
 }
 #endif // !JIT32_GCENCODER
 
@@ -11032,7 +11077,7 @@ void CodeGen::genRestoreCalleeSavedFltRegs(unsigned lclFrameSize)
 // instGen_MemoryBarrier: Emit a MemoryBarrier instruction
 //
 // Arguments:
-//     barrierKind - kind of barrier to emit (Load-only is no-op on xarch)
+//     barrierKind - kind of barrier to emit (Load-only and Store-only are no-ops on xarch)
 //
 // Notes:
 //     All MemoryBarriers instructions can be removed by DOTNET_JitNoMemoryBarriers=1

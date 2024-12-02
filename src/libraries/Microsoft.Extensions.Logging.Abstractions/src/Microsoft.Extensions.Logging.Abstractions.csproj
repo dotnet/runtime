@@ -38,6 +38,10 @@ Microsoft.Extensions.Logging.Abstractions.NullLogger</PackageDescription>
     <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
   </ItemGroup>
 
+  <ItemGroup Condition="'$(TargetFramework)' != '$(NetCoreAppCurrent)'">
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Diagnostics.DiagnosticSource\src\System.Diagnostics.DiagnosticSource.csproj" />
+  </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.DependencyInjection.Abstractions\src\Microsoft.Extensions.DependencyInjection.Abstractions.csproj" />
 

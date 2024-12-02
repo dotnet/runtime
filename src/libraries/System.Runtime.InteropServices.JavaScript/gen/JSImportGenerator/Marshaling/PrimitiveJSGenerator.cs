@@ -11,49 +11,49 @@ namespace Microsoft.Interop.JavaScript
 {
     internal class PrimitiveJSGenerator : BaseJSGenerator
     {
-        public PrimitiveJSGenerator(MarshalerType marshalerType, IMarshallingGenerator inner)
+        public PrimitiveJSGenerator(MarshalerType marshalerType, IBoundMarshallingGenerator inner)
             : base(marshalerType, inner)
         {
         }
 
-        public PrimitiveJSGenerator(MarshalerType marshalerType)
-            : base(marshalerType, new Forwarder())
+        public PrimitiveJSGenerator(TypePositionInfo info, StubCodeContext context, MarshalerType marshalerType)
+            : base(marshalerType, new Forwarder().Bind(info, context))
         {
         }
 
         // TODO order parameters in such way that affinity capturing parameters are emitted first
-        public override IEnumerable<StatementSyntax> Generate(TypePositionInfo info, StubCodeContext context)
+        public override IEnumerable<StatementSyntax> Generate(StubIdentifierContext context)
         {
-            string argName = context.GetAdditionalIdentifier(info, "js_arg");
-            var target = info.IsManagedReturnPosition
+            string argName = context.GetAdditionalIdentifier(TypeInfo, "js_arg");
+            var target = TypeInfo.IsManagedReturnPosition
                 ? Constants.ArgumentReturn
                 : argName;
 
-            var source = info.IsManagedReturnPosition
-                ? Argument(IdentifierName(context.GetIdentifiers(info).native))
-                : _inner.AsArgument(info, context);
+            var source = TypeInfo.IsManagedReturnPosition
+                ? Argument(IdentifierName(context.GetIdentifiers(TypeInfo).native))
+                : _inner.AsArgument(context);
 
-            if (context.CurrentStage == StubCodeContext.Stage.UnmarshalCapture && context.Direction == MarshalDirection.ManagedToUnmanaged && info.IsManagedReturnPosition)
+            if (context.CurrentStage == StubIdentifierContext.Stage.UnmarshalCapture && CodeContext.Direction == MarshalDirection.ManagedToUnmanaged && TypeInfo.IsManagedReturnPosition)
             {
                 yield return ToManagedMethod(target, source);
             }
 
-            if (context.CurrentStage == StubCodeContext.Stage.Marshal && context.Direction == MarshalDirection.UnmanagedToManaged && info.IsManagedReturnPosition)
+            if (context.CurrentStage == StubIdentifierContext.Stage.Marshal && CodeContext.Direction == MarshalDirection.UnmanagedToManaged && TypeInfo.IsManagedReturnPosition)
             {
                 yield return ToJSMethod(target, source);
             }
 
-            foreach (var x in base.Generate(info, context))
+            foreach (var x in base.Generate(context))
             {
                 yield return x;
             }
 
-            if (context.CurrentStage == StubCodeContext.Stage.PinnedMarshal && context.Direction == MarshalDirection.ManagedToUnmanaged && !info.IsManagedReturnPosition)
+            if (context.CurrentStage == StubIdentifierContext.Stage.PinnedMarshal && CodeContext.Direction == MarshalDirection.ManagedToUnmanaged && !TypeInfo.IsManagedReturnPosition)
             {
                 yield return ToJSMethod(target, source);
             }
 
-            if (context.CurrentStage == StubCodeContext.Stage.Unmarshal && context.Direction == MarshalDirection.UnmanagedToManaged && !info.IsManagedReturnPosition)
+            if (context.CurrentStage == StubIdentifierContext.Stage.Unmarshal && CodeContext.Direction == MarshalDirection.UnmanagedToManaged && !TypeInfo.IsManagedReturnPosition)
             {
                 yield return ToManagedMethod(target, source);
             }

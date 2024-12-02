@@ -174,7 +174,9 @@ namespace System.Collections.Generic
         public void TrimExcess() { }
         public void TrimExcess(int capacity) { }
         public bool TryAdd(TKey key, TValue value) { throw null; }
+        public bool TryAdd(TKey key, TValue value, out int index) { throw null; }
         public bool TryGetValue(TKey key, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TValue value) { throw null; }
+        public bool TryGetValue(TKey key, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TValue value, out int index) { throw null; }
         public partial struct Enumerator : System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<TKey, TValue>>, System.Collections.IDictionaryEnumerator, System.Collections.IEnumerator, System.IDisposable
         {
             private object _dummy;
@@ -580,55 +582,20 @@ namespace System.Collections.Generic
         }
     }
 }
-namespace System.Collections.ObjectModel
-{
-    public partial class ReadOnlySet<T> : System.Collections.Generic.ICollection<T>, System.Collections.Generic.IEnumerable<T>, System.Collections.Generic.IReadOnlyCollection<T>, System.Collections.Generic.IReadOnlySet<T>, System.Collections.Generic.ISet<T>, System.Collections.ICollection, System.Collections.IEnumerable
-    {
-        public ReadOnlySet(System.Collections.Generic.ISet<T> @set) { }
-        public int Count { get { throw null; } }
-        public static System.Collections.ObjectModel.ReadOnlySet<T> Empty { get { throw null; } }
-        protected System.Collections.Generic.ISet<T> Set { get { throw null; } }
-        bool System.Collections.Generic.ICollection<T>.IsReadOnly { get { throw null; } }
-        bool System.Collections.ICollection.IsSynchronized { get { throw null; } }
-        object System.Collections.ICollection.SyncRoot { get { throw null; } }
-        public bool Contains(T item) { throw null; }
-        public System.Collections.Generic.IEnumerator<T> GetEnumerator() { throw null; }
-        public bool IsProperSubsetOf(System.Collections.Generic.IEnumerable<T> other) { throw null; }
-        public bool IsProperSupersetOf(System.Collections.Generic.IEnumerable<T> other) { throw null; }
-        public bool IsSubsetOf(System.Collections.Generic.IEnumerable<T> other) { throw null; }
-        public bool IsSupersetOf(System.Collections.Generic.IEnumerable<T> other) { throw null; }
-        public bool Overlaps(System.Collections.Generic.IEnumerable<T> other) { throw null; }
-        public bool SetEquals(System.Collections.Generic.IEnumerable<T> other) { throw null; }
-        void System.Collections.Generic.ICollection<T>.Add(T item) { }
-        void System.Collections.Generic.ICollection<T>.Clear() { }
-        void System.Collections.Generic.ICollection<T>.CopyTo(T[] array, int arrayIndex) { }
-        bool System.Collections.Generic.ICollection<T>.Remove(T item) { throw null; }
-        bool System.Collections.Generic.ISet<T>.Add(T item) { throw null; }
-        void System.Collections.Generic.ISet<T>.ExceptWith(System.Collections.Generic.IEnumerable<T> other) { }
-        void System.Collections.Generic.ISet<T>.IntersectWith(System.Collections.Generic.IEnumerable<T> other) { }
-        void System.Collections.Generic.ISet<T>.SymmetricExceptWith(System.Collections.Generic.IEnumerable<T> other) { }
-        void System.Collections.Generic.ISet<T>.UnionWith(System.Collections.Generic.IEnumerable<T> other) { }
-        void System.Collections.ICollection.CopyTo(System.Array array, int index) { }
-        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
-    }
-}
 #endif // !BUILDING_CORELIB_REFERENCE
 namespace System.Collections.Generic
 {
     public static partial class CollectionExtensions
     {
         public static void AddRange<T>(this System.Collections.Generic.List<T> list, params System.ReadOnlySpan<T> source) { }
-        public static System.Collections.Generic.Dictionary<TKey, TValue>.AlternateLookup<TAlternateKey> GetAlternateLookup<TKey, TValue, TAlternateKey>(this System.Collections.Generic.Dictionary<TKey, TValue> dictionary) where TKey : notnull where TAlternateKey : notnull, allows ref struct { throw null; }
-        public static System.Collections.Generic.HashSet<T>.AlternateLookup<TAlternate> GetAlternateLookup<T, TAlternate>(this System.Collections.Generic.HashSet<T> set) where TAlternate : allows ref struct { throw null; }
         public static void CopyTo<T>(this System.Collections.Generic.List<T> list, System.Span<T> destination) { }
         public static TValue? GetValueOrDefault<TKey, TValue>(this System.Collections.Generic.IReadOnlyDictionary<TKey, TValue> dictionary, TKey key) { throw null; }
         public static TValue GetValueOrDefault<TKey, TValue>(this System.Collections.Generic.IReadOnlyDictionary<TKey, TValue> dictionary, TKey key, TValue defaultValue) { throw null; }
         public static void InsertRange<T>(this System.Collections.Generic.List<T> list, int index, params System.ReadOnlySpan<T> source) { }
         public static bool Remove<TKey, TValue>(this System.Collections.Generic.IDictionary<TKey, TValue> dictionary, TKey key, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TValue value) { throw null; }
         public static bool TryAdd<TKey, TValue>(this System.Collections.Generic.IDictionary<TKey, TValue> dictionary, TKey key, TValue value) { throw null; }
-        public static bool TryGetAlternateLookup<TKey, TValue, TAlternateKey>(this System.Collections.Generic.Dictionary<TKey, TValue> dictionary, out System.Collections.Generic.Dictionary<TKey, TValue>.AlternateLookup<TAlternateKey> lookup) where TKey : notnull where TAlternateKey : notnull, allows ref struct { throw null; }
-        public static bool TryGetAlternateLookup<T, TAlternate>(this System.Collections.Generic.HashSet<T> set, out System.Collections.Generic.HashSet<T>.AlternateLookup<TAlternate> lookup) where TAlternate : allows ref struct { throw null; }
         public static System.Collections.ObjectModel.ReadOnlyCollection<T> AsReadOnly<T>(this IList<T> list) { throw null; }
+        public static System.Collections.ObjectModel.ReadOnlySet<T> AsReadOnly<T>(this ISet<T> set) { throw null; }
         public static System.Collections.ObjectModel.ReadOnlyDictionary<TKey, TValue> AsReadOnly<TKey, TValue>(this IDictionary<TKey, TValue> dictionary) where TKey : notnull { throw null; }
     }
     public abstract partial class Comparer<T> : System.Collections.Generic.IComparer<T>, System.Collections.IComparer
@@ -675,6 +642,7 @@ namespace System.Collections.Generic
         public bool ContainsKey(TKey key) { throw null; }
         public bool ContainsValue(TValue value) { throw null; }
         public int EnsureCapacity(int capacity) { throw null; }
+        public System.Collections.Generic.Dictionary<TKey, TValue>.AlternateLookup<TAlternateKey> GetAlternateLookup<TAlternateKey>() where TAlternateKey : notnull, allows ref struct { throw null; }
         public System.Collections.Generic.Dictionary<TKey, TValue>.Enumerator GetEnumerator() { throw null; }
         [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
@@ -696,6 +664,7 @@ namespace System.Collections.Generic
         public void TrimExcess() { }
         public void TrimExcess(int capacity) { }
         public bool TryAdd(TKey key, TValue value) { throw null; }
+        public bool TryGetAlternateLookup<TAlternateKey>(out System.Collections.Generic.Dictionary<TKey, TValue>.AlternateLookup<TAlternateKey> lookup) where TAlternateKey : notnull, allows ref struct { throw null; }
         public bool TryGetValue(TKey key, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TValue value) { throw null; }
         public readonly partial struct AlternateLookup<TAlternateKey> where TAlternateKey : notnull, allows ref struct
         {
@@ -812,6 +781,7 @@ namespace System.Collections.Generic
         public static System.Collections.Generic.IEqualityComparer<System.Collections.Generic.HashSet<T>> CreateSetComparer() { throw null; }
         public int EnsureCapacity(int capacity) { throw null; }
         public void ExceptWith(System.Collections.Generic.IEnumerable<T> other) { }
+        public System.Collections.Generic.HashSet<T>.AlternateLookup<TAlternate> GetAlternateLookup<TAlternate>() where TAlternate : allows ref struct { throw null; }
         public System.Collections.Generic.HashSet<T>.Enumerator GetEnumerator() { throw null; }
         [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
@@ -832,6 +802,7 @@ namespace System.Collections.Generic
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
         public void TrimExcess() { }
         public void TrimExcess(int capacity) { }
+        public bool TryGetAlternateLookup<TAlternate>(out System.Collections.Generic.HashSet<T>.AlternateLookup<TAlternate> lookup) where TAlternate : allows ref struct { throw null; }
         public bool TryGetValue(T equalValue, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out T actualValue) { throw null; }
         public void UnionWith(System.Collections.Generic.IEnumerable<T> other) { }
         public readonly partial struct AlternateLookup<TAlternate> where TAlternate : allows ref struct

@@ -176,7 +176,7 @@ namespace System.Threading.Tasks
         // When true the Async Causality logging trace is enabled as well as a dictionary to relate operation ids with Tasks
         internal static bool s_asyncDebuggingEnabled; // false by default
 
-        // This dictonary relates the task id, from an operation id located in the Async Causality log to the actual
+        // This dictionary relates the task id, from an operation id located in the Async Causality log to the actual
         // task. This is to be used by the debugger ONLY. Task in this dictionary represent current active tasks.
         private static Dictionary<int, Task>? s_currentActiveTasks;
 
@@ -819,6 +819,7 @@ namespace System.Threading.Tasks
 
         /// <summary>Gets whether the task's debugger notification for wait completion bit is set.</summary>
         /// <returns>true if the bit is set; false if it's not set.</returns>
+        [FeatureSwitchDefinition("System.Diagnostics.Debugger.IsSupported")]
         internal bool IsWaitNotificationEnabled => // internal only to enable unit tests; would otherwise be private
             (m_stateFlags & (int)TaskStateFlags.WaitCompletionNotification) != 0;
 
@@ -1791,7 +1792,7 @@ namespace System.Threading.Tasks
         {
             //
             // WARNING: The Task/Task<TResult>/TaskCompletionSource classes
-            // have all been carefully crafted to insure that GetExceptions()
+            // have all been carefully crafted to ensure that GetExceptions()
             // is never called while AddException() is being called.  There
             // are locks taken on m_contingentProperties in several places:
             //
@@ -1803,7 +1804,7 @@ namespace System.Threading.Tasks
             //    is allowed to complete its operation before Task.Exception_get()
             //    can access GetExceptions().
             //
-            // -- Task.ThrowIfExceptional(): The lock insures that Wait() will
+            // -- Task.ThrowIfExceptional(): The lock ensures that Wait() will
             //    not attempt to call GetExceptions() while Task<TResult>.TrySetException()
             //    is in the process of calling AddException().
             //
@@ -2966,6 +2967,9 @@ namespace System.Threading.Tasks
         // to be able to see the method on the stack and inspect arguments).
         private bool InternalWaitCore(int millisecondsTimeout, CancellationToken cancellationToken)
         {
+#if TARGET_WASI
+            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+#endif
             // If the task has already completed, there's nothing to wait for.
             bool returnValue = IsCompleted;
             if (returnValue)
@@ -3056,6 +3060,27 @@ namespace System.Threading.Tasks
             bool returnValue = SpinWait(millisecondsTimeout);
             if (!returnValue)
             {
+#if CORECLR
+                if (ThreadPoolWorkQueue.s_prioritizationExperiment)
+                {
+                    // We're about to block waiting for the task to complete, which is expensive, and if
+                    // the task being waited on depends on some other work to run, this thread could end up
+                    // waiting for some other thread to do work. If the two threads are part of the same scheduler,
+                    // such as the thread pool, that could lead to a (temporary) deadlock. This is made worse by
+                    // it also leading to a possible priority inversion on previously queued work. Each thread in
+                    // the thread pool has a local queue. A key motivator for this local queue is it allows this
+                    // thread to create work items that it will then prioritize above all other work in the
+                    // pool. However, while this thread makes its own local queue the top priority, that queue is
+                    // every other thread's lowest priority. If this thread blocks, all of its created work that's
+                    // supposed to be high priority becomes low priority, and work that's typically part of a
+                    // currently in-flight operation gets deprioritized relative to new requests coming into the
+                    // pool, which can lead to the whole system slowing down or even deadlocking. To address that,
+                    // just before we block, we move all local work into a global queue, so that it's at least
+                    // prioritized by other threads more fairly with respect to other work.
+                    ThreadPoolWorkQueue.TransferAllLocalWorkItemsToHighPriorityGlobalQueue();
+                }
+#endif
+
                 var mres = new SetOnInvokeMres();
                 try
                 {
@@ -3516,7 +3541,7 @@ namespace System.Threading.Tasks
                             stc.Run(this, canInlineContinuationTask: false);
                         }
                     }
-                    else if (!(currentContinuation is ITaskCompletionAction))
+                    else if (currentContinuation is not ITaskCompletionAction)
                     {
                         if (forceContinuationsAsync)
                         {
@@ -4483,7 +4508,7 @@ namespace System.Threading.Tasks
                 //    activity, we ensure we at least create a correlation from the current activity to
                 //    the continuation that runs when the promise completes.
                 if ((this.Options & (TaskCreationOptions)InternalTaskOptions.PromiseTask) != 0 &&
-                    !(this is ITaskCompletionAction))
+                    this is not ITaskCompletionAction)
                 {
                     TplEventSource log = TplEventSource.Log;
                     if (log.IsEnabled())
@@ -4681,6 +4706,9 @@ namespace System.Threading.Tasks
         [MethodImpl(MethodImplOptions.NoOptimization)]  // this is needed for the parallel debugger
         public static void WaitAll(params Task[] tasks)
         {
+#if TARGET_WASI
+            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+#endif
             if (tasks is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.tasks);
@@ -4706,6 +4734,9 @@ namespace System.Threading.Tasks
         [UnsupportedOSPlatform("browser")]
         public static void WaitAll(params ReadOnlySpan<Task> tasks)
         {
+#if TARGET_WASI
+            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+#endif
             bool waitResult = WaitAllCore(tasks, Timeout.Infinite, default);
             Debug.Assert(waitResult, "expected wait to succeed");
         }
@@ -4743,6 +4774,9 @@ namespace System.Threading.Tasks
         [MethodImpl(MethodImplOptions.NoOptimization)]  // this is needed for the parallel debugger
         public static bool WaitAll(Task[] tasks, TimeSpan timeout)
         {
+#if TARGET_WASI
+            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+#endif
             long totalMilliseconds = (long)timeout.TotalMilliseconds;
             if (totalMilliseconds is < -1 or > int.MaxValue)
             {
@@ -4787,6 +4821,9 @@ namespace System.Threading.Tasks
         [MethodImpl(MethodImplOptions.NoOptimization)]  // this is needed for the parallel debugger
         public static bool WaitAll(Task[] tasks, int millisecondsTimeout)
         {
+#if TARGET_WASI
+            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+#endif
             if (tasks is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.tasks);
@@ -4821,6 +4858,9 @@ namespace System.Threading.Tasks
         [MethodImpl(MethodImplOptions.NoOptimization)]  // this is needed for the parallel debugger
         public static void WaitAll(Task[] tasks, CancellationToken cancellationToken)
         {
+#if TARGET_WASI
+            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+#endif
             if (tasks is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.tasks);
@@ -4867,6 +4907,9 @@ namespace System.Threading.Tasks
         [MethodImpl(MethodImplOptions.NoOptimization)]  // this is needed for the parallel debugger
         public static bool WaitAll(Task[] tasks, int millisecondsTimeout, CancellationToken cancellationToken)
         {
+#if TARGET_WASI
+            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+#endif
             if (tasks is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.tasks);
@@ -4889,6 +4932,9 @@ namespace System.Threading.Tasks
         [UnsupportedOSPlatform("browser")]
         public static void WaitAll(IEnumerable<Task> tasks, CancellationToken cancellationToken = default)
         {
+#if TARGET_WASI
+            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+#endif
             if (tasks is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.tasks);
@@ -4907,6 +4953,9 @@ namespace System.Threading.Tasks
         [UnsupportedOSPlatform("browser")]
         private static bool WaitAllCore(ReadOnlySpan<Task> tasks, int millisecondsTimeout, CancellationToken cancellationToken)
         {
+#if TARGET_WASI
+            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+#endif
             if (millisecondsTimeout < -1)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.millisecondsTimeout);
@@ -5037,6 +5086,9 @@ namespace System.Threading.Tasks
         [UnsupportedOSPlatform("browser")]
         private static bool WaitAllBlockingCore(List<Task> tasks, int millisecondsTimeout, CancellationToken cancellationToken)
         {
+#if TARGET_WASI
+            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+#endif
             Debug.Assert(tasks != null, "Expected a non-null list of tasks");
             Debug.Assert(tasks.Count > 0, "Expected at least one task");
 
@@ -5337,7 +5389,6 @@ namespace System.Threading.Tasks
         [MethodImpl(MethodImplOptions.AggressiveInlining)] // method looks long, but for a given TResult it results in a relatively small amount of asm
         public static unsafe Task<TResult> FromResult<TResult>(TResult result)
         {
-#pragma warning disable 8500 // address of / sizeof of managed types
             // The goal of this function is to be give back a cached task if possible, or to otherwise give back a new task.
             // To give back a cached task, we need to be able to evaluate the incoming result value, and we need to avoid as
             // much overhead as possible when doing so, as this function is invoked as part of the return path from every async
@@ -5386,7 +5437,6 @@ namespace System.Threading.Tasks
 
             // No cached task is available.  Manufacture a new one for this result.
             return new Task<TResult>(result);
-#pragma warning restore 8500
         }
 
         /// <summary>Creates a <see cref="Task{TResult}"/> that's completed exceptionally with the specified exception.</summary>
@@ -6236,6 +6286,7 @@ namespace System.Threading.Tasks
         /// <summary>
         /// Creates a task that will complete when all of the supplied tasks have completed.
         /// </summary>
+        /// <typeparam name="TResult">The type of the result returned by the tasks.</typeparam>
         /// <param name="tasks">The tasks to wait on for completion.</param>
         /// <returns>A task that represents the completion of all of the supplied tasks.</returns>
         /// <remarks>
@@ -6276,6 +6327,7 @@ namespace System.Threading.Tasks
         /// <summary>
         /// Creates a task that will complete when all of the supplied tasks have completed.
         /// </summary>
+        /// <typeparam name="TResult">The type of the result returned by the tasks.</typeparam>
         /// <param name="tasks">The tasks to wait on for completion.</param>
         /// <returns>A task that represents the completion of all of the supplied tasks.</returns>
         /// <remarks>
@@ -6650,6 +6702,7 @@ namespace System.Threading.Tasks
         /// <summary>
         /// Creates a task that will complete when any of the supplied tasks have completed.
         /// </summary>
+        /// <typeparam name="TTask">The type of the result returned by the tasks.</typeparam>
         /// <param name="tasks">The tasks to wait on for completion.</param>
         /// <returns>A task that represents the completion of one of the supplied tasks.  The return Task's Result is the task that completed.</returns>
         /// <remarks>
@@ -6724,6 +6777,7 @@ namespace System.Threading.Tasks
         /// <summary>
         /// Creates a task that will complete when any of the supplied tasks have completed.
         /// </summary>
+        /// <typeparam name="TResult">The type of the result returned by the tasks.</typeparam>
         /// <param name="tasks">The tasks to wait on for completion.</param>
         /// <returns>A task that represents the completion of one of the supplied tasks.  The return Task's Result is the task that completed.</returns>
         /// <remarks>
@@ -6746,6 +6800,7 @@ namespace System.Threading.Tasks
         /// <summary>
         /// Creates a task that will complete when any of the supplied tasks have completed.
         /// </summary>
+        /// <typeparam name="TResult">The type of the result returned by the tasks.</typeparam>
         /// <param name="tasks">The tasks to wait on for completion.</param>
         /// <returns>A task that represents the completion of one of the supplied tasks.  The return Task's Result is the task that completed.</returns>
         /// <remarks>
@@ -6759,6 +6814,7 @@ namespace System.Threading.Tasks
             WhenAnyCore(tasks);
 
         /// <summary>Creates a task that will complete when either of the supplied tasks have completed.</summary>
+        /// <typeparam name="TResult">The type of the result returned by the tasks.</typeparam>
         /// <param name="task1">The first task to wait on for completion.</param>
         /// <param name="task2">The second task to wait on for completion.</param>
         /// <returns>A task that represents the completion of one of the supplied tasks.  The return Task's Result is the task that completed.</returns>
@@ -6775,6 +6831,7 @@ namespace System.Threading.Tasks
         /// <summary>
         /// Creates a task that will complete when any of the supplied tasks have completed.
         /// </summary>
+        /// <typeparam name="TResult">The type of the result returned by the tasks.</typeparam>
         /// <param name="tasks">The tasks to wait on for completion.</param>
         /// <returns>A task that represents the completion of one of the supplied tasks.  The return Task's Result is the task that completed.</returns>
         /// <remarks>
@@ -6808,14 +6865,18 @@ namespace System.Threading.Tasks
         }
 
         /// <inheritdoc cref="WhenEach(Task[])"/>
-        public static IAsyncEnumerable<Task> WhenEach(ReadOnlySpan<Task> tasks) => // TODO https://github.com/dotnet/runtime/issues/77873: Add params
+        /// <param name="tasks">The tasks to iterate through as they complete.</param>
+        public static IAsyncEnumerable<Task> WhenEach(params ReadOnlySpan<Task> tasks) => // TODO https://github.com/dotnet/runtime/issues/77873: Add params
             WhenEachState.Iterate<Task>(WhenEachState.Create(tasks));
 
         /// <inheritdoc cref="WhenEach(Task[])"/>
+        /// <param name="tasks">The tasks to iterate through as they complete.</param>
         public static IAsyncEnumerable<Task> WhenEach(IEnumerable<Task> tasks) =>
             WhenEachState.Iterate<Task>(WhenEachState.Create(tasks));
 
         /// <inheritdoc cref="WhenEach(Task[])"/>
+        /// <typeparam name="TResult">The type of the result returned by the tasks.</typeparam>
+        /// <param name="tasks">The tasks to iterate through as they complete.</param>
         public static IAsyncEnumerable<Task<TResult>> WhenEach<TResult>(params Task<TResult>[] tasks)
         {
             ArgumentNullException.ThrowIfNull(tasks);
@@ -6823,10 +6884,14 @@ namespace System.Threading.Tasks
         }
 
         /// <inheritdoc cref="WhenEach(Task[])"/>
-        public static IAsyncEnumerable<Task<TResult>> WhenEach<TResult>(ReadOnlySpan<Task<TResult>> tasks) => // TODO https://github.com/dotnet/runtime/issues/77873: Add params
+        /// <typeparam name="TResult">The type of the result returned by the tasks.</typeparam>
+        /// <param name="tasks">The tasks to iterate through as they complete.</param>
+        public static IAsyncEnumerable<Task<TResult>> WhenEach<TResult>(params ReadOnlySpan<Task<TResult>> tasks) => // TODO https://github.com/dotnet/runtime/issues/77873: Add params
             WhenEachState.Iterate<Task<TResult>>(WhenEachState.Create(ReadOnlySpan<Task>.CastUp(tasks)));
 
         /// <inheritdoc cref="WhenEach(Task[])"/>
+        /// <typeparam name="TResult">The type of the result returned by the tasks.</typeparam>
+        /// <param name="tasks">The tasks to iterate through as they complete.</param>
         public static IAsyncEnumerable<Task<TResult>> WhenEach<TResult>(IEnumerable<Task<TResult>> tasks) =>
             WhenEachState.Iterate<Task<TResult>>(WhenEachState.Create(tasks));
 
@@ -6998,7 +7063,7 @@ namespace System.Threading.Tasks
             {
                 if (continuationObject is Action singleAction)
                 {
-                    return new Delegate[] { AsyncMethodBuilderCore.TryGetStateMachineForDebugger(singleAction) };
+                    return [AsyncMethodBuilderCore.TryGetStateMachineForDebugger(singleAction)];
                 }
 
                 if (continuationObject is TaskContinuation taskContinuation)
@@ -7017,7 +7082,7 @@ namespace System.Threading.Tasks
                 // the VS debugger is more interested in the continuation than the internal invoke()
                 if (continuationObject is ITaskCompletionAction singleCompletionAction)
                 {
-                    return new Delegate[] { new Action<Task>(singleCompletionAction.Invoke) };
+                    return [new Action<Task>(singleCompletionAction.Invoke)];
                 }
 
                 if (continuationObject is List<object?> continuationList)

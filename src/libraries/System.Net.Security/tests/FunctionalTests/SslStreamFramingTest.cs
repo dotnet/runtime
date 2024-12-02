@@ -39,7 +39,10 @@ namespace System.Net.Security.Tests
             // 1 byte reads
             ByteByByte,
 
-            // coalesce reads to biggest chunks possible
+            // Receive data at chunks, not necessarily respecting frame boundaries
+            Chunked,
+
+            // Coalesce reads to biggest chunks possible
             Coalescing
         }
 
@@ -129,7 +132,6 @@ namespace System.Net.Security.Tests
             Assert.True(serverStream.ReadCalled, "Mocked read method was not used");
 
             await TestHelper.PingPong(client, server);
-
         }
 
         internal class ConfigurableReadStream : Stream
@@ -168,6 +170,7 @@ namespace System.Net.Security.Tests
                 {
                     case FramingType.ByteByByte:
                         return await _stream.ReadAsync(buffer.Length > 0 ? buffer.Slice(0, 1) : buffer, cancellationToken);
+
                     case FramingType.Coalescing:
                         {
                             if (buffer.Length > 0)
@@ -178,6 +181,24 @@ namespace System.Net.Security.Tests
                             }
                             return await _stream.ReadAsync(buffer, cancellationToken);
                         }
+                    case FramingType.Chunked:
+                        {
+                            if (buffer.Length > 0)
+                            {
+                                // wait 10ms, this should be enough for the other side to write as much data
+                                // as it will ever write before receiving something back.
+                                await Task.Delay(10);
+
+                                const int maxRead = 1519; // arbitrarily chosen chunk size
+
+                                if (buffer.Length > maxRead)
+                                {
+                                    buffer = buffer.Slice(0, maxRead);
+                                }
+                            }
+                            return await _stream.ReadAsync(buffer, cancellationToken);
+                        }
+
                     default:
                         throw new NotImplementedException();
                 }

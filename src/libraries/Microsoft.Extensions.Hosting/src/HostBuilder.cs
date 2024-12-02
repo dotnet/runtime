@@ -37,7 +37,7 @@ namespace Microsoft.Extensions.Hosting
         private HostingEnvironment? _hostingEnvironment;
         private IServiceProvider? _appServices;
         private PhysicalFileProvider? _defaultProvider;
-        private readonly bool _defaultProviderFactoryUsed;
+        private bool _defaultProviderFactoryUsed;
 
         /// <summary>
         /// Initializes a new instance of <see cref="HostBuilder"/>.
@@ -49,7 +49,7 @@ namespace Microsoft.Extensions.Hosting
         }
 
         /// <summary>
-        /// A central location for sharing state between components during the host building process.
+        /// Gets a central location for sharing state between components during the host building process.
         /// </summary>
         public IDictionary<object, object> Properties { get; } = new Dictionary<object, object>();
 
@@ -109,6 +109,7 @@ namespace Microsoft.Extensions.Hosting
             ThrowHelper.ThrowIfNull(factory);
 
             _serviceProviderFactory = new ServiceFactoryAdapter<TContainerBuilder>(factory);
+            _defaultProviderFactoryUsed = false;
             return this;
         }
 
@@ -123,6 +124,7 @@ namespace Microsoft.Extensions.Hosting
             ThrowHelper.ThrowIfNull(factory);
 
             _serviceProviderFactory = new ServiceFactoryAdapter<TContainerBuilder>(() => _hostBuilderContext!, factory);
+            _defaultProviderFactoryUsed = false;
             return this;
         }
 
@@ -145,7 +147,7 @@ namespace Microsoft.Extensions.Hosting
         /// <summary>
         /// Run the given actions to initialize the host. This can only be called once.
         /// </summary>
-        /// <returns>An initialized <see cref="IHost"/></returns>
+        /// <returns>An initialized <see cref="IHost"/>.</returns>
         /// <remarks>Adds basic services to the host such as application lifetime, host environment, and logging.</remarks>
         public IHost Build()
         {

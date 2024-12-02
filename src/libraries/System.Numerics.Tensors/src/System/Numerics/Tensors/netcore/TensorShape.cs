@@ -8,6 +8,8 @@ using System.Runtime.InteropServices;
 
 namespace System.Numerics.Tensors
 {
+
+    [Experimental(Experimentals.TensorTDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
     internal readonly struct TensorShape
     {
         // Used to determine when we need to allocate a metadata array

@@ -329,6 +329,60 @@ FlowEdge* Compiler::BlockDominancePreds(BasicBlock* blk)
 }
 
 //------------------------------------------------------------------------
+// IsInsertedSsaLiveIn: See if a local is marked as being live-in to a block in
+// the side table with locals inserted into SSA.
+//
+// Arguments:
+//   block - The block
+//   lclNum - The local
+//
+// Returns:
+//    True if the local is marked as live-in to that block
+//
+bool Compiler::IsInsertedSsaLiveIn(BasicBlock* block, unsigned lclNum)
+{
+    assert(lvaGetDesc(lclNum)->lvInSsa);
+
+    if (m_insertedSsaLocalsLiveIn == nullptr)
+    {
+        return false;
+    }
+
+    return m_insertedSsaLocalsLiveIn->Lookup(BasicBlockLocalPair(block, lclNum));
+}
+
+//------------------------------------------------------------------------
+// AddInsertedSsaLiveIn: Mark as local that was inserted into SSA as being
+// live-in to a block.
+//
+// Arguments:
+//   block - The block
+//   lclNum - The local
+//
+// Returns:
+//    True if this was added anew; false if the local was already marked as such.
+//
+bool Compiler::AddInsertedSsaLiveIn(BasicBlock* block, unsigned lclNum)
+{
+    // SSA-inserted locals always have explicit reaching defs for all uses, so
+    // it never makes sense for them to be live into the first block.
+    assert(block != fgFirstBB);
+
+    if (m_insertedSsaLocalsLiveIn == nullptr)
+    {
+        m_insertedSsaLocalsLiveIn = new (this, CMK_SSA) BasicBlockLocalPairSet(getAllocator(CMK_SSA));
+    }
+
+    if (m_insertedSsaLocalsLiveIn->Set(BasicBlockLocalPair(block, lclNum), true, BasicBlockLocalPairSet::Overwrite))
+    {
+        return false;
+    }
+
+    JITDUMP("Marked V%02u as live into " FMT_BB "\n", lclNum, block->bbNum);
+    return true;
+}
+
+//------------------------------------------------------------------------
 // IsLastHotBlock: see if this is the last block before the cold section
 //
 // Arguments:
@@ -390,131 +444,31 @@ bool BasicBlock::CanRemoveJumpToTarget(BasicBlock* target, Compiler* compiler) c
     return NextIs(target) && !compiler->fgInDifferentRegions(this, target);
 }
 
+#ifdef DEBUG
+
 //------------------------------------------------------------------------
 // checkPredListOrder: see if pred list is properly ordered
 //
 // Returns:
-//    false if pred list is not in increasing bbNum order.
+//    false if pred list is not in increasing bbID order.
 //
 bool BasicBlock::checkPredListOrder()
 {
-    unsigned lastBBNum = 0;
+    unsigned lastBBID = 0;
+    bool     compare  = false;
     for (BasicBlock* const predBlock : PredBlocks())
     {
-        const unsigned bbNum = predBlock->bbNum;
-        if (bbNum <= lastBBNum)
+        const unsigned bbID = predBlock->bbID;
+        if (compare && (bbID <= lastBBID))
         {
-            assert(bbNum != lastBBNum);
+            assert(bbID != lastBBID);
             return false;
         }
-        lastBBNum = bbNum;
+        compare  = true;
+        lastBBID = bbID;
     }
     return true;
 }
-
-//------------------------------------------------------------------------
-// ensurePredListOrder: ensure all pred list entries appear in increasing
-//    bbNum order.
-//
-// Arguments:
-//    compiler - current compiler instance
-//
-void BasicBlock::ensurePredListOrder(Compiler* compiler)
-{
-    // First, check if list is already in order.
-    //
-    if (checkPredListOrder())
-    {
-        return;
-    }
-
-    reorderPredList(compiler);
-    assert(checkPredListOrder());
-}
-
-//------------------------------------------------------------------------
-// reorderPredList: relink pred list in increasing bbNum order.
-//
-// Arguments:
-//    compiler - current compiler instance
-//
-void BasicBlock::reorderPredList(Compiler* compiler)
-{
-    // Count number or entries.
-    //
-    int count = 0;
-    for (FlowEdge* const pred : PredEdges())
-    {
-        count++;
-    }
-
-    // If only 0 or 1 entry, nothing to reorder.
-    //
-    if (count < 2)
-    {
-        return;
-    }
-
-    // Allocate sort vector if needed.
-    //
-    if (compiler->fgPredListSortVector == nullptr)
-    {
-        CompAllocator allocator        = compiler->getAllocator(CMK_FlowEdge);
-        compiler->fgPredListSortVector = new (allocator) jitstd::vector<FlowEdge*>(allocator);
-    }
-
-    jitstd::vector<FlowEdge*>* const sortVector = compiler->fgPredListSortVector;
-    sortVector->clear();
-
-    // Fill in the vector from the list.
-    //
-    for (FlowEdge* const pred : PredEdges())
-    {
-        sortVector->push_back(pred);
-    }
-
-    // Sort by increasing bbNum
-    //
-    struct FlowEdgeBBNumCmp
-    {
-        bool operator()(const FlowEdge* f1, const FlowEdge* f2)
-        {
-            return f1->getSourceBlock()->bbNum < f2->getSourceBlock()->bbNum;
-        }
-    };
-
-    jitstd::sort(sortVector->begin(), sortVector->end(), FlowEdgeBBNumCmp());
-
-    // Rethread the list.
-    //
-    FlowEdge* last = nullptr;
-
-    for (FlowEdge* current : *sortVector)
-    {
-        if (last == nullptr)
-        {
-            bbPreds = current;
-        }
-        else
-        {
-            last->setNextPredEdge(current);
-        }
-
-        last = current;
-    }
-
-    last->setNextPredEdge(nullptr);
-
-    // Note bbLastPred is only used transiently, during
-    // initial pred list construction.
-    //
-    if (!compiler->fgPredsComputed)
-    {
-        bbLastPred = last;
-    }
-}
-
-#ifdef DEBUG
 
 //------------------------------------------------------------------------
 // dspBlockILRange(): Display the block's IL range as [XXX...YYY), where XXX and YYY might be "???" for BAD_IL_OFFSET.
@@ -562,7 +516,6 @@ void BasicBlock::dspFlags() const
         {BBF_REMOVED, "del"},
         {BBF_DONT_REMOVE, "keep"},
         {BBF_INTERNAL, "internal"},
-        {BBF_FAILED_VERIFICATION, "failV"},
         {BBF_HAS_SUPPRESSGC_CALL, "sup-gc"},
         {BBF_LOOP_HEAD, "loophead"},
         {BBF_HAS_LABEL, "label"},
@@ -664,8 +617,7 @@ void BasicBlock::dspSuccs(Compiler* compiler)
     // compute it ourselves here.
     if (bbKind == BBJ_SWITCH)
     {
-        // Create a set with all the successors. Don't use BlockSet, so we don't need to worry
-        // about the BlockSet epoch.
+        // Create a set with all the successors.
         unsigned     bbNumMax = compiler->fgBBNumMax;
         BitVecTraits bitVecTraits(bbNumMax + 1, compiler);
         BitVec       uniqueSuccBlocks(BitVecOps::MakeEmpty(&bitVecTraits));
@@ -1083,10 +1035,10 @@ unsigned JitPtrKeyFuncs<BasicBlock>::GetHashCode(const BasicBlock* ptr)
     unsigned hash = SsaStressHashHelper();
     if (hash != 0)
     {
-        return (hash ^ (ptr->bbNum << 16) ^ ptr->bbNum);
+        return (hash ^ (ptr->bbID << 16) ^ ptr->bbID);
     }
 #endif
-    return ptr->bbNum;
+    return ptr->bbID;
 }
 
 //------------------------------------------------------------------------
@@ -1631,10 +1583,7 @@ BasicBlock* BasicBlock::New(Compiler* compiler)
     // boundaries), or have been inserted by the JIT
     block->bbCodeOffs    = BAD_IL_OFFSET;
     block->bbCodeOffsEnd = BAD_IL_OFFSET;
-
-#ifdef DEBUG
-    block->bbID = compiler->compBasicBlockID++;
-#endif
+    block->bbID          = compiler->compBasicBlockID++;
 
     /* Give the block a number, set the ancestor count and weight */
 

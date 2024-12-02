@@ -150,7 +150,6 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static unsafe void Memmove<T>(ref T destination, ref T source, nuint elementCount)
         {
-#pragma warning disable 8500 // sizeof of managed types
             if (!RuntimeHelpers.IsReferenceOrContainsReferences<T>())
             {
                 // Blittable memmove
@@ -167,7 +166,6 @@ namespace System
                     ref Unsafe.As<T, byte>(ref source),
                     elementCount * (nuint)sizeof(T));
             }
-#pragma warning restore 8500
         }
 
         // The maximum block size to for __BulkMoveWithWriteBarrier FCall. This is required to avoid GC starvation.

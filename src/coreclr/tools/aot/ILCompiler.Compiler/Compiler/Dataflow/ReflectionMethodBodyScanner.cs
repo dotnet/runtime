@@ -114,14 +114,6 @@ namespace ILCompiler.Dataflow
         {
             _origin = new MessageOrigin(methodBody.OwningMethod);
             base.Scan(methodBody, ref interproceduralState);
-
-            if (!methodBody.OwningMethod.Signature.ReturnType.IsVoid)
-            {
-                var method = methodBody.OwningMethod;
-                var methodReturnValue = _annotations.GetMethodReturnValue(method, isNewObj: false);
-                if (methodReturnValue.DynamicallyAccessedMemberTypes != 0)
-                    HandleAssignmentPattern(_origin, ReturnValue, methodReturnValue, method.GetDisplayName());
-            }
         }
 
         public static DependencyList ScanAndProcessReturnValue(NodeFactory factory, FlowAnnotations annotations, Logger logger, MethodIL methodBody, out List<INodeWithRuntimeDeterminedDependencies> runtimeDependencies)
@@ -195,6 +187,8 @@ namespace ILCompiler.Dataflow
         private MethodParameterValue GetMethodParameterValue(ParameterProxy parameter, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
             => _annotations.GetMethodParameterValue(parameter, dynamicallyAccessedMemberTypes);
 
+        protected override MethodReturnValue GetReturnValue(MethodIL method) => _annotations.GetMethodReturnValue(method.OwningMethod, isNewObj: false);
+
         /// <summary>
         /// HandleGetField is called every time the scanner needs to represent a value of the field
         /// either as a source or target. It is not called when just a reference to field is created,
@@ -214,23 +208,23 @@ namespace ILCompiler.Dataflow
             return _annotations.GetFieldValue(field);
         }
 
-        private void HandleStoreValueWithDynamicallyAccessedMembers(MethodIL methodBody, int offset, ValueWithDynamicallyAccessedMembers targetValue, MultiValue sourceValue, string reason)
+        private void HandleStoreValueWithDynamicallyAccessedMembers(MethodIL methodBody, int offset, ValueWithDynamicallyAccessedMembers targetValue, MultiValue sourceValue, int? parameterIndex, string reason)
         {
             if (targetValue.DynamicallyAccessedMemberTypes != 0)
             {
                 _origin = _origin.WithInstructionOffset(methodBody, offset);
-                HandleAssignmentPattern(_origin, sourceValue, targetValue, reason);
+                TrimAnalysisPatterns.Add(new TrimAnalysisAssignmentPattern(sourceValue, targetValue, _origin, parameterIndex, reason));
             }
         }
 
-        protected override void HandleStoreField(MethodIL methodBody, int offset, FieldValue field, MultiValue valueToStore)
-            => HandleStoreValueWithDynamicallyAccessedMembers(methodBody, offset, field, valueToStore, field.Field.GetDisplayName());
+        protected override void HandleStoreField(MethodIL methodBody, int offset, FieldValue field, MultiValue valueToStore, int? parameterIndex)
+            => HandleStoreValueWithDynamicallyAccessedMembers(methodBody, offset, field, valueToStore, parameterIndex, field.Field.GetDisplayName());
 
-        protected override void HandleStoreParameter(MethodIL methodBody, int offset, MethodParameterValue parameter, MultiValue valueToStore)
-            => HandleStoreValueWithDynamicallyAccessedMembers(methodBody, offset, parameter, valueToStore, parameter.Parameter.Method.GetDisplayName());
+        protected override void HandleStoreParameter(MethodIL methodBody, int offset, MethodParameterValue parameter, MultiValue valueToStore, int? parameterIndex)
+            => HandleStoreValueWithDynamicallyAccessedMembers(methodBody, offset, parameter, valueToStore, parameterIndex, parameter.Parameter.Method.GetDisplayName());
 
-        protected override void HandleStoreMethodReturnValue(MethodIL methodBody, int offset, MethodReturnValue returnValue, MultiValue valueToStore)
-            => HandleStoreValueWithDynamicallyAccessedMembers(methodBody, offset, returnValue, valueToStore, returnValue.Method.GetDisplayName());
+        protected override void HandleReturnValue(MethodIL methodBody, int offset, MethodReturnValue returnValue, MultiValue valueToStore)
+            => HandleStoreValueWithDynamicallyAccessedMembers(methodBody, offset, returnValue, valueToStore, null, returnValue.Method.GetDisplayName());
 
         protected override void HandleTypeTokenAccess(MethodIL methodBody, int offset, TypeDesc accessedType)
         {
@@ -412,15 +406,6 @@ namespace ILCompiler.Dataflow
             }
 
             return false;
-        }
-
-        private void HandleAssignmentPattern(
-            in MessageOrigin origin,
-            in MultiValue value,
-            ValueWithDynamicallyAccessedMembers targetValue,
-            string reason)
-        {
-            TrimAnalysisPatterns.Add(new TrimAnalysisAssignmentPattern(value, targetValue, origin, reason));
         }
 
         private void ProcessGenericArgumentDataFlow(MethodDesc method)

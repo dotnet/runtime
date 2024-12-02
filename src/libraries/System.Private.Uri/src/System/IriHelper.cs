@@ -180,7 +180,7 @@ namespace System
                         }
 
                         int bytesWritten = rune.EncodeToUtf8(maxUtf8EncodedSpan);
-                        Span<byte> encodedBytes = maxUtf8EncodedSpan.Slice(0, bytesWritten);
+                        ReadOnlySpan<byte> encodedBytes = maxUtf8EncodedSpan.Slice(0, bytesWritten);
 
                         foreach (byte b in encodedBytes)
                         {

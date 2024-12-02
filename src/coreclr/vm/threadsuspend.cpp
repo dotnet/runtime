@@ -26,7 +26,7 @@ ThreadSuspend::SUSPEND_REASON ThreadSuspend::m_suspendReason;
 
 #if defined(TARGET_WINDOWS)
 void* ThreadSuspend::g_returnAddressHijackTarget = NULL;
-#endif
+#endif // TARGET_WINDOWS
 
 // If you add any thread redirection function, make sure the debugger can 1) recognize the redirection
 // function, and 2) retrieve the original CONTEXT.  See code:Debugger.InitializeHijackFunctionAddress and
@@ -71,6 +71,16 @@ extern "C" void             RedirectedHandledJITCaseForGCStress_Stub(void);
 #define IS_VALID_WRITE_PTR(addr, size)      _ASSERTE((addr) != NULL)
 #define IS_VALID_CODE_PTR(addr)             _ASSERTE((addr) != NULL)
 
+#if defined(TARGET_AMD64) || defined(TARGET_X86)
+// These values should be picked up from winnt.h, defining them in case they are missing there.
+#ifndef XSTATE_APX
+#define XSTATE_APX (19)
+#endif // XSTATE_APX
+
+#ifndef XSTATE_MASK_APX
+#define XSTATE_MASK_APX (1 << XSTATE_APX)
+#endif // XSTATE_MASK_APX
+#endif  // TARGET_AMD64 || TARGET_X86
 
 void ThreadSuspend::SetSuspendRuntimeInProgress()
 {
@@ -1001,6 +1011,7 @@ BOOL Thread::ReadyForAsyncException()
         else
         {
              CONTEXT ctx;
+             ctx.ContextFlags = CONTEXT_CONTROL;
              SetIP(&ctx, 0);
              SetSP(&ctx, 0);
              FillRegDisplay(&rd, &ctx);
@@ -1956,20 +1967,36 @@ CONTEXT* AllocateOSContextHelper(BYTE** contextBuffer)
 {
     CONTEXT* pOSContext = NULL;
 
-#if !defined(TARGET_UNIX) && (defined(TARGET_X86) || defined(TARGET_AMD64))
+#if !defined(TARGET_UNIX) && (defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_ARM64))
     DWORD context = CONTEXT_COMPLETE;
 
-    // Determine if the processor supports AVX so we could
-    // retrieve extended registers
-    DWORD64 FeatureMask = GetEnabledXStateFeatures();
-    if ((FeatureMask & (XSTATE_MASK_AVX | XSTATE_MASK_AVX512)) != 0)
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
+    const DWORD64 xStateFeatureMask = XSTATE_MASK_AVX | XSTATE_MASK_AVX512 | XSTATE_MASK_APX;
+    const ULONG64 xStateCompactionMask = XSTATE_MASK_LEGACY | XSTATE_MASK_MPX | xStateFeatureMask;
+#elif defined(TARGET_ARM64)
+    const DWORD64 xStateFeatureMask = XSTATE_MASK_ARM64_SVE;
+    const ULONG64 xStateCompactionMask = XSTATE_MASK_LEGACY | xStateFeatureMask;
+#endif
+
+    // Determine if the processor supports extended features so we could retrieve those registers
+    DWORD64 FeatureMask = 0;
+
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
+    FeatureMask = GetEnabledXStateFeatures();
+#elif defined(TARGET_ARM64)
+    if (g_pfnGetEnabledXStateFeatures != NULL)
+    {
+        FeatureMask = g_pfnGetEnabledXStateFeatures();
+    }
+#endif
+
+    if ((FeatureMask & xStateFeatureMask) != 0)
     {
         context = context | CONTEXT_XSTATE;
     }
 
     // Retrieve contextSize by passing NULL for Buffer
     DWORD contextSize = 0;
-    ULONG64 xStateCompactionMask = XSTATE_MASK_LEGACY | XSTATE_MASK_AVX | XSTATE_MASK_MPX | XSTATE_MASK_AVX512;
     // The initialize call should fail but return contextSize
     BOOL success = g_pfnInitializeContext2 ?
         g_pfnInitializeContext2(NULL, context, NULL, &contextSize, xStateCompactionMask) :
@@ -2005,7 +2032,6 @@ CONTEXT* AllocateOSContextHelper(BYTE** contextBuffer)
     }
 
     *contextBuffer = buffer;
-
 #else
     pOSContext = new (nothrow) CONTEXT;
     pOSContext->ContextFlags = CONTEXT_COMPLETE;
@@ -2363,7 +2389,7 @@ void Thread::PerformPreemptiveGC()
         // BUG(github #10318) - when not using allocation contexts, the alloc lock
         // must be acquired here. Until fixed, this assert prevents random heap corruption.
         _ASSERTE(GCHeapUtilities::UseThreadAllocationContexts());
-        GCHeapUtilities::GetGCHeap()->StressHeap(&t_runtime_thread_locals.alloc_context);
+        GCHeapUtilities::GetGCHeap()->StressHeap(&t_runtime_thread_locals.alloc_context.m_GCAllocContext);
         m_bGCStressing = FALSE;
     }
     m_GCOnTransitionsOK = TRUE;
@@ -2716,40 +2742,29 @@ void __stdcall Thread::RedirectedHandledJITCase(RedirectReason reason)
     }
 #endif // TARGET_X86
 
-#if defined(HAVE_GCCOVER) && defined(USE_REDIRECT_FOR_GCSTRESS) // GCCOVER
-    //
-    // If GCStress interrupts an IL stub or inlined p/invoke while it's running in preemptive mode, it switches the mode to
-    // cooperative - but we will resume to preemptive below.  We should not trigger an abort in that case, as it will fail
-    // due to the GC mode.
-    //
-    if (!Thread::UseRedirectForGcStress() || !pThread->m_fPreemptiveGCDisabledForGCStress)
-#endif
+    UINT_PTR uAbortAddr;
+    UINT_PTR uResumePC = (UINT_PTR)GetIP(pCtx);
+    CopyOSContext(pThread->m_OSContext, pCtx);
+    uAbortAddr = (UINT_PTR)COMPlusCheckForAbort();
+    if (uAbortAddr)
     {
+        LOG((LF_EH, LL_INFO100, "thread abort in progress, resuming thread under control... (handled jit case)\n"));
 
-        UINT_PTR uAbortAddr;
-        UINT_PTR uResumePC = (UINT_PTR)GetIP(pCtx);
-        CopyOSContext(pThread->m_OSContext, pCtx);
-        uAbortAddr = (UINT_PTR)COMPlusCheckForAbort();
-        if (uAbortAddr)
-        {
-            LOG((LF_EH, LL_INFO100, "thread abort in progress, resuming thread under control... (handled jit case)\n"));
+        CONSISTENCY_CHECK(CheckPointer(pCtx));
 
-            CONSISTENCY_CHECK(CheckPointer(pCtx));
+        STRESS_LOG1(LF_EH, LL_INFO10, "resume under control: ip: %p (handled jit case)\n", uResumePC);
 
-            STRESS_LOG1(LF_EH, LL_INFO10, "resume under control: ip: %p (handled jit case)\n", uResumePC);
-
-            SetIP(pThread->m_OSContext, uResumePC);
+        SetIP(pThread->m_OSContext, uResumePC);
 
 #if defined(TARGET_ARM)
-            // Save the original resume PC in Lr
-            pCtx->Lr = uResumePC;
+        // Save the original resume PC in Lr
+        pCtx->Lr = uResumePC;
 
-            // Since we have set a new IP, we have to clear conditional execution flags too.
-            ClearITState(pThread->m_OSContext);
+        // Since we have set a new IP, we have to clear conditional execution flags too.
+        ClearITState(pThread->m_OSContext);
 #endif // TARGET_ARM
 
-            SetIP(pCtx, uAbortAddr);
-        }
+        SetIP(pCtx, uAbortAddr);
     }
 
     // Unlink the frame in preparation for resuming in managed code
@@ -2757,14 +2772,6 @@ void __stdcall Thread::RedirectedHandledJITCase(RedirectReason reason)
 
     // Allow future use of the context
     pThread->UnmarkRedirectContextInUse(pCtx);
-
-#if defined(HAVE_GCCOVER) && defined(USE_REDIRECT_FOR_GCSTRESS) // GCCOVER
-    if (Thread::UseRedirectForGcStress() && pThread->m_fPreemptiveGCDisabledForGCStress)
-    {
-        pThread->EnablePreemptiveGC();
-        pThread->m_fPreemptiveGCDisabledForGCStress = false;
-    }
-#endif
 
     LOG((LF_SYNC, LL_INFO1000, "Resuming execution with RtlRestoreContext\n"));
     SetLastError(dwLastError); // END_PRESERVE_LAST_ERROR
@@ -2896,17 +2903,20 @@ BOOL Thread::RedirectThreadAtHandledJITCase(PFN_REDIRECTTARGET pTgt)
 
     // Always get complete context, pCtx->ContextFlags are set during Initialization
 
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
     // Scenarios like GC stress may indirectly disable XState features in the pCtx
     // depending on the state at the time of GC stress interrupt.
-    //
-    // Make sure that AVX feature mask is set, if supported.
     //
     // This should not normally fail.
     // The system silently ignores any feature specified in the FeatureMask
     // which is not enabled on the processor.
-    SetXStateFeaturesMask(pCtx, (XSTATE_MASK_AVX | XSTATE_MASK_AVX512));
-#endif //defined(TARGET_X86) || defined(TARGET_AMD64)
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
+    SetXStateFeaturesMask(pCtx, XSTATE_MASK_AVX | XSTATE_MASK_AVX512 | XSTATE_MASK_APX);
+#elif defined(TARGET_ARM64)
+    if (g_pfnSetXStateFeaturesMask != NULL)
+    {
+        g_pfnSetXStateFeaturesMask(pCtx, XSTATE_MASK_ARM64_SVE);
+    }
+#endif
 
     // Make sure we specify CONTEXT_EXCEPTION_REQUEST to detect "trap frame reporting".
     pCtx->ContextFlags |= CONTEXT_EXCEPTION_REQUEST;
@@ -3026,14 +3036,23 @@ BOOL Thread::RedirectCurrentThreadAtHandledJITCase(PFN_REDIRECTTARGET pTgt, CONT
     // Get and save the thread's context
     BOOL success = TRUE;
 
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
+#if defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_ARM64)
     // This method is called for GC stress interrupts in managed code.
     // The current context may have various XState features, depending on what is used/dirty,
-    // but only AVX feature may contain live data. (that could change with new features in JIT)
+    // but only some features may contain live data. (that could change with new features in JIT)
     // Besides pCtx may not have space to store other features.
-    // So we will mask out everything but AVX.
+    // So we will mask out everything but those we are known to use.
     DWORD64 srcFeatures = 0;
+
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
     success = GetXStateFeaturesMask(pCurrentThreadCtx, &srcFeatures);
+#elif defined(TARGET_ARM64)
+    if (g_pfnGetXStateFeaturesMask != NULL)
+    {
+        success = g_pfnGetXStateFeaturesMask(pCurrentThreadCtx, &srcFeatures);
+    }
+#endif
+
     _ASSERTE(success);
     if (!success)
         return FALSE;
@@ -3041,7 +3060,21 @@ BOOL Thread::RedirectCurrentThreadAtHandledJITCase(PFN_REDIRECTTARGET pTgt, CONT
     // Get may return 0 if no XState is set, which Set would not accept.
     if (srcFeatures != 0)
     {
-        success = SetXStateFeaturesMask(pCurrentThreadCtx, srcFeatures & (XSTATE_MASK_AVX | XSTATE_MASK_AVX512));
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
+        const DWORD64 xStateFeatureMask = XSTATE_MASK_AVX | XSTATE_MASK_AVX512 | XSTATE_MASK_APX;
+#elif defined(TARGET_ARM64)
+        const DWORD64 xStateFeatureMask = XSTATE_MASK_ARM64_SVE;
+#endif
+
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
+        success = SetXStateFeaturesMask(pCurrentThreadCtx, srcFeatures & xStateFeatureMask);
+#elif defined(TARGET_ARM64)
+        if (g_pfnSetXStateFeaturesMask != NULL)
+        {
+            success = g_pfnSetXStateFeaturesMask(pCurrentThreadCtx, srcFeatures & xStateFeatureMask);
+        }
+#endif
+
         _ASSERTE(success);
         if (!success)
             return FALSE;
@@ -3155,22 +3188,17 @@ BOOL Thread::CheckForAndDoRedirectForUserSuspend()
 // Redirect thread at a GC stress point.
 BOOL Thread::CheckForAndDoRedirectForGCStress (CONTEXT *pCurrentThreadCtx)
 {
-    WRAPPER_NO_CONTRACT;
+    CONTRACTL {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
 
     _ASSERTE(Thread::UseRedirectForGcStress());
 
     LOG((LF_CORDB, LL_INFO1000, "Redirecting thread %08x for GCStress", GetThreadId()));
-
-    m_fPreemptiveGCDisabledForGCStress = !PreemptiveGCDisabled();
-    GCX_COOP_NO_DTOR();
-
     BOOL fSuccess = RedirectCurrentThreadAtHandledJITCase(GetRedirectHandlerForGCStress(), pCurrentThreadCtx);
-
-    if (!fSuccess)
-    {
-        GCX_COOP_NO_DTOR_END();
-        m_fPreemptiveGCDisabledForGCStress = false;
-    }
 
     return fSuccess;
 }
@@ -3694,6 +3722,9 @@ ThrowControlForThread(
 #ifdef FEATURE_EH_FUNCLETS
         FaultingExceptionFrame *pfef
 #endif // FEATURE_EH_FUNCLETS
+#if defined(TARGET_AMD64) && defined(TARGET_WINDOWS)
+        , TADDR ssp
+#endif // TARGET_AMD64 && TARGET_WINDOWS
         )
 {
     STATIC_CONTRACT_THROWS;
@@ -3742,6 +3773,10 @@ ThrowControlForThread(
     FaultingExceptionFrame *pfef = &fef;
 #endif // FEATURE_EH_FUNCLETS
     pfef->InitAndLink(pThread->m_OSContext);
+
+#if defined(TARGET_AMD64) && defined(TARGET_WINDOWS)
+    pfef->SetSSP(ssp);
+#endif
 
     // !!! Can not assert here.  Sometimes our EHInfo for catch clause extends beyond
     // !!! Jit_EndCatch.  Not sure if we have guarantee on catch clause.
@@ -5850,7 +5885,7 @@ void Thread::ApcActivationCallback(ULONG_PTR Parameter)
 
 #if defined(TARGET_ARM64)
     // Windows incorrectly set the CONTEXT_UNWOUND_TO_CALL in the flags of the context it passes to us.
-    // That results in incorrect compensation of PC at some places and sometimes incorrect unwinding 
+    // That results in incorrect compensation of PC at some places and sometimes incorrect unwinding
     // and GC holes due to that.
     pContext->ContextFlags &= ~CONTEXT_UNWOUND_TO_CALL;
 #endif // TARGET_ARM64

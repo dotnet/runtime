@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.InteropServices;
+using Xunit;
 
 public class Count
 {
@@ -207,7 +208,8 @@ public class Count
     }
 
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         Count c = new Count();
 

@@ -71,6 +71,7 @@ TADDR DACGetMethodTableFromObjectPointer(TADDR objAddr, ICorDebugDataTarget * ta
     ULONG32 returned = 0;
     TADDR Value = (TADDR)NULL;
 
+    // Every object has a pointer to its method table at offset 0
     HRESULT hr = target->ReadVirtual(objAddr, (PBYTE)&Value, sizeof(TADDR), &returned);
 
     if ((hr != S_OK) || (returned != sizeof(TADDR)))
@@ -92,6 +93,8 @@ PTR_SyncBlock DACGetSyncBlockFromObjectPointer(TADDR objAddr, ICorDebugDataTarge
     ULONG32 returned = 0;
     DWORD Value = 0;
 
+    // Every object has an object header right before it. The sync block value (DWORD) is the last member
+    // of the object header. Read the DWORD right before the object address to get the sync block value.
     HRESULT hr = target->ReadVirtual(objAddr - sizeof(DWORD), (PBYTE)&Value, sizeof(DWORD), &returned);
 
     if ((hr != S_OK) || (returned != sizeof(DWORD)))
@@ -214,11 +217,15 @@ BOOL DacValidateMD(PTR_MethodDesc pMD)
 
         if (retval)
         {
-            MethodDesc *pMDCheck = MethodDesc::GetMethodDescFromStubAddr(pMD->GetTemporaryEntryPoint(), TRUE);
-
-            if (PTR_HOST_TO_TADDR(pMD) != PTR_HOST_TO_TADDR(pMDCheck))
+            PCODE tempEntryPoint = pMD->GetTemporaryEntryPointIfExists();
+            if (tempEntryPoint != (PCODE)NULL)
             {
-                retval = FALSE;
+                MethodDesc *pMDCheck = MethodDesc::GetMethodDescFromStubAddr(tempEntryPoint, TRUE);
+
+                if (PTR_HOST_TO_TADDR(pMD) != PTR_HOST_TO_TADDR(pMDCheck))
+                {
+                    retval = FALSE;
+                }
             }
         }
 
@@ -296,62 +303,29 @@ HRESULT ClrDataAccess::GetThreadStoreData(struct DacpThreadStoreData *threadStor
 {
     SOSDacEnter();
 
-    if (m_cdacSos != NULL)
+    ThreadStore* threadStore = ThreadStore::s_pThreadStore;
+    if (!threadStore)
     {
-        // Try the cDAC first - it will return E_NOTIMPL if it doesn't support this method yet. Fall back to the DAC.
-        hr = m_cdacSos->GetThreadStoreData(threadStoreData);
-        if (FAILED(hr))
-        {
-            hr = GetThreadStoreDataImpl(threadStoreData);
-        }
-#ifdef _DEBUG
-        else
-        {
-            // Assert that the data is the same as what we get from the DAC.
-            DacpThreadStoreData threadStoreDataLocal;
-            HRESULT hrLocal = GetThreadStoreDataImpl(&threadStoreDataLocal);
-            _ASSERTE(hr == hrLocal);
-            _ASSERTE(threadStoreData->threadCount == threadStoreDataLocal.threadCount);
-            _ASSERTE(threadStoreData->unstartedThreadCount == threadStoreDataLocal.unstartedThreadCount);
-            _ASSERTE(threadStoreData->backgroundThreadCount == threadStoreDataLocal.backgroundThreadCount);
-            _ASSERTE(threadStoreData->pendingThreadCount == threadStoreDataLocal.pendingThreadCount);
-            _ASSERTE(threadStoreData->deadThreadCount == threadStoreDataLocal.deadThreadCount);
-            _ASSERTE(threadStoreData->fHostConfig == threadStoreDataLocal.fHostConfig);
-            _ASSERTE(threadStoreData->firstThread == threadStoreDataLocal.firstThread);
-            _ASSERTE(threadStoreData->finalizerThread == threadStoreDataLocal.finalizerThread);
-            _ASSERTE(threadStoreData->gcThread == threadStoreDataLocal.gcThread);
-        }
-#endif
+        hr = E_UNEXPECTED;
     }
     else
     {
-        hr = GetThreadStoreDataImpl(threadStoreData);
+        // initialize the fields of our local structure
+        threadStoreData->threadCount = threadStore->m_ThreadCount;
+        threadStoreData->unstartedThreadCount = threadStore->m_UnstartedThreadCount;
+        threadStoreData->backgroundThreadCount = threadStore->m_BackgroundThreadCount;
+        threadStoreData->pendingThreadCount = threadStore->m_PendingThreadCount;
+        threadStoreData->deadThreadCount = threadStore->m_DeadThreadCount;
+        threadStoreData->fHostConfig = FALSE;
+
+        // identify the "important" threads
+        threadStoreData->firstThread = HOST_CDADDR(threadStore->m_ThreadList.GetHead());
+        threadStoreData->finalizerThread = HOST_CDADDR(g_pFinalizerThread);
+        threadStoreData->gcThread = HOST_CDADDR(g_pSuspensionThread);
     }
 
     SOSDacLeave();
     return hr;
-}
-
-HRESULT ClrDataAccess::GetThreadStoreDataImpl(struct DacpThreadStoreData *threadStoreData)
-{
-    ThreadStore* threadStore = ThreadStore::s_pThreadStore;
-    if (!threadStore)
-        return E_UNEXPECTED;
-
-    // initialize the fields of our local structure
-    threadStoreData->threadCount = threadStore->m_ThreadCount;
-    threadStoreData->unstartedThreadCount = threadStore->m_UnstartedThreadCount;
-    threadStoreData->backgroundThreadCount = threadStore->m_BackgroundThreadCount;
-    threadStoreData->pendingThreadCount = threadStore->m_PendingThreadCount;
-    threadStoreData->deadThreadCount = threadStore->m_DeadThreadCount;
-    threadStoreData->fHostConfig = FALSE;
-
-    // identify the "important" threads
-    threadStoreData->firstThread = HOST_CDADDR(threadStore->m_ThreadList.GetHead());
-    threadStoreData->finalizerThread = HOST_CDADDR(g_pFinalizerThread);
-    threadStoreData->gcThread = HOST_CDADDR(g_pSuspensionThread);
-
-    return S_OK;
 }
 
 HRESULT
@@ -419,7 +393,11 @@ ClrDataAccess::GetMethodTableSlot(CLRDATA_ADDRESS mt, unsigned int slot, CLRDATA
     else if (slot < mTable->GetNumVtableSlots())
     {
         // Now get the slot:
-        *value = mTable->GetRestoredSlot(slot);
+        *value = mTable->GetSlot(slot);
+        if (*value == 0)
+        {
+            hr = S_FALSE;
+        }
     }
     else
     {
@@ -430,8 +408,16 @@ ClrDataAccess::GetMethodTableSlot(CLRDATA_ADDRESS mt, unsigned int slot, CLRDATA
             MethodDesc * pMD = it.GetMethodDesc();
             if (pMD->GetSlot() == slot)
             {
-                *value = pMD->GetMethodEntryPoint();
-                hr = S_OK;
+                *value = pMD->GetMethodEntryPointIfExists();
+                if (*value == 0)
+                {
+                    hr = S_FALSE;
+                }
+                else
+                {
+                    hr = S_OK;
+                }
+                break;
             }
         }
     }
@@ -440,6 +426,100 @@ ClrDataAccess::GetMethodTableSlot(CLRDATA_ADDRESS mt, unsigned int slot, CLRDATA
     return hr;
 }
 
+HRESULT
+ClrDataAccess::GetMethodTableSlotEnumerator(CLRDATA_ADDRESS mt, ISOSMethodEnum **enumerator)
+{
+    if (mt == 0 || enumerator == NULL)
+        return E_INVALIDARG;
+
+    SOSDacEnter();
+
+    PTR_MethodTable mTable = PTR_MethodTable(TO_TADDR(mt));
+    BOOL bIsFree = FALSE;
+    if (!DacValidateMethodTable(mTable, bIsFree))
+    {
+        hr = E_INVALIDARG;
+    }
+    else
+    {
+        DacMethodTableSlotEnumerator *methodTableSlotEnumerator = new (nothrow) DacMethodTableSlotEnumerator();
+        *enumerator = methodTableSlotEnumerator;
+        if (*enumerator == NULL)
+        {
+            hr = E_OUTOFMEMORY;
+        }
+        else
+        {
+            hr = methodTableSlotEnumerator->Init(mTable);
+        }
+    }
+
+    SOSDacLeave();
+    return hr;
+}
+
+HRESULT DacMethodTableSlotEnumerator::Init(PTR_MethodTable mTable)
+{
+    WORD numVtableSlots = mTable->GetNumVtableSlots();
+    for (WORD slot = 0; slot < numVtableSlots; slot++)
+    {
+        SOSMethodData methodData = {0, 0, 0, 0, 0, 0};
+        MethodDesc* pMD = nullptr;
+
+        EX_TRY
+        {
+            pMD = mTable->GetMethodDescForSlot_NoThrow(slot);
+        }
+        EX_CATCH
+        {
+        }
+        EX_END_CATCH(SwallowAllExceptions)
+
+        if (pMD != nullptr)
+        {
+            methodData.MethodDesc = HOST_CDADDR(pMD);
+            methodData.DefininingMethodTable = PTR_CDADDR(pMD->GetMethodTable());
+            methodData.DefiningModule = HOST_CDADDR(pMD->GetModule());
+            methodData.Token = pMD->GetMemberDef();
+        }
+
+        methodData.Entrypoint = mTable->GetSlot(slot);
+        methodData.Slot = slot;
+
+        if (!mMethods.Add(methodData))
+            return E_OUTOFMEMORY;
+    }
+
+    MethodTable::IntroducedMethodIterator it(mTable);
+    for (; it.IsValid(); it.Next())
+    {
+        MethodDesc* pMD = it.GetMethodDesc();
+        WORD slot = pMD->GetSlot();
+        if (slot >= numVtableSlots)
+        {
+            SOSMethodData methodData = {0};
+            methodData.MethodDesc = HOST_CDADDR(pMD);
+            methodData.Entrypoint = pMD->GetMethodEntryPointIfExists();
+            methodData.DefininingMethodTable = PTR_CDADDR(pMD->GetMethodTable());
+            methodData.DefiningModule = HOST_CDADDR(pMD->GetModule());
+            methodData.Token = pMD->GetMemberDef();
+
+            if (slot == MethodTable::NO_SLOT)
+            {
+                methodData.Slot = 0xFFFFFFFF;
+            }
+            else
+            {
+                methodData.Slot = slot;
+            }
+
+            if (!mMethods.Add(methodData))
+                return E_OUTOFMEMORY;
+        }
+    }
+
+    return S_OK;
+}
 
 HRESULT
 ClrDataAccess::GetCodeHeapList(CLRDATA_ADDRESS jitManager, unsigned int count, struct DacpJitCodeHeapInfo codeHeaps[], unsigned int *pNeeded)
@@ -586,14 +666,14 @@ ClrDataAccess::GetRegisterName(int regNum, unsigned int count, _Inout_updates_z_
 #elif defined(TARGET_LOONGARCH64)
     static const WCHAR *regs[] =
     {
-        W("R0"), W("AT"), W("V0"), W("V1"),
+        W("R0"), W("RA"), W("TP"), W("SP"),
         W("A0"), W("A1"), W("A2"), W("A3"),
         W("A4"), W("A5"), W("A6"), W("A7"),
         W("T0"), W("T1"), W("T2"), W("T3"),
-        W("T8"), W("T9"), W("S0"), W("S1"),
-        W("S2"), W("S3"), W("S4"), W("S5"),
-        W("S6"), W("S7"), W("K0"), W("K1"),
-        W("GP"), W("SP"), W("FP"), W("RA")
+        W("T4"), W("T5"), W("T6"), W("T7"),
+        W("T8"), W("R21"), W("FP"), W("S0"),
+        W("S1"), W("S2"), W("S3"), W("S4"),
+        W("S5"), W("S6"), W("S7"), W("S8")
     };
 #elif defined(TARGET_RISCV64)
     static const WCHAR *regs[] =
@@ -715,7 +795,7 @@ ClrDataAccess::GetThreadAllocData(CLRDATA_ADDRESS addr, struct DacpAllocData *da
 
     Thread* thread = PTR_Thread(TO_TADDR(addr));
 
-    PTR_gc_alloc_context pAllocContext = thread->GetAllocContext();
+    gc_alloc_context* pAllocContext = thread->GetAllocContext();
 
     if (pAllocContext != NULL)
     {
@@ -766,52 +846,10 @@ ClrDataAccess::GetHeapAllocData(unsigned int count, struct DacpGenerationAllocDa
     return hr;
 }
 
-HRESULT ClrDataAccess::GetThreadData(CLRDATA_ADDRESS threadAddr, struct DacpThreadData* threadData)
+HRESULT ClrDataAccess::GetThreadData(CLRDATA_ADDRESS threadAddr, struct DacpThreadData *threadData)
 {
     SOSDacEnter();
 
-    if (m_cdacSos != NULL)
-    {
-        hr = m_cdacSos->GetThreadData(threadAddr, threadData);
-        if (FAILED(hr))
-        {
-            hr = GetThreadDataImpl(threadAddr, threadData);
-        }
-#ifdef _DEBUG
-        else
-        {
-            DacpThreadData threadDataLocal;
-            HRESULT hrLocal = GetThreadDataImpl(threadAddr, &threadDataLocal);
-            _ASSERTE(hr == hrLocal);
-            _ASSERTE(threadData->corThreadId == threadDataLocal.corThreadId);
-            _ASSERTE(threadData->osThreadId == threadDataLocal.osThreadId);
-            _ASSERTE(threadData->state == threadDataLocal.state);
-            _ASSERTE(threadData->preemptiveGCDisabled == threadDataLocal.preemptiveGCDisabled);
-            _ASSERTE(threadData->allocContextPtr == threadDataLocal.allocContextPtr);
-            _ASSERTE(threadData->allocContextLimit == threadDataLocal.allocContextLimit);
-            _ASSERTE(threadData->context == threadDataLocal.context);
-            _ASSERTE(threadData->domain == threadDataLocal.domain);
-            _ASSERTE(threadData->pFrame == threadDataLocal.pFrame);
-            _ASSERTE(threadData->lockCount == threadDataLocal.lockCount);
-            _ASSERTE(threadData->firstNestedException == threadDataLocal.firstNestedException);
-            _ASSERTE(threadData->teb == threadDataLocal.teb);
-            _ASSERTE(threadData->fiberData == threadDataLocal.fiberData);
-            _ASSERTE(threadData->lastThrownObjectHandle == threadDataLocal.lastThrownObjectHandle);
-            _ASSERTE(threadData->nextThread == threadDataLocal.nextThread);;
-        }
-#endif
-    }
-    else
-    {
-        hr = GetThreadDataImpl(threadAddr, threadData);
-    }
-
-    SOSDacLeave();
-    return hr;
-}
-
-HRESULT ClrDataAccess::GetThreadDataImpl(CLRDATA_ADDRESS threadAddr, struct DacpThreadData *threadData)
-{
     // marshal the Thread object from the target
     Thread* thread = PTR_Thread(TO_TADDR(threadAddr));
 
@@ -822,7 +860,7 @@ HRESULT ClrDataAccess::GetThreadDataImpl(CLRDATA_ADDRESS threadAddr, struct Dacp
     threadData->state = thread->m_State;
     threadData->preemptiveGCDisabled = thread->m_fPreemptiveGCDisabled;
 
-    PTR_gc_alloc_context allocContext = thread->GetAllocContext();
+    gc_alloc_context* allocContext = thread->GetAllocContext();
     if (allocContext)
     {
         threadData->allocContextPtr = TO_CDADDR(allocContext->alloc_ptr);
@@ -860,7 +898,8 @@ HRESULT ClrDataAccess::GetThreadDataImpl(CLRDATA_ADDRESS threadAddr, struct Dacp
         thread->m_ExceptionState.m_currentExInfo.m_pPrevNestedInfo);
 #endif // FEATURE_EH_FUNCLETS
 
-    return S_OK;
+    SOSDacLeave();
+    return hr;
 }
 
 #ifdef FEATURE_REJIT
@@ -882,11 +921,11 @@ void CopyNativeCodeVersionToReJitData(NativeCodeVersion nativeCodeVersion, Nativ
             pReJitData->flags = DacpReJitData::kUnknown;
             break;
 
-        case ILCodeVersion::kStateRequested:
+        case RejitFlags::kStateRequested:
             pReJitData->flags = DacpReJitData::kRequested;
             break;
 
-        case ILCodeVersion::kStateActive:
+        case RejitFlags::kStateActive:
             pReJitData->flags = DacpReJitData::kActive;
             break;
         }
@@ -917,7 +956,6 @@ void CopyNativeCodeVersionToReJitData(NativeCodeVersion nativeCodeVersion, Nativ
 // Return Value:
 //      HRESULT indicating success or failure.
 //
-
 HRESULT ClrDataAccess::GetMethodDescData(
     CLRDATA_ADDRESS methodDesc,
     CLRDATA_ADDRESS ip,
@@ -1500,7 +1538,6 @@ ClrDataAccess::GetDomainFromContext(CLRDATA_ADDRESS contextAddr, CLRDATA_ADDRESS
     return hr;
 }
 
-
 HRESULT
 ClrDataAccess::GetObjectStringData(CLRDATA_ADDRESS obj, unsigned int count, _Inout_updates_z_(count) WCHAR *stringData, unsigned int *pNeeded)
 {
@@ -1517,16 +1554,17 @@ ClrDataAccess::GetObjectStringData(CLRDATA_ADDRESS obj, unsigned int count, _Ino
 
     // Object must be a string
     BOOL bFree = FALSE;
-    if (!DacValidateMethodTable(mt, bFree))
+    if (!DacValidateMethodTable(mt, bFree)
+        || HOST_CDADDR(mt) != HOST_CDADDR(g_pStringClass))
+    {
         hr = E_INVALIDARG;
-    else if (HOST_CDADDR(mt) != HOST_CDADDR(g_pStringClass))
-        hr = E_INVALIDARG;
-
-    if (SUCCEEDED(hr))
+    }
+    else
     {
         PTR_StringObject str(TO_TADDR(obj));
         ULONG32 needed = (ULONG32)str->GetStringLength() + 1;
 
+        HRESULT hr;
         if (stringData && count > 0)
         {
             if (count > needed)
@@ -1706,62 +1744,13 @@ ClrDataAccess::GetModule(CLRDATA_ADDRESS addr, IXCLRDataModule **mod)
 }
 
 HRESULT
-ClrDataAccess::GetModuleData(CLRDATA_ADDRESS addr, struct DacpModuleData* moduleData)
+ClrDataAccess::GetModuleData(CLRDATA_ADDRESS addr, struct DacpModuleData *ModuleData)
 {
-    if (addr == 0 || moduleData == NULL)
+    if (addr == 0 || ModuleData == NULL)
         return E_INVALIDARG;
 
     SOSDacEnter();
 
-    if (m_cdacSos != NULL)
-    {
-        hr = m_cdacSos->GetModuleData(addr, moduleData);
-        if (FAILED(hr))
-        {
-            hr = GetModuleDataImpl(addr, moduleData);
-        }
-#ifdef _DEBUG
-        else
-        {
-            DacpModuleData moduleDataLocal;
-            HRESULT hrLocal = GetModuleDataImpl(addr, &moduleDataLocal);
-            _ASSERTE(hr == hrLocal);
-            _ASSERTE(moduleData->Address == moduleDataLocal.Address);
-            _ASSERTE(moduleData->PEAssembly == moduleDataLocal.PEAssembly);
-            _ASSERTE(moduleData->ilBase == moduleDataLocal.ilBase);
-            _ASSERTE(moduleData->metadataStart == moduleDataLocal.metadataStart);
-            _ASSERTE(moduleData->metadataSize == moduleDataLocal.metadataSize);
-            _ASSERTE(moduleData->Assembly == moduleDataLocal.Assembly);
-            _ASSERTE(moduleData->bIsReflection == moduleDataLocal.bIsReflection);
-            _ASSERTE(moduleData->bIsPEFile == moduleDataLocal.bIsPEFile);
-            _ASSERTE(moduleData->dwBaseClassIndex == moduleDataLocal.dwBaseClassIndex);
-            _ASSERTE(moduleData->dwModuleID == moduleDataLocal.dwModuleID);
-            _ASSERTE(moduleData->dwTransientFlags == moduleDataLocal.dwTransientFlags);
-            _ASSERTE(moduleData->TypeDefToMethodTableMap == moduleDataLocal.TypeDefToMethodTableMap);
-            _ASSERTE(moduleData->TypeRefToMethodTableMap == moduleDataLocal.TypeRefToMethodTableMap);
-            _ASSERTE(moduleData->MethodDefToDescMap == moduleDataLocal.MethodDefToDescMap);
-            _ASSERTE(moduleData->FieldDefToDescMap == moduleDataLocal.FieldDefToDescMap);
-            _ASSERTE(moduleData->MemberRefToDescMap == moduleDataLocal.MemberRefToDescMap);
-            _ASSERTE(moduleData->FileReferencesMap == moduleDataLocal.FileReferencesMap);
-            _ASSERTE(moduleData->ManifestModuleReferencesMap == moduleDataLocal.ManifestModuleReferencesMap);
-            _ASSERTE(moduleData->LoaderAllocator == moduleDataLocal.LoaderAllocator);
-            _ASSERTE(moduleData->ThunkHeap == moduleDataLocal.ThunkHeap);
-            _ASSERTE(moduleData->dwModuleIndex == moduleDataLocal.dwModuleIndex);
-        }
-#endif
-    }
-    else
-    {
-        hr = GetModuleDataImpl(addr, moduleData);
-    }
-
-    SOSDacLeave();
-    return hr;
-}
-
-HRESULT
-ClrDataAccess::GetModuleDataImpl(CLRDATA_ADDRESS addr, struct DacpModuleData *ModuleData)
-{
     Module* pModule = PTR_Module(TO_TADDR(addr));
 
     ZeroMemory(ModuleData,sizeof(DacpModuleData));
@@ -1803,7 +1792,8 @@ ClrDataAccess::GetModuleDataImpl(CLRDATA_ADDRESS addr, struct DacpModuleData *Mo
     }
     EX_END_CATCH(SwallowAllExceptions)
 
-    return S_OK;
+    SOSDacLeave();
+    return hr;
 }
 
 HRESULT
@@ -1828,85 +1818,46 @@ ClrDataAccess::GetMethodTableData(CLRDATA_ADDRESS mt, struct DacpMethodTableData
         return E_INVALIDARG;
 
     SOSDacEnter();
-    if (m_cdacSos != NULL)
-    {
-        // Try the cDAC first - it will return E_NOTIMPL if it doesn't support this method yet. Fall back to the DAC.
-        hr = m_cdacSos->GetMethodTableData(mt, MTData);
-        if (FAILED(hr))
-        {
-            hr = GetMethodTableDataImpl(mt, MTData);
-        }
-#ifdef _DEBUG
-        else
-        {
-            // Assert that the data is the same as what we get from the DAC.
-            DacpMethodTableData mtDataLocal;
-            HRESULT hrLocal = GetMethodTableDataImpl(mt, &mtDataLocal);
-            _ASSERTE(hr == hrLocal);
-            _ASSERTE(MTData->BaseSize == mtDataLocal.BaseSize);
-            _ASSERTE(MTData->ComponentSize == mtDataLocal.ComponentSize);
-            _ASSERTE(MTData->bIsFree == mtDataLocal.bIsFree);
-            _ASSERTE(MTData->Module == mtDataLocal.Module);
-            _ASSERTE(MTData->Class == mtDataLocal.Class);
-            _ASSERTE(MTData->ParentMethodTable == mtDataLocal.ParentMethodTable);
-            _ASSERTE(MTData->wNumInterfaces == mtDataLocal.wNumInterfaces);
-            _ASSERTE(MTData->wNumMethods == mtDataLocal.wNumMethods);
-            _ASSERTE(MTData->wNumVtableSlots == mtDataLocal.wNumVtableSlots);
-            _ASSERTE(MTData->wNumVirtuals == mtDataLocal.wNumVirtuals);
-            _ASSERTE(MTData->cl == mtDataLocal.cl);
-            _ASSERTE(MTData->dwAttrClass = mtDataLocal.dwAttrClass);
-            _ASSERTE(MTData->bContainsPointers == mtDataLocal.bContainsPointers);
-            _ASSERTE(MTData->bIsShared == mtDataLocal.bIsShared);
-            _ASSERTE(MTData->bIsDynamic == mtDataLocal.bIsDynamic);
-        }
-#endif
-    }
-    else
-    {
-        hr = GetMethodTableDataImpl (mt, MTData);
-    }
-    SOSDacLeave();
-    return hr;
-}
 
-HRESULT
-ClrDataAccess::GetMethodTableDataImpl(CLRDATA_ADDRESS mt, struct DacpMethodTableData *MTData)
-{
     PTR_MethodTable pMT = PTR_MethodTable(TO_TADDR(mt));
     BOOL bIsFree = FALSE;
     if (!DacValidateMethodTable(pMT, bIsFree))
     {
-        return E_INVALIDARG;
+        hr = E_INVALIDARG;
+    }
+    else
+    {
+        ZeroMemory(MTData,sizeof(DacpMethodTableData));
+        MTData->BaseSize = pMT->GetBaseSize();
+        // [compat] SOS DAC APIs added this base size adjustment for strings
+        // due to: "2008/09/25 Title: New implementation of StringBuilder and improvements in String class"
+        // which changed StringBuilder not to use a String as an internal buffer and in the process
+        // changed the String internals so that StringObject::GetBaseSize() now includes the nul terminator character,
+        // which is apparently not expected by SOS.
+        if(pMT->IsString())
+            MTData->BaseSize -= sizeof(WCHAR);
+        MTData->ComponentSize = (DWORD)pMT->GetComponentSize();
+        MTData->bIsFree = bIsFree;
+        if(!bIsFree)
+        {
+            MTData->Module = HOST_CDADDR(pMT->GetModule());
+            // Note: DacpMethodTableData::Class is really a pointer to the canonical method table
+            MTData->Class = HOST_CDADDR(pMT->GetClass()->GetMethodTable());
+            MTData->ParentMethodTable = HOST_CDADDR(pMT->GetParentMethodTable());;
+            MTData->wNumInterfaces = (WORD)pMT->GetNumInterfaces();
+            MTData->wNumMethods = pMT->GetNumMethods(); // printed as "number of vtable slots" and used to iterate over method slots
+            MTData->wNumVtableSlots = 0; // always return 0 since .NET 9
+            MTData->wNumVirtuals = 0; // always return 0 since .NET 9
+            MTData->cl = pMT->GetCl();
+            MTData->dwAttrClass = pMT->GetAttrClass();
+            MTData->bContainsPointers = pMT->ContainsGCPointers();
+            MTData->bIsShared = FALSE;
+            MTData->bIsDynamic = pMT->IsDynamicStatics() ? TRUE : FALSE;
+        }
     }
 
-    ZeroMemory(MTData,sizeof(DacpMethodTableData));
-    MTData->BaseSize = pMT->GetBaseSize();
-    // [compat] SOS DAC APIs added this base size adjustment for strings
-    // due to: "2008/09/25 Title: New implementation of StringBuilder and improvements in String class"
-    // which changed StringBuilder not to use a String as an internal buffer and in the process
-    // changed the String internals so that StringObject::GetBaseSize() now includes the nul terminator character,
-    // which is apparently not expected by SOS.
-    if(pMT->IsString())
-        MTData->BaseSize -= sizeof(WCHAR);
-    MTData->ComponentSize = (DWORD)pMT->GetComponentSize();
-    MTData->bIsFree = bIsFree;
-    if(!bIsFree)
-    {
-        MTData->Module = HOST_CDADDR(pMT->GetModule());
-        // Note: DacpMethodTableData::Class is really a pointer to the canonical method table
-        MTData->Class = HOST_CDADDR(pMT->GetClass()->GetMethodTable());
-        MTData->ParentMethodTable = HOST_CDADDR(pMT->GetParentMethodTable());;
-        MTData->wNumInterfaces = (WORD)pMT->GetNumInterfaces();
-        MTData->wNumMethods = pMT->GetNumMethods(); // printed as "number of vtable slots" and used to iterate over method slots
-        MTData->wNumVtableSlots = 0; // always return 0 since .NET 9
-        MTData->wNumVirtuals = 0; // always return 0 since .NET 9
-        MTData->cl = pMT->GetCl();
-        MTData->dwAttrClass = pMT->GetAttrClass();
-        MTData->bContainsPointers = pMT->ContainsGCPointers();
-        MTData->bIsShared = FALSE;
-        MTData->bIsDynamic = pMT->IsDynamicStatics();
-    }
-    return S_OK;
+    SOSDacLeave();
+    return hr;
 }
 
 HRESULT
@@ -2157,45 +2108,20 @@ ClrDataAccess::GetMethodTableForEEClass(CLRDATA_ADDRESS eeClassReallyCanonMT, CL
         return E_INVALIDARG;
 
     SOSDacEnter();
-    if (m_cdacSos != NULL)
-    {
-        // Try the cDAC first - it will return E_NOTIMPL if it doesn't support this method yet. Fall back to the DAC.
-        hr = m_cdacSos->GetMethodTableForEEClass(eeClassReallyCanonMT, value);
-        if (FAILED(hr))
-        {
-            hr = GetMethodTableForEEClassImpl(eeClassReallyCanonMT, value);
-        }
-#ifdef _DEBUG
-        else
-        {
-            // Assert that the data is the same as what we get from the DAC.
-            CLRDATA_ADDRESS valueLocal;
-            HRESULT hrLocal = GetMethodTableForEEClassImpl(eeClassReallyCanonMT, &valueLocal);
-            _ASSERTE(hr == hrLocal);
-            _ASSERTE(*value == valueLocal);
-        }
-#endif
-    }
-    else
-    {
-        hr = GetMethodTableForEEClassImpl (eeClassReallyCanonMT, value);
-    }
-    SOSDacLeave();
-    return hr;
-}
 
-HRESULT
-ClrDataAccess::GetMethodTableForEEClassImpl(CLRDATA_ADDRESS eeClassReallyCanonMT, CLRDATA_ADDRESS *value)
-{
     PTR_MethodTable pCanonMT = PTR_MethodTable(TO_TADDR(eeClassReallyCanonMT));
     BOOL bIsFree;
     if (!DacValidateMethodTable(pCanonMT, bIsFree))
     {
-        return E_INVALIDARG;
+        hr = E_INVALIDARG;
+    }
+    else
+    {
+        *value = HOST_CDADDR(pCanonMT);
     }
 
-    *value = HOST_CDADDR(pCanonMT);
-    return S_OK;
+    SOSDacLeave();
+    return hr;
 }
 
 HRESULT
@@ -2245,6 +2171,7 @@ ClrDataAccess::GetPEFileName(CLRDATA_ADDRESS moduleAddr, unsigned int count, _In
         return E_INVALIDARG;
 
     SOSDacEnter();
+
     PTR_Module pModule = PTR_Module(TO_TADDR(moduleAddr));
     PEAssembly* pPEAssembly = pModule->GetPEAssembly();
 
@@ -2297,9 +2224,12 @@ ClrDataAccess::GetPEFileBase(CLRDATA_ADDRESS moduleAddr, CLRDATA_ADDRESS *base)
 
 DWORD DACGetNumComponents(TADDR addr, ICorDebugDataTarget* target)
 {
-    // For an object pointer, this attempts to read the number of
-    // array components.
-    addr+=sizeof(size_t);
+    // For an object pointer, this attempts to read the number of components.
+    // This expects that the first member after the MethodTable pointer (from Object)
+    // is a 32-bit integer representing the number of components.
+    // This holds for ArrayBase and StringObject - see coreclr/vm/object.h
+    // Free objects also have a component count set at this offset- see SetFree in coreclr/gc/gc.cpp
+    addr += sizeof(size_t); // Method table pointer
     ULONG32 returned = 0;
     DWORD Value = 0;
     HRESULT hr = target->ReadVirtual(addr, (PBYTE)&Value, sizeof(DWORD), &returned);
@@ -2319,7 +2249,6 @@ ClrDataAccess::GetObjectData(CLRDATA_ADDRESS addr, struct DacpObjectData *object
 
     SOSDacEnter();
 
-    ZeroMemory (objectData, sizeof(DacpObjectData));
     TADDR mtTADDR = DACGetMethodTableFromObjectPointer(CLRDATA_ADDRESS_TO_TADDR(addr),m_pTarget);
     if (mtTADDR==(TADDR)NULL)
         hr = E_INVALIDARG;
@@ -2380,15 +2309,13 @@ ClrDataAccess::GetObjectData(CLRDATA_ADDRESS addr, struct DacpObjectData *object
                 {
                     hr = E_INVALIDARG;
                 }
-                else
-                {
-                    objectData->ElementTypeHandle = (CLRDATA_ADDRESS)(thElem.AsTAddr());
-                    objectData->dwRank = mt->GetRank();
-                    objectData->dwNumComponents = pArrayObj->GetNumComponents ();
-                    objectData->ArrayDataPtr = PTR_CDADDR(pArrayObj->GetDataPtr (TRUE));
-                    objectData->ArrayBoundsPtr = HOST_CDADDR(pArrayObj->GetBoundsPtr());
-                    objectData->ArrayLowerBoundsPtr = HOST_CDADDR(pArrayObj->GetLowerBoundsPtr());
-                }
+
+                objectData->ElementTypeHandle = (CLRDATA_ADDRESS)(thElem.AsTAddr());
+                objectData->dwRank = mt->GetRank();
+                objectData->dwNumComponents = pArrayObj->GetNumComponents ();
+                objectData->ArrayDataPtr = PTR_CDADDR(pArrayObj->GetDataPtr (TRUE));
+                objectData->ArrayBoundsPtr = HOST_CDADDR(pArrayObj->GetBoundsPtr());
+                objectData->ArrayLowerBoundsPtr = HOST_CDADDR(pArrayObj->GetLowerBoundsPtr());
             }
             else
             {
@@ -2419,7 +2346,6 @@ ClrDataAccess::GetObjectData(CLRDATA_ADDRESS addr, struct DacpObjectData *object
 #endif // FEATURE_COMINTEROP
 
     SOSDacLeave();
-
     return hr;
 }
 
@@ -2472,19 +2398,17 @@ ClrDataAccess::GetAppDomainData(CLRDATA_ADDRESS addr, struct DacpAppDomainData *
     }
     else
     {
-        PTR_BaseDomain pBaseDomain = PTR_BaseDomain(TO_TADDR(addr));
-
         ZeroMemory(appdomainData, sizeof(DacpAppDomainData));
-        appdomainData->AppDomainPtr = PTR_CDADDR(pBaseDomain);
-        PTR_LoaderAllocator pLoaderAllocator = pBaseDomain->GetLoaderAllocator();
+        appdomainData->AppDomainPtr = addr;
+        PTR_LoaderAllocator pLoaderAllocator = SystemDomain::GetGlobalLoaderAllocator();
         appdomainData->pHighFrequencyHeap = HOST_CDADDR(pLoaderAllocator->GetHighFrequencyHeap());
         appdomainData->pLowFrequencyHeap = HOST_CDADDR(pLoaderAllocator->GetLowFrequencyHeap());
         appdomainData->pStubHeap = HOST_CDADDR(pLoaderAllocator->GetStubHeap());
         appdomainData->appDomainStage = STAGE_OPEN;
 
-        if (pBaseDomain->IsAppDomain())
+        if (addr != HOST_CDADDR(SystemDomain::System()))
         {
-            AppDomain * pAppDomain = pBaseDomain->AsAppDomain();
+            PTR_AppDomain pAppDomain = PTR_AppDomain(TO_TADDR(addr));
             appdomainData->DomainLocalBlock = 0;
             appdomainData->pDomainLocalModules = 0;
 
@@ -2495,11 +2419,11 @@ ClrDataAccess::GetAppDomainData(CLRDATA_ADDRESS addr, struct DacpAppDomainData *
                 // The assembly list is not valid in a closed appdomain.
                 AppDomain::AssemblyIterator i = pAppDomain->IterateAssembliesEx((AssemblyIterationFlags)(
                     kIncludeLoading | kIncludeLoaded | kIncludeExecution));
-                CollectibleAssemblyHolder<DomainAssembly *> pDomainAssembly;
+                CollectibleAssemblyHolder<Assembly *> pAssembly;
 
-                while (i.Next(pDomainAssembly.This()))
+                while (i.Next(pAssembly.This()))
                 {
-                    if (pDomainAssembly->IsLoaded())
+                    if (pAssembly->IsLoaded())
                     {
                         appdomainData->AssemblyCount++;
                     }
@@ -2601,22 +2525,25 @@ ClrDataAccess::GetAssemblyList(CLRDATA_ADDRESS addr, int count, CLRDATA_ADDRESS 
 
     SOSDacEnter();
 
-    BaseDomain* pBaseDomain = PTR_BaseDomain(TO_TADDR(addr));
-
-    int n=0;
-    if (pBaseDomain->IsAppDomain())
+    if (addr == HOST_CDADDR(SystemDomain::System()))
     {
-        AppDomain::AssemblyIterator i = pBaseDomain->AsAppDomain()->IterateAssembliesEx(
+        // We shouldn't be asking for the assemblies in SystemDomain
+        hr = E_INVALIDARG;
+    }
+    else
+    {
+        PTR_AppDomain pAppDomain = PTR_AppDomain(TO_TADDR(addr));
+        AppDomain::AssemblyIterator i = pAppDomain->IterateAssembliesEx(
             (AssemblyIterationFlags)(kIncludeLoading | kIncludeLoaded | kIncludeExecution));
-        CollectibleAssemblyHolder<DomainAssembly *> pDomainAssembly;
+        CollectibleAssemblyHolder<Assembly *> pAssembly;
 
+        int n = 0;
         if (values)
         {
-            while (i.Next(pDomainAssembly.This()) && (n < count))
+            while (i.Next(pAssembly.This()) && (n < count))
             {
-                if (pDomainAssembly->IsLoaded())
+                if (pAssembly->IsLoaded())
                 {
-                    CollectibleAssemblyHolder<Assembly *> pAssembly = pDomainAssembly->GetAssembly();
                     // Note: DAC doesn't need to keep the assembly alive - see code:CollectibleAssemblyHolder#CAH_DAC
                     values[n++] = HOST_CDADDR(pAssembly.Extract());
                 }
@@ -2624,20 +2551,13 @@ ClrDataAccess::GetAssemblyList(CLRDATA_ADDRESS addr, int count, CLRDATA_ADDRESS 
         }
         else
         {
-            while (i.Next(pDomainAssembly.This()))
-                if (pDomainAssembly->IsLoaded())
+            while (i.Next(pAssembly.This()))
+                if (pAssembly->IsLoaded())
                     n++;
         }
 
         if (pNeeded)
             *pNeeded = n;
-    }
-    else
-    {
-        // The only other type of BaseDomain is the SystemDomain, and we shouldn't be asking
-        // for the assemblies in it.
-        _ASSERTE(false);
-        hr = E_INVALIDARG;
     }
 
     SOSDacLeave();
@@ -2678,31 +2598,44 @@ ClrDataAccess::GetAppDomainName(CLRDATA_ADDRESS addr, unsigned int count, _Inout
 {
     SOSDacEnter();
 
-    PTR_BaseDomain pBaseDomain = PTR_BaseDomain(TO_TADDR(addr));
-    if (!pBaseDomain->IsAppDomain())
+    if (addr == HOST_CDADDR(SystemDomain::System()))
     {
-        // Shared domain and SystemDomain don't have this field.
+        // SystemDomain doesn't have this field.
         if (pNeeded)
             *pNeeded = 1;
-        if (name)
+        if (name && count > 0)
             name[0] = 0;
     }
     else
     {
-        AppDomain* pAppDomain = pBaseDomain->AsAppDomain();
+        PTR_AppDomain pAppDomain = PTR_AppDomain(TO_TADDR(addr));
 
-        if (!pAppDomain->m_friendlyName.IsEmpty())
+        size_t countAsSizeT = count;
+        if (pAppDomain->m_friendlyName.IsValid())
         {
-            if (!pAppDomain->m_friendlyName.DacGetUnicode(count, name, pNeeded))
+            LPCWSTR friendlyName = (LPCWSTR)pAppDomain->m_friendlyName;
+            size_t friendlyNameLen = u16_strlen(friendlyName);
+
+            if (pNeeded)
             {
-                hr =  E_FAIL;
+                *pNeeded = (unsigned int)(friendlyNameLen + 1);
+            }
+
+            if (name && count > 0)
+            {
+                if (countAsSizeT > (friendlyNameLen + 1))
+                {
+                    countAsSizeT = friendlyNameLen + 1;
+                }
+                memcpy(name, friendlyName, countAsSizeT * sizeof(WCHAR));
+                name[countAsSizeT - 1] = 0;
             }
         }
         else
         {
             if (pNeeded)
                 *pNeeded = 1;
-            if (name)
+            if (name && count > 0)
                 name[0] = 0;
 
             hr = S_OK;
@@ -2741,9 +2674,9 @@ ClrDataAccess::GetAppDomainConfigFile(CLRDATA_ADDRESS appDomain, int count,
 }
 
 HRESULT
-ClrDataAccess::GetAssemblyData(CLRDATA_ADDRESS cdBaseDomainPtr, CLRDATA_ADDRESS assembly, struct DacpAssemblyData *assemblyData)
+ClrDataAccess::GetAssemblyData(CLRDATA_ADDRESS domain, CLRDATA_ADDRESS assembly, struct DacpAssemblyData *assemblyData)
 {
-    if (assembly == (CLRDATA_ADDRESS)NULL && cdBaseDomainPtr == (CLRDATA_ADDRESS)NULL)
+    if (assembly == (CLRDATA_ADDRESS)NULL && domain == (CLRDATA_ADDRESS)NULL)
     {
         return E_INVALIDARG;
     }
@@ -2755,14 +2688,9 @@ ClrDataAccess::GetAssemblyData(CLRDATA_ADDRESS cdBaseDomainPtr, CLRDATA_ADDRESS 
     // Make sure conditionally-assigned fields like AssemblySecDesc, LoadContext, etc. are zeroed
     ZeroMemory(assemblyData, sizeof(DacpAssemblyData));
 
-    // If the specified BaseDomain is an AppDomain, get a pointer to it
-    AppDomain * pDomain = NULL;
-    if (cdBaseDomainPtr != (CLRDATA_ADDRESS)NULL)
+    if (domain != (CLRDATA_ADDRESS)NULL)
     {
-        assemblyData->BaseDomainPtr = cdBaseDomainPtr;
-        PTR_BaseDomain baseDomain = PTR_BaseDomain(TO_TADDR(cdBaseDomainPtr));
-        if( baseDomain->IsAppDomain() )
-            pDomain = baseDomain->AsAppDomain();
+        assemblyData->DomainPtr = domain;
     }
 
     assemblyData->AssemblyPtr = HOST_CDADDR(pAssembly);
@@ -3323,39 +3251,6 @@ ClrDataAccess::GetNestedExceptionData(CLRDATA_ADDRESS exception, CLRDATA_ADDRESS
 
     SOSDacEnter();
 
-    if (m_cdacSos != NULL)
-    {
-        // Try the cDAC first - it will return E_NOTIMPL if it doesn't support this method yet. Fall back to the DAC.
-        hr = m_cdacSos->GetNestedExceptionData(exception, exceptionObject, nextNestedException);
-        if (FAILED(hr))
-        {
-            hr = GetNestedExceptionDataImpl(exception, exceptionObject, nextNestedException);
-        }
-#ifdef _DEBUG
-        else
-        {
-            // Assert that the data is the same as what we get from the DAC.
-            CLRDATA_ADDRESS exceptionObjectLocal;
-            CLRDATA_ADDRESS nextNestedExceptionLocal;
-            HRESULT hrLocal = GetNestedExceptionDataImpl(exception, &exceptionObjectLocal, &nextNestedExceptionLocal);
-            _ASSERTE(hr == hrLocal);
-            _ASSERTE(*exceptionObject == exceptionObjectLocal);
-            _ASSERTE(*nextNestedException == nextNestedExceptionLocal);
-        }
-#endif
-    }
-    else
-    {
-        hr = GetNestedExceptionDataImpl(exception, exceptionObject, nextNestedException);
-    }
-
-    SOSDacLeave();
-    return hr;
-}
-
-HRESULT
-ClrDataAccess::GetNestedExceptionDataImpl(CLRDATA_ADDRESS exception, CLRDATA_ADDRESS *exceptionObject, CLRDATA_ADDRESS *nextNestedException)
-{
 #ifdef FEATURE_EH_FUNCLETS
     ExceptionTrackerBase *pExData = PTR_ExceptionTrackerBase(TO_TADDR(exception));
 #else
@@ -3363,11 +3258,17 @@ ClrDataAccess::GetNestedExceptionDataImpl(CLRDATA_ADDRESS exception, CLRDATA_ADD
 #endif // FEATURE_EH_FUNCLETS
 
     if (!pExData)
-        return E_INVALIDARG;
+    {
+        hr = E_INVALIDARG;
+    }
+    else
+    {
+        *exceptionObject = TO_CDADDR(*PTR_TADDR(pExData->m_hThrowable));
+        *nextNestedException = PTR_HOST_TO_TADDR(pExData->m_pPrevNestedInfo);
+    }
 
-    *exceptionObject = TO_CDADDR(*PTR_TADDR(pExData->m_hThrowable));
-    *nextNestedException = PTR_HOST_TO_TADDR(pExData->m_pPrevNestedInfo);
-    return S_OK;
+    SOSDacLeave();
+    return hr;
 }
 
 HRESULT
@@ -3403,7 +3304,7 @@ ClrDataAccess::GetThreadLocalModuleData(CLRDATA_ADDRESS thread, unsigned int ind
 HRESULT ClrDataAccess::GetHandleEnum(ISOSHandleEnum **ppHandleEnum)
 {
     unsigned int types[] = {HNDTYPE_WEAK_SHORT, HNDTYPE_WEAK_LONG, HNDTYPE_STRONG, HNDTYPE_PINNED, HNDTYPE_DEPENDENT,
-                            HNDTYPE_SIZEDREF, HNDTYPE_WEAK_INTERIOR_POINTER,
+                            HNDTYPE_WEAK_INTERIOR_POINTER,
 #if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS) || defined(FEATURE_OBJCMARSHAL)
                             HNDTYPE_REFCOUNTED,
 #endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS || FEATURE_OBJCMARSHAL
@@ -3441,7 +3342,6 @@ HRESULT ClrDataAccess::GetHandleEnumForGC(unsigned int gen, ISOSHandleEnum **ppH
     SOSDacEnter();
 
     unsigned int types[] = {HNDTYPE_WEAK_SHORT, HNDTYPE_WEAK_LONG, HNDTYPE_STRONG, HNDTYPE_PINNED, HNDTYPE_DEPENDENT,
-                            HNDTYPE_SIZEDREF,
 #if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS) || defined(FEATURE_OBJCMARSHAL)
                             HNDTYPE_REFCOUNTED,
 #endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS || FEATURE_OBJCMARSHAL
@@ -3669,8 +3569,7 @@ ClrDataAccess::TraverseVirtCallStubHeap(CLRDATA_ADDRESS pAppDomain, VCSHeapType 
 
     SOSDacEnter();
 
-    BaseDomain* pBaseDomain = PTR_BaseDomain(TO_TADDR(pAppDomain));
-    VirtualCallStubManager *pVcsMgr = pBaseDomain->GetLoaderAllocator()->GetVirtualCallStubManager();
+    VirtualCallStubManager *pVcsMgr = SystemDomain::GetGlobalLoaderAllocator()->GetVirtualCallStubManager();
     if (!pVcsMgr)
     {
         hr = E_POINTER;
@@ -3715,8 +3614,8 @@ HRESULT ClrDataAccess::GetDomainLoaderAllocator(CLRDATA_ADDRESS domainAddress, C
 
     SOSDacEnter();
 
-    PTR_BaseDomain pDomain = PTR_BaseDomain(TO_TADDR(domainAddress));
-    *pLoaderAllocator = pDomain != nullptr ? HOST_CDADDR(pDomain->GetLoaderAllocator()) : 0;
+    // The one and only app domain uses the global loader allocator
+    *pLoaderAllocator = HOST_CDADDR(SystemDomain::GetGlobalLoaderAllocator());
 
     SOSDacLeave();
     return hr;
@@ -4648,7 +4547,6 @@ HRESULT ClrDataAccess::GetObjectExceptionData(CLRDATA_ADDRESS objAddr, struct Da
     SOSDacEnter();
 
     PTR_ExceptionObject pObj = dac_cast<PTR_ExceptionObject>(TO_TADDR(objAddr));
-
     data->Message         = TO_CDADDR(dac_cast<TADDR>(pObj->GetMessage()));
     data->InnerException  = TO_CDADDR(dac_cast<TADDR>(pObj->GetInnerException()));
     data->StackTrace      = TO_CDADDR(dac_cast<TADDR>(pObj->GetStackTraceArrayObject()));
@@ -4659,7 +4557,6 @@ HRESULT ClrDataAccess::GetObjectExceptionData(CLRDATA_ADDRESS objAddr, struct Da
     data->XCode           = pObj->GetXCode();
 
     SOSDacLeave();
-
     return hr;
 }
 
@@ -4721,7 +4618,7 @@ HRESULT ClrDataAccess::GetPendingReJITID(CLRDATA_ADDRESS methodDesc, int *pRejit
     {
         hr = E_INVALIDARG;
     }
-    else if (ilVersion.GetRejitState() == ILCodeVersion::kStateRequested)
+    else if (ilVersion.GetRejitState() == RejitFlags::kStateRequested)
     {
         *pRejitId = (int)ilVersion.GetVersionId();
     }
@@ -4764,11 +4661,11 @@ HRESULT ClrDataAccess::GetReJITInformation(CLRDATA_ADDRESS methodDesc, int rejit
             pReJitData->flags = DacpReJitData2::kUnknown;
             break;
 
-        case ILCodeVersion::kStateRequested:
+        case RejitFlags::kStateRequested:
             pReJitData->flags = DacpReJitData2::kRequested;
             break;
 
-        case ILCodeVersion::kStateActive:
+        case RejitFlags::kStateActive:
             pReJitData->flags = DacpReJitData2::kActive;
             break;
         }
@@ -4801,7 +4698,7 @@ HRESULT ClrDataAccess::GetProfilerModifiedILInformation(CLRDATA_ADDRESS methodDe
     CodeVersionManager* pCodeVersionManager = pMD->GetCodeVersionManager();
     CodeVersionManager::LockHolder codeVersioningLockHolder;
     ILCodeVersion ilVersion = pCodeVersionManager->GetActiveILCodeVersion(pMD);
-    if (ilVersion.GetRejitState() != ILCodeVersion::kStateActive || !ilVersion.HasDefaultIL())
+    if (ilVersion.GetRejitState() != RejitFlags::kStateActive || !ilVersion.HasDefaultIL())
     {
         pILData->type = DacpProfilerILData::ReJITModified;
         pILData->rejitID = static_cast<ULONG>(pCodeVersionManager->GetActiveILCodeVersion(pMD).GetVersionId());
@@ -4851,7 +4748,7 @@ HRESULT ClrDataAccess::GetMethodsWithProfilerModifiedIL(CLRDATA_ADDRESS mod, CLR
 
                 TADDR pDynamicIL = pModule->GetDynamicIL(pMD->GetMemberDef());
                 ILCodeVersion ilVersion = pCodeVersionManager->GetActiveILCodeVersion(pMD);
-                if (ilVersion.GetRejitState() != ILCodeVersion::kStateActive || !ilVersion.HasDefaultIL() || pDynamicIL != (TADDR)NULL)
+                if (ilVersion.GetRejitState() != RejitFlags::kStateActive || !ilVersion.HasDefaultIL() || pDynamicIL != (TADDR)NULL)
                 {
                     methodDescs[*pcMethodDescs] = PTR_CDADDR(pMD);
                     ++(*pcMethodDescs);
@@ -5101,15 +4998,7 @@ HRESULT ClrDataAccess::GetBreakingChangeVersion(int* pVersion)
     if (pVersion == nullptr)
         return E_INVALIDARG;
 
-    if (m_cdacSos9 != nullptr && SUCCEEDED(m_cdacSos9->GetBreakingChangeVersion(pVersion)))
-    {
-        _ASSERTE(*pVersion == SOS_BREAKING_CHANGE_VERSION);
-    }
-    else
-    {
-        *pVersion = SOS_BREAKING_CHANGE_VERSION;
-    }
-
+    *pVersion = SOS_BREAKING_CHANGE_VERSION;
     return S_OK;
 }
 
@@ -5462,8 +5351,9 @@ HRESULT ClrDataAccess::GetGlobalAllocationContext(
     }
 
     SOSDacEnter();
-    *allocPtr = (CLRDATA_ADDRESS)((&g_global_alloc_context)->alloc_ptr);
-    *allocLimit = (CLRDATA_ADDRESS)((&g_global_alloc_context)->alloc_limit);
+    gc_alloc_context global_alloc_context = ((ee_alloc_context)g_global_alloc_context).m_GCAllocContext;
+    *allocPtr = (CLRDATA_ADDRESS)global_alloc_context.alloc_ptr;
+    *allocLimit = (CLRDATA_ADDRESS)global_alloc_context.alloc_limit;
     SOSDacLeave();
     return hr;
 }

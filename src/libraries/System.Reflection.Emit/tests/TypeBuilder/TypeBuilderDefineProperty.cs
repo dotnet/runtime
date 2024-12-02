@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.IO;
 using Xunit;
 
 namespace System.Reflection.Emit.Tests
@@ -16,11 +17,12 @@ namespace System.Reflection.Emit.Tests
             yield return new object[] { "\u043F\u0440\u0438\u0432\u0435\u0442", PropertyAttributes.SpecialName, typeof(EmptyNonGenericStruct), null, "\u043F\u0440\u0438\u0432\u0435\u0442", PropertyAttributes.SpecialName };
             yield return new object[] { "class", (PropertyAttributes)(-1), null, new Type[] { typeof(void) }, "class", PropertyAttributes.None };
             yield return new object[] { "Test Name With Spaces", (PropertyAttributes)8192, typeof(string), new Type[] { typeof(string) }, "Test Name With Spaces", PropertyAttributes.None };
-            yield return new object[] { "PropertyName", PropertyAttributes.None, typeof(BasicDelegate), new Type[] { typeof(int) }, "PropertyName", PropertyAttributes.None };
-            yield return new object[] { "PropertyName", PropertyAttributes.None, typeof(EmptyEnum), new Type[] { typeof(int) }, "PropertyName", PropertyAttributes.None };
-            yield return new object[] { "PropertyName", PropertyAttributes.None, typeof(DateTime), new Type[] { typeof(int) }, "PropertyName", PropertyAttributes.None };
-            yield return new object[] { "PropertyName", PropertyAttributes.None, typeof(EmptyGenericStruct<int>), new Type[] { typeof(int) }, "PropertyName", PropertyAttributes.None };
-            yield return new object[] { "PropertyName", PropertyAttributes.None, typeof(EmptyGenericStruct<int>).GetGenericArguments()[0], new Type[] { typeof(int) }, "PropertyName", PropertyAttributes.None };
+            yield return new object[] { "Property,Name", PropertyAttributes.None, typeof(BasicDelegate), new Type[] { typeof(int) }, "Property,Name", PropertyAttributes.None };
+            yield return new object[] { "Property.Name", PropertyAttributes.None, typeof(EmptyEnum), new Type[] { typeof(int) }, "Property.Name", PropertyAttributes.None };
+            yield return new object[] { "Property\nName", PropertyAttributes.None, typeof(DateTime), new Type[] { typeof(int) }, "Property\nName", PropertyAttributes.None };
+            yield return new object[] { "Property@Name", PropertyAttributes.None, typeof(EmptyGenericStruct<int>), new Type[] { typeof(int) }, "Property@Name", PropertyAttributes.None };
+            yield return new object[] { "Property*Name", PropertyAttributes.None, typeof(EmptyGenericStruct<int>).GetGenericArguments()[0], new Type[] { typeof(int) }, "Property*Name", PropertyAttributes.None };
+            yield return new object[] { "0x42", PropertyAttributes.None, typeof(int), new Type[] { typeof(int) }, "0x42", PropertyAttributes.None };
 
             // Invalid unicode
             yield return new object[] { "\uDC00", (PropertyAttributes)0x8000, typeof(EmptyGenericStruct<string>), new Type[] { typeof(EmptyGenericClass<string>) }, "\uFFFD", PropertyAttributes.None };
@@ -37,7 +39,7 @@ namespace System.Reflection.Emit.Tests
             PropertyBuilder property = type.DefineProperty(name, attributes, returnType, parameterTypes);
             Assert.Equal(name, property.Name);
             Assert.Equal(attributes, property.Attributes);
-            Assert.Equal(returnType, property.PropertyType);
+            Assert.Equal(returnType ?? typeof(void), property.PropertyType);
 
             Type createdType = type.CreateType();
             Assert.Equal(type.AsType().GetProperties(Helpers.AllFlags), createdType.GetProperties(Helpers.AllFlags));
@@ -46,6 +48,76 @@ namespace System.Reflection.Emit.Tests
             Assert.Equal(expectedName, createdProperty.Name);
             Assert.Equal(expectedPropertyAttributes, createdProperty.Attributes);
             Assert.Equal(returnType ?? typeof(void), createdProperty.PropertyType);
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        [MemberData(nameof(TestData))]
+        public void DefinePropertyPersistedAssembly(string name, PropertyAttributes attributes, Type returnType, Type[] parameterTypes, string expectedName, PropertyAttributes _)
+        {
+            PersistedAssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
+            PropertyBuilder property = type.DefineProperty(name, attributes, returnType, parameterTypes);
+            Assert.Equal(name, property.Name);
+            Assert.Equal(attributes, property.Attributes);
+            Assert.Equal(returnType ?? typeof(void), property.PropertyType);
+
+            type.CreateType();
+            using (var stream = new MemoryStream())
+            using (MetadataLoadContext mlc = new MetadataLoadContext(new CoreMetadataAssemblyResolver()))
+            {
+                ab.Save(stream);
+
+                Assembly assemblyFromStream = mlc.LoadFromStream(stream);
+                Type createdType = assemblyFromStream.GetType("MyType");
+
+                PropertyInfo createdProperty = createdType.GetProperty(expectedName, Helpers.AllFlags);
+                Assert.Equal(expectedName, createdProperty.Name);
+                Type retType = returnType ?? typeof(void);
+                Assert.Equal(retType.FullName, createdProperty.PropertyType.FullName);
+            }
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/2389", TestRuntimes.Mono)]
+        public void DefineProperty_NameCollision()
+        {
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
+            Type[] parameterTypes = { typeof(int), typeof(double) };
+            PropertyBuilder property1 = type.DefineProperty("PropertyName", PropertyAttributes.None, typeof(int), parameterTypes);
+            PropertyBuilder property2 = type.DefineProperty("PropertyName", PropertyAttributes.None, typeof(int), parameterTypes);
+            PropertyBuilder property3 = type.DefineProperty("PropertyName", PropertyAttributes.None, typeof(string), [typeof(int)]);
+            Type createdType = type.CreateType();
+
+            PropertyInfo[] properties = createdType.GetProperties(Helpers.AllFlags);
+            Assert.Equal(2, properties.Length);
+            Assert.Equal("PropertyName", properties[0].Name);
+            Assert.Equal("PropertyName", properties[1].Name);
+            Assert.Throws<AmbiguousMatchException>(() => createdType.GetProperty("PropertyName", Helpers.AllFlags)); 
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        public void DefineProperty_NameCollisionPersistedAssembly()
+        {
+            PersistedAssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
+            Type[] parameterTypes = { typeof(int), typeof(double) };
+            PropertyBuilder property1 = type.DefineProperty("PropertyName", PropertyAttributes.None, typeof(int), parameterTypes);
+            PropertyBuilder property2 = type.DefineProperty("PropertyName", PropertyAttributes.None, typeof(int), parameterTypes);
+            PropertyBuilder property3 = type.DefineProperty("PropertyName", PropertyAttributes.None, typeof(string), [typeof(int)]);
+            type.CreateType();
+
+            using (var stream = new MemoryStream())
+            using (MetadataLoadContext mlc = new MetadataLoadContext(new CoreMetadataAssemblyResolver()))
+            {
+                ab.Save(stream);
+
+                Assembly assemblyFromStream = mlc.LoadFromStream(stream);
+                Type createdType = assemblyFromStream.GetType("MyType");
+
+                PropertyInfo[] properties = createdType.GetProperties(Helpers.AllFlags);
+                Assert.Equal(3, properties.Length);
+                Assert.Equal("PropertyName", properties[0].Name);
+                Assert.Equal("PropertyName", properties[1].Name);
+                Assert.Throws<AmbiguousMatchException>(() => createdType.GetProperty("PropertyName", Helpers.AllFlags));
+            }
         }
 
         [Fact]

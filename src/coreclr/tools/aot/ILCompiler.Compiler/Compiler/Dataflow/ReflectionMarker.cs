@@ -89,12 +89,13 @@ namespace ILCompiler.Dataflow
 
             List<ModuleDesc> referencedModules = new();
             TypeDesc foundType = CustomAttributeTypeNameParser.GetTypeByCustomAttributeTypeNameForDataFlow(typeName, callingModule, diagnosticContext.Origin.MemberDefinition!.Context,
-                referencedModules, out bool typeWasNotFoundInAssemblyNorBaseLibrary);
+                referencedModules, needsAssemblyName, out bool failedBecauseNotFullyQualified);
             if (foundType == null)
             {
-                if (needsAssemblyName && typeWasNotFoundInAssemblyNorBaseLibrary)
-                    diagnosticContext.AddDiagnostic(DiagnosticId.TypeWasNotFoundInAssemblyNorBaseLibrary, typeName);
-
+                if (failedBecauseNotFullyQualified)
+                {
+                    diagnosticContext.AddDiagnostic(DiagnosticId.TypeNameIsNotAssemblyQualified, typeName);
+                }
                 type = default;
                 return false;
             }
@@ -324,9 +325,6 @@ namespace ILCompiler.Dataflow
                 var id = reportOnMember ? DiagnosticId.DynamicallyAccessedMembersOnTypeReferencesMemberWithDynamicallyAccessedMembers : DiagnosticId.DynamicallyAccessedMembersOnTypeReferencesMemberOnBaseWithDynamicallyAccessedMembers;
                 _logger.LogWarning(origin, id, _typeHierarchyDataFlowOrigin.GetDisplayName(), entity.GetDisplayName());
             }
-
-            // We decided to not warn on reflection access to compiler-generated methods:
-            // https://github.com/dotnet/runtime/issues/85042
         }
 
         private void ReportRequires(in MessageOrigin origin, TypeSystemEntity entity, string requiresAttributeName, in CustomAttributeValue<TypeDesc> requiresAttribute)

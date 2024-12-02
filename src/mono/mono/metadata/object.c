@@ -908,7 +908,7 @@ compute_class_bitmap (MonoClass *klass, gsize *bitmap, int size, int offset, int
 			guint32 field_instance_offset = field_offset;
 			// If struct has InlineArray attribute, iterate `length` times to set a bitmap
 			if (m_class_is_inlinearray (p))
-				field_iter = m_class_inlinearray_value (p);
+				field_iter = mono_class_get_inlinearray_value (p);
 
 			if (field_iter > 500)
 				g_warning ("Large number of iterations detected when creating a GC bitmap, might affect performance.");
@@ -6529,7 +6529,7 @@ mono_value_box_handle (MonoClass *klass, gpointer value, MonoError *error)
 
 	error_init (error);
 
-	g_assert (m_class_is_valuetype (klass));
+	g_assert (m_class_is_valuetype (klass) || mono_class_is_pointer (klass));
 	g_assert (value != NULL);
 	if (G_UNLIKELY (m_class_is_byreflike (klass))) {
 		char *full_name = mono_type_get_full_name (klass);

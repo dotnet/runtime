@@ -418,7 +418,7 @@ bool CoffNativeCodeManager::IsSafePoint(PTR_VOID pvAddress)
     if (decoder.IsInterruptible())
         return true;
 
-    if (decoder.IsInterruptibleSafePoint())
+    if (decoder.IsSafePoint())
         return true;
 
     return false;
@@ -479,7 +479,7 @@ void CoffNativeCodeManager::EnumGcRefs(MethodInfo *    pMethodInfo,
                 codeOffset - 1
             );
 
-            assert(decoder.IsInterruptibleSafePoint());
+            assert(decoder.IsSafePoint());
         }
     }
 
@@ -790,6 +790,10 @@ bool CoffNativeCodeManager::UnwindStackFrame(MethodInfo *    pMethodInfo,
     if (!(flags & USFF_GcUnwind))
     {
         memcpy(pRegisterSet->Xmm, &context.Xmm6, sizeof(pRegisterSet->Xmm));
+        if (pRegisterSet->SSP)
+        {
+            pRegisterSet->SSP += 8;
+        }
     }
 #elif defined(TARGET_ARM64)
     if (!(flags & USFF_GcUnwind))

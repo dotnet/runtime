@@ -181,7 +181,7 @@ namespace Microsoft.Extensions.Logging.Generators
                                                     break;
 
                                                 default:
-                                                    Debug.Assert(false, "Unexpected number of arguments in attribute constructor.");
+                                                    Debug.Fail("Unexpected number of arguments in attribute constructor.");
                                                     break;
                                             }
                                         }
@@ -649,6 +649,10 @@ namespace Microsoft.Extensions.Logging.Generators
                     foreach (IFieldSymbol fs in currentClassType.GetMembers().OfType<IFieldSymbol>())
                     {
                         if (!onMostDerivedType && fs.DeclaredAccessibility == Accessibility.Private)
+                        {
+                            continue;
+                        }
+                        if (!fs.CanBeReferencedByName)
                         {
                             continue;
                         }

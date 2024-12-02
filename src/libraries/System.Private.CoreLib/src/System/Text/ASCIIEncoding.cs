@@ -528,7 +528,7 @@ namespace System.Text
 
             int charCount = bytesLength;
 
-            if (!(fallback is DecoderReplacementFallback replacementFallback) || replacementFallback.MaxCharCount != 1)
+            if (fallback is not DecoderReplacementFallback replacementFallback || replacementFallback.MaxCharCount != 1)
             {
                 // Unrecognized fallback mechanism - count bytes manually.
 

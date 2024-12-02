@@ -7,8 +7,7 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Runtime.Versioning;
-using System.Runtime.Intrinsics.Tests.Vectors;
+using System.Tests;
 using Xunit;
 using Xunit.Sdk;
 
@@ -17,7 +16,6 @@ namespace System.Numerics.Tests
     /// <summary>
     ///  Vector{T} tests that use random number generation and a unified generic test structure
     /// </summary>
-    [RequiresPreviewFeatures]
     public unsafe class GenericVectorTests
     {
         /// <summary>Verifies that two <see cref="Vector{Single}" /> values are equal, within the <paramref name="variance" />.</summary>
@@ -54,7 +52,6 @@ namespace System.Numerics.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/81785", TestPlatforms.Browser)]
         public unsafe void IsHardwareAcceleratedTest()
         {
             MethodInfo methodInfo = typeof(Vector).GetMethod("get_IsHardwareAccelerated");
@@ -1096,10 +1093,8 @@ namespace System.Numerics.Tests
         [Fact]
         public void AdditionInt64() { TestAddition<long>(); }
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void AdditionSingle() { TestAddition<float>(); }
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void AdditionDouble() { TestAddition<double>(); }
         private void TestAddition<T>() where T : struct, INumber<T>
         {
@@ -1163,10 +1158,8 @@ namespace System.Numerics.Tests
         [Fact]
         public void SubtractionInt64() { TestSubtraction<long>(); }
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void SubtractionSingle() { TestSubtraction<float>(); }
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void SubtractionDouble() { TestSubtraction<double>(); }
         private void TestSubtraction<T>() where T : struct, INumber<T>
         {
@@ -1230,10 +1223,8 @@ namespace System.Numerics.Tests
         [Fact]
         public void MultiplicationInt64() { TestMultiplication<long>(); }
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void MultiplicationSingle() { TestMultiplication<float>(); }
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void MultiplicationDouble() { TestMultiplication<double>(); }
         private void TestMultiplication<T>() where T : struct, INumber<T>
         {
@@ -1274,11 +1265,9 @@ namespace System.Numerics.Tests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/67893", TestPlatforms.tvOS)]
         public void MultiplicationWithScalarInt64() { TestMultiplicationWithScalar<long>(); }
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/67893", TestPlatforms.tvOS)]
         public void MultiplicationWithScalarSingle() { TestMultiplicationWithScalar<float>(); }
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/67893", TestPlatforms.tvOS)]
         public void MultiplicationWithScalarDouble() { TestMultiplicationWithScalar<double>(); }
         private void TestMultiplicationWithScalar<T>() where T : struct, INumber<T>
@@ -1320,10 +1309,8 @@ namespace System.Numerics.Tests
         [Fact]
         public void DivisionInt64() { TestDivision<long>(); }
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void DivisionSingle() { TestDivision<float>(); }
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void DivisionDouble() { TestDivision<double>(); }
         private void TestDivision<T>() where T : struct, INumber<T>
         {
@@ -1390,11 +1377,9 @@ namespace System.Numerics.Tests
         public void DivisionWithScalarInt64() { TestDivisionWithScalar<long>(); }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void DivisionWithScalarSingle() { TestDivisionWithScalar<float>(); }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void DivisionWithScalarDouble() { TestDivisionWithScalar<double>(); }
 
         private void TestDivisionWithScalar<T>() where T : struct, INumber<T>
@@ -1462,10 +1447,8 @@ namespace System.Numerics.Tests
         [Fact]
         public void UnaryMinusInt64() { TestUnaryMinus<long>(); }
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void UnaryMinusSingle() { TestUnaryMinus<float>(); }
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void UnaryMinusDouble() { TestUnaryMinus<double>(); }
         private void TestUnaryMinus<T>() where T : struct, INumber<T>
         {
@@ -1852,10 +1835,8 @@ namespace System.Numerics.Tests
         [Fact]
         public void VectorGreaterThanInt64() { TestVectorGreaterThan<long>(); }
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void VectorGreaterThanSingle() { TestVectorGreaterThan<float>(); }
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void VectorGreaterThanDouble() { TestVectorGreaterThan<double>(); }
         private void TestVectorGreaterThan<T>() where T : struct, INumber<T>
         {
@@ -1891,10 +1872,8 @@ namespace System.Numerics.Tests
         [Fact]
         public void GreaterThanOrEqualInt64() { TestVectorGreaterThanOrEqual<long>(); }
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void GreaterThanOrEqualSingle() { TestVectorGreaterThanOrEqual<float>(); }
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void GreaterThanOrEqualDouble() { TestVectorGreaterThanOrEqual<double>(); }
         private void TestVectorGreaterThanOrEqual<T>() where T : struct, INumber<T>
         {
@@ -2146,10 +2125,8 @@ namespace System.Numerics.Tests
         [Fact]
         public void LessThanInt64() { TestVectorLessThan<long>(); }
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void LessThanSingle() { TestVectorLessThan<float>(); }
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void LessThanDouble() { TestVectorLessThan<double>(); }
         private void TestVectorLessThan<T>() where T : struct, INumber<T>
         {
@@ -2185,10 +2162,8 @@ namespace System.Numerics.Tests
         [Fact]
         public void LessThanOrEqualInt64() { TestVectorLessThanOrEqual<long>(); }
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void LessThanOrEqualSingle() { TestVectorLessThanOrEqual<float>(); }
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void LessThanOrEqualDouble() { TestVectorLessThanOrEqual<double>(); }
         private void TestVectorLessThanOrEqual<T>() where T : struct, INumber<T>
         {
@@ -2224,10 +2199,8 @@ namespace System.Numerics.Tests
         [Fact]
         public void LessThanAnyInt64() { TestVectorLessThanAny<long>(); }
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void LessThanAnySingle() { TestVectorLessThanAny<float>(); }
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void LessThanAnyDouble() { TestVectorLessThanAny<double>(); }
         private void TestVectorLessThanAny<T>() where T : struct, INumber<T>
         {
@@ -2552,10 +2525,8 @@ namespace System.Numerics.Tests
         [Fact]
         public void ConditionalSelectInt64() { TestConditionalSelect<long>(); }
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void ConditionalSelectSingle() { TestConditionalSelect<float>(); }
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void ConditionalSelectDouble() { TestConditionalSelect<double>(); }
         private void TestConditionalSelect<T>() where T : struct, INumber<T>
         {
@@ -2606,10 +2577,8 @@ namespace System.Numerics.Tests
         [Fact]
         public void DotProductInt64() { TestDotProduct<long>(); }
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void DotProductSingle() { TestDotProduct<float>(); }
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void DotProductDouble() { TestDotProduct<double>(); }
         private void TestDotProduct<T>() where T : struct, INumber<T>
         {
@@ -2644,10 +2613,8 @@ namespace System.Numerics.Tests
         [Fact]
         public void MaxInt64() { TestMax<long>(); }
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void MaxSingle() { TestMax<float>(); }
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void MaxDouble() { TestMax<double>(); }
         private void TestMax<T>() where T : struct, INumber<T>
         {
@@ -2682,10 +2649,8 @@ namespace System.Numerics.Tests
         [Fact]
         public void MinInt64() { TestMin<long>(); }
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void MinSingle() { TestMin<float>(); }
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void MinDouble() { TestMin<double>(); }
         private void TestMin<T>() where T : struct, INumber<T>
         {
@@ -2720,10 +2685,8 @@ namespace System.Numerics.Tests
         [Fact]
         public void SquareRootInt64() { TestSquareRoot<long>(-1); }
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void SquareRootSingle() { TestSquareRoot<float>(6); }
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void SquareRootDouble() { TestSquareRoot<double>(15); }
         private void TestSquareRoot<T>(int precision = -1) where T : struct, INumber<T>, IEquatable<T>
         {
@@ -2816,10 +2779,8 @@ namespace System.Numerics.Tests
         [Fact]
         public void AbsInt64() { TestAbs<long>(); }
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void AbsSingle() { TestAbs<float>(); }
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void AbsDouble() { TestAbs<double>(); }
         private void TestAbs<T>() where T : struct, INumber<T>
         {
@@ -2856,10 +2817,8 @@ namespace System.Numerics.Tests
         [Fact]
         public void MultiplicationReflectionInt64() { TestMultiplicationReflection<long>(); }
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void MultiplicationReflectionSingle() { TestMultiplicationReflection<float>(); }
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void MultiplicationReflectionDouble() { TestMultiplicationReflection<double>(); }
         private void TestMultiplicationReflection<T>() where T : struct, INumber<T>
         {
@@ -2895,10 +2854,8 @@ namespace System.Numerics.Tests
         [Fact]
         public void AdditionReflectionInt64() { TestAdditionReflection<long>(); }
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void AdditionReflectionSingle() { TestAdditionReflection<float>(); }
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void AdditionReflectionDouble() { TestAdditionReflection<double>(); }
         private void TestAdditionReflection<T>() where T : struct, INumber<T>
         {
@@ -2934,10 +2891,8 @@ namespace System.Numerics.Tests
         [Fact]
         public void DivisionReflectionInt64() { TestDivisionReflection<long>(); }
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void DivisionReflectionSingle() { TestDivisionReflection<float>(); }
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void DivisionReflectionDouble() { TestDivisionReflection<double>(); }
         private void TestDivisionReflection<T>() where T : struct, INumber<T>
         {
@@ -4537,35 +4492,492 @@ namespace System.Numerics.Tests
         }
 
         [Theory]
-        [MemberData(nameof(VectorTestMemberData.MultiplyAddDouble), MemberType = typeof(VectorTestMemberData))]
-        public void FusedMultiplyAddDoubleTest(double left, double right, double addend)
+        [MemberData(nameof(GenericMathTestMemberData.CosDouble), MemberType = typeof(GenericMathTestMemberData))]
+        public void CosDoubleTest(double value, double expectedResult, double variance)
         {
-            Vector<double> actualResult = Vector.FusedMultiplyAdd(new Vector<double>(left), new Vector<double>(right), new Vector<double>(addend));
-            AssertEqual(new Vector<double>(double.FusedMultiplyAdd(left, right, addend)), actualResult, Vector<double>.Zero);
+            Vector<double> actualResult = Vector.Cos(Vector.Create(value));
+            AssertEqual(Vector.Create(expectedResult), actualResult, Vector.Create(variance));
         }
 
         [Theory]
-        [MemberData(nameof(VectorTestMemberData.MultiplyAddSingle), MemberType = typeof(VectorTestMemberData))]
-        public void FusedMultiplyAddSingleTest(float left, float right, float addend)
+        [MemberData(nameof(GenericMathTestMemberData.CosSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void CosSingleTest(float value, float expectedResult, float variance)
         {
-            Vector<float> actualResult = Vector.FusedMultiplyAdd(new Vector<float>(left), new Vector<float>(right), new Vector<float>(addend));
-            AssertEqual(new Vector<float>(float.FusedMultiplyAdd(left, right, addend)), actualResult, Vector<float>.Zero);
+            Vector<float> actualResult = Vector.Cos(Vector.Create(value));
+            AssertEqual(Vector.Create(expectedResult), actualResult, Vector.Create(variance));
         }
 
         [Theory]
-        [MemberData(nameof(VectorTestMemberData.MultiplyAddDouble), MemberType = typeof(VectorTestMemberData))]
-        public void MultiplyAddEstimateDoubleTest(double left, double right, double addend)
+        [MemberData(nameof(GenericMathTestMemberData.ExpDouble), MemberType = typeof(GenericMathTestMemberData))]
+        public void ExpDoubleTest(double value, double expectedResult, double variance)
         {
-            Vector<double> actualResult = Vector.MultiplyAddEstimate(new Vector<double>(left), new Vector<double>(right), new Vector<double>(addend));
-            AssertEqual(new Vector<double>(double.MultiplyAddEstimate(left, right, addend)), actualResult, Vector<double>.Zero);
+            Vector<double> actualResult = Vector.Exp(Vector.Create(value));
+            AssertEqual(Vector.Create(expectedResult), actualResult, Vector.Create(variance));
         }
 
         [Theory]
-        [MemberData(nameof(VectorTestMemberData.MultiplyAddSingle), MemberType = typeof(VectorTestMemberData))]
-        public void MultiplyAddEstimateSingleTest(float left, float right, float addend)
+        [MemberData(nameof(GenericMathTestMemberData.ExpSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void ExpSingleTest(float value, float expectedResult, float variance)
         {
-            Vector<float> actualResult = Vector.MultiplyAddEstimate(new Vector<float>(left), new Vector<float>(right), new Vector<float>(addend));
-            AssertEqual(new Vector<float>(float.MultiplyAddEstimate(left, right, addend)), actualResult, Vector<float>.Zero);
+            Vector<float> actualResult = Vector.Exp(Vector.Create(value));
+            AssertEqual(Vector.Create(expectedResult), actualResult, Vector.Create(variance));
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.LogDouble), MemberType = typeof(GenericMathTestMemberData))]
+        public void LogDoubleTest(double value, double expectedResult, double variance)
+        {
+            Vector<double> actualResult = Vector.Log(Vector.Create(value));
+            AssertEqual(Vector.Create(expectedResult), actualResult, Vector.Create(variance));
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.LogSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void LogSingleTest(float value, float expectedResult, float variance)
+        {
+            Vector<float> actualResult = Vector.Log(Vector.Create(value));
+            AssertEqual(Vector.Create(expectedResult), actualResult, Vector.Create(variance));
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.Log2Double), MemberType = typeof(GenericMathTestMemberData))]
+        public void Log2DoubleTest(double value, double expectedResult, double variance)
+        {
+            Vector<double> actualResult = Vector.Log2(Vector.Create(value));
+            AssertEqual(Vector.Create(expectedResult), actualResult, Vector.Create(variance));
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.Log2Single), MemberType = typeof(GenericMathTestMemberData))]
+        public void Log2SingleTest(float value, float expectedResult, float variance)
+        {
+            Vector<float> actualResult = Vector.Log2(Vector.Create(value));
+            AssertEqual(Vector.Create(expectedResult), actualResult, Vector.Create(variance));
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.FusedMultiplyAddDouble), MemberType = typeof(GenericMathTestMemberData))]
+        public void FusedMultiplyAddDoubleTest(double left, double right, double addend, double expectedResult)
+        {
+            AssertEqual(Vector.Create(expectedResult), Vector.FusedMultiplyAdd(Vector.Create(left), Vector.Create(right), Vector.Create(addend)), Vector<double>.Zero);
+            AssertEqual(Vector.Create(double.MultiplyAddEstimate(left, right, addend)), Vector.MultiplyAddEstimate(Vector.Create(left), Vector.Create(right), Vector.Create(addend)), Vector<double>.Zero);
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.FusedMultiplyAddSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void FusedMultiplyAddSingleTest(float left, float right, float addend, float expectedResult)
+        {
+            AssertEqual(Vector.Create(expectedResult), Vector.FusedMultiplyAdd(Vector.Create(left), Vector.Create(right), Vector.Create(addend)), Vector<float>.Zero);
+            AssertEqual(Vector.Create(float.MultiplyAddEstimate(left, right, addend)), Vector.MultiplyAddEstimate(Vector.Create(left), Vector.Create(right), Vector.Create(addend)), Vector<float>.Zero);
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.ClampDouble), MemberType = typeof(GenericMathTestMemberData))]
+        public void ClampDoubleTest(double x, double min, double max, double expectedResult)
+        {
+            Vector<double> actualResult = Vector.Clamp(Vector.Create(x), Vector.Create(min), Vector.Create(max));
+            AssertEqual(Vector.Create(expectedResult), actualResult, Vector<double>.Zero);
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.ClampSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void ClampSingleTest(float x, float min, float max, float expectedResult)
+        {
+            Vector<float> actualResult = Vector.Clamp(Vector.Create(x), Vector.Create(min), Vector.Create(max));
+            AssertEqual(Vector.Create(expectedResult), actualResult, Vector<float>.Zero);
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.CopySignDouble), MemberType = typeof(GenericMathTestMemberData))]
+        public void CopySignDoubleTest(double x, double y, double expectedResult)
+        {
+            Vector<double> actualResult = Vector.CopySign(Vector.Create(x), Vector.Create(y));
+            AssertEqual(Vector.Create(expectedResult), actualResult, Vector<double>.Zero);
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.CopySignSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void CopySignSingleTest(float x, float y, float expectedResult)
+        {
+            Vector<float> actualResult = Vector.CopySign(Vector.Create(x), Vector.Create(y));
+            AssertEqual(Vector.Create(expectedResult), actualResult, Vector<float>.Zero);
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.DegreesToRadiansDouble), MemberType = typeof(GenericMathTestMemberData))]
+        public void DegreesToRadiansDoubleTest(double value, double expectedResult, double variance)
+        {
+            Vector<double> actualResult1 = Vector.DegreesToRadians(Vector.Create(-value));
+            AssertEqual(Vector.Create(-expectedResult), actualResult1, Vector.Create(variance));
+
+            Vector<double> actualResult2 = Vector.DegreesToRadians(Vector.Create(+value));
+            AssertEqual(Vector.Create(+expectedResult), actualResult2, Vector.Create(variance));
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.DegreesToRadiansSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void DegreesToRadiansSingleTest(float value, float expectedResult, float variance)
+        {
+            AssertEqual(Vector.Create(-expectedResult), Vector.DegreesToRadians(Vector.Create(-value)), Vector.Create(variance));
+            AssertEqual(Vector.Create(+expectedResult), Vector.DegreesToRadians(Vector.Create(+value)), Vector.Create(variance));
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.HypotDouble), MemberType = typeof(GenericMathTestMemberData))]
+        public void HypotDoubleTest(double x, double y, double expectedResult, double variance)
+        {
+            AssertEqual(Vector.Create(expectedResult), Vector.Hypot(Vector.Create(-x), Vector.Create(-y)), Vector.Create(variance));
+            AssertEqual(Vector.Create(expectedResult), Vector.Hypot(Vector.Create(-x), Vector.Create(+y)), Vector.Create(variance));
+            AssertEqual(Vector.Create(expectedResult), Vector.Hypot(Vector.Create(+x), Vector.Create(-y)), Vector.Create(variance));
+            AssertEqual(Vector.Create(expectedResult), Vector.Hypot(Vector.Create(+x), Vector.Create(+y)), Vector.Create(variance));
+
+            AssertEqual(Vector.Create(expectedResult), Vector.Hypot(Vector.Create(-y), Vector.Create(-x)), Vector.Create(variance));
+            AssertEqual(Vector.Create(expectedResult), Vector.Hypot(Vector.Create(-y), Vector.Create(+x)), Vector.Create(variance));
+            AssertEqual(Vector.Create(expectedResult), Vector.Hypot(Vector.Create(+y), Vector.Create(-x)), Vector.Create(variance));
+            AssertEqual(Vector.Create(expectedResult), Vector.Hypot(Vector.Create(+y), Vector.Create(+x)), Vector.Create(variance));
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.HypotSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void HypotSingleTest(float x, float y, float expectedResult, float variance)
+        {
+            AssertEqual(Vector.Create(expectedResult), Vector.Hypot(Vector.Create(-x), Vector.Create(-y)), Vector.Create(variance));
+            AssertEqual(Vector.Create(expectedResult), Vector.Hypot(Vector.Create(-x), Vector.Create(+y)), Vector.Create(variance));
+            AssertEqual(Vector.Create(expectedResult), Vector.Hypot(Vector.Create(+x), Vector.Create(-y)), Vector.Create(variance));
+            AssertEqual(Vector.Create(expectedResult), Vector.Hypot(Vector.Create(+x), Vector.Create(+y)), Vector.Create(variance));
+
+            AssertEqual(Vector.Create(expectedResult), Vector.Hypot(Vector.Create(-y), Vector.Create(-x)), Vector.Create(variance));
+            AssertEqual(Vector.Create(expectedResult), Vector.Hypot(Vector.Create(-y), Vector.Create(+x)), Vector.Create(variance));
+            AssertEqual(Vector.Create(expectedResult), Vector.Hypot(Vector.Create(+y), Vector.Create(-x)), Vector.Create(variance));
+            AssertEqual(Vector.Create(expectedResult), Vector.Hypot(Vector.Create(+y), Vector.Create(+x)), Vector.Create(variance));
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsNaNDouble), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNaNDoubleTest(double value, bool expectedResult)
+        {
+            Assert.Equal(expectedResult ? Vector<double>.AllBitsSet : Vector<double>.Zero, Vector.IsNaN(Vector.Create(value)));
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsNaNSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNaNSingleTest(float value, bool expectedResult)
+        {
+            Assert.Equal(expectedResult ? Vector<float>.AllBitsSet : Vector<float>.Zero, Vector.IsNaN(Vector.Create(value)));
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsNegativeDouble), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNegativeDoubleTest(double value, bool expectedResult)
+        {
+            Assert.Equal(expectedResult ? Vector<double>.AllBitsSet : Vector<double>.Zero, Vector.IsNegative(Vector.Create(value)));
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsNegativeSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNegativeSingleTest(float value, bool expectedResult)
+        {
+            Assert.Equal(expectedResult ? Vector<float>.AllBitsSet : Vector<float>.Zero, Vector.IsNegative(Vector.Create(value)));
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsPositiveDouble), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsPositiveDoubleTest(double value, bool expectedResult)
+        {
+            Assert.Equal(expectedResult ? Vector<double>.AllBitsSet : Vector<double>.Zero, Vector.IsPositive(Vector.Create(value)));
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsPositiveSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsPositiveSingleTest(float value, bool expectedResult)
+        {
+            Assert.Equal(expectedResult ? Vector<float>.AllBitsSet : Vector<float>.Zero, Vector.IsPositive(Vector.Create(value)));
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsPositiveInfinityDouble), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsPositiveInfinityDoubleTest(double value, bool expectedResult)
+        {
+            Assert.Equal(expectedResult ? Vector<double>.AllBitsSet : Vector<double>.Zero, Vector.IsPositiveInfinity(Vector.Create(value)));
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsPositiveInfinitySingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsPositiveInfinitySingleTest(float value, bool expectedResult)
+        {
+            Assert.Equal(expectedResult ? Vector<float>.AllBitsSet : Vector<float>.Zero, Vector.IsPositiveInfinity(Vector.Create(value)));
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsZeroDouble), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsZeroDoubleTest(double value, bool expectedResult)
+        {
+            Assert.Equal(expectedResult ? Vector<double>.AllBitsSet : Vector<double>.Zero, Vector.IsZero(Vector.Create(value)));
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsZeroSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsZeroSingleTest(float value, bool expectedResult)
+        {
+            Assert.Equal(expectedResult ? Vector<float>.AllBitsSet : Vector<float>.Zero, Vector.IsZero(Vector.Create(value)));
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.LerpDouble), MemberType = typeof(GenericMathTestMemberData))]
+        public void LerpDoubleTest(double x, double y, double amount, double expectedResult)
+        {
+            AssertEqual(Vector.Create(+expectedResult), Vector.Lerp(Vector.Create(+x), Vector.Create(+y), Vector.Create(amount)), Vector<double>.Zero);
+            AssertEqual(Vector.Create((expectedResult == 0.0) ? expectedResult : -expectedResult), Vector.Lerp(Vector.Create(-x), Vector.Create(-y), Vector.Create(amount)), Vector<double>.Zero);
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.LerpSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void LerpSingleTest(float x, float y, float amount, float expectedResult)
+        {
+            AssertEqual(Vector.Create(+expectedResult), Vector.Lerp(Vector.Create(+x), Vector.Create(+y), Vector.Create(amount)), Vector<float>.Zero);
+            AssertEqual(Vector.Create((expectedResult == 0.0f) ? expectedResult : -expectedResult), Vector.Lerp(Vector.Create(-x), Vector.Create(-y), Vector.Create(amount)), Vector<float>.Zero);
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.MaxDouble), MemberType = typeof(GenericMathTestMemberData))]
+        public void MaxDoubleTest(double x, double y, double expectedResult)
+        {
+            Vector<double> actualResult = Vector.Max(Vector.Create(x), Vector.Create(y));
+            AssertEqual(Vector.Create(expectedResult), actualResult, Vector<double>.Zero);
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.MaxSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void MaxSingleTest(float x, float y, float expectedResult)
+        {
+            Vector<float> actualResult = Vector.Max(Vector.Create(x), Vector.Create(y));
+            AssertEqual(Vector.Create(expectedResult), actualResult, Vector<float>.Zero);
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.MaxMagnitudeDouble), MemberType = typeof(GenericMathTestMemberData))]
+        public void MaxMagnitudeDoubleTest(double x, double y, double expectedResult)
+        {
+            Vector<double> actualResult = Vector.MaxMagnitude(Vector.Create(x), Vector.Create(y));
+            AssertEqual(Vector.Create(expectedResult), actualResult, Vector<double>.Zero);
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.MaxMagnitudeSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void MaxMagnitudeSingleTest(float x, float y, float expectedResult)
+        {
+            Vector<float> actualResult = Vector.MaxMagnitude(Vector.Create(x), Vector.Create(y));
+            AssertEqual(Vector.Create(expectedResult), actualResult, Vector<float>.Zero);
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.MaxMagnitudeNumberDouble), MemberType = typeof(GenericMathTestMemberData))]
+        public void MaxMagnitudeNumberDoubleTest(double x, double y, double expectedResult)
+        {
+            Vector<double> actualResult = Vector.MaxMagnitudeNumber(Vector.Create(x), Vector.Create(y));
+            AssertEqual(Vector.Create(expectedResult), actualResult, Vector<double>.Zero);
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.MaxMagnitudeNumberSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void MaxMagnitudeNumberSingleTest(float x, float y, float expectedResult)
+        {
+            Vector<float> actualResult = Vector.MaxMagnitudeNumber(Vector.Create(x), Vector.Create(y));
+            AssertEqual(Vector.Create(expectedResult), actualResult, Vector<float>.Zero);
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.MaxNumberDouble), MemberType = typeof(GenericMathTestMemberData))]
+        public void MaxNumberDoubleTest(double x, double y, double expectedResult)
+        {
+            Vector<double> actualResult = Vector.MaxNumber(Vector.Create(x), Vector.Create(y));
+            AssertEqual(Vector.Create(expectedResult), actualResult, Vector<double>.Zero);
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.MaxNumberSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void MaxNumberSingleTest(float x, float y, float expectedResult)
+        {
+            Vector<float> actualResult = Vector.MaxNumber(Vector.Create(x), Vector.Create(y));
+            AssertEqual(Vector.Create(expectedResult), actualResult, Vector<float>.Zero);
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.MinDouble), MemberType = typeof(GenericMathTestMemberData))]
+        public void MinDoubleTest(double x, double y, double expectedResult)
+        {
+            Vector<double> actualResult = Vector.Min(Vector.Create(x), Vector.Create(y));
+            AssertEqual(Vector.Create(expectedResult), actualResult, Vector<double>.Zero);
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.MinSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void MinSingleTest(float x, float y, float expectedResult)
+        {
+            Vector<float> actualResult = Vector.Min(Vector.Create(x), Vector.Create(y));
+            AssertEqual(Vector.Create(expectedResult), actualResult, Vector<float>.Zero);
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.MinMagnitudeDouble), MemberType = typeof(GenericMathTestMemberData))]
+        public void MinMagnitudeDoubleTest(double x, double y, double expectedResult)
+        {
+            Vector<double> actualResult = Vector.MinMagnitude(Vector.Create(x), Vector.Create(y));
+            AssertEqual(Vector.Create(expectedResult), actualResult, Vector<double>.Zero);
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.MinMagnitudeSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void MinMagnitudeSingleTest(float x, float y, float expectedResult)
+        {
+            Vector<float> actualResult = Vector.MinMagnitude(Vector.Create(x), Vector.Create(y));
+            AssertEqual(Vector.Create(expectedResult), actualResult, Vector<float>.Zero);
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.MinMagnitudeNumberDouble), MemberType = typeof(GenericMathTestMemberData))]
+        public void MinMagnitudeNumberDoubleTest(double x, double y, double expectedResult)
+        {
+            Vector<double> actualResult = Vector.MinMagnitudeNumber(Vector.Create(x), Vector.Create(y));
+            AssertEqual(Vector.Create(expectedResult), actualResult, Vector<double>.Zero);
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.MinMagnitudeNumberSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void MinMagnitudeNumberSingleTest(float x, float y, float expectedResult)
+        {
+            Vector<float> actualResult = Vector.MinMagnitudeNumber(Vector.Create(x), Vector.Create(y));
+            AssertEqual(Vector.Create(expectedResult), actualResult, Vector<float>.Zero);
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.MinNumberDouble), MemberType = typeof(GenericMathTestMemberData))]
+        public void MinNumberDoubleTest(double x, double y, double expectedResult)
+        {
+            Vector<double> actualResult = Vector.MinNumber(Vector.Create(x), Vector.Create(y));
+            AssertEqual(Vector.Create(expectedResult), actualResult, Vector<double>.Zero);
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.MinNumberSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void MinNumberSingleTest(float x, float y, float expectedResult)
+        {
+            Vector<float> actualResult = Vector.MinNumber(Vector.Create(x), Vector.Create(y));
+            AssertEqual(Vector.Create(expectedResult), actualResult, Vector<float>.Zero);
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.RadiansToDegreesDouble), MemberType = typeof(GenericMathTestMemberData))]
+        public void RadiansToDegreesDoubleTest(double value, double expectedResult, double variance)
+        {
+            AssertEqual(Vector.Create(-expectedResult), Vector.RadiansToDegrees(Vector.Create(-value)), Vector.Create(variance));
+            AssertEqual(Vector.Create(+expectedResult), Vector.RadiansToDegrees(Vector.Create(+value)), Vector.Create(variance));
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.RadiansToDegreesSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void RadiansToDegreesSingleTest(float value, float expectedResult, float variance)
+        {
+            AssertEqual(Vector.Create(-expectedResult), Vector.RadiansToDegrees(Vector.Create(-value)), Vector.Create(variance));
+            AssertEqual(Vector.Create(+expectedResult), Vector.RadiansToDegrees(Vector.Create(+value)), Vector.Create(variance));
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.RoundDouble), MemberType = typeof(GenericMathTestMemberData))]
+        public void RoundDoubleTest(double value, double expectedResult)
+        {
+            Vector<double> actualResult = Vector.Round(Vector.Create(value));
+            AssertEqual(Vector.Create(expectedResult), actualResult, Vector<double>.Zero);
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.RoundSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void RoundSingleTest(float value, float expectedResult)
+        {
+            Vector<float> actualResult = Vector.Round(Vector.Create(value));
+            AssertEqual(Vector.Create(expectedResult), actualResult, Vector<float>.Zero);
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.RoundAwayFromZeroDouble), MemberType = typeof(GenericMathTestMemberData))]
+        public void RoundAwayFromZeroDoubleTest(double value, double expectedResult)
+        {
+            Vector<double> actualResult = Vector.Round(Vector.Create(value), MidpointRounding.AwayFromZero);
+            AssertEqual(Vector.Create(expectedResult), actualResult, Vector<double>.Zero);
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.RoundAwayFromZeroSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void RoundAwayFromZeroSingleTest(float value, float expectedResult)
+        {
+            Vector<float> actualResult = Vector.Round(Vector.Create(value), MidpointRounding.AwayFromZero);
+            AssertEqual(Vector.Create(expectedResult), actualResult, Vector<float>.Zero);
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.RoundToEvenDouble), MemberType = typeof(GenericMathTestMemberData))]
+        public void RoundToEvenDoubleTest(double value, double expectedResult)
+        {
+            Vector<double> actualResult = Vector.Round(Vector.Create(value), MidpointRounding.ToEven);
+            AssertEqual(Vector.Create(expectedResult), actualResult, Vector<double>.Zero);
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.RoundToEvenSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void RoundToEvenSingleTest(float value, float expectedResult)
+        {
+            Vector<float> actualResult = Vector.Round(Vector.Create(value), MidpointRounding.ToEven);
+            AssertEqual(Vector.Create(expectedResult), actualResult, Vector<float>.Zero);
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.SinDouble), MemberType = typeof(GenericMathTestMemberData))]
+        public void SinDoubleTest(double value, double expectedResult, double variance)
+        {
+            Vector<double> actualResult = Vector.Sin(Vector.Create(value));
+            AssertEqual(Vector.Create(expectedResult), actualResult, Vector.Create(variance));
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.SinSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void SinSingleTest(float value, float expectedResult, float variance)
+        {
+            Vector<float> actualResult = Vector.Sin(Vector.Create(value));
+            AssertEqual(Vector.Create(expectedResult), actualResult, Vector.Create(variance));
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.SinCosDouble), MemberType = typeof(GenericMathTestMemberData))]
+        public void SinCosDoubleTest(double value, double expectedResultSin, double expectedResultCos, double allowedVarianceSin, double allowedVarianceCos)
+        {
+            (Vector<double> resultSin, Vector<double> resultCos) = Vector.SinCos(Vector.Create(value));
+            AssertEqual(Vector.Create(expectedResultSin), resultSin, Vector.Create(allowedVarianceSin));
+            AssertEqual(Vector.Create(expectedResultCos), resultCos, Vector.Create(allowedVarianceCos));
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.SinCosSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void SinCosSingleTest(float value, float expectedResultSin, float expectedResultCos, float allowedVarianceSin, float allowedVarianceCos)
+        {
+            (Vector<float> resultSin, Vector<float> resultCos) = Vector.SinCos(Vector.Create(value));
+            AssertEqual(Vector.Create(expectedResultSin), resultSin, Vector.Create(allowedVarianceSin));
+            AssertEqual(Vector.Create(expectedResultCos), resultCos, Vector.Create(allowedVarianceCos));
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.TruncateDouble), MemberType = typeof(GenericMathTestMemberData))]
+        public void TruncateDoubleTest(double value, double expectedResult)
+        {
+            Vector<double> actualResult = Vector.Truncate(Vector.Create(value));
+            AssertEqual(Vector.Create(expectedResult), actualResult, Vector<double>.Zero);
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.TruncateSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void TruncateSingleTest(float value, float expectedResult)
+        {
+            Vector<float> actualResult = Vector.Truncate(Vector.Create(value));
+            AssertEqual(Vector.Create(expectedResult), actualResult, Vector<float>.Zero);
         }
     }
 }

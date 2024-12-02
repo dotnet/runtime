@@ -1,9 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.Generic;
 using System.IO;
 using FluentAssertions;
+using Microsoft.DotNet.XUnitExtensions;
 using Microsoft.Extensions.DependencyModel.Resolution;
 using Xunit;
 using F = Microsoft.Extensions.DependencyModel.Tests.TestLibraryFactory;
@@ -26,31 +28,15 @@ namespace Microsoft.Extensions.DependencyModel.Tests
             result.Should().Contain(PackagesPath);
         }
 
-
-        [Fact]
-        public void ShouldUseNugetUnderUserProfileOnWindows()
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // https://github.com/dotnet/runtime/issues/21430
+        public void ShouldUseNugetUnderUserProfile()
         {
             var environment = EnvironmentMockBuilder.Create()
-                .SetIsWindows(true)
-                .AddVariable("USERPROFILE", "User Profile")
                 .AddAppContextData("PROBING_DIRECTORIES", string.Empty)
                 .Build();
 
             var result = PackageCompilationAssemblyResolver.GetDefaultProbeDirectories(environment);
-            result.Should().Contain(Path.Combine("User Profile", ".nuget", "packages"));
-        }
-
-        [Fact]
-        public void ShouldUseNugetUnderHomeOnNonWindows()
-        {
-            var environment = EnvironmentMockBuilder.Create()
-                .SetIsWindows(false)
-                .AddVariable("HOME", "User Home")
-                .AddAppContextData("PROBING_DIRECTORIES", string.Empty)
-                .Build();
-
-            var result = PackageCompilationAssemblyResolver.GetDefaultProbeDirectories(environment);
-            result.Should().Contain(Path.Combine("User Home", ".nuget", "packages"));
+            result.Should().Contain(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".nuget", "packages"));
         }
 
         [Fact]

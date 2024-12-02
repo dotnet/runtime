@@ -38,10 +38,10 @@ namespace System.Net.Http
         // https://www.rfc-editor.org/rfc/rfc9114.html#section-7.2.4.1-2.2.1
         private uint _maxHeaderListSize = uint.MaxValue; // Defaults to infinite
 
-        // Once the server's streams are received, these are set to 1. Further receipt of these streams results in a connection error.
-        private int _haveServerControlStream;
-        private int _haveServerQpackDecodeStream;
-        private int _haveServerQpackEncodeStream;
+        // Once the server's streams are received, these are set to true. Further receipt of these streams results in a connection error.
+        private bool _haveServerControlStream;
+        private bool _haveServerQpackDecodeStream;
+        private bool _haveServerQpackEncodeStream;
 
         // A connection-level error will abort any future operations.
         private Exception? _abortException;
@@ -89,9 +89,9 @@ namespace System.Net.Http
             }
         }
 
-        public void InitQuicConnection(QuicConnection connection)
+        public void InitQuicConnection(QuicConnection connection, Activity? connectionSetupActivity)
         {
-            MarkConnectionAsEstablished(connection.RemoteEndPoint);
+            MarkConnectionAsEstablished(connectionSetupActivity: connectionSetupActivity, remoteEndPoint: connection.RemoteEndPoint);
 
             _connection = connection;
 
@@ -241,7 +241,7 @@ namespace System.Net.Http
             }
         }
 
-        public async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, long queueStartingTimestamp, CancellationToken cancellationToken)
+        public async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, long queueStartingTimestamp, Activity? waitForConnectionActivity, CancellationToken cancellationToken)
         {
             // Allocate an active request
             QuicStream? quicStream = null;
@@ -269,10 +269,17 @@ namespace System.Net.Http
                 }
                 // Swallow any exceptions caused by the connection being closed locally or even disposed due to a race.
                 // Since quicStream will stay `null`, the code below will throw appropriate exception to retry the request.
-                catch (ObjectDisposedException) { }
-                catch (QuicException e) when (e.QuicError != QuicError.OperationAborted) { }
+                catch (ObjectDisposedException e)
+                {
+                    ConnectionSetupDistributedTracing.ReportError(waitForConnectionActivity, e);
+                }
+                catch (QuicException e) when (e.QuicError != QuicError.OperationAborted)
+                {
+                    ConnectionSetupDistributedTracing.ReportError(waitForConnectionActivity, e);
+                }
                 finally
                 {
+                    waitForConnectionActivity?.Stop();
                     if (queueStartingTimestamp != 0)
                     {
                         TimeSpan duration = Stopwatch.GetElapsedTime(queueStartingTimestamp);
@@ -304,6 +311,8 @@ namespace System.Net.Http
                     throw new HttpRequestException(HttpRequestError.Unknown, SR.net_http_request_aborted, null, RequestRetryType.RetryOnConnectionFailure);
                 }
 
+                Debug.Assert(waitForConnectionActivity?.IsStopped != false);
+                if (ConnectionSetupActivity is not null) ConnectionSetupDistributedTracing.AddConnectionLinkToRequestActivity(ConnectionSetupActivity);
                 if (NetEventSource.Log.IsEnabled()) Trace($"Sending request: {request}");
 
                 Task<HttpResponseMessage> responseTask = requestStream.SendAsync(cancellationToken);
@@ -589,7 +598,7 @@ namespace System.Net.Http
                     switch (buffer.ActiveSpan[0])
                     {
                         case (byte)Http3StreamType.Control:
-                            if (Interlocked.Exchange(ref _haveServerControlStream, 1) != 0)
+                            if (Interlocked.Exchange(ref _haveServerControlStream, true))
                             {
                                 // A second control stream has been received.
                                 throw HttpProtocolException.CreateHttp3ConnectionException(Http3ErrorCode.StreamCreationError);
@@ -605,7 +614,7 @@ namespace System.Net.Http
                             await ProcessServerControlStreamAsync(stream, bufferCopy).ConfigureAwait(false);
                             return;
                         case (byte)Http3StreamType.QPackDecoder:
-                            if (Interlocked.Exchange(ref _haveServerQpackDecodeStream, 1) != 0)
+                            if (Interlocked.Exchange(ref _haveServerQpackDecodeStream, true))
                             {
                                 // A second QPack decode stream has been received.
                                 throw HttpProtocolException.CreateHttp3ConnectionException(Http3ErrorCode.StreamCreationError);
@@ -616,7 +625,7 @@ namespace System.Net.Http
                             await stream.CopyToAsync(Stream.Null).ConfigureAwait(false);
                             return;
                         case (byte)Http3StreamType.QPackEncoder:
-                            if (Interlocked.Exchange(ref _haveServerQpackEncodeStream, 1) != 0)
+                            if (Interlocked.Exchange(ref _haveServerQpackEncodeStream, true))
                             {
                                 // A second QPack encode stream has been received.
                                 throw HttpProtocolException.CreateHttp3ConnectionException(Http3ErrorCode.StreamCreationError);

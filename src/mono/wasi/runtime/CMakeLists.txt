@@ -14,8 +14,8 @@ set_target_properties(dotnet PROPERTIES COMPILE_FLAGS ${CONFIGURATION_WASICC_FLA
 
 target_link_libraries(dotnet
     PRIVATE
-    ${CMAKE_SYSROOT}/lib/wasm32-wasi/libc++.a
-    ${CMAKE_SYSROOT}/lib/wasm32-wasi/libc++abi.a
+    ${CMAKE_SYSROOT}/lib/wasm32-wasip2/libc++.a
+    ${CMAKE_SYSROOT}/lib/wasm32-wasip2/libc++abi.a
     ${ICU_LIB_DIR}/libicudata.a
     ${ICU_LIB_DIR}/libicuuc.a
     ${ICU_LIB_DIR}/libicui18n.a

@@ -154,14 +154,12 @@ namespace System.Buffers.Text
 #if NET
             int encodedLength = GetEncodedLength(source.Length);
 
-#pragma warning disable CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type
             return string.Create(encodedLength, (IntPtr)(&source), static (buffer, spanPtr) =>
             {
                 ReadOnlySpan<byte> source = *(ReadOnlySpan<byte>*)spanPtr;
                 EncodeToChars(source, buffer, out _, out int charsWritten);
                 Debug.Assert(buffer.Length == charsWritten, $"The source length: {source.Length}, bytes written: {charsWritten}");
             });
-#pragma warning restore CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type
 #else
             char[] destination = new char[GetEncodedLength(source.Length)];
             EncodeToChars(source, destination, out _, out int charsWritten);
@@ -291,7 +289,9 @@ namespace System.Buffers.Text
                 default(Base64EncoderByte).StoreVector512ToDestination(dest, destStart, destLength, str);
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
+#if NET9_0_OR_GREATER
             [CompExactlyDependsOn(typeof(Avx2))]
+#endif
             public unsafe void StoreVector256ToDestination(byte* dest, byte* destStart, int destLength, Vector256<byte> str) =>
                 default(Base64EncoderByte).StoreVector256ToDestination(dest, destStart, destLength, str);
 
@@ -299,12 +299,14 @@ namespace System.Buffers.Text
             public unsafe void StoreVector128ToDestination(byte* dest, byte* destStart, int destLength, Vector128<byte> str) =>
                 default(Base64EncoderByte).StoreVector128ToDestination(dest, destStart, destLength, str);
 
+#if NET9_0_OR_GREATER
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
             public unsafe void StoreArmVector128x4ToDestination(byte* dest, byte* destStart, int destLength,
                 Vector128<byte> res1, Vector128<byte> res2, Vector128<byte> res3, Vector128<byte> res4) =>
                 default(Base64EncoderByte).StoreArmVector128x4ToDestination(dest, destStart, destLength, res1, res2, res3, res4);
-#endif
+#endif // NET9_0_OR_GREATER
+#endif // NET
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public unsafe void EncodeThreeAndWrite(byte* threeBytes, byte* destination, ref byte encodingMap) =>
@@ -403,6 +405,7 @@ namespace System.Buffers.Text
                 utf16HighVector.Store(dest + Vector128<ushort>.Count);
             }
 
+#if NET9_0_OR_GREATER
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
             public unsafe void StoreArmVector128x4ToDestination(ushort* dest, ushort* destStart, int destLength,
@@ -416,7 +419,8 @@ namespace System.Buffers.Text
                 AdvSimd.Arm64.StoreVectorAndZip(dest, (utf16LowVector1, utf16LowVector2, utf16LowVector3, utf16LowVector4));
                 AdvSimd.Arm64.StoreVectorAndZip(dest + 32, (utf16HighVector1, utf16HighVector2, utf16HighVector3, utf16HighVector4));
             }
-#endif
+#endif // NET9_0_OR_GREATER
+#endif // NET
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public unsafe void EncodeThreeAndWrite(byte* threeBytes, ushort* destination, ref byte encodingMap)

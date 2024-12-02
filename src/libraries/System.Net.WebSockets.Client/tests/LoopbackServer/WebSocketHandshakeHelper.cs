@@ -83,7 +83,7 @@ namespace System.Net.WebSockets.Client.Tests
                 await SendHttp2ServerResponseAsync(connection, streamId, cancellationToken: cancellationToken).ConfigureAwait(false);
             }
 
-            data.WebSocketStream = new Http2LoopbackStream(connection, streamId);
+            data.WebSocketStream = new Http2LoopbackStream(connection, streamId, sendResetOnDispose: false);
             return data;
         }
 

@@ -6,6 +6,7 @@
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetOS)' == 'browser'">
+    <XunitShowProgress>true</XunitShowProgress>
     <WasmXHarnessMaxParallelThreads>1</WasmXHarnessMaxParallelThreads>
   </PropertyGroup>
   <ItemGroup>

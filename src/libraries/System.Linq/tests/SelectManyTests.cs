@@ -376,21 +376,27 @@ namespace System.Linq.Tests
         [MemberData(nameof(ParameterizedTestsData))]
         public void ParameterizedTests(IEnumerable<int> source, Func<int, IEnumerable<int>> selector)
         {
-            var expected = source.Select(i => selector(i)).Aggregate((l, r) => l.Concat(r));
-            var actual = source.SelectMany(selector);
+            Assert.All(CreateSources(source), source =>
+            {
+                var expected = source.Select(i => selector(i)).Aggregate((l, r) => l.Concat(r));
+                var actual = source.SelectMany(selector);
 
-            Assert.Equal(expected, actual);
-            Assert.Equal(expected.Count(), actual.Count()); // SelectMany may employ an optimized Count implementation.
-            Assert.Equal(expected.ToArray(), actual.ToArray());
-            Assert.Equal(expected.ToList(), actual.ToList());
+                Assert.Equal(expected, actual);
+                Assert.Equal(expected.Count(), actual.Count()); // SelectMany may employ an optimized Count implementation.
+                Assert.Equal(expected.ToArray(), actual.ToArray());
+                Assert.Equal(expected.ToList(), actual.ToList());
+            });
         }
 
         public static IEnumerable<object[]> ParameterizedTestsData()
         {
-            for (int i = 1; i <= 20; i++)
+            foreach (Func<IEnumerable<int>, IEnumerable<int>> transform in IdentityTransforms<int>())
             {
-                Func<int, IEnumerable<int>> selector = n => Enumerable.Range(i, n);
-                yield return new object[] { Enumerable.Range(1, i), selector };
+                for (int i = 1; i <= 20; i++)
+                {
+                    Func<int, IEnumerable<int>> selector = n => transform(Enumerable.Range(i, n));
+                    yield return new object[] { Enumerable.Range(1, i), selector };
+                }
             }
         }
 

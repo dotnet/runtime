@@ -23,5 +23,9 @@ namespace Server.Contract
         public const string ConsumeNETServerTesting = "DE4ACF53-5957-4D31-8BE2-EA6C80683246";
         public const string InspectableTesting = "CE137261-6F19-44F5-A449-EF963B3F987E";
         public const string TrackMyLifetimeTesting = "4F54231D-9E11-4C0B-8E0B-2EBD8B0E5811";
+        public const string ClassInterfaceNotSetTesting = "B8314D5A-DE70-435B-AD97-8F88820D1F3C";
+        public const string ClassInterfaceNoneTesting = "ED4D9C70-1C9F-406B-B51F-87DD977AF3B2";
+        public const string ClassInterfaceAutoDispatchTesting = "C1A0AE72-791B-4380-946E-B7BABDEA1701";
+        public const string ClassInterfaceAutoDualTesting = "95696E2C-742F-4639-A9D4-5D36EE021C49";
     }
 }

@@ -1,7 +1,3 @@
-# Due to how we build the libraries native build as part of the CoreCLR build as well as standalone,
-# we can end up coming to this file twice. Only run it once to simplify our build.
-include_guard()
-
 include(${CMAKE_CURRENT_LIST_DIR}/configuretools.cmake)
 
 # Set initial flags for each configuration
@@ -304,15 +300,20 @@ elseif(CLR_CMAKE_HOST_SUNOS)
   add_compile_options($<$<COMPILE_LANGUAGE:ASM>:-Wa,--noexecstack>)
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fstack-protector")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fstack-protector")
-  add_definitions(-D__EXTENSIONS__ -D_XPG4_2 -D_POSIX_PTHREAD_SEMANTICS)
-elseif(CLR_CMAKE_HOST_OSX AND NOT CLR_CMAKE_HOST_MACCATALYST AND NOT CLR_CMAKE_HOST_IOS AND NOT CLR_CMAKE_HOST_TVOS)
+  add_definitions(-D__EXTENSIONS__ -D_XPG4_2 -D_POSIX_PTHREAD_SEMANTICS -D_REENTRANT)
+elseif(CLR_CMAKE_HOST_APPLE)
+  # enable support for X/Open and POSIX APIs, like the <ucontext.h> header file
   add_definitions(-D_XOPEN_SOURCE)
+  # enable support for Darwin extension APIs, like pthread_getthreadid_np
+  add_definitions(-D_DARWIN_C_SOURCE)
 
-  # the new linker in Xcode 15 (ld_new/ld_prime) deprecated the -bind_at_load flag for macOS which causes a warning
-  # that fails the build since we build with -Werror. Only pass the flag if we need it, i.e. older linkers.
-  check_linker_flag(C "-Wl,-bind_at_load,-fatal_warnings" LINKER_SUPPORTS_BIND_AT_LOAD_FLAG)
-  if(LINKER_SUPPORTS_BIND_AT_LOAD_FLAG)
-    add_linker_flag("-Wl,-bind_at_load")
+  if(CLR_CMAKE_HOST_OSX)
+    # the new linker in Xcode 15 (ld_new/ld_prime) deprecated the -bind_at_load flag for macOS which causes a warning
+    # that fails the build since we build with -Werror. Only pass the flag if we need it, i.e. older linkers.
+    check_linker_flag(C "-Wl,-bind_at_load,-fatal_warnings" LINKER_SUPPORTS_BIND_AT_LOAD_FLAG)
+    if(LINKER_SUPPORTS_BIND_AT_LOAD_FLAG)
+      add_linker_flag("-Wl,-bind_at_load")
+    endif()
   endif()
 elseif(CLR_CMAKE_HOST_HAIKU)
   add_compile_options($<$<COMPILE_LANGUAGE:ASM>:-Wa,--noexecstack>)
@@ -624,6 +625,9 @@ if (CLR_CMAKE_HOST_UNIX)
 
     # clang 18.1 supressions
     add_compile_options(-Wno-switch-default)
+
+    # clang 20 suppressions
+    add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wno-nontrivial-memaccess>)
   else()
     add_compile_options(-Wno-uninitialized)
     add_compile_options(-Wno-strict-aliasing)
@@ -670,22 +674,22 @@ if (CLR_CMAKE_HOST_UNIX)
     set(DISABLE_OVERRIDING_MIN_VERSION_ERROR -Wno-overriding-t-option)
     add_link_options(-Wno-overriding-t-option)
     if(CLR_CMAKE_HOST_ARCH_ARM64)
-      set(MACOS_VERSION_MIN_FLAGS "-target arm64-apple-ios15.0-macabi")
-      add_link_options(-target arm64-apple-ios15.0-macabi)
+      set(CLR_CMAKE_MACCATALYST_COMPILER_TARGET "arm64-apple-ios15.0-macabi")
+      add_link_options(-target ${CLR_CMAKE_MACCATALYST_COMPILER_TARGET})
     elseif(CLR_CMAKE_HOST_ARCH_AMD64)
-      set(MACOS_VERSION_MIN_FLAGS "-target x86_64-apple-ios15.0-macabi")
-      add_link_options(-target x86_64-apple-ios15.0-macabi)
+      set(CLR_CMAKE_MACCATALYST_COMPILER_TARGET "x86_64-apple-ios15.0-macabi")
+      add_link_options(-target ${CLR_CMAKE_MACCATALYST_COMPILER_TARGET})
     else()
       clr_unknown_arch()
     endif()
     # These options are intentionally set using the CMAKE_XXX_FLAGS instead of
     # add_compile_options so that they take effect on the configuration functions
     # in various configure.cmake files.
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${MACOS_VERSION_MIN_FLAGS} ${DISABLE_OVERRIDING_MIN_VERSION_ERROR}")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${MACOS_VERSION_MIN_FLAGS} ${DISABLE_OVERRIDING_MIN_VERSION_ERROR}")
-    set(CMAKE_ASM_FLAGS "${CMAKE_ASM_FLAGS} ${MACOS_VERSION_MIN_FLAGS} ${DISABLE_OVERRIDING_MIN_VERSION_ERROR}")
-    set(CMAKE_OBJC_FLAGS "${CMAKE_OBJC_FLAGS} ${MACOS_VERSION_MIN_FLAGS} ${DISABLE_OVERRIDING_MIN_VERSION_ERROR}")
-    set(CMAKE_OBJCXX_FLAGS "${CMAKE_OBJCXX_FLAGS} ${MACOS_VERSION_MIN_FLAGS} ${DISABLE_OVERRIDING_MIN_VERSION_ERROR}")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -target ${CLR_CMAKE_MACCATALYST_COMPILER_TARGET} ${DISABLE_OVERRIDING_MIN_VERSION_ERROR}")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -target ${CLR_CMAKE_MACCATALYST_COMPILER_TARGET} ${DISABLE_OVERRIDING_MIN_VERSION_ERROR}")
+    set(CMAKE_ASM_FLAGS "${CMAKE_ASM_FLAGS} -target ${CLR_CMAKE_MACCATALYST_COMPILER_TARGET} ${DISABLE_OVERRIDING_MIN_VERSION_ERROR}")
+    set(CMAKE_OBJC_FLAGS "${CMAKE_OBJC_FLAGS}-target ${CLR_CMAKE_MACCATALYST_COMPILER_TARGET} ${DISABLE_OVERRIDING_MIN_VERSION_ERROR}")
+    set(CMAKE_OBJCXX_FLAGS "${CMAKE_OBJCXX_FLAGS} -target ${CLR_CMAKE_MACCATALYST_COMPILER_TARGET} ${DISABLE_OVERRIDING_MIN_VERSION_ERROR}")
   elseif(CLR_CMAKE_HOST_OSX)
     set(CMAKE_OSX_DEPLOYMENT_TARGET "12.0")
     if(CLR_CMAKE_HOST_ARCH_ARM64)
@@ -976,27 +980,13 @@ endif()
 
 # Ensure other tools are present
 if (CLR_CMAKE_HOST_WIN32)
-    if(CLR_CMAKE_HOST_ARCH_ARM)
-
-      # Explicitly specify the assembler to be used for Arm32 compile
-      file(TO_CMAKE_PATH "$ENV{VCToolsInstallDir}\\bin\\HostX86\\arm\\armasm.exe" CMAKE_ASM_COMPILER)
-
-      set(CMAKE_ASM_MASM_COMPILER ${CMAKE_ASM_COMPILER})
-      message("CMAKE_ASM_MASM_COMPILER explicitly set to: ${CMAKE_ASM_MASM_COMPILER}")
-
-      # Enable generic assembly compilation to avoid CMake generate VS proj files that explicitly
-      # use ml[64].exe as the assembler.
-      enable_language(ASM)
-      set(CMAKE_ASM_COMPILE_OPTIONS_MSVC_RUNTIME_LIBRARY_MultiThreaded         "")
-      set(CMAKE_ASM_COMPILE_OPTIONS_MSVC_RUNTIME_LIBRARY_MultiThreadedDLL      "")
-      set(CMAKE_ASM_COMPILE_OPTIONS_MSVC_RUNTIME_LIBRARY_MultiThreadedDebug    "")
-      set(CMAKE_ASM_COMPILE_OPTIONS_MSVC_RUNTIME_LIBRARY_MultiThreadedDebugDLL "")
-      set(CMAKE_ASM_COMPILE_OBJECT "<CMAKE_ASM_COMPILER> -g <INCLUDES> <FLAGS> -o <OBJECT> <SOURCE>")
-
-    elseif(CLR_CMAKE_HOST_ARCH_ARM64)
-
+    if(CLR_CMAKE_HOST_ARCH_ARM64)
       # Explicitly specify the assembler to be used for Arm64 compile
-      file(TO_CMAKE_PATH "$ENV{VCToolsInstallDir}\\bin\\HostX86\\arm64\\armasm64.exe" CMAKE_ASM_COMPILER)
+      if (CMAKE_SYSTEM_PROCESSOR STREQUAL "ARM64")
+        file(TO_CMAKE_PATH "$ENV{VCToolsInstallDir}\\bin\\Hostarm64\\arm64\\armasm64.exe" CMAKE_ASM_COMPILER)
+      else()
+        file(TO_CMAKE_PATH "$ENV{VCToolsInstallDir}\\bin\\HostX64\\arm64\\armasm64.exe" CMAKE_ASM_COMPILER)
+      endif()
 
       set(CMAKE_ASM_MASM_COMPILER ${CMAKE_ASM_COMPILER})
       message("CMAKE_ASM_MASM_COMPILER explicitly set to: ${CMAKE_ASM_MASM_COMPILER}")

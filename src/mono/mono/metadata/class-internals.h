@@ -1356,6 +1356,12 @@ mono_class_get_declsec_flags (MonoClass *klass);
 void
 mono_class_set_declsec_flags (MonoClass *klass, guint32 value);
 
+MONO_COMPONENT_API gint32
+mono_class_get_inlinearray_value (MonoClass *klass);
+
+void
+mono_class_set_inlinearray_value (MonoClass *klass, gint32 value);
+
 void
 mono_class_set_weak_bitmap (MonoClass *klass, int nbits, gsize *bits);
 
@@ -1464,6 +1470,14 @@ mono_class_has_default_constructor (MonoClass *klass, gboolean public_only);
 
 gboolean
 mono_method_has_unmanaged_callers_only_attribute (MonoMethod *method);
+
+typedef struct _MonoVarianceSearchTableEntry {
+    MonoClass *klass;
+    int offset;
+} MonoVarianceSearchTableEntry;
+
+MonoVarianceSearchTableEntry *
+mono_class_get_variance_search_table (MonoClass *klass, int *table_size);
 
 // There are many ways to do on-demand initialization.
 //   Some allow multiple concurrent initializations. Some do not.

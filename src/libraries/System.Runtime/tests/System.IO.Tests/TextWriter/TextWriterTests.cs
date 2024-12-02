@@ -690,7 +690,7 @@ namespace System.IO.Tests
             Assert.Same(e, vt.AsTask().Exception.InnerException);
         }
 
-        // Browser bypasses SyncTextWriter for faster startup
+        // single-threaded WASM bypasses SyncTextWriter for faster startup
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task FlushAsync_Precanceled()
         {

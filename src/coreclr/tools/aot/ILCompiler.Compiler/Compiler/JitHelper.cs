@@ -124,6 +124,9 @@ namespace ILCompiler
                 case ReadyToRunHelper.Unbox_Nullable:
                     mangledName = "RhUnboxNullable";
                     break;
+                case ReadyToRunHelper.Unbox_TypeTest:
+                    mangledName = "RhUnboxTypeTest";
+                    break;
 
                 case ReadyToRunHelper.NewMultiDimArr:
                     methodDesc = context.GetHelperEntryPoint("ArrayHelpers", "NewObjArray");
@@ -311,12 +314,6 @@ namespace ILCompiler
                     break;
                 case ReadyToRunHelper.MonitorExit:
                     methodDesc = context.GetHelperEntryPoint("SynchronizedMethodHelpers", "MonitorExit");
-                    break;
-                case ReadyToRunHelper.MonitorEnterStatic:
-                    methodDesc = context.GetHelperEntryPoint("SynchronizedMethodHelpers", "MonitorEnterStatic");
-                    break;
-                case ReadyToRunHelper.MonitorExitStatic:
-                    methodDesc = context.GetHelperEntryPoint("SynchronizedMethodHelpers", "MonitorExitStatic");
                     break;
 
                 case ReadyToRunHelper.GVMLookupForSlot:

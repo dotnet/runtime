@@ -35,7 +35,7 @@ namespace System.Buffers
         /// </summary>
         private readonly SharedArrayPoolPartitions?[] _buckets = new SharedArrayPoolPartitions[NumBuckets];
         /// <summary>Whether the callback to trim arrays in response to memory pressure has been created.</summary>
-        private int _trimCallbackCreated;
+        private bool _trimCallbackCreated;
 
         /// <summary>Allocate a new <see cref="SharedArrayPoolPartitions"/> and try to store it into the <see cref="_buckets"/> array.</summary>
         private unsafe SharedArrayPoolPartitions CreatePerCorePartitions(int bucketIndex)
@@ -283,7 +283,7 @@ namespace System.Buffers
             t_tlsBuckets = tlsBuckets;
 
             _allTlsBuckets.Add(tlsBuckets, null);
-            if (Interlocked.Exchange(ref _trimCallbackCreated, 1) == 0)
+            if (!Interlocked.Exchange(ref _trimCallbackCreated, true))
             {
                 Gen2GcCallback.Register(s => ((SharedArrayPool<T>)s).Trim(), this);
             }

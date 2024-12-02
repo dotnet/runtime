@@ -8,6 +8,7 @@ using System.Globalization;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics.X86;
 
 namespace System
 {
@@ -344,7 +345,7 @@ namespace System
         /// <param name="value">The value to convert.</param>
         /// <returns><paramref name="value" /> converted to a <see cref="Int128" />.</returns>
         [CLSCompliant(false)]
-        public static explicit operator Int128(UInt128 value) => Unsafe.BitCast<UInt128, Int128>(value);
+        public static explicit operator Int128(UInt128 value) => new Int128(value._upper, value._lower);
 
         /// <summary>Explicitly converts a 128-bit unsigned integer to a <see cref="Int128" /> value, throwing an overflow exception for any values that fall outside the representable range.</summary>
         /// <param name="value">The value to convert.</param>
@@ -357,7 +358,7 @@ namespace System
             {
                 ThrowHelper.ThrowOverflowException();
             }
-            return Unsafe.BitCast<UInt128, Int128>(value);
+            return new Int128(value._upper, value._lower);
         }
 
         /// <summary>Explicitly converts a 128-bit unsigned integer to a <see cref="IntPtr" /> value.</summary>
@@ -1103,6 +1104,20 @@ namespace System
                     // left and right are both uint64
                     return left._lower / right._lower;
                 }
+                else if (X86Base.X64.IsSupported)
+                {
+                    ulong highRes = 0ul;
+                    ulong remainder = left._upper;
+
+#pragma warning disable SYSLIB5004 // DivRem is marked as [Experimental], partly because it does not get optmized by the JIT for constant inputs
+                    if (remainder >= right._lower)
+                    {
+                        (highRes, remainder) = X86Base.X64.DivRem(left._upper, 0, right._lower);
+                    }
+
+                    return new UInt128(highRes, X86Base.X64.DivRem(left._lower, remainder, right._lower).Quotient);
+#pragma warning restore SYSLIB5004 // DivRem is marked as [Experimental]
+                }
             }
 
             if (right >= left)
@@ -1197,8 +1212,8 @@ namespace System
                 // block of the divisor. Thus, guessing digits of the quotient
                 // will be more precise. Additionally we'll get r = a % b.
 
-                uint divHi = right[right.Length - 1];
-                uint divLo = right.Length > 1 ? right[right.Length - 2] : 0;
+                uint divHi = right[^1];
+                uint divLo = right.Length > 1 ? right[^2] : 0;
 
                 // We measure the leading zeros of the divisor
                 int shift = BitOperations.LeadingZeroCount(divHi);
@@ -1207,7 +1222,7 @@ namespace System
                 // And, we make sure the most significant bit is set
                 if (shift > 0)
                 {
-                    uint divNx = right.Length > 2 ? right[right.Length - 3] : 0;
+                    uint divNx = right.Length > 2 ? right[^3] : 0;
 
                     divHi = (divHi << shift) | (divLo >> backShift);
                     divLo = (divLo << shift) | (divNx >> backShift);

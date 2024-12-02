@@ -220,6 +220,7 @@
     <Compile Include="System\Runtime\CompilerServices\ClassConstructorRunner.cs" />
     <Compile Include="System\Runtime\CompilerServices\InlineArrayAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\StaticClassConstructionContext.cs" />
+    <Compile Include="System\Runtime\ExceptionServices\ExceptionHandling.cs" />
     <Compile Include="System\Runtime\InteropServices\InAttribute.cs" />
     <Compile Include="System\Diagnostics\DebuggerStepThroughAttribute.cs" />
     <Compile Include="System\Diagnostics\StackTraceHiddenAttribute.cs" />

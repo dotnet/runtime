@@ -47,6 +47,7 @@ static void (*restore_stack) (void *);
 static MonoW32ExceptionHandler fpe_handler;
 static MonoW32ExceptionHandler ill_handler;
 static MonoW32ExceptionHandler segv_handler;
+static MonoW32ExceptionHandler term_handler = NULL;
 
 LPTOP_LEVEL_EXCEPTION_FILTER mono_old_win_toplevel_exception_filter;
 gpointer mono_win_vectored_exception_handle;
@@ -260,6 +261,31 @@ void win32_seh_cleanup(void)
 	RemoveVectoredExceptionHandler (mono_win_vectored_exception_handle);
 }
 
+BOOL WINAPI mono_win_ctrl_handler(DWORD fdwCtrlType)
+{
+	switch (fdwCtrlType) {
+	case CTRL_C_EVENT:
+		if (term_handler != NULL)
+			term_handler(0, NULL, NULL);
+		return TRUE;
+		break;
+	case CTRL_CLOSE_EVENT:
+		return TRUE;
+		break;
+	case CTRL_BREAK_EVENT:
+		return FALSE;
+		break;
+	case CTRL_LOGOFF_EVENT:
+		return FALSE;
+		break;
+	case CTRL_SHUTDOWN_EVENT:
+		return FALSE;
+		break;
+	default:
+		return FALSE;
+	}
+}
+
 void win32_seh_set_handler(int type, MonoW32ExceptionHandler handler)
 {
 	switch (type) {
@@ -271,6 +297,11 @@ void win32_seh_set_handler(int type, MonoW32ExceptionHandler handler)
 		break;
 	case SIGSEGV:
 		segv_handler = handler;
+		break;
+	case SIGTERM:
+		term_handler = handler;
+		if (!SetConsoleCtrlHandler(mono_win_ctrl_handler, TRUE))
+			fprintf(stderr,"Cannot set control handler\n");
 		break;
 	default:
 		break;
