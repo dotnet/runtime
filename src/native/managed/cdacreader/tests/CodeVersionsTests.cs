@@ -587,12 +587,12 @@ public class CodeVersionsTests
         Assert.Equal(2, ilCodeVersions.Count);
 
         // Get the explicit ILCodeVersion and assert that it is in the list of ILCodeVersions
-        ILCodeVersionHandle explicitILcodeVersion = codeVersions.GetActiveILCodeVersion(methodDescAddress);
-        Assert.Contains(ilCodeVersions, ilcodeVersion => ilcodeVersion.Equals(explicitILcodeVersion));
-        Assert.Equal(expectedExplicitCodePointer, codeVersions.GetNativeCode(codeVersions.GetActiveNativeCodeVersionForILCodeVersion(methodDescAddress, explicitILcodeVersion)));
+        ILCodeVersionHandle explicitILCodeVersion = codeVersions.GetActiveILCodeVersion(methodDescAddress);
+        Assert.Contains(ilCodeVersions, ilcodeVersion => ilcodeVersion.Equals(explicitILCodeVersion));
+        Assert.Equal(expectedExplicitCodePointer, codeVersions.GetNativeCode(codeVersions.GetActiveNativeCodeVersionForILCodeVersion(methodDescAddress, explicitILCodeVersion)));
 
         // Find the other ILCodeVersion (synthetic) and assert that it is valid.
-        ILCodeVersionHandle syntheticILcodeVersion = ilCodeVersions.Find(ilCodeVersion => !ilCodeVersion.Equals(explicitILcodeVersion));
+        ILCodeVersionHandle syntheticILcodeVersion = ilCodeVersions.Find(ilCodeVersion => !ilCodeVersion.Equals(explicitILCodeVersion));
         Assert.True(syntheticILcodeVersion.IsValid);
         Assert.Equal(expectedSyntheticCodePointer, codeVersions.GetNativeCode(codeVersions.GetActiveNativeCodeVersionForILCodeVersion(methodDescAddress, syntheticILcodeVersion)));
     }
@@ -651,17 +651,17 @@ public class CodeVersionsTests
         Assert.Equal(2, ilCodeVersions.Count);
 
         // Get the explicit ILCodeVersion and assert that it is in the list of ILCodeVersions
-        ILCodeVersionHandle explicitILcodeVersion = codeVersions.GetActiveILCodeVersion(methodDescAddress);
-        Assert.Contains(ilCodeVersions, ilcodeVersion => ilcodeVersion.Equals(explicitILcodeVersion));
-        Assert.True(explicitILcodeVersion.IsValid);
+        ILCodeVersionHandle explicitILCodeVersion = codeVersions.GetActiveILCodeVersion(methodDescAddress);
+        Assert.Contains(ilCodeVersions, ilcodeVersion => ilcodeVersion.Equals(explicitILCodeVersion));
+        Assert.True(explicitILCodeVersion.IsValid);
 
         // Find the other ILCodeVersion (synthetic) and assert that it is valid.
-        ILCodeVersionHandle syntheticILcodeVersion = ilCodeVersions.Find(ilCodeVersion => !ilCodeVersion.Equals(explicitILcodeVersion));
+        ILCodeVersionHandle syntheticILcodeVersion = ilCodeVersions.Find(ilCodeVersion => !ilCodeVersion.Equals(explicitILCodeVersion));
         Assert.True(syntheticILcodeVersion.IsValid);
 
         // Verify getting ILCode is equal to ILCode from NativeCode from ILCode.
-        NativeCodeVersionHandle explicitNativeCodeVersion = codeVersions.GetActiveNativeCodeVersionForILCodeVersion(methodDescAddress, explicitILcodeVersion);
-        Assert.True(explicitILcodeVersion.Equals(codeVersions.GetILCodeVersion(explicitNativeCodeVersion)));
+        NativeCodeVersionHandle explicitNativeCodeVersion = codeVersions.GetActiveNativeCodeVersionForILCodeVersion(methodDescAddress, explicitILCodeVersion);
+        Assert.True(explicitILCodeVersion.Equals(codeVersions.GetILCodeVersion(explicitNativeCodeVersion)));
 
         NativeCodeVersionHandle syntheticNativeCodeVersion = codeVersions.GetActiveNativeCodeVersionForILCodeVersion(methodDescAddress, syntheticILcodeVersion);
         Assert.True(syntheticILcodeVersion.Equals(codeVersions.GetILCodeVersion(syntheticNativeCodeVersion)));
