@@ -107,7 +107,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
 			static Type FieldWithMethods;
 			[Kept]
-			[UnexpectedWarning("IL2080", "UnannotatedField", Tool.TrimmerAnalyzerAndNativeAot, "https://github.com/dotnet/runtime/issues/93800")]
+			[UnexpectedWarning("IL2080", nameof(UnannotatedField), Tool.TrimmerAnalyzerAndNativeAot, "https://github.com/dotnet/runtime/issues/93800")]
 			static void Field()
 			{
 				typeof (Nullable<>).MakeGenericType (UnannotatedField).GetMethods ();
@@ -115,7 +115,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			[Kept]
-			[UnexpectedWarning("IL2090", "unannotated", Tool.TrimmerAnalyzerAndNativeAot, "https://github.com/dotnet/runtime/issues/93800")]
+			[UnexpectedWarning("IL2090", nameof(unannotated), Tool.TrimmerAnalyzerAndNativeAot, "https://github.com/dotnet/runtime/issues/93800")]
 			static void Parameter(
 				Type unannotated,
 				[KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute))]
@@ -137,7 +137,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			[Kept]
-			[UnexpectedWarning("IL2075", "unannotated", Tool.TrimmerAnalyzerAndNativeAot, "https://github.com/dotnet/runtime/issues/93800")]
+			[UnexpectedWarning("IL2075", nameof(GetUnannotated), Tool.TrimmerAnalyzerAndNativeAot, "https://github.com/dotnet/runtime/issues/93800")]
 			static void ReturnValue()
 			{
 				typeof (Nullable<>).MakeGenericType (GetUnannotated()).GetMethods ();
