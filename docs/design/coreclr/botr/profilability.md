@@ -35,18 +35,18 @@ Profilers subscribe to events by specifying the corresponding flag in a call to 
 
     {
         //check if profiler set flag, pin profiler
-        BEGIN_PIN_PROFILER(CORProfilerTrackModuleLoads());
+        BEGIN_PROFILER_CALLBACK(CORProfilerTrackModuleLoads());
 
         //call the wrapper around the profiler's callback implementation
         g_profControlBlock.pProfInterface->ModuleLoadStarted((ModuleID) this);
 
         //unpin profiler
-        END_PIN_PROFILER();
+        END_PROFILER_CALLBACK();
     }
 
 To be clear, the code above is what you'll see sprinkled throughout the code base.  The function it calls (in this case ModuleLoadStarted()) is our wrapper around the profiler's callback implementation (in this case ICorProfilerCallback::ModuleLoadStarted()).  All of our wrappers appear in a single file (vm\EEToProfInterfaceImpl.cpp), and the guidance provided in the sections below relate to those wrappers; not to the above sample code that calls the wrappers.
 
-The macro BEGIN\_PIN\_PROFILER evaluates the expression passed as its argument.  If the expression is TRUE, then the profiler is pinned into memory (meaning the profiler will not be able to detach from the process) and the code between the BEGIN\_PIN\_PROFILER and END\_PIN\_PROFILER macros is executed.  If the expression is FALSE, all code between the BEGIN\_PIN\_PROFILER and END\_PIN\_PROFILER macros is skipped.  For more information about the BEGIN\_PIN\_PROFILER and END\_PIN\_PROFILER macros, find their definition in the code base and read the comments there.
+The macro BEGIN_PROFILER_CALLBACK evaluates the expression passed as its argument.  If the expression is TRUE, then the profiler is pinned into memory (meaning the profiler will not be able to detach from the process) and the code between the BEGIN_PROFILER_CALLBACK and END_PROFILER_CALLBACK macros is executed.  If the expression is FALSE, all code between the BEGIN_PROFILER_CALLBACK and END_PROFILER_CALLBACK macros is skipped.  For more information about the BEGIN_PROFILER_CALLBACK and END_PROFILER_CALLBACK macros, find their definition in the code base and read the comments there.
 
 Contracts
 ---------
