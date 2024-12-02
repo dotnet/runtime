@@ -353,29 +353,34 @@ public:
         assert(lclOp != nullptr);
 
         // Get the existing weighting.
-        MaskConversionsWeight weight;
-        bool                  found = weightsTable->Lookup(lclOp->GetLclNum(), &weight);
-        assert(found);
+        MaskConversionsWeight* weight = weightsTable->LookupPointer(lclOp->GetLclNum());
+
+        if (weight == nullptr)
+        {
+            return fgWalkResult::WALK_CONTINUE;
+        }
 
         // Quit if the cost of changing is higher or is invalid.
-        if (weight.currentCost <= weight.switchCost || weight.invalid)
+        if (weight->currentCost <= weight->switchCost || weight->invalid)
         {
             JITDUMP("Local %s V%02d at [%06u] will not be converted. ", isLocalStore ? "store" : "use",
                     lclOp->GetLclNum(), Compiler::dspTreeID(lclOp));
-            weight.DumpTotalWeight();
+            weight->DumpTotalWeight();
             return fgWalkResult::WALK_CONTINUE;
         }
 
         JITDUMP("Local %s V%02d at [%06u] will be converted. ", isLocalStore ? "store" : "use", lclOp->GetLclNum(),
                 Compiler::dspTreeID(lclOp));
-        weight.DumpTotalWeight();
+        weight->DumpTotalWeight();
 
         // Fix up the type of the lcl and the lclvar.
         assert(lclOp->gtType != TYP_MASK);
         var_types lclOrigType = lclOp->gtType;
         lclOp->gtType         = TYP_MASK;
-        LclVarDsc* varDsc     = m_compiler->lvaGetDesc(lclOp->GetLclNum());
-        varDsc->lvType        = TYP_MASK;
+
+        LclVarDsc* varDsc = m_compiler->lvaGetDesc(lclOp->GetLclNum());
+        assert(varTypeIsSIMDOrMask(varDsc));
+        varDsc->lvType = TYP_MASK;
 
         // Add or remove a conversion
 
@@ -398,9 +403,9 @@ public:
 
             // There is not enough information in the lcl to get simd types. Instead reuse the cached
             // simd types from the removed convert nodes.
-            assert(weight.simdBaseJitType != CORINFO_TYPE_UNDEF);
-            lclOp->Data() = m_compiler->gtNewSimdCvtVectorToMaskNode(TYP_MASK, lclOp->Data(), weight.simdBaseJitType,
-                                                                     weight.simdSize);
+            assert(weight->simdBaseJitType != CORINFO_TYPE_UNDEF);
+            lclOp->Data() = m_compiler->gtNewSimdCvtVectorToMaskNode(TYP_MASK, lclOp->Data(), weight->simdBaseJitType,
+                                                                     weight->simdSize);
         }
 
         else if (isLocalUse && removeConversion)
@@ -422,9 +427,9 @@ public:
 
             // There is not enough information in the lcl to get simd types. Instead reuse the cached simd
             // types from the removed convert nodes.
-            assert(weight.simdBaseJitType != CORINFO_TYPE_UNDEF);
+            assert(weight->simdBaseJitType != CORINFO_TYPE_UNDEF);
             *use =
-                m_compiler->gtNewSimdCvtMaskToVectorNode(lclOrigType, lclOp, weight.simdBaseJitType, weight.simdSize);
+                m_compiler->gtNewSimdCvtMaskToVectorNode(lclOrigType, lclOp, weight->simdBaseJitType, weight->simdSize);
         }
 
         JITDUMP("Updated %s V%02d at [%06u] to mask (%s conversion)\n", isLocalStore ? "store" : "use",
