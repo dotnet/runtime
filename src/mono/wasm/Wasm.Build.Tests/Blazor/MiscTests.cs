@@ -54,16 +54,17 @@ public class MiscTests : BlazorWasmTestBase
     public void DefaultTemplate_AOT_InProjectFile(Configuration config)
     {
         string extraProperties = config == Configuration.Debug
-                                    ? ("<EmccLinkOptimizationFlag>-O1</EmccLinkOptimizationFlag>" +
+                                    ? ("<RunAOTCompilation>true</RunAOTCompilation>" +
+                                        "<EmccLinkOptimizationFlag>-O1</EmccLinkOptimizationFlag>" +
                                         "<EmccCompileOptimizationFlag>-O1</EmccCompileOptimizationFlag>")
-                                    : string.Empty;
+                                    : "<RunAOTCompilation>true</RunAOTCompilation>";
         ProjectInfo info = CopyTestAsset(config, aot: true, BasicTestApp, "blz_aot_prj_file", extraProperties: extraProperties);
 
         // No relinking, no AOT
         BlazorBuild(info, config);
 
         // will aot
-        BlazorPublish(info, config, new PublishOptions(UseCache: false));
+        BlazorPublish(info, config, new PublishOptions(UseCache: false, AOT: true));
 
         // build again
         BlazorBuild(info, config, new BuildOptions(UseCache: false));
