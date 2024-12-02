@@ -28,12 +28,12 @@ namespace ILLink.Shared
 		}
 
 		public string GetMessage (params string[] args) =>
-			string.Format (_messageFormat, args);
+			MessageFormat.TryFormat (_messageFormat, args);
 
 		public string GetMessageFormat () => _messageFormat;
 
 		public string GetTitle (params string[] args) =>
-			string.Format (_titleFormat, args);
+			MessageFormat.TryFormat (_titleFormat, args);
 
 		public string GetTitleFormat () => _titleFormat;
 	}

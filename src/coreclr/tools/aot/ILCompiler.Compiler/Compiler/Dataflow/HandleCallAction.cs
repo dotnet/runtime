@@ -16,6 +16,7 @@ using Internal.IL;
 using DependencyList = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencyList;
 using MultiValue = ILLink.Shared.DataFlow.ValueSet<ILLink.Shared.DataFlow.SingleValue>;
 using WellKnownType = ILLink.Shared.TypeSystemProxy.WellKnownType;
+using System;
 
 #nullable enable
 
@@ -697,7 +698,8 @@ namespace ILLink.Shared.TrimAnalysis
             public IEnumerable<DependencyNodeCore<NodeFactory>.DependencyListEntry> InstantiateDependencies(NodeFactory factory, Instantiation typeInstantiation, Instantiation methodInstantiation)
             {
                 var list = new DependencyList();
-                RootingHelpers.TryGetDependenciesForReflectedMethod(ref list, factory, _method.InstantiateSignature(typeInstantiation, methodInstantiation), "MakeGenericMethod");
+                if (_method.InstantiateSignature(typeInstantiation, methodInstantiation).CheckConstraints(new InstantiationContext(typeInstantiation, methodInstantiation)))
+                    RootingHelpers.TryGetDependenciesForReflectedMethod(ref list, factory, _method.InstantiateSignature(typeInstantiation, methodInstantiation), "MakeGenericMethod");
                 return list;
             }
         }
@@ -711,7 +713,8 @@ namespace ILLink.Shared.TrimAnalysis
             public IEnumerable<DependencyNodeCore<NodeFactory>.DependencyListEntry> InstantiateDependencies(NodeFactory factory, Instantiation typeInstantiation, Instantiation methodInstantiation)
             {
                 var list = new DependencyList();
-                RootingHelpers.TryGetDependenciesForReflectedType(ref list, factory, _type.InstantiateSignature(typeInstantiation, methodInstantiation), "MakeGenericType");
+                if (_type.InstantiateSignature(typeInstantiation, methodInstantiation).CheckConstraints(new InstantiationContext(typeInstantiation, methodInstantiation)))
+                    RootingHelpers.TryGetDependenciesForReflectedType(ref list, factory, _type.InstantiateSignature(typeInstantiation, methodInstantiation), "MakeGenericType");
                 return list;
             }
         }
