@@ -2519,7 +2519,8 @@ BasicBlock* Compiler::fgCloneTryRegion(BasicBlock* tryEntry, CloneTryInfo& info,
     //
     CompAllocator        alloc = getAllocator(CMK_TryRegionClone);
     ArrayStack<unsigned> regionsToProcess(alloc);
-    unsigned const       tryIndex = tryEntry->getTryIndex();
+    unsigned const       tryIndex              = tryEntry->getTryIndex();
+    unsigned             numberOfBlocksToClone = 0;
 
     // Track blocks to clone for caller, or if we are cloning and
     // caller doesn't care.
@@ -2535,13 +2536,15 @@ BasicBlock* Compiler::fgCloneTryRegion(BasicBlock* tryEntry, CloneTryInfo& info,
     BitVec&                visited     = info.Visited;
     BlockToBlockMap* const map         = info.Map;
 
-    auto addBlockToClone = [=, &blocks, &visited](BasicBlock* block, const char* msg) {
+    auto addBlockToClone = [=, &blocks, &visited, &numberOfBlocksToClone](BasicBlock* block, const char* msg) {
         if (!BitVecOps::TryAddElemD(traits, visited, block->bbNum))
         {
             return false;
         }
 
         JITDUMP("  %s block " FMT_BB "\n", msg, block->bbNum);
+
+        numberOfBlocksToClone++;
 
         if (blocks != nullptr)
         {
@@ -2714,8 +2717,8 @@ BasicBlock* Compiler::fgCloneTryRegion(BasicBlock* tryEntry, CloneTryInfo& info,
 
     // Now blocks contains an entry for each block to clone.
     //
-    JITDUMP("Will need to clone %u EH regions (outermost: EH#%02u) and %zu blocks\n", regionCount, outermostTryIndex,
-            blocks->size());
+    JITDUMP("Will need to clone %u EH regions (outermost: EH#%02u) and %u blocks\n", regionCount, outermostTryIndex,
+            numberOfBlocksToClone);
 
     // Allocate the new EH clauses. First, find the enclosing EH clause, if any...
     // we will want to allocate the new clauses just "before" this point.
@@ -2973,6 +2976,14 @@ BasicBlock* Compiler::fgCloneTryRegion(BasicBlock* tryEntry, CloneTryInfo& info,
             EHblkDsc* const clonedEbd     = ehGetDsc(cloneHndIndex);
             newBlock->setHndIndex(cloneHndIndex);
             updateBlockReferences(cloneHndIndex);
+
+            // Handler and filter entries also have an
+            // additional artificial reference count.
+            //
+            if (bbIsHandlerBeg(newBlock))
+            {
+                newBlock->bbRefs++;
+            }
         }
     }
     JITDUMP("Done fixing region indices\n");
