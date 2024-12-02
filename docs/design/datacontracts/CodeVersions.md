@@ -7,18 +7,18 @@ This contract encapsulates support for [code versioning](../features/code-versio
 ```csharp
 internal readonly struct ILCodeVersionHandle
 {
-    public static ILCodeVersionHandle Invalid => new ILCodeVersionHandle(TargetPointer.Null, 0, TargetPointer.Null);
+    public static ILCodeVersionHandle Invalid;
 
-    public bool IsValid => Module != TargetPointer.Null || ILCodeVersionNode != TargetPointer.Null;
+    public bool IsValid;
 }
 ```
 
 ```csharp
 internal struct NativeCodeVersionHandle
 {
-    internal static NativeCodeVersionHandle Invalid => new(TargetPointer.Null, TargetPointer.Null);
+    internal static NativeCodeVersionHandle Invalid;
 
-    public bool Valid => MethodDescAddress != TargetPointer.Null || CodeVersionNodeAddress != TargetPointer.Null;
+    public bool Valid;
 }
 ```
 
