@@ -76,7 +76,7 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
         (config == Configuration.Release) ? NativeFilesType.Relinked :
         NativeFilesType.FromRuntimePack;
 
-    public void AssertBundle(Configuration config, MSBuildOptions buildOptions, bool isUsingWorkloads, bool? expectNativeBuild = null)
+    public void AssertBundle(Configuration config, MSBuildOptions buildOptions, bool isUsingWorkloads, bool? isNativeBuild = null)
     {
         string frameworkDir = string.IsNullOrEmpty(buildOptions.NonDefaultFrameworkDir) ?
             GetBinFrameworkDir(config, buildOptions.IsPublish, _defaultTargetFramework) :
@@ -85,7 +85,7 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
         AssertBundle(new AssertBundleOptions(
             config,
             BuildOptions: buildOptions,
-            ExpectedFileType: GetExpectedFileType(config, buildOptions.AOT, buildOptions.IsPublish, isUsingWorkloads, expectNativeBuild),
+            ExpectedFileType: GetExpectedFileType(config, buildOptions.AOT, buildOptions.IsPublish, isUsingWorkloads, isNativeBuild),
             BinFrameworkDir: frameworkDir,
             ExpectSymbolsFile: true,
             AssertIcuAssets: true,
@@ -162,11 +162,14 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
         }
     }
 
-    public void AssertWasmSdkBundle(Configuration config, MSBuildOptions buildOptions, bool isUsingWorkloads, bool? expectNativeBuild = null, string? buildOutput = null)
+    public void AssertWasmSdkBundle(Configuration config, MSBuildOptions buildOptions, bool isUsingWorkloads, bool? isNativeBuild = null, string? buildOutput = null)
     {
-        if (buildOutput is not null)
-            ProjectProviderBase.AssertRuntimePackPath(buildOutput, buildOptions.TargetFramework ?? _defaultTargetFramework);
-        AssertBundle(config, buildOptions, isUsingWorkloads, expectNativeBuild);
+        if (isUsingWorkloads && buildOutput is not null)
+        {
+            // In no-workload case, the path would be from a restored nuget
+            ProjectProviderBase.AssertRuntimePackPath(buildOutput, buildOptions.TargetFramework ?? _defaultTargetFramework, buildOptions.RuntimeType);
+        }
+        AssertBundle(config, buildOptions, isUsingWorkloads, isNativeBuild);
     }
     
     public BuildPaths GetBuildPaths(Configuration configuration, bool forPublish)

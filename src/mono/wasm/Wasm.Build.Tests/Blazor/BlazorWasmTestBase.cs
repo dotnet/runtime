@@ -98,11 +98,11 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestsBase
         return Path.Combine(_projectDir, $"{id}.csproj");
     }
 
-    protected (string projectDir, string buildOutput) BlazorBuild(ProjectInfo info, Configuration config, bool isNativeBuild = false) =>
+    protected (string projectDir, string buildOutput) BlazorBuild(ProjectInfo info, Configuration config, bool? isNativeBuild = null) =>
         BlazorBuild(info, config, _defaultBlazorBuildOptions, isNativeBuild);
 
     protected (string projectDir, string buildOutput) BlazorBuild(
-        ProjectInfo info, Configuration config, MSBuildOptions buildOptions, bool isNativeBuild = false)
+        ProjectInfo info, Configuration config, MSBuildOptions buildOptions, bool? isNativeBuild = null)
     {
         try
         {
@@ -156,20 +156,14 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestsBase
         }
     }
 
-    public void AssertBundle(Configuration config, string buildOutput, MSBuildOptions buildOptions, bool expectNativeBuild)
+    public void AssertBundle(Configuration config, string buildOutput, MSBuildOptions buildOptions, bool? isNativeBuild = null)
     {
-        if (IsUsingWorkloads)
-        {
-            // In no-workload case, the path would be from a restored nuget
-            ProjectProviderBase.AssertRuntimePackPath(buildOutput, buildOptions.TargetFramework ?? DefaultTargetFramework, buildOptions.RuntimeType);
-        }
-
-        _provider.AssertBundle(config, buildOptions, IsUsingWorkloads, expectNativeBuild);
+        _provider.AssertBundle(config, buildOptions, IsUsingWorkloads, isNativeBuild);
 
         if (!buildOptions.IsPublish)
             return;
 
-        var expectedFileType = _provider.GetExpectedFileType(config, buildOptions.AOT, buildOptions.IsPublish, IsUsingWorkloads, expectNativeBuild);
+        var expectedFileType = _provider.GetExpectedFileType(config, buildOptions.AOT, buildOptions.IsPublish, IsUsingWorkloads, isNativeBuild);
         // Publish specific checks
         if (expectedFileType == NativeFilesType.AOT)
         {
