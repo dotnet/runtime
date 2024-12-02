@@ -168,7 +168,6 @@ internal readonly partial struct CodeVersions_1 : ICodeVersions
             return NativeCodeVersionHandle.Invalid;
         }
 
-        TargetNUInt ilVersionId = GetId(ilCodeVersionHandle);
         if (!IsExplicit(ilCodeVersionHandle))
         {
             // if the ILCodeVersion is synthetic, then check if the active NativeCodeVersion is the synthetic one
@@ -182,6 +181,7 @@ internal readonly partial struct CodeVersions_1 : ICodeVersions
         // Iterate through versioning state nodes and return the active one, matching any IL code version
         Contracts.IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
         MethodDescHandle md = rts.GetMethodDescHandle(methodDesc);
+        TargetNUInt ilVersionId = GetId(ilCodeVersionHandle);
         return FindFirstCodeVersion(rts, md, (codeVersion) =>
         {
             return (ilVersionId == codeVersion.ILVersionId)
@@ -315,7 +315,7 @@ internal readonly partial struct CodeVersions_1 : ICodeVersions
     {
         if (handle.ILCodeVersionNode == TargetPointer.Null)
         {
-            throw new NotImplementedException("Synthetic ILCodeVersion does not have a backing node.");
+            throw new InvalidOperationException("Synthetic ILCodeVersion does not have a backing node.");
         }
 
         return _target.ProcessedData.GetOrAdd<ILCodeVersionNode>(handle.ILCodeVersionNode);
@@ -325,7 +325,7 @@ internal readonly partial struct CodeVersions_1 : ICodeVersions
     {
         if (handle.CodeVersionNodeAddress == TargetPointer.Null)
         {
-            throw new NotImplementedException("Synthetic NativeCodeVersion does not have a backing node.");
+            throw new InvalidOperationException("Synthetic NativeCodeVersion does not have a backing node.");
         }
 
         return _target.ProcessedData.GetOrAdd<NativeCodeVersionNode>(handle.CodeVersionNodeAddress);

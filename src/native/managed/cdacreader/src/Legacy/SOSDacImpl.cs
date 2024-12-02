@@ -310,8 +310,7 @@ internal sealed unsafe partial class SOSDacImpl
                 {
                     // Caller wants some reverted rejit versions.  Gather reverted rejit version data to return
 
-                    // Prepare array to populate with rejitids.  "+ 1" because GetReJITIDs
-                    // returns all available rejitids, including the rejitid for the one non-reverted
+                    // Returns all available rejitids, including the rejitid for the one non-reverted
                     // current version.
                     List<TargetNUInt> reJitIds = rejitContract.GetRejitIds(_target, methodDescHandle.Address).ToList();
 
@@ -324,7 +323,6 @@ internal sealed unsafe partial class SOSDacImpl
                         ILCodeVersionHandle ilCodeVersion = nativeCodeContract.GetILCodeVersions(methodDesc)
                             .FirstOrDefault(ilcode => rejitContract.GetRejitId(ilcode) == reJitIds[(int)i],
                                 ILCodeVersionHandle.Invalid);
-
 
                         if (!ilCodeVersion.IsValid || rejitContract.GetRejitId(ilCodeVersion) == activeVersionId)
                         {
@@ -339,8 +337,7 @@ internal sealed unsafe partial class SOSDacImpl
 
                         iRejitDataReverted++;
                     }
-                    // pcNeededRevertedRejitData != NULL as per condition at top of function (cuz rgRevertedRejitData !=
-                    // NULL).
+                    // We already checked that pcNeededRevertedRejitData != NULL because rgRevertedRejitData != NULL
                     *pcNeededRevertedRejitData = iRejitDataReverted;
                 }
             }

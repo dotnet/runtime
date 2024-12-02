@@ -28,7 +28,7 @@ Data descriptors used:
 | Data Descriptor Name | Field | Meaning |
 | --- | --- | --- |
 | ProfControlBlock | GlobalEventMask | an `ICorProfiler` `COR_PRF_MONITOR` value |
-| ILCodeVersionNode | VersionId | `ILCodeVersion` ReJIT id
+| ILCodeVersionNode | VersionId | `ILCodeVersion` ReJIT ID
 | ILCodeVersionNode | RejitState | a `RejitFlags` value |
 
 Global variables used:
