@@ -133,9 +133,9 @@ public:
     Compiler::fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
     {
         GenTreeLclVarCommon* lclOp  = (*use)->AsLclVarCommon();
-        LclVarDsc*           lclDsc = m_compiler->lvaGetDesc(lclOp);
+        LclVarDsc*           varDsc = m_compiler->lvaGetDesc(lclOp);
 
-        if (!varTypeIsSIMDOrMask(lclDsc))
+        if (!varTypeIsSIMDOrMask(varDsc))
         {
             return fgWalkResult::WALK_CONTINUE;
         }
@@ -220,8 +220,6 @@ public:
 
         if (isLocalStore || isLocalUse)
         {
-            LclVarDsc* varDsc = m_compiler->lvaGetDesc(lclOp->GetLclNum());
-
             // Cannot convert any locals with an exposed address.
             if (varDsc->IsAddressExposed())
             {
