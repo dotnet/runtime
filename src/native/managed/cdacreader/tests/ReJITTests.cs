@@ -17,11 +17,9 @@ public class ReJITTests
 {
     internal static Target CreateTarget(
         MockTarget.Architecture arch,
-        MockReJIT builder = null,
+        MockReJIT builder,
         Mock<ICodeVersions> mockCodeVersions = null)
     {
-        builder ??= new MockReJIT(arch);
-
         TestPlaceholderTarget target = new TestPlaceholderTarget(arch, builder.Builder.GetReadContext().ReadFromTarget, builder.Types, builder.Globals);
 
         mockCodeVersions ??= new Mock<ICodeVersions>();
