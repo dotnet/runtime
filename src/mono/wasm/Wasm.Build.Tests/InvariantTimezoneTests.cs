@@ -37,18 +37,24 @@ namespace Wasm.Build.Tests
         public async Task RelinkingWithoutAOT(Configuration config, bool aot, bool? invariantTimezone)
             => await TestInvariantTimezone(config, aot, invariantTimezone, isNativeBuild: true);
 
-        private async Task TestInvariantTimezone(Configuration config, bool aot, bool? invariantTimezone, bool isNativeBuild = false)
+        private async Task TestInvariantTimezone(Configuration config, bool aot, bool? invariantTimezone, bool? isNativeBuild = null)
         {
-            string extraProperties = isNativeBuild ? "<WasmBuildNative>true</WasmBuildNative>" : "";
+            string extraProperties = isNativeBuild == true ? "<WasmBuildNative>true</WasmBuildNative>" : "";
             if (invariantTimezone != null)
+            {
                 extraProperties = $"{extraProperties}<InvariantTimezone>{invariantTimezone}</InvariantTimezone>";
+            }
+            if (invariantTimezone == true)
+            {
+                if (isNativeBuild == false)
+                    throw new System.ArgumentException("InvariantTimezone=true requires a native build");
+                // -p:InvariantTimezone=true triggers native build, isNativeBuild is not undefined anymore
+                isNativeBuild = true;
+            }
 
             string prefix = $"invariant_{invariantTimezone?.ToString() ?? "unset"}";
             ProjectInfo info = CopyTestAsset(config, aot, BasicTestApp, prefix, extraProperties: extraProperties);
             ReplaceFile(Path.Combine("Common", "Program.cs"), Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "InvariantTimezone.cs"));
-
-            // invariantTimezone triggers native build
-            isNativeBuild = isNativeBuild || invariantTimezone == true;
             PublishProject(info, config, isNativeBuild: isNativeBuild);
 
             RunResult output = await RunForPublishWithWebServer(new BrowserRunOptions(config, TestScenario: "DotnetRun", ExpectedExitCode: 42));

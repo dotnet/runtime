@@ -41,18 +41,25 @@ namespace Wasm.Build.Tests
         public async Task RelinkingWithoutAOT(Configuration config, bool aot, bool? invariantGlobalization)
             => await TestInvariantGlobalization(config, aot, invariantGlobalization, isNativeBuild: true);
 
-        private async Task TestInvariantGlobalization(Configuration config, bool aot, bool? invariantGlobalization, bool isNativeBuild = false)
+        private async Task TestInvariantGlobalization(Configuration config, bool aot, bool? invariantGlobalization, bool? isNativeBuild = null)
         {
-            string extraProperties = isNativeBuild ? "<WasmBuildNative>true</WasmBuildNative>" : "";
+            string extraProperties = isNativeBuild == true ? "<WasmBuildNative>true</WasmBuildNative>" : "";
             if (invariantGlobalization != null)
+            {
                 extraProperties = $"{extraProperties}<InvariantGlobalization>{invariantGlobalization}</InvariantGlobalization>";
+            }
+            if (invariantGlobalization == true)
+            {
+                if (isNativeBuild == false)
+                    throw new System.ArgumentException("InvariantGlobalization=true requires a native build");
+                // -p:InvariantGlobalization=true triggers native build, isNativeBuild is not undefined anymore
+                isNativeBuild = true;
+            }
 
             string prefix = $"invariant_{invariantGlobalization?.ToString() ?? "unset"}";
             ProjectInfo info = CopyTestAsset(config, aot, BasicTestApp, prefix, extraProperties: extraProperties);
             ReplaceFile(Path.Combine("Common", "Program.cs"), Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "InvariantGlobalization.cs"));
 
-            // invariantGlobalization triggers native build
-            isNativeBuild = isNativeBuild || invariantGlobalization == true;
             var globalizationMode = invariantGlobalization == true ? GlobalizationMode.Invariant : GlobalizationMode.Sharded;
             PublishProject(info, config, new PublishOptions(GlobalizationMode: globalizationMode, AOT: aot), isNativeBuild: isNativeBuild);
 

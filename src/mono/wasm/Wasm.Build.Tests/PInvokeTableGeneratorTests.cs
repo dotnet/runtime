@@ -197,7 +197,7 @@ namespace Wasm.Build.Tests
             ProjectInfo info = CopyTestAsset(config, aot, BasicTestApp, "fnptr", extraProperties: extraProperties);
             ReplaceFile(Path.Combine("Common", "Program.cs"), Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "PInvoke", "FunctionPointers.cs"));
 
-            string output = PublishForVariadicFunctionTests(info, config, aot, isNativeBuild: false);
+            string output = PublishForVariadicFunctionTests(info, config, aot);
             Assert.DoesNotContain("warning WASM0001", output);
 
             RunResult result = await RunForPublishWithWebServer(new BrowserRunOptions(
@@ -216,7 +216,7 @@ namespace Wasm.Build.Tests
             string programRelativePath = Path.Combine("Common", "Program.cs");
             ReplaceFile(programRelativePath, Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "PInvoke", "FunctionPointers.cs"));
             UpdateFile(programRelativePath, new Dictionary<string, string> { { "[DllImport(\"someting\")]", "[UnmanagedCallersOnly]" } });
-            string output = PublishForVariadicFunctionTests(info, config, aot, isNativeBuild: false);
+            string output = PublishForVariadicFunctionTests(info, config, aot);
             Assert.DoesNotMatch("warning\\sWASM0001.*Skipping.*Test::SomeFunction1.*because.*function\\spointer", output);
         }
 
@@ -228,7 +228,7 @@ namespace Wasm.Build.Tests
             string programRelativePath = Path.Combine("Common", "Program.cs");
             ReplaceFile(programRelativePath, Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "PInvoke", "UnmanagedCallbackInFile.cs"));
 
-            string output = PublishForVariadicFunctionTests(info, config, aot, isNativeBuild: false);
+            string output = PublishForVariadicFunctionTests(info, config, aot);
             Assert.DoesNotMatch(".*(warning|error).*>[A-Z0-9]+__Foo", output);
 
             RunResult result = await RunForPublishWithWebServer(new BrowserRunOptions(
@@ -241,14 +241,13 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun()]
-        [ActiveIssue("RuntimeError: null function or function signature mismatch")]
         public async void UnmanagedCallersOnly_Namespaced(Configuration config, bool aot)
         {
             ProjectInfo info = CopyTestAsset(config, aot, BasicTestApp, "cb_namespace");
             string programRelativePath = Path.Combine("Common", "Program.cs");
             ReplaceFile(programRelativePath, Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "PInvoke", "UnmanagedCallbackNamespaced.cs"));
 
-            string output = PublishForVariadicFunctionTests(info, config, aot, isNativeBuild: false);
+            string output = PublishForVariadicFunctionTests(info, config, aot);
             Assert.DoesNotMatch(".*(warning|error).*>[A-Z0-9]+__Foo", output);
 
             RunResult result = await RunForPublishWithWebServer(new BrowserRunOptions(

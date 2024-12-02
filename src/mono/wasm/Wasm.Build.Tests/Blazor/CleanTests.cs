@@ -73,7 +73,7 @@ public class CleanTests : BlazorWasmTestBase
         BlazorBuild(info,
             config,
             new BuildOptions(UseCache: false, ExtraMSBuildArgs: relink ? "-p:WasmBuildNative=true" : string.Empty),
-            isNativeBuild: relink);
+            isNativeBuild: relink ? true : null);
 
         if (relink)
             Assert.True(Directory.Exists(relinkDir), $"Could not find expected relink dir: {relinkDir}");

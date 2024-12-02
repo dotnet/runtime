@@ -154,7 +154,7 @@ public abstract class IcuTestsBase : WasmTemplateTestsBase
             (string _, string buildOutput) = PublishProject(info,
                 config,
                 new PublishOptions(GlobalizationMode: globalizationMode, CustomIcuFile: icuFileName),
-                isNativeBuild: triggersNativeBuild);
+                isNativeBuild: triggersNativeBuild ? true : null);
 
             BrowserRunOptions runOptions = new(config, Locale: locale, ExpectedExitCode: 42);
             RunResult runOutput = await RunForPublishWithWebServer(runOptions);
