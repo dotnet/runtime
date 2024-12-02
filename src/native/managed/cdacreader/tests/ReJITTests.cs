@@ -44,7 +44,7 @@ public class ReJITTests
         Dictionary<ILCodeVersionHandle, TargetNUInt> expectedRejitIds = new()
         {
             // synthetic ILCodeVersionHandle
-            { new ILCodeVersionHandle(new TargetPointer(/* arbitrary */ 0x100), /* arbitrary */ 100, TargetPointer.Null), new TargetNUInt(0) },
+            { ILCodeVersionHandle.OfSynthetic(new TargetPointer(/* arbitrary */ 0x100), /* arbitrary */ 100), new TargetNUInt(0) },
             { mockRejit.AddExplicitILCodeVersion(new TargetNUInt(1), MockReJIT.RejitFlags.kStateActive), new TargetNUInt(1) },
             { mockRejit.AddExplicitILCodeVersion(new TargetNUInt(2), MockReJIT.RejitFlags.kStateRequested), new TargetNUInt(2) },
             { mockRejit.AddExplicitILCodeVersion(new TargetNUInt(3), MockReJIT.RejitFlags.kStateRequested), new TargetNUInt(3) }
@@ -73,7 +73,7 @@ public class ReJITTests
         Dictionary<ILCodeVersionHandle, RejitState> expectedRejitStates = new()
         {
             // synthetic ILCodeVersionHandle
-            { new ILCodeVersionHandle(new TargetPointer(/* arbitrary */ 0x100), /* arbitrary */ 100, TargetPointer.Null), RejitState.Active },
+            { ILCodeVersionHandle.OfSynthetic(new TargetPointer(/* arbitrary */ 0x100), /* arbitrary */ 100), RejitState.Active },
             { mockRejit.AddExplicitILCodeVersion(new TargetNUInt(1), MockReJIT.RejitFlags.kStateActive), RejitState.Active },
             { mockRejit.AddExplicitILCodeVersion(new TargetNUInt(2), MockReJIT.RejitFlags.kStateRequested), RejitState.Requested },
             { mockRejit.AddExplicitILCodeVersion(new TargetNUInt(3), MockReJIT.RejitFlags.kSuppressParams | MockReJIT.RejitFlags.kStateRequested), RejitState.Requested }
@@ -106,7 +106,7 @@ public class ReJITTests
         List<ILCodeVersionHandle> ilCodeVersionHandles =
         [
             // synthetic ILCodeVersionHandle
-            new ILCodeVersionHandle(new TargetPointer(/* arbitrary */ 0x100), /* arbitrary */ 100, TargetPointer.Null),
+            ILCodeVersionHandle.OfSynthetic(new TargetPointer(/* arbitrary */ 0x100), /* arbitrary */ 100),
             mockRejit.AddExplicitILCodeVersion(new TargetNUInt(1), MockReJIT.RejitFlags.kStateActive),
             mockRejit.AddExplicitILCodeVersion(new TargetNUInt(2), MockReJIT.RejitFlags.kStateRequested)
         ];

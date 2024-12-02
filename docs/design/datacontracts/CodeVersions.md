@@ -7,22 +7,8 @@ This contract encapsulates support for [code versioning](../features/code-versio
 ```csharp
 internal readonly struct ILCodeVersionHandle
 {
-    internal readonly TargetPointer Module;
-    internal readonly uint MethodDefinition;
-    internal readonly TargetPointer ILCodeVersionNode;
-    internal ILCodeVersionHandle(TargetPointer module, uint methodDef, TargetPointer ilCodeVersionNodeAddress)
-    {
-        if (module != TargetPointer.Null && ilCodeVersionNodeAddress != TargetPointer.Null)
-            throw new ArgumentException("Both MethodDesc and ILCodeVersionNode cannot be non-null");
-
-        if (module != TargetPointer.Null && methodDef == 0)
-            throw new ArgumentException("MethodDefinition must be non-zero if Module is non-null");
-
-        Module = module;
-        MethodDefinition = methodDef;
-        ILCodeVersionNode = ilCodeVersionNodeAddress;
-    }
     public static ILCodeVersionHandle Invalid => new ILCodeVersionHandle(TargetPointer.Null, 0, TargetPointer.Null);
+
     public bool IsValid => Module != TargetPointer.Null || ILCodeVersionNode != TargetPointer.Null;
 }
 ```
@@ -30,20 +16,8 @@ internal readonly struct ILCodeVersionHandle
 ```csharp
 internal struct NativeCodeVersionHandle
 {
-    // no public constructors
-    internal readonly TargetPointer MethodDescAddress;
-    internal readonly TargetPointer CodeVersionNodeAddress;
-    internal NativeCodeVersionHandle(TargetPointer methodDescAddress, TargetPointer codeVersionNodeAddress)
-    {
-        if (methodDescAddress != TargetPointer.Null && codeVersionNodeAddress != TargetPointer.Null)
-        {
-            throw new ArgumentException("Only one of methodDescAddress and codeVersionNodeAddress can be non-null");
-        }
-        MethodDescAddress = methodDescAddress;
-        CodeVersionNodeAddress = codeVersionNodeAddress;
-    }
-
     internal static NativeCodeVersionHandle Invalid => new(TargetPointer.Null, TargetPointer.Null);
+
     public bool Valid => MethodDescAddress != TargetPointer.Null || CodeVersionNodeAddress != TargetPointer.Null;
 }
 ```
@@ -195,7 +169,7 @@ NativeCodeVersionHandle ICodeVersions.GetNativeCodeVersionForIP(TargetCodePointe
     MethodDescHandle md = rts.GetMethodDescHandle(methodDescAddress);
     if (!rts.IsVersionable(md))
     {
-        return new NativeCodeVersionHandle(methodDescAddress, codeVersionNodeAddress: TargetPointer.Null);
+        return NativeCodeVersion.OfSynthetic(methodDescAddress);
     }
     else
     {
@@ -210,7 +184,7 @@ NativeCodeVersionHandle GetSpecificNativeCodeVersion(MethodDescHandle md, Target
     TargetCodePointer firstNativeCode = rts.GetNativeCode(md);
     if (firstNativeCode == startAddress)
     {
-        NativeCodeVersionHandle first = new NativeCodeVersionHandle(md.Address, TargetPointer.Null);
+        NativeCodeVersionHandle first = NativeCodeVersionHandle.OfSynthetic(md.Address);
         return first;
     }
 
@@ -236,7 +210,7 @@ NativeCodeVersionHandle FindFirstCodeVersion(IRuntimeTypeSystem rts, MethodDescH
         Data.NativeCodeVersionNode current = _target.ProcessedData.GetOrAdd<Data.NativeCodeVersionNode>(currentAddress);
         if (predicate(current))
         {
-            return new NativeCodeVersionHandle(methodDescAddress: TargetPointer.Null, currentAddress);
+            return NativeCodeVersionHandle.OfExplicit(currentAddress);
         }
         currentAddress = current.Next;
     }

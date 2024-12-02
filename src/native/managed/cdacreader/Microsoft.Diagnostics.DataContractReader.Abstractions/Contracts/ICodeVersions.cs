@@ -30,7 +30,7 @@ internal readonly struct ILCodeVersionHandle
     internal readonly TargetPointer Module;
     internal readonly uint MethodDefinition;
     internal readonly TargetPointer ILCodeVersionNode;
-    internal ILCodeVersionHandle(TargetPointer module, uint methodDef, TargetPointer ilCodeVersionNodeAddress)
+    private ILCodeVersionHandle(TargetPointer module, uint methodDef, TargetPointer ilCodeVersionNodeAddress)
     {
         if (module != TargetPointer.Null && ilCodeVersionNodeAddress != TargetPointer.Null)
             throw new ArgumentException("Both MethodDesc and ILCodeVersionNode cannot be non-null");
@@ -38,12 +38,25 @@ internal readonly struct ILCodeVersionHandle
         if (module != TargetPointer.Null && methodDef == 0)
             throw new ArgumentException("MethodDefinition must be non-zero if Module is non-null");
 
+        if (module == TargetPointer.Null && methodDef != 0)
+            throw new ArgumentException("MethodDefinition must be zero if Module is null");
+
         Module = module;
         MethodDefinition = methodDef;
         ILCodeVersionNode = ilCodeVersionNodeAddress;
     }
+
+    // for more information on Explicit/Synthetic code versions see docs/design/features/code-versioning.md
+    internal static ILCodeVersionHandle OfExplicit(TargetPointer ilCodeVersionNodeAddress) =>
+        new ILCodeVersionHandle(TargetPointer.Null, 0, ilCodeVersionNodeAddress);
+    internal static ILCodeVersionHandle OfSynthetic(TargetPointer module, uint methodDef) =>
+        new ILCodeVersionHandle(module, methodDef, TargetPointer.Null);
+
     public static ILCodeVersionHandle Invalid => new ILCodeVersionHandle(TargetPointer.Null, 0, TargetPointer.Null);
+
     public bool IsValid => Module != TargetPointer.Null || ILCodeVersionNode != TargetPointer.Null;
+
+    internal bool IsExplicit => ILCodeVersionNode != TargetPointer.Null;
 }
 
 internal readonly struct NativeCodeVersionHandle
@@ -51,7 +64,7 @@ internal readonly struct NativeCodeVersionHandle
     // no public constructors
     internal readonly TargetPointer MethodDescAddress;
     internal readonly TargetPointer CodeVersionNodeAddress;
-    internal NativeCodeVersionHandle(TargetPointer methodDescAddress, TargetPointer codeVersionNodeAddress)
+    private NativeCodeVersionHandle(TargetPointer methodDescAddress, TargetPointer codeVersionNodeAddress)
     {
         if (methodDescAddress != TargetPointer.Null && codeVersionNodeAddress != TargetPointer.Null)
         {
@@ -61,9 +74,17 @@ internal readonly struct NativeCodeVersionHandle
         CodeVersionNodeAddress = codeVersionNodeAddress;
     }
 
-    internal static NativeCodeVersionHandle Invalid => new(TargetPointer.Null, TargetPointer.Null);
+    // for more information on Explicit/Synthetic code versions see docs/design/features/code-versioning.md
+    internal static NativeCodeVersionHandle OfExplicit(TargetPointer codeVersionNodeAddress) =>
+        new NativeCodeVersionHandle(TargetPointer.Null, codeVersionNodeAddress);
+    internal static NativeCodeVersionHandle OfSynthetic(TargetPointer methodDescAddress) =>
+        new NativeCodeVersionHandle(methodDescAddress, TargetPointer.Null);
+
+    public static NativeCodeVersionHandle Invalid => new(TargetPointer.Null, TargetPointer.Null);
+
     public bool Valid => MethodDescAddress != TargetPointer.Null || CodeVersionNodeAddress != TargetPointer.Null;
 
+    internal bool IsExplicit => CodeVersionNodeAddress != TargetPointer.Null;
 }
 
 internal readonly struct CodeVersions : ICodeVersions
