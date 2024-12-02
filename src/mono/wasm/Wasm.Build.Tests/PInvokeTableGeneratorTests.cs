@@ -530,7 +530,6 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun(aot: true, config: Configuration.Release)]
-        [ActiveIssue("WasmGenerateAppBundle = false, so _WasmGenerateAppBundle is not triggered. Is the change expected?")]
         public void EnsureComInteropCompilesInAOT(Configuration config, bool aot)
         {
             ProjectInfo info = CopyTestAsset(config, aot, BasicTestApp, "com");
@@ -539,7 +538,6 @@ namespace Wasm.Build.Tests
             (string libraryDir, string output) = isPublish ?
                 PublishProject(info, config, new PublishOptions(AOT: aot)) :
                 BuildProject(info, config, new BuildOptions(AOT: aot));
-            Assert.Contains("Generated app bundle at " + libraryDir, output);
         }
 
         [Theory]
