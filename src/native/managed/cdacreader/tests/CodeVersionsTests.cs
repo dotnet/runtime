@@ -566,8 +566,8 @@ public class CodeVersionsTests
             Module = module,
         };
 
-        (TargetPointer firstNode, TargetPointer activeSyntheticNativeNode) = builder.AddNativeCodeVersionNodesForMethod(methodDescAddress, 2, 1, expectedSyntheticCodePointer, new TargetNUInt(0));
-        (firstNode, TargetPointer activeExplicitNativeNode) = builder.AddNativeCodeVersionNodesForMethod(methodDescAddress, 2, 1, expectedExplicitCodePointer, ilVersionId, firstNode);
+        (TargetPointer firstNode, _) = builder.AddNativeCodeVersionNodesForMethod(methodDescAddress, 2, 1, expectedSyntheticCodePointer, new TargetNUInt(0));
+        (firstNode, _) = builder.AddNativeCodeVersionNodesForMethod(methodDescAddress, 2, 1, expectedExplicitCodePointer, ilVersionId, firstNode);
 
         TargetPointer methodDescVersioningStateAddress = builder.AddMethodDescVersioningState(nativeCodeVersionNode: firstNode, isDefaultVersionActive: false);
 
@@ -630,8 +630,8 @@ public class CodeVersionsTests
             Module = module,
         };
 
-        (TargetPointer firstNode, TargetPointer activeSyntheticNativeNode) = builder.AddNativeCodeVersionNodesForMethod(methodDescAddress, 2, 1, expectedSyntheticCodePointer, new TargetNUInt(0));
-        (firstNode, TargetPointer activeExplicitNativeNode) = builder.AddNativeCodeVersionNodesForMethod(methodDescAddress, 2, 1, expectedExplicitCodePointer, ilVersionId, firstNode);
+        (TargetPointer firstNode, _) = builder.AddNativeCodeVersionNodesForMethod(methodDescAddress, 2, 1, expectedSyntheticCodePointer, new TargetNUInt(0));
+        (firstNode, _) = builder.AddNativeCodeVersionNodesForMethod(methodDescAddress, 2, 1, expectedExplicitCodePointer, ilVersionId, firstNode);
 
         TargetPointer methodDescVersioningStateAddress = builder.AddMethodDescVersioningState(nativeCodeVersionNode: firstNode, isDefaultVersionActive: false);
 
