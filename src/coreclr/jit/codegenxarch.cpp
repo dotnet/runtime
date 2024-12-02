@@ -9064,7 +9064,7 @@ void CodeGen::genAmd64EmitterUnitTestsApx()
     genDefineTempLabel(genCreateTempLabel());
 
     // This test suite needs REX2 enabled.
-    // assert(theEmitter->UseRex2Encoding() || theEmitter->emitComp->DoJitStressRex2Encoding());
+    assert(theEmitter->UseRex2Encoding() || theEmitter->emitComp->DoJitStressRex2Encoding());
 
     theEmitter->emitIns_R_R(INS_add, EA_1BYTE, REG_EAX, REG_ECX);
     theEmitter->emitIns_R_R(INS_add, EA_2BYTE, REG_EAX, REG_ECX);
@@ -9206,7 +9206,7 @@ void CodeGen::genAmd64EmitterUnitTestsApx()
     theEmitter->emitIns_R(INS_mulEAX, EA_8BYTE, REG_EDX);
 
     // Note:
-    // All the tests below rely on the runtime status of the stack this unit tests attaching to, 
+    // All the tests below rely on the runtime status of the stack this unit tests attaching to,
     // it might fail due to stack value unavailable/mismatch, since these tests are mainly for
     // encoding correctness check, this kind of failures may be considered as not harmful.
 
