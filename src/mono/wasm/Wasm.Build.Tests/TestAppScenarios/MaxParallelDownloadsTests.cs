@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.Linq;
 using System.Threading.Tasks;
 using Xunit.Abstractions;
@@ -30,7 +31,7 @@ public class MaxParallelDownloadsTests : WasmTemplateTestsBase
         RunResult result = await RunForBuildWithDotnetRun(new BrowserRunOptions(
             config,
             TestScenario: "MaxParallelDownloads",
-            BrowserQueryString: new Dictionary<string, string> { ["maxParallelDownloads"] = maxParallelDownloads }
+            BrowserQueryString: new NameValueCollection { {"maxParallelDownloads", maxParallelDownloads } }
         ));
 
         var resultTestOutput = result.TestOutput.ToList();

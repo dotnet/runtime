@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -32,7 +33,7 @@ public class ModuleConfigTests : WasmTemplateTestsBase
         var result = await RunForPublishWithWebServer(new BrowserRunOptions(
             Configuration: config,
             TestScenario: "DownloadResourceProgressTest",
-            BrowserQueryString: new Dictionary<string, string> { ["failAssemblyDownload"] = failAssemblyDownload.ToString().ToLowerInvariant() }
+            BrowserQueryString: new NameValueCollection { {"failAssemblyDownload", failAssemblyDownload.ToString().ToLowerInvariant() } }
         ));
         Assert.True(
             result.TestOutput.Any(m => m.Contains("DownloadResourceProgress: Finished")),

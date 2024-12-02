@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -22,9 +23,7 @@ namespace Wasm.Build.Tests
 
         public static IEnumerable<object?[]> MainWithArgsTestData(bool aot)
             => ConfigWithAOTData(aot).Multiply(
-                        // ToDo:
-                        // ActiveIssue - passing args to the program does not work, possible error in the test logic
-                        // new object?[] { new object?[] { "abc", "foobar"} },
+                        new object?[] { new object?[] { "abc", "foobar"} },
                         new object?[] { new object?[0] })
                 .Where(item => !(item.ElementAt(0) is Configuration config && config == Configuration.Debug && item.ElementAt(1) is bool aotValue && aotValue))
                 .UnwrapItemsAsArrays();
@@ -36,7 +35,6 @@ namespace Wasm.Build.Tests
             => await TestMainWithArgs(config, aot, "async_main_with_args", "AsyncMainWithArgs.cs", args);
 
         [Theory]
-        [ActiveIssue("ToDo: passing args to the program does not work, possible error in the test logic")]
         [MemberData(nameof(MainWithArgsTestData), parameters: new object[] { /*aot*/ false })]
         [MemberData(nameof(MainWithArgsTestData), parameters: new object[] { /*aot*/ true })]
         public async Task NonAsyncMainWithArgs(Configuration config, bool aot, string[] args)
@@ -51,14 +49,15 @@ namespace Wasm.Build.Tests
             ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBasicTestApp, projectNamePrefix);
             ReplaceFile(Path.Combine("Common", "Program.cs"), Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", projectContentsName));
 
-            string argsStr = string.Join(" ", args);
-            _testOutput.WriteLine ($"-- args: {argsStr}, name: {projectContentsName}");
+            var queryArgs = new NameValueCollection();
+            foreach (var arg in args)
+                queryArgs.Add("arg", arg);
             PublishProject(info, config, new PublishOptions(AOT: aot));
 
             int argsCount = args.Length;
             int expectedCode = 42 + argsCount;
             RunResult output = await RunForPublishWithWebServer(
-                new BrowserRunOptions(config, TestScenario: "DotnetRun", ExtraArgs: argsStr, ExpectedExitCode: expectedCode));
+                new BrowserRunOptions(config, TestScenario: "MainWithArgs", BrowserQueryString: queryArgs, ExpectedExitCode: expectedCode));
             Assert.Contains(output.TestOutput, m => m.Contains($"args#: {argsCount}"));
             foreach (var arg in args)
                 Assert.Contains(output.TestOutput, m => m.Contains($"arg: {arg}"));

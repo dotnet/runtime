@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.Threading.Tasks;
 using Microsoft.Playwright;
 
@@ -16,7 +17,7 @@ public abstract record RunOptions
     bool DetectRuntimeFailures = true,
     
     Dictionary<string, string>? ServerEnvironment = null,
-    Dictionary<string, string>? BrowserQueryString = null,
+    NameValueCollection? BrowserQueryString = null,
     Action<string, string>? OnConsoleMessage = null,
     Action<string>? OnServerMessage = null,
     Action<string>? OnErrorMessage = null,

@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -31,7 +32,7 @@ public class AppSettingsTests : WasmTemplateTestsBase
         BrowserRunOptions options = new(
             config,
             TestScenario: "AppSettingsTest",
-            BrowserQueryString: new Dictionary<string, string> { ["applicationEnvironment"] = applicationEnvironment }
+            BrowserQueryString: new NameValueCollection { { "applicationEnvironment", applicationEnvironment } }
         );
         RunResult result = await RunForPublishWithWebServer(options);
         Assert.Contains(result.TestOutput, m => m.Contains("'/appsettings.json' exists 'True'"));

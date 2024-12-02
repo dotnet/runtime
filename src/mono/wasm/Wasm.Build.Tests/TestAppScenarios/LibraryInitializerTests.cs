@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -49,7 +50,7 @@ public partial class LibraryInitializerTests : WasmTemplateTestsBase
         BrowserRunOptions options = new(
             config,
             TestScenario: "LibraryInitializerTest",
-            BrowserQueryString: new Dictionary<string, string> { ["throwError"] = "true" },
+            BrowserQueryString: new NameValueCollection { {"throwError", "true" } },
             ExpectedExitCode: 1);
         RunResult result = await RunForPublishWithWebServer(options);
         Assert.True(result.ConsoleOutput.Any(m => AbortStartupOnErrorRegex().IsMatch(m)), "The library initializer test didn't emit expected error message");

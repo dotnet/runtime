@@ -5,6 +5,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using Wasm.Build.Tests.TestAppScenarios;
 using Xunit.Abstractions;
 using Xunit;
@@ -29,7 +30,10 @@ public class SignalRTestsBase : WasmTemplateTestsBase
             Configuration: config,
             ServerEnvironment: new Dictionary<string, string> { ["ASPNETCORE_ENVIRONMENT"] = "Development" },
             BrowserPath: staticWebAssetBasePath,
-            BrowserQueryString: new Dictionary<string, string> { ["transport"] = transport, ["message"] = "ping" } ));
+            BrowserQueryString: new NameValueCollection {
+                { "transport", transport},
+                { "message", "ping" }
+            }));
 
         string testOutput = string.Join("\n", result.TestOutput) ?? "";
         Assert.NotEmpty(testOutput);

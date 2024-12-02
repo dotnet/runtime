@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -269,10 +270,12 @@ public class WasmTemplateTestsBase : BuildTestBase
         using RunCommand runCommand = new RunCommand(s_buildEnv, _testOutput);
         ToolCommand cmd = runCommand.WithWorkingDirectory(workingDirectory);
 
-        var query = runOptions.BrowserQueryString ?? new Dictionary<string, string>();
+        var query = runOptions.BrowserQueryString ?? new NameValueCollection();
         if (runOptions is BrowserRunOptions browserOp && !string.IsNullOrEmpty(browserOp.TestScenario))
             query.Add("test", browserOp.TestScenario);
-        var queryString = query.Any() ? "?" + string.Join("&", query.Select(kvp => $"{kvp.Key}={kvp.Value}")) : "";
+        var queryString = query.Count > 0 && query.AllKeys != null
+            ? "?" + string.Join("&", query.AllKeys.SelectMany(key => query.GetValues(key)?.Select(value => $"{key}={value}") ?? Enumerable.Empty<string>()))
+            : "";
 
         List<string> testOutput = new();
         List<string> consoleOutput = new();

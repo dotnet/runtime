@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -41,7 +42,7 @@ public class LazyLoadingTests : WasmTemplateTestsBase
             RunResult result = await RunForBuildWithDotnetRun(new BrowserRunOptions(
                 config,
                 TestScenario: "LazyLoadingTest",
-                BrowserQueryString: new Dictionary<string, string> { ["lazyLoadingTestExtension"] = clientLazyLoadingTestExtension }
+                BrowserQueryString: new NameValueCollection { {"lazyLoadingTestExtension", clientLazyLoadingTestExtension } }
             ));
 
             Assert.True(result.TestOutput.Any(m => m.Contains("FirstName")), "The lazy loading test didn't emit expected message with JSON");
@@ -59,7 +60,7 @@ public class LazyLoadingTests : WasmTemplateTestsBase
         BrowserRunOptions options = new(
             config,
             TestScenario: "LazyLoadingTest",
-            BrowserQueryString: new Dictionary<string, string> { ["loadRequiredAssembly"] = "false" },
+            BrowserQueryString: new NameValueCollection { {"loadRequiredAssembly", "false" } },
             ExpectedExitCode: 1);
         RunResult result = await RunForPublishWithWebServer(options);
         Assert.True(result.ConsoleOutput.Any(m => m.Contains("Could not load file or assembly") && m.Contains("Json")), "The lazy loading test didn't emit expected error message");

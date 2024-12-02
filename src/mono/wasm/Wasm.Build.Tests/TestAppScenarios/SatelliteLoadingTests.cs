@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -36,7 +37,7 @@ public class SatelliteLoadingTests : WasmTemplateTestsBase
         var result = await RunForBuildWithDotnetRun(new BrowserRunOptions(
             Configuration: config, 
             TestScenario: "SatelliteAssembliesTest",
-            BrowserQueryString: new Dictionary<string, string> { ["loadAllSatelliteResources"] = loadAllSatelliteResources.ToString().ToLowerInvariant() }
+            BrowserQueryString: new NameValueCollection { {"loadAllSatelliteResources", loadAllSatelliteResources.ToString().ToLowerInvariant() } }
         ));
 
         var expectedOutput = new List<Action<string>>();
