@@ -5959,18 +5959,108 @@ bool FlowGraphNaturalLoop::HasDef(unsigned lclNum)
 // CanDuplicate: Check if this loop can be duplicated.
 //
 // Parameters:
-//   allowEH - enable cloning if loop contains EH
+//   reason - If this function returns false, the reason why.
+//
+// Returns:
+//   True if the loop can be duplicated.
+//
+// Remarks:
+//   Does not support duplicating loops with EH constructs in them.
+//   (see CanDuplicateWithEH)
+//
+bool FlowGraphNaturalLoop::CanDuplicate(INDEBUG(const char** reason))
+{
+#ifdef DEBUG
+    const char* localReason;
+    if (reason == nullptr)
+    {
+        reason = &localReason;
+    }
+#endif
+
+    Compiler*       comp   = m_dfsTree->GetCompiler();
+    BasicBlockVisit result = VisitLoopBlocks([=](BasicBlock* block) {
+        if (!BasicBlock::sameEHRegion(block, GetHeader()))
+        {
+            INDEBUG(*reason = "Loop not entirely within one EH region");
+            return BasicBlockVisit::Abort;
+        }
+
+        return BasicBlockVisit::Continue;
+    });
+
+    return result != BasicBlockVisit::Abort;
+}
+
+//------------------------------------------------------------------------
+// Duplicate: Duplicate the blocks of this loop, inserting them after `insertAfter`.
+//
+// Parameters:
+//   insertAfter            - [in, out] Block to insert duplicated blocks after; updated to last block inserted.
+//   map                    - A map that will have mappings from loop blocks to duplicated blocks added to it.
+//   weightScale            - Factor to scale weight of new blocks by
+//
+void FlowGraphNaturalLoop::Duplicate(BasicBlock** insertAfter, BlockToBlockMap* map, weight_t weightScale)
+{
+    assert(CanDuplicate(nullptr));
+
+    Compiler* comp = m_dfsTree->GetCompiler();
+
+    BasicBlock* bottom = GetLexicallyBottomMostBlock();
+
+    VisitLoopBlocksLexical([=](BasicBlock* blk) {
+        // Initialize newBlk as BBJ_ALWAYS without jump target, and fix up jump target later
+        // with BasicBlock::CopyTarget().
+        BasicBlock* newBlk = comp->fgNewBBafter(BBJ_ALWAYS, *insertAfter, /*extendRegion*/ true);
+        JITDUMP("Adding " FMT_BB " (copy of " FMT_BB ") after " FMT_BB "\n", newBlk->bbNum, blk->bbNum,
+                (*insertAfter)->bbNum);
+
+        BasicBlock::CloneBlockState(comp, newBlk, blk);
+
+        // We're going to create the preds below, which will set the bbRefs properly,
+        // so clear out the cloned bbRefs field.
+        newBlk->bbRefs = 0;
+
+        newBlk->scaleBBWeight(weightScale);
+
+        *insertAfter = newBlk;
+        map->Set(blk, newBlk, BlockToBlockMap::Overwrite);
+
+        return BasicBlockVisit::Continue;
+    });
+
+    // Now go through the new blocks, remapping their jump targets within the loop
+    // and updating the preds lists.
+    VisitLoopBlocks([=](BasicBlock* blk) {
+        BasicBlock* newBlk = nullptr;
+        bool        b      = map->Lookup(blk, &newBlk);
+        assert(b && newBlk != nullptr);
+
+        // Jump target should not be set yet
+        assert(!newBlk->HasInitializedTarget());
+
+        // Redirect the new block according to "blockMap".
+        // optSetMappedBlockTargets will set newBlk's successors, and add pred edges for the successors.
+        comp->optSetMappedBlockTargets(blk, newBlk, map);
+
+        return BasicBlockVisit::Continue;
+    });
+}
+
+//------------------------------------------------------------------------
+// CanDuplicateWithEH: Check if this loop (possibly containing try entries)
+//   can be duplicated.
+//
+// Parameters:
 //   reason - If this function returns false, the reason why.
 //
 // Returns:
 //   True if the loop can be duplicated.
 //
 // Notes:
-//   If allowEH is true, CanDuplicate will return true if the loop contains try entries,
-//   and a subsequent Duplicate() call will duplicate the loop and any other blocks needed
-//   to properly clone the EH.
+//   Extends CanDuplicate to cover loops with try region entries.
 //
-bool FlowGraphNaturalLoop::CanDuplicate(bool allowEH DEBUGARG(const char** reason))
+bool FlowGraphNaturalLoop::CanDuplicateWithEH(INDEBUG(const char** reason))
 {
 #ifdef DEBUG
     const char* localReason;
@@ -5992,12 +6082,6 @@ bool FlowGraphNaturalLoop::CanDuplicate(bool allowEH DEBUGARG(const char** reaso
         if (inSameRegionAsHeader)
         {
             return BasicBlockVisit::Continue;
-        }
-
-        if (!allowEH)
-        {
-            INDEBUG(*reason = "Loop not entirely within one EH region");
-            return BasicBlockVisit::Abort;
         }
 
         if (comp->bbIsTryBeg(block))
@@ -6026,9 +6110,7 @@ bool FlowGraphNaturalLoop::CanDuplicate(bool allowEH DEBUGARG(const char** reaso
     const unsigned numberOfTryRegions = tryRegionsToClone.Height();
     if ((result != BasicBlockVisit::Abort) && (numberOfTryRegions > 0))
     {
-        assert(allowEH);
-
-        // Possibly limit to just 1 region...?
+        // Possibly limit to just 1 region.
         //
         JITDUMP(FMT_LP " contains %u top-level try region%s\n", GetIndex(), numberOfTryRegions,
                 numberOfTryRegions > 1 ? "s" : "");
@@ -6051,17 +6133,20 @@ bool FlowGraphNaturalLoop::CanDuplicate(bool allowEH DEBUGARG(const char** reaso
 }
 
 //------------------------------------------------------------------------
-// Duplicate: Duplicate the blocks of this loop, inserting them after `insertAfter`.
+// DuplicateWithEH: Duplicate the blocks of this loop, inserting them after `insertAfter`,
+//    and also fully clone any try regions
 //
 // Parameters:
 //   insertAfter            - [in, out] Block to insert duplicated blocks after; updated to last block inserted.
 //   map                    - A map that will have mappings from loop blocks to duplicated blocks added to it.
 //   weightScale            - Factor to scale weight of new blocks by
-//   allowEH                - Allow cloning loops that contain try region entries
 //
-void FlowGraphNaturalLoop::Duplicate(BasicBlock** insertAfter, BlockToBlockMap* map, weight_t weightScale, bool allowEH)
+// Notes:
+//   Extends uplicate to cover loops with try region entries.
+//
+void FlowGraphNaturalLoop::DuplicateWithEH(BasicBlock** insertAfter, BlockToBlockMap* map, weight_t weightScale)
 {
-    assert(CanDuplicate(allowEH, nullptr));
+    assert(CanDuplicateWithEH(nullptr));
 
     Compiler* const   comp           = m_dfsTree->GetCompiler();
     bool              clonedTry      = false;
@@ -6135,35 +6220,31 @@ void FlowGraphNaturalLoop::Duplicate(BasicBlock** insertAfter, BlockToBlockMap* 
     BitVec       visited(BitVecOps::MakeEmpty(&traits));
 
     VisitLoopBlocksLexical([=, &traits, &visited, &clonedTry, &ehIndexShift](BasicBlock* blk) {
-        if (allowEH)
+        // Try cloning may have already handled this block
+        //
+        if (BitVecOps::IsMember(&traits, visited, blk->bbNum))
         {
-            // If we allow cloning loops with EH, we may have already handled
-            // this loop block as part of a containing try region.
-            //
-            if (BitVecOps::IsMember(&traits, visited, blk->bbNum))
-            {
-                return BasicBlockVisit::Continue;
-            }
+            return BasicBlockVisit::Continue;
+        }
 
-            // If this is a try region entry, clone the entire region now.
-            // Defer adding edges and extending EH regions until later.
-            //
-            // Updates map, visited, and insertAfter.
-            //
-            if (comp->bbIsTryBeg(blk))
-            {
-                Compiler::CloneTryInfo info(traits, visited);
-                info.Map          = map;
-                info.AddEdges     = false;
-                info.ProfileScale = weightScale;
+        // If this is a try region entry, clone the entire region now.
+        // Defer adding edges and extending EH regions until later.
+        //
+        // Updates map, visited, and insertAfter.
+        //
+        if (comp->bbIsTryBeg(blk))
+        {
+            Compiler::CloneTryInfo info(traits, visited);
+            info.Map          = map;
+            info.AddEdges     = false;
+            info.ProfileScale = weightScale;
 
-                BasicBlock* const clonedBlock = comp->fgCloneTryRegion(blk, info, insertAfter);
+            BasicBlock* const clonedBlock = comp->fgCloneTryRegion(blk, info, insertAfter);
 
-                assert(clonedBlock != nullptr);
-                ehIndexShift += info.EHIndexShift;
-                clonedTry = true;
-                return BasicBlockVisit::Continue;
-            }
+            assert(clonedBlock != nullptr);
+            ehIndexShift += info.EHIndexShift;
+            clonedTry = true;
+            return BasicBlockVisit::Continue;
         }
         else
         {

@@ -2232,8 +2232,10 @@ public:
 
     bool HasDef(unsigned lclNum);
 
-    bool CanDuplicate(bool allowEH DEBUGARG(const char** reason));
-    void Duplicate(BasicBlock** insertAfter, BlockToBlockMap* map, weight_t weightScale, bool allowEH);
+    bool CanDuplicate(INDEBUG(const char** reason));
+    bool CanDuplicateWithEH(INDEBUG(const char** reason));
+    void Duplicate(BasicBlock** insertAfter, BlockToBlockMap* map, weight_t weightScale);
+    void DuplicateWithEH(BasicBlock** insertAfter, BlockToBlockMap* map, weight_t weightScale);
 
     bool MayExecuteBlockMultipleTimesPerIteration(BasicBlock* block);
 

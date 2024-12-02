@@ -1892,7 +1892,15 @@ bool Compiler::optIsLoopClonable(FlowGraphNaturalLoop* loop, LoopCloneContext* c
     INDEBUG(cloneLoopsWithEH = (JitConfig.JitCloneLoopsWithEH() > 0);)
     INDEBUG(const char* reason);
 
-    if (!loop->CanDuplicate(cloneLoopsWithEH DEBUGARG(&reason)))
+    if (cloneLoopsWithEH)
+    {
+        if (!loop->CanDuplicateWithEH(INDEBUG(&reason)))
+        {
+            JITDUMP("Loop cloning: rejecting loop " FMT_LP ": %s\n", loop->GetIndex(), reason);
+            return false;
+        }
+    }
+    else if (!loop->CanDuplicate(INDEBUG(&reason)))
     {
         JITDUMP("Loop cloning: rejecting loop " FMT_LP ": %s\n", loop->GetIndex(), reason);
         return false;
@@ -2143,7 +2151,14 @@ void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* contex
 
     BlockToBlockMap* blockMap = new (getAllocator(CMK_LoopClone)) BlockToBlockMap(getAllocator(CMK_LoopClone));
 
-    loop->Duplicate(&newPred, blockMap, LoopCloneContext::slowPathWeightScaleFactor, cloneLoopsWithEH);
+    if (cloneLoopsWithEH)
+    {
+        loop->DuplicateWithEH(&newPred, blockMap, LoopCloneContext::slowPathWeightScaleFactor);
+    }
+    else
+    {
+        loop->Duplicate(&newPred, blockMap, LoopCloneContext::slowPathWeightScaleFactor);
+    }
 
     // Scale old blocks to the fast path weight.
     loop->VisitLoopBlocks([=](BasicBlock* block) {
