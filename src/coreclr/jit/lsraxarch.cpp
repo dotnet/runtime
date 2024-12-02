@@ -2144,7 +2144,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
         // is not allocated the same register as the target.
         bool isRMW = intrinsicTree->isRMWHWIntrinsic(compiler);
 #if defined(TARGET_AMD64)
-        bool isEvexCompatible = intrinsicTree->isEvexCompatibleHWIntrinsic();
+        bool isEvexCompatible = intrinsicTree->isEvexCompatibleHWIntrinsic(compiler);
 #endif // TARGET_AMD64
 
         // Create internal temps, and handle any other special requirements.
@@ -2793,7 +2793,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
     if (dstCount == 1)
     {
 #if defined(TARGET_AMD64)
-        bool isEvexCompatible = intrinsicTree->isEvexCompatibleHWIntrinsic();
+        bool isEvexCompatible = intrinsicTree->isEvexCompatibleHWIntrinsic(compiler);
 
         if (!isEvexCompatible)
         {

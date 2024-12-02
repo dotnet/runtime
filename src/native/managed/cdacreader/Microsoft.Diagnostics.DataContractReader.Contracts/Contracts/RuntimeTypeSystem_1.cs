@@ -1023,21 +1023,6 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         return methodDescPointer.Value + offset;
     }
 
-    private TargetCodePointer CodePointerFromAddress(TargetPointer address)
-    {
-        IPlatformMetadata metadata = _target.Contracts.PlatformMetadata;
-        CodePointerFlags flags = metadata.GetCodePointerFlags();
-        if (flags.HasFlag(CodePointerFlags.HasArm32ThumbBit))
-        {
-            return new TargetCodePointer(address.Value | 1);
-        } else if (flags.HasFlag(CodePointerFlags.HasArm64PtrAuth))
-        {
-            throw new NotImplementedException("CodePointerFromAddress: ARM64 with pointer authentication");
-        }
-        Debug.Assert(flags == default);
-        return new TargetCodePointer(address.Value);
-    }
-
     TargetCodePointer IRuntimeTypeSystem.GetNativeCode(MethodDescHandle methodDescHandle)
     {
         MethodDesc md = _methodDescs[methodDescHandle.Address];
@@ -1049,7 +1034,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
             // This means that *ppCode is not stable. It can turn from non-zero to zero.
             TargetPointer ppCode = ((IRuntimeTypeSystem)this).GetAddressOfNativeCodeSlot(methodDescHandle);
             TargetCodePointer pCode = _target.ReadCodePointer(ppCode);
-            return CodePointerFromAddress(pCode.AsTargetPointer);;
+            return CodePointerUtils.CodePointerFromAddress(pCode.AsTargetPointer, _target);
         }
 
         if (!md.HasStableEntryPoint || md.HasPrecode)

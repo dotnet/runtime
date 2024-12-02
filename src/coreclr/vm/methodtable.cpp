@@ -134,7 +134,7 @@ class MethodDataCache
     UINT32 m_iLastTouched;
 
 #ifdef HOST_64BIT
-    UINT32 pad;      // insures that we are a multiple of 8-bytes
+    UINT32 pad;      // ensures that we are a multiple of 8-bytes
 #endif
 };  // class MethodDataCache
 

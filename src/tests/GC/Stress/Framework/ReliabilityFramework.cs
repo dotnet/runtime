@@ -157,9 +157,17 @@ public class ReliabilityFramework
         string configFile = null;
         bool okToContinue = true, doReplay = false;
         string sTests = "tests", sSeed = "seed", exectime = "maximumExecutionTime";
+        StringBuilder sb = new StringBuilder();
 
         ReliabilityFramework rf = new ReliabilityFramework();
         rf._logger.WriteToInstrumentationLog(null, LoggingLevels.StartupShutdown, "Started");
+        var configVars = GC.GetConfigurationVariables();
+        foreach (var kvp in configVars)
+        {
+            sb.AppendLine($"{kvp.Key}: {kvp.Value}");
+        }
+        rf._logger.WriteToInstrumentationLog(null, LoggingLevels.StartupShutdown, $"GC Configuration Variables:\n{sb}");
+
         foreach (string arg in args)
         {
             rf._logger.WriteToInstrumentationLog(null, LoggingLevels.StartupShutdown, String.Format("Argument: {0}", arg));
@@ -798,7 +806,7 @@ public class ReliabilityFramework
                 else
                 {
                     Thread.Sleep(250);	// give the CPU a bit of a rest if we don't need to start a new test.
-                    if (DateTime.Now.Subtract(_startTime) > minTimeToStartTest)
+                    if (_curTestSet.DebugBreakOnMissingTest && DateTime.Now.Subtract(_startTime) > minTimeToStartTest)
                     {
                         MissingTestException e = new MissingTestException("New tests not starting");
                         ExceptionHandler exceptionHandler = GenerateExceptionMessageAndHandler(_curTestSet.DebugBreakOnMissingTest, e);

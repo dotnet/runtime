@@ -6,6 +6,7 @@
 
 #include "StackFrameIterator.h"
 #include "slist.h" // DefaultSListTraits
+#include <minipal/xoshiro128pp.h>
 
 struct gc_alloc_context;
 class RuntimeInstance;
@@ -113,7 +114,19 @@ struct ee_alloc_context
 
     gc_alloc_context* GetGCAllocContext();
     uint8_t* GetCombinedLimit();
-    void UpdateCombinedLimit();
+    void UpdateCombinedLimit(bool samplingEnabled);
+    static bool IsRandomizedSamplingEnabled();
+    static uint32_t ComputeGeometricRandom();
+
+    struct PerThreadRandom
+    {
+        minipal_xoshiro128pp random_state;
+
+        PerThreadRandom();
+        double NextDouble();
+    };
+
+    static thread_local PerThreadRandom t_random;
 };
 
 

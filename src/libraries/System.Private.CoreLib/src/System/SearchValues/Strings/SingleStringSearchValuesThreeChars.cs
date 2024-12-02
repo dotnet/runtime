@@ -35,9 +35,13 @@ namespace System.Buffers
         // With case-sensitive comparisons, we've therefore already confirmed the match.
         // With case-insensitive comparisons, we've applied the CaseConversionMask to the input, so while the anchors likely matched, we can't be sure.
         // An exception to that is if we know the value is composed of only ASCII letters, in which case masking the input can't produce false positives.
-        private static bool CanSkipAnchorMatchVerification =>
-            !TValueLength.AtLeast4Chars &&
-            (typeof(TCaseSensitivity) == typeof(CaseSensitive) || typeof(TCaseSensitivity) == typeof(CaseInsensitiveAsciiLetters));
+        private static bool CanSkipAnchorMatchVerification
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get =>
+                !TValueLength.AtLeast4Chars &&
+                (typeof(TCaseSensitivity) == typeof(CaseSensitive) || typeof(TCaseSensitivity) == typeof(CaseInsensitiveAsciiLetters));
+        }
 
         public SingleStringSearchValuesThreeChars(HashSet<string>? uniqueValues, string value) : base(uniqueValues)
         {
