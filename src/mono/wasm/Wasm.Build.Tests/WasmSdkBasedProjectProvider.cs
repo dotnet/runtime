@@ -70,9 +70,9 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
 
     public NativeFilesType GetExpectedFileType(Configuration config, bool isAOT, bool isPublish, bool isUsingWorkloads, bool? isNativeBuild=null) =>
         isNativeBuild == true ? NativeFilesType.Relinked : // precedence over build/publish check: build with -p:WasmBuildNative=true should use relinked
-        isNativeBuild == false ? NativeFilesType.FromRuntimePack :
         !isPublish ? NativeFilesType.FromRuntimePack : // precedence over AOT check: build with AOT should use runtime pack
-        isAOT ? NativeFilesType.AOT :
+        isAOT ? NativeFilesType.AOT : // precedence over -p:WasmBuildNative=false check: publish with AOT relinks regardless of WasmBuildNative value
+        isNativeBuild == false ? NativeFilesType.FromRuntimePack :
         (config == Configuration.Release) ? NativeFilesType.Relinked :
         NativeFilesType.FromRuntimePack;
 
