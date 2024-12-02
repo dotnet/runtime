@@ -35,6 +35,13 @@ static Thread* g_RuntimeInitializingThread;
 
 #endif //!DACCESS_COMPILE
 
+ee_alloc_context::PerThreadRandom::PerThreadRandom()
+{
+    minipal_xoshiro128pp_init(&random_state, (uint32_t)PalGetTickCount64());
+}
+
+thread_local ee_alloc_context::PerThreadRandom ee_alloc_context::t_random = PerThreadRandom();
+
 PInvokeTransitionFrame* Thread::GetTransitionFrame()
 {
     if (ThreadStore::GetSuspendingThread() == this)
@@ -1346,3 +1353,13 @@ FCIMPLEND
 #endif //USE_PORTABLE_HELPERS
 
 #endif // !DACCESS_COMPILE
+
+
+EXTERN_C void QCALLTYPE RhSetCurrentThreadName(const TCHAR* name)
+{
+#ifdef TARGET_WINDOWS
+    PalSetCurrentThreadNameW(name);
+#else
+    PalSetCurrentThreadName(name);
+#endif
+}

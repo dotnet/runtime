@@ -559,11 +559,11 @@ HRESULT CorHost2::CreateAppDomainWithManager(
 
     BEGIN_EXTERNAL_ENTRYPOINT(&hr);
 
-    AppDomain* pDomain = SystemDomain::System()->DefaultDomain();
+    AppDomain* pDomain = AppDomain::GetCurrentDomain();
 
     pDomain->SetFriendlyName(wszFriendlyName);
 
-    ETW::LoaderLog::DomainLoad(pDomain, (LPWSTR)wszFriendlyName);
+    ETW::LoaderLog::DomainLoad((LPWSTR)wszFriendlyName);
 
     if (dwFlags & APPDOMAIN_IGNORE_UNHANDLED_EXCEPTIONS)
         pDomain->SetIgnoreUnhandledExceptions();

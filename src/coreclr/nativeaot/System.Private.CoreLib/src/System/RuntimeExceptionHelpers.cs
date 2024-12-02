@@ -7,6 +7,7 @@ using System.Runtime;
 using System.Threading;
 
 using Internal.Reflection.Augments;
+using Internal.Reflection.Core.Execution;
 
 namespace System
 {
@@ -94,6 +95,18 @@ namespace System
 
                     case ExceptionIDs.AccessViolation:
                         FailFast("Access Violation: Attempted to read or write protected memory. This is often an indication that other memory is corrupt. The application will be terminated since this platform does not support throwing an AccessViolationException.");
+                        return null;
+
+                    case ExceptionIDs.IllegalInstruction:
+                        FailFast("Illegal instruction: Attempted to execute an instruction code not defined by the processor.");
+                        return null;
+
+                    case ExceptionIDs.PrivilegedInstruction:
+                        FailFast("Privileged instruction: Attempted to execute an instruction code that cannot be executed in user mode.");
+                        return null;
+
+                    case ExceptionIDs.InPageError:
+                        FailFast("In page error: Attempted to access a memory page that is not present, and the system is unable to load the page. For example, this exception might occur if a network connection is lost while running a program over a network.");
                         return null;
 
                     case ExceptionIDs.DataMisaligned:
@@ -316,7 +329,7 @@ namespace System
             get
             {
                 // Reflection needs to work as the exception code calls GetType() and GetType().ToString()
-                return ReflectionAugments.IsInitialized;
+                return ReflectionCoreExecution.ExecutionEnvironment != null;
             }
         }
     }

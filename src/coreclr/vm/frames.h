@@ -190,6 +190,9 @@ FRAME_TYPE_NAME(ResumableFrame)
 FRAME_TYPE_NAME(RedirectedThreadFrame)
 #endif // FEATURE_HIJACK
 FRAME_TYPE_NAME(FaultingExceptionFrame)
+#ifdef FEATURE_EH_FUNCLETS
+FRAME_TYPE_NAME(SoftwareExceptionFrame)
+#endif // FEATURE_EH_FUNCLETS
 #ifdef DEBUGGING_SUPPORTED
 FRAME_TYPE_NAME(FuncEvalFrame)
 #endif // DEBUGGING_SUPPORTED
@@ -1064,6 +1067,10 @@ class FaultingExceptionFrame : public Frame
     T_CONTEXT               m_ctx;
 #endif // !FEATURE_EH_FUNCLETS
 
+#ifdef TARGET_AMD64
+    TADDR                   m_SSP;
+#endif
+
     VPTR_VTABLE_CLASS(FaultingExceptionFrame, Frame)
 
 public:
@@ -1124,6 +1131,13 @@ public:
     }
 #endif // FEATURE_EH_FUNCLETS
 
+#ifdef TARGET_AMD64
+    void SetSSP(TADDR value)
+    {
+        m_SSP = value;
+    }
+#endif
+
     virtual BOOL NeedsUpdateRegDisplay()
     {
         return TRUE;
@@ -1134,6 +1148,69 @@ public:
     // Keep as last entry in class
     DEFINE_VTABLE_GETTER_AND_DTOR(FaultingExceptionFrame)
 };
+
+#ifdef FEATURE_EH_FUNCLETS
+
+class SoftwareExceptionFrame : public Frame
+{
+    TADDR                           m_ReturnAddress;
+    T_CONTEXT                       m_Context;
+    T_KNONVOLATILE_CONTEXT_POINTERS m_ContextPointers;
+
+    VPTR_VTABLE_CLASS(SoftwareExceptionFrame, Frame)
+
+public:
+#ifndef DACCESS_COMPILE
+    SoftwareExceptionFrame() {
+        LIMITED_METHOD_CONTRACT;
+    }
+#endif
+
+    virtual TADDR GetReturnAddressPtr()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return PTR_HOST_MEMBER_TADDR(SoftwareExceptionFrame, this, m_ReturnAddress);
+    }
+
+    void Init();
+    void InitAndLink(Thread *pThread);
+
+    Interception GetInterception()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return INTERCEPTION_EXCEPTION;
+    }
+
+    virtual ETransitionType GetTransitionType()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return TT_InternalCall;
+    }
+
+    unsigned GetFrameAttribs()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return FRAME_ATTR_EXCEPTION;
+    }
+
+    T_CONTEXT* GetContext()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return &m_Context;
+    }
+
+    virtual BOOL NeedsUpdateRegDisplay()
+    {
+        return TRUE;
+    }
+
+    virtual void UpdateRegDisplay(const PREGDISPLAY, bool updateFloats = false);
+
+    // Keep as last entry in class
+    DEFINE_VTABLE_GETTER_AND_DTOR(SoftwareExceptionFrame)
+};
+
+#endif // FEATURE_EH_FUNCLETS
 
 //-----------------------------------------------------------------------
 // Frame for debugger function evaluation
@@ -1793,7 +1870,7 @@ public:
     static BYTE GetOffsetOfArgs()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-#if defined(TARGET_ARM) || defined(TARGET_ARM64)
+#if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_RISCV64)
         size_t ofs = offsetof(UnmanagedToManagedFrame, m_argumentRegisters);
 #else
         size_t ofs = sizeof(UnmanagedToManagedFrame);
@@ -1808,20 +1885,6 @@ public:
         LIMITED_METHOD_DAC_CONTRACT;
         return m_pvDatum;
     }
-
-    static int GetOffsetOfDatum()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return offsetof(UnmanagedToManagedFrame, m_pvDatum);
-    }
-
-#ifdef TARGET_X86
-    static int GetOffsetOfCalleeSavedRegisters()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return offsetof(UnmanagedToManagedFrame, m_calleeSavedRegisters);
-    }
-#endif
 
     int GetFrameType()
     {
@@ -3193,6 +3256,7 @@ public:
     void Poll() { WRAPPER_NO_CONTRACT; m_frame.Poll(); }
     void SetStackPointerPtr(TADDR sp) { WRAPPER_NO_CONTRACT; m_frame.SetStackPointerPtr(sp); }
     void InitAndLink(T_CONTEXT *pContext) { WRAPPER_NO_CONTRACT; m_frame.InitAndLink(pContext); }
+    void InitAndLink(Thread *pThread) { WRAPPER_NO_CONTRACT; m_frame.InitAndLink(pThread); }
     void Init(Thread *pThread, OBJECTREF *pObjRefs, UINT numObjRefs, BOOL maybeInterior)
         { WRAPPER_NO_CONTRACT; m_frame.Init(pThread, pObjRefs, numObjRefs, maybeInterior); }
     ValueClassInfo ** GetValueClassInfoList() { WRAPPER_NO_CONTRACT; return m_frame.GetValueClassInfoList(); }

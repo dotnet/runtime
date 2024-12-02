@@ -144,7 +144,7 @@ extends:
             nameSuffix: AllSubsets_Mono_LLVMFULLAOT_RuntimeTests
             runtimeVariant: llvmfullaot
             buildArgs: -s mono+libs+clr.hosts+clr.iltools -c $(_BuildConfig) /p:MonoEnableLLVM=true
-            timeoutInMinutes: 360
+            timeoutInMinutes: 400
             condition: >-
               or(
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
@@ -191,7 +191,7 @@ extends:
             nameSuffix: AllSubsets_Mono_LLVMFULLAOT_RuntimeIntrinsicsTests
             runtimeVariant: llvmfullaot
             buildArgs: -s mono+libs+clr.hosts+clr.iltools -c $(_BuildConfig) /p:MonoEnableLLVM=true
-            timeoutInMinutes: 360
+            timeoutInMinutes: 400
             condition: >-
               or(
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),

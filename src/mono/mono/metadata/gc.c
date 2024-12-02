@@ -694,8 +694,8 @@ mono_gc_finalize_notify (void)
 	if (mono_gc_is_null ())
 		return;
 
-#if defined(HOST_WASI)
-	// TODO: Schedule the background job on WASI. Threads aren't yet supported in this build.
+#if defined(HOST_WASI) && defined(DISABLE_THREADS)
+	mono_runtime_do_background_work ();
 #elif defined(HOST_WASM) && defined(DISABLE_THREADS)
 	mono_main_thread_schedule_background_job (mono_runtime_do_background_work);
 #else

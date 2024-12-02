@@ -77,6 +77,7 @@ export type MonoConfigInternal = MonoConfig & {
     assets?: AssetEntryInternal[],
     runtimeOptions?: string[], // array of runtime options as strings
     aotProfilerOptions?: AOTProfilerOptions, // dictionary-style Object. If omitted, aot profiler will not be initialized.
+    logProfilerOptions?: LogProfilerOptions, // dictionary-style Object. If omitted, log profiler will not be initialized.
     browserProfilerOptions?: BrowserProfilerOptions, // dictionary-style Object. If omitted, browser profiler will not be initialized.
     waitForDebugger?: number,
     appendElementOnExit?: boolean
@@ -172,6 +173,7 @@ export type LoaderHelpers = {
     invokeLibraryInitializers: (functionName: string, args: any[]) => Promise<void>,
     libraryInitializers?: { scriptName: string, exports: any }[];
 
+    isDebuggingSupported(): boolean,
     isChromium: boolean,
     isFirefox: boolean
 
@@ -273,6 +275,11 @@ export type AOTProfilerOptions = {
 export type BrowserProfilerOptions = {
 }
 
+export type LogProfilerOptions = {
+    takeHeapshot?: string,
+    configuration?: string //  log profiler options string"
+}
+
 // how we extended emscripten Module
 export type DotnetModule = EmscriptenModule & DotnetModuleConfig;
 export type DotnetModuleInternal = EmscriptenModule & DotnetModuleConfig & EmscriptenModuleInternal;
@@ -289,6 +296,7 @@ export type EmscriptenBuildOptions = {
     wasmEnableEH: boolean,
     enableAotProfiler: boolean,
     enableBrowserProfiler: boolean,
+    enableLogProfiler: boolean,
     runAOTCompilation: boolean,
     wasmEnableThreads: boolean,
     gitHash: string,

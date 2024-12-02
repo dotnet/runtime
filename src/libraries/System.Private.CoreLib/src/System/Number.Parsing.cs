@@ -120,7 +120,7 @@ namespace System
 
             int i = number.Scale;
 
-            if ((i > TInteger.MaxDigitCount) || (i < number.DigitsCount) || (!TInteger.IsSigned && number.IsNegative))
+            if ((i > TInteger.MaxDigitCount) || (i < number.DigitsCount) || (!TInteger.IsSigned && number.IsNegative) || number.HasNonZeroTail)
             {
                 return false;
             }

@@ -320,22 +320,20 @@ PCODE ECall::GetFCallImpl(MethodDesc * pMD, BOOL * pfSharedOrDynamicFCallImpl /*
     MethodTable * pMT = pMD->GetMethodTable();
 
     //
-    // Delegate constructors are FCalls for which the entrypoint points to the target of the delegate
-    // We have to intercept these and set the call target to the helper COMDelegate::DelegateConstruct
+    // Delegate constructors are QCalls for which the entrypoint points to the target of the delegate
+    // We have to intercept these and set the call target to the managed helper Delegate.DelegateConstruct
     //
     if (pMT->IsDelegate())
     {
         if (pfSharedOrDynamicFCallImpl)
             *pfSharedOrDynamicFCallImpl = TRUE;
 
-        // COMDelegate::DelegateConstruct is the only fcall used by user delegates.
-        // All the other gDelegateFuncs are only used by System.Delegate
         _ASSERTE(pMD->IsCtor());
 
         // We need to set up the ECFunc properly.  We don't want to use the pMD passed in,
         // since it may disappear.  Instead, use the stable one on Delegate.  Remember
-        // that this is 1:M between the FCall and the pMDs.
-        return GetFCallImpl(CoreLibBinder::GetMethod(METHOD__DELEGATE__CONSTRUCT_DELEGATE));
+        // that this is 1:M between the method and the constructors.
+        return CoreLibBinder::GetMethod(METHOD__DELEGATE__CONSTRUCT_DELEGATE)->GetMultiCallableAddrOfCode();
     }
 
     // COM imported classes have special constructors
@@ -457,9 +455,7 @@ BOOL ECall::IsSharedFCallImpl(PCODE pImpl)
 
     PCODE pNativeCode = pImpl;
 
-    return
-        (pNativeCode == GetEEFuncEntryPoint(FCComCtor)) ||
-        (pNativeCode == GetEEFuncEntryPoint(COMDelegate::DelegateConstruct));
+    return (pNativeCode == GetEEFuncEntryPoint(FCComCtor));
 }
 
 BOOL ECall::CheckUnusedECalls(SetSHash<DWORD>& usedIDs)

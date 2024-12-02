@@ -6,7 +6,6 @@
     <SharedFrameworkName>$(MicrosoftNetCoreAppFrameworkName)</SharedFrameworkName>
     <IsShipping Condition="'$(PgoInstrument)' != ''">false</IsShipping>
     <SharedFrameworkFriendlyName>.NET Runtime</SharedFrameworkFriendlyName>
-    <EnableDefaultPackageReadmeFile>true</EnableDefaultPackageReadmeFile>
   </PropertyGroup>
 
   <!--
@@ -147,12 +146,15 @@
     <PlatformManifestFileEntry Include="libRuntime.VxSortEnabled.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libstandalonegc-disabled.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libstandalonegc-enabled.a" IsNative="true" />
+    <PlatformManifestFileEntry Include="libaotminipal.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libstdc++compat.a" IsNative="true" />
     <!-- NativeAOT/Windows specific files -->
     <PlatformManifestFileEntry Include="bootstrapper.obj" IsNative="true" />
     <PlatformManifestFileEntry Include="bootstrapper.GuardCF.obj" IsNative="true" />
     <PlatformManifestFileEntry Include="bootstrapperdll.obj" IsNative="true" />
     <PlatformManifestFileEntry Include="bootstrapperdll.GuardCF.obj" IsNative="true" />
+    <PlatformManifestFileEntry Include="dllmain.obj" IsNative="true" />
+    <PlatformManifestFileEntry Include="dllmain.GuardCF.obj" IsNative="true" />
     <PlatformManifestFileEntry Include="eventpipe-disabled.lib" IsNative="true" />
     <PlatformManifestFileEntry Include="eventpipe-disabled.GuardCF.lib" IsNative="true" />
     <PlatformManifestFileEntry Include="eventpipe-enabled.lib" IsNative="true" />
@@ -171,8 +173,8 @@
     <PlatformManifestFileEntry Include="System.Globalization.Native.Aot.GuardCF.lib" IsNative="true" />
     <PlatformManifestFileEntry Include="System.IO.Compression.Native.Aot.lib" IsNative="true" />
     <PlatformManifestFileEntry Include="System.IO.Compression.Native.Aot.GuardCF.lib" IsNative="true" />
+    <PlatformManifestFileEntry Include="aotminipal.lib" IsNative="true" />
     <!-- NativeAOT managed specific files -->
-    <PlatformManifestFileEntry Include="System.Private.DisabledReflection.dll" />
     <PlatformManifestFileEntry Include="System.Private.Reflection.Execution.dll" />
     <PlatformManifestFileEntry Include="System.Private.StackTraceMetadata.dll" />
     <PlatformManifestFileEntry Include="System.Private.TypeLoader.dll" />
@@ -221,6 +223,7 @@
     <PlatformManifestFileEntry Include="libmono-ee-interp.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libmono-icall-table.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libmono-profiler-aot.a" IsNative="true" />
+    <PlatformManifestFileEntry Include="libmono-profiler-log.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libmono-profiler-browser.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libmono-wasm-eh-js.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libmono-wasm-eh-wasm.a" IsNative="true" />

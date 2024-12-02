@@ -1,7 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#ifndef SOS_INCLUDE
 #include "common.h"
+#endif
 
 #include "gcinfodecoder.h"
 
@@ -415,24 +417,14 @@ bool GcInfoDecoder::IsSafePoint()
     return m_SafePointIndex != m_NumSafePoints;
 }
 
-bool GcInfoDecoder::AreSafePointsInterruptible()
-{
-    return m_Version >= 3;
-}
-
-bool GcInfoDecoder::IsInterruptibleSafePoint()
-{
-    return IsSafePoint() && AreSafePointsInterruptible();
-}
-
-bool GcInfoDecoder::CouldBeInterruptibleSafePoint()
+bool GcInfoDecoder::CouldBeSafePoint()
 {
     // This is used in asserts. Ideally it would return false
     // if current location canot possibly be a safepoint.
     // However in some cases we optimize away "boring" callsites when no variables are tracked.
     // So there is no way to tell precisely that a point is indeed not a safe point.
     // Thus we do what we can here, but this could be better if we could have more data
-    return AreSafePointsInterruptible() && m_NumInterruptibleRanges == 0;
+    return m_NumInterruptibleRanges == 0;
 }
 
 bool GcInfoDecoder::HasMethodDescGenericsInstContext()
@@ -449,7 +441,7 @@ bool GcInfoDecoder::HasMethodTableGenericsInstContext()
 
 #ifdef PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED
 
-// This is used for gccoverage: is the given offset
+// This is used for gcinfodumper: is the given offset
 //  a call-return offset with partially-interruptible GC info?
 bool GcInfoDecoder::IsSafePoint(UINT32 codeOffset)
 {
@@ -1802,7 +1794,7 @@ void GcInfoDecoder::ReportRegisterToGC( // ARM64
     LOG((LF_GCROOTS, LL_INFO1000, "Reporting " FMT_REG, regNum ));
 
     OBJECTREF* pObjRef = GetRegisterSlot( regNum, pRD );
-#if defined(TARGET_UNIX) && !defined(FEATURE_NATIVEAOT) && !defined(SOS_TARGET_AMD64)
+#if defined(TARGET_UNIX) && !defined(FEATURE_NATIVEAOT) && !defined(SOS_TARGET_ARM64)
     // On PAL, we don't always have the context pointers available due to
     // a limitation of an unwinding library. In such case, the context
     // pointers for some nonvolatile registers are NULL.
@@ -1955,7 +1947,7 @@ void GcInfoDecoder::ReportRegisterToGC(
     LOG((LF_GCROOTS, LL_INFO1000, "Reporting " FMT_REG, regNum ));
 
     OBJECTREF* pObjRef = GetRegisterSlot( regNum, pRD );
-#if defined(TARGET_UNIX) && !defined(FEATURE_NATIVEAOT) && !defined(SOS_TARGET_AMD64)
+#if defined(TARGET_UNIX) && !defined(FEATURE_NATIVEAOT) && !defined(SOS_TARGET_LOONGARCH64)
 
     // On PAL, we don't always have the context pointers available due to
     // a limitation of an unwinding library. In such case, the context
@@ -1976,7 +1968,7 @@ void GcInfoDecoder::ReportRegisterToGC(
 
         gcFlags |= GC_CALL_PINNED;
     }
-#endif // TARGET_UNIX && !SOS_TARGET_ARM64
+#endif // TARGET_UNIX && !SOS_TARGET_LOONGARCH64
 
 #ifdef _DEBUG
     if(IsScratchRegister(regNum, pRD))
@@ -2093,7 +2085,7 @@ void GcInfoDecoder::ReportRegisterToGC(
     LOG((LF_GCROOTS, LL_INFO1000, "Reporting " FMT_REG, regNum ));
 
     OBJECTREF* pObjRef = GetRegisterSlot( regNum, pRD );
-#if defined(TARGET_UNIX) && !defined(FEATURE_NATIVEAOT) && !defined(SOS_TARGET_AMD64)
+#if defined(TARGET_UNIX) && !defined(FEATURE_NATIVEAOT) && !defined(SOS_TARGET_RISCV64)
 
     // On PAL, we don't always have the context pointers available due to
     // a limitation of an unwinding library. In such case, the context
@@ -2114,7 +2106,7 @@ void GcInfoDecoder::ReportRegisterToGC(
 
         gcFlags |= GC_CALL_PINNED;
     }
-#endif // TARGET_UNIX && !SOS_TARGET_ARM64
+#endif // TARGET_UNIX && !SOS_TARGET_RISCV64
 
 #ifdef _DEBUG
     if(IsScratchRegister(regNum, pRD))

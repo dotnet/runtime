@@ -39,7 +39,7 @@ namespace ILLink.Shared.TrimAnalysis
 			_isNewObj = operation.Kind == OperationKind.ObjectCreation;
 			_diagnosticContext = new DiagnosticContext (location, reportDiagnostic);
 			_annotations = FlowAnnotations.Instance;
-			_reflectionAccessAnalyzer = new (reportDiagnostic);
+			_reflectionAccessAnalyzer = new (reportDiagnostic, typeHierarchyType: null);
 			_requireDynamicallyAccessedMembersAction = new (_diagnosticContext, _reflectionAccessAnalyzer);
 			_multiValueLattice = multiValueLattice;
 		}
@@ -66,6 +66,11 @@ namespace ILLink.Shared.TrimAnalysis
 				break;
 
 			case IntrinsicId.Object_GetType: {
+					if (instanceValue.IsEmpty ()) {
+						AddReturnValue (MultiValueLattice.Top);
+						break;
+					}
+
 					foreach (var valueNode in instanceValue.AsEnumerable ()) {
 						// Note that valueNode can be statically typed as some generic argument type.
 						// For example:

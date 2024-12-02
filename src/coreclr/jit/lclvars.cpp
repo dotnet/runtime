@@ -33,76 +33,6 @@ unsigned Compiler::s_lvaDoubleAlignedProcsCount = 0;
 
 /*****************************************************************************/
 
-void Compiler::lvaInit()
-{
-    lvaParameterPassingInfo = nullptr;
-    lvaParameterStackSize   = 0;
-
-    /* We haven't allocated stack variables yet */
-    lvaRefCountState = RCS_INVALID;
-
-    lvaGenericsContextInUse = false;
-
-    lvaTrackedToVarNumSize = 0;
-    lvaTrackedToVarNum     = nullptr;
-
-    lvaTrackedFixed = false; // false: We can still add new tracked variables
-
-    lvaDoneFrameLayout = NO_FRAME_LAYOUT;
-#if defined(FEATURE_EH_WINDOWS_X86)
-    lvaShadowSPslotsVar = BAD_VAR_NUM;
-#endif // FEATURE_EH_WINDOWS_X86
-    lvaInlinedPInvokeFrameVar = BAD_VAR_NUM;
-    lvaReversePInvokeFrameVar = BAD_VAR_NUM;
-#if FEATURE_FIXED_OUT_ARGS
-    lvaOutgoingArgSpaceVar  = BAD_VAR_NUM;
-    lvaOutgoingArgSpaceSize = PhasedVar<unsigned>();
-#endif // FEATURE_FIXED_OUT_ARGS
-#ifdef JIT32_GCENCODER
-    lvaLocAllocSPvar = BAD_VAR_NUM;
-#endif // JIT32_GCENCODER
-    lvaNewObjArrayArgs  = BAD_VAR_NUM;
-    lvaGSSecurityCookie = BAD_VAR_NUM;
-#ifdef TARGET_ARM64
-    lvaFfrRegister = BAD_VAR_NUM;
-#endif
-#ifdef TARGET_X86
-    lvaVarargsBaseOfStkArgs = BAD_VAR_NUM;
-#endif // TARGET_X86
-    lvaVarargsHandleArg = BAD_VAR_NUM;
-    lvaStubArgumentVar  = BAD_VAR_NUM;
-    lvaArg0Var          = BAD_VAR_NUM;
-    lvaMonAcquired      = BAD_VAR_NUM;
-    lvaRetAddrVar       = BAD_VAR_NUM;
-
-#ifdef SWIFT_SUPPORT
-    lvaSwiftSelfArg           = BAD_VAR_NUM;
-    lvaSwiftIndirectResultArg = BAD_VAR_NUM;
-    lvaSwiftErrorArg          = BAD_VAR_NUM;
-#endif
-
-    lvaInlineeReturnSpillTemp = BAD_VAR_NUM;
-
-    gsShadowVarInfo = nullptr;
-    lvaPSPSym       = BAD_VAR_NUM;
-#if FEATURE_SIMD
-    lvaSIMDInitTempVarNum = BAD_VAR_NUM;
-#endif // FEATURE_SIMD
-    lvaCurEpoch = 0;
-
-#if defined(DEBUG) && defined(TARGET_XARCH)
-    lvaReturnSpCheck = BAD_VAR_NUM;
-#endif
-
-#if defined(DEBUG) && defined(TARGET_X86)
-    lvaCallSpCheck = BAD_VAR_NUM;
-#endif
-
-    structPromotionHelper = new (this, CMK_Promotion) StructPromotionHelper(this);
-}
-
-/*****************************************************************************/
-
 void Compiler::lvaInitTypeRef()
 {
 
@@ -653,6 +583,19 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
         CorInfoTypeWithMod corInfoType = info.compCompHnd->getArgType(&info.compMethodInfo->args, argLst, &typeHnd);
         varDsc->lvIsParam              = 1;
 
+#if defined(TARGET_X86) && defined(FEATURE_IJW)
+        if ((corInfoType & CORINFO_TYPE_MOD_COPY_WITH_HELPER) != 0)
+        {
+            CorInfoType typeWithoutMod = strip(corInfoType);
+            if (typeWithoutMod == CORINFO_TYPE_VALUECLASS || typeWithoutMod == CORINFO_TYPE_PTR ||
+                typeWithoutMod == CORINFO_TYPE_BYREF)
+            {
+                JITDUMP("Marking user arg%02u as requiring special copy semantics\n", i);
+                recordArgRequiresSpecialCopy(i);
+            }
+        }
+#endif // TARGET_X86 && FEATURE_IJW
+
         lvaInitVarDsc(varDsc, varDscInfo->varNum, strip(corInfoType), typeHnd, argLst, &info.compMethodInfo->args);
 
         if (strip(corInfoType) == CORINFO_TYPE_CLASS)
@@ -1078,6 +1021,8 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
                         secondAllocatedRegArgNum = varDscInfo->allocRegArg(argRegTypeInStruct2, 1);
                         varDsc->SetOtherArgReg(
                             genMapRegArgNumToRegNum(secondAllocatedRegArgNum, argRegTypeInStruct2, info.compCallConv));
+
+                        varDsc->lvIsMultiRegArg = true;
                     }
                     else if (cSlotsToEnregister > 1)
                     {
@@ -1099,6 +1044,8 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
                     {
                         varDsc->SetOtherArgReg(
                             genMapRegArgNumToRegNum(firstAllocatedRegArgNum + 1, TYP_I_IMPL, info.compCallConv));
+
+                        varDsc->lvIsMultiRegArg = true;
                     }
 
                     assert(cSlots <= 2);
@@ -1798,9 +1745,8 @@ void Compiler::lvaClassifyParameterABI()
                 }
             }
 
-            for (unsigned i = 0; i < abiInfo.NumSegments; i++)
+            for (const ABIPassingSegment& segment : abiInfo.Segments())
             {
-                const ABIPassingSegment& segment = abiInfo.Segment(i);
                 if (segment.IsPassedInRegister())
                 {
                     argRegs |= segment.GetRegisterMask();
@@ -2167,13 +2113,6 @@ bool Compiler::StructPromotionHelper::TryPromoteStructVar(unsigned lclNum)
 {
     if (CanPromoteStructVar(lclNum))
     {
-#if 0
-            // Often-useful debugging code: if you've narrowed down a struct-promotion problem to a single
-            // method, this allows you to select a subset of the vars to promote (by 1-based ordinal number).
-            static int structPromoVarNum = 0;
-            structPromoVarNum++;
-            if (atoi(getenv("structpromovarnumlo")) <= structPromoVarNum && structPromoVarNum <= atoi(getenv("structpromovarnumhi")))
-#endif // 0
         if (ShouldPromoteStructVar(lclNum))
         {
             PromoteStructVar(lclNum);
@@ -6016,9 +5955,8 @@ bool Compiler::lvaGetRelativeOffsetToCallerAllocatedSpaceForParameter(unsigned l
 {
     const ABIPassingInformation& abiInfo = lvaGetParameterABIInfo(lclNum);
 
-    for (unsigned i = 0; i < abiInfo.NumSegments; i++)
+    for (const ABIPassingSegment& segment : abiInfo.Segments())
     {
-        const ABIPassingSegment& segment = abiInfo.Segment(i);
         if (!segment.IsPassedOnStack())
         {
 #if defined(WINDOWS_AMD64_ABI)

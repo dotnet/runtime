@@ -10,6 +10,7 @@
   <Import Project="$(RepositoryEngineeringDir)Analyzers.targets" />
   <Import Project="Sdk.targets" Sdk="Microsoft.DotNet.Arcade.Sdk" />
   <Import Project="$(RepositoryEngineeringDir)liveBuilds.targets" />
+  <Import Project="$(RepositoryEngineeringDir)toolAot.targets" />
   <Import Project="$(RepositoryEngineeringDir)generators.targets" />
   <Import Project="$(RepositoryEngineeringDir)python.targets" />
   <Import Project="$(RepositoryEngineeringDir)generatorProjects.targets" Condition="'$(IsGeneratorProject)' == 'true'" />
@@ -39,7 +40,8 @@
       Define this here (not just in Versions.props) because the SDK resets it
       unconditionally in Microsoft.NETCoreSdk.BundledVersions.props.
     -->
-    <NETCoreAppMaximumVersion>$(MajorVersion).$(MinorVersion)</NETCoreAppMaximumVersion>
+    <NETCoreAppMaximumVersion>$(NetCoreAppCurrentVersion)</NETCoreAppMaximumVersion>
+    <UnsupportedTargetFrameworkVersion>$([MSBuild]::Add('$(NETCoreAppMaximumVersion.Split('.')[0])', '1')).0</UnsupportedTargetFrameworkVersion>
     <!-- SDK sets product to assembly but we want it to be our product name -->
     <Product>Microsoft%AE .NET</Product>
     <!-- Use the .NET product branding version for informational version description -->
@@ -143,12 +145,12 @@
   <Target Name="FilterTransitiveProjectReferences"
           AfterTargets="IncludeTransitiveProjectReferences"
           Condition="'$(DisableTransitiveProjectReferences)' != 'true' and
-                     '@(DefaultReferenceExclusion)' != ''">
+                     ('@(DefaultReferenceExclusion)' != '' or '@(ProjectReferenceExclusion)' != '')">
     <ItemGroup>
       <_transitiveProjectReferenceWithProjectName Include="@(ProjectReference->Metadata('NuGetPackageId'))"
                                                   OriginalIdentity="%(Identity)" />
       <_transitiveIncludedProjectReferenceWithProjectName Include="@(_transitiveProjectReferenceWithProjectName)"
-                                                          Exclude="@(DefaultReferenceExclusion)" />
+                                                          Exclude="@(DefaultReferenceExclusion);@(ProjectReferenceExclusion)" />
       <_transitiveExcludedProjectReferenceWithProjectName Include="@(_transitiveProjectReferenceWithProjectName)"
                                                           Exclude="@(_transitiveIncludedProjectReferenceWithProjectName)" />
       <ProjectReference Remove="@(_transitiveExcludedProjectReferenceWithProjectName->Metadata('OriginalIdentity'))" />
@@ -162,7 +164,7 @@
           AfterTargets="ResolveTargetingPackAssets">
     <ItemGroup>
       <_targetingPackReferenceExclusion Include="$(TargetName)" />
-      <_targetingPackReferenceExclusion Include="@(_ResolvedProjectReferencePaths->Metadata('Filename'))" />
+      <_targetingPackReferenceExclusionProjects Include="@(_ResolvedProjectReferencePaths->Metadata('Filename'))" />
       <_targetingPackReferenceExclusion Include="@(DefaultReferenceExclusion)" />
     </ItemGroup>
 
@@ -177,7 +179,7 @@
       <_targetingPackReferenceWithProjectName Include="@(Reference->WithMetadataValue('ExternallyResolved', 'true')->Metadata('Filename'))"
                                               OriginalIdentity="%(Identity)" />
       <_targetingPackIncludedReferenceWithProjectName Include="@(_targetingPackReferenceWithProjectName)"
-                                                      Exclude="@(_targetingPackReferenceExclusion)" />
+                                                      Exclude="@(_targetingPackReferenceExclusion);@(_targetingPackReferenceExclusionProjects->WithMetadataValue('ReferenceOutputAssembly', 'true'))" />
       <_targetingPackExcludedReferenceWithProjectName Include="@(_targetingPackReferenceWithProjectName)"
                                                       Exclude="@(_targetingPackIncludedReferenceWithProjectName)" />
       <Reference Remove="@(_targetingPackExcludedReferenceWithProjectName->Metadata('OriginalIdentity'))" />
@@ -187,36 +189,10 @@
       <_targetingPackAnalyzerReferenceWithProjectName Include="@(Analyzer->WithMetadataValue('ExternallyResolved', 'true')->Metadata('Filename'))"
                                                       OriginalIdentity="%(Identity)" />
       <_targetingPackIncludedAnalyzerReferenceWithProjectName Include="@(_targetingPackAnalyzerReferenceWithProjectName)"
-                                                              Exclude="@(_targetingPackReferenceExclusion)" />
+                                                              Exclude="@(_targetingPackReferenceExclusion);@(_targetingPackReferenceExclusionProjects->WithMetadataValue('OutputItemType', 'Analyzer'))" />
       <_targetingPackExcludedAnalyzerReferenceWithProjectName Include="@(_targetingPackAnalyzerReferenceWithProjectName)"
                                                               Exclude="@(_targetingPackIncludedAnalyzerReferenceWithProjectName)" />
       <Analyzer Remove="@(_targetingPackExcludedAnalyzerReferenceWithProjectName->Metadata('OriginalIdentity'))" />
     </ItemGroup>
   </Target>
-
-  <!--
-    Arcade SDK versioning is defined by static properties in a targets file: work around this by
-    moving properties based on versioning into a target.
-  -->
-  <Target Name="GetProductVersions">
-    <PropertyGroup>
-      <IncludePreReleaseLabelInPackageVersion Condition="'$(DotNetFinalVersionKind)' != 'release'">true</IncludePreReleaseLabelInPackageVersion>
-      <IncludePreReleaseLabelInPackageVersion Condition="'$(SuppressFinalPackageVersion)' == 'true'">true</IncludePreReleaseLabelInPackageVersion>
-      <IncludePreReleaseLabelInPackageVersion Condition="'$(IsShipping)' != 'true'">true</IncludePreReleaseLabelInPackageVersion>
-
-      <IncludeBuildNumberInPackageVersion Condition="'$(StabilizePackageVersion)' != 'true'">true</IncludeBuildNumberInPackageVersion>
-      <IncludeBuildNumberInPackageVersion Condition="'$(SuppressFinalPackageVersion)' == 'true'">true</IncludeBuildNumberInPackageVersion>
-      <IncludeBuildNumberInPackageVersion Condition="'$(IsShipping)' != 'true'">true</IncludeBuildNumberInPackageVersion>
-
-      <ProductVersionSuffix Condition="'$(IncludePreReleaseLabelInPackageVersion)' == 'true'">-$(VersionSuffix)</ProductVersionSuffix>
-      <ProductBandVersion Condition="'$(ProductBandVersion)' == ''">$(MajorVersion).$(MinorVersion)</ProductBandVersion>
-      <ProductionVersion Condition="'$(ProductionVersion)' == ''">$(ProductBandVersion).$(PatchVersion)</ProductionVersion>
-      <ProductVersion>$(ProductionVersion)$(ProductVersionSuffix)</ProductVersion>
-
-      <SharedFrameworkNugetVersion>$(ProductVersion)</SharedFrameworkNugetVersion>
-      <NuGetVersion>$(SharedFrameworkNugetVersion)</NuGetVersion>
-      <InstallersRelativePath>Runtime/$(SharedFrameworkNugetVersion)/</InstallersRelativePath>
-    </PropertyGroup>
-  </Target>
-
 </Project>

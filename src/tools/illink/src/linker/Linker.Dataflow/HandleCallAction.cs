@@ -24,7 +24,6 @@ namespace ILLink.Shared.TrimAnalysis
 		readonly MarkStep _markStep;
 		readonly ReflectionMarker _reflectionMarker;
 		readonly MethodDefinition _callingMethodDefinition;
-		readonly MethodReference _calledMethodReference;
 
 		public HandleCallAction (
 			LinkContext context,
@@ -32,8 +31,7 @@ namespace ILLink.Shared.TrimAnalysis
 			MarkStep markStep,
 			ReflectionMarker reflectionMarker,
 			in DiagnosticContext diagnosticContext,
-			MethodDefinition callingMethodDefinition,
-			MethodReference calledMethodReference)
+			MethodDefinition callingMethodDefinition)
 		{
 			_context = context;
 			_operation = operation;
@@ -43,8 +41,7 @@ namespace ILLink.Shared.TrimAnalysis
 			_diagnosticContext = diagnosticContext;
 			_callingMethodDefinition = callingMethodDefinition;
 			_annotations = context.Annotations.FlowAnnotations;
-			_requireDynamicallyAccessedMembersAction = new (reflectionMarker, diagnosticContext);
-			_calledMethodReference = calledMethodReference;
+			_requireDynamicallyAccessedMembersAction = new (context, reflectionMarker, diagnosticContext);
 		}
 
 		private partial bool TryHandleIntrinsic (
@@ -55,15 +52,14 @@ namespace ILLink.Shared.TrimAnalysis
 			out MultiValue? methodReturnValue)
 		{
 			MultiValue? maybeMethodReturnValue = methodReturnValue = null;
-			Debug.Assert (calledMethod.Method == _context.Resolve (_calledMethodReference));
 
 			switch (intrinsicId) {
 			case IntrinsicId.None: {
-					if (ReflectionMethodBodyScanner.IsPInvokeDangerous (calledMethod.Method, _context, out bool comDangerousMethod)) {
+					if (ReflectionMethodBodyScanner.IsPInvokeDangerous (calledMethod.Definition, _context, out bool comDangerousMethod)) {
 						Debug.Assert (comDangerousMethod); // Currently COM dangerous is the only one we detect
 						_diagnosticContext.AddDiagnostic (DiagnosticId.CorrectnessOfCOMCannotBeGuaranteed, calledMethod.GetDisplayName ());
 					}
-					if (_context.Annotations.DoesMethodRequireUnreferencedCode (calledMethod.Method, out RequiresUnreferencedCodeAttribute? requiresUnreferencedCode))
+					if (_context.Annotations.DoesMethodRequireUnreferencedCode (calledMethod.Definition, out RequiresUnreferencedCodeAttribute? requiresUnreferencedCode))
 						MarkStep.ReportRequiresUnreferencedCode (calledMethod.GetDisplayName (), requiresUnreferencedCode, _diagnosticContext);
 
 					return TryHandleSharedIntrinsic (calledMethod, instanceValue, argumentValues, intrinsicId, out methodReturnValue);
@@ -77,7 +73,7 @@ namespace ILLink.Shared.TrimAnalysis
 				break;
 
 			case IntrinsicId.Array_Empty: {
-					AddReturnValue (ArrayValue.Create (0, ((GenericInstanceMethod) _calledMethodReference).GenericArguments[0]));
+					AddReturnValue (ArrayValue.Create (0, ((GenericInstanceMethod) calledMethod.Method).GenericArguments[0]));
 				}
 				break;
 
@@ -104,6 +100,11 @@ namespace ILLink.Shared.TrimAnalysis
 			// GetType()
 			//
 			case IntrinsicId.Object_GetType: {
+					if (instanceValue.IsEmpty ()) {
+						AddReturnValue (MultiValueLattice.Top);
+						break;
+					}
+
 					foreach (var valueNode in instanceValue.AsEnumerable ()) {
 						// Note that valueNode can be statically typed in IL as some generic argument type.
 						// For example:
@@ -154,7 +155,7 @@ namespace ILLink.Shared.TrimAnalysis
 							// This can be seen a little bit as a violation of the annotation, but we already have similar cases
 							// where a parameter is annotated and if something in the method sets a specific known type to it
 							// we will also make it just work, even if the annotation doesn't match the usage.
-							AddReturnValue (new SystemTypeValue (staticType));
+							AddReturnValue (new SystemTypeValue (new (staticType, _context)));
 						} else if (staticTypeDef.IsTypeOf ("System", "Enum")) {
 							AddReturnValue (_context.Annotations.FlowAnnotations.GetMethodReturnValue (calledMethod, _isNewObj, DynamicallyAccessedMemberTypes.PublicFields));
 						} else {
@@ -197,9 +198,9 @@ namespace ILLink.Shared.TrimAnalysis
 
 		private partial bool MethodIsTypeConstructor (MethodProxy method)
 		{
-			if (!method.Method.IsConstructor)
+			if (!method.Definition.IsConstructor)
 				return false;
-			TypeDefinition? type = method.Method.DeclaringType;
+			TypeDefinition? type = method.Definition.DeclaringType;
 			while (type is not null) {
 				if (type.IsTypeOf (WellKnownType.System_Type))
 					return true;
@@ -210,20 +211,22 @@ namespace ILLink.Shared.TrimAnalysis
 
 		private partial IEnumerable<SystemReflectionMethodBaseValue> GetMethodsOnTypeHierarchy (TypeProxy type, string name, BindingFlags? bindingFlags)
 		{
-			foreach (var method in type.Type.GetMethodsOnTypeHierarchy (_context, m => m.Name == name, bindingFlags))
-				yield return new SystemReflectionMethodBaseValue (new MethodProxy (method));
+			foreach (var method in type.Type.GetMethodsOnTypeHierarchy (_context, m => m.Name == name, bindingFlags)) {
+				if (MethodProxy.TryCreate (method, _context, out MethodProxy? methodProxy))
+					yield return new SystemReflectionMethodBaseValue (methodProxy.Value);
+			}
 		}
 
 		private partial IEnumerable<SystemTypeValue> GetNestedTypesOnType (TypeProxy type, string name, BindingFlags? bindingFlags)
 		{
 			foreach (var nestedType in type.Type.GetNestedTypesOnType (_context, t => t.Name == name, bindingFlags))
-				yield return new SystemTypeValue (new TypeProxy (nestedType));
+				yield return new SystemTypeValue (new TypeProxy (nestedType, _context));
 		}
 
 		private partial bool TryGetBaseType (TypeProxy type, out TypeProxy? baseType)
 		{
 			if (type.Type.ResolveToTypeDefinition (_context)?.BaseType is TypeReference baseTypeRef && _context.TryResolve (baseTypeRef) is TypeDefinition baseTypeDefinition) {
-				baseType = new TypeProxy (baseTypeDefinition);
+				baseType = new TypeProxy (baseTypeDefinition, _context);
 				return true;
 			}
 
@@ -242,8 +245,8 @@ namespace ILLink.Shared.TrimAnalysis
 				return false;
 			}
 
-			if (!_reflectionMarker.TryResolveTypeNameAndMark (resolvedAssembly, typeName, _diagnosticContext, out TypeDefinition? resolvedTypeDefinition)
-				|| resolvedTypeDefinition.IsTypeOf (WellKnownType.System_Array)) {
+			if (!_reflectionMarker.TryResolveTypeNameAndMark (resolvedAssembly, typeName, _diagnosticContext, out TypeReference? foundType)
+				|| foundType.IsTypeOf (WellKnownType.System_Array)) {
 				// It's not wrong to have a reference to non-existing type - the code may well expect to get an exception in this case
 				// Note that we did find the assembly, so it's not a ILLink config problem, it's either intentional, or wrong versions of assemblies
 				// but ILLink can't know that. In case a user tries to create an array using System.Activator we should simply ignore it, the user
@@ -252,7 +255,7 @@ namespace ILLink.Shared.TrimAnalysis
 				return false;
 			}
 
-			resolvedType = new TypeProxy (resolvedTypeDefinition);
+			resolvedType = new TypeProxy (foundType, _context);
 			return true;
 		}
 
@@ -282,7 +285,7 @@ namespace ILLink.Shared.TrimAnalysis
 
 		private partial bool MarkAssociatedProperty (MethodProxy method)
 		{
-			if (method.Method.TryGetProperty (out PropertyDefinition? propertyDefinition)) {
+			if (method.Definition.TryGetProperty (out PropertyDefinition? propertyDefinition)) {
 				_reflectionMarker.MarkProperty (_diagnosticContext.Origin, propertyDefinition);
 				return true;
 			}

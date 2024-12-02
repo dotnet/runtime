@@ -87,10 +87,10 @@ namespace Mono.Linker
 		public static TypeReference GetInflatedParameterType (this MethodReference method, int parameterIndex)
 		{
 #pragma warning disable RS0030 // MethodReference.Parameters is banned -- it's best to leave this as is for now
-			if (method.DeclaringType is GenericInstanceType genericInstance)
-				return TypeReferenceExtensions.InflateGenericType (genericInstance, method.Parameters[parameterIndex].ParameterType);
-
-			return method.Parameters[parameterIndex].ParameterType;
+			IGenericInstance? genericInstance = method as IGenericInstance ?? method.DeclaringType as IGenericInstance;
+			if (genericInstance is null)
+				return method.Parameters[parameterIndex].ParameterType;
+			return TypeReferenceExtensions.InflateGenericType (genericInstance, method.Parameters[parameterIndex].ParameterType);
 #pragma warning restore RS0030 // Do not used banned APIs
 		}
 

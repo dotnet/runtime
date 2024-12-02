@@ -186,6 +186,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
     // We need to validate that other phases of the compiler haven't introduced unsupported intrinsics
     assert(compiler->compIsaSupportedDebugOnly(isa));
     assert(HWIntrinsicInfo::RequiresCodegen(intrinsicId));
+    assert(!HWIntrinsicInfo::NeedsNormalizeSmallTypeToInt(intrinsicId) || !varTypeIsSmall(node->GetSimdBaseType()));
 
     bool    isTableDriven = genIsTableDrivenHWIntrinsic(intrinsicId, category);
     insOpts instOptions   = INS_OPTS_NONE;
@@ -781,7 +782,6 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
         case InstructionSet_AVX10v1_V512:
         case InstructionSet_AVX10v1_V512_X64:
         case InstructionSet_EVEX:
-        case InstructionSet_EVEX_X64:
         {
             genAvxFamilyIntrinsic(node, instOptions);
             break;

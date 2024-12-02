@@ -18,6 +18,7 @@ import html
 import os
 import re
 from coreclr_arguments import *
+from jitutil import run_command
 
 parser = argparse.ArgumentParser(description="description")
 
@@ -25,9 +26,9 @@ parser.add_argument("-diff_summary_dir", required=True, help="Path to diff summa
 parser.add_argument("-arch", required=True, help="Architecture")
 parser.add_argument("-platform", required=True, help="OS platform")
 parser.add_argument("-type", required=True, help="Type of diff (asmdiffs, tpdiff, all)")
+parser.add_argument("-source_directory", required=True, help="Path to the root directory of the dotnet/runtime source tree")
 
 target_windows = True
-
 
 def setup_args(args):
     """ Setup the args.
@@ -61,6 +62,11 @@ def setup_args(args):
                         "type",
                         lambda type: type in ["asmdiffs", "tpdiff", "all"],
                         "Invalid type \"{}\"".format)
+
+    coreclr_args.verify(args,
+                        "source_directory",
+                        os.path.isdir,
+                        "source_directory doesn't exist")
 
     do_asmdiffs = False
     do_tpdiff = False
@@ -139,6 +145,7 @@ def main(main_args):
     diff_summary_dir = coreclr_args.diff_summary_dir
     arch = coreclr_args.arch
     platform_name = coreclr_args.platform.lower()
+    source_directory = coreclr_args.source_directory
 
     do_asmdiffs = False
     do_tpdiff = False
@@ -150,7 +157,43 @@ def main(main_args):
         do_asmdiffs = True
         do_tpdiff = True
 
-    # Consolidate all superpmi_asmdiffs_summary_*.md and superpmi_tpdiff_summary_*.md
+    superpmi_scripts_directory = os.path.join(source_directory, 'src', 'coreclr', 'scripts')
+    python_path = sys.executable
+
+    # First summarize all .JSON to a .md for each (diff_type, target_os, target_arch).
+    per_diff_target = {}
+    for dir_path, _, file_names in os.walk(diff_summary_dir):
+        for file_name in sorted(file_names):
+            match = re.search("superpmi_(.*)_summary_(.*)-(.*)-(\\d+)\\.json", file_name)
+            if match:
+                diff_type = match.group(1)
+                target_os = match.group(2)
+                target_arch = match.group(3)
+                if (diff_type, target_os, target_arch) not in per_diff_target:
+                    per_diff_target[(diff_type, target_os, target_arch)] = []
+
+                per_diff_target[(diff_type, target_os, target_arch)].append(os.path.join(dir_path, file_name))
+
+    superpmi_script = os.path.join(superpmi_scripts_directory, "superpmi.py")
+    for (diff_type, target_os, target_arch), json_files in per_diff_target.items():
+        output_path = os.path.join(diff_summary_dir, "superpmi_{}_summary_{}_{}.md".format(diff_type, target_os, target_arch))
+        args = [
+            python_path,
+            superpmi_script,
+            "summarize",
+            "-summary_type", diff_type,
+            "-output_long_summary_path", output_path,
+            "-summaries"
+            ]
+        args.extend(json_files)
+        print("Invoking {}".format(" ".join(args)))
+        _, _, return_code = run_command(args, source_directory)
+
+        if return_code != 0:
+            print("'{}' failed with '{}'".format(superpmi_script, return_code))
+            return return_code
+
+    # Consolidate all superpmi_asmdiffs_summary_*.json and superpmi_tpdiff_summary_*.json
     # into overall_<asmdiffs|tpdiff>_summary_<os>_<architecture>.md.
     # (Don't name it "superpmi_xxx.md" or we might consolidate it into itself.)
     # If there are no summary files found, add a "No diffs found" text to be explicit about that.
@@ -170,7 +213,7 @@ def main(main_args):
             any_asmdiffs_found = False
             for dirpath, _, files in os.walk(diff_summary_dir):
                 for file_name in files:
-                    if file_name.startswith("superpmi_asmdiffs") and file_name.endswith(".md") and "_short_" not in file_name:
+                    if file_name.startswith("superpmi_asmdiffs") and file_name.endswith(".md"):
                         full_file_path = os.path.join(dirpath, file_name)
                         if append_diff_file(f, file_name, full_file_path):
                             any_asmdiffs_found = True

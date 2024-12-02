@@ -104,6 +104,7 @@ PCSTR GetRegName (UINT32 regnum)
     case 29: return "s6";
     case 30: return "s7";
     case 31: return "s8";
+    case 32: return "pc";
     }
 
     return "???";
@@ -142,6 +143,7 @@ PCSTR GetRegName (UINT32 regnum)
     case 29: return "t4";
     case 30: return "t5";
     case 31: return "t6";
+    case 32: return "pc";
     }
 
     return "???";

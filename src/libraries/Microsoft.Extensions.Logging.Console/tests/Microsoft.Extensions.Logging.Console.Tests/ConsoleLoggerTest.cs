@@ -1409,6 +1409,31 @@ namespace Microsoft.Extensions.Logging.Console.Test
             Assert.True(formatter.FormatterOptions.IncludeScopes);
         }
 
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        public void LogMultipleArrays()
+        {
+            // Arrange
+            using var t = SetUp();
+            var logger = t.Logger;
+            var sink = t.Sink;
+
+            var define1 = LoggerMessage.Define<string[], string[]>(LogLevel.Information, new EventId(), "Log: {Array1} and {Array2}");
+            var define2 = LoggerMessage.Define<int, string[], string[]>(LogLevel.Information, new EventId(), "Log {Number}: {Array1} and {Array2}");
+
+            // Act
+            define1(logger, ["a", "b", "c"], ["d", "e", "f"], null);
+            define2(logger, 30, ["a", "b", "c"], ["d", "e", "f"], null);
+
+            var expectedMessage1 = $"{CreateHeader(ConsoleLoggerFormat.Default)}{Environment.NewLine}{_paddingString}Log: a, b, c and d, e, f{Environment.NewLine}";
+            var expectedMessage2 = $"{CreateHeader(ConsoleLoggerFormat.Default)}{Environment.NewLine}{_paddingString}Log 30: a, b, c and d, e, f{Environment.NewLine}";
+
+            Assert.Equal(4, sink.Writes.Count);
+            Assert.Equal("info", sink.Writes[0].Message);
+            Assert.Equal(expectedMessage1, sink.Writes[1].Message);
+            Assert.Equal("info", sink.Writes[2].Message);
+            Assert.Equal(expectedMessage2, sink.Writes[3].Message);
+        }
+
         public static TheoryData<ConsoleLoggerFormat, LogLevel> FormatsAndLevels
         {
             get

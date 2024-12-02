@@ -3,6 +3,7 @@
 
 using System.IO;
 using System.Formats.Nrbf.Utils;
+using System.Reflection.Metadata;
 
 namespace System.Formats.Nrbf;
 
@@ -21,86 +22,100 @@ internal sealed class SystemClassWithMembersAndTypesRecord : ClassRecord
 
     public override SerializationRecordType RecordType => SerializationRecordType.SystemClassWithMembersAndTypes;
 
-    internal static SystemClassWithMembersAndTypesRecord Decode(BinaryReader reader, RecordMap recordMap, PayloadOptions options)
+    internal static SerializationRecord Decode(BinaryReader reader, RecordMap recordMap, PayloadOptions options)
     {
         ClassInfo classInfo = ClassInfo.Decode(reader);
         MemberTypeInfo memberTypeInfo = MemberTypeInfo.Decode(reader, classInfo.MemberNames.Count, options, recordMap);
         // the only difference with ClassWithMembersAndTypesRecord is that we don't read library id here
         classInfo.LoadTypeName(options);
+        TypeName typeName = classInfo.TypeName;
+
+        // BinaryFormatter represents primitive types as MemberPrimitiveTypedRecord
+        // only for arrays of objects. For other arrays, like arrays of some abstraction
+        // (example: new IComparable[] { int.MaxValue }), it uses SystemClassWithMembersAndTypes.
+        // The same goes for root records that turn out to be primitive types.
+        // We want to have the behavior unified, so we map such records to
+        // PrimitiveTypeRecord<T> so the users don't need to learn the BF internals
+        // to get a single primitive value.
+        // We need to be as strict as possible, as we don't want to map anything else by accident.
+        // That is why the code below is VERY defensive.
+
+        if (!classInfo.TypeName.IsSimple || classInfo.MemberNames.Count == 0 || memberTypeInfo.Infos[0].BinaryType != BinaryType.Primitive)
+        {
+            return new SystemClassWithMembersAndTypesRecord(classInfo, memberTypeInfo);
+        }
+        else if (classInfo.MemberNames.Count == 1)
+        {
+            PrimitiveType primitiveType = (PrimitiveType)memberTypeInfo.Infos[0].AdditionalInfo!;
+            // Get the member name without allocating on the heap.
+            Collections.Generic.Dictionary<string, int>.Enumerator structEnumerator = classInfo.MemberNames.GetEnumerator();
+            _ = structEnumerator.MoveNext();
+            string memberName = structEnumerator.Current.Key;
+            // Everything needs to match: primitive type, type name name and member name.
+            return (primitiveType, typeName.FullName, memberName) switch
+            {
+                (PrimitiveType.Boolean, "System.Boolean", "m_value") => Create(reader.ReadBoolean()),
+                (PrimitiveType.Byte, "System.Byte", "m_value") => Create(reader.ReadByte()),
+                (PrimitiveType.SByte, "System.SByte", "m_value") => Create(reader.ReadSByte()),
+                (PrimitiveType.Char, "System.Char", "m_value") => Create(reader.ParseChar()),
+                (PrimitiveType.Int16, "System.Int16", "m_value") => Create(reader.ReadInt16()),
+                (PrimitiveType.UInt16, "System.UInt16", "m_value") => Create(reader.ReadUInt16()),
+                (PrimitiveType.Int32, "System.Int32", "m_value") => Create(reader.ReadInt32()),
+                (PrimitiveType.UInt32, "System.UInt32", "m_value") => Create(reader.ReadUInt32()),
+                (PrimitiveType.Int64, "System.Int64", "m_value") => Create(reader.ReadInt64()),
+                (PrimitiveType.Int64, "System.IntPtr", "value") => Create(new IntPtr(reader.ReadInt64())),
+                (PrimitiveType.Int64, "System.TimeSpan", "_ticks") => Create(new TimeSpan(reader.ReadInt64())),
+                (PrimitiveType.UInt64, "System.UInt64", "m_value") => Create(reader.ReadUInt64()),
+                (PrimitiveType.UInt64, "System.UIntPtr", "value") => Create(new UIntPtr(reader.ReadUInt64())),
+                (PrimitiveType.Single, "System.Single", "m_value") => Create(reader.ReadSingle()),
+                (PrimitiveType.Double, "System.Double", "m_value") => Create(reader.ReadDouble()),
+                _ => new SystemClassWithMembersAndTypesRecord(classInfo, memberTypeInfo)
+            };
+        }
+        else if (classInfo.MemberNames.Count == 2 && typeName.FullName == "System.DateTime"
+            && HasMember("ticks", 0, PrimitiveType.Int64)
+            && HasMember("dateData", 1, PrimitiveType.UInt64))
+        {
+            return DecodeDateTime(reader, classInfo.Id);
+        }
+        else if (classInfo.MemberNames.Count == 4 && typeName.FullName == "System.Decimal"
+            && HasMember("flags", 0, PrimitiveType.Int32)
+            && HasMember("hi", 1, PrimitiveType.Int32)
+            && HasMember("lo", 2, PrimitiveType.Int32)
+            && HasMember("mid", 3, PrimitiveType.Int32))
+        {
+            return DecodeDecimal(reader, classInfo.Id);
+        }
+
         return new SystemClassWithMembersAndTypesRecord(classInfo, memberTypeInfo);
+
+        SerializationRecord Create<T>(T value) where T : unmanaged
+            => new MemberPrimitiveTypedRecord<T>(value, classInfo.Id);
+
+        bool HasMember(string name, int order, PrimitiveType primitiveType)
+            => classInfo.MemberNames.TryGetValue(name, out int memberOrder)
+            && memberOrder == order
+            && ((PrimitiveType)memberTypeInfo.Infos[order].AdditionalInfo!) == primitiveType;
     }
 
     internal override (AllowedRecordTypes allowed, PrimitiveType primitiveType) GetNextAllowedRecordType()
         => MemberTypeInfo.GetNextAllowedRecordType(MemberValues.Count);
 
-    // For the root records that turn out to be primitive types, we map them to
-    // PrimitiveTypeRecord<T> so the users don't need to learn the BF internals
-    // to get a single primitive value!
-    internal SerializationRecord TryToMapToUserFriendly()
+    internal static MemberPrimitiveTypedRecord<DateTime> DecodeDateTime(BinaryReader reader, SerializationRecordId id)
     {
-        if (MemberValues.Count == 1)
-        {
-            if (HasMember("m_value"))
-            {
-                return MemberValues[0] switch
-                {
-                    // there can be a value match, but no TypeName match
-                    bool value when TypeName.FullName == typeof(bool).FullName => Create(value),
-                    byte value when TypeName.FullName == typeof(byte).FullName => Create(value),
-                    sbyte value when TypeName.FullName == typeof(sbyte).FullName => Create(value),
-                    char value when TypeName.FullName == typeof(char).FullName => Create(value),
-                    short value when TypeName.FullName == typeof(short).FullName => Create(value),
-                    ushort value when TypeName.FullName == typeof(ushort).FullName => Create(value),
-                    int value when TypeName.FullName == typeof(int).FullName => Create(value),
-                    uint value when TypeName.FullName == typeof(uint).FullName => Create(value),
-                    long value when TypeName.FullName == typeof(long).FullName => Create(value),
-                    ulong value when TypeName.FullName == typeof(ulong).FullName => Create(value),
-                    float value when TypeName.FullName == typeof(float).FullName => Create(value),
-                    double value when TypeName.FullName == typeof(double).FullName => Create(value),
-                    _ => this
-                };
-            }
-            else if (HasMember("value"))
-            {
-                return MemberValues[0] switch
-                {
-                    // there can be a value match, but no TypeName match
-                    long value when TypeName.FullName == typeof(IntPtr).FullName => Create(new IntPtr(value)),
-                    ulong value when TypeName.FullName == typeof(UIntPtr).FullName => Create(new UIntPtr(value)),
-                    _ => this
-                };
-            }
-            else if (HasMember("_ticks") && MemberValues[0] is long ticks && TypeName.FullName == typeof(TimeSpan).FullName)
-            {
-                return Create(new TimeSpan(ticks));
-            }
-        }
-        else if (MemberValues.Count == 2
-            && HasMember("ticks") && HasMember("dateData")
-            && MemberValues[0] is long value && MemberValues[1] is ulong
-            && TypeNameMatches(typeof(DateTime)))
-        {
-            return Create(Utils.BinaryReaderExtensions.CreateDateTimeFromData(value));
-        }
-        else if(MemberValues.Count == 4
-            && HasMember("lo") && HasMember("mid") && HasMember("hi") && HasMember("flags")
-            && MemberValues[0] is int && MemberValues[1] is int && MemberValues[2] is int && MemberValues[3] is int
-            && TypeNameMatches(typeof(decimal)))
-        {
-            int[] bits =
-            [
-                GetInt32("lo"),
-                GetInt32("mid"),
-                GetInt32("hi"),
-                GetInt32("flags")
-            ];
+        _ = reader.ReadInt64(); // ticks are not used, but they need to be read as they go first in the payload
+        ulong dateData = reader.ReadUInt64();
 
-            return Create(new decimal(bits));
-        }
+        return new MemberPrimitiveTypedRecord<DateTime>(BinaryReaderExtensions.CreateDateTimeFromData(dateData), id);
+    }
 
-        return this;
+    internal static MemberPrimitiveTypedRecord<decimal> DecodeDecimal(BinaryReader reader, SerializationRecordId id)
+    {
+        int flags = reader.ReadInt32();
+        int hi = reader.ReadInt32();
+        int lo = reader.ReadInt32();
+        int mid = reader.ReadInt32();
 
-        SerializationRecord Create<T>(T value) where T : unmanaged
-            => new MemberPrimitiveTypedRecord<T>(value, Id);
+        return new MemberPrimitiveTypedRecord<decimal>(new decimal([lo, mid, hi, flags]), id);
     }
 }

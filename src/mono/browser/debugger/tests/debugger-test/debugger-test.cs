@@ -1429,136 +1429,136 @@ public class ReadOnlySpanTest
     }
 }
 
-public class ToStringOverriden
+public class ToStringOverridden
 {
-    class ToStringOverridenA {
+    class ToStringOverriddenA {
         public override string ToString()
         {
-            return "helloToStringOverridenA";
+            return "helloToStringOverriddenA";
         }
     }
-    class ToStringOverridenB: ToStringOverridenA {}
+    class ToStringOverriddenB: ToStringOverriddenA {}
 
-    class ToStringOverridenC {}
-    class ToStringOverridenD: ToStringOverridenC
+    class ToStringOverriddenC {}
+    class ToStringOverriddenD: ToStringOverriddenC
     {
         public override string ToString()
         {
-            return "helloToStringOverridenD";
-        }
-    }
-
-    struct ToStringOverridenE
-    {
-        public override string ToString()
-        {
-            return "helloToStringOverridenE";
+            return "helloToStringOverriddenD";
         }
     }
 
-    class ToStringOverridenF
+    struct ToStringOverriddenE
     {
         public override string ToString()
         {
-            return "helloToStringOverridenF";
-        }
-    }
-    class ToStringOverridenG: ToStringOverridenF
-    {
-        public override string ToString()
-        {
-            return "helloToStringOverridenG";
+            return "helloToStringOverriddenE";
         }
     }
 
-    class ToStringOverridenH
+    class ToStringOverriddenF
     {
         public override string ToString()
         {
-            return "helloToStringOverridenH";
+            return "helloToStringOverriddenF";
+        }
+    }
+    class ToStringOverriddenG: ToStringOverriddenF
+    {
+        public override string ToString()
+        {
+            return "helloToStringOverriddenG";
+        }
+    }
+
+    class ToStringOverriddenH
+    {
+        public override string ToString()
+        {
+            return "helloToStringOverriddenH";
         }
         public string ToString(bool withParms = true)
         {
-            return "helloToStringOverridenHWrong";
+            return "helloToStringOverriddenHWrong";
         }
     }
 
-    class ToStringOverridenI
+    class ToStringOverriddenI
     {
         public string ToString(bool withParms = true)
         {
-            return "helloToStringOverridenIWrong";
+            return "helloToStringOverriddenIWrong";
         }
     }
 
-    struct ToStringOverridenJ
+    struct ToStringOverriddenJ
     {
         public override string ToString()
         {
-            return "helloToStringOverridenJ";
+            return "helloToStringOverriddenJ";
         }
         public string ToString(bool withParms = true)
         {
-            return "helloToStringOverridenJWrong";
+            return "helloToStringOverriddenJWrong";
         }
     }
 
-    struct ToStringOverridenK
+    struct ToStringOverriddenK
     {
         public string ToString(bool withParms = true)
         {
-            return "helloToStringOverridenKWrong";
+            return "helloToStringOverriddenKWrong";
         }
     }
 
-    record ToStringOverridenL
-    {
-        public override string ToString()
-        {
-            return "helloToStringOverridenL";
-        }
-    }
-
-    record ToStringOverridenM
-    {
-        public string ToString(bool withParms = true)
-        {
-            return "helloToStringOverridenMWrong";
-        }
-    }
-
-    record ToStringOverridenN
+    record ToStringOverriddenL
     {
         public override string ToString()
         {
-            return "helloToStringOverridenN";
+            return "helloToStringOverriddenL";
+        }
+    }
+
+    record ToStringOverriddenM
+    {
+        public string ToString(bool withParms = true)
+        {
+            return "helloToStringOverriddenMWrong";
+        }
+    }
+
+    record ToStringOverriddenN
+    {
+        public override string ToString()
+        {
+            return "helloToStringOverriddenN";
         }
         public string ToString(bool withParms = true)
         {
-            return "helloToStringOverridenNWrong";
+            return "helloToStringOverriddenNWrong";
         }
     }
 
     public override string ToString()
     {
-        return "helloToStringOverriden";
+        return "helloToStringOverridden";
     }
     public static void Run()
     {
-        var a = new ToStringOverriden();
-        var b = new ToStringOverridenB();
-        var c = new ToStringOverridenD();
-        var d = new ToStringOverridenE();
-        ToStringOverridenA e = new ToStringOverridenB();
-        object f = new ToStringOverridenB();
-        var g = new ToStringOverridenG();
-        var h = new ToStringOverridenH();
-        var i = new ToStringOverridenI();
-        var j = new ToStringOverridenJ();
-        var k = new ToStringOverridenK();
-        var l = new ToStringOverridenL();
-        var m = new ToStringOverridenM();
-        var n = new ToStringOverridenN();
+        var a = new ToStringOverridden();
+        var b = new ToStringOverriddenB();
+        var c = new ToStringOverriddenD();
+        var d = new ToStringOverriddenE();
+        ToStringOverriddenA e = new ToStringOverriddenB();
+        object f = new ToStringOverriddenB();
+        var g = new ToStringOverriddenG();
+        var h = new ToStringOverriddenH();
+        var i = new ToStringOverriddenI();
+        var j = new ToStringOverriddenJ();
+        var k = new ToStringOverriddenK();
+        var l = new ToStringOverriddenL();
+        var m = new ToStringOverriddenM();
+        var n = new ToStringOverriddenN();
         System.Diagnostics.Debugger.Break();
     }
 }

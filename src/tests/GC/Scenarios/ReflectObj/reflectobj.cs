@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using Xunit;
 /**************************************************************/
 /* TEST: ReflectObj
 /* Purpose: test if GC can handle objects create by reflect
@@ -20,7 +21,7 @@ namespace App {
     using System.Reflection;
     using System.Runtime.CompilerServices;
 
-    class ReflectObj
+    public class ReflectObj
     {
         Object obj;
         public static int icCreat = 0;
@@ -49,7 +50,8 @@ namespace App {
             icFinal++;
         }
 
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             Console.WriteLine("Test should return with ExitCode 100 ...");
             CreateObj temp = new CreateObj();

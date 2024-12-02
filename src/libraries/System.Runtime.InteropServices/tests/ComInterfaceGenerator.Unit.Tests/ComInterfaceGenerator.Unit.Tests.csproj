@@ -13,7 +13,6 @@
     <Compile Include="$(CommonTestPath)SourceGenerators\LiveReferencePack.cs" Link="Common\SourceGenerators\LiveReferencePack.cs" />
     <Compile Include="$(CommonTestPath)SourceGenerators\GlobalOptionsOnlyProvider.cs" Link="Common\SourceGenerators\GlobalOptionsOnlyProvider.cs" />
     <Compile Include="..\Common\TestUtils.cs" Link="Common\TestUtils.cs" />
-    <Compile Include="..\Common\TargetFrameworkOptions.cs" Link="Common\TargetFrameworkOptions.cs" />
     <Compile Include="..\Common\CustomCollectionMarshallingCodeSnippets.cs" Link="Common\CustomCollectionMarshallingCodeSnippets.cs" />
     <Compile Include="..\Common\CustomStructMarshallingCodeSnippets.cs" Link="Common\CustomStructMarshallingCodeSnippets.cs" />
     <Compile Include="..\Common\ICustomMarshallingSignatureTestProvider.cs" Link="ICustomMarshallingSignatureTestProvider.cs" />
@@ -33,6 +32,9 @@
     <PackageReference Include="DiffPlex" Version="$(CompilerPlatformTestingDiffPlexVersion)" />
     <PackageReference Include="Microsoft.VisualBasic" Version="$(CompilerPlatformTestingMicrosoftVisualBasicVersion)" />
     <PackageReference Include="Microsoft.VisualStudio.Composition" Version="$(CompilerPlatformTestingMicrosoftVisualStudioCompositionVersion)" />
+
+    <!-- Upgrade to a non-vulnerable version of Asn1 - which will be ignored in favor of the framework copy  -->
+    <PackageReference Include="System.Formats.Asn1" Version="$(SystemFormatsAsn1Version)" ExcludeAssets="All" />
   </ItemGroup>
 
   <ItemGroup>

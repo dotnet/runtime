@@ -98,6 +98,7 @@ private:
     void      TryLowerCselToCSOp(GenTreeOp* select, GenTree* cond);
     bool      TryLowerAddSubToMulLongOp(GenTreeOp* op, GenTree** next);
     bool      TryLowerNegToMulLongOp(GenTreeOp* op, GenTree** next);
+    bool      TryContainingCselOp(GenTreeHWIntrinsic* parentNode, GenTreeHWIntrinsic* childNode);
 #endif
     void ContainCheckSelect(GenTreeOp* select);
     void ContainCheckBitCast(GenTree* node);
@@ -183,6 +184,10 @@ private:
     GenTree* LowerVirtualStubCall(GenTreeCall* call);
     void     LowerArgsForCall(GenTreeCall* call);
     void     ReplaceArgWithPutArgOrBitcast(GenTree** ppChild, GenTree* newNode);
+#if defined(TARGET_X86) && defined(FEATURE_IJW)
+    void LowerSpecialCopyArgs(GenTreeCall* call);
+    void InsertSpecialCopyArg(GenTreePutArgStk* putArgStk, CORINFO_CLASS_HANDLE argType, unsigned lclNum);
+#endif // defined(TARGET_X86) && defined(FEATURE_IJW)
     GenTree* NewPutArg(GenTreeCall* call, GenTree* arg, CallArg* callArg, var_types type);
     void     LowerArg(GenTreeCall* call, CallArg* callArg, bool late);
 #if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
@@ -562,7 +567,7 @@ private:
 
 #if defined(FEATURE_HW_INTRINSICS)
     // Tries to make 'childNode' contained or regOptional in the 'parentNode'
-    void TryMakeSrcContainedOrRegOptional(GenTreeHWIntrinsic* parentNode, GenTree* childNode) const;
+    void TryMakeSrcContainedOrRegOptional(GenTreeHWIntrinsic* parentNode, GenTree* childNode);
 #endif
 
     // Checks and makes 'childNode' contained in the 'parentNode'

@@ -156,6 +156,7 @@
 // Defines the type ValueNum.
 #include "valuenumtype.h"
 // Defines the type SmallHashTable.
+#include "compiler.h"
 #include "smallhash.h"
 
 // A "ValueNumStore" represents the "universe" of value numbers used in a single
@@ -595,6 +596,20 @@ public:
     template <typename TArgVisitor>
     VNVisit VNVisitReachingVNs(ValueNum vn, TArgVisitor argVisitor)
     {
+        // Fast-path: in most cases vn is not a phi definition
+        if (!IsPhiDef(vn))
+        {
+            return argVisitor(vn);
+        }
+        return VNVisitReachingVNsWorker(vn, argVisitor);
+    }
+
+private:
+
+    // Helper function for VNVisitReachingVNs
+    template <typename TArgVisitor>
+    VNVisit VNVisitReachingVNsWorker(ValueNum vn, TArgVisitor argVisitor)
+    {
         ArrayStack<ValueNum> toVisit(m_alloc);
         toVisit.Push(vn);
 
@@ -629,6 +644,8 @@ public:
         }
         return VNVisit::Continue;
     }
+
+public:
 
     // And the single constant for an object reference type.
     static ValueNum VNForNull()
@@ -818,6 +835,7 @@ public:
 
     ValueNum VNForPhiDef(var_types type, unsigned lclNum, unsigned ssaDef, ArrayStack<unsigned>& ssaArgs);
     bool     GetPhiDef(ValueNum vn, VNPhiDef* phiDef);
+    bool     IsPhiDef(ValueNum vn) const;
     ValueNum VNForMemoryPhiDef(BasicBlock* block, ArrayStack<unsigned>& vns);
     bool     GetMemoryPhiDef(ValueNum vn, VNMemoryPhiDef* memoryPhiDef);
 
@@ -1322,6 +1340,24 @@ public:
     T CoercedConstantValue(ValueNum vn)
     {
         return ConstantValueInternal<T>(vn DEBUGARG(true));
+    }
+
+    template <typename T>
+    bool IsVNIntegralConstant(ValueNum vn, T* value)
+    {
+        if (!IsVNConstant(vn) || !varTypeIsIntegral(TypeOfVN(vn)))
+        {
+            *value = 0;
+            return false;
+        }
+        ssize_t val = CoercedConstantValue<ssize_t>(vn);
+        if (FitsIn<T>(val))
+        {
+            *value = static_cast<T>(val);
+            return true;
+        }
+        *value = 0;
+        return false;
     }
 
     CORINFO_OBJECT_HANDLE ConstantObjHandle(ValueNum vn)

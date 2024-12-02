@@ -50,6 +50,7 @@ set(VM_SOURCES_DAC_AND_WKS_COMMON
     bundle.cpp
     castcache.cpp
     callcounting.cpp
+    cdacplatformmetadata.cpp
     ceeload.cpp
     class.cpp
     classhash.cpp
@@ -345,7 +346,6 @@ set(VM_SOURCES_WKS
     nativeeventsource.cpp
     nativelibrary.cpp
     nativelibrarynative.cpp
-    objectlist.cpp
     olevariant.cpp
     pendingload.cpp
     pinvokeoverride.cpp
@@ -444,7 +444,6 @@ set(VM_HEADERS_WKS
     multicorejit.h
     multicorejitimpl.h
     nativeeventsource.h
-    objectlist.h
     olevariant.h
     pendingload.h
     profdetach.h
@@ -579,7 +578,6 @@ if(CLR_CMAKE_TARGET_WIN32)
         comtoclrcall.cpp
         dispatchinfo.cpp
         dispparammarshaler.cpp
-        mngstdinterfaces.cpp
         olecontexthelpers.cpp
         runtimecallablewrapper.cpp
         stdinterfaces.cpp
@@ -595,7 +593,6 @@ if(CLR_CMAKE_TARGET_WIN32)
         comtoclrcall.h
         dispatchinfo.h
         dispparammarshaler.h
-        mngstdinterfaces.h
         olecontexthelpers.h
         runtimecallablewrapper.h
         stdinterfaces.h

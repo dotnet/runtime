@@ -13,6 +13,7 @@
     <MonoLLVMToolsVersion Condition="'$(MonoLLVMHostOS)' == 'linux-musl'">$(runtimelinuxmuslx64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion)</MonoLLVMToolsVersion>
     <MonoLLVMToolsVersion Condition="'$(MonoLLVMHostOS)' == 'win'">$(runtimewinx64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion)</MonoLLVMToolsVersion>
     <MonoLLVMToolsVersion Condition="'$(MonoLLVMHostOS)' == 'osx'">$(runtimeosxx64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion)</MonoLLVMToolsVersion>
+    <MonoLLVMSDKDebugSuffix Condition="'$(MonoLLVMHostOS)' == 'win' and '$(Configuration)' == 'Debug'" >.Debug</MonoLLVMSDKDebugSuffix>
   </PropertyGroup>
 
   <ItemGroup>
@@ -28,15 +29,15 @@
                       Version="$(MonoLLVMToolsVersion)"
                       PackageArch="$(BuildArchitecture)"
                       Condition="'$(BuildArchitecture)' != ''" />
-    <PackageReference Include="runtime.$(MonoLLVMHostOS)-$(TargetArchitecture).Microsoft.NETCore.Runtime.Mono.LLVM.Sdk"
+    <PackageReference Include="runtime.$(MonoLLVMHostOS)-$(TargetArchitecture).Microsoft.NETCore.Runtime.Mono.LLVM.Sdk$(MonoLLVMSDKDebugSuffix)"
                       Version="$(MonoLLVMSDKVersion)"
                       PackageArch="$(TargetArchitecture)"
                       Condition="'$(TargetArchitecture)' != ''" />
-    <PackageReference Include="runtime.$(MonoLLVMHostOS)-$(AotHostArchitecture).Microsoft.NETCore.Runtime.Mono.LLVM.Sdk"
+    <PackageReference Include="runtime.$(MonoLLVMHostOS)-$(AotHostArchitecture).Microsoft.NETCore.Runtime.Mono.LLVM.Sdk$(MonoLLVMSDKDebugSuffix)"
                       Version="$(MonoLLVMSDKVersion)"
                       PackageArch="$(AotHostArchitecture)"
                       Condition="'$(AotHostArchitecture)' != ''" />
-    <PackageReference Include="runtime.$(MonoLLVMHostOS)-$(BuildArchitecture).Microsoft.NETCore.Runtime.Mono.LLVM.Sdk"
+    <PackageReference Include="runtime.$(MonoLLVMHostOS)-$(BuildArchitecture).Microsoft.NETCore.Runtime.Mono.LLVM.Sdk$(MonoLLVMSDKDebugSuffix)"
                       Version="$(MonoLLVMSDKVersion)"
                       PackageArch="$(BuildArchitecture)"
                       Condition="'$(BuildArchitecture)' != ''" />
@@ -87,7 +88,9 @@
   <Target Name="CopyLLVMToTree" AfterTargets="Build">
     <ItemGroup>
       <LLVMFiles Include="$(NuGetPackageRoot)\$([System.String]::Copy(%(PackageReference.Identity)).ToLowerInvariant())\%(PackageReference.Version)\tools\$(MonoLLVMHostOS)-%(PackageReference.PackageArch)\**"
-                 FileArch="%(PackageReference.PackageArch)" />
+                 FileArch="%(PackageReference.PackageArch)"  Condition="'$(_LocalLLVMArtifacts)' == ''" />
+      <LLVMFiles Include="$(_LocalLLVMArtifacts)\obj\InstallRoot-$(BuildArchitecture)\**"
+                 FileArch="%(PackageReference.PackageArch)"  Condition="'$(_LocalLLVMArtifacts)' != ''" />
     </ItemGroup>
     <Copy SourceFiles="@(LLVMFiles)" DestinationFolder="$(MonoLLVMDir)\%(LLVMFiles.FileArch)\%(RecursiveDir)">
       <Output TaskParameter="DestinationFiles" ItemName="FileWrites"/>

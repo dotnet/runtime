@@ -9,6 +9,7 @@ using System.Formats.Nrbf.Utils;
 using System.Text;
 using System.Runtime.Serialization;
 using System.Runtime.InteropServices;
+using System.Reflection.Metadata;
 
 namespace System.Formats.Nrbf;
 
@@ -22,31 +23,32 @@ public static class NrbfDecoder
     // The header consists of:
     // - a byte that describes the record type (SerializationRecordType.SerializedStreamHeader)
     // - four 32 bit integers:
-    //   - root Id (every value is valid)
+    //   - root Id (every value except of 0 is valid)
     //   - header Id (value is ignored)
     //   - major version, it has to be equal 1.
     //   - minor version, it has to be equal 0.
     private static ReadOnlySpan<byte> HeaderSuffix => [1, 0, 0, 0, 0, 0, 0, 0];
 
     /// <summary>
-    /// Checks if given buffer starts with <see href="https://learn.microsoft.com/openspecs/windows_protocols/ms-nrbf/a7e578d3-400a-4249-9424-7529d10d1b3c">NRBF payload header</see>.
+    /// Checks if the given buffer starts with the <see href="https://learn.microsoft.com/openspecs/windows_protocols/ms-nrbf/a7e578d3-400a-4249-9424-7529d10d1b3c">NRBF payload header</see>.
     /// </summary>
     /// <param name="bytes">The buffer to inspect.</param>
-    /// <returns><see langword="true" /> if it starts with NRBF payload header; otherwise, <see langword="false" />.</returns>
+    /// <returns><see langword="true" /> if the buffer starts with the NRBF payload header; otherwise, <see langword="false" />.</returns>
     public static bool StartsWithPayloadHeader(ReadOnlySpan<byte> bytes)
         => bytes.Length >= SerializedStreamHeaderRecord.Size
         && bytes[0] == (byte)SerializationRecordType.SerializedStreamHeader
         && bytes.Slice(SerializedStreamHeaderRecord.Size - HeaderSuffix.Length, HeaderSuffix.Length).SequenceEqual(HeaderSuffix);
 
     /// <summary>
-    /// Checks if given stream starts with <see href="https://learn.microsoft.com/openspecs/windows_protocols/ms-nrbf/a7e578d3-400a-4249-9424-7529d10d1b3c">NRBF payload header</see>.
+    /// Checks if the given stream starts with the <see href="https://learn.microsoft.com/openspecs/windows_protocols/ms-nrbf/a7e578d3-400a-4249-9424-7529d10d1b3c">NRBF payload header</see>.
     /// </summary>
     /// <param name="stream">The stream to inspect. The stream must be both readable and seekable.</param>
-    /// <returns><see langword="true" /> if it starts with NRBF payload header; otherwise, <see langword="false" />.</returns>
+    /// <returns><see langword="true" /> if the stream starts with the NRBF payload header; otherwise, <see langword="false" />.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="stream" /> is <see langword="null" />.</exception>
     /// <exception cref="NotSupportedException">The stream does not support reading or seeking.</exception>
     /// <exception cref="ObjectDisposedException">The stream was closed.</exception>
-    /// <remarks><para>When this method returns, <paramref name="stream" /> will be restored to its original position.</para></remarks>
+    /// <exception cref="IOException">An I/O error occurred.</exception>
+    /// <remarks>When this method returns, <paramref name="stream" /> is restored to its original position.</remarks>
     public static bool StartsWithPayloadHeader(Stream stream)
     {
 #if NET
@@ -68,28 +70,22 @@ public static class NrbfDecoder
             return false;
         }
 
-        try
+        byte[] buffer = new byte[SerializedStreamHeaderRecord.Size];
+        int offset = 0;
+        while (offset < buffer.Length)
         {
-#if NET
-            Span<byte> buffer = stackalloc byte[SerializedStreamHeaderRecord.Size];
-            stream.ReadExactly(buffer);
-#else
-            byte[] buffer = new byte[SerializedStreamHeaderRecord.Size];
-            int offset = 0;
-            while (offset < buffer.Length)
+            int read = stream.Read(buffer, offset, buffer.Length - offset);
+            if (read == 0)
             {
-                int read = stream.Read(buffer, offset, buffer.Length - offset);
-                if (read == 0)
-                    throw new EndOfStreamException();
-                offset += read;
+                stream.Position = beginning;
+                return false;
             }
-#endif
-            return StartsWithPayloadHeader(buffer);
+            offset += read;
         }
-        finally
-        {
-            stream.Position = beginning;
-        }
+
+        bool result = StartsWithPayloadHeader(buffer);
+        stream.Position = beginning;
+        return result;
     }
 
     /// <summary>
@@ -103,19 +99,20 @@ public static class NrbfDecoder
     /// </param>
     /// <returns>A <see cref="SerializationRecord"/> that represents the root object.
     /// It can be either <see cref="PrimitiveTypeRecord{T}"/>,
-    /// a <see cref="ClassRecord"/> or an <see cref="ArrayRecord"/>.</returns>
+    /// a <see cref="ClassRecord"/>, or an <see cref="ArrayRecord"/>.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="payload"/> is <see langword="null" />.</exception>
     /// <exception cref="ArgumentException"><paramref name="payload"/> does not support reading or is already closed.</exception>
-    /// <exception cref="SerializationException">Reading from <paramref name="payload"/> encounters invalid NRBF data.</exception>
+    /// <exception cref="SerializationException">Reading from <paramref name="payload"/> encountered invalid NRBF data.</exception>
+    /// <exception cref="IOException">An I/O error occurred.</exception>
     /// <exception cref="NotSupportedException">
-    /// Reading from <paramref name="payload"/> encounters not supported records.
-    /// For example, arrays with non-zero offset or not supported record types
+    /// Reading from <paramref name="payload"/> encountered unsupported records,
+    /// for example, arrays with non-zero offset or unsupported record types
     /// (<see cref="SerializationRecordType.ClassWithMembers"/>, <see cref="SerializationRecordType.SystemClassWithMembers"/>,
-    /// <see cref="SerializationRecordType.MethodCall"/> or <see cref="SerializationRecordType.MethodReturn"/>).
+    /// <see cref="SerializationRecordType.MethodCall"/>, or <see cref="SerializationRecordType.MethodReturn"/>).
     /// </exception>
     /// <exception cref="DecoderFallbackException">Reading from <paramref name="payload"/>
-    /// encounters an invalid UTF8 sequence.</exception>
-    /// <exception cref="EndOfStreamException">The end of the stream is reached before reading <see cref="SerializationRecordType.MessageEnd"/> record.</exception>
+    /// encountered an invalid UTF8 sequence.</exception>
+    /// <exception cref="EndOfStreamException">The end of the stream was reached before reading <see cref="SerializationRecordType.MessageEnd"/> record.</exception>
     public static SerializationRecord Decode(Stream payload, PayloadOptions? options = default, bool leaveOpen = false)
         => Decode(payload, out _, options, leaveOpen);
 
@@ -142,7 +139,14 @@ public static class NrbfDecoder
 #endif
 
         using BinaryReader reader = new(payload, ThrowOnInvalidUtf8Encoding, leaveOpen: leaveOpen);
-        return Decode(reader, options ?? new(), out recordMap);
+        try
+        {
+            return Decode(reader, options ?? new(), out recordMap);
+        }
+        catch (FormatException) // can be thrown by various BinaryReader methods
+        {
+            throw new SerializationException(SR.Serialization_InvalidFormat);
+        }
     }
 
     /// <summary>
@@ -213,20 +217,15 @@ public static class NrbfDecoder
     private static SerializationRecord DecodeNext(BinaryReader reader, RecordMap recordMap,
         AllowedRecordTypes allowed, PayloadOptions options, out SerializationRecordType recordType)
     {
-        byte nextByte = reader.ReadByte();
-        if (((uint)allowed & (1u << nextByte)) == 0)
-        {
-            ThrowHelper.ThrowForUnexpectedRecordType(nextByte);
-        }
-        recordType = (SerializationRecordType)nextByte;
+        recordType = reader.ReadSerializationRecordType(allowed);
 
         SerializationRecord record = recordType switch
         {
             SerializationRecordType.ArraySingleObject => ArraySingleObjectRecord.Decode(reader),
             SerializationRecordType.ArraySinglePrimitive => DecodeArraySinglePrimitiveRecord(reader),
             SerializationRecordType.ArraySingleString => ArraySingleStringRecord.Decode(reader),
-            SerializationRecordType.BinaryArray => BinaryArrayRecord.Decode(reader, recordMap, options),
-            SerializationRecordType.BinaryLibrary => BinaryLibraryRecord.Decode(reader),
+            SerializationRecordType.BinaryArray => DecodeBinaryArrayRecord(reader, recordMap, options),
+            SerializationRecordType.BinaryLibrary => BinaryLibraryRecord.Decode(reader, options),
             SerializationRecordType.BinaryObjectString => BinaryObjectStringRecord.Decode(reader),
             SerializationRecordType.ClassWithId => ClassWithIdRecord.Decode(reader, recordMap),
             SerializationRecordType.ClassWithMembersAndTypes => ClassWithMembersAndTypesRecord.Decode(reader, recordMap, options),
@@ -237,7 +236,8 @@ public static class NrbfDecoder
             SerializationRecordType.ObjectNullMultiple => ObjectNullMultipleRecord.Decode(reader),
             SerializationRecordType.ObjectNullMultiple256 => ObjectNullMultiple256Record.Decode(reader),
             SerializationRecordType.SerializedStreamHeader => SerializedStreamHeaderRecord.Decode(reader),
-            _ => SystemClassWithMembersAndTypesRecord.Decode(reader, recordMap, options),
+            SerializationRecordType.SystemClassWithMembersAndTypes => SystemClassWithMembersAndTypesRecord.Decode(reader, recordMap, options),
+            _ => throw new InvalidOperationException()
         };
 
         recordMap.Add(record);
@@ -254,7 +254,7 @@ public static class NrbfDecoder
             PrimitiveType.Boolean => new MemberPrimitiveTypedRecord<bool>(reader.ReadBoolean()),
             PrimitiveType.Byte => new MemberPrimitiveTypedRecord<byte>(reader.ReadByte()),
             PrimitiveType.SByte => new MemberPrimitiveTypedRecord<sbyte>(reader.ReadSByte()),
-            PrimitiveType.Char => new MemberPrimitiveTypedRecord<char>(reader.ReadChar()),
+            PrimitiveType.Char => new MemberPrimitiveTypedRecord<char>(reader.ParseChar()),
             PrimitiveType.Int16 => new MemberPrimitiveTypedRecord<short>(reader.ReadInt16()),
             PrimitiveType.UInt16 => new MemberPrimitiveTypedRecord<ushort>(reader.ReadUInt16()),
             PrimitiveType.Int32 => new MemberPrimitiveTypedRecord<int>(reader.ReadInt32()),
@@ -263,18 +263,23 @@ public static class NrbfDecoder
             PrimitiveType.UInt64 => new MemberPrimitiveTypedRecord<ulong>(reader.ReadUInt64()),
             PrimitiveType.Single => new MemberPrimitiveTypedRecord<float>(reader.ReadSingle()),
             PrimitiveType.Double => new MemberPrimitiveTypedRecord<double>(reader.ReadDouble()),
-            PrimitiveType.Decimal => new MemberPrimitiveTypedRecord<decimal>(decimal.Parse(reader.ReadString(), CultureInfo.InvariantCulture)),
-            PrimitiveType.DateTime => new MemberPrimitiveTypedRecord<DateTime>(Utils.BinaryReaderExtensions.CreateDateTimeFromData(reader.ReadInt64())),
-            // String is handled with a record, never on it's own
-            _ => new MemberPrimitiveTypedRecord<TimeSpan>(new TimeSpan(reader.ReadInt64())),
+            PrimitiveType.Decimal => new MemberPrimitiveTypedRecord<decimal>(reader.ParseDecimal()),
+            PrimitiveType.DateTime => new MemberPrimitiveTypedRecord<DateTime>(Utils.BinaryReaderExtensions.CreateDateTimeFromData(reader.ReadUInt64())),
+            PrimitiveType.TimeSpan => new MemberPrimitiveTypedRecord<TimeSpan>(new TimeSpan(reader.ReadInt64())),
+            _ => throw new InvalidOperationException()
         };
     }
 
-    private static SerializationRecord DecodeArraySinglePrimitiveRecord(BinaryReader reader)
+    private static ArrayRecord DecodeArraySinglePrimitiveRecord(BinaryReader reader)
     {
         ArrayInfo info = ArrayInfo.Decode(reader);
         PrimitiveType primitiveType = reader.ReadPrimitiveType();
 
+        return DecodeArraySinglePrimitiveRecord(reader, info, primitiveType);
+    }
+
+    private static ArrayRecord DecodeArraySinglePrimitiveRecord(BinaryReader reader, ArrayInfo info, PrimitiveType primitiveType)
+    {
         return primitiveType switch
         {
             PrimitiveType.Boolean => Decode<bool>(info, reader),
@@ -291,11 +296,173 @@ public static class NrbfDecoder
             PrimitiveType.Double => Decode<double>(info, reader),
             PrimitiveType.Decimal => Decode<decimal>(info, reader),
             PrimitiveType.DateTime => Decode<DateTime>(info, reader),
-            _ => Decode<TimeSpan>(info, reader),
+            PrimitiveType.TimeSpan => Decode<TimeSpan>(info, reader),
+            _ => throw new InvalidOperationException()
         };
 
-        static SerializationRecord Decode<T>(ArrayInfo info, BinaryReader reader) where T : unmanaged
+        static ArrayRecord Decode<T>(ArrayInfo info, BinaryReader reader) where T : unmanaged
             => new ArraySinglePrimitiveRecord<T>(info, ArraySinglePrimitiveRecord<T>.DecodePrimitiveTypes(reader, info.GetSZArrayLength()));
+    }
+
+    private static ArrayRecord DecodeArrayRectangularPrimitiveRecord(PrimitiveType primitiveType, ArrayInfo info, int[] lengths, BinaryReader reader)
+    {
+        return primitiveType switch
+        {
+            PrimitiveType.Boolean => Decode<bool>(info, lengths, reader),
+            PrimitiveType.Byte => Decode<byte>(info, lengths, reader),
+            PrimitiveType.SByte => Decode<sbyte>(info, lengths, reader),
+            PrimitiveType.Char => Decode<char>(info, lengths, reader),
+            PrimitiveType.Int16 => Decode<short>(info, lengths, reader),
+            PrimitiveType.UInt16 => Decode<ushort>(info, lengths, reader),
+            PrimitiveType.Int32 => Decode<int>(info, lengths, reader),
+            PrimitiveType.UInt32 => Decode<uint>(info, lengths, reader),
+            PrimitiveType.Int64 => Decode<long>(info, lengths, reader),
+            PrimitiveType.UInt64 => Decode<ulong>(info, lengths, reader),
+            PrimitiveType.Single => Decode<float>(info, lengths, reader),
+            PrimitiveType.Double => Decode<double>(info, lengths, reader),
+            PrimitiveType.Decimal => Decode<decimal>(info, lengths, reader),
+            PrimitiveType.DateTime => Decode<DateTime>(info, lengths, reader),
+            PrimitiveType.TimeSpan => Decode<TimeSpan>(info, lengths, reader),
+            _ => throw new InvalidOperationException()
+        };
+
+        static ArrayRecord Decode<T>(ArrayInfo info, int[] lengths, BinaryReader reader) where T : unmanaged
+        {
+            // We limit the length of multi-dimensional array to max length of SZArray.
+            // Because of that, it's possible to re-use the same decoding logic for both MD and SZ arrays.
+            IReadOnlyList<T> values = ArraySinglePrimitiveRecord<T>.DecodePrimitiveTypes(reader, info.GetSZArrayLength());
+            return new ArrayRectangularPrimitiveRecord<T>(info, lengths, values);
+        }
+    }
+
+    private static ArrayRecord DecodeBinaryArrayRecord(BinaryReader reader, RecordMap recordMap, PayloadOptions options)
+    {
+        SerializationRecordId objectId = SerializationRecordId.Decode(reader);
+        BinaryArrayType arrayType = reader.ReadArrayType();
+        int rank = reader.ReadInt32();
+
+        bool isRectangular = arrayType is BinaryArrayType.Rectangular;
+
+        // It is an arbitrary limit in the current CoreCLR type loader.
+        // Don't change this value without reviewing the loop a few lines below.
+        const int MaxSupportedArrayRank = 32;
+
+        if (rank < 1 || rank > MaxSupportedArrayRank
+            || (rank != 1 && !isRectangular)
+            || (rank == 1 && isRectangular))
+        {
+            ThrowHelper.ThrowInvalidValue(rank);
+        }
+
+        int[] lengths = new int[rank]; // adversary-controlled, but acceptable since upper limit of 32
+        long totalElementCount = 1; // to avoid integer overflow during the multiplication below
+        for (int i = 0; i < lengths.Length; i++)
+        {
+            lengths[i] = ArrayInfo.ParseValidArrayLength(reader);
+            totalElementCount *= lengths[i];
+
+            // n.b. This forbids "new T[Array.MaxLength, Array.MaxLength, Array.MaxLength, ..., 0]"
+            // but allows "new T[0, Array.MaxLength, Array.MaxLength, Array.MaxLength, ...]". But
+            // that's the same behavior that newarr and Array.CreateInstance exhibit, so at least
+            // we're consistent.
+
+            if (totalElementCount > ArrayInfo.MaxArrayLength)
+            {
+                ThrowHelper.ThrowInvalidValue(lengths[i]); // max array size exceeded
+            }
+        }
+
+        // Per BinaryReaderExtensions.ReadArrayType, we do not support nonzero offsets, so
+        // we don't need to read the NRBF stream 'LowerBounds' field here.
+
+        MemberTypeInfo memberTypeInfo = MemberTypeInfo.Decode(reader, 1, options, recordMap);
+        ArrayInfo arrayInfo = new(objectId, totalElementCount, arrayType, rank);
+
+        (BinaryType binaryType, object? additionalInfo) = memberTypeInfo.Infos[0];
+        if (arrayType == BinaryArrayType.Rectangular)
+        {
+            if (binaryType == BinaryType.Primitive)
+            {
+                return DecodeArrayRectangularPrimitiveRecord((PrimitiveType)additionalInfo!, arrayInfo, lengths, reader);
+            }
+            else if (binaryType == BinaryType.String)
+            {
+                return new RectangularArrayRecord(typeof(string), arrayInfo, memberTypeInfo, lengths);
+            }
+            else if (binaryType == BinaryType.Object)
+            {
+                return new RectangularArrayRecord(typeof(SerializationRecord), arrayInfo, memberTypeInfo, lengths);
+            }
+            else if (binaryType is BinaryType.SystemClass or BinaryType.Class)
+            {
+                TypeName typeName = binaryType == BinaryType.SystemClass ? (TypeName)additionalInfo! : ((ClassTypeInfo)additionalInfo!).TypeName;
+                // BinaryArrayType.Rectangular can be also a jagged array.
+                return typeName.IsArray
+                    ? new JaggedArrayRecord(arrayInfo, memberTypeInfo, lengths)
+                    : new RectangularArrayRecord(typeof(SerializationRecord), arrayInfo, memberTypeInfo, lengths);
+            }
+            else if (binaryType is BinaryType.PrimitiveArray or BinaryType.StringArray or BinaryType.ObjectArray)
+            {
+                // A multi-dimensional array of single dimensional arrays. Example: int[][,]
+                return new JaggedArrayRecord(arrayInfo, memberTypeInfo, lengths);
+            }
+        }
+        else if (arrayType == BinaryArrayType.Single)
+        {
+            if (binaryType is BinaryType.SystemClass or BinaryType.Class)
+            {
+                TypeName typeName = binaryType == BinaryType.SystemClass ? (TypeName)additionalInfo! : ((ClassTypeInfo)additionalInfo!).TypeName;
+                // BinaryArrayType.Single that describes an array is just a jagged array.
+                return typeName.IsArray
+                    ? new JaggedArrayRecord(arrayInfo, memberTypeInfo, lengths)
+                    : new SZArrayOfRecords(arrayInfo, memberTypeInfo);
+            }
+            else if (binaryType == BinaryType.String)
+            {
+                // BinaryArrayRecord can represent string[] (but BF always uses ArraySingleStringRecord for that).
+                return new ArraySingleStringRecord(arrayInfo);
+            }
+            else if (binaryType == BinaryType.Primitive)
+            {
+                // BinaryArrayRecord can represent Primitive[] (but BF always uses ArraySinglePrimitiveRecord for that).
+                return DecodeArraySinglePrimitiveRecord(reader, arrayInfo, (PrimitiveType)additionalInfo!);
+            }
+            else if (binaryType == BinaryType.Object)
+            {
+                // BinaryArrayRecord can represent object[] (but BF always uses ArraySingleObjectRecord for that).
+                return new ArraySingleObjectRecord(arrayInfo);
+            }
+            else if (binaryType is BinaryType.ObjectArray or BinaryType.StringArray or BinaryType.PrimitiveArray)
+            {
+                // It's a Jagged array that does not use BinaryArrayType.Jagged.
+                return new JaggedArrayRecord(arrayInfo, memberTypeInfo, lengths);
+            }
+        }
+        else if (arrayType == BinaryArrayType.Jagged)
+        {
+            if (binaryType is BinaryType.ObjectArray or BinaryType.StringArray or BinaryType.PrimitiveArray)
+            {
+                // It's a Jagged array that does not use BinaryArrayType.Jagged.
+                return new JaggedArrayRecord(arrayInfo, memberTypeInfo, lengths);
+            }
+            else if (binaryType == BinaryType.SystemClass && ((TypeName)additionalInfo!).IsArray)
+            {
+                // BinaryType.SystemClass can be used to describe arrays of system class records.
+                // Example: new Exception[] { new Exception("test") };
+                return new JaggedArrayRecord(arrayInfo, memberTypeInfo, lengths);
+            }
+            else if (binaryType == BinaryType.Class && ((ClassTypeInfo)additionalInfo!).TypeName.IsArray)
+            {
+                // BinaryType.Class can be used to describe arrays of class records.
+                // Example: new MyCustomType[] { new MyCustomType(0) };
+                return new JaggedArrayRecord(arrayInfo, memberTypeInfo, lengths);
+            }
+
+            // It's invalid, the element type must be an array.
+            throw new SerializationException(SR.Format(SR.Serialization_InvalidValue, binaryType));
+        }
+
+        throw new InvalidOperationException();
     }
 
     /// <summary>

@@ -60,17 +60,7 @@ namespace JIT.HardwareIntrinsics.Arm
                 test.RunStructFldScenario();
 
                 // Validates using inside ConditionalSelect with value falseValue
-                // Currently, using this operation in ConditionalSelect() gives incorrect result
-                // when falseReg == targetReg because this instruction uses Pg/Z to update the targetReg
-                // instead of Pg/M to merge it. As such, the value of falseReg is lost. Ideally, such
-                // instructions should be marked similar to RMW (a different flag name) to make sure that
-                // we do not assign falseReg/targetReg same. Then, we would do something like this:
-                //
-                // ldnf1sh target, pg/z, [x0]
-                // sel mask, target, target, falseReg
-                //
-                // This needs more careful thinking, so disabling it for now.
-                // test.ConditionalSelect_FalseOp();
+                test.ConditionalSelect_FalseOp();
 
                 // Validates using inside ConditionalSelect with zero falseValue
                 test.ConditionalSelect_ZeroOp();
@@ -336,7 +326,7 @@ namespace JIT.HardwareIntrinsics.Arm
             ref var op3Ref = ref op3;
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateFirstFaultingResult(Unsafe.AsPointer(ref op1Ref), ref op2Ref, _dataTable.inBounded.Span.Length, Unsafe.AsPointer(ref op3Ref), _dataTable.outArrayPtr, faultResult);
+            ValidateFirstFaultingResult(Unsafe.AsPointer(ref op1Ref), Unsafe.AsPointer(ref op3Ref), _dataTable.outArrayPtr, faultResult);
         }
 
         public void RunBasicScenario_FalseMask()
@@ -728,24 +718,23 @@ namespace JIT.HardwareIntrinsics.Arm
             }
         }
 
-        private void ValidateFirstFaultingResult(void* op1, ref byte op2, int op2Size, void* op3, void* result, Vector<{GetFfrType}> faultResult, [CallerMemberName] string method = "")
+        private void ValidateFirstFaultingResult(void* op1, void* op3, void* result, Vector<{GetFfrType}> faultResult, [CallerMemberName] string method = "")
         {
             {Op1BaseType}[] inArray1 = new {Op1BaseType}[Vector<{Op1BaseType}>.Count];
-            {Op2BaseType}[] inArray2 = new {Op2BaseType}[op2Size / Unsafe.SizeOf<{Op2BaseType}>()];
+            byte[] inArray2 = _dataTable.inBounded.Span.ToArray();
             {Op3BaseType}[] inArray3 = new {Op3BaseType}[Vector<{Op3BaseType}>.Count];
             {RetBaseType}[] outArray = new {RetBaseType}[RetElementCount];
 
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1BaseType}, byte>(ref inArray1[0]), ref Unsafe.AsRef<byte>(op1), (uint)(inArray1.Length * Unsafe.SizeOf<{Op1BaseType}>()));
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op2BaseType}, byte>(ref inArray2[0]), ref op2, (uint)(inArray2.Length * Unsafe.SizeOf<{Op2BaseType}>()));
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op3BaseType}, byte>(ref inArray3[0]), ref Unsafe.AsRef<byte>(op3), (uint)(inArray3.Length * Unsafe.SizeOf<{Op3BaseType}>()));
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<{RetBaseType}, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), (uint)Unsafe.SizeOf<{RetVectorType}<{RetBaseType}>>());
         
             ValidateFirstFaultingResult(inArray1, inArray2, inArray3, outArray, faultResult, method);
         }
 
-        private void ValidateFirstFaultingResult({Op1BaseType}[] firstOp, {Op2BaseType}[] secondOp, {Op3BaseType}[] thirdOp, {RetBaseType}[] result, Vector<{GetFfrType}> faultResult, [CallerMemberName] string method = "")
+        private void ValidateFirstFaultingResult({Op1BaseType}[] firstOp, byte[] secondOp, {Op3BaseType}[] thirdOp, {RetBaseType}[] result, Vector<{GetFfrType}> faultResult, [CallerMemberName] string method = "")
         {
-            var succeeded = Helpers.CheckGatherVectorWithByteOffsetFirstFaultingBehavior(firstOp, secondOp, thirdOp, result, faultResult);
+            var succeeded = Helpers.CheckGatherVectorWithByteOffsetFirstFaultingBehavior<{Op1BaseType}, {Op2BaseType}, {Op3BaseType}, {GetFfrType}>(firstOp, secondOp, thirdOp, result, faultResult);
 
             if (!succeeded)
             {

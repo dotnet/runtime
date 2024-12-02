@@ -15,10 +15,7 @@
 // This hash table is used by class loaders to look up constructed types:
 // arrays, pointers and instantiations of user-defined generic types.
 //
-// Each persisted module structure has an EETypeHashTable used for constructed types that
-// were ngen'ed into that module. See ceeload.hpp for more information about ngen modules.
-//
-// Types created at runtime are placed in an EETypeHashTable in BaseDomain.
+// Types created at runtime are placed in an EETypeHashTable in Module.
 //
 // Keys are derivable from the data stored in the table (TypeHandle)
 // - for an instantiated type, the typedef module, typedef token, and instantiation
