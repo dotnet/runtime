@@ -20,7 +20,7 @@ namespace Wasm.Build.NativeRebuild.Tests
 
         [Theory]
         [MemberData(nameof(NativeBuildData))]
-        // [ActiveIssue(aot: True "Expected changed file: dotnet.native.wasm, dotnet.native.js, WasmBasicTestApp.wasm.bc, WasmBasicTestApp.wasm.o")]
+        // [ActiveIssue(aot: True "Expected changed file: dotnet.native.wasm, dotnet.native.js, WasmBasicTestApp.dll.bc, WasmBasicTestApp.dll.o")]
         public async void SimpleStringChangeInSource(Configuration config, bool aot, bool nativeRelink, bool invariant)
         {
             ProjectInfo info = CopyTestAsset(config, aot, BasicTestApp, "rebuild_simple");
@@ -32,7 +32,7 @@ namespace Wasm.Build.NativeRebuild.Tests
             pathsDict.UpdateTo(unchanged: !aot, "dotnet.native.wasm", "dotnet.native.js");
         
             if (aot)
-                pathsDict.UpdateTo(unchanged: false, $"{mainAssembly}.bc", $"{mainAssembly}.o");
+                pathsDict.UpdateTo(unchanged: false, $"{info.ProjectName}.dll.bc", $"{info.ProjectName}.dll.o");
 
             var originalStat = StatFiles(pathsDict);
 
