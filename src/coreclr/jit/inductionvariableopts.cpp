@@ -1376,9 +1376,15 @@ class StrengthReductionContext
     void        AdvanceCursors(ArrayStack<CursorInfo>* cursors, ArrayStack<CursorInfo>* nextCursors);
     void        ExpandStoredCursors(ArrayStack<CursorInfo>* cursors, ArrayStack<CursorInfo>* otherCursors);
     bool        CheckAdvancedCursors(ArrayStack<CursorInfo>* cursors, ScevAddRec** nextIV);
-    ScevAddRec* ComputeRephrasableIV(ScevAddRec* iv1, ScevAddRec* iv2);
+    ScevAddRec* ComputeRephrasableIV(ScevAddRec* iv1,
+                                     bool        allowRephrasingByScalingIV1,
+                                     ScevAddRec* iv2,
+                                     bool        allowRephrasingByScalingIV2);
     template <typename T>
-    ScevAddRec* ComputeRephrasableIVWithDifferentStep(ScevAddRec* iv1, ScevAddRec* iv2);
+    ScevAddRec* ComputeRephrasableIVByScaling(ScevAddRec* iv1,
+                                              bool        allowRephrasingByScalingIV1,
+                                              ScevAddRec* iv2,
+                                              bool        allowRephrasingByScalingIV2);
     GenTree*    RephraseIV(ScevAddRec* iv, ScevAddRec* sourceIV, GenTree* sourceTree);
     bool        StaysWithinManagedObject(ArrayStack<CursorInfo>* cursors, ScevAddRec* addRec);
     bool        TryReplaceUsesWithNewPrimaryIV(ArrayStack<CursorInfo>* cursors, ScevAddRec* iv);
@@ -1995,13 +2001,10 @@ static T Gcd(T a, T b)
 //   True if all cursors still represent a common derived IV and would be
 //   replacable by a new primary IV computing it.
 //
-// Remarks:
-//   This function may remove cursors from m_cursors1 and m_cursors2 if it
-//   decides to no longer consider some cursors for strength reduction.
-//
 bool StrengthReductionContext::CheckAdvancedCursors(ArrayStack<CursorInfo>* cursors, ScevAddRec** nextIV)
 {
-    *nextIV = nullptr;
+    *nextIV                    = nullptr;
+    bool allowRephrasingNextIV = true;
 
     for (int i = 0; i < cursors->Height(); i++)
     {
@@ -2009,16 +2012,25 @@ bool StrengthReductionContext::CheckAdvancedCursors(ArrayStack<CursorInfo>* curs
 
         if (cursor.IV != nullptr)
         {
+            bool allowRephrasingViaScaling = true;
+#ifdef TARGET_ARM64
+            // On arm64 we break address modes if we have to scale, so disallow that.
+            allowRephrasingViaScaling = !cursor.Tree->IsPartOfAddressMode();
+#endif
+
             if (*nextIV == nullptr)
             {
-                *nextIV = cursor.IV;
+                *nextIV               = cursor.IV;
+                allowRephrasingNextIV = allowRephrasingViaScaling;
                 continue;
             }
 
-            ScevAddRec* rephrasableAddRec = ComputeRephrasableIV(cursor.IV, *nextIV);
+            ScevAddRec* rephrasableAddRec =
+                ComputeRephrasableIV(cursor.IV, allowRephrasingViaScaling, *nextIV, allowRephrasingNextIV);
             if (rephrasableAddRec != nullptr)
             {
                 *nextIV = rephrasableAddRec;
+                allowRephrasingNextIV &= allowRephrasingViaScaling;
                 continue;
             }
         }
@@ -2031,9 +2043,9 @@ bool StrengthReductionContext::CheckAdvancedCursors(ArrayStack<CursorInfo>* curs
 }
 
 //------------------------------------------------------------------------
-// ComputeRephrasableIVWithDifferentStep:
-//   Compute an IV that both "iv1" and "iv2" can be rephrased in terms of, when
-//   their step values do not match.
+// ComputeRephrasableIVWByScaling:
+//   Compute an IV that both "iv1" and "iv2" can be rephrased in terms of via
+//   scaling, assuming their step values do not match.
 //
 // Parameters:
 //   iv1 - First IV
@@ -2043,7 +2055,10 @@ bool StrengthReductionContext::CheckAdvancedCursors(ArrayStack<CursorInfo>* curs
 //   The IV, or nullptr if no IV could be computed.
 //
 template <typename T>
-ScevAddRec* StrengthReductionContext::ComputeRephrasableIVWithDifferentStep(ScevAddRec* iv1, ScevAddRec* iv2)
+ScevAddRec* StrengthReductionContext::ComputeRephrasableIVByScaling(ScevAddRec* iv1,
+                                                                    bool        allowRephrasingByScalingIV1,
+                                                                    ScevAddRec* iv2,
+                                                                    bool        allowRephrasingByScalingIV2)
 {
     // To rephrase the IVs we will need to scale them up. This requires the
     // start value to be 0 since that starting value will be scaled too.
@@ -2062,6 +2077,11 @@ ScevAddRec* StrengthReductionContext::ComputeRephrasableIVWithDifferentStep(Scev
     }
 
     T gcd = Gcd((T)iv1Step, (T)iv2Step);
+
+    if ((!allowRephrasingByScalingIV1 && (gcd != (T)iv1Step)) || (!allowRephrasingByScalingIV2 && (gcd != (T)iv2Step)))
+    {
+        return nullptr;
+    }
 
     // Commonly one step value divides the other.
     if (gcd == (T)iv1Step)
@@ -2085,13 +2105,18 @@ ScevAddRec* StrengthReductionContext::ComputeRephrasableIVWithDifferentStep(Scev
 //   Compute an IV that both "iv1" and "iv2" can be rephrased in terms of.
 //
 // Parameters:
-//   iv1 - First IV
-//   iv2 - Second IV
+//   iv1                         - First IV
+//   allowRephrasingByScalingIV1 - Whether we should allow rephrasing IV1 by scaling.
+//   iv2                         - Second IV
+//   allowRephrasingByScalingIV2 - Whether we should allow rephrasing IV2 by scaling.
 //
 // Returns:
 //   The IV, or nullptr if no IV could be computed.
 //
-ScevAddRec* StrengthReductionContext::ComputeRephrasableIV(ScevAddRec* iv1, ScevAddRec* iv2)
+ScevAddRec* StrengthReductionContext::ComputeRephrasableIV(ScevAddRec* iv1,
+                                                           bool        allowRephrasingByScalingIV1,
+                                                           ScevAddRec* iv2,
+                                                           bool        allowRephrasingByScalingIV2)
 {
     if (!Scev::Equals(iv1->Start, iv2->Start))
     {
@@ -2107,12 +2132,14 @@ ScevAddRec* StrengthReductionContext::ComputeRephrasableIV(ScevAddRec* iv1, Scev
     // to be profitable to rewrite in terms of such a new IV.
     if (iv1->Type == TYP_INT)
     {
-        return ComputeRephrasableIVWithDifferentStep<int32_t>(iv1, iv2);
+        return ComputeRephrasableIVByScaling<int32_t>(iv1, allowRephrasingByScalingIV1, iv2,
+                                                      allowRephrasingByScalingIV2);
     }
 
     if (iv2->Type == TYP_LONG)
     {
-        return ComputeRephrasableIVWithDifferentStep<int64_t>(iv1, iv2);
+        return ComputeRephrasableIVByScaling<int64_t>(iv1, allowRephrasingByScalingIV1, iv2,
+                                                      allowRephrasingByScalingIV2);
     }
 
     return nullptr;
@@ -2154,14 +2181,30 @@ GenTree* StrengthReductionContext::RephraseIV(ScevAddRec* iv, ScevAddRec* source
     {
         assert((int32_t)ivStep % (int32_t)sourceIVStep == 0);
         int32_t scale = (int32_t)ivStep / (int32_t)sourceIVStep;
-        return m_comp->gtNewOperNode(GT_MUL, TYP_INT, sourceTree, m_comp->gtNewIconNode(scale));
+        if (isPow2(scale))
+        {
+            return m_comp->gtNewOperNode(GT_LSH, TYP_INT, sourceTree,
+                                         m_comp->gtNewIconNode(BitOperations::Log2((uint32_t)scale)));
+        }
+        else
+        {
+            return m_comp->gtNewOperNode(GT_MUL, TYP_INT, sourceTree, m_comp->gtNewIconNode(scale));
+        }
     }
 
     if (iv->Type == TYP_LONG)
     {
         assert(ivStep % sourceIVStep == 0);
         int64_t scale = ivStep / sourceIVStep;
-        return m_comp->gtNewOperNode(GT_MUL, TYP_LONG, sourceTree, m_comp->gtNewLconNode(scale));
+        if (isPow2(scale))
+        {
+            return m_comp->gtNewOperNode(GT_LSH, TYP_LONG, sourceTree,
+                                         m_comp->gtNewLconNode(BitOperations::Log2((uint64_t)scale)));
+        }
+        else
+        {
+            return m_comp->gtNewOperNode(GT_MUL, TYP_LONG, sourceTree, m_comp->gtNewLconNode(scale));
+        }
     }
 
     unreached();
