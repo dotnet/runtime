@@ -16,8 +16,16 @@ namespace System
         private readonly ref byte _value;
         private readonly IntPtr _type;
 
-        internal readonly IntPtr Type => _type;
-        internal readonly ref byte Value => ref _value;
+        // implementation of CORINFO_HELP_GETREFANY
+        internal static ref byte GetRefAny(IntPtr clsHnd, TypedReference typedByRef)
+        {
+            if (clsHnd != typedByRef._type)
+            {
+                throw new InvalidCastException();
+            }
+
+            return ref typedByRef._value;
+        }
 
         private TypedReference(ref byte target, RuntimeType type)
         {

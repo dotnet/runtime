@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
@@ -25,9 +24,6 @@ namespace System.Runtime.CompilerServices
             throw null!; // Provide hint to the inliner that this method does not return
         }
 
-        [DoesNotReturn]
-        private static void ThrowInvalidCastException() => throw new InvalidCastException();
-
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern object IsInstanceOfAny_NoCacheLookup(void* toTypeHnd, object obj);
 
@@ -36,16 +32,6 @@ namespace System.Runtime.CompilerServices
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern void WriteBarrier(ref object? dst, object? obj);
-
-        internal static ref byte GetRefAny(IntPtr clsHnd, TypedReference typedByRef)
-        {
-            if (clsHnd != typedByRef.Type)
-            {
-                ThrowInvalidCastException();
-            }
-
-            return ref typedByRef.Value;
-        }
 
         // IsInstanceOf test used for unusual cases (naked type parameters, variant generic types)
         // Unlike the IsInstanceOfInterface and IsInstanceOfClass functions,
