@@ -1717,6 +1717,8 @@ RelopEvaluationResult ScalarEvolutionContext::EvaluateRelopViaRangeCheck(ValueNu
                 }
             }
             break;
+        default:
+            break;
     }
 
     return RelopEvaluationResult::Unknown;
