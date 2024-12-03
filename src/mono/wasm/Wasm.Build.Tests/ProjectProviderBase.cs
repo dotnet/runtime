@@ -263,7 +263,7 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
         return table;
     }
 
-    public IDictionary<string, FileStat> StatFilesAfterChange(IDictionary<string, (string fullPath, bool unchanged)> pathsDict)
+    public IDictionary<string, FileStat> StatFilesAfterRebuild(IDictionary<string, (string fullPath, bool unchanged)> pathsDict)
     {
         if (!IsFingerprintingEnabled)
             return StatFiles(pathsDict);

@@ -29,12 +29,12 @@ public class OptimizationFlagChangeTests : NativeRebuildTestsBase
     [Theory]
     [MemberData(nameof(FlagsOnlyChangeData), parameters: /*aot*/ false)]
     // [MemberData(nameof(FlagsOnlyChangeData), parameters: /*aot*/ true)]
-    // [ActiveIssue("File sizes don't match: dotnet.native.wasm size should be same as from obj/for-publish but is not")]
     public async void OptimizationFlagChange(Configuration config, bool aot, string cflags, string ldflags)
     {
         ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBasicTestApp, "rebuild_flags");        
-        // force _WasmDevel=false, so we don't get -O0
-        BuildPaths paths = await FirstNativeBuildAndRun(info, config, nativeRelink: true, invariant: false, extraBuildArgs: "/p:_WasmDevel=false");
+        // force _WasmDevel=false, so we don't get -O0 but -O2
+        string optElevationArg = "/p:_WasmDevel=false";
+        BuildPaths paths = await FirstNativeBuildAndRun(info, config, nativeRelink: true, invariant: false, extraBuildArgs: optElevationArg);
 
         string mainAssembly = $"{info.ProjectName}{ProjectProviderBase.WasmAssemblyExtension}";
         var pathsDict = GetFilesTable(info.ProjectName, aot, paths, unchanged: false);
@@ -59,9 +59,13 @@ public class OptimizationFlagChangeTests : NativeRebuildTestsBase
         var originalStat = StatFiles(pathsDict);
 
         // Rebuild
-
-        string output = Rebuild(info, config, nativeRelink: true, invariant: false, extraBuildArgs: $" {cflags} {ldflags}", verbosity: "normal");
-        var newStat = StatFiles(pathsDict);
+        string output = Rebuild(info,
+                                config,
+                                nativeRelink: true,
+                                invariant: false,
+                                extraBuildArgs: $" {cflags} {ldflags} {optElevationArg}",
+                                assertAppBundle: false); // optimization flags change changes the size of dotnet.native.wasm
+        var newStat = StatFilesAfterRebuild(pathsDict);
         CompareStat(originalStat, newStat, pathsDict);
 
         RunResult runOutput = await RunForPublishWithWebServer(new BrowserRunOptions(config, TestScenario: "DotnetRun"));

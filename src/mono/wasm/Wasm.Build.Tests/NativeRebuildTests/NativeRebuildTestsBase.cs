@@ -58,7 +58,7 @@ namespace Wasm.Build.NativeRebuild.Tests
             return GetBuildPaths(config, forPublish: true);
         }
 
-        protected string Rebuild(ProjectInfo info, Configuration config, bool nativeRelink, bool invariant, string extraBuildArgs="", string verbosity="normal")
+        protected string Rebuild(ProjectInfo info, Configuration config, bool nativeRelink, bool invariant, string extraBuildArgs="", string verbosity="normal", bool assertAppBundle=true)
         {
             if (!_buildContext.TryGetBuildFor(info, out BuildResult? result))
                 throw new XunitException($"Test bug: could not get the build result in the cache");
@@ -72,10 +72,8 @@ namespace Wasm.Build.NativeRebuild.Tests
 
             bool isNativeBuild = nativeRelink || invariant;
             var globalizationMode = invariant ? GlobalizationMode.Invariant : GlobalizationMode.Sharded;
-            (string _, string output) = PublishProject(info,
-                config,
-                new PublishOptions(GlobalizationMode: globalizationMode, ExtraMSBuildArgs: extraArgs, UseCache: false),
-                isNativeBuild: nativeRelink);
+            var options = new PublishOptions(GlobalizationMode: globalizationMode, ExtraMSBuildArgs: extraArgs, UseCache: false, AssertAppBundle: assertAppBundle);
+            (string _, string output) = PublishProject(info, config, options, isNativeBuild: nativeRelink);
             return output;
         }
 

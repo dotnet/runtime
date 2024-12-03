@@ -38,7 +38,7 @@ namespace Wasm.Build.NativeRebuild.Tests
             ReplaceFile(Path.Combine("Common", "Program.cs"), Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "NativeRebuildNewAssembly.cs"));
 
             Rebuild(info, config, nativeRelink, invariant);
-            var newStat = StatFilesAfterChange(pathsDict);
+            var newStat = StatFilesAfterRebuild(pathsDict);
 
             CompareStat(originalStat, newStat, pathsDict);
             await RunForPublishWithWebServer(new BrowserRunOptions(config, ExpectedExitCode: 42, TestScenario: "DotnetRun"));
