@@ -26,7 +26,7 @@ namespace Wasm.Build.Tests
               string programText,
               Configuration config,
               bool aot,
-              bool isNativeBuild = false,
+              bool? isNativeBuild = null,
               int expectedExitCode = 42,
               string expectedOutput = "Hello, World!",
               string runtimeConfigContents = "",
