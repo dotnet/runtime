@@ -4637,9 +4637,13 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     DoPhase(this, PHASE_SWIFT_ERROR_RET, &Compiler::fgAddSwiftErrorReturns);
 #endif // SWIFT_SUPPORT
 
-    // Remove empty try regions
+    // Remove empty try regions (try/finally)
     //
     DoPhase(this, PHASE_EMPTY_TRY, &Compiler::fgRemoveEmptyTry);
+
+    // Remove empty try regions (try/catch)
+    //
+    DoPhase(this, PHASE_EMPTY_TRY_CATCH, &Compiler::fgRemoveEmptyTryCatch);
 
     // Remove empty finally regions
     //
@@ -4809,6 +4813,18 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         // Unroll loops
         //
         DoPhase(this, PHASE_UNROLL_LOOPS, &Compiler::optUnrollLoops);
+
+        // Try again to remove empty try finally/fault clauses
+        //
+        DoPhase(this, PHASE_EMPTY_FINALLY_2, &Compiler::fgRemoveEmptyFinally);
+
+        // Remove empty try regions (try/finally)
+        //
+        DoPhase(this, PHASE_EMPTY_TRY_2, &Compiler::fgRemoveEmptyTry);
+
+        // Remove empty try regions (try/catch)
+        //
+        DoPhase(this, PHASE_EMPTY_TRY_CATCH_2, &Compiler::fgRemoveEmptyTryCatch);
 
         // Compute dominators and exceptional entry blocks
         //
@@ -5039,7 +5055,16 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 #endif
 
     // Try again to remove empty try finally/fault clauses
-    DoPhase(this, PHASE_EMPTY_FINALLY_2, &Compiler::fgRemoveEmptyFinally);
+    //
+    DoPhase(this, PHASE_EMPTY_FINALLY_3, &Compiler::fgRemoveEmptyFinally);
+
+    // Remove empty try regions (try/finally)
+    //
+    DoPhase(this, PHASE_EMPTY_TRY_3, &Compiler::fgRemoveEmptyTry);
+
+    // Remove empty try regions (try/catch)
+    //
+    DoPhase(this, PHASE_EMPTY_TRY_CATCH_3, &Compiler::fgRemoveEmptyTryCatch);
 
     if (UsesFunclets())
     {
