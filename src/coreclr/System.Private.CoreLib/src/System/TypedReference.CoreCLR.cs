@@ -16,6 +16,9 @@ namespace System
         private readonly ref byte _value;
         private readonly IntPtr _type;
 
+        internal readonly IntPtr Type => _type;
+        internal readonly ref byte Value => ref _value;
+
         private TypedReference(ref byte target, RuntimeType type)
         {
             _value = ref target;

@@ -1383,24 +1383,6 @@ HCIMPL2(Object*, JIT_Box, CORINFO_CLASS_HANDLE type, void* unboxedData)
 HCIMPLEND
 
 /*************************************************************/
-HCIMPL2_IV(LPVOID, JIT_GetRefAny, CORINFO_CLASS_HANDLE type, TypedByRef typedByRef)
-{
-    FCALL_CONTRACT;
-
-    TypeHandle clsHnd(type);
-    // <TODO>@TODO right now we check for precisely the correct type.
-    // do we want to allow inheritance?  (watch out since value
-    // classes inherit from object but do not normal object layout).</TODO>
-    if (clsHnd != typedByRef.type) {
-        FCThrow(kInvalidCastException);
-    }
-
-    return(typedByRef.data);
-}
-HCIMPLEND
-
-
-/*************************************************************/
 HCIMPL2(BOOL, JIT_IsInstanceOfException, CORINFO_CLASS_HANDLE type, Object* obj)
 {
     FCALL_CONTRACT;
