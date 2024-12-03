@@ -28,13 +28,6 @@ jobs:
     container: ${{ matrix.os.container }}
     name: Format jit codebase ${{ matrix.os.name }}
     steps:
-      - name: Checkout jitutils
-        uses: actions/checkout@v4
-        with:
-          path: jitutils
-          repository: dotnet/jitutils
-          ref: main
-          token: ${{ secrets.GITHUB_TOKEN }}
       - name: Install .NET
         uses: actions/setup-dotnet@v4
         with:
