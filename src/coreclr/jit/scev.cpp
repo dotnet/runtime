@@ -1703,6 +1703,7 @@ RelopEvaluationResult ScalarEvolutionContext::EvaluateRelopViaRangeCheck(ValueNu
         }
         case VNF_LE_UN:
         case VNF_GT_UN:
+        {
             Range uRange = Range(Limit(::Limit::keUndef));
             if (TryGetUnsignedRange(length, &uRange))
             {
@@ -1716,7 +1717,9 @@ RelopEvaluationResult ScalarEvolutionContext::EvaluateRelopViaRangeCheck(ValueNu
                     return relop == VNF_LE ? RelopEvaluationResult::False : RelopEvaluationResult::True;
                 }
             }
+
             break;
+        }
         default:
             break;
     }
