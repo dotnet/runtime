@@ -48,7 +48,7 @@ jobs:
       
       - name: Run jitformat.py
         run: |
-          python3 runtime/src/coreclr/scripts/jitformat.py --jitutils jitutils -r runtime -o ${{ matrix.os.name }} -a x64 ${{ matrix.os.cross }}
+          python3 runtime/src/coreclr/scripts/jitformat.py -r runtime -o ${{ matrix.os.name }} -a x64 ${{ matrix.os.cross }}
         env:
           ROOTFS_DIR: ${{ matrix.os.rootfs }}
       
