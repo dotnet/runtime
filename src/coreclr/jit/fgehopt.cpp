@@ -2476,7 +2476,7 @@ PhaseStatus Compiler::fgTailMergeThrows()
 //    else
 //      Return the cloned try entry, or nullptr if cloning failed
 //         cloned blocks will be created and scaled by profile weight
-//         and if info.m_addEdges is true have proper bbkinds and flow edges
+//         and if info.AddEdges is true have proper bbkinds and flow edges
 //      info data will be updated:
 //         Map will be modified to contain keys and for the blocks cloned
 //         Visited will include bits for each newly cloned block
@@ -2614,6 +2614,17 @@ BasicBlock* Compiler::fgCloneTryRegion(BasicBlock* tryEntry, CloneTryInfo& info,
                 else if (block->KindIs(BBJ_CALLFINALLYRET) && block->Prev()->TargetIs(ebd->ebdHndBeg))
                 {
                     addBlockToClone(block, "callfinallyret");
+
+#if defined(FEATURE_EH_WINDOWS_X86)
+
+                    // For non-funclet X86 we must also clone the next block after the callfinallyret.
+                    // (it will contain an END_LFIN)
+                    //
+                    if (!UsesFunclets())
+                    {
+                        addBlockToClone(block->GetTarget(), "lfin-continuation");
+                    }
+#endif
                 }
             }
         }
