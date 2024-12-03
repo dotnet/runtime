@@ -167,7 +167,7 @@
     <optimizationlinuxarm64MIBCRuntimeVersion>1.0.0-prerelease.23566.3</optimizationlinuxarm64MIBCRuntimeVersion>
     <optimizationPGOCoreCLRVersion>1.0.0-prerelease.23566.3</optimizationPGOCoreCLRVersion>
     <!-- Not auto-updated. -->
-    <MicrosoftDiaSymReaderNativeVersion>17.10.0-beta1.24272.1</MicrosoftDiaSymReaderNativeVersion>
+    <MicrosoftDiaSymReaderNativeVersion>17.12.0-beta1.24603.5</MicrosoftDiaSymReaderNativeVersion>
     <SystemCommandLineVersion>2.0.0-beta4.23307.1</SystemCommandLineVersion>
     <TraceEventVersion>3.0.3</TraceEventVersion>
     <NETStandardLibraryRefVersion>2.1.0</NETStandardLibraryRefVersion>
