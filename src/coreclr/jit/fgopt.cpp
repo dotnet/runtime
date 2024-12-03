@@ -5270,21 +5270,14 @@ void Compiler::ThreeOptLayout::Run()
         if ((ordinals[tryBeg->bbNum] != 0) || tryBeg->IsFirst())
         {
             JITDUMP("Running 3-opt for try region #%d\n", (currEHRegion - 1));
-            const unsigned tryLastOrdinal = ordinals[HBtab->ebdTryLast->bbNum];
-            while (RunThreeOptPass(tryBeg, blockOrder[tryLastOrdinal]))
-            {
-                modified = true;
-            }
+            modified |= RunThreeOptPass(tryBeg, HBtab->ebdTryLast);
         }
     }
 
     // Finally, reorder the main method body
     currEHRegion = 0;
     JITDUMP("Running 3-opt for main method body\n");
-    while (RunThreeOptPass(compiler->fgFirstBB, blockOrder[numCandidateBlocks - 1]))
-    {
-        modified = true;
-    }
+    modified |= RunThreeOptPass(compiler->fgFirstBB, blockOrder[numCandidateBlocks - 1]);
 
     if (modified)
     {
@@ -5344,7 +5337,7 @@ bool Compiler::ThreeOptLayout::RunGreedyThreeOptPass(unsigned startPos, unsigned
     while (!cutPoints.Empty())
     {
         FlowEdge* const candidateEdge = cutPoints.Pop();
-        candidateEdge->markUnvisited();
+        assert(candidateEdge->visited());
 
         BasicBlock* const srcBlk = candidateEdge->getSourceBlock();
         BasicBlock* const dstBlk = candidateEdge->getDestinationBlock();
