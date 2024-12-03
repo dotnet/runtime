@@ -214,9 +214,11 @@ namespace System
 
         /// <summary>
         /// Returns the <see cref="Exception"/> that is the root cause of this exception.
+        /// </summary>
+        /// <remarks>
         /// This will either be the root exception, or the first <see cref="AggregateException"/>
         /// that contains either multiple inner exceptions or no inner exceptions at all.
-        /// </summary>
+        /// </remarks>
         public override Exception GetBaseException()
         {
             // Recursively traverse the inner exceptions as long as the inner exception of type
