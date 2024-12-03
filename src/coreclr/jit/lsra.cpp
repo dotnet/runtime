@@ -13913,13 +13913,3 @@ SingleTypeRegSet LinearScan::RegisterSelection::selectMinimal(
     assert(found && isSingleRegister(candidates));
     return candidates;
 }
-                                          refPosition->bbNum));
-#endif // TRACK_LSRA_STATS
-            *registerScore = RegisterScore::REG_NUM;
-#endif // DEBUG
-        }
-    }
-
-    assert(found && isSingleRegister(candidates));
-    return candidates;
-}
