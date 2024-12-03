@@ -3726,7 +3726,7 @@ HCIMPL1(void, JIT_CountProfile64, volatile LONG64* pCounter)
     LONG64 delta = 1;
     DWORD threshold = g_pConfig->TieredPGO_ScalableCountThreshold();
 
-    if (count >= (LONG64)(1 << threshold))
+    if (count >= (LONG64)(1LL << threshold))
     {
         DWORD logCount;
         BitScanReverse64(&logCount, count);
