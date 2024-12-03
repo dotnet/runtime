@@ -2498,7 +2498,7 @@ void Compiler::fgRemoveConditionalJump(BasicBlock* block)
 //
 // Currently we require that the conditional branch jump back to the block that follows the unconditional
 // branch. We can improve the code execution and layout by concatenating a copy of the conditional branch
-// block at the end of the conditional branch and reversing the sense of the branch.
+// block at the end of the conditional branch.
 //
 // This is only done when the amount of code to be copied is smaller than our calculated threshold
 // in maxDupCostSz.
@@ -2510,12 +2510,14 @@ void Compiler::fgRemoveConditionalJump(BasicBlock* block)
 //
 bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
 {
-    if (opts.MinOpts())
+    if (!bJump->KindIs(BBJ_ALWAYS))
     {
         return false;
     }
 
-    if (!bJump->KindIs(BBJ_ALWAYS))
+    BasicBlock* bDest = bJump->GetTarget();
+
+    if (!bDest->KindIs(BBJ_COND))
     {
         return false;
     }
@@ -2525,6 +2527,14 @@ bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
     {
         return false;
     }
+
+    if (!bJump->NextIs(bDest->GetTrueTarget()) && !bJump->NextIs(bDest->GetFalseTarget()))
+    {
+        return false;
+    }
+
+    // bJump is followed by one of bDest's successors, so bJump cannot be the last block
+    assert(!bJump->IsLast());
 
     if (bJump->HasFlag(BBF_KEEP_BBJ_ALWAYS))
     {
@@ -2537,28 +2547,9 @@ bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
         return false;
     }
 
-    BasicBlock* bDest = bJump->GetTarget();
-
-    if (!bDest->KindIs(BBJ_COND))
-    {
-        return false;
-    }
-
-    if (!bJump->NextIs(bDest->GetTrueTarget()))
-    {
-        return false;
-    }
-
     // 'bJump' must be in the same try region as the condition, since we're going to insert
     // a duplicated condition in 'bJump', and the condition might include exception throwing code.
     if (!BasicBlock::sameTryRegion(bJump, bDest))
-    {
-        return false;
-    }
-
-    // do not jump into another try region
-    BasicBlock* bDestNormalTarget = bDest->GetFalseTarget();
-    if (bDestNormalTarget->hasTryIndex() && !BasicBlock::sameTryRegion(bJump, bDestNormalTarget))
     {
         return false;
     }
@@ -2595,7 +2586,7 @@ bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
     bool     rareDest                  = bDest->isRunRarely();
     bool     rareNext                  = bJump->Next()->isRunRarely();
 
-    // If we have profile data then we calculate the number of time
+    // If we have profile data then we calculate the number of times
     // the loop will iterate into loopIterations
     if (fgIsUsingProfileWeights())
     {
@@ -2629,7 +2620,7 @@ bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
 
     //
     // Branches between the hot and rarely run regions
-    // should be minimized.  So we allow a larger size
+    // should be minimized. So we allow a larger size
     //
     if (rareDest != rareJump)
     {
@@ -2642,7 +2633,7 @@ bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
     }
 
     //
-    // We we are ngen-ing:
+    // We are ngen-ing:
     // If the uncondional branch is a rarely run block then
     // we are willing to have more code expansion since we
     // won't be running code from this page
@@ -2742,11 +2733,6 @@ bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
         newStmtList->SetPrevStmt(newLastStmt);
     }
 
-    //
-    // Reverse the sense of the compare
-    //
-    gtReverseCond(condTree);
-
     // We need to update the following flags of the bJump block if they were set in the bDest block
     bJump->CopyFlags(bDest, BBF_COPY_PROPAGATE);
 
@@ -2765,13 +2751,9 @@ bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
     FlowEdge* const destFalseEdge = bDest->GetFalseEdge();
     FlowEdge* const destTrueEdge  = bDest->GetTrueEdge();
 
-    // bJump now falls through into the next block
-    //
-    FlowEdge* const falseEdge = fgAddRefPred(bJump->Next(), bJump, destFalseEdge);
+    FlowEdge* const falseEdge = fgAddRefPred(destFalseEdge->getDestinationBlock(), bJump, destFalseEdge);
 
-    // bJump now jumps to bDest's normal jump target
-    //
-    fgRedirectTargetEdge(bJump, bDestNormalTarget);
+    fgRedirectTargetEdge(bJump, destTrueEdge->getDestinationBlock());
     bJump->GetTargetEdge()->setLikelihood(destTrueEdge->getLikelihood());
 
     bJump->SetCond(bJump->GetTargetEdge(), falseEdge);
