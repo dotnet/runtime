@@ -269,6 +269,36 @@ namespace System
             int cTypeHandles,
             ObjectHandleOnStack instantiatedObject);
 
+        internal static unsafe object InternalAlloc(MethodTable* pMT)
+        {
+            object? result = null;
+            InternalAlloc(pMT, ObjectHandleOnStack.Create(ref result));
+            return result!;
+        }
+
+        internal static object InternalAlloc(RuntimeType type)
+        {
+            Debug.Assert(!type.GetNativeTypeHandle().IsTypeDesc);
+            object result = InternalAlloc(type.GetNativeTypeHandle().AsMethodTable());
+            GC.KeepAlive(type);
+            return result;
+        }
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_InternalAlloc")]
+        private static unsafe partial void InternalAlloc(MethodTable* pMT, ObjectHandleOnStack result);
+
+        internal static object InternalAllocNoChecks(RuntimeType type)
+        {
+            Debug.Assert(!type.GetNativeTypeHandle().IsTypeDesc);
+            object? result = null;
+            InternalAllocNoChecks(type.GetNativeTypeHandle().AsMethodTable(), ObjectHandleOnStack.Create(ref result));
+            GC.KeepAlive(type);
+            return result!;
+        }
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_InternalAllocNoChecks")]
+        private static unsafe partial void InternalAllocNoChecks(MethodTable* pMT, ObjectHandleOnStack result);
+
         /// <summary>
         /// Given a RuntimeType, returns information about how to activate it via calli
         /// semantics. This method will ensure the type object is fully initialized within
@@ -1026,14 +1056,59 @@ namespace System
 
         [DebuggerStepThrough]
         [DebuggerHidden]
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern object? InvokeMethod(object? target, void** arguments, Signature sig, bool isConstructor);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeMethodHandle_InvokeMethod")]
+        private static partial void InvokeMethod(ObjectHandleOnStack target, void** arguments, ObjectHandleOnStack sig, Interop.BOOL isConstructor, ObjectHandleOnStack result);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern object? ReboxFromNullable(object? src);
+        [DebuggerStepThrough]
+        [DebuggerHidden]
+        internal static object? InvokeMethod(object? target, void** arguments, Signature sig, bool isConstructor)
+        {
+            object? result = null;
+            InvokeMethod(
+                ObjectHandleOnStack.Create(ref target),
+                arguments,
+                ObjectHandleOnStack.Create(ref sig),
+                isConstructor ? Interop.BOOL.TRUE : Interop.BOOL.FALSE,
+                ObjectHandleOnStack.Create(ref result));
+            return result;
+        }
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern object ReboxToNullable(object? src, RuntimeType destNullableType);
+        /// <summary>
+        /// For a true boxed Nullable{T}, re-box to a boxed {T} or null, otherwise just return the input.
+        /// </summary>
+        internal static object? ReboxFromNullable(object? src)
+        {
+            // If src is null or not NullableOfT, just return that state.
+            if (src is null)
+            {
+                return null;
+            }
+
+            MethodTable* pMT = RuntimeHelpers.GetMethodTable(src);
+            if (!pMT->IsNullable)
+            {
+                return src;
+            }
+
+            return CastHelpers.ReboxFromNullable(pMT, src);
+        }
+
+        /// <summary>
+        /// Convert a boxed value of {T} (which is either {T} or null) to a true boxed Nullable{T}.
+        /// </summary>
+        internal static object ReboxToNullable(object? src, RuntimeType destNullableType)
+        {
+            Debug.Assert(destNullableType.IsNullableOfT);
+            MethodTable* pMT = destNullableType.GetNativeTypeHandle().AsMethodTable();
+            object obj = RuntimeTypeHandle.InternalAlloc(pMT);
+            GC.KeepAlive(destNullableType); // The obj instance will keep the type alive.
+
+            CastHelpers.Unbox_Nullable(
+                ref obj.GetRawData(),
+                pMT,
+                src);
+            return obj;
+        }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeMethodHandle_GetMethodInstantiation")]
         private static partial void GetMethodInstantiation(RuntimeMethodHandleInternal method, ObjectHandleOnStack types, Interop.BOOL fAsRuntimeTypeArray);
