@@ -26,7 +26,7 @@ namespace System.Runtime.CompilerServices
         }
 
         [DoesNotReturn]
-        internal static void ThrowInvalidCastException() => throw new InvalidCastException();
+        private static void ThrowInvalidCastException() => throw new InvalidCastException();
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern object IsInstanceOfAny_NoCacheLookup(void* toTypeHnd, object obj);
@@ -39,9 +39,6 @@ namespace System.Runtime.CompilerServices
 
         internal static ref byte GetRefAny(IntPtr clsHnd, TypedReference typedByRef)
         {
-            // <TODO>@TODO right now we check for precisely the correct type.
-            // do we want to allow inheritance?  (watch out since value
-            // classes inherit from object but do not normal object layout).</TODO>
             if (clsHnd != typedByRef.Type)
             {
                 ThrowInvalidCastException();
