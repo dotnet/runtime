@@ -1922,7 +1922,16 @@ namespace System
             GetCustomModifiersAtOffset(GetParameterOffset(parameterIndex), required);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal extern int GetParameterOffset(int parameterIndex);
+        private static extern unsafe int GetParameterOffsetInternal(void* sig, int csig, int parameterIndex);
+
+        internal int GetParameterOffset(int parameterIndex)
+        {
+            int offsetMaybe = GetParameterOffsetInternal(m_sig, m_csig, parameterIndex);
+            // If the result is negative, it is an error code.
+            if (offsetMaybe < 0)
+                Marshal.ThrowExceptionForHR(offsetMaybe);
+            return offsetMaybe;
+        }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal extern int GetTypeParameterOffset(int offset, int index);

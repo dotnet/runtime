@@ -330,7 +330,7 @@ public:
 
     static FCDECL2(FC_BOOL_RET, CompareSig, SignatureNative* pLhs, SignatureNative* pRhs);
 
-    static FCDECL2(INT32, GetParameterOffset, SignatureNative* pSig, INT32 parameterIndex);
+    static FCDECL3(INT32, GetParameterOffsetInternal, PCCOR_SIGNATURE sig, DWORD csig, INT32 parameterIndex);
 
     static FCDECL3(INT32, GetTypeParameterOffset, SignatureNative* pSig, INT32 offset, INT32 index);
 

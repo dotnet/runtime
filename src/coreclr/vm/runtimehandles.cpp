@@ -1464,49 +1464,38 @@ FCIMPL1(INT32, RuntimeMethodHandle::GetSlot, MethodDesc *pMethod) {
 }
 FCIMPLEND
 
-FCIMPL2(INT32, SignatureNative::GetParameterOffset, SignatureNative* pSignatureUNSAFE, INT32 parameterIndex)
+FCIMPL3(INT32, SignatureNative::GetParameterOffsetInternal, PCCOR_SIGNATURE sig, DWORD csig, INT32 parameterIndex)
 {
     FCALL_CONTRACT;
 
-    struct
+    _ASSERTE(sig != NULL);
+    _ASSERTE(csig > 0);
+
+    HRESULT hr;
+    SigPointer sp(sig, csig);
+
+    uint32_t callConv;
+    IfFailRet(sp.GetCallingConvInfo(&callConv));
+    if ((callConv & IMAGE_CEE_CS_CALLCONV_MASK) != IMAGE_CEE_CS_CALLCONV_FIELD)
     {
-        SIGNATURENATIVEREF pSig;
-    } gc;
-
-    gc.pSig = (SIGNATURENATIVEREF)pSignatureUNSAFE;
-
-    INT32 offset = 0;
-
-    HELPER_METHOD_FRAME_BEGIN_RET_PROTECT(gc);
-    {
-        SigPointer sp(gc.pSig->GetCorSig(), gc.pSig->GetCorSigSize());
-
-        uint32_t callConv = 0;
-        IfFailThrow(sp.GetCallingConvInfo(&callConv));
-
-        if ((callConv & IMAGE_CEE_CS_CALLCONV_MASK) != IMAGE_CEE_CS_CALLCONV_FIELD)
+        if (callConv & IMAGE_CEE_CS_CALLCONV_GENERIC)
         {
-            if (callConv & IMAGE_CEE_CS_CALLCONV_GENERIC)
-            {
-                IfFailThrow(sp.GetData(NULL));
-            }
-
-            uint32_t numArgs;
-            IfFailThrow(sp.GetData(&numArgs));
-            _ASSERTE((uint32_t)parameterIndex <= numArgs);
-
-            for (int i = 0; i < parameterIndex; i++)
-                IfFailThrow(sp.SkipExactlyOne());
-        }
-        else
-        {
-            _ASSERTE(parameterIndex == 0);
+            IfFailRet(sp.GetData(NULL));
         }
 
-        offset = (INT32)(sp.GetPtr() - gc.pSig->GetCorSig());
+        uint32_t numArgs;
+        IfFailRet(sp.GetData(&numArgs));
+        _ASSERTE((uint32_t)parameterIndex <= numArgs);
+
+        for (INT32 i = 0; i < parameterIndex; i++)
+            IfFailRet(sp.SkipExactlyOne());
     }
-    HELPER_METHOD_FRAME_END();
+    else
+    {
+        _ASSERTE(parameterIndex == 0);
+    }
 
+    INT32 offset = (INT32)(sp.GetPtr() - sig);
     return offset;
 }
 FCIMPLEND
