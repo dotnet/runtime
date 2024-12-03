@@ -209,16 +209,6 @@ inline void ProfControlBlock::DeRegisterProfilerInfo(ProfilerInfo *pProfilerInfo
     InterlockedDecrement(notificationProfilerCount.GetPointer());
 }
 
-inline void UpdateGlobalEventMaskHelper(ProfilerInfo *pProfilerInfo, DWORD *pEventMask)
-{
-    *pEventMask |= pProfilerInfo->eventMask.GetEventMask();
-}
-
-inline void UpdateGlobalEventMaskHighHelper(ProfilerInfo *pProfilerInfo, DWORD *pEventMaskHigh)
-{
-    *pEventMaskHigh |= pProfilerInfo->eventMask.GetEventMaskHigh();
-}
-
 inline void ProfControlBlock::UpdateGlobalEventMask()
 {
     while (true)
