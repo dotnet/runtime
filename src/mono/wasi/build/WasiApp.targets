@@ -372,6 +372,7 @@
       <_WasiLinkStepArgs Include="-o &quot;$(_WasiOutputFileName.Replace('\', '/'))&quot;" />
 
       <_WasmLinkStepArgs Include="@(_WasiLinkStepArgs)" />
+      <_WasmLinkStepArgs Include="@(LinkerArg)" />
     </ItemGroup>
   </Target>
 

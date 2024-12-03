@@ -9,6 +9,13 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.DotNet.XHarness.Common" Version="$(MicrosoftDotNetXHarnessTestRunnersCommonVersion)" />
+    <!-- Update and drop package assets from Json, we'll use the framework version -->
+    <PackageReference Include="System.Text.Json" Version="$(SystemTextJsonToolsetVersion)" PrivateAssets="All" ExcludeAssets="All" />
+  </ItemGroup>
+
+  <!-- Suppress System.Text.Json/8.0.4 advisory as desktop msbuild doesn't yet provide binding redirects for the non-vulnerable version (8.0.5). -->
+  <ItemGroup> 
+    <NuGetAuditSuppress Include="https://github.com/advisories/GHSA-8g4q-xg66-9fp4" />
   </ItemGroup>
 
   <ItemGroup>

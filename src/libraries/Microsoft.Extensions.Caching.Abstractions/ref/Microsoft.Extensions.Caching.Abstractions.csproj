@@ -9,8 +9,7 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
-    <Compile Include="Microsoft.Extensions.Caching.Abstractions.net6.0.cs" />
-    <Compile Include="Microsoft.Extensions.Caching.Abstractions.Typeforwards.netcoreapp.cs" />
+    <Compile Include="Microsoft.Extensions.Caching.Abstractions.netcoreapp.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">

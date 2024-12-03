@@ -7,7 +7,7 @@ using System.IO;
 namespace Microsoft.Extensions.Configuration.Xml
 {
     /// <summary>
-    /// Represents an XML file as an <see cref="IConfigurationSource"/>.
+    /// Provides configuration key-value pairs that are obtained from an XML file.
     /// </summary>
     [RequiresDynamicCode(XmlDocumentDecryptor.RequiresDynamicCodeMessage)]
     [RequiresUnreferencedCode(XmlDocumentDecryptor.RequiresUnreferencedCodeMessage)]

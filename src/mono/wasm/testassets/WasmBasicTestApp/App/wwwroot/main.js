@@ -28,6 +28,11 @@ dotnet
 
 // Modify runtime start based on test case
 switch (testCase) {
+    case "SatelliteAssembliesTest":
+        if (params.get("loadAllSatelliteResources") === "true") {
+            dotnet.withConfig({ loadAllSatelliteResources: true });
+        }
+        break;
     case "AppSettingsTest":
         dotnet.withApplicationEnvironment(params.get("applicationEnvironment"));
         break;
@@ -122,6 +127,19 @@ switch (testCase) {
         };
         dotnet.withConfig({ maxParallelDownloads: maxParallelDownloads });
         break;
+    case "AllocateLargeHeapThenInterop":
+        dotnet.withEnvironmentVariable("MONO_LOG_LEVEL", "debug")
+        dotnet.withEnvironmentVariable("MONO_LOG_MASK", "gc")
+        dotnet.withModuleConfig({
+            preRun: (Module) => {
+                // wasting 2GB of memory
+                for (let i = 0; i < 210; i++) {
+                    testOutput(`wasting 10m ${Module._malloc(10 * 1024 * 1024)}`);
+                }
+                testOutput(`WASM ${Module.HEAP32.byteLength} bytes.`);
+            }
+        })
+        break;
     case "ProfilerTest":
         dotnet.withConfig({
             logProfilerOptions: {
@@ -129,6 +147,9 @@ switch (testCase) {
                 configuration: "log:alloc,output=output.mlpd"
             }
         })
+        break;
+    case "OverrideBootConfigName":
+        dotnet.withConfigSrc("boot.json");
         break;
 }
 
@@ -141,7 +162,7 @@ const assemblyExtension = Object.keys(config.resources.coreAssembly)[0].endsWith
 try {
     switch (testCase) {
         case "SatelliteAssembliesTest":
-            await exports.SatelliteAssembliesTest.Run();
+            await exports.SatelliteAssembliesTest.Run(params.get("loadAllSatelliteResources") !== "true");
             exit(0);
             break;
         case "LazyLoadingTest":
@@ -182,7 +203,7 @@ try {
             break;
         case "DebugLevelTest":
             testOutput("WasmDebugLevel: " + config.debugLevel);
-            exit(0);
+            exit(42);
             break;
         case "InterpPgoTest":
             setModuleImports('main.js', {
@@ -228,6 +249,11 @@ try {
 
             let exit_code = ret == 42 ? 0 : 1;
             exit(exit_code);
+            break;
+        case "OverrideBootConfigName":
+            testOutput("ConfigSrc: " + Module.configSrc);
+            exports.OverrideBootConfigNameTest.Run();
+            exit(0);
             break;
         default:
             console.error(`Unknown test case: ${testCase}`);

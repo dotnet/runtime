@@ -255,8 +255,8 @@ End
 
 Crst Interop
     AcquiredBefore PinnedHeapHandleTable AvailableParamTypes ClassInit DeadlockDetection GenericDictionaryExpansion
-                   HandleTable InstMethodHashTable InteropData JitGenericHandleCache LoaderHeap SigConvert
-                   StubDispatchCache StubUnwindInfoHeapSegments SyncBlockCache TypeIDMap UnresolvedClassLock
+                   HandleTable InstMethodHashTable InteropData LoaderHeap SigConvert
+                   StubDispatchCache SyncBlockCache TypeIDMap UnresolvedClassLock
                    PendingTypeLoadEntry
 End
 
@@ -274,9 +274,6 @@ End
 Crst Jit
     AcquiredBefore DeadlockDetection JumpStubCache
     SameLevelAs ClassInit
-End
-
-Crst JitGenericHandleCache
 End
 
 Crst JitPatchpoint
@@ -342,7 +339,7 @@ Crst PendingTypeLoadEntry
                    FusionAppCtx GlobalStrLiteralMap HandleTable IbcProfile
                    IJWFixupData IJWHash ISymUnmanagedReader Jit JumpStubCache LoaderHeap
                    Module ModuleLookupTable PEImage
-                   SigConvert SingleUseLock StubDispatchCache StubUnwindInfoHeapSegments
+                   SigConvert SingleUseLock StubDispatchCache
                    SyncBlockCache SystemDomain ThreadIdDispenser ThreadStore TypeIDMap UnresolvedClassLock
     SameLevelAs PendingTypeLoadEntry
 End
@@ -402,7 +399,7 @@ Crst SingleUseLock
 End
 
 Crst UnwindInfoTableLock
-    AcquiredAfter StubUnwindInfoHeapSegments SingleUseLock
+    AcquiredAfter SingleUseLock
     AcquiredBefore StressLog
 End
 
@@ -415,10 +412,6 @@ Crst CodeFragmentHeap
 End
 
 Crst StubDispatchCache
-End
-
-Crst StubUnwindInfoHeapSegments
-    AcquiredAfter StubCache
 End
 
 Crst SyncBlockCache
@@ -446,7 +439,7 @@ End
 Crst ThreadStore
     AcquiredBefore AvailableParamTypes DeadlockDetection DebuggerController
                    DebuggerHeapLock DebuggerJitInfo DynamicIL HandleTable IbcProfile
-                   JitGenericHandleCache JumpStubCache LoaderHeap ModuleLookupTable ProfilerGCRefDataFreeList
+                   JumpStubCache LoaderHeap ModuleLookupTable ProfilerGCRefDataFreeList
                    SingleUseLock SyncBlockCache SystemDomainDelayedUnloadList ThreadIdDispenser DebuggerMutex
                    JitInlineTrackingMap
 End

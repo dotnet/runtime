@@ -813,9 +813,6 @@
   <data name="Arg_TypeLoadNullStr" xml:space="preserve">
     <value>A null or zero length string does not represent a valid Type.</value>
   </data>
-  <data name="Arg_TypeRefPrimitive" xml:space="preserve">
-    <value>TypedReferences cannot be redefined as primitives. Field name '{0}'.</value>
-  </data>
   <data name="Arg_TypeUnloadedException" xml:space="preserve">
     <value>Type had been unloaded.</value>
   </data>
@@ -2575,6 +2572,9 @@
   <data name="InvalidOperation_CannotRegisterSecondResolver" xml:space="preserve">
     <value>A resolver is already set for the assembly.</value>
   </data>
+  <data name="InvalidOperation_CannotRegisterSecondHandler" xml:space="preserve">
+    <value>A handler for unhandled exceptions is already set.</value>
+  </data>
   <data name="InvalidOperation_CannotRestoreUnsuppressedFlow" xml:space="preserve">
     <value>Cannot restore context flow when it is not suppressed.</value>
   </data>
@@ -4318,9 +4318,6 @@
   </data>
   <data name="UnsupportedType" xml:space="preserve">
     <value>Unsupported type</value>
-  </data>
-  <data name="Reflection_Disabled" xml:space="preserve">
-    <value>This operation is not available because the reflection support was disabled at compile time.</value>
   </data>
   <data name="RFLCT_CannotSetInitonlyStaticField" xml:space="preserve">
     <value>Cannot set initonly static field '{0}' after type '{1}' is initialized.</value>

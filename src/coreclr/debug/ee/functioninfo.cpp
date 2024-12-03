@@ -1058,7 +1058,7 @@ void DebuggerJitInfo::SetBoundaries(ULONG32 cMap, ICorDebugInfo::OffsetMapping *
     {
         // Did the current rejit provide a map?
         const InstrumentedILOffsetMapping *pReJitMap = NULL;
-        if (ilVersion.GetRejitState() == ILCodeVersion::kStateActive)
+        if (ilVersion.GetRejitState() == RejitFlags::kStateActive)
         {
             pReJitMap = ilVersion.GetInstrumentedILMap();
         }
@@ -2023,8 +2023,8 @@ void DebuggerMethodInfo::CreateDJIsForNativeBlobs(AppDomain * pAppDomain, Method
         // This also handles the possibility of getting the same methoddesc back from the iterator.
         // It also lets EnC + generics play nice together (including if an generic method was EnC-ed)
         LoadedMethodDescIterator it(pAppDomain, m_module, m_token);
-        CollectibleAssemblyHolder<DomainAssembly *> pDomainAssembly;
-        while (it.Next(pDomainAssembly.This()))
+        CollectibleAssemblyHolder<Assembly *> pAssembly;
+        while (it.Next(pAssembly.This()))
         {
             MethodDesc * pDesc = it.Current();
             if (!pDesc->HasNativeCode())

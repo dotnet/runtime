@@ -9,7 +9,6 @@
     IMPORT PreStubWorker
     IMPORT NDirectImportWorker
     IMPORT VSD_ResolveWorker
-    IMPORT JIT_InternalThrow
     IMPORT ComPreStubWorker
     IMPORT COMToCLRWorker
     IMPORT CallDescrWorkerUnwindFrameChainHandler
@@ -37,6 +36,9 @@
     IMPORT  g_highest_address
     IMPORT  g_card_table
     IMPORT  g_dispatch_cache_chain_success_counter
+    IMPORT  g_pGetGCStaticBase
+    IMPORT  g_pGetNonGCStaticBase
+
 #ifdef WRITE_BARRIER_CHECK
     SETALIAS g_GCShadow, ?g_GCShadow@@3PEAEEA
     SETALIAS g_GCShadowEnd, ?g_GCShadowEnd@@3PEAEEA
@@ -45,9 +47,6 @@
     IMPORT $g_GCShadow
     IMPORT $g_GCShadowEnd
 #endif // WRITE_BARRIER_CHECK
-
-    IMPORT JIT_GetDynamicNonGCStaticBase_Portable
-    IMPORT JIT_GetDynamicGCStaticBase_Portable
 
 #ifdef FEATURE_COMINTEROP
     IMPORT CLRToCOMWorker
@@ -317,22 +316,6 @@ EphemeralCheckEnabled
 
     LEAF_END JIT_UpdateWriteBarrierState
 
-; void SinglecastDelegateInvokeStub(Delegate *pThis)
-    LEAF_ENTRY SinglecastDelegateInvokeStub
-        cmp     x0, #0
-        beq     LNullThis
-
-        ldr     x16, [x0, #DelegateObject___methodPtr]
-        ldr     x0, [x0, #DelegateObject___target]
-
-        br      x16
-
-LNullThis
-        mov     x0, #CORINFO_NullReferenceException_ASM
-        b       JIT_InternalThrow
-
-    LEAF_END
-
 #ifdef FEATURE_COMINTEROP
 
 ; ------------------------------------------------------------------
@@ -540,7 +523,7 @@ GenericComCallStub_FirstStackAdjust     SETA GenericComCallStub_FirstStackAdjust
     SAVE_FLOAT_ARGUMENT_REGISTERS  sp, 0
 
     str x12, [sp, #(GenericComCallStub_FrameOffset + UnmanagedToManagedFrame__m_pvDatum)]
-    add x1, sp, #GenericComCallStub_FrameOffset
+    add x0, sp, #GenericComCallStub_FrameOffset
     bl COMToCLRWorker
 
     ; pop the stack
@@ -953,7 +936,6 @@ Fail
     mov x12, x0
 
     EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
-    PATCH_LABEL ExternalMethodFixupPatchLabel
     EPILOG_BRANCH_REG   x12
 
     NESTED_END
@@ -1029,28 +1011,36 @@ Fail
 
     LEAF_ENTRY JIT_GetDynamicNonGCStaticBase_SingleAppDomain
     ; If class is not initialized, bail to C++ helper
-    ldr x1, [x0, #OFFSETOF__DynamicStaticsInfo__m_pNonGCStatics]
+    add x1, x0, #OFFSETOF__DynamicStaticsInfo__m_pNonGCStatics
+    ldar x1, [x1]
     tbnz x1, #0, CallHelper1
     mov x0, x1
     ret lr
 
 CallHelper1
-    ; Tail call JIT_GetDynamicNonGCStaticBase_Portable
-    b JIT_GetDynamicNonGCStaticBase_Portable
+    ; Tail call GetNonGCStaticBase
+    ldr x0, [x0, #OFFSETOF__DynamicStaticsInfo__m_pMethodTable]
+    adrp     x1, g_pGetNonGCStaticBase
+    ldr      x1, [x1, g_pGetNonGCStaticBase]
+    br       x1
     LEAF_END
 
 ; void* JIT_GetDynamicGCStaticBase(DynamicStaticsInfo *dynamicInfo)
 
     LEAF_ENTRY JIT_GetDynamicGCStaticBase_SingleAppDomain
     ; If class is not initialized, bail to C++ helper
-    ldr x1, [x0, #OFFSETOF__DynamicStaticsInfo__m_pGCStatics]
+    add x1, x0, #OFFSETOF__DynamicStaticsInfo__m_pGCStatics
+    ldar x1, [x1]
     tbnz x1, #0, CallHelper2
     mov x0, x1
     ret lr
 
 CallHelper2
-    ; Tail call JIT_GetDynamicGCStaticBase_Portable
-    b JIT_GetDynamicGCStaticBase_Portable
+    ; Tail call GetGCStaticBase
+    ldr x0, [x0, #OFFSETOF__DynamicStaticsInfo__m_pMethodTable]
+    adrp     x1, g_pGetGCStaticBase
+    ldr      x1, [x1, g_pGetGCStaticBase]
+    br       x1
     LEAF_END
 
 ; ------------------------------------------------------------------

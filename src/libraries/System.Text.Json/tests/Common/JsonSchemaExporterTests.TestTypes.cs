@@ -469,6 +469,62 @@ namespace System.Text.Json.Schema.Tests
                 """,
                 Options: new() { TreatNullObliviousAsNonNullable = true });
 
+            SimpleRecord recordValue = new(42, "str", true, 3.14);
+            yield return new TestData<PocoWithNonRecursiveDuplicateOccurrences>(
+                Value: new() { Value1 = recordValue, Value2 = recordValue, ArrayValue = [recordValue], ListValue = [recordValue] },
+                ExpectedJsonSchema: """
+                {
+                  "type": ["object","null"],
+                  "properties": {
+                    "Value1": {
+                      "type": "object",
+                      "properties": {
+                        "X": { "type": "integer" },
+                        "Y": { "type": "string" },
+                        "Z": { "type": "boolean" },
+                        "W": { "type": "number" }
+                      },
+                      "required": ["X", "Y", "Z", "W"]
+                    },
+                    /* The same type on a different property is repeated to
+                       account for potential metadata resolved from attributes. */
+                    "Value2": {
+                      "type": "object",
+                      "properties": {
+                        "X": { "type": "integer" },
+                        "Y": { "type": "string" },
+                        "Z": { "type": "boolean" },
+                        "W": { "type": "number" }
+                      },
+                      "required": ["X", "Y", "Z", "W"]
+                    },
+                    /* This collection element is the first occurrence
+                       of the type without contextual metadata. */
+                    "ListValue": {
+                      "type": "array",
+                      "items": {
+                        "type": ["object","null"],
+                        "properties": {
+                          "X": { "type": "integer" },
+                          "Y": { "type": "string" },
+                          "Z": { "type": "boolean" },
+                          "W": { "type": "number" }
+                        },
+                        "required": ["X", "Y", "Z", "W"]
+                      }
+                    },
+                    /* This collection element is the second occurrence
+                       of the type which points to the first occurrence. */
+                    "ArrayValue": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/properties/ListValue/items"
+                      }
+                    }
+                  }
+                }
+                """);
+
             yield return new TestData<PocoWithDescription>(
                 Value: new() { X = 42 },
                 ExpectedJsonSchema: """
@@ -1034,6 +1090,30 @@ namespace System.Text.Json.Schema.Tests
                 }
                 """);
 
+            yield return new TestData<ClassWithOptionalObjectParameter>(
+                Value: new(value: null),
+                AdditionalValues: [new(true), new(42), new(""), new(new object()), new(Array.Empty<int>())],
+                ExpectedJsonSchema: """
+                        {
+                            "type": ["object","null"],
+                            "properties": {
+                              "Value": { "default": null }
+                            }
+                        }
+                        """);
+
+            yield return new TestData<ClassWithPropertiesUsingCustomConverters>(
+                Value: new() { Prop1 = new() , Prop2 = new() },
+                ExpectedJsonSchema: """
+                    {
+                        "type": ["object","null"],
+                        "properties": {
+                          "Prop1": true,
+                          "Prop2": true,
+                        }
+                    }
+                    """);
+
             // Collection types
             yield return new TestData<int[]>([1, 2, 3], ExpectedJsonSchema: """{"type":["array","null"],"items":{"type":"integer"}}""");
             yield return new TestData<List<bool>>([false, true, false], ExpectedJsonSchema: """{"type":["array","null"],"items":{"type":"boolean"}}""");
@@ -1212,6 +1292,14 @@ namespace System.Text.Json.Schema.Tests
         public class PocoWithRecursiveDictionaryValue
         {
             public Dictionary<string, PocoWithRecursiveDictionaryValue> Children { get; init; } = new();
+        }
+
+        public class PocoWithNonRecursiveDuplicateOccurrences
+        {
+            public SimpleRecord Value1 { get; set; }
+            public SimpleRecord Value2 { get; set; }
+            public List<SimpleRecord> ListValue { get; set; }
+            public SimpleRecord[] ArrayValue { get; set; }
         }
 
         [Description("The type description")]
@@ -1441,6 +1529,11 @@ namespace System.Text.Json.Schema.Tests
             public PocoWithRecursiveMembers Value { get; set; }
         }
 
+        public class ClassWithOptionalObjectParameter(object? value = null)
+        {
+            public object? Value { get; } = value;
+        }
+
         public readonly struct StructDictionary<TKey, TValue>(IEnumerable<KeyValuePair<TKey, TValue>> values)
             : IReadOnlyDictionary<TKey, TValue>
             where TKey : notnull
@@ -1503,6 +1596,29 @@ namespace System.Text.Json.Schema.Tests
             JsonSerializerOptions? SerializerOptions { get; }
 
             IEnumerable<ITestData> GetTestDataForAllValues();
+        }
+
+        public class ClassWithPropertiesUsingCustomConverters
+        {
+            [JsonPropertyOrder(0)]
+            public ClassWithCustomConverter1 Prop1 { get; set; }
+            [JsonPropertyOrder(1)]
+            public ClassWithCustomConverter2 Prop2 { get; set; }
+
+            [JsonConverter(typeof(CustomConverter<ClassWithCustomConverter1>))]
+            public class ClassWithCustomConverter1;
+
+            [JsonConverter(typeof(CustomConverter<ClassWithCustomConverter2>))]
+            public class ClassWithCustomConverter2;
+
+            public sealed class CustomConverter<T> : JsonConverter<T>
+            {
+                public override T? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+                    => default;
+
+                public override void Write(Utf8JsonWriter writer, T value, JsonSerializerOptions options)
+                    => writer.WriteNullValue();
+            }
         }
 
         private static TAttribute? GetCustomAttribute<TAttribute>(ICustomAttributeProvider? provider, bool inherit = false) where TAttribute : Attribute

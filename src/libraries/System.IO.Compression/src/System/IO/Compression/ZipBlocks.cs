@@ -269,14 +269,12 @@ namespace System.IO.Compression
             zip64Field._localHeaderOffset = null;
             zip64Field._startDiskNumber = null;
 
-            List<ZipGenericExtraField> markedForDelete = new List<ZipGenericExtraField>();
             bool zip64FieldFound = false;
 
-            foreach (ZipGenericExtraField ef in extraFields)
+            extraFields.RemoveAll(ef =>
             {
                 if (ef.Tag == TagConstant)
                 {
-                    markedForDelete.Add(ef);
                     if (!zip64FieldFound)
                     {
                         if (TryGetZip64BlockFromGenericExtraField(ef, readUncompressedSize, readCompressedSize,
@@ -285,24 +283,18 @@ namespace System.IO.Compression
                             zip64FieldFound = true;
                         }
                     }
+                    return true;
                 }
-            }
 
-            foreach (ZipGenericExtraField ef in markedForDelete)
-                extraFields.Remove(ef);
+                return false;
+            });
 
             return zip64Field;
         }
 
         public static void RemoveZip64Blocks(List<ZipGenericExtraField> extraFields)
         {
-            List<ZipGenericExtraField> markedForDelete = new List<ZipGenericExtraField>();
-            foreach (ZipGenericExtraField field in extraFields)
-                if (field.Tag == TagConstant)
-                    markedForDelete.Add(field);
-
-            foreach (ZipGenericExtraField field in markedForDelete)
-                extraFields.Remove(field);
+            extraFields.RemoveAll(field => field.Tag == TagConstant);
         }
 
         public void WriteBlock(Stream stream)
