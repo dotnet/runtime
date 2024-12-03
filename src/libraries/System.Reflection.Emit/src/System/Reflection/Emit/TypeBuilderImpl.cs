@@ -212,7 +212,7 @@ namespace System.Reflection.Emit
             // Get the parent class's default constructor and add it to the IL
             ConstructorInfo? con;
             if (_typeParent!.IsConstructedGenericType &&
-                (_typeParent.GetGenericTypeDefinition() is TypeBuilderImpl || ModuleBuilderImpl.ContainsTypeBuilder(_typeParent.GetGenericArguments())))
+                (_typeParent.GetGenericTypeDefinition() is TypeBuilderImpl || _module.ContainsTypeBuilder(_typeParent.GetGenericArguments())))
             {
                 // When TypeBuilder involved need to construct the parent constructor using TypeBuilder.GetConstructor() static method
                 con = GetConstructor(_typeParent, _typeParent.GetGenericTypeDefinition().GetConstructor(
@@ -326,7 +326,7 @@ namespace System.Reflection.Emit
             {
                 if (im.Exists(pair => pair.ifaceMethod.Equals(methodInfoDeclaration)))
                 {
-                    throw new ArgumentException(SR.Format(SR.Argument_MethodOverriden, methodInfoBody.Name, FullName), nameof(methodInfoDeclaration));
+                    throw new ArgumentException(SR.Format(SR.Argument_MethodOverridden, methodInfoBody.Name, FullName), nameof(methodInfoDeclaration));
                 }
 
                 im.Add((methodInfoDeclaration, methodInfoBody));
@@ -637,7 +637,10 @@ namespace System.Reflection.Emit
         public override Guid GUID => throw new NotSupportedException();
         public override Type? BaseType => _typeParent;
         public override int MetadataToken => MetadataTokens.GetToken(_handle);
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields |
+            DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods |
+            DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties |
+            DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
         public override object? InvokeMember(string name, BindingFlags invokeAttr, Binder? binder, object? target,
             object?[]? args, ParameterModifier[]? modifiers, CultureInfo? culture, string[]? namedParameters) => throw new NotSupportedException();
         protected override bool IsArrayImpl() => false;

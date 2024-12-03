@@ -29,7 +29,7 @@ terminology.
 | IPC | Inter-Process Communication. |
 | IL | Intermediate Language. Equivalent to CIL, also equivalent to [MSIL](https://learn.microsoft.com/dotnet/standard/managed-execution-process#compiling-to-msil). |
 | JIT | [Just-in-Time](https://github.com/dotnet/runtime/blob/main/docs/design/coreclr/jit/ryujit-overview.md) compiler. RyuJIT is the code name for the next generation Just-in-Time(aka "JIT") for the .NET runtime. |
-| LCG | Lightweight Code Generation. An early name for [dynamic methods](https://github.com/dotnet/runtime/blob/main/src/coreclr/System.Private.CoreLib/src/System/Reflection/Emit/DynamicMethod.cs). |
+| LCG | Lightweight Code Generation. An early name for [dynamic methods](https://github.com/dotnet/runtime/blob/main/src/libraries/System.Private.CoreLib/src/System/Reflection/Emit/DynamicMethod.cs). |
 | MD | MetaData. |
 | MDA | Managed Debugging Assistant - see [details](https://learn.microsoft.com/dotnet/framework/debug-trace-profile/diagnosing-errors-with-managed-debugging-assistants) (Note: Not in .NET Core, equivalent diagnostic functionality is made available on a case-by-case basis, e.g. [#9418](https://github.com/dotnet/runtime/issues/9418)) |
 | MIBC | Managed Instrumented Block Counts - used as extension (`*.mibc`) for managed PGO files. |
@@ -49,7 +49,7 @@ terminology.
 | SPCL | `System.Private.CoreLib` - the lowest managed assembly in the libraries stack that contains `System.Object`, `String`, etc. |
 | SuperPMI | JIT component test framework (super fast JIT testing - it mocks/replays EE in EE-JIT interface) - see [SuperPMI details](https://github.com/dotnet/runtime/blob/main/src/coreclr/tools/superpmi/readme.md). |
 | SVR | The CLR used to be built as two variants, with one called "mscorsvr.dll", to mean the "server" version. In particular, it contained the server GC implementation, which was intended for multi-threaded apps capable of taking advantage of multiple processors. In the .NET Framework 2 release, the two variants were merged into "mscorwks.dll". The WKS version was the default, however the SVR version remained available. |
-| TFM | [Target Framework Moniker](https://learn.microsoft.com/dotnet/standard/frameworks) such as `net6.0` or `netstandard2.0`. |
+| TFM | [Target Framework Moniker](https://learn.microsoft.com/dotnet/standard/frameworks) such as `net8.0` or `netstandard2.0`. |
 | TPA | Trusted Platform Assemblies used to be a special set of assemblies that comprised the platform assemblies, when it was originally designed. As of today, it is simply the set of assemblies known to constitute the application. |
 | URT | Universal Runtime. Ancient name for what ended up being .NET, is used in the WinError facility name FACILITY_URT. |
 | UTC | [Universal Tuple Compiler](https://blogs.msdn.microsoft.com/vcblog/2013/06/12/optimizing-c-code-overview/). The Microsoft C++ optimizer back-end that starts by converting the information from the FrontEnd into tuples – a binary stream of instructions. |

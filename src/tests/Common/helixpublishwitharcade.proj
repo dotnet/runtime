@@ -67,7 +67,7 @@
   <PropertyGroup>
     <CoreRootDirectory>$(TestBinDir)Tests\Core_Root\</CoreRootDirectory>
     <CoreRootDirectory>$([MSBuild]::NormalizeDirectory($(CoreRootDirectory)))</CoreRootDirectory>
-    <XUnitLogCheckerDirectory>$(TestBinDir)Common\XUnitLogChecker\</XUnitLogCheckerDirectory>
+    <XUnitLogCheckerDirectory>$(TestBinDir)XUnitLogChecker\</XUnitLogCheckerDirectory>
     <XUnitLogCheckerDirectory>$([MSBuild]::NormalizeDirectory($(XUnitLogCheckerDirectory)))</XUnitLogCheckerDirectory>
     <LegacyPayloadsRootDirectory>$(TestBinDir)LegacyPayloads\</LegacyPayloadsRootDirectory>
     <LegacyPayloadsRootDirectory>$([MSBuild]::NormalizeDirectory($(LegacyPayloadsRootDirectory)))</LegacyPayloadsRootDirectory>
@@ -336,8 +336,8 @@
       <_MergedWrapperMarker Include="$(TestBinDir)**\*.MergedTestAssembly" Exclude="$(TestBinDir)**\supportFiles\*.MergedTestAssembly" />
 
       <_MergedWrapperMarker Update="@(_MergedWrapperMarker)">
-        <TestExecutionScriptPath Condition="'$(TargetsBrowser)' != 'true'">$([System.IO.Path]::ChangeExtension('%(Identity)', '.$(TestScriptExtension)'))</TestExecutionScriptPath>
-        <TestExecutionScriptPath Condition="'$(TargetsBrowser)' == 'true'">%(RootDir)%(Directory)AppBundle/RunTests.$(TestScriptExtension)</TestExecutionScriptPath>
+        <TestExecutionScriptPath Condition="'$(TargetsMobile)' != 'true'">$([System.IO.Path]::ChangeExtension('%(Identity)', '.$(TestScriptExtension)'))</TestExecutionScriptPath>
+        <TestExecutionScriptPath Condition="'$(TargetsMobile)' == 'true'">%(RootDir)%(Directory)AppBundle/RunTests.$(TestScriptExtension)</TestExecutionScriptPath>
       </_MergedWrapperMarker>
 
       <!-- Exclude merged test wrappers without the test execution script for this target (skipped due to CLRTestTargetUnsupported et al) -->
@@ -392,7 +392,6 @@
     <PropertyGroup>
       <XUnitLogCheckerHelixPath Condition="'$(TestWrapperTargetsWindows)' != 'true'">%24HELIX_CORRELATION_PAYLOAD/</XUnitLogCheckerHelixPath>
       <XUnitLogCheckerHelixPath Condition="'$(TestWrapperTargetsWindows)' == 'true'">%25HELIX_CORRELATION_PAYLOAD%25/</XUnitLogCheckerHelixPath>
-      <XUnitLogCheckerHelixPath>$(XUnitLogCheckerHelixPath)XUnitLogChecker/</XUnitLogCheckerHelixPath>
 
       <XUnitLogCheckerArgs>--results-path $(_MergedWrapperRunScriptDirectoryRelative)</XUnitLogCheckerArgs>
       <XUnitLogCheckerArgs>$(XUnitLogCheckerArgs) --test-wrapper $(_MergedWrapperName)</XUnitLogCheckerArgs>
@@ -401,7 +400,7 @@
       <XUnitLogCheckerArgs Condition="'$(TestWrapperTargetsWindows)' != 'true'">$(XUnitLogCheckerArgs) %24HELIX_DUMP_FOLDER</XUnitLogCheckerArgs>
       <XUnitLogCheckerArgs Condition="'$(TestWrapperTargetsWindows)' == 'true'">$(XUnitLogCheckerArgs) %25HELIX_DUMP_FOLDER%25</XUnitLogCheckerArgs>
 
-      <XUnitLogCheckerCommand>dotnet $(XUnitLogCheckerHelixPath)XUnitLogChecker.dll $(XUnitLogCheckerArgs)</XUnitLogCheckerCommand>
+      <XUnitLogCheckerCommand>$(XUnitLogCheckerHelixPath)XUnitLogChecker$(ExeSuffix) $(XUnitLogCheckerArgs)</XUnitLogCheckerCommand>
     </PropertyGroup>
 
     <ItemGroup>
@@ -426,7 +425,7 @@
       <HelixCommandLines Condition="'$(TestWrapperTargetsWindows)' != 'true'" Include="test_exit_code=%24%3F" />
 
       <!-- Add the XUnitLogChecker's running command and store its exit code. -->
-      <HelixCommandLines Include="$(XUnitLogCheckerCommand)" />
+      <HelixCommandLines Condition="'$(IsXunitLogCheckerSupported)' == 'true'" Include="$(XUnitLogCheckerCommand)" />
       <HelixCommandLines Condition="'$(TestWrapperTargetsWindows)' == 'true'" Include="set xunitlogchecker_exit_code=%25ERRORLEVEL%25" />
       <HelixCommandLines Condition="'$(TestWrapperTargetsWindows)' != 'true'" Include="xunitlogchecker_exit_code=%24%3F" />
 
@@ -474,11 +473,15 @@
     <PropertyGroup>
       <_MergedWrapperDirectory>%(_MergedWrapperMarker.RootDir)%(Directory)</_MergedWrapperDirectory>
       <_MergedWrapperName>%(_MergedWrapperMarker.FileName)</_MergedWrapperName>
+      <!-- Android package names can't have hyphens, so we replace them with underscores -->
+      <_MergedApkName>$(_MergedWrapperName.Replace('-', '_'))</_MergedApkName>
     </PropertyGroup>
 
     <ItemGroup>
-      <_MergedPayloadGroups Include="$(_MergedWrapperName)" />
-      <_MergedPayloadFiles Include="@(_MergedPayloadGroups->'$(_MergedWrapperDirectory)AppBundle/bin/%(Identity).apk')" />
+      <_MergedPayloadGroups Include="$(_MergedWrapperName)">
+        <ApkPackageName>$(_MergedApkName)</ApkPackageName>
+      </_MergedPayloadGroups>
+      <_MergedPayloadFiles Include="@(_MergedPayloadGroups->'$(_MergedWrapperDirectory)AppBundle/bin/%(ApkPackageName).apk')" />
     </ItemGroup>
 
     <Copy SourceFiles="@(_MergedPayloadFiles)" DestinationFiles="@(_MergedPayloadFiles->'$(MergedPayloadsRootDirectory)\$(_MergedWrapperName)\%(FileName)%(Extension)')" />
@@ -761,7 +764,7 @@
     <HelixCorrelationPayload Include="$(CoreRootDirectory)" />
 
     <!-- Browser-Wasm and iOS platforms follow a very different workflow, which is currently out of scope of the Log Checker. It's not useful on any platform that uses xharness. -->
-    <HelixCorrelationPayload Include="$(XUnitLogCheckerDirectory)" Condition="'$(TargetsBrowser)' != 'true' and '$(TargetsAppleMobile)' != 'true'" />
+    <HelixCorrelationPayload Include="$(XUnitLogCheckerDirectory)" Condition="'$(IsXunitLogCheckerSupported)' == 'true' and '$(TargetsBrowser)' != 'true' and '$(TargetsAppleMobile)' != 'true'" />
     <HelixCorrelationPayload Condition="'$(TestWrapperTargetsWindows)' == 'true'" Include="dotnet-sos">
       <Destination>sos</Destination>
       <Uri>https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-tools/nuget/v3/flat2/dotnet-sos/$(DotnetSosVersion)/dotnet-sos.$(DotnetSosVersion).nupkg</Uri>
@@ -802,7 +805,11 @@
   <ItemGroup Condition="'$(TargetHasHelixXHarnessSdkSupport)' == 'true'">
     <MergedPayloads Update="@(MergedPayloads)">
       <PayloadGroup>%(FileName)%(Extension)</PayloadGroup>
-      <ApkPath>$(MergedPayloadsRootDirectory)%(FileName)%(Extension)/%(FileName)%(Extension).apk</ApkPath>
+      <!-- Android package names can't have dashes, so we replace them with underscores. -->
+      <ApkFileName>$([System.String]::new('%(FileName)%(Extension)').Replace('-', '_'))</ApkFileName>
+    </MergedPayloads>
+    <MergedPayloads Update="@(MergedPayloads)">
+      <ApkPath>$(MergedPayloadsRootDirectory)%(FileName)%(Extension)/%(ApkFileName).apk</ApkPath>
       <AppBundlePath>$(MergedPayloadsRootDirectory)%(FileName)%(Extension)/%(FileName)%(Extension).app</AppBundlePath>
     </MergedPayloads>
   </ItemGroup>
@@ -891,7 +898,7 @@
 
     <XHarnessApkToTest Include="@(MergedPayloads->Metadata('PayloadGroup'))" Condition="'$(TargetsAndroid)' == 'true'">
       <Arguments>--arg=env:TestExclusionListPath=TestExclusionList.txt</Arguments>
-      <AndroidPackageName>net.dot.%(PayloadGroup)</AndroidPackageName>
+      <AndroidPackageName>net.dot.%(ApkFileName)</AndroidPackageName>
       <AndroidInstrumentationName>net.dot.MonoRunner</AndroidInstrumentationName>
       <TestTimeout Condition=" '$(TimeoutPerTestCollectionInMinutes)' != '' ">$([System.TimeSpan]::FromMinutes($(TimeoutPerTestCollectionInMinutes)))</TestTimeout>
     </XHarnessApkToTest>

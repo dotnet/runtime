@@ -31,7 +31,7 @@ bool install_info::print_environment(const pal::char_t* leading_whitespace)
     return found_any;
 }
 
-bool install_info::print_other_architectures(const pal::char_t* leading_whitespace)
+bool install_info::enumerate_other_architectures(std::function<void(pal::architecture, const pal::string_t&, bool)> callback)
 {
     bool found_any = false;
     for (uint32_t i = 0; i < static_cast<uint32_t>(pal::architecture::__last); ++i)
@@ -47,13 +47,22 @@ bool install_info::print_other_architectures(const pal::char_t* leading_whitespa
         {
             found_any = true;
             remove_trailing_dir_separator(&install_location);
+            callback(arch, install_location, is_registered);
+        }
+    }
+
+    return found_any;
+}
+
+bool install_info::print_other_architectures(const pal::char_t* leading_whitespace)
+{
+    return enumerate_other_architectures(
+        [&](pal::architecture arch, const pal::string_t& install_location, bool is_registered)
+        {
             trace::println(_X("%s%-5s [%s]"), leading_whitespace, get_arch_name(arch), install_location.c_str());
             if (is_registered)
             {
                 trace::println(_X("%s  registered at [%s]"), leading_whitespace, pal::get_dotnet_self_registered_config_location(arch).c_str());
             }
-        }
-    }
-
-    return found_any;
+        });
 }

@@ -10,24 +10,24 @@ using Microsoft.Extensions.FileProviders.Physical;
 namespace Microsoft.Extensions.FileProviders.Internal
 {
     /// <summary>
-    /// Represents the contents of a physical file directory
+    /// Represents the contents of a physical file directory.
     /// </summary>
     public class PhysicalDirectoryContents : IDirectoryContents
     {
         private readonly PhysicalDirectoryInfo _info;
 
         /// <summary>
-        /// Initializes an instance of <see cref="PhysicalDirectoryContents"/>
+        /// Initializes an instance of <see cref="PhysicalDirectoryContents"/>.
         /// </summary>
-        /// <param name="directory">The directory</param>
+        /// <param name="directory">The directory to represent.</param>
         public PhysicalDirectoryContents(string directory)
             : this(directory, ExclusionFilters.Sensitive)
         { }
 
         /// <summary>
-        /// Initializes an instance of <see cref="PhysicalDirectoryContents"/>
+        /// Initializes an instance of <see cref="PhysicalDirectoryContents"/>.
         /// </summary>
-        /// <param name="directory">The directory</param>
+        /// <param name="directory">The directory to represent.</param>
         /// <param name="filters">Specifies which files or directories are excluded from enumeration.</param>
         public PhysicalDirectoryContents(string directory, ExclusionFilters filters)
         {

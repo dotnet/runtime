@@ -19,7 +19,7 @@ namespace Mono.Linker.Tests.Cases.Generics
 			public abstract string OverloadedMethod (T thing); // Don't call this one, it should be stripped
 
 			[Kept]
-			public abstract string OverloadedMethod (int thing); // Call to this should preserve the overriden one
+			public abstract string OverloadedMethod (int thing); // Call to this should preserve the overridden one
 		}
 
 		[KeptMember (".ctor()")]

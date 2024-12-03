@@ -31,6 +31,8 @@ jobs:
         value: $[ stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'] ]
       - name: monoContainsChange
         value: $[ stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'] ]
+      - name: illinkContainsChange
+        value: $[ stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'] ]
     jobParameters:
       testGroup: innerloop
       nameSuffix: AllSubsets_Mono
@@ -39,8 +41,7 @@ jobs:
       ${{ if eq(variables['isRollingBuild'], true) }}:
         buildArgs: -s mono+libs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:DevTeamProvisioning=- /p:RunAOTCompilation=true $(_runSmokeTestsOnlyArg) /p:BuildTestsOnHelix=true /p:EnableAdditionalTimezoneChecks=true /p:UsePortableRuntimePack=true /p:BuildDarwinFrameworks=true /p:IsManualOrRollingBuild=true /p:EnableAggressiveTrimming=false
       ${{ else }}:
-      # Tracking issue: https://github.com/dotnet/runtime/issues/82637
-        buildArgs: -s mono+libs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:DevTeamProvisioning=- /p:RunAOTCompilation=true $(_runSmokeTestsOnlyArg) /p:BuildTestsOnHelix=true /p:EnableAdditionalTimezoneChecks=true /p:UsePortableRuntimePack=true /p:BuildDarwinFrameworks=true /p:IsManualOrRollingBuild=true /p:EnableAggressiveTrimming=false
+        buildArgs: -s mono+libs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:DevTeamProvisioning=- /p:RunAOTCompilation=true $(_runSmokeTestsOnlyArg) /p:BuildTestsOnHelix=true /p:EnableAdditionalTimezoneChecks=true /p:UsePortableRuntimePack=true /p:BuildDarwinFrameworks=true /p:IsManualOrRollingBuild=true /p:EnableAggressiveTrimming=true
       timeoutInMinutes: 480
       # extra steps, run tests
       postBuildSteps:
@@ -165,3 +166,4 @@ jobs:
             creator: dotnet-bot
             testBuildArgs: tree nativeaot/SmokeTests /p:BuildNativeAOTRuntimePack=true
             testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
+            buildAllTestsAsStandalone: true

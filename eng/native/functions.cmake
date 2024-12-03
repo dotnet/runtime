@@ -637,7 +637,7 @@ endfunction()
 function(add_sanitizer_runtime_support targetName)
   # Add sanitizer support functions.
   if (CLR_CMAKE_ENABLE_ASAN)
-    target_sources(${targetName} PRIVATE "$<$<STREQUAL:$<TARGET_PROPERTY:TYPE>,EXECUTABLE>:${CLR_SRC_NATIVE_DIR}/minipal/asansupport.cpp>")
+    target_link_libraries(${targetName} PRIVATE $<$<STREQUAL:$<TARGET_PROPERTY:TYPE>,EXECUTABLE>:minipal_sanitizer_support>)
   endif()
 endfunction()
 

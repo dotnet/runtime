@@ -452,12 +452,40 @@ namespace System.Text.RegularExpressions.Generator
                         "FFC1FFFFFEFFFFFFFFFFFFFFFFFFFFFF" => "s_asciiExceptWhiteSpace",
                         "FFFFFFFFFFFF00FC01000078010000F8" => "s_asciiExceptWordChars",
 
+                        "FFFFFFFFFFDF00FCFFFFFFFFFFFFFFFF" => "s_asciiExceptDigitsAndDash",
+                        "000000000040FF03FEFFFF07FEFFFF07" => "s_asciiLettersAndDigitsAndDot",
+                        "000000000020FF03FEFFFF07FEFFFF07" => "s_asciiLettersAndDigitsAndDash",
+                        "000000000060FF03FEFFFF07FEFFFF07" => "s_asciiLettersAndDigitsAndDashDot",
+                        "000000000040FF03FEFFFF87FEFFFF07" => "s_asciiLettersAndDigitsAndDotUnderscore",
+                        "000000000020FF03FEFFFF87FEFFFF07" => "s_asciiLettersAndDigitsAndDashUnderscore",
+                        "000000000060FF03FEFFFF87FEFFFF07" => "s_asciiLettersAndDigitsAndDashDotUnderscore",
+                        "000000000040FF030000000000000000" => "s_asciiDigitsAndDot",
+                        "000000000020FF030000000000000000" => "s_asciiDigitsAndDash",
+                        "0000000000200000FEFFFF07FEFFFF07" => "s_asciiLettersAndDash",
+                        "0000000000000000FEFFFF87FEFFFF07" => "s_asciiLettersAndUnderscore",
+                        "000000000000FF0300000000FEFFFF07" => "s_asciiLettersLowerAndDigits",
+                        "000000000000FF03FEFFFF0700000000" => "s_asciiLettersUpperAndDigits",
+                        "000000000020FF0300000000FEFFFF07" => "s_asciiLettersLowerAndDigitsAndDash",
+
                         _ => $"s_ascii_{hexBitmap.TrimStart('0')}"
                     };
                 }
                 else
                 {
                     fieldName = GetSHA256FieldName("s_nonAscii_", new string(chars));
+
+                    fieldName = fieldName switch
+                    {
+                        "s_nonAscii_326E1FD0AD567A84CAD13F2BE521A57789829F59D59ABE37F9E111D0182B6601" => "s_asciiLettersAndKelvinSign",
+                        "s_nonAscii_46E3FAA2E94950B9D41E9AB1B570CAB55D04A30009110072B4BC074D57272527" => "s_asciiLettersAndDigitsAndKelvinSign",
+                        "s_nonAscii_2D5586687DC37F0329E3CA4127326E68B5A3A090B13B7834AEA7BFC4EDDE220F" => "s_asciiLettersAndDigitsAndDashKelvinSign",
+                        "s_nonAscii_83AFA3CC45CC4C2D8C316947CFC319199813C7F90226BDF348E2B3236D6237C1" => "s_asciiLettersAndDigitsAndDashDotKelvinSign",
+                        "s_nonAscii_9FA52D3BAECB644578472387D5284CC6F36F408FEB88A04BA674CE14F24D2386" => "s_asciiLettersAndDigitsAndUnderscoreKelvinSign",
+                        "s_nonAscii_D41BEF0BEAFBA32A45D2356E3F1579596F35B7C67CAA9CF7C4B3F2A5422DCA51" => "s_asciiLettersAndDigitsAndDashUnderscoreKelvinSign",
+                        "s_nonAscii_0D7E5600013B3F0349C00277028B6DEA566BB9BAF991CCB7AC92DEC54C4544C1" => "s_asciiLettersAndDigitsAndDashDotUnderscoreKelvinSign",
+
+                        _ => fieldName
+                    };
                 }
             }
 

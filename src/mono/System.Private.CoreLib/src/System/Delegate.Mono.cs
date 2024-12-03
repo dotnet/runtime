@@ -86,7 +86,7 @@ namespace System
             };
         }
 
-        protected Delegate([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type target, string method)
+        protected Delegate([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.AllMethods)] Type target, string method)
         {
             ArgumentNullException.ThrowIfNull(target);
 
@@ -174,7 +174,7 @@ namespace System
             return CreateDelegate_internal(new QCallTypeHandle(ref rtType), target, info, throwOnBindFailure);
         }
 
-        public static Delegate? CreateDelegate(Type type, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type target, string method, bool ignoreCase, bool throwOnBindFailure)
+        public static Delegate? CreateDelegate(Type type, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.AllMethods)] Type target, string method, bool ignoreCase, bool throwOnBindFailure)
         {
             ArgumentNullException.ThrowIfNull(type);
             ArgumentNullException.ThrowIfNull(target);
@@ -202,9 +202,7 @@ namespace System
             return CreateDelegate_internal(new QCallTypeHandle(ref rtType), null, info, throwOnBindFailure);
         }
 
-        // GetCandidateMethod is annotated as DynamicallyAccessedMemberTypes.All because it will bind to non-public methods
-        // on a base type of methodType. Using All is currently the only way ILLinker will preserve these methods.
-        private static MethodInfo? GetCandidateMethod(RuntimeType type, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type target, string method, BindingFlags bflags, bool ignoreCase)
+        private static MethodInfo? GetCandidateMethod(RuntimeType type, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.AllMethods)] Type target, string method, BindingFlags bflags, bool ignoreCase)
         {
             MethodInfo? invoke = GetDelegateInvokeMethod(type);
             if (invoke is null)

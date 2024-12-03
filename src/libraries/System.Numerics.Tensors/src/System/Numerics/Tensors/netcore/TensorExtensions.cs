@@ -3,7 +3,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -56,7 +55,7 @@ namespace System.Numerics.Tensors
             where T : IFloatingPoint<T>
         {
             T sum = Sum(x);
-            return T.CreateChecked(sum / T.CreateChecked(x._shape._memoryLength));
+            return T.CreateChecked(sum / T.CreateChecked(x.FlattenedLength));
         }
         #endregion
 
@@ -395,16 +394,18 @@ namespace System.Numerics.Tensors
             scoped Span<nint> curIndex;
             nint[]? curIndexArray;
 
-            if (tensors[0].Rank > 6)
+            if (tensors[0].Rank > TensorShape.MaxInlineRank)
             {
                 curIndexArray = ArrayPool<nint>.Shared.Rent(tensors[0].Rank);
-                curIndex = curIndexArray;
+                curIndex = curIndexArray.AsSpan(0, tensors[0].Rank);
             }
             else
             {
                 curIndexArray = null;
                 curIndex = stackalloc nint[tensors[0].Rank];
             }
+            curIndex.Clear();
+
             nint srcIndex;
             nint copyLength;
 
@@ -499,16 +500,17 @@ namespace System.Numerics.Tensors
             scoped Span<nint> curIndex;
             nint[]? curIndexArray;
 
-            if (right.Rank > 6)
+            if (right.Rank > TensorShape.MaxInlineRank)
             {
                 curIndexArray = ArrayPool<nint>.Shared.Rent(right.Rank);
-                curIndex = curIndexArray;
+                curIndex = curIndexArray.AsSpan(0, right.Rank);
             }
             else
             {
                 curIndexArray = null;
                 curIndex = stackalloc nint[right.Rank];
             }
+            curIndex.Clear();
 
             for (int i = 0; i < left.FlattenedLength; i++)
             {
@@ -554,16 +556,17 @@ namespace System.Numerics.Tensors
             scoped Span<nint> curIndex;
             nint[]? curIndexArray;
 
-            if (x.Rank > 6)
+            if (x.Rank > TensorShape.MaxInlineRank)
             {
                 curIndexArray = ArrayPool<nint>.Shared.Rent(x.Rank);
-                curIndex = curIndexArray;
+                curIndex = curIndexArray.AsSpan(0, x.Rank);
             }
             else
             {
                 curIndexArray = null;
                 curIndex = stackalloc nint[x.Rank];
             }
+            curIndex.Clear();
 
             for (int i = 0; i < x.FlattenedLength; i++)
             {
@@ -598,16 +601,17 @@ namespace System.Numerics.Tensors
             scoped Span<nint> curIndex;
             nint[]? curIndexArray;
 
-            if (broadcastedLeft.Rank > 6)
+            if (broadcastedLeft.Rank > TensorShape.MaxInlineRank)
             {
                 curIndexArray = ArrayPool<nint>.Shared.Rent(broadcastedRight.Rank);
-                curIndex = curIndexArray;
+                curIndex = curIndexArray.AsSpan(0, broadcastedRight.Rank);
             }
             else
             {
                 curIndexArray = null;
                 curIndex = stackalloc nint[broadcastedRight.Rank];
             }
+            curIndex.Clear();
 
             for (int i = 0; i < broadcastedLeft.FlattenedLength; i++)
             {
@@ -636,16 +640,17 @@ namespace System.Numerics.Tensors
             scoped Span<nint> curIndex;
             nint[]? curIndexArray;
 
-            if (x.Rank > 6)
+            if (x.Rank > TensorShape.MaxInlineRank)
             {
                 curIndexArray = ArrayPool<nint>.Shared.Rent(x.Rank);
-                curIndex = curIndexArray;
+                curIndex = curIndexArray.AsSpan(0, x.Rank);
             }
             else
             {
                 curIndexArray = null;
                 curIndex = stackalloc nint[x.Rank];
             }
+            curIndex.Clear();
 
             for (int i = 0; i < x.FlattenedLength; i++)
             {
@@ -680,16 +685,17 @@ namespace System.Numerics.Tensors
             scoped Span<nint> curIndex;
             nint[]? curIndexArray;
 
-            if (broadcastedRight.Lengths.Length > 6)
+            if (broadcastedRight.Rank > TensorShape.MaxInlineRank)
             {
                 curIndexArray = ArrayPool<nint>.Shared.Rent(broadcastedRight.Lengths.Length);
-                curIndex = curIndexArray;
+                curIndex = curIndexArray.AsSpan(0, broadcastedRight.Rank);
             }
             else
             {
                 curIndexArray = null;
                 curIndex = stackalloc nint[broadcastedRight.Lengths.Length];
             }
+            curIndex.Clear();
 
             for (int i = 0; i < broadcastedLeft.FlattenedLength; i++)
             {
@@ -718,16 +724,17 @@ namespace System.Numerics.Tensors
             scoped Span<nint> curIndex;
             nint[]? curIndexArray;
 
-            if (x.Rank > 6)
+            if (x.Rank > TensorShape.MaxInlineRank)
             {
                 curIndexArray = ArrayPool<nint>.Shared.Rent(x.Rank);
-                curIndex = curIndexArray;
+                curIndex = curIndexArray.AsSpan(0, x.Rank);
             }
             else
             {
                 curIndexArray = null;
                 curIndex = stackalloc nint[x.Rank];
             }
+            curIndex.Clear();
 
             for (int i = 0; i < x.FlattenedLength; i++)
             {
@@ -864,16 +871,17 @@ namespace System.Numerics.Tensors
             scoped Span<nint> curIndex;
             nint[]? curIndexArray;
 
-            if (right.Rank > 6)
+            if (right.Rank > TensorShape.MaxInlineRank)
             {
                 curIndexArray = ArrayPool<nint>.Shared.Rent(right.Rank);
-                curIndex = curIndexArray;
+                curIndex = curIndexArray.AsSpan(0, right.Rank);
             }
             else
             {
                 curIndexArray = null;
                 curIndex = stackalloc nint[right.Rank];
             }
+            curIndex.Clear();
 
             for (int i = 0; i < left.FlattenedLength; i++)
             {
@@ -923,16 +931,17 @@ namespace System.Numerics.Tensors
             scoped Span<nint> curIndex;
             nint[]? curIndexArray;
 
-            if (x.Rank > 6)
+            if (x.Rank > TensorShape.MaxInlineRank)
             {
                 curIndexArray = ArrayPool<nint>.Shared.Rent(x.Rank);
-                curIndex = curIndexArray;
+                curIndex = curIndexArray.AsSpan(0, x.Rank);
             }
             else
             {
                 curIndexArray = null;
                 curIndex = stackalloc nint[x.Rank];
             }
+            curIndex.Clear();
 
             for (int i = 0; i < x.FlattenedLength; i++)
             {
@@ -982,16 +991,17 @@ namespace System.Numerics.Tensors
             scoped Span<nint> curIndex;
             nint[]? curIndexArray;
 
-            if (y.Rank > 6)
+            if (y.Rank > TensorShape.MaxInlineRank)
             {
                 curIndexArray = ArrayPool<nint>.Shared.Rent(y.Rank);
-                curIndex = curIndexArray;
+                curIndex = curIndexArray.AsSpan(0, y.Rank);
             }
             else
             {
                 curIndexArray = null;
                 curIndex = stackalloc nint[y.Rank];
             }
+            curIndex.Clear();
 
             for (int i = 0; i < y.FlattenedLength; i++)
             {
@@ -1070,16 +1080,17 @@ namespace System.Numerics.Tensors
             scoped Span<nint> curIndex;
             nint[]? curIndexArray;
 
-            if (right.Rank > 6)
+            if (right.Rank > TensorShape.MaxInlineRank)
             {
                 curIndexArray = ArrayPool<nint>.Shared.Rent(right.Rank);
-                curIndex = curIndexArray;
+                curIndex = curIndexArray.AsSpan(0, right.Rank);
             }
             else
             {
                 curIndexArray = null;
                 curIndex = stackalloc nint[right.Rank];
             }
+            curIndex.Clear();
 
             for (int i = 0; i < left.FlattenedLength; i++)
             {
@@ -1129,16 +1140,17 @@ namespace System.Numerics.Tensors
             scoped Span<nint> curIndex;
             nint[]? curIndexArray;
 
-            if (x.Rank > 6)
+            if (x.Rank > TensorShape.MaxInlineRank)
             {
                 curIndexArray = ArrayPool<nint>.Shared.Rent(x.Rank);
-                curIndex = curIndexArray;
+                curIndex = curIndexArray.AsSpan(0, x.Rank);
             }
             else
             {
                 curIndexArray = null;
                 curIndex = stackalloc nint[x.Rank];
             }
+            curIndex.Clear();
 
             for (int i = 0; i < x.FlattenedLength; i++)
             {
@@ -1188,16 +1200,17 @@ namespace System.Numerics.Tensors
             scoped Span<nint> curIndex;
             nint[]? curIndexArray;
 
-            if (y.Rank > 6)
+            if (y.Rank > TensorShape.MaxInlineRank)
             {
                 curIndexArray = ArrayPool<nint>.Shared.Rent(y.Rank);
-                curIndex = curIndexArray;
+                curIndex = curIndexArray.AsSpan(0, y.Rank);
             }
             else
             {
                 curIndexArray = null;
                 curIndex = stackalloc nint[y.Rank];
             }
+            curIndex.Clear();
 
             for (int i = 0; i < y.FlattenedLength; i++)
             {
@@ -1231,16 +1244,17 @@ namespace System.Numerics.Tensors
             scoped Span<nint> curIndex;
             nint[]? curIndexArray;
 
-            if (broadcastedRight.Lengths.Length > 6)
+            if (broadcastedRight.Rank > TensorShape.MaxInlineRank)
             {
                 curIndexArray = ArrayPool<nint>.Shared.Rent(broadcastedRight.Lengths.Length);
-                curIndex = curIndexArray;
+                curIndex = curIndexArray.AsSpan(0, broadcastedRight.Rank);
             }
             else
             {
                 curIndexArray = null;
                 curIndex = stackalloc nint[broadcastedRight.Lengths.Length];
             }
+            curIndex.Clear();
 
             for (int i = 0; i < broadcastedLeft.FlattenedLength; i++)
             {
@@ -1269,16 +1283,17 @@ namespace System.Numerics.Tensors
             scoped Span<nint> curIndex;
             nint[]? curIndexArray;
 
-            if (x.Rank > 6)
+            if (x.Rank > TensorShape.MaxInlineRank)
             {
                 curIndexArray = ArrayPool<nint>.Shared.Rent(x.Rank);
-                curIndex = curIndexArray;
+                curIndex = curIndexArray.AsSpan(0, x.Rank);
             }
             else
             {
                 curIndexArray = null;
                 curIndex = stackalloc nint[x.Rank];
             }
+            curIndex.Clear();
 
             for (int i = 0; i < x.FlattenedLength; i++)
             {
@@ -1307,16 +1322,17 @@ namespace System.Numerics.Tensors
             scoped Span<nint> curIndex;
             nint[]? curIndexArray;
 
-            if (y.Rank > 6)
+            if (y.Rank > TensorShape.MaxInlineRank)
             {
                 curIndexArray = ArrayPool<nint>.Shared.Rent(y.Rank);
-                curIndex = curIndexArray;
+                curIndex = curIndexArray.AsSpan(0, y.Rank);
             }
             else
             {
                 curIndexArray = null;
                 curIndex = stackalloc nint[y.Rank];
             }
+            curIndex.Clear();
 
             for (int i = 0; i < y.FlattenedLength; i++)
             {
@@ -1351,16 +1367,17 @@ namespace System.Numerics.Tensors
             scoped Span<nint> curIndex;
             nint[]? curIndexArray;
 
-            if (broadcastedRight.Lengths.Length > 6)
+            if (broadcastedRight.Rank > TensorShape.MaxInlineRank)
             {
                 curIndexArray = ArrayPool<nint>.Shared.Rent(broadcastedRight.Lengths.Length);
-                curIndex = curIndexArray;
+                curIndex = curIndexArray.AsSpan(0, broadcastedRight.Rank);
             }
             else
             {
                 curIndexArray = null;
                 curIndex = stackalloc nint[broadcastedRight.Lengths.Length];
             }
+            curIndex.Clear();
 
             for (int i = 0; i < broadcastedLeft.FlattenedLength; i++)
             {
@@ -1389,16 +1406,17 @@ namespace System.Numerics.Tensors
             scoped Span<nint> curIndex;
             nint[]? curIndexArray;
 
-            if (x.Rank > 6)
+            if (x.Rank > TensorShape.MaxInlineRank)
             {
                 curIndexArray = ArrayPool<nint>.Shared.Rent(x.Rank);
-                curIndex = curIndexArray;
+                curIndex = curIndexArray.AsSpan(0, x.Rank);
             }
             else
             {
                 curIndexArray = null;
                 curIndex = stackalloc nint[x.Rank];
             }
+            curIndex.Clear();
 
             for (int i = 0; i < x.FlattenedLength; i++)
             {
@@ -1427,16 +1445,17 @@ namespace System.Numerics.Tensors
             scoped Span<nint> curIndex;
             nint[]? curIndexArray;
 
-            if (y.Rank > 6)
+            if (y.Rank > TensorShape.MaxInlineRank)
             {
                 curIndexArray = ArrayPool<nint>.Shared.Rent(y.Rank);
-                curIndex = curIndexArray;
+                curIndex = curIndexArray.AsSpan(0, y.Rank);
             }
             else
             {
                 curIndexArray = null;
                 curIndex = stackalloc nint[y.Rank];
             }
+            curIndex.Clear();
 
             for (int i = 0; i < y.FlattenedLength; i++)
             {
@@ -1472,16 +1491,17 @@ namespace System.Numerics.Tensors
             scoped Span<nint> curIndex;
             nint[]? curIndexArray;
 
-            if (broadcastedLeft.Rank > 6)
+            if (broadcastedLeft.Rank > TensorShape.MaxInlineRank)
             {
                 curIndexArray = ArrayPool<nint>.Shared.Rent(broadcastedRight.Rank);
-                curIndex = curIndexArray;
+                curIndex = curIndexArray.AsSpan(0, broadcastedRight.Rank);
             }
             else
             {
                 curIndexArray = null;
                 curIndex = stackalloc nint[broadcastedRight.Rank];
             }
+            curIndex.Clear();
 
             for (int i = 0; i < broadcastedLeft.FlattenedLength; i++)
             {
@@ -1510,16 +1530,17 @@ namespace System.Numerics.Tensors
             scoped Span<nint> curIndex;
             nint[]? curIndexArray;
 
-            if (x.Rank > 6)
+            if (x.Rank > TensorShape.MaxInlineRank)
             {
                 curIndexArray = ArrayPool<nint>.Shared.Rent(x.Rank);
-                curIndex = curIndexArray;
+                curIndex = curIndexArray.AsSpan(0, x.Rank);
             }
             else
             {
                 curIndexArray = null;
                 curIndex = stackalloc nint[x.Rank];
             }
+            curIndex.Clear();
 
             for (int i = 0; i < x.FlattenedLength; i++)
             {
@@ -1548,16 +1569,17 @@ namespace System.Numerics.Tensors
             scoped Span<nint> curIndex;
             nint[]? curIndexArray;
 
-            if (y.Rank > 6)
+            if (y.Rank > TensorShape.MaxInlineRank)
             {
                 curIndexArray = ArrayPool<nint>.Shared.Rent(y.Rank);
-                curIndex = curIndexArray;
+                curIndex = curIndexArray.AsSpan(0, y.Rank);
             }
             else
             {
                 curIndexArray = null;
                 curIndex = stackalloc nint[y.Rank];
             }
+            curIndex.Clear();
 
             for (int i = 0; i < y.FlattenedLength; i++)
             {
@@ -1593,16 +1615,17 @@ namespace System.Numerics.Tensors
             scoped Span<nint> curIndex;
             nint[]? curIndexArray;
 
-            if (broadcastedLeft.Rank > 6)
+            if (broadcastedLeft.Rank > TensorShape.MaxInlineRank)
             {
                 curIndexArray = ArrayPool<nint>.Shared.Rent(broadcastedRight.Rank);
-                curIndex = curIndexArray;
+                curIndex = curIndexArray.AsSpan(0, broadcastedRight.Rank);
             }
             else
             {
                 curIndexArray = null;
                 curIndex = stackalloc nint[broadcastedRight.Rank];
             }
+            curIndex.Clear();
 
             for (int i = 0; i < broadcastedLeft.FlattenedLength; i++)
             {
@@ -1618,35 +1641,36 @@ namespace System.Numerics.Tensors
         }
 
         /// <summary>
-        /// Compares the elements of two <see cref="ReadOnlyTensorSpan{T}"/> to see if all elements of <paramref name="s"/> are greater than <paramref name="y"/>.
+        /// Compares the elements of two <see cref="ReadOnlyTensorSpan{T}"/> to see if all elements of <paramref name="x"/> are greater than <paramref name="y"/>.
         /// If the shapes are not the same, the tensors are broadcasted to the smallest broadcastable size before they are compared.
-        /// It returns a <see cref="bool"/> where the value is true if all elements in <paramref name="s"/> are greater than <paramref name="y"/>.
+        /// It returns a <see cref="bool"/> where the value is true if all elements in <paramref name="x"/> are greater than <paramref name="y"/>.
         /// </summary>
-        /// <param name="s">First <see cref="ReadOnlyTensorSpan{T}"/> to compare.</param>
+        /// <param name="x">First <see cref="ReadOnlyTensorSpan{T}"/> to compare.</param>
         /// <param name="y">Second <see cref="ReadOnlyTensorSpan{T}"/> to compare against.</param>
-        /// <returns><see cref="bool"/> where the value is true if all elements in <paramref name="s"/> are greater than <paramref name="y"/>.</returns>
-        public static bool GreaterThanOrEqualAll<T>(in ReadOnlyTensorSpan<T> s, T y)
+        /// <returns><see cref="bool"/> where the value is true if all elements in <paramref name="x"/> are greater than <paramref name="y"/>.</returns>
+        public static bool GreaterThanOrEqualAll<T>(in ReadOnlyTensorSpan<T> x, T y)
             where T : IComparisonOperators<T, T, bool>
         {
             scoped Span<nint> curIndex;
             nint[]? curIndexArray;
 
-            if (s.Rank > 6)
+            if (x.Rank > TensorShape.MaxInlineRank)
             {
-                curIndexArray = ArrayPool<nint>.Shared.Rent(s.Rank);
-                curIndex = curIndexArray;
+                curIndexArray = ArrayPool<nint>.Shared.Rent(x.Rank);
+                curIndex = curIndexArray.AsSpan(0, x.Rank);
             }
             else
             {
                 curIndexArray = null;
-                curIndex = stackalloc nint[s.Rank];
+                curIndex = stackalloc nint[x.Rank];
             }
+            curIndex.Clear();
 
-            for (int i = 0; i < s.FlattenedLength; i++)
+            for (int i = 0; i < x.FlattenedLength; i++)
             {
-                if (s[curIndex] < y)
+                if (x[curIndex] < y)
                     return false;
-                TensorSpanHelpers.AdjustIndexes(s.Rank - 1, 1, curIndex, s.Lengths);
+                TensorSpanHelpers.AdjustIndexes(x.Rank - 1, 1, curIndex, x.Lengths);
             }
 
             if (curIndexArray != null)
@@ -1669,16 +1693,17 @@ namespace System.Numerics.Tensors
             scoped Span<nint> curIndex;
             nint[]? curIndexArray;
 
-            if (y.Rank > 6)
+            if (y.Rank > TensorShape.MaxInlineRank)
             {
                 curIndexArray = ArrayPool<nint>.Shared.Rent(y.Rank);
-                curIndex = curIndexArray;
+                curIndex = curIndexArray.AsSpan(0, y.Rank);
             }
             else
             {
                 curIndexArray = null;
                 curIndex = stackalloc nint[y.Rank];
             }
+            curIndex.Clear();
 
             for (int i = 0; i < y.FlattenedLength; i++)
             {
@@ -1758,16 +1783,17 @@ namespace System.Numerics.Tensors
             scoped Span<nint> curIndex;
             nint[]? curIndexArray;
 
-            if (right.Rank > 6)
+            if (right.Rank > TensorShape.MaxInlineRank)
             {
                 curIndexArray = ArrayPool<nint>.Shared.Rent(right.Rank);
-                curIndex = curIndexArray;
+                curIndex = curIndexArray.AsSpan(0, right.Rank);
             }
             else
             {
                 curIndexArray = null;
                 curIndex = stackalloc nint[right.Rank];
             }
+            curIndex.Clear();
 
             for (int i = 0; i < left.FlattenedLength; i++)
             {
@@ -1817,16 +1843,17 @@ namespace System.Numerics.Tensors
             scoped Span<nint> curIndex;
             nint[]? curIndexArray;
 
-            if (x.Rank > 6)
+            if (x.Rank > TensorShape.MaxInlineRank)
             {
                 curIndexArray = ArrayPool<nint>.Shared.Rent(x.Rank);
-                curIndex = curIndexArray;
+                curIndex = curIndexArray.AsSpan(0, x.Rank);
             }
             else
             {
                 curIndexArray = null;
                 curIndex = stackalloc nint[x.Rank];
             }
+            curIndex.Clear();
 
             for (int i = 0; i < x.FlattenedLength; i++)
             {
@@ -1876,16 +1903,17 @@ namespace System.Numerics.Tensors
             scoped Span<nint> curIndex;
             nint[]? curIndexArray;
 
-            if (y.Rank > 6)
+            if (y.Rank > TensorShape.MaxInlineRank)
             {
                 curIndexArray = ArrayPool<nint>.Shared.Rent(y.Rank);
-                curIndex = curIndexArray;
+                curIndex = curIndexArray.AsSpan(0, y.Rank);
             }
             else
             {
                 curIndexArray = null;
                 curIndex = stackalloc nint[y.Rank];
             }
+            curIndex.Clear();
 
             for (int i = 0; i < y.FlattenedLength; i++)
             {
@@ -1964,16 +1992,17 @@ namespace System.Numerics.Tensors
             scoped Span<nint> curIndex;
             nint[]? curIndexArray;
 
-            if (right.Rank > 6)
+            if (right.Rank > TensorShape.MaxInlineRank)
             {
                 curIndexArray = ArrayPool<nint>.Shared.Rent(right.Rank);
-                curIndex = curIndexArray;
+                curIndex = curIndexArray.AsSpan(0, right.Rank);
             }
             else
             {
                 curIndexArray = null;
                 curIndex = stackalloc nint[right.Rank];
             }
+            curIndex.Clear();
 
             for (int i = 0; i < left.FlattenedLength; i++)
             {
@@ -2023,16 +2052,17 @@ namespace System.Numerics.Tensors
             scoped Span<nint> curIndex;
             nint[]? curIndexArray;
 
-            if (x.Rank > 6)
+            if (x.Rank > TensorShape.MaxInlineRank)
             {
                 curIndexArray = ArrayPool<nint>.Shared.Rent(x.Rank);
-                curIndex = curIndexArray;
+                curIndex = curIndexArray.AsSpan(0, x.Rank);
             }
             else
             {
                 curIndexArray = null;
                 curIndex = stackalloc nint[x.Rank];
             }
+            curIndex.Clear();
 
             for (int i = 0; i < x.FlattenedLength; i++)
             {
@@ -2082,16 +2112,17 @@ namespace System.Numerics.Tensors
             scoped Span<nint> curIndex;
             nint[]? curIndexArray;
 
-            if (y.Rank > 6)
+            if (y.Rank > TensorShape.MaxInlineRank)
             {
                 curIndexArray = ArrayPool<nint>.Shared.Rent(y.Rank);
-                curIndex = curIndexArray;
+                curIndex = curIndexArray.AsSpan(0, y.Rank);
             }
             else
             {
                 curIndexArray = null;
                 curIndex = stackalloc nint[y.Rank];
             }
+            curIndex.Clear();
 
             for (int i = 0; i < y.FlattenedLength; i++)
             {
@@ -2126,16 +2157,17 @@ namespace System.Numerics.Tensors
             scoped Span<nint> curIndex;
             nint[]? curIndexArray;
 
-            if (broadcastedRight.Lengths.Length > 6)
+            if (broadcastedRight.Rank > TensorShape.MaxInlineRank)
             {
                 curIndexArray = ArrayPool<nint>.Shared.Rent(broadcastedRight.Lengths.Length);
-                curIndex = curIndexArray;
+                curIndex = curIndexArray.AsSpan(0, broadcastedRight.Rank);
             }
             else
             {
                 curIndexArray = null;
                 curIndex = stackalloc nint[broadcastedRight.Lengths.Length];
             }
+            curIndex.Clear();
 
             for (int i = 0; i < broadcastedLeft.FlattenedLength; i++)
             {
@@ -2151,35 +2183,36 @@ namespace System.Numerics.Tensors
         }
 
         /// <summary>
-        /// Compares the elements of two <see cref="ReadOnlyTensorSpan{T}"/> to see if any elements of <paramref name="f"/> are less than <paramref name="x"/>.
+        /// Compares the elements of two <see cref="ReadOnlyTensorSpan{T}"/> to see if any elements of <paramref name="x"/> are less than <paramref name="y"/>.
         /// If the shapes are not the same, the tensors are broadcasted to the smallest broadcastable size before they are compared.
-        /// It returns a <see cref="bool"/> where the value is true if any elements in <paramref name="f"/> are less than <paramref name="x"/>.
+        /// It returns a <see cref="bool"/> where the value is true if any elements in <paramref name="x"/> are less than <paramref name="y"/>.
         /// </summary>
-        /// <param name="f">First <see cref="ReadOnlyTensorSpan{T}"/> to compare.</param>
-        /// <param name="x">Second value to compare against.</param>
-        /// <returns><see cref="bool"/> where the value is true if any elements in <paramref name="f"/> are less than <paramref name="x"/>.</returns>
-        public static bool LessThanAny<T>(in ReadOnlyTensorSpan<T> f, T x)
+        /// <param name="x">First <see cref="ReadOnlyTensorSpan{T}"/> to compare.</param>
+        /// <param name="y">Second value to compare against.</param>
+        /// <returns><see cref="bool"/> where the value is true if any elements in <paramref name="x"/> are less than <paramref name="y"/>.</returns>
+        public static bool LessThanAny<T>(in ReadOnlyTensorSpan<T> x, T y)
             where T : IComparisonOperators<T, T, bool>
         {
             scoped Span<nint> curIndex;
             nint[]? curIndexArray;
 
-            if (f.Rank > 6)
+            if (x.Rank > TensorShape.MaxInlineRank)
             {
-                curIndexArray = ArrayPool<nint>.Shared.Rent(f.Rank);
-                curIndex = curIndexArray;
+                curIndexArray = ArrayPool<nint>.Shared.Rent(x.Rank);
+                curIndex = curIndexArray.AsSpan(0, x.Rank);
             }
             else
             {
                 curIndexArray = null;
-                curIndex = stackalloc nint[f.Rank];
+                curIndex = stackalloc nint[x.Rank];
             }
+            curIndex.Clear();
 
-            for (int i = 0; i < f.FlattenedLength; i++)
+            for (int i = 0; i < x.FlattenedLength; i++)
             {
-                if (f[curIndex] < x)
+                if (x[curIndex] < y)
                     return true;
-                TensorSpanHelpers.AdjustIndexes(f.Rank - 1, 1, curIndex, f.Lengths);
+                TensorSpanHelpers.AdjustIndexes(x.Rank - 1, 1, curIndex, x.Lengths);
             }
 
             if (curIndexArray != null)
@@ -2202,16 +2235,17 @@ namespace System.Numerics.Tensors
             scoped Span<nint> curIndex;
             nint[]? curIndexArray;
 
-            if (y.Rank > 6)
+            if (y.Rank > TensorShape.MaxInlineRank)
             {
                 curIndexArray = ArrayPool<nint>.Shared.Rent(y.Rank);
-                curIndex = curIndexArray;
+                curIndex = curIndexArray.AsSpan(0, y.Rank);
             }
             else
             {
                 curIndexArray = null;
                 curIndex = stackalloc nint[y.Rank];
             }
+            curIndex.Clear();
 
             for (int i = 0; i < y.FlattenedLength; i++)
             {
@@ -2247,16 +2281,17 @@ namespace System.Numerics.Tensors
             scoped Span<nint> curIndex;
             nint[]? curIndexArray;
 
-            if (broadcastedRight.Lengths.Length > 6)
+            if (broadcastedRight.Rank > TensorShape.MaxInlineRank)
             {
                 curIndexArray = ArrayPool<nint>.Shared.Rent(broadcastedRight.Lengths.Length);
-                curIndex = curIndexArray;
+                curIndex = curIndexArray.AsSpan(0, broadcastedRight.Rank);
             }
             else
             {
                 curIndexArray = null;
                 curIndex = stackalloc nint[broadcastedRight.Lengths.Length];
             }
+            curIndex.Clear();
 
             for (int i = 0; i < broadcastedLeft.FlattenedLength; i++)
             {
@@ -2272,35 +2307,36 @@ namespace System.Numerics.Tensors
         }
 
         /// <summary>
-        /// Compares the elements of two <see cref="ReadOnlyTensorSpan{T}"/> to see if any elements of <paramref name="f"/> are less than <paramref name="x"/>.
+        /// Compares the elements of two <see cref="ReadOnlyTensorSpan{T}"/> to see if any elements of <paramref name="x"/> are less than <paramref name="y"/>.
         /// If the shapes are not the same, the tensors are broadcasted to the smallest broadcastable size before they are compared.
-        /// It returns a <see cref="bool"/> where the value is true if any elements in <paramref name="f"/> are less than <paramref name="x"/>.
+        /// It returns a <see cref="bool"/> where the value is true if any elements in <paramref name="x"/> are less than <paramref name="y"/>.
         /// </summary>
-        /// <param name="f">First <see cref="ReadOnlyTensorSpan{T}"/> to compare.</param>
-        /// <param name="x">Second value to compare against.</param>
-        /// <returns><see cref="bool"/> where the value is true if any elements in <paramref name="f"/> are less than <paramref name="x"/>.</returns>
-        public static bool LessThanOrEqualAny<T>(in ReadOnlyTensorSpan<T> f, T x)
+        /// <param name="x">First <see cref="ReadOnlyTensorSpan{T}"/> to compare.</param>
+        /// <param name="y">Second value to compare against.</param>
+        /// <returns><see cref="bool"/> where the value is true if any elements in <paramref name="x"/> are less than <paramref name="y"/>.</returns>
+        public static bool LessThanOrEqualAny<T>(in ReadOnlyTensorSpan<T> x, T y)
             where T : IComparisonOperators<T, T, bool>
         {
             scoped Span<nint> curIndex;
             nint[]? curIndexArray;
 
-            if (f.Rank > 6)
+            if (x.Rank > TensorShape.MaxInlineRank)
             {
-                curIndexArray = ArrayPool<nint>.Shared.Rent(f.Rank);
-                curIndex = curIndexArray;
+                curIndexArray = ArrayPool<nint>.Shared.Rent(x.Rank);
+                curIndex = curIndexArray.AsSpan(0, x.Rank);
             }
             else
             {
                 curIndexArray = null;
-                curIndex = stackalloc nint[f.Rank];
+                curIndex = stackalloc nint[x.Rank];
             }
+            curIndex.Clear();
 
-            for (int i = 0; i < f.FlattenedLength; i++)
+            for (int i = 0; i < x.FlattenedLength; i++)
             {
-                if (f[curIndex] <= x)
+                if (x[curIndex] <= y)
                     return true;
-                TensorSpanHelpers.AdjustIndexes(f.Rank - 1, 1, curIndex, f.Lengths);
+                TensorSpanHelpers.AdjustIndexes(x.Rank - 1, 1, curIndex, x.Lengths);
             }
 
             if (curIndexArray != null)
@@ -2323,16 +2359,17 @@ namespace System.Numerics.Tensors
             scoped Span<nint> curIndex;
             nint[]? curIndexArray;
 
-            if (y.Rank > 6)
+            if (y.Rank > TensorShape.MaxInlineRank)
             {
                 curIndexArray = ArrayPool<nint>.Shared.Rent(y.Rank);
-                curIndex = curIndexArray;
+                curIndex = curIndexArray.AsSpan(0, y.Rank);
             }
             else
             {
                 curIndexArray = null;
                 curIndex = stackalloc nint[y.Rank];
             }
+            curIndex.Clear();
 
             for (int i = 0; i <= y.FlattenedLength; i++)
             {
@@ -2367,16 +2404,17 @@ namespace System.Numerics.Tensors
             scoped Span<nint> curIndex;
             nint[]? curIndexArray;
 
-            if (broadcastedRight.Lengths.Length > 6)
+            if (broadcastedRight.Rank > TensorShape.MaxInlineRank)
             {
                 curIndexArray = ArrayPool<nint>.Shared.Rent(broadcastedRight.Lengths.Length);
-                curIndex = curIndexArray;
+                curIndex = curIndexArray.AsSpan(0, broadcastedRight.Rank);
             }
             else
             {
                 curIndexArray = null;
                 curIndex = stackalloc nint[broadcastedRight.Lengths.Length];
             }
+            curIndex.Clear();
 
             for (int i = 0; i < broadcastedLeft.FlattenedLength; i++)
             {
@@ -2392,35 +2430,36 @@ namespace System.Numerics.Tensors
         }
 
         /// <summary>
-        /// Compares the elements of two <see cref="ReadOnlyTensorSpan{T}"/> to see if all elements of <paramref name="f"/> are less than <paramref name="x"/>.
+        /// Compares the elements of two <see cref="ReadOnlyTensorSpan{T}"/> to see if all elements of <paramref name="x"/> are less than <paramref name="y"/>.
         /// If the shapes are not the same, the tensors are broadcasted to the smallest broadcastable size before they are compared.
-        /// It returns a <see cref="bool"/> where the value is true if all elements in <paramref name="f"/> are less than <paramref name="x"/>.
+        /// It returns a <see cref="bool"/> where the value is true if all elements in <paramref name="x"/> are less than <paramref name="y"/>.
         /// </summary>
-        /// <param name="f">First <see cref="ReadOnlyTensorSpan{T}"/> to compare.</param>
-        /// <param name="x">Second value to compare against.</param>
-        /// <returns><see cref="bool"/> where the value is true if all elements in <paramref name="f"/> are less than <paramref name="x"/>.</returns>
-        public static bool LessThanAll<T>(in ReadOnlyTensorSpan<T> f, T x)
+        /// <param name="x">First <see cref="ReadOnlyTensorSpan{T}"/> to compare.</param>
+        /// <param name="y">Second value to compare against.</param>
+        /// <returns><see cref="bool"/> where the value is true if all elements in <paramref name="x"/> are less than <paramref name="y"/>.</returns>
+        public static bool LessThanAll<T>(in ReadOnlyTensorSpan<T> x, T y)
             where T : IComparisonOperators<T, T, bool>
         {
             scoped Span<nint> curIndex;
             nint[]? curIndexArray;
 
-            if (f.Rank > 6)
+            if (x.Rank > TensorShape.MaxInlineRank)
             {
-                curIndexArray = ArrayPool<nint>.Shared.Rent(f.Rank);
-                curIndex = curIndexArray;
+                curIndexArray = ArrayPool<nint>.Shared.Rent(x.Rank);
+                curIndex = curIndexArray.AsSpan(0, x.Rank);
             }
             else
             {
                 curIndexArray = null;
-                curIndex = stackalloc nint[f.Rank];
+                curIndex = stackalloc nint[x.Rank];
             }
+            curIndex.Clear();
 
-            for (int i = 0; i < f.FlattenedLength; i++)
+            for (int i = 0; i < x.FlattenedLength; i++)
             {
-                if (f[curIndex] >= x)
+                if (x[curIndex] >= y)
                     return false;
-                TensorSpanHelpers.AdjustIndexes(f.Rank - 1, 1, curIndex, f.Lengths);
+                TensorSpanHelpers.AdjustIndexes(x.Rank - 1, 1, curIndex, x.Lengths);
             }
 
             if (curIndexArray != null)
@@ -2443,16 +2482,17 @@ namespace System.Numerics.Tensors
             scoped Span<nint> curIndex;
             nint[]? curIndexArray;
 
-            if (y.Rank > 6)
+            if (y.Rank > TensorShape.MaxInlineRank)
             {
                 curIndexArray = ArrayPool<nint>.Shared.Rent(y.Rank);
-                curIndex = curIndexArray;
+                curIndex = curIndexArray.AsSpan(0, y.Rank);
             }
             else
             {
                 curIndexArray = null;
                 curIndex = stackalloc nint[y.Rank];
             }
+            curIndex.Clear();
 
             for (int i = 0; i < y.FlattenedLength; i++)
             {
@@ -2487,16 +2527,17 @@ namespace System.Numerics.Tensors
             scoped Span<nint> curIndex;
             nint[]? curIndexArray;
 
-            if (broadcastedRight.Lengths.Length > 6)
+            if (broadcastedRight.Rank > TensorShape.MaxInlineRank)
             {
                 curIndexArray = ArrayPool<nint>.Shared.Rent(broadcastedRight.Lengths.Length);
-                curIndex = curIndexArray;
+                curIndex = curIndexArray.AsSpan(0, broadcastedRight.Rank);
             }
             else
             {
                 curIndexArray = null;
                 curIndex = stackalloc nint[broadcastedRight.Lengths.Length];
             }
+            curIndex.Clear();
 
             for (int i = 0; i < broadcastedLeft.FlattenedLength; i++)
             {
@@ -2512,35 +2553,36 @@ namespace System.Numerics.Tensors
         }
 
         /// <summary>
-        /// Compares the elements of two <see cref="ReadOnlyTensorSpan{T}"/> to see if all elements of <paramref name="f"/> are less than <paramref name="x"/>.
+        /// Compares the elements of two <see cref="ReadOnlyTensorSpan{T}"/> to see if all elements of <paramref name="x"/> are less than <paramref name="y"/>.
         /// If the shapes are not the same, the tensors are broadcasted to the smallest broadcastable size before they are compared.
-        /// It returns a <see cref="bool"/> where the value is true if all elements in <paramref name="f"/> are less than <paramref name="x"/>.
+        /// It returns a <see cref="bool"/> where the value is true if all elements in <paramref name="x"/> are less than <paramref name="y"/>.
         /// </summary>
-        /// <param name="f">First <see cref="ReadOnlyTensorSpan{T}"/> to compare.</param>
-        /// <param name="x">Second value to compare against.</param>
-        /// <returns><see cref="bool"/> where the value is true if all elements in <paramref name="f"/> are less than <paramref name="x"/>.</returns>
-        public static bool LessThanOrEqualAll<T>(in ReadOnlyTensorSpan<T> f, T x)
+        /// <param name="x">First <see cref="ReadOnlyTensorSpan{T}"/> to compare.</param>
+        /// <param name="y">Second value to compare against.</param>
+        /// <returns><see cref="bool"/> where the value is true if all elements in <paramref name="x"/> are less than <paramref name="y"/>.</returns>
+        public static bool LessThanOrEqualAll<T>(in ReadOnlyTensorSpan<T> x, T y)
             where T : IComparisonOperators<T, T, bool>
         {
             scoped Span<nint> curIndex;
             nint[]? curIndexArray;
 
-            if (f.Rank > 6)
+            if (x.Rank > TensorShape.MaxInlineRank)
             {
-                curIndexArray = ArrayPool<nint>.Shared.Rent(f.Rank);
-                curIndex = curIndexArray;
+                curIndexArray = ArrayPool<nint>.Shared.Rent(x.Rank);
+                curIndex = curIndexArray.AsSpan(0, x.Rank);
             }
             else
             {
                 curIndexArray = null;
-                curIndex = stackalloc nint[f.Rank];
+                curIndex = stackalloc nint[x.Rank];
             }
+            curIndex.Clear();
 
-            for (int i = 0; i < f.FlattenedLength; i++)
+            for (int i = 0; i < x.FlattenedLength; i++)
             {
-                if (f[curIndex] > x)
+                if (x[curIndex] > y)
                     return false;
-                TensorSpanHelpers.AdjustIndexes(f.Rank - 1, 1, curIndex, f.Lengths);
+                TensorSpanHelpers.AdjustIndexes(x.Rank - 1, 1, curIndex, x.Lengths);
             }
 
             if (curIndexArray != null)
@@ -2563,16 +2605,17 @@ namespace System.Numerics.Tensors
             scoped Span<nint> curIndex;
             nint[]? curIndexArray;
 
-            if (y.Rank > 6)
+            if (y.Rank > TensorShape.MaxInlineRank)
             {
                 curIndexArray = ArrayPool<nint>.Shared.Rent(y.Rank);
-                curIndex = curIndexArray;
+                curIndex = curIndexArray.AsSpan(0, y.Rank);
             }
             else
             {
                 curIndexArray = null;
                 curIndex = stackalloc nint[y.Rank];
             }
+            curIndex.Clear();
 
             for (int i = 0; i < y.FlattenedLength; i++)
             {
@@ -2614,8 +2657,14 @@ namespace System.Numerics.Tensors
 
                 if (dimensions.IsEmpty)
                 {
-                    lengths = tensor._lengths.Reverse().ToArray();
-                    permutation = Enumerable.Range(0, tensor.Rank).Reverse().ToArray();
+                    int[] tempPermutation = new int[tensor.Rank];
+                    for (int i = 0; i < tensor.Rank; i++)
+                    {
+                        lengths[i] = tensor._lengths[tensor.Rank - 1 - i];
+                        tempPermutation[i] = tensor.Rank - 1 - i;
+                    }
+
+                    permutation = tempPermutation;
                 }
                 else
                 {
@@ -2637,9 +2686,12 @@ namespace System.Numerics.Tensors
                 if (outTensor.Rank > 6)
                 {
                     indicesArray = ArrayPool<nint>.Shared.Rent(outTensor.Rank);
-                    indexes = indicesArray;
+                    indexes = indicesArray.AsSpan(0, outTensor.Rank);
+                    indexes.Clear();
+
                     permutedIndicesArray = ArrayPool<nint>.Shared.Rent(outTensor.Rank);
-                    permutedIndices = permutedIndicesArray;
+                    permutedIndices = permutedIndicesArray.AsSpan(0, outTensor.Rank);
+                    permutedIndices.Clear();
                 }
                 else
                 {
@@ -2677,6 +2729,14 @@ namespace System.Numerics.Tensors
         /// <param name="lengths"><see cref="ReadOnlySpan{T}"/> with the new dimensions.</param>
         public static Tensor<T> Reshape<T>(this Tensor<T> tensor, params ReadOnlySpan<nint> lengths)
         {
+            if (tensor.Lengths.SequenceEqual(lengths))
+                return tensor;
+
+            if (!TensorHelpers.IsContiguousAndDense<T>(tensor) && !tensor.Strides.Contains(0))
+            {
+                ThrowHelper.ThrowArgument_CannotReshapeNonContiguousOrDense();
+            }
+
             nint[] arrLengths = lengths.ToArray();
             // Calculate wildcard info.
             if (lengths.Contains(-1))
@@ -2698,7 +2758,33 @@ namespace System.Numerics.Tensors
             nint tempLinear = TensorSpanHelpers.CalculateTotalLength(arrLengths);
             if (tempLinear != tensor.FlattenedLength)
                 ThrowHelper.ThrowArgument_InvalidReshapeDimensions();
-            nint[] strides = TensorSpanHelpers.CalculateStrides(arrLengths);
+
+            nint[] strides;
+
+            // If we contain a 0 stride we can only add dimensions of length 1.
+            if (tensor.Strides.Contains(0))
+            {
+                List<nint> origStrides = new List<nint>(tensor.Strides.ToArray());
+                int lengthOffset = 0;
+                for (int i = 0; i < arrLengths.Length; i++)
+                {
+                    if (lengthOffset < tensor.Rank && arrLengths[i] == tensor.Lengths[lengthOffset])
+                        lengthOffset++;
+                    else if (arrLengths[i] == 1)
+                    {
+                        if (lengthOffset == tensor.Rank)
+                            origStrides.Add(tensor.Strides[lengthOffset - 1]);
+                        else
+                            origStrides.Insert(i, tensor.Strides[i] * tensor.Lengths[i]);
+                    }
+                    else
+                        ThrowHelper.ThrowArgument_InvalidReshapeDimensions();
+                }
+                strides = origStrides.ToArray();
+            }
+            else
+                strides = TensorSpanHelpers.CalculateStrides(arrLengths);
+
             return new Tensor<T>(tensor._values, arrLengths, strides);
         }
 
@@ -2711,6 +2797,14 @@ namespace System.Numerics.Tensors
         /// <param name="lengths"><see cref="ReadOnlySpan{T}"/> with the new dimensions.</param>
         public static TensorSpan<T> Reshape<T>(in this TensorSpan<T> tensor, params scoped ReadOnlySpan<nint> lengths)
         {
+            if (tensor.Lengths.SequenceEqual(lengths))
+                return tensor;
+
+            if (!TensorHelpers.IsContiguousAndDense<T>(tensor) && !tensor.Strides.Contains(0))
+            {
+                ThrowHelper.ThrowArgument_CannotReshapeNonContiguousOrDense();
+            }
+
             nint[] arrLengths = lengths.ToArray();
             // Calculate wildcard info.
             if (lengths.Contains(-1))
@@ -2732,7 +2826,35 @@ namespace System.Numerics.Tensors
             nint tempLinear = TensorSpanHelpers.CalculateTotalLength(arrLengths);
             if (tempLinear != tensor.FlattenedLength)
                 ThrowHelper.ThrowArgument_InvalidReshapeDimensions();
-            nint[] strides = TensorSpanHelpers.CalculateStrides(arrLengths);
+
+            nint[] strides;
+
+            // If we contain a 0 stride we can only add dimensions of length 1.
+            if (tensor.Strides.Contains(0))
+            {
+                List<nint> origStrides = new List<nint>(tensor.Strides.ToArray());
+                int lengthOffset = 0;
+                for (int i = 0; i < arrLengths.Length; i++)
+                {
+                    if (lengthOffset < tensor.Rank && arrLengths[i] == tensor.Lengths[lengthOffset])
+                    {
+                        lengthOffset++;
+                    }
+                    else if (arrLengths[i] == 1)
+                    {
+                        if (lengthOffset == tensor.Rank)
+                            origStrides.Add(tensor.Strides[lengthOffset - 1]);
+                        else
+                            origStrides.Insert(i, tensor.Strides[i] * tensor.Lengths[i]);
+                    }
+                    else
+                        ThrowHelper.ThrowArgument_InvalidReshapeDimensions();
+                }
+                strides = origStrides.ToArray();
+            }
+            else
+                strides = TensorSpanHelpers.CalculateStrides(arrLengths);
+
             TensorSpan<T> output = new TensorSpan<T>(ref tensor._reference, arrLengths, strides, tensor._shape._memoryLength);
             return output;
         }
@@ -2746,6 +2868,14 @@ namespace System.Numerics.Tensors
         /// <param name="lengths"><see cref="ReadOnlySpan{T}"/> with the new dimensions.</param>
         public static ReadOnlyTensorSpan<T> Reshape<T>(in this ReadOnlyTensorSpan<T> tensor, params scoped ReadOnlySpan<nint> lengths)
         {
+            if (tensor.Lengths.SequenceEqual(lengths))
+                return tensor;
+
+            if (!TensorHelpers.IsContiguousAndDense<T>(tensor) && !tensor.Strides.Contains(0))
+            {
+                ThrowHelper.ThrowArgument_CannotReshapeNonContiguousOrDense();
+            }
+
             nint[] arrLengths = lengths.ToArray();
             // Calculate wildcard info.
             if (lengths.Contains(-1))
@@ -2767,7 +2897,33 @@ namespace System.Numerics.Tensors
             nint tempLinear = TensorSpanHelpers.CalculateTotalLength(arrLengths);
             if (tempLinear != tensor.FlattenedLength)
                 ThrowHelper.ThrowArgument_InvalidReshapeDimensions();
-            nint[] strides = TensorSpanHelpers.CalculateStrides(arrLengths);
+
+            nint[] strides;
+
+            // If we contain a 0 stride we can only add dimensions of length 1.
+            if (tensor.Strides.Contains(0))
+            {
+                List<nint> origStrides = new List<nint>(tensor.Strides.ToArray());
+                int lengthOffset = 0;
+                for (int i = 0; i < arrLengths.Length; i++)
+                {
+                    if (lengthOffset < tensor.Rank && arrLengths[i] == tensor.Lengths[lengthOffset])
+                        lengthOffset++;
+                    else if (arrLengths[i] == 1)
+                    {
+                        if (lengthOffset == tensor.Rank)
+                            origStrides.Add(tensor.Strides[lengthOffset - 1]);
+                        else
+                            origStrides.Insert(i, tensor.Strides[i] * tensor.Lengths[i]);
+                    }
+                    else
+                        ThrowHelper.ThrowArgument_InvalidReshapeDimensions();
+                }
+                strides = origStrides.ToArray();
+            }
+            else
+                strides = TensorSpanHelpers.CalculateStrides(arrLengths);
+
             ReadOnlyTensorSpan<T> output = new ReadOnlyTensorSpan<T>(ref tensor._reference, arrLengths, strides, tensor._shape._memoryLength);
             return output;
         }
@@ -2917,9 +3073,12 @@ namespace System.Numerics.Tensors
                 if (tensor.Rank > 6)
                 {
                     oIndicesArray = ArrayPool<nint>.Shared.Rent(tensor.Rank);
-                    oIndices = oIndicesArray;
+                    oIndices = oIndicesArray.AsSpan(0, tensor.Rank);
+                    oIndices.Clear();
+
                     iIndicesArray = ArrayPool<nint>.Shared.Rent(tensor.Rank);
-                    iIndices = iIndicesArray;
+                    iIndices = iIndicesArray.AsSpan(0, tensor.Rank);
+                    iIndices.Clear();
                 }
                 else
                 {
@@ -3003,14 +3162,17 @@ namespace System.Numerics.Tensors
             TensorSpan<T> srcSpan;
             if (ranges == ReadOnlySpan<NRange>.Empty)
             {
-                if (!tensor.Lengths.SequenceEqual(values.Lengths))
+                if (!TensorHelpers.IsBroadcastableTo(values.Lengths, tensor.Lengths))
                     ThrowHelper.ThrowArgument_SetSliceNoRange(nameof(values));
-                srcSpan = tensor.Slice(tensor.Lengths);
+                srcSpan = tensor;
             }
             else
                 srcSpan = tensor.Slice(ranges);
 
-            if (!srcSpan.Lengths.SequenceEqual(values.Lengths))
+            if (!TensorHelpers.IsContiguousAndDense<T>(srcSpan))
+                ThrowHelper.ThrowArgument_SetSliceInvalidShapes(nameof(values));
+
+            if (!TensorHelpers.IsBroadcastableTo(values.Lengths, srcSpan.Lengths))
                 ThrowHelper.ThrowArgument_SetSliceInvalidShapes(nameof(values));
 
             values.CopyTo(srcSpan);
@@ -3051,9 +3213,12 @@ namespace System.Numerics.Tensors
             if (tensor.Rank > 6)
             {
                 oIndicesArray = ArrayPool<nint>.Shared.Rent(tensor.Rank);
-                oIndices = oIndicesArray;
+                oIndices = oIndicesArray.AsSpan(0, tensor.Rank);
+                oIndices.Clear();
+
                 iIndicesArray = ArrayPool<nint>.Shared.Rent(tensor.Rank);
-                iIndices = iIndicesArray;
+                iIndices = iIndicesArray.AsSpan(0, tensor.Rank);
+                iIndices.Clear();
             }
             else
             {
@@ -3296,7 +3461,7 @@ namespace System.Numerics.Tensors
             Tensor<T>[] outputs = new Tensor<T>[tensors.Length];
             for (int i = 0; i < tensors.Length; i++)
             {
-                outputs[i] = Tensor.Unsqueeze(tensors[0], dimension);
+                outputs[i] = Tensor.Unsqueeze(tensors[i], dimension);
             }
             return Tensor.ConcatenateOnDimension<T>(dimension, outputs);
         }
@@ -3334,7 +3499,7 @@ namespace System.Numerics.Tensors
             Tensor<T>[] outputs = new Tensor<T>[tensors.Length];
             for (int i = 0; i < tensors.Length; i++)
             {
-                outputs[i] = Tensor.Unsqueeze(tensors[0], dimension);
+                outputs[i] = Tensor.Unsqueeze(tensors[i], dimension);
             }
             return ref Tensor.ConcatenateOnDimension<T>(dimension, tensors, destination);
         }
@@ -3367,7 +3532,8 @@ namespace System.Numerics.Tensors
         /// <param name="tensor">The <see cref="TensorSpan{T}"/> you want to represent as a string.</param>
         /// <param name="maximumLengths">Maximum Length of each dimension</param>
         /// <returns>A <see cref="string"/> representation of the <paramref name="tensor"/></returns>
-        public static string ToString<T>(this in TensorSpan<T> tensor, params ReadOnlySpan<nint> maximumLengths) => ((ReadOnlyTensorSpan<T>)tensor).ToString(maximumLengths);
+        public static string ToString<T>(this in TensorSpan<T> tensor, params ReadOnlySpan<nint> maximumLengths) =>
+            ((ReadOnlyTensorSpan<T>)tensor).ToString(maximumLengths);
 
         /// <summary>
         /// Creates a <see cref="string"/> representation of the <see cref="ReadOnlyTensorSpan{T}"/>."/>
@@ -3377,17 +3543,23 @@ namespace System.Numerics.Tensors
         /// <param name="maximumLengths">Maximum Length of each dimension</param>
         public static string ToString<T>(this in ReadOnlyTensorSpan<T> tensor, params ReadOnlySpan<nint> maximumLengths)
         {
+            StringBuilder sb = new();
+            ToString(in tensor, sb, maximumLengths);
+            return sb.ToString();
+        }
 
+        internal static void ToString<T>(this in ReadOnlyTensorSpan<T> tensor, StringBuilder sb, params ReadOnlySpan<nint> maximumLengths)
+        {
             if (maximumLengths.Length != tensor.Rank)
                 ThrowHelper.ThrowArgument_DimensionsNotSame(nameof(tensor));
 
-            var sb = new StringBuilder();
             scoped Span<nint> curIndexes;
             nint[]? curIndexesArray;
             if (tensor.Rank > 6)
             {
                 curIndexesArray = ArrayPool<nint>.Shared.Rent(tensor.Rank);
-                curIndexes = curIndexesArray;
+                curIndexes = curIndexesArray.AsSpan(0, tensor.Rank);
+                curIndexes.Clear();
             }
             else
             {
@@ -3412,8 +3584,6 @@ namespace System.Numerics.Tensors
 
             if (curIndexesArray != null)
                 ArrayPool<nint>.Shared.Return(curIndexesArray);
-
-            return sb.ToString();
         }
 
         /// <summary>
@@ -3435,11 +3605,15 @@ namespace System.Numerics.Tensors
         {
             if (tensor.Lengths.Length < 2)
                 ThrowHelper.ThrowArgument_TransposeTooFewDimensions();
-            int[] dimension = Enumerable.Range(0, tensor.Rank).ToArray();
+
+            Span<int> dimension = tensor.Rank <= TensorShape.MaxInlineRank ? stackalloc int[tensor.Rank] : new int[tensor.Rank];
+            TensorSpanHelpers.FillRange(dimension);
+
             int temp = dimension[tensor.Rank - 1];
             dimension[tensor.Rank - 1] = dimension[tensor.Rank - 2];
             dimension[tensor.Rank - 2] = temp;
-            return PermuteDimensions(tensor, dimension.AsSpan());
+
+            return PermuteDimensions(tensor, dimension);
         }
         #endregion
 
@@ -3499,10 +3673,28 @@ namespace System.Numerics.Tensors
             if (dimension < 0)
                 dimension = tensor.Rank - dimension;
 
-            List<nint> tempLengths = tensor._lengths.ToList();
-            tempLengths.Insert(dimension, 1);
-            nint[] lengths = tempLengths.ToArray();
-            nint[] strides = TensorSpanHelpers.CalculateStrides(lengths);
+            Span<nint> lengths = tensor._lengths.Length + 1 <= TensorShape.MaxInlineRank ?
+                stackalloc nint[tensor._lengths.Length + 1] :
+                new nint[tensor._lengths.Length + 1];
+            tensor._lengths.AsSpan(0, dimension).CopyTo(lengths);
+            tensor._lengths.AsSpan(dimension).CopyTo(lengths.Slice(dimension + 1));
+            lengths[dimension] = 1;
+
+            Span<nint> strides = tensor.Strides.Length + 1 <= TensorShape.MaxInlineRank ?
+                stackalloc nint[tensor.Strides.Length + 1] :
+                new nint[tensor.Strides.Length + 1];
+            if (dimension == tensor.Rank)
+            {
+                tensor.Strides.CopyTo(strides);
+                strides[dimension] = tensor.Strides[dimension - 1];
+            }
+            else
+            {
+                tensor.Strides.Slice(0, dimension).CopyTo(strides);
+                tensor.Strides.Slice(dimension).CopyTo(strides.Slice(dimension + 1));
+                strides[dimension] = tensor.Strides[dimension] * tensor.Lengths[dimension];
+            }
+
             return new Tensor<T>(tensor._values, lengths, strides);
         }
 
@@ -3518,10 +3710,28 @@ namespace System.Numerics.Tensors
             if (dimension < 0)
                 dimension = tensor.Rank - dimension;
 
-            List<nint> tempLengths = tensor.Lengths.ToArray().ToList();
-            tempLengths.Insert(dimension, 1);
-            nint[] lengths = tempLengths.ToArray();
-            nint[] strides = TensorSpanHelpers.CalculateStrides(lengths);
+            Span<nint> lengths = tensor.Lengths.Length + 1 <= TensorShape.MaxInlineRank ?
+                stackalloc nint[tensor.Lengths.Length + 1] :
+                new nint[tensor.Lengths.Length + 1];
+            tensor.Lengths.Slice(0, dimension).CopyTo(lengths);
+            tensor.Lengths.Slice(dimension).CopyTo(lengths.Slice(dimension + 1));
+            lengths[dimension] = 1;
+
+            Span<nint> strides = tensor.Strides.Length + 1 <= TensorShape.MaxInlineRank ?
+                stackalloc nint[tensor.Strides.Length + 1] :
+                new nint[tensor.Strides.Length + 1];
+            if (dimension == tensor.Rank)
+            {
+                tensor.Strides.CopyTo(strides);
+                strides[dimension] = tensor.Strides[dimension - 1];
+            }
+            else
+            {
+                tensor.Strides.Slice(0, dimension).CopyTo(strides);
+                tensor.Strides.Slice(dimension).CopyTo(strides.Slice(dimension + 1));
+                strides[dimension] = tensor.Strides[dimension] * tensor.Lengths[dimension];
+            }
+
             return new TensorSpan<T>(ref tensor._reference, lengths, strides, tensor._shape._memoryLength);
         }
 
@@ -3537,10 +3747,28 @@ namespace System.Numerics.Tensors
             if (dimension < 0)
                 dimension = tensor.Rank - dimension;
 
-            List<nint> tempLengths = tensor.Lengths.ToArray().ToList();
-            tempLengths.Insert(dimension, 1);
-            nint[] lengths = tempLengths.ToArray();
-            nint[] strides = TensorSpanHelpers.CalculateStrides(lengths);
+            Span<nint> lengths = tensor.Lengths.Length + 1 <= TensorShape.MaxInlineRank ?
+                stackalloc nint[tensor.Lengths.Length + 1] :
+                new nint[tensor.Lengths.Length + 1];
+            tensor.Lengths.Slice(0, dimension).CopyTo(lengths);
+            tensor.Lengths.Slice(dimension).CopyTo(lengths.Slice(dimension + 1));
+            lengths[dimension] = 1;
+
+            Span<nint> strides = tensor.Strides.Length + 1 <= TensorShape.MaxInlineRank ?
+                stackalloc nint[tensor.Strides.Length + 1] :
+                new nint[tensor.Strides.Length + 1];
+            if (dimension == tensor.Rank)
+            {
+                tensor.Strides.CopyTo(strides);
+                strides[dimension] = tensor.Strides[dimension - 1];
+            }
+            else
+            {
+                tensor.Strides.Slice(0, dimension).CopyTo(strides);
+                tensor.Strides.Slice(dimension).CopyTo(strides.Slice(dimension + 1));
+                strides[dimension] = tensor.Strides[dimension] * tensor.Lengths[dimension];
+            }
+
             return new ReadOnlyTensorSpan<T>(ref tensor._reference, lengths, strides, tensor._shape._memoryLength);
         }
         #endregion
@@ -4234,7 +4462,7 @@ namespace System.Numerics.Tensors
             where TFrom : IEquatable<TFrom>, IEqualityOperators<TFrom, TFrom, bool>, INumberBase<TFrom>
             where TTo : INumberBase<TTo>
         {
-            return ref TensorPrimitivesHelperTFromSpanInTToSpanOut(source, destination, TensorPrimitives.ConvertChecked);
+            return ref TensorPrimitivesHelperSpanInSpanOut(source, destination, TensorPrimitives.ConvertChecked);
         }
         #endregion
 
@@ -4264,7 +4492,7 @@ namespace System.Numerics.Tensors
             where TFrom : IEquatable<TFrom>, IEqualityOperators<TFrom, TFrom, bool>, INumberBase<TFrom>
             where TTo : INumberBase<TTo>
         {
-            return ref TensorPrimitivesHelperTFromSpanInTToSpanOut(source, destination, TensorPrimitives.ConvertSaturating);
+            return ref TensorPrimitivesHelperSpanInSpanOut(source, destination, TensorPrimitives.ConvertSaturating);
         }
         #endregion
 
@@ -4294,7 +4522,7 @@ namespace System.Numerics.Tensors
             where TFrom : IEquatable<TFrom>, IEqualityOperators<TFrom, TFrom, bool>, INumberBase<TFrom>
             where TTo : INumberBase<TTo>
         {
-            return ref TensorPrimitivesHelperTFromSpanInTToSpanOut(source, destination, TensorPrimitives.ConvertTruncating);
+            return ref TensorPrimitivesHelperSpanInSpanOut(source, destination, TensorPrimitives.ConvertTruncating);
         }
         #endregion
 
@@ -4500,7 +4728,7 @@ namespace System.Numerics.Tensors
         /// This method effectively computes <c><typeparamref name="T"/>.CosPi(<paramref name="x" />[i])</c>.
         /// </para>
         /// <para>
-        /// The angles in x must be in radians. Use <see cref="M:System.Single.DegreesToRadians"/> or multiply by <typeparamref name="T"/>.Pi/180 to convert degrees to radians.
+        /// The angles in x must be in radians. Use <see cref="M:System.Single.DegreesToRadians(System.Single)"/> or multiply by <typeparamref name="T"/>.Pi/180 to convert degrees to radians.
         /// </para>
         /// <para>
         /// This method may call into the underlying C runtime or employ instructions specific to the current architecture. Exact results may differ between different
@@ -4523,7 +4751,7 @@ namespace System.Numerics.Tensors
         /// This method effectively computes <c><typeparamref name="T"/>.CosPi(<paramref name="x" />[i])</c>.
         /// </para>
         /// <para>
-        /// The angles in x must be in radians. Use <see cref="M:System.Single.DegreesToRadians"/> or multiply by <typeparamref name="T"/>.Pi/180 to convert degrees to radians.
+        /// The angles in x must be in radians. Use <see cref="M:System.Single.DegreesToRadians(System.Single)"/> or multiply by <typeparamref name="T"/>.Pi/180 to convert degrees to radians.
         /// </para>
         /// <para>
         /// This method may call into the underlying C runtime or employ instructions specific to the current architecture. Exact results may differ between different
@@ -4964,7 +5192,7 @@ namespace System.Numerics.Tensors
         public static ref readonly TensorSpan<int> ILogB<T>(scoped in ReadOnlyTensorSpan<T> x, in TensorSpan<int> destination)
             where T : IFloatingPointIeee754<T>
         {
-            return ref TensorPrimitivesHelperSpanInIntSpanOut(x, destination, TensorPrimitives.ILogB);
+            return ref TensorPrimitivesHelperSpanInSpanOut(x, destination, TensorPrimitives.ILogB);
         }
         #endregion
 
@@ -5824,8 +6052,7 @@ namespace System.Numerics.Tensors
         public static T Norm<T>(scoped in ReadOnlyTensorSpan<T> x)
             where T : IRootFunctions<T>
         {
-            ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref x._reference, (int)x._shape._memoryLength);
-            return TensorPrimitives.Norm(span);
+            return TensorPrimitivesHelperSpanInTOut(x, TensorPrimitives.Norm);
         }
         #endregion
 
@@ -6423,8 +6650,7 @@ namespace System.Numerics.Tensors
         public static T Sum<T>(scoped in ReadOnlyTensorSpan<T> x)
             where T : IAdditionOperators<T, T, T>, IAdditiveIdentity<T, T>
         {
-            ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref x._reference, (int)x._shape._memoryLength);
-            return TensorPrimitives.Sum(span);
+            return TensorPrimitivesHelperSpanInTOut(x, TensorPrimitives.Sum);
         }
         #endregion
 
@@ -6616,7 +6842,7 @@ namespace System.Numerics.Tensors
         }
 
         #region TensorPrimitivesHelpers
-        private delegate void PerformCalculationSpanInSpanOut<T>(ReadOnlySpan<T> input, Span<T> output);
+        private delegate void PerformCalculationSpanInSpanOut<TIn, TOut>(ReadOnlySpan<TIn> input, Span<TOut> output);
 
         private delegate void PerformCalculationSpanInTInSpanOut<T>(ReadOnlySpan<T> input, T value, Span<T> output);
 
@@ -6624,37 +6850,36 @@ namespace System.Numerics.Tensors
 
         private delegate void PerformCalculationTwoSpanInSpanOut<T>(ReadOnlySpan<T> input, ReadOnlySpan<T> inputTwo, Span<T> output);
 
-        private delegate void PerformCalculationTFromSpanInTToSpanOut<TFrom, TTo>(ReadOnlySpan<TFrom> input, Span<TTo> output)
-            where TFrom : INumberBase<TFrom>
-            where TTo : INumberBase<TTo>;
-
         private delegate T PerformCalculationTwoSpanInTOut<T>(ReadOnlySpan<T> input, ReadOnlySpan<T> inputTwo);
-
-        private delegate void PerformCalculationSpanInIntSpanOut<T>(ReadOnlySpan<T> input, Span<int> output);
 
         private delegate T PerformCalculationSpanInTOut<T>(ReadOnlySpan<T> input);
 
         private static T TensorPrimitivesHelperSpanInTOut<T>(scoped in ReadOnlyTensorSpan<T> input, PerformCalculationSpanInTOut<T> performCalculation)
         {
-            ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref input._reference, (int)input._shape._memoryLength);
-            return performCalculation(span);
-        }
-
-        private static ref readonly TensorSpan<int> TensorPrimitivesHelperSpanInIntSpanOut<T>(scoped in ReadOnlyTensorSpan<T> input, in TensorSpan<int> destination, PerformCalculationSpanInIntSpanOut<T> performCalculation)
-        {
-            ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref input._reference, (int)input._shape._memoryLength);
-            Span<int> data = MemoryMarshal.CreateSpan(ref destination._reference, (int)destination._shape._memoryLength);
-            performCalculation(span, data);
-            return ref destination;
+            if (TensorHelpers.IsContiguousAndDense(input))
+            {
+                ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref input._reference, (int)input._shape.FlattenedLength);
+                return performCalculation(span);
+            }
+            // Flattening needs to happen
+            else
+            {
+                // TODO: Can optimize this to not need to realize the broadcasts
+                // That will need to be done on a per method basis.
+                nint flattenedLength = input.FlattenedLength;
+                T[] flattened = new T[flattenedLength];
+                input.FlattenTo(flattened);
+                return performCalculation(flattened);
+            }
         }
 
         private static T TensorPrimitivesHelperTwoSpanInTOut<T>(scoped in ReadOnlyTensorSpan<T> left, scoped in ReadOnlyTensorSpan<T> right, PerformCalculationTwoSpanInTOut<T> performCalculation)
         {
             // If sizes are the same.
-            if (TensorHelpers.AreLengthsTheSame(left, right) && TensorHelpers.IsUnderlyingStorageSameSize(left, right))
+            if (TensorHelpers.IsContiguousAndDense(left) && TensorHelpers.IsContiguousAndDense(right) && TensorHelpers.AreLengthsTheSame(left, right))
             {
-                ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref left._reference, (int)left._shape._memoryLength);
-                ReadOnlySpan<T> rspan = MemoryMarshal.CreateSpan(ref right._reference, (int)right._shape._memoryLength);
+                ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref left._reference, (int)left._shape.FlattenedLength);
+                ReadOnlySpan<T> rspan = MemoryMarshal.CreateSpan(ref right._reference, (int)right._shape.FlattenedLength);
                 return performCalculation(span, rspan);
             }
             // Broadcasting needs to happen.
@@ -6665,6 +6890,8 @@ namespace System.Numerics.Tensors
                 // 2 - One tensor has row contiguous memory and the right has column contiguous memory (i.e. a 1x5 and a 5x1)
                 // Because we are returning a single T though we need to actual realize the broadcasts at this point to perform the calculations.
 
+                // TODO: Can optimize this to not need to realize the broadcasts
+                // That will need to be done on a per method basis.
                 nint[] newLengths = Tensor.GetSmallestBroadcastableLengths(left.Lengths, right.Lengths);
                 nint newLength = TensorSpanHelpers.CalculateTotalLength(newLengths);
                 TensorSpan<T> broadcastedLeft = new TensorSpan<T>(new T[newLength], newLengths, ReadOnlySpan<nint>.Empty);
@@ -6678,59 +6905,177 @@ namespace System.Numerics.Tensors
             }
         }
 
-        private static ref readonly TensorSpan<T> TensorPrimitivesHelperSpanInSpanOut<T>(scoped in ReadOnlyTensorSpan<T> input, in TensorSpan<T> destination, PerformCalculationSpanInSpanOut<T> performCalculation)
+        private static ref readonly TensorSpan<TOut> TensorPrimitivesHelperSpanInSpanOut<TIn, TOut>(scoped in ReadOnlyTensorSpan<TIn> input, in TensorSpan<TOut> destination, PerformCalculationSpanInSpanOut<TIn, TOut> performCalculation)
         {
-            if (destination._shape._memoryLength < input._shape._memoryLength)
+            // Make sure destination has enough memory
+            if (destination._shape._memoryLength < input._shape.FlattenedLength)
                 ThrowHelper.ThrowArgumentException_DestinationTooShort();
 
-            ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref input._reference, (int)input._shape._memoryLength);
-            Span<T> ospan = MemoryMarshal.CreateSpan(ref destination._reference, (int)destination._shape._memoryLength);
-            performCalculation(span, ospan);
+            // Make sure destination shape works with input shape
+            TensorSpan<TOut> slicedDestination = destination.Slice(input._shape.Lengths);
+
+            Span<TOut> destinationSpan;
+            ReadOnlySpan<TIn> inputSpan;
+
+            // Memory is contiguous for both input and destination
+            if (TensorHelpers.IsContiguousAndDense(input) && TensorHelpers.IsContiguousAndDense<TOut>(slicedDestination))
+            {
+                inputSpan = MemoryMarshal.CreateSpan(ref input._reference, (int)input._shape.FlattenedLength);
+                destinationSpan = MemoryMarshal.CreateSpan(ref slicedDestination._reference, (int)slicedDestination._shape.FlattenedLength);
+                performCalculation(inputSpan, destinationSpan);
+            }
+            else
+            {
+                scoped Span<nint> curIndex;
+                nint[]? curIndexArray;
+                if (input.Lengths.Length > TensorShape.MaxInlineRank)
+                {
+                    curIndexArray = ArrayPool<nint>.Shared.Rent(input.Lengths.Length);
+                    curIndex = curIndexArray.AsSpan(0, input.Rank);
+                }
+                else
+                {
+                    curIndexArray = null;
+                    curIndex = stackalloc nint[input.Lengths.Length];
+                }
+                curIndex.Clear();
+
+                int copiedValues = 0;
+                nint rowLength = input.Lengths[^1];
+
+                while (copiedValues < slicedDestination.FlattenedLength)
+                {
+                    inputSpan = MemoryMarshal.CreateReadOnlySpan(in input[curIndex], (int)rowLength);
+                    destinationSpan = MemoryMarshal.CreateSpan(ref slicedDestination[curIndex], (int)rowLength);
+                    performCalculation(inputSpan, destinationSpan);
+                    copiedValues += (int)rowLength;
+                    TensorSpanHelpers.AdjustIndexes(input.Rank - 2, 1, curIndex, input.Lengths);
+                }
+
+                if (curIndexArray != null)
+                    ArrayPool<nint>.Shared.Return(curIndexArray);
+            }
+
             return ref destination;
         }
 
         private static ref readonly TensorSpan<T> TensorPrimitivesHelperSpanInTInSpanOut<T>(scoped in ReadOnlyTensorSpan<T> input, T value, in TensorSpan<T> destination, PerformCalculationSpanInTInSpanOut<T> performCalculation)
         {
-            if (destination._shape._memoryLength < input._shape._memoryLength)
+            if (destination._shape._memoryLength < input._shape.FlattenedLength)
                 ThrowHelper.ThrowArgumentException_DestinationTooShort();
 
-            ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref input._reference, (int)input._shape._memoryLength);
-            Span<T> ospan = MemoryMarshal.CreateSpan(ref destination._reference, (int)destination._shape._memoryLength);
-            performCalculation(span, value, ospan);
+            // Make sure destination shape works with input shape
+            TensorSpan<T> slicedDestination = destination.Slice(input._shape.Lengths);
+
+            ReadOnlySpan<T> inputSpan;
+            Span<T> destinationSpan;
+
+            if (TensorHelpers.IsContiguousAndDense(input) && TensorHelpers.IsContiguousAndDense<T>(slicedDestination))
+            {
+                inputSpan = MemoryMarshal.CreateSpan(ref input._reference, (int)input.FlattenedLength);
+                destinationSpan = MemoryMarshal.CreateSpan(ref destination._reference, (int)destination.FlattenedLength);
+                performCalculation(inputSpan, value, destinationSpan);
+            }
+            else
+            {
+                scoped Span<nint> curIndex;
+                nint[]? curIndexArray;
+                if (input.Lengths.Length > TensorShape.MaxInlineRank)
+                {
+                    curIndexArray = ArrayPool<nint>.Shared.Rent(input.Lengths.Length);
+                    curIndex = curIndexArray.AsSpan(0, input.Rank);
+                }
+                else
+                {
+                    curIndexArray = null;
+                    curIndex = stackalloc nint[input.Lengths.Length];
+                }
+                curIndex.Clear();
+
+                int copiedValues = 0;
+                nint rowLength = input.Lengths[^1];
+
+                while (copiedValues < slicedDestination.FlattenedLength)
+                {
+                    inputSpan = MemoryMarshal.CreateReadOnlySpan(in input[curIndex], (int)rowLength);
+                    destinationSpan = MemoryMarshal.CreateSpan(ref slicedDestination[curIndex], (int)rowLength);
+                    performCalculation(inputSpan, value, destinationSpan);
+                    copiedValues += (int)rowLength;
+                    TensorSpanHelpers.AdjustIndexes(input.Rank - 2, 1, curIndex, input.Lengths);
+                }
+
+                if (curIndexArray != null)
+                    ArrayPool<nint>.Shared.Return(curIndexArray);
+            }
+
             return ref destination;
         }
 
         private static ref readonly TensorSpan<T> TensorPrimitivesHelperTInSpanInSpanOut<T>(T value, scoped in ReadOnlyTensorSpan<T> input, in TensorSpan<T> destination, PerformCalculationTInSpanInSpanOut<T> performCalculation)
         {
-            if (destination._shape._memoryLength < input._shape._memoryLength)
+            if (destination._shape._memoryLength < input._shape.FlattenedLength)
                 ThrowHelper.ThrowArgumentException_DestinationTooShort();
 
-            ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref input._reference, (int)input._shape._memoryLength);
-            Span<T> ospan = MemoryMarshal.CreateSpan(ref destination._reference, (int)destination._shape._memoryLength);
-            performCalculation(value, span, ospan);
-            return ref destination;
-        }
+            // Make sure destination shape works with input shape
+            TensorSpan<T> slicedDestination = destination.Slice(input._shape.Lengths);
 
-        private static ref readonly TensorSpan<TTo> TensorPrimitivesHelperTFromSpanInTToSpanOut<TFrom, TTo>(scoped in ReadOnlyTensorSpan<TFrom> input, in TensorSpan<TTo> destination, PerformCalculationTFromSpanInTToSpanOut<TFrom, TTo> performCalculation)
-            where TFrom : IEquatable<TFrom>, IEqualityOperators<TFrom, TFrom, bool>, INumberBase<TFrom>
-            where TTo : INumberBase<TTo>
-        {
-            ReadOnlySpan<TFrom> span = MemoryMarshal.CreateSpan(ref input._reference, (int)input._shape._memoryLength);
-            Span<TTo> ospan = MemoryMarshal.CreateSpan(ref destination._reference, (int)destination._shape._memoryLength);
-            performCalculation(span, ospan);
+            ReadOnlySpan<T> inputSpan;
+            Span<T> destinationSpan;
+
+            if (TensorHelpers.IsContiguousAndDense(input) && TensorHelpers.IsContiguousAndDense<T>(slicedDestination))
+            {
+                inputSpan = MemoryMarshal.CreateSpan(ref input._reference, (int)input._shape._memoryLength);
+                destinationSpan = MemoryMarshal.CreateSpan(ref destination._reference, (int)destination._shape._memoryLength);
+                performCalculation(value, inputSpan, destinationSpan);
+            }
+            else
+            {
+                scoped Span<nint> curIndex;
+                nint[]? curIndexArray;
+                if (input.Lengths.Length > TensorShape.MaxInlineRank)
+                {
+                    curIndexArray = ArrayPool<nint>.Shared.Rent(input.Lengths.Length);
+                    curIndex = curIndexArray.AsSpan(0, input.Rank);
+                }
+                else
+                {
+                    curIndexArray = null;
+                    curIndex = stackalloc nint[input.Lengths.Length];
+                }
+                curIndex.Clear();
+
+                int copiedValues = 0;
+                nint rowLength = input.Lengths[^1];
+
+                while (copiedValues < slicedDestination.FlattenedLength)
+                {
+                    inputSpan = MemoryMarshal.CreateReadOnlySpan(in input[curIndex], (int)rowLength);
+                    destinationSpan = MemoryMarshal.CreateSpan(ref slicedDestination[curIndex], (int)rowLength);
+                    performCalculation(value, inputSpan, destinationSpan);
+                    copiedValues += (int)rowLength;
+                    TensorSpanHelpers.AdjustIndexes(input.Rank - 2, 1, curIndex, input.Lengths);
+                }
+
+                if (curIndexArray != null)
+                    ArrayPool<nint>.Shared.Return(curIndexArray);
+            }
+
             return ref destination;
         }
 
         private static ref readonly TensorSpan<T> TensorPrimitivesHelperTwoSpanInSpanOut<T>(scoped in ReadOnlyTensorSpan<T> left, scoped in ReadOnlyTensorSpan<T> right, in TensorSpan<T> destination, PerformCalculationTwoSpanInSpanOut<T> performCalculation)
         {
-            // If sizes are the same.
-            if (TensorHelpers.AreLengthsTheSame(left, right) && TensorHelpers.IsUnderlyingStorageSameSize(left, right))
+            nint[] newSize = Tensor.GetSmallestBroadcastableLengths(left.Lengths, right.Lengths);
+
+            TensorSpan<T> slicedDestination = destination.Slice(newSize);
+
+            // If sizes are the same and memory is contiguous for all tensors
+            if (TensorHelpers.AreLengthsTheSame(left, right) && TensorHelpers.IsUnderlyingStorageSameSize(left, right) && TensorHelpers.IsContiguousAndDense(left)
+                && TensorHelpers.IsContiguousAndDense(right) && TensorHelpers.IsContiguousAndDense<T>(slicedDestination))
             {
-                if (!TensorHelpers.IsUnderlyingStorageSameSize(left, destination))
-                    ThrowHelper.ThrowArgument_DestinationTooShort();
-                ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref left._reference, (int)left._shape._memoryLength);
-                ReadOnlySpan<T> rspan = MemoryMarshal.CreateSpan(ref right._reference, (int)right._shape._memoryLength);
-                Span<T> ospan = MemoryMarshal.CreateSpan(ref destination._reference, (int)destination._shape._memoryLength);
+                ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref left._reference, left._shape._memoryLength <= left.FlattenedLength ? (int)left._shape._memoryLength : (int)left.FlattenedLength);
+                ReadOnlySpan<T> rspan = MemoryMarshal.CreateSpan(ref right._reference, right._shape._memoryLength <= right.FlattenedLength ? (int)right._shape._memoryLength : (int)right.FlattenedLength);
+                Span<T> ospan = MemoryMarshal.CreateSpan(ref slicedDestination._reference, (int)slicedDestination._shape._memoryLength);
                 performCalculation(span, rspan, ospan);
                 return ref destination;
             }
@@ -6741,12 +7086,8 @@ namespace System.Numerics.Tensors
                 // 1 - Both tensors have row contiguous memory (i.e. a 1x5 being broadcast to a 5x5)
                 // 2 - One tensor has row contiguous memory and the right has column contiguous memory (i.e. a 1x5 and a 5x1)
 
-                nint[] newSize = Tensor.GetSmallestBroadcastableLengths(left.Lengths, right.Lengths);
-
                 ReadOnlyTensorSpan<T> broadcastedLeft = Tensor.LazyBroadcast(left, newSize);
                 ReadOnlyTensorSpan<T> broadcastedRight = Tensor.LazyBroadcast(right, newSize);
-                if (!destination.Lengths.SequenceEqual(newSize) || destination._shape._memoryLength < broadcastedLeft.FlattenedLength)
-                    ThrowHelper.ThrowArgument_LengthsNotBroadcastCompatible();
 
                 nint rowLength = newSize[^1];
                 Span<T> ospan;
@@ -6755,25 +7096,40 @@ namespace System.Numerics.Tensors
 
                 scoped Span<nint> curIndex;
                 nint[]? curIndexArray;
-                if (newSize.Length > 6)
+                if (newSize.Length > TensorShape.MaxInlineRank)
                 {
                     curIndexArray = ArrayPool<nint>.Shared.Rent(newSize.Length);
-                    curIndex = curIndexArray;
+                    curIndex = curIndexArray.AsSpan(0, newSize.Length);
                 }
                 else
                 {
                     curIndexArray = null;
                     curIndex = stackalloc nint[newSize.Length];
                 }
+                curIndex.Clear();
 
                 int outputOffset = 0;
-                // ADD IN CASE WHERE NEITHER ARE ROW CONTIGUOUS
-                // tensor not row contiguous
-                if (broadcastedLeft.Strides[^1] == 0)
+                // neither row contiguous
+                if (broadcastedLeft.Strides[^1] == 0 && broadcastedRight.Strides[^1] == 0)
                 {
-                    while (outputOffset < destination.FlattenedLength)
+                    Span<T> buffer2 = new T[rowLength];
+
+                    while (outputOffset < slicedDestination.FlattenedLength)
                     {
-                        ospan = MemoryMarshal.CreateSpan(ref Unsafe.Add(ref destination._reference, outputOffset), (int)rowLength);
+                        ospan = MemoryMarshal.CreateSpan(ref Unsafe.Add(ref slicedDestination._reference, TensorSpanHelpers.ComputeLinearIndex(curIndex, slicedDestination.Strides, slicedDestination.Lengths)), (int)rowLength);
+                        buffer.Fill(broadcastedLeft[curIndex]);
+                        buffer2.Fill(broadcastedRight[curIndex]);
+                        performCalculation(buffer, buffer2, ospan);
+                        outputOffset += (int)rowLength;
+                        TensorSpanHelpers.AdjustIndexes(broadcastedLeft.Rank - 2, 1, curIndex, broadcastedLeft.Lengths);
+                    }
+                }
+                // tensor not row contiguous
+                else if (broadcastedLeft.Strides[^1] == 0)
+                {
+                    while (outputOffset < slicedDestination.FlattenedLength)
+                    {
+                        ospan = MemoryMarshal.CreateSpan(ref Unsafe.Add(ref slicedDestination._reference, TensorSpanHelpers.ComputeLinearIndex(curIndex, slicedDestination.Strides, slicedDestination.Lengths)), (int)rowLength);
                         buffer.Fill(broadcastedLeft[curIndex]);
                         ispan = MemoryMarshal.CreateSpan(ref Unsafe.Add(ref broadcastedRight._reference, TensorSpanHelpers.ComputeLinearIndex(curIndex, broadcastedRight.Strides, broadcastedRight.Lengths)), (int)rowLength);
                         performCalculation(buffer, ispan, ospan);
@@ -6784,9 +7140,9 @@ namespace System.Numerics.Tensors
                 // right not row contiguous
                 else if (broadcastedRight.Strides[^1] == 0)
                 {
-                    while (outputOffset < destination.FlattenedLength)
+                    while (outputOffset < slicedDestination.FlattenedLength)
                     {
-                        ospan = MemoryMarshal.CreateSpan(ref Unsafe.Add(ref destination._reference, outputOffset), (int)rowLength);
+                        ospan = MemoryMarshal.CreateSpan(ref Unsafe.Add(ref slicedDestination._reference, TensorSpanHelpers.ComputeLinearIndex(curIndex, slicedDestination.Strides, slicedDestination.Lengths)), (int)rowLength);
                         buffer.Fill(broadcastedRight[curIndex]);
                         ispan = MemoryMarshal.CreateSpan(ref Unsafe.Add(ref broadcastedLeft._reference, TensorSpanHelpers.ComputeLinearIndex(curIndex, broadcastedLeft.Strides, broadcastedLeft.Lengths)), (int)rowLength);
                         performCalculation(ispan, buffer, ospan);
@@ -6798,9 +7154,9 @@ namespace System.Numerics.Tensors
                 else
                 {
                     Span<T> rspan;
-                    while (outputOffset < destination.FlattenedLength)
+                    while (outputOffset < slicedDestination.FlattenedLength)
                     {
-                        ospan = MemoryMarshal.CreateSpan(ref Unsafe.Add(ref destination._reference, outputOffset), (int)rowLength);
+                        ospan = MemoryMarshal.CreateSpan(ref Unsafe.Add(ref slicedDestination._reference, TensorSpanHelpers.ComputeLinearIndex(curIndex, slicedDestination.Strides, slicedDestination.Lengths)), (int)rowLength);
                         ispan = MemoryMarshal.CreateSpan(ref Unsafe.Add(ref broadcastedLeft._reference, TensorSpanHelpers.ComputeLinearIndex(curIndex, broadcastedLeft.Strides, broadcastedLeft.Lengths)), (int)rowLength);
                         rspan = MemoryMarshal.CreateSpan(ref Unsafe.Add(ref broadcastedRight._reference, TensorSpanHelpers.ComputeLinearIndex(curIndex, broadcastedRight.Strides, broadcastedRight.Lengths)), (int)rowLength);
                         performCalculation(ispan, rspan, ospan);

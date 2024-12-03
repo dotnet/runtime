@@ -309,6 +309,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [Theory, MemberData(nameof(BrainpoolCurvesPfx))]
         public static void ReadECDsaPrivateKey_BrainpoolP160r1_Pfx(byte[] pfxData)
         {
+            static bool IsKnownGoodPlatform() => PlatformDetection.IsWindows10OrLater || PlatformDetection.IsUbuntu;
+
             try
             {
                 using (var cert = new X509Certificate2(pfxData, TestData.PfxDataPassword))
@@ -324,11 +326,10 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                     }
                 }
             }
-            catch (CryptographicException)
+            catch (CryptographicException) when (!IsKnownGoodPlatform())
             {
-                // Windows 7, Windows 8, CentOS, macOS can fail. Verify known good platforms don't fail.
-                Assert.False(PlatformDetection.IsWindows && PlatformDetection.WindowsVersion >= 10, "Is Windows 10");
-                Assert.False(PlatformDetection.IsUbuntu, "Is Ubuntu");
+                // Windows 7, Windows 8, CentOS, macOS can fail. If the platform is a known good, let the exception
+                // through since it should not fail.
             }
         }
 

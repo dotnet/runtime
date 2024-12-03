@@ -382,7 +382,7 @@ namespace System.IO.Tests
             Assert.False(TryErrorEvent(watcher, action, cleanup, attempts, expected: true), message);
         }
 
-        /// /// <summary>
+        /// <summary>
         /// Helper method for the ExpectError/ExpectNoError functions.
         /// </summary>
         /// <param name="watcher">The FileSystemWatcher to test</param>

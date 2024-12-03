@@ -59,6 +59,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/107981", TestPlatforms.Wasi)] // https://github.com/WebAssembly/wasi-libc/issues/538
         public void IOControl_FIONREAD_Success()
         {
             using (var client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
@@ -99,6 +100,7 @@ namespace System.Net.Sockets.Tests
         [PlatformSpecific(TestPlatforms.AnyUnix)]
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/50568", TestPlatforms.Android | TestPlatforms.LinuxBionic)]
+        [SkipOnPlatform(TestPlatforms.Wasi, "Wasi doesn't support OOBDATA")]
         public void IOControl_SIOCATMARK_Unix_Success()
         {
             using (var client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))

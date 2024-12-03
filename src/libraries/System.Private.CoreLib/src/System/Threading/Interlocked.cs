@@ -84,7 +84,7 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe byte Exchange(ref byte location1, byte value)
         {
-#if !MONO && (TARGET_X86 || TARGET_AMD64 || TARGET_ARM64)
+#if (MONO && (TARGET_AMD64 || TARGET_ARM64 || TARGET_WASM)) || (!MONO && (TARGET_X86 || TARGET_AMD64 || TARGET_ARM64))
             return Exchange(ref location1, value); // Must expand intrinsic
 #else
             // this relies on GC keeping 4B alignment for refs and on subtracting to such alignment being in the same object
@@ -123,7 +123,7 @@ namespace System.Threading
         [CLSCompliant(false)]
         public static unsafe ushort Exchange(ref ushort location1, ushort value)
         {
-#if !MONO && (TARGET_X86 || TARGET_AMD64 || TARGET_ARM64)
+#if ((MONO && (TARGET_AMD64 || TARGET_ARM64 || TARGET_WASM)) || !MONO && (TARGET_X86 || TARGET_AMD64 || TARGET_ARM64))
             return Exchange(ref location1, value); // Must expand intrinsic
 #else
             // this relies on GC keeping 4B alignment for refs and on subtracting to such alignment being in the same object
@@ -322,7 +322,7 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe byte CompareExchange(ref byte location1, byte value, byte comparand)
         {
-#if !MONO && (TARGET_X86 || TARGET_AMD64 || TARGET_ARM64)
+#if (MONO && (TARGET_ARM64 || TARGET_AMD64 || TARGET_WASM)) || (!MONO && (TARGET_X86 || TARGET_AMD64 || TARGET_ARM64))
             return CompareExchange(ref location1, value, comparand); // Must expand intrinsic
 #else
             // this relies on GC keeping 4B alignment for refs and on subtracting to such alignment being in the same object
@@ -365,7 +365,7 @@ namespace System.Threading
         [CLSCompliant(false)]
         public static unsafe ushort CompareExchange(ref ushort location1, ushort value, ushort comparand)
         {
-#if !MONO && (TARGET_X86 || TARGET_AMD64 || TARGET_ARM64)
+#if (MONO && (TARGET_ARM64 || TARGET_AMD64 || TARGET_WASM)) || (!MONO && (TARGET_X86 || TARGET_AMD64 || TARGET_ARM64))
             return CompareExchange(ref location1, value, comparand); // Must expand intrinsic
 #else
             // this relies on GC keeping 4B alignment for refs and on subtracting to such alignment being in the same object
@@ -716,14 +716,6 @@ namespace System.Threading
         /// </summary>
         [Intrinsic]
         public static void MemoryBarrier() => MemoryBarrier();
-
-        /// <summary>
-        /// Synchronizes memory access as follows:
-        /// The processor that executes the current thread cannot reorder instructions in such a way that memory reads before
-        /// the call to <see cref="ReadMemoryBarrier"/> execute after memory accesses that follow the call to <see cref="ReadMemoryBarrier"/>.
-        /// </summary>
-        [Intrinsic]
-        internal static void ReadMemoryBarrier() => ReadMemoryBarrier();
         #endregion
     }
 }

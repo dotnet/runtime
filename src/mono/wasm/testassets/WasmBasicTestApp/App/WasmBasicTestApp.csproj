@@ -16,9 +16,11 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Library\Json.csproj" />
+    <ProjectReference Include="..\ResourceLibrary\ResourceLibrary.csproj" />
   </ItemGroup>
 
   <ItemGroup>
     <BlazorWebAssemblyLazyLoad Include="Json$(WasmAssemblyExtension)" />
+    <WasmExtraFilesToDeploy Include="profiler.js" />
   </ItemGroup>
 </Project>

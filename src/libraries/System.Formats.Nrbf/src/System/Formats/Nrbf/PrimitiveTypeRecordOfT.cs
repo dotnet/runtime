@@ -18,7 +18,7 @@ namespace System.Formats.Nrbf;
 /// <see cref="char"/>, <see cref="short"/>, <see cref="ushort"/>,
 /// <see cref="int"/>, <see cref="uint"/>, <see cref="long"/>, <see cref="ulong"/>,
 /// <see cref="float"/>, <see cref="double"/>, <see cref="decimal"/>,
-/// <see cref="DateTime"/> and <see cref="TimeSpan"/>.
+/// <see cref="DateTime"/>, and <see cref="TimeSpan"/>.
 /// </para>
 /// <para>Other serialization records are represented with <see cref="ClassRecord"/> or <see cref="ArrayRecord"/>.</para>
 /// </remarks>

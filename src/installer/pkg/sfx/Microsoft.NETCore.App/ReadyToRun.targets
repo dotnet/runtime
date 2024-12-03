@@ -1,15 +1,16 @@
 <Project>
   <Target Name="ResolveReadyToRunCompilers" DependsOnTargets="ResolveRuntimeFilesFromLocalBuild">
     <PropertyGroup>
-      <Crossgen2Dll>$([MSBuild]::NormalizePath('$(Crossgen2Dir)', 'tools', 'crossgen2.dll'))</Crossgen2Dll>
       <PublishReadyToRunPerfmapFormatVersion Condition="'$(PublishReadyToRunPerfmapFormatVersion)' == ''">1</PublishReadyToRunPerfmapFormatVersion>
+      <Crossgen2Path>$([MSBuild]::NormalizePath('$(Crossgen2InBuildDir)', 'crossgen2.dll'))</Crossgen2Path>
+      <R2RDotnetHostPath>$(DotNetTool)</R2RDotnetHostPath>
     </PropertyGroup>
 
     <ItemGroup>
-      <Crossgen2Tool Include="$(Crossgen2Dll)"
+      <Crossgen2Tool Include="$(Crossgen2Path)"
                      TargetArch="$(TargetArchitecture)"
                      TargetOS="$(TargetOS)"
-                     DotNetHostPath="$(DotNetTool)"
+                     DotnetHostPath="$(R2RDotnetHostPath)"
                      PerfmapFormatVersion="$(PublishReadyToRunPerfmapFormatVersion)"/>
     </ItemGroup>
   </Target>

@@ -8,6 +8,6 @@ namespace Microsoft.Interop.JavaScript
 {
     internal interface IJSMarshallingGenerator : IBoundMarshallingGenerator
     {
-        IEnumerable<ExpressionSyntax> GenerateBind(StubCodeContext context);
+        IEnumerable<ExpressionSyntax> GenerateBind();
     }
 }

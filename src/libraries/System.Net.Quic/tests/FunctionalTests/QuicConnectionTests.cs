@@ -455,11 +455,13 @@ namespace System.Net.Quic.Tests
         {
             int maxStreamIndex = 0;
             const int Limit = 5;
+            SemaphoreSlim streamsAvailableFired = new SemaphoreSlim(0);
 
             var clientOptions = CreateQuicClientOptions(new IPEndPoint(0, 0));
             clientOptions.StreamCapacityCallback = (connection, args) =>
             {
                 Interlocked.Add(ref maxStreamIndex, args.BidirectionalIncrement);
+                streamsAvailableFired.Release();
             };
 
             var listenerOptions = CreateQuicListenerOptions();
@@ -472,6 +474,10 @@ namespace System.Net.Quic.Tests
 
             (QuicConnection clientConnection, QuicConnection serverConnection) = await CreateConnectedQuicConnection(clientOptions, listenerOptions);
 
+            while (maxStreamIndex < Limit)
+            {
+                await streamsAvailableFired.WaitAsync().WaitAsync(PassingTestTimeout);
+            }
             Assert.Equal(Limit, maxStreamIndex);
 
             Queue<(QuicStream client, QuicStream server)> streams = new();
@@ -509,8 +515,11 @@ namespace System.Net.Quic.Tests
                 }
             }
 
-            // give time to update the count
-            await Task.Delay(1000);
+            // wait for the callback
+            while (maxStreamIndex < 3 * Limit)
+            {
+                await streamsAvailableFired.WaitAsync().WaitAsync(PassingTestTimeout);
+            }
 
             // by now, we opened and closed 2 * Limit, and expect a budget of 'Limit' more
             Assert.Equal(3 * Limit, maxStreamIndex);

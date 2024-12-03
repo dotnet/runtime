@@ -58,11 +58,11 @@
 #include <mono/utils/mono-compiler.h>
 #include <mono/utils/mono-time.h>
 #include <mono/utils/mono-mmap.h>
-#include <mono/utils/mono-rand.h>
 #include <mono/utils/json.h>
 #include <mono/utils/mono-threads-coop.h>
 #include <mono/profiler/aot.h>
 #include <mono/utils/w32api.h>
+#include <minipal/random.h>
 
 #include "aot-compiler.h"
 #include "aot-runtime.h"
@@ -7607,6 +7607,8 @@ emit_method_info (MonoAotCompile *acfg, MonoCompile *cfg)
 		flags |= MONO_AOT_METHOD_FLAG_HAS_CTX;
 	if (cfg->interp_entry_only)
 		flags |= MONO_AOT_METHOD_FLAG_INTERP_ENTRY_ONLY;
+	if (cfg->uses_simd_intrinsics && cfg->compile_llvm)
+		flags |= MONO_AOT_METHOD_FLAG_HAS_LLVM_INTRINSICS;
 	/* Saved into another table so it can be accessed without having access to this data */
 	cfg->aot_method_flags = flags;
 
@@ -8744,8 +8746,14 @@ mono_aot_split_options (const char *aot_options)
 	g_return_val_if_fail (aot_options != NULL, NULL);
 
 	while ((cur = *aot_options) != '\0') {
-		if (state == MONO_AOT_OPTION_STATE_ESCAPE)
+		if (state == MONO_AOT_OPTION_STATE_ESCAPE) {
+			// After the escaped character, we're back inside quotes
+			//
+			// Note: we don't seem to remove the "" or the \ from the option here.
+			// Perhaps the caller is expected to take care of it?
+			state = MONO_AOT_OPTION_STATE_STRING;
 			goto next;
+		}
 
 		switch (cur) {
 		case '"':
@@ -11559,16 +11567,8 @@ emit_extra_methods (MonoAotCompile *acfg)
 static void
 generate_aotid (guint8* aotid)
 {
-	gpointer rand_handle;
-	ERROR_DECL (error);
-
-	mono_rand_open ();
-	rand_handle = mono_rand_init (NULL, 0);
-
-	mono_rand_try_get_bytes (&rand_handle, aotid, 16, error);
-	mono_error_assert_ok (error);
-
-	mono_rand_close (rand_handle);
+	int status = minipal_get_cryptographically_secure_random_bytes (aotid, 16);
+	g_assert (status == 0);
 }
 
 static void
