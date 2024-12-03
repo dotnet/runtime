@@ -149,8 +149,6 @@ inline void ProfControlBlock::Init()
 
     fConcurrentGCDisabledForAttach = FALSE;
 
-    mainProfilerInfo.ResetPerSessionStatus();
-
     fProfControlBlockInitialized = TRUE;
 
     fProfilerRequestedRuntimeSuspend = FALSE;
