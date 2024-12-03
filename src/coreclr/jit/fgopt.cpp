@@ -5095,7 +5095,6 @@ void Compiler::ThreeOptLayout::ConsiderEdge(FlowEdge* edge)
         return;
     }
 
-    edge->markVisited();
     BasicBlock* const srcBlk = edge->getSourceBlock();
     BasicBlock* const dstBlk = edge->getDestinationBlock();
 
@@ -5145,6 +5144,7 @@ void Compiler::ThreeOptLayout::ConsiderEdge(FlowEdge* edge)
         return;
     }
 
+    edge->markVisited();
     cutPoints.Push(edge);
 }
 
@@ -5322,7 +5322,7 @@ bool Compiler::ThreeOptLayout::RunGreedyThreeOptPass(unsigned startPos, unsigned
     assert(startPos < endPos);
     bool modified = false;
 
-    JITDUMP("Using greedy strategy for finding cut points.\n");
+    JITDUMP("Running greedy 3-opt pass.\n");
 
     // Initialize cutPoints with candidate branches in this section
     for (unsigned position = startPos; position <= endPos; position++)
@@ -5337,7 +5337,7 @@ bool Compiler::ThreeOptLayout::RunGreedyThreeOptPass(unsigned startPos, unsigned
     while (!cutPoints.Empty())
     {
         FlowEdge* const candidateEdge = cutPoints.Pop();
-        assert(candidateEdge->visited());
+        candidateEdge->markUnvisited();
 
         BasicBlock* const srcBlk = candidateEdge->getSourceBlock();
         BasicBlock* const dstBlk = candidateEdge->getDestinationBlock();
