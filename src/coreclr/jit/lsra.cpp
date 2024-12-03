@@ -551,7 +551,7 @@ static const regMaskTP LsraLimitSmallIntSet = (RBM_T1 | RBM_T3 | RBM_A0 | RBM_A1
 static const regMaskTP LsraLimitSmallFPSet  = (RBM_F0 | RBM_F1 | RBM_F2 | RBM_F8 | RBM_F9);
 #elif defined(TARGET_RISCV64)
 static const regMaskTP LsraLimitSmallIntSet = (RBM_T1 | RBM_T3 | RBM_A0 | RBM_A1 | RBM_T0);
-static const regMaskTP LsraLimitSmallFPSet  = (RBM_F0 | RBM_F1 | RBM_F2 | RBM_F8 | RBM_F9);
+static const regMaskTP LsraLimitSmallFPSet  = (RBM_FT0 | RBM_FT1 | RBM_FT2 | RBM_FS0 | RBM_FS1);
 #else
 #error Unsupported or unset target architecture
 #endif // target
@@ -911,8 +911,7 @@ LinearScan::LinearScan(Compiler* theCompiler)
 
     // Block sequencing (the order in which we schedule).
     // Note that we don't initialize the bbVisitedSet until we do the first traversal
-    // This is so that any blocks that are added during the first traversal
-    // are accounted for (and we don't have BasicBlockEpoch issues).
+    // This is so that any blocks that are added during the first traversal are accounted for.
     blockSequencingDone = false;
     blockSequence       = nullptr;
     curBBSeqNum         = 0;
@@ -937,35 +936,47 @@ LinearScan::LinearScan(Compiler* theCompiler)
 // Notes:
 //    On return, the blockSequence array contains the blocks in reverse post-order.
 //    This method clears the bbVisitedSet on LinearScan, and when it returns the set
-//    contains all the bbNums for the block.
+//    contains all the bbPostorderNums for the block.
 //
 void LinearScan::setBlockSequence()
 {
     assert(!blockSequencingDone); // The method should be called only once.
 
-    compiler->EnsureBasicBlockEpoch();
-#ifdef DEBUG
-    blockEpoch = compiler->GetCurBasicBlockEpoch();
-#endif // DEBUG
-
     // Initialize the "visited" blocks set.
-    bbVisitedSet = BlockSetOps::MakeEmpty(compiler);
+    traits       = new (compiler, CMK_LSRA) BitVecTraits(compiler->fgBBcount, compiler);
+    bbVisitedSet = BitVecOps::MakeEmpty(traits);
 
     // If optimizations are enabled, allocate blocks in reverse post-order.
     // This ensures each block's predecessors are visited first.
-    auto getRpoSequence = [this]() -> BasicBlock** {
-        FlowGraphDfsTree* const dfsTree   = compiler->fgComputeDfs</* useProfile */ true>();
-        BasicBlock** const      postOrder = dfsTree->GetPostOrder();
-        bbSeqCount                        = dfsTree->GetPostOrderCount();
+    FlowGraphDfsTree* dfsTree        = nullptr;
+    auto              getRpoSequence = [this, &dfsTree]() -> BasicBlock** {
+        BasicBlock** sequence = new (compiler, CMK_LSRA) BasicBlock*[compiler->fgBBcount];
+        dfsTree               = compiler->fgComputeDfs</* useProfile */ true>();
+        bbSeqCount            = dfsTree->GetPostOrderCount();
 
-        // Flip the DFS traversal to get the reverse post-order traversal
-        // (this is the order in which blocks will be allocated)
-        for (unsigned left = 0, right = bbSeqCount - 1; left < right; left++, right--)
+        if (dfsTree->HasCycle())
         {
-            std::swap(postOrder[left], postOrder[right]);
+            // Ensure loop bodies are compact in the visitation order
+            FlowGraphNaturalLoops* const loops = FlowGraphNaturalLoops::Find(dfsTree);
+            unsigned                     index = 0;
+
+            auto addToSequence = [this, sequence, &index](BasicBlock* block) {
+                sequence[index++] = block;
+            };
+
+            compiler->fgVisitBlocksInLoopAwareRPO(dfsTree, loops, addToSequence);
+        }
+        else
+        {
+            // Flip the DFS traversal to get the reverse post-order traversal
+            // (this is the order in which blocks will be allocated)
+            for (unsigned i = bbSeqCount, j = 0; i != 0; i--, j++)
+            {
+                sequence[j] = dfsTree->GetPostOrder(i - 1);
+            }
         }
 
-        return postOrder;
+        return sequence;
     };
 
     // If we aren't optimizing, we won't have any cross-block live registers,
@@ -978,7 +989,9 @@ void LinearScan::setBlockSequence()
         unsigned i = 0;
         for (BasicBlock* const block : compiler->Blocks())
         {
-            traversalOrder[i++] = block;
+            // Give this block a unique post-order number that can be used as a key into bbVisitedSet
+            block->bbPostorderNum = i;
+            traversalOrder[i++]   = block;
         }
 
         assert(i == bbSeqCount);
@@ -1092,25 +1105,24 @@ void LinearScan::setBlockSequence()
         visitBlock(blockSequence[i]);
     }
 
-    // If the DFS didn't visit any blocks, add them to the end of blockSequence
-    if (bbSeqCount < compiler->fgBBcount)
+    // If any blocks remain unvisited, add them to the end of blockSequence.
+    // Unvisited blocks are more likely to be at the back of the list, so iterate backwards.
+    for (BasicBlock* block = compiler->fgLastBB; bbSeqCount < compiler->fgBBcount; block = block->Prev())
     {
         assert(compiler->opts.OptimizationEnabled());
+        assert(block != nullptr);
+        assert(dfsTree != nullptr);
 
-        // Unvisited blocks are more likely to be at the back of the list, so iterate backwards
-        unsigned i = bbSeqCount;
-        for (BasicBlock* block = compiler->fgLastBB; i < compiler->fgBBcount; block = block->Prev())
+        if (!dfsTree->Contains(block))
         {
-            assert(block != nullptr);
-            if (!isBlockVisited(block))
-            {
-                visitBlock(block);
-                blockSequence[i++] = block;
-            }
+            // Give this block a unique post-order number that can be used as a key into bbVisitedSet
+            block->bbPostorderNum = bbSeqCount;
+            visitBlock(block);
+            blockSequence[bbSeqCount++] = block;
         }
     }
 
-    bbSeqCount          = compiler->fgBBcount;
+    assert(bbSeqCount == compiler->fgBBcount);
     blockSequencingDone = true;
 
 #ifdef DEBUG
@@ -1305,7 +1317,6 @@ PhaseStatus LinearScan::doLinearScan()
     compiler->EndPhase(PHASE_LINEAR_SCAN_RESOLVE);
 
     assert(blockSequencingDone); // Should do at least one traversal.
-    assert(blockEpoch == compiler->GetCurBasicBlockEpoch());
 
 #if TRACK_LSRA_STATS
     if ((JitConfig.DisplayLsraStats() == 1)
@@ -2776,6 +2787,7 @@ bool LinearScan::isMatchingConstant(RegRecord* physRegRecord, RefPosition* refPo
             break;
         }
 
+#if defined(FEATURE_SIMD)
         case GT_CNS_VEC:
         {
             return
@@ -2784,11 +2796,14 @@ bool LinearScan::isMatchingConstant(RegRecord* physRegRecord, RefPosition* refPo
 #endif
                 GenTreeVecCon::Equals(refPosition->treeNode->AsVecCon(), otherTreeNode->AsVecCon());
         }
+#endif // FEATURE_SIMD
 
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
         case GT_CNS_MSK:
         {
             return GenTreeMskCon::Equals(refPosition->treeNode->AsMskCon(), otherTreeNode->AsMskCon());
         }
+#endif // FEATURE_MASKED_HW_INTRINSICS)
 
         default:
             break;
@@ -9630,6 +9645,29 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
         }
     }
 
+#ifdef TARGET_ARM
+    auto addOtherHalfRegToReady = [&](regNumber otherHalfReg) {
+        // For a double interval, if the first half if freed up, check if the other
+        // half can also be freed (if it is a target for resolution).
+
+        regNumber otherHalfSrcReg = (regNumber)source[otherHalfReg];
+        regNumber otherHalfSrcLoc = (regNumber)location[otherHalfReg];
+
+        // Necessary conditions:
+        // - There is a source register for this reg (otherHalfSrcReg != REG_NA)
+        // - It is currently free                    (otherHalfSrcLoc == REG_NA)
+        // - The source interval isn't yet completed (sourceIntervals[otherHalfSrcReg] != nullptr)
+        // - It's in the TODO set                    (targetRegsToDo.IsRegNumInMask(otherHalfReg))
+        // - It's not resolved from stack            (!targetRegsFromStack.IsRegNumInMask(otherHalfReg))
+        if ((otherHalfSrcReg != REG_NA) && (otherHalfSrcLoc == REG_NA) &&
+            (sourceIntervals[otherHalfSrcReg] != nullptr) && targetRegsToDo.IsRegNumInMask(otherHalfReg) &&
+            !targetRegsFromStack.IsRegNumInMask(otherHalfReg))
+        {
+            targetRegsReady.AddRegNumInMask(otherHalfReg);
+        }
+    };
+#endif // TARGET_ARM
+
     // Perform reg to reg moves
     while (targetRegsToDo.IsNonEmpty())
     {
@@ -9671,22 +9709,10 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
                         }
 
                         // Since we want to check if we can free upperHalfReg, only do it
-                        // if lowerHalfReg is ready.
+                        // if lowerHalfReg is ready and it is one of the target candidate.
                         if (targetRegsReady.IsRegNumInMask(fromReg))
                         {
-                            regNumber upperHalfSrcReg = (regNumber)source[upperHalfReg];
-                            regNumber upperHalfSrcLoc = (regNumber)location[upperHalfReg];
-                            // Necessary conditions:
-                            // - There is a source register for this reg (upperHalfSrcReg != REG_NA)
-                            // - It is currently free                    (upperHalfSrcLoc == REG_NA)
-                            // - The source interval isn't yet completed (sourceIntervals[upperHalfSrcReg] != nullptr)
-                            // - It's not resolved from stack (!targetRegsFromStack.IsRegNumInMask(upperHalfReg))
-                            if ((upperHalfSrcReg != REG_NA) && (upperHalfSrcLoc == REG_NA) &&
-                                (sourceIntervals[upperHalfSrcReg] != nullptr) &&
-                                !targetRegsFromStack.IsRegNumInMask(upperHalfReg))
-                            {
-                                targetRegsReady.AddRegNumInMask(upperHalfReg);
-                            }
+                            addOtherHalfRegToReady(upperHalfReg);
                         }
                     }
                 }
@@ -9694,25 +9720,7 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
                 {
                     // We may have freed up the other half of a double where the lower half
                     // was already free.
-                    regNumber lowerHalfReg    = REG_PREV(fromReg);
-                    regNumber lowerHalfSrcReg = (regNumber)source[lowerHalfReg];
-                    regNumber lowerHalfSrcLoc = (regNumber)location[lowerHalfReg];
-                    // Necessary conditions:
-                    // - There is a source register for this reg (lowerHalfSrcReg != REG_NA)
-                    // - It is currently free                    (lowerHalfSrcLoc == REG_NA)
-                    // - The source interval isn't yet completed (sourceIntervals[lowerHalfSrcReg] != nullptr)
-                    // - It's not in the ready set               (!targetRegsReady.IsRegNumInMask(lowerHalfReg))
-                    // - It's not resolved from stack            (!targetRegsFromStack.IsRegNumInMask(lowerHalfReg))
-                    if ((lowerHalfSrcReg != REG_NA) && (lowerHalfSrcLoc == REG_NA) &&
-                        (sourceIntervals[lowerHalfSrcReg] != nullptr) &&
-                        !targetRegsReady.IsRegNumInMask(lowerHalfReg) &&
-                        !targetRegsFromStack.IsRegNumInMask(lowerHalfReg))
-                    {
-                        // This must be a double interval, otherwise it would be in targetRegsReady, or already
-                        // completed.
-                        assert(sourceIntervals[lowerHalfSrcReg]->registerType == TYP_DOUBLE);
-                        targetRegsReady.AddRegNumInMask(lowerHalfReg);
-                    }
+                    addOtherHalfRegToReady(REG_PREV(fromReg));
 #endif // TARGET_ARM
                 }
             }
@@ -9887,6 +9895,14 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
                                       targetReg DEBUG_ARG(fromBlock) DEBUG_ARG(toBlock)
                                           DEBUG_ARG(resolveTypeName[resolveType]));
                         location[targetReg] = (regNumberSmall)tempReg;
+
+                        if (sourceIntervals[targetReg]->registerType == TYP_DOUBLE)
+                        {
+                            // Free up upperHalf reg of this targetReg, if it is one of the target candidate.
+
+                            assert(genIsValidDoubleReg(targetReg));
+                            addOtherHalfRegToReady(REG_NEXT(targetReg));
+                        }
                     }
 #else
                     assert(sourceIntervals[targetReg] != nullptr);
@@ -10000,10 +10016,8 @@ void LinearScan::dumpLsraStats(FILE* file)
 
     fprintf(file, "----------\n");
 #ifdef DEBUG
-    LPCWSTR lsraOrder = JitConfig.JitLsraOrdering() == nullptr ? W("ABCDEFGHIJKLMNOPQ") : JitConfig.JitLsraOrdering();
-    char    lsraOrderUtf8[(REGSELECT_HEURISTIC_COUNT * 3) + 1] = {};
-    WideCharToMultiByte(CP_UTF8, 0, lsraOrder, -1, lsraOrderUtf8, ARRAY_SIZE(lsraOrderUtf8), nullptr, nullptr);
-    fprintf(file, "Register selection order: %s\n", lsraOrderUtf8);
+    const char* lsraOrder = JitConfig.JitLsraOrdering() == nullptr ? "ABCDEFGHIJKLMNOPQ" : JitConfig.JitLsraOrdering();
+    fprintf(file, "Register selection order: %s\n", lsraOrder);
 #endif
     fprintf(file, "Total Tracked Vars:  %d\n", compiler->lvaTrackedCount);
     fprintf(file, "Total Reg Cand Vars: %d\n", regCandidateVarCount);
@@ -12407,10 +12421,10 @@ LinearScan::RegisterSelection::RegisterSelection(LinearScan* linearScan)
 #define BUSY_REG_SEL_DEF(stat, value, shortname, orderSeqId) REG_SEL_DEF(stat, value, shortname, orderSeqId)
 #include "lsra_score.h"
 
-    LPCWSTR ordering = JitConfig.JitLsraOrdering();
+    const char* ordering = JitConfig.JitLsraOrdering();
     if (ordering == nullptr)
     {
-        ordering = W("ABCDEFGHIJKLMNOPQ");
+        ordering = "ABCDEFGHIJKLMNOPQ";
 
         if (!linearScan->enregisterLocalVars && linearScan->compiler->opts.OptimizationDisabled()
 #ifdef TARGET_ARM64
@@ -12418,7 +12432,7 @@ LinearScan::RegisterSelection::RegisterSelection(LinearScan* linearScan)
 #endif
         )
         {
-            ordering = W("MQQQQQQQQQQQQQQQQ");
+            ordering = "MQQQQQQQQQQQQQQQQ";
         }
     }
 
@@ -13890,6 +13904,16 @@ SingleTypeRegSet LinearScan::RegisterSelection::selectMinimal(
 #if TRACK_LSRA_STATS
             INTRACK_STATS_IF(found, linearScan->updateLsraStat(linearScan->getLsraStatFromScore(RegisterScore::REG_NUM),
                                                                refPosition->bbNum));
+#endif // TRACK_LSRA_STATS
+            *registerScore = RegisterScore::REG_NUM;
+#endif // DEBUG
+        }
+    }
+
+    assert(found && isSingleRegister(candidates));
+    return candidates;
+}
+                                          refPosition->bbNum));
 #endif // TRACK_LSRA_STATS
             *registerScore = RegisterScore::REG_NUM;
 #endif // DEBUG

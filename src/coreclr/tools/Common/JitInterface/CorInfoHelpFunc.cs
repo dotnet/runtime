@@ -115,9 +115,6 @@ namespace Internal.JitInterface
 
         CORINFO_HELP_MON_ENTER,
         CORINFO_HELP_MON_EXIT,
-        CORINFO_HELP_MON_ENTER_STATIC,
-        CORINFO_HELP_MON_EXIT_STATIC,
-
         CORINFO_HELP_GETCLASSFROMMETHODPARAM, // Given a generics method handle, returns a class handle
         CORINFO_HELP_GETSYNCFROMCLASSHANDLE,  // Given a generics class handle, returns the sync monitor
                                               // in its ManagedClassObject
@@ -174,6 +171,7 @@ namespace Internal.JitInterface
         CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED,
         CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED,
         CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2,
+        CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2_NOJITOPT,
         /* Debugger */
 
         CORINFO_HELP_DBG_IS_JUST_MY_CODE,    // Check if this is "JustMyCode" and needs to be stepped through.

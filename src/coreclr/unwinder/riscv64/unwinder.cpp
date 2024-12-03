@@ -9,75 +9,6 @@
 
 #include "unwinder.h"
 
-typedef struct _RISCV64_KTRAP_FRAME {
-
-//
-// Exception active indicator.
-//
-//    0 - interrupt frame.
-//    1 - exception frame.
-//    2 - service frame.
-//
-
-    /* +0x000 */ UCHAR ExceptionActive;              // always valid
-    /* +0x001 */ UCHAR ContextFromKFramesUnwound;    // set if KeContextFromKFrames created this frame
-    /* +0x002 */ UCHAR DebugRegistersValid;          // always valid
-    /* +0x003 */ union {
-                     UCHAR PreviousMode;   // system services only
-                     UCHAR PreviousIrql;             // interrupts only
-                 };
-
-//
-// Page fault information (page faults only)
-// Previous trap frame address (system services only)
-//
-// Organized this way to allow first couple words to be used
-// for scratch space in the general case
-//
-
-    /* +0x004 */ ULONG FaultStatus;                      // page faults only
-    /* +0x008 */ union {
-                     ULONG64 FaultAddress;             // page faults only
-                     ULONG64 TrapFrame;                // system services only
-                 };
-
-//
-// The LOONGARCH architecture does not have an architectural trap frame.  On
-// an exception or interrupt, the processor switches to an
-// exception-specific processor mode in which at least the RA and SP
-// registers are banked.  Software is responsible for preserving
-// registers which reflect the processor state in which the
-// exception occurred rather than any intermediate processor modes.
-//
-
-//
-// Volatile floating point state is dynamically allocated; this
-// pointer may be NULL if the FPU was not enabled at the time the
-// trap was taken.
-//
-
-    /* +0x010 */ PVOID VfpState;
-
-//
-// Volatile registers
-//
-    ULONG64 R[15];
-    ULONG64 Gp;
-    ULONG64 Tp;
-    ULONG64 Sp;
-    ULONG64 Fp;
-    ULONG64 Ra;
-    ULONG64 Pc;
-
-} RISCV64_KTRAP_FRAME, *PRISCV64_KTRAP_FRAME;
-
-typedef struct _RISCV64_VFP_STATE
-{
-    struct _RISCV64_VFP_STATE *Link;          // link to next state entry
-    ULONG Fcsr;                              // FCSR register
-    ULONG64 F[32];                           // All F registers (0-31)
-} RISCV64_VFP_STATE, *PRISCV64_VFP_STATE, KRISCV64_VFP_STATE, *PKRISCV64_VFP_STATE;
-
 //
 // Parameters describing the unwind codes.
 //
@@ -158,198 +89,6 @@ static const BYTE UnwindCodeSizeTable[256] =
     2,2,2,2,2,2,2,2, 3,2,2,2,3,2,2,2, 3,2,2,2,2,2,3,2, 3,2,3,2,3,2,2,2,
     4,1,3,1,1,1,1,1, 1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1
 };
-
-NTSTATUS
-RtlpUnwindCustom(
-    __inout PT_CONTEXT ContextRecord,
-    _In_ BYTE Opcode,
-    _In_ PRISCV64_UNWIND_PARAMS UnwindParams
-    )
-
-/*++
-
-Routine Description:
-
-    Handles custom unwinding operations involving machine-specific
-    frames.
-
-Arguments:
-
-    ContextRecord - Supplies the address of a context record.
-
-    Opcode - The opcode to decode.
-
-    UnwindParams - Additional parameters shared with caller.
-
-Return Value:
-
-    An NTSTATUS indicating either STATUS_SUCCESS if everything went ok, or
-    another status code if there were problems.
-
---*/
-
-{
-    ULONG Fcsr;
-    ULONG RegIndex;
-    ULONG_PTR SourceAddress;
-    ULONG_PTR StartingSp;
-    NTSTATUS Status;
-    ULONG_PTR VfpStateAddress;
-
-    StartingSp = ContextRecord->Sp;
-    Status = STATUS_SUCCESS;
-
-    //
-    // The opcode describes the special-case stack
-    //
-
-    switch (Opcode)
-    {
-
-    //
-    // Trap frame case
-    //
-
-    case 0xe8:  // MSFT_OP_TRAP_FRAME:
-
-        //
-        // Ensure there is enough valid space for the trap frame
-        //
-
-        VALIDATE_STACK_ADDRESS(UnwindParams, ContextRecord, sizeof(RISCV64_KTRAP_FRAME), 16, &Status);
-        if (!NT_SUCCESS(Status)) {
-            return Status;
-        }
-
-        //
-        // Restore R0-R14, and F0-F32
-        //
-        SourceAddress = StartingSp + offsetof(RISCV64_KTRAP_FRAME, R);
-        for (RegIndex = 0; RegIndex < 15; RegIndex++) {
-            UPDATE_CONTEXT_POINTERS(UnwindParams, RegIndex, SourceAddress);
-#ifdef __GNUC__
-            *(&ContextRecord->R0 + RegIndex) = MEMORY_READ_QWORD(UnwindParams, SourceAddress);
-#else
-            ContextRecord->R[RegIndex] = MEMORY_READ_QWORD(UnwindParams, SourceAddress);
-#endif
-            SourceAddress += sizeof(ULONG_PTR);
-        }
-
-        SourceAddress = StartingSp + offsetof(RISCV64_KTRAP_FRAME, VfpState);
-        VfpStateAddress = MEMORY_READ_QWORD(UnwindParams, SourceAddress);
-        if (VfpStateAddress != 0) {
-
-            SourceAddress = VfpStateAddress + offsetof(KRISCV64_VFP_STATE, Fcsr);
-            Fcsr = MEMORY_READ_DWORD(UnwindParams, SourceAddress);
-            if (Fcsr != (ULONG)-1) {
-
-                ContextRecord->Fcsr = Fcsr;
-
-                SourceAddress = VfpStateAddress + offsetof(KRISCV64_VFP_STATE, F);
-                for (RegIndex = 0; RegIndex < 32; RegIndex++) {
-                    UPDATE_FP_CONTEXT_POINTERS(UnwindParams, RegIndex, SourceAddress);
-                    ContextRecord->F[RegIndex] = MEMORY_READ_QWORD(UnwindParams, SourceAddress);
-                    SourceAddress += 2 * sizeof(ULONGLONG);
-                }
-            }
-        }
-
-        //
-        // Restore SP, RA, PC, and the status registers
-        //
-
-        //SourceAddress = StartingSp + offsetof(RISCV64_KTRAP_FRAME, Tp);//TP
-        //ContextRecord->Tp = MEMORY_READ_QWORD(UnwindParams, SourceAddress);
-
-        SourceAddress = StartingSp + offsetof(RISCV64_KTRAP_FRAME, Sp);
-        ContextRecord->Sp = MEMORY_READ_QWORD(UnwindParams, SourceAddress);
-
-        SourceAddress = StartingSp + offsetof(RISCV64_KTRAP_FRAME, Fp);
-        ContextRecord->Fp = MEMORY_READ_QWORD(UnwindParams, SourceAddress);
-
-        SourceAddress = StartingSp + offsetof(RISCV64_KTRAP_FRAME, Ra);
-        ContextRecord->Ra = MEMORY_READ_QWORD(UnwindParams, SourceAddress);
-
-        SourceAddress = StartingSp + offsetof(RISCV64_KTRAP_FRAME, Pc);
-        ContextRecord->Pc = MEMORY_READ_QWORD(UnwindParams, SourceAddress);
-
-        //
-        // Set the trap frame and clear the unwound-to-call flag
-        //
-
-        UNWIND_PARAMS_SET_TRAP_FRAME(UnwindParams, StartingSp, sizeof(RISCV64_KTRAP_FRAME));
-        ContextRecord->ContextFlags &= ~CONTEXT_UNWOUND_TO_CALL;
-        break;
-
-    //
-    // Context case
-    //
-
-    case 0xea:  // MSFT_OP_CONTEXT:
-
-        //
-        // Ensure there is enough valid space for the full CONTEXT structure
-        //
-
-        VALIDATE_STACK_ADDRESS(UnwindParams, ContextRecord, sizeof(CONTEXT), 16, &Status);
-        if (!NT_SUCCESS(Status)) {
-            return Status;
-        }
-
-        //
-        // Restore R0-R23, and F0-F31
-        //
-
-        SourceAddress = StartingSp + offsetof(T_CONTEXT, R0);
-        for (RegIndex = 0; RegIndex < 23; RegIndex++) {
-            UPDATE_CONTEXT_POINTERS(UnwindParams, RegIndex, SourceAddress);
-#ifdef __GNUC__
-            *(&ContextRecord->R0 + RegIndex) = MEMORY_READ_QWORD(UnwindParams, SourceAddress);
-#else
-            ContextRecord->R[RegIndex] = MEMORY_READ_QWORD(UnwindParams, SourceAddress);
-#endif
-            SourceAddress += sizeof(ULONG_PTR);
-        }
-
-        SourceAddress = StartingSp + offsetof(T_CONTEXT, F);
-        for (RegIndex = 0; RegIndex < 32; RegIndex++) {
-            UPDATE_FP_CONTEXT_POINTERS(UnwindParams, RegIndex, SourceAddress);
-            ContextRecord->F[RegIndex] = MEMORY_READ_QWORD(UnwindParams, SourceAddress);
-            SourceAddress += 2 * sizeof(ULONGLONG);
-        }
-
-        //
-        // Restore SP, RA, PC, and the status registers
-        //
-
-        SourceAddress = StartingSp + offsetof(T_CONTEXT, Fp);
-        ContextRecord->Fp = MEMORY_READ_QWORD(UnwindParams, SourceAddress);
-
-        SourceAddress = StartingSp + offsetof(T_CONTEXT, Sp);
-        ContextRecord->Sp = MEMORY_READ_QWORD(UnwindParams, SourceAddress);
-
-        SourceAddress = StartingSp + offsetof(T_CONTEXT, Pc);
-        ContextRecord->Pc = MEMORY_READ_QWORD(UnwindParams, SourceAddress);
-
-        SourceAddress = StartingSp + offsetof(T_CONTEXT, Fcsr);
-        ContextRecord->Fcsr = MEMORY_READ_DWORD(UnwindParams, SourceAddress);
-
-        //
-        // Inherit the unwound-to-call flag from this context
-        //
-
-        SourceAddress = StartingSp + offsetof(T_CONTEXT, ContextFlags);
-        ContextRecord->ContextFlags &= ~CONTEXT_UNWOUND_TO_CALL;
-        ContextRecord->ContextFlags |=
-                        MEMORY_READ_DWORD(UnwindParams, SourceAddress) & CONTEXT_UNWOUND_TO_CALL;
-        break;
-
-    default:
-        return STATUS_UNSUCCESSFUL;
-    }
-
-    return STATUS_SUCCESS;
-}
 
 ULONG
 RtlpComputeScopeSize(
@@ -857,7 +596,7 @@ ExecuteCodes:
         // alloc_m (11000xxx|xxxxxxxx): allocate large stack with size < 32k (2^11 * 16).
         //
 
-        else if (CurCode <= 0xc7) {
+        else if ((CurCode & 0xf8) == 0xc0) {
             if (AccumulatedSaveNexts != 0) {
                 return STATUS_UNWIND_INVALID_SEQUENCE;
             }
@@ -890,7 +629,7 @@ ExecuteCodes:
         // save_freg (1101110x|xxxxzzzz|zzzzzzzz): save reg f(8+#X) at [sp+#Z*8], offset <= 32767
         //
 
-        else if ((CurCode & 0xdc) == 0xdc) {
+        else if ((CurCode & 0xfe) == 0xdc) {
             if (AccumulatedSaveNexts != 0) {
                 return STATUS_UNWIND_INVALID_SEQUENCE;
             }
@@ -981,18 +720,6 @@ ExecuteCodes:
         }
 
         //
-        // custom_0 (111010xx): restore custom structure
-        //
-
-        else if (CurCode >= 0xe8 && CurCode <= 0xeb) {
-            if (AccumulatedSaveNexts != 0) {
-                return STATUS_UNWIND_INVALID_SEQUENCE;
-            }
-            Status = RtlpUnwindCustom(ContextRecord, (BYTE) CurCode, UnwindParams);
-            FinalPcFromRa = FALSE;
-        }
-
-        //
         // Anything else is invalid
         //
 
@@ -1028,332 +755,6 @@ finished:
     return Status;
 }
 
-NTSTATUS
-RtlpUnwindFunctionCompact(
-    _In_ DWORD64 ControlPcRva,
-    _In_ PT_RUNTIME_FUNCTION FunctionEntry,
-    __inout T_CONTEXT *ContextRecord,
-    _Out_ PDWORD64 EstablisherFrame,
-    __deref_opt_out_opt PEXCEPTION_ROUTINE *HandlerRoutine,
-    _Out_ PVOID *HandlerData,
-    _In_ PRISCV64_UNWIND_PARAMS UnwindParams
-    )
-
-/*++
-
-Routine Description:
-
-    This function virtually unwinds the specified function by parsing the
-    compact .pdata record to determine where in the function the provided
-    ControlPc is, and then executing a standard, well-defined set of
-    operations.
-
-    If a context pointers record is specified (in the UnwindParams), then
-    the address where each nonvolatile register is restored from is recorded
-    in the appropriate element of the context pointers record.
-
-Arguments:
-
-    ControlPcRva - Supplies the address where control left the specified
-        function, as an offset relative to the ImageBase.
-
-    FunctionEntry - Supplies the address of the function table entry for the
-        specified function. If appropriate, this should have already been
-        probed.
-
-    ContextRecord - Supplies the address of a context record.
-
-    EstablisherFrame - Supplies a pointer to a variable that receives the
-        the establisher frame pointer value.
-
-    HandlerRoutine - Supplies an optional pointer to a variable that receives
-        the handler routine address.  If control did not leave the specified
-        function in either the prolog or an epilog and a handler of the
-        proper type is associated with the function, then the address of the
-        language specific exception handler is returned. Otherwise, NULL is
-        returned.
-
-    HandlerData - Supplies a pointer to a variable that receives a pointer
-        the language handler data.
-
-    UnwindParams - Additional parameters shared with caller.
-
-Return Value:
-
-    STATUS_SUCCESS if the unwind could be completed, a failure status otherwise.
-    Unwind can only fail when validation bounds are specified.
-
---*/
-
-{
-    ULONG Count;
-    ULONG Cr;
-    ULONG CurrentOffset;
-    ULONG EpilogLength;
-    ULONG Flag;
-    ULONG FloatSize;
-    ULONG FrameSize;
-    ULONG FRegOpcodes;
-    ULONG FunctionLength;
-    ULONG HBit;
-    ULONG HOpcodes;
-    ULONG IRegOpcodes;
-    ULONG IntSize;
-    ULONG LocalSize;
-    DWORD64 OffsetInFunction;
-    DWORD64 OffsetInScope;
-    ULONG PrologLength;
-    ULONG RegF;
-    ULONG RegI;
-    ULONG RegSize;
-    ULONG ScopeStart;
-    ULONG StackAdjustOpcodes;
-    NTSTATUS Status;
-    ULONG UnwindData;
-
-    UnwindData = FunctionEntry->UnwindData;
-    Status = STATUS_SUCCESS;
-
-    //
-    // Compact records always describe an unwind to a call.
-    //
-
-    ContextRecord->ContextFlags |= CONTEXT_UNWOUND_TO_CALL;
-
-    //
-    // Extract the basic information about how to do a full unwind.
-    //
-
-    Flag = UnwindData & 3;
-    FunctionLength = (UnwindData >> 2) & 0x7ff;
-    RegF = (UnwindData >> 13) & 7;
-    RegI = (UnwindData >> 16) & 0xf;
-    HBit = (UnwindData >> 20) & 1;
-    Cr = (UnwindData >> 21) & 3;
-    FrameSize = (UnwindData >> 23) & 0x1ff;
-
-    assert(!"---------------RISCV64 ShouldNotReachHere");
-    if (Flag == 3) {
-        return STATUS_UNWIND_INVALID_SEQUENCE;
-    }
-    if (Cr == 2) {
-        return STATUS_UNWIND_INVALID_SEQUENCE;
-    }
-
-    //
-    // Determine the size of the locals
-    //
-
-    IntSize = RegI * 8;
-    if (Cr == 1) {
-        IntSize += 8;
-    }
-    FloatSize = (RegF == 0) ? 0 : (RegF + 1) * 8;
-    RegSize = (IntSize + FloatSize + 8*8 * HBit + 0xf) & ~0xf;
-    if (RegSize > 16 * FrameSize) {
-        return STATUS_UNWIND_INVALID_SEQUENCE;
-    }
-    LocalSize = 16 * FrameSize - RegSize;
-
-    //
-    // If we're near the start of the function (within 17 words),
-    // see if we are within the prolog.
-    //
-    // N.B. If the low 2 bits of the UnwindData are 2, then we have
-    // no prolog.
-    //
-
-    OffsetInFunction = (ControlPcRva - FunctionEntry->BeginAddress) / 4;
-    OffsetInScope = 0;
-    if (OffsetInFunction < 17 && Flag != 2) {
-
-        //
-        // Compute sizes for each opcode in the prolog.
-        //
-
-        IRegOpcodes = (IntSize + 8) / 16;
-        FRegOpcodes = (FloatSize + 8) / 16;
-        HOpcodes = 4 * HBit;
-        StackAdjustOpcodes = (Cr == 3) ? 1 : 0;
-        if (Cr != 3 || LocalSize > 512) {
-            StackAdjustOpcodes += (LocalSize > 4088) ? 2 : (LocalSize > 0) ? 1 : 0;
-        }
-
-        //
-        // Compute the total prolog length and determine if we are within
-        // its scope.
-        //
-        // N.B. We must execute prolog operations backwards to unwind, so
-        // our final scope offset in this case is the distance from the end.
-        //
-
-        PrologLength = IRegOpcodes + FRegOpcodes + HOpcodes + StackAdjustOpcodes;
-
-        if (OffsetInFunction < PrologLength) {
-            OffsetInScope = PrologLength - OffsetInFunction;
-        }
-    }
-
-    //
-    // If we're near the end of the function (within 15 words), see if
-    // we are within the epilog.
-    //
-    // N.B. If the low 2 bits of the UnwindData are 2, then we have
-    // no epilog.
-    //
-
-    if (OffsetInScope == 0 && OffsetInFunction + 15 >= FunctionLength && Flag != 2) {
-
-        //
-        // Compute sizes for each opcode in the epilog.
-        //
-
-        IRegOpcodes = (IntSize + 8) / 16;
-        FRegOpcodes = (FloatSize + 8) / 16;
-        HOpcodes = HBit;
-        StackAdjustOpcodes = (Cr == 3) ? 1 : 0;
-        if (Cr != 3 || LocalSize > 512) {
-            StackAdjustOpcodes += (LocalSize > 4088) ? 2 : (LocalSize > 0) ? 1 : 0;
-        }
-
-        //
-        // Compute the total epilog length and determine if we are within
-        // its scope.
-        //
-
-        EpilogLength = IRegOpcodes + FRegOpcodes + HOpcodes + StackAdjustOpcodes + 1;
-
-        ScopeStart = FunctionLength - EpilogLength;
-        if (OffsetInFunction > ScopeStart) {
-            OffsetInScope = OffsetInFunction - ScopeStart;
-        }
-    }
-
-    //
-    // Process operations backwards, in the order: stack/frame deallocation,
-    // VFP register popping, integer register popping, parameter home
-    // area recovery.
-    //
-    // First case is simple: we process everything with no regard for
-    // the current offset within the scope.
-    //
-
-    Status = STATUS_SUCCESS;
-    if (OffsetInScope == 0) {
-
-        if (Cr == 3) {
-            Status = RtlpUnwindRestoreRegisterRange(ContextRecord, 0, 22, 1, UnwindParams);///fp
-            assert(Status == STATUS_SUCCESS);
-            Status = RtlpUnwindRestoreRegisterRange(ContextRecord, 0, 1, 1, UnwindParams);//ra
-        }
-        ContextRecord->Sp += LocalSize;
-
-        if (RegF != 0 && Status == STATUS_SUCCESS) {
-            Status = RtlpUnwindRestoreFpRegisterRange(ContextRecord, IntSize, 24, RegF + 1, UnwindParams);//fs0
-        }
-
-        if (Cr == 1 && Status == STATUS_SUCCESS) {
-            Status = RtlpUnwindRestoreRegisterRange(ContextRecord, IntSize - 8, 1, 1, UnwindParams);//ra
-        }
-        if (RegI > 0 && Status == STATUS_SUCCESS) {
-            Status = RtlpUnwindRestoreRegisterRange(ContextRecord, 0, 23, RegI, UnwindParams);//s0
-        }
-        ContextRecord->Sp += RegSize;
-    }
-
-    //
-    // Second case is more complex: we must step along each operation
-    // to ensure it should be executed.
-    //
-
-    else {
-
-        CurrentOffset = 0;
-        if (Cr == 3) {
-            if (LocalSize <= 512) {
-                if (CurrentOffset++ >= OffsetInScope) {
-                    Status = RtlpUnwindRestoreRegisterRange(ContextRecord, -(LONG)LocalSize, 22, 1, UnwindParams);
-                    Status = RtlpUnwindRestoreRegisterRange(ContextRecord, -(LONG)LocalSize, 1, 1, UnwindParams);
-                }
-                LocalSize = 0;
-            }
-        }
-        while (LocalSize != 0) {
-            Count = (LocalSize + 4087) % 4088 + 1;
-            if (CurrentOffset++ >= OffsetInScope) {
-                ContextRecord->Sp += Count;
-            }
-            LocalSize -= Count;
-        }
-
-        if (HBit != 0) {
-            CurrentOffset += 4;
-        }
-
-        if (RegF != 0 && Status == STATUS_SUCCESS) {
-            RegF++;
-            while (RegF != 0) {
-                Count = 2 - (RegF & 1);
-                RegF -= Count;
-                if (CurrentOffset++ >= OffsetInScope) {
-                    Status = RtlpUnwindRestoreFpRegisterRange(
-                               ContextRecord,
-                               (RegF == 0 && RegI == 0) ? (-(LONG)RegSize) : (IntSize + 8 * RegF),
-                               24 + RegF,
-                               Count,
-                               UnwindParams);
-                }
-            }
-        }
-
-        if (Cr == 1 && Status == STATUS_SUCCESS) {
-            if (RegI % 2 == 0) {
-                if (CurrentOffset++ >= OffsetInScope) {
-                    Status = RtlpUnwindRestoreRegisterRange(ContextRecord, IntSize - 8, 31, 1, UnwindParams);//s8 ?
-                }
-            } else {
-                if (CurrentOffset++ >= OffsetInScope) {
-                    RegI--;
-                    Status = RtlpUnwindRestoreRegisterRange(ContextRecord, IntSize - 8, 2, 1, UnwindParams);//tp ?
-                    if (Status == STATUS_SUCCESS) {
-                        Status = RtlpUnwindRestoreRegisterRange(ContextRecord, IntSize - 16, 23 + RegI, 1, UnwindParams);
-                    }
-                }
-            }
-        }
-
-        while (RegI != 0 && Status == STATUS_SUCCESS) {
-            Count = 2 - (RegI & 1);
-            RegI -= Count;
-            if (CurrentOffset++ >= OffsetInScope) {
-                Status = RtlpUnwindRestoreRegisterRange(
-                            ContextRecord,
-                            (RegI == 0) ? (-(LONG)RegSize) : (8 * RegI),
-                            23 + RegI,
-                            Count,
-                            UnwindParams);
-            }
-        }
-    }
-
-    //
-    // If we succeeded, post-process the results a bit
-    //
-
-    if (Status == STATUS_SUCCESS) {
-
-        ContextRecord->Pc = ContextRecord->Ra;
-        *EstablisherFrame = ContextRecord->Sp;
-
-        if (ARGUMENT_PRESENT(HandlerRoutine)) {
-            *HandlerRoutine = NULL;
-        }
-        *HandlerData = NULL;
-    }
-
-    return Status;
-}
-
 BOOL OOPStackUnwinderRISCV64::Unwind(T_CONTEXT * pContext)
 {
     DWORD64 ImageBase = 0;
@@ -1372,28 +773,15 @@ BOOL OOPStackUnwinderRISCV64::Unwind(T_CONTEXT * pContext)
     if (FAILED(GetFunctionEntry(pContext->Pc, &Rfe, sizeof(Rfe))))
         return FALSE;
 
-    if ((Rfe.UnwindData & 3) != 0)
-    {
-        hr = RtlpUnwindFunctionCompact(pContext->Pc - ImageBase,
-                                        &Rfe,
-                                        pContext,
-                                        &DummyEstablisherFrame,
-                                        &DummyHandlerRoutine,
-                                        &DummyHandlerData,
-                                        NULL);
-
-    }
-    else
-    {
-        hr = RtlpUnwindFunctionFull(pContext->Pc - ImageBase,
-                                    ImageBase,
-                                    &Rfe,
-                                    pContext,
-                                    &DummyEstablisherFrame,
-                                    &DummyHandlerRoutine,
-                                    &DummyHandlerData,
-                                    NULL);
-    }
+    assert((Rfe.UnwindData & 3) == 0);
+    hr = RtlpUnwindFunctionFull(pContext->Pc - ImageBase,
+                                ImageBase,
+                                &Rfe,
+                                pContext,
+                                &DummyEstablisherFrame,
+                                &DummyHandlerRoutine,
+                                &DummyHandlerData,
+                                NULL);
 
     // PC == 0 means unwinding is finished.
     // Same if no forward progress is made
@@ -1448,28 +836,15 @@ RtlVirtualUnwind(
     RISCV64_UNWIND_PARAMS unwindParams;
     unwindParams.ContextPointers = ContextPointers;
 
-    if ((rfe.UnwindData & 3) != 0)
-    {
-        hr = RtlpUnwindFunctionCompact(ControlPc - ImageBase,
-                                        &rfe,
-                                        ContextRecord,
-                                        EstablisherFrame,
-                                        &handlerRoutine,
-                                        HandlerData,
-                                        &unwindParams);
-
-    }
-    else
-    {
-        hr = RtlpUnwindFunctionFull(ControlPc - ImageBase,
-                                    ImageBase,
-                                    &rfe,
-                                    ContextRecord,
-                                    EstablisherFrame,
-                                    &handlerRoutine,
-                                    HandlerData,
-                                    &unwindParams);
-    }
+    assert((rfe.UnwindData & 3) == 0);
+    hr = RtlpUnwindFunctionFull(ControlPc - ImageBase,
+                                ImageBase,
+                                &rfe,
+                                ContextRecord,
+                                EstablisherFrame,
+                                &handlerRoutine,
+                                HandlerData,
+                                &unwindParams);
 
     return handlerRoutine;
 }

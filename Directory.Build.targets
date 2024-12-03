@@ -10,6 +10,7 @@
   <Import Project="$(RepositoryEngineeringDir)Analyzers.targets" />
   <Import Project="Sdk.targets" Sdk="Microsoft.DotNet.Arcade.Sdk" />
   <Import Project="$(RepositoryEngineeringDir)liveBuilds.targets" />
+  <Import Project="$(RepositoryEngineeringDir)toolAot.targets" />
   <Import Project="$(RepositoryEngineeringDir)generators.targets" />
   <Import Project="$(RepositoryEngineeringDir)python.targets" />
   <Import Project="$(RepositoryEngineeringDir)generatorProjects.targets" Condition="'$(IsGeneratorProject)' == 'true'" />
@@ -40,6 +41,7 @@
       unconditionally in Microsoft.NETCoreSdk.BundledVersions.props.
     -->
     <NETCoreAppMaximumVersion>$(NetCoreAppCurrentVersion)</NETCoreAppMaximumVersion>
+    <UnsupportedTargetFrameworkVersion>$([MSBuild]::Add('$(NETCoreAppMaximumVersion.Split('.')[0])', '1')).0</UnsupportedTargetFrameworkVersion>
     <!-- SDK sets product to assembly but we want it to be our product name -->
     <Product>Microsoft%AE .NET</Product>
     <!-- Use the .NET product branding version for informational version description -->
@@ -193,30 +195,4 @@
       <Analyzer Remove="@(_targetingPackExcludedAnalyzerReferenceWithProjectName->Metadata('OriginalIdentity'))" />
     </ItemGroup>
   </Target>
-
-  <!--
-    Arcade SDK versioning is defined by static properties in a targets file: work around this by
-    moving properties based on versioning into a target.
-  -->
-  <Target Name="GetProductVersions">
-    <PropertyGroup>
-      <IncludePreReleaseLabelInPackageVersion Condition="'$(DotNetFinalVersionKind)' != 'release'">true</IncludePreReleaseLabelInPackageVersion>
-      <IncludePreReleaseLabelInPackageVersion Condition="'$(SuppressFinalPackageVersion)' == 'true'">true</IncludePreReleaseLabelInPackageVersion>
-      <IncludePreReleaseLabelInPackageVersion Condition="'$(IsShipping)' != 'true'">true</IncludePreReleaseLabelInPackageVersion>
-
-      <IncludeBuildNumberInPackageVersion Condition="'$(StabilizePackageVersion)' != 'true'">true</IncludeBuildNumberInPackageVersion>
-      <IncludeBuildNumberInPackageVersion Condition="'$(SuppressFinalPackageVersion)' == 'true'">true</IncludeBuildNumberInPackageVersion>
-      <IncludeBuildNumberInPackageVersion Condition="'$(IsShipping)' != 'true'">true</IncludeBuildNumberInPackageVersion>
-
-      <ProductVersionSuffix Condition="'$(IncludePreReleaseLabelInPackageVersion)' == 'true'">-$(VersionSuffix)</ProductVersionSuffix>
-      <ProductBandVersion Condition="'$(ProductBandVersion)' == ''">$(MajorVersion).$(MinorVersion)</ProductBandVersion>
-      <ProductionVersion Condition="'$(ProductionVersion)' == ''">$(ProductBandVersion).$(PatchVersion)</ProductionVersion>
-      <ProductVersion>$(ProductionVersion)$(ProductVersionSuffix)</ProductVersion>
-
-      <SharedFrameworkNugetVersion>$(ProductVersion)</SharedFrameworkNugetVersion>
-      <NuGetVersion>$(SharedFrameworkNugetVersion)</NuGetVersion>
-      <InstallersRelativePath>Runtime/$(SharedFrameworkNugetVersion)/</InstallersRelativePath>
-    </PropertyGroup>
-  </Target>
-
 </Project>

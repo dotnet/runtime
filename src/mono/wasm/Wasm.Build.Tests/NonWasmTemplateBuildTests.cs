@@ -67,9 +67,13 @@ public class NonWasmTemplateBuildTests : TestMainJsTestBase
         )
         .MultiplyWithSingleArgs
         (
-            "net6.0",
-            s_previousTargetFramework,
-            s_latestTargetFramework
+            EnvironmentVariables.WorkloadsTestPreviousVersions
+                ? [
+                    "net6.0",
+                    s_previousTargetFramework,
+                    s_latestTargetFramework
+                ]
+                : [s_latestTargetFramework]
         )
         .UnwrapItemsAsArrays().ToList();
 

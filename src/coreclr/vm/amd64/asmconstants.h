@@ -111,11 +111,12 @@ ASMCONSTANTS_C_ASSERT(OFFSETOF__Thread__m_pFrame
 #define Thread_m_pFrame OFFSETOF__Thread__m_pFrame
 
 
-#define               OFFSETOF__gc_alloc_context__alloc_ptr 0x0
-ASMCONSTANT_OFFSETOF_ASSERT(gc_alloc_context, alloc_ptr);
+#define               OFFSETOF__ee_alloc_context__alloc_ptr 0x8
+ASMCONSTANTS_C_ASSERT(OFFSETOF__ee_alloc_context__alloc_ptr == offsetof(ee_alloc_context, m_GCAllocContext) +
+                                                               offsetof(gc_alloc_context, alloc_ptr));
 
-#define               OFFSETOF__gc_alloc_context__alloc_limit 0x8
-ASMCONSTANT_OFFSETOF_ASSERT(gc_alloc_context, alloc_limit);
+#define               OFFSETOF__ee_alloc_context__m_CombinedLimit 0x0
+ASMCONSTANTS_C_ASSERT(OFFSETOF__ee_alloc_context__m_CombinedLimit == offsetof(ee_alloc_context, m_CombinedLimit));
 
 #define               OFFSETOF__ThreadExceptionState__m_pCurrentTracker 0x000
 ASMCONSTANTS_C_ASSERT(OFFSETOF__ThreadExceptionState__m_pCurrentTracker
@@ -184,6 +185,10 @@ ASMCONSTANTS_C_ASSERT(SIZEOF__InterfaceInfo_t
 
 ASMCONSTANTS_C_ASSERT(MethodTableAuxiliaryData::enum_flag_Initialized == 0x1);
 
+#define                OFFSETOF__DynamicStaticsInfo__m_pMethodTable 0x10
+ASMCONSTANTS_C_ASSERT(OFFSETOF__DynamicStaticsInfo__m_pMethodTable
+                    == offsetof(DynamicStaticsInfo, m_pMethodTable));
+
 #define                OFFSETOF__DynamicStaticsInfo__m_pNonGCStatics 0x8
 ASMCONSTANTS_C_ASSERT(OFFSETOF__DynamicStaticsInfo__m_pNonGCStatics
                     == offsetof(DynamicStaticsInfo, m_pNonGCStatics));
@@ -233,8 +238,15 @@ ASMCONSTANTS_C_ASSERT(OFFSETOF__VASigCookie__pNDirectILStub
 
 #if defined(UNIX_AMD64_ABI) && !defined(HOST_WINDOWS)
 // Expression is too complicated, is currently:
-//     (8*6 + 4*2 + 2*6 + 4 + 8*6 + 8*16 + 8 + /*XMM_SAVE_AREA32*/(2*2 + 1*2 + 2 + 4 + 2*2 + 4 + 2*2 + 4*2 + 16*8 + 16*16 + 1*96) + 26*16 + 8 + 8*5 + /*XSTATE*/ + 8 + 8 + /*XSTATE_AVX*/ 16*16 + /*XSTATE_AVX512_KMASK*/ 8*8 + /*XSTATE_AVX512_ZMM_H*/ 32*16 + /*XSTATE_AVX512_ZMM*/ 64*16)
-#define               SIZEOF__CONTEXT                 (3104)
+//     (8*6 + 4*2 + 2*6 + 4 + 8*6 + 8*16 + 8 + 
+//      /*XMM_SAVE_AREA32*/(2*2 + 1*2 + 2 + 4 + 2*2 + 4 + 2*2 + 4*2 + 16*8 + 16*16 + 1*96) + 26*16 + 8 + 8*5 + 
+//      /*XSTATE*/ + 8 + 8 + 
+//      /*XSTATE_AVX*/ 16*16 + 
+//      /*XSTATE_AVX512_KMASK*/ 8*8 + 
+//      /*XSTATE_AVX512_ZMM_H*/ 32*16 + 
+//      /*XSTATE_AVX512_ZMM*/ 64*16 + 
+//      /*XSTATE_APX*/ 8*16)
+#define               SIZEOF__CONTEXT                 (3232)
 #else
 // Expression is too complicated, is currently:
 //     (8*6 + 4*2 + 2*6 + 4 + 8*6 + 8*16 + 8 + /*XMM_SAVE_AREA32*/(2*2 + 1*2 + 2 + 4 + 2*2 + 4 + 2*2 + 4*2 + 16*8 + 16*16 + 1*96) + 26*16 + 8 + 8*5)

@@ -322,6 +322,10 @@ namespace System
         public static string Create<TState>(int length, TState state, SpanAction<char, TState> action)
             where TState : allows ref struct
         {
+            // To support interop scenarios, the underlying buffer is guaranteed to be at least 1 greater than represented by the span parameter of the action callback.
+            // This additional index represents the null-terminator and, if written, that is the only value supported.
+            // Writing any value other than the null-terminator corrupts the string and is considered undefined behavior.
+
             if (action is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.action);

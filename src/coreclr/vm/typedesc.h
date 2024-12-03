@@ -204,7 +204,7 @@ public:
 
     // internal RuntimeType object handle
     RUNTIMETYPEHANDLE m_hExposedClassObject;
-    template<typename T> friend struct ::cdac_data;
+    friend struct ::cdac_data<TypeDesc>;
 };
 
 template<>
@@ -269,7 +269,7 @@ protected:
 
     // The type that is being modified
     TypeHandle        m_Arg;
-    template<typename T> friend struct ::cdac_data;
+    friend struct ::cdac_data<ParamTypeDesc>;
 };
 
 template<>
@@ -395,7 +395,7 @@ protected:
     // index within declaring type or method, numbered from zero
     unsigned int m_index;
 
-    template<typename T> friend struct ::cdac_data;
+    friend struct ::cdac_data<TypeVarTypeDesc>;
 };
 
 template<>
@@ -495,7 +495,7 @@ protected:
     // Return type first, then argument types
     TypeHandle m_RetAndArgTypes[1];
 
-    template<typename T> friend struct ::cdac_data;
+    friend struct ::cdac_data<FnPtrTypeDesc>;
 }; // class FnPtrTypeDesc
 
 template<>
