@@ -734,13 +734,15 @@ namespace System.Reflection.Emit
                 {
                     case FieldInfo field:
                         Type declaringType = field.DeclaringType!;
-                        if (field.DeclaringType!.IsGenericTypeDefinition)
+                        if (declaringType.IsGenericTypeDefinition)
                         {
                             //The type of the field has to be fully instantiated type.
                             declaringType = declaringType.MakeGenericType(declaringType.GetGenericArguments());
                         }
+
                         memberHandle = AddMemberReference(field.Name, GetTypeHandle(declaringType),
-                            MetadataSignatureHelper.GetFieldSignature(field.FieldType, field.GetRequiredCustomModifiers(), field.GetOptionalCustomModifiers(), this));
+                            MetadataSignatureHelper.GetFieldSignature(GetFieldType(field), field.GetRequiredCustomModifiers(), field.GetOptionalCustomModifiers(), this));
+
                         break;
                     case ConstructorInfo ctor:
                         ctor = (ConstructorInfo)GetOriginalMemberIfConstructedType(ctor);
@@ -770,6 +772,26 @@ namespace System.Reflection.Emit
             }
 
             return memberHandle;
+
+            // The field type has to be the original open generic field type, not the closed type.
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern", Justification = "Internal reflection implementation")]
+            static Type GetFieldType(FieldInfo fieldInfo)
+            {
+                if (fieldInfo.DeclaringType!.IsGenericType)
+                {
+                    fieldInfo = fieldInfo.DeclaringType!.GetGenericTypeDefinition().GetField(fieldInfo.Name, GetBindingFlags(fieldInfo))!;
+                }
+
+                return fieldInfo.FieldType;
+
+                static BindingFlags GetBindingFlags(FieldInfo fieldInfo)
+                {
+                    BindingFlags flags = BindingFlags.Default;
+                    flags |= fieldInfo.IsPublic ? BindingFlags.Public : BindingFlags.NonPublic;
+                    flags |= fieldInfo.IsStatic ? BindingFlags.Static : BindingFlags.Instance;
+                    return flags;
+                }
+            }
         }
 
         private EntityHandle GetMethodReference(MethodInfo methodInfo, Type[] optionalParameterTypes)
