@@ -29,6 +29,7 @@ namespace System
             return ref typedByRef._value;
 
             [DoesNotReturn]
+            [StackTraceHidden]
             static void ThrowInvalidCastException() => throw new InvalidCastException();
         }
 
