@@ -24,6 +24,8 @@ This is a list of additions and edits to be made in ECMA-335 specifications. It 
 - [Creating arrays using newobj](#creating-arrays-using-newobj)
 - [API documentation](#api-documentation)
 - [Debug Interchange Format](#debug-interchange-format)
+- [Instance construction](#instance-construction)
+- [Type initialization](#type-initialization)
 
 ## Signatures
 
@@ -1102,3 +1104,19 @@ The incorrect description of `System.Array.Initialize` API in section "II.13.2 I
 ## Debug Interchange Format
 
 The Debug Interchange Format described in partition V is superseded by the [Portable PDB Format](PortablePdb-Metadata.md).
+
+## Instance construction
+
+The following is added to the section "II.10.5.1 Instance constructor":
+
+> Instance constructors shall not be executed multiple times for a single object instance. Explicit calls to constructors from user code are only permitted when calling instance constructors of the base type inside of instance constructors of the derrived type.
+
+## Type initialization
+
+The following is added to the section "II.10.5.3 Type initializer":
+
+> Type initializers shall not be called explicitly from user code. Users intending to guarantee them running at a particular timing shall use the `System.Runtime.CompilerServices.RuntimeHelpers.RunClassConstructor` method.
+
+Section "II.10.5.3.1 Type initialization guarantees" is changed so that the guarantee number 3 now states the following:
+
+> A type initializer shall be executed exactly once for any given type, unless the previous attempt resulted in a `System.TypeInitializationException` being thrown at the location that triggered it.
