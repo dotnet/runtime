@@ -543,7 +543,8 @@ CDAC_TYPE_END(ProfControlBlock)
 
 #ifdef HAVE_GCCOVER
 CDAC_TYPE_BEGIN(GCCoverageInfo)
-CDAC_TYPE_FIELD(GCCoverageInfo, /*pointer*/, SavedCode, offsetof(GCCoverageInfo, SavedCode))
+CDAC_TYPE_INDETERMINATE(GCCoverageInfo)
+CDAC_TYPE_FIELD(GCCoverageInfo, /*pointer*/, SavedCode, offsetof(GCCoverageInfo, savedCode))
 CDAC_TYPE_END(GCCoverageInfo)
 #endif // HAVE_GCCOVER
 

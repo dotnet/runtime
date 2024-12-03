@@ -37,6 +37,7 @@ internal sealed class CachingContractRegistry : ContractRegistry
             [typeof(IPlatformMetadata)] = new PlatformMetadataFactory(),
             [typeof(IPrecodeStubs)] = new PrecodeStubsFactory(),
             [typeof(IReJIT)] = new ReJITFactory(),
+            [typeof(IGCCover)] = new GCCoverFactory(),
         };
         configureFactories?.Invoke(_factories);
     }

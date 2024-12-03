@@ -20,7 +20,7 @@ internal sealed class MethodDesc : IData<MethodDesc>
         CodeData = target.ReadPointer(address + (ulong)type.Fields[nameof(CodeData)].Offset);
         if (type.Fields.ContainsKey(nameof(GCCoverageInfo)))
         {
-            GCCoverageInfo = target.Read<byte>(address + (ulong)type.Fields[nameof(GCCoverageInfo)].Offset);
+            GCCoverageInfo = target.ReadPointer(address + (ulong)type.Fields[nameof(GCCoverageInfo)].Offset);
         }
     }
 

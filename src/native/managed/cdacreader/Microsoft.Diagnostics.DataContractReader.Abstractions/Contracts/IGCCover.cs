@@ -7,6 +7,8 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
 internal interface IGCCover : IContract
 {
+    static string IContract.Name { get; } = nameof(GCCover);
+
     public virtual TargetPointer? GetGCCoverageInfo(NativeCodeVersionHandle codeVersionHandle) => throw new NotImplementedException();
 }
 
