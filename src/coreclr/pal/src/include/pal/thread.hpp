@@ -24,7 +24,6 @@ Abstract:
 #include "cs.hpp"
 
 #include <pthread.h>
-#include <sys/syscall.h>
 #if HAVE_MACH_EXCEPTIONS
 #include <mach/mach.h>
 #endif // HAVE_MACH_EXCEPTIONS
