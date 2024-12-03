@@ -2136,7 +2136,7 @@ ScevAddRec* StrengthReductionContext::ComputeRephrasableIV(ScevAddRec* iv1,
                                                       allowRephrasingByScalingIV2);
     }
 
-    if (iv2->Type == TYP_LONG)
+    if (iv1->Type == TYP_LONG)
     {
         return ComputeRephrasableIVByScaling<int64_t>(iv1, allowRephrasingByScalingIV1, iv2,
                                                       allowRephrasingByScalingIV2);
