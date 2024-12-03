@@ -26,7 +26,7 @@ namespace ILCompiler
         }
 
         public void AddExportedMethods(IEnumerable<EcmaMethod> methods)
-            => _methods.AddRange(methods.Where(m => m.Module != _context.SystemModule));
+            => _methods.AddRange(methods);
 
         public void EmitExportedMethods()
         {
