@@ -344,7 +344,7 @@ DEFINE_METHOD(RT_TYPE_HANDLE,       ALLOCATECOMOBJECT,      AllocateComObject,  
 #endif
 DEFINE_FIELD(RT_TYPE_HANDLE,        M_TYPE,                 m_type)
 
-DEFINE_CLASS(TYPED_REFERENCE,  System,           TypedReference)
+// DEFINE_CLASS(TYPED_REFERENCE,  System,           TypedReference)
 DEFINE_METHOD(TYPED_REFERENCE, GETREFANY,        GetRefAny,                   NoSig)
 
 DEFINE_CLASS(TYPE_NAME_RESOLVER,    Reflection,             TypeNameResolver)
