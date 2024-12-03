@@ -75,7 +75,7 @@ namespace Mono.Linker.Tests.TestCases
 				// Skip for now
 				break;
 			case "ObjectGetTypeLibraryMode":
-                	case "TypeHierarchyLibraryModeSuppressions":
+			case "TypeHierarchyLibraryModeSuppressions":
 				// No Library mode
 				break;
 			default:
