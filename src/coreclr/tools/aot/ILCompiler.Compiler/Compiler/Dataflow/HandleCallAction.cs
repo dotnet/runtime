@@ -16,7 +16,6 @@ using Internal.IL;
 using DependencyList = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencyList;
 using MultiValue = ILLink.Shared.DataFlow.ValueSet<ILLink.Shared.DataFlow.SingleValue>;
 using WellKnownType = ILLink.Shared.TypeSystemProxy.WellKnownType;
-using System;
 
 #nullable enable
 
