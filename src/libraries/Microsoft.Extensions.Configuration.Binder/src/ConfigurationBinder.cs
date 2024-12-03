@@ -478,11 +478,8 @@ namespace Microsoft.Extensions.Configuration
                         Debug.Assert(section is not null);
                         throw new InvalidOperationException(SR.Format(SR.Error_FailedBinding, section.Path, type));
                     }
-
-                    return;
                 }
-
-                if (isParentCollection && bindingPoint.Value is null)
+                else if (isParentCollection && bindingPoint.Value is null)
                 {
                     // Try to create the default instance of the type
                     bindingPoint.TrySetValue(CreateInstance(type, config, options, out _));
