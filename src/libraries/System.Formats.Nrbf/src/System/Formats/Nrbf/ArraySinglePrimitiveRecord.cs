@@ -136,7 +136,7 @@ internal sealed class ArraySinglePrimitiveRecord<T> : SZArrayRecord<T>
         {
             if (typeof(T) == typeof(short) || typeof(T) == typeof(ushort))
             {
-                Span<short> span = MemoryMarshal.Cast<T, short>(result);
+                Span<short> span = MemoryMarshal.Cast<T, short>(result.AsSpan());
 #if NET
                 BinaryPrimitives.ReverseEndianness(span, span);
 #else
@@ -148,7 +148,7 @@ internal sealed class ArraySinglePrimitiveRecord<T> : SZArrayRecord<T>
             }
             else if (typeof(T) == typeof(int) || typeof(T) == typeof(uint) || typeof(T) == typeof(float))
             {
-                Span<int> span = MemoryMarshal.Cast<T, int>(result);
+                Span<int> span = MemoryMarshal.Cast<T, int>(result.AsSpan());
 #if NET
                 BinaryPrimitives.ReverseEndianness(span, span);
 #else
@@ -160,7 +160,7 @@ internal sealed class ArraySinglePrimitiveRecord<T> : SZArrayRecord<T>
             }
             else if (typeof(T) == typeof(long) || typeof(T) == typeof(ulong) || typeof(T) == typeof(double))
             {
-                Span<long> span = MemoryMarshal.Cast<T, long>(result);
+                Span<long> span = MemoryMarshal.Cast<T, long>(result.AsSpan());
 #if NET
                 BinaryPrimitives.ReverseEndianness(span, span);
 #else
@@ -176,7 +176,7 @@ internal sealed class ArraySinglePrimitiveRecord<T> : SZArrayRecord<T>
         {
             // See DontCastBytesToBooleans test to see what could go wrong.
             bool[] booleans = (bool[])(object)result;
-            resultAsBytes = MemoryMarshal.AsBytes<T>(result);
+            resultAsBytes = MemoryMarshal.AsBytes<T>(result.AsSpan());
             for (int i = 0; i < booleans.Length; i++)
             {
                 // We don't use the bool array to get the value, as an optimizing compiler or JIT could elide this.
