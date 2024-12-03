@@ -59,6 +59,7 @@
 //
 
 #include "jitpch.h"
+#include "rangecheck.h"
 
 //------------------------------------------------------------------------
 // GetConstantValue: If this SSA use refers to a constant, then fetch that
@@ -1579,7 +1580,185 @@ RelopEvaluationResult ScalarEvolutionContext::EvaluateRelop(ValueNum vn)
         }
     }
 
+    return EvaluateRelopViaRangeCheck(vn);
+}
+
+//------------------------------------------------------------------------
+// EvaluateRelopViaRangeCheck:
+//   Invoke range check to try evaluating a relop.
+//
+// Parameters:
+//   vn - The value number for the relop
+//
+// Returns:
+//   The evaluation result.
+//
+RelopEvaluationResult ScalarEvolutionContext::EvaluateRelopViaRangeCheck(ValueNum vn)
+{
+    VNFuncApp vnf;
+    if (!m_comp->vnStore->GetVNFunc(vn, &vnf) || !m_comp->vnStore->IsVNRelop(vn))
+    {
+        return RelopEvaluationResult::Unknown;
+    }
+
+    VNFunc   relop;
+    ValueNum op1;
+    ValueNum op2;
+    if (m_comp->vnStore->IsVNConstant(vnf.m_args[0]))
+    {
+        relop = ValueNumStore::SwapRelop(vnf.m_func);
+        op1   = vnf.m_args[1];
+        op2   = vnf.m_args[0];
+    }
+    else if (m_comp->vnStore->IsVNConstant(vnf.m_args[1]))
+    {
+        relop = vnf.m_func;
+        op1   = vnf.m_args[0];
+        op2   = vnf.m_args[1];
+    }
+    else
+    {
+        return RelopEvaluationResult::Unknown;
+    }
+
+    if (m_comp->vnStore->TypeOfVN(op2) != TYP_INT)
+    {
+        return RelopEvaluationResult::Unknown;
+    }
+
+    int32_t cns = m_comp->vnStore->ConstantValue<int32_t>(op2);
+
+    // No luck, try range check
+    Range length = Range(Limit(Limit::keDependent));
+    RangeCheck::MergeEdgeAssertions(m_comp, op1, ValueNumStore::NoVN, m_loop->GetHeader()->bbAssertionIn, &length,
+                                    false);
+
+    switch (relop)
+    {
+        case VNF_EQ:
+        case VNF_NE:
+        {
+            if (length.lLimit.IsConstant() && (length.lLimit.GetConstant() == cns) && length.uLimit.IsConstant() &&
+                (length.uLimit.GetConstant() == cns))
+            {
+                return relop == VNF_EQ ? RelopEvaluationResult::True : RelopEvaluationResult::False;
+            }
+
+            if ((length.lLimit.IsConstant() && (length.lLimit.GetConstant() > cns)) ||
+                (length.uLimit.IsConstant() && (length.uLimit.GetConstant() < cns)))
+            {
+                return relop == VNF_EQ ? RelopEvaluationResult::False : RelopEvaluationResult::True;
+            }
+
+            break;
+        }
+        case VNF_LT:
+        case VNF_GE:
+        {
+            if (length.uLimit.IsConstant() && (length.uLimit.GetConstant() < cns))
+            {
+                return relop == VNF_LT ? RelopEvaluationResult::True : RelopEvaluationResult::False;
+            }
+
+            if (length.lLimit.IsConstant() && (length.lLimit.GetConstant() >= cns))
+            {
+                return relop == VNF_LT ? RelopEvaluationResult::False : RelopEvaluationResult::True;
+            }
+
+            break;
+        }
+        case VNF_LE:
+        case VNF_GT:
+        {
+            if (length.uLimit.IsConstant() && (length.uLimit.GetConstant() <= cns))
+            {
+                return relop == VNF_LE ? RelopEvaluationResult::True : RelopEvaluationResult::False;
+            }
+
+            if (length.lLimit.IsConstant() && (length.lLimit.GetConstant() > cns))
+            {
+                return relop == VNF_LE ? RelopEvaluationResult::False : RelopEvaluationResult::True;
+            }
+
+            break;
+        }
+        case VNF_LT_UN:
+        case VNF_GE_UN:
+        {
+            Range uRange = Range(Limit(::Limit::keUndef));
+            if (TryGetUnsignedRange(length, &uRange))
+            {
+                if (uRange.lLimit.IsConstant() && ((uint32_t)uRange.lLimit.GetConstant() < (uint32_t)cns))
+                {
+                    return relop == VNF_LT_UN ? RelopEvaluationResult::True : RelopEvaluationResult::False;
+                }
+
+                if (uRange.uLimit.IsConstant() && ((uint32_t)uRange.uLimit.GetConstant() >= (uint32_t)cns))
+                {
+                    return relop == VNF_LT_UN ? RelopEvaluationResult::False : RelopEvaluationResult::True;
+                }
+            }
+
+            break;
+        }
+        case VNF_LE_UN:
+        case VNF_GT_UN:
+            Range uRange = Range(Limit(::Limit::keUndef));
+            if (TryGetUnsignedRange(length, &uRange))
+            {
+                if (uRange.uLimit.IsConstant() && ((uint32_t)uRange.uLimit.GetConstant() <= (uint32_t)cns))
+                {
+                    return relop == VNF_LE ? RelopEvaluationResult::True : RelopEvaluationResult::False;
+                }
+
+                if (uRange.lLimit.IsConstant() && ((uint32_t)uRange.lLimit.GetConstant() > (uint32_t)cns))
+                {
+                    return relop == VNF_LE ? RelopEvaluationResult::False : RelopEvaluationResult::True;
+                }
+            }
+            break;
+    }
+
     return RelopEvaluationResult::Unknown;
+}
+
+//------------------------------------------------------------------------
+// TryGetUnsignedRange:
+//   Convert a signed range into an unsigned range if possible.
+//
+// Parameters:
+//   range         - The signed range
+//   unsignedRange - [out] Equivalent unsigned range
+//
+// Returns:
+//   True if there is a single equivalent unsigned range.
+//
+// Remarks:
+//   Range check (and assertion prop) tracks only signed ranges. A signed range
+//   [x..y] represents an unsigned range
+//     [(uint32_t)x..(uint32_t)y] if x >= 0, y >= 0
+//     [(uint32_t)y..(uint32_t)x] if x < 0, y < 0
+//     [0..(uint32_t)y] U [(uint32_t)x..0xffffffff] if x < 0, y >= 0
+//
+//   To make things easier for ourselves we only handle the x >= 0 and y < 0
+//   cases.
+//
+bool ScalarEvolutionContext::TryGetUnsignedRange(const Range& range, Range* unsignedRange)
+{
+    Limit lLimit;
+    Limit uLimit;
+    if (range.lLimit.IsConstant() && (range.lLimit.GetConstant() >= 0))
+    {
+        *unsignedRange = Range(range.lLimit, range.uLimit);
+        return true;
+    }
+    if (range.uLimit.IsConstant() && (range.uLimit.GetConstant() < 0))
+    {
+        *unsignedRange = Range(range.uLimit, range.lLimit);
+        return true;
+    }
+
+    return false;
 }
 
 //------------------------------------------------------------------------

@@ -240,6 +240,9 @@ class ScalarEvolutionContext
     bool   MayOverflowBeforeExit(ScevAddRec* lhs, Scev* rhs, VNFunc exitOp);
     bool   AddRecMayOverflow(ScevAddRec* addRec, bool signedBound, const SimplificationAssumptions& assumptions);
 
+    RelopEvaluationResult EvaluateRelopViaRangeCheck(ValueNum relop);
+    bool                  TryGetUnsignedRange(const struct Range& range, struct Range* unsignedRange);
+
     bool Materialize(Scev* scev, bool createIR, GenTree** result, ValueNumPair* resultVN);
 
 public:
