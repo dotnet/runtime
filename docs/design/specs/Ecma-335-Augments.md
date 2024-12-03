@@ -1115,7 +1115,7 @@ The following is added to the section "II.10.5.1 Instance constructor":
 
 The following is added to the section "II.10.5.3 Type initializer":
 
-> Type initializers shall not be called explicitly from user code. Users intending to guarantee them running at a particular timing shall use the `System.Runtime.CompilerServices.RuntimeHelpers.RunClassConstructor` method.
+> Type initializers shall not be called explicitly from user code. Users intending to guarantee the type initializer has been executed shall use the `System.Runtime.CompilerServices.RuntimeHelpers.RunClassConstructor` method.
 
 Section "II.10.5.3.1 Type initialization guarantees" is changed so that the guarantee number 3 now states the following:
 
