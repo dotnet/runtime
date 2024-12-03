@@ -2672,6 +2672,14 @@ public:
     //
 
     OBJECTREF Allocate();
+
+    // This flavor of Allocate is more efficient, but can only be used
+    // if CheckInstanceActivated(), IsClassInited() are known to be true.
+    // A sufficient condition is that another instance of the exact same type already
+    // exists in the same ALC. It's currently called only from Delegate.Combine
+    // via RuntimeTypeHandle_InternalAllocNoChecks.
+    OBJECTREF AllocateNoChecks();
+
     OBJECTREF Box(void* data);
     OBJECTREF FastBox(void** data);
 #ifndef DACCESS_COMPILE

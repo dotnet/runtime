@@ -287,6 +287,18 @@ namespace System
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_InternalAlloc")]
         private static unsafe partial void InternalAlloc(MethodTable* pMT, ObjectHandleOnStack result);
 
+        internal static object InternalAllocNoChecks(RuntimeType type)
+        {
+            Debug.Assert(!type.GetNativeTypeHandle().IsTypeDesc);
+            object? result = null;
+            InternalAllocNoChecks(type.GetNativeTypeHandle().AsMethodTable(), ObjectHandleOnStack.Create(ref result));
+            GC.KeepAlive(type);
+            return result!;
+        }
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_InternalAllocNoChecks")]
+        private static unsafe partial void InternalAllocNoChecks(MethodTable* pMT, ObjectHandleOnStack result);
+
         /// <summary>
         /// Given a RuntimeType, returns information about how to activate it via calli
         /// semantics. This method will ensure the type object is fully initialized within

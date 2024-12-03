@@ -1219,6 +1219,26 @@ inline PTR_BYTE MethodTable::GetGCThreadStaticsBasePointer(PTR_Thread pThread)
     return (PTR_BYTE)GetThreadLocalStaticBaseNoCreate(pThread, tlsIndex);
 }
 
+//==========================================================================================
+inline OBJECTREF MethodTable::AllocateNoChecks()
+{
+    CONTRACTL
+    {
+        MODE_COOPERATIVE;
+        GC_TRIGGERS;
+        THROWS;
+    }
+    CONTRACTL_END;
+
+    // We know an instance of this class already exists
+    // therefore, some checks become redundant.
+    // this currently only happens for Delegate.Combine
+
+    CONSISTENCY_CHECK(CheckInstanceActivated());
+
+    return AllocateObject(this);
+}
+
 #ifndef DACCESS_COMPILE
 //==========================================================================================
 // unbox src into dest, No checks are done
