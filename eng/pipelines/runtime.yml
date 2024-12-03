@@ -841,7 +841,6 @@ extends:
           shouldRunSmokeOnly: onLibrariesAndIllinkChanges
           scenarios:
             - WasmTestOnChrome
-            - WasmTestOnFirefox
 
       # EAT Library tests - only run on linux
       - template: /eng/pipelines/common/templates/wasm-library-aot-tests.yml

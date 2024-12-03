@@ -5,10 +5,11 @@ using System.Threading;
 
 namespace System.Runtime.ExceptionServices
 {
-    public delegate bool UnhandledExceptionHandler(System.Exception exception);
-
     public static class ExceptionHandling
     {
-        internal static UnhandledExceptionHandler? s_handler;
+        internal static bool IsHandledByGlobalHandler(Exception ex)
+        {
+            return false;
+        }
     }
 }

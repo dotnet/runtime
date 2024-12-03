@@ -2691,8 +2691,6 @@ static MonoMethod*
 interp_transform_internal_calls (MonoMethod *method, MonoMethod *target_method, MonoMethodSignature *csignature, gboolean is_virtual)
 {
 	if (((method->wrapper_type == MONO_WRAPPER_NONE) || (method->wrapper_type == MONO_WRAPPER_DYNAMIC_METHOD)) && target_method != NULL) {
-		if (target_method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL)
-			target_method = mono_marshal_get_native_wrapper (target_method, FALSE, FALSE);
 		if (!is_virtual && target_method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED)
 			target_method = mono_marshal_get_synchronized_wrapper (target_method);
 
@@ -3748,8 +3746,18 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 		}
 	}
 
-	if (op == -1)
+	if (op == -1) {
 		target_method = interp_transform_internal_calls (method, target_method, csignature, is_virtual);
+
+		if (((method->wrapper_type == MONO_WRAPPER_NONE) || (method->wrapper_type == MONO_WRAPPER_DYNAMIC_METHOD)) && target_method != NULL) {
+			if (target_method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) {
+				// Avoid calling mono_marshal_get_native_wrapper () too early, it might call managed callbacks.
+				csignature = mono_metadata_signature_dup_mempool (td->mempool, csignature);
+				csignature->pinvoke = FALSE;
+				native = FALSE;
+			}
+		}
+	}
 
 	if (csignature->call_convention == MONO_CALL_VARARG)
 		csignature = mono_method_get_signature_checked (target_method, image, token, generic_context, error);
@@ -9898,7 +9906,8 @@ mono_interp_transform_method (InterpMethod *imethod, ThreadContext *context, Mon
 			generic_context = &generic_container->context;
 	}
 
-	if (method->iflags & (METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL | METHOD_IMPL_ATTRIBUTE_RUNTIME)) {
+	if ((method->iflags & (METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL | METHOD_IMPL_ATTRIBUTE_RUNTIME)) ||
+			(method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL)) {
 		MonoMethod *nm = NULL;
 		if (imethod->transformed) {
 			MONO_PROFILER_RAISE (jit_done, (method, imethod->jinfo));
@@ -9906,8 +9915,11 @@ mono_interp_transform_method (InterpMethod *imethod, ThreadContext *context, Mon
 		}
 
 		/* assumes all internal calls with an array this are built in... */
-		if (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL && (! mono_method_signature_internal (method)->hasthis || m_class_get_rank (method->klass) == 0)) {
+		if ((method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL && (! mono_method_signature_internal (method)->hasthis || m_class_get_rank (method->klass) == 0)) ||
+				(method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL)) {
 			nm = mono_marshal_get_native_wrapper (method, FALSE, FALSE);
+			if (context->has_resume_state)
+				return;
 		} else {
 			const char *name = method->name;
 			if (m_class_get_parent (method->klass) == mono_defaults.multicastdelegate_class) {
