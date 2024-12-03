@@ -656,6 +656,12 @@ PhaseStatus Compiler::fgRemoveEmptyTry()
         fgPrepareCallFinallyRetForRemoval(leave);
         fgRemoveBlock(leave, /* unreachable */ true);
 
+        // Remove profile weight into the continuation block
+        if (continuation->hasProfileWeight())
+        {
+            continuation->setBBProfileWeight(max(0.0, continuation->bbWeight - leave->bbWeight));
+        }
+
         // (3) Convert the callfinally to a normal jump to the handler
         assert(callFinally->HasInitializedTarget());
         callFinally->SetKind(BBJ_ALWAYS);
@@ -695,6 +701,12 @@ PhaseStatus Compiler::fgRemoveEmptyTry()
                     fgRemoveStmt(block, finallyRet);
                     FlowEdge* const newEdge = fgAddRefPred(continuation, block);
                     block->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
+
+                    // Propagate profile weight into the continuation block
+                    if (continuation->hasProfileWeight())
+                    {
+                        continuation->setBBProfileWeight(continuation->bbWeight + block->bbWeight);
+                    }
                 }
             }
 
