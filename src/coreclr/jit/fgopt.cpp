@@ -5409,16 +5409,38 @@ bool Compiler::ThreeOptLayout::RunGreedyThreeOptPass(unsigned startPos, unsigned
             s3End      = srcPos;
             costChange = BB_ZERO_WEIGHT;
 
+            // The cut points before S2 and after S3 are fixed.
+            // We will search for the optimal cut point before S3.
+            BasicBlock* const s2Block     = blockOrder[s2Start];
+            BasicBlock* const s2BlockPrev = blockOrder[s2Start - 1];
+            BasicBlock* const lastBlock   = blockOrder[s3End];
+
+            // Because the above cut points are fixed, don't waste time re-computing their costs.
+            // Instead, pre-compute them here.
+            const weight_t currCostBase =
+                GetCost(s2BlockPrev, s2Block) +
+                ((s3End < endPos) ? GetCost(lastBlock, blockOrder[s3End + 1]) : lastBlock->bbWeight);
+            const weight_t newCostBase = GetCost(lastBlock, s2Block);
+
             // Search for the ideal start to S3
             for (unsigned position = s2Start + 1; position <= s3End; position++)
             {
+                BasicBlock* const s3Block     = blockOrder[position];
+                BasicBlock* const s3BlockPrev = blockOrder[position - 1];
+
                 // Don't consider any cut points that would break up call-finally pairs
-                if (blockOrder[position]->KindIs(BBJ_CALLFINALLYRET))
+                if (s3Block->KindIs(BBJ_CALLFINALLYRET))
                 {
                     continue;
                 }
 
-                const weight_t delta = GetPartitionCostDelta(startPos, s2Start, position, s3End, endPos);
+                // Compute the cost delta of this partition
+                const weight_t currCost = currCostBase + GetCost(s3BlockPrev, s3Block);
+                const weight_t newCost =
+                    newCostBase + GetCost(s2BlockPrev, s3Block) +
+                    ((s3End < endPos) ? GetCost(s3BlockPrev, blockOrder[s3End + 1]) : s3BlockPrev->bbWeight);
+                const weight_t delta = newCost - currCost;
+
                 if (delta < costChange)
                 {
                     costChange = delta;
