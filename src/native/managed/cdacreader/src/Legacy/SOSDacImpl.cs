@@ -318,10 +318,10 @@ internal sealed unsafe partial class SOSDacImpl
                     uint iRejitDataReverted = 0;
                     ILCodeVersionHandle activeVersion = nativeCodeContract.GetActiveILCodeVersion(methodDesc);
                     TargetNUInt activeVersionId = rejitContract.GetRejitId(activeVersion);
-                    for (uint i = 0; (i < reJitIds.Count) && (iRejitDataReverted < cRevertedRejitVersions); i++)
+                    for (int i = 0; (i < reJitIds.Count) && (iRejitDataReverted < cRevertedRejitVersions); i++)
                     {
                         ILCodeVersionHandle ilCodeVersion = nativeCodeContract.GetILCodeVersions(methodDesc)
-                            .FirstOrDefault(ilcode => rejitContract.GetRejitId(ilcode) == reJitIds[(int)i],
+                            .FirstOrDefault(ilcode => rejitContract.GetRejitId(ilcode) == reJitIds[i],
                                 ILCodeVersionHandle.Invalid);
 
                         if (!ilCodeVersion.IsValid || rejitContract.GetRejitId(ilCodeVersion) == activeVersionId)
@@ -471,7 +471,7 @@ internal sealed unsafe partial class SOSDacImpl
                     flags = DacpReJitData.Flags.kActive;
                     break;
                 default:
-                    Debug.Fail("Unknown SharedRejitInfo state. cDAC should be updated to understand this new state.");
+                    Debug.Fail("Unknown RejitState. cDAC should be updated to understand this new state.");
                     break;
             }
             pReJitData->flags = flags;

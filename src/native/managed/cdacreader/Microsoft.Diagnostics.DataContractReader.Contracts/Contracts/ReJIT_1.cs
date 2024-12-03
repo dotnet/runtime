@@ -52,7 +52,7 @@ internal readonly partial struct ReJIT_1 : IReJIT
 
     RejitState IReJIT.GetRejitState(ILCodeVersionHandle ilCodeVersionHandle)
     {
-        if (ilCodeVersionHandle.ILCodeVersionNode == TargetPointer.Null)
+        if (!ilCodeVersionHandle.IsExplicit)
         {
             // for non explicit ILCodeVersions, ReJITState is always kStateActive
             return RejitState.Active;
@@ -62,7 +62,7 @@ internal readonly partial struct ReJIT_1 : IReJIT
         {
             RejitFlags.kStateRequested => RejitState.Requested,
             RejitFlags.kStateActive => RejitState.Active,
-            _ => throw new NotImplementedException($"Unknown ReJIT state: {ilCodeVersionNode.RejitState}"),
+            _ => throw new InvalidOperationException($"Unknown ReJIT state: {ilCodeVersionNode.RejitState}"),
         };
     }
 
@@ -81,7 +81,7 @@ internal readonly partial struct ReJIT_1 : IReJIT
     {
         if (ilCodeVersionHandle.ILCodeVersionNode == TargetPointer.Null)
         {
-            throw new NotImplementedException("Synthetic ILCodeVersion does not have a backing node.");
+            throw new InvalidOperationException("Synthetic ILCodeVersion does not have a backing node.");
         }
 
         return _target.ProcessedData.GetOrAdd<ILCodeVersionNode>(ilCodeVersionHandle.ILCodeVersionNode);

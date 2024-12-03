@@ -70,7 +70,7 @@ internal partial class MockDescriptors
         {
             TargetPointer codeVersionNode = _codeVersions.AddILCodeVersionNode(TargetPointer.Null, rejitId, (uint)rejitFlags);
 
-            return ILCodeVersionHandle.OfExplicit(codeVersionNode);
+            return ILCodeVersionHandle.CreateExplicit(codeVersionNode);
         }
 
         internal static Dictionary<DataType, Target.TypeInfo> GetTypes(TargetTestHelpers helpers)

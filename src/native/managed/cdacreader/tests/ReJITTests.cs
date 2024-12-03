@@ -35,14 +35,14 @@ public class ReJITTests
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
-    public void GetRejitIdOk(MockTarget.Architecture arch)
+    public void GetRejitId_SyntheticAndExplicit_Success(MockTarget.Architecture arch)
     {
         MockReJIT mockRejit = new MockReJIT(arch);
 
         Dictionary<ILCodeVersionHandle, TargetNUInt> expectedRejitIds = new()
         {
             // synthetic ILCodeVersionHandle
-            { ILCodeVersionHandle.OfSynthetic(new TargetPointer(/* arbitrary */ 0x100), /* arbitrary */ 100), new TargetNUInt(0) },
+            { ILCodeVersionHandle.CreateSynthetic(new TargetPointer(/* arbitrary */ 0x100), /* arbitrary */ 100), new TargetNUInt(0) },
             { mockRejit.AddExplicitILCodeVersion(new TargetNUInt(1), MockReJIT.RejitFlags.kStateActive), new TargetNUInt(1) },
             { mockRejit.AddExplicitILCodeVersion(new TargetNUInt(2), MockReJIT.RejitFlags.kStateRequested), new TargetNUInt(2) },
             { mockRejit.AddExplicitILCodeVersion(new TargetNUInt(3), MockReJIT.RejitFlags.kStateRequested), new TargetNUInt(3) }
@@ -64,14 +64,14 @@ public class ReJITTests
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
-    public void GetRejitStateOk(MockTarget.Architecture arch)
+    public void GetRejitState_SyntheticAndExplicit_Success(MockTarget.Architecture arch)
     {
         MockReJIT mockRejit = new MockReJIT(arch);
 
         Dictionary<ILCodeVersionHandle, RejitState> expectedRejitStates = new()
         {
             // synthetic ILCodeVersionHandle
-            { ILCodeVersionHandle.OfSynthetic(new TargetPointer(/* arbitrary */ 0x100), /* arbitrary */ 100), RejitState.Active },
+            { ILCodeVersionHandle.CreateSynthetic(new TargetPointer(/* arbitrary */ 0x100), /* arbitrary */ 100), RejitState.Active },
             { mockRejit.AddExplicitILCodeVersion(new TargetNUInt(1), MockReJIT.RejitFlags.kStateActive), RejitState.Active },
             { mockRejit.AddExplicitILCodeVersion(new TargetNUInt(2), MockReJIT.RejitFlags.kStateRequested), RejitState.Requested },
             { mockRejit.AddExplicitILCodeVersion(new TargetNUInt(3), MockReJIT.RejitFlags.kSuppressParams | MockReJIT.RejitFlags.kStateRequested), RejitState.Requested }
@@ -93,7 +93,7 @@ public class ReJITTests
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
-    public void GetRejitIdsOk(MockTarget.Architecture arch)
+    public void GetRejitIds_SyntheticAndExplicit_Success(MockTarget.Architecture arch)
     {
         MockReJIT mockRejit = new MockReJIT(arch);
         Mock<ICodeVersions> mockCodeVersions = new Mock<ICodeVersions>();
@@ -104,7 +104,7 @@ public class ReJITTests
         List<ILCodeVersionHandle> ilCodeVersionHandles =
         [
             // synthetic ILCodeVersionHandle
-            ILCodeVersionHandle.OfSynthetic(new TargetPointer(/* arbitrary */ 0x100), /* arbitrary */ 100),
+            ILCodeVersionHandle.CreateSynthetic(new TargetPointer(/* arbitrary */ 0x100), /* arbitrary */ 100),
             mockRejit.AddExplicitILCodeVersion(new TargetNUInt(1), MockReJIT.RejitFlags.kStateActive),
             mockRejit.AddExplicitILCodeVersion(new TargetNUInt(2), MockReJIT.RejitFlags.kStateRequested)
         ];

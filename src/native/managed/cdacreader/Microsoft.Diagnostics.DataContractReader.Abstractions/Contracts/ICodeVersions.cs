@@ -47,12 +47,12 @@ internal readonly struct ILCodeVersionHandle
     }
 
     // for more information on Explicit/Synthetic code versions see docs/design/features/code-versioning.md
-    internal static ILCodeVersionHandle OfExplicit(TargetPointer ilCodeVersionNodeAddress) =>
+    internal static ILCodeVersionHandle CreateExplicit(TargetPointer ilCodeVersionNodeAddress) =>
         new ILCodeVersionHandle(TargetPointer.Null, 0, ilCodeVersionNodeAddress);
-    internal static ILCodeVersionHandle OfSynthetic(TargetPointer module, uint methodDef) =>
+    internal static ILCodeVersionHandle CreateSynthetic(TargetPointer module, uint methodDef) =>
         new ILCodeVersionHandle(module, methodDef, TargetPointer.Null);
 
-    public static ILCodeVersionHandle Invalid => new ILCodeVersionHandle(TargetPointer.Null, 0, TargetPointer.Null);
+    public static ILCodeVersionHandle Invalid { get; } = new(TargetPointer.Null, 0, TargetPointer.Null);
 
     public bool IsValid => Module != TargetPointer.Null || ILCodeVersionNode != TargetPointer.Null;
 
@@ -75,12 +75,12 @@ internal readonly struct NativeCodeVersionHandle
     }
 
     // for more information on Explicit/Synthetic code versions see docs/design/features/code-versioning.md
-    internal static NativeCodeVersionHandle OfExplicit(TargetPointer codeVersionNodeAddress) =>
+    internal static NativeCodeVersionHandle CreateExplicit(TargetPointer codeVersionNodeAddress) =>
         new NativeCodeVersionHandle(TargetPointer.Null, codeVersionNodeAddress);
-    internal static NativeCodeVersionHandle OfSynthetic(TargetPointer methodDescAddress) =>
+    internal static NativeCodeVersionHandle CreateSynthetic(TargetPointer methodDescAddress) =>
         new NativeCodeVersionHandle(methodDescAddress, TargetPointer.Null);
 
-    public static NativeCodeVersionHandle Invalid => new(TargetPointer.Null, TargetPointer.Null);
+    public static NativeCodeVersionHandle Invalid { get; } = new(TargetPointer.Null, TargetPointer.Null);
 
     public bool Valid => MethodDescAddress != TargetPointer.Null || CodeVersionNodeAddress != TargetPointer.Null;
 

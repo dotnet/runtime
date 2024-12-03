@@ -28,7 +28,7 @@ internal readonly partial struct CodeVersions_1 : ICodeVersions
         TargetPointer ilVersionStateAddress = _target.Contracts.Loader.GetModuleLookupMapElement(ilCodeVersionTable, methodDefToken, out var _);
         if (ilVersionStateAddress == TargetPointer.Null)
         {
-            return ILCodeVersionHandle.OfSynthetic(module, methodDefToken);
+            return ILCodeVersionHandle.CreateSynthetic(module, methodDefToken);
         }
         Data.ILCodeVersioningState ilState = _target.ProcessedData.GetOrAdd<Data.ILCodeVersioningState>(ilVersionStateAddress);
         return ActiveILCodeVersionHandleFromState(ilState);
@@ -50,7 +50,7 @@ internal readonly partial struct CodeVersions_1 : ICodeVersions
                 nativeCodeVersionHandle.MethodDescAddress,
                 out TargetPointer module,
                 out uint methodDefToken);
-            return ILCodeVersionHandle.OfSynthetic(module, methodDefToken);
+            return ILCodeVersionHandle.CreateSynthetic(module, methodDefToken);
         }
         else
         {
@@ -78,7 +78,7 @@ internal readonly partial struct CodeVersions_1 : ICodeVersions
         TargetPointer ilVersionStateAddress = _target.Contracts.Loader.GetModuleLookupMapElement(ilCodeVersionTable, methodDefToken, out var _);
 
         // always add the synthetic version
-        yield return ILCodeVersionHandle.OfSynthetic(module, methodDefToken);
+        yield return ILCodeVersionHandle.CreateSynthetic(module, methodDefToken);
 
         // if explicit versions exist, iterate linked list and return them
         if (ilVersionStateAddress != TargetPointer.Null)
@@ -88,7 +88,7 @@ internal readonly partial struct CodeVersions_1 : ICodeVersions
             while (nodePointer != TargetPointer.Null)
             {
                 Data.ILCodeVersionNode current = _target.ProcessedData.GetOrAdd<Data.ILCodeVersionNode>(nodePointer);
-                yield return ILCodeVersionHandle.OfExplicit(nodePointer);
+                yield return ILCodeVersionHandle.CreateExplicit(nodePointer);
                 nodePointer = current.Next;
             }
         }
@@ -113,7 +113,7 @@ internal readonly partial struct CodeVersions_1 : ICodeVersions
         MethodDescHandle md = rts.GetMethodDescHandle(methodDescAddress);
         if (!rts.IsVersionable(md))
         {
-            return NativeCodeVersionHandle.OfSynthetic(methodDescAddress);
+            return NativeCodeVersionHandle.CreateSynthetic(methodDescAddress);
         }
         else
         {
@@ -171,7 +171,7 @@ internal readonly partial struct CodeVersions_1 : ICodeVersions
         if (!ilCodeVersionHandle.IsExplicit)
         {
             // if the ILCodeVersion is synthetic, then check if the active NativeCodeVersion is the synthetic one
-            NativeCodeVersionHandle provisionalHandle = NativeCodeVersionHandle.OfSynthetic(methodDescAddress: methodDesc);
+            NativeCodeVersionHandle provisionalHandle = NativeCodeVersionHandle.CreateSynthetic(methodDescAddress: methodDesc);
             if (IsActiveNativeCodeVersion(provisionalHandle))
             {
                 return provisionalHandle;
@@ -202,7 +202,7 @@ internal readonly partial struct CodeVersions_1 : ICodeVersions
         TargetCodePointer firstNativeCode = rts.GetNativeCode(md);
         if (firstNativeCode == startAddress)
         {
-            NativeCodeVersionHandle first = NativeCodeVersionHandle.OfSynthetic(md.Address);
+            NativeCodeVersionHandle first = NativeCodeVersionHandle.CreateSynthetic(md.Address);
             return first;
         }
 
@@ -229,7 +229,7 @@ internal readonly partial struct CodeVersions_1 : ICodeVersions
             Data.NativeCodeVersionNode current = _target.ProcessedData.GetOrAdd<Data.NativeCodeVersionNode>(currentAddress);
             if (predicate(current))
             {
-                return NativeCodeVersionHandle.OfExplicit(currentAddress);
+                return NativeCodeVersionHandle.CreateExplicit(currentAddress);
             }
             currentAddress = current.Next;
         }
@@ -247,10 +247,10 @@ internal readonly partial struct CodeVersions_1 : ICodeVersions
         switch ((ILCodeVersionKind)ilState.ActiveVersionKind)
         {
             case ILCodeVersionKind.Explicit:
-                return ILCodeVersionHandle.OfExplicit(ilState.ActiveVersionNode);
+                return ILCodeVersionHandle.CreateExplicit(ilState.ActiveVersionNode);
             case ILCodeVersionKind.Synthetic:
             case ILCodeVersionKind.Unknown:
-                return ILCodeVersionHandle.OfSynthetic(ilState.ActiveVersionModule, ilState.ActiveVersionMethodDef);
+                return ILCodeVersionHandle.CreateSynthetic(ilState.ActiveVersionModule, ilState.ActiveVersionMethodDef);
             default:
                 throw new InvalidOperationException($"Unknown ILCodeVersionKind {ilState.ActiveVersionKind}");
         }
