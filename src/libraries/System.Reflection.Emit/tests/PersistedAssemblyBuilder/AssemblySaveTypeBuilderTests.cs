@@ -213,12 +213,16 @@ namespace System.Reflection.Emit.Tests
 
         private class GenericClassWithGenericField<T>
         {
+//#pragma warning disable CS0649
             public T F;
+//#pragma warning restore CS0649
         }
 
         private class GenericClassWithNonGenericField<T>
         {
+//#pragma warning disable CS0649
             public int F;
+//#pragma warning restore CS0649
         }
 
         public static IEnumerable<object[]> GenericTypesWithField()
