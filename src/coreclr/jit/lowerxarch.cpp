@@ -856,7 +856,7 @@ GenTree* Lowering::LowerCast(GenTree* tree)
     if (varTypeIsFloating(srcType))
     {
         noway_assert(!tree->gtOverflow());
-        assert(castToType != TYP_ULONG || comp->canUseEvexEncoding());
+        assert(castToType != TYP_ULONG || comp->canUseEvexEncodingDebugOnly());
     }
     else if (srcType == TYP_UINT)
     {
@@ -864,7 +864,7 @@ GenTree* Lowering::LowerCast(GenTree* tree)
     }
     else if (srcType == TYP_ULONG)
     {
-        assert(castToType != TYP_FLOAT || comp->canUseEvexEncoding());
+        assert(castToType != TYP_FLOAT || comp->canUseEvexEncodingDebugOnly());
     }
 
 #if defined(TARGET_AMD64)
@@ -963,12 +963,20 @@ GenTree* Lowering::LowerCast(GenTree* tree)
                 GenTree* compMask = comp->gtNewSimdCmpOpNode(GT_GE, TYP_SIMD16, fixupVal, maxVal, fieldType, 16);
                 BlockRange().InsertAfter(maxValDstType, compMask);
 
+                GenTree* actualCompMask = compMask;
+
+                if (compMask->OperIsConvertMaskToVector())
+                {
+                    actualCompMask = compMask->AsHWIntrinsic()->Op(1);
+                    BlockRange().InsertBefore(compMask, actualCompMask);
+                }
+
                 // convert fixupVal to local variable and clone it for further use
-                LIR::Use fixupValUse(BlockRange(), &(compMask->AsHWIntrinsic()->Op(1)), compMask);
+                LIR::Use fixupValUse(BlockRange(), &(actualCompMask->AsHWIntrinsic()->Op(1)), actualCompMask);
                 ReplaceWithLclVar(fixupValUse);
-                fixupVal               = compMask->AsHWIntrinsic()->Op(1);
+                fixupVal               = actualCompMask->AsHWIntrinsic()->Op(1);
                 GenTree* fixupValClone = comp->gtClone(fixupVal);
-                LowerNode(compMask);
+                LowerNode(actualCompMask);
                 BlockRange().InsertAfter(fixupVal, fixupValClone);
 
                 GenTree* FixupValCloneScalar =
@@ -984,12 +992,15 @@ GenTree* Lowering::LowerCast(GenTree* tree)
                 BlockRange().InsertAfter(newCast, newTree);
                 LowerNode(newTree);
 
-                // usage 2 --> use thecompared mask with input value and max value to blend
-                GenTree* control = comp->gtNewIconNode(0xCA); // (B & A) | (C & ~A)
-                BlockRange().InsertAfter(newTree, control);
-                GenTree* cndSelect = comp->gtNewSimdTernaryLogicNode(TYP_SIMD16, compMask, maxValDstType, newTree,
-                                                                     control, destFieldType, 16);
-                BlockRange().InsertAfter(control, cndSelect);
+                // usage 2 --> use the compared mask with input value and max value to blend
+                GenTree* cndSelect =
+                    comp->gtNewSimdCndSelNode(TYP_SIMD16, compMask, maxValDstType, newTree, destFieldType, 16);
+                BlockRange().InsertAfter(newTree, cndSelect);
+
+                if (compMask->OperIsConvertMaskToVector())
+                {
+                    LowerNode(compMask);
+                }
                 LowerNode(cndSelect);
 
                 castOutput =
@@ -1064,7 +1075,7 @@ GenTree* Lowering::LowerCast(GenTree* tree)
             BlockRange().InsertAfter(newCast, newTree);
             LowerNode(newTree);
 
-            // usage 2 --> use thecompared mask with input value and max value to blend
+            // usage 2 --> use the compared mask with input value and max value to blend
             GenTree* cndSelect = comp->gtNewSimdCndSelNode(TYP_SIMD16, compMask, maxValDup, newTree, destFieldType, 16);
             BlockRange().InsertAfter(newTree, cndSelect);
             LowerNode(cndSelect);
@@ -1955,6 +1966,30 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
 
             if (!varTypeIsFloating(node->GetSimdBaseType()) && op2->IsVectorZero())
             {
+                LIR::Use use;
+
+                if ((node->GetSimdSize() != 64) && BlockRange().TryGetUse(node, &use))
+                {
+                    GenTree* parentNode = use.User();
+
+                    if (parentNode->OperIsConvertMaskToVector())
+                    {
+                        LIR::Use parentUse;
+
+                        if (BlockRange().TryGetUse(parentNode, &parentUse))
+                        {
+                            if (!parentUse.User()->OperIsHWIntrinsic(NI_EVEX_MoveMask))
+                            {
+                                // For TYP_SIMD16 and TYP_SIMD32 we want to avoid this optimization
+                                // if the user would be just converting the mask back to a vector
+                                // as we can instead rewrite this to a regular CompareEqual and then
+                                // consume the vector directly.
+                                break;
+                            }
+                        }
+                    }
+                }
+
                 NamedIntrinsic testIntrinsicId;
 
                 if (intrinsicId == NI_EVEX_CompareEqualMask)
@@ -2043,6 +2078,506 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
                 node->ChangeHWIntrinsicId(intrinsicId, op1, op2);
             }
             break;
+        }
+
+        case NI_EVEX_BlendVariableMask:
+        {
+            unsigned simdSize = node->GetSimdSize();
+
+            if (simdSize == 64)
+            {
+                // Nothing to handle for TYP_SIMD64 as they require masks
+                break;
+            }
+
+            GenTree* op3 = node->Op(3);
+
+            if (!op3->OperIsConvertVectorToMask())
+            {
+                // We can only special case when op3 is ConvertVectorToMask
+                break;
+            }
+
+            // We have BlendVariableMask(op1, op2, ConvertVectorToMask(op3)) and
+            // so we'll rewrite it to BlendVariable(op1, op2, op3) allowing us
+            // to avoid the additional conversion all together
+
+            var_types simdBaseType = node->GetSimdBaseType();
+
+            if (simdSize == 32)
+            {
+                intrinsicId = varTypeIsFloating(simdBaseType) ? NI_AVX_BlendVariable : NI_AVX2_BlendVariable;
+            }
+            else
+            {
+                intrinsicId = NI_SSE41_BlendVariable;
+            }
+
+            node->ResetHWIntrinsicId(intrinsicId, comp, node->Op(1), node->Op(2), op3->AsHWIntrinsic()->Op(1));
+            BlockRange().Remove(op3);
+
+            return LowerNode(node);
+        }
+
+        case NI_EVEX_ConvertMaskToVector:
+        {
+            NamedIntrinsic id  = NI_Illegal;
+            GenTree*       op1 = node->Op(1);
+
+            unsigned  simdSize     = node->GetSimdSize();
+            var_types simdBaseType = node->GetSimdBaseType();
+
+            LIR::Use use;
+            bool     foundUse = BlockRange().TryGetUse(node, &use);
+
+            if (foundUse)
+            {
+                if (use.User()->OperIsVectorConditionalSelect())
+                {
+                    // We have a ConvertMaskToVector but its user is ConditionalSelect
+                    // which means we can actually consume the mask directly for this
+                    // special scenario.
+                    break;
+                }
+
+                if (use.User()->OperIsConvertVectorToMask())
+                {
+                    // We have ConvertVectorToMask(ConvertMaskToVector(op1))
+                    // so we can optimize it to just be op1 if they are compatible
+
+                    GenTreeHWIntrinsic* parentNode       = use.User()->AsHWIntrinsic();
+                    unsigned            simdBaseTypeSize = genTypeSize(simdBaseType);
+
+                    if ((genTypeSize(parentNode->GetSimdBaseType()) == simdBaseTypeSize))
+                    {
+                        LIR::Use parentUse;
+
+                        if (BlockRange().TryGetUse(parentNode, &parentUse))
+                        {
+                            parentUse.ReplaceWith(op1);
+                        }
+                        else
+                        {
+                            op1->SetUnusedValue();
+                        }
+
+                        BlockRange().Remove(parentNode);
+
+                        GenTree* nextNode = node->gtNext;
+                        BlockRange().Remove(node);
+
+                        return nextNode;
+                    }
+                }
+            }
+
+            if (simdSize == 64)
+            {
+                // Nothing to handle for TYP_SIMD64 as they require masks
+                break;
+            }
+
+            if (!op1->OperIsHWIntrinsic())
+            {
+                // We can only special case certain HWINTRINSIC nodes
+                break;
+            }
+
+            GenTreeHWIntrinsic* op1Intrin   = op1->AsHWIntrinsic();
+            NamedIntrinsic      op1IntrinId = op1Intrin->GetHWIntrinsicId();
+
+            switch (op1IntrinId)
+            {
+                case NI_EVEX_CompareEqualMask:
+                {
+                    if (varTypeIsFloating(simdBaseType))
+                    {
+                        id = HWIntrinsicInfo::lookupIdForFloatComparisonMode(
+                            NI_AVX_Compare, FloatComparisonMode::OrderedEqualNonSignaling, simdBaseType, simdSize);
+                    }
+                    else if (simdSize == 32)
+                    {
+                        id = NI_AVX2_CompareEqual;
+                    }
+                    else if (varTypeIsLong(simdBaseType))
+                    {
+                        id = NI_SSE41_CompareEqual;
+                    }
+                    else
+                    {
+                        id = NI_SSE2_CompareEqual;
+                    }
+                    break;
+                }
+
+                case NI_EVEX_CompareGreaterThanMask:
+                {
+                    if (varTypeIsFloating(simdBaseType))
+                    {
+                        id = HWIntrinsicInfo::lookupIdForFloatComparisonMode(
+                            NI_AVX_Compare, FloatComparisonMode::OrderedGreaterThanSignaling, simdBaseType, simdSize);
+                    }
+                    else if (varTypeIsUnsigned(simdBaseType))
+                    {
+                        // Unsigned integer comparisons must use the EVEX instruction
+                        break;
+                    }
+                    else if (simdSize == 32)
+                    {
+                        id = NI_AVX2_CompareGreaterThan;
+                    }
+                    else if (varTypeIsLong(simdBaseType))
+                    {
+                        id = NI_SSE42_CompareGreaterThan;
+                    }
+                    else
+                    {
+                        id = NI_SSE2_CompareGreaterThan;
+                    }
+                    break;
+                }
+
+                case NI_EVEX_CompareGreaterThanOrEqualMask:
+                {
+                    if (varTypeIsFloating(simdBaseType))
+                    {
+                        id = HWIntrinsicInfo::lookupIdForFloatComparisonMode(
+                            NI_AVX_Compare, FloatComparisonMode::OrderedGreaterThanOrEqualSignaling, simdBaseType,
+                            simdSize);
+                    }
+                    else
+                    {
+                        // Integer comparisons must use the EVEX instruction
+                    }
+                    break;
+                }
+
+                case NI_EVEX_CompareLessThanMask:
+                {
+                    if (varTypeIsFloating(simdBaseType))
+                    {
+                        id = HWIntrinsicInfo::lookupIdForFloatComparisonMode(
+                            NI_AVX_Compare, FloatComparisonMode::OrderedLessThanSignaling, simdBaseType, simdSize);
+                    }
+                    else if (varTypeIsUnsigned(simdBaseType))
+                    {
+                        // Unsigned integer comparisons must use the EVEX instruction
+                        break;
+                    }
+                    else if (simdSize == 32)
+                    {
+                        id = NI_AVX2_CompareLessThan;
+                    }
+                    else if (varTypeIsLong(simdBaseType))
+                    {
+                        id = NI_SSE42_CompareLessThan;
+                    }
+                    else
+                    {
+                        id = NI_SSE2_CompareLessThan;
+                    }
+                    break;
+                }
+
+                case NI_EVEX_CompareLessThanOrEqualMask:
+                {
+                    if (varTypeIsFloating(simdBaseType))
+                    {
+                        id = HWIntrinsicInfo::lookupIdForFloatComparisonMode(
+                            NI_AVX_Compare, FloatComparisonMode::OrderedLessThanOrEqualSignaling, simdBaseType,
+                            simdSize);
+                    }
+                    else
+                    {
+                        // Integer comparisons must use the EVEX instruction
+                    }
+                    break;
+                }
+
+                case NI_EVEX_CompareNotEqualMask:
+                {
+                    if (varTypeIsFloating(simdBaseType))
+                    {
+                        id = HWIntrinsicInfo::lookupIdForFloatComparisonMode(
+                            NI_AVX_Compare, FloatComparisonMode::UnorderedNotEqualNonSignaling, simdBaseType, simdSize);
+                    }
+                    else
+                    {
+                        // Integer comparisons must use the EVEX instruction
+                    }
+                    break;
+                }
+
+                case NI_EVEX_CompareNotGreaterThanMask:
+                {
+                    if (varTypeIsFloating(simdBaseType))
+                    {
+                        id = HWIntrinsicInfo::lookupIdForFloatComparisonMode(
+                            NI_AVX_Compare, FloatComparisonMode::UnorderedNotGreaterThanSignaling, simdBaseType,
+                            simdSize);
+                    }
+                    else
+                    {
+                        // Integer comparisons must use the EVEX instruction
+                        // as this is the same as: LessThanOrEqual
+                    }
+                    break;
+                }
+
+                case NI_EVEX_CompareNotGreaterThanOrEqualMask:
+                {
+                    if (varTypeIsFloating(simdBaseType))
+                    {
+                        id = HWIntrinsicInfo::lookupIdForFloatComparisonMode(
+                            NI_AVX_Compare, FloatComparisonMode::UnorderedNotGreaterThanOrEqualSignaling, simdBaseType,
+                            simdSize);
+                    }
+                    else if (varTypeIsUnsigned(simdBaseType))
+                    {
+                        // Unsigned integer comparisons must use the EVEX instruction
+                        // as this is the same as: LessThan
+                        break;
+                    }
+                    else if (simdSize == 32)
+                    {
+                        id = NI_AVX2_CompareLessThan;
+                    }
+                    else if (varTypeIsLong(simdBaseType))
+                    {
+                        id = NI_SSE42_CompareLessThan;
+                    }
+                    else
+                    {
+                        id = NI_SSE2_CompareLessThan;
+                    }
+                    break;
+                }
+
+                case NI_EVEX_CompareNotLessThanMask:
+                {
+                    if (varTypeIsFloating(simdBaseType))
+                    {
+                        id = HWIntrinsicInfo::lookupIdForFloatComparisonMode(
+                            NI_AVX_Compare, FloatComparisonMode::UnorderedNotLessThanSignaling, simdBaseType, simdSize);
+                    }
+                    else
+                    {
+                        // Integer comparisons must use the EVEX instruction
+                        // as this is the same as: GreaterThanOrEqual
+                    }
+                    break;
+                }
+
+                case NI_EVEX_CompareNotLessThanOrEqualMask:
+                {
+                    if (varTypeIsFloating(simdBaseType))
+                    {
+                        id = HWIntrinsicInfo::lookupIdForFloatComparisonMode(
+                            NI_AVX_Compare, FloatComparisonMode::UnorderedNotLessThanOrEqualSignaling, simdBaseType,
+                            simdSize);
+                    }
+                    else if (varTypeIsUnsigned(simdBaseType))
+                    {
+                        // Unsigned integer comparisons must use the EVEX instruction
+                        // as this is the same as: GreaterThan
+                        break;
+                    }
+                    else if (simdSize == 32)
+                    {
+                        id = NI_AVX2_CompareGreaterThan;
+                    }
+                    else if (varTypeIsLong(simdBaseType))
+                    {
+                        id = NI_SSE42_CompareGreaterThan;
+                    }
+                    else
+                    {
+                        id = NI_SSE2_CompareGreaterThan;
+                    }
+                    break;
+                }
+
+                case NI_EVEX_CompareOrderedMask:
+                {
+                    assert(varTypeIsFloating(simdBaseType));
+                    id = HWIntrinsicInfo::lookupIdForFloatComparisonMode(NI_AVX_Compare,
+                                                                         FloatComparisonMode::OrderedNonSignaling,
+                                                                         simdBaseType, simdSize);
+                    break;
+                }
+
+                case NI_EVEX_CompareUnorderedMask:
+                {
+                    assert(varTypeIsFloating(simdBaseType));
+                    id = HWIntrinsicInfo::lookupIdForFloatComparisonMode(NI_AVX_Compare,
+                                                                         FloatComparisonMode::UnorderedNonSignaling,
+                                                                         simdBaseType, simdSize);
+                    break;
+                }
+
+                default:
+                {
+                    // Other cases get no special handling
+                    break;
+                }
+            }
+
+            if (id != NI_Illegal)
+            {
+                GenTree* op2 = op1Intrin->Op(2);
+
+                if (op2->isContained() && op2->OperIsHWIntrinsic() && op2->AsHWIntrinsic()->OperIsBroadcastScalar())
+                {
+                    // Don't rewrite cases that are taking advantage of embedded broadcast
+                    // as they typically reduce cache impact and help reduce code size.
+                    break;
+                }
+
+                // We've remapped ConvertMaskToVector(Compare*Mask) to be simply
+                // Compare*, allowing us to avoid the additional conversion expense
+
+                op1Intrin->gtType = node->TypeGet();
+                op1Intrin->ChangeHWIntrinsicId(id);
+
+                GenTree* nextNode = node->gtNext;
+
+                if (foundUse)
+                {
+                    use.ReplaceWith(op1Intrin);
+                }
+                else
+                {
+                    op1Intrin->SetUnusedValue();
+                }
+
+                // Some intrinsics need operand swapping, so ensure
+                // we clear containment and relower the node
+
+                op2->ClearContained();
+                LowerNode(op1Intrin);
+
+                BlockRange().Remove(node);
+                return nextNode;
+            }
+            break;
+        }
+
+        case NI_EVEX_ConvertVectorToMask:
+        {
+            GenTree* op1 = node->Op(1);
+
+            unsigned  simdSize     = node->GetSimdSize();
+            var_types simdBaseType = node->GetSimdBaseType();
+
+            LIR::Use use;
+
+            if (BlockRange().TryGetUse(node, &use))
+            {
+                if (use.User()->OperIsConvertMaskToVector())
+                {
+                    // We have ConvertMaskToVector(ConvertVectorToMask(op1))
+                    // so we can optimize it to just be op1 if they are compatible
+
+                    GenTreeHWIntrinsic* parentNode       = use.User()->AsHWIntrinsic();
+                    unsigned            simdBaseTypeSize = genTypeSize(simdBaseType);
+
+                    if ((genTypeSize(parentNode->GetSimdBaseType()) == simdBaseTypeSize))
+                    {
+                        LIR::Use parentUse;
+
+                        if (BlockRange().TryGetUse(parentNode, &parentUse))
+                        {
+                            parentUse.ReplaceWith(op1);
+                        }
+                        else
+                        {
+                            op1->SetUnusedValue();
+                        }
+
+                        BlockRange().Remove(parentNode);
+
+                        GenTree* nextNode = node->gtNext;
+                        BlockRange().Remove(node);
+
+                        return nextNode;
+                    }
+                }
+            }
+            break;
+        }
+
+        case NI_EVEX_MoveMask:
+        {
+            unsigned simdSize = node->GetSimdSize();
+
+            if (simdSize == 64)
+            {
+                // Nothing to handle for TYP_SIMD64 as they require masks
+                break;
+            }
+
+            GenTree* op1 = node->Op(1);
+
+            if (!op1->OperIsConvertVectorToMask())
+            {
+                // We can only special case when op1 is ConvertVectorToMask
+                break;
+            }
+
+            // We have Evex.MoveMask(ConvertVectorToMask(op1)) and
+            // so we'll rewrite it to Avx.MoveMask(op1) allowing us
+            // to avoid the additional conversion all together
+
+            var_types simdBaseType = node->GetSimdBaseType();
+
+            if (varTypeIsShort(simdBaseType))
+            {
+                // We don't want to special case short as existing sequence is more
+                // optimal than the fallback we'd otherwise have to generate which is:
+                //     ctrl = Vector128.Create(1, 3, 5, 7, 9, 11, 13, 15, -1, -1, -1, -1, -1, -1, -1, -1)
+                //     op1 = Ssse3.Shuffle(op1, ctrl)
+                //     Sse2.MoveMask(op1)
+                // In the case of TYP_SIMD32 we need an additional Avx2.Permute4x64 as well
+                break;
+            }
+
+            switch (simdBaseType)
+            {
+                case TYP_BYTE:
+                case TYP_UBYTE:
+                {
+                    intrinsicId = (simdSize == 32) ? NI_AVX2_MoveMask : NI_SSE2_MoveMask;
+                    break;
+                }
+
+                case TYP_INT:
+                case TYP_UINT:
+                case TYP_FLOAT:
+                {
+                    intrinsicId = (simdSize == 32) ? NI_AVX_MoveMask : NI_SSE_MoveMask;
+                    node->SetSimdBaseJitType(CORINFO_TYPE_FLOAT);
+                    break;
+                }
+
+                case TYP_LONG:
+                case TYP_ULONG:
+                case TYP_DOUBLE:
+                {
+                    intrinsicId = (simdSize == 32) ? NI_AVX_MoveMask : NI_SSE2_MoveMask;
+                    node->SetSimdBaseJitType(CORINFO_TYPE_DOUBLE);
+                    break;
+                }
+
+                default:
+                {
+                    unreached();
+                }
+            }
+
+            node->ResetHWIntrinsicId(intrinsicId, comp, op1->AsHWIntrinsic()->Op(1));
+            BlockRange().Remove(op1);
+
+            return LowerNode(node);
         }
 
         case NI_EVEX_NotMask:

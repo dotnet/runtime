@@ -29540,7 +29540,7 @@ var_types GenTreeHWIntrinsic::GetLookupTypeForCmpOp(
     {
         case GT_EQ:
         {
-            if (simdSize == 64)
+            if ((simdSize == 64) || (comp->opts.OptimizationEnabled() && comp->canUseEvexEncoding()))
             {
                 lookupType = TYP_MASK;
             }
@@ -29551,7 +29551,8 @@ var_types GenTreeHWIntrinsic::GetLookupTypeForCmpOp(
         case GT_LE:
         case GT_NE:
         {
-            if ((simdSize == 64) || (varTypeIsIntegral(simdBaseType) && comp->canUseEvexEncoding()))
+            if ((simdSize == 64) ||
+                ((comp->opts.OptimizationEnabled() || varTypeIsIntegral(simdBaseType)) && comp->canUseEvexEncoding()))
             {
                 lookupType = TYP_MASK;
             }
@@ -29561,7 +29562,8 @@ var_types GenTreeHWIntrinsic::GetLookupTypeForCmpOp(
         case GT_GT:
         case GT_LT:
         {
-            if ((simdSize == 64) || (varTypeIsUnsigned(simdBaseType) && comp->canUseEvexEncoding()))
+            if ((simdSize == 64) ||
+                ((comp->opts.OptimizationEnabled() || varTypeIsUnsigned(simdBaseType)) && comp->canUseEvexEncoding()))
             {
                 lookupType = TYP_MASK;
             }
