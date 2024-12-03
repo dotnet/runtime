@@ -489,10 +489,11 @@ endfunction()
 
 function(install_symbol_file symbol_file destination_path)
   if(CLR_CMAKE_TARGET_WIN32)
-      install(FILES ${symbol_file} DESTINATION ${destination_path}/PDB ${ARGN})
+      get_filename_component(DST_PATH_ABS ${destination_path}/PDB ABSOLUTE)
   else()
-      install(FILES ${symbol_file} DESTINATION ${destination_path} ${ARGN})
+      get_filename_component(DST_PATH_ABS ${destination_path} ABSOLUTE)
   endif()
+  install(FILES ${symbol_file} DESTINATION ${DST_PATH_ABS} ${ARGN})
 endfunction()
 
 function(install_static_library targetName destination component)
