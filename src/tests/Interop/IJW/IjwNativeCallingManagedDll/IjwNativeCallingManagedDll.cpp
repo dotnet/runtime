@@ -24,8 +24,8 @@ extern "C" DLL_EXPORT int __cdecl NativeEntryPoint()
 
 public value struct ValueToReturnStorage
 {
-    ValueToReturnStorage() : valueToReturn(100) {}
     int valueToReturn;
+    bool valueSet;
 };
 
 // store the value to return in an appdomain local static variable to allow this test to be a regression test for https://github.com/dotnet/runtime/issues/110365
@@ -42,11 +42,15 @@ public:
     static void ChangeReturnedValue(int i)
     {
         s_valueToReturnStorage.valueToReturn = i;
+        s_valueToReturnStorage.valueSet = true;
     }
 
     static int GetReturnValue()
     {
-        return s_valueToReturnStorage.valueToReturn;
+        if (s_valueToReturnStorage.valueSet)
+            return s_valueToReturnStorage.valueToReturn;
+        else
+            return 100;
     }
 };
 
