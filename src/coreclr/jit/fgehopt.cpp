@@ -2537,7 +2537,7 @@ BasicBlock* Compiler::fgCloneTryRegion(BasicBlock* tryEntry, CloneTryInfo& info,
     BlockToBlockMap* const map         = info.Map;
 
     auto addBlockToClone = [=, &blocks, &visited, &numberOfBlocksToClone](BasicBlock* block, const char* msg) {
-        if (!BitVecOps::TryAddElemD(traits, visited, block->bbNum))
+        if (!BitVecOps::TryAddElemD(traits, visited, block->bbID))
         {
             return false;
         }
@@ -2570,10 +2570,10 @@ BasicBlock* Compiler::fgCloneTryRegion(BasicBlock* tryEntry, CloneTryInfo& info,
         BasicBlock* const firstTryBlock = ebd->ebdTryBeg;
         BasicBlock* const lastTryBlock  = ebd->ebdTryLast;
 
-        if (BitVecOps::IsMember(traits, visited, firstTryBlock->bbNum))
+        if (BitVecOps::IsMember(traits, visited, firstTryBlock->bbID))
         {
             JITDUMP("already walked try region for EH#%02u\n", regionIndex);
-            assert(BitVecOps::IsMember(traits, visited, lastTryBlock->bbNum));
+            assert(BitVecOps::IsMember(traits, visited, lastTryBlock->bbID));
         }
         else
         {
@@ -2625,10 +2625,10 @@ BasicBlock* Compiler::fgCloneTryRegion(BasicBlock* tryEntry, CloneTryInfo& info,
             BasicBlock* const firstFltBlock = ebd->ebdFilter;
             BasicBlock* const lastFltBlock  = ebd->BBFilterLast();
 
-            if (BitVecOps::IsMember(traits, visited, firstFltBlock->bbNum))
+            if (BitVecOps::IsMember(traits, visited, firstFltBlock->bbID))
             {
                 JITDUMP("already walked filter region for EH#%02u\n", regionIndex);
-                assert(BitVecOps::IsMember(traits, visited, lastFltBlock->bbNum));
+                assert(BitVecOps::IsMember(traits, visited, lastFltBlock->bbID));
             }
             else
             {
@@ -2648,10 +2648,10 @@ BasicBlock* Compiler::fgCloneTryRegion(BasicBlock* tryEntry, CloneTryInfo& info,
         BasicBlock* const firstHndBlock = ebd->ebdHndBeg;
         BasicBlock* const lastHndBlock  = ebd->ebdHndLast;
 
-        if (BitVecOps::IsMember(traits, visited, firstHndBlock->bbNum))
+        if (BitVecOps::IsMember(traits, visited, firstHndBlock->bbID))
         {
             JITDUMP("already walked handler region for EH#%02u\n", regionIndex);
-            assert(BitVecOps::IsMember(traits, visited, lastHndBlock->bbNum));
+            assert(BitVecOps::IsMember(traits, visited, lastHndBlock->bbID));
         }
         else
         {
@@ -3129,9 +3129,19 @@ bool Compiler::fgCanCloneTryRegion(BasicBlock* tryEntry)
 {
     assert(bbIsTryBeg(tryEntry));
 
-    BitVecTraits      traits(compBasicBlockID, this);
-    BitVec            visited = BitVecOps::MakeEmpty(&traits);
-    CloneTryInfo      info(traits, visited);
+    CloneTryInfo      info(this);
     BasicBlock* const result = fgCloneTryRegion(tryEntry, info);
     return result != nullptr;
+}
+
+//------------------------------------------------------------------------
+// CloneTryInfo::CloneTryInfo
+//
+// Arguments:
+//    construct an object for cloning a try region
+//
+CloneTryInfo::CloneTryInfo(Compiler* comp)
+    : Traits(comp->compBasicBlockID, comp)
+    , Visited(BitVecOps::MakeEmpty(&Traits))
+{
 }

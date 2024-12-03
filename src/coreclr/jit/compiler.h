@@ -2559,6 +2559,29 @@ struct RelopImplicationInfo
     bool reverseSense = false;
 };
 
+//------------------------------------------------------------------------
+// CloneTryInfo
+//
+// Describes information needed to clone a try region, and information
+// produced by cloning that region
+//
+struct CloneTryInfo
+{
+    CloneTryInfo(Compiler* comp);
+
+    // bbID based traits and vector
+    //
+    BitVecTraits Traits;
+    BitVec Visited;
+
+    BlockToBlockMap* Map = nullptr;
+    jitstd::vector<BasicBlock*>* BlocksToClone = nullptr;
+    weight_t ProfileScale = 0.0;
+    unsigned EHIndexShift = 0;
+    bool AddEdges = false;
+    bool ScaleOriginalBlockProfile = false;
+};
+
 /*
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -5360,19 +5383,6 @@ public:
     PhaseStatus fgMergeFinallyChains();
 
     PhaseStatus fgCloneFinally();
-
-    struct CloneTryInfo
-    {
-        CloneTryInfo(BitVecTraits& traits, BitVec& visited) : Traits(traits), Visited(visited) {}
-        BitVecTraits Traits;
-        BitVec& Visited;
-        BlockToBlockMap* Map = nullptr;
-        jitstd::vector<BasicBlock*>* BlocksToClone = nullptr;
-        weight_t ProfileScale = 0.0;
-        unsigned EHIndexShift = 0;
-        bool AddEdges = false;
-        bool ScaleOriginalBlockProfile = false;
-    };
 
     bool fgCanCloneTryRegion(BasicBlock* tryEntry);
 

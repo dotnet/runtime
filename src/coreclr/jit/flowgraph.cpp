@@ -6136,7 +6136,7 @@ bool FlowGraphNaturalLoop::CanDuplicateWithEH(INDEBUG(const char** reason))
 //   weightScale            - Factor to scale weight of new blocks by
 //
 // Notes:
-//   Extends uplicate to cover loops with try region entries.
+//   Extends Duplicate to cover loops with try region entries.
 //
 void FlowGraphNaturalLoop::DuplicateWithEH(BasicBlock** insertAfter, BlockToBlockMap* map, weight_t weightScale)
 {
@@ -6216,7 +6216,7 @@ void FlowGraphNaturalLoop::DuplicateWithEH(BasicBlock** insertAfter, BlockToBloc
     VisitLoopBlocksLexical([=, &traits, &visited, &clonedTry, &ehIndexShift](BasicBlock* blk) {
         // Try cloning may have already handled this block
         //
-        if (BitVecOps::IsMember(&traits, visited, blk->bbNum))
+        if (BitVecOps::IsMember(&traits, visited, blk->bbID))
         {
             return BasicBlockVisit::Continue;
         }
@@ -6224,11 +6224,11 @@ void FlowGraphNaturalLoop::DuplicateWithEH(BasicBlock** insertAfter, BlockToBloc
         // If this is a try region entry, clone the entire region now.
         // Defer adding edges and extending EH regions until later.
         //
-        // Updates map, visited, and insertAfter.
+        // Updates map, and insertAfter.
         //
         if (comp->bbIsTryBeg(blk))
         {
-            Compiler::CloneTryInfo info(traits, visited);
+            CloneTryInfo info(comp);
             info.Map          = map;
             info.AddEdges     = false;
             info.ProfileScale = weightScale;
@@ -6236,6 +6236,7 @@ void FlowGraphNaturalLoop::DuplicateWithEH(BasicBlock** insertAfter, BlockToBloc
             BasicBlock* const clonedBlock = comp->fgCloneTryRegion(blk, info, insertAfter);
 
             assert(clonedBlock != nullptr);
+            BitVecOps::UnionD(&traits, visited, info.Visited);
             ehIndexShift += info.EHIndexShift;
             clonedTry = true;
             return BasicBlockVisit::Continue;
@@ -6246,7 +6247,7 @@ void FlowGraphNaturalLoop::DuplicateWithEH(BasicBlock** insertAfter, BlockToBloc
             //
             assert(!comp->bbIsTryBeg(blk));
             assert(!comp->bbIsHandlerBeg(blk));
-            assert(!BitVecOps::IsMember(&traits, visited, blk->bbNum));
+            assert(!BitVecOps::IsMember(&traits, visited, blk->bbID));
         }
 
         // `blk` was not in loop-enclosed try region or companion region.
