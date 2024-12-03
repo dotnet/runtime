@@ -18,7 +18,7 @@ if (NOT CLR_CMAKE_TARGET_BROWSER AND NOT CLR_CMAKE_TARGET_WASI)
 
     if (CLR_CMAKE_USE_SYSTEM_BROTLI)
         add_definitions(-DFEATURE_USE_SYSTEM_BROTLI)
-        if (CLR_CMAKE_TARGET_FREEBSD)
+        if (CLR_CMAKE_HOST_FREEBSD)
             set(CMAKE_REQUIRED_INCLUDES ${CROSS_ROOTFS}/usr/local/include)
         endif()
     else ()
