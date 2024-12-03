@@ -175,8 +175,10 @@ namespace System.Runtime.CompilerServices
                 mt = mt->ParentMethodTable;
             }
 
+#if FEATURE_TYPEEQUIVALENCE
             // this helper is not supposed to be used with type-equivalent "to" type.
             Debug.Assert(!((MethodTable*)toTypeHnd)->HasTypeEquivalence);
+#endif // FEATURE_TYPEEQUIVALENCE
 
             obj = null;
 
