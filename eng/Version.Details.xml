@@ -372,11 +372,11 @@
       <Uri>https://github.com/dotnet/roslyn</Uri>
       <Sha>3bff3622487486dec7794dfd0c71e05a52c313a4</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.CodeAnalysis.Analyzers" Version="3.11.0-beta1.24508.2">
+    <Dependency Name="Microsoft.CodeAnalysis.Analyzers" Version="3.11.0-beta1.24574.2">
       <Uri>https://github.com/dotnet/roslyn-analyzers</Uri>
       <Sha>3d61c57c73c3dd5f1f407ef9cd3414d94bf0eaf2</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.CodeAnalysis.NetAnalyzers" Version="9.0.0-preview.24508.2">
+    <Dependency Name="Microsoft.CodeAnalysis.NetAnalyzers" Version="9.0.0-preview.24574.2">
       <Uri>https://github.com/dotnet/roslyn-analyzers</Uri>
       <Sha>3d61c57c73c3dd5f1f407ef9cd3414d94bf0eaf2</Sha>
     </Dependency>
