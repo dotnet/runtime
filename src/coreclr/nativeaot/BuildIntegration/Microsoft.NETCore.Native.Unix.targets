@@ -166,7 +166,7 @@ The .NET Foundation licenses this file to you under the MIT license.
 
     <ItemGroup>
       <!-- zlib must be added after System.IO.Compression.Native, order matters. -->
-      <NativeLibrary Condition="'$(UseSystemZlib)' != 'true'" Include="$(IlcSdkPath)libz.a" />
+      <NativeLibrary Condition="'$(UseSystemZlib)' != 'true'" Include="$(IlcFrameworkNativePath)libz.a" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(StaticICULinking)' == 'true' and '$(NativeLib)' != 'Static' and '$(InvariantGlobalization)' != 'true'">

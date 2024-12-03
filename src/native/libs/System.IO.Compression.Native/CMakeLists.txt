@@ -91,6 +91,8 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
     endif()
 
     set_target_properties(System.IO.Compression.Native-Static PROPERTIES OUTPUT_NAME System.IO.Compression.Native CLEAN_DIRECT_OUTPUT 1)
+
+    install (TARGETS zlib DESTINATION ${STATIC_LIB_DESTINATION} COMPONENT libs)
 else ()
     if (GEN_SHARED_LIB)
         include (GenerateExportHeader)
@@ -163,12 +165,11 @@ else ()
     if(STATIC_LIBS_ONLY)
         install_static_library(System.IO.Compression.Native.Aot aotsdk nativeaot)
         install_static_library(System.IO.Compression.Native.Aot.GuardCF aotsdk nativeaot)
+        if (NOT CLR_CMAKE_USE_SYSTEM_ZLIB)
+            install_static_library(zlib aotsdk nativeaot)
+        endif()
     endif()
 
 endif ()
-
-if((NOT CLR_CMAKE_USE_SYSTEM_ZLIB) AND STATIC_LIBS_ONLY)
-    install_static_library(zlib aotsdk nativeaot)
-endif()
 
 install (TARGETS System.IO.Compression.Native-Static DESTINATION ${STATIC_LIB_DESTINATION} COMPONENT libs)
