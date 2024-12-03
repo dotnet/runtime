@@ -297,18 +297,15 @@ void Compiler::fgUpdateACDsBeforeEHTableEntryRemoval(unsigned XTnum)
         //
         AddCodeDscKey oldKey(add);
 
-        const bool inHnd = add->acdHndIndex > 0;
-        const bool inTry = add->acdTryIndex > 0;
-        const bool inThisHnd =
-            inHnd && ((unsigned)(add->acdHndIndex - 1) == XTnum) && (add->acdKeyDsg == AcdKeyDesignator::KD_HND);
-        const bool inThisFlt =
-            inHnd && ((unsigned)(add->acdHndIndex - 1) == XTnum) && (add->acdKeyDsg == AcdKeyDesignator::KD_FLT);
-        const bool inThisTry =
-            inTry && ((unsigned)(add->acdTryIndex - 1) == XTnum) && (add->acdKeyDsg == AcdKeyDesignator::KD_TRY);
+        const bool inHnd     = add->acdHndIndex > 0;
+        const bool inTry     = add->acdTryIndex > 0;
+        const bool inThisHnd = inHnd && ((unsigned)(add->acdHndIndex - 1) == XTnum);
+        const bool inThisFlt = inHnd && ((unsigned)(add->acdHndIndex - 1) == XTnum);
+        const bool inThisTry = inTry && ((unsigned)(add->acdTryIndex - 1) == XTnum);
 
         // If this ACD is in the filter of this region, it is no longer needed
         //
-        if (inThisFlt)
+        if (inThisFlt && (add->acdKeyDsg == AcdKeyDesignator::KD_FLT))
         {
             bool const removed = map->Remove(oldKey);
             assert(removed);
@@ -326,6 +323,8 @@ void Compiler::fgUpdateACDsBeforeEHTableEntryRemoval(unsigned XTnum)
             continue;
         }
 
+        bool rekey = false;
+
         // If this ACD is in the handler of this region, update the
         // enclosing handler index.
         //
@@ -339,6 +338,8 @@ void Compiler::fgUpdateACDsBeforeEHTableEntryRemoval(unsigned XTnum)
             {
                 add->acdHndIndex = ebd->ebdEnclosingHndIndex + 1;
             }
+
+            rekey = (add->acdKeyDsg == AcdKeyDesignator::KD_HND);
         }
 
         // If this ACD is in the try of this region, update the
@@ -354,6 +355,17 @@ void Compiler::fgUpdateACDsBeforeEHTableEntryRemoval(unsigned XTnum)
             {
                 add->acdTryIndex = ebd->ebdEnclosingTryIndex + 1;
             }
+            rekey = (add->acdKeyDsg == AcdKeyDesignator::KD_TRY);
+        }
+
+        if (!rekey)
+        {
+            // If we didn't change the enclosing region for the ACD,
+            // the modifications above didn't change the key.
+            //
+            JITDUMP("ACD%u non-enclosing region updated; key remains the same\n", add->acdNum);
+            JITDUMPEXEC(add->Dump());
+            continue;
         }
 
         // Update the ACD key designator (note it may change).
@@ -388,7 +400,7 @@ void Compiler::fgUpdateACDsBeforeEHTableEntryRemoval(unsigned XTnum)
         {
             // If not, re-enter this ACD in the map with the updated key
             //
-            JITDUMP("ACD%u updated\n", add->acdNum);
+            JITDUMP("ACD%u updated with new key\n", add->acdNum);
             map->Set(newKey, add);
             JITDUMPEXEC(add->Dump());
         }
