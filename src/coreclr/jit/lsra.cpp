@@ -960,7 +960,7 @@ void LinearScan::setBlockSequence()
             FlowGraphNaturalLoops* const loops = FlowGraphNaturalLoops::Find(dfsTree);
             unsigned                     index = 0;
 
-            auto addToSequence = [this, sequence, &index](BasicBlock* block) {
+            auto addToSequence = [sequence, &index](BasicBlock* block) {
                 sequence[index++] = block;
             };
 
