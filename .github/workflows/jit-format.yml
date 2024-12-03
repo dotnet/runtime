@@ -39,10 +39,6 @@ jobs:
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'
-      - name: Build jitutils
-        run: |
-          ./bootstrap${{ matrix.os.extension }}
-        working-directory: jitutils
       - name: Checkout runtime
         uses: actions/checkout@v4
         with:
