@@ -1109,7 +1109,7 @@ The Debug Interchange Format described in partition V is superseded by the [Port
 
 The following is added to the section "II.10.5.1 Instance constructor":
 
-> Instance constructors shall not be executed multiple times for a single object instance. Explicit calls to constructors from user code are only permitted when calling instance constructors of the base type inside of instance constructors of the derived type.
+> Instance constructors shall not be executed multiple times for a single object instance. Explicit calls to constructors on object instances from user code are only permitted when calling instance constructors of the base type inside of instance constructors of the derived type.
 
 ## Type initialization
 
