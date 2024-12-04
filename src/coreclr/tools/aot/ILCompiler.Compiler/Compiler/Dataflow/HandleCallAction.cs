@@ -711,8 +711,9 @@ namespace ILLink.Shared.TrimAnalysis
             public IEnumerable<DependencyNodeCore<NodeFactory>.DependencyListEntry> InstantiateDependencies(NodeFactory factory, Instantiation typeInstantiation, Instantiation methodInstantiation)
             {
                 var list = new DependencyList();
-                if (_method.InstantiateSignature(typeInstantiation, methodInstantiation).CheckConstraints(new InstantiationContext(typeInstantiation, methodInstantiation)))
-                    RootingHelpers.TryGetDependenciesForReflectedMethod(ref list, factory, _method.InstantiateSignature(typeInstantiation, methodInstantiation), "MakeGenericMethod");
+                MethodDesc instantiatedMethod = _method.InstantiateSignature(typeInstantiation, methodInstantiation);
+                if (instantiatedMethod.CheckConstraints(new InstantiationContext(typeInstantiation, methodInstantiation)))
+                    RootingHelpers.TryGetDependenciesForReflectedMethod(ref list, factory, instantiatedMethod, "MakeGenericMethod");
                 return list;
             }
         }
@@ -726,8 +727,9 @@ namespace ILLink.Shared.TrimAnalysis
             public IEnumerable<DependencyNodeCore<NodeFactory>.DependencyListEntry> InstantiateDependencies(NodeFactory factory, Instantiation typeInstantiation, Instantiation methodInstantiation)
             {
                 var list = new DependencyList();
-                if (_type.InstantiateSignature(typeInstantiation, methodInstantiation).CheckConstraints(new InstantiationContext(typeInstantiation, methodInstantiation)))
-                    RootingHelpers.TryGetDependenciesForReflectedType(ref list, factory, _type.InstantiateSignature(typeInstantiation, methodInstantiation), "MakeGenericType");
+                TypeDesc instantiatedType = _type.InstantiateSignature(typeInstantiation, methodInstantiation);
+                if (instantiatedType.CheckConstraints(new InstantiationContext(typeInstantiation, methodInstantiation)))
+                    RootingHelpers.TryGetDependenciesForReflectedType(ref list, factory, instantiatedType, "MakeGenericType");
                 return list;
             }
         }
