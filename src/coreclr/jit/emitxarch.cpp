@@ -1383,9 +1383,6 @@ bool emitter::TakesRex2Prefix(const instrDesc* id) const
         return false;
     }
 
-    // TODO-apx:
-    // there are duplicated stress logics here and in HasExtendedGPReg()
-    // need to clean up later.
 #if defined(DEBUG)
     if (emitComp->DoJitStressRex2Encoding())
     {
@@ -1882,22 +1879,10 @@ bool emitter::IsExtendedGPReg(regNumber reg) const
         return false;
     }
 
-// TODO-apx: It would be better to have stress mode on LSRA to forcely allocate EGPRs,
-//           instead of stressing here.
-#if defined(DEBUG)
-    if (emitComp->DoJitStressRex2Encoding())
-    {
-        return true;
-    }
-#endif // DEBUG
-
-    if (UseRex2Encoding())
-    {
-        /*
-            include EGPR checks here.
-        */
-        // return (reg >= REG_R16) && (reg <= REG_31)
-    }
+    // TODO-XArch-APX: 
+    // we will eventually check EGPRs here: (reg >= REG_R16) && (reg <= REG_R31).
+    // revisit this part when LSRA is updated.
+    return false;
 #endif
     return false;
 }
@@ -3573,7 +3558,6 @@ inline unsigned emitter::insEncodeReg012(const instrDesc* id, regNumber reg, emi
         }
         if (false /*reg >= REG_R16 && reg <= REG_R31*/)
         {
-            // TODO-XArch-APX:
             // seperate the encoding for REX2.B3/B4, REX2.B3 will be handled in `AddRexBPrefix`.
             assert(TakesRex2Prefix(id));
             *code |= 0x001000000000ULL; // REX2.B4
@@ -3623,7 +3607,6 @@ inline unsigned emitter::insEncodeReg345(const instrDesc* id, regNumber reg, emi
         }
         if (false /*reg >= REG_R16 && reg <= REG_R31*/)
         {
-            // TODO-XArch-APX:
             // seperate the encoding for REX2.R3/R4, REX2.R3 will be handled in `AddRexRPrefix`.
             assert(TakesRex2Prefix(id));
             *code |= 0x004000000000ULL; // REX2.R4
@@ -3735,7 +3718,6 @@ inline unsigned emitter::insEncodeRegSIB(const instrDesc* id, regNumber reg, cod
         }
         if (false /*reg >= REG_R16 && reg <= REG_R31*/)
         {
-            // TODO-XArch-APX:
             // seperate the encoding for REX2.X3/X4, REX2.X3 will be handled in `AddRexXPrefix`.
             assert(TakesRex2Prefix(id));
             *code |= 0x002000000000ULL; // REX2.X4
