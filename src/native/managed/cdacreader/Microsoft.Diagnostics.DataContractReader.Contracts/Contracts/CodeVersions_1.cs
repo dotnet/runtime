@@ -183,8 +183,6 @@ internal readonly partial struct CodeVersions_1 : ICodeVersions
         });
     }
 
-
-
     [Flags]
     internal enum MethodDescVersioningStateFlags : byte
     {

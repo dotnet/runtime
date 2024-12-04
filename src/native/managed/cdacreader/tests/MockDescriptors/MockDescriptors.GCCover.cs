@@ -45,7 +45,7 @@ internal partial class MockDescriptors
                 new(1),
                 gcCoverPointer);
 
-            return NativeCodeVersionHandle.OfExplicit(nativeCodeVersionNode);
+            return NativeCodeVersionHandle.CreateExplicit(nativeCodeVersionNode);
         }
     }
 }

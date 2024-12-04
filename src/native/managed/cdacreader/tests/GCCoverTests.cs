@@ -69,7 +69,6 @@ public class GCCoverTests
         GetGCCoverageInfoSyntheticHelper(arch, TargetPointer.Null);
     }
 
-
     private void GetGCCoverageInfoSyntheticHelper(MockTarget.Architecture arch, TargetPointer expectedGCCoverageInfo)
     {
         Mock<IRuntimeTypeSystem> mockRTS = new Mock<IRuntimeTypeSystem>();
@@ -77,7 +76,7 @@ public class GCCoverTests
         TargetPointer methodDesc = new(/* arbitrary */ 0x1234_5678);
         MockSyntheticGCCoverageInfo(mockRTS, methodDesc, expectedGCCoverageInfo);
 
-        NativeCodeVersionHandle codeVersionHandle = NativeCodeVersionHandle.OfSynthetic(methodDesc);
+        NativeCodeVersionHandle codeVersionHandle = NativeCodeVersionHandle.CreateSynthetic(methodDesc);
 
         var target = CreateTarget(arch, new MockGCCover(arch), mockRTS);
 
