@@ -263,12 +263,12 @@ namespace System.Reflection.Emit.Tests
 
                                 Assert.Equal("F", metadataReader.GetString(memberRef.Name));
 
-                                // The field handle should point to the open generic field, and not the resolved generic type.
-                                Assert.True(IsGenericField(metadataReader.GetBlobReader(memberRef.Signature)));
+                                // A reference to a generic field should point to the open generic field, and not the resolved generic type.
+                                Assert.Equal(shouldFieldBeGeneric, IsGenericField(metadataReader.GetBlobReader(memberRef.Signature)));
                             }
                         }
 
-                        Assert.Equal(shouldFieldBeGeneric, found);
+                        Assert.True(found);
                     }
                 }
             }
@@ -277,7 +277,8 @@ namespace System.Reflection.Emit.Tests
             {
                 while (signatureReader.RemainingBytes > 0)
                 {
-                    if (signatureReader.ReadSignatureTypeCode() == SignatureTypeCode.GenericTypeParameter)
+                    SignatureTypeCode typeCode = signatureReader.ReadSignatureTypeCode();
+                    if (typeCode == SignatureTypeCode.GenericTypeParameter)
                     {
                         return true;
                     }
