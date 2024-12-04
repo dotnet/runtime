@@ -23,6 +23,7 @@
     <PackageReference Include="LightInject.Microsoft.DependencyInjection" Version="3.7.1" />
     <PackageReference Include="Grace.DependencyInjection.Extensions" Version="7.1.0" />
     <PackageReference Include="Stashbox.Extensions.Dependencyinjection" Version="4.2.3" />
+    <!-- Update the transitive STJ to a non-vulnerable version. -->
     <PackageReference Include="System.Text.Json" Version="$(SystemTextJsonVersion)" />
   </ItemGroup>
 
