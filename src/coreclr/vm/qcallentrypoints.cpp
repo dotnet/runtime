@@ -120,6 +120,7 @@ static const Entry s_QCall[] =
     DllImportEntry(RuntimeTypeHandle_MakeArray)
     DllImportEntry(RuntimeTypeHandle_IsCollectible)
     DllImportEntry(RuntimeTypeHandle_GetConstraints)
+    DllImportEntry(RuntimeTypeHandle_GetArgumentTypesFromFunctionPointer)
     DllImportEntry(RuntimeTypeHandle_GetAssemblySlow)
     DllImportEntry(RuntimeTypeHandle_GetModuleSlow)
     DllImportEntry(RuntimeTypeHandle_GetNumVirtualsAndStaticVirtuals)

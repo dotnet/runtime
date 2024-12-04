@@ -455,8 +455,16 @@ namespace System
             return new RuntimeMethodHandleInternal(GetMethodAt(typeHandle.AsMethodTable(), slot));
         }
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern Type[] GetArgumentTypesFromFunctionPointer(RuntimeType type);
+        internal static Type[] GetArgumentTypesFromFunctionPointer(RuntimeType type)
+        {
+            Debug.Assert(type.IsFunctionPointer);
+            Type[]? argTypes = null;
+            GetArgumentTypesFromFunctionPointer(new QCallTypeHandle(ref type), ObjectHandleOnStack.Create(ref argTypes));
+            return argTypes!;
+        }
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_GetArgumentTypesFromFunctionPointer")]
+        private static partial void GetArgumentTypesFromFunctionPointer(QCallTypeHandle type, ObjectHandleOnStack argTypes);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern bool IsUnmanagedFunctionPointer(RuntimeType type);

@@ -680,47 +680,46 @@ FCIMPL1(INT32, RuntimeTypeHandle::GetAttributes, ReflectClassBaseObject *pTypeUN
 }
 FCIMPLEND
 
-FCIMPL1(Object *, RuntimeTypeHandle::GetArgumentTypesFromFunctionPointer, ReflectClassBaseObject *pTypeUNSAFE)
+extern "C" void QCALLTYPE RuntimeTypeHandle_GetArgumentTypesFromFunctionPointer(QCall::TypeHandle pTypeHandle, QCall::ObjectHandleOnStack argTypes)
 {
-    CONTRACTL {
-        FCALL_CHECK;
-        PRECONDITION(CheckPointer(pTypeUNSAFE));
-    }
-    CONTRACTL_END;
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+
+    GCX_COOP();
 
     struct
     {
-        PTRARRAYREF retVal;
+        PTRARRAYREF types;
     } gc;
+    gc.types = NULL;
+    GCPROTECT_BEGIN(gc);
 
-    gc.retVal = NULL;
+    FnPtrTypeDesc* fnPtr = pTypeHandle.AsTypeHandle().AsFnPtrType();
 
-    REFLECTCLASSBASEREF refType = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(pTypeUNSAFE);
-    TypeHandle typeHandle = refType->GetType();
-    if (!typeHandle.IsFnPtrType())
-        FCThrowRes(kArgumentException, W("Arg_InvalidHandle"));
+    // Allocate a System.Type[] for arguments and return types.
+    MethodTable *pMT = CoreLibBinder::GetClass(CLASS__TYPE);
+    TypeHandle arrayHandle = ClassLoader::LoadArrayTypeThrowing(TypeHandle(pMT), ELEMENT_TYPE_SZARRAY);
+    DWORD cRetAndArgTypes = fnPtr->GetNumArgs() + 1;
+    gc.types = (PTRARRAYREF)AllocateSzArray(arrayHandle, cRetAndArgTypes);
 
-    FnPtrTypeDesc* fnPtr = typeHandle.AsFnPtrType();
+    TypeHandle* retAndArgTypes = fnPtr->GetRetAndArgTypes();
+    _ASSERTE(retAndArgTypes != NULL);
 
-    HELPER_METHOD_FRAME_BEGIN_RET_PROTECT(gc);
+    // Fill the array.
+    for (DWORD position = 0; position < cRetAndArgTypes; ++position)
     {
-        MethodTable *pMT = CoreLibBinder::GetClass(CLASS__TYPE);
-        TypeHandle arrayHandle = ClassLoader::LoadArrayTypeThrowing(TypeHandle(pMT), ELEMENT_TYPE_SZARRAY);
-        DWORD cArgs = fnPtr->GetNumArgs();
-        gc.retVal = (PTRARRAYREF) AllocateSzArray(arrayHandle, cArgs + 1);
-
-        for (DWORD position = 0; position <= cArgs; position++)
-        {
-            TypeHandle typeHandle = fnPtr->GetRetAndArgTypes()[position];
-            OBJECTREF refType = typeHandle.GetManagedClassObject();
-            gc.retVal->SetAt(position, refType);
-        }
+        TypeHandle typeHandle = retAndArgTypes[position];
+        OBJECTREF refType = typeHandle.GetManagedClassObject();
+        gc.types->SetAt(position, refType);
     }
-    HELPER_METHOD_FRAME_END();
 
-    return OBJECTREFToObject(gc.retVal);
+    argTypes.Set(gc.types);
+
+    GCPROTECT_END();
+
+    END_QCALL;
 }
-FCIMPLEND
 
 FCIMPL1(FC_BOOL_RET, RuntimeTypeHandle::IsUnmanagedFunctionPointer, ReflectClassBaseObject *pTypeUNSAFE);
 {
