@@ -6048,7 +6048,7 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
     // but it requires moving the whole set of logic down into compCompileHelper after compInitOptions has
     // run and we're going to end up exiting early if JIT_FLAG_ALT_JIT and opts.altJit don't match anyways
 
-    if (!info.compMatchedVM || compileFlags->IsSet(JitFlags::JIT_FLAG_ALT_JIT))
+    if (!info.compMatchedVM || (compileFlags->IsSet(JitFlags::JIT_FLAG_ALT_JIT) && JitConfig.RunAltJitCode() == 0))
     {
         CORINFO_InstructionSetFlags instructionSetFlags;
 
