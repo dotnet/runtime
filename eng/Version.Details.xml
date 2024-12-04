@@ -336,17 +336,17 @@
       <Uri>https://github.com/dotnet/runtime</Uri>
       <Sha>55eee324653e01cf28809d02b25a5b0894b58d22</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.XHarness.TestRunners.Common" Version="10.0.0-prerelease.24568.1">
+    <Dependency Name="Microsoft.DotNet.XHarness.TestRunners.Common" Version="10.0.0-prerelease.24575.1">
       <Uri>https://github.com/dotnet/xharness</Uri>
-      <Sha>fe4a5344aaf4826ca41b57cf0cd89342ef37c7b0</Sha>
+      <Sha>9fca69998474507f6515c1351efe027dbf194c87</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.XHarness.TestRunners.Xunit" Version="10.0.0-prerelease.24568.1">
+    <Dependency Name="Microsoft.DotNet.XHarness.TestRunners.Xunit" Version="10.0.0-prerelease.24575.1">
       <Uri>https://github.com/dotnet/xharness</Uri>
-      <Sha>fe4a5344aaf4826ca41b57cf0cd89342ef37c7b0</Sha>
+      <Sha>9fca69998474507f6515c1351efe027dbf194c87</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.XHarness.CLI" Version="10.0.0-prerelease.24568.1">
+    <Dependency Name="Microsoft.DotNet.XHarness.CLI" Version="10.0.0-prerelease.24575.1">
       <Uri>https://github.com/dotnet/xharness</Uri>
-      <Sha>fe4a5344aaf4826ca41b57cf0cd89342ef37c7b0</Sha>
+      <Sha>9fca69998474507f6515c1351efe027dbf194c87</Sha>
     </Dependency>
     <Dependency Name="Microsoft.DotNet.PackageTesting" Version="10.0.0-beta.24570.4">
       <Uri>https://github.com/dotnet/arcade</Uri>
