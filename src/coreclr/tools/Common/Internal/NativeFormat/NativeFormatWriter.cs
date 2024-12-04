@@ -1996,7 +1996,7 @@ namespace Internal.NativeFormat
         // Current size of index entry
         private int _entryIndexSize; // 0 - uint8, 1 - uint16, 2 - uint32
 
-        public const int DefaultFillFactor = 13;
+        public const int DefaultFillFactor = 5;
 
         public VertexHashtable(int fillFactor = DefaultFillFactor)
         {
