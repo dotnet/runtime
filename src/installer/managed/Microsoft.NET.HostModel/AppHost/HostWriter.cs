@@ -209,9 +209,11 @@ namespace Microsoft.NET.HostModel.AppHost
         /// </summary>
         /// <param name="appHostPath">The path of Apphost template, which has the place holder</param>
         /// <param name="bundleHeaderOffset">The offset to the location of bundle header</param>
+        /// <param name="macosCodesign">Whether to ad-hoc sign the bundle as a Mach-O executable</param>
         public static void SetAsBundle(
             string appHostPath,
-            long bundleHeaderOffset)
+            long bundleHeaderOffset,
+            bool macosCodesign = false)
         {
             byte[] bundleHeaderPlaceholder = {
                 // 8 bytes represent the bundle header-offset
@@ -226,13 +228,38 @@ namespace Microsoft.NET.HostModel.AppHost
 
             // Re-write the destination apphost with the proper contents.
             RetryUtil.RetryOnIOError(() =>
-                BinaryUtils.SearchAndReplace(appHostPath,
-                                             bundleHeaderPlaceholder,
-                                             BitConverter.GetBytes(bundleHeaderOffset),
-                                             pad0s: false));
-
+                        BinaryUtils.SearchAndReplace(appHostPath,
+                                                    bundleHeaderPlaceholder,
+                                                    BitConverter.GetBytes(bundleHeaderOffset),
+                                                    pad0s: false));
             RetryUtil.RetryOnIOError(() =>
-                MachOUtils.AdjustHeadersForBundle(appHostPath));
+            {
+                using (FileStream bundleStream = new FileStream(appHostPath, FileMode.Open, FileAccess.ReadWrite))
+                {
+                    long bundleSize = bundleStream.Length;
+                    long mmapFileSize = bundleSize;
+                    if (macosCodesign)
+                    {
+                        mmapFileSize += MachObjectFile.GetSignatureSizeEstimate((uint)bundleSize, Path.GetFileName(appHostPath));
+                    }
+                    using (MemoryMappedFile memoryMappedFile = MemoryMappedFile.CreateFromFile(bundleStream, null, mmapFileSize, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, leaveOpen: true))
+                    using (MemoryMappedViewAccessor accessor = memoryMappedFile.CreateViewAccessor(0, 0, MemoryMappedFileAccess.ReadWrite))
+                    {
+                        if (MachObjectFile.IsMachOImage(accessor))
+                        {
+                            var machObjectFile = MachObjectFile.Create(accessor);
+                            if (machObjectFile.HasSignature)
+                                throw new AppHostMachOFormatException(MachOFormatError.SignNotRemoved);
+                            machObjectFile.TryAdjustHeadersForBundle((ulong)bundleSize, accessor);
+                            if (macosCodesign)
+                            {
+                                bundleSize = machObjectFile.CreateAdHocSignature(accessor, Path.GetFileName(appHostPath));
+                            }
+                        }
+                    }
+                    bundleStream.SetLength(bundleSize);
+                }
+            });
 
             // Memory-mapped write does not updating last write time
             RetryUtil.RetryOnIOError(() =>

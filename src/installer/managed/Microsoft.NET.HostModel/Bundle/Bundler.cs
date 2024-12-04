@@ -345,18 +345,7 @@ namespace Microsoft.NET.HostModel.Bundle
                 _tracer.Log($"Bundle: Path={bundlePath}, Size={bundle.Length}");
             }
 
-            HostWriter.SetAsBundle(bundlePath, headerOffset);
-
-            // Sign the bundle if requested
-            // TODO: use managed code signing
-            if (_macosCodesign && RuntimeInformation.IsOSPlatform(OSPlatform.OSX) && Codesign.IsAvailable)
-            {
-                var (exitCode, stdErr) = Codesign.Run("-s -", bundlePath);
-                if (exitCode != 0)
-                {
-                    throw new InvalidOperationException($"Failed to codesign '{bundlePath}': {stdErr}");
-                }
-            }
+            HostWriter.SetAsBundle(bundlePath, headerOffset, _macosCodesign);
 
             return bundlePath;
         }

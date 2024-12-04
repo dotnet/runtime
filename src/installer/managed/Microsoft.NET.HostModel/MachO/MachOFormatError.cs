@@ -19,8 +19,6 @@ namespace Microsoft.NET.HostModel.AppHost
         SignCommandNotLast,     // CODE_SIGNATURE command must be the last command
         SignBlobNotLast,        // Signature blob must be at the very end of the file
         SignDoesntFollowSymtab, // Signature blob must immediately follow the Symtab
-        MemoryMapAccessFault,   // Error reading the memory-mapped apphost
-        InvalidUTF8,            // UTF8 decoding failed
         SignNotRemoved,         // Signature not removed from the host (while processing a single-file bundle)
     }
 }
