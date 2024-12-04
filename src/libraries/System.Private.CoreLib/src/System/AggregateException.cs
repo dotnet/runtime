@@ -221,8 +221,8 @@ namespace System
         /// </remarks>
         public override Exception GetBaseException()
         {
-            // Recursively traverse the inner exceptions as long as the inner exception of type
-            // AggregateException and has only one inner exception
+            // Recursively traverse the inner exceptions as long as the inner exception is of type
+            // AggregateException and has exactly one inner exception
             Exception? back = this;
             AggregateException? backAsAggregate = this;
             while (backAsAggregate != null && backAsAggregate.InnerExceptions.Count == 1)
