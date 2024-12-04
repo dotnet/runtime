@@ -4446,10 +4446,7 @@ bool Compiler::fgComputeCalledCount(weight_t returnWeight)
     {
         // Skip past any/all BBF_INTERNAL blocks that may have been added before the first real IL block.
         //
-        while (firstILBlock->HasFlag(BBF_INTERNAL))
-        {
-            firstILBlock = firstILBlock->Next();
-        }
+        firstILBlock = fgGetFirstILBlock();
     }
 
     // The 'firstILBlock' is now expected to have a profile-derived weight
@@ -4474,7 +4471,7 @@ bool Compiler::fgComputeCalledCount(weight_t returnWeight)
 
     // If we allocated a scratch block as the first BB then we need
     // to set its profile-derived weight to be fgCalledCount
-    if (fgFirstBBisScratch())
+    if (fgFirstBB->HasFlag(BBF_INTERNAL))
     {
         fgFirstBB->setBBProfileWeight(fgCalledCount);
         madeChanges = true;
