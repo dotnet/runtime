@@ -3,6 +3,8 @@
 
 It can show sections overview in the summary output, disassemble function(s) code, show information about dotnet AOT. It is available as [dotnet tool](https://docs.microsoft.com/en-us/dotnet/core/tools/global-tools).
 
+It can also inspect WIT component wasm files, produced by WASI tools. And wasm object files produced by clang or other tools.
+
 # wa-diff
 
 `wa-diff` is a tool to compare WebAssembly binary files
