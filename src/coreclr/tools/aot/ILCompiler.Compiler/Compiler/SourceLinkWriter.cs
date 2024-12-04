@@ -45,10 +45,15 @@ namespace ILCompiler
 
             if (!_sourceLinkMaps.TryGetValue(ecmaMethod.Module, out SourceLinkMap map))
             {
-                ReadOnlySpan<byte> sourceLinkBytes = ecmaMethod.Module.PdbReader.GetSourceLinkData();
+                ReadOnlySpan<byte> sourceLinkBytes = ecmaMethod.Module.PdbReader is PdbSymbolReader reader ? reader.GetSourceLinkData() : default;
                 string sourceLinkData = sourceLinkBytes.IsEmpty
                     ? "{\"documents\":{}}" : Encoding.UTF8.GetString(sourceLinkBytes);
                 _sourceLinkMaps.Add(ecmaMethod.Module, map = SourceLinkMap.Parse(sourceLinkData));
+            }
+
+            if (map.Entries.Count == 0)
+            {
+                return;
             }
 
             foreach (NativeSequencePoint sequencePoint in debugInfoNode.GetNativeSequencePoints())
