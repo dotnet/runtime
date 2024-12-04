@@ -68,10 +68,34 @@ namespace WebAssemblyInfo
                                 Console.WriteLine($"Segment {i} name: {name} alignment: {alignment} flags: {flags}");
                         }
                         break;
-                    // case LinkingSubsectionType.WasmInitFunctions:
-                    //     break;
-                    // case LinkingSubsectionType.WasmComdatInfo:
-                    //     break;
+                    case LinkingSubsectionType.WasmInitFunctions:
+                        count = ReadU32();
+                        for (var i = 0; i < count; i++)
+                        {
+                            var priority = ReadU32();
+                            var symbolIndex = ReadU32();
+                            if (Context.Verbose)
+                                Console.WriteLine($"Init function {i} priority: {priority} symbol index: {symbolIndex}");
+                        }
+                        break;
+                    case LinkingSubsectionType.WasmComdatInfo:
+                        count = ReadU32();
+                        for (var i = 0; i < count; i++)
+                        {
+                            var name = ReadString();
+                            var flags = ReadU32();
+                            if (Context.Verbose)
+                                Console.WriteLine($"COMDAT {i} name: {name} flags: {flags}");
+                            var symbolsCount = ReadU32();
+                            for (var j = 0; j < symbolsCount; j++)
+                            {
+                                var kind = (SymbolKind)Reader.ReadByte();
+                                var symbolIndex = ReadU32();
+                                if (Context.Verbose)
+                                    Console.WriteLine($"  Symbol {j} kind: {kind} index: {symbolIndex}");
+                            }
+                        }
+                        break;
                     case LinkingSubsectionType.WasmSymbolTable:
                         LinkingReadSymbolTable();
                         break;
