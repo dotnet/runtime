@@ -80,11 +80,6 @@ INST(csrrci,        "csrrci",         0,    0x00007073)
 
 INST(ecall,         "ecall",          0,    0x00000073)
 INST(ebreak,        "ebreak",         0,    0x00100073)
-INST(uret,          "uret",           0,    0x00200073)
-INST(sret,          "sret",           0,    0x10200073)
-INST(mret,          "mret",           0,    0x30200073)
-INST(wfi,           "wfi",            0,    0x10500073)
-INST(sfence_vma,    "sfence.vma",     0,    0x12000073)
 
 //// R_R_I
 INST(lb,            "lb",             LD,   0x00000003)
