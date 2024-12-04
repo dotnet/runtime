@@ -217,7 +217,7 @@ namespace System.Diagnostics
 
         /// <summary>
         /// This is an ID that is specific to a particular request.   Filtering
-        /// to a particular ID insures that you get only one request that matches.
+        /// to a particular ID ensures that you get only one request that matches.
         /// Id has a hierarchical structure: '|root-id.id1_id2.id3_' Id is generated when
         /// <see cref="Start"/> is called by appending suffix to Parent.Id
         /// or ParentId; Activity has no Id until it started

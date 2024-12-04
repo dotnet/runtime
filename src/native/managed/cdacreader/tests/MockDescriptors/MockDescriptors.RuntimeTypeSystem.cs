@@ -4,7 +4,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace Microsoft.Diagnostics.DataContractReader.UnitTests;
+namespace Microsoft.Diagnostics.DataContractReader.Tests;
 
 internal partial class MockDescriptors
 {
@@ -32,7 +32,7 @@ internal partial class MockDescriptors
         internal readonly MockMemorySpace.Builder Builder;
 
         internal Dictionary<DataType, Target.TypeInfo> Types { get; }
-        internal (string Name, ulong Value, string? Type)[] Globals { get; }
+        internal (string Name, ulong Value)[] Globals { get; }
 
         internal MockMemorySpace.BumpAllocator TypeSystemAllocator { get; }
 
@@ -52,8 +52,8 @@ internal partial class MockDescriptors
             AddGlobalPointers();
             Globals =
             [
-                (nameof(Constants.Globals.FreeObjectMethodTable), TestFreeObjectMethodTableGlobalAddress, null),
-                (nameof(Constants.Globals.MethodDescAlignment), GetMethodDescAlignment(Builder.TargetTestHelpers), nameof(DataType.uint64)),
+                (nameof(Constants.Globals.FreeObjectMethodTable), TestFreeObjectMethodTableGlobalAddress),
+                (nameof(Constants.Globals.MethodDescAlignment), GetMethodDescAlignment(Builder.TargetTestHelpers)),
             ];
         }
 

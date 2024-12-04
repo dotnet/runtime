@@ -1480,7 +1480,7 @@ public:
     bool isCommutativeHWIntrinsic() const;
     bool isContainableHWIntrinsic() const;
     bool isRMWHWIntrinsic(Compiler* comp);
-    bool isEvexCompatibleHWIntrinsic() const;
+    bool isEvexCompatibleHWIntrinsic(Compiler* comp) const;
     bool isEmbeddedMaskingCompatibleHWIntrinsic() const;
 #else
     bool isCommutativeHWIntrinsic() const
@@ -1665,32 +1665,9 @@ public:
     }
 
     bool OperIsHWIntrinsic(NamedIntrinsic intrinsicId) const;
-
-    bool OperIsConvertMaskToVector() const
-    {
-#if defined(FEATURE_HW_INTRINSICS)
-#if defined(TARGET_XARCH)
-        return OperIsHWIntrinsic(NI_EVEX_ConvertMaskToVector);
-#elif defined(TARGET_ARM64)
-        return OperIsHWIntrinsic(NI_Sve_ConvertMaskToVector);
-#endif // !TARGET_XARCH && !TARGET_ARM64
-#else
-        return false;
-#endif // FEATURE_HW_INTRINSICS
-    }
-
-    bool OperIsConvertVectorToMask() const
-    {
-#if defined(FEATURE_HW_INTRINSICS)
-#if defined(TARGET_XARCH)
-        return OperIsHWIntrinsic(NI_EVEX_ConvertVectorToMask);
-#elif defined(TARGET_ARM64)
-        return OperIsHWIntrinsic(NI_Sve_ConvertVectorToMask);
-#endif // !TARGET_XARCH && !TARGET_ARM64
-#else
-        return false;
-#endif // FEATURE_HW_INTRINSICS
-    }
+    bool OperIsConvertMaskToVector() const;
+    bool OperIsConvertVectorToMask() const;
+    bool OperIsVectorConditionalSelect() const;
 
     // This is here for cleaner GT_LONG #ifdefs.
     static bool OperIsLong(genTreeOps gtOper)
@@ -2161,6 +2138,11 @@ public:
     void Clear64RsltMul()
     {
         gtFlags &= ~GTF_MUL_64RSLT;
+    }
+
+    bool IsPartOfAddressMode()
+    {
+        return OperIs(GT_ADD, GT_MUL, GT_LSH) && ((gtFlags & GTF_ADDRMODE_NO_CSE) != 0);
     }
 
     void SetAllEffectsFlags(GenTree* source)
@@ -6582,6 +6564,45 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
     bool OperIsCreateScalarUnsafe() const;
     bool OperIsBitwiseHWIntrinsic() const;
     bool OperIsEmbRoundingEnabled() const;
+
+    bool OperIsHWIntrinsic(NamedIntrinsic intrinsicId) const
+    {
+        return GetHWIntrinsicId() == intrinsicId;
+    }
+
+    bool OperIsConvertMaskToVector() const
+    {
+#if defined(TARGET_XARCH)
+        return OperIsHWIntrinsic(NI_EVEX_ConvertMaskToVector);
+#elif defined(TARGET_ARM64)
+        return OperIsHWIntrinsic(NI_Sve_ConvertMaskToVector);
+#else
+        return false;
+#endif
+    }
+
+    bool OperIsConvertVectorToMask() const
+    {
+#if defined(TARGET_XARCH)
+        return OperIsHWIntrinsic(NI_EVEX_ConvertVectorToMask);
+#elif defined(TARGET_ARM64)
+        return OperIsHWIntrinsic(NI_Sve_ConvertVectorToMask);
+#else
+        return false;
+#endif
+    }
+
+    bool OperIsVectorConditionalSelect() const
+    {
+#if defined(TARGET_XARCH)
+        return OperIsHWIntrinsic(NI_Vector128_ConditionalSelect) || OperIsHWIntrinsic(NI_Vector256_ConditionalSelect) ||
+               OperIsHWIntrinsic(NI_Vector512_ConditionalSelect);
+#elif defined(TARGET_ARM64)
+        return OperIsHWIntrinsic(NI_AdvSimd_BitwiseSelect) || OperIsHWIntrinsic(NI_Sve_ConditionalSelect);
+#else
+        return false;
+#endif
+    }
 
     bool OperRequiresAsgFlag() const;
     bool OperRequiresCallFlag() const;

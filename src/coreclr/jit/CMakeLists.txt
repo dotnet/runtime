@@ -156,6 +156,7 @@ set( JIT_SOURCES
   objectalloc.cpp
   optcse.cpp
   optimizebools.cpp
+  optimizemaskconversions.cpp
   optimizer.cpp
   patchpoint.cpp
   phase.cpp
@@ -298,7 +299,6 @@ set( JIT_HEADERS
   bitsetops.h
   bitvec.h
   block.h
-  blockset.h
   codegen.h
   codegeninterface.h
   compiler.h

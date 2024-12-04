@@ -222,73 +222,106 @@ namespace System
         public static System.Span<T> AsSpan<T>(this T[]? array, int start, int length) { throw null; }
         public static System.Span<T> AsSpan<T>(this T[]? array, System.Range range) { throw null; }
         public static int BinarySearch<T>(this System.ReadOnlySpan<T> span, System.IComparable<T> comparable) { throw null; }
+        [System.Runtime.CompilerServices.OverloadResolutionPriorityAttribute(-1)]
         public static int BinarySearch<T>(this System.Span<T> span, System.IComparable<T> comparable) { throw null; }
         public static int BinarySearch<T, TComparer>(this System.ReadOnlySpan<T> span, T value, TComparer comparer) where TComparer : System.Collections.Generic.IComparer<T>, allows ref struct { throw null; }
         public static int BinarySearch<T, TComparable>(this System.ReadOnlySpan<T> span, TComparable comparable) where TComparable : System.IComparable<T>, allows ref struct { throw null; }
+        [System.Runtime.CompilerServices.OverloadResolutionPriorityAttribute(-1)]
         public static int BinarySearch<T, TComparer>(this System.Span<T> span, T value, TComparer comparer) where TComparer : System.Collections.Generic.IComparer<T>, allows ref struct { throw null; }
+        [System.Runtime.CompilerServices.OverloadResolutionPriorityAttribute(-1)]
         public static int BinarySearch<T, TComparable>(this System.Span<T> span, TComparable comparable) where TComparable : System.IComparable<T>, allows ref struct { throw null; }
+        [System.Runtime.CompilerServices.OverloadResolutionPriorityAttribute(-1)]
         public static int CommonPrefixLength<T>(this System.Span<T> span, System.ReadOnlySpan<T> other) { throw null; }
+        [System.Runtime.CompilerServices.OverloadResolutionPriorityAttribute(-1)]
         public static int CommonPrefixLength<T>(this System.Span<T> span, System.ReadOnlySpan<T> other, System.Collections.Generic.IEqualityComparer<T>? comparer) { throw null; }
         public static int CommonPrefixLength<T>(this System.ReadOnlySpan<T> span, System.ReadOnlySpan<T> other) { throw null; }
         public static int CommonPrefixLength<T>(this System.ReadOnlySpan<T> span, System.ReadOnlySpan<T> other, System.Collections.Generic.IEqualityComparer<T>? comparer) { throw null; }
         public static int CompareTo(this System.ReadOnlySpan<char> span, System.ReadOnlySpan<char> other, System.StringComparison comparisonType) { throw null; }
         public static bool Contains(this System.ReadOnlySpan<char> span, System.ReadOnlySpan<char> value, System.StringComparison comparisonType) { throw null; }
         public static bool Contains<T>(this System.ReadOnlySpan<T> span, T value) where T : System.IEquatable<T>? { throw null; }
+        [System.Runtime.CompilerServices.OverloadResolutionPriorityAttribute(-1)]
         public static bool Contains<T>(this System.Span<T> span, T value) where T : System.IEquatable<T>? { throw null; }
         public static bool ContainsAny(this System.ReadOnlySpan<char> span, System.Buffers.SearchValues<string> values) { throw null; }
+        [System.Runtime.CompilerServices.OverloadResolutionPriorityAttribute(-1)]
         public static bool ContainsAny(this System.Span<char> span, System.Buffers.SearchValues<string> values) { throw null; }
         public static bool ContainsAny<T>(this System.ReadOnlySpan<T> span, System.Buffers.SearchValues<T> values) where T : System.IEquatable<T>? { throw null; }
         public static bool ContainsAny<T>(this System.ReadOnlySpan<T> span, System.ReadOnlySpan<T> values) where T : System.IEquatable<T>? { throw null; }
         public static bool ContainsAny<T>(this System.ReadOnlySpan<T> span, T value0, T value1) where T : System.IEquatable<T>? { throw null; }
         public static bool ContainsAny<T>(this System.ReadOnlySpan<T> span, T value0, T value1, T value2) where T : System.IEquatable<T>? { throw null; }
+        [System.Runtime.CompilerServices.OverloadResolutionPriorityAttribute(-1)]
         public static bool ContainsAny<T>(this System.Span<T> span, System.Buffers.SearchValues<T> values) where T : System.IEquatable<T>? { throw null; }
+        [System.Runtime.CompilerServices.OverloadResolutionPriorityAttribute(-1)]
         public static bool ContainsAny<T>(this System.Span<T> span, System.ReadOnlySpan<T> values) where T : System.IEquatable<T>? { throw null; }
+        [System.Runtime.CompilerServices.OverloadResolutionPriorityAttribute(-1)]
         public static bool ContainsAny<T>(this System.Span<T> span, T value0, T value1) where T : System.IEquatable<T>? { throw null; }
+        [System.Runtime.CompilerServices.OverloadResolutionPriorityAttribute(-1)]
         public static bool ContainsAny<T>(this System.Span<T> span, T value0, T value1, T value2) where T : System.IEquatable<T>? { throw null; }
         public static bool ContainsAnyExcept<T>(this System.ReadOnlySpan<T> span, System.Buffers.SearchValues<T> values) where T : System.IEquatable<T>? { throw null; }
         public static bool ContainsAnyExcept<T>(this System.ReadOnlySpan<T> span, System.ReadOnlySpan<T> values) where T : System.IEquatable<T>? { throw null; }
         public static bool ContainsAnyExcept<T>(this System.ReadOnlySpan<T> span, T value) where T : System.IEquatable<T>? { throw null; }
         public static bool ContainsAnyExcept<T>(this System.ReadOnlySpan<T> span, T value0, T value1) where T : System.IEquatable<T>? { throw null; }
         public static bool ContainsAnyExcept<T>(this System.ReadOnlySpan<T> span, T value0, T value1, T value2) where T : System.IEquatable<T>? { throw null; }
+        [System.Runtime.CompilerServices.OverloadResolutionPriorityAttribute(-1)]
         public static bool ContainsAnyExcept<T>(this System.Span<T> span, System.Buffers.SearchValues<T> values) where T : System.IEquatable<T>? { throw null; }
+        [System.Runtime.CompilerServices.OverloadResolutionPriorityAttribute(-1)]
         public static bool ContainsAnyExcept<T>(this System.Span<T> span, System.ReadOnlySpan<T> values) where T : System.IEquatable<T>? { throw null; }
+        [System.Runtime.CompilerServices.OverloadResolutionPriorityAttribute(-1)]
         public static bool ContainsAnyExcept<T>(this System.Span<T> span, T value) where T : System.IEquatable<T>? { throw null; }
+        [System.Runtime.CompilerServices.OverloadResolutionPriorityAttribute(-1)]
         public static bool ContainsAnyExcept<T>(this System.Span<T> span, T value0, T value1) where T : System.IEquatable<T>? { throw null; }
+        [System.Runtime.CompilerServices.OverloadResolutionPriorityAttribute(-1)]
         public static bool ContainsAnyExcept<T>(this System.Span<T> span, T value0, T value1, T value2) where T : System.IEquatable<T>? { throw null; }
         public static bool ContainsAnyExceptInRange<T>(this System.ReadOnlySpan<T> span, T lowInclusive, T highInclusive) where T : System.IComparable<T> { throw null; }
+        [System.Runtime.CompilerServices.OverloadResolutionPriorityAttribute(-1)]
         public static bool ContainsAnyExceptInRange<T>(this System.Span<T> span, T lowInclusive, T highInclusive) where T : System.IComparable<T> { throw null; }
         public static bool ContainsAnyInRange<T>(this System.ReadOnlySpan<T> span, T lowInclusive, T highInclusive) where T : System.IComparable<T> { throw null; }
+        [System.Runtime.CompilerServices.OverloadResolutionPriorityAttribute(-1)]
         public static bool ContainsAnyInRange<T>(this System.Span<T> span, T lowInclusive, T highInclusive) where T : System.IComparable<T> { throw null; }
         public static void CopyTo<T>(this T[]? source, System.Memory<T> destination) { }
         public static void CopyTo<T>(this T[]? source, System.Span<T> destination) { }
+        [System.Runtime.CompilerServices.OverloadResolutionPriorityAttribute(-1)]
         public static int Count<T>(this System.Span<T> span, T value) where T : System.IEquatable<T>? { throw null; }
         public static int Count<T>(this System.ReadOnlySpan<T> span, T value) where T : System.IEquatable<T>? { throw null; }
+        [System.Runtime.CompilerServices.OverloadResolutionPriorityAttribute(-1)]
         public static int Count<T>(this System.Span<T> span, System.ReadOnlySpan<T> value) where T : System.IEquatable<T>? { throw null; }
         public static int Count<T>(this System.ReadOnlySpan<T> span, System.ReadOnlySpan<T> value) where T : System.IEquatable<T>? { throw null; }
         public static bool EndsWith(this System.ReadOnlySpan<char> span, System.ReadOnlySpan<char> value, System.StringComparison comparisonType) { throw null; }
         public static bool EndsWith<T>(this System.ReadOnlySpan<T> span, System.ReadOnlySpan<T> value) where T : System.IEquatable<T>? { throw null; }
+        [System.Runtime.CompilerServices.OverloadResolutionPriorityAttribute(-1)]
         public static bool EndsWith<T>(this System.Span<T> span, System.ReadOnlySpan<T> value) where T : System.IEquatable<T>? { throw null; }
         public static bool EndsWith<T>(this System.ReadOnlySpan<T> span, T value) where T : System.IEquatable<T>? { throw null; }
         public static System.Text.SpanLineEnumerator EnumerateLines(this System.ReadOnlySpan<char> span) { throw null; }
+        [System.Runtime.CompilerServices.OverloadResolutionPriorityAttribute(-1)]
         public static System.Text.SpanLineEnumerator EnumerateLines(this System.Span<char> span) { throw null; }
         public static System.Text.SpanRuneEnumerator EnumerateRunes(this System.ReadOnlySpan<char> span) { throw null; }
+        [System.Runtime.CompilerServices.OverloadResolutionPriorityAttribute(-1)]
         public static System.Text.SpanRuneEnumerator EnumerateRunes(this System.Span<char> span) { throw null; }
         public static bool Equals(this System.ReadOnlySpan<char> span, System.ReadOnlySpan<char> other, System.StringComparison comparisonType) { throw null; }
         public static int IndexOf(this System.ReadOnlySpan<char> span, System.ReadOnlySpan<char> value, System.StringComparison comparisonType) { throw null; }
         public static int IndexOfAny(this System.ReadOnlySpan<char> span, System.Buffers.SearchValues<string> values) { throw null; }
+        [System.Runtime.CompilerServices.OverloadResolutionPriorityAttribute(-1)]
         public static int IndexOfAny(this System.Span<char> span, System.Buffers.SearchValues<string> values) { throw null; }
         public static int IndexOfAny<T>(this System.ReadOnlySpan<T> span, System.Buffers.SearchValues<T> values) where T : System.IEquatable<T>? { throw null; }
         public static int IndexOfAny<T>(this System.ReadOnlySpan<T> span, System.ReadOnlySpan<T> values) where T : System.IEquatable<T>? { throw null; }
         public static int IndexOfAny<T>(this System.ReadOnlySpan<T> span, T value0, T value1) where T : System.IEquatable<T>? { throw null; }
         public static int IndexOfAny<T>(this System.ReadOnlySpan<T> span, T value0, T value1, T value2) where T : System.IEquatable<T>? { throw null; }
+        [System.Runtime.CompilerServices.OverloadResolutionPriorityAttribute(-1)]
         public static int IndexOfAny<T>(this System.Span<T> span, System.Buffers.SearchValues<T> values) where T : System.IEquatable<T>? { throw null; }
+        [System.Runtime.CompilerServices.OverloadResolutionPriorityAttribute(-1)]
         public static int IndexOfAny<T>(this System.Span<T> span, System.ReadOnlySpan<T> values) where T : System.IEquatable<T>? { throw null; }
+        [System.Runtime.CompilerServices.OverloadResolutionPriorityAttribute(-1)]
         public static int IndexOfAny<T>(this System.Span<T> span, T value0, T value1) where T : System.IEquatable<T>? { throw null; }
+        [System.Runtime.CompilerServices.OverloadResolutionPriorityAttribute(-1)]
         public static int IndexOfAny<T>(this System.Span<T> span, T value0, T value1, T value2) where T : System.IEquatable<T>? { throw null; }
+        [System.Runtime.CompilerServices.OverloadResolutionPriorityAttribute(-1)]
         public static int IndexOfAnyExcept<T>(this System.Span<T> span, T value) where T : System.IEquatable<T>? { throw null; }
+        [System.Runtime.CompilerServices.OverloadResolutionPriorityAttribute(-1)]
         public static int IndexOfAnyExcept<T>(this System.Span<T> span, T value0, T value1) where T : System.IEquatable<T>? { throw null; }
+        [System.Runtime.CompilerServices.OverloadResolutionPriorityAttribute(-1)]
         public static int IndexOfAnyExcept<T>(this System.Span<T> span, T value0, T value1, T value2) where T : System.IEquatable<T>? { throw null; }
+        [System.Runtime.CompilerServices.OverloadResolutionPriorityAttribute(-1)]
         public static int IndexOfAnyExcept<T>(this System.Span<T> span, System.Buffers.SearchValues<T> values) where T : System.IEquatable<T>? { throw null; }
+        [System.Runtime.CompilerServices.OverloadResolutionPriorityAttribute(-1)]
         public static int IndexOfAnyExcept<T>(this System.Span<T> span, System.ReadOnlySpan<T> values) where T : System.IEquatable<T>? { throw null; }
         public static int IndexOfAnyExcept<T>(this System.ReadOnlySpan<T> span, T value) where T : System.IEquatable<T>? { throw null; }
         public static int IndexOfAnyExcept<T>(this System.ReadOnlySpan<T> span, T value0, T value1) where T : System.IEquatable<T>? { throw null; }
@@ -296,12 +329,16 @@ namespace System
         public static int IndexOfAnyExcept<T>(this System.ReadOnlySpan<T> span, System.Buffers.SearchValues<T> values) where T : System.IEquatable<T>? { throw null; }
         public static int IndexOfAnyExcept<T>(this System.ReadOnlySpan<T> span, System.ReadOnlySpan<T> values) where T : System.IEquatable<T>? { throw null; }
         public static int IndexOfAnyExceptInRange<T>(this System.ReadOnlySpan<T> span, T lowInclusive, T highInclusive) where T : System.IComparable<T> { throw null; }
+        [System.Runtime.CompilerServices.OverloadResolutionPriorityAttribute(-1)]
         public static int IndexOfAnyExceptInRange<T>(this System.Span<T> span, T lowInclusive, T highInclusive) where T : System.IComparable<T> { throw null; }
         public static int IndexOf<T>(this System.ReadOnlySpan<T> span, System.ReadOnlySpan<T> value) where T : System.IEquatable<T>? { throw null; }
         public static int IndexOf<T>(this System.ReadOnlySpan<T> span, T value) where T : System.IEquatable<T>? { throw null; }
+        [System.Runtime.CompilerServices.OverloadResolutionPriorityAttribute(-1)]
         public static int IndexOf<T>(this System.Span<T> span, System.ReadOnlySpan<T> value) where T : System.IEquatable<T>? { throw null; }
+        [System.Runtime.CompilerServices.OverloadResolutionPriorityAttribute(-1)]
         public static int IndexOf<T>(this System.Span<T> span, T value) where T : System.IEquatable<T>? { throw null; }
         public static int IndexOfAnyInRange<T>(this System.ReadOnlySpan<T> span, T lowInclusive, T highInclusive) where T : System.IComparable<T> { throw null; }
+        [System.Runtime.CompilerServices.OverloadResolutionPriorityAttribute(-1)]
         public static int IndexOfAnyInRange<T>(this System.Span<T> span, T lowInclusive, T highInclusive) where T : System.IComparable<T> { throw null; }
         public static bool IsWhiteSpace(this System.ReadOnlySpan<char> span) { throw null; }
         public static int LastIndexOf(this System.ReadOnlySpan<char> span, System.ReadOnlySpan<char> value, System.StringComparison comparisonType) { throw null; }
@@ -309,14 +346,23 @@ namespace System
         public static int LastIndexOfAny<T>(this System.ReadOnlySpan<T> span, System.ReadOnlySpan<T> values) where T : System.IEquatable<T>? { throw null; }
         public static int LastIndexOfAny<T>(this System.ReadOnlySpan<T> span, T value0, T value1) where T : System.IEquatable<T>? { throw null; }
         public static int LastIndexOfAny<T>(this System.ReadOnlySpan<T> span, T value0, T value1, T value2) where T : System.IEquatable<T>? { throw null; }
+        [System.Runtime.CompilerServices.OverloadResolutionPriorityAttribute(-1)]
         public static int LastIndexOfAny<T>(this System.Span<T> span, System.Buffers.SearchValues<T> values) where T : System.IEquatable<T>? { throw null; }
+        [System.Runtime.CompilerServices.OverloadResolutionPriorityAttribute(-1)]
         public static int LastIndexOfAny<T>(this System.Span<T> span, System.ReadOnlySpan<T> values) where T : System.IEquatable<T>? { throw null; }
+        [System.Runtime.CompilerServices.OverloadResolutionPriorityAttribute(-1)]
         public static int LastIndexOfAny<T>(this System.Span<T> span, T value0, T value1) where T : System.IEquatable<T>? { throw null; }
+        [System.Runtime.CompilerServices.OverloadResolutionPriorityAttribute(-1)]
         public static int LastIndexOfAny<T>(this System.Span<T> span, T value0, T value1, T value2) where T : System.IEquatable<T>? { throw null; }
+        [System.Runtime.CompilerServices.OverloadResolutionPriorityAttribute(-1)]
         public static int LastIndexOfAnyExcept<T>(this System.Span<T> span, T value) where T : System.IEquatable<T>? { throw null; }
+        [System.Runtime.CompilerServices.OverloadResolutionPriorityAttribute(-1)]
         public static int LastIndexOfAnyExcept<T>(this System.Span<T> span, T value0, T value1) where T : System.IEquatable<T>? { throw null; }
+        [System.Runtime.CompilerServices.OverloadResolutionPriorityAttribute(-1)]
         public static int LastIndexOfAnyExcept<T>(this System.Span<T> span, T value0, T value1, T value2) where T : System.IEquatable<T>? { throw null; }
+        [System.Runtime.CompilerServices.OverloadResolutionPriorityAttribute(-1)]
         public static int LastIndexOfAnyExcept<T>(this System.Span<T> span, System.Buffers.SearchValues<T> values) where T : System.IEquatable<T>? { throw null; }
+        [System.Runtime.CompilerServices.OverloadResolutionPriorityAttribute(-1)]
         public static int LastIndexOfAnyExcept<T>(this System.Span<T> span, System.ReadOnlySpan<T> values) where T : System.IEquatable<T>? { throw null; }
         public static int LastIndexOfAnyExcept<T>(this System.ReadOnlySpan<T> span, T value) where T : System.IEquatable<T>? { throw null; }
         public static int LastIndexOfAnyExcept<T>(this System.ReadOnlySpan<T> span, T value0, T value1) where T : System.IEquatable<T>? { throw null; }
@@ -324,25 +370,34 @@ namespace System
         public static int LastIndexOfAnyExcept<T>(this System.ReadOnlySpan<T> span, System.Buffers.SearchValues<T> values) where T : System.IEquatable<T>? { throw null; }
         public static int LastIndexOfAnyExcept<T>(this System.ReadOnlySpan<T> span, System.ReadOnlySpan<T> values) where T : System.IEquatable<T>? { throw null; }
         public static int LastIndexOfAnyExceptInRange<T>(this System.ReadOnlySpan<T> span, T lowInclusive, T highInclusive) where T : System.IComparable<T> { throw null; }
+        [System.Runtime.CompilerServices.OverloadResolutionPriorityAttribute(-1)]
         public static int LastIndexOfAnyExceptInRange<T>(this System.Span<T> span, T lowInclusive, T highInclusive) where T : System.IComparable<T> { throw null; }
         public static int LastIndexOf<T>(this System.ReadOnlySpan<T> span, System.ReadOnlySpan<T> value) where T : System.IEquatable<T>? { throw null; }
         public static int LastIndexOf<T>(this System.ReadOnlySpan<T> span, T value) where T : System.IEquatable<T>? { throw null; }
+        [System.Runtime.CompilerServices.OverloadResolutionPriorityAttribute(-1)]
         public static int LastIndexOf<T>(this System.Span<T> span, System.ReadOnlySpan<T> value) where T : System.IEquatable<T>? { throw null; }
+        [System.Runtime.CompilerServices.OverloadResolutionPriorityAttribute(-1)]
         public static int LastIndexOf<T>(this System.Span<T> span, T value) where T : System.IEquatable<T>? { throw null; }
         public static int LastIndexOfAnyInRange<T>(this System.ReadOnlySpan<T> span, T lowInclusive, T highInclusive) where T : System.IComparable<T> { throw null; }
+        [System.Runtime.CompilerServices.OverloadResolutionPriorityAttribute(-1)]
         public static int LastIndexOfAnyInRange<T>(this System.Span<T> span, T lowInclusive, T highInclusive) where T : System.IComparable<T> { throw null; }
         public static bool Overlaps<T>(this System.ReadOnlySpan<T> span, System.ReadOnlySpan<T> other) { throw null; }
         public static bool Overlaps<T>(this System.ReadOnlySpan<T> span, System.ReadOnlySpan<T> other, out int elementOffset) { throw null; }
+        [System.Runtime.CompilerServices.OverloadResolutionPriorityAttribute(-1)]
         public static bool Overlaps<T>(this System.Span<T> span, System.ReadOnlySpan<T> other) { throw null; }
+        [System.Runtime.CompilerServices.OverloadResolutionPriorityAttribute(-1)]
         public static bool Overlaps<T>(this System.Span<T> span, System.ReadOnlySpan<T> other, out int elementOffset) { throw null; }
         public static void Replace<T>(this System.Span<T> span, T oldValue, T newValue) where T : System.IEquatable<T>? { }
         public static void Replace<T>(this System.ReadOnlySpan<T> source, System.Span<T> destination, T oldValue, T newValue) where T : System.IEquatable<T>? { }
         public static void Reverse<T>(this System.Span<T> span) { }
         public static int SequenceCompareTo<T>(this System.ReadOnlySpan<T> span, System.ReadOnlySpan<T> other) where T : System.IComparable<T>? { throw null; }
+        [System.Runtime.CompilerServices.OverloadResolutionPriorityAttribute(-1)]
         public static int SequenceCompareTo<T>(this System.Span<T> span, System.ReadOnlySpan<T> other) where T : System.IComparable<T>? { throw null; }
         public static bool SequenceEqual<T>(this System.ReadOnlySpan<T> span, System.ReadOnlySpan<T> other) where T : System.IEquatable<T>? { throw null; }
+        [System.Runtime.CompilerServices.OverloadResolutionPriorityAttribute(-1)]
         public static bool SequenceEqual<T>(this System.Span<T> span, System.ReadOnlySpan<T> other) where T : System.IEquatable<T>? { throw null; }
         public static bool SequenceEqual<T>(this System.ReadOnlySpan<T> span, System.ReadOnlySpan<T> other, System.Collections.Generic.IEqualityComparer<T>? comparer = null) { throw null; }
+        [System.Runtime.CompilerServices.OverloadResolutionPriorityAttribute(-1)]
         public static bool SequenceEqual<T>(this System.Span<T> span, System.ReadOnlySpan<T> other, System.Collections.Generic.IEqualityComparer<T>? comparer = null) { throw null; }
         public static void Sort<T>(this System.Span<T> span) { }
         public static void Sort<T>(this System.Span<T> span, System.Comparison<T> comparison) { }
@@ -360,6 +415,7 @@ namespace System
         public static int SplitAny(this System.ReadOnlySpan<char> source, System.Span<System.Range> destination, System.ReadOnlySpan<string> separators, System.StringSplitOptions options = System.StringSplitOptions.None) { throw null; }
         public static bool StartsWith(this System.ReadOnlySpan<char> span, System.ReadOnlySpan<char> value, System.StringComparison comparisonType) { throw null; }
         public static bool StartsWith<T>(this System.ReadOnlySpan<T> span, System.ReadOnlySpan<T> value) where T : System.IEquatable<T>? { throw null; }
+        [System.Runtime.CompilerServices.OverloadResolutionPriorityAttribute(-1)]
         public static bool StartsWith<T>(this System.Span<T> span, System.ReadOnlySpan<T> value) where T : System.IEquatable<T>? { throw null; }
         public static bool StartsWith<T>(this System.ReadOnlySpan<T> span, T value) where T : System.IEquatable<T>? { throw null; }
         public static int ToLower(this System.ReadOnlySpan<char> source, System.Span<char> destination, System.Globalization.CultureInfo? culture) { throw null; }

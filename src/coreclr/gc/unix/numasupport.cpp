@@ -54,7 +54,7 @@ static int GetNodeNum(const char* path, bool firstOnly)
 void NUMASupportInitialize()
 {
 #ifdef TARGET_LINUX
-    if (syscall(__NR_get_mempolicy, NULL, NULL, 0, 0, 0) < 0 && errno == ENOSYS)
+    if (syscall(__NR_get_mempolicy, NULL, NULL, 0, 0, 0) < 0)
         return;
 
     int highestNumaNode = GetNodeNum("/sys/devices/system/node", false);

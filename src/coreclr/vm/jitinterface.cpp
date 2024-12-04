@@ -7928,7 +7928,7 @@ CorInfoInline CEEInfo::canInline (CORINFO_METHOD_HANDLE hCaller,
             CodeVersionManager* pCodeVersionManager = pCallee->GetCodeVersionManager();
             CodeVersionManager::LockHolder codeVersioningLockHolder;
             ILCodeVersion ilVersion = pCodeVersionManager->GetActiveILCodeVersion(pCallee);
-            if (ilVersion.GetRejitState() != ILCodeVersion::kStateActive || !ilVersion.HasDefaultIL())
+            if (ilVersion.GetRejitState() != RejitFlags::kStateActive || !ilVersion.HasDefaultIL())
             {
                 result = INLINE_FAIL;
                 szFailReason = "ReJIT methods cannot be inlined.";
@@ -8131,7 +8131,7 @@ void CEEInfo::reportInliningDecision (CORINFO_METHOD_HANDLE inlinerHnd,
                 CodeVersionManager* pCodeVersionManager = pCallee->GetCodeVersionManager();
                 CodeVersionManager::LockHolder codeVersioningLockHolder;
                 ILCodeVersion ilVersion = pCodeVersionManager->GetActiveILCodeVersion(pCallee);
-                if (ilVersion.GetRejitState() != ILCodeVersion::kStateActive || !ilVersion.HasDefaultIL())
+                if (ilVersion.GetRejitState() != RejitFlags::kStateActive || !ilVersion.HasDefaultIL())
                 {
                     shouldCallReJIT = TRUE;
                     modId = reinterpret_cast<ModuleID>(pCaller->GetModule());
@@ -10210,26 +10210,7 @@ void CEEInfo::getEEInfo(CORINFO_EE_INFO *pEEInfoOut)
     EE_TO_JIT_TRANSITION();
 }
 
-const char16_t * CEEInfo::getJitTimeLogFilename()
-{
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    } CONTRACTL_END;
-
-    LPCWSTR result = NULL;
-
-    JIT_TO_EE_TRANSITION();
-    result = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_JitTimeLogFile);
-    EE_TO_JIT_TRANSITION();
-
-    return (const char16_t *)result;
-}
-
-
-
-    // Return details about EE internal data structures
+// Return details about EE internal data structures
 uint32_t CEEInfo::getThreadTLSIndex(void **ppIndirection)
 {
     CONTRACTL {
@@ -12939,7 +12920,7 @@ BOOL g_fAllowRel32 = TRUE;
 // The reason that this is named UnsafeJitFunction is that this helper
 // method is not thread safe!  When multiple threads get in here for
 // the same pMD, ALL of them MUST return the SAME value.
-// To insure that this happens you must call MakeJitWorker.
+// To ensure that this happens you must call MakeJitWorker.
 // It creates a DeadlockAware list of methods being jitted and prevents us
 // from trying to jit the same method more that once.
 //

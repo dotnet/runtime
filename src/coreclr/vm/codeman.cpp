@@ -253,7 +253,7 @@ void UnwindInfoTable::AddToUnwindInfoTable(UnwindInfoTable** unwindInfoPtr, PT_R
 
         ULONG size = (ULONG) ((rangeEnd - rangeStart) / 128) + 1;
 
-        // To insure the test the growing logic in debug code make the size much smaller.
+        // To ensure the test the growing logic in debug code make the size much smaller.
         INDEBUG(size = size / 4 + 1);
         unwindInfo = (PTR_UnwindInfoTable)new UnwindInfoTable(rangeStart, rangeEnd, size);
         unwindInfo->Register();
@@ -433,7 +433,7 @@ void UnwindInfoTable::AddToUnwindInfoTable(UnwindInfoTable** unwindInfoPtr, PT_R
 {
     STANDARD_VM_CONTRACT;
     {
-        // CodeHeapIterator holds the m_CodeHeapCritSec, which insures code heaps don't get deallocated while being walked
+        // CodeHeapIterator holds the m_CodeHeapCritSec, which ensures code heaps don't get deallocated while being walked
         EEJitManager::CodeHeapIterator heapIterator(NULL);
 
         // Currently m_CodeHeapCritSec is given the CRST_UNSAFE_ANYMODE flag which allows it to be taken in a GC_NOTRIGGER
@@ -1392,6 +1392,12 @@ void EEJitManager::SetCpuInfo()
         CPUCompileFlags.Set(InstructionSet_PCLMULQDQ);
     }
 
+    if (((cpuFeatures & XArchIntrinsicConstants_Vpclmulqdq) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableVPCLMULQDQ))
+    {
+        CPUCompileFlags.Set(InstructionSet_PCLMULQDQ_V256);
+        CPUCompileFlags.Set(InstructionSet_PCLMULQDQ_V512);
+    }
+
     if (((cpuFeatures & XArchIntrinsicConstants_AvxVnni) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVXVNNI))
     {
         CPUCompileFlags.Set(InstructionSet_AVXVNNI);
@@ -1402,6 +1408,13 @@ void EEJitManager::SetCpuInfo()
         CPUCompileFlags.Set(InstructionSet_X86Serialize);
     }
 
+    if (((cpuFeatures & XArchIntrinsicConstants_Gfni) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableGFNI))
+    {
+        CPUCompileFlags.Set(InstructionSet_GFNI);
+        CPUCompileFlags.Set(InstructionSet_GFNI_V256);
+        CPUCompileFlags.Set(InstructionSet_GFNI_V512);
+    }
+
     if (((cpuFeatures & XArchIntrinsicConstants_Evex) != 0) &&
         ((cpuFeatures & XArchIntrinsicConstants_Avx10v1) != 0))
     {
@@ -1409,13 +1422,25 @@ void EEJitManager::SetCpuInfo()
         {
             CPUCompileFlags.Set(InstructionSet_EVEX);
             CPUCompileFlags.Set(InstructionSet_AVX10v1);
-
-            if((cpuFeatures & XArchIntrinsicConstants_Avx512) != 0)
-            {
-                CPUCompileFlags.Set(InstructionSet_AVX10v1_V512);
-            }
+            CPUCompileFlags.Set(InstructionSet_AVX10v1_V512);
         }
     }
+
+    if ((cpuFeatures & XArchIntrinsicConstants_Avx10v2) != 0)
+    {
+        if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX10v2))
+        {
+            CPUCompileFlags.Set(InstructionSet_AVX10v2);
+            CPUCompileFlags.Set(InstructionSet_AVX10v2_V512);
+        }
+    }
+
+    #if defined(TARGET_AMD64)
+    if ((cpuFeatures & XArchIntrinsicConstants_Apx) != 0)
+    {
+        CPUCompileFlags.Set(InstructionSet_APX);
+    }
+    #endif  // TARGET_AMD64
 #elif defined(TARGET_ARM64)
 
 #if !defined(TARGET_WINDOWS)
@@ -4143,9 +4168,11 @@ void EEJitManager::NibbleMapDeleteUnlocked(HeapList* pHp, TADDR pCode)
 
     PTR_DWORD pMap = pHp->pHdrMap;
 
-    // assert that the nibble is not empty and the DWORD is not a pointer
+    // Assert that the DWORD is not a pointer. Deleting a portion of a pointer
+    // would cause the state of the map to be invalid. Deleting empty nibbles,
+    // a no-op, is allowed and can occur when removing JIT data.
     pMap += index;
-    _ASSERTE(((*pMap) & ~mask) && !IsPointer(*pMap));
+    _ASSERTE(!IsPointer(*pMap));
 
     // delete the relevant nibble
     VolatileStore<DWORD>(pMap, (*pMap) & mask);
@@ -4951,7 +4978,7 @@ void ExecutionManager::Unload(LoaderAllocator *pLoaderAllocator)
 // (This is also true on ARM64, but it not true for x86)
 //
 // For these architectures, in JITed code and in the prestub, we encode direct calls
-// using the preferred call instruction and we also try to insure that the Jitted
+// using the preferred call instruction and we also try to ensure that the Jitted
 // code is within the 32-bit pc-rel range of clr.dll to allow direct JIT helper calls.
 //
 // When the call target is too far away to encode using the preferred call instruction.
@@ -5887,8 +5914,6 @@ BOOL ReadyToRunJitManager::JitCodeToMethodInfo(RangeSection * pRangeSection,
 #ifdef FEATURE_EH_FUNCLETS
     // Save the raw entry
     PTR_RUNTIME_FUNCTION RawFunctionEntry = pRuntimeFunctions + MethodIndex;
-
-    ULONG UMethodIndex = (ULONG)MethodIndex;
 
     const int lookupIndex = HotColdMappingLookupTable::LookupMappingForMethod(pInfo, (ULONG)MethodIndex);
     if ((lookupIndex != -1) && ((lookupIndex & 1) == 1))
