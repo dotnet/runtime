@@ -1877,7 +1877,7 @@ bool emitter::IsExtendedGPReg(regNumber reg) const
         return false;
     }
 
-    // TODO-XArch-APX: 
+    // TODO-XArch-APX:
     // we will eventually check EGPRs here: (reg >= REG_R16) && (reg <= REG_R31).
     // revisit this part when LSRA is updated.
     return false;
