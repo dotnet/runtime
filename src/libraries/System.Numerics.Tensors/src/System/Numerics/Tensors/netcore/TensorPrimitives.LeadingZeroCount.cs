@@ -30,7 +30,7 @@ namespace System.Numerics.Tensors
         {
             public static bool Vectorizable =>
                 (Avx512CD.VL.IsSupported && (sizeof(T) == 2 || sizeof(T) == 4 || sizeof(T) == 8)) ||
-                (Avx512BW.IsSupported && Avx512Vbmi.IsSupported && Avx512Vbmi.VL.IsSupported && sizeof(T) == 1) ||
+                (Avx512Vbmi.VL.IsSupported && sizeof(T) == 1) ||
                 (AdvSimd.IsSupported && (sizeof(T) == 1 || sizeof(T) == 2 || sizeof(T) == 4));
 
             public static T Invoke(T x) => T.LeadingZeroCount(x);
