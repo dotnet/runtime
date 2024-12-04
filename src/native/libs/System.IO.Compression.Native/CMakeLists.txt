@@ -92,7 +92,9 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
 
     set_target_properties(System.IO.Compression.Native-Static PROPERTIES OUTPUT_NAME System.IO.Compression.Native CLEAN_DIRECT_OUTPUT 1)
 
-    install (TARGETS zlib DESTINATION ${STATIC_LIB_DESTINATION} COMPONENT libs)
+    if (NOT CLR_CMAKE_USE_SYSTEM_ZLIB)
+        install (TARGETS zlib DESTINATION ${STATIC_LIB_DESTINATION} COMPONENT libs)
+    endif()
 else ()
     if (GEN_SHARED_LIB)
         include (GenerateExportHeader)
