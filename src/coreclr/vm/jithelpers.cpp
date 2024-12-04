@@ -3681,20 +3681,17 @@ HCIMPL1(void, JIT_CountProfile32, volatile LONG* pCounter)
     LONG delta = 1;
     DWORD threshold = g_pConfig->TieredPGO_ScalableCountThreshold();
 
-    if (count > 0)
+    if (count >= (LONG)(1 << threshold))
     {
-        DWORD logCount = 0;
+        DWORD logCount;
         BitScanReverse(&logCount, count);
 
-        if (logCount >= threshold)
+        delta = 1 << (logCount - (threshold - 1));
+        const unsigned rand = HandleHistogramProfileRand();
+        const bool update = (rand & (delta - 1)) == 0;
+        if (!update)
         {
-            delta = 1 << (logCount - (threshold - 1));
-            const unsigned rand = HandleHistogramProfileRand();
-            const bool update = (rand & (delta - 1)) == 0;
-            if (!update)
-            {
-                return;
-            }
+            return;
         }
     }
 
@@ -3711,20 +3708,17 @@ HCIMPL1(void, JIT_CountProfile64, volatile LONG64* pCounter)
     LONG64 delta = 1;
     DWORD threshold = g_pConfig->TieredPGO_ScalableCountThreshold();
 
-    if (count > 0)
+    if (count >= (LONG64)(1LL << threshold))
     {
-        DWORD logCount = 0;
+        DWORD logCount;
         BitScanReverse64(&logCount, count);
 
-        if (logCount >= threshold)
+        delta = 1LL << (logCount - (threshold - 1));
+        const unsigned rand = HandleHistogramProfileRand();
+        const bool update = (rand & (delta - 1)) == 0;
+        if (!update)
         {
-            delta = 1LL << (logCount - (threshold - 1));
-            const unsigned rand = HandleHistogramProfileRand();
-            const bool update = (rand & (delta - 1)) == 0;
-            if (!update)
-            {
-                return;
-            }
+            return;
         }
     }
 
