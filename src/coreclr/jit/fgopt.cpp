@@ -5522,7 +5522,13 @@ bool Compiler::ThreeOptLayout::RunThreeOptPass(BasicBlock* startBlock, BasicBloc
     }
 
     JITDUMP("Initial layout cost: %f\n", GetLayoutCost(startPos, endPos));
-    const bool modified = RunGreedyThreeOptPass(startPos, endPos);
+    bool modified = false;
+
+    // Run until the layout cost reaches a local minimum
+    while (RunGreedyThreeOptPass(startPos, endPos))
+    {
+        modified = true;
+    }
 
     // Write back to 'tempOrder' so changes to this region aren't lost next time we swap 'tempOrder' and 'blockOrder'
     if (modified)
