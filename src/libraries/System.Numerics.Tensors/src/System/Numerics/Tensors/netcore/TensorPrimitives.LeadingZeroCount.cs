@@ -136,6 +136,11 @@ namespace System.Numerics.Tensors
             {
                 if (Avx512BW.IsSupported && Avx512Vbmi.IsSupported && sizeof(T) == 1)
                 {
+                    // Use each element of x as an index into a lookup table.
+                    // Lookup can be broken down into the following:
+                    //      Bit 7 is set -- Result is 0, else result is from lookup table
+                    //      Bit 6 is set -- Use lookupVectorB, else use lookupVectorA
+                    //      Bit 5:0      -- Index to use for lookup table
                     Vector512<byte> lookupVectorA =
                         Vector512.Create((byte)8, 7, 6, 6, 5, 5, 5, 5,
                                                4, 4, 4, 4, 4, 4, 4, 4,
