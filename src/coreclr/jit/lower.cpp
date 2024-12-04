@@ -7812,6 +7812,17 @@ void Lowering::WidenSIMD12IfNecessary(GenTreeLclVarCommon* node)
 
 PhaseStatus Lowering::DoPhase()
 {
+    // We need a scratch BB into which it can safely insert a P/Invoke method
+    // prolog if one is required. Similarly, we need a scratch BB for poisoning
+    // and when we have Swift parameters to reassemble. Create it here.
+    if (comp->compMethodRequiresPInvokeFrame() || comp->compShouldPoisonFrame() || comp->lvaHasAnySwiftStackParamToReassemble())
+    {
+        if (comp->fgEnsureFirstBBisScratch())
+        {
+            comp->fgInvalidateDfsTree();
+        }
+    }
+
     // If we have any PInvoke calls, insert the one-time prolog code. We'll insert the epilog code in the
     // appropriate spots later. NOTE: there is a minor optimization opportunity here, as we still create p/invoke
     // data structures and setup/teardown even if we've eliminated all p/invoke calls due to dead code elimination.
