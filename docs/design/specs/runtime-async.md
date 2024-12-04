@@ -17,7 +17,7 @@ Applicability of `MethodImplOptions.Async`:
 * The `[MethodImpl(MethodImplOptions.Async)]` only has effect when applied to method definitions that return generic or nongeneric variants of Task or ValueTask.
 * The `[MethodImpl(MethodImplOptions.Async)]` only has effect when applied to method definitions with CIL implementation.
 * Async method definitions are only valid inside async-capable assemblies. An async-capable assembly is one which references a corlib containing an `abstract sealed class RuntimeFeature` with a `public const string` field member named `Async`.
-* Combining MethodImplOptions.Async with MethodImplOptions.Synchronized is invalid.
+* Combining `MethodImplOptions.Async` with `MethodImplOptions.Synchronized` is invalid.
 * Applying `MethodImplOptions.Async` to methods with `byref` or `ref-like` parameters is invalid.
 * Applying `MethodImplOptions.Async` to vararg methods is invalid.
 
