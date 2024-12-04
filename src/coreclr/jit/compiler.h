@@ -5270,7 +5270,6 @@ public:
 
     bool fgModified = false;             // True if the flow graph has been modified recently
     bool fgPredsComputed = false;        // Have we computed the bbPreds list
-    bool fgOptimizedFinally = false;     // Did we optimize any try-finallys?
 
     bool fgHasSwitch = false; // any BBJ_SWITCH jumps?
 
@@ -5352,11 +5351,15 @@ public:
 
     PhaseStatus fgRemoveEmptyTry();
 
+    PhaseStatus fgRemoveEmptyTryCatch();
+
     PhaseStatus fgRemoveEmptyFinally();
 
     PhaseStatus fgMergeFinallyChains();
 
     PhaseStatus fgCloneFinally();
+
+    void fgUpdateACDsBeforeEHTableEntryRemoval(unsigned XTnum);
 
     void fgCleanupContinuation(BasicBlock* continuation);
 
@@ -6230,7 +6233,8 @@ public:
 #endif // DEBUG
 
         weight_t GetCost(BasicBlock* block, BasicBlock* next);
-        bool TrySwappingPartitions(unsigned s1Start, unsigned s2Start, unsigned s3Start, unsigned s3End, unsigned s4End);
+        weight_t GetPartitionCostDelta(unsigned s1Start, unsigned s2Start, unsigned s3Start, unsigned s3End, unsigned s4End);
+        void SwapPartitions(unsigned s1Start, unsigned s2Start, unsigned s3Start, unsigned s3End, unsigned s4End);
 
         void ConsiderEdge(FlowEdge* edge);
         void AddNonFallthroughSuccs(unsigned blockPos);
