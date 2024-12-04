@@ -1089,6 +1089,7 @@ class DebuggerController
     // pIP is the ip right after the prolog of the method we've entered.
     // fp is the frame pointer for that method.
     static void DispatchMethodEnter(void * pIP, FramePointer fp);
+    static void DispatchMulticastDelegate(DELEGATEREF pbDel, INT32 countDel);
 
 
     // Delete any patches that exist for a specific module and optionally a specific AppDomain.
@@ -1299,6 +1300,9 @@ public:
     void EnableMethodEnter();
     void DisableMethodEnter();
 
+    void EnableMultiCastDelegate();
+    void DisableMultiCastDelegate();
+
     void DisableAll();
 
     virtual DEBUGGER_CONTROLLER_TYPE GetDCType( void )
@@ -1398,6 +1402,7 @@ public:
                                     const BYTE * ip,
                                     FramePointer fp);
 
+    virtual void TriggerMulticastDelegate(DELEGATEREF pDel, INT32 delegateCount);
 
     // Send the managed debug event.
     // This is called after TriggerPatch/TriggerSingleStep actually trigger.
@@ -1437,6 +1442,7 @@ private:
     int                 m_eventQueuedCount;
     bool                m_deleted;
     bool                m_fEnableMethodEnter;
+    bool                m_multicastDelegateHelper;
 
 #endif // !DACCESS_COMPILE
 };
@@ -1638,7 +1644,7 @@ protected:
 
 
     virtual void TriggerMethodEnter(Thread * thread, DebuggerJitInfo * dji, const BYTE * ip, FramePointer fp);
-
+    void TriggerMulticastDelegate(DELEGATEREF pDel, INT32 delegateCount);
 
     void ResetRange();
 
