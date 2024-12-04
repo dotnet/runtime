@@ -7815,7 +7815,8 @@ PhaseStatus Lowering::DoPhase()
     // We need a scratch BB into which it can safely insert a P/Invoke method
     // prolog if one is required. Similarly, we need a scratch BB for poisoning
     // and when we have Swift parameters to reassemble. Create it here.
-    if (comp->compMethodRequiresPInvokeFrame() || comp->compShouldPoisonFrame() || comp->lvaHasAnySwiftStackParamToReassemble())
+    if (comp->compMethodRequiresPInvokeFrame() || comp->compShouldPoisonFrame() ||
+        comp->lvaHasAnySwiftStackParamToReassemble())
     {
         if (comp->fgEnsureFirstBBisScratch())
         {
