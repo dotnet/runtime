@@ -4945,6 +4945,9 @@ weight_t Compiler::ThreeOptLayout::GetLayoutCost(unsigned startPos, unsigned end
 //   block - The block to consider creating fallthrough from
 //   next - The block to consider creating fallthrough into
 //
+// Returns:
+//   The cost
+//
 weight_t Compiler::ThreeOptLayout::GetCost(BasicBlock* block, BasicBlock* next)
 {
     assert(block != nullptr);
@@ -4964,8 +4967,8 @@ weight_t Compiler::ThreeOptLayout::GetCost(BasicBlock* block, BasicBlock* next)
 }
 
 //-----------------------------------------------------------------------------
-// Compiler::ThreeOptLayout::TrySwappingPartitions: Evaluates the cost of swapping the given partitions.
-// If it is profitable, write the swapped partitions back to 'blockOrder'.
+// Compiler::ThreeOptLayout::GetPartitionCostDelta: Computes the current cost of the given partitions,
+// and the cost of swapping S2 and S3, returning the difference between them.
 //
 // Parameters:
 //   s1Start - The starting position of the first partition
@@ -4975,24 +4978,10 @@ weight_t Compiler::ThreeOptLayout::GetCost(BasicBlock* block, BasicBlock* next)
 //   s4End - The ending position (inclusive) of the fourth partition
 //
 // Returns:
-//   True if the swap was performed, false otherwise
+//   The difference in cost between the current and proposed layouts.
+//   A negative delta indicates the proposed layout is an improvement.
 //
-// Notes:
-//   Here is the proposed partition:
-//   S1: s1Start ~ s2Start-1
-//   S2: s2Start ~ s3Start-1
-//   S3: s3Start ~ s3End
-//   S4: remaining blocks
-//
-//   After the swap:
-//   S1: s1Start ~ s2Start-1
-//   S3: s3Start ~ s3End
-//   S2: s2Start ~ s3Start-1
-//   S4: remaining blocks
-//
-//   If 's3End' and 's4End' are the same, the fourth partition doesn't exist.
-//
-bool Compiler::ThreeOptLayout::TrySwappingPartitions(
+weight_t Compiler::ThreeOptLayout::GetPartitionCostDelta(
     unsigned s1Start, unsigned s2Start, unsigned s3Start, unsigned s3End, unsigned s4End)
 {
     BasicBlock* const s2Block     = blockOrder[s2Start];
@@ -5019,16 +5008,38 @@ bool Compiler::ThreeOptLayout::TrySwappingPartitions(
         newCost += s3BlockPrev->bbWeight;
     }
 
-    // Check if the swap is profitable
-    if ((newCost >= currCost) || Compiler::fgProfileWeightsEqual(newCost, currCost, 0.001))
-    {
-        return false;
-    }
+    return newCost - currCost;
+}
 
-    // We've found a profitable cut point. Continue with the swap.
-    JITDUMP("Swapping partitions [" FMT_BB ", " FMT_BB "] and [" FMT_BB ", " FMT_BB
-            "] (current partition cost = %f, new partition cost = %f)\n",
-            s2Block->bbNum, s3BlockPrev->bbNum, s3Block->bbNum, lastBlock->bbNum, currCost, newCost);
+//-----------------------------------------------------------------------------
+// Compiler::ThreeOptLayout::SwapPartitions: Swap the specified partitions.
+// It is assumed (and asserted) that the swap is profitable.
+//
+// Parameters:
+//   s1Start - The starting position of the first partition
+//   s2Start - The starting position of the second partition
+//   s3Start - The starting position of the third partition
+//   s3End - The ending position (inclusive) of the third partition
+//   s4End - The ending position (inclusive) of the fourth partition
+//
+// Notes:
+//   Here is the proposed partition:
+//   S1: s1Start ~ s2Start-1
+//   S2: s2Start ~ s3Start-1
+//   S3: s3Start ~ s3End
+//   S4: remaining blocks
+//
+//   After the swap:
+//   S1: s1Start ~ s2Start-1
+//   S3: s3Start ~ s3End
+//   S2: s2Start ~ s3Start-1
+//   S4: remaining blocks
+//
+//   If 's3End' and 's4End' are the same, the fourth partition doesn't exist.
+//
+void Compiler::ThreeOptLayout::SwapPartitions(
+    unsigned s1Start, unsigned s2Start, unsigned s3Start, unsigned s3End, unsigned s4End)
+{
     INDEBUG(const weight_t currLayoutCost = GetLayoutCost(s1Start, s4End));
 
     // Swap the partitions
@@ -5062,8 +5073,6 @@ bool Compiler::ThreeOptLayout::TrySwappingPartitions(
                Compiler::fgProfileWeightsEqual(newLayoutCost, currLayoutCost, 0.001));
     }
 #endif // DEBUG
-
-    return true;
 }
 
 //-----------------------------------------------------------------------------
@@ -5086,7 +5095,6 @@ void Compiler::ThreeOptLayout::ConsiderEdge(FlowEdge* edge)
         return;
     }
 
-    edge->markVisited();
     BasicBlock* const srcBlk = edge->getSourceBlock();
     BasicBlock* const dstBlk = edge->getDestinationBlock();
 
@@ -5136,6 +5144,7 @@ void Compiler::ThreeOptLayout::ConsiderEdge(FlowEdge* edge)
         return;
     }
 
+    edge->markVisited();
     cutPoints.Push(edge);
 }
 
@@ -5313,7 +5322,7 @@ bool Compiler::ThreeOptLayout::RunGreedyThreeOptPass(unsigned startPos, unsigned
     assert(startPos < endPos);
     bool modified = false;
 
-    JITDUMP("Using greedy strategy for finding cut points.\n");
+    JITDUMP("Running greedy 3-opt pass.\n");
 
     // Initialize cutPoints with candidate branches in this section
     for (unsigned position = startPos; position <= endPos; position++)
@@ -5328,7 +5337,7 @@ bool Compiler::ThreeOptLayout::RunGreedyThreeOptPass(unsigned startPos, unsigned
     while (!cutPoints.Empty())
     {
         FlowEdge* const candidateEdge = cutPoints.Pop();
-        assert(candidateEdge->visited());
+        candidateEdge->markUnvisited();
 
         BasicBlock* const srcBlk = candidateEdge->getSourceBlock();
         BasicBlock* const dstBlk = candidateEdge->getDestinationBlock();
@@ -5364,6 +5373,7 @@ bool Compiler::ThreeOptLayout::RunGreedyThreeOptPass(unsigned startPos, unsigned
 
         const bool isForwardJump = (srcPos < dstPos);
         unsigned   s2Start, s3Start, s3End;
+        weight_t   costChange;
 
         if (isForwardJump)
         {
@@ -5378,34 +5388,82 @@ bool Compiler::ThreeOptLayout::RunGreedyThreeOptPass(unsigned startPos, unsigned
             // S3: dstPos ~ endPos
             // S2: srcPos+1 ~ dstPos-1
             // S4: remaining blocks
-            s2Start = srcPos + 1;
-            s3Start = dstPos;
-            s3End   = endPos;
+            s2Start    = srcPos + 1;
+            s3Start    = dstPos;
+            s3End      = endPos;
+            costChange = GetPartitionCostDelta(startPos, s2Start, s3Start, s3End, endPos);
         }
         else
         {
-
+            // For backward jumps, we will employ a greedy 4-opt approach to find the ideal cut point
+            // between the destination and source blocks.
             // Here is the proposed partition:
             // S1: startPos ~ dstPos-1
-            // S2: dstPos ~ srcPos-1
-            // S3: srcPos
+            // S2: dstPos ~ s3Start-1
+            // S3: s3Start ~ srcPos
             // S4: srcPos+1 ~ endPos
             //
             // After the swap:
             // S1: startPos ~ dstPos-1
-            // S3: srcPos
-            // S2: dstPos ~ srcPos-1
+            // S3: s3Start ~ srcPos
+            // S2: dstPos ~ s3Start-1
             // S4: srcPos+1 ~ endPos
-            s2Start = dstPos;
-            s3Start = srcPos;
-            s3End   = srcPos;
+            s2Start    = dstPos;
+            s3Start    = srcPos;
+            s3End      = srcPos;
+            costChange = BB_ZERO_WEIGHT;
+
+            // The cut points before S2 and after S3 are fixed.
+            // We will search for the optimal cut point before S3.
+            BasicBlock* const s2Block     = blockOrder[s2Start];
+            BasicBlock* const s2BlockPrev = blockOrder[s2Start - 1];
+            BasicBlock* const lastBlock   = blockOrder[s3End];
+
+            // Because the above cut points are fixed, don't waste time re-computing their costs.
+            // Instead, pre-compute them here.
+            const weight_t currCostBase =
+                GetCost(s2BlockPrev, s2Block) +
+                ((s3End < endPos) ? GetCost(lastBlock, blockOrder[s3End + 1]) : lastBlock->bbWeight);
+            const weight_t newCostBase = GetCost(lastBlock, s2Block);
+
+            // Search for the ideal start to S3
+            for (unsigned position = s2Start + 1; position <= s3End; position++)
+            {
+                BasicBlock* const s3Block     = blockOrder[position];
+                BasicBlock* const s3BlockPrev = blockOrder[position - 1];
+
+                // Don't consider any cut points that would break up call-finally pairs
+                if (s3Block->KindIs(BBJ_CALLFINALLYRET))
+                {
+                    continue;
+                }
+
+                // Compute the cost delta of this partition
+                const weight_t currCost = currCostBase + GetCost(s3BlockPrev, s3Block);
+                const weight_t newCost =
+                    newCostBase + GetCost(s2BlockPrev, s3Block) +
+                    ((s3End < endPos) ? GetCost(s3BlockPrev, blockOrder[s3End + 1]) : s3BlockPrev->bbWeight);
+                const weight_t delta = newCost - currCost;
+
+                if (delta < costChange)
+                {
+                    costChange = delta;
+                    s3Start    = position;
+                }
+            }
         }
 
         // Continue evaluating partitions if this one isn't profitable
-        if (!TrySwappingPartitions(startPos, s2Start, s3Start, s3End, endPos))
+        if ((costChange >= BB_ZERO_WEIGHT) || Compiler::fgProfileWeightsEqual(costChange, BB_ZERO_WEIGHT, 0.001))
         {
             continue;
         }
+
+        JITDUMP("Swapping partitions [" FMT_BB ", " FMT_BB "] and [" FMT_BB ", " FMT_BB "] (cost change = %f)\n",
+                blockOrder[s2Start]->bbNum, blockOrder[s3Start - 1]->bbNum, blockOrder[s3Start]->bbNum,
+                blockOrder[s3End]->bbNum, costChange);
+
+        SwapPartitions(startPos, s2Start, s3Start, s3End, endPos);
 
         // Update the ordinals for the blocks we moved
         for (unsigned i = s2Start; i <= endPos; i++)
