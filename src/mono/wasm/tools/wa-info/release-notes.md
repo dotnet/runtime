@@ -1,3 +1,10 @@
+### Release version 0.5
+
+Changes:
+
+ * add support for wasm object files
+ * parse linking and relocation sections
+
 ### Release version 0.4
 
 Changes:
