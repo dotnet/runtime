@@ -132,10 +132,6 @@ namespace CorUnix
     // type when:
     // 1) The object's refcount drops to 0
     // 2) A process is shutting down
-    // 3) A process has released all local references to the object
-    //
-    // The cleanup routine must only cleanup the object's shared state
-    // when the last parameter (fCleanupSharedSate) is TRUE.
     //
     // When the third parameter (fShutdown) is TRUE the process is in
     // the act of exiting. The cleanup routine should not perform any
