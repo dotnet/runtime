@@ -11,9 +11,6 @@ internal partial class MockDescriptors
 {
     public class GCCover
     {
-        private const ulong DefaultAllocationRangeStart = 0x0011_1000;
-        private const ulong DefaultAllocationRangeEnd = 0x00012_0000;
-
         internal readonly MockMemorySpace.Builder Builder;
 
         internal Dictionary<DataType, Target.TypeInfo> Types { get; }
