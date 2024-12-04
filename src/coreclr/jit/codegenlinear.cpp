@@ -384,9 +384,9 @@ void CodeGen::genCodeForBBlist()
 
 #ifdef SWIFT_SUPPORT
         // Reassemble Swift struct parameters on the local stack frame in the
-        // scratch BB right after the prolog. There can be arbitrary amounts of
+        // init BB right after the prolog. There can be arbitrary amounts of
         // codegen related to doing this, so it cannot be done in the prolog.
-        if (compiler->fgBBisScratch(block) && compiler->lvaHasAnySwiftStackParamToReassemble())
+        if (block->IsFirst() && compiler->lvaHasAnySwiftStackParamToReassemble())
         {
             genHomeSwiftStructParameters(/* handleStack */ true);
         }
