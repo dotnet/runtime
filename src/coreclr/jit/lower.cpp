@@ -4888,7 +4888,6 @@ void Lowering::LowerRet(GenTreeOp* ret)
         }
     }
 
-    // Method doing PInvokes has exactly one return block unless it has tail calls.
     if (comp->compMethodRequiresPInvokeFrame())
     {
         InsertPInvokeMethodEpilog(comp->compCurBB DEBUGARG(ret));
@@ -5331,6 +5330,11 @@ void Lowering::LowerReturnSuspend(GenTree* node)
     while (BlockRange().LastNode() != node)
     {
         BlockRange().Remove(BlockRange().LastNode(), true);
+    }
+
+    if (comp->compMethodRequiresPInvokeFrame())
+    {
+        InsertPInvokeMethodEpilog(comp->compCurBB DEBUGARG(node));
     }
 }
 

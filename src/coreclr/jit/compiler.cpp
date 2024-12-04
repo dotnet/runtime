@@ -3368,7 +3368,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
 
         if (compIsAsync2())
         {
-            printf("OPTIONS: compilation is an async2\n");
+            printf("OPTIONS: compilation is an async2 state machine\n");
         }
     }
 #endif
