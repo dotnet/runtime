@@ -2,7 +2,7 @@
 
 > The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
 
-The [MIT](https://github.com/dotnet/core/blob/main/LICENSE.TXT) license and others like it have a provision that distributions of software should include the license. This is model we should be following.
+The [MIT](https://github.com/dotnet/core/blob/main/LICENSE.TXT) license and others like it have a provision that distributions of software should include the license. This is the model we should be following.
 
 Each .NET binary distribution must carry:
 
