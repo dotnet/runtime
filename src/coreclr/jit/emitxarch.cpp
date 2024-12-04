@@ -274,8 +274,6 @@ bool emitter::IsEvexEncodableInstruction(instruction ins) const
 //
 bool emitter::IsRex2EncodableInstruction(instruction ins) const
 {
-    // TODO-Xarch-apx: we have special stress mode for REX2 on non-compatible machine, that will
-    //                 force UseRex2Encoding return true regardless of the CPUID results.
     if (!UseRex2Encoding())
     {
         return false;
