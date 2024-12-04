@@ -11,7 +11,15 @@ These are proposed modifications to the ECMA-335 specification for runtime-async
 
 ### I.8.4.5 Sync and Async Methods
 
-Methods may be either 'sync' or 'async'. Async method definitions are methods with CIL implementation and with a return type of `System.Threading.Task`, `System.Threading.ValueTask`, `System.Threading.Task<T>`, or `System.Threading.ValueTask<T>` attributed with `[MethodImpl(MethodImplOptions.Async)]`. The `[MethodImpl(MethodImplOptions.Async)]` has no effect outside of this pattern. Async method definitions are only valid inside async-capable assemblies. An async-capable assembly is one which references a corlib containing an `abstract sealed class RuntimeFeature` with a `public const string` field member named `Async`. Inside async method bodies, certain methods are also invokable by a special signature encoding, described in [### I.8.6.1.5 Method signatures].
+Methods may be either 'sync' or 'async'. Async method definitions are methods attributed with `[MethodImpl(MethodImplOptions.Async)]`. Inside async method bodies, certain methods are also invokable by a special signature encoding, described in [### I.8.6.1.5 Method signatures].
+
+Applicability of `MethodImplOptions.Async`:
+* The `[MethodImpl(MethodImplOptions.Async)]` only has effect when applied to method definitions that return generic or nongeneric variants of Task or ValueTask.
+* The `[MethodImpl(MethodImplOptions.Async)]` only has effect when applied to method definitions with CIL implementation.
+* Async method definitions are only valid inside async-capable assemblies. An async-capable assembly is one which references a corlib containing an `abstract sealed class RuntimeFeature` with a `public const string` field member named `Async`.
+* Combining MethodImplOptions.Async with MethodImplOptions.Synchronized is invalid.
+* Applying `MethodImplOptions.Async` to methods with `byref` or `ref-like` parameters is invalid.
+* Applying `MethodImplOptions.Async` to vararg methods is invalid.
 
 Sync methods are all other methods.
 
