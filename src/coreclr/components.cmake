@@ -1,7 +1,7 @@
 # Define all the individually buildable components of the CoreCLR build and their respective targets
 add_component(jit)
 add_component(alljits)
-add_component(alljitscommunity)
+add_component(alljitscommunity alljitscommunity EXCLUDE_FROM_ALL)
 add_component(hosts)
 add_component(runtime)
 add_component(paltests paltests_install)
