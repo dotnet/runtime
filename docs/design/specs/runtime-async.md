@@ -29,10 +29,8 @@ Unlike sync methods, async methods support suspension. Suspension allows async m
 
 Async methods also do not have matching return type conventions as sync methods. For sync methods, the stack should contain a value convertible to the stated return type before the `ret` instruction. For async methods, the stack should be empty in the case of `Task` or `ValueTask`, or the type argument in the case of `Task<T>` or `ValueTask<T>`.
 
-Async methods support the following suspension points:
+Async methods support suspension using one of the following methods:
 
-* Calling an `Await` method on `Task/ValueTask/Task<T>/ValueTask<T>` as defined below. If the callee suspends, the caller will suspend as well.
-* Using new .NET runtime APIs to "await" an "INotifyCompletion" type. The signatures of these methods shall be:
   ```C#
   namespace System.Runtime.CompilerServices
   {
@@ -42,11 +40,20 @@ Async methods support the following suspension points:
           public static void AwaitAwaiterFromRuntimeAsync<TAwaiter>(TAwaiter awaiter) where TAwaiter : INotifyCompletion { ... }
           [MethodImpl(MethodImplOptions.Async)]
           public static void UnsafeAwaitAwaiterFromRuntimeAsync<TAwaiter>(TAwaiter awaiter) where TAwaiter : ICriticalNotifyCompletion
+          
+          [MethodImpl(MethodImplOptions.Async)]
+          public static void Await(Task task);
+          [MethodImpl(MethodImplOptions.Async)]
+          public static void Await(ValueTask task);
+          [MethodImpl(MethodImplOptions.Async)]
+          public static T Await<T>(Task<T> task);
+          [MethodImpl(MethodImplOptions.Async)]
+          public static T Await<T>(ValueTask<T> task);
       }
   }
   ```
 
-Each of the above methods will have semantics analogous to the current AsyncTaskMethodBuilder.AwaitOnCompleted/AwaitUnsafeOnCompleted methods. After calling this method, it can be presumed that the task has completed. These methods are only legal to call from inside async methods.
+These methods are only legal to call inside async methods. The `...AwaitAwaiter...` methods will have semantics analogous to the current `AsyncTaskMethodBuilder.AwaitOnCompleted/AwaitUnsafeOnCompleted` methods. After calling either method, it can be presumed that the task or awaiter has completed. The `Await` methods perform suspension like the `AwaitAwaiter...` methods, but are optimized for calling on the return value of a call to an async method. To achieve maximum performance, the IL sequence of two `call` instructions -- one to the async method and immediately one to the `Await` method -- should be preferred.
 
 Only local variables which are "hoisted" may be used across suspension points. That is, only "hoisted" local variables will have their state preserved after returning from a suspension. On methods with the `localsinit` flag set, non-"hoisted" local variables will be initialized to their default value when resuming from suspension. Otherwise, these variables will have an undefined value. To identify "hoisted" local variables, they must have an optional custom modifier to the `System.Runtime.CompilerServices.HoistedLocal` class, which will be a new .NET runtime API. This custom modifier must be the last custom modifier on the variable. It is invalid for by-ref variables, or variables with a by-ref-like type, to be marked hoisted. Hoisted local variables are stored in managed memory and cannot be converted to unmanaged pointers without explicit pinning.
 The code generator is free to ignore the `HoistedLocal` modifier if it can prove that this makes no observable difference in the execution of the generated program. This can be observable in diagnostics since it may mean the value of a local with the `HoistedLocal` modifier will not be available after certain suspension points.
@@ -61,26 +68,6 @@ Other restrictions are likely to be permanent, including
 * Suspension points may not appear in exception handling blocks.
 * Only four types will be supported as the return type for "runtime-async" methods: `System.Threading.Task`, `System.Threading.ValueTask`, `System.Threading.Task<T>`, and `System.Threading.ValueTask<T>`
 
-In addition to the `AwaitAwaiter...` general-purpose methods defined above, the following specialty await methods are also defined.
-
-```C#
-  namespace System.Runtime.CompilerServices
-  {
-      public static class RuntimeHelpers
-      {
-          [MethodImpl(MethodImplOptions.Async)]
-          public static void Await(Task task);
-          [MethodImpl(MethodImplOptions.Async)]
-          public static void Await(ValueTask task);
-          [MethodImpl(MethodImplOptions.Async)]
-          public static T Await<T>(Task<T> task);
-          [MethodImpl(MethodImplOptions.Async)]
-          public static T Await<T>(ValueTask<T> task);
-      }
-  }
-```
-
-These methods are also only legal to call inside async methods. These methods perform suspension like the `AwaitAwaiter...` methods, but are optimized for calling on the return value of a call to an async method. To achieve maximum performance, the IL sequence of two `call` instructions -- one to the async method and immediately one to the `Await` method -- should be preferred.
 
 ### II.23.1.11 Flags for methods [MethodImplAttributes]
 
