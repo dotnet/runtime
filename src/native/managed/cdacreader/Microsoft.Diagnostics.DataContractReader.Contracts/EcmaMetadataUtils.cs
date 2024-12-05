@@ -11,5 +11,4 @@ internal static class EcmaMetadataUtils
     internal static uint GetRowId(uint token) => token & RIDMask;
 
     internal static uint MakeToken(uint rid, uint table) => rid | (table << RowIdBitCount);
-
 }

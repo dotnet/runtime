@@ -25,7 +25,9 @@ internal readonly partial struct CodeVersions_1 : ICodeVersions
 
         ModuleHandle moduleHandle = _target.Contracts.Loader.GetModuleHandle(module);
         TargetPointer ilCodeVersionTable = _target.Contracts.Loader.GetLookupTables(moduleHandle).MethodDefToILCodeVersioningState;
-        TargetPointer ilVersionStateAddress = _target.Contracts.Loader.GetModuleLookupMapElement(ilCodeVersionTable, methodDefToken, out var _);
+        TargetPointer ilVersionStateAddress = methodDefToken == (uint)Constants.CorTokenType.mdtMethodDef
+            ? TargetPointer.Null // no token - for example, special runtime methods like array methods
+            : _target.Contracts.Loader.GetModuleLookupMapElement(ilCodeVersionTable, methodDefToken, out var _);
         if (ilVersionStateAddress == TargetPointer.Null)
         {
             return ILCodeVersionHandle.CreateSynthetic(module, methodDefToken);
@@ -75,7 +77,9 @@ internal readonly partial struct CodeVersions_1 : ICodeVersions
 
         ModuleHandle moduleHandle = _target.Contracts.Loader.GetModuleHandle(module);
         TargetPointer ilCodeVersionTable = _target.Contracts.Loader.GetLookupTables(moduleHandle).MethodDefToILCodeVersioningState;
-        TargetPointer ilVersionStateAddress = _target.Contracts.Loader.GetModuleLookupMapElement(ilCodeVersionTable, methodDefToken, out var _);
+        TargetPointer ilVersionStateAddress = methodDefToken == (uint)Constants.CorTokenType.mdtMethodDef
+            ? TargetPointer.Null // no token - for example, special runtime methods like array methods
+            : _target.Contracts.Loader.GetModuleLookupMapElement(ilCodeVersionTable, methodDefToken, out var _);
 
         // always add the synthetic version
         yield return ILCodeVersionHandle.CreateSynthetic(module, methodDefToken);
