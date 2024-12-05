@@ -19,7 +19,6 @@ function(create_standalone_jit)
 
   set(oneValueArgs TARGET OS ARCH)
   set(multiValueArgs DESTINATIONS)
-  set(JIT_COMMUNITY false)
   cmake_parse_arguments(TARGETDETAILS "" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
   if(TARGETDETAILS_OS STREQUAL "unix_osx" OR TARGETDETAILS_OS STREQUAL "unix_anyos")
@@ -52,19 +51,17 @@ function(create_standalone_jit)
   elseif(TARGETDETAILS_ARCH STREQUAL "loongarch64")
     set(JIT_ARCH_SOURCES ${JIT_LOONGARCH64_SOURCES})
     set(JIT_ARCH_HEADERS ${JIT_LOONGARCH64_HEADERS})
-    set(JIT_COMMUNITY true)
   elseif(TARGETDETAILS_ARCH STREQUAL "riscv64")
     set(JIT_ARCH_SOURCES ${JIT_RISCV64_SOURCES})
     set(JIT_ARCH_HEADERS ${JIT_RISCV64_HEADERS})
-    set(JIT_COMMUNITY true)
   else()
     clr_unknown_arch()
   endif()
 
   if (TARGETDETAILS_DESTINATIONS STREQUAL "")
-    add_jit(${TARGETDETAILS_TARGET} ${JIT_COMMUNITY})
+    add_jit(${TARGETDETAILS_TARGET})
   else()
-    add_jit(${TARGETDETAILS_TARGET} ${JIT_COMMUNITY} DESTINATIONS "${TARGETDETAILS_DESTINATIONS}")
+    add_jit(${TARGETDETAILS_TARGET} DESTINATIONS "${TARGETDETAILS_DESTINATIONS}")
   endif()
 
   set_target_definitions_to_custom_os_and_arch(${ARGN})
@@ -568,7 +565,7 @@ endif(CLR_CMAKE_HOST_UNIX)
 
 # Shared function for generating JIT
 # optional arguments: DESTINATIONS path
-function(add_jit jitName jitCommunity)
+function(add_jit jitName)
 
     set_source_files_properties(${JIT_EXPORTS_FILE} PROPERTIES GENERATED TRUE)
 
@@ -619,12 +616,7 @@ function(add_jit jitName jitCommunity)
     endif()
 
     # add the install targets
-    if (jitCommunity)
-        install_clr(TARGETS ${jitName} ${ARGN} COMPONENT alljitscommunity)
-    else()
-        install_clr(TARGETS ${jitName} ${ARGN} COMPONENT alljits)
-        install_clr(TARGETS ${jitName} ${ARGN} COMPONENT alljitscommunity)
-    endif()
+    install_clr(TARGETS ${jitName} ${ARGN} COMPONENT alljits)
 endfunction()
 
 set(JIT_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
@@ -650,8 +642,10 @@ if (CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_AMD64)
   create_standalone_jit(TARGET clrjit_universal_arm64_${ARCH_HOST_NAME} OS universal ARCH arm64 DESTINATIONS .)
   create_standalone_jit(TARGET clrjit_unix_x64_${ARCH_HOST_NAME} OS unix_anyos ARCH x64 DESTINATIONS .)
   create_standalone_jit(TARGET clrjit_win_x64_${ARCH_HOST_NAME} OS win ARCH x64 DESTINATIONS .)
-  create_standalone_jit(TARGET clrjit_unix_loongarch64_${ARCH_HOST_NAME} OS unix ARCH loongarch64 DESTINATIONS .)
-  create_standalone_jit(TARGET clrjit_unix_riscv64_${ARCH_HOST_NAME} OS unix ARCH riscv64 DESTINATIONS .)
+  if (CLR_CMAKE_BUILD_COMMUNITY_ALTJITS EQUAL 1)
+    create_standalone_jit(TARGET clrjit_unix_loongarch64_${ARCH_HOST_NAME} OS unix ARCH loongarch64 DESTINATIONS .)
+    create_standalone_jit(TARGET clrjit_unix_riscv64_${ARCH_HOST_NAME} OS unix ARCH riscv64 DESTINATIONS .)
+  endif(CLR_CMAKE_BUILD_COMMUNITY_ALTJITS EQUAL 1)
 endif (CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_AMD64)
 
 if (CLR_CMAKE_TARGET_ARCH_LOONGARCH64)
