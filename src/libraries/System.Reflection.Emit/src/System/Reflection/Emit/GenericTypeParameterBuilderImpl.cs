@@ -135,7 +135,10 @@ namespace System.Reflection.Emit
         public override EventInfo[] GetEvents(BindingFlags bindingAttr) => throw new NotSupportedException();
         [DynamicallyAccessedMembers(TypeBuilderImpl.GetAllMembers)]
         public override MemberInfo[] GetMembers(BindingFlags bindingAttr) => throw new NotSupportedException();
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields |
+            DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods |
+            DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties |
+            DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
         public override object InvokeMember(string name, BindingFlags invokeAttr, Binder? binder, object? target, object?[]? args, ParameterModifier[]? modifiers, CultureInfo? culture, string[]? namedParameters) => throw new NotSupportedException();
 
         public override Type MakePointerType() =>

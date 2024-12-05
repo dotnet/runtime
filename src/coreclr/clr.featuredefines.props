@@ -3,7 +3,6 @@
         <FeatureCoreCLR>true</FeatureCoreCLR>
         <FeatureEventTrace>true</FeatureEventTrace>
         <FeaturePerfTracing>true</FeaturePerfTracing>
-        <FeatureTypeEquivalence>true</FeatureTypeEquivalence>
         <ProfilingSupportedBuild>true</ProfilingSupportedBuild>
     </PropertyGroup>
 
@@ -16,6 +15,7 @@
         <FeatureComWrappers>true</FeatureComWrappers>
         <FeatureCominterop>true</FeatureCominterop>
         <FeatureCominteropApartmentSupport>true</FeatureCominteropApartmentSupport>
+        <FeatureTypeEquivalence>true</FeatureTypeEquivalence>
         <FeatureIjw>true</FeatureIjw>
     </PropertyGroup>
 

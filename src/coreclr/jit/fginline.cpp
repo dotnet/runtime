@@ -913,14 +913,6 @@ PhaseStatus Compiler::fgInline()
 
 #endif // DEBUG
 
-    if (madeChanges)
-    {
-        // Optional quirk to keep this as zero diff. Some downstream phases are bbNum sensitive
-        // but rely on the ambient bbNums.
-        //
-        fgRenumberBlocks();
-    }
-
     if (fgPgoConsistent)
     {
         Metrics.ProfileConsistentAfterInline++;
@@ -1659,6 +1651,7 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
     compQmarkUsed |= InlineeCompiler->compQmarkUsed;
     compGSReorderStackLayout |= InlineeCompiler->compGSReorderStackLayout;
     compHasBackwardJump |= InlineeCompiler->compHasBackwardJump;
+    compMaskConvertUsed |= InlineeCompiler->compMaskConvertUsed;
 
     lvaGenericsContextInUse |= InlineeCompiler->lvaGenericsContextInUse;
 

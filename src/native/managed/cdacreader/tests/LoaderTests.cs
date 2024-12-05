@@ -3,9 +3,11 @@
 
 using System;
 using System.IO;
+using Microsoft.Diagnostics.DataContractReader.Contracts;
+using Moq;
 using Xunit;
 
-namespace Microsoft.Diagnostics.DataContractReader.UnitTests;
+namespace Microsoft.Diagnostics.DataContractReader.Tests;
 
 using MockLoader = MockDescriptors.Loader;
 
@@ -19,9 +21,6 @@ public unsafe class LoaderTests
         TargetTestHelpers helpers = new(arch);
         MockMemorySpace.Builder builder = new(helpers);
         MockLoader loader = new(builder);
-        builder = builder
-            .SetContracts([nameof(Contracts.Loader)])
-            .SetTypes(loader.Types);
 
         string expected = $"{AppContext.BaseDirectory}{Path.DirectorySeparatorChar}TestModule.dll";
 
@@ -29,11 +28,12 @@ public unsafe class LoaderTests
         TargetPointer moduleAddr = loader.AddModule(path: expected);
         TargetPointer moduleAddrEmptyPath = loader.AddModule();
 
-        bool success = builder.TryCreateTarget(out ContractDescriptorTarget? target);
-        Assert.True(success);
+        var target = new TestPlaceholderTarget(arch, builder.GetReadContext().ReadFromTarget, loader.Types);
+        target.SetContracts(Mock.Of<ContractRegistry>(
+            c => c.Loader == ((IContractFactory<ILoader>)new LoaderFactory()).CreateContract(target, 1)));
 
         // Validate the expected module data
-        Contracts.ILoader contract = target.Contracts.Loader;
+        ILoader contract = target.Contracts.Loader;
         Assert.NotNull(contract);
         {
             Contracts.ModuleHandle handle = contract.GetModuleHandle(moduleAddr);
@@ -55,9 +55,6 @@ public unsafe class LoaderTests
         TargetTestHelpers helpers = new(arch);
         MockMemorySpace.Builder builder = new(helpers);
         MockLoader loader = new(builder);
-        builder = builder
-            .SetContracts([nameof(Contracts.Loader)])
-            .SetTypes(loader.Types);
 
         string expected = $"TestModule.dll";
 
@@ -65,8 +62,9 @@ public unsafe class LoaderTests
         TargetPointer moduleAddr = loader.AddModule(fileName: expected);
         TargetPointer moduleAddrEmptyName = loader.AddModule();
 
-        bool success = builder.TryCreateTarget(out ContractDescriptorTarget? target);
-        Assert.True(success);
+        var target = new TestPlaceholderTarget(arch, builder.GetReadContext().ReadFromTarget, loader.Types);
+        target.SetContracts(Mock.Of<ContractRegistry>(
+            c => c.Loader == ((IContractFactory<ILoader>)new LoaderFactory()).CreateContract(target, 1)));
 
         // Validate the expected module data
         Contracts.ILoader contract = target.Contracts.Loader;
