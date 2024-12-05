@@ -7568,7 +7568,10 @@ bool DebuggerStepper::TriggerSingleStep(Thread *thread, const BYTE *ip)
     if (!g_pEEInterface->IsManagedNativeCode(ip))
     {
         LOG((LF_CORDB,LL_INFO10000, "DS::TSS: not in managed code, Returning false (case 0)!\n"));
-        DisableSingleStep();
+        if ((thread->m_State & Thread::TS_DebugWillSync) == 0)
+        {
+            DisableSingleStep();
+        }
         return false;
     }
 
