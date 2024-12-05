@@ -3512,7 +3512,7 @@ namespace System.Numerics.Tensors
         /// <param name="x">The <see cref="TensorSpan{T}"/> to take the standard deviation of.</param>
         /// <returns><typeparamref name="T"/> representing the standard deviation.</returns>
         public static T StdDev<T>(in ReadOnlyTensorSpan<T> x)
-            where T : IFloatingPoint<T>, IPowerFunctions<T>, IAdditionOperators<T, T, T>, IAdditiveIdentity<T, T>, IRootFunctions<T>
+            where T : IFloatingPoint<T>, IPowerFunctions<T>, IAdditionOperators<T, T, T>, IAdditiveIdentity<T, T>
         {
             T mean = Average(x);
             Span<T> span = MemoryMarshal.CreateSpan(ref x._reference, (int)x._shape._memoryLength);
@@ -3521,7 +3521,7 @@ namespace System.Numerics.Tensors
             TensorPrimitives.Abs(output, output);
             TensorPrimitives.Pow((ReadOnlySpan<T>)output, T.CreateChecked(2), output);
             T sum = TensorPrimitives.Sum((ReadOnlySpan<T>)output);
-            return T.Sqrt(sum / T.CreateChecked(x._shape._memoryLength));
+            return T.CreateChecked(sum / T.CreateChecked(x._shape._memoryLength));
         }
         #endregion
 
