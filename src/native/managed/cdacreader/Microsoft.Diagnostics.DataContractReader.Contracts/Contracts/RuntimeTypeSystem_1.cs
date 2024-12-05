@@ -894,8 +894,25 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
     private TargetPointer GetLoaderModule(TypeHandle typeHandle)
     {
-        if (!typeHandle.IsMethodTable())
-            throw new NotImplementedException(); // TODO[cdac]: TypeDesc::GetLoaderModule()
+        if (typeHandle.IsTypeDesc())
+        {
+            // TypeDesc::GetLoaderModule
+            if (HasTypeParam(typeHandle))
+            {
+                return GetLoaderModule(GetTypeParam(typeHandle));
+            }
+            else if (IsGenericVariable(typeHandle, out TargetPointer genericParamModule, out _))
+            {
+                return genericParamModule;
+            }
+            else
+            {
+                System.Diagnostics.Debug.Assert(IsFunctionPointer(typeHandle, out _, out _));
+                FnPtrTypeDesc fnPtrTypeDesc = _target.ProcessedData.GetOrAdd<FnPtrTypeDesc>(typeHandle.TypeDescAddress());
+                return fnPtrTypeDesc.LoaderModule;
+            }
+        }
+
         MethodTable mt = _methodTables[typeHandle.Address];
         Data.MethodTableAuxiliaryData mtAuxData = _target.ProcessedData.GetOrAdd<Data.MethodTableAuxiliaryData>(mt.AuxiliaryData);
         return mtAuxData.LoaderModule;
@@ -1023,21 +1040,6 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         return methodDescPointer.Value + offset;
     }
 
-    private TargetCodePointer CodePointerFromAddress(TargetPointer address)
-    {
-        IPlatformMetadata metadata = _target.Contracts.PlatformMetadata;
-        CodePointerFlags flags = metadata.GetCodePointerFlags();
-        if (flags.HasFlag(CodePointerFlags.HasArm32ThumbBit))
-        {
-            return new TargetCodePointer(address.Value | 1);
-        } else if (flags.HasFlag(CodePointerFlags.HasArm64PtrAuth))
-        {
-            throw new NotImplementedException("CodePointerFromAddress: ARM64 with pointer authentication");
-        }
-        Debug.Assert(flags == default);
-        return new TargetCodePointer(address.Value);
-    }
-
     TargetCodePointer IRuntimeTypeSystem.GetNativeCode(MethodDescHandle methodDescHandle)
     {
         MethodDesc md = _methodDescs[methodDescHandle.Address];
@@ -1049,7 +1051,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
             // This means that *ppCode is not stable. It can turn from non-zero to zero.
             TargetPointer ppCode = ((IRuntimeTypeSystem)this).GetAddressOfNativeCodeSlot(methodDescHandle);
             TargetCodePointer pCode = _target.ReadCodePointer(ppCode);
-            return CodePointerFromAddress(pCode.AsTargetPointer);;
+            return CodePointerUtils.CodePointerFromAddress(pCode.AsTargetPointer, _target);
         }
 
         if (!md.HasStableEntryPoint || md.HasPrecode)

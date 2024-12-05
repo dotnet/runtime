@@ -6,7 +6,11 @@ if (NOT CLR_CMAKE_USE_SYSTEM_ZLIB)
     include(${CLR_SRC_NATIVE_DIR}/external/zlib-ng.cmake)
 endif()
 
-if (NOT CLR_CMAKE_USE_SYSTEM_BROTLI)
+if (CLR_CMAKE_USE_SYSTEM_BROTLI)
+    if (CLR_CMAKE_HOST_FREEBSD)
+        set(CMAKE_REQUIRED_INCLUDES ${CROSS_ROOTFS}/usr/local/include)
+    endif()
+else()
     include(${CLR_SRC_NATIVE_DIR}/external/brotli.cmake)
 endif()
 

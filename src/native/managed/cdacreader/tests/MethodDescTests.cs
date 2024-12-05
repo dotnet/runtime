@@ -2,12 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Generic;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
-using Microsoft.Diagnostics.DataContractReader.Data;
+using Moq;
 using Xunit;
 
-namespace Microsoft.Diagnostics.DataContractReader.UnitTests;
+namespace Microsoft.Diagnostics.DataContractReader.Tests;
 
 public class MethodDescTests
 {
@@ -16,34 +15,22 @@ public class MethodDescTests
         TargetTestHelpers targetTestHelpers = new(arch);
 
         MockMemorySpace.Builder builder = new(targetTestHelpers);
-        MockDescriptors.RuntimeTypeSystem rtsBuilder = new(builder) {
-            // arbtrary address range
-            TypeSystemAllocator = builder.CreateAllocator(start: 0x00000000_4a000000, end: 0x00000000_4b000000),
-        };
+        MockDescriptors.RuntimeTypeSystem rtsBuilder = new(builder);
+        MockDescriptors.Loader loaderBuilder = new(builder);
 
-        var loaderBuilder = new MockDescriptors.Loader(builder);
-
-        MockDescriptors.Object objectBuilder = new(rtsBuilder) {
-            // arbtrary adress range
-            ManagedObjectAllocator = builder.CreateAllocator(start: 0x00000000_10000000, end: 0x00000000_20000000),
-        };
         var methodDescChunkAllocator = builder.CreateAllocator(start: 0x00000000_20002000, end: 0x00000000_20003000);
         var methodDescBuilder = new MockDescriptors.MethodDescriptors(rtsBuilder, loaderBuilder)
         {
             MethodDescChunkAllocator = methodDescChunkAllocator,
         };
 
-        builder = builder
-            .SetContracts([ nameof (Contracts.Object), nameof (Contracts.RuntimeTypeSystem), nameof (Contracts.Loader) ])
-            .SetGlobals(MockDescriptors.MethodDescriptors.Globals(targetTestHelpers))
-            .SetTypes(methodDescBuilder.Types);
-
-        methodDescBuilder.AddGlobalPointers();
-
         configure?.Invoke(methodDescBuilder);
 
-        bool success = builder.TryCreateTarget(out ContractDescriptorTarget? target);
-        Assert.True(success);
+        var target = new TestPlaceholderTarget(arch, builder.GetReadContext().ReadFromTarget, methodDescBuilder.Types, methodDescBuilder.Globals);
+        target.SetContracts(Mock.Of<ContractRegistry>(
+            c => c.RuntimeTypeSystem == ((IContractFactory<IRuntimeTypeSystem>)new RuntimeTypeSystemFactory()).CreateContract(target, 1)
+                && c.Loader == ((IContractFactory<ILoader>)new LoaderFactory()).CreateContract(target, 1)));
+
         testCase(target);
     }
 
