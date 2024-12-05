@@ -15,9 +15,9 @@ namespace System.Formats.Nrbf;
 /// <remarks>
 /// ArraySingleObject records are described in <see href="https://learn.microsoft.com/openspecs/windows_protocols/ms-nrbf/982b2f50-6367-402a-aaf2-44ee96e2a5e0">[MS-NRBF] 2.4.3.2</see>.
 /// </remarks>
-internal sealed class ArraySingleObjectRecord : SZArrayRecord<object?>
+internal sealed class ArraySingleObjectRecord : SZArrayRecord<SerializationRecord>
 {
-    private ArraySingleObjectRecord(ArrayInfo arrayInfo) : base(arrayInfo) => Records = [];
+    internal ArraySingleObjectRecord(ArrayInfo arrayInfo) : base(arrayInfo) => Records = [];
 
     public override SerializationRecordType RecordType => SerializationRecordType.ArraySingleObject;
 
@@ -27,25 +27,26 @@ internal sealed class ArraySingleObjectRecord : SZArrayRecord<object?>
     private List<SerializationRecord> Records { get; }
 
     /// <inheritdoc/>
-    public override object?[] GetArray(bool allowNulls = true)
-        => (object?[])(allowNulls ? _arrayNullsAllowed ??= ToArray(true) : _arrayNullsNotAllowed ??= ToArray(false));
+    public override SerializationRecord?[] GetArray(bool allowNulls = true)
+        => (SerializationRecord?[])(allowNulls ? _arrayNullsAllowed ??= ToArray(true) : _arrayNullsNotAllowed ??= ToArray(false));
 
-    private object?[] ToArray(bool allowNulls)
+    private SerializationRecord?[] ToArray(bool allowNulls)
     {
-        object?[] values = new object?[Length];
+        SerializationRecord?[] values = new SerializationRecord?[Length];
 
         int valueIndex = 0;
         for (int recordIndex = 0; recordIndex < Records.Count; recordIndex++)
         {
             SerializationRecord record = Records[recordIndex];
 
-            int nullCount = record is NullsRecord nullsRecord ? nullsRecord.NullCount : 0;
-            if (nullCount == 0)
+            if (record is MemberReferenceRecord referenceRecord)
             {
-                // "new object[] { <SELF> }" is special cased because it allows for storing reference to itself.
-                values[valueIndex++] = record is MemberReferenceRecord referenceRecord && referenceRecord.Reference.Equals(Id)
-                    ? values // a reference to self, and a way to get StackOverflow exception ;)
-                    : record.GetValue();
+                record = referenceRecord.GetReferencedRecord();
+            }
+
+            if (record is not NullsRecord nullsRecord)
+            {
+                values[valueIndex++] = record;
                 continue;
             }
 
@@ -54,6 +55,7 @@ internal sealed class ArraySingleObjectRecord : SZArrayRecord<object?>
                 ThrowHelper.ThrowArrayContainedNulls();
             }
 
+            int nullCount = nullsRecord.NullCount;
             do
             {
                 values[valueIndex++] = null;

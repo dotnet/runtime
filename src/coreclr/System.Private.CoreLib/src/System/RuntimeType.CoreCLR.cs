@@ -1038,7 +1038,7 @@ namespace System
 
                         if (ReflectedType.IsSZArray)
                         {
-                            RuntimeType arrayType = (RuntimeType)ReflectedType.GetElementType();
+                            RuntimeType arrayType = (RuntimeType)ReflectedType.GetElementType()!;
 
                             if (!arrayType.IsPointer)
                             {
@@ -1597,7 +1597,7 @@ namespace System
                 if (m_enclosingType == null)
                 {
                     // Use void as a marker of null enclosing type
-                    RuntimeType enclosingType = RuntimeTypeHandle.GetDeclaringType(GetRuntimeType());
+                    RuntimeType? enclosingType = RuntimeTypeHandle.GetDeclaringType(GetRuntimeType());
                     Debug.Assert(enclosingType != typeof(void));
                     m_enclosingType = enclosingType ?? (RuntimeType)typeof(void);
                 }
@@ -2055,8 +2055,8 @@ namespace System
                 Type genericArgument = genericArguments[i];
                 Type genericParameter = genericParameters[i];
 
-                if (!RuntimeTypeHandle.SatisfiesConstraints(genericParameter.TypeHandle.GetTypeChecked(),
-                    typeContext, methodContext, genericArgument.TypeHandle.GetTypeChecked()))
+                if (!RuntimeTypeHandle.SatisfiesConstraints(genericParameter.TypeHandle.GetRuntimeTypeChecked(),
+                    typeContext, methodContext, genericArgument.TypeHandle.GetRuntimeTypeChecked()))
                 {
                     throw new ArgumentException(
                         SR.Format(SR.Argument_GenConstraintViolation, i.ToString(), genericArgument, definition, genericParameter), e);

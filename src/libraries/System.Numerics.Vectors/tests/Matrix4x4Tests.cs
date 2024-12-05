@@ -819,9 +819,36 @@ namespace System.Numerics.Tests
                     Vector3 v = point - pp;
                     float d = Vector3.Dot(v, plane.Normal);
                     Vector3 vp = point - 2.0f * d * plane.Normal;
-                    Assert.True(MathHelper.Equal(rp, vp), "Matrix4x4.Reflection did not provide expected value.");
+                    Assert.True(MathHelper.Equal(rp, vp), "Matrix4x4.CreateReflection did not provide expected value.");
                 }
             }
+        }
+
+        [Fact]
+        public void Matrix4x4CreateReflectionTest02()
+        {
+            Plane plane = new Plane(0, 1, 0, 60);
+            Matrix4x4 actual = Matrix4x4.CreateReflection(plane);
+
+            AssertExtensions.Equal(1.0f, actual.M11, 0.0f);
+            AssertExtensions.Equal(0.0f, actual.M12, 0.0f);
+            AssertExtensions.Equal(0.0f, actual.M13, 0.0f);
+            AssertExtensions.Equal(0.0f, actual.M14, 0.0f);
+
+            AssertExtensions.Equal(0.0f, actual.M21, 0.0f);
+            AssertExtensions.Equal(-1.0f, actual.M22, 0.0f);
+            AssertExtensions.Equal(0.0f, actual.M23, 0.0f);
+            AssertExtensions.Equal(0.0f, actual.M24, 0.0f);
+
+            AssertExtensions.Equal(0.0f, actual.M31, 0.0f);
+            AssertExtensions.Equal(0.0f, actual.M32, 0.0f);
+            AssertExtensions.Equal(1.0f, actual.M33, 0.0f);
+            AssertExtensions.Equal(0.0f, actual.M34, 0.0f);
+
+            AssertExtensions.Equal(0.0f, actual.M41, 0.0f);
+            AssertExtensions.Equal(-120.0f, actual.M42, 0.0f);
+            AssertExtensions.Equal(0.0f, actual.M43, 0.0f);
+            AssertExtensions.Equal(1.0f, actual.M44, 0.0f);
         }
 
         // A test for CreateRotationZ (float)

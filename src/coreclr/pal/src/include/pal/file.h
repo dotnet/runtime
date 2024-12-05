@@ -21,7 +21,6 @@ Revision History:
 #ifndef _PAL_FILE_H_
 #define _PAL_FILE_H_
 
-#include "pal/shmemory.h"
 #include "pal/stackstring.hpp"
 #include <sys/types.h>
 #include <dirent.h>

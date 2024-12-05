@@ -396,6 +396,9 @@ namespace System
         public static bool IsNotHybridGlobalization => !IsHybridGlobalization;
         public static bool IsNotHybridGlobalizationOnApplePlatform => !IsHybridGlobalizationOnApplePlatform;
 
+        // This can be removed once numeric comparisons are supported on Apple platforms
+        public static bool IsNumericComparisonSupported => !IsHybridGlobalizationOnApplePlatform;
+
         // HG on apple platforms implies ICU
         public static bool IsIcuGlobalization => !IsInvariantGlobalization && (IsHybridGlobalizationOnApplePlatform || ICUVersion > new Version(0, 0, 0, 0));
 

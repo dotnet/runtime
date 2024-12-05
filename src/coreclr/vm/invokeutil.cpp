@@ -554,7 +554,7 @@ OBJECTREF InvokeUtil::CreateObjectAfterInvoke(TypeHandle th, void * pValue) {
 
     case ELEMENT_TYPE_PTR:
     {
-        obj = CreatePointer(th, *(void **)pValue);
+        obj = CreatePointer(th, *(LPVOID*)pValue);
         break;
     }
 
@@ -564,7 +564,7 @@ OBJECTREF InvokeUtil::CreateObjectAfterInvoke(TypeHandle th, void * pValue) {
     case ELEMENT_TYPE_STRING:
     case ELEMENT_TYPE_OBJECT:
     case ELEMENT_TYPE_VAR:
-        obj = *(OBJECTREF *)pValue;
+        obj = ObjectToOBJECTREF(*(Object**)pValue);
         break;
 
     case ELEMENT_TYPE_FNPTR:

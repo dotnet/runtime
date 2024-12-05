@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using Microsoft.Diagnostics.DataContractReader.Contracts;
 
 namespace Microsoft.Diagnostics.DataContractReader.Tests;
 
@@ -15,6 +16,49 @@ internal partial class MockDescriptors
         private const ulong DefaultAllocationRangeStart = 0x00000000_4a000000;
         private const ulong DefaultAllocationRangeEnd = 0x00000000_4b000000;
 
+        private static readonly TypeFields TypeDescFields = new TypeFields()
+        {
+            DataType = DataType.TypeDesc,
+            Fields =
+            [
+                new(nameof(Data.TypeDesc.TypeAndFlags), DataType.uint32),
+            ]
+        };
+
+        private static readonly TypeFields FnPtrTypeDescFields = new TypeFields()
+        {
+            DataType = DataType.FnPtrTypeDesc,
+            Fields =
+            [
+                new(nameof(Data.FnPtrTypeDesc.NumArgs), DataType.uint32),
+                new(nameof(Data.FnPtrTypeDesc.CallConv), DataType.uint32),
+                new(nameof(Data.FnPtrTypeDesc.LoaderModule), DataType.pointer),
+                new(nameof(Data.FnPtrTypeDesc.RetAndArgTypes), DataType.pointer),
+            ],
+            BaseTypeFields = TypeDescFields
+        };
+
+        private static readonly TypeFields ParamTypeDescFields = new TypeFields()
+        {
+            DataType = DataType.ParamTypeDesc,
+            Fields =
+            [
+                new(nameof(Data.ParamTypeDesc.TypeArg), DataType.pointer),
+            ],
+            BaseTypeFields = TypeDescFields
+        };
+
+        private static readonly TypeFields TypeVarTypeDescFields = new TypeFields()
+        {
+            DataType = DataType.TypeVarTypeDesc,
+            Fields =
+            [
+                new(nameof(Data.TypeVarTypeDesc.Module), DataType.pointer),
+                new(nameof(Data.TypeVarTypeDesc.Token), DataType.uint32),
+            ],
+            BaseTypeFields = TypeDescFields
+        };
+
         private static Dictionary<DataType, Target.TypeInfo> GetTypes(TargetTestHelpers helpers)
         {
             return GetTypesForTypeFields(
@@ -24,6 +68,10 @@ internal partial class MockDescriptors
                     EEClassFields,
                     ArrayClassFields,
                     MethodTableAuxiliaryDataFields,
+                    TypeDescFields,
+                    FnPtrTypeDescFields,
+                    ParamTypeDescFields,
+                    TypeVarTypeDescFields,
                 ]);
         }
 
@@ -163,6 +211,63 @@ internal partial class MockDescriptors
 
             Span<byte> methodTable = Builder.BorrowAddressRange(methodTablePointer, (int)methodTableTypeInfo.Size.Value);
             Builder.TargetTestHelpers.WritePointer(methodTable.Slice(methodTableTypeInfo.Fields[nameof(Data.MethodTable.AuxiliaryData)].Offset), auxDataFragment.Address);
+        }
+
+        internal TargetPointer AddFunctionPointerTypeDesc(uint callConv, TargetPointer[] retAndArgTypes, TargetPointer loaderModule)
+        {
+            Target.TypeInfo typeInfo = Types[DataType.FnPtrTypeDesc];
+            TargetTestHelpers helpers = Builder.TargetTestHelpers;
+
+            ulong size = typeInfo.Size.Value + (ulong)(retAndArgTypes.Length * helpers.PointerSize);
+            MockMemorySpace.HeapFragment fragment = TypeSystemAllocator.Allocate(size, $"FnPtrTypeDesc");
+            Builder.AddHeapFragment(fragment);
+            Span<byte> dest = fragment.Data;
+            helpers.Write(dest.Slice(Types[DataType.TypeDesc].Fields[nameof(Data.TypeDesc.TypeAndFlags)].Offset), (uint)CorElementType.FnPtr);
+            helpers.Write(dest.Slice(typeInfo.Fields[nameof(Data.FnPtrTypeDesc.NumArgs)].Offset), retAndArgTypes.Length - 1);
+            helpers.Write(dest.Slice(typeInfo.Fields[nameof(Data.FnPtrTypeDesc.CallConv)].Offset), callConv);
+            helpers.WritePointer(dest.Slice(typeInfo.Fields[nameof(Data.FnPtrTypeDesc.LoaderModule)].Offset), loaderModule);
+            for (int i = 0; i < retAndArgTypes.Length; i ++)
+            {
+                Span<byte> span = fragment.Data.AsSpan().Slice(typeInfo.Fields[nameof(Data.FnPtrTypeDesc.RetAndArgTypes)].Offset + i * helpers.PointerSize, helpers.PointerSize);
+                helpers.WritePointer(span, retAndArgTypes[i]);
+            }
+
+            return fragment.Address;
+        }
+
+        internal TargetPointer AddParamTypeDesc(uint typeAndFlags, TargetPointer typeArg)
+        {
+            CorElementType type = (CorElementType)(typeAndFlags & 0xFF);
+            if (type != CorElementType.ValueType && type != CorElementType.Byref && type != CorElementType.Ptr)
+                throw new ArgumentOutOfRangeException(nameof(typeAndFlags));
+
+            Target.TypeInfo typeInfo = Types[DataType.ParamTypeDesc];
+            TargetTestHelpers helpers = Builder.TargetTestHelpers;
+
+            MockMemorySpace.HeapFragment fragment = TypeSystemAllocator.Allocate(typeInfo.Size.Value, $"ParamTypeDesc");
+            Builder.AddHeapFragment(fragment);
+            Span<byte> dest = fragment.Data;
+            helpers.Write(dest.Slice(Types[DataType.TypeDesc].Fields[nameof(Data.TypeDesc.TypeAndFlags)].Offset), typeAndFlags);
+            helpers.WritePointer(dest.Slice(typeInfo.Fields[nameof(Data.ParamTypeDesc.TypeArg)].Offset), typeArg);
+            return fragment.Address;
+        }
+
+        internal TargetPointer AddTypeVarTypeDesc(uint typeAndFlags, TargetPointer module, uint token)
+        {
+            CorElementType type = (CorElementType)(typeAndFlags & 0xFF);
+            if (type != CorElementType.MVar && type != CorElementType.Var)
+                throw new ArgumentOutOfRangeException(nameof(typeAndFlags));
+
+            Target.TypeInfo typeInfo = Types[DataType.TypeVarTypeDesc];
+            TargetTestHelpers helpers = Builder.TargetTestHelpers;
+
+            MockMemorySpace.HeapFragment fragment = TypeSystemAllocator.Allocate(typeInfo.Size.Value, $"TypeVarTypeDesc");
+            Builder.AddHeapFragment(fragment);
+            Span<byte> dest = fragment.Data;
+            helpers.Write(dest.Slice(Types[DataType.TypeDesc].Fields[nameof(Data.TypeDesc.TypeAndFlags)].Offset), typeAndFlags);
+            helpers.WritePointer(dest.Slice(typeInfo.Fields[nameof(Data.TypeVarTypeDesc.Module)].Offset), module);
+            helpers.Write(dest.Slice(typeInfo.Fields[nameof(Data.TypeVarTypeDesc.Token)].Offset), token);
+            return fragment.Address;
         }
     }
 }

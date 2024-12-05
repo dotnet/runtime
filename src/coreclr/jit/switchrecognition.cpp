@@ -51,8 +51,8 @@ PhaseStatus Compiler::optSwitchRecognition()
 // Arguments:
 //    block            - The block to check
 //    allowSideEffects - is variableNode allowed to have side-effects (COMMA)?
-//    trueEdge         - [out] The successor edge taken if X == CNS
-//    falseEdge        - [out] The successor edge taken if X != CNS
+//    trueTarget       - [out] The successor visited if X == CNS
+//    falseTarget      - [out] The successor visited if X != CNS
 //    isReversed       - [out] True if the condition is reversed (GT_NE)
 //    variableNode     - [out] The variable node (X in the example above)
 //    cns              - [out] The constant value (CNS in the example above)
@@ -176,13 +176,12 @@ bool Compiler::optSwitchDetectAndConvert(BasicBlock* firstBlock)
         weight_t          falseLikelihood = firstBlock->GetFalseEdge()->getLikelihood();
         const BasicBlock* prevBlock       = firstBlock;
 
-        // Now walk the next blocks and see if they are basically the same type of test
-        for (const BasicBlock* currBb = firstBlock->Next(); currBb != nullptr; currBb = currBb->Next())
+        // Now walk the chain of test blocks, and see if they are basically the same type of test
+        for (BasicBlock *currBb = falseTarget, *currFalseTarget; currBb != nullptr; currBb = currFalseTarget)
         {
             GenTree*    currVariableNode = nullptr;
             ssize_t     currCns          = 0;
             BasicBlock* currTrueTarget   = nullptr;
-            BasicBlock* currFalseTarget  = nullptr;
 
             if (!currBb->hasSingleStmt())
             {
@@ -323,9 +322,15 @@ bool Compiler::optSwitchConvert(
 
     // Find the last block in the chain
     const BasicBlock* lastBlock = firstBlock;
-    for (int i = 0; i < testsCount - 1; i++)
+    for (int i = 0; i < (testsCount - 1); i++)
     {
-        lastBlock = lastBlock->Next();
+        const GenTree* rootNode = lastBlock->lastStmt()->GetRootNode();
+        assert(lastBlock->KindIs(BBJ_COND));
+        assert(rootNode->OperIs(GT_JTRUE));
+
+        // We only support reversed tests (GT_NE) in the last block of the chain.
+        assert(rootNode->gtGetOp1()->OperIs(GT_EQ));
+        lastBlock = lastBlock->GetFalseTarget();
     }
 
     BasicBlock* blockIfTrue  = nullptr;
@@ -359,10 +364,13 @@ bool Compiler::optSwitchConvert(
     // Unlink and remove the whole chain of conditional blocks
     fgRemoveRefPred(falseEdge);
     BasicBlock* blockToRemove = falseEdge->getDestinationBlock();
-    assert(firstBlock->NextIs(blockToRemove));
-    while (!lastBlock->NextIs(blockToRemove))
+    for (int i = 0; i < (testsCount - 1); i++)
     {
-        blockToRemove = fgRemoveBlock(blockToRemove, true);
+        // We always follow the false target because reversed tests are only supported for the last block.
+        assert(blockToRemove->KindIs(BBJ_COND));
+        BasicBlock* const nextBlockToRemove = blockToRemove->GetFalseTarget();
+        fgRemoveBlock(blockToRemove, true);
+        blockToRemove = nextBlockToRemove;
     }
 
     const unsigned jumpCount = static_cast<unsigned>(maxValue - minValue + 1);
@@ -404,6 +412,8 @@ bool Compiler::optSwitchConvert(
             switchTrueEdge = newEdge;
         }
     }
+
+    assert(switchTrueEdge != nullptr);
 
     // Link the 'default' case
     FlowEdge* const switchDefaultEdge = fgAddRefPred(blockIfFalse, firstBlock);
