@@ -830,13 +830,6 @@ bool Compiler::fgCanCompactBlock(BasicBlock* block)
         return false;
     }
 
-    // We don't want to compact blocks that are in different hot/cold regions
-    //
-    if (fgInDifferentRegions(block, target))
-    {
-        return false;
-    }
-
     // We cannot compact two blocks in different EH regions.
     //
     if (!BasicBlock::sameEHRegion(block, target))
@@ -872,6 +865,10 @@ bool Compiler::fgCanCompactBlock(BasicBlock* block)
 void Compiler::fgCompactBlock(BasicBlock* block)
 {
     assert(fgCanCompactBlock(block));
+
+    // We shouldn't churn the flowgraph after doing hot/cold splitting
+    assert(fgFirstColdBlock == nullptr);
+
     BasicBlock* const target = block->GetTarget();
 
     JITDUMP("\nCompacting " FMT_BB " into " FMT_BB ":\n", target->bbNum, block->bbNum);
@@ -1356,6 +1353,9 @@ bool Compiler::fgOptimizeEmptyBlock(BasicBlock* block)
 {
     assert(block->isEmpty());
 
+    // We shouldn't churn the flowgraph after doing hot/cold splitting
+    assert(fgFirstColdBlock == nullptr);
+
     bool        madeChanges = false;
     BasicBlock* bPrev       = block->Prev();
 
@@ -1397,12 +1397,6 @@ bool Compiler::fgOptimizeEmptyBlock(BasicBlock* block)
 
             /* Do not remove a block that jumps to itself - used for while (true){} */
             if (block->TargetIs(block))
-            {
-                break;
-            }
-
-            // can't allow fall through into cold code
-            if (block->IsLastHotBlock(this))
             {
                 break;
             }
@@ -5610,6 +5604,9 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication /* = false */,
 
     noway_assert(opts.OptimizationEnabled());
 
+    // We shouldn't be churning the flowgraph after doing hot/cold splitting
+    assert(fgFirstColdBlock == nullptr);
+
 #ifdef DEBUG
     if (verbose && !isPhase)
     {
@@ -5766,9 +5763,7 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication /* = false */,
                     bNext->KindIs(BBJ_ALWAYS) && // the next block is a BBJ_ALWAYS block
                     !bNext->JumpsToNext() &&     // and it doesn't jump to the next block (we might compact them)
                     bNext->isEmpty() &&          // and it is an empty block
-                    !bNext->TargetIs(bNext) &&   // special case for self jumps
-                    !bDest->IsFirstColdBlock(this) &&
-                    !fgInDifferentRegions(block, bDest)) // do not cross hot/cold sections
+                    !bNext->TargetIs(bNext))     // special case for self jumps
                 {
                     assert(block->FalseTargetIs(bNext));
 
@@ -5810,20 +5805,6 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication /* = false */,
                     if (bNext->hasTryIndex() && !BasicBlock::sameTryRegion(block, bNext))
                     {
                         optimizeJump = false;
-                    }
-
-                    // If we are optimizing using real profile weights
-                    // then don't optimize a conditional jump to an unconditional jump
-                    // until after we have computed the edge weights
-                    //
-                    if (fgIsUsingProfileWeights())
-                    {
-                        // if block and bDest are in different hot/cold regions we can't do this optimization
-                        // because we can't allow fall-through into the cold region.
-                        if (fgInDifferentRegions(block, bDest))
-                        {
-                            optimizeJump = false;
-                        }
                     }
 
                     if (optimizeJump && isJumpToJoinFree)
@@ -5913,12 +5894,6 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication /* = false */,
 
                         /* Mark the block as removed */
                         bNext->SetFlags(BBF_REMOVED);
-
-                        // If this is the first Cold basic block update fgFirstColdBlock
-                        if (bNext->IsFirstColdBlock(this))
-                        {
-                            fgFirstColdBlock = bNext->Next();
-                        }
 
                         //
                         // If we removed the end of a try region or handler region
