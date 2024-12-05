@@ -25,4 +25,15 @@ extern "C" void QCALLTYPE ThrowInvalidCastException(CORINFO_CLASS_HANDLE pTarget
 extern "C" void QCALLTYPE GetThreadStaticsByMethodTable(QCall::ByteRefOnStack refHandle, MethodTable* pMT, bool gcStatic);
 extern "C" void QCALLTYPE GetThreadStaticsByIndex(QCall::ByteRefOnStack refHandle, uint32_t staticBlockIndex, bool gcStatic);
 
-#endif //_JITQCALLHELPERS_H
+#if defined(TARGET_32BIT)
+extern "C" INT32 QCALLTYPE DivInt32Internal(INT32 dividend, INT32 divisor);
+extern "C" UINT32 QCALLTYPE DivUInt32Internal(UINT32 dividend, UINT32 divisor);
+extern "C" INT64 QCALLTYPE DivInt64Internal(INT64 dividend, INT64 divisor);
+extern "C" UINT64 QCALLTYPE DivUInt64Internal(UINT64 dividend, UINT64 divisor);
+extern "C" INT32 QCALLTYPE ModInt32Internal(INT32 dividend, INT32 divisor);
+extern "C" UINT32 QCALLTYPE ModUInt32Internal(UINT32 dividend, UINT32 divisor);
+extern "C" INT64 QCALLTYPE ModInt64Internal(INT64 dividend, INT64 divisor);
+extern "C" UINT64 QCALLTYPE ModUInt64Internal(UINT64 dividend, UINT64 divisor);
+#endif // TARGET_32BIT
+
+#endif // _JITQCALLHELPERS_H

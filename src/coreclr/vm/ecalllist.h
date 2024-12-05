@@ -216,16 +216,6 @@ FCFuncStart(gMathFuncs)
     FCFuncElement("Sqrt", COMDouble::Sqrt)
     FCFuncElement("Tan", COMDouble::Tan)
     FCFuncElement("Tanh", COMDouble::Tanh)
-#ifdef TARGET_32BIT
-    FCFuncElement("DivInt32Internal", COMDivModInt::DivInt32)
-    FCFuncElement("DivUInt32Internal", COMDivModInt::DivUInt32)
-    FCFuncElement("DivInt64Internal", COMDivModInt::DivInt64)
-    FCFuncElement("DivUInt64Internal", COMDivModInt::DivUInt64)
-    FCFuncElement("ModInt32Internal", COMDivModInt::ModInt32)
-    FCFuncElement("ModUInt32Internal", COMDivModInt::ModUInt32)
-    FCFuncElement("ModInt64Internal", COMDivModInt::ModInt64)
-    FCFuncElement("ModUInt64Internal", COMDivModInt::ModUInt64)
-#endif // TARGET_32BIT
 FCFuncEnd()
 
 FCFuncStart(gMathFFuncs)

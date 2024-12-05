@@ -472,6 +472,16 @@ static const Entry s_QCall[] =
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
     DllImportEntry(X86BaseCpuId)
 #endif
+#if defined(TARGET_32BIT)
+    DllImportEntry(DivInt32Internal)
+    DllImportEntry(DivUInt32Internal)
+    DllImportEntry(DivInt64Internal)
+    DllImportEntry(DivUInt64Internal)
+    DllImportEntry(ModInt32Internal)
+    DllImportEntry(ModUInt32Internal)
+    DllImportEntry(ModInt64Internal)
+    DllImportEntry(ModUInt64Internal)
+#endif
     DllImportEntry(StubHelpers_CreateCustomMarshaler)
     DllImportEntry(StubHelpers_SetStringTrailByte)
     DllImportEntry(StubHelpers_ThrowInteropParamException)
