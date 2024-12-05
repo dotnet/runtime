@@ -308,6 +308,7 @@ if NOT DEFINED PYTHON (
 )
 
 set __CMakeTarget=
+set __BuildAllJitsCommunity=0
 for /f "delims=" %%a in ("-%__RequestedBuildComponents%-") do (
     set "string=%%a"
     if not "!string:-hosts-=!"=="!string!" (
@@ -318,6 +319,10 @@ for /f "delims=" %%a in ("-%__RequestedBuildComponents%-") do (
     )
     if not "!string:-alljits-=!"=="!string!" (
         set __CMakeTarget=!__CMakeTarget! alljits
+    )
+    if not "!string:-alljitscommunity-=!"=="!string!" (
+        set __CMakeTarget=!__CMakeTarget! alljitscommunity
+        set __BuildAllJitsCommunity=1
     )
     if not "!string:-runtime-=!"=="!string!" (
         set __CMakeTarget=!__CMakeTarget! runtime
@@ -479,7 +484,11 @@ set __TargetArchList=
 set /A __TotalSpecifiedTargetArch=__TargetArchX64 + __TargetArchX86 + __TargetArchArm + __TargetArchArm64 + __TargetArchLoongArch64 + __TargetArchRiscV64
 if %__TotalSpecifiedTargetArch% EQU 0 (
     REM Nothing specified means we want to build all architectures.
-    set __TargetArchList=x64 x86 arm arm64 loongarch64 riscv64
+    set __TargetArchList=x64 x86 arm arm64
+)
+
+if %__BuildAllJitsCommunity%==1 (
+    set __TargetArchList=%__TargetArchList% loongarch64 riscv64
 )
 
 REM Otherwise, add all the specified architectures to the list.

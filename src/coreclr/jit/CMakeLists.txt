@@ -19,6 +19,7 @@ function(create_standalone_jit)
 
   set(oneValueArgs TARGET OS ARCH)
   set(multiValueArgs DESTINATIONS)
+  set(JIT_COMMUNITY false)
   cmake_parse_arguments(TARGETDETAILS "" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
   if(TARGETDETAILS_OS STREQUAL "unix_osx" OR TARGETDETAILS_OS STREQUAL "unix_anyos")
@@ -51,17 +52,19 @@ function(create_standalone_jit)
   elseif(TARGETDETAILS_ARCH STREQUAL "loongarch64")
     set(JIT_ARCH_SOURCES ${JIT_LOONGARCH64_SOURCES})
     set(JIT_ARCH_HEADERS ${JIT_LOONGARCH64_HEADERS})
+    set(JIT_COMMUNITY true)
   elseif(TARGETDETAILS_ARCH STREQUAL "riscv64")
     set(JIT_ARCH_SOURCES ${JIT_RISCV64_SOURCES})
     set(JIT_ARCH_HEADERS ${JIT_RISCV64_HEADERS})
+    set(JIT_COMMUNITY true)
   else()
     clr_unknown_arch()
   endif()
 
   if (TARGETDETAILS_DESTINATIONS STREQUAL "")
-    add_jit(${TARGETDETAILS_TARGET})
+    add_jit(${TARGETDETAILS_TARGET} ${JIT_COMMUNITY})
   else()
-    add_jit(${TARGETDETAILS_TARGET} DESTINATIONS "${TARGETDETAILS_DESTINATIONS}")
+    add_jit(${TARGETDETAILS_TARGET} ${JIT_COMMUNITY} DESTINATIONS "${TARGETDETAILS_DESTINATIONS}")
   endif()
 
   set_target_definitions_to_custom_os_and_arch(${ARGN})
@@ -565,7 +568,7 @@ endif(CLR_CMAKE_HOST_UNIX)
 
 # Shared function for generating JIT
 # optional arguments: DESTINATIONS path
-function(add_jit jitName)
+function(add_jit jitName jitCommunity)
 
     set_source_files_properties(${JIT_EXPORTS_FILE} PROPERTIES GENERATED TRUE)
 
@@ -616,7 +619,12 @@ function(add_jit jitName)
     endif()
 
     # add the install targets
-    install_clr(TARGETS ${jitName} ${ARGN} COMPONENT alljits)
+    if (jitCommunity)
+        install_clr(TARGETS ${jitName} ${ARGN} COMPONENT alljitscommunity)
+    else()
+        install_clr(TARGETS ${jitName} ${ARGN} COMPONENT alljits)
+        install_clr(TARGETS ${jitName} ${ARGN} COMPONENT alljitscommunity)
+    endif()
 endfunction()
 
 set(JIT_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
