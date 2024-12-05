@@ -354,7 +354,7 @@ internal unsafe partial class MachObjectFile
             // Signature blob should be right after the symbol table except for a few bytes of padding
             uint symtabEnd = symtabLC.Command.GetStringTableOffset(header) + symtabLC.Command.GetStringTableSize(header);
             uint signStart = codeSignatureLC.Command.GetDataOffset(header);
-            if (symtabEnd < signStart || signStart - symtabEnd > 32)
+            if (symtabEnd > signStart || signStart - symtabEnd > 32)
                 throw new AppHostMachOFormatException(MachOFormatError.SignDoesntFollowSymtab);
             // Signature blob should be contained within the LinkEdit segment
             if (codeSignatureLC.Command.GetDataOffset(header) < linkEditSegment64.Command.GetFileOffset(header)
