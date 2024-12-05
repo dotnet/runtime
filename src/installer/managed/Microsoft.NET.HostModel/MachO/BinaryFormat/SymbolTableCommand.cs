@@ -5,6 +5,10 @@ using System.Runtime.InteropServices;
 
 namespace Microsoft.NET.HostModel.MachO;
 
+/// <summary>
+/// A load command with info about the location of the symbol table and string table.
+/// See https://github.com/apple-oss-distributions/cctools/blob/7a5450708479bbff61527d5e0c32a3f7b7e4c1d0/include/mach-o/loader.h#L908 for reference.
+/// </summary>
 [StructLayout(LayoutKind.Sequential)]
 internal struct SymbolTableCommand
 {
