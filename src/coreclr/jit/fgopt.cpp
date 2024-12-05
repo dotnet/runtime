@@ -1416,7 +1416,7 @@ bool Compiler::fgOptimizeEmptyBlock(BasicBlock* block)
             if (bPrev == nullptr)
             {
                 assert(block == fgFirstBB);
-                if (!block->JumpsToNext())
+                if (!block->JumpsToNext() || !fgCanCompactInitBlock())
                 {
                     break;
                 }

@@ -5045,15 +5045,6 @@ BasicBlock* Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
 
         BasicBlock* succBlock = block->GetTarget();
 
-        bool skipUnmarkLoop = false;
-
-        if (succBlock->isLoopHead() && bPrev && (succBlock->bbNum <= bPrev->bbNum))
-        {
-            // It looks like `block` is the source of a back edge of a loop, and once we remove `block` the
-            // loop will still exist because we'll move the edge to `bPrev`. So, don't unscale the loop blocks.
-            skipUnmarkLoop = true;
-        }
-
         // If this is the first Cold basic block update fgFirstColdBlock
         if (block->IsFirstColdBlock(this))
         {
