@@ -111,6 +111,7 @@ configuration:
           reply: Draft Pull Request was automatically closed for 30 days of inactivity. Please [let us know](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you'd like to reopen it.
     eventResponderTasks:
     - if:
+      - isOpen
       - or:
         - payloadType: Issues
         - payloadType: Pull_Request
@@ -381,8 +382,8 @@ configuration:
         then:
         - mentionUsers:
             mentionees:
-            - lambdageek
             - steveisok
+            - vitek-karas
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 
@@ -394,8 +395,8 @@ configuration:
         then:
         - mentionUsers:
             mentionees:
-            - lambdageek
             - steveisok
+            - vitek-karas
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 
@@ -407,8 +408,8 @@ configuration:
         then:
         - mentionUsers:
             mentionees:
-            - fanyang-mono
             - steveisok
+            - vitek-karas
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 
@@ -421,7 +422,7 @@ configuration:
         - mentionUsers:
             mentionees:
             - steveisok
-            - lambdageek
+            - vitek-karas
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 
@@ -700,7 +701,7 @@ configuration:
         then:
         - mentionUsers:
             mentionees:
-            - directhex
+            - akoeplinger
             - matouskozak
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
@@ -1588,9 +1589,7 @@ configuration:
         then:
         - mentionUsers:
             mentionees:
-            - agocke
-            - sbomer
-            - vitek-karas
+            - dotnet/illink
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 

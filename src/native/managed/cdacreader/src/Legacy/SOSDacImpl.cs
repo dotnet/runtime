@@ -2,12 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 using System.Text;
 
 using Microsoft.Diagnostics.DataContractReader.Contracts;
+using Microsoft.Diagnostics.DataContractReader.Contracts.Extensions;
 
 namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 
@@ -190,21 +193,289 @@ internal sealed unsafe partial class SOSDacImpl
             // elements we return
             return HResults.E_INVALIDARG;
         }
+
+        int hr = HResults.E_NOTIMPL;
         try
         {
             Contracts.IRuntimeTypeSystem rtsContract = _target.Contracts.RuntimeTypeSystem;
             Contracts.MethodDescHandle methodDescHandle = rtsContract.GetMethodDescHandle(methodDesc);
+            Contracts.ICodeVersions nativeCodeContract = _target.Contracts.CodeVersions;
+            Contracts.IReJIT rejitContract = _target.Contracts.ReJIT;
 
-            data->MethodTablePtr = rtsContract.GetMethodTable(methodDescHandle);
+            if (rgRevertedRejitData != null)
+            {
+                NativeMemory.Clear(rgRevertedRejitData, (nuint)(sizeof(DacpReJitData) * cRevertedRejitVersions));
+            }
+            if (pcNeededRevertedRejitData != null)
+            {
+                *pcNeededRevertedRejitData = 0;
+            }
+
+            NativeCodeVersionHandle requestedNativeCodeVersion;
+            NativeCodeVersionHandle? activeNativeCodeVersion = null;
+            if (ip != 0)
+            {
+                requestedNativeCodeVersion = nativeCodeContract.GetNativeCodeVersionForIP(new TargetCodePointer(ip));
+            }
+            else
+            {
+                requestedNativeCodeVersion = nativeCodeContract.GetActiveNativeCodeVersion(new TargetPointer(methodDesc));
+                activeNativeCodeVersion = requestedNativeCodeVersion;
+            }
+
+            data->requestedIP = ip;
+            data->bIsDynamic = rtsContract.IsDynamicMethod(methodDescHandle) ? 1 : 0;
+            data->wSlotNumber = rtsContract.GetSlotNumber(methodDescHandle);
+            TargetCodePointer nativeCodeAddr = TargetCodePointer.Null;
+            if (requestedNativeCodeVersion.Valid)
+            {
+                nativeCodeAddr = nativeCodeContract.GetNativeCode(requestedNativeCodeVersion);
+            }
+            if (nativeCodeAddr != TargetCodePointer.Null)
+            {
+                data->bHasNativeCode = 1;
+                data->NativeCodeAddr = nativeCodeAddr;
+            }
+            else
+            {
+                data->bHasNativeCode = 0;
+                data->NativeCodeAddr = 0xffffffff_fffffffful;
+            }
+            if (rtsContract.HasNativeCodeSlot(methodDescHandle))
+            {
+                data->AddressOfNativeCodeSlot = rtsContract.GetAddressOfNativeCodeSlot(methodDescHandle);
+            }
+            else
+            {
+                data->AddressOfNativeCodeSlot = 0;
+            }
+            data->MDToken = rtsContract.GetMethodToken(methodDescHandle);
+            data->MethodDescPtr = methodDesc;
+            TargetPointer methodTableAddr = rtsContract.GetMethodTable(methodDescHandle);
+            data->MethodTablePtr = methodTableAddr;
+            TypeHandle typeHandle = rtsContract.GetTypeHandle(methodTableAddr);
+            data->ModulePtr = rtsContract.GetModule(typeHandle);
+
+            // If rejit info is appropriate, get the following:
+            //     * ReJitInfo for the current, active version of the method
+            //     * ReJitInfo for the requested IP (for !ip2md and !u)
+            //     * ReJitInfos for all reverted versions of the method (up to
+            //         cRevertedRejitVersions)
+            //
+            // Minidumps will not have all this rejit info, and failure to get rejit info
+            // should not be fatal.  So enclose all rejit stuff in a try.
+            try
+            {
+                if (activeNativeCodeVersion is null || !activeNativeCodeVersion.Value.Valid)
+                {
+                    activeNativeCodeVersion = nativeCodeContract.GetActiveNativeCodeVersion(new TargetPointer(methodDesc));
+                }
+
+                if (activeNativeCodeVersion is null || !activeNativeCodeVersion.Value.Valid)
+                {
+                    throw new InvalidOperationException("No active native code version found");
+                }
+
+                // Active ReJitInfo
+                CopyNativeCodeVersionToReJitData(
+                    activeNativeCodeVersion.Value,
+                    activeNativeCodeVersion.Value,
+                    &data->rejitDataCurrent);
+
+                // Requested ReJitInfo
+                Debug.Assert(data->rejitDataRequested.rejitID == 0);
+                if (ip != 0 && requestedNativeCodeVersion.Valid)
+                {
+                    CopyNativeCodeVersionToReJitData(
+                        requestedNativeCodeVersion,
+                        activeNativeCodeVersion.Value,
+                        &data->rejitDataRequested);
+                }
+
+                // Total number of jitted rejit versions
+                int cJittedRejitVersions = rejitContract.GetRejitIds(_target, methodDescHandle.Address).Count();
+                data->cJittedRejitVersions = (uint)cJittedRejitVersions;
+
+                // Reverted ReJitInfos
+                if (rgRevertedRejitData == null)
+                {
+                    // No reverted rejit versions will be returned, but maybe caller wants a
+                    // count of all versions
+                    if (pcNeededRevertedRejitData != null)
+                    {
+                        *pcNeededRevertedRejitData = data->cJittedRejitVersions;
+                    }
+                }
+                else
+                {
+                    // Caller wants some reverted rejit versions.  Gather reverted rejit version data to return
+
+                    // Returns all available rejitids, including the rejitid for the one non-reverted
+                    // current version.
+                    List<TargetNUInt> reJitIds = rejitContract.GetRejitIds(_target, methodDescHandle.Address).ToList();
+
+                    // Go through rejitids.  For each reverted one, populate a entry in rgRevertedRejitData
+                    uint iRejitDataReverted = 0;
+                    ILCodeVersionHandle activeVersion = nativeCodeContract.GetActiveILCodeVersion(methodDesc);
+                    TargetNUInt activeVersionId = rejitContract.GetRejitId(activeVersion);
+                    for (int i = 0; (i < reJitIds.Count) && (iRejitDataReverted < cRevertedRejitVersions); i++)
+                    {
+                        ILCodeVersionHandle ilCodeVersion = nativeCodeContract.GetILCodeVersions(methodDesc)
+                            .FirstOrDefault(ilcode => rejitContract.GetRejitId(ilcode) == reJitIds[i],
+                                ILCodeVersionHandle.Invalid);
+
+                        if (!ilCodeVersion.IsValid || rejitContract.GetRejitId(ilCodeVersion) == activeVersionId)
+                        {
+                            continue;
+                        }
+
+                        NativeCodeVersionHandle activeRejitChild = nativeCodeContract.GetActiveNativeCodeVersionForILCodeVersion(methodDesc, ilCodeVersion);
+                        CopyNativeCodeVersionToReJitData(
+                            activeRejitChild,
+                            activeNativeCodeVersion.Value,
+                            &rgRevertedRejitData[iRejitDataReverted]);
+
+                        iRejitDataReverted++;
+                    }
+                    // We already checked that pcNeededRevertedRejitData != NULL because rgRevertedRejitData != NULL
+                    *pcNeededRevertedRejitData = iRejitDataReverted;
+                }
+            }
+            catch (global::System.Exception)
+            {
+                if (pcNeededRevertedRejitData != null)
+                {
+                    *pcNeededRevertedRejitData = 0;
+                }
+            }
+
+#if false // TODO[cdac]: HAVE_GCCOVER
+            if (requestedNativeCodeVersion.Valid)
+            {
+                TargetPointer gcCoverAddr = nativeCodeContract.GetGCCoverageInfo(requestedNativeCodeVersion);
+                if (gcCoverAddr != TargetPointer.Null)
+                {
+                    throw new NotImplementedException(); // TODO[cdac]: gc stress code copy
+                }
+            }
+#endif
+
+            if (data->bIsDynamic != 0)
+            {
+                throw new NotImplementedException(); // TODO[cdac]: get the dynamic method managed object
+            }
+
+            hr = HResults.S_OK;
         }
         catch (global::System.Exception ex)
         {
-            return ex.HResult;
+            hr = ex.HResult;
         }
 
-        return _legacyImpl is not null
-            ? _legacyImpl.GetMethodDescData(methodDesc, ip, data, cRevertedRejitVersions, rgRevertedRejitData, pcNeededRevertedRejitData)
-            : HResults.E_NOTIMPL;
+#if DEBUG
+        if (_legacyImpl is not null)
+        {
+            if (hr == HResults.S_OK) {
+                DacpMethodDescData dataLocal = default;
+                DacpReJitData[]? rgRevertedRejitDataLocal = null;
+                if (rgRevertedRejitData != null)
+                {
+                    rgRevertedRejitDataLocal = new DacpReJitData[cRevertedRejitVersions];
+                }
+                uint cNeededRevertedRejitDataLocal = 0;
+                uint* pcNeededRevertedRejitDataLocal = null;
+                if (pcNeededRevertedRejitData != null)
+                {
+                    pcNeededRevertedRejitDataLocal = &cNeededRevertedRejitDataLocal;
+                }
+                int hrLocal;
+                fixed (DacpReJitData* rgRevertedRejitDataLocalPtr = rgRevertedRejitDataLocal)
+                {
+                    hrLocal = _legacyImpl.GetMethodDescData(methodDesc, ip, &dataLocal, cRevertedRejitVersions, rgRevertedRejitDataLocalPtr, pcNeededRevertedRejitDataLocal);
+                }
+                Debug.Assert(hrLocal == hr);
+                Debug.Assert(data->bHasNativeCode == dataLocal.bHasNativeCode);
+                Debug.Assert(data->bIsDynamic == dataLocal.bIsDynamic);
+                Debug.Assert(data->wSlotNumber == dataLocal.wSlotNumber);
+                Debug.Assert(data->NativeCodeAddr == dataLocal.NativeCodeAddr);
+                Debug.Assert(data->AddressOfNativeCodeSlot == dataLocal.AddressOfNativeCodeSlot);
+                Debug.Assert(data->MethodDescPtr == dataLocal.MethodDescPtr);
+                Debug.Assert(data->MethodTablePtr == dataLocal.MethodTablePtr);
+                Debug.Assert(data->ModulePtr == dataLocal.ModulePtr);
+                Debug.Assert(data->MDToken == dataLocal.MDToken);
+                Debug.Assert(data->GCInfo == dataLocal.GCInfo);
+                Debug.Assert(data->GCStressCodeCopy == dataLocal.GCStressCodeCopy);
+                Debug.Assert(data->managedDynamicMethodObject == dataLocal.managedDynamicMethodObject);
+                Debug.Assert(data->requestedIP == dataLocal.requestedIP);
+                Debug.Assert(data->cJittedRejitVersions == dataLocal.cJittedRejitVersions);
+
+                // rejitDataCurrent
+                Debug.Assert(data->rejitDataCurrent.rejitID == dataLocal.rejitDataCurrent.rejitID);
+                Debug.Assert(data->rejitDataCurrent.NativeCodeAddr == dataLocal.rejitDataCurrent.NativeCodeAddr);
+                Debug.Assert(data->rejitDataCurrent.flags == dataLocal.rejitDataCurrent.flags);
+
+                // rejitDataRequested
+                Debug.Assert(data->rejitDataRequested.rejitID == dataLocal.rejitDataRequested.rejitID);
+                Debug.Assert(data->rejitDataRequested.NativeCodeAddr == dataLocal.rejitDataRequested.NativeCodeAddr);
+                Debug.Assert(data->rejitDataRequested.flags == dataLocal.rejitDataRequested.flags);
+
+                // rgRevertedRejitData
+                if (rgRevertedRejitData != null && rgRevertedRejitDataLocal != null)
+                {
+                    Debug.Assert(cNeededRevertedRejitDataLocal == *pcNeededRevertedRejitData);
+                    for (ulong i = 0; i < cNeededRevertedRejitDataLocal; i++)
+                    {
+                        Debug.Assert(rgRevertedRejitData[i].rejitID == rgRevertedRejitDataLocal[i].rejitID);
+                        Debug.Assert(rgRevertedRejitData[i].NativeCodeAddr == rgRevertedRejitDataLocal[i].NativeCodeAddr);
+                        Debug.Assert(rgRevertedRejitData[i].flags == rgRevertedRejitDataLocal[i].flags);
+                    }
+                }
+            } else {
+                // TODO[cdac]: stop delegating to the legacy DAC
+                hr = _legacyImpl.GetMethodDescData(methodDesc, ip, data, cRevertedRejitVersions, rgRevertedRejitData, pcNeededRevertedRejitData);
+            }
+        }
+#endif
+        return hr;
+    }
+
+    private void CopyNativeCodeVersionToReJitData(
+        NativeCodeVersionHandle nativeCodeVersion,
+        NativeCodeVersionHandle activeNativeCodeVersion,
+        DacpReJitData* pReJitData)
+    {
+        ICodeVersions cv = _target.Contracts.CodeVersions;
+        IReJIT rejit = _target.Contracts.ReJIT;
+
+        ILCodeVersionHandle ilCodeVersion = cv.GetILCodeVersion(nativeCodeVersion);
+
+        pReJitData->rejitID = rejit.GetRejitId(ilCodeVersion).Value;
+        pReJitData->NativeCodeAddr = cv.GetNativeCode(nativeCodeVersion);
+
+        if (nativeCodeVersion.CodeVersionNodeAddress != activeNativeCodeVersion.CodeVersionNodeAddress ||
+            nativeCodeVersion.MethodDescAddress != activeNativeCodeVersion.MethodDescAddress)
+        {
+            pReJitData->flags = DacpReJitData.Flags.kReverted;
+        }
+        else
+        {
+            DacpReJitData.Flags flags = DacpReJitData.Flags.kUnknown;
+            switch (rejit.GetRejitState(ilCodeVersion))
+            {
+                // kStateRequested
+                case RejitState.Requested:
+                    flags = DacpReJitData.Flags.kRequested;
+                    break;
+                // kStateActive
+                case RejitState.Active:
+                    flags = DacpReJitData.Flags.kActive;
+                    break;
+                default:
+                    Debug.Fail("Unknown RejitState. cDAC should be updated to understand this new state.");
+                    break;
+            }
+            pReJitData->flags = flags;
+        }
     }
 
     int ISOSDacInterface.GetMethodDescFromToken(ulong moduleAddr, uint token, ulong* methodDesc)
@@ -465,37 +736,20 @@ internal sealed unsafe partial class SOSDacImpl
         => _legacyImpl is not null ? _legacyImpl.GetMethodTableSlot(mt, slot, value) : HResults.E_NOTIMPL;
     int ISOSDacInterface.GetMethodTableTransparencyData(ulong mt, void* data)
         => _legacyImpl is not null ? _legacyImpl.GetMethodTableTransparencyData(mt, data) : HResults.E_NOTIMPL;
-    int ISOSDacInterface.GetModule(ulong addr, /*IXCLRDataModule*/ void** mod)
+    int ISOSDacInterface.GetModule(ulong addr, out IXCLRDataModule? mod)
     {
-        ComWrappers cw = new StrategyBasedComWrappers();
+        mod = default;
 
-        int hr;
-        nint legacyModulePointer = 0;
-        object? legacyModule = null;
+        IXCLRDataModule? legacyModule = null;
         if (_legacyImpl is not null)
         {
-            hr = _legacyImpl.GetModule(addr, (void**)&legacyModulePointer);
+            int hr = _legacyImpl.GetModule(addr, out legacyModule);
             if (hr < 0)
                 return hr;
-
-            legacyModule = cw.GetOrCreateObjectForComInstance(legacyModulePointer, CreateObjectFlags.None);
         }
 
-        ClrDataModule module = new(addr, _target, legacyModulePointer, legacyModule);
-
-        // Lifetime is now managed via ClrDataModule
-        if (legacyModulePointer != 0)
-            Marshal.Release(legacyModulePointer);
-
-        nint iunknownPtr = cw.GetOrCreateComInterfaceForObject(module, CreateComInterfaceFlags.None);
-        hr = Marshal.QueryInterface(iunknownPtr, typeof(IXCLRDataModule).GUID, out nint modPtr);
-        if (iunknownPtr != 0)
-            Marshal.Release(iunknownPtr);
-
-        if (hr == HResults.S_OK)
-            *mod = (IXCLRDataModule*)modPtr;
-
-        return hr;
+        mod = new ClrDataModule(addr, _target, legacyModule);
+        return HResults.S_OK;
     }
 
     int ISOSDacInterface.GetModuleData(ulong moduleAddr, DacpModuleData* data)

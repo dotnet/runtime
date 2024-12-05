@@ -130,7 +130,9 @@ DEFINE_FIELD_U(m_fullname,                 AssemblyBaseObject,     m_fullname)
 DEFINE_FIELD_U(m_syncRoot,                 AssemblyBaseObject,     m_pSyncRoot)
 DEFINE_FIELD_U(m_assembly,                 AssemblyBaseObject,     m_pAssembly)
 DEFINE_CLASS(ASSEMBLY,              Reflection,             RuntimeAssembly)
-
+#ifdef FOR_ILLINK
+DEFINE_METHOD(ASSEMBLY,             CTOR,                   .ctor,                      IM_RetVoid)
+#endif // FOR_ILLINK
 
 DEFINE_CLASS(ASYNCCALLBACK,         System,                 AsyncCallback)
 DEFINE_CLASS(ATTRIBUTE,             System,                 Attribute)
@@ -152,6 +154,9 @@ DEFINE_METHOD(CLASS,                GET_METHODS,            GetMethods,         
 DEFINE_METHOD(CLASS,                INVOKE_MEMBER,          InvokeMember,               IM_Str_BindingFlags_Binder_Obj_ArrObj_ArrParameterModifier_CultureInfo_ArrStr_RetObj)
 DEFINE_METHOD(CLASS,                GET_METHOD_BASE,        GetMethodBase,              SM_RuntimeType_RuntimeMethodHandleInternal_RetMethodBase)
 DEFINE_METHOD(CLASS,                GET_FIELD_INFO,         GetFieldInfo,               SM_RuntimeType_IRuntimeFieldInfo_RetFieldInfo)
+#ifdef FOR_ILLINK
+DEFINE_METHOD(CLASS,                CTOR,                   .ctor,                      IM_RetVoid)
+#endif // FOR_ILLINK
 
 #ifdef FEATURE_COMINTEROP
 DEFINE_METHOD(CLASS,                FORWARD_CALL_TO_INVOKE, ForwardCallToInvokeMember,  IM_Str_BindingFlags_Obj_ArrObj_ArrBool_ArrInt_ArrType_Type_RetObj)
@@ -338,6 +343,9 @@ DEFINE_METHOD(RT_TYPE_HANDLE,       TO_INTPTR,              ToIntPtr,           
 DEFINE_METHOD(RT_TYPE_HANDLE,       ALLOCATECOMOBJECT,      AllocateComObject,          SM_VoidPtr_RetObj)
 #endif
 DEFINE_FIELD(RT_TYPE_HANDLE,        M_TYPE,                 m_type)
+
+// DEFINE_CLASS(TYPED_REFERENCE,  System,           TypedReference)
+DEFINE_METHOD(TYPED_REFERENCE, GETREFANY,        GetRefAny,                   NoSig)
 
 DEFINE_CLASS(TYPE_NAME_RESOLVER,    Reflection,             TypeNameResolver)
 DEFINE_METHOD(TYPE_NAME_RESOLVER,   GET_TYPE_HELPER,        GetTypeHelper,              SM_Type_CharPtr_RuntimeAssembly_Bool_Bool_RetRuntimeType)
@@ -839,6 +847,9 @@ DEFINE_FIELD_U(_DONT_USE_InternalThread,  ThreadBaseObject,   m_InternalThread)
 DEFINE_FIELD_U(_priority,                 ThreadBaseObject,   m_Priority)
 DEFINE_FIELD_U(_isDead,                   ThreadBaseObject,   m_IsDead)
 DEFINE_FIELD_U(_isThreadPool,             ThreadBaseObject,   m_IsThreadPool)
+
+DEFINE_CLASS(DIRECTONTHREADLOCALDATA, Threading, Thread+DirectOnThreadLocalData)
+
 DEFINE_CLASS(THREAD,                Threading,              Thread)
 DEFINE_METHOD(THREAD,               START_CALLBACK,                          StartCallback,                               IM_RetVoid)
 #ifdef FEATURE_OBJCMARSHAL
@@ -1166,10 +1177,12 @@ DEFINE_METHOD(CASTHELPERS, CHKCASTANY,       ChkCastAny,                  SM_Ptr
 DEFINE_METHOD(CASTHELPERS, CHKCASTINTERFACE, ChkCastInterface,            SM_PtrVoid_Obj_RetObj)
 DEFINE_METHOD(CASTHELPERS, CHKCASTCLASS,     ChkCastClass,                SM_PtrVoid_Obj_RetObj)
 DEFINE_METHOD(CASTHELPERS, CHKCASTCLASSSPECIAL, ChkCastClassSpecial,      SM_PtrVoid_Obj_RetObj)
-DEFINE_METHOD(CASTHELPERS, UNBOX,            Unbox,                       SM_PtrVoid_Obj_RetRefByte)
+DEFINE_METHOD(CASTHELPERS, UNBOX,            Unbox,                       NoSig)
 DEFINE_METHOD(CASTHELPERS, STELEMREF,        StelemRef,                   SM_ArrObject_IntPtr_Obj_RetVoid)
 DEFINE_METHOD(CASTHELPERS, LDELEMAREF,       LdelemaRef,                  SM_ArrObject_IntPtr_PtrVoid_RetRefObj)
 DEFINE_METHOD(CASTHELPERS, ARRAYTYPECHECK,   ArrayTypeCheck,              SM_Obj_Array_RetVoid)
+DEFINE_METHOD(CASTHELPERS, UNBOX_NULLABLE,   Unbox_Nullable,              NoSig)
+DEFINE_METHOD(CASTHELPERS, UNBOX_TYPETEST,   Unbox_TypeTest,              NoSig)
 
 DEFINE_CLASS(VIRTUALDISPATCHHELPERS, CompilerServices, VirtualDispatchHelpers)
 DEFINE_METHOD(VIRTUALDISPATCHHELPERS, VIRTUALFUNCTIONPOINTER, VirtualFunctionPointer, NoSig)
@@ -1189,6 +1202,18 @@ DEFINE_METHOD(GENERICSHELPERS, CLASSWITHSLOTANDMODULE, ClassWithSlotAndModule, N
 DEFINE_CLASS(INITHELPERS, CompilerServices, InitHelpers)
 DEFINE_METHOD(INITHELPERS, INITCLASS, InitClass, NoSig)
 DEFINE_METHOD(INITHELPERS, INITINSTANTIATEDCLASS, InitInstantiatedClass, NoSig)
+
+DEFINE_CLASS(STATICSHELPERS, CompilerServices, StaticsHelpers)
+DEFINE_METHOD(STATICSHELPERS, GET_NONGC_STATIC, GetNonGCStaticBase, NoSig)
+DEFINE_METHOD(STATICSHELPERS, GET_GC_STATIC, GetGCStaticBase, NoSig)
+DEFINE_METHOD(STATICSHELPERS, GET_DYNAMIC_NONGC_STATIC, GetDynamicNonGCStaticBase, NoSig)
+DEFINE_METHOD(STATICSHELPERS, GET_DYNAMIC_GC_STATIC, GetDynamicGCStaticBase, NoSig)
+DEFINE_METHOD(STATICSHELPERS, GET_NONGC_THREADSTATIC, GetNonGCThreadStaticBase, NoSig)
+DEFINE_METHOD(STATICSHELPERS, GET_GC_THREADSTATIC, GetGCThreadStaticBase, NoSig)
+DEFINE_METHOD(STATICSHELPERS, GET_DYNAMIC_NONGC_THREADSTATIC, GetDynamicNonGCThreadStaticBase, NoSig)
+DEFINE_METHOD(STATICSHELPERS, GET_DYNAMIC_GC_THREADSTATIC, GetDynamicGCThreadStaticBase, NoSig)
+DEFINE_METHOD(STATICSHELPERS, GET_OPTIMIZED_NONGC_THREADSTATIC, GetOptimizedNonGCThreadStaticBase, NoSig)
+DEFINE_METHOD(STATICSHELPERS, GET_OPTIMIZED_GC_THREADSTATIC, GetOptimizedGCThreadStaticBase, NoSig)
 
 DEFINE_CLASS_U(CompilerServices, GenericsHelpers+GenericHandleArgs, GenericHandleArgs)
 DEFINE_FIELD_U(signature, GenericHandleArgs, signature)

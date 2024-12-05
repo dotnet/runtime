@@ -20,17 +20,4 @@
     </type>
   </assembly>
 
-  <!-- Public attributes that need to be interpreted by the compiler, fine to strip afterwards -->
-  <assembly fullname="System.Private.CoreLib" feature="System.AggressiveAttributeTrimming" featurevalue="true">
-    <type fullname="System.Runtime.CompilerServices.DisableRuntimeMarshallingAttribute">
-      <attribute internal="RemoveAttributeInstances" />
-    </type>
-    <type fullname="System.Runtime.CompilerServices.CompilationRelaxationsAttribute">
-      <attribute internal="RemoveAttributeInstances" />
-    </type>
-    <type fullname="System.Runtime.CompilerServices.RuntimeCompatibilityAttribute">
-      <attribute internal="RemoveAttributeInstances" />
-    </type>
-  </assembly>
-
 </linker>

@@ -4,7 +4,7 @@
 namespace System.Formats.Asn1
 {
     /// <summary>
-    ///   The tag class for a particular ASN.1 tag.
+    ///   Specifies the tag class for a particular ASN.1 tag.
     /// </summary>
     // Uses a masked overlay of the tag class encoding.
     // T-REC-X.690-201508 sec 8.1.2.2
