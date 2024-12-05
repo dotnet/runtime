@@ -1,12 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
-using Microsoft.Diagnostics.DataContractReader.Contracts.Extensions;
-using Microsoft.Diagnostics.DataContractReader.Data;
 using Moq;
 using Xunit;
 
@@ -21,7 +16,11 @@ public class GCCoverTests
         MockGCCover builder,
         Mock<IRuntimeTypeSystem> mockRuntimeTypeSystem = null)
     {
-        TestPlaceholderTarget target = new TestPlaceholderTarget(arch, builder.Builder.GetReadContext().ReadFromTarget, builder.Types, builder.Globals);
+        TestPlaceholderTarget target = new TestPlaceholderTarget(
+            arch,
+            builder.Builder.GetReadContext().ReadFromTarget,
+            builder.Types,
+            builder.Globals);
 
         mockRuntimeTypeSystem ??= new Mock<IRuntimeTypeSystem>();
 
@@ -55,9 +54,7 @@ public class GCCoverTests
         var gcCover = target.Contracts.GCCover;
         Assert.NotNull(gcCover);
 
-        TargetPointer? actualGCCoverageInfo = gcCover.GetGCCoverageInfo(codeVersionHandle);
-
-        Assert.NotNull(actualGCCoverageInfo);
+        TargetPointer actualGCCoverageInfo = gcCover.GetGCCoverageInfo(codeVersionHandle);
         Assert.Equal(expectedGCCoverageInfo, actualGCCoverageInfo);
     }
 
@@ -85,13 +82,14 @@ public class GCCoverTests
         var gcCover = target.Contracts.GCCover;
         Assert.NotNull(gcCover);
 
-        TargetPointer? actualGCCoverageInfo = gcCover.GetGCCoverageInfo(codeVersionHandle);
-
-        Assert.NotNull(actualGCCoverageInfo);
+        TargetPointer actualGCCoverageInfo = gcCover.GetGCCoverageInfo(codeVersionHandle);
         Assert.Equal(expectedGCCoverageInfo, actualGCCoverageInfo);
     }
 
-    private void MockSyntheticGCCoverageInfo(Mock<IRuntimeTypeSystem> mockRTS, TargetPointer methodDescAddress, TargetPointer expectedGCCoverageInfo)
+    private void MockSyntheticGCCoverageInfo(
+        Mock<IRuntimeTypeSystem> mockRTS,
+        TargetPointer methodDescAddress,
+        TargetPointer expectedGCCoverageInfo)
     {
         MethodDescHandle methodDescHandle = new MethodDescHandle(methodDescAddress);
         mockRTS.Setup(rts => rts

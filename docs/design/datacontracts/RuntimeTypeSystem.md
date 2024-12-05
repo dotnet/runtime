@@ -159,9 +159,8 @@ partial interface IRuntimeTypeSystem : IContract
     // Get an instruction pointer that can be called to cause the MethodDesc to be executed
     public virtual TargetCodePointer GetNativeCode(MethodDescHandle methodDesc);
 
-    // Gets the GCCoverageInfo pointer if available.
-    // If not enabled in the target process, returns null.
-    public virtual TargetPointer? GetGCCoverageInfo(MethodDescHandle methodDesc);
+    // Gets the GCCoverageInfo pointer if available, otherwise returns TargetPointer.Null
+    public virtual TargetPointer GetGCCoverageInfo(MethodDescHandle methodDesc);
 }
 ```
 

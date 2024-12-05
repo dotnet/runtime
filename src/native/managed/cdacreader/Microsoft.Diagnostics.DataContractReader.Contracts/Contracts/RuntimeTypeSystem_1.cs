@@ -1015,10 +1015,10 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         return _target.ReadCodePointer(addrOfSlot);
     }
 
-    TargetPointer? IRuntimeTypeSystem.GetGCCoverageInfo(MethodDescHandle methodDesc)
+    TargetPointer IRuntimeTypeSystem.GetGCCoverageInfo(MethodDescHandle methodDesc)
     {
         MethodDesc md = _methodDescs[methodDesc.Address];
-        return md.GCCoverageInfo;
+        return md.GCCoverageInfo ?? TargetPointer.Null;
     }
 
     private class NonValidatedMethodTableQueries : MethodValidation.IMethodTableQueries

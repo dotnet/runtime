@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics;
 using Microsoft.Diagnostics.DataContractReader.Data;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
@@ -15,12 +16,9 @@ internal readonly struct GCCover_1 : IGCCover
         _target = target;
     }
 
-    TargetPointer? IGCCover.GetGCCoverageInfo(NativeCodeVersionHandle codeVersionHandle)
+    TargetPointer IGCCover.GetGCCoverageInfo(NativeCodeVersionHandle codeVersionHandle)
     {
-        if (!codeVersionHandle.Valid)
-        {
-            return null;
-        }
+        Debug.Assert(codeVersionHandle.Valid);
 
         if (!codeVersionHandle.IsExplicit)
         {
@@ -33,7 +31,7 @@ internal readonly struct GCCover_1 : IGCCover
         {
             // NativeCodeVersionNode::GetGCCoverageInfo
             NativeCodeVersionNode codeVersionNode = AsNode(codeVersionHandle);
-            return codeVersionNode.GCCoverageInfo;
+            return codeVersionNode.GCCoverageInfo ?? TargetPointer.Null;
         }
     }
 

@@ -167,7 +167,7 @@ internal interface IRuntimeTypeSystem : IContract
 
     public virtual TargetPointer GetAddressOfNativeCodeSlot(MethodDescHandle methodDesc) => throw new NotImplementedException();
 
-    public virtual TargetPointer? GetGCCoverageInfo(MethodDescHandle methodDesc) => throw new NotImplementedException();
+    public virtual TargetPointer GetGCCoverageInfo(MethodDescHandle methodDesc) => throw new NotImplementedException();
     #endregion MethodDesc inspection APIs
 }
 

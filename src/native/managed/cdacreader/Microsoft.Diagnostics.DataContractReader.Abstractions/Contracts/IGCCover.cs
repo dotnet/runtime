@@ -9,7 +9,7 @@ internal interface IGCCover : IContract
 {
     static string IContract.Name { get; } = nameof(GCCover);
 
-    public virtual TargetPointer? GetGCCoverageInfo(NativeCodeVersionHandle codeVersionHandle) => throw new NotImplementedException();
+    public virtual TargetPointer GetGCCoverageInfo(NativeCodeVersionHandle codeVersionHandle) => throw new NotImplementedException();
 }
 
 internal readonly struct GCCover : IGCCover
