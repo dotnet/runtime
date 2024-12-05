@@ -145,45 +145,15 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         public TargetPointer CodeData => _desc.CodeData;
         public bool IsIL => Classification == MethodClassification.IL || Classification == MethodClassification.Instantiated;
 
-        public bool HasNativeCodeSlot => HasFlags(MethodDescFlags_1.MethodDescFlags.HasNativeCodeSlot);
-        internal bool HasNonVtableSlot => HasFlags(MethodDescFlags_1.MethodDescFlags.HasNonVtableSlot);
-        internal bool HasMethodImpl => HasFlags(MethodDescFlags_1.MethodDescFlags.HasMethodImpl);
+        internal bool HasNonVtableSlot => MethodDescOptionalSlots.HasNonVtableSlot(_desc.Flags);
+        internal bool HasNativeCodeSlot => MethodDescOptionalSlots.HasNativeCodeSlot(_desc.Flags);
 
         internal bool HasStableEntryPoint => HasFlags(MethodDescFlags_1.MethodDescFlags3.HasStableEntryPoint);
         internal bool HasPrecode => HasFlags(MethodDescFlags_1.MethodDescFlags3.HasPrecode);
 
-        #region Additional Pointers
-        private int AdditionalPointersHelper(MethodDescFlags_1.MethodDescFlags extraFlags)
-            => int.PopCount(_desc.Flags & (ushort)extraFlags);
-
-        // non-vtable slot, native code slot and MethodImpl slots are stored after the MethodDesc itself, packed tightly
-        // in the order: [non-vtable; methhod impl; native code].
-        internal int NonVtableSlotIndex => HasNonVtableSlot ? 0 : throw new InvalidOperationException("no non-vtable slot");
-        internal int MethodImplIndex
-        {
-            get
-            {
-                if (!HasMethodImpl)
-                {
-                    throw new InvalidOperationException("no method impl slot");
-                }
-                return AdditionalPointersHelper(MethodDescFlags_1.MethodDescFlags.HasNonVtableSlot);
-            }
-        }
-        internal int NativeCodeSlotIndex
-        {
-            get
-            {
-                if (!HasNativeCodeSlot)
-                {
-                    throw new InvalidOperationException("no native code slot");
-                }
-                return AdditionalPointersHelper(MethodDescFlags_1.MethodDescFlags.HasNonVtableSlot | MethodDescFlags_1.MethodDescFlags.HasMethodImpl);
-            }
-        }
-
-        internal int AdditionalPointersCount => AdditionalPointersHelper(MethodDescFlags_1.MethodDescFlags.MethodDescAdditionalPointersMask);
-        #endregion Additional Pointers
+        internal uint NonVtableSlotOffset => MethodDescOptionalSlots.NonVtableSlotOffset(_desc.Flags);
+        internal uint MethodImplOffset => MethodDescOptionalSlots.MethodImplOffset(_desc.Flags, _target);
+        internal uint NativeCodeSlotOffset => MethodDescOptionalSlots.NativeCodeSlotOffset(_desc.Flags, _target);
 
         internal bool IsLoaderModuleAttachedToChunk => HasFlags(MethodDescChunkFlags.LoaderModuleAttachedToChunk);
 
@@ -1030,13 +1000,13 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
     {
         MethodDesc md = _methodDescs[methodDesc.Address];
         uint offset = MethodDescAdditionalPointersOffset(md);
-        offset += (uint)(_target.PointerSize * md.NativeCodeSlotIndex);
+        offset += md.NativeCodeSlotOffset;
         return methodDesc.Address + offset;
     }
     private TargetPointer GetAddressOfNonVtableSlot(TargetPointer methodDescPointer, MethodDesc md)
     {
         uint offset = MethodDescAdditionalPointersOffset(md);
-        offset += (uint)(_target.PointerSize * md.NonVtableSlotIndex);
+        offset += md.NonVtableSlotOffset;
         return methodDescPointer.Value + offset;
     }
 

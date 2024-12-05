@@ -342,6 +342,10 @@ CDAC_TYPE_FIELD(MethodDescChunk, /*uint8*/, Count, cdac_data<MethodDescChunk>::C
 CDAC_TYPE_FIELD(MethodDescChunk, /*uint16*/, FlagsAndTokenRange, cdac_data<MethodDescChunk>::FlagsAndTokenRange)
 CDAC_TYPE_END(MethodDescChunk)
 
+CDAC_TYPE_BEGIN(MethodImpl)
+CDAC_TYPE_SIZE(sizeof(MethodImpl))
+CDAC_TYPE_END(MethodImpl)
+
 CDAC_TYPE_BEGIN(InstantiatedMethodDesc)
 CDAC_TYPE_SIZE(sizeof(InstantiatedMethodDesc))
 CDAC_TYPE_FIELD(InstantiatedMethodDesc, /*pointer*/, PerInstInfo, cdac_data<InstantiatedMethodDesc>::PerInstInfo)

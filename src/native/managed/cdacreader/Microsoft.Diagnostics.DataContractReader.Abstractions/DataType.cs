@@ -73,4 +73,5 @@ public enum DataType
     HashMap,
     Bucket,
     UnwindInfo,
+    MethodImpl,
 }
