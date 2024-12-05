@@ -43,13 +43,11 @@ using namespace CorUnix;
 CObjectType CorUnix::otMutex(
                 otiMutex,
                 NULL,   // No cleanup routine
-                NULL,   // No initialization routine
                 0,      // No immutable data
                 NULL,   // No immutable data copy routine
                 NULL,   // No immutable data cleanup routine
                 0,      // No process local data
                 NULL,   // No process local data cleanup routine
-                0,      // No shared data
                 0,      // Should be MUTEX_ALL_ACCESS; currently ignored (no Win32 security)
                 CObjectType::SecuritySupported,
                 CObjectType::SecurityInfoNotPersisted,
@@ -66,13 +64,11 @@ static CAllowedObjectTypes aotMutex(otiMutex);
 CObjectType CorUnix::otNamedMutex(
                 otiNamedMutex,
                 &SharedMemoryProcessDataHeader::PalObject_Close, // Cleanup routine
-                NULL,   // No initialization routine
                 sizeof(SharedMemoryProcessDataHeader *), // Immutable data
                 NULL,   // No immutable data copy routine
                 NULL,   // No immutable data cleanup routine
                 0,      // No process local data
                 NULL,   // No process local data cleanup routine
-                0,      // No shared data
                 0,      // Should be MUTEX_ALL_ACCESS; currently ignored (no Win32 security)
                 CObjectType::SecuritySupported,
                 CObjectType::SecurityInfoNotPersisted,

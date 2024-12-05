@@ -175,8 +175,10 @@ namespace System.Runtime.CompilerServices
                 mt = mt->ParentMethodTable;
             }
 
+#if FEATURE_TYPEEQUIVALENCE
             // this helper is not supposed to be used with type-equivalent "to" type.
             Debug.Assert(!((MethodTable*)toTypeHnd)->HasTypeEquivalence);
+#endif // FEATURE_TYPEEQUIVALENCE
 
             obj = null;
 
@@ -594,6 +596,32 @@ namespace System.Runtime.CompilerServices
                         SpanHelpers.Memmove(ref dst, ref src, valueSize);
                 }
             }
+        }
+
+        [DebuggerHidden]
+        internal static object? ReboxFromNullable(MethodTable* srcMT, object src)
+        {
+            Debug.Assert(srcMT->IsNullable);
+
+            ref byte nullableData = ref src.GetRawData();
+
+            // If 'hasValue' is false, return null.
+            if (!Unsafe.As<byte, bool>(ref nullableData))
+                return null;
+
+            // Allocate a new instance of the T in Nullable<T>.
+            MethodTable* dstMT = srcMT->InstantiationArg0();
+            object dst = RuntimeTypeHandle.InternalAlloc(dstMT);
+
+            // Copy data from the Nullable<T>.
+            ref byte srcData = ref Unsafe.Add(ref nullableData, srcMT->NullableValueAddrOffset);
+            ref byte dstData = ref RuntimeHelpers.GetRawData(dst);
+            if (dstMT->ContainsGCPointers)
+                Buffer.BulkMoveWithWriteBarrier(ref dstData, ref srcData, dstMT->GetNumInstanceFieldBytesIfContainsGCPointers());
+            else
+                SpanHelpers.Memmove(ref dstData, ref srcData, dstMT->GetNumInstanceFieldBytes());
+
+            return dst;
         }
 
         [DebuggerHidden]

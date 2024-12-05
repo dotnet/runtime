@@ -353,6 +353,9 @@ DEFINE_METHOD(RT_TYPE_HANDLE,       ALLOCATECOMOBJECT,      AllocateComObject,  
 #endif
 DEFINE_FIELD(RT_TYPE_HANDLE,        M_TYPE,                 m_type)
 
+// DEFINE_CLASS(TYPED_REFERENCE,  System,           TypedReference)
+DEFINE_METHOD(TYPED_REFERENCE, GETREFANY,        GetRefAny,                   NoSig)
+
 DEFINE_CLASS(TYPE_NAME_RESOLVER,    Reflection,             TypeNameResolver)
 DEFINE_METHOD(TYPE_NAME_RESOLVER,   GET_TYPE_HELPER,        GetTypeHelper,              SM_Type_CharPtr_RuntimeAssembly_Bool_Bool_RetRuntimeType)
 
@@ -1187,8 +1190,8 @@ DEFINE_METHOD(CASTHELPERS, UNBOX,            Unbox,                       NoSig)
 DEFINE_METHOD(CASTHELPERS, STELEMREF,        StelemRef,                   SM_ArrObject_IntPtr_Obj_RetVoid)
 DEFINE_METHOD(CASTHELPERS, LDELEMAREF,       LdelemaRef,                  SM_ArrObject_IntPtr_PtrVoid_RetRefObj)
 DEFINE_METHOD(CASTHELPERS, ARRAYTYPECHECK,   ArrayTypeCheck,              SM_Obj_Array_RetVoid)
-DEFINE_METHOD(CASTHELPERS, UNBOX_NULLABLE,   Unbox_Nullable, NoSig)
-DEFINE_METHOD(CASTHELPERS, UNBOX_TYPETEST,   Unbox_TypeTest, NoSig)
+DEFINE_METHOD(CASTHELPERS, UNBOX_NULLABLE,   Unbox_Nullable,              NoSig)
+DEFINE_METHOD(CASTHELPERS, UNBOX_TYPETEST,   Unbox_TypeTest,              NoSig)
 
 DEFINE_CLASS(VIRTUALDISPATCHHELPERS, CompilerServices, VirtualDispatchHelpers)
 DEFINE_METHOD(VIRTUALDISPATCHHELPERS, VIRTUALFUNCTIONPOINTER, VirtualFunctionPointer, NoSig)
