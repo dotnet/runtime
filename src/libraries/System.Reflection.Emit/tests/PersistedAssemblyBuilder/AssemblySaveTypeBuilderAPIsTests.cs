@@ -234,7 +234,7 @@ namespace System.Reflection.Emit.Tests
             TypeBuilder ifaceType = module.DefineType("InterfaceType", TypeAttributes.Public | TypeAttributes.Interface | TypeAttributes.Abstract);
             TypeBuilder implType = module.DefineType("ImplType", TypeAttributes.Public);
 
-            GenericTypeParameterBuilder[] gParams =  implType.DefineGenericParameters("T");
+            GenericTypeParameterBuilder[] gParams = implType.DefineGenericParameters("T");
             gParams[0].SetInterfaceConstraints(ifaceType);
             Type constructedGenericInterface = typeof(IComparable<>).MakeGenericType(gParams);
             implType.AddInterfaceImplementation(constructedGenericInterface);
@@ -374,10 +374,179 @@ namespace System.Reflection.Emit.Tests
             Assert.Throws<ArgumentException>(() => type.GetInterfaceMap(typeof(InterfaceWithMethod))); // not implemented
         }
 
+        [Fact]
+        public void GetInterface_Validations()
+        {
+            PersistedAssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
+            ModuleBuilder module = ab.GetDynamicModule("MyModule");
+
+            TypeBuilder interfaceType = module.DefineType("InterfaceType", TypeAttributes.Public | TypeAttributes.Interface | TypeAttributes.Abstract, parent: null);
+            MethodBuilder svmInterface = interfaceType.DefineMethod("InterfaceMethod1", MethodAttributes.Public | MethodAttributes.Virtual | MethodAttributes.Abstract, CallingConventions.Standard, typeof(int), Type.EmptyTypes);
+            MethodBuilder mInterface = interfaceType.DefineMethod("InterfaceMethod2", MethodAttributes.Public | MethodAttributes.Virtual | MethodAttributes.Abstract, typeof(string), Array.Empty<Type>());
+            MethodBuilder vmInterface = interfaceType.DefineMethod("InterfaceMethod3", MethodAttributes.Assembly | MethodAttributes.Virtual | MethodAttributes.Abstract, CallingConventions.HasThis, typeof(void), [typeof(bool)]);
+            Type interfaceTypeActual = interfaceType.CreateType();
+
+            // Implicit implementations (same name, signatures)
+            TypeBuilder implType = module.DefineType("ImplType", TypeAttributes.Public, parent: typeof(Impl), new Type[] { interfaceTypeActual });
+            MethodBuilder mImpl = implType.DefineMethod("InterfaceMethod2", MethodAttributes.Public | MethodAttributes.Virtual, typeof(string), Array.Empty<Type>());
+            ILGenerator ilGenerator = mImpl.GetILGenerator();
+            ilGenerator.Emit(OpCodes.Ldstr, "Hello");
+            ilGenerator.Emit(OpCodes.Ret);
+            MethodBuilder m2Impl = implType.DefineMethod("InterfaceMethod3", MethodAttributes.Public | MethodAttributes.Virtual, typeof(void), [typeof(bool)]);
+            ilGenerator = m2Impl.GetILGenerator();
+            ilGenerator.Emit(OpCodes.Ldc_I4_1);
+            ilGenerator.Emit(OpCodes.Ret);
+
+            Type implTypeActual = implType.CreateType();
+
+            Type? interfaceReceived = implTypeActual.GetInterface("InterfaceType");
+            Assert.Equal(interfaceTypeActual, interfaceReceived);
+
+            interfaceReceived = implTypeActual.GetInterface("interfacetype", false);
+            Assert.Null(interfaceReceived);
+
+            interfaceReceived = implTypeActual.GetInterface("interfacetype", true);
+            Assert.NotNull(interfaceReceived);
+        }
+
         public interface InterfaceDerivedFromOtherInterface : DefineMethodOverrideInterface
         {
             public string M2(int a);
         }
+
+        [Fact]
+        public void DefineNestedType_GetNestedType()
+        {
+            PersistedAssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyAndModule(out ModuleBuilder mb);
+
+            // define two top level classes
+            TypeBuilder type1 = mb.DefineType("Type1", TypeAttributes.Public | TypeAttributes.Class);
+            TypeBuilder type2 = mb.DefineType("Type2", TypeAttributes.Public | TypeAttributes.Class); // used to make sure we never find that one
+
+            // Define a public and private nested class in Type1
+            TypeBuilder nestedType1 = type1.DefineNestedType("NestedType1", TypeAttributes.NestedPublic | TypeAttributes.Class);
+            TypeBuilder nestedType2 = type1.DefineNestedType("NestedType2", TypeAttributes.NestedPrivate | TypeAttributes.Class);
+
+            // create all the types
+            nestedType2.CreateType();
+            nestedType1.CreateType();
+            type2.CreateType();
+            type1.CreateType();
+
+            // Get public nested types of type1
+            Type[] nestedTypes = type1.GetNestedTypes(BindingFlags.Public);
+            Assert.Equal(1, nestedTypes.Length);
+            Assert.Equal(nestedType1, nestedTypes[0]);
+
+            // Get all nested types of type1
+            nestedTypes = type1.GetNestedTypes(BindingFlags.NonPublic | BindingFlags.Public);
+            Assert.Equal(2, nestedTypes.Length);
+            Assert.Contains(nestedType1, nestedTypes);
+            Assert.Contains(nestedType2, nestedTypes);
+
+            // Get the nested type by name
+            Type? type = type1.GetNestedType("NestedType1");
+            Assert.Equal(nestedType1, type);
+
+            // Get a name that doesn't exist
+            type = type1.GetNestedType("NestedType3");
+            Assert.Null(type);
+
+            // Get by name with wrong flag
+            type = type1.GetNestedType("NestedType1", BindingFlags.NonPublic);
+            Assert.Null(type);
+
+            // Type2 should not have any nested types
+            nestedTypes = type2.GetNestedTypes(BindingFlags.Public | BindingFlags.NonPublic);
+            Assert.Empty(nestedTypes);
+        }
+
+        [Fact]
+        public void CreateType_GetMembers()
+        {
+            AssemblySaveTools.PopulateAssemblyAndModule(out ModuleBuilder mb);
+
+            TypeBuilder type = mb.DefineType("MyType", TypeAttributes.Public | TypeAttributes.Class);
+
+            // Define a class with a field, method, property, constructor and nested type
+            FieldBuilder field = type.DefineField("Field", typeof(int), FieldAttributes.Public);
+
+            MethodBuilder method = type.DefineMethod("Method", MethodAttributes.Public, typeof(int), Type.EmptyTypes);
+            ILGenerator ilGenerator = method.GetILGenerator();
+            ilGenerator.Emit(OpCodes.Ldc_I4_1);
+            ilGenerator.Emit(OpCodes.Ret);
+
+            PropertyBuilder property = type.DefineProperty("Property", PropertyAttributes.None, typeof(int), Type.EmptyTypes);
+            MethodBuilder getMethod = type.DefineMethod("get_Property", MethodAttributes.Public | MethodAttributes.SpecialName | MethodAttributes.HideBySig, typeof(int), Type.EmptyTypes);
+            ILGenerator getIlGenerator = getMethod.GetILGenerator();
+            getIlGenerator.Emit(OpCodes.Ldc_I4_2);
+            getIlGenerator.Emit(OpCodes.Ret);
+            property.SetGetMethod(getMethod);
+
+            ConstructorBuilder constructor = type.DefineConstructor(MethodAttributes.Public, CallingConventions.Standard, Type.EmptyTypes);
+            ILGenerator constructorIlGenerator = constructor.GetILGenerator();
+            constructorIlGenerator.Emit(OpCodes.Ret);
+
+            TypeBuilder nestedType = type.DefineNestedType("NestedType", TypeAttributes.NestedPublic | TypeAttributes.Class);
+
+            // Create a child type
+            TypeBuilder child = mb.DefineType("ChildType", TypeAttributes.Public | TypeAttributes.Class, type);
+
+            nestedType.CreateType();
+            type.CreateType();
+            child.CreateType();
+
+            Test(type);
+            Test(child);
+
+            void Test(TypeBuilder type)
+            {
+                // Test get all
+                MemberInfo[] members = type.GetMembers(BindingFlags.Public | BindingFlags.Instance);
+                Assert.Contains(field, members);
+                Assert.Contains(method, members);
+                Assert.Contains(property, members);
+                Assert.Contains(getMethod, members);
+                if (type != child) // child type doesn't have the parent constructor nor the nested type
+                {
+                    Assert.Contains(nestedType, members);
+                    Assert.Contains(constructor, members);
+                }
+
+                // Test get all with wrong flags
+                members = type.GetMembers(BindingFlags.NonPublic);
+                Assert.Empty(members);
+
+                // Test get field by name
+                members = type.GetMember("Field", MemberTypes.Field, BindingFlags.Public | BindingFlags.Instance);
+                Assert.Single(members);
+                Assert.Equal(field, members[0]);
+
+                // Test get method by name
+                members = type.GetMember("Method", MemberTypes.Method, BindingFlags.Public | BindingFlags.Instance);
+                Assert.Single(members);
+                Assert.Equal(method, members[0]);
+
+                // Test get property by name
+                members = type.GetMember("Property", MemberTypes.Property, BindingFlags.Public | BindingFlags.Instance);
+                Assert.Single(members);
+                Assert.Equal(property, members[0]);
+
+                if (type != child)
+                {
+                    // Test get constructor by name
+                    members = type.GetMember(".ctor", MemberTypes.Constructor, BindingFlags.Public | BindingFlags.Instance);
+                    Assert.Single(members);
+                    Assert.Equal(constructor, members[0]);
+
+                    // Test get nested type by name
+                    members = type.GetMember("NestedType", MemberTypes.NestedType, BindingFlags.Public);
+                    Assert.Single(members);
+                    Assert.Equal(nestedType, members[0]);
+                }
+            }
+        }
+
 
         [Fact]
         public void CreateType_ValidateMethods()
@@ -390,7 +559,7 @@ namespace System.Reflection.Emit.Tests
             TypeBuilder abstractType = module.DefineType("AbstractType", TypeAttributes.Public | TypeAttributes.Abstract);
             MethodBuilder abstractMethod = abstractType.DefineMethod("AbstractMethod", MethodAttributes.Public | MethodAttributes.Abstract);
             abstractType.DefineMethod("PinvokeMethod", MethodAttributes.Public | MethodAttributes.Abstract | MethodAttributes.PinvokeImpl);
-            Assert.Throws<InvalidOperationException>(() => abstractMethod.GetILGenerator()); 
+            Assert.Throws<InvalidOperationException>(() => abstractMethod.GetILGenerator());
             abstractType.CreateType(); // succeeds
 
             TypeBuilder concreteTypeWithNativeAndPinvokeMethod = module.DefineType("Type3", TypeAttributes.Public);
@@ -772,7 +941,7 @@ namespace System.Reflection.Emit.Tests
         public void GetFieldGetFieldsTest()
         {
             AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
-            foreach(object[] fd in FieldTestData)
+            foreach (object[] fd in FieldTestData)
             {
                 FieldBuilder field = type.DefineField((string)fd[0], (Type)fd[1], (FieldAttributes)fd[2]);
                 Assert.Equal(fd[0], field.Name);
@@ -793,7 +962,7 @@ namespace System.Reflection.Emit.Tests
 
             Assert.Throws<AmbiguousMatchException>(() => type.GetField("TestName1", Helpers.AllFlags));
             Assert.Equal(allFields[0], type.GetField("TestName1", BindingFlags.Public | BindingFlags.Instance));
-            Assert.Equal(allFields[allFields.Length-1], type.GetField("TestName1", BindingFlags.Public | BindingFlags.Static));
+            Assert.Equal(allFields[allFields.Length - 1], type.GetField("TestName1", BindingFlags.Public | BindingFlags.Static));
             Assert.Equal(allFields[10], type.GetField("testname5", Helpers.AllFlags));
             Assert.Equal(allFields[10], type.GetField("testname5", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.IgnoreCase));
             Assert.Equal(allFields[9], type.GetField("testname5", BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.IgnoreCase));
