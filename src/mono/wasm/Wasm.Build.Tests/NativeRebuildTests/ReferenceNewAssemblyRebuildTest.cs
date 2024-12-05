@@ -21,11 +21,11 @@ namespace Wasm.Build.NativeRebuild.Tests
 
         [Theory]
         [MemberData(nameof(NativeBuildData))]
-        // [ActiveIssue(aot: True "Expected changed file: ...")]
+        // [ActiveIssue(aot: True "Expected changed file: driver-gen.c")]
         public async void ReferenceNewAssembly(Configuration config, bool aot, bool nativeRelink, bool invariant)
         {
             ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBasicTestApp, "rebuild_tasks");     
-            BuildPaths paths = await FirstNativeBuildAndRun(info, config, nativeRelink, invariant);
+            BuildPaths paths = await FirstNativeBuildAndRun(info, config, aot, nativeRelink, invariant);
 
             var pathsDict = GetFilesTable(info.ProjectName, aot, paths, unchanged: false);
             pathsDict.UpdateTo(unchanged: true, "corebindings.o");
@@ -37,7 +37,7 @@ namespace Wasm.Build.NativeRebuild.Tests
 
             ReplaceFile(Path.Combine("Common", "Program.cs"), Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "NativeRebuildNewAssembly.cs"));
 
-            Rebuild(info, config, nativeRelink, invariant);
+            Rebuild(info, config, aot, nativeRelink, invariant);
             var newStat = StatFilesAfterRebuild(pathsDict);
 
             CompareStat(originalStat, newStat, pathsDict);

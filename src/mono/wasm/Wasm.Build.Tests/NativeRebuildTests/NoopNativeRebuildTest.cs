@@ -22,12 +22,12 @@ namespace Wasm.Build.NativeRebuild.Tests
         public async void NoOpRebuildForNativeBuilds(Configuration config, bool aot, bool nativeRelink, bool invariant)
         {
             ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBasicTestApp, "rebuild_noop");
-            BuildPaths paths = await FirstNativeBuildAndRun(info, config, nativeRelink, invariant);
+            BuildPaths paths = await FirstNativeBuildAndRun(info, config, aot, nativeRelink, invariant);
 
             var pathsDict = GetFilesTable(info.ProjectName, aot, paths, unchanged: true);
             var originalStat = StatFiles(pathsDict);
 
-            Rebuild(info, config, nativeRelink, invariant);
+            Rebuild(info, config, aot, nativeRelink, invariant);
             var newStat = StatFiles(pathsDict);
 
             CompareStat(originalStat, newStat, pathsDict);

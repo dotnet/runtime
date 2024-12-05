@@ -34,7 +34,7 @@ namespace Wasm.Build.NativeRebuild.Tests
         public async void ExtraEmccFlagsSetButNoRealChange(Configuration config, bool aot, string extraCFlags, string extraLDFlags)
         {
             ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBasicTestApp, "rebuild_flags");
-            BuildPaths paths = await FirstNativeBuildAndRun(info, config, nativeRelink: true, invariant: false);
+            BuildPaths paths = await FirstNativeBuildAndRun(info, config, aot, requestNativeRelink: true, invariant: false);
             var pathsDict = GetFilesTable(info.ProjectName, aot, paths, unchanged: true);
             if (extraLDFlags.Length > 0)
                 pathsDict.UpdateTo(unchanged: false, "dotnet.native.wasm", "dotnet.native.js");
@@ -44,7 +44,7 @@ namespace Wasm.Build.NativeRebuild.Tests
             // Rebuild
             string mainAssembly = $"{info.ProjectName}.dll";
             string extraBuildArgs = $" {extraCFlags} {extraLDFlags}";
-            string output = Rebuild(info, config, nativeRelink: true, invariant: false, extraBuildArgs: extraBuildArgs, verbosity: "normal");
+            string output = Rebuild(info, config, aot, requestNativeRelink: true, invariant: false, extraBuildArgs: extraBuildArgs, verbosity: "normal");
             
             pathsDict = GetFilesTable(info.ProjectName, aot, paths, unchanged: true);
             var newStat = StatFiles(pathsDict);

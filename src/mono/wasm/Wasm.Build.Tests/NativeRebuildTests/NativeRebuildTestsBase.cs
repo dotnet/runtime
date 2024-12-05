@@ -46,34 +46,43 @@ namespace Wasm.Build.NativeRebuild.Tests
                         .UnwrapItemsAsArrays().ToList();
         }
 
-        internal async Task<BuildPaths> FirstNativeBuildAndRun(ProjectInfo info, Configuration config, bool nativeRelink, bool invariant, string extraBuildArgs="")
+        internal async Task<BuildPaths> FirstNativeBuildAndRun(ProjectInfo info, Configuration config, bool aot, bool requestNativeRelink, bool invariant, string extraBuildArgs="")
         {
-            bool isNativeBuild = nativeRelink || invariant;
-            var extraArgs = $"-p:_WasmDevel=true -p:WasmBuildNative={nativeRelink} -p:InvariantGlobalization={invariant} {extraBuildArgs}";
+            var extraArgs = $"-p:_WasmDevel=true {extraBuildArgs}";
+            if (requestNativeRelink)
+                extraArgs += $" -p:WasmBuildNative={requestNativeRelink}";
+            if (invariant)
+                extraArgs += $" -p:InvariantGlobalization={invariant}";
+            bool? nativeBuildValue = (requestNativeRelink || invariant) ? true : null;
             PublishProject(info,
                 config,
-                new PublishOptions(GlobalizationMode: invariant ? GlobalizationMode.Invariant : GlobalizationMode.Sharded, ExtraMSBuildArgs: extraArgs),
-                isNativeBuild: nativeRelink);
+                new PublishOptions(AOT: aot, GlobalizationMode: invariant ? GlobalizationMode.Invariant : GlobalizationMode.Sharded, ExtraMSBuildArgs: extraArgs),
+                isNativeBuild: nativeBuildValue);
             await RunForPublishWithWebServer(new BrowserRunOptions(config, TestScenario: "DotnetRun"));
             return GetBuildPaths(config, forPublish: true);
         }
 
-        protected string Rebuild(ProjectInfo info, Configuration config, bool nativeRelink, bool invariant, string extraBuildArgs="", string verbosity="normal", bool assertAppBundle=true)
+        protected string Rebuild(
+            ProjectInfo info, Configuration config, bool aot, bool requestNativeRelink, bool invariant, string extraBuildArgs="", string verbosity="normal", bool assertAppBundle=true)
         {
             if (!_buildContext.TryGetBuildFor(info, out BuildResult? result))
                 throw new XunitException($"Test bug: could not get the build result in the cache");
 
             File.Move(result!.LogFile, Path.ChangeExtension(result.LogFile!, ".first.binlog"));
             
-            var extraArgs = $"-p:_WasmDevel=true -p:WasmBuildNative={nativeRelink} -p:InvariantGlobalization={invariant} -v:{verbosity} {extraBuildArgs}";
+            var extraArgs = $"-p:_WasmDevel=true -v:{verbosity} {extraBuildArgs}";
+            if (requestNativeRelink)
+                extraArgs += $" -p:WasmBuildNative={requestNativeRelink}";
+            if (invariant)
+                extraArgs += $" -p:InvariantGlobalization={invariant}";
 
             // artificial delay to have new enough timestamps
             Thread.Sleep(5000);
 
-            bool isNativeBuild = nativeRelink || invariant;
+            bool? nativeBuildValue = (requestNativeRelink || invariant) ? true : null;
             var globalizationMode = invariant ? GlobalizationMode.Invariant : GlobalizationMode.Sharded;
-            var options = new PublishOptions(GlobalizationMode: globalizationMode, ExtraMSBuildArgs: extraArgs, UseCache: false, AssertAppBundle: assertAppBundle);
-            (string _, string output) = PublishProject(info, config, options, isNativeBuild: nativeRelink);
+            var options = new PublishOptions(AOT: aot, GlobalizationMode: globalizationMode, ExtraMSBuildArgs: extraArgs, UseCache: false, AssertAppBundle: assertAppBundle);
+            (string _, string output) = PublishProject(info, config, options, isNativeBuild: nativeBuildValue);
             return output;
         }
 

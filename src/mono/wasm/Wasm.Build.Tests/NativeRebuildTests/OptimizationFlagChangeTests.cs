@@ -34,7 +34,7 @@ public class OptimizationFlagChangeTests : NativeRebuildTestsBase
         ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBasicTestApp, "rebuild_flags");        
         // force _WasmDevel=false, so we don't get -O0 but -O2
         string optElevationArg = "/p:_WasmDevel=false";
-        BuildPaths paths = await FirstNativeBuildAndRun(info, config, nativeRelink: true, invariant: false, extraBuildArgs: optElevationArg);
+        BuildPaths paths = await FirstNativeBuildAndRun(info, config, aot, requestNativeRelink: true, invariant: false, extraBuildArgs: optElevationArg);
 
         string mainAssembly = $"{info.ProjectName}{ProjectProviderBase.WasmAssemblyExtension}";
         var pathsDict = GetFilesTable(info.ProjectName, aot, paths, unchanged: false);
@@ -61,7 +61,8 @@ public class OptimizationFlagChangeTests : NativeRebuildTestsBase
         // Rebuild
         string output = Rebuild(info,
                                 config,
-                                nativeRelink: true,
+                                aot,
+                                requestNativeRelink: true,
                                 invariant: false,
                                 extraBuildArgs: $" {cflags} {ldflags} {optElevationArg}",
                                 assertAppBundle: false); // optimization flags change changes the size of dotnet.native.wasm
