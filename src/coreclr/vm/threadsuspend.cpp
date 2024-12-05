@@ -4126,7 +4126,10 @@ bool Thread::SysStartSuspendForDebug(AppDomain *pAppDomain)
 
 #if defined(FEATURE_THREAD_ACTIVATION)
                 // Inject an activation that will interrupt the thread and try to bring it to a safe point
-                thread->InjectActivation(Thread::ActivationReason::SuspendForDebugger);
+                if ((thread->m_StateNC & Thread::TSNC_DebuggerIsStepping) == 0)
+                {
+                    thread->InjectActivation(Thread::ActivationReason::SuspendForDebugger);
+                }
 #endif // FEATURE_THREAD_ACTIVATION && TARGET_WINDOWS
             }
             else
@@ -4263,7 +4266,10 @@ bool Thread::SysSweepThreadsForDebug(bool forceSync)
 
 #if defined(FEATURE_THREAD_ACTIVATION)
             // Inject an activation that will interrupt the thread and try to bring it to a safe point
-            thread->InjectActivation(Thread::ActivationReason::SuspendForDebugger);
+            if ((thread->m_StateNC & Thread::TSNC_DebuggerIsStepping) == 0)
+            {
+                thread->InjectActivation(Thread::ActivationReason::SuspendForDebugger);
+            }
 #endif // FEATURE_THREAD_ACTIVATION && TARGET_WINDOWS
 
             continue;
