@@ -1937,7 +1937,7 @@ namespace System
             int offsetMaybe = GetParameterOffsetInternal(m_sig, m_csig, parameterIndex);
             // If the result is negative, it is an error code.
             if (offsetMaybe < 0)
-                Marshal.ThrowExceptionForHR(offsetMaybe);
+                Marshal.ThrowExceptionForHR(offsetMaybe, new IntPtr(-1));
             return offsetMaybe;
         }
 
