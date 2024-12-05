@@ -10,11 +10,11 @@ namespace System.Collections.Frozen
 {
     internal sealed partial class Int32FrozenDictionary<TValue>
     {
-
+        /// <inheritdoc/>
         private protected override AlternateLookupDelegate<TAlternateKey> GetAlternateLookupDelegate<TAlternateKey>()
-            => AlternateKeyDelegateHolder<TAlternateKey>.Instance;
+            => AlternateLookupDelegateHolder<TAlternateKey>.Instance;
 
-        private static class AlternateKeyDelegateHolder<TAlternateKey>
+        private static class AlternateLookupDelegateHolder<TAlternateKey>
             where TAlternateKey : notnull
 #if NET9_0_OR_GREATER
 #pragma warning disable SA1001 // Commas should be spaced correctly
@@ -22,10 +22,15 @@ namespace System.Collections.Frozen
 #pragma warning restore SA1001
 #endif
         {
-            public static AlternateLookupDelegate<TAlternateKey> Instance = (dictionary, key)
+            /// <summary>
+            /// Invokes <see cref="GetValueRefOrNullRefCoreAlternate{TAlternate}(TAlternate)"/>
+            /// on instances known to be of type <see cref="Int32FrozenDictionary{TValue}"/>.
+            /// </summary>
+            public static readonly AlternateLookupDelegate<TAlternateKey> Instance = (dictionary, key)
                 => ref ((Int32FrozenDictionary<TValue>)dictionary).GetValueRefOrNullRefCoreAlternate(key);
         }
 
+        /// <inheritdoc cref="GetValueRefOrNullRefCore(int)" />
         private ref readonly TValue GetValueRefOrNullRefCoreAlternate<TAlternateKey>(TAlternateKey key)
             where TAlternateKey : notnull
 #if NET9_0_OR_GREATER

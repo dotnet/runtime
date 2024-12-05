@@ -9,21 +9,26 @@ namespace System.Collections.Frozen
 {
     internal sealed partial class Int32FrozenSet
     {
-
+        /// <inheritdoc/>
         private protected override AlternateLookupDelegate<TAlternate> GetAlternateLookupDelegate<TAlternate>()
-            => AlternateKeyDelegateHolder<TAlternate>.Instance;
+            => AlternateLookupDelegateHolder<TAlternate>.Instance;
 
-        private static class AlternateKeyDelegateHolder<TAlternate>
+        private static class AlternateLookupDelegateHolder<TAlternate>
 #if NET9_0_OR_GREATER
 #pragma warning disable SA1001 // Commas should be spaced correctly
             where TAlternate : allows ref struct
 #pragma warning restore SA1001
 #endif
         {
-            public static AlternateLookupDelegate<TAlternate> Instance = (set, item)
+            /// <summary>
+            /// Invokes <see cref="FindItemIndexAlternate{TAlternate}(TAlternate)"/>
+            /// on instances known to be of type <see cref="Int32FrozenSet"/>.
+            /// </summary>
+            public static readonly AlternateLookupDelegate<TAlternate> Instance = (set, item)
                 => ((Int32FrozenSet)set).FindItemIndexAlternate(item);
         }
 
+        /// <inheritdoc cref="FindItemIndex(int)" />
         private int FindItemIndexAlternate<TAlternate>(TAlternate item)
 #if NET9_0_OR_GREATER
 #pragma warning disable SA1001 // Commas should be spaced correctly

@@ -9,9 +9,14 @@ namespace System.Collections.Frozen
 {
     internal abstract partial class OrdinalStringFrozenDictionary<TValue> : FrozenDictionary<string, TValue>
     {
-        private static AlternateLookupDelegate<ReadOnlySpan<char>> s_alternateLookup = (dictionary, key)
+        /// <summary>
+        /// Invokes <see cref="GetValueRefOrNullRefCoreAlternate(ReadOnlySpan{char})"/>
+        /// on instances known to be of type <see cref="OrdinalStringFrozenDictionary{TValue}"/>.
+        /// </summary>
+        private static readonly AlternateLookupDelegate<ReadOnlySpan<char>> s_alternateLookup = (dictionary, key)
             => ref ((OrdinalStringFrozenDictionary<TValue>)dictionary).GetValueRefOrNullRefCoreAlternate(key);
 
+        /// <inheritdoc/>
         private protected override AlternateLookupDelegate<TAlternateKey> GetAlternateLookupDelegate<TAlternateKey>()
         {
             Debug.Assert(typeof(TAlternateKey) == typeof(ReadOnlySpan<char>));
@@ -24,6 +29,7 @@ namespace System.Collections.Frozen
         // call to that span-based method that's aggressively inlined. That then exposes the implementation
         // to the sealed Equals/GetHashCodes on each derived type, allowing them to be devirtualized and inlined
         // into each unique copy of the code.
+        /// <inheritdoc cref="GetValueRefOrNullRefCore(string)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private protected virtual ref readonly TValue GetValueRefOrNullRefCoreAlternate(ReadOnlySpan<char> key)
         {

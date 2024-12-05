@@ -347,7 +347,7 @@ namespace System.Collections.Frozen
             where TAlternate : allows ref struct
 #pragma warning restore SA1001
 #endif
-            => AlternateLookupHolder<TAlternate>.Instance;
+            => AlternateLookupDelegateHolder<TAlternate>.ReturnsNullRef;
 
         /// <summary>
         /// Invokes a method equivalent to <see cref="FindItemIndex"/>
@@ -356,10 +356,6 @@ namespace System.Collections.Frozen
         internal delegate int AlternateLookupDelegate<TAlternate>(FrozenSet<T> set, TAlternate key)
 #if NET9_0_OR_GREATER
 #pragma warning disable SA1001 // Commas should be spaced correctly
-            // This method will only ever be used on .NET 9+. However, because of how everything is structured,
-            // and to avoid a proliferation of conditional files for many of the derived types (in particular
-            // for the OrdinalString* implementations), we still build this method into all builds, even though
-            // it'll be unused. But we can't use the allows ref struct constraint downlevel, hence the #if.
             where TAlternate : allows ref struct
 #pragma warning restore SA1001
 #endif
@@ -368,14 +364,14 @@ namespace System.Collections.Frozen
         /// <summary>
         /// Holds an implementation of <see cref="AlternateLookupDelegate{TAlternate}"/> which always returns -1.
         /// </summary>
-        private static class AlternateLookupHolder<TAlternate>
+        private static class AlternateLookupDelegateHolder<TAlternate>
 #if NET9_0_OR_GREATER
 #pragma warning disable SA1001 // Commas should be spaced correctly
             where TAlternate : allows ref struct
 #pragma warning restore SA1001
 #endif
         {
-            public static AlternateLookupDelegate<TAlternate> Instance = (_, _) => -1;
+            public static readonly AlternateLookupDelegate<TAlternate> ReturnsNullRef = (_, _) => -1;
         }
 
 

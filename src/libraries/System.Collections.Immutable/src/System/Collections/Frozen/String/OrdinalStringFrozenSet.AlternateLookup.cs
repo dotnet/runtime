@@ -8,9 +8,14 @@ namespace System.Collections.Frozen
 {
     internal abstract partial class OrdinalStringFrozenSet
     {
-        private static AlternateLookupDelegate<ReadOnlySpan<char>> s_alternateLookup = (set, key)
+        /// <summary>
+        /// Invokes <see cref="FindItemIndex(string)"/>
+        /// on instances known to be of type <see cref="OrdinalStringFrozenSet"/>.
+        /// </summary>
+        private static readonly AlternateLookupDelegate<ReadOnlySpan<char>> s_alternateLookup = (set, key)
             => ((OrdinalStringFrozenSet)set).FindItemIndexAlternate(key);
 
+        /// <inheritdoc/>
         private protected override AlternateLookupDelegate<TAlternateKey> GetAlternateLookupDelegate<TAlternateKey>()
         {
             Debug.Assert(typeof(TAlternateKey) == typeof(ReadOnlySpan<char>));
@@ -23,6 +28,7 @@ namespace System.Collections.Frozen
         // call to that span-based method that's aggressively inlined. That then exposes the implementation
         // to the sealed Equals/GetHashCodes on each derived type, allowing them to be devirtualized and inlined
         // into each unique copy of the code.
+        /// <inheritdoc cref="FindItemIndex(string)" />
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private protected virtual int FindItemIndexAlternate(ReadOnlySpan<char> item)

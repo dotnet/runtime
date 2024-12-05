@@ -76,7 +76,6 @@ namespace System.Collections.Frozen
         /// <typeparam name="TAlternateKey">The alternate type of a key for performing lookups.</typeparam>
         public readonly struct AlternateLookup<TAlternateKey> where TAlternateKey : notnull, allows ref struct
         {
-
             private readonly AlternateLookupDelegate<TAlternateKey> _alternateLookupDelegate;
 
             /// <summary>Initialize the instance. The dictionary must have already been verified to have a compatible comparer.</summary>

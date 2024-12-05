@@ -9,15 +9,21 @@ namespace System.Collections.Frozen
 {
     internal sealed partial class LengthBucketsFrozenDictionary<TValue>
     {
-        private static AlternateLookupDelegate<ReadOnlySpan<char>> s_alternateLookup = (dictionary, key)
+        /// <summary>
+        /// Invokes <see cref="GetValueRefOrNullRefCoreAlternate(ReadOnlySpan{char})"/>
+        /// on instances known to be of type <see cref="LengthBucketsFrozenDictionary{TValue}"/>.
+        /// </summary>
+        private static readonly AlternateLookupDelegate<ReadOnlySpan<char>> s_alternateLookup = (dictionary, key)
             => ref ((LengthBucketsFrozenDictionary<TValue>)dictionary).GetValueRefOrNullRefCoreAlternate(key);
 
+        /// <inheritdoc/>
         private protected override AlternateLookupDelegate<TAlternateKey> GetAlternateLookupDelegate<TAlternateKey>()
         {
             Debug.Assert(typeof(TAlternateKey) == typeof(ReadOnlySpan<char>));
             return (AlternateLookupDelegate<TAlternateKey>)(object)s_alternateLookup;
         }
 
+        /// <inheritdoc cref="GetValueRefOrNullRefCore(string)" />
         private ref readonly TValue GetValueRefOrNullRefCoreAlternate(ReadOnlySpan<char> key)
         {
             IAlternateEqualityComparer<ReadOnlySpan<char>, string> comparer = GetAlternateEqualityComparer<ReadOnlySpan<char>>();

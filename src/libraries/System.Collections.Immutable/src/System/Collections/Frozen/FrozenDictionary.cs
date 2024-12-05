@@ -468,7 +468,7 @@ namespace System.Collections.Frozen
             , allows ref struct
 #pragma warning restore SA1001
 #endif
-            => AlternateLookupHolder<TAlternateKey>.Instance;
+            => AlternateLookupDelegateHolder<TAlternateKey>.ReturnsNullRef;
 
         /// <summary>
         /// Invokes a method equivalent to <see cref="GetValueRefOrNullRef(TKey)"/>
@@ -478,10 +478,6 @@ namespace System.Collections.Frozen
             where TAlternateKey : notnull
 #if NET9_0_OR_GREATER
 #pragma warning disable SA1001 // Commas should be spaced correctly
-            // This method will only ever be used on .NET 9+. However, because of how everything is structured,
-            // and to avoid a proliferation of conditional files for many of the derived types (in particular
-            // for the OrdinalString* implementations), we still build this method into all builds, even though
-            // it'll be unused. But we can't use the allows ref struct constraint downlevel, hence the #if.
             , allows ref struct
 #pragma warning restore SA1001
 #endif
@@ -490,7 +486,7 @@ namespace System.Collections.Frozen
         /// <summary>
         /// Holds an implementation of <see cref="AlternateLookupDelegate{TAlternateKey}"/> which always returns a null ref.
         /// </summary>
-        private static class AlternateLookupHolder<TAlternateKey>
+        private static class AlternateLookupDelegateHolder<TAlternateKey>
             where TAlternateKey : notnull
 #if NET9_0_OR_GREATER
 #pragma warning disable SA1001 // Commas should be spaced correctly
@@ -498,7 +494,7 @@ namespace System.Collections.Frozen
 #pragma warning restore SA1001
 #endif
         {
-            public static AlternateLookupDelegate<TAlternateKey> Instance = (_, _) => ref Unsafe.NullRef<TValue>();
+            public static readonly AlternateLookupDelegate<TAlternateKey> ReturnsNullRef = (_, _) => ref Unsafe.NullRef<TValue>();
         }
 
         /// <summary>Gets a reference to the value associated with the specified key.</summary>
