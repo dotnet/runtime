@@ -10000,10 +10000,10 @@ void CodeGen::genFnEpilog(BasicBlock* block)
         if (frameSize > 0)
         {
 #ifdef TARGET_X86
-            /* Add 'compiler->compLclFrameSize' to ESP */
-            /* Use pop ECX to increment ESP by 4, unless compiler->compJmpOpUsed is true */
+            // Add 'compiler->compLclFrameSize' to ESP. Use "pop ECX" for that, except in cases
+            // where ECX may contain some state.
 
-            if ((frameSize == TARGET_POINTER_SIZE) && !compiler->compJmpOpUsed)
+            if ((frameSize == TARGET_POINTER_SIZE) && !compiler->compJmpOpUsed && !compiler->compIsAsync2())
             {
                 inst_RV(INS_pop, REG_ECX, TYP_I_IMPL);
                 regSet.verifyRegUsed(REG_ECX);
@@ -10011,8 +10011,8 @@ void CodeGen::genFnEpilog(BasicBlock* block)
             else
 #endif // TARGET_X86
             {
-                /* Add 'compiler->compLclFrameSize' to ESP */
-                /* Generate "add esp, <stack-size>" */
+                // Add 'compiler->compLclFrameSize' to ESP
+                // Generate "add esp, <stack-size>"
                 inst_RV_IV(INS_add, REG_SPBASE, frameSize, EA_PTRSIZE);
             }
         }
@@ -10090,7 +10090,7 @@ void CodeGen::genFnEpilog(BasicBlock* block)
                 // do nothing before popping the callee-saved registers
             }
 #ifdef TARGET_X86
-            else if (compiler->compLclFrameSize == REGSIZE_BYTES)
+            else if ((compiler->compLclFrameSize == REGSIZE_BYTES) && !compiler->compJmpOpUsed && !compiler->compIsAsync2())
             {
                 // "pop ecx" will make ESP point to the callee-saved registers
                 inst_RV(INS_pop, REG_ECX, TYP_I_IMPL);
