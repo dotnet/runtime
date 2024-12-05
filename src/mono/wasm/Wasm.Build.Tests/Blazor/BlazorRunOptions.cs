@@ -17,6 +17,7 @@ public record BlazorRunOptions : RunOptions
 
     public BlazorRunOptions(
         Configuration                   Configuration,
+        bool                            AOT                     = false,
         RunHost                         Host                    = RunHost.DotnetRun,
         bool                            DetectRuntimeFailures   = true,
         Dictionary<string, string>?     ServerEnvironment       = null,
@@ -34,6 +35,7 @@ public record BlazorRunOptions : RunOptions
         Func<RunOptions, IPage, Task>?  ExecuteAfterLoaded      = null
     ) : base(
         Configuration,
+        AOT,
         Host,
         DetectRuntimeFailures,
         ServerEnvironment,

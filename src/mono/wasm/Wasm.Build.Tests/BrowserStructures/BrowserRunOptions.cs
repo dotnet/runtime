@@ -17,6 +17,7 @@ public record BrowserRunOptions : RunOptions
 
     public BrowserRunOptions(
         Configuration               Configuration,
+        bool                        AOT                     = false,
         RunHost                     Host                    = RunHost.DotnetRun,
         bool                        DetectRuntimeFailures   = true,
         Dictionary<string, string>? ServerEnvironment       = null,
@@ -32,6 +33,7 @@ public record BrowserRunOptions : RunOptions
         string?                     TestScenario            = null
     ) : base(
         Configuration,
+        AOT,
         Host,
         DetectRuntimeFailures,
         ServerEnvironment,

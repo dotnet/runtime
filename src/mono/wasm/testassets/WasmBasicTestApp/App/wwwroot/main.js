@@ -26,6 +26,16 @@ dotnet
     .withExitCodeLogging()
     .withExitOnUnhandledError();
 
+const logLevel = params.get("MONO_LOG_LEVEL");
+const logMask = params.get("MONO_LOG_MASK");
+if (logLevel !== null && logMask !== null) {
+    dotnet.withDiagnosticTracing(true); // enable JavaScript tracing
+    dotnet.withConfig({environmentVariables: {
+        "MONO_LOG_LEVEL": logLevel,
+        "MONO_LOG_MASK": logMask,
+    }});
+}
+
 // Modify runtime start based on test case
 switch (testCase) {
     case "SatelliteAssembliesTest":

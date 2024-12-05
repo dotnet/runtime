@@ -28,7 +28,7 @@ public class OptimizationFlagChangeTests : NativeRebuildTestsBase
 
     [Theory]
     [MemberData(nameof(FlagsOnlyChangeData), parameters: /*aot*/ false)]
-    // [MemberData(nameof(FlagsOnlyChangeData), parameters: /*aot*/ true)]
+    [MemberData(nameof(FlagsOnlyChangeData), parameters: /*aot*/ true)]
     public async void OptimizationFlagChange(Configuration config, bool aot, string cflags, string ldflags)
     {
         ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBasicTestApp, "rebuild_flags");        
@@ -69,8 +69,8 @@ public class OptimizationFlagChangeTests : NativeRebuildTestsBase
         var newStat = StatFilesAfterRebuild(pathsDict);
         CompareStat(originalStat, newStat, pathsDict);
 
-        RunResult runOutput = await RunForPublishWithWebServer(new BrowserRunOptions(config, TestScenario: "DotnetRun"));
-        TestUtils.AssertSubstring($"Found statically linked AOT module '{Path.GetFileNameWithoutExtension(mainAssembly)}'", runOutput.TestOutput,
+        RunResult runOutput = await RunForPublishWithWebServer(new BrowserRunOptions(config, aot, TestScenario: "DotnetRun"));
+        TestUtils.AssertSubstring($"Found statically linked AOT module '{Path.GetFileNameWithoutExtension(mainAssembly)}'", runOutput.ConsoleOutput,
                             contains: aot);
     }
 }

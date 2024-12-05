@@ -271,6 +271,11 @@ public class WasmTemplateTestsBase : BuildTestBase
         ToolCommand cmd = runCommand.WithWorkingDirectory(workingDirectory);
 
         var query = runOptions.BrowserQueryString ?? new NameValueCollection();
+        if (runOptions.AOT)
+        {
+            query.Add("MONO_LOG_LEVEL", "debug");
+            query.Add("MONO_LOG_MASK", "aot");
+        }
         if (runOptions is BrowserRunOptions browserOp && !string.IsNullOrEmpty(browserOp.TestScenario))
             query.Add("test", browserOp.TestScenario);
         var queryString = query.Count > 0 && query.AllKeys != null

@@ -13,6 +13,7 @@ namespace Wasm.Build.Tests;
 public abstract record RunOptions
 (
     Configuration Configuration,
+    bool AOT = false,
     RunHost Host = RunHost.DotnetRun,
     bool DetectRuntimeFailures = true,
     
