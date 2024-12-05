@@ -125,8 +125,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
             uint tokenRemainder = (uint)(desc.Flags3AndTokenRemainder & tokenRemainderMask);
             uint tokenRange = ((uint)(chunk.FlagsAndTokenRange & tokenRangeMask)) << tokenRemainderBitCount;
-
-            return (uint)Constants.CorTokenType.mdtMethodDef | tokenRange | tokenRemainder;
+            return DotNetMetadataTokens.CreateMethodDef(tokenRange | tokenRemainder);
         }
 
         public MethodClassification Classification => (MethodClassification)((int)_desc.Flags & (int)MethodDescFlags_1.MethodDescFlags.ClassificationMask);

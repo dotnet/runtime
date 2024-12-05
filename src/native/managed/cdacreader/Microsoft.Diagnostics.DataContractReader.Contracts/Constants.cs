@@ -47,9 +47,4 @@ internal static class Constants
         internal const string HashMapSlotsPerBucket = nameof(HashMapSlotsPerBucket);
         internal const string HashMapValueMask = nameof(HashMapValueMask);
     }
-
-    internal enum CorTokenType : uint
-    {
-        mdtMethodDef = 0x06000000
-    }
 }

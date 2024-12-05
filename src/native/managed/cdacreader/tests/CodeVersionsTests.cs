@@ -33,7 +33,7 @@ public class CodeVersionsTests
         public bool IsVersionable { get; private set; }
 
         public uint RowId { get; set; }
-        public uint MethodToken => (uint)Constants.CorTokenType.mdtMethodDef | RowId;
+        public uint MethodToken => DotNetMetadataTokens.CreateMethodDef(RowId);
 
         // n.b. in the real RuntimeTypeSystem_1 this is more complex
         public TargetCodePointer NativeCode { get; private set; }
@@ -342,7 +342,7 @@ public class CodeVersionsTests
     {
         uint methodRowId = 0x25; // arbitrary
         TargetCodePointer expectedNativeCodePointer = new TargetCodePointer(0x0700_abc0);
-        uint methodDefToken = (uint)Constants.CorTokenType.mdtMethodDef | methodRowId;
+        uint methodDefToken = DotNetMetadataTokens.CreateMethodDef(methodRowId);
         var builder = new MockCodeVersions(arch);
         var methodDescAddress = new TargetPointer(0x00aa_aa00);
         var methodDescNilTokenAddress = new TargetPointer(0x00aa_bb00);
