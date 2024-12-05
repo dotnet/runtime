@@ -265,6 +265,7 @@ internal unsafe partial class MachObjectFile
             throw new ArgumentException("File is too small", nameof(file));
         file.Write(0, ref _header);
         file.Write(_linkEditSegment64.FileOffset, ref _linkEditSegment64.Command);
+        file.Write(_symtabCommand.FileOffset, ref _symtabCommand.Command);
         if (!_codeSignatureLoadCommand.Command.IsDefault)
         {
             file.Write(_codeSignatureLoadCommand.FileOffset, ref _codeSignatureLoadCommand.Command);

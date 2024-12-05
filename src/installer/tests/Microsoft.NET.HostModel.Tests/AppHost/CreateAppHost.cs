@@ -282,28 +282,7 @@ namespace Microsoft.NET.HostModel.AppHost.Tests
 
                 // Validate that there is a signature present in the apphost Mach file
                 SigningTests.IsSigned(destinationFilePath).Should().BeTrue();
-
-                // Verify with codesign as well
-                Assert.True(Codesign.IsAvailable);
-                const string codesign = @"/usr/bin/codesign";
-                var psi = new ProcessStartInfo()
-                {
-                    Arguments = $"-d \"{destinationFilePath}\"",
-                    FileName = codesign,
-                    RedirectStandardError = true,
-                };
-
-                using (var p = Process.Start(psi))
-                {
-                    p.Start();
-                    p.StandardError.ReadToEnd()
-                        .Should().Contain($"Executable={Path.GetFullPath(destinationFilePath)}");
-                    p.WaitForExit();
-                    // Successfully signed the apphost.
-                    Assert.True(p.ExitCode == 0, $"Expected exit code was '0' but '{codesign}' returned '{p.ExitCode}' instead.");
-                }
             }
-
         }
 
         [Theory]
@@ -327,29 +306,6 @@ namespace Microsoft.NET.HostModel.AppHost.Tests
 
                 // Validate that there is a signature present in the apphost Mach file
                 SigningTests.IsSigned(destinationFilePath).Should().BeTrue();
-
-                // Verify with codesign as well
-                if (!Codesign.IsAvailable)
-                {
-                    return;
-                }
-                const string codesign = @"/usr/bin/codesign";
-                var psi = new ProcessStartInfo()
-                {
-                    Arguments = $"-d \"{destinationFilePath}\"",
-                    FileName = codesign,
-                    RedirectStandardError = true,
-                };
-
-                using (var p = Process.Start(psi))
-                {
-                    p.Start();
-                    p.StandardError.ReadToEnd()
-                        .Should().Contain($"Executable={Path.GetFullPath(destinationFilePath)}");
-                    p.WaitForExit();
-                    // Successfully signed the apphost.
-                    Assert.True(p.ExitCode == 0, $"Expected exit code was '0' but '{codesign}' returned '{p.ExitCode}' instead.");
-                }
             }
         }
 

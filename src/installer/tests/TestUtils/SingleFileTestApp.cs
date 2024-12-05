@@ -145,13 +145,14 @@ namespace Microsoft.DotNet.CoreSetup.Test
 
         public void CreateAppHost(bool isWindowsGui = false, bool copyResources = true, bool disableCetCompat = false)
         {
+            bool macosCodesign = RuntimeInformation.IsOSPlatform(OSPlatform.OSX);
             if (selfContained)
             {
-                builtApp.CreateSingleFileHost(isWindowsGui, copyResources, disableCetCompat);
+                builtApp.CreateSingleFileHost(isWindowsGui, copyResources, disableCetCompat, macosCodesign: macosCodesign);
             }
             else
             {
-                builtApp.CreateAppHost(isWindowsGui, copyResources, disableCetCompat);
+                builtApp.CreateAppHost(isWindowsGui, copyResources, disableCetCompat, macosCodesign: macosCodesign);
             }
         }
 
