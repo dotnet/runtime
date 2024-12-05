@@ -9,6 +9,8 @@
 
 #include "unwinder.h"
 
+#define NOTHING
+
 typedef struct _LOONGARCH64_KTRAP_FRAME {
 
 //
@@ -975,13 +977,11 @@ ExecuteCodes:
 
         //
         // end_c (11100101): end of unwind code in current chained scope
+        //          Continue unwinding parent scope.
         //
 
         else if (CurCode == 0xe5) {
-            if (AccumulatedSaveNexts != 0) {
-                return STATUS_UNWIND_INVALID_SEQUENCE;
-            }
-            goto finished;
+            NOTHING;
         }
 
         //

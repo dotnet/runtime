@@ -96,8 +96,6 @@ static const Entry s_QCall[] =
     DllImportEntry(Delegate_GetMulticastInvokeSlow)
     DllImportEntry(Delegate_AdjustTarget)
     DllImportEntry(Delegate_Construct)
-    DllImportEntry(Delegate_InternalAlloc)
-    DllImportEntry(Delegate_InternalAllocLike)
     DllImportEntry(Delegate_FindMethodHandle)
     DllImportEntry(Delegate_InternalEqualMethodHandles)
     DllImportEntry(Environment_Exit)
@@ -127,6 +125,8 @@ static const Entry s_QCall[] =
     DllImportEntry(RuntimeTypeHandle_GetNumVirtualsAndStaticVirtuals)
     DllImportEntry(RuntimeTypeHandle_VerifyInterfaceIsImplemented)
     DllImportEntry(RuntimeTypeHandle_GetInterfaceMethodImplementation)
+    DllImportEntry(RuntimeTypeHandle_GetDeclaringTypeHandleForGenericVariable)
+    DllImportEntry(RuntimeTypeHandle_GetDeclaringTypeHandle)
     DllImportEntry(RuntimeTypeHandle_IsVisible)
     DllImportEntry(RuntimeTypeHandle_ConstructName)
     DllImportEntry(RuntimeTypeHandle_GetInstantiation)
@@ -136,11 +136,14 @@ static const Entry s_QCall[] =
 #ifdef FEATURE_COMINTEROP
     DllImportEntry(RuntimeTypeHandle_AllocateComObject)
 #endif // FEATURE_COMINTEROP
-    DllImportEntry(RuntimeTypeHandle_GetTypeFromHandleSlow)
+    DllImportEntry(RuntimeTypeHandle_GetRuntimeTypeFromHandleSlow)
     DllImportEntry(RuntimeTypeHandle_CreateInstanceForAnotherGenericParameter)
+    DllImportEntry(RuntimeTypeHandle_InternalAlloc)
+    DllImportEntry(RuntimeTypeHandle_InternalAllocNoChecks)
     DllImportEntry(RuntimeTypeHandle_AllocateTypeAssociatedMemory)
     DllImportEntry(RuntimeTypeHandle_RegisterCollectibleTypeDependency)
     DllImportEntry(MethodBase_GetCurrentMethod)
+    DllImportEntry(RuntimeMethodHandle_InvokeMethod)
     DllImportEntry(RuntimeMethodHandle_ConstructInstantiation)
     DllImportEntry(RuntimeMethodHandle_GetFunctionPointer)
     DllImportEntry(RuntimeMethodHandle_GetIsCollectible)
@@ -505,6 +508,7 @@ static const Entry s_QCall[] =
     DllImportEntry(GetThreadStaticsByMethodTable)
     DllImportEntry(GetThreadStaticsByIndex)
     DllImportEntry(GenericHandleWorker)
+    DllImportEntry(ThrowInvalidCastException)
 };
 
 const void* QCallResolveDllImport(const char* name)

@@ -7,11 +7,11 @@ using System.Collections.Generic;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Moq;
 
-namespace Microsoft.Diagnostics.DataContractReader.UnitTests.ExecutionManager;
+namespace Microsoft.Diagnostics.DataContractReader.Tests.ExecutionManager;
 
 public class ExecutionManagerTests
 {
-    private static Target CreateTarget(ExecutionManagerTestBuilder emBuilder)
+    private static Target CreateTarget(MockDescriptors.ExecutionManager emBuilder)
     {
         var arch = emBuilder.Builder.TargetTestHelpers.Arch;
         TestPlaceholderTarget.ReadFromTargetDelegate reader = emBuilder.Builder.GetReadContext().ReadFromTarget;
@@ -28,7 +28,7 @@ public class ExecutionManagerTests
     [MemberData(nameof(StdArchAllVersions))]
     public void GetCodeBlockHandle_Null(int version, MockTarget.Architecture arch)
     {
-        ExecutionManagerTestBuilder emBuilder = new (version, arch, ExecutionManagerTestBuilder.DefaultAllocationRange);
+        MockDescriptors.ExecutionManager emBuilder = new (version, arch, MockDescriptors.ExecutionManager.DefaultAllocationRange);
         var target = CreateTarget(emBuilder);
 
         var em = target.Contracts.ExecutionManager;
@@ -41,7 +41,7 @@ public class ExecutionManagerTests
     [MemberData(nameof(StdArchAllVersions))]
     public void GetCodeBlockHandle_NoRangeSections(int version, MockTarget.Architecture arch)
     {
-        ExecutionManagerTestBuilder emBuilder = new (version, arch, ExecutionManagerTestBuilder.DefaultAllocationRange);
+        MockDescriptors.ExecutionManager emBuilder = new (version, arch, MockDescriptors.ExecutionManager.DefaultAllocationRange);
         var target = CreateTarget(emBuilder);
 
         var em = target.Contracts.ExecutionManager;
@@ -62,7 +62,7 @@ public class ExecutionManagerTests
 
         TargetPointer expectedMethodDescAddress = new TargetPointer(0x0101_aaa0);
 
-        ExecutionManagerTestBuilder emBuilder = new(version, arch, ExecutionManagerTestBuilder.DefaultAllocationRange);
+        MockDescriptors.ExecutionManager emBuilder = new(version, arch, MockDescriptors.ExecutionManager.DefaultAllocationRange);
         var jittedCode = emBuilder.AllocateJittedCodeRange(codeRangeStart, codeRangeSize);
 
         TargetCodePointer methodStart = emBuilder.AddJittedMethod(jittedCode, methodSize, expectedMethodDescAddress);
@@ -107,7 +107,7 @@ public class ExecutionManagerTests
 
         TargetPointer jitManagerAddress = new (0x000b_ff00); // arbitrary
 
-        ExecutionManagerTestBuilder emBuilder = new(version, arch, ExecutionManagerTestBuilder.DefaultAllocationRange);
+        MockDescriptors.ExecutionManager emBuilder = new(version, arch, MockDescriptors.ExecutionManager.DefaultAllocationRange);
         var jittedCode = emBuilder.AllocateJittedCodeRange(codeRangeStart, codeRangeSize);
 
         NibbleMapTestBuilderBase nibBuilder = emBuilder.CreateNibbleMap(codeRangeStart, codeRangeSize);
@@ -142,12 +142,12 @@ public class ExecutionManagerTests
         const uint codeRangeSize = 0xc000u; // arbitrary
         TargetPointer jitManagerAddress = new(0x000b_ff00); // arbitrary
 
-        ExecutionManagerTestBuilder emBuilder = new(version, arch, ExecutionManagerTestBuilder.DefaultAllocationRange);
+        MockDescriptors.ExecutionManager emBuilder = new(version, arch, MockDescriptors.ExecutionManager.DefaultAllocationRange);
         var jittedCode = emBuilder.AllocateJittedCodeRange(codeRangeStart, codeRangeSize);
 
         uint runtimeFunction = 0x100;
 
-        TargetPointer r2rInfo = emBuilder.AddReadyToRunInfo([runtimeFunction]);
+        TargetPointer r2rInfo = emBuilder.AddReadyToRunInfo([runtimeFunction], []);
         MockDescriptors.HashMap hashMapBuilder = new(emBuilder.Builder);
         hashMapBuilder.PopulatePtrMap(
             r2rInfo + (uint)emBuilder.Types[DataType.ReadyToRunInfo].Fields[nameof(Data.ReadyToRunInfo.EntryPointToMethodDescMap)].Offset,
@@ -177,12 +177,12 @@ public class ExecutionManagerTests
 
         TargetPointer expectedMethodDescAddress = new TargetPointer(0x0101_aaa0);
 
-        ExecutionManagerTestBuilder emBuilder = new(version, arch, ExecutionManagerTestBuilder.DefaultAllocationRange);
+        MockDescriptors.ExecutionManager emBuilder = new(version, arch, MockDescriptors.ExecutionManager.DefaultAllocationRange);
         var jittedCode = emBuilder.AllocateJittedCodeRange(codeRangeStart, codeRangeSize);
 
         uint expectedRuntimeFunction = 0x100;
 
-        TargetPointer r2rInfo = emBuilder.AddReadyToRunInfo([expectedRuntimeFunction]);
+        TargetPointer r2rInfo = emBuilder.AddReadyToRunInfo([expectedRuntimeFunction], []);
         MockDescriptors.HashMap hashMapBuilder = new(emBuilder.Builder);
         hashMapBuilder.PopulatePtrMap(
             r2rInfo + (uint)emBuilder.Types[DataType.ReadyToRunInfo].Fields[nameof(Data.ReadyToRunInfo.EntryPointToMethodDescMap)].Offset,
@@ -223,12 +223,12 @@ public class ExecutionManagerTests
 
         TargetPointer[] methodDescAddresses = [ 0x0101_aaa0, 0x0201_aaa0];
 
-        ExecutionManagerTestBuilder emBuilder = new(version, arch, ExecutionManagerTestBuilder.DefaultAllocationRange);
+        MockDescriptors.ExecutionManager emBuilder = new(version, arch, MockDescriptors.ExecutionManager.DefaultAllocationRange);
         var jittedCode = emBuilder.AllocateJittedCodeRange(codeRangeStart, codeRangeSize);
 
         uint[] runtimeFunctions = [ 0x100, 0xc00 ];
 
-        TargetPointer r2rInfo = emBuilder.AddReadyToRunInfo(runtimeFunctions);
+        TargetPointer r2rInfo = emBuilder.AddReadyToRunInfo(runtimeFunctions, []);
         MockDescriptors.HashMap hashMapBuilder = new(emBuilder.Builder);
         hashMapBuilder.PopulatePtrMap(
             r2rInfo + (uint)emBuilder.Types[DataType.ReadyToRunInfo].Fields[nameof(Data.ReadyToRunInfo.EntryPointToMethodDescMap)].Offset,
@@ -274,6 +274,57 @@ public class ExecutionManagerTests
             Assert.NotNull(handle);
             TargetPointer actualMethodDesc = em.GetMethodDesc(handle.Value);
             Assert.Equal(methodDescAddresses[1], actualMethodDesc);
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(StdArchAllVersions))]
+    public void GetMethodDesc_R2R_HotColdBlock(int version, MockTarget.Architecture arch)
+    {
+        const ulong codeRangeStart = 0x0a0a_0000u; // arbitrary
+        const uint codeRangeSize = 0xc000u; // arbitrary
+        TargetPointer jitManagerAddress = new(0x000b_ff00); // arbitrary
+
+        TargetPointer[] methodDescAddresses = [0x0101_aaa0, 0x0201_aaa0];
+
+        MockDescriptors.ExecutionManager emBuilder = new(version, arch, MockDescriptors.ExecutionManager.DefaultAllocationRange);
+        var jittedCode = emBuilder.AllocateJittedCodeRange(codeRangeStart, codeRangeSize);
+
+        uint[] runtimeFunctions = [0x100, 0x200, 0x300, 0x400, 0x500];
+        uint[] hotColdMap = [3, 0, 4, 1];
+
+        TargetPointer r2rInfo = emBuilder.AddReadyToRunInfo(runtimeFunctions, hotColdMap);
+        MockDescriptors.HashMap hashMapBuilder = new(emBuilder.Builder);
+        hashMapBuilder.PopulatePtrMap(
+            r2rInfo + (uint)emBuilder.Types[DataType.ReadyToRunInfo].Fields[nameof(Data.ReadyToRunInfo.EntryPointToMethodDescMap)].Offset,
+            [
+                (jittedCode.RangeStart + runtimeFunctions[hotColdMap[1]], methodDescAddresses[0]),
+                (jittedCode.RangeStart + runtimeFunctions[hotColdMap[3]], methodDescAddresses[1]),
+            ]);
+
+        TargetPointer r2rModule = emBuilder.AddReadyToRunModule(r2rInfo);
+        TargetPointer rangeSectionAddress = emBuilder.AddReadyToRunRangeSection(jittedCode, jitManagerAddress, r2rModule);
+        _ = emBuilder.AddRangeSectionFragment(jittedCode, rangeSectionAddress);
+
+        Target target = CreateTarget(emBuilder);
+
+        IExecutionManager em = target.Contracts.ExecutionManager;
+        Assert.NotNull(em);
+
+        // Hot and cold parts should map to the same method desc
+        for (int i = 0; i < hotColdMap.Length; i++)
+        {
+            // Function start
+            var handle = em.GetCodeBlockHandle(codeRangeStart + runtimeFunctions[hotColdMap[i]]);
+            Assert.NotNull(handle);
+            TargetPointer actualMethodDesc = em.GetMethodDesc(handle.Value);
+            Assert.Equal(methodDescAddresses[i / 2], actualMethodDesc);
+
+            // Past function start
+            handle = em.GetCodeBlockHandle(codeRangeStart + runtimeFunctions[hotColdMap[i]] + 8);
+            Assert.NotNull(handle);
+            actualMethodDesc = em.GetMethodDesc(handle.Value);
+            Assert.Equal(methodDescAddresses[i / 2], actualMethodDesc);
         }
     }
 

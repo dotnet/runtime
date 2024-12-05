@@ -5,7 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Microsoft.Diagnostics.DataContractReader.UnitTests;
+namespace Microsoft.Diagnostics.DataContractReader.Tests;
 
 internal partial class MockDescriptors
 {
@@ -44,7 +44,7 @@ internal partial class MockDescriptors
         internal readonly Loader LoaderBuilder;
 
         internal Dictionary<DataType, Target.TypeInfo> Types { get; }
-        internal (string Name, ulong Value, string? Type)[] Globals { get; }
+        internal (string Name, ulong Value)[] Globals { get; }
 
         internal MockMemorySpace.BumpAllocator MethodDescChunkAllocator { get; set; }
 
@@ -59,7 +59,7 @@ internal partial class MockDescriptors
             Types = GetTypes();
             Globals = rtsBuilder.Globals.Concat(
             [
-                new(nameof(Constants.Globals.MethodDescTokenRemainderBitCount), TokenRemainderBitCount, "uint8"),
+                new(nameof(Constants.Globals.MethodDescTokenRemainderBitCount), TokenRemainderBitCount),
             ]).ToArray();
         }
 

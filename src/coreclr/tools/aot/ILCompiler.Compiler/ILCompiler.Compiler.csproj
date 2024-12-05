@@ -37,6 +37,7 @@
     <Compile Include="..\..\Common\Compiler\Win32Resources\ResourceData.ResourcesDataModel.cs" Link="Compiler\Win32Resources\ResourceData.ResourcesDataModel.cs" />
     <Compile Include="..\..\Common\Compiler\Win32Resources\ResourceData.UpdateResourceDataModel.cs" Link="Compiler\Win32Resources\ResourceData.UpdateResourceDataModel.cs" />
     <Compile Include="..\..\Common\Compiler\Win32Resources\ResourceData.Win32Structs.cs" Link="Compiler\Win32Resources\ResourceData.Win32Structs.cs" />
+    <Compile Include="..\..\Common\Microsoft\SourceLink\Tools\SourceLinkMap.cs" Link="Common\SourceLinkMap.cs" />
     <Compile Include="..\..\Common\TypeSystem\IL\DelegateInfo.cs">
       <Link>IL\DelegateInfo.cs</Link>
     </Compile>
@@ -457,6 +458,7 @@
     <Compile Include="Compiler\ObjectDataInterner.cs" />
     <Compile Include="Compiler\ReachabilityInstrumentationFilter.cs" />
     <Compile Include="Compiler\ReachabilityInstrumentationProvider.cs" />
+    <Compile Include="Compiler\SourceLinkWriter.cs" />
     <Compile Include="Compiler\SubstitutedILProvider.cs" />
     <Compile Include="Compiler\SubstitutionProvider.cs" />
     <Compile Include="Compiler\GenericRootProvider.cs" />

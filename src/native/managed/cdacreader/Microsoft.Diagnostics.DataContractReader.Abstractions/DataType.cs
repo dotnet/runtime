@@ -72,4 +72,5 @@ public enum DataType
     RuntimeFunction,
     HashMap,
     Bucket,
+    UnwindInfo,
 }

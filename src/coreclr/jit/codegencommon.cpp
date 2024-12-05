@@ -4963,7 +4963,7 @@ void CodeGen::genFinalizeFrame()
 
     // We currently only expect to push/pop consecutive FP registers
     // and these have to be double-sized registers as well.
-    // Here we will insure that maskPushRegsFloat obeys these requirements.
+    // Here we will ensure that maskPushRegsFloat obeys these requirements.
     //
     if (maskPushRegsFloat != RBM_NONE)
     {

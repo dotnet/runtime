@@ -203,5 +203,27 @@ namespace ILLink.RoslynAnalyzer
 
 		public static bool IsStaticConstructor ([NotNullWhen (returnValue: true)] this ISymbol? symbol)
 			=> (symbol as IMethodSymbol)?.MethodKind == MethodKind.StaticConstructor;
+
+		public static bool IsEntryPoint (this IMethodSymbol methodSymbol, Compilation compilation)
+			=> methodSymbol.Name is WellKnownMemberNames.EntryPointMethodName or WellKnownMemberNames.TopLevelStatementsEntryPointMethodName &&
+			   methodSymbol.IsStatic &&
+			   (methodSymbol.ReturnsVoid ||
+				methodSymbol.ReturnType.SpecialType == SpecialType.System_Int32 ||
+				SymbolEqualityComparer.Default.Equals(methodSymbol.ReturnType.OriginalDefinition, compilation.TaskType()) ||
+				SymbolEqualityComparer.Default.Equals(methodSymbol.ReturnType.OriginalDefinition, compilation.TaskOfTType()));
+
+		public static bool IsUnmanagedCallersOnlyEntryPoint (this IMethodSymbol methodSymbol)
+		{
+			foreach (var attr in methodSymbol.GetAttributes ()) {
+				if (attr.AttributeClass is { } attrClass && attrClass.HasName ("System.Runtime.InteropServices.UnmanagedCallersOnlyAttribute")) {
+					foreach (var namedArgument in attr.NamedArguments) {
+						if (namedArgument.Key == "EntryPoint")
+							return true;
+					}
+				}
+			}
+
+			return false;
+		}
 	}
 }

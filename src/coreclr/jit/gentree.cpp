@@ -26786,7 +26786,55 @@ bool GenTree::OperIsHWIntrinsic(NamedIntrinsic intrinsicId) const
 {
     if (OperIsHWIntrinsic())
     {
-        return AsHWIntrinsic()->GetHWIntrinsicId() == intrinsicId;
+        return AsHWIntrinsic()->OperIsHWIntrinsic(intrinsicId);
+    }
+    return false;
+}
+
+//------------------------------------------------------------------------
+// OperIsConvertMaskToVector: Is this a ConvertMaskToVector hwintrinsic
+//
+// Return Value:
+//    true if the node is a ConvertMaskToVector hwintrinsic
+//    otherwise; false
+//
+bool GenTree::OperIsConvertMaskToVector() const
+{
+    if (OperIsHWIntrinsic())
+    {
+        return AsHWIntrinsic()->OperIsConvertMaskToVector();
+    }
+    return false;
+}
+
+//------------------------------------------------------------------------
+// OperIsConvertVectorToMask: Is this a ConvertVectorToMask hwintrinsic
+//
+// Return Value:
+//    true if the node is a ConvertVectorToMask hwintrinsic
+//    otherwise; false
+//
+bool GenTree::OperIsConvertVectorToMask() const
+{
+    if (OperIsHWIntrinsic())
+    {
+        return AsHWIntrinsic()->OperIsConvertVectorToMask();
+    }
+    return false;
+}
+
+//------------------------------------------------------------------------
+// OperIsVectorConditionalSelect: Is this a vector ConditionalSelect hwintrinsic
+//
+// Return Value:
+//    true if the node is a vector ConditionalSelect hwintrinsic
+//    otherwise; false
+//
+bool GenTree::OperIsVectorConditionalSelect() const
+{
+    if (OperIsHWIntrinsic())
+    {
+        return AsHWIntrinsic()->OperIsVectorConditionalSelect();
     }
     return false;
 }
@@ -30101,7 +30149,7 @@ regNumber ReturnTypeDesc::GetABIReturnReg(unsigned idx, CorInfoCallConvExtension
     var_types regType = GetReturnRegType(idx);
     if (idx == 0)
     {
-        resultReg = varTypeIsIntegralOrI(regType) ? REG_INTRET : REG_FLOATRET; // A0 or F0
+        resultReg = varTypeIsIntegralOrI(regType) ? REG_INTRET : REG_FLOATRET; // A0 or FA0
     }
     else
     {
@@ -30115,7 +30163,7 @@ regNumber ReturnTypeDesc::GetABIReturnReg(unsigned idx, CorInfoCallConvExtension
         else
         {
             assert(varTypeUsesFloatReg(regType));
-            resultReg = varTypeIsIntegralOrI(GetReturnRegType(0)) ? REG_FLOATRET : REG_FLOATRET_1; // F0 or F1
+            resultReg = varTypeIsIntegralOrI(GetReturnRegType(0)) ? REG_FLOATRET : REG_FLOATRET_1; // FA0 or FA1
         }
     }
 
@@ -30570,8 +30618,17 @@ bool GenTree::IsNeverNegative(Compiler* comp) const
         }
     }
 
-    // TODO-Casts: extend IntegralRange to handle constants
-    return IntegralRange::ForNode(const_cast<GenTree*>(this), comp).IsNonNegative();
+    if (IntegralRange::ForNode(const_cast<GenTree*>(this), comp).IsNonNegative())
+    {
+        return true;
+    }
+
+    if ((comp->vnStore != nullptr) && comp->vnStore->IsVNNeverNegative(gtVNPair.GetConservative()))
+    {
+        return true;
+    }
+
+    return false;
 }
 
 //------------------------------------------------------------------------
@@ -30669,8 +30726,6 @@ bool GenTree::CanDivOrModPossiblyOverflow(Compiler* comp) const
 #if defined(FEATURE_HW_INTRINSICS)
 GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
 {
-    assert(tree->OperIsHWIntrinsic());
-
     if (!opts.Tier0OptimizationEnabled())
     {
         return tree;
