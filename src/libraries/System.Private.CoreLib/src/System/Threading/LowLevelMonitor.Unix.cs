@@ -29,17 +29,17 @@ namespace System.Threading
             _nativeMonitor = IntPtr.Zero;
         }
 
-        private void AcquireCore()
+        private readonly void AcquireCore()
         {
             Interop.Sys.LowLevelMonitor_Acquire(_nativeMonitor);
         }
 
-        private void ReleaseCore()
+        private readonly void ReleaseCore()
         {
             Interop.Sys.LowLevelMonitor_Release(_nativeMonitor);
         }
 
-        private void WaitCore()
+        private readonly void WaitCore()
         {
             Interop.Sys.LowLevelMonitor_Wait(_nativeMonitor);
         }
@@ -57,7 +57,7 @@ namespace System.Threading
             return Interop.Sys.LowLevelMonitor_TimedWait(_nativeMonitor, timeoutMilliseconds);
         }
 
-        private void Signal_ReleaseCore()
+        private readonly void Signal_ReleaseCore()
         {
             Interop.Sys.LowLevelMonitor_Signal_Release(_nativeMonitor);
         }

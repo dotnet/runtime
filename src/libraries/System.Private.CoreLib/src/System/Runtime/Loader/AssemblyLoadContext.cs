@@ -590,7 +590,7 @@ namespace System.Runtime.Loader
                 _initialized = true;
             }
 
-            public void Dispose()
+            public readonly void Dispose()
             {
                 if (_initialized)
                 {

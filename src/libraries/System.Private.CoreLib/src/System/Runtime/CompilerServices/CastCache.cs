@@ -136,7 +136,7 @@ namespace System.Runtime.CompilerServices
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal CastResult TryGet(nuint source, nuint target)
+        internal readonly CastResult TryGet(nuint source, nuint target)
         {
             // table is always initialized and is not null.
             return TryGet(_table!, source, target);
@@ -210,7 +210,7 @@ namespace System.Runtime.CompilerServices
         // The following helpers must match native implementations in castcache.h and castcache.cpp
 
         // we generally do not OOM in casts, just return null unless throwOnFail is specified.
-        private int[]? CreateCastCache(int size, bool throwOnFail = false)
+        private readonly int[]? CreateCastCache(int size, bool throwOnFail = false)
         {
             // size must be positive
             Debug.Assert(size > 1);

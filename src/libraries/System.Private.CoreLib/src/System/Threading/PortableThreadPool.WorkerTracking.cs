@@ -67,7 +67,7 @@ namespace System.Threading
 
             private CountsOfThreadsProcessingUserCallbacks(uint data) => _data = data;
 
-            private short GetInt16Value(byte shift) => (short)(_data >> shift);
+            private readonly short GetInt16Value(byte shift) => (short)(_data >> shift);
             private void SetInt16Value(short value, byte shift) =>
                 _data = (_data & ~((uint)ushort.MaxValue << shift)) | ((uint)(ushort)value << shift);
 
@@ -122,9 +122,9 @@ namespace System.Threading
             public override bool Equals([NotNullWhen(true)] object? obj) =>
                 obj is CountsOfThreadsProcessingUserCallbacks other && Equals(other);
 
-            public bool Equals(CountsOfThreadsProcessingUserCallbacks other) => _data == other._data;
+            public readonly bool Equals(CountsOfThreadsProcessingUserCallbacks other) => _data == other._data;
 
-            public override int GetHashCode() => (int)_data;
+            public override readonly int GetHashCode() => (int)_data;
         }
     }
 }

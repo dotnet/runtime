@@ -1482,7 +1482,7 @@ namespace System.Threading
                 }
             }
 
-            private ushort EnterForEnterAnyReadDeprioritizedCount
+            private readonly ushort EnterForEnterAnyReadDeprioritizedCount
             {
                 get
                 {
@@ -1491,7 +1491,7 @@ namespace System.Threading
                 }
             }
 
-            private ushort EnterForEnterAnyWriteDeprioritizedCount
+            private readonly ushort EnterForEnterAnyWriteDeprioritizedCount
             {
                 get
                 {
@@ -1611,7 +1611,7 @@ namespace System.Threading
             }
 
 #if DEBUG
-            public bool IsHeld => _isLocked;
+            public readonly bool IsHeld => _isLocked;
 #endif
         }
 

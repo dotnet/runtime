@@ -115,7 +115,7 @@ namespace System
             /// <summary>
             /// Implements the IEnumerator pattern.
             /// </summary>
-            public TDelegate Current
+            public readonly TDelegate Current
             {
                 get => _current!;
             }
@@ -141,7 +141,7 @@ namespace System
             /// </summary>
             /// <returns>An IEnumerator instance that can be used to iterate through the invocation targets of the delegate.</returns>
             [EditorBrowsable(EditorBrowsableState.Never)] // Only here to make foreach work
-            public System.Delegate.InvocationListEnumerator<TDelegate> GetEnumerator() => this;
+            public readonly System.Delegate.InvocationListEnumerator<TDelegate> GetEnumerator() => this;
         }
 
         public object? DynamicInvoke(params object?[]? args)

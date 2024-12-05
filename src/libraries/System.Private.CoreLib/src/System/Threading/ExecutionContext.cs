@@ -598,12 +598,12 @@ namespace System.Threading
             return obj is AsyncFlowControl asyncControl && Equals(asyncControl);
         }
 
-        public bool Equals(AsyncFlowControl obj)
+        public readonly bool Equals(AsyncFlowControl obj)
         {
             return _thread == obj._thread;
         }
 
-        public override int GetHashCode()
+        public override readonly int GetHashCode()
         {
             return _thread?.GetHashCode() ?? 0;
         }

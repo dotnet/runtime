@@ -450,7 +450,7 @@ namespace System.Collections.Generic
             /// <summary>Adds the specified element to a set.</summary>
             /// <param name="item">The element to add to the set.</param>
             /// <returns>true if the element is added to the set; false if the element is already present.</returns>
-            public bool Add(TAlternate item)
+            public readonly bool Add(TAlternate item)
             {
                 HashSet<T> set = Set;
                 IAlternateEqualityComparer<TAlternate, T> comparer = GetAlternateComparer(set);
@@ -538,7 +538,7 @@ namespace System.Collections.Generic
             /// <summary>Removes the specified element from a set.</summary>
             /// <param name="item">The element to remove.</param>
             /// <returns>true if the element is successfully found and removed; otherwise, false.</returns>
-            public bool Remove(TAlternate item)
+            public readonly bool Remove(TAlternate item)
             {
                 HashSet<T> set = Set;
                 IAlternateEqualityComparer<TAlternate, T> comparer = GetAlternateComparer(set);
@@ -623,7 +623,7 @@ namespace System.Collections.Generic
             }
 
             /// <summary>Finds the item in the set and returns a reference to the found item, or a null reference if not found.</summary>
-            internal ref readonly T FindValue(TAlternate item)
+            internal readonly ref readonly T FindValue(TAlternate item)
             {
                 HashSet<T> set = Set;
                 IAlternateEqualityComparer<TAlternate, T> comparer = GetAlternateComparer(set);
@@ -1834,11 +1834,11 @@ namespace System.Collections.Generic
                 return false;
             }
 
-            public T Current => _current;
+            public readonly T Current => _current;
 
-            public void Dispose() { }
+            public readonly void Dispose() { }
 
-            object? IEnumerator.Current
+            readonly object? IEnumerator.Current
             {
                 get
                 {

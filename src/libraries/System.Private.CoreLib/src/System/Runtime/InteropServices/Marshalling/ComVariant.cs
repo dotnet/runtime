@@ -81,7 +81,7 @@ namespace System.Runtime.InteropServices.Marshalling
             public int _numElements;
             public T* _data;
 
-            public Span<T> AsSpan() => new(_data, _numElements);
+            public readonly Span<T> AsSpan() => new(_data, _numElements);
         }
 
         [StructLayout(LayoutKind.Sequential)]

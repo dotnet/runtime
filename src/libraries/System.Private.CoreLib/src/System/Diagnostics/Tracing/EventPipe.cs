@@ -98,7 +98,7 @@ namespace System.Diagnostics.Tracing
                 native.m_pFilterData = (char*)Marshal.StringToCoTaskMemUni(managed.FilterData);
             }
 
-            internal void Release()
+            internal readonly void Release()
             {
                 if (m_pProviderName != null)
                 {

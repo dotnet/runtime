@@ -255,7 +255,7 @@ namespace System.Globalization
                 return new TimeSpanToken(TTT.Sep, 0, 0, _value.Slice(startPos, length));
             }
 
-            internal bool EOL => _pos >= (_value.Length - 1);
+            internal readonly bool EOL => _pos >= (_value.Length - 1);
 
             internal void BackOne()
             {
@@ -302,7 +302,7 @@ namespace System.Globalization
                 }
             }
 
-            internal bool FullAppCompatMatch(TimeSpanFormat.FormatLiterals pattern) =>
+            internal readonly bool FullAppCompatMatch(TimeSpanFormat.FormatLiterals pattern) =>
                 _sepCount == 5
                 && _numCount == 4
                 && _literals0.EqualsOrdinal(pattern.Start)
@@ -311,7 +311,7 @@ namespace System.Globalization
                 && _literals3.EqualsOrdinal(pattern.AppCompatLiteral)
                 && _literals4.EqualsOrdinal(pattern.End);
 
-            internal bool PartialAppCompatMatch(TimeSpanFormat.FormatLiterals pattern) =>
+            internal readonly bool PartialAppCompatMatch(TimeSpanFormat.FormatLiterals pattern) =>
                 _sepCount == 4
                 && _numCount == 3
                 && _literals0.EqualsOrdinal(pattern.Start)
@@ -320,7 +320,7 @@ namespace System.Globalization
                 && _literals3.EqualsOrdinal(pattern.End);
 
             /// <summary>DHMSF (all values matched)</summary>
-            internal bool FullMatch(TimeSpanFormat.FormatLiterals pattern) =>
+            internal readonly bool FullMatch(TimeSpanFormat.FormatLiterals pattern) =>
                 _sepCount == MaxLiteralTokens
                 && _numCount == MaxNumericTokens
                 && _literals0.EqualsOrdinal(pattern.Start)
@@ -331,14 +331,14 @@ namespace System.Globalization
                 && _literals5.EqualsOrdinal(pattern.End);
 
             /// <summary>D (no hours, minutes, seconds, or fractions)</summary>
-            internal bool FullDMatch(TimeSpanFormat.FormatLiterals pattern) =>
+            internal readonly bool FullDMatch(TimeSpanFormat.FormatLiterals pattern) =>
                 _sepCount == 2
                 && _numCount == 1
                 && _literals0.EqualsOrdinal(pattern.Start)
                 && _literals1.EqualsOrdinal(pattern.End);
 
             /// <summary>HM (no days, seconds, or fractions)</summary>
-            internal bool FullHMMatch(TimeSpanFormat.FormatLiterals pattern) =>
+            internal readonly bool FullHMMatch(TimeSpanFormat.FormatLiterals pattern) =>
                 _sepCount == 3
                 && _numCount == 2
                 && _literals0.EqualsOrdinal(pattern.Start)
@@ -346,7 +346,7 @@ namespace System.Globalization
                 && _literals2.EqualsOrdinal(pattern.End);
 
             /// <summary>DHM (no seconds or fraction)</summary>
-            internal bool FullDHMMatch(TimeSpanFormat.FormatLiterals pattern) =>
+            internal readonly bool FullDHMMatch(TimeSpanFormat.FormatLiterals pattern) =>
                 _sepCount == 4
                 && _numCount == 3
                 && _literals0.EqualsOrdinal(pattern.Start)
@@ -355,7 +355,7 @@ namespace System.Globalization
                 && _literals3.EqualsOrdinal(pattern.End);
 
             /// <summary>HMS (no days or fraction)</summary>
-            internal bool FullHMSMatch(TimeSpanFormat.FormatLiterals pattern) =>
+            internal readonly bool FullHMSMatch(TimeSpanFormat.FormatLiterals pattern) =>
                 _sepCount == 4
                 && _numCount == 3
                 && _literals0.EqualsOrdinal(pattern.Start)
@@ -364,7 +364,7 @@ namespace System.Globalization
                 && _literals3.EqualsOrdinal(pattern.End);
 
             /// <summary>DHMS (no fraction)</summary>
-            internal bool FullDHMSMatch(TimeSpanFormat.FormatLiterals pattern) =>
+            internal readonly bool FullDHMSMatch(TimeSpanFormat.FormatLiterals pattern) =>
                 _sepCount == 5
                 && _numCount == 4
                 && _literals0.EqualsOrdinal(pattern.Start)
@@ -374,7 +374,7 @@ namespace System.Globalization
                 && _literals4.EqualsOrdinal(pattern.End);
 
             /// <summary>HMSF (no days)</summary>
-            internal bool FullHMSFMatch(TimeSpanFormat.FormatLiterals pattern) =>
+            internal readonly bool FullHMSFMatch(TimeSpanFormat.FormatLiterals pattern) =>
                 _sepCount == 5
                 && _numCount == 4
                 && _literals0.EqualsOrdinal(pattern.Start)
@@ -503,7 +503,7 @@ namespace System.Globalization
                 _originalTimeSpanString = originalTimeSpanString;
             }
 
-            internal bool SetNoFormatSpecifierFailure()
+            internal readonly bool SetNoFormatSpecifierFailure()
             {
                 if (!_throwOnFailure)
                 {
@@ -513,7 +513,7 @@ namespace System.Globalization
                 throw new FormatException(SR.Format_NoFormatSpecifier);
             }
 
-            internal bool SetBadQuoteFailure(char failingCharacter)
+            internal readonly bool SetBadQuoteFailure(char failingCharacter)
             {
                 if (!_throwOnFailure)
                 {
@@ -523,7 +523,7 @@ namespace System.Globalization
                 throw new FormatException(SR.Format(SR.Format_BadQuote, failingCharacter));
             }
 
-            internal bool SetInvalidStringFailure()
+            internal readonly bool SetInvalidStringFailure()
             {
                 if (!_throwOnFailure)
                 {
@@ -533,7 +533,7 @@ namespace System.Globalization
                 throw new FormatException(SR.Format_InvalidString);
             }
 
-            internal bool SetArgumentNullFailure(string argumentName)
+            internal readonly bool SetArgumentNullFailure(string argumentName)
             {
                 if (_throwOnFailure)
                 {
@@ -544,7 +544,7 @@ namespace System.Globalization
                 return false;
             }
 
-            internal bool SetOverflowFailure()
+            internal readonly bool SetOverflowFailure()
             {
                 if (!_throwOnFailure)
                 {
@@ -554,7 +554,7 @@ namespace System.Globalization
                 throw new OverflowException(SR.Format(SR.Overflow_TimeSpanElementTooLarge, new string(_originalTimeSpanString)));
             }
 
-            internal bool SetBadTimeSpanFailure()
+            internal readonly bool SetBadTimeSpanFailure()
             {
                 if (!_throwOnFailure)
                 {
@@ -564,7 +564,7 @@ namespace System.Globalization
                 throw new FormatException(SR.Format(SR.Format_BadTimeSpan, new string(_originalTimeSpanString)));
             }
 
-            internal bool SetBadFormatSpecifierFailure(char? formatSpecifierCharacter = null)
+            internal readonly bool SetBadFormatSpecifierFailure(char? formatSpecifierCharacter = null)
             {
                 if (!_throwOnFailure)
                 {
@@ -1487,7 +1487,7 @@ namespace System.Globalization
                     (char)0;
             }
 
-            internal char NextNonDigit()
+            internal readonly char NextNonDigit()
             {
                 int i = _str.Slice(_pos).IndexOfAnyExceptInRange('0', '9');
                 return i < 0 ? (char)0 : _str[_pos + i];

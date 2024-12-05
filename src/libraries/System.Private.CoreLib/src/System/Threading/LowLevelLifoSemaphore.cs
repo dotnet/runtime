@@ -266,13 +266,13 @@ namespace System.Threading
 
             private Counts(ulong data) => _data = data;
 
-            private uint GetUInt32Value(byte shift) => (uint)(_data >> shift);
+            private readonly uint GetUInt32Value(byte shift) => (uint)(_data >> shift);
             private void SetUInt32Value(uint value, byte shift) =>
                 _data = (_data & ~((ulong)uint.MaxValue << shift)) | ((ulong)value << shift);
-            private ushort GetUInt16Value(byte shift) => (ushort)(_data >> shift);
+            private readonly ushort GetUInt16Value(byte shift) => (ushort)(_data >> shift);
             private void SetUInt16Value(ushort value, byte shift) =>
                 _data = (_data & ~((ulong)ushort.MaxValue << shift)) | ((ulong)value << shift);
-            private byte GetByteValue(byte shift) => (byte)(_data >> shift);
+            private readonly byte GetByteValue(byte shift) => (byte)(_data >> shift);
             private void SetByteValue(byte value, byte shift) =>
                 _data = (_data & ~((ulong)byte.MaxValue << shift)) | ((ulong)value << shift);
 
@@ -367,8 +367,8 @@ namespace System.Threading
             public static bool operator !=(Counts lhs, Counts rhs) => !lhs.Equals(rhs);
 
             public override bool Equals([NotNullWhen(true)] object? obj) => obj is Counts other && Equals(other);
-            public bool Equals(Counts other) => _data == other._data;
-            public override int GetHashCode() => (int)_data + (int)(_data >> 32);
+            public readonly bool Equals(Counts other) => _data == other._data;
+            public override readonly int GetHashCode() => (int)_data + (int)(_data >> 32);
         }
 
         [StructLayout(LayoutKind.Sequential)]

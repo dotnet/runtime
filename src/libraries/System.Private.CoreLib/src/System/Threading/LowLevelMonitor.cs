@@ -25,7 +25,7 @@ namespace System.Threading
         }
 
 #if DEBUG
-        public bool IsLocked => _ownerThread == Thread.CurrentThread;
+        public readonly bool IsLocked => _ownerThread == Thread.CurrentThread;
 #endif
 
 #pragma warning disable CA1822
@@ -46,7 +46,7 @@ namespace System.Threading
         }
 
         [Conditional("DEBUG")]
-        private void VerifyIsNotLockedByAnyThread()
+        private readonly void VerifyIsNotLockedByAnyThread()
         {
 #if DEBUG
             Debug.Assert(_ownerThread == null);

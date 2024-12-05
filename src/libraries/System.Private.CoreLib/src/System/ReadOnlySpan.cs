@@ -260,7 +260,7 @@ namespace System
             }
 
             /// <summary>Gets the element at the current position of the enumerator.</summary>
-            public ref readonly T Current
+            public readonly ref readonly T Current
             {
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
                 get => ref _span[_index];

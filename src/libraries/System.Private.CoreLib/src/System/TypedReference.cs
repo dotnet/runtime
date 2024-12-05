@@ -75,7 +75,7 @@ namespace System
             throw new NotSupportedException(SR.NotSupported_NYI);
         }
 
-        internal bool IsNull => Unsafe.IsNullRef(ref _value) && _type == IntPtr.Zero;
+        internal readonly bool IsNull => Unsafe.IsNullRef(ref _value) && _type == IntPtr.Zero;
 
         public static Type GetTargetType(TypedReference value)
         {

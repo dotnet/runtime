@@ -127,7 +127,7 @@ namespace System.Runtime.CompilerServices
         }
 
         /// <summary>Gets a span of the written characters thus far.</summary>
-        internal ReadOnlySpan<char> Text => _chars.Slice(0, _pos);
+        internal readonly ReadOnlySpan<char> Text => _chars.Slice(0, _pos);
 
         /// <summary>Writes the specified string to the handler.</summary>
         /// <param name="value">The string to write.</param>

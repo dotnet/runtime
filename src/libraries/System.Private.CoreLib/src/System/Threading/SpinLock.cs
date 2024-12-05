@@ -578,7 +578,7 @@ namespace System.Threading
         }
 
         /// <summary>Gets whether thread ownership tracking is enabled for this instance.</summary>
-        public bool IsThreadOwnerTrackingEnabled => (_owner & LOCK_ID_DISABLE_MASK) == 0;
+        public readonly bool IsThreadOwnerTrackingEnabled => (_owner & LOCK_ID_DISABLE_MASK) == 0;
 
         #region Debugger proxy class
         /// <summary>

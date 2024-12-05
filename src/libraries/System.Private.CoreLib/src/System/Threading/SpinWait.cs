@@ -95,7 +95,7 @@ namespace System.Threading
         /// </summary>
         public int Count
         {
-            get => _count;
+            readonly get => _count;
             internal set
             {
                 Debug.Assert(value >= 0);
@@ -113,7 +113,7 @@ namespace System.Threading
         /// On a single-CPU machine, <see cref="SpinOnce()"/> always yields the processor. On machines with
         /// multiple CPUs, <see cref="SpinOnce()"/> may yield after an unspecified number of calls.
         /// </remarks>
-        public bool NextSpinWillYield => _count >= YieldThreshold || Environment.IsSingleProcessor;
+        public readonly bool NextSpinWillYield => _count >= YieldThreshold || Environment.IsSingleProcessor;
 
         /// <summary>
         /// Performs a single spin.

@@ -25,12 +25,12 @@ namespace System.Text
         /// <summary>
         /// Gets the line at the current position of the enumerator.
         /// </summary>
-        public ReadOnlySpan<char> Current => _current;
+        public readonly ReadOnlySpan<char> Current => _current;
 
         /// <summary>
         /// Returns this instance as an enumerator.
         /// </summary>
-        public SpanLineEnumerator GetEnumerator() => this;
+        public readonly SpanLineEnumerator GetEnumerator() => this;
 
         /// <summary>
         /// Advances the enumerator to the next line of the span.

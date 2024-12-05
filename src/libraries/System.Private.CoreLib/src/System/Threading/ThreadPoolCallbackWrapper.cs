@@ -24,7 +24,7 @@ namespace System.Threading
             };
         }
 
-        public void Exit(bool resetThread = true)
+        public readonly void Exit(bool resetThread = true)
         {
             if (resetThread)
             {

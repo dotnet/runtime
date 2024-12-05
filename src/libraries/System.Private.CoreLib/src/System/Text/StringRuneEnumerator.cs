@@ -20,9 +20,9 @@ namespace System.Text
             _nextIndex = 0;
         }
 
-        public Rune Current => _current;
+        public readonly Rune Current => _current;
 
-        public StringRuneEnumerator GetEnumerator() => this;
+        public readonly StringRuneEnumerator GetEnumerator() => this;
 
         public bool MoveNext()
         {
@@ -49,16 +49,16 @@ namespace System.Text
             return true;
         }
 
-        object? IEnumerator.Current => _current;
+        readonly object? IEnumerator.Current => _current;
 
-        void IDisposable.Dispose()
+        readonly void IDisposable.Dispose()
         {
             // no-op
         }
 
-        IEnumerator IEnumerable.GetEnumerator() => this;
+        readonly IEnumerator IEnumerable.GetEnumerator() => this;
 
-        IEnumerator<Rune> IEnumerable<Rune>.GetEnumerator() => this;
+        readonly IEnumerator<Rune> IEnumerable<Rune>.GetEnumerator() => this;
 
         void IEnumerator.Reset()
         {

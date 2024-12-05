@@ -43,7 +43,7 @@ namespace System.Threading.Tasks.Sources
         /// <remarks>Continuations may run asynchronously if this is false, but they'll never run synchronously if this is true.</remarks>
         public bool RunContinuationsAsynchronously
         {
-            get => _runContinuationsAsynchronously;
+            readonly get => _runContinuationsAsynchronously;
             set => _runContinuationsAsynchronously = value;
         }
 
@@ -77,7 +77,7 @@ namespace System.Threading.Tasks.Sources
         }
 
         /// <summary>Gets the operation version.</summary>
-        public short Version => _version;
+        public readonly short Version => _version;
 
         /// <summary>Gets the status of the operation.</summary>
         /// <param name="token">Opaque value that was provided to the <see cref="ValueTask"/>'s constructor.</param>
@@ -106,7 +106,7 @@ namespace System.Threading.Tasks.Sources
 
         /// <summary>Throws an exception in response to a failed <see cref="GetResult"/>.</summary>
         [StackTraceHidden]
-        private void ThrowForFailedGetResult()
+        private readonly void ThrowForFailedGetResult()
         {
             _error?.Throw();
             throw new InvalidOperationException(); // not using ThrowHelper.ThrowInvalidOperationException so that the JIT sees ThrowForFailedGetResult as always throwing
@@ -198,7 +198,7 @@ namespace System.Threading.Tasks.Sources
 
         /// <summary>Ensures that the specified token matches the current version.</summary>
         /// <param name="token">The token supplied by <see cref="ValueTask"/>.</param>
-        private void ValidateToken(short token)
+        private readonly void ValidateToken(short token)
         {
             if (token != _version)
             {

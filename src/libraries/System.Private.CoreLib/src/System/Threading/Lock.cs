@@ -721,8 +721,8 @@ namespace System.Threading
             public static uint InitialStateValue => 0;
             public static uint LockedStateValue => IsLockedMask;
             private static uint Neg(uint state) => (uint)-(int)state;
-            public bool IsInitialState => this == default;
-            public bool IsLocked => (_state & IsLockedMask) != 0;
+            public readonly bool IsInitialState => this == default;
+            public readonly bool IsLocked => (_state & IsLockedMask) != 0;
 
             private void SetIsLocked()
             {
@@ -730,7 +730,7 @@ namespace System.Threading
                 _state += IsLockedMask;
             }
 
-            private bool ShouldNotPreemptWaiters => (_state & ShouldNotPreemptWaitersMask) != 0;
+            private readonly bool ShouldNotPreemptWaiters => (_state & ShouldNotPreemptWaitersMask) != 0;
 
             private void SetShouldNotPreemptWaiters()
             {
@@ -755,7 +755,7 @@ namespace System.Threading
                 }
             }
 
-            private bool HasAnySpinners => (_state & SpinnerCountMask) != 0;
+            private readonly bool HasAnySpinners => (_state & SpinnerCountMask) != 0;
 
             private bool TryIncrementSpinnerCount()
             {
@@ -774,7 +774,7 @@ namespace System.Threading
                 _state -= SpinnerCountIncrement;
             }
 
-            private bool IsWaiterSignaledToWake => (_state & IsWaiterSignaledToWakeMask) != 0;
+            private readonly bool IsWaiterSignaledToWake => (_state & IsWaiterSignaledToWakeMask) != 0;
 
             private void SetIsWaiterSignaledToWake()
             {
@@ -794,7 +794,7 @@ namespace System.Threading
             // - Not interruptible by Thread.Interrupt
             // - Don't allow reentrance through APCs or message pumping
             // - Not forwarded to SynchronizationContext wait overrides
-            public bool UseTrivialWaits => (_state & UseTrivialWaitsMask) != 0;
+            public readonly bool UseTrivialWaits => (_state & UseTrivialWaitsMask) != 0;
 
             public static void InitializeUseTrivialWaits(Lock lockObj, bool useTrivialWaits)
             {
@@ -806,7 +806,7 @@ namespace System.Threading
                 }
             }
 
-            public bool HasAnyWaiters => _state >= WaiterCountIncrement;
+            public readonly bool HasAnyWaiters => _state >= WaiterCountIncrement;
 
             private bool TryIncrementWaiterCount()
             {
@@ -837,9 +837,9 @@ namespace System.Threading
             public static bool operator ==(State state1, State state2) => state1._state == state2._state;
             public static bool operator !=(State state1, State state2) => !(state1 == state2);
 
-            bool IEquatable<State>.Equals(State other) => this == other;
-            public override bool Equals(object? obj) => obj is State other && this == other;
-            public override int GetHashCode() => (int)_state;
+            readonly bool IEquatable<State>.Equals(State other) => this == other;
+            public override readonly bool Equals(object? obj) => obj is State other && this == other;
+            public override readonly int GetHashCode() => (int)_state;
 
             private static State CompareExchange(Lock lockObj, State toState, State fromState) =>
                 new State(Interlocked.CompareExchange(ref lockObj._state, toState._state, fromState._state));

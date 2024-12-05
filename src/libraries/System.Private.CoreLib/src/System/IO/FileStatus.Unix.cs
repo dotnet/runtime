@@ -28,11 +28,11 @@ namespace System.IO
         // Must only be used after calling EnsureCachesInitialized and checking EntryExists is true.
         private Interop.Sys.FileStatus _fileCache;
 
-        private bool EntryExists => _state <= InitializedExistsFile;
+        private readonly bool EntryExists => _state <= InitializedExistsFile;
 
-        private bool IsDir => _state == InitializedExistsDir;
+        private readonly bool IsDir => _state == InitializedExistsDir;
 
-        private bool IsBrokenLink => _state == InitializedExistsBrokenLink;
+        private readonly bool IsBrokenLink => _state == InitializedExistsBrokenLink;
 
         // Check if the main path (without following symlinks) has the hidden attribute set.
         private bool HasHiddenFlag
@@ -86,7 +86,7 @@ namespace System.IO
         // Must only be used after calling EnsureCachesInitialized.
         private int _isReadOnlyCache;
 
-        private bool IsModeReadOnlyCore()
+        private readonly bool IsModeReadOnlyCore()
         {
             var mode = ((UnixFileMode)_fileCache.Mode & FileSystem.ValidUnixFileModes);
 
@@ -585,7 +585,7 @@ namespace System.IO
             return (time.UtcDateTime.Ticks - DateTimeOffset.UnixEpoch.Ticks - seconds * TimeSpan.TicksPerSecond) * NanosecondsPerTick;
         }
 
-        private void ThrowNotFound(string? path)
+        private readonly void ThrowNotFound(string? path)
         {
             Interop.Error error = _state == InitializedNotExistsNotADir ? Interop.Error.ENOTDIR : Interop.Error.ENOENT;
             throw Interop.GetExceptionForIoErrno(new Interop.ErrorInfo(error), path);

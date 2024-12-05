@@ -535,7 +535,7 @@ namespace System.Text
             /// Implement IEnumerable.GetEnumerator() to return  'this' as the IEnumerator
             /// </summary>
             [EditorBrowsable(EditorBrowsableState.Never)] // Only here to make foreach work
-            public ChunkEnumerator GetEnumerator() { return this; }
+            public readonly ChunkEnumerator GetEnumerator() { return this; }
 
             /// <summary>
             /// Implements the IEnumerator pattern.
@@ -566,7 +566,7 @@ namespace System.Text
             /// <summary>
             /// Implements the IEnumerator pattern.
             /// </summary>
-            public ReadOnlyMemory<char> Current
+            public readonly ReadOnlyMemory<char> Current
             {
                 get
                 {
@@ -2849,7 +2849,7 @@ namespace System.Text
 
             /// <summary>Writes the specified string to the handler.</summary>
             /// <param name="value">The string to write.</param>
-            public void AppendLiteral(string value) => _stringBuilder.Append(value);
+            public readonly void AppendLiteral(string value) => _stringBuilder.Append(value);
 
             #region AppendFormatted
             // Design note:
@@ -3042,13 +3042,13 @@ namespace System.Text
             #region AppendFormatted ReadOnlySpan<char>
             /// <summary>Writes the specified character span to the handler.</summary>
             /// <param name="value">The span to write.</param>
-            public void AppendFormatted(ReadOnlySpan<char> value) => _stringBuilder.Append(value);
+            public readonly void AppendFormatted(ReadOnlySpan<char> value) => _stringBuilder.Append(value);
 
             /// <summary>Writes the specified string of chars to the handler.</summary>
             /// <param name="value">The span to write.</param>
             /// <param name="alignment">Minimum number of characters that should be written for this value.  If the value is negative, it indicates left-aligned and the required minimum is the absolute value.</param>
             /// <param name="format">The format string.</param>
-            public void AppendFormatted(ReadOnlySpan<char> value, int alignment = 0, string? format = null)
+            public readonly void AppendFormatted(ReadOnlySpan<char> value, int alignment = 0, string? format = null)
             {
                 if (alignment == 0)
                 {
@@ -3126,7 +3126,7 @@ namespace System.Text
             /// <param name="format">The format string.</param>
             /// <typeparam name="T">The type of the value to write.</typeparam>
             [MethodImpl(MethodImplOptions.NoInlining)]
-            private void AppendCustomFormatter<T>(T value, string? format)
+            private readonly void AppendCustomFormatter<T>(T value, string? format)
             {
                 // This case is very rare, but we need to handle it prior to the other checks in case
                 // a provider was used that supplied an ICustomFormatter which wanted to intercept the particular value.

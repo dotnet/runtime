@@ -23,7 +23,7 @@ namespace System.Threading
         private IntPtr _nextFree; // if this instance if free, points to the next free instance.
         private int _dataIndex; // Index in _dataArray of this instance's OverlappedData.
 
-        internal OverlappedData Data
+        internal readonly OverlappedData Data
         {
             get { return s_dataArray![_dataIndex]; }
         }

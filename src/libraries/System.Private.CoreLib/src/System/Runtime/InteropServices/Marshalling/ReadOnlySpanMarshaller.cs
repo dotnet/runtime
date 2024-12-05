@@ -127,18 +127,18 @@ namespace System.Runtime.InteropServices.Marshalling
             /// Returns a span that points to the memory where the managed values of the array are stored.
             /// </summary>
             /// <returns>A span over managed values of the array.</returns>
-            public ReadOnlySpan<T> GetManagedValuesSource() => _managedArray;
+            public readonly ReadOnlySpan<T> GetManagedValuesSource() => _managedArray;
 
             /// <summary>
             /// Returns a span that points to the memory where the unmanaged values of the array should be stored.
             /// </summary>
             /// <returns>A span where unmanaged values of the array should be stored.</returns>
-            public Span<TUnmanagedElement> GetUnmanagedValuesDestination() => _span;
+            public readonly Span<TUnmanagedElement> GetUnmanagedValuesDestination() => _span;
 
             /// <summary>
             /// Returns a reference to the marshalled array.
             /// </summary>
-            public ref TUnmanagedElement GetPinnableReference() => ref MemoryMarshal.GetReference(_span);
+            public readonly ref TUnmanagedElement GetPinnableReference() => ref MemoryMarshal.GetReference(_span);
 
             /// <summary>
             /// Returns the unmanaged value representing the array.
@@ -152,7 +152,7 @@ namespace System.Runtime.InteropServices.Marshalling
             /// <summary>
             /// Frees resources.
             /// </summary>
-            public void Free()
+            public readonly void Free()
             {
                 NativeMemory.Free(_allocatedMemory);
             }
@@ -189,7 +189,7 @@ namespace System.Runtime.InteropServices.Marshalling
             /// Returns the managed value representing the native array.
             /// </summary>
             /// <returns>A span over managed values of the array.</returns>
-            public ReadOnlySpan<T> ToManaged()
+            public readonly ReadOnlySpan<T> ToManaged()
             {
                 return new ReadOnlySpan<T>(_managedValues!);
             }
@@ -199,7 +199,7 @@ namespace System.Runtime.InteropServices.Marshalling
             /// </summary>
             /// <param name="numElements">The number of elements in the array.</param>
             /// <returns>A span over unmanaged values of the array.</returns>
-            public ReadOnlySpan<TUnmanagedElement> GetUnmanagedValuesSource(int numElements)
+            public readonly ReadOnlySpan<TUnmanagedElement> GetUnmanagedValuesSource(int numElements)
             {
                 return new ReadOnlySpan<TUnmanagedElement>(_unmanagedArray, numElements);
             }
@@ -218,7 +218,7 @@ namespace System.Runtime.InteropServices.Marshalling
             /// <summary>
             /// Frees resources.
             /// </summary>
-            public void Free()
+            public readonly void Free()
             {
                 Marshal.FreeCoTaskMem((IntPtr)_unmanagedArray);
             }

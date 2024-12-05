@@ -1083,12 +1083,12 @@ namespace System
                 return _blocks[index];
             }
 
-            public int GetLength()
+            public readonly int GetLength()
             {
                 return _length;
             }
 
-            public bool IsZero()
+            public readonly bool IsZero()
             {
                 return _length == 0;
             }

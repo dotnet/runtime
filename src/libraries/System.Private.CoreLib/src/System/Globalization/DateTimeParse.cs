@@ -5370,7 +5370,7 @@ namespace System
         internal int Index;
 
         // The length of Value string.
-        internal int Length => Value.Length;
+        internal readonly int Length => Value.Length;
 
         // The current character to be looked at.
         internal char m_current;
@@ -5397,7 +5397,7 @@ namespace System
             m_checkDigitToken = ((dtfi.FormatFlags & DateTimeFormatFlags.UseDigitPrefixInTokens) != 0);
         }
 
-        internal CompareInfo CompareInfo => m_info;
+        internal readonly CompareInfo CompareInfo => m_info;
 
         //
         // Advance the Index.
@@ -5561,7 +5561,7 @@ namespace System
             Index + target.Length <= Length &&
             m_info.Compare(Value.Slice(Index, target.Length), target, CompareOptions.IgnoreCase) == 0;
 
-        internal bool MatchSpecifiedWords(string target, bool checkWordBoundary, scoped ref int matchLength)
+        internal readonly bool MatchSpecifiedWords(string target, bool checkWordBoundary, scoped ref int matchLength)
         {
             int valueRemaining = Value.Length - Index;
             matchLength = target.Length;
@@ -5964,7 +5964,7 @@ namespace System
         internal DTSubStringType type;
         internal int value;
 
-        internal char this[int relativeIndex] => s[index + relativeIndex];
+        internal readonly char this[int relativeIndex] => s[index + relativeIndex];
     }
 
     //

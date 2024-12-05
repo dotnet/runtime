@@ -34,7 +34,7 @@ namespace System.Threading
             private ulong _id;
 
             public ThreadId(ulong id) => _id = id;
-            public ulong Id => _id;
+            public readonly ulong Id => _id;
 #else
             [ThreadStatic]
             private static uint t_threadId;
@@ -45,7 +45,7 @@ namespace System.Threading
             public uint Id => _id;
 #endif
 
-            public bool IsInitialized => _id != 0;
+            public readonly bool IsInitialized => _id != 0;
             public static ThreadId Current_NoInitialize => new ThreadId(t_threadId);
 
             public void InitializeForCurrentThread()

@@ -32,7 +32,7 @@ namespace System.Buffers
         /// Returns the pointer to memory, where the memory is assumed to be pinned and hence the address won't change.
         /// </summary>
         [CLSCompliant(false)]
-        public void* Pointer => _pointer;
+        public readonly void* Pointer => _pointer;
 
         /// <summary>
         /// Frees the pinned handle and releases IPinnable.

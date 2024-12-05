@@ -60,7 +60,7 @@ namespace System.Buffers
             _slowContainsValuesPtr = valuesPtr;
         }
 
-        public char[] GetValues()
+        public readonly char[] GetValues()
         {
             Debug.Assert(_hashEntries is not null);
 
@@ -71,7 +71,7 @@ namespace System.Buffers
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool FastContains(char value)
+        public readonly bool FastContains(char value)
         {
             Debug.Assert(_hashEntries is not null);
             Debug.Assert((IntPtr)_slowContainsValuesPtr == IntPtr.Zero);
@@ -101,7 +101,7 @@ namespace System.Buffers
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private bool SlowContains(char value)
+        private readonly bool SlowContains(char value)
         {
             Debug.Assert(_hashEntries is null);
             Debug.Assert((IntPtr)_slowContainsValuesPtr != IntPtr.Zero);

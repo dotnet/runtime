@@ -105,12 +105,12 @@ namespace System.Runtime.InteropServices.Marshalling
             /// Converts the current managed string to an unmanaged string.
             /// </summary>
             /// <returns>The converted unmanaged string.</returns>
-            public ushort* ToUnmanaged() => _ptrToFirstChar;
+            public readonly ushort* ToUnmanaged() => _ptrToFirstChar;
 
             /// <summary>
             /// Frees any allocated unmanaged string memory.
             /// </summary>
-            public void Free()
+            public readonly void Free()
             {
                 if (_allocated)
                     BStrStringMarshaller.Free(_ptrToFirstChar);

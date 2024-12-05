@@ -490,7 +490,7 @@ namespace System.Collections.Generic
                 }
             }
 
-            private void ThrowEnumerationNotStartedOrEnded()
+            private readonly void ThrowEnumerationNotStartedOrEnded()
             {
                 Debug.Assert(_index == -1 || _index == -2);
                 throw new InvalidOperationException(_index == -1 ? SR.InvalidOperation_EnumNotStarted : SR.InvalidOperation_EnumEnded);

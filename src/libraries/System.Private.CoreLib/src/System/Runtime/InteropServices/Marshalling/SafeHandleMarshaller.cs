@@ -91,7 +91,7 @@ namespace System.Runtime.InteropServices.Marshalling
             /// Retrieve the unmanaged handle.
             /// </summary>
             /// <returns>The unmanaged handle</returns>
-            public IntPtr ToUnmanaged() => _originalHandleValue;
+            public readonly IntPtr ToUnmanaged() => _originalHandleValue;
 
             /// <summary>
             /// Initialize the marshaller from an unmanaged handle.
@@ -122,7 +122,7 @@ namespace System.Runtime.InteropServices.Marshalling
             /// Retrieve the managed handle from the marshaller.
             /// </summary>
             /// <returns>The managed handle.</returns>
-            public T ToManagedFinally() => _handleToReturn!;
+            public readonly T ToManagedFinally() => _handleToReturn!;
 
             /// <summary>
             /// Free any resources and reference counts owned by the marshaller.
@@ -179,7 +179,7 @@ namespace System.Runtime.InteropServices.Marshalling
             /// Retrieve the managed handle from the marshaller.
             /// </summary>
             /// <returns>The managed handle.</returns>
-            public T ToManaged() => _newHandle;
+            public readonly T ToManaged() => _newHandle;
 
             /// <summary>
             /// Free any resources and reference counts owned by the marshaller.

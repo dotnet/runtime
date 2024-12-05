@@ -439,7 +439,7 @@ namespace System
             }
         }
 
-        public int ToHashCode()
+        public readonly int ToHashCode()
         {
             // Storing the value of _length locally shaves of quite a few bytes
             // in the resulting machine code.
@@ -496,11 +496,11 @@ namespace System
 
         [Obsolete("HashCode is a mutable struct and should not be compared with other HashCodes. Use ToHashCode to retrieve the computed hash code.", error: true)]
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public override int GetHashCode() => throw new NotSupportedException(SR.HashCode_HashCodeNotSupported);
+        public override readonly int GetHashCode() => throw new NotSupportedException(SR.HashCode_HashCodeNotSupported);
 
         [Obsolete("HashCode is a mutable struct and should not be compared with other HashCodes.", error: true)]
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public override bool Equals(object? obj) => throw new NotSupportedException(SR.HashCode_EqualityNotSupported);
+        public override readonly bool Equals(object? obj) => throw new NotSupportedException(SR.HashCode_EqualityNotSupported);
 #pragma warning restore 0809
     }
 }

@@ -373,7 +373,7 @@ namespace System.Diagnostics.Tracing
             return true;
         }
 
-        internal unsafe bool GenerateMetadataV2(byte* pMetadataBlob, ref uint offset, uint blobSize)
+        internal readonly unsafe bool GenerateMetadataV2(byte* pMetadataBlob, ref uint offset, uint blobSize)
         {
             if (TypeInfo == null)
                 return false;
@@ -564,7 +564,7 @@ namespace System.Diagnostics.Tracing
             }
         }
 
-        internal bool GetMetadataLength(out uint size)
+        internal readonly bool GetMetadataLength(out uint size)
         {
             size = 0;
 
@@ -667,7 +667,7 @@ namespace System.Diagnostics.Tracing
             return Type.GetTypeCode(parameterType);
         }
 
-        internal bool GetMetadataLengthV2(out uint size)
+        internal readonly bool GetMetadataLengthV2(out uint size)
         {
             return GetMetadataLengthForNamedTypeV2(ParameterName, TypeInfo, out size);
         }

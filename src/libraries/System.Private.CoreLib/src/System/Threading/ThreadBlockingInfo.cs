@@ -88,7 +88,7 @@ namespace System.Threading
         // determined.
         //
         // Calls to native helpers are avoided in the property getter such that it can be more easily evaluated by a debugger.
-        public ulong LockOwnerOSThreadId // the getter may be used by debuggers
+        public readonly ulong LockOwnerOSThreadId // the getter may be used by debuggers
         {
             get
             {
@@ -127,7 +127,7 @@ namespace System.Threading
         // determined.
         //
         // Calls to native helpers are avoided in the property getter such that it can be more easily evaluated by a debugger.
-        public int LockOwnerManagedThreadId // the getter may be used by debuggers
+        public readonly int LockOwnerManagedThreadId // the getter may be used by debuggers
         {
             get
             {

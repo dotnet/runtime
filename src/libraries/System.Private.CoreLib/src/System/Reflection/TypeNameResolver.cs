@@ -11,7 +11,7 @@ namespace System.Reflection.Metadata
     {
         public TypeNameParseOptions() { }
 #pragma warning disable CA1822 // Mark members as static
-        public int MaxNodes
+        public readonly int MaxNodes
         {
             get
             {

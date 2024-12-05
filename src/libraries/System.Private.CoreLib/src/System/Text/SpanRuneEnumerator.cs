@@ -16,9 +16,9 @@ namespace System.Text
             _current = default;
         }
 
-        public Rune Current => _current;
+        public readonly Rune Current => _current;
 
-        public SpanRuneEnumerator GetEnumerator() => this;
+        public readonly SpanRuneEnumerator GetEnumerator() => this;
 
         public bool MoveNext()
         {

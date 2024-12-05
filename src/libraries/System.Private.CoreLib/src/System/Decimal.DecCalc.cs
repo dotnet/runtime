@@ -61,29 +61,29 @@ namespace System
 
             private uint High
             {
-                get => uhi;
+                readonly get => uhi;
                 set => uhi = value;
             }
 
             private uint Low
             {
-                get => ulo;
+                readonly get => ulo;
                 set => ulo = value;
             }
 
             private uint Mid
             {
-                get => umid;
+                readonly get => umid;
                 set => umid = value;
             }
 
-            private bool IsNegative => (int)uflags < 0;
+            private readonly bool IsNegative => (int)uflags < 0;
 
-            private int Scale => (byte)(uflags >> ScaleShift);
+            private readonly int Scale => (byte)(uflags >> ScaleShift);
 
             private ulong Low64
             {
-                get => ulomid;
+                readonly get => ulomid;
                 set => ulomid = value;
             }
 
@@ -2520,7 +2520,7 @@ done:
                     get => ((ulong)U1 << 32) | U0;
                     set { U1 = (uint)(value >> 32); U0 = (uint)value; }
 #else
-                    get => ulo64LE;
+                    readonly get => ulo64LE;
                     set => ulo64LE = value;
 #endif
                 }
@@ -2534,7 +2534,7 @@ done:
                     get => ((ulong)U2 << 32) | U1;
                     set { U2 = (uint)(value >> 32); U1 = (uint)value; }
 #else
-                    get => uhigh64LE;
+                    readonly get => uhigh64LE;
                     set => uhigh64LE = value;
 #endif
                 }
@@ -2563,7 +2563,7 @@ done:
                     get => ((ulong)U1 << 32) | U0;
                     set { U1 = (uint)(value >> 32); U0 = (uint)value; }
 #else
-                    get => ulo64LE;
+                    readonly get => ulo64LE;
                     set => ulo64LE = value;
 #endif
                 }
@@ -2574,7 +2574,7 @@ done:
                     get => ((ulong)U3 << 32) | U2;
                     set { U3 = (uint)(value >> 32); U2 = (uint)value; }
 #else
-                    get => uhigh64LE;
+                    readonly get => uhigh64LE;
                     set => uhigh64LE = value;
 #endif
                 }
@@ -2609,7 +2609,7 @@ done:
                     get => ((ulong)U1 << 32) | U0;
                     set { U1 = (uint)(value >> 32); U0 = (uint)value; }
 #else
-                    get => ulo64LE;
+                    readonly get => ulo64LE;
                     set => ulo64LE = value;
 #endif
                 }
@@ -2620,7 +2620,7 @@ done:
                     get => ((ulong)U3 << 32) | U2;
                     set { U3 = (uint)(value >> 32); U2 = (uint)value; }
 #else
-                    get => umid64LE;
+                    readonly get => umid64LE;
                     set => umid64LE = value;
 #endif
                 }
@@ -2631,7 +2631,7 @@ done:
                     get => ((ulong)U5 << 32) | U4;
                     set { U5 = (uint)(value >> 32); U4 = (uint)value; }
 #else
-                    get => uhigh64LE;
+                    readonly get => uhigh64LE;
                     set => uhigh64LE = value;
 #endif
                 }

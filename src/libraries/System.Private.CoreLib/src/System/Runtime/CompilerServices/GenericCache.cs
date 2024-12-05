@@ -139,7 +139,7 @@ namespace System.Runtime.CompilerServices
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal bool TryGet(TKey key, out TValue? value)
+        internal readonly bool TryGet(TKey key, out TValue? value)
         {
             // table is always initialized and is not null.
             Entry[] table = _table!;
@@ -196,7 +196,7 @@ namespace System.Runtime.CompilerServices
         }
 
         // we generally do not want OOM in cache lookups, just return null unless throwOnFail is specified.
-        private Entry[]? CreateCacheTable(int size, bool throwOnFail = false)
+        private readonly Entry[]? CreateCacheTable(int size, bool throwOnFail = false)
         {
             // size must be positive
             Debug.Assert(size > 1);

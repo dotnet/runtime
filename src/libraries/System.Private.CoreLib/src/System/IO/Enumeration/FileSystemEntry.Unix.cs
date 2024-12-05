@@ -154,8 +154,8 @@ namespace System.IO.Enumeration
         public bool IsHidden => _status.IsFileSystemEntryHidden(FullPath, FileName);
         internal bool IsReadOnly => _status.IsReadOnly(FullPath, continueOnError: true);
 
-        public bool IsDirectory => _isDirectory;
-        internal bool IsSymbolicLink => _directoryEntry.InodeType == Interop.Sys.NodeType.DT_LNK;
+        public readonly bool IsDirectory => _isDirectory;
+        internal readonly bool IsSymbolicLink => _directoryEntry.InodeType == Interop.Sys.NodeType.DT_LNK;
 
         public FileSystemInfo ToFileSystemInfo()
         {

@@ -308,7 +308,7 @@ namespace System
                 return false;
             }
 
-            public T Current
+            public readonly T Current
             {
                 get
                 {
@@ -327,7 +327,7 @@ namespace System
                 _current = _start - 1;
             }
 
-            public void Dispose()
+            public readonly void Dispose()
             {
             }
         }

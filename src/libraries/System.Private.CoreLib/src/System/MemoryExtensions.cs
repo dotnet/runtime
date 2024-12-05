@@ -4056,11 +4056,11 @@ namespace System
 
             /// <summary>Gets an enumerator that allows for iteration over the split span.</summary>
             /// <returns>Returns a <see cref="SpanSplitEnumerator{T}"/> that can be used to iterate over the split span.</returns>
-            public SpanSplitEnumerator<T> GetEnumerator() => this;
+            public readonly SpanSplitEnumerator<T> GetEnumerator() => this;
 
             /// <summary>Gets the current element of the enumeration.</summary>
             /// <returns>Returns a <see cref="Range"/> instance that indicates the bounds of the current element withing the source span.</returns>
-            public Range Current => new Range(_startCurrent, _endCurrent);
+            public readonly Range Current => new Range(_startCurrent, _endCurrent);
 
             /// <summary>Initializes the enumerator for <see cref="SpanSplitEnumeratorMode.SearchValues"/>.</summary>
             internal SpanSplitEnumerator(ReadOnlySpan<T> span, SearchValues<T> searchValues)

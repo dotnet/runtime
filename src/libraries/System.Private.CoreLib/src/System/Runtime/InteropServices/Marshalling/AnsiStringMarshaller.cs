@@ -97,12 +97,12 @@ namespace System.Runtime.InteropServices.Marshalling
             /// Converts the current managed string to an unmanaged string.
             /// </summary>
             /// <returns>The converted unmanaged string.</returns>
-            public byte* ToUnmanaged() => _unmanagedValue;
+            public readonly byte* ToUnmanaged() => _unmanagedValue;
 
             /// <summary>
             /// Frees any allocated unmanaged string memory.
             /// </summary>
-            public void Free()
+            public readonly void Free()
             {
                 if (_allocated)
                     NativeMemory.Free(_unmanagedValue);

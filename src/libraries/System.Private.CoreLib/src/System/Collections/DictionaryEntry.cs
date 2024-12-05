@@ -26,13 +26,13 @@ namespace System.Collections
 
         public object Key
         {
-            get => _key;
+            readonly get => _key;
             set => _key = value;
         }
 
         public object? Value
         {
-            get => _value;
+            readonly get => _value;
             set => _value = value;
         }
 
@@ -43,7 +43,7 @@ namespace System.Collections
             value = Value;
         }
 
-        public override string ToString() =>
+        public override readonly string ToString() =>
             KeyValuePair.PairToString(_key, _value);
     }
 }

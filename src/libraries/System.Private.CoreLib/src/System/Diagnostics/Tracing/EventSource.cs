@@ -1253,7 +1253,7 @@ namespace System.Diagnostics.Tracing
             /// </summary>
             public unsafe IntPtr DataPointer
             {
-                get => (IntPtr)(void*)m_Ptr;
+                readonly get => (IntPtr)(void*)m_Ptr;
                 set => m_Ptr = unchecked((ulong)(void*)value);
             }
 
@@ -1262,7 +1262,7 @@ namespace System.Diagnostics.Tracing
             /// </summary>
             public int Size
             {
-                get => m_Size;
+                readonly get => m_Size;
                 set => m_Size = value;
             }
 
@@ -1272,7 +1272,7 @@ namespace System.Diagnostics.Tracing
             /// </summary>
             internal int Reserved
             {
-                get => m_Reserved;
+                readonly get => m_Reserved;
                 set => m_Reserved = value;
             }
 
@@ -5175,7 +5175,7 @@ namespace System.Diagnostics.Tracing
         public SessionMask(uint mask = 0)
         { m_mask = mask & MASK; }
 
-        public bool IsEqualOrSupersetOf(SessionMask m)
+        public readonly bool IsEqualOrSupersetOf(SessionMask m)
         {
             return (this.m_mask | m.m_mask) == this.m_mask;
         }
@@ -5188,7 +5188,7 @@ namespace System.Diagnostics.Tracing
             return new SessionMask((uint)1 << perEventSourceSessionId);
         }
 
-        public ulong ToEventKeywords()
+        public readonly ulong ToEventKeywords()
         {
             return (ulong)m_mask << SHIFT_SESSION_TO_KEYWORD;
         }
@@ -5200,7 +5200,7 @@ namespace System.Diagnostics.Tracing
 
         public bool this[int perEventSourceSessionId]
         {
-            get
+            readonly get
             {
                 Debug.Assert(perEventSourceSessionId < MAX);
                 return (m_mask & (1 << perEventSourceSessionId)) != 0;

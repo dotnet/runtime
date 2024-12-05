@@ -22,7 +22,7 @@ namespace System.Threading
 
             private ThreadCounts(ulong data) => _data = data;
 
-            private short GetInt16Value(byte shift) => (short)(_data >> shift);
+            private readonly short GetInt16Value(byte shift) => (short)(_data >> shift);
             private void SetInt16Value(short value, byte shift) =>
                 _data = (_data & ~((ulong)ushort.MaxValue << shift)) | ((ulong)(ushort)value << shift);
 
@@ -118,8 +118,8 @@ namespace System.Threading
             public static bool operator !=(ThreadCounts lhs, ThreadCounts rhs) => lhs._data != rhs._data;
 
             public override bool Equals([NotNullWhen(true)] object? obj) => obj is ThreadCounts other && Equals(other);
-            public bool Equals(ThreadCounts other) => _data == other._data;
-            public override int GetHashCode() => (int)_data + (int)(_data >> 32);
+            public readonly bool Equals(ThreadCounts other) => _data == other._data;
+            public override readonly int GetHashCode() => (int)_data + (int)(_data >> 32);
         }
     }
 }
