@@ -485,10 +485,10 @@ set /A __TotalSpecifiedTargetArch=__TargetArchX64 + __TargetArchX86 + __TargetAr
 if %__TotalSpecifiedTargetArch% EQU 0 (
     REM Nothing specified means we want to build all architectures.
     set __TargetArchList=x64 x86 arm arm64
-)
-
-if %__BuildAllJitsCommunity%==1 (
-    set __TargetArchList=%__TargetArchList% loongarch64 riscv64
+    
+    if %__BuildAllJitsCommunity%==1 (
+        set __TargetArchList=%__TargetArchList% loongarch64 riscv64
+    )
 )
 
 REM Otherwise, add all the specified architectures to the list.
