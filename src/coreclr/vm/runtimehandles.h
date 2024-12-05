@@ -158,6 +158,8 @@ public:
 extern "C" void QCALLTYPE RuntimeTypeHandle_GetRuntimeTypeFromHandleSlow(void* typeHandleRaw, QCall::ObjectHandleOnStack result);
 
 extern "C" void QCALLTYPE RuntimeTypeHandle_CreateInstanceForAnotherGenericParameter(QCall::TypeHandle pTypeHandle, TypeHandle *pInstArray, INT32 cInstArray, QCall::ObjectHandleOnStack pInstantiatedObject);
+extern "C" void QCALLTYPE RuntimeTypeHandle_InternalAlloc(MethodTable* pMT, QCall::ObjectHandleOnStack allocated);
+extern "C" void QCALLTYPE RuntimeTypeHandle_InternalAllocNoChecks(MethodTable* pMT, QCall::ObjectHandleOnStack allocated);
 extern "C" void* QCALLTYPE RuntimeTypeHandle_AllocateTypeAssociatedMemory(QCall::TypeHandle type, uint32_t size);
 
 extern "C" PVOID QCALLTYPE QCall_GetGCHandleForTypeHandle(QCall::TypeHandle pTypeHandle, INT32 handleType);
@@ -197,41 +199,6 @@ extern "C" void QCALLTYPE RuntimeTypeHandle_RegisterCollectibleTypeDependency(QC
 class RuntimeMethodHandle
 {
 public:
-    static FCDECL4(Object*, InvokeMethod, Object *target, PVOID* args, SignatureNative* pSig, FC_BOOL_ARG fConstructor);
-
-    static FCDECL2(Object*, ReboxToNullable, Object *pBoxedValUNSAFE, ReflectClassBaseObject *pDestUNSAFE);
-    static FCDECL1(Object*, ReboxFromNullable, Object *pBoxedValUNSAFE);
-
-    struct StreamingContextData {
-        Object * additionalContext;  // additionalContex was changed from OBJECTREF to Object to avoid having a
-        INT32 contextStates;         // constructor in this struct. GCC doesn't allow structs with constructors to be
-    };
-
-    // *******************************************************************************************
-    // Keep these in sync with the version in bcl\system\runtime\serialization\streamingcontext.cs
-    // *******************************************************************************************
-    enum StreamingContextStates
-    {
-        CONTEXTSTATE_CrossProcess   = 0x01,
-        CONTEXTSTATE_CrossMachine   = 0x02,
-        CONTEXTSTATE_File           = 0x04,
-        CONTEXTSTATE_Persistence    = 0x08,
-        CONTEXTSTATE_Remoting       = 0x10,
-        CONTEXTSTATE_Other          = 0x20,
-        CONTEXTSTATE_Clone          = 0x40,
-        CONTEXTSTATE_CrossAppDomain = 0x80,
-        CONTEXTSTATE_All            = 0xFF
-    };
-
-    // passed by value
-    // STATIC IMPLEMENTATION
-    static OBJECTREF InvokeMethod_Internal(
-        MethodDesc *pMethod, OBJECTREF targetUNSAFE, INT32 attrs, OBJECTREF binderUNSAFE, PTRARRAYREF objsUNSAFE, OBJECTREF localeUNSAFE,
-        BOOL isBinderDefault, Assembly *caller, Assembly *reflectedClassAssembly, TypeHandle declaringType, SignatureNative* pSig, BOOL verifyAccess);
-
-    static FCDECL4(void, SerializationInvoke, ReflectMethodObject *pMethodUNSAFE, Object* targetUNSAFE,
-        Object* serializationInfoUNSAFE, struct StreamingContextData * pContext);
-
     static FCDECL1(INT32, GetAttributes, MethodDesc *pMethod);
     static FCDECL1(INT32, GetImplAttributes, ReflectMethodObject *pMethodUNSAFE);
     static FCDECL1(MethodTable*, GetMethodTable, MethodDesc *pMethod);
@@ -268,7 +235,6 @@ public:
     static FCDECL1(Object*, GetLoaderAllocator, MethodDesc *pMethod);
 };
 
-
 extern "C" MethodDesc* QCALLTYPE MethodBase_GetCurrentMethod(QCall::StackCrawlMarkHandle stackMark);
 
 extern "C" BOOL QCALLTYPE RuntimeMethodHandle_IsCAVisibleFromDecoratedType(
@@ -278,6 +244,13 @@ extern "C" BOOL QCALLTYPE RuntimeMethodHandle_IsCAVisibleFromDecoratedType(
         QCall::ModuleHandle sourceModuleHandle);
 
 extern "C" void QCALLTYPE RuntimeMethodHandle_GetMethodInstantiation(MethodDesc * pMethod, QCall::ObjectHandleOnStack retTypes, BOOL fAsRuntimeTypeArray);
+
+extern "C" void QCALLTYPE RuntimeMethodHandle_InvokeMethod(
+    QCall::ObjectHandleOnStack target,
+    PVOID* args,
+    QCall::ObjectHandleOnStack pSigUNSAFE,
+    BOOL fConstructor,
+    QCall::ObjectHandleOnStack result);
 
 extern "C" void QCALLTYPE RuntimeMethodHandle_ConstructInstantiation(MethodDesc * pMethod, DWORD format, QCall::StringHandleOnStack retString);
 extern "C" void* QCALLTYPE RuntimeMethodHandle_GetFunctionPointer(MethodDesc * pMethod);

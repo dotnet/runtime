@@ -62,20 +62,17 @@ void
 FileCleanupRoutine(
     CPalThread *pThread,
     IPalObject *pObjectToCleanup,
-    bool fShutdown,
-    bool fCleanupSharedState
+    bool fShutdown
     );
 
 CObjectType CorUnix::otFile(
                 otiFile,
                 FileCleanupRoutine,
-                NULL,   // No initialization routine
                 0,      // No immutable data
                 NULL,   // No immutable data copy routine
                 NULL,   // No immutable data cleanup routine
                 sizeof(CFileProcessLocalData),
                 CFileProcessLocalDataCleanupRoutine,
-                0,      // No shared data
                 GENERIC_READ|GENERIC_WRITE,  // Ignored -- no Win32 object security support
                 CObjectType::SecuritySupported,
                 CObjectType::OSPersistedSecurityInfo,
@@ -121,8 +118,7 @@ void
 FileCleanupRoutine(
     CPalThread *pThread,
     IPalObject *pObjectToCleanup,
-    bool fShutdown,
-    bool fCleanupSharedState
+    bool fShutdown
     )
 {
     PAL_ERROR palError;
