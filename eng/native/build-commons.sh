@@ -79,6 +79,8 @@ build_native()
     fi
 
     if [[ "$targetOS" == android || "$targetOS" == linux-bionic ]]; then
+        # Keep in sync with $(AndroidApiLevelMin) in Directory.Build.props in the repository rooot
+        local ANDROID_API_LEVEL=28
         if [[ -z "$ANDROID_NDK_ROOT" ]]; then
             echo "Error: You need to set the ANDROID_NDK_ROOT environment variable pointing to the Android NDK root."
             exit 1
@@ -87,7 +89,7 @@ build_native()
         cmakeArgs="-C $__RepoRootDir/eng/native/tryrun.cmake $cmakeArgs"
 
         # keep ANDROID_PLATFORM in sync with SetOSTargetMinVersions in the root Directory.Build.props
-        cmakeArgs="-DCMAKE_TOOLCHAIN_FILE=$ANDROID_NDK_ROOT/build/cmake/android.toolchain.cmake -DANDROID_PLATFORM=android-21 $cmakeArgs"
+        cmakeArgs="-DCMAKE_TOOLCHAIN_FILE=$ANDROID_NDK_ROOT/build/cmake/android.toolchain.cmake -DANDROID_PLATFORM=android-${ANDROID_API_LEVEL} -DANDROID_NATIVE_API_LEVEL=${ANDROID_API_LEVEL} $cmakeArgs"
 
         # Don't try to set CC/CXX in init-compiler.sh - it's handled in android.toolchain.cmake already
         __Compiler="default"
