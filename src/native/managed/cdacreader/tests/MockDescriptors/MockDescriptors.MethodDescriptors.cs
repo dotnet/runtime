@@ -79,7 +79,9 @@ internal partial class MockDescriptors
                     MethodDescFields,
                     MethodDescChunkFields,
                 ]);
+            types[DataType.NonVtableSlot] = new Target.TypeInfo() { Size = (uint)TargetTestHelpers.PointerSize };
             types[DataType.MethodImpl] = new Target.TypeInfo() { Size = (uint)TargetTestHelpers.PointerSize * 2 };
+            types[DataType.NativeCodeSlot] = new Target.TypeInfo() { Size = (uint)TargetTestHelpers.PointerSize };
             types = types
                 .Concat(RTSBuilder.Types)
                 .Concat(LoaderBuilder.Types)

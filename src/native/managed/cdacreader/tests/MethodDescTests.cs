@@ -106,13 +106,13 @@ public class MethodDescTests
 
         uint methodDescSize = methodDescBuilder.Types[DataType.MethodDesc].Size.Value;
         if (flags.HasFlag(MethodDescFlags_1.MethodDescFlags.HasNonVtableSlot))
-            methodDescSize += (uint)helpers.PointerSize;
+            methodDescSize += methodDescBuilder.Types[DataType.NonVtableSlot].Size!.Value;
 
         if (flags.HasFlag(MethodDescFlags_1.MethodDescFlags.HasMethodImpl))
             methodDescSize += methodDescBuilder.Types[DataType.MethodImpl].Size!.Value;
 
         if (flags.HasFlag(MethodDescFlags_1.MethodDescFlags.HasNativeCodeSlot))
-            methodDescSize += (uint)helpers.PointerSize;
+            methodDescSize += methodDescBuilder.Types[DataType.NativeCodeSlot].Size!.Value;
 
         byte chunkSize = (byte)(methodDescSize / methodDescBuilder.MethodDescAlignment);
         TargetPointer chunk = methodDescBuilder.AddMethodDescChunk(methodTable, string.Empty, count: 1, chunkSize, tokenRange: 0);

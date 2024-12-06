@@ -82,7 +82,7 @@ internal static class MethodDescOptionalSlots
 
         uint offset = 0;
         if (HasNonVtableSlot(flags))
-            offset += (uint)target.PointerSize;
+            offset += target.GetTypeInfo(DataType.NonVtableSlot).Size!.Value;
 
         if (HasMethodImpl(flags))
             offset += target.GetTypeInfo(DataType.MethodImpl).Size!.Value;
