@@ -250,8 +250,10 @@ if(NOT CLR_CMAKE_HOST_MACCATALYST AND NOT CLR_CMAKE_HOST_IOS AND NOT CLR_CMAKE_H
   add_subdirectory(utilcode)
   add_subdirectory(inc)
 
-  add_subdirectory(ilasm)
-  add_subdirectory(ildasm)
+  if (NOT CLR_CMAKE_TARGET_ANDROID)
+    add_subdirectory(ilasm)
+    add_subdirectory(ildasm)
+  endif(CLR_CMAKE_TARGET_ANDROID)
   add_subdirectory(gcinfo)
   add_subdirectory(jit)
   add_subdirectory(vm)
