@@ -13304,21 +13304,25 @@ void gc_heap::age_free_regions (const char* msg)
 //       though perhaps BGC can leave them there.  Future work could verify and assert this.)
 //    b. Move any basic region in global_regions_to_decommit (which means we intended to decommit them
 //       but haven't done so yet) to surplus_regions
-//    b. Move all huge regions that are past the age threshold from global_free_huge_regions to aged_regions
-//    c. Move all basic/large regions that are past the age threshold from free_regions to aged_regions
+//    c. Move all huge regions that are past the age threshold from global_free_huge_regions to aged_regions
+//    d. Move all basic/large regions that are past the age threshold from free_regions to aged_regions
 // 2. Move all regions from aged_regions to global_regions_to_decommit.  Note that the intention is to
 //    combine this with move_highest_free_regions in a future change, which is why we don't just do this
-//    in steps 1b/1c.
+//    in steps 1c/1d.
 // 3. Compute the required per-heap budgets for SOH (basic regions) and the balance.  The budget for LOH
-//    (large/huge) is zero as we are using an entirely age-based approach.
+//    (large) is zero as we are using an entirely age-based approach.
 //        balance = (number of free regions) - budget
 // 4. Decide if we are going to distribute or decommit a nonzero balance.  To distribute, we adjust the
-//    per-heap budgets, so after this step the LOH (large/huge) budgets can be positive.
-//    a. A negative balance (deficit) must be distributed since decommitting a negative number of regions
-//       doesn't make sense.  A negative balance isn't possible for LOH since the budgets start at zero.
+//    per-heap budgets, so after this step the LOH (large) budgets can be positive.
+//    a. A negative balance (deficit) for SOH (basic) will be distributed it means we expect to use
+//       more memory than we have on the free lists.  A negative balance for LOH (large) isn't possible
+//       for LOH since the budgets start at zero.
 //    b. For SOH (basic), we will decommit surplus regions unless we are in a foreground GC during BGC.
-//    c. For LOH (large/huge), we will distribute surplus regions since we are using an entirely age-based
-//       approach.  However, if we are in a high-memory-usage scenario, we will decommit.
+//    c. For LOH (large), we will distribute surplus regions since we are using an entirely age-based
+//       approach.  However, if we are in a high-memory-usage scenario, we will decommit.  In this case,
+//       we will also decommit the huge regions in global_free_huge_regions.  Note that they were not
+//       originally included in the balance because they are kept in a global list.  Only basic/large
+//       regions are kept in per-heap lists where they can be distributed.
 // 5. Implement the distribute-or-decommit strategy.  To distribute, we simply move regions across heaps,
 //    using surplus_regions as a holding space.  To decommit, for server GC we generally leave them on the
 //    global_regions_to_decommit list and decommit them over time.  However, in high-memory-usage scenarios,
@@ -13449,22 +13453,22 @@ void gc_heap::distribute_free_regions()
         // if so, put the highest free regions on the decommit list
         total_num_free_regions[kind] += surplus_regions[kind].get_num_free_regions();
 
-        ptrdiff_t balance = total_num_free_regions[kind] - total_budget_in_region_units[kind];
+        ptrdiff_t balance_to_distribute = total_num_free_regions[kind] - total_budget_in_region_units[kind];
 
-        if (distribute_surplus_p(balance, kind, aggressive_decommit_large_p))
+        if (distribute_surplus_p(balance_to_distribute, kind, aggressive_decommit_large_p))
         {
 #ifdef MULTIPLE_HEAPS
             // we may have a deficit or - for large regions or if background GC is going on - a surplus.
             // adjust the budget per heap accordingly
-            if (balance != 0)
+            if (balance_to_distribute != 0)
             {
-                dprintf (REGIONS_LOG, ("distributing the %zd %s regions deficit", -balance, free_region_kind_name[kind]));
+                dprintf (REGIONS_LOG, ("distributing the %zd %s regions deficit", -balance_to_distribute, free_region_kind_name[kind]));
 
                 ptrdiff_t curr_balance = 0;
                 ptrdiff_t rem_balance = 0;
                 for (int i = 0; i < n_heaps; i++)
                 {
-                    curr_balance += balance;
+                    curr_balance += balance_to_distribute;
                     ptrdiff_t adjustment_per_heap = curr_balance / n_heaps;
                     curr_balance -= adjustment_per_heap * n_heaps;
                     ptrdiff_t new_budget = (ptrdiff_t)heap_budget_in_region_units[kind][i] + adjustment_per_heap;
@@ -13508,20 +13512,28 @@ void gc_heap::distribute_free_regions()
         }
         else
         {
-            assert (balance >= 0);
+            assert (balance_to_distribute >= 0);
+
+            ptrdiff_t balance_to_decommit = balance_to_distribute;
+            if (kind == large_free_region)
+            {
+                // huge regions aren't part of balance_to_distribute because they are kept in a global list
+                // and therefore can't be distributed across heaps
+                balance_to_decommit += global_free_huge_regions.get_size_free_regions() / global_region_allocator.get_large_region_alignment();
+            }
 
             dprintf(REGIONS_LOG, ("distributing the %zd %s regions, removing %zd regions",
                 total_budget_in_region_units[kind],
                 free_region_kind_name[kind],
                 balance));
 
-            if (balance > 0)
+            if (balance_to_decommit > 0)
             {
                 // remember how many regions we had on the decommit list already due to aging
                 size_t num_regions_to_decommit_before = global_regions_to_decommit[kind].get_num_free_regions();
 
                 // put the highest regions on the decommit list
-                global_region_allocator.move_highest_free_regions (balance * region_factor[kind],
+                global_region_allocator.move_highest_free_regions (balance_to_decommit * region_factor[kind],
                                                                    kind == basic_free_region,
                                                                    global_regions_to_decommit);
 
@@ -13532,7 +13544,7 @@ void gc_heap::distribute_free_regions()
                 {
                     // we should now have 'balance' regions more on the decommit list
                     assert (global_regions_to_decommit[kind].get_num_free_regions() ==
-                            num_regions_to_decommit_before + (size_t)balance);
+                            num_regions_to_decommit_before + (size_t)balance_to_decommit);
                 }
                 else
                 {
@@ -13759,6 +13771,8 @@ bool gc_heap::distribute_surplus_p(ptrdiff_t balance, int kind, bool aggressive_
     if (kind == basic_free_region)
     {
 #ifdef BACKGROUND_GC
+        // This is detecting FGCs that run during BGCs. It is not detecting ephemeral GCs that
+        // (possibly) run right before a BGC as background_running_p() is not yet true at that point.
         return (background_running_p() && (settings.condemned_generation != max_generation));
 #else
         return false;
@@ -13771,7 +13785,6 @@ bool gc_heap::distribute_surplus_p(ptrdiff_t balance, int kind, bool aggressive_
 void gc_heap::decide_on_decommit_strategy(bool joined_last_gc_before_oom)
 {
 #ifdef MULTIPLE_HEAPS
-
     if (joined_last_gc_before_oom || g_low_memory_status)
     {
         dprintf (REGIONS_LOG, ("low memory - decommitting everything (last_gc_before_oom=%d, g_low_memory_status=%d)", joined_last_gc_before_oom, g_low_memory_status));
@@ -13789,6 +13802,11 @@ void gc_heap::decide_on_decommit_strategy(bool joined_last_gc_before_oom)
         size_to_decommit_for_heap_hard_limit = max(size_to_decommit_for_heap_hard_limit, (ptrdiff_t)0);
     }
 
+    // For the various high memory load situations, we're not using the process size at all.  In
+    // particular, if we had a large process and smaller processes running in the same container,
+    // then we will treat them the same if the container reaches reaches high_memory_load_th.  In
+    // the future, we could consider additional complexity to try to reclaim more memory from
+    // larger processes than smaller ones.
     ptrdiff_t size_to_decommit_for_physical = 0;
     if (settings.entry_memory_load >= high_memory_load_th)
     {
