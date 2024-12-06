@@ -47,14 +47,13 @@ jobs:
     # Linux musl x64
     - ${{ if eq(parameters.platform, 'linux_musl_x64') }}:
       - ${{ if or(ne(parameters.jobParameters.isExtraPlatforms, true), eq(parameters.jobParameters.includeAllPlatforms, true)) }}:
-        - (Alpine.318.Amd64.Open)Ubuntu.2204.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.18-helix-amd64
+        - (Alpine.321.Amd64.Open)Ubuntu.2204.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.21-helix-amd64
       - ${{ if or(eq(parameters.jobParameters.isExtraPlatforms, true), eq(parameters.jobParameters.includeAllPlatforms, true)) }}:
-        - (Alpine.318.Amd64.Open)Ubuntu.2204.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.18-helix-amd64
+        - (Alpine.321.Amd64.Open)Ubuntu.2204.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.21-helix-amd64
 
     # Linux musl arm64
     - ${{ if and(eq(parameters.platform, 'linux_musl_arm64'), or(eq(parameters.jobParameters.isExtraPlatforms, true), eq(parameters.jobParameters.includeAllPlatforms, true))) }}:
-      - (Alpine.318.Arm64.Open)ubuntu.2204.armarch.open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.18-helix-arm64v8
-      - (Alpine.319.Arm64.Open)ubuntu.2204.armarch.open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.19-helix-arm64v8
+      - (Alpine.320.Arm64.Open)ubuntu.2204.armarch.open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.20-helix-arm64v8
 
     # Linux x64
     - ${{ if eq(parameters.platform, 'linux_x64') }}:
@@ -62,13 +61,13 @@ jobs:
         - ${{ if and(eq(parameters.jobParameters.testScope, 'outerloop'), eq(parameters.jobParameters.runtimeFlavor, 'mono')) }}:
           - SLES.15.Amd64.Open
           - (Centos.9.Amd64.Open)Ubuntu.2204.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:centos-stream9-helix
-          - (Fedora.38.Amd64.Open)Ubuntu.2204.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:fedora-38-helix
+          - (Fedora.41.Amd64.Open)Ubuntu.2204.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:fedora-41-helix
           - (Ubuntu.2204.Amd64.Open)Ubuntu.2204.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-22.04-helix-amd64
           - (Debian.12.Amd64.Open)Ubuntu.2204.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-12-helix-amd64
         - ${{ if or(ne(parameters.jobParameters.testScope, 'outerloop'), ne(parameters.jobParameters.runtimeFlavor, 'mono')) }}:
           - ${{ if or(eq(parameters.jobParameters.isExtraPlatforms, true), eq(parameters.jobParameters.includeAllPlatforms, true)) }}:
             - SLES.15.Amd64.Open
-            - (Fedora.38.Amd64.Open)Ubuntu.2204.amd64.open@mcr.microsoft.com/dotnet-buildtools/prereqs:fedora-38-helix
+            - (Fedora.41.Amd64.Open)Ubuntu.2204.amd64.open@mcr.microsoft.com/dotnet-buildtools/prereqs:fedora-41-helix
             - Ubuntu.2204.Amd64.Open
             - (Debian.12.Amd64.Open)Ubuntu.2204.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-12-helix-amd64
             - (Mariner.2.0.Amd64.Open)Ubuntu.2204.amd64.open@mcr.microsoft.com/dotnet-buildtools/prereqs:cbl-mariner-2.0-helix-amd64
