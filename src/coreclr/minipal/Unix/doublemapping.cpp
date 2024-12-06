@@ -54,6 +54,8 @@ bool VMToOSInterface::CreateDoubleMemoryMapper(void** pHandle, size_t *pMaxExecu
     int fd = -1;
 #endif
 
+#ifndef TARGET_ANDROID
+    // Bionic doesn't have shm_{open,unlink}
     // POSIX fallback
     if (fd == -1)
     {
@@ -64,6 +66,7 @@ bool VMToOSInterface::CreateDoubleMemoryMapper(void** pHandle, size_t *pMaxExecu
         fd = shm_open(name, O_RDWR | O_CREAT | O_EXCL | O_NOFOLLOW, 0600);
         shm_unlink(name);
     }
+#endif // !TARGET_ANDROID
 
     if (fd == -1)
     {
