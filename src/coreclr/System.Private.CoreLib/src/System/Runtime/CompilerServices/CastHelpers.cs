@@ -25,12 +25,12 @@ namespace System.Runtime.CompilerServices
         }
 
         [LibraryImport(RuntimeHelpers.QCall)]
+        [return: MarshalAs(UnmanagedType.Bool)]
         private static partial bool IsInstanceOf_NoCacheLookup(void *toTypeHnd, [MarshalAs(UnmanagedType.Bool)] bool throwCastException, ObjectHandleOnStack obj);
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static object? IsInstanceOfAny_NoCacheLookup(void* toTypeHnd, object obj)
         {
-            ObjectHandleOfStack objHandleOnStack = default;
             if (IsInstanceOf_NoCacheLookup(toTypeHnd, false, ObjectHandleOnStack.Create(ref obj)))
             {
                 return obj;
@@ -39,7 +39,7 @@ namespace System.Runtime.CompilerServices
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static extern object ChkCastAny_NoCacheLookup(void* toTypeHnd, object obj)
+        private static object ChkCastAny_NoCacheLookup(void* toTypeHnd, object obj)
         {
             IsInstanceOf_NoCacheLookup(toTypeHnd, true, ObjectHandleOnStack.Create(ref obj));
             return obj;
@@ -477,13 +477,13 @@ namespace System.Runtime.CompilerServices
         {
             Debug.Assert(obj != null);
 
-            obj = IsInstanceOfAny_NoCacheLookup(elementType, obj);
-            if (obj == null)
+            object? obj2 = IsInstanceOfAny_NoCacheLookup(elementType, obj);
+            if (obj2 == null)
             {
                 ThrowArrayMismatchException();
             }
 
-            WriteBarrier(ref element, obj);
+            WriteBarrier(ref element, obj2);
         }
 
         [DebuggerHidden]
@@ -509,8 +509,7 @@ namespace System.Runtime.CompilerServices
         {
             Debug.Assert(obj != null);
 
-            obj = IsInstanceOfAny_NoCacheLookup(elementType, obj);
-            if (obj == null)
+            if (IsInstanceOfAny_NoCacheLookup(elementType, obj) == null)
             {
                 ThrowArrayMismatchException();
             }
