@@ -123,7 +123,7 @@ namespace Wasm.Build.Tests
             ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBasicTestApp, prefix, extraProperties: extraProperties);
             string programRelativePath = Path.Combine("Common", "Program.cs");
             ReplaceFile(programRelativePath, Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "PInvoke", "BittableSameAssembly.cs"));
-            
+
             var replacements = new Dictionary<string, string> { };
             if (!disableRuntimeMarshalling)
             {
@@ -259,8 +259,8 @@ namespace Wasm.Build.Tests
             Assert.Contains("B.Conflict.C", result.TestOutput);
             if (OperatingSystem.IsWindows()) {
                 // Windows console unicode support is not great
-                Assert.Contains("A.Conflict.C_", result.TestOutput);
-                Assert.Contains("B.Conflict.C_", result.TestOutput);
+                Assert.Contains(result.TestOutput, m => m.Contains("A.Conflict.C_"));
+                Assert.Contains(result.TestOutput, m => m.Contains("B.Conflict.C_"));
             } else {
                 Assert.Contains("A.Conflict.C_\U0001F412", result.TestOutput);
                 Assert.Contains("B.Conflict.C_\U0001F412", result.TestOutput);
@@ -309,7 +309,7 @@ namespace Wasm.Build.Tests
             BuildProject(info, config, new BuildOptions(AssertAppBundle: false, AOT: aot));
             // restore the project directory
             _projectDir = Path.Combine(_projectDir, "..", "App");
-            
+
             string icallTable =
             """
             [
@@ -346,7 +346,7 @@ namespace Wasm.Build.Tests
                 throw new FileNotFoundException($"Could not find WasmAppBuilder.dll in {tasksDir}");
 
             _testOutput.WriteLine ("Using WasmAppBuilder.dll from {0}", taskPath);
-            
+
             string AddAssembly(string assemblyLocation, string name) => $"<WasmPInvokeAssembly Include=\"{Path.Combine(assemblyLocation, name + ".dll")}\" />";
             string frameworkDir = Path.Combine(GetBinFrameworkDir(config, isPublish));
             string appAssemblyPath = Path.Combine(frameworkDir, "..", "..");
@@ -383,7 +383,7 @@ namespace Wasm.Build.Tests
                 { "LANG", culture },
                 { "LC_ALL", culture },
             };
-            
+
             (_, string output) = PublishProject(info,
                 config,
                 new PublishOptions(ExtraBuildEnvironmentVariables: extraEnvVars, AOT: aot),
@@ -410,7 +410,7 @@ namespace Wasm.Build.Tests
             var extraItems = @"<NativeFileReference Include=""*.c"" />";
             string extraProperties = aot ? string.Empty : "<WasmBuildNative>true</WasmBuildNative>";
             ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBasicTestApp, "abi", extraItems: extraItems, extraProperties: extraProperties);
-            
+
             int baseArg = 10;
             GenerateSourceFiles(_projectDir, baseArg);
             bool isPublish = aot;
