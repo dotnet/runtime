@@ -6001,9 +6001,7 @@ void FlowGraphNaturalLoop::Duplicate(BasicBlock** insertAfter, BlockToBlockMap* 
 
     Compiler* comp = m_dfsTree->GetCompiler();
 
-    BasicBlock* bottom = GetLexicallyBottomMostBlock();
-
-    VisitLoopBlocksLexical([=](BasicBlock* blk) {
+    VisitLoopBlocks([=](BasicBlock* blk) {
         // Initialize newBlk as BBJ_ALWAYS without jump target, and fix up jump target later
         // with BasicBlock::CopyTarget().
         BasicBlock* newBlk = comp->fgNewBBafter(BBJ_ALWAYS, *insertAfter, /*extendRegion*/ true);
@@ -6213,7 +6211,7 @@ void FlowGraphNaturalLoop::DuplicateWithEH(BasicBlock** insertAfter, BlockToBloc
     BitVecTraits traits(comp->compBasicBlockID, comp);
     BitVec       visited(BitVecOps::MakeEmpty(&traits));
 
-    VisitLoopBlocksLexical([=, &traits, &visited, &clonedTry, &ehIndexShift](BasicBlock* blk) {
+    VisitLoopBlocks([=, &traits, &visited, &clonedTry, &ehIndexShift](BasicBlock* blk) {
         // Try cloning may have already handled this block
         //
         if (BitVecOps::IsMember(&traits, visited, blk->bbID))
