@@ -2,7 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
+using Microsoft.Diagnostics.DataContractReader.RuntimeTypeSystemHelpers;
 using Moq;
 using Xunit;
 
@@ -10,6 +12,16 @@ namespace Microsoft.Diagnostics.DataContractReader.Tests;
 
 public class MethodDescTests
 {
+    private static Target CreateTarget(MockDescriptors.MethodDescriptors methodDescBuilder)
+    {
+        MockMemorySpace.Builder builder = methodDescBuilder.Builder;
+        var target = new TestPlaceholderTarget(builder.TargetTestHelpers.Arch, builder.GetReadContext().ReadFromTarget, methodDescBuilder.Types, methodDescBuilder.Globals);
+        target.SetContracts(Mock.Of<ContractRegistry>(
+            c => c.RuntimeTypeSystem == ((IContractFactory<IRuntimeTypeSystem>)new RuntimeTypeSystemFactory()).CreateContract(target, 1)
+                && c.Loader == ((IContractFactory<ILoader>)new LoaderFactory()).CreateContract(target, 1)
+                && c.PlatformMetadata == new Mock<Contracts.IPlatformMetadata>().Object));
+        return target;
+    }
     private static void MethodDescHelper(MockTarget.Architecture arch, Action<MockDescriptors.MethodDescriptors> configure, Action<Target> testCase)
     {
         TargetTestHelpers targetTestHelpers = new(arch);
@@ -17,19 +29,11 @@ public class MethodDescTests
         MockMemorySpace.Builder builder = new(targetTestHelpers);
         MockDescriptors.RuntimeTypeSystem rtsBuilder = new(builder);
         MockDescriptors.Loader loaderBuilder = new(builder);
-
-        var methodDescChunkAllocator = builder.CreateAllocator(start: 0x00000000_20002000, end: 0x00000000_20003000);
-        var methodDescBuilder = new MockDescriptors.MethodDescriptors(rtsBuilder, loaderBuilder)
-        {
-            MethodDescChunkAllocator = methodDescChunkAllocator,
-        };
+        MockDescriptors.MethodDescriptors methodDescBuilder = new(rtsBuilder, loaderBuilder);
 
         configure?.Invoke(methodDescBuilder);
 
-        var target = new TestPlaceholderTarget(arch, builder.GetReadContext().ReadFromTarget, methodDescBuilder.Types, methodDescBuilder.Globals);
-        target.SetContracts(Mock.Of<ContractRegistry>(
-            c => c.RuntimeTypeSystem == ((IContractFactory<IRuntimeTypeSystem>)new RuntimeTypeSystemFactory()).CreateContract(target, 1)
-                && c.Loader == ((IContractFactory<ILoader>)new LoaderFactory()).CreateContract(target, 1)));
+        var target = CreateTarget(methodDescBuilder);
 
         testCase(target);
     }
@@ -61,11 +65,7 @@ public class MethodDescTests
 
             byte methodDescNum = 3; // abitrary, less than "count"
             byte methodDescIndex = (byte)(methodDescNum * methodDescSize);
-            Span<byte> dest = builder.BorrowMethodDesc(chunk, methodDescIndex);
-            builder.SetMethodDesc(dest, methodDescIndex, slotNum: expectedSlotNum, tokenRemainder: expectedRidRemainder);
-
-            testMethodDescAddress = builder.GetMethodDescAddress(chunk, methodDescIndex);
-
+            testMethodDescAddress = builder.SetMethodDesc(chunk, methodDescIndex, slotNum: expectedSlotNum, flags: 0, tokenRemainder: expectedRidRemainder);
         },
         (target) =>
         {
@@ -85,5 +85,70 @@ public class MethodDescTests
             TargetPointer versioning = rts.GetMethodDescVersioningState(handle);
             Assert.Equal(TargetPointer.Null, versioning);
         });
+    }
+
+    public static IEnumerable<object[]> StdArchOptionalSlotsData()
+    {
+        foreach (object[] arr in new MockTarget.StdArch())
+        {
+            MockTarget.Architecture arch = (MockTarget.Architecture)arr[0];
+            yield return new object[] { arch, 0 };
+            yield return new object[] { arch, MethodDescFlags_1.MethodDescFlags.HasNonVtableSlot };
+            yield return new object[] { arch, MethodDescFlags_1.MethodDescFlags.HasMethodImpl };
+            yield return new object[] { arch, MethodDescFlags_1.MethodDescFlags.HasNativeCodeSlot };
+            yield return new object[] { arch, MethodDescFlags_1.MethodDescFlags.HasNonVtableSlot | MethodDescFlags_1.MethodDescFlags.HasMethodImpl };
+            yield return new object[] { arch, MethodDescFlags_1.MethodDescFlags.HasNonVtableSlot | MethodDescFlags_1.MethodDescFlags.HasNativeCodeSlot };
+            yield return new object[] { arch, MethodDescFlags_1.MethodDescFlags.HasMethodImpl | MethodDescFlags_1.MethodDescFlags.HasNativeCodeSlot };
+            yield return new object[] { arch, MethodDescFlags_1.MethodDescFlags.HasNonVtableSlot | MethodDescFlags_1.MethodDescFlags.HasMethodImpl | MethodDescFlags_1.MethodDescFlags.HasNativeCodeSlot };
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(StdArchOptionalSlotsData))]
+    public void GetAddressOfNativeCodeSlot_OptionalSlots(MockTarget.Architecture arch, ushort flagsValue)
+    {
+        TargetTestHelpers helpers = new(arch);
+        MockMemorySpace.Builder builder = new(helpers);
+        MockDescriptors.RuntimeTypeSystem rtsBuilder = new(builder);
+        MockDescriptors.Loader loaderBuilder = new(builder);
+        MockDescriptors.MethodDescriptors methodDescBuilder = new(rtsBuilder, loaderBuilder);
+
+        MethodDescFlags_1.MethodDescFlags flags = (MethodDescFlags_1.MethodDescFlags)flagsValue;
+        ushort numVirtuals = 1;
+        TargetPointer eeClass = rtsBuilder.AddEEClass(string.Empty, 0, 2, 1);
+        TargetPointer methodTable = rtsBuilder.AddMethodTable(string.Empty,
+            mtflags: default, mtflags2: default, baseSize: helpers.ObjectBaseSize,
+            module: TargetPointer.Null, parentMethodTable: TargetPointer.Null, numInterfaces: 0, numVirtuals: numVirtuals);
+        rtsBuilder.SetEEClassAndCanonMTRefs(eeClass, methodTable);
+
+        uint methodDescSize = methodDescBuilder.Types[DataType.MethodDesc].Size.Value;
+        if (flags.HasFlag(MethodDescFlags_1.MethodDescFlags.HasNonVtableSlot))
+            methodDescSize += (uint)helpers.PointerSize;
+
+        if (flags.HasFlag(MethodDescFlags_1.MethodDescFlags.HasMethodImpl))
+            methodDescSize += methodDescBuilder.Types[DataType.MethodImpl].Size!.Value;
+
+        if (flags.HasFlag(MethodDescFlags_1.MethodDescFlags.HasNativeCodeSlot))
+            methodDescSize += (uint)helpers.PointerSize;
+
+        byte chunkSize = (byte)(methodDescSize / methodDescBuilder.MethodDescAlignment);
+        TargetPointer chunk = methodDescBuilder.AddMethodDescChunk(methodTable, string.Empty, count: 1, chunkSize, tokenRange: 0);
+        TargetPointer methodDescAddress = methodDescBuilder.SetMethodDesc(chunk, index: 0, slotNum: 0, flags: (ushort)flags, tokenRemainder: 0);
+
+        Target target = CreateTarget(methodDescBuilder);
+        IRuntimeTypeSystem rts = target.Contracts.RuntimeTypeSystem;
+
+        var handle = rts.GetMethodDescHandle(methodDescAddress);
+        Assert.NotEqual(TargetPointer.Null, handle.Address);
+
+        bool hasNativeCodeSlot = rts.HasNativeCodeSlot(handle);
+        Assert.Equal(flags.HasFlag(MethodDescFlags_1.MethodDescFlags.HasNativeCodeSlot), hasNativeCodeSlot);
+        if (hasNativeCodeSlot)
+        {
+            // Native code slot is last optional slot
+            TargetPointer expectedCodeSlotAddr = methodDescAddress + methodDescSize - (uint)helpers.PointerSize;
+            TargetPointer actualNativeCodeSlotAddr = rts.GetAddressOfNativeCodeSlot(handle);
+            Assert.Equal(expectedCodeSlotAddr, actualNativeCodeSlotAddr);
+        }
     }
 }
