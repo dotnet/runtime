@@ -5376,7 +5376,7 @@ public:
 
     PhaseStatus fgRemoveEmptyTry();
 
-    PhaseStatus fgRemoveEmptyTryCatch();
+    PhaseStatus fgRemoveEmptyTryCatchOrTryFault();
 
     PhaseStatus fgRemoveEmptyFinally();
 
