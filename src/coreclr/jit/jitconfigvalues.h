@@ -59,6 +59,7 @@ CONFIG_INTEGER(JitBreakMorphTree, "JitBreakMorphTree", 0xffffffff)
 CONFIG_INTEGER(JitBreakOnBadCode, "JitBreakOnBadCode", 0)
 CONFIG_INTEGER(JitBreakOnMinOpts, "JITBreakOnMinOpts", 0) // Halt if jit switches to MinOpts
 CONFIG_INTEGER(JitCloneLoops, "JitCloneLoops", 1)         // If 0, don't clone. Otherwise clone loops for optimizations.
+CONFIG_INTEGER(JitCloneLoopsWithEH, "JitCloneLoopsWithEH", 0) // If 0, don't clone loops containing EH regions
 CONFIG_INTEGER(JitCloneLoopsWithGdvTests, "JitCloneLoopsWithGdvTests", 1)     // If 0, don't clone loops based on
                                                                               // invariant type/method address tests
 RELEASE_CONFIG_INTEGER(JitCloneLoopsSizeLimit, "JitCloneLoopsSizeLimit", 400) // limit cloning to loops with less
@@ -94,6 +95,8 @@ CONFIG_INTEGER(JitOptimizeStructHiddenBuffer, "JitOptimizeStructHiddenBuffer", 1
 CONFIG_INTEGER(JitUnrollLoopMaxIterationCount,
                "JitUnrollLoopMaxIterationCount",
                DEFAULT_UNROLL_LOOP_MAX_ITERATION_COUNT)
+
+CONFIG_INTEGER(JitUnrollLoopsWithEH, "JitUnrollLoopsWithEH", 0) // If 0, don't unroll loops containing EH regions
 
 CONFIG_INTEGER(JitDirectAlloc, "JitDirectAlloc", 0)
 CONFIG_INTEGER(JitDoubleAlign, "JitDoubleAlign", 1)
@@ -665,7 +668,7 @@ RELEASE_CONFIG_INTEGER(JitEECallTimingInfo, "JitEECallTimingInfo", 0)
 
 CONFIG_INTEGER(JitEnableFinallyCloning, "JitEnableFinallyCloning", 1)
 CONFIG_INTEGER(JitEnableRemoveEmptyTry, "JitEnableRemoveEmptyTry", 1)
-CONFIG_INTEGER(JitEnableRemoveEmptyTryCatch, "JitEnableRemoveEmptyTryCatch", 1)
+CONFIG_INTEGER(JitEnableRemoveEmptyTryCatchOrTryFault, "JitEnableRemoveEmptyTryCatchOrTryFault", 1)
 
 // Overall master enable for Guarded Devirtualization.
 RELEASE_CONFIG_INTEGER(JitEnableGuardedDevirtualization, "JitEnableGuardedDevirtualization", 1)

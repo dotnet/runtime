@@ -424,7 +424,7 @@ bool BasicBlock::IsFirstColdBlock(Compiler* compiler) const
 bool BasicBlock::CanRemoveJumpToNext(Compiler* compiler) const
 {
     assert(KindIs(BBJ_ALWAYS));
-    return JumpsToNext() && (bbNext != compiler->fgFirstColdBlock);
+    return JumpsToNext() && !IsLastHotBlock(compiler);
 }
 
 //------------------------------------------------------------------------
@@ -441,7 +441,7 @@ bool BasicBlock::CanRemoveJumpToTarget(BasicBlock* target, Compiler* compiler) c
 {
     assert(KindIs(BBJ_COND));
     assert(TrueTargetIs(target) || FalseTargetIs(target));
-    return NextIs(target) && !compiler->fgInDifferentRegions(this, target);
+    return NextIs(target) && !IsLastHotBlock(compiler);
 }
 
 #ifdef DEBUG

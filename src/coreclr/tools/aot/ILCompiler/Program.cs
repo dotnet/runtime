@@ -606,6 +606,7 @@ namespace ILCompiler
 
             string mapFileName = Get(_command.MapFileName);
             string mstatFileName = Get(_command.MstatFileName);
+            string sourceLinkFileName = Get(_command.SourceLinkFileName);
 
             List<ObjectDumper> dumpers = new List<ObjectDumper>();
 
@@ -614,6 +615,9 @@ namespace ILCompiler
 
             if (mstatFileName != null)
                 dumpers.Add(new MstatObjectDumper(mstatFileName, typeSystemContext));
+
+            if (sourceLinkFileName != null)
+                dumpers.Add(new SourceLinkWriter(sourceLinkFileName));
 
             CompilationResults compilationResults = compilation.Compile(outputFilePath, ObjectDumper.Compose(dumpers));
             string exportsFile = Get(_command.ExportsFile);
