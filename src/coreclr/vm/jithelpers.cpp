@@ -96,11 +96,6 @@ using std::isnan;
 #include <optsmallperfcritical.h>
 
 //
-// helper macro to multiply two 32-bit uints
-//
-#define Mul32x32To64(a, b)  ((UINT64)((UINT32)(a)) * (UINT64)((UINT32)(b)))
-
-//
 // helper macro to get high 32-bit of 64-bit int
 //
 #define Hi32Bits(a)         ((UINT32)((UINT64)(a) >> 32))
@@ -120,7 +115,7 @@ HCIMPL2_VV(INT64, JIT_LMul, INT64 val1, INT64 val2)
     UINT32 val2High = Hi32Bits(val2);
 
     if ((val1High == 0) && (val2High == 0))
-        return Mul32x32To64(val1, val2);
+        return (UINT64)((UINT32)val1 * (UINT32)val2);
 
     return (val1 * val2);
 }
