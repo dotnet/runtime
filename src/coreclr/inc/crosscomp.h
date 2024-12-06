@@ -696,15 +696,15 @@ typedef struct _T_KNONVOLATILE_CONTEXT_POINTERS {
 #define DAC_CS_NATIVE_DATA_SIZE 24
 #elif defined(TARGET_FREEBSD) && defined(TARGET_ARM64)
 #define DAC_CS_NATIVE_DATA_SIZE 24
-#elif defined(TARGET_LINUX) && defined(TARGET_ARM)
+#elif (defined(TARGET_LINUX) || defined(TARGET_ANDROID)) && defined(TARGET_ARM)
 #define DAC_CS_NATIVE_DATA_SIZE 80
-#elif defined(TARGET_LINUX) && defined(TARGET_ARM64)
+#elif (defined(TARGET_LINUX) || defined(TARGET_ANDROID)) && defined(TARGET_ARM64)
 #define DAC_CS_NATIVE_DATA_SIZE 104
 #elif defined(TARGET_LINUX) && defined(TARGET_LOONGARCH64)
 #define DAC_CS_NATIVE_DATA_SIZE 96
-#elif defined(TARGET_LINUX) && defined(TARGET_X86)
+#elif (defined(TARGET_LINUX) || defined(TARGET_ANDROID)) && defined(TARGET_X86)
 #define DAC_CS_NATIVE_DATA_SIZE 76
-#elif defined(TARGET_LINUX) && defined(TARGET_AMD64)
+#elif (defined(TARGET_LINUX) || defined(TARGET_ANDROID)) && defined(TARGET_AMD64)
 #define DAC_CS_NATIVE_DATA_SIZE 96
 #elif defined(TARGET_LINUX) && defined(TARGET_S390X)
 #define DAC_CS_NATIVE_DATA_SIZE 96
@@ -748,4 +748,3 @@ struct T_CRITICAL_SECTION {
 #else
 #define T_CRITICAL_SECTION CRITICAL_SECTION
 #endif
-
