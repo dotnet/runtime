@@ -27,8 +27,8 @@ internal partial class MockDescriptors
             // nibble maps for various range section fragments are allocated in this range
             public ulong NibbleMapStart;
             public ulong NibbleMapEnd;
-            // "RealCodeHeader" objects for jitted methods and the module, info, and runtime functions for R2R
-            // are allocated in this range
+            // "RealCodeHeader" objects for jitted methods and the module, info, runtime functions
+            // and hot/cold map for R2R are allocated in this range
             public ulong ExecutionManagerStart;
             public ulong ExecutionManagerEnd;
         }
@@ -235,15 +235,6 @@ internal partial class MockDescriptors
             ]
         };
 
-        private static readonly MockDescriptors.TypeFields RuntimeFunctionFields = new()
-        {
-            DataType = DataType.RuntimeFunction,
-            Fields =
-            [
-                new(nameof(Data.RuntimeFunction.BeginAddress), DataType.uint32),
-            ]
-        };
-
         private static MockDescriptors.TypeFields ReadyToRunInfoFields(TargetTestHelpers helpers) => new()
         {
             DataType = DataType.ReadyToRunInfo,
@@ -252,6 +243,8 @@ internal partial class MockDescriptors
                 new(nameof(Data.ReadyToRunInfo.CompositeInfo), DataType.pointer),
                 new(nameof(Data.ReadyToRunInfo.NumRuntimeFunctions), DataType.uint32),
                 new(nameof(Data.ReadyToRunInfo.RuntimeFunctions), DataType.pointer),
+                new(nameof(Data.ReadyToRunInfo.NumHotColdMap), DataType.uint32),
+                new(nameof(Data.ReadyToRunInfo.HotColdMap), DataType.pointer),
                 new(nameof(Data.ReadyToRunInfo.DelayLoadMethodCallThunks), DataType.pointer),
                 new(nameof(Data.ReadyToRunInfo.EntryPointToMethodDescMap), DataType.Unknown, helpers.LayoutFields(MockDescriptors.HashMap.HashMapFields.Fields).Stride),
             ]
@@ -264,6 +257,7 @@ internal partial class MockDescriptors
         internal (string Name, ulong Value)[] Globals { get; }
 
         private readonly RangeSectionMapTestBuilder _rsmBuilder;
+        private readonly RuntimeFunctions _rfBuilder;
 
         private readonly MockMemorySpace.BumpAllocator _rangeSectionMapAllocator;
         private readonly MockMemorySpace.BumpAllocator _nibbleMapAllocator;
@@ -278,6 +272,7 @@ internal partial class MockDescriptors
             Version = version;
             Builder = builder;
             _rsmBuilder = new RangeSectionMapTestBuilder(ExecutionManagerCodeRangeMapAddress, builder);
+            _rfBuilder = new RuntimeFunctions(builder);
             _rangeSectionMapAllocator = Builder.CreateAllocator(allocationRange.RangeSectionMapStart, allocationRange.RangeSectionMapEnd);
             _nibbleMapAllocator = Builder.CreateAllocator(allocationRange.NibbleMapStart, allocationRange.NibbleMapEnd);
             _allocator = Builder.CreateAllocator(allocationRange.ExecutionManagerStart, allocationRange.ExecutionManagerEnd);
@@ -285,14 +280,14 @@ internal partial class MockDescriptors
                 Builder.TargetTestHelpers,
                 [
                     RangeSectionMapFields,
-                RangeSectionFragmentFields,
-                RangeSectionFields,
-                CodeHeapListNodeFields,
-                RealCodeHeaderFields,
-                RuntimeFunctionFields,
-                ReadyToRunInfoFields(Builder.TargetTestHelpers),
-                MockDescriptors.ModuleFields,
+                    RangeSectionFragmentFields,
+                    RangeSectionFields,
+                    CodeHeapListNodeFields,
+                    RealCodeHeaderFields,
+                    ReadyToRunInfoFields(Builder.TargetTestHelpers),
+                    MockDescriptors.ModuleFields,
                 ]).Concat(MockDescriptors.HashMap.GetTypes(Builder.TargetTestHelpers))
+                .Concat(_rfBuilder.Types)
                 .ToDictionary();
 
             // Tests are currently always set to use funclets
@@ -436,25 +431,27 @@ internal partial class MockDescriptors
             return codeStart;
         }
 
-        public TargetPointer AddReadyToRunInfo(uint[] runtimeFunctions)
+        public TargetPointer AddReadyToRunInfo(uint[] runtimeFunctions, uint[] hotColdMap)
         {
             TargetTestHelpers helpers = Builder.TargetTestHelpers;
 
             // Add the array of runtime functions
             uint numRuntimeFunctions = (uint)runtimeFunctions.Length;
-            Target.TypeInfo runtimeFunctionType = Types[DataType.RuntimeFunction];
-            uint runtimeFunctionSize = runtimeFunctionType.Size.Value;
-            MockMemorySpace.HeapFragment runtimeFunctionsFragment = _allocator.Allocate((numRuntimeFunctions + 1) * runtimeFunctionSize, $"RuntimeFunctions[{numRuntimeFunctions}]");
-            Builder.AddHeapFragment(runtimeFunctionsFragment);
-            for (uint i = 0; i < numRuntimeFunctions; i++)
-            {
-                Span<byte> func = Builder.BorrowAddressRange(runtimeFunctionsFragment.Address + i * runtimeFunctionSize, (int)runtimeFunctionSize);
-                helpers.Write(func.Slice(runtimeFunctionType.Fields[nameof(Data.RuntimeFunction.BeginAddress)].Offset, sizeof(uint)), runtimeFunctions[i]);
-            }
+            TargetPointer runtimeFunctionsAddr = _rfBuilder.AddRuntimeFunctions(runtimeFunctions);
 
-            // Runtime function entries are terminated by a sentinel value of -1
-            Span<byte> sentinel = Builder.BorrowAddressRange(runtimeFunctionsFragment.Address + numRuntimeFunctions * runtimeFunctionSize, (int)runtimeFunctionSize);
-            helpers.Write(sentinel.Slice(runtimeFunctionType.Fields[nameof(Data.RuntimeFunction.BeginAddress)].Offset, sizeof(uint)), ~0u);
+            // Add the hot/cold map
+            TargetPointer hotColdMapAddr = TargetPointer.Null;
+            if (hotColdMap.Length > 0)
+            {
+                MockMemorySpace.HeapFragment hotColdMapFragment = _allocator.Allocate((ulong)hotColdMap.Length * sizeof(uint), $"HotColdMap[{hotColdMap.Length}]");
+                Builder.AddHeapFragment(hotColdMapFragment);
+                hotColdMapAddr = hotColdMapFragment.Address;
+                for (uint i = 0; i < hotColdMap.Length; i++)
+                {
+                    Span<byte> span = Builder.BorrowAddressRange(hotColdMapFragment.Address + i * sizeof(uint), sizeof(uint));
+                    helpers.Write(span, hotColdMap[i]);
+                }
+            }
 
             // Add ReadyToRunInfo
             Target.TypeInfo r2rInfoType = Types[DataType.ReadyToRunInfo];
@@ -467,7 +464,11 @@ internal partial class MockDescriptors
 
             // Point at the runtime functions
             helpers.Write(data.Slice(r2rInfoType.Fields[nameof(Data.ReadyToRunInfo.NumRuntimeFunctions)].Offset, sizeof(uint)), numRuntimeFunctions);
-            helpers.WritePointer(data.Slice(r2rInfoType.Fields[nameof(Data.ReadyToRunInfo.RuntimeFunctions)].Offset, helpers.PointerSize), runtimeFunctionsFragment.Address);
+            helpers.WritePointer(data.Slice(r2rInfoType.Fields[nameof(Data.ReadyToRunInfo.RuntimeFunctions)].Offset, helpers.PointerSize), runtimeFunctionsAddr);
+
+            // Point at the hot/cold map
+            helpers.Write(data.Slice(r2rInfoType.Fields[nameof(Data.ReadyToRunInfo.NumHotColdMap)].Offset, sizeof(uint)), hotColdMap.Length);
+            helpers.WritePointer(data.Slice(r2rInfoType.Fields[nameof(Data.ReadyToRunInfo.HotColdMap)].Offset, helpers.PointerSize), hotColdMapAddr);
 
             return r2rInfo.Address;
         }
