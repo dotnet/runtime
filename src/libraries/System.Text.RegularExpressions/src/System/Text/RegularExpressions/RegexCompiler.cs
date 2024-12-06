@@ -20,168 +20,91 @@ namespace System.Text.RegularExpressions
     [RequiresDynamicCode("Compiling a RegEx requires dynamic code.")]
     internal abstract class RegexCompiler
     {
-        [field: MaybeNull]
+#pragma warning disable CS9264 // nullability of `field`: https://github.com/dotnet/csharplang/issues/8425
         private static FieldInfo RuntextstartField => field ??= RegexRunnerField("runtextstart");
-        [field: MaybeNull]
         private static FieldInfo RuntextposField => field ??= RegexRunnerField("runtextpos");
-        [field: MaybeNull]
         private static FieldInfo RuntrackposField => field ??= RegexRunnerField("runtrackpos");
-        [field: MaybeNull]
         private static FieldInfo RunstackField => field ??= RegexRunnerField("runstack");
-        [field: MaybeNull]
         private static FieldInfo CultureField => field ??= typeof(CompiledRegexRunner).GetField("_culture", BindingFlags.Instance | BindingFlags.NonPublic)!;
-        [field: MaybeNull]
         private static FieldInfo CaseBehaviorField => field ??= typeof(CompiledRegexRunner).GetField("_caseBehavior", BindingFlags.Instance | BindingFlags.NonPublic)!;
-        [field: MaybeNull]
         private static FieldInfo SearchValuesArrayField => field ??= typeof(CompiledRegexRunner).GetField("_searchValues", BindingFlags.Instance | BindingFlags.NonPublic)!;
 
-        [field: MaybeNull]
         private static MethodInfo CaptureMethod => field ??= RegexRunnerMethod("Capture");
-        [field: MaybeNull]
         private static MethodInfo TransferCaptureMethod => field ??= RegexRunnerMethod("TransferCapture");
-        [field: MaybeNull]
         private static MethodInfo UncaptureMethod => field ??= RegexRunnerMethod("Uncapture");
-        [field: MaybeNull]
         private static MethodInfo IsMatchedMethod => field ??= RegexRunnerMethod("IsMatched");
-        [field: MaybeNull]
         private static MethodInfo MatchLengthMethod => field ??= RegexRunnerMethod("MatchLength");
-        [field: MaybeNull]
         private static MethodInfo MatchIndexMethod => field ??= RegexRunnerMethod("MatchIndex");
-        [field: MaybeNull]
         private static MethodInfo IsBoundaryMethod => field ??= typeof(RegexRunner).GetMethod("IsBoundary", BindingFlags.NonPublic | BindingFlags.Static, [typeof(ReadOnlySpan<char>), typeof(int)])!;
-        [field: MaybeNull]
         private static MethodInfo IsWordCharMethod => field ??= RegexRunnerMethod("IsWordChar");
-        [field: MaybeNull]
         private static MethodInfo IsECMABoundaryMethod => field ??= typeof(RegexRunner).GetMethod("IsECMABoundary", BindingFlags.NonPublic | BindingFlags.Static, [typeof(ReadOnlySpan<char>), typeof(int)])!;
-        [field: MaybeNull]
         private static MethodInfo CrawlposMethod => field ??= RegexRunnerMethod("Crawlpos");
-        [field: MaybeNull]
         private static MethodInfo CharInClassMethod => field ??= RegexRunnerMethod("CharInClass");
-        [field: MaybeNull]
         private static MethodInfo CheckTimeoutMethod => field ??= RegexRunnerMethod("CheckTimeout");
 
-        [field: MaybeNull]
         private static MethodInfo RegexCaseEquivalencesTryFindCaseEquivalencesForCharWithIBehaviorMethod => field ??= typeof(RegexCaseEquivalences).GetMethod("TryFindCaseEquivalencesForCharWithIBehavior", BindingFlags.Static | BindingFlags.Public)!;
-        [field: MaybeNull]
         private static MethodInfo CharIsDigitMethod => field ??= typeof(char).GetMethod("IsDigit", [typeof(char)])!;
-        [field: MaybeNull]
         private static MethodInfo CharIsWhiteSpaceMethod => field ??= typeof(char).GetMethod("IsWhiteSpace", [typeof(char)])!;
-        [field: MaybeNull]
         private static MethodInfo CharIsControlMethod => field ??= typeof(char).GetMethod("IsControl", [typeof(char)])!;
-        [field: MaybeNull]
         private static MethodInfo CharIsLetterMethod => field ??= typeof(char).GetMethod("IsLetter", [typeof(char)])!;
-        [field: MaybeNull]
         private static MethodInfo CharIsAsciiDigitMethod => field ??= typeof(char).GetMethod("IsAsciiDigit", [typeof(char)])!;
-        [field: MaybeNull]
         private static MethodInfo CharIsAsciiLetterMethod => field ??= typeof(char).GetMethod("IsAsciiLetter", [typeof(char)])!;
-        [field: MaybeNull]
         private static MethodInfo CharIsAsciiLetterLowerMethod => field ??= typeof(char).GetMethod("IsAsciiLetterLower", [typeof(char)])!;
-        [field: MaybeNull]
         private static MethodInfo CharIsAsciiLetterUpperMethod => field ??= typeof(char).GetMethod("IsAsciiLetterUpper", [typeof(char)])!;
-        [field: MaybeNull]
         private static MethodInfo CharIsAsciiLetterOrDigitMethod => field ??= typeof(char).GetMethod("IsAsciiLetterOrDigit", [typeof(char)])!;
-        [field: MaybeNull]
         private static MethodInfo CharIsAsciiHexDigitMethod => field ??= typeof(char).GetMethod("IsAsciiHexDigit", [typeof(char)])!;
-        [field: MaybeNull]
         private static MethodInfo CharIsAsciiHexDigitLowerMethod => field ??= typeof(char).GetMethod("IsAsciiHexDigitLower", [typeof(char)])!;
-        [field: MaybeNull]
         private static MethodInfo CharIsAsciiHexDigitUpperMethod => field ??= typeof(char).GetMethod("IsAsciiHexDigitUpper", [typeof(char)])!;
-        [field: MaybeNull]
         private static MethodInfo CharIsLetterOrDigitMethod => field ??= typeof(char).GetMethod("IsLetterOrDigit", [typeof(char)])!;
-        [field: MaybeNull]
         private static MethodInfo CharIsLowerMethod => field ??= typeof(char).GetMethod("IsLower", [typeof(char)])!;
-        [field: MaybeNull]
         private static MethodInfo CharIsUpperMethod => field ??= typeof(char).GetMethod("IsUpper", [typeof(char)])!;
-        [field: MaybeNull]
         private static MethodInfo CharIsNumberMethod => field ??= typeof(char).GetMethod("IsNumber", [typeof(char)])!;
-        [field: MaybeNull]
         private static MethodInfo CharIsPunctuationMethod => field ??= typeof(char).GetMethod("IsPunctuation", [typeof(char)])!;
-        [field: MaybeNull]
         private static MethodInfo CharIsSeparatorMethod => field ??= typeof(char).GetMethod("IsSeparator", [typeof(char)])!;
-        [field: MaybeNull]
         private static MethodInfo CharIsSymbolMethod => field ??= typeof(char).GetMethod("IsSymbol", [typeof(char)])!;
-        [field: MaybeNull]
         private static MethodInfo CharGetUnicodeInfoMethod => field ??= typeof(char).GetMethod("GetUnicodeCategory", [typeof(char)])!;
-        [field: MaybeNull]
         private static MethodInfo SpanGetItemMethod => field ??= typeof(ReadOnlySpan<char>).GetMethod("get_Item", [typeof(int)])!;
-        [field: MaybeNull]
         private static MethodInfo SpanGetLengthMethod => field ??= typeof(ReadOnlySpan<char>).GetMethod("get_Length")!;
-        [field: MaybeNull]
         private static MethodInfo SpanIndexOfCharMethod => field ??= typeof(MemoryExtensions).GetMethod("IndexOf", [typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0)])!.MakeGenericMethod(typeof(char));
-        [field: MaybeNull]
         private static MethodInfo SpanIndexOfSpanMethod => field ??= typeof(MemoryExtensions).GetMethod("IndexOf", [typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0))])!.MakeGenericMethod(typeof(char));
-        [field: MaybeNull]
         private static MethodInfo SpanIndexOfSpanStringComparisonMethod => field ??= typeof(MemoryExtensions).GetMethod("IndexOf", [typeof(ReadOnlySpan<char>), typeof(ReadOnlySpan<char>), typeof(StringComparison)])!;
-        [field: MaybeNull]
         private static MethodInfo SpanIndexOfAnyCharCharMethod => field ??= typeof(MemoryExtensions).GetMethod("IndexOfAny", [typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0)])!.MakeGenericMethod(typeof(char));
-        [field: MaybeNull]
         private static MethodInfo SpanIndexOfAnyCharCharCharMethod => field ??= typeof(MemoryExtensions).GetMethod("IndexOfAny", [typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0)])!.MakeGenericMethod(typeof(char));
-        [field: MaybeNull]
         private static MethodInfo SpanIndexOfAnySpanMethod => field ??= typeof(MemoryExtensions).GetMethod("IndexOfAny", [typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0))])!.MakeGenericMethod(typeof(char));
-        [field: MaybeNull]
         private static MethodInfo SpanIndexOfAnySearchValuesMethod => field ??= typeof(MemoryExtensions).GetMethod("IndexOfAny", [typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), typeof(SearchValues<>).MakeGenericType(Type.MakeGenericMethodParameter(0))])!.MakeGenericMethod(typeof(char));
-        [field: MaybeNull]
         private static MethodInfo SpanIndexOfAnySearchValuesStringMethod => field ??= typeof(MemoryExtensions).GetMethod("IndexOfAny", [typeof(ReadOnlySpan<char>), typeof(SearchValues<string>)])!;
-        [field: MaybeNull]
         private static MethodInfo SpanIndexOfAnyExceptCharMethod => field ??= typeof(MemoryExtensions).GetMethod("IndexOfAnyExcept", [typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0)])!.MakeGenericMethod(typeof(char));
-        [field: MaybeNull]
         private static MethodInfo SpanIndexOfAnyExceptCharCharMethod => field ??= typeof(MemoryExtensions).GetMethod("IndexOfAnyExcept", [typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0)])!.MakeGenericMethod(typeof(char));
-        [field: MaybeNull]
         private static MethodInfo SpanIndexOfAnyExceptCharCharCharMethod => field ??= typeof(MemoryExtensions).GetMethod("IndexOfAnyExcept", [typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0)])!.MakeGenericMethod(typeof(char));
-        [field: MaybeNull]
         private static MethodInfo SpanIndexOfAnyExceptSpanMethod => field ??= typeof(MemoryExtensions).GetMethod("IndexOfAnyExcept", [typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0))])!.MakeGenericMethod(typeof(char));
-        [field: MaybeNull]
         private static MethodInfo SpanIndexOfAnyExceptSearchValuesMethod => field ??= typeof(MemoryExtensions).GetMethod("IndexOfAnyExcept", [typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), typeof(SearchValues<>).MakeGenericType(Type.MakeGenericMethodParameter(0))])!.MakeGenericMethod(typeof(char));
-        [field: MaybeNull]
         private static MethodInfo SpanIndexOfAnyInRangeMethod => field ??= typeof(MemoryExtensions).GetMethod("IndexOfAnyInRange", [typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0)])!.MakeGenericMethod(typeof(char));
-        [field: MaybeNull]
         private static MethodInfo SpanIndexOfAnyExceptInRangeMethod => field ??= typeof(MemoryExtensions).GetMethod("IndexOfAnyExceptInRange", [typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0)])!.MakeGenericMethod(typeof(char));
-        [field: MaybeNull]
         private static MethodInfo SpanLastIndexOfCharMethod => field ??= typeof(MemoryExtensions).GetMethod("LastIndexOf", [typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0)])!.MakeGenericMethod(typeof(char));
-        [field: MaybeNull]
         private static MethodInfo SpanLastIndexOfAnyCharCharMethod => field ??= typeof(MemoryExtensions).GetMethod("LastIndexOfAny", [typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0)])!.MakeGenericMethod(typeof(char));
-        [field: MaybeNull]
         private static MethodInfo SpanLastIndexOfAnyCharCharCharMethod => field ??= typeof(MemoryExtensions).GetMethod("LastIndexOfAny", [typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0)])!.MakeGenericMethod(typeof(char));
-        [field: MaybeNull]
         private static MethodInfo SpanLastIndexOfAnySpanMethod => field ??= typeof(MemoryExtensions).GetMethod("LastIndexOfAny", [typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0))])!.MakeGenericMethod(typeof(char));
-        [field: MaybeNull]
         private static MethodInfo SpanLastIndexOfAnySearchValuesMethod => field ??= typeof(MemoryExtensions).GetMethod("LastIndexOfAny", [typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), typeof(SearchValues<>).MakeGenericType(Type.MakeGenericMethodParameter(0))])!.MakeGenericMethod(typeof(char));
-        [field: MaybeNull]
         private static MethodInfo SpanLastIndexOfSpanMethod => field ??= typeof(MemoryExtensions).GetMethod("LastIndexOf", [typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0))])!.MakeGenericMethod(typeof(char));
-        [field: MaybeNull]
         private static MethodInfo SpanLastIndexOfAnyExceptCharMethod => field ??= typeof(MemoryExtensions).GetMethod("LastIndexOfAnyExcept", [typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0)])!.MakeGenericMethod(typeof(char));
-        [field: MaybeNull]
         private static MethodInfo SpanLastIndexOfAnyExceptCharCharMethod => field ??= typeof(MemoryExtensions).GetMethod("LastIndexOfAnyExcept", [typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0)])!.MakeGenericMethod(typeof(char));
-        [field: MaybeNull]
         private static MethodInfo SpanLastIndexOfAnyExceptCharCharCharMethod => field ??= typeof(MemoryExtensions).GetMethod("LastIndexOfAnyExcept", [typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0)])!.MakeGenericMethod(typeof(char));
-        [field: MaybeNull]
         private static MethodInfo SpanLastIndexOfAnyExceptSpanMethod => field ??= typeof(MemoryExtensions).GetMethod("LastIndexOfAnyExcept", [typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0))])!.MakeGenericMethod(typeof(char));
-        [field: MaybeNull]
         private static MethodInfo SpanLastIndexOfAnyExceptSearchValuesMethod => field ??= typeof(MemoryExtensions).GetMethod("LastIndexOfAnyExcept", [typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), typeof(SearchValues<>).MakeGenericType(Type.MakeGenericMethodParameter(0))])!.MakeGenericMethod(typeof(char));
-        [field: MaybeNull]
         private static MethodInfo SpanLastIndexOfAnyInRangeMethod => field ??= typeof(MemoryExtensions).GetMethod("LastIndexOfAnyInRange", [typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0)])!.MakeGenericMethod(typeof(char));
-        [field: MaybeNull]
         private static MethodInfo SpanLastIndexOfAnyExceptInRangeMethod => field ??= typeof(MemoryExtensions).GetMethod("LastIndexOfAnyExceptInRange", [typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0)])!.MakeGenericMethod(typeof(char));
-        [field: MaybeNull]
         private static MethodInfo SpanSliceIntMethod => field ??= typeof(ReadOnlySpan<char>).GetMethod("Slice", [typeof(int)])!;
-        [field: MaybeNull]
         private static MethodInfo SpanSliceIntIntMethod => field ??= typeof(ReadOnlySpan<char>).GetMethod("Slice", [typeof(int), typeof(int)])!;
-        [field: MaybeNull]
         private static MethodInfo SpanStartsWithSpanMethod => field ??= typeof(MemoryExtensions).GetMethod("StartsWith", [typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0))])!.MakeGenericMethod(typeof(char));
-        [field: MaybeNull]
         private static MethodInfo SpanStartsWithSpanComparisonMethod => field ??= typeof(MemoryExtensions).GetMethod("StartsWith", [typeof(ReadOnlySpan<char>), typeof(ReadOnlySpan<char>), typeof(StringComparison)])!;
-        [field: MaybeNull]
         private static MethodInfo StringAsSpanMethod => field ??= typeof(MemoryExtensions).GetMethod("AsSpan", [typeof(string)])!;
-        [field: MaybeNull]
         private static MethodInfo StringGetCharsMethod => field ??= typeof(string).GetMethod("get_Chars", [typeof(int)])!;
-        [field: MaybeNull]
         private static MethodInfo ArrayResizeMethod => field ??= typeof(Array).GetMethod("Resize")!.MakeGenericMethod(typeof(int));
-        [field: MaybeNull]
         private static MethodInfo MathMinIntIntMethod => field ??= typeof(Math).GetMethod("Min", [typeof(int), typeof(int)])!;
-        [field: MaybeNull]
         private static MethodInfo MemoryMarshalGetArrayDataReferenceSearchValuesMethod => field ??= typeof(MemoryMarshal).GetMethod("GetArrayDataReference", [Type.MakeGenericMethodParameter(0).MakeArrayType()])!.MakeGenericMethod(typeof(SearchValues<char>))!;
-        [field: MaybeNull]
         private static MethodInfo UnsafeAsMethod => field ??= typeof(Unsafe).GetMethod("As", [typeof(object)])!;
+#pragma warning restore CS9264
+
         // Note:
         // Single-range helpers like IsAsciiLetterLower, IsAsciiLetterUpper, IsAsciiDigit, and IsBetween aren't used here, as the IL generated for those
         // single-range checks is as cheap as the method call, and there's no readability issue as with the source generator.
