@@ -23,11 +23,23 @@ public class DllImportTests : BlazorWasmTestBase
         _enablePerTestCleanup = true;
     }
 
+    public static TheoryData<Configuration, bool, bool> DllImportTheoryData()
+    {
+        var data = new TheoryData<Configuration, bool, bool>();
+        data.Add(Configuration.Debug, /*build*/true, /*publish*/false);
+        data.Add(Configuration.Release, /*build*/true, /*publish*/false);
+        data.Add(Configuration.Release, /*build*/false, /*publish*/true);
+
+        // ActiveIssue("https://github.com/dotnet/runtime/issues/110482")
+        if (!s_isWindows)
+        {
+            data.Add(Configuration.Release, /*build*/true, /*publish*/true);
+        }
+        return data;
+    }
+
     [Theory]
-    [InlineData(Configuration.Debug, /*build*/true, /*publish*/false)]
-    [InlineData(Configuration.Release, /*build*/true, /*publish*/false)]
-    [InlineData(Configuration.Release, /*build*/false, /*publish*/true)]
-    [InlineData(Configuration.Release, /*build*/true, /*publish*/true)]
+    [MemberData(nameof(DllImportTheoryData))]
     public async Task WithDllImportInMainAssembly(Configuration config, bool build, bool publish)
     {
         // Based on https://github.com/dotnet/runtime/issues/59255
