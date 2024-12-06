@@ -3747,7 +3747,7 @@ public:
 
     //-------------------------------------------------------------------------
 
-    GenTree* gtFoldExpr(GenTree* tree);
+    GenTree* gtFoldExpr(GenTree* tree, bool* folded = nullptr);
     GenTree* gtFoldExprConst(GenTree* tree);
     GenTree* gtFoldIndirConst(GenTreeIndir* indir);
     GenTree* gtFoldExprSpecial(GenTree* tree);

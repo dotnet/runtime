@@ -8305,10 +8305,17 @@ DONE_MORPHING_CHILDREN:
     }
 
     // Try to fold it, maybe we get lucky,
-    tree = gtFoldExpr(tree);
+    bool folded;
+    tree = gtFoldExpr(tree, &folded);
 
     if (oldTree != tree)
     {
+        if (folded)
+        {
+            INDEBUG(tree->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+            return tree;
+        }
+
         /* if gtFoldExpr returned op1 or op2 then we are done */
         if ((tree == op1) || (tree == op2) || (tree == qmarkOp1) || (tree == qmarkOp2))
         {
