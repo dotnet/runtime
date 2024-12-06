@@ -544,7 +544,7 @@ extern "C" void QCALLTYPE RuntimeTypeHandle_GetInterfaces(MethodTable* pMT, QCal
         MethodTable::InterfaceMapIterator it = pMT->IterateInterfaceMap();
         while (it.Next())
         {
-            _ASSERTE(i < ifaceCount);
+            _ASSERTE(i < (UINT)ifaceCount);
             OBJECTREF refInterface = it.GetInterface(pMT)->GetManagedClassObject();
             gc.Types->SetAt(i, refInterface);
             _ASSERTE(gc.Types->GetAt(i) != NULL);
