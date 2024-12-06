@@ -271,6 +271,9 @@ void CodeGen::genPopCalleeSavedRegistersAndFreeLclFrame(bool jmpEpilog)
         GetEmitter()->emitIns_R_R_I(INS_add, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, spAdjust);
         compiler->unwindAllocStack(spAdjust);
     }
+
+    // TODO-PAC: emit autiasp
+    GetEmitter()->emitIns(INS_xpaclri);
 }
 
 //------------------------------------------------------------------------
@@ -1690,6 +1693,9 @@ void CodeGen::genFuncletEpilog()
             genStackPointerAdjustment(-genFuncletInfo.fiSpDelta1, REG_NA, nullptr, /* reportUnwindData */ true);
         }
     }
+
+    // TODO-PAC: emit autiasp
+    GetEmitter()->emitIns(INS_xpaclri);
 
     inst_RV(INS_ret, REG_LR, TYP_I_IMPL);
     compiler->unwindReturn(REG_LR);
