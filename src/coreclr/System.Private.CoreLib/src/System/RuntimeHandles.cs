@@ -539,8 +539,24 @@ namespace System
             return success;
         }
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern Type[]? GetInterfaces(RuntimeType type);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_GetInterfaces")]
+        private static unsafe partial void GetInterfaces(MethodTable* pMT, ObjectHandleOnStack result);
+
+        internal static Type[] GetInterfaces(RuntimeType type)
+        {
+            Debug.Assert(!IsGenericVariable(type));
+
+            Type[] result = Array.Empty<Type>();
+            TypeHandle typeHandle = type.GetNativeTypeHandle();
+            if (typeHandle.IsTypeDesc)
+            {
+                return result;
+            }
+
+            GetInterfaces(typeHandle.AsMethodTable(), ObjectHandleOnStack.Create(ref result));
+            GC.KeepAlive(type);
+            return result;
+        }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_GetConstraints")]
         private static partial void GetConstraints(QCallTypeHandle handle, ObjectHandleOnStack types);

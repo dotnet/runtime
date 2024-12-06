@@ -826,30 +826,21 @@ namespace System
                     #endregion
 
                     #region Populate Literal Fields on Interfaces
+                    Type[] interfaces;
                     if (ReflectedType.IsGenericParameter)
                     {
-                        Type[] interfaces = ReflectedType.BaseType!.GetInterfaces();
-
-                        for (int i = 0; i < interfaces.Length; i++)
-                        {
-                            // Populate literal fields defined on any of the interfaces implemented by the declaring type
-                            PopulateLiteralFields(filter, (RuntimeType)interfaces[i], ref list);
-                            PopulateRtFields(filter, (RuntimeType)interfaces[i], ref list);
-                        }
+                        interfaces = ReflectedType.BaseType!.GetInterfaces();
                     }
                     else
                     {
-                        Type[]? interfaces = RuntimeTypeHandle.GetInterfaces(ReflectedType);
+                        interfaces = RuntimeTypeHandle.GetInterfaces(ReflectedType);
+                    }
 
-                        if (interfaces != null)
-                        {
-                            for (int i = 0; i < interfaces.Length; i++)
-                            {
-                                // Populate literal fields defined on any of the interfaces implemented by the declaring type
-                                PopulateLiteralFields(filter, (RuntimeType)interfaces[i], ref list);
-                                PopulateRtFields(filter, (RuntimeType)interfaces[i], ref list);
-                            }
-                        }
+                    foreach (Type iface in interfaces)
+                    {
+                        // Populate literal fields defined on any of the interfaces implemented by the declaring type
+                        PopulateLiteralFields(filter, (RuntimeType)iface, ref list);
+                        PopulateRtFields(filter, (RuntimeType)iface, ref list);
                     }
                     #endregion
 
@@ -1016,23 +1007,19 @@ namespace System
 
                     if (!RuntimeTypeHandle.IsGenericVariable(declaringType))
                     {
-                        Type[]? ifaces = RuntimeTypeHandle.GetInterfaces(declaringType);
-
-                        if (ifaces != null)
+                        Type[] ifaces = RuntimeTypeHandle.GetInterfaces(declaringType);
+                        foreach (Type iface in ifaces)
                         {
-                            for (int i = 0; i < ifaces.Length; i++)
+                            RuntimeType interfaceType = (RuntimeType)iface;
+
+                            if (filter.RequiresStringComparison())
                             {
-                                RuntimeType interfaceType = (RuntimeType)ifaces[i];
-
-                                if (filter.RequiresStringComparison())
-                                {
-                                    if (!filter.Match(RuntimeTypeHandle.GetUtf8Name(interfaceType)))
-                                        continue;
-                                }
-
-                                Debug.Assert(interfaceType.IsInterface);
-                                list.Add(interfaceType);
+                                if (!filter.Match(RuntimeTypeHandle.GetUtf8Name(interfaceType)))
+                                    continue;
                             }
+
+                            Debug.Assert(interfaceType.IsInterface);
+                            list.Add(interfaceType);
                         }
 
                         if (ReflectedType.IsSZArray)

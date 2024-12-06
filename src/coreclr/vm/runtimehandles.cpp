@@ -515,7 +515,50 @@ extern "C" void QCALLTYPE RuntimeTypeHandle_ConstructName(QCall::TypeHandle pTyp
     END_QCALL;
 }
 
-PTRARRAYREF CopyRuntimeTypeHandles(TypeHandle * prgTH, INT32 numTypeHandles, BinderClassID arrayElemType)
+extern "C" void QCALLTYPE RuntimeTypeHandle_GetInterfaces(MethodTable* pMT, QCall::ObjectHandleOnStack result)
+{
+    QCALL_CONTRACT;
+
+    _ASSERTE(pMT != NULL);
+
+    BEGIN_QCALL;
+
+    INT32 ifaceCount = pMT->GetNumInterfaces();
+    // Allocate the array
+    if (ifaceCount > 0)
+    {
+        GCX_COOP();
+
+        struct
+        {
+            PTRARRAYREF Types;
+        } gc;
+        gc.Types = NULL;
+        GCPROTECT_BEGIN(gc);
+        TypeHandle arrayHandle = ClassLoader::LoadArrayTypeThrowing(TypeHandle(g_pRuntimeTypeClass), ELEMENT_TYPE_SZARRAY);
+        gc.Types = (PTRARRAYREF)AllocateSzArray(arrayHandle, ifaceCount);
+
+        UINT i = 0;
+
+        // Populate type array
+        MethodTable::InterfaceMapIterator it = pMT->IterateInterfaceMap();
+        while (it.Next())
+        {
+            _ASSERTE(i < ifaceCount);
+            OBJECTREF refInterface = it.GetInterface(pMT)->GetManagedClassObject();
+            gc.Types->SetAt(i, refInterface);
+            _ASSERTE(gc.Types->GetAt(i) != NULL);
+            i++;
+        }
+
+        result.Set(gc.Types);
+        GCPROTECT_END();
+    }
+
+    END_QCALL;
+}
+
+static PTRARRAYREF CopyRuntimeTypeHandles(TypeHandle * prgTH, INT32 numTypeHandles, BinderClassID arrayElemType)
 {
     CONTRACTL {
         THROWS;
@@ -578,61 +621,6 @@ extern "C" void QCALLTYPE RuntimeTypeHandle_GetConstraints(QCall::TypeHandle pTy
 
     return;
 }
-
-FCIMPL1(PtrArray*, RuntimeTypeHandle::GetInterfaces, ReflectClassBaseObject *pTypeUNSAFE) {
-    CONTRACTL {
-        FCALL_CHECK;
-    }
-    CONTRACTL_END;
-
-    REFLECTCLASSBASEREF refType = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(pTypeUNSAFE);
-
-    if (refType == NULL)
-        FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
-
-    TypeHandle typeHandle = refType->GetType();
-
-  if (typeHandle.IsGenericVariable())
-        FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
-
-    INT32 ifaceCount = 0;
-
-    PTRARRAYREF refRetVal  = NULL;
-    HELPER_METHOD_FRAME_BEGIN_RET_2(refRetVal, refType);
-    {
-        if (typeHandle.IsTypeDesc())
-        {
-            ifaceCount = 0;
-        }
-        else
-        {
-            ifaceCount = typeHandle.GetMethodTable()->GetNumInterfaces();
-        }
-
-        // Allocate the array
-        if (ifaceCount > 0)
-        {
-            TypeHandle arrayHandle = ClassLoader::LoadArrayTypeThrowing(TypeHandle(g_pRuntimeTypeClass), ELEMENT_TYPE_SZARRAY);
-            refRetVal = (PTRARRAYREF)AllocateSzArray(arrayHandle, ifaceCount);
-
-            // populate type array
-            UINT i = 0;
-
-            MethodTable::InterfaceMapIterator it = typeHandle.GetMethodTable()->IterateInterfaceMap();
-            while (it.Next())
-            {
-                OBJECTREF refInterface = it.GetInterface(typeHandle.GetMethodTable())->GetManagedClassObject();
-                refRetVal->SetAt(i, refInterface);
-                _ASSERTE(refRetVal->GetAt(i) != NULL);
-                i++;
-            }
-        }
-    }
-    HELPER_METHOD_FRAME_END();
-
-    return (PtrArray*)OBJECTREFToObject(refRetVal);
-}
-FCIMPLEND
 
 FCIMPL1(INT32, RuntimeTypeHandle::GetAttributes, ReflectClassBaseObject *pTypeUNSAFE) {
     CONTRACTL {
