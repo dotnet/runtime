@@ -3531,7 +3531,7 @@ namespace System.Numerics.Tensors
             {
                 return T.CreateChecked(Math.Sqrt(double.CreateChecked(variance)));
             }
-            return T.Pow(sum / T.CreateChecked(x._shape._memoryLength), T.CreateChecked(0.5));
+            return T.Pow(variance, T.CreateChecked(0.5));
         }
         #endregion
 
