@@ -34,10 +34,10 @@ namespace System.Globalization.Tests
             Assert.Throws<ArgumentException>(() => "\uFB01".IsNormalized((NormalizationForm)10));
             Assert.Throws<ArgumentException>(() => "\uFB01".AsSpan().IsNormalized((NormalizationForm)10));
 
-            AssertExtensions.Throws<ArgumentException>("strInput", () => "\uFFFE".IsNormalized()); // Invalid codepoint
+            AssertExtensions.Throws<ArgumentException>("source", () => "\uFFFE".IsNormalized()); // Invalid codepoint
             AssertExtensions.Throws<ArgumentException>("source", () => "\uFFFE".AsSpan().IsNormalized()); // Invalid codepoint
 
-            AssertExtensions.Throws<ArgumentException>("strInput", () => "\uD800\uD800".IsNormalized()); // Invalid surrogate pair
+            AssertExtensions.Throws<ArgumentException>("source", () => "\uD800\uD800".IsNormalized()); // Invalid surrogate pair
             AssertExtensions.Throws<ArgumentException>("source", () => "\uD800\uD800".AsSpan().IsNormalized()); // Invalid surrogate pair
         }
 

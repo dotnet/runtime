@@ -32,27 +32,6 @@ namespace System.Globalization
             return result != Interop.BOOL.FALSE;
         }
 
-        private static unsafe bool NlsIsNormalized(string strInput, NormalizationForm normalizationForm)
-        {
-            Debug.Assert(!GlobalizationMode.Invariant);
-            Debug.Assert(GlobalizationMode.UseNls);
-            Debug.Assert(strInput != null);
-            Debug.Assert(normalizationForm == NormalizationForm.FormC || normalizationForm == NormalizationForm.FormD || normalizationForm == NormalizationForm.FormKC || normalizationForm == NormalizationForm.FormKD);
-
-            Interop.BOOL result;
-            fixed (char* pInput = strInput)
-            {
-                result = Interop.Normaliz.IsNormalizedString(normalizationForm, pInput, strInput.Length);
-            }
-
-            // The only way to know if IsNormalizedString failed is through checking the Win32 last error
-            // IsNormalizedString pinvoke has SetLastError attribute property which will set the last error
-            // to 0 (ERROR_SUCCESS) before executing the calls.
-            CheckLastErrorAndThrowIfFailed(nameof(strInput));
-
-            return result != Interop.BOOL.FALSE;
-        }
-
         private static unsafe string NlsNormalize(string strInput, NormalizationForm normalizationForm)
         {
             Debug.Assert(!GlobalizationMode.Invariant);

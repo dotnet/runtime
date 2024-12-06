@@ -10,37 +10,6 @@ namespace System.Globalization
 {
     internal static partial class Normalization
     {
-        private static unsafe bool IcuIsNormalized(string strInput, NormalizationForm normalizationForm)
-        {
-            Debug.Assert(!GlobalizationMode.Invariant);
-            Debug.Assert(!GlobalizationMode.UseNls);
-            Debug.Assert(normalizationForm == NormalizationForm.FormC || normalizationForm == NormalizationForm.FormD || normalizationForm == NormalizationForm.FormKC || normalizationForm == NormalizationForm.FormKD);
-
-            ValidateArguments(strInput, normalizationForm);
-
-            int ret;
-            fixed (char* pInput = strInput)
-            {
-#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
-                if (GlobalizationMode.Hybrid)
-                {
-                    ret = Interop.Globalization.IsNormalizedNative(normalizationForm, pInput, strInput.Length);
-                }
-                else
-#endif
-                {
-                    ret = Interop.Globalization.IsNormalized(normalizationForm, pInput, strInput.Length);
-                }
-            }
-
-            if (ret == -1)
-            {
-                throw new ArgumentException(SR.Argument_InvalidCharSequenceNoIndex, nameof(strInput));
-            }
-
-            return ret == 1;
-        }
-
         private static unsafe bool IcuIsNormalized(ReadOnlySpan<char> source, NormalizationForm normalizationForm)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
@@ -231,7 +200,7 @@ namespace System.Globalization
             if ((OperatingSystem.IsBrowser() || OperatingSystem.IsWasi()) && (normalizationForm == NormalizationForm.FormKC || normalizationForm == NormalizationForm.FormKD))
             {
                 // Browser's ICU doesn't contain data needed for FormKC and FormKD
-                throw new PlatformNotSupportedException();
+                throw new PlatformNotSupportedException(SR.Argument_UnsupportedNormalizationFormInBrowser);
             }
 
             if (HasInvalidUnicodeSequence(strInput))

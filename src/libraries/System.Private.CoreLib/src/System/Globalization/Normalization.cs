@@ -9,22 +9,6 @@ namespace System.Globalization
 {
     internal static partial class Normalization
     {
-        internal static bool IsNormalized(string strInput, NormalizationForm normalizationForm)
-        {
-            CheckNormalizationForm(normalizationForm);
-
-            if (GlobalizationMode.Invariant)
-            {
-                // In Invariant mode we assume all characters are normalized.
-                // This is because we don't support any linguistic operation on the strings
-                return true;
-            }
-
-            return GlobalizationMode.UseNls ?
-                NlsIsNormalized(strInput, normalizationForm) :
-                IcuIsNormalized(strInput, normalizationForm);
-        }
-
         internal static bool IsNormalized(ReadOnlySpan<char> source, NormalizationForm normalizationForm = NormalizationForm.FormC)
         {
             CheckNormalizationForm(normalizationForm);
@@ -61,25 +45,25 @@ namespace System.Globalization
         {
             CheckNormalizationForm(normalizationForm);
 
-            if (GlobalizationMode.Invariant || source.IsEmpty)
+            if (source.IsEmpty)
             {
-                // In Invariant mode we assume all characters are normalized.
-                // This is because we don't support any linguistic operation on the strings
                 charsWritten = 0;
                 return true;
             }
 
-            if (Ascii.IsValid(source))
+            if (GlobalizationMode.Invariant || Ascii.IsValid(source))
             {
-                if (destination.Length < source.Length)
+                // In Invariant mode we assume all characters are normalized.
+                // This is because we don't support any linguistic operation on the strings
+
+                if (source.TryCopyTo(destination))
                 {
-                    charsWritten = 0;
-                    return false;
+                    charsWritten = source.Length;
+                    return true;
                 }
 
-                source.CopyTo(destination);
-                charsWritten = source.Length;
-                return true;
+                charsWritten = 0;
+                return false;
             }
 
             return GlobalizationMode.UseNls ?
