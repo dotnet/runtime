@@ -327,8 +327,6 @@ public:
         FieldDesc *pFieldDesc, ReflectMethodObject *pMethodUNSAFE,
         ReflectClassBaseObject *pDeclaringType);
 
-    static FCDECL2(FC_BOOL_RET, CompareSig, SignatureNative* pLhs, SignatureNative* pRhs);
-
     static FCDECL3(INT32, GetParameterOffsetInternal, PCCOR_SIGNATURE sig, DWORD csig, INT32 parameterIndex);
 
     static FCDECL3(INT32, GetTypeParameterOffset, SignatureNative* pSig, INT32 offset, INT32 index);
@@ -507,6 +505,10 @@ private:
     DWORD m_cSig;
     MethodDesc* m_pMethod;
 };
+
+extern "C" BOOL QCALLTYPE Signature_AreEqual(
+    PCCOR_SIGNATURE sig1, INT32 cSig1, QCall::TypeHandle handle1,
+    PCCOR_SIGNATURE sig2, INT32 cSig2, QCall::TypeHandle handle2);
 
 class ReflectionPointer : public Object
 {

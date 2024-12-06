@@ -133,7 +133,6 @@ FCFuncEnd()
 
 FCFuncStart(gSignatureNative)
     FCFuncElement("GetSignature", SignatureNative::GetSignature)
-    FCFuncElement("CompareSig", SignatureNative::CompareSig)
     FCFuncElement("GetParameterOffsetInternal", SignatureNative::GetParameterOffsetInternal)
     FCFuncElement("GetTypeParameterOffset", SignatureNative::GetTypeParameterOffset)
     FCFuncElement("GetCustomModifiersAtOffset", SignatureNative::GetCustomModifiersAtOffset)

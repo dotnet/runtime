@@ -1897,7 +1897,7 @@ namespace System
         public int MDStreamVersion => GetMDStreamVersion(GetRuntimeModule());
     }
 
-    internal sealed unsafe class Signature
+    internal sealed unsafe partial class Signature
     {
         #region FCalls
         [MemberNotNull(nameof(m_arguments))]
@@ -1961,8 +1961,17 @@ namespace System
         internal RuntimeType ReturnType => m_returnTypeORfieldType;
         internal RuntimeType FieldType => m_returnTypeORfieldType;
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern bool CompareSig(Signature sig1, Signature sig2);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Signature_AreEqual")]
+        private static partial Interop.BOOL AreEqual(
+            void* sig1, int csig1, QCallTypeHandle type1,
+            void* sig2, int csig2, QCallTypeHandle type2);
+
+        internal static bool AreEqual(Signature sig1, Signature sig2)
+        {
+            return AreEqual(
+                sig1.m_sig, sig1.m_csig, new QCallTypeHandle(ref sig1.m_declaringType!),
+                sig2.m_sig, sig2.m_csig, new QCallTypeHandle(ref sig2.m_declaringType!)) != Interop.BOOL.FALSE;
+        }
 
         internal Type[] GetCustomModifiers(int parameterIndex, bool required) =>
             GetCustomModifiersAtOffset(GetParameterOffset(parameterIndex), required);

@@ -1828,32 +1828,25 @@ FCIMPL6(void, SignatureNative::GetSignature,
 }
 FCIMPLEND
 
-FCIMPL2(FC_BOOL_RET, SignatureNative::CompareSig, SignatureNative* pLhsUNSAFE, SignatureNative* pRhsUNSAFE)
+extern "C" BOOL QCALLTYPE Signature_AreEqual(
+    PCCOR_SIGNATURE sig1, INT32 cSig1, QCall::TypeHandle handle1,
+    PCCOR_SIGNATURE sig2, INT32 cSig2, QCall::TypeHandle handle2)
 {
-    FCALL_CONTRACT;
+    QCALL_CONTRACT;
 
-    INT32 ret = 0;
+    BOOL ret = FALSE;
 
-    struct
-    {
-        SIGNATURENATIVEREF pLhs;
-        SIGNATURENATIVEREF pRhs;
-    } gc;
+    BEGIN_QCALL;
 
-    gc.pLhs = (SIGNATURENATIVEREF)pLhsUNSAFE;
-    gc.pRhs = (SIGNATURENATIVEREF)pRhsUNSAFE;
+    ret = MetaSig::CompareMethodSigs(
+        sig1, cSig1, handle1.AsTypeHandle().GetModule(), NULL,
+        sig2, cSig2, handle2.AsTypeHandle().GetModule(), NULL,
+        FALSE);
 
-    HELPER_METHOD_FRAME_BEGIN_RET_PROTECT(gc);
-    {
-        ret = MetaSig::CompareMethodSigs(
-            gc.pLhs->GetCorSig(), gc.pLhs->GetCorSigSize(), gc.pLhs->GetModule(), NULL,
-            gc.pRhs->GetCorSig(), gc.pRhs->GetCorSigSize(), gc.pRhs->GetModule(), NULL,
-            FALSE);
-    }
-    HELPER_METHOD_FRAME_END();
-    FC_RETURN_BOOL(ret);
+    END_QCALL;
+
+    return ret;
 }
-FCIMPLEND
 
 extern "C" void QCALLTYPE RuntimeMethodHandle_GetMethodInstantiation(MethodDesc * pMethod, QCall::ObjectHandleOnStack retTypes, BOOL fAsRuntimeTypeArray)
 {
