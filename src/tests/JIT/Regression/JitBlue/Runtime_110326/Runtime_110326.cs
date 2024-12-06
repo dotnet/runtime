@@ -18,7 +18,7 @@ public class Runtime_110326A
     [Fact]
     public static void TestEntryPoint()
     {
-        TestClass.Method1();
+        Runtime_110326A.Method1();
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -58,7 +58,7 @@ public class Runtime_110326B
     [Fact]
     public static void TestEntryPoint()
     {
-        TestClass.Method0();
+        Runtime_110326B.Method0();
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
