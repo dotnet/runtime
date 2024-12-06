@@ -15,6 +15,7 @@ using Xunit.Abstractions;
 
 namespace System.Net.Sockets.Tests
 {
+    [SkipOnPlatform(TestPlatforms.Wasi, "Wasi doesn't support UnixDomainSocket")]
     public class UnixDomainSocketTest
     {
         private readonly ITestOutputHelper _log;
@@ -467,13 +468,13 @@ namespace System.Net.Sockets.Tests
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets in our CI environment")]
-        public void UnixDomainSocketEndPoint_RelativePathDeletesFile()
+        public async Task UnixDomainSocketEndPoint_RelativePathDeletesFile()
         {
             if (!Socket.OSSupportsUnixDomainSockets)
             {
                 return;
             }
-            RemoteExecutor.Invoke(() =>
+            await RemoteExecutor.Invoke(() =>
             {
                 using (Socket socket = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified))
                 {
@@ -501,7 +502,7 @@ namespace System.Net.Sockets.Tests
                         Directory.Delete(otherDir);
                     }
                 }
-            }).Dispose();
+            }).DisposeAsync();
         }
 
         [ConditionalFact(typeof(Socket), nameof(Socket.OSSupportsUnixDomainSockets))]
@@ -636,7 +637,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        private static string GetRandomNonExistingFilePath()
+        internal static string GetRandomNonExistingFilePath()
         {
             string result;
             do

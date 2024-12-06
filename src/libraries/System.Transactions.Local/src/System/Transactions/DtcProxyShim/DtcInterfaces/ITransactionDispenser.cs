@@ -8,7 +8,7 @@ using System.Transactions.Oletx;
 
 namespace System.Transactions.DtcProxyShim.DtcInterfaces;
 
-// https://docs.microsoft.com/previous-versions/windows/desktop/ms687604(v=vs.85)
+// https://learn.microsoft.com/previous-versions/windows/desktop/ms687604(v=vs.85)
 [GeneratedComInterface, Guid(Guids.IID_ITransactionDispenser), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
 internal partial interface ITransactionDispenser
 {

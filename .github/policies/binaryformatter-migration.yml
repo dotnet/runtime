@@ -1,0 +1,25 @@
+id: binaryformatter-migration
+name: BinaryFormatter migration label automation
+owner: jeffhandley
+resource: repository
+disabled: false
+configuration:
+  resourceManagementConfiguration:
+    eventResponderTasks:
+    - description: '@Mention for binaryformatter-migration'
+      if:
+      - or:
+        - payloadType: Issues
+        - payloadType: Pull_Request
+      - labelAdded:
+          label: binaryformatter-migration
+      then:
+      - mentionUsers:
+          mentionees:
+          - adamsitnik
+          - bartonjs
+          - jeffhandley
+          - terrajobst
+          replyTemplate: >-
+            Tagging subscribers to 'binaryformatter-migration': ${mentionees}
+          assignMentionees: False

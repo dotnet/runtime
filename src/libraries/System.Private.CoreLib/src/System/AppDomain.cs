@@ -134,17 +134,14 @@ namespace System
 
         private static int ExecuteAssembly(Assembly assembly, string?[]? args)
         {
-            MethodInfo? entry = assembly.EntryPoint;
-            if (entry == null)
-            {
+            MethodInfo entry = assembly.EntryPoint ??
                 throw new MissingMethodException(SR.Arg_EntryPointNotFoundException);
-            }
 
             object? result = entry.Invoke(
                 obj: null,
                 invokeAttr: BindingFlags.DoNotWrapExceptions,
                 binder: null,
-                parameters: entry.GetParametersAsSpan().Length > 0 ? new object?[] { args } : null,
+                parameters: entry.GetParametersAsSpan().Length > 0 ? [args] : null,
                 culture: null);
 
             return result != null ? (int)result : 0;
@@ -424,11 +421,8 @@ namespace System
                         if (s_getWindowsPrincipal == null)
                         {
                             Type type = Type.GetType("System.Security.Principal.WindowsPrincipal, System.Security.Principal.Windows", throwOnError: true)!;
-                            MethodInfo? mi = type.GetMethod("GetDefaultInstance", BindingFlags.NonPublic | BindingFlags.Static);
-                            if (mi == null)
-                            {
+                            MethodInfo mi = type.GetMethod("GetDefaultInstance", BindingFlags.NonPublic | BindingFlags.Static) ??
                                 throw new PlatformNotSupportedException(SR.PlatformNotSupported_Principal);
-                            }
                             s_getWindowsPrincipal = mi.CreateDelegate<Func<IPrincipal>>();
                         }
 

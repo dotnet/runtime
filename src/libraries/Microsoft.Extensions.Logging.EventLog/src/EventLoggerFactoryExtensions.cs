@@ -15,7 +15,7 @@ namespace Microsoft.Extensions.Logging
     public static class EventLoggerFactoryExtensions
     {
         /// <summary>
-        /// Adds an event logger. Use <paramref name="settings"/> to enable logging for specific <see cref="LogLevel"/>s.
+        /// Adds an event logger. Use <paramref name="settings"/> to enable logging for specific log levels.
         /// </summary>
         /// <param name="factory">The extension method argument.</param>
         /// <param name="settings">The <see cref="EventLogSettings"/>.</param>
@@ -34,7 +34,7 @@ namespace Microsoft.Extensions.Logging
         /// Adds an event logger that is enabled for <see cref="LogLevel"/>s of minLevel or higher.
         /// </summary>
         /// <param name="factory">The extension method argument.</param>
-        /// <param name="minLevel">The minimum <see cref="LogLevel"/> to be logged</param>
+        /// <param name="minLevel">The minimum <see cref="LogLevel"/> to be logged.</param>
         [EditorBrowsable(EditorBrowsableState.Never)]
         [Obsolete("This method is retained only for compatibility. The recommended alternative is AddEventLog(this ILoggingBuilder builder).", error: true)]
         public static ILoggerFactory AddEventLog(this ILoggerFactory factory, LogLevel minLevel) =>
@@ -63,7 +63,7 @@ namespace Microsoft.Extensions.Logging
         }
 
         /// <summary>
-        /// Adds an event logger. Use <paramref name="settings"/> to enable logging for specific <see cref="LogLevel"/>s.
+        /// Adds an event logger. Use <paramref name="settings"/> to enable logging for specific log levels.
         /// </summary>
         /// <param name="builder">The extension method argument.</param>
         /// <param name="settings">The <see cref="EventLogSettings"/>.</param>
@@ -79,7 +79,7 @@ namespace Microsoft.Extensions.Logging
         }
 
         /// <summary>
-        /// Adds an event logger. Use <paramref name="configure"/> to enable logging for specific <see cref="LogLevel"/>s.
+        /// Adds an event logger. Use <paramref name="configure"/> to enable logging for specific log levels.
         /// </summary>
         /// <param name="builder">The extension method argument.</param>
         /// <param name="configure">A delegate to configure the <see cref="EventLogSettings"/>.</param>

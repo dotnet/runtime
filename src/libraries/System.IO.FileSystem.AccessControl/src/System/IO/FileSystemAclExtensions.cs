@@ -213,7 +213,7 @@ namespace System.IO
         }
 
         // In the context of a FileStream, the only ACCESS_MASK ACE rights we care about are reading/writing data and the generic read/write rights.
-        // See: https://docs.microsoft.com/en-us/windows/win32/secauthz/access-mask
+        // See: https://learn.microsoft.com/windows/win32/secauthz/access-mask
         private static FileAccess GetFileAccessFromRights(FileSystemRights rights)
         {
             FileAccess access = 0;

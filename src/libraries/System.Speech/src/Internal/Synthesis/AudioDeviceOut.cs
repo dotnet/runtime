@@ -194,7 +194,7 @@ namespace System.Speech.Internal.Synthesis
                         Interop.WinMM.MMSYSERR result = Interop.WinMM.waveOutPause(_hwo);
                         if (result != Interop.WinMM.MMSYSERR.NOERROR)
                         {
-                            System.Diagnostics.Debug.Assert(false, ((int)result).ToString(System.Globalization.CultureInfo.InvariantCulture));
+                            System.Diagnostics.Debug.Fail(((int)result).ToString(System.Globalization.CultureInfo.InvariantCulture));
                         }
                     }
                     _fPaused = true;

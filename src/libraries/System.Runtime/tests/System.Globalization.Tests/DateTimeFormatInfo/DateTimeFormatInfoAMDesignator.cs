@@ -137,7 +137,7 @@ namespace System.Globalization.Tests
             yield return new object[] { "en-ZA", "am" };
             yield return new object[] { "en-ZM", "am" };
             yield return new object[] { "en-ZW", "am" };
-            string latinAmericaSpanishAMDesignator = PlatformDetection.IsFirefox ? "a.\u00A0m." : "a.m.";
+            string latinAmericaSpanishAMDesignator = PlatformDetection.IsFirefox || PlatformDetection.IsNodeJS ? "a.\u00A0m." : "a.m.";
             yield return new object[] { "es-419", latinAmericaSpanishAMDesignator };
             yield return new object[] { "es-ES", "a.\u00A0m." };
             yield return new object[] { "es-MX", latinAmericaSpanishAMDesignator };
@@ -189,7 +189,7 @@ namespace System.Globalization.Tests
             yield return new object[] { "sw-KE", "AM" };
             yield return new object[] { "sw-TZ", "AM" };
             yield return new object[] { "sw-UG", "AM" };
-            string tamilAMDesignator = PlatformDetection.IsFirefox ? "முற்பகல்" : "AM"; // முற்பகல்
+            string tamilAMDesignator = PlatformDetection.IsFirefox || PlatformDetection.IsNodeJS ? "முற்பகல்" : "AM"; // முற்பகல்
             yield return new object[] { "ta-IN", tamilAMDesignator };
             yield return new object[] { "ta-LK", tamilAMDesignator };
             yield return new object[] { "ta-MY", tamilAMDesignator };

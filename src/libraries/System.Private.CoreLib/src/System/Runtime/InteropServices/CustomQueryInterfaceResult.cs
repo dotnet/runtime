@@ -5,7 +5,7 @@ using System.ComponentModel;
 
 namespace System.Runtime.InteropServices
 {
-    // The enum of the return value of IQuerable.GetInterface
+    // The enum of the return value of ICustomQueryInterface.GetInterface
     [EditorBrowsable(EditorBrowsableState.Never)]
     public enum CustomQueryInterfaceResult
     {

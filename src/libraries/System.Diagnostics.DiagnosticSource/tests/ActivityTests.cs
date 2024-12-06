@@ -1627,6 +1627,102 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        public void AddExceptionTest()
+        {
+            using ActivitySource aSource = new ActivitySource("AddExceptionTest");
+
+            ActivityListener listener = new ActivityListener();
+            listener.ShouldListenTo = (activitySource) => object.ReferenceEquals(activitySource, aSource);
+            listener.Sample = (ref ActivityCreationOptions<ActivityContext> options) => ActivitySamplingResult.AllData;
+            ActivitySource.AddActivityListener(listener);
+
+            using Activity? activity = aSource.StartActivity("Activity1");
+            Assert.NotNull(activity);
+            Assert.Empty(activity.Events);
+
+            const string ExceptionEventName = "exception";
+            const string ExceptionMessageTag = "exception.message";
+            const string ExceptionStackTraceTag = "exception.stacktrace";
+            const string ExceptionTypeTag = "exception.type";
+
+            Exception exception = new ArgumentOutOfRangeException("Some message");
+            activity.AddException(exception);
+            List<ActivityEvent> events = activity.Events.ToList();
+            Assert.Equal(1, events.Count);
+            Assert.Equal(ExceptionEventName, events[0].Name);
+            Assert.Equal(new TagList { { ExceptionMessageTag, exception.Message}, { ExceptionStackTraceTag, exception.ToString()}, { ExceptionTypeTag, exception.GetType().ToString() } }, events[0].Tags);
+
+            try { throw new InvalidOperationException("Some other message"); } catch (Exception e) { exception = e; }
+            activity.AddException(exception);
+            events = activity.Events.ToList();
+            Assert.Equal(2, events.Count);
+            Assert.Equal(ExceptionEventName, events[1].Name);
+            Assert.Equal(new TagList { { ExceptionMessageTag, exception.Message}, { ExceptionStackTraceTag, exception.ToString()}, { ExceptionTypeTag, exception.GetType().ToString() } }, events[1].Tags);
+
+            listener.ExceptionRecorder = (Activity activity, Exception exception, ref TagList theTags) => theTags.Add("foo", "bar");
+            activity.AddException(exception, new TagList { { "hello", "world" } });
+            events = activity.Events.ToList();
+            Assert.Equal(3, events.Count);
+            Assert.Equal(ExceptionEventName, events[2].Name);
+            Assert.Equal(new TagList
+                            {
+                                { "hello", "world" },
+                                { "foo", "bar" },
+                                { ExceptionMessageTag, exception.Message },
+                                { ExceptionStackTraceTag, exception.ToString() },
+                                { ExceptionTypeTag, exception.GetType().ToString() }
+                            },
+                            events[2].Tags);
+
+            listener.ExceptionRecorder = (Activity activity, Exception exception, ref TagList theTags) =>
+                                            {
+                                                theTags.Add("exception.escaped", "true");
+                                                theTags.Add("exception.message", "Overridden message");
+                                                theTags.Add("exception.stacktrace", "Overridden stacktrace");
+                                                theTags.Add("exception.type", "Overridden type");
+                                            };
+            activity.AddException(exception, new TagList { { "hello", "world" } });
+            events = activity.Events.ToList();
+            Assert.Equal(4, events.Count);
+            Assert.Equal(ExceptionEventName, events[3].Name);
+            Assert.Equal(new TagList
+                            {
+                                { "hello", "world" },
+                                { "exception.escaped", "true" },
+                                { "exception.message", "Overridden message" },
+                                { "exception.stacktrace", "Overridden stacktrace" },
+                                { "exception.type", "Overridden type" }
+                            },
+                            events[3].Tags);
+
+            ActivityListener listener1 = new ActivityListener();
+            listener1.ShouldListenTo = (activitySource) => object.ReferenceEquals(activitySource, aSource);
+            listener1.Sample = (ref ActivityCreationOptions<ActivityContext> options) => ActivitySamplingResult.AllData;
+            ActivitySource.AddActivityListener(listener1);
+            listener1.ExceptionRecorder = (Activity activity, Exception exception, ref TagList theTags) =>
+                                            {
+                                                theTags.Remove(new KeyValuePair<string, object?>("exception.message", "Overridden message"));
+                                                theTags.Remove(new KeyValuePair<string, object?>("exception.stacktrace", "Overridden stacktrace"));
+                                                theTags.Remove(new KeyValuePair<string, object?>("exception.type", "Overridden type"));
+                                                theTags.Add("secondListener", "win");
+                                            };
+            activity.AddException(exception, new TagList { { "hello", "world" } });
+            events = activity.Events.ToList();
+            Assert.Equal(5, events.Count);
+            Assert.Equal(ExceptionEventName, events[4].Name);
+            Assert.Equal(new TagList
+                            {
+                                { "hello", "world" },
+                                { "exception.escaped", "true" },
+                                { "secondListener", "win" },
+                                { "exception.message", exception.Message },
+                                { "exception.stacktrace", exception.ToString() },
+                                { "exception.type", exception.GetType().ToString() },
+                            },
+                            events[4].Tags);
+        }
+
+        [Fact]
         public void TestIsAllDataRequested()
         {
             // Activity constructor always set IsAllDataRequested to true for compatibility.

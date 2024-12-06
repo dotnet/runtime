@@ -40,11 +40,11 @@ class LockedRangeList : public RangeList
         return RangeList::AddRangeWorker(start,end,id);
     }
 
-    virtual void RemoveRangesWorker(void *id, const BYTE *start = NULL, const BYTE *end = NULL)
+    virtual void RemoveRangesWorker(void *id)
     {
         WRAPPER_NO_CONTRACT;
         SimpleWriteLockHolder lh(&m_RangeListRWLock);
-        RangeList::RemoveRangesWorker(id,start,end);
+        RangeList::RemoveRangesWorker(id);
     }
 
     virtual BOOL IsInRangeWorker(TADDR address, TADDR *pID = NULL)

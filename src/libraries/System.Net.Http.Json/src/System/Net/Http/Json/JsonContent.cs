@@ -29,7 +29,15 @@ namespace System.Net.Http.Json
 
             Value = inputValue;
             _typeInfo = jsonTypeInfo;
-            Headers.ContentType = mediaType ?? JsonHelpers.GetDefaultMediaType();
+
+            if (mediaType is not null)
+            {
+                Headers.ContentType = mediaType;
+            }
+            else
+            {
+                Headers.TryAddWithoutValidation("Content-Type", JsonHelpers.DefaultMediaType);
+            }
         }
 
         /// <summary>

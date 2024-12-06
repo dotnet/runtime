@@ -131,8 +131,8 @@
   <data name="InvalidRegexArgumentsMessage" xml:space="preserve">
     <value>The specified regex is invalid. '{0}'</value>
   </data>
-  <data name="RegexMethodMustHaveValidSignatureMessage" xml:space="preserve">
-    <value>GeneratedRegexAttribute method must be partial, parameterless, non-generic, non-abstract, and return Regex.</value>
+  <data name="RegexMemberMustHaveValidSignatureMessage" xml:space="preserve">
+    <value>GeneratedRegexAttribute method or property must be partial, parameterless, non-generic, non-abstract, and return Regex. If a property, it must also be get-only.</value>
   </data>
   <data name="LimitedSourceGenerationTitle" xml:space="preserve">
     <value>Regex generator limitation reached.</value>

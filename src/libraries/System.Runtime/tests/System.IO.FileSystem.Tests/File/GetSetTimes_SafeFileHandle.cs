@@ -101,7 +101,7 @@ namespace System.IO.Tests
             File.SetLastAccessTime(handle, DateTime.Now.Subtract(TimeSpan.FromDays(1)));
             DateTime timeAfterWrite = default, timeBeforeWrite = File.GetLastWriteTime(handle);
 
-            // According to https://learn.microsoft.com/en-us/windows/win32/api/fileapi/ns-fileapi-win32_file_attribute_data
+            // According to https://learn.microsoft.com/windows/win32/api/fileapi/ns-fileapi-win32_file_attribute_data
             // write time has a resolution of 2 seconds on FAT. Let's wait a little bit longer.
             for (int i = 0; i <= 5 && timeBeforeWrite >= timeAfterWrite; i++)
             {

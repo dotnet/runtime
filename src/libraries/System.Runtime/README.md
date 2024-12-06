@@ -1,7 +1,7 @@
 # System.Runtime
 Contains fundamental classes and base classes that define commonly-used value and reference data types, events and event handlers, interfaces, attributes, and processing exceptions.
 
-Documentation can be found here: https://learn.microsoft.com/en-us/dotnet/api/system?view=net-7.0.
+Documentation can be found here: https://learn.microsoft.com/dotnet/api/system?view=net-7.0.
 
 ## Contribution Bar
 - [x] [We consider new features, new APIs and performance changes](../../libraries/README.md#primary-bar)

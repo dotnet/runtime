@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 
 using Internal.Runtime;
 using Internal.Text;
@@ -74,8 +75,7 @@ namespace ILCompiler.DependencyAnalysis
                     ISymbolNode target = reloc.Target;
                     if (target is ISymbolNodeWithLinkage withLinkage)
                         target = withLinkage.NodeForLinkage(factory);
-                    relocOccurences.TryGetValue(target, out int num);
-                    relocOccurences[target] = ++num;
+                    CollectionsMarshal.GetValueRefOrAddDefault(relocOccurences, target, out _)++;
                 }
             }
 

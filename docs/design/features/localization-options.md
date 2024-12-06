@@ -15,9 +15,9 @@ The goal is to support:
 
 ### Windows
 
-On Windows, [resource script (.rc) files](https://docs.microsoft.com/cpp/windows/resource-files-visual-studio) are used to create resources that will be embedded into a binary. These files define [`STRINGTABLE`](https://docs.microsoft.com/windows/win32/menurc/stringtable-resource) resources containing the resource strings. Each string has a resource identifier - a symbol name mapped to an integer value - which can be used to look up the string value.
+On Windows, [resource script (.rc) files](https://learn.microsoft.com/cpp/windows/resource-files-visual-studio) are used to create resources that will be embedded into a binary. These files define [`STRINGTABLE`](https://learn.microsoft.com/windows/win32/menurc/stringtable-resource) resources containing the resource strings. Each string has a resource identifier - a symbol name mapped to an integer value - which can be used to look up the string value.
 
-The [`LoadString`](https://docs.microsoft.com/windows/win32/api/winuser/nf-winuser-loadstringw) and [`FormatMessage`](https://docs.microsoft.com/windows/win32/api/winbase/nf-winbase-formatmessage) APIs retrieve a string resources based on a specified identifier (the integer value of the resource identifier) from a specified module. These APIs leave it to their consumer to find and load the appropriate module containing the desired resources. While resources for all languages can be included in the main binary itself, it is common to separate language-specific resources into resource-only libraries.
+The [`LoadString`](https://learn.microsoft.com/windows/win32/api/winuser/nf-winuser-loadstringw) and [`FormatMessage`](https://learn.microsoft.com/windows/win32/api/winbase/nf-winbase-formatmessage) APIs retrieve a string resources based on a specified identifier (the integer value of the resource identifier) from a specified module. These APIs leave it to their consumer to find and load the appropriate module containing the desired resources. While resources for all languages can be included in the main binary itself, it is common to separate language-specific resources into resource-only libraries.
 
 ### Linux
 
@@ -284,7 +284,7 @@ Any automated testing would likely also require some form of language override.
 
 ### Single-file
 
-The standard way of doing native localization is based on having separate resources files. On Windows, it is possible to embed resources for multiple languages into one library and use [`FormatMessage`](https://docs.microsoft.com/windows/win32/api/winbase/nf-winbase-formatmessage) or a combination of [`FindResourceEx`](https://docs.microsoft.com/windows/win32/api/winbase/nf-winbase-findresourceexa) and [`LoadResource`](https://docs.microsoft.com/windows/win32/api/libloaderapi/nf-libloaderapi-loadresource) to load the resource for a specific language. On Linux and OSX, no such platform support exists.
+The standard way of doing native localization is based on having separate resources files. On Windows, it is possible to embed resources for multiple languages into one library and use [`FormatMessage`](https://learn.microsoft.com/windows/win32/api/winbase/nf-winbase-formatmessage) or a combination of [`FindResourceEx`](https://learn.microsoft.com/windows/win32/api/winbase/nf-winbase-findresourceexa) and [`LoadResource`](https://learn.microsoft.com/windows/win32/api/libloaderapi/nf-libloaderapi-loadresource) to load the resource for a specific language. On Linux and OSX, no such platform support exists.
 
 Extracting files to disk has proven to be extremely problematic across all platforms (permissions, anti-virus, clean up). Adding native resources to that extraction would only exacerbate the existing issues. This means that localized resources would need be read from memory. A custom solution would need to be created and maintained:
   - Format for storing identifiers and their corresponding strings for every language

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
+using System.Collections.Generic;
 using System.IO;
 using Xunit;
 
@@ -18,29 +19,29 @@ namespace System.Text.Json.Serialization.Tests
                 JsonSerializer.Deserialize(ref reader, returnType: null);
             });
 
-            Assert.Contains("returnType", ex.ToString());
+            Assert.Contains("returnType", ex.Message);
 
             ex = Assert.Throws<ArgumentNullException>(() => JsonSerializer.Deserialize("", returnType: null));
-            Assert.Contains("returnType", ex.ToString());
+            Assert.Contains("returnType", ex.Message);
 
             ex = Assert.Throws<ArgumentNullException>(() => JsonSerializer.Deserialize(new char[] { '1' }, returnType: null));
-            Assert.Contains("returnType", ex.ToString());
+            Assert.Contains("returnType", ex.Message);
 
             ex = Assert.Throws<ArgumentNullException>(() => JsonSerializer.Deserialize(new byte[] { 1 }, returnType: null));
-            Assert.Contains("returnType", ex.ToString());
+            Assert.Contains("returnType", ex.Message);
 
             ex = Assert.Throws<ArgumentNullException>(() => JsonSerializer.DeserializeAsync(new MemoryStream(), returnType: null));
-            Assert.Contains("returnType", ex.ToString());
+            Assert.Contains("returnType", ex.Message);
         }
 
         [Fact]
         public static void NullJsonThrows()
         {
             ArgumentNullException ex = Assert.Throws<ArgumentNullException>(() => JsonSerializer.Deserialize(json: (string)null, returnType: typeof(string)));
-            Assert.Contains("json", ex.ToString());
+            Assert.Contains("json", ex.Message);
 
             ex = Assert.Throws<ArgumentNullException>(() => JsonSerializer.DeserializeAsync(utf8Json: null, returnType: null));
-            Assert.Contains("utf8Json", ex.ToString());
+            Assert.Contains("utf8Json", ex.Message);
         }
 
         [Fact]
@@ -757,6 +758,28 @@ namespace System.Text.Json.Serialization.Tests
                     Assert.Equal(1, ((DeepArray)custom).array.GetArrayLength());
                 }
             }
+        }
+
+        [Fact]
+        public static void ReadSimpleList_AllowMultipleValues_TrailingJson()
+        {
+            var options = new JsonReaderOptions { AllowMultipleValues = true };
+            ReadOnlySpan<byte> json = "[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20]             null"u8;
+            var reader = new Utf8JsonReader(json, options);
+
+            List<int> result = JsonSerializer.Deserialize<List<int>>(ref reader);
+            Assert.Equal([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20], result);
+        }
+
+        [Fact]
+        public static void ReadSimpleList_AllowMultipleValues_TrailingContent()
+        {
+            var options = new JsonReaderOptions { AllowMultipleValues = true };
+            ReadOnlySpan<byte> json = "[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20]             !!<NotJson/>!!"u8;
+            var reader = new Utf8JsonReader(json, options);
+
+            List<int> result = JsonSerializer.Deserialize<List<int>>(ref reader);
+            Assert.Equal([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20], result);
         }
     }
 

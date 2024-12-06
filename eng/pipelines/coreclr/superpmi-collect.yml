@@ -43,6 +43,7 @@ extends:
           jobParameters:
             testGroup: outerloop
             buildArgs: -s clr+libs+libs.tests -rc $(_BuildConfig) -c Release /p:ArchiveTests=true
+            timeoutInMinutes: 120
             postBuildSteps:
               - template: /eng/pipelines/coreclr/templates/build-native-test-assets-step.yml
               - template: /eng/pipelines/common/upload-artifact-step.yml
@@ -78,12 +79,14 @@ extends:
           jobParameters:
             testGroup: outerloop
             buildArgs: -s clr+libs+libs.tests -rc $(_BuildConfig) -c Release /p:ArchiveTests=true
+            timeoutInMinutes: 120
             postBuildSteps:
               # Build CLR assets for x64 as well as the target as we need an x64 mcs
               - template: /eng/pipelines/common/templates/global-build-step.yml
                 parameters:
                   buildArgs: -s clr.spmi -c $(_BuildConfig)
                   archParameter: -arch x64
+                  displayName: Build SuperPMI
               - template: /eng/pipelines/coreclr/templates/build-native-test-assets-step.yml
               - template: /eng/pipelines/common/upload-artifact-step.yml
                 parameters:
@@ -117,6 +120,7 @@ extends:
           jobParameters:
             testGroup: outerloop
             buildArgs: -s clr+libs+libs.tests -rc $(_BuildConfig) -c Release /p:ArchiveTests=true
+            timeoutInMinutes: 120
             postBuildSteps:
               # Build CLR assets for x64 as well as the target as we need an x64 mcs
               - template: /eng/pipelines/common/templates/global-build-step.yml
@@ -124,6 +128,7 @@ extends:
                   buildArgs: -s clr.spmi -c $(_BuildConfig)
                   archParameter: -arch x64
                   container: linux_x64
+                  displayName: Build SuperPMI
               - template: /eng/pipelines/coreclr/templates/build-native-test-assets-step.yml
               - template: /eng/pipelines/common/upload-artifact-step.yml
                 parameters:

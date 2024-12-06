@@ -148,10 +148,7 @@ namespace System.Net.Http
         public BrowserHttpController(HttpRequestMessage request, bool? allowAutoRedirect, CancellationToken cancellationToken)
         {
             ArgumentNullException.ThrowIfNull(request);
-            if (request.RequestUri == null)
-            {
-                throw new ArgumentNullException(nameof(request.RequestUri));
-            }
+            ArgumentNullException.ThrowIfNull(request.RequestUri);
 
             _cancellationToken = cancellationToken;
             _request = request;
@@ -163,7 +160,7 @@ namespace System.Net.Http
 
                 if (!_httpController.IsDisposed)
                 {
-                    BrowserHttpInterop.AbortRequest(_httpController);
+                    BrowserHttpInterop.Abort(_httpController);
                 }
             }, httpController);
 
@@ -251,9 +248,16 @@ namespace System.Net.Http
                     {
                         fetchPromise = BrowserHttpInterop.FetchStream(_jsController, uri, _headerNames, _headerValues, _optionNames, _optionValues);
                         writeStream = new BrowserHttpWriteStream(this);
-                        await _request.Content.CopyToAsync(writeStream, _cancellationToken).ConfigureAwait(false);
-                        var closePromise = BrowserHttpInterop.TransformStreamClose(_jsController);
-                        await BrowserHttpInterop.CancellationHelper(closePromise, _cancellationToken, _jsController).ConfigureAwait(false);
+                        try
+                        {
+                            await _request.Content.CopyToAsync(writeStream, _cancellationToken).ConfigureAwait(false);
+                            var closePromise = BrowserHttpInterop.TransformStreamClose(_jsController);
+                            await BrowserHttpInterop.CancellationHelper(closePromise, _cancellationToken, _jsController).ConfigureAwait(false);
+                        }
+                        catch(JSException jse) when (jse.Message.Contains("BrowserHttpWriteStream.Rejected", StringComparison.Ordinal))
+                        {
+                            // any error from pushing bytes will also appear in the fetch promise result
+                        }
                     }
                     else
                     {
@@ -347,7 +351,7 @@ namespace System.Net.Http
             {
                 if (!_jsController.IsDisposed)
                 {
-                    BrowserHttpInterop.AbortRequest(_jsController);// aborts also response
+                    BrowserHttpInterop.Abort(_jsController);// aborts also response
                 }
                 _jsController.Dispose();
             }

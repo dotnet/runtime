@@ -1,4 +1,5 @@
 <Project Sdk="Microsoft.Build.NoTargets">
+
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppPrevious);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
     <IsPackable>true</IsPackable>
@@ -7,16 +8,7 @@
     <NoWarn>$(NoWarn);NU5128</NoWarn>
     <!-- Reference dependencies to persiste them in the project's project.assets.json file which is used to calculate package dependencies. -->
     <NoTargetsDoNotReferenceOutputAssemblies>false</NoTargetsDoNotReferenceOutputAssemblies>
-    <PackageDescription>This package provides a version of the Managed Extensibility Framework (MEF) that is lightweight and specifically optimized for high throughput scenarios, such as the web.
-
-Commonly Used Types:
-System.Composition.ExportAttribute
-System.Composition.ImportAttribute
-System.Composition.Convention.ConventionBuilder
-System.Composition.Hosting.CompositionHost
-System.Composition.CompositionContext
-System.Composition.CompositionContextExtensions</PackageDescription>
-
+    <PackageDescription>Provides a version of the Managed Extensibility Framework (MEF) that is lightweight and specifically optimized for high throughput scenarios, such as the web.</PackageDescription>
     <!-- TODO https://github.com/dotnet/runtime/issues/90400: Annotate for nullable reference types -->
     <Nullable>disable</Nullable>
     <NoWarn>$(NoWarn);nullable</NoWarn>
@@ -36,4 +28,5 @@ System.Composition.CompositionContextExtensions</PackageDescription>
     <None Include="$(PlaceholderFile)" PackagePath="lib/net461" Pack="true" />
     <None Include="$(PlaceholderFile)" PackagePath="lib/netcoreapp2.0" Pack="true" />
   </ItemGroup>
+
 </Project>

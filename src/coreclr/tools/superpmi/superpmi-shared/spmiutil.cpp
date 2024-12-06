@@ -9,6 +9,9 @@
 #include "logging.h"
 #include "spmiutil.h"
 
+#include <minipal/debugger.h>
+#include <minipal/random.h>
+
 static bool breakOnDebugBreakorAV = false;
 
 bool BreakOnDebugBreakorAV()
@@ -35,12 +38,12 @@ void SetBreakOnException(bool value)
 
 void DebugBreakorAV(int val)
 {
-    if (IsDebuggerPresent())
+    if (minipal_is_native_debugger_present())
     {
         if (val == 0)
-            __debugbreak();
+            DEBUG_BREAK;
         if (BreakOnDebugBreakorAV())
-            __debugbreak();
+            DEBUG_BREAK;
     }
 
     int exception_code = EXCEPTIONCODE_DebugBreakorAV + val;
@@ -233,13 +236,8 @@ WCHAR* GetResultFileName(const WCHAR* folderPath, const WCHAR* fileName, const W
 
     // Append a random string to improve uniqueness.
     //
-    unsigned randomNumber = 0;
-
-#ifdef TARGET_UNIX
-    PAL_Random(&randomNumber, sizeof(randomNumber));
-#else  // !TARGET_UNIX
-    rand_s(&randomNumber);
-#endif // !TARGET_UNIX
+    unsigned int randomNumber = 0;
+    minipal_get_non_cryptographically_secure_random_bytes((uint8_t*)&randomNumber, sizeof(randomNumber));
 
     WCHAR randomString[randomStringLength + 1];
     FormatInteger(randomString, randomStringLength + 1, "%08X", randomNumber);
@@ -516,11 +514,11 @@ std::string getClassName(MethodContext* mc, CORINFO_CLASS_HANDLE clsHnd)
 
 std::string ConvertToUtf8(const WCHAR* str)
 {
-    unsigned len = WszWideCharToMultiByte(CP_UTF8, 0, str, -1, nullptr, 0, nullptr, nullptr);
+    unsigned len = WideCharToMultiByte(CP_UTF8, 0, str, -1, nullptr, 0, nullptr, nullptr);
     if (len == 0)
         return{};
 
     std::vector<char> buf(len + 1);
-    WszWideCharToMultiByte(CP_UTF8, 0, str, -1, buf.data(), len + 1, nullptr, nullptr);
+    WideCharToMultiByte(CP_UTF8, 0, str, -1, buf.data(), len + 1, nullptr, nullptr);
     return std::string{ buf.data() };
 }

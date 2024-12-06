@@ -1,5 +1,5 @@
 # Makefile for zlib
-# Copyright (C) 1995-2016 Jean-loup Gailly, Mark Adler
+# Copyright (C) 1995-2024 Jean-loup Gailly, Mark Adler
 # For conditions of distribution and use, see copyright notice in zlib.h
 
 # To compile and test, type:
@@ -28,8 +28,9 @@ SUFFIX=-ng
 TEST_LIBS=$(LIBNAME1).a
 LDSHARED=$(CC)
 LDSHAREDFLAGS=-shared
+LDVERSIONSCRIPT=
 
-VER=2.1.6
+VER=2.2.1
 VER1=2
 
 STATICLIB=$(LIBNAME1).a
@@ -74,15 +75,17 @@ man3dir = ${mandir}/man3
 pkgconfigdir = ${libdir}/pkgconfig
 
 OBJZ = \
+	arch/generic/adler32_c.o \
+	arch/generic/adler32_fold_c.o \
+	arch/generic/chunkset_c.o \
+	arch/generic/compare256_c.o \
+	arch/generic/crc32_braid_c.o \
+	arch/generic/crc32_fold_c.o \
+	arch/generic/slide_hash_c.o \
 	adler32.o \
-	adler32_fold.o \
-	chunkset.o \
-	compare256.o \
 	compress.o \
-	cpu_features.o \
-	crc32_braid.o \
+	crc32.o \
 	crc32_braid_comb.o \
-	crc32_fold.o \
 	deflate.o \
 	deflate_fast.o \
 	deflate_huff.o \
@@ -97,10 +100,10 @@ OBJZ = \
 	inftrees.o \
 	insert_string.o \
 	insert_string_roll.o \
-	slide_hash.o \
 	trees.o \
 	uncompr.o \
 	zutil.o \
+	cpu_features.o \
 	$(ARCH_STATIC_OBJS)
 
 OBJG = \
@@ -112,15 +115,17 @@ TESTOBJG =
 OBJC = $(OBJZ) $(OBJG)
 
 PIC_OBJZ = \
+	arch/generic/adler32_c.lo \
+	arch/generic/adler32_fold_c.lo \
+	arch/generic/chunkset_c.lo \
+	arch/generic/compare256_c.lo \
+	arch/generic/crc32_braid_c.lo \
+	arch/generic/crc32_fold_c.lo \
+	arch/generic/slide_hash_c.lo \
 	adler32.lo \
-	adler32_fold.lo \
-	chunkset.lo \
-	compare256.lo \
 	compress.lo \
-	cpu_features.lo \
-	crc32_braid.lo \
+	crc32.lo \
 	crc32_braid_comb.lo \
-	crc32_fold.lo \
 	deflate.lo \
 	deflate_fast.lo \
 	deflate_huff.lo \
@@ -135,10 +140,10 @@ PIC_OBJZ = \
 	inftrees.lo \
 	insert_string.lo \
 	insert_string_roll.lo \
-	slide_hash.lo \
 	trees.lo \
 	uncompr.lo \
 	zutil.lo \
+	cpu_features.lo \
 	$(ARCH_SHARED_OBJS)
 
 PIC_OBJG = \
@@ -168,6 +173,12 @@ $(ARCHDIR)/%.o: $(SRCDIR)/$(ARCHDIR)/%.c
 
 $(ARCHDIR)/%.lo: $(SRCDIR)/$(ARCHDIR)/%.c
 	$(MAKE) -C $(ARCHDIR) $(notdir $@)
+
+arch/generic/%.o: $(SRCDIR)/arch/generic/%.c
+	$(MAKE) -C arch/generic $(notdir $@)
+
+arch/generic/%.lo: $(SRCDIR)/arch/generic/%.c
+	$(MAKE) -C arch/generic $(notdir $@)
 
 %.o: $(ARCHDIR)/%.o
 	-cp $< $@
@@ -242,7 +253,7 @@ gzwrite.lo: $(SRCDIR)/gzwrite.c
 
 $(SHAREDTARGET): $(PIC_OBJS) $(DEFFILE) $(RCOBJS)
 ifneq ($(SHAREDTARGET),)
-	$(LDSHARED) $(CFLAGS) $(LDSHAREDFLAGS) $(LDFLAGS) -o $@ $(DEFFILE) $(PIC_OBJS) $(RCOBJS) $(LDSHAREDLIBC)
+	$(LDSHARED) $(CFLAGS) $(LDSHAREDFLAGS) $(LDVERSIONSCRIPT) $(LDFLAGS) -o $@ $(DEFFILE) $(PIC_OBJS) $(RCOBJS) $(LDSHAREDLIBC)
 ifneq ($(STRIP),)
 	$(STRIP) $@
 endif
@@ -356,6 +367,7 @@ uninstall: uninstall-static uninstall-shared
 mostlyclean: clean
 clean:
 	@if [ -f $(ARCHDIR)/Makefile ]; then $(MAKE) -C $(ARCHDIR) clean; fi
+	@if [ -f arch/generic/Makefile ]; then $(MAKE) -C arch/generic clean; fi
 	@if [ -f test/Makefile ]; then $(MAKE) -C test clean; fi
 	rm -f *.o *.lo *~ \
 	   example$(EXE) minigzip$(EXE) minigzipsh$(EXE) \

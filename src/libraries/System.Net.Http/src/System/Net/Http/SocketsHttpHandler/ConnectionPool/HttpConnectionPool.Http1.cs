@@ -114,6 +114,12 @@ namespace System.Net.Http
                     {
                         if (connection is not null || _http11Connections.TryPop(out connection))
                         {
+                            // If the connection is new, this check will always succeed as there is no scavenging task pending.
+                            if (!connection.TryOwnScavengingTaskCompletion())
+                            {
+                                goto DisposeConnection;
+                            }
+
                             // TryDequeueWaiter will prune completed requests from the head of the queue,
                             // so it's possible for it to return false even though we checked that Count != 0.
                             bool success = _http11RequestQueue.TryDequeueWaiter(this, out waiter);
@@ -144,10 +150,19 @@ namespace System.Net.Http
                             // and set the _http11RequestQueueIsEmptyAndNotDisposed flag to false, followed by multiple
                             // returning connections observing the flag and calling into this method before we clear the flag.
                             // This should be a relatively rare case, so the added contention should be minimal.
+
+                            // We took ownership of the scavenging task completion.
+                            // If we can't return the completion (the task already completed), we must dispose the connection.
+                            if (!connection.TryReturnScavengingTaskCompletionOwnership())
+                            {
+                                goto DisposeConnection;
+                            }
+
                             _http11Connections.Push(connection);
                         }
                         else
                         {
+                            // We may be out of available connections, check if we should inject a new one.
                             CheckForHttp11ConnectionInjection();
                         }
 
@@ -163,11 +178,31 @@ namespace System.Net.Http
                     // before signaling the waiter. This is intentional, as the fact that
                     // this method was called indicates that the connection is either new,
                     // or was just returned to the pool and is still in a good state.
+                    //
+                    // We must, however, take ownership of the scavenging task completion as
+                    // there is a small chance that such a task was started if the connection
+                    // was briefly returned to the pool.
                     return;
                 }
 
                 // The request was already cancelled or handled by a different connection.
+
+                // We took ownership of the scavenging task completion.
+                // If we can't return the completion (the task already completed), we must dispose the connection.
+                if (!connection.TryReturnScavengingTaskCompletionOwnership())
+                {
+                    goto DisposeConnection;
+                }
+
                 // Loop again to try to find another request to signal, or return the connection.
+                continue;
+
+            DisposeConnection:
+                // The scavenging task completed before we assigned a request to the connection.
+                // We've received EOF/erroneous data and the connection is not usable anymore.
+                // Throw it away and try again.
+                connection.Dispose();
+                connection = null;
             }
 
             if (_disposed)
@@ -259,14 +294,14 @@ namespace System.Net.Http
 
         internal async ValueTask<HttpConnection> CreateHttp11ConnectionAsync(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
         {
-            (Stream stream, TransportContext? transportContext, IPEndPoint? remoteEndPoint) = await ConnectAsync(request, async, cancellationToken).ConfigureAwait(false);
-            return await ConstructHttp11ConnectionAsync(async, stream, transportContext, request, remoteEndPoint, cancellationToken).ConfigureAwait(false);
+            (Stream stream, TransportContext? transportContext, Activity? activity,  IPEndPoint? remoteEndPoint) = await ConnectAsync(request, async, cancellationToken).ConfigureAwait(false);
+            return await ConstructHttp11ConnectionAsync(async, stream, transportContext, request, activity, remoteEndPoint, cancellationToken).ConfigureAwait(false);
         }
 
-        private async ValueTask<HttpConnection> ConstructHttp11ConnectionAsync(bool async, Stream stream, TransportContext? transportContext, HttpRequestMessage request, IPEndPoint? remoteEndPoint, CancellationToken cancellationToken)
+        private async ValueTask<HttpConnection> ConstructHttp11ConnectionAsync(bool async, Stream stream, TransportContext? transportContext, HttpRequestMessage request, Activity? activity, IPEndPoint? remoteEndPoint, CancellationToken cancellationToken)
         {
             Stream newStream = await ApplyPlaintextFilterAsync(async, stream, HttpVersion.Version11, request, cancellationToken).ConfigureAwait(false);
-            return new HttpConnection(this, newStream, transportContext, remoteEndPoint);
+            return new HttpConnection(this, newStream, transportContext, activity, remoteEndPoint);
         }
 
         private void HandleHttp11ConnectionFailure(HttpConnectionWaiter<HttpConnection>? requestWaiter, Exception e)

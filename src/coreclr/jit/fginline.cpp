@@ -69,7 +69,7 @@ bool Compiler::IsDisallowedRecursiveInline(InlineContext* ancestor, InlineInfo* 
 {
     // We disallow inlining the exact same instantiation.
     if ((ancestor->GetCallee() == inlineInfo->fncHandle) &&
-        (ancestor->GetRuntimeContext() == inlineInfo->inlineCandidateInfo->exactContextHnd))
+        (ancestor->GetRuntimeContext() == inlineInfo->inlineCandidateInfo->exactContextHandle))
     {
         JITDUMP("Call site is trivially recursive\n");
         return true;
@@ -80,7 +80,7 @@ bool Compiler::IsDisallowedRecursiveInline(InlineContext* ancestor, InlineInfo* 
     // involved this can quickly consume a large amount of resources, so try to
     // verify that we aren't inlining recursively with complex contexts.
     if (info.compCompHnd->haveSameMethodDefinition(inlineInfo->fncHandle, ancestor->GetCallee()) &&
-        ContextComplexityExceeds(inlineInfo->inlineCandidateInfo->exactContextHnd, 64))
+        ContextComplexityExceeds(inlineInfo->inlineCandidateInfo->exactContextHandle, 64))
     {
         JITDUMP("Call site is recursive with a complex generic context\n");
         return true;
@@ -387,6 +387,19 @@ private:
 #endif // DEBUG
         }
 
+        // If the inline was rejected and returns a retbuffer, then mark that
+        // local as DNER now so that promotion knows to leave it up to physical
+        // promotion.
+        if ((*use)->IsCall())
+        {
+            CallArg* retBuffer = (*use)->AsCall()->gtArgs.GetRetBufferArg();
+            if ((retBuffer != nullptr) && retBuffer->GetNode()->OperIs(GT_LCL_ADDR))
+            {
+                m_compiler->lvaSetVarDoNotEnregister(retBuffer->GetNode()->AsLclVarCommon()->GetLclNum()
+                                                         DEBUGARG(DoNotEnregisterReason::HiddenBufferStructArg));
+            }
+        }
+
 #if FEATURE_MULTIREG_RET
         // If an inline was rejected and the call returns a struct, we may
         // have deferred some work when importing call for cases where the
@@ -651,30 +664,44 @@ private:
                 //
                 if (block->hasProfileWeight())
                 {
-                    bool           repairWasComplete = true;
-                    weight_t const weight            = removedEdge->getLikelyWeight();
+                    bool           repairWasComplete  = true;
+                    bool           missingProfileData = false;
+                    weight_t const weight             = removedEdge->getLikelyWeight();
 
                     if (weight > 0)
                     {
                         // Target block weight will increase.
                         //
                         BasicBlock* const target = block->GetTarget();
-                        assert(target->hasProfileWeight());
-                        target->setBBProfileWeight(target->bbWeight + weight);
+
+                        // We may have a profiled inlinee in an unprofiled method
+                        //
+                        if (target->hasProfileWeight())
+                        {
+                            target->setBBProfileWeight(target->bbWeight + weight);
+                            missingProfileData = true;
+                        }
 
                         // Alternate weight will decrease
                         //
                         BasicBlock* const alternate = removedEdge->getDestinationBlock();
-                        assert(alternate->hasProfileWeight());
-                        weight_t const alternateNewWeight = alternate->bbWeight - weight;
 
-                        // If profile weights are consistent, expect at worst a slight underflow.
-                        //
-                        if (m_compiler->fgPgoConsistent && (alternateNewWeight < 0))
+                        if (alternate->hasProfileWeight())
                         {
-                            assert(m_compiler->fgProfileWeightsEqual(alternateNewWeight, 0));
+                            weight_t const alternateNewWeight = alternate->bbWeight - weight;
+
+                            // If profile weights are consistent, expect at worst a slight underflow.
+                            //
+                            if (m_compiler->fgPgoConsistent && (alternateNewWeight < 0))
+                            {
+                                assert(m_compiler->fgProfileWeightsEqual(alternateNewWeight, 0));
+                            }
+                            alternate->setBBProfileWeight(max(0.0, alternateNewWeight));
                         }
-                        alternate->setBBProfileWeight(max(0.0, alternateNewWeight));
+                        else
+                        {
+                            missingProfileData = true;
+                        }
 
                         // This will affect profile transitively, so in general
                         // the profile will become inconsistent.
@@ -685,11 +712,16 @@ private:
                         // block's postdominator is target's target (simple
                         // if/then/else/join).
                         //
-                        if (target->KindIs(BBJ_ALWAYS))
+                        if (!missingProfileData && target->KindIs(BBJ_ALWAYS))
                         {
                             repairWasComplete =
                                 alternate->KindIs(BBJ_ALWAYS) && alternate->TargetIs(target->GetTarget());
                         }
+                    }
+
+                    if (missingProfileData)
+                    {
+                        JITDUMP("Profile data could not be locally repaired. Data was missing.\n");
                     }
 
                     if (!repairWasComplete)
@@ -880,14 +912,6 @@ PhaseStatus Compiler::fgInline()
     }
 
 #endif // DEBUG
-
-    if (madeChanges)
-    {
-        // Optional quirk to keep this as zero diff. Some downstream phases are bbNum sensitive
-        // but rely on the ambient bbNums.
-        //
-        fgRenumberBlocks();
-    }
 
     if (fgPgoConsistent)
     {
@@ -1287,7 +1311,7 @@ void Compiler::fgInvokeInlineeCompiler(GenTreeCall* call, InlineResult* inlineRe
                     ->NewContext(pParam->inlineInfo->inlineCandidateInfo->inlinersContext, pParam->inlineInfo->iciStmt,
                                               pParam->inlineInfo->iciCall);
             pParam->inlineInfo->argCnt                   = pParam->inlineCandidateInfo->methInfo.args.totalILArgs();
-            pParam->inlineInfo->tokenLookupContextHandle = pParam->inlineCandidateInfo->exactContextHnd;
+            pParam->inlineInfo->tokenLookupContextHandle = pParam->inlineCandidateInfo->exactContextHandle;
 
             JITLOG_THIS(pParam->pThis,
                                      (LL_INFO100000, "INLINER: inlineInfo.tokenLookupContextHandle for %s set to 0x%p:\n",
@@ -1490,7 +1514,12 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
             // Inlinee contains just one BB. So just insert its statement list to topBlock.
             if (InlineeCompiler->fgFirstBB->bbStmtList != nullptr)
             {
+                JITDUMP("\nInserting inlinee code into " FMT_BB "\n", iciBlock->bbNum);
                 stmtAfter = fgInsertStmtListAfter(iciBlock, stmtAfter, InlineeCompiler->fgFirstBB->firstStmt());
+            }
+            else
+            {
+                JITDUMP("\ninlinee was empty\n");
             }
 
             // Copy inlinee bbFlags to caller bbFlags.
@@ -1526,6 +1555,10 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
             fgInlineAppendStatements(pInlineInfo, iciBlock, stmtAfter);
             insertInlineeBlocks = false;
         }
+        else
+        {
+            JITDUMP("\ninlinee was single-block, but not BBJ_RETURN\n");
+        }
     }
 
     //
@@ -1533,8 +1566,12 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
     //
     if (insertInlineeBlocks)
     {
+        JITDUMP("\nInserting inlinee blocks\n");
         bottomBlock              = fgSplitBlockAfterStatement(topBlock, stmtAfter);
         unsigned const baseBBNum = fgBBNumMax;
+
+        JITDUMP("split " FMT_BB " after the inlinee call site; after portion is now " FMT_BB "\n", topBlock->bbNum,
+                bottomBlock->bbNum);
 
         // The newly split block is not special so doesn't need to be kept.
         //
@@ -1570,7 +1607,7 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
             if (block->KindIs(BBJ_RETURN))
             {
                 noway_assert(!block->HasFlag(BBF_HAS_JMP));
-                JITDUMP("\nConvert bbKind of " FMT_BB " to BBJ_ALWAYS to bottomBlock " FMT_BB "\n", block->bbNum,
+                JITDUMP("\nConvert bbKind of " FMT_BB " to BBJ_ALWAYS to bottom block " FMT_BB "\n", block->bbNum,
                         bottomBlock->bbNum);
 
                 FlowEdge* const newEdge = fgAddRefPred(bottomBlock, block);
@@ -1614,6 +1651,7 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
     compQmarkUsed |= InlineeCompiler->compQmarkUsed;
     compGSReorderStackLayout |= InlineeCompiler->compGSReorderStackLayout;
     compHasBackwardJump |= InlineeCompiler->compHasBackwardJump;
+    compMaskConvertUsed |= InlineeCompiler->compMaskConvertUsed;
 
     lvaGenericsContextInUse |= InlineeCompiler->lvaGenericsContextInUse;
 
@@ -1962,7 +2000,7 @@ void Compiler::fgInsertInlineeArgument(
 //    * Passing of call arguments via temps
 //
 //    Newly added statements are placed just after the original call
-//    and are are given the same inline context as the call any calls
+//    and are given the same inline context as the call any calls
 //    added here will appear to have been part of the immediate caller.
 //
 Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
@@ -2029,7 +2067,7 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
 
     if (inlineInfo->inlineCandidateInfo->initClassResult & CORINFO_INITCLASS_USE_HELPER)
     {
-        CORINFO_CLASS_HANDLE exactClass = eeGetClassFromContext(inlineInfo->inlineCandidateInfo->exactContextHnd);
+        CORINFO_CLASS_HANDLE exactClass = eeGetClassFromContext(inlineInfo->inlineCandidateInfo->exactContextHandle);
 
         tree    = fgGetSharedCCtor(exactClass);
         newStmt = gtNewStmt(tree, callDI);

@@ -117,7 +117,7 @@ namespace System.Globalization
             }
         }
 
-        // there are chars that are ignored by ICU hashing algorithm but not ignored by invariant hashing
+        // there are chars that are considered equal by HybridGlobalization but do not have equal hashes when binary hashed
         // Control: 1105 (out of 1105)
         // Format: 697 (out of 731)
         // OtherPunctuation: 6919 (out of 7004)
@@ -175,19 +175,19 @@ namespace System.Globalization
         }
 
         private static bool IndexingOptionsNotSupported(CompareOptions options) =>
-            (options & CompareOptions.IgnoreSymbols) == CompareOptions.IgnoreSymbols;
+            (options & (CompareOptions.IgnoreSymbols | CompareOptions.NumericOrdering)) != 0;
 
         private static bool CompareOptionsNotSupported(CompareOptions options) =>
             (options & CompareOptions.IgnoreWidth) == CompareOptions.IgnoreWidth ||
-            ((options & CompareOptions.IgnoreNonSpace) == CompareOptions.IgnoreNonSpace && (options & CompareOptions.IgnoreKanaType) != CompareOptions.IgnoreKanaType);
+            ((options & CompareOptions.IgnoreNonSpace) == CompareOptions.IgnoreNonSpace && (options & CompareOptions.IgnoreKanaType) == 0);
 
         private static string GetPNSE(CompareOptions options) =>
             SR.Format(SR.PlatformNotSupported_HybridGlobalizationWithCompareOptions, options);
 
         private static bool CompareOptionsNotSupportedForCulture(CompareOptions options, string cultureName) =>
-            (options == CompareOptions.IgnoreKanaType &&
+            ((options & ~CompareOptions.NumericOrdering) == CompareOptions.IgnoreKanaType &&
             (string.IsNullOrEmpty(cultureName) || cultureName.Split('-')[0] != "ja")) ||
-            (options == CompareOptions.None &&
+            ((options & ~CompareOptions.NumericOrdering) == CompareOptions.None &&
             (cultureName.Split('-')[0] == "ja"));
 
         private static string GetPNSEForCulture(CompareOptions options, string cultureName) =>

@@ -1,4 +1,5 @@
 #include <config.h>
+#include <mono/metadata/debug-helpers.h>
 #include <mono/utils/mono-logger-internals.h>
 #include <mono/utils/mono-proclib.h>
 #include <mono/utils/w32subset.h>
@@ -98,6 +99,9 @@ parse_arg (const char *arg, ProfilerConfig *config)
 	} else if (match_option (arg, "heapshot-on-shutdown", NULL)) {
 		config->hs_on_shutdown = TRUE;
 		config->enable_mask |= PROFLOG_HEAPSHOT_ALIAS;
+	} else if (match_option (arg, "take-heapshot-method", &val)) {
+		printf ("take-heapshot-method: %s\n", val);
+		set_log_profiler_take_heapshot_method(val);
 	} else if (match_option (arg, "sample", &val)) {
 		set_sample_freq (config, val);
 		config->sampling_mode = MONO_PROFILER_SAMPLE_MODE_PROCESS;

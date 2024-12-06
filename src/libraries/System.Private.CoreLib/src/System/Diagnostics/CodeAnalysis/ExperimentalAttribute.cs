@@ -22,7 +22,12 @@ namespace System.Diagnostics.CodeAnalysis
                     AttributeTargets.Event |
                     AttributeTargets.Interface |
                     AttributeTargets.Delegate, Inherited = false)]
-    public sealed class ExperimentalAttribute : Attribute
+#if SYSTEM_PRIVATE_CORELIB
+    public
+#else
+    internal
+#endif
+        sealed class ExperimentalAttribute : Attribute
     {
         /// <summary>
         ///  Initializes a new instance of the <see cref="ExperimentalAttribute"/> class, specifying the ID that the compiler will use
@@ -43,6 +48,15 @@ namespace System.Diagnostics.CodeAnalysis
         ///  <para>This property represents the unique ID that can be used to suppress the warnings or errors, if needed.</para>
         /// </remarks>
         public string DiagnosticId { get; }
+
+        /// <summary>
+        ///  Gets or sets an optional message associated with the experimental attribute.
+        /// </summary>
+        /// <value>The message that provides additional information about the experimental feature.</value>
+        /// <remarks>
+        ///  This message can be used to provide more context or guidance about the experimental feature.
+        /// </remarks>
+        public string? Message { get; set; }
 
         /// <summary>
         ///  Gets or sets the URL for corresponding documentation.

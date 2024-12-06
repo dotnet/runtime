@@ -117,7 +117,7 @@ namespace XmlCoreTest.Common
                     FilePathUtil.addStream(_fileName, _writerStream);
                     XmlWriterSettings ws = _wSettings.Clone();
                     ws.CheckCharacters = true;
-                    _xmlWriter = WriterHelper.Create(ww, ws, _overrideAsync, _async);
+                    _xmlWriter = WriterHelper.Create(ww, ws, true);
                     break;
                 case WriterType.WrappedWriter:
                     _writerStream = new MemoryStream();

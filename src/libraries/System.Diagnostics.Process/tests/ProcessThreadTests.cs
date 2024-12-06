@@ -7,6 +7,7 @@ using System.Linq;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 using System.Threading.Tasks;
+using System.Runtime.InteropServices;
 
 namespace System.Diagnostics.Tests
 {
@@ -107,8 +108,8 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [Fact]
-        [PlatformSpecific(TestPlatforms.Linux|TestPlatforms.Windows)] // OSX and FreeBSD throw PNSE from StartTime
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [PlatformSpecific(TestPlatforms.Linux | TestPlatforms.Windows)] // OSX and FreeBSD throw PNSE from StartTime
         public async Task TestStartTimeProperty()
         {
             TimeSpan allowedWindow = TimeSpan.FromSeconds(2);
@@ -148,15 +149,13 @@ namespace System.Diagnostics.Tests
                 await Task.Factory.StartNew(() =>
                 {
                     p.Refresh();
-                    try
-                    {
-                        var newest = p.Threads.Cast<ProcessThread>().OrderBy(t => t.StartTime.ToUniversalTime()).Last();
-                        Assert.InRange(newest.StartTime.ToUniversalTime(), curTime - allowedWindow, DateTime.Now.ToUniversalTime() + allowedWindow);
-                    }
-                    catch (InvalidOperationException)
-                    {
-                        // A thread may have gone away between our getting its info and attempting to access its StartTime
-                    }
+
+                    int newThreadId = GetCurrentThreadId();
+
+                    ProcessThread[] processThreads = p.Threads.Cast<ProcessThread>().ToArray();
+                    ProcessThread newThread = Assert.Single(processThreads, thread => thread.Id == newThreadId);
+
+                    Assert.InRange(newThread.StartTime.ToUniversalTime(), curTime - allowedWindow, DateTime.Now.ToUniversalTime() + allowedWindow);
                 }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
             }
         }

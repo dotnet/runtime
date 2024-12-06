@@ -20,11 +20,7 @@ namespace System.Globalization
 
         private string[]? GetTimeFormatsCore(bool shortFormat)
         {
-#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
-            string format = GlobalizationMode.Hybrid ? GetTimeFormatStringNative(shortFormat) : IcuGetTimeFormatString(shortFormat);
-#else
             string format = IcuGetTimeFormatString(shortFormat);
-#endif
             return new string[] { format };
         }
 

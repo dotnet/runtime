@@ -6,6 +6,7 @@ using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
+using System.Runtime.Intrinsics.Wasm;
 using System.Runtime.Intrinsics.X86;
 
 namespace System.Text
@@ -1500,10 +1501,10 @@ namespace System.Text
         {
             // max ASCII character is 0b_0111_1111, so the most significant bit (0x80) tells whether it contains non ascii
 
-            // prefer architecture specific intrinsic as they offer better perf
+            // For performance, prefer architecture specific implementation
             if (Sse41.IsSupported)
             {
-                return !Sse41.TestZ(asciiVector, Vector128.Create((byte)0x80));
+                return (asciiVector & Vector128.Create((byte)0x80)) != Vector128<byte>.Zero;
             }
             else if (AdvSimd.Arm64.IsSupported)
             {
@@ -1517,25 +1518,23 @@ namespace System.Text
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool VectorContainsNonAsciiChar(Vector128<ushort> utf16Vector)
+        internal static bool VectorContainsNonAsciiChar(Vector128<ushort> utf16Vector)
         {
-            // prefer architecture specific intrinsic as they offer better perf
-            if (Sse2.IsSupported)
+            // For performance, prefer architecture specific implementation
+            if (Sse41.IsSupported)
             {
-                if (Sse41.IsSupported)
-                {
-                    Vector128<ushort> asciiMaskForTestZ = Vector128.Create((ushort)0xFF80);
-                    // If a non-ASCII bit is set in any WORD of the vector, we have seen non-ASCII data.
-                    return !Sse41.TestZ(utf16Vector.AsInt16(), asciiMaskForTestZ.AsInt16());
-                }
-                else
-                {
-                    Vector128<ushort> asciiMaskForAddSaturate = Vector128.Create((ushort)0x7F80);
-                    // The operation below forces the 0x8000 bit of each WORD to be set iff the WORD element
-                    // has value >= 0x0800 (non-ASCII). Then we'll treat the vector as a BYTE vector in order
-                    // to extract the mask. Reminder: the 0x0080 bit of each WORD should be ignored.
-                    return (Sse2.MoveMask(Sse2.AddSaturate(utf16Vector, asciiMaskForAddSaturate).AsByte()) & 0b_1010_1010_1010_1010) != 0;
-                }
+                const ushort asciiMask = ushort.MaxValue - 127; // 0xFF80
+                Vector128<ushort> zeroIsAscii = utf16Vector & Vector128.Create(asciiMask);
+                // If a non-ASCII bit is set in any WORD of the vector, we have seen non-ASCII data.
+                return zeroIsAscii != Vector128<ushort>.Zero;
+            }
+            else if (Sse2.IsSupported)
+            {
+                Vector128<ushort> asciiMaskForAddSaturate = Vector128.Create((ushort)0x7F80);
+                // The operation below forces the 0x8000 bit of each WORD to be set iff the WORD element
+                // has value >= 0x0800 (non-ASCII). Then we'll treat the vector as a BYTE vector in order
+                // to extract the mask. Reminder: the 0x0080 bit of each WORD should be ignored.
+                return (Sse2.MoveMask(Sse2.AddSaturate(utf16Vector, asciiMaskForAddSaturate).AsByte()) & 0b_1010_1010_1010_1010) != 0;
             }
             else if (AdvSimd.Arm64.IsSupported)
             {
@@ -1554,24 +1553,16 @@ namespace System.Text
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool VectorContainsNonAsciiChar(Vector256<ushort> utf16Vector)
+        internal static bool VectorContainsNonAsciiChar(Vector256<ushort> utf16Vector)
         {
-            if (Avx.IsSupported)
-            {
-                Vector256<ushort> asciiMaskForTestZ = Vector256.Create((ushort)0xFF80);
-                return !Avx.TestZ(utf16Vector.AsInt16(), asciiMaskForTestZ.AsInt16());
-            }
-            else
-            {
-                const ushort asciiMask = ushort.MaxValue - 127; // 0xFF80
-                Vector256<ushort> zeroIsAscii = utf16Vector & Vector256.Create(asciiMask);
-                // If a non-ASCII bit is set in any WORD of the vector, we have seen non-ASCII data.
-                return zeroIsAscii != Vector256<ushort>.Zero;
-            }
+            const ushort asciiMask = ushort.MaxValue - 127; // 0xFF80
+            Vector256<ushort> zeroIsAscii = utf16Vector & Vector256.Create(asciiMask);
+            // If a non-ASCII bit is set in any WORD of the vector, we have seen non-ASCII data.
+            return zeroIsAscii != Vector256<ushort>.Zero;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool VectorContainsNonAsciiChar(Vector512<ushort> utf16Vector)
+        internal static bool VectorContainsNonAsciiChar(Vector512<ushort> utf16Vector)
         {
             const ushort asciiMask = ushort.MaxValue - 127; // 0xFF80
             Vector512<ushort> zeroIsAscii = utf16Vector & Vector512.Create(asciiMask);
@@ -1600,14 +1591,13 @@ namespace System.Text
             if (typeof(T) == typeof(byte))
             {
                 return
-                    Sse41.IsSupported ? Sse41.TestZ(vector.AsByte(), Vector128.Create((byte)0x80)) :
+                    Sse41.IsSupported ? (vector.AsByte() & Vector128.Create((byte)0x80)) == Vector128<byte>.Zero :
                     AdvSimd.Arm64.IsSupported ? AllBytesInUInt64AreAscii(AdvSimd.Arm64.MaxPairwise(vector.AsByte(), vector.AsByte()).AsUInt64().ToScalar()) :
                     vector.AsByte().ExtractMostSignificantBits() == 0;
             }
             else
             {
                 return
-                    Sse41.IsSupported ? Sse41.TestZ(vector.AsUInt16(), Vector128.Create((ushort)0xFF80)) :
                     AdvSimd.Arm64.IsSupported ? AllCharsInUInt64AreAscii(AdvSimd.Arm64.MaxPairwise(vector.AsUInt16(), vector.AsUInt16()).AsUInt64().ToScalar()) :
                     (vector.AsUInt16() & Vector128.Create((ushort)0xFF80)) == Vector128<ushort>.Zero;
             }
@@ -1623,14 +1613,12 @@ namespace System.Text
             if (typeof(T) == typeof(byte))
             {
                 return
-                    Avx.IsSupported ? Avx.TestZ(vector.AsByte(), Vector256.Create((byte)0x80)) :
+                    Avx.IsSupported ? (vector.AsByte() & Vector256.Create((byte)0x80)) == Vector256<byte>.Zero:
                     vector.AsByte().ExtractMostSignificantBits() == 0;
             }
             else
             {
-                return
-                    Avx.IsSupported ? Avx.TestZ(vector.AsUInt16(), Vector256.Create((ushort)0xFF80)) :
-                    (vector.AsUInt16() & Vector256.Create((ushort)0xFF80)) == Vector256<ushort>.Zero;
+                return (vector.AsUInt16() & Vector256.Create((ushort)0xFF80)) == Vector256<ushort>.Zero;
             }
         }
 
@@ -1651,7 +1639,7 @@ namespace System.Text
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static Vector128<byte> ExtractAsciiVector(Vector128<ushort> vectorFirst, Vector128<ushort> vectorSecond)
+        internal static Vector128<byte> ExtractAsciiVector(Vector128<ushort> vectorFirst, Vector128<ushort> vectorSecond)
         {
             // Narrows two vectors of words [ w7 w6 w5 w4 w3 w2 w1 w0 ] and [ w7' w6' w5' w4' w3' w2' w1' w0' ]
             // to a vector of bytes [ b7 ... b0 b7' ... b0'].
@@ -1665,10 +1653,30 @@ namespace System.Text
             {
                 return AdvSimd.Arm64.UnzipEven(vectorFirst.AsByte(), vectorSecond.AsByte());
             }
+            else if (PackedSimd.IsSupported)
+            {
+                return PackedSimd.ConvertNarrowingSaturateUnsigned(vectorFirst.AsInt16(), vectorSecond.AsInt16());
+            }
             else
             {
                 return Vector128.Narrow(vectorFirst, vectorSecond);
             }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static Vector256<byte> ExtractAsciiVector(Vector256<ushort> vectorFirst, Vector256<ushort> vectorSecond)
+        {
+            return Avx2.IsSupported
+                ? PackedSpanHelpers.FixUpPackedVector256Result(Avx2.PackUnsignedSaturate(vectorFirst.AsInt16(), vectorSecond.AsInt16()))
+                : Vector256.Narrow(vectorFirst, vectorSecond);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static Vector512<byte> ExtractAsciiVector(Vector512<ushort> vectorFirst, Vector512<ushort> vectorSecond)
+        {
+            return Avx512BW.IsSupported
+                ? PackedSpanHelpers.FixUpPackedVector512Result(Avx512BW.PackUnsignedSaturate(vectorFirst.AsInt16(), vectorSecond.AsInt16()))
+                : Vector512.Narrow(vectorFirst, vectorSecond);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -1821,7 +1829,7 @@ namespace System.Text
             // Turn the 16 ASCII chars we just read into 16 ASCII bytes, then copy it to the destination.
 
             ref byte asciiBuffer = ref *pAsciiBuffer;
-            Vector256<byte> asciiVector = Vector256.Narrow(utf16VectorFirst, utf16VectorFirst);
+            Vector256<byte> asciiVector = ExtractAsciiVector(utf16VectorFirst, utf16VectorFirst);
             asciiVector.GetLower().StoreUnsafe(ref asciiBuffer, 0);
             nuint currentOffsetInElements = Vector256.Size / 2; // we processed 16 elements so far
 
@@ -1847,7 +1855,7 @@ namespace System.Text
                 }
 
                 // Turn the 16 ASCII chars we just read into 16 ASCII bytes, then copy it to the destination.
-                asciiVector = Vector256.Narrow(utf16VectorFirst, utf16VectorFirst);
+                asciiVector = ExtractAsciiVector(utf16VectorFirst, utf16VectorFirst);
                 asciiVector.GetLower().StoreUnsafe(ref asciiBuffer, currentOffsetInElements);
             }
 
@@ -1877,7 +1885,7 @@ namespace System.Text
                 // Build up the ASCII vector and perform the store.
 
                 Debug.Assert(((nuint)pAsciiBuffer + currentOffsetInElements) % Vector256.Size == 0, "Write should be aligned.");
-                asciiVector = Vector256.Narrow(utf16VectorFirst, utf16VectorSecond);
+                asciiVector = ExtractAsciiVector(utf16VectorFirst, utf16VectorSecond);
                 asciiVector.StoreUnsafe(ref asciiBuffer, currentOffsetInElements);
 
                 currentOffsetInElements += Vector256.Size;
@@ -1900,7 +1908,7 @@ namespace System.Text
             // First part was all ASCII, narrow and aligned write. Note we're only filling in the low half of the vector.
 
             Debug.Assert(((nuint)pAsciiBuffer + currentOffsetInElements) % Vector128.Size == 0, "Destination should be 128-bit-aligned.");
-            asciiVector = Vector256.Narrow(utf16VectorFirst, utf16VectorFirst);
+            asciiVector = ExtractAsciiVector(utf16VectorFirst, utf16VectorFirst);
             asciiVector.GetLower().StoreUnsafe(ref asciiBuffer, currentOffsetInElements);
             currentOffsetInElements += Vector256.Size / 2;
 
@@ -1938,7 +1946,7 @@ namespace System.Text
             // Turn the 32 ASCII chars we just read into 32 ASCII bytes, then copy it to the destination.
 
             ref byte asciiBuffer = ref *pAsciiBuffer;
-            Vector512<byte> asciiVector = Vector512.Narrow(utf16VectorFirst, utf16VectorFirst);
+            Vector512<byte> asciiVector = ExtractAsciiVector(utf16VectorFirst, utf16VectorFirst);
             asciiVector.GetLower().StoreUnsafe(ref asciiBuffer, 0); // how to store the lower part of a avx512
             nuint currentOffsetInElements = Vector512.Size / 2; // we processed 32 elements so far
 
@@ -1965,7 +1973,7 @@ namespace System.Text
                 }
 
                 // Turn the 32 ASCII chars we just read into 32 ASCII bytes, then copy it to the destination.
-                asciiVector = Vector512.Narrow(utf16VectorFirst, utf16VectorFirst);
+                asciiVector = ExtractAsciiVector(utf16VectorFirst, utf16VectorFirst);
                 asciiVector.GetLower().StoreUnsafe(ref asciiBuffer, currentOffsetInElements);
             }
 
@@ -1995,7 +2003,7 @@ namespace System.Text
                 // Build up the ASCII vector and perform the store.
 
                 Debug.Assert(((nuint)pAsciiBuffer + currentOffsetInElements) % Vector512.Size == 0, "Write should be aligned.");
-                asciiVector = Vector512.Narrow(utf16VectorFirst, utf16VectorSecond);
+                asciiVector = ExtractAsciiVector(utf16VectorFirst, utf16VectorSecond);
                 asciiVector.StoreUnsafe(ref asciiBuffer, currentOffsetInElements);
 
                 currentOffsetInElements += Vector512.Size;
@@ -2018,7 +2026,7 @@ namespace System.Text
             // First part was all ASCII, narrow and aligned write. Note we're only filling in the low half of the vector.
 
             Debug.Assert(((nuint)pAsciiBuffer + currentOffsetInElements) % Vector256.Size == 0, "Destination should be 256-bit-aligned.");
-            asciiVector = Vector512.Narrow(utf16VectorFirst, utf16VectorFirst);
+            asciiVector = ExtractAsciiVector(utf16VectorFirst, utf16VectorFirst);
             asciiVector.GetLower().StoreUnsafe(ref asciiBuffer, currentOffsetInElements);
             currentOffsetInElements += Vector512.Size / 2;
 

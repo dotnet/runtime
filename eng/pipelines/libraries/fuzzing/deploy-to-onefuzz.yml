@@ -35,12 +35,13 @@ extends:
 
         - powershell: |
             cd $(Build.SourcesDirectory)
-            ./build.cmd clr+libs+packs+host -rc Checked -c Debug
+            ./build.cmd clr+libs -rc Checked -c Debug
           displayName: Build runtime (checked + debug)
 
         - powershell: |
             cd $(fuzzerProject)
-            $(dotnetPath) publish -o publish
+            $(dotnetPath) build-server shutdown
+            $(dotnetPath) build
           displayName: Build Fuzzing targets
 
         - powershell: |
@@ -50,7 +51,7 @@ extends:
 
         - powershell: |
             cd $(fuzzerProject)
-            publish/DotnetFuzzing.exe prepare-onefuzz deployment
+            ./run.bat
           displayName: Prepare OneFuzz deployment
 
 # OneFuzz can't currently handle a single deployment where multiple jobs share similar assemblies/pdbs.
@@ -65,6 +66,30 @@ extends:
 #         displayName: Send to OneFuzz
 
 # ONEFUZZ_TASK_WORKAROUND_START
+        - task: onefuzz-task@0
+          inputs:
+            onefuzzOSes: 'Windows'
+          env:
+            onefuzzDropDirectory: $(fuzzerProject)/deployment/AssemblyNameInfoFuzzer
+            SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+          displayName: Send AssemblyNameInfoFuzzer to OneFuzz
+
+        - task: onefuzz-task@0
+          inputs:
+            onefuzzOSes: 'Windows'
+          env:
+            onefuzzDropDirectory: $(fuzzerProject)/deployment/Base64Fuzzer
+            SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+          displayName: Send Base64Fuzzer to OneFuzz
+
+        - task: onefuzz-task@0
+          inputs:
+            onefuzzOSes: 'Windows'
+          env:
+            onefuzzDropDirectory: $(fuzzerProject)/deployment/Base64UrlFuzzer
+            SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+          displayName: Send Base64UrlFuzzer to OneFuzz
+
         - task: onefuzz-task@0
           inputs:
             onefuzzOSes: 'Windows'
@@ -85,6 +110,14 @@ extends:
           inputs:
             onefuzzOSes: 'Windows'
           env:
+            onefuzzDropDirectory: $(fuzzerProject)/deployment/NrbfDecoderFuzzer
+            SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+          displayName: Send NrbfDecoderFuzzer to OneFuzz
+
+        - task: onefuzz-task@0
+          inputs:
+            onefuzzOSes: 'Windows'
+          env:
             onefuzzDropDirectory: $(fuzzerProject)/deployment/SearchValuesByteCharFuzzer
             SYSTEM_ACCESSTOKEN: $(System.AccessToken)
           displayName: Send SearchValuesByteCharFuzzer to OneFuzz
@@ -96,6 +129,22 @@ extends:
             onefuzzDropDirectory: $(fuzzerProject)/deployment/SearchValuesStringFuzzer
             SYSTEM_ACCESSTOKEN: $(System.AccessToken)
           displayName: Send SearchValuesStringFuzzer to OneFuzz
+
+        - task: onefuzz-task@0
+          inputs:
+            onefuzzOSes: 'Windows'
+          env:
+            onefuzzDropDirectory: $(fuzzerProject)/deployment/TextEncodingFuzzer
+            SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+          displayName: Send TextEncodingFuzzer to OneFuzz
+
+        - task: onefuzz-task@0
+          inputs:
+            onefuzzOSes: 'Windows'
+          env:
+            onefuzzDropDirectory: $(fuzzerProject)/deployment/TypeNameFuzzer
+            SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+          displayName: Send TypeNameFuzzer to OneFuzz
 
         - task: onefuzz-task@0
           inputs:

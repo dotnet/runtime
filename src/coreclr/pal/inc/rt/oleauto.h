@@ -11,7 +11,6 @@
 
 #ifndef _OLEAUTO_H_
 #define _OLEAUTO_H_
-#include "oaidl.h"
 
 #ifndef BEGIN_INTERFACE
 #define BEGIN_INTERFACE

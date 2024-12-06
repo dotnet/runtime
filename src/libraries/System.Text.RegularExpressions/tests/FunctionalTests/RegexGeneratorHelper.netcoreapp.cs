@@ -177,7 +177,9 @@ namespace System.Text.RegularExpressions.Tests
                 {
                     code.Append($", {SymbolDisplay.FormatLiteral(regex.culture.Name, quote: true)}");
                 }
-                code.AppendLine($")] public static partial Regex Get{count}();");
+
+                bool useProp = count % 2 == 0; // validate both methods and properties by alternating between them
+                code.AppendLine($")] public static partial Regex Get{count}{(useProp ? " { get; }" : "();")}");
 
                 count++;
             }
@@ -238,12 +240,13 @@ namespace System.Text.RegularExpressions.Tests
             var alc = new RegexLoadContext(Environment.CurrentDirectory);
             Assembly a = alc.LoadFromStream(dll);
 
-            // Instantiate each regex using the newly created static Get method that was source generated.
+            // Instantiate each regex using the newly created static Get member that was source generated.
             var instances = new Regex[count];
             Type c = a.GetType("C")!;
             for (int i = 0; i < instances.Length; i++)
             {
-                instances[i] = (Regex)c.GetMethod($"Get{i}")!.Invoke(null, null)!;
+                string memberName = $"Get{i}";
+                instances[i] = (Regex)(c.GetMethod(memberName) ?? c.GetProperty(memberName).GetGetMethod())!.Invoke(null, null)!;
             }
 
             // Issue an unload on the ALC, so it'll be collected once the Regex instance is collected

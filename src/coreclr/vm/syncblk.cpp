@@ -2097,7 +2097,7 @@ BOOL ObjHeader::Validate (BOOL bVerifySyncBlkIndex)
 // Warning: Assumes you already own the cache lock.
 //          Assumes nothing allocated inside the SyncBlock (only releases the memory, does not destruct.)
 //
-// This holder really just meets GetSyncBlock()'s special needs. It's not a general purpose holder.
+// This holder really just meets GetSyncBlock()'s special requirements. It's not a general purpose holder.
 
 
 // Do not inline this call. (fyuan)

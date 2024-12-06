@@ -1106,6 +1106,8 @@ namespace System.Diagnostics
             return processes;
         }
 
+        private bool IsCurrentProcess => _processId == Environment.ProcessId;
+
         /// <devdoc>
         ///    <para>
         ///       Returns a new <see cref='System.Diagnostics.Process'/>

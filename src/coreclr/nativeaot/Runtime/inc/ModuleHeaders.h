@@ -11,8 +11,8 @@ struct ReadyToRunHeaderConstants
 {
     static const uint32_t Signature = 0x00525452; // 'RTR'
 
-    static const uint32_t CurrentMajorVersion = 9;
-    static const uint32_t CurrentMinorVersion = 3;
+    static const uint32_t CurrentMajorVersion = 10;
+    static const uint32_t CurrentMinorVersion = 1;
 };
 
 struct ReadyToRunHeader

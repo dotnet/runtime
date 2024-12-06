@@ -6,7 +6,7 @@ using System.Runtime.InteropServices.Marshalling;
 
 namespace System.Transactions.DtcProxyShim.DtcInterfaces;
 
-// https://docs.microsoft.com/previous-versions/windows/desktop/ms687122(v=vs.85)
+// https://learn.microsoft.com/previous-versions/windows/desktop/ms687122(v=vs.85)
 [GeneratedComInterface, Guid("30274F88-6EE4-474e-9B95-7807BC9EF8CF"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
 internal partial interface ITmNodeName
 {

@@ -65,7 +65,7 @@
 
 static MonoDomain *mono_root_domain;
 
-static MonoDomain *
+static void
 create_root_domain (void)
 {
 	MonoDomain *domain;
@@ -85,12 +85,13 @@ create_root_domain (void)
 	else
 		domain = (MonoDomain *)mono_gc_alloc_fixed (sizeof (MonoDomain), domain_gc_desc, MONO_ROOT_SOURCE_DOMAIN, NULL, "Domain Structure");
 
+	// It is important to populate this global before firing profiler events, because the profiler event
+	//  listener may attempt to perform operations that require a root domain to already exist.
+	mono_root_domain = domain;
+
 	MONO_PROFILER_RAISE (domain_loading, (domain));
 
-
 	MONO_PROFILER_RAISE (domain_loaded, (domain));
-
-	return domain;
 }
 
 /**
@@ -138,8 +139,8 @@ mono_init_internal (const char *root_domain_name)
 	mono_runtime_init_tls ();
 	mono_icall_init ();
 
-	domain = create_root_domain ();
-	mono_root_domain = domain;
+	create_root_domain ();
+	domain = mono_root_domain;
 
 	mono_alcs_init ();
 	mono_jit_info_tables_init ();

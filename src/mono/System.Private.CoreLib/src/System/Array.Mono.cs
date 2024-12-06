@@ -259,7 +259,7 @@ namespace System
                 }
                 else if (source.IsPointer && target.IsPointer)
                 {
-                    return true;
+                    return target.IsAssignableFrom(source);
                 }
                 else if (source.IsPrimitive && target.IsPrimitive)
                 {

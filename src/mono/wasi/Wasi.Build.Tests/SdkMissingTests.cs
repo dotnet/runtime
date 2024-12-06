@@ -31,8 +31,8 @@ public class SdkMissingTests : BuildTestBase
             };
 
     [Theory]
-    [MemberData(nameof(TestDataForNativeBuildFails), "<WasmSingleFileBundle>true</WasmSingleFileBundle>")]
-    [MemberData(nameof(TestDataForNativeBuildFails), "<InvariantGlobalization>true</InvariantGlobalization>")]
+    [MemberData(nameof(TestDataForNativeBuildFails), "<WasmSingleFileBundle>true</WasmSingleFileBundle><WasmBuildNative>true</WasmBuildNative>")]
+    [MemberData(nameof(TestDataForNativeBuildFails), "<InvariantGlobalization>true</InvariantGlobalization><WasmBuildNative>true</WasmBuildNative>")]
     public void NativeBuildOrPublishFails(string config, string extraProperties, bool publish)
     {
         string output = BuildWithInvalidSdkPath(config, extraProperties, publish, expectSuccess: false);

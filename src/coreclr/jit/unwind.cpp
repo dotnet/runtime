@@ -224,11 +224,12 @@ void Compiler::unwindPushPopMaskCFI(regMaskTP regMask, bool isFloat)
         // because LLVM only know about D0-D31.
         // As such pairs Sx,Sx+1 are referenced as D0-D15 registers in DWARF
         // For that we process registers in pairs.
+        regBit >>= isFloat ? 2 : 1;
         regNum = isFloat ? REG_PREV(REG_PREV(regNum)) : REG_PREV(regNum);
 #else
+        regBit >>= 1;
         regNum = REG_PREV(regNum);
 #endif
-        regBit = genRegMask(regNum);
     }
 }
 

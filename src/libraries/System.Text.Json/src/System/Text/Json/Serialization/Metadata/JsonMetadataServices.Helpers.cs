@@ -53,6 +53,7 @@ namespace System.Text.Json.Serialization.Metadata
                 typeInfo.PropertyMetadataSerializationNotSupported = true;
             }
 
+            typeInfo.ConstructorAttributeProviderFactory = objectInfo.ConstructorAttributeProviderFactory;
             typeInfo.SerializeHandler = objectInfo.SerializeHandler;
             typeInfo.NumberHandling = objectInfo.NumberHandling;
             typeInfo.PopulatePolymorphismMetadata();
@@ -195,7 +196,7 @@ namespace System.Text.Json.Serialization.Metadata
             propertyInfo.IgnoreCondition = propertyInfoValues.IgnoreCondition;
             propertyInfo.JsonTypeInfo = propertyInfoValues.PropertyTypeInfo;
             propertyInfo.NumberHandling = propertyInfoValues.NumberHandling;
-            propertyInfo.IsSourceGenerated = true;
+            propertyInfo.AttributeProviderFactory = propertyInfoValues.AttributeProviderFactory;
 
             return propertyInfo;
         }

@@ -110,7 +110,7 @@
     <Exec Condition="$(_DotNetVersionExitCode) != '0'" Command="$(_DotNetVersionCommand)" CustomErrorRegularExpression=".*" />
 
     <PropertyGroup>
-      <SdkBandVersionForWorkload_ComputedFromInstaller>$(SdkBandVersion)$([System.Text.RegularExpressions.Regex]::Match($(_DotNetVersionOutput), `-[A-z]*[\.]*\d*`))</SdkBandVersionForWorkload_ComputedFromInstaller>
+      <SdkBandVersionForWorkload_ComputedFromInstaller>$(SdkBandVersion)$([System.Text.RegularExpressions.Regex]::Match($(_DotNetVersionOutput), `-(?!rtm)[A-z]*[\.]*\d*`))</SdkBandVersionForWorkload_ComputedFromInstaller>
       <VersionBandForSdkManifestsDir Condition="'$(VersionBandForSdkManifestsDir)' == ''">$(SdkBandVersionForWorkload_ComputedFromInstaller)</VersionBandForSdkManifestsDir>
       <VersionBandForManifestPackages Condition="'$(VersionBandForManifestPackages)' == ''">$(VersionBandForSdkManifestsDir)</VersionBandForManifestPackages>
     </PropertyGroup>

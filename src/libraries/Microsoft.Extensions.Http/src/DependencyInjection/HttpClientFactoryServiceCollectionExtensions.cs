@@ -222,7 +222,7 @@ namespace Microsoft.Extensions.DependencyInjection
         /// </typeparam>
         /// <typeparam name="TImplementation">
         /// The implementation type of the typed client. The type specified will be instantiated by the
-        /// <see cref="ITypedHttpClientFactory{TImplementation}"/>
+        /// <see cref="ITypedHttpClientFactory{TImplementation}"/>.
         /// </typeparam>
         /// <param name="services">The <see cref="IServiceCollection"/>.</param>
         /// <returns>An <see cref="IHttpClientBuilder"/> that can be used to configure the client.</returns>
@@ -301,7 +301,7 @@ namespace Microsoft.Extensions.DependencyInjection
         /// </typeparam>
         /// <typeparam name="TImplementation">
         /// The implementation type of the typed client. The type specified will be instantiated by the
-        /// <see cref="ITypedHttpClientFactory{TImplementation}"/>
+        /// <see cref="ITypedHttpClientFactory{TImplementation}"/>.
         /// </typeparam>
         /// <param name="services">The <see cref="IServiceCollection"/>.</param>
         /// <param name="name">The logical name of the <see cref="HttpClient"/> to configure.</param>
@@ -424,7 +424,7 @@ namespace Microsoft.Extensions.DependencyInjection
         /// </typeparam>
         /// <typeparam name="TImplementation">
         /// The implementation type of the typed client. The type specified will be instantiated by the
-        /// <see cref="ITypedHttpClientFactory{TImplementation}"/>
+        /// <see cref="ITypedHttpClientFactory{TImplementation}"/>.
         /// </typeparam>
         /// <param name="services">The <see cref="IServiceCollection"/>.</param>
         /// <param name="configureClient">A delegate that is used to configure an <see cref="HttpClient"/>.</param>
@@ -468,7 +468,7 @@ namespace Microsoft.Extensions.DependencyInjection
         /// </typeparam>
         /// <typeparam name="TImplementation">
         /// The implementation type of the typed client. The type specified will be instantiated by the
-        /// <see cref="ITypedHttpClientFactory{TImplementation}"/>
+        /// <see cref="ITypedHttpClientFactory{TImplementation}"/>.
         /// </typeparam>
         /// <param name="services">The <see cref="IServiceCollection"/>.</param>
         /// <param name="configureClient">A delegate that is used to configure an <see cref="HttpClient"/>.</param>
@@ -595,7 +595,7 @@ namespace Microsoft.Extensions.DependencyInjection
         /// </typeparam>
         /// <typeparam name="TImplementation">
         /// The implementation type of the typed client. The type specified will be instantiated by the
-        /// <see cref="ITypedHttpClientFactory{TImplementation}"/>
+        /// <see cref="ITypedHttpClientFactory{TImplementation}"/>.
         /// </typeparam>
         /// <param name="services">The <see cref="IServiceCollection"/>.</param>
         /// <param name="name">The logical name of the <see cref="HttpClient"/> to configure.</param>
@@ -642,7 +642,7 @@ namespace Microsoft.Extensions.DependencyInjection
         /// </typeparam>
         /// <typeparam name="TImplementation">
         /// The implementation type of the typed client. The type specified will be instantiated by the
-        /// <see cref="ITypedHttpClientFactory{TImplementation}"/>
+        /// <see cref="ITypedHttpClientFactory{TImplementation}"/>.
         /// </typeparam>
         /// <param name="services">The <see cref="IServiceCollection"/>.</param>
         /// <param name="name">The logical name of the <see cref="HttpClient"/> to configure.</param>

@@ -4,6 +4,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO.Pipelines;
 using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 using System.Text.Json.Serialization;
@@ -88,6 +89,8 @@ namespace System.Text.Json
         /// </summary>
         public int FlushThreshold;
 
+        public PipeWriter? PipeWriter;
+
         /// <summary>
         /// Indicates that the state still contains suspended frames waiting re-entry.
         /// </summary>
@@ -155,12 +158,12 @@ namespace System.Text.Json
             SupportAsync = supportAsync;
 
             JsonSerializerOptions options = jsonTypeInfo.Options;
-            if (options.ReferenceHandlingStrategy != ReferenceHandlingStrategy.None)
+            if (options.ReferenceHandlingStrategy != JsonKnownReferenceHandler.Unspecified)
             {
                 Debug.Assert(options.ReferenceHandler != null);
                 ReferenceResolver = options.ReferenceHandler.CreateResolver(writing: true);
 
-                if (options.ReferenceHandlingStrategy == ReferenceHandlingStrategy.IgnoreCycles &&
+                if (options.ReferenceHandlingStrategy == JsonKnownReferenceHandler.IgnoreCycles &&
                     rootValueBoxed is not null && jsonTypeInfo.Type.IsValueType)
                 {
                     // Root object is a boxed value type, we need to push it to the reference stack before starting the serializer.
@@ -275,7 +278,7 @@ namespace System.Text.Json
             => (CompletedAsyncDisposables ??= new List<IAsyncDisposable>()).Add(asyncDisposable);
 
         // Asynchronously dispose of any AsyncDisposables that have been scheduled for disposal
-        public async ValueTask DisposeCompletedAsyncDisposables()
+        public readonly async ValueTask DisposeCompletedAsyncDisposables()
         {
             Debug.Assert(CompletedAsyncDisposables?.Count > 0);
             Exception? exception = null;
@@ -304,7 +307,7 @@ namespace System.Text.Json
         /// Walks the stack cleaning up any leftover IDisposables
         /// in the event of an exception on serialization
         /// </summary>
-        public void DisposePendingDisposablesOnException()
+        public readonly void DisposePendingDisposablesOnException()
         {
             Exception? exception = null;
 
@@ -343,7 +346,7 @@ namespace System.Text.Json
         /// Walks the stack cleaning up any leftover I(Async)Disposables
         /// in the event of an exception on async serialization
         /// </summary>
-        public async ValueTask DisposePendingDisposablesOnExceptionAsync()
+        public readonly async ValueTask DisposePendingDisposablesOnExceptionAsync()
         {
             Exception? exception = null;
 

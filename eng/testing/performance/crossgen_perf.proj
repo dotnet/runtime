@@ -10,10 +10,10 @@
     Crossgen and Crossgen2 Scenario WorkItems 
   -->
   <PropertyGroup Condition="'$(AGENT_OS)' == 'Windows_NT'">
-    <Python>py -3</Python>
+    <Python>python</Python>
     <HelixPreCommands>$(HelixPreCommands)</HelixPreCommands>
     <CoreRoot>%HELIX_CORRELATION_PAYLOAD%\Core_Root</CoreRoot>
-    <ScenarioDirectory>%HELIX_CORRELATION_PAYLOAD%\performance\src\scenarios\</ScenarioDirectory>
+    <ScenarioDirectory>%HELIX_WORKITEM_ROOT%\performance\src\scenarios\</ScenarioDirectory>
     <CrossgenDirectory>$(ScenarioDirectory)crossgen\</CrossgenDirectory>
     <Crossgen2Directory>$(ScenarioDirectory)crossgen2\</Crossgen2Directory>
   </PropertyGroup>
@@ -21,7 +21,7 @@
     <Python>python3</Python>
     <HelixPreCommands>$(HelixPreCommands);chmod +x $HELIX_WORKITEM_PAYLOAD/startup/Startup;chmod +x $HELIX_WORKITEM_PAYLOAD/startup/perfcollect;sudo apt update;chmod +x $HELIX_WORKITEM_PAYLOAD/SOD/SizeOnDisk</HelixPreCommands>
     <CoreRoot>$HELIX_CORRELATION_PAYLOAD/Core_Root</CoreRoot>
-    <ScenarioDirectory>$HELIX_CORRELATION_PAYLOAD/performance/src/scenarios/</ScenarioDirectory>
+    <ScenarioDirectory>$HELIX_WORKITEM_ROOT/performance/src/scenarios/</ScenarioDirectory>
     <CrossgenDirectory>$(ScenarioDirectory)crossgen/</CrossgenDirectory>
     <Crossgen2Directory>$(ScenarioDirectory)crossgen2/</Crossgen2Directory>
   </PropertyGroup>
@@ -47,14 +47,14 @@
   <ItemGroup> 
     <Crossgen2WorkItem Include="@(SingleAssembly)">
       <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
-      <Command>$(Python) $(Crossgen2Directory)test.py crossgen2 --core-root $(CoreRoot) --single %(Identity)</Command>
+      <Command>$(Python) $(Crossgen2Directory)test.py crossgen2 --core-root $(CoreRoot) --single %(Identity) $(ScenarioArgs)</Command>
     </Crossgen2WorkItem>
   </ItemGroup>
 
   <ItemGroup> 
     <Crossgen2SingleThreadedWorkItem Include="@(SingleAssembly)">
       <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
-      <Command>$(Python) $(Crossgen2Directory)test.py crossgen2 --core-root $(CoreRoot) --single %(Identity) --singlethreaded True</Command>
+      <Command>$(Python) $(Crossgen2Directory)test.py crossgen2 --core-root $(CoreRoot) --single %(Identity) --singlethreaded True $(ScenarioArgs)</Command>
     </Crossgen2SingleThreadedWorkItem>
   </ItemGroup>
 
@@ -62,7 +62,7 @@
     <Crossgen2SizeOnDiskWorkItem Include="@(SingleAssembly)">
       <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
       <PreCommands>$(Python) $(Crossgen2Directory)pre.py crossgen2 --core-root $(CoreRoot) --single %(Identity) </PreCommands>
-      <Command>$(Python) $(Crossgen2Directory)test.py sod --scenario-name &quot;Crossgen2 %(Identity) Size&quot; --dirs ./crossgen.out/</Command>
+      <Command>$(Python) $(Crossgen2Directory)test.py sod --scenario-name &quot;Crossgen2 %(Identity) Size&quot; --dirs ./crossgen.out/ $(ScenarioArgs)</Command>
       <PostCommands>$(Python) $(Crossgen2Directory)post.py</PostCommands>
     </Crossgen2SizeOnDiskWorkItem>
   </ItemGroup>
@@ -77,7 +77,7 @@
     </HelixWorkItem>
     <HelixWorkItem Include="Crossgen2 Composite Framework R2R">
       <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>	
-      <Command>$(Python) $(Crossgen2Directory)test.py crossgen2 --core-root $(CoreRoot) --composite $(Crossgen2Directory)framework-r2r.dll.rsp</Command>
+      <Command>$(Python) $(Crossgen2Directory)test.py crossgen2 --core-root $(CoreRoot) --composite $(Crossgen2Directory)framework-r2r.dll.rsp $(ScenarioArgs)</Command>
       <Timeout>1:00</Timeout>  
     </HelixWorkItem>
     <HelixWorkItem Include="@(Crossgen2SizeOnDiskWorkItem -> 'Crossgen2 Size on Disk %(Identity)')">

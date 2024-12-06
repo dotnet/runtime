@@ -130,9 +130,7 @@ namespace System.Reflection.Emit
             for (i = 0; i < namedProperties.Length; i++)
             {
                 // Validate the property.
-                PropertyInfo property = namedProperties[i];
-                if (property == null)
-                    throw new ArgumentNullException("namedProperties[" + i + "]");
+                PropertyInfo property = namedProperties[i] ?? throw new ArgumentNullException($"namedProperties[{i}]");
 
                 // Allow null for non-primitive types only.
                 Type propType = property.PropertyType;
@@ -150,7 +148,7 @@ namespace System.Reflection.Emit
 
                 // Property has to be from the same class or base class as ConstructorInfo.
                 if (property.DeclaringType != con.DeclaringType
-                    && (!(con.DeclaringType is TypeBuilderInstantiation))
+                    && (con.DeclaringType is not TypeBuilderInstantiation)
                     && !con.DeclaringType!.IsSubclassOf(property.DeclaringType!))
                 {
                     // Might have failed check because one type is a XXXBuilder
@@ -162,7 +160,7 @@ namespace System.Reflection.Emit
                         // the constructor is a TypeBuilder, but we still need
                         // to deal with the case where the property's declaring
                         // type is one.
-                        if (!(property.DeclaringType is TypeBuilder) ||
+                        if (property.DeclaringType is not TypeBuilder ||
                             !con.DeclaringType.IsSubclassOf(((RuntimeTypeBuilder)property.DeclaringType).BakedRuntimeType))
                             throw new ArgumentException(SR.Argument_BadPropertyForConstructorBuilder);
                     }
@@ -188,9 +186,7 @@ namespace System.Reflection.Emit
             for (i = 0; i < namedFields.Length; i++)
             {
                 // Validate the field.
-                FieldInfo namedField = namedFields[i];
-                if (namedField == null)
-                    throw new ArgumentNullException("namedFields[" + i + "]");
+                FieldInfo namedField = namedFields[i] ?? throw new ArgumentNullException($"namedFields[{i}]");
 
                 // Allow null for non-primitive types only.
                 Type fldType = namedField.FieldType;
@@ -204,7 +200,7 @@ namespace System.Reflection.Emit
 
                 // Field has to be from the same class or base class as ConstructorInfo.
                 if (namedField.DeclaringType != con.DeclaringType
-                    && (!(con.DeclaringType is TypeBuilderInstantiation))
+                    && (con.DeclaringType is not TypeBuilderInstantiation)
                     && !con.DeclaringType!.IsSubclassOf(namedField.DeclaringType!))
                 {
                     // Might have failed check because one type is a XXXBuilder
@@ -216,7 +212,7 @@ namespace System.Reflection.Emit
                         // the constructor is a TypeBuilder, but we still need
                         // to deal with the case where the field's declaring
                         // type is one.
-                        if (!(namedField.DeclaringType is TypeBuilder) ||
+                        if (namedField.DeclaringType is not TypeBuilder ||
                             !con.DeclaringType.IsSubclassOf(((RuntimeTypeBuilder)namedFields[i].DeclaringType!).BakedRuntimeType))
                             throw new ArgumentException(SR.Argument_BadFieldForConstructorBuilder);
                     }
@@ -255,20 +251,11 @@ namespace System.Reflection.Emit
             }
             if (t.IsEnum)
             {
-                switch (Type.GetTypeCode(Enum.GetUnderlyingType(t)))
-                {
-                    case TypeCode.SByte:
-                    case TypeCode.Byte:
-                    case TypeCode.Int16:
-                    case TypeCode.UInt16:
-                    case TypeCode.Int32:
-                    case TypeCode.UInt32:
-                    case TypeCode.Int64:
-                    case TypeCode.UInt64:
-                        return true;
-                    default:
-                        return false;
-                }
+                return Type.GetTypeCode(Enum.GetUnderlyingType(t)) is
+                    TypeCode.SByte or TypeCode.Byte or
+                    TypeCode.Int16 or TypeCode.UInt16 or
+                    TypeCode.Int32 or TypeCode.UInt32 or
+                    TypeCode.Int64 or TypeCode.UInt64;
             }
             if (t.IsArray)
             {
@@ -429,8 +416,7 @@ namespace System.Reflection.Emit
                     writer.Write((byte)0xff);
                 else
                 {
-                    string? typeName = TypeNameBuilder.ToString((Type)value, TypeNameBuilder.Format.AssemblyQualifiedName);
-                    if (typeName == null)
+                    string typeName = TypeNameBuilder.ToString((Type)value, TypeNameBuilder.Format.AssemblyQualifiedName) ??
                         throw new ArgumentException(SR.Format(SR.Argument_InvalidTypeForCA, value.GetType()));
                     EmitString(writer, typeName);
                 }
