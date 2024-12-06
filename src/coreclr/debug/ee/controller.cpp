@@ -25,6 +25,11 @@ const char *GetTType( TraceType tt);
 
 #define IsSingleStep(exception) ((exception) == EXCEPTION_SINGLE_STEP)
 
+typedef enum __TailCallFunctionType {
+    TailCallThatReturns = 1,
+    StoreTailCallArgs = 2
+} TailCallFunctionType;
+
 // -------------------------------------------------------------------------
 //  DebuggerController routines
 // -------------------------------------------------------------------------
@@ -5789,10 +5794,10 @@ static bool IsTailCallJitHelper(const BYTE * ip)
 // control flow will be a little peculiar in that the function will return
 // immediately, so we need special handling in the debugger for it. This
 // function detects that case to be used for those scenarios.
-static bool IsTailCallThatReturns(const BYTE * ip, ControllerStackInfo* info)
+static bool IsTailCall(const BYTE * ip, ControllerStackInfo* info, TailCallFunctionType type)
 {
     MethodDesc* pTailCallDispatcherMD = TailCallHelp::GetTailCallDispatcherMD();
-    if (pTailCallDispatcherMD == NULL)
+    if (pTailCallDispatcherMD == NULL && type == TailCallFunctionType::TailCallThatReturns)
     {
         return false;
     }
@@ -5807,6 +5812,11 @@ static bool IsTailCallThatReturns(const BYTE * ip, ControllerStackInfo* info)
         trace.GetTraceType() == TRACE_UNJITTED_METHOD
         ? trace.GetMethodDesc()
         : g_pEEInterface->GetNativeCodeMethodDesc(trace.GetAddress());
+
+    if (type == TailCallFunctionType::StoreTailCallArgs)
+    {
+        return (pTargetMD->IsDynamicMethod() && pTargetMD->AsDynamicMethodDesc()->GetILStubType() == DynamicMethodDesc::StubTailCallStoreArgs);
+    }
 
     if (pTargetMD != pTailCallDispatcherMD)
     {
@@ -6039,6 +6049,13 @@ bool DebuggerStepper::TrapStep(ControllerStackInfo *info, bool in)
                     fCallingIntoFunclet = IsAddrWithinMethodIncludingFunclet(ji, info->m_activeFrame.md, walker.GetNextIP()) &&
                         ((CORDB_ADDRESS)(SIZE_T)walker.GetNextIP() != ji->m_addrOfCode);
 #endif
+                    // If we are stepping into a tail call that uses the StoreTailCallArgs 
+                    // we need to enable the method enter, otherwise it will behave like a resume
+                    if (in && IsTailCall(walker.GetNextIP(), info, TailCallFunctionType::StoreTailCallArgs))
+                    {
+                        EnableMethodEnter();
+                        return true;
+                    }
                     // At this point, we know that the call/branch target is not
                     // in the current method. The possible cases is that this is
                     // a jump or a tailcall-via-helper. There are two separate
@@ -6050,7 +6067,7 @@ bool DebuggerStepper::TrapStep(ControllerStackInfo *info, bool in)
                     // is done by stepping out to the previous user function
                     // (non IL stub).
                     if ((fIsJump && !fCallingIntoFunclet) || IsTailCallJitHelper(walker.GetNextIP()) ||
-                        IsTailCallThatReturns(walker.GetNextIP(), info))
+                        IsTailCall(walker.GetNextIP(), info, TailCallFunctionType::TailCallThatReturns))
                     {
                         // A step-over becomes a step-out for a tail call.
                         if (!in)
@@ -6196,7 +6213,7 @@ bool DebuggerStepper::TrapStep(ControllerStackInfo *info, bool in)
                 return true;
             }
 
-            if (IsTailCallJitHelper(walker.GetNextIP()) || IsTailCallThatReturns(walker.GetNextIP(), info))
+            if (IsTailCallJitHelper(walker.GetNextIP()) || IsTailCall(walker.GetNextIP(), info, TailCallFunctionType::TailCallThatReturns))
             {
                 if (!in)
                 {

@@ -109,7 +109,9 @@ namespace System.Collections.Immutable
         /// no larger element, the bitwise complement of <see cref="ImmutableList{T}.Count"/>.
         /// </returns>
         /// <exception cref="ArgumentOutOfRangeException">
-        /// <paramref name="index"/> is less than 0.-or-<paramref name="count"/> is less than 0.
+        /// <para><paramref name="index"/> is less than 0.</para>
+        /// <para>-or-</para>
+        /// <para><paramref name="count"/> is less than 0.</para>
         /// </exception>
         /// <exception cref="ArgumentException">
         /// <paramref name="index"/> and <paramref name="count"/> do not denote a valid range in the <see cref="ImmutableList{T}"/>.
@@ -167,7 +169,7 @@ namespace System.Collections.Immutable
         /// </summary>
         /// <param name="index">The 0-based index of the element in the set to return.</param>
         /// <returns>The element at the given position.</returns>
-        /// <exception cref="IndexOutOfRangeException">Thrown from getter when <paramref name="index"/> is negative or not less than <see cref="Count"/>.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="index"/> is negative or not less than <see cref="Count"/>.</exception>
         public T this[int index] => _root.ItemRef(index);
 
         /// <summary>
@@ -175,7 +177,7 @@ namespace System.Collections.Immutable
         /// </summary>
         /// <param name="index">The 0-based index of the element in the set to return.</param>
         /// <returns>A read-only reference to the element at the given position.</returns>
-        /// <exception cref="IndexOutOfRangeException">Thrown when <paramref name="index"/> is negative or not less than <see cref="Count"/>.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="index"/> is negative or not less than <see cref="Count"/>.</exception>
         public ref readonly T ItemRef(int index) => ref _root.ItemRef(index);
 
         #endregion
@@ -927,14 +929,14 @@ namespace System.Collections.Immutable
         /// Removes the value at the specified index.
         /// </summary>
         /// <param name="index">The index.</param>
-        /// <exception cref="NotSupportedException">Always thrown.</exception>
+        /// <exception cref="NotSupportedException">In all cases.</exception>
         void IList<T>.RemoveAt(int index) => throw new NotSupportedException();
 
         /// <summary>
         /// Gets or sets the value at the specified index.
         /// </summary>
-        /// <exception cref="IndexOutOfRangeException">Thrown from getter when <paramref name="index"/> is negative or not less than <see cref="Count"/>.</exception>
-        /// <exception cref="NotSupportedException">Always thrown from the setter.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="index"/> is negative or not less than <see cref="Count"/> (getter).</exception>
+        /// <exception cref="NotSupportedException">In all cases from the setter.</exception>
         T IList<T>.this[int index]
         {
             get => this[index];
@@ -1052,7 +1054,7 @@ namespace System.Collections.Immutable
         /// Removes the first occurrence of a specific object from the <see cref="IList"/>.
         /// </summary>
         /// <param name="value">The object to remove from the <see cref="IList"/>.</param>
-        /// <exception cref="NotSupportedException">Always thrown.</exception>
+        /// <exception cref="NotSupportedException">In all cases.</exception>
         void IList.Remove(object? value) => throw new NotSupportedException();
 
         /// <summary>
@@ -1063,8 +1065,8 @@ namespace System.Collections.Immutable
         /// </value>
         /// <param name="index">The index.</param>
         /// <returns>The value at the specified index.</returns>
-        /// <exception cref="IndexOutOfRangeException">Thrown from getter when <paramref name="index"/> is negative or not less than <see cref="Count"/>.</exception>
-        /// <exception cref="NotSupportedException">Always thrown from the setter.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="index"/> is negative or not less than <see cref="Count"/> (getter).</exception>
+        /// <exception cref="NotSupportedException">In call cases from the setter.</exception>
         object? IList.this[int index]
         {
             get => this[index];

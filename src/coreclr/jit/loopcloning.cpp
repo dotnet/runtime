@@ -1181,7 +1181,7 @@ bool Compiler::optDeriveLoopCloningConditions(FlowGraphNaturalLoop* loop, LoopCl
             }
 
             default:
-                JITDUMP("Unknown opt\n");
+                assert(!"Unknown opt type");
                 return false;
         }
     }
@@ -1378,12 +1378,14 @@ bool Compiler::optDeriveLoopCloningConditions(FlowGraphNaturalLoop* loop, LoopCl
                 // TODO: ensure array is dereference-able?
             }
             break;
+
             case LcOptInfo::LcTypeTest:
+            case LcOptInfo::LcMethodAddrTest:
                 // handled above
                 break;
 
             default:
-                JITDUMP("Unknown opt\n");
+                assert(!"Unknown opt type");
                 return false;
         }
     }
@@ -1886,8 +1888,19 @@ bool Compiler::optIsLoopClonable(FlowGraphNaturalLoop* loop, LoopCloneContext* c
         return false;
     }
 
+    bool cloneLoopsWithEH = false;
+    INDEBUG(cloneLoopsWithEH = (JitConfig.JitCloneLoopsWithEH() > 0);)
     INDEBUG(const char* reason);
-    if (!loop->CanDuplicate(INDEBUG(&reason)))
+
+    if (cloneLoopsWithEH)
+    {
+        if (!loop->CanDuplicateWithEH(INDEBUG(&reason)))
+        {
+            JITDUMP("Loop cloning: rejecting loop " FMT_LP ": %s\n", loop->GetIndex(), reason);
+            return false;
+        }
+    }
+    else if (!loop->CanDuplicate(INDEBUG(&reason)))
     {
         JITDUMP("Loop cloning: rejecting loop " FMT_LP ": %s\n", loop->GetIndex(), reason);
         return false;
@@ -2029,6 +2042,9 @@ void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* contex
     }
 #endif
 
+    bool cloneLoopsWithEH = false;
+    INDEBUG(cloneLoopsWithEH = (JitConfig.JitCloneLoopsWithEH() > 0);)
+
     // Determine the depth of the loop, so we can properly weight blocks added (outside the cloned loop blocks).
     unsigned depth         = loop->GetDepth();
     weight_t ambientWeight = 1;
@@ -2092,19 +2108,57 @@ void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* contex
     // loop itself. All failed conditions will branch to the slow preheader.
     // The slow preheader will unconditionally branch to the slow loop header.
     // This puts the slow loop in the canonical loop form.
+    //
+    // The slow preheader needs to go in the same EH region as the preheader.
+    //
     JITDUMP("Create unique preheader for slow path loop\n");
-    BasicBlock* slowPreheader = fgNewBBafter(BBJ_ALWAYS, newPred, /*extendRegion*/ true);
+    const bool  extendRegion  = BasicBlock::sameEHRegion(bottom, preheader);
+    BasicBlock* slowPreheader = fgNewBBafter(BBJ_ALWAYS, newPred, extendRegion);
     JITDUMP("Adding " FMT_BB " after " FMT_BB "\n", slowPreheader->bbNum, newPred->bbNum);
     slowPreheader->bbWeight = newPred->isRunRarely() ? BB_ZERO_WEIGHT : ambientWeight;
     slowPreheader->CopyFlags(newPred, (BBF_PROF_WEIGHT | BBF_RUN_RARELY));
     slowPreheader->scaleBBWeight(LoopCloneContext::slowPathWeightScaleFactor);
+
+    // If we didn't extend the region above (because the last loop
+    // block was in some enclosed EH region), put the slow preheader
+    // into the appropriate region, and make appropriate extent updates.
+    //
+    if (!extendRegion)
+    {
+        slowPreheader->copyEHRegion(preheader);
+        bool     isTry           = false;
+        unsigned enclosingRegion = ehGetMostNestedRegionIndex(slowPreheader, &isTry);
+
+        if (enclosingRegion != 0)
+        {
+            EHblkDsc* const ebd = ehGetDsc(enclosingRegion - 1);
+            for (EHblkDsc* const HBtab : EHClauses(this, ebd))
+            {
+                if (HBtab->ebdTryLast == bottom)
+                {
+                    fgSetTryEnd(HBtab, slowPreheader);
+                }
+                if (HBtab->ebdHndLast == bottom)
+                {
+                    fgSetHndEnd(HBtab, slowPreheader);
+                }
+            }
+        }
+    }
     newPred = slowPreheader;
 
     // Now we'll clone the blocks of the loop body. These cloned blocks will be the slow path.
 
     BlockToBlockMap* blockMap = new (getAllocator(CMK_LoopClone)) BlockToBlockMap(getAllocator(CMK_LoopClone));
 
-    loop->Duplicate(&newPred, blockMap, LoopCloneContext::slowPathWeightScaleFactor);
+    if (cloneLoopsWithEH)
+    {
+        loop->DuplicateWithEH(&newPred, blockMap, LoopCloneContext::slowPathWeightScaleFactor);
+    }
+    else
+    {
+        loop->Duplicate(&newPred, blockMap, LoopCloneContext::slowPathWeightScaleFactor);
+    }
 
     // Scale old blocks to the fast path weight.
     loop->VisitLoopBlocks([=](BasicBlock* block) {
@@ -3062,8 +3116,6 @@ PhaseStatus Compiler::optCloneLoops()
             m_dfsTree = fgComputeDfs();
             m_loops   = FlowGraphNaturalLoops::Find(m_dfsTree);
         }
-
-        fgRenumberBlocks();
     }
 
 #ifdef DEBUG

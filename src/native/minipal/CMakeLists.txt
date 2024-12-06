@@ -2,11 +2,14 @@ include(configure.cmake)
 
 set(SOURCES
     cpufeatures.c
+    guid.c
     random.c
     debugger.c
+    strings.c
     time.c
     unicodedata.c
     utf8.c
+    xoshiro128pp.c
 )
 
 # Provide an object library for scenarios where we ship static libraries
@@ -14,11 +17,19 @@ include_directories(${CLR_SRC_NATIVE_DIR} ${CMAKE_CURRENT_BINARY_DIR})
 
 add_library(minipal_objects OBJECT ${SOURCES})
 
-# Add a copy of the minipal static library with interprocedural optimization disabled
+if (WIN32)
+    target_link_libraries(minipal_objects PUBLIC bcrypt)
+endif()
+
+# Add a copy of the minipal object library with interprocedural optimization disabled
 # for NativeAOT scenarios, where we ship static libraries that need to be able to be run with
 # a variety of toolchain versions, not only the exact one we built with.
 add_library(aotminipal STATIC ${SOURCES})
 set_target_properties(aotminipal PROPERTIES INTERPROCEDURAL_OPTIMIZATION OFF)
+
+if (WIN32)
+    target_link_libraries(aotminipal PUBLIC bcrypt)
+endif()
 
 # Provide a static library for our shared library and executable scenarios
 # for easier usability.
