@@ -9734,25 +9734,33 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 op1->AsCall()->compileTimeHelperArgumentHandle = (CORINFO_GENERIC_HANDLE)resolvedToken.hClass;
 
                 // Remember that this function contains 'new' of an SD array.
-                block->SetFlags(BBF_HAS_NEWARR);
                 optMethodFlags |= OMF_HAS_NEWARRAY;
+                block->SetFlags(BBF_HAS_NEWARR);
 
-                // We assign the newly allocated object (by a GT_CALL to newarr node)
-                // to a temp. Note that the pattern "temp = allocArr" is required
-                // by ObjectAllocator phase to be able to determine newarr nodes
-                // without exhaustive walk over all expressions.
-                lclNum = lvaGrabTemp(true DEBUGARG("NewArr temp"));
+                if (opts.OptimizationEnabled())
+                {
+                    // We assign the newly allocated object (by a GT_CALL to newarr node)
+                    // to a temp. Note that the pattern "temp = allocArr" is required
+                    // by ObjectAllocator phase to be able to determine newarr nodes
+                    // without exhaustive walk over all expressions.
+                    lclNum = lvaGrabTemp(true DEBUGARG("NewArr temp"));
 
-                impStoreToTemp(lclNum, op1, CHECK_SPILL_NONE);
+                    impStoreToTemp(lclNum, op1, CHECK_SPILL_NONE);
 
-                assert(lvaTable[lclNum].lvSingleDef == 0);
-                lvaTable[lclNum].lvSingleDef = 1;
-                JITDUMP("Marked V%02u as a single def local\n", lclNum);
-                lvaSetClass(lclNum, resolvedToken.hClass, true /* is Exact */);
+                    assert(lvaTable[lclNum].lvSingleDef == 0);
+                    lvaTable[lclNum].lvSingleDef = 1;
+                    JITDUMP("Marked V%02u as a single def local\n", lclNum);
+                    lvaSetClass(lclNum, resolvedToken.hClass, true /* is Exact */);
 
-                /* Push the result of the call on the stack */
+                    /* Push the result of the call on the stack */
 
-                impPushOnStack(gtNewLclvNode(lclNum, TYP_REF), tiRetVal);
+                    impPushOnStack(gtNewLclvNode(lclNum, TYP_REF), tiRetVal);
+                }
+                else
+                {
+                    /* Push the result of the call on the stack */
+                    impPushOnStack(op1, tiRetVal);
+                }
 
                 callTyp = TYP_REF;
             }

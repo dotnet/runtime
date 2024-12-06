@@ -2614,6 +2614,11 @@ GenTree* Compiler::impInitializeArrayIntrinsic(CORINFO_SIG_INFO* sig)
         // Make sure the target of the store is the array passed to InitializeArray.
         if (arrayLocalStore->AsLclVar()->GetLclNum() != arrayLocalNode->AsLclVar()->GetLclNum())
         {
+            if (opts.OptimizationDisabled())
+            {
+                return nullptr;
+            }
+
             // The array can be spilled to a temp for stack allocation.
             // Try getting the actual store node from the previous statement.
             if (arrayLocalStore->AsLclVar()->Data()->OperIs(GT_LCL_VAR) && impLastStmt->GetPrevStmt() != nullptr)
