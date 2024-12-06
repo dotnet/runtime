@@ -347,6 +347,7 @@ void ObjectAllocator::ComputeStackObjectPointers(BitVecTraits* bitVecTraits)
                     {
                         // Check if we know what is assigned to this pointer.
                         unsigned bitCount = BitVecOps::Count(bitVecTraits, m_ConnGraphAdjacencyMatrix[lclNum]);
+                        assert(bitCount <= 1);
                         if (bitCount > 0)
                         {
                             BitVecOps::Iter iter(bitVecTraits, m_ConnGraphAdjacencyMatrix[lclNum]);
