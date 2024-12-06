@@ -514,8 +514,30 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern void GetNextIntroducedMethod(ref RuntimeMethodHandleInternal method);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern bool GetFields(RuntimeType type, IntPtr* result, int* count);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_GetFields")]
+        private static partial Interop.BOOL GetFields(MethodTable* pMT, Span<IntPtr> data, ref int usedCount);
+
+        internal static bool GetFields(RuntimeType type, ref Span<IntPtr> buffer, ref int count)
+        {
+            TypeHandle typeHandle = type.GetNativeTypeHandle();
+
+            CorElementType elementType = (CorElementType)typeHandle.GetCorElementType();
+            if (elementType is CorElementType.ELEMENT_TYPE_VAR or CorElementType.ELEMENT_TYPE_MVAR)
+            {
+                throw new ArgumentException(SR.Arg_InvalidHandle);
+            }
+
+            if (typeHandle.IsTypeDesc)
+            {
+                count = 0;
+                return true;
+            }
+
+            count = buffer.Length;
+            bool success = GetFields(typeHandle.AsMethodTable(), buffer, ref count) != Interop.BOOL.FALSE;
+            GC.KeepAlive(type);
+            return success;
+        }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern Type[]? GetInterfaces(RuntimeType type);

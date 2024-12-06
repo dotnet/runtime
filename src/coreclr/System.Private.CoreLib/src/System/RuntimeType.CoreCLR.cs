@@ -858,25 +858,24 @@ namespace System
 
                 private unsafe void PopulateRtFields(Filter filter, RuntimeType declaringType, ref ListBuilder<RuntimeFieldInfo> list)
                 {
-                    IntPtr* pResult = stackalloc IntPtr[64];
-                    int count = 64;
+                    Span<IntPtr> result = stackalloc IntPtr[64];
+                    int count = 0;
 
-                    if (!RuntimeTypeHandle.GetFields(declaringType, pResult, &count))
+                    if (!RuntimeTypeHandle.GetFields(declaringType, ref result, ref count))
                     {
-                        fixed (IntPtr* pBigResult = new IntPtr[count])
-                        {
-                            RuntimeTypeHandle.GetFields(declaringType, pBigResult, &count);
-                            PopulateRtFields(filter, pBigResult, count, declaringType, ref list);
-                        }
+                        result = new IntPtr[count];
+                        bool success = RuntimeTypeHandle.GetFields(declaringType, ref result, ref count);
+                        Debug.Assert(success && result.Length == count);
+                        PopulateRtFields(filter, result, declaringType, ref list);
                     }
                     else if (count > 0)
                     {
-                        PopulateRtFields(filter, pResult, count, declaringType, ref list);
+                        PopulateRtFields(filter, result.Slice(0, count), declaringType, ref list);
                     }
                 }
 
                 private unsafe void PopulateRtFields(Filter filter,
-                    IntPtr* ppFieldHandles, int count, RuntimeType declaringType, ref ListBuilder<RuntimeFieldInfo> list)
+                    Span<IntPtr> ppFieldHandles, RuntimeType declaringType, ref ListBuilder<RuntimeFieldInfo> list)
                 {
                     Debug.Assert(declaringType != null);
                     Debug.Assert(ReflectedType != null);
@@ -884,9 +883,9 @@ namespace System
                     bool needsStaticFieldForGeneric = declaringType.IsGenericType && !RuntimeTypeHandle.ContainsGenericVariables(declaringType);
                     bool isInherited = declaringType != ReflectedType;
 
-                    for (int i = 0; i < count; i++)
+                    foreach (IntPtr handle in ppFieldHandles)
                     {
-                        RuntimeFieldHandleInternal runtimeFieldHandle = new RuntimeFieldHandleInternal(ppFieldHandles[i]);
+                        RuntimeFieldHandleInternal runtimeFieldHandle = new RuntimeFieldHandleInternal(handle);
 
                         if (filter.RequiresStringComparison())
                         {

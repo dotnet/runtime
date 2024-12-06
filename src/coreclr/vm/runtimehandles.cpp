@@ -455,55 +455,39 @@ extern "C" MethodDesc* QCALLTYPE RuntimeTypeHandle_GetMethodAt(MethodTable* pMT,
     return pRetMethod;
 }
 
-FCIMPL3(FC_BOOL_RET, RuntimeTypeHandle::GetFields, ReflectClassBaseObject *pTypeUNSAFE, INT32 **result, INT32 *pCount) {
-    CONTRACTL {
-        FCALL_CHECK;
-    }
-    CONTRACTL_END;
+extern "C" BOOL QCALLTYPE RuntimeTypeHandle_GetFields(MethodTable* pMT, intptr_t* result, INT32* pCount)
+{
+    QCALL_CONTRACT;
 
-    REFLECTCLASSBASEREF refType = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(pTypeUNSAFE);
-    if (refType == NULL)
-        FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
-
-    TypeHandle typeHandle = refType->GetType();
-
-    if (!pCount || !result)
-        FCThrow(kArgumentNullException);
-
-    if (typeHandle.IsGenericVariable())
-        FCThrowRes(kArgumentException, W("Arg_InvalidHandle"));
-
-    if (typeHandle.IsTypeDesc() || typeHandle.IsArray()) {
-        *pCount = 0;
-        FC_RETURN_BOOL(TRUE);
-    }
-
-    MethodTable *pMT= typeHandle.GetMethodTable();
-    if (!pMT)
-        FCThrowRes(kArgumentException, W("Arg_InvalidHandle"));
+    _ASSERTE(pMT != NULL);
+    _ASSERTE(result != NULL);
+    _ASSERTE(pCount != NULL);
 
     BOOL retVal = FALSE;
-    HELPER_METHOD_FRAME_BEGIN_RET_1(refType);
-    // <TODO>Check this approximation - we may be losing exact type information </TODO>
+
+    BEGIN_QCALL;
+
     EncApproxFieldDescIterator fdIterator(pMT, ApproxFieldDescIterator::ALL_FIELDS, TRUE);
     INT32 count = (INT32)fdIterator.Count();
 
     if (count > *pCount)
     {
         *pCount = count;
+        retVal = FALSE;
     }
     else
     {
-        for(INT32 i = 0; i < count; i ++)
-            result[i] = (INT32*)fdIterator.Next();
+        for(INT32 i = 0; i < count; ++i)
+            result[i] = (intptr_t)fdIterator.Next();
 
         *pCount = count;
         retVal = TRUE;
     }
-    HELPER_METHOD_FRAME_END();
-    FC_RETURN_BOOL(retVal);
+
+    END_QCALL;
+
+    return retVal;
 }
-FCIMPLEND
 
 extern "C" void QCALLTYPE RuntimeMethodHandle_ConstructInstantiation(MethodDesc * pMethod, DWORD format, QCall::StringHandleOnStack retString)
 {
