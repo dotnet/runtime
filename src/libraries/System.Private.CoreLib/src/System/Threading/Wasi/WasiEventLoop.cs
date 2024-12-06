@@ -152,6 +152,7 @@ namespace System.Threading
                 }
 
                 // this could block, this is blocking WASI API call
+                // FIXME: this will also block soft-debugger ability to pause the execution. Solutions: A) upgrade to WASIp3 B) register debugger connection's pollable
                 var readyIndexes = PollInterop.Poll(pending);
 
                 var holdersCount = holders.Count;

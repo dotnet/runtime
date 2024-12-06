@@ -898,8 +898,34 @@ public:
 
     bool isUsedFromMemory() const
     {
-        return ((isContained() && (isMemoryOp() || OperIs(GT_LCL_VAR, GT_CNS_DBL, GT_CNS_VEC, GT_CNS_MSK))) ||
-                isUsedFromSpillTemp());
+        if (isContained())
+        {
+            if (isMemoryOp())
+            {
+                return true;
+            }
+
+            if (OperIs(GT_LCL_VAR, GT_CNS_DBL))
+            {
+                return true;
+            }
+
+#if defined(FEATURE_SIMD)
+            if (OperIs(GT_CNS_VEC))
+            {
+                return true;
+            }
+#endif // FEATURE_SIMD
+
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
+            if (OperIs(GT_CNS_MSK))
+            {
+                return true;
+            }
+#endif // FEATURE_MASKED_HW_INTRINSICS
+        }
+
+        return isUsedFromSpillTemp();
     }
 
     bool isUsedFromReg() const
@@ -1092,8 +1118,16 @@ public:
 
     static bool OperIsConst(genTreeOps gtOper)
     {
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
         static_assert_no_msg(AreContiguous(GT_CNS_INT, GT_CNS_LNG, GT_CNS_DBL, GT_CNS_STR, GT_CNS_VEC, GT_CNS_MSK));
         return (GT_CNS_INT <= gtOper) && (gtOper <= GT_CNS_MSK);
+#elif defined(FEATURE_SIMD)
+        static_assert_no_msg(AreContiguous(GT_CNS_INT, GT_CNS_LNG, GT_CNS_DBL, GT_CNS_STR, GT_CNS_VEC));
+        return (GT_CNS_INT <= gtOper) && (gtOper <= GT_CNS_VEC);
+#else
+        static_assert_no_msg(AreContiguous(GT_CNS_INT, GT_CNS_LNG, GT_CNS_DBL, GT_CNS_STR));
+        return (GT_CNS_INT <= gtOper) && (gtOper <= GT_CNS_STR);
+#endif
     }
 
     bool OperIsConst() const
@@ -1446,7 +1480,7 @@ public:
     bool isCommutativeHWIntrinsic() const;
     bool isContainableHWIntrinsic() const;
     bool isRMWHWIntrinsic(Compiler* comp);
-    bool isEvexCompatibleHWIntrinsic() const;
+    bool isEvexCompatibleHWIntrinsic(Compiler* comp) const;
     bool isEmbeddedMaskingCompatibleHWIntrinsic() const;
 #else
     bool isCommutativeHWIntrinsic() const
@@ -1631,32 +1665,9 @@ public:
     }
 
     bool OperIsHWIntrinsic(NamedIntrinsic intrinsicId) const;
-
-    bool OperIsConvertMaskToVector() const
-    {
-#if defined(FEATURE_HW_INTRINSICS)
-#if defined(TARGET_XARCH)
-        return OperIsHWIntrinsic(NI_EVEX_ConvertMaskToVector);
-#elif defined(TARGET_ARM64)
-        return OperIsHWIntrinsic(NI_Sve_ConvertMaskToVector);
-#endif // !TARGET_XARCH && !TARGET_ARM64
-#else
-        return false;
-#endif // FEATURE_HW_INTRINSICS
-    }
-
-    bool OperIsConvertVectorToMask() const
-    {
-#if defined(FEATURE_HW_INTRINSICS)
-#if defined(TARGET_XARCH)
-        return OperIsHWIntrinsic(NI_EVEX_ConvertVectorToMask);
-#elif defined(TARGET_ARM64)
-        return OperIsHWIntrinsic(NI_Sve_ConvertVectorToMask);
-#endif // !TARGET_XARCH && !TARGET_ARM64
-#else
-        return false;
-#endif // FEATURE_HW_INTRINSICS
-    }
+    bool OperIsConvertMaskToVector() const;
+    bool OperIsConvertVectorToMask() const;
+    bool OperIsVectorConditionalSelect() const;
 
     // This is here for cleaner GT_LONG #ifdefs.
     static bool OperIsLong(genTreeOps gtOper)
@@ -6549,6 +6560,45 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
     bool OperIsBitwiseHWIntrinsic() const;
     bool OperIsEmbRoundingEnabled() const;
 
+    bool OperIsHWIntrinsic(NamedIntrinsic intrinsicId) const
+    {
+        return GetHWIntrinsicId() == intrinsicId;
+    }
+
+    bool OperIsConvertMaskToVector() const
+    {
+#if defined(TARGET_XARCH)
+        return OperIsHWIntrinsic(NI_EVEX_ConvertMaskToVector);
+#elif defined(TARGET_ARM64)
+        return OperIsHWIntrinsic(NI_Sve_ConvertMaskToVector);
+#else
+        return false;
+#endif
+    }
+
+    bool OperIsConvertVectorToMask() const
+    {
+#if defined(TARGET_XARCH)
+        return OperIsHWIntrinsic(NI_EVEX_ConvertVectorToMask);
+#elif defined(TARGET_ARM64)
+        return OperIsHWIntrinsic(NI_Sve_ConvertVectorToMask);
+#else
+        return false;
+#endif
+    }
+
+    bool OperIsVectorConditionalSelect() const
+    {
+#if defined(TARGET_XARCH)
+        return OperIsHWIntrinsic(NI_Vector128_ConditionalSelect) || OperIsHWIntrinsic(NI_Vector256_ConditionalSelect) ||
+               OperIsHWIntrinsic(NI_Vector512_ConditionalSelect);
+#elif defined(TARGET_ARM64)
+        return OperIsHWIntrinsic(NI_AdvSimd_BitwiseSelect) || OperIsHWIntrinsic(NI_Sve_ConditionalSelect);
+#else
+        return false;
+#endif
+    }
+
     bool OperRequiresAsgFlag() const;
     bool OperRequiresCallFlag() const;
     bool OperRequiresGlobRefFlag() const;
@@ -6696,6 +6746,7 @@ private:
 };
 #endif // FEATURE_HW_INTRINSICS
 
+#if defined(FEATURE_SIMD)
 // GenTreeVecCon -- vector constant (GT_CNS_VEC)
 //
 struct GenTreeVecCon : public GenTree
@@ -6938,7 +6989,6 @@ struct GenTreeVecCon : public GenTree
     {
         switch (gtType)
         {
-#if defined(FEATURE_SIMD)
             case TYP_SIMD8:
             {
                 simd8_t result = {};
@@ -6980,7 +7030,6 @@ struct GenTreeVecCon : public GenTree
                 break;
             }
 #endif // TARGET_XARCH
-#endif // FEATURE_SIMD
 
             default:
             {
@@ -6996,7 +7045,6 @@ struct GenTreeVecCon : public GenTree
     {
         switch (gtType)
         {
-#if defined(FEATURE_SIMD)
             case TYP_SIMD8:
             {
                 simd8_t result = {};
@@ -7038,7 +7086,6 @@ struct GenTreeVecCon : public GenTree
                 break;
             }
 #endif // TARGET_XARCH
-#endif // FEATURE_SIMD
 
             default:
             {
@@ -7051,7 +7098,6 @@ struct GenTreeVecCon : public GenTree
     {
         switch (gtType)
         {
-#if defined(FEATURE_SIMD)
             case TYP_SIMD8:
             {
                 simd8_t result = {};
@@ -7093,7 +7139,6 @@ struct GenTreeVecCon : public GenTree
                 break;
             }
 #endif // TARGET_XARCH
-#endif // FEATURE_SIMD
 
             default:
             {
@@ -7106,7 +7151,6 @@ struct GenTreeVecCon : public GenTree
     {
         switch (gtType)
         {
-#if defined(FEATURE_SIMD)
             case TYP_SIMD8:
             {
                 return gtSimd8Val.IsAllBitsSet();
@@ -7134,7 +7178,6 @@ struct GenTreeVecCon : public GenTree
             }
 
 #endif // TARGET_XARCH
-#endif // FEATURE_SIMD
 
             default:
             {
@@ -7156,7 +7199,6 @@ struct GenTreeVecCon : public GenTree
 
         switch (gtType)
         {
-#if defined(FEATURE_SIMD)
             case TYP_SIMD8:
             {
                 return left->gtSimd8Val == right->gtSimd8Val;
@@ -7184,7 +7226,6 @@ struct GenTreeVecCon : public GenTree
             }
 
 #endif // TARGET_XARCH
-#endif // FEATURE_SIMD
 
             default:
             {
@@ -7201,7 +7242,6 @@ struct GenTreeVecCon : public GenTree
     {
         switch (gtType)
         {
-#if defined(FEATURE_SIMD)
             case TYP_SIMD8:
             {
                 return gtSimd8Val.IsZero();
@@ -7229,7 +7269,6 @@ struct GenTreeVecCon : public GenTree
             }
 
 #endif // TARGET_XARCH
-#endif // FEATURE_SIMD
 
             default:
             {
@@ -7242,7 +7281,6 @@ struct GenTreeVecCon : public GenTree
     {
         switch (gtType)
         {
-#if defined(FEATURE_SIMD)
             case TYP_SIMD8:
             {
                 return EvaluateGetElementFloating<simd8_t>(simdBaseType, gtSimd8Val, index);
@@ -7269,7 +7307,6 @@ struct GenTreeVecCon : public GenTree
                 return EvaluateGetElementFloating<simd64_t>(simdBaseType, gtSimd64Val, index);
             }
 #endif // TARGET_XARCH
-#endif // FEATURE_SIMD
 
             default:
             {
@@ -7282,7 +7319,6 @@ struct GenTreeVecCon : public GenTree
     {
         switch (gtType)
         {
-#if defined(FEATURE_SIMD)
             case TYP_SIMD8:
             {
                 return EvaluateGetElementIntegral<simd8_t>(simdBaseType, gtSimd8Val, index);
@@ -7309,7 +7345,6 @@ struct GenTreeVecCon : public GenTree
                 return EvaluateGetElementIntegral<simd64_t>(simdBaseType, gtSimd64Val, index);
             }
 #endif // TARGET_XARCH
-#endif // FEATURE_SIMD
 
             default:
             {
@@ -7400,13 +7435,12 @@ struct GenTreeVecCon : public GenTree
 #endif
 };
 
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
 // GenTreeMskCon -- mask constant (GT_CNS_MSK)
 //
 struct GenTreeMskCon : public GenTree
 {
-#if defined(FEATURE_MASKED_HW_INTRINSICS)
     simdmask_t gtSimdMaskVal;
-#endif // FEATURE_MASKED_HW_INTRINSICS
 
     void EvaluateUnaryInPlace(genTreeOps oper, bool scalar, var_types baseType, unsigned simdSize);
     void EvaluateBinaryInPlace(
@@ -7414,29 +7448,17 @@ struct GenTreeMskCon : public GenTree
 
     bool IsAllBitsSet() const
     {
-#if defined(FEATURE_MASKED_HW_INTRINSICS)
         return gtSimdMaskVal.IsAllBitsSet();
-#else
-        unreached();
-#endif // FEATURE_MASKED_HW_INTRINSICS
     }
 
     static bool Equals(const GenTreeMskCon* left, const GenTreeMskCon* right)
     {
-#if defined(FEATURE_MASKED_HW_INTRINSICS)
         return left->gtSimdMaskVal == right->gtSimdMaskVal;
-#else
-        unreached();
-#endif // FEATURE_MASKED_HW_INTRINSICS
     }
 
     bool IsZero() const
     {
-#if defined(FEATURE_MASKED_HW_INTRINSICS)
         return gtSimdMaskVal.IsZero();
-#else
-        unreached();
-#endif // FEATURE_MASKED_HW_INTRINSICS
     }
 
     GenTreeMskCon(var_types type)
@@ -7444,13 +7466,9 @@ struct GenTreeMskCon : public GenTree
     {
         assert(varTypeIsMask(type));
 
-#if defined(FEATURE_MASKED_HW_INTRINSICS)
         // Some uses of GenTreeMskCon do not specify all bits in the mask they are using but failing to zero out the
         // buffer will cause determinism issues with the compiler.
         memset(&gtSimdMaskVal, 0, sizeof(gtSimdMaskVal));
-#else
-        unreached();
-#endif // FEATURE_MASKED_HW_INTRINSICS
     }
 
 #if DEBUGGABLE_GENTREE
@@ -7460,6 +7478,8 @@ struct GenTreeMskCon : public GenTree
     }
 #endif
 };
+#endif // FEATURE_MASKED_HW_INTRINSICS
+#endif // FEATURE_SIMD
 
 // GenTreeIndexAddr: Given an array object and an index, checks that the index is within the bounds of the array if
 //                   necessary and produces the address of the value at that index of the array.
@@ -9652,7 +9672,11 @@ inline bool GenTree::IsFloatPositiveZero() const
 //
 inline bool GenTree::IsVectorZero() const
 {
+#if defined(FEATURE_SIMD)
     return IsCnsVec() && AsVecCon()->IsZero();
+#else
+    return false;
+#endif // FEATURE_SIMD
 }
 
 //-------------------------------------------------------------------
@@ -9666,8 +9690,12 @@ inline bool GenTree::IsVectorZero() const
 //
 inline bool GenTree::IsVectorNegativeZero(var_types simdBaseType) const
 {
+#if defined(FEATURE_SIMD)
     assert(varTypeIsFloating(simdBaseType));
     return IsCnsVec() && AsVecCon()->IsNegativeZero(simdBaseType);
+#else
+    return false;
+#endif // FEATURE_SIMD
 }
 
 //-------------------------------------------------------------------
@@ -9681,8 +9709,12 @@ inline bool GenTree::IsVectorNegativeZero(var_types simdBaseType) const
 //
 inline bool GenTree::IsVectorNaN(var_types simdBaseType) const
 {
+#if defined(FEATURE_SIMD)
     assert(varTypeIsFloating(simdBaseType));
     return IsCnsVec() && AsVecCon()->IsNaN(simdBaseType);
+#else
+    return false;
+#endif // FEATURE_SIMD
 }
 
 //-------------------------------------------------------------------
@@ -10561,12 +10593,20 @@ inline bool GenTree::IsCnsNonZeroFltOrDbl() const
 
 inline bool GenTree::IsCnsVec() const
 {
+#if defined(FEATURE_SIMD)
     return OperIs(GT_CNS_VEC);
+#else
+    return false;
+#endif // FEATURE_SIMD
 }
 
 inline bool GenTree::IsCnsMsk() const
 {
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
     return OperIs(GT_CNS_MSK);
+#else
+    return false;
+#endif // FEATURE_MASKED_HW_INTRINSICS
 }
 
 inline bool GenTree::IsHelperCall()
@@ -10635,8 +10675,12 @@ const size_t TREE_NODE_SZ_SMALL = sizeof(GenTreeLclFld);
 // the largest by a small margin due to needing to carry a simd64_t
 // constant value. Otherwise, GenTreeCall is the largest.
 
+#if defined(FEATURE_SIMD)
 const size_t TREE_NODE_SZ_LARGE =
     (sizeof(GenTreeVecCon) < sizeof(GenTreeCall)) ? sizeof(GenTreeCall) : sizeof(GenTreeVecCon);
+#else
+const size_t TREE_NODE_SZ_LARGE = sizeof(GenTreeCall);
+#endif // FEATURE_SIMD
 
 enum varRefKinds
 {

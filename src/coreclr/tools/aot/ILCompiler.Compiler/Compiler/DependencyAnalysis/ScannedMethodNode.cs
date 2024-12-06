@@ -62,6 +62,12 @@ namespace ILCompiler.DependencyAnalysis
                 _dependencies.Add(new DependencyListEntry(factory.MethodEntrypoint(nonUnboxingMethod, false), "Non-unboxing method"));
             }
 
+            TypeDesc owningType = _method.OwningType;
+            if (factory.PreinitializationManager.HasEagerStaticConstructor(owningType))
+            {
+                _dependencies.Add(factory.EagerCctorIndirection(owningType.GetStaticConstructor()), "Eager .cctor");
+            }
+
             _exception = scanningException;
         }
 

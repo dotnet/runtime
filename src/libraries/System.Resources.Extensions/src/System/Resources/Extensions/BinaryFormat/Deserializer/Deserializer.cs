@@ -229,7 +229,7 @@ internal sealed partial class Deserializer : IDeserializer
                 SerializationRecordType.MemberPrimitiveTyped => ((PrimitiveTypeRecord)record).Value,
                 SerializationRecordType.ArraySingleString => ((SZArrayRecord<string>)record).GetArray(),
                 SerializationRecordType.ArraySinglePrimitive => ArrayRecordDeserializer.GetArraySinglePrimitive(record),
-                SerializationRecordType.BinaryArray => ArrayRecordDeserializer.GetSimpleBinaryArray((ArrayRecord)record, _typeResolver),
+                SerializationRecordType.BinaryArray => ArrayRecordDeserializer.GetRectangularArrayOfPrimitives((ArrayRecord)record, _typeResolver),
                 _ => null
             };
 

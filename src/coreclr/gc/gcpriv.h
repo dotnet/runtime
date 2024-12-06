@@ -5171,6 +5171,9 @@ private:
         int             last_n_heaps;
         // don't start a GC till we see (n_max_heaps - new_n_heaps) number of threads idling
         VOLATILE(int32_t) idle_thread_count;
+#ifdef BACKGROUND_GC
+        VOLATILE(int32_t) idle_bgc_thread_count;
+#endif
         bool            init_only_p;
 
         bool            should_change_heap_count;
@@ -5198,6 +5201,17 @@ private:
     // This is set when change_heap_count wants the next GC to be a BGC for rethreading gen2 FL
     // and reset during that BGC.
     PER_HEAP_ISOLATED_FIELD_MAINTAINED bool trigger_bgc_for_rethreading_p;
+    // BGC threads are created on demand but we don't destroy the ones we created. This
+    // is to track how many we've created. They may or may not be active depending on
+    // if they are needed.
+    PER_HEAP_ISOLATED_FIELD_MAINTAINED int total_bgc_threads;
+
+    // HC last BGC observed.
+    PER_HEAP_ISOLATED_FIELD_MAINTAINED int last_bgc_n_heaps;
+    // Number of total BGC threads last BGC observed. This tells us how many new BGC threads have
+    // been created since. Note that just because a BGC thread is created doesn't mean it's used.
+    // We can fail at committing mark array and not proceed with the BGC.
+    PER_HEAP_ISOLATED_FIELD_MAINTAINED int last_total_bgc_threads;
 #endif //BACKGROUND_GC
 #endif //DYNAMIC_HEAP_COUNT
 
@@ -5348,6 +5362,9 @@ private:
 
 #ifdef DYNAMIC_HEAP_COUNT
     PER_HEAP_ISOLATED_FIELD_INIT_ONLY int dynamic_adaptation_mode;
+#ifdef STRESS_DYNAMIC_HEAP_COUNT
+    PER_HEAP_ISOLATED_FIELD_INIT_ONLY int bgc_to_ngc2_ratio;
+#endif //STRESS_DYNAMIC_HEAP_COUNT
 #endif //DYNAMIC_HEAP_COUNT
 
     /********************************************/

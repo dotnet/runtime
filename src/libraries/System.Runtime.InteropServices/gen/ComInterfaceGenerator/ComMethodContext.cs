@@ -141,8 +141,13 @@ namespace Microsoft.Interop
                                     CastExpression(OriginalDeclaringInterface.Info.Type.Syntax, IdentifierName("this"))),
                                 IdentifierName(MethodInfo.MethodName)),
                             ArgumentList(
-                                SeparatedList(GenerationContext.SignatureContext.ManagedParameters.Select(p => Argument(IdentifierName(p.InstanceIdentifier))))))))
+                                SeparatedList(GenerationContext.SignatureContext.ManagedParameters.Select(GenerateArgument))))))
                 .WithSemicolonToken(Token(SyntaxKind.SemicolonToken));
+
+            static ArgumentSyntax GenerateArgument(TypePositionInfo info)
+                => info.IsByRef
+                ? Argument(IdentifierName(info.InstanceIdentifier)).WithRefKindKeyword(MarshallerHelpers.GetManagedArgumentRefKindKeyword(info))
+                : Argument(IdentifierName(info.InstanceIdentifier));
         }
 
         /// <summary>
