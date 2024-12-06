@@ -81,6 +81,7 @@ build_native()
     if [[ "$targetOS" == android || "$targetOS" == linux-bionic ]]; then
         # Keep in sync with $(AndroidApiLevelMin) in Directory.Build.props in the repository rooot
         local ANDROID_API_LEVEL=21
+
         if [[ -z "$ANDROID_NDK_ROOT" ]]; then
             echo "Error: You need to set the ANDROID_NDK_ROOT environment variable pointing to the Android NDK root."
             exit 1
