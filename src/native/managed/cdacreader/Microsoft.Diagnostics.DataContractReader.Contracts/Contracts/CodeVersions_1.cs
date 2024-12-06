@@ -297,7 +297,7 @@ internal readonly partial struct CodeVersions_1 : ICodeVersions
     private TargetPointer GetILVersionStateAddress(TargetPointer module, uint methodDefToken)
     {
         // No token - for example, special runtime methods like array methods
-        if (methodDefToken == (uint)DotNetMetadataTokens.TokenType.mdtMethodDef)
+        if (methodDefToken == (uint)EcmaMetadataUtils.TokenType.mdtMethodDef)
             return TargetPointer.Null;
 
         ModuleHandle moduleHandle = _target.Contracts.Loader.GetModuleHandle(module);
