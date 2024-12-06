@@ -284,6 +284,38 @@ namespace System.Text.Json
 #endif
         }
 
+        internal static int GetUtf8CharByteCount(byte firstUtf8Byte)
+        {
+            byte upperUtf8Bits = (byte)(firstUtf8Byte & 0xC0);
+            byte lowerUtf8Bits = (byte)(firstUtf8Byte & 0x30);
+
+            switch (upperUtf8Bits)
+            {
+                case 0b00_00_0000:
+                case 0b01_00_0000:
+                    return 1;
+
+                case 0b11_00_0000:
+                    switch (lowerUtf8Bits)
+                    {
+                        case 0b00_00_0000:
+                        case 0b00_01_0000:
+                            return 2;
+
+                        case 0b00_10_0000:
+                            return 3;
+
+                        case 0b00_11_0000:
+                            return 4;
+                    }
+                    break;
+            }
+
+            // This should really only be an extension byte (10xxxxxx), but we'll return here instead of having a case for it to
+            // keep the compiler happy.
+            return 0;
+        }
+
         internal static unsafe OperationStatus ToUtf8(ReadOnlySpan<char> source, Span<byte> destination, out int written)
         {
 #if NET

@@ -2,13 +2,19 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
+using System.Buffers.Text;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace System.Text.Json
 {
     public sealed partial class Utf8JsonWriter
     {
-        private char _cachedHighSurrogate;
+        private const byte HighSurrogateByteSentinel = 0xFF;
+        private const char HighSurrogateCharSentinel = (char)(HighSurrogateByteSentinel<<8 | HighSurrogateByteSentinel);
+
+        private int _partialStringSegmentChar;
 
         /// <summary>
         /// Writes the pre-encoded text value (as a JSON string) as an element of a JSON array.
@@ -104,31 +110,60 @@ namespace System.Text.Json
             // If we have a high surrogate left over from the last segment we need to make sure it's written out. When
             // the first character of the current segment is a low surrogate we'll write as a complete pair, otherwise
             // we'll write it on its own.
-            if (_cachedHighSurrogate != '\0')
+            if (_partialStringSegmentChar != 0)
             {
-                if (value.Length > 0 && char.IsLowSurrogate(value[0]))
+                // Unfortunately we cannot use MemoryMarshal.CreateSpan here because it is not available in netstandard2.0.
+                unsafe
                 {
-                    ReadOnlySpan<char> surrogatePair = stackalloc char[] { _cachedHighSurrogate, value[0] };
-                    WriteStringEscape(surrogatePair, StringSegmentSentinel);
-                    value = value.Slice(1);
-                }
-                else
-                {
-                    ReadOnlySpan<char> surrogate = stackalloc char[] { _cachedHighSurrogate };
-                    WriteStringEscape(surrogate, StringSegmentSentinel);
+                    fixed (int* partialStringSegmentCharPtr = &_partialStringSegmentChar)
+                    {
+                        Span<char> partialStringSegmentChar = new Span<char>(partialStringSegmentCharPtr, 2);
+                        if (partialStringSegmentChar[1] == HighSurrogateCharSentinel)
+                        {
+                            if (value.Length > 0 && char.IsLowSurrogate(value[0]))
+                            {
+                                partialStringSegmentChar[1] = value[0];
+                                WriteStringEscape(partialStringSegmentChar, StringSegmentSentinel);
+                                value = value.Slice(1);
+                            }
+                            else
+                            {
+                                // The caller sent a high surrogate on the previous call to this method, but did not provide a
+                                // low surrogate on the this call. We should handle it gracefully.
+                                WriteStringEscape(partialStringSegmentChar.Slice(0, 1), StringSegmentSentinel);
+                            }
+                        }
+                        else
+                        {
+                            // The caller sent a partial UTF-8 sequence on a previous call to WriteStringValueSegment(byte) but
+                            // switched to calling WriteStringValueSegment(char) on this call. We should handle this gracefully.
+                            Span<byte> partialStringSegmentUtf8Bytes = MemoryMarshal.Cast<char, byte>(partialStringSegmentChar);
+                            WriteStringEscape(partialStringSegmentUtf8Bytes.Slice(0, partialStringSegmentUtf8Bytes[3]), StringSegmentSentinel);
+                        }
+                    }
                 }
 
-                _cachedHighSurrogate = '\0';
+                _partialStringSegmentChar = 0;
             }
 
             // If the last character of the segment is a high surrogate we need to cache it and write the rest of the
             // string. The cached value will be written when the next segment is written.
-            if (value.Length > 0)
+            if (!isFinalSegment && value.Length > 0)
             {
                 char finalChar = value[value.Length - 1];
                 if (char.IsHighSurrogate(finalChar))
                 {
-                    _cachedHighSurrogate = finalChar;
+                    // Unfortunately we cannot use MemoryMarshal.CreateSpan here because it is not available in netstandard2.0.
+                    unsafe
+                    {
+                        fixed (int* partialStringSegmentCharPtr = &_partialStringSegmentChar)
+                        {
+                            Span<char> partialStringSegmentChar = new Span<char>(partialStringSegmentCharPtr, 2);
+                            partialStringSegmentChar[0] = finalChar;
+                            partialStringSegmentChar[1] = HighSurrogateCharSentinel;
+                        }
+                    }
+
                     value = value.Slice(0, value.Length - 1);
                 }
             }
@@ -325,6 +360,101 @@ namespace System.Text.Json
             JsonWriterHelper.ValidateValue(utf8Value);
 
             JsonTokenType nextTokenType = isFinalSegment ? JsonTokenType.String : Utf8JsonWriter.StringSegmentSentinel;
+
+            if (_partialStringSegmentChar != 0)
+            {
+                // Unfortunately we cannot use MemoryMarshal.CreateSpan here because it is not available in netstandard2.0.
+                unsafe
+                {
+                    fixed (int* partialStringSegmentCharPtr = &_partialStringSegmentChar)
+                    {
+                        Span<byte> partialStringSegmentUtf8Bytes = new Span<byte>(partialStringSegmentCharPtr, 4);
+                        if (partialStringSegmentUtf8Bytes[3] == HighSurrogateByteSentinel)
+                        {
+                            // The caller sent a high surrogate on a previous call to WriteStringValueSegment(char) but switched
+                            // to calling WriteStringValueSegment(byte) on this call. We'll handle this gracefully by writing the
+                            // high surrogate on its own.
+                            Span<char> surrogatePair = MemoryMarshal.Cast<byte, char>(partialStringSegmentUtf8Bytes);
+                            WriteStringEscape(surrogatePair.Slice(0, 1), StringSegmentSentinel);
+                        }
+                        else
+                        {
+                            // Attempt to complete the UTF-8 sequence from the previous segment.
+                            int requiredByteCount = JsonWriterHelper.GetUtf8CharByteCount(partialStringSegmentUtf8Bytes[0]);
+                            int remainingByteCount = requiredByteCount - partialStringSegmentUtf8Bytes[3];
+                            int availableByteCount = Math.Min(remainingByteCount, utf8Value.Length);
+
+                            for (int i = 0; i < availableByteCount; i++)
+                            {
+                                int nextByteIndex = partialStringSegmentUtf8Bytes[3] + i;
+
+                                byte remainingByte = utf8Value[0];
+                                if (JsonWriterHelper.GetUtf8CharByteCount(remainingByte) != 0)
+                                {
+                                    // Invalid UTF-8 sequence! Write what we cached without trying to complete the sequence.
+                                    requiredByteCount = nextByteIndex;
+                                    remainingByteCount = 0;
+                                    break;
+                                }
+
+                                partialStringSegmentUtf8Bytes[nextByteIndex] = remainingByte;
+                                remainingByteCount--;
+                                utf8Value = utf8Value.Slice(1);
+                            }
+
+                            if (isFinalSegment || remainingByteCount == 0)
+                            {
+                                WriteStringEscape(partialStringSegmentUtf8Bytes.Slice(0, requiredByteCount), StringSegmentSentinel);
+                            }
+                            else
+                            {
+                                // We didn't have enough to complete the sequence, so update the count of bytes we do have so that
+                                // the next iteration will pick up where we left off.
+                                partialStringSegmentUtf8Bytes[3] = (byte)(requiredByteCount - remainingByteCount);
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (!isFinalSegment && utf8Value.Length > 0)
+            {
+                int expectedUtf8ByteCount = 0;
+                int startOfPartialUtf8Sequence = -1;
+                for (int i = utf8Value.Length - 1; i >= utf8Value.Length - 3; i--)
+                {
+                    expectedUtf8ByteCount = JsonWriterHelper.GetUtf8CharByteCount(utf8Value[i]);
+                    if (expectedUtf8ByteCount == 0)
+                    {
+                        continue;
+                    }
+
+                    if (expectedUtf8ByteCount > 1)
+                    {
+                        startOfPartialUtf8Sequence = i;
+                    }
+
+                    break;
+                }
+
+                if (startOfPartialUtf8Sequence >= 0)
+                {
+                    // Unfortunately we cannot use MemoryMarshal.CreateSpan here because it is not available in netstandard2.0.
+                    unsafe
+                    {
+                        fixed (int* partialStringSegmentCharPtr = &_partialStringSegmentChar)
+                        {
+                            Span<byte> partialStringSegmentUtf8Bytes = new Span<byte>(partialStringSegmentCharPtr, 4);
+                            ReadOnlySpan<byte> bytesToWrite = utf8Value.Slice(startOfPartialUtf8Sequence);
+                            bytesToWrite.CopyTo(partialStringSegmentUtf8Bytes);
+                            partialStringSegmentUtf8Bytes[3] = (byte)bytesToWrite.Length;
+                        }
+                    }
+
+                    utf8Value = utf8Value.Slice(0, startOfPartialUtf8Sequence);
+                }
+            }
+
             WriteStringEscape(utf8Value, nextTokenType);
 
             if (isFinalSegment)

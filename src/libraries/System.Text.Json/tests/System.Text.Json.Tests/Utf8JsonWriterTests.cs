@@ -6800,7 +6800,91 @@ namespace System.Text.Json.Tests
         }
 
         [Fact]
-        public static void WriteStringValueSegment()
+        public static void WriteStringValueSegment_Byte()
+        {
+            var output = new ArrayBufferWriter<byte>();
+            using var jsonUtf8 = new Utf8JsonWriter(output);
+            jsonUtf8.WriteStartObject();
+            jsonUtf8.WritePropertyName("test");
+            jsonUtf8.WriteStringValueSegment(Encoding.UTF8.GetBytes("Hello "), isFinalSegment: false);
+            jsonUtf8.WriteStringValueSegment(Encoding.UTF8.GetBytes("World!"), isFinalSegment: true);
+            jsonUtf8.WriteEndObject();
+            jsonUtf8.Flush();
+
+            JsonTestHelper.AssertContents($"{{\"test\":\"Hello World!\"}}", output);
+        }
+
+        [Fact]
+        public static void WriteStringValueSegment_Byte_SplitInUtf8Sequence()
+        {
+            const string result = "\\uD83D\\uDE00";
+
+            Span<byte> utf8Bytes = Encoding.UTF8.GetBytes("\uD83D\uDE00");
+
+            var output = new ArrayBufferWriter<byte>();
+            using var jsonUtf8 = new Utf8JsonWriter(output);
+            jsonUtf8.WriteStartObject();
+            jsonUtf8.WritePropertyName("full");
+            // complete string -> expect 0xD83D 0xDE00
+            jsonUtf8.WriteStringValue(utf8Bytes);
+            jsonUtf8.WritePropertyName("segmented");
+            // incomplete UTf-8 sequence -> expect cached
+            jsonUtf8.WriteStringValueSegment(utf8Bytes.Slice(0, 1), isFinalSegment: false);
+            // incomplete UTf-8 sequence -> expect cached
+            jsonUtf8.WriteStringValueSegment(utf8Bytes.Slice(1, 1), isFinalSegment: false);
+            // remainder of UTF-8 sequence -> expect 0xD83D 0xDE00
+            jsonUtf8.WriteStringValueSegment(utf8Bytes.Slice(2, 2), isFinalSegment: true);
+            jsonUtf8.WriteEndObject();
+            jsonUtf8.Flush();
+
+            JsonTestHelper.AssertContents($"{{\"full\":\"{result}\",\"segmented\":\"{result}\"}}", output);
+        }
+
+        [Fact]
+        public static void WriteStringValueSegment_Byte_NotFinalized()
+        {
+            static ArrayBufferWriter<byte> executeScenario(Action<Utf8JsonWriter> implementation, bool expectFailure)
+            {
+                var output = new ArrayBufferWriter<byte>();
+                using var jsonUtf8 = new Utf8JsonWriter(output);
+                jsonUtf8.WriteStartObject();
+                jsonUtf8.WritePropertyName("test");
+                jsonUtf8.WriteStringValueSegment(Encoding.UTF8.GetBytes("Hello "), isFinalSegment: false);
+
+                if (expectFailure)
+                {
+                    InvalidOperationException invalidOperationexception = Assert.Throws<InvalidOperationException>(
+                        () => implementation(jsonUtf8));
+                    Assert.Contains("The current JSON string must be finalized before a token of type", invalidOperationexception.Message);
+                    return null;
+                }
+                else
+                {
+                    implementation(jsonUtf8);
+                    jsonUtf8.WriteEndObject();
+                    jsonUtf8.Flush();
+                    return output;
+                }
+            }
+
+            // The following are expected to fail.
+            executeScenario(w => w.WriteEndArray(), expectFailure: true);
+            executeScenario(w => w.WriteCommentValue("comment"), expectFailure: true);
+            executeScenario(w => w.WriteEndArray(), expectFailure: true);
+            executeScenario(w => w.WriteEndObject(), expectFailure: true);
+            executeScenario(w => w.WriteNullValue(), expectFailure: true);
+            executeScenario(w => w.WriteNumberValue(123), expectFailure: true);
+            executeScenario(w => w.WritePropertyName("test"), expectFailure: true);
+            executeScenario(w => w.WriteStartArray(), expectFailure: true);
+            executeScenario(w => w.WriteStartObject(), expectFailure: true);
+
+            // WriteStringValue is a special case that implicitly finalizes.
+            ArrayBufferWriter<byte> writeStringValueOutput = executeScenario(w => w.WriteStringValue(Encoding.UTF8.GetBytes("World!")), expectFailure: false);
+            JsonTestHelper.AssertContents($"{{\"test\":\"Hello World!\"}}", writeStringValueOutput);
+        }
+
+        [Fact]
+        public static void WriteStringValueSegment_Char()
         {
             var output = new ArrayBufferWriter<byte>();
             using var jsonUtf8 = new Utf8JsonWriter(output);
@@ -6815,7 +6899,7 @@ namespace System.Text.Json.Tests
         }
 
         [Fact]
-        public static void WriteStringValueSegment_BadSurrogatePairs()
+        public static void WriteStringValueSegment_Char_BadSurrogatePairs()
         {
             const string result = "\\uFFFD\\uD83D\\uDE00\\uFFFD";
 
@@ -6843,7 +6927,7 @@ namespace System.Text.Json.Tests
         }
 
         [Fact]
-        public static void WriteStringValueSegment_SplitInSurrogatePair()
+        public static void WriteStringValueSegment_Char_SplitInSurrogatePair()
         {
             const string result = "\\uD83D\\uDE00\\uD83D\\uDE00\\uD83D\\uDE00";
 
@@ -6871,7 +6955,7 @@ namespace System.Text.Json.Tests
         }
 
         [Fact]
-        public static void WriteStringValueSegment_NotFinalized()
+        public static void WriteStringValueSegment_Char_NotFinalized()
         {
             static ArrayBufferWriter<byte> executeScenario(Action<Utf8JsonWriter> implementation, bool expectFailure)
             {
