@@ -73,6 +73,20 @@ public class WorkloadRequiredTests : BlazorWasmTestBase
     }
 
     [Theory, TestCategory("no-workload")]
+    [InlineData(Configuration.Debug)]
+    [InlineData(Configuration.Release)]
+    public async Task DefaultTemplate_WithoutWorkload(Configuration config)
+    {
+        ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.BlazorBasicTestApp, "blz_no_workload");
+        BlazorBuild(info, config);
+        await RunForBuildWithDotnetRun(new BlazorRunOptions(config));
+
+        BlazorPublish(info, config, new PublishOptions(UseCache: false));
+        await RunForPublishWithWebServer(new BlazorRunOptions(config));
+    }
+
+
+    [Theory, TestCategory("no-workload")]
     [MemberData(nameof(InvariantGlobalizationTestData), parameters: /*publish*/ false)]
     [MemberData(nameof(InvariantGlobalizationTestData), parameters: /*publish*/ true)]
     public async Task WorkloadNotRequiredForInvariantGlobalization(Configuration config, bool invariant, bool publish)

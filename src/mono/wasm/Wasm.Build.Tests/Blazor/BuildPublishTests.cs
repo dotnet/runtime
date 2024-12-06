@@ -23,20 +23,6 @@ public class BuildPublishTests : BlazorWasmTestBase
         _enablePerTestCleanup = true;
     }
 
-    [Theory, TestCategory("no-workload")]
-    [InlineData(Configuration.Debug)]
-    [InlineData(Configuration.Release)]
-    public async Task DefaultTemplate_WithoutWorkload(Configuration config)
-    {
-        ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.BlazorBasicTestApp, "blz_no_workload");
-        BlazorBuild(info, config);
-        await RunForBuildWithDotnetRun(new BlazorRunOptions(config));
-
-        BlazorPublish(info, config, new PublishOptions(UseCache: false));
-        await RunForPublishWithWebServer(new BlazorRunOptions(config));
-    }
-
-
     public static TheoryData<Configuration, bool> TestDataForDefaultTemplate_WithWorkload(bool isAot)
     {
         var data = new TheoryData<Configuration, bool>();
