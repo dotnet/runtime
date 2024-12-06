@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Collections.Generic;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Microsoft.Diagnostics.DataContractReader.RuntimeTypeSystemHelpers;
@@ -22,69 +21,53 @@ public class MethodDescTests
                 && c.PlatformMetadata == new Mock<Contracts.IPlatformMetadata>().Object));
         return target;
     }
-    private static void MethodDescHelper(MockTarget.Architecture arch, Action<MockDescriptors.MethodDescriptors> configure, Action<Target> testCase)
-    {
-        TargetTestHelpers targetTestHelpers = new(arch);
-
-        MockMemorySpace.Builder builder = new(targetTestHelpers);
-        MockDescriptors.RuntimeTypeSystem rtsBuilder = new(builder);
-        MockDescriptors.Loader loaderBuilder = new(builder);
-        MockDescriptors.MethodDescriptors methodDescBuilder = new(rtsBuilder, loaderBuilder);
-
-        configure?.Invoke(methodDescBuilder);
-
-        var target = CreateTarget(methodDescBuilder);
-
-        testCase(target);
-    }
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
     public void MethodDescGetMethodDescTokenOk(MockTarget.Architecture arch)
     {
-        TargetPointer testMethodDescAddress = default;
-        TargetPointer objectMethodTable = default;
+        TargetTestHelpers helpers = new(arch);
+        MockMemorySpace.Builder builder = new(helpers);
+        MockDescriptors.RuntimeTypeSystem rtsBuilder = new(builder);
+        MockDescriptors.Loader loaderBuilder = new(builder);
+        MockDescriptors.MethodDescriptors methodDescBuilder = new(rtsBuilder, loaderBuilder);
+
         const int MethodDefToken = 0x06 << 24;
         const ushort expectedRidRangeStart = 0x2000; // arbitrary (larger than  1<< TokenRemainderBitCount)
         const ushort expectedRidRemainder = 0x10; // arbitrary
         const uint expectedRid = expectedRidRangeStart | expectedRidRemainder; // arbitrary
         uint expectedToken = MethodDefToken | expectedRid;
         ushort expectedSlotNum = 0x0002; // arbitrary, but must be less than number of vtable slots in the method table
-        MethodDescHelper(arch,
-        (builder) =>
-        {
-            objectMethodTable = MethodTableTests.AddSystemObjectMethodTable(builder.RTSBuilder).MethodTable;
-            // add a loader module so that we can do the "IsCollectible" check
-            TargetPointer module = builder.LoaderBuilder.AddModule("testModule");
-            builder.RTSBuilder.SetMethodTableAuxData(objectMethodTable, loaderModule: module);
+        TargetPointer objectMethodTable = MethodTableTests.AddSystemObjectMethodTable(methodDescBuilder.RTSBuilder).MethodTable;
+        // add a loader module so that we can do the "IsCollectible" check
+        TargetPointer module = methodDescBuilder.LoaderBuilder.AddModule("testModule");
+        methodDescBuilder.RTSBuilder.SetMethodTableAuxData(objectMethodTable, loaderModule: module);
 
-            byte count = 10; // arbitrary
-            byte methodDescSize = (byte)(builder.Types[DataType.MethodDesc].Size.Value / builder.MethodDescAlignment);
-            byte chunkSize = (byte)(count * methodDescSize);
-            var chunk = builder.AddMethodDescChunk(objectMethodTable, "testMethod", count, chunkSize, tokenRange: expectedRidRangeStart);
+        byte count = 10; // arbitrary
+        byte methodDescSize = (byte)(methodDescBuilder.Types[DataType.MethodDesc].Size.Value / methodDescBuilder.MethodDescAlignment);
+        byte chunkSize = (byte)(count * methodDescSize);
+        var chunk = methodDescBuilder.AddMethodDescChunk(objectMethodTable, "testMethod", count, chunkSize, tokenRange: expectedRidRangeStart);
 
-            byte methodDescNum = 3; // abitrary, less than "count"
-            byte methodDescIndex = (byte)(methodDescNum * methodDescSize);
-            testMethodDescAddress = builder.SetMethodDesc(chunk, methodDescIndex, slotNum: expectedSlotNum, flags: 0, tokenRemainder: expectedRidRemainder);
-        },
-        (target) =>
-        {
-            IRuntimeTypeSystem rts = target.Contracts.RuntimeTypeSystem;
+        byte methodDescNum = 3; // abitrary, less than "count"
+        byte methodDescIndex = (byte)(methodDescNum * methodDescSize);
+        TargetPointer testMethodDescAddress = methodDescBuilder.SetMethodDesc(chunk, methodDescIndex, slotNum: expectedSlotNum, flags: 0, tokenRemainder: expectedRidRemainder);
 
-            var handle = rts.GetMethodDescHandle(testMethodDescAddress);
-            Assert.NotEqual(TargetPointer.Null, handle.Address);
+        Target target = CreateTarget(methodDescBuilder);
+        IRuntimeTypeSystem rts = target.Contracts.RuntimeTypeSystem;
 
-            uint token = rts.GetMethodToken(handle);
-            Assert.Equal(expectedToken, token);
-            ushort slotNum = rts.GetSlotNumber(handle);
-            Assert.Equal(expectedSlotNum, slotNum);
-            TargetPointer mt = rts.GetMethodTable(handle);
-            Assert.Equal(objectMethodTable, mt);
-            bool isCollectible = rts.IsCollectibleMethod(handle);
-            Assert.False(isCollectible);
-            TargetPointer versioning = rts.GetMethodDescVersioningState(handle);
-            Assert.Equal(TargetPointer.Null, versioning);
-        });
+        var handle = rts.GetMethodDescHandle(testMethodDescAddress);
+        Assert.NotEqual(TargetPointer.Null, handle.Address);
+
+        uint token = rts.GetMethodToken(handle);
+        Assert.Equal(expectedToken, token);
+        ushort slotNum = rts.GetSlotNumber(handle);
+        Assert.Equal(expectedSlotNum, slotNum);
+        TargetPointer mt = rts.GetMethodTable(handle);
+        Assert.Equal(objectMethodTable, mt);
+        bool isCollectible = rts.IsCollectibleMethod(handle);
+        Assert.False(isCollectible);
+        TargetPointer versioning = rts.GetMethodDescVersioningState(handle);
+        Assert.Equal(TargetPointer.Null, versioning);
     }
 
     public static IEnumerable<object[]> StdArchOptionalSlotsData()
