@@ -452,11 +452,16 @@ namespace System.Collections.Frozen
         /// <summary>
         /// Retrieves a delegate which calls a method equivalent to <see cref="GetValueRefOrNullRef(TKey)"/>
         /// for the <typeparamref name="TAlternateKey"/>.
-        /// Generic Virtual methods are very slow and could negate much of the benefit of
-        /// using Alternate Keys. Doing it this way moves the generic virtual method invocation
-        /// to the point when the alternate lookup is prepared and instead we only pay for delegate
-        /// invocation which is much cheaper.
         /// </summary>
+        /// <remarks>
+        /// This is virtual rather than abstract because only some implementations need to support this, e.g. implementations that
+        /// are only ever used with the default comparer won't ever hit code paths that use this, at least not
+        /// until/if we make `EqualityComparer{string}.Default` implement `IAlternateEqualityComparer{ReadOnlySpan{char}, string}`.
+        ///
+        /// Generic Virtual method invocation is slower than delegate invocation and could negate
+        /// much of the benefit of using Alternate Keys. By retrieving the delegate up-front when
+        /// the lookup is created, we only pay for generic virtual method invocation once.
+        /// </remarks>
         private protected virtual AlternateLookupDelegate<TAlternateKey> GetAlternateLookupDelegate<TAlternateKey>()
             where TAlternateKey : notnull
 #if NET9_0_OR_GREATER
