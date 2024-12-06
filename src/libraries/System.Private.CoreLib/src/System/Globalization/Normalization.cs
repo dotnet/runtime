@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace System.Globalization
@@ -10,6 +11,8 @@ namespace System.Globalization
     {
         internal static bool IsNormalized(string strInput, NormalizationForm normalizationForm)
         {
+            CheckNormalizationForm(normalizationForm);
+
             if (GlobalizationMode.Invariant)
             {
                 // In Invariant mode we assume all characters are normalized.
@@ -22,8 +25,26 @@ namespace System.Globalization
                 IcuIsNormalized(strInput, normalizationForm);
         }
 
+        internal static bool IsNormalized(ReadOnlySpan<char> source, NormalizationForm normalizationForm = NormalizationForm.FormC)
+        {
+            CheckNormalizationForm(normalizationForm);
+
+            // In Invariant mode we assume all characters are normalized.
+            if (GlobalizationMode.Invariant || source.IsEmpty || Ascii.IsValid(source))
+            {
+                // This is because we don't support any linguistic operation on the strings
+                return true;
+            }
+
+            return GlobalizationMode.UseNls ?
+                NlsIsNormalized(source, normalizationForm) :
+                IcuIsNormalized(source, normalizationForm);
+        }
+
         internal static string Normalize(string strInput, NormalizationForm normalizationForm)
         {
+            CheckNormalizationForm(normalizationForm);
+
             if (GlobalizationMode.Invariant)
             {
                 // In Invariant mode we assume all characters are normalized.
@@ -34,6 +55,64 @@ namespace System.Globalization
             return GlobalizationMode.UseNls ?
                 NlsNormalize(strInput, normalizationForm) :
                 IcuNormalize(strInput, normalizationForm);
+        }
+
+        internal static bool TryNormalize(ReadOnlySpan<char> source, Span<char> destination, out int charsWritten, NormalizationForm normalizationForm = NormalizationForm.FormC)
+        {
+            CheckNormalizationForm(normalizationForm);
+
+            if (GlobalizationMode.Invariant || source.IsEmpty)
+            {
+                // In Invariant mode we assume all characters are normalized.
+                // This is because we don't support any linguistic operation on the strings
+                charsWritten = 0;
+                return true;
+            }
+
+            if (Ascii.IsValid(source))
+            {
+                if (destination.Length < source.Length)
+                {
+                    charsWritten = 0;
+                    return false;
+                }
+
+                source.CopyTo(destination);
+                charsWritten = source.Length;
+                return true;
+            }
+
+            return GlobalizationMode.UseNls ?
+                NlsTryNormalize(source, destination, out charsWritten, normalizationForm) :
+                IcuTryNormalize(source, destination, out charsWritten, normalizationForm);
+        }
+
+        internal static int GetNormalizedLength(this ReadOnlySpan<char> source, NormalizationForm normalizationForm = NormalizationForm.FormC)
+        {
+            CheckNormalizationForm(normalizationForm);
+
+            if (GlobalizationMode.Invariant || source.IsEmpty || Ascii.IsValid(source))
+            {
+                // In Invariant mode we assume all characters are normalized.
+                // This is because we don't support any linguistic operation on the strings
+                return source.Length;
+            }
+
+            return GlobalizationMode.UseNls ?
+                NlsGetNormalizedLength(source, normalizationForm) :
+                IcuGetNormalizedLength(source, normalizationForm);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static void CheckNormalizationForm(NormalizationForm normalizationForm)
+        {
+            if (normalizationForm != NormalizationForm.FormC &&
+                normalizationForm != NormalizationForm.FormD &&
+                normalizationForm != NormalizationForm.FormKC &&
+                normalizationForm != NormalizationForm.FormKD)
+            {
+                throw new ArgumentException(SR.Argument_InvalidNormalizationForm, nameof(normalizationForm));
+            }
         }
     }
 }
