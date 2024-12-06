@@ -2,4 +2,5 @@
   <PropertyGroup>
     <ProductVersion>0.5</ProductVersion>
   </PropertyGroup>
+  <Import Project="../../../Directory.Build.props" />
 </Project>
