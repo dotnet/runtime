@@ -1901,6 +1901,7 @@ namespace System
     {
         #region FCalls
         [MemberNotNull(nameof(m_arguments))]
+        [MemberNotNull(nameof(m_declaringType))]
         [MemberNotNull(nameof(m_returnTypeORfieldType))]
         [MethodImpl(MethodImplOptions.InternalCall)]
         private extern void GetSignature(
@@ -1913,7 +1914,7 @@ namespace System
         // Keep the layout in sync with SignatureNative in the VM
         //
         internal RuntimeType[] m_arguments;
-        internal RuntimeType? m_declaringType;
+        internal RuntimeType m_declaringType;
         internal RuntimeType m_returnTypeORfieldType;
         internal object? m_keepalive;
         internal void* m_sig;
@@ -1969,8 +1970,8 @@ namespace System
         internal static bool AreEqual(Signature sig1, Signature sig2)
         {
             return AreEqual(
-                sig1.m_sig, sig1.m_csig, new QCallTypeHandle(ref sig1.m_declaringType!),
-                sig2.m_sig, sig2.m_csig, new QCallTypeHandle(ref sig2.m_declaringType!)) != Interop.BOOL.FALSE;
+                sig1.m_sig, sig1.m_csig, new QCallTypeHandle(ref sig1.m_declaringType),
+                sig2.m_sig, sig2.m_csig, new QCallTypeHandle(ref sig2.m_declaringType)) != Interop.BOOL.FALSE;
         }
 
         internal Type[] GetCustomModifiers(int parameterIndex, bool required) =>
