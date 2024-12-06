@@ -1,12 +1,17 @@
 using System;
-using System.Text.Json;
+using System.Security.Cryptography;
+using System.Text;
 public class Test
 {
     public static int Main()
     {
-        string json = "{ \"name\": \"value\" }";
-        var jdoc = JsonDocument.Parse($"{json}", new JsonDocumentOptions());
-        Console.WriteLine($"json: {jdoc}");
+        string input = "Hello, world!";
+        using (SHA256 sha256 = SHA256.Create())
+        {
+            byte[] inputBytes = Encoding.UTF8.GetBytes(input);
+            byte[] hashBytes = sha256.ComputeHash(inputBytes);
+            Console.WriteLine($"Hash of {input}: {Convert.ToBase64String(hashBytes)}");
+        }
         return 42;
     }
 }
