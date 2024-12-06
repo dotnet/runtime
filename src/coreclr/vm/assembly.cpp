@@ -129,7 +129,7 @@ Assembly::Assembly(PEAssembly* pPEAssembly, LoaderAllocator *pLoaderAllocator)
 #endif
     , m_pLoaderAllocator{pLoaderAllocator}
 #ifdef FEATURE_COLLECTIBLE_TYPES
-    , m_isCollectible{pLoaderAllocator->IsCollectible() != FALSE}
+    , m_isCollectible{static_cast<BYTE>(pLoaderAllocator->IsCollectible() != FALSE ? 1 : 0)}
 #endif
     , m_isDynamic(false)
     , m_isLoading{true}
@@ -1959,7 +1959,12 @@ void Assembly::EnsureLoadLevel(FileLoadLevel targetLevel)
         // Enforce the loading requirement.  Note that we may have a deadlock in which case we
         // may be off by one which is OK.  (At this point if we are short of targetLevel we know
         // we have done so because of reentrancy constraints.)
-
+        if (GetLoadLevel() < targetLevel)
+        {
+            // If we reach this point, we will certainly not have activated the assembly,
+            // So any current logic to mark MethodTable's as activated needs to be not be recorded.
+            DoNotRecordTheResultOfEnsureLoadLevel();
+        }
         RequireLoadLevel((FileLoadLevel)(targetLevel-1));
     }
     else

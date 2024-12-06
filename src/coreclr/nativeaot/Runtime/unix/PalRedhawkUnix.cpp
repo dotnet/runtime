@@ -32,7 +32,6 @@
 #include <sched.h>
 #include <sys/mman.h>
 #include <sys/types.h>
-#include <sys/syscall.h>
 #include <dlfcn.h>
 #include <dirent.h>
 #include <string.h>
@@ -43,6 +42,10 @@
 #include <cstdarg>
 #include <signal.h>
 #include <minipal/thread.h>
+
+#ifdef TARGET_LINUX
+#include <sys/syscall.h>
+#endif
 
 #if HAVE_PTHREAD_GETTHREADID_NP
 #include <pthread_np.h>
@@ -58,6 +61,10 @@
 
 #ifdef TARGET_APPLE
 #include <mach/mach.h>
+#endif
+
+#ifdef TARGET_HAIKU
+#include <OS.h>
 #endif
 
 using std::nullptr_t;
@@ -962,17 +969,6 @@ extern "C" void EnterCriticalSection(CRITICAL_SECTION * lpCriticalSection)
 extern "C" void LeaveCriticalSection(CRITICAL_SECTION * lpCriticalSection)
 {
     pthread_mutex_unlock(&lpCriticalSection->mutex);
-}
-
-extern "C" UInt32_BOOL IsDebuggerPresent()
-{
-#ifdef HOST_WASM
-    // For now always true since the browser will handle it in case of WASM.
-    return UInt32_TRUE;
-#else
-    // UNIXTODO: Implement this function
-    return UInt32_FALSE;
-#endif
 }
 
 extern "C" UInt32_BOOL SetEvent(HANDLE event)

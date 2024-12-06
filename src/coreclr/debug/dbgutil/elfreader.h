@@ -38,7 +38,7 @@ private:
     void* m_symbolTableAddr;                // DT_SYMTAB
 
     GnuHashTable m_hashTable;               // gnu hash table info
-    int32_t* m_buckets;                     // gnu hash table buckets    
+    int32_t* m_buckets;                     // gnu hash table buckets
     void* m_chainsAddress;
 
 public:

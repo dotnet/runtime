@@ -301,7 +301,7 @@ mono_class_setup_fields (MonoClass *klass)
 		instance_size = MONO_ABI_SIZEOF (MonoObject);
 	}
 
-	if (m_class_is_inlinearray (klass) && m_class_inlinearray_value (klass) <= 0) {
+	if (m_class_is_inlinearray (klass) && mono_class_get_inlinearray_value (klass) <= 0) {
 		if (mono_get_runtime_callbacks ()->mono_class_set_deferred_type_load_failure_callback)
 			mono_get_runtime_callbacks ()->mono_class_set_deferred_type_load_failure_callback (klass, "Inline array length property must be positive.");
 		else
@@ -735,7 +735,7 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token, MonoError 
 		attr = class_has_inlinearray_attribute (klass);
 		if (attr.has_attr) {
 			klass->is_inlinearray = 1;
-			klass->inlinearray_value = GPOINTER_TO_INT32 (attr.value);
+			mono_class_set_inlinearray_value(klass, GPOINTER_TO_INT32 (attr.value));
 		}
 	}
 
@@ -940,7 +940,7 @@ mono_class_create_generic_inst (MonoGenericClass *gclass)
 	klass->this_arg.data.generic_class = klass->_byval_arg.data.generic_class = gclass;
 	klass->this_arg.byref__ = TRUE;
 	klass->is_inlinearray = gklass->is_inlinearray;
-	klass->inlinearray_value = gklass->inlinearray_value;
+	mono_class_set_inlinearray_value(klass, mono_class_get_inlinearray_value(gklass));
 	klass->is_exception_class = gklass->is_exception_class;
 	klass->enumtype = gklass->enumtype;
 	klass->valuetype = gklass->valuetype;
@@ -2295,7 +2295,7 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 					const guint32 struct_max_size = 1024 * 1024;
 					guint32 initial_size = size;
 					// If size overflows, it returns 0
-					size *= m_class_inlinearray_value (klass);
+					size *= mono_class_get_inlinearray_value (klass);
 					inlined_fields++;
 					if(size == 0 || size > struct_max_size) {
 						if (mono_get_runtime_callbacks ()->mono_class_set_deferred_type_load_failure_callback) {

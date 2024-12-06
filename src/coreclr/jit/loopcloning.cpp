@@ -1181,7 +1181,7 @@ bool Compiler::optDeriveLoopCloningConditions(FlowGraphNaturalLoop* loop, LoopCl
             }
 
             default:
-                JITDUMP("Unknown opt\n");
+                assert(!"Unknown opt type");
                 return false;
         }
     }
@@ -1378,12 +1378,14 @@ bool Compiler::optDeriveLoopCloningConditions(FlowGraphNaturalLoop* loop, LoopCl
                 // TODO: ensure array is dereference-able?
             }
             break;
+
             case LcOptInfo::LcTypeTest:
+            case LcOptInfo::LcMethodAddrTest:
                 // handled above
                 break;
 
             default:
-                JITDUMP("Unknown opt\n");
+                assert(!"Unknown opt type");
                 return false;
         }
     }
@@ -1773,6 +1775,94 @@ void Compiler::optPerformStaticOptimizations(FlowGraphNaturalLoop*     loop,
     }
 }
 
+//------------------------------------------------------------------------
+// optShouldCloneLoop: Decide if a loop that can be cloned should be cloned.
+//
+// Arguments:
+//     loop        - the current loop for which the optimizations are performed.
+//     context     - data structure where all loop cloning info is kept.
+//
+// Returns:
+//     true if expected performance gain from cloning is worth the potential
+//     size increase.
+//
+// Remarks:
+//     This is a simple-minded heuristic meant to avoid "runaway" cloning
+//     where large loops are cloned.
+//
+//     We estimate the size cost of cloning by summing up the number of
+//     tree nodes in all statements in all blocks in the loop.
+//
+//     This value is compared to a hard-coded threshold, and if bigger,
+//     then the method returns false.
+//
+bool Compiler::optShouldCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* context)
+{
+    // Compute loop size
+    //
+    unsigned loopSize = 0;
+
+    // For now we use a very simplistic model where each tree node
+    // has the same code size.
+    //
+    // CostSz is not available until later.
+    //
+    struct TreeCostWalker : GenTreeVisitor<TreeCostWalker>
+    {
+        enum
+        {
+            DoPreOrder = true,
+        };
+
+        unsigned m_nodeCount;
+
+        TreeCostWalker(Compiler* comp)
+            : GenTreeVisitor(comp)
+            , m_nodeCount(0)
+        {
+        }
+
+        fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
+        {
+            m_nodeCount++;
+            return WALK_CONTINUE;
+        }
+
+        void Reset()
+        {
+            m_nodeCount = 0;
+        }
+        unsigned Cost()
+        {
+            return m_nodeCount;
+        }
+    };
+
+    TreeCostWalker costWalker(this);
+
+    loop->VisitLoopBlocks([&](BasicBlock* block) {
+        weight_t normalizedWeight = block->getBBWeight(this);
+        for (Statement* const stmt : block->Statements())
+        {
+            costWalker.Reset();
+            costWalker.WalkTree(stmt->GetRootNodePointer(), nullptr);
+            loopSize += costWalker.Cost();
+        }
+        return BasicBlockVisit::Continue;
+    });
+
+    int const sizeLimit = JitConfig.JitCloneLoopsSizeLimit();
+
+    if ((sizeLimit >= 0) && (loopSize >= (unsigned)sizeLimit))
+    {
+        JITDUMP("Loop cloning: rejecting loop " FMT_LP " of size %u, size limit %d\n", loop->GetIndex(), loopSize,
+                sizeLimit);
+        return false;
+    }
+
+    return true;
+}
+
 //----------------------------------------------------------------------------
 // optIsLoopClonable: Determine whether this loop can be cloned.
 //
@@ -1798,8 +1888,19 @@ bool Compiler::optIsLoopClonable(FlowGraphNaturalLoop* loop, LoopCloneContext* c
         return false;
     }
 
+    bool cloneLoopsWithEH = false;
+    INDEBUG(cloneLoopsWithEH = (JitConfig.JitCloneLoopsWithEH() > 0);)
     INDEBUG(const char* reason);
-    if (!loop->CanDuplicate(INDEBUG(&reason)))
+
+    if (cloneLoopsWithEH)
+    {
+        if (!loop->CanDuplicateWithEH(INDEBUG(&reason)))
+        {
+            JITDUMP("Loop cloning: rejecting loop " FMT_LP ": %s\n", loop->GetIndex(), reason);
+            return false;
+        }
+    }
+    else if (!loop->CanDuplicate(INDEBUG(&reason)))
     {
         JITDUMP("Loop cloning: rejecting loop " FMT_LP ": %s\n", loop->GetIndex(), reason);
         return false;
@@ -1841,7 +1942,6 @@ bool Compiler::optIsLoopClonable(FlowGraphNaturalLoop* loop, LoopCloneContext* c
                 loop->GetIndex());
         return false;
     }
-
     assert(!requireIterable || !lvaVarAddrExposed(iterInfo->IterVar));
 
     if (requireIterable)
@@ -1942,6 +2042,9 @@ void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* contex
     }
 #endif
 
+    bool cloneLoopsWithEH = false;
+    INDEBUG(cloneLoopsWithEH = (JitConfig.JitCloneLoopsWithEH() > 0);)
+
     // Determine the depth of the loop, so we can properly weight blocks added (outside the cloned loop blocks).
     unsigned depth         = loop->GetDepth();
     weight_t ambientWeight = 1;
@@ -2005,19 +2108,57 @@ void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* contex
     // loop itself. All failed conditions will branch to the slow preheader.
     // The slow preheader will unconditionally branch to the slow loop header.
     // This puts the slow loop in the canonical loop form.
+    //
+    // The slow preheader needs to go in the same EH region as the preheader.
+    //
     JITDUMP("Create unique preheader for slow path loop\n");
-    BasicBlock* slowPreheader = fgNewBBafter(BBJ_ALWAYS, newPred, /*extendRegion*/ true);
+    const bool  extendRegion  = BasicBlock::sameEHRegion(bottom, preheader);
+    BasicBlock* slowPreheader = fgNewBBafter(BBJ_ALWAYS, newPred, extendRegion);
     JITDUMP("Adding " FMT_BB " after " FMT_BB "\n", slowPreheader->bbNum, newPred->bbNum);
     slowPreheader->bbWeight = newPred->isRunRarely() ? BB_ZERO_WEIGHT : ambientWeight;
     slowPreheader->CopyFlags(newPred, (BBF_PROF_WEIGHT | BBF_RUN_RARELY));
     slowPreheader->scaleBBWeight(LoopCloneContext::slowPathWeightScaleFactor);
+
+    // If we didn't extend the region above (because the last loop
+    // block was in some enclosed EH region), put the slow preheader
+    // into the appropriate region, and make appropriate extent updates.
+    //
+    if (!extendRegion)
+    {
+        slowPreheader->copyEHRegion(preheader);
+        bool     isTry           = false;
+        unsigned enclosingRegion = ehGetMostNestedRegionIndex(slowPreheader, &isTry);
+
+        if (enclosingRegion != 0)
+        {
+            EHblkDsc* const ebd = ehGetDsc(enclosingRegion - 1);
+            for (EHblkDsc* const HBtab : EHClauses(this, ebd))
+            {
+                if (HBtab->ebdTryLast == bottom)
+                {
+                    fgSetTryEnd(HBtab, slowPreheader);
+                }
+                if (HBtab->ebdHndLast == bottom)
+                {
+                    fgSetHndEnd(HBtab, slowPreheader);
+                }
+            }
+        }
+    }
     newPred = slowPreheader;
 
     // Now we'll clone the blocks of the loop body. These cloned blocks will be the slow path.
 
     BlockToBlockMap* blockMap = new (getAllocator(CMK_LoopClone)) BlockToBlockMap(getAllocator(CMK_LoopClone));
 
-    loop->Duplicate(&newPred, blockMap, LoopCloneContext::slowPathWeightScaleFactor);
+    if (cloneLoopsWithEH)
+    {
+        loop->DuplicateWithEH(&newPred, blockMap, LoopCloneContext::slowPathWeightScaleFactor);
+    }
+    else
+    {
+        loop->Duplicate(&newPred, blockMap, LoopCloneContext::slowPathWeightScaleFactor);
+    }
 
     // Scale old blocks to the fast path weight.
     loop->VisitLoopBlocks([=](BasicBlock* block) {
@@ -2563,7 +2704,7 @@ Compiler::fgWalkResult Compiler::optCanOptimizeByLoopCloning(GenTree* tree, Loop
 
                 assert(compCurBB->lastStmt() == info->stmt);
                 info->context->EnsureLoopOptInfo(info->loop->GetIndex())
-                    ->Push(new (this, CMK_LoopOpt) LcTypeTestOptInfo(info->stmt, indir, lclNum, clsHnd));
+                    ->Push(new (this, CMK_LoopOpt) LcTypeTestOptInfo(compCurBB, info->stmt, indir, lclNum, clsHnd));
             }
         }
         else if (optIsHandleOrIndirOfHandle(relopOp2, GTF_ICON_FTN_ADDR))
@@ -2644,7 +2785,7 @@ Compiler::fgWalkResult Compiler::optCanOptimizeByLoopCloning(GenTree* tree, Loop
                 assert(iconHandle->IsIconHandle(GTF_ICON_FTN_ADDR));
                 assert(compCurBB->lastStmt() == info->stmt);
                 LcMethodAddrTestOptInfo* optInfo = new (this, CMK_LoopOpt)
-                    LcMethodAddrTestOptInfo(info->stmt, indir, lclNum, (void*)iconHandle->IconValue(),
+                    LcMethodAddrTestOptInfo(compCurBB, info->stmt, indir, lclNum, (void*)iconHandle->IconValue(),
                                             relopOp2 != iconHandle DEBUG_ARG(
                                                             (CORINFO_METHOD_HANDLE)iconHandle->gtTargetHandle));
                 info->context->EnsureLoopOptInfo(info->loop->GetIndex())->Push(optInfo);
@@ -2944,35 +3085,12 @@ PhaseStatus Compiler::optCloneLoops()
                 // No need to clone.
                 context.CancelLoopOptInfo(loop->GetIndex());
             }
+            else if (!optShouldCloneLoop(loop, &context))
+            {
+                context.CancelLoopOptInfo(loop->GetIndex());
+            }
         }
     }
-
-#if 0
-    // The code in this #if has been useful in debugging loop cloning issues, by
-    // enabling selective enablement of the loop cloning optimization according to
-    // method hash.
-#ifdef DEBUG
-    unsigned methHash = info.compMethodHash();
-    char* lostr = getenv("loopclonehashlo");
-    unsigned methHashLo = 0;
-    if (lostr != NULL)
-    {
-        sscanf_s(lostr, "%x", &methHashLo);
-        // methHashLo = (unsigned(atoi(lostr)) << 2);  // So we don't have to use negative numbers.
-    }
-    char* histr = getenv("loopclonehashhi");
-    unsigned methHashHi = UINT32_MAX;
-    if (histr != NULL)
-    {
-        sscanf_s(histr, "%x", &methHashHi);
-        // methHashHi = (unsigned(atoi(histr)) << 2);  // So we don't have to use negative numbers.
-    }
-    if (methHash < methHashLo || methHash > methHashHi)
-    {
-        return PhaseStatus::MODIFIED_EVERYTHING;
-    }
-#endif
-#endif
 
     assert(Metrics.LoopsCloned == 0); // It should be initialized, but not yet changed.
     for (FlowGraphNaturalLoop* loop : m_loops->InReversePostOrder())
@@ -2998,8 +3116,6 @@ PhaseStatus Compiler::optCloneLoops()
             m_dfsTree = fgComputeDfs();
             m_loops   = FlowGraphNaturalLoops::Find(m_dfsTree);
         }
-
-        fgRenumberBlocks();
     }
 
 #ifdef DEBUG

@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.IO;
 using Xunit.Abstractions;
 
 #nullable enable
@@ -9,9 +10,9 @@ namespace Wasm.Build.Tests;
 
 public class BlazorWasmProjectProvider : WasmSdkBasedProjectProvider
 {
-    public BlazorWasmProjectProvider(ITestOutputHelper _testOutput, string? _projectDir = null)
-            : base(_testOutput, _projectDir)
-    {}
+    public BlazorWasmProjectProvider(ITestOutputHelper _testOutput, string defaultTargetFramework, string? _projectDir = null)
+            : base(_testOutput, defaultTargetFramework, _projectDir)
+    { }
 
     public void AssertBundle(BlazorBuildOptions options)
         => AssertBundle(new AssertWasmSdkBundleOptions(

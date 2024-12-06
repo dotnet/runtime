@@ -846,19 +846,10 @@ bool EECodeManager::IsGcSafe( EECodeInfo     *pCodeInfo,
     if (gcInfoDecoder.IsInterruptible())
         return true;
 
-    if (InterruptibleSafePointsEnabled() && gcInfoDecoder.IsInterruptibleSafePoint())
+    if (gcInfoDecoder.IsSafePoint())
         return true;
 
     return false;
-}
-
-bool EECodeManager::InterruptibleSafePointsEnabled()
-{
-    LIMITED_METHOD_CONTRACT;
-
-    // zero initialized
-    static ConfigDWORD interruptibleCallSitesEnabled;
-    return interruptibleCallSitesEnabled.val(CLRConfig::INTERNAL_InterruptibleCallSites) != 0;
 }
 
 #if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
@@ -1431,8 +1422,7 @@ bool EECodeManager::EnumGcRefs( PREGDISPLAY     pRD,
                             DECODE_INTERRUPTIBILITY,
                             curOffs
                             );
-        _ASSERTE(_gcInfoDecoder.IsInterruptible() ||
-            (InterruptibleSafePointsEnabled() && _gcInfoDecoder.CouldBeInterruptibleSafePoint()));
+        _ASSERTE(_gcInfoDecoder.IsInterruptible() || _gcInfoDecoder.CouldBeSafePoint());
     }
 #endif
 
@@ -1535,7 +1525,7 @@ bool EECodeManager::EnumGcRefs( PREGDISPLAY     pRD,
                 curOffs - 1
             );
 
-            _ASSERTE((InterruptibleSafePointsEnabled() && gcInfoDecoder.CouldBeInterruptibleSafePoint()));
+            _ASSERTE(gcInfoDecoder.CouldBeSafePoint());
         }
     }
 
@@ -1952,6 +1942,7 @@ PTR_VOID EECodeManager::GetExactGenericsToken(SIZE_T          baseStackSlot,
 
 void * EECodeManager::GetGSCookieAddr(PREGDISPLAY     pContext,
                                       EECodeInfo *    pCodeInfo,
+                                      unsigned        flags,
                                       CodeManState  * pState)
 {
     CONTRACTL {
@@ -1964,6 +1955,14 @@ void * EECodeManager::GetGSCookieAddr(PREGDISPLAY     pContext,
 
 #ifdef FEATURE_EH_FUNCLETS
     if (pCodeInfo->IsFunclet())
+    {
+        return NULL;
+    }
+#endif
+
+#ifdef HAS_LIGHTUNWIND
+    // LightUnwind does not track sufficient context to compute GS cookie address
+    if (flags & LightUnwind)
     {
         return NULL;
     }

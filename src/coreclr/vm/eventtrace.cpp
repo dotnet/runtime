@@ -2328,16 +2328,88 @@ enum CallbackProviderIndex
     DotNETRuntimePrivate = 3
 };
 
+enum SessionChange
+{
+    EventPipeSessionDisable = 0,
+    EventPipeSessionEnable = 1,
+    EtwSessionChangeUnknown = 2
+};
+
+#if !defined(HOST_UNIX)
+// EventFilterType identifies the filter type used by the PEVENT_FILTER_DESCRIPTOR
+enum EventFilterType
+{
+    // data should be pairs of UTF8 null terminated strings all concatenated together.
+    // The first element of the pair is the key and the 2nd is the value. We expect one of the
+    // keys to be the string "GCSeqNumber" and the value to be a number encoded as text.
+    // This is the standard way EventPipe encodes filter values
+    StringKeyValueEncoding = 0,
+    // data should be an 8 byte binary LONGLONG value
+    // this is the historic encoding defined by .NET Framework for use with ETW
+    LongBinaryClientSequenceNumber = 1
+};
+
+VOID ParseFilterDataClientSequenceNumber(
+    PEVENT_FILTER_DESCRIPTOR FilterData,
+    LONGLONG * pClientSequenceNumber)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    if (FilterData == NULL)
+        return;
+
+    if (FilterData->Type == LongBinaryClientSequenceNumber && FilterData->Size == sizeof(LONGLONG))
+    {
+        *pClientSequenceNumber = *(LONGLONG *) (FilterData->Ptr);
+    }
+    else if (FilterData->Type == StringKeyValueEncoding)
+    {
+        const char* buffer = reinterpret_cast<const char*>(FilterData->Ptr);
+        const char* buffer_end = buffer + FilterData->Size;
+
+        while (buffer < buffer_end)
+        {
+            const char* key = buffer;
+            size_t key_len = strnlen(key, buffer_end - buffer);
+            buffer += key_len + 1;
+
+            if (buffer >= buffer_end)
+                break;
+
+            const char* value = buffer;
+            size_t value_len = strnlen(value, buffer_end - buffer);
+            buffer += value_len + 1;
+
+            if (buffer > buffer_end)
+                break;
+
+            if (strcmp(key, "GCSeqNumber") != 0)
+                continue;
+
+            char* endPtr = nullptr;
+            long parsedValue = strtol(value, &endPtr, 10);
+            if (endPtr != value && *endPtr == '\0')
+            {
+                *pClientSequenceNumber = static_cast<LONGLONG>(parsedValue);
+                break;
+            }
+        }
+    }
+}
+#endif // !defined(HOST_UNIX)
+
 // Common handler for all ETW or EventPipe event notifications. Based on the provider that
 // was enabled/disabled, this implementation forwards the event state change onto GCHeapUtilities
 // which will inform the GC to update its local state about what events are enabled.
+// NOTE: When multiple ETW or EventPipe sessions are enabled, the ControlCode will be
+// EVENT_CONTROL_CODE_ENABLE_PROVIDER even if the session invoking this callback is being disabled.
 VOID EtwCallbackCommon(
     CallbackProviderIndex ProviderIndex,
     ULONG ControlCode,
     UCHAR Level,
     ULONGLONG MatchAnyKeyword,
     PVOID pFilterData,
-    BOOL isEventPipeCallback)
+    SessionChange Change)
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -2373,20 +2445,17 @@ VOID EtwCallbackCommon(
     // This callback gets called on both ETW/EventPipe session enable/disable.
     // We need toupdate the EventPipe provider context if we are in a callback
     // from EventPipe, but not from ETW.
-    if (isEventPipeCallback)
+    if (Change == EventPipeSessionEnable || Change == EventPipeSessionDisable)
     {
         ctxToUpdate->EventPipeProvider.Level = Level;
         ctxToUpdate->EventPipeProvider.EnabledKeywordsBitmask = MatchAnyKeyword;
         ctxToUpdate->EventPipeProvider.IsEnabled = ControlCode;
 
         // For EventPipe, ControlCode can only be either 0 or 1.
-        _ASSERTE(ControlCode == 0 || ControlCode == 1);
+        _ASSERTE(ControlCode == EVENT_CONTROL_CODE_DISABLE_PROVIDER || ControlCode == EVENT_CONTROL_CODE_ENABLE_PROVIDER);
     }
 
-    if (
-#if !defined(HOST_UNIX)
-        (ControlCode == EVENT_CONTROL_CODE_ENABLE_PROVIDER || ControlCode == EVENT_CONTROL_CODE_DISABLE_PROVIDER) &&
-#endif
+    if ((ControlCode == EVENT_CONTROL_CODE_ENABLE_PROVIDER || ControlCode == EVENT_CONTROL_CODE_DISABLE_PROVIDER) &&
         (ProviderIndex == DotNETRuntime || ProviderIndex == DotNETRuntimePrivate))
     {
 #if !defined(HOST_UNIX)
@@ -2403,22 +2472,29 @@ VOID EtwCallbackCommon(
         GCHeapUtilities::RecordEventStateChange(bIsPublicTraceHandle, keywords, level);
     }
 
-    // Special check for the runtime provider's ManagedHeapCollectKeyword.  Profilers
-    // flick this to force a full GC.
-    if (g_fEEStarted && !g_fEEShutDown && bIsPublicTraceHandle &&
-        ((MatchAnyKeyword & CLR_MANAGEDHEAPCOLLECT_KEYWORD) != 0))
+    // Special check for a profiler requested GC.
+    // A full GC will be forced if:
+    // 1. The runtime has started and is not shutting down.
+    // 2. The public provider is requesting GC.
+    // 3. The provider's ManagedHeapCollectKeyword is enabled.
+    // 4. If it is an ETW provider, the control code is to enable or capture the state of the provider.
+    // 5. If it is an EventPipe provider, the session is not being disabled.
+    bool bValidGCRequest =
+        g_fEEStarted && !g_fEEShutDown &&
+        bIsPublicTraceHandle &&
+        ((MatchAnyKeyword & CLR_MANAGEDHEAPCOLLECT_KEYWORD) != 0) &&
+        ((ControlCode == EVENT_CONTROL_CODE_ENABLE_PROVIDER) ||
+         (ControlCode == EVENT_CONTROL_CODE_CAPTURE_STATE)) &&
+        ((Change == EtwSessionChangeUnknown) ||
+         (Change == EventPipeSessionEnable));
+
+    if (bValidGCRequest)
     {
         // Profilers may (optionally) specify extra data in the filter parameter
         // to log with the GCStart event.
         LONGLONG l64ClientSequenceNumber = 0;
 #if !defined(HOST_UNIX)
-        PEVENT_FILTER_DESCRIPTOR FilterData = (PEVENT_FILTER_DESCRIPTOR)pFilterData;
-        if ((FilterData != NULL) &&
-           (FilterData->Type == 1) &&
-           (FilterData->Size == sizeof(l64ClientSequenceNumber)))
-        {
-            l64ClientSequenceNumber = *(LONGLONG *) (FilterData->Ptr);
-        }
+        ParseFilterDataClientSequenceNumber((PEVENT_FILTER_DESCRIPTOR)pFilterData, &l64ClientSequenceNumber);
 #endif // !defined(HOST_UNIX)
         ETW::GCLog::ForceGC(l64ClientSequenceNumber);
     }
@@ -2449,7 +2525,9 @@ VOID EventPipeEtwCallbackDotNETRuntimeStress(
 {
     LIMITED_METHOD_CONTRACT;
 
-    EtwCallbackCommon(DotNETRuntimeStress, ControlCode, Level, MatchAnyKeyword, FilterData, true);
+    SessionChange change = SourceId == NULL ? EventPipeSessionDisable : EventPipeSessionEnable;
+
+    EtwCallbackCommon(DotNETRuntimeStress, ControlCode, Level, MatchAnyKeyword, FilterData, change);
 }
 
 VOID EventPipeEtwCallbackDotNETRuntime(
@@ -2463,7 +2541,9 @@ VOID EventPipeEtwCallbackDotNETRuntime(
 {
     LIMITED_METHOD_CONTRACT;
 
-    EtwCallbackCommon(DotNETRuntime, ControlCode, Level, MatchAnyKeyword, FilterData, true);
+    SessionChange change = SourceId == NULL ? EventPipeSessionDisable : EventPipeSessionEnable;
+
+    EtwCallbackCommon(DotNETRuntime, ControlCode, Level, MatchAnyKeyword, FilterData, change);
 }
 
 VOID EventPipeEtwCallbackDotNETRuntimeRundown(
@@ -2477,7 +2557,9 @@ VOID EventPipeEtwCallbackDotNETRuntimeRundown(
 {
     LIMITED_METHOD_CONTRACT;
 
-    EtwCallbackCommon(DotNETRuntimeRundown, ControlCode, Level, MatchAnyKeyword, FilterData, true);
+    SessionChange change = SourceId == NULL ? EventPipeSessionDisable : EventPipeSessionEnable;
+
+    EtwCallbackCommon(DotNETRuntimeRundown, ControlCode, Level, MatchAnyKeyword, FilterData, change);
 }
 
 VOID EventPipeEtwCallbackDotNETRuntimePrivate(
@@ -2491,7 +2573,9 @@ VOID EventPipeEtwCallbackDotNETRuntimePrivate(
 {
     WRAPPER_NO_CONTRACT;
 
-    EtwCallbackCommon(DotNETRuntimePrivate, ControlCode, Level, MatchAnyKeyword, FilterData, true);
+    SessionChange change = SourceId == NULL ? EventPipeSessionDisable : EventPipeSessionEnable;
+
+    EtwCallbackCommon(DotNETRuntimePrivate, ControlCode, Level, MatchAnyKeyword, FilterData, change);
 }
 
 
@@ -2612,7 +2696,7 @@ extern "C"
         } CONTRACTL_END;
 
         // Mark that we are the special ETWRundown thread.  Currently all this does
-        // is insure that AVs thrown in this thread are treated as normal exceptions.
+        // is ensure that AVs thrown in this thread are treated as normal exceptions.
         // This allows us to catch and swallow them.   We can do this because we have
         // a reasonably strong belief that doing ETW Rundown does not change runtime state
         // and thus if an AV happens it is better to simply give up logging ETW and
@@ -2647,7 +2731,7 @@ extern "C"
             return;
         }
 
-        EtwCallbackCommon(providerIndex, ControlCode, Level, MatchAnyKeyword, FilterData, false);
+        EtwCallbackCommon(providerIndex, ControlCode, Level, MatchAnyKeyword, FilterData, EtwSessionChangeUnknown);
 
         // A manifest based provider can be enabled to multiple event tracing sessions
         // As long as there is atleast 1 enabled session, IsEnabled will be TRUE
@@ -2705,10 +2789,7 @@ extern "C"
 
     }
 }
-#endif // FEATURE_NATIVEAOT
-
-#endif // HOST_UNIX
-#ifndef FEATURE_NATIVEAOT
+#endif // !defined(HOST_UNIX)
 
 /****************************************************************************/
 /* This is called by the runtime when an exception is thrown */

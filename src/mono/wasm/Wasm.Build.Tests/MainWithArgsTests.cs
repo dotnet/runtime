@@ -71,7 +71,7 @@ namespace Wasm.Build.Tests
             buildArgs = buildArgs with { ProjectName = projectName, ProjectFileContents = programText };
             buildArgs = ExpandBuildArgs(buildArgs);
             if (dotnetWasmFromRuntimePack == null)
-                dotnetWasmFromRuntimePack = !(buildArgs.AOT || buildArgs.Config == "Release");
+                dotnetWasmFromRuntimePack = IsDotnetWasmFromRuntimePack(buildArgs);
 
             _testOutput.WriteLine ($"-- args: {buildArgs}, name: {projectName}");
 

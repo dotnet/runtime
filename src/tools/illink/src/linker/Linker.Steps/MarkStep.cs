@@ -326,8 +326,6 @@ namespace Mono.Linker.Steps
 			}
 
 			MarkTypeVisibleToReflection (type, reason, origin);
-			MarkCustomAttributes (type, new DependencyInfo (DependencyKind.CustomAttribute, type), origin);
-			MarkTypeSpecialCustomAttributes (type, origin);
 
 			if (type.HasInterfaces) {
 				foreach (InterfaceImplementation iface in type.Interfaces)
@@ -3090,6 +3088,8 @@ namespace Mono.Linker.Steps
 				Tracer.AddDirectDependency (method.DeclaringType, new DependencyInfo (DependencyKind.InstantiatedByCtor, method), marked: false);
 			} else if (method.IsStaticConstructor () && Annotations.HasLinkerAttribute<RequiresUnreferencedCodeAttribute> (method))
 				Context.LogWarning (methodOrigin, DiagnosticId.RequiresUnreferencedCodeOnStaticConstructor, method.GetDisplayName ());
+			else if (method == method.Module.EntryPoint && Annotations.HasLinkerAttribute<RequiresUnreferencedCodeAttribute>(method))
+				Context.LogWarning (methodOrigin, DiagnosticId.RequiresUnreferencedCodeOnEntryPoint, method.GetDisplayName ());
 
 			if (method.IsConstructor) {
 				if (!Annotations.ProcessSatelliteAssemblies && KnownMembers.IsSatelliteAssemblyMarker (method))

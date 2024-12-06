@@ -203,14 +203,15 @@
       <ProfiledAOTProfilePaths Include="$(MibcFilePath)" />
     </ItemGroup>
 
-    <!-- 
-      In order for the runtime to work when static linking, we must supply 
+    <!--
+      In order for the runtime to work when static linking, we must supply
       a list of direct pinvokes otherwise the runtime will crash
     -->
     <ItemGroup Condition="'$(_IsLibraryMode)' == 'true'">
       <DirectPInvokes Include="libSystem.Native" />
       <DirectPInvokes Include="libSystem.IO.Compression.Native" />
       <DirectPInvokes Include="libSystem.Security.Cryptography.Native.Android" />
+      <DirectPInvokes Include="libbrotlienc;libbrotlidec" />
     </ItemGroup>
 
     <PropertyGroup>

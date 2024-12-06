@@ -2766,12 +2766,12 @@ void LinearScan::buildIntervals()
                     {
                         calleeSaveCount = CNT_CALLEE_ENREG;
                     }
-#if defined(TARGET_XARCH) && defined(FEATURE_SIMD)
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
                     else if (varTypeUsesMaskReg(interval->registerType))
                     {
                         calleeSaveCount = CNT_CALLEE_SAVED_MASK;
                     }
-#endif // TARGET_XARCH && FEATURE_SIMD
+#endif // FEATURE_MASKED_HW_INTRINSICS
                     else
                     {
                         assert(varTypeUsesFloatReg(interval->registerType));
@@ -3695,11 +3695,12 @@ int LinearScan::BuildOperandUses(GenTree* node, SingleTypeRegSet candidates)
 #ifdef TARGET_ARM64
             if (HWIntrinsicInfo::IsScalable(hwintrinsic->GetHWIntrinsicId()))
             {
+                int count = 0;
                 for (size_t argNum = 1; argNum <= numArgs; argNum++)
                 {
-                    BuildOperandUses(hwintrinsic->Op(argNum), candidates);
+                    count += BuildOperandUses(hwintrinsic->Op(argNum), candidates);
                 }
-                return (int)numArgs;
+                return count;
             }
 #endif
             assert(numArgs == 2);

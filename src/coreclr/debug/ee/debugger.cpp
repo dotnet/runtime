@@ -1651,7 +1651,7 @@ void Debugger::SendRawEvent(const DebuggerIPCEvent * pManagedEvent)
 
     // If no debugger attached, then don't bother raising a 1st-chance exception because nobody will sniff it.
     // @dbgtodo iDNA: in iDNA case, the recorder may sniff it.
-    if (!IsDebuggerPresent())
+    if (!minipal_is_native_debugger_present())
     {
         return;
     }
@@ -5462,6 +5462,9 @@ bool Debugger::FirstChanceNativeException(EXCEPTION_RECORD *exception,
     }
 
     bool retVal;
+#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
+    DebuggerSteppingInfo debuggerSteppingInfo;
+#endif
 
     {
         // Don't stop for native debugging anywhere inside our inproc-Filters.
@@ -5470,7 +5473,11 @@ bool Debugger::FirstChanceNativeException(EXCEPTION_RECORD *exception,
         if (!CORDBUnrecoverableError(this))
         {
             retVal = DebuggerController::DispatchNativeException(exception, context,
-                                                               code, thread);
+                                                               code, thread
+#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
+                                                               ,&debuggerSteppingInfo
+#endif
+                                                               );
         }
         else
         {
@@ -5481,7 +5488,9 @@ bool Debugger::FirstChanceNativeException(EXCEPTION_RECORD *exception,
 #if defined(OUT_OF_PROCESS_SETTHREADCONTEXT) && !defined(DACCESS_COMPILE)
     if (retVal && fIsVEH)
     {
-        SendSetThreadContextNeeded(context);
+        // This does not return. Out-of-proc debugger will update the thread context
+        // within this call.
+        SendSetThreadContextNeeded(context, &debuggerSteppingInfo);
     }
 #endif
     return retVal;
@@ -6460,7 +6469,7 @@ HRESULT Debugger::LaunchDebuggerForUser(Thread * pThread, EXCEPTION_POINTERS * p
             //
             SendUserBreakpointAndSynchronize(g_pEEInterface->GetThread());
         }
-        else if (!CORDebuggerAttached() && IsDebuggerPresent())
+        else if (!CORDebuggerAttached() && minipal_is_native_debugger_present())
         {
             //
             // If the registered debugger is not a managed debugger, send a native breakpoint
@@ -6476,7 +6485,7 @@ HRESULT Debugger::LaunchDebuggerForUser(Thread * pThread, EXCEPTION_POINTERS * p
         DebugBreak();
     }
 
-    if (!IsDebuggerPresent())
+    if (!minipal_is_native_debugger_present())
     {
         LOG((LF_CORDB, LL_ERROR, "D::LDFU: Failed to launch the debugger.\n"));
     }
@@ -7097,7 +7106,7 @@ void Debugger::JitAttach(Thread * pThread, EXCEPTION_POINTERS * pExceptionInfo, 
     CONTRACTL_END;
 
     // Don't do anything if there is a native debugger already attached or the debugging support has been disabled.
-    if (IsDebuggerPresent() || m_pRCThread == NULL)
+    if (minipal_is_native_debugger_present() || m_pRCThread == NULL)
         return;
 
     GCX_PREEMP_EEINTERFACE_TOGGLE_IFTHREAD();
@@ -7172,7 +7181,7 @@ void Debugger::EnsureDebuggerAttached(Thread * pThread, EXCEPTION_POINTERS * pEx
     {
         // if the debugger is already attached then we can't launch one
         // and whatever attach state we are in is just what we get
-        if(IsDebuggerPresent())
+        if(minipal_is_native_debugger_present())
         {
             // unblock other threads waiting on our attach and clean up
             PostJitAttach();
@@ -8910,7 +8919,7 @@ void Debugger::SendUserBreakpoint(Thread * thread)
         // On jit-attach, we just send the UserBreak event. Don't do an extra step-out.
         SendUserBreakpointAndSynchronize(thread);
     }
-    else if (IsDebuggerPresent())
+    else if (minipal_is_native_debugger_present())
     {
         DebugBreak();
     }
@@ -12242,7 +12251,7 @@ HRESULT Debugger::DeoptimizeMethodHelper(Module* pModule, mdMethodDef methodDef)
         // call back in to anything so set it all here to match the original IL and debug codegen flags
         ilCodeVersion.SetIL(ILCodeVersion(pModule, methodDef).GetIL());
         ilCodeVersion.SetJitFlags(COR_PRF_CODEGEN_DISABLE_ALL_OPTIMIZATIONS | COR_PRF_CODEGEN_DEBUG_INFO);
-        ilCodeVersion.SetRejitState(ILCodeVersion::kStateActive);
+        ilCodeVersion.SetRejitState(RejitFlags::kStateActive);
         ilCodeVersion.SetEnableReJITCallback(false);
     }
 
@@ -16691,7 +16700,7 @@ void Debugger::StartCanaryThread()
 
 #ifndef DACCESS_COMPILE
 #ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
-void Debugger::SendSetThreadContextNeeded(CONTEXT *context)
+void Debugger::SendSetThreadContextNeeded(CONTEXT *context, DebuggerSteppingInfo *pDebuggerSteppingInfo)
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
@@ -16742,11 +16751,14 @@ void Debugger::SendSetThreadContextNeeded(CONTEXT *context)
     // adjust context size if the context pointer is not aligned with the buffer we allocated
     contextSize -= (DWORD)((BYTE*)pContext-(BYTE*)pBuffer);
 
+    bool fIsInPlaceSingleStep = pDebuggerSteppingInfo != NULL && pDebuggerSteppingInfo->IsInPlaceSingleStep();
+    PRD_TYPE opcode = pDebuggerSteppingInfo != NULL ? pDebuggerSteppingInfo->GetOpcode() : CORDbg_BREAK_INSTRUCTION;
+
     // send the context to the right side
-    LOG((LF_CORDB, LL_INFO10000, "D::SSTCN ContextFlags=0x%X contextSize=%d..\n", contextFlags, contextSize));
+    LOG((LF_CORDB, LL_INFO10000, "D::SSTCN ContextFlags=0x%X contextSize=%d fIsInPlaceSingleStep=%d opcode=%x\n", contextFlags, contextSize, fIsInPlaceSingleStep, opcode));
     EX_TRY
     {
-        SetThreadContextNeededFlare((TADDR)pContext, contextSize, pContext->Rip, pContext->Rsp);
+        SetThreadContextNeededFlare((TADDR)pContext, contextSize, fIsInPlaceSingleStep, opcode);
     }
     EX_CATCH
     {
@@ -16765,7 +16777,7 @@ BOOL Debugger::IsOutOfProcessSetContextEnabled()
     return m_fOutOfProcessSetContextEnabled;
 }
 #else
-void Debugger::SendSetThreadContextNeeded(CONTEXT* context)
+void Debugger::SendSetThreadContextNeeded(CONTEXT* context, DebuggerSteppingInfo *pDebuggerSteppingInfo)
 {
     _ASSERTE(!"SendSetThreadContextNeeded is not enabled on this platform");
 }
@@ -16781,7 +16793,10 @@ void Debugger::MulticastTraceNextStep(DELEGATEREF pbDel, INT32 count)
 {
     DebuggerController::DispatchMulticastDelegate(pbDel, count);
 }
+void Debugger::ExternalMethodFixupNextStep(PCODE address)
+{
+    DebuggerController::DispatchExternalMethodFixup(address);
+}
 #endif //DACCESS_COMPILE
 
 #endif //DEBUGGING_SUPPORTED
-

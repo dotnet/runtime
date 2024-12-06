@@ -10,6 +10,8 @@ namespace Mono.Linker.Tests.Cases.Reflection
 	[Reference ("System.Core.dll")]
 	[ExpectedNoWarnings]
 	[KeptPrivateImplementationDetails ("ThrowSwitchExpressionException")]
+	[KeptAttributeAttribute(typeof(UnconditionalSuppressMessageAttribute))]
+	[UnconditionalSuppressMessage ("AOT", "IL3050", Justification = "These tests are not targeted at AOT scenarios")]
 	public class ExpressionCallString
 	{
 		public static void Main ()

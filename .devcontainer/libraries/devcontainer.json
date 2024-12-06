@@ -4,8 +4,7 @@
 	"build": {
 		"dockerfile": "../Dockerfile",
 		"args": {
-			// Update 'VARIANT' to pick a .NET Core version: 6.0, 7.0
-			"VARIANT": "6.0-jammy"
+			"VARIANT": "8.0-noble"
 		}
 	},
 	"hostRequirements": {
