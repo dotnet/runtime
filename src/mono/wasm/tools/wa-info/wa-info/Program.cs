@@ -1,4 +1,7 @@
-﻿using System;
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
@@ -10,14 +13,13 @@ namespace WebAssemblyInfo
 {
     public class Program
     {
-        static internal Regex? AssemblyFilter;
-        static internal Regex? TypeFilter;
+        internal static Regex? AssemblyFilter;
+        internal static Regex? TypeFilter;
         public static bool ListWitImports;
         public static bool ListWitExports;
+        private static readonly Dictionary<string, AssemblyReader> assemblies = new();
 
-        readonly static Dictionary<string, AssemblyReader> assemblies = new();
-
-        static int Main(string[] args)
+        public static int Main(string[] args)
         {
             var context = new WasmContext();
             var files = ProcessArguments(context, args);
@@ -68,7 +70,7 @@ namespace WebAssemblyInfo
             return 0;
         }
 
-        static AssemblyReader GetAssemblyReader(string path)
+        private static AssemblyReader GetAssemblyReader(string path)
         {
             if (assemblies.TryGetValue(path, out AssemblyReader? reader))
                 return reader;
@@ -79,7 +81,7 @@ namespace WebAssemblyInfo
             return reader;
         }
 
-        static List<string> ProcessArguments(WasmContext context, string[] args)
+        private static List<string> ProcessArguments(WasmContext context, string[] args)
         {
             var help = false;
             var options = new OptionSet {

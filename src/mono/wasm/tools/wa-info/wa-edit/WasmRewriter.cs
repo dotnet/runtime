@@ -1,17 +1,17 @@
-﻿using System;
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using System;
 using System.IO;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace WebAssemblyInfo
 {
-    internal class WasmRewriter : WasmReaderBase
+    internal sealed class WasmRewriter : WasmReaderBase
     {
-        readonly string DestinationPath;
-        BinaryWriter Writer;
-        WasmEditContext editContext;
+        private readonly string DestinationPath;
+        private readonly BinaryWriter Writer;
+        private readonly WasmEditContext editContext;
 
         public WasmRewriter(WasmEditContext context, string source, string destination) : base(context, source)
         {
@@ -36,7 +36,7 @@ namespace WebAssemblyInfo
             Writer.Write(Version);
         }
 
-        override protected void ReadSection(SectionInfo section)
+        protected override void ReadSection(SectionInfo section)
         {
             if (File.Exists(editContext.DataSectionFile))
             {
@@ -56,18 +56,18 @@ namespace WebAssemblyInfo
             WriteSection(section);
         }
 
-        void WriteSection(SectionInfo section)
+        private void WriteSection(SectionInfo section)
         {
             Reader.BaseStream.Seek(section.offset, SeekOrigin.Begin);
             Writer.Write(Reader.ReadBytes((int)section.size + (int)(section.begin - section.offset)));
         }
 
-        struct Chunk
+        private struct Chunk
         {
             public int index, size;
         }
 
-        List<Chunk> Split(byte[] data)
+        private List<Chunk> Split(byte[] data)
         {
             int zeroesLen = 9;
             var list = new List<Chunk>();
@@ -119,7 +119,7 @@ namespace WebAssemblyInfo
             return list;
         }
 
-        void RewriteDataSection()
+        private void RewriteDataSection()
         {
             //var oo = Writer.BaseStream.Position;
             var bytes = File.ReadAllBytes(editContext.DataSectionFile);
@@ -146,7 +146,7 @@ namespace WebAssemblyInfo
             //Writer.BaseStream.Position = pos;
         }
 
-        uint GetDataSegmentLength(DataMode mode, Chunk chunk, int memoryOffset)
+        private static uint GetDataSegmentLength(DataMode mode, Chunk chunk, int memoryOffset)
         {
             var len = U32Len((uint)mode) + U32Len((uint)chunk.size) + (uint)chunk.size;
             if (mode == DataMode.Active)
@@ -155,7 +155,7 @@ namespace WebAssemblyInfo
             return len;
         }
 
-        void WriteDataSegment(DataMode mode, byte[] data, Chunk chunk, int memoryOffset)
+        private void WriteDataSegment(DataMode mode, byte[] data, Chunk chunk, int memoryOffset)
         {
             if (editContext.Verbose2)
                 Console.WriteLine($"  write data segment at offset: {memoryOffset} chunk index: {chunk.index} size: {chunk.size}");
@@ -184,13 +184,10 @@ namespace WebAssemblyInfo
             Writer.BaseStream.Position = pos;
         }
 
-        uint ConstI32ExprLen(int cn)
-        {
-            return 2 + I32Len(cn);
-        }
+        private static uint ConstI32ExprLen(int cn) => 2 + I32Len(cn);
 
         // i32.const <cn>
-        void WriteConstI32Expr(int cn)
+        private void WriteConstI32Expr(int cn)
         {
             Writer.Write((byte)Opcode.I32_Const);
             WriteI32(cn);

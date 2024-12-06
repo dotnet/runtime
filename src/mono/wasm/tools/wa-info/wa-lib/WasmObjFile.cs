@@ -1,10 +1,13 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
 using System.Text;
 
 namespace WebAssemblyInfo
 {
     public partial class WasmReader : WasmReaderBase
     {
-        enum LinkingSubsectionType
+        private enum LinkingSubsectionType
         {
             WasmSegmentInfo = 5,
             WasmInitFunctions = 6,
@@ -12,7 +15,7 @@ namespace WebAssemblyInfo
             WasmSymbolTable = 8,
         };
 
-        enum SymbolKind
+        private enum SymbolKind
         {
             Function = 0,
             Data = 1,
@@ -22,7 +25,7 @@ namespace WebAssemblyInfo
             Table = 5,
         }
 
-        enum SymbolFlags : UInt32
+        private enum SymbolFlags : uint
         {
             Weak = 1,
             Local = 2,
@@ -35,7 +38,7 @@ namespace WebAssemblyInfo
             Absolute = 0x200,
         }
 
-        void ReadCustomLinkingSection(UInt32 size)
+        private void ReadCustomLinkingSection(uint size)
         {
             var start = Reader.BaseStream.Position;
             var version = ReadU32();
@@ -108,7 +111,7 @@ namespace WebAssemblyInfo
             }
         }
 
-        enum RelocationType : byte
+        private enum RelocationType : byte
         {
             FunctionIndexLEB = 0,
             TableIndexSLEB = 1,
@@ -134,14 +137,13 @@ namespace WebAssemblyInfo
             FunctionIndexI32 = 26,
         };
 
-        void ReadCustomRelocSection(UInt32 size, string name)
+        private void ReadCustomRelocSection(uint _, string name)
         {
             if (Context.Verbose) {
                 Console.WriteLine();
                 Console.WriteLine($"Reading custom reloc section: {name}");
             }
 
-            var start = Reader.BaseStream.Position;
             var sectionIndex = ReadU32();
             var count = ReadU32();
             if (Context.Verbose2)
@@ -190,7 +192,7 @@ namespace WebAssemblyInfo
                     case SymbolKind.Table:
                         var index = ReadU32();
                         string? name = null;
-                        if ((flags & (UInt32)SymbolFlags.Undefined) != 0 && (flags & (UInt32)SymbolFlags.ExplicitName) == 0)
+                        if ((flags & (uint)SymbolFlags.Undefined) != 0 && (flags & (uint)SymbolFlags.ExplicitName) == 0)
                         {
                             if (imports != null)
                                 name = imports[index].Name;
@@ -207,7 +209,7 @@ namespace WebAssemblyInfo
                         if (Context.Verbose)
                             Console.WriteLine($"Symbol {i} kind: {kind} flags: {SymbolFlagsToString(flags)} name: {name}");
 
-                        if ((flags & (UInt32)SymbolFlags.Undefined) == 0)
+                        if ((flags & (uint)SymbolFlags.Undefined) == 0)
                         {
                             index = ReadU32();
                             var offset = ReadU32();
@@ -229,12 +231,12 @@ namespace WebAssemblyInfo
             }
         }
 
-        string SymbolFlagsToString(UInt32 flags)
+        private static string SymbolFlagsToString(uint flags)
         {
             var sb = new StringBuilder();
             foreach (var flag in Enum.GetValues(typeof(SymbolFlags)))
             {
-                if ((flags & (UInt32)flag) != 0)
+                if ((flags & (uint)flag) != 0)
                 {
                     var prefix = sb.Length == 0 ? "" : ", ";
                     sb.Append($"{prefix}{flag}");

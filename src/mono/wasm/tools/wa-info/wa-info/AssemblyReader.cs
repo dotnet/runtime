@@ -1,4 +1,7 @@
-﻿using System;
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection.Metadata;
@@ -7,11 +10,11 @@ using System.Text;
 
 namespace WebAssemblyInfo
 {
-    internal class AssemblyReader
+    internal sealed class AssemblyReader
     {
-        BinaryReader binaryReader;
-        PEReader peReader;
-        MetadataReader reader;
+        private readonly BinaryReader binaryReader;
+        private readonly PEReader peReader;
+        private readonly MetadataReader reader;
 
         public AssemblyReader(string path)
         {
@@ -44,14 +47,14 @@ namespace WebAssemblyInfo
             return methods;
         }
 
-        string GetTypeFullname(MetadataReader reader, TypeDefinition td)
+        private static string GetTypeFullname(MetadataReader reader, TypeDefinition td)
         {
             StringBuilder sb = new StringBuilder();
             var ns = reader.GetString(td.Namespace);
             if (ns.Length > 0)
             {
                 sb.Append(ns);
-                sb.Append(".");
+                sb.Append('.');
             }
 
             sb.Append(reader.GetString(td.Name));
@@ -76,9 +79,9 @@ namespace WebAssemblyInfo
             return sb.ToString();
         }
 
-        bool warnedAboutSigErr = false;
+        private bool warnedAboutSigErr;
 
-        string GetMethodString(MetadataReader reader, TypeDefinition td, MethodDefinition md)
+        private string GetMethodString(MetadataReader reader, TypeDefinition td, MethodDefinition md)
         {
             StringBuilder sb = new StringBuilder();
 
@@ -89,7 +92,7 @@ namespace WebAssemblyInfo
 
             var context = new GenericContext(md.GetGenericParameters(), td.GetGenericParameters(), reader);
 
-            MethodSignature<string> signature = new MethodSignature<string>();
+            MethodSignature<string> signature = default;
             bool sigErr = false;
             try
             {

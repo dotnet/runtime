@@ -1,4 +1,7 @@
-﻿using System;
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using System;
 using System.Collections.Immutable;
 using System.Reflection.Metadata;
 using System.Text;
@@ -7,7 +10,7 @@ namespace WebAssemblyInfo
 {
     public class SignatureDecoder : ISignatureTypeProvider<string, GenericContext>
     {
-        static string GetShapeRank(ArrayShape shape)
+        private static string GetShapeRank(ArrayShape shape)
         {
             StringBuilder sb = new();
 
@@ -46,7 +49,7 @@ namespace WebAssemblyInfo
             return $"{elementType}&";
         }
 
-        static string GetParameterTypes(MethodSignature<string> signature)
+        private static string GetParameterTypes(MethodSignature<string> signature)
         {
             StringBuilder sb = new();
             var count = signature.RequiredParameterCount;

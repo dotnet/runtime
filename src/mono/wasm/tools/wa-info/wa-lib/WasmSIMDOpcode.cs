@@ -1,8 +1,11 @@
-﻿using System;
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using System;
 
 namespace WebAssemblyInfo
 {
-    public enum SIMDOpcode : Int32
+    public enum SIMDOpcode : int
     {
         V128_Load = 0x00,
         V128_Load8x8_S = 0x01,

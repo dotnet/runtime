@@ -1,4 +1,7 @@
-﻿using System;
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Text.RegularExpressions;
@@ -9,7 +12,7 @@ namespace WebAssemblyInfo
 {
     public class Program
     {
-        static int Main(string[] args)
+        public static int Main(string[] args)
         {
             var context = new WasmContext();
             var files = ProcessArguments(context, args);
@@ -30,7 +33,7 @@ namespace WebAssemblyInfo
             return CompareReaders(context, reader1, reader2);
         }
 
-        static int CompareReaders(WasmContext context, WasmDiffReader reader1, WasmDiffReader reader2)
+        private static int CompareReaders(WasmContext context, WasmDiffReader reader1, WasmDiffReader reader2)
         {
             int rv = 0;
 
@@ -61,7 +64,7 @@ namespace WebAssemblyInfo
             return rv;
         }
 
-        static List<string> ProcessArguments(WasmContext context, string[] args)
+        private static List<string> ProcessArguments(WasmContext context, string[] args)
         {
             var help = false;
             var options = new OptionSet {

@@ -1,4 +1,7 @@
-﻿using System;
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using System;
 using System.IO;
 using System.Text;
 using System.Runtime.InteropServices;
@@ -16,16 +19,16 @@ namespace WebAssemblyInfo
 
         public bool TryDelegate;
 
-        public UInt32 Idx;
-        public UInt32 Idx2;
-        public Int32 I32;
-        public Int64 I64;
-        public Single F32;
-        public Double F64;
+        public uint Idx;
+        public uint Idx2;
+        public int I32;
+        public long I64;
+        public float F32;
+        public double F64;
 
         public MemArg MemArg;
 
-        public UInt32[] IdxArray;
+        public uint[] IdxArray;
 
         public long Offset;
 
@@ -38,7 +41,7 @@ namespace WebAssemblyInfo
         public string ToString(WasmReader? reader)
         {
             var prefix = reader != null && reader.Context.PrintOffsets ? $"0x{Offset:x8}: " : null;
-            var opStr = prefix + Opcode.ToString().ToLower().Replace("_", ".");
+            var opStr = prefix + Opcode.ToString().ToLowerInvariant().Replace("_", ".");
             switch (Opcode)
             {
                 case Opcode.Block:
@@ -48,7 +51,7 @@ namespace WebAssemblyInfo
                     var str = $"{opStr}\n{BlockToString(Block, reader)}";
                     str += ((Block2 == null || Block2.Length < 1) ? "" : $"else\n{BlockToString(Block2, reader)}");
                     if (Opcode == Opcode.Try && TryDelegate)
-                        str += $"\n{prefix}{Opcode.Delegate.ToString().ToLower().Replace("_", ".")} {Idx}";
+                        str += $"\n{prefix}{Opcode.Delegate.ToString().ToLowerInvariant().Replace("_", ".")} {Idx}";
 
                     return str;
                 case Opcode.Local_Get:
@@ -102,7 +105,7 @@ namespace WebAssemblyInfo
 
                     return $"{opStr}{offset}{align}";
                 case Opcode.SIMDPrefix:
-                    opStr = prefix + SIMDOpcode.ToString().ToLower().Replace("_", ".");
+                    opStr = prefix + SIMDOpcode.ToString().ToLowerInvariant().Replace("_", ".");
                     offset = MemArg.Offset != 0 ? $" offset:{MemArg.Offset}" : null;
                     align = MemArg.Align != 0 ? $" align:{MemArg.Align}" : null;
                     string? optional = null;
@@ -144,13 +147,13 @@ namespace WebAssemblyInfo
 
                     return $"{opStr}{offset}{align}{optional}    [SIMD]";
                 case Opcode.MTPrefix:
-                    opStr = prefix + MTOpcode.ToString().ToLower().Replace("_", ".");
+                    opStr = prefix + MTOpcode.ToString().ToLowerInvariant().Replace("_", ".");
                     offset = MemArg.Offset != 0 ? $" offset:{MemArg.Offset}" : null;
                     align = MemArg.Align != 0 ? $" align:{MemArg.Align}" : null;
 
                     return $"{opStr}{offset}{align}    [MT]";
                 case Opcode.Prefix:
-                    opStr = prefix + PrefixOpcode.ToString().ToLower().Replace("_", ".");
+                    opStr = prefix + PrefixOpcode.ToString().ToLowerInvariant().Replace("_", ".");
 
                     return $"{opStr}    [PF]";
                 case Opcode.Nop:
@@ -159,26 +162,26 @@ namespace WebAssemblyInfo
             }
         }
 
-        static string? FunctionName(UInt32 idx, WasmReader? reader)
+        private static string? FunctionName(uint idx, WasmReader? reader)
         {
             if (reader == null)
-                return $"[{idx.ToString()}]";
+                return $"[{idx}]";
 
             return reader.GetFunctionName(idx, false);
         }
 
-        static string FunctionType(UInt32 idx, WasmReader? reader)
+        private static string FunctionType(uint idx, WasmReader? reader)
         {
             if (reader == null)
-                return $"[{idx.ToString()}]";
+                return $"[{idx}]";
 
             return reader.FunctionType(idx);
         }
 
-        static string GlobalName(UInt32 idx, WasmReader? reader)
+        private static string GlobalName(uint idx, WasmReader? reader)
         {
             if (reader == null)
-                return $"${idx.ToString()}";
+                return $"${idx}";
 
             return $"${reader.GlobalName(idx)}";
         }
@@ -188,7 +191,7 @@ namespace WebAssemblyInfo
             return ToString(null);
         }
 
-        static string BlockToString(Instruction[] instructions, WasmReader? reader)
+        private static string BlockToString(Instruction[] instructions, WasmReader? reader)
         {
             if (instructions == null || instructions.Length < 1)
                 return "";
@@ -205,10 +208,10 @@ namespace WebAssemblyInfo
     public struct TableType
     {
         public ReferenceType RefType;
-        public UInt32 Min;
-        public UInt32 Max;
+        public uint Min;
+        public uint Max;
 
-        override public string ToString()
+        public override string ToString()
         {
             return $"table {RefType} {Min} {Max}";
         }
@@ -217,10 +220,10 @@ namespace WebAssemblyInfo
     public struct Element
     {
         public ElementFlag Flags;
-        public UInt32 TableIdx;
+        public uint TableIdx;
         public ReferenceType RefType;
         public byte Kind;
-        public UInt32[] Indices;
+        public uint[] Indices;
         public Instruction[] Expression;
         public Instruction[][] Expressions;
 
@@ -279,7 +282,7 @@ namespace WebAssemblyInfo
     {
         public DataMode Mode;
         public Instruction[] Expression;
-        public UInt32 MemIdx;
+        public uint MemIdx;
         public byte[] Content;
     }
 
@@ -289,7 +292,7 @@ namespace WebAssemblyInfo
         public Mutability Mutability;
         public Instruction[] Expression;
 
-        override public string ToString()
+        public override string ToString()
         {
             var tail = Expression == null ? "" : $" {Expression}";
 
@@ -299,8 +302,8 @@ namespace WebAssemblyInfo
 
     public struct Memory
     {
-        public UInt32 Min;
-        public UInt32 Max;
+        public uint Min;
+        public uint Max;
     }
 
     public enum Mutability
@@ -311,13 +314,13 @@ namespace WebAssemblyInfo
 
     public struct MemArg
     {
-        public UInt32 Align;
-        public UInt32 Offset;
+        public uint Align;
+        public uint Offset;
     }
 
     public struct LocalsBlock
     {
-        public UInt32 Count;
+        public uint Count;
         public ValueType Type;
 
         public string ToString(int idx)
@@ -337,11 +340,11 @@ namespace WebAssemblyInfo
     {
         public LocalsBlock[] Locals;
         public Instruction[] Instructions;
-        public UInt32 Idx;
-        public UInt32 Size;
+        public uint Idx;
+        public uint Size;
         public long Offset;
 
-        void ReadCode(WasmReader reader)
+        private void ReadCode(WasmReader reader)
         {
             reader.Reader.BaseStream.Seek(Offset, SeekOrigin.Begin);
 
@@ -414,10 +417,10 @@ namespace WebAssemblyInfo
     {
         public BlockTypeKind Kind;
         public ValueType ValueType;
-        public UInt32 TypeIdx;
+        public uint TypeIdx;
     }
 
-    public enum ExportDesc : Byte
+    public enum ExportDesc : byte
     {
         FuncIdx = 0,
         TableIdx,
@@ -428,7 +431,7 @@ namespace WebAssemblyInfo
     public struct Export
     {
         public string Name;
-        public UInt32 Idx;
+        public uint Idx;
         public ExportDesc Desc;
 
         public override string ToString()
@@ -437,7 +440,7 @@ namespace WebAssemblyInfo
         }
     }
 
-    public enum ImportDesc : Byte
+    public enum ImportDesc : byte
     {
         TypeIdx = 0,
         TableType,
@@ -449,9 +452,9 @@ namespace WebAssemblyInfo
     {
         public string Module;
         public string Name;
-        public UInt32 Idx;
-        public UInt32 Min;
-        public UInt32 Max;
+        public uint Idx;
+        public uint Min;
+        public uint Max;
         public ImportDesc Desc;
         public Global GlobalType;
         public TableType TableType;
@@ -481,10 +484,10 @@ namespace WebAssemblyInfo
 
     public struct Function
     {
-        public UInt32 TypeIdx;
+        public uint TypeIdx;
     }
 
-    public enum WitExternDescriptionKind : Byte
+    public enum WitExternDescriptionKind : byte
     {
         CoreModule = 0,
         Function,
@@ -527,10 +530,10 @@ namespace WebAssemblyInfo
 
     public struct WitValueType {
         public WitValueTypeKind Kind;
-        public UInt32 TypeIdx;
+        public uint TypeIdx;
         public WitPrimaryValueType PrimaryValueType;
 
-        override public string ToString()
+        public override string ToString()
         {
             return Kind == WitValueTypeKind.Type ? $"typeidx: {TypeIdx}" : $"primaryvaluetype: {PrimaryValueType}";
         }
@@ -541,17 +544,17 @@ namespace WebAssemblyInfo
         public WitTypeBound TypeBound;
         public WitValueBound ValueBound;
         public WitValueType ValueType;
-        public UInt32 Idx;
+        public uint Idx;
     }
 
     public struct WitImport
     {
         public string Name;
-        public UInt32 Length;
+        public uint Length;
 
         public WitExternDescription ExternDescription;
 
-        override public string ToString()
+        public override string ToString()
         {
             var tail = "";
             switch(ExternDescription.Kind)
@@ -593,22 +596,22 @@ namespace WebAssemblyInfo
         Instance,
     }
 
-    struct WitExport
+    internal struct WitExport
     {
         public string Name;
-        public UInt32 Length;
-        public UInt32 SortIdx;
+        public uint Length;
+        public uint SortIdx;
         public WitSort Sort;
         public WitCoreSort CoreSort;
         public WitExternDescription ExternDescription;
 
-        override public string ToString()
+        public override string ToString()
         {
             return $"export name: \"{Name}\" sort: {Sort} sortidx: {SortIdx} externdesc kind: {ExternDescription.Kind} typeidx: {ExternDescription.Idx}";
         }
     }
 
-    public enum NumberType : Byte
+    public enum NumberType : byte
     {
         i32 = 0x7f,
         i64 = 0x7e,
@@ -616,7 +619,7 @@ namespace WebAssemblyInfo
         f64 = 0x7c
     }
 
-    public enum ReferenceType : Byte
+    public enum ReferenceType : byte
     {
         FuncRef = 0x70,
         ExternRef = 0x6f,
@@ -686,7 +689,7 @@ namespace WebAssemblyInfo
                 if (startIdx >= 0)
                 {
                     sb.Append('$');
-                    sb.Append(startIdx++.ToString());
+                    sb.Append(startIdx++);
                     sb.Append(' ');
                 }
 
@@ -732,7 +735,7 @@ namespace WebAssemblyInfo
         }
     }
 
-    enum CustomSubSectionId
+    internal enum CustomSubSectionId
     {
         ModuleName = 0,
         FunctionNames = 1,

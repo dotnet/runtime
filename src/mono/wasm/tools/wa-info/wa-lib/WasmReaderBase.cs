@@ -1,9 +1,12 @@
-﻿using System;
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
 
-using NameMap = System.Collections.Generic.Dictionary<System.UInt32, string>;
+using NameMap = System.Collections.Generic.Dictionary<uint, string>;
 
 namespace WebAssemblyInfo
 {
@@ -12,7 +15,7 @@ namespace WebAssemblyInfo
         public WasmContext Context;
 
         public readonly BinaryReader Reader;
-        public UInt32 Version { get; private set; }
+        public uint Version { get; private set; }
         public string Path { get; private set; }
 
         protected readonly long Length;
@@ -51,7 +54,7 @@ namespace WebAssemblyInfo
 
         protected byte[] MagicWasm = { 0x0, 0x61, 0x73, 0x6d };
 
-        protected bool InWitComponent = false;
+        protected bool InWitComponent;
 
         protected virtual void ReadModule()
         {
@@ -80,7 +83,7 @@ namespace WebAssemblyInfo
             }
         }
 
-        void ReadWasmModule()
+        private void ReadWasmModule()
         {
             while (Reader.BaseStream.Position < EndOfModulePositions.Peek())
                 ReadSection();
@@ -121,7 +124,7 @@ namespace WebAssemblyInfo
         protected struct SectionInfo
         {
             public SectionId id;
-            public UInt32 size;
+            public uint size;
             public long offset;
             public long begin;
         }
@@ -130,7 +133,7 @@ namespace WebAssemblyInfo
 
         protected abstract void ReadSection(SectionInfo section);
 
-        SectionId ReadSectionId()
+        private SectionId ReadSectionId()
         {
             var id = (int)Reader.ReadByte();
             if (InWitComponent)
@@ -139,7 +142,7 @@ namespace WebAssemblyInfo
             return (SectionId)id;
         }
 
-        void ReadSection()
+        private void ReadSection()
         {
             var section = new SectionInfo() { offset=Reader.BaseStream.Position, id = ReadSectionId(), size = ReadU32(), begin = Reader.BaseStream.Position };
             sections.Add(section);
@@ -159,14 +162,14 @@ namespace WebAssemblyInfo
             Reader.BaseStream.Seek(section.begin + section.size, SeekOrigin.Begin);
         }
 
-        public UInt32 ReadU32()
+        public uint ReadU32()
         {
-            UInt32 value = 0;
+            uint value = 0;
             var offset = 0;
             do
             {
                 var b = Reader.ReadByte();
-                value |= (UInt32)(b & 0x7f) << offset;
+                value |= (uint)(b & 0x7f) << offset;
 
                 if ((b & 0x80) == 0)
                     break;
@@ -177,16 +180,16 @@ namespace WebAssemblyInfo
             return value;
         }
 
-        protected Int32 ReadI32()
+        protected int ReadI32()
         {
-            Int32 value = 0;
+            int value = 0;
             var offset = 0;
             byte b;
 
             do
             {
                 b = Reader.ReadByte();
-                value |= (Int32)(b & 0x7f) << offset;
+                value |= (int)(b & 0x7f) << offset;
 
                 if ((b & 0x80) == 0)
                     break;
@@ -195,21 +198,21 @@ namespace WebAssemblyInfo
             } while (true);
 
             if (offset < 32 && (b & 0x40) == 0x40)
-                value |= (~(Int32)0 << offset);
+                value |= (~(int)0 << offset);
 
             return value;
         }
 
-        protected Int64 ReadI64()
+        protected long ReadI64()
         {
-            Int64 value = 0;
+            long value = 0;
             var offset = 0;
             byte b;
 
             do
             {
                 b = Reader.ReadByte();
-                value |= (Int64)(b & 0x7f) << offset;
+                value |= (long)(b & 0x7f) << offset;
 
                 if ((b & 0x80) == 0)
                     break;
@@ -218,7 +221,7 @@ namespace WebAssemblyInfo
             } while (true);
 
             if (offset < 64 && (b & 0x40) == 0x40)
-                value |= (~(Int64)0 << offset);
+                value |= (~(long)0 << offset);
 
             return value;
         }

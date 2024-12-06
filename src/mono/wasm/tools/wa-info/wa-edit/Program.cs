@@ -1,8 +1,8 @@
-﻿using System;
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using System;
 using System.Collections.Generic;
-using System.Globalization;
-using System.IO;
-using System.Text.RegularExpressions;
 
 using Mono.Options;
 
@@ -10,7 +10,7 @@ namespace WebAssemblyInfo
 {
     public class Program
     {
-        static int Main(string[] args)
+        public static int Main(string[] args)
         {
             var context = new WasmEditContext();
             var files = ProcessArguments(context, args);
@@ -20,7 +20,7 @@ namespace WebAssemblyInfo
             return 0;
         }
 
-        static List<string> ProcessArguments(WasmEditContext context, string[] args)
+        private static List<string> ProcessArguments(WasmEditContext context, string[] args)
         {
             var help = false;
             var options = new OptionSet {

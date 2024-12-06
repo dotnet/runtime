@@ -1,8 +1,11 @@
-﻿using System;
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using System;
 
 namespace WebAssemblyInfo
 {
-    public enum MTOpcode : Int32
+    public enum MTOpcode : int
     {
         Memory_Atomic_Notify = 0x00,
         Memory_Atomic_Wait32 = 0x01,

@@ -1,4 +1,7 @@
-﻿using System;
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -7,17 +10,17 @@ using DiffPlex.DiffBuilder.Model;
 
 namespace WebAssemblyInfo
 {
-    class WasmDiffReader : WasmReader
+    internal sealed class WasmDiffReader : WasmReader
     {
         public WasmDiffReader(WasmContext context, string path) : base(context, path) { }
         public WasmDiffReader(WasmContext context, Stream stream, long length) : base(context, stream, length) { }
 
-        override protected WasmReader CreateEmbeddedReader(WasmContext context, Stream stream, long length)
+        protected override WasmReader CreateEmbeddedReader(WasmContext context, Stream stream, long length)
         {
             return new WasmDiffReader(context, stream, length);
         }
 
-        void CompareSections(SectionInfo section1, SectionInfo section2)
+        private static void CompareSections(SectionInfo section1, SectionInfo section2)
         {
             if (section1.size != section2.size)
             {
@@ -71,10 +74,9 @@ namespace WebAssemblyInfo
             return 0;
         }
 
-        void CompareDisassembledFunctions(UInt32 idx, string? name, object? data)
+        private void CompareDisassembledFunctions(uint idx, string? name, object? data)
         {
-            if (data == null)
-                throw new ArgumentNullException("data");
+            ArgumentNullException.ThrowIfNull(data);
 
             (var otherReader, var secondPass) = ((WasmDiffReader, bool))data;
             if (otherReader == null || otherReader.functionTypes == null || otherReader.functions == null || functionTypes == null || functions == null || FuncsCode == null || otherReader.FuncsCode == null)
@@ -91,7 +93,7 @@ namespace WebAssemblyInfo
             }
 
             // 1st pass
-            Function? f1 = functions[idx], f2 = null;
+            Function? f2 = null;
             string? otherName = null;
             uint otherIdx;
             if (GetOtherIndex(name, idx, otherReader, out otherIdx))
@@ -117,7 +119,7 @@ namespace WebAssemblyInfo
             string sig2 = functionType2.ToString(otherName);
 
             string sizeDiff = "";
-            int sizeDelta = 0;
+            int sizeDelta;
             if (Context.ShowFunctionSize)
             {
                 sizeDelta = (int)otherReader.FuncsCode[otherIdx].Size - (int)FuncsCode[idx].Size;
@@ -183,7 +185,7 @@ namespace WebAssemblyInfo
             Console.WriteLine();
         }
 
-        void PrintPrevLines(string? l1, string? l2)
+        private static void PrintPrevLines(string? l1, string? l2)
         {
             if (l1 != null && l2 != null)
                 Console.WriteLine("...");
@@ -200,12 +202,11 @@ namespace WebAssemblyInfo
             return 0;
         }
 
-        Dictionary<string, int> sizeDiffs = new Dictionary<string, int>();
+        private readonly Dictionary<string, int> sizeDiffs = new Dictionary<string, int>();
 
-        void CompareFunctionSizes(UInt32 idx, string? name, object? data)
+        private void CompareFunctionSizes(uint idx, string? name, object? data)
         {
-            if (data == null)
-                throw new ArgumentNullException("data");
+            ArgumentNullException.ThrowIfNull(data);
 
             (var otherReader, var secondPass) = ((WasmDiffReader, bool))data;
             if (otherReader == null || otherReader.functionTypes == null || otherReader.functions == null || functionTypes == null || functions == null || FuncsCode == null || otherReader.FuncsCode == null)
@@ -219,12 +220,11 @@ namespace WebAssemblyInfo
             }
 
             // 1st pass
-            Function? f1 = functions[idx], f2 = null;
-            string? otherName = null;
+            Function? f2 = null;
             uint otherIdx;
             if (GetOtherIndex(name, idx, otherReader, out otherIdx))
             {
-                otherName = otherReader.GetFunctionName(otherIdx);
+                otherReader.GetFunctionName(otherIdx);
                 f2 = otherReader.functions[otherIdx];
                 processedIndexes?.Add(otherIdx);
             }
@@ -241,7 +241,7 @@ namespace WebAssemblyInfo
                 sizeDiffs[$" {name}"] = delta;
         }
 
-        static bool GetOtherIndex(string? name, uint idx, WasmDiffReader other, out uint otherIdx)
+        private static bool GetOtherIndex(string? name, uint idx, WasmDiffReader other, out uint otherIdx)
         {
             otherIdx = idx;
             return other.HasFunctionNames && other.GetFunctionIdx(name, out otherIdx);
@@ -276,12 +276,11 @@ namespace WebAssemblyInfo
             return 0;
         }
 
-        HashSet<uint>? processedIndexes;
+        private HashSet<uint>? processedIndexes;
 
         protected override void FilterFunctions(ProcessFunction processFunction, object? data = null)
         {
-            if (data == null)
-                throw new ArgumentNullException("data");
+            ArgumentNullException.ThrowIfNull(data);
 
             WasmDiffReader otherReader = (WasmDiffReader)data ?? throw new InvalidOperationException();
 
@@ -290,7 +289,7 @@ namespace WebAssemblyInfo
 
             if (otherReader.functions != null)
             {
-                for (UInt32 idx = 0; idx < otherReader.functions.Length; idx++)
+                for (uint idx = 0; idx < otherReader.functions.Length; idx++)
                 {
                     if (processedIndexes.Contains(idx))
                         continue;
