@@ -111,12 +111,6 @@ HCIMPL2_VV(INT64, JIT_LMul, INT64 val1, INT64 val2)
 {
     FCALL_CONTRACT;
 
-    UINT32 val1High = Hi32Bits(val1);
-    UINT32 val2High = Hi32Bits(val2);
-
-    if ((val1High == 0) && (val2High == 0))
-        return (UINT64)((UINT32)val1 * (UINT32)val2);
-
     return (val1 * val2);
 }
 HCIMPLEND
