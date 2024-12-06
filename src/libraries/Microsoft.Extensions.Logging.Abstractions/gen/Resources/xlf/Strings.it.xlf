@@ -32,16 +32,6 @@
         <target state="translated">I nomi dei parametri del metodo di registrazione non possono iniziare con _</target>
         <note />
       </trans-unit>
-      <trans-unit id="InvalidLoggingMethodParameterOutMessage">
-        <source>Argument '{0}' is using the unsupported out parameter modifier</source>
-        <target state="translated">L'argomento "{0}" usa il modificatore di parametro out non supportato</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="InvalidLoggingMethodParameterOutTitle">
-        <source>Argument is using the unsupported out parameter modifier</source>
-        <target state="translated">L'argomento utilizza il modificatore di parametro out non supportato</target>
-        <note />
-      </trans-unit>
       <trans-unit id="LoggingMethodHasBodyMessage">
         <source>Logging methods cannot have a body</source>
         <target state="translated">I metodi di registrazione non possono avere un corpo</target>
@@ -67,24 +57,9 @@
         <target state="translated">I metodi di registrazione devono essere statici</target>
         <note />
       </trans-unit>
-      <trans-unit id="LoggingUnsupportedLanguageVersionMessageFormat">
-        <source>The Logging source generator is not available in C# {0}. Please use language version {1} or greater.</source>
-        <target state="translated">Il generatore dell'origine di registrazione non è disponibile in C# {0}. Usare la versione del linguaggio {1} o successiva.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="LoggingUnsupportedLanguageVersionTitle">
-        <source>C# language version not supported by the source generator.</source>
-        <target state="translated">Versione del linguaggio C# non supportata dal generatore di origine.</target>
-        <note />
-      </trans-unit>
       <trans-unit id="MalformedFormatStringsMessage">
-        <source>Logging method '{0}' contains malformed format strings</source>
-        <target state="translated">Il metodo di registrazione '{0}' contiene stringhe in formato non valido</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="MalformedFormatStringsTitle">
-        <source>Logging method contains malformed format strings</source>
-        <target state="translated">Il metodo di registrazione contiene stringhe in formato non valido</target>
+        <source>Can't have malformed format strings (like dangling {, etc)</source>
+        <target state="new">Can't have malformed format strings (like dangling {, etc)</target>
         <note />
       </trans-unit>
       <trans-unit id="MissingLogLevelMessage">
@@ -170,16 +145,6 @@
       <trans-unit id="ShouldntReuseEventIdsTitle">
         <source>Multiple logging methods cannot use the same event id within a class</source>
         <target state="translated">Più metodi di registrazione non possono utilizzare lo stesso ID evento all'interno di una classe</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="ShouldntReuseEventNamesMessage">
-        <source>Multiple logging methods are using event name {0} in class {1}</source>
-        <target state="translated">Più metodi di registrazione stanno utilizzando il nome evento {0} nella classe {1}</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="ShouldntReuseEventNamesTitle">
-        <source>Multiple logging methods should not use the same event name within a class</source>
-        <target state="translated">Più metodi di registrazione non devono usare lo stesso nome di evento all'interno di una classe</target>
         <note />
       </trans-unit>
       <trans-unit id="TemplateHasNoCorrespondingArgumentMessage">
