@@ -514,6 +514,7 @@ static const Entry s_QCall[] =
     DllImportEntry(GetThreadStaticsByIndex)
     DllImportEntry(GenericHandleWorker)
     DllImportEntry(ThrowInvalidCastException)
+    DllImportEntry(IsInstanceOf_NoCacheLookup)
 };
 
 const void* QCallResolveDllImport(const char* name)
