@@ -1194,7 +1194,6 @@ PhaseStatus Compiler::fgCloneFinally()
         unsigned    regionBBCount   = 0;
         unsigned    regionStmtCount = 0;
         bool        hasFinallyRet   = false;
-        bool        isAllRare       = true;
         bool        hasSwitch       = false;
 
         for (BasicBlock* const block : Blocks(firstBlock, lastBlock))
@@ -1215,7 +1214,6 @@ PhaseStatus Compiler::fgCloneFinally()
             }
 
             hasFinallyRet = hasFinallyRet || block->KindIs(BBJ_EHFINALLYRET);
-            isAllRare     = isAllRare && block->isRunRarely();
         }
 
         // Skip cloning if the finally has a switch.
@@ -1229,13 +1227,6 @@ PhaseStatus Compiler::fgCloneFinally()
         if (!hasFinallyRet)
         {
             JITDUMP("Finally in EH#%u does not return; skipping.\n", XTnum);
-            continue;
-        }
-
-        // Skip cloning if the finally is rarely run code.
-        if (isAllRare)
-        {
-            JITDUMP("Finally in EH#%u is run rarely; skipping.\n", XTnum);
             continue;
         }
 
