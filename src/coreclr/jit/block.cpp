@@ -1976,7 +1976,7 @@ unsigned BasicBlock::StatementCount()
 // Returns:
 //   true if the number of statements is greater than limit
 //
-bool BasicBlock::StatementCountExceeds(unsigned limit, unsigned* count)
+bool BasicBlock::StatementCountExceeds(unsigned limit, unsigned* count /* = nullptr */)
 {
     unsigned localCount = 0;
     bool     overLimit  = false;
@@ -1999,7 +1999,7 @@ bool BasicBlock::StatementCountExceeds(unsigned limit, unsigned* count)
 }
 
 //------------------------------------------------------------------------
-// ComplexityExceeds: check if the number of nodes in the trees in athe block
+// ComplexityExceeds: check if the number of nodes in the trees in the block
 //   exceeds some limit
 //
 // Arguments:
@@ -2010,7 +2010,7 @@ bool BasicBlock::StatementCountExceeds(unsigned limit, unsigned* count)
 // Returns:
 //   true if the number of nodes is greater than limit
 //
-bool BasicBlock::ComplexityExceeds(Compiler* comp, unsigned limit, unsigned* count)
+bool BasicBlock::ComplexityExceeds(Compiler* comp, unsigned limit, unsigned* count /* = nullptr */)
 {
     unsigned localCount = 0;
     bool     overLimit  = false;
@@ -2048,7 +2048,7 @@ bool BasicBlock::ComplexityExceeds(Compiler* comp, unsigned limit, unsigned* cou
 // Returns:
 //   true if the number of nodes is greater than limit
 //
-bool BasicBlockRangeList::ComplexityExceeds(Compiler* comp, unsigned limit, unsigned* count)
+bool BasicBlockRangeList::ComplexityExceeds(Compiler* comp, unsigned limit, unsigned* count /* = nullptr */)
 {
     unsigned localCount = 0;
     bool     overLimit  = false;
