@@ -3,8 +3,11 @@
 
 using System;
 using System.IO;
+using System.Linq;
+using System.Text.Json;
 using Xunit;
 using Xunit.Abstractions;
+using Xunit.Sdk;
 
 #nullable enable
 
@@ -68,5 +71,36 @@ public class MiscTests : BlazorWasmTestBase
 
         // build again
         BlazorBuild(info, config, new BuildOptions(UseCache: false));
+    }
+
+    [Fact]
+    public void BugRegression_60479_WithRazorClassLib()
+    {
+        Configuration config = Configuration.Release;
+        string razorClassLibraryName = "RazorClassLibrary";
+        string extraItems = @$"
+            <ProjectReference Include=""..\\RazorClassLibrary\\RazorClassLibrary.csproj"" />
+            <BlazorWebAssemblyLazyLoad Include=""{razorClassLibraryName}{ProjectProviderBase.WasmAssemblyExtension}"" />";
+        ProjectInfo info = CopyTestAsset(config, aot: true, TestAsset.BlazorBasicTestApp, "blz_razor_lib_top", extraItems: extraItems);
+
+        // No relinking, no AOT
+        BlazorBuild(info, config);
+
+        // will relink
+        BlazorPublish(info, config, new PublishOptions(UseCache: false));
+
+        // publish/wwwroot/_framework/blazor.boot.json
+        string frameworkDir = GetBlazorBinFrameworkDir(config, forPublish: true);
+        string bootJson = Path.Combine(frameworkDir, "blazor.boot.json");
+
+        Assert.True(File.Exists(bootJson), $"Could not find {bootJson}");
+        var jdoc = JsonDocument.Parse(File.ReadAllText(bootJson));
+        if (!jdoc.RootElement.TryGetProperty("resources", out JsonElement resValue) ||
+            !resValue.TryGetProperty("lazyAssembly", out JsonElement lazyVal))
+        {
+            throw new XunitException($"Could not find resources.lazyAssembly object in {bootJson}");
+        }
+
+        Assert.True(lazyVal.EnumerateObject().Select(jp => jp.Name).FirstOrDefault(f => f.StartsWith(razorClassLibraryName)) != null);
     }
 }

@@ -15,9 +15,9 @@ using Microsoft.Playwright;
 
 namespace Wasm.Build.Tests.Blazor;
 
-public class MiscTests3 : BlazorWasmTestBase
+public class DllImportTests : BlazorWasmTestBase
 {
-    public MiscTests3(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
+    public DllImportTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
         : base(output, buildContext)
     {
         _enablePerTestCleanup = true;
@@ -67,37 +67,6 @@ public class MiscTests3 : BlazorWasmTestBase
             var txt = await page.Locator("p[role='test']").InnerHTMLAsync();
             Assert.Equal("Output: 22", txt);
         }
-    }
-
-    [Fact]
-    public void BugRegression_60479_WithRazorClassLib()
-    {
-        Configuration config = Configuration.Release;
-        string razorClassLibraryName = "RazorClassLibrary";
-        string extraItems = @$"
-            <ProjectReference Include=""..\\RazorClassLibrary\\RazorClassLibrary.csproj"" />
-            <BlazorWebAssemblyLazyLoad Include=""{razorClassLibraryName}{ProjectProviderBase.WasmAssemblyExtension}"" />";
-        ProjectInfo info = CopyTestAsset(config, aot: true, TestAsset.BlazorBasicTestApp, "blz_razor_lib_top", extraItems: extraItems);
-
-        // No relinking, no AOT
-        BlazorBuild(info, config);
-
-        // will relink
-        BlazorPublish(info, config, new PublishOptions(UseCache: false));
-
-        // publish/wwwroot/_framework/blazor.boot.json
-        string frameworkDir = GetBlazorBinFrameworkDir(config, forPublish: true);
-        string bootJson = Path.Combine(frameworkDir, "blazor.boot.json");
-
-        Assert.True(File.Exists(bootJson), $"Could not find {bootJson}");
-        var jdoc = JsonDocument.Parse(File.ReadAllText(bootJson));
-        if (!jdoc.RootElement.TryGetProperty("resources", out JsonElement resValue) ||
-            !resValue.TryGetProperty("lazyAssembly", out JsonElement lazyVal))
-        {
-            throw new XunitException($"Could not find resources.lazyAssembly object in {bootJson}");
-        }
-
-        Assert.True(lazyVal.EnumerateObject().Select(jp => jp.Name).FirstOrDefault(f => f.StartsWith(razorClassLibraryName)) != null);
     }
 
     private void BlazorAddRazorButton(string buttonText, string customCode, string methodName = "test") =>
