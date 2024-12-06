@@ -51,11 +51,16 @@ internal class MethodValidation
         private readonly Target _target;
         private readonly Data.MethodDesc _desc;
         private readonly Data.MethodDescChunk _chunk;
-        internal NonValidatedMethodDesc(Target target, Data.MethodDesc desc, Data.MethodDescChunk chunk)
+
+        internal TargetPointer Address { get; init; }
+
+        internal NonValidatedMethodDesc(Target target, TargetPointer methodDescAddr, Data.MethodDesc desc, Data.MethodDescChunk chunk)
         {
             _target = target;
             _desc = desc;
             _chunk = chunk;
+
+            Address = methodDescAddr;
         }
 
         private bool HasFlags(MethodDescFlags_1.MethodDescFlags flag) => (_desc.Flags & (ushort)flag) != 0;
@@ -110,7 +115,7 @@ internal class MethodValidation
         // we bypass the target data cache here because we don't want to cache non-validated data
         Data.MethodDesc desc = new Data.MethodDesc(_target, methodDescPointer);
         Data.MethodDescChunk chunk = GetMethodDescChunkThrowing(methodDescPointer, desc, out methodDescChunkPointer);
-        return new NonValidatedMethodDesc(_target, desc, chunk);
+        return new NonValidatedMethodDesc(_target, methodDescPointer, desc, chunk);
     }
 
     private TargetCodePointer GetTemporaryEntryPointIfExists(NonValidatedMethodDesc umd)
@@ -123,21 +128,21 @@ internal class MethodValidation
         return codeData.TemporaryEntryPoint;
     }
 
-    private TargetPointer GetAddressOfNativeCodeSlot(TargetPointer methodDescPointer, NonValidatedMethodDesc umd)
+    private TargetPointer GetAddressOfNativeCodeSlot(NonValidatedMethodDesc umd)
     {
         uint offset = MethodDescAdditionalPointersOffset(umd);
         offset += umd.NativeCodeSlotOffset;
-        return methodDescPointer.Value + offset;
+        return umd.Address + offset;
     }
 
-    private TargetPointer GetAddressOfNonVtableSlot(TargetPointer methodDescPointer, NonValidatedMethodDesc umd)
+    private TargetPointer GetAddressOfNonVtableSlot(NonValidatedMethodDesc umd)
     {
         uint offset = MethodDescAdditionalPointersOffset(umd);
         offset += umd.NonVtableSlotOffset;
-        return methodDescPointer.Value + offset;
+        return umd.Address + offset;
     }
 
-    private TargetCodePointer GetCodePointer(TargetPointer methodDescPointer, NonValidatedMethodDesc umd)
+    private TargetCodePointer GetCodePointer(NonValidatedMethodDesc umd)
     {
         // TODO(cdac): _ASSERTE(!IsDefaultInterfaceMethod() || HasNativeCodeSlot());
         if (umd.HasNativeCodeSlot)
@@ -145,7 +150,7 @@ internal class MethodValidation
             // When profiler is enabled, profiler may ask to rejit a code even though we
             // we have ngen code for this MethodDesc.  (See MethodDesc::DoPrestub).
             // This means that *ppCode is not stable. It can turn from non-zero to zero.
-            TargetPointer ppCode = GetAddressOfNativeCodeSlot(methodDescPointer, umd);
+            TargetPointer ppCode = GetAddressOfNativeCodeSlot(umd);
             TargetCodePointer pCode = _target.ReadCodePointer(ppCode);
 
             return CodePointerUtils.CodePointerFromAddress(pCode.AsTargetPointer, _target);
@@ -154,23 +159,23 @@ internal class MethodValidation
         if (!umd.HasStableEntryPoint || umd.HasPrecode)
             return TargetCodePointer.Null;
 
-        return GetStableEntryPoint(methodDescPointer, umd);
+        return GetStableEntryPoint(umd);
     }
 
-    private TargetCodePointer GetStableEntryPoint(TargetPointer methodDescPointer, NonValidatedMethodDesc umd)
+    private TargetCodePointer GetStableEntryPoint(NonValidatedMethodDesc umd)
     {
         Debug.Assert(umd.HasStableEntryPoint);
         // TODO(cdac): _ASSERTE(!IsVersionableWithVtableSlotBackpatch());
 
-        return GetMethodEntryPointIfExists(methodDescPointer, umd);
+        return GetMethodEntryPointIfExists(umd);
     }
 
 
-    private TargetCodePointer GetMethodEntryPointIfExists(TargetPointer methodDescAddress, NonValidatedMethodDesc umd)
+    private TargetCodePointer GetMethodEntryPointIfExists(NonValidatedMethodDesc umd)
     {
         if (umd.HasNonVtableSlot)
         {
-            TargetPointer pSlot = GetAddressOfNonVtableSlot(methodDescAddress, umd);
+            TargetPointer pSlot = GetAddressOfNonVtableSlot(umd);
 
             return _target.ReadCodePointer(pSlot);
         }
@@ -188,7 +193,7 @@ internal class MethodValidation
         return _target.GetTypeInfo(type).Size ?? throw new InvalidOperationException("size of MethodDesc not known");
     }
 
-    private bool HasNativeCode(TargetPointer methodDescPointer, NonValidatedMethodDesc umd) => GetCodePointer(methodDescPointer, umd) != TargetCodePointer.Null;
+    private bool HasNativeCode(NonValidatedMethodDesc umd) => GetCodePointer(umd) != TargetCodePointer.Null;
 
     internal bool ValidateMethodDescPointer(TargetPointer methodDescPointer, [NotNullWhen(true)] out TargetPointer methodDescChunkPointer)
     {
@@ -220,9 +225,9 @@ internal class MethodValidation
                 }
             }
 
-            if (HasNativeCode(methodDescPointer, umd) && !umd.IsFCall)
+            if (HasNativeCode(umd) && !umd.IsFCall)
             {
-                TargetCodePointer jitCodeAddr = GetCodePointer(methodDescPointer, umd);
+                TargetCodePointer jitCodeAddr = GetCodePointer(umd);
                 Contracts.IExecutionManager executionManager = _target.Contracts.ExecutionManager;
                 CodeBlockHandle? codeInfo = executionManager.GetCodeBlockHandle(jitCodeAddr);
                 if (!codeInfo.HasValue)

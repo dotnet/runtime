@@ -1003,11 +1003,11 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         offset += md.NativeCodeSlotOffset;
         return methodDesc.Address + offset;
     }
-    private TargetPointer GetAddressOfNonVtableSlot(TargetPointer methodDescPointer, MethodDesc md)
+    private TargetPointer GetAddressOfNonVtableSlot(MethodDesc md)
     {
         uint offset = MethodDescAdditionalPointersOffset(md);
         offset += md.NonVtableSlotOffset;
-        return methodDescPointer.Value + offset;
+        return md.Address + offset;
     }
 
     TargetCodePointer IRuntimeTypeSystem.GetNativeCode(MethodDescHandle methodDescHandle)
@@ -1027,22 +1027,22 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         if (!md.HasStableEntryPoint || md.HasPrecode)
             return TargetCodePointer.Null;
 
-        return GetStableEntryPoint(methodDescHandle.Address, md);
+        return GetStableEntryPoint(md);
     }
 
-    private TargetCodePointer GetStableEntryPoint(TargetPointer methodDescAddress, MethodDesc md)
+    private TargetCodePointer GetStableEntryPoint(MethodDesc md)
     {
-        // TODO(cdac): _ASSERTE(HasStableEntryPoint());
         // TODO(cdac): _ASSERTE(!IsVersionableWithVtableSlotBackpatch());
+        Debug.Assert(md.HasStableEntryPoint);
 
-        return GetMethodEntryPointIfExists(methodDescAddress, md);
+        return GetMethodEntryPointIfExists(md);
     }
 
-    private TargetCodePointer GetMethodEntryPointIfExists(TargetPointer methodDescAddress, MethodDesc md)
+    private TargetCodePointer GetMethodEntryPointIfExists(MethodDesc md)
     {
         if (md.HasNonVtableSlot)
         {
-            TargetPointer pSlot = GetAddressOfNonVtableSlot(methodDescAddress, md);
+            TargetPointer pSlot = GetAddressOfNonVtableSlot(md);
             return _target.ReadCodePointer(pSlot);
         }
 
