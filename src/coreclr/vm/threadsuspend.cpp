@@ -4112,10 +4112,7 @@ bool Thread::SysStartSuspendForDebug(AppDomain *pAppDomain)
 
 #if defined(FEATURE_THREAD_ACTIVATION)
                 // Inject an activation that will interrupt the thread and try to bring it to a safe point
-                if ((thread->m_StateNC & Thread::TSNC_DebuggerIsStepping) == 0)
-                {
-                    thread->InjectActivation(Thread::ActivationReason::SuspendForDebugger);
-                }
+                thread->InjectActivation(Thread::ActivationReason::SuspendForDebugger);
 #endif // FEATURE_THREAD_ACTIVATION && TARGET_WINDOWS
             }
             else
@@ -4252,10 +4249,7 @@ bool Thread::SysSweepThreadsForDebug(bool forceSync)
 
 #if defined(FEATURE_THREAD_ACTIVATION)
             // Inject an activation that will interrupt the thread and try to bring it to a safe point
-            if ((thread->m_StateNC & Thread::TSNC_DebuggerIsStepping) == 0)
-            {
-                thread->InjectActivation(Thread::ActivationReason::SuspendForDebugger);
-            }
+            thread->InjectActivation(Thread::ActivationReason::SuspendForDebugger);
 #endif // FEATURE_THREAD_ACTIVATION && TARGET_WINDOWS
 
             continue;
@@ -5739,7 +5733,9 @@ BOOL CheckActivationSafePoint(SIZE_T ip)
 
     // The criteria for safe activation is to be running managed code.
     // Also we are not interested in handling interruption if we are already in preemptive mode.
-    BOOL isActivationSafePoint = pThread != NULL &&
+    // Also we are not interested in handling interruption if we are single stepping
+    BOOL isActivationSafePoint = pThread != NULL && 
+        (pThread->m_StateNC & Thread::TSNC_DebuggerIsStepping) == 0 &&
         pThread->PreemptiveGCDisabled() &&
         ExecutionManager::IsManagedCode(ip);
 
@@ -5924,7 +5920,12 @@ bool Thread::InjectActivation(ActivationReason reason)
     {
         return true;
     }
-
+    // Avoid APC calls when the thread is in single step state to avoid any
+    // wrong resume because it's running a native code.
+    if ((m_StateNC & Thread::TSNC_DebuggerIsStepping) == 0)
+    {
+        return false;
+    }
 #ifdef FEATURE_SPECIAL_USER_MODE_APC
     _ASSERTE(UseSpecialUserModeApc());
 
