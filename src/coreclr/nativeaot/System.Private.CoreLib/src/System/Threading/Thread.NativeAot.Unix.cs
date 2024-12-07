@@ -98,7 +98,7 @@ namespace System.Threading
 
             if (stackSize <= 0)
             {
-                stackSize = StackSizeFromConfig;
+                stackSize = _stackSizeFromConfig;
             }
 
             if (!Interop.Sys.CreateThread((IntPtr)stackSize, &ThreadEntryPoint, (IntPtr)thisThreadHandle))
