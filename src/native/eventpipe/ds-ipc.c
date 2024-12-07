@@ -176,7 +176,7 @@ ipc_stream_factory_build_and_add_port (
 	if (builder->type == DS_PORT_TYPE_LISTEN) {
 #ifndef DS_IPC_DISABLE_LISTEN_PORTS
         ep_char8_t* ipc_default_prefix = ds_rt_config_value_get_port_default_prefix();
-        ipc_default_prefix = ipc_default_prefix != nullptr ? ipc_default_prefix : (ep_char8_t*)"dotnet-diagnostic";
+        ipc_default_prefix = ipc_default_prefix != NULL ? ipc_default_prefix : (ep_char8_t*)"dotnet-diagnostic";
 
 		ipc = ds_ipc_alloc (builder->path, DS_IPC_CONNECTION_MODE_LISTEN, callback, ipc_default_prefix);
 		ep_raise_error_if_nok (ipc != NULL);
@@ -189,7 +189,7 @@ ipc_stream_factory_build_and_add_port (
 	} else if (builder->type == DS_PORT_TYPE_CONNECT) {
 #ifndef DS_IPC_DISABLE_CONNECT_PORTS
         ep_char8_t* ipc_default_prefix = ds_rt_config_value_get_port_default_prefix();
-        ipc_default_prefix = ipc_default_prefix != nullptr ? ipc_default_prefix : (ep_char8_t*)"dotnet-diagnostic";
+        ipc_default_prefix = ipc_default_prefix != NULL ? ipc_default_prefix : (ep_char8_t*)"dotnet-diagnostic";
 
 		ipc = ds_ipc_alloc (builder->path, DS_IPC_CONNECTION_MODE_CONNECT, callback, ipc_default_prefix);
 		ep_raise_error_if_nok (ipc != NULL);
