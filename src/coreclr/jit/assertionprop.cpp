@@ -1248,6 +1248,7 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
             assertion.op2.u1.iconVal = op2->AsIntCon()->gtIconVal;
             assertion.op2.vn         = optConservativeNormalVN(op2);
             assertion.op2.SetIconFlag(op2->GetIconHandleFlag());
+            assertion.op2.SetSimd(op2->IsCnsSimd());
 
             //
             // Ok everything has been set and the assertion looks good
@@ -1337,6 +1338,7 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
 
                         assertion.op2.u1.iconVal = iconVal;
                         assertion.op2.SetIconFlag(op2->GetIconHandleFlag(), op2->AsIntCon()->gtFieldSeq);
+                        assertion.op2.SetSimd(op2->IsCnsSimd());
                     }
                     else if (op2->gtOper == GT_CNS_LNG)
                     {
@@ -3340,6 +3342,10 @@ GenTree* Compiler::optConstantAssertionProp(AssertionDsc*        curAssertion,
             {
                 assert(varTypeIsIntegralOrI(tree));
                 newTree->BashToConst(curAssertion->op2.u1.iconVal, genActualType(tree));
+                if (curAssertion->op2.IsSimd())
+                {
+                    newTree->gtFlags |= GTF_ICON_SIMD_COUNT;
+                }
             }
             break;
 

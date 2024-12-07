@@ -7830,6 +7830,7 @@ public:
             optOp2Kind kind; // a const or copy assertion
         private:
             uint16_t m_encodedIconFlags; // encoded icon gtFlags, don't use directly
+            bool     m_isSimd;
         public:
             ValueNum vn;
             struct IntVal
@@ -7870,6 +7871,14 @@ public:
                 assert((flags & ~GTF_ICON_HDL_MASK) == 0);
                 m_encodedIconFlags = flags >> iconMaskTzc;
                 u1.fieldSeq        = fieldSeq;
+            }
+            bool IsSimd() const
+            {
+                return m_isSimd;
+            }
+            void SetSimd(bool simd)
+            {
+                m_isSimd = simd;
             }
         } op2;
 

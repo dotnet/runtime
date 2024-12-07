@@ -2236,6 +2236,11 @@ public:
         return (gtOper == GT_CNS_INT) ? (gtFlags & GTF_ICON_HDL_MASK) : GTF_EMPTY;
     }
 
+    bool IsCnsSimd() const
+    {
+        return (gtOper == GT_CNS_INT) ? ((gtFlags & GTF_ICON_SIMD_COUNT) != 0) : false;
+    }
+
     bool IsTlsIconHandle()
     {
         if (IsIconHandle())
