@@ -1895,68 +1895,94 @@ namespace System
 
     internal sealed unsafe partial class Signature
     {
-        #region FCalls
-        [MemberNotNull(nameof(m_arguments))]
-        [MemberNotNull(nameof(m_declaringType))]
-        [MemberNotNull(nameof(m_returnTypeORfieldType))]
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private extern void GetSignature(
-            void* pCorSig, int cCorSig,
-            RuntimeFieldHandleInternal fieldHandle, IRuntimeMethodInfo? methodHandle, RuntimeType? declaringType);
-        #endregion
-
         #region Private Data Members
         //
         // Keep the layout in sync with SignatureNative in the VM
         //
-        internal RuntimeType[] m_arguments;
-        internal RuntimeType m_declaringType;
-        internal RuntimeType m_returnTypeORfieldType;
-        internal object? m_keepalive;
-        internal void* m_sig;
-        internal int m_managedCallingConventionAndArgIteratorFlags; // lowest byte is CallingConvention, upper 3 bytes are ArgIterator flags
-        internal int m_nSizeOfArgStack;
-        internal int m_csig;
-        internal RuntimeMethodHandleInternal m_pMethod;
+        private RuntimeType[]? _arguments;
+        private RuntimeType _declaringType;
+        private RuntimeType _returnTypeORfieldType;
+#pragma warning disable CA1823, 169
+        private object? _keepAlive;
+#pragma warning restore CA1823, 169
+        private void* _sig;
+        private int _csig;
+        private int _managedCallingConventionAndArgIteratorFlags; // lowest byte is CallingConvention, upper 3 bytes are ArgIterator flags
+#pragma warning disable CA1823, 169
+        private int _nSizeOfArgStack;
+#pragma warning restore CA1823, 169
+        private RuntimeMethodHandleInternal _pMethod;
         #endregion
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Signature_Init")]
+        private static partial void Init(
+            ObjectHandleOnStack _this,
+            void* pCorSig, int cCorSig,
+            RuntimeFieldHandleInternal fieldHandle,
+            RuntimeMethodHandleInternal methodHandle,
+            IntPtr typeHandle);
+
+        [MemberNotNull(nameof(_declaringType))]
+        [MemberNotNull(nameof(_returnTypeORfieldType))]
+        private void Init(
+            void* pCorSig, int cCorSig,
+            RuntimeFieldHandleInternal fieldHandle,
+            RuntimeMethodHandleInternal methodHandle)
+        {
+            Signature _this = this;
+            IntPtr typeHandle = _declaringType?.GetUnderlyingNativeHandle() ?? IntPtr.Zero;
+            Init(ObjectHandleOnStack.Create(ref _this),
+                pCorSig, cCorSig,
+                fieldHandle,
+                methodHandle,
+                typeHandle);
+            Debug.Assert(_declaringType != null);
+            Debug.Assert(_returnTypeORfieldType != null);
+        }
 
         #region Constructors
         public Signature(
-            IRuntimeMethodInfo method,
+            IRuntimeMethodInfo methodHandle,
             RuntimeType[] arguments,
             RuntimeType returnType,
             CallingConventions callingConvention)
         {
-            m_pMethod = method.Value;
-            m_arguments = arguments;
-            m_returnTypeORfieldType = returnType;
-            m_managedCallingConventionAndArgIteratorFlags = (byte)callingConvention;
+            _arguments = arguments;
+            _returnTypeORfieldType = returnType;
+            _managedCallingConventionAndArgIteratorFlags = (int)callingConvention;
+            Debug.Assert((_managedCallingConventionAndArgIteratorFlags & 0xffffff00) == 0);
+            _pMethod = methodHandle.Value;
 
-            GetSignature(null, 0, default, method, null);
+            Init(null, 0, default, methodHandle.Value);
+            GC.KeepAlive(methodHandle);
         }
 
         public Signature(IRuntimeMethodInfo methodHandle, RuntimeType declaringType)
         {
-            GetSignature(null, 0, default, methodHandle, declaringType);
+            _declaringType = declaringType;
+            Init(null, 0, default, methodHandle.Value);
+            GC.KeepAlive(methodHandle);
         }
 
         public Signature(IRuntimeFieldInfo fieldHandle, RuntimeType declaringType)
         {
-            GetSignature(null, 0, fieldHandle.Value, null, declaringType);
+            _declaringType = declaringType;
+            Init(null, 0, fieldHandle.Value, default);
             GC.KeepAlive(fieldHandle);
         }
 
         public Signature(void* pCorSig, int cCorSig, RuntimeType declaringType)
         {
-            GetSignature(pCorSig, cCorSig, default, null, declaringType);
+            _declaringType = declaringType;
+            Init(pCorSig, cCorSig, default, default);
         }
         #endregion
 
         #region Internal Members
-        internal CallingConventions CallingConvention => (CallingConventions)(byte)m_managedCallingConventionAndArgIteratorFlags;
-        internal RuntimeType[] Arguments => m_arguments;
-        internal RuntimeType ReturnType => m_returnTypeORfieldType;
-        internal RuntimeType FieldType => m_returnTypeORfieldType;
+        internal CallingConventions CallingConvention => (CallingConventions)(_managedCallingConventionAndArgIteratorFlags & 0xff);
+        internal RuntimeType[] Arguments => _arguments ?? [];
+        internal RuntimeType ReturnType => _returnTypeORfieldType;
+        internal RuntimeType FieldType => _returnTypeORfieldType;
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Signature_AreEqual")]
         private static partial Interop.BOOL AreEqual(
@@ -1966,8 +1992,8 @@ namespace System
         internal static bool AreEqual(Signature sig1, Signature sig2)
         {
             return AreEqual(
-                sig1.m_sig, sig1.m_csig, new QCallTypeHandle(ref sig1.m_declaringType),
-                sig2.m_sig, sig2.m_csig, new QCallTypeHandle(ref sig2.m_declaringType)) != Interop.BOOL.FALSE;
+                sig1._sig, sig1._csig, new QCallTypeHandle(ref sig1._declaringType),
+                sig2._sig, sig2._csig, new QCallTypeHandle(ref sig2._declaringType)) != Interop.BOOL.FALSE;
         }
 
         internal Type[] GetCustomModifiers(int parameterIndex, bool required) =>
@@ -1978,7 +2004,7 @@ namespace System
 
         internal int GetParameterOffset(int parameterIndex)
         {
-            int offsetMaybe = GetParameterOffsetInternal(m_sig, m_csig, parameterIndex);
+            int offsetMaybe = GetParameterOffsetInternal(_sig, _csig, parameterIndex);
             // If the result is negative, it is an error code.
             if (offsetMaybe < 0)
                 Marshal.ThrowExceptionForHR(offsetMaybe, new IntPtr(-1));

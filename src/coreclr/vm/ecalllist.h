@@ -132,7 +132,6 @@ FCFuncStart(gMetaDataImport)
 FCFuncEnd()
 
 FCFuncStart(gSignatureNative)
-    FCFuncElement("GetSignature", SignatureNative::GetSignature)
     FCFuncElement("GetParameterOffsetInternal", SignatureNative::GetParameterOffsetInternal)
     FCFuncElement("GetTypeParameterOffset", SignatureNative::GetTypeParameterOffset)
     FCFuncElement("GetCustomModifiersAtOffset", SignatureNative::GetCustomModifiersAtOffset)

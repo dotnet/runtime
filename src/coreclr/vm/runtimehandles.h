@@ -315,18 +315,28 @@ typedef REF<SignatureNative> SIGNATURENATIVEREF;
 typedef PTR_SignatureNative SIGNATURENATIVEREF;
 #endif
 
+extern "C" void QCALLTYPE Signature_Init(
+    QCall::ObjectHandleOnStack sigNative,
+    PCCOR_SIGNATURE pCorSig, DWORD cCorSig,
+    FieldDesc* pFieldDesc,
+    MethodDesc* pMethodDesc,
+    EnregisteredTypeHandle typeHandleRaw);
+
+extern "C" BOOL QCALLTYPE Signature_AreEqual(
+    PCCOR_SIGNATURE sig1, INT32 cSig1, QCall::TypeHandle handle1,
+    PCCOR_SIGNATURE sig2, INT32 cSig2, QCall::TypeHandle handle2);
+
 class SignatureNative : public Object
 {
-    friend class RuntimeMethodHandle;
+    friend void QCALLTYPE Signature_Init(
+        QCall::ObjectHandleOnStack sigNative,
+        PCCOR_SIGNATURE pCorSig, DWORD cCorSig,
+        FieldDesc* pFieldDesc,
+        MethodDesc* pMethodDesc,
+        EnregisteredTypeHandle typeHandleRaw);
     friend class ArgIteratorForMethodInvoke;
 
 public:
-    static FCDECL6(void, GetSignature,
-        SignatureNative* pSignatureNative,
-        PCCOR_SIGNATURE pCorSig, DWORD cCorSig,
-        FieldDesc *pFieldDesc, ReflectMethodObject *pMethodUNSAFE,
-        ReflectClassBaseObject *pDeclaringType);
-
     static FCDECL3(INT32, GetParameterOffsetInternal, PCCOR_SIGNATURE sig, DWORD csig, INT32 parameterIndex);
 
     static FCDECL3(INT32, GetTypeParameterOffset, SignatureNative* pSig, INT32 offset, INT32 index);
@@ -500,15 +510,11 @@ private:
     OBJECTREF m_returnType;
     OBJECTREF m_keepalive;
     PCCOR_SIGNATURE m_sig;
+    DWORD m_cSig;
     INT32 m_managedCallingConvention;
     INT32 m_nSizeOfArgStack;
-    DWORD m_cSig;
     MethodDesc* m_pMethod;
 };
-
-extern "C" BOOL QCALLTYPE Signature_AreEqual(
-    PCCOR_SIGNATURE sig1, INT32 cSig1, QCall::TypeHandle handle1,
-    PCCOR_SIGNATURE sig2, INT32 cSig2, QCall::TypeHandle handle2);
 
 class ReflectionPointer : public Object
 {

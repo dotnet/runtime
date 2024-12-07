@@ -188,6 +188,7 @@ static const Entry s_QCall[] =
     DllImportEntry(ModuleHandle_GetPEKind)
     DllImportEntry(ModuleHandle_GetDynamicMethod)
     DllImportEntry(AssemblyHandle_GetManifestModuleSlow)
+    DllImportEntry(Signature_Init)
     DllImportEntry(Signature_AreEqual)
     DllImportEntry(TypeBuilder_DefineGenericParam)
     DllImportEntry(TypeBuilder_DefineType)
