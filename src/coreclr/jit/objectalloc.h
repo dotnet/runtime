@@ -184,7 +184,7 @@ inline bool ObjectAllocator::CanAllocateLclVarOnStack(unsigned int         lclNu
         }
 
         unsigned elemSize = elemLayout != nullptr ? elemLayout->GetSize() : genTypeSize(type);
-        classSize         = static_cast<unsigned>(OFFSETOF__CORINFO_Array__data) + elemSize * static_cast<unsigned>(length);
+        classSize = static_cast<unsigned>(OFFSETOF__CORINFO_Array__data) + elemSize * static_cast<unsigned>(length);
     }
     else if (allocType == OAT_NEWOBJ)
     {
