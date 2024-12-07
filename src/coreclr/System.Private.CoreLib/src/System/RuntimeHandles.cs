@@ -2012,7 +2012,22 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal extern int GetTypeParameterOffset(int offset, int index);
+        private static extern unsafe int GetTypeParameterOffsetInternal(void* sig, int csig, int offset, int index);
+
+        internal int GetTypeParameterOffset(int offset, int index)
+        {
+            if (offset < 0)
+            {
+                Debug.Assert(offset == -1);
+                return offset;
+            }
+
+            int offsetMaybe = GetTypeParameterOffsetInternal(_sig, _csig, offset, index);
+            // If the result is negative and not -1, it is an error code.
+            if (offsetMaybe < 0 && offsetMaybe != -1)
+                Marshal.ThrowExceptionForHR(offsetMaybe, new IntPtr(-1));
+            return offsetMaybe;
+        }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal extern SignatureCallingConvention GetCallingConventionFromFunctionPointerAtOffset(int offset);

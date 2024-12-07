@@ -1471,68 +1471,48 @@ FCIMPL3(INT32, SignatureNative::GetParameterOffsetInternal, PCCOR_SIGNATURE sig,
 }
 FCIMPLEND
 
-FCIMPL3(INT32, SignatureNative::GetTypeParameterOffset, SignatureNative* pSignatureUNSAFE, INT32 offset, INT32 index)
+FCIMPL4(INT32, SignatureNative::GetTypeParameterOffsetInternal, PCCOR_SIGNATURE sig, DWORD csig, INT32 offset, INT32 index)
 {
     FCALL_CONTRACT;
+    _ASSERTE(offset >= 0);
 
-    struct
-    {
-        SIGNATURENATIVEREF pSig;
-    } gc;
+    HRESULT hr;
+    SigPointer sp(sig + offset, csig - offset);
 
-    if (offset < 0)
+    CorElementType etype;
+    IfFailRet(sp.GetElemType(&etype));
+
+    uint32_t argCnt;
+    switch (etype)
     {
-        _ASSERTE(offset == -1);
-        return offset;
+    case ELEMENT_TYPE_FNPTR:
+        IfFailRet(sp.SkipMethodHeaderSignature(&argCnt, /* skipReturnType */ false));
+        _ASSERTE((uint32_t)index <= argCnt);
+        break;
+    case ELEMENT_TYPE_GENERICINST:
+        IfFailRet(sp.SkipExactlyOne());
+
+        IfFailRet(sp.GetData(&argCnt));
+        _ASSERTE((uint32_t)index < argCnt);
+        break;
+    case ELEMENT_TYPE_ARRAY:
+    case ELEMENT_TYPE_SZARRAY:
+    case ELEMENT_TYPE_BYREF:
+    case ELEMENT_TYPE_PTR:
+        _ASSERTE(index == 0);
+        break;
+    case ELEMENT_TYPE_VAR:
+    case ELEMENT_TYPE_MVAR:
+        return -1; // Use offset -1 to signal method substituted method variable. We do not have full signature for those.
+    default:
+        _ASSERTE(false); // Unexpected element type
+        return -1;
     }
 
-    gc.pSig = (SIGNATURENATIVEREF)pSignatureUNSAFE;
+    for (int i = 0; i < index; i++)
+        IfFailRet(sp.SkipExactlyOne());
 
-    HELPER_METHOD_FRAME_BEGIN_RET_PROTECT(gc);
-    {
-        SigPointer sp(gc.pSig->GetCorSig() + offset, gc.pSig->GetCorSigSize() - offset);
-
-        CorElementType etype;
-        IfFailThrow(sp.GetElemType(&etype));
-
-        uint32_t argCnt;
-
-        switch (etype)
-        {
-        case ELEMENT_TYPE_FNPTR:
-            IfFailThrow(sp.SkipMethodHeaderSignature(&argCnt, /* skipReturnType */ false));
-            _ASSERTE((uint32_t)index <= argCnt);
-            break;
-        case ELEMENT_TYPE_GENERICINST:
-            IfFailThrow(sp.SkipExactlyOne());
-
-            IfFailThrow(sp.GetData(&argCnt));
-            _ASSERTE((uint32_t)index < argCnt);
-            break;
-        case ELEMENT_TYPE_ARRAY:
-        case ELEMENT_TYPE_SZARRAY:
-        case ELEMENT_TYPE_BYREF:
-        case ELEMENT_TYPE_PTR:
-            _ASSERTE(index == 0);
-            break;
-        case ELEMENT_TYPE_VAR:
-        case ELEMENT_TYPE_MVAR:
-            offset = -1; // Use offset -1 to signal method substituted method variable. We do not have full signature for those.
-            goto Done;
-        default:
-            _ASSERTE(false); // Unexpected element type
-            offset = -1;
-            goto Done;
-        }
-
-        for (int i = 0; i < index; i++)
-            IfFailThrow(sp.SkipExactlyOne());
-
-        offset = (INT32)(sp.GetPtr() - gc.pSig->GetCorSig());
-    Done: ;
-    }
-    HELPER_METHOD_FRAME_END();
-
+    offset = (INT32)(sp.GetPtr() - sig);
     return offset;
 }
 FCIMPLEND
