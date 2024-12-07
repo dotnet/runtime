@@ -1942,3 +1942,134 @@ StackEntry* BasicBlock::bbStackOnEntry() const
     assert(bbEntryState);
     return bbEntryState->esStack;
 }
+
+//------------------------------------------------------------------------
+// StatementCount: number of statements in the block.
+//
+// Returns:
+//   count of statements
+//
+// Notes:
+//   If you are calling this in order to compare the statement count
+//   against a limit, use StatementCountExceeds as it may do less work.
+//
+unsigned BasicBlock::StatementCount()
+{
+    unsigned count = 0;
+
+    for (Statement* const stmt : Statements())
+    {
+        count++;
+    }
+
+    return count;
+}
+
+//------------------------------------------------------------------------
+// StatementCountExceeds: check if the number of statements in the block
+//   exceeds some limit
+//
+// Arguments:
+//    limit  - limit on the number of statements
+//    count  - [out, optional] actual number of statements (if less than or equal to limit)
+//
+// Returns:
+//   true if the number of statements is greater than limit
+//
+bool BasicBlock::StatementCountExceeds(unsigned limit, unsigned* count /* = nullptr */)
+{
+    unsigned localCount = 0;
+    bool     overLimit  = false;
+
+    for (Statement* const stmt : Statements())
+    {
+        if (++localCount > limit)
+        {
+            overLimit = true;
+            break;
+        }
+    }
+
+    if (count != nullptr)
+    {
+        *count = localCount;
+    }
+
+    return overLimit;
+}
+
+//------------------------------------------------------------------------
+// ComplexityExceeds: check if the number of nodes in the trees in the block
+//   exceeds some limit
+//
+// Arguments:
+//    comp   - compiler instance
+//    limit  - limit on the number of nodes
+//    count  - [out, optional] actual number of nodes (if less than or equal to limit)
+//
+// Returns:
+//   true if the number of nodes is greater than limit
+//
+bool BasicBlock::ComplexityExceeds(Compiler* comp, unsigned limit, unsigned* count /* = nullptr */)
+{
+    unsigned localCount = 0;
+    bool     overLimit  = false;
+
+    for (Statement* const stmt : Statements())
+    {
+        unsigned slack  = limit - localCount;
+        unsigned actual = 0;
+        if (comp->gtComplexityExceeds(stmt->GetRootNode(), slack, &actual))
+        {
+            overLimit = true;
+            break;
+        }
+
+        localCount += actual;
+    }
+
+    if (count != nullptr)
+    {
+        *count = localCount;
+    }
+
+    return overLimit;
+}
+
+//------------------------------------------------------------------------
+// ComplexityExceeds: check if the number of nodes in the trees in the blocks
+//   in the range exceeds some limit
+//
+// Arguments:
+//    comp   - compiler instance
+//    limit  - limit on the number of nodes
+//    count  - [out, optional] actual number of nodes (if less than or equal to limit)
+//
+// Returns:
+//   true if the number of nodes is greater than limit
+//
+bool BasicBlockRangeList::ComplexityExceeds(Compiler* comp, unsigned limit, unsigned* count /* = nullptr */)
+{
+    unsigned localCount = 0;
+    bool     overLimit  = false;
+
+    for (BasicBlock* const block : *this)
+    {
+        unsigned slack  = limit - localCount;
+        unsigned actual = 0;
+        if (block->ComplexityExceeds(comp, slack, &actual))
+        {
+            overLimit = true;
+            break;
+        }
+
+        localCount += actual;
+    }
+
+    if (count != nullptr)
+    {
+        *count = localCount;
+    }
+
+    return overLimit;
+}
