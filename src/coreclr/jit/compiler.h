@@ -2611,6 +2611,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 */
 
 struct HWIntrinsicInfo;
+class LoopDefinitions;
 
 class Compiler
 {
@@ -5443,7 +5444,7 @@ public:
     };
 
     PhaseStatus fgMorphBlocks();
-    void fgMorphBlock(BasicBlock* block, MorphUnreachableInfo* unreachableInfo = nullptr);
+    void fgMorphBlock(BasicBlock* block, MorphUnreachableInfo* unreachableInfo = nullptr, LoopDefinitions* loopDefs = nullptr);
     void fgMorphStmts(BasicBlock* block);
 
     void fgMergeBlockReturn(BasicBlock* block);
@@ -8640,11 +8641,9 @@ public:
     template <typename Functor>
     bool eeRunFunctorWithSPMIErrorTrap(Functor f)
     {
-        return eeRunWithSPMIErrorTrap<Functor>(
-            [](Functor* pf) {
+        return eeRunWithSPMIErrorTrap<Functor>([](Functor* pf) {
             (*pf)();
-        },
-            &f);
+        }, &f);
     }
 
     bool eeRunWithSPMIErrorTrapImp(void (*function)(void*), void* param);
@@ -12247,6 +12246,203 @@ public:
         WalkTree(domTree->m_domTree);
     }
 };
+
+// Data structure that keeps track of local definitions inside loops.
+class LoopDefinitions
+{
+    typedef JitHashTable<unsigned, JitSmallPrimitiveKeyFuncs<unsigned>, bool> LocalDefinitionsMap;
+
+    FlowGraphNaturalLoops* m_loops;
+    // For every loop, we track all definitions exclusive to that loop.
+    // Definitions in descendant loops are not kept in their ancestor's maps.
+    LocalDefinitionsMap** m_maps;
+    // Blocks whose IR we have visited to find local definitions in.
+    BitVec m_visitedBlocks;
+
+    LocalDefinitionsMap* GetOrCreateMap(FlowGraphNaturalLoop* loop);
+
+    template <typename TFunc>
+    bool VisitLoopNestMaps(FlowGraphNaturalLoop* loop, TFunc& func);
+public:
+    LoopDefinitions(FlowGraphNaturalLoops* loops);
+
+    template <typename TFunc>
+    void VisitDefinedLocalNums(FlowGraphNaturalLoop* loop, TFunc func);
+};
+
+inline LoopDefinitions::LoopDefinitions(FlowGraphNaturalLoops* loops)
+    : m_loops(loops)
+{
+    Compiler* comp = loops->GetDfsTree()->GetCompiler();
+    m_maps = loops->NumLoops() == 0 ? nullptr : new (comp, CMK_LoopOpt) LocalDefinitionsMap* [loops->NumLoops()] {};
+    BitVecTraits poTraits = loops->GetDfsTree()->PostOrderTraits();
+    m_visitedBlocks       = BitVecOps::MakeEmpty(&poTraits);
+}
+
+//------------------------------------------------------------------------------
+// LoopDefinitions:GetOrCreateMap:
+//   Get or create the map of occurrences exclusive to a single loop.
+//
+// Parameters:
+//   loop - The loop
+//
+// Returns:
+//   Map of occurrences.
+//
+// Remarks:
+//   As a precondition occurrences of all descendant loops must already have
+//   been found.
+//
+inline LoopDefinitions::LocalDefinitionsMap* LoopDefinitions::GetOrCreateMap(FlowGraphNaturalLoop* loop)
+{
+    LocalDefinitionsMap* map = m_maps[loop->GetIndex()];
+    if (map != nullptr)
+    {
+        return map;
+    }
+
+    BitVecTraits poTraits = m_loops->GetDfsTree()->PostOrderTraits();
+
+#ifdef DEBUG
+    // As an invariant the map contains only the locals exclusive to each loop
+    // (i.e. occurrences inside descendant loops are not contained in ancestor
+    // loop maps). Double check that we've already computed the child maps to
+    // make sure we do not visit descendant blocks below.
+    for (FlowGraphNaturalLoop* child = loop->GetChild(); child != nullptr; child = child->GetSibling())
+    {
+        assert(BitVecOps::IsMember(&poTraits, m_visitedBlocks, child->GetHeader()->bbPostorderNum));
+    }
+#endif
+
+    Compiler* comp           = m_loops->GetDfsTree()->GetCompiler();
+    map                      = new (comp, CMK_LoopOpt) LocalDefinitionsMap(comp->getAllocator(CMK_LoopOpt));
+    m_maps[loop->GetIndex()] = map;
+
+    struct LocalsVisitor : GenTreeVisitor<LocalsVisitor>
+    {
+        enum
+        {
+            DoPreOrder    = true,
+            DoLclVarsOnly = true,
+        };
+
+        LocalsVisitor(Compiler* comp, LoopDefinitions::LocalDefinitionsMap* map)
+            : GenTreeVisitor(comp)
+            , m_map(map)
+        {
+        }
+
+        fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
+        {
+            GenTreeLclVarCommon* lcl = (*use)->AsLclVarCommon();
+            if (!lcl->OperIsLocalStore())
+            {
+                return Compiler::WALK_CONTINUE;
+            }
+
+            m_map->Set(lcl->GetLclNum(), true, LocalDefinitionsMap::Overwrite);
+
+            LclVarDsc* lclDsc = m_compiler->lvaGetDesc(lcl);
+            if (m_compiler->lvaIsImplicitByRefLocal(lcl->GetLclNum()) && lclDsc->lvPromoted)
+            {
+                // fgRetypeImplicitByRefArgs created a new promoted
+                // struct local to represent this arg. The stores will
+                // be rewritten by morph.
+                assert(lclDsc->lvFieldLclStart != 0);
+                m_map->Set(lclDsc->lvFieldLclStart, true, LocalDefinitionsMap::Overwrite);
+                lclDsc = m_compiler->lvaGetDesc(lclDsc->lvFieldLclStart);
+            }
+
+            if (lclDsc->lvPromoted)
+            {
+                for (unsigned i = 0; i < lclDsc->lvFieldCnt; i++)
+                {
+                    unsigned fieldLclNum = lclDsc->lvFieldLclStart + i;
+                    m_map->Set(fieldLclNum, true, LocalDefinitionsMap::Overwrite);
+                }
+            }
+            else if (lclDsc->lvIsStructField)
+            {
+                m_map->Set(lclDsc->lvParentLcl, true, LocalDefinitionsMap::Overwrite);
+            }
+
+            return Compiler::WALK_CONTINUE;
+        }
+
+    private:
+        LoopDefinitions::LocalDefinitionsMap* m_map;
+    };
+
+    LocalsVisitor visitor(comp, map);
+
+    loop->VisitLoopBlocksReversePostOrder([=, &poTraits, &visitor](BasicBlock* block) {
+        if (!BitVecOps::TryAddElemD(&poTraits, m_visitedBlocks, block->bbPostorderNum))
+        {
+            return BasicBlockVisit::Continue;
+        }
+
+        for (Statement* stmt : block->NonPhiStatements())
+        {
+            visitor.WalkTree(stmt->GetRootNodePointer(), nullptr);
+        }
+
+        return BasicBlockVisit::Continue;
+    });
+
+    return map;
+}
+
+//------------------------------------------------------------------------------
+// LoopDefinitions:VisitLoopNestMaps:
+//   Visit all occurrence maps of the specified loop nest.
+//
+// Type parameters:
+//   TFunc - bool(LocalToOccurrenceMap*) functor that returns true to continue
+//           the visit and false to abort.
+//
+// Parameters:
+//   loop - Root loop of the nest.
+//   func - Functor instance
+//
+// Returns:
+//   True if the visit completed; false if "func" returned false for any map.
+//
+template <typename TFunc>
+bool LoopDefinitions::VisitLoopNestMaps(FlowGraphNaturalLoop* loop, TFunc& func)
+{
+    for (FlowGraphNaturalLoop* child = loop->GetChild(); child != nullptr; child = child->GetSibling())
+    {
+        if (!VisitLoopNestMaps(child, func))
+        {
+            return false;
+        }
+    }
+
+    return func(GetOrCreateMap(loop));
+}
+
+//------------------------------------------------------------------------------
+// LoopDefinitions:VisitDefinedLocalNums:
+//   Call a callback for all locals that are defined in the specified loop.
+//
+// Parameters:
+//   loop - The loop
+//   func - The callback
+//
+template <typename TFunc>
+void LoopDefinitions::VisitDefinedLocalNums(FlowGraphNaturalLoop* loop, TFunc func)
+{
+    auto visit = [=, &func](LocalDefinitionsMap* map) {
+        for (unsigned lclNum : LocalDefinitionsMap::KeyIteration(map))
+        {
+            func(lclNum);
+        }
+
+        return true;
+    };
+
+    VisitLoopNestMaps(loop, visit);
+}
 
 // EHClauses: adapter class for forward iteration of the exception handling table using range-based `for`, e.g.:
 //    for (EHblkDsc* const ehDsc : EHClauses(compiler))

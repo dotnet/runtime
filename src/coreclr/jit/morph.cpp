@@ -13245,7 +13245,7 @@ void Compiler::fgMorphStmts(BasicBlock* block)
 //
 Compiler::MorphUnreachableInfo::MorphUnreachableInfo(Compiler* comp)
     : m_traits(comp->m_dfsTree->GetPostOrderCount(), comp)
-    , m_vec(BitVecOps::MakeEmpty(&m_traits)){};
+    , m_vec(BitVecOps::MakeEmpty(&m_traits)) {};
 
 //------------------------------------------------------------------------
 // SetUnreachable: during morph, mark a block as unreachable
@@ -13279,7 +13279,7 @@ bool Compiler::MorphUnreachableInfo::IsUnreachable(BasicBlock* block)
 //    block - block in question
 //    unreachableInfo - [optional] info on blocks proven unreachable
 //
-void Compiler::fgMorphBlock(BasicBlock* block, MorphUnreachableInfo* unreachableInfo)
+void Compiler::fgMorphBlock(BasicBlock* block, MorphUnreachableInfo* unreachableInfo, LoopDefinitions* loopDefs)
 {
     JITDUMP("\nMorphing " FMT_BB "\n", block->bbNum);
 
@@ -13311,6 +13311,7 @@ void Compiler::fgMorphBlock(BasicBlock* block, MorphUnreachableInfo* unreachable
                 bool hasPredAssertions = false;
                 bool isReachable =
                     (block == fgFirstBB) || (block == genReturnBB) || (opts.IsOSR() && (block == fgEntryBB));
+                FlowGraphNaturalLoop* loop = nullptr;
 
                 for (BasicBlock* const pred : block->PredBlocks())
                 {
@@ -13322,6 +13323,13 @@ void Compiler::fgMorphBlock(BasicBlock* block, MorphUnreachableInfo* unreachable
                     //
                     if (pred->bbPostorderNum <= block->bbPostorderNum)
                     {
+                        loop = m_loops->GetLoopByHeader(block);
+                        if ((loop != nullptr) && loop->ContainsBlock(pred))
+                        {
+                            JITDUMP("Ignoring loop backedge " FMT_BB "->" FMT_BB "\n", pred->bbNum, block->bbNum);
+                            continue;
+                        }
+
                         JITDUMP(FMT_BB " pred " FMT_BB " not processed; clearing assertions in\n", block->bbNum,
                                 pred->bbNum);
                         hasPredAssertions = false;
@@ -13389,6 +13397,23 @@ void Compiler::fgMorphBlock(BasicBlock* block, MorphUnreachableInfo* unreachable
                     {
                         BitVecOps::IntersectionD(apTraits, apLocal, assertionsOut);
                     }
+                }
+
+                if (hasPredAssertions && (loop != nullptr))
+                {
+                    JITDUMP("Block " FMT_BB " is a loop header; clearing assertions about defined locals\n",
+                            block->bbNum);
+                    loopDefs->VisitDefinedLocalNums(loop, [&](unsigned lclNum) {
+                        JITDUMP("  V%02u", lclNum);
+                        BitVecOps::Iter iter(apTraits, GetAssertionDep(lclNum));
+                        unsigned        assertionIndex;
+                        while (iter.NextElem(&assertionIndex))
+                        {
+                            BitVecOps::RemoveElemD(apTraits, apLocal, assertionIndex);
+                        }
+                    });
+
+                    JITDUMP("\n");
                 }
 
                 if (!hasPredAssertions)
@@ -13562,10 +13587,11 @@ PhaseStatus Compiler::fgMorphBlocks()
 
         // Morph the blocks in RPO.
         //
+        LoopDefinitions loopDefs(m_loops);
         for (unsigned i = m_dfsTree->GetPostOrderCount(); i != 0; i--)
         {
             BasicBlock* const block = m_dfsTree->GetPostOrder(i - 1);
-            fgMorphBlock(block, &unreachableInfo);
+            fgMorphBlock(block, &unreachableInfo, &loopDefs);
         }
         assert(bbNumMax == fgBBNumMax);
 
