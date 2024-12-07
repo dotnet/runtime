@@ -157,7 +157,7 @@ inline bool ObjectAllocator::CanAllocateLclVarOnStack(unsigned int         lclNu
     enableArrays            = (JitConfig.JitObjectStackAllocationArray() != 0);
 #endif
 
-    unsigned int classSize = 0;
+    unsigned classSize = 0;
 
     if (allocType == OAT_NEWARR)
     {
@@ -184,7 +184,7 @@ inline bool ObjectAllocator::CanAllocateLclVarOnStack(unsigned int         lclNu
         }
 
         unsigned elemSize = elemLayout != nullptr ? elemLayout->GetSize() : genTypeSize(type);
-        classSize         = (unsigned int)OFFSETOF__CORINFO_Array__data + elemSize * static_cast<unsigned int>(length);
+        classSize         = static_cast<unsigned>(OFFSETOF__CORINFO_Array__data) + elemSize * static_cast<unsigned>(length);
     }
     else if (allocType == OAT_NEWOBJ)
     {
@@ -243,7 +243,7 @@ inline bool ObjectAllocator::CanAllocateLclVarOnStack(unsigned int         lclNu
 
     if (blockSize != nullptr)
     {
-        *blockSize = (unsigned int)classSize;
+        *blockSize = classSize;
     }
 
     return true;

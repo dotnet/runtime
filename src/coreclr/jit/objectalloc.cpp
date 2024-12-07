@@ -37,6 +37,14 @@ PhaseStatus ObjectAllocator::DoPhase()
         return PhaseStatus::MODIFIED_NOTHING;
     }
 
+    // If optimizations are disabled and there are no newobjs, we don't need to morph anything.
+    if (comp->opts.OptimizationDisabled() && (comp->optMethodFlags & OMF_HAS_NEWOBJ) == 0)
+    {
+        JITDUMP("optimizations are disabled and there are no newobjs; punting\n");
+        comp->fgInvalidateDfsTree();
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+
     bool        enabled       = IsObjectStackAllocationEnabled();
     const char* disableReason = ": global config";
 
