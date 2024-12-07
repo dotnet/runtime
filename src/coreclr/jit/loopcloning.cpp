@@ -1823,6 +1823,9 @@ bool Compiler::optShouldCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* 
         return false;
     }
 
+    JITDUMP("Loop cloning: loop " FMT_LP ": size %u does not exceed size limit %u\n", loop->GetIndex(), size,
+            sizeLimit);
+
     return true;
 }
 
