@@ -689,12 +689,14 @@ REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalStartBackgroundWork(_In_ BackgroundCall
     const size_t minStack = 0x10000;     // 64K
     const size_t maxStack = 0x80000000;  //  2G
 
-    uint64_t stacksize = g_pRhConfig->GetDefaultStackSize();
-
-    if (stacksize < maxStack && stacksize >= minStack)
+    uint64_t stackSize;
+    if (g_pRhConfig->ReadConfigValue("Threading_DefaultStackSize", "System.Threading.DefaultStackSize", &stackSize))
     {
-        st = pthread_attr_setstacksize(&attrs, (size_t)stacksize);
-        ASSERT(st == 0);
+        if (stacksize < maxStack && stacksize >= minStack)
+        {
+            st = pthread_attr_setstacksize(&attrs, (size_t)stacksize);
+            ASSERT(st == 0);
+        }
     }
 
     static const int NormalPriority = 0;
