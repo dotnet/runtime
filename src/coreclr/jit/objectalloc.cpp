@@ -348,25 +348,16 @@ void ObjectAllocator::ComputeStackObjectPointers(BitVecTraits* bitVecTraits)
                         // Check if we know what is assigned to this pointer.
                         unsigned bitCount = BitVecOps::Count(bitVecTraits, m_ConnGraphAdjacencyMatrix[lclNum]);
                         assert(bitCount <= 1);
-                        if (bitCount > 0)
+                        if (bitCount == 1)
                         {
                             BitVecOps::Iter iter(bitVecTraits, m_ConnGraphAdjacencyMatrix[lclNum]);
-                            unsigned        rhsLclNum               = 0;
-                            bool            definitelyStackPointing = true;
+                            unsigned        rhsLclNum = 0;
+                            iter.NextElem(&rhsLclNum);
 
-                            while (iter.NextElem(&rhsLclNum))
+                            if (DoesLclVarPointToStack(rhsLclNum))
                             {
-                                if (!DoesLclVarPointToStack(rhsLclNum))
-                                {
-                                    definitelyStackPointing = false;
-                                    break;
-                                }
-                            }
-
-                            if (definitelyStackPointing)
-                            {
-                                // All stores to lclNum local are the definitely-stack-pointing
-                                // rhsLclNum locals so lclNum local is also definitely-stack-pointing.
+                                // The only store to lclNum local is the definitely-stack-pointing
+                                // rhsLclNum local so lclNum local is also definitely-stack-pointing.
                                 MarkLclVarAsDefinitelyStackPointing(lclNum);
                             }
                         }
@@ -992,7 +983,18 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
             case GT_SUB:
             case GT_BOX:
             case GT_FIELD_ADDR:
+                // Check whether the local escapes via its grandparent.
+                ++parentIndex;
+                keepChecking = true;
+                break;
+
             case GT_INDEX_ADDR:
+                if (tree == parent->AsIndexAddr()->Index())
+                {
+                    // The index is not taken so the local doesn't escape.
+                    canLclVarEscapeViaParentStack = false;
+                    break;
+                }
                 // Check whether the local escapes via its grandparent.
                 ++parentIndex;
                 keepChecking = true;
