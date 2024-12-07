@@ -5936,10 +5936,10 @@ bool Thread::InjectActivation(ActivationReason reason)
     }
     // Avoid APC calls when the thread is in single step state to avoid any
     // wrong resume because it's running a native code.
-    /*if ((m_StateNC & Thread::TSNC_DebuggerIsStepping) == 0)
+    if ((m_StateNC & Thread::TSNC_DebuggerIsStepping) == 0)
     {
         return false;
-    }*/
+    }
 #ifdef FEATURE_SPECIAL_USER_MODE_APC
     _ASSERTE(UseSpecialUserModeApc());
 
