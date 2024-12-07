@@ -546,13 +546,13 @@ namespace System
         {
             Debug.Assert(!IsGenericVariable(type));
 
-            Type[] result = Array.Empty<Type>();
             TypeHandle typeHandle = type.GetNativeTypeHandle();
             if (typeHandle.IsTypeDesc)
             {
-                return result;
+                return [];
             }
 
+            Type[] result = [];
             GetInterfaces(typeHandle.AsMethodTable(), ObjectHandleOnStack.Create(ref result));
             GC.KeepAlive(type);
             return result;
