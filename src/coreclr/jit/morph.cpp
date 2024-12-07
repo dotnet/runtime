@@ -13283,6 +13283,8 @@ void Compiler::fgMorphBlock(BasicBlock* block, MorphUnreachableInfo* unreachable
 {
     JITDUMP("\nMorphing " FMT_BB "\n", block->bbNum);
 
+    bool canPredAssertionsCrossBlocks = true;
+
     if (optLocalAssertionProp)
     {
         if (!optCrossBlockLocalAssertionProp)
@@ -13327,6 +13329,7 @@ void Compiler::fgMorphBlock(BasicBlock* block, MorphUnreachableInfo* unreachable
                         if ((loop != nullptr) && loop->ContainsBlock(pred))
                         {
                             JITDUMP("Ignoring loop backedge " FMT_BB "->" FMT_BB "\n", pred->bbNum, block->bbNum);
+                            canPredAssertionsCrossBlocks = false;
                             continue;
                         }
 
@@ -13470,6 +13473,11 @@ void Compiler::fgMorphBlock(BasicBlock* block, MorphUnreachableInfo* unreachable
         {
             fgMergeBlockReturn(block);
         }
+    }
+
+    if (!canPredAssertionsCrossBlocks)
+    {
+        apLocal = BitVecOps::MakeEmpty(apTraits);
     }
 
     // Publish the live out state.
