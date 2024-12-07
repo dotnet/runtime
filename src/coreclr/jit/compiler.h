@@ -8641,9 +8641,11 @@ public:
     template <typename Functor>
     bool eeRunFunctorWithSPMIErrorTrap(Functor f)
     {
-        return eeRunWithSPMIErrorTrap<Functor>([](Functor* pf) {
+        return eeRunWithSPMIErrorTrap<Functor>(
+            [](Functor* pf) {
             (*pf)();
-        }, &f);
+        },
+            &f);
     }
 
     bool eeRunWithSPMIErrorTrapImp(void (*function)(void*), void* param);
