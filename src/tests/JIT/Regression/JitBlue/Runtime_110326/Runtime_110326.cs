@@ -22,7 +22,7 @@ public class Runtime_110326A
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static ulong Method1()
+    private static ulong Method1()
     {
         S1 s1_s1_d1_f3_160 = new S1();
         return Vector512.ExtractMostSignificantBits(s1_s1_d1_f3_160.v512_short_3);
@@ -62,7 +62,7 @@ public class Runtime_110326B
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Method0()
+    private static void Method0()
     {
         S2_D1_F2.S2_D2_F2 s2_s2_d1_f2_s2_d2_f2_262 = new S2_D1_F2.S2_D2_F2();
         S2_D1_F2.S2_D2_F2 s2_s2_d1_f2_s2_d2_f2_263 = s2_s2_d1_f2_s2_d2_f2_262;
@@ -85,7 +85,7 @@ public class Runtime_110326B
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Log(string varName, object varValue)
+    private static void Log(string varName, object varValue)
     {
     }
 }
