@@ -7586,7 +7586,7 @@ bool DebuggerStepper::TriggerSingleStep(Thread *thread, const BYTE *ip)
     {
         LOG((LF_CORDB,LL_INFO10000, "DS::TSS: not in managed code, Returning false (case 0)!\n"));
         // Sometimes we can get here with a callstack that is coming from an APC
-        // this will disable the single stepping and wrongly resume an app that the user
+        // this will disable the single stepping and incorrectly resume an app that the user
         // is stepping.
 #ifdef FEATURE_THREAD_ACTIVATION        
         if ((thread->m_State & Thread::TS_DebugWillSync) == 0)
