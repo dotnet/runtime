@@ -1517,38 +1517,22 @@ FCIMPL4(INT32, SignatureNative::GetTypeParameterOffsetInternal, PCCOR_SIGNATURE 
 }
 FCIMPLEND
 
-FCIMPL2(FC_INT8_RET, SignatureNative::GetCallingConventionFromFunctionPointerAtOffset, SignatureNative* pSignatureUNSAFE, INT32 offset)
+FCIMPL3(INT32, SignatureNative::GetCallingConventionFromFunctionPointerAtOffsetInternal, PCCOR_SIGNATURE sig, DWORD csig, INT32 offset)
 {
     FCALL_CONTRACT;
+    _ASSERTE(offset >= 0);
 
-    struct
-    {
-        SIGNATURENATIVEREF pSig;
-    } gc;
-
-    if (offset < 0)
-    {
-        _ASSERTE(offset == -1);
-        return 0;
-    }
-
-    gc.pSig = (SIGNATURENATIVEREF)pSignatureUNSAFE;
-
+    HRESULT hr;
     uint32_t callConv = 0;
+    SigPointer sp(sig + offset, csig - offset);
 
-    HELPER_METHOD_FRAME_BEGIN_RET_PROTECT(gc);
-    {
-        SigPointer sp(gc.pSig->GetCorSig() + offset, gc.pSig->GetCorSigSize() - offset);
+    CorElementType etype;
+    IfFailRet(sp.GetElemType(&etype));
+    _ASSERTE(etype == ELEMENT_TYPE_FNPTR);
 
-        CorElementType etype;
-        IfFailThrow(sp.GetElemType(&etype));
-        _ASSERTE(etype == ELEMENT_TYPE_FNPTR);
+    IfFailRet(sp.GetCallingConv(&callConv));
 
-        IfFailThrow(sp.GetCallingConv(&callConv));
-    }
-    HELPER_METHOD_FRAME_END();
-
-    return (FC_INT8_RET)(callConv);
+    return (INT32)callConv;
 }
 FCIMPLEND
 

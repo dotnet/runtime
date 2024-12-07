@@ -135,7 +135,7 @@ FCFuncStart(gSignatureNative)
     FCFuncElement("GetParameterOffsetInternal", SignatureNative::GetParameterOffsetInternal)
     FCFuncElement("GetTypeParameterOffsetInternal", SignatureNative::GetTypeParameterOffsetInternal)
     FCFuncElement("GetCustomModifiersAtOffset", SignatureNative::GetCustomModifiersAtOffset)
-    FCFuncElement("GetCallingConventionFromFunctionPointerAtOffset", SignatureNative::GetCallingConventionFromFunctionPointerAtOffset)
+    FCFuncElement("GetCallingConventionFromFunctionPointerAtOffsetInternal", SignatureNative::GetCallingConventionFromFunctionPointerAtOffsetInternal)
 FCFuncEnd()
 
 FCFuncStart(gRuntimeMethodHandle)

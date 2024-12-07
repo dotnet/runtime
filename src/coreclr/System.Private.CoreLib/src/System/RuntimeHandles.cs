@@ -2030,7 +2030,22 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal extern SignatureCallingConvention GetCallingConventionFromFunctionPointerAtOffset(int offset);
+        private static extern unsafe int GetCallingConventionFromFunctionPointerAtOffsetInternal(void* sig, int csig, int offset);
+
+        internal SignatureCallingConvention GetCallingConventionFromFunctionPointerAtOffset(int offset)
+        {
+            if (offset < 0)
+            {
+                Debug.Assert(offset == -1);
+                return SignatureCallingConvention.Default;
+            }
+
+            int callConvMaybe = GetCallingConventionFromFunctionPointerAtOffsetInternal(_sig, _csig, offset);
+            // If the result is negative, it is an error code.
+            if (callConvMaybe < 0)
+                Marshal.ThrowExceptionForHR(callConvMaybe, new IntPtr(-1));
+            return (SignatureCallingConvention)callConvMaybe;
+        }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal extern Type[] GetCustomModifiersAtOffset(int offset, bool required);
