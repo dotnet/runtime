@@ -178,6 +178,18 @@ ds_rt_config_value_get_default_port_suspend (void)
 	return static_cast<uint32_t>(CLRConfig::GetConfigValue (CLRConfig::EXTERNAL_DOTNET_DefaultDiagnosticPortSuspend));
 }
 
+
+static
+inline
+ep_char8_t *
+ds_rt_config_value_get_port_default_prefix (void)
+{
+    STATIC_CONTRACT_NOTHROW;
+
+	CLRConfigStringHolder value(CLRConfig::GetConfigValue (CLRConfig::EXTERNAL_DOTNET_DiagnosticPortDefaultPrefix));
+	return ep_rt_utf16_to_utf8_string (reinterpret_cast<ep_char16_t *>(value.GetValue ()));
+}
+
 /*
 * DiagnosticsDump.
 */

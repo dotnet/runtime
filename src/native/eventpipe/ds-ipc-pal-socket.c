@@ -159,7 +159,8 @@ static
 bool
 ipc_transport_get_default_name (
 	ep_char8_t *name,
-	int32_t name_len);
+	int32_t name_len,
+    const ep_char8_t *ipc_default_prefix);
 
 static
 bool
@@ -172,7 +173,8 @@ DiagnosticsIpc *
 ipc_alloc_uds_address (
 	DiagnosticsIpc *ipc,
 	DiagnosticsIpcConnectionMode mode,
-	const ep_char8_t *ipc_name);
+	const ep_char8_t *ipc_name,
+    const ep_char8_t *ipc_default_prefix);
 
 static
 DiagnosticsIpc *
@@ -694,14 +696,15 @@ inline
 bool
 ipc_transport_get_default_name (
 	ep_char8_t *name,
-	int32_t name_len)
+	int32_t name_len,
+    const ep_char8_t *ipc_default_prefix)
 {
 #ifdef DS_IPC_PAL_AF_UNIX
 #ifndef EP_NO_RT_DEPENDENCY
 	return ds_rt_transport_get_default_name (
 		name,
 		name_len,
-		"dotnet-diagnostic",
+		ipc_default_prefix,
 		ep_rt_current_process_get_id (),
 		NULL,
 		"socket");
@@ -711,7 +714,7 @@ ipc_transport_get_default_name (
 	PAL_GetTransportName(
 		name_len,
 		name,
-		"dotnet-diagnostic",
+		ipc_default_prefix,
 		pd.m_Pid,
 		pd.m_ApplicationGroupId,
 		"socket");
@@ -788,7 +791,8 @@ DiagnosticsIpc *
 ipc_alloc_uds_address (
 	DiagnosticsIpc *ipc,
 	DiagnosticsIpcConnectionMode mode,
-	const ep_char8_t *ipc_name)
+	const ep_char8_t *ipc_name,
+    const ep_char8_t *ipc_default_prefix)
 {
 #ifdef DS_IPC_PAL_AF_UNIX
 	EP_ASSERT (ipc != NULL);
@@ -810,7 +814,8 @@ ipc_alloc_uds_address (
 		// generate the default socket name
 		ipc_transport_get_default_name (
 			server_address->sun_path,
-			sizeof (server_address->sun_path));
+			sizeof (server_address->sun_path),
+            ipc_default_prefix);
 	}
 
 	ipc->server_address = (ds_ipc_socket_address_t *)server_address;
@@ -942,10 +947,11 @@ DiagnosticsIpc *
 ipc_alloc_address (
 	DiagnosticsIpc *ipc,
 	DiagnosticsIpcConnectionMode mode,
-	const ep_char8_t *ipc_name)
+	const ep_char8_t *ipc_name,
+    const ep_char8_t *ipc_default_prefix)
 {
 #ifdef DS_IPC_PAL_AF_UNIX
-	return ipc_alloc_uds_address (ipc, mode, ipc_name);
+	return ipc_alloc_uds_address (ipc, mode, ipc_name, ipc_default_prefix);
 #elif defined(DS_IPC_PAL_AF_INET) || defined(DS_IPC_PAL_AF_INET6)
 	return ipc_alloc_tcp_address (ipc, mode, ipc_name);
 #else
@@ -1027,7 +1033,8 @@ DiagnosticsIpc *
 ds_ipc_alloc (
 	const ep_char8_t *ipc_name,
 	DiagnosticsIpcConnectionMode mode,
-	ds_ipc_error_callback_func callback)
+	ds_ipc_error_callback_func callback,
+    const ep_char8_t *ipc_default_prefix)
 {
 	DiagnosticsIpc *instance = NULL;
 
@@ -1039,7 +1046,7 @@ ds_ipc_alloc (
 	instance->is_closed = false;
 	instance->is_listening = false;
 
-	ep_raise_error_if_nok (ipc_alloc_address (instance, mode, ipc_name) != NULL);
+	ep_raise_error_if_nok (ipc_alloc_address (instance, mode, ipc_name, ipc_default_prefix) != NULL);
 
 	if (mode == DS_IPC_CONNECTION_MODE_LISTEN)
 		ep_raise_error_if_nok (ipc_init_listener (instance, callback) == true);

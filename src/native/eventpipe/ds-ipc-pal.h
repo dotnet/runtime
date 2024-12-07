@@ -30,7 +30,8 @@ DiagnosticsIpc *
 ds_ipc_alloc (
 	const ep_char8_t *ipc_name,
 	DiagnosticsIpcConnectionMode mode,
-	ds_ipc_error_callback_func callback);
+	ds_ipc_error_callback_func callback,
+    const ep_char8_t *ipc_default_prefix);
 
 void
 ds_ipc_free (DiagnosticsIpc *ipc);

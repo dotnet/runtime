@@ -168,6 +168,20 @@ ds_rt_config_value_get_default_port_suspend (void)
     return 0;
 }
 
+static
+inline
+ep_char8_t *
+ds_rt_config_value_get_port_default_prefix (void)
+{
+    STATIC_CONTRACT_NOTHROW;
+
+    char* value;
+    if (RhConfig::Environment::TryGetStringValue("DiagnosticPortDefaultPrefix", &value))
+        return (ep_char8_t*)value;
+
+    return nullptr;
+}
+
 /*
 * DiagnosticsDump.
 */

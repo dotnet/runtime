@@ -117,7 +117,9 @@ DiagnosticsIpc *
 ds_ipc_alloc (
 	const ep_char8_t *ipc_name,
 	DiagnosticsIpcConnectionMode mode,
-	ds_ipc_error_callback_func callback)
+	ds_ipc_error_callback_func callback,
+    const ep_char8_t *ipc_default_prefix)
+
 {
 	int32_t characters_written = -1;
 
@@ -144,7 +146,8 @@ ds_ipc_alloc (
 		characters_written = sprintf_s (
 			(char *)&instance->pipe_name,
 			(size_t)DS_IPC_WIN32_MAX_NAMED_PIPE_LEN,
-			(const char *)"\\\\.\\pipe\\dotnet-diagnostic-%d",
+			(const char *)"\\\\.\\pipe\\%s-%d",
+            ipc_default_prefix,
 			GetCurrentProcessId ());
 	}
 

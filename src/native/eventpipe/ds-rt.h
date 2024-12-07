@@ -63,6 +63,10 @@ static
 uint32_t
 ds_rt_config_value_get_default_port_suspend (void);
 
+static
+ep_char8_t *
+ds_rt_config_value_get_port_default_prefix (void);
+
 /*
 * DiagnosticsDump.
 */
