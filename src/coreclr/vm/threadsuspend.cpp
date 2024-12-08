@@ -5746,10 +5746,9 @@ BOOL CheckActivationSafePoint(SIZE_T ip)
     Thread *pThread = GetThreadNULLOk();
 
     // The criteria for safe activation is to be running managed code.
-    // Also we are not interested in handling interruption if we are already in preemptive mode.
-    // Also we are not interested in handling interruption if we are single stepping
+    // Also we are not interested in handling interruption if we are already in preemptive mode nor if we are single stepping
     BOOL isActivationSafePoint = pThread != NULL && 
-        //(pThread->m_StateNC & Thread::TSNC_DebuggerIsStepping) == 0 &&
+        (pThread->m_StateNC & Thread::TSNC_DebuggerIsStepping) == 0 &&
         pThread->PreemptiveGCDisabled() &&
         ExecutionManager::IsManagedCode(ip);
 
@@ -5936,7 +5935,7 @@ bool Thread::InjectActivation(ActivationReason reason)
     }
     // Avoid APC calls when the thread is in single step state to avoid any
     // wrong resume because it's running a native code.
-    if ((m_StateNC & Thread::TSNC_DebuggerIsStepping) == 0)
+    if ((m_StateNC & Thread::TSNC_DebuggerIsStepping) != 0)
     {
         return false;
     }
