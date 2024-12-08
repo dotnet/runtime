@@ -12351,9 +12351,21 @@ inline LoopDefinitions::LocalDefinitionsMap* LoopDefinitions::GetOrCreateMap(Flo
         fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
         {
             GenTreeLclVarCommon* lcl = (*use)->AsLclVarCommon();
-            if (!lcl->OperIsLocalStore() && (!m_optForCrossBlock || !lcl->OperIs(GT_LCL_ADDR)))
+
+            if (m_optForCrossBlock)
             {
-                return Compiler::WALK_CONTINUE;
+                if (!lcl->OperIsLocalStore() &&
+                    !(lcl->OperIs(GT_LCL_ADDR) && m_compiler->gtNodeHasSideEffects(user, GTF_PERSISTENT_SIDE_EFFECTS)))
+                {
+                    return Compiler::WALK_CONTINUE;
+                }
+            }
+            else
+            {
+                if (!lcl->OperIsLocalStore())
+                {
+                    return Compiler::WALK_CONTINUE;
+                }
             }
 
             m_map->Set(lcl->GetLclNum(), true, LocalDefinitionsMap::Overwrite);
