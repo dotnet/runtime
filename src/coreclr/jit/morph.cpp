@@ -13595,7 +13595,7 @@ PhaseStatus Compiler::fgMorphBlocks()
 
         // Morph the blocks in RPO.
         //
-        LoopDefinitions loopDefs(m_loops);
+        LoopDefinitions loopDefs(m_loops, true);
         for (unsigned i = m_dfsTree->GetPostOrderCount(); i != 0; i--)
         {
             BasicBlock* const block = m_dfsTree->GetPostOrder(i - 1);

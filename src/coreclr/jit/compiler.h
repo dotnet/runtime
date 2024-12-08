@@ -12269,20 +12269,24 @@ class LoopDefinitions
     LocalDefinitionsMap** m_maps;
     // Blocks whose IR we have visited to find local definitions in.
     BitVec m_visitedBlocks;
+    // Whether we are optimizing for cross-block definitions.
+    // If true, we will also consider locals that are used as address in a block.
+    bool m_optForCrossBlock = false;
 
     LocalDefinitionsMap* GetOrCreateMap(FlowGraphNaturalLoop* loop);
 
     template <typename TFunc>
     bool VisitLoopNestMaps(FlowGraphNaturalLoop* loop, TFunc& func);
 public:
-    LoopDefinitions(FlowGraphNaturalLoops* loops);
+    LoopDefinitions(FlowGraphNaturalLoops* loops, bool optForCrossBlock);
 
     template <typename TFunc>
     void VisitDefinedLocalNums(FlowGraphNaturalLoop* loop, TFunc func);
 };
 
-inline LoopDefinitions::LoopDefinitions(FlowGraphNaturalLoops* loops)
+inline LoopDefinitions::LoopDefinitions(FlowGraphNaturalLoops* loops, bool optForCrossBlock)
     : m_loops(loops)
+    , m_optForCrossBlock(optForCrossBlock)
 {
     Compiler* comp = loops->GetDfsTree()->GetCompiler();
     m_maps = loops->NumLoops() == 0 ? nullptr : new (comp, CMK_LoopOpt) LocalDefinitionsMap* [loops->NumLoops()] {};
@@ -12337,16 +12341,17 @@ inline LoopDefinitions::LocalDefinitionsMap* LoopDefinitions::GetOrCreateMap(Flo
             DoLclVarsOnly = true,
         };
 
-        LocalsVisitor(Compiler* comp, LoopDefinitions::LocalDefinitionsMap* map)
+        LocalsVisitor(Compiler* comp, LoopDefinitions::LocalDefinitionsMap* map, bool optForCrossBlock)
             : GenTreeVisitor(comp)
             , m_map(map)
+            , m_optForCrossBlock(optForCrossBlock)
         {
         }
 
         fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
         {
             GenTreeLclVarCommon* lcl = (*use)->AsLclVarCommon();
-            if (!lcl->OperIsLocalStore())
+            if (!lcl->OperIsLocalStore() && (!m_optForCrossBlock || !lcl->OperIs(GT_LCL_ADDR)))
             {
                 return Compiler::WALK_CONTINUE;
             }
@@ -12382,9 +12387,10 @@ inline LoopDefinitions::LocalDefinitionsMap* LoopDefinitions::GetOrCreateMap(Flo
 
     private:
         LoopDefinitions::LocalDefinitionsMap* m_map;
+        bool                                  m_optForCrossBlock;
     };
 
-    LocalsVisitor visitor(comp, map);
+    LocalsVisitor visitor(comp, map, m_optForCrossBlock);
 
     loop->VisitLoopBlocksReversePostOrder([=, &poTraits, &visitor](BasicBlock* block) {
         if (!BitVecOps::TryAddElemD(&poTraits, m_visitedBlocks, block->bbPostorderNum))

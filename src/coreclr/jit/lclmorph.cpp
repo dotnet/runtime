@@ -2188,7 +2188,7 @@ PhaseStatus Compiler::fgMarkAddressExposedLocals()
         m_blockToEHPreds = nullptr;
 
         m_loops = FlowGraphNaturalLoops::Find(m_dfsTree);
-        LoopDefinitions loopDefs(m_loops);
+        LoopDefinitions loopDefs(m_loops, false);
 
         LocalEqualsLocalAddrAssertions  assertions(this, &loopDefs);
         LocalEqualsLocalAddrAssertions* pAssertions = &assertions;
