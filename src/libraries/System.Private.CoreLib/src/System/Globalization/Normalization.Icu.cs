@@ -148,7 +148,7 @@ namespace System.Globalization
                 }
             }
 
-            if (realLen == -1)
+            if (realLen < 0)
             {
                 throw new ArgumentException(SR.Argument_InvalidCharSequenceNoIndex, nameof(source));
             }
