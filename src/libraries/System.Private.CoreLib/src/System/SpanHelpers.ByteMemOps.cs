@@ -33,9 +33,6 @@ namespace System
         private struct Block64 {}
 #endif // HAS_CUSTOM_BLOCKS
 
-#if NATIVEAOT
-        [System.Runtime.RuntimeExport("RhSpanHelpers_MemCopy")]
-#endif
         [Intrinsic] // Unrolled for small constant lengths
         internal static unsafe void Memmove(ref byte dest, ref byte src, nuint len)
         {
@@ -245,9 +242,6 @@ namespace System
             Buffer._Memmove(ref dest, ref src, len);
         }
 
-#if NATIVEAOT
-        [System.Runtime.RuntimeExport("RhSpanHelpers_MemZero")]
-#endif
         [Intrinsic] // Unrolled for small sizes
         public static unsafe void ClearWithoutReferences(ref byte dest, nuint len)
         {
@@ -434,9 +428,6 @@ namespace System
             Buffer._ZeroMemory(ref dest, len);
         }
 
-#if NATIVEAOT
-        [System.Runtime.RuntimeExport("RhSpanHelpers_MemSet")]
-#endif
         internal static void Fill(ref byte dest, byte value, nuint len)
         {
             if (!Vector.IsHardwareAccelerated)

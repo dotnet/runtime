@@ -127,6 +127,8 @@ namespace System.DirectoryServices.Protocols
             Marshal.StructureToPtr(defaults, ptrToDefaults, false);
             try
             {
+                // Bump up the protocol version because ldap_sasl_interactive_bind requires LDAP V3 else it returns LDAP_NOT_SUPPORTED and this ends up throwing LdapException: The feature is not supported.
+                SessionOptions.ProtocolVersion = 3;
                 return Interop.Ldap.ldap_sasl_interactive_bind(_ldapHandle, null, Interop.KerberosDefaultMechanism, IntPtr.Zero, IntPtr.Zero, Interop.LDAP_SASL_QUIET, LdapPal.SaslInteractionProcedure, ptrToDefaults);
             }
             finally

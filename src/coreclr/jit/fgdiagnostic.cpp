@@ -56,7 +56,7 @@ void Compiler::fgPrintEdgeWeights()
 
 #ifdef DEBUG
 
-void Compiler::fgDebugCheckUpdate(const bool doAggressiveCompaction)
+void Compiler::fgDebugCheckUpdate()
 {
     if (!compStressCompile(STRESS_CHK_FLOW_UPDATE, 30))
     {
@@ -139,7 +139,7 @@ void Compiler::fgDebugCheckUpdate(const bool doAggressiveCompaction)
 
         /* no un-compacted blocks */
 
-        if (fgCanCompactBlock(block) && (doAggressiveCompaction || block->JumpsToNext()))
+        if (fgCanCompactBlock(block))
         {
             noway_assert(!"Found un-compacted blocks!");
         }
