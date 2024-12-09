@@ -5077,7 +5077,7 @@ bool Compiler::fgDebugCheckOutgoingProfileData(BasicBlock* block, ProfileChecks 
 void Compiler::fgRepairProfileCondToUncond(BasicBlock* block,
                                            FlowEdge*   retainedEdge,
                                            FlowEdge*   removedEdge,
-                                           int*        metric)
+                                           int*        metric /* = nullptr */)
 {
     assert(block->KindIs(BBJ_ALWAYS));
     assert(block->GetTargetEdge() == retainedEdge);
@@ -5093,7 +5093,7 @@ void Compiler::fgRepairProfileCondToUncond(BasicBlock* block,
     //
     weight_t const weight = removedEdge->getLikelyWeight();
 
-    if (weight == 0)
+    if (weight == 0.0)
     {
         return;
     }
@@ -5134,9 +5134,9 @@ void Compiler::fgRepairProfileCondToUncond(BasicBlock* block,
 
         // If profile weights are consistent, expect at worst a slight underflow.
         //
-        if (fgPgoConsistent && (alternateNewWeight < 0))
+        if (fgPgoConsistent && (alternateNewWeight < 0.0))
         {
-            assert(fgProfileWeightsEqual(alternateNewWeight, 0));
+            assert(fgProfileWeightsEqual(alternateNewWeight, 0.0));
         }
         alternate->setBBProfileWeight(max(0.0, alternateNewWeight));
     }
