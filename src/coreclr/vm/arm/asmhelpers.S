@@ -916,12 +916,25 @@ ProbeLoop:
 #endif // FEATURE_TIERED_COMPILATION
 
     LEAF_ENTRY JIT_PollGC, _TEXT
-        PREPARE_EXTERNAL_VAR g_TrapReturningThreads, r12
-        ldr     r12, [r12]
-        cbnz    r12, LOCAL_LABEL(JIT_PollGCRarePath)
+#if defined(__clang__)
+        ldr     r2, =g_TrapReturningThreads-(1f+4)
+1:
+        add     r2, pc
+#else
+        ldr     r2, =g_TrapReturningThreads
+#endif
+        PREPARE_EXTERNAL_VAR g_TrapReturningThreads, r0
+        ldr     r2, [r2]
+        cbnz    r2, LOCAL_LABEL(JIT_PollGCRarePath)
         ret
 LOCAL_LABEL(JIT_PollGCRarePath):
-        PREPARE_EXTERNAL_VAR g_pPollGC, r12
-        ldr     r12, [r12]
-        EPILOG_BRANCH_REG r12
+#if defined(__clang__)
+        ldr     r2, =g_pPollGC-(1f+4)
+1:
+        add     r2, pc
+#else
+        ldr     r2, =g_pPollGC
+#endif
+        ldr     r2, [r2]
+        EPILOG_BRANCH_REG r2
     LEAF_END JIT_PollGC, _TEXT
