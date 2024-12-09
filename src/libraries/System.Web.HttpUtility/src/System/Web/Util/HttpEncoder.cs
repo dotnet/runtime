@@ -680,7 +680,8 @@ namespace System.Web.Util
                 const char LOW_SURROGATE_END = '\udfff';
 
                 // Replace any invalid surrogate chars.
-                for (int i = chars.IndexOfAnyInRange(HIGH_SURROGATE_START, LOW_SURROGATE_END); (uint)i < (uint)chars.Length; i++)
+                int idxOfFirstSurrogate = chars.IndexOfAnyInRange(HIGH_SURROGATE_START, LOW_SURROGATE_END);
+                for (int i = idxOfFirstSurrogate; (uint)i < (uint)chars.Length; i++)
                 {
                     if (char.IsHighSurrogate(chars[i]))
                     {
