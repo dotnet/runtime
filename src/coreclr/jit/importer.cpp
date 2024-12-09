@@ -9745,7 +9745,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     // without exhaustive walk over all expressions.
                     lclNum = lvaGrabTemp(true DEBUGARG("NewArr temp"));
 
-                    impStoreToTemp(lclNum, op1, CHECK_SPILL_NONE);
+                    impStoreToTemp(lclNum, op1, CHECK_SPILL_ALL);
 
                     assert(lvaTable[lclNum].lvSingleDef == 0);
                     lvaTable[lclNum].lvSingleDef = 1;
