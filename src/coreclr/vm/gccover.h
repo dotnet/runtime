@@ -46,12 +46,6 @@ public:
     void SprinkleBreakpoints(BYTE * saveAddr, PCODE codeStart, size_t codeSize, size_t regionOffsetAdj, BOOL fZapped);
 };
 
-template<>
-struct cdac_data<GCCoverageInfo>
-{
-    static constexpr size_t SavedCode = offsetof(GCCoverageInfo, savedCode);
-};
-
 typedef DPTR(GCCoverageInfo) PTR_GCCoverageInfo; // see code:GCCoverageInfo::savedCode
 
 #ifdef _MSC_VER

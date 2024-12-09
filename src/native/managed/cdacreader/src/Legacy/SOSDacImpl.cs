@@ -354,7 +354,7 @@ internal sealed unsafe partial class SOSDacImpl
             {
                 IGCCover gcCover = _target.Contracts.GCCover;
                 TargetPointer gcCoverAddr = gcCover.GetGCCoverageInfo(requestedNativeCodeVersion);
-                if (gcCoverAddr.Value != TargetPointer.Null)
+                if (gcCoverAddr != TargetPointer.Null)
                 {
                     // In certain minidumps, we won't save the gccover information.
                     // (it would be unwise to do so, it is heavy and not a customer scenario).
