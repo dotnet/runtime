@@ -856,7 +856,11 @@ namespace System
                         Debug.Assert(count > result.Length);
                         result = new IntPtr[count];
                     }
-                    PopulateRtFields(filter, result.Slice(0, count), declaringType, ref list);
+
+                    if (count > 0)
+                    {
+                        PopulateRtFields(filter, result.Slice(0, count), declaringType, ref list);
+                    }
                 }
 
                 private unsafe void PopulateRtFields(Filter filter,
