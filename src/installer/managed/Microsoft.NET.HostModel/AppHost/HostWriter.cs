@@ -250,7 +250,9 @@ namespace Microsoft.NET.HostModel.AppHost
                             var machObjectFile = MachObjectFile.Create(accessor);
                             if (machObjectFile.HasSignature)
                                 throw new AppHostMachOFormatException(MachOFormatError.SignNotRemoved);
-                            machObjectFile.TryAdjustHeadersForBundle((ulong)bundleSize, accessor);
+                            bool wasBundled = machObjectFile.TryAdjustHeadersForBundle((ulong)bundleSize, accessor);
+                            if (!wasBundled)
+                                throw new InvalidOperationException("The bundle was unable to be created. This is likely because the bundled content is too large.");
                             if (macosCodesign)
                                 bundleSize = machObjectFile.CreateAdHocSignature(accessor, Path.GetFileName(appHostPath));
                         }

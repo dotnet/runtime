@@ -108,11 +108,18 @@ internal unsafe partial class MachObjectFile
         return GetFileSize();
     }
 
+    /// <summary>
+    /// Adjusts the headers of the Mach-O file to accomodate the new size of the bundle by putting bundle data into the string table.
+    /// </summary>
+    /// <param name="fileSize">The total size of the bundle</param>
+    /// <param name="file">The bundle file to be processed</param>
+    /// <returns>`true` if the headers were adjusted successfully, `false` otherwise.</returns>
     public bool TryAdjustHeadersForBundle(ulong fileSize, MemoryMappedViewAccessor file)
     {
         ulong newStringTableSize = fileSize - _symtabCommand.Command.GetStringTableOffset(_header);
         if (newStringTableSize > uint.MaxValue)
         {
+            // Too big, won't fit into the string table size field
             return false;
         }
         _symtabCommand.Command.SetStringTableSize((uint)newStringTableSize, _header);
