@@ -364,6 +364,7 @@ internal sealed unsafe partial class SOSDacImpl
             // data->managedDynamicMethodObject. This field is unused in both SOS and CLRMD
             // and would require accessing CorLib bound managed fields which the cDAC does not
             // currently support. However, it must remain in the return type for compatibility.
+            data->managedDynamicMethodObject = 0;
 
             hr = HResults.S_OK;
         }
