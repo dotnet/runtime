@@ -81,7 +81,7 @@ namespace System
 
         /// <summary>
         /// Gets the estimated length of the normalized form of the specified string in the <see cref="NormalizationForm.FormC" />.
-/// </summary>
+        /// </summary>
         /// <param name="source">The character span to get the estimated length of the normalized form.</param>
         /// <param name="normalizationForm">The normalization form to use.</param>
         /// <returns>The estimated length of the normalized form of the specified string.</returns>
