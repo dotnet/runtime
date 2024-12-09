@@ -1843,10 +1843,14 @@ private:
     template<int op, typename T, CorInfoType cit, bool TypeIsUnchanged>
     void BinaryArithOvfOpWork(T val1, T val2);
 
-    INT32 RemFunc(INT32 v1, INT32 v2) { return v1 % v2; }
-    INT64 RemFunc(INT64 v1, INT64 v2) { return v1 % v2; }
-    float RemFunc(float v1, float v2);
-    double RemFunc(double v1, double v2);
+    template <typename T>
+    T RemFunc(T v1, T v2) { return v1 % v2; }
+
+    template <>
+    float RemFunc<float>(float v1, float v2) { return fmodf(v1, v2); }
+
+    template <>
+    double RemFunc<double>(double v1, double v2) { return fmod(v1, v2); }
 
     enum BinaryIntOpEnum
     {

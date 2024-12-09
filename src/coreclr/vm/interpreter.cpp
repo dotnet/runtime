@@ -22,6 +22,7 @@
 #include "runtimehandles.h"
 #include "vars.hpp"
 #include "cycletimer.h"
+#include <inttypes.h>
 
 inline CORINFO_CALLINFO_FLAGS combine(CORINFO_CALLINFO_FLAGS flag1, CORINFO_CALLINFO_FLAGS flag2)
 {
@@ -753,8 +754,8 @@ CorJitResult Interpreter::GenerateInterpreterStub(CEEInfo* comp,
     {
         const char* clsName;
         const char* methName = getMethodName(comp, info->ftn, &clsName);
-        if (   !s_InterpretMeths.contains(methName, clsName, info->args.pSig)
-            || s_InterpretMethsExclude.contains(methName, clsName, info->args.pSig))
+        if (   !s_InterpretMeths.contains(methName, clsName, (int32_t)info->args.numArgs)
+            || s_InterpretMethsExclude.contains(methName, clsName, (int32_t)info->args.numArgs))
         {
             TRACE_SKIPPED(clsName, methName, "not in set of methods to interpret");
             return CORJIT_SKIPPED;
@@ -1317,7 +1318,8 @@ CorJitResult Interpreter::GenerateInterpreterStub(CEEInfo* comp,
                     // First home the register arguments in the stack space allocated by the caller.
                     // Refer to Stack Allocation on x64 [http://msdn.microsoft.com/en-US/library/ew5tede7(v=vs.80).aspx]
                     X86Reg argRegs[] = { kECX, kEDX, kR8, kR9 };
-                    if (!jmpCall) { sl.X86EmitIndexRegStoreRSP(regArgsFound * sizeof(void*), argRegs[regArgsFound - 1]); }
+                    if (!jmpCall) { sl.X86EmitOp(0x89, argRegs[regArgsFound - 1], (X86Reg)kESP_Unsafe,  regArgsFound * sizeof(void*), (X86Reg)0, 0, StubLinkerCPU::X86OperandSize::k64BitOp); }
+
                     argState.argOffsets[k] = (regArgsFound - 1) * sizeof(void*);
 #elif defined(HOST_LOONGARCH64)
                     argState.argOffsets[k] += intRegArgBaseOffset;
@@ -1463,13 +1465,13 @@ CorJitResult Interpreter::GenerateInterpreterStub(CEEInfo* comp,
             }
             else
             {
-                sl.X86EmitIndexRegStoreRSP(offs, intArgsRegs[indexGP]);
+                sl.X86EmitOp(0x89, intArgsRegs[indexGP], (X86Reg)kESP_Unsafe,  offs, (X86Reg)0, 0, StubLinkerCPU::X86OperandSize::k64BitOp);
                 indexGP++;
             }
         }
 
         // Pass "ilArgs", i.e. just the point where registers have been homed, as 2nd arg.
-        sl.X86EmitIndexLeaRSP(ARGUMENT_kREG2, static_cast<X86Reg>(kESP_Unsafe), fixedTwoSlotSize);
+        sl.X86EmitOp(0x8d, dstreg, (X86Reg)kESP_Unsafe,  fixedTwoSlotSize, (X86Reg)0, 0, StubLinkerCPU::X86OperandSize::k64BitOp);
 
         // If we have IL stubs pass the stub context in R10 or else pass NULL.
 #if INTERP_ILSTUBS
@@ -1495,7 +1497,7 @@ CorJitResult Interpreter::GenerateInterpreterStub(CEEInfo* comp,
         sl.X86EmitReturn(0);
 #elif defined(HOST_AMD64)
         // Pass "ilArgs", i.e. just the point where registers have been homed, as 2nd arg
-        sl.X86EmitIndexLeaRSP(ARGUMENT_kREG2, static_cast<X86Reg>(kESP_Unsafe), 8);
+        sl.X86EmitOp(0x8d, ARGUMENT_kREG2, (X86Reg)kESP_Unsafe,  8, (X86Reg)0, 0, StubLinkerCPU::X86OperandSize::k64BitOp);
 
         // Allocate space for homing callee's (InterpretMethod's) arguments.
         // Calling convention requires a default allocation space of 4,
@@ -1586,8 +1588,6 @@ CorJitResult Interpreter::GenerateInterpreterStub(CEEInfo* comp,
 
         UINT stackFrameSize = argState.numFPRegArgSlots;
 
-        sl.EmitProlog(argState.numRegArgs, argState.numFPRegArgSlots, 0 /*cCalleeSavedRegs*/, static_cast<unsigned short>(cHFAVars*sizeof(void*)));
-
 #if INTERP_ILSTUBS
         if (pMD->IsILStub())
         {
@@ -1602,7 +1602,7 @@ CorJitResult Interpreter::GenerateInterpreterStub(CEEInfo* comp,
         }
 
         // Second arg is pointer to the basei of the ILArgs -- i.e., the current stack value
-        sl.EmitAddImm(IntReg(1), RegSp, sl.GetSavedRegArgsOffset());
+        sl.EmitAddImm(IntReg(1), RegSp, 0);
 
         // First arg is the pointer to the interpMethodInfo structure
 #if INTERP_ILSTUBS
@@ -1633,8 +1633,6 @@ CorJitResult Interpreter::GenerateInterpreterStub(CEEInfo* comp,
 
         }
 
-        sl.EmitEpilog();
-
 #elif defined(HOST_LOONGARCH64)
         assert(!"unimplemented on LOONGARCH yet");
 #elif defined(HOST_RISCV64)
@@ -1642,8 +1640,6 @@ CorJitResult Interpreter::GenerateInterpreterStub(CEEInfo* comp,
             getClassSize(info->args.retTypeClass) == 16;
 
         UINT stackFrameSize  = argState.numFPRegArgSlots;
-
-        sl.EmitProlog(argState.numRegArgs, argState.numFPRegArgSlots, hasTwoRetSlots ? 2 * sizeof(void*) : 0);
 
 #if INTERP_ILSTUBS
         if (pMD->IsILStub())
@@ -1671,7 +1667,6 @@ CorJitResult Interpreter::GenerateInterpreterStub(CEEInfo* comp,
             sl.EmitLoad(IntReg(11), RegSp, sizeof(void*));
         }
 
-        sl.EmitEpilog();
 #else
 #error unsupported platform
 #endif
@@ -2976,7 +2971,7 @@ EvalLoop:
             ConvOvfUn<INT32, INT_MIN, INT_MAX, /*TCanHoldPtr*/false, CORINFO_TYPE_INT>();
             break;
         case CEE_CONV_OVF_I8_UN:
-            ConvOvfUn<INT64, _I64_MIN, _I64_MAX, /*TCanHoldPtr*/true, CORINFO_TYPE_LONG>();
+            ConvOvfUn<INT64, INT64_MIN, INT64_MAX, /*TCanHoldPtr*/true, CORINFO_TYPE_LONG>();
             break;
         case CEE_CONV_OVF_U1_UN:
             ConvOvfUn<UINT8, 0, UCHAR_MAX, /*TCanHoldPtr*/false, CORINFO_TYPE_INT>();
@@ -2988,7 +2983,7 @@ EvalLoop:
             ConvOvfUn<UINT32, 0, UINT_MAX, /*TCanHoldPtr*/false, CORINFO_TYPE_INT>();
             break;
         case CEE_CONV_OVF_U8_UN:
-            ConvOvfUn<UINT64, 0, _UI64_MAX, /*TCanHoldPtr*/true, CORINFO_TYPE_LONG>();
+            ConvOvfUn<UINT64, 0, UINT64_MAX, /*TCanHoldPtr*/true, CORINFO_TYPE_LONG>();
             break;
         case CEE_CONV_OVF_I_UN:
             if (sizeof(NativeInt) == 4)
@@ -2998,7 +2993,7 @@ EvalLoop:
             else
             {
                 _ASSERTE(sizeof(NativeInt) == 8);
-                ConvOvfUn<NativeInt, _I64_MIN, _I64_MAX, /*TCanHoldPtr*/true, CORINFO_TYPE_NATIVEINT>();
+                ConvOvfUn<NativeInt, INT64_MIN, INT64_MAX, /*TCanHoldPtr*/true, CORINFO_TYPE_NATIVEINT>();
             }
             break;
         case CEE_CONV_OVF_U_UN:
@@ -3009,7 +3004,7 @@ EvalLoop:
             else
             {
                 _ASSERTE(sizeof(NativeUInt) == 8);
-                ConvOvfUn<NativeUInt, 0, _UI64_MAX, /*TCanHoldPtr*/true, CORINFO_TYPE_NATIVEINT>();
+                ConvOvfUn<NativeUInt, 0, UINT64_MAX, /*TCanHoldPtr*/true, CORINFO_TYPE_NATIVEINT>();
             }
             break;
         case CEE_BOX:
@@ -3111,10 +3106,10 @@ EvalLoop:
             ConvOvf<UINT32, 0, UINT_MAX, /*TCanHoldPtr*/false, CORINFO_TYPE_INT>();
             break;
         case CEE_CONV_OVF_I8:
-            ConvOvf<INT64, _I64_MIN, _I64_MAX, /*TCanHoldPtr*/true, CORINFO_TYPE_LONG>();
+            ConvOvf<INT64, INT64_MIN, INT64_MAX, /*TCanHoldPtr*/true, CORINFO_TYPE_LONG>();
             break;
         case CEE_CONV_OVF_U8:
-            ConvOvf<UINT64, 0, _UI64_MAX, /*TCanHoldPtr*/true, CORINFO_TYPE_LONG>();
+            ConvOvf<UINT64, 0, UINT64_MAX, /*TCanHoldPtr*/true, CORINFO_TYPE_LONG>();
             break;
         case CEE_REFANYVAL:
             RefanyVal();
@@ -3145,7 +3140,7 @@ EvalLoop:
             else
             {
                 _ASSERTE(sizeof(NativeInt) == 8);
-                ConvOvf<NativeInt, _I64_MIN, _I64_MAX, /*TCanHoldPtr*/true, CORINFO_TYPE_NATIVEINT>();
+                ConvOvf<NativeInt, INT64_MIN, INT64_MAX, /*TCanHoldPtr*/true, CORINFO_TYPE_NATIVEINT>();
             }
             break;
         case CEE_CONV_OVF_U:
@@ -3156,7 +3151,7 @@ EvalLoop:
             else
             {
                 _ASSERTE(sizeof(NativeUInt) == 8);
-                ConvOvf<NativeUInt, 0, _UI64_MAX, /*TCanHoldPtr*/true, CORINFO_TYPE_NATIVEINT>();
+                ConvOvf<NativeUInt, 0, UINT64_MAX, /*TCanHoldPtr*/true, CORINFO_TYPE_NATIVEINT>();
             }
             break;
         case CEE_ADD_OVF:
@@ -6827,17 +6822,6 @@ void Interpreter::SetILInstrCategories()
     s_ILInstrCategories[CEE_CONV_U] = CEE_CONV_I;
 }
 #endif // INTERP_ILINSTR_PROFILE
-
-#ifndef TARGET_WINDOWS
-namespace
-{
-    bool isnan(float val)
-    {
-        UINT32 bits = *reinterpret_cast<UINT32*>(&val);
-        return (bits & 0x7FFFFFFFU) > 0x7F800000U;
-    }
-}
-#endif
 
 template<int op>
 void Interpreter::CompareOp()
@@ -11278,16 +11262,6 @@ void Interpreter::ThrowStackOverflow()
     COMPlusThrow(kStackOverflowException);
 }
 
-float Interpreter::RemFunc(float v1, float v2)
-{
-    return fmodf(v1, v2);
-}
-
-double Interpreter::RemFunc(double v1, double v2)
-{
-    return fmod(v1, v2);
-}
-
 // Static members and methods.
 Interpreter::AddrToMDMap* Interpreter::s_addrToMDMap = NULL;
 
@@ -12305,13 +12279,13 @@ void Interpreter::PrintValue(InterpreterType it, BYTE* valAddr)
     case CORINFO_TYPE_NATIVEINT:
         {
             INT64 val = static_cast<INT64>(*reinterpret_cast<NativeInt*>(valAddr));
-            fprintf(GetLogFile(), "%lld (= 0x%llx)", val, val);
+            fprintf(GetLogFile(), "%" PRId64 " (= %" PRIx64 ")", val, val);
         }
         break;
     case CORINFO_TYPE_NATIVEUINT:
         {
             UINT64 val = static_cast<UINT64>(*reinterpret_cast<NativeUInt*>(valAddr));
-            fprintf(GetLogFile(), "%lld (= 0x%llx)", val, val);
+            fprintf(GetLogFile(), "%" PRIu64 " (= %" PRIx64 ")", val, val);
         }
         break;
 
@@ -12322,11 +12296,11 @@ void Interpreter::PrintValue(InterpreterType it, BYTE* valAddr)
     case CORINFO_TYPE_LONG:
         {
             INT64 val = *reinterpret_cast<INT64*>(valAddr);
-            fprintf(GetLogFile(), "%lld (= 0x%llx)", val, val);
+            fprintf(GetLogFile(), "%" PRId64 " (= %" PRIx64 ")", val, val);
         }
         break;
     case CORINFO_TYPE_ULONG:
-        fprintf(GetLogFile(), "%lld", *reinterpret_cast<UINT64*>(valAddr));
+        fprintf(GetLogFile(), "%" PRIu64, *reinterpret_cast<UINT64*>(valAddr));
         break;
 
     case CORINFO_TYPE_CLASS:

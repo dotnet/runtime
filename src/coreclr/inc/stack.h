@@ -23,7 +23,8 @@ class Stack
     {
         if (m_elemsCount == m_elemsSize)
         {
-            m_elemsSize = max(InitSize, 2*m_elemsSize);
+            unsigned elemsSizeByTwo = 2 * m_elemsSize;
+            m_elemsSize = InitSize > elemsSizeByTwo ? InitSize : elemsSizeByTwo;
             T* newElems = new T[m_elemsSize];
             if (m_elemsCount != 0)
             {
