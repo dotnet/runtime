@@ -23,7 +23,6 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
     private readonly Dictionary<TargetPointer, MethodTable> _methodTables = new();
     private readonly Dictionary<TargetPointer, MethodDesc> _methodDescs = new();
 
-
     internal struct MethodTable
     {
         internal MethodTableFlags_1 Flags { get; }
@@ -126,8 +125,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
             uint tokenRemainder = (uint)(desc.Flags3AndTokenRemainder & tokenRemainderMask);
             uint tokenRange = ((uint)(chunk.FlagsAndTokenRange & tokenRangeMask)) << tokenRemainderBitCount;
-
-            return 0x06000000 | tokenRange | tokenRemainder;
+            return EcmaMetadataUtils.CreateMethodDef(tokenRange | tokenRemainder);
         }
 
         public MethodClassification Classification => (MethodClassification)((int)_desc.Flags & (int)MethodDescFlags_1.MethodDescFlags.ClassificationMask);
