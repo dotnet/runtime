@@ -674,6 +674,8 @@ void Compiler::optAssertionInit(bool isLocalProp)
             {
                 optMaxAssertionCount = (AssertionIndex)(min(maxTrackedLocals, lvaTrackedCount) * 3 / 128 + 1) * 64;
             }
+
+            optMaxAssertionCount = optMaxAssertionCount * 2; // experiment
         }
         else
         {
