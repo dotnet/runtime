@@ -8,10 +8,7 @@ using Xunit;
 public class Runtime_109981
 {
     [Fact]
-    public static void TestEntryPoint()
-    {
-        Foo(14);
-    }
+    public static int TestEntryPoint() => Foo(14);
 
     public static int Foo(int x)
     {
