@@ -360,10 +360,10 @@ internal sealed unsafe partial class SOSDacImpl
             }
 #endif
 
-            if (data->bIsDynamic != 0)
-            {
-                throw new NotImplementedException(); // TODO[cdac]: get the dynamic method managed object
-            }
+            // Since the cDAC does not currently support fetching CorLib bound managed fields,
+            // this API does not populate the data->managedDynamicMethodObject field as in the
+            // original implementation. While this field appears to be unused, it must remain
+            // in the return type for compatibility.
 
             hr = HResults.S_OK;
         }
@@ -405,7 +405,8 @@ internal sealed unsafe partial class SOSDacImpl
                 Debug.Assert(data->MDToken == dataLocal.MDToken);
                 Debug.Assert(data->GCInfo == dataLocal.GCInfo);
                 Debug.Assert(data->GCStressCodeCopy == dataLocal.GCStressCodeCopy);
-                Debug.Assert(data->managedDynamicMethodObject == dataLocal.managedDynamicMethodObject);
+                // managedDynamicMethodObject is not currently populated by the cDAC API.
+                // Debug.Assert(data->managedDynamicMethodObject == dataLocal.managedDynamicMethodObject);
                 Debug.Assert(data->requestedIP == dataLocal.requestedIP);
                 Debug.Assert(data->cJittedRejitVersions == dataLocal.cJittedRejitVersions);
 
