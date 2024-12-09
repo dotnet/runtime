@@ -194,15 +194,31 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestsBase
 
     // Keeping these methods with explicit Build/Publish in the name
     // so in the test code it is evident which is being run!
-    public override async Task<RunResult> RunForBuildWithDotnetRun(RunOptions runOptions)
-        => await base.RunForBuildWithDotnetRun(runOptions with {
-            ExecuteAfterLoaded = runOptions.ExecuteAfterLoaded ?? _executeAfterLoaded
+    public override async Task<RunResult> RunForBuildWithDotnetRun(RunOptions runOptions) =>
+        await base.RunForBuildWithDotnetRun(runOptions with {
+            ExecuteAfterLoaded = runOptions.ExecuteAfterLoaded ?? _executeAfterLoaded,
+            ServerEnvironment = GetServerEnvironmentForBuild(runOptions.ServerEnvironment)
         });
 
     public override async Task<RunResult> RunForPublishWithWebServer(RunOptions runOptions)
         => await base.RunForPublishWithWebServer(runOptions with {
             ExecuteAfterLoaded = runOptions.ExecuteAfterLoaded ?? _executeAfterLoaded
         });
+
+    private Dictionary<string, string>? GetServerEnvironmentForBuild(Dictionary<string, string>? originalServerEnv)
+    {
+        var serverEnvironment = new Dictionary<string, string>();
+        if (originalServerEnv != null)
+        {
+            foreach (var kvp in originalServerEnv)
+            {
+                serverEnvironment.Add(kvp.Key, kvp.Value);
+            }
+        }
+        // avoid "System.IO.IOException: address already in use"
+        serverEnvironment.Add("ASPNETCORE_URLS", "http://127.0.0.1:0");
+        return serverEnvironment;
+    }
 
     public string GetBlazorBinFrameworkDir(Configuration config, bool forPublish, string framework = DefaultTargetFrameworkForBlazor, string? projectDir = null)
         => _provider.GetBinFrameworkDir(config: config, forPublish: forPublish, framework: framework, projectDir: projectDir);
