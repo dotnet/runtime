@@ -87,8 +87,15 @@
       <_CoreClrBuildArg Condition="'$(Platform)' == 'x86'" Include="-DANDROID_ABI=x86" />
       <_CoreClrBuildArg Condition="'$(Platform)' == 'x64'" Include="-DANDROID_ABI=x86_64" />
 
-      <!-- No LTTNG on Android -->
-      <_CoreClrBuildArg Include="-cmakeargs -DFEATURE_EVENT_TRACE=0"/>
+      <!-- 
+        TODO: No LTTNG on Android, it's disabled at the eventprovider level. Will need an answer. 
+        Disabling FEATURE_EVENT_TRACE is too wide.
+      -->
+      <!--
+        Unsure if something like this is actually defined. We need this to differentiate between
+        features that are enabled in mono android, but not in coreclr.
+      -->
+      <_CoreClrBuildArg Include="-cmakeargs -DRUNTIME_CORECLR=1" />
     </ItemGroup>
 
     <PropertyGroup>
