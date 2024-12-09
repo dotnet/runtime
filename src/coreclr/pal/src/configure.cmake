@@ -936,7 +936,8 @@ elseif(CLR_CMAKE_TARGET_HAIKU)
   set(DEADLOCK_WHEN_THREAD_IS_SUSPENDED_WHILE_BLOCKED_ON_MUTEX 0)
   set(HAVE_SCHED_OTHER_ASSIGNABLE 1)
 else() # Anything else is Linux
-  if(NOT HAVE_LTTNG_TRACEPOINT_H AND FEATURE_EVENT_TRACE)
+  # LTTNG is not available on Android, so don't error out
+  if(NOT HAVE_LTTNG_TRACEPOINT_H AND NOT CLR_CMAKE_TARGET_ANDROID AND FEATURE_EVENT_TRACE)
     unset(HAVE_LTTNG_TRACEPOINT_H CACHE)
     message(FATAL_ERROR "Cannot find liblttng-ust-dev. Try installing liblttng-ust-dev  (or the appropriate packages for your platform)")
   endif()
