@@ -11,7 +11,7 @@ internal partial class MockDescriptors
 {
     public class MethodDescriptors
     {
-        internal const uint TokenRemainderBitCount = 12u; /* see METHOD_TOKEN_REMAINDER_BIT_COUNT*/
+        internal const byte TokenRemainderBitCount = 12; /* see METHOD_TOKEN_REMAINDER_BIT_COUNT*/
 
         private static readonly TypeFields MethodDescFields = new TypeFields()
         {

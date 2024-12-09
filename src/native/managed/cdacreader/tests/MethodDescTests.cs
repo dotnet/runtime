@@ -34,6 +34,7 @@ public class MethodDescTests
 
         const int MethodDefToken = 0x06 << 24;
         const ushort expectedRidRangeStart = 0x2000; // arbitrary (larger than  1<< TokenRemainderBitCount)
+        Assert.True(expectedRidRangeStart > (1 << MockDescriptors.MethodDescriptors.TokenRemainderBitCount));
         const ushort expectedRidRemainder = 0x10; // arbitrary
         const uint expectedRid = expectedRidRangeStart | expectedRidRemainder; // arbitrary
         uint expectedToken = MethodDefToken | expectedRid;
