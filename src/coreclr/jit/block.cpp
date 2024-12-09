@@ -298,7 +298,7 @@ FlowEdge* Compiler::BlockDominancePreds(BasicBlock* blk)
     }
 
     EHblkDsc* ehblk = ehGetBlockHndDsc(blk);
-    res = BlockPredsWithEH(blk);
+    res             = BlockPredsWithEH(blk);
     for (BasicBlock* predBlk : ehblk->ebdTryBeg->PredBlocks())
     {
         res = new (this, CMK_FlowEdge) FlowEdge(predBlk, blk, res);
