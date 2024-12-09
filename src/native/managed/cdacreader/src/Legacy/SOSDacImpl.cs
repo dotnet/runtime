@@ -362,8 +362,8 @@ internal sealed unsafe partial class SOSDacImpl
 
             // Since the cDAC does not currently support fetching CorLib bound managed fields,
             // this API does not populate the data->managedDynamicMethodObject field as in the
-            // original implementation. While this field appears to be unused, it must remain
-            // in the return type for compatibility.
+            // original implementation. While the field is unused, it must remain in the
+            // return type for compatibility.
 
             hr = HResults.S_OK;
         }
@@ -405,7 +405,7 @@ internal sealed unsafe partial class SOSDacImpl
                 Debug.Assert(data->MDToken == dataLocal.MDToken);
                 Debug.Assert(data->GCInfo == dataLocal.GCInfo);
                 Debug.Assert(data->GCStressCodeCopy == dataLocal.GCStressCodeCopy);
-                // managedDynamicMethodObject is not currently populated by the cDAC API.
+                // managedDynamicMethodObject is not currently populated by the cDAC API and may differ from legacyImpl.
                 // Debug.Assert(data->managedDynamicMethodObject == dataLocal.managedDynamicMethodObject);
                 Debug.Assert(data->requestedIP == dataLocal.requestedIP);
                 Debug.Assert(data->cJittedRejitVersions == dataLocal.cJittedRejitVersions);
