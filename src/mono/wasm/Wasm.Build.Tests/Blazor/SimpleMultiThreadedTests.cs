@@ -24,7 +24,7 @@ public class SimpleMultiThreadedTests : BlazorWasmTestBase
     [Theory]
     [InlineData(Configuration.Debug)]
     [InlineData(Configuration.Release)]
-    [ActiveIssue("run fails with timeout")]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/100373")] // to be fixed by: "https://github.com/dotnet/aspnetcore/issues/54365"
     public async Task BlazorBuildRunTest(Configuration config)
     {
         string extraProperties = "<WasmEnableThreads>true</WasmEnableThreads>";
