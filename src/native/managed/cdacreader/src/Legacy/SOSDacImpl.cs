@@ -407,7 +407,7 @@ internal sealed unsafe partial class SOSDacImpl
                 Debug.Assert(data->GCInfo == dataLocal.GCInfo);
                 Debug.Assert(data->GCStressCodeCopy == dataLocal.GCStressCodeCopy);
                 // managedDynamicMethodObject is not currently populated by the cDAC API and may differ from legacyImpl.
-                // Debug.Assert(data->managedDynamicMethodObject == dataLocal.managedDynamicMethodObject);
+                Debug.Assert(data->managedDynamicMethodObject == 0);
                 Debug.Assert(data->requestedIP == dataLocal.requestedIP);
                 Debug.Assert(data->cJittedRejitVersions == dataLocal.cJittedRejitVersions);
 
