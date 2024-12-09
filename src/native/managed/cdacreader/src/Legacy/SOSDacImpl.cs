@@ -360,10 +360,10 @@ internal sealed unsafe partial class SOSDacImpl
             }
 #endif
 
-            // Since the cDAC does not currently support fetching CorLib bound managed fields,
-            // this API does not populate the data->managedDynamicMethodObject field as in the
-            // legacy implementation. While the field is unused, it must remain in the return
-            // type for compatibility.
+            // Unlike the legacy implementation, the cDAC does not currently populate
+            // data->managedDynamicMethodObject. This field is unused in both SOS and CLRMD
+            // and would require accessing CorLib bound managed fields which the cDAC does not
+            // currently support. However, it must remain in the return type for compatibility.
 
             hr = HResults.S_OK;
         }
