@@ -15,7 +15,7 @@ public class Runtime_109981
         if (x == 123)
             return 0;
 
-        int sum = 0;
+        int sum = 9;
         for (int i = 0; i < x; i++)
         {
             sum += i;
@@ -34,17 +34,17 @@ public class Runtime_109981
                 }
                 finally
                 {
-                    sum += 9;
+                    sum += 1000;
                 }
             }
             catch (ArgumentException)
             {
-                sum += 1000;
+                sum += 10000;
             }
         }
         catch when (Filter())
         {
-            sum += 10000;
+            sum += 100000;
         }
 
         return sum;
