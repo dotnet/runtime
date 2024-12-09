@@ -450,18 +450,22 @@ pal::string_t get_download_url(const pal::char_t* framework_name, const pal::cha
         url.append(_X("missing_runtime=true"));
     }
 
+#if defined(TARGET_WINDOWS)
+#define TARGET_OS "win"
+#elif defined(TARGET_OSX)
+#define TARGET_OS "osx"
+#elif defined(TARGET_LINUX) || defined(TARGET_ANDROID)
+#define TARGET_OS "linux"
+#else
+// others are community supported platforms
+#define TARGET_OS "community"
+#endif
+
     const pal::char_t* arch = get_current_arch_name();
     url.append(_X("&arch="));
     url.append(arch);
     url.append(_X("&rid="));
-    url.append(get_runtime_id());
-
-    pal::string_t os = pal::get_current_os_rid_platform();
-    if (os.empty())
-        os = pal::get_current_os_fallback_rid();
-
-    url.append(_X("&os="));
-    url.append(os);
+    url.append(_STRINGIFY(TARGET_OS) _X("-") _STRINGIFY(CURRENT_ARCH_NAME));
 
     return url;
 }
