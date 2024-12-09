@@ -1576,7 +1576,7 @@ ClrDataAccess::GetObjectStringData(CLRDATA_ADDRESS obj, unsigned int count, _Ino
 
             if (SUCCEEDED(hr))
             {
-                _ASSERTE(bytesRead == count * sizeof(WCHAR));
+                needed = bytesRead / sizeof(WCHAR);
                 stringData[count - 1] = W('\0');
             }
             else
