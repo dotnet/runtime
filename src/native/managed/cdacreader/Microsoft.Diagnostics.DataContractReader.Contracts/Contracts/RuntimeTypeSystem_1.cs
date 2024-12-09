@@ -894,8 +894,25 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
     private TargetPointer GetLoaderModule(TypeHandle typeHandle)
     {
-        if (!typeHandle.IsMethodTable())
-            throw new NotImplementedException(); // TODO[cdac]: TypeDesc::GetLoaderModule()
+        if (typeHandle.IsTypeDesc())
+        {
+            // TypeDesc::GetLoaderModule
+            if (HasTypeParam(typeHandle))
+            {
+                return GetLoaderModule(GetTypeParam(typeHandle));
+            }
+            else if (IsGenericVariable(typeHandle, out TargetPointer genericParamModule, out _))
+            {
+                return genericParamModule;
+            }
+            else
+            {
+                System.Diagnostics.Debug.Assert(IsFunctionPointer(typeHandle, out _, out _));
+                FnPtrTypeDesc fnPtrTypeDesc = _target.ProcessedData.GetOrAdd<FnPtrTypeDesc>(typeHandle.TypeDescAddress());
+                return fnPtrTypeDesc.LoaderModule;
+            }
+        }
+
         MethodTable mt = _methodTables[typeHandle.Address];
         Data.MethodTableAuxiliaryData mtAuxData = _target.ProcessedData.GetOrAdd<Data.MethodTableAuxiliaryData>(mt.AuxiliaryData);
         return mtAuxData.LoaderModule;

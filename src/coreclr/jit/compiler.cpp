@@ -4641,9 +4641,9 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     //
     DoPhase(this, PHASE_EMPTY_TRY, &Compiler::fgRemoveEmptyTry);
 
-    // Remove empty try regions (try/catch)
+    // Remove empty try regions (try/catch/fault)
     //
-    DoPhase(this, PHASE_EMPTY_TRY_CATCH, &Compiler::fgRemoveEmptyTryCatch);
+    DoPhase(this, PHASE_EMPTY_TRY_CATCH_FAULT, &Compiler::fgRemoveEmptyTryCatchOrTryFault);
 
     // Remove empty finally regions
     //
@@ -4769,12 +4769,12 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     //
     DoPhase(this, PHASE_GS_COOKIE, &Compiler::gsPhase);
 
-    // Compute the block weights
-    //
-    DoPhase(this, PHASE_COMPUTE_BLOCK_WEIGHTS, &Compiler::fgComputeBlockWeights);
-
     if (opts.OptimizationEnabled())
     {
+        // Compute the block weights
+        //
+        DoPhase(this, PHASE_COMPUTE_BLOCK_WEIGHTS, &Compiler::fgComputeBlockWeights);
+
         // Invert loops
         //
         DoPhase(this, PHASE_INVERT_LOOPS, &Compiler::optInvertLoops);
@@ -4822,9 +4822,9 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         //
         DoPhase(this, PHASE_EMPTY_TRY_2, &Compiler::fgRemoveEmptyTry);
 
-        // Remove empty try regions (try/catch)
+        // Remove empty try regions (try/catch/fault)
         //
-        DoPhase(this, PHASE_EMPTY_TRY_CATCH_2, &Compiler::fgRemoveEmptyTryCatch);
+        DoPhase(this, PHASE_EMPTY_TRY_CATCH_FAULT_2, &Compiler::fgRemoveEmptyTryCatchOrTryFault);
 
         // Compute dominators and exceptional entry blocks
         //
@@ -5062,9 +5062,9 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     //
     DoPhase(this, PHASE_EMPTY_TRY_3, &Compiler::fgRemoveEmptyTry);
 
-    // Remove empty try regions (try/catch)
+    // Remove empty try regions (try/catch/fault)
     //
-    DoPhase(this, PHASE_EMPTY_TRY_CATCH_3, &Compiler::fgRemoveEmptyTryCatch);
+    DoPhase(this, PHASE_EMPTY_TRY_CATCH_FAULT_3, &Compiler::fgRemoveEmptyTryCatchOrTryFault);
 
     if (UsesFunclets())
     {
@@ -6048,7 +6048,16 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
     // but it requires moving the whole set of logic down into compCompileHelper after compInitOptions has
     // run and we're going to end up exiting early if JIT_FLAG_ALT_JIT and opts.altJit don't match anyways
 
-    if (!info.compMatchedVM || compileFlags->IsSet(JitFlags::JIT_FLAG_ALT_JIT))
+    bool enableAvailableIsas = !info.compMatchedVM;
+
+#ifdef DEBUG
+    if (compileFlags->IsSet(JitFlags::JIT_FLAG_ALT_JIT) && JitConfig.RunAltJitCode() == 0)
+    {
+        enableAvailableIsas = true;
+    }
+#endif // DEBUG
+
+    if (enableAvailableIsas)
     {
         CORINFO_InstructionSetFlags instructionSetFlags;
 
