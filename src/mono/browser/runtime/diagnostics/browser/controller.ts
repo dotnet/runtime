@@ -4,7 +4,7 @@
 import WasmEnableThreads from "consts:wasmEnableThreads";
 
 import { threads_c_functions as cwraps } from "../../cwraps";
-import { INTERNAL, mono_assert } from "../../globals";
+import { INTERNAL, mono_assert, loaderHelpers } from "../../globals";
 import { mono_log_info, mono_log_debug, mono_log_warn } from "../../logging";
 import { withStackAlloc, getI32 } from "../../memory";
 import { waitForThread } from "../../pthreads";
@@ -56,6 +56,7 @@ export function getController (): ServerController {
 
 export async function startDiagnosticServer (websocket_url: string): Promise<ServerController | null> {
     mono_assert(WasmEnableThreads, "The diagnostic server requires threads to be enabled during build time.");
+    mono_assert(!loaderHelpers.is_exited(), "runtime is exited");
     const sizeOfPthreadT = 4;
     mono_log_info(`starting the diagnostic server url: ${websocket_url}`);
     const result: PThreadPtr | undefined = withStackAlloc(sizeOfPthreadT, (pthreadIdPtr) => {

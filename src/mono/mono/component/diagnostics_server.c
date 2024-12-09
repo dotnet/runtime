@@ -67,7 +67,7 @@ mono_wasm_diagnostic_server_resume_runtime_startup (void);
 static bool
 ds_server_wasm_init (void)
 {
-	/* called on the main thread when the runtime is sufficiently initialized */
+	/* called on the deputy thread when the runtime is sufficiently initialized */
 	mono_coop_sem_init (&wasm_ds_options.suspend_resume, 0);
 	mono_wasm_diagnostic_server_on_runtime_server_init(&wasm_ds_options);
 	return true;

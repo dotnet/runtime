@@ -9,6 +9,7 @@ import { MonoWorkerToMainMessage, monoThreadInfo, mono_wasm_pthread_ptr, update_
 import { Module, ENVIRONMENT_IS_WORKER, createPromiseController, loaderHelpers, mono_assert, runtimeHelpers } from "../globals";
 import { PThreadLibrary, MainToWorkerMessageType, MonoThreadMessage, PThreadInfo, PThreadPtr, PThreadPtrNull, PThreadWorker, PromiseController, Thread, WorkerToMainMessageType, monoMessageSymbol } from "../types/internal";
 import { mono_log_info, mono_log_debug, mono_log_warn } from "../logging";
+import { mono_wasm_diagnostic_server_on_runtime_server_init_main } from "../diagnostics";
 
 const threadPromises: Map<PThreadPtr, PromiseController<Thread>[]> = new Map();
 
@@ -71,25 +72,21 @@ function monoWorkerMessageHandler (worker: PThreadWorker, ev: MessageEvent<any>)
         return;
     }
 
-    let port: MessagePort;
     let thread: Thread;
     pthreadId = message.info?.pthreadId ?? 0;
     worker.info = Object.assign({}, worker.info, message.info);
     switch (message.monoCmd) {
         case WorkerToMainMessageType.preload:
             // this one shot port from setupPreloadChannelToMainThread
-            port = message.port!;
-            port.postMessage({
+            message.port!.postMessage({
                 type: "pthread",
                 cmd: MainToWorkerMessageType.applyConfig,
                 config: JSON.stringify(runtimeHelpers.config),
                 monoThreadInfo: JSON.stringify(worker.info),
             });
-            port.close();
             break;
         case WorkerToMainMessageType.pthreadCreated:
-            port = message.port!;
-            thread = new ThreadImpl(pthreadId, worker, port);
+            thread = new ThreadImpl(pthreadId, worker, message.port!);
             worker.thread = thread;
             worker.info.isRunning = true;
             resolveThreadPromises(pthreadId, thread);
@@ -107,6 +104,9 @@ function monoWorkerMessageHandler (worker: PThreadWorker, ev: MessageEvent<any>)
             break;
         case WorkerToMainMessageType.deputyFailed:
             runtimeHelpers.afterMonoStarted.promise_control.reject(new Error(message.error));
+            break;
+        case WorkerToMainMessageType.diagnosticServerInit:
+            mono_wasm_diagnostic_server_on_runtime_server_init_main();
             break;
         case WorkerToMainMessageType.monoRegistered:
         case WorkerToMainMessageType.monoAttached:

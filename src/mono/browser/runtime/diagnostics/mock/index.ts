@@ -6,6 +6,7 @@ import monoDiagnosticsMock from "consts:monoDiagnosticsMock";
 import { createMockEnvironment } from "./environment";
 import type { MockEnvironment, MockScriptConnection } from "./export-types";
 import { assertNever } from "../../types/internal";
+import { loaderHelpers, mono_assert } from "../../globals";
 import { mono_log_debug, mono_log_warn } from "../../logging";
 
 export interface MockRemoteSocket extends EventTarget {
@@ -27,6 +28,7 @@ export type MockScript = (env: MockEnvironment) => MockConnectionScript[];
 let MockImplConstructor: new (script: MockScript) => Mock;
 export function mock (script: MockScript): Mock {
     if (monoDiagnosticsMock) {
+        mono_assert(!loaderHelpers.is_exited(), "runtime is exited");
         if (!MockImplConstructor) {
             class MockScriptEngineSocketImpl implements MockRemoteSocket {
                 constructor (private readonly engine: MockScriptEngineImpl) { }

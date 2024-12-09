@@ -3,7 +3,11 @@
     <WasmBuildNative>true</WasmBuildNative>
     <FeatureWasmPerfTracing>true</FeatureWasmPerfTracing>
     <WasmEnableThreads>true</WasmEnableThreads>
+    <WasmEnableWebcil>false</WasmEnableWebcil>
     <WasmEnablePerfTracing>true</WasmEnablePerfTracing>
+    <HybridGlobalization>false</HybridGlobalization>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <DebugType>portable</DebugType>
     <NoWarn>$(NoWarn);CA2007</NoWarn> <!-- consider ConfigureAwait() -->
     <MonoDiagnosticsMock Condition="('$(MonoDiagnosticsMock)' == '') and ('$(Configuration)' == 'Debug' or '$(ArchiveTests)' == 'true')">true</MonoDiagnosticsMock>
   </PropertyGroup>
@@ -26,7 +30,7 @@
 {
   "MONO_LOG_LEVEL": "warning",
   "MONO_LOG_MASK": "all",
-  "DOTNET_DiagnosticPorts": "mock:./mock.js,suspend",
+  "DOTNET_DiagnosticPorts": "mock:../mock.js,suspend",
   "CI_TEST": "$(ArchiveTests)"
 }' />
   </ItemGroup>

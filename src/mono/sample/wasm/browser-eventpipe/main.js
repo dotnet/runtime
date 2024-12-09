@@ -21,10 +21,10 @@ async function doWork(startWork, stopWork, getIterationsDone) {
     document.getElementById("startWork").innerText = "Stopping";
     document.getElementById("out").innerHTML = '... ...';
 
-    stopWork();
+    await stopWork();
 
     const ret = await workPromise; // get the answer
-    const iterations = getIterationsDone(); // get how many times the loop ran
+    const iterations = await getIterationsDone(); // get how many times the loop ran
 
     INTERNAL.diagnosticServerThread.postMessageToWorker({
         type: "diagnostic_server_mock",
@@ -54,6 +54,12 @@ async function main() {
         .withElementOnExit()
         .withExitCodeLogging()
         .withDiagnosticTracing(false)
+        .withConfig({
+            pthreadPoolInitialSize: 7,
+        })
+        .withRuntimeOptions([
+            "--no-jiterpreter-traces-enabled"
+        ])
         .create();
 
     globalThis.__Module = Module;
@@ -96,6 +102,8 @@ async function main() {
             document.body.removeChild(link);
         }
     });
+
+    INTERNAL.diagnosticServerThread.port.start();
 
     const config = getConfig();
     if (isTest(config)) {

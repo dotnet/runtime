@@ -294,6 +294,9 @@ async function onRuntimeInitializedAsync (userOnRuntimeInitialized: (module:Emsc
             update_thread_info();
             runtimeHelpers.managedThreadTID = tcwraps.mono_wasm_create_deputy_thread();
 
+            // this is not mono-attached thread, so we can start it earlier
+            await mono_wasm_init_diagnostics();
+
             // await mono started on deputy thread
             await runtimeHelpers.afterMonoStarted.promise;
             runtimeHelpers.ioThreadTID = tcwraps.mono_wasm_create_io_thread();
@@ -546,11 +549,6 @@ export async function start_runtime () {
 
         if (runtimeHelpers.config.logProfilerOptions)
             mono_wasm_init_log_profiler(runtimeHelpers.config.logProfilerOptions);
-
-        if (WasmEnableThreads) {
-            // this is not mono-attached thread, so we can start it earlier
-            await mono_wasm_init_diagnostics();
-        }
 
         mono_wasm_load_runtime();
 

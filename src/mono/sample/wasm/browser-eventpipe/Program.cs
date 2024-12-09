@@ -82,34 +82,21 @@ namespace Sample
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static long recursiveFib (int n)
+        private static long RecursiveFib (int n)
         {
             if (n < 1)
                 return 0;
             if (n == 1)
                 return 1;
             WasmHelloEventSource.Instance.CountCall();
-            return recursiveFib (n - 1) + recursiveFib (n - 2);
+            return RecursiveFib (n - 1) + RecursiveFib (n - 2);
         }
-
-#if false
-            // dead code to prove that starting user threads isn't possible on the perftracing runtime
-            public static void Meth() {
-                    Thread.Sleep (500);
-                    while (!GetCancellationToken().IsCancellationRequested) {
-                            Console.WriteLine ("ping");
-                            Thread.Sleep (500);
-                    }
-            }
-#endif
 
         [JSExport]
         public static async Task<double> StartAsyncWork(int N)
         {
             CancellationToken ct = GetCancellationToken();
-#if false
-            new Thread(new ThreadStart(Meth)).Start();
-#endif
+            DateTime next = DateTime.Now.AddSeconds(1);
             await Task.Delay(1);
             long b;
             WasmHelloEventSource.Instance.NewCallsCounter();
@@ -117,14 +104,22 @@ namespace Sample
             while (true)
             {
                 WasmHelloEventSource.Instance.StartFib(N);
-                await Task.Delay(1);
-                b = recursiveFib (N);
+                b = RecursiveFib (N);
                 WasmHelloEventSource.Instance.StopFib(N, b.ToString());
                 iterations++;
-                            Console.WriteLine ("ping1");
                 if (ct.IsCancellationRequested)
                     break;
+                
+                var now = DateTime.Now;
+                if(iterations % 100 == 0 || next <= now)
+                {
+                    Console.WriteLine ("ping " + iterations);
+                    await Task.Delay(1);
+                    next = now.AddSeconds(1);
+                }
             }
+            Console.WriteLine ("ping " + iterations);
+
             Console.WriteLine ("stopping");
             long expected = fastFib(N);
             Console.WriteLine ("stopping2");
@@ -137,17 +132,19 @@ namespace Sample
         }
 
         [JSExport]
-        public static void StopWork()
+        public static Task StopWork()
         {
             cts.Cancel();
+            return Task.CompletedTask;
         }
 
         [JSExport]
-        public static string GetIterationsDone()
+        public static Task<string> GetIterationsDone()
         {
-            return iterations.ToString();
+            return Task.FromResult(iterations.ToString());
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
         private static long fastFib(int N) {
             if (N < 1)
                 return 0;

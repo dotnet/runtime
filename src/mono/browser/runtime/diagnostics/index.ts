@@ -6,12 +6,13 @@ import WasmEnableThreads from "consts:wasmEnableThreads";
 import type {
     DiagnosticOptions,
 } from "./shared/types";
-import { is_nullish } from "../types/internal";
+import { is_nullish, WorkerToMainMessageType } from "../types/internal";
 import type { VoidPtr } from "../types/emscripten";
 import { getController, startDiagnosticServer } from "./browser/controller";
 import * as memory from "../memory";
 import { mono_log_warn } from "../logging";
 import { mono_assert, runtimeHelpers } from "../globals";
+import { monoThreadInfo, postMessageToMain } from "../pthreads/shared";
 
 
 // called from C on the main thread
@@ -31,7 +32,6 @@ export function mono_wasm_event_pipe_early_startup_callback (): void {
 ///   * The IPC sessions first send an IPC message with the session ID and then they start streaming
 ////  * If the diagnostic server gets more commands it will send us a message through the serverController and we will start additional sessions
 
-let suspendOnStartup = false;
 let diagnosticsServerEnabled = false;
 
 let diagnosticsInitialized = false;
@@ -49,27 +49,11 @@ export async function mono_wasm_init_diagnostics (): Promise<void> {
             throw new Error("server.connectUrl must be a string");
         }
         const url = options.server.connectUrl;
-        const suspend = boolsyOption(options.server.suspend);
         const controller = await startDiagnosticServer(url);
         if (controller) {
             diagnosticsServerEnabled = true;
-            if (suspend) {
-                suspendOnStartup = true;
-            }
         }
     }
-}
-
-function boolsyOption (x: string | boolean): boolean {
-    if (x === true || x === false)
-        return x;
-    if (typeof x === "string") {
-        if (x === "true")
-            return true;
-        if (x === "false")
-            return false;
-    }
-    throw new Error(`invalid option: "${x}", should be true, false, or "true" or "false"`);
 }
 
 /// Parse environment variables for diagnostics configuration
@@ -140,14 +124,24 @@ function diagnostic_options_from_ports_spec (val: string): DiagnosticOptions | n
 
 }
 
-export function mono_wasm_diagnostic_server_on_runtime_server_init (out_options: VoidPtr): void {
+export function mono_wasm_diagnostic_server_on_runtime_server_init_main (): void {
     mono_assert(WasmEnableThreads, "The diagnostic server requires threads to be enabled during build time.");
     if (diagnosticsServerEnabled) {
         /* called on the main thread when the runtime is sufficiently initialized */
         const controller = getController();
         controller.postServerAttachToRuntime();
-        // FIXME: is this really the best place to do this?
-        memory.setI32(out_options, suspendOnStartup ? 1 : 0);
     }
+}
+
+export function mono_wasm_diagnostic_server_on_runtime_server_init (out_options: VoidPtr): void {
+    mono_assert(WasmEnableThreads, "The diagnostic server requires threads to be enabled during build time.");
+    // FIXME: is this really the best place to do this?
+    const options = diagnostic_options_from_environment();
+    const suspend = options && options.server && (options.server.suspend == true || options.server.suspend == "true");
+    memory.setI32(out_options, suspend ? 1 : 0);
+    postMessageToMain({
+        monoCmd: WorkerToMainMessageType.diagnosticServerInit,
+        info: monoThreadInfo
+    });
 }
 

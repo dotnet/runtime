@@ -4,11 +4,11 @@
 /// @ts-check
 
 /**
- * @typedef { import("../../../wasm/runtime/diagnostics-mock").MockEnvironment } MockEnvironment
- * @typedef { import("../../../wasm/runtime/diagnostics-mock").MockScriptConnection } MockScriptConnection
- * @typedef { import("../../../wasm/runtime/diagnostics-mock").PromiseAndController } PromiseAndController
- * @typedef { import("../../../wasm/runtime/diagnostics-mock").PromiseAndController<number> } PromiseAndControllerNumber
- * @typedef { import("../../../wasm/runtime/diagnostics-mock").PromiseAndController<void> } PromiseAndControllerVoid
+ * @typedef { import("../../../browser/runtime/diagnostics-mock").MockEnvironment } MockEnvironment
+ * @typedef { import("../../../browser/runtime/diagnostics-mock").MockScriptConnection } MockScriptConnection
+ * @typedef { import("../../../browser/runtime/diagnostics-mock").PromiseAndController } PromiseAndController
+ * @typedef { import("../../../browser/runtime/diagnostics-mock").PromiseAndController<number> } PromiseAndControllerNumber
+ * @typedef { import("../../../browser/runtime/diagnostics-mock").PromiseAndController<void> } PromiseAndControllerVoid
  */
 
 /**
@@ -62,7 +62,7 @@ function script(env) {
                     ]
                 }));
                 let sessionID = undefined;
-                const buffer = new SharedArrayBuffer(2_000_000);
+                const buffer = new SharedArrayBuffer(20_000_000);
                 const view = new Uint8Array(buffer);
                 let length = 0;
                 await conn.processSend((bytes) => {

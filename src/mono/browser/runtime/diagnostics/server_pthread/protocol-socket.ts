@@ -10,6 +10,7 @@ import {
 import Magic from "./ipc-protocol/magic";
 import Parser from "./ipc-protocol/base-parser";
 import { assertNever } from "../../types/internal";
+import { loaderHelpers, mono_assert } from "../../globals";
 import { mono_log_debug, mono_log_warn } from "../../logging";
 
 export const dotnetDiagnosticsServerProtocolCommandEvent = "dotnet:diagnostics:protocolCommand" as const;
@@ -177,6 +178,7 @@ class ProtocolSocketImpl implements ProtocolSocket {
 
     onMessage (this: ProtocolSocketImpl, ev: MessageEvent<ArrayBuffer | Blob | string>): void {
         const data = ev.data;
+        mono_assert(!loaderHelpers.is_exited(), "runtime is exited");
         mono_log_debug(() => `protocol socket received message ${ev.data}`);
         if (typeof data === "object" && data instanceof ArrayBuffer) {
             this.onArrayBuffer(data);

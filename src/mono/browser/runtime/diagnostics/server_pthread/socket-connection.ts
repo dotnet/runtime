@@ -4,6 +4,7 @@
 import { assertNever } from "../../types/internal";
 import { VoidPtr } from "../../types/emscripten";
 import type { CommonSocket } from "./common-socket";
+import { loaderHelpers, mono_assert } from "../../globals";
 import { mono_log_debug, mono_log_warn } from "../../logging";
 import { localHeapViewU8 } from "../../memory";
 enum ListenerState {
@@ -34,6 +35,7 @@ export class EventPipeSocketConnection {
     private _state: ListenerState;
     readonly stream: SocketGuts;
     constructor (socket: CommonSocket) {
+        mono_assert(!loaderHelpers.is_exited(), "runtime is exited");
         this._state = ListenerState.Sending;
         this.stream = new SocketGuts(socket);
     }

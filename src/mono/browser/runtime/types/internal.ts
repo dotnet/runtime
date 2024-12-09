@@ -540,6 +540,7 @@ export const enum WorkerToMainMessageType {
     deputyFailed = "deputyFailed",
     deputyStarted = "monoStarted",
     deputyReady = "deputyReady",
+    diagnosticServerInit = "diagnosticServerInit",
     ioStarted = "ioStarted",
     preload = "preload",
 }

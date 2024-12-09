@@ -5,6 +5,7 @@
 import WasmEnableThreads from "consts:wasmEnableThreads";
 import monoDiagnosticsMock from "consts:monoDiagnosticsMock";
 
+import { loaderHelpers } from "../../globals";
 import { PromiseAndController, assertNever } from "../../types/internal";
 import { pthread_self } from "../../pthreads";
 import { createPromiseController, mono_assert } from "../../globals";
@@ -90,6 +91,7 @@ class DiagnosticServerImpl implements DiagnosticServer {
     private attachToRuntimeController = createPromiseController<void>().promise_control;
 
     start (): void {
+        mono_assert(!loaderHelpers.is_exited(), "runtime is exited");
         mono_log_info(`starting diagnostic server with url: ${this.websocketUrl}`);
         this.startRequestedController.resolve();
     }

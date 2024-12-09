@@ -21,6 +21,13 @@ To set runtime options when using the .NET runtime directly, use the `withRuntim
     const runtime = await dotnet
         .withRuntimeOptions(["--jiterpreter-stats-enabled"])
 ```
+
+Or disable jiterp with
+
+```javascript
+    const runtime = await dotnet
+        .withRuntimeOptions(["--no-jiterpreter-traces-enabled"])
+```
 When using Blazor, you can use the Msbuild property `BlazorWebAssemblyJiterpreter` as a convenient shorthand to configure whether the Jiterpreter is enabled. You can also use `BlazorWebAssemblyRuntimeOptions` to set specific options directly. At present, the Jiterpreter only functions in Blazor applications that have been published. When running with debugging enabled, it will be inactive.
 
 ## Trace lifecycle
