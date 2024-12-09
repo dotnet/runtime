@@ -84,9 +84,9 @@ namespace
 
     STDMETHODIMP HostServices::ReleaseDisconnectedReferenceSources()
     {
-        // This could lead to deadlock if finalizer thread is trying to get back to this thread, because we are
+        // We'd like to call InteropLibImports::WaitForRuntimeFinalizerForExternal() here, but this could
+        // lead to deadlock if the finalizer thread is trying to get back to this thread, because we are
         // not pumping anymore. Disable this for now. See: https://github.com/dotnet/runtime/issues/109538.
-        // return InteropLibImports::WaitForRuntimeFinalizerForExternal();
         return S_OK;
     }
 
