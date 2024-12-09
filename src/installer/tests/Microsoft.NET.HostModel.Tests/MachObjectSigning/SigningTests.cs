@@ -27,18 +27,19 @@ namespace Microsoft.NET.HostModel.MachO.CodeSign.Tests
         internal static bool IsSigned(string filePath)
         {
             // Validate the signature if we can, otherwise, at least ensure there is a signature LoadCommand present
-            bool isSigned = false;
             using (var appHostSourceStream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 1))
             using (var memoryMappedFile = MemoryMappedFile.CreateFromFile(appHostSourceStream, null, 0, MemoryMappedFileAccess.Read, HandleInheritability.None, true))
             using (var managedSignedAccessor = memoryMappedFile.CreateViewAccessor(0, 0, MemoryMappedFileAccess.CopyOnWrite))
             {
-                isSigned = MachObjectFile.Create(managedSignedAccessor).HasSignature;
+                if (!MachObjectFile.Create(managedSignedAccessor).HasSignature) {
+                    return false;
+                }
             }
-            if (Codesign.IsAvailable) {
-                var csResult = Codesign.Run("--verify", filePath);
-                isSigned &= csResult.ExitCode == 0;
+            if (Codesign.IsAvailable
+                && Codesign.Run("--verify", filePath).ExitCode != 0) {
+                    return false;
             }
-            return isSigned;
+            return true;
         }
 
         static readonly string[] liveBuiltHosts = new string[] { Binaries.AppHost.FilePath, Binaries.SingleFileHost.FilePath };

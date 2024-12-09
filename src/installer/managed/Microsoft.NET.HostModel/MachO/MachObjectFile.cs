@@ -109,7 +109,7 @@ internal unsafe partial class MachObjectFile
     }
 
     /// <summary>
-    /// Adjusts the headers of the Mach-O file to accomodate the new size of the bundle by putting bundle data into the string table.
+    /// Adjusts the headers of the Mach-O file to accommodate the new size of the bundle by putting bundle data into the string table.
     /// </summary>
     /// <param name="fileSize">The total size of the bundle</param>
     /// <param name="file">The bundle file to be processed</param>
@@ -379,7 +379,7 @@ internal unsafe partial class MachObjectFile
     {
         uint csOffset = GetSignatureStart();
         uint csPtr = (uint)(_codeSignatureLoadCommand.Command.IsDefault ? _nextCommandPtr : _codeSignatureLoadCommand.FileOffset);
-        uint csSize = CodeSignature.GetCodeSignatureSize(GetSignatureStart(), identifier);;
+        uint csSize = CodeSignature.GetCodeSignatureSize(GetSignatureStart(), identifier);
 
         if (_codeSignatureLoadCommand.Command.IsDefault)
         {
