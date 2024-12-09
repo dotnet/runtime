@@ -6536,7 +6536,7 @@ void Interpreter::LdToken()
     if (tok.hMethod != NULL)
     {
         MethodDesc* pMethod = (MethodDesc*)tok.hMethod;
-        Object* objPtr = OBJECTREFToObject((OBJECTREF)pMethod->GetStubMethodInfo());
+        Object* objPtr = OBJECTREFToObject((OBJECTREF)pMethod->AllocateStubMethodInfo());
         OpStackSet<Object*>(m_curStackHt, objPtr);
     }
     else if (tok.hField != NULL)

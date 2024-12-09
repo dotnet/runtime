@@ -445,7 +445,7 @@ extern "C" void QCALLTYPE ExceptionNative_GetMethodFromStackTrace(QCall::ObjectH
     // The managed stack trace classes always return typical method definition,
     // so we don't need to bother providing exact instantiation.
     MethodDesc* pMDTypical = pMD->LoadTypicalMethodDefinition();
-    retMethodInfo.Set(pMDTypical->GetStubMethodInfo());
+    retMethodInfo.Set(pMDTypical->AllocateStubMethodInfo());
     _ASSERTE(pMDTypical->IsRuntimeMethodHandle());
 
     END_QCALL;

@@ -895,37 +895,27 @@ extern "C" MethodDesc* QCALLTYPE RuntimeTypeHandle_GetInterfaceMethodImplementat
     return pResult;
 }
 
-FCIMPL1(ReflectMethodObject*, RuntimeTypeHandle::GetDeclaringMethod, ReflectClassBaseObject *pTypeUNSAFE) {
-    CONTRACTL {
-        FCALL_CHECK;
-    }
-    CONTRACTL_END;
+extern "C" void QCALLTYPE RuntimeTypeHandle_GetDeclaringMethodForGenericParameter(QCall::TypeHandle pTypeHandle, QCall::ObjectHandleOnStack result)
+{
+    QCALL_CONTRACT;
 
-    REFLECTCLASSBASEREF refType = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(pTypeUNSAFE);
+    BEGIN_QCALL;
 
-    if (refType == NULL)
-        FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
-
-    TypeHandle typeHandle = refType->GetType();;
-
-    if (!typeHandle.IsTypeDesc())
-        return NULL;
+    TypeHandle typeHandle = pTypeHandle.AsTypeHandle();
+    _ASSERTE(typeHandle.IsGenericVariable());
 
     TypeVarTypeDesc* pGenericVariable = typeHandle.AsGenericVariable();
     mdToken defToken = pGenericVariable->GetTypeOrMethodDef();
-    if (TypeFromToken(defToken) != mdtMethodDef)
-        return NULL;
+    if (TypeFromToken(defToken) == mdtMethodDef)
+    {
+        GCX_COOP();
+        MethodDesc* pMD = pGenericVariable->LoadOwnerMethod();
+        pMD->CheckRestore();
+        result.Set(pMD->AllocateStubMethodInfo());
+    }
 
-    REFLECTMETHODREF pRet = NULL;
-    HELPER_METHOD_FRAME_BEGIN_RET_0();
-    MethodDesc * pMD = pGenericVariable->LoadOwnerMethod();
-    pMD->CheckRestore();
-    pRet = pMD->GetStubMethodInfo();
-    HELPER_METHOD_FRAME_END();
-
-    return (ReflectMethodObject*)OBJECTREFToObject(pRet);
+    END_QCALL;
 }
-FCIMPLEND
 
 extern "C" EnregisteredTypeHandle QCALLTYPE RuntimeTypeHandle_GetDeclaringTypeHandleForGenericVariable(EnregisteredTypeHandle pTypeHandle)
 {
@@ -1926,7 +1916,7 @@ extern "C" void QCALLTYPE RuntimeMethodHandle_GetTypicalMethodDefinition(MethodD
     if (pMethodTypical != pMethod)
     {
         GCX_COOP();
-        refMethod.Set(pMethodTypical->GetStubMethodInfo());
+        refMethod.Set(pMethodTypical->AllocateStubMethodInfo());
     }
     END_QCALL;
 
@@ -1952,7 +1942,7 @@ extern "C" void QCALLTYPE RuntimeMethodHandle_StripMethodInstantiation(MethodDes
     if (pMethodStripped != pMethod)
     {
         GCX_COOP();
-        refMethod.Set(pMethodStripped->GetStubMethodInfo());
+        refMethod.Set(pMethodStripped->AllocateStubMethodInfo());
     }
     END_QCALL;
 
@@ -2552,7 +2542,7 @@ extern "C" void QCALLTYPE ModuleHandle_GetDynamicMethod(QCall::ModuleHandle pMod
         // create a handle to hold the resolver objectref
         OBJECTHANDLE resolverHandle = AppDomain::GetCurrentDomain()->CreateLongWeakHandle(resolver.Get());
         pNewMD->GetLCGMethodResolver()->SetManagedResolver(resolverHandle);
-        result.Set(pNewMD->GetStubMethodInfo());
+        result.Set(pNewMD->AllocateStubMethodInfo());
     }
 
     LoaderAllocator *pLoaderAllocator = pModule->GetLoaderAllocator();
