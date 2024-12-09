@@ -182,12 +182,11 @@ namespace System.Tests
 
             if (PlatformDetection.IsNotHybridGlobalizationOnApplePlatform)
             {
-                bool ignoreSymbolsIgnoresOnlyPunctuation = PlatformDetection.IsHybridGlobalizationOnBrowser;
                 yield return new object[] { "abcd", "ab cd", "en-US", CompareOptions.IgnoreSymbols, true };
-                yield return new object[] { "abcd", "ab+cd", "en-US", CompareOptions.IgnoreSymbols, !ignoreSymbolsIgnoresOnlyPunctuation };
+                yield return new object[] { "abcd", "ab+cd", "en-US", CompareOptions.IgnoreSymbols, true };
                 yield return new object[] { "abcd", "ab%cd", "en-US", CompareOptions.IgnoreSymbols, true };
                 yield return new object[] { "abcd", "ab&cd", "en-US", CompareOptions.IgnoreSymbols, true };
-                yield return new object[] { "abcd", "ab$cd", "en-US", CompareOptions.IgnoreSymbols, !ignoreSymbolsIgnoresOnlyPunctuation };
+                yield return new object[] { "abcd", "ab$cd", "en-US", CompareOptions.IgnoreSymbols, true };
                 yield return new object[] { "a-bcd", "ab$cd", "en-US", CompareOptions.IgnoreSymbols, true };
                 yield return new object[] { "abcd*", "ab$cd", "en-US", CompareOptions.IgnoreSymbols, true };
                 yield return new object[] { "ab$dd", "ab$cd", "en-US", CompareOptions.IgnoreSymbols, false };
