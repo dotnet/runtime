@@ -235,27 +235,23 @@ namespace Microsoft.NET.HostModel.AppHost
             {
                 using (FileStream bundleStream = new FileStream(appHostPath, FileMode.Open, FileAccess.ReadWrite))
                 {
+                    if (!MachObjectFile.IsMachOImage(bundleStream))
+                        return;
                     long bundleSize = bundleStream.Length;
-                    long mmapFileSize = bundleSize;
-                    bool isMachOImage = MachObjectFile.IsMachOImage(bundleStream);
-                    if (isMachOImage && macosCodesign)
-                    {
-                        mmapFileSize += MachObjectFile.GetSignatureSizeEstimate((uint)bundleSize, Path.GetFileName(appHostPath));
-                    }
+                    long mmapFileSize = macosCodesign ?
+                        bundleSize + MachObjectFile.GetSignatureSizeEstimate((uint)bundleSize, Path.GetFileName(appHostPath))
+                        : bundleSize;
                     using (MemoryMappedFile memoryMappedFile = MemoryMappedFile.CreateFromFile(bundleStream, null, mmapFileSize, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, leaveOpen: true))
                     using (MemoryMappedViewAccessor accessor = memoryMappedFile.CreateViewAccessor(0, 0, MemoryMappedFileAccess.ReadWrite))
                     {
-                        if (isMachOImage)
-                        {
-                            var machObjectFile = MachObjectFile.Create(accessor);
-                            if (machObjectFile.HasSignature)
-                                throw new AppHostMachOFormatException(MachOFormatError.SignNotRemoved);
-                            bool wasBundled = machObjectFile.TryAdjustHeadersForBundle((ulong)bundleSize, accessor);
-                            if (!wasBundled)
-                                throw new InvalidOperationException("The bundle was unable to be created. This is likely because the bundled content is too large.");
-                            if (macosCodesign)
-                                bundleSize = machObjectFile.CreateAdHocSignature(accessor, Path.GetFileName(appHostPath));
-                        }
+                        var machObjectFile = MachObjectFile.Create(accessor);
+                        if (machObjectFile.HasSignature)
+                            throw new AppHostMachOFormatException(MachOFormatError.SignNotRemoved);
+                        bool wasBundled = machObjectFile.TryAdjustHeadersForBundle((ulong)bundleSize, accessor);
+                        if (!wasBundled)
+                            throw new InvalidOperationException("The single-file bundle was unable to be created. This is likely because the bundled content is too large.");
+                        if (macosCodesign)
+                            bundleSize = machObjectFile.CreateAdHocSignature(accessor, Path.GetFileName(appHostPath));
                     }
                     bundleStream.SetLength(bundleSize);
                 }
