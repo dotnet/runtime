@@ -69,6 +69,12 @@ public class MethodDescTests
         Assert.False(isCollectible);
         TargetPointer versioning = rts.GetMethodDescVersioningState(handle);
         Assert.Equal(TargetPointer.Null, versioning);
+
+        // Method classification - IL method
+        Assert.False(rts.IsStoredSigMethodDesc(handle, out _));
+        Assert.False(rts.IsNoMetadataMethod(handle, out _));
+        Assert.False(rts.IsDynamicMethod(handle));
+        Assert.False(rts.IsILStub(handle));
     }
 
     public static IEnumerable<object[]> StdArchOptionalSlotsData()
@@ -133,6 +139,55 @@ public class MethodDescTests
             TargetPointer expectedCodeSlotAddr = methodDescAddress + methodDescSize - (uint)helpers.PointerSize;
             TargetPointer actualNativeCodeSlotAddr = rts.GetAddressOfNativeCodeSlot(handle);
             Assert.Equal(expectedCodeSlotAddr, actualNativeCodeSlotAddr);
+        }
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void IsDynamicMethod(MockTarget.Architecture arch)
+    {
+        TargetTestHelpers helpers = new(arch);
+        MockMemorySpace.Builder builder = new(helpers);
+        MockDescriptors.RuntimeTypeSystem rtsBuilder = new(builder);
+        MockDescriptors.Loader loaderBuilder = new(builder);
+        MockDescriptors.MethodDescriptors methodDescBuilder = new(rtsBuilder, loaderBuilder);
+
+        ushort numVirtuals = 1;
+        TargetPointer eeClass = rtsBuilder.AddEEClass(string.Empty, 0, 2, 1);
+        TargetPointer methodTable = rtsBuilder.AddMethodTable(string.Empty,
+            mtflags: default, mtflags2: default, baseSize: helpers.ObjectBaseSize,
+            module: TargetPointer.Null, parentMethodTable: TargetPointer.Null, numInterfaces: 0, numVirtuals: numVirtuals);
+        rtsBuilder.SetEEClassAndCanonMTRefs(eeClass, methodTable);
+
+        byte count = 2;
+        uint methodDescSize = methodDescBuilder.Types[DataType.DynamicMethodDesc].Size.Value;
+        uint methodDescSizeByAlignment = methodDescSize / methodDescBuilder.MethodDescAlignment;
+        byte chunkSize = (byte)(count * methodDescSizeByAlignment);
+        TargetPointer chunk = methodDescBuilder.AddMethodDescChunk(methodTable, string.Empty, count: 1, chunkSize, tokenRange: 0);
+
+        TargetPointer dynamicMethod = methodDescBuilder.SetMethodDesc(chunk, index: 0, slotNum: 0, flags: (ushort)MethodClassification.Dynamic, tokenRemainder: 0);
+        methodDescBuilder.SetDynamicMethodDesc(dynamicMethod, (uint)RuntimeTypeSystem_1.DynamicMethodDescExtendedFlags.IsLCGMethod);
+        TargetPointer ilStubMethod = methodDescBuilder.SetMethodDesc(chunk, index: (byte)methodDescSizeByAlignment, slotNum: 0, flags: (ushort)MethodClassification.Dynamic, tokenRemainder: 0);
+        methodDescBuilder.SetDynamicMethodDesc(ilStubMethod, (uint)RuntimeTypeSystem_1.DynamicMethodDescExtendedFlags.IsILStub);
+
+        Target target = CreateTarget(methodDescBuilder);
+        IRuntimeTypeSystem rts = target.Contracts.RuntimeTypeSystem;
+
+        {
+            var handle = rts.GetMethodDescHandle(dynamicMethod);
+            Assert.NotEqual(TargetPointer.Null, handle.Address);
+            Assert.True(rts.IsStoredSigMethodDesc(handle, out _));
+            Assert.True(rts.IsNoMetadataMethod(handle, out _));
+            Assert.True(rts.IsDynamicMethod(handle));
+            Assert.False(rts.IsILStub(handle));
+        }
+        {
+            var handle = rts.GetMethodDescHandle(ilStubMethod);
+            Assert.NotEqual(TargetPointer.Null, handle.Address);
+            Assert.True(rts.IsStoredSigMethodDesc(handle, out _));
+            Assert.True(rts.IsNoMetadataMethod(handle, out _));
+            Assert.False(rts.IsDynamicMethod(handle));
+            Assert.True(rts.IsILStub(handle));
         }
     }
 }

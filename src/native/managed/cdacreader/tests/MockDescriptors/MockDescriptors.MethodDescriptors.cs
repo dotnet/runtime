@@ -40,6 +40,28 @@ internal partial class MockDescriptors
             ]
         };
 
+        private static readonly TypeFields StoredSigMethodDescFields = new TypeFields()
+        {
+            DataType = DataType.StoredSigMethodDesc,
+            Fields =
+            [
+                new(nameof(Data.StoredSigMethodDesc.Sig), DataType.pointer),
+                new(nameof(Data.StoredSigMethodDesc.cSig), DataType.uint32),
+                new(nameof(Data.StoredSigMethodDesc.ExtendedFlags), DataType.uint32),
+            ],
+            BaseTypeFields = MethodDescFields
+        };
+
+        private static readonly TypeFields DynamicMethodDescFields = new TypeFields()
+        {
+            DataType = DataType.DynamicMethodDesc,
+            Fields =
+            [
+                new(nameof(Data.DynamicMethodDesc.MethodName), DataType.pointer),
+            ],
+            BaseTypeFields = StoredSigMethodDescFields
+        };
+
         private const ulong DefaultAllocationRangeStart = 0x2000_2000;
         private const ulong DefaultAllocationRangeEnd = 0x2000_3000;
 
@@ -78,6 +100,8 @@ internal partial class MockDescriptors
                 [
                     MethodDescFields,
                     MethodDescChunkFields,
+                    StoredSigMethodDescFields,
+                    DynamicMethodDescFields,
                 ]);
             types[DataType.NonVtableSlot] = new Target.TypeInfo() { Size = (uint)TargetTestHelpers.PointerSize };
             types[DataType.MethodImpl] = new Target.TypeInfo() { Size = (uint)TargetTestHelpers.PointerSize * 2 };
@@ -119,6 +143,14 @@ internal partial class MockDescriptors
             TargetTestHelpers.Write(data.Slice(methodDescTypeInfo.Fields[nameof(Data.MethodDesc.Flags)].Offset), flags);
             TargetTestHelpers.Write(data.Slice(methodDescTypeInfo.Fields[nameof(Data.MethodDesc.Flags3AndTokenRemainder)].Offset), tokenRemainder);
             TargetTestHelpers.Write(data.Slice(methodDescTypeInfo.Fields[nameof(Data.MethodDesc.Slot)].Offset), slotNum);
+            return methodDesc;
+        }
+
+        internal TargetPointer SetDynamicMethodDesc(TargetPointer methodDesc, uint extendedFlags)
+        {
+            Target.TypeInfo storedSigInfo = Types[DataType.StoredSigMethodDesc];
+            Span<byte> data = Builder.BorrowAddressRange(methodDesc, (int)storedSigInfo.Size.Value);
+            TargetTestHelpers.Write(data.Slice(storedSigInfo.Fields[nameof(Data.StoredSigMethodDesc.ExtendedFlags)].Offset), extendedFlags);
             return methodDesc;
         }
     }
