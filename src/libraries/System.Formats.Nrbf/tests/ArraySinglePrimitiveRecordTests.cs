@@ -23,7 +23,12 @@ public class ArraySinglePrimitiveRecordTests : ReadTests
         foreach (int size in new[] { 1, 127, 128, 512_001 })
         {
             yield return new object[] { size, true };
-            yield return new object[] { size, false };
+
+            // It's the most time-consuming test case, skip it for the non-Release builds.
+            if (size != 512_001 || PlatformDetection.IsReleaseRuntime)
+            {
+                yield return new object[] { size, false };
+            }
         }
     }
 
