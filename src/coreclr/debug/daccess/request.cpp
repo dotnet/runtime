@@ -1573,10 +1573,10 @@ ClrDataAccess::GetObjectStringData(CLRDATA_ADDRESS obj, unsigned int count, _Ino
             TADDR pszStr = TO_TADDR(obj)+offsetof(StringObject, m_FirstChar);
             ULONG32 bytesRead;
             hr = m_pTarget->ReadVirtual(pszStr, (PBYTE)stringData, count * sizeof(WCHAR), &bytesRead);
+            needed = bytesRead / sizeof(WCHAR);
 
             if (SUCCEEDED(hr))
             {
-                needed = bytesRead / sizeof(WCHAR);
                 stringData[count - 1] = W('\0');
             }
             else
