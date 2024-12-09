@@ -316,7 +316,7 @@ typedef PTR_SignatureNative SIGNATURENATIVEREF;
 #endif
 
 extern "C" void QCALLTYPE Signature_Init(
-    QCall::ObjectHandleOnStack sigNative,
+    QCall::ObjectHandleOnStack sigObj,
     PCCOR_SIGNATURE pCorSig, DWORD cCorSig,
     FieldDesc* pFieldDesc,
     MethodDesc* pMethodDesc,
@@ -326,10 +326,16 @@ extern "C" BOOL QCALLTYPE Signature_AreEqual(
     PCCOR_SIGNATURE sig1, INT32 cSig1, QCall::TypeHandle handle1,
     PCCOR_SIGNATURE sig2, INT32 cSig2, QCall::TypeHandle handle2);
 
+extern "C" void QCALLTYPE Signature_GetCustomModifiersAtOffset(
+    QCall::ObjectHandleOnStack sigObj,
+    INT32 offset,
+    BOOL fRequired,
+    QCall::ObjectHandleOnStack result);
+
 class SignatureNative : public Object
 {
     friend void QCALLTYPE Signature_Init(
-        QCall::ObjectHandleOnStack sigNative,
+        QCall::ObjectHandleOnStack sigObj,
         PCCOR_SIGNATURE pCorSig, DWORD cCorSig,
         FieldDesc* pFieldDesc,
         MethodDesc* pMethodDesc,
@@ -342,8 +348,6 @@ public:
     static FCDECL4(INT32, GetTypeParameterOffsetInternal, PCCOR_SIGNATURE sig, DWORD csig, INT32 offset, INT32 index);
 
     static FCDECL3(INT32, GetCallingConventionFromFunctionPointerAtOffsetInternal, PCCOR_SIGNATURE sig, DWORD csig, INT32 offset);
-
-    static FCDECL3(Object *, GetCustomModifiersAtOffset, SignatureNative* pSig, INT32 offset, FC_BOOL_ARG fRequired);
 
     BOOL HasThis() { LIMITED_METHOD_CONTRACT; return (m_managedCallingConvention & CALLCONV_HasThis); }
     INT32 NumFixedArgs() { WRAPPER_NO_CONTRACT; return m_PtrArrayarguments->GetNumComponents(); }

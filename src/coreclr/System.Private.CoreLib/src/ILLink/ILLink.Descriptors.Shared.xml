@@ -9,6 +9,9 @@
     <!-- Accessed via native code. -->
     <type fullname="System.Runtime.InteropServices.CustomMarshalers.*" />
 
+    <!-- Share definition across managed and native code. -->
+    <type fullname="System.Signature" />
+
     <!-- GetActualImplementationForArrayGenericIListOrIReadOnlyListMethod depends on slots of these interfaces not changing -->
     <type fullname="System.Collections.Generic.IEnumerable`1" />
     <type fullname="System.Collections.Generic.ICollection`1" />

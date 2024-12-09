@@ -1996,9 +1996,6 @@ namespace System
                 sig2._sig, sig2._csig, new QCallTypeHandle(ref sig2._declaringType)) != Interop.BOOL.FALSE;
         }
 
-        internal Type[] GetCustomModifiers(int parameterIndex, bool required) =>
-            GetCustomModifiersAtOffset(GetParameterOffset(parameterIndex), required);
-
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern unsafe int GetParameterOffsetInternal(void* sig, int csig, int parameterIndex);
 
@@ -2047,8 +2044,27 @@ namespace System
             return (SignatureCallingConvention)callConvMaybe;
         }
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal extern Type[] GetCustomModifiersAtOffset(int offset, bool required);
+        internal Type[] GetCustomModifiers(int parameterIndex, bool required) =>
+            GetCustomModifiersAtOffset(GetParameterOffset(parameterIndex), required);
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Signature_GetCustomModifiersAtOffset")]
+        private static partial void GetCustomModifiersAtOffset(
+            ObjectHandleOnStack sigObj,
+            int offset,
+            Interop.BOOL required,
+            ObjectHandleOnStack result);
+
+        internal Type[] GetCustomModifiersAtOffset(int offset, bool required)
+        {
+            Signature _this = this;
+            Type[]? result = null;
+            GetCustomModifiersAtOffset(
+                ObjectHandleOnStack.Create(ref _this),
+                offset,
+                required ? Interop.BOOL.TRUE : Interop.BOOL.FALSE,
+                ObjectHandleOnStack.Create(ref result));
+            return result!;
+        }
         #endregion
     }
 

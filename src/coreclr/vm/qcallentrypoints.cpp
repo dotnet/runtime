@@ -190,6 +190,7 @@ static const Entry s_QCall[] =
     DllImportEntry(AssemblyHandle_GetManifestModuleSlow)
     DllImportEntry(Signature_Init)
     DllImportEntry(Signature_AreEqual)
+    DllImportEntry(Signature_GetCustomModifiersAtOffset)
     DllImportEntry(TypeBuilder_DefineGenericParam)
     DllImportEntry(TypeBuilder_DefineType)
     DllImportEntry(TypeBuilder_SetParentType)

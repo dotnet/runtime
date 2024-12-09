@@ -1536,121 +1536,121 @@ FCIMPL3(INT32, SignatureNative::GetCallingConventionFromFunctionPointerAtOffsetI
 }
 FCIMPLEND
 
-FCIMPL3(Object *, SignatureNative::GetCustomModifiersAtOffset,
-    SignatureNative* pSignatureUNSAFE,
+extern "C" void QCALLTYPE Signature_GetCustomModifiersAtOffset(
+    QCall::ObjectHandleOnStack sigObj,
     INT32 offset,
-    FC_BOOL_ARG fRequired)
+    BOOL fRequired,
+    QCall::ObjectHandleOnStack result)
 {
-    FCALL_CONTRACT;
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+
+    GCX_COOP();
 
     struct
     {
         SIGNATURENATIVEREF pSig;
         PTRARRAYREF retVal;
     } gc;
-
-    gc.pSig = (SIGNATURENATIVEREF)pSignatureUNSAFE;
+    gc.pSig = (SIGNATURENATIVEREF)sigObj.Get();
     gc.retVal = NULL;
+    GCPROTECT_BEGIN(gc);
+    SigTypeContext typeContext;
+    gc.pSig->GetTypeContext(&typeContext);
 
-    HELPER_METHOD_FRAME_BEGIN_RET_PROTECT(gc);
+    SigPointer argument(gc.pSig->GetCorSig() + offset, gc.pSig->GetCorSigSize() - offset);
+
+    SigPointer sp = argument;
+    Module* pModule = gc.pSig->GetModule();
+    INT32 cMods = 0;
+    CorElementType cmodType;
+
+    CorElementType cmodTypeExpected = fRequired ? ELEMENT_TYPE_CMOD_REQD : ELEMENT_TYPE_CMOD_OPT;
+
+    // Discover the number of required and optional custom modifiers.
+    while (TRUE)
     {
-        SigTypeContext typeContext;
-        gc.pSig->GetTypeContext(&typeContext);
+        BYTE data;
+        IfFailThrow(sp.GetByte(&data));
+        cmodType = (CorElementType)data;
 
-        SigPointer argument(gc.pSig->GetCorSig() + offset, gc.pSig->GetCorSigSize() - offset);
-
-        SigPointer sp = argument;
-        Module* pModule = gc.pSig->GetModule();
-        INT32 cMods = 0;
-        CorElementType cmodType;
-
-        CorElementType cmodTypeExpected = FC_ACCESS_BOOL(fRequired) ? ELEMENT_TYPE_CMOD_REQD : ELEMENT_TYPE_CMOD_OPT;
-
-        // Discover the number of required and optional custom modifiers.
-        while(TRUE)
+        if (cmodType == ELEMENT_TYPE_CMOD_REQD || cmodType == ELEMENT_TYPE_CMOD_OPT)
         {
-            BYTE data;
-            IfFailThrow(sp.GetByte(&data));
-            cmodType = (CorElementType)data;
-
-            if (cmodType == ELEMENT_TYPE_CMOD_REQD || cmodType == ELEMENT_TYPE_CMOD_OPT)
+            if (cmodType == cmodTypeExpected)
             {
-                if (cmodType == cmodTypeExpected)
-                {
-                    cMods ++;
-                }
-
-                IfFailThrow(sp.GetToken(NULL));
+                cMods++;
             }
-            else if (cmodType == ELEMENT_TYPE_CMOD_INTERNAL)
-            {
-                BYTE required;
-                IfFailThrow(sp.GetByte(&required));
-                if (fRequired == (required != 0))
-                {
-                    cMods ++;
-                }
 
-                IfFailThrow(sp.GetPointer(NULL));
-            }
-            else if (cmodType != ELEMENT_TYPE_SENTINEL)
+            IfFailThrow(sp.GetToken(NULL));
+        }
+        else if (cmodType == ELEMENT_TYPE_CMOD_INTERNAL)
+        {
+            BYTE required;
+            IfFailThrow(sp.GetByte(&required));
+            if (fRequired == (required != 0))
             {
-                break;
+                cMods++;
+            }
+
+            IfFailThrow(sp.GetPointer(NULL));
+        }
+        else if (cmodType != ELEMENT_TYPE_SENTINEL)
+        {
+            break;
+        }
+    }
+
+    // Reset sp and populate the arrays for the required and optional custom
+    // modifiers now that we know how long they should be.
+    sp = argument;
+
+    MethodTable *pMT = CoreLibBinder::GetClass(CLASS__TYPE);
+    TypeHandle arrayHandle = ClassLoader::LoadArrayTypeThrowing(TypeHandle(pMT), ELEMENT_TYPE_SZARRAY);
+
+    gc.retVal = (PTRARRAYREF) AllocateSzArray(arrayHandle, cMods);
+
+    while (cMods != 0)
+    {
+        BYTE data;
+        IfFailThrow(sp.GetByte(&data));
+        cmodType = (CorElementType)data;
+
+        if (cmodType == ELEMENT_TYPE_CMOD_INTERNAL)
+        {
+            BYTE required;
+            IfFailThrow(sp.GetByte(&required));
+
+            TypeHandle th;
+            IfFailThrow(sp.GetPointer((void**)&th));
+
+            if (fRequired == (required != 0))
+            {
+                OBJECTREF refType = th.GetManagedClassObject();
+                gc.retVal->SetAt(--cMods, refType);
             }
         }
-
-        // Reset sp and populate the arrays for the required and optional custom
-        // modifiers now that we know how long they should be.
-        sp = argument;
-
-        MethodTable *pMT = CoreLibBinder::GetClass(CLASS__TYPE);
-        TypeHandle arrayHandle = ClassLoader::LoadArrayTypeThrowing(TypeHandle(pMT), ELEMENT_TYPE_SZARRAY);
-
-        gc.retVal = (PTRARRAYREF) AllocateSzArray(arrayHandle, cMods);
-
-        while(cMods != 0)
+        else
         {
-            BYTE data;
-            IfFailThrow(sp.GetByte(&data));
-            cmodType = (CorElementType)data;
+            mdToken token;
+            IfFailThrow(sp.GetToken(&token));
 
-            if (cmodType == ELEMENT_TYPE_CMOD_INTERNAL)
+            if (cmodType == cmodTypeExpected)
             {
-                BYTE required;
-                IfFailThrow(sp.GetByte(&required));
+                TypeHandle th = ClassLoader::LoadTypeDefOrRefOrSpecThrowing(pModule, token,
+                                                                            &typeContext,
+                                                                            ClassLoader::ThrowIfNotFound,
+                                                                            ClassLoader::FailIfUninstDefOrRef);
 
-                TypeHandle th;
-                IfFailThrow(sp.GetPointer((void**)&th));
-
-                if (fRequired == (required != 0))
-                {
-                    OBJECTREF refType = th.GetManagedClassObject();
-                    gc.retVal->SetAt(--cMods, refType);
-                }
-            }
-            else
-            {
-                mdToken token;
-                IfFailThrow(sp.GetToken(&token));
-
-                if (cmodType == cmodTypeExpected)
-                {
-                    TypeHandle th = ClassLoader::LoadTypeDefOrRefOrSpecThrowing(pModule, token,
-                                                                                &typeContext,
-                                                                                ClassLoader::ThrowIfNotFound,
-                                                                                ClassLoader::FailIfUninstDefOrRef);
-
-                    OBJECTREF refType = th.GetManagedClassObject();
-                    gc.retVal->SetAt(--cMods, refType);
-                }
+                OBJECTREF refType = th.GetManagedClassObject();
+                gc.retVal->SetAt(--cMods, refType);
             }
         }
     }
-    HELPER_METHOD_FRAME_END();
-
-    return OBJECTREFToObject(gc.retVal);
+    result.Set(gc.retVal);
+    GCPROTECT_END();
+    END_QCALL;
 }
-FCIMPLEND
 
 FCIMPL1(INT32, RuntimeMethodHandle::GetMethodDef, ReflectMethodObject *pMethodUNSAFE) {
     CONTRACTL {
@@ -1683,7 +1683,7 @@ FCIMPL1(INT32, RuntimeMethodHandle::GetMethodDef, ReflectMethodObject *pMethodUN
 FCIMPLEND
 
 extern "C" void QCALLTYPE Signature_Init(
-    QCall::ObjectHandleOnStack sigNative,
+    QCall::ObjectHandleOnStack sigObj,
     PCCOR_SIGNATURE pCorSig, DWORD cCorSig,
     FieldDesc* pFieldDesc,
     MethodDesc* pMethodDesc,
@@ -1699,7 +1699,7 @@ extern "C" void QCALLTYPE Signature_Init(
     {
         SIGNATURENATIVEREF pSig;
     } gc;
-    gc.pSig = (SIGNATURENATIVEREF)sigNative.Get();
+    gc.pSig = (SIGNATURENATIVEREF)sigObj.Get();
     GCPROTECT_BEGIN(gc);
 
     TypeHandle declType = TypeHandle::FromPtr(typeHandleRaw);
