@@ -126,6 +126,9 @@
     <NativeAotSupported Condition="'$(_NativeAotSupportedOS)' == 'true' and '$(_NativeAotSupportedArch)' == 'true'">true</NativeAotSupported>
     <UseNativeAotForComponents Condition="'$(NativeAotSupported)' == 'true' and '$(TargetOS)' == '$(HostOS)' and '$(TargetsLinuxBionic)' != 'true'">true</UseNativeAotForComponents>
 
+    <!-- TODO: remove once SDK is updated to 10.0 preview 1 (needs https://github.com/dotnet/runtime/pull/110238) -->
+    <UseNativeAotForComponents Condition="'$(TargetOS)' == 'windows' and '$(TargetArchitecture)' == 'x86'">false</UseNativeAotForComponents>
+
     <!-- If we're building clr.nativeaotlibs and not building the CLR runtime, compile libraries against NativeAOT CoreLib -->
     <UseNativeAotCoreLib Condition="'$(TestNativeAot)' == 'true' or ($(_subset.Contains('+clr.nativeaotlibs+')) and !$(_subset.Contains('+clr.native+')) and !$(_subset.Contains('+clr.runtime+')) and !$(_subset.Contains('+clr.corelib+')))">true</UseNativeAotCoreLib>
   </PropertyGroup>
