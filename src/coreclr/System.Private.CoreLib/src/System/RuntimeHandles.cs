@@ -517,25 +517,21 @@ namespace System
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_GetFields")]
         private static partial Interop.BOOL GetFields(MethodTable* pMT, Span<IntPtr> data, ref int usedCount);
 
-        internal static bool GetFields(RuntimeType type, ref Span<IntPtr> buffer, ref int count)
+        internal static bool GetFields(RuntimeType type, Span<IntPtr> buffer, out int count)
         {
+            Debug.Assert(!IsGenericVariable(type));
+
             TypeHandle typeHandle = type.GetNativeTypeHandle();
-
-            CorElementType elementType = (CorElementType)typeHandle.GetCorElementType();
-            if (elementType is CorElementType.ELEMENT_TYPE_VAR or CorElementType.ELEMENT_TYPE_MVAR)
-            {
-                throw new ArgumentException(SR.Arg_InvalidHandle);
-            }
-
             if (typeHandle.IsTypeDesc)
             {
                 count = 0;
                 return true;
             }
 
-            count = buffer.Length;
-            bool success = GetFields(typeHandle.AsMethodTable(), buffer, ref count) != Interop.BOOL.FALSE;
+            int countLocal = buffer.Length;
+            bool success = GetFields(typeHandle.AsMethodTable(), buffer, ref countLocal) != Interop.BOOL.FALSE;
             GC.KeepAlive(type);
+            count = countLocal;
             return success;
         }
 

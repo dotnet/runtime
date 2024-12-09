@@ -850,23 +850,17 @@ namespace System
                 private unsafe void PopulateRtFields(Filter filter, RuntimeType declaringType, ref ListBuilder<RuntimeFieldInfo> list)
                 {
                     Span<IntPtr> result = stackalloc IntPtr[64];
-                    int count = 0;
-
-                    if (!RuntimeTypeHandle.GetFields(declaringType, ref result, ref count))
+                    int count;
+                    while (!RuntimeTypeHandle.GetFields(declaringType, result, out count))
                     {
+                        Debug.Assert(count > result.Length);
                         result = new IntPtr[count];
-                        bool success = RuntimeTypeHandle.GetFields(declaringType, ref result, ref count);
-                        Debug.Assert(success && result.Length == count);
-                        PopulateRtFields(filter, result, declaringType, ref list);
                     }
-                    else if (count > 0)
-                    {
-                        PopulateRtFields(filter, result.Slice(0, count), declaringType, ref list);
-                    }
+                    PopulateRtFields(filter, result.Slice(0, count), declaringType, ref list);
                 }
 
                 private unsafe void PopulateRtFields(Filter filter,
-                    Span<IntPtr> ppFieldHandles, RuntimeType declaringType, ref ListBuilder<RuntimeFieldInfo> list)
+                    ReadOnlySpan<IntPtr> fieldHandles, RuntimeType declaringType, ref ListBuilder<RuntimeFieldInfo> list)
                 {
                     Debug.Assert(declaringType != null);
                     Debug.Assert(ReflectedType != null);
@@ -874,7 +868,7 @@ namespace System
                     bool needsStaticFieldForGeneric = declaringType.IsGenericType && !RuntimeTypeHandle.ContainsGenericVariables(declaringType);
                     bool isInherited = declaringType != ReflectedType;
 
-                    foreach (IntPtr handle in ppFieldHandles)
+                    foreach (IntPtr handle in fieldHandles)
                     {
                         RuntimeFieldHandleInternal runtimeFieldHandle = new RuntimeFieldHandleInternal(handle);
 
