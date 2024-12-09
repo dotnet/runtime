@@ -660,7 +660,24 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern bool CanCastTo(RuntimeType type, RuntimeType target);
+        private static extern CastResult CanCastToInternal(RuntimeType type, RuntimeType target);
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_CanCastToSlow")]
+        private static partial Interop.BOOL CanCastToSlow(QCallTypeHandle type1, QCallTypeHandle type2);
+
+        internal static bool CanCastTo(RuntimeType type, RuntimeType target)
+        {
+            return CanCastToInternal(type, target) switch
+            {
+                CastResult.CanCast => true,
+                CastResult.CannotCast => false,
+                _ => CanCastToWorker(type, target)
+            };
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static bool CanCastToWorker(RuntimeType type1, RuntimeType type2)
+                => CanCastToSlow(new QCallTypeHandle(ref type1), new QCallTypeHandle(ref type2)) != Interop.BOOL.FALSE;
+        }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_GetDeclaringTypeHandleForGenericVariable")]
         private static partial IntPtr GetDeclaringTypeHandleForGenericVariable(IntPtr typeHandle);

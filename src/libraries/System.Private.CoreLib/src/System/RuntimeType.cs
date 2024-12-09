@@ -268,7 +268,6 @@ namespace System
             // For runtime type, let the VM decide.
             if (c.UnderlyingSystemType is RuntimeType fromType)
             {
-                // both this and c (or their underlying system types) are runtime types
                 return RuntimeTypeHandle.CanCastTo(fromType, this);
             }
 

@@ -996,59 +996,59 @@ extern "C" EnregisteredTypeHandle QCALLTYPE RuntimeTypeHandle_GetDeclaringTypeHa
     return (EnregisteredTypeHandle)retTypeHandle.AsTAddr();
 }
 
-FCIMPL2(FC_BOOL_RET, RuntimeTypeHandle::CanCastTo, ReflectClassBaseObject *pTypeUNSAFE, ReflectClassBaseObject *pTargetUNSAFE) {
-    CONTRACTL {
-        FCALL_CHECK;
-    }
-    CONTRACTL_END;
-
+FCIMPL2(TypeHandle::CastResult, RuntimeTypeHandle::CanCastToInternal, ReflectClassBaseObject *pTypeUNSAFE, ReflectClassBaseObject *pTargetUNSAFE)
+{
+    FCALL_CONTRACT;
 
     REFLECTCLASSBASEREF refType = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(pTypeUNSAFE);
     REFLECTCLASSBASEREF refTarget = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(pTargetUNSAFE);
-
-    if ((refType == NULL) || (refTarget == NULL))
-        FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
-
     TypeHandle fromHandle = refType->GetType();
     TypeHandle toHandle = refTarget->GetType();
+    return fromHandle.CanCastToCached(toHandle);
+}
+FCIMPLEND
 
-    TypeHandle::CastResult r = fromHandle.CanCastToCached(toHandle);
-    if (r != TypeHandle::MaybeCast)
+extern "C" BOOL QCALLTYPE RuntimeTypeHandle_CanCastToSlow(QCall::TypeHandle type, QCall::TypeHandle target)
+{
+    QCALL_CONTRACT;
+
+    BOOL retVal = FALSE;
+
+    BEGIN_QCALL;
+
+    TypeHandle fromHandle = type.AsTypeHandle();
+    TypeHandle toHandle = target.AsTypeHandle();
+
+    // We allow T to be cast to Nullable<T>
+    if (!fromHandle.IsTypeDesc()
+        && Nullable::IsNullableForType(toHandle, fromHandle.AsMethodTable()))
     {
-        FC_RETURN_BOOL((BOOL)r);
+        // do not put this in the cache (see TypeHandle::CanCastTo and ObjIsInstanceOfCore).
+        retVal = TRUE;
     }
-
-    BOOL iRetVal = FALSE;
-    HELPER_METHOD_FRAME_BEGIN_RET_2(refType, refTarget);
+    else
     {
-        // We allow T to be cast to Nullable<T>
-        if (!fromHandle.IsTypeDesc() && Nullable::IsNullableForType(toHandle, fromHandle.AsMethodTable()))
+        GCX_COOP();
+
+        if (fromHandle.IsTypeDesc())
         {
-            // do not put this in the cache (see TypeHandle::CanCastTo and ObjIsInstanceOfCore).
-            iRetVal = TRUE;
+            retVal = fromHandle.AsTypeDesc()->CanCastTo(toHandle, /* pVisited */ NULL);
+        }
+        else if (toHandle.IsTypeDesc())
+        {
+            retVal = FALSE;
+            CastCache::TryAddToCache(fromHandle, toHandle, FALSE);
         }
         else
         {
-            if (fromHandle.IsTypeDesc())
-            {
-                iRetVal = fromHandle.AsTypeDesc()->CanCastTo(toHandle, /* pVisited */ NULL);
-            }
-            else if (toHandle.IsTypeDesc())
-            {
-                iRetVal = FALSE;
-                CastCache::TryAddToCache(fromHandle, toHandle, FALSE);
-            }
-            else
-            {
-                iRetVal = fromHandle.AsMethodTable()->CanCastTo(toHandle.AsMethodTable(), /* pVisited */ NULL);
-            }
+            retVal = fromHandle.AsMethodTable()->CanCastTo(toHandle.AsMethodTable(), /* pVisited */ NULL);
         }
     }
-    HELPER_METHOD_FRAME_END();
 
-    FC_RETURN_BOOL(iRetVal);
+    END_QCALL;
+
+    return retVal;
 }
-FCIMPLEND
 
 FCIMPL6(FC_BOOL_RET, RuntimeTypeHandle::SatisfiesConstraints, PTR_ReflectClassBaseObject pParamTypeUNSAFE, TypeHandle *typeContextArgs, INT32 typeContextCount, TypeHandle *methodContextArgs, INT32 methodContextCount, PTR_ReflectClassBaseObject pArgumentTypeUNSAFE);
 {
