@@ -401,32 +401,63 @@ namespace System.IO.Packaging
 
                 PackUriHelper.ValidatedPartUri partUri;
 
+                var uriComparer = Comparer<PackUriHelper.ValidatedPartUri>.Default;
+
+                //Sorting the parts array which takes O(n log n) time.
+                Array.Sort(parts, Comparer<PackagePart>.Create((partA, partB) => uriComparer.Compare((PackUriHelper.ValidatedPartUri)partA.Uri, (PackUriHelper.ValidatedPartUri)partB.Uri)));
+
                 //We need this dictionary to detect any collisions that might be present in the
                 //list of parts that was given to us from the underlying physical layer, as more than one
                 //partnames can be mapped to the same normalized part.
                 //Note: We cannot use the _partList member variable, as that gets updated incrementally and so its
                 //not possible to find the collisions using that list.
                 //PackUriHelper.ValidatedPartUri implements the IComparable interface.
-                Dictionary<PackUriHelper.ValidatedPartUri, PackagePart> seenPartUris = new Dictionary<PackUriHelper.ValidatedPartUri, PackagePart>(parts.Length);
+                Dictionary<string, KeyValuePair<PackUriHelper.ValidatedPartUri, PackagePart>> partDictionary = new Dictionary<string, KeyValuePair<PackUriHelper.ValidatedPartUri, PackagePart>>(parts.Length);
+                List<string> partIndex = new List<string>(parts.Length);
 
                 for (int i = 0; i < parts.Length; i++)
                 {
                     partUri = (PackUriHelper.ValidatedPartUri)parts[i].Uri;
 
-                    if (seenPartUris.ContainsKey(partUri))
+                    string normalizedPartName = partUri.NormalizedPartUriString;
+
+                    if (partDictionary.ContainsKey(normalizedPartName))
+                    {
                         throw new FileFormatException(SR.BadPackageFormat);
+                    }
                     else
                     {
-                        // Add the part to the list of URIs that we have already seen
-                        seenPartUris.Add(partUri, parts[i]);
+                        //since we will arive to this line of code after the parts are already sorted
+                        string? precedingPartName = null;
 
-                        if (!_partList.ContainsKey(partUri))
+                        if (partIndex.Count > 0)
                         {
-                            // Add the part to the _partList if there is no prefix collision
-                            AddIfNoPrefixCollisionDetected(partUri, parts[i]);
+                            precedingPartName = (partIndex[partIndex.Count - 1]);
                         }
+
+                        // Add the part to the dictionary
+                        partDictionary.Add(normalizedPartName, new KeyValuePair<PackUriHelper.ValidatedPartUri, PackagePart>(partUri, parts[i]));
+
+                        if (precedingPartName != null
+                            && normalizedPartName.StartsWith(precedingPartName, StringComparison.Ordinal)
+                            && normalizedPartName.Length > precedingPartName.Length
+                            && normalizedPartName[precedingPartName.Length] == PackUriHelper.ForwardSlashChar)
+                        {
+                            //Removing the invalid entry from the _partList.
+                            partDictionary.Remove(normalizedPartName);
+
+                            throw new InvalidOperationException(SR.PartNamePrefixExists);
+                        }
+
+                        //adding entry to partIndex to keep track of last element being added.
+                        //since parts are already sorted, last element in partIndex list will point to preceeding element to the current.
+                        partIndex.Add(partUri.NormalizedPartUriString);
                     }
                 }
+
+                //copying parts from partdictionary to partlist
+                CopyPartDicitonaryToPartList(partDictionary, partIndex);
+
                 _partCollection = new PackagePartCollection(_partList);
             }
             return _partCollection;
@@ -1171,6 +1202,23 @@ namespace System.IO.Packaging
             //Internally null is used to indicate that no filter string was specified and
             //and all the relationships should be returned.
             return new PackageRelationshipCollection(_relationships, filterString);
+        }
+
+        private void CopyPartDicitonaryToPartList(Dictionary<string, KeyValuePair<PackUriHelper.ValidatedPartUri, PackagePart>> partDictionary, List<string> partIndex)
+        {
+            //Clearing _partList before copying in new data. Reassigning the variable, assuming the previous object to be garbage collected.
+            //ideally addition to sortedlist takes O(n) but since we have sorted data and also we defined the size, it will take O(log n) per addition
+            //total time complexity for this function will be O(n log n)
+            _partList = new SortedList<PackUriHelper.ValidatedPartUri, PackagePart>(partDictionary.Count);
+
+            //Since partIndex is created from a sorted parts array we are sure that partIndex
+            //will have items in same order
+            foreach (var id in partIndex)
+            {
+                //retrieving object from partDictionary hashtable
+                var keyValue = partDictionary[id];
+                _partList.Add(keyValue.Key, keyValue.Value);
+            }
         }
 
         #endregion Private Methods
