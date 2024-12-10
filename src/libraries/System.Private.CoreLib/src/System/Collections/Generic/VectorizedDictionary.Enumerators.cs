@@ -1,8 +1,10 @@
-﻿using System;
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
-using System.Linq;
 
 namespace System.Collections.Generic {
     public partial class Dictionary<TKey, TValue> {
@@ -42,10 +44,10 @@ namespace System.Collections.Generic {
             void ICollection<TKey>.Clear () =>
                 Dictionary.Clear();
 
-            bool ICollection<TKey>.Contains (TKey item) =>
+            public bool Contains (TKey item) =>
                 Dictionary.ContainsKey(item);
 
-            void ICollection<TKey>.CopyTo (TKey[] array, int arrayIndex) {
+            public void CopyTo (TKey[] array, int arrayIndex) {
                 // FIXME: Use EnumerateBuckets
                 using (var e = GetEnumerator())
                     while (e.MoveNext())
@@ -68,7 +70,8 @@ namespace System.Collections.Generic {
             object ICollection.SyncRoot => Dictionary;
             void ICollection.CopyTo(System.Array array, int index) =>
                 // FIXME
-                ((ICollection)this.ToList()).CopyTo(array, index);
+                throw new NotImplementedException();
+                // ((ICollection)this.ToList()).CopyTo(array, index);
         }
 
         public struct ValueCollection : ICollection<TValue>, ICollection {
@@ -113,7 +116,7 @@ namespace System.Collections.Generic {
                 return false;
             }
 
-            void ICollection<TValue>.CopyTo (TValue[] array, int arrayIndex) {
+            public void CopyTo (TValue[] array, int arrayIndex) {
                 // FIXME: Use EnumerateBuckets
                 using (var e = GetEnumerator())
                     while (e.MoveNext())
@@ -136,7 +139,8 @@ namespace System.Collections.Generic {
             object ICollection.SyncRoot => Dictionary;
             void ICollection.CopyTo(System.Array array, int index) =>
                 // FIXME
-                ((ICollection)this.ToList()).CopyTo(array, index);
+                throw new NotImplementedException();
+                //((ICollection)this.ToList()).CopyTo(array, index);
         }
 
         public struct Enumerator : IEnumerator<KeyValuePair<TKey, TValue>>, IDictionaryEnumerator {

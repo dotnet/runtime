@@ -192,6 +192,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Collections\Generic\CollectionExtensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Collections\Generic\Comparer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Collections\Generic\Dictionary.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Collections\Generic\VectorizedDictionary*.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Collections\Generic\DebugViewDictionaryItem.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Collections\Generic\EqualityComparer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Collections\Generic\HashSet.cs" />

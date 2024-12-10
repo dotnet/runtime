@@ -70,7 +70,9 @@ namespace System.Runtime.InteropServices
         public static ref TValue GetValueRefOrNullRef<TKey, TValue, TAlternateKey>(Dictionary<TKey, TValue>.AlternateLookup<TAlternateKey> dictionary, TAlternateKey key)
             where TKey : notnull
             where TAlternateKey : notnull, allows ref struct
-            => ref dictionary.FindValue(key, out _);
+            // FIXME
+            => throw new NotImplementedException();
+            // => ref dictionary.FindValue(key, out _);
 
         /// <summary>
         /// Gets a ref to a <typeparamref name="TValue"/> in the <see cref="Dictionary{TKey, TValue}"/>, adding a new entry with a default value if it does not exist in the <paramref name="dictionary"/>.
@@ -86,18 +88,18 @@ namespace System.Runtime.InteropServices
             => ref Dictionary<TKey, TValue>.CollectionsMarshalHelper.GetValueRefOrAddDefault(dictionary, key, out exists);
         */
 
-        public static ref readonly V GetValueRefOrAddDefault<TKey, TValue> (this Dictionary<K, V> self, K key, out bool exists)
-            where K : notnull
+        public static ref readonly TValue GetValueRefOrAddDefault<TKey, TValue> (Dictionary<TKey, TValue> self, TKey key, out bool exists)
+            where TKey : notnull
         {
 retry:
             ref var pair = ref self.TryInsert(key, default!, Dictionary<K, V>.InsertMode.EnsureUnique, out var result);
-            if (result == Dictionary<K, V>.InsertResult.NeedToGrow) {
+            if (result == Dictionary<TKey, TValue>.InsertResult.NeedToGrow) {
                 self.EnsureCapacity(self.Count + 1);
                 goto retry;
             }
             if (Unsafe.IsNullRef(ref pair))
                 throw new Exception("Corrupted internal state");
-            exists = (result != Dictionary<K, V>.InsertResult.OkAddedNew);
+            exists = (result != Dictionary<TKey, TValue>.InsertResult.OkAddedNew);
             return ref pair.Value;
         }
 
@@ -114,6 +116,7 @@ retry:
         public static ref TValue? GetValueRefOrAddDefault<TKey, TValue, TAlternateKey>(Dictionary<TKey, TValue>.AlternateLookup<TAlternateKey> dictionary, TAlternateKey key, out bool exists)
             where TKey : notnull
             where TAlternateKey : notnull, allows ref struct
+            // FIXME
             => throw new NotImplementedException();
             // => ref dictionary.GetValueRefOrAddDefault(key, out exists);
 

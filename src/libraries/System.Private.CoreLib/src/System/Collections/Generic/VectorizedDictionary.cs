@@ -1,7 +1,11 @@
-﻿// Performs a murmur3 finalization mix on hashcodes before using them, for collision resistance
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+// Performs a murmur3 finalization mix on hashcodes before using them, for collision resistance
 // #define PERMUTE_HASH_CODES
 
 using System;
+using System.Threading;
 using System.Collections;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -48,25 +52,24 @@ namespace System.Collections.Generic {
         private ICollection<TKey>? _BoxedKeys;
         private ICollection<TValue>? _BoxedValues;
         // It's important for an empty dictionary to have both count and capacity be 0
-        private int _Count = 0,
-            _Capacity = 0;
-        private ulong _fastModMultiplier;
+        private int _Count, _Capacity;
+        private /* volatile */ ulong _fastModMultiplier;
 
         private Bucket[] _Buckets = Statics.EmptyBuckets;
 
-        public VectorizedDictionary ()
+        public Dictionary ()
             : this (InitialCapacity, null) {
         }
 
-        public VectorizedDictionary (int capacity)
+        public Dictionary (int capacity)
             : this (capacity, null) {
         }
 
-        public VectorizedDictionary (IEqualityComparer<TKey>? comparer)
+        public Dictionary (IEqualityComparer<TKey>? comparer)
             : this (InitialCapacity, comparer) {
         }
 
-        public VectorizedDictionary (int capacity, IEqualityComparer<TKey>? comparer) {
+        public Dictionary (int capacity, IEqualityComparer<TKey>? comparer) {
             if (typeof(TKey).IsValueType)
                 Comparer = comparer;
             // HACK: DefaultEqualityComparer<K> for string is really bad
@@ -77,7 +80,7 @@ namespace System.Collections.Generic {
             EnsureCapacity(capacity);
         }
 
-        public VectorizedDictionary (Dictionary<TKey, TValue> source) {
+        public Dictionary (Dictionary<TKey, TValue> source) {
             Comparer = source.Comparer;
             _Count = source._Count;
             _Capacity = source._Capacity;
@@ -90,7 +93,7 @@ namespace System.Collections.Generic {
 
         // [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         [EditorBrowsable(EditorBrowsableState.Never)]
-        protected VectorizedDictionary(SerializationInfo info, StreamingContext context)
+        protected Dictionary(SerializationInfo info, StreamingContext context)
         {
             // We can't do anything with the keys and values until the entire graph has been deserialized
             // and we have a resonable estimate that GetHashCode is not going to fail.  For the time being,
@@ -163,7 +166,7 @@ namespace System.Collections.Generic {
             _Buckets = newBuckets;
             // HACK: Ensure we store a new larger bucket array before storing the larger fastModMultiplier and capacity.
             // This ensures that concurrent modification will not produce a bucket index that is too big.
-            Thread.MemoryBarrier();
+            Interlocked.MemoryBarrier();
             _fastModMultiplier = fastModMultiplier;
             _Capacity = usableCapacity;
 
@@ -242,7 +245,9 @@ namespace System.Collections.Generic {
                 hashCode, (uint)buckets.Length,
                 // Volatile.Read to ensure that the load of _fastModMultiplier can't get moved before load of _Buckets
                 // This doesn't appear to generate a memory barrier or anything.
-                Volatile.Read(ref _fastModMultiplier)
+                // FIXME
+                // Volatile.Read(ref _fastModMultiplier)
+                _fastModMultiplier
             ));
 
         // Internal for access from CollectionsMarshal
@@ -259,7 +264,7 @@ namespace System.Collections.Generic {
         internal ref TValue FindValue (TKey key) {
             ref var pair = ref FindKey(key);
             if (Unsafe.IsNullRef(ref pair))
-                return Unsafe.NullRef<TValue>();
+                return ref Unsafe.NullRef<TValue>();
             else
                 return ref pair.Value;
         }
@@ -791,7 +796,7 @@ retry:
             CopyToArray(array, index);
         }
 
-        private void CopyTo (object[] array, int index) {
+        public void CopyTo (object[] array, int index) {
             CopyToArray(array, index);
         }
 
