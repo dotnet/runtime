@@ -337,7 +337,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			}
 
 			[Kept]
-			[ExpectedWarning ("IL2026", Tool.Trimmer, "https://github.com/dotnet/linker/issues/2638")]
+			[ExpectedWarning ("IL2026", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/linker/issues/2638")]
 			public static void Test ()
 			{
 				BindingFlags left = BindingFlags.Instance | BindingFlags.Static;

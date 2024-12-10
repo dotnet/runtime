@@ -23,7 +23,6 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
     private readonly Dictionary<TargetPointer, MethodTable> _methodTables = new();
     private readonly Dictionary<TargetPointer, MethodDesc> _methodDescs = new();
 
-
     internal struct MethodTable
     {
         internal MethodTableFlags_1 Flags { get; }
@@ -126,8 +125,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
             uint tokenRemainder = (uint)(desc.Flags3AndTokenRemainder & tokenRemainderMask);
             uint tokenRange = ((uint)(chunk.FlagsAndTokenRange & tokenRangeMask)) << tokenRemainderBitCount;
-
-            return 0x06000000 | tokenRange | tokenRemainder;
+            return EcmaMetadataUtils.CreateMethodDef(tokenRange | tokenRemainder);
         }
 
         public MethodClassification Classification => (MethodClassification)((int)_desc.Flags & (int)MethodDescFlags_1.MethodDescFlags.ClassificationMask);
@@ -894,8 +892,25 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
     private TargetPointer GetLoaderModule(TypeHandle typeHandle)
     {
-        if (!typeHandle.IsMethodTable())
-            throw new NotImplementedException(); // TODO[cdac]: TypeDesc::GetLoaderModule()
+        if (typeHandle.IsTypeDesc())
+        {
+            // TypeDesc::GetLoaderModule
+            if (HasTypeParam(typeHandle))
+            {
+                return GetLoaderModule(GetTypeParam(typeHandle));
+            }
+            else if (IsGenericVariable(typeHandle, out TargetPointer genericParamModule, out _))
+            {
+                return genericParamModule;
+            }
+            else
+            {
+                System.Diagnostics.Debug.Assert(IsFunctionPointer(typeHandle, out _, out _));
+                FnPtrTypeDesc fnPtrTypeDesc = _target.ProcessedData.GetOrAdd<FnPtrTypeDesc>(typeHandle.TypeDescAddress());
+                return fnPtrTypeDesc.LoaderModule;
+            }
+        }
+
         MethodTable mt = _methodTables[typeHandle.Address];
         Data.MethodTableAuxiliaryData mtAuxData = _target.ProcessedData.GetOrAdd<Data.MethodTableAuxiliaryData>(mt.AuxiliaryData);
         return mtAuxData.LoaderModule;

@@ -1825,7 +1825,7 @@ bool CSE_HeuristicCommon::CanConsiderTree(GenTree* tree, bool isReturn)
         case GT_ADD: // Check for ADDRMODE flag on these Binary Operators
         case GT_MUL:
         case GT_LSH:
-            if ((tree->gtFlags & GTF_ADDRMODE_NO_CSE) != 0)
+            if (tree->IsPartOfAddressMode())
             {
                 return false;
             }
@@ -5114,10 +5114,7 @@ void CSE_HeuristicCommon::ReplaceCSENode(Statement* stmt, GenTree* exp, GenTree*
 //
 void CSE_HeuristicCommon::InsertUseIntoSsa(IncrementalSsaBuilder& ssaBuilder, const UseDefLocation& useDefLoc)
 {
-    if (!ssaBuilder.InsertUse(useDefLoc))
-    {
-        return;
-    }
+    ssaBuilder.InsertUse(useDefLoc);
 
     GenTreeLclVar* lcl = useDefLoc.Tree;
     assert(lcl->HasSsaName());

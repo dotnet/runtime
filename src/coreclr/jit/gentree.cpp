@@ -17852,13 +17852,14 @@ ExceptionSetFlags Compiler::gtCollectExceptions(GenTree* tree)
 // of number of sub nodes.
 //
 // Arguments:
-//     tree  - The tree to check
-//     limit - The limit in terms of number of nodes
+//     tree       - The tree to check
+//     limit      - The limit in terms of number of nodes
+//     complexity - [out, optional] the actual node count (if not greater than limit)
 //
 // Return Value:
-//     True if there are mode sub nodes in tree; otherwise false.
+//     True if there are more than limit nodes in tree; otherwise false.
 //
-bool Compiler::gtComplexityExceeds(GenTree* tree, unsigned limit)
+bool Compiler::gtComplexityExceeds(GenTree* tree, unsigned limit, unsigned* complexity)
 {
     struct ComplexityVisitor : GenTreeVisitor<ComplexityVisitor>
     {
@@ -17883,13 +17884,26 @@ bool Compiler::gtComplexityExceeds(GenTree* tree, unsigned limit)
             return WALK_CONTINUE;
         }
 
+        unsigned NumNodes()
+        {
+            return m_numNodes;
+        }
+
     private:
         unsigned m_limit;
         unsigned m_numNodes = 0;
     };
 
     ComplexityVisitor visitor(this, limit);
-    return visitor.WalkTree(&tree, nullptr) == WALK_ABORT;
+
+    fgWalkResult result = visitor.WalkTree(&tree, nullptr);
+
+    if (complexity != nullptr)
+    {
+        *complexity = visitor.NumNodes();
+    }
+
+    return (result == WALK_ABORT);
 }
 
 bool GenTree::IsPhiNode()
@@ -26786,7 +26800,55 @@ bool GenTree::OperIsHWIntrinsic(NamedIntrinsic intrinsicId) const
 {
     if (OperIsHWIntrinsic())
     {
-        return AsHWIntrinsic()->GetHWIntrinsicId() == intrinsicId;
+        return AsHWIntrinsic()->OperIsHWIntrinsic(intrinsicId);
+    }
+    return false;
+}
+
+//------------------------------------------------------------------------
+// OperIsConvertMaskToVector: Is this a ConvertMaskToVector hwintrinsic
+//
+// Return Value:
+//    true if the node is a ConvertMaskToVector hwintrinsic
+//    otherwise; false
+//
+bool GenTree::OperIsConvertMaskToVector() const
+{
+    if (OperIsHWIntrinsic())
+    {
+        return AsHWIntrinsic()->OperIsConvertMaskToVector();
+    }
+    return false;
+}
+
+//------------------------------------------------------------------------
+// OperIsConvertVectorToMask: Is this a ConvertVectorToMask hwintrinsic
+//
+// Return Value:
+//    true if the node is a ConvertVectorToMask hwintrinsic
+//    otherwise; false
+//
+bool GenTree::OperIsConvertVectorToMask() const
+{
+    if (OperIsHWIntrinsic())
+    {
+        return AsHWIntrinsic()->OperIsConvertVectorToMask();
+    }
+    return false;
+}
+
+//------------------------------------------------------------------------
+// OperIsVectorConditionalSelect: Is this a vector ConditionalSelect hwintrinsic
+//
+// Return Value:
+//    true if the node is a vector ConditionalSelect hwintrinsic
+//    otherwise; false
+//
+bool GenTree::OperIsVectorConditionalSelect() const
+{
+    if (OperIsHWIntrinsic())
+    {
+        return AsHWIntrinsic()->OperIsVectorConditionalSelect();
     }
     return false;
 }
@@ -30101,7 +30163,7 @@ regNumber ReturnTypeDesc::GetABIReturnReg(unsigned idx, CorInfoCallConvExtension
     var_types regType = GetReturnRegType(idx);
     if (idx == 0)
     {
-        resultReg = varTypeIsIntegralOrI(regType) ? REG_INTRET : REG_FLOATRET; // A0 or F0
+        resultReg = varTypeIsIntegralOrI(regType) ? REG_INTRET : REG_FLOATRET; // A0 or FA0
     }
     else
     {
@@ -30115,7 +30177,7 @@ regNumber ReturnTypeDesc::GetABIReturnReg(unsigned idx, CorInfoCallConvExtension
         else
         {
             assert(varTypeUsesFloatReg(regType));
-            resultReg = varTypeIsIntegralOrI(GetReturnRegType(0)) ? REG_FLOATRET : REG_FLOATRET_1; // F0 or F1
+            resultReg = varTypeIsIntegralOrI(GetReturnRegType(0)) ? REG_FLOATRET : REG_FLOATRET_1; // FA0 or FA1
         }
     }
 
@@ -30570,8 +30632,17 @@ bool GenTree::IsNeverNegative(Compiler* comp) const
         }
     }
 
-    // TODO-Casts: extend IntegralRange to handle constants
-    return IntegralRange::ForNode(const_cast<GenTree*>(this), comp).IsNonNegative();
+    if (IntegralRange::ForNode(const_cast<GenTree*>(this), comp).IsNonNegative())
+    {
+        return true;
+    }
+
+    if ((comp->vnStore != nullptr) && comp->vnStore->IsVNNeverNegative(gtVNPair.GetConservative()))
+    {
+        return true;
+    }
+
+    return false;
 }
 
 //------------------------------------------------------------------------
@@ -30669,8 +30740,6 @@ bool GenTree::CanDivOrModPossiblyOverflow(Compiler* comp) const
 #if defined(FEATURE_HW_INTRINSICS)
 GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
 {
-    assert(tree->OperIsHWIntrinsic());
-
     if (!opts.Tier0OptimizationEnabled())
     {
         return tree;
