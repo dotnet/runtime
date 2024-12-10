@@ -148,6 +148,25 @@ if(TIZEN)
   include_directories(SYSTEM ${TIZEN_TOOLCHAIN_PATH}/include/c++/${TIZEN_TOOLCHAIN})
 endif()
 
+function(locate_toolchain_exec exec var)
+    set(TOOLSET_PREFIX ${TOOLCHAIN}-)
+    string(TOUPPER ${exec} EXEC_UPPERCASE)
+    if(NOT "$ENV{CLR_${EXEC_UPPERCASE}}" STREQUAL "")
+        set(${var} "$ENV{CLR_${EXEC_UPPERCASE}}" PARENT_SCOPE)
+        return()
+    endif()
+
+    find_program(EXEC_LOCATION_${exec}
+        NAMES
+        "${TOOLSET_PREFIX}${exec}${CLR_CMAKE_COMPILER_FILE_NAME_VERSION}"
+        "${TOOLSET_PREFIX}${exec}")
+
+    if (EXEC_LOCATION_${exec} STREQUAL "EXEC_LOCATION_${exec}-NOTFOUND")
+        message(FATAL_ERROR "Unable to find toolchain executable. Name: ${exec}, Prefix: ${TOOLSET_PREFIX}.")
+    endif()
+    set(${var} ${EXEC_LOCATION_${exec}} PARENT_SCOPE)
+endfunction()
+
 if(ANDROID)
     if(TARGET_ARCH_NAME STREQUAL "arm")
         set(ANDROID_ABI armeabi-v7a)
@@ -178,65 +197,23 @@ elseif(FREEBSD)
     set(CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} -fuse-ld=lld")
 elseif(ILLUMOS)
     set(CMAKE_SYSROOT "${CROSS_ROOTFS}")
+    set(CMAKE_SYSTEM_PREFIX_PATH "${CROSS_ROOTFS}")
+    set(CMAKE_C_STANDARD_LIBRARIES "${CMAKE_C_STANDARD_LIBRARIES} -lssp")
+    set(CMAKE_CXX_STANDARD_LIBRARIES "${CMAKE_CXX_STANDARD_LIBRARIES} -lssp")
 
     include_directories(SYSTEM ${CROSS_ROOTFS}/include)
 
-    set(TOOLSET_PREFIX ${TOOLCHAIN}-)
-    function(locate_toolchain_exec exec var)
-        string(TOUPPER ${exec} EXEC_UPPERCASE)
-        if(NOT "$ENV{CLR_${EXEC_UPPERCASE}}" STREQUAL "")
-            set(${var} "$ENV{CLR_${EXEC_UPPERCASE}}" PARENT_SCOPE)
-            return()
-        endif()
-
-        find_program(EXEC_LOCATION_${exec}
-            NAMES
-            "${TOOLSET_PREFIX}${exec}${CLR_CMAKE_COMPILER_FILE_NAME_VERSION}"
-            "${TOOLSET_PREFIX}${exec}")
-
-        if (EXEC_LOCATION_${exec} STREQUAL "EXEC_LOCATION_${exec}-NOTFOUND")
-            message(FATAL_ERROR "Unable to find toolchain executable. Name: ${exec}, Prefix: ${TOOLSET_PREFIX}.")
-        endif()
-        set(${var} ${EXEC_LOCATION_${exec}} PARENT_SCOPE)
-    endfunction()
-
-    set(CMAKE_SYSTEM_PREFIX_PATH "${CROSS_ROOTFS}")
-
     locate_toolchain_exec(gcc CMAKE_C_COMPILER)
     locate_toolchain_exec(g++ CMAKE_CXX_COMPILER)
-
-    set(CMAKE_C_STANDARD_LIBRARIES "${CMAKE_C_STANDARD_LIBRARIES} -lssp")
-    set(CMAKE_CXX_STANDARD_LIBRARIES "${CMAKE_CXX_STANDARD_LIBRARIES} -lssp")
 elseif(HAIKU)
     set(CMAKE_SYSROOT "${CROSS_ROOTFS}")
     set(CMAKE_PROGRAM_PATH "${CMAKE_PROGRAM_PATH};${CROSS_ROOTFS}/cross-tools-x86_64/bin")
-
-    set(TOOLSET_PREFIX ${TOOLCHAIN}-)
-    function(locate_toolchain_exec exec var)
-        string(TOUPPER ${exec} EXEC_UPPERCASE)
-        if(NOT "$ENV{CLR_${EXEC_UPPERCASE}}" STREQUAL "")
-            set(${var} "$ENV{CLR_${EXEC_UPPERCASE}}" PARENT_SCOPE)
-            return()
-        endif()
-
-        find_program(EXEC_LOCATION_${exec}
-            NAMES
-            "${TOOLSET_PREFIX}${exec}${CLR_CMAKE_COMPILER_FILE_NAME_VERSION}"
-            "${TOOLSET_PREFIX}${exec}")
-
-        if (EXEC_LOCATION_${exec} STREQUAL "EXEC_LOCATION_${exec}-NOTFOUND")
-            message(FATAL_ERROR "Unable to find toolchain executable. Name: ${exec}, Prefix: ${TOOLSET_PREFIX}.")
-        endif()
-        set(${var} ${EXEC_LOCATION_${exec}} PARENT_SCOPE)
-    endfunction()
-
     set(CMAKE_SYSTEM_PREFIX_PATH "${CROSS_ROOTFS}")
+    set(CMAKE_C_STANDARD_LIBRARIES "${CMAKE_C_STANDARD_LIBRARIES} -lssp")
+    set(CMAKE_CXX_STANDARD_LIBRARIES "${CMAKE_CXX_STANDARD_LIBRARIES} -lssp")
 
     locate_toolchain_exec(gcc CMAKE_C_COMPILER)
     locate_toolchain_exec(g++ CMAKE_CXX_COMPILER)
-
-    set(CMAKE_C_STANDARD_LIBRARIES "${CMAKE_C_STANDARD_LIBRARIES} -lssp")
-    set(CMAKE_CXX_STANDARD_LIBRARIES "${CMAKE_CXX_STANDARD_LIBRARIES} -lssp")
 
     # let CMake set up the correct search paths
     include(Platform/Haiku)
