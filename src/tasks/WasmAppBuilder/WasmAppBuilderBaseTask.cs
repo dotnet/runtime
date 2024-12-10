@@ -39,7 +39,6 @@ public abstract class WasmAppBuilderBaseTask : Task
     public string[] IcuDataFileNames { get; set; } = Array.Empty<string>();
 
     public ITaskItem[] SatelliteAssemblies { get; set; } = Array.Empty<ITaskItem>();
-    public bool HybridGlobalization { get; set; }
     public bool InvariantGlobalization { get; set; }
     public ITaskItem[] FilesToIncludeInFileSystem { get; set; } = Array.Empty<ITaskItem>();
     public ITaskItem[] ExtraFilesToDeploy { get; set; } = Array.Empty<ITaskItem>();

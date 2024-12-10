@@ -25,7 +25,6 @@ public class TestMainJsProjectProvider : ProjectProviderBase
                { "dotnet.js.map", false },
                { "dotnet.native.js", false },
                { "dotnet.native.js.symbols", false },
-               { "dotnet.globalization.js", false },
                { "dotnet.native.wasm", false },
                { "dotnet.native.worker.mjs", false },
                { "dotnet.runtime.js", false },
@@ -60,9 +59,6 @@ public class TestMainJsProjectProvider : ProjectProviderBase
                 res.Add("dotnet.native.worker.mjs.map");
             }
         }
-
-        if (assertOptions.GlobalizationMode is GlobalizationMode.Hybrid)
-            res.Add("dotnet.globalization.js");
 
         if (assertOptions.AssertSymbolsFile && assertOptions.ExpectSymbolsFile)
             res.Add("dotnet.native.js.symbols");

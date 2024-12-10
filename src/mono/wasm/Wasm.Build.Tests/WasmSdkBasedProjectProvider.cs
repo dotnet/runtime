@@ -31,7 +31,6 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
                { "dotnet.js.map", false },
                { "dotnet.native.js", true },
                { "dotnet.native.js.symbols", false },
-               { "dotnet.globalization.js", true },
                { "dotnet.native.wasm", true },
                { "dotnet.native.worker.mjs", true },
                { "dotnet.runtime.js", true },
@@ -50,10 +49,6 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
         if (assertOptions.RuntimeType is RuntimeVariant.MultiThreaded)
         {
             res.Add("dotnet.native.worker.mjs");
-        }
-        if (assertOptions.GlobalizationMode is GlobalizationMode.Hybrid)
-        {
-            res.Add("dotnet.globalization.js");
         }
 
         if (!assertOptions.IsPublish)
@@ -122,10 +117,6 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
         {
             nativeFilesToCheck.Add("dotnet.native.worker.mjs");
         }
-        if (assertOptions.GlobalizationMode == GlobalizationMode.Hybrid)
-        {
-            nativeFilesToCheck.Add("dotnet.globalization.js");
-        }
 
         foreach (string nativeFilename in nativeFilesToCheck)
         {
@@ -152,7 +143,7 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
             }
         }
     }
-    
+
     public void AssertTestMainJsBundle(BuildArgs buildArgs,
                               BuildProjectOptions buildProjectOptions,
                               string? buildOutput = null,
@@ -180,7 +171,7 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
         else
             AssertBundle(buildArgs, buildProjectOptions);
     }
-    
+
     public override string FindBinFrameworkDir(string config, bool forPublish, string framework, string? projectDir = null)
     {
         EnsureProjectDirIsSet();
