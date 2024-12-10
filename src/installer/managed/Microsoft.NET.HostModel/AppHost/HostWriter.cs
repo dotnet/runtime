@@ -153,7 +153,7 @@ namespace Microsoft.NET.HostModel.AppHost
                                     MachObjectFile machObjectFile = MachObjectFile.Create(memoryMappedViewAccessor);
                                     appHostLength = machObjectFile.CreateAdHocSignature(memoryMappedViewAccessor, fileName);
                                 }
-                                else if (MachObjectFile.TryRemoveCodesign(memoryMappedViewAccessor, out long? length))
+                                else if (MachObjectFile.RemoveCodeSignatureIfPresent(memoryMappedViewAccessor, out long? length))
                                 {
                                     appHostLength = length.Value;
                                 }

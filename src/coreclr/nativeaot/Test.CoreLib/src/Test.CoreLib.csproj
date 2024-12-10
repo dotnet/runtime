@@ -232,6 +232,8 @@
     <Compile Include="System\Runtime\InitializeFinalizerThread.cs" />
     <Compile Include="System\Threading\Interlocked.cs" />
     <Compile Include="System\Array.cs" />
+    <Compile Include="System\Buffer.cs" />
+    <Compile Include="System\SpanHelpers.cs" />
     <Compile Include="System\RuntimeExceptionHelpers.cs" />
     <Compile Include="System\Object.cs" />
     <Compile Include="System\Type.cs" />
