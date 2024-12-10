@@ -113,13 +113,13 @@ namespace System.Globalization.Tests
             // Inputs where matched length does not equal value string length
             if (PlatformDetection.IsNotHybridGlobalizationOnApplePlatform)
             {
-                yield return new object[] { s_germanCompare, "abc Strasse Strasse xyz", "stra\u00DFe", 22, 23, supportedIgnoreCaseIgnoreNonSpaceOptions, 12, 7 };
-                yield return new object[] { s_germanCompare, "abc stra\u00DFe stra\u00DFe xyz", "Strasse", 20, 21, supportedIgnoreCaseIgnoreNonSpaceOptions, 11, 6 };
+                yield return new object[] { s_germanCompare, "abc Strasse Strasse xyz", "stra\u00DFe", 22, 23, CompareOptions.IgnoreCase | CompareOptions.IgnoreNonSpace, 12, 7 };
+                yield return new object[] { s_germanCompare, "abc stra\u00DFe stra\u00DFe xyz", "Strasse", 20, 21, CompareOptions.IgnoreCase | CompareOptions.IgnoreNonSpace, 11, 6 };
                 yield return new object[] { s_invariantCompare, "abcdzxyz", "\u01F3", 7, 8, CompareOptions.IgnoreNonSpace, 3, 2 };
                 yield return new object[] { s_invariantCompare, "abc\u01F3xyz", "dz", 6, 7, CompareOptions.IgnoreNonSpace, 3, 1 };
             }
-            yield return new object[] { s_germanCompare, "abc Strasse Strasse xyz", "xtra\u00DFe", 22, 23, supportedIgnoreCaseIgnoreNonSpaceOptions, -1, 0 };
-            yield return new object[] { s_germanCompare, "abc stra\u00DFe stra\u00DFe xyz", "Xtrasse", 20, 21, supportedIgnoreCaseIgnoreNonSpaceOptions, -1, 0 };
+            yield return new object[] { s_germanCompare, "abc Strasse Strasse xyz", "xtra\u00DFe", 22, 23, CompareOptions.IgnoreCase | CompareOptions.IgnoreNonSpace, -1, 0 };
+            yield return new object[] { s_germanCompare, "abc stra\u00DFe stra\u00DFe xyz", "Xtrasse", 20, 21, CompareOptions.IgnoreCase | CompareOptions.IgnoreNonSpace, -1, 0 };
         }
 
         public static IEnumerable<object[]> LastIndexOf_Aesc_Ligature_TestData()

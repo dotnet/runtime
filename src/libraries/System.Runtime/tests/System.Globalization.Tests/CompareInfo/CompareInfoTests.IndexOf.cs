@@ -139,16 +139,16 @@ namespace System.Globalization.Tests
             // Inputs where matched length does not equal value string length
             if (PlatformDetection.IsNotHybridGlobalizationOnApplePlatform)
             {
-                yield return new object[] { s_germanCompare, "abc Strasse Strasse xyz", "stra\u00DFe", 0, 23, supportedIgnoreCaseIgnoreNonSpaceOptions, 4, 7 };
-                yield return new object[] { s_germanCompare, "abc stra\u00DFe stra\u00DFe xyz", "Strasse", 0, 21, supportedIgnoreCaseIgnoreNonSpaceOptions, 4, 6 };
+                yield return new object[] { s_germanCompare, "abc Strasse Strasse xyz", "stra\u00DFe", 0, 23, CompareOptions.IgnoreCase | CompareOptions.IgnoreNonSpace, 4, 7 };
+                yield return new object[] { s_germanCompare, "abc stra\u00DFe stra\u00DFe xyz", "Strasse", 0, 21, CompareOptions.IgnoreCase | CompareOptions.IgnoreNonSpace, 4, 6 };
                 if (PlatformDetection.IsNotHybridGlobalizationOnApplePlatform)
                 {
                     yield return new object[] { s_invariantCompare, "abcdzxyz", "\u01F3", 0, 8, CompareOptions.IgnoreNonSpace, 3, 2 };
                     yield return new object[] { s_invariantCompare, "abc\u01F3xyz", "dz", 0, 7, CompareOptions.IgnoreNonSpace, 3, 1 };
                 }
             }
-            yield return new object[] { s_germanCompare, "abc Strasse Strasse xyz", "xtra\u00DFe", 0, 23, supportedIgnoreCaseIgnoreNonSpaceOptions, -1, 0 };
-            yield return new object[] { s_germanCompare, "abc stra\u00DFe stra\u00DFe xyz", "Xtrasse", 0, 21, supportedIgnoreCaseIgnoreNonSpaceOptions, -1, 0 };
+            yield return new object[] { s_germanCompare, "abc Strasse Strasse xyz", "xtra\u00DFe", 0, 23, CompareOptions.IgnoreCase | CompareOptions.IgnoreNonSpace, -1, 0 };
+            yield return new object[] { s_germanCompare, "abc stra\u00DFe stra\u00DFe xyz", "Xtrasse", 0, 21, CompareOptions.IgnoreCase | CompareOptions.IgnoreNonSpace, -1, 0 };
         }
 
         public static IEnumerable<object[]> IndexOf_Aesc_Ligature_TestData()

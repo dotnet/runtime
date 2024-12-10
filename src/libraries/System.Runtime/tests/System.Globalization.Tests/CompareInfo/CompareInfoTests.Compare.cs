@@ -244,7 +244,7 @@ namespace System.Globalization.Tests
             yield return new object[] { s_invariantCompare, "", "", CompareOptions.None, 0 };
 
             yield return new object[] { s_invariantCompare, new string('a', 5555), new string('a', 5555), CompareOptions.None, 0 };
-            yield return new object[] { s_invariantCompare, "foobar", "FooB\u00C0R", supportedIgnoreCaseIgnoreNonSpaceOptions, 0 };
+            yield return new object[] { s_invariantCompare, "foobar", "FooB\u00C0R", CompareOptions.IgnoreCase | CompareOptions.IgnoreNonSpace, 0 };
             yield return new object[] { s_invariantCompare, "foobar", "FooB\u00C0R", CompareOptions.IgnoreNonSpace, -1 };
 
             yield return new object[] { s_invariantCompare, "\uFF9E", "\u3099", CompareOptions.IgnoreNonSpace, 0 };
@@ -619,7 +619,7 @@ namespace System.Globalization.Tests
                     CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth | CompareOptions.IgnoreNonSpace,
                     CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth | CompareOptions.IgnoreCase | CompareOptions.IgnoreNonSpace,
                 };
-            CompareOptions[] optionsNegative = 
+            CompareOptions[] optionsNegative =
             Array.Empty<CompareOptions>();
 
             if (PlatformDetection.IsNumericComparisonSupported)

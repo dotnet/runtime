@@ -110,15 +110,15 @@ namespace System.Globalization.Tests
             }
 
             // Suffixes where matched length does not equal value string length
-            yield return new object[] { s_germanCompare, "xyz Strasse", "xtra\u00DFe", supportedIgnoreCaseIgnoreNonSpaceOptions, false, 0 };
+            yield return new object[] { s_germanCompare, "xyz Strasse", "xtra\u00DFe", CompareOptions.IgnoreCase | CompareOptions.IgnoreNonSpace, false, 0 };
             if (PlatformDetection.IsNotHybridGlobalizationOnApplePlatform)
             {
                 yield return new object[] { s_invariantCompare, "xyzdz", "\u01F3", CompareOptions.IgnoreNonSpace, true, 2 };
                 yield return new object[] { s_invariantCompare, "xyz\u01F3", "dz", CompareOptions.IgnoreNonSpace, true, 1 };
-                yield return new object[] { s_germanCompare, "xyz stra\u00DFe", "Strasse", supportedIgnoreCaseIgnoreNonSpaceOptions, true, 6 };
-                yield return new object[] { s_germanCompare, "xyz Strasse", "stra\u00DFe", supportedIgnoreCaseIgnoreNonSpaceOptions, true, 7 };
+                yield return new object[] { s_germanCompare, "xyz stra\u00DFe", "Strasse", CompareOptions.IgnoreCase | CompareOptions.IgnoreNonSpace, true, 6 };
+                yield return new object[] { s_germanCompare, "xyz Strasse", "stra\u00DFe", CompareOptions.IgnoreCase | CompareOptions.IgnoreNonSpace, true, 7 };
             }
-            yield return new object[] { s_germanCompare, "xyz stra\u00DFe", "Xtrasse", supportedIgnoreCaseIgnoreNonSpaceOptions, false, 0 };
+            yield return new object[] { s_germanCompare, "xyz stra\u00DFe", "Xtrasse", CompareOptions.IgnoreCase | CompareOptions.IgnoreNonSpace, false, 0 };
         }
 
         [Theory]

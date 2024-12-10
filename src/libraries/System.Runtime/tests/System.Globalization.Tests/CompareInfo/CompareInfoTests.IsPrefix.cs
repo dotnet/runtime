@@ -116,11 +116,11 @@ namespace System.Globalization.Tests
             {
                 yield return new object[] { s_invariantCompare, "dzxyz", "\u01F3", CompareOptions.IgnoreNonSpace, true, 2 };
                 yield return new object[] { s_invariantCompare, "\u01F3xyz", "dz", CompareOptions.IgnoreNonSpace, true, 1 };
-                yield return new object[] { s_germanCompare, "Strasse xyz", "stra\u00DFe", supportedIgnoreCaseIgnoreNonSpaceOptions, true, 7 };
-                yield return new object[] { s_germanCompare, "stra\u00DFe xyz", "Strasse", supportedIgnoreCaseIgnoreNonSpaceOptions, true, 6 };
+                yield return new object[] { s_germanCompare, "Strasse xyz", "stra\u00DFe", CompareOptions.IgnoreCase | CompareOptions.IgnoreNonSpace, true, 7 };
+                yield return new object[] { s_germanCompare, "stra\u00DFe xyz", "Strasse", CompareOptions.IgnoreCase | CompareOptions.IgnoreNonSpace, true, 6 };
             }
-            yield return new object[] { s_germanCompare, "Strasse xyz", "xtra\u00DFe", supportedIgnoreCaseIgnoreNonSpaceOptions, false, 0 };
-            yield return new object[] { s_germanCompare, "stra\u00DFe xyz", "Xtrasse", supportedIgnoreCaseIgnoreNonSpaceOptions, false, 0 };
+            yield return new object[] { s_germanCompare, "Strasse xyz", "xtra\u00DFe", CompareOptions.IgnoreCase | CompareOptions.IgnoreNonSpace, false, 0 };
+            yield return new object[] { s_germanCompare, "stra\u00DFe xyz", "Xtrasse", CompareOptions.IgnoreCase | CompareOptions.IgnoreNonSpace, false, 0 };
         }
 
         [Theory]
