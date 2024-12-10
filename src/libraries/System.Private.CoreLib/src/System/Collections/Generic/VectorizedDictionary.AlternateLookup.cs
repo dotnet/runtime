@@ -11,8 +11,8 @@ namespace System.Collections.Generic {
         public readonly struct AlternateLookup<TAlternateKey>
             where TAlternateKey : notnull, allows ref struct {
 
-            public readonly Dictionary<TKey, TValue> Dictionary;
-            public readonly IAlternateEqualityComparer<TAlternateKey, TKey> Comparer;
+            public Dictionary<TKey, TValue> Dictionary { get; private set; }
+            public IAlternateEqualityComparer<TAlternateKey, TKey> Comparer { get; private set; }
 
             internal AlternateLookup (Dictionary<TKey, TValue> dictionary, IAlternateEqualityComparer<TAlternateKey, TKey> comparer) {
                 ArgumentNullException.ThrowIfNull(dictionary);

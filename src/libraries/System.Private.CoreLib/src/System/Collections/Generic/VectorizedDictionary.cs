@@ -82,6 +82,22 @@ namespace System.Collections.Generic {
             EnsureCapacity(capacity);
         }
 
+        public Dictionary (IDictionary<TKey, TValue> source) {
+            Comparer = EqualityComparer<TKey>.Default;
+            EnsureCapacity(source.Count);
+            foreach (var kvp in source)
+                Add(kvp.Key, kvp.Value);
+        }
+
+        public Dictionary (IDictionary<TKey, TValue> source, IEqualityComparer<TKey>? comparer) {
+            if (!typeof(TKey).IsValueType)
+                ArgumentNullException.ThrowIfNull(comparer);
+            Comparer = comparer;
+            EnsureCapacity(source.Count);
+            foreach (var kvp in source)
+                Add(kvp.Key, kvp.Value);
+        }
+
         public Dictionary (Dictionary<TKey, TValue> source) {
             Comparer = source.Comparer;
             _Count = source._Count;
@@ -104,20 +120,21 @@ namespace System.Collections.Generic {
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void EnsureCapacity (int capacity) {
+        public int EnsureCapacity (int capacity) {
             if (capacity < 0)
                 throw new ArgumentOutOfRangeException(nameof(capacity));
             else if (capacity == 0)
-                return;
+                return Capacity;
 
             if (Capacity >= capacity)
-                return;
+                return Capacity;
 
             int nextIncrement = (_Buckets == Statics.EmptyBuckets)
                 ? capacity
                 : Capacity * 2;
 
             Resize(Math.Max(capacity, nextIncrement));
+            return Capacity;
         }
 
         private void Resize (int capacity) {
@@ -183,10 +200,12 @@ namespace System.Collections.Generic {
             Resize(_Count);
         }
 
-        // FIXME: What does this actually do? The docs don't make it clear. Is it just Resize(capacity) and it throws if
-        //  you have too many items to fit?
-        public void TrimExcess (int capacity) =>
-            throw new NotImplementedException();
+        public void TrimExcess (int capacity) {
+            if (capacity > _Count)
+                return;
+
+            Resize(capacity);
+        }
 
         private readonly struct RehashCallback : IPairCallback {
             public readonly Dictionary<TKey, TValue> Self;

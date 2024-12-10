@@ -68,10 +68,12 @@ namespace System.Collections.Generic {
 
             bool ICollection.IsSynchronized => false;
             object ICollection.SyncRoot => Dictionary;
-            void ICollection.CopyTo(System.Array array, int index) =>
-                // FIXME
-                throw new NotImplementedException();
-                // ((ICollection)this.ToList()).CopyTo(array, index);
+            void ICollection.CopyTo(System.Array array, int index) {
+                // FIXME: Use EnumerateBuckets
+                using (var e = GetEnumerator())
+                    while (e.MoveNext())
+                        array.SetValue(e.Current, index++);
+            }
         }
 
         public sealed class ValueCollection : ICollection<TValue>, ICollection {
@@ -80,7 +82,7 @@ namespace System.Collections.Generic {
             public struct Enumerator : IEnumerator<TValue> {
                 private Dictionary<TKey, TValue>.Enumerator Inner;
 
-                public TValue Current => Inner.CurrentValue;
+                public TValue Current => Inner.CurrentValue!;
                 object? IEnumerator.Current => Inner.CurrentValue;
 
                 internal Enumerator (Dictionary<TKey, TValue> dictionary) {
@@ -111,16 +113,14 @@ namespace System.Collections.Generic {
                 Dictionary.Clear();
 
             // FIXME
-            bool ICollection<TValue>.Contains (TValue? item) {
-                ThrowInvalidOperation();
-                return false;
-            }
+            bool ICollection<TValue>.Contains (TValue? item) =>
+                Dictionary.ContainsValue(item);
 
-            public void CopyTo (TValue[] array, int arrayIndex) {
+            public void CopyTo (TValue[] array, int index) {
                 // FIXME: Use EnumerateBuckets
                 using (var e = GetEnumerator())
                     while (e.MoveNext())
-                        array[arrayIndex++] = e.Current;
+                        array[index++] = e.Current;
             }
 
             public Enumerator GetEnumerator () =>
@@ -137,13 +137,17 @@ namespace System.Collections.Generic {
 
             bool ICollection.IsSynchronized => false;
             object ICollection.SyncRoot => Dictionary;
-            void ICollection.CopyTo(System.Array array, int index) =>
-                // FIXME
-                throw new NotImplementedException();
-                //((ICollection)this.ToList()).CopyTo(array, index);
+            void ICollection.CopyTo(System.Array array, int index) {
+                // FIXME: Use EnumerateBuckets
+                using (var e = GetEnumerator())
+                    while (e.MoveNext())
+                        array.SetValue(e.Current, index++);
+            }
         }
 
         public struct Enumerator : IEnumerator<KeyValuePair<TKey, TValue>>, IDictionaryEnumerator {
+            public readonly Dictionary<TKey, TValue> Dictionary;
+
             private int _bucketIndex, _valueIndexLocal;
             // NOTE: Copying the bucket as we enter it means that concurrent modification during enumeration is completely safe;
             //  the old contents of the bucket will be observed instead of a mix of modified and unmodified bucket items, and
@@ -187,6 +191,7 @@ namespace System.Collections.Generic {
             object? IDictionaryEnumerator.Value => CurrentValue;
 
             public Enumerator (Dictionary<TKey, TValue> dictionary) {
+                Dictionary = dictionary;
                 _bucketIndex = -1;
                 _valueIndexLocal = BucketSizeI;
                 _buckets = dictionary._Buckets;
@@ -223,6 +228,7 @@ namespace System.Collections.Generic {
             public void Reset () {
                 _bucketIndex = -1;
                 _valueIndexLocal = BucketSizeI;
+                _buckets = Dictionary._Buckets;
             }
         }
 
