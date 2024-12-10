@@ -1077,8 +1077,7 @@ void InitThreadManager()
 #ifdef TARGET_WINDOWS
     if (!InitFlsSlot())
     {
-        _ASSERTE(!"Initialization of a FLS slot failed.");
-        COMPlusThrowWin32();
+        _ASSERTE_ALL_BUILDS(!"Initialization of a FLS slot failed.");
     }
 #endif
 
