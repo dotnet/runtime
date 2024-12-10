@@ -8,7 +8,7 @@ using System.Runtime.CompilerServices;
 
 namespace System.Collections.Generic {
     public partial class Dictionary<TKey, TValue> {
-        public struct KeyCollection : ICollection<TKey>, ICollection {
+        public sealed class KeyCollection : ICollection<TKey>, ICollection {
             public readonly Dictionary<TKey, TValue> Dictionary;
 
             public struct Enumerator : IEnumerator<TKey> {
@@ -74,7 +74,7 @@ namespace System.Collections.Generic {
                 // ((ICollection)this.ToList()).CopyTo(array, index);
         }
 
-        public struct ValueCollection : ICollection<TValue>, ICollection {
+        public sealed class ValueCollection : ICollection<TValue>, ICollection {
             public readonly Dictionary<TKey, TValue> Dictionary;
 
             public struct Enumerator : IEnumerator<TValue> {
@@ -104,14 +104,14 @@ namespace System.Collections.Generic {
             public int Count => Dictionary.Count;
             bool ICollection<TValue>.IsReadOnly => true;
 
-            void ICollection<TValue>.Add (TValue item) =>
+            void ICollection<TValue>.Add (TValue? item) =>
                 ThrowInvalidOperation();
 
             void ICollection<TValue>.Clear () =>
                 Dictionary.Clear();
 
             // FIXME
-            bool ICollection<TValue>.Contains (TValue item) {
+            bool ICollection<TValue>.Contains (TValue? item) {
                 ThrowInvalidOperation();
                 return false;
             }
@@ -132,7 +132,7 @@ namespace System.Collections.Generic {
             IEnumerator IEnumerable.GetEnumerator () =>
                 GetEnumerator();
 
-            bool ICollection<TValue>.Remove (TValue item) =>
+            bool ICollection<TValue>.Remove (TValue? item) =>
                 throw new InvalidOperationException();
 
             bool ICollection.IsSynchronized => false;
@@ -159,7 +159,7 @@ namespace System.Collections.Generic {
                 }
             }
 
-            public TValue CurrentValue {
+            public TValue? CurrentValue {
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
                 get {
                     return _currentBucket.Pairs[_valueIndexLocal].Value;
@@ -170,7 +170,7 @@ namespace System.Collections.Generic {
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
                 get {
                     ref var pair = ref _currentBucket.Pairs[_valueIndexLocal];
-                    return new KeyValuePair<TKey, TValue>(pair.Key, pair.Value);
+                    return new KeyValuePair<TKey, TValue>(pair.Key, pair.Value!);
                 }
             }
             object IEnumerator.Current => Current;
@@ -240,7 +240,7 @@ namespace System.Collections.Generic {
                 }
             }
 
-            public ref readonly TValue CurrentValue {
+            public ref TValue? CurrentValue {
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
                 get {
                     return ref _currentPair.Value;
@@ -251,7 +251,7 @@ namespace System.Collections.Generic {
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
                 get {
                     ref var pair = ref _currentPair;
-                    return new KeyValuePair<TKey, TValue>(pair.Key, pair.Value);
+                    return new KeyValuePair<TKey, TValue>(pair.Key, pair.Value!);
                 }
             }
 

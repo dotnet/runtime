@@ -30,14 +30,14 @@ namespace System.Collections.Generic {
             CascadeSlot = 14,
             DegradedCascadeCount = 0xFFFF;
 
-        public delegate bool ForEachCallback (int index, in TKey key, ref TValue value);
+        public delegate bool ForEachCallback (int index, in TKey key, ref TValue? value);
 
         // Internal for use by CollectionsMarshal
         // It would be nice to use KeyValuePair instead but it's a readonly type and we need the ability to reassign Value
         [StructLayout(LayoutKind.Sequential)]
         internal struct Pair {
             public TKey Key;
-            public TValue Value;
+            public TValue? Value;
         }
 
         // This size must match or exceed BucketSizeI

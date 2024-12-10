@@ -53,7 +53,7 @@ namespace System.Runtime.InteropServices
         /// The ref null can be detected using System.Runtime.CompilerServices.Unsafe.IsNullRef
         /// </remarks>
         public static ref TValue GetValueRefOrNullRef<TKey, TValue>(Dictionary<TKey, TValue> dictionary, TKey key) where TKey : notnull
-            => ref dictionary.FindValue(key);
+            => ref dictionary.FindValue(key)!;
 
         /// <summary>
         /// Gets either a ref to a <typeparamref name="TValue"/> in the <see cref="Dictionary{TKey, TValue}"/> or a ref null if it does not exist in the <paramref name="dictionary"/>.
@@ -88,13 +88,13 @@ namespace System.Runtime.InteropServices
             => ref Dictionary<TKey, TValue>.CollectionsMarshalHelper.GetValueRefOrAddDefault(dictionary, key, out exists);
         */
 
-        public static ref readonly TValue GetValueRefOrAddDefault<TKey, TValue> (Dictionary<TKey, TValue> self, TKey key, out bool exists)
+        public static ref TValue? GetValueRefOrAddDefault<TKey, TValue> (Dictionary<TKey, TValue> dictionary, TKey key, out bool exists)
             where TKey : notnull
         {
 retry:
-            ref var pair = ref self.TryInsert(key, default!, Dictionary<TKey, TValue>.InsertMode.EnsureUnique, out var result);
+            ref var pair = ref dictionary.TryInsert(key, default!, Dictionary<TKey, TValue>.InsertMode.EnsureUnique, out var result);
             if (result == Dictionary<TKey, TValue>.InsertResult.NeedToGrow) {
-                self.EnsureCapacity(self.Count + 1);
+                dictionary.EnsureCapacity(dictionary.Count + 1);
                 goto retry;
             }
             if (Unsafe.IsNullRef(ref pair))

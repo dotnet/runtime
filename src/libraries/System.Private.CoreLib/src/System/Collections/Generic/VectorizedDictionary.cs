@@ -43,9 +43,11 @@ namespace System.Collections.Generic {
 
         public IEqualityComparer<TKey>? Comparer { get; private set; }
 
-        // In SCG.Dictionary, Keys and Values are on-demand-allocated classes. Here, they are on-demand-created structs.
-        public KeyCollection Keys => new KeyCollection(this);
-        public ValueCollection Values => new ValueCollection(this);
+        private KeyCollection? _Keys;
+        private ValueCollection? _Values;
+
+        public KeyCollection Keys => _Keys ??= new KeyCollection(this);
+        public ValueCollection Values => _Values ??= new ValueCollection(this);
         // These optimize for the scenario where someone uses IDictionary.Keys or IDictionary<K, V>.Keys. Normally this
         //  would have to box the KeyCollection/ValueCollection structs on demand, so we cache the boxed version of them
         //  in these fields to get rid of the per-use allocation. Most application scenarios will never allocate these.
@@ -261,13 +263,15 @@ namespace System.Collections.Generic {
         }
 
         // Internal for access from CollectionsMarshal
-        internal ref TValue FindValue (TKey key) {
+#pragma warning disable CS8619
+        internal ref TValue? FindValue (TKey key) {
             ref var pair = ref FindKey(key);
             if (Unsafe.IsNullRef(ref pair))
                 return ref Unsafe.NullRef<TValue>();
             else
                 return ref pair.Value;
         }
+#pragma warning restore CS8619
 
         // Performance is much worse unless this method is inlined, I'm not sure why.
         // If we disable inlining for it, our generated code size is dramatically reduced.
@@ -300,7 +304,7 @@ namespace System.Collections.Generic {
 
         // Internal for access from CollectionsMarshal
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal ref Pair TryInsert (TKey key, TValue value, InsertMode mode, out InsertResult result) {
+        internal ref Pair TryInsert (TKey key, TValue? value, InsertMode mode, out InsertResult result) {
             var comparer = Comparer;
             if (typeof(TKey).IsValueType && (comparer == null))
                 return ref TryInsert<DefaultComparerKeySearcher>(key, value, mode, null, out result);
@@ -309,7 +313,7 @@ namespace System.Collections.Generic {
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static ref Pair TryInsertIntoBucket (ref Bucket bucket, byte suffix, int bucketCount, TKey key, TValue value) {
+        private static ref Pair TryInsertIntoBucket (ref Bucket bucket, byte suffix, int bucketCount, TKey key, TValue? value) {
             if (bucketCount >= BucketSizeI)
                 return ref Unsafe.NullRef<Pair>();
 
@@ -325,7 +329,7 @@ namespace System.Collections.Generic {
 
         // Inlining required for acceptable codegen
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private ref Pair TryInsert<TKeySearcher> (TKey key, TValue value, InsertMode mode, IEqualityComparer<TKey>? comparer, out InsertResult result)
+        private ref Pair TryInsert<TKeySearcher> (TKey key, TValue? value, InsertMode mode, IEqualityComparer<TKey>? comparer, out InsertResult result)
             where TKeySearcher : struct, IKeySearcher
         {
             var needToGrow = (_Count >= _Capacity);
@@ -376,6 +380,7 @@ namespace System.Collections.Generic {
             return ref Unsafe.NullRef<Pair>();
         }
 
+#pragma warning disable CS8601
         // Inlining required for disasmo
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Remove (TKey key) {
@@ -394,6 +399,7 @@ namespace System.Collections.Generic {
             else
                 return TryRemove<ComparerKeySearcher>(key, comparer, out value);
         }
+#pragma warning restore CS8601
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static void RemoveFromBucket (ref Bucket bucket, int indexInBucket, int bucketCount, ref Pair toRemove) {
@@ -422,7 +428,7 @@ namespace System.Collections.Generic {
 
         // Don't force inlining (to reduce code size), since Remove has two overloads that inline this 1-2 times each
         // [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private bool TryRemove<TKeySearcher> (TKey key, IEqualityComparer<TKey>? comparer, out TValue value)
+        private bool TryRemove<TKeySearcher> (TKey key, IEqualityComparer<TKey>? comparer, out TValue? value)
             where TKeySearcher : struct, IKeySearcher
         {
             // HACK: It is legal to pass a NullRef as the out-address for value
@@ -470,7 +476,7 @@ namespace System.Collections.Generic {
                 ref var pair = ref FindKey(key);
                 if (Unsafe.IsNullRef(ref pair))
                     throw new KeyNotFoundException($"Key not found: {key}");
-                return pair.Value;
+                return pair.Value!;
             }
             set {
             retry:
@@ -521,7 +527,7 @@ namespace System.Collections.Generic {
 #pragma warning restore CS8601
         }
 
-        public void Add (TKey key, TValue value) {
+        public void Add (TKey key, TValue? value) {
             var ok = TryAdd(key, value);
             if (!ok)
                 throw new ArgumentException($"Key already exists: {key}");
@@ -529,7 +535,7 @@ namespace System.Collections.Generic {
 
         // Inlining required for disasmo
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool TryAdd (TKey key, TValue value) {
+        public bool TryAdd (TKey key, TValue? value) {
         retry:
             TryInsert(key, value, InsertMode.EnsureUnique, out var result);
             switch (result) {
@@ -605,10 +611,10 @@ namespace System.Collections.Generic {
             !Unsafe.IsNullRef(ref FindKey(key));
 
         private struct ContainsValueCallback : IPairCallback {
-            public readonly TValue Value;
+            public readonly TValue? Value;
             public bool Result;
 
-            public ContainsValueCallback (TValue value) {
+            public ContainsValueCallback (TValue? value) {
                 Value = value;
                 Result = false;
             }
@@ -623,7 +629,7 @@ namespace System.Collections.Generic {
             }
         }
 
-        public bool ContainsValue (TValue value) {
+        public bool ContainsValue (TValue? value) {
             if (_Count == 0)
                 return false;
 
@@ -679,12 +685,12 @@ namespace System.Collections.Generic {
                 value = default!;
                 return false;
             } else {
-                value = pair.Value;
+                value = pair.Value!;
                 return true;
             }
         }
 
-        public TValue AddOrUpdate (TKey key, TValue addValue, Func<TKey, TValue, TValue> updateValueFactory) {
+        public TValue AddOrUpdate (TKey key, TValue? addValue, Func<TKey, TValue, TValue> updateValueFactory) {
 retry:
             ref var pair = ref TryInsert(key, addValue, InsertMode.EnsureUnique, out var result);
             switch (result) {
@@ -692,9 +698,9 @@ retry:
                     EnsureCapacity(Count + 1);
                     goto retry;
                 case InsertResult.KeyAlreadyPresent:
-                    return pair.Value = updateValueFactory(key, pair.Value);
+                    return (pair.Value = updateValueFactory(key, pair.Value!))!;
                 case InsertResult.OkAddedNew:
-                    return addValue;
+                    return addValue!;
                 default:
                     ThrowConcurrentModification();
                     return default!;
@@ -711,9 +717,9 @@ retry:
                     EnsureCapacity(Count + 1);
                     goto retry;
                 case InsertResult.KeyAlreadyPresent:
-                    return pair.Value;
+                    return pair.Value!;
                 case InsertResult.OkAddedNew:
-                    return pair.Value = valueFactory(key);
+                    return (pair.Value = valueFactory(key))!;
                 default:
                     ThrowConcurrentModification();
                     return default!;
@@ -734,7 +740,7 @@ retry:
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public bool Pair (ref Pair pair) {
-                Array[Index++] = new KeyValuePair<TKey, TValue>(pair.Key, pair.Value);
+                Array[Index++] = new KeyValuePair<TKey, TValue>(pair.Key, pair.Value!);
                 return true;
             }
         }
@@ -750,7 +756,7 @@ retry:
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public bool Pair (ref Pair pair) {
-                Array[Index++] = new DictionaryEntry(pair.Key, pair.Value);
+                Array[Index++] = new DictionaryEntry(pair.Key, pair.Value!);
                 return true;
             }
         }
@@ -766,7 +772,7 @@ retry:
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public bool Pair (ref Pair pair) {
-                Array[Index++] = new KeyValuePair<TKey, TValue>(pair.Key, pair.Value);
+                Array[Index++] = new KeyValuePair<TKey, TValue>(pair.Key, pair.Value!);
                 return true;
             }
         }

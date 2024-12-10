@@ -26,7 +26,7 @@ namespace System.Collections.Generic {
                     ref var pair = ref FindKey(key);
                     if (Unsafe.IsNullRef(ref pair))
                         throw new KeyNotFoundException();
-                    return pair.Value;
+                    return pair.Value!;
                 }
             }
 
@@ -41,12 +41,12 @@ namespace System.Collections.Generic {
                     value = default!;
                     return false;
                 } else {
-                    value = pair.Value;
+                    value = pair.Value!;
                     return true;
                 }
             }
 
-            public bool TryAdd (TAlternateKey key, TValue value) {
+            public bool TryAdd (TAlternateKey key, TValue? value) {
                 // FIXME: Duplicate the TryInsert logic from SimdDictionary to avoid the Create call when there is a key collision
                 return Dictionary.TryAdd(Comparer.Create(key), value);
             }
