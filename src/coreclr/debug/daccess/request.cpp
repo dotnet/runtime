@@ -1049,6 +1049,11 @@ HRESULT ClrDataAccess::GetMethodDescData(
             {
                 ILCodeVersion activeILCodeVersion = pCodeVersionManager->GetActiveILCodeVersion(pMD);
                 activeNativeCodeVersion = activeILCodeVersion.GetActiveNativeCodeVersion(pMD);
+                if (activeNativeCodeVersion.IsNull())
+                {
+                    // This is caught below and S_OK is returned
+                    DacError(E_ACCESSDENIED);
+                }
             }
             CopyNativeCodeVersionToReJitData(
                 activeNativeCodeVersion,
