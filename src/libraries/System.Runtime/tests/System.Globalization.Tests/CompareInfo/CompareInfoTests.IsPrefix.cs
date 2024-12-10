@@ -79,8 +79,7 @@ namespace System.Globalization.Tests
             }
 
             // Platform differences
-            bool behavesLikeNls = PlatformDetection.IsNlsGlobalization || !PlatformDetection.IsBrowserDomSupportedOrNodeJS;
-            if (behavesLikeNls)
+            if (PlatformDetection.IsNlsGlobalization)
             {
                 if (PlatformDetection.IsNotHybridGlobalizationOnApplePlatform)
                 {

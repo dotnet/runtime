@@ -91,8 +91,7 @@ namespace System.Globalization.Tests
             yield return new object[] { s_invariantCompare, "a\u0000b", "b\u0000b", CompareOptions.None, false, 0 };
 
             // Platform differences
-            bool behavesLikeNls = PlatformDetection.IsNlsGlobalization || !PlatformDetection.IsBrowserDomSupportedOrNodeJS;
-            if (behavesLikeNls)
+            if (PlatformDetection.IsNlsGlobalization)
             {
                 yield return new object[] { s_hungarianCompare, "foobardzsdzs", "rddzs", CompareOptions.None, true, 7 };
                 yield return new object[] { s_frenchCompare, "\u0153", "oe", CompareOptions.None, true, 1 };
