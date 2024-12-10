@@ -17852,13 +17852,14 @@ ExceptionSetFlags Compiler::gtCollectExceptions(GenTree* tree)
 // of number of sub nodes.
 //
 // Arguments:
-//     tree  - The tree to check
-//     limit - The limit in terms of number of nodes
+//     tree       - The tree to check
+//     limit      - The limit in terms of number of nodes
+//     complexity - [out, optional] the actual node count (if not greater than limit)
 //
 // Return Value:
-//     True if there are mode sub nodes in tree; otherwise false.
+//     True if there are more than limit nodes in tree; otherwise false.
 //
-bool Compiler::gtComplexityExceeds(GenTree* tree, unsigned limit)
+bool Compiler::gtComplexityExceeds(GenTree* tree, unsigned limit, unsigned* complexity)
 {
     struct ComplexityVisitor : GenTreeVisitor<ComplexityVisitor>
     {
@@ -17883,13 +17884,26 @@ bool Compiler::gtComplexityExceeds(GenTree* tree, unsigned limit)
             return WALK_CONTINUE;
         }
 
+        unsigned NumNodes()
+        {
+            return m_numNodes;
+        }
+
     private:
         unsigned m_limit;
         unsigned m_numNodes = 0;
     };
 
     ComplexityVisitor visitor(this, limit);
-    return visitor.WalkTree(&tree, nullptr) == WALK_ABORT;
+
+    fgWalkResult result = visitor.WalkTree(&tree, nullptr);
+
+    if (complexity != nullptr)
+    {
+        *complexity = visitor.NumNodes();
+    }
+
+    return (result == WALK_ABORT);
 }
 
 bool GenTree::IsPhiNode()

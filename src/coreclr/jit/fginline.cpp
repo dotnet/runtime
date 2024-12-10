@@ -644,98 +644,28 @@ private:
                 m_compiler->gtUpdateNodeSideEffects(tree);
                 assert((tree->gtFlags & GTF_SIDE_EFFECT) == 0);
                 tree->gtBashToNOP();
-                m_madeChanges         = true;
-                FlowEdge* removedEdge = nullptr;
+                m_madeChanges          = true;
+                FlowEdge* removedEdge  = nullptr;
+                FlowEdge* retainedEdge = nullptr;
 
                 if (condTree->IsIntegralConst(0))
                 {
-                    removedEdge = block->GetTrueEdge();
-                    m_compiler->fgRemoveRefPred(removedEdge);
-                    block->SetKindAndTargetEdge(BBJ_ALWAYS, block->GetFalseEdge());
+                    removedEdge  = block->GetTrueEdge();
+                    retainedEdge = block->GetFalseEdge();
                 }
                 else
                 {
-                    removedEdge = block->GetFalseEdge();
-                    m_compiler->fgRemoveRefPred(removedEdge);
-                    block->SetKindAndTargetEdge(BBJ_ALWAYS, block->GetTrueEdge());
+                    removedEdge  = block->GetFalseEdge();
+                    retainedEdge = block->GetTrueEdge();
                 }
 
-                // Update profile; make it consistent if possible
+                m_compiler->fgRemoveRefPred(removedEdge);
+                block->SetKindAndTargetEdge(BBJ_ALWAYS, retainedEdge);
+
+                // Update profile, make it consistent if possible.
                 //
-                if (block->hasProfileWeight())
-                {
-                    bool           repairWasComplete  = true;
-                    bool           missingProfileData = false;
-                    weight_t const weight             = removedEdge->getLikelyWeight();
-
-                    if (weight > 0)
-                    {
-                        // Target block weight will increase.
-                        //
-                        BasicBlock* const target = block->GetTarget();
-
-                        // We may have a profiled inlinee in an unprofiled method
-                        //
-                        if (target->hasProfileWeight())
-                        {
-                            target->setBBProfileWeight(target->bbWeight + weight);
-                            missingProfileData = true;
-                        }
-
-                        // Alternate weight will decrease
-                        //
-                        BasicBlock* const alternate = removedEdge->getDestinationBlock();
-
-                        if (alternate->hasProfileWeight())
-                        {
-                            weight_t const alternateNewWeight = alternate->bbWeight - weight;
-
-                            // If profile weights are consistent, expect at worst a slight underflow.
-                            //
-                            if (m_compiler->fgPgoConsistent && (alternateNewWeight < 0))
-                            {
-                                assert(m_compiler->fgProfileWeightsEqual(alternateNewWeight, 0));
-                            }
-                            alternate->setBBProfileWeight(max(0.0, alternateNewWeight));
-                        }
-                        else
-                        {
-                            missingProfileData = true;
-                        }
-
-                        // This will affect profile transitively, so in general
-                        // the profile will become inconsistent.
-                        //
-                        repairWasComplete = false;
-
-                        // But we can check for the special case where the
-                        // block's postdominator is target's target (simple
-                        // if/then/else/join).
-                        //
-                        if (!missingProfileData && target->KindIs(BBJ_ALWAYS))
-                        {
-                            repairWasComplete =
-                                alternate->KindIs(BBJ_ALWAYS) && alternate->TargetIs(target->GetTarget());
-                        }
-                    }
-
-                    if (missingProfileData)
-                    {
-                        JITDUMP("Profile data could not be locally repaired. Data was missing.\n");
-                    }
-
-                    if (!repairWasComplete)
-                    {
-                        JITDUMP("Profile data could not be locally repaired. Data %s inconsistent.\n",
-                                m_compiler->fgPgoConsistent ? "is now" : "was already");
-
-                        if (m_compiler->fgPgoConsistent)
-                        {
-                            m_compiler->Metrics.ProfileInconsistentInlinerBranchFold++;
-                            m_compiler->fgPgoConsistent = false;
-                        }
-                    }
-                }
+                m_compiler->fgRepairProfileCondToUncond(block, retainedEdge, removedEdge,
+                                                        &m_compiler->Metrics.ProfileInconsistentInlinerBranchFold);
             }
         }
         else
