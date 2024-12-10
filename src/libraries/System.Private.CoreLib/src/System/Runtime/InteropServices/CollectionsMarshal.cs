@@ -81,8 +81,25 @@ namespace System.Runtime.InteropServices
         /// <typeparam name="TKey">The type of the keys in the dictionary.</typeparam>
         /// <typeparam name="TValue">The type of the values in the dictionary.</typeparam>
         /// <remarks>Items should not be added to or removed from the <see cref="Dictionary{TKey, TValue}"/> while the ref <typeparamref name="TValue"/> is in use.</remarks>
+        /*
         public static ref TValue? GetValueRefOrAddDefault<TKey, TValue>(Dictionary<TKey, TValue> dictionary, TKey key, out bool exists) where TKey : notnull
             => ref Dictionary<TKey, TValue>.CollectionsMarshalHelper.GetValueRefOrAddDefault(dictionary, key, out exists);
+        */
+
+        public static ref readonly V GetValueRefOrAddDefault<TKey, TValue> (this Dictionary<K, V> self, K key, out bool exists)
+            where K : notnull
+        {
+retry:
+            ref var pair = ref self.TryInsert(key, default!, Dictionary<K, V>.InsertMode.EnsureUnique, out var result);
+            if (result == Dictionary<K, V>.InsertResult.NeedToGrow) {
+                self.EnsureCapacity(self.Count + 1);
+                goto retry;
+            }
+            if (Unsafe.IsNullRef(ref pair))
+                throw new Exception("Corrupted internal state");
+            exists = (result != Dictionary<K, V>.InsertResult.OkAddedNew);
+            return ref pair.Value;
+        }
 
         /// <summary>
         /// Gets a ref to a <typeparamref name="TValue"/> in the <see cref="Dictionary{TKey, TValue}.AlternateLookup{TAlternateKey}"/>, adding a new entry with a default value if it does not exist in the <paramref name="dictionary"/>.
@@ -97,7 +114,8 @@ namespace System.Runtime.InteropServices
         public static ref TValue? GetValueRefOrAddDefault<TKey, TValue, TAlternateKey>(Dictionary<TKey, TValue>.AlternateLookup<TAlternateKey> dictionary, TAlternateKey key, out bool exists)
             where TKey : notnull
             where TAlternateKey : notnull, allows ref struct
-            => ref dictionary.GetValueRefOrAddDefault(key, out exists);
+            => throw new NotImplementedException();
+            // => ref dictionary.GetValueRefOrAddDefault(key, out exists);
 
         /// <summary>
         /// Sets the count of the <see cref="List{T}"/> to the specified value.

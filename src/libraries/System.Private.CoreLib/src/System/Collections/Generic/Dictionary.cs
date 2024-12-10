@@ -11,6 +11,7 @@ using System.Runtime.Serialization;
 
 namespace System.Collections.Generic
 {
+#if ORIGINAL_DICTIONARY
     [DebuggerTypeProxy(typeof(IDictionaryDebugView<,>))]
     [DebuggerDisplay("Count = {Count}")]
     [Serializable]
@@ -2268,4 +2269,5 @@ namespace System.Collections.Generic
             }
         }
     }
+#endif
 }
