@@ -17142,15 +17142,60 @@ void gc_heap::handle_oom (oom_reason reason, size_t alloc_size,
     fgm_result.fgm = fgm_no_failure;
 
 #ifdef FEATURE_EVENT_TRACE
+    // 1. Memory Limit
+    // total_physical_mem
+    /*
+    uint64_t    gc_heap::total_physical_mem = 0;
+    uint64_t    gc_heap::entry_available_physical_mem = 0;
+    size_t      gc_heap::heap_hard_limit = 0;
+    size_t      gc_heap::heap_hard_limit_oh[total_oh_count];
+    */
+
+    // 2. Available Physical Memory.
+    uint32_t memory_load = 0;
+    uint64_t available_physical = 0;
+    uint64_t available_page_file = 0;
+    get_memory_info (&memory_load, &available_physical, &available_page_file);
+
+    // 3. Committed Usage.
+    size_t total_committed = 0;
+    size_t committed_decommit = 0;
+    size_t committed_free = 0;
+    size_t committed_bookkeeping = 0;
+    size_t new_current_total_committed;
+    size_t new_current_total_committed_bookkeeping;
+    size_t new_committed_by_oh[recorded_committed_bucket_counts];
+    compute_committed_bytes(total_committed, committed_decommit, committed_free,
+                            committed_bookkeeping, new_current_total_committed, new_current_total_committed_bookkeeping,
+                            new_committed_by_oh);
+    size_t total_committed_in_use = new_committed_by_oh[soh] + new_committed_by_oh[loh] + new_committed_by_oh[poh];
+
+    // 4. Fragmentation.
+    // get_total_gen_fragmentation.
+    // get_total_fragmentation.
+    size_t total_fragmentation = get_total_fragmentation();
+
+    // 5. Is special_sweep_p set?
+    bool special_sweep_set_p = false;
+    #ifdef USE_REGIONS
+        special_sweep_set_p = special_sweep_p;
+    #endif //USE_REGIONS
+
     GCEventFireOOMDetails_V1 (
         (size_t)oom_info.gc_index,
-        (uint8_t)*oom_info.allocated,
-        (uint8_t)*oom_info.reserved,
+        (uint8_t)(*oom_info.allocated),
+        (uint8_t)(*oom_info.reserved),
         (size_t)oom_info.alloc_size,
         (uint8_t)oom_info.reason,
         (uint8_t)oom_info.fgm,
         (size_t)oom_info.size,
-        (size_t)oom_info.available_pagefile_mb);
+        (size_t)oom_info.available_pagefile_mb, // TODO: Consider removing in favor of the get_memory_info one.
+        (uint8_t)oom_info.loh_p,
+        (uint64_t)gc_heap::total_physical_mem,
+        (uint64_t)available_physical,
+        (size_t)total_committed,
+        (size_t)total_fragmentation,
+        (uint8_t)special_sweep_set_p);
 #endif //FEATURE_EVENT_TRACE
 
     // Break early - before the more_space_lock is release so no other threads
