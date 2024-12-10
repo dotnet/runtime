@@ -168,24 +168,22 @@ FCIMPL1(ReflectClassBaseObject*, RuntimeTypeHandle::GetRuntimeTypeFromHandleIfEx
 }
 FCIMPLEND
 
-FCIMPL2(FC_BOOL_RET, RuntimeTypeHandle::IsEquivalentTo, ReflectClassBaseObject *rtType1UNSAFE, ReflectClassBaseObject *rtType2UNSAFE)
+#ifdef FEATURE_TYPEEQUIVALENCE
+extern "C" BOOL QCALLTYPE RuntimeTypeHandle_IsEquivalentTo(QCall::TypeHandle rtType1, QCall::TypeHandle rtType2)
 {
-    FCALL_CONTRACT;
-
-    REFLECTCLASSBASEREF rtType1 = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(rtType1UNSAFE);
-    REFLECTCLASSBASEREF rtType2 = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(rtType2UNSAFE);
+    QCALL_CONTRACT;
 
     BOOL areEquivalent = FALSE;
-    HELPER_METHOD_FRAME_BEGIN_RET_2(rtType1, rtType2);
 
-    if (rtType1 != NULL && rtType2 != NULL)
-        areEquivalent = rtType1->GetType().IsEquivalentTo(rtType2->GetType());
+    BEGIN_QCALL;
 
-    HELPER_METHOD_FRAME_END();
+    areEquivalent = rtType1.AsTypeHandle().IsEquivalentTo(rtType2.AsTypeHandle());
 
-    FC_RETURN_BOOL(areEquivalent);
+    END_QCALL;
+
+    return areEquivalent;
 }
-FCIMPLEND
+#endif // FEATURE_TYPEEQUIVALENCE
 
 FCIMPL1(MethodDesc *, RuntimeTypeHandle::GetFirstIntroducedMethod, ReflectClassBaseObject *pTypeUNSAFE) {
     CONTRACTL {
@@ -271,25 +269,17 @@ FCIMPL1(FC_BOOL_RET, RuntimeFieldHandle::AcquiresContextFromThis, FieldDesc* pFi
 }
 FCIMPLEND
 
-FCIMPL1(Object*, RuntimeFieldHandle::GetLoaderAllocator, FieldDesc* pField)
+FCIMPL1(Object*, RuntimeFieldHandle::GetLoaderAllocatorInternal, FieldDesc* pField)
 {
-    CONTRACTL {
+    CONTRACTL
+    {
         FCALL_CHECK;
+        PRECONDITION(pField != NULL);
     }
     CONTRACTL_END;
 
-    OBJECTREF loaderAllocator = NULL;
-
-    if (!pField)
-        FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
-
-    HELPER_METHOD_FRAME_BEGIN_RET_PROTECT(loaderAllocator);
-
     LoaderAllocator *pLoaderAllocator = pField->GetApproxEnclosingMethodTable()->GetLoaderAllocator();
-    loaderAllocator = pLoaderAllocator->GetExposedObject();
-
-    HELPER_METHOD_FRAME_END();
-
+    OBJECTREF loaderAllocator = pLoaderAllocator->GetExposedObject();
     return OBJECTREFToObject(loaderAllocator);
 }
 FCIMPLEND
@@ -415,32 +405,19 @@ extern "C" INT32 QCALLTYPE RuntimeTypeHandle_GetNumVirtualsAndStaticVirtuals(QCa
     return numVirtuals;
 }
 
-FCIMPL2(MethodDesc *, RuntimeTypeHandle::GetMethodAt, ReflectClassBaseObject *pTypeUNSAFE, INT32 slot) {
-    CONTRACTL {
-        FCALL_CHECK;
-    }
-    CONTRACTL_END;
+extern "C" MethodDesc* QCALLTYPE RuntimeTypeHandle_GetMethodAt(MethodTable* pMT, INT32 slot)
+{
+    QCALL_CONTRACT;
 
-    REFLECTCLASSBASEREF refType = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(pTypeUNSAFE);
-
-    if (refType == NULL)
-        FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
-
-    TypeHandle typeHandle = refType->GetType();
+    _ASSERTE(pMT != NULL);
+    _ASSERTE(slot >= 0);
 
     MethodDesc* pRetMethod = NULL;
 
-    if (typeHandle.IsGenericVariable())
-        FCThrowRes(kArgumentException, W("Arg_InvalidHandle"));
+    BEGIN_QCALL;
 
-    HELPER_METHOD_FRAME_BEGIN_RET_1(refType);
-
-    MethodTable *pMT = typeHandle.GetMethodTable();
     INT32 numVirtuals = (INT32)pMT->GetNumVirtuals();
-
-    if (slot < 0)
-        COMPlusThrow(kArgumentException, W("Arg_ArgumentOutOfRangeException"));
-    else if (slot < numVirtuals)
+    if (slot < numVirtuals)
     {
         pRetMethod = pMT->GetMethodDescForSlot((DWORD)slot);
     }
@@ -473,12 +450,10 @@ FCIMPL2(MethodDesc *, RuntimeTypeHandle::GetMethodAt, ReflectClassBaseObject *pT
         }
     }
 
-    HELPER_METHOD_FRAME_END();
+    END_QCALL;
 
     return pRetMethod;
 }
-
-FCIMPLEND
 
 FCIMPL3(FC_BOOL_RET, RuntimeTypeHandle::GetFields, ReflectClassBaseObject *pTypeUNSAFE, INT32 **result, INT32 *pCount) {
     CONTRACTL {
@@ -705,47 +680,46 @@ FCIMPL1(INT32, RuntimeTypeHandle::GetAttributes, ReflectClassBaseObject *pTypeUN
 }
 FCIMPLEND
 
-FCIMPL1(Object *, RuntimeTypeHandle::GetArgumentTypesFromFunctionPointer, ReflectClassBaseObject *pTypeUNSAFE)
+extern "C" void QCALLTYPE RuntimeTypeHandle_GetArgumentTypesFromFunctionPointer(QCall::TypeHandle pTypeHandle, QCall::ObjectHandleOnStack argTypes)
 {
-    CONTRACTL {
-        FCALL_CHECK;
-        PRECONDITION(CheckPointer(pTypeUNSAFE));
-    }
-    CONTRACTL_END;
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+
+    GCX_COOP();
 
     struct
     {
-        PTRARRAYREF retVal;
+        PTRARRAYREF types;
     } gc;
+    gc.types = NULL;
+    GCPROTECT_BEGIN(gc);
 
-    gc.retVal = NULL;
+    FnPtrTypeDesc* fnPtr = pTypeHandle.AsTypeHandle().AsFnPtrType();
 
-    REFLECTCLASSBASEREF refType = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(pTypeUNSAFE);
-    TypeHandle typeHandle = refType->GetType();
-    if (!typeHandle.IsFnPtrType())
-        FCThrowRes(kArgumentException, W("Arg_InvalidHandle"));
+    // Allocate a System.Type[] for arguments and return types.
+    MethodTable *pMT = CoreLibBinder::GetClass(CLASS__TYPE);
+    TypeHandle arrayHandle = ClassLoader::LoadArrayTypeThrowing(TypeHandle(pMT), ELEMENT_TYPE_SZARRAY);
+    DWORD cRetAndArgTypes = fnPtr->GetNumArgs() + 1;
+    gc.types = (PTRARRAYREF)AllocateSzArray(arrayHandle, cRetAndArgTypes);
 
-    FnPtrTypeDesc* fnPtr = typeHandle.AsFnPtrType();
+    TypeHandle* retAndArgTypes = fnPtr->GetRetAndArgTypes();
+    _ASSERTE(retAndArgTypes != NULL);
 
-    HELPER_METHOD_FRAME_BEGIN_RET_PROTECT(gc);
+    // Fill the array.
+    for (DWORD position = 0; position < cRetAndArgTypes; ++position)
     {
-        MethodTable *pMT = CoreLibBinder::GetClass(CLASS__TYPE);
-        TypeHandle arrayHandle = ClassLoader::LoadArrayTypeThrowing(TypeHandle(pMT), ELEMENT_TYPE_SZARRAY);
-        DWORD cArgs = fnPtr->GetNumArgs();
-        gc.retVal = (PTRARRAYREF) AllocateSzArray(arrayHandle, cArgs + 1);
-
-        for (DWORD position = 0; position <= cArgs; position++)
-        {
-            TypeHandle typeHandle = fnPtr->GetRetAndArgTypes()[position];
-            OBJECTREF refType = typeHandle.GetManagedClassObject();
-            gc.retVal->SetAt(position, refType);
-        }
+        TypeHandle typeHandle = retAndArgTypes[position];
+        OBJECTREF refType = typeHandle.GetManagedClassObject();
+        gc.types->SetAt(position, refType);
     }
-    HELPER_METHOD_FRAME_END();
 
-    return OBJECTREFToObject(gc.retVal);
+    argTypes.Set(gc.types);
+
+    GCPROTECT_END();
+
+    END_QCALL;
 }
-FCIMPLEND
 
 FCIMPL1(FC_BOOL_RET, RuntimeTypeHandle::IsUnmanagedFunctionPointer, ReflectClassBaseObject *pTypeUNSAFE);
 {
@@ -1489,49 +1463,38 @@ FCIMPL1(INT32, RuntimeMethodHandle::GetSlot, MethodDesc *pMethod) {
 }
 FCIMPLEND
 
-FCIMPL2(INT32, SignatureNative::GetParameterOffset, SignatureNative* pSignatureUNSAFE, INT32 parameterIndex)
+FCIMPL3(INT32, SignatureNative::GetParameterOffsetInternal, PCCOR_SIGNATURE sig, DWORD csig, INT32 parameterIndex)
 {
     FCALL_CONTRACT;
 
-    struct
+    _ASSERTE(sig != NULL);
+    _ASSERTE(csig > 0);
+
+    HRESULT hr;
+    SigPointer sp(sig, csig);
+
+    uint32_t callConv;
+    IfFailRet(sp.GetCallingConvInfo(&callConv));
+    if ((callConv & IMAGE_CEE_CS_CALLCONV_MASK) != IMAGE_CEE_CS_CALLCONV_FIELD)
     {
-        SIGNATURENATIVEREF pSig;
-    } gc;
-
-    gc.pSig = (SIGNATURENATIVEREF)pSignatureUNSAFE;
-
-    INT32 offset = 0;
-
-    HELPER_METHOD_FRAME_BEGIN_RET_PROTECT(gc);
-    {
-        SigPointer sp(gc.pSig->GetCorSig(), gc.pSig->GetCorSigSize());
-
-        uint32_t callConv = 0;
-        IfFailThrow(sp.GetCallingConvInfo(&callConv));
-
-        if ((callConv & IMAGE_CEE_CS_CALLCONV_MASK) != IMAGE_CEE_CS_CALLCONV_FIELD)
+        if (callConv & IMAGE_CEE_CS_CALLCONV_GENERIC)
         {
-            if (callConv & IMAGE_CEE_CS_CALLCONV_GENERIC)
-            {
-                IfFailThrow(sp.GetData(NULL));
-            }
-
-            uint32_t numArgs;
-            IfFailThrow(sp.GetData(&numArgs));
-            _ASSERTE((uint32_t)parameterIndex <= numArgs);
-
-            for (int i = 0; i < parameterIndex; i++)
-                IfFailThrow(sp.SkipExactlyOne());
-        }
-        else
-        {
-            _ASSERTE(parameterIndex == 0);
+            IfFailRet(sp.GetData(NULL));
         }
 
-        offset = (INT32)(sp.GetPtr() - gc.pSig->GetCorSig());
+        uint32_t numArgs;
+        IfFailRet(sp.GetData(&numArgs));
+        _ASSERTE((uint32_t)parameterIndex <= numArgs);
+
+        for (INT32 i = 0; i < parameterIndex; i++)
+            IfFailRet(sp.SkipExactlyOne());
     }
-    HELPER_METHOD_FRAME_END();
+    else
+    {
+        _ASSERTE(parameterIndex == 0);
+    }
 
+    INT32 offset = (INT32)(sp.GetPtr() - sig);
     return offset;
 }
 FCIMPLEND
@@ -2364,25 +2327,17 @@ FCIMPL1(FC_BOOL_RET, RuntimeMethodHandle::IsConstructor, MethodDesc *pMethod)
 }
 FCIMPLEND
 
-FCIMPL1(Object*, RuntimeMethodHandle::GetLoaderAllocator, MethodDesc *pMethod)
+FCIMPL1(Object*, RuntimeMethodHandle::GetLoaderAllocatorInternal, MethodDesc *pMethod)
 {
-    CONTRACTL {
+    CONTRACTL
+    {
         FCALL_CHECK;
+        PRECONDITION(pMethod != NULL);
     }
     CONTRACTL_END;
 
-    OBJECTREF loaderAllocator = NULL;
-
-    if (!pMethod)
-        FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
-
-    HELPER_METHOD_FRAME_BEGIN_RET_PROTECT(loaderAllocator);
-
     LoaderAllocator *pLoaderAllocator = pMethod->GetLoaderAllocator();
-    loaderAllocator = pLoaderAllocator->GetExposedObject();
-
-    HELPER_METHOD_FRAME_END();
-
+    OBJECTREF loaderAllocator = pLoaderAllocator->GetExposedObject();
     return OBJECTREFToObject(loaderAllocator);
 }
 FCIMPLEND

@@ -73,4 +73,7 @@ public enum DataType
     HashMap,
     Bucket,
     UnwindInfo,
+    NonVtableSlot,
+    MethodImpl,
+    NativeCodeSlot,
 }
