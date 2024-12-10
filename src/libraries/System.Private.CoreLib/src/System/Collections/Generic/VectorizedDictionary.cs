@@ -116,7 +116,7 @@ namespace System.Collections.Generic {
             // We can't do anything with the keys and values until the entire graph has been deserialized
             // and we have a resonable estimate that GetHashCode is not going to fail.  For the time being,
             // we'll just cache this.  The graph is not valid until OnDeserialization has been called.
-            // HashHelpers.SerializationInfoTable.Add(this, info);
+            HashHelpers.SerializationInfoTable.Add(this, info);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -929,9 +929,7 @@ retry:
         }
 
         public virtual void OnDeserialization (object? sender) {
-            // FIXME
-            // HashHelpers.SerializationInfoTable.TryGetValue(this, out SerializationInfo? siInfo);
-            SerializationInfo? siInfo = null;
+            HashHelpers.SerializationInfoTable.TryGetValue(this, out SerializationInfo? siInfo);
 
             if (siInfo == null)
             {
@@ -973,7 +971,7 @@ retry:
                 Resize(0);
             }
 
-            // HashHelpers.SerializationInfoTable.Remove(this);
+            HashHelpers.SerializationInfoTable.Remove(this);
         }
     }
 }
