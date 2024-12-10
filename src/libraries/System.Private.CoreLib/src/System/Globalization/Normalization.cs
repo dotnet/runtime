@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Text;
 
@@ -13,10 +12,10 @@ namespace System.Globalization
         {
             CheckNormalizationForm(normalizationForm);
 
-            // In Invariant mode we assume all characters are normalized.
-            if (GlobalizationMode.Invariant || source.IsEmpty || Ascii.IsValid(source))
+            // In Invariant mode we assume all characters are normalized because we don't support any linguistic operations on strings.
+            // If it's ASCII && one of the 4 main forms, then it's already normalized.
+            if (GlobalizationMode.Invariant || Ascii.IsValid(source))
             {
-                // This is because we don't support any linguistic operation on the strings
                 return true;
             }
 
@@ -29,10 +28,10 @@ namespace System.Globalization
         {
             CheckNormalizationForm(normalizationForm);
 
-            if (GlobalizationMode.Invariant)
+            // In Invariant mode we assume all characters are normalized because we don't support any linguistic operations on strings.
+            // If it's ASCII && one of the 4 main forms, then it's already normalized.
+            if (GlobalizationMode.Invariant || Ascii.IsValid(strInput))
             {
-                // In Invariant mode we assume all characters are normalized.
-                // This is because we don't support any linguistic operation on the strings
                 return strInput;
             }
 
@@ -45,17 +44,10 @@ namespace System.Globalization
         {
             CheckNormalizationForm(normalizationForm);
 
-            if (source.IsEmpty)
-            {
-                charsWritten = 0;
-                return true;
-            }
-
+            // In Invariant mode we assume all characters are normalized because we don't support any linguistic operations on strings.
+            // If it's ASCII && one of the 4 main forms, then it's already normalized.
             if (GlobalizationMode.Invariant || Ascii.IsValid(source))
             {
-                // In Invariant mode we assume all characters are normalized.
-                // This is because we don't support any linguistic operation on the strings
-
                 if (source.TryCopyTo(destination))
                 {
                     charsWritten = source.Length;
@@ -75,10 +67,10 @@ namespace System.Globalization
         {
             CheckNormalizationForm(normalizationForm);
 
-            if (GlobalizationMode.Invariant || source.IsEmpty || Ascii.IsValid(source))
+            // In Invariant mode we assume all characters are normalized because we don't support any linguistic operations on strings.
+            // If it's ASCII && one of the 4 main forms, then it's already normalized.
+            if (GlobalizationMode.Invariant || Ascii.IsValid(source))
             {
-                // In Invariant mode we assume all characters are normalized.
-                // This is because we don't support any linguistic operation on the strings
                 return source.Length;
             }
 
