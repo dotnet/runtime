@@ -332,7 +332,7 @@ CDAC_TYPE_FIELD(MethodDesc, /*uint16*/, Flags3AndTokenRemainder, cdac_data<Metho
 CDAC_TYPE_FIELD(MethodDesc, /*uint8*/, EntryPointFlags, cdac_data<MethodDesc>::EntryPointFlags)
 CDAC_TYPE_FIELD(MethodDesc, /*pointer*/, CodeData, cdac_data<MethodDesc>::CodeData)
 #ifdef HAVE_GCCOVER
-CDAC_TYPE_FIELD(MethodDesc, /*pointer*/, GCCoverageInfo, MethodDesc::m_GcCover)
+CDAC_TYPE_FIELD(MethodDesc, /*pointer*/, GCCoverageInfo, offsetof(MethodDesc, m_GcCover))
 #endif // HAVE_GCCOVER
 CDAC_TYPE_END(MethodDesc)
 
