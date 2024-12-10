@@ -1642,25 +1642,13 @@ extern "C" void QCALLTYPE Signature_GetCustomModifiersAtOffset(
     END_QCALL;
 }
 
-FCIMPL1(INT32, RuntimeMethodHandle::GetMethodDef, ReflectMethodObject *pMethodUNSAFE) {
-    CONTRACTL {
-        FCALL_CHECK;
-    }
-    CONTRACTL_END;
-
-    if (!pMethodUNSAFE)
-        FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
-
-    MethodDesc* pMethod = pMethodUNSAFE->GetMethod();
+FCIMPL1(INT32, RuntimeMethodHandle::GetMethodDef, MethodDesc* pMethod)
+{
+    FCALL_CONTRACT;
+    _ASSERTE(pMethod != NULL);
 
     if (pMethod->HasMethodInstantiation())
-    {
-        HELPER_METHOD_FRAME_BEGIN_RET_1(pMethodUNSAFE);
-        {
-            pMethod = pMethod->StripMethodInstantiation();
-        }
-        HELPER_METHOD_FRAME_END();
-    }
+        pMethod = pMethod->StripMethodInstantiation();
 
     INT32 tkMethodDef = (INT32)pMethod->GetMemberDef();
     _ASSERTE(TypeFromToken(tkMethodDef) == mdtMethodDef);

@@ -1113,7 +1113,16 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern int GetMethodDef(IRuntimeMethodInfo method);
+        private static extern int GetMethodDef(RuntimeMethodHandleInternal method);
+
+        internal static int GetMethodDef(IRuntimeMethodInfo method)
+        {
+            Debug.Assert(method != null);
+
+            int slot = GetMethodDef(method.Value);
+            GC.KeepAlive(method);
+            return slot;
+        }
 
         internal static string GetName(RuntimeMethodHandleInternal method)
             => GetUtf8Name(method).ToString();

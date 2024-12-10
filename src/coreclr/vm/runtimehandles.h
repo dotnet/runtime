@@ -202,7 +202,7 @@ public:
     static FCDECL1(INT32, GetImplAttributes, ReflectMethodObject *pMethodUNSAFE);
     static FCDECL1(MethodTable*, GetMethodTable, MethodDesc *pMethod);
     static FCDECL1(INT32, GetSlot, MethodDesc *pMethod);
-    static FCDECL1(INT32, GetMethodDef, ReflectMethodObject *pMethodUNSAFE);
+    static FCDECL1(INT32, GetMethodDef, MethodDesc *pMethod);
     static FCDECL1(LPCUTF8, GetUtf8Name, MethodDesc *pMethod);
     static
     FCDECL1(FC_BOOL_RET, HasMethodInstantiation, MethodDesc *pMethod);
