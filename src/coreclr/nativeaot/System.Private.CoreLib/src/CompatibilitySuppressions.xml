@@ -871,12 +871,6 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
-    <Target>F:System.Collections.Generic.Dictionary`2.AlternateLookup`1.Comparer</Target>
-    <Left>ref/net10.0/System.Private.CoreLib.dll</Left>
-    <Right>lib/net10.0/System.Private.CoreLib.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0002</DiagnosticId>
     <Target>F:System.Collections.Generic.Dictionary`2.BucketSizeI</Target>
     <Left>ref/net10.0/System.Private.CoreLib.dll</Left>
     <Right>lib/net10.0/System.Private.CoreLib.dll</Right>
@@ -955,7 +949,7 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:System.Collections.Generic.Dictionary`2.AlternateLookup`1.get_Dictionary</Target>
+    <Target>M:System.Collections.Generic.Dictionary`2.AlternateLookup`1.get_Comparer</Target>
     <Left>ref/net10.0/System.Private.CoreLib.dll</Left>
     <Right>lib/net10.0/System.Private.CoreLib.dll</Right>
   </Suppression>
