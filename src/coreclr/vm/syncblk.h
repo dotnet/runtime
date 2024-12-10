@@ -514,6 +514,12 @@ public:
         return m_Recursion;
     }
 
+    PTR_Thread GetHoldingThread() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        return g_pThinLockThreadIdDispenser->IdToThreadWithValidation(m_HoldingThreadId);
+    }
+
     DWORD GetHoldingThreadId() const
     {
         LIMITED_METHOD_CONTRACT;
