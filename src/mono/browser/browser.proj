@@ -501,8 +501,7 @@
                        $(NativeBinDir)dotnet.native.js;
                        $(NativeBinDir)dotnet.d.ts;
                        $(NativeBinDir)package.json;
-                       $(NativeBinDir)dotnet.native.wasm;
-                       $(NativeBinDir)dotnet.globalization.js"
+                       $(NativeBinDir)dotnet.native.wasm;"
           DestinationFolder="$(MicrosoftNetCoreAppRuntimePackNativeDir)"
           SkipUnchangedFiles="true" />
 

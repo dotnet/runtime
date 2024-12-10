@@ -7,7 +7,7 @@ import WasmEnableThreads from "consts:wasmEnableThreads";
 import WasmEnableSIMD from "consts:wasmEnableSIMD";
 import WasmEnableExceptionHandling from "consts:wasmEnableExceptionHandling";
 
-import { GlobalizationMode, type RuntimeAPI } from "./types";
+import { type RuntimeAPI } from "./types";
 
 import { Module, exportedRuntimeAPI, loaderHelpers, passEmscriptenInternals, runtimeHelpers, setRuntimeGlobals, } from "./globals";
 import { GlobalObjects, RuntimeHelpers } from "./types/internal";
@@ -25,8 +25,6 @@ import { forceDisposeProxies } from "./gc-handles";
 import { mono_wasm_dump_threads } from "./pthreads";
 
 import { threads_c_functions as tcwraps } from "./cwraps";
-import { stringToUTF16, stringToUTF16Ptr, utf16ToString, utf16ToStringLoop } from "./strings";
-import { localHeapViewU16, setI32, setU16_local } from "./memory";
 
 export let runtimeList: RuntimeList;
 
