@@ -18,6 +18,12 @@ namespace System.Security.Cryptography
         {
             private SecKeyPair? _keys;
 
+            // All values are in bits.
+            // 1024 was achieved via experimentation.
+            // 1024 and 1024+8 both generated successfully, 1024-8 produced errSecParam.
+            // 8192 generated successfully, 8192+8 produced errSecParam.
+            private static readonly KeySizes s_legalKeySize = new KeySizes(minSize: 1024, maxSize: 8192, skipSize: 8);
+
             public RSASecurityTransforms()
                 : this(2048)
             {
@@ -38,19 +44,7 @@ namespace System.Security.Cryptography
                 SetKey(SecKeyPair.PublicPrivatePair(publicKey, privateKey));
             }
 
-            public override KeySizes[] LegalKeySizes
-            {
-                get
-                {
-                    return new KeySizes[]
-                    {
-                        // All values are in bits.
-                        // 1024 was achieved via experimentation.
-                        // 1024 and 1024+8 both generated successfully, 1024-8 produced errSecParam.
-                        new KeySizes(minSize: 1024, maxSize: 16384, skipSize: 8),
-                    };
-                }
-            }
+            public override KeySizes[] LegalKeySizes => [s_legalKeySize];
 
             public override int KeySize
             {
