@@ -800,17 +800,6 @@ BOOL DbgIsExecutable(LPVOID lpMem, SIZE_T length);
 
 int GetRandomInt(int maxVal);
 
-//
-//
-// COMCHARACTER
-//
-//
-class COMCharacter {
-public:
-    //These are here for support from native code.  They are never called from our managed classes.
-    static BOOL nativeIsWhiteSpace(WCHAR c);
-};
-
 // ======================================================================================
 // Simple, reusable 100ns timer for normalizing ticks. For use in Q/FCalls to avoid discrepency with
 // tick frequency between native and managed.
