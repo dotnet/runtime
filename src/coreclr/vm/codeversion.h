@@ -419,6 +419,8 @@ template<>
 struct cdac_data<ILCodeVersionNode>
 {
     static constexpr size_t VersionId = offsetof(ILCodeVersionNode, m_rejitId);
+    static constexpr size_t Next = offsetof(ILCodeVersionNode, m_pNextILVersionNode);
+    static constexpr size_t RejitState = offsetof(ILCodeVersionNode, m_rejitState);
 };
 
 class ILCodeVersionCollection
@@ -543,6 +545,7 @@ private:
 template<>
 struct cdac_data<ILCodeVersioningState>
 {
+    static constexpr size_t FirstVersionNode = offsetof(ILCodeVersioningState, m_pFirstVersionNode);
     static constexpr size_t ActiveVersionKind = offsetof(ILCodeVersioningState, m_activeVersion.m_storageKind);
     static constexpr size_t ActiveVersionNode = offsetof(ILCodeVersioningState, m_activeVersion.m_pVersionNode);
     static constexpr size_t ActiveVersionModule = offsetof(ILCodeVersioningState, m_activeVersion.m_synthetic.m_pModule);

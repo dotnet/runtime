@@ -669,14 +669,7 @@ unsigned int ObjectAllocator::MorphAllocObjNodeIntoStackAlloc(
         BasicBlock* removedBlock = removedEdge->getDestinationBlock();
         comp->fgRemoveRefPred(removedEdge);
         predBlock->SetKindAndTargetEdge(BBJ_ALWAYS, keptEdge);
-
-        if (predBlock->hasProfileWeight())
-        {
-            block->setBBProfileWeight(predBlock->bbWeight);
-            JITDUMP("Profile weight into " FMT_BB " needs to be propagated to successors. Profile %s inconsistent.\n",
-                    block->bbNum, comp->fgPgoConsistent ? "is now" : "was already");
-            comp->fgPgoConsistent = false;
-        }
+        comp->fgRepairProfileCondToUncond(predBlock, keptEdge, removedEdge);
 
         // Just lop off the JTRUE, the rest can clean up later
         // (eg may have side effects)

@@ -7897,9 +7897,7 @@ PhaseStatus Lowering::DoPhase()
 
         comp->fgLocalVarLiveness();
         // local var liveness can delete code, which may create empty blocks
-        // Don't churn the flowgraph with aggressive compaction since we've already run block layout
-        bool modified = comp->fgUpdateFlowGraph(/* doTailDuplication */ false, /* isPhase */ false,
-                                                /* doAggressiveCompaction */ false);
+        bool modified = comp->fgUpdateFlowGraph(/* doTailDuplication */ false, /* isPhase */ false);
 
         if (modified)
         {
