@@ -203,6 +203,8 @@ internal partial class MockDescriptors
         DataType = DataType.GCCoverageInfo,
         Fields =
         [
+            // Add DummyField to ensure the offset of SavedCode is not added to the TargetPointer.Null
+            new("DummyField", DataType.pointer),
             new("SavedCode", DataType.pointer),
         ]
     };
