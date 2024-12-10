@@ -945,7 +945,8 @@ DebuggerController::DebuggerController(Thread * pThread, AppDomain * pAppDomain)
     m_deleted(false),
     m_fEnableMethodEnter(false),
     m_multicastDelegateHelper(false),
-    m_externalMethodFixup(false)
+    m_externalMethodFixup(false),
+    m_genericPInvokeCalli(false)
 {
     CONTRACTL
     {
@@ -2402,6 +2403,10 @@ bool DebuggerController::PatchTrace(TraceDestination *trace,
 
     case TRACE_EXTERNAL_METHOD_FIXUP:
         EnableExternalMethodFixup();
+        return true;
+    
+    case TRACE_GENERIC_PINVOKE_CALLI:
+        EnableGenericPInvokeCalli();
         return true;
 
     case TRACE_OTHER:
@@ -4050,6 +4055,73 @@ void DebuggerController::DispatchExternalMethodFixup(PCODE addr)
         p = p->m_next;
     }
 }
+
+void DebuggerController::EnableGenericPInvokeCalli()
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END;
+
+    ControllerLockHolder chController;
+    if (!m_genericPInvokeCalli)
+    {
+        LOG((LF_CORDB, LL_INFO1000000, "DC::EnableGenericPInvokeCalli, this=%p, previously disabled\n", this));
+        m_genericPInvokeCalli = true;
+        g_genericPInvokeCalliHelperTraceActiveCount += 1;
+    }
+    else
+    {
+        LOG((LF_CORDB, LL_INFO1000000, "DC::EnableGenericPInvokeCalli, this=%p, already set\n", this));
+    }
+}
+
+void DebuggerController::DisableGenericPInvokeCalli()
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END;
+
+    ControllerLockHolder chController;
+    if (m_genericPInvokeCalli)
+    {
+        LOG((LF_CORDB, LL_INFO10000, "DC::DisableGenericPInvokeCalli, this=%p, previously set\n", this));
+        m_genericPInvokeCalli = false;
+        g_genericPInvokeCalliHelperTraceActiveCount -= 1;
+    }
+    else
+    {
+        LOG((LF_CORDB, LL_INFO10000, "DC::DisableGenericPInvokeCalli, this=%p, already disabled\n", this));
+    }
+}
+
+// // Loop through controllers and dispatch 
+void DebuggerController::DispatchGenericPInvokeCalli(PCODE addr)
+{
+    Thread * pThread = g_pEEInterface->GetThread();
+    _ASSERTE(pThread  != NULL);
+
+    ControllerLockHolder lockController;
+
+    DebuggerController *p = g_controllers;
+    while (p != NULL)
+    {
+        if (p->m_genericPInvokeCalli)
+        {
+            if ((p->GetThread() == NULL) || (p->GetThread() == pThread))
+            {
+                p->TriggerGenericPInvokeCalli(addr);
+            }
+        }
+        p = p->m_next;
+    }
+}
+
 //
 // AddProtection adds page protection to (at least) the given range of
 // addresses
@@ -4201,6 +4273,10 @@ void DebuggerController::TriggerMulticastDelegate(DELEGATEREF pDel, INT32 delega
 void DebuggerController::TriggerExternalMethodFixup(PCODE target)
 {
     _ASSERTE(!"This code should be unreachable. If your controller enables ExternalMethodFixup events, it should also override this callback to do something useful when the event arrives.");
+}
+void DebuggerController::TriggerGenericPInvokeCalli(PCODE target)
+{
+    _ASSERTE(!"This code should be unreachable. If your controller enables GenericPInvokeCalli events, it should also override this callback to do something useful when the event arrives.");
 }
 
 
@@ -7790,6 +7866,18 @@ void DebuggerStepper::TriggerExternalMethodFixup(PCODE target)
     //fStopInUnmanaged only matters for TRACE_UNMANAGED
     PatchTrace(&trace, fp, /*fStopInUnmanaged*/false);
     this->DisableExternalMethodFixup();
+}
+
+void DebuggerStepper::TriggerGenericPInvokeCalli(PCODE target)
+{
+    TraceDestination trace;
+    FramePointer fp = LEAF_MOST_FRAME;
+
+    trace.InitForStub(target);
+    g_pEEInterface->FollowTrace(&trace);
+    //fStopInUnmanaged only matters for TRACE_UNMANAGED
+    PatchTrace(&trace, fp, /*fStopInUnmanaged*/false);
+    this->DisableGenericPInvokeCalli();
 }
 
 // Prepare for sending an event.

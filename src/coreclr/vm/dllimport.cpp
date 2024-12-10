@@ -38,6 +38,7 @@
 #include "pinvokeoverride.h"
 #include "nativelibrary.h"
 #include "interoplibinterface.h"
+#include "../debug/ee/debugger.h"
 
 #include <formattype.h>
 #include "../md/compiler/custattr.h"
@@ -5911,7 +5912,6 @@ EXTERN_C void STDCALL VarargPInvokeStubWorker(TransitionBlock * pTransitionBlock
 
     _ASSERTE(pVASigCookie == pFrame->GetVASigCookie());
     _ASSERTE(pMD == pFrame->GetFunction());
-
     GetILStubForCalli(pVASigCookie, pMD);
 
     pFrame->Pop(CURRENT_THREAD);
@@ -5940,7 +5940,6 @@ EXTERN_C void STDCALL GenericPInvokeCalliStubWorker(TransitionBlock * pTransitio
     pFrame->Push(CURRENT_THREAD);
 
     _ASSERTE(pVASigCookie == pFrame->GetVASigCookie());
-
     GetILStubForCalli(pVASigCookie, NULL);
 
     pFrame->Pop(CURRENT_THREAD);
@@ -6069,7 +6068,10 @@ PCODE GetILStubForCalli(VASigCookie *pVASigCookie, MethodDesc *pMD)
 
     UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
     UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
-
+    if (g_genericPInvokeCalliHelperTraceActiveCount > 0)
+    {
+        g_pDebugger->GenericPInvokeCalliNextStep(pVASigCookie->pNDirectILStub);
+    }
     RETURN pVASigCookie->pNDirectILStub;
 }
 
