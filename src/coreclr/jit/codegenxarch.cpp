@@ -1231,7 +1231,7 @@ bool CodeGen::genIsSameLocalVar(GenTree* op1, GenTree* op2)
     GenTree* op1Skip = op1->gtSkipReloadOrCopy();
     GenTree* op2Skip = op1->gtSkipReloadOrCopy();
     return op1Skip->OperIs(GT_LCL_VAR) && op2Skip->OperIs(GT_LCL_VAR) &&
-        (op1Skip->AsLclVar()->GetLclNum() == op2Skip->AsLclVar()->GetLclNum());
+           (op1Skip->AsLclVar()->GetLclNum() == op2Skip->AsLclVar()->GetLclNum());
 }
 
 //------------------------------------------------------------------------
