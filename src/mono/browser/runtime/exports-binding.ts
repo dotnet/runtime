@@ -27,7 +27,7 @@ import {
 } from "./pthreads";
 import { mono_wasm_dump_threads } from "./pthreads/ui-thread";
 import { mono_wasm_schedule_synchronization_context } from "./pthreads/shared";
-import { mono_wasm_hybrid_globalization_imports } from "./globalization";
+import { mono_wasm_js_globalization_imports } from "./globalization";
 
 // the JS methods would be visible to EMCC linker and become imports of the WASM module
 
@@ -104,7 +104,7 @@ const wasmImports: Function[] = [
     // threading exports, if threading is enabled
     ...mono_wasm_threads_imports,
     // hybrid globalization exports
-    ...mono_wasm_hybrid_globalization_imports,
+    ...mono_wasm_js_globalization_imports,
 ];
 
 export function replace_linker_placeholders (imports: WebAssembly.Imports) {

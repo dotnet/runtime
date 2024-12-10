@@ -223,9 +223,6 @@ export async function mono_download_assets (): Promise<void> {
                     if (asset.behavior === "symbols") {
                         await runtimeHelpers.instantiate_symbols_asset(asset);
                         cleanupAsset(asset);
-                    } else if (asset.behavior === "segmentation-rules") {
-                        await runtimeHelpers.instantiate_segmentation_rules_asset(asset);
-                        cleanupAsset(asset);
                     }
 
                     if (skipBufferByAssetTypes[asset.behavior]) {

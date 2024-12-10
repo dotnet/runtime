@@ -58,17 +58,8 @@ extern void* mono_wasm_bind_js_import_ST (void *signature);
 extern void mono_wasm_invoke_jsimport_ST (int function_handle, void *args);
 #endif /* DISABLE_THREADS */
 
-// HybridGlobalization
-extern char16_t* mono_wasm_change_case (const uint16_t* culture, int32_t cultureLength, const uint16_t* src, int32_t srcLength, uint16_t* dst, int32_t dstLength, mono_bool bToUpper);
-extern char16_t* mono_wasm_compare_string (const uint16_t* culture, int32_t cultureLength, const uint16_t* str1, int32_t str1Length, const uint16_t* str2, int32_t str2Length, int32_t options, int *resultPtr);
-extern char16_t* mono_wasm_starts_with (const uint16_t* culture, int32_t cultureLength, const uint16_t* str1, int32_t str1Length, const uint16_t* str2, int32_t str2Length, int32_t options, mono_bool *resultPtr);
-extern char16_t* mono_wasm_ends_with (const uint16_t* culture, int32_t cultureLength, const uint16_t* str1, int32_t str1Length, const uint16_t* str2, int32_t str2Length, int32_t options, mono_bool *resultPtr);
-extern char16_t* mono_wasm_index_of (const uint16_t* culture, int32_t cultureLength, const uint16_t* str1, int32_t str1Length, const uint16_t* str2, int32_t str2Length, int32_t options, mono_bool fromBeginning, int *resultPtr);
-extern char16_t* mono_wasm_get_calendar_info (const uint16_t* culture, int32_t cultureLength, int32_t calendarId, const uint16_t* result, int32_t resultMaxLength, int *resultLength);
-extern char16_t* mono_wasm_get_culture_info (const uint16_t* culture, int32_t cultureLength, const uint16_t* result, int32_t resultMaxLength, int *resultLength);
+// JS-based globalization
 extern char16_t* mono_wasm_get_locale_info (const uint16_t* locale, int32_t localeLength, const uint16_t* culture, int32_t cultureLength, const uint16_t* result, int32_t resultMaxLength, int *resultLength);
-extern char16_t* mono_wasm_get_first_day_of_week (const uint16_t* culture, int32_t cultureLength, int *resultPtr);
-extern char16_t* mono_wasm_get_first_week_of_year (const uint16_t* culture, int32_t cultureLength, int *resultPtr);
 
 void bindings_initialize_internals (void)
 {
@@ -102,17 +93,8 @@ void bindings_initialize_internals (void)
 	mono_add_internal_call ("Interop/Runtime::GetAssemblyExport", mono_wasm_get_assembly_export);
 	mono_add_internal_call ("System.ConsolePal::Clear", mono_wasm_console_clear);
 
-	// HybridGlobalization
-	mono_add_internal_call ("Interop/JsGlobalization::ChangeCase", mono_wasm_change_case);
-	mono_add_internal_call ("Interop/JsGlobalization::CompareString", mono_wasm_compare_string);
-	mono_add_internal_call ("Interop/JsGlobalization::StartsWith", mono_wasm_starts_with);
-	mono_add_internal_call ("Interop/JsGlobalization::EndsWith", mono_wasm_ends_with);
-	mono_add_internal_call ("Interop/JsGlobalization::IndexOf", mono_wasm_index_of);
-	mono_add_internal_call ("Interop/JsGlobalization::GetCalendarInfo", mono_wasm_get_calendar_info);
+	// JS-based globalization
 	mono_add_internal_call ("Interop/JsGlobalization::GetLocaleInfo", mono_wasm_get_locale_info);
-	mono_add_internal_call ("Interop/JsGlobalization::GetCultureInfo", mono_wasm_get_culture_info);
-	mono_add_internal_call ("Interop/JsGlobalization::GetFirstDayOfWeek", mono_wasm_get_first_day_of_week);
-	mono_add_internal_call ("Interop/JsGlobalization::GetFirstWeekOfYear", mono_wasm_get_first_week_of_year);
 }
 
 static MonoAssembly* _mono_wasm_assembly_load (char *assembly_name)

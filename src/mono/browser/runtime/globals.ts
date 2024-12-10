@@ -29,7 +29,6 @@ export let ENVIRONMENT_IS_PTHREAD: boolean;
 export let exportedRuntimeAPI: RuntimeAPI = null as any;
 export let runtimeHelpers: RuntimeHelpers = null as any;
 export let loaderHelpers: LoaderHelpers = null as any;
-export let globalizationHelpers: GlobalizationHelpers = null as any;
 
 export let _runtimeModuleLoaded = false; // please keep it in place also as rollup guard
 
@@ -54,7 +53,6 @@ export function setRuntimeGlobals (globalObjects: GlobalObjects) {
     INTERNAL = globalObjects.internal;
     runtimeHelpers = globalObjects.runtimeHelpers;
     loaderHelpers = globalObjects.loaderHelpers;
-    globalizationHelpers = globalObjects.globalizationHelpers;
     exportedRuntimeAPI = globalObjects.api;
 
     const rh: Partial<RuntimeHelpers> = {

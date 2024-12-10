@@ -19,7 +19,7 @@ import { export_api } from "./export-api";
 import { initializeReplacements } from "./polyfills";
 
 import { mono_wasm_stringify_as_error_with_stack } from "./logging";
-import { instantiate_asset, instantiate_symbols_asset, instantiate_segmentation_rules_asset } from "./assets";
+import { instantiate_asset, instantiate_symbols_asset } from "./assets";
 import { jiterpreter_dump_stats } from "./jiterpreter";
 import { forceDisposeProxies } from "./gc-handles";
 import { mono_wasm_dump_threads } from "./pthreads";
@@ -42,7 +42,6 @@ function initializeExports (globalObjects: GlobalObjects): RuntimeAPI {
         instantiate_asset,
         jiterpreter_dump_stats,
         forceDisposeProxies,
-        instantiate_segmentation_rules_asset,
 
     };
     if (WasmEnableThreads) {
