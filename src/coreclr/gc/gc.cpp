@@ -3293,8 +3293,8 @@ void gc_heap::fire_pevents()
 // because EE is not suspended then. On entry it's fired after the GCStart event, on exit it's fire before the GCStop event.
 void gc_heap::fire_committed_usage_event()
 {
-#ifdef FEATURE_EVENT_TRACE
     if (!EVENT_ENABLED (GCMarkWithType)) return;
+#ifdef FEATURE_EVENT_TRACE
 
     size_t total_committed = 0;
     size_t committed_decommit = 0;
@@ -17140,6 +17140,18 @@ void gc_heap::handle_oom (oom_reason reason, size_t alloc_size,
 
     add_to_oom_history_per_heap();
     fgm_result.fgm = fgm_no_failure;
+
+#ifdef FEATURE_EVENT_TRACE
+    GCEventFireOOMDetails_V1 (
+        (size_t)oom_info.gc_index,
+        (uint8_t)*oom_info.allocated,
+        (uint8_t)*oom_info.reserved,
+        (size_t)oom_info.alloc_size,
+        (uint8_t)oom_info.reason,
+        (uint8_t)oom_info.fgm,
+        (size_t)oom_info.size,
+        (size_t)oom_info.available_pagefile_mb);
+#endif //FEATURE_EVENT_TRACE
 
     // Break early - before the more_space_lock is release so no other threads
     // could have allocated on the same heap when OOM happened.
