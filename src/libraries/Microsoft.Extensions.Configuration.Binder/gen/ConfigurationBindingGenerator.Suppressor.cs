@@ -51,9 +51,10 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     bool shouldSuppressDiagnostic =
                         location.SourceTree is SyntaxTree sourceTree &&
                         sourceTree.GetRoot().FindNode(location.SourceSpan) is SyntaxNode syntaxNode &&
-                        BinderInvocation.IsCandidateSyntaxNode(syntaxNode) &&
+                        (syntaxNode as InvocationExpressionSyntax ?? syntaxNode.Parent as InvocationExpressionSyntax) is InvocationExpressionSyntax invocation &&
+                        BinderInvocation.IsCandidateSyntaxNode(invocation) &&
                         context.GetSemanticModel(sourceTree)
-                            .GetOperation((InvocationExpressionSyntax)syntaxNode, context.CancellationToken) is IInvocationOperation operation &&
+                            .GetOperation(invocation, context.CancellationToken) is IInvocationOperation operation &&
                         BinderInvocation.IsBindingOperation(operation);
 
                     if (shouldSuppressDiagnostic)
