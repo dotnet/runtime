@@ -4,7 +4,6 @@
 using System.Buffers;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using EditorBrowsableAttribute = System.ComponentModel.EditorBrowsableAttribute;
@@ -144,7 +143,15 @@ namespace System.Numerics.Tensors
         /// have a rank of 1 and a length equal to the length of the provided <see cref="Array"/>.
         /// </summary>
         /// <param name="array">The target array.</param>
-        public TensorSpan(Array? array) : this(array, ReadOnlySpan<int>.Empty, array == null ? [0] : (from dim in Enumerable.Range(0, array.Rank) select (nint)array.GetLength(dim)).ToArray(), []) { }
+        public TensorSpan(Array? array) :
+            this(array,
+                 ReadOnlySpan<int>.Empty,
+                 array == null ?
+                     [0] :
+                     TensorSpanHelpers.FillLengths(array.Rank <= TensorShape.MaxInlineRank ? stackalloc nint[array.Rank] : new nint[array.Rank], array),
+                 [])
+        {
+        }
 
         /// <summary>
         /// Creates a new <see cref="TensorSpan{T}"/> over the provided <see cref="Array"/> using the specified start offsets, lengths, and strides.
@@ -156,7 +163,11 @@ namespace System.Numerics.Tensors
         public TensorSpan(Array? array, scoped ReadOnlySpan<int> start, scoped ReadOnlySpan<nint> lengths, scoped ReadOnlySpan<nint> strides)
         {
             if (lengths.IsEmpty && array != null)
-                lengths = (from dim in Enumerable.Range(0, array.Rank) select (nint)array.GetLength(dim)).ToArray();
+            {
+                lengths = TensorSpanHelpers.FillLengths(
+                    array.Rank < TensorShape.MaxInlineRank ? stackalloc nint[array.Rank] : new nint[array.Rank],
+                    array);
+            }
 
             nint linearLength = TensorSpanHelpers.CalculateTotalLength(lengths);
 
@@ -201,7 +212,11 @@ namespace System.Numerics.Tensors
         public TensorSpan(Array? array, scoped ReadOnlySpan<NIndex> startIndex, scoped ReadOnlySpan<nint> lengths, scoped ReadOnlySpan<nint> strides)
         {
             if (lengths.IsEmpty && array != null)
-                lengths = (from dim in Enumerable.Range(0, array.Rank) select (nint)array.GetLength(dim)).ToArray();
+            {
+                lengths = TensorSpanHelpers.FillLengths(
+                    array.Rank <= TensorShape.MaxInlineRank ? stackalloc nint[array.Rank] : new nint[array.Rank],
+                    array);
+            }
 
             nint linearLength = TensorSpanHelpers.CalculateTotalLength(lengths);
             strides = strides.IsEmpty ? (ReadOnlySpan<nint>)TensorSpanHelpers.CalculateStrides(lengths, linearLength) : strides;

@@ -644,79 +644,28 @@ private:
                 m_compiler->gtUpdateNodeSideEffects(tree);
                 assert((tree->gtFlags & GTF_SIDE_EFFECT) == 0);
                 tree->gtBashToNOP();
-                m_madeChanges         = true;
-                FlowEdge* removedEdge = nullptr;
+                m_madeChanges          = true;
+                FlowEdge* removedEdge  = nullptr;
+                FlowEdge* retainedEdge = nullptr;
 
                 if (condTree->IsIntegralConst(0))
                 {
-                    removedEdge = block->GetTrueEdge();
-                    m_compiler->fgRemoveRefPred(removedEdge);
-                    block->SetKindAndTargetEdge(BBJ_ALWAYS, block->GetFalseEdge());
+                    removedEdge  = block->GetTrueEdge();
+                    retainedEdge = block->GetFalseEdge();
                 }
                 else
                 {
-                    removedEdge = block->GetFalseEdge();
-                    m_compiler->fgRemoveRefPred(removedEdge);
-                    block->SetKindAndTargetEdge(BBJ_ALWAYS, block->GetTrueEdge());
+                    removedEdge  = block->GetFalseEdge();
+                    retainedEdge = block->GetTrueEdge();
                 }
 
-                // Update profile; make it consistent if possible
+                m_compiler->fgRemoveRefPred(removedEdge);
+                block->SetKindAndTargetEdge(BBJ_ALWAYS, retainedEdge);
+
+                // Update profile, make it consistent if possible.
                 //
-                if (block->hasProfileWeight())
-                {
-                    bool           repairWasComplete = true;
-                    weight_t const weight            = removedEdge->getLikelyWeight();
-
-                    if (weight > 0)
-                    {
-                        // Target block weight will increase.
-                        //
-                        BasicBlock* const target = block->GetTarget();
-                        assert(target->hasProfileWeight());
-                        target->setBBProfileWeight(target->bbWeight + weight);
-
-                        // Alternate weight will decrease
-                        //
-                        BasicBlock* const alternate = removedEdge->getDestinationBlock();
-                        assert(alternate->hasProfileWeight());
-                        weight_t const alternateNewWeight = alternate->bbWeight - weight;
-
-                        // If profile weights are consistent, expect at worst a slight underflow.
-                        //
-                        if (m_compiler->fgPgoConsistent && (alternateNewWeight < 0))
-                        {
-                            assert(m_compiler->fgProfileWeightsEqual(alternateNewWeight, 0));
-                        }
-                        alternate->setBBProfileWeight(max(0.0, alternateNewWeight));
-
-                        // This will affect profile transitively, so in general
-                        // the profile will become inconsistent.
-                        //
-                        repairWasComplete = false;
-
-                        // But we can check for the special case where the
-                        // block's postdominator is target's target (simple
-                        // if/then/else/join).
-                        //
-                        if (target->KindIs(BBJ_ALWAYS))
-                        {
-                            repairWasComplete =
-                                alternate->KindIs(BBJ_ALWAYS) && alternate->TargetIs(target->GetTarget());
-                        }
-                    }
-
-                    if (!repairWasComplete)
-                    {
-                        JITDUMP("Profile data could not be locally repaired. Data %s inconsistent.\n",
-                                m_compiler->fgPgoConsistent ? "is now" : "was already");
-
-                        if (m_compiler->fgPgoConsistent)
-                        {
-                            m_compiler->Metrics.ProfileInconsistentInlinerBranchFold++;
-                            m_compiler->fgPgoConsistent = false;
-                        }
-                    }
-                }
+                m_compiler->fgRepairProfileCondToUncond(block, retainedEdge, removedEdge,
+                                                        &m_compiler->Metrics.ProfileInconsistentInlinerBranchFold);
             }
         }
         else
@@ -893,14 +842,6 @@ PhaseStatus Compiler::fgInline()
     }
 
 #endif // DEBUG
-
-    if (madeChanges)
-    {
-        // Optional quirk to keep this as zero diff. Some downstream phases are bbNum sensitive
-        // but rely on the ambient bbNums.
-        //
-        fgRenumberBlocks();
-    }
 
     if (fgPgoConsistent)
     {
@@ -1503,7 +1444,12 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
             // Inlinee contains just one BB. So just insert its statement list to topBlock.
             if (InlineeCompiler->fgFirstBB->bbStmtList != nullptr)
             {
+                JITDUMP("\nInserting inlinee code into " FMT_BB "\n", iciBlock->bbNum);
                 stmtAfter = fgInsertStmtListAfter(iciBlock, stmtAfter, InlineeCompiler->fgFirstBB->firstStmt());
+            }
+            else
+            {
+                JITDUMP("\ninlinee was empty\n");
             }
 
             // Copy inlinee bbFlags to caller bbFlags.
@@ -1539,6 +1485,10 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
             fgInlineAppendStatements(pInlineInfo, iciBlock, stmtAfter);
             insertInlineeBlocks = false;
         }
+        else
+        {
+            JITDUMP("\ninlinee was single-block, but not BBJ_RETURN\n");
+        }
     }
 
     //
@@ -1546,8 +1496,12 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
     //
     if (insertInlineeBlocks)
     {
+        JITDUMP("\nInserting inlinee blocks\n");
         bottomBlock              = fgSplitBlockAfterStatement(topBlock, stmtAfter);
         unsigned const baseBBNum = fgBBNumMax;
+
+        JITDUMP("split " FMT_BB " after the inlinee call site; after portion is now " FMT_BB "\n", topBlock->bbNum,
+                bottomBlock->bbNum);
 
         // The newly split block is not special so doesn't need to be kept.
         //
@@ -1583,7 +1537,7 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
             if (block->KindIs(BBJ_RETURN))
             {
                 noway_assert(!block->HasFlag(BBF_HAS_JMP));
-                JITDUMP("\nConvert bbKind of " FMT_BB " to BBJ_ALWAYS to bottomBlock " FMT_BB "\n", block->bbNum,
+                JITDUMP("\nConvert bbKind of " FMT_BB " to BBJ_ALWAYS to bottom block " FMT_BB "\n", block->bbNum,
                         bottomBlock->bbNum);
 
                 FlowEdge* const newEdge = fgAddRefPred(bottomBlock, block);
@@ -1627,6 +1581,7 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
     compQmarkUsed |= InlineeCompiler->compQmarkUsed;
     compGSReorderStackLayout |= InlineeCompiler->compGSReorderStackLayout;
     compHasBackwardJump |= InlineeCompiler->compHasBackwardJump;
+    compMaskConvertUsed |= InlineeCompiler->compMaskConvertUsed;
 
     lvaGenericsContextInUse |= InlineeCompiler->lvaGenericsContextInUse;
 

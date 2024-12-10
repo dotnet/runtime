@@ -230,15 +230,10 @@ extern "C" FCDECL2(VOID, JIT_CheckedWriteBarrier, Object **dst, Object *ref);
 extern "C" FCDECL2(VOID, JIT_WriteBarrier, Object **dst, Object *ref);
 extern "C" FCDECL2(VOID, JIT_WriteBarrierEnsureNonHeapTarget, Object **dst, Object *ref);
 
-extern "C" FCDECL2(Object*, ChkCastAny_NoCacheLookup, CORINFO_CLASS_HANDLE type, Object* obj);
-extern "C" FCDECL2(Object*, IsInstanceOfAny_NoCacheLookup, CORINFO_CLASS_HANDLE type, Object* obj);
-extern "C" FCDECL2(LPVOID, Unbox_Helper, CORINFO_CLASS_HANDLE type, Object* obj);
-extern "C" FCDECL2(void, JIT_Unbox_TypeTest, CORINFO_CLASS_HANDLE type, CORINFO_CLASS_HANDLE boxType);
-extern "C" FCDECL3(void, JIT_Unbox_Nullable, void * destPtr, CORINFO_CLASS_HANDLE type, Object* obj);
-
-// ARM64 JIT_WriteBarrier uses speciall ABI and thus is not callable directly
+// ARM64 JIT_WriteBarrier uses special ABI and thus is not callable directly
 // Copied write barriers must be called at a different location
 extern "C" FCDECL2(VOID, JIT_WriteBarrier_Callable, Object **dst, Object *ref);
+
 #define WriteBarrier_Helper JIT_WriteBarrier_Callable
 
 #ifdef TARGET_AMD64

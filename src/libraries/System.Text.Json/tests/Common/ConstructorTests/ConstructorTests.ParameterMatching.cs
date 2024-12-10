@@ -1668,5 +1668,32 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(2, result.Y);
             Assert.Equal(3, result.Z);
         }
+
+        [Fact]
+        public async Task ClassWithConflictingCaseInsensitiveProperties_Succeeds_When_CaseSensitive()
+        {
+            // Regression test for https://github.com/dotnet/runtime/issues/109768
+
+            string json = """{"a": "lower", "A": "upper"}""";
+            ClassWithConflictingCaseInsensitiveProperties result = await Serializer.DeserializeWrapper<ClassWithConflictingCaseInsensitiveProperties>(json);
+            Assert.Equal("lower", result.From);
+            Assert.Equal("upper", result.To);
+        }
+
+        public class ClassWithConflictingCaseInsensitiveProperties
+        {
+            [JsonPropertyName("a")]
+            public string From { get; set; }
+
+            [JsonPropertyName("A")]
+            public string To { get; set; }
+
+            [JsonConstructor]
+            public ClassWithConflictingCaseInsensitiveProperties(string from, string to)
+            {
+                From = from;
+                To = to;
+            }
+        }
     }
 }

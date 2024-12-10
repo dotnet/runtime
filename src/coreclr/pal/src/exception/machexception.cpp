@@ -26,7 +26,6 @@ SET_DEFAULT_DEBUG_CHANNEL(EXCEPT); // some headers have code with asserts, so do
 #include "pal/init.h"
 #include "pal/utils.h"
 #include "pal/context.h"
-#include "pal/malloc.hpp"
 #include "pal/process.h"
 #include "pal/virtual.h"
 #include "pal/map.hpp"
@@ -1327,7 +1326,7 @@ void MachExceptionInfo::RestoreState(mach_port_t thread)
     kern_return_t machret = thread_set_state(thread, x86_THREAD_STATE, (thread_state_t)&ThreadState, x86_THREAD_STATE_COUNT);
     CHECK_MACH("thread_set_state(thread)", machret);
 
-    machret = thread_set_state(thread, FloatState.ash.flavor, (thread_state_t)&FloatState, FloatState.ash.count);
+    machret = thread_set_state(thread, FloatState.ash.flavor, (thread_state_t)&FloatState.ufs, FloatState.ash.count);
     CHECK_MACH("thread_set_state(float)", machret);
 
     machret = thread_set_state(thread, x86_DEBUG_STATE, (thread_state_t)&DebugState, x86_DEBUG_STATE_COUNT);
