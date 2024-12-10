@@ -1015,10 +1015,15 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         return _target.ReadCodePointer(addrOfSlot);
     }
 
-    TargetPointer IRuntimeTypeSystem.GetGCCoverageInfo(MethodDescHandle methodDesc)
+    TargetPointer IRuntimeTypeSystem.GetGCStressCodeCopy(MethodDescHandle methodDesc)
     {
         MethodDesc md = _methodDescs[methodDesc.Address];
-        return md.GCCoverageInfo ?? TargetPointer.Null;
+        if (md.GCCoverageInfo is TargetPointer gcCoverageInfoAddr)
+        {
+            Target.TypeInfo gcCoverageInfoType = _target.GetTypeInfo(DataType.GCCoverageInfo);
+            return gcCoverageInfoAddr + (ulong)gcCoverageInfoType.Fields["SavedCode"].Offset;
+        }
+        return TargetPointer.Null;
     }
 
     private class NonValidatedMethodTableQueries : MethodValidation.IMethodTableQueries

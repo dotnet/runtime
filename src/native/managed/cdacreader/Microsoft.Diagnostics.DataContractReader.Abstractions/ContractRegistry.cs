@@ -59,8 +59,4 @@ internal abstract class ContractRegistry
     /// Gets an instance of the ReJIT contract for the target.
     /// </summary>
     public abstract IReJIT ReJIT { get; }
-    /// <summary>
-    /// Gets an instance of the GCCover contract for the target.
-    /// </summary>
-    public abstract IGCCover GCCover { get; }
 }

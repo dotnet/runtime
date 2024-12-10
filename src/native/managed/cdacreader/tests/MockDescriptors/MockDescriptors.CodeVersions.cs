@@ -95,6 +95,7 @@ internal partial class MockDescriptors
                     NativeCodeVersionNodeFields,
                     ILCodeVersioningStateFields,
                     ILCodeVersionNodeFields,
+                    GCCoverageInfoFields,
                 ]);
         }
 
