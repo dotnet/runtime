@@ -115,6 +115,13 @@ namespace System.Text.RegularExpressions
             var strings = new string[_stringTable.Count];
             foreach (KeyValuePair<string, int> stringEntry in _stringTable)
             {
+                if ((stringEntry.Value < 0) || (stringEntry.Value >= strings.Length)) {
+                    StringBuilder sb = new ();
+                    sb.AppendLine($"Got kvp {stringEntry} from _stringTable; strings size is {strings.Length}");
+                    foreach (KeyValuePair<string, int> stringEntry2 in _stringTable)
+                        sb.AppendLine(stringEntry2.ToString());
+                    throw new Exception(sb.ToString());
+                }
                 strings[stringEntry.Value] = stringEntry.Key;
             }
 
@@ -177,7 +184,8 @@ namespace System.Text.RegularExpressions
         /// </summary>
         private int StringCode(string str)
         {
-#if NET
+// FIXME
+#if NET_BROKEN
             ref int i = ref CollectionsMarshal.GetValueRefOrAddDefault(_stringTable, str, out bool exists);
             if (!exists)
             {

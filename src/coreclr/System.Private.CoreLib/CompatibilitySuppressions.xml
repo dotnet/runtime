@@ -69,6 +69,12 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
+    <Target>F:System.Collections.Generic.Dictionary`2.Enumerator.Dictionary</Target>
+    <Left>ref/net10.0/System.Private.CoreLib.dll</Left>
+    <Right>lib/net10.0/System.Private.CoreLib.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
     <Target>F:System.Collections.Generic.Dictionary`2.InitialCapacity</Target>
     <Left>ref/net10.0/System.Private.CoreLib.dll</Left>
     <Right>lib/net10.0/System.Private.CoreLib.dll</Right>
@@ -94,18 +100,6 @@
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:System.Collections.Generic.Dictionary`2.#ctor(System.Collections.Generic.Dictionary{`0,`1})</Target>
-    <Left>ref/net10.0/System.Private.CoreLib.dll</Left>
-    <Right>lib/net10.0/System.Private.CoreLib.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:System.Collections.Generic.Dictionary`2.#ctor(System.Collections.Generic.IDictionary{`0,`1},System.Collections.Generic.IEqualityComparer{`0})</Target>
-    <Left>ref/net10.0/System.Private.CoreLib.dll</Left>
-    <Right>lib/net10.0/System.Private.CoreLib.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:System.Collections.Generic.Dictionary`2.#ctor(System.Collections.Generic.IDictionary{`0,`1})</Target>
     <Left>ref/net10.0/System.Private.CoreLib.dll</Left>
     <Right>lib/net10.0/System.Private.CoreLib.dll</Right>
   </Suppression>
@@ -183,12 +177,6 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:System.Collections.Generic.Dictionary`2.EnsureCapacity(System.Int32)</Target>
-    <Left>ref/net10.0/System.Private.CoreLib.dll</Left>
-    <Right>lib/net10.0/System.Private.CoreLib.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:System.Collections.Generic.Dictionary`2.Enumerator.#ctor(System.Collections.Generic.Dictionary{`0,`1})</Target>
     <Left>ref/net10.0/System.Private.CoreLib.dll</Left>
     <Right>lib/net10.0/System.Private.CoreLib.dll</Right>
@@ -231,12 +219,6 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:System.Collections.Generic.Dictionary`2.KeyCollection.#ctor</Target>
-    <Left>ref/net10.0/System.Private.CoreLib.dll</Left>
-    <Right>lib/net10.0/System.Private.CoreLib.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:System.Collections.Generic.Dictionary`2.KeyCollection.#ctor(System.Collections.Generic.Dictionary{`0,`1})</Target>
     <Left>ref/net10.0/System.Private.CoreLib.dll</Left>
     <Right>lib/net10.0/System.Private.CoreLib.dll</Right>
@@ -249,12 +231,6 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:System.Collections.Generic.Dictionary`2.ValueCollection.#ctor</Target>
-    <Left>ref/net10.0/System.Private.CoreLib.dll</Left>
-    <Right>lib/net10.0/System.Private.CoreLib.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:System.Collections.Generic.Dictionary`2.ValueCollection.#ctor(System.Collections.Generic.Dictionary{`0,`1})</Target>
     <Left>ref/net10.0/System.Private.CoreLib.dll</Left>
     <Right>lib/net10.0/System.Private.CoreLib.dll</Right>
@@ -262,18 +238,6 @@
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:System.Collections.Generic.Dictionary`2.ValueCollection.Enumerator.Reset</Target>
-    <Left>ref/net10.0/System.Private.CoreLib.dll</Left>
-    <Right>lib/net10.0/System.Private.CoreLib.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0007</DiagnosticId>
-    <Target>T:System.Collections.Generic.Dictionary`2.KeyCollection</Target>
-    <Left>ref/net10.0/System.Private.CoreLib.dll</Left>
-    <Right>lib/net10.0/System.Private.CoreLib.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0007</DiagnosticId>
-    <Target>T:System.Collections.Generic.Dictionary`2.ValueCollection</Target>
     <Left>ref/net10.0/System.Private.CoreLib.dll</Left>
     <Right>lib/net10.0/System.Private.CoreLib.dll</Right>
   </Suppression>
@@ -333,6 +297,18 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0017</DiagnosticId>
+    <Target>M:System.Collections.Generic.Dictionary`2.#ctor(System.Collections.Generic.IDictionary{`0,`1},System.Collections.Generic.IEqualityComparer{`0})$0</Target>
+    <Left>ref/net10.0/System.Private.CoreLib.dll</Left>
+    <Right>lib/net10.0/System.Private.CoreLib.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0017</DiagnosticId>
+    <Target>M:System.Collections.Generic.Dictionary`2.#ctor(System.Collections.Generic.IDictionary{`0,`1})$0</Target>
+    <Left>ref/net10.0/System.Private.CoreLib.dll</Left>
+    <Right>lib/net10.0/System.Private.CoreLib.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0017</DiagnosticId>
     <Target>M:System.Collections.Generic.Dictionary`2.KeyCollection.CopyTo(`0[],System.Int32)$1</Target>
     <Left>ref/net10.0/System.Private.CoreLib.dll</Left>
     <Right>lib/net10.0/System.Private.CoreLib.dll</Right>
@@ -340,18 +316,6 @@
   <Suppression>
     <DiagnosticId>CP0017</DiagnosticId>
     <Target>M:System.Collections.Generic.Dictionary`2.TryGetAlternateLookup``1(System.Collections.Generic.Dictionary{`0,`1}.AlternateLookup{``0}@)$0</Target>
-    <Left>ref/net10.0/System.Private.CoreLib.dll</Left>
-    <Right>lib/net10.0/System.Private.CoreLib.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0017</DiagnosticId>
-    <Target>M:System.Collections.Generic.Dictionary`2.ValueCollection.CopyTo(`1[],System.Int32)$1</Target>
-    <Left>ref/net10.0/System.Private.CoreLib.dll</Left>
-    <Right>lib/net10.0/System.Private.CoreLib.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0017</DiagnosticId>
-    <Target>M:System.Runtime.InteropServices.CollectionsMarshal.GetValueRefOrAddDefault``2(System.Collections.Generic.Dictionary{``0,``1},``0,System.Boolean@)$0</Target>
     <Left>ref/net10.0/System.Private.CoreLib.dll</Left>
     <Right>lib/net10.0/System.Private.CoreLib.dll</Right>
   </Suppression>
