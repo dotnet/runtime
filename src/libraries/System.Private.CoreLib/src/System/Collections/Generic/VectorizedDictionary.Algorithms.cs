@@ -94,7 +94,7 @@ namespace System.Collections.Generic {
         /// </summary>
         // Callback is passed by-ref so it can be used to store results from the enumeration operation
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void EnumerateBuckets<TCallback> (Span<Bucket> buckets, ref TCallback callback)
+        private static void EnumerateBuckets<TCallback> (Span<Bucket> buckets, ref TCallback callback)
             where TCallback : struct, IBucketCallback {
             // FIXME: Using a foreach on this span produces an imul-per-iteration for some reason.
             ref Bucket bucket = ref MemoryMarshal.GetReference(buckets),
@@ -114,7 +114,7 @@ namespace System.Collections.Generic {
         /// </summary>
         // Callback is passed by-ref so it can be used to store results from the enumeration operation
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void EnumeratePairs<TCallback> (Span<Bucket> buckets, ref TCallback callback)
+        private static void EnumeratePairs<TCallback> (Span<Bucket> buckets, ref TCallback callback)
             where TCallback : struct, IPairCallback {
             // FIXME: Using a foreach on this span produces an imul-per-iteration for some reason.
             ref Bucket bucket = ref MemoryMarshal.GetReference(buckets),
@@ -240,7 +240,7 @@ iteration:
         // In the common case this method never runs, but inlining allows some smart stuff to happen in terms of stack size and
         //  register usage.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void AdjustCascadeCounts (
+        private static void AdjustCascadeCounts (
             LoopingBucketEnumerator enumerator, bool increase
         ) {
             // Early-out before doing setup work since in the common case we won't have cascaded out of a bucket at all

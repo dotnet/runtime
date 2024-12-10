@@ -124,15 +124,15 @@ namespace System.Collections.Generic {
         // We have separate implementations of FindKeyInBucket that get used depending on whether we have a null
         //  comparer for a valuetype, where we can rely on ryujit to inline EqualityComparer<K>.Default
         private interface IKeySearcher {
-            /// <summary>
-            /// Scans the occupied slots in <paramref name="bucket"/>, looking for a Key that is equal to <paramref name="needle"/>.
-            /// </summary>
-            /// <param name="startIndexInBucket">The index within the bucket to begin the search at.</param>
-            /// <param name="bucketCount">bucket.Count</param>
-            /// <param name="comparer">The EqualityComparer to use for key comparisons.</param>
-            /// <param name="needle">The desired key.</param>
-            /// <param name="matchIndexInBucket">The location where a match was found, if any.</param>
-            /// <returns>Whether a matching key was found.</returns>
+            // <summary>
+            // Scans the occupied slots in <paramref name="bucket"/>, looking for a Key that is equal to <paramref name="needle"/>.
+            // </summary>
+            // <param name="startIndexInBucket">The index within the bucket to begin the search at.</param>
+            // <param name="bucketCount">bucket.Count</param>
+            // <param name="comparer">The EqualityComparer to use for key comparisons.</param>
+            // <param name="needle">The desired key.</param>
+            // <param name="matchIndexInBucket">The location where a match was found, if any.</param>
+            // <returns>Whether a matching key was found.</returns>
             static abstract ref Pair FindKeyInBucket (
                 // We have to use UnscopedRef to allow lazy initialization
                 [UnscopedRef] ref Bucket bucket, int startIndexInBucket, int bucketCount,
@@ -144,13 +144,13 @@ namespace System.Collections.Generic {
 
         // Used to encapsulate operations that enumerate all the buckets synchronously (i.e. Clear)
         private interface IBucketCallback {
-            /// <returns>true to continue iteration, false to stop</returns>
+            // <returns>true to continue iteration, false to stop</returns>
             abstract bool Bucket (ref Bucket bucket);
         }
 
         // Used to encapsulate operations that enumerate all the occupied slots synchronously (i.e. CopyTo)
         private interface IPairCallback {
-            /// <returns>true to continue iteration, false to stop</returns>
+            // <returns>true to continue iteration, false to stop</returns>
             abstract bool Pair (ref Pair pair);
         }
     }

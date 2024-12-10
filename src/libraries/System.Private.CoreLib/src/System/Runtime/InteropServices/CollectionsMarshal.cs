@@ -74,15 +74,15 @@ namespace System.Runtime.InteropServices
             => throw new NotImplementedException();
             // => ref dictionary.FindValue(key, out _);
 
-        /// <summary>
-        /// Gets a ref to a <typeparamref name="TValue"/> in the <see cref="Dictionary{TKey, TValue}"/>, adding a new entry with a default value if it does not exist in the <paramref name="dictionary"/>.
-        /// </summary>
-        /// <param name="dictionary">The dictionary to get the ref to <typeparamref name="TValue"/> from.</param>
-        /// <param name="key">The key used for lookup.</param>
-        /// <param name="exists">Whether or not a new entry for the given key was added to the dictionary.</param>
-        /// <typeparam name="TKey">The type of the keys in the dictionary.</typeparam>
-        /// <typeparam name="TValue">The type of the values in the dictionary.</typeparam>
-        /// <remarks>Items should not be added to or removed from the <see cref="Dictionary{TKey, TValue}"/> while the ref <typeparamref name="TValue"/> is in use.</remarks>
+        // <summary>
+        // Gets a ref to a <typeparamref name="TValue"/> in the <see cref="Dictionary{TKey, TValue}"/>, adding a new entry with a default value if it does not exist in the <paramref name="dictionary"/>.
+        // </summary>
+        // <param name="dictionary">The dictionary to get the ref to <typeparamref name="TValue"/> from.</param>
+        // <param name="key">The key used for lookup.</param>
+        // <param name="exists">Whether or not a new entry for the given key was added to the dictionary.</param>
+        // <typeparam name="TKey">The type of the keys in the dictionary.</typeparam>
+        // <typeparam name="TValue">The type of the values in the dictionary.</typeparam>
+        // <remarks>Items should not be added to or removed from the <see cref="Dictionary{TKey, TValue}"/> while the ref <typeparamref name="TValue"/> is in use.</remarks>
         /*
         public static ref TValue? GetValueRefOrAddDefault<TKey, TValue>(Dictionary<TKey, TValue> dictionary, TKey key, out bool exists) where TKey : notnull
             => ref Dictionary<TKey, TValue>.CollectionsMarshalHelper.GetValueRefOrAddDefault(dictionary, key, out exists);
@@ -92,7 +92,7 @@ namespace System.Runtime.InteropServices
             where TKey : notnull
         {
 retry:
-            ref var pair = ref self.TryInsert(key, default!, Dictionary<K, V>.InsertMode.EnsureUnique, out var result);
+            ref var pair = ref self.TryInsert(key, default!, Dictionary<TKey, TValue>.InsertMode.EnsureUnique, out var result);
             if (result == Dictionary<TKey, TValue>.InsertResult.NeedToGrow) {
                 self.EnsureCapacity(self.Count + 1);
                 goto retry;

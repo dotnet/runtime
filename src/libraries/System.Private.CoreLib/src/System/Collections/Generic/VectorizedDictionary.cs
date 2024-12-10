@@ -592,7 +592,7 @@ namespace System.Collections.Generic {
 
             _Count = 0;
             // FIXME: Only do this if _Count is below say 0.5x?
-            var c = new ClearCallback();
+            ClearCallback c = default!;
             EnumerateBuckets(_Buckets, ref c);
         }
 
@@ -772,8 +772,7 @@ retry:
         }
 
         private void CopyToArray<T> (T[] array, int index) {
-            if (array == null)
-                throw new ArgumentNullException(nameof(array));
+            ArgumentNullException.ThrowIfNull(array);
             if ((uint)index > (uint)array.Length)
                 throw new ArgumentOutOfRangeException(nameof(index));
             if (array.Length - index < Count)
@@ -815,7 +814,7 @@ retry:
         }
 
         public (int normal, int overflowed, int degraded) AnalyzeBuckets () {
-            var c = new AnalyzeCallback();
+            AnalyzeCallback c = default!;
             EnumerateBuckets(_Buckets, ref c);
             return (c.Normal, c.Overflowed, c.Degraded);
         }
@@ -891,9 +890,7 @@ retry:
         }
 
         public virtual void GetObjectData (SerializationInfo info, StreamingContext context) {
-            if (info == null) {
-                throw new ArgumentNullException(nameof(info));
-            }
+            ArgumentNullException.ThrowIfNull(info);
 
             info.AddValue(VersionName, 0);
             info.AddValue(ComparerName, Comparer, typeof(IEqualityComparer<TKey>));

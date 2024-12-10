@@ -15,10 +15,8 @@ namespace System.Collections.Generic {
             public readonly IAlternateEqualityComparer<TAlternateKey, TKey> Comparer;
 
             internal AlternateLookup (Dictionary<TKey, TValue> dictionary, IAlternateEqualityComparer<TAlternateKey, TKey> comparer) {
-                if (dictionary == null)
-                    throw new ArgumentNullException(nameof(dictionary));
-                if (comparer == null)
-                    throw new ArgumentNullException(nameof(comparer));
+                ArgumentNullException.ThrowIfNull(dictionary);
+                ArgumentNullException.ThrowIfNull(comparer);
                 Dictionary = dictionary;
                 Comparer = comparer;
             }
