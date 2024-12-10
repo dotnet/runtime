@@ -1787,8 +1787,7 @@ static void OsAttachThread(void* thread)
 
     if (threadFromCurrentFiber != NULL)
     {
-        _ASSERTE(!"Multiple threads encountered from a single fiber");
-        COMPlusThrowWin32();
+        _ASSERTE_ALL_BUILDS(!"Multiple threads encountered from a single fiber");
     }
 
     // Associate the current fiber with the current thread.  This makes the current fiber the thread's "home"
@@ -1817,8 +1816,7 @@ bool OsDetachThread(void* thread)
 
     if (threadFromCurrentFiber != thread)
     {
-        _ASSERTE(!"Detaching a thread from the wrong fiber");
-        COMPlusThrowWin32();
+        _ASSERTE_ALL_BUILDS(!"Detaching a thread from the wrong fiber");
     }
 
     FlsSetValue(g_flsIndex, NULL);
