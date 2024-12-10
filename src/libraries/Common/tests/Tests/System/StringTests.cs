@@ -1034,7 +1034,7 @@ namespace System.Tests
                     var secondSpan = new ReadOnlySpan<char>(second);
                     Assert.True(0 > firstSpan.CompareTo(secondSpan, StringComparison.Ordinal));
 
-                    // On Apple platforms, string comparison is handled by native Apple functions, which apply normalization techniques 
+                    // On Apple platforms, string comparison is handled by native Apple functions, which apply normalization techniques
                     // like `precomposedStringWithCanonicalMapping`. This can lead to differences in behavior compared to other platforms.
                     if (PlatformDetection.IsNotHybridGlobalizationOnApplePlatform)
                     {
@@ -1315,7 +1315,7 @@ namespace System.Tests
 
                     Assert.False(firstSpan.Contains(secondSpan, StringComparison.OrdinalIgnoreCase));
 
-                    // On Apple platforms, string comparison is handled by native Apple functions, which apply normalization techniques 
+                    // On Apple platforms, string comparison is handled by native Apple functions, which apply normalization techniques
                     // like `precomposedStringWithCanonicalMapping`. This can lead to differences in behavior compared to other platforms.
                     if (PlatformDetection.IsNotHybridGlobalizationOnApplePlatform)
                     {
@@ -5939,6 +5939,7 @@ namespace System.Tests
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/95338", typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnApplePlatform))]
+        [MemberData(nameof(ToUpper_Culture_TestData))]
         public static void Test_ToUpper_Culture(string actual, string expected, CultureInfo culture)
         {
             Assert.Equal(expected, actual.ToUpper(culture));
