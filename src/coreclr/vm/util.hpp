@@ -18,13 +18,6 @@
 #include "posterror.h"
 #include <type_traits>
 
-// Hot cache lines need to be aligned to cache line size to improve performance
-#if defined(TARGET_ARM64)
-#define MAX_CACHE_LINE_SIZE 128
-#else
-#define MAX_CACHE_LINE_SIZE 64
-#endif
-
 #ifndef DACCESS_COMPILE
 #if defined(TARGET_WINDOWS) && defined(TARGET_ARM64)
 // Flag to check if atomics feature is available on
