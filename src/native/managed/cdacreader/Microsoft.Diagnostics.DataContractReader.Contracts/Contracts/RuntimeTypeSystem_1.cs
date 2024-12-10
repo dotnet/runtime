@@ -1018,7 +1018,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
     TargetPointer IRuntimeTypeSystem.GetGCStressCodeCopy(MethodDescHandle methodDesc)
     {
         MethodDesc md = _methodDescs[methodDesc.Address];
-        if (md.GCCoverageInfo is TargetPointer gcCoverageInfoAddr)
+        if (md.GCCoverageInfo is TargetPointer gcCoverageInfoAddr && gcCoverageInfoAddr != TargetPointer.Null)
         {
             Target.TypeInfo gcCoverageInfoType = _target.GetTypeInfo(DataType.GCCoverageInfo);
             return gcCoverageInfoAddr + (ulong)gcCoverageInfoType.Fields["SavedCode"].Offset;
