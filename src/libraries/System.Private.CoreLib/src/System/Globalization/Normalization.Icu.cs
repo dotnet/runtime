@@ -250,10 +250,8 @@ namespace System.Globalization
                         // not followed by a low surrogate
                         return true;
                     }
-                    else
-                    {
-                        i++; // consume the low surrogate.
-                    }
+
+                    i++; // consume the low surrogate.
                 }
             }
 
