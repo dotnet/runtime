@@ -781,51 +781,22 @@ BOOL ObjIsInstanceOf(Object* pObject, TypeHandle toTypeHnd, BOOL throwCastExcept
     return ObjIsInstanceOfCore(pObject, toTypeHnd, throwCastException);
 }
 
-HCIMPL2(Object*, ChkCastAny_NoCacheLookup, CORINFO_CLASS_HANDLE type, Object* obj)
+extern "C" BOOL QCALLTYPE IsInstanceOf_NoCacheLookup(CORINFO_CLASS_HANDLE type, BOOL throwCastException, QCall::ObjectHandleOnStack objOnStack)
 {
-    FCALL_CONTRACT;
+    QCALL_CONTRACT;
+    BOOL result = FALSE;
 
-    // This case should be handled by frameless helper
-    _ASSERTE(obj != NULL);
+    BEGIN_QCALL;
 
-    OBJECTREF oref = ObjectToOBJECTREF(obj);
-    VALIDATEOBJECTREF(oref);
+    GCX_COOP();
 
     TypeHandle clsHnd(type);
+    result = ObjIsInstanceOfCore(OBJECTREFToObject(objOnStack.Get()), clsHnd, throwCastException);
 
-    HELPER_METHOD_FRAME_BEGIN_RET_1(oref);
-    if (!ObjIsInstanceOfCore(OBJECTREFToObject(oref), clsHnd, TRUE))
-    {
-        UNREACHABLE(); //ObjIsInstanceOf will throw if cast can't be done
-    }
-    HELPER_METHOD_POLL();
-    HELPER_METHOD_FRAME_END();
+    END_QCALL;
 
-    return OBJECTREFToObject(oref);
+    return result;
 }
-HCIMPLEND
-
-HCIMPL2(Object*, IsInstanceOfAny_NoCacheLookup, CORINFO_CLASS_HANDLE type, Object* obj)
-{
-    FCALL_CONTRACT;
-
-    // This case should be handled by frameless helper
-    _ASSERTE(obj != NULL);
-
-    OBJECTREF oref = ObjectToOBJECTREF(obj);
-    VALIDATEOBJECTREF(oref);
-
-    TypeHandle clsHnd(type);
-
-    HELPER_METHOD_FRAME_BEGIN_RET_1(oref);
-    if (!ObjIsInstanceOfCore(OBJECTREFToObject(oref), clsHnd))
-        oref = NULL;
-    HELPER_METHOD_POLL();
-    HELPER_METHOD_FRAME_END();
-
-    return OBJECTREFToObject(oref);
-}
-HCIMPLEND
 
 //========================================================================
 //
@@ -1381,24 +1352,6 @@ HCIMPL2(Object*, JIT_Box, CORINFO_CLASS_HANDLE type, void* unboxedData)
     return(OBJECTREFToObject(newobj));
 }
 HCIMPLEND
-
-/*************************************************************/
-HCIMPL2_IV(LPVOID, JIT_GetRefAny, CORINFO_CLASS_HANDLE type, TypedByRef typedByRef)
-{
-    FCALL_CONTRACT;
-
-    TypeHandle clsHnd(type);
-    // <TODO>@TODO right now we check for precisely the correct type.
-    // do we want to allow inheritance?  (watch out since value
-    // classes inherit from object but do not normal object layout).</TODO>
-    if (clsHnd != typedByRef.type) {
-        FCThrow(kInvalidCastException);
-    }
-
-    return(typedByRef.data);
-}
-HCIMPLEND
-
 
 /*************************************************************/
 HCIMPL2(BOOL, JIT_IsInstanceOfException, CORINFO_CLASS_HANDLE type, Object* obj)
@@ -3699,20 +3652,17 @@ HCIMPL1(void, JIT_CountProfile32, volatile LONG* pCounter)
     LONG delta = 1;
     DWORD threshold = g_pConfig->TieredPGO_ScalableCountThreshold();
 
-    if (count > 0)
+    if (count >= (LONG)(1 << threshold))
     {
-        DWORD logCount = 0;
+        DWORD logCount;
         BitScanReverse(&logCount, count);
 
-        if (logCount >= threshold)
+        delta = 1 << (logCount - (threshold - 1));
+        const unsigned rand = HandleHistogramProfileRand();
+        const bool update = (rand & (delta - 1)) == 0;
+        if (!update)
         {
-            delta = 1 << (logCount - (threshold - 1));
-            const unsigned rand = HandleHistogramProfileRand();
-            const bool update = (rand & (delta - 1)) == 0;
-            if (!update)
-            {
-                return;
-            }
+            return;
         }
     }
 
@@ -3729,20 +3679,17 @@ HCIMPL1(void, JIT_CountProfile64, volatile LONG64* pCounter)
     LONG64 delta = 1;
     DWORD threshold = g_pConfig->TieredPGO_ScalableCountThreshold();
 
-    if (count > 0)
+    if (count >= (LONG64)(1LL << threshold))
     {
-        DWORD logCount = 0;
+        DWORD logCount;
         BitScanReverse64(&logCount, count);
 
-        if (logCount >= threshold)
+        delta = 1LL << (logCount - (threshold - 1));
+        const unsigned rand = HandleHistogramProfileRand();
+        const bool update = (rand & (delta - 1)) == 0;
+        if (!update)
         {
-            delta = 1LL << (logCount - (threshold - 1));
-            const unsigned rand = HandleHistogramProfileRand();
-            const bool update = (rand & (delta - 1)) == 0;
-            if (!update)
-            {
-                return;
-            }
+            return;
         }
     }
 

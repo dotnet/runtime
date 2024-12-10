@@ -1418,15 +1418,10 @@ namespace System.Runtime.InteropServices
         [UnmanagedCallersOnly]
         internal static unsafe int IReferenceTrackerHost_ReleaseDisconnectedReferenceSources(IntPtr pThis)
         {
-            try
-            {
-                GC.WaitForPendingFinalizers();
-                return HResults.S_OK;
-            }
-            catch (Exception e)
-            {
-                return Marshal.GetHRForException(e);
-            }
+            // We'd like to call GC.WaitForPendingFinalizers() here, but this could lead to deadlock
+            // if the finalizer thread is trying to get back to this thread, because we are not pumping
+            // anymore. Disable this for now. See: https://github.com/dotnet/runtime/issues/109538.
+            return HResults.S_OK;
         }
 
         [UnmanagedCallersOnly]
