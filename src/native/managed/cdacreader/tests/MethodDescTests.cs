@@ -13,14 +13,17 @@ namespace Microsoft.Diagnostics.DataContractReader.Tests;
 
 public class MethodDescTests
 {
-    private static Target CreateTarget(MockDescriptors.MethodDescriptors methodDescBuilder)
+    private static Target CreateTarget(MockDescriptors.MethodDescriptors methodDescBuilder, Mock<IExecutionManager> mockExecutionManager = null)
     {
         MockMemorySpace.Builder builder = methodDescBuilder.Builder;
         var target = new TestPlaceholderTarget(builder.TargetTestHelpers.Arch, builder.GetReadContext().ReadFromTarget, methodDescBuilder.Types, methodDescBuilder.Globals);
+
+        mockExecutionManager ??= new Mock<IExecutionManager>();
         target.SetContracts(Mock.Of<ContractRegistry>(
             c => c.RuntimeTypeSystem == ((IContractFactory<IRuntimeTypeSystem>)new RuntimeTypeSystemFactory()).CreateContract(target, 1)
                 && c.Loader == ((IContractFactory<ILoader>)new LoaderFactory()).CreateContract(target, 1)
-                && c.PlatformMetadata == new Mock<Contracts.IPlatformMetadata>().Object));
+                && c.PlatformMetadata == new Mock<IPlatformMetadata>().Object
+                && c.ExecutionManager == mockExecutionManager.Object));
         return target;
     }
 
@@ -288,6 +291,73 @@ public class MethodDescTests
             TargetPointer actualNativeCodeSlotAddr = rts.GetAddressOfNativeCodeSlot(handle);
             Assert.Equal(expectedCodeSlotAddr, actualNativeCodeSlotAddr);
         }
+    }
+
+    public static IEnumerable<object[]> StdArchMethodDescTypeData()
+    {
+        foreach (object[] arr in new MockTarget.StdArch())
+        {
+            MockTarget.Architecture arch = (MockTarget.Architecture)arr[0];
+            yield return new object[] { arch, DataType.MethodDesc };
+            yield return new object[] { arch, DataType.FCallMethodDesc };
+            yield return new object[] { arch, DataType.PInvokeMethodDesc };
+            yield return new object[] { arch, DataType.EEImplMethodDesc };
+            yield return new object[] { arch, DataType.ArrayMethodDesc };
+            yield return new object[] { arch, DataType.InstantiatedMethodDesc };
+            yield return new object[] { arch, DataType.CLRToCOMCallMethodDesc };
+            yield return new object[] { arch, DataType.DynamicMethodDesc };
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(StdArchMethodDescTypeData))]
+    public void GetNativeCode_StableEntryPoint_NonVtableSlot(MockTarget.Architecture arch, DataType methodDescType)
+    {
+        TargetTestHelpers helpers = new(arch);
+        MockMemorySpace.Builder builder = new(helpers);
+        MockDescriptors.RuntimeTypeSystem rtsBuilder = new(builder);
+        MockDescriptors.Loader loaderBuilder = new(builder);
+        MockDescriptors.MethodDescriptors methodDescBuilder = new(rtsBuilder, loaderBuilder);
+
+        TargetPointer methodTable = AddMethodTable(rtsBuilder);
+        MethodClassification classification = methodDescType switch
+        {
+            DataType.MethodDesc => MethodClassification.IL,
+            DataType.FCallMethodDesc => MethodClassification.FCall,
+            DataType.PInvokeMethodDesc => MethodClassification.PInvoke,
+            DataType.EEImplMethodDesc => MethodClassification.EEImpl,
+            DataType.ArrayMethodDesc => MethodClassification.Array,
+            DataType.InstantiatedMethodDesc => MethodClassification.Instantiated,
+            DataType.CLRToCOMCallMethodDesc => MethodClassification.ComInterop,
+            DataType.DynamicMethodDesc => MethodClassification.Dynamic,
+            _ => throw new ArgumentOutOfRangeException(nameof(methodDescType))
+        };
+        uint methodDescBaseSize = methodDescBuilder.Types[methodDescType].Size.Value;
+        uint methodDescSize = methodDescBaseSize + methodDescBuilder.Types[DataType.NonVtableSlot].Size!.Value;
+        byte chunkSize = (byte)(methodDescSize / methodDescBuilder.MethodDescAlignment);
+        TargetPointer chunk = methodDescBuilder.AddMethodDescChunk(methodTable, string.Empty, count: 1, chunkSize, tokenRange: 0);
+
+        ushort flags = (ushort)((ushort)classification | (ushort)MethodDescFlags_1.MethodDescFlags.HasNonVtableSlot);
+        TargetPointer methodDescAddress = methodDescBuilder.SetMethodDesc(chunk, index: 0, slotNum: 0, flags, tokenRemainder: 0, flags3: (ushort)MethodDescFlags_1.MethodDescFlags3.HasStableEntryPoint);
+        TargetCodePointer nativeCode = new TargetCodePointer(0x0789_abc0);
+        helpers.WritePointer(
+            methodDescBuilder.Builder.BorrowAddressRange(methodDescAddress + methodDescBaseSize, helpers.PointerSize),
+            nativeCode);
+
+        Mock<IExecutionManager> mockExecutionManager = new();
+        CodeBlockHandle codeBlock = new CodeBlockHandle(methodDescAddress);
+        mockExecutionManager.Setup(em => em.GetCodeBlockHandle(nativeCode))
+            .Returns(codeBlock);
+        mockExecutionManager.Setup(em => em.GetMethodDesc(codeBlock))
+            .Returns(methodDescAddress);
+        Target target = CreateTarget(methodDescBuilder, mockExecutionManager);
+        IRuntimeTypeSystem rts = target.Contracts.RuntimeTypeSystem;
+
+        var handle = rts.GetMethodDescHandle(methodDescAddress);
+        Assert.NotEqual(TargetPointer.Null, handle.Address);
+
+        TargetCodePointer actualNativeCode = rts.GetNativeCode(handle);
+        Assert.Equal(nativeCode, actualNativeCode);
     }
 
     private TargetPointer AddMethodTable(MockDescriptors.RuntimeTypeSystem rtsBuilder, ushort numVirtuals = 5)

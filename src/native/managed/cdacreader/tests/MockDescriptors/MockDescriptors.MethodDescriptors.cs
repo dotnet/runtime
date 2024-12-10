@@ -120,6 +120,10 @@ internal partial class MockDescriptors
             types[DataType.MethodImpl] = new Target.TypeInfo() { Size = (uint)TargetTestHelpers.PointerSize * 2 };
             types[DataType.NativeCodeSlot] = new Target.TypeInfo() { Size = (uint)TargetTestHelpers.PointerSize };
             types[DataType.ArrayMethodDesc] = new Target.TypeInfo() { Size = types[DataType.StoredSigMethodDesc].Size.Value };
+            types[DataType.FCallMethodDesc] = new Target.TypeInfo() { Size = types[DataType.MethodDesc].Size.Value + (uint)TargetTestHelpers.PointerSize };
+            types[DataType.PInvokeMethodDesc] = new Target.TypeInfo() { Size = types[DataType.MethodDesc].Size.Value + (uint)TargetTestHelpers.PointerSize };
+            types[DataType.EEImplMethodDesc] = new Target.TypeInfo() { Size = types[DataType.StoredSigMethodDesc].Size.Value };
+            types[DataType.CLRToCOMCallMethodDesc] = new Target.TypeInfo() { Size = types[DataType.MethodDesc].Size.Value + (uint)TargetTestHelpers.PointerSize };
             types = types
                 .Concat(RTSBuilder.Types)
                 .Concat(LoaderBuilder.Types)
@@ -148,14 +152,14 @@ internal partial class MockDescriptors
             return chunkAddress + methodDescChunkTypeInfo.Size.Value + index * MethodDescAlignment;
         }
 
-        internal TargetPointer SetMethodDesc(TargetPointer methodDescChunk, byte index, ushort slotNum, ushort flags, ushort tokenRemainder)
+        internal TargetPointer SetMethodDesc(TargetPointer methodDescChunk, byte index, ushort slotNum, ushort flags, ushort tokenRemainder, ushort flags3 = 0)
         {
             TargetPointer methodDesc = GetMethodDescAddress(methodDescChunk, index);
             Target.TypeInfo methodDescTypeInfo = Types[DataType.MethodDesc];
             Span<byte> data = Builder.BorrowAddressRange(methodDesc, (int)methodDescTypeInfo.Size.Value);
-            TargetTestHelpers.Write(data.Slice(methodDescTypeInfo.Fields[nameof(Data.MethodDesc.ChunkIndex)].Offset), (byte)index);
+            TargetTestHelpers.Write(data.Slice(methodDescTypeInfo.Fields[nameof(Data.MethodDesc.ChunkIndex)].Offset), index);
             TargetTestHelpers.Write(data.Slice(methodDescTypeInfo.Fields[nameof(Data.MethodDesc.Flags)].Offset), flags);
-            TargetTestHelpers.Write(data.Slice(methodDescTypeInfo.Fields[nameof(Data.MethodDesc.Flags3AndTokenRemainder)].Offset), tokenRemainder);
+            TargetTestHelpers.Write(data.Slice(methodDescTypeInfo.Fields[nameof(Data.MethodDesc.Flags3AndTokenRemainder)].Offset), (ushort)(tokenRemainder | flags3));
             TargetTestHelpers.Write(data.Slice(methodDescTypeInfo.Fields[nameof(Data.MethodDesc.Slot)].Offset), slotNum);
             return methodDesc;
         }
