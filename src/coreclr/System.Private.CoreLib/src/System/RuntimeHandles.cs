@@ -1243,7 +1243,26 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern RuntimeMethodHandleInternal GetStubIfNeeded(RuntimeMethodHandleInternal method, RuntimeType declaringType, RuntimeType[]? methodInstantiation);
+        private static extern RuntimeMethodHandleInternal GetStubIfNeededInternal(RuntimeMethodHandleInternal method, RuntimeType declaringType);
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeMethodHandle_GetStubIfNeededSlow")]
+        private static partial RuntimeMethodHandleInternal GetStubIfNeededSlow(RuntimeMethodHandleInternal method, QCallTypeHandle declaringTypeHandle, ObjectHandleOnStack methodInstantiation);
+
+        internal static RuntimeMethodHandleInternal GetStubIfNeeded(RuntimeMethodHandleInternal method, RuntimeType declaringType, RuntimeType[]? methodInstantiation)
+        {
+            if (methodInstantiation is null)
+            {
+                RuntimeMethodHandleInternal handle = GetStubIfNeededInternal(method, declaringType);
+                if (!handle.IsNullHandle())
+                    return handle;
+            }
+
+            return GetStubIfNeededWorker(method, declaringType, methodInstantiation);
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static RuntimeMethodHandleInternal GetStubIfNeededWorker(RuntimeMethodHandleInternal method, RuntimeType declaringType, RuntimeType[]? methodInstantiation)
+                => GetStubIfNeededSlow(method, new QCallTypeHandle(ref declaringType), ObjectHandleOnStack.Create(ref methodInstantiation));
+        }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern RuntimeMethodHandleInternal GetMethodFromCanonical(RuntimeMethodHandleInternal method, RuntimeType declaringType);

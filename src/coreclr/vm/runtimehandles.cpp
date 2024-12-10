@@ -1890,7 +1890,7 @@ FCIMPL1(FC_BOOL_RET, RuntimeMethodHandle::IsTypicalMethodDefinition, ReflectMeth
 FCIMPLEND
 
 extern "C" void QCALLTYPE RuntimeMethodHandle_GetTypicalMethodDefinition(MethodDesc * pMethod, QCall::ObjectHandleOnStack refMethod)
-    {
+{
     QCALL_CONTRACT;
 
     BEGIN_QCALL;
@@ -1964,75 +1964,71 @@ extern "C" void QCALLTYPE RuntimeMethodHandle_StripMethodInstantiation(MethodDes
 // 3. create an UnboxingStub for a method in a value type. In this case instArray will be null.
 // For case 2 and 3, an instantiating stub or unboxing stub might not be needed in which case the original
 // MethodDesc is returned.
-FCIMPL3(MethodDesc*, RuntimeMethodHandle::GetStubIfNeeded,
+FCIMPL2(MethodDesc*, RuntimeMethodHandle::GetStubIfNeededInternal,
     MethodDesc *pMethod,
-    ReflectClassBaseObject *pTypeUNSAFE,
-    PtrArray* instArrayUNSAFE)
+    ReflectClassBaseObject *pTypeUNSAFE)
 {
-    CONTRACTL {
-        FCALL_CHECK;
-    }
-    CONTRACTL_END;
+    FCALL_CONTRACT;
 
     REFLECTCLASSBASEREF refType = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(pTypeUNSAFE);
-    PTRARRAYREF instArray = (PTRARRAYREF)ObjectToOBJECTREF(instArrayUNSAFE);
-
-    if (refType == NULL)
-        FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
 
     TypeHandle instType = refType->GetType();
-    MethodDesc *pNewMethod = pMethod;
-
-    // error conditions
-    if (!pMethod)
-        FCThrowRes(kArgumentException, W("Arg_InvalidHandle"));
-
-    if (instType.IsNull())
-        FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
 
     // Perf optimization: this logic is actually duplicated in FindOrCreateAssociatedMethodDescForReflection, but since it
     // is the more common case it's worth the duplicate check here to avoid the helper method frame
-    if ( instArray == NULL &&
-         ( pMethod->HasMethodInstantiation() ||
-           ( !instType.IsValueType() &&
-             ( !instType.HasInstantiation() || instType.IsGenericTypeDefinition() ) ) ) )
+    if (pMethod->HasMethodInstantiation()
+        || (!instType.IsValueType()
+            && (!instType.HasInstantiation() || instType.IsGenericTypeDefinition())))
     {
-        return pNewMethod;
+        return pMethod;
     }
 
-    HELPER_METHOD_FRAME_BEGIN_RET_2(refType, instArray);
-    {
-        TypeHandle *inst = NULL;
-        DWORD ntypars = 0;
-
-        if (instArray != NULL)
-        {
-            ntypars = instArray->GetNumComponents();
-
-            size_t size = ntypars * sizeof(TypeHandle);
-            if ((size / sizeof(TypeHandle)) != ntypars) // uint over/underflow
-                COMPlusThrow(kArgumentException);
-            inst = (TypeHandle*) _alloca(size);
-
-            for (DWORD i = 0; i < ntypars; i++)
-            {
-                REFLECTCLASSBASEREF instRef = (REFLECTCLASSBASEREF)instArray->GetAt(i);
-
-                if (instRef == NULL)
-                    COMPlusThrowArgumentNull(W("inst"), W("ArgumentNull_ArrayElement"));
-
-                inst[i] = instRef->GetType();
-            }
-        }
-
-        pNewMethod = MethodDesc::FindOrCreateAssociatedMethodDescForReflection(pMethod, instType, Instantiation(inst, ntypars));
-    }
-    HELPER_METHOD_FRAME_END();
-
-    return pNewMethod;
+    return NULL;
 }
 FCIMPLEND
 
+// See RuntimeMethodHandle::GetStubIfNeededInternal for more details.
+extern "C" MethodDesc* QCALLTYPE RuntimeMethodHandle_GetStubIfNeededSlow(MethodDesc* pMethod, QCall::TypeHandle declaringTypeHandle, QCall::ObjectHandleOnStack methodInstantiation)
+{
+    QCALL_CONTRACT;
+
+    MethodDesc *pNewMethod = NULL;
+
+    BEGIN_QCALL;
+
+    GCX_COOP();
+
+    TypeHandle instType = declaringTypeHandle.AsTypeHandle();
+
+    TypeHandle* inst = NULL;
+    DWORD ntypars = 0;
+
+    // Construct TypeHandle array for instantiation.
+    if (methodInstantiation.Get() != NULL)
+    {
+        ntypars = ((PTRARRAYREF)methodInstantiation.Get())->GetNumComponents();
+
+        size_t size = ntypars * sizeof(TypeHandle);
+        if ((size / sizeof(TypeHandle)) != ntypars) // uint over/underflow
+            COMPlusThrow(kArgumentException);
+        inst = (TypeHandle*) _alloca(size);
+
+        for (DWORD i = 0; i < ntypars; i++)
+        {
+            REFLECTCLASSBASEREF instRef = (REFLECTCLASSBASEREF)((PTRARRAYREF)methodInstantiation.Get())->GetAt(i);
+            if (instRef == NULL)
+                COMPlusThrowArgumentNull(W("inst"), W("ArgumentNull_ArrayElement"));
+
+            inst[i] = instRef->GetType();
+        }
+    }
+
+    pNewMethod = MethodDesc::FindOrCreateAssociatedMethodDescForReflection(pMethod, instType, Instantiation(inst, ntypars));
+
+    END_QCALL;
+
+    return pNewMethod;
+}
 
 FCIMPL2(MethodDesc*, RuntimeMethodHandle::GetMethodFromCanonical, MethodDesc *pMethod, ReflectClassBaseObject *pTypeUNSAFE)
 {
