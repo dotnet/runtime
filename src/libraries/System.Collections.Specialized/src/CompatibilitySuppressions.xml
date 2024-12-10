@@ -1,7 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <!-- https://learn.microsoft.com/dotnet/fundamentals/package-validation/diagnostic-ids -->
 <Suppressions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
-  <!-- Type exposed publicly in implementation only for serialization purposes. -->
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:System.Collections.Specialized.ListDictionary.DictionaryNode</Target>
