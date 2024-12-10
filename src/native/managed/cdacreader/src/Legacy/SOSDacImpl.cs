@@ -352,7 +352,8 @@ internal sealed unsafe partial class SOSDacImpl
             // HAVE_GCCOVER
             if (requestedNativeCodeVersion.Valid)
             {
-                // This is often TargetPointer.Null. In certain minidumps, we won't save the gccover information.
+                // TargetPointer.Null if GCCover information is not available.
+                // In certain minidumps, we won't save the GCCover information.
                 // (it would be unwise to do so, it is heavy and not a customer scenario).
                 data->GCInfo = nativeCodeContract.GetGCStressCodeCopy(requestedNativeCodeVersion);
             }
