@@ -800,8 +800,8 @@ namespace System.Tests
             yield return new object[] { "", "\0", "y", StringComparison.InvariantCulture, "" };
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser), nameof(PlatformDetection.IsNotHybridGlobalizationOnApplePlatform))]
-        [MemberData(nameof(Replace_StringComparison_TestData))]        
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnApplePlatform))]
+        [MemberData(nameof(Replace_StringComparison_TestData))]
         public void Replace_StringComparison_ReturnsExpected(string original, string oldValue, string newValue, StringComparison comparisonType, string expected)
         {
             Assert.Equal(expected, original.Replace(oldValue, newValue, comparisonType));
@@ -891,7 +891,7 @@ namespace System.Tests
             AssertExtensions.Throws<ArgumentException>("oldValue", () => "abc".Replace("", "def", true, CultureInfo.CurrentCulture));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser), nameof(PlatformDetection.IsNotHybridGlobalizationOnApplePlatform))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization), nameof(PlatformDetection.IsNotHybridGlobalizationOnApplePlatform))]
         public void Replace_StringComparison_WeightlessOldValue_WithOrdinalComparison_Succeeds()
         {
             Assert.Equal("abcdef", ("abc" + ZeroWidthJoiner).Replace(ZeroWidthJoiner, "def"));
@@ -899,7 +899,7 @@ namespace System.Tests
             Assert.Equal("abcdef", ("abc" + ZeroWidthJoiner).Replace(ZeroWidthJoiner, "def", StringComparison.OrdinalIgnoreCase));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser), nameof(PlatformDetection.IsNotHybridGlobalizationOnApplePlatform))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization), nameof(PlatformDetection.IsNotHybridGlobalizationOnApplePlatform))]
         public void Replace_StringComparison_WeightlessOldValue_WithLinguisticComparison_TerminatesReplacement()
         {
             Assert.Equal("abc" + ZeroWidthJoiner + "def", ("abc" + ZeroWidthJoiner + "def").Replace(ZeroWidthJoiner, "xyz", StringComparison.CurrentCulture));
