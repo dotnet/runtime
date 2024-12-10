@@ -1557,7 +1557,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		{
 			class AnnotatedBase
 			{
-				[Kept (By = Tool.Trimmer /* The object.GetType() call is statically unreachable, this could be trimmed */)]
+				[Kept (By = Tool.Trimmer /* https://github.com/dotnet/runtime/issues/110563 */)]
 				[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute), By = Tool.Trimmer)]
 				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
 				class Base
@@ -1566,7 +1566,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 					public void Method () { }
 				}
 
-				[Kept (By = Tool.Trimmer /* The object.GetType() call is statically unreachable, this could be trimmed */)]
+				[Kept (By = Tool.Trimmer /* https://github.com/dotnet/runtime/issues/110563 */)]
 				[KeptBaseType (typeof (Base), By = Tool.Trimmer)]
 				class Derived : Base
 				{
@@ -1616,7 +1616,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.All)]
 				interface IBase
 				{
-					[Kept (By = Tool.Trimmer /* interface method is not target of reflection */)]
+					[Kept (By = Tool.Trimmer /* https://github.com/dotnet/runtime/issues/104740 */)]
 					public void Method () { }
 				}
 
