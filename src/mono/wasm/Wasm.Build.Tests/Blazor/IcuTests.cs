@@ -28,7 +28,7 @@ public class IcuTests : BlazorWasmTestBase
     [InlineData("Release", null)]
     public async Task FullIcuFromRuntimePackWithInvariant(string config, bool? invariant)
     {
-        string id = $"blz_hybrid_{config}_{GetRandomId()}";
+        string id = $"blz_full_icu_{config}_{GetRandomId()}";
         string projectFile = CreateBlazorWasmTemplateProject(id);
         string extraProperties = "<BlazorWebAssemblyLoadAllGlobalizationData>true</BlazorWebAssemblyLoadAllGlobalizationData>";
         if (invariant != null)

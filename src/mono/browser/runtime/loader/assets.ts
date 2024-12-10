@@ -72,8 +72,7 @@ const skipBufferByAssetTypes: {
     [k: string]: boolean
 } = {
     "dotnetwasm": true,
-    "symbols": true,
-    "segmentation-rules": true,
+    "symbols": true
 };
 
 // these assets are instantiated differently than the main flow
@@ -82,8 +81,7 @@ const skipInstantiateByAssetTypes: {
 } = {
     ...jsModulesAssetTypes,
     "dotnetwasm": true,
-    "symbols": true,
-    "segmentation-rules": true,
+    "symbols": true
 };
 
 // load again for each worker
@@ -91,7 +89,6 @@ const loadIntoWorker: {
     [k: string]: boolean
 } = {
     "symbols": true,
-    "segmentation-rules": true,
 };
 
 export function shouldLoadIcuAsset (asset: AssetEntryInternal): boolean {
@@ -310,9 +307,6 @@ export function prepareAssets () {
         if (WasmEnableThreads) {
             convert_single_asset(modulesAssets, resources.jsModuleWorker, "js-module-threads");
         }
-        if (config.globalizationMode == GlobalizationMode.Hybrid) {
-            convert_single_asset(modulesAssets, resources.jsModuleGlobalization, "js-module-globalization");
-        }
 
         const addAsset = (asset: AssetEntryInternal, isCore: boolean) => {
             if (resources.fingerprinting && (asset.behavior == "assembly" || asset.behavior == "pdb" || asset.behavior == "resource")) {
@@ -417,12 +411,6 @@ export function prepareAssets () {
                         hash: resources.icu[name],
                         behavior: "icu",
                         loadRemote: true
-                    });
-                } else if (name.startsWith("segmentation-rules") && name.endsWith(".json")) {
-                    assetsToLoad.push({
-                        name,
-                        hash: resources.icu[name],
-                        behavior: "segmentation-rules",
                     });
                 }
             }

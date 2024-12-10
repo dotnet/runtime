@@ -8,7 +8,7 @@ import { exceptions, simd } from "wasm-feature-detect";
 
 import gitHash from "consts:gitHash";
 
-import type { DotnetModuleInternal, GlobalObjects, GlobalizationHelpers, LoaderHelpers, MonoConfigInternal, PThreadWorker, RuntimeHelpers } from "../types/internal";
+import type { DotnetModuleInternal, GlobalObjects, LoaderHelpers, MonoConfigInternal, PThreadWorker, RuntimeHelpers } from "../types/internal";
 import type { MonoConfig, RuntimeAPI } from "../types";
 import { assert_runtime_running, installUnhandledErrorHandler, is_exited, is_runtime_running, mono_exit } from "./exit";
 import { assertIsControllablePromise, createPromiseController, getPromiseController } from "./promise-controller";

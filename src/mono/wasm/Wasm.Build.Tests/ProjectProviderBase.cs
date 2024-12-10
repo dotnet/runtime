@@ -358,10 +358,6 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
             case GlobalizationMode.FullIcu:
                 expected.Add("icudt.dat");
                 break;
-            case GlobalizationMode.Hybrid:
-                expected.Add("icudt_hybrid.dat");
-                expected.Add("segmentation-rules.json");
-                break;
             case GlobalizationMode.Custom:
                 if (string.IsNullOrEmpty(assertOptions.CustomIcuFile))
                     throw new ArgumentException("WasmBuildTest is invalid, value for Custom globalization mode is required when GlobalizationMode=Custom.");
@@ -380,8 +376,6 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
         }
 
         IEnumerable<string> actual = Directory.EnumerateFiles(assertOptions.BinFrameworkDir, "icudt*dat");
-        if (assertOptions.GlobalizationMode == GlobalizationMode.Hybrid)
-            actual = actual.Union(Directory.EnumerateFiles(assertOptions.BinFrameworkDir, "segmentation-rules*json"));
 
         if (IsFingerprintingEnabled)
         {

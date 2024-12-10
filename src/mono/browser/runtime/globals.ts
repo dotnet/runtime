@@ -9,7 +9,7 @@
 import gitHash from "consts:gitHash";
 
 import { RuntimeAPI } from "./types/index";
-import type { GlobalObjects, EmscriptenInternals, RuntimeHelpers, LoaderHelpers, DotnetModuleInternal, PromiseAndController, EmscriptenBuildOptions, GCHandle, GlobalizationHelpers } from "./types/internal";
+import type { GlobalObjects, EmscriptenInternals, RuntimeHelpers, LoaderHelpers, DotnetModuleInternal, PromiseAndController, EmscriptenBuildOptions, GCHandle } from "./types/internal";
 import { mono_log_error } from "./logging";
 
 // these are our public API (except internal)

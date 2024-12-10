@@ -103,7 +103,7 @@ const wasmImports: Function[] = [
     ...mono_wasm_imports,
     // threading exports, if threading is enabled
     ...mono_wasm_threads_imports,
-    // hybrid globalization exports
+    // globalization exports
     ...mono_wasm_js_globalization_imports,
 ];
 

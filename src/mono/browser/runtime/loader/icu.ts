@@ -26,11 +26,8 @@ export function init_globalization () {
     }
 
     const invariantEnv = "DOTNET_SYSTEM_GLOBALIZATION_INVARIANT";
-    const hybridEnv = "DOTNET_SYSTEM_GLOBALIZATION_HYBRID";
     const env_variables = loaderHelpers.config.environmentVariables!;
-    if (env_variables[hybridEnv] === undefined && loaderHelpers.config.globalizationMode === GlobalizationMode.Hybrid) {
-        env_variables[hybridEnv] = "1";
-    } else if (env_variables[invariantEnv] === undefined && invariantMode) {
+    if (env_variables[invariantEnv] === undefined && invariantMode) {
         env_variables[invariantEnv] = "1";
     }
     if (env_variables["TZ"] === undefined) {
@@ -70,8 +67,6 @@ export function getIcuResourceName (config: MonoConfig): string | null {
             if (icuFiles.length >= 1) {
                 return icuFiles[0];
             }
-        } else if (config.globalizationMode === GlobalizationMode.Hybrid) {
-            icuFile = "icudt_hybrid.dat";
         } else if (!culture || config.globalizationMode === GlobalizationMode.All) {
             icuFile = "icudt.dat";
         } else if (config.globalizationMode === GlobalizationMode.Sharded) {
