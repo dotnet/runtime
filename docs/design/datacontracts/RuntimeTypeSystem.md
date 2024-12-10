@@ -657,7 +657,7 @@ We depend on the following data descriptors:
 | `StoredSigMethodDesc` | `cSig` | Count of bytes in the metadata signature |
 | `StoredSigMethodDesc` | `ExtendedFlags` | Flags field for the `StoredSigMethodDesc` |
 | `DynamicMethodDesc` | `MethodName` | Pointer to Null-terminated UTF8 string describing the Method desc |
-| `GCCoverageInfo` | `SavedCode` | Pointer to the GCCover saved code copy |
+| `GCCoverageInfo` | `SavedCode` | Pointer to the GCCover saved code copy, if supported |
 
 
 The contract depends on the following other contracts
