@@ -26,7 +26,8 @@
   </PropertyGroup>
   <ItemGroup Condition="'$(UsingNativeAOT)' == 'true'">
     <PackageReference Include="Microsoft.DotNet.ILCompiler.LLVM" Version="$(ProductVersion)-*" />
-    <PackageReference Include="runtime.win-x64.Microsoft.DotNet.ILCompiler.LLVM" Version="$(ProductVersion)-*" />
+    <PackageReference Include="runtime.$(ToolsRID).Microsoft.DotNet.ILCompiler.LLVM" Version="$(ProductVersion)-*" />
+    <!-- TODO: Can be removed when emscripten workload refactoring is aligned with NativeAOT -->
     <EmscriptenEnvVars Include="DOTNET_EMSCRIPTEN_LLVM_ROOT=$(EmscriptenSdkToolsPath)bin" />
     <EmscriptenEnvVars Include="DOTNET_EMSCRIPTEN_BINARYEN_ROOT=$(EmscriptenSdkToolsPath)" />
     <EmscriptenEnvVars Include="DOTNET_EMSCRIPTEN_NODE_JS=$([MSBuild]::NormalizePath($(EmscriptenNodeToolsPath), 'bin', 'node$(_ExeExt)'))" />
