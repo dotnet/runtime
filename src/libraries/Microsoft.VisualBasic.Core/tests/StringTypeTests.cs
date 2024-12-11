@@ -363,7 +363,7 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
             Assert.Throws<ArgumentException>(() => StringType.MidStmtStr(ref str, start, length, insert));
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [Theory]
         [MemberData(nameof(StrCmp_TestData))]
         public void StrCmp(string left, string right, int expectedBinaryCompare, int expectedTextCompare)
         {
@@ -388,7 +388,7 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
             yield return new object[] { "abc", "ABC", 32, 0 };
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [Theory]
         [InlineData(null, null, true, true)]
         [InlineData("", null, true, true)]
         [InlineData("", "*", true, true)]

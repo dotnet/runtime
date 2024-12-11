@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Globalization;
 using System.Text;
 
 namespace System
@@ -41,7 +42,7 @@ namespace System
         /// <returns><see langword="true"/> if the specified span of characters is in a normalized form; otherwise, <see langword="false"/>.</returns>
         /// <exception cref="ArgumentException">The specified character span contains an invalid code point or the normalization form is invalid.</exception>
         public static bool IsNormalized(this ReadOnlySpan<char> source, NormalizationForm normalizationForm = NormalizationForm.FormC) =>
-            System.Globalization.Normalization.IsNormalized(source, normalizationForm);
+            Normalization.IsNormalized(source, normalizationForm);
 
         /// <summary>
         /// Normalizes the specified string to the <see cref="NormalizationForm.FormC" />.
@@ -77,7 +78,7 @@ namespace System
         /// <returns><see langword="true"/> if the specified span of characters was successfully normalized; otherwise, <see langword="false"/>.</returns>
         /// <exception cref="ArgumentException">The specified character span contains an invalid code point or the normalization form is invalid.</exception>
         public static bool TryNormalize(this ReadOnlySpan<char> source, Span<char> destination, out int charsWritten, NormalizationForm normalizationForm = NormalizationForm.FormC) =>
-            System.Globalization.Normalization.TryNormalize(source, destination, out charsWritten, normalizationForm);
+            Normalization.TryNormalize(source, destination, out charsWritten, normalizationForm);
 
         /// <summary>
         /// Gets the estimated length of the normalized form of the specified string in the <see cref="NormalizationForm.FormC" />.
@@ -87,6 +88,6 @@ namespace System
         /// <returns>The estimated length of the normalized form of the specified string.</returns>
         /// <exception cref="ArgumentException">The specified character span contains an invalid code point or the normalization form is invalid.</exception>
         public static int GetNormalizedLength(this ReadOnlySpan<char> source, NormalizationForm normalizationForm = NormalizationForm.FormC) =>
-            System.Globalization.Normalization.GetNormalizedLength(source, normalizationForm);
+            Normalization.GetNormalizedLength(source, normalizationForm);
     }
 }

@@ -514,11 +514,45 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern void GetNextIntroducedMethod(ref RuntimeMethodHandleInternal method);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern bool GetFields(RuntimeType type, IntPtr* result, int* count);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_GetFields")]
+        private static partial Interop.BOOL GetFields(MethodTable* pMT, Span<IntPtr> data, ref int usedCount);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern Type[]? GetInterfaces(RuntimeType type);
+        internal static bool GetFields(RuntimeType type, Span<IntPtr> buffer, out int count)
+        {
+            Debug.Assert(!IsGenericVariable(type));
+
+            TypeHandle typeHandle = type.GetNativeTypeHandle();
+            if (typeHandle.IsTypeDesc)
+            {
+                count = 0;
+                return true;
+            }
+
+            int countLocal = buffer.Length;
+            bool success = GetFields(typeHandle.AsMethodTable(), buffer, ref countLocal) != Interop.BOOL.FALSE;
+            GC.KeepAlive(type);
+            count = countLocal;
+            return success;
+        }
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_GetInterfaces")]
+        private static unsafe partial void GetInterfaces(MethodTable* pMT, ObjectHandleOnStack result);
+
+        internal static Type[] GetInterfaces(RuntimeType type)
+        {
+            Debug.Assert(!IsGenericVariable(type));
+
+            TypeHandle typeHandle = type.GetNativeTypeHandle();
+            if (typeHandle.IsTypeDesc)
+            {
+                return [];
+            }
+
+            Type[] result = [];
+            GetInterfaces(typeHandle.AsMethodTable(), ObjectHandleOnStack.Create(ref result));
+            GC.KeepAlive(type);
+            return result;
+        }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_GetConstraints")]
         private static partial void GetConstraints(QCallTypeHandle handle, ObjectHandleOnStack types);
@@ -1859,10 +1893,11 @@ namespace System
         public int MDStreamVersion => GetMDStreamVersion(GetRuntimeModule());
     }
 
-    internal sealed unsafe class Signature
+    internal sealed unsafe partial class Signature
     {
         #region FCalls
         [MemberNotNull(nameof(m_arguments))]
+        [MemberNotNull(nameof(m_declaringType))]
         [MemberNotNull(nameof(m_returnTypeORfieldType))]
         [MethodImpl(MethodImplOptions.InternalCall)]
         private extern void GetSignature(
@@ -1875,7 +1910,7 @@ namespace System
         // Keep the layout in sync with SignatureNative in the VM
         //
         internal RuntimeType[] m_arguments;
-        internal RuntimeType? m_declaringType;
+        internal RuntimeType m_declaringType;
         internal RuntimeType m_returnTypeORfieldType;
         internal object? m_keepalive;
         internal void* m_sig;
@@ -1923,8 +1958,17 @@ namespace System
         internal RuntimeType ReturnType => m_returnTypeORfieldType;
         internal RuntimeType FieldType => m_returnTypeORfieldType;
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern bool CompareSig(Signature sig1, Signature sig2);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Signature_AreEqual")]
+        private static partial Interop.BOOL AreEqual(
+            void* sig1, int csig1, QCallTypeHandle type1,
+            void* sig2, int csig2, QCallTypeHandle type2);
+
+        internal static bool AreEqual(Signature sig1, Signature sig2)
+        {
+            return AreEqual(
+                sig1.m_sig, sig1.m_csig, new QCallTypeHandle(ref sig1.m_declaringType),
+                sig2.m_sig, sig2.m_csig, new QCallTypeHandle(ref sig2.m_declaringType)) != Interop.BOOL.FALSE;
+        }
 
         internal Type[] GetCustomModifiers(int parameterIndex, bool required) =>
             GetCustomModifiersAtOffset(GetParameterOffset(parameterIndex), required);
