@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppPrevious);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
@@ -160,6 +160,7 @@ The System.Text.Json library is built-in as part of the shared framework in .NET
     <Compile Include="System\Text\Json\Serialization\PolymorphicSerializationState.cs" />
     <Compile Include="System\Text\Json\StackHelper.cs" />
     <Compile Include="System\Text\Json\ValueQueue.cs" />
+    <Compile Include="System\Text\Json\Writer\Utf8JsonWriter.WriteValues.StringSegment.cs" />
     <Compile Include="System\Text\Json\Writer\Utf8JsonWriterCache.cs" />
     <Compile Include="System\Text\Json\Serialization\ReferenceEqualsWrapper.cs" />
     <Compile Include="System\Text\Json\Serialization\ConverterStrategy.cs" />
@@ -387,6 +388,14 @@ The System.Text.Json library is built-in as part of the shared framework in .NET
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\RequiresDynamicCodeAttribute.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\CallerArgumentExpressionAttribute.cs" />
     <Compile Include="System\Text\Json\Reader\JsonReaderHelper.netstandard.cs" />
+  </ItemGroup>
+
+  <!-- Polyfills for working with Unicode -->
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
+    <Compile Include="Polyfills\System.Numerics.BitOperations.netstandard20.cs" />
+    <Compile Include="Polyfills\System.Text.Rune.netstandard20.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Text\UnicodeDebug.cs" Link="System\Text\UnicodeDebug.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Text\UnicodeUtility.cs" Link="System\Text\UnicodeUtility.cs" />
   </ItemGroup>
 
   <!-- Application tfms (.NETCoreApp, .NETFramework) need to use the same or higher version of .NETStandard's dependencies. -->

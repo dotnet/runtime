@@ -61,7 +61,10 @@ namespace System.Text.Json
 
         private void WriteCommentByOptions(ReadOnlySpan<char> value)
         {
-            ValidateWritingComment();
+            if (!_options.SkipValidation)
+            {
+                ValidateWritingComment();
+            }
 
             if (_options.Indented)
             {

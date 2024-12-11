@@ -767,7 +767,6 @@
   <data name="JsonSchemaExporter_DepthTooLarge" xml:space="preserve">
     <value>The depth of the generated JSON schema exceeds the JsonSerializerOptions.MaxDepth setting.</value>
   </data>
-  <!-- System.Collections polyfills -->
   <data name="Arg_WrongType" xml:space="preserve">
     <value>The value '{0}' is not of type '{1}' and cannot be used in this generic collection.</value>
   </data>
@@ -810,7 +809,7 @@
   <data name="Argument_InvalidOffLen" xml:space="preserve">
     <value>Offset and length were out of bounds for the array or count is greater than the number of elements from index to the end of the source collection.</value>
   </data>
-	<data name="CannotWriteWithinString" xml:space="preserve">
-    <value>The current JSON string must be finalized before a token of type '{0}' can be added.</value>
+  <data name="CannotWriteWithinString" xml:space="preserve">
+    <value>Cannot write the requested JSON property or value until the final string value segment has been written.</value>
   </data>
 </root>

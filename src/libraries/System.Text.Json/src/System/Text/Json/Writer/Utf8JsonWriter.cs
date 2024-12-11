@@ -7,6 +7,7 @@ using System.IO;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
+using System.ComponentModel;
 
 #if !NET
 using System.Runtime.InteropServices;
@@ -50,6 +51,14 @@ namespace System.Text.Json
         private bool _commentAfterNoneOrPropertyName;
         private JsonTokenType _tokenType;
         private BitStack _bitStack;
+
+#if NET
+        private Inline4ByteArray _partialCodePoint;
+        private Span<byte> PartialCodePointRaw => _partialCodePoint;
+#else
+        private byte[]? _partialCodePoint;
+        private Span<byte> PartialCodePointRaw => _partialCodePoint ??= new byte[4];
+#endif
 
         // The highest order bit of _currentDepth is used to discern whether we are writing the first item in a list or not.
         // if (_currentDepth >> 31) == 1, add a list separator before writing the item
@@ -274,6 +283,8 @@ namespace System.Text.Json
             _currentDepth = default;
 
             _bitStack = default;
+
+            ClearPartialCodePoint();
         }
 
         private void CheckNotDisposed()

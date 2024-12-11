@@ -617,7 +617,7 @@ namespace System.Text.Json
                     message = SR.Format(SR.CannotWriteValueAfterPrimitiveOrClose, tokenType);
                     break;
                 case ExceptionResource.CannotWriteWithinString:
-                    message = SR.Format(SR.CannotWriteWithinString, tokenType);
+                    message = SR.CannotWriteWithinString;
                     break;
                 default:
                     Debug.Fail($"The ExceptionResource enum value: {resource} is not part of the switch. Add the appropriate case and exception message.");
