@@ -25,6 +25,12 @@ PhaseStatus Compiler::fgCanonicalizeFirstBB()
     {
         JITDUMP("Canonicalizing entry because it currently has predecessors\n");
     }
+    else if (opts.compDbgCode && !fgFirstBB->HasFlag(BBF_INTERNAL))
+    {
+        // For debug ensure the first BB is internal so as to not conflate user
+        // code with JIT added code.
+        JITDUMP("Canonicalizing entry because it currently is a user BB and we are generating debug code\n");
+    }
     else
     {
         return PhaseStatus::MODIFIED_NOTHING;
@@ -34,6 +40,10 @@ PhaseStatus Compiler::fgCanonicalizeFirstBB()
     return PhaseStatus::MODIFIED_EVERYTHING;
 }
 
+//------------------------------------------------------------------------------
+// fgCreateNewInitBB:
+//   Create a new init BB at the beginning of the function.
+//
 void Compiler::fgCreateNewInitBB()
 {
     // The first block has an implicit ref count which we must remove. Note the
@@ -5841,7 +5851,7 @@ BasicBlock* Compiler::fgNewBBFromTreeAfter(
  */
 void Compiler::fgInsertBBbefore(BasicBlock* insertBeforeBlk, BasicBlock* newBlk)
 {
-    if (fgFirstBB == insertBeforeBlk)
+    if (insertBeforeBlk == fgFirstBB)
     {
         newBlk->SetNext(fgFirstBB);
 
@@ -5853,8 +5863,7 @@ void Compiler::fgInsertBBbefore(BasicBlock* insertBeforeBlk, BasicBlock* newBlk)
         fgInsertBBafter(insertBeforeBlk->Prev(), newBlk);
     }
 
-    /* Update fgFirstFuncletBB if insertBeforeBlk is the first block of the funclet region. */
-    if (fgFirstFuncletBB == insertBeforeBlk)
+    if (insertBeforeBlk == fgFirstFuncletBB)
     {
         fgFirstFuncletBB = newBlk;
     }

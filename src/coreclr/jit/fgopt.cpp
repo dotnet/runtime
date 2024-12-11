@@ -882,6 +882,13 @@ bool Compiler::fgCanCompactInitBlock()
         return false;
     }
 
+    if (opts.compDbgCode && !target->HasFlag(BBF_INTERNAL))
+    {
+        // Init BB must be internal for debug code to avoid conflating
+        // JIT-inserted code with user code.
+        return false;
+    }
+
     return true;
 }
 
