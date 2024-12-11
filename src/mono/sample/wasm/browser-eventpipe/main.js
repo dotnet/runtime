@@ -54,6 +54,8 @@ async function main() {
         .withElementOnExit()
         .withExitCodeLogging()
         .withDiagnosticTracing(false)
+        //.withEnvironmentVariable("MONO_DIAGNOSTICS", "--diagnostic-mono-profiler=enable")// --diagnostic-ports=mock:../mock.js,suspend
+        //.withEnvironmentVariable("DOTNET_DiagnosticPorts", "mock:../mock.js,suspend")
         .withConfig({
             pthreadPoolInitialSize: 7,
         })
