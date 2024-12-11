@@ -59,7 +59,7 @@ public:
     INT32 _filterOffset;
 };
 
-class RuntimeMethodBody : Object
+class RuntimeMethodBody : public Object
 {
 private:
     // Disallow creation and copy construction of these.
