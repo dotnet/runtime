@@ -47,7 +47,7 @@ void ThreadDetaching();
 
 void EnsureTlsDestructionMonitor();
 #ifdef TARGET_WINDOWS
-bool InitFlsSlot();
+void InitFlsSlot();
 bool OsDetachThread(void* thread);
 #endif
 

@@ -1075,10 +1075,7 @@ void InitThreadManager()
     CONTRACTL_END;
 
 #ifdef TARGET_WINDOWS
-    if (!InitFlsSlot())
-    {
-        _ASSERTE_ALL_BUILDS(!"Initialization of a FLS slot failed.");
-    }
+    InitFlsSlot();
 #endif
 
     // All patched helpers should fit into one page.
