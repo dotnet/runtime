@@ -3,6 +3,7 @@ if(CLR_CMAKE_TARGET_TIZEN_LINUX)
 endif()
 
 if(NOT DEFINED FEATURE_EVENT_TRACE)
+  # To actually disable FEATURE_EVENT_TRACE, also change clr.featuredefines.props
   set(FEATURE_EVENT_TRACE 1)
 endif(NOT DEFINED FEATURE_EVENT_TRACE)
 
