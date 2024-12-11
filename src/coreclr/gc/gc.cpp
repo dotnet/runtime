@@ -17142,8 +17142,9 @@ void gc_heap::handle_oom (oom_reason reason, size_t alloc_size,
     fgm_result.fgm = fgm_no_failure;
 
 #ifdef FEATURE_EVENT_TRACE
-    // Get Memory Load.
-    uint32_t memory_load = 0; // Include.
+
+    // Include just the memory_load. 
+    uint32_t memory_load = 0;
     uint64_t available_physical = 0;
     uint64_t available_page_file = 0;
     get_memory_info (&memory_load, &available_physical, &available_page_file);
