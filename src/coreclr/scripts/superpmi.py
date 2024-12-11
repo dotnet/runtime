@@ -2733,8 +2733,8 @@ class SuperPMIReplayAsmDiffs:
 
                 return 1
 
-            by_small_then_improvement = sorted(by_diff_size_pct, key=is_small_diff)
-            by_small_then_regression = sorted(reversed(by_diff_size_pct), key=is_small_diff)
+            by_improvement_then_small = sorted(by_diff_size_pct, key=is_small_diff)
+            by_regression_then_small = sorted(reversed(by_diff_size_pct), key=is_small_diff)
 
             def pick_examples(diffs, picked_contexts):
                 seen = set()
@@ -2754,10 +2754,10 @@ class SuperPMIReplayAsmDiffs:
 
                 return result
 
-            example_improvements = pick_examples(by_small_then_improvement, set())
+            example_improvements = pick_examples(by_improvement_then_small, set())
 
             example_improvement_contexts = set(row["Context"] for row in example_improvements)
-            example_regressions = pick_examples(by_small_then_regression, example_improvement_contexts)
+            example_regressions = pick_examples(by_regression_then_small, example_improvement_contexts)
 
             contexts = smallest_contexts + top_improvements + top_regressions + top_improvements_pct + top_regressions_pct + smallest_zero_size_contexts + example_improvements + example_regressions
             examples = example_improvements + example_regressions
