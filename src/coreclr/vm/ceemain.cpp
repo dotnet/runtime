@@ -1801,7 +1801,7 @@ static void OsAttachThread(void* thread)
 //  thread        - thread to detach
 // Return:
 //  true if the thread was detached, false if there was no attached thread
-bool OsDetachThread(void* thread)
+void OsDetachThread(void* thread)
 {
     ASSERT(g_flsIndex != FLS_OUT_OF_INDEXES);
     void* threadFromCurrentFiber = FlsGetValue(g_flsIndex);
@@ -1810,7 +1810,7 @@ bool OsDetachThread(void* thread)
     {
         // we've seen this thread, but not this fiber.  It must be a "foreign" fiber that was
         // borrowing this thread.
-        return false;
+        return;
     }
 
     if (threadFromCurrentFiber != thread)
@@ -1819,7 +1819,6 @@ bool OsDetachThread(void* thread)
     }
 
     FlsSetValue(g_flsIndex, NULL);
-    return true;
 }
 
 void EnsureTlsDestructionMonitor()
