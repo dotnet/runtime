@@ -371,8 +371,6 @@ public:
     // True if the declaring type or instantiation of method (if any) contains formal generic type parameters
     BOOL ContainsGenericVariables();
 
-    Module* GetDefiningModuleForOpenMethod();
-
     // True if this is a class and method instantiation that on <__Canon,...,__Canon>
     BOOL IsTypicalSharedInstantiation();
 
@@ -503,10 +501,6 @@ public:
     MethodDescBackpatchInfoTracker* GetBackpatchInfoTracker();
 
     PTR_LoaderAllocator GetLoaderAllocator();
-
-    // GetDomainSpecificLoaderAllocator returns the collectable loader allocator for collectable types
-    // and the loader allocator in the current domain for non-collectable types
-    LoaderAllocator * GetDomainSpecificLoaderAllocator();
 
     Module* GetLoaderModule();
 
@@ -819,8 +813,6 @@ public:
         LIMITED_METHOD_DAC_CONTRACT;
         return IsEEImpl() || IsArray() || IsNoMetadata();
     }
-
-    PCCOR_SIGNATURE GetSig();
 
     void GetSig(PCCOR_SIGNATURE *ppSig, DWORD *pcSig);
     SigParser GetSigParser();
@@ -1861,10 +1853,8 @@ public:
     //
     // Optional MethodDesc slots appear after the end of base MethodDesc in this order:
     //
-
-    // class MethodImpl;                            // Present if HasMethodImplSlot() is true
-
     typedef PCODE NonVtableSlot;   // Present if HasNonVtableSlot() is true
+    // class MethodImpl;           // Present if HasMethodImplSlot() is true
     typedef PCODE NativeCodeSlot;  // Present if HasNativeCodeSlot() is true
 
 // Stub Dispatch code
@@ -1916,6 +1906,8 @@ template<> struct cdac_data<MethodDesc>
     static constexpr size_t Slot = offsetof(MethodDesc, m_wSlotNumber);
     static constexpr size_t Flags = offsetof(MethodDesc, m_wFlags);
     static constexpr size_t Flags3AndTokenRemainder = offsetof(MethodDesc, m_wFlags3AndTokenRemainder);
+    static constexpr size_t EntryPointFlags = offsetof(MethodDesc, m_bFlags4);
+    static constexpr size_t CodeData = offsetof(MethodDesc, m_codeData);
 };
 
 #ifndef DACCESS_COMPILE

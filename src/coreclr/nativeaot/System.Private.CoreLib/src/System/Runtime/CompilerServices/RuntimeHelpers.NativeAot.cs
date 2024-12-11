@@ -45,7 +45,7 @@ namespace System.Runtime.CompilerServices
             if (type.IsNull)
                 throw new ArgumentException(SR.InvalidOperation_HandleIsNotInitialized);
 
-            ReflectionAugments.ReflectionCoreCallbacks.RunClassConstructor(type);
+            ReflectionAugments.RunClassConstructor(type);
         }
 
         public static void RunModuleConstructor(ModuleHandle module)
@@ -380,7 +380,7 @@ namespace System.Runtime.CompilerServices
             if (mt->IsByRefLike)
                 throw new NotSupportedException(SR.NotSupported_ByRefLike);
 
-            return RuntimeImports.RhBox(mt, ref target);
+            return RuntimeExports.RhBox(mt, ref target);
         }
 
         /// <summary>

@@ -40,13 +40,18 @@ The .NET Foundation licenses this file to you under the MIT license.
   <Target Name="SetupOSSpecificProps" DependsOnTargets="$(IlcDynamicBuildPropertyDependencies)">
 
     <ItemGroup>
+      <NativeLibrary Condition="'$(NativeLib)' != ''" Include="$(IlcSdkPath)dllmain$(ObjectSuffix)" />
       <NativeLibrary Include="$(IlcSdkPath)$(BootstrapperName)$(ObjectSuffix)" />
       <NativeLibrary Include="$(IlcSdkPath)$(FullRuntimeName)$(LibrarySuffix)" />
       <NativeLibrary Include="$(IlcSdkPath)$(EventPipeName)$(LibrarySuffix)" />
       <NativeLibrary Condition="'$(_targetArchitecture)' == 'x64'" Include="$(IlcSdkPath)$(VxSortSupportName)$(LibrarySuffix)" />
       <NativeLibrary Condition="'$(IlcMultiModule)' == 'true'" Include="$(SharedLibrary)" />
       <NativeLibrary Include="$(IlcSdkPath)$(StandaloneGCSupportName)$(LibrarySuffix)" />
+      <NativeLibrary Include="$(IlcSdkPath)aotminipal$(LibFileExt)" />
       <NativeLibrary Include="$(IlcSdkPath)zlibstatic$(LibFileExt)" />
+      <NativeLibrary Include="$(IlcSdkPath)brotlicommon$(LibFileExt)" />
+      <NativeLibrary Include="$(IlcSdkPath)brotlienc$(LibFileExt)" />
+      <NativeLibrary Include="$(IlcSdkPath)brotlidec$(LibFileExt)" />
     </ItemGroup>
 
     <ItemGroup>
@@ -85,6 +90,7 @@ The .NET Foundation licenses this file to you under the MIT license.
     </ItemGroup>
 
     <ItemGroup>
+      <LinkerArg Condition="$(IlcMultiModule) != 'true' and $(EnableSourceLink) == 'true'" Include="/SOURCELINK:$(NativeIntermediateOutputPath)%(ManagedBinary.Filename).sourcelink" />
       <LinkerArg Condition="'$(NativeLib)' == 'Shared'" Include="/DLL" />
       <LinkerArg Include="@(NativeLibrary->'&quot;%(Identity)&quot;')" />
       <LinkerArg Include="@(SdkNativeLibrary->'&quot;%(Identity)&quot;')" />
