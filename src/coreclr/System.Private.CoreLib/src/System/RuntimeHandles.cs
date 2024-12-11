@@ -845,8 +845,8 @@ namespace System
             return ContainsGenericVariables(GetRuntimeTypeChecked());
         }
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern bool SatisfiesConstraints(RuntimeType paramType, IntPtr* pTypeContext, int typeContextLength, IntPtr* pMethodContext, int methodContextLength, RuntimeType toType);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_SatisfiesConstraints")]
+        private static partial Interop.BOOL SatisfiesConstraints(QCallTypeHandle paramType, IntPtr* pTypeContext, int typeContextLength, IntPtr* pMethodContext, int methodContextLength, QCallTypeHandle toType);
 
         internal static bool SatisfiesConstraints(RuntimeType paramType, RuntimeType[]? typeContext, RuntimeType[]? methodContext, RuntimeType toType)
         {
@@ -855,7 +855,7 @@ namespace System
 
             fixed (IntPtr* pTypeContextHandles = typeContextHandles, pMethodContextHandles = methodContextHandles)
             {
-                bool result = SatisfiesConstraints(paramType, pTypeContextHandles, typeContextLength, pMethodContextHandles, methodContextLength, toType);
+                bool result = SatisfiesConstraints(new QCallTypeHandle(ref paramType), pTypeContextHandles, typeContextLength, pMethodContextHandles, methodContextLength, new QCallTypeHandle(ref toType)) != Interop.BOOL.FALSE;
 
                 GC.KeepAlive(typeContext);
                 GC.KeepAlive(methodContext);

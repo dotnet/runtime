@@ -1050,47 +1050,38 @@ extern "C" BOOL QCALLTYPE RuntimeTypeHandle_CanCastToSlow(QCall::TypeHandle type
     return retVal;
 }
 
-FCIMPL6(FC_BOOL_RET, RuntimeTypeHandle::SatisfiesConstraints, PTR_ReflectClassBaseObject pParamTypeUNSAFE, TypeHandle *typeContextArgs, INT32 typeContextCount, TypeHandle *methodContextArgs, INT32 methodContextCount, PTR_ReflectClassBaseObject pArgumentTypeUNSAFE);
+extern "C" BOOL QCALLTYPE RuntimeTypeHandle_SatisfiesConstraints(QCall::TypeHandle paramType, TypeHandle* typeContextArgs, INT32 typeContextCount, TypeHandle* methodContextArgs, INT32 methodContextCount, QCall::TypeHandle toType)
 {
-    CONTRACTL {
-        FCALL_CHECK;
+    CONTRACTL
+    {
+        QCALL_CHECK;
         PRECONDITION(CheckPointer(typeContextArgs, NULL_OK));
         PRECONDITION(CheckPointer(methodContextArgs, NULL_OK));
     }
     CONTRACTL_END;
 
-    REFLECTCLASSBASEREF refParamType = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(pParamTypeUNSAFE);
-    REFLECTCLASSBASEREF refArgumentType = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(pArgumentTypeUNSAFE);
-
-    TypeHandle thGenericParameter = refParamType->GetType();
-    TypeHandle thGenericArgument = refArgumentType->GetType();
     BOOL bResult = FALSE;
+
+    BEGIN_QCALL;
+
+    Instantiation classInst = typeContextArgs != NULL
+        ? Instantiation(typeContextArgs, typeContextCount)
+        : Instantiation{};
+    Instantiation methodInst = methodContextArgs != NULL
+        ? Instantiation(methodContextArgs, methodContextCount)
+        : Instantiation{};
+
     SigTypeContext typeContext;
-
-    Instantiation classInst;
-    Instantiation methodInst;
-
-    if (typeContextArgs != NULL)
-    {
-        classInst = Instantiation(typeContextArgs, typeContextCount);
-    }
-
-    if (methodContextArgs != NULL)
-    {
-        methodInst = Instantiation(methodContextArgs, methodContextCount);
-    }
-
     SigTypeContext::InitTypeContext(classInst, methodInst, &typeContext);
 
-    HELPER_METHOD_FRAME_BEGIN_RET_2(refParamType, refArgumentType);
-    {
-        bResult = thGenericParameter.AsGenericVariable()->SatisfiesConstraints(&typeContext, thGenericArgument);
-    }
-    HELPER_METHOD_FRAME_END();
+    TypeHandle thGenericParameter = paramType.AsTypeHandle();
+    TypeHandle thGenericArgument = toType.AsTypeHandle();
+    bResult = thGenericParameter.AsGenericVariable()->SatisfiesConstraints(&typeContext, thGenericArgument);
 
-    FC_RETURN_BOOL(bResult);
+    END_QCALL;
+
+    return bResult;
 }
-FCIMPLEND
 
 extern "C" void QCALLTYPE RuntimeTypeHandle_GetInstantiation(QCall::TypeHandle pType, QCall::ObjectHandleOnStack retTypes, BOOL fAsRuntimeTypeArray)
 {
