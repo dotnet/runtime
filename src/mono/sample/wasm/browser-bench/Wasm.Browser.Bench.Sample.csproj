@@ -24,9 +24,9 @@
   <UsingTask TaskName="GetNugetConfigTask" AssemblyFile="$(OutputPath)Wasm.Browser.Bench.Sample.dll" />
 
   <Target Name="SetNugetConfigContent">
-    <GetNugetConfigTask 
-      InputFile="$(MonoProjectRoot)wasm/Wasm.Build.Tests/data/nuget9.config" 
-      ArtifactsDir="$(ArtifactsDir)" 
+    <GetNugetConfigTask
+      InputFile="$(MonoProjectRoot)wasm/Wasm.Build.Tests/data/nuget10.config"
+      ArtifactsDir="$(ArtifactsDir)"
       Configuration="$(Configuration)">
       <Output TaskParameter="NugetConfigContent" PropertyName="NugetConfigContent"/>
     </GetNugetConfigTask>

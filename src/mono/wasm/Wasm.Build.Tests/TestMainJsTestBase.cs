@@ -65,8 +65,7 @@ public abstract class TestMainJsTestBase : BuildTestBase
         if (options.ExtraBuildEnvironmentVariables is null)
             options = options with { ExtraBuildEnvironmentVariables = new Dictionary<string, string>() };
 
-        // TODO: reenable this when the SDK supports targetting net10.0
-        //options.ExtraBuildEnvironmentVariables["TreatPreviousAsCurrent"] = "false";
+        options.ExtraBuildEnvironmentVariables["TreatPreviousAsCurrent"] = "false";
 
         try
         {

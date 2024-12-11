@@ -146,10 +146,10 @@ namespace Wasm.Build.Tests
         public static IEnumerable<object?[]> BrowserBuildAndRunTestData()
         {
             yield return new object?[] { "", BuildTestBase.DefaultTargetFramework, DefaultRuntimeAssetsRelativePath };
-            yield return new object?[] { "-f net9.0", "net9.0", DefaultRuntimeAssetsRelativePath };
+            yield return new object?[] { "-f net10.0", "net10.0", DefaultRuntimeAssetsRelativePath };
 
             if (EnvironmentVariables.WorkloadsTestPreviousVersions)
-                yield return new object?[] { "-f net8.0", "net8.0", DefaultRuntimeAssetsRelativePath };
+                yield return new object?[] { "-f net9.0", "net9.0", DefaultRuntimeAssetsRelativePath };
 
             // ActiveIssue("https://github.com/dotnet/runtime/issues/90979")
             // yield return new object?[] { "", BuildTestBase.DefaultTargetFramework, "./" };
@@ -158,7 +158,7 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [MemberData(nameof(BrowserBuildAndRunTestData))]
-        public async Task BrowserBuildAndRun(string extraNewArgs, string targetFramework, string runtimeAssetsRelativePath) 
+        public async Task BrowserBuildAndRun(string extraNewArgs, string targetFramework, string runtimeAssetsRelativePath)
         {
             string config = "Debug";
             string id = $"browser_{config}_{GetRandomId()}";
@@ -202,8 +202,8 @@ namespace Wasm.Build.Tests
 
             string extraPropertiesForDBP = string.Empty;
             string frameworkDir = FindBinFrameworkDir(config, forPublish: false);
-            
-            var buildOptions = _baseBuildProjectOptions with 
+
+            var buildOptions = _baseBuildProjectOptions with
             {
                 BinFrameworkDir = frameworkDir
             };

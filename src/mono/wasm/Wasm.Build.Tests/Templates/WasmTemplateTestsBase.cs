@@ -80,8 +80,7 @@ public class WasmTemplateTestsBase : BuildTestBase
         if (buildProjectOptions.ExtraBuildEnvironmentVariables is null)
             buildProjectOptions = buildProjectOptions with { ExtraBuildEnvironmentVariables = new Dictionary<string, string>() };
 
-        // TODO: reenable this when the SDK supports targetting net10.0
-        //buildProjectOptions.ExtraBuildEnvironmentVariables["TreatPreviousAsCurrent"] = "false";
+        buildProjectOptions.ExtraBuildEnvironmentVariables["TreatPreviousAsCurrent"] = "false";
 
         (CommandResult res, string logFilePath) = BuildProjectWithoutAssert(id, buildArgs.Config, buildProjectOptions, extraArgs);
         if (buildProjectOptions.UseCache)
@@ -140,7 +139,7 @@ public class WasmTemplateTestsBase : BuildTestBase
     }
 
     protected void UpdateBrowserMainJs(string targetFramework = DefaultTargetFramework, string runtimeAssetsRelativePath = DefaultRuntimeAssetsRelativePath)
-    {            
+    {
         string mainJsPath = Path.Combine(_projectDir!, "wwwroot", "main.js");
         string mainJsContent = File.ReadAllText(mainJsPath);
 
