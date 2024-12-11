@@ -1113,7 +1113,7 @@ namespace System.Numerics.Tensors.Tests
             {
                 sum += MathF.Pow(values[i] - mean, 2);
             }
-            return sum / values.Length;
+            return MathF.Sqrt(sum / values.Length);
         }
 
         [Fact]
