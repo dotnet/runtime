@@ -2451,7 +2451,7 @@ BasicBlock* LinearScan::findPredBlockForLiveIn(BasicBlock*           block,
                         {
                             for (BasicBlock* const otherPred : otherBlock->PredBlocks())
                             {
-                                if ((otherPred->bbNum == blockInfo[otherBlock->bbNum].predBBNum) && (!otherPred->IsFirst() || !otherPred->isEmpty()))
+                                if (otherPred->bbNum == blockInfo[otherBlock->bbNum].predBBNum)
                                 {
                                     predBlock = otherPred;
                                     break;
