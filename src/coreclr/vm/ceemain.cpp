@@ -1748,7 +1748,6 @@ void InitFlsSlot()
     g_flsIndex = FlsAlloc(FiberDetachCallback);
     if (g_flsIndex == FLS_OUT_OF_INDEXES)
     {
-        _ASSERTE(!"Initialization of an FLS slot failed.");
         COMPlusThrowWin32();
     }
 }
