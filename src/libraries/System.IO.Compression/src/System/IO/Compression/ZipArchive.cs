@@ -689,8 +689,7 @@ namespace System.IO.Compression
                         // NB: the existing ZipArchiveEntries are sorted in _entries by their position ascending.
                         if (entry.OffsetOfLocalHeader >= startingOffset)
                         {
-                            // If the pending data to write is fixed-length metadata in the header, there's no need to load the full file for
-                            // inflation and deflation.
+                            // If the pending data to write is fixed-length metadata in the header, there's no need to load the compressed file bits.
                             if ((entry.Changes & (ChangeState.DynamicLengthMetadata | ChangeState.StoredData)) != 0)
                             {
                                 completeRewriteStartingOffset = Math.Min(completeRewriteStartingOffset, entry.OffsetOfLocalHeader);
@@ -725,23 +724,23 @@ namespace System.IO.Compression
                 entry.WriteAndFinishLocalEntry(forceWriteLocalEntry);
             }
 
-            long startOfCentralDirectory = _archiveStream.Position;
+            long plannedCentralDirectoryPosition = _archiveStream.Position;
             // If there are no entries in the archive, we still want to create the archive epilogue.
             bool archiveEpilogueRequiresUpdate = _entries.Count == 0;
 
             foreach (ZipArchiveEntry entry in _entries)
             {
                 // The central directory needs to be rewritten if its position has moved, if there's a new entry in the archive, or if the entry might be different.
-                bool centralDirectoryEntryRequiresUpdate = startOfCentralDirectory != _centralDirectoryStart
-                    | (!entry.OriginallyInArchive || (entry.OriginallyInArchive && entry.OffsetOfLocalHeader >= completeRewriteStartingOffset));
+                bool centralDirectoryEntryRequiresUpdate = plannedCentralDirectoryPosition != _centralDirectoryStart
+                    || !entry.OriginallyInArchive || entry.OffsetOfLocalHeader >= completeRewriteStartingOffset;
 
                 entry.WriteCentralDirectoryFileHeader(centralDirectoryEntryRequiresUpdate);
                 archiveEpilogueRequiresUpdate |= centralDirectoryEntryRequiresUpdate;
             }
 
-            long sizeOfCentralDirectory = _archiveStream.Position - startOfCentralDirectory;
+            long sizeOfCentralDirectory = _archiveStream.Position - plannedCentralDirectoryPosition;
 
-            WriteArchiveEpilogue(startOfCentralDirectory, sizeOfCentralDirectory, archiveEpilogueRequiresUpdate);
+            WriteArchiveEpilogue(plannedCentralDirectoryPosition, sizeOfCentralDirectory, archiveEpilogueRequiresUpdate);
 
             // If entries have been removed and new (smaller) ones added, there could be empty space at the end of the file.
             // Shrink the file to reclaim this space.
@@ -780,7 +779,7 @@ namespace System.IO.Compression
             }
 
             // write normal eocd
-            if (centralDirectoryChanged | (Changed != ChangeState.Unchanged))
+            if (centralDirectoryChanged || (Changed != ChangeState.Unchanged))
             {
                 ZipEndOfCentralDirectoryBlock.WriteBlock(_archiveStream, _entries.Count, startOfCentralDirectory, sizeOfCentralDirectory, _archiveComment);
             }
