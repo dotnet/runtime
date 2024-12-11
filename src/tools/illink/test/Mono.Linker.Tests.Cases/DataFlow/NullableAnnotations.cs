@@ -65,9 +65,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			GetUnderlyingTypeOnNonNullableKnownType.Test ();
 			MakeGenericTypeWithUnknownValue (new object[2] { 1, 2 });
 			MakeGenericTypeWithKnowAndUnknownArray ();
-
-			// Prevents optimizing away 'as Type' conversion.
-			PreserveSystemType ();
 		}
 
 		[Kept]
@@ -333,12 +330,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			Type nullable = typeof (Nullable<>).MakeGenericType (types);
 			nullable.GetProperties ();   // This works - we still know it's Nullable<>, so we can get its properties
 			Nullable.GetUnderlyingType (nullable).GetFields (); // This must warn - since we have no idea what the underlying type is for the unknownTypes case
-		}
-
-		[Kept]
-		static void PreserveSystemType ()
-		{
-			typeof (Type).RequiresNonPublicConstructors ();
 		}
 	}
 }
