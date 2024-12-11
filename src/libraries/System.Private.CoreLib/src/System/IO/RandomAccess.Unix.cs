@@ -168,7 +168,7 @@ namespace System.IO
 
             var handles = new MemoryHandle[buffersCount];
             Span<Interop.Sys.IOVector> vectors = buffersCount <= IovStackThreshold ?
-                stackalloc Interop.Sys.IOVector[IovStackThreshold] :
+                stackalloc Interop.Sys.IOVector[IovStackThreshold].Slice(0, buffersCount) :
                 new Interop.Sys.IOVector[buffersCount];
 
             try
@@ -188,7 +188,7 @@ namespace System.IO
                 while (totalBytesToWrite > 0)
                 {
                     long bytesWritten;
-                    Span<Interop.Sys.IOVector> left = vectors.Slice(buffersOffset, buffersCount - buffersOffset);
+                    Span<Interop.Sys.IOVector> left = vectors.Slice(buffersOffset);
                     fixed (Interop.Sys.IOVector* pinnedVectors = &MemoryMarshal.GetReference(left))
                     {
                         bytesWritten = Interop.Sys.PWriteV(handle, pinnedVectors, left.Length, fileOffset);
@@ -207,7 +207,7 @@ namespace System.IO
                     // We need to try again for the remainder.
                     while (buffersOffset < buffersCount && bytesWritten > 0)
                     {
-                        int n = buffers[buffersOffset].Length;
+                        int n = (int)vectors[buffersOffset].Count;
                         if (n <= bytesWritten)
                         {
                             bytesWritten -= n;
