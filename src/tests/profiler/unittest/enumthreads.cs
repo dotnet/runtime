@@ -43,7 +43,7 @@ namespace Profiler.Tests
                 return ProfilerTestRunner.Run(profileePath: System.Reflection.Assembly.GetExecutingAssembly().Location,
                                               testName: "EnumThreads",
                                               profilerClsid: EnumThreadsProfilerGuid,
-                                              profileeArguments: testName,
+                                              profileeArguments: testName
                                               ) == 100;
             }
             catch (Exception ex)

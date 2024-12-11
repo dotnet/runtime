@@ -11,6 +11,7 @@ public:
     EnumThreadsProfiler() : Profiler(),
         _gcStarts(0),
         _gcFinishes(0),
+        _profilerEnumThreadsCompleted(0),
         _failures(0)
     {}
 
@@ -28,5 +29,6 @@ public:
 private:
     std::atomic<int> _gcStarts;
     std::atomic<int> _gcFinishes;
+    std::atomic<int> _profilerEnumThreadsCompleted;
     std::atomic<int> _failures;
 };
