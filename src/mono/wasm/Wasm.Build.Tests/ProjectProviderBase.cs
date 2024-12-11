@@ -358,6 +358,9 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
             case GlobalizationMode.FullIcu:
                 expected.Add("icudt.dat");
                 break;
+            case GlobalizationMode.Hybrid:
+                expected.Add("icudt_hybrid.dat");
+                break;
             case GlobalizationMode.Custom:
                 if (string.IsNullOrEmpty(assertOptions.CustomIcuFile))
                     throw new ArgumentException("WasmBuildTest is invalid, value for Custom globalization mode is required when GlobalizationMode=Custom.");
