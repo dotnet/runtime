@@ -2745,7 +2745,7 @@ class SuperPMIReplayAsmDiffs:
 
                 result = []
                 for row in diffs:
-                    if not try_add_seen(row) or row["Context"] in picked_contexts:
+                    if row["Context"] in picked_contexts or not try_add_seen(row):
                         continue
 
                     result.append(row)
