@@ -517,36 +517,6 @@ RETAIL_CONFIG_DWORD_INFO(EXTERNAL_Thread_AssignCpuGroups, W("Thread_AssignCpuGro
 RETAIL_CONFIG_DWORD_INFO_EX(EXTERNAL_ProcessorCount, W("PROCESSOR_COUNT"), 0, "Specifies the number of processors available for the process, which is returned by Environment.ProcessorCount", CLRConfig::LookupOptions::ParseIntegerAsBase10)
 
 ///
-/// Threadpool
-///
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_ThreadPool_ForceMinWorkerThreads, W("ThreadPool_ForceMinWorkerThreads"), 0, "Overrides the MinThreads setting for the ThreadPool worker pool")
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_ThreadPool_ForceMaxWorkerThreads, W("ThreadPool_ForceMaxWorkerThreads"), 0, "Overrides the MaxThreads setting for the ThreadPool worker pool")
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_ThreadPool_DisableStarvationDetection, W("ThreadPool_DisableStarvationDetection"), 0, "Disables the ThreadPool feature that forces new threads to be added when workitems run for too long")
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_ThreadPool_DebugBreakOnWorkerStarvation, W("ThreadPool_DebugBreakOnWorkerStarvation"), 0, "Breaks into the debugger if the ThreadPool detects work queue starvation")
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_ThreadPool_EnableWorkerTracking, W("ThreadPool_EnableWorkerTracking"), 0, "Enables extra expensive tracking of how many workers threads are working simultaneously")
-#ifdef TARGET_ARM64
-// Spinning scheme is currently different on ARM64
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_ThreadPool_UnfairSemaphoreSpinLimit, W("ThreadPool_UnfairSemaphoreSpinLimit"), 0x32, "Maximum number of spins per processor a thread pool worker thread performs before waiting for work")
-#else // !TARGET_ARM64
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_ThreadPool_UnfairSemaphoreSpinLimit, W("ThreadPool_UnfairSemaphoreSpinLimit"), 0x46, "Maximum number of spins a thread pool worker thread performs before waiting for work")
-#endif // TARGET_ARM64
-
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_HillClimbing_Disable,                             W("HillClimbing_Disable"),                            0, "Disables hill climbing for thread adjustments in the thread pool");
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_HillClimbing_WavePeriod,                          W("HillClimbing_WavePeriod"),                         4, "");
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_HillClimbing_TargetSignalToNoiseRatio,            W("HillClimbing_TargetSignalToNoiseRatio"),           300, "");
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_HillClimbing_ErrorSmoothingFactor,                W("HillClimbing_ErrorSmoothingFactor"),               1, "");
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_HillClimbing_WaveMagnitudeMultiplier,             W("HillClimbing_WaveMagnitudeMultiplier"),            100, "");
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_HillClimbing_MaxWaveMagnitude,                    W("HillClimbing_MaxWaveMagnitude"),                   20, "");
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_HillClimbing_WaveHistorySize,                     W("HillClimbing_WaveHistorySize"),                    8, "");
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_HillClimbing_Bias,                                W("HillClimbing_Bias"),                               15, "The 'cost' of a thread.  0 means drive for increased throughput regardless of thread count; higher values bias more against higher thread counts.");
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_HillClimbing_MaxChangePerSecond,                  W("HillClimbing_MaxChangePerSecond"),                 4, "");
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_HillClimbing_MaxChangePerSample,                  W("HillClimbing_MaxChangePerSample"),                 20, "");
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_HillClimbing_MaxSampleErrorPercent,               W("HillClimbing_MaxSampleErrorPercent"),              15, "");
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_HillClimbing_SampleIntervalLow,                   W("HillClimbing_SampleIntervalLow"),                  10, "");
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_HillClimbing_SampleIntervalHigh,                  W("HillClimbing_SampleIntervalHigh"),                 200, "");
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_HillClimbing_GainExponent,                        W("HillClimbing_GainExponent"),                       200, "The exponent to apply to the gain, times 100.  100 means to use linear gain, higher values will enhance large moves and damp small ones.");
-
-///
 /// Tiered Compilation
 ///
 #ifdef FEATURE_TIERED_COMPILATION
