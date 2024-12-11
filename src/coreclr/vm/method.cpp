@@ -1022,7 +1022,7 @@ PCODE MethodDesc::GetNativeCode()
         PCODE pCode = *ppCode;
 
 #ifdef TARGET_ARM
-        if (pCode != NULL)
+        if (pCode != (PCODE)NULL)
             pCode |= THUMB_CODE;
 #endif
         return pCode;
@@ -3135,10 +3135,10 @@ BOOL MethodDesc::SetNativeCodeInterlocked(PCODE addr, PCODE pExpected /*=NULL*/)
     if (HasNativeCodeSlot())
     {
 #ifdef TARGET_ARM
-        _ASSERTE(IsThumbCode(addr) || (addr==NULL));
+        _ASSERTE(IsThumbCode(addr) || (addr == (PCODE)NULL));
         addr &= ~THUMB_CODE;
 
-        if (pExpected != NULL)
+        if (pExpected != (PCODE)NULL)
         {
             _ASSERTE(IsThumbCode(pExpected));
             pExpected &= ~THUMB_CODE;

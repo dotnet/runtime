@@ -1098,7 +1098,7 @@ void ResolveHolder::Initialize(ResolveHolder* pResolveHolderRX,
     _stub._cacheMask           = CALL_STUB_CACHE_MASK * sizeof(void*);
 
     _ASSERTE(resolveWorkerTarget == (PCODE)ResolveWorkerChainLookupAsmStub);
-    _ASSERTE(patcherTarget == NULL);
+    _ASSERTE(patcherTarget == (PCODE)NULL);
 }
 
 Stub *GenerateInitPInvokeFrameHelper()
