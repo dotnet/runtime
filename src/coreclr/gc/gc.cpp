@@ -3293,8 +3293,8 @@ void gc_heap::fire_pevents()
 // because EE is not suspended then. On entry it's fired after the GCStart event, on exit it's fire before the GCStop event.
 void gc_heap::fire_committed_usage_event()
 {
-    if (!EVENT_ENABLED (GCMarkWithType)) return;
 #ifdef FEATURE_EVENT_TRACE
+    if (!EVENT_ENABLED (GCMarkWithType)) return;
 
     size_t total_committed = 0;
     size_t committed_decommit = 0;
