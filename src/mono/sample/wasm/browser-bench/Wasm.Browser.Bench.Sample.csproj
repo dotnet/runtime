@@ -15,8 +15,7 @@
   <PropertyGroup Condition="'$(UsingNativeAOT)' == 'true'">
     <PublishTrimmed>true</PublishTrimmed>
     <PublishDir>$(MSBuildThisFileDirectory)/bin/$(Configuration)/AppBundle</PublishDir>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(UsingNativeAOT)' == 'true'">
+    <DebugType>none</DebugType>
     <RestoreAdditionalProjectSources>$(RestoreAdditionalProjectSources);https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-experimental/nuget/v3/index.json</RestoreAdditionalProjectSources>
     <UsingBrowserRuntimeWorkload>false</UsingBrowserRuntimeWorkload>
     <UsingWasiRuntimeWorkload>false</UsingWasiRuntimeWorkload>
