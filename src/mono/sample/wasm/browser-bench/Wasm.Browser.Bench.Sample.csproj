@@ -36,7 +36,6 @@
   </ItemGroup>
   <!-- /NativeAOT -->
 
-
   <ItemGroup>
     <WasmExtraFilesToDeploy Include="index.html" />
     <WasmExtraFilesToDeploy Include="main.js" />
