@@ -57,8 +57,14 @@ HRESULT STDMETHODCALLTYPE EnumThreadsProfiler::GarbageCollectionFinished()
 
 HRESULT STDMETHODCALLTYPE EnumThreadsProfiler::RuntimeSuspendFinished()
 {
+    SHUTDOWNGUARD();
+
+    printf("EnumThreadsProfiler::RuntimeSuspendFinished\n");
+
     ICorProfilerThreadEnum* threadEnum = nullptr;
     HRESULT enumThreadsHR = pCorProfilerInfo->EnumThreads(&threadEnum);
+    printf("Finished enumerating threads\n");
+    _profilerEnumThreadsCompleted.fetch_add(1, std::memory_order_relaxed);
     threadEnum->Release();
     return enumThreadsHR;
 }
@@ -74,6 +80,10 @@ HRESULT EnumThreadsProfiler::Shutdown()
     else if (_gcFinishes == 0)
     {
         printf("EnumThreadsProfiler::Shutdown: FAIL: Expected GarbageCollectionFinished to be called\n");
+    }
+    else if (_profilerEnumThreadsCompleted == 0)
+    {
+        printf("EnumThreadsProfiler::Shutdown: FAIL: Expected RuntimeSuspendFinished to be called and EnumThreads completed\n");
     }
     else if(_failures == 0)
     {
