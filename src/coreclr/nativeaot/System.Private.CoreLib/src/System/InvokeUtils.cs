@@ -133,7 +133,7 @@ namespace System
             if (dstElementType == srcElementType)
             {
                 // Rebox the value if the EETypeElementTypes match
-                dstObject = RuntimeImports.RhBox(dstEEType, ref srcObject.GetRawData());
+                dstObject = RuntimeExports.RhBox(dstEEType, ref srcObject.GetRawData());
             }
             else
             {

@@ -1254,21 +1254,61 @@ void Compiler::fgSetHndEnd(EHblkDsc* handlerTab, BasicBlock* newHndLast)
 }
 
 //-------------------------------------------------------------
-// fgFindEHRegionEnds: Walk the block list, and set each try/handler region's end block.
+// fgRebuildEHRegions: After reordering blocks, make EH regions contiguous
+// while maintaining relative block order, and update each region's end pointer.
 //
-void Compiler::fgFindEHRegionEnds()
+void Compiler::fgRebuildEHRegions()
 {
     assert(compHndBBtabCount != 0);
     unsigned unsetTryEnds = compHndBBtabCount;
     unsigned unsetHndEnds = compHndBBtabCount;
 
-    // Null out each clause's end pointers.
-    // A non-null end pointer indicates we already updated the clause.
+    // Null out try/handler end pointers to signify the given clause hasn't been visited yet.
     for (EHblkDsc* const HBtab : EHClauses(this))
     {
         HBtab->ebdTryLast = nullptr;
         HBtab->ebdHndLast = nullptr;
     }
+
+    // Walk the main method body, and move try blocks to re-establish contiguity.
+    for (BasicBlock *block = fgFirstBB, *next; block != fgFirstFuncletBB; block = next)
+    {
+        next            = block->Next();
+        EHblkDsc* HBtab = ehGetBlockTryDsc(block);
+        if (HBtab != nullptr)
+        {
+            // Move this block up to the previous block in the same try region.
+            BasicBlock* const insertionPoint = HBtab->ebdTryLast;
+            if ((insertionPoint != nullptr) && !insertionPoint->NextIs(block))
+            {
+                assert(block != HBtab->ebdTryLast);
+                fgUnlinkBlock(block);
+                fgInsertBBafter(HBtab->ebdTryLast, block);
+            }
+
+            // Update this try region's (and all parent try regions') end pointer with the last block visited
+            for (unsigned XTnum = block->getTryIndex(); XTnum != EHblkDsc::NO_ENCLOSING_INDEX;
+                 XTnum          = ehGetEnclosingTryIndex(XTnum))
+            {
+                HBtab = ehGetDsc(XTnum);
+                if (HBtab->ebdTryLast == nullptr)
+                {
+                    assert(HBtab->ebdTryBeg == block);
+                    assert(unsetTryEnds != 0);
+                    unsetTryEnds--;
+                    HBtab->ebdTryLast = block;
+                }
+                else if (HBtab->ebdTryLast->NextIs(block))
+                {
+                    HBtab->ebdTryLast = block;
+                }
+            }
+        }
+    }
+
+    // The above logic rebuilt the try regions in the main method body.
+    // Now, resolve the regions in the funclet section, if there is one.
+    assert((unsetTryEnds == 0) || (fgFirstFuncletBB != nullptr));
 
     // Updates the try region's (and all of its parent regions') end block to 'block,'
     // if the try region's end block hasn't been updated yet.
@@ -1310,19 +1350,7 @@ void Compiler::fgFindEHRegionEnds()
         }
     };
 
-    // Iterate backwards through the main method body, and update each try region's end block
-    for (BasicBlock* block = fgLastBBInMainFunction(); (unsetTryEnds != 0) && (block != nullptr); block = block->Prev())
-    {
-        if (block->hasTryIndex())
-        {
-            setTryEnd(block);
-        }
-    }
-
-    // If we don't have a funclet section, then all of the try regions should have been updated above
-    assert((unsetTryEnds == 0) || (fgFirstFuncletBB != nullptr));
-
-    // If we do have a funclet section, update the ends of any try regions nested in funclets
+    // If we have a funclet section, update the ends of any try regions nested in funclets
     for (BasicBlock* block = fgLastBB; (unsetTryEnds != 0) && (block != fgLastBBInMainFunction());
          block             = block->Prev())
     {
@@ -1340,6 +1368,9 @@ void Compiler::fgFindEHRegionEnds()
             setHndEnd(block);
         }
     }
+
+    assert(unsetTryEnds == 0);
+    assert(unsetHndEnds == 0);
 }
 
 /*****************************************************************************
@@ -1432,7 +1463,7 @@ void Compiler::fgAllocEHTable()
         // the maximum number of clauses we will need might be very large. We allocate
         // twice the number of EH clauses in the IL, which should be good in practice.
         // In extreme cases, we might need to abandon this and reallocate. See
-        // fgAddEHTableEntry() for more details.
+        // fgTryAddEHTableEntries() for more details.
 
 #ifdef DEBUG
         compHndBBtabAllocCount = info.compXcptnsCount; // force the resizing code to hit more frequently in DEBUG
@@ -1645,20 +1676,61 @@ void Compiler::fgRemoveEHTableEntry(unsigned XTnum)
     }
 }
 
-/*****************************************************************************
- *
- *  Add a single exception table entry at index 'XTnum', [0 <= XTnum <= compHndBBtabCount].
- *  If 'XTnum' is compHndBBtabCount, then add the entry at the end.
- *  Note that this changes the size of the exception table.
- *  All the blocks referring to the various index values are updated.
- *  The table entry itself is not filled in.
- *  Returns a pointer to the new entry.
- */
-EHblkDsc* Compiler::fgAddEHTableEntry(unsigned XTnum)
+//------------------------------------------------------------------------
+// fgTryAddEHTableEntries: try to add new EH table entries
+//
+// Arguments:
+//   XTnum  -- new entries will be added before this entry
+//             (use compHndBBtabCount to add at end)
+//   count  -- number of entries to add
+//   deferAdding -- if true, don't actually add new entries, just check
+//         if they can be added; return nullptr if not.
+//
+// Returns:
+//   A pointer to the new entry with the highest index, or
+//   nullptr if the table cannot be expanded to hold the new entries
+//
+// Notes:
+//
+//  Note that changes the size of the exception table.
+//  All the blocks referring to the various index values are updated.
+//  The new table entries are not filled in.
+//
+//  Note mid-table insertions can be expensive as they must walk
+//  all blocks to update block EH region indices.
+//
+//  If there are active ACDs, these are updated as needed. Callers who
+//  are making room for cloned EH must take pains to find and clone these
+//  as well...
+//
+EHblkDsc* Compiler::fgTryAddEHTableEntries(unsigned XTnum, unsigned count, bool deferAdding)
 {
-    assert(UsesFunclets());
+    bool           reallocate = false;
+    bool const     insert     = (XTnum != compHndBBtabCount);
+    unsigned const newCount   = compHndBBtabCount + count;
 
-    if (XTnum != compHndBBtabCount)
+    if (newCount > MAX_XCPTN_INDEX)
+    {
+        // We have run out of indices. Fail.
+        //
+        return nullptr;
+    }
+
+    if (deferAdding)
+    {
+        // We can add count entries...
+        //
+        return compHndBBtab;
+    }
+
+    if (newCount > compHndBBtabAllocCount)
+    {
+        // We need to reallocate the table
+        //
+        reallocate = true;
+    }
+
+    if (insert)
     {
         // Update all enclosing links that will get invalidated by inserting an entry at 'XTnum'
 
@@ -1667,12 +1739,12 @@ EHblkDsc* Compiler::fgAddEHTableEntry(unsigned XTnum)
             if ((xtab->ebdEnclosingTryIndex != EHblkDsc::NO_ENCLOSING_INDEX) && (xtab->ebdEnclosingTryIndex >= XTnum))
             {
                 // Update the enclosing scope link
-                xtab->ebdEnclosingTryIndex++;
+                xtab->ebdEnclosingTryIndex += (unsigned short)count;
             }
             if ((xtab->ebdEnclosingHndIndex != EHblkDsc::NO_ENCLOSING_INDEX) && (xtab->ebdEnclosingHndIndex >= XTnum))
             {
                 // Update the enclosing scope link
-                xtab->ebdEnclosingHndIndex++;
+                xtab->ebdEnclosingHndIndex += (unsigned short)count;
             }
         }
 
@@ -1682,31 +1754,68 @@ EHblkDsc* Compiler::fgAddEHTableEntry(unsigned XTnum)
         {
             if (blk->hasTryIndex() && (blk->getTryIndex() >= XTnum))
             {
-                blk->setTryIndex(blk->getTryIndex() + 1);
+                blk->setTryIndex(blk->getTryIndex() + count);
             }
 
             if (blk->hasHndIndex() && (blk->getHndIndex() >= XTnum))
             {
-                blk->setHndIndex(blk->getHndIndex() + 1);
+                blk->setHndIndex(blk->getHndIndex() + count);
+            }
+        }
+
+        // Update impacted ACDs
+        //
+        if (fgHasAddCodeDscMap())
+        {
+            AddCodeDscMap* const    map = fgGetAddCodeDscMap();
+            ArrayStack<AddCodeDsc*> modified(getAllocator(CMK_Unknown));
+
+            for (AddCodeDsc* const add : AddCodeDscMap::ValueIteration(map))
+            {
+                bool          isModified = false;
+                AddCodeDscKey oldKey(add);
+
+                if (add->acdTryIndex > XTnum)
+                {
+                    add->acdTryIndex += (unsigned short)count;
+                    isModified = true;
+                }
+
+                if (add->acdHndIndex > XTnum)
+                {
+                    isModified = true;
+                    add->acdHndIndex += (unsigned short)count;
+                }
+
+                if (isModified)
+                {
+                    add->UpdateKeyDesignator(this);
+                    bool const removed = map->Remove(oldKey);
+                    assert(removed);
+                    modified.Push(add);
+                }
+            }
+
+            while (modified.Height() > 0)
+            {
+                AddCodeDsc* const add = modified.Pop();
+                AddCodeDscKey     newKey(add);
+                JITDUMP("ACD%u updated\n", add->acdNum);
+                map->Set(newKey, add);
+                JITDUMPEXEC(add->Dump());
             }
         }
     }
 
-    // Increase the number of entries in the EH table by one
-
-    if (compHndBBtabCount == compHndBBtabAllocCount)
+    // If necessary, increase the number of entries in the EH table
+    //
+    if (reallocate)
     {
-        // We need to reallocate the table
-
-        if (compHndBBtabAllocCount == MAX_XCPTN_INDEX)
-        { // We're already at the max size for indices to be unsigned short
-            IMPL_LIMITATION("too many exception clauses");
-        }
-
-        // Double the table size. For stress, we could use +1. Note that if the table isn't allocated
+        // Roughly double the table size. Note that if the table isn't allocated
         // yet, such as when we add an EH region for synchronized methods that don't already have one,
         // we start at zero, so we need to make sure the new table has at least one entry.
-        unsigned newHndBBtabAllocCount = max(1u, compHndBBtabAllocCount * 2);
+        //
+        unsigned newHndBBtabAllocCount = max(1u, compHndBBtabAllocCount + newCount);
         noway_assert(compHndBBtabAllocCount < newHndBBtabAllocCount); // check for overflow
 
         if (newHndBBtabAllocCount > MAX_XCPTN_INDEX)
@@ -1714,21 +1823,21 @@ EHblkDsc* Compiler::fgAddEHTableEntry(unsigned XTnum)
             newHndBBtabAllocCount = MAX_XCPTN_INDEX; // increase to the maximum size we allow
         }
 
-        JITDUMP("*********** fgAddEHTableEntry: increasing EH table size from %d to %d\n", compHndBBtabAllocCount,
+        JITDUMP("*********** fgTryAddEHTableEntries: increasing EH table size from %d to %d\n", compHndBBtabAllocCount,
                 newHndBBtabAllocCount);
 
         compHndBBtabAllocCount = newHndBBtabAllocCount;
 
         EHblkDsc* newTable = new (this, CMK_BasicBlock) EHblkDsc[compHndBBtabAllocCount];
 
-        // Move over the stuff before the new entry
+        // Move over the stuff before the new entries
 
         memcpy_s(newTable, compHndBBtabAllocCount * sizeof(*compHndBBtab), compHndBBtab, XTnum * sizeof(*compHndBBtab));
 
         if (XTnum != compHndBBtabCount)
         {
             // Move over the stuff after the new entry
-            memcpy_s(newTable + XTnum + 1, (compHndBBtabAllocCount - XTnum - 1) * sizeof(*compHndBBtab),
+            memcpy_s(newTable + XTnum + count, (compHndBBtabAllocCount - XTnum - 1) * sizeof(*compHndBBtab),
                      compHndBBtab + XTnum, (compHndBBtabCount - XTnum) * sizeof(*compHndBBtab));
         }
 
@@ -1739,18 +1848,18 @@ EHblkDsc* Compiler::fgAddEHTableEntry(unsigned XTnum)
     }
     else if (XTnum != compHndBBtabCount)
     {
-        // Leave the elements before the new element alone. Move the ones after it, to make space.
+        // Leave the elements before the new elements alone. Move the ones after it, to make space.
 
         EHblkDsc* HBtab = compHndBBtab + XTnum;
 
-        memmove_s(HBtab + 1, (compHndBBtabAllocCount - XTnum - 1) * sizeof(*compHndBBtab), HBtab,
+        memmove_s(HBtab + count, (compHndBBtabAllocCount - XTnum - 1) * sizeof(*compHndBBtab), HBtab,
                   (compHndBBtabCount - XTnum) * sizeof(*compHndBBtab));
     }
 
     // Now the entry is there, but not filled in
-
-    compHndBBtabCount++;
-    return compHndBBtab + XTnum;
+    //
+    compHndBBtabCount = newCount;
+    return compHndBBtab + XTnum + (count - 1);
 }
 
 /*****************************************************************************
@@ -2092,8 +2201,8 @@ void Compiler::fgNormalizeEH()
     if (modified)
     {
         JITDUMP("Added at least one basic block in fgNormalizeEH.\n");
-        fgRenumberBlocks();
-        // fgRenumberBlocks() will dump all the blocks and the handler table, so we don't need to do it here.
+        JITDUMPEXEC(fgDispBasicBlocks());
+        JITDUMPEXEC(fgDispHandlerTab());
         INDEBUG(fgVerifyHandlerTab());
     }
     else

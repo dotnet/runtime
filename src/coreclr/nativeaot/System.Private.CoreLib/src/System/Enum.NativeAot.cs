@@ -48,7 +48,7 @@ namespace System
                 typeof(TStorage) == typeof(uint) ||
                 typeof(TStorage) == typeof(ulong));
 
-            return (EnumInfo<TStorage>)ReflectionAugments.ReflectionCoreCallbacks.GetEnumInfo(enumType,
+            return (EnumInfo<TStorage>)ReflectionAugments.GetEnumInfo(enumType,
                 static (underlyingType, names, valuesAsObject, isFlags) =>
                 {
                     // Only after we've sorted, create the underlying array.

@@ -49,5 +49,10 @@ internal static class Constants
 
         internal const string ExecutionManagerCodeRangeMapAddress = nameof(ExecutionManagerCodeRangeMapAddress);
         internal const string StubCodeBlockLast = nameof(StubCodeBlockLast);
+        internal const string PlatformMetadata = nameof(PlatformMetadata);
+        internal const string ProfilerControlBlock = nameof(ProfilerControlBlock);
+
+        internal const string HashMapSlotsPerBucket = nameof(HashMapSlotsPerBucket);
+        internal const string HashMapValueMask = nameof(HashMapValueMask);
     }
 }

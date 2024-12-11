@@ -12,11 +12,11 @@
 
 // It is illegal to cause a GC or EH to happen in an FCALL before setting
 // up a frame.  To prevent accidentally violating this rule, FCALLs turn
-// on BEGINGCFORBID, which insures that these things can't happen in a
+// on BEGINGCFORBID, which ensures that these things can't happen in a
 // checked build without causing an ASSERTE.  Once you set up a frame,
 // this state is turned off as long as the frame is active, and then is
 // turned on again when the frame is torn down.   This mechanism should
-// be sufficient to insure that the rules are followed.
+// be sufficient to ensure that the rules are followed.
 
 // In general you set up a frame by using the following macros
 
@@ -596,7 +596,7 @@ LPVOID __FCThrowArgument(LPVOID me, enum RuntimeExceptionKind reKind, LPCWSTR ar
             /* gcpoll; */
 
 // The while(__helperframe.RestoreState() needs a bit of explanation.
-// The issue is insuring that the same machine state (which registers saved)
+// The issue is ensuring that the same machine state (which registers saved)
 // exists when the machine state is probed (when the frame is created, and
 // when it is actually used (when the frame is popped.  We do this by creating
 // a flow of control from use to def.  Note that 'RestoreState' always returns false
@@ -910,7 +910,7 @@ void HCallAssert(void*& cache, void* target);
 // the helper routine to the end of the FCALL using trivial heurisitics.   The easiest (and only supported)
 // way of doing this is to place your helper right before a return (eg at the end of the method).  Generally
 // this is not a problem at all, since the FCALL itself will pick off some common case and then tail-call to
-// the helper for everything else.  You must use the code:FC_INNER_RETURN macros to do the call, to insure
+// the helper for everything else.  You must use the code:FC_INNER_RETURN macros to do the call, to ensure
 // that the C++ compiler does not tail-call optimize the call to the inner function and mess up the stack
 // depth.
 //
