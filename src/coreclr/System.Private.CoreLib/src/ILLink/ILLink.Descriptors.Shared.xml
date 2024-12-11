@@ -16,8 +16,13 @@
     <type fullname="System.Collections.Generic.IList`1" />
     <type fullname="System.Collections.Generic.IReadOnlyList`1" />
 
-    <!-- Indicator for illink that all instance methods are instantiated -->
+    <!-- Indicator for illink that the type is runtime-constructed -->
     <type fullname="System.SZArrayHelper">
+      <method name=".ctor" />
+    </type>
+
+    <!-- Indicator for illink that the type is runtime-constructed -->
+    <type fullname="System.RuntimeType">
       <method name=".ctor" />
     </type>
   </assembly>
