@@ -10,4 +10,4 @@ path_classifiers:
     - src/libraries/**/ref/*
     # exclude artifacts/obj/**/CMakeFiles/* since CMake generates random
     # directory names causing creation of duplicate issues
-    - artifacts/obj/**/CMakeFiles/*
+    - artifacts/obj/**/CMakeFiles/**/CheckFunctionExists.c
