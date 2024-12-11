@@ -1758,17 +1758,16 @@ static void __stdcall FiberDetachCallback(void* lpFlsData)
     }
 }
 
-bool InitFlsSlot()
+void InitFlsSlot()
 {
     // We use fiber detach callbacks to run our thread shutdown code because the fiber detach
     // callback is made without the OS loader lock
     g_flsIndex = FlsAlloc(FiberDetachCallback);
     if (g_flsIndex == FLS_OUT_OF_INDEXES)
     {
-        return false;
+        _ASSERTE(!"Initialization of an FLS slot failed.");
+        COMPlusThrowWin32();
     }
-
-    return true;
 }
 
 // Register the thread with OS to be notified when thread is about to be destroyed
