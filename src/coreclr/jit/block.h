@@ -1667,19 +1667,6 @@ public:
 
     bool bbFallsThrough() const;
 
-    // Our slop fraction is 1/50 of the block weight.
-    static weight_t GetSlopFraction(weight_t weightBlk)
-    {
-        return weightBlk / 50.0;
-    }
-
-    // Given an the edge b1 -> b2, calculate the slop fraction by
-    // using the higher of the two block weights
-    static weight_t GetSlopFraction(BasicBlock* b1, BasicBlock* b2)
-    {
-        return GetSlopFraction(max(b1->bbWeight, b2->bbWeight));
-    }
-
 #ifdef DEBUG
     unsigned        bbTgtStkDepth; // Native stack depth on entry (for throw-blocks)
     static unsigned s_nMaxTrees;   // The max # of tree nodes in any BB
@@ -1726,6 +1713,12 @@ public:
     {
         return StatementList(FirstNonPhiDef());
     }
+
+    // Simple "size" estimates
+    //
+    unsigned StatementCount();
+    bool     StatementCountExceeds(unsigned limit, unsigned* count = nullptr);
+    bool     ComplexityExceeds(Compiler* comp, unsigned limit, unsigned* complexity = nullptr);
 
     GenTree* lastNode() const;
 
@@ -2203,6 +2196,8 @@ public:
     {
         return BasicBlockIterator(m_end->Next()); // walk until we see the block *following* the `m_end` block
     }
+
+    bool ComplexityExceeds(Compiler* comp, unsigned limit, unsigned* count = nullptr);
 };
 
 // BBswtDesc -- descriptor for a switch block

@@ -586,6 +586,8 @@ void Compiler::optSetMappedBlockTargets(BasicBlock* blk, BasicBlock* newBlk, Blo
         case BBJ_CALLFINALLY:
         case BBJ_CALLFINALLYRET:
         case BBJ_LEAVE:
+        case BBJ_EHCATCHRET:
+        case BBJ_EHFILTERRET:
         {
             FlowEdge* newEdge;
 
@@ -704,16 +706,6 @@ void Compiler::optSetMappedBlockTargets(BasicBlock* blk, BasicBlock* newBlk, Blo
             }
 
             newBlk->SetSwitch(newSwtDesc);
-            break;
-        }
-
-        case BBJ_EHCATCHRET:
-        case BBJ_EHFILTERRET:
-        {
-            // newBlk's jump target should not need to be redirected
-            assert(!redirectMap->Lookup(blk->GetTarget(), &newTarget));
-            FlowEdge* newEdge = fgAddRefPred(newBlk->GetTarget(), newBlk);
-            newBlk->SetKindAndTargetEdge(blk->GetKind(), newEdge);
             break;
         }
 
@@ -1514,8 +1506,19 @@ bool Compiler::optTryUnrollLoop(FlowGraphNaturalLoop* loop, bool* changedIR)
     }
     // clang-format on
 
+    bool unrollLoopsWithEH = false;
+    INDEBUG(unrollLoopsWithEH = (JitConfig.JitUnrollLoopsWithEH() > 0);)
     INDEBUG(const char* reason);
-    if (!loop->CanDuplicate(INDEBUG(&reason)))
+
+    if (unrollLoopsWithEH)
+    {
+        if (!loop->CanDuplicateWithEH(INDEBUG(&reason)))
+        {
+            JITDUMP("Failed to unroll loop " FMT_LP ": %s\n", loop->GetIndex(), reason);
+            return false;
+        }
+    }
+    else if (!loop->CanDuplicate(INDEBUG(&reason)))
     {
         JITDUMP("Failed to unroll loop " FMT_LP ": %s\n", loop->GetIndex(), reason);
         return false;
@@ -1526,6 +1529,7 @@ bool Compiler::optTryUnrollLoop(FlowGraphNaturalLoop* loop, bool* changedIR)
     *changedIR = true;
 
     // Heuristic: Estimated cost in code size of the unrolled loop.
+    // TODO: duplication cost is higher if there is EH...
 
     ClrSafeInt<unsigned> loopCostSz; // Cost is size of one iteration
 
@@ -1622,7 +1626,15 @@ bool Compiler::optTryUnrollLoop(FlowGraphNaturalLoop* loop, bool* changedIR)
         // and we might not have upscaled at all, if we had profile data.
         //
         weight_t scaleWeight = 1.0 / BB_LOOP_WEIGHT_SCALE;
-        loop->Duplicate(&insertAfter, &blockMap, scaleWeight);
+
+        if (unrollLoopsWithEH)
+        {
+            loop->DuplicateWithEH(&insertAfter, &blockMap, scaleWeight);
+        }
+        else
+        {
+            loop->Duplicate(&insertAfter, &blockMap, scaleWeight);
+        }
 
         // Replace all uses of the loop iterator with the current value.
         loop->VisitLoopBlocks([=, &blockMap](BasicBlock* block) {
