@@ -193,11 +193,18 @@ Note: Editing this file doesn't update the mapping used by `@msftbot` for area-s
 
 While not necessarily associated with a specific area, these community members have the power to assist with routing and labeling issues and pull requests, and are generally knowledgeable about how the repo works:
 
+* @a74nh
 * @am11
+* @clamp03
+* @Clockwork-Muse
 * @filipnavara
 * @huoyaoyuan
+* @martincostello
+* @omajid
+* @Sergio0694
+* @shushanhf
 * @SingleAccretion
 * @teo-tsirpanis
 * @tmds
 * @vcsjones
-* @Sergio0694
+* @xoofx
