@@ -86,20 +86,6 @@ ds_server_wasm_pause_for_diagnostics_monitor (void)
 {
 	/* wait until the DS receives a resume */
 	if (wasm_ds_options.suspend) {
-		/* WISH: it would be better if we split mono_runtime_init_checked() (and runtime
-		 * initialization in general) into two separate functions that we could call from
-		 * JS, and wait for the resume event in JS.  That would allow the browser to remain
-		 * responsive.
-		 *
-		 * (We can't pause earlier because we need to start up enough of the runtime that DS
-		 * can call ep_enable_2() and get session IDs back.  Which seems to require
-		 * mono_jit_init_version() to be called. )
-		 *
-		 * With the current setup we block the browser UI.  Emscripten still processes its
-		 * queued work in futex_wait_busy, so at least other pthreads aren't waiting for us.
-		 * But the user can't interact with the browser tab at all. Even the JS console is
-		 * not displayed.
-		 */
 		int res = mono_coop_sem_wait(&wasm_ds_options.suspend_resume, MONO_SEM_FLAGS_NONE);
 		g_assert (res == 0);
 	}

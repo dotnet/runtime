@@ -74,7 +74,7 @@ const Parser = {
         }
         const size = (buf[j + 3] << 24) | (buf[j + 2] << 16) | (buf[j + 1] << 8) | buf[j];
         advancePos(pos, 4);
-        return size;
+        return size >>> 0;
     },
     tryParseUint64 (buf: Uint8Array, pos: { pos: number }): [number, number] | undefined {
         const lo = Parser.tryParseUint32(buf, pos);
