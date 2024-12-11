@@ -46,7 +46,12 @@ set(HEADERS
     ../../fxr_resolver.h
 )
 
-add_compile_definitions(NATIVE_LIBS_EMBEDDED)
+# TODO: Android uses a separate System.Security.Cryptography lib that does not have 
+# the exported functions the singlefilehost expects. 
+# Figure out how that's going to work and turn this back on.
+if (NOT CLR_CMAKE_TARGET_ANDROID)
+    add_compile_definitions(NATIVE_LIBS_EMBEDDED)
+endif()
 
 include(../../fxr/files.cmake)
 include(../../hostpolicy/files.cmake)
@@ -169,10 +174,21 @@ else()
 
         System.Globalization.Native-Static
         System.IO.Compression.Native-Static
-        System.Net.Security.Native-Static
         System.Native-Static
-        System.Security.Cryptography.Native.OpenSsl-Static
+    )
 
+    if(NOT CLR_CMAKE_TARGET_ANDROID)
+        list(APPEND NATIVE_LIBS
+            System.Net.Security.Native-Static
+            System.Security.Cryptography.Native.OpenSsl-Static
+        )
+    else()
+        list(APPEND NATIVE_LIBS
+            System.Security.Cryptography.Native.Android-Static
+        )
+    endif()
+
+    list(APPEND NATIVE_LIBS
         coreclrpal_dac
         corguids
         dbgutil
