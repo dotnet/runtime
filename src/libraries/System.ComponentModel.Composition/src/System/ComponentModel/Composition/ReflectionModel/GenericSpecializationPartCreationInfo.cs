@@ -581,8 +581,8 @@ namespace System.ComponentModel.Composition.ReflectionModel
             {
                 if (!GenericServices.CanSpecialize(
                     specialization[i],
-                    (genericParameterConstraints![i] as Type[]).CreateTypeSpecializations(specialization),
-                    genericParameterAttributes![i]))
+                    (genericParameterConstraints[i] as Type[]).CreateTypeSpecializations(specialization),
+                    genericParameterAttributes[i]))
                 {
                     return false;
                 }
