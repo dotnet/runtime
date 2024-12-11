@@ -1798,8 +1798,6 @@ static void OsAttachThread(void* thread)
 // It fails fast if some other thread value was attached to the current fiber.
 // Parameters:
 //  thread        - thread to detach
-// Return:
-//  true if the thread was detached, false if there was no attached thread
 void OsDetachThread(void* thread)
 {
     ASSERT(g_flsIndex != FLS_OUT_OF_INDEXES);
