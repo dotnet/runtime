@@ -2597,8 +2597,7 @@ namespace Mono.Linker.Steps
 			case "ValueType":
 			case "Enum":
 			case "Array":
-			case "Type": // Temporary until we start running the tests with an SDK >= ~.NET 10 Preview 1
-			case "RuntimeType": // Temporary until we start running the tests with an SDK >= ~.NET 10 Preview 1
+			case "RuntimeType": // works around https://github.com/dotnet/runtime/issues/110605
 				return td.Namespace == "System";
 			}
 
