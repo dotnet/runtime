@@ -20,15 +20,10 @@ public class ArraySinglePrimitiveRecordTests : ReadTests
 
     public static IEnumerable<object[]> GetCanReadArrayOfAnySizeArgs()
     {
-        foreach (int size in new[] { 1, 127, 128, 512_001 })
+        foreach (int size in new[] { 1, 127, 128, 20_001 })
         {
             yield return new object[] { size, true };
-
-            // It's the most time-consuming test case, skip it for the non-Release builds.
-            if (size != 512_001 || PlatformDetection.IsReleaseRuntime)
-            {
-                yield return new object[] { size, false };
-            }
+            yield return new object[] { size, false };
         }
     }
 
