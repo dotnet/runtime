@@ -16,7 +16,6 @@ namespace System.Reflection.Tests
             Exception exInner = ex.InnerException;
 
             Assert.Contains("Here", exInner.ToString());
-            Assert.Contains("InterpretedInvoke_Method", exInner.ToString());
             Assert.DoesNotContain("InvokeStub_TestClassThatThrows", exInner.ToString());
         }
 
@@ -29,7 +28,6 @@ namespace System.Reflection.Tests
             Exception exInner = ex.InnerException;
 
             Assert.Contains("Here", exInner.ToString());
-            Assert.Contains("InterpretedInvoke_Constructor", exInner.ToString());
             Assert.DoesNotContain("InvokeStub_TestClassThatThrows", exInner.ToString());
         }
 

@@ -39921,7 +39921,7 @@ void gc_heap::bgc_thread_function()
         {
             dprintf (6666, ("h%d no concurrent GC needed, exiting", heap_number));
 
-#ifdef STRESS_DYNAMIC_HEAP_COUNT
+#if defined(TRACE_GC) && defined(SIMPLE_DPRINTF) && defined(STRESS_DYNAMIC_HEAP_COUNT)
             flush_gc_log (true);
             GCToOSInterface::DebugBreak();
 #endif
