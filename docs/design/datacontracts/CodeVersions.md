@@ -261,4 +261,4 @@ public virtual TargetPointer GetGCStressCodeCopy(NativeCodeVersionHandle codeVer
 ```
 
 1. If `codeVersionHandle` is synthetic, use the `IRuntimeTypeSystem` to find the GCStressCodeCopy.
-2. If `codeVersionHandle` is explicit, read the `NativeCodeVersionNode` for the `GCCoverageInfo` pointer. This value is nullable as it only exists in some builds. If the value doesn't exist or is a nullptr, return `TargetPointer.Null`. Otherwise return the `SavedCode` pointer from the `GCCoverageInfo` struct.
+2. If `codeVersionHandle` is explicit, read the `NativeCodeVersionNode` for the `GCCoverageInfo` pointer. This value only exists in some builds. If the value doesn't exist or is a nullptr, return `TargetPointer.Null`. Otherwise return the `SavedCode` pointer from the `GCCoverageInfo` struct.
