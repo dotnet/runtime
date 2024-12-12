@@ -341,8 +341,7 @@ JS_ENGINES = [NODE_JS]
           Condition="'$(HostOS)' == 'windows'"
           WorkingDirectory="$(ArtifactsObjDir)"
           IgnoreStandardErrorWarningFormat="true" />
-
-    <Touch Files="$(WASI_SDK_PATH)/VERSION24" AlwaysCreate="true" />
+    <Touch Files="$(WASI_SDK_PATH)/WASI-SDK-VERSION-25.0" AlwaysCreate="true" />
 
   </Target>
 
@@ -601,6 +600,7 @@ JS_ENGINES = [NODE_JS]
       <_MonoCFLAGS Include="-D_WASI_EMULATED_PROCESS_CLOCKS"/>
       <_MonoCFLAGS Include="-D_WASI_EMULATED_SIGNAL"/>
       <_MonoCFLAGS Include="-D_WASI_EMULATED_MMAN"/>
+      <_MonoCFLAGS Include="-D_WASI_EMULATED_PTHREAD"/>
     </ItemGroup>
 
     <!-- iOS/tvOS specific options -->
