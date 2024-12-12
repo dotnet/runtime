@@ -44,6 +44,7 @@
     <ItemGroup>
       <NestedBuildProperty Include="RunAOTCompilation" />
       <NestedBuildProperty Include="HybridGlobalization" />
+      <NestedBuildProperty Include="InvariantGlobalization" />
       <NestedBuildProperty Include="UsingNativeAOT" />
       <NestedBuildProperty Include="WasmEnableThreads" />
       <NestedBuildProperty Include="MonoDiagnosticsMock" />
