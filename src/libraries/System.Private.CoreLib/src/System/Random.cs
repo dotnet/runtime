@@ -30,7 +30,7 @@ namespace System
             // With no seed specified, if this is the base type, we can implement this however we like.
             // If it's a derived type, for compat we respect the previous implementation, so that overrides
             // are called as they were previously.
-            _impl = GetType() == typeof(Random) ? new XoshiroImpl() : new Net5CompatDerivedImpl(this);
+            _impl = GetType() == typeof(Random) ? new XoshiroImpl() : new CompatDerivedImpl(this);
 
         /// <summary>Initializes a new instance of the Random class, using the specified seed value.</summary>
         /// <param name="Seed">
@@ -41,7 +41,7 @@ namespace System
             // With a custom seed, if this is the base Random class, we still need to respect the same algorithm that's been
             // used in the past, but we can do so without having to deal with calling the right overrides in a derived type.
             // If this is a derived type, we need to handle always using the same overrides we've done previously.
-            _impl = GetType() == typeof(Random) ? new Net5CompatSeedImpl(Seed) : new Net5CompatDerivedImpl(this, Seed);
+            _impl = GetType() == typeof(Random) ? new CompatSeedImpl(Seed) : new CompatDerivedImpl(this, Seed);
 
         /// <summary>Constructor used by <see cref="ThreadSafeRandom"/>.</summary>
         /// <param name="isThreadSafeRandom">Must be true.</param>
@@ -197,41 +197,94 @@ namespace System
                 throw new ArgumentException(SR.Arg_EmptySpan, nameof(choices));
             }
 
-            // The most expensive part of this operation is the call to get random data. We can
-            // do so potentially many fewer times if:
-            // - the number of choices is <= 256. This let's us get a single byte per choice.
-            // - the number of choices is a power of two. This let's us use a byte and simply mask off
-            //   unnecessary bits cheaply rather than needing to use rejection sampling.
-            // In such a case, we can grab a bunch of random bytes in one call.
-            if (BitOperations.IsPow2(choices.Length) && choices.Length <= 256)
+            // The most expensive part of this operation is the call to get random data. If the number of
+            // choices is <= 256 (which is the majority use case), we can use a single byte per element,
+            // which means we can ammortize the cost of getting random data by getting random bytes in bulk.
+            // However, we can only do that if this instance is Random.Shared or an instance created with
+            // `new Random()`. If it was created with a seed, changing which members we call and how many
+            // times may result in a visible difference in the sequence of output items. Similarly if it's
+            // a derived instance, which overrides get called and when is observable.
+            ImplBase impl = _impl;
+            if ((impl is null || impl.GetType() == typeof(XoshiroImpl)) &&
+                choices.Length <= 256)
             {
-                Span<byte> randomBytes = stackalloc byte[512]; // arbitrary size, a balance between stack consumed and number of random calls required
-                while (!destination.IsEmpty)
-                {
-                    if (destination.Length < randomBytes.Length)
-                    {
-                        randomBytes = randomBytes.Slice(0, destination.Length);
-                    }
+                // Get stack space to store random bytes. This size was chosen to balance between
+                // stack consumed and number of random calls required.
+                Span<byte> randomBytes = stackalloc byte[512];
 
-                    NextBytes(randomBytes);
+                if (BitOperations.IsPow2(choices.Length))
+                {
+                    // To avoid bias, we can't just % all bytes to get them into range; that would cause
+                    // the lower values to be more likely than the higher values. If the number of choices
+                    // is a power of 2, though, we can just mask off the extraneous bits.
 
                     int mask = choices.Length - 1;
-                    for (int i = 0; i < randomBytes.Length; i++)
+
+                    while (!destination.IsEmpty)
                     {
-                        destination[i] = choices[randomBytes[i] & mask];
+                        // If this will be the last iteration, avoid over-requesting randomness.
+                        if (destination.Length < randomBytes.Length)
+                        {
+                            randomBytes = randomBytes.Slice(0, destination.Length);
+                        }
+
+                        NextBytes(randomBytes);
+
+                        for (int i = 0; i < randomBytes.Length; i++)
+                        {
+                            destination[i] = choices[randomBytes[i] & mask];
+                        }
+
+                        destination = destination.Slice(randomBytes.Length);
                     }
-
-                    destination = destination.Slice(randomBytes.Length);
                 }
+                else
+                {
+                    // As the length isn't a power of two, we can't just mask off all extraneous bits, and
+                    // instead need to do rejection sampling. However, we can mask off the irrelevant bits, which
+                    // then reduces the chances of needing to reject a value.
 
-                return;
+                    int mask = (int)BitOperations.RoundUpToPowerOf2((uint)choices.Length) - 1;
+
+                    while (!destination.IsEmpty)
+                    {
+                        // Unlike in the IsPow2 case, where every byte will be used, some bytes here may
+                        // be rejected. On average, half the bytes may be rejected, so we heuristically
+                        // choose to shrink to twice the destination length.
+                        if (destination.Length * 2 < randomBytes.Length)
+                        {
+                            randomBytes = randomBytes.Slice(0, destination.Length * 2);
+                        }
+
+                        NextBytes(randomBytes);
+
+                        int i = 0;
+                        foreach (byte b in randomBytes)
+                        {
+                            if ((uint)i >= (uint)destination.Length)
+                            {
+                                break;
+                            }
+
+                            byte masked = (byte)(b & mask);
+                            if (masked < (uint)choices.Length)
+                            {
+                                destination[i++] = choices[masked];
+                            }
+                        }
+
+                        destination = destination.Slice(i);
+                    }
+                }
             }
-
-            // Simple fallback: get each item individually, generating a new random Int32 for each
-            // item. This is slower than the above, but it works for all types and sizes of choices.
-            for (int i = 0; i < destination.Length; i++)
+            else
             {
-                destination[i] = choices[Next(choices.Length)];
+                // Simple fallback: get each item individually, generating a new random Int32 for each
+                // item. This is slower than the above, but it works for all types and sizes of choices.
+                for (int i = 0; i < destination.Length; i++)
+                {
+                    destination[i] = choices[Next(choices.Length)];
+                }
             }
         }
 

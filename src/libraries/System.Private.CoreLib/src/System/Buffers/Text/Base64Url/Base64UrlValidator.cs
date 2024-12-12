@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
 namespace System.Buffers.Text
@@ -60,6 +61,7 @@ namespace System.Buffers.Text
 
             public int IndexOfAnyExcept(ReadOnlySpan<char> span) => span.IndexOfAnyExcept(s_validBase64UrlChars);
 #else
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public int DecodeValue(char value)
             {
                 if (value > byte.MaxValue)
@@ -74,8 +76,8 @@ namespace System.Buffers.Text
             public bool IsWhiteSpace(char value) => Base64Helper.IsWhiteSpace(value);
             public bool IsEncodingPad(char value) => value == Base64Helper.EncodingPad || value == UrlEncodingPad;
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public bool ValidateAndDecodeLength(int length, int paddingCount, out int decodedLength) =>
-                default(Base64UrlByteValidatable).ValidateAndDecodeLength(length, paddingCount, out decodedLength);
+            public bool ValidateAndDecodeLength(char lastChar, int length, int paddingCount, out int decodedLength) =>
+                default(Base64UrlByteValidatable).ValidateAndDecodeLength((byte)lastChar, length, paddingCount, out decodedLength);
         }
 
         private readonly struct Base64UrlByteValidatable : Base64Helper.IBase64Validatable<byte>
@@ -90,28 +92,37 @@ namespace System.Buffers.Text
             public bool IsWhiteSpace(byte value) => Base64Helper.IsWhiteSpace(value);
             public bool IsEncodingPad(byte value) => value == Base64Helper.EncodingPad || value == UrlEncodingPad;
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public bool ValidateAndDecodeLength(int length, int paddingCount, out int decodedLength)
+            public bool ValidateAndDecodeLength(byte lastChar, int length, int paddingCount, out int decodedLength)
             {
-                // Padding is optional for Base64Url, so need to account remainder. If remainder is 1, then it's invalid.
-#if NET
-                (uint whole, uint remainder) = uint.DivRem((uint)(length), 4);
-                if (remainder == 1 || (remainder > 1 && (remainder - paddingCount == 1 || paddingCount == remainder)))
-                {
-                    decodedLength = 0;
-                    return false;
-                }
-
-                decodedLength = (int)((whole * 3) + (remainder > 0 ? remainder - 1 : 0) - paddingCount);
-#else
+                // Padding is optional for Base64Url, so need to account remainder.
                 int remainder = (int)((uint)length % 4);
-                if (remainder == 1 || (remainder > 1 && (remainder - paddingCount == 1 || paddingCount == remainder)))
+
+                if (paddingCount != 0)
                 {
-                    decodedLength = 0;
-                    return false;
+                    length -= paddingCount;
+                    remainder = (int)((uint)length % 4);
+
+                    // if there is a padding, there should be remainder and the sum of remainder and padding should not exceed 4
+                    if (remainder == 0 || remainder + paddingCount > 4)
+                    {
+                        decodedLength = 0;
+                        return false;
+                    }
                 }
 
-                decodedLength = (length >> 2) * 3 + (remainder > 0 ? remainder - 1 : 0) - paddingCount;
-#endif
+                decodedLength = (length >> 2) * 3 + (remainder > 0 ? remainder - 1 : 0);
+
+                if (remainder > 0)
+                {
+                    int decoded = default(Base64UrlDecoderByte).DecodingMap[lastChar];
+                    switch (remainder)
+                    {
+                        case 1: return false; // 1 byte is not decodable => invalid.
+                        case 2: return ((decoded & 0x0F) == 0); // if unused lower 4 bits are set to 0
+                        case 3: return ((decoded & 0x03) == 0); // if unused lower 2 bits are set to 0
+                    }
+                }
+
                 return true;
             }
         }

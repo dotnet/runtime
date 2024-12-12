@@ -706,12 +706,6 @@ namespace Internal.JitInterface
                 case CorInfoHelpFunc.CORINFO_HELP_DBLREM:
                     id = ReadyToRunHelper.DblRem;
                     break;
-                case CorInfoHelpFunc.CORINFO_HELP_FLTROUND:
-                    id = ReadyToRunHelper.FltRound;
-                    break;
-                case CorInfoHelpFunc.CORINFO_HELP_DBLROUND:
-                    id = ReadyToRunHelper.DblRound;
-                    break;
 
                 case CorInfoHelpFunc.CORINFO_HELP_JIT_PINVOKE_BEGIN:
                     id = ReadyToRunHelper.PInvokeBegin;
@@ -757,13 +751,6 @@ namespace Internal.JitInterface
                     break;
                 case CorInfoHelpFunc.CORINFO_HELP_MON_EXIT:
                     id = ReadyToRunHelper.MonitorExit;
-                    break;
-
-                case CorInfoHelpFunc.CORINFO_HELP_MON_ENTER_STATIC:
-                    id = ReadyToRunHelper.MonitorEnterStatic;
-                    break;
-                case CorInfoHelpFunc.CORINFO_HELP_MON_EXIT_STATIC:
-                    id = ReadyToRunHelper.MonitorExitStatic;
                     break;
 
                 case CorInfoHelpFunc.CORINFO_HELP_GETSYNCFROMCLASSHANDLE:

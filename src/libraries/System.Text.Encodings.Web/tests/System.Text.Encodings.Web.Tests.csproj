@@ -14,14 +14,12 @@
     <Compile Include="..\src\System\Text\Encodings\Web\AsciiByteMap.cs" Link="System\Text\Encodings\Web\AsciiByteMap.cs" />
     <Compile Include="..\src\System\Text\Encodings\Web\OptimizedInboxTextEncoder.Ascii.cs" Link="System\Text\Encodings\Web\OptimizedInboxTextEncoder.Ascii.cs" />
     <Compile Include="..\src\System\Text\Encodings\Web\ScalarEscaperBase.cs" Link="System\Text\Encodings\Web\ScalarEscaperBase.cs" />
-    <Compile Include="..\src\System\Text\Encodings\Web\SpanUtility.cs" Link="System\Text\Encodings\Web\SpanUtility.cs" />
     <Compile Include="..\src\System\Text\Unicode\UnicodeHelpers.cs" Link="System\Text\Unicode\UnicodeHelpers.cs" />
     <Compile Include="..\src\System\Text\Unicode\UnicodeHelpers.generated.cs" Link="System\Text\Unicode\UnicodeHelpers.generated.cs" />
     <Compile Include="AsciiByteMapTests.cs" />
     <Compile Include="AsciiPreescapedDataTests.cs" />
     <Compile Include="AllowedAsciiCodePointsTests.cs" />
     <Compile Include="InboxEncoderCommonTests.cs" />
-    <Compile Include="SpanUtilityTests.cs" />
     <Compile Include="AllowedBmpCodePointsBitmapTests.cs" />
     <Compile Include="TextEncoderBatteryTests.cs" />
     <Compile Include="TextEncoderTests.cs" />

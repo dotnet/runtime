@@ -721,7 +721,13 @@ void CodeGen::inst_TT_RV(instruction ins, emitAttr size, GenTree* tree, regNumbe
     unsigned varNum = tree->AsLclVarCommon()->GetLclNum();
     assert(varNum < compiler->lvaCount);
 #if CPU_LOAD_STORE_ARCH
+#ifdef TARGET_ARM64
+    // Workaround until https://github.com/dotnet/runtime/issues/105512 is fixed.
+    assert(GetEmitter()->emitInsIsStore(ins) || (ins == INS_sve_str));
+#else
     assert(GetEmitter()->emitInsIsStore(ins));
+#endif
+
 #endif
     GetEmitter()->emitIns_S_R(ins, size, reg, varNum, 0);
 }
@@ -744,7 +750,7 @@ void CodeGen::inst_RV_SH(
 #elif defined(TARGET_XARCH)
 
 #ifdef TARGET_AMD64
-    // X64 JB BE insures only encodable values make it here.
+    // X64 JB BE ensures only encodable values make it here.
     // x86 can encode 8 bits, though it masks down to 5 or 6
     // depending on 32-bit or 64-bit registers are used.
     // Here we will allow anything that is encodable.
@@ -950,11 +956,11 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(GenTree* op)
                 return OperandDesc(op->AsIntCon()->IconValue(), op->AsIntCon()->ImmedValNeedsReloc(compiler));
             }
 
+#if defined(FEATURE_SIMD)
             case GT_CNS_VEC:
             {
                 switch (op->TypeGet())
                 {
-#if defined(FEATURE_SIMD)
                     case TYP_SIMD8:
                     {
                         simd8_t constValue;
@@ -991,7 +997,6 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(GenTree* op)
                     }
 
 #endif // TARGET_XARCH
-#endif // FEATURE_SIMD
 
                     default:
                     {
@@ -999,17 +1004,16 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(GenTree* op)
                     }
                 }
             }
+#endif // FEATURE_SIMD
 
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
             case GT_CNS_MSK:
             {
-#if defined(FEATURE_MASKED_HW_INTRINSICS)
                 simdmask_t constValue;
                 memcpy(&constValue, &op->AsMskCon()->gtSimdMaskVal, sizeof(simdmask_t));
                 return OperandDesc(emit->emitSimdMaskConst(constValue));
-#else
-                unreached();
-#endif // FEATURE_MASKED_HW_INTRINSICS
             }
+#endif // FEATURE_MASKED_HW_INTRINSICS
 
             default:
                 unreached();

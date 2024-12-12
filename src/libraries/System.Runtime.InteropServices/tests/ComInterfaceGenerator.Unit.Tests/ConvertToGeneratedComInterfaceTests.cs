@@ -135,6 +135,54 @@ namespace ComInterfaceGenerator.Unit.Tests
         }
 
         [Fact]
+        public async Task StringFix_DoesNotAddStringMarshallingToNonStringScenarios()
+        {
+            string source = """
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
+
+                [ComImport]
+                [Guid("5DA39CDF-DCAD-447A-836E-EA80DB34D81B")]
+                [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+                public interface [|IUsesString|]
+                {
+                  string Method();
+                }
+
+                [ComImport]
+                [Guid("5DA39CDF-DCAD-447A-836E-EA80DB34D81C")]
+                [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+                public interface [|INoString|]
+                {
+                  int Method();
+                }
+                """;
+
+            string fixedSource = """
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
+                
+                [GeneratedComInterface(StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(BStrStringMarshaller))]
+                [Guid("5DA39CDF-DCAD-447A-836E-EA80DB34D81B")]
+                [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+                public partial interface IUsesString
+                {
+                  string Method();
+                }
+
+                [GeneratedComInterface]
+                [Guid("5DA39CDF-DCAD-447A-836E-EA80DB34D81C")]
+                [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+                public partial interface INoString
+                {
+                  int Method();
+                }
+                """;
+
+            await VerifyCS.VerifyCodeFixAsync(source, fixedSource);
+        }
+
+        [Fact]
         public async Task Array_DoesNotReportDiagnostic()
         {
             // The default behavior in ComImport for arrays is to marshal as a SAFEARRAY. We don't support SAFEARRAY's, so we don't want to offer a fix here.

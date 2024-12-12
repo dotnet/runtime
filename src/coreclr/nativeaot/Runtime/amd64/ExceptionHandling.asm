@@ -44,7 +44,9 @@ ALTERNATE_ENTRY RhpThrowHwExGEHCONT ; this needs to be an EHCONT target since we
         .pushframe
 
         alloc_stack     SIZEOF_XmmSaves + 8h    ;; reserve stack for the xmm saves (+8h to realign stack)
-        push_vol_reg    r8                      ;; padding
+        rdsspq  r8                              ;; nop if SSP is not implemented, 0 if not enabled
+        push_vol_reg    r8                      ;; SSP
+        xor     r8, r8
         push_nonvol_reg r15
         push_nonvol_reg r14
         push_nonvol_reg r13
@@ -127,7 +129,9 @@ NESTED_ENTRY RhpThrowEx, _TEXT
         xor     r8, r8
 
         alloc_stack     SIZEOF_XmmSaves + 8h    ;; reserve stack for the xmm saves (+8h to realign stack)
-        push_vol_reg    r8                      ;; padding
+        rdsspq  r8                              ;; nop if SSP is not implemented, 0 if not enabled
+        push_vol_reg    r8                      ;; SSP
+        xor     r8, r8
         push_nonvol_reg r15
         push_nonvol_reg r14
         push_nonvol_reg r13
@@ -221,7 +225,9 @@ NESTED_ENTRY RhpRethrow, _TEXT
         xor     r8, r8
 
         alloc_stack     SIZEOF_XmmSaves + 8h    ;; reserve stack for the xmm saves (+8h to realign stack)
-        push_vol_reg    r8                      ;; padding
+        rdsspq  r8                              ;; nop if SSP is not implemented, 0 if not enabled
+        push_vol_reg    r8                      ;; SSP
+        xor     r8, r8
         push_nonvol_reg r15
         push_nonvol_reg r14
         push_nonvol_reg r13
@@ -490,7 +496,7 @@ endif
         INLINE_THREAD_UNHIJACK rdx, rcx, r9                         ;; Thread in rdx, trashes rcx and r9
 
         mov     rcx, [rsp + rsp_offsetof_arguments + 18h]           ;; rcx <- current ExInfo *
-        mov     r10, [r8 + OFFSETOF__REGDISPLAY__IP]                ;; r10 <- original IP value
+        mov     r11, [r8 + OFFSETOF__REGDISPLAY__SSP]               ;; r11 <- resume SSP value
         mov     r8, [r8 + OFFSETOF__REGDISPLAY__SP]                 ;; r8 <- resume SP value
         xor     r9, r9                                              ;; r9 <- 0
 
@@ -505,7 +511,7 @@ endif
    ;; Sanity check: if we have shadow stack, it should agree with what we have in rsp
    LOCAL_STACK_USE equ 118h
    ifdef _DEBUG
-        rdsspq  r9
+        rdsspq  r9                                                  ;; NB, r9 == 0 prior to this
         test    r9, r9
         jz      @f
         mov     r9, [r9]
@@ -531,23 +537,23 @@ endif
         ;; reset RSP and jump to RAX
    @@:  mov     rsp, r8                                             ;; reset the SP to resume SP value
 
-        ;; if have shadow stack, then we need to reconcile it with the rsp change we have just made
-        rdsspq  r9
+        ;; if have shadow stack, then we need to reconcile it with the rsp change we have just made. (r11 must contain target SSP)
+        rdsspq  r9                                                  ;; NB, r9 == 0 prior to this
         test    r9, r9
-        jz      NoSSP
+        je      No_Ssp_Update
+        sub     r11, r9
+        shr     r11, 3
+        ;; the incsspq instruction uses only the lowest 8 bits of the argument, so we need to loop in case the increment is larger than 255
+        mov     r9, 255
+    Update_Loop:
+        cmp     r11, r9
+        cmovb   r9, r11
+        incsspq r9
+        sub     r11, r9
+        ja      Update_Loop
 
-        ;; Find the shadow stack pointer for the frame we are going to restore to.
-        ;; The SSP we search is pointing to the return address of the frame represented
-        ;; by the passed in context. So we search for the instruction pointer from 
-        ;; the context and return one slot up from there.
-        ;; (Same logic as in GetSSPForFrameOnCurrentStack)
-        xor     r11, r11
-   @@:  inc     r11
-        cmp     [r9 + r11 * 8 - 8], r10
-        jne     @b
 
-        incsspq r11
-NoSSP:  jmp     rax
+No_Ssp_Update:  jmp     rax
 
 
 NESTED_END RhpCallCatchFunclet, _TEXT

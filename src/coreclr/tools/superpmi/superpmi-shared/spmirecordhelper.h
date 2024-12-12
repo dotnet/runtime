@@ -77,19 +77,22 @@ public:
         DWORD handleInstCount,
         DWORD handleInstIndex,
         const DenseLightWeightMap<DWORDLONG>* handleMap,
+        MemoryTracker* memoryTracker,
         /* OUT */ unsigned* handleInstCountOut,
         /* OUT */ CORINFO_CLASS_HANDLE** handleInstArrayOut);
 
     static void DeserializeCORINFO_SIG_INST(
         CORINFO_SIG_INFO& sigInfoOut,
         const Agnostic_CORINFO_SIG_INFO& sigInfo,
-        const DenseLightWeightMap<DWORDLONG>* handleMap);
+        const DenseLightWeightMap<DWORDLONG>* handleMap,
+        MemoryTracker* memoryTracker);
 
     template <typename key, typename value>
     static CORINFO_SIG_INFO Restore_CORINFO_SIG_INFO(
         const Agnostic_CORINFO_SIG_INFO& sigInfo,
         LightWeightMap<key, value>* buffers,
-        const DenseLightWeightMap<DWORDLONG>* handleMap);
+        const DenseLightWeightMap<DWORDLONG>* handleMap,
+        MemoryTracker* memoryTracker);
 
     static Agnostic_CORINFO_LOOKUP_KIND CreateAgnostic_CORINFO_LOOKUP_KIND(
         const CORINFO_LOOKUP_KIND* pGenericLookupKind);
@@ -381,6 +384,7 @@ inline void SpmiRecordsHelper::DeserializeCORINFO_SIG_INST_HandleArray(
     DWORD handleInstCount,
     DWORD handleInstIndex,
     const DenseLightWeightMap<DWORDLONG>* handleMap,
+    MemoryTracker* memoryTracker,
     /* OUT */ unsigned* handleInstCountOut,
     /* OUT */ CORINFO_CLASS_HANDLE** handleInstArrayOut)
 {
@@ -388,7 +392,7 @@ inline void SpmiRecordsHelper::DeserializeCORINFO_SIG_INST_HandleArray(
 
     if (handleInstCount > 0)
     {
-        handleInstArray = new CORINFO_CLASS_HANDLE[handleInstCount]; // memory leak?
+        handleInstArray = (CORINFO_CLASS_HANDLE*)memoryTracker->allocate(handleInstCount * sizeof(CORINFO_CLASS_HANDLE));
         for (unsigned int i = 0; i < handleInstCount; i++)
         {
             DWORD key = handleInstIndex + i;
@@ -405,16 +409,17 @@ inline void SpmiRecordsHelper::DeserializeCORINFO_SIG_INST_HandleArray(
 }
 
 inline void SpmiRecordsHelper::DeserializeCORINFO_SIG_INST(
-    CORINFO_SIG_INFO& sigInfoOut, const Agnostic_CORINFO_SIG_INFO& sigInfo, const DenseLightWeightMap<DWORDLONG>* handleMap)
+    CORINFO_SIG_INFO& sigInfoOut, const Agnostic_CORINFO_SIG_INFO& sigInfo, const DenseLightWeightMap<DWORDLONG>* handleMap, MemoryTracker* memoryTracker)
 {
-    DeserializeCORINFO_SIG_INST_HandleArray(sigInfo.sigInst_classInstCount, sigInfo.sigInst_classInst_Index, handleMap, &sigInfoOut.sigInst.classInstCount, &sigInfoOut.sigInst.classInst);
-    DeserializeCORINFO_SIG_INST_HandleArray(sigInfo.sigInst_methInstCount, sigInfo.sigInst_methInst_Index, handleMap, &sigInfoOut.sigInst.methInstCount, &sigInfoOut.sigInst.methInst);
+    DeserializeCORINFO_SIG_INST_HandleArray(sigInfo.sigInst_classInstCount, sigInfo.sigInst_classInst_Index, handleMap, memoryTracker, &sigInfoOut.sigInst.classInstCount, &sigInfoOut.sigInst.classInst);
+    DeserializeCORINFO_SIG_INST_HandleArray(sigInfo.sigInst_methInstCount, sigInfo.sigInst_methInst_Index, handleMap, memoryTracker, &sigInfoOut.sigInst.methInstCount, &sigInfoOut.sigInst.methInst);
 }
 
 template <typename key, typename value>
 inline CORINFO_SIG_INFO SpmiRecordsHelper::Restore_CORINFO_SIG_INFO(const Agnostic_CORINFO_SIG_INFO& sigInfo,
                                                                     LightWeightMap<key, value>* buffers,
-                                                                    const DenseLightWeightMap<DWORDLONG>* handleMap)
+                                                                    const DenseLightWeightMap<DWORDLONG>* handleMap,
+                                                                    MemoryTracker* memoryTracker)
 {
     CORINFO_SIG_INFO sig;
     sig.callConv        = (CorInfoCallConv)sigInfo.callConv;
@@ -430,7 +435,7 @@ inline CORINFO_SIG_INFO SpmiRecordsHelper::Restore_CORINFO_SIG_INFO(const Agnost
     sig.scope           = (CORINFO_MODULE_HANDLE)sigInfo.scope;
     sig.token           = (mdToken)sigInfo.token;
 
-    DeserializeCORINFO_SIG_INST(sig, sigInfo, handleMap);
+    DeserializeCORINFO_SIG_INST(sig, sigInfo, handleMap, memoryTracker);
 
     return sig;
 }

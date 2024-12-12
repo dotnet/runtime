@@ -8,7 +8,7 @@ using Microsoft.Extensions.Primitives;
 namespace Microsoft.Extensions.Caching.Memory
 {
     /// <summary>
-    /// Provide extensions methods for <see cref="IMemoryCache"/> operations.
+    /// Provides extensions methods for <see cref="IMemoryCache"/> operations.
     /// </summary>
     public static class CacheExtensions
     {
@@ -37,13 +37,13 @@ namespace Microsoft.Extensions.Caching.Memory
         }
 
         /// <summary>
-        /// Try to get the value associated with the given key.
+        /// Tries to get the value associated with the given key.
         /// </summary>
         /// <typeparam name="TItem">The type of the object to get.</typeparam>
         /// <param name="cache">The <see cref="IMemoryCache"/> instance this method extends.</param>
         /// <param name="key">The key of the value to get.</param>
         /// <param name="value">The value associated with the given key.</param>
-        /// <returns><c>true</c> if the key was found. <c>false</c> otherwise.</returns>
+        /// <returns><c>true</c> if the key was found; <c>false</c> otherwise.</returns>
         public static bool TryGetValue<TItem>(this IMemoryCache cache, object key, out TItem? value)
         {
             if (cache.TryGetValue(key, out object? result))
@@ -70,7 +70,7 @@ namespace Microsoft.Extensions.Caching.Memory
         /// </summary>
         /// <typeparam name="TItem">The type of the object to set.</typeparam>
         /// <param name="cache">The <see cref="IMemoryCache"/> instance this method extends.</param>
-        /// <param name="key">The key of the entry to add.</param>
+        /// <param name="key">The key of the entry to set.</param>
         /// <param name="value">The value to associate with the key.</param>
         /// <returns>The value that was set.</returns>
         public static TItem Set<TItem>(this IMemoryCache cache, object key, TItem value)
@@ -86,7 +86,7 @@ namespace Microsoft.Extensions.Caching.Memory
         /// </summary>
         /// <typeparam name="TItem">The type of the object to set.</typeparam>
         /// <param name="cache">The <see cref="IMemoryCache"/> instance this method extends.</param>
-        /// <param name="key">The key of the entry to add.</param>
+        /// <param name="key">The key of the entry to set.</param>
         /// <param name="value">The value to associate with the key.</param>
         /// <param name="absoluteExpiration">The point in time at which the cache entry will expire.</param>
         /// <returns>The value that was set.</returns>
@@ -104,7 +104,7 @@ namespace Microsoft.Extensions.Caching.Memory
         /// </summary>
         /// <typeparam name="TItem">The type of the object to set.</typeparam>
         /// <param name="cache">The <see cref="IMemoryCache"/> instance this method extends.</param>
-        /// <param name="key">The key of the entry to add.</param>
+        /// <param name="key">The key of the entry to set.</param>
         /// <param name="value">The value to associate with the key.</param>
         /// <param name="absoluteExpirationRelativeToNow">The duration from now after which the cache entry will expire.</param>
         /// <returns>The value that was set.</returns>
@@ -122,7 +122,7 @@ namespace Microsoft.Extensions.Caching.Memory
         /// </summary>
         /// <typeparam name="TItem">The type of the object to set.</typeparam>
         /// <param name="cache">The <see cref="IMemoryCache"/> instance this method extends.</param>
-        /// <param name="key">The key of the entry to add.</param>
+        /// <param name="key">The key of the entry to set.</param>
         /// <param name="value">The value to associate with the key.</param>
         /// <param name="expirationToken">The <see cref="IChangeToken"/> that causes the cache entry to expire.</param>
         /// <returns>The value that was set.</returns>
@@ -140,7 +140,7 @@ namespace Microsoft.Extensions.Caching.Memory
         /// </summary>
         /// <typeparam name="TItem">The type of the object to set.</typeparam>
         /// <param name="cache">The <see cref="IMemoryCache"/> instance this method extends.</param>
-        /// <param name="key">The key of the entry to add.</param>
+        /// <param name="key">The key of the entry to set.</param>
         /// <param name="value">The value to associate with the key.</param>
         /// <param name="options">The existing <see cref="MemoryCacheEntryOptions"/> instance to apply to the new entry.</param>
         /// <returns>The value that was set.</returns>

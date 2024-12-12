@@ -755,15 +755,15 @@ namespace System.Text
                     byte[] fallbackBytes;
                     if (_bigEndian)
                     {
-                        fallbackBytes = new byte[] {
+                        fallbackBytes = [
                             unchecked((byte)(iChar >> 24)), unchecked((byte)(iChar >> 16)),
-                            unchecked((byte)(iChar >> 8)), unchecked((byte)(iChar)) };
+                            unchecked((byte)(iChar >> 8)), unchecked((byte)(iChar)) ];
                     }
                     else
                     {
-                        fallbackBytes = new byte[] {
+                        fallbackBytes = [
                             unchecked((byte)(iChar)), unchecked((byte)(iChar >> 8)),
-                            unchecked((byte)(iChar >> 16)), unchecked((byte)(iChar >> 24)) };
+                            unchecked((byte)(iChar >> 16)), unchecked((byte)(iChar >> 24)) ];
                     }
 
                     charCount += fallbackBuffer.InternalFallback(fallbackBytes, bytes);
@@ -904,15 +904,15 @@ namespace System.Text
                     byte[] fallbackBytes;
                     if (_bigEndian)
                     {
-                        fallbackBytes = new byte[] {
+                        fallbackBytes = [
                             unchecked((byte)(iChar >> 24)), unchecked((byte)(iChar >> 16)),
-                            unchecked((byte)(iChar >> 8)), unchecked((byte)(iChar)) };
+                            unchecked((byte)(iChar >> 8)), unchecked((byte)(iChar)) ];
                     }
                     else
                     {
-                        fallbackBytes = new byte[] {
+                        fallbackBytes = [
                             unchecked((byte)(iChar)), unchecked((byte)(iChar >> 8)),
-                            unchecked((byte)(iChar >> 16)), unchecked((byte)(iChar >> 24)) };
+                            unchecked((byte)(iChar >> 16)), unchecked((byte)(iChar >> 24)) ];
                     }
 
                     // Chars won't be updated unless this works.
@@ -1117,11 +1117,11 @@ namespace System.Text
                 // Allocate new array to prevent users from modifying it.
                 if (_bigEndian)
                 {
-                    return new byte[4] { 0x00, 0x00, 0xFE, 0xFF };
+                    return [0x00, 0x00, 0xFE, 0xFF];
                 }
                 else
                 {
-                    return new byte[4] { 0xFF, 0xFE, 0x00, 0x00 }; // 00 00 FE FF
+                    return [0xFF, 0xFE, 0x00, 0x00]; // 00 00 FE FF
                 }
             }
             else

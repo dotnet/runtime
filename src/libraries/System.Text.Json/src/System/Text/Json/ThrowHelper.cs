@@ -66,6 +66,18 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
+        public static void ThrowArgumentOutOfRangeException_NeedNonNegNum(string paramName)
+        {
+            throw new ArgumentOutOfRangeException(paramName, SR.ArgumentOutOfRange_Generic_MustBeNonNegative);
+        }
+
+        [DoesNotReturn]
+        public static void ThrowArgumentException_InvalidOffLen()
+        {
+            throw new ArgumentException(SR.Argument_InvalidOffLen);
+        }
+
+        [DoesNotReturn]
         public static void ThrowArgumentException_ArrayTooSmall(string paramName)
         {
             throw new ArgumentException(SR.ArrayTooSmall, paramName);
@@ -718,6 +730,12 @@ namespace System.Text.Json
         public static void ThrowObjectDisposedException_JsonDocument()
         {
             throw new ObjectDisposedException(nameof(JsonDocument));
+        }
+
+        [DoesNotReturn]
+        public static void ThrowInsufficientExecutionStackException_JsonElementDeepEqualsInsufficientExecutionStack()
+        {
+            throw new InsufficientExecutionStackException(SR.JsonElementDeepEqualsInsufficientExecutionStack);
         }
     }
 

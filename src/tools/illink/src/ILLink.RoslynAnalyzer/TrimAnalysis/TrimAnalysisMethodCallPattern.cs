@@ -1,21 +1,18 @@
 // Copyright (c) .NET Foundation and contributors. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.Collections.Generic;
+using System;
 using System.Collections.Immutable;
 using System.Diagnostics;
-using System.Runtime.InteropServices.ComTypes;
 using ILLink.RoslynAnalyzer.DataFlow;
-using ILLink.Shared;
 using ILLink.Shared.DataFlow;
 using ILLink.Shared.TrimAnalysis;
-using ILLink.Shared.TypeSystemProxy;
 using Microsoft.CodeAnalysis;
 using MultiValue = ILLink.Shared.DataFlow.ValueSet<ILLink.Shared.DataFlow.SingleValue>;
 
 namespace ILLink.RoslynAnalyzer.TrimAnalysis
 {
-	public readonly record struct TrimAnalysisMethodCallPattern
+	internal readonly record struct TrimAnalysisMethodCallPattern
 	{
 		public IMethodSymbol CalledMethod { get; init; }
 		public MultiValue Instance { get; init; }
@@ -72,26 +69,22 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 				featureContextLattice.Meet (FeatureContext, other.FeatureContext));
 		}
 
-		public IEnumerable<Diagnostic> CollectDiagnostics (DataFlowAnalyzerContext context)
+		public void ReportDiagnostics (DataFlowAnalyzerContext context, Action<Diagnostic> reportDiagnostic)
 		{
-			DiagnosticContext diagnosticContext = new (Operation.Syntax.GetLocation ());
+			var location = Operation.Syntax.GetLocation ();
 			if (context.EnableTrimAnalyzer &&
 				!OwningSymbol.IsInRequiresUnreferencedCodeAttributeScope(out _) &&
 				!FeatureContext.IsEnabled (RequiresUnreferencedCodeAnalyzer.FullyQualifiedRequiresUnreferencedCodeAttribute))
 			{
-				TrimAnalysisVisitor.HandleCall(Operation, OwningSymbol, CalledMethod, Instance, Arguments, diagnosticContext, default, out var _);
+				TrimAnalysisVisitor.HandleCall(Operation, OwningSymbol, CalledMethod, Instance, Arguments, location, reportDiagnostic, default, out var _);
 			}
 
+			var diagnosticContext = new DiagnosticContext (location, reportDiagnostic);
 			foreach (var requiresAnalyzer in context.EnabledRequiresAnalyzers)
 			{
-				if (requiresAnalyzer.CheckAndCreateRequiresDiagnostic (Operation, CalledMethod, OwningSymbol, context, FeatureContext, out Diagnostic? diag)
-					&& !requiresAnalyzer.IsIntrinsicallyHandled (CalledMethod, Instance, Arguments))
-				{
-					diagnosticContext.AddDiagnostic (diag);
-				}
+				if (!requiresAnalyzer.IsIntrinsicallyHandled (CalledMethod, Instance, Arguments))
+					requiresAnalyzer.CheckAndCreateRequiresDiagnostic (Operation, CalledMethod, OwningSymbol, context, FeatureContext, in diagnosticContext);
 			}
-
-			return diagnosticContext.Diagnostics;
 		}
 	}
 }

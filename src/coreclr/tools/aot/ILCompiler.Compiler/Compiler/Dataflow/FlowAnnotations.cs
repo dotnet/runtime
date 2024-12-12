@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
@@ -232,7 +232,7 @@ namespace ILLink.Shared.TrimAnalysis
             //       public override Type GetTypeWithFields() { return typeof(TestType); }
             //   }
             //
-            // If TestType from above is trimmed, it may note have all its fields, and there would be no warnings generated.
+            // If TestType from above is trimmed, it may not have all its fields, and there would be no warnings generated.
             // But there has to be code like this somewhere in the app, in order to generate the override:
             //   class RuntimeTypeGenerator
             //   {
@@ -440,6 +440,7 @@ namespace ILLink.Shared.TrimAnalysis
                             returnAnnotation = GetMemberTypesForDynamicallyAccessedMembersAttribute(reader, parameter.GetCustomAttributes());
                             if (returnAnnotation != DynamicallyAccessedMemberTypes.None && !IsTypeInterestingForDataflow(signature.ReturnType))
                             {
+                                returnAnnotation = DynamicallyAccessedMemberTypes.None;
                                 _logger.LogWarning(method, DiagnosticId.DynamicallyAccessedMembersOnMethodReturnValueCanOnlyApplyToTypesOrStrings, method.GetDisplayName());
                             }
                         }
@@ -958,6 +959,11 @@ namespace ILLink.Shared.TrimAnalysis
         internal partial MethodReturnValue GetMethodReturnValue(MethodProxy method, bool isNewObj)
             => GetMethodReturnValue(method, isNewObj, GetReturnParameterAnnotation(method.Method));
 
+#pragma warning disable CA1822 // Other partial implementations are not in the ilc project
+        internal partial GenericParameterValue GetGenericParameterValue(GenericParameterProxy genericParameter, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
+#pragma warning restore CA1822 // Mark members as static
+            => new GenericParameterValue(genericParameter.GenericParameter, dynamicallyAccessedMemberTypes);
+
         internal partial GenericParameterValue GetGenericParameterValue(GenericParameterProxy genericParameter)
             => new GenericParameterValue(genericParameter.GenericParameter, GetGenericParameterAnnotation(genericParameter.GenericParameter));
 
@@ -970,17 +976,13 @@ namespace ILLink.Shared.TrimAnalysis
             => GetMethodParameterValue(param, GetParameterAnnotation(param));
 
 #pragma warning disable CA1822 // Mark members as static - Should be an instance method for consistency
-        // overrideIsThis is needed for backwards compatibility with MakeGenericType/Method https://github.com/dotnet/linker/issues/2428
-        internal MethodParameterValue GetMethodThisParameterValue(MethodProxy method, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes, bool overrideIsThis = false)
+        internal partial MethodParameterValue GetMethodThisParameterValue(MethodProxy method, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
         {
-            if (!method.HasImplicitThis() && !overrideIsThis)
+            if (!method.HasImplicitThis())
                 throw new InvalidOperationException($"Cannot get 'this' parameter of method {method.GetDisplayName()} with no 'this' parameter.");
-            return new MethodParameterValue(new ParameterProxy(method, (ParameterIndex)0), dynamicallyAccessedMemberTypes, overrideIsThis);
+            return new MethodParameterValue(new ParameterProxy(method, (ParameterIndex)0), dynamicallyAccessedMemberTypes);
         }
 #pragma warning restore CA1822 // Mark members as static
-
-        internal partial MethodParameterValue GetMethodThisParameterValue(MethodProxy method, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
-            => GetMethodThisParameterValue(method, dynamicallyAccessedMemberTypes, false);
 
         internal partial MethodParameterValue GetMethodThisParameterValue(MethodProxy method)
         {

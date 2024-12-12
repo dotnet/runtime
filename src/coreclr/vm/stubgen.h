@@ -39,6 +39,10 @@ struct LocalDesc
     size_t  cbType;
     TypeHandle InternalToken;  // only valid with ELEMENT_TYPE_INTERNAL
 
+    // only valid with ELEMENT_TYPE_CMOD_INTERNAL
+    bool InternalModifierRequired; 
+    TypeHandle InternalModifierToken;
+
     // used only for E_T_FNPTR and E_T_ARRAY
     PCCOR_SIGNATURE pSig;
     union
@@ -94,6 +98,14 @@ struct LocalDesc
     {
         LIMITED_METHOD_CONTRACT;
         ChangeType(ELEMENT_TYPE_PTR);
+    }
+
+    void AddModifier(bool required, TypeHandle thModifier)
+    {
+        _ASSERTE_MSG(InternalModifierToken.IsNull(), "Only one custom modifier is supported per element signature");
+        ChangeType(ELEMENT_TYPE_CMOD_INTERNAL);
+        InternalModifierRequired = required;
+        InternalModifierToken = thModifier;
     }
 
     void ChangeType(CorElementType elemType)
@@ -267,7 +279,6 @@ protected:
 #else // _DEBUG
 #define TOKEN_LOOKUP_MAP_SIZE  (64*sizeof(void*))
 #endif // _DEBUG
-
 //---------------------------------------------------------------------------------------
 //
 class TokenLookupMap
@@ -841,6 +852,7 @@ public:
     void EmitBLE_UN     (ILCodeLabel* pCodeLabel);
     void EmitBLT        (ILCodeLabel* pCodeLabel);
     void EmitBNE_UN     (ILCodeLabel* pCodeLabel);
+    void EmitBOX        (int token);
     void EmitBR         (ILCodeLabel* pCodeLabel);
     void EmitBREAK      ();
     void EmitBRFALSE    (ILCodeLabel* pCodeLabel);
@@ -932,6 +944,7 @@ public:
     void EmitSUB        ();
     void EmitTHROW      ();
     void EmitUNALIGNED  (BYTE alignment);
+    void EmitUNBOX_ANY  (int token);
 
     // Overloads to simplify common usage patterns
     void EmitNEWOBJ     (BinderMethodID id, int numInArgs);

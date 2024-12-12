@@ -101,7 +101,7 @@ struct _MonoClass {
 	guint16    *interface_offsets_packed;
 	guint8     *interface_bitmap;
 
-	gint32      inlinearray_value; /* System.Runtime.CompilerServices.InlineArrayAttribute length value */
+	
 	guint       name_hash;
 
 	MonoClass **interfaces;
@@ -129,8 +129,7 @@ struct _MonoClass {
 	/* Infrequently used items. See class-accessors.c: InfrequentDataKind for what goes into here. */
 	MonoPropertyBag infrequent_data;
 
-	MonoClass **variant_search_table;
-	int variant_search_table_length;
+	void *variant_search_table;
 };
 
 struct _MonoClassDef {

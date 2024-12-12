@@ -33,9 +33,9 @@ namespace System
 
         // Do not replace the array allocation with Array.Empty. We don't want to have the overhead of
         // instantiating another generic type in addition to ArraySegment<T> for new type parameters.
-#pragma warning disable CA1825
+#pragma warning disable CA1825, IDE0300
         public static ArraySegment<T> Empty { get; } = new ArraySegment<T>(new T[0]);
-#pragma warning restore CA1825
+#pragma warning restore CA1825, IDE0300
 
         private readonly T[]? _array; // Do not rename (binary serialization)
         private readonly int _offset; // Do not rename (binary serialization)

@@ -1916,14 +1916,13 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 			MonoClass *swift_self = mono_class_try_get_swift_self_class ();
 			MonoClass *swift_error = mono_class_try_get_swift_error_class ();
 			MonoClass *swift_indirect_result = mono_class_try_get_swift_indirect_result_class ();
-			MonoClass *swift_error_ptr = mono_class_create_ptr (m_class_get_this_arg (swift_error));
+			MonoClass *swift_error_ptr = swift_error ? mono_class_create_ptr (m_class_get_this_arg (swift_error)) : NULL;
 			MonoClass *klass = mono_class_from_mono_type_internal (sig->params [pindex]);
 			if ((klass == swift_self || klass == swift_indirect_result) && sig->pinvoke) {
 				guint32 align;
 				MonoType *ptype = mini_get_underlying_type (sig->params [pindex]);
 				int size = mini_type_stack_size_full (ptype, &align, cinfo->pinvoke);
-				g_assert (size == 8);
-
+				g_assert (size == TARGET_SIZEOF_VOID_P);
 				ainfo->storage = ArgVtypeInIRegs;
 				ainfo->reg = (klass == swift_self) ? ARMREG_R20 : ARMREG_R8;
 				ainfo->nregs = 1;
@@ -2024,22 +2023,21 @@ arg_get_val (CallContext *ccontext, ArgInfo *ainfo, gpointer dest)
 	}
 #ifdef MONO_ARCH_HAVE_SWIFTCALL
 	case ArgSwiftVtypeLoweredRet: {
-		int i;
 		int gr = 0, fr = 0; // We can start from 0 since we are handling only returns
 		char *storage = (char*)dest;
-		for (i = 0; i < ainfo->nregs; ++i) {
-			switch (ainfo->struct_storage [i]) {
-				case ArgInIReg:
-					*(gsize*)(storage + ainfo->offsets [i]) = ccontext->gregs [gr++];
-					break;
-				case ArgInFReg:
-					*(double*)(storage + ainfo->offsets [i]) = ccontext->fregs [fr++];
-					break;
-				case ArgInFRegR4:
-					*(float*)(storage + ainfo->offsets [i]) = *(float*)&ccontext->fregs [fr++];
-					break;
-				default:
-					g_assert_not_reached ();
+		for (int k = 0; k < ainfo->nregs; ++k) {
+			switch (ainfo->struct_storage [k]) {
+			case ArgInIReg:
+				*(gsize*)(storage + ainfo->offsets [k]) = ccontext->gregs [gr++];
+				break;
+			case ArgInFReg:
+				*(double*)(storage + ainfo->offsets [k]) = ccontext->fregs [fr++];
+				break;
+			case ArgInFRegR4:
+				*(float*)(storage + ainfo->offsets [k]) = *(float*)&ccontext->fregs [fr++];
+				break;
+			default:
+				g_assert_not_reached ();
 			}
 		}
 		break;
@@ -2055,10 +2053,39 @@ arg_set_val (CallContext *ccontext, ArgInfo *ainfo, gpointer src)
 {
 	g_assert (arg_need_temp (ainfo));
 
-	float *src_float = (float*)src;
-	for (int k = 0; k < ainfo->nregs; k++) {
-		*(float*)&ccontext->fregs [ainfo->reg + k] = *src_float;
-		src_float++;
+	switch (ainfo->storage) {
+	case ArgHFA: {
+		float *src_float = (float*)src;
+		for (int k = 0; k < ainfo->nregs; k++) {
+			*(float*)&ccontext->fregs [ainfo->reg + k] = *src_float;
+			src_float++;
+		}
+		break;
+	}
+#ifdef MONO_ARCH_HAVE_SWIFTCALL
+	case ArgSwiftVtypeLoweredRet: {
+		int gr = 0, fr = 0; // We can start from 0 since we are handling only returns
+		char *storage = (char*)src;
+		for (int k = 0; k < ainfo->nregs; k++) {
+			switch (ainfo->struct_storage [k]) {
+			case ArgInIReg:
+				ccontext->gregs [gr++] = *(gsize*)(storage + ainfo->offsets [k]);
+				break;
+			case ArgInFReg:
+				ccontext->fregs [fr++] = *(double*)(storage + ainfo->offsets [k]);
+				break;
+			case ArgInFRegR4:
+				*(float*)&ccontext->fregs [fr++] = *(float*)(storage + ainfo->offsets [k]);
+				break;
+			default:
+				g_assert_not_reached ();
+			}
+		}	
+		break;
+	}
+#endif /* MONO_ARCH_HAVE_SWIFTCALL */
+	default:
+		g_assert_not_reached ();
 	}
 }
 
@@ -2242,7 +2269,7 @@ gpointer
 mono_arch_get_swift_error (CallContext *ccontext, MonoMethodSignature *sig, int *arg_index)
 {
 	MonoClass *swift_error = mono_class_try_get_swift_error_class ();
-	MonoClass *swift_error_ptr = mono_class_create_ptr (m_class_get_this_arg (swift_error));
+	MonoClass *swift_error_ptr = swift_error ? mono_class_create_ptr (m_class_get_this_arg (swift_error)) : NULL;
 	for (guint i = 0; i < sig->param_count + sig->hasthis; i++) {
 		MonoClass *klass = mono_class_from_mono_type_internal (sig->params [i]);
 		if (klass && (klass == swift_error || klass == swift_error_ptr)) {
@@ -3093,7 +3120,7 @@ mono_arch_get_llvm_call_info (MonoCompile *cfg, MonoMethodSignature *sig)
 		linfo->ret.esize = cinfo->ret.esize;
 		break;
 	case ArgSwiftVtypeLoweredRet:
-		// LLVM compilation of P/Invoke wrappers is not supported
+		linfo->ret.storage = LLVMArgNone; // LLVM compilation of pinvoke wrappers is not supported, see emit_method_inner in mini-llvm.c
 		break;
 	default:
 		g_assert_not_reached ();
@@ -3160,7 +3187,7 @@ mono_arch_get_llvm_call_info (MonoCompile *cfg, MonoMethodSignature *sig)
 			lainfo->storage = LLVMArgVtypeInSIMDReg;
 			break;
 		case ArgSwiftError:
-			// LLVM compilation of P/Invoke wrappers is not supported
+			lainfo->storage = LLVMArgNone; // LLVM compilation of pinvoke wrappers is not supported, see emit_method_inner in mini-llvm.c
 			break;
 		default:
 			g_assert_not_reached ();
@@ -5031,7 +5058,10 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 			/* Atomic */
 		case OP_MEMORY_BARRIER:
-			arm_dmb (code, ARM_DMB_ISH);
+			if (ins->backend.memory_barrier_kind == MONO_MEMORY_BARRIER_ACQ)
+				arm_dmb (code, ARM_DMB_ISHLD);
+			else
+				arm_dmb (code, ARM_DMB_ISH);
 			break;
 		case OP_ATOMIC_ADD_I4: {
 			guint8 *buf [16];
@@ -5059,6 +5089,30 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			arm_movx (code, dreg, ARMREG_IP0);
 			break;
 		}
+		case OP_ATOMIC_EXCHANGE_U1: {
+			guint8 *buf [16];
+
+			buf [0] = code;
+			arm_ldxrb (code, ARMREG_IP0, sreg1);
+			arm_stlxrb (code, ARMREG_IP1, sreg2, sreg1);
+			arm_cbnzw (code, ARMREG_IP1, buf [0]);
+
+			arm_dmb (code, ARM_DMB_ISH);
+			arm_movx (code, dreg, ARMREG_IP0);
+			break;
+		}
+		case OP_ATOMIC_EXCHANGE_U2: {
+			guint8 *buf [16];
+
+			buf [0] = code;
+			arm_ldxrh (code, ARMREG_IP0, sreg1);
+			arm_stlxrh (code, ARMREG_IP1, sreg2, sreg1);
+			arm_cbnzw (code, ARMREG_IP1, buf [0]);
+
+			arm_dmb (code, ARM_DMB_ISH);
+			arm_movx (code, dreg, ARMREG_IP0);
+			break;
+		}
 		case OP_ATOMIC_EXCHANGE_I4: {
 			guint8 *buf [16];
 
@@ -5079,6 +5133,34 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			arm_stlxrx (code, ARMREG_IP1, sreg2, sreg1);
 			arm_cbnzw (code, ARMREG_IP1, buf [0]);
 
+			arm_dmb (code, ARM_DMB_ISH);
+			arm_movx (code, dreg, ARMREG_IP0);
+			break;
+		}
+		case OP_ATOMIC_CAS_U1: {
+			guint8 *buf [16];
+			buf [0] = code;
+			arm_ldxrb (code, ARMREG_IP0, sreg1);
+			arm_cmpw (code, ARMREG_IP0, ins->sreg3);
+			buf [1] = code;
+			arm_bcc (code, ARMCOND_NE, 0);
+			arm_stlxrb(code, ARMREG_IP1, sreg2, sreg1);
+			arm_cbnzw (code, ARMREG_IP1, buf [0]);
+			arm_patch_rel (buf [1], code, MONO_R_ARM64_BCC);
+			arm_dmb (code, ARM_DMB_ISH);
+			arm_movx (code, dreg, ARMREG_IP0);
+			break;
+		}
+		case OP_ATOMIC_CAS_U2: {
+			guint8 *buf [16];
+			buf [0] = code;
+			arm_ldxrh (code, ARMREG_IP0, sreg1);
+			arm_cmpw (code, ARMREG_IP0, ins->sreg3);
+			buf [1] = code;
+			arm_bcc (code, ARMCOND_NE, 0);
+			arm_stlxrh(code, ARMREG_IP1, sreg2, sreg1);
+			arm_cbnzw (code, ARMREG_IP1, buf [0]);
+			arm_patch_rel (buf [1], code, MONO_R_ARM64_BCC);
 			arm_dmb (code, ARM_DMB_ISH);
 			arm_movx (code, dreg, ARMREG_IP0);
 			break;
@@ -6486,6 +6568,30 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 		}
 		break;
 	}
+#ifdef MONO_ARCH_HAVE_SWIFTCALL
+	case ArgSwiftVtypeLoweredRet: {
+		if (cfg->method->wrapper_type == MONO_WRAPPER_NATIVE_TO_MANAGED) {
+			MonoInst *ins = cfg->ret;
+			int gr = 0, fr = 0; // We can start from 0 since we are handling only returns
+			for (int i = 0; i < cinfo->ret.nregs; ++i) {
+				switch (cinfo->ret.struct_storage [i]) {
+				case ArgInIReg:
+					code = emit_ldrx (code, gr++, ins->inst_basereg, GTMREG_TO_INT (ins->inst_offset + cinfo->ret.offsets [i]));
+					break;
+				case ArgInFRegR4:
+					code = emit_ldrfpw (code, fr++, ins->inst_basereg, GTMREG_TO_INT (ins->inst_offset + cinfo->ret.offsets [i]));
+					break;
+				case ArgInFReg:
+					code = emit_ldrfpx (code, fr++, ins->inst_basereg, GTMREG_TO_INT (ins->inst_offset + cinfo->ret.offsets [i]));
+					break;
+				default:
+					g_assert_not_reached ();
+				}
+			}
+		}
+		break;
+	}
+#endif /* MONO_ARCH_HAVE_SWIFTCALL */
 	default:
 		break;
 	}
@@ -6884,8 +6990,12 @@ mono_arch_opcode_supported (int opcode)
 	switch (opcode) {
 	case OP_ATOMIC_ADD_I4:
 	case OP_ATOMIC_ADD_I8:
+	case OP_ATOMIC_EXCHANGE_U1:
+	case OP_ATOMIC_EXCHANGE_U2:
 	case OP_ATOMIC_EXCHANGE_I4:
 	case OP_ATOMIC_EXCHANGE_I8:
+	case OP_ATOMIC_CAS_U1:
+	case OP_ATOMIC_CAS_U2:
 	case OP_ATOMIC_CAS_I4:
 	case OP_ATOMIC_CAS_I8:
 	case OP_ATOMIC_LOAD_I1:

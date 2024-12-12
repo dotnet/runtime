@@ -1,10 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
+
 namespace System.Drawing
 {
     public static class SystemColors
     {
+        internal static bool s_useAlternativeColorSet;
+
         public static Color ActiveBorder => Color.FromKnownColor(KnownColor.ActiveBorder);
         public static Color ActiveCaption => Color.FromKnownColor(KnownColor.ActiveCaption);
         public static Color ActiveCaptionText => Color.FromKnownColor(KnownColor.ActiveCaptionText);
@@ -47,5 +51,29 @@ namespace System.Drawing
         public static Color Window => Color.FromKnownColor(KnownColor.Window);
         public static Color WindowFrame => Color.FromKnownColor(KnownColor.WindowFrame);
         public static Color WindowText => Color.FromKnownColor(KnownColor.WindowText);
+
+        /// <summary>
+        /// When <see langword="true"/>, system <see cref="KnownColor"/> values will return
+        /// the alternative color set (as returned by <see cref="SystemColors"/> statics or
+        /// <see cref="Color.FromKnownColor(KnownColor)"/>). This is currently "dark mode"
+        /// variants of the system colors.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <see cref="KnownColor"/> <see cref="Color"/> values are always looked up every
+        /// time you use them and do not retain any other context. As such, existing
+        /// <see cref="Color"/> values will change when this property is set.
+        /// </para>
+        /// <para>
+        /// On Windows, system <see cref="KnownColor"/> values will always return the current
+        /// Windows color when the OS has a high contrast theme enabled.
+        /// </para>
+        /// </remarks>
+        [Experimental(Experimentals.SystemColorsDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
+        public static bool UseAlternativeColorSet
+        {
+            get => s_useAlternativeColorSet;
+            set => s_useAlternativeColorSet = value;
+        }
     }
 }

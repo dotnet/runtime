@@ -221,12 +221,10 @@ namespace System.Threading
             throw new PlatformNotSupportedException(SR.Arg_PlatformNotSupported); // Replaced by ThreadPoolBoundHandle.BindHandle
         }
 
-#pragma warning disable IDE0060 // Remove unused parameter
         [SupportedOSPlatform("windows")]
         public static bool BindHandle(SafeHandle osHandle)
         {
             throw new PlatformNotSupportedException(SR.Arg_PlatformNotSupported); // Replaced by ThreadPoolBoundHandle.BindHandle
         }
-#pragma warning restore IDE0060
     }
 }

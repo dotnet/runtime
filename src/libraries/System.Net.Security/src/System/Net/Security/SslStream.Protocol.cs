@@ -277,7 +277,7 @@ namespace System.Net.Security
 
         private static X509Certificate2? MakeEx(X509Certificate certificate)
         {
-            Debug.Assert(certificate != null, "certificate != null");
+            Debug.Assert(certificate != null);
 
             if (certificate.GetType() == typeof(X509Certificate2))
             {
@@ -686,7 +686,7 @@ namespace System.Net.Security
                 if (localCertificate == null)
                 {
                     if (NetEventSource.Log.IsEnabled())
-                        NetEventSource.Error(this, $"ServerCertSelectionDelegate returned no certificaete for '{_sslAuthenticationOptions.TargetHost}'.");
+                        NetEventSource.Error(this, $"ServerCertSelectionDelegate returned no certificate for '{_sslAuthenticationOptions.TargetHost}'.");
                     throw new AuthenticationException(SR.net_ssl_io_no_server_cert);
                 }
 
@@ -985,7 +985,7 @@ namespace System.Net.Security
             _headerSize = streamSizes.Header;
             _trailerSize = streamSizes.Trailer;
             _maxDataSize = streamSizes.MaximumMessage;
-            Debug.Assert(_maxDataSize > 0, "_maxDataSize > 0");
+            Debug.Assert(_maxDataSize > 0);
 
             SslStreamPal.QueryContextConnectionInfo(_securityContext!, ref _connectionInfo);
 #if DEBUG

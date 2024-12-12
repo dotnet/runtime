@@ -112,10 +112,12 @@ Function :
     SEHCleanupSignals
 
     Restore default signal handlers
+Parameters :
+    isChildProcess - indicates that it is called from a child process fork
 
     (no parameters, no return value)
 --*/
-void SEHCleanupSignals();
+void SEHCleanupSignals(bool isChildProcess);
 
 /*++
 Function :

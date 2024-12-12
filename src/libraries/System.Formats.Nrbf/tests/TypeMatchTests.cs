@@ -74,6 +74,34 @@ public class TypeMatchTests : ReadTests
     }
 
     [Fact]
+    public void ThrowsForNullType()
+    {
+        List<int> input = new List<int>();
+
+        SerializationRecord record = NrbfDecoder.Decode(Serialize(input));
+
+        Assert.Throws<ArgumentNullException>(() => record.TypeNameMatches(type: null));
+    }
+
+    [Fact]
+    public void TakesCustomOffsetsIntoAccount()
+    {
+        int[] input = [1, 2, 3];
+
+        SerializationRecord record = NrbfDecoder.Decode(Serialize(input));
+
+        Assert.True(record.TypeNameMatches(typeof(int[])));
+
+        Type nonSzArray = typeof(int).Assembly.GetType("System.Int32[*]");
+#if NET
+        Assert.False(nonSzArray.IsSZArray);
+        Assert.True(nonSzArray.IsVariableBoundArray);
+#endif
+        Assert.Equal(1, nonSzArray.GetArrayRank());
+        Assert.False(record.TypeNameMatches(nonSzArray));
+    }
+
+    [Fact]
     public void TakesGenericTypeDefinitionIntoAccount()
     {
         List<int> input = new List<int>();
@@ -302,6 +330,12 @@ public class TypeMatchTests : ReadTests
 
         Assert.True(one.TypeNameMatches(typeof(T)));
 
+        Assert.Equal(typeof(T).GetTypeFullNameIncludingTypeForwards(), one.TypeName.FullName);
+        if (typeof(T) != typeof(TimeSpan)) // TimeSpan is missing type forwards
+        {
+            Assert.Equal(typeof(T).GetAssemblyNameIncludingTypeForwards(), one.TypeName.AssemblyName!.FullName);
+        }
+
         foreach (Type type in PrimitiveTypes)
         {
             Assert.Equal(typeof(T) == type, one.TypeNameMatches(type));
@@ -328,7 +362,7 @@ public class TypeMatchTests : ReadTests
         }
         else
         {
-            Assert.True(arrayRecord is SZArrayRecord<ClassRecord>, userMessage: typeof(T).Name);
+            Assert.True(arrayRecord is SZArrayRecord<SerializationRecord>, userMessage: typeof(T).Name);
             Assert.True(arrayRecord.TypeNameMatches(typeof(T[])));
             Assert.Equal(arrayRecord.TypeName.GetElementType().AssemblyName.FullName, typeof(T).GetAssemblyNameIncludingTypeForwards());
         }

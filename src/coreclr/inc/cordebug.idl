@@ -5180,7 +5180,7 @@ interface ICorDebugNativeFrame : ICorDebugFrame
      * coherent state.  (Note that even if the frame is in a valid
      * state as far as the runtime is concerned, there still may be
      * problems - e.g. uninitialized local variables, etc.  The caller
-     * (or perhaps the user) is responsible for insuring coherency of
+     * (or perhaps the user) is responsible for ensuring coherency of
      * the running program.)
      *
      * Calling SetIP immediately invalidates all frames and chains for the

@@ -6,20 +6,20 @@ using System.IO;
 namespace Microsoft.Extensions.Configuration.Json
 {
     /// <summary>
-    /// Loads configuration key/values from a json stream into a provider.
+    /// Provides configuration key-value pairs that are obtained from a JSON stream.
     /// </summary>
     public class JsonStreamConfigurationProvider : StreamConfigurationProvider
     {
         /// <summary>
-        /// Constructor.
+        /// Initializes a new instance of the <see cref="JsonStreamConfigurationProvider"/> class.
         /// </summary>
         /// <param name="source">The <see cref="JsonStreamConfigurationSource"/>.</param>
         public JsonStreamConfigurationProvider(JsonStreamConfigurationSource source) : base(source) { }
 
         /// <summary>
-        /// Loads json configuration key/values from a stream into a provider.
+        /// Loads JSON configuration key-value pairs from a stream into a provider.
         /// </summary>
-        /// <param name="stream">The json <see cref="Stream"/> to load configuration data from.</param>
+        /// <param name="stream">The JSON <see cref="Stream"/> to load configuration data from.</param>
         public override void Load(Stream stream)
         {
             Data = JsonConfigurationFileParser.Parse(stream);

@@ -22,9 +22,9 @@ namespace System.Collections.Frozen
     }
     public abstract partial class FrozenSet<T>
     {
-        public System.Collections.Frozen.FrozenSet<T>.AlternateLookup<TAlternate> GetAlternateLookup<TAlternate>() { throw null; }
-        public bool TryGetAlternateLookup<TAlternate>(out System.Collections.Frozen.FrozenSet<T>.AlternateLookup<TAlternate> lookup) { throw null; }
-        public readonly partial struct AlternateLookup<TAlternate>
+        public System.Collections.Frozen.FrozenSet<T>.AlternateLookup<TAlternate> GetAlternateLookup<TAlternate>() where TAlternate : allows ref struct { throw null; }
+        public bool TryGetAlternateLookup<TAlternate>(out System.Collections.Frozen.FrozenSet<T>.AlternateLookup<TAlternate> lookup) where TAlternate : allows ref struct { throw null; }
+        public readonly partial struct AlternateLookup<TAlternate> where TAlternate : allows ref struct
         {
             private readonly object _dummy;
             private readonly int _dummyPrimitive;

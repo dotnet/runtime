@@ -106,7 +106,6 @@ struct PAL_LIMITED_CONTEXT
     uintptr_t  R29;
     uintptr_t  R30;
     uintptr_t  R31;
-    uintptr_t  R2;
 
     uintptr_t  SP;
     uintptr_t  IP;
@@ -153,7 +152,11 @@ struct PAL_LIMITED_CONTEXT
     uintptr_t  R13;
     uintptr_t  R14;
     uintptr_t  R15;
+#if defined(TARGET_WINDOWS)
+    uintptr_t  SSP;
+#else
     uintptr_t  __explicit_padding__;
+#endif // TARGET_WINDOWS
     Fp128       Xmm6;
     Fp128       Xmm7;
     Fp128       Xmm8;

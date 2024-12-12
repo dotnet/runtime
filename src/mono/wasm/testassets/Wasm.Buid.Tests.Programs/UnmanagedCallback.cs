@@ -6,10 +6,21 @@ public unsafe partial class Test
     public unsafe static int Main(string[] args)
     {
         ((IntPtr)(delegate* unmanaged<int,int>)&Interop.Managed8\u4F60Func).ToString();
-
         Console.WriteLine($"main: {args.Length}");
         Interop.UnmanagedFunc();
+
         return 42;
+    }
+}
+
+namespace Conflict.A {
+    file class Interop {
+        [UnmanagedCallersOnly(EntryPoint = "ConflictManagedFunc")]
+        public static int Managed8\u4F60Func(int number)
+        {
+            Console.WriteLine($"Conflict.A.Managed8\u4F60Func({number}) -> {number}");
+            return number;
+        }
     }
 }
 

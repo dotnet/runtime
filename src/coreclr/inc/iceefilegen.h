@@ -62,10 +62,9 @@ typedef HRESULT (__stdcall * PFN_DestroyICeeFileGen)(ICeeFileGen ** ceeFileGen);
 #define ICEE_CREATE_MACHINE_MASK       0x0000FF00  // space for up to 256 machine targets (note: most users just do a bit check, not an equality compare after applying the mask)
 #define ICEE_CREATE_MACHINE_ILLEGAL    0x00000000  // An illegal machine name
 #define ICEE_CREATE_MACHINE_I386       0x00000100  // Create a IMAGE_FILE_MACHINE_I386
-#define ICEE_CREATE_MACHINE_IA64       0x00000200  // Create a IMAGE_FILE_MACHINE_IA64
-#define ICEE_CREATE_MACHINE_AMD64      0x00000400  // Create a IMAGE_FILE_MACHINE_AMD64
-#define ICEE_CREATE_MACHINE_ARM        0x00000800  // Create a IMAGE_FILE_MACHINE_ARMNT
-#define ICEE_CREATE_MACHINE_ARM64      0x00001000  // Create a IMAGE_FILE_MACHINE_ARM64
+#define ICEE_CREATE_MACHINE_AMD64      0x00000200  // Create a IMAGE_FILE_MACHINE_AMD64
+#define ICEE_CREATE_MACHINE_ARM        0x00000400  // Create a IMAGE_FILE_MACHINE_ARMNT
+#define ICEE_CREATE_MACHINE_ARM64      0x00000800  // Create a IMAGE_FILE_MACHINE_ARM64
 
     // Pass this to CreateCeeFileEx to create a pure IL Exe or DLL
 #define ICEE_CREATE_FILE_PURE_IL  ICEE_CREATE_FILE_PE32         | \
@@ -150,7 +149,7 @@ class ICeeFileGen {
     // Emit the metadata from "emitter".
     // If 'section != 0, it will put the data in 'buffer'.  This
     // buffer is assumed to be in 'section' at 'offset' and of size 'buffLen'
-    // (should use GetSaveSize to insure that buffer is big enough
+    // (should use GetSaveSize to ensure that buffer is big enough
     virtual HRESULT EmitMetaDataAt (HCEEFILE ceeFile, IMetaDataEmit *emitter,
                                     HCEESECTION section, DWORD offset,
                                     BYTE* buffer, unsigned buffLen);

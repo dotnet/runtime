@@ -65,7 +65,7 @@ class CoreclrArguments:
 
         self.valid_arches = ["x64", "x86", "arm", "arm64", "loongarch64", "riscv64", "wasm"]
         self.valid_build_types = ["Debug", "Checked", "Release"]
-        self.valid_host_os = ["windows", "osx", "linux", "illumos", "solaris", "haiku", "browser", "android", "wasi"]
+        self.valid_host_os = ["windows", "osx", "linux", "illumos", "solaris", "haiku", "freebsd", "browser", "android", "wasi"]
 
         self.__initialize__(args)
 
@@ -175,7 +175,7 @@ class CoreclrArguments:
     def provide_default_host_os():
         """ Return a string representing the current host operating system.
 
-            Returns one of: linux, osx, windows, illumos, solaris, haiku
+            Returns one of: linux, osx, windows, illumos, solaris, haiku, freebsd
         """
 
         if sys.platform == "linux" or sys.platform == "linux2":
@@ -189,6 +189,8 @@ class CoreclrArguments:
             return 'illumos' if is_illumos else 'solaris'
         elif sys.platform == "haiku":
             return "haiku"
+        elif sys.platform.startswith("freebsd"):
+            return "freebsd"
         else:
             print("Unknown OS: %s" % sys.platform)
             sys.exit(1)

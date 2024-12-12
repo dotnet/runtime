@@ -452,9 +452,9 @@ ComMTMethodProps * DispatchMemberInfo::GetMemberProps(OBJECTREF MemberInfoObj, C
         }
         else if (CoreLibBinder::IsClass(pMemberInfoClass, CLASS__RT_FIELD_INFO))
         {
-            MethodDescCallSite getFieldHandle(METHOD__RTFIELD__GET_FIELDHANDLE, &MemberInfoObj);
+            MethodDescCallSite getFieldDesc(METHOD__RTFIELD__GET_FIELDESC, &MemberInfoObj);
             ARG_SLOT arg = ObjToArgSlot(MemberInfoObj);
-            FieldDesc* pFld = (FieldDesc*) getFieldHandle.Call_RetLPVOID(&arg);
+            FieldDesc* pFld = (FieldDesc*) getFieldDesc.Call_RetLPVOID(&arg);
             if (pFld)
                 pMemberProps = pMemberMap->GetMethodProps(pFld->GetMemberDef(), pFld->GetModule());
         }
