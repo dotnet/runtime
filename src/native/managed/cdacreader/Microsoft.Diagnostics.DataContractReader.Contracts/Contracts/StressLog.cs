@@ -10,38 +10,12 @@ using System.Numerics;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
-public record struct StressLogData(
-    uint LoggedFacilities,
-    uint Level,
-    uint MaxSizePerThread,
-    uint MaxSizeTotal,
-    int TotalChunks,
-    ulong TickFrequency,
-    ulong StartTimestamp,
-    TargetPointer Logs);
-
-public record struct ThreadStressLogData(
-    TargetPointer NextPointer,
-    ulong ThreadId,
-    bool WriteHasWrapped,
-    TargetPointer CurrentPointer,
-    TargetPointer ChunkListHead,
-    TargetPointer ChunkListTail,
-    TargetPointer CurrentWriteChunk);
-
-public record struct StressMsgData(
-    uint Facility,
-    TargetPointer FormatString,
-    ulong Timestamp,
-    IReadOnlyList<TargetPointer> Args);
-
 internal sealed class StressLogFactory : IContractFactory<IStressLog>
 {
     public IStressLog CreateContract(Target target, int version)
     {
         return version switch
         {
-            0 => new StressLog_0(target),
             1 => new StressLog_1(target),
             2 => new StressLog_2(target),
             _ => default(StressLog),
@@ -49,28 +23,14 @@ internal sealed class StressLogFactory : IContractFactory<IStressLog>
     }
 }
 
-public interface IStressLog : IContract
-{
-    static string IContract.Name { get; } = nameof(StressLog);
-    public virtual bool HasStressLog() => throw new NotImplementedException();
-    public virtual StressLogData GetStressLogData() => throw new NotImplementedException();
-    public virtual StressLogData GetStressLogData(TargetPointer stressLog) => throw new NotImplementedException();
-    public virtual IEnumerable<ThreadStressLogData> GetThreadStressLogs(TargetPointer Logs) => throw new NotImplementedException();
-    public virtual IEnumerable<StressMsgData> GetStressMessages(ThreadStressLogData threadLog) => throw new NotImplementedException();
-}
-
-file readonly struct StressLog : IStressLog
-{
-    // Everything throws NotImplementedException
-}
-
 #pragma warning disable CS9107 // Parameter 'Target target' is captured into the state of the enclosing type and its value is also passed to the base constructor. The value might be captured by the base class as well.
 // Shared portions of the contract for versions 0 through 2
-file abstract class StressLog_0_2(Target target) : IStressLog
+file abstract class StressLog_1_2(Target target) : IStressLog
 {
-    private static bool StressLogChunkValid(Data.StressLogChunk chunk)
+    private bool StressLogChunkValid(Data.StressLogChunk chunk)
     {
-        return chunk.Sig1 == 0xCFCFCFCF && chunk.Sig2 == 0xCFCFCFCF;
+        uint validSig = target.ReadGlobal<uint>(Constants.Globals.StressLogValidChunkSig);
+        return chunk.Sig1 == validSig && chunk.Sig2 == validSig;
     }
 
     public bool HasStressLog() => target.ReadGlobal<byte>(Constants.Globals.StressLogEnabled) != 0;
@@ -139,6 +99,32 @@ file abstract class StressLog_0_2(Target target) : IStressLog
 
             currentPointer = threadStressLog.Next;
         }
+    }
+
+    protected TargetPointer GetFormatPointer(ulong formatOffset)
+    {
+        if (target.ReadGlobal<byte>(Constants.Globals.StressLogHasModuleTable) == 0)
+        {
+            Data.StressLog stressLog = target.ProcessedData.GetOrAdd<Data.StressLog>(target.ReadGlobalPointer(Constants.Globals.StressLog));
+            return new TargetPointer(stressLog.ModuleOffset.Value + formatOffset);
+        }
+
+        TargetPointer moduleTable = target.ReadGlobalPointer(Constants.Globals.StressLogModuleTable);
+        uint moduleEntrySize = target.GetTypeInfo(DataType.StressLogModuleDesc).Size!.Value;
+        uint maxModules = target.ReadGlobal<uint>(Constants.Globals.StressLogMaxModules);
+        ulong cumulativeOffset = 0;
+        for (uint i = 0; i < maxModules; ++i)
+        {
+            Data.StressLogModuleDesc module = target.ProcessedData.GetOrAdd<Data.StressLogModuleDesc>(moduleTable + i * moduleEntrySize);
+            ulong relativeOffset = formatOffset - cumulativeOffset;
+            if (relativeOffset < module.Size.Value)
+            {
+                return new TargetPointer((ulong)module.BaseAddress + relativeOffset);
+            }
+            cumulativeOffset += module.Size.Value;
+        }
+
+        return TargetPointer.Null;
     }
 
     protected abstract StressMsgData GetStressMsgData(Data.StressMsg msg);
@@ -214,7 +200,7 @@ file abstract class StressLog_0_2(Target target) : IStressLog
                 && readPointer > currentPointer)
             {
                 // We've read all of the entries in the log,
-                // wrapped to the start, of the chunk list,
+                // wrapped to the start of the chunk list,
                 // and read up to the current write pointer.
                 // So we've read all messages.
                 break;
@@ -233,11 +219,11 @@ file abstract class StressLog_0_2(Target target) : IStressLog
 
     public bool IsPointerInStressLog(StressLogData stressLog, TargetPointer pointer)
     {
-        ulong chunckSize = target.GetTypeInfo(DataType.StressLogChunk).Size!.Value;
+        ulong chunkSize = target.GetTypeInfo(DataType.StressLogChunk).Size!.Value;
         StressLogMemory stressLogMemory = target.ProcessedData.GetOrAdd<StressLogMemory>(stressLog.Logs);
         foreach (TargetPointer chunk in stressLogMemory.Chunks)
         {
-            if (pointer >= chunk && pointer < chunk + chunckSize)
+            if (pointer >= chunk && pointer < chunk + chunkSize)
             {
                 return true;
             }
@@ -281,11 +267,19 @@ file abstract class StressLog_0_2(Target target) : IStressLog
     }
 }
 
-file sealed class StressLog_0(Target target) : StressLog_0_2(target)
+file sealed class StressLog_1(Target target) : StressLog_1_2(target)
 {
     protected override StressMsgData GetStressMsgData(Data.StressMsg msg)
     {
-        Data.StressLog stressLog = target.ProcessedData.GetOrAdd<Data.StressLog>(target.ReadGlobalPointer(Constants.Globals.StressLog));
+        // Message header layout:
+        // struct
+        // {
+        //     uint32_t numberOfArgsLow  : 3;
+        //     uint32_t formatOffset  : 26;
+        //     uint32_t numberOfArgsHigh : 3;
+        //     uint32_t facility;
+        //     uint64_t timeStamp;
+        // };
         uint pointerSize = (uint)target.PointerSize;
         uint payload = target.Read<uint>(msg.Header);
         int numArgs = (int)((payload & 0x7) | ((payload >> 29) & 0x7));
@@ -297,57 +291,29 @@ file sealed class StressLog_0(Target target) : StressLog_0_2(target)
 
         return new StressMsgData(
             Facility: target.Read<uint>((ulong)msg.Header + 4),
-            FormatString: new TargetPointer(stressLog.ModuleOffset.Value + ((payload >> 3) & ((1 << 26) - 1))),
+            FormatString: GetFormatPointer(((payload >> 3) & ((1 << 26) - 1))),
             Timestamp: target.Read<ulong>((ulong)msg.Header + 8),
             Args: args);
     }
 }
 
-file sealed class StressLog_1(Target target) : StressLog_0_2(target)
+file sealed class StressLog_2(Target target) : StressLog_1_2(target)
 {
     protected override StressMsgData GetStressMsgData(Data.StressMsg msg)
     {
-        uint pointerSize = (uint)target.PointerSize;
-        uint payload = target.Read<uint>(msg.Header);
-        int numArgs = (int)((payload & 0x7) | ((payload >> 29) & 0x7));
-        var args = new TargetPointer[numArgs];
-        for (int i = 0; i < numArgs; i++)
-        {
-            args[i] = target.ReadPointer((ulong)msg.Args + (ulong)(i * pointerSize));
-        }
+        // Message header layout:
+        // struct
+        // {
+        //     static const size_t formatOffsetLowBits = 26;
+        //     static const size_t formatOffsetHighBits = 13;
+        //
+        //     uint64_t facility: 32;
+        //     uint64_t numberOfArgs : 6;
+        //     uint64_t formatOffsetLow: formatOffsetLowBits;
+        //     uint64_t formatOffsetHigh: formatOffsetHighBits;
+        //     uint64_t timeStamp: 51;
+        // };
 
-        ulong formatOffset = ((payload >> 3) & ((1 << 26) - 1));
-
-        TargetPointer formatString = TargetPointer.Null;
-        ulong cumulativeOffset = 0;
-
-        TargetPointer moduleTable = target.ReadGlobalPointer(Constants.Globals.StressLogModuleTable);
-        uint moduleEntrySize = target.GetTypeInfo(DataType.StressLogModuleDesc).Size!.Value;
-        uint maxModules = target.ReadGlobal<uint>(Constants.Globals.StressLogMaxModules);
-        for (uint i = 0; i < maxModules; ++i)
-        {
-            Data.StressLogModuleDesc module = target.ProcessedData.GetOrAdd<Data.StressLogModuleDesc>(moduleTable + i * moduleEntrySize);
-            ulong relativeOffset = formatOffset - cumulativeOffset;
-            if (relativeOffset < module.Size.Value)
-            {
-                formatString = new TargetPointer((ulong)module.BaseAddress + relativeOffset);
-                break;
-            }
-            cumulativeOffset += module.Size.Value;
-        }
-
-        return new StressMsgData(
-            Facility: target.Read<uint>((ulong)msg.Header + 4),
-            FormatString: formatString,
-            Timestamp: target.Read<ulong>((ulong)msg.Header + 8),
-            Args: args);
-    }
-}
-
-file sealed class StressLog_2(Target target) : StressLog_0_2(target)
-{
-    protected override StressMsgData GetStressMsgData(Data.StressMsg msg)
-    {
         uint pointerSize = (uint)target.PointerSize;
 
         ulong payload1 = target.Read<ulong>(msg.Header);
@@ -360,27 +326,9 @@ file sealed class StressLog_2(Target target) : StressLog_0_2(target)
         }
         ulong formatOffset = ((payload1 >> 38) & ((1 << 26) - 1)) | ((payload2 & ((1ul << 13) - 1)) << 26);
 
-        TargetPointer formatString = TargetPointer.Null;
-        ulong cumulativeOffset = 0;
-
-        TargetPointer moduleTable = target.ReadGlobalPointer(Constants.Globals.StressLogModuleTable);
-        uint moduleEntrySize = target.GetTypeInfo(DataType.StressLogModuleDesc).Size!.Value;
-        uint maxModules = target.ReadGlobal<uint>(Constants.Globals.StressLogMaxModules);
-        for (uint i = 0; i < maxModules; ++i)
-        {
-            Data.StressLogModuleDesc module = target.ProcessedData.GetOrAdd<Data.StressLogModuleDesc>(moduleTable + i * moduleEntrySize);
-            ulong relativeOffset = formatOffset - cumulativeOffset;
-            if (relativeOffset < module.Size.Value)
-            {
-                formatString = new TargetPointer((ulong)module.BaseAddress + relativeOffset);
-                break;
-            }
-            cumulativeOffset += module.Size.Value;
-        }
-
         return new StressMsgData(
             Facility: (uint)payload1,
-            FormatString: formatString,
+            FormatString: GetFormatPointer(formatOffset),
             Timestamp: payload2 >> 13,
             Args: args);
     }

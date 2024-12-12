@@ -13,7 +13,7 @@ internal sealed class ThreadStressLog : IData<ThreadStressLog>
         Target.TypeInfo type = target.GetTypeInfo(DataType.ThreadStressLog);
 
         Next = target.ReadPointer(address + (ulong)type.Fields[nameof(Next)].Offset);
-        ThreadId = target.Read<uint>(address + (ulong)type.Fields[nameof(ThreadId)].Offset);
+        ThreadId = target.Read<ulong>(address + (ulong)type.Fields[nameof(ThreadId)].Offset);
         WriteHasWrapped = target.Read<byte>(address + (ulong)type.Fields[nameof(WriteHasWrapped)].Offset) != 0;
         CurrentPtr = target.ReadPointer(address + (ulong)type.Fields[nameof(CurrentPtr)].Offset);
         ChunkListHead = target.ReadPointer(address + (ulong)type.Fields[nameof(ChunkListHead)].Offset);

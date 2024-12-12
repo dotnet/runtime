@@ -573,6 +573,7 @@ public static class Program
                 },
                 "globals": {
                     "StressLogEnabled": [ "0x1", "uint8" ],
+                    "StressLogHasModuleTable": [ "0x1", "uint8" ],
                     "StressLogMaxModules": [ "0x5", "uint64" ],
                     "StressLogChunkSize": [ "0x8000", "uint32" ],
                     "StressLogMaxMessageSize": [ "0x208", "uint64" ],

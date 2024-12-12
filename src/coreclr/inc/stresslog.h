@@ -17,7 +17,7 @@
    extension (eg. strike). There is no memory allocation system calls etc to purtub things */
 
 // ******************************************************************************
-// WARNING!!!: These classes are used by the runtime and SOS in the diagnostics 
+// WARNING!!!: These classes are used by the runtime and SOS in the diagnostics
 // repo. Values should added or removed in a backwards and forwards compatible way.
 // See: https://github.com/dotnet/diagnostics/blob/main/src/shared/inc/stresslog.h
 //      https://github.com/dotnet/runtime/blob/main/src/coreclr/inc/stresslog.h
@@ -546,7 +546,7 @@ struct StressLogChunk
 #endif //!STRESS_LOG_READONLY
 
     StressLogChunk (StressLogChunk * p = NULL, StressLogChunk * n = NULL)
-        :prev (p), next (n), dwSig1 (0xCFCFCFCF), dwSig2 (0xCFCFCFCF)
+        :prev (p), next (n), dwSig1 (ValidChunkSig), dwSig2 (ValidChunkSig)
     {}
 
     char * StartPtr ()
@@ -561,8 +561,10 @@ struct StressLogChunk
 
     BOOL IsValid () const
     {
-        return dwSig1 == 0xCFCFCFCF && dwSig2 == 0xCFCFCFCF;
+        return dwSig1 == ValidChunkSig && dwSig2 == ValidChunkSig;
     }
+
+    static constexpr uint32_t ValidChunkSig = 0xCFCFCFCF;
 };
 
 // This class implements a circular stack of variable sized elements

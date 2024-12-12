@@ -631,9 +631,11 @@ CDAC_GLOBAL_POINTER(MiniMetaDataBuffMaxSize, &::g_MiniMetaDataBuffMaxSize)
 #ifdef STRESS_LOG
 CDAC_GLOBAL(StressLogEnabled, uint8, 1)
 CDAC_GLOBAL_POINTER(StressLog, &g_pStressLog)
+CDAC_GLOBAL(StressLogHasModuleTable, uint8, 1)
 CDAC_GLOBAL_POINTER(StressLogModuleTable, &g_pStressLog->modules)
 CDAC_GLOBAL(StressLogMaxModules, uint64, cdac_offsets<StressLog>::MAX_MODULES)
 CDAC_GLOBAL(StressLogChunkSize, uint32, STRESSLOG_CHUNK_SIZE)
+CDAC_GLOBAL(StressLogValidChunkSig, uint32, StressLogChunk::ValidChunkSig)
 CDAC_GLOBAL(StressLogMaxMessageSize, uint64, (uint64_t)StressMsg::maxMsgSize)
 #else
 CDAC_GLOBAL(StressLogEnabled, uint8, 0)
