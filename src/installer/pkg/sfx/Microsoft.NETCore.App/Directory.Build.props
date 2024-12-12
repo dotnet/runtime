@@ -175,7 +175,6 @@
     <PlatformManifestFileEntry Include="System.IO.Compression.Native.Aot.GuardCF.lib" IsNative="true" />
     <PlatformManifestFileEntry Include="aotminipal.lib" IsNative="true" />
     <!-- NativeAOT managed specific files -->
-    <PlatformManifestFileEntry Include="System.Private.DisabledReflection.dll" />
     <PlatformManifestFileEntry Include="System.Private.Reflection.Execution.dll" />
     <PlatformManifestFileEntry Include="System.Private.StackTraceMetadata.dll" />
     <PlatformManifestFileEntry Include="System.Private.TypeLoader.dll" />
@@ -283,6 +282,13 @@
     <!-- zlib-specific files -->
     <PlatformManifestFileEntry Include="libz.a" IsNative="true" />
     <PlatformManifestFileEntry Include="zlibstatic.lib" IsNative="true" />
+    <!-- brotli-specific files -->
+    <PlatformManifestFileEntry Include="libbrotlienc.a" IsNative="true" />
+    <PlatformManifestFileEntry Include="libbrotlidec.a" IsNative="true" />
+    <PlatformManifestFileEntry Include="libbrotlicommon.a" IsNative="true" />
+    <PlatformManifestFileEntry Include="brotlienc.lib" IsNative="true" />
+    <PlatformManifestFileEntry Include="brotlidec.lib" IsNative="true" />
+    <PlatformManifestFileEntry Include="brotlicommon.lib" IsNative="true" />
   </ItemGroup>
 
  <ItemGroup>

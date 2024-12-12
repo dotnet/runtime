@@ -186,10 +186,6 @@ internal static partial class Interop
         [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         public static partial int ldap_parse_reference(ConnectionHandle ldapHandle, IntPtr result, ref IntPtr referrals);
 
-        [LibraryImport(Libraries.Wldap32, EntryPoint = "ldap_create_sort_controlW")]
-        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
-        public static partial int ldap_create_sort_control(ConnectionHandle handle, IntPtr keys, byte critical, ref IntPtr control);
-
         [LibraryImport(Libraries.Wldap32, EntryPoint = "ldap_control_freeW")]
         [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         public static partial int ldap_control_free(IntPtr control);

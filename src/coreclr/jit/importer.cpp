@@ -7613,64 +7613,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         fgRemoveRefPred(removedEdge);
                         block->SetKindAndTargetEdge(BBJ_ALWAYS, retainedEdge);
                         Metrics.ImporterBranchFold++;
-
-                        // If we removed an edge carrying profile, try to do a local repair.
-                        //
-                        if (block->hasProfileWeight())
-                        {
-                            bool           repairWasComplete = true;
-                            weight_t const weight            = removedEdge->getLikelyWeight();
-
-                            if (weight > 0)
-                            {
-                                // Target block weight will increase.
-                                //
-                                BasicBlock* const target = block->GetTarget();
-                                assert(target->hasProfileWeight());
-                                target->setBBProfileWeight(target->bbWeight + weight);
-
-                                // Alternate weight will decrease
-                                //
-                                BasicBlock* const alternate = removedEdge->getDestinationBlock();
-                                assert(alternate->hasProfileWeight());
-                                weight_t const alternateNewWeight = alternate->bbWeight - weight;
-
-                                // If profile weights are consistent, expect at worst a slight underflow.
-                                //
-                                if (fgPgoConsistent && (alternateNewWeight < 0))
-                                {
-                                    assert(fgProfileWeightsEqual(alternateNewWeight, 0));
-                                }
-                                alternate->setBBProfileWeight(max(0.0, alternateNewWeight));
-
-                                // This will affect profile transitively, so in general
-                                // the profile will become inconsistent.
-                                //
-                                repairWasComplete = false;
-
-                                // But we can check for the special case where the
-                                // block's postdominator is target's target (simple
-                                // if/then/else/join).
-                                //
-                                if (target->KindIs(BBJ_ALWAYS))
-                                {
-                                    repairWasComplete = alternate->KindIs(BBJ_ALWAYS) &&
-                                                        (alternate->GetTarget() == target->GetTarget());
-                                }
-                            }
-
-                            if (!repairWasComplete)
-                            {
-                                JITDUMP("Profile data could not be locally repaired. Data %s inconsistent.\n",
-                                        fgPgoConsistent ? "is now" : "was already");
-
-                                if (fgPgoConsistent)
-                                {
-                                    Metrics.ProfileInconsistentImporterBranchFold++;
-                                    fgPgoConsistent = false;
-                                }
-                            }
-                        }
+                        fgRepairProfileCondToUncond(block, retainedEdge, removedEdge,
+                                                    &Metrics.ProfileInconsistentImporterBranchFold);
                     }
 
                     if (!op1->OperIs(GT_CNS_INT))

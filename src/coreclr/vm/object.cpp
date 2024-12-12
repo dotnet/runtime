@@ -366,11 +366,12 @@ void STDCALL CopyValueClassUnchecked(void* dest, void* src, MethodTable *pMT)
 
     if (pMT->ContainsGCPointers())
     {
-        memmoveGCRefs(dest, src, pMT->GetNumInstanceFieldBytes());
+        memmoveGCRefs(dest, src, pMT->GetNumInstanceFieldBytesIfContainsGCPointers());
     }
     else
     {
-        switch (pMT->GetNumInstanceFieldBytes())
+        DWORD numInstanceFieldBytes = pMT->GetNumInstanceFieldBytes();
+        switch (numInstanceFieldBytes)
         {
         case 1:
             *(UINT8*)dest = *(UINT8*)src;
@@ -391,7 +392,7 @@ void STDCALL CopyValueClassUnchecked(void* dest, void* src, MethodTable *pMT)
             break;
 #endif // !ALIGN_ACCESS
         default:
-            memcpyNoGCRefs(dest, src, pMT->GetNumInstanceFieldBytes());
+            memcpyNoGCRefs(dest, src, numInstanceFieldBytes);
             break;
         }
     }
@@ -1547,7 +1548,7 @@ uint32_t StackTraceArray::CopyDataFrom(StackTraceArray const & src)
 
 #ifdef _DEBUG
 //===============================================================================
-// Code that insures that our unmanaged version of Nullable is consistant with
+// Code that ensures that our unmanaged version of Nullable is consistant with
 // the managed version Nullable<T> for all T.
 
 void Nullable::CheckFieldOffsets(TypeHandle nullableType)
@@ -1564,7 +1565,7 @@ void Nullable::CheckFieldOffsets(TypeHandle nullableType)
 
     MethodTable* nullableMT = nullableType.GetMethodTable();
 
-        // insure that the managed version of the table is the same as the
+        // ensure that the managed version of the table is the same as the
         // unmanaged.  Note that we can't do this in corelib.h because this
         // class is generic and field layout depends on the instantiation.
 
@@ -1600,26 +1601,14 @@ BOOL Nullable::IsNullableForTypeHelper(MethodTable* nullableMT, MethodTable* par
 }
 
 //===============================================================================
-// Returns true if nullableMT is Nullable<T> for T == paramMT
-
-BOOL Nullable::IsNullableForTypeHelperNoGC(MethodTable* nullableMT, MethodTable* paramMT)
-{
-    LIMITED_METHOD_CONTRACT;
-    if (!nullableMT->IsNullable())
-        return FALSE;
-
-    // we require an exact match of the parameter types
-    return TypeHandle(paramMT) == nullableMT->GetInstantiation()[0];
-}
-
-//===============================================================================
 int32_t Nullable::GetValueAddrOffset(MethodTable* nullableMT)
 {
     LIMITED_METHOD_CONTRACT;
 
     _ASSERTE(IsNullableType(nullableMT));
     _ASSERTE(strcmp(nullableMT->GetApproxFieldDescListRaw()[1].GetDebugName(), "value") == 0);
-    return nullableMT->GetApproxFieldDescListRaw()[1].GetOffset();
+    _ASSERTE(nullableMT->GetApproxFieldDescListRaw()[1].GetOffset() == nullableMT->GetNullableValueAddrOffset());
+    return nullableMT->GetNullableValueAddrOffset();
 }
 
 CLR_BOOL* Nullable::HasValueAddr(MethodTable* nullableMT) {
@@ -1637,7 +1626,8 @@ void* Nullable::ValueAddr(MethodTable* nullableMT) {
     LIMITED_METHOD_CONTRACT;
 
     _ASSERTE(strcmp(nullableMT->GetApproxFieldDescListRaw()[1].GetDebugName(), "value") == 0);
-    return (((BYTE*) this) + nullableMT->GetApproxFieldDescListRaw()[1].GetOffset());
+    _ASSERTE(nullableMT->GetApproxFieldDescListRaw()[1].GetOffset() == nullableMT->GetNullableValueAddrOffset());
+    return (((BYTE*) this) + nullableMT->GetNullableValueAddrOffset());
 }
 
 //===============================================================================
@@ -1738,53 +1728,6 @@ BOOL Nullable::UnBox(void* destPtr, OBJECTREF boxedVal, MethodTable* destMT)
 
 //===============================================================================
 // Special Logic to unbox a boxed T as a nullable<T>
-// Does not handle type equivalence (may conservatively return FALSE)
-BOOL Nullable::UnBoxNoGC(void* destPtr, OBJECTREF boxedVal, MethodTable* destMT)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-    Nullable* dest = (Nullable*) destPtr;
-
-    // We should only get here if we are unboxing a T as a Nullable<T>
-    _ASSERTE(IsNullableType(destMT));
-
-    // We better have a concrete instantiation, or our field offset asserts are not useful
-    _ASSERTE(!destMT->ContainsGenericVariables());
-
-    if (boxedVal == NULL)
-    {
-        // Logically we are doing *dest->HasValueAddr(destMT) = false;
-        // We zero out the whole structure because it may contain GC references
-        // and these need to be initialized to zero.   (could optimize in the non-GC case)
-        InitValueClass(destPtr, destMT);
-    }
-    else
-    {
-        if (!IsNullableForTypeNoGC(destMT, boxedVal->GetMethodTable()))
-        {
-            // For safety's sake, also allow true nullables to be unboxed normally.
-            // This should not happen normally, but we want to be robust
-            if (destMT == boxedVal->GetMethodTable())
-            {
-                CopyValueClass(dest, boxedVal->GetData(), destMT);
-                return TRUE;
-            }
-            return FALSE;
-        }
-
-        *dest->HasValueAddr(destMT) = true;
-        CopyValueClass(dest->ValueAddr(destMT), boxedVal->UnBox(), boxedVal->GetMethodTable());
-    }
-    return TRUE;
-}
-
-//===============================================================================
-// Special Logic to unbox a boxed T as a nullable<T>
 // Does not do any type checks.
 void Nullable::UnBoxNoCheck(void* destPtr, OBJECTREF boxedVal, MethodTable* destMT)
 {
@@ -1817,6 +1760,7 @@ void Nullable::UnBoxNoCheck(void* destPtr, OBJECTREF boxedVal, MethodTable* dest
             // For safety's sake, also allow true nullables to be unboxed normally.
             // This should not happen normally, but we want to be robust
             CopyValueClass(dest, boxedVal->GetData(), destMT);
+            return;
         }
 
         *dest->HasValueAddr(destMT) = true;

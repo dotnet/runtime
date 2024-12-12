@@ -273,7 +273,7 @@ JS_ENGINES = [NODE_JS]
     </PropertyGroup>
 
     <RemoveDir Directories="$(EMSDK_PATH)" />
-    
+
     <ItemGroup>
       <EmsdkFiles   Condition="'%(PackageReference.Identity)' != 'runtime.$(_portableHostOS)-$(BuildArchitecture).Microsoft.NETCore.Runtime.Wasm.Node.Transport' and '%(PackageReference.Identity)' != 'Microsoft.NET.Runtime.Emscripten.$(EmsdkVersion).Python.win-$(BuildArchitecture)'"
                     Include="$(NuGetPackageRoot)\$([System.String]::Copy(%(PackageReference.Identity)).ToLowerInvariant())\%(PackageReference.Version)\tools\**" />
@@ -295,7 +295,7 @@ JS_ENGINES = [NODE_JS]
     <ReadLinesFromFile File="$(EMSDK_PATH)emsdk_env$(ScriptExt)">
       <Output TaskParameter="Lines" PropertyName="_EmsdkEnvFileText" />
     </ReadLinesFromFile>
-    <WriteLinesToFile File="$(EMSDK_PATH)emsdk_env$(ScriptExt)" 
+    <WriteLinesToFile File="$(EMSDK_PATH)emsdk_env$(ScriptExt)"
                       Overwrite="true"
                       Lines="$(_EmsdkPaths);$(_EmsdkEnvFileText)" />
     <WriteLinesToFile File="$(EMSDK_PATH)emscripten/.emscripten"
@@ -313,7 +313,7 @@ JS_ENGINES = [NODE_JS]
 
     <PropertyGroup>
       <ShouldProvisionEmscripten>false</ShouldProvisionEmscripten>
-    </PropertyGroup>    
+    </PropertyGroup>
   </Target>
 
   <!-- Sets up WASI SDK if you don't have the WASI_SDK_PATH env variable set -->
@@ -365,8 +365,8 @@ JS_ENGINES = [NODE_JS]
     See https://github.com/llvm/llvm-project/pull/98373
     See https://github.com/dotnet/runtime/issues/104773
     -->
-    <Exec Command="wasm-opt --version" IgnoreExitCode="true" 
-      IgnoreStandardErrorWarningFormat="true" 
+    <Exec Command="wasm-opt --version" IgnoreExitCode="true"
+      IgnoreStandardErrorWarningFormat="true"
       StandardErrorImportance="low"
       StandardOutputImportance="Low" >
       <Output TaskParameter="ExitCode" PropertyName="_WasmOptExitCode"/>
@@ -1094,16 +1094,16 @@ JS_ENGINES = [NODE_JS]
         <Destination>$(RuntimeBinDir)$(MonoStaticLibFileName)</Destination>
       </_MonoRuntimeArtifacts>
       <_MonoRuntimeArtifacts Include="$(_MonoAotCrossFilePath)" Condition="Exists($(_MonoAotCrossFilePath))">
-        <Destination>$(RuntimeBinDir)cross\$(OutputRID)\$(MonoAotCrossName)$(ExeSuffix)</Destination>
+        <Destination>$(MonoAotCrossDir)$(MonoAotCrossName)$(ExeSuffix)</Destination>
       </_MonoRuntimeArtifacts>
       <_MonoRuntimeArtifacts Include="$(_MonoAotCrossFilePath).dbg" Condition="Exists('$(_MonoAotCrossFilePath).dbg')">
-        <Destination>$(RuntimeBinDir)cross\$(OutputRID)\$(MonoAotCrossName).dbg</Destination>
+        <Destination>$(MonoAotCrossDir)$(MonoAotCrossName).dbg</Destination>
       </_MonoRuntimeArtifacts>
       <_MonoRuntimeArtifacts Include="$(_MonoAotCrossFilePath).dwarf" Condition="Exists('$(_MonoAotCrossFilePath).dwarf')">
-        <Destination>$(RuntimeBinDir)cross\$(OutputRID)\$(MonoAotCrossName).dwarf</Destination>
+        <Destination>$(MonoAotCrossDir)$(MonoAotCrossName).dwarf</Destination>
       </_MonoRuntimeArtifacts>
       <_MonoRuntimeArtifacts Include="$(MonoObjCrossDir)out\bin\PDB\$(MonoAotCrossName).pdb" Condition="Exists('$(MonoObjCrossDir)out\bin\PDB\$(MonoAotCrossName).pdb')">
-        <Destination>$(RuntimeBinDir)cross\$(OutputRID)\$(MonoAotCrossName).pdb</Destination>
+        <Destination>$(MonoAotCrossDir)$(MonoAotCrossName).pdb</Destination>
       </_MonoRuntimeArtifacts>
       <!-- copy the mono runtime component shared or static libraries -->
       <_MonoRuntimeArtifacts Include="@(_MonoRuntimeComponentsStaticFilePath)">
@@ -1119,10 +1119,10 @@ JS_ENGINES = [NODE_JS]
         <Destination>$(RuntimeBinDir)libc++abi.so.1</Destination>
       </_MonoRuntimeArtifacts>
       <_MonoRuntimeArtifacts Condition="'$(HostOS)' == 'Linux' and ((('$(MonoAOTBundleLLVMOptimizer)' == 'true' or '$(MonoAOTEnableLLVM)' == 'true') and '$(MonoUseLibCxx)' == 'true') or '$(TargetArchitecture)' == 'wasm')" Include="$(MonoLLVMDir)\$(_MonoLLVMHostArchitecture)\lib\libc++.so.1">
-        <Destination>$(RuntimeBinDir)cross\$(OutputRID)\libc++.so.1</Destination>
+        <Destination>$(MonoAotCrossDir)libc++.so.1</Destination>
       </_MonoRuntimeArtifacts>
       <_MonoRuntimeArtifacts Condition="'$(HostOS)' == 'Linux' and ((('$(MonoAOTBundleLLVMOptimizer)' == 'true' or '$(MonoAOTEnableLLVM)' == 'true') and '$(MonoUseLibCxx)' == 'true') or '$(TargetArchitecture)' == 'wasm')" Include="$(MonoLLVMDir)\$(_MonoLLVMHostArchitecture)\lib\libc++abi.so.1">
-        <Destination>$(RuntimeBinDir)cross\$(OutputRID)\libc++abi.so.1</Destination>
+        <Destination>$(MonoAotCrossDir)libc++abi.so.1</Destination>
       </_MonoRuntimeArtifacts>
       <_MonoRuntimeArtifacts Condition="'$(MonoBundleLLVMOptimizer)' == 'true'" Include="$(MonoLLVMDir)\$(_MonoLLVMHostArchitecture)\bin\llc$(ExeSuffix)">
         <Destination>$(RuntimeBinDir)\llc$(ExeSuffix)</Destination>
@@ -1131,10 +1131,10 @@ JS_ENGINES = [NODE_JS]
         <Destination>$(RuntimeBinDir)\opt$(ExeSuffix)</Destination>
       </_MonoRuntimeArtifacts>
       <_MonoRuntimeArtifacts Condition="'$(MonoAOTBundleLLVMOptimizer)' == 'true'" Include="$(MonoLLVMDir)\$(_MonoLLVMHostArchitecture)\bin\llc$(ExeSuffix)">
-        <Destination>$(RuntimeBinDir)cross\$(OutputRID)\llc$(ExeSuffix)</Destination>
+        <Destination>$(MonoAotCrossDir)llc$(ExeSuffix)</Destination>
       </_MonoRuntimeArtifacts>
       <_MonoRuntimeArtifacts Condition="'$(MonoAOTBundleLLVMOptimizer)' == 'true'" Include="$(MonoLLVMDir)\$(_MonoLLVMHostArchitecture)\bin\opt$(ExeSuffix)">
-        <Destination>$(RuntimeBinDir)cross\$(OutputRID)\opt$(ExeSuffix)</Destination>
+        <Destination>$(MonoAotCrossDir)opt$(ExeSuffix)</Destination>
       </_MonoRuntimeArtifacts>
       <_MonoIncludeArtifacts Include="$(MonoObjDir)out\include\**" />
       <_MonoRuntimeArtifacts Condition="'$(MonoComponentsStatic)' != 'true' and Exists('$(MonoObjDir)out\lib\Mono.release.framework')" Include="@(_MonoRuntimeComponentsSharedFilePath)">
@@ -1207,9 +1207,6 @@ JS_ENGINES = [NODE_JS]
       </_MonoRuntimeArtifacts>
       <_MonoRuntimeArtifacts Condition="('$(TargetsBrowser)' == 'true'  or '$(TargetsWasi)' == 'true') and '$(BuildMonoAOTCrossCompilerOnly)' != 'true'" Include="$(MonoObjDir)out\lib\libmono-wasm-nosimd.a">
         <Destination>$(RuntimeBinDir)libmono-wasm-nosimd.a</Destination>
-      </_MonoRuntimeArtifacts>
-      <_MonoRuntimeArtifacts Condition="('$(TargetsBrowser)' == 'true'  or '$(TargetsWasi)' == 'true') and '$(BuildMonoAOTCrossCompilerOnly)' != 'true'" Include="$(MonoObjDir)_deps\fetchzlibng-build\libz.a">
-        <Destination>$(RuntimeBinDir)libz.a</Destination>
       </_MonoRuntimeArtifacts>
     </ItemGroup>
 

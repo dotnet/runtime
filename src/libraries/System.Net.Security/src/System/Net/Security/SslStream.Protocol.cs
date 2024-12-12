@@ -686,7 +686,7 @@ namespace System.Net.Security
                 if (localCertificate == null)
                 {
                     if (NetEventSource.Log.IsEnabled())
-                        NetEventSource.Error(this, $"ServerCertSelectionDelegate returned no certificaete for '{_sslAuthenticationOptions.TargetHost}'.");
+                        NetEventSource.Error(this, $"ServerCertSelectionDelegate returned no certificate for '{_sslAuthenticationOptions.TargetHost}'.");
                     throw new AuthenticationException(SR.net_ssl_io_no_server_cert);
                 }
 

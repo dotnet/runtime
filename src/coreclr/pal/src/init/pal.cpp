@@ -22,16 +22,14 @@ SET_DEFAULT_DEBUG_CHANNEL(PAL); // some headers have code with asserts, so do th
 #include "pal/cs.hpp"
 #include "pal/file.hpp"
 #include "pal/map.hpp"
-#include "../objmgr/shmobjectmanager.hpp"
+#include "../objmgr/listedobjectmanager.hpp"
 #include "pal/seh.hpp"
 #include "pal/palinternal.h"
 #include "pal/sharedmemory.h"
-#include "pal/shmemory.h"
 #include "pal/process.h"
 #include "../thread/procprivate.hpp"
 #include "pal/module.h"
 #include "pal/virtual.h"
-#include "pal/misc.h"
 #include "pal/environ.h"
 #include "pal/utils.h"
 #include "pal/debug.h"
@@ -299,7 +297,7 @@ Initialize(
 {
     PAL_ERROR palError = ERROR_GEN_FAILURE;
     CPalThread *pThread = nullptr;
-    CSharedMemoryObjectManager *pshmom = nullptr;
+    CListedObjectManager *plom = nullptr;
     LPWSTR command_line = nullptr;
     LPWSTR exe_path = nullptr;
     int retval = -1;
@@ -402,7 +400,7 @@ Initialize(
         if (FALSE == EnvironInitialize())
         {
             palError = ERROR_PALINIT_ENV;
-            goto CLEANUP0;
+            goto CLEANUP1;
         }
 
         if (!INIT_IncreaseDescriptorLimit())
@@ -416,15 +414,7 @@ Initialize(
         {
             ERROR("Shared memory static initialization failed!\n");
             palError = ERROR_PALINIT_SHARED_MEMORY_MANAGER;
-            goto CLEANUP0;
-        }
-
-        /* initialize the shared memory infrastructure */
-        if (!SHMInitialize())
-        {
-            ERROR("Shared memory initialization failed!\n");
-            palError = ERROR_PALINIT_SHM;
-            goto CLEANUP0;
+            goto CLEANUP1;
         }
 
         //
@@ -482,23 +472,23 @@ Initialize(
         // Initialize the object manager
         //
 
-        pshmom = new(std::nothrow) CSharedMemoryObjectManager();
-        if (nullptr == pshmom)
+        plom = new(std::nothrow) CListedObjectManager();
+        if (nullptr == plom)
         {
             ERROR("Unable to allocate new object manager\n");
             palError = ERROR_OUTOFMEMORY;
             goto CLEANUP1b;
         }
 
-        palError = pshmom->Initialize();
+        palError = plom->Initialize();
         if (NO_ERROR != palError)
         {
             ERROR("object manager initialization failed!\n");
-            delete pshmom;
+            delete plom;
             goto CLEANUP1b;
         }
 
-        g_pObjectManager = pshmom;
+        g_pObjectManager = plom;
 
         //
         // Initialize the synchronization manager
@@ -689,8 +679,6 @@ CLEANUP1b:
 CLEANUP1a:
     // Cleanup global process data
 CLEANUP1:
-    SHMCleanup();
-CLEANUP0:
     CleanupCGroup();
 CLEANUP0a:
     TLSCleanup();

@@ -170,7 +170,11 @@ bool Compiler::fgRemoveUnreachableBlocks(CanRemoveBlockBody canRemoveBlock)
 //
 PhaseStatus Compiler::fgComputeDominators()
 {
-    assert(m_dfsTree != nullptr);
+    if (m_dfsTree == nullptr)
+    {
+        m_dfsTree = fgComputeDfs();
+    }
+
     if (m_domTree == nullptr)
     {
         m_domTree = FlowGraphDominatorTree::Build(m_dfsTree);
@@ -752,25 +756,13 @@ PhaseStatus Compiler::fgPostImportationCleanup()
         }
     }
 
-    // Did we alter any flow or EH?
-    //
-    const bool madeFlowChanges = (addedBlocks > 0) || (delCnt > 0) || (removedBlks > 0);
-
-    // Renumber the basic blocks if so.
-    //
-    if (madeFlowChanges)
-    {
-        JITDUMP("\nRenumbering the basic blocks for fgPostImportationCleanup\n");
-        fgRenumberBlocks();
-    }
-
 #ifdef DEBUG
     fgVerifyHandlerTab();
 #endif // DEBUG
 
     // Did we make any changes?
     //
-    const bool madeChanges = madeFlowChanges || addedTemps;
+    const bool madeChanges = (addedBlocks > 0) || (delCnt > 0) || (removedBlks > 0) || addedTemps;
 
     // Note that we have now run post importation cleanup,
     // so we can enable more stringent checking.
@@ -838,13 +830,6 @@ bool Compiler::fgCanCompactBlock(BasicBlock* block)
         return false;
     }
 
-    // We don't want to compact blocks that are in different hot/cold regions
-    //
-    if (fgInDifferentRegions(block, target))
-    {
-        return false;
-    }
-
     // We cannot compact two blocks in different EH regions.
     //
     if (!BasicBlock::sameEHRegion(block, target))
@@ -880,6 +865,10 @@ bool Compiler::fgCanCompactBlock(BasicBlock* block)
 void Compiler::fgCompactBlock(BasicBlock* block)
 {
     assert(fgCanCompactBlock(block));
+
+    // We shouldn't churn the flowgraph after doing hot/cold splitting
+    assert(fgFirstColdBlock == nullptr);
+
     BasicBlock* const target = block->GetTarget();
 
     JITDUMP("\nCompacting " FMT_BB " into " FMT_BB ":\n", target->bbNum, block->bbNum);
@@ -1364,6 +1353,9 @@ bool Compiler::fgOptimizeEmptyBlock(BasicBlock* block)
 {
     assert(block->isEmpty());
 
+    // We shouldn't churn the flowgraph after doing hot/cold splitting
+    assert(fgFirstColdBlock == nullptr);
+
     bool        madeChanges = false;
     BasicBlock* bPrev       = block->Prev();
 
@@ -1405,12 +1397,6 @@ bool Compiler::fgOptimizeEmptyBlock(BasicBlock* block)
 
             /* Do not remove a block that jumps to itself - used for while (true){} */
             if (block->TargetIs(block))
-            {
-                break;
-            }
-
-            // can't allow fall through into cold code
-            if (block->IsLastHotBlock(this))
             {
                 break;
             }
@@ -4463,8 +4449,11 @@ bool Compiler::fgReorderBlocks(bool useProfile)
 // Template parameters:
 //    hasEH - If true, method has EH regions, so check that we don't try to move blocks in different regions
 //
+// Parameters:
+//    dfsTree - The depth-first traversal of the flowgraph
+//
 template <bool hasEH>
-void Compiler::fgMoveHotJumps()
+void Compiler::fgMoveHotJumps(FlowGraphDfsTree* dfsTree)
 {
 #ifdef DEBUG
     if (verbose)
@@ -4477,9 +4466,9 @@ void Compiler::fgMoveHotJumps()
     }
 #endif // DEBUG
 
-    EnsureBasicBlockEpoch();
-    BlockSet visitedBlocks(BlockSetOps::MakeEmpty(this));
-    BlockSetOps::AddElemD(this, visitedBlocks, fgFirstBB->bbNum);
+    assert(dfsTree != nullptr);
+    BitVecTraits traits(dfsTree->PostOrderTraits());
+    BitVec       visitedBlocks = BitVecOps::MakeEmpty(&traits);
 
     // If we have a funclet region, don't bother reordering anything in it.
     //
@@ -4487,7 +4476,12 @@ void Compiler::fgMoveHotJumps()
     for (BasicBlock* block = fgFirstBB; block != fgFirstFuncletBB; block = next)
     {
         next = block->Next();
-        BlockSetOps::AddElemD(this, visitedBlocks, block->bbNum);
+        if (!dfsTree->Contains(block))
+        {
+            continue;
+        }
+
+        BitVecOps::AddElemD(&traits, visitedBlocks, block->bbPostorderNum);
 
         // Don't bother trying to move cold blocks
         //
@@ -4534,7 +4528,8 @@ void Compiler::fgMoveHotJumps()
         }
 
         BasicBlock* target         = targetEdge->getDestinationBlock();
-        bool        isBackwardJump = BlockSetOps::IsMember(this, visitedBlocks, target->bbNum);
+        bool        isBackwardJump = BitVecOps::IsMember(&traits, visitedBlocks, target->bbPostorderNum);
+        assert(dfsTree->Contains(target));
 
         if (isBackwardJump)
         {
@@ -4553,7 +4548,8 @@ void Compiler::fgMoveHotJumps()
                 //
                 targetEdge     = unlikelyEdge;
                 target         = targetEdge->getDestinationBlock();
-                isBackwardJump = BlockSetOps::IsMember(this, visitedBlocks, target->bbNum);
+                isBackwardJump = BitVecOps::IsMember(&traits, visitedBlocks, target->bbPostorderNum);
+                assert(dfsTree->Contains(target));
 
                 if (isBackwardJump)
                 {
@@ -4696,7 +4692,7 @@ void Compiler::fgDoReversePostOrderLayout()
             }
         }
 
-        fgMoveHotJumps</* hasEH */ false>();
+        fgMoveHotJumps</* hasEH */ false>(dfsTree);
 
         return;
     }
@@ -4769,7 +4765,7 @@ void Compiler::fgDoReversePostOrderLayout()
         fgInsertBBafter(pair.callFinally, pair.callFinallyRet);
     }
 
-    fgMoveHotJumps</* hasEH */ true>();
+    fgMoveHotJumps</* hasEH */ true>(dfsTree);
 }
 
 //-----------------------------------------------------------------------------
@@ -4943,6 +4939,9 @@ weight_t Compiler::ThreeOptLayout::GetLayoutCost(unsigned startPos, unsigned end
 //   block - The block to consider creating fallthrough from
 //   next - The block to consider creating fallthrough into
 //
+// Returns:
+//   The cost
+//
 weight_t Compiler::ThreeOptLayout::GetCost(BasicBlock* block, BasicBlock* next)
 {
     assert(block != nullptr);
@@ -4959,6 +4958,115 @@ weight_t Compiler::ThreeOptLayout::GetCost(BasicBlock* block, BasicBlock* next)
     }
 
     return maxCost;
+}
+
+//-----------------------------------------------------------------------------
+// Compiler::ThreeOptLayout::GetPartitionCostDelta: Computes the current cost of the given partitions,
+// and the cost of swapping S2 and S3, returning the difference between them.
+//
+// Parameters:
+//   s1Start - The starting position of the first partition
+//   s2Start - The starting position of the second partition
+//   s3Start - The starting position of the third partition
+//   s3End - The ending position (inclusive) of the third partition
+//   s4End - The ending position (inclusive) of the fourth partition
+//
+// Returns:
+//   The difference in cost between the current and proposed layouts.
+//   A negative delta indicates the proposed layout is an improvement.
+//
+weight_t Compiler::ThreeOptLayout::GetPartitionCostDelta(
+    unsigned s1Start, unsigned s2Start, unsigned s3Start, unsigned s3End, unsigned s4End)
+{
+    BasicBlock* const s2Block     = blockOrder[s2Start];
+    BasicBlock* const s2BlockPrev = blockOrder[s2Start - 1];
+    BasicBlock* const s3Block     = blockOrder[s3Start];
+    BasicBlock* const s3BlockPrev = blockOrder[s3Start - 1];
+    BasicBlock* const lastBlock   = blockOrder[s3End];
+
+    // Evaluate the cost of swapping S2 and S3
+    weight_t currCost = GetCost(s2BlockPrev, s2Block) + GetCost(s3BlockPrev, s3Block);
+    weight_t newCost  = GetCost(s2BlockPrev, s3Block) + GetCost(lastBlock, s2Block);
+
+    // Consider flow into S4, if the partition exists
+    if (s3End < s4End)
+    {
+        BasicBlock* const s4StartBlock = blockOrder[s3End + 1];
+        currCost += GetCost(lastBlock, s4StartBlock);
+        newCost += GetCost(s3BlockPrev, s4StartBlock);
+    }
+    else
+    {
+        assert(s3End == s4End);
+        currCost += lastBlock->bbWeight;
+        newCost += s3BlockPrev->bbWeight;
+    }
+
+    return newCost - currCost;
+}
+
+//-----------------------------------------------------------------------------
+// Compiler::ThreeOptLayout::SwapPartitions: Swap the specified partitions.
+// It is assumed (and asserted) that the swap is profitable.
+//
+// Parameters:
+//   s1Start - The starting position of the first partition
+//   s2Start - The starting position of the second partition
+//   s3Start - The starting position of the third partition
+//   s3End - The ending position (inclusive) of the third partition
+//   s4End - The ending position (inclusive) of the fourth partition
+//
+// Notes:
+//   Here is the proposed partition:
+//   S1: s1Start ~ s2Start-1
+//   S2: s2Start ~ s3Start-1
+//   S3: s3Start ~ s3End
+//   S4: remaining blocks
+//
+//   After the swap:
+//   S1: s1Start ~ s2Start-1
+//   S3: s3Start ~ s3End
+//   S2: s2Start ~ s3Start-1
+//   S4: remaining blocks
+//
+//   If 's3End' and 's4End' are the same, the fourth partition doesn't exist.
+//
+void Compiler::ThreeOptLayout::SwapPartitions(
+    unsigned s1Start, unsigned s2Start, unsigned s3Start, unsigned s3End, unsigned s4End)
+{
+    INDEBUG(const weight_t currLayoutCost = GetLayoutCost(s1Start, s4End));
+
+    // Swap the partitions
+    const unsigned     s1Size      = s2Start - s1Start;
+    const unsigned     s2Size      = s3Start - s2Start;
+    const unsigned     s3Size      = (s3End + 1) - s3Start;
+    BasicBlock** const regionStart = blockOrder + s1Start;
+    BasicBlock** const tempStart   = tempOrder + s1Start;
+    memcpy(tempStart, regionStart, sizeof(BasicBlock*) * s1Size);
+    memcpy(tempStart + s1Size, regionStart + s1Size + s2Size, sizeof(BasicBlock*) * s3Size);
+    memcpy(tempStart + s1Size + s3Size, regionStart + s1Size, sizeof(BasicBlock*) * s2Size);
+
+    // Copy remaining blocks in S4 over
+    const unsigned numBlocks     = (s4End - s1Start) + 1;
+    const unsigned swappedSize   = s1Size + s2Size + s3Size;
+    const unsigned remainingSize = numBlocks - swappedSize;
+    assert(numBlocks >= swappedSize);
+    memcpy(tempStart + swappedSize, regionStart + swappedSize, sizeof(BasicBlock*) * remainingSize);
+
+    std::swap(blockOrder, tempOrder);
+
+#ifdef DEBUG
+    // Don't bother checking if the cost improved for exceptionally costly layouts.
+    // Imprecision from summing large floating-point values can falsely trigger the below assert.
+    constexpr weight_t maxLayoutCostToCheck = (weight_t)UINT32_MAX;
+    if (currLayoutCost < maxLayoutCostToCheck)
+    {
+        // Ensure the swap improved the overall layout. Tolerate some imprecision.
+        const weight_t newLayoutCost = GetLayoutCost(s1Start, s4End);
+        assert((newLayoutCost < currLayoutCost) ||
+               Compiler::fgProfileWeightsEqual(newLayoutCost, currLayoutCost, 0.001));
+    }
+#endif // DEBUG
 }
 
 //-----------------------------------------------------------------------------
@@ -4981,7 +5089,6 @@ void Compiler::ThreeOptLayout::ConsiderEdge(FlowEdge* edge)
         return;
     }
 
-    edge->markVisited();
     BasicBlock* const srcBlk = edge->getSourceBlock();
     BasicBlock* const dstBlk = edge->getDestinationBlock();
 
@@ -5031,6 +5138,7 @@ void Compiler::ThreeOptLayout::ConsiderEdge(FlowEdge* edge)
         return;
     }
 
+    edge->markVisited();
     cutPoints.Push(edge);
 }
 
@@ -5185,39 +5293,36 @@ void Compiler::ThreeOptLayout::Run()
 }
 
 //-----------------------------------------------------------------------------
-// Compiler::ThreeOptLayout::RunThreeOptPass: Runs 3-opt for the given block range.
+// Compiler::ThreeOptLayout::RunGreedyThreeOptPass: Runs 3-opt for the given block range,
+// using a greedy strategy for finding partitions to swap.
 //
 // Parameters:
 //   startBlock - The first block of the range to reorder
 //   endBlock - The last block (inclusive) of the range to reorder
 //
-bool Compiler::ThreeOptLayout::RunThreeOptPass(BasicBlock* startBlock, BasicBlock* endBlock)
+// Returns:
+//   True if we reordered anything, false otherwise
+//
+// Notes:
+//   For methods with more than a trivial number of basic blocks,
+//   iteratively trying every cut point is prohibitively expensive.
+//   Instead, add the non-fallthrough successor edges of each block to a priority queue,
+//   and try to create fallthrough on each edge via partition swaps, starting with the hottest edges.
+//   For each swap, repopulate the priority queue with edges along the modified cut points.
+//
+bool Compiler::ThreeOptLayout::RunGreedyThreeOptPass(unsigned startPos, unsigned endPos)
 {
-    assert(startBlock != nullptr);
-    assert(endBlock != nullptr);
     assert(cutPoints.Empty());
+    assert(startPos < endPos);
+    bool modified = false;
 
-    bool           modified  = false;
-    const unsigned startPos  = ordinals[startBlock->bbNum];
-    const unsigned endPos    = ordinals[endBlock->bbNum];
-    const unsigned numBlocks = (endPos - startPos + 1);
-    assert((startPos != 0) || startBlock->IsFirst());
-    assert(startPos <= endPos);
-
-    if (numBlocks < 3)
-    {
-        JITDUMP("Not enough blocks to partition anything. Skipping reordering.\n");
-        return false;
-    }
+    JITDUMP("Running greedy 3-opt pass.\n");
 
     // Initialize cutPoints with candidate branches in this section
     for (unsigned position = startPos; position <= endPos; position++)
     {
         AddNonFallthroughSuccs(position);
     }
-
-    INDEBUG(weight_t currLayoutCost = GetLayoutCost(startPos, endPos);)
-    JITDUMP("Initial layout cost: %f\n", currLayoutCost);
 
     // For each candidate edge, determine if it's profitable to partition after the source block
     // and before the destination block, and swap the partitions to create fallthrough.
@@ -5226,7 +5331,7 @@ bool Compiler::ThreeOptLayout::RunThreeOptPass(BasicBlock* startBlock, BasicBloc
     while (!cutPoints.Empty())
     {
         FlowEdge* const candidateEdge = cutPoints.Pop();
-        assert(candidateEdge->visited());
+        candidateEdge->markUnvisited();
 
         BasicBlock* const srcBlk = candidateEdge->getSourceBlock();
         BasicBlock* const dstBlk = candidateEdge->getDestinationBlock();
@@ -5261,8 +5366,8 @@ bool Compiler::ThreeOptLayout::RunThreeOptPass(BasicBlock* startBlock, BasicBloc
         // If the new cost improves upon the current cost, then we can justify the swap.
 
         const bool isForwardJump = (srcPos < dstPos);
-        weight_t   currCost, newCost;
-        unsigned   part1Size, part2Size, part3Size;
+        unsigned   s2Start, s3Start, s3End;
+        weight_t   costChange;
 
         if (isForwardJump)
         {
@@ -5277,118 +5382,153 @@ bool Compiler::ThreeOptLayout::RunThreeOptPass(BasicBlock* startBlock, BasicBloc
             // S3: dstPos ~ endPos
             // S2: srcPos+1 ~ dstPos-1
             // S4: remaining blocks
-            part1Size = srcPos - startPos + 1;
-            part2Size = dstPos - srcPos - 1;
-            part3Size = endPos - dstPos + 1;
-
-            // Don't include branches into S4 in the cost calculation,
-            // since we're only considering branches within this region.
-            currCost = GetCost(srcBlk, blockOrder[srcPos + 1]) + GetCost(blockOrder[dstPos - 1], dstBlk) +
-                       blockOrder[endPos]->bbWeight;
-            newCost = GetCost(srcBlk, dstBlk) + GetCost(blockOrder[endPos], blockOrder[srcPos + 1]) +
-                      blockOrder[dstPos - 1]->bbWeight;
+            s2Start    = srcPos + 1;
+            s3Start    = dstPos;
+            s3End      = endPos;
+            costChange = GetPartitionCostDelta(startPos, s2Start, s3Start, s3End, endPos);
         }
         else
         {
-            assert(dstPos < srcPos);
-
+            // For backward jumps, we will employ a greedy 4-opt approach to find the ideal cut point
+            // between the destination and source blocks.
             // Here is the proposed partition:
             // S1: startPos ~ dstPos-1
-            // S2: dstPos ~ srcPos-1
-            // S3: srcPos
+            // S2: dstPos ~ s3Start-1
+            // S3: s3Start ~ srcPos
             // S4: srcPos+1 ~ endPos
             //
             // After the swap:
             // S1: startPos ~ dstPos-1
-            // S3: srcPos
-            // S2: dstPos ~ srcPos-1
+            // S3: s3Start ~ srcPos
+            // S2: dstPos ~ s3Start-1
             // S4: srcPos+1 ~ endPos
-            part1Size = dstPos - startPos;
-            part2Size = srcPos - dstPos;
-            part3Size = 1;
+            s2Start    = dstPos;
+            s3Start    = srcPos;
+            s3End      = srcPos;
+            costChange = BB_ZERO_WEIGHT;
 
-            currCost = GetCost(blockOrder[srcPos - 1], srcBlk) + GetCost(blockOrder[dstPos - 1], dstBlk);
-            newCost  = GetCost(srcBlk, dstBlk) + GetCost(blockOrder[dstPos - 1], srcBlk);
+            // The cut points before S2 and after S3 are fixed.
+            // We will search for the optimal cut point before S3.
+            BasicBlock* const s2Block     = blockOrder[s2Start];
+            BasicBlock* const s2BlockPrev = blockOrder[s2Start - 1];
+            BasicBlock* const lastBlock   = blockOrder[s3End];
 
-            if (srcPos != endPos)
+            // Because the above cut points are fixed, don't waste time re-computing their costs.
+            // Instead, pre-compute them here.
+            const weight_t currCostBase =
+                GetCost(s2BlockPrev, s2Block) +
+                ((s3End < endPos) ? GetCost(lastBlock, blockOrder[s3End + 1]) : lastBlock->bbWeight);
+            const weight_t newCostBase = GetCost(lastBlock, s2Block);
+
+            // Search for the ideal start to S3
+            for (unsigned position = s2Start + 1; position <= s3End; position++)
             {
-                currCost += GetCost(srcBlk, blockOrder[srcPos + 1]);
-                newCost += GetCost(blockOrder[srcPos - 1], blockOrder[srcPos + 1]);
-            }
-            else
-            {
-                currCost += srcBlk->bbWeight;
-                newCost += blockOrder[srcPos - 1]->bbWeight;
+                BasicBlock* const s3Block     = blockOrder[position];
+                BasicBlock* const s3BlockPrev = blockOrder[position - 1];
+
+                // Don't consider any cut points that would break up call-finally pairs
+                if (s3Block->KindIs(BBJ_CALLFINALLYRET))
+                {
+                    continue;
+                }
+
+                // Compute the cost delta of this partition
+                const weight_t currCost = currCostBase + GetCost(s3BlockPrev, s3Block);
+                const weight_t newCost =
+                    newCostBase + GetCost(s2BlockPrev, s3Block) +
+                    ((s3End < endPos) ? GetCost(s3BlockPrev, blockOrder[s3End + 1]) : s3BlockPrev->bbWeight);
+                const weight_t delta = newCost - currCost;
+
+                if (delta < costChange)
+                {
+                    costChange = delta;
+                    s3Start    = position;
+                }
             }
         }
 
         // Continue evaluating partitions if this one isn't profitable
-        if ((newCost >= currCost) || Compiler::fgProfileWeightsEqual(currCost, newCost, 0.001))
+        if ((costChange >= BB_ZERO_WEIGHT) || Compiler::fgProfileWeightsEqual(costChange, BB_ZERO_WEIGHT, 0.001))
         {
             continue;
         }
 
-        // We've found a profitable cut point. Continue with the swap.
-        JITDUMP("Creating fallthrough for " FMT_BB " -> " FMT_BB
-                " (current partition cost = %f, new partition cost = %f)\n",
-                srcBlk->bbNum, dstBlk->bbNum, currCost, newCost);
+        JITDUMP("Swapping partitions [" FMT_BB ", " FMT_BB "] and [" FMT_BB ", " FMT_BB "] (cost change = %f)\n",
+                blockOrder[s2Start]->bbNum, blockOrder[s3Start - 1]->bbNum, blockOrder[s3Start]->bbNum,
+                blockOrder[s3End]->bbNum, costChange);
 
-        // Swap the partitions
-        BasicBlock** const regionStart = blockOrder + startPos;
-        BasicBlock** const tempStart   = tempOrder + startPos;
-        memcpy(tempStart, regionStart, sizeof(BasicBlock*) * part1Size);
-        memcpy(tempStart + part1Size, regionStart + part1Size + part2Size, sizeof(BasicBlock*) * part3Size);
-        memcpy(tempStart + part1Size + part3Size, regionStart + part1Size, sizeof(BasicBlock*) * part2Size);
-
-        // For backward jumps, there might be additional blocks after 'srcBlk' that need to be copied over.
-        const unsigned swappedSize   = part1Size + part2Size + part3Size;
-        const unsigned remainingSize = numBlocks - swappedSize;
-        assert(numBlocks >= swappedSize);
-        assert((remainingSize == 0) || !isForwardJump);
-        memcpy(tempStart + swappedSize, regionStart + swappedSize, sizeof(BasicBlock*) * remainingSize);
-
-        std::swap(blockOrder, tempOrder);
+        SwapPartitions(startPos, s2Start, s3Start, s3End, endPos);
 
         // Update the ordinals for the blocks we moved
-        for (unsigned i = (startPos + part1Size); i <= endPos; i++)
+        for (unsigned i = s2Start; i <= endPos; i++)
         {
             ordinals[blockOrder[i]->bbNum] = i;
         }
 
         // Ensure this move created fallthrough from 'srcBlk' to 'dstBlk'
         assert((ordinals[srcBlk->bbNum] + 1) == ordinals[dstBlk->bbNum]);
-        modified = true;
 
         // At every cut point is an opportunity to consider more candidate edges.
         // To the left of each cut point, consider successor edges that don't fall through.
         // Ditto predecessor edges to the right of each cut point.
-        AddNonFallthroughSuccs(startPos + part1Size - 1);
-        AddNonFallthroughSuccs(startPos + part1Size + part2Size - 1);
-        AddNonFallthroughSuccs(startPos + part1Size + part2Size + part3Size - 1);
+        AddNonFallthroughSuccs(s2Start - 1);
+        AddNonFallthroughPreds(s2Start);
+        AddNonFallthroughSuccs(s3Start - 1);
+        AddNonFallthroughPreds(s3Start);
+        AddNonFallthroughSuccs(s3End);
 
-        AddNonFallthroughPreds(startPos + part1Size);
-        AddNonFallthroughPreds(startPos + part1Size + part2Size);
-
-        if (remainingSize != 0)
+        if (s3End < endPos)
         {
-            AddNonFallthroughPreds(startPos + part1Size + part2Size + part3Size);
+            AddNonFallthroughPreds(s3End + 1);
         }
 
-#ifdef DEBUG
-        // Ensure the swap improved the overall layout
-        const weight_t newLayoutCost = GetLayoutCost(startPos, endPos);
-        assert(newLayoutCost < currLayoutCost);
-        currLayoutCost = newLayoutCost;
-#endif // DEBUG
+        modified = true;
     }
+
+    return modified;
+}
+
+//-----------------------------------------------------------------------------
+// Compiler::ThreeOptLayout::RunThreeOptPass: Runs 3-opt for the given block range.
+//
+// Parameters:
+//   startBlock - The first block of the range to reorder
+//   endBlock - The last block (inclusive) of the range to reorder
+//
+// Returns:
+//   True if we reordered anything, false otherwise
+//
+bool Compiler::ThreeOptLayout::RunThreeOptPass(BasicBlock* startBlock, BasicBlock* endBlock)
+{
+    assert(startBlock != nullptr);
+    assert(endBlock != nullptr);
+
+    const unsigned startPos  = ordinals[startBlock->bbNum];
+    const unsigned endPos    = ordinals[endBlock->bbNum];
+    const unsigned numBlocks = (endPos - startPos + 1);
+    assert((startPos != 0) || startBlock->IsFirst());
+    assert(startPos <= endPos);
+
+    if (numBlocks < 3)
+    {
+        JITDUMP("Not enough blocks to partition anything. Skipping reordering.\n");
+        return false;
+    }
+
+    JITDUMP("Initial layout cost: %f\n", GetLayoutCost(startPos, endPos));
+    const bool modified = RunGreedyThreeOptPass(startPos, endPos);
 
     // Write back to 'tempOrder' so changes to this region aren't lost next time we swap 'tempOrder' and 'blockOrder'
     if (modified)
     {
         memcpy(tempOrder + startPos, blockOrder + startPos, sizeof(BasicBlock*) * numBlocks);
+        JITDUMP("Final layout cost: %f\n", GetLayoutCost(startPos, endPos));
+    }
+    else
+    {
+        JITDUMP("No changes made.\n");
     }
 
-    JITDUMP("Final layout cost: %f\n", currLayoutCost);
     return modified;
 }
 
@@ -5440,8 +5580,6 @@ PhaseStatus Compiler::fgUpdateFlowGraphPhase()
 // Arguments:
 //    doTailDuplication - true to attempt tail duplication optimization
 //    isPhase - true if being run as the only thing in a phase
-//    doAggressiveCompaction - if false, only compact blocks that jump to the next block
-//    to prevent modifying the flowgraph; else, compact as much as possible
 //
 // Returns: true if the flowgraph has been modified
 //
@@ -5449,9 +5587,7 @@ PhaseStatus Compiler::fgUpdateFlowGraphPhase()
 //    Debuggable code and Min Optimization JIT also introduces basic blocks
 //    but we do not optimize those!
 //
-bool Compiler::fgUpdateFlowGraph(bool doTailDuplication /* = false */,
-                                 bool isPhase /* = false */,
-                                 bool doAggressiveCompaction /* = true */)
+bool Compiler::fgUpdateFlowGraph(bool doTailDuplication /* = false */, bool isPhase /* = false */)
 {
 #ifdef DEBUG
     if (verbose && !isPhase)
@@ -5463,6 +5599,9 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication /* = false */,
     /* This should never be called for debuggable code */
 
     noway_assert(opts.OptimizationEnabled());
+
+    // We shouldn't be churning the flowgraph after doing hot/cold splitting
+    assert(fgFirstColdBlock == nullptr);
 
 #ifdef DEBUG
     if (verbose && !isPhase)
@@ -5620,9 +5759,7 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication /* = false */,
                     bNext->KindIs(BBJ_ALWAYS) && // the next block is a BBJ_ALWAYS block
                     !bNext->JumpsToNext() &&     // and it doesn't jump to the next block (we might compact them)
                     bNext->isEmpty() &&          // and it is an empty block
-                    !bNext->TargetIs(bNext) &&   // special case for self jumps
-                    !bDest->IsFirstColdBlock(this) &&
-                    !fgInDifferentRegions(block, bDest)) // do not cross hot/cold sections
+                    !bNext->TargetIs(bNext))     // special case for self jumps
                 {
                     assert(block->FalseTargetIs(bNext));
 
@@ -5664,20 +5801,6 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication /* = false */,
                     if (bNext->hasTryIndex() && !BasicBlock::sameTryRegion(block, bNext))
                     {
                         optimizeJump = false;
-                    }
-
-                    // If we are optimizing using real profile weights
-                    // then don't optimize a conditional jump to an unconditional jump
-                    // until after we have computed the edge weights
-                    //
-                    if (fgIsUsingProfileWeights())
-                    {
-                        // if block and bDest are in different hot/cold regions we can't do this optimization
-                        // because we can't allow fall-through into the cold region.
-                        if (fgInDifferentRegions(block, bDest))
-                        {
-                            optimizeJump = false;
-                        }
                     }
 
                     if (optimizeJump && isJumpToJoinFree)
@@ -5768,12 +5891,6 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication /* = false */,
                         /* Mark the block as removed */
                         bNext->SetFlags(BBF_REMOVED);
 
-                        // If this is the first Cold basic block update fgFirstColdBlock
-                        if (bNext->IsFirstColdBlock(this))
-                        {
-                            fgFirstColdBlock = bNext->Next();
-                        }
-
                         //
                         // If we removed the end of a try region or handler region
                         // we will need to update ebdTryLast or ebdHndLast.
@@ -5835,7 +5952,7 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication /* = false */,
 
             /* COMPACT blocks if possible */
 
-            if (fgCanCompactBlock(block) && (doAggressiveCompaction || block->JumpsToNext()))
+            if (fgCanCompactBlock(block))
             {
                 fgCompactBlock(block);
 
@@ -5969,7 +6086,7 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication /* = false */,
         fgVerifyHandlerTab();
         // Make sure that the predecessor lists are accurate
         fgDebugCheckBBlist();
-        fgDebugCheckUpdate(doAggressiveCompaction);
+        fgDebugCheckUpdate();
     }
 #endif // DEBUG
 
