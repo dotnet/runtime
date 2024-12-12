@@ -34,7 +34,7 @@ namespace System.Text.Json.Serialization.Tests
         public async Task DeserializeMemoryOfTAsync()
         {
             Memory<int> memoryInt = await Serializer.DeserializeWrapper<Memory<int>>("[1,2,3]");
-            AssertExtensions.SequenceEqual(new int[] { 1, 2, 3 }, memoryInt.Span);
+            AssertExtensions.SequenceEqual(new int[] { 1, 2, 3 }.AsSpan(), memoryInt.Span);
 
             Memory<EmptyClass> memoryPoco = new EmptyClass[] { new(), new(), new() }.AsMemory();
             Assert.Equal(3, memoryPoco.Length);
@@ -75,7 +75,7 @@ namespace System.Text.Json.Serialization.Tests
         {
             string json = @"{""Memory"":[1,2,3]}";
             MemoryOfTClass<int> memoryOfIntClass = await Serializer.DeserializeWrapper<MemoryOfTClass<int>>(json);
-            AssertExtensions.SequenceEqual(new int[] { 1, 2, 3 }, memoryOfIntClass.Memory.Span);
+            AssertExtensions.SequenceEqual(new int[] { 1, 2, 3 }.AsSpan(), memoryOfIntClass.Memory.Span);
         }
 
         [Fact]
@@ -97,7 +97,7 @@ namespace System.Text.Json.Serialization.Tests
         public async Task DeserializeMemoryByteAsync()
         {
             Memory<byte> memory = await Serializer.DeserializeWrapper<Memory<byte>>("\"VGhpcyBpcyBzb21lIHRlc3QgZGF0YSEhIQ==\"");
-            AssertExtensions.SequenceEqual(s_testData, memory.Span);
+            AssertExtensions.SequenceEqual(s_testData.AsSpan(), memory.Span);
 
             ReadOnlyMemory<byte> readOnlyMemory = await Serializer.DeserializeWrapper<ReadOnlyMemory<byte>>("\"VGhpcyBpcyBzb21lIHRlc3QgZGF0YSEhIQ==\"");
             AssertExtensions.SequenceEqual(s_testData, readOnlyMemory.Span);
@@ -135,7 +135,7 @@ namespace System.Text.Json.Serialization.Tests
             string json = @"{""Memory"":""VGhpcyBpcyBzb21lIHRlc3QgZGF0YSEhIQ==""}";
 
             MemoryOfTClass<byte> memoryOfByteClass = await Serializer.DeserializeWrapper<MemoryOfTClass<byte>>(json);
-            AssertExtensions.SequenceEqual<byte>(s_testData, memoryOfByteClass.Memory.Span);
+            AssertExtensions.SequenceEqual<byte>(s_testData.AsSpan(), memoryOfByteClass.Memory.Span);
         }
     }
 }

@@ -136,7 +136,7 @@ namespace System.Security.Cryptography.Tests
             int written = HashDataOneShot(key, stream, destination);
 
             Assert.Equal(MacSize, written);
-            AssertExtensions.SequenceEqual(expected, destination);
+            AssertExtensions.SequenceEqual(expected.AsSpan(), destination);
         }
 
         protected void VerifyHashDataStream_CryptographicOperations(ReadOnlySpan<byte> key, Stream stream, string output)
@@ -146,7 +146,7 @@ namespace System.Security.Cryptography.Tests
             int written = CryptographicOperations.HmacData(HashAlgorithm, key, stream, destination);
 
             Assert.Equal(MacSize, written);
-            AssertExtensions.SequenceEqual(expected, destination);
+            AssertExtensions.SequenceEqual(expected.AsSpan(), destination);
         }
 
         protected async Task VerifyHashDataStreamAsync(ReadOnlyMemory<byte> key, Stream stream, string output)
@@ -156,7 +156,7 @@ namespace System.Security.Cryptography.Tests
             int written = await HashDataOneShotAsync(key, stream, destination, cancellationToken: default);
 
             Assert.Equal(MacSize, written);
-            AssertExtensions.SequenceEqual(expected, destination.Span);
+            AssertExtensions.SequenceEqual(expected.AsSpan(), destination.Span);
         }
 
         protected async Task VerifyHashDataStreamAsync_CryptographicOperations(ReadOnlyMemory<byte> key, Stream stream, string output)
@@ -171,7 +171,7 @@ namespace System.Security.Cryptography.Tests
                 cancellationToken: default);
 
             Assert.Equal(MacSize, written);
-            AssertExtensions.SequenceEqual(expected, destination.Span);
+            AssertExtensions.SequenceEqual(expected.AsSpan(), destination.Span);
         }
 
         protected void VerifyHashDataStreamAllocating(byte[] key, Stream stream, string output, bool spanKey)
