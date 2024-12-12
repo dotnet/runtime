@@ -44,7 +44,7 @@ namespace ILCompiler
                 int numTokens = reader.ReadInt32();
 
                 bool[] tokenStates = new bool[numTokens];
-                if (reader.Read(MemoryMarshal.Cast<bool, byte>(tokenStates)) != numTokens)
+                if (reader.Read(MemoryMarshal.Cast<bool, byte>(tokenStates.AsSpan())) != numTokens)
                     throw new IOException("Unexpected end of file");
 
                 _reachabilityInfo.Add(new Guid(guidBytes), tokenStates);
