@@ -55,7 +55,6 @@ public class BuildPublishTests : BlazorWasmTestBase
         ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.BlazorBasicTestApp, "blz_aot", appendUnicodeToPath: testUnicode);
         BlazorBuild(info, config);
 
-        // NativeFilesType.AOT??
         PublishProject(info, config, new PublishOptions(AOT: true, UseCache: false));
     }
 
