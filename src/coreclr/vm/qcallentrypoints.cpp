@@ -162,6 +162,7 @@ static const Entry s_QCall[] =
     DllImportEntry(RuntimeMethodHandle_IsCAVisibleFromDecoratedType)
     DllImportEntry(RuntimeMethodHandle_Destroy)
     DllImportEntry(RuntimeMethodHandle_GetStubIfNeededSlow)
+    DllImportEntry(RuntimeMethodHandle_GetMethodBody)
     DllImportEntry(RuntimeModule_GetScopeName)
     DllImportEntry(RuntimeModule_GetFullyQualifiedName)
     DllImportEntry(RuntimeModule_GetTypes)

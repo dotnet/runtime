@@ -221,9 +221,6 @@ public:
     static
     FCDECL1(Object*, GetResolver, MethodDesc * pMethod);
 
-
-    static FCDECL2(RuntimeMethodBody*, GetMethodBody, ReflectMethodObject *pMethodUNSAFE, PTR_ReflectClassBaseObject pDeclaringType);
-
     static FCDECL1(FC_BOOL_RET, IsConstructor, MethodDesc *pMethod);
 
     static FCDECL1(Object*, GetLoaderAllocatorInternal, MethodDesc *pMethod);
@@ -253,6 +250,7 @@ extern "C" void QCALLTYPE RuntimeMethodHandle_GetTypicalMethodDefinition(MethodD
 extern "C" void QCALLTYPE RuntimeMethodHandle_StripMethodInstantiation(MethodDesc * pMethod, QCall::ObjectHandleOnStack refMethod);
 extern "C" void QCALLTYPE RuntimeMethodHandle_Destroy(MethodDesc * pMethod);
 extern "C" MethodDesc* QCALLTYPE RuntimeMethodHandle_GetStubIfNeededSlow(MethodDesc* pMethod, QCall::TypeHandle declaringTypeHandle, QCall::ObjectHandleOnStack methodInstantiation);
+extern "C" void QCALLTYPE RuntimeMethodHandle_GetMethodBody(MethodDesc* pMethod, EnregisteredTypeHandle pDeclaringType, QCall::ObjectHandleOnStack result);
 
 class RuntimeFieldHandle
 {
