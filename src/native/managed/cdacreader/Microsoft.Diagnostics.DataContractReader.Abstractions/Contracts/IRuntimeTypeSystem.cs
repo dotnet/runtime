@@ -80,6 +80,7 @@ internal interface IRuntimeTypeSystem : IContract
     #region TypeHandle inspection APIs
     public virtual TypeHandle GetTypeHandle(TargetPointer address) => throw new NotImplementedException();
     public virtual TargetPointer GetModule(TypeHandle typeHandle) => throw new NotImplementedException();
+
     // A canonical method table is either the MethodTable itself, or in the case of a generic instantiation, it is the
     // MethodTable of the prototypical instance.
     public virtual TargetPointer GetCanonicalMethodTable(TypeHandle typeHandle) => throw new NotImplementedException();
@@ -130,7 +131,7 @@ internal interface IRuntimeTypeSystem : IContract
     public virtual bool IsGenericMethodDefinition(MethodDescHandle methodDesc) => throw new NotImplementedException();
     public virtual ReadOnlySpan<TypeHandle> GetGenericMethodInstantiation(MethodDescHandle methodDesc) => throw new NotImplementedException();
 
-    // Return mdTokenNil (0x06000000) if the method doesn't have a token, otherwise return the token of the method
+    // Return mdtMethodDef (0x06000000) if the method doesn't have a token, otherwise return the token of the method
     public virtual uint GetMethodToken(MethodDescHandle methodDesc) => throw new NotImplementedException();
 
     // Return true if a MethodDesc represents an array method

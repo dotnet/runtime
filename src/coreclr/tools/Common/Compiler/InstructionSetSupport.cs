@@ -71,8 +71,13 @@ namespace ILCompiler
                 return "";
 
             // 64-bit ISA variants are not included in the mapping dictionary, so we use the containing type instead
-            if ((architecture, potentialType.Name) is (TargetArchitecture.X64, "X64") or (TargetArchitecture.ARM64, "Arm64"))
-                potentialType = (MetadataType)potentialType.ContainingType;
+            if (potentialType.Name is "X64" or "Arm64")
+            {
+                if (architecture is TargetArchitecture.X64 or TargetArchitecture.ARM64)
+                    potentialType = (MetadataType)potentialType.ContainingType;
+                else
+                    return "";
+            }
 
             // We assume that managed names in InstructionSetDesc.txt use an underscore separator for nested classes
             string suffix = "";

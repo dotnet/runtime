@@ -2405,6 +2405,9 @@ namespace System.DirectoryServices.AccountManagement
         // Must be called inside of lock(domainInfoLock)
         protected virtual void LoadDomainInfo()
         {
+            const int LdapDefaultPort = 389;
+            const int LdapsDefaultPort = 636;
+
             GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADStoreCtx", "LoadComputerInfo");
 
             Debug.Assert(this.ctxBase != null);
@@ -2418,12 +2421,22 @@ namespace System.DirectoryServices.AccountManagement
             this.dnsHostName = ADUtils.GetServerName(this.ctxBase);
 
             // Pull the requested port number
-            Uri ldapUri = new Uri(this.ctxBase.Path);
-            int port = ldapUri.Port != -1 ? ldapUri.Port : (ldapUri.Scheme.ToUpperInvariant() == "LDAPS" ? 636 : 389);
+            int port = LdapDefaultPort;
+            if (Uri.TryCreate(ctxBase.Path, UriKind.Absolute, out Uri ldapUri))
+            {
+                if (ldapUri.Port != -1)
+                {
+                    port = ldapUri.Port;
+                }
+                else if (string.Equals(ldapUri.Scheme, "LDAPS", StringComparison.OrdinalIgnoreCase))
+                {
+                    port = LdapsDefaultPort;
+                }
+            }
 
             string dnsDomainName = "";
 
-            using (DirectoryEntry rootDse = new DirectoryEntry("LDAP://" + this.dnsHostName + ":" + port + "/rootDse", "", "", AuthenticationTypes.Anonymous))
+            using (DirectoryEntry rootDse = new DirectoryEntry($"LDAP://{this.dnsHostName}:{port}/rootDse", "", "", AuthenticationTypes.Anonymous))
             {
                 this.defaultNamingContext = (string)rootDse.Properties["defaultNamingContext"][0];
                 this.contextBasePartitionDN = this.defaultNamingContext;

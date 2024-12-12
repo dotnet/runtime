@@ -72,4 +72,8 @@ public enum DataType
     RuntimeFunction,
     HashMap,
     Bucket,
+    UnwindInfo,
+    NonVtableSlot,
+    MethodImpl,
+    NativeCodeSlot,
 }
