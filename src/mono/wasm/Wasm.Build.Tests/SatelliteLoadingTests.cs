@@ -16,7 +16,7 @@ using System.Xml.Linq;
 
 #nullable enable
 
-namespace Wasm.Build.Tests.TestAppScenarios;
+namespace Wasm.Build.Tests;
 
 public class SatelliteLoadingTests : WasmTemplateTestsBase
 {
@@ -35,7 +35,7 @@ public class SatelliteLoadingTests : WasmTemplateTestsBase
         BuildProject(info, config);
 
         var result = await RunForBuildWithDotnetRun(new BrowserRunOptions(
-            Configuration: config, 
+            Configuration: config,
             TestScenario: "SatelliteAssembliesTest",
             BrowserQueryString: new NameValueCollection { {"loadAllSatelliteResources", loadAllSatelliteResources.ToString().ToLowerInvariant() } }
         ));

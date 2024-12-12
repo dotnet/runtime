@@ -11,7 +11,7 @@ using Xunit.Abstractions;
 
 #nullable enable
 
-namespace Wasm.Build.Tests.TestAppScenarios;
+namespace Wasm.Build.Tests;
 
 public class DebugLevelTests : WasmTemplateTestsBase
 {

@@ -13,7 +13,7 @@ using Microsoft.Playwright;
 
 #nullable enable
 
-namespace Wasm.Build.Tests.TestAppScenarios;
+namespace Wasm.Build.Tests;
 
 public class InterpPgoTests : WasmTemplateTestsBase
 {

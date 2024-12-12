@@ -10,7 +10,7 @@ using Xunit;
 
 #nullable enable
 
-namespace Wasm.Build.Tests.TestAppScenarios;
+namespace Wasm.Build.Tests;
 
 public class DownloadThenInitTests : WasmTemplateTestsBase
 {

@@ -51,7 +51,7 @@ namespace Wasm.Build.Tests.Blazor
             string extraProperties = "<WasmBuildNative>true</WasmBuildNative>";
             ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.BlazorBasicTestApp, "blz_relink", extraProperties: extraProperties);
             var buildOptions = new BuildOptions(ExtraMSBuildArgs: "-p:EmccLinkOptimizationFlag=-O2");
-            BlazorBuild(info, config, new BuildOptions(ExtraMSBuildArgs: "-p:EmccLinkOptimizationFlag=-O2"), isNativeBuild: true);
+            BlazorBuild(info, config, buildOptions, isNativeBuild: true);
             string projectDir = Path.GetFileName(Path.GetDirectoryName(Path.GetDirectoryName(info.ProjectFilePath)))!;
             File.Move(Path.Combine(s_buildEnv.LogRootPath, projectDir, $"{info.ProjectName}-build.binlog"),
                         Path.Combine(s_buildEnv.LogRootPath, projectDir, $"{info.ProjectName}-build-first.binlog"));

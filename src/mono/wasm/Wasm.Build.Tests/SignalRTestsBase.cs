@@ -6,7 +6,7 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.Collections.Specialized;
-using Wasm.Build.Tests.TestAppScenarios;
+using Wasm.Build.Tests;
 using Xunit.Abstractions;
 using Xunit;
 #nullable enable

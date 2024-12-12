@@ -15,7 +15,7 @@ using Xunit;
 
 #nullable enable
 
-namespace Wasm.Build.Tests.TestAppScenarios;
+namespace Wasm.Build.Tests;
 
 public partial class LibraryInitializerTests : WasmTemplateTestsBase
 {
@@ -27,7 +27,7 @@ public partial class LibraryInitializerTests : WasmTemplateTestsBase
     [Fact]
     public async Task LoadLibraryInitializer()
     {
-        Configuration config = Configuration.Debug;        
+        Configuration config = Configuration.Debug;
         ProjectInfo info = CopyTestAsset(config, false, TestAsset.WasmBasicTestApp, "LibraryInitializerTests_LoadLibraryInitializer");
         PublishProject(info, config);
         RunResult result = await RunForPublishWithWebServer(new BrowserRunOptions(config, TestScenario: "LibraryInitializerTest"));
@@ -43,7 +43,7 @@ public partial class LibraryInitializerTests : WasmTemplateTestsBase
     [Fact]
     public async Task AbortStartupOnError()
     {
-        Configuration config = Configuration.Debug;        
+        Configuration config = Configuration.Debug;
         ProjectInfo info = CopyTestAsset(config, false, TestAsset.WasmBasicTestApp, "LibraryInitializerTests_AbortStartupOnError");
         PublishProject(info, config);
 
