@@ -477,7 +477,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.ExtensionsTests
 
             byte[] rawData = akid.RawData;
 
-            AssertExtensions.SequenceEqual(keyId, rawData.AsSpan(6));
+            AssertExtensions.SequenceEqual(keyId.AsSpan(), rawData.AsSpan(6));
             Assert.Equal("308183808180", rawData.AsSpan(0, 6).ByteArrayToHex());
         }
 
