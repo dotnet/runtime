@@ -164,7 +164,7 @@ IEnumerable<ThreadStressLogData> GetThreadStressLogs(TargetPointer logs)
 }
 
 // Return messages going in reverse chronological order, newest first.
-IEnumerable<StressMsgData> GetStressMessages(ThreadStressLog threadLog)
+IEnumerable<StressMsgData> GetStressMessages(ThreadStressLogData threadLog)
 {
     // 1. Get the current message pointer from the log and the info about the current chunk the runtime is writing into.
     //    Record our current read pointer as the current message pointer.
