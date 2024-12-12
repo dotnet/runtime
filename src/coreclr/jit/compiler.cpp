@@ -4657,11 +4657,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     //
     DoPhase(this, PHASE_CLONE_FINALLY, &Compiler::fgCloneFinally);
 
-    // Drop back to just checking profile likelihoods.
-    //
-    activePhaseChecks &= ~PhaseChecks::CHECK_PROFILE;
-    activePhaseChecks |= PhaseChecks::CHECK_LIKELIHOODS;
-
     // Do some flow-related optimizations
     //
     if (opts.OptimizationEnabled())
@@ -4672,6 +4667,11 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
             return fgHeadTailMerge(true);
         });
 
+        // Drop back to just checking profile likelihoods.
+        //
+        activePhaseChecks &= ~PhaseChecks::CHECK_PROFILE;
+        activePhaseChecks |= PhaseChecks::CHECK_LIKELIHOODS;
+
         // Merge common throw blocks
         //
         DoPhase(this, PHASE_MERGE_THROWS, &Compiler::fgTailMergeThrows);
@@ -4679,6 +4679,13 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         // Run an early flow graph simplification pass
         //
         DoPhase(this, PHASE_EARLY_UPDATE_FLOW_GRAPH, &Compiler::fgUpdateFlowGraphPhase);
+    }
+    else
+    {
+        // Drop back to just checking profile likelihoods.
+        //
+        activePhaseChecks &= ~PhaseChecks::CHECK_PROFILE;
+        activePhaseChecks |= PhaseChecks::CHECK_LIKELIHOODS;
     }
 
     // Promote struct locals

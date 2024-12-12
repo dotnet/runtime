@@ -6576,6 +6576,14 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
                     FlowEdge* const newEdge = fgAddRefPred(crossJumpTarget, predBlock);
                     predBlock->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
                 }
+
+                // For tail merge we have a common successor of predBlock and
+                // crossJumpTarget, so the profile update can be done locally.
+                crossJumpTarget->bbWeight += predBlock->bbWeight;
+                if (crossJumpTarget->bbWeight > BB_ZERO_WEIGHT)
+                {
+                    crossJumpTarget->RemoveFlags(BBF_RUN_RARELY);
+                }
             }
 
             // We changed things

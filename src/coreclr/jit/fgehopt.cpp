@@ -2437,7 +2437,19 @@ PhaseStatus Compiler::fgTailMergeThrows()
                 case BBJ_SWITCH:
                 {
                     JITDUMP("*** " FMT_BB " now branching to " FMT_BB "\n", predBlock->bbNum, canonicalBlock->bbNum);
+                    FlowEdge* prevEdge      = fgGetPredForBlock(nonCanonicalBlock, predBlock);
+                    weight_t  removedWeight = predBlock->bbWeight * prevEdge->getLikelihood();
                     fgReplaceJumpTarget(predBlock, nonCanonicalBlock, canonicalBlock);
+
+                    // In practice, when we have true profile data, we can repair it locally here, since the no-return
+                    // call means that there is no contribution from nonCanonicalBlock to any of its successors.
+                    // Note that this might not be the case if we have profile data from e.g. synthesis, so this
+                    // repair is best-effort only.
+                    canonicalBlock->bbWeight += removedWeight;
+                    if (canonicalBlock->bbWeight > BB_ZERO_WEIGHT)
+                    {
+                        canonicalBlock->RemoveFlags(BBF_RUN_RARELY);
+                    }
                     updated = true;
                 }
                 break;
