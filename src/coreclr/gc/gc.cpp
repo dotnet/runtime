@@ -17150,13 +17150,13 @@ void gc_heap::handle_oom (oom_reason reason, size_t alloc_size,
     get_memory_info (&memory_load, &available_physical, &available_page_file);
 
     GCEventFireOOMDetails_V1 (
-        (size_t)oom_info.gc_index,
+        (uint64_t)oom_info.gc_index,
         (uint8_t)(*oom_info.allocated),
         (uint8_t)(*oom_info.reserved),
-        (size_t)oom_info.alloc_size,
+        (uint64_t)oom_info.alloc_size,
         (uint8_t)oom_info.reason,
         (uint8_t)oom_info.fgm,
-        (size_t)oom_info.size,
+        (uint64_t)oom_info.size,
         (uint8_t)oom_info.loh_p,
         (uint32_t)memory_load);
 
