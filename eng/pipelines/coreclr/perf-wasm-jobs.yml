@@ -171,26 +171,3 @@ jobs:
         logicalmachine: 'perftiger'
         downloadSpecificBuild: ${{ parameters.downloadSpecificBuild }}
         perfBranch: ${{ parameters.perfBranch }}
-
-- ${{if or(and(ne(variables['System.TeamProject'], 'public'), in(variables['Build.Reason'], 'Schedule')), in(variables['Build.DefinitionName'], 'runtime-wasm-perf')) }}:
-  # run mono wasm blazor perf job
-  - template: /eng/pipelines/common/platform-matrix.yml
-    parameters:
-      jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
-      buildConfig: release
-      runtimeFlavor: wasm
-      platforms:
-      - linux_x64
-      jobParameters:
-        testGroup: perf
-        liveLibrariesBuildConfig: Release
-        runtimeType: wasm
-        projectFile: $(Build.SourcesDirectory)/eng/testing/performance/blazor_perf.proj
-        runKind: blazor_scenarios
-        runJobTemplate: /eng/pipelines/coreclr/templates/run-scenarios-job.yml
-        # For working with a newer sdk, and previous tfm (eg. 9.0 sdk, and net8.0 tfm)
-        #additionalSetupParameters: '--dotnetversions 8.0.0' # passed to run-performance-job.py
-        logicalmachine: 'perftiger'
-        downloadSpecificBuild: ${{ parameters.downloadSpecificBuild }}
-        hybridGlobalization: True
-        perfBranch: ${{ parameters.perfBranch }}
