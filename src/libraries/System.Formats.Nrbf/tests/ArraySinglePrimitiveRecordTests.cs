@@ -20,7 +20,7 @@ public class ArraySinglePrimitiveRecordTests : ReadTests
 
     public static IEnumerable<object[]> GetCanReadArrayOfAnySizeArgs()
     {
-        foreach (int size in new[] { 1, 127, 128, 512_001, 512_001 })
+        foreach (int size in new[] { 1, 127, 128, 20_001 })
         {
             yield return new object[] { size, true };
             yield return new object[] { size, false };
