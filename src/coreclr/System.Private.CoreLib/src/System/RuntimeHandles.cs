@@ -1321,17 +1321,8 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern Resolver GetResolver(RuntimeMethodHandleInternal method);
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeMethodHandle_GetMethodBody")]
-        private static partial void GetMethodBody(RuntimeMethodHandleInternal method, nint declaringType, ObjectHandleOnStack result);
-
-        internal static RuntimeMethodBody? GetMethodBody(IRuntimeMethodInfo method, RuntimeType declaringType)
-        {
-            RuntimeMethodBody? result = null;
-            GetMethodBody(method.Value, declaringType.GetUnderlyingNativeHandle(), ObjectHandleOnStack.Create(ref result));
-            GC.KeepAlive(method);
-            GC.KeepAlive(declaringType);
-            return result;
-        }
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static extern RuntimeMethodBody? GetMethodBody(IRuntimeMethodInfo method, RuntimeType declaringType);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern bool IsConstructor(RuntimeMethodHandleInternal method);
