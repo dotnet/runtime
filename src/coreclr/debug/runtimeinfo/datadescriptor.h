@@ -342,6 +342,18 @@ CDAC_TYPE_FIELD(MethodDescChunk, /*uint8*/, Count, cdac_data<MethodDescChunk>::C
 CDAC_TYPE_FIELD(MethodDescChunk, /*uint16*/, FlagsAndTokenRange, cdac_data<MethodDescChunk>::FlagsAndTokenRange)
 CDAC_TYPE_END(MethodDescChunk)
 
+CDAC_TYPE_BEGIN(NonVtableSlot)
+CDAC_TYPE_SIZE(sizeof(MethodDesc::NonVtableSlot))
+CDAC_TYPE_END(NonVtableSlot)
+
+CDAC_TYPE_BEGIN(MethodImpl)
+CDAC_TYPE_SIZE(sizeof(MethodImpl))
+CDAC_TYPE_END(MethodImpl)
+
+CDAC_TYPE_BEGIN(NativeCodeSlot)
+CDAC_TYPE_SIZE(sizeof(MethodDesc::NativeCodeSlot))
+CDAC_TYPE_END(NativeCodeSlot)
+
 CDAC_TYPE_BEGIN(InstantiatedMethodDesc)
 CDAC_TYPE_SIZE(sizeof(InstantiatedMethodDesc))
 CDAC_TYPE_FIELD(InstantiatedMethodDesc, /*pointer*/, PerInstInfo, cdac_data<InstantiatedMethodDesc>::PerInstInfo)
@@ -496,6 +508,7 @@ CDAC_TYPE_END(CodeHeapListNode)
 
 CDAC_TYPE_BEGIN(ILCodeVersioningState)
 CDAC_TYPE_INDETERMINATE(ILCodeVersioningState)
+CDAC_TYPE_FIELD(ILCodeVersioningState, /*pointer*/, FirstVersionNode, cdac_data<ILCodeVersioningState>::FirstVersionNode)
 CDAC_TYPE_FIELD(ILCodeVersioningState, /*uint32*/, ActiveVersionKind, cdac_data<ILCodeVersioningState>::ActiveVersionKind)
 CDAC_TYPE_FIELD(ILCodeVersioningState, /*pointer*/, ActiveVersionNode, cdac_data<ILCodeVersioningState>::ActiveVersionNode)
 CDAC_TYPE_FIELD(ILCodeVersioningState, /*pointer*/, ActiveVersionModule, cdac_data<ILCodeVersioningState>::ActiveVersionModule)
@@ -514,6 +527,8 @@ CDAC_TYPE_END(NativeCodeVersionNode)
 CDAC_TYPE_BEGIN(ILCodeVersionNode)
 CDAC_TYPE_INDETERMINATE(ILCodeVersionNode)
 CDAC_TYPE_FIELD(ILCodeVersionNode, /*nuint*/, VersionId, cdac_data<ILCodeVersionNode>::VersionId)
+CDAC_TYPE_FIELD(ILCodeVersionNode, /*pointer*/, Next, cdac_data<ILCodeVersionNode>::Next)
+CDAC_TYPE_FIELD(ILCodeVersionNode, /*uint32*/, RejitState, cdac_data<ILCodeVersionNode>::RejitState)
 CDAC_TYPE_END(ILCodeVersionNode)
 
 CDAC_TYPE_BEGIN(ProfControlBlock)

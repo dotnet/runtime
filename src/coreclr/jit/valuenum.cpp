@@ -10807,7 +10807,11 @@ PhaseStatus Compiler::fgValueNumber()
     }
 
     assert(m_dfsTree != nullptr);
-    assert(m_loops != nullptr);
+
+    if (m_loops == nullptr)
+    {
+        m_loops = FlowGraphNaturalLoops::Find(m_dfsTree);
+    }
 
     m_blockToLoop = BlockToNaturalLoopMap::Build(m_loops);
     // Compute the side effects of loops.

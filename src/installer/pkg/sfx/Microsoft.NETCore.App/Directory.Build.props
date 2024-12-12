@@ -282,6 +282,13 @@
     <!-- zlib-specific files -->
     <PlatformManifestFileEntry Include="libz.a" IsNative="true" />
     <PlatformManifestFileEntry Include="zlibstatic.lib" IsNative="true" />
+    <!-- brotli-specific files -->
+    <PlatformManifestFileEntry Include="libbrotlienc.a" IsNative="true" />
+    <PlatformManifestFileEntry Include="libbrotlidec.a" IsNative="true" />
+    <PlatformManifestFileEntry Include="libbrotlicommon.a" IsNative="true" />
+    <PlatformManifestFileEntry Include="brotlienc.lib" IsNative="true" />
+    <PlatformManifestFileEntry Include="brotlidec.lib" IsNative="true" />
+    <PlatformManifestFileEntry Include="brotlicommon.lib" IsNative="true" />
   </ItemGroup>
 
  <ItemGroup>

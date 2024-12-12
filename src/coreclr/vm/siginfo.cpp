@@ -16,7 +16,6 @@
 #include "gcheaputilities.h"
 #include "field.h"
 #include "eeconfig.h"
-#include "runtimehandles.h" // for SignatureNative
 #include "winwrap.h"
 #include <formattype.h>
 #include "sigbuilder.h"
