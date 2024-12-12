@@ -39,6 +39,6 @@
     "typescript": "5.4.5"
   },
   "dependencies": {
-    "wasm-feature-detect": "1.6.1"
+    "wasm-feature-detect": "1.6.2"
   }
 }
