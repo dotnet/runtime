@@ -3224,6 +3224,7 @@ void Compiler::fgDebugCheckInitBB()
     assert(fgFirstBB != nullptr);
     assert(!fgFirstBB->hasTryIndex());
     assert(fgFirstBB->bbPreds == nullptr);
+    assert(!opts.compDbgCode || fgFirstBB->HasFlag(BBF_INTERNAL));
 }
 
 //------------------------------------------------------------------------
