@@ -631,5 +631,129 @@ namespace System.Text.Json.SourceGeneration.UnitTests
 
             CompilationHelper.AssertEqualDiagnosticMessages(expectedDiagnostics, result.Diagnostics);
         }
+
+        [Fact]
+        public void RefStructPropertyWithoutJsonIgnore_CompilesWithWarning()
+        {
+            // Regression test for https://github.com/dotnet/runtime/issues/98590
+
+            string source = """
+                using System;
+                using System.Text.Json.Serialization;
+
+                public class MyPoco
+                {
+                    public ReadOnlySpan<char> Values => "abc".AsSpan();
+                }
+
+                [JsonSerializable(typeof(MyPoco))]
+                public partial class MyContext : JsonSerializerContext
+                {
+                }
+                """;
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source);
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, disableDiagnosticValidation: true);
+
+            Location propertyLocation = ((INamedTypeSymbol)compilation.GetSymbolsWithName("MyPoco").First()).GetMembers("Values").First().Locations[0];
+
+            var expectedDiagnostics = new DiagnosticData[]
+            {
+                new(DiagnosticSeverity.Warning, propertyLocation, "The type 'MyPoco' includes the ref like property, field or constructor parameter 'Values'. No source code will be generated for the property, field or constructor."),
+            };
+
+            CompilationHelper.AssertEqualDiagnosticMessages(expectedDiagnostics, result.Diagnostics);
+        }
+
+        [Fact]
+        public void RefStructCtorParam_CompilesWithWarning()
+        {
+            // Regression test for https://github.com/dotnet/runtime/issues/98590
+
+            string source = """
+                using System;
+                using System.Text.Json.Serialization;
+
+                public class MyPoco
+                {
+                    public MyPoco(ReadOnlySpan<char> value)
+                    {
+                        Value = value.ToString();
+                    }
+
+                    public string Value { get; }
+                }
+
+                [JsonSerializable(typeof(MyPoco))]
+                public partial class MyContext : JsonSerializerContext
+                {
+                }
+                """;
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source);
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, disableDiagnosticValidation: true);
+
+            ITypeSymbol type = (INamedTypeSymbol)compilation.GetSymbolsWithName("MyPoco").First();
+            IMethodSymbol ctor = (IMethodSymbol)type.GetMembers(".ctor").First();
+            IParameterSymbol param = ctor.Parameters.First();
+
+            var expectedDiagnostics = new DiagnosticData[]
+            {
+                new(DiagnosticSeverity.Warning, param.Locations.First(), "The type 'MyPoco' includes the ref like property, field or constructor parameter 'value'. No source code will be generated for the property, field or constructor."),
+            };
+
+            CompilationHelper.AssertEqualDiagnosticMessages(expectedDiagnostics, result.Diagnostics);
+        }
+
+#if NET9_0_OR_GREATER
+        [Fact]
+        public void CollectionWithRefStructElement_CompilesWithWarning()
+        {
+            // Regression test for https://github.com/dotnet/runtime/issues/98590
+
+            string source = """
+                using System;
+                using System.Collections;
+                using System.Collections.Generic;
+                using System.Text.Json.Serialization;
+
+                public class CollectionWithRefStructElement : IEnumerable<ReadOnlySpan<char>>
+                {
+                    private List<string> _values = new();
+                    public void Add(ReadOnlySpan<char> value) => _values.Add(value.ToString());
+                    IEnumerator<ReadOnlySpan<char>> IEnumerable<ReadOnlySpan<char>>.GetEnumerator() => new SpanEnumerator(_values.GetEnumerator());
+                    IEnumerator IEnumerable.GetEnumerator() => throw new NotImplementedException();
+
+                    private sealed class SpanEnumerator(IEnumerator<string> inner) : IEnumerator<ReadOnlySpan<char>>
+                    {
+                        public ReadOnlySpan<char> Current => inner.Current.AsSpan();
+                        object IEnumerator.Current => throw new NotSupportedException();
+                        public void Dispose() => inner.Dispose();
+                        public bool MoveNext() => inner.MoveNext();
+                        public void Reset() => inner.Reset();
+                    }
+                }
+
+                [JsonSerializable(typeof(CollectionWithRefStructElement))]
+                public partial class MyContext : JsonSerializerContext
+                {
+                }
+                """;
+
+            CSharpParseOptions parseOptions = CompilationHelper.CreateParseOptions((LanguageVersion)1300); // C# 13 required for ref struct collection elements.
+            Compilation compilation = CompilationHelper.CreateCompilation(source, parseOptions: parseOptions);
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, disableDiagnosticValidation: true);
+
+            ISymbol contextSymbol = compilation.GetSymbolsWithName("MyContext").First();
+            Collections.Immutable.ImmutableArray<AttributeData> attributes = contextSymbol.GetAttributes();
+
+            var expectedDiagnostics = new DiagnosticData[]
+            {
+                new(DiagnosticSeverity.Warning, attributes[0].GetLocation(), "Did not generate serialization metadata for type 'CollectionWithRefStructElement'."),
+            };
+
+            CompilationHelper.AssertEqualDiagnosticMessages(expectedDiagnostics, result.Diagnostics);
+        }
+#endif
     }
 }

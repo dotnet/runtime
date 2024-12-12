@@ -73,73 +73,73 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
 
             int age = (int)(42);
-            if (configuration["Age"] is string value2)
+            if (configuration["Age"] is string value2 && !string.IsNullOrEmpty(value2))
             {
                 age = ParseInt(value2, configuration.GetSection("Age").Path);
             }
 
             float f = 42F;
-            if (configuration["F"] is string value3)
+            if (configuration["F"] is string value3 && !string.IsNullOrEmpty(value3))
             {
                 f = ParseFloat(value3, configuration.GetSection("F").Path);
             }
 
             double d = 3.1415899999999999D;
-            if (configuration["D"] is string value4)
+            if (configuration["D"] is string value4 && !string.IsNullOrEmpty(value4))
             {
                 d = ParseDouble(value4, configuration.GetSection("D").Path);
             }
 
             decimal m = 3.1415926535897932384626433M;
-            if (configuration["M"] is string value5)
+            if (configuration["M"] is string value5 && !string.IsNullOrEmpty(value5))
             {
                 m = ParseDecimal(value5, configuration.GetSection("M").Path);
             }
 
             global::System.StringComparison sc = (global::System.StringComparison)(4);
-            if (configuration["SC"] is string value6)
+            if (configuration["SC"] is string value6 && !string.IsNullOrEmpty(value6))
             {
                 sc = ParseEnum<global::System.StringComparison>(value6, configuration.GetSection("SC").Path);
             }
 
             char c = 'q';
-            if (configuration["C"] is string value7)
+            if (configuration["C"] is string value7 && !string.IsNullOrEmpty(value7))
             {
                 c = ParseChar(value7, configuration.GetSection("C").Path);
             }
 
             int? nage = (int?)(42);
-            if (configuration["NAge"] is string value8)
+            if (configuration["NAge"] is string value8 && !string.IsNullOrEmpty(value8))
             {
                 nage = ParseInt(value8, configuration.GetSection("NAge").Path);
             }
 
             float? nf = 42F;
-            if (configuration["NF"] is string value9)
+            if (configuration["NF"] is string value9 && !string.IsNullOrEmpty(value9))
             {
                 nf = ParseFloat(value9, configuration.GetSection("NF").Path);
             }
 
             double? nd = 3.1415899999999999D;
-            if (configuration["ND"] is string value10)
+            if (configuration["ND"] is string value10 && !string.IsNullOrEmpty(value10))
             {
                 nd = ParseDouble(value10, configuration.GetSection("ND").Path);
             }
 
             decimal? nm = 3.1415926535897932384626433M;
-            if (configuration["NM"] is string value11)
+            if (configuration["NM"] is string value11 && !string.IsNullOrEmpty(value11))
             {
                 nm = ParseDecimal(value11, configuration.GetSection("NM").Path);
             }
 
             global::System.StringComparison? nsc = (global::System.StringComparison?)(4);
-            if (configuration["NSC"] is string value12)
+            if (configuration["NSC"] is string value12 && !string.IsNullOrEmpty(value12))
             {
                 nsc = ParseEnum<global::System.StringComparison>(value12, configuration.GetSection("NSC").Path);
             }
 
             char? nc = 'q';
-            if (configuration["NC"] is string value13)
+            if (configuration["NC"] is string value13 && !string.IsNullOrEmpty(value13))
             {
                 nc = ParseChar(value13, configuration.GetSection("NC").Path);
             }

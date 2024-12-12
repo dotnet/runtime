@@ -143,7 +143,7 @@ extern "C" std::uintptr_t __stdcall start_runtime_and_get_target_address(std::ui
     {
 #pragma warning (push)
 #pragma warning (disable: 4297)
-        throw StatusCode::LibHostCurExeFindFailure;
+        throw StatusCode::CurrentHostFindFailure;
 #pragma warning (pop)
     }
 

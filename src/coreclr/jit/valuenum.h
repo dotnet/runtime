@@ -156,6 +156,7 @@
 // Defines the type ValueNum.
 #include "valuenumtype.h"
 // Defines the type SmallHashTable.
+#include "compiler.h"
 #include "smallhash.h"
 
 // A "ValueNumStore" represents the "universe" of value numbers used in a single
@@ -168,7 +169,7 @@ enum VNFunc
 #define GTNODE(en, st, cm, ivn, ok) VNF_##en,
 #include "gtlist.h"
     VNF_Boundary = GT_COUNT,
-#define ValueNumFuncDef(nm, arity, commute, knownNonNull, sharedStatic, extra) VNF_##nm,
+#define ValueNumFuncDef(nm, arity, commute, knownNonNull, sharedStatic) VNF_##nm,
 #include "valuenumfuncs.h"
     VNF_COUNT
 };
@@ -595,6 +596,20 @@ public:
     template <typename TArgVisitor>
     VNVisit VNVisitReachingVNs(ValueNum vn, TArgVisitor argVisitor)
     {
+        // Fast-path: in most cases vn is not a phi definition
+        if (!IsPhiDef(vn))
+        {
+            return argVisitor(vn);
+        }
+        return VNVisitReachingVNsWorker(vn, argVisitor);
+    }
+
+private:
+
+    // Helper function for VNVisitReachingVNs
+    template <typename TArgVisitor>
+    VNVisit VNVisitReachingVNsWorker(ValueNum vn, TArgVisitor argVisitor)
+    {
         ArrayStack<ValueNum> toVisit(m_alloc);
         toVisit.Push(vn);
 
@@ -629,6 +644,8 @@ public:
         }
         return VNVisit::Continue;
     }
+
+public:
 
     // And the single constant for an object reference type.
     static ValueNum VNForNull()
@@ -818,6 +835,7 @@ public:
 
     ValueNum VNForPhiDef(var_types type, unsigned lclNum, unsigned ssaDef, ArrayStack<unsigned>& ssaArgs);
     bool     GetPhiDef(ValueNum vn, VNPhiDef* phiDef);
+    bool     IsPhiDef(ValueNum vn) const;
     ValueNum VNForMemoryPhiDef(BasicBlock* block, ArrayStack<unsigned>& vns);
     bool     GetMemoryPhiDef(ValueNum vn, VNMemoryPhiDef* memoryPhiDef);
 
@@ -1324,6 +1342,24 @@ public:
         return ConstantValueInternal<T>(vn DEBUGARG(true));
     }
 
+    template <typename T>
+    bool IsVNIntegralConstant(ValueNum vn, T* value)
+    {
+        if (!IsVNConstant(vn) || !varTypeIsIntegral(TypeOfVN(vn)))
+        {
+            *value = 0;
+            return false;
+        }
+        ssize_t val = CoercedConstantValue<ssize_t>(vn);
+        if (FitsIn<T>(val))
+        {
+            *value = static_cast<T>(val);
+            return true;
+        }
+        *value = 0;
+        return false;
+    }
+
     CORINFO_OBJECT_HANDLE ConstantObjHandle(ValueNum vn)
     {
         assert(IsVNObjHandle(vn));
@@ -1352,22 +1388,16 @@ public:
     }
 
 #if defined(FEATURE_HW_INTRINSICS)
-    ValueNum EvalHWIntrinsicFunUnary(
-        GenTreeHWIntrinsic* tree, VNFunc func, ValueNum arg0VN, bool encodeResultType, ValueNum resultTypeVN);
+    ValueNum EvalHWIntrinsicFunUnary(GenTreeHWIntrinsic* tree, VNFunc func, ValueNum arg0VN, ValueNum resultTypeVN);
 
-    ValueNum EvalHWIntrinsicFunBinary(GenTreeHWIntrinsic* tree,
-                                      VNFunc              func,
-                                      ValueNum            arg0VN,
-                                      ValueNum            arg1VN,
-                                      bool                encodeResultType,
-                                      ValueNum            resultTypeVN);
+    ValueNum EvalHWIntrinsicFunBinary(
+        GenTreeHWIntrinsic* tree, VNFunc func, ValueNum arg0VN, ValueNum arg1VN, ValueNum resultTypeVN);
 
     ValueNum EvalHWIntrinsicFunTernary(GenTreeHWIntrinsic* tree,
                                        VNFunc              func,
                                        ValueNum            arg0VN,
                                        ValueNum            arg1VN,
                                        ValueNum            arg2VN,
-                                       bool                encodeResultType,
                                        ValueNum            resultTypeVN);
 #endif // FEATURE_HW_INTRINSICS
 

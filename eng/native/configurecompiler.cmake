@@ -1,7 +1,3 @@
-# Due to how we build the libraries native build as part of the CoreCLR build as well as standalone,
-# we can end up coming to this file twice. Only run it once to simplify our build.
-include_guard()
-
 include(${CMAKE_CURRENT_LIST_DIR}/configuretools.cmake)
 
 # Set initial flags for each configuration
@@ -304,15 +300,20 @@ elseif(CLR_CMAKE_HOST_SUNOS)
   add_compile_options($<$<COMPILE_LANGUAGE:ASM>:-Wa,--noexecstack>)
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fstack-protector")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fstack-protector")
-  add_definitions(-D__EXTENSIONS__ -D_XPG4_2 -D_POSIX_PTHREAD_SEMANTICS)
-elseif(CLR_CMAKE_HOST_OSX AND NOT CLR_CMAKE_HOST_MACCATALYST AND NOT CLR_CMAKE_HOST_IOS AND NOT CLR_CMAKE_HOST_TVOS)
+  add_definitions(-D__EXTENSIONS__ -D_XPG4_2 -D_POSIX_PTHREAD_SEMANTICS -D_REENTRANT)
+elseif(CLR_CMAKE_HOST_APPLE)
+  # enable support for X/Open and POSIX APIs, like the <ucontext.h> header file
   add_definitions(-D_XOPEN_SOURCE)
+  # enable support for Darwin extension APIs, like pthread_getthreadid_np
+  add_definitions(-D_DARWIN_C_SOURCE)
 
-  # the new linker in Xcode 15 (ld_new/ld_prime) deprecated the -bind_at_load flag for macOS which causes a warning
-  # that fails the build since we build with -Werror. Only pass the flag if we need it, i.e. older linkers.
-  check_linker_flag(C "-Wl,-bind_at_load,-fatal_warnings" LINKER_SUPPORTS_BIND_AT_LOAD_FLAG)
-  if(LINKER_SUPPORTS_BIND_AT_LOAD_FLAG)
-    add_linker_flag("-Wl,-bind_at_load")
+  if(CLR_CMAKE_HOST_OSX)
+    # the new linker in Xcode 15 (ld_new/ld_prime) deprecated the -bind_at_load flag for macOS which causes a warning
+    # that fails the build since we build with -Werror. Only pass the flag if we need it, i.e. older linkers.
+    check_linker_flag(C "-Wl,-bind_at_load,-fatal_warnings" LINKER_SUPPORTS_BIND_AT_LOAD_FLAG)
+    if(LINKER_SUPPORTS_BIND_AT_LOAD_FLAG)
+      add_linker_flag("-Wl,-bind_at_load")
+    endif()
   endif()
 elseif(CLR_CMAKE_HOST_HAIKU)
   add_compile_options($<$<COMPILE_LANGUAGE:ASM>:-Wa,--noexecstack>)
@@ -624,6 +625,9 @@ if (CLR_CMAKE_HOST_UNIX)
 
     # clang 18.1 supressions
     add_compile_options(-Wno-switch-default)
+
+    # clang 20 suppressions
+    add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wno-nontrivial-memaccess>)
   else()
     add_compile_options(-Wno-uninitialized)
     add_compile_options(-Wno-strict-aliasing)

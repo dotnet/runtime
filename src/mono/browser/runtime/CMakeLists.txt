@@ -28,11 +28,12 @@ target_link_libraries(dotnet.native
     ${MONO_ARTIFACTS_DIR}/libmono-wasm-${CONFIGURATION_INTERPSIMDTABLES_LIB}.a
     ${MONO_ARTIFACTS_DIR}/libmono-profiler-aot.a
     ${MONO_ARTIFACTS_DIR}/libmono-profiler-browser.a
-    ${MONO_ARTIFACTS_DIR}/libz.a
+    ${MONO_ARTIFACTS_DIR}/libmono-profiler-log.a
     ${NATIVE_BIN_DIR}/wasm-bundled-timezones.a
     ${NATIVE_BIN_DIR}/libSystem.Native.a
     ${NATIVE_BIN_DIR}/libSystem.Globalization.Native.a
-    ${NATIVE_BIN_DIR}/libSystem.IO.Compression.Native.a)
+    ${NATIVE_BIN_DIR}/libSystem.IO.Compression.Native.a
+    ${NATIVE_BIN_DIR}/libz.a)
 
 set_target_properties(dotnet.native PROPERTIES
     LINK_DEPENDS "${NATIVE_BIN_DIR}/src/emcc-default.rsp;${NATIVE_BIN_DIR}/src/es6/dotnet.es6.pre.js;${NATIVE_BIN_DIR}/src/es6/dotnet.es6.lib.js;${NATIVE_BIN_DIR}/src/es6/dotnet.es6.extpost.js;"

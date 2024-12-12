@@ -52,7 +52,6 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/2389", TestRuntimes.Mono)]
         public void SetCustomAttribute_CustomAttributeBuilder_TypeNotCreated_ThrowsInvalidOperationException()
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Class | TypeAttributes.Public);
@@ -116,7 +115,6 @@ namespace System.Reflection.Emit.Tests
 
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/2389", TestRuntimes.Mono)]
         public void SetCustomAttribute_ConstructorInfo_ByteArray_TypeAlreadyCreated_ThrowsInvalidOperationException()
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Class | TypeAttributes.Public);

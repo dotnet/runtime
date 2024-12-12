@@ -51,7 +51,7 @@ namespace NetCoreServer
 
             if (path.Equals(new PathString("/statuscode.ashx")))
             {
-                StatusCodeHandler.Invoke(context);
+                await StatusCodeHandler.InvokeAsync(context);
                 return;
             }
 

@@ -112,8 +112,6 @@
              Link="ProductionCode\BufferBuilder.cs" />
     <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs"
              Link="Common\DisableRuntimeMarshalling.cs" />
-    <Compile Include="$(CommonPath)System\Net\TlsStream.cs"
-             Link="Common\System\Net\TlsStream.cs" />
     <Compile Include="$(CommonPath)System\Net\InternalException.cs"
              Link="Common\System\Net\InternalException.cs" />
     <Compile Include="$(CommonPath)System\Net\LazyAsyncResult.cs"
@@ -140,8 +138,8 @@
              Link="Common\System\HexConverter.cs" />
     <Compile Include="$(CommonPath)System\Obsoletions.cs"
              Link="Common\System\Obsoletions.cs" />
-    <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs" 
-             Link="Common\System\Text\ValueStringBuilder.cs" /> 
+    <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs"
+             Link="Common\System\Text\ValueStringBuilder.cs" />
   </ItemGroup>
   <!-- Unix specific files -->
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'unix'">

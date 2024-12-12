@@ -61,6 +61,19 @@ namespace System.Net.Sockets
         private static unsafe void LoadSocketTypeFromHandle(
             SafeSocketHandle handle, out AddressFamily addressFamily, out SocketType socketType, out ProtocolType protocolType, out bool blocking, out bool isListening, out bool isSocket)
         {
+            if (OperatingSystem.IsWasi())
+            {
+                // FIXME: Unify with unix after https://github.com/WebAssembly/wasi-libc/issues/537
+                blocking = false;
+                Interop.Error e = Interop.Sys.GetSocketType(handle, out addressFamily, out socketType, out protocolType, out isListening);
+                if (e == Interop.Error.ENOTSOCK)
+                {
+                    throw new SocketException((int)SocketError.NotSocket);
+                }
+                handle.IsSocket = isSocket = true;
+                return;
+            }
+
             if (Interop.Sys.FStat(handle, out Interop.Sys.FileStatus stat) == -1)
             {
                 throw new SocketException((int)SocketError.NotSocket);

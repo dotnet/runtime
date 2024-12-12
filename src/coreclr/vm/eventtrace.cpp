@@ -1926,7 +1926,7 @@ VOID ETW::EnumerationLog::ModuleRangeRundown()
                                          TRACE_LEVEL_INFORMATION,
                                          CLR_PERFTRACK_PRIVATE_KEYWORD))
         {
-            ETW::EnumerationLog::EnumerationHelper(NULL, NULL, ETW::EnumerationLog::EnumerationStructs::ModuleRangeLoadPrivate);
+            ETW::EnumerationLog::EnumerationHelper(NULL, ETW::EnumerationLog::EnumerationStructs::ModuleRangeLoadPrivate);
         }
     } EX_CATCH { } EX_END_CATCH(SwallowAllExceptions);
 }
@@ -2037,7 +2037,7 @@ VOID ETW::EnumerationLog::StartRundown()
                 enumerationOptions |= ETW::EnumerationLog::EnumerationStructs::JittedMethodRichDebugInfo;
             }
 
-            ETW::EnumerationLog::EnumerationHelper(NULL, NULL, enumerationOptions);
+            ETW::EnumerationLog::EnumerationHelper(NULL, enumerationOptions);
 
             if (bIsThreadingRundownEnabled)
             {
@@ -2124,9 +2124,8 @@ VOID ETW::EnumerationLog::EnumerateForCaptureState()
         {
             DWORD enumerationOptions = GetEnumerationOptionsFromRuntimeKeywords();
 
-            // Send unload events for all remaining domains, including shared domain and
-            // default domain.
-            ETW::EnumerationLog::EnumerationHelper(NULL /* module filter */, NULL /* domain filter */, enumerationOptions);
+            // Send unload events for all remaining modules
+            ETW::EnumerationLog::EnumerationHelper(NULL /* module filter */, enumerationOptions);
 
             // Send thread created events for all currently active threads, if requested
             if (ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context,
@@ -2227,7 +2226,7 @@ VOID ETW::EnumerationLog::EndRundown()
                 enumerationOptions |= ETW::EnumerationLog::EnumerationStructs::JittedMethodRichDebugInfo;
             }
 
-            ETW::EnumerationLog::EnumerationHelper(NULL, NULL, enumerationOptions);
+            ETW::EnumerationLog::EnumerationHelper(NULL, enumerationOptions);
 
             if (bIsThreadingRundownEnabled)
             {
@@ -2329,16 +2328,88 @@ enum CallbackProviderIndex
     DotNETRuntimePrivate = 3
 };
 
+enum SessionChange
+{
+    EventPipeSessionDisable = 0,
+    EventPipeSessionEnable = 1,
+    EtwSessionChangeUnknown = 2
+};
+
+#if !defined(HOST_UNIX)
+// EventFilterType identifies the filter type used by the PEVENT_FILTER_DESCRIPTOR
+enum EventFilterType
+{
+    // data should be pairs of UTF8 null terminated strings all concatenated together.
+    // The first element of the pair is the key and the 2nd is the value. We expect one of the
+    // keys to be the string "GCSeqNumber" and the value to be a number encoded as text.
+    // This is the standard way EventPipe encodes filter values
+    StringKeyValueEncoding = 0,
+    // data should be an 8 byte binary LONGLONG value
+    // this is the historic encoding defined by .NET Framework for use with ETW
+    LongBinaryClientSequenceNumber = 1
+};
+
+VOID ParseFilterDataClientSequenceNumber(
+    PEVENT_FILTER_DESCRIPTOR FilterData,
+    LONGLONG * pClientSequenceNumber)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    if (FilterData == NULL)
+        return;
+
+    if (FilterData->Type == LongBinaryClientSequenceNumber && FilterData->Size == sizeof(LONGLONG))
+    {
+        *pClientSequenceNumber = *(LONGLONG *) (FilterData->Ptr);
+    }
+    else if (FilterData->Type == StringKeyValueEncoding)
+    {
+        const char* buffer = reinterpret_cast<const char*>(FilterData->Ptr);
+        const char* buffer_end = buffer + FilterData->Size;
+
+        while (buffer < buffer_end)
+        {
+            const char* key = buffer;
+            size_t key_len = strnlen(key, buffer_end - buffer);
+            buffer += key_len + 1;
+
+            if (buffer >= buffer_end)
+                break;
+
+            const char* value = buffer;
+            size_t value_len = strnlen(value, buffer_end - buffer);
+            buffer += value_len + 1;
+
+            if (buffer > buffer_end)
+                break;
+
+            if (strcmp(key, "GCSeqNumber") != 0)
+                continue;
+
+            char* endPtr = nullptr;
+            long parsedValue = strtol(value, &endPtr, 10);
+            if (endPtr != value && *endPtr == '\0')
+            {
+                *pClientSequenceNumber = static_cast<LONGLONG>(parsedValue);
+                break;
+            }
+        }
+    }
+}
+#endif // !defined(HOST_UNIX)
+
 // Common handler for all ETW or EventPipe event notifications. Based on the provider that
 // was enabled/disabled, this implementation forwards the event state change onto GCHeapUtilities
 // which will inform the GC to update its local state about what events are enabled.
+// NOTE: When multiple ETW or EventPipe sessions are enabled, the ControlCode will be
+// EVENT_CONTROL_CODE_ENABLE_PROVIDER even if the session invoking this callback is being disabled.
 VOID EtwCallbackCommon(
     CallbackProviderIndex ProviderIndex,
     ULONG ControlCode,
     UCHAR Level,
     ULONGLONG MatchAnyKeyword,
     PVOID pFilterData,
-    BOOL isEventPipeCallback)
+    SessionChange Change)
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -2374,20 +2445,17 @@ VOID EtwCallbackCommon(
     // This callback gets called on both ETW/EventPipe session enable/disable.
     // We need toupdate the EventPipe provider context if we are in a callback
     // from EventPipe, but not from ETW.
-    if (isEventPipeCallback)
+    if (Change == EventPipeSessionEnable || Change == EventPipeSessionDisable)
     {
         ctxToUpdate->EventPipeProvider.Level = Level;
         ctxToUpdate->EventPipeProvider.EnabledKeywordsBitmask = MatchAnyKeyword;
         ctxToUpdate->EventPipeProvider.IsEnabled = ControlCode;
 
         // For EventPipe, ControlCode can only be either 0 or 1.
-        _ASSERTE(ControlCode == 0 || ControlCode == 1);
+        _ASSERTE(ControlCode == EVENT_CONTROL_CODE_DISABLE_PROVIDER || ControlCode == EVENT_CONTROL_CODE_ENABLE_PROVIDER);
     }
 
-    if (
-#if !defined(HOST_UNIX)
-        (ControlCode == EVENT_CONTROL_CODE_ENABLE_PROVIDER || ControlCode == EVENT_CONTROL_CODE_DISABLE_PROVIDER) &&
-#endif
+    if ((ControlCode == EVENT_CONTROL_CODE_ENABLE_PROVIDER || ControlCode == EVENT_CONTROL_CODE_DISABLE_PROVIDER) &&
         (ProviderIndex == DotNETRuntime || ProviderIndex == DotNETRuntimePrivate))
     {
 #if !defined(HOST_UNIX)
@@ -2404,22 +2472,29 @@ VOID EtwCallbackCommon(
         GCHeapUtilities::RecordEventStateChange(bIsPublicTraceHandle, keywords, level);
     }
 
-    // Special check for the runtime provider's ManagedHeapCollectKeyword.  Profilers
-    // flick this to force a full GC.
-    if (g_fEEStarted && !g_fEEShutDown && bIsPublicTraceHandle &&
-        ((MatchAnyKeyword & CLR_MANAGEDHEAPCOLLECT_KEYWORD) != 0))
+    // Special check for a profiler requested GC.
+    // A full GC will be forced if:
+    // 1. The runtime has started and is not shutting down.
+    // 2. The public provider is requesting GC.
+    // 3. The provider's ManagedHeapCollectKeyword is enabled.
+    // 4. If it is an ETW provider, the control code is to enable or capture the state of the provider.
+    // 5. If it is an EventPipe provider, the session is not being disabled.
+    bool bValidGCRequest =
+        g_fEEStarted && !g_fEEShutDown &&
+        bIsPublicTraceHandle &&
+        ((MatchAnyKeyword & CLR_MANAGEDHEAPCOLLECT_KEYWORD) != 0) &&
+        ((ControlCode == EVENT_CONTROL_CODE_ENABLE_PROVIDER) ||
+         (ControlCode == EVENT_CONTROL_CODE_CAPTURE_STATE)) &&
+        ((Change == EtwSessionChangeUnknown) ||
+         (Change == EventPipeSessionEnable));
+
+    if (bValidGCRequest)
     {
         // Profilers may (optionally) specify extra data in the filter parameter
         // to log with the GCStart event.
         LONGLONG l64ClientSequenceNumber = 0;
 #if !defined(HOST_UNIX)
-        PEVENT_FILTER_DESCRIPTOR FilterData = (PEVENT_FILTER_DESCRIPTOR)pFilterData;
-        if ((FilterData != NULL) &&
-           (FilterData->Type == 1) &&
-           (FilterData->Size == sizeof(l64ClientSequenceNumber)))
-        {
-            l64ClientSequenceNumber = *(LONGLONG *) (FilterData->Ptr);
-        }
+        ParseFilterDataClientSequenceNumber((PEVENT_FILTER_DESCRIPTOR)pFilterData, &l64ClientSequenceNumber);
 #endif // !defined(HOST_UNIX)
         ETW::GCLog::ForceGC(l64ClientSequenceNumber);
     }
@@ -2450,7 +2525,9 @@ VOID EventPipeEtwCallbackDotNETRuntimeStress(
 {
     LIMITED_METHOD_CONTRACT;
 
-    EtwCallbackCommon(DotNETRuntimeStress, ControlCode, Level, MatchAnyKeyword, FilterData, true);
+    SessionChange change = SourceId == NULL ? EventPipeSessionDisable : EventPipeSessionEnable;
+
+    EtwCallbackCommon(DotNETRuntimeStress, ControlCode, Level, MatchAnyKeyword, FilterData, change);
 }
 
 VOID EventPipeEtwCallbackDotNETRuntime(
@@ -2464,7 +2541,9 @@ VOID EventPipeEtwCallbackDotNETRuntime(
 {
     LIMITED_METHOD_CONTRACT;
 
-    EtwCallbackCommon(DotNETRuntime, ControlCode, Level, MatchAnyKeyword, FilterData, true);
+    SessionChange change = SourceId == NULL ? EventPipeSessionDisable : EventPipeSessionEnable;
+
+    EtwCallbackCommon(DotNETRuntime, ControlCode, Level, MatchAnyKeyword, FilterData, change);
 }
 
 VOID EventPipeEtwCallbackDotNETRuntimeRundown(
@@ -2478,7 +2557,9 @@ VOID EventPipeEtwCallbackDotNETRuntimeRundown(
 {
     LIMITED_METHOD_CONTRACT;
 
-    EtwCallbackCommon(DotNETRuntimeRundown, ControlCode, Level, MatchAnyKeyword, FilterData, true);
+    SessionChange change = SourceId == NULL ? EventPipeSessionDisable : EventPipeSessionEnable;
+
+    EtwCallbackCommon(DotNETRuntimeRundown, ControlCode, Level, MatchAnyKeyword, FilterData, change);
 }
 
 VOID EventPipeEtwCallbackDotNETRuntimePrivate(
@@ -2492,7 +2573,9 @@ VOID EventPipeEtwCallbackDotNETRuntimePrivate(
 {
     WRAPPER_NO_CONTRACT;
 
-    EtwCallbackCommon(DotNETRuntimePrivate, ControlCode, Level, MatchAnyKeyword, FilterData, true);
+    SessionChange change = SourceId == NULL ? EventPipeSessionDisable : EventPipeSessionEnable;
+
+    EtwCallbackCommon(DotNETRuntimePrivate, ControlCode, Level, MatchAnyKeyword, FilterData, change);
 }
 
 
@@ -2613,7 +2696,7 @@ extern "C"
         } CONTRACTL_END;
 
         // Mark that we are the special ETWRundown thread.  Currently all this does
-        // is insure that AVs thrown in this thread are treated as normal exceptions.
+        // is ensure that AVs thrown in this thread are treated as normal exceptions.
         // This allows us to catch and swallow them.   We can do this because we have
         // a reasonably strong belief that doing ETW Rundown does not change runtime state
         // and thus if an AV happens it is better to simply give up logging ETW and
@@ -2648,7 +2731,7 @@ extern "C"
             return;
         }
 
-        EtwCallbackCommon(providerIndex, ControlCode, Level, MatchAnyKeyword, FilterData, false);
+        EtwCallbackCommon(providerIndex, ControlCode, Level, MatchAnyKeyword, FilterData, EtwSessionChangeUnknown);
 
         // A manifest based provider can be enabled to multiple event tracing sessions
         // As long as there is atleast 1 enabled session, IsEnabled will be TRUE
@@ -2706,10 +2789,7 @@ extern "C"
 
     }
 }
-#endif // FEATURE_NATIVEAOT
-
-#endif // HOST_UNIX
-#ifndef FEATURE_NATIVEAOT
+#endif // !defined(HOST_UNIX)
 
 /****************************************************************************/
 /* This is called by the runtime when an exception is thrown */
@@ -2964,7 +3044,7 @@ VOID ETW::ExceptionLog::ExceptionFilterEnd()
 /****************************************************************************/
 /* This is called by the runtime when a domain is loaded */
 /****************************************************************************/
-VOID ETW::LoaderLog::DomainLoadReal(BaseDomain *pDomain, _In_opt_ LPWSTR wszFriendlyName)
+VOID ETW::LoaderLog::DomainLoadReal(_In_opt_ LPWSTR wszFriendlyName)
 {
     CONTRACTL {
         NOTHROW;
@@ -2978,7 +3058,7 @@ VOID ETW::LoaderLog::DomainLoadReal(BaseDomain *pDomain, _In_opt_ LPWSTR wszFrie
                                         CLR_LOADER_KEYWORD))
         {
             DWORD dwEventOptions = ETW::EnumerationLog::EnumerationStructs::DomainAssemblyModuleLoad;
-            ETW::LoaderLog::SendDomainEvent(pDomain, dwEventOptions, wszFriendlyName);
+            ETW::LoaderLog::SendDomainEvent(dwEventOptions, wszFriendlyName);
         }
     } EX_CATCH { } EX_END_CATCH(SwallowAllExceptions);
 }
@@ -2986,7 +3066,7 @@ VOID ETW::LoaderLog::DomainLoadReal(BaseDomain *pDomain, _In_opt_ LPWSTR wszFrie
 /****************************************************************************/
 /* This is called by the runtime when an AppDomain is unloaded */
 /****************************************************************************/
-VOID ETW::LoaderLog::DomainUnload(AppDomain *pDomain)
+VOID ETW::LoaderLog::DomainUnload()
 {
     CONTRACTL {
         NOTHROW;
@@ -3009,7 +3089,7 @@ VOID ETW::LoaderLog::DomainUnload(AppDomain *pDomain)
                 enumerationOptions |= ETW::EnumerationLog::EnumerationStructs::TypeUnload;
             }
 
-            ETW::EnumerationLog::EnumerationHelper(NULL, pDomain, enumerationOptions);
+            ETW::EnumerationLog::EnumerationHelper(NULL, enumerationOptions);
         }
     } EX_CATCH { } EX_END_CATCH(SwallowAllExceptions);
 }
@@ -3873,7 +3953,7 @@ VOID ETW::LoaderLog::ModuleLoad(Module *pModule, LONG liReportedSharedModule)
                 if(bTraceFlagLoaderSet || bTraceFlagPerfTrackSet)
                     ETW::LoaderLog::SendModuleEvent(pModule, ETW::EnumerationLog::EnumerationStructs::DomainAssemblyModuleLoad | ETW::EnumerationLog::EnumerationStructs::ModuleRangeLoad);
 
-                ETW::EnumerationLog::EnumerationHelper(pModule, NULL, enumerationOptions);
+                ETW::EnumerationLog::EnumerationHelper(pModule, enumerationOptions);
             }
 
             // we want to report domainmodule events whenever they are loaded in any AppDomain
@@ -3910,9 +3990,8 @@ VOID ETW::EnumerationLog::ProcessShutdown()
         {
             DWORD enumerationOptions = GetEnumerationOptionsFromRuntimeKeywords();
 
-            // Send unload events for all remaining domains, including shared domain and
-            // default domain.
-            ETW::EnumerationLog::EnumerationHelper(NULL /* module filter */, NULL /* domain filter */, enumerationOptions);
+            // Send unload events for all remaining modules
+            ETW::EnumerationLog::EnumerationHelper(NULL /* module filter */, enumerationOptions);
         }
     } EX_CATCH { } EX_END_CATCH(SwallowAllExceptions);
 }
@@ -3926,20 +4005,20 @@ VOID ETW::EnumerationLog::ProcessShutdown()
 /****************************************************************************/
 /* This routine is used to send a domain load/unload or rundown event                              */
 /****************************************************************************/
-VOID ETW::LoaderLog::SendDomainEvent(BaseDomain *pBaseDomain, DWORD dwEventOptions, LPCWSTR wszFriendlyName)
+VOID ETW::LoaderLog::SendDomainEvent(DWORD dwEventOptions, LPCWSTR wszFriendlyName)
 {
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
+        PRECONDITION(AppDomain::GetCurrentDomain() != NULL);
     } CONTRACTL_END;
 
-    if(!pBaseDomain)
-        return;
+    AppDomain* pDomain = AppDomain::GetCurrentDomain();
 
     PCWSTR szDtraceOutput1=W("");
-    BOOL bIsAppDomain = pBaseDomain->IsAppDomain();
+    BOOL bIsAppDomain = TRUE;
 
-    ULONGLONG ullDomainId = (ULONGLONG)pBaseDomain;
+    ULONGLONG ullDomainId = (ULONGLONG)pDomain;
     ULONG ulDomainFlags = ETW::LoaderLog::LoaderStructs::DefaultDomain | ETW::LoaderLog::LoaderStructs::ExecutableDomain;
 
     LPCWSTR wsEmptyString = W("");
@@ -3949,7 +4028,7 @@ VOID ETW::LoaderLog::SendDomainEvent(BaseDomain *pBaseDomain, DWORD dwEventOptio
     if(wszFriendlyName)
         lpswzDomainName = (PWCHAR)wszFriendlyName;
     else
-        lpswzDomainName = (PWCHAR)pBaseDomain->AsAppDomain()->GetFriendlyName();
+        lpswzDomainName = (PWCHAR)pDomain->GetFriendlyName();
 
     /* prepare events args for ETW and ETM */
     szDtraceOutput1 = (PCWSTR)lpswzDomainName;
@@ -5238,12 +5317,9 @@ VOID ETW::MethodLog::SendEventsForJitMethodsHelper(LoaderAllocator *pLoaderAlloc
 /****************************************************************************/
 /* This routine sends back method events of type 'dwEventOptions', for all
    JITed methods in either a given LoaderAllocator (if pLoaderAllocatorFilter is non NULL)
-   or in a given Domain (if pDomainFilter is non NULL) or for
-   all methods (if both filters are null) */
+   or all methods (if pLoaderAllocatorFilter is null) */
 /****************************************************************************/
-// Code review indicates this method is never called with both filters NULL. Ideally we would
-// assert this and change the comment above, but given I am making a change late in the release I am being cautious
-VOID ETW::MethodLog::SendEventsForJitMethods(BaseDomain *pDomainFilter, LoaderAllocator *pLoaderAllocatorFilter, DWORD dwEventOptions)
+VOID ETW::MethodLog::SendEventsForJitMethods(BOOL getCodeVersionIds, LoaderAllocator *pLoaderAllocatorFilter, DWORD dwEventOptions)
 {
     CONTRACTL {
         NOTHROW;
@@ -5303,9 +5379,8 @@ VOID ETW::MethodLog::SendEventsForJitMethods(BaseDomain *pDomainFilter, LoaderAl
         // table lock that corresponds to the domain or module we're currently iterating over.
         //
 
-        // We only support getting rejit IDs when filtering by domain.
 #ifdef FEATURE_CODE_VERSIONING
-        if (pDomainFilter)
+        if (getCodeVersionIds)
         {
             CodeVersionManager::LockHolder codeVersioningLockHolder;
             SendEventsForJitMethodsHelper(
@@ -5337,21 +5412,24 @@ VOID ETW::MethodLog::SendEventsForJitMethods(BaseDomain *pDomainFilter, LoaderAl
 
 //---------------------------------------------------------------------------------------
 //
-// Wrapper around IterateDomain, which locks the AppDomain to be <
-// STAGE_FINALIZED until the iteration is complete.
+// This routine fires ETW events for
+//   Domain
+//   Assemblies in them
+//   Modules in them
+//   JIT methods in them
+//   R2R methods in them
+// based on enumeration options
 //
 // Arguments:
-//      pAppDomain - AppDomain to iterate
-//      enumerationOptions - Flags indicating what to enumerate.  Just passed
-//         straight through to IterateDomain
+//      enumerationOptions - Flags indicating what to enumerate.
 //
-VOID ETW::EnumerationLog::IterateAppDomain(AppDomain * pAppDomain, DWORD enumerationOptions)
+VOID ETW::EnumerationLog::IterateAppDomain(DWORD enumerationOptions)
 {
     CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
-        PRECONDITION(pAppDomain != NULL);
+        PRECONDITION(AppDomain::GetCurrentDomain() != NULL);
     }
     CONTRACTL_END;
 
@@ -5359,65 +5437,32 @@ VOID ETW::EnumerationLog::IterateAppDomain(AppDomain * pAppDomain, DWORD enumera
     // ensure the App Domain does not get finalized until we're all done
     SystemDomain::LockHolder lh;
 
-    // Now it's safe to do the iteration
-    IterateDomain(pAppDomain, enumerationOptions);
-}
-
-/********************************************************************************/
-/* This routine fires ETW events for
-   Domain,
-   Assemblies in them,
-   DomainModule's in them,
-   Modules in them,
-   JIT methods in them,
-   and the NGEN methods in them
-   based on enumerationOptions.*/
-/********************************************************************************/
-VOID ETW::EnumerationLog::IterateDomain(BaseDomain *pDomain, DWORD enumerationOptions)
-{
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        PRECONDITION(pDomain != NULL);
-    } CONTRACTL_END;
-
-#if defined(_DEBUG) && !defined(DACCESS_COMPILE)
-    // Do not call IterateDomain() directly with an AppDomain.  Use
-    // IterateAppDomain(), which wraps this function with a hold on the
-    // SystemDomain lock, which ensures pDomain's type data doesn't disappear
-    // on us.
-    if (pDomain->IsAppDomain())
-    {
-        _ASSERTE(SystemDomain::IsUnderDomainLock());
-    }
-#endif // defined(_DEBUG) && !defined(DACCESS_COMPILE)
-
+    AppDomain* pDomain = AppDomain::GetCurrentDomain();
     EX_TRY
     {
         // DC Start events for Domain
         if(enumerationOptions & ETW::EnumerationLog::EnumerationStructs::DomainAssemblyModuleDCStart)
         {
-            ETW::LoaderLog::SendDomainEvent(pDomain, enumerationOptions);
+            ETW::LoaderLog::SendDomainEvent(enumerationOptions);
         }
 
         // DC End or Unload Jit Method events
         if (enumerationOptions & ETW::EnumerationLog::EnumerationStructs::JitMethodUnloadOrDCEndAny)
         {
-            ETW::MethodLog::SendEventsForJitMethods(pDomain, NULL, enumerationOptions);
+            ETW::MethodLog::SendEventsForJitMethods(TRUE /*getCodeVersionIds*/, NULL, enumerationOptions);
         }
 
-        AppDomain::AssemblyIterator assemblyIterator = pDomain->AsAppDomain()->IterateAssembliesEx(
+        AppDomain::AssemblyIterator assemblyIterator = pDomain->IterateAssembliesEx(
             (AssemblyIterationFlags)(kIncludeLoaded | kIncludeExecution));
-        CollectibleAssemblyHolder<DomainAssembly *> pDomainAssembly;
-        while (assemblyIterator.Next(pDomainAssembly.This()))
+        CollectibleAssemblyHolder<Assembly *> pAssembly;
+        while (assemblyIterator.Next(pAssembly.This()))
         {
-            CollectibleAssemblyHolder<Assembly *> pAssembly = pDomainAssembly->GetAssembly();
             if (enumerationOptions & ETW::EnumerationLog::EnumerationStructs::DomainAssemblyModuleDCStart)
             {
                 ETW::EnumerationLog::IterateAssembly(pAssembly, enumerationOptions);
             }
 
-            Module * pModule = pDomainAssembly->GetModule();
+            Module * pModule = pAssembly->GetModule();
             ETW::EnumerationLog::IterateModule(pModule, enumerationOptions);
 
             if((enumerationOptions & ETW::EnumerationLog::EnumerationStructs::DomainAssemblyModuleDCEnd) ||
@@ -5430,14 +5475,14 @@ VOID ETW::EnumerationLog::IterateDomain(BaseDomain *pDomain, DWORD enumerationOp
         // DC Start or Load Jit Method events
         if (enumerationOptions & ETW::EnumerationLog::EnumerationStructs::JitMethodLoadOrDCStartAny)
         {
-            ETW::MethodLog::SendEventsForJitMethods(pDomain, NULL, enumerationOptions);
+            ETW::MethodLog::SendEventsForJitMethods(TRUE /*getCodeVersionIds*/, NULL, enumerationOptions);
         }
 
         // DC End or Unload events for Domain
         if((enumerationOptions & ETW::EnumerationLog::EnumerationStructs::DomainAssemblyModuleDCEnd) ||
            (enumerationOptions & ETW::EnumerationLog::EnumerationStructs::DomainAssemblyModuleUnload))
         {
-            ETW::LoaderLog::SendDomainEvent(pDomain, enumerationOptions);
+            ETW::LoaderLog::SendDomainEvent(enumerationOptions);
         }
     } EX_CATCH { } EX_END_CATCH(SwallowAllExceptions);
 }
@@ -5465,7 +5510,7 @@ VOID ETW::EnumerationLog::IterateCollectibleLoaderAllocator(AssemblyLoaderAlloca
         // Unload Jit Method events
         if (enumerationOptions & ETW::EnumerationLog::EnumerationStructs::JitMethodUnload)
         {
-            ETW::MethodLog::SendEventsForJitMethods(NULL, pLoaderAllocator, enumerationOptions);
+            ETW::MethodLog::SendEventsForJitMethods(FALSE /*getCodeVersionIds*/, pLoaderAllocator, enumerationOptions);
         }
 
         // Iterate on all DomainAssembly loaded from the same AssemblyLoaderAllocator
@@ -5474,7 +5519,7 @@ VOID ETW::EnumerationLog::IterateCollectibleLoaderAllocator(AssemblyLoaderAlloca
         {
             Assembly *pAssembly = domainAssemblyIt->GetAssembly(); // TODO: handle iterator
 
-            Module* pModule = domainAssemblyIt->GetModule();
+            Module* pModule = domainAssemblyIt->GetAssembly()->GetModule();
             ETW::EnumerationLog::IterateModule(pModule, enumerationOptions);
 
             if (enumerationOptions & ETW::EnumerationLog::EnumerationStructs::DomainAssemblyModuleUnload)
@@ -5488,7 +5533,7 @@ VOID ETW::EnumerationLog::IterateCollectibleLoaderAllocator(AssemblyLoaderAlloca
         // Load Jit Method events
         if (enumerationOptions & ETW::EnumerationLog::EnumerationStructs::JitMethodLoad)
         {
-            ETW::MethodLog::SendEventsForJitMethods(NULL, pLoaderAllocator, enumerationOptions);
+            ETW::MethodLog::SendEventsForJitMethods(FALSE /*getCodeVersionIds*/, pLoaderAllocator, enumerationOptions);
         }
     } EX_CATCH { } EX_END_CATCH(SwallowAllExceptions);
 }
@@ -5593,17 +5638,12 @@ VOID ETW::EnumerationLog::IterateModule(Module *pModule, DWORD enumerationOption
 //
 // Arguments:
 //      * moduleFilter - if non-NULL, events from only moduleFilter module are reported
-//      * domainFilter - if non-NULL, events from only domainFilter domain are reported
 //      * enumerationOptions - Flags from ETW::EnumerationLog::EnumerationStructs which
 //          describe which events should be sent.
 //
-// Notes:
-//     * if all filter args are NULL, events from all domains are reported
-//
-//
 
 // static
-VOID ETW::EnumerationLog::EnumerationHelper(Module *moduleFilter, BaseDomain *domainFilter, DWORD enumerationOptions)
+VOID ETW::EnumerationLog::EnumerationHelper(Module *moduleFilter, DWORD enumerationOptions)
 {
     CONTRACTL {
         THROWS;
@@ -5625,36 +5665,18 @@ VOID ETW::EnumerationLog::EnumerationHelper(Module *moduleFilter, BaseDomain *do
         // DC End or Unload Jit Method events from all Domains
         if (enumerationOptions & ETW::EnumerationLog::EnumerationStructs::JitMethodUnloadOrDCEndAny)
         {
-            ETW::MethodLog::SendEventsForJitMethods(NULL, NULL, enumerationOptions);
+            ETW::MethodLog::SendEventsForJitMethods(FALSE /*getCodeVersionIds*/, NULL, enumerationOptions);
         }
 
         // DC Start or Load Jit Method events from all Domains
         if (enumerationOptions & ETW::EnumerationLog::EnumerationStructs::JitMethodLoadOrDCStartAny)
         {
-            ETW::MethodLog::SendEventsForJitMethods(NULL, NULL, enumerationOptions);
+            ETW::MethodLog::SendEventsForJitMethods(FALSE /*getCodeVersionIds*/, NULL, enumerationOptions);
         }
     }
     else
     {
-        if(domainFilter)
-        {
-            if(domainFilter->IsAppDomain())
-            {
-                ETW::EnumerationLog::IterateAppDomain(domainFilter->AsAppDomain(), enumerationOptions);
-            }
-            else
-            {
-                ETW::EnumerationLog::IterateDomain(domainFilter, enumerationOptions);
-            }
-        }
-        else
-        {
-            AppDomain *pDomain = AppDomain::GetCurrentDomain();
-            if (pDomain != NULL)
-            {
-                ETW::EnumerationLog::IterateAppDomain(pDomain, enumerationOptions);
-            }
-        }
+        ETW::EnumerationLog::IterateAppDomain(enumerationOptions);
     }
 }
 

@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent)-browser;$(NetCoreAppCurrent);$(NetCoreAppMinimum)-browser;$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-browser;$(NetCoreAppCurrent)-wasi;$(NetCoreAppCurrent);$(NetCoreAppMinimum)-browser;$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
     <TargetFrameworks Condition="'$(NetCoreAppPrevious)' != ''">$(TargetFrameworks);$(NetCoreAppPrevious)-windows;$(NetCoreAppPrevious)</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <!-- CS3011: Only CLS-compliant members can be abstract -->
@@ -31,7 +31,6 @@ System.Text.Encodings.Web.JavaScriptEncoder</PackageDescription>
     <Compile Include="System\Text\Encodings\Web\OptimizedInboxTextEncoder.cs" />
     <Compile Include="System\Text\Encodings\Web\DefaultUrlEncoder.cs" />
     <Compile Include="System\Text\Encodings\Web\DefaultJavaScriptEncoder.cs" />
-    <Compile Include="System\Text\Encodings\Web\SpanUtility.cs" />
     <Compile Include="System\Text\Encodings\Web\ScalarEscaperBase.cs" />
     <Compile Include="System\Text\Encodings\Web\HtmlEncoder.cs" />
     <Compile Include="System\Text\Encodings\Web\DefaultHtmlEncoder.cs" />

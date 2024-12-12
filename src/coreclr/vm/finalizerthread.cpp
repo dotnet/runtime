@@ -52,42 +52,6 @@ BOOL FinalizerThread::HaveExtraWorkForFinalizer()
     return GetFinalizerThread()->HaveExtraWorkForFinalizer();
 }
 
-static void CallFinalizerOnThreadObject(OBJECTREF obj)
-{
-    STATIC_CONTRACT_MODE_COOPERATIVE;
-
-    THREADBASEREF   refThis = (THREADBASEREF)obj;
-    Thread*         thread  = refThis->GetInternal();
-
-    // Prevent multiple calls to Finalize
-    // Objects can be resurrected after being finalized.  However, there is no
-    // race condition here.  We always check whether an exposed thread object is
-    // still attached to the internal Thread object, before proceeding.
-    if (thread)
-    {
-        refThis->ResetStartHelper();
-
-        // During process shutdown, we finalize even reachable objects.  But if we break
-        // the link between the System.Thread and the internal Thread object, the runtime
-        // may not work correctly.  In particular, we won't be able to transition between
-        // contexts and domains to finalize other objects.  Since the runtime doesn't
-        // require that Threads finalize during shutdown, we need to disable this.  If
-        // we wait until phase 2 of shutdown finalization (when the EE is suspended and
-        // will never resume) then we can simply skip the side effects of Thread
-        // finalization.
-        if ((g_fEEShutDown & ShutDown_Finalize2) == 0)
-        {
-            if (GetThreadNULLOk() != thread)
-            {
-                refThis->ClearInternal();
-            }
-
-            thread->SetThreadState(Thread::TS_Finalized);
-            Thread::SetCleanupNeededForFinalizedThread();
-        }
-    }
-}
-
 OBJECTREF FinalizerThread::GetNextFinalizableObject()
 {
     STATIC_CONTRACT_THROWS;
@@ -137,20 +101,6 @@ Again:
             pMTCur = pMTCur->GetParentMethodTable();
         }
         while (pMTCur != NULL);
-    }
-  
-    if (pMT == g_pThreadClass)
-    {
-        // Finalizing Thread object requires ThreadStoreLock.  It is expensive if
-        // we keep taking ThreadStoreLock.  This is very bad if we have high retiring
-        // rate of Thread objects.
-        // To avoid taking ThreadStoreLock multiple times, we mark Thread with TS_Finalized
-        // and clean up a batch of them when we take ThreadStoreLock next time.
-
-        // To avoid possible hierarchy requirement between critical finalizers, we call cleanup
-        // code directly.
-        CallFinalizerOnThreadObject(obj);
-        goto Again;
     }
 
     return obj;
@@ -426,18 +376,7 @@ DWORD WINAPI FinalizerThread::FinalizerThreadStart(void *args)
     ASSERT(args == 0);
     ASSERT(hEventFinalizer->IsValid());
 
-    // TODO: The following line should be removed after contract violation is fixed.
-    // See bug 27409
-    SCAN_IGNORE_THROW;
-    SCAN_IGNORE_TRIGGER;
-
     LOG((LF_GC, LL_INFO10, "Finalizer thread starting...\n"));
-
-#if defined(FEATURE_COMINTEROP_APARTMENT_SUPPORT) && !defined(FEATURE_COMINTEROP)
-    // Make sure the finalizer thread is set to MTA to avoid hitting
-    // DevDiv Bugs 180773 - [Stress Failure] AV at CoreCLR!SafeQueryInterfaceHelper
-    GetFinalizerThread()->SetApartment(Thread::AS_InMTA);
-#endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT && !FEATURE_COMINTEROP
 
     s_FinalizerThreadOK = GetFinalizerThread()->HasStarted();
 

@@ -6,8 +6,8 @@
 #pragma hdrstop
 #endif
 
-// For now the max possible size is Vector512<ushort>.Count * 2
-#define MaxPossibleUnrollSize 64
+// Overestimated threshold to avoid memory allocations,
+#define MaxPossibleUnrollSize 128
 
 //------------------------------------------------------------------------
 // importer_vectorization.cpp
@@ -72,331 +72,144 @@ static bool ConvertToLowerCase(WCHAR* input, WCHAR* mask, int length)
     return true;
 }
 
-#if defined(FEATURE_HW_INTRINSICS)
 //------------------------------------------------------------------------
-// impExpandHalfConstEqualsSIMD: Attempts to unroll and vectorize
-//    Equals against a constant WCHAR data for Length in [8..64] range
-//    using SIMD instructions. C# equivalent of what this function emits:
-//
-//    bool IsTestString(ReadOnlySpan<char> span)
-//    {
-//        // Length and Null checks are not handled here
-//        ref char s = ref MemoryMarshal.GetReference(span);
-//        var v1 = Vector128.LoadUnsafe(ref s);
-//        var v1 = Vector128.LoadUnsafe(ref s, span.Length - Vector128<ushort>.Count);
-//        var cns1 = Vector128.Create('T', 'e', 's', 't', 'S', 't', 'r', 'i');
-//        var cns2 = Vector128.Create('s', 't', 'S', 't', 'r', 'i', 'n', 'g');
-//        return ((v1 ^ cns1) | (v2 ^ cns2)) == Vector<ushort>.Zero;
-//
-//        // for:
-//        // return span.SequenceEqual("TestString");
-//    }
+// impExpandHalfConstEquals: Attempts to unroll and vectorize
+//    Equals against a constant WCHAR data
 //
 // Arguments:
 //    data       - Pointer to a data to vectorize
 //    cns        - Constant data (array of 2-byte chars)
-//    len        - Number of chars in the cns
+//    charLen    - Number of chars in the cns
 //    dataOffset - Offset for data
 //    cmpMode    - Ordinal or OrdinalIgnoreCase mode (works only for ASCII cns)
 //
 // Return Value:
-//    A pointer to the newly created SIMD node or nullptr if unrolling is not
-//    possible, not profitable or constant data contains non-ASCII char(s) in 'ignoreCase' mode
+//    A tree representing unrolled comparison or nullptr if unrolling is not possible
+//    (possible only if cns contains non-ASCII char(s) in OrdinalIgnoreCase mode)
 //
-// Notes:
-//    This function doesn't check obj for null or its Length, it's just an internal helper
-//    for impExpandHalfConstEquals
-//
-GenTree* Compiler::impExpandHalfConstEqualsSIMD(
-    GenTreeLclVarCommon* data, WCHAR* cns, int len, int dataOffset, StringComparison cmpMode)
+GenTree* Compiler::impExpandHalfConstEquals(
+    GenTreeLclVarCommon* data, WCHAR* cns, int charLen, int dataOffset, StringComparison cmpMode)
 {
-    assert(len >= 8 && len <= MaxPossibleUnrollSize);
+    static_assert_no_msg(sizeof(WCHAR) == 2);
+    assert((charLen > 0) && (charLen <= MaxPossibleUnrollSize));
 
-    const int byteLen  = len * sizeof(WCHAR);
-    int       simdSize = (int)roundDownSIMDSize(byteLen);
-#ifdef TARGET_XARCH
-    if ((simdSize == YMM_REGSIZE_BYTES) && !compOpportunisticallyDependsOn(InstructionSet_AVX2))
-    {
-        // We need AVX2 for NI_Vector256_op_Equality, fallback to Vector128 if only AVX is available
-        simdSize = XMM_REGSIZE_BYTES;
-    }
+    // A gtNewOperNode which can handle SIMD operands (used for bitwise operations):
+    auto bitwiseOp = [&](genTreeOps oper, var_types type, GenTree* op1, GenTree* op2) -> GenTree* {
+#ifdef FEATURE_HW_INTRINSICS
+        if (varTypeIsSIMD(type))
+        {
+            return gtNewSimdBinOpNode(oper, type, op1, op2, CORINFO_TYPE_NATIVEUINT, genTypeSize(type));
+        }
+        if (varTypeIsSIMD(op1))
+        {
+            // E.g. a comparison of SIMD ops returning TYP_INT;
+            assert(varTypeIsSIMD(op2));
+            return gtNewSimdCmpOpAllNode(oper, type, op1, op2, CORINFO_TYPE_NATIVEUINT, genTypeSize(op1));
+        }
 #endif
-    if (byteLen > (simdSize * 2))
+        return gtNewOperNode(oper, type, op1, op2);
+    };
+
+    // Convert charLen to byteLen. It never overflows because charLen is a small value
+    unsigned byteLen = (unsigned)charLen * 2;
+
+    // Find the largest possible type to read data
+    var_types readType         = roundDownMaxType(byteLen, true);
+    GenTree*  result           = nullptr;
+    unsigned  byteLenRemaining = byteLen;
+    while (byteLenRemaining > 0)
     {
-        // Data is too big to be processed via two SIMD loads
-        // or baseline has no SIMD support
-        return nullptr;
-    }
-    assert((byteLen >= simdSize) && (simdSize >= 16));
-
-    WCHAR cnsValue[MaxPossibleUnrollSize]    = {};
-    WCHAR toLowerMask[MaxPossibleUnrollSize] = {};
-
-    memcpy(cnsValue, cns, byteLen);
-
-    if ((cmpMode == OrdinalIgnoreCase) && !ConvertToLowerCase(cnsValue, toLowerMask, len))
-    {
-        // value contains non-ASCII chars, we can't proceed further
-        return nullptr;
-    }
-
-    const var_types   simdType = getSIMDTypeForSize(simdSize);
-    const CorInfoType baseType = CORINFO_TYPE_NATIVEUINT;
-
-    GenTreeVecCon* cnsVec1 = gtNewVconNode(simdType, cnsValue);
-    GenTreeVecCon* cnsVec2 = gtNewVconNode(simdType, (BYTE*)cnsValue + byteLen - simdSize);
-
-    GenTree* offset1 = gtNewIconNode(dataOffset, TYP_I_IMPL);
-    GenTree* offset2 = gtNewIconNode(dataOffset + byteLen - simdSize, TYP_I_IMPL);
-    GenTree* vec1    = gtNewIndir(simdType, gtNewOperNode(GT_ADD, TYP_BYREF, data, offset1));
-    GenTree* vec2    = gtNewIndir(simdType, gtNewOperNode(GT_ADD, TYP_BYREF, gtClone(data), offset2));
-
-    GenTree* xor1;
-    GenTree* orr;
-
-    if (cmpMode == OrdinalIgnoreCase)
-    {
-        // Apply ASCII-only ToLowerCase mask (bitwise OR 0x20 for all a-Z chars)
-        GenTreeVecCon* toLowerVec1 = gtNewVconNode(simdType, toLowerMask);
-        GenTreeVecCon* toLowerVec2 = gtNewVconNode(simdType, (BYTE*)toLowerMask + byteLen - simdSize);
-
-        vec1 = gtNewSimdBinOpNode(GT_OR, simdType, vec1, toLowerVec1, baseType, simdSize);
-        xor1 = gtNewSimdBinOpNode(GT_XOR, simdType, vec1, cnsVec1, baseType, simdSize);
-
-        vec2 = gtNewSimdBinOpNode(GT_OR, simdType, vec2, toLowerVec2, baseType, simdSize);
-    }
-    else
-    {
-        xor1 = gtNewSimdBinOpNode(GT_XOR, simdType, vec1, cnsVec1, baseType, simdSize);
-    }
-
-    // ((v1 ^ cns1) | (v2 ^ cns2)) == zero
-
-    GenTree* xor2;
-
-    xor2 = gtNewSimdBinOpNode(GT_XOR, simdType, vec2, cnsVec2, baseType, simdSize);
-    orr  = gtNewSimdBinOpNode(GT_OR, simdType, xor1, xor2, baseType, simdSize);
-
-    // Optimization: use a single load when byteLen equals simdSize.
-    // For code simplicity we always create nodes for two vectors case.
-    const bool useSingleVector = simdSize == byteLen;
-    return gtNewSimdCmpOpAllNode(GT_EQ, TYP_INT, useSingleVector ? xor1 : orr, gtNewZeroConNode(simdType), baseType,
-                                 simdSize);
-
-    // Codegen example for byteLen=40 and OrdinalIgnoreCase mode with AVX:
-    //
-    //  vmovups  ymm0, ymmword ptr [rcx+0CH]
-    //  vpor     ymm0, ymm0, ymmword ptr [reloc @RWD00]
-    //  vpxor    ymm0, ymm0, ymmword ptr [reloc @RWD32]
-    //  vmovups  ymm1, ymmword ptr [rcx+28H]
-    //  vpor     ymm1, ymm1, ymmword ptr [reloc @RWD64]
-    //  vpxor    ymm1, ymm1, ymmword ptr [reloc @RWD96]
-    //  vpor     ymm0, ymm0, ymm1
-    //  vptest   ymm0, ymm0
-    //  sete     al
-    //  movzx    rax, al
-}
-#endif // defined(FEATURE_HW_INTRINSICS)
-
-//------------------------------------------------------------------------
-// impCreateCompareInd: creates the following tree:
-//
-//  *  EQ        int
-//  +--*  IND       <type>
-//  |  \--*  ADD       byref
-//  |     +--*  <obj>
-//  |     \--*  CNS_INT   <offset>
-//  \--*  CNS_INT   <value>
-//
-//  or in case of 'ignoreCase':
-//
-//  *  EQ        int
-//  +--*  OR        int
-//  |  +--*  IND       <type>
-//  |  |  \--*  ADD       byref
-//  |  |     +--*  <obj>
-//  |  |     \--*  CNS_INT   <offset>
-//  |  \--*  CNS_INT   <lowercase mask>
-//  \--*  CNS_INT   <lowercased value>
-//
-// Arguments:
-//    comp       - Compiler object
-//    obj        - GenTree representing data pointer
-//    type       - Type for the IND node
-//    offset     - Offset for the data pointer
-//    value      - Constant value to compare against
-//    cmpMode    - Ordinal or OrdinalIgnoreCase mode (works only for ASCII cns)
-//    joint      - Type of joint, can be Eq ((d1 == cns1) && (s2 == cns2))
-//                 or Xor (d1 ^ cns1) | (s2 ^ cns2).
-//
-// Return Value:
-//    A tree with indirect load and comparison
-//    nullptr in case of 'ignoreCase' mode and non-ASCII value
-//
-GenTree* Compiler::impCreateCompareInd(GenTreeLclVarCommon*  obj,
-                                       var_types             type,
-                                       ssize_t               offset,
-                                       ssize_t               value,
-                                       StringComparison      cmpMode,
-                                       StringComparisonJoint joint)
-{
-    var_types actualType    = genActualType(type);
-    GenTree*  offsetTree    = gtNewIconNode(offset, TYP_I_IMPL);
-    GenTree*  addOffsetTree = gtNewOperNode(GT_ADD, TYP_BYREF, obj, offsetTree);
-    GenTree*  indirTree     = gtNewIndir(type, addOffsetTree);
-
-    if (cmpMode == OrdinalIgnoreCase)
-    {
-        ssize_t mask;
-        if (!ConvertToLowerCase((WCHAR*)&value, (WCHAR*)&mask, sizeof(ssize_t) / sizeof(WCHAR)))
+        // We have a remaining data to process and it's smaller than the
+        // previously processed data
+        if (byteLenRemaining < genTypeSize(readType))
         {
-            // value contains non-ASCII chars, we can't proceed further
-            return nullptr;
-        }
-        GenTree* toLowerMask = gtNewIconNode(mask, actualType);
-        indirTree            = gtNewOperNode(GT_OR, actualType, indirTree, toLowerMask);
-    }
+            if (varTypeIsIntegral(readType))
+            {
+                // Use a smaller GPR load for the remaining data, we're going to zero-extend it
+                // since the previous GPR load was larger. Hence, for e.g. 6 bytes we're going to do
+                // "(IND<INT> ^ cns1) | (UINT)(IND<USHORT> ^ cns2)"
+                readType = roundUpGPRType(byteLenRemaining);
+            }
+            else
+            {
+                // TODO-CQ: We should probably do the same for SIMD, e.g. 34 bytes -> SIMD32 and SIMD16
+                // while currently we do SIMD32 and SIMD32. This involves a bit more complex upcasting logic.
+            }
 
-    GenTree* valueTree = gtNewIconNode(value, actualType);
-    if (joint == StringComparisonJoint::Xor)
-    {
-        // XOR is better than CMP if we want to join multiple comparisons
-        return gtNewOperNode(GT_XOR, actualType, indirTree, valueTree);
-    }
-    assert(joint == StringComparisonJoint::Eq);
-    return gtNewOperNode(GT_EQ, TYP_INT, indirTree, valueTree);
-}
-
-//------------------------------------------------------------------------
-// impExpandHalfConstEqualsSWAR: Attempts to unroll and vectorize
-//    Equals against a constant WCHAR data for Length in [1..8] range
-//    using SWAR (a sort of SIMD but for GPR registers and instructions)
-//
-// Arguments:
-//    data       - Pointer to a data to vectorize
-//    cns        - Constant data (array of 2-byte chars)
-//    len        - Number of chars in the cns
-//    dataOffset - Offset for data
-//    cmpMode    - Ordinal or OrdinalIgnoreCase mode (works only for ASCII cns)
-//
-// Return Value:
-//    A pointer to the newly created SWAR node or nullptr if unrolling is not
-//    possible, not profitable or constant data contains non-ASCII char(s) in 'ignoreCase' mode
-//
-// Notes:
-//    This function doesn't check obj for null or its Length, it's just an internal helper
-//    for impExpandHalfConstEquals
-//
-GenTree* Compiler::impExpandHalfConstEqualsSWAR(
-    GenTreeLclVarCommon* data, WCHAR* cns, int len, int dataOffset, StringComparison cmpMode)
-{
-    assert(len >= 1 && len <= 8);
-
-// Compose Int32 or Int64 values from ushort components
-#define MAKEINT32(c1, c2)         ((UINT64)c2 << 16) | ((UINT64)c1 << 0)
-#define MAKEINT64(c1, c2, c3, c4) ((UINT64)c4 << 48) | ((UINT64)c3 << 32) | ((UINT64)c2 << 16) | ((UINT64)c1 << 0)
-
-    if (len == 1)
-    {
-        //   [ ch1 ]
-        //   [value]
-        //
-        return impCreateCompareInd(data, TYP_USHORT, dataOffset, cns[0], cmpMode);
-    }
-    if (len == 2)
-    {
-        //   [ ch1 ][ ch2 ]
-        //   [   value    ]
-        //
-        const UINT32 value = MAKEINT32(cns[0], cns[1]);
-        return impCreateCompareInd(data, TYP_INT, dataOffset, value, cmpMode);
-    }
-#ifdef TARGET_64BIT
-    if (len == 3)
-    {
-        // handle len = 3 via two Int32 with overlapping:
-        //
-        //   [ ch1 ][ ch2 ][ ch3 ]
-        //   [   value1   ]
-        //          [   value2   ]
-        //
-        // where offset for value2 is 2 bytes (1 char)
-        //
-        UINT32   value1 = MAKEINT32(cns[0], cns[1]);
-        UINT32   value2 = MAKEINT32(cns[1], cns[2]);
-        GenTree* firstIndir =
-            impCreateCompareInd(data, TYP_INT, dataOffset, value1, cmpMode, StringComparisonJoint::Xor);
-        GenTree* secondIndir =
-            impCreateCompareInd(gtClone(data)->AsLclVarCommon(), TYP_INT, dataOffset + sizeof(USHORT), value2, cmpMode,
-                                StringComparisonJoint::Xor);
-
-        if ((firstIndir == nullptr) || (secondIndir == nullptr))
-        {
-            return nullptr;
+            // Overlap with the previously processed data
+            byteLenRemaining = genTypeSize(readType);
+            assert(byteLenRemaining <= byteLen);
         }
 
-        return gtNewOperNode(GT_EQ, TYP_INT, gtNewOperNode(GT_OR, TYP_INT, firstIndir, secondIndir), gtNewIconNode(0));
-    }
+        ssize_t byteOffset = ((ssize_t)byteLen - (ssize_t)byteLenRemaining);
 
-    assert(len >= 4 && len <= 8);
+        // Total offset includes dataOffset (e.g. 12 for String)
+        ssize_t totalOffset = byteOffset + (ssize_t)dataOffset;
 
-    UINT64 value1 = MAKEINT64(cns[0], cns[1], cns[2], cns[3]);
-    if (len == 4)
-    {
-        //   [ ch1 ][ ch2 ][ ch3 ][ ch4 ]
-        //   [          value           ]
-        //
-        return impCreateCompareInd(data, TYP_LONG, dataOffset, value1, cmpMode);
-    }
+        // Clone dst and add offset if necessary.
+        GenTree* absOffset  = gtNewIconNode(totalOffset, TYP_I_IMPL);
+        GenTree* currData   = gtNewOperNode(GT_ADD, TYP_BYREF, gtCloneExpr(data), absOffset);
+        GenTree* loadedData = gtNewIndir(readType, currData, GTF_IND_UNALIGNED | GTF_IND_ALLOW_NON_ATOMIC);
 
-    // For 5..7 value2 will overlap with value1, e.g. for Length == 6:
-    //
-    //   [ ch1 ][ ch2 ][ ch3 ][ ch4 ][ ch5 ][ ch6 ]
-    //   [          value1          ]
-    //                 [          value2          ]
-    //
-
-    // For 5..6 the overlapping part is 4 bytes
-    if (len <= 6)
-    {
-        UINT32   value2 = MAKEINT32(cns[len - 2], cns[len - 1]);
-        GenTree* firstIndir =
-            impCreateCompareInd(data, TYP_LONG, dataOffset, value1, cmpMode, StringComparisonJoint::Xor);
-
-        ssize_t  offset      = dataOffset + len * sizeof(WCHAR) - sizeof(UINT32);
-        GenTree* secondIndir = impCreateCompareInd(gtClone(data)->AsLclVarCommon(), TYP_INT, offset, value2, cmpMode,
-                                                   StringComparisonJoint::Xor);
-
-        if ((firstIndir == nullptr) || (secondIndir == nullptr))
+        // For OrdinalIgnoreCase mode we need to convert both data and cns to lower case
+        if (cmpMode == OrdinalIgnoreCase)
         {
-            return nullptr;
+            WCHAR mask[MaxPossibleUnrollSize] = {};
+            int   maskSize                    = (int)genTypeSize(readType) / 2;
+            if (!ConvertToLowerCase(cns + (byteOffset / 2), reinterpret_cast<WCHAR*>(&mask), maskSize))
+            {
+                // value contains non-ASCII chars, we can't proceed further
+                return nullptr;
+            }
+
+            // 0x20 mask for the current chunk to convert it to lower case
+            GenTree* toLowerMask = gtNewGenericCon(readType, (uint8_t*)mask);
+
+            // loadedData is now "loadedData | toLowerMask"
+            loadedData = bitwiseOp(GT_OR, genActualType(readType), loadedData, toLowerMask);
+        }
+        else
+        {
+            assert(cmpMode == Ordinal);
         }
 
-        secondIndir = gtNewCastNode(TYP_LONG, secondIndir, true, TYP_LONG);
-        return gtNewOperNode(GT_EQ, TYP_INT, gtNewOperNode(GT_OR, TYP_LONG, firstIndir, secondIndir),
-                             gtNewIconNode(0, TYP_LONG));
+        GenTree* srcCns = gtNewGenericCon(readType, (uint8_t*)cns + byteOffset);
+
+        // A small optimization: prefer X == Y over X ^ Y == 0 since
+        // just one comparison is needed, and we can do it with a single load.
+        if ((genTypeSize(readType) == byteLen) && varTypeIsIntegral(readType))
+        {
+            // TODO-CQ: Figure out why it's a size regression for SIMD
+            return bitwiseOp(GT_EQ, TYP_INT, loadedData, srcCns);
+        }
+
+        // loadedData ^ srcCns
+        GenTree* xorNode = bitwiseOp(GT_XOR, genActualType(readType), loadedData, srcCns);
+
+        // Merge with the previous result with OR
+        if (result == nullptr)
+        {
+            // It's the first check
+            result = xorNode;
+        }
+        else
+        {
+            if (!result->TypeIs(readType))
+            {
+                assert(varTypeIsIntegral(result) && varTypeIsIntegral(readType));
+                xorNode = gtNewCastNode(result->TypeGet(), xorNode, true, result->TypeGet());
+            }
+
+            // Merge with the previous result via OR
+            result = bitwiseOp(GT_OR, genActualType(result->TypeGet()), result, xorNode);
+        }
+
+        // Move to the next chunk.
+        byteLenRemaining -= genTypeSize(readType);
     }
 
-    // For 7..8 the overlapping part is 8 bytes
-    assert((len == 7) || (len == 8));
-
-    UINT64   value2     = MAKEINT64(cns[len - 4], cns[len - 3], cns[len - 2], cns[len - 1]);
-    GenTree* firstIndir = impCreateCompareInd(data, TYP_LONG, dataOffset, value1, cmpMode, StringComparisonJoint::Xor);
-
-    ssize_t  offset      = dataOffset + len * sizeof(WCHAR) - sizeof(UINT64);
-    GenTree* secondIndir = impCreateCompareInd(gtClone(data)->AsLclVarCommon(), TYP_LONG, offset, value2, cmpMode,
-                                               StringComparisonJoint::Xor);
-
-    if ((firstIndir == nullptr) || (secondIndir == nullptr))
-    {
-        return nullptr;
-    }
-
-    return gtNewOperNode(GT_EQ, TYP_INT, gtNewOperNode(GT_OR, TYP_LONG, firstIndir, secondIndir),
-                         gtNewIconNode(0, TYP_LONG));
-#else // TARGET_64BIT
-    return nullptr;
-#endif
+    // Compare the result against zero, e.g. (chunk1 ^ cns1) | (chunk2 ^ cns2) == 0
+    return bitwiseOp(GT_EQ, TYP_INT, result, gtNewZeroConNode(result->TypeGet()));
 }
 
 //------------------------------------------------------------------------
@@ -464,18 +277,7 @@ GenTree* Compiler::impExpandHalfConstEquals(GenTreeLclVarCommon* data,
             dataAddr                 = gtNewLclvNode(dataTmp, TYP_BYREF);
         }
 
-        GenTree* indirCmp = nullptr;
-        if (len < 8) // SWAR impl supports len == 8 but we'd better give it to SIMD
-        {
-            indirCmp = impExpandHalfConstEqualsSWAR(dataAddr, cnsData, len, dataOffset, cmpMode);
-        }
-#if defined(FEATURE_HW_INTRINSICS)
-        else if (IsBaselineSimdIsaSupported())
-        {
-            indirCmp = impExpandHalfConstEqualsSIMD(dataAddr, cnsData, len, dataOffset, cmpMode);
-        }
-#endif
-
+        GenTree* indirCmp = impExpandHalfConstEquals(dataAddr, cnsData, len, dataOffset, cmpMode);
         if (indirCmp == nullptr)
         {
             JITDUMP("unable to compose indirCmp\n");
@@ -677,9 +479,14 @@ GenTree* Compiler::impUtf16StringComparison(StringComparisonKind kind, CORINFO_S
     else
     {
         cnsLength = info.compCompHnd->getStringLiteral(cnsStr->gtScpHnd, cnsStr->gtSconCPX, str, MaxPossibleUnrollSize);
-        if ((cnsLength < 0) || (cnsLength > MaxPossibleUnrollSize))
+        if (cnsLength < 0)
         {
             // We were unable to get the literal (e.g. dynamic context)
+            return nullptr;
+        }
+        if (cnsLength > ((int)getUnrollThreshold(MemcmpU16) / 2))
+        {
+            JITDUMP("UTF16 data is too long to unroll - bail out.\n");
             return nullptr;
         }
         JITDUMP("Trying to unroll String.Equals|StartsWith|EndsWith(op1, \"cns\")...\n")
@@ -829,12 +636,19 @@ GenTree* Compiler::impUtf16SpanComparison(StringComparisonKind kind, CORINFO_SIG
     else
     {
         cnsLength = info.compCompHnd->getStringLiteral(cnsStr->gtScpHnd, cnsStr->gtSconCPX, str, MaxPossibleUnrollSize);
-        if ((cnsLength < 0) || (cnsLength > MaxPossibleUnrollSize))
+        if (cnsLength < 0)
         {
             // We were unable to get the literal (e.g. dynamic context)
             return nullptr;
         }
-        JITDUMP("Trying to unroll MemoryExtensions.Equals|SequenceEqual|StartsWith(op1, \"%ws\")...\n", str)
+        if (cnsLength > ((int)getUnrollThreshold(MemcmpU16) / 2))
+        {
+            JITDUMP("UTF16 data is too long to unroll - bail out.\n");
+            return nullptr;
+        }
+
+        JITDUMP("Trying to unroll MemoryExtensions.Equals|SequenceEqual|StartsWith(op1, \"%s\")...\n",
+                convertUtf16ToUtf8ForPrinting((WCHAR*)str));
     }
 
     unsigned spanLclNum;

@@ -4918,7 +4918,7 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
 
         if (needCheckOv)
         {
-            emitIns_R_R_R(INS_or, attr, REG_R21, nonIntReg->GetRegNum(), REG_R0);
+            emitIns_R_R_I(INS_ori, attr, REG_R21, nonIntReg->GetRegNum(), 0);
         }
 
         emitIns_R_R_I(ins, attr, dst->GetRegNum(), nonIntReg->GetRegNum(), imm);
@@ -5058,7 +5058,18 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
 
             if (dst->OperIs(GT_ADD))
             {
-                saveOperReg1 = (dst->GetRegNum() == regOp1) ? regOp2 : regOp1;
+                saveOperReg1 = regOp1;
+                if (dst->GetRegNum() == regOp1)
+                {
+                    saveOperReg1 = regOp2;
+                    if (regOp1 == regOp2)
+                    {
+                        assert(REG_R21 != regOp1);
+                        assert(REG_RA != regOp1);
+                        emitIns_R_R_I(INS_ori, attr, REG_R21, regOp1, 0);
+                        saveOperReg1 = REG_R21;
+                    }
+                }
             }
             else
             {
@@ -5067,7 +5078,7 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
                     assert(REG_R21 != regOp1);
                     assert(REG_RA != regOp1);
                     saveOperReg1 = REG_R21;
-                    emitIns_R_R_R(INS_or, attr, REG_R21, regOp1, REG_R0);
+                    emitIns_R_R_I(INS_ori, attr, REG_R21, regOp1, 0);
                 }
                 else
                 {

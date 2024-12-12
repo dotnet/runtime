@@ -57,6 +57,7 @@ Copyright (c) .NET Foundation. All rights reserved.
     <_DefaultValueAttributeSupport Condition="'$(_DefaultValueAttributeSupport)' == ''">false</_DefaultValueAttributeSupport>
     <DynamicCodeSupport Condition="'$(DynamicCodeSupport)' == ''">true</DynamicCodeSupport>
     <UseSystemResourceKeys Condition="'$(UseSystemResourceKeys)' == ''">false</UseSystemResourceKeys>
+    <_DataSetXmlSerializationSupport Condition="'$(_DataSetXmlSerializationSupport)' == ''">false</_DataSetXmlSerializationSupport>
   </PropertyGroup>
 
 
@@ -156,6 +157,7 @@ Copyright (c) .NET Foundation. All rights reserved.
             UnusedInterfaces="$(_TrimmerUnusedInterfaces)"
             IPConstProp="$(_TrimmerIPConstProp)"
             Sealer="$(_TrimmerSealer)"
+            KeepMetadata="@(_TrimmerKeepMetadata)"
 
             Warn="$(ILLinkWarningLevel)"
             NoWarn="$(NoWarn)"
@@ -239,6 +241,11 @@ Copyright (c) .NET Foundation. All rights reserved.
       <TrimmerRemoveSymbols Condition=" '$(DebuggerSupport)' == 'false' ">true</TrimmerRemoveSymbols>
       <TrimmerRemoveSymbols Condition=" '$(DebuggerSupport)' != 'false' ">false</TrimmerRemoveSymbols>
     </PropertyGroup>
+
+    <ItemGroup>
+      <!-- Keep parameter name and other metadata unless debugger support is disabled. -->
+      <_TrimmerKeepMetadata Include="all" Condition=" '$(DebuggerSupport)' != 'false' " />
+    </ItemGroup>
 
     <PropertyGroup>
       <_TrimmerPreserveSymbolPaths Condition=" '$(_TrimmerPreserveSymbolPaths)' == '' and '$(DeterministicSourcePaths)' == 'true' ">true</_TrimmerPreserveSymbolPaths>

@@ -15,8 +15,9 @@ using static System.Buffers.Text.Base64Helper;
 namespace System.Buffers.Text
 {
     // AVX2 and Vector128 version based on https://github.com/gfoidl/Base64/blob/5383320e28cac6c7ac6f86502fb05d23a048a21d/source/gfoidl.Base64/Internal/Encodings/Base64UrlEncoding.cs
-
+#pragma warning disable 1591 // TODO: Document this API. https://github.com/dotnet/runtime/issues/105974
     public static partial class Base64Url
+#pragma warning restore 1591
     {
         private const int MaxStackallocThreshold = 256;
 
@@ -674,7 +675,11 @@ namespace System.Buffers.Text
                     return false;
                 }
 
+#if NET9_0_OR_GREATER
+                str = Ascii.ExtractAsciiVector(utf16VectorLower, utf16VectorUpper).AsSByte();
+#else
                 str = Vector512.Narrow(utf16VectorLower, utf16VectorUpper).AsSByte();
+#endif
                 return true;
             }
 
@@ -698,7 +703,11 @@ namespace System.Buffers.Text
                     return false;
                 }
 
+#if NET9_0_OR_GREATER
+                str = Ascii.ExtractAsciiVector(utf16VectorLower, utf16VectorUpper).AsSByte();
+#else
                 str = Vector256.Narrow(utf16VectorLower, utf16VectorUpper).AsSByte();
+#endif
                 return true;
             }
 

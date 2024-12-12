@@ -59,14 +59,16 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
     TakeLock
     if [ ! -d IL-CG2 ]%3B then
       mkdir IL-CG2
+      cp ./*.dll IL-CG2/
+      rm IL-CG2/composite-r2r.dll 2>/dev/null
+      rm IL-CG2/Coreclr.TestWrapper.dll 2>/dev/null
+      rm IL-CG2/*.XUnitWrapper.dll 2>/dev/null
+
       if [ ! -z ${CompositeBuildMode+x} ]%3B then
-        cp $(AssemblyName).dll IL-CG2/
-        cp $CORE_ROOT/lib*.so $CORE_ROOT/lib*.dylib $(scriptPath)
-      else
-        cp *.dll IL-CG2/
-        rm IL-CG2/composite-r2r.dll 2>/dev/null
-        rm IL-CG2/Coreclr.TestWrapper.dll 2>/dev/null
-        rm IL-CG2/*.XUnitWrapper.dll 2>/dev/null
+        # HACK: copy native shared shim libraries. Not needed on Windows.
+        cp "$CORE_ROOT"/lib*.so "$CORE_ROOT"/lib*.dylib $(scriptPath)
+
+        ExtraCrossGen2Args+=" --composite"
       fi
 
       ExtraCrossGen2Args+=" $(CrossGen2TestExtraArguments)"
@@ -75,53 +77,71 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
           ExtraCrossGen2Args+=" --inputbubble"
       fi
 
+      # NOTE: CrossGen2TestCheckPdb not implemented in this version (no PDBs on *nix)
+
       __cg2ExitCode=0
       __r2rDumpExitCode=0
 
-      OneFileCrossgen2() {
+      RunCrossgen2OnFiles() {
         date +%H:%M:%S
         __OutputFile=$1
 
         __ResponseFile="$__OutputFile.rsp"
-        rm $__ResponseFile 2>/dev/null
+        rm "$__ResponseFile" 2>/dev/null
 
-        __Command=$_DebuggerFullPath
+        __R2RDumpCommand=$_DebuggerFullPath
         # Tests run locally need __TestDotNetCmd (set by runtest.py) or a compatible 5.0 dotnet runtime in the path
         if [ ! -z ${__TestDotNetCmd+x} ] %3B then
-            __Command+=" $__TestDotNetCmd"
+            __R2RDumpCommand+=" $__TestDotNetCmd"
         else
-            __Command+=" dotnet"
+            __R2RDumpCommand+=" dotnet"
         fi
-        __R2RDumpCommand=$__Command" $CORE_ROOT/R2RDump/R2RDump.dll"
+        __R2RDumpCommand+=" $CORE_ROOT/R2RDump/R2RDump.dll"
         __R2RDumpCommand+=" --header --sc --in $__OutputFile --out $__OutputFile.r2rdump --val"
-        __Command+=" $CORE_ROOT/crossgen2/crossgen2.dll"
+
+        __Command="$_DebuggerFullPath $CORE_ROOT/crossgen2/crossgen2"
         __Command+=" @$__ResponseFile"
         __Command+=" $ExtraCrossGen2Args"
 
-        echo $2 >> $__ResponseFile
+        # Expand glob or multiple filenames into array
+        __InputFiles=($2)
+        for dllFile in "${__InputFiles[@]}"; do
+          echo "$dllFile" >> "$__ResponseFile"
+        done
 
-        echo -o:$__OutputFile>>$__ResponseFile
-        echo -r:$CORE_ROOT/System.*.dll>>$__ResponseFile
-        echo -r:$CORE_ROOT/Microsoft.*.dll>>$__ResponseFile
-        echo -r:$CORE_ROOT/xunit.*.dll>>$__ResponseFile
-        echo -r:$CORE_ROOT/mscorlib.dll>>$__ResponseFile
-        echo --verify-type-and-field-layout>>$__ResponseFile
-        echo --method-layout:random>>$__ResponseFile
+        echo -o:"$__OutputFile" >> "$__ResponseFile"
+        echo --targetarch:$(TargetArchitecture) >> "$__ResponseFile"
+        echo --targetos:$(TargetOS) >> "$__ResponseFile"
+        echo --verify-type-and-field-layout >> "$__ResponseFile"
+        echo --method-layout:random >> "$__ResponseFile"
         if [ ! -z ${CrossGen2SynthesizePgo+x} ]%3B then
-            echo --synthesize-random-mibc>>$__ResponseFile
-            echo --embed-pgo-data>>$__ResponseFile
+            echo --synthesize-random-mibc >> "$__ResponseFile"
+            echo --embed-pgo-data >> "$__ResponseFile"
         fi
         if [ ! -z ${HotColdSplitting+x} ]%3B then
-            echo --hot-cold-splitting>>$__ResponseFile
+            echo --hot-cold-splitting >> "$__ResponseFile"
         fi
-        echo --targetarch:$(TargetArchitecture)>>$__ResponseFile
-        echo --targetos:$(TargetOS)>>$__ResponseFile
+
+        # HACK: Suppress the globbing of the references and filenames causing empty lines in the response file
+        set -o noglob
+
+        echo -r:$CORE_ROOT/System.*.dll >> "$__ResponseFile"
+        echo -r:$CORE_ROOT/Microsoft.*.dll >> "$__ResponseFile"
+        echo -r:$CORE_ROOT/xunit.*.dll >> "$__ResponseFile"
+        echo -r:$CORE_ROOT/mscorlib.dll >> "$__ResponseFile"
+        echo -r:$CORE_ROOT/netstandard.dll >> "$__ResponseFile"
+
+        # HACK: Re-enable globbing
+        set +o noglob
 
         echo "Response file: $__ResponseFile"
-        cat $__ResponseFile
+        cat "$__ResponseFile"
 
         # Suppress some DOTNET variables for the duration of Crossgen2 execution
-        export -n DOTNET_GCName DOTNET_GCStress DOTNET_HeapVerify DOTNET_ReadyToRun DOTNET_TC_OnStackReplacement DOTNET_TC_PartialCompilation
+        export -n DOTNET_GCName DOTNET_GCStress DOTNET_HeapVerify DOTNET_ReadyToRun
+        # FIXME: Remove this?
+        # work around problems in 6.0 OSR
+        export -n DOTNET_TC_OnStackReplacement DOTNET_TC_PartialCompilation
 
         echo "Running CrossGen2: $__Command"
         $__Command
@@ -131,24 +151,25 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
         $__R2RDumpCommand
         __r2rDumpExitCode=$?
 
-        export DOTNET_GCName DOTNET_GCStress DOTNET_HeapVerify DOTNET_ReadyToRun DOTNET_TC_OnStackReplacement DOTNET_TC_PartialCompilation
+        export DOTNET_GCName DOTNET_GCStress DOTNET_HeapVerify DOTNET_ReadyToRun
+        export DOTNET_TC_OnStackReplacement DOTNET_TC_PartialCompilation
         date +%H:%M:%S
       }
 
       if [ ! -z ${CompositeBuildMode+x} ]%3B then
-          ExtraCrossGen2Args+=" --composite"
-          OneFileCrossgen2 "$PWD/composite-r2r.dll" "$PWD/IL-CG2/*.dll"
+          shopt -s nullglob
+          RunCrossgen2OnFiles "$PWD/composite-r2r.dll" "$PWD/IL-CG2/*.dll"
       else
-          ExtraCrossGen2Args+= -r:$PWD/IL-CG2/*.dll
-        for dllFile in $PWD/IL-CG2/*.dll
-        do
-          echo $dllFile
-          bareFileName="${dllFile##*/}"
-          OneFileCrossgen2 "$PWD/$bareFileName" "$dllFile"
-          if [ $__cg2ExitCode -ne 0 ]; then
-            break
-          fi
-        done
+          ExtraCrossGen2Args+=" -r:$PWD/IL-CG2/*.dll"
+          for dllFile in "$PWD"/IL-CG2/*.dll
+          do
+            echo $dllFile
+            bareFileName="${dllFile##*/}"
+            RunCrossgen2OnFiles "$PWD/$bareFileName" "$dllFile"
+            if [ $__cg2ExitCode -ne 0 ]; then
+              break
+            fi
+          done
       fi
 
       echo "Crossgen2 compilation finished, exit code $__cg2ExitCode" >> $compilationDoneFlagFile
@@ -247,13 +268,13 @@ if defined RunCrossGen2 (
     ) else (
         set __DotNet="dotnet"
     )
-    set __Command=!_DebuggerFullPath!
-    set __Command=!__Command! !__DotNet!
-    set __R2RDumpCommand=!__Command! "!CORE_ROOT!\r2rdump\r2rdump.dll"
+    set __R2RDumpCommand=!_DebuggerFullPath! !__DotNet! "!CORE_ROOT!\r2rdump\r2rdump.dll"
     set __R2RDumpCommand=!__R2RDumpCommand! --header --sc --in !__OutputFile! --out !__OutputFile!.r2rdump --val
-    set __Command=!__Command! "!CORE_ROOT!\crossgen2\crossgen2.dll"
+
+    set __Command=!_DebuggerFullPath! "!CORE_ROOT!\crossgen2\crossgen2.exe"
     set __Command=!__Command! @"!__ResponseFile!"
     set __Command=!__Command! !ExtraCrossGen2Args!
+
     echo !__InputFile!>>!__ResponseFile!
     echo -o:!__OutputFile!>>!__ResponseFile!
     echo --targetarch:$(TargetArchitecture)>>!__ResponseFile!
@@ -287,18 +308,19 @@ if defined RunCrossGen2 (
     set "DOTNET_HeapVerify="
     set "DOTNET_ReadyToRun="
 
+    REM FIXME: remove this?
     REM work around problems in 6.0 OSR
     set "DOTNET_TC_OnStackReplacement="
     set "DOTNET_TC_PartialCompilation="
 
-    echo "!__Command!"
+    echo "Running CrossGen2: !__Command!"
     call !__Command!
 
     set CrossGen2Status=!ERRORLEVEL!
 
     IF NOT !CrossGen2Status!==0 goto :DoneR2RDumpOperations
 
-    echo "!__R2RDumpCommand!"
+    echo "Running R2RDump: !__R2RDumpCommand!"
     call !__R2RDumpCommand!
 
     set R2RDumpStatus=!ERRORLEVEL!

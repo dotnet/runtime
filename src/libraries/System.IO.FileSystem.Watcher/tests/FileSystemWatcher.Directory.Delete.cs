@@ -7,6 +7,7 @@ using Xunit;
 
 namespace System.IO.Tests
 {
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/103584", TestPlatforms.Windows)]
     public class Directory_Delete_Tests : FileSystemWatcherTest
     {
         [Fact]
@@ -64,7 +65,6 @@ namespace System.IO.Tests
         }
 
         [ConditionalFact(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/103584", TestPlatforms.Windows)]
         public void FileSystemWatcher_Directory_Delete_SymLink()
         {
             string dir = CreateTestDirectory(TestDirectory, "dir");
