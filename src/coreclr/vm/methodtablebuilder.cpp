@@ -5067,7 +5067,7 @@ MethodTableBuilder::ValidateMethods()
                 if (IsMiNative(it.ImplFlags()))
                 {
                     // For now simply disallow managed native code if you turn this on you have to at least
-                    // insure that we have SkipVerificationPermission or equivalent
+                    // ensure that we have SkipVerificationPermission or equivalent
                     BuildMethodTableThrowException(BFA_MANAGED_NATIVE_NYI, it.Token());
                 }
                 else

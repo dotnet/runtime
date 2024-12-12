@@ -214,7 +214,7 @@ void HelperMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloat
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        PRECONDITION(m_MachState.isValid());               // InsureInit has been called
+        PRECONDITION(m_MachState.isValid());               // EnsureInit has been called
         SUPPORTS_DAC;
     }
     CONTRACT_END;
@@ -236,7 +236,7 @@ void HelperMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloat
         // This allocation throws on OOM.
         MachState* pUnwoundState = (MachState*)DacAllocHostOnlyInstance(sizeof(*pUnwoundState), true);
 
-        InsureInit(pUnwoundState);
+        EnsureInit(pUnwoundState);
 
         pRD->PCTAddr = dac_cast<TADDR>(pUnwoundState->pRetAddr());
         pRD->pCurrentContext->Eip = pRD->ControlPC = pUnwoundState->GetRetAddr();
@@ -295,7 +295,7 @@ void HelperMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloat
     {
         MachState unwindState;
 
-        InsureInit(&unwindState);
+        EnsureInit(&unwindState);
         pRD->PCTAddr = dac_cast<TADDR>(unwindState.pRetAddr());
         pRD->ControlPC = unwindState.GetRetAddr();
         pRD->SP = unwindState._esp;
@@ -317,10 +317,10 @@ void HelperMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloat
         thisState->_ebp = unwindState._ebp;
         pRD->pEbp = (DWORD *)&thisState->_ebp;
 
-        // InsureInit always sets m_RegArgs to zero
+        // EnsureInit always sets m_RegArgs to zero
         // in the real code.  I'm not sure exactly
         // what should happen in the on-the-fly case,
-        // but go with what would happen from an InsureInit.
+        // but go with what would happen from an EnsureInit.
 
         RETURN;
     }
@@ -371,7 +371,7 @@ EXTERN_C MachState* STDCALL HelperMethodFrameConfirmState(HelperMethodFrame* fra
     BEGIN_DEBUG_ONLY_CODE;
     if (!state->isValid())
     {
-        frame->InsureInit(NULL);
+        frame->EnsureInit(NULL);
         _ASSERTE(state->_pEsi != &state->_esi || state->_esi  == (TADDR)esiVal);
         _ASSERTE(state->_pEdi != &state->_edi || state->_edi  == (TADDR)ediVal);
         _ASSERTE(state->_pEbx != &state->_ebx || state->_ebx  == (TADDR)ebxVal);
