@@ -16571,7 +16571,9 @@ INTEGRAL_OVF:
     // update args table. For this reason this optimization is enabled only
     // for global morphing phase.
     //
-    // TODO-CQ: Once fgMorphArgs() is fixed this restriction could be removed.
+    // TODO-CQ: Once fgMorphArgs() is fixed this restriction could be removed,
+    // but it would require to know whether or not we are after morph such that
+    // we know when the call created below needs to be in morphed form.
 
     if (!fgGlobalMorph)
     {
@@ -16581,10 +16583,10 @@ INTEGRAL_OVF:
 
     var_types type = genActualType(tree->TypeGet());
     op1            = type == TYP_LONG ? gtNewLconNode(0) : gtNewIconNode(0);
-    if (vnStore != nullptr)
-    {
-        op1->gtVNPair.SetBoth(vnStore->VNZeroForType(type));
-    }
+    INDEBUG(op1->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+
+    // Would need to set VNs if this wasn't in global morph only.
+    assert(vnStore == nullptr);
 
     JITDUMP("\nFolding binary operator with constant nodes into a comma throw:\n");
     DISPTREE(tree);
@@ -16598,18 +16600,10 @@ INTEGRAL_OVF:
 
     op2 = op1;
     op1 = gtNewHelperCallNode(CORINFO_HELP_OVERFLOW, TYP_VOID, gtNewIconNode(compCurBB->bbTryIndex));
-
-    // op1 is a call to the JIT helper that throws an Overflow exception.
-    // Attach the ExcSet for VNF_OverflowExc(Void) to this call.
-
-    if (vnStore != nullptr)
-    {
-        op1->gtVNPair = vnStore->VNPWithExc(ValueNumPair(ValueNumStore::VNForVoid(), ValueNumStore::VNForVoid()),
-                                            vnStore->VNPExcSetSingleton(vnStore->VNPairForFunc(TYP_REF, VNF_OverflowExc,
-                                                                                               vnStore->VNPForVoid())));
-    }
+    op1 = fgMorphTree(op1);
 
     tree = gtNewOperNode(GT_COMMA, tree->TypeGet(), op1, op2);
+    INDEBUG(tree->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
 
     return tree;
 }

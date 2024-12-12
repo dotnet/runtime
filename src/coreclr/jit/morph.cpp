@@ -8307,29 +8307,7 @@ DONE_MORPHING_CHILDREN:
     // Try to fold it, maybe we get lucky,
     tree = gtFoldExpr(tree);
 
-    if (oldTree != tree)
-    {
-        /* if gtFoldExpr returned op1 or op2 then we are done */
-        if ((tree == op1) || (tree == op2) || (tree == qmarkOp1) || (tree == qmarkOp2))
-        {
-            return tree;
-        }
-
-        /* If we created a comma-throw tree then we need to morph op1 */
-        if (fgIsCommaThrow(tree))
-        {
-            tree->AsOp()->gtOp1 = fgMorphTree(tree->AsOp()->gtOp1);
-            fgMorphTreeDone(tree);
-            return tree;
-        }
-
-        return tree;
-    }
-    else if (tree->OperIsConst())
-    {
-        return tree;
-    }
-    else if (tree->IsNothingNode())
+    if ((oldTree != tree) || tree->OperIsConst() || tree->IsNothingNode())
     {
         return tree;
     }
