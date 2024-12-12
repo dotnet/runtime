@@ -4643,6 +4643,8 @@ BasicBlock* Compiler::fgSplitBlockAtEnd(BasicBlock* curr)
 BasicBlock* Compiler::fgSplitBlockAfterStatement(BasicBlock* curr, Statement* stmt)
 {
     assert(!curr->IsLIR()); // No statements in LIR, so you can't use this function.
+    assert(curr->bbStmtList != nullptr);
+    assert(fgBlockContainsStatementBounded(curr, stmt));
 
     BasicBlock* newBlock = fgSplitBlockAtEnd(curr);
 
@@ -4651,7 +4653,7 @@ BasicBlock* Compiler::fgSplitBlockAfterStatement(BasicBlock* curr, Statement* st
         newBlock->bbStmtList = stmt->GetNextStmt();
         if (newBlock->bbStmtList != nullptr)
         {
-            newBlock->bbStmtList->SetPrevStmt(curr->bbStmtList->GetPrevStmt());
+            newBlock->bbStmtList->SetPrevStmt(curr->lastStmt());
         }
         curr->bbStmtList->SetPrevStmt(stmt);
         stmt->SetNextStmt(nullptr);
