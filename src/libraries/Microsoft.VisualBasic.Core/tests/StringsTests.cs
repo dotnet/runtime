@@ -431,7 +431,7 @@ namespace Microsoft.VisualBasic.Tests
             Assert.Equal(expected, Strings.InStr(1, string1, string2, CompareMethod.Binary));
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [Theory]
         [InlineData("A", "a", 1)]
         [InlineData("Aa", "a", 1)]
         public void InStr_TextCompare(string string1, string string2, int expected)
@@ -479,7 +479,7 @@ namespace Microsoft.VisualBasic.Tests
             Assert.Equal(expected, Strings.InStrRev(stringCheck, stringMatch, start, CompareMethod.Binary));
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [Theory]
         [InlineData("A", "a", 1, 1)]
         [InlineData("aA", "a", 2, 2)]
         public void InStrRev_TextCompare(string stringCheck, string stringMatch, int start, int expected)
@@ -779,7 +779,7 @@ namespace Microsoft.VisualBasic.Tests
             Assert.Equal(expected, Strings.Trim(str));
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [Theory]
         [InlineData("", "", null, 1, -1, CompareMethod.Text, null)]
         [InlineData("", null, "", 1, -1, CompareMethod.Text, null)]
         [InlineData("", "", "", 1, -1, CompareMethod.Text, null)]
@@ -815,7 +815,7 @@ namespace Microsoft.VisualBasic.Tests
             Assert.Equal(expected, Strings.Space(number));
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [Theory]
         [InlineData(null, null, -1, CompareMethod.Text, new string[] { "" })]
         [InlineData(null, "", -1, CompareMethod.Text, new string[] { "" })]
         [InlineData("", null, -1, CompareMethod.Text, new string[] { "" })]
@@ -833,14 +833,14 @@ namespace Microsoft.VisualBasic.Tests
             Assert.Equal(expected, Strings.Split(expression, delimiter, limit, compare));
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [Theory]
         [InlineData("A, B, C", ", ", 0, CompareMethod.Text)]
         public void Split_IndexOutOfRangeException(string expression, string delimiter, int limit, CompareMethod compare)
         {
             Assert.Throws< IndexOutOfRangeException>(() => Strings.Split(expression, delimiter, limit, compare));
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [Theory]
         [InlineData("a", "a", 0, 0)]
         [InlineData("a", "b", -1, -1)]
         [InlineData("b", "a", 1, 1)]

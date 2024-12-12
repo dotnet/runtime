@@ -12,7 +12,6 @@ internal readonly partial struct CodeVersions_1 : ICodeVersions
 {
     private readonly Target _target;
 
-
     public CodeVersions_1(Target target)
     {
         _target = target;
@@ -23,9 +22,7 @@ internal readonly partial struct CodeVersions_1 : ICodeVersions
         // CodeVersionManager::GetActiveILCodeVersion
         GetModuleAndMethodDesc(methodDesc, out TargetPointer module, out uint methodDefToken);
 
-        ModuleHandle moduleHandle = _target.Contracts.Loader.GetModuleHandle(module);
-        TargetPointer ilCodeVersionTable = _target.Contracts.Loader.GetLookupTables(moduleHandle).MethodDefToILCodeVersioningState;
-        TargetPointer ilVersionStateAddress = _target.Contracts.Loader.GetModuleLookupMapElement(ilCodeVersionTable, methodDefToken, out var _);
+        TargetPointer ilVersionStateAddress = GetILVersionStateAddress(module, methodDefToken);
         if (ilVersionStateAddress == TargetPointer.Null)
         {
             return ILCodeVersionHandle.CreateSynthetic(module, methodDefToken);
@@ -73,14 +70,11 @@ internal readonly partial struct CodeVersions_1 : ICodeVersions
         // CodeVersionManager::GetILCodeVersions
         GetModuleAndMethodDesc(methodDesc, out TargetPointer module, out uint methodDefToken);
 
-        ModuleHandle moduleHandle = _target.Contracts.Loader.GetModuleHandle(module);
-        TargetPointer ilCodeVersionTable = _target.Contracts.Loader.GetLookupTables(moduleHandle).MethodDefToILCodeVersioningState;
-        TargetPointer ilVersionStateAddress = _target.Contracts.Loader.GetModuleLookupMapElement(ilCodeVersionTable, methodDefToken, out var _);
-
         // always add the synthetic version
         yield return ILCodeVersionHandle.CreateSynthetic(module, methodDefToken);
 
         // if explicit versions exist, iterate linked list and return them
+        TargetPointer ilVersionStateAddress = GetILVersionStateAddress(module, methodDefToken);
         if (ilVersionStateAddress != TargetPointer.Null)
         {
             Data.ILCodeVersioningState ilState = _target.ProcessedData.GetOrAdd<Data.ILCodeVersioningState>(ilVersionStateAddress);
@@ -187,7 +181,6 @@ internal readonly partial struct CodeVersions_1 : ICodeVersions
             return (ilVersionId == codeVersion.ILVersionId)
                 && ((NativeCodeVersionNodeFlags)codeVersion.Flags).HasFlag(NativeCodeVersionNodeFlags.IsActiveChild);
         });
-
     }
 
     [Flags]
@@ -299,6 +292,18 @@ internal readonly partial struct CodeVersions_1 : ICodeVersions
         TypeHandle typeHandle = rts.GetTypeHandle(mtAddr);
         module = rts.GetModule(typeHandle);
         methodDefToken = rts.GetMethodToken(md);
+    }
+
+    private TargetPointer GetILVersionStateAddress(TargetPointer module, uint methodDefToken)
+    {
+        // No token - for example, special runtime methods like array methods
+        if (methodDefToken == (uint)EcmaMetadataUtils.TokenType.mdtMethodDef)
+            return TargetPointer.Null;
+
+        ModuleHandle moduleHandle = _target.Contracts.Loader.GetModuleHandle(module);
+        TargetPointer ilCodeVersionTable = _target.Contracts.Loader.GetLookupTables(moduleHandle).MethodDefToILCodeVersioningState;
+        TargetPointer ilVersionStateAddress = _target.Contracts.Loader.GetModuleLookupMapElement(ilCodeVersionTable, methodDefToken, out var _);
+        return ilVersionStateAddress;
     }
 
     private ILCodeVersionNode AsNode(ILCodeVersionHandle handle)

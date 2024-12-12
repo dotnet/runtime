@@ -30,7 +30,6 @@ SET_DEFAULT_DEBUG_CHANNEL(PAL); // some headers have code with asserts, so do th
 #include "../thread/procprivate.hpp"
 #include "pal/module.h"
 #include "pal/virtual.h"
-#include "pal/misc.h"
 #include "pal/environ.h"
 #include "pal/utils.h"
 #include "pal/debug.h"

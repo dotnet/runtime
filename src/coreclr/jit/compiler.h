@@ -2220,9 +2220,6 @@ public:
     BasicBlockVisit VisitLoopBlocks(TFunc func);
 
     template<typename TFunc>
-    BasicBlockVisit VisitLoopBlocksLexical(TFunc func);
-
-    template<typename TFunc>
     BasicBlockVisit VisitRegularExitBlocks(TFunc func);
 
     BasicBlock* GetLexicallyTopMostBlock();
@@ -6545,6 +6542,7 @@ public:
     }
 
     void fgRemoveProfileData(const char* reason);
+    void fgRepairProfileCondToUncond(BasicBlock* block, FlowEdge* retainedEdge, FlowEdge* removedEdge, int* metric = nullptr);
 
 //-------- Insert a statement at the start or end of a basic block --------
 
