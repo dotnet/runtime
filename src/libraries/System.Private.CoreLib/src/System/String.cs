@@ -531,7 +531,8 @@ namespace System
         internal static string Alloc(int length, out Span<char> resultSpan)
         {
             string result = FastAllocateString(length);
-            resultSpan = new Span<char>(ref result._firstChar, result._stringLength);
+            Debug.Assert(result.Length == length);
+            resultSpan = new Span<char>(ref result._firstChar, length);
             return result;
         }
 
