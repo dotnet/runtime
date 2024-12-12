@@ -11,7 +11,6 @@ using System.Linq;
 using System.Reflection.PortableExecutable;
 using System.Runtime.InteropServices;
 using System.Text;
-using Microsoft.DotNet.CoreSetup;
 using Microsoft.NET.HostModel.AppHost;
 using Microsoft.NET.HostModel.MachO;
 

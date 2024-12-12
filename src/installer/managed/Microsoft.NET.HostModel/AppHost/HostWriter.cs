@@ -237,9 +237,10 @@ namespace Microsoft.NET.HostModel.AppHost
                 {
                     if (!MachObjectFile.IsMachOImage(bundleStream))
                         return;
+
                     long bundleSize = bundleStream.Length;
-                    long mmapFileSize = macosCodesign ?
-                        bundleSize + MachObjectFile.GetSignatureSizeEstimate((uint)bundleSize, Path.GetFileName(appHostPath))
+                    long mmapFileSize = macosCodesign
+                        ? bundleSize + MachObjectFile.GetSignatureSizeEstimate((uint)bundleSize, Path.GetFileName(appHostPath))
                         : bundleSize;
                     using (MemoryMappedFile memoryMappedFile = MemoryMappedFile.CreateFromFile(bundleStream, null, mmapFileSize, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, leaveOpen: true))
                     using (MemoryMappedViewAccessor accessor = memoryMappedFile.CreateViewAccessor(0, 0, MemoryMappedFileAccess.ReadWrite))

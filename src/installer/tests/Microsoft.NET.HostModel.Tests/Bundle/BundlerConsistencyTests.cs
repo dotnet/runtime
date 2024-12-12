@@ -331,7 +331,7 @@ namespace Microsoft.NET.HostModel.Bundle.Tests
             Bundler bundler = CreateBundlerInstance(targetOS: OSPlatform.OSX, macosCodesign: shouldCodesign);
             string bundledApp = bundler.GenerateBundle(fileSpecs);
 
-            SigningTests.IsSigned(bundledApp).Should().Be(shouldCodesign);
+            Assert.Equal(shouldCodesign, SigningTests.IsSigned(bundledApp));
         }
 
         public class SharedTestState : IDisposable

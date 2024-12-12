@@ -307,10 +307,11 @@ internal unsafe partial class MachObjectFile
             switch (loadCommand.GetCommandType(header))
             {
                 case MachLoadCommandType.CodeSignature:
-                    inputFile.Read(commandsPtr, out LinkEditCommand leCommand);
-                    codeSignatureLC = (leCommand, commandsPtr);
                     if (i + 1 != header.NumberOfCommands)
                         throw new AppHostMachOFormatException(MachOFormatError.SignCommandNotLast);
+
+                    inputFile.Read(commandsPtr, out LinkEditCommand leCommand);
+                    codeSignatureLC = (leCommand, commandsPtr);
                     break;
                 case MachLoadCommandType.Segment64:
                     inputFile.Read(commandsPtr, out Segment64LoadCommand segment64);
@@ -355,10 +356,12 @@ internal unsafe partial class MachObjectFile
         if (symtabLC.Command.GetSymbolTableOffset(header) < linkEditSegment64.Command.GetFileOffset(header)
             || symtabLC.Command.GetStringTableOffset(header) + symtabLC.Command.GetStringTableSize(header)
                 > linkEditSegment64.Command.GetFileOffset(header) + linkEditSegment64.Command.GetFileSize(header))
+        {
             throw new AppHostMachOFormatException(MachOFormatError.SymtabNotInLinkEdit);
+        }
         if (!codeSignatureLC.Command.IsDefault)
         {
-            // Signature blob should be right after the symbol table except for a few bytes of padding
+            // Signature blob should be right after the symbol table except for a few bytes of padding for alignment
             uint symtabEnd = symtabLC.Command.GetStringTableOffset(header) + symtabLC.Command.GetStringTableSize(header);
             uint signStart = codeSignatureLC.Command.GetDataOffset(header);
             if (symtabEnd > signStart || signStart - symtabEnd > 32)
@@ -367,7 +370,9 @@ internal unsafe partial class MachObjectFile
             if (codeSignatureLC.Command.GetDataOffset(header) < linkEditSegment64.Command.GetFileOffset(header)
                 || codeSignatureLC.Command.GetDataOffset(header) + codeSignatureLC.Command.GetFileSize(header)
                     > linkEditSegment64.Command.GetFileOffset(header) + linkEditSegment64.Command.GetFileSize(header))
+            {
                 throw new AppHostMachOFormatException(MachOFormatError.SignNotInLinkEdit);
+            }
         }
         return commandsPtr;
     }
