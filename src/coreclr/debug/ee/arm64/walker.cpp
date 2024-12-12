@@ -280,7 +280,7 @@ BOOL  NativeWalker::DecodePCRelativeBranchInst(PT_CONTEXT context, const PRD_TYP
         // Sign extension
         if ((offset & 0x4000000)) //Check for 26'st bit
         {
-            offset = offset | 0xFFFFFFFFF8000000;
+            offset = offset | 0xFFFFFFFFF0000000;
         }
 
         if ((opcode & 0x80000000) != 0) //BL
