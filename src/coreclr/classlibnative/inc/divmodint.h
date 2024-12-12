@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#ifndef _DIVMODINT_H_
-#define _DIVMODINT_H_
+#ifndef HAVE_DIVMODINT_H
+#define HAVE_DIVMODINT_H
 
 #include <object.h>
 #include <fcall.h>
@@ -19,4 +19,4 @@ public:
     FCDECL2_VV(static uint64_t, ModUInt64, uint64_t dividend, uint64_t divisor);
 };
 
-#endif // _DIVMODINT_H_
+#endif // HAVE_DIVMODINT_H
