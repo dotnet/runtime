@@ -7585,7 +7585,15 @@ bool DebuggerStepper::TriggerSingleStep(Thread *thread, const BYTE *ip)
     if (!g_pEEInterface->IsManagedNativeCode(ip))
     {
         LOG((LF_CORDB,LL_INFO10000, "DS::TSS: not in managed code, Returning false (case 0)!\n"));
-        DisableSingleStep();
+        // Sometimes we can get here with a callstack that is coming from an APC
+        // this will disable the single stepping and incorrectly resume an app that the user
+        // is stepping through.
+#ifdef FEATURE_THREAD_ACTIVATION        
+        if ((thread->m_State & Thread::TS_DebugWillSync) == 0)
+#endif   
+        {
+            DisableSingleStep();
+        }
         return false;
     }
 

@@ -4945,7 +4945,7 @@ BasicBlock* Compiler::fgSplitEdge(BasicBlock* curr, BasicBlock* succ)
 
 // Removes the block from the bbPrev/bbNext chain
 // Updates fgFirstBB and fgLastBB if necessary
-// Does not update fgFirstFuncletBB or fgFirstColdBlock (fgUnlinkRange does)
+// Does not update fgFirstFuncletBB
 void Compiler::fgUnlinkBlock(BasicBlock* block)
 {
     if (block->IsFirst())
@@ -5006,6 +5006,9 @@ void Compiler::fgUnlinkRange(BasicBlock* bBeg, BasicBlock* bEnd)
     assert(bBeg != nullptr);
     assert(bEnd != nullptr);
 
+    // We shouldn't be churning the flowgraph after doing hot/cold splitting
+    assert(fgFirstColdBlock == nullptr);
+
     BasicBlock* bPrev = bBeg->Prev();
     assert(bPrev != nullptr); // Can't unlink a range starting with the first block
 
@@ -5018,12 +5021,6 @@ void Compiler::fgUnlinkRange(BasicBlock* bBeg, BasicBlock* bEnd)
     else
     {
         bPrev->SetNext(bEnd->Next());
-    }
-
-    // If bEnd was the first Cold basic block update fgFirstColdBlock
-    if (bEnd->IsFirstColdBlock(this))
-    {
-        fgFirstColdBlock = bPrev->Next();
     }
 
 #ifdef DEBUG
@@ -5056,6 +5053,9 @@ BasicBlock* Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
 {
     assert(block != nullptr);
 
+    // We shouldn't churn the flowgraph after doing hot/cold splitting
+    assert(fgFirstColdBlock == nullptr);
+
     JITDUMP("fgRemoveBlock " FMT_BB ", unreachable=%s\n", block->bbNum, dspBool(unreachable));
 
     BasicBlock* bPrev = block->Prev();
@@ -5077,12 +5077,6 @@ BasicBlock* Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
         if (block == fgFirstFuncletBB)
         {
             fgFirstFuncletBB = block->Next();
-        }
-
-        // If this is the first Cold basic block update fgFirstColdBlock
-        if (block->IsFirstColdBlock(this))
-        {
-            fgFirstColdBlock = block->Next();
         }
 
         // A BBJ_CALLFINALLY is usually paired with a BBJ_CALLFINALLYRET.
@@ -5139,12 +5133,6 @@ BasicBlock* Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
             // It looks like `block` is the source of a back edge of a loop, and once we remove `block` the
             // loop will still exist because we'll move the edge to `bPrev`. So, don't unscale the loop blocks.
             skipUnmarkLoop = true;
-        }
-
-        // If this is the first Cold basic block update fgFirstColdBlock
-        if (block->IsFirstColdBlock(this))
-        {
-            fgFirstColdBlock = block->Next();
         }
 
         // Update fgFirstFuncletBB if necessary

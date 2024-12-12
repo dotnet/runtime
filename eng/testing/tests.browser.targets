@@ -227,7 +227,6 @@
       <_WasmPropertyNames Include="EmccLinkOptimizationFlag" />
       <_WasmPropertyNames Include="WasmIncludeFullIcuData" />
       <_WasmPropertyNames Include="WasmIcuDataFileName" />
-      <_WasmPropertyNames Include="HybridGlobalization" />
     </ItemGroup>
   </Target>
 
