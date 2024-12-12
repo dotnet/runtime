@@ -2749,11 +2749,24 @@ void Compiler::optFindLoops()
 //
 bool Compiler::optCanonicalizeLoops()
 {
-    bool changed = false;
+    bool changed      = false;
+    bool splitHeaders = false;
 
     for (FlowGraphNaturalLoop* loop : m_loops->InReversePostOrder())
     {
-        changed |= optCreatePreheader(loop);
+        bool splitHeader = false;
+        changed |= optCreatePreheader(loop, &splitHeader);
+        splitHeaders |= splitHeader;
+    }
+
+    // If we split any headers we must rebuild DFS/loops.
+    // This should be relatively uncommon.
+    //
+    if (splitHeaders)
+    {
+        fgInvalidateDfsTree();
+        m_dfsTree = fgComputeDfs();
+        m_loops   = FlowGraphNaturalLoops::Find(m_dfsTree);
     }
 
     // At this point we've created preheaders. That means we are working with
@@ -2864,13 +2877,15 @@ void Compiler::optCompactLoop(FlowGraphNaturalLoop* loop)
 //
 // Parameters:
 //   loop - The loop to create the preheader for
+//   splitHeader - [out] set true if the loop header was split
 //
 // Returns:
-//   True if a new preheader block had to be created.
+//   True if a new preheader block had to be created or if the header was split
 //
-bool Compiler::optCreatePreheader(FlowGraphNaturalLoop* loop)
+bool Compiler::optCreatePreheader(FlowGraphNaturalLoop* loop, bool* splitHeader)
 {
-    BasicBlock* header = loop->GetHeader();
+    BasicBlock* const header = loop->GetHeader();
+    *splitHeader             = false;
 
     // If all loop backedges sources are within the same try region as the loop header,
     // then the preheader can be in the same try region as the header.
@@ -2879,8 +2894,8 @@ bool Compiler::optCreatePreheader(FlowGraphNaturalLoop* loop)
     //
     unsigned preheaderEHRegion    = EHblkDsc::NO_ENCLOSING_INDEX;
     bool     inSameRegionAsHeader = true;
-    if (header->hasTryIndex())
-    {
+
+    auto checkBackedges = [&]() {
         preheaderEHRegion = header->getTryIndex();
         for (FlowEdge* backEdge : loop->BackEdges())
         {
@@ -2894,6 +2909,96 @@ bool Compiler::optCreatePreheader(FlowGraphNaturalLoop* loop)
                 break;
             }
         }
+    };
+
+    if (header->hasTryIndex())
+    {
+        checkBackedges();
+    }
+
+    // If we couldn't place the preheader in the same EH region as the
+    // header, and the header is also a try entry, split the header before
+    // the first statement that can raise and exception, and so push the try
+    // entry down inside the loop.
+    //
+    if (!inSameRegionAsHeader && bbIsTryBeg(header))
+    {
+        JITDUMP("Create preheader: splitting loop header / try entry " FMT_BB "\n", header->bbNum);
+        *splitHeader = true;
+
+        Statement* const firstStmt   = header->firstStmt();
+        BasicBlock*      newTryEntry = nullptr;
+
+        if (firstStmt == nullptr)
+        {
+            // Empty header
+            //
+            newTryEntry = fgSplitBlockAtEnd(header);
+        }
+        else
+        {
+            // Non-empty header.
+            //
+            Statement* const lastStmt      = header->lastStmt();
+            bool const       hasTerminator = header->HasTerminator();
+            Statement* const stopStmt      = hasTerminator ? lastStmt : nullptr;
+            Statement*       splitBefore   = firstStmt;
+
+            while ((splitBefore != stopStmt) && (splitBefore->GetRootNode()->gtFlags & GTF_EXCEPT) == 0)
+            {
+                splitBefore = splitBefore->GetNextStmt();
+            }
+
+            // If no statement can throw, split at the end, as long as there's no terminator
+            //
+            if (splitBefore == nullptr)
+            {
+                assert(!hasTerminator);
+                newTryEntry = fgSplitBlockAtEnd(header);
+            }
+            // If the header has a single statement and needs a terminator, or the first statement
+            // can throw, split at the beginning
+            //
+            else if (splitBefore == firstStmt)
+            {
+                newTryEntry = fgSplitBlockAtBeginning(header);
+            }
+            // Else split in the middle
+            //
+            else
+            {
+                newTryEntry = fgSplitBlockAfterStatement(header, splitBefore->GetPrevStmt());
+            }
+        }
+
+        // update EH table, and keep track of the outermost enclosing try
+        //
+        EHblkDsc* outermostHBtab = nullptr;
+        for (EHblkDsc* const HBtab : EHClauses(this))
+        {
+            if (HBtab->ebdTryBeg == header)
+            {
+                fgSetTryBeg(HBtab, newTryEntry);
+                outermostHBtab = HBtab;
+            }
+        }
+        assert(outermostHBtab != nullptr);
+
+        // Recompute preheader placement
+        //
+        const unsigned enclosingTryIndex = outermostHBtab->ebdEnclosingTryIndex;
+        preheaderEHRegion                = enclosingTryIndex;
+
+        if (enclosingTryIndex == EHblkDsc::NO_ENCLOSING_INDEX)
+        {
+            header->clearTryIndex();
+            inSameRegionAsHeader = true;
+        }
+        else
+        {
+            header->setTryIndex(enclosingTryIndex);
+            checkBackedges();
+        }
     }
 
     if (!bbIsHandlerBeg(header) && (loop->EntryEdges().size() == 1))
@@ -2906,7 +3011,7 @@ bool Compiler::optCreatePreheader(FlowGraphNaturalLoop* loop)
         {
             JITDUMP("Natural loop " FMT_LP " already has preheader " FMT_BB "\n", loop->GetIndex(),
                     preheaderCandidate->bbNum);
-            return false;
+            return *splitHeader;
         }
     }
 
