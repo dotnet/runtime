@@ -3,7 +3,7 @@
     <CrossHostArch Condition="'$(CrossBuild)' == 'true' or '$(TargetArchitecture)' != '$(BuildArchitecture)' or '$(HostOS)' != '$(TargetOS)' or '$(EnableNativeSanitizers)' != ''">$(BuildArchitecture)</CrossHostArch>
     <_IsPublishing>true</_IsPublishing>
     <RuntimeIdentifier>$(NETCoreSdkRuntimeIdentifier)</RuntimeIdentifier>
-    <PublishDir>$(RuntimeBinDir)/$(BuildArchitecture)/crossgen2/</PublishDir>
+    <PublishDir>$(RuntimeBinDir)$(BuildArchitecture)/crossgen2/</PublishDir>
     <SelfContained>true</SelfContained>
     <PublishTrimmed>true</PublishTrimmed>
     <TrimmerSingleWarn>false</TrimmerSingleWarn>
