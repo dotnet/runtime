@@ -18,11 +18,11 @@ namespace Mono.Linker.Tests.Cases.Generics
 
 		class GenericReturnType
 		{
-			[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
+			[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute), By = Tool.Trimmer /* Type is needed due to IL metadata only */)]
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
 			class ReturnType<T>
 			{
-				[Kept]
+				[Kept (By = Tool.Trimmer /* https://github.com/dotnet/runtime/issues/110563 */)]
 				public void Method () { }
 			}
 
