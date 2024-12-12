@@ -10,8 +10,9 @@ namespace System.Collections.Generic
     {
         /// <summary>
         /// The default insertion behavior.
+        /// Specifies that if an existing entry with the same key is encountered, the insertion operation should fail without throwing.
         /// </summary>
-        None = 0,
+        InsertNewOnly = 0,
 
         /// <summary>
         /// Specifies that an existing entry with the same key should be overwritten if encountered.

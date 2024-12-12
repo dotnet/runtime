@@ -1,12 +1,20 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+// FIXME
+#pragma warning disable IDE0008
+
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.Arm;
+using System.Runtime.Intrinsics.Wasm;
+using System.Runtime.Intrinsics.X86;
 using System.Runtime.Serialization;
 
 namespace System.Collections.Generic
@@ -17,17 +25,204 @@ namespace System.Collections.Generic
     [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class Dictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDictionary, IReadOnlyDictionary<TKey, TValue>, ISerializable, IDeserializationCallback where TKey : notnull
     {
+        /*
+        static Dictionary () {
+            while (!Debugger.IsAttached)
+                Debugger.Launch();
+        }
+        */
+
+        private ref struct LoopingBucketEnumerator
+        {
+            // The size of this struct is REALLY important! Adding even a single field to this will add stack spills to critical loops.
+            // FIXME: This span being a field puts pressure on the JIT to do recursive struct decomposition; I'm not sure it always does
+            private readonly Span<Bucket> _buckets;
+            private readonly int _initialIndex;
+            private int _index;
+
+            [Obsolete("Use LoopingBucketEnumerator.New")]
+            public LoopingBucketEnumerator()
+            {
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            private LoopingBucketEnumerator(Span<Bucket> buckets, uint hashCode, ulong fastModMultiplier)
+            {
+                _buckets = buckets;
+                _initialIndex = GetBucketIndexForHashCode(buckets, hashCode, fastModMultiplier);
+                _index = _initialIndex;
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static ref Bucket New(Span<Bucket> buckets, uint hashCode, ulong fastModMultiplier, out LoopingBucketEnumerator enumerator)
+            {
+                // FIXME: Optimize this out with EmptyBuckets array like SimdDictionary
+                if (buckets.IsEmpty)
+                {
+                    enumerator = default;
+                    return ref Unsafe.NullRef<Bucket>();
+                }
+                else
+                {
+                    enumerator = new LoopingBucketEnumerator(buckets, hashCode, fastModMultiplier);
+                    // FIXME: Optimize out the memory load of _initialIndex somehow.
+                    return ref enumerator._buckets[enumerator._initialIndex];
+                }
+            }
+
+            /// <summary>
+            /// Walks forward through buckets, wrapping around at the end of the container.
+            /// Never visits a bucket twice.
+            /// </summary>
+            /// <returns>The next bucket, or NullRef if you have visited every bucket exactly once.</returns>
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public ref Bucket Advance()
+            {
+                // Operating on the index field directly is harmless as long as the enumerator struct got decomposed, which it seems to
+                // Caching index into a local and then doing a writeback at the end increases generated code size so it's not worth it
+                if (++_index >= _buckets.Length)
+                    _index = 0;
+
+                if (_index == _initialIndex)
+                    return ref Unsafe.NullRef<Bucket>();
+                else
+                    return ref _buckets[_index];
+            }
+
+            /// <summary>
+            /// Walks back through the buckets you have previously visited.
+            /// </summary>
+            /// <returns>Each bucket you previously visited, exactly once, in reverse order, then NullRef.</returns>
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public ref Bucket Retreat()
+            {
+                if (_index == _initialIndex)
+                    return ref Unsafe.NullRef<Bucket>();
+
+                if (--_index < 0)
+                    _index = _buckets.Length - 1;
+                return ref _buckets[_index];
+            }
+        }
+
+        [InlineArray(12)]
+        [StructLayout(LayoutKind.Sequential)]
+        private struct InlineEntryIndexArray
+        {
+            public int Index0;
+        }
+
+        private struct Bucket
+        {
+            public const int Capacity = 12,
+                CountSlot = 13,
+                CascadeSlot = 14,
+                DegradedCascadeCount = 0xFF;
+
+            public Vector128<byte> Suffixes;
+            public InlineEntryIndexArray Indices;
+
+// This analysis is incorrect
+#pragma warning disable IDE0251
+            public ref byte Count
+            {
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
+                get => ref Unsafe.AddByteOffset(ref Unsafe.As<Vector128<byte>, byte>(ref Unsafe.AsRef(in Suffixes)), CountSlot);
+            }
+
+            public ref ushort CascadeCount
+            {
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
+                get => ref Unsafe.AddByteOffset(ref Unsafe.As<Vector128<byte>, ushort>(ref Unsafe.AsRef(in Suffixes)), CascadeSlot);
+            }
+#pragma warning restore IDE0251
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public readonly byte GetSlot(int index)
+            {
+                Debug.Assert(index < Vector128<byte>.Count);
+                // the extract-lane opcode this generates is slower than doing a byte load from memory,
+                //  even if we already have the bucket in a register. Not sure why, but my guess based on agner's
+                //  instruction tables is that it's because lane extract generates more uops than a byte move.
+                // the two operations have the same latency on icelake, and the byte move's latency is lower on zen4
+                // return self[index];
+                // index &= 15;
+                return Unsafe.AddByteOffset(ref Unsafe.As<Vector128<byte>, byte>(ref Unsafe.AsRef(in Suffixes)), index);
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public void SetSlot(nuint index, byte value)
+            {
+                Debug.Assert(index < (nuint)Vector128<byte>.Count);
+                // index &= 15;
+                Unsafe.AddByteOffset(ref Unsafe.As<Vector128<byte>, byte>(ref Suffixes), index) = value;
+            }
+
+            public readonly int FindSuffix(int bucketCount, byte suffix, Vector128<byte> searchVector)
+            {
+                if (Sse2.IsSupported)
+                {
+                    return BitOperations.TrailingZeroCount(Sse2.MoveMask(Sse2.CompareEqual(searchVector, Suffixes)));
+                }
+                else if (AdvSimd.Arm64.IsSupported)
+                {
+                    // Completely untested
+                    var laneBits = AdvSimd.And(
+                        AdvSimd.CompareEqual(searchVector, Suffixes),
+                        Vector128.Create(1, 2, 4, 8, 16, 32, 64, 128, 1, 2, 4, 8, 16, 32, 64, 128)
+                    );
+                    var moveMask = AdvSimd.Arm64.AddAcross(laneBits.GetLower()).ToScalar() |
+                        (AdvSimd.Arm64.AddAcross(laneBits.GetUpper()).ToScalar() << 8);
+                    return BitOperations.TrailingZeroCount(moveMask);
+                }
+                else if (PackedSimd.IsSupported)
+                {
+                    // Completely untested
+                    return BitOperations.TrailingZeroCount(PackedSimd.Bitmask(PackedSimd.CompareEqual(searchVector, Suffixes)));
+                }
+                else
+                {
+                    return FindSuffixScalar(bucketCount, suffix);
+                }
+            }
+
+            public readonly unsafe int FindSuffixScalar(int bucketCount, byte suffix)
+            {
+                // Hand-unrolling the search into four comparisons per loop iteration is a significant performance improvement
+                //  for a moderate code size penalty (733b -> 826b; 399usec -> 321usec)
+                var haystack = (byte*)Unsafe.AsPointer(ref Unsafe.AsRef(in Suffixes));
+                for (int i = 0; i < bucketCount; i += 4, haystack += 4)
+                {
+                    // FIXME: It's not possible to use cmovs here due to a JIT limitation (can't do cmovs in loops)
+                    // A chain of cmovs would be much faster.
+                    if (haystack[0] == suffix)
+                        return i;
+                    if (haystack[1] == suffix)
+                        return i + 1;
+                    if (haystack[2] == suffix)
+                        return i + 2;
+                    if (haystack[3] == suffix)
+                        return i + 3;
+                }
+
+                return 32;
+            }
+        }
+
+        // FIXME
+#pragma warning disable CA1823
         // constants for serialization
         private const string VersionName = "Version"; // Do not rename (binary serialization)
         private const string HashSizeName = "HashSize"; // Do not rename (binary serialization). Must save buckets.Length
         private const string KeyValuePairsName = "KeyValuePairs"; // Do not rename (binary serialization)
         private const string ComparerName = "Comparer"; // Do not rename (binary serialization)
+#pragma warning restore CA1823
 
-        private int[]? _buckets;
+        private Bucket[]? _buckets;
         private Entry[]? _entries;
-#if TARGET_64BIT
+//#if TARGET_64BIT
         private ulong _fastModMultiplier;
-#endif
+//#endif
         private int _count;
         private int _freeList;
         private int _freeCount;
@@ -132,16 +327,19 @@ namespace System.Collections.Generic
                 Debug.Assert(_count == 0);
 
                 Entry[] oldEntries = source._entries;
+                // FIXME
+                /*
                 if (source._comparer == _comparer)
                 {
                     // If comparers are the same, we can copy _entries without rehashing.
                     CopyEntries(oldEntries, source._count);
                     return;
                 }
+                */
 
                 // Comparers differ need to rehash all the entries via Add
-                int count = source._count;
-                for (int i = 0; i < count; i++)
+                int allocatedEntryCount = source._count;
+                for (int i = 0; i < allocatedEntryCount; i++)
                 {
                     // Only copy if an entry
                     if (oldEntries[i].next >= -1)
@@ -240,15 +438,15 @@ namespace System.Collections.Generic
             }
             set
             {
-                bool modified = TryInsert(key, value, InsertionBehavior.OverwriteExisting);
-                Debug.Assert(modified);
+                ref Entry result = ref TryInsert(key, value, InsertionBehavior.OverwriteExisting, out _);
+                Debug.Assert(!Unsafe.IsNullRef(ref result));
             }
         }
 
         public void Add(TKey key, TValue value)
         {
-            bool modified = TryInsert(key, value, InsertionBehavior.ThrowOnExisting);
-            Debug.Assert(modified); // If there was an existing key and the Add failed, an exception will already have been thrown.
+            ref Entry result = ref TryInsert(key, value, InsertionBehavior.ThrowOnExisting, out _);
+            Debug.Assert(!Unsafe.IsNullRef(ref result));
         }
 
         void ICollection<KeyValuePair<TKey, TValue>>.Add(KeyValuePair<TKey, TValue> keyValuePair) =>
@@ -285,6 +483,7 @@ namespace System.Collections.Generic
                 Debug.Assert(_buckets != null, "_buckets should be non-null");
                 Debug.Assert(_entries != null, "_entries should be non-null");
 
+                // TODO: Optimized clear that only touches buckets where count is nonzero
                 Array.Clear(_buckets);
 
                 _count = 0;
@@ -377,6 +576,9 @@ namespace System.Collections.Generic
         [EditorBrowsable(EditorBrowsableState.Never)]
         public virtual void GetObjectData(SerializationInfo info, StreamingContext context)
         {
+            // FIXME
+            throw new NotImplementedException();
+            /*
             if (info == null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.info);
@@ -392,6 +594,161 @@ namespace System.Collections.Generic
                 CopyTo(array, 0);
                 info.AddValue(KeyValuePairsName, array, typeof(KeyValuePair<TKey, TValue>[]));
             }
+            */
+        }
+
+        // The hash suffix is selected from 8 bits of the hash, and then modified to ensure
+        //  it is never zero (because a zero suffix indicates an empty slot.)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static byte GetHashSuffix(uint hashCode)
+        {
+            // We could shift by 24 bits to take the other end of the value, but taking the low 8
+            //  bits produces better results for the common scenario where you're using sequential
+            //  integers as keys (since their default hash is the identity function).
+            var result = unchecked((byte)hashCode);
+            // Assuming the JIT turns this into a cmov, this should be better than a bitwise or
+            //  since it nearly doubles the number of possible suffixes, improving collision
+            //  resistance and reducing the odds of having to check multiple keys.
+            return result == 0 ? (byte)255 : result;
+        }
+
+        private ref Entry FindEntry(TKey key)
+        {
+            // FIXME: Specialize using static interface methods like SimdDictionary
+            var comparer = Comparer ?? EqualityComparer<TKey>.Default;
+            uint hashCode = (uint)((typeof(TKey).IsValueType && comparer == null) ? key.GetHashCode() : comparer!.GetHashCode(key));
+            var suffix = GetHashSuffix(hashCode);
+            // FIXME: Skip this on non-vectorized targets
+            var searchVector = Vector128.Create(suffix);
+            ref var bucket = ref LoopingBucketEnumerator.New(_buckets, hashCode, _fastModMultiplier, out var enumerator);
+            Span<Entry> entries = _entries!;
+            // FIXME: Change to do { } while () by introducing EmptyBuckets optimization from SimdDictionary
+            while (!Unsafe.IsNullRef(ref bucket))
+            {
+                // Pipelining
+                int bucketCount = bucket.Count;
+                // Determine start index for key search
+                int startIndex = bucket.FindSuffix(bucketCount, suffix, searchVector);
+                ref var entry = ref FindEntryInBucket(ref bucket, entries, startIndex, bucketCount, comparer!, key, out _, out _);
+                if (Unsafe.IsNullRef(ref entry))
+                {
+                    if (bucket.CascadeCount == 0)
+                        return ref Unsafe.NullRef<Entry>();
+                }
+                else
+                    return ref entry;
+                bucket = ref enumerator.Advance();
+            }
+
+            return ref Unsafe.NullRef<Entry>();
+        }
+
+        private ref Entry FindEntry<TAlternateKey>(TAlternateKey key, IAlternateEqualityComparer<TAlternateKey, TKey> comparer)
+            where TAlternateKey : notnull, allows ref struct
+        {
+            // FIXME: Specialize using static interface methods like SimdDictionary
+            var hashCode = unchecked((uint)comparer.GetHashCode(key));
+            var suffix = GetHashSuffix(hashCode);
+            // FIXME: Skip this on non-vectorized targets
+            var searchVector = Vector128.Create(suffix);
+            ref var bucket = ref LoopingBucketEnumerator.New(_buckets, hashCode, _fastModMultiplier, out var enumerator);
+            Span<Entry> entries = _entries!;
+            // FIXME: Change to do { } while () by introducing EmptyBuckets optimization from SimdDictionary
+            while (!Unsafe.IsNullRef(ref bucket))
+            {
+                // Pipelining
+                int bucketCount = bucket.Count;
+                // Determine start index for key search
+                int startIndex = bucket.FindSuffix(bucketCount, suffix, searchVector);
+                ref var entry = ref FindEntryInBucket(ref bucket, entries, startIndex, bucketCount, comparer, key, out _, out _);
+                if (Unsafe.IsNullRef(ref entry))
+                {
+                    if (bucket.CascadeCount == 0)
+                        return ref Unsafe.NullRef<Entry>();
+                }
+                else
+                    return ref entry;
+                bucket = ref enumerator.Advance();
+            }
+
+            return ref Unsafe.NullRef<Entry>();
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static ref Entry FindEntryInBucket(
+            ref Bucket bucket, Span<Entry> entries, int startIndex, int bucketCount,
+            IEqualityComparer<TKey> comparer, TKey key,
+            // These out-params are annoying but inlining seems to optimize them away
+            out int entryIndex, out int matchIndexInBucket
+        )
+        {
+            Unsafe.SkipInit(out matchIndexInBucket);
+            Unsafe.SkipInit(out entryIndex);
+            Debug.Assert(startIndex >= 0);
+            Debug.Assert(comparer != null);
+
+            int count = bucketCount - startIndex;
+            if (count <= 0)
+                return ref Unsafe.NullRef<Entry>();
+
+            ref int indexSlot = ref bucket.Indices[startIndex];
+            while (true)
+            {
+                ref var entry = ref entries[indexSlot];
+                if (comparer.Equals(key, entry.key))
+                {
+                    // We could optimize out the bucketCount local to prevent a stack spill in some cases by doing
+                    //  Unsafe.ByteOffset(...) / sizeof(Pair), but the potential idiv is extremely painful
+                    entryIndex = indexSlot;
+                    matchIndexInBucket = bucketCount - count;
+                    return ref entry;
+                }
+
+                // NOTE: --count <= 0 produces an extra 'test' opcode
+                if (--count == 0)
+                    return ref Unsafe.NullRef<Entry>();
+                else
+                    indexSlot = ref Unsafe.Add(ref indexSlot, 1);
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static ref Entry FindEntryInBucket<TAlternateKey>(
+            ref Bucket bucket, Span<Entry> entries, int startIndex, int bucketCount,
+            IAlternateEqualityComparer<TAlternateKey, TKey> comparer, TAlternateKey key,
+            // These out-params are annoying but inlining seems to optimize them away
+            out int entryIndex, out int matchIndexInBucket
+        )
+            where TAlternateKey : notnull, allows ref struct
+        {
+            Unsafe.SkipInit(out matchIndexInBucket);
+            Unsafe.SkipInit(out entryIndex);
+            Debug.Assert(startIndex >= 0);
+            Debug.Assert(comparer != null);
+
+            int count = bucketCount - startIndex;
+            if (count <= 0)
+                return ref Unsafe.NullRef<Entry>();
+
+            ref int indexSlot = ref bucket.Indices[startIndex];
+            while (true)
+            {
+                ref var entry = ref entries[indexSlot];
+                if (comparer.Equals(key, entry.key))
+                {
+                    // We could optimize out the bucketCount local to prevent a stack spill in some cases by doing
+                    //  Unsafe.ByteOffset(...) / sizeof(Pair), but the potential idiv is extremely painful
+                    matchIndexInBucket = bucketCount - count;
+                    entryIndex = indexSlot;
+                    return ref entry;
+                }
+
+                // NOTE: --count <= 0 produces an extra 'test' opcode
+                if (--count == 0)
+                    return ref Unsafe.NullRef<Entry>();
+                else
+                    indexSlot = ref Unsafe.Add(ref indexSlot, 1);
+            }
         }
 
         internal ref TValue FindValue(TKey key)
@@ -401,108 +758,122 @@ namespace System.Collections.Generic
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.key);
             }
 
-            ref Entry entry = ref Unsafe.NullRef<Entry>();
-            if (_buckets != null)
-            {
-                Debug.Assert(_entries != null, "expected entries to be != null");
-                IEqualityComparer<TKey>? comparer = _comparer;
-                if (typeof(TKey).IsValueType && // comparer can only be null for value types; enable JIT to eliminate entire if block for ref types
-                    comparer == null)
-                {
-                    uint hashCode = (uint)key.GetHashCode();
-                    int i = GetBucket(hashCode);
-                    Entry[]? entries = _entries;
-                    uint collisionCount = 0;
+            ref Entry entry = ref FindEntry(key);
+            if (Unsafe.IsNullRef(ref entry))
+                return ref Unsafe.NullRef<TValue>();
+            else
+                return ref entry.value;
+        }
 
-                    // ValueType: Devirtualize with EqualityComparer<TKey>.Default intrinsic
-                    i--; // Value in _buckets is 1-based; subtract 1 from i. We do it here so it fuses with the following conditional.
-                    do
-                    {
-                        // Test in if to drop range check for following array access
-                        if ((uint)i >= (uint)entries.Length)
-                        {
-                            goto ReturnNotFound;
-                        }
+        private static void FillNewBucketsForResize (
+            Span<Bucket> newBuckets, ulong fastModMultiplier,
+            Span<Entry> entries, int allocatedEntryCount, IEqualityComparer<TKey>? comparer
+        ) {
+            // FIXME
+            comparer ??= EqualityComparer<TKey>.Default;
 
-                        entry = ref entries[i];
-                        if (entry.hashCode == hashCode && EqualityComparer<TKey>.Default.Equals(entry.key, key))
-                        {
-                            goto ReturnFound;
-                        }
-
-                        i = entry.next;
-
-                        collisionCount++;
-                    } while (collisionCount <= (uint)entries.Length);
-
-                    // The chain of entries forms a loop; which means a concurrent update has happened.
-                    // Break out of the loop and throw, rather than looping forever.
-                    goto ConcurrentOperation;
-                }
-                else
-                {
-                    Debug.Assert(comparer is not null);
-                    uint hashCode = (uint)comparer.GetHashCode(key);
-                    int i = GetBucket(hashCode);
-                    Entry[]? entries = _entries;
-                    uint collisionCount = 0;
-                    i--; // Value in _buckets is 1-based; subtract 1 from i. We do it here so it fuses with the following conditional.
-                    do
-                    {
-                        // Test in if to drop range check for following array access
-                        if ((uint)i >= (uint)entries.Length)
-                        {
-                            goto ReturnNotFound;
-                        }
-
-                        entry = ref entries[i];
-                        if (entry.hashCode == hashCode && comparer.Equals(entry.key, key))
-                        {
-                            goto ReturnFound;
-                        }
-
-                        i = entry.next;
-
-                        collisionCount++;
-                    } while (collisionCount <= (uint)entries.Length);
-
-                    // The chain of entries forms a loop; which means a concurrent update has happened.
-                    // Break out of the loop and throw, rather than looping forever.
-                    goto ConcurrentOperation;
-                }
+            for (int index = 0; index < allocatedEntryCount; index++) {
+                // FIXME: Use Unsafe.Add to optimize out the imul per element
+                ref var entry = ref entries[index];
+                if (entry.next >= -1)
+                    InsertExistingEntryIntoNewBucket(newBuckets, fastModMultiplier, comparer, ref entry, index);
             }
 
-            goto ReturnNotFound;
+            static void InsertExistingEntryIntoNewBucket(
+                Span<Bucket> newBuckets, ulong fastModMultiplier,
+                IEqualityComparer<TKey> comparer, ref Entry entry, int entryIndex
+            )
+            {
+                Debug.Assert(comparer is not null || typeof(TKey).IsValueType);
+                uint hashCode = (uint)((typeof(TKey).IsValueType && comparer == null) ? entry.key.GetHashCode() : comparer!.GetHashCode(entry.key));
+                var suffix = GetHashSuffix(hashCode);
+                // FIXME: Skip this on non-vectorized targets
+                var searchVector = Vector128.Create(suffix);
 
-        ConcurrentOperation:
-            ThrowHelper.ThrowInvalidOperationException_ConcurrentOperationsNotSupported();
-        ReturnFound:
-            ref TValue value = ref entry.value;
-        Return:
-            return ref value;
-        ReturnNotFound:
-            value = ref Unsafe.NullRef<TValue>();
-            goto Return;
+                ref var bucket = ref LoopingBucketEnumerator.New(newBuckets, hashCode, fastModMultiplier, out var enumerator);
+                // FIXME: Change to do { } while () by introducing EmptyBuckets optimization from SimdDictionary
+                while (!Unsafe.IsNullRef(ref bucket))
+                {
+                    // Pipelining
+                    int bucketCount = bucket.Count;
+                    if (bucketCount < Bucket.Capacity) {
+                        if (TryInsertIntoBucket(ref bucket, suffix, bucketCount, entryIndex))
+                        {
+                            AdjustCascadeCounts(enumerator, true);
+                            return;
+                        }
+                    }
+
+                    bucket = ref enumerator.Advance();
+                }
+
+                ThrowHelper.ThrowInvalidOperationException_ConcurrentOperationsNotSupported();
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static int GetBucketCountForEntryCount(int count)
+        {
+            int result = checked((count + Bucket.Capacity - 1) / Bucket.Capacity);
+            return (result > 1)
+                ? HashHelpers.GetPrime(result)
+                : result;
         }
 
         private int Initialize(int capacity)
         {
             int size = HashHelpers.GetPrime(capacity);
-            int[] buckets = new int[size];
+            int bucketCount = GetBucketCountForEntryCount(size);
+            Bucket[] buckets = new Bucket[bucketCount];
             Entry[] entries = new Entry[size];
 
             // Assign member variables after both arrays allocated to guard against corruption from OOM if second fails
             _freeList = -1;
+            _freeCount = 0;
 #if TARGET_64BIT
-            _fastModMultiplier = HashHelpers.GetFastModMultiplier((uint)size);
+            _fastModMultiplier = HashHelpers.GetFastModMultiplier((uint)bucketCount);
 #endif
             _buckets = buckets;
             _entries = entries;
+            _count = 0;
 
             return size;
         }
 
-        private bool TryInsert(TKey key, TValue value, InsertionBehavior behavior)
+        // TODO: Figure out if we can outline this (reduces code size) without regressing performance for all inserts/removes
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static void AdjustCascadeCounts(LoopingBucketEnumerator enumerator, bool increase)
+        {
+            // We may have cascaded out of a previous bucket; if so, scan backwards and update
+            //  the cascade count for every bucket we previously scanned.
+            ref Bucket bucket = ref enumerator.Retreat();
+            while (!Unsafe.IsNullRef(ref bucket))
+            {
+                // FIXME: Track number of times we cascade out of a bucket for string rehashing anti-DoS mitigation!
+                var cascadeCount = bucket.CascadeCount;
+                if (increase)
+                {
+                    // Never overflow (wrap around) the counter
+                    if (cascadeCount < Bucket.DegradedCascadeCount)
+                        bucket.CascadeCount = (ushort)(cascadeCount + 1);
+                }
+                else
+                {
+                    if (cascadeCount == 0)
+                        ThrowHelper.ThrowInvalidOperationException_ConcurrentOperationsNotSupported();
+
+                    // If the cascade counter hit the maximum, it's possible the actual cascade count through here is higher,
+                    //  so it's no longer safe to decrement. This is a very rare scenario, but it permanently degrades the table.
+                    // TODO: Track this and trigger a rehash once too many buckets are in this state + dict is mostly empty.
+                    else if (cascadeCount < Bucket.DegradedCascadeCount)
+                        bucket.CascadeCount = (ushort)(cascadeCount - 1);
+                }
+
+                bucket = ref enumerator.Retreat();
+            }
+        }
+
+        private ref Entry TryInsert(TKey key, TValue value, InsertionBehavior behavior, out bool exists)
         {
             // NOTE: this method is mirrored in CollectionsMarshal.GetValueRefOrAddDefault below.
             // If you make any changes here, make sure to keep that version in sync as well.
@@ -512,89 +883,118 @@ namespace System.Collections.Generic
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.key);
             }
 
-            if (_buckets == null)
-            {
-                Initialize(0);
-            }
-            Debug.Assert(_buckets != null);
-
-            Entry[]? entries = _entries;
-            Debug.Assert(entries != null, "expected entries to be non-null");
-
-            IEqualityComparer<TKey>? comparer = _comparer;
+            // FIXME: Specialize using static interface methods like SimdDictionary
+            var comparer = Comparer ?? EqualityComparer<TKey>.Default;
             Debug.Assert(comparer is not null || typeof(TKey).IsValueType);
             uint hashCode = (uint)((typeof(TKey).IsValueType && comparer == null) ? key.GetHashCode() : comparer!.GetHashCode(key));
+            var suffix = GetHashSuffix(hashCode);
+            // FIXME: Skip this on non-vectorized targets
+            var searchVector = Vector128.Create(suffix);
+            int newEntryIndex = -1;
+            ref Entry newEntry = ref Unsafe.NullRef<Entry>();
 
-            uint collisionCount = 0;
-            ref int bucket = ref GetBucket(hashCode);
-            int i = bucket - 1; // Value in _buckets is 1-based
-
-            if (typeof(TKey).IsValueType && // comparer can only be null for value types; enable JIT to eliminate entire if block for ref types
-                comparer == null)
+        // We need to retry when we grow the buckets array since the correct destination bucket will have changed and might not
+        //  be the same as the destination bucket before resizing (it probably isn't, in fact)
+        retry:
+            Span<Bucket> buckets = _buckets;
+            if (buckets.IsEmpty)
             {
-                // ValueType: Devirtualize with EqualityComparer<TKey>.Default intrinsic
-                while ((uint)i < (uint)entries.Length)
+                Initialize(0);
+                buckets = _buckets;
+            }
+            Debug.Assert(!buckets.IsEmpty);
+            Span<Entry> entries = _entries!;
+            Debug.Assert(!entries.IsEmpty, "expected entries to be non-null");
+
+            ref var bucket = ref LoopingBucketEnumerator.New(buckets, hashCode, _fastModMultiplier, out var enumerator);
+            // FIXME: Change to do { } while () by introducing EmptyBuckets optimization from SimdDictionary
+            while (!Unsafe.IsNullRef(ref bucket))
+            {
+                // Pipelining
+                int bucketCount = bucket.Count;
+                // Determine start index for key search
+                // FIXME: Call a separate version for non-vectorized targets
+                int startIndex = bucket.FindSuffix(bucketCount, suffix, searchVector);
+                ref var entry = ref FindEntryInBucket(ref bucket, entries, startIndex, bucketCount, comparer!, key, out _, out _);
+                if (!Unsafe.IsNullRef(ref entry))
                 {
-                    if (entries[i].hashCode == hashCode && EqualityComparer<TKey>.Default.Equals(entries[i].key, key))
+                    exists = true;
+                    switch (behavior)
                     {
-                        if (behavior == InsertionBehavior.OverwriteExisting)
-                        {
-                            entries[i].value = value;
-                            return true;
-                        }
-
-                        if (behavior == InsertionBehavior.ThrowOnExisting)
-                        {
+                        case InsertionBehavior.InsertNewOnly:
+                            return ref entry;
+                        case InsertionBehavior.OverwriteExisting:
+                            PopulateEntry(ref entry, key, value);
+                            return ref entry;
+                        case InsertionBehavior.ThrowOnExisting:
                             ThrowHelper.ThrowAddingDuplicateWithKeyArgumentException(key);
-                        }
-
-                        return false;
-                    }
-
-                    i = entries[i].next;
-
-                    collisionCount++;
-                    if (collisionCount > (uint)entries.Length)
-                    {
-                        // The chain of entries forms a loop; which means a concurrent update has happened.
-                        // Break out of the loop and throw, rather than looping forever.
-                        ThrowHelper.ThrowInvalidOperationException_ConcurrentOperationsNotSupported();
+                            return ref Unsafe.NullRef<Entry>();
+                        default:
+                            ThrowHelper.ThrowArgumentOutOfRangeException();
+                            return ref Unsafe.NullRef<Entry>();
                     }
                 }
-            }
-            else
-            {
-                Debug.Assert(comparer is not null);
-                while ((uint)i < (uint)entries.Length)
+                else if (startIndex < Bucket.Capacity)
                 {
-                    if (entries[i].hashCode == hashCode && comparer.Equals(entries[i].key, key))
+                    // FIXME: Suffix collision. Track these for rehashing anti-DoS mitigation.
+                }
+
+                if (bucketCount < Bucket.Capacity)
+                {
+                    if (newEntryIndex < 0)
                     {
-                        if (behavior == InsertionBehavior.OverwriteExisting)
+                        newEntryIndex = TryCreateNewEntry(entries);
+                        if (newEntryIndex < 0)
                         {
-                            entries[i].value = value;
-                            return true;
+                            // We can't reuse the existing target bucket once we resized, so start over. This is very rare.
+                            Resize();
+                            goto retry;
                         }
-
-                        if (behavior == InsertionBehavior.ThrowOnExisting)
+                        else
                         {
-                            ThrowHelper.ThrowAddingDuplicateWithKeyArgumentException(key);
+                            newEntry = ref entries[newEntryIndex];
+                            PopulateEntry(ref newEntry, key, value);
                         }
-
-                        return false;
                     }
 
-                    i = entries[i].next;
-
-                    collisionCount++;
-                    if (collisionCount > (uint)entries.Length)
+                    if (TryInsertIntoBucket(ref bucket, suffix, bucketCount, newEntryIndex))
                     {
-                        // The chain of entries forms a loop; which means a concurrent update has happened.
-                        // Break out of the loop and throw, rather than looping forever.
-                        ThrowHelper.ThrowInvalidOperationException_ConcurrentOperationsNotSupported();
+                        _version++;
+                        AdjustCascadeCounts(enumerator, true);
+                        exists = false;
+                        return ref entries[newEntryIndex];
                     }
                 }
+
+                bucket = ref enumerator.Advance();
             }
 
+            if (_count >= entries.Length)
+            {
+                Resize();
+                goto retry;
+            }
+
+            ThrowHelper.ThrowInvalidOperationException_ConcurrentOperationsNotSupported();
+            exists = false;
+            return ref Unsafe.NullRef<Entry>();
+
+            // FIXME: Re-implement this
+            /*
+            // Value types never rehash
+            if (!typeof(TKey).IsValueType && collisionCount > HashHelpers.HashCollisionThreshold && comparer is NonRandomizedStringEqualityComparer)
+            {
+                // If we hit the collision threshold we'll need to switch to the comparer which is using randomized string hashing
+                // i.e. EqualityComparer<string>.Default.
+                Resize(entries.Length, true);
+            }
+
+            return true;
+            */
+        }
+
+        private int TryCreateNewEntry(Span<Entry> entries)
+        {
             int index;
             if (_freeCount > 0)
             {
@@ -605,34 +1005,37 @@ namespace System.Collections.Generic
             }
             else
             {
-                int count = _count;
-                if (count == entries.Length)
-                {
-                    Resize();
-                    bucket = ref GetBucket(hashCode);
-                }
-                index = count;
-                _count = count + 1;
-                entries = _entries;
+                index = _count;
+                // Resize needed
+                if (_count >= entries.Length)
+                    return -1;
+                _count = index + 1;
             }
+            return index;
+        }
 
-            ref Entry entry = ref entries![index];
-            entry.hashCode = hashCode;
-            entry.next = bucket - 1; // Value in _buckets is 1-based
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static void PopulateEntry(ref Entry entry, TKey key, TValue value)
+        {
             entry.key = key;
             entry.value = value;
-            bucket = index + 1; // Value in _buckets is 1-based
-            _version++;
+            entry.next = 0;
+        }
 
-            // Value types never rehash
-            if (!typeof(TKey).IsValueType && collisionCount > HashHelpers.HashCollisionThreshold && comparer is NonRandomizedStringEqualityComparer)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool TryInsertIntoBucket(ref Bucket bucket, byte suffix, int bucketCount, int entryIndex)
+        {
+            if (bucketCount >= Bucket.Capacity)
+                return false;
+
+            unchecked
             {
-                // If we hit the collision threshold we'll need to switch to the comparer which is using randomized string hashing
-                // i.e. EqualityComparer<string>.Default.
-                Resize(entries.Length, true);
+                ref var destination = ref bucket.Indices[bucketCount];
+                bucket.Count = (byte)(bucketCount + 1);
+                bucket.SetSlot((nuint)bucketCount, suffix);
+                destination = entryIndex;
+                return true;
             }
-
-            return true;
         }
 
         /// <summary>
@@ -802,54 +1205,17 @@ namespace System.Collections.Generic
                 Dictionary<TKey, TValue> dictionary = Dictionary;
                 IAlternateEqualityComparer<TAlternateKey, TKey> comparer = GetAlternateComparer(dictionary);
 
-                ref Entry entry = ref Unsafe.NullRef<Entry>();
-                if (dictionary._buckets != null)
+                ref var entry = ref dictionary.FindEntry(key, comparer);
+                if (Unsafe.IsNullRef(ref entry))
                 {
-                    Debug.Assert(dictionary._entries != null, "expected entries to be != null");
-
-                    uint hashCode = (uint)comparer.GetHashCode(key);
-                    int i = dictionary.GetBucket(hashCode);
-                    Entry[]? entries = dictionary._entries;
-                    uint collisionCount = 0;
-                    i--; // Value in _buckets is 1-based; subtract 1 from i. We do it here so it fuses with the following conditional.
-                    do
-                    {
-                        // Should be a while loop https://github.com/dotnet/runtime/issues/9422
-                        // Test in if to drop range check for following array access
-                        if ((uint)i >= (uint)entries.Length)
-                        {
-                            goto ReturnNotFound;
-                        }
-
-                        entry = ref entries[i];
-                        if (entry.hashCode == hashCode && comparer.Equals(key, entry.key))
-                        {
-                            goto ReturnFound;
-                        }
-
-                        i = entry.next;
-
-                        collisionCount++;
-                    } while (collisionCount <= (uint)entries.Length);
-
-                    // The chain of entries forms a loop; which means a concurrent update has happened.
-                    // Break out of the loop and throw, rather than looping forever.
-                    goto ConcurrentOperation;
+                    actualKey = default!;
+                    return ref Unsafe.NullRef<TValue>();
                 }
-
-                goto ReturnNotFound;
-
-            ConcurrentOperation:
-                ThrowHelper.ThrowInvalidOperationException_ConcurrentOperationsNotSupported();
-            ReturnFound:
-                ref TValue value = ref entry.value;
-                actualKey = entry.key;
-            Return:
-                return ref value;
-            ReturnNotFound:
-                value = ref Unsafe.NullRef<TValue>();
-                actualKey = default!;
-                goto Return;
+                else
+                {
+                    actualKey = entry.key;
+                    return ref entry.value;
+                }
             }
 
             /// <summary>Removes the value with the specified alternate key from the <see cref="Dictionary{TKey, TValue}"/>.</summary>
@@ -871,70 +1237,69 @@ namespace System.Collections.Generic
             public bool Remove(TAlternateKey key, [MaybeNullWhen(false)] out TKey actualKey, [MaybeNullWhen(false)] out TValue value)
             {
                 Dictionary<TKey, TValue> dictionary = Dictionary;
+                Span<Bucket> buckets = dictionary._buckets;
                 IAlternateEqualityComparer<TAlternateKey, TKey> comparer = GetAlternateComparer(dictionary);
-
-                if (dictionary._buckets != null)
+                if (buckets.IsEmpty)
                 {
-                    Debug.Assert(dictionary._entries != null, "entries should be non-null");
-                    uint collisionCount = 0;
-
-                    uint hashCode = (uint)comparer.GetHashCode(key);
-
-                    ref int bucket = ref dictionary.GetBucket(hashCode);
-                    Entry[]? entries = dictionary._entries;
-                    int last = -1;
-                    int i = bucket - 1; // Value in buckets is 1-based
-                    while (i >= 0)
-                    {
-                        ref Entry entry = ref entries[i];
-
-                        if (entry.hashCode == hashCode && comparer.Equals(key, entry.key))
-                        {
-                            if (last < 0)
-                            {
-                                bucket = entry.next + 1; // Value in buckets is 1-based
-                            }
-                            else
-                            {
-                                entries[last].next = entry.next;
-                            }
-
-                            actualKey = entry.key;
-                            value = entry.value;
-
-                            Debug.Assert((StartOfFreeList - dictionary._freeList) < 0, "shouldn't underflow because max hashtable length is MaxPrimeArrayLength = 0x7FEFFFFD(2146435069) _freelist underflow threshold 2147483646");
-                            entry.next = StartOfFreeList - dictionary._freeList;
-
-                            if (RuntimeHelpers.IsReferenceOrContainsReferences<TKey>())
-                            {
-                                entry.key = default!;
-                            }
-
-                            if (RuntimeHelpers.IsReferenceOrContainsReferences<TValue>())
-                            {
-                                entry.value = default!;
-                            }
-
-                            dictionary._freeList = i;
-                            dictionary._freeCount++;
-                            return true;
-                        }
-
-                        last = i;
-                        i = entry.next;
-
-                        collisionCount++;
-                        if (collisionCount > (uint)entries.Length)
-                        {
-                            // The chain of entries forms a loop; which means a concurrent update has happened.
-                            // Break out of the loop and throw, rather than looping forever.
-                            ThrowHelper.ThrowInvalidOperationException_ConcurrentOperationsNotSupported();
-                        }
-                    }
+                    actualKey = default!;
+                    value = default!;
+                    return false;
                 }
 
-                actualKey = default;
-                value = default;
+                // This allows using Remove(key, out value) to implement Remove(key) efficiently,
+                //  as long as we check whether value is a null reference before writing to it.
+                Unsafe.SkipInit(out value);
+
+                if (key == null)
+                {
+                    ThrowHelper.ThrowArgumentNullException(ExceptionArgument.key);
+                }
+
+                // FIXME: Specialize using static interface methods like SimdDictionary
+                Debug.Assert(comparer is not null);
+                uint hashCode = (uint)(comparer!.GetHashCode(key));
+                var suffix = GetHashSuffix(hashCode);
+                // FIXME: Skip this on non-vectorized targets
+                var searchVector = Vector128.Create(suffix);
+                Span<Entry> entries = dictionary._entries!;
+                Debug.Assert(!entries.IsEmpty, "expected entries to be non-null");
+
+                ref var bucket = ref LoopingBucketEnumerator.New(buckets, hashCode, dictionary._fastModMultiplier, out var enumerator);
+
+                // FIXME: Change to do { } while () by introducing EmptyBuckets optimization from SimdDictionary
+                while (!Unsafe.IsNullRef(ref bucket))
+                {
+                    // Pipelining
+                    int bucketCount = bucket.Count;
+                    // Determine start index for key search
+                    int startIndex = bucket.FindSuffix(bucketCount, suffix, searchVector);
+                    ref var entry = ref FindEntryInBucket(
+                        ref bucket, entries, startIndex, bucketCount, comparer!, key,
+                        out int entryIndex, out int indexInBucket
+                    );
+                    if (!Unsafe.IsNullRef(ref entry))
+                    {
+                        actualKey = entry.key;
+                        value = entry.value;
+                        dictionary.RemoveEntry(ref entry, entryIndex);
+                        RemoveIndexFromBucket(ref bucket, indexInBucket, bucketCount);
+                        AdjustCascadeCounts(enumerator, false);
+                        return true;
+                    }
+
+                    if (bucket.CascadeCount == 0)
+                    {
+                        actualKey = default!;
+                        value = default!;
+                        return false;
+                    }
+
+                    bucket = ref enumerator.Advance();
+                }
+
+                actualKey = default!;
+                value = default!;
+                ThrowHelper.ThrowInvalidOperationException_ConcurrentOperationsNotSupported();
                 return false;
             }
 
@@ -956,84 +1321,105 @@ namespace System.Collections.Generic
             }
 
             /// <inheritdoc cref="CollectionsMarshal.GetValueRefOrAddDefault{TKey, TValue}(Dictionary{TKey, TValue}, TKey, out bool)"/>
+#pragma warning disable IDE0060
             internal ref TValue? GetValueRefOrAddDefault(TAlternateKey key, out bool exists)
+#pragma warning restore IDE0060
             {
                 // NOTE: this method is a mirror of GetValueRefOrAddDefault above. Keep it in sync.
+                exists = false;
 
                 Dictionary<TKey, TValue> dictionary = Dictionary;
                 IAlternateEqualityComparer<TAlternateKey, TKey> comparer = GetAlternateComparer(dictionary);
 
-                if (dictionary._buckets == null)
-                {
-                    dictionary.Initialize(0);
-                }
-                Debug.Assert(dictionary._buckets != null);
-
-                Entry[]? entries = dictionary._entries;
-                Debug.Assert(entries != null, "expected entries to be non-null");
-
-                uint hashCode = (uint)comparer.GetHashCode(key);
-
-                uint collisionCount = 0;
-                ref int bucket = ref dictionary.GetBucket(hashCode);
-                int i = bucket - 1; // Value in _buckets is 1-based
-
-                Debug.Assert(comparer is not null);
-                while ((uint)i < (uint)entries.Length)
-                {
-                    if (entries[i].hashCode == hashCode && comparer.Equals(key, entries[i].key))
-                    {
-                        exists = true;
-
-                        return ref entries[i].value!;
-                    }
-
-                    i = entries[i].next;
-
-                    collisionCount++;
-                    if (collisionCount > (uint)entries.Length)
-                    {
-                        // The chain of entries forms a loop; which means a concurrent update has happened.
-                        // Break out of the loop and throw, rather than looping forever.
-                        ThrowHelper.ThrowInvalidOperationException_ConcurrentOperationsNotSupported();
-                    }
-                }
-
-                TKey actualKey = comparer.Create(key);
-                if (actualKey is null)
+                if (key == null)
                 {
                     ThrowHelper.ThrowArgumentNullException(ExceptionArgument.key);
                 }
 
-                int index;
-                if (dictionary._freeCount > 0)
+                // FIXME: Specialize using static interface methods like SimdDictionary
+                Debug.Assert(comparer is not null);
+                uint hashCode = (uint)(comparer!.GetHashCode(key));
+                var suffix = GetHashSuffix(hashCode);
+                // FIXME: Skip this on non-vectorized targets
+                var searchVector = Vector128.Create(suffix);
+                int newEntryIndex = -1;
+                ref Entry newEntry = ref Unsafe.NullRef<Entry>();
+
+            // We need to retry when we grow the buckets array since the correct destination bucket will have changed and might not
+            //  be the same as the destination bucket before resizing (it probably isn't, in fact)
+            retry:
+                Span<Bucket> buckets = dictionary._buckets;
+                if (buckets.IsEmpty)
                 {
-                    index = dictionary._freeList;
-                    Debug.Assert((StartOfFreeList - entries[dictionary._freeList].next) >= -1, "shouldn't overflow because `next` cannot underflow");
-                    dictionary._freeList = StartOfFreeList - entries[dictionary._freeList].next;
-                    dictionary._freeCount--;
+                    dictionary.Initialize(0);
+                    buckets = dictionary._buckets;
                 }
-                else
+                Debug.Assert(!buckets.IsEmpty, "expected entries to be non-null");
+                Span<Entry> entries = dictionary._entries!;
+                Debug.Assert(!entries.IsEmpty, "expected entries to be non-null");
+
+                ref var bucket = ref LoopingBucketEnumerator.New(buckets, hashCode, dictionary._fastModMultiplier, out var enumerator);
+                // FIXME: Change to do { } while () by introducing EmptyBuckets optimization from SimdDictionary
+                while (!Unsafe.IsNullRef(ref bucket))
                 {
-                    int count = dictionary._count;
-                    if (count == entries.Length)
+                    // Pipelining
+                    int bucketCount = bucket.Count;
+                    // Determine start index for key search
+                    // FIXME: Call a separate version for non-vectorized targets
+                    int startIndex = bucket.FindSuffix(bucketCount, suffix, searchVector);
+                    ref var entry = ref FindEntryInBucket(ref bucket, entries, startIndex, bucketCount, comparer!, key, out _, out _);
+                    if (!Unsafe.IsNullRef(ref entry))
                     {
-                        dictionary.Resize();
-                        bucket = ref dictionary.GetBucket(hashCode);
+                        exists = true;
+                        return ref entry.value!;
                     }
-                    index = count;
-                    dictionary._count = count + 1;
-                    entries = dictionary._entries;
+                    else if (startIndex < Bucket.Capacity)
+                    {
+                        // FIXME: Suffix collision. Track these for rehashing anti-DoS mitigation.
+                    }
+
+                    if (bucketCount < Bucket.Capacity)
+                    {
+                        if (newEntryIndex < 0)
+                        {
+                            newEntryIndex = dictionary.TryCreateNewEntry(entries);
+                            if (newEntryIndex < 0)
+                            {
+                                // We can't reuse the existing target bucket once we resized, so start over. This is very rare.
+                                dictionary.Resize();
+                                goto retry;
+                            }
+                            else
+                            {
+                                newEntry = ref entries[newEntryIndex];
+                                PopulateEntry(ref newEntry, comparer.Create(key), default!);
+                            }
+                        }
+
+                        if (TryInsertIntoBucket(ref bucket, suffix, bucketCount, newEntryIndex))
+                        {
+                            dictionary._version++;
+                            AdjustCascadeCounts(enumerator, true);
+                            exists = false;
+                            return ref entries[newEntryIndex].value!;
+                        }
+                    }
+
+                    bucket = ref enumerator.Advance();
                 }
 
-                ref Entry entry = ref entries![index];
-                entry.hashCode = hashCode;
-                entry.next = bucket - 1; // Value in _buckets is 1-based
-                entry.key = actualKey;
-                entry.value = default!;
-                bucket = index + 1; // Value in _buckets is 1-based
-                dictionary._version++;
+                if (dictionary._count >= entries.Length)
+                {
+                    dictionary.Resize();
+                    goto retry;
+                }
 
+                ThrowHelper.ThrowInvalidOperationException_ConcurrentOperationsNotSupported();
+                exists = false;
+                return ref Unsafe.NullRef<TValue>();
+
+                // FIXME: Re-implement this
+                /*
                 // Value types never rehash
                 if (!typeof(TKey).IsValueType && collisionCount > HashHelpers.HashCollisionThreshold && comparer is NonRandomizedStringEqualityComparer)
                 {
@@ -1056,6 +1442,7 @@ namespace System.Collections.Generic
                 exists = false;
 
                 return ref entry.value!;
+                */
             }
         }
 
@@ -1077,127 +1464,20 @@ namespace System.Collections.Generic
                     ThrowHelper.ThrowArgumentNullException(ExceptionArgument.key);
                 }
 
-                if (dictionary._buckets == null)
-                {
-                    dictionary.Initialize(0);
-                }
-                Debug.Assert(dictionary._buckets != null);
-
-                Entry[]? entries = dictionary._entries;
-                Debug.Assert(entries != null, "expected entries to be non-null");
-
-                IEqualityComparer<TKey>? comparer = dictionary._comparer;
-                Debug.Assert(comparer is not null || typeof(TKey).IsValueType);
-                uint hashCode = (uint)((typeof(TKey).IsValueType && comparer == null) ? key.GetHashCode() : comparer!.GetHashCode(key));
-
-                uint collisionCount = 0;
-                ref int bucket = ref dictionary.GetBucket(hashCode);
-                int i = bucket - 1; // Value in _buckets is 1-based
-
-                if (typeof(TKey).IsValueType && // comparer can only be null for value types; enable JIT to eliminate entire if block for ref types
-                    comparer == null)
-                {
-                    // ValueType: Devirtualize with EqualityComparer<TKey>.Default intrinsic
-                    while ((uint)i < (uint)entries.Length)
-                    {
-                        if (entries[i].hashCode == hashCode && EqualityComparer<TKey>.Default.Equals(entries[i].key, key))
-                        {
-                            exists = true;
-
-                            return ref entries[i].value!;
-                        }
-
-                        i = entries[i].next;
-
-                        collisionCount++;
-                        if (collisionCount > (uint)entries.Length)
-                        {
-                            // The chain of entries forms a loop; which means a concurrent update has happened.
-                            // Break out of the loop and throw, rather than looping forever.
-                            ThrowHelper.ThrowInvalidOperationException_ConcurrentOperationsNotSupported();
-                        }
-                    }
-                }
+                ref var entry = ref dictionary.TryInsert(key, default!, InsertionBehavior.InsertNewOnly, out exists);
+                if (!Unsafe.IsNullRef(ref entry))
+                    return ref entry.value!;
                 else
-                {
-                    Debug.Assert(comparer is not null);
-                    while ((uint)i < (uint)entries.Length)
-                    {
-                        if (entries[i].hashCode == hashCode && comparer.Equals(entries[i].key, key))
-                        {
-                            exists = true;
-
-                            return ref entries[i].value!;
-                        }
-
-                        i = entries[i].next;
-
-                        collisionCount++;
-                        if (collisionCount > (uint)entries.Length)
-                        {
-                            // The chain of entries forms a loop; which means a concurrent update has happened.
-                            // Break out of the loop and throw, rather than looping forever.
-                            ThrowHelper.ThrowInvalidOperationException_ConcurrentOperationsNotSupported();
-                        }
-                    }
-                }
-
-                int index;
-                if (dictionary._freeCount > 0)
-                {
-                    index = dictionary._freeList;
-                    Debug.Assert((StartOfFreeList - entries[dictionary._freeList].next) >= -1, "shouldn't overflow because `next` cannot underflow");
-                    dictionary._freeList = StartOfFreeList - entries[dictionary._freeList].next;
-                    dictionary._freeCount--;
-                }
-                else
-                {
-                    int count = dictionary._count;
-                    if (count == entries.Length)
-                    {
-                        dictionary.Resize();
-                        bucket = ref dictionary.GetBucket(hashCode);
-                    }
-                    index = count;
-                    dictionary._count = count + 1;
-                    entries = dictionary._entries;
-                }
-
-                ref Entry entry = ref entries![index];
-                entry.hashCode = hashCode;
-                entry.next = bucket - 1; // Value in _buckets is 1-based
-                entry.key = key;
-                entry.value = default!;
-                bucket = index + 1; // Value in _buckets is 1-based
-                dictionary._version++;
-
-                // Value types never rehash
-                if (!typeof(TKey).IsValueType && collisionCount > HashHelpers.HashCollisionThreshold && comparer is NonRandomizedStringEqualityComparer)
-                {
-                    // If we hit the collision threshold we'll need to switch to the comparer which is using randomized string hashing
-                    // i.e. EqualityComparer<string>.Default.
-                    dictionary.Resize(entries.Length, true);
-
-                    exists = false;
-
-                    // At this point the entries array has been resized, so the current reference we have is no longer valid.
-                    // We're forced to do a new lookup and return an updated reference to the new entry instance. This new
-                    // lookup is guaranteed to always find a value though and it will never return a null reference here.
-                    ref TValue? value = ref dictionary.FindValue(key)!;
-
-                    Debug.Assert(!Unsafe.IsNullRef(ref value), "the lookup result cannot be a null ref here");
-
-                    return ref value;
-                }
-
-                exists = false;
-
-                return ref entry.value!;
+                    return ref Unsafe.NullRef<TValue?>();
             }
         }
 
         public virtual void OnDeserialization(object? sender)
         {
+            // FIXME
+            throw new NotImplementedException();
+            /*
+
             HashHelpers.SerializationInfoTable.TryGetValue(this, out SerializationInfo? siInfo);
 
             if (siInfo == null)
@@ -1240,14 +1520,13 @@ namespace System.Collections.Generic
 
             _version = realVersion;
             HashHelpers.SerializationInfoTable.Remove(this);
+            */
         }
 
-        private void Resize() => Resize(HashHelpers.ExpandPrime(_count), false);
+        private void Resize() => Resize(HashHelpers.ExpandPrime(_count));
 
-        private void Resize(int newSize, bool forceNewHashCodes)
+        private void Resize(int newSize)
         {
-            // Value types never rehash
-            Debug.Assert(!forceNewHashCodes || !typeof(TKey).IsValueType);
             Debug.Assert(_entries != null, "_entries should be non-null");
             Debug.Assert(newSize >= _entries.Length);
 
@@ -1256,185 +1535,143 @@ namespace System.Collections.Generic
             int count = _count;
             Array.Copy(_entries, entries, count);
 
-            if (!typeof(TKey).IsValueType && forceNewHashCodes)
-            {
-                Debug.Assert(_comparer is NonRandomizedStringEqualityComparer);
-                IEqualityComparer<TKey> comparer = _comparer = (IEqualityComparer<TKey>)((NonRandomizedStringEqualityComparer)_comparer).GetRandomizedEqualityComparer();
+            int newBucketCount = GetBucketCountForEntryCount(newSize);
+            ulong fastModMultiplier = HashHelpers.GetFastModMultiplier((uint)newBucketCount);
 
-                for (int i = 0; i < count; i++)
-                {
-                    if (entries[i].next >= -1)
-                    {
-                        entries[i].hashCode = (uint)comparer.GetHashCode(entries[i].key);
-                    }
-                }
-            }
-
-            // Assign member variables after both arrays allocated to guard against corruption from OOM if second fails
-            _buckets = new int[newSize];
-#if TARGET_64BIT
-            _fastModMultiplier = HashHelpers.GetFastModMultiplier((uint)newSize);
-#endif
-            for (int i = 0; i < count; i++)
+            if (newBucketCount != _buckets?.Length)
             {
-                if (entries[i].next >= -1)
-                {
-                    ref int bucket = ref GetBucket(entries[i].hashCode);
-                    entries[i].next = bucket - 1; // Value in _buckets is 1-based
-                    bucket = i + 1;
-                }
+                Bucket[] newBuckets = new Bucket[newBucketCount];
+                FillNewBucketsForResize(
+                    newBuckets, fastModMultiplier, entries, _count,
+                    // FIXME
+                    Comparer ?? EqualityComparer<TKey>.Default
+                );
+                _buckets = newBuckets;
+                _fastModMultiplier = fastModMultiplier;
             }
 
             _entries = entries;
+            _version++;
         }
 
         public bool Remove(TKey key)
         {
-            // The overload Remove(TKey key, out TValue value) is a copy of this method with one additional
-            // statement to copy the value for entry being removed into the output parameter.
-            // Code has been intentionally duplicated for performance reasons.
+            return Remove(key, out Unsafe.NullRef<TValue>()!);
+        }
 
-            if (key == null)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static void RemoveIndexFromBucket(ref Bucket bucket, int indexInBucket, int bucketCount)
+        {
+            Debug.Assert(bucketCount > 0);
+            unchecked
             {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.key);
-            }
-
-            if (_buckets != null)
-            {
-                Debug.Assert(_entries != null, "entries should be non-null");
-                uint collisionCount = 0;
-
-                IEqualityComparer<TKey>? comparer = _comparer;
-                Debug.Assert(typeof(TKey).IsValueType || comparer is not null);
-                uint hashCode = (uint)(typeof(TKey).IsValueType && comparer == null ? key.GetHashCode() : comparer!.GetHashCode(key));
-
-                ref int bucket = ref GetBucket(hashCode);
-                Entry[]? entries = _entries;
-                int last = -1;
-                int i = bucket - 1; // Value in buckets is 1-based
-                while (i >= 0)
+                int replacementIndexInBucket = bucketCount - 1;
+                bucket.Count = (byte)replacementIndexInBucket;
+                ref var toRemove = ref bucket.Indices[indexInBucket];
+                ref var replacement = ref bucket.Indices[replacementIndexInBucket];
+                // This rotate-back algorithm makes removes more expensive than if we were to just always zero the slot.
+                // But then other algorithms like insertion get more expensive, since we have to search for a zero to replace...
+                if (!Unsafe.AreSame(ref toRemove, ref replacement))
                 {
-                    ref Entry entry = ref entries[i];
-
-                    if (entry.hashCode == hashCode &&
-                        (typeof(TKey).IsValueType && comparer == null ? EqualityComparer<TKey>.Default.Equals(entry.key, key) : comparer!.Equals(entry.key, key)))
-                    {
-                        if (last < 0)
-                        {
-                            bucket = entry.next + 1; // Value in buckets is 1-based
-                        }
-                        else
-                        {
-                            entries[last].next = entry.next;
-                        }
-
-                        Debug.Assert((StartOfFreeList - _freeList) < 0, "shouldn't underflow because max hashtable length is MaxPrimeArrayLength = 0x7FEFFFFD(2146435069) _freelist underflow threshold 2147483646");
-                        entry.next = StartOfFreeList - _freeList;
-
-                        if (RuntimeHelpers.IsReferenceOrContainsReferences<TKey>())
-                        {
-                            entry.key = default!;
-                        }
-
-                        if (RuntimeHelpers.IsReferenceOrContainsReferences<TValue>())
-                        {
-                            entry.value = default!;
-                        }
-
-                        _freeList = i;
-                        _freeCount++;
-                        return true;
-                    }
-
-                    last = i;
-                    i = entry.next;
-
-                    collisionCount++;
-                    if (collisionCount > (uint)entries.Length)
-                    {
-                        // The chain of entries forms a loop; which means a concurrent update has happened.
-                        // Break out of the loop and throw, rather than looping forever.
-                        ThrowHelper.ThrowInvalidOperationException_ConcurrentOperationsNotSupported();
-                    }
+                    // TODO: This is the only place in the find/insert/remove algorithms that actually needs indexInBucket.
+                    // Can we refactor it away? The good news is RyuJIT optimizes it out entirely in find/insert.
+                    bucket.SetSlot((uint)indexInBucket, bucket.GetSlot(replacementIndexInBucket));
+                    bucket.SetSlot((uint)replacementIndexInBucket, 0);
+                    toRemove = replacement;
+                }
+                else
+                {
+                    bucket.SetSlot((uint)indexInBucket, 0);
+                    toRemove = default!;
                 }
             }
-            return false;
+        }
+
+        private void RemoveEntry(ref Entry entry, int entryIndex)
+        {
+            Debug.Assert((StartOfFreeList - _freeList) < 0, "shouldn't underflow because max hashtable length is MaxPrimeArrayLength = 0x7FEFFFFD(2146435069) _freelist underflow threshold 2147483646");
+            entry.next = StartOfFreeList - _freeList;
+
+            if (RuntimeHelpers.IsReferenceOrContainsReferences<TKey>())
+            {
+                entry.key = default!;
+            }
+
+            if (RuntimeHelpers.IsReferenceOrContainsReferences<TValue>())
+            {
+                entry.value = default!;
+            }
+
+            _freeList = entryIndex;
+            _freeCount++;
         }
 
         public bool Remove(TKey key, [MaybeNullWhen(false)] out TValue value)
         {
-            // This overload is a copy of the overload Remove(TKey key) with one additional
-            // statement to copy the value for entry being removed into the output parameter.
-            // Code has been intentionally duplicated for performance reasons.
+            // This allows using Remove(key, out value) to implement Remove(key) efficiently,
+            //  as long as we check whether value is a null reference before writing to it.
+            Unsafe.SkipInit(out value);
 
             if (key == null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.key);
             }
 
-            if (_buckets != null)
+            if (_buckets == null)
             {
-                Debug.Assert(_entries != null, "entries should be non-null");
-                uint collisionCount = 0;
-
-                IEqualityComparer<TKey>? comparer = _comparer;
-                Debug.Assert(typeof(TKey).IsValueType || comparer is not null);
-                uint hashCode = (uint)(typeof(TKey).IsValueType && comparer == null ? key.GetHashCode() : comparer!.GetHashCode(key));
-
-                ref int bucket = ref GetBucket(hashCode);
-                Entry[]? entries = _entries;
-                int last = -1;
-                int i = bucket - 1; // Value in buckets is 1-based
-                while (i >= 0)
-                {
-                    ref Entry entry = ref entries[i];
-
-                    if (entry.hashCode == hashCode &&
-                        (typeof(TKey).IsValueType && comparer == null ? EqualityComparer<TKey>.Default.Equals(entry.key, key) : comparer!.Equals(entry.key, key)))
-                    {
-                        if (last < 0)
-                        {
-                            bucket = entry.next + 1; // Value in buckets is 1-based
-                        }
-                        else
-                        {
-                            entries[last].next = entry.next;
-                        }
-
-                        value = entry.value;
-
-                        Debug.Assert((StartOfFreeList - _freeList) < 0, "shouldn't underflow because max hashtable length is MaxPrimeArrayLength = 0x7FEFFFFD(2146435069) _freelist underflow threshold 2147483646");
-                        entry.next = StartOfFreeList - _freeList;
-
-                        if (RuntimeHelpers.IsReferenceOrContainsReferences<TKey>())
-                        {
-                            entry.key = default!;
-                        }
-
-                        if (RuntimeHelpers.IsReferenceOrContainsReferences<TValue>())
-                        {
-                            entry.value = default!;
-                        }
-
-                        _freeList = i;
-                        _freeCount++;
-                        return true;
-                    }
-
-                    last = i;
-                    i = entry.next;
-
-                    collisionCount++;
-                    if (collisionCount > (uint)entries.Length)
-                    {
-                        // The chain of entries forms a loop; which means a concurrent update has happened.
-                        // Break out of the loop and throw, rather than looping forever.
-                        ThrowHelper.ThrowInvalidOperationException_ConcurrentOperationsNotSupported();
-                    }
-                }
+                if (!Unsafe.IsNullRef(ref value))
+                    value = default!;
+                return false;
             }
 
-            value = default;
+            // FIXME: Specialize using static interface methods like SimdDictionary
+            var comparer = Comparer ?? EqualityComparer<TKey>.Default;
+            Debug.Assert(comparer is not null || typeof(TKey).IsValueType);
+            uint hashCode = (uint)((typeof(TKey).IsValueType && comparer == null) ? key.GetHashCode() : comparer!.GetHashCode(key));
+            var suffix = GetHashSuffix(hashCode);
+            // FIXME: Skip this on non-vectorized targets
+            var searchVector = Vector128.Create(suffix);
+            Span<Entry> entries = _entries!;
+            Debug.Assert(!entries.IsEmpty, "expected entries to be non-null");
+
+            ref var bucket = ref LoopingBucketEnumerator.New(_buckets, hashCode, _fastModMultiplier, out var enumerator);
+
+            // FIXME: Change to do { } while () by introducing EmptyBuckets optimization from SimdDictionary
+            while (!Unsafe.IsNullRef(ref bucket))
+            {
+                // Pipelining
+                int bucketCount = bucket.Count;
+                // Determine start index for key search
+                int startIndex = bucket.FindSuffix(bucketCount, suffix, searchVector);
+                ref var entry = ref FindEntryInBucket(
+                    ref bucket, entries, startIndex, bucketCount, comparer!, key,
+                    out int entryIndex, out int indexInBucket
+                );
+
+                if (!Unsafe.IsNullRef(ref entry))
+                {
+                    if (!Unsafe.IsNullRef(ref value))
+                        value = entry.value;
+                    // NOTE: We don't increment version because it's documented that removal during enumeration works.
+                    RemoveEntry(ref entry, entryIndex);
+                    RemoveIndexFromBucket(ref bucket, indexInBucket, bucketCount);
+                    AdjustCascadeCounts(enumerator, false);
+                    return true;
+                }
+
+                if (bucket.CascadeCount == 0)
+                {
+                    if (!Unsafe.IsNullRef(ref value))
+                        value = default!;
+                    return false;
+                }
+
+                bucket = ref enumerator.Advance();
+            }
+
+            if (!Unsafe.IsNullRef(ref value))
+                value = default!;
+            ThrowHelper.ThrowInvalidOperationException_ConcurrentOperationsNotSupported();
             return false;
         }
 
@@ -1452,7 +1689,7 @@ namespace System.Collections.Generic
         }
 
         public bool TryAdd(TKey key, TValue value) =>
-            TryInsert(key, value, InsertionBehavior.None);
+            !Unsafe.IsNullRef(ref TryInsert(key, value, InsertionBehavior.InsertNewOnly, out _));
 
         bool ICollection<KeyValuePair<TKey, TValue>>.IsReadOnly => false;
 
@@ -1554,7 +1791,7 @@ namespace System.Collections.Generic
             }
 
             int newSize = HashHelpers.GetPrime(capacity);
-            Resize(newSize, forceNewHashCodes: false);
+            Resize(newSize);
             return newSize;
         }
 
@@ -1582,50 +1819,36 @@ namespace System.Collections.Generic
         /// <exception cref="ArgumentOutOfRangeException">Passed capacity is lower than entries count.</exception>
         public void TrimExcess(int capacity)
         {
+            int allocatedEntryCount = _count;
             if (capacity < Count)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.capacity);
             }
 
             int newSize = HashHelpers.GetPrime(capacity);
-            Entry[]? oldEntries = _entries;
-            int currentCapacity = oldEntries == null ? 0 : oldEntries.Length;
+            Span<Entry> oldEntries = _entries;
+            int currentCapacity = oldEntries.IsEmpty ? 0 : oldEntries.Length;
             if (newSize >= currentCapacity)
             {
                 return;
             }
 
-            int oldCount = _count;
             _version++;
             Initialize(newSize);
 
-            Debug.Assert(oldEntries is not null);
-
-            CopyEntries(oldEntries, oldCount);
-        }
-
-        private void CopyEntries(Entry[] entries, int count)
-        {
-            Debug.Assert(_entries is not null);
-
-            Entry[] newEntries = _entries;
-            int newCount = 0;
-            for (int i = 0; i < count; i++)
+            // FIXME: Write a dedicated special-case implementation of this loop maybe?
+            // Not sure how much faster it could actually be.
+            if (!oldEntries.IsEmpty)
             {
-                uint hashCode = entries[i].hashCode;
-                if (entries[i].next >= -1)
+                for (int i = 0; i < allocatedEntryCount; i++)
                 {
-                    ref Entry entry = ref newEntries[newCount];
-                    entry = entries[i];
-                    ref int bucket = ref GetBucket(hashCode);
-                    entry.next = bucket - 1; // Value in _buckets is 1-based
-                    bucket = newCount + 1;
-                    newCount++;
+                    ref var entry = ref oldEntries[i];
+                    // Initialize zeroed our count and created new bucket/entry arrays so we can use the regular insert operation
+                    //  to repopulate our new backing stores
+                    if (entry.next >= -1)
+                        TryInsert(entry.key, entry.value, InsertionBehavior.ThrowOnExisting, out _);
                 }
             }
-
-            _count = newCount;
-            _freeCount = 0;
         }
 
         bool ICollection.IsSynchronized => false;
@@ -1739,22 +1962,29 @@ namespace System.Collections.Generic
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private ref int GetBucket(uint hashCode)
+        private static int GetBucketIndexForHashCode(Span<Bucket> buckets, uint hashCode, ulong fastModMultiplier)
         {
-            int[] buckets = _buckets!;
+            unchecked
+            {
 #if TARGET_64BIT
-            return ref buckets[HashHelpers.FastMod(hashCode, (uint)buckets.Length, _fastModMultiplier)];
+                return (int)HashHelpers.FastMod(hashCode, (uint)buckets.Length, fastModMultiplier);
 #else
-            return ref buckets[(uint)hashCode % buckets.Length];
+                return (int)(hashCode % buckets.Length);
 #endif
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private ref Bucket GetBucket(uint hashCode)
+        {
+            Bucket[] buckets = _buckets!;
+            return ref buckets[GetBucketIndexForHashCode(buckets, hashCode, _fastModMultiplier)];
         }
 
         private struct Entry
         {
-            public uint hashCode;
             /// <summary>
-            /// 0-based index of next entry in chain: -1 means end of chain
-            /// also encodes whether this entry _itself_ is part of the free list by changing sign and subtracting 3,
+            /// encodes whether this entry _itself_ is part of the free list by changing sign and subtracting 3,
             /// so -2 means end of free list, -3 means index 0 but on free list, -4 means index 1 but on free list, etc.
             /// </summary>
             public int next;
