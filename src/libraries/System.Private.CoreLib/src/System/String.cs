@@ -340,8 +340,8 @@ namespace System
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.length);
             }
 
-            string result = FastAllocateString(length);
-            action(new Span<char>(ref result.GetRawStringData(), length), state);
+            string result = Alloc(length, out Span<char> resultSpan);
+            action(resultSpan, state);
             return result;
         }
 
@@ -363,7 +363,7 @@ namespace System
         [Intrinsic] // When input is a string literal
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static implicit operator ReadOnlySpan<char>(string? value) =>
-            value != null ? new ReadOnlySpan<char>(ref value.GetRawStringData(), value.Length) : default;
+            value is not null ? value.GetSpan() : default;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal bool TryGetSpan(int startIndex, int count, out ReadOnlySpan<char> slice)
@@ -525,7 +525,15 @@ namespace System
         public ref readonly char GetPinnableReference() => ref _firstChar;
 
         internal ref char GetRawStringData() => ref _firstChar;
-        internal ref ushort GetRawStringDataAsUInt16() => ref Unsafe.As<char, ushort>(ref _firstChar);
+
+        internal ReadOnlySpan<char> GetSpan() => new ReadOnlySpan<char>(ref _firstChar, _stringLength);
+
+        internal static string Alloc(int length, out Span<char> resultSpan)
+        {
+            string result = FastAllocateString(length);
+            resultSpan = new Span<char>(ref result._firstChar, result._stringLength);
+            return result;
+        }
 
         // Helper for encodings so they can talk to our buffer directly
         // stringLength must be the exact size we'll expect

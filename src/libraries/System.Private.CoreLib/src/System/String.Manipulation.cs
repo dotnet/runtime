@@ -1213,7 +1213,7 @@ namespace System
             // If inner ReplaceCore method returns null, it means no substitutions were
             // performed, so as an optimization we'll return the original string.
 
-            return ReplaceCore(this, oldValue.AsSpan(), newValue.AsSpan(), ci ?? CultureInfo.CurrentCulture.CompareInfo, options)
+            return ReplaceCore(this, oldValue.GetSpan(), newValue.AsSpan(), ci ?? CultureInfo.CurrentCulture.CompareInfo, options)
                 ?? this;
         }
 
@@ -1290,8 +1290,8 @@ namespace System
             }
 
             // Copy the remaining characters, doing the replacement as we go.
-            ref ushort pSrc = ref Unsafe.Add(ref GetRawStringDataAsUInt16(), (uint)copyLength);
-            ref ushort pDst = ref Unsafe.Add(ref result.GetRawStringDataAsUInt16(), (uint)copyLength);
+            ref ushort pSrc = ref Unsafe.Add(ref Unsafe.As<char, ushort>(ref _firstChar), (uint)copyLength);
+            ref ushort pDst = ref Unsafe.Add(ref Unsafe.As<char, ushort>(ref _firstChar), (uint)copyLength);
 
             // If the string is long enough for vectorization to kick in, we'd like to
             // process the remaining elements vectorized too.
@@ -1430,7 +1430,7 @@ namespace System
                 int count = replacementIdx - thisIdx;
                 if (count != 0)
                 {
-                    this.AsSpan(thisIdx, count).CopyTo(dstSpan.Slice(dstIdx));
+                    GetSpan().Slice(thisIdx, count).CopyTo(dstSpan.Slice(dstIdx));
                     dstIdx += count;
                 }
                 thisIdx = replacementIdx + oldValueLength;
@@ -1442,7 +1442,7 @@ namespace System
 
             // Copy over the final non-matching portion at the end of the string.
             Debug.Assert(this.Length - thisIdx == dstSpan.Length - dstIdx);
-            this.AsSpan(thisIdx).CopyTo(dstSpan.Slice(dstIdx));
+            GetSpan().Slice(thisIdx).CopyTo(dstSpan.Slice(dstIdx));
 
             return dst;
         }
@@ -1524,8 +1524,8 @@ namespace System
             // for the intermediate segments, then we'll sandwich everything together
             // with one final string.Concat call.
 
-            ReadOnlySpan<char> firstSegment = this.AsSpan(0, idxOfFirstNewlineChar);
-            ReadOnlySpan<char> remaining = this.AsSpan(idxOfFirstNewlineChar + stride);
+            ReadOnlySpan<char> firstSegment = GetSpan().Slice(0, idxOfFirstNewlineChar);
+            ReadOnlySpan<char> remaining = GetSpan().Slice(idxOfFirstNewlineChar + stride);
 
             var builder = new ValueStringBuilder(stackalloc char[StackallocCharBufferSizeLimit]);
             while (true)
@@ -1604,7 +1604,7 @@ namespace System
         {
             // If we are going to replace the new line with a line feed ('\n'),
             // we can skip looking for it to avoid breaking out of the vectorized path unnecessarily.
-            int idxOfFirstNewlineChar = this.AsSpan().IndexOfAny(SearchValuesStorage.NewLineCharsExceptLineFeed);
+            int idxOfFirstNewlineChar = GetSpan().IndexOfAny(SearchValuesStorage.NewLineCharsExceptLineFeed);
             if ((uint)idxOfFirstNewlineChar >= (uint)Length)
             {
                 return this;
@@ -1614,7 +1614,7 @@ namespace System
                 (uint)(idxOfFirstNewlineChar + 1) < (uint)Length &&
                 this[idxOfFirstNewlineChar + 1] == '\n' ? 2 : 1;
 
-            ReadOnlySpan<char> remaining = this.AsSpan(idxOfFirstNewlineChar + stride);
+            ReadOnlySpan<char> remaining = GetSpan().Slice(idxOfFirstNewlineChar + stride);
 
             var builder = new ValueStringBuilder(stackalloc char[StackallocCharBufferSizeLimit]);
             while (true)
@@ -1628,7 +1628,7 @@ namespace System
             }
 
             builder.Append('\n');
-            string retVal = Concat(this.AsSpan(0, idxOfFirstNewlineChar), builder.AsSpan(), remaining);
+            string retVal = Concat(GetSpan().Slice(0, idxOfFirstNewlineChar), builder.AsSpan(), remaining);
             builder.Dispose();
             return retVal;
         }
@@ -1913,7 +1913,7 @@ namespace System
 
             for (int i = 0; i < numReplaces; i++)
             {
-                thisEntry = this.AsSpan(currIndex, sepList[i] - currIndex);
+                thisEntry = GetSpan().Slice(currIndex, sepList[i] - currIndex);
                 if ((options & StringSplitOptions.TrimEntries) != 0)
                 {
                     thisEntry = thisEntry.Trim();
@@ -1932,7 +1932,7 @@ namespace System
                     {
                         while (++i < numReplaces)
                         {
-                            thisEntry = this.AsSpan(currIndex, sepList[i] - currIndex);
+                            thisEntry = GetSpan().Slice(currIndex, sepList[i] - currIndex);
                             if ((options & StringSplitOptions.TrimEntries) != 0)
                             {
                                 thisEntry = thisEntry.Trim();
@@ -1953,7 +1953,7 @@ namespace System
 
             // Handle the last substring at the end of the array
             // (could be empty if separator appeared at the end of the input string)
-            thisEntry = this.AsSpan(currIndex);
+            thisEntry = GetSpan().Slice(currIndex);
             if ((options & StringSplitOptions.TrimEntries) != 0)
             {
                 thisEntry = thisEntry.Trim();

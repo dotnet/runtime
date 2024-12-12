@@ -919,6 +919,8 @@ namespace System
 
         internal static string Format(DateTime dateTime, string? format, IFormatProvider? provider, TimeSpan offset)
         {
+            string result;
+            Span<char> resultSpan;
             DateTimeFormatInfo dtfi;
 
             if (string.IsNullOrEmpty(format))
@@ -929,17 +931,17 @@ namespace System
                 {
                     if (IsTimeOnlySpecialCase(dateTime, dtfi))
                     {
-                        string str = string.FastAllocateString(FormatSLength);
-                        TryFormatS(dateTime, new Span<char>(ref str.GetRawStringData(), str.Length), out int charsWritten);
+                        result = string.Alloc(FormatSLength, out resultSpan);
+                        TryFormatS(dateTime, resultSpan, out int charsWritten);
                         Debug.Assert(charsWritten == FormatSLength);
-                        return str;
+                        return result;
                     }
                     else if (ReferenceEquals(dtfi, DateTimeFormatInfo.InvariantInfo))
                     {
-                        string str = string.FastAllocateString(FormatInvariantGMinLength);
-                        TryFormatInvariantG(dateTime, offset, new Span<char>(ref str.GetRawStringData(), str.Length), out int charsWritten);
+                        result = string.Alloc(FormatInvariantGMinLength, out resultSpan);
+                        TryFormatInvariantG(dateTime, offset, resultSpan, out int charsWritten);
                         Debug.Assert(charsWritten == FormatInvariantGMinLength);
-                        return str;
+                        return result;
                     }
                     else
                     {
@@ -955,10 +957,10 @@ namespace System
                     }
                     else if (ReferenceEquals(dtfi, DateTimeFormatInfo.InvariantInfo))
                     {
-                        string str = string.FastAllocateString(FormatInvariantGMaxLength);
-                        TryFormatInvariantG(dateTime, offset, new Span<char>(ref str.GetRawStringData(), str.Length), out int charsWritten);
+                        result = string.Alloc(FormatInvariantGMaxLength, out resultSpan);
+                        TryFormatInvariantG(dateTime, offset, resultSpan, out int charsWritten);
                         Debug.Assert(charsWritten == FormatInvariantGMaxLength);
-                        return str;
+                        return result;
                     }
                     else
                     {
@@ -969,7 +971,6 @@ namespace System
             else if (format.Length == 1)
             {
                 int charsWritten;
-                string str;
                 switch (format[0])
                 {
                     // Round trip format
@@ -981,24 +982,24 @@ namespace System
 
                     // RFC1123 format
                     case 'r' or 'R':
-                        str = string.FastAllocateString(FormatRLength);
-                        TryFormatR(dateTime, offset, new Span<char>(ref str.GetRawStringData(), str.Length), out charsWritten);
-                        Debug.Assert(charsWritten == str.Length);
-                        return str;
+                        result = string.Alloc(FormatRLength, out resultSpan);
+                        TryFormatR(dateTime, offset, resultSpan, out charsWritten);
+                        Debug.Assert(charsWritten == result.Length);
+                        return result;
 
                     // Sortable format
                     case 's':
-                        str = string.FastAllocateString(FormatSLength);
-                        TryFormatS(dateTime, new Span<char>(ref str.GetRawStringData(), str.Length), out charsWritten);
-                        Debug.Assert(charsWritten == str.Length);
-                        return str;
+                        result = string.Alloc(FormatSLength, out resultSpan);
+                        TryFormatS(dateTime, resultSpan, out charsWritten);
+                        Debug.Assert(charsWritten == result.Length);
+                        return result;
 
                     // Universal time in sortable format
                     case 'u':
-                        str = string.FastAllocateString(FormatuLength);
-                        TryFormatu(dateTime, offset, new Span<char>(ref str.GetRawStringData(), str.Length), out charsWritten);
-                        Debug.Assert(charsWritten == str.Length);
-                        return str;
+                        result = string.Alloc(FormatuLength, out resultSpan);
+                        TryFormatu(dateTime, offset, resultSpan, out charsWritten);
+                        Debug.Assert(charsWritten == result.Length);
+                        return result;
 
                     // Universal time in culture dependent format
                     case 'U':
@@ -1021,9 +1022,9 @@ namespace System
 
             var vlb = new ValueListBuilder<char>(stackalloc char[256]);
             FormatCustomized(dateTime, format, dtfi, offset, ref vlb);
-            string resultString = vlb.AsSpan().ToString();
+            result = vlb.AsSpan().ToString();
             vlb.Dispose();
-            return resultString;
+            return result;
         }
 
         internal static bool TryFormat<TChar>(DateTime dateTime, Span<TChar> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider? provider) where TChar : unmanaged, IUtfChar<TChar> =>

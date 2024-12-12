@@ -95,9 +95,9 @@ namespace System
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.count, ExceptionResource.ArgumentOutOfRange_Count);
             }
 
-            int result = SpanHelpers.IndexOfChar(ref Unsafe.Add(ref _firstChar, startIndex), value, count);
+            int index = GetSpan().Slice(startIndex, count).IndexOf(value);
 
-            return result < 0 ? result : result + startIndex;
+            return index < 0 ? index : index + startIndex;
         }
 
         // Returns the index of the first occurrence of any specified character in the current instance.
@@ -110,7 +110,7 @@ namespace System
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.anyOf);
             }
 
-            return new ReadOnlySpan<char>(ref _firstChar, Length).IndexOfAny(anyOf);
+            return GetSpan().IndexOfAny(anyOf);
         }
 
         public int IndexOfAny(char[] anyOf, int startIndex)
@@ -135,7 +135,7 @@ namespace System
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.count, ExceptionResource.ArgumentOutOfRange_Count);
             }
 
-            int result = new ReadOnlySpan<char>(ref Unsafe.Add(ref _firstChar, startIndex), count).IndexOfAny(anyOf);
+            int result = GetSpan().Slice(startIndex, count).IndexOfAny(anyOf);
 
             return result < 0 ? result : result + startIndex;
         }
@@ -309,7 +309,7 @@ namespace System
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.anyOf);
             }
 
-            return new ReadOnlySpan<char>(ref _firstChar, Length).LastIndexOfAny(anyOf);
+            return GetSpan().LastIndexOfAny(anyOf);
         }
 
         public int LastIndexOfAny(char[] anyOf, int startIndex)
@@ -340,7 +340,7 @@ namespace System
             }
 
             int startSearchAt = startIndex + 1 - count;
-            int result = new ReadOnlySpan<char>(ref Unsafe.Add(ref _firstChar, startSearchAt), count).LastIndexOfAny(anyOf);
+            int result = GetSpan().Slice(startSearchAt, count).LastIndexOfAny(anyOf);
 
             return result < 0 ? result : result + startSearchAt;
         }

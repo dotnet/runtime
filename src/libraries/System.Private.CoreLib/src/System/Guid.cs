@@ -374,7 +374,7 @@ namespace System
             ArgumentNullException.ThrowIfNull(input);
             ArgumentNullException.ThrowIfNull(format);
 
-            return ParseExact((ReadOnlySpan<char>)input, (ReadOnlySpan<char>)format);
+            return ParseExact(input.GetSpan(), format.GetSpan());
         }
 
         public static Guid ParseExact(ReadOnlySpan<char> input, [StringSyntax(StringSyntaxAttribute.GuidFormat)] ReadOnlySpan<char> format)
@@ -1176,12 +1176,12 @@ namespace System
                 };
             }
 
-            string guidString = string.FastAllocateString(guidSize);
+            string result = string.Alloc(guidSize, out Span<char> resultSpan);
 
-            bool result = TryFormatCore(new Span<char>(ref guidString.GetRawStringData(), guidString.Length), out int bytesWritten, format);
-            Debug.Assert(result && bytesWritten == guidString.Length, "Formatting guid should have succeeded.");
+            bool success = TryFormatCore(resultSpan, out int bytesWritten, format);
+            Debug.Assert(success && bytesWritten == result.Length, "Formatting guid should have succeeded.");
 
-            return guidString;
+            return result;
         }
 
         public bool TryFormat(Span<char> destination, out int charsWritten, [StringSyntax(StringSyntaxAttribute.GuidFormat)] ReadOnlySpan<char> format = default) =>

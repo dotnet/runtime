@@ -95,10 +95,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ReadOnlySpan<char> AsSpan(this string? text)
         {
-            if (text == null)
-                return default;
-
-            return new ReadOnlySpan<char>(ref text.GetRawStringData(), text.Length);
+            return text is not null ? text.GetSpan() : default;
         }
 
         /// <summary>
@@ -122,7 +119,7 @@ namespace System
             if ((uint)start > (uint)text.Length)
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.start);
 
-            return new ReadOnlySpan<char>(ref Unsafe.Add(ref text.GetRawStringData(), (nint)(uint)start /* force zero-extension */), text.Length - start);
+            return text.GetSpan().Slice(start);
         }
 
         /// <summary>Creates a new <see cref="ReadOnlySpan{Char}"/> over a portion of the target string from a specified position to the end of the string.</summary>
@@ -148,7 +145,7 @@ namespace System
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.startIndex);
             }
 
-            return new ReadOnlySpan<char>(ref Unsafe.Add(ref text.GetRawStringData(), (nint)(uint)actualIndex /* force zero-extension */), text.Length - actualIndex);
+            return text.GetSpan().Slice(actualIndex);
         }
 
         /// <summary>Creates a new <see cref="ReadOnlySpan{Char}"/> over a portion of a target string using the range start and end indexes.</summary>
@@ -174,7 +171,7 @@ namespace System
             }
 
             (int start, int length) = range.GetOffsetAndLength(text.Length);
-            return new ReadOnlySpan<char>(ref Unsafe.Add(ref text.GetRawStringData(), (nint)(uint)start /* force zero-extension */), length);
+            return text.GetSpan().Slice(start, length);
         }
 
         /// <summary>
@@ -206,7 +203,7 @@ namespace System
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.start);
 #endif
 
-            return new ReadOnlySpan<char>(ref Unsafe.Add(ref text.GetRawStringData(), (nint)(uint)start /* force zero-extension */), length);
+            return text.GetSpan().Slice(start, length);
         }
 
         /// <summary>Creates a new <see cref="ReadOnlyMemory{T}"/> over the portion of the target string.</summary>

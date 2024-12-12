@@ -23,7 +23,7 @@ namespace System.Globalization
                 return string.Empty;
             }
 
-            ReadOnlySpan<char> source = s;
+            ReadOnlySpan<char> source = s.GetSpan();
 
             int i = 0;
             while (i < s.Length)
@@ -53,11 +53,10 @@ namespace System.Globalization
                 return s;
             }
 
-            string result = string.FastAllocateString(s.Length);
-            var destination = new Span<char>(ref result.GetRawStringData(), result.Length);
-            ReadOnlySpan<char> src = s;
-            src.Slice(0, i).CopyTo(destination);
-            ToLower(src.Slice(i), destination.Slice(i));
+            string result = string.Alloc(s.Length, out Span<char> resultSpan);
+            ReadOnlySpan<char> src = s.GetSpan();
+            src.Slice(0, i).CopyTo(resultSpan);
+            ToLower(src.Slice(i), resultSpan.Slice(i));
 
             return result;
         }
@@ -69,7 +68,7 @@ namespace System.Globalization
                 return string.Empty;
             }
 
-            ReadOnlySpan<char> source = s;
+            ReadOnlySpan<char> source = s.GetSpan();
 
             int i = 0;
             while (i < s.Length)
@@ -99,11 +98,10 @@ namespace System.Globalization
                 return s;
             }
 
-            string result = string.FastAllocateString(s.Length);
-            var destination = new Span<char>(ref result.GetRawStringData(), result.Length);
-            ReadOnlySpan<char> src = s;
-            src.Slice(0, i).CopyTo(destination);
-            ToUpper(src.Slice(i), destination.Slice(i));
+            string result = string.Alloc(s.Length, out Span<char> resultSpan);
+            ReadOnlySpan<char> src = s.GetSpan();
+            src.Slice(0, i).CopyTo(resultSpan);
+            ToUpper(src.Slice(i), resultSpan.Slice(i));
 
             return result;
         }

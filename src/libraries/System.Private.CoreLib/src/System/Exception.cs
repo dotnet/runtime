@@ -148,8 +148,7 @@ namespace System
             }
 
             // Create the string
-            string result = string.FastAllocateString(length);
-            Span<char> resultSpan = new Span<char>(ref result.GetRawStringData(), result.Length);
+            string result = string.Alloc(length, out Span<char> resultSpan);
 
             // Fill it in
             Write(className, ref resultSpan);

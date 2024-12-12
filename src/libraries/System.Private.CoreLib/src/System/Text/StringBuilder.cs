@@ -368,8 +368,8 @@ namespace System.Text
             }
 
             AssertInvariants();
-            string result = string.FastAllocateString(length);
-            CopyTo(startIndex, new Span<char>(ref result.GetRawStringData(), result.Length), result.Length);
+            string result = string.Alloc(length, out Span<char> resultSpan);
+            CopyTo(startIndex, resultSpan, resultSpan.Length);
             return result;
         }
 
