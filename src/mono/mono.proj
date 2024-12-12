@@ -341,7 +341,7 @@ JS_ENGINES = [NODE_JS]
           Condition="'$(HostOS)' == 'windows'"
           WorkingDirectory="$(ArtifactsObjDir)"
           IgnoreStandardErrorWarningFormat="true" />
-    <Touch Files="$(WASI_SDK_PATH)/WASI-SDK-VERSION-25.0" AlwaysCreate="true" />
+    <Touch Files="$(WASI_SDK_PATH)/WASI-SDK-VERSION-$(WasiSdkVersion)" AlwaysCreate="true" />
 
   </Target>
 
