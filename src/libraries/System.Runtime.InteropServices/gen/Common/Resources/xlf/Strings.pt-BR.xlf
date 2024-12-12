@@ -842,9 +842,9 @@
         <target state="translated">O tipo de ponto de entrada para realizar marshaling '{0}' para o tipo gerenciado '{1}' deve ter uma aridade maior do que o tipo gerenciado.</target>
         <note />
       </trans-unit>
-      <trans-unit id="MarshallerInNativeReturnPositionMustMatchNativeReturnType">
-        <source>All marshallers for values that are passed as the unmanaged return value must have the same unmanaged type.</source>
-        <target state="translated">Todos os marshallers de valores passados como o valor retornado não gerenciado devem ter o mesmo tipo não gerenciado.</target>
+      <trans-unit id="MarshallerInOverlappingNativePositionMustMatchNativeType">
+        <source>All marshallers for values that are passed as the unmanaged return value or parameter must have the same unmanaged type.</source>
+        <target state="new">All marshallers for values that are passed as the unmanaged return value or parameter must have the same unmanaged type.</target>
         <note />
       </trans-unit>
       <trans-unit id="MarshallerTypeMustBeClosedOrMatchArityDescription">
