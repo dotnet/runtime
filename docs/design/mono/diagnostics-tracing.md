@@ -98,10 +98,10 @@ On the other hand, if it is desired to include all components, there are two opt
 
 ## Install diagnostic client tooling
 
-```
-dotnet tool install -g dotnet-trace --add-source=https://aka.ms/dotnet-tools/index.json
-dotnet tool install -g dotnet-counters --add-source=https://aka.ms/dotnet-tools/index.json
-dotnet tool install -g dotnet-dsrouter --add-source=https://aka.ms/dotnet-tools/index.json
+```sh
+$ dotnet tool install -g dotnet-trace --add-source=https://aka.ms/dotnet-tools/index.json
+$ dotnet tool install -g dotnet-counters --add-source=https://aka.ms/dotnet-tools/index.json
+$ dotnet tool install -g dotnet-dsrouter --add-source=https://aka.ms/dotnet-tools/index.json
 ```
 
 If tools have already been installed, they can all be updated to latest version using `update` keyword instead of `install` keyword.
@@ -124,8 +124,8 @@ Starting in .NET 8, enhancements to `dotnet-dsrouter` supporting most of below d
 
 Starting `dotnet-dsrouter` to trace an application running on iOS simulator could be done using the `ios-sim` profile:
 
-```
-dotnet-dsrouter ios-sim -i
+```sh
+$ dotnet-dsrouter ios-sim -i
 WARNING: dotnet-dsrouter is a development tool not intended for production environments.
 
 How to connect current dotnet-dsrouter pid=26600 with iOS simulator and diagnostics tooling.
@@ -148,8 +148,8 @@ Using `-i` outputs enough details on how to configure the `DOTNET_DiagnosticPort
 
 For example, running default tracing together with above `dotnet-dsrouter` instance, set `DOTNET_DiagnosticPorts=127.0.0.1:9000,nosuspend,listen` environment variable for the launched application running on iOS simulator and then run diagnostic tooling using pid of running `dotnet-dsrouter`:
 
-```
-dotnet-trace collect -p 26600
+```sh
+$ dotnet-trace collect -p 26600
 ```
 
 Changing the environment variable for launched application to `DOTNET_DiagnosticPorts=127.0.0.1:9000,suspend,listen` will enable startup tracing using above `dotnet-dsrouter` instance.
@@ -193,32 +193,32 @@ Use `nosuspend` keyword if runtime do regular startup, not waiting for any diagn
 
 When running towards Android emulator or device (connected over usb):
 
-```
-dotnet-dsrouter server-client -ipcs ~/myport -tcpc 127.0.0.1:9000 --forward-port Android
+```sh
+$ dotnet-dsrouter server-client -ipcs ~/myport -tcpc 127.0.0.1:9000 --forward-port Android
 ```
 
 When running towards iOS simulator:
 
-```
-dotnet-dsrouter server-client -ipcs ~/myport -tcpc 127.0.0.1:9000
+```sh
+$ dotnet-dsrouter server-client -ipcs ~/myport -tcpc 127.0.0.1:9000
 ```
 
 When running towards iOS device (connected over usb):
 
-```
-dotnet-dsrouter server-client -ipcs ~/myport -tcpc 127.0.0.1:9000 --forward-port iOS
+```sh
+$ dotnet-dsrouter server-client -ipcs ~/myport -tcpc 127.0.0.1:9000 --forward-port iOS
 ```
 
 Run diagnostic tooling like this, regardless of `suspend|nosuspend`, `Android|iOS` or `simulator|emulator|device` scenarios are being used:
 
-```
-dotnet-trace collect --diagnostic-port ~/myport,connect
+```sh
+$ dotnet-trace collect --diagnostic-port ~/myport,connect
 ```
 
 or
 
-```
-dotnet-counters monitor --diagnostic-port ~/myport,connect
+```sh
+$ dotnet-counters monitor --diagnostic-port ~/myport,connect
 ```
 
 Android and iOS SDK's have documented similar steps on how to setup profiling/tracing:
@@ -235,39 +235,39 @@ https://github.com/xamarin/xamarin-macios/wiki/Profiling
 
 Make sure the following is enabled in https://github.com/dotnet/runtime/blob/main/src/mono/sample/iOS/Makefile,
 
-```
+```Makefile
 RUNTIME_COMPONENTS=diagnostics_tracing
 DIAGNOSTIC_PORTS=127.0.0.1:9000,nosuspend,listen
 ```
 
-```
-dotnet-dsrouter ios-sim &
+```sh
+$ dotnet-dsrouter ios-sim &
 ```
 
-```
-dotnet-counters monitor -p <dotnet-dsrouter pid>
+```sh
+$ dotnet-counters monitor -p <dotnet-dsrouter pid>
 ```
 
 ##### Custom configuration:
 
 Make sure the following is enabled in https://github.com/dotnet/runtime/blob/main/src/mono/sample/iOS/Makefile,
 
-```
+```Makefile
 RUNTIME_COMPONENTS=diagnostics_tracing
 DIAGNOSTIC_PORTS=127.0.0.1:9000,nosuspend
 ```
 
-```
-dotnet-dsrouter server-server -ipcs ~/myport -tcps 127.0.0.1:9000 &
+```sh
+$ dotnet-dsrouter server-server -ipcs ~/myport -tcps 127.0.0.1:9000 &
 ```
 
-```
+```sh
 cd src/mono/sample/iOS/
-make run-sim
+$ make run-sim
 ```
 
-```
-dotnet-counters monitor --diagnostic-port ~/myport,connect
+```sh
+$ dotnet-counters monitor --diagnostic-port ~/myport,connect
 ```
 
 #### Example using dotnet-counters using sample app on Android emulator
@@ -278,44 +278,44 @@ dotnet-counters monitor --diagnostic-port ~/myport,connect
 
 Make sure the following is enabled in https://github.com/dotnet/runtime/blob/main/src/mono/sample/Android/Makefile,
 
-```
+```Makefile
 RUNTIME_COMPONENTS=diagnostics_tracing
 DIAGNOSTIC_PORTS=10.0.2.2:9000,nosuspend,connect
 ```
 
-```
-dotnet-dsrouter android-emu &
+```sh
+$ dotnet-dsrouter android-emu &
 ```
 
-```
+```sh
 cd src/mono/sample/Android/
-make run
+$ make run
 ```
 
-```
-dotnet-counters monitor -p <dotnet-dsrouter pid>
+```sh
+$ dotnet-counters monitor -p <dotnet-dsrouter pid>
 ```
 
 ##### Custom configuration:
 
 Make sure the following is enabled in https://github.com/dotnet/runtime/blob/main/src/mono/sample/Android/Makefile,
 
-```
+```Makefile
 RUNTIME_COMPONENTS=diagnostics_tracing
 DIAGNOSTIC_PORTS=10.0.2.2:9000,nosuspend
 ```
 
-```
-dotnet-dsrouter server-server -ipcs ~/myport -tcps 10.0.2.2:9000 &
+```sh
+$ dotnet-dsrouter server-server -ipcs ~/myport -tcps 10.0.2.2:9000 &
 ```
 
-```
+```sh
 cd src/mono/sample/Android/
-make run
+$ make run
 ```
 
-```
-dotnet-counters monitor --diagnostic-port ~/myport,connect
+```sh
+$ dotnet-counters monitor --diagnostic-port ~/myport,connect
 ```
 
 Using `adb` port forwarding it is possible to use `127.0.0.1:9000` in above scenario and adding `--forward-port Android` to `dotnet-dsrouter` launch arguments. That will automatically run needed `adb` commands. NOTE, `dotnet-dsrouter` needs to find `adb` tool for this to work, see above for more details.
@@ -328,61 +328,61 @@ Using `adb` port forwarding it is possible to use `127.0.0.1:9000` in above scen
 
 Make sure the following is enabled in https://github.com/dotnet/runtime/blob/main/src/mono/sample/iOS/Makefile,
 
-```
+```Makefile
 RUNTIME_COMPONENTS=diagnostics_tracing
 DIAGNOSTIC_PORTS=127.0.0.1:9000,suspend,listen
 ```
 
-```
-dotnet-dsrouter ios-sim &
+```sh
+$ dotnet-dsrouter ios-sim &
 ```
 
-```
-dotnet-counters monitor -p <dotnet-dsrouter pid>
+```sh
+$ dotnet-counters monitor -p <dotnet-dsrouter pid>
 ```
 
 ##### Custom configuration:
 
 Make sure the following is enabled in https://github.com/dotnet/runtime/blob/main/src/mono/sample/iOS/Makefile,
 
-```
+```Makefile
 RUNTIME_COMPONENTS=diagnostics_tracing
 DIAGNOSTIC_PORTS=127.0.0.1:9000,suspend
 ```
 
-```
-dotnet-dsrouter client-server -tcpc ~/myport -tcps 127.0.0.1:9000 &
-```
-
-```
-dotnet-trace collect --diagnostic-port ~/myport
+```sh
+$ dotnet-dsrouter client-server -tcpc ~/myport -tcps 127.0.0.1:9000 &
 ```
 
+```sh
+$ dotnet-trace collect --diagnostic-port ~/myport
 ```
+
+```sh
 cd src/mono/sample/iOS/
-make run-sim
+$ make run-sim
 ```
 
 Since `dotnet-dsrouter` is capable to run several different modes, it is also possible to do startup tracing using server-server mode.
 
 Make sure the following is enabled in https://github.com/dotnet/runtime/blob/main/src/mono/sample/iOS/Makefile,
 
-```
+```Makefile
 RUNTIME_COMPONENTS=diagnostics_tracing
 DIAGNOSTIC_PORTS=127.0.0.1:9000,suspend
 ```
 
-```
-dotnet-dsrouter server-server -ipcs ~/myport -tcps 127.0.0.1:9000 &
+```sh
+$ dotnet-dsrouter server-server -ipcs ~/myport -tcps 127.0.0.1:9000 &
 ```
 
-```
+```sh
 cd src/mono/sample/iOS/
-make run-sim
+$ make run-sim
 ```
 
-```
-dotnet-trace collect --diagnostic-port ~/myport,connect
+```sh
+$ dotnet-trace collect --diagnostic-port ~/myport,connect
 ```
 
 #### Example using dotnet-trace startup tracing using sample app on Android emulator
@@ -393,66 +393,66 @@ dotnet-trace collect --diagnostic-port ~/myport,connect
 
 Make sure the following is enabled in https://github.com/dotnet/runtime/blob/main/src/mono/sample/Android/Makefile,
 
-```
+```Makefile
 RUNTIME_COMPONENTS=diagnostics_tracing
 DIAGNOSTIC_PORTS=10.0.2.2:9000,suspend,connect
 ```
 
-```
-dotnet-dsrouter android-emu &
+```sh
+$ dotnet-dsrouter android-emu &
 ```
 
-```
+```sh
 cd src/mono/sample/Android/
-make run
+$ make run
 ```
 
-```
-dotnet-counters monitor -p <dotnet-dsrouter pid>
+```sh
+$ dotnet-counters monitor -p <dotnet-dsrouter pid>
 ```
 
 ##### Custom configuration:
 
 Make sure the following is enabled in https://github.com/dotnet/runtime/blob/main/src/mono/sample/Android/Makefile,
 
-```
+```Makefile
 RUNTIME_COMPONENTS=diagnostics_tracing
 DIAGNOSTIC_PORTS=10.0.2.2:9000,suspend
 ```
 
-```
-dotnet-dsrouter client-server -tcpc ~/myport -tcps 127.0.0.1:9000 &
-```
-
-```
-dotnet-trace collect --diagnostic-port ~/myport
+```sh
+$ dotnet-dsrouter client-server -tcpc ~/myport -tcps 127.0.0.1:9000 &
 ```
 
+```sh
+$ dotnet-trace collect --diagnostic-port ~/myport
 ```
+
+```sh
 cd src/mono/sample/Android/
-make run
+$ make run
 ```
 
 Since `dotnet-dsrouter` is capable to run several different modes, it is also possible to do startup tracing using server-server mode.
 
 Make sure the following is enabled in https://github.com/dotnet/runtime/blob/main/src/mono/sample/Android/Makefile,
 
-```
+```Makefile
 RUNTIME_COMPONENTS=diagnostics_tracing
 DIAGNOSTIC_PORTS=10.0.2.2:9000,suspend
 ```
 
-```
-dotnet-dsrouter server-server -ipcs ~/myport -tcps 10.0.2.2:9000 &
+```sh
+$ dotnet-dsrouter server-server -ipcs ~/myport -tcps 10.0.2.2:9000 &
 ```
 
-```
+```sh
 cd src/mono/sample/Android/
-make run
+$ make run
 ```
 
-```
-dotnet-trace collect --diagnostic-port ~/myport,connect
+```sh
+$ dotnet-trace collect --diagnostic-port ~/myport,connect
 ```
 
 Using `adb` port forwarding it is possible to use `127.0.0.1:9000` in above scenario and adding `--forward-port Android` to `dotnet-dsrouter` launch arguments. That will automatically run needed `adb` commands. NOTE, `dotnet-dsrouter` needs to find `adb` tool for this to work, see above for more details.
@@ -473,36 +473,36 @@ Below scenarios uses loopback interface together with device connected to develo
 
 Launch application using the following environment variable set, `DIAGNOSTIC_PORTS=127.0.0.1:9000,suspend,connect`
 
-```
-dotnet-dsrouter android &
+```sh
+$ dotnet-dsrouter android &
 ```
 
 Run application on device connected over usb.
 
-```
-dotnet-trace collect -p <dotnet-dsrouter pid>
+```sh
+$ dotnet-trace collect -p <dotnet-dsrouter pid>
 ```
 
 ##### Custom configuration:
 
 Launch application using the following environment variable set, `DIAGNOSTIC_PORTS=127.0.0.1:9000,suspend`
 
-```
-dotnet-dsrouter server-server -ipcs ~/myport -tcps 127.0.0.1:9000 --forward-port Android &
+```sh
+$ dotnet-dsrouter server-server -ipcs ~/myport -tcps 127.0.0.1:9000 --forward-port Android &
 ```
 
 Run application on device connected over usb.
 
-```
-dotnet-trace collect --diagnostic-port ~/myport,connect
+```sh
+$ dotnet-trace collect --diagnostic-port ~/myport,connect
 ```
 
 The same scenario could be run pushing the TCP/IP listener over to device. Following changes needs to be done to above configuration:
 
 `DIAGNOSTIC_PORTS=127.0.0.1:9000,suspend,listen`
 
-```
-dotnet-dsrouter server-client -ipcs ~/myport -tcpc 127.0.0.1:9000 --forward-port Android &
+```sh
+$ dotnet-dsrouter server-client -ipcs ~/myport -tcpc 127.0.0.1:9000 --forward-port Android &
 ```
 
 #### iOS
@@ -513,28 +513,28 @@ dotnet-dsrouter server-client -ipcs ~/myport -tcpc 127.0.0.1:9000 --forward-port
 
 Launch application using the following environment variable set, `DIAGNOSTIC_PORTS=127.0.0.1:9000,suspend,listen`
 
-```
-dotnet-dsrouter ios &
+```sh
+$ dotnet-dsrouter ios &
 ```
 
 Run application on device connected over usb.
 
-```
-dotnet-trace collect -p <dotnet-dsrouter pid>
+```sh
+$ dotnet-trace collect -p <dotnet-dsrouter pid>
 ```
 
 ##### Custom configuration:
 
 Launch application using the following environment variable set, `DIAGNOSTIC_PORTS=*:9000,suspend,listen`
 
-```
-dotnet-dsrouter server-client -ipcs ~/myport -tcpc 127.0.0.1:9000 --forward-port iOS &
+```sh
+$ dotnet-dsrouter server-client -ipcs ~/myport -tcpc 127.0.0.1:9000 --forward-port iOS &
 ```
 
 Run application on device connected over usb.
 
-```
-dotnet-trace collect --diagnostic-port ~/myport,connect
+```sh
+$ dotnet-trace collect --diagnostic-port ~/myport,connect
 ```
 
 NOTE, iOS only support use of loopback interface when running DiagnosticServer in listening mode on device and using `dotnet-dsrouter` in server-client (IPC Server, TCP/IP client) with port forwarding.
@@ -551,9 +551,7 @@ Running using single file based EventPipe session will produce a file in working
 
 Increasing the default log level in `dotnet-trace` for `Microsoft-Windows-DotNETRuntime` provider will include additional events in nettrace file giving more details around JIT and loader activities, like all loaded assemblies, loaded types, loaded/JIT:ed methods as well as timing and size metrics, all valuable information when analyzing things like startup performance, size of loaded/JIT:ed methods, time it takes to JIT all, subset or individual methods etc. To instruct `dotnet-trace` to only collect `Microsoft-Windows-DotNETRuntime` events during startup, use one of that startup tracing scenarios as described above, but add the following parameters to `dotnet-trace`,
 
-```
---clreventlevel verbose --providers Microsoft-Windows-DotNETRuntime
-```
+`--clreventlevel verbose --providers Microsoft-Windows-DotNETRuntime`
 
 `Prefview` have built in analyzers for JIT/Loader stats, so either load resulting nettrace file in `Perfview` or analyze file using custom `TraceEvent` parsers.
 
@@ -561,9 +559,7 @@ Increasing the default log level in `dotnet-trace` for `Microsoft-Windows-DotNET
 
 Starting with .NET 8 the experimental profiler provider, `Microsoft-DotNETRuntimeMonoProfiler`, has been disabled by default. In order to enable it, the following needs to be added to MonoVM specific environment variable:
 
-```
-MONO_DIAGNOSTICS=--diagnostic-mono-profiler=enable
-```
+`MONO_DIAGNOSTICS=--diagnostic-mono-profiler=enable`
 
 MonoVM comes with a EventPipe provider mapping most of low-level Mono profiler events into native EventPipe events thought `Microsoft-DotNETRuntimeMonoProfiler`. Mainly this provider exists to simplify transition from old MonoVM log profiler over to nettrace, but it also adds a couple of features available in MonoVM profiler.
 
@@ -571,15 +567,11 @@ Mono profiler includes the concept of method tracing and have support for method
 
 Method tracing can be controlled using a keyword in the MonoProfiler provider, but if an EventPipe session is not running when a method gets JIT:ed, it won't be instrumented and will not fire any enter/leave events. 0x20000000 will start to capture enter/leave events and 0x40000000000 can be used to enable instrumentation including all methods JIT:ed during lifetime of EventPipe session. To make sure all needed methods gets instrumented, runtime should be configured using startup profiling (as described above) and `dotnet-trace` should be run using the following provider configuration,
 
-```
---providers Microsoft-DotNETRuntimeMonoProfiler:0x40020000000;4
-```
+`--providers Microsoft-DotNETRuntimeMonoProfiler:0x40020000000;4`
 
 To fully control the instrumentation (not depend on running EventPipe session), there is a MonoVM specific environment variable that can be set:
 
-```
-MONO_DIAGNOSTICS=--diagnostic-mono-profiler-callspec=
-```
+`MONO_DIAGNOSTICS=--diagnostic-mono-profiler-callspec=`
 
 That will enable enter/leave profiling for all JIT:ed methods matching callspec. Callspec uses MonoVM callspec format:
 
@@ -599,27 +591,23 @@ It is possible to combine include and exclude expressions using `,` as separator
 
 Trace all methods, except methods belonging to `System.Int32` type.
 
-```
-MONO_DIAGNOSTICS=--diagnostic-mono-profiler-callspec=all,-T:System.Int32
-```
+`MONO_DIAGNOSTICS=--diagnostic-mono-profiler-callspec=all,-T:System.Int32`
 
 Trace all methods in `Program` type.
 
-```
-MONO_DIAGNOSTICS=--diagnostic-mono-profiler-callspec=T:Program
-```
+`MONO_DIAGNOSTICS=--diagnostic-mono-profiler-callspec=T:Program`
 
 If no EventPipe session is running using MonoProfiler provider with method tracing keyword, no events will be emitted, even if running methods have been instrumented using `MONO_DIAGNOSTICS`.
 
 When instrumenting methods using `MONO_DIAGNOSTICS`, it is possible to run `dotnet-trace` using the following provider configuration,
 
-```
---providers Microsoft-DotNETRuntimeMonoProfiler:0x20000000:4
-```
+`--providers Microsoft-DotNETRuntimeMonoProfiler:0x20000000:4`
 
 Since all methods matching callspec will be instrumented it is possible to capture enter/leave events only when needed at any time during application lifetime.
 
 A way to effectively use this precise profiling is to first run with SampleProfiler provider, identifying hot paths worth additional investigation and then enable tracing using a matching callspec and trace execution of methods using MonoProfiler provider tracing keyword. It is of course possible to do enter/leave profiling during startup as well (using callspec or provider enabled instrumentation), just keep in mind that it can produce many events, especially in case when no callspec is in use.
+
+NOTE, EventPipe technology comes with an overhead emitting events that will have impact on enter/leave measurements. If more precise instrumentation is needed it is recommended to implement a Mono profiler provider handling the enter/leave callbacks directly.
 
 ### Collect GC dumps on MonoVM .NET 8
 
@@ -629,9 +617,7 @@ Starting with .NET 8 MonoVM support GC dumps functionality using tools like `dot
 
 MonoVM EventPipe provider `Microsoft-DotNETRuntimeMonoProfiler`, includes several GC related events that can be used to track allocations, roots and other GC events as well as generating GC heap dumps. Heap dumps can be requested on demand using `dotnet-trace` using the following provider configuration,
 
-```
---providers Microsoft-DotNETRuntimeMonoProfiler:0x8900001:4
-```
+`--providers Microsoft-DotNETRuntimeMonoProfiler:0x8900001:4`
 
 This will trigger a heap dump including object references, object type info and GC events that can be used to detect when dump starts and completes (to know when to end EventPipe session). If `dotnet-trace` is used, there is no clear indication when full dump has been completed but looking at the stream size counter will indicate when no more data gets written into stream and session can be closed.
 
@@ -641,22 +627,16 @@ It is also possible to get details about roots registration/deregistration, hand
 
 To track GC allocations with callstack, it needs to be enabled when starting up application using an environment variable:
 
-```
-MONO_DIAGNOSTICS=--diagnostic-mono-profiler=alloc
-```
+`MONO_DIAGNOSTICS=--diagnostic-mono-profiler=alloc`
 
 NOTE, this affects runtime performance since it will change the underlying allocator. It however won't emit any events until an EventPipe session has been created with keywords enabling allocation tracking,
 
-```
---providers Microsoft-DotNETRuntimeMonoProfiler:0x200000:4
-```
+`--providers Microsoft-DotNETRuntimeMonoProfiler:0x200000:4`
 
 It is also possible to setup one EventPipe session running over longer periods of time, getting all requested GC events, including multiple heap dumps. A different EventPipe session can be used to trigger heap dumps on demand, but that session
 won't get any additional events, just trigger a heap dump.
 
-```
---providers Microsoft-DotNETRuntimeMonoProfiler:0x800000:4
-```
+`--providers Microsoft-DotNETRuntimeMonoProfiler:0x800000:4`
 
 Combining different sessions including different GC information opens up ability to track all GC allocations during a specific time period (to reduce size of captured data), while taking heap dumps into separate sessions, make it possible to do full analysis of GC memory increase/decrease tied allocation callstacks for individual object instances.
 
