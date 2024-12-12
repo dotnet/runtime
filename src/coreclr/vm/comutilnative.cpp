@@ -76,131 +76,49 @@ FCIMPL0(VOID, ExceptionNative::PrepareForForeignExceptionRaise)
 }
 FCIMPLEND
 
-// Given an exception object, this method will extract the stacktrace and dynamic method array and set them up for return to the caller.
-FCIMPL3(VOID, ExceptionNative::GetStackTracesDeepCopy, Object* pExceptionObjectUnsafe, Object **pStackTraceUnsafe, Object **pDynamicMethodsUnsafe);
+// Given an exception object, this method will mark its stack trace as frozen and return it to the caller.
+// Frozen stack traces are immutable, when a thread attempts to add a frame to it, the stack trace is cloned first.
+extern "C" void QCALLTYPE ExceptionNative_GetFrozenStackTrace(QCall::ObjectHandleOnStack exception, QCall::ObjectHandleOnStack ret)
 {
-    CONTRACTL
-    {
-        FCALL_CHECK;
-    }
-    CONTRACTL_END;
+    QCALL_CONTRACT;
 
-    ASSERT(pExceptionObjectUnsafe != NULL);
-    ASSERT(pStackTraceUnsafe != NULL);
-    ASSERT(pDynamicMethodsUnsafe != NULL);
+    BEGIN_QCALL;
+
+    GCX_COOP();
+
+    _ASSERTE(exception.Get() != NULL);
 
     struct
     {
         StackTraceArray stackTrace;
-        StackTraceArray stackTraceCopy;
-        EXCEPTIONREF refException;
-        PTRARRAYREF dynamicMethodsArray; // Object array of Managed Resolvers
-        PTRARRAYREF dynamicMethodsArrayCopy; // Copy of the object array of Managed Resolvers
+        EXCEPTIONREF refException = NULL;
+        PTRARRAYREF keepAliveArray = NULL; // Object array of Managed Resolvers / AssemblyLoadContexts
     } gc;
-    gc.refException = NULL;
-    gc.dynamicMethodsArray = NULL;
-    gc.dynamicMethodsArrayCopy = NULL;
-
-    // GC protect the array reference
-    HELPER_METHOD_FRAME_BEGIN_PROTECT(gc);
+    GCPROTECT_BEGIN(gc);
 
     // Get the exception object reference
-    gc.refException = (EXCEPTIONREF)(ObjectToOBJECTREF(pExceptionObjectUnsafe));
+    gc.refException = (EXCEPTIONREF)exception.Get();
 
-    // Fetch the stacktrace details from the exception under a lock
-    gc.refException->GetStackTrace(gc.stackTrace, &gc.dynamicMethodsArray);
+    gc.refException->GetStackTrace(gc.stackTrace, &gc.keepAliveArray);
 
-    bool fHaveStackTrace = false;
-    bool fHaveDynamicMethodArray = false;
+    gc.stackTrace.MarkAsFrozen();
 
-    if ((unsigned)gc.stackTrace.Size() > 0)
+    if (gc.keepAliveArray != NULL)
     {
-        // Deepcopy the array
-        gc.stackTraceCopy.CopyFrom(gc.stackTrace);
-        fHaveStackTrace = true;
-    }
-
-    if (gc.dynamicMethodsArray != NULL)
-    {
-        // Get the number of elements in the dynamic methods array
-        unsigned   cOrigDynamic = gc.dynamicMethodsArray->GetNumComponents();
-
-        // ..and allocate a new array. This can trigger GC or throw under OOM.
-        gc.dynamicMethodsArrayCopy = (PTRARRAYREF)AllocateObjectArray(cOrigDynamic, g_pObjectClass);
-
-        // Deepcopy references to the new array we just allocated
-        memmoveGCRefs(gc.dynamicMethodsArrayCopy->GetDataPtr(), gc.dynamicMethodsArray->GetDataPtr(),
-                                                  cOrigDynamic * sizeof(Object *));
-
-        fHaveDynamicMethodArray = true;
-    }
-
-    // Prep to return
-    *pStackTraceUnsafe = fHaveStackTrace?OBJECTREFToObject(gc.stackTraceCopy.Get()):NULL;
-    *pDynamicMethodsUnsafe = fHaveDynamicMethodArray?OBJECTREFToObject(gc.dynamicMethodsArrayCopy):NULL;
-
-    HELPER_METHOD_FRAME_END();
-}
-FCIMPLEND
-
-// Given an exception object and deep copied instances of a stacktrace and/or dynamic method array, this method will set the latter in the exception object instance.
-FCIMPL3(VOID, ExceptionNative::SaveStackTracesFromDeepCopy, Object* pExceptionObjectUnsafe, Object *pStackTraceUnsafe, Object *pDynamicMethodsUnsafe);
-{
-    CONTRACTL
-    {
-        FCALL_CHECK;
-    }
-    CONTRACTL_END;
-
-    ASSERT(pExceptionObjectUnsafe != NULL);
-
-    struct
-    {
-        StackTraceArray stackTrace;
-        EXCEPTIONREF refException;
-        PTRARRAYREF dynamicMethodsArray; // Object array of Managed Resolvers
-    } gc;
-    gc.refException = NULL;
-    gc.dynamicMethodsArray = NULL;
-
-    // GC protect the array reference
-    HELPER_METHOD_FRAME_BEGIN_PROTECT(gc);
-
-    // Get the exception object reference
-    gc.refException = (EXCEPTIONREF)(ObjectToOBJECTREF(pExceptionObjectUnsafe));
-
-    if (pStackTraceUnsafe != NULL)
-    {
-        // Copy the stacktrace
-        StackTraceArray stackTraceArray((I1ARRAYREF)ObjectToOBJECTREF(pStackTraceUnsafe));
-        gc.stackTrace.Swap(stackTraceArray);
-    }
-
-    gc.dynamicMethodsArray = NULL;
-    if (pDynamicMethodsUnsafe != NULL)
-    {
-        gc.dynamicMethodsArray = (PTRARRAYREF)ObjectToOBJECTREF(pDynamicMethodsUnsafe);
-    }
-
-    // If there is no stacktrace, then there cannot be any dynamic method array. Thus,
-    // save stacktrace only when we have it.
-    if (gc.stackTrace.Size() > 0)
-    {
-        // Save the stacktrace details in the exception under a lock
-        gc.refException->SetStackTrace(gc.stackTrace.Get(), gc.dynamicMethodsArray);
+        ret.Set(gc.keepAliveArray);
     }
     else
     {
-        gc.refException->SetStackTrace(NULL, NULL);
+        ret.Set(gc.stackTrace.Get());
     }
+    GCPROTECT_END();
 
-    HELPER_METHOD_FRAME_END();
+    END_QCALL;
 }
-FCIMPLEND
 
 #ifdef FEATURE_COMINTEROP
 
-BSTR BStrFromString(STRINGREF s)
+static BSTR BStrFromString(STRINGREF s)
 {
     CONTRACTL
     {
@@ -492,6 +410,75 @@ extern "C" void QCALLTYPE ExceptionNative_GetMessageFromNativeResources(Exceptio
     END_QCALL;
 }
 
+extern "C" void QCALLTYPE ExceptionNative_GetMethodFromStackTrace(QCall::ObjectHandleOnStack stacktrace, QCall::ObjectHandleOnStack retMethodInfo)
+{
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+
+    GCX_COOP();
+
+    MethodDesc* pMD = NULL;
+    // See ExceptionObject::GetStackTrace() and ExceptionObject::SetStackTrace()
+    // for details on the stacktrace array.
+    {
+        ARRAYBASEREF arrayBaseRef = (ARRAYBASEREF)stacktrace.Get();
+        _ASSERTE(arrayBaseRef != NULL);
+
+        // The stacktrace can be either sbyte[] or Object[]. In the latter case,
+        // the first entry is the actual stack trace sbyte[], the rest are pointers
+        // to the method info objects. We only care about the first entry here.
+        CorElementType elemType = arrayBaseRef->GetArrayElementType();
+        if (elemType != ELEMENT_TYPE_I1)
+        {
+            _ASSERTE(elemType == ELEMENT_TYPE_CLASS); // object[]
+            PTRARRAYREF ptrArrayRef = (PTRARRAYREF)arrayBaseRef;
+            arrayBaseRef = (ARRAYBASEREF)OBJECTREFToObject(ptrArrayRef->GetAt(0));
+        }
+
+        I1ARRAYREF arrayRef = (I1ARRAYREF)arrayBaseRef;
+        StackTraceArray stackArray(arrayRef);
+        _ASSERTE(stackArray.Size() > 0);
+        pMD = stackArray[0].pFunc;
+    }
+
+    // The managed stack trace classes always return typical method definition,
+    // so we don't need to bother providing exact instantiation.
+    MethodDesc* pMDTypical = pMD->LoadTypicalMethodDefinition();
+    retMethodInfo.Set(pMDTypical->GetStubMethodInfo());
+    _ASSERTE(pMDTypical->IsRuntimeMethodHandle());
+
+    END_QCALL;
+}
+
+extern "C" void QCALLTYPE ExceptionNative_ThrowAmbiguousResolutionException(
+    MethodTable* pTargetClass,
+    MethodTable* pInterfaceMT,
+    MethodDesc* pInterfaceMD)
+{
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+
+    ThrowAmbiguousResolutionException(pTargetClass, pInterfaceMT, pInterfaceMD);
+
+    END_QCALL;
+}
+
+extern "C" void QCALLTYPE ExceptionNative_ThrowEntryPointNotFoundException(
+    MethodTable* pTargetClass,
+    MethodTable* pInterfaceMT,
+    MethodDesc* pInterfaceMD)
+{
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+
+    ThrowEntryPointNotFoundException(pTargetClass, pInterfaceMT, pInterfaceMD);
+
+    END_QCALL;
+}
+
 extern "C" void QCALLTYPE Buffer_Clear(void *dst, size_t length)
 {
     QCALL_CONTRACT;
@@ -701,19 +688,15 @@ extern "C" int QCALLTYPE GCInterface_WaitForFullGCComplete(int millisecondsTimeo
     return result;
 }
 
-/*================================GetGeneration=================================
+/*================================GetGenerationInternal=================================
 **Action: Returns the generation in which args->obj is found.
 **Returns: The generation in which args->obj is found.
 **Arguments: args->obj -- The object to locate.
-**Exceptions: ArgumentException if args->obj is null.
 ==============================================================================*/
-FCIMPL1(int, GCInterface::GetGeneration, Object* objUNSAFE)
+FCIMPL1(int, GCInterface::GetGenerationInternal, Object* objUNSAFE)
 {
     FCALL_CONTRACT;
-
-    if (objUNSAFE == NULL)
-        FCThrowArgumentNull(W("obj"));
-
+    _ASSERTE(objUNSAFE != NULL);
     int result = (INT32)GCHeapUtilities::GetGCHeap()->WhichGeneration(objUNSAFE);
     FC_GC_POLL_RET();
     return result;
@@ -925,7 +908,7 @@ FCIMPL0(INT64, GCInterface::GetAllocatedBytesForCurrentThread)
 
     INT64 currentAllocated = 0;
     Thread *pThread = GetThread();
-    gc_alloc_context* ac = &t_runtime_thread_locals.alloc_context;
+    gc_alloc_context* ac = &t_runtime_thread_locals.alloc_context.m_GCAllocContext;
     currentAllocated = ac->alloc_bytes + ac->alloc_bytes_uoh - (ac->alloc_limit - ac->alloc_ptr);
 
     return currentAllocated;
@@ -934,34 +917,30 @@ FCIMPLEND
 
 /*===============================AllocateNewArray===============================
 **Action: Allocates a new array object. Allows passing extra flags
-**Returns: The allocated array.
-**Arguments: elementTypeHandle -> type of the element,
-**           length -> number of elements,
-**           zeroingOptional -> whether caller prefers to skip clearing the content of the array, if possible.
+**Arguments: typeHandlePtr -> TypeHandle pointer of array,
+**           length -> Number of elements,
+**           flags -> Flags that impact allocated memory,
+**           ret -> The allocated array.
 **Exceptions: IDS_EE_ARRAY_DIMENSIONS_EXCEEDED when size is too large. OOM if can't allocate.
 ==============================================================================*/
-FCIMPL3(Object*, GCInterface::AllocateNewArray, void* arrayTypeHandle, INT32 length, INT32 flags)
+extern "C" void QCALLTYPE GCInterface_AllocateNewArray(void* typeHandlePtr, INT32 length, INT32 flags, QCall::ObjectHandleOnStack ret)
 {
-    CONTRACTL {
-        FCALL_CHECK;
-    } CONTRACTL_END;
+    QCALL_CONTRACT;
+    _ASSERTE(typeHandlePtr != NULL);
 
-    OBJECTREF pRet = NULL;
-    TypeHandle arrayType = TypeHandle::FromPtr(arrayTypeHandle);
+    BEGIN_QCALL;
 
-    HELPER_METHOD_FRAME_BEGIN_RET_0();
+    GCX_COOP();
+
+    TypeHandle typeHandle = TypeHandle::FromPtr(typeHandlePtr);
+    _ASSERTE(typeHandle.IsArray());
 
     //Only the following flags are used by GC.cs, so we'll just assert it here.
     _ASSERTE((flags & ~(GC_ALLOC_ZEROING_OPTIONAL | GC_ALLOC_PINNED_OBJECT_HEAP)) == 0);
+    ret.Set(AllocateSzArray(typeHandle, length, (GC_ALLOC_FLAGS)flags));
 
-    pRet = AllocateSzArray(arrayType, length, (GC_ALLOC_FLAGS)flags);
-
-    HELPER_METHOD_FRAME_END();
-
-    return OBJECTREFToObject(pRet);
+    END_QCALL;
 }
-FCIMPLEND
-
 
 FCIMPL0(INT64, GCInterface::GetTotalAllocatedBytesApproximate)
 {
@@ -1418,7 +1397,7 @@ void GCInterface::RemoveMemoryPressure(UINT64 bytesAllocated)
     CONTRACTL
     {
         NOTHROW;
-        GC_TRIGGERS;
+        GC_NOTRIGGER;
         MODE_ANY;
     }
     CONTRACTL_END;
@@ -1454,7 +1433,7 @@ NOINLINE void GCInterface::SendEtwRemoveMemoryPressureEvent(UINT64 bytesAllocate
     CONTRACTL
     {
         NOTHROW;
-        GC_TRIGGERS;
+        GC_NOTRIGGER;
         MODE_ANY;
     }
     CONTRACTL_END;
@@ -1580,7 +1559,7 @@ extern "C" void QCALLTYPE Interlocked_MemoryBarrierProcessWide()
 static BOOL HasOverriddenMethod(MethodTable* mt, MethodTable* classMT, WORD methodSlot)
 {
     CONTRACTL{
-        NOTHROW;
+        THROWS;
         GC_NOTRIGGER;
         MODE_ANY;
     } CONTRACTL_END;
@@ -1623,7 +1602,7 @@ BOOL CanCompareBitsOrUseFastGetHashCode(MethodTable* mt)
         return mt->CanCompareBitsOrUseFastGetHashCode();
     }
 
-    if (mt->ContainsPointers()
+    if (mt->ContainsGCPointers()
         || mt->IsNotTightlyPacked()
         || mt->GetClass()->IsInlineArray())
     {
@@ -1831,6 +1810,22 @@ FCIMPL1(CorElementType, MethodTableNative::GetPrimitiveCorElementType, MethodTab
 }
 FCIMPLEND
 
+FCIMPL2(MethodTable*, MethodTableNative::GetMethodTableMatchingParentClass, MethodTable *mt, MethodTable* parent)
+{
+    FCALL_CONTRACT;
+
+    return mt->GetMethodTableMatchingParentClass(parent);
+}
+FCIMPLEND
+
+FCIMPL1(MethodTable*, MethodTableNative::InstantiationArg0, MethodTable* mt);
+{
+    FCALL_CONTRACT;
+
+    return mt->GetInstantiation()[0].AsMethodTable();
+}
+FCIMPLEND
+
 extern "C" BOOL QCALLTYPE MethodTable_AreTypesEquivalent(MethodTable* mta, MethodTable* mtb)
 {
     QCALL_CONTRACT;
@@ -1846,71 +1841,91 @@ extern "C" BOOL QCALLTYPE MethodTable_AreTypesEquivalent(MethodTable* mta, Metho
     return bResult;
 }
 
-static MethodTable * g_pStreamMT;
-static WORD g_slotBeginRead, g_slotEndRead;
-static WORD g_slotBeginWrite, g_slotEndWrite;
-
-static bool HasOverriddenStreamMethod(MethodTable * pMT, WORD slot)
+extern "C" BOOL QCALLTYPE TypeHandle_CanCastTo_NoCacheLookup(void* fromTypeHnd, void* toTypeHnd)
 {
-    CONTRACTL{
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
+    QCALL_CONTRACT;
+
+    BOOL ret = false;
+
+    BEGIN_QCALL;
+
+    // Cache lookup and trivial cases are already handled at managed side. Call the uncached versions directly.
+    _ASSERTE(fromTypeHnd != toTypeHnd);
+
+    GCX_COOP();
+
+    TypeHandle fromTH = TypeHandle::FromPtr(fromTypeHnd);
+    TypeHandle toTH = TypeHandle::FromPtr(toTypeHnd);
+
+    if (fromTH.IsTypeDesc())
+    {
+        ret = fromTH.AsTypeDesc()->CanCastTo(toTH, NULL);
+    }
+    else if (Nullable::IsNullableForType(toTH, fromTH.AsMethodTable()))
+    {
+        // do not allow type T to be cast to Nullable<T>
+        ret = FALSE;
+    }
+    else
+    {
+        ret = fromTH.AsMethodTable()->CanCastTo(toTH.AsMethodTable(), NULL);
+    }
+
+    END_QCALL;
+
+    return ret;
+}
+
+extern "C" INT32 QCALLTYPE TypeHandle_GetCorElementType(void* typeHnd)
+{
+    QCALL_CONTRACT_NO_GC_TRANSITION;
+
+    return (INT32)TypeHandle::FromPtr(typeHnd).GetSignatureCorElementType();
+}
+
+static bool HasOverriddenStreamMethod(MethodTable* streamMT, MethodTable* pMT, WORD slot)
+{
+    CONTRACTL
+    {
+        STANDARD_VM_CHECK;
+        PRECONDITION(streamMT != NULL);
+        PRECONDITION(pMT != NULL);
     } CONTRACTL_END;
 
     PCODE actual = pMT->GetRestoredSlot(slot);
-    PCODE base = g_pStreamMT->GetRestoredSlot(slot);
+    PCODE base = streamMT->GetRestoredSlot(slot);
+
+    // If the PCODEs match, then there is no override.
     if (actual == base)
         return false;
 
-    // If CoreLib is JITed, the slots can be patched and thus we need to compare the actual MethodDescs
-    // to detect match reliably
-    if (MethodTable::GetMethodDescForSlotAddress(actual) == MethodTable::GetMethodDescForSlotAddress(base))
-        return false;
-
-    return true;
+    // If CoreLib is JITed, the slots can be patched and thus we need to compare
+    // the actual MethodDescs to detect match reliably.
+    return MethodTable::GetMethodDescForSlotAddress(actual) != MethodTable::GetMethodDescForSlotAddress(base);
 }
 
-FCIMPL1(FC_BOOL_RET, StreamNative::HasOverriddenBeginEndRead, Object *stream)
+extern "C" BOOL QCALLTYPE Stream_HasOverriddenSlow(MethodTable* pMT, BOOL isRead)
 {
-    FCALL_CONTRACT;
+    QCALL_CONTRACT;
+    _ASSERTE(pMT != NULL);
 
-    if (stream == NULL)
-        FC_RETURN_BOOL(TRUE);
+    BOOL readOverride = FALSE;
+    BOOL writeOverride = FALSE;
 
-    if (g_pStreamMT == NULL || g_slotBeginRead == 0 || g_slotEndRead == 0)
-    {
-        HELPER_METHOD_FRAME_BEGIN_RET_1(stream);
-        g_pStreamMT = CoreLibBinder::GetClass(CLASS__STREAM);
-        g_slotBeginRead = CoreLibBinder::GetMethod(METHOD__STREAM__BEGIN_READ)->GetSlot();
-        g_slotEndRead = CoreLibBinder::GetMethod(METHOD__STREAM__END_READ)->GetSlot();
-        HELPER_METHOD_FRAME_END();
-    }
+    BEGIN_QCALL;
 
-    MethodTable * pMT = stream->GetMethodTable();
+    MethodTable* pStreamMT = CoreLibBinder::GetClass(CLASS__STREAM);
+    WORD slotBeginRead = CoreLibBinder::GetMethod(METHOD__STREAM__BEGIN_READ)->GetSlot();
+    WORD slotEndRead = CoreLibBinder::GetMethod(METHOD__STREAM__END_READ)->GetSlot();
+    WORD slotBeginWrite = CoreLibBinder::GetMethod(METHOD__STREAM__BEGIN_WRITE)->GetSlot();
+    WORD slotEndWrite = CoreLibBinder::GetMethod(METHOD__STREAM__END_WRITE)->GetSlot();
 
-    FC_RETURN_BOOL(HasOverriddenStreamMethod(pMT, g_slotBeginRead) || HasOverriddenStreamMethod(pMT, g_slotEndRead));
+    // Check the current MethodTable for Stream overrides and set state on the MethodTable.
+    readOverride = HasOverriddenStreamMethod(pStreamMT, pMT, slotBeginRead) || HasOverriddenStreamMethod(pStreamMT, pMT, slotEndRead);
+    writeOverride = HasOverriddenStreamMethod(pStreamMT, pMT, slotBeginWrite) || HasOverriddenStreamMethod(pStreamMT, pMT, slotEndWrite);
+    pMT->GetAuxiliaryDataForWrite()->SetStreamOverrideState(readOverride, writeOverride);
+
+    END_QCALL;
+
+    return isRead ? readOverride : writeOverride;
 }
-FCIMPLEND
-
-FCIMPL1(FC_BOOL_RET, StreamNative::HasOverriddenBeginEndWrite, Object *stream)
-{
-    FCALL_CONTRACT;
-
-    if (stream == NULL)
-        FC_RETURN_BOOL(TRUE);
-
-    if (g_pStreamMT == NULL || g_slotBeginWrite == 0 || g_slotEndWrite == 0)
-    {
-        HELPER_METHOD_FRAME_BEGIN_RET_1(stream);
-        g_pStreamMT = CoreLibBinder::GetClass(CLASS__STREAM);
-        g_slotBeginWrite = CoreLibBinder::GetMethod(METHOD__STREAM__BEGIN_WRITE)->GetSlot();
-        g_slotEndWrite = CoreLibBinder::GetMethod(METHOD__STREAM__END_WRITE)->GetSlot();
-        HELPER_METHOD_FRAME_END();
-    }
-
-    MethodTable * pMT = stream->GetMethodTable();
-
-    FC_RETURN_BOOL(HasOverriddenStreamMethod(pMT, g_slotBeginWrite) || HasOverriddenStreamMethod(pMT, g_slotEndWrite));
-}
-FCIMPLEND

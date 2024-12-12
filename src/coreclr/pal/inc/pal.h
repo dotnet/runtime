@@ -140,9 +140,13 @@ extern bool g_arm64_atomics_present;
 
 #define EMPTY_BASES_DECL
 
-
 #if !defined(_MSC_VER) || defined(SOURCE_FORMATTING)
-#define __assume(x) (void)0
+#if __has_builtin(__builtin_assume)
+#define __assume(condition) do { bool assume_cond = (condition); __builtin_assume(assume_cond); } while (0)
+#else
+#define __assume(condition) do { if (!(condition)) __builtin_unreachable(); } while (0)
+#endif // __has_builtin(__builtin_assume)
+
 #define __annotation(x)
 #endif //!MSC_VER
 
@@ -170,13 +174,6 @@ extern bool g_arm64_atomics_present;
 
 /******************* PAL-Specific Entrypoints *****************************/
 
-#define IsDebuggerPresent PAL_IsDebuggerPresent
-
-PALIMPORT
-BOOL
-PALAPI
-PAL_IsDebuggerPresent();
-
 #define DLL_PROCESS_ATTACH 1
 #define DLL_THREAD_ATTACH  2
 #define DLL_THREAD_DETACH  3
@@ -191,6 +188,7 @@ PAL_IsDebuggerPresent();
 #define PAL_INITIALIZE_ENSURE_STACK_SIZE            0x20
 #define PAL_INITIALIZE_REGISTER_SIGNALS             0x40
 #define PAL_INITIALIZE_REGISTER_ACTIVATION_SIGNAL   0x80
+#define PAL_INITIALIZE_FLUSH_PROCESS_WRITE_BUFFERS  0x100
 
 // PAL_Initialize() flags
 #define PAL_INITIALIZE                 (PAL_INITIALIZE_SYNC_THREAD | \
@@ -206,7 +204,8 @@ PAL_IsDebuggerPresent();
                                         PAL_INITIALIZE_DEBUGGER_EXCEPTIONS | \
                                         PAL_INITIALIZE_ENSURE_STACK_SIZE | \
                                         PAL_INITIALIZE_REGISTER_SIGNALS | \
-                                        PAL_INITIALIZE_REGISTER_ACTIVATION_SIGNAL)
+                                        PAL_INITIALIZE_REGISTER_ACTIVATION_SIGNAL  | \
+                                        PAL_INITIALIZE_FLUSH_PROCESS_WRITE_BUFFERS)
 
 typedef DWORD (PALAPI_NOEXPORT *PTHREAD_START_ROUTINE)(LPVOID lpThreadParameter);
 typedef PTHREAD_START_ROUTINE LPTHREAD_START_ROUTINE;
@@ -363,13 +362,6 @@ VOID
 PALAPI
 PAL_UnregisterModule(
     IN HINSTANCE hInstance);
-
-PALIMPORT
-VOID
-PALAPI
-PAL_Random(
-    IN OUT LPVOID lpBuffer,
-    IN DWORD dwLength);
 
 PALIMPORT
 BOOL
@@ -1382,12 +1374,14 @@ typedef struct _KNONVOLATILE_CONTEXT_POINTERS {
 #define XSTATE_AVX512_KMASK (5)
 #define XSTATE_AVX512_ZMM_H (6)
 #define XSTATE_AVX512_ZMM (7)
+#define XSTATE_APX (19)
 
 #define XSTATE_MASK_GSSE (UI64(1) << (XSTATE_GSSE))
 #define XSTATE_MASK_AVX (XSTATE_MASK_GSSE)
 #define XSTATE_MASK_AVX512 ((UI64(1) << (XSTATE_AVX512_KMASK)) | \
                             (UI64(1) << (XSTATE_AVX512_ZMM_H)) | \
                             (UI64(1) << (XSTATE_AVX512_ZMM)))
+#define XSTATE_MASK_APX (UI64(1) << (XSTATE_APX))
 
 typedef struct DECLSPEC_ALIGN(16) _M128A {
     ULONGLONG Low;
@@ -1624,6 +1618,27 @@ typedef struct DECLSPEC_ALIGN(16) _CONTEXT {
         M512 Zmm30;
         M512 Zmm31;
     };
+    
+    struct
+    {
+        DWORD64 Egpr16;
+        DWORD64 Egpr17;
+        DWORD64 Egpr18;
+        DWORD64 Egpr19;
+        DWORD64 Egpr20;
+        DWORD64 Egpr21;
+        DWORD64 Egpr22;
+        DWORD64 Egpr23;
+        DWORD64 Egpr24;
+        DWORD64 Egpr25;
+        DWORD64 Egpr26;
+        DWORD64 Egpr27;
+        DWORD64 Egpr28;
+        DWORD64 Egpr29;
+        DWORD64 Egpr30;
+        DWORD64 Egpr31;
+    };
+    
 } CONTEXT, *PCONTEXT, *LPCONTEXT;
 
 //
@@ -1844,11 +1859,11 @@ typedef struct _IMAGE_ARM_RUNTIME_FUNCTION_ENTRY {
 #define CONTEXT_EXCEPTION_REQUEST 0x40000000L
 #define CONTEXT_EXCEPTION_REPORTING 0x80000000L
 
-#define CONTEXT_XSTATE (CONTEXT_ARM64 | 0x40L)
+#define CONTEXT_ARM64_XSTATE (CONTEXT_ARM64 | 0x20L)
+#define CONTEXT_XSTATE CONTEXT_ARM64_XSTATE
 
-#define XSTATE_SVE (0)
-
-#define XSTATE_MASK_SVE (UI64(1) << (XSTATE_SVE))
+#define XSTATE_ARM64_SVE (2)
+#define XSTATE_MASK_ARM64_SVE (UI64(1) << (XSTATE_ARM64_SVE))
 
 //
 // This flag is set by the unwinder if it has unwound to a call
@@ -2652,6 +2667,8 @@ PALIMPORT BOOL PALAPI PAL_GetUnwindInfoSize(SIZE_T baseAddress, ULONG64 ehFrameH
 #define PAL_CS_NATIVE_DATA_SIZE 96
 #elif defined(__linux__) && defined(__riscv) && __riscv_xlen == 64
 #define PAL_CS_NATIVE_DATA_SIZE 96
+#elif defined(__HAIKU__) && defined(__x86_64__)
+#define PAL_CS_NATIVE_DATA_SIZE 56
 #else
 #error  PAL_CS_NATIVE_DATA_SIZE is not defined for this architecture
 #endif
@@ -3960,7 +3977,9 @@ unsigned int __cdecl _rotr(unsigned int value, int shift)
 PALIMPORT DLLEXPORT char * __cdecl PAL_getenv(const char *);
 PALIMPORT DLLEXPORT int __cdecl _putenv(const char *);
 
+#ifndef ERANGE
 #define ERANGE          34
+#endif
 
 /****************PAL Perf functions for PInvoke*********************/
 #if PAL_PERF
@@ -4525,29 +4544,10 @@ public:
 
 /******************* HRESULT types ****************************************/
 
-#define FACILITY_WINDOWS                 8
-#define FACILITY_URT                     19
-#define FACILITY_UMI                     22
-#define FACILITY_SXS                     23
-#define FACILITY_STORAGE                 3
-#define FACILITY_SSPI                    9
-#define FACILITY_SCARD                   16
-#define FACILITY_SETUPAPI                15
-#define FACILITY_SECURITY                9
-#define FACILITY_RPC                     1
+#define FACILITY_ITF                     4
 #define FACILITY_WIN32                   7
 #define FACILITY_CONTROL                 10
-#define FACILITY_NULL                    0
-#define FACILITY_MSMQ                    14
-#define FACILITY_MEDIASERVER             13
-#define FACILITY_INTERNET                12
-#define FACILITY_ITF                     4
-#define FACILITY_DPLAY                   21
-#define FACILITY_DISPATCH                2
-#define FACILITY_COMPLUS                 17
-#define FACILITY_CERT                    11
-#define FACILITY_ACS                     20
-#define FACILITY_AAF                     18
+#define FACILITY_URT                     19
 
 #define NO_ERROR 0L
 
@@ -4556,13 +4556,8 @@ public:
 
 #define SUCCEEDED(Status) ((HRESULT)(Status) >= 0)
 #define FAILED(Status) ((HRESULT)(Status)<0)
-#define IS_ERROR(Status) ((ULONG)(Status) >> 31 == SEVERITY_ERROR) // diff from win32
 #define HRESULT_CODE(hr)    ((hr) & 0xFFFF)
-#define SCODE_CODE(sc)      ((sc) & 0xFFFF)
 #define HRESULT_FACILITY(hr)  (((hr) >> 16) & 0x1fff)
-#define SCODE_FACILITY(sc)    (((sc) >> 16) & 0x1fff)
-#define HRESULT_SEVERITY(hr)  (((hr) >> 31) & 0x1)
-#define SCODE_SEVERITY(sc)    (((sc) >> 31) & 0x1)
 
 // both macros diff from Win32
 #define MAKE_HRESULT(sev,fac,code) \

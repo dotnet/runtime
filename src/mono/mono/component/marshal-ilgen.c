@@ -1044,7 +1044,7 @@ emit_marshal_char_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 static int
 emit_marshal_custom_ilgen_throw_exception (MonoMethodBuilder *mb, const char *exc_nspace, const char *exc_name, const char *msg, MarshalAction action)
 {
-	/* Throw exception and emit compensation code, if neccesary */
+	/* Throw exception and emit compensation code, if necessary */
 	switch (action) {
 	case MARSHAL_ACTION_CONV_IN:
 	case MARSHAL_ACTION_MANAGED_CONV_IN:

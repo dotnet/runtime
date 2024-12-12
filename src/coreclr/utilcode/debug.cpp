@@ -1,22 +1,22 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 //*****************************************************************************
 // Debug.cpp
 //
 // Helper code for debugging.
 //*****************************************************************************
-//
-
 
 #include "stdafx.h"
 #include "utilcode.h"
 #include "ex.h"
 #include "corexcep.h"
 
+#include <minipal/debugger.h>
+
 #ifdef _DEBUG
 #define LOGGING
 #endif
-
 
 #include "log.h"
 
@@ -156,7 +156,7 @@ VOID LogAssert(
 
     // Log asserts to the stress log. Note that we can't include the szExpr b/c that
     // may not be a string literal (particularly for formatt-able asserts).
-    STRESS_LOG2(LF_ASSERT, LL_ALWAYS, "ASSERT:%s, line:%d\n", szFile, iLine);
+    STRESS_LOG2(LF_ASSERT, LL_ALWAYS, "ASSERT:%s:%d\n", szFile, iLine);
 
     SYSTEMTIME st;
 #ifndef TARGET_UNIX
@@ -283,7 +283,7 @@ bool _DbgBreakCheck(
         return false;       // don't stop debugger. No gui.
     }
 
-    if (IsDebuggerPresent())
+    if (minipal_is_native_debugger_present())
     {
         return true;       // like a retry
     }
@@ -321,33 +321,6 @@ bool _DbgBreakCheckNoThrow(
     }
     return result;
 }
-
-#ifndef TARGET_UNIX
-// Get the timestamp from the PE file header.  This is useful
-unsigned DbgGetEXETimeStamp()
-{
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_DEBUG_ONLY;
-
-    static ULONG cache = 0;
-    if (cache == 0) {
-        // Use GetModuleHandleA to avoid contracts - this results in a recursive loop initializing the
-        // debug allocator.
-        BYTE* imageBase = (BYTE*) GetModuleHandleA(NULL);
-        if (imageBase == 0)
-            return(0);
-        IMAGE_DOS_HEADER *pDOS = (IMAGE_DOS_HEADER*) imageBase;
-        if ((pDOS->e_magic != VAL16(IMAGE_DOS_SIGNATURE)) || (pDOS->e_lfanew == 0))
-            return(0);
-
-        IMAGE_NT_HEADERS *pNT = (IMAGE_NT_HEADERS*) (VAL32(pDOS->e_lfanew) + imageBase);
-        cache = VAL32(pNT->FileHeader.TimeDateStamp);
-    }
-
-    return cache;
-}
-#endif // TARGET_UNIX
 
 VOID DebBreakHr(HRESULT hr)
 {

@@ -11,10 +11,6 @@ namespace System.Formats.Nrbf;
 /// </remarks>
 internal enum PrimitiveType : byte
 {
-    /// <summary>
-    /// Used internally to express no value
-    /// </summary>
-    None = 0,
     Boolean = 1,
     Byte = 2,
     Char = 3,
@@ -30,7 +26,19 @@ internal enum PrimitiveType : byte
     DateTime = 13,
     UInt16 = 14,
     UInt32 = 15,
-    UInt64 = 16,
-    Null = 17,
-    String = 18
+    UInt64 = 16
+    // This internal enum no longer contains Null and String as they were always illegal:
+    // - In case of BinaryArray (NRBF 2.4.3.1):
+    // "If the BinaryTypeEnum value is Primitive, the PrimitiveTypeEnumeration
+    // value in AdditionalTypeInfo MUST NOT be Null (17) or String (18)."
+    // - In case of MemberPrimitiveTyped (NRBF 2.5.1):
+    // "PrimitiveTypeEnum (1 byte): A PrimitiveTypeEnumeration
+    // value that specifies the Primitive Type of data that is being transmitted.
+    // This field MUST NOT contain a value of 17 (Null) or 18 (String)."
+    // - In case of ArraySinglePrimitive (NRBF 2.4.3.3):
+    // "A PrimitiveTypeEnumeration value that identifies the Primitive Type
+    // of the items of the Array. The value MUST NOT be 17 (Null) or 18 (String)."
+    // - In case of MemberTypeInfo (NRBF 2.3.1.2):
+    // "When the BinaryTypeEnum value is Primitive, the PrimitiveTypeEnumeration
+    // value in AdditionalInfo MUST NOT be Null (17) or String (18)."
 }

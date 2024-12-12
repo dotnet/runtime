@@ -362,3 +362,8 @@ void GCToEEInterface::DiagAddNewRegion(int generation, uint8_t* rangeStart, uint
 void GCToEEInterface::LogErrorToHost(const char *message)
 {
 }
+
+uint64_t GCToEEInterface::GetThreadOSThreadId(Thread* thread)
+{
+    return 0;
+}

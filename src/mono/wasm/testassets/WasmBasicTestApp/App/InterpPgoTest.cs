@@ -12,15 +12,10 @@ public partial class InterpPgoTest
     internal static partial string GetHRef();
     
     [JSExport]
-    internal static void TryToTier(int iterationCount)
+    internal static string Greeting()
     {
-        var buffer = new int[4096];
-        var random = new Random();
-        for (int i = 0; i < iterationCount; i++) {
-            for (int j = 0; j < buffer.Length; j++)
-                buffer[j] = random.Next();
-        }
-        var text = $"Greetings from {GetHRef()}. I filled a buffer with random items {iterationCount} times.";
+        var text = $"Hello, World! Greetings from {GetHRef()}";
         Console.WriteLine(text);
+        return text;
     }
 }

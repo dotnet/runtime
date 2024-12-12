@@ -72,6 +72,8 @@ namespace System.Net.Http
         // _shutdown above is true, and requests in flight have been (or are being) failed.
         private Exception? _abortException;
 
+        private Http2ProtocolErrorCode? _goAwayErrorCode;
+
         private const int MaxStreamId = int.MaxValue;
 
         // Temporary workaround for request burst handling on connection start.
@@ -128,8 +130,8 @@ namespace System.Net.Http
         private long _keepAlivePingTimeoutTimestamp;
         private volatile KeepAliveState _keepAliveState;
 
-        public Http2Connection(HttpConnectionPool pool, Stream stream, IPEndPoint? remoteEndPoint)
-            : base(pool, remoteEndPoint)
+        public Http2Connection(HttpConnectionPool pool, Stream stream, Activity? connectionSetupActivity, IPEndPoint? remoteEndPoint)
+            : base(pool, connectionSetupActivity, remoteEndPoint)
         {
             _stream = stream;
 
@@ -286,11 +288,6 @@ namespace System.Net.Http
 
                 if (_streamsInUse < _maxConcurrentStreams)
                 {
-                    if (_streamsInUse == 0)
-                    {
-                        MarkConnectionAsNotIdle();
-                    }
-
                     _streamsInUse++;
                     return true;
                 }
@@ -322,8 +319,6 @@ namespace System.Net.Http
 
                 if (_streamsInUse == 0)
                 {
-                    MarkConnectionAsIdle();
-
                     if (_shutdown)
                     {
                         FinalTeardown();
@@ -410,7 +405,11 @@ namespace System.Net.Http
                     _incomingBuffer.Commit(bytesRead);
                     if (bytesRead == 0)
                     {
-                        if (_incomingBuffer.ActiveLength == 0)
+                        if (_goAwayErrorCode is not null)
+                        {
+                            ThrowProtocolError(_goAwayErrorCode.Value, SR.net_http_http2_connection_close);
+                        }
+                        else if (_incomingBuffer.ActiveLength == 0)
                         {
                             ThrowMissingFrame();
                         }
@@ -496,6 +495,7 @@ namespace System.Net.Http
                 catch (HttpProtocolException e)
                 {
                     InitialSettingsReceived.TrySetException(e);
+                    LogExceptions(InitialSettingsReceived.Task);
                     throw;
                 }
                 catch (Exception e)
@@ -1069,6 +1069,7 @@ namespace System.Net.Http
 
             Debug.Assert(lastStreamId >= 0);
             Exception resetException = HttpProtocolException.CreateHttp2ConnectionException(errorCode, SR.net_http_http2_connection_close);
+            _goAwayErrorCode = errorCode;
 
             // There is no point sending more PING frames for RTT estimation:
             _rttEstimator.OnGoAwayReceived();
@@ -1598,6 +1599,11 @@ namespace System.Net.Http
                     ThrowRetry(SR.net_http_request_aborted);
                 }
 
+                if (_httpStreams.Count == 0)
+                {
+                    MarkConnectionAsNotIdle();
+                }
+
                 // Now that we're holding the lock, configure the stream.  The lock must be held while
                 // assigning the stream ID to ensure only one stream gets an ID, and it must be held
                 // across setting the initial window size (available credit) and storing the stream into
@@ -1836,7 +1842,6 @@ namespace System.Net.Http
             Debug.Assert(_streamsInUse == 0);
 
             GC.SuppressFinalize(this);
-
             _stream.Dispose();
 
             _connectionWindow.Dispose();
@@ -1980,6 +1985,7 @@ namespace System.Net.Http
             Debug.Assert(async);
             Debug.Assert(!_pool.HasSyncObjLock);
             if (NetEventSource.Log.IsEnabled()) Trace($"Sending request: {request}");
+            if (ConnectionSetupActivity is not null) ConnectionSetupDistributedTracing.AddConnectionLinkToRequestActivity(ConnectionSetupActivity);
 
             try
             {
@@ -2063,6 +2069,11 @@ namespace System.Net.Http
                 {
                     Debug.Fail($"Stream {http2Stream.StreamId} not found in dictionary during RemoveStream???");
                     return;
+                }
+
+                if (_httpStreams.Count == 0)
+                {
+                    MarkConnectionAsIdle();
                 }
             }
 

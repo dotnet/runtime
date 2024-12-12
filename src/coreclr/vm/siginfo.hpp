@@ -49,6 +49,8 @@ unsigned GetSizeForCorElementType(CorElementType etyp);
 
 class SigBuilder;
 class ArgDestination;
+class TokenLookupMap;
+class DynamicResolver;
 
 typedef const struct HardCodedMetaSig *LPHARDCODEDMETASIG;
 
@@ -83,7 +85,7 @@ class SigPointer : public SigParser
 
 public:
     // Constructor.
-    SigPointer() { LIMITED_METHOD_DAC_CONTRACT; }
+    SigPointer() : SigParser() { LIMITED_METHOD_DAC_CONTRACT; }
 
     // Copy constructor.
     SigPointer(const SigPointer & sig) : SigParser(sig)
@@ -277,7 +279,7 @@ public:
         //------------------------------------------------------------------------
         // Tests for the existence of a custom modifier
         //------------------------------------------------------------------------
-        BOOL HasCustomModifier(Module *pModule, LPCSTR szModName, CorElementType cmodtype) const;
+        BOOL HasCustomModifier(Module *pModule, LPCSTR szModName, CorElementType cmodtype, Module** pModifierScope = NULL, mdToken* pModifierType = NULL) const;
 
         //------------------------------------------------------------------------
         // Tests for ELEMENT_TYPE_CLASS or ELEMENT_TYPE_VALUETYPE followed by a TypeDef,

@@ -64,6 +64,17 @@ public partial class ClassWithPrimaryConstructor(ILogger logger)
     public partial void Test();
 }
 
+public partial class ClassWithPrimaryConstructorWithParameterUsedInMethod(ILogger logger)
+{
+    [LoggerMessage(0, LogLevel.Debug, "Test.")]
+    public partial void Test();
+
+    private void OtherLoggerUse()
+    {
+        logger.LogInformation("Other logger use.");
+    }
+}
+
 public partial class ClassWithPrimaryConstructorInDifferentPartialDeclaration(ILogger logger);
 
 public partial class ClassWithPrimaryConstructorInDifferentPartialDeclaration

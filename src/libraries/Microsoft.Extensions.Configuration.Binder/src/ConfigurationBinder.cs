@@ -220,7 +220,7 @@ namespace Microsoft.Extensions.Configuration
 
         [RequiresDynamicCode(DynamicCodeWarningMessage)]
         [RequiresUnreferencedCode(PropertyTrimmingWarningMessage)]
-        private static void BindProperties(object instance, IConfiguration configuration, BinderOptions options)
+        private static void BindProperties(object instance, IConfiguration configuration, BinderOptions options, ParameterInfo[]? constructorParameters)
         {
             List<PropertyInfo> modelProperties = GetAllProperties(instance.GetType());
 
@@ -248,8 +248,41 @@ namespace Microsoft.Extensions.Configuration
 
             foreach (PropertyInfo property in modelProperties)
             {
-                BindProperty(property, instance, configuration, options);
+                if (constructorParameters is null || !constructorParameters.Any(p => p.Name == property.Name))
+                {
+                    BindProperty(property, instance, configuration, options);
+                }
+                else
+                {
+                    ResetPropertyValue(property, instance, options);
+                }
             }
+        }
+
+        /// <summary>
+        /// Reset the property value to the value from the property getter. This is useful for properties that have a getter or setters that perform some logic changing the object state.
+        /// </summary>
+        /// <param name="property">The property to reset.</param>
+        /// <param name="instance">The instance to reset the property on.</param>
+        /// <param name="options">The binder options.</param>
+        /// <remarks>
+        /// This method doesn't do any configuration binding. It just resets the property value to the value from the property getter.
+        /// This method called only when creating an instance using a primary constructor with parameters names match properties names.
+        /// </remarks>
+        [RequiresDynamicCode(DynamicCodeWarningMessage)]
+        [RequiresUnreferencedCode(PropertyTrimmingWarningMessage)]
+        private static void ResetPropertyValue(PropertyInfo property, object instance, BinderOptions options)
+        {
+            // We don't support set only, non public, or indexer properties
+            if (property.GetMethod is null ||
+                property.SetMethod is null ||
+                (!options.BindNonPublicProperties && (!property.GetMethod.IsPublic || !property.SetMethod.IsPublic)) ||
+                property.GetMethod.GetParameters().Length > 0)
+            {
+                return;
+            }
+
+            property.SetValue(instance, property.GetValue(instance));
         }
 
         [RequiresDynamicCode(DynamicCodeWarningMessage)]
@@ -381,6 +414,8 @@ namespace Microsoft.Extensions.Configuration
                     return;
                 }
 
+                ParameterInfo[]? constructorParameters = null;
+
                 // If we don't have an instance, try to create one
                 if (bindingPoint.Value is null)
                 {
@@ -401,7 +436,7 @@ namespace Microsoft.Extensions.Configuration
                     }
                     else
                     {
-                        bindingPoint.SetValue(CreateInstance(type, config, options));
+                        bindingPoint.SetValue(CreateInstance(type, config, options, out constructorParameters));
                     }
                 }
 
@@ -424,20 +459,48 @@ namespace Microsoft.Extensions.Configuration
                     }
                     else
                     {
-                        BindProperties(bindingPoint.Value, config, options);
+                        BindProperties(bindingPoint.Value, config, options, constructorParameters);
                     }
                 }
             }
             else
             {
-                if (isParentCollection && bindingPoint.Value is null && string.IsNullOrEmpty(configValue))
+                // Reaching this point indicates that the configuration section is a leaf node with a string value.
+                // Typically, configValue will be an empty string if the value in the configuration is empty or null.
+                // While configValue could be any other string, we already know it cannot be converted to the required type, as TryConvertValue has already failed.
+
+                if (!string.IsNullOrEmpty(configValue))
                 {
-                    // If we don't have an instance, try to create one
-                    bindingPoint.TrySetValue(CreateInstance(type, config, options));
+                    // If we have a value, but no children, we can't bind it to anything
+                    // We already tried calling TryConvertValue and couldn't convert the configuration value to the required type.
+                    if (options.ErrorOnUnknownConfiguration)
+                    {
+                        Debug.Assert(section is not null);
+                        throw new InvalidOperationException(SR.Format(SR.Error_FailedBinding, section.Path, type));
+                    }
+                }
+                else if (isParentCollection && bindingPoint.Value is null)
+                {
+                    // Try to create the default instance of the type
+                    bindingPoint.TrySetValue(CreateInstance(type, config, options, out _));
                 }
             }
         }
 
+        /// <summary>
+        /// Create an instance of the specified type.
+        /// </summary>
+        /// <param name="type">The type to create an instance of.</param>
+        /// <param name="config">The configuration to bind to the instance.</param>
+        /// <param name="options">The binder options.</param>
+        /// <param name="constructorParameters">The parameters of the constructor used to create the instance.</param>
+        /// <returns>The created instance.</returns>
+        /// <exception cref="InvalidOperationException">If the type cannot be created.</exception>
+        /// <remarks>
+        /// constructorParameters will not be null only when using a constructor with a parameters which get their values from the configuration
+        /// This happen when using types having properties match the constructor parameter names. `record` types are an example.
+        /// In such cases we need to carry the parameters list to avoid binding the properties again during BindProperties.
+        /// </remarks>
         [RequiresDynamicCode(DynamicCodeWarningMessage)]
         [RequiresUnreferencedCode(
             "In case type is a Nullable<T>, cannot statically analyze what the underlying type is so its members may be trimmed.")]
@@ -446,9 +509,10 @@ namespace Microsoft.Extensions.Configuration
                                         DynamicallyAccessedMemberTypes.NonPublicConstructors)]
             Type type,
             IConfiguration config,
-            BinderOptions options)
+            BinderOptions options,
+            out ParameterInfo[]? constructorParameters)
         {
-            Debug.Assert(!type.IsArray);
+            constructorParameters = null;
 
             if (type.IsInterface || type.IsAbstract)
             {
@@ -494,6 +558,8 @@ namespace Microsoft.Extensions.Configuration
                 {
                     parameterValues[index] = BindParameter(parameters[index], type, config, options);
                 }
+
+                constructorParameters = parameters;
 
                 return constructor.Invoke(parameterValues);
             }

@@ -282,9 +282,9 @@
 //
 //     extern ThreadStore* g_pThreadStore;
 //     ThreadStore* g_pThreadStore = &StaticStore;
-//     class SystemDomain : public BaseDomain {
+//     class CodeVersionManager {
 //         ...
-//         ArrayListStatic m_appDomainIndexList;
+//         static BOOL s_HasNonDefaultILVersions;
 //         ...
 //     }
 //
@@ -304,9 +304,9 @@
 //     GPTR_DECL(ThreadStore, g_pThreadStore);
 //     GPTR_IMPL_INIT(ThreadStore, g_pThreadStore, &StaticStore);
 //
-//     class SystemDomain : public BaseDomain {
+//     class CodeVersionManager {
 //         ...
-//         SVAL_DECL(ArrayListStatic; m_appDomainIndexList);
+//         SVAL_DECL(BOOL, s_HasNonDefaultILVersions);
 //         ...
 //     }
 //
@@ -733,6 +733,27 @@ PVOID DacAllocHostOnlyInstance(ULONG32 size, bool throwEx);
 // Determines whether ASSERTs should be raised when inconsistencies in the target are detected
 bool DacTargetConsistencyAssertsEnabled();
 
+// Sets whether ASSERTs should be raised when then fail.
+// Returns the previous value
+bool DacSetEnableDacAssertsUnconditionally(bool enable);
+
+class DacAssertsEnabledHolder
+{
+#ifdef _DEBUG
+    bool m_fOldValue;
+public:
+    DacAssertsEnabledHolder()
+    {
+        m_fOldValue = DacSetEnableDacAssertsUnconditionally(true);
+    }
+
+    ~DacAssertsEnabledHolder()
+    {
+        DacSetEnableDacAssertsUnconditionally(m_fOldValue);
+    }
+#endif // _DEBUG
+};
+
 // Host instances can be marked as they are enumerated in
 // order to break cycles.  This function returns true if
 // the instance is already marked, otherwise it marks the
@@ -973,7 +994,7 @@ public:
     __DPtrBase() = default;
 
     explicit __DPtrBase(__TPtrBase ptr) : __TPtrBase(ptr.GetAddr()) {}
-    
+
     // construct const from non-const
     __DPtrBase(__DPtrBase<typename std::remove_const<type>::type, DPtrTemplate> const & rhs) : __DPtrBase(rhs.GetAddr()) {}
 
@@ -2184,9 +2205,7 @@ public: name(int dummy) : base(dummy) {}
 
 // helper macro to make the vtables unique for DAC
 #define VPTR_UNIQUE(unique) virtual int MakeVTableUniqueForDAC() { return unique; }
-#define VPTR_UNIQUE_BaseDomain                          (100000)
-#define VPTR_UNIQUE_SystemDomain                        (VPTR_UNIQUE_BaseDomain + 1)
-#define VPTR_UNIQUE_ComMethodFrame                      (VPTR_UNIQUE_SystemDomain + 1)
+#define VPTR_UNIQUE_ComMethodFrame                      (100000)
 #define VPTR_UNIQUE_RedirectedThreadFrame               (VPTR_UNIQUE_ComMethodFrame + 1)
 #define VPTR_UNIQUE_HijackFrame                         (VPTR_UNIQUE_RedirectedThreadFrame + 1)
 
@@ -2298,10 +2317,10 @@ public: name(int dummy) : base(dummy) {}
 //             pMD = dac_cast<PTR_MethodDesc>(pInstMD)
 //
 //   - (D|V)PTR of one encapsulated pointer type to a (D|V)PTR of
-//     another type, i.e., PTR_AppDomain <-> PTR_BaseDomain
-//     Syntax: with PTR_AppDomain pAD, PTR_BaseDomain pBD
-//             dac_cast<PTR_AppDomain>(pBD)
-//             dac_cast<PTR_BaseDomain>(pAD)
+//     another type, i.e., PTR_Module <-> PTR_ModuleBase
+//     Syntax: with PTR_Module pModule, PTR_Module pModuleBase
+//             dac_cast<PTR_Module>(pModuleBase)
+//             dac_cast<PTR_ModuleBase>(pModule)
 //
 // Example comparisons of some old and new syntax, where
 //    h is a host pointer, such as "Foo *h;"
@@ -2447,6 +2466,12 @@ typedef DPTR(union _UNWIND_CODE)       PTR_UNWIND_CODE;
 typedef DPTR(T_RUNTIME_FUNCTION) PTR_RUNTIME_FUNCTION;
 #endif
 #endif
+
+#ifdef DACCESS_COMPILE
+#define DAC_IGNORE(x)
+#else
+#define DAC_IGNORE(x) x
+#endif // DACCESS_COMPILE
 
 //----------------------------------------------------------------------------
 //

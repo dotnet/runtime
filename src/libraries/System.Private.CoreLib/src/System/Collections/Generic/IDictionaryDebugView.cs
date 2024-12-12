@@ -11,9 +11,7 @@ namespace System.Collections.Generic
 
         public IDictionaryDebugView(IDictionary<TKey, TValue> dictionary)
         {
-            ArgumentNullException.ThrowIfNull(dictionary);
-
-            _dict = dictionary;
+            _dict = dictionary ?? throw new ArgumentNullException(nameof(dictionary));
         }
 
         [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
@@ -39,9 +37,7 @@ namespace System.Collections.Generic
 
         public DictionaryKeyCollectionDebugView(ICollection<TKey> collection)
         {
-            ArgumentNullException.ThrowIfNull(collection);
-
-            _collection = collection;
+            _collection = collection ?? throw new ArgumentNullException(nameof(collection));
         }
 
         [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
@@ -62,9 +58,7 @@ namespace System.Collections.Generic
 
         public DictionaryValueCollectionDebugView(ICollection<TValue> collection)
         {
-            ArgumentNullException.ThrowIfNull(collection);
-
-            _collection = collection;
+            _collection = collection ?? throw new ArgumentNullException(nameof(collection));
         }
 
         [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]

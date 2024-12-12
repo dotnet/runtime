@@ -504,12 +504,35 @@ namespace System.Diagnostics
         internal void OnInitializing(InitializingTraceSourceEventArgs e)
         {
             Initializing?.Invoke(this, e);
-
             TraceUtils.VerifyAttributes(Attributes, GetSupportedAttributes(), this);
 
-            foreach (TraceListener listener in Listeners)
+            if (TraceInternal.UseGlobalLock)
             {
-                TraceUtils.VerifyAttributes(listener.Attributes, listener.GetSupportedAttributes(), this);
+                // we lock on the same object that Trace does because we're writing to the same Listeners.
+                lock (TraceInternal.critSec)
+                {
+                    foreach (TraceListener listener in Listeners)
+                    {
+                        TraceUtils.VerifyAttributes(listener.Attributes, listener.GetSupportedAttributes(), this);
+                    }
+                }
+            }
+            else
+            {
+                foreach (TraceListener listener in Listeners)
+                {
+                    if (!listener!.IsThreadSafe)
+                    {
+                        lock (listener)
+                        {
+                            TraceUtils.VerifyAttributes(listener.Attributes, listener.GetSupportedAttributes(), this);
+                        }
+                    }
+                    else
+                    {
+                        TraceUtils.VerifyAttributes(listener.Attributes, listener.GetSupportedAttributes(), this);
+                    }
+                }
             }
         }
 

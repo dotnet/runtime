@@ -70,7 +70,9 @@ namespace System.Net
                 {
                     return;
                 }
-                lock ((DisconnectResults as ICollection).SyncRoot)
+
+                var disconnectResults = DisconnectResults;
+                lock ((disconnectResults as ICollection).SyncRoot)
                 {
                     if (_unsafeConnectionNtlmAuthentication == value)
                     {
@@ -79,7 +81,7 @@ namespace System.Net
                     _unsafeConnectionNtlmAuthentication = value;
                     if (!value)
                     {
-                        foreach (DisconnectAsyncResult result in DisconnectResults.Values)
+                        foreach (DisconnectAsyncResult result in disconnectResults.Values)
                         {
                             result.AuthenticatedConnection = null;
                         }
@@ -694,7 +696,13 @@ namespace System.Net
             // assurance that we do this only for NTLM/Negotiate is not here, but in the
             // code that caches WindowsIdentity instances in the Dictionary.
             DisconnectAsyncResult? disconnectResult;
-            DisconnectResults.TryGetValue(connectionId, out disconnectResult);
+
+            var disconnectResults = DisconnectResults;
+            lock ((disconnectResults as ICollection).SyncRoot)
+            {
+                disconnectResults.TryGetValue(connectionId, out disconnectResult);
+            }
+
             if (UnsafeConnectionNtlmAuthentication)
             {
                 if (authorizationHeader == null)
@@ -1327,7 +1335,12 @@ namespace System.Net
                     // Need to make sure it's going to get returned before adding it to the hash.  That way it'll be handled
                     // correctly in HandleAuthentication's finally.
                     disconnectResult = result;
-                    session.Listener.DisconnectResults[connectionId] = disconnectResult;
+
+                    var disconnectResults = session.Listener.DisconnectResults;
+                    lock ((disconnectResults as ICollection).SyncRoot)
+                    {
+                        disconnectResults[connectionId] = disconnectResult;
+                    }
                 }
 
                 if (statusCode == Interop.HttpApi.ERROR_SUCCESS && HttpListener.SkipIOCPCallbackOnSuccess)
@@ -1535,7 +1548,15 @@ namespace System.Net
             private readonly ulong _connectionId;
             private readonly HttpListenerSession _listenerSession;
             private readonly NativeOverlapped* _nativeOverlapped;
-            private int _ownershipState;   // 0 = normal, 1 = in HandleAuthentication(), 2 = disconnected, 3 = cleaned up
+            private OwnershipState _ownershipState;
+
+            private enum OwnershipState
+            {
+                Normal,
+                InHandleAuthentication,
+                Disconnected,
+                CleanedUp
+            }
 
             internal NativeOverlapped* NativeOverlapped
             {
@@ -1577,7 +1598,7 @@ namespace System.Net
             internal unsafe DisconnectAsyncResult(HttpListenerSession session, ulong connectionId)
             {
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"HttpListener: {session.Listener}, ConnectionId: {connectionId}");
-                _ownershipState = 1;
+                _ownershipState = OwnershipState.InHandleAuthentication;
                 _listenerSession = session;
                 _connectionId = connectionId;
 
@@ -1588,23 +1609,23 @@ namespace System.Net
 
             internal bool StartOwningDisconnectHandling()
             {
-                int oldValue;
+                OwnershipState oldValue;
 
                 SpinWait spin = default;
-                while ((oldValue = Interlocked.CompareExchange(ref _ownershipState, 1, 0)) == 2)
+                while ((oldValue = Interlocked.CompareExchange(ref _ownershipState, OwnershipState.InHandleAuthentication, OwnershipState.Normal)) == OwnershipState.Disconnected)
                 {
                     // Must block until it equals 3 - we must be in the callback right now.
                     spin.SpinOnce();
                 }
 
-                Debug.Assert(oldValue != 1, "StartOwningDisconnectHandling called twice.");
-                return oldValue < 2;
+                Debug.Assert(oldValue != OwnershipState.InHandleAuthentication, "StartOwningDisconnectHandling called twice.");
+                return oldValue < OwnershipState.Disconnected;
             }
 
             internal void FinishOwningDisconnectHandling()
             {
                 // If it got disconnected, run the disconnect code.
-                if (Interlocked.CompareExchange(ref _ownershipState, 0, 1) == 2)
+                if (Interlocked.CompareExchange(ref _ownershipState, OwnershipState.Normal, OwnershipState.InHandleAuthentication) == OwnershipState.Disconnected)
                 {
                     HandleDisconnect();
                 }
@@ -1620,7 +1641,7 @@ namespace System.Net
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, "_connectionId:" + asyncResult._connectionId);
 
                 asyncResult._listenerSession.RequestQueueBoundHandle.FreeNativeOverlapped(nativeOverlapped);
-                if (Interlocked.Exchange(ref asyncResult._ownershipState, 2) == 0)
+                if (Interlocked.Exchange(ref asyncResult._ownershipState, OwnershipState.Disconnected) == OwnershipState.Normal)
                 {
                     asyncResult.HandleDisconnect();
                 }
@@ -1638,8 +1659,21 @@ namespace System.Net
             {
                 HttpListener listener = _listenerSession.Listener;
 
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"DisconnectResults {listener.DisconnectResults} removing for _connectionId: {_connectionId}");
-                listener.DisconnectResults.Remove(_connectionId);
+                var disconnectResults = listener.DisconnectResults;
+                if (NetEventSource.Log.IsEnabled())
+                {
+                    string? results;
+                    lock  ((disconnectResults as ICollection).SyncRoot)
+                    {
+                        results = disconnectResults.ToString();
+                    }
+                    NetEventSource.Info(this, $"DisconnectResults {results} removing for _connectionId: {_connectionId}");
+                }
+
+                lock ((disconnectResults as ICollection).SyncRoot)
+                {
+                    disconnectResults.Remove(_connectionId);
+                }
 
                 // Cached identity is disposed with the session context
                 Session?.Dispose();
@@ -1655,8 +1689,8 @@ namespace System.Net
                     identity.Dispose();
                 }
 
-                int oldValue = Interlocked.Exchange(ref _ownershipState, 3);
-                Debug.Assert(oldValue == 2, $"Expected OwnershipState of 2, saw {oldValue}.");
+                OwnershipState oldValue = Interlocked.Exchange(ref _ownershipState, OwnershipState.CleanedUp);
+                Debug.Assert(oldValue == OwnershipState.Disconnected, $"Expected OwnershipState of Disconnected, saw {oldValue}.");
             }
 
             internal WindowsPrincipal? AuthenticatedConnection { get; set; }

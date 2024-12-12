@@ -114,7 +114,7 @@ jobs:
       - ${{ if eq(parameters.archType, 'wasm') }}:
         - name: wasmDarcDependenciesChanged
           value: $[ or(
-                      eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['DarcDependenciesChanged.Microsoft_NET_Workload_Emscripten_Current_Manifest-9_0_100_Transport'], true),
+                      eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['DarcDependenciesChanged.Microsoft_NET_Workload_Emscripten_Current_Manifest-10_0_100_Transport'], true),
                       eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['DarcDependenciesChanged.Microsoft_DotNet_Build_Tasks_Workloads'], true),
                       eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['DarcDependenciesChanged.System_Runtime_TimeZoneData'], true),
                       eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['DarcDependenciesChanged.Microsoft_Net_Compilers_Toolset'], true),
@@ -170,12 +170,12 @@ jobs:
 
         # OSX Public Build Pool (we don't have on-prem OSX BuildPool).
         ${{ if and(in(parameters.osGroup, 'osx', 'maccatalyst', 'ios', 'iossimulator', 'tvos', 'tvossimulator'), eq(variables['System.TeamProject'], 'public')) }}:
-          vmImage: 'macos-12'
+          vmImage: 'macos-13'
 
-        # OSX Internal Pool
+        # Official build OSX pool
         ${{ if and(in(parameters.osGroup, 'osx', 'maccatalyst', 'ios', 'iossimulator', 'tvos', 'tvossimulator'), ne(variables['System.TeamProject'], 'public')) }}:
           name: "Azure Pipelines"
-          vmImage: 'macOS-12'
+          vmImage: 'macos-latest-internal'
           os: macOS
 
         # Official Build Windows Pool

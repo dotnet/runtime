@@ -93,7 +93,6 @@ namespace System.Text.Json
             return Value.TextEqualsHelper(utf8Text, isPropertyName: true, shouldUnescape: false);
         }
 
-        // TODO make public https://github.com/dotnet/runtime/issues/77666
         internal bool NameIsEscaped => Value.ValueIsEscapedHelper(isPropertyName: true);
         internal ReadOnlySpan<byte> NameSpan => Value.GetPropertyNameRaw();
 

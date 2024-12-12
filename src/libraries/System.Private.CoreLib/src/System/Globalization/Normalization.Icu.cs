@@ -10,31 +10,33 @@ namespace System.Globalization
 {
     internal static partial class Normalization
     {
-        private static unsafe bool IcuIsNormalized(string strInput, NormalizationForm normalizationForm)
+        private static unsafe bool IcuIsNormalized(ReadOnlySpan<char> source, NormalizationForm normalizationForm)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
             Debug.Assert(!GlobalizationMode.UseNls);
+            Debug.Assert(!source.IsEmpty);
+            Debug.Assert(normalizationForm is NormalizationForm.FormC or NormalizationForm.FormD or NormalizationForm.FormKC or NormalizationForm.FormKD);
 
-            ValidateArguments(strInput, normalizationForm);
+            ValidateArguments(source, normalizationForm, nameof(source));
 
             int ret;
-            fixed (char* pInput = strInput)
+            fixed (char* pInput = source)
             {
 #if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
                 if (GlobalizationMode.Hybrid)
                 {
-                    ret = Interop.Globalization.IsNormalizedNative(normalizationForm, pInput, strInput.Length);
+                    ret = Interop.Globalization.IsNormalizedNative(normalizationForm, pInput, source.Length);
                 }
                 else
 #endif
                 {
-                    ret = Interop.Globalization.IsNormalized(normalizationForm, pInput, strInput.Length);
+                    ret = Interop.Globalization.IsNormalized(normalizationForm, pInput, source.Length);
                 }
             }
 
             if (ret == -1)
             {
-                throw new ArgumentException(SR.Argument_InvalidCharSequenceNoIndex, nameof(strInput));
+                throw new ArgumentException(SR.Argument_InvalidCharSequenceNoIndex, nameof(source));
             }
 
             return ret == 1;
@@ -44,6 +46,7 @@ namespace System.Globalization
         {
             Debug.Assert(!GlobalizationMode.Invariant);
             Debug.Assert(!GlobalizationMode.UseNls);
+            Debug.Assert(normalizationForm == NormalizationForm.FormC || normalizationForm == NormalizationForm.FormD || normalizationForm == NormalizationForm.FormKC || normalizationForm == NormalizationForm.FormKD);
 
             ValidateArguments(strInput, normalizationForm);
 
@@ -114,25 +117,95 @@ namespace System.Globalization
             }
         }
 
-        private static void ValidateArguments(string strInput, NormalizationForm normalizationForm)
+        private static unsafe bool IcuTryNormalize(ReadOnlySpan<char> source, Span<char> destination, out int charsWritten, NormalizationForm normalizationForm = NormalizationForm.FormC)
         {
-            Debug.Assert(strInput != null);
+            Debug.Assert(!GlobalizationMode.Invariant);
+            Debug.Assert(!GlobalizationMode.UseNls);
+            Debug.Assert(!source.IsEmpty);
+            Debug.Assert(normalizationForm == NormalizationForm.FormC || normalizationForm == NormalizationForm.FormD || normalizationForm == NormalizationForm.FormKC || normalizationForm == NormalizationForm.FormKD);
 
-            if (OperatingSystem.IsBrowser() && (normalizationForm == NormalizationForm.FormKC || normalizationForm == NormalizationForm.FormKD))
+            if (destination.IsEmpty)
             {
-                // Browser's ICU doesn't contain data needed for FormKC and FormKD
-                throw new PlatformNotSupportedException();
+                charsWritten = 0;
+                return false;
             }
 
-            if (normalizationForm != NormalizationForm.FormC && normalizationForm != NormalizationForm.FormD &&
-                normalizationForm != NormalizationForm.FormKC && normalizationForm != NormalizationForm.FormKD)
+            ValidateArguments(source, normalizationForm, nameof(source));
+
+            int realLen;
+            fixed (char* pInput = source)
+            fixed (char* pDest = destination)
             {
-                throw new ArgumentException(SR.Argument_InvalidNormalizationForm, nameof(normalizationForm));
+#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+                if (GlobalizationMode.Hybrid)
+                {
+                    realLen = Interop.Globalization.NormalizeStringNative(normalizationForm, pInput, source.Length, pDest, destination.Length);
+                }
+                else
+#endif
+                {
+                    realLen = Interop.Globalization.NormalizeString(normalizationForm, pInput, source.Length, pDest, destination.Length);
+                }
+            }
+
+            if (realLen < 0)
+            {
+                throw new ArgumentException(SR.Argument_InvalidCharSequenceNoIndex, nameof(source));
+            }
+
+            if (realLen <= destination.Length)
+            {
+                charsWritten = realLen;
+                return true;
+            }
+
+            charsWritten = 0;
+            return false;
+        }
+
+        private static unsafe int IcuGetNormalizedLength(ReadOnlySpan<char> source, NormalizationForm normalizationForm)
+        {
+            Debug.Assert(!GlobalizationMode.Invariant);
+            Debug.Assert(!GlobalizationMode.UseNls);
+            Debug.Assert(!source.IsEmpty);
+            Debug.Assert(normalizationForm == NormalizationForm.FormC || normalizationForm == NormalizationForm.FormD || normalizationForm == NormalizationForm.FormKC || normalizationForm == NormalizationForm.FormKD);
+
+            ValidateArguments(source, normalizationForm, nameof(source));
+
+            int realLen;
+            fixed (char* pInput = source)
+            {
+#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+                if (GlobalizationMode.Hybrid)
+                {
+                    realLen = Interop.Globalization.NormalizeStringNative(normalizationForm, pInput, source.Length, null, 0);
+                }
+                else
+#endif
+                {
+                    realLen = Interop.Globalization.NormalizeString(normalizationForm, pInput, source.Length, null, 0);
+                }
+            }
+
+            if (realLen < 0)
+            {
+                throw new ArgumentException(SR.Argument_InvalidCharSequenceNoIndex, nameof(source));
+            }
+
+            return realLen;
+        }
+
+        private static void ValidateArguments(ReadOnlySpan<char> strInput, NormalizationForm normalizationForm, string paramName = "strInput")
+        {
+            if ((OperatingSystem.IsBrowser() || OperatingSystem.IsWasi()) && (normalizationForm == NormalizationForm.FormKC || normalizationForm == NormalizationForm.FormKD))
+            {
+                // Browser's ICU doesn't contain data needed for FormKC and FormKD
+                throw new PlatformNotSupportedException(SR.Argument_UnsupportedNormalizationFormInBrowser);
             }
 
             if (HasInvalidUnicodeSequence(strInput))
             {
-                throw new ArgumentException(SR.Argument_InvalidCharSequenceNoIndex, nameof(strInput));
+                throw new ArgumentException(SR.Argument_InvalidCharSequenceNoIndex, paramName);
             }
         }
 
@@ -143,18 +216,22 @@ namespace System.Globalization
         /// We walk the string ourselves looking for these bad sequences so we can continue to throw
         /// ArgumentException in these cases.
         /// </summary>
-        private static bool HasInvalidUnicodeSequence(string s)
+        private static bool HasInvalidUnicodeSequence(ReadOnlySpan<char> s)
         {
-            for (int i = 0; i < s.Length; i++)
+            const char Noncharacter = '\uFFFE';
+
+            int i = s.IndexOfAnyInRange(CharUnicodeInfo.HIGH_SURROGATE_START, Noncharacter);
+
+            for (; (uint)i < (uint)s.Length; i++)
             {
                 char c = s[i];
 
-                if (c < '\ud800')
+                if (c < CharUnicodeInfo.HIGH_SURROGATE_START)
                 {
                     continue;
                 }
 
-                if (c == '\uFFFE')
+                if (c == Noncharacter)
                 {
                     return true;
                 }
@@ -167,17 +244,14 @@ namespace System.Globalization
 
                 if (char.IsHighSurrogate(c))
                 {
-                    if (i + 1 >= s.Length || !char.IsLowSurrogate(s[i + 1]))
+                    if ((uint)(i + 1) >= (uint)s.Length || !char.IsLowSurrogate(s[i + 1]))
                     {
                         // A high surrogate at the end of the string or a high surrogate
                         // not followed by a low surrogate
                         return true;
                     }
-                    else
-                    {
-                        i++; // consume the low surrogate.
-                        continue;
-                    }
+
+                    i++; // consume the low surrogate.
                 }
             }
 

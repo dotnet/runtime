@@ -846,19 +846,10 @@ bool EECodeManager::IsGcSafe( EECodeInfo     *pCodeInfo,
     if (gcInfoDecoder.IsInterruptible())
         return true;
 
-    if (InterruptibleSafePointsEnabled() && gcInfoDecoder.IsInterruptibleSafePoint())
+    if (gcInfoDecoder.IsSafePoint())
         return true;
 
     return false;
-}
-
-bool EECodeManager::InterruptibleSafePointsEnabled()
-{
-    LIMITED_METHOD_CONTRACT;
-
-    // zero initialized
-    static ConfigDWORD interruptibleCallSitesEnabled;
-    return interruptibleCallSitesEnabled.val(CLRConfig::INTERNAL_InterruptibleCallSites) != 0;
 }
 
 #if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
@@ -1423,32 +1414,6 @@ bool EECodeManager::EnumGcRefs( PREGDISPLAY     pRD,
 
     GCInfoToken gcInfoToken = pCodeInfo->GetGCInfoToken();
 
-#if defined(STRESS_HEAP) && defined(PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED)
-    // When we simulate a hijack during gcstress
-    //  we start with ActiveStackFrame and the offset
-    //  after the call
-    // We need to make it look like a non-leaf frame
-    //  so that it's treated like a regular hijack
-    if (flags & ActiveStackFrame)
-    {
-        GcInfoDecoder _gcInfoDecoder(
-                            gcInfoToken,
-                            DECODE_INTERRUPTIBILITY,
-                            curOffs
-                            );
-        if(!_gcInfoDecoder.IsInterruptible() &&
-            !(InterruptibleSafePointsEnabled() && _gcInfoDecoder.IsInterruptibleSafePoint()))
-        {
-            // This must be the offset after a call
-#ifdef _DEBUG
-            GcInfoDecoder _safePointDecoder(gcInfoToken, (GcInfoDecoderFlags)0, 0);
-            _ASSERTE(_safePointDecoder.IsSafePoint(curOffs));
-#endif
-            flags &= ~((unsigned)ActiveStackFrame);
-        }
-    }
-#endif // STRESS_HEAP && PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED
-
 #ifdef _DEBUG
     if (flags & ActiveStackFrame)
     {
@@ -1457,8 +1422,7 @@ bool EECodeManager::EnumGcRefs( PREGDISPLAY     pRD,
                             DECODE_INTERRUPTIBILITY,
                             curOffs
                             );
-        _ASSERTE(_gcInfoDecoder.IsInterruptible() ||
-            (InterruptibleSafePointsEnabled() && _gcInfoDecoder.IsInterruptibleSafePoint()));
+        _ASSERTE(_gcInfoDecoder.IsInterruptible() || _gcInfoDecoder.CouldBeSafePoint());
     }
 #endif
 
@@ -1561,7 +1525,7 @@ bool EECodeManager::EnumGcRefs( PREGDISPLAY     pRD,
                 curOffs - 1
             );
 
-            _ASSERTE((InterruptibleSafePointsEnabled() && gcInfoDecoder.IsInterruptibleSafePoint()));
+            _ASSERTE(gcInfoDecoder.CouldBeSafePoint());
         }
     }
 
@@ -1978,6 +1942,7 @@ PTR_VOID EECodeManager::GetExactGenericsToken(SIZE_T          baseStackSlot,
 
 void * EECodeManager::GetGSCookieAddr(PREGDISPLAY     pContext,
                                       EECodeInfo *    pCodeInfo,
+                                      unsigned        flags,
                                       CodeManState  * pState)
 {
     CONTRACTL {
@@ -1990,6 +1955,14 @@ void * EECodeManager::GetGSCookieAddr(PREGDISPLAY     pContext,
 
 #ifdef FEATURE_EH_FUNCLETS
     if (pCodeInfo->IsFunclet())
+    {
+        return NULL;
+    }
+#endif
+
+#ifdef HAS_LIGHTUNWIND
+    // LightUnwind does not track sufficient context to compute GS cookie address
+    if (flags & LightUnwind)
     {
         return NULL;
     }

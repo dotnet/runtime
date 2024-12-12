@@ -6,8 +6,6 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 
-#pragma warning disable 8500 // taking address of managed types
-
 namespace System.Net.NetworkInformation
 {
     internal sealed class BsdIPv4GlobalStatistics : IPGlobalStatistics

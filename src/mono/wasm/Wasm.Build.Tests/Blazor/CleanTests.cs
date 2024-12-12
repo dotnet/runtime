@@ -21,81 +21,73 @@ public class CleanTests : BlazorWasmTestBase
     }
 
     [Theory]
-    [InlineData("Debug")]
-    [InlineData("Release")]
-    public void Blazor_BuildThenClean_NativeRelinking(string config)
+    [InlineData(Configuration.Debug)]
+    [InlineData(Configuration.Release)]
+    public void Blazor_BuildThenClean_NativeRelinking(Configuration config)
     {
-        string id = GetRandomId();
+        string extraProperties = @"<_WasmDevel>true</_WasmDevel><WasmBuildNative>true</WasmBuildNative>";
+        ProjectInfo info = CopyTestAsset(config, aot: true, TestAsset.BlazorBasicTestApp, "clean", extraProperties: extraProperties);
+        BlazorBuild(info, config, isNativeBuild: true);
 
-        InitBlazorWasmProjectDir(id);
-        string projectFile = CreateBlazorWasmTemplateProject(id);
-
-        string extraProperties = @"<_WasmDevel>true</_WasmDevel>
-                                    <WasmBuildNative>true</WasmBuildNative>";
-
-        AddItemsPropertiesToProject(projectFile, extraProperties: extraProperties);
-        BlazorBuild(new BlazorBuildOptions(id, config, NativeFilesType.Relinked));
-
-        string relinkDir = Path.Combine(_projectDir!, "obj", config, DefaultTargetFrameworkForBlazor, "wasm", "for-build");
+        string relinkDir = Path.Combine(_projectDir, "obj", config.ToString(), DefaultTargetFrameworkForBlazor, "wasm", "for-build");
         Assert.True(Directory.Exists(relinkDir), $"Could not find expected relink dir: {relinkDir}");
 
-        string logPath = Path.Combine(s_buildEnv.LogRootPath, id, $"{id}-clean.binlog");
-        new DotNetCommand(s_buildEnv, _testOutput)
-                .WithWorkingDirectory(_projectDir!)
-                .WithEnvironmentVariable("NUGET_PACKAGES", _nugetPackagesDir)
-                .ExecuteWithCapturedOutput("build", "-t:Clean", $"-p:Configuration={config}", $"-bl:{logPath}")
-                .EnsureSuccessful();
+        string logPath = Path.Combine(s_buildEnv.LogRootPath, info.ProjectName, $"{info.ProjectName}-clean.binlog");
+        using ToolCommand cmd = new DotNetCommand(s_buildEnv, _testOutput)
+                                    .WithWorkingDirectory(_projectDir);
+        cmd.WithEnvironmentVariable("NUGET_PACKAGES", _nugetPackagesDir)
+            .ExecuteWithCapturedOutput("build", "-t:Clean", $"-p:Configuration={config}", $"-bl:{logPath}")
+            .EnsureSuccessful();
 
         AssertEmptyOrNonExistentDirectory(relinkDir);
     }
 
     [Theory]
-    [InlineData("Debug")]
-    [InlineData("Release")]
-    public void Blazor_BuildNoNative_ThenBuildNative_ThenClean(string config)
+    [InlineData(Configuration.Debug)]
+    [InlineData(Configuration.Release)]
+    public void Blazor_BuildNoNative_ThenBuildNative_ThenClean(Configuration config)
         => Blazor_BuildNativeNonNative_ThenCleanTest(config, firstBuildNative: false);
 
     [Theory]
-    [InlineData("Debug")]
-    [InlineData("Release")]
-    public void Blazor_BuildNative_ThenBuildNonNative_ThenClean(string config)
+    [InlineData(Configuration.Debug)]
+    [InlineData(Configuration.Release)]
+    public void Blazor_BuildNative_ThenBuildNonNative_ThenClean(Configuration config)
         => Blazor_BuildNativeNonNative_ThenCleanTest(config, firstBuildNative: true);
 
-    private void Blazor_BuildNativeNonNative_ThenCleanTest(string config, bool firstBuildNative)
+    private void Blazor_BuildNativeNonNative_ThenCleanTest(Configuration config, bool firstBuildNative)
     {
-        string id = GetRandomId();
-
-        InitBlazorWasmProjectDir(id);
-        string projectFile = CreateBlazorWasmTemplateProject(id);
-
         string extraProperties = @"<_WasmDevel>true</_WasmDevel>";
-
-        AddItemsPropertiesToProject(projectFile, extraProperties: extraProperties);
+        ProjectInfo info = CopyTestAsset(config, aot: true, TestAsset.BlazorBasicTestApp, "clean_native", extraProperties: extraProperties);
 
         bool relink = firstBuildNative;
-        BlazorBuildInternal(id, config, publish: false,
-                        extraArgs: relink ? "-p:WasmBuildNative=true" : string.Empty);
+        BlazorBuild(info,
+            config,
+            new BuildOptions(ExtraMSBuildArgs: relink ? "-p:WasmBuildNative=true" : string.Empty),
+            isNativeBuild: relink);
 
-        string relinkDir = Path.Combine(_projectDir!, "obj", config, DefaultTargetFrameworkForBlazor, "wasm", "for-build");
+        string relinkDir = Path.Combine(_projectDir, "obj", config.ToString(), DefaultTargetFrameworkForBlazor, "wasm", "for-build");
         if (relink)
             Assert.True(Directory.Exists(relinkDir), $"Could not find expected relink dir: {relinkDir}");
 
         relink = !firstBuildNative;
-        BlazorBuildInternal(id, config, publish: false,
-                        extraArgs: relink ? "-p:WasmBuildNative=true" : string.Empty);
+        BlazorBuild(info,
+            config,
+            new BuildOptions(UseCache: false, ExtraMSBuildArgs: relink ? "-p:WasmBuildNative=true" : string.Empty),
+            isNativeBuild: relink ? true : null);
 
         if (relink)
             Assert.True(Directory.Exists(relinkDir), $"Could not find expected relink dir: {relinkDir}");
 
-        string logPath = Path.Combine(s_buildEnv.LogRootPath, id, $"{id}-clean.binlog");
-        new DotNetCommand(s_buildEnv, _testOutput)
-                .WithWorkingDirectory(_projectDir!)
-                .WithEnvironmentVariable("NUGET_PACKAGES", _projectDir!)
+        string logPath = Path.Combine(s_buildEnv.LogRootPath, info.ProjectName, $"{info.ProjectName}-clean.binlog");
+        using ToolCommand cmd = new DotNetCommand(s_buildEnv, _testOutput)
+                                    .WithWorkingDirectory(_projectDir);
+        cmd.WithEnvironmentVariable("NUGET_PACKAGES", _projectDir)
                 .ExecuteWithCapturedOutput("build", "-t:Clean", $"-p:Configuration={config}", $"-bl:{logPath}")
                 .EnsureSuccessful();
 
         AssertEmptyOrNonExistentDirectory(relinkDir);
     }
+
     private void AssertEmptyOrNonExistentDirectory(string dirPath)
     {
         _testOutput.WriteLine($"dirPath: {dirPath}");

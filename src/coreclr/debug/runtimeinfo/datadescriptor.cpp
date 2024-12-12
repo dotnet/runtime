@@ -9,6 +9,8 @@
 #include "static_assert.h"
 
 #include <sospriv.h>
+#include "cdacplatformmetadata.hpp"
+#include "methodtable.h"
 #include "threads.h"
 
 // begin blob definition

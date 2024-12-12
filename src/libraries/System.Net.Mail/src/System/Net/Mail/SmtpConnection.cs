@@ -28,7 +28,7 @@ namespace System.Net.Mail
         private readonly EventHandler? _onCloseHandler;
         internal SmtpTransport? _parent;
         private readonly SmtpClient? _client;
-        private NetworkStream? _networkStream;
+        private Stream? _stream;
         internal TcpClient? _tcpClient;
         private SmtpReplyReaderFactory? _responseReader;
 
@@ -82,7 +82,7 @@ namespace System.Net.Mail
         internal void InitializeConnection(string host, int port)
         {
             _tcpClient!.Connect(host, port);
-            _networkStream = _tcpClient.GetStream();
+            _stream = _tcpClient.GetStream();
         }
 
         internal IAsyncResult BeginInitializeConnection(string host, int port, AsyncCallback? callback, object? state)
@@ -93,7 +93,7 @@ namespace System.Net.Mail
         internal void EndInitializeConnection(IAsyncResult result)
         {
             _tcpClient!.EndConnect(result);
-            _networkStream = _tcpClient.GetStream();
+            _stream = _tcpClient.GetStream();
         }
 
         internal IAsyncResult BeginGetConnection(ContextAwareResult outerResult, AsyncCallback? callback, object? state, string host, int port)
@@ -105,18 +105,18 @@ namespace System.Net.Mail
 
         internal IAsyncResult BeginFlush(AsyncCallback? callback, object? state)
         {
-            return _networkStream!.BeginWrite(_bufferBuilder.GetBuffer(), 0, _bufferBuilder.Length, callback, state);
+            return _stream!.BeginWrite(_bufferBuilder.GetBuffer(), 0, _bufferBuilder.Length, callback, state);
         }
 
         internal void EndFlush(IAsyncResult result)
         {
-            _networkStream!.EndWrite(result);
+            _stream!.EndWrite(result);
             _bufferBuilder.Reset();
         }
 
         internal void Flush()
         {
-            _networkStream!.Write(_bufferBuilder.GetBuffer(), 0, _bufferBuilder.Length);
+            _stream!.Write(_bufferBuilder.GetBuffer(), 0, _bufferBuilder.Length);
             _bufferBuilder.Reset();
         }
 
@@ -150,7 +150,7 @@ namespace System.Net.Mail
                             finally
                             {
                                 //free cbt buffer
-                                _networkStream?.Close();
+                                _stream?.Close();
                                 _tcpClient.Dispose();
                             }
                         }
@@ -190,7 +190,7 @@ namespace System.Net.Mail
             }
 
             InitializeConnection(host, port);
-            _responseReader = new SmtpReplyReaderFactory(_networkStream!);
+            _responseReader = new SmtpReplyReaderFactory(_stream!);
 
             LineInfo info = _responseReader.GetNextReplyReader().ReadLine();
 
@@ -225,17 +225,25 @@ namespace System.Net.Mail
                 if (!_serverSupportsStartTls)
                 {
                     // Either TLS is already established or server does not support TLS
-                    if (!(_networkStream is TlsStream))
+                    if (!(_stream is SslStream))
                     {
                         throw new SmtpException(SR.MailServerDoesNotSupportStartTls);
                     }
                 }
 
                 StartTlsCommand.Send(this);
-                TlsStream tlsStream = new TlsStream(_networkStream!, _tcpClient!.Client, host, _clientCertificates);
-                tlsStream.AuthenticateAsClient();
-                _networkStream = tlsStream;
-                _responseReader = new SmtpReplyReaderFactory(_networkStream);
+#pragma warning disable SYSLIB0014 // ServicePointManager is obsolete
+                SslStream sslStream = new SslStream(_stream!, false, ServicePointManager.ServerCertificateValidationCallback);
+
+                sslStream.AuthenticateAsClient(
+                    host,
+                    _clientCertificates,
+                    (SslProtocols)ServicePointManager.SecurityProtocol, // enums use same values
+                    ServicePointManager.CheckCertificateRevocationList);
+#pragma warning restore SYSLIB0014 // ServicePointManager is obsolete
+
+                _stream = sslStream;
+                _responseReader = new SmtpReplyReaderFactory(_stream);
 
                 // According to RFC 3207: The client SHOULD send an EHLO command
                 // as the first command after a successful TLS negotiation.
@@ -362,7 +370,7 @@ namespace System.Net.Mail
 
         internal Stream GetClosableStream()
         {
-            ClosableStream cs = new ClosableStream(_networkStream!, _onCloseHandler);
+            ClosableStream cs = new ClosableStream(_stream!, _onCloseHandler);
             _isStreamOpen = true;
             return cs;
         }
@@ -460,7 +468,7 @@ namespace System.Net.Mail
 
             private void Handshake()
             {
-                _connection._responseReader = new SmtpReplyReaderFactory(_connection._networkStream!);
+                _connection._responseReader = new SmtpReplyReaderFactory(_connection._stream!);
 
                 SmtpReplyReader reader = _connection.Reader!.GetNextReplyReader();
                 IAsyncResult result = reader.BeginReadLine(s_handshakeCallback, this);
@@ -533,10 +541,10 @@ namespace System.Net.Mail
                 {
                     _connection._extensions = EHelloCommand.EndSend(result);
                     _connection.ParseExtensions(_connection._extensions);
-                    // If we already have a TlsStream, this is the second EHLO cmd
+                    // If we already have a SslStream, this is the second EHLO cmd
                     // that we sent after TLS handshake compelted. So skip TLS and
                     // continue with Authenticate.
-                    if (_connection._networkStream is TlsStream)
+                    if (_connection._stream is SslStream)
                     {
                         Authenticate();
                         return true;
@@ -547,7 +555,7 @@ namespace System.Net.Mail
                         if (!_connection._serverSupportsStartTls)
                         {
                             // Either TLS is already established or server does not support TLS
-                            if (!(_connection._networkStream is TlsStream))
+                            if (!(_connection._stream is SslStream))
                             {
                                 throw new SmtpException(SR.MailServerDoesNotSupportStartTls);
                             }
@@ -579,7 +587,7 @@ namespace System.Net.Mail
                             // If we already have a SSlStream, this is the second EHLO cmd
                             // that we sent after TLS handshake compelted. So skip TLS and
                             // continue with Authenticate.
-                            if (thisPtr._connection._networkStream is TlsStream)
+                            if (thisPtr._connection._stream is SslStream)
                             {
                                 thisPtr.Authenticate();
                                 return;
@@ -606,7 +614,7 @@ namespace System.Net.Mail
                             if (!thisPtr._connection._serverSupportsStartTls)
                             {
                                 // Either TLS is already established or server does not support TLS
-                                if (!(thisPtr._connection._networkStream is TlsStream))
+                                if (!(thisPtr._connection._stream is SslStream))
                                 {
                                     throw new SmtpException(SR.MailServerDoesNotSupportStartTls);
                                 }
@@ -663,7 +671,7 @@ namespace System.Net.Mail
                 if (result.CompletedSynchronously)
                 {
                     StartTlsCommand.EndSend(result);
-                    TlsStreamAuthenticate();
+                    SslStreamAuthenticate();
                     return true;
                 }
                 return false;
@@ -677,7 +685,7 @@ namespace System.Net.Mail
                     try
                     {
                         StartTlsCommand.EndSend(result);
-                        thisPtr.TlsStreamAuthenticate();
+                        thisPtr.SslStreamAuthenticate();
                     }
                     catch (Exception e)
                     {
@@ -686,29 +694,39 @@ namespace System.Net.Mail
                 }
             }
 
-            private bool TlsStreamAuthenticate()
+            private bool SslStreamAuthenticate()
             {
-                _connection._networkStream = new TlsStream(_connection._networkStream!, _connection._tcpClient!.Client, _host, _connection._clientCertificates);
-                IAsyncResult result = ((TlsStream)_connection._networkStream).BeginAuthenticateAsClient(TlsStreamAuthenticateCallback, this);
+#pragma warning disable SYSLIB0014 // ServicePointManager is obsolete
+                _connection._stream = new SslStream(_connection._stream!, false, ServicePointManager.ServerCertificateValidationCallback);
+
+                IAsyncResult result = ((SslStream)_connection._stream).BeginAuthenticateAsClient(
+                    _host,
+                    _connection._clientCertificates,
+                    (SslProtocols)ServicePointManager.SecurityProtocol, // enums use same values
+                    ServicePointManager.CheckCertificateRevocationList,
+                    SslStreamAuthenticateCallback,
+                    this);
+#pragma warning restore SYSLIB0014 // ServicePointManager is obsolete
+
                 if (result.CompletedSynchronously)
                 {
-                    ((TlsStream)_connection._networkStream).EndAuthenticateAsClient(result);
-                    _connection._responseReader = new SmtpReplyReaderFactory(_connection._networkStream);
+                    ((SslStream)_connection._stream).EndAuthenticateAsClient(result);
+                    _connection._responseReader = new SmtpReplyReaderFactory(_connection._stream);
                     SendEHello();
                     return true;
                 }
                 return false;
             }
 
-            private static void TlsStreamAuthenticateCallback(IAsyncResult result)
+            private static void SslStreamAuthenticateCallback(IAsyncResult result)
             {
                 if (!result.CompletedSynchronously)
                 {
                     ConnectAndHandshakeAsyncResult thisPtr = (ConnectAndHandshakeAsyncResult)result.AsyncState!;
                     try
                     {
-                        (thisPtr._connection._networkStream as TlsStream)!.EndAuthenticateAsClient(result);
-                        thisPtr._connection._responseReader = new SmtpReplyReaderFactory(thisPtr._connection._networkStream);
+                        (thisPtr._connection._stream as SslStream)!.EndAuthenticateAsClient(result);
+                        thisPtr._connection._responseReader = new SmtpReplyReaderFactory(thisPtr._connection._stream);
                         thisPtr.SendEHello();
                     }
                     catch (Exception e)

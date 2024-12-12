@@ -162,7 +162,7 @@ void ThreadStore::DetachCurrentThread()
     }
 
     // Unregister from OS notifications
-    // This can return false if detach notification is spurious and does not belong to this thread.
+    // This can return false if a thread did not register for OS notification.
     if (!PalDetachThread(pDetachingThread))
     {
         return;
@@ -406,9 +406,9 @@ EXTERN_C void* QCALLTYPE RhpGetCurrentThread()
     return ThreadStore::GetCurrentThread();
 }
 
-FCIMPL3(void, RhpInitiateThreadAbort, void* thread, Object * threadAbortException, CLR_BOOL doRudeAbort)
+FCIMPL3(void, RhpInitiateThreadAbort, void* thread, Object * threadAbortException, FC_BOOL_ARG doRudeAbort)
 {
-    GetThreadStore()->InitiateThreadAbort((Thread*)thread, threadAbortException, doRudeAbort);
+    GetThreadStore()->InitiateThreadAbort((Thread*)thread, threadAbortException, FC_ACCESS_BOOL(doRudeAbort));
 }
 FCIMPLEND
 

@@ -252,11 +252,8 @@ namespace System.Reflection.Emit
             {
                 // some user derived ConstructorInfo
                 // go through the slower code path, i.e. retrieve parameters and form signature helper.
-                ParameterInfo[] parameters = constructor.GetParameters();
-                if (parameters == null)
-                {
+                ParameterInfo[] parameters = constructor.GetParameters() ??
                     throw new ArgumentException(SR.Argument_InvalidConstructorInfo);
-                }
 
                 Type[] parameterTypes = new Type[parameters.Length];
                 Type[][] requiredCustomModifiers = new Type[parameters.Length][];
@@ -995,13 +992,8 @@ namespace System.Reflection.Emit
             }
             else
             {
-                Type? declaringType = method.DeclaringType;
-
-                // We need to get the TypeRef tokens
-                if (declaringType == null)
-                {
+                Type declaringType = method.DeclaringType ??
                     throw new InvalidOperationException(SR.InvalidOperation_CannotImportGlobalFromDifferentModule);
-                }
 
                 if (declaringType.IsArray)
                 {

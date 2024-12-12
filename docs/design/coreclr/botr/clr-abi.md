@@ -23,10 +23,13 @@ ARM64: See [Overview of ARM64 ABI conventions](https://learn.microsoft.com/cpp/b
 ## Non-Windows ABI documentation
 
 Arm corporation ABI documentation (for ARM32 and ARM64) is [here](https://developer.arm.com/architectures/system-architectures/software-standards/abi) and [here](https://github.com/ARM-software/abi-aa).
+Apple's ARM64 calling convention differences can be found [here](https://developer.apple.com/documentation/xcode/writing-arm64-code-for-apple-platforms).
 
 The Linux System V x86_64 ABI is documented in [System V Application Binary Interface / AMD64 Architecture Processor Supplement](https://github.com/hjl-tools/x86-psABI/wiki/x86-64-psABI-1.0.pdf), with document source material [here](https://gitlab.com/x86-psABIs/x86-64-ABI).
 
 The LoongArch64 ABI documentation is [here](https://github.com/loongson/LoongArch-Documentation/blob/main/docs/LoongArch-ELF-ABI-EN.adoc)
+
+The RISC-V ABIs Specification: [latest release](https://github.com/riscv-non-isa/riscv-elf-psabi-doc/releases/latest), [latest draft](https://github.com/riscv-non-isa/riscv-elf-psabi-doc/releases), [document source repo](https://github.com/riscv-non-isa/riscv-elf-psabi-doc).
 
 # General Unwind/Frame Layout
 
@@ -76,7 +79,9 @@ On ARM and ARM64, just like native, nothing is put in the floating point registe
 
 However, unlike native varargs, all floating point arguments are not promoted to double (`R8`), and instead retain their original type (`R4` or `R8`) (although this does not preclude an IL generator like managed C++ from explicitly injecting an upcast at the call-site and adjusting the call-site-sig appropriately). This leads to unexpected behavior when native C++ is ported to C# or even just managed via the different flavors of managed C++.
 
-Managed varargs are not supported in .NET Core.
+Managed varargs are supported on Windows only.
+
+Managed/native varargs are supported on Windows only. Support for managed/native varargs on non-Windows platforms is tracked by [this issue](https://github.com/dotnet/runtime/issues/82081).
 
 ## Generics
 
@@ -97,6 +102,10 @@ Just like native, AMD64 has implicit-byrefs. Any structure (value type in IL par
 
 The AMD64 native calling conventions (Windows 64 and System V) require return buffer address to be returned by callee in RAX. JIT also follows this rule.
 
+## RISC-V only: structs passed/returned according to hardware floating-point calling convention
+
+Passing/returning structs according to hardware floating-point calling convention like native is currently [supported only up to 16 bytes](https://github.com/dotnet/runtime/issues/107386), ones larger than that differ from the standard ABI and are passed/returned according to integer calling convention (by implicit reference).
+
 ## Return buffers
 
 The same applies to some return buffers. See `MethodTable::IsStructRequiringStackAllocRetBuf()`. When that returns `false`, the return buffer might be on the heap, either due to reflection/remoting code paths mentioned previously or due to a JIT optimization where a call with a return buffer that then assigns to a field (on the GC heap) are changed into passing the field reference as the return buffer. Conversely, when it returns true, the JIT does not need to use a write barrier when storing to the return buffer, but it is still not guaranteed to be a compiler temp, and as such the JIT should not introduce spurious writes to the return buffer.
@@ -116,6 +125,12 @@ ARM64-only: When a method returns a structure that is larger than 16 bytes the c
 ## Small primitive returns
 
 Primitive value types smaller than 32-bits are widened to 32-bits: signed small types are sign extended and unsigned small types are zero extended. This can be different from the standard calling conventions that may leave the state of unused bits in the return register undefined.
+
+## Small primitive arguments
+
+Small primitive arguments have undefined upper bits. This can be different from the standard calling conventions that may require normalization (e.g. on ARM32 and Apple ARM64).
+
+On RISC-V small primitive arguments are extended according to standard calling conventions.
 
 # PInvokes
 

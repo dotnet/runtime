@@ -95,13 +95,7 @@ namespace System.Security.Cryptography.Pkcs
                 {
                     if (choice.Certificate.HasValue)
                     {
-                        coll.Add(new X509Certificate2(choice.Certificate.Value
-#if NET
-                            .Span
-#else
-                            .ToArray()
-#endif
-                            ));
+                        coll.Add(X509CertificateLoader.LoadCertificate(choice.Certificate.Value.Span));
                     }
                 }
 

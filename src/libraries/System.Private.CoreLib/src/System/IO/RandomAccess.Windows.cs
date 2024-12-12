@@ -206,17 +206,15 @@ namespace System.IO
                         resetEvent.ReleaseRefCount(overlapped);
                     }
 
-                    switch (errorCode)
+                    throw errorCode switch
                     {
-                        case Interop.Errors.ERROR_INVALID_PARAMETER:
-                            // ERROR_INVALID_PARAMETER may be returned for writes
-                            // where the position is too large or for synchronous writes
-                            // to a handle opened asynchronously.
-                            throw new IOException(SR.IO_FileTooLong);
+                        // ERROR_INVALID_PARAMETER may be returned for writes
+                        // where the position is too large or for synchronous writes
+                        // to a handle opened asynchronously.
+                        Interop.Errors.ERROR_INVALID_PARAMETER => new IOException(SR.IO_FileTooLong),
 
-                        default:
-                            throw Win32Marshal.GetExceptionForWin32Error(errorCode, handle.Path);
-                    }
+                        _ => Win32Marshal.GetExceptionForWin32Error(errorCode, handle.Path),
+                    };
                 }
             }
             finally
@@ -437,7 +435,7 @@ namespace System.IO
         internal static void WriteGatherAtOffset(SafeFileHandle handle, IReadOnlyList<ReadOnlyMemory<byte>> buffers, long fileOffset)
         {
             // WriteFileGather does not support sync handles, so we just call WriteFile in a loop
-            int bytesWritten = 0;
+            long bytesWritten = 0;
             int buffersCount = buffers.Count;
             for (int i = 0; i < buffersCount; i++)
             {

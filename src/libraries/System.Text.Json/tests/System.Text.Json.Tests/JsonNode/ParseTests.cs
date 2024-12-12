@@ -159,19 +159,6 @@ namespace System.Text.Json.Nodes.Tests
             FieldInfo jsonDictionaryField = typeof(JsonObject).GetField("_dictionary", BindingFlags.Instance | BindingFlags.NonPublic);
             Assert.NotNull(jsonDictionaryField);
 
-#if !NET9_0_OR_GREATER // Bespoke implementation replaced with OrderedDictionary
-            Type jsonPropertyDictionaryType = typeof(JsonObject).Assembly.GetType("System.Text.Json.OrderedDictionary`2");
-            Assert.NotNull(jsonPropertyDictionaryType);
-
-            jsonPropertyDictionaryType = jsonPropertyDictionaryType.MakeGenericType(new Type[] { typeof(string), typeof(JsonNode) });
-
-            FieldInfo listField = jsonPropertyDictionaryType.GetField("_propertyList", BindingFlags.Instance | BindingFlags.NonPublic);
-            Assert.NotNull(listField);
-
-            FieldInfo dictionaryField = jsonPropertyDictionaryType.GetField("_propertyDictionary", BindingFlags.Instance | BindingFlags.NonPublic);
-            Assert.NotNull(dictionaryField);
-#endif
-
             using (MemoryStream stream = new MemoryStream(SimpleTestClass.s_data))
             {
                 // Only JsonElement is present.
@@ -188,10 +175,6 @@ namespace System.Text.Json.Nodes.Tests
                 jsonDictionary = jsonDictionaryField.GetValue(node);
                 Assert.NotNull(jsonDictionary);
 
-#if !NET9_0_OR_GREATER // Bespoke implementation replaced with OrderedDictionary
-                Assert.NotNull(listField.GetValue(jsonDictionary));
-                Assert.NotNull(dictionaryField.GetValue(jsonDictionary)); // The dictionary threshold was reached.
-#endif
                 Test();
 
                 void Test()
@@ -220,11 +203,6 @@ namespace System.Text.Json.Nodes.Tests
 
                 jsonDictionary = jsonDictionaryField.GetValue(node);
                 Assert.NotNull(jsonDictionary);
-
-#if !NET9_0_OR_GREATER // Bespoke implementation replaced with OrderedDictionary
-                Assert.NotNull(listField.GetValue(jsonDictionary));
-                Assert.NotNull(dictionaryField.GetValue(jsonDictionary)); // The dictionary threshold was reached.
-#endif
 
                 Test();
 

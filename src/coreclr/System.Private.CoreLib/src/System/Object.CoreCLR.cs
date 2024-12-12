@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace System
 {
@@ -10,8 +11,13 @@ namespace System
     {
         // Returns a Type object which represent this object instance.
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public extern Type GetType();
+        public unsafe Type GetType()
+        {
+            MethodTable* pMT = RuntimeHelpers.GetMethodTable(this);
+            RuntimeType type = RuntimeTypeHandle.GetRuntimeType(pMT);
+            GC.KeepAlive(this);
+            return type;
+        }
 
         // Returns a new object instance that is a memberwise copy of this
         // object.  This is always a shallow copy of the instance. The method is protected

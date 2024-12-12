@@ -39,8 +39,6 @@ namespace System.Net.Http.Tests
             {
                 FakeRegistry.Reset();
 
-                Assert.False(HttpWindowsProxy.TryCreate(out IWebProxy p));
-
                 FakeRegistry.WinInetProxySettings.Proxy = proxyString;
                 WinInetProxyHelper proxyHelper = new WinInetProxyHelper();
                 Assert.Null(proxyHelper.AutoConfigUrl);
@@ -48,8 +46,7 @@ namespace System.Net.Http.Tests
                 Assert.False(proxyHelper.AutoSettingsUsed);
                 Assert.True(proxyHelper.ManualSettingsUsed);
 
-                Assert.True(HttpWindowsProxy.TryCreate(out p));
-                Assert.NotNull(p);
+                IWebProxy p = new HttpWindowsProxy(proxyHelper);
 
                 Assert.Equal(!string.IsNullOrEmpty(insecureProxy) ? new Uri(insecureProxy) : null, p.GetProxy(new Uri(fooHttp)));
                 Assert.Equal(!string.IsNullOrEmpty(secureProxy) ? new Uri(secureProxy) : null, p.GetProxy(new Uri(fooHttps)));
@@ -81,8 +78,6 @@ namespace System.Net.Http.Tests
             {
                 TestControl.ResetAll();
 
-                Assert.False(HttpWindowsProxy.TryCreate(out IWebProxy p));
-
                 FakeRegistry.WinInetProxySettings.AutoConfigUrl = "http://127.0.0.1/proxy.pac";
                 WinInetProxyHelper proxyHelper = new WinInetProxyHelper();
                 Assert.Null(proxyHelper.Proxy);
@@ -90,8 +85,7 @@ namespace System.Net.Http.Tests
                 Assert.False(proxyHelper.ManualSettingsUsed);
                 Assert.True(proxyHelper.AutoSettingsUsed);
 
-                Assert.True(HttpWindowsProxy.TryCreate(out p));
-                Assert.NotNull(p);
+                IWebProxy p = new HttpWindowsProxy(proxyHelper);
 
                 // With a HttpWindowsProxy created configured to use auto-config, now set Proxy so when it
                 // attempts to resolve a proxy, it resolves our string.
@@ -137,15 +131,12 @@ namespace System.Net.Http.Tests
         {
             await RemoteExecutor.Invoke((proxyString, expectedString) =>
             {
-                IWebProxy p;
-
                 FakeRegistry.Reset();
 
                 FakeRegistry.WinInetProxySettings.Proxy = proxyString;
                 WinInetProxyHelper proxyHelper = new WinInetProxyHelper();
 
-                Assert.True(HttpWindowsProxy.TryCreate(out p));
-                Assert.NotNull(p);
+                IWebProxy p = new HttpWindowsProxy(proxyHelper);
                 Assert.Equal(expectedString, p.GetProxy(new Uri(fooHttp)).ToString());
                 Assert.Equal(expectedString, p.GetProxy(new Uri(fooHttps)).ToString());
             }, rawProxyString, expectedUri).DisposeAsync();
@@ -174,14 +165,12 @@ namespace System.Net.Http.Tests
             await RemoteExecutor.Invoke((url, expected) =>
             {
                 bool expectedResult = Boolean.Parse(expected);
-                IWebProxy p;
 
                 FakeRegistry.Reset();
                 FakeRegistry.WinInetProxySettings.Proxy = insecureProxyUri;
                 FakeRegistry.WinInetProxySettings.ProxyBypass = "23.23.86.44;*.foo.com;<local>;BAR.COM; ; 162*;[2002::11];[*:f8b0:4005:80a::200e]; http://www.xn--mnchhausen-9db.at;http://*.xn--bb-bjab.eu;http://xn--bb-bjab.eu;";
 
-                Assert.True(HttpWindowsProxy.TryCreate(out p));
-                Assert.NotNull(p);
+                IWebProxy p = new HttpWindowsProxy();
 
                 Uri u = new Uri(url);
                 Assert.Equal(expectedResult, p.GetProxy(u) == null);
@@ -199,14 +188,12 @@ namespace System.Net.Http.Tests
             await RemoteExecutor.Invoke((bypassValue, expected) =>
             {
                 int expectedCount = Convert.ToInt32(expected);
-                IWebProxy p;
 
                 FakeRegistry.Reset();
                 FakeRegistry.WinInetProxySettings.Proxy = insecureProxyUri;
                 FakeRegistry.WinInetProxySettings.ProxyBypass = bypassValue;
 
-                Assert.True(HttpWindowsProxy.TryCreate(out p));
-                Assert.NotNull(p);
+                IWebProxy p = new HttpWindowsProxy();
 
                 HttpWindowsProxy sp = p as HttpWindowsProxy;
                 Assert.NotNull(sp);
@@ -223,34 +210,6 @@ namespace System.Net.Http.Tests
         }
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [InlineData("http://")]
-        [InlineData("http=")]
-        [InlineData("http://;")]
-        [InlineData("http=;")]
-        [InlineData("  ;  ")]
-        public async Task HttpProxy_InvalidWindowsProxy_Null(string rawProxyString)
-        {
-            await RemoteExecutor.Invoke((proxyString) =>
-            {
-                IWebProxy p;
-
-                FakeRegistry.Reset();
-                Assert.False(HttpWindowsProxy.TryCreate(out p));
-
-                FakeRegistry.WinInetProxySettings.Proxy = proxyString;
-                WinInetProxyHelper proxyHelper = new WinInetProxyHelper();
-
-                Assert.True(HttpWindowsProxy.TryCreate(out p));
-                Assert.NotNull(p);
-
-                Assert.Null(p.GetProxy(new Uri(fooHttp)));
-                Assert.Null(p.GetProxy(new Uri(fooHttps)));
-                Assert.Null(p.GetProxy(new Uri(fooWs)));
-                Assert.Null(p.GetProxy(new Uri(fooWss)));
-            }, rawProxyString).DisposeAsync();
-        }
-
-        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [MemberData(nameof(HttpProxy_Multi_Data))]
         public async Task HttpProxy_Multi_Success(string proxyConfig, string url, string expected)
         {
@@ -262,7 +221,7 @@ namespace System.Net.Http.Tests
                 TestControl.ResetAll();
                 FakeRegistry.WinInetProxySettings.AutoConfigUrl = "http://dummy.com";
 
-                Assert.True(HttpWindowsProxy.TryCreate(out IWebProxy p));
+                IWebProxy p = new HttpWindowsProxy();
                 HttpWindowsProxy wp = Assert.IsType<HttpWindowsProxy>(p);
 
                 // Now that HttpWindowsProxy has been constructed to use autoconfig,
@@ -319,7 +278,7 @@ namespace System.Net.Http.Tests
                     FakeRegistry.WinInetProxySettings.AutoConfigUrl = "http://dummy.com";
                 }
 
-                Assert.True(HttpWindowsProxy.TryCreate(out IWebProxy p));
+                IWebProxy p = new HttpWindowsProxy();
                 HttpWindowsProxy wp = Assert.IsType<HttpWindowsProxy>(p);
 
                 if (!manual)

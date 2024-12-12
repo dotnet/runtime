@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Formats.Nrbf.Utils;
 using System.IO;
 using System.Reflection.Metadata;
 
@@ -15,7 +16,13 @@ namespace System.Formats.Nrbf;
 /// </remarks>
 internal sealed class BinaryLibraryRecord : SerializationRecord
 {
-    private BinaryLibraryRecord(SerializationRecordId libraryId, string libraryName)
+    private BinaryLibraryRecord(SerializationRecordId libraryId, string rawLibraryName)
+    {
+        Id = libraryId;
+        RawLibraryName = rawLibraryName;
+    }
+
+    private BinaryLibraryRecord(SerializationRecordId libraryId, AssemblyNameInfo libraryName)
     {
         Id = libraryId;
         LibraryName = libraryName;
@@ -23,20 +30,29 @@ internal sealed class BinaryLibraryRecord : SerializationRecord
 
     public override SerializationRecordType RecordType => SerializationRecordType.BinaryLibrary;
 
-    public override TypeName TypeName
-    {
-        get
-        {
-            Debug.Fail("TypeName should never be called on BinaryLibraryRecord");
-            return TypeName.Parse(nameof(BinaryLibraryRecord).AsSpan());
-        }
-    }
+    public override TypeName TypeName => TypeName.Parse(nameof(BinaryLibraryRecord).AsSpan());
 
-    internal string LibraryName { get; }
+    internal string? RawLibraryName { get; }
+
+    internal AssemblyNameInfo? LibraryName { get; }
 
     /// <inheritdoc />
     public override SerializationRecordId Id { get; }
 
-    internal static BinaryLibraryRecord Decode(BinaryReader reader)
-        => new(SerializationRecordId.Decode(reader), reader.ReadString());
+    internal static BinaryLibraryRecord Decode(BinaryReader reader, PayloadOptions options)
+    {
+        SerializationRecordId id = SerializationRecordId.Decode(reader);
+        string rawName = reader.ReadString();
+
+        if (AssemblyNameInfo.TryParse(rawName.AsSpan(), out AssemblyNameInfo? assemblyNameInfo))
+        {
+            return new BinaryLibraryRecord(id, assemblyNameInfo);
+        }
+        else if (!options.UndoTruncatedTypeNames)
+        {
+            ThrowHelper.ThrowInvalidAssemblyName();
+        }
+
+        return new BinaryLibraryRecord(id, rawName);
+    }
 }

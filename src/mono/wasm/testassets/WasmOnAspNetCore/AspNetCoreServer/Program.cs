@@ -31,6 +31,7 @@ var provider = new FileExtensionContentTypeProvider();
 provider.Mappings[".dll"] = "application/octet-stream";
 provider.Mappings[".pdb"] = "application/octet-stream";
 provider.Mappings[".dat"] = "application/octet-stream";
+provider.Mappings[".mjs"] = "text/javascript";
 app.UseStaticFiles(new StaticFileOptions
 {
     ContentTypeProvider = provider,

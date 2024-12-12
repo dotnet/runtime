@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using ILCompiler;
 using ILCompiler.Dataflow;
@@ -372,13 +373,17 @@ namespace ILLink.Shared.TrimAnalysis
                 //
                 case IntrinsicId.Object_GetType:
                     {
+                        if (instanceValue.IsEmpty ()) {
+                            AddReturnValue (MultiValueLattice.Top);
+                            break;
+                        }
+
                         foreach (var valueNode in instanceValue.AsEnumerable ())
                         {
                             // Note that valueNode can be statically typed in IL as some generic argument type.
                             // For example:
                             //   void Method<T>(T instance) { instance.GetType().... }
-                            // Currently this case will end up with null StaticType - since there's no typedef for the generic argument type.
-                            // But it could be that T is annotated with for example PublicMethods:
+                            // It could be that T is annotated with for example PublicMethods:
                             //   void Method<[DAM(PublicMethods)] T>(T instance) { instance.GetType().GetMethod("Test"); }
                             // In this case it's in theory possible to handle it, by treating the T basically as a base class
                             // for the actual type of "instance". But the analysis for this would be pretty complicated (as the marking
@@ -390,10 +395,34 @@ namespace ILLink.Shared.TrimAnalysis
                             // currently it won't do.
 
                             TypeDesc? staticType = (valueNode as IValueWithStaticType)?.StaticType?.Type;
+                            if (staticType?.IsByRef == true)
+                            {
+                                staticType = ((ByRefType)staticType).ParameterType;
+                            }
                             if (staticType is null || (!staticType.IsDefType && !staticType.IsArray))
                             {
-                                // We don't know anything about the type GetType was called on. Track this as a usual "result of a method call without any annotations"
-                                AddReturnValue(_reflectionMarker.Annotations.GetMethodReturnValue(calledMethod, _isNewObj));
+                                DynamicallyAccessedMemberTypes annotation = default;
+                                if (staticType is GenericParameterDesc genericParam)
+                                {
+                                    foreach (TypeDesc constraint in genericParam.TypeConstraints)
+                                    {
+                                        if (constraint.IsWellKnownType(Internal.TypeSystem.WellKnownType.Enum))
+                                        {
+                                            annotation = DynamicallyAccessedMemberTypes.PublicFields;
+                                            break;
+                                        }
+                                    }
+                                }
+
+                                if (annotation != default)
+                                {
+                                    AddReturnValue(_reflectionMarker.Annotations.GetMethodReturnValue(calledMethod, _isNewObj, annotation));
+                                }
+                                else
+                                {
+                                    // We don't know anything about the type GetType was called on. Track this as a usual "result of a method call without any annotations"
+                                    AddReturnValue(_reflectionMarker.Annotations.GetMethodReturnValue(calledMethod, _isNewObj));
+                                }
                             }
                             else if (staticType.IsSealed() || staticType.IsTypeOf("System", "Delegate"))
                             {
@@ -411,6 +440,10 @@ namespace ILLink.Shared.TrimAnalysis
                                 // where a parameter is annotated and if something in the method sets a specific known type to it
                                 // we will also make it just work, even if the annotation doesn't match the usage.
                                 AddReturnValue(new SystemTypeValue(staticType));
+                            }
+                            else if (staticType.IsTypeOf("System", "Enum"))
+                            {
+                                AddReturnValue(_reflectionMarker.Annotations.GetMethodReturnValue(calledMethod, _isNewObj, DynamicallyAccessedMemberTypes.PublicFields));
                             }
                             else
                             {
@@ -605,17 +638,31 @@ namespace ILLink.Shared.TrimAnalysis
             return false;
         }
 
-#pragma warning disable IDE0060
         private partial bool TryResolveTypeNameForCreateInstanceAndMark(in MethodProxy calledMethod, string assemblyName, string typeName, out TypeProxy resolvedType)
         {
-            // TODO: niche APIs that we probably shouldn't even have added
-            // We have to issue a warning, otherwise we could break the app without a warning.
-            // This is not the ideal warning, but it's good enough for now.
-            _diagnosticContext.AddDiagnostic(DiagnosticId.UnrecognizedParameterInMethodCreateInstance, calledMethod.GetParameter((ParameterIndex)(1 + (calledMethod.HasImplicitThis() ? 1 : 0))).GetDisplayName(), calledMethod.GetDisplayName());
-            resolvedType = default;
-            return false;
+            if (!System.Reflection.Metadata.AssemblyNameInfo.TryParse(assemblyName, out var an)
+                || _callingMethod.Context.ResolveAssembly(an) is not ModuleDesc resolvedAssembly)
+            {
+                _diagnosticContext.AddDiagnostic(DiagnosticId.UnresolvedAssemblyInCreateInstance,
+                    assemblyName,
+                    calledMethod.GetDisplayName());
+                resolvedType = default;
+                return false;
+            }
+
+            if (!_reflectionMarker.TryResolveTypeNameAndMark(resolvedAssembly, typeName, _diagnosticContext, "Reflection", out TypeDesc? foundType))
+            {
+                // It's not wrong to have a reference to non-existing type - the code may well expect to get an exception in this case
+                // Note that we did find the assembly, so it's not a ILLink config problem, it's either intentional, or wrong versions of assemblies
+                // but ILLink can't know that. In case a user tries to create an array using System.Activator we should simply ignore it, the user
+                // might expect an exception to be thrown.
+                resolvedType = default;
+                return false;
+            }
+
+            resolvedType = new TypeProxy(foundType);
+            return true;
         }
-#pragma warning restore IDE0060
 
         private partial void MarkStaticConstructor(TypeProxy type)
             => _reflectionMarker.MarkStaticConstructor(_diagnosticContext.Origin, type.Type, _reason);

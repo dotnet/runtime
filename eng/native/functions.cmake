@@ -221,7 +221,7 @@ function(preprocess_file inputFilename outputFilename)
   get_compile_definitions(PREPROCESS_DEFINITIONS)
   get_include_directories(PREPROCESS_INCLUDE_DIRECTORIES)
   get_source_file_property(SOURCE_FILE_DEFINITIONS ${inputFilename} COMPILE_DEFINITIONS)
-  
+
   foreach(DEFINITION IN LISTS SOURCE_FILE_DEFINITIONS)
     list(APPEND PREPROCESS_DEFINITIONS -D${DEFINITION})
   endforeach()
@@ -489,7 +489,8 @@ endfunction()
 
 function(install_symbol_file symbol_file destination_path)
   if(CLR_CMAKE_TARGET_WIN32)
-      install(FILES ${symbol_file} DESTINATION ${destination_path}/PDB ${ARGN})
+      cmake_path(SET DEST NORMALIZE "${destination_path}/PDB")
+      install(FILES ${symbol_file} DESTINATION ${DEST} ${ARGN})
   else()
       install(FILES ${symbol_file} DESTINATION ${destination_path} ${ARGN})
   endif()
@@ -508,7 +509,7 @@ function(install_static_library targetName destination component)
   if (WIN32)
     set_target_properties(${targetName} PROPERTIES
         COMPILE_PDB_NAME "${targetName}"
-        COMPILE_PDB_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}"
+        COMPILE_PDB_OUTPUT_DIRECTORY "$<TARGET_FILE_DIR:${targetName}>"
     )
     install (FILES "$<TARGET_FILE_DIR:${targetName}>/${targetName}.pdb" DESTINATION ${destination} COMPONENT ${component})
   endif()
@@ -637,7 +638,7 @@ endfunction()
 function(add_sanitizer_runtime_support targetName)
   # Add sanitizer support functions.
   if (CLR_CMAKE_ENABLE_ASAN)
-    target_sources(${targetName} PRIVATE "$<$<STREQUAL:$<TARGET_PROPERTY:TYPE>,EXECUTABLE>:${CLR_SRC_NATIVE_DIR}/minipal/asansupport.cpp>")
+    target_link_libraries(${targetName} PRIVATE $<$<STREQUAL:$<TARGET_PROPERTY:TYPE>,EXECUTABLE>:minipal_sanitizer_support>)
   endif()
 endfunction()
 

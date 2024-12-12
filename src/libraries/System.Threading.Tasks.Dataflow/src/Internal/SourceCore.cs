@@ -625,7 +625,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
                     if (_nextMessageId.Value != header.Id ||
                         !_messages.TryDequeue(out dropped)) // remove the next message
                     {
-                        Debug.Assert(false, "The target did not follow the protocol.");
+                        Debug.Fail("The target did not follow the protocol.");
                     }
                     _nextMessageId.Value++;
 

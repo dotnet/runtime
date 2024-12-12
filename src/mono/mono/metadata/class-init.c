@@ -301,7 +301,7 @@ mono_class_setup_fields (MonoClass *klass)
 		instance_size = MONO_ABI_SIZEOF (MonoObject);
 	}
 
-	if (m_class_is_inlinearray (klass) && m_class_inlinearray_value (klass) <= 0) {
+	if (m_class_is_inlinearray (klass) && mono_class_get_inlinearray_value (klass) <= 0) {
 		if (mono_get_runtime_callbacks ()->mono_class_set_deferred_type_load_failure_callback)
 			mono_get_runtime_callbacks ()->mono_class_set_deferred_type_load_failure_callback (klass, "Inline array length property must be positive.");
 		else
@@ -310,6 +310,10 @@ mono_class_setup_fields (MonoClass *klass)
 
 	/* Get the real size */
 	explicit_size = mono_metadata_packing_from_typedef (klass->image, klass->type_token, &packing_size, &real_size);
+
+	if (real_size > GINT32_TO_UINT32(INT32_MAX - MONO_ABI_SIZEOF (MonoObject)))
+		mono_class_set_type_load_failure (klass, "Can't load type %s. The size is too big.", m_class_get_name (klass));
+
 	if (explicit_size)
 		instance_size += real_size;
 
@@ -731,7 +735,7 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token, MonoError 
 		attr = class_has_inlinearray_attribute (klass);
 		if (attr.has_attr) {
 			klass->is_inlinearray = 1;
-			klass->inlinearray_value = GPOINTER_TO_INT32 (attr.value);
+			mono_class_set_inlinearray_value(klass, GPOINTER_TO_INT32 (attr.value));
 		}
 	}
 
@@ -936,7 +940,7 @@ mono_class_create_generic_inst (MonoGenericClass *gclass)
 	klass->this_arg.data.generic_class = klass->_byval_arg.data.generic_class = gclass;
 	klass->this_arg.byref__ = TRUE;
 	klass->is_inlinearray = gklass->is_inlinearray;
-	klass->inlinearray_value = gklass->inlinearray_value;
+	mono_class_set_inlinearray_value(klass, mono_class_get_inlinearray_value(gklass));
 	klass->is_exception_class = gklass->is_exception_class;
 	klass->enumtype = gklass->enumtype;
 	klass->valuetype = gklass->valuetype;
@@ -2291,7 +2295,7 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 					const guint32 struct_max_size = 1024 * 1024;
 					guint32 initial_size = size;
 					// If size overflows, it returns 0
-					size *= m_class_inlinearray_value (klass);
+					size *= mono_class_get_inlinearray_value (klass);
 					inlined_fields++;
 					if(size == 0 || size > struct_max_size) {
 						if (mono_get_runtime_callbacks ()->mono_class_set_deferred_type_load_failure_callback) {
@@ -2322,7 +2326,12 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 				}
 				/*TypeBuilders produce all sort of weird things*/
 				g_assert (image_is_dynamic (klass->image) || field_offsets [i] > 0);
-				real_size = field_offsets [i] + size;
+
+				gint64 raw_real_size = (gint64)field_offsets [i] + size;
+				real_size = (gint32)raw_real_size;
+
+				if (real_size != raw_real_size)
+					mono_class_set_type_load_failure (klass, "Can't load type %s. The size is too big.", m_class_get_name (klass));
 			}
 
 			instance_size = MAX (real_size, instance_size);
@@ -2381,7 +2390,13 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 			/*
 			 * Calc max size.
 			 */
-			real_size = MAX (real_size, size + field_offsets [i]);
+			gint64 raw_real_size = (gint64)field_offsets [i] + size;
+			gint32 real_size_cast = (gint32)raw_real_size;
+
+			if (real_size_cast != raw_real_size)
+				mono_class_set_type_load_failure (klass, "Can't load type %s. The size is too big.", m_class_get_name (klass));
+
+			real_size = MAX (real_size, real_size_cast);
 		}
 
 		/* check for incorrectly aligned or overlapped by a non-object field */
@@ -2529,8 +2544,8 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 		}
 	}
 
-	/*valuetypes can't be neither bigger than 1Mb or empty. */
-	if (klass->valuetype && (klass->instance_size <= 0 || klass->instance_size > (0x100000 + MONO_ABI_SIZEOF (MonoObject)))) {
+	/*valuetypes can not be size 0 or bigger than 2gb. */
+	if (klass->valuetype && (klass->instance_size <= 0 || klass->instance_size > INT32_MAX)) {
 		/* Special case compiler generated types */
 		/* Hard to check for [CompilerGenerated] here */
 		if (!strstr (klass->name, "StaticArrayInitTypeSize") && !strstr (klass->name, "$ArrayType"))
@@ -3286,7 +3301,14 @@ mono_class_setup_interface_id_nolock (MonoClass *klass)
 	    * 	a != b ==> true
 		*/
 		const char *name = m_class_get_name (klass);
-		if (!strcmp (name, "IList`1") || !strcmp (name, "ICollection`1") || !strcmp (name, "IEnumerable`1") || !strcmp (name, "IEnumerator`1"))
+		if (
+			!strcmp (name, "IList`1") ||
+			!strcmp (name, "IReadOnlyList`1") ||
+			!strcmp (name, "ICollection`1") ||
+			!strcmp (name, "IReadOnlyCollection`1") ||
+			!strcmp (name, "IEnumerable`1") ||
+			!strcmp (name, "IEnumerator`1")
+		)
 			klass->is_array_special_interface = 1;
 	}
 }
@@ -4187,6 +4209,121 @@ void
 mono_class_set_runtime_vtable (MonoClass *klass, MonoVTable *vtable)
 {
 	klass->runtime_vtable = vtable;
+}
+
+static int
+index_of_class (MonoClass *needle, MonoVarianceSearchTableEntry *haystack, int haystack_size) {
+	for (int i = 0; i < haystack_size; i++)
+		if (haystack[i].klass == needle)
+			return i;
+
+	return -1;
+}
+
+static void
+append_variance_entry (MonoClass *klass, MonoVarianceSearchTableEntry *buf, int buf_size, int *buf_count, MonoClass *value) {
+	int index = *buf_count;
+	(*buf_count) += 1;
+	g_assert (index < buf_size);
+	buf[index].klass = value;
+	buf[index].offset = value ? mono_class_interface_offset (klass, value) : 0;
+}
+
+static gboolean
+build_variance_search_table_inner (MonoClass *klass, MonoVarianceSearchTableEntry *buf, int buf_size, int *buf_count, MonoClass *current, gboolean terminator) {
+	// We have to track separately whether the buffer contains any actual interfaces, since we're appending
+	//  null terminators between levels of the inheritance hierarchy
+	gboolean result = FALSE;
+
+	while (current) {
+		if (!m_class_is_interfaces_inited (current)) {
+			ERROR_DECL (error);
+			mono_class_setup_interfaces (current, error);
+			return_val_if_nok (error, FALSE);
+		}
+
+		guint c = m_class_get_interface_count (current);
+		MonoClass **ifaces = m_class_get_interfaces (current);
+		for (guint i = 0; i < c; i++) {
+			MonoClass *iface = ifaces [i];
+			// Avoid adding duplicates or recursing into them.
+			if (index_of_class (iface, buf, *buf_count) >= 0)
+				continue;
+
+			if (mono_class_has_variant_generic_params (iface)) {
+				append_variance_entry (klass, buf, buf_size, buf_count, iface);
+				result = TRUE;
+			}
+
+			if (build_variance_search_table_inner (klass, buf, buf_size, buf_count, iface, FALSE))
+				result = TRUE;
+		}
+
+		current = current->parent;
+
+		if (terminator) {
+			// HACK: Don't append another NULL if we already have one, it's unnecessary
+			if (*buf_count && buf[(*buf_count) - 1].klass != NULL)
+				append_variance_entry (klass, buf, buf_size, buf_count, NULL);
+		}
+	}
+
+	return result;
+}
+
+typedef struct VarianceSearchTable {
+	int count;
+	MonoVarianceSearchTableEntry entries[1]; // a total of count items, at least 1
+} VarianceSearchTable;
+
+// Only call this with the loader lock held
+static void
+build_variance_search_table (MonoClass *klass) {
+	int buf_size = m_class_get_interface_offsets_count (klass) + klass->idepth + 1, buf_count = 0;
+	MonoVarianceSearchTableEntry *buf = g_alloca (buf_size * sizeof(MonoVarianceSearchTableEntry));
+	VarianceSearchTable *result = NULL;
+	memset (buf, 0, buf_size * sizeof(MonoVarianceSearchTableEntry));
+	gboolean any_items = build_variance_search_table_inner (klass, buf, buf_size, &buf_count, klass, TRUE);
+
+	if (any_items) {
+		guint bytes = (buf_count * sizeof(MonoVarianceSearchTableEntry));
+		result = (VarianceSearchTable *)mono_mem_manager_alloc (m_class_get_mem_manager (klass), bytes + sizeof(VarianceSearchTable));
+		result->count = buf_count;
+		memcpy (result->entries, buf, bytes);
+	}
+	klass->variant_search_table = result;
+	// Ensure we do not set the inited flag until we've stored the result pointer
+	mono_memory_barrier ();
+	klass->variant_search_table_inited = TRUE;
+}
+
+MonoVarianceSearchTableEntry *
+mono_class_get_variance_search_table (MonoClass *klass, int *table_size) {
+	g_assert (klass);
+	g_assert (table_size);
+
+	// We will never do a variance search to locate a given interface on an interface, only on
+	//  a fully-defined type or generic instance
+	if (m_class_is_interface (klass)) {
+		*table_size = 0;
+		return NULL;
+	}
+
+	if (!klass->variant_search_table_inited) {
+		mono_loader_lock ();
+		if (!klass->variant_search_table_inited)
+			build_variance_search_table (klass);
+		mono_loader_unlock ();
+	}
+
+	VarianceSearchTable *vst = klass->variant_search_table;
+	if (vst) {
+		*table_size = vst->count;
+		return vst->entries;
+	} else {
+		*table_size = 0;
+		return NULL;
+	}
 }
 
 /**

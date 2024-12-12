@@ -7,8 +7,6 @@
       <method name="_RefreshMemoryLimit" />
     </type>
     <!-- Accessed via native code. -->
-    <type fullname="System.Runtime.InteropServices.ComTypes.IEnumerable" />
-    <type fullname="System.Runtime.InteropServices.ComTypes.IEnumerator" />
     <type fullname="System.Runtime.InteropServices.CustomMarshalers.*" />
 
     <!-- GetActualImplementationForArrayGenericIListOrIReadOnlyListMethod depends on slots of these interfaces not changing -->

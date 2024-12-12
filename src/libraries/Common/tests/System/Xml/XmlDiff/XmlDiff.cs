@@ -354,7 +354,7 @@ namespace System.Xml.XmlDiff
                 else
                 {
                     //Both SourceRead and TargetRead is NULL
-                    Debug.Assert(false, "Impossible Situation for comparison");
+                    Debug.Fail("Impossible Situation for comparison");
                 }
             }
             return flag;
