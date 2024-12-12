@@ -273,7 +273,7 @@ JS_ENGINES = [NODE_JS]
     </PropertyGroup>
 
     <RemoveDir Directories="$(EMSDK_PATH)" />
-    
+
     <ItemGroup>
       <EmsdkFiles   Condition="'%(PackageReference.Identity)' != 'runtime.$(_portableHostOS)-$(BuildArchitecture).Microsoft.NETCore.Runtime.Wasm.Node.Transport' and '%(PackageReference.Identity)' != 'Microsoft.NET.Runtime.Emscripten.$(EmsdkVersion).Python.win-$(BuildArchitecture)'"
                     Include="$(NuGetPackageRoot)\$([System.String]::Copy(%(PackageReference.Identity)).ToLowerInvariant())\%(PackageReference.Version)\tools\**" />
@@ -295,7 +295,7 @@ JS_ENGINES = [NODE_JS]
     <ReadLinesFromFile File="$(EMSDK_PATH)emsdk_env$(ScriptExt)">
       <Output TaskParameter="Lines" PropertyName="_EmsdkEnvFileText" />
     </ReadLinesFromFile>
-    <WriteLinesToFile File="$(EMSDK_PATH)emsdk_env$(ScriptExt)" 
+    <WriteLinesToFile File="$(EMSDK_PATH)emsdk_env$(ScriptExt)"
                       Overwrite="true"
                       Lines="$(_EmsdkPaths);$(_EmsdkEnvFileText)" />
     <WriteLinesToFile File="$(EMSDK_PATH)emscripten/.emscripten"
@@ -313,7 +313,7 @@ JS_ENGINES = [NODE_JS]
 
     <PropertyGroup>
       <ShouldProvisionEmscripten>false</ShouldProvisionEmscripten>
-    </PropertyGroup>    
+    </PropertyGroup>
   </Target>
 
   <!-- Sets up WASI SDK if you don't have the WASI_SDK_PATH env variable set -->
@@ -365,8 +365,8 @@ JS_ENGINES = [NODE_JS]
     See https://github.com/llvm/llvm-project/pull/98373
     See https://github.com/dotnet/runtime/issues/104773
     -->
-    <Exec Command="wasm-opt --version" IgnoreExitCode="true" 
-      IgnoreStandardErrorWarningFormat="true" 
+    <Exec Command="wasm-opt --version" IgnoreExitCode="true"
+      IgnoreStandardErrorWarningFormat="true"
       StandardErrorImportance="low"
       StandardOutputImportance="Low" >
       <Output TaskParameter="ExitCode" PropertyName="_WasmOptExitCode"/>
@@ -1207,9 +1207,6 @@ JS_ENGINES = [NODE_JS]
       </_MonoRuntimeArtifacts>
       <_MonoRuntimeArtifacts Condition="('$(TargetsBrowser)' == 'true'  or '$(TargetsWasi)' == 'true') and '$(BuildMonoAOTCrossCompilerOnly)' != 'true'" Include="$(MonoObjDir)out\lib\libmono-wasm-nosimd.a">
         <Destination>$(RuntimeBinDir)libmono-wasm-nosimd.a</Destination>
-      </_MonoRuntimeArtifacts>
-      <_MonoRuntimeArtifacts Condition="('$(TargetsBrowser)' == 'true'  or '$(TargetsWasi)' == 'true') and '$(BuildMonoAOTCrossCompilerOnly)' != 'true'" Include="$(MonoObjDir)_deps\fetchzlibng-build\libz.a">
-        <Destination>$(RuntimeBinDir)libz.a</Destination>
       </_MonoRuntimeArtifacts>
     </ItemGroup>
 

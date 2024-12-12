@@ -91,8 +91,6 @@ FCFuncStart(gCOMTypeHandleFuncs)
     FCFuncElement("GetArrayRank", RuntimeTypeHandle::GetArrayRank)
     FCFuncElement("GetToken", RuntimeTypeHandle::GetToken)
     FCFuncElement("GetUtf8NameInternal", RuntimeTypeHandle::GetUtf8Name)
-    FCFuncElement("GetFields", RuntimeTypeHandle::GetFields)
-    FCFuncElement("GetInterfaces", RuntimeTypeHandle::GetInterfaces)
     FCFuncElement("GetAttributes", RuntimeTypeHandle::GetAttributes)
     FCFuncElement("GetNumVirtuals", RuntimeTypeHandle::GetNumVirtuals)
     FCFuncElement("CanCastTo", RuntimeTypeHandle::CanCastTo)
@@ -135,7 +133,6 @@ FCFuncEnd()
 
 FCFuncStart(gSignatureNative)
     FCFuncElement("GetSignature", SignatureNative::GetSignature)
-    FCFuncElement("CompareSig", SignatureNative::CompareSig)
     FCFuncElement("GetParameterOffsetInternal", SignatureNative::GetParameterOffsetInternal)
     FCFuncElement("GetTypeParameterOffset", SignatureNative::GetTypeParameterOffset)
     FCFuncElement("GetCustomModifiersAtOffset", SignatureNative::GetCustomModifiersAtOffset)
@@ -261,13 +258,7 @@ FCFuncStart(gThreadFuncs)
     FCFuncElement("get_OptimalMaxSpinWaitsPerSpinIteration", ThreadNative::GetOptimalMaxSpinWaitsPerSpinIteration)
 FCFuncEnd()
 
-FCFuncStart(gThreadPoolFuncs)
-    FCFuncElement("GetNextConfigUInt32Value", ThreadPoolNative::GetNextConfigUInt32Value)
-FCFuncEnd()
-
 FCFuncStart(gCastHelpers)
-    FCFuncElement("IsInstanceOfAny_NoCacheLookup", ::IsInstanceOfAny_NoCacheLookup)
-    FCFuncElement("ChkCastAny_NoCacheLookup", ::ChkCastAny_NoCacheLookup)
     FCFuncElement("WriteBarrier", ::WriteBarrier_Helper)
 FCFuncEnd()
 
@@ -429,7 +420,6 @@ FCClassElement("Signature", "System", gSignatureNative)
 FCClassElement("String", "System", gStringFuncs)
 FCClassElement("StubHelpers", "System.StubHelpers", gStubHelperFuncs)
 FCClassElement("Thread", "System.Threading", gThreadFuncs)
-FCClassElement("ThreadPool", "System.Threading", gThreadPoolFuncs)
 
 #undef FCFuncElement
 #undef FCFuncElementSig

@@ -3661,7 +3661,7 @@ public:
     // is #of nodes in subtree) of "tree" is greater than "limit".
     // (This is somewhat redundant with the "GetCostEx()/GetCostSz()" fields, but can be used
     // before they have been set.)
-    bool gtComplexityExceeds(GenTree* tree, unsigned limit);
+    bool gtComplexityExceeds(GenTree* tree, unsigned limit, unsigned* complexity = nullptr);
 
     GenTree* gtReverseCond(GenTree* tree);
 
@@ -5376,7 +5376,7 @@ public:
 
     PhaseStatus fgRemoveEmptyTry();
 
-    PhaseStatus fgRemoveEmptyTryCatch();
+    PhaseStatus fgRemoveEmptyTryCatchOrTryFault();
 
     PhaseStatus fgRemoveEmptyFinally();
 
@@ -6545,6 +6545,7 @@ public:
     }
 
     void fgRemoveProfileData(const char* reason);
+    void fgRepairProfileCondToUncond(BasicBlock* block, FlowEdge* retainedEdge, FlowEdge* removedEdge, int* metric = nullptr);
 
 //-------- Insert a statement at the start or end of a basic block --------
 

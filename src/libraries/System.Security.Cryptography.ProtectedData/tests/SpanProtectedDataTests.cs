@@ -42,7 +42,7 @@ namespace System.Security.Cryptography.ProtectedDataTests
         public void NearCorrectSizeBufferTests(int delta, bool success)
         {
             byte[] buffer = new byte[DefaultProtectedBufferSize];
-            int original = ProtectedData.Protect([1, 2, 3], DataProtectionScope.CurrentUser, buffer);
+            int original = ProtectedData.Protect([1, 2, 3], DataProtectionScope.CurrentUser, buffer.AsSpan());
 
             if (success)
             {

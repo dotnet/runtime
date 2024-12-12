@@ -778,29 +778,29 @@ PhaseStatus Compiler::fgRemoveEmptyTry()
 }
 
 //------------------------------------------------------------------------
-// fgRemoveEmptyTryCatch: Optimize try/catch where the try is empty,
-//    or cannot throw any exceptions
+// fgRemoveEmptyTryCatchOrTryFault: Optimize try/catch or try/fault where
+//    the try is empty, or cannot throw any exceptions
 //
 // Returns:
 //    PhaseStatus indicating what, if anything, was changed.
 //
-PhaseStatus Compiler::fgRemoveEmptyTryCatch()
+PhaseStatus Compiler::fgRemoveEmptyTryCatchOrTryFault()
 {
-    JITDUMP("\n*************** In fgRemoveEmptyTryCatch()\n");
+    JITDUMP("\n*************** In fgRemoveEmptyTryCatchOrTryFault()\n");
 
     // We need to do this transformation before funclets are created.
     assert(!fgFuncletsCreated);
 
-    bool enableRemoveEmptyTryCatch = true;
+    bool enableRemoveEmptyTryCatchOrTryFault = true;
 
 #ifdef DEBUG
     // Allow override to enable/disable.
-    enableRemoveEmptyTryCatch = (JitConfig.JitEnableRemoveEmptyTryCatch() == 1);
+    enableRemoveEmptyTryCatchOrTryFault = (JitConfig.JitEnableRemoveEmptyTryCatchOrTryFault() == 1);
 #endif // DEBUG
 
-    if (!enableRemoveEmptyTryCatch)
+    if (!enableRemoveEmptyTryCatchOrTryFault)
     {
-        JITDUMP("Empty try/catch removal disabled.\n");
+        JITDUMP("Empty try/catch/fault removal disabled.\n");
         return PhaseStatus::MODIFIED_NOTHING;
     }
 
@@ -825,7 +825,7 @@ PhaseStatus Compiler::fgRemoveEmptyTryCatch()
 #ifdef DEBUG
     if (verbose)
     {
-        printf("\n*************** Before fgRemoveEmptyTryCatch()\n");
+        printf("\n*************** Before fgRemoveEmptyTryCatchOrTryFault()\n");
         fgDispBasicBlocks();
         fgDispHandlerTab();
         printf("\n");
@@ -840,9 +840,9 @@ PhaseStatus Compiler::fgRemoveEmptyTryCatch()
         EHblkDsc* const HBtab = &compHndBBtab[XTnum];
 
         // Check if this is a try/catch.
-        if (HBtab->HasFinallyOrFaultHandler())
+        if (HBtab->HasFinallyHandler())
         {
-            JITDUMP("EH#%u is not a try-catch; skipping.\n", XTnum);
+            JITDUMP("EH#%u is not a try-catch or try-fault; skipping.\n", XTnum);
             XTnum++;
             continue;
         }
@@ -1047,7 +1047,7 @@ PhaseStatus Compiler::fgRemoveEmptyTryCatch()
 
     if (emptyCount > 0)
     {
-        JITDUMP("fgRemoveEmptyTryCatch() optimized %u empty-try catch clauses\n", emptyCount);
+        JITDUMP("fgRemoveEmptyTryCatchOrTryFault() optimized %u empty-try catch/fault clauses\n", emptyCount);
         fgInvalidateDfsTree();
         return PhaseStatus::MODIFIED_EVERYTHING;
     }
@@ -1194,7 +1194,6 @@ PhaseStatus Compiler::fgCloneFinally()
         unsigned    regionBBCount   = 0;
         unsigned    regionStmtCount = 0;
         bool        hasFinallyRet   = false;
-        bool        isAllRare       = true;
         bool        hasSwitch       = false;
 
         for (BasicBlock* const block : Blocks(firstBlock, lastBlock))
@@ -1215,7 +1214,6 @@ PhaseStatus Compiler::fgCloneFinally()
             }
 
             hasFinallyRet = hasFinallyRet || block->KindIs(BBJ_EHFINALLYRET);
-            isAllRare     = isAllRare && block->isRunRarely();
         }
 
         // Skip cloning if the finally has a switch.
@@ -1229,13 +1227,6 @@ PhaseStatus Compiler::fgCloneFinally()
         if (!hasFinallyRet)
         {
             JITDUMP("Finally in EH#%u does not return; skipping.\n", XTnum);
-            continue;
-        }
-
-        // Skip cloning if the finally is rarely run code.
-        if (isAllRare)
-        {
-            JITDUMP("Finally in EH#%u is run rarely; skipping.\n", XTnum);
             continue;
         }
 
