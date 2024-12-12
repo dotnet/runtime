@@ -42,7 +42,7 @@ namespace System.Tests
             Assert.Equal(OperationStatus.Done, Convert.FromHexString(actual, tryResult, out int consumed, out int written));
             Assert.Equal(fromResult.Length, written);
             Assert.Equal(actual.Length, consumed);
-            AssertExtensions.SequenceEqual(expected, tryResult);
+            AssertExtensions.SequenceEqual(expected.AsSpan(), tryResult);
         }
 
         [Fact]
