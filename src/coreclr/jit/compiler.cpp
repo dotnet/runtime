@@ -4510,7 +4510,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     DoPhase(this, PHASE_INCPROFILE, &Compiler::fgIncorporateProfileData);
 
     activePhaseChecks |= PhaseChecks::CHECK_FG_INIT_BLOCK;
-    DoPhase(this, PHASE_CANONICALIZE_ENTRY_BB, &Compiler::fgCanonicalizeFirstBB);
+    DoPhase(this, PHASE_CANONICALIZE_ENTRY, &Compiler::fgCanonicalizeFirstBB);
 
     // If we are doing OSR, update flow to initially reach the appropriate IL offset.
     //
