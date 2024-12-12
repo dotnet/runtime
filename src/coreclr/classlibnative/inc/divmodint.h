@@ -7,7 +7,7 @@
 #include <object.h>
 #include <fcall.h>
 
-class COMDivModInt {
+class DivModInt {
 public:
     FCDECL2(static int32_t, DivInt32, int32_t dividend, int32_t divisor);
     FCDECL2(static uint32_t, DivUInt32, uint32_t dividend, uint32_t divisor);

@@ -9,49 +9,49 @@
 
 #include <optsmallperfcritical.h>
 
-FCIMPL2(int32_t, COMDivModInt::DivInt32, int32_t dividend, int32_t divisor)
+FCIMPL2(int32_t, DivModInt::DivInt32, int32_t dividend, int32_t divisor)
     FCALL_CONTRACT;
 
     return dividend / divisor;
 FCIMPLEND
 
-FCIMPL2(uint32_t, COMDivModInt::DivUInt32, uint32_t dividend, uint32_t divisor)
+FCIMPL2(uint32_t, DivModInt::DivUInt32, uint32_t dividend, uint32_t divisor)
     FCALL_CONTRACT;
 
     return dividend / divisor;
 FCIMPLEND
 
-FCIMPL2_VV(int64_t, COMDivModInt::DivInt64, int64_t dividend, int64_t divisor)
+FCIMPL2_VV(int64_t, DivModInt::DivInt64, int64_t dividend, int64_t divisor)
     FCALL_CONTRACT;
 
     return dividend / divisor;
 FCIMPLEND
 
-FCIMPL2_VV(uint64_t, COMDivModInt::DivUInt64, uint64_t dividend, uint64_t divisor)
+FCIMPL2_VV(uint64_t, DivModInt::DivUInt64, uint64_t dividend, uint64_t divisor)
     FCALL_CONTRACT;
 
     return dividend / divisor;
 FCIMPLEND
 
-FCIMPL2(int32_t, COMDivModInt::ModInt32, int32_t dividend, int32_t divisor)
+FCIMPL2(int32_t, DivModInt::ModInt32, int32_t dividend, int32_t divisor)
     FCALL_CONTRACT;
 
     return dividend % divisor;
 FCIMPLEND
 
-FCIMPL2(uint32_t, COMDivModInt::ModUInt32, uint32_t dividend, uint32_t divisor)
+FCIMPL2(uint32_t, DivModInt::ModUInt32, uint32_t dividend, uint32_t divisor)
     FCALL_CONTRACT;
 
     return dividend % divisor;
 FCIMPLEND
 
-FCIMPL2_VV(int64_t, COMDivModInt::ModInt64, int64_t dividend, int64_t divisor)
+FCIMPL2_VV(int64_t, DivModInt::ModInt64, int64_t dividend, int64_t divisor)
     FCALL_CONTRACT;
 
     return dividend % divisor;
 FCIMPLEND
 
-FCIMPL2_VV(uint64_t, COMDivModInt::ModUInt64, uint64_t dividend, uint64_t divisor)
+FCIMPL2_VV(uint64_t, DivModInt::ModUInt64, uint64_t dividend, uint64_t divisor)
     FCALL_CONTRACT;
 
     return dividend % divisor;
