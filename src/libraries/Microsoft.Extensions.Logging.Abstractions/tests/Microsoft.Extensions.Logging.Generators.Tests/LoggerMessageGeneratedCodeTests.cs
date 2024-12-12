@@ -49,6 +49,17 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
         }
 
         [Fact]
+        public void FindsLoggerInPrimaryConstructorParameterUsedInMethod()
+        {
+            var logger = new MockLogger();
+
+            logger.Reset();
+
+            new ClassWithPrimaryConstructorWithParameterUsedInMethod(logger).Test();
+            Assert.Equal("Test.", logger.LastFormattedString);
+        }
+
+        [Fact]
         public void FindsLoggerInPrimaryConstructorParameterInDifferentPartialDeclaration()
         {
             var logger = new MockLogger();

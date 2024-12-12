@@ -158,11 +158,10 @@ namespace System.Net.NetworkInformation
                         compAnyRegexString.DangerousGetHandle(),
                         entNetIpv6String.DangerousGetHandle()))
                 using (SafeCreateHandle patterns = Interop.CoreFoundation.CFArrayCreate(
-                        new CFStringRef[2]
-                        {
+                        [
                             ipv4Pattern.DangerousGetHandle(),
                             ipv6Pattern.DangerousGetHandle()
-                        }, (UIntPtr)2))
+                        ], (UIntPtr)2))
                 {
                     // Try to register our pattern strings with the dynamic store instance.
                     if (patterns.IsInvalid || !Interop.SystemConfiguration.SCDynamicStoreSetNotificationKeys(

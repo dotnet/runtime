@@ -48,16 +48,6 @@ namespace Microsoft.Interop
     }
 
     /// <summary>
-    /// Marshalling information is lacking because of support not because it is
-    /// unknown or non-existent.
-    /// </summary>
-    /// <remarks>
-    /// An indication of "missing support" will trigger the fallback logic, which is
-    /// the forwarder marshaller.
-    /// </remarks>
-    public record MissingSupportMarshallingInfo : MarshallingInfo;
-
-    /// <summary>
     /// Character encoding enumeration.
     /// </summary>
     public enum CharEncoding
@@ -128,18 +118,6 @@ namespace Microsoft.Interop
         ManagedTypeInfo PlaceholderTypeParameter) : NativeMarshallingAttributeInfo(
             EntryPointType,
             Marshallers);
-
-    /// <summary>
-    /// Marshalling information is lacking because of support not because it is
-    /// unknown or non-existent. Includes information about element types in case
-    /// we need to rehydrate the marshalling info into an attribute for the fallback marshaller.
-    /// </summary>
-    /// <remarks>
-    /// An indication of "missing support" will trigger the fallback logic, which is
-    /// the forwarder marshaller.
-    /// </remarks>
-    public sealed record MissingSupportCollectionMarshallingInfo(CountInfo CountInfo, MarshallingInfo ElementMarshallingInfo) : MissingSupportMarshallingInfo;
-
 
     /// <summary>
     /// Marshal an exception based on the same rules as the built-in COM system based on the unmanaged type of the native return marshaller.

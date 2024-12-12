@@ -451,7 +451,7 @@ void BaseBucketParamsManager::GetAppName(_Out_writes_(maxLength) WCHAR* targetPa
     CONTRACTL_END;
 
     PathString appPath;
-    if (GetCurrentModuleFileName(appPath) == S_OK)
+    if (GetCurrentExecutableFileName(appPath) == S_OK)
     {
         // Get just the module name; remove the path
         const WCHAR* appName = u16_strrchr(appPath, DIRECTORY_SEPARATOR_CHAR_W);
@@ -479,7 +479,7 @@ void BaseBucketParamsManager::GetAppVersion(_Out_writes_(maxLength) WCHAR* targe
     WCHAR verBuf[23] = {0};
     USHORT major, minor, build, revision;
 
-    if ((GetCurrentModuleFileName(appPath) == S_OK) && SUCCEEDED(DwGetFileVersionInfo(appPath, major, minor, build, revision)))
+    if ((GetCurrentExecutableFileName(appPath) == S_OK) && SUCCEEDED(DwGetFileVersionInfo(appPath, major, minor, build, revision)))
     {
         _snwprintf_s(targetParam,
             maxLength,

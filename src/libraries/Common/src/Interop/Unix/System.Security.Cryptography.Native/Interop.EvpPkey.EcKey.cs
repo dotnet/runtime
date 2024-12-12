@@ -12,8 +12,21 @@ internal static partial class Interop
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpPkeyGetEcKey")]
         internal static partial SafeEcKeyHandle EvpPkeyGetEcKey(SafeEvpPKeyHandle pkey);
 
-        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpPkeySetEcKey")]
+        [LibraryImport(Libraries.CryptoNative)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal static partial bool EvpPkeySetEcKey(SafeEvpPKeyHandle pkey, SafeEcKeyHandle key);
+        private static partial bool CryptoNative_EvpPkeySetEcKey(SafeEvpPKeyHandle pkey, SafeEcKeyHandle key);
+
+        // Calls EVP_PKEY_set1_EC_KEY therefore the key will be duplicated
+        internal static SafeEvpPKeyHandle CreateEvpPkeyFromEcKey(SafeEcKeyHandle key)
+        {
+            SafeEvpPKeyHandle pkey = Interop.Crypto.EvpPkeyCreate();
+            if (!CryptoNative_EvpPkeySetEcKey(pkey, key))
+            {
+                pkey.Dispose();
+                throw Interop.Crypto.CreateOpenSslCryptographicException();
+            }
+
+            return pkey;
+        }
     }
 }

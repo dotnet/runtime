@@ -28,13 +28,21 @@ namespace System.ComponentModel.Tests
             var component = new DescriptorTestComponent();
             var properties = TypeDescriptor.GetProperties(component.GetType());
             PropertyDescriptor propertyDescriptor = properties.Find(nameof(component.Property), false);
-            var handlerWasCalled = false;
-            EventHandler valueChangedHandler = (_, __) => handlerWasCalled = true;
+            int handlerCalledCount = 0;
 
-            propertyDescriptor.AddValueChanged(component, valueChangedHandler);
-            propertyDescriptor.SetValue(component, int.MaxValue);
+            EventHandler valueChangedHandler1 = (_, __) => handlerCalledCount++;
+            EventHandler valueChangedHandler2 = (_, __) => handlerCalledCount++;
 
-            Assert.True(handlerWasCalled);
+            propertyDescriptor.AddValueChanged(component, valueChangedHandler1);
+
+            // Add case.
+            propertyDescriptor.SetValue(component, int.MaxValue); // Add to delegate.
+            Assert.Equal(1, handlerCalledCount);
+
+
+            propertyDescriptor.AddValueChanged(component, valueChangedHandler2);
+            propertyDescriptor.SetValue(component, int.MaxValue);  // Update delegate.
+            Assert.Equal(3, handlerCalledCount);
         }
 
         [Fact]
@@ -42,15 +50,25 @@ namespace System.ComponentModel.Tests
         {
             var component = new DescriptorTestComponent();
             var properties = TypeDescriptor.GetProperties(component.GetType());
-            var handlerWasCalled = false;
-            EventHandler valueChangedHandler = (_, __) => handlerWasCalled = true;
+            int handlerCalledCount = 0;
+
+            EventHandler valueChangedHandler1 = (_, __) => handlerCalledCount++;
+            EventHandler valueChangedHandler2 = (_, __) => handlerCalledCount++;
+
             PropertyDescriptor propertyDescriptor = properties.Find(nameof(component.Property), false);
 
-            propertyDescriptor.AddValueChanged(component, valueChangedHandler);
-            propertyDescriptor.RemoveValueChanged(component, valueChangedHandler);
+            propertyDescriptor.AddValueChanged(component, valueChangedHandler1);
+            propertyDescriptor.AddValueChanged(component, valueChangedHandler2);
             propertyDescriptor.SetValue(component, int.MaxValue);
+            Assert.Equal(2, handlerCalledCount);
 
-            Assert.False(handlerWasCalled);
+            propertyDescriptor.SetValue(component, int.MaxValue);
+            Assert.Equal(4, handlerCalledCount);
+
+            propertyDescriptor.RemoveValueChanged(component, valueChangedHandler1);
+            propertyDescriptor.RemoveValueChanged(component, valueChangedHandler2);
+            propertyDescriptor.SetValue(component, int.MaxValue);
+            Assert.Equal(4, handlerCalledCount);
         }
 
         [Fact]

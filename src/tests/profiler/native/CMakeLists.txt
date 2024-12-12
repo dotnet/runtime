@@ -5,12 +5,14 @@ project(Profiler)
 set(SOURCES
     assemblyprofiler/assemblyprofiler.cpp
     eltprofiler/slowpatheltprofiler.cpp
+    enumthreadsprofiler/enumthreadsprofiler.cpp
     eventpipeprofiler/eventpipereadingprofiler.cpp
     eventpipeprofiler/eventpipewritingprofiler.cpp
     eventpipeprofiler/eventpipemetadatareader.cpp
     gcallocateprofiler/gcallocateprofiler.cpp
-    nongcheap/nongcheap.cpp
     gcbasicprofiler/gcbasicprofiler.cpp
+    gcheapenumerationprofiler/gcheapenumerationprofiler.cpp
+    gcheapenumerationprofiler/gcheapenumerationprofiler.def
     gcprofiler/gcprofiler.cpp
     getappdomainstaticaddress/getappdomainstaticaddress.cpp
     handlesprofiler/handlesprofiler.cpp
@@ -18,6 +20,7 @@ set(SOURCES
     metadatagetdispenser/metadatagetdispenser.cpp
     moduleload/moduleload.cpp
     multiple/multiple.cpp
+    nongcheap/nongcheap.cpp
     nullprofiler/nullprofiler.cpp
     rejitprofiler/rejitprofiler.cpp
     rejitprofiler/ilrewriter.cpp

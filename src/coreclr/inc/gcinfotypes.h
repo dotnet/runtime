@@ -14,9 +14,10 @@
 #endif // _MSC_VER
 
 // *****************************************************************************
-// WARNING!!!: These values and code are also used by SOS in the diagnostics
-// repo. Should updated in a backwards and forwards compatible way.
+// WARNING!!!: These values and code are used in the runtime repo and SOS in the 
+// diagnostics repo. Should updated in a backwards and forwards compatible way.
 // See: https://github.com/dotnet/diagnostics/blob/main/src/shared/inc/gcinfotypes.h
+//      https://github.com/dotnet/runtime/blob/main/src/coreclr/inc/gcinfotypes.h
 // *****************************************************************************
 
 #define PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED

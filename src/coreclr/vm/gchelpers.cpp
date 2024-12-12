@@ -40,7 +40,7 @@
 //
 //========================================================================
 
-inline gc_alloc_context* GetThreadAllocContext()
+inline ee_alloc_context* GetThreadEEAllocContext()
 {
     WRAPPER_NO_CONTRACT;
 
@@ -183,6 +183,113 @@ inline void CheckObjectSize(size_t alloc_size)
     }
 }
 
+void FireAllocationSampled(GC_ALLOC_FLAGS flags, size_t size, size_t samplingBudgetOffset, Object* orObject)
+{
+    // Note: this code is duplicated from GCToCLREventSink::FireGCAllocationTick_V4
+    void* typeId = nullptr;
+    const WCHAR* name = nullptr;
+    InlineSString<MAX_CLASSNAME_LENGTH> strTypeName;
+    EX_TRY
+    {
+        TypeHandle th = GetThread()->GetTHAllocContextObj();
+
+        if (th != 0)
+        {
+            th.GetName(strTypeName);
+            name = strTypeName.GetUnicode();
+            typeId = th.GetMethodTable();
+        }
+    }
+    EX_CATCH{}
+    EX_END_CATCH(SwallowAllExceptions)
+    // end of duplication
+
+    if (typeId != nullptr)
+    {
+        unsigned int allocKind =
+            (flags & GC_ALLOC_PINNED_OBJECT_HEAP) ? 2 :
+            (flags & GC_ALLOC_LARGE_OBJECT_HEAP) ? 1 :
+            0;  // SOH
+        FireEtwAllocationSampled(allocKind, GetClrInstanceId(), typeId, name, (BYTE*)orObject, size, samplingBudgetOffset);
+    }
+}
+
+inline Object* Alloc(ee_alloc_context* pEEAllocContext, size_t size, GC_ALLOC_FLAGS flags)
+{
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE; // returns an objref without pinning it => cooperative
+    } CONTRACTL_END;
+
+    Object* retVal = nullptr;
+    gc_alloc_context* pAllocContext = &pEEAllocContext->m_GCAllocContext;
+    bool isSampled = false;
+    size_t availableSpace = 0;
+    size_t aligned_size = 0;
+    size_t samplingBudget = 0;
+    bool isRandomizedSamplingEnabled = ee_alloc_context::IsRandomizedSamplingEnabled();
+    if (isRandomizedSamplingEnabled)
+    {
+        // object allocations are always padded up to pointer size
+        aligned_size = AlignUp(size, sizeof(uintptr_t));
+
+        // The number bytes we can allocate before we need to emit a sampling event.
+        // This calculation is only valid if combined_limit < alloc_limit.
+        samplingBudget = (size_t)(pEEAllocContext->m_CombinedLimit - pAllocContext->alloc_ptr);
+
+        // The number of bytes available in the current allocation context
+        availableSpace = (size_t)(pAllocContext->alloc_limit - pAllocContext->alloc_ptr);
+
+        // Check to see if the allocated object overlaps a sampled byte
+        // in this AC. This happens when both:
+        // 1) The AC contains a sampled byte (combined_limit < alloc_limit)
+        // 2) The object is large enough to overlap it (samplingBudget < aligned_size)
+        //
+        // Note that the AC could have no remaining space for allocations (alloc_ptr =
+        // alloc_limit = combined_limit). When a thread hasn't done any SOH allocations
+        // yet it also starts in an empty state where alloc_ptr = alloc_limit =
+        // combined_limit = nullptr. The (1) check handles both of these situations
+        // properly as an empty AC can not have a sampled byte inside of it.
+        isSampled =
+            (pEEAllocContext->m_CombinedLimit < pAllocContext->alloc_limit) &&
+            (samplingBudget < aligned_size);
+
+        // if the object overflows the AC, we need to sample the remaining bytes
+        // the sampling budget only included at most the bytes inside the AC
+        if (aligned_size > availableSpace && !isSampled)
+        {
+            samplingBudget = ee_alloc_context::ComputeGeometricRandom() + availableSpace;
+            isSampled = (samplingBudget < aligned_size);
+        }
+    }
+
+    GCStress<gc_on_alloc>::MaybeTrigger(pAllocContext);
+
+    // for SOH, if there is enough space in the current allocation context, then
+    // the allocation will be done in place (like in the fast path),
+    // otherwise a new allocation context will be provided
+    retVal = GCHeapUtilities::GetGCHeap()->Alloc(pAllocContext, size, flags);
+
+    if (isSampled)
+    {
+        // At this point the object methodtable isn't initialized yet but it doesn't matter when we are
+        // just emitting an ETW/EventPipe event. If we want this event to be more useful from ICorProfiler
+        // in the future we probably want to pass the isSampled flag back to callers so that the event
+        // can be raised after the MethodTable is initialized.
+        FireAllocationSampled(flags, aligned_size, samplingBudget, retVal);
+    }
+
+    // There are a variety of conditions that may have invalidated the previous combined_limit value
+    // such as not allocating the object in the AC memory region (UOH allocations), moving the AC, adding
+    // extra alignment padding, allocating a new AC, or allocating an object that consumed the sampling budget.
+    // Rather than test for all the different invalidation conditions individually we conservatively always
+    // recompute it. If sampling isn't enabled this inlined function is just trivially setting
+    // combined_limit=alloc_limit.
+    pEEAllocContext->UpdateCombinedLimit(isRandomizedSamplingEnabled);
+
+    return retVal;
+}
 
 // There are only two ways to allocate an object.
 //     * Call optimized helpers that were generated on the fly. This is how JIT compiled code does most
@@ -222,16 +329,16 @@ inline Object* Alloc(size_t size, GC_ALLOC_FLAGS flags)
 
     if (GCHeapUtilities::UseThreadAllocationContexts())
     {
-        gc_alloc_context *threadContext = GetThreadAllocContext();
-        GCStress<gc_on_alloc>::MaybeTrigger(threadContext);
-        retVal = GCHeapUtilities::GetGCHeap()->Alloc(threadContext, size, flags);
+        ee_alloc_context *threadContext = GetThreadEEAllocContext();
+        GCStress<gc_on_alloc>::MaybeTrigger(&threadContext->m_GCAllocContext);
+        retVal = Alloc(threadContext, size, flags);
     }
     else
     {
         GlobalAllocLockHolder holder(&g_global_alloc_lock);
-        gc_alloc_context *globalContext = &g_global_alloc_context;
-        GCStress<gc_on_alloc>::MaybeTrigger(globalContext);
-        retVal = GCHeapUtilities::GetGCHeap()->Alloc(globalContext, size, flags);
+        ee_alloc_context *globalContext = &g_global_alloc_context;
+        GCStress<gc_on_alloc>::MaybeTrigger(&globalContext->m_GCAllocContext);
+        retVal = Alloc(globalContext, size, flags);
     }
 
 
@@ -402,7 +509,7 @@ OBJECTREF AllocateSzArray(MethodTable* pArrayMT, INT32 cElements, GC_ALLOC_FLAGS
 #endif
 
 #ifdef FEATURE_DOUBLE_ALIGNMENT_HINT
-    if ((pArrayMT->GetArrayElementType() == ELEMENT_TYPE_R8) &&
+    if ((pArrayMT->GetArrayElementTypeHandle() == CoreLibBinder::GetElementType(ELEMENT_TYPE_R8)) &&
         ((DWORD)cElements >= g_pConfig->GetDoubleArrayToLargeObjectHeapThreshold()))
     {
         STRESS_LOG2(LF_GC, LL_INFO10, "Allocating double MD array of size %d and length %d to large object heap\n", totalSize, cElements);
@@ -413,7 +520,7 @@ OBJECTREF AllocateSzArray(MethodTable* pArrayMT, INT32 cElements, GC_ALLOC_FLAGS
     if (totalSize >= LARGE_OBJECT_SIZE && totalSize >= GCHeapUtilities::GetGCHeap()->GetLOHThreshold())
         flags |= GC_ALLOC_LARGE_OBJECT_HEAP;
 
-    if (pArrayMT->ContainsPointers())
+    if (pArrayMT->ContainsGCPointers())
         flags |= GC_ALLOC_CONTAINS_REF;
 
     ArrayBase* orArray = NULL;
@@ -424,70 +531,26 @@ OBJECTREF AllocateSzArray(MethodTable* pArrayMT, INT32 cElements, GC_ALLOC_FLAGS
     }
     else
     {
-#ifndef FEATURE_64BIT_ALIGNMENT
-        if ((DATA_ALIGNMENT < sizeof(double)) && (pArrayMT->GetArrayElementType() == ELEMENT_TYPE_R8) &&
-            (totalSize < GCHeapUtilities::GetGCHeap()->GetLOHThreshold() - MIN_OBJECT_SIZE))
+#ifdef FEATURE_DOUBLE_ALIGNMENT_HINT
+        if (pArrayMT->GetArrayElementTypeHandle() == CoreLibBinder::GetElementType(ELEMENT_TYPE_R8))
         {
-            // Creation of an array of doubles, not in the large object heap.
-            // We want to align the doubles to 8 byte boundaries, but the GC gives us pointers aligned
-            // to 4 bytes only (on 32 bit platforms). To align, we ask for 12 bytes more to fill with a
-            // dummy object.
-            // If the GC gives us a 8 byte aligned address, we use it for the array and place the dummy
-            // object after the array, otherwise we put the dummy object first, shifting the base of
-            // the array to an 8 byte aligned address. Also, we need to make sure that the syncblock of the
-            // second object is zeroed. GC won't take care of zeroing it out with GC_ALLOC_ZEROING_OPTIONAL.
-            //
-            // Note: on 64 bit platforms, the GC always returns 8 byte aligned addresses, and we don't
-            // execute this code because DATA_ALIGNMENT < sizeof(double) is false.
-
-            _ASSERTE(DATA_ALIGNMENT == sizeof(double) / 2);
-            _ASSERTE((MIN_OBJECT_SIZE % sizeof(double)) == DATA_ALIGNMENT);   // used to change alignment
-            _ASSERTE(pArrayMT->GetComponentSize() == sizeof(double));
-            _ASSERTE(g_pObjectClass->GetBaseSize() == MIN_OBJECT_SIZE);
-            _ASSERTE(totalSize < totalSize + MIN_OBJECT_SIZE);
-            orArray = (ArrayBase*)Alloc(totalSize + MIN_OBJECT_SIZE, flags);
-
-            Object* orDummyObject;
-            if (((size_t)orArray % sizeof(double)) != 0)
-            {
-                orDummyObject = orArray;
-                orArray = (ArrayBase*)((size_t)orArray + MIN_OBJECT_SIZE);
-                if (flags & GC_ALLOC_ZEROING_OPTIONAL)
-                {
-                    // clean the syncblock of the aligned array.
-                    *(((void**)orArray)-1) = 0;
-                }
-            }
-            else
-            {
-                orDummyObject = (Object*)((size_t)orArray + totalSize);
-                if (flags & GC_ALLOC_ZEROING_OPTIONAL)
-                {
-                    // clean the syncblock of the dummy object.
-                    *(((void**)orDummyObject)-1) = 0;
-                }
-            }
-            _ASSERTE(((size_t)orArray % sizeof(double)) == 0);
-            orDummyObject->SetMethodTable(g_pObjectClass);
+            flags |= GC_ALLOC_ALIGN8;
         }
-        else
-#endif  // FEATURE_64BIT_ALIGNMENT
-        {
-#ifdef FEATURE_64BIT_ALIGNMENT
-            MethodTable* pElementMT = pArrayMT->GetArrayElementTypeHandle().GetMethodTable();
-            if (pElementMT->RequiresAlign8() && pElementMT->IsValueType())
-            {
-                // This platform requires that certain fields are 8-byte aligned (and the runtime doesn't provide
-                // this guarantee implicitly, e.g. on 32-bit platforms). Since it's the array payload, not the
-                // header that requires alignment we need to be careful. However it just so happens that all the
-                // cases we care about (single and multi-dim arrays of value types) have an even number of DWORDs
-                // in their headers so the alignment requirements for the header and the payload are the same.
-                _ASSERTE(((pArrayMT->GetBaseSize() - SIZEOF_OBJHEADER) & 7) == 0);
-                flags |= GC_ALLOC_ALIGN8;
-            }
 #endif
-            orArray = (ArrayBase*)Alloc(totalSize, flags);
+#ifdef FEATURE_64BIT_ALIGNMENT
+        MethodTable* pElementMT = pArrayMT->GetArrayElementTypeHandle().GetMethodTable();
+        if (pElementMT->RequiresAlign8() && pElementMT->IsValueType())
+        {
+            // This platform requires that certain fields are 8-byte aligned (and the runtime doesn't provide
+            // this guarantee implicitly, e.g. on 32-bit platforms). Since it's the array payload, not the
+            // header that requires alignment we need to be careful. However it just so happens that all the
+            // cases we care about (single and multi-dim arrays of value types) have an even number of DWORDs
+            // in their headers so the alignment requirements for the header and the payload are the same.
+            _ASSERTE(((pArrayMT->GetBaseSize() - SIZEOF_OBJHEADER) & 7) == 0);
+            flags |= GC_ALLOC_ALIGN8;
         }
+#endif
+        orArray = (ArrayBase*)Alloc(totalSize, flags);
         orArray->SetMethodTable(pArrayMT);
     }
 
@@ -513,7 +576,7 @@ OBJECTREF TryAllocateFrozenSzArray(MethodTable* pArrayMT, INT32 cElements)
 
     // The initial validation is copied from AllocateSzArray impl
 
-    if (pArrayMT->ContainsPointers() && cElements > 0)
+    if (pArrayMT->ContainsGCPointers() && cElements > 0)
     {
         // For arrays with GC pointers we can only work with empty arrays
         return NULL;
@@ -541,7 +604,7 @@ OBJECTREF TryAllocateFrozenSzArray(MethodTable* pArrayMT, INT32 cElements)
 
     // FrozenObjectHeapManager doesn't yet support objects with a custom alignment,
     // so we give up on arrays of value types requiring 8 byte alignment on 32bit platforms.
-    if ((DATA_ALIGNMENT < sizeof(double)) && (pArrayMT->GetArrayElementType() == ELEMENT_TYPE_R8))
+    if ((DATA_ALIGNMENT < sizeof(double)) && (pArrayMT->GetArrayElementTypeHandle() == CoreLibBinder::GetElementType(ELEMENT_TYPE_R8)))
     {
         return NULL;
     }
@@ -709,7 +772,7 @@ OBJECTREF AllocateArrayEx(MethodTable *pArrayMT, INT32 *pArgs, DWORD dwNumArgs, 
 #endif
 
 #ifdef FEATURE_DOUBLE_ALIGNMENT_HINT
-    if ((pArrayMT->GetArrayElementType() == ELEMENT_TYPE_R8) &&
+    if ((pArrayMT->GetArrayElementTypeHandle() == CoreLibBinder::GetElementType(ELEMENT_TYPE_R8)) &&
         (cElements >= g_pConfig->GetDoubleArrayToLargeObjectHeapThreshold()))
     {
         STRESS_LOG2(LF_GC, LL_INFO10, "Allocating double MD array of size %d and length %d to large object heap\n", totalSize, cElements);
@@ -720,7 +783,7 @@ OBJECTREF AllocateArrayEx(MethodTable *pArrayMT, INT32 *pArgs, DWORD dwNumArgs, 
     if (totalSize >= LARGE_OBJECT_SIZE && totalSize >= GCHeapUtilities::GetGCHeap()->GetLOHThreshold())
         flags |= GC_ALLOC_LARGE_OBJECT_HEAP;
 
-    if (pArrayMT->ContainsPointers())
+    if (pArrayMT->ContainsGCPointers())
         flags |= GC_ALLOC_CONTAINS_REF;
 
     ArrayBase* orArray = NULL;
@@ -1066,7 +1129,7 @@ OBJECTREF AllocateObject(MethodTable *pMT
 #endif // FEATURE_COMINTEROP
     else
     {
-        if (pMT->ContainsPointers())
+        if (pMT->ContainsGCPointers())
             flags |= GC_ALLOC_CONTAINS_REF;
 
         if (pMT->HasFinalizer())
@@ -1122,7 +1185,7 @@ OBJECTREF TryAllocateFrozenObject(MethodTable* pObjMT)
 
     SetTypeHandleOnThreadForAlloc(TypeHandle(pObjMT));
 
-    if (pObjMT->ContainsPointers() || pObjMT->IsComObjectType())
+    if (pObjMT->ContainsGCPointers() || pObjMT->IsComObjectType())
     {
         return NULL;
     }

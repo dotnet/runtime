@@ -31,22 +31,23 @@ ICorProfilerCallback
 
 This interface comprises the callbacks made by the CLR into the profiler to notify the profiler of interesting events.  Each callback is wrapped in a thin method in the EE that handles locating the profiler's implementation of ICorProfilerCallback(2), and calling its corresponding method.
 
-Profilers subscribe to events by specifying the corresponding flag in a call to ICorProfilerInfo::SetEventMask().  The profiling API stores these choices and exposes them to the CLR through specialized inline functions (CORProfiler\*) that mask against the bit corresponding to the flag.   Then, sprinkled throughout the CLR, you'll see code that calls the ICorProfilerCallback wrapper to notify the profiler of events as they happen, but this call is conditional on the flag being set (determined by calling the specialized inline function):
+Profilers subscribe to events by specifying the corresponding flag in a call to ICorProfilerInfo::SetEventMask()/ICorProfilerInfo::SetEventMask2().  The profiling API stores these choices and exposes them to the CLR through specialized inline functions (CORProfiler\*) that mask against the bit corresponding to the flag.   Then, sprinkled throughout the CLR, you'll see code that calls the ICorProfilerCallback wrapper to notify the profiler of events as they happen, but this call is conditional on the flag being set (determined by calling the specialized inline function):
 
     {
-        //check if profiler set flag, pin profiler
-        BEGIN_PIN_PROFILER(CORProfilerTrackModuleLoads());
+        // check if profiler set flag
+        BEGIN_PROFILER_CALLBACK(CORProfilerTrackModuleLoads());
 
-        //call the wrapper around the profiler's callback implementation
-        g_profControlBlock.pProfInterface->ModuleLoadStarted((ModuleID) this);
+        // call the ProfControlBlock wrapper around the profiler's callback implementation
+        // which pins the profiler in DoOneProfilerIteration via EvacuationCounterHolder
+        (&g_profControlBlock)->ModuleLoadStarted((ModuleID) this);
+        // unpins the profiler after completing the callback
 
-        //unpin profiler
-        END_PIN_PROFILER();
+        END_PROFILER_CALLBACK();
     }
 
 To be clear, the code above is what you'll see sprinkled throughout the code base.  The function it calls (in this case ModuleLoadStarted()) is our wrapper around the profiler's callback implementation (in this case ICorProfilerCallback::ModuleLoadStarted()).  All of our wrappers appear in a single file (vm\EEToProfInterfaceImpl.cpp), and the guidance provided in the sections below relate to those wrappers; not to the above sample code that calls the wrappers.
 
-The macro BEGIN\_PIN\_PROFILER evaluates the expression passed as its argument.  If the expression is TRUE, then the profiler is pinned into memory (meaning the profiler will not be able to detach from the process) and the code between the BEGIN\_PIN\_PROFILER and END\_PIN\_PROFILER macros is executed.  If the expression is FALSE, all code between the BEGIN\_PIN\_PROFILER and END\_PIN\_PROFILER macros is skipped.  For more information about the BEGIN\_PIN\_PROFILER and END\_PIN\_PROFILER macros, find their definition in the code base and read the comments there.
+The macro BEGIN_PROFILER_CALLBACK evaluates the expression passed as its argument.  If the expression is TRUE, the code between the BEGIN_PROFILER_CALLBACK and END_PROFILER_CALLBACK macros is executed, and the profiler is pinned into memory (meaning the profiler will not be able to detach from the process) through the ProfControlBlock wrapper.  If the expression is FALSE, all code between the BEGIN_PROFILER_CALLBACK and END_PROFILER_CALLBACK macros is skipped.  For more information about the BEGIN_PROFILER_CALLBACK and END_PROFILER_CALLBACK macros, find their definition in the code base and read the comments there.
 
 Contracts
 ---------

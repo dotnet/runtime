@@ -104,7 +104,7 @@ namespace System.Text
         // Right now this has both bytes and bytes[], since we might have extra bytes, hence the
         // array, and we might need the index, hence the byte*
         // Don't touch ref chars unless we succeed
-        internal virtual unsafe bool InternalFallback(byte[] bytes, byte* pBytes, ref char* chars)
+        internal unsafe bool InternalFallback(byte[] bytes, byte* pBytes, ref char* chars)
         {
             Debug.Assert(byteStart != null, "[DecoderFallback.InternalFallback]Used InternalFallback without calling InternalInitialize");
 

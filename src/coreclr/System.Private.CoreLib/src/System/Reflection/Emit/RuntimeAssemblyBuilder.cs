@@ -54,14 +54,9 @@ namespace System.Reflection.Emit
 
             EnsureDynamicCodeSupported();
 
-            AssemblyLoadContext? assemblyLoadContext =
-                AssemblyLoadContext.CurrentContextualReflectionContext ?? AssemblyLoadContext.GetLoadContext(callingAssembly);
-
-            if (assemblyLoadContext == null)
-            {
+            AssemblyLoadContext assemblyLoadContext =
+                (AssemblyLoadContext.CurrentContextualReflectionContext ?? AssemblyLoadContext.GetLoadContext(callingAssembly)) ??
                 throw new InvalidOperationException();
-            }
-
             return new RuntimeAssemblyBuilder(name, access, assemblyLoadContext, assemblyAttributes);
         }
     }

@@ -75,6 +75,8 @@ namespace ILCompiler
             new("--map") { Description = "Generate a map file" };
         public CliOption<string> MstatFileName { get; } =
             new("--mstat") { Description = "Generate an mstat file" };
+        public CliOption<string> SourceLinkFileName { get; } =
+            new("--sourcelink") { Description = "Generate a SourceLink file" };
         public CliOption<string> MetadataLogFileName { get; } =
             new("--metadatalog") { Description = "Generate a metadata log file" };
         public CliOption<bool> CompleteTypesMetadata { get; } =
@@ -117,6 +119,10 @@ namespace ILCompiler
             new("--preinitstatics") { Description = "Interpret static constructors at compile time if possible (implied by -O)" };
         public CliOption<bool> NoPreinitStatics { get; } =
             new("--nopreinitstatics") { Description = "Do not interpret static constructors at compile time" };
+        public CliOption<bool> InstrumentReachability { get; } =
+            new("--reachabilityinstrument") { Description = "Instrument code for dynamic reachability" };
+        public CliOption<string> UseReachability { get; } =
+            new("--reachabilityuse") { Description = "Use dynamic reachability instrumentation data to produce minimal output" };
         public CliOption<string[]> SuppressedWarnings { get; } =
             new("--nowarn") { DefaultValueFactory = _ => Array.Empty<string>(), Description = "Disable specific warning messages" };
         public CliOption<bool> SingleWarn { get; } =
@@ -205,6 +211,7 @@ namespace ILCompiler
             Options.Add(SubstitutionFilePaths);
             Options.Add(MapFileName);
             Options.Add(MstatFileName);
+            Options.Add(SourceLinkFileName);
             Options.Add(MetadataLogFileName);
             Options.Add(CompleteTypesMetadata);
             Options.Add(ReflectionData);
@@ -226,6 +233,8 @@ namespace ILCompiler
             Options.Add(Dehydrate);
             Options.Add(PreinitStatics);
             Options.Add(NoPreinitStatics);
+            Options.Add(InstrumentReachability);
+            Options.Add(UseReachability);
             Options.Add(SuppressedWarnings);
             Options.Add(SingleWarn);
             Options.Add(NoTrimWarn);
@@ -329,7 +338,7 @@ namespace ILCompiler
                 Console.WriteLine("Use the '--' option to disambiguate between input files that have begin with -- and options. After a '--' option, all arguments are " +
                     "considered to be input files. If no input files begin with '--' then this option is not necessary.\n");
 
-                string[] ValidArchitectures = new string[] { "arm", "arm64", "x86", "x64", "riscv64" };
+                string[] ValidArchitectures = new string[] { "arm", "arm64", "x86", "x64", "riscv64", "loongarch64" };
                 string[] ValidOS = new string[] { "windows", "linux", "freebsd", "osx", "maccatalyst", "ios", "iossimulator", "tvos", "tvossimulator" };
 
                 Console.WriteLine("Valid switches for {0} are: '{1}'. The default value is '{2}'\n", "--targetos", string.Join("', '", ValidOS), Helpers.GetTargetOS(null).ToString().ToLowerInvariant());

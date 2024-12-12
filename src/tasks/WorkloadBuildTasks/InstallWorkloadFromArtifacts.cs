@@ -56,7 +56,7 @@ namespace Microsoft.Workload.Build.Tasks
             ReadCommentHandling = JsonCommentHandling.Skip
         };
 
-        [GeneratedRegex(@"^\d+\.\d+\.\d+(-[A-z]*\.*\d*)?")]
+        [GeneratedRegex(@"^\d+\.\d+\.\d+(-(?!rtm)[A-z]*\.*\d*)?")]
         private static partial Regex bandVersionRegex();
 
         public override bool Execute()
@@ -287,6 +287,18 @@ namespace Microsoft.Workload.Build.Tasks
             }
 
             string outputDir = FindSubDirIgnoringCase(manifestVersionBandDir, name);
+
+            if (!Directory.Exists(outputDir))
+            {
+                Log.LogMessage($"Could not find {name} directory at {outputDir}. Creating it..");
+                Directory.CreateDirectory(outputDir);
+            }
+
+            // If we one sub entry, it's workload manifest version and we should install into it (aka workload sets)
+            string[] outputSubEntries = Directory.GetFileSystemEntries(outputDir);
+            if (outputSubEntries.Length == 1)
+                outputDir = outputSubEntries[0];
+
             var bandVersion = VersionBandForManifestPackages;
             // regex matching the version band, e.g. 6.0.100-preview.3.21202.5 => 6.0.100-preview.3
             string packagePreleaseVersion = bandVersionRegex().Match(version).Groups[1].Value;
@@ -295,7 +307,8 @@ namespace Microsoft.Workload.Build.Tasks
             if (!string.IsNullOrEmpty(bandPreleaseVersion) &&
                 packagePreleaseVersion != bandPreleaseVersion &&
                 packagePreleaseVersion != "-dev" &&
-                packagePreleaseVersion != "-ci")
+                packagePreleaseVersion != "-ci" &&
+                packagePreleaseVersion != "-rtm")
             {
                 bandVersion = bandVersion.Replace (bandPreleaseVersion, packagePreleaseVersion);
             }

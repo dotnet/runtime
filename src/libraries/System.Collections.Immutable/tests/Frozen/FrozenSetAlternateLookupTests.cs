@@ -12,9 +12,9 @@ namespace System.Collections.Frozen.Tests
         [Fact]
         public void AlternateLookup_Empty()
         {
-            Assert.False(FrozenSet<string>.Empty.TryGetAlternateLookup<ReadOnlySpan<char>>(out _));
+            Assert.True(FrozenSet<string>.Empty.TryGetAlternateLookup<ReadOnlySpan<char>>(out _));
 
-            foreach (StringComparer comparer in new[] { StringComparer.Ordinal, StringComparer.OrdinalIgnoreCase })
+            foreach (IEqualityComparer<string> comparer in new IEqualityComparer<string>[] { null, EqualityComparer<string>.Default, StringComparer.Ordinal, StringComparer.OrdinalIgnoreCase })
             {
                 FrozenSet<string>.AlternateLookup<ReadOnlySpan<char>> lookup = FrozenSet.ToFrozenSet([], comparer).GetAlternateLookup<ReadOnlySpan<char>>();
                 Assert.False(lookup.Contains("anything".AsSpan()));
@@ -24,7 +24,7 @@ namespace System.Collections.Frozen.Tests
         [Fact]
         public void UnsupportedComparer()
         {
-            FrozenSet<string> frozen = FrozenSet.ToFrozenSet(["a", "b"]);
+            FrozenSet<char> frozen = FrozenSet.ToFrozenSet(['a', 'b']);
             Assert.Throws<InvalidOperationException>(() => frozen.GetAlternateLookup<ReadOnlySpan<char>>());
             Assert.False(frozen.TryGetAlternateLookup<ReadOnlySpan<char>>(out _));
         }

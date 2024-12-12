@@ -111,7 +111,7 @@ namespace Mono.Linker
 		{
 			if (method.GetParametersCount () <= (int) index || (int) index < 0)
 				return null;
-			return new (new (method), index);
+			return new (method, index);
 		}
 
 		/// <summary>
@@ -131,8 +131,7 @@ namespace Mono.Linker
 		/// </summary>
 		internal static ParameterProxyEnumerable GetParameters (this MethodDefinition method)
 		{
-			int implicitThisOffset = method.HasImplicitThis () ? 1 : 0;
-			return new ParameterProxyEnumerable (0, method.Parameters.Count + implicitThisOffset, method);
+			return new ParameterProxyEnumerable (0, method.GetParametersCount (), method);
 		}
 
 		/// <summary>

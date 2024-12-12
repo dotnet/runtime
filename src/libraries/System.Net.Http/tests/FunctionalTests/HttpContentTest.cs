@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
@@ -509,6 +509,93 @@ namespace System.Net.Http.Functional.Tests
             Assert.IsType<IOException>(ex.InnerException);
         }
 
+        [Fact]
+        public async Task LoadIntoBufferAsync_Buffered_IgnoresCancellationToken()
+        {
+            string content = Guid.NewGuid().ToString();
+
+            await LoopbackServer.CreateClientAndServerAsync(
+                async uri =>
+                {
+                    using HttpClient httpClient = CreateHttpClient();
+
+                    HttpResponseMessage response = await httpClient.GetAsync(
+                        uri,
+                        HttpCompletionOption.ResponseContentRead);
+
+                    CancellationToken cancellationToken = new CancellationToken(canceled: true);
+
+                    await response.Content.LoadIntoBufferAsync(cancellationToken);
+                },
+                async server =>
+                {
+                    await server.AcceptConnectionSendResponseAndCloseAsync(content: content);
+                });
+        }
+
+        [Fact]
+        public async Task LoadIntoBufferAsync_Unbuffered_CanBeCanceled_AlreadyCanceledCts()
+        {
+            await LoopbackServer.CreateClientAndServerAsync(
+                async uri =>
+                {
+                    using HttpClient httpClient = CreateHttpClient();
+
+                    HttpResponseMessage response = await httpClient.GetAsync(
+                        uri,
+                        HttpCompletionOption.ResponseHeadersRead);
+
+                    CancellationToken cancellationToken = new CancellationToken(canceled: true);
+
+                    Task task = response.Content.LoadIntoBufferAsync(cancellationToken);
+
+                    var exception = await Assert.ThrowsAsync<TaskCanceledException>(() => task);
+
+                    Assert.Equal(cancellationToken, exception.CancellationToken);
+                },
+                async server =>
+                {
+                    await IgnoreExceptions(server.AcceptConnectionSendResponseAndCloseAsync());
+                });
+        }
+
+        [OuterLoop("Uses Task.Delay")]
+        [Fact]
+        public async Task LoadIntoBufferAsync_Unbuffered_CanBeCanceled()
+        {
+            var cts = new CancellationTokenSource();
+
+            await LoopbackServer.CreateClientAndServerAsync(
+                async uri =>
+                {
+                    using HttpClient httpClient = base.CreateHttpClient();
+
+                    HttpResponseMessage response = await httpClient.GetAsync(
+                        uri,
+                        HttpCompletionOption.ResponseHeadersRead);
+
+                    CancellationToken cancellationToken = cts.Token;
+
+                    Task task = response.Content.LoadIntoBufferAsync(cancellationToken);
+
+                    var exception = await Assert.ThrowsAsync<TaskCanceledException>(() => task);
+
+                    Assert.Equal(cancellationToken, exception.CancellationToken);
+                },
+                async server =>
+                {
+                    await server.AcceptConnectionAsync(async connection =>
+                    {
+                        await connection.ReadRequestHeaderAsync();
+                        await connection.SendResponseAsync(LoopbackServer.GetHttpResponseHeaders(contentLength: 100));
+                        await Task.Delay(250);
+                        cts.Cancel();
+                        await Task.Delay(500);
+                        await IgnoreExceptions(connection.SendResponseAsync(new string('a', 100)));
+                    });
+                });
+        }
+
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
@@ -602,6 +689,18 @@ namespace System.Net.Http.Functional.Tests
             Assert.Equal(sourceString, result);
         }
 
+        [Fact]
+        public async Task ReadAsStringAsync_UsesCharsetEncoding()
+        {
+            var content = new ByteArrayContent(Encoding.UTF8.GetBytes("ő"));
+
+            content.Headers.ContentType = new MediaTypeHeaderValue("text/plain", Encoding.Latin1.WebName);
+
+            string result = await content.ReadAsStringAsync();
+
+            Assert.Equal(['\xC5', '\x91'], result);
+        }
+
         [Theory]
         [InlineData("\"\"invalid")]
         [InlineData("invalid\"\"")]
@@ -622,6 +721,24 @@ namespace System.Net.Http.Functional.Tests
             string result = await content.ReadAsStringAsync();
 
             Assert.Equal(sourceString, result);
+        }
+
+        [Theory]
+        [InlineData(65001)] // UTF8
+        [InlineData(12000)] // UTF32
+        [InlineData(1200)] // Unicode
+        [InlineData(1201)] // BigEndianUnicode
+        public async Task ReadAsStringAsync_NoCharSet_EncodingIsInferredFromPreamble(int codePage)
+        {
+            Encoding encoding = Encoding.GetEncoding(codePage);
+
+            byte[] stringBytes = encoding.GetBytes("oő");
+
+            var content = new ByteArrayContent([..encoding.GetPreamble(), ..stringBytes]);
+
+            string result = await content.ReadAsStringAsync();
+
+            Assert.Equal(encoding.GetString(stringBytes), result);
         }
 
         [Fact]
@@ -702,14 +819,7 @@ namespace System.Net.Http.Functional.Tests
                 },
                 async server =>
                 {
-                    try
-                    {
-                        await server.AcceptConnectionSendResponseAndCloseAsync();
-                    }
-                    catch (Exception ex)
-                    {
-                        _output.WriteLine($"Ignored exception:{Environment.NewLine}{ex}");
-                    }
+                    await IgnoreExceptions(server.AcceptConnectionSendResponseAndCloseAsync());
                 });
         }
 
@@ -738,14 +848,7 @@ namespace System.Net.Http.Functional.Tests
                         await Task.Delay(250);
                         cts.Cancel();
                         await Task.Delay(500);
-                        try
-                        {
-                            await connection.SendResponseAsync(new string('a', 100));
-                        }
-                        catch (Exception ex)
-                        {
-                            _output.WriteLine($"Ignored exception:{Environment.NewLine}{ex}");
-                        }
+                        await IgnoreExceptions(connection.SendResponseAsync(new string('a', 100)));
                     });
                 });
         }
@@ -797,14 +900,7 @@ namespace System.Net.Http.Functional.Tests
                 },
                 async server =>
                 {
-                    try
-                    {
-                        await server.AcceptConnectionSendResponseAndCloseAsync();
-                    }
-                    catch (Exception ex)
-                    {
-                        _output.WriteLine($"Ignored exception:{Environment.NewLine}{ex}");
-                    }
+                    await IgnoreExceptions(server.AcceptConnectionSendResponseAndCloseAsync());
                 });
         }
 
@@ -833,14 +929,7 @@ namespace System.Net.Http.Functional.Tests
                         await Task.Delay(250);
                         cts.Cancel();
                         await Task.Delay(500);
-                        try
-                        {
-                            await connection.SendResponseAsync(new string('a', 100));
-                        }
-                        catch (Exception ex)
-                        {
-                            _output.WriteLine($"Ignored exception:{Environment.NewLine}{ex}");
-                        }
+                        await IgnoreExceptions(connection.SendResponseAsync(new string('a', 100)));
                     });
                 });
         }

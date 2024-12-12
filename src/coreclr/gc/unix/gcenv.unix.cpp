@@ -18,9 +18,12 @@
 #include "gcenv.structs.h"
 #include "gcenv.base.h"
 #include "gcenv.os.h"
+#include "gcenv.ee.h"
 #include "gcenv.unix.inl"
 #include "volatile.h"
+#include "gcconfig.h"
 #include "numasupport.h"
+#include <minipal/thread.h>
 
 #if HAVE_SWAPCTL
 #include <sys/swap.h>
@@ -86,6 +89,10 @@ extern "C"
     } while (false)
 
 #endif // __APPLE__
+
+#ifdef __HAIKU__
+#include <OS.h>
+#endif // __HAIKU__
 
 #ifdef __linux__
 #include <sys/syscall.h> // __NR_membarrier
@@ -389,18 +396,7 @@ void GCToOSInterface::Shutdown()
 //  Numeric id of the current thread, as best we can retrieve it.
 uint64_t GCToOSInterface::GetCurrentThreadIdForLogging()
 {
-#if defined(__linux__)
-    return (uint64_t)syscall(SYS_gettid);
-#elif HAVE_PTHREAD_GETTHREADID_NP
-    return (uint64_t)pthread_getthreadid_np();
-#elif HAVE_PTHREAD_THREADID_NP
-    unsigned long long tid;
-    pthread_threadid_np(pthread_self(), &tid);
-    return (uint64_t)tid;
-#else
-    // Fallback in case we don't know how to get integer thread id on the current platform
-    return (uint64_t)pthread_self();
-#endif
+    return (uint64_t)minipal_get_current_thread_id();
 }
 
 // Get the process ID of the process.
@@ -580,7 +576,11 @@ static void* VirtualReserveInner(size_t size, size_t alignment, uint32_t flags, 
     }
 
     size_t alignedSize = size + (alignment - OS_PAGE_SIZE);
-    void * pRetVal = mmap(nullptr, alignedSize, PROT_NONE, MAP_ANON | MAP_PRIVATE | hugePagesFlag, -1, 0);
+    int mmapFlags = MAP_ANON | MAP_PRIVATE | hugePagesFlag;
+#ifdef __HAIKU__
+    mmapFlags |= MAP_NORESERVE;
+#endif
+    void * pRetVal = mmap(nullptr, alignedSize, PROT_NONE, mmapFlags, -1, 0);
 
     if (pRetVal != MAP_FAILED)
     {
@@ -729,7 +729,11 @@ bool GCToOSInterface::VirtualDecommit(void* address, size_t size)
     // that much more clear to the operating system that we no
     // longer need these pages. Also, GC depends on re-committed pages to
     // be zeroed-out.
-    bool bRetVal = mmap(address, size, PROT_NONE, MAP_FIXED | MAP_ANON | MAP_PRIVATE, -1, 0) != MAP_FAILED;
+    int mmapFlags = MAP_FIXED | MAP_ANON | MAP_PRIVATE;
+#ifdef TARGET_HAIKU
+    mmapFlags |= MAP_NORESERVE;
+#endif
+    bool bRetVal = mmap(address, size, PROT_NONE, mmapFlags, -1, 0) != MAP_FAILED;
 
 #ifdef MADV_DONTDUMP
     if (bRetVal)
@@ -862,10 +866,10 @@ done:
     return result;
 }
 
-static size_t GetLogicalProcessorCacheSizeFromOS()
+static void GetLogicalProcessorCacheSizeFromSysConf(size_t* cacheLevel, size_t* cacheSize)
 {
-    size_t cacheLevel = 0;
-    size_t cacheSize = 0;
+    assert (cacheLevel != nullptr);
+    assert (cacheSize != nullptr);
 
 #if defined(_SC_LEVEL1_DCACHE_SIZE) || defined(_SC_LEVEL2_CACHE_SIZE) || defined(_SC_LEVEL3_CACHE_SIZE) || defined(_SC_LEVEL4_CACHE_SIZE)
     const int cacheLevelNames[] =
@@ -881,47 +885,105 @@ static size_t GetLogicalProcessorCacheSizeFromOS()
         long size = sysconf(cacheLevelNames[i]);
         if (size > 0)
         {
-            cacheSize = (size_t)size;
-            cacheLevel = i + 1;
+            *cacheSize = (size_t)size;
+            *cacheLevel = i + 1;
             break;
         }
     }
 #endif
+}
+
+static void GetLogicalProcessorCacheSizeFromSysFs(size_t* cacheLevel, size_t* cacheSize)
+{
+    assert (cacheLevel != nullptr);
+    assert (cacheSize != nullptr);
 
 #if defined(TARGET_LINUX) && !defined(HOST_ARM) && !defined(HOST_X86)
-    if (cacheSize == 0)
+    //
+    // Retrieve cachesize via sysfs by reading the file /sys/devices/system/cpu/cpu0/cache/index{LastLevelCache}/size
+    // for the platform. Currently musl and arm64 should be only cases to use
+    // this method to determine cache size.
+    //
+    size_t level;
+    char path_to_size_file[] =  "/sys/devices/system/cpu/cpu0/cache/index-/size";
+    char path_to_level_file[] =  "/sys/devices/system/cpu/cpu0/cache/index-/level";
+    int index = 40;
+    assert(path_to_size_file[index] == '-');
+    assert(path_to_level_file[index] == '-');
+
+    for (int i = 0; i < 5; i++)
     {
-        //
-        // Fallback to retrieve cachesize via /sys/.. if sysconf was not available
-        // for the platform. Currently musl and arm64 should be only cases to use
-        // this method to determine cache size.
-        //
-        size_t level;
-        char path_to_size_file[] =  "/sys/devices/system/cpu/cpu0/cache/index-/size";
-        char path_to_level_file[] =  "/sys/devices/system/cpu/cpu0/cache/index-/level";
-        int index = 40;
-        assert(path_to_size_file[index] == '-');
-        assert(path_to_level_file[index] == '-');
+        path_to_size_file[index] = (char)(48 + i);
 
-        for (int i = 0; i < 5; i++)
+        uint64_t cache_size_from_sys_file = 0;
+
+        if (ReadMemoryValueFromFile(path_to_size_file, &cache_size_from_sys_file))
         {
-            path_to_size_file[index] = (char)(48 + i);
+            *cacheSize = std::max(*cacheSize, (size_t)cache_size_from_sys_file);
 
-            uint64_t cache_size_from_sys_file = 0;
-
-            if (ReadMemoryValueFromFile(path_to_size_file, &cache_size_from_sys_file))
+            path_to_level_file[index] = (char)(48 + i);
+            if (ReadMemoryValueFromFile(path_to_level_file, &level))
             {
-                cacheSize = std::max(cacheSize, (size_t)cache_size_from_sys_file);
-
-                path_to_level_file[index] = (char)(48 + i);
-                if (ReadMemoryValueFromFile(path_to_level_file, &level))
-                {
-                    cacheLevel = level;
-                }
+                *cacheLevel = level;
             }
         }
     }
+#endif 
+}
+
+static void GetLogicalProcessorCacheSizeFromHeuristic(size_t* cacheLevel, size_t* cacheSize)
+{
+    assert (cacheLevel != nullptr);
+    assert (cacheSize != nullptr);
+
+#if (defined(TARGET_LINUX) && !defined(TARGET_APPLE))
+    {
+        // Use the following heuristics at best depending on the CPU count
+        // 1 ~ 4   :  4 MB
+        // 5 ~ 16  :  8 MB
+        // 17 ~ 64 : 16 MB
+        // 65+     : 32 MB
+        DWORD logicalCPUs = g_processAffinitySet.Count();
+        if (logicalCPUs < 5)
+        {
+            *cacheSize = 4;
+        }
+        else if (logicalCPUs < 17)
+        {
+            *cacheSize = 8;
+        }
+        else if (logicalCPUs < 65)
+        {
+            *cacheSize = 16;
+        }
+        else
+        {
+            *cacheSize = 32;
+        }
+
+        *cacheSize *= (1024 * 1024);
+    }
 #endif
+}
+
+static size_t GetLogicalProcessorCacheSizeFromOS()
+{
+    size_t cacheLevel = 0;
+    size_t cacheSize = 0;
+
+    if (GCConfig::GetGCCacheSizeFromSysConf())
+    {
+        GetLogicalProcessorCacheSizeFromSysConf(&cacheLevel, &cacheSize);
+    }
+
+    if (cacheSize == 0) 
+    {
+        GetLogicalProcessorCacheSizeFromSysFs(&cacheLevel, &cacheSize);
+        if (cacheSize == 0)
+        {
+            GetLogicalProcessorCacheSizeFromHeuristic(&cacheLevel, &cacheSize);
+        }
+    }
 
 #if HAVE_SYSCTLBYNAME
     if (cacheSize == 0)
@@ -948,32 +1010,7 @@ static size_t GetLogicalProcessorCacheSizeFromOS()
 #if (defined(HOST_ARM64) || defined(HOST_LOONGARCH64)) && !defined(TARGET_APPLE)
     if (cacheLevel != 3)
     {
-        // We expect to get the L3 cache size for Arm64 but currently expected to be missing that info
-        // from most of the machines.
-        // Hence, just use the following heuristics at best depending on the CPU count
-        // 1 ~ 4   :  4 MB
-        // 5 ~ 16  :  8 MB
-        // 17 ~ 64 : 16 MB
-        // 65+     : 32 MB
-        DWORD logicalCPUs = g_processAffinitySet.Count();
-        if (logicalCPUs < 5)
-        {
-            cacheSize = 4;
-        }
-        else if (logicalCPUs < 17)
-        {
-            cacheSize = 8;
-        }
-        else if (logicalCPUs < 65)
-        {
-            cacheSize = 16;
-        }
-        else
-        {
-            cacheSize = 32;
-        }
-
-        cacheSize *= (1024 * 1024);
+        GetLogicalProcessorCacheSizeFromHeuristic(&cacheLevel, &cacheSize);
     }
 #endif
 
@@ -997,7 +1034,7 @@ static uint64_t GetMemorySizeMultiplier(char units)
     return 1;
 }
 
-#ifndef __APPLE__
+#if !defined(__APPLE__) && !defined(__HAIKU__)
 // Try to read the MemAvailable entry from /proc/meminfo.
 // Return true if the /proc/meminfo existed, the entry was present and we were able to parse it.
 static bool ReadMemAvailable(uint64_t* memAvailable)
@@ -1030,7 +1067,7 @@ static bool ReadMemAvailable(uint64_t* memAvailable)
 
     return foundMemAvailable;
 }
-#endif // __APPLE__
+#endif // !defined(__APPLE__) && !defined(__HAIKU__)
 
 // Get size of the largest cache on the processor die
 // Parameters:
@@ -1259,6 +1296,12 @@ uint64_t GetAvailablePhysicalMemory()
     sysctlbyname("vm.stats.vm.v_free_count", &free_count, &sz, NULL, 0);
 
     available = (inactive_count + laundry_count + free_count) * sysconf(_SC_PAGESIZE);
+#elif defined(__HAIKU__)
+    system_info info;
+    if (get_system_info(&info) == B_OK)
+    {
+        available = info.free_memory;
+    }
 #else // Linux
     static volatile bool tryReadMemInfo = true;
 

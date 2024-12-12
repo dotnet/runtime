@@ -116,10 +116,11 @@ public:
     const SString& GetPath();
     const SString& GetIdentityPath();
 
-#ifdef DACCESS_COMPILE
-    // This is the metadata module name. Used as a hint as file name.
+    // This is the module file name. Used as a hint as file name.
+    // For assemblies loaded from a path or single-file bundle, this is the file name portion of the path
+    // For assemblies loaded from memory, this is the module file name from metadata
+    // For reflection emitted assemblies, this is an empty string
     const SString &GetModuleFileNameHint();
-#endif // DACCESS_COMPILE
 
     LPCWSTR GetPathForErrorMessages();
 
@@ -204,10 +205,9 @@ public:
     void *GetVTable(RVA rva);
 
     BOOL GetResource(LPCSTR szName, DWORD *cbResource,
-                     PBYTE *pbInMemoryResource, DomainAssembly** pAssemblyRef,
+                     PBYTE *pbInMemoryResource, Assembly** pAssemblyRef,
                      LPCSTR *szFileName, DWORD *dwLocation,
-                     BOOL fSkipRaiseResolveEvent, DomainAssembly* pDomainAssembly,
-                     AppDomain* pAppDomain);
+                     Assembly* pAssembly);
 
 #ifndef DACCESS_COMPILE
     PTR_CVOID GetMetadata(COUNT_T *pSize);
@@ -434,7 +434,6 @@ private:
     // assembly that created the dynamic assembly. If the creator assembly is dynamic itself, then its fallback
     // load context would be propagated to the assembly being dynamically generated.
     PTR_AssemblyBinder m_pFallbackBinder;
-
 };  // class PEAssembly
 
 typedef ReleaseHolder<PEAssembly> PEAssemblyHolder;

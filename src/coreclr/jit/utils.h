@@ -198,7 +198,7 @@ public:
     bool Contains(unsigned hash);
 
     // Ensure the range string has been parsed.
-    void EnsureInit(const WCHAR* rangeStr, unsigned capacity = DEFAULT_CAPACITY)
+    void EnsureInit(const char* rangeStr, unsigned capacity = DEFAULT_CAPACITY)
     {
         // Make sure that the memory was zero initialized
         assert(m_inited == 0 || m_inited == 1);
@@ -235,7 +235,7 @@ private:
         unsigned m_high;
     };
 
-    void InitRanges(const WCHAR* rangeStr, unsigned capacity);
+    void InitRanges(const char* rangeStr, unsigned capacity);
 
     unsigned m_entries;   // number of entries in the range array
     unsigned m_lastRange; // count of low-high pairs
@@ -256,7 +256,7 @@ public:
     }
 
     // Ensure the string has been parsed.
-    void EnsureInit(const WCHAR* str)
+    void EnsureInit(const char* str)
     {
         if (m_values == nullptr)
         {
@@ -275,7 +275,7 @@ public:
     }
 
 private:
-    void     Init(const WCHAR* str);
+    void     Init(const char* str);
     int*     m_values;
     unsigned m_length;
 };
@@ -292,7 +292,7 @@ public:
     }
 
     // Ensure the string has been parsed.
-    void EnsureInit(const WCHAR* str)
+    void EnsureInit(const char* str)
     {
         if (m_values == nullptr)
         {
@@ -311,7 +311,7 @@ public:
     }
 
 private:
-    void     Init(const WCHAR* str);
+    void     Init(const char* str);
     double*  m_values;
     unsigned m_length;
 };
@@ -591,6 +591,7 @@ private:
     bool m_mutatesHeap[CORINFO_HELP_COUNT];
     bool m_mayRunCctor[CORINFO_HELP_COUNT];
     bool m_isNoEscape[CORINFO_HELP_COUNT];
+    bool m_isNoGC[CORINFO_HELP_COUNT];
 
     void init();
 
@@ -655,6 +656,13 @@ public:
         assert(helperId < CORINFO_HELP_COUNT);
         return m_isNoEscape[helperId];
     }
+
+    bool IsNoGC(CorInfoHelpFunc helperId)
+    {
+        assert(helperId > CORINFO_HELP_UNDEF);
+        assert(helperId < CORINFO_HELP_COUNT);
+        return m_isNoGC[helperId];
+    }
 };
 
 //*****************************************************************************
@@ -682,8 +690,8 @@ class AssemblyNamesList2
     HostAllocator m_alloc;  // HostAllocator to use in this class
 
 public:
-    // Take a Unicode string list of assembly names, parse it, and store it.
-    AssemblyNamesList2(const WCHAR* list, HostAllocator alloc);
+    // Take a UTF8 string list of assembly names, parse it, and store it.
+    AssemblyNamesList2(const char* list, HostAllocator alloc);
 
     ~AssemblyNamesList2();
 
@@ -733,7 +741,7 @@ class MethodSet
 
 public:
     // Take a Unicode string with the filename containing a list of function names, parse it, and store it.
-    MethodSet(const WCHAR* filename, HostAllocator alloc);
+    MethodSet(const char* filename, HostAllocator alloc);
 
     ~MethodSet();
 
@@ -1181,5 +1189,10 @@ bool CastFromLongOverflows(int64_t fromValue, var_types toType, bool fromUnsigne
 bool CastFromFloatOverflows(float fromValue, var_types toType);
 bool CastFromDoubleOverflows(double fromValue, var_types toType);
 } // namespace CheckedOps
+
+#define STRINGIFY_(x) #x
+#define STRINGIFY(x)  STRINGIFY_(x)
+
+FILE* fopen_utf8(const char* path, const char* mode);
 
 #endif // _UTILS_H_

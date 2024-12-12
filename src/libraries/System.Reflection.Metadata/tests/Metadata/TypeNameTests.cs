@@ -107,9 +107,7 @@ namespace System.Reflection.Metadata.Tests
 
             static void Verify(Type type, AssemblyName expectedAssemblyName, TypeName parsed)
             {
-                Assert.Equal(type.AssemblyQualifiedName, parsed.AssemblyQualifiedName);
-                Assert.Equal(type.FullName, parsed.FullName);
-                Assert.Equal(type.Name, parsed.Name);
+                EnsureBasicMatch(parsed, type);
 
                 AssemblyNameInfo parsedAssemblyName = parsed.AssemblyName;
                 Assert.NotNull(parsedAssemblyName);
@@ -123,119 +121,207 @@ namespace System.Reflection.Metadata.Tests
             }
         }
 
-        [Theory]
-        [InlineData(10, "*")] // pointer to pointer
-        [InlineData(10, "[]")] // array of arrays
-        [InlineData(100, "*")]
-        [InlineData(100, "[]")]
-        public void MaxNodesIsRespected_TooManyDecorators(int maxDepth, string decorator)
+        private static void EnsureMaxNodesIsRespected(string typeName, int expectedNodeCount, Action<TypeName> validate)
         {
-            TypeNameParseOptions options = new()
+            // Specified MaxNodes is equal the actual node count
+            TypeNameParseOptions equal = new()
             {
-                MaxNodes = maxDepth
+                MaxNodes = expectedNodeCount
             };
 
-            string notTooMany = $"System.Int32{string.Join("", Enumerable.Repeat(decorator, maxDepth - 1))}";
-            string tooMany = $"System.Int32{string.Join("", Enumerable.Repeat(decorator, maxDepth))}";
+            TypeName parsed = TypeName.Parse(typeName.AsSpan(), equal);
+            Assert.Equal(expectedNodeCount, parsed.GetNodeCount());
+            validate(parsed);
+            Assert.True(TypeName.TryParse(typeName.AsSpan(), out parsed, equal));
+            Assert.Equal(expectedNodeCount, parsed.GetNodeCount());
+            validate(parsed);
 
-            Assert.Throws<InvalidOperationException>(() => TypeName.Parse(tooMany.AsSpan(), options));
-            Assert.False(TypeName.TryParse(tooMany.AsSpan(), out _, options));
-
-            TypeName parsed = TypeName.Parse(notTooMany.AsSpan(), options);
-            ValidateElementType(maxDepth, parsed, decorator);
-
-            Assert.True(TypeName.TryParse(notTooMany.AsSpan(), out parsed, options));
-            ValidateElementType(maxDepth, parsed, decorator);
-
-            static void ValidateElementType(int maxDepth, TypeName parsed, string decorator)
+            // Specified MaxNodes is less than the actual node count 
+            TypeNameParseOptions less = new()
             {
-                for (int i = 0; i < maxDepth - 1; i++)
+                MaxNodes = expectedNodeCount - 1
+            };
+
+            Assert.Throws<InvalidOperationException>(() => TypeName.Parse(typeName.AsSpan(), less));
+            Assert.False(TypeName.TryParse(typeName.AsSpan(), out _, less));
+
+            // Specified MaxNodes is more than the actual node count
+            TypeNameParseOptions more = new()
+            {
+                MaxNodes = expectedNodeCount + 1
+            };
+
+            parsed = TypeName.Parse(typeName.AsSpan(), more);
+            Assert.Equal(expectedNodeCount, parsed.GetNodeCount());
+            validate(parsed);
+            Assert.True(TypeName.TryParse(typeName.AsSpan(), out parsed, more));
+            Assert.Equal(expectedNodeCount, parsed.GetNodeCount());
+            validate(parsed);
+        }
+
+        [Theory]
+        [InlineData("*", 10)] // pointer to pointer
+        [InlineData("[]", 10)] // array of arrays
+        [InlineData("*", 100)]
+        [InlineData("[]", 100)]
+        public void MaxNodesIsRespected_Decorators(string decorator, int decoratorsCount)
+        {
+            string name = $"System.Int32{string.Join("", Enumerable.Repeat(decorator, decoratorsCount))}";
+
+            // Expected node count:
+            // - +1 for the simple type name (System.Int32)
+            // - +1 for every decorator
+            int expectedNodeCount = 1 + decoratorsCount;
+
+            EnsureMaxNodesIsRespected(name, expectedNodeCount, parsed =>
+            {
+                for (int i = 0; i < decoratorsCount; i++)
                 {
+                    Assert.Equal(expectedNodeCount - i, parsed.GetNodeCount());
+
                     Assert.Equal(decorator == "*", parsed.IsPointer);
                     Assert.Equal(decorator == "[]", parsed.IsSZArray);
                     Assert.False(parsed.IsConstructedGenericType);
+                    Assert.False(parsed.IsSimple);
 
                     parsed = parsed.GetElementType();
                 }
-            }
+            });
         }
 
         [Theory]
         [InlineData(10)]
         [InlineData(100)]
-        public void MaxNodesIsRespected_TooDeepGenerics(int maxDepth)
+        public void MaxNodesIsRespected_GenericsOfGenerics(int depth)
         {
-            TypeNameParseOptions options = new()
+            // MakeGenericType is not used here, as it crashes for larger depths
+            string coreLibName = typeof(object).Assembly.FullName;
+            string name = typeof(int).AssemblyQualifiedName!;
+            for (int i = 0; i < depth; i++)
             {
-                MaxNodes = maxDepth
-            };
-
-            string tooDeep = GetName(maxDepth);
-            string notTooDeep = GetName(maxDepth - 1);
-
-            Assert.Throws<InvalidOperationException>(() => TypeName.Parse(tooDeep.AsSpan(), options));
-            Assert.False(TypeName.TryParse(tooDeep.AsSpan(), out _, options));
-
-            TypeName parsed = TypeName.Parse(notTooDeep.AsSpan(), options);
-            Validate(maxDepth, parsed);
-
-            Assert.True(TypeName.TryParse(notTooDeep.AsSpan(), out parsed, options));
-            Validate(maxDepth, parsed);
-
-            static string GetName(int depth)
-            {
-                // MakeGenericType is not used here, as it crashes for larger depths
-                string coreLibName = typeof(object).Assembly.FullName;
-                string fullName = typeof(int).AssemblyQualifiedName!;
-                for (int i = 0; i < depth; i++)
-                {
-                    fullName = $"System.Collections.Generic.List`1[[{fullName}]], {coreLibName}";
-                }
-                return fullName;
+                name = $"System.Collections.Generic.List`1[[{name}]], {coreLibName}";
             }
 
-            static void Validate(int maxDepth, TypeName parsed)
+            // Expected node count:
+            // - +1 for the simple type name (System.Int32)
+            // - +2 * depth (+1 for the generic type definition and +1 for the constructed generic type)
+            int expectedNodeCount = 1 + 2 * depth;
+
+            EnsureMaxNodesIsRespected(name, expectedNodeCount, parsed =>
             {
-                for (int i = 0; i < maxDepth - 1; i++)
+                for (int i = 0; i < depth - 1; i++)
                 {
                     Assert.True(parsed.IsConstructedGenericType);
                     parsed = parsed.GetGenericArguments()[0];
                 }
-            }
+            });
         }
 
         [Theory]
         [InlineData(10)]
         [InlineData(100)]
-        public void MaxNodesIsRespected_TooManyGenericArguments(int maxDepth)
+        public void MaxNodesIsRespected_FlatGenericArguments(int genericArgsCount)
         {
-            TypeNameParseOptions options = new()
-            {
-                MaxNodes = maxDepth
-            };
+            string name = $"Some.GenericType`{genericArgsCount}[{string.Join(",", Enumerable.Repeat("System.Int32", genericArgsCount))}]";
 
-            string tooMany = GetName(maxDepth);
-            string notTooMany = GetName(maxDepth - 1);
+            // Expected node count:
+            // - +1 for the constructed generic type itself
+            // - +1 * genericArgsCount (all arguments are simple)
+            // - +1 for generic type definition
+            int expectedNodeCount = 1 + genericArgsCount + 1;
 
-            Assert.Throws<InvalidOperationException>(() => TypeName.Parse(tooMany.AsSpan(), options));
-            Assert.False(TypeName.TryParse(tooMany.AsSpan(), out _, options));
-
-            TypeName parsed = TypeName.Parse(notTooMany.AsSpan(), options);
-            Validate(parsed, maxDepth);
-
-            Assert.True(TypeName.TryParse(notTooMany.AsSpan(), out parsed, options));
-            Validate(parsed, maxDepth);
-
-            static string GetName(int depth)
-                => $"Some.GenericType`{depth}[{string.Join(",", Enumerable.Repeat("System.Int32", depth))}]";
-
-            static void Validate(TypeName parsed, int maxDepth)
+            EnsureMaxNodesIsRespected(name, expectedNodeCount, parsed =>
             {
                 Assert.True(parsed.IsConstructedGenericType);
                 ImmutableArray<TypeName> genericArgs = parsed.GetGenericArguments();
-                Assert.Equal(maxDepth - 1, genericArgs.Length);
+                Assert.Equal(genericArgsCount, genericArgs.Length);
                 Assert.All(genericArgs, arg => Assert.False(arg.IsConstructedGenericType));
-            }
+                Assert.All(genericArgs, arg => Assert.Equal(1, arg.GetNodeCount()));
+                Assert.Equal(1, parsed.GetGenericTypeDefinition().GetNodeCount());
+                Assert.Equal(expectedNodeCount, parsed.GetNodeCount());
+            });
+        }
+
+        [Theory]
+        [InlineData(10)]
+        [InlineData(100)]
+        public void MaxNodesIsRespected_NestedNames(int nestingDepth)
+        {
+            string name = $"Namespace.NotNestedType+{string.Join("+", Enumerable.Repeat("NestedType", nestingDepth))}";
+
+            // Expected node count:
+            // - +1 for the nested type name itself
+            // - +1 * nestingDepth
+            int expectedNodeCount = 1 + nestingDepth;
+
+            EnsureMaxNodesIsRespected(name, expectedNodeCount, parsed =>
+            {
+                Assert.True(parsed.IsNested);
+                Assert.Equal(expectedNodeCount, parsed.GetNodeCount());
+
+                int depth = nestingDepth;
+                while (parsed.IsNested)
+                {
+                    parsed = parsed.DeclaringType;
+                    Assert.Equal(depth, parsed.GetNodeCount());
+                    depth--;
+                }
+
+                Assert.False(parsed.IsNested);
+                Assert.Equal(1, parsed.GetNodeCount());
+                Assert.Equal(0, depth);
+            });
+        }
+
+        [Theory]
+        [InlineData("System.Int32*", 2)] // a pointer to a simple type
+        [InlineData("System.Int32[]*", 3)] // a pointer to an array of a simple type
+        [InlineData("System.Declaring+Nested", 2)] // a nested and declaring types
+        [InlineData("System.Declaring+Nested*", 3)] // a pointer to a nested type, which has the declaring type
+        // "Namespace.Declaring+NestedGeneric`2[A, B]" requires 5 TypeName instances:
+        // - constructed generic type: Namespace.Declaring+NestedGeneric`2[A, B] (+1)
+        //   - declaring type: Namespace.Declaring (+1)
+        //   - generic type definition: Namespace.Declaring+NestedGeneric`2 (+1)
+        //      - declaring type is the same as of the constructed generic type (+0)
+        //   - generic arguments:
+        //   - generic arguments:
+        //     - simple: A (+1)
+        //     - simple: B (+1)
+        [InlineData("Namespace.Declaring+NestedGeneric`2[A, B]", 5)]
+        // A pointer to the above
+        [InlineData("Namespace.Declaring+NestedGeneric`2[A, B]*", 6)]
+        // A pointer to the array of the above
+        [InlineData("Namespace.Declaring+NestedGeneric`2[A, B][,]*", 7)]
+        // "Namespace.Declaring+NestedGeneric`1[AnotherGeneric`1[A]]" requires 6 TypeName instances:
+        // - constructed generic type: Namespace.Declaring+NestedGeneric`1[AnotherGeneric`1[A]] (+1)
+        //   - declaring type: Namespace.Declaring (+1)
+        //   - generic type definition: Namespace.Declaring+NestedGeneric`1 (+1)
+        //      - declaring type is the same as of the constructed generic type (+0)
+        //   - generic arguments:
+        //     - constructed generic type: AnotherGeneric`1[A] (+1)
+        //       - generic type definition: AnotherGeneric`1 (+1)
+        //         - generic arguments:
+        //           - simple: A (+1)
+        [InlineData("Namespace.Declaring+NestedGeneric`1[AnotherGeneric`1[A]]", 6)]
+        public void MaxNodesIsRespected(string typeName, int expectedNodeCount)
+        {
+            TypeNameParseOptions tooMany = new()
+            {
+                MaxNodes = expectedNodeCount - 1
+            };
+            TypeNameParseOptions notTooMany = new()
+            {
+                MaxNodes = expectedNodeCount
+            };
+
+            Assert.Throws<InvalidOperationException>(() => TypeName.Parse(typeName.AsSpan(), tooMany));
+            Assert.False(TypeName.TryParse(typeName.AsSpan(), out _, tooMany));
+
+            TypeName parsed = TypeName.Parse(typeName.AsSpan(), notTooMany);
+            Assert.Equal(expectedNodeCount, parsed.GetNodeCount());
+
+            Assert.True(TypeName.TryParse(typeName.AsSpan(), out parsed, notTooMany));
+            Assert.Equal(expectedNodeCount, parsed.GetNodeCount());
         }
 
         public static IEnumerable<object[]> GenericArgumentsAreSupported_Arguments()
@@ -473,10 +559,10 @@ namespace System.Reflection.Metadata.Tests
         [InlineData(typeof(int[,][]), 3)]
         [InlineData(typeof(Nullable<>), 1)] // open generic type treated as elemental
         [InlineData(typeof(NestedNonGeneric_0), 2)] // declaring and nested
-        [InlineData(typeof(NestedGeneric_0<int>), 3)] // declaring, nested and generic arg
+        [InlineData(typeof(NestedGeneric_0<int>), 4)] // declaring, nested, generic arg and generic type definition
         [InlineData(typeof(NestedNonGeneric_0.NestedNonGeneric_1), 3)] // declaring, nested 0 and nested 1
         // TypeNameTests+NestedGeneric_0`1+NestedGeneric_1`2[[Int32],[String],[Boolean]] (simplified for brevity)
-        [InlineData(typeof(NestedGeneric_0<int>.NestedGeneric_1<string, bool>), 6)] // declaring, nested 0 and nested 1 and 3 generic args
+        [InlineData(typeof(NestedGeneric_0<int>.NestedGeneric_1<string, bool>), 7)] // declaring, nested 0 and nested 1 and 3 generic args and generic type definition
         [MemberData(nameof(GetAdditionalConstructedTypeData))]
         public void GetNodeCountReturnsExpectedValue(Type type, int expected)
         {
@@ -484,9 +570,147 @@ namespace System.Reflection.Metadata.Tests
 
             Assert.Equal(expected, parsed.GetNodeCount());
 
-            Assert.Equal(type.Name, parsed.Name);
-            Assert.Equal(type.FullName, parsed.FullName);
-            Assert.Equal(type.AssemblyQualifiedName, parsed.AssemblyQualifiedName);
+            EnsureBasicMatch(parsed, type);
+
+            if (!type.IsByRef)
+            {
+                EnsureBasicMatch(parsed.MakeSZArrayTypeName(), type.MakeArrayType());
+                EnsureBasicMatch(parsed.MakeArrayTypeName(3), type.MakeArrayType(3));
+                EnsureBasicMatch(parsed.MakeByRefTypeName(), type.MakeByRefType());
+                EnsureBasicMatch(parsed.MakePointerTypeName(), type.MakePointerType());
+            }
+        }
+
+        [OuterLoop("It takes a lot of time")]
+        [Fact]
+        public void GetNodeCountThrowsForInt32Overflow()
+        {
+            TypeName genericType = TypeName.Parse("Generic".AsSpan());
+            TypeName genericArg = TypeName.Parse("Arg".AsSpan());
+            // Don't allocate Array.MaxLength array as it may make this test flaky (frequent OOMs).
+            ImmutableArray<TypeName>.Builder genericArgs = ImmutableArray.CreateBuilder<TypeName>(initialCapacity: (int)Math.Sqrt(int.MaxValue));
+            for (int i = 0; i < genericArgs.Capacity; ++i)
+            {
+                genericArgs.Add(genericArg);
+            }
+            TypeName constructedGenericType = genericType.MakeGenericTypeName(genericArgs.MoveToImmutable());
+            // Just repeat the same reference to a large closed generic type multiple times.
+            // It's going to give us large node count without allocating too much.
+            TypeName largeNodeCount = genericType.MakeGenericTypeName(Enumerable.Repeat(constructedGenericType, (int)Math.Sqrt(int.MaxValue)).ToImmutableArray());
+
+            Assert.Throws<OverflowException>(() => largeNodeCount.GetNodeCount());
+        }
+
+        [Fact]
+        public void MakeGenericTypeName()
+        {
+            Type genericTypeDefinition = typeof(Dictionary<,>);
+            TypeName genericTypeNameDefinition = TypeName.Parse(genericTypeDefinition.AssemblyQualifiedName.AsSpan());
+
+            Type[] genericArgs = new Type[] { typeof(int), typeof(bool) };
+            ImmutableArray<TypeName> genericTypeNames = genericArgs.Select(type => TypeName.Parse(type.AssemblyQualifiedName.AsSpan())).ToImmutableArray();
+
+            TypeName genericTypeName = genericTypeNameDefinition.MakeGenericTypeName(genericTypeNames);
+            Type genericType = genericTypeDefinition.MakeGenericType(genericArgs);
+
+            EnsureBasicMatch(genericTypeName, genericType);
+
+            TypeName szArrayTypeName = genericTypeNameDefinition.MakeSZArrayTypeName();
+            Assert.Throws<InvalidOperationException>(() => szArrayTypeName.MakeGenericTypeName(genericTypeNames));
+            TypeName mdArrayTypeName = genericTypeNameDefinition.MakeArrayTypeName(3);
+            Assert.Throws<InvalidOperationException>(() => mdArrayTypeName.MakeGenericTypeName(genericTypeNames));
+            TypeName pointerTypeName = genericTypeNameDefinition.MakePointerTypeName();
+            Assert.Throws<InvalidOperationException>(() => pointerTypeName.MakeGenericTypeName(genericTypeNames));
+            TypeName byRefTypeName = genericTypeNameDefinition.MakeByRefTypeName();
+            Assert.Throws<InvalidOperationException>(() => byRefTypeName.MakeGenericTypeName(genericTypeNames));
+        }
+
+        [Theory]
+        [InlineData("Simple")]
+        [InlineData("Pointer*")]
+        [InlineData("Pointer*******")]
+        [InlineData("ByRef&")]
+        [InlineData("SZArray[]")]
+        [InlineData("CustomOffsetArray[*]")]
+        [InlineData("MDArray[,]")]
+        [InlineData("Declaring+Nested")]
+        [InlineData("Declaring+Deep+Deeper+Nested")]
+        [InlineData("Generic[[GenericArg]]")]
+        public void WithAssemblyNameThrowsForNonSimpleNames(string input)
+        {
+            TypeName typeName = TypeName.Parse(input.AsSpan());
+
+            if (typeName.IsSimple)
+            {
+                AssemblyNameInfo assemblyName = new("MyName");
+                TypeName simple = typeName.WithAssemblyName(assemblyName: assemblyName);
+
+                Assert.Equal(typeName.FullName, simple.FullName); // full name has not changed
+                Assert.NotEqual(typeName.AssemblyQualifiedName, simple.AssemblyQualifiedName);
+                Assert.Equal($"{typeName.FullName}, {assemblyName.FullName}", simple.AssemblyQualifiedName);
+
+                Assert.True(simple.IsSimple);
+                Assert.False(simple.IsArray);
+                Assert.False(simple.IsConstructedGenericType);
+                Assert.False(simple.IsPointer);
+                Assert.False(simple.IsByRef);
+                Assert.Equal(typeName.IsNested, simple.IsNested);
+            }
+            else
+            {
+                Assert.Throws<InvalidOperationException>(() => typeName.WithAssemblyName(assemblyName: null));
+            }
+        }
+
+        [Theory]
+        [InlineData("Declaring+Nested")]
+        [InlineData("Declaring+Nested, Lib")]
+        [InlineData("Declaring+Deep+Deeper+Nested")]
+        [InlineData("Declaring+Deep+Deeper+Nested, Lib")]
+        public void WithAssemblyName_NestedNames(string name)
+        {
+            AssemblyNameInfo assemblyName = new("New");
+            TypeName parsed = TypeName.Parse(name.AsSpan());
+            TypeName made = parsed.WithAssemblyName(assemblyName);
+
+            VerifyNestedNames(parsed, made, assemblyName);
+        }
+
+        [Theory]
+        [InlineData(typeof(NestedNonGeneric_0.NestedGeneric_1<int>))]
+        [InlineData(typeof(NestedGeneric_0<int>))]
+        [InlineData(typeof(NestedGeneric_0<int>.NestedNonGeneric_1))]
+        [InlineData(typeof(NestedGeneric_0<int>.NestedGeneric_1<string, bool>))]
+        [InlineData(typeof(NestedGeneric_0<int>.NestedGeneric_1<string, bool>.NestedNonGeneric_2))]
+        [InlineData(typeof(NestedGeneric_0<int>.NestedGeneric_1<string, bool>.NestedGeneric_2<short, byte, sbyte>))]
+        [InlineData(typeof(NestedGeneric_0<int>.NestedGeneric_1<string, bool>.NestedGeneric_2<short, byte, sbyte>.NestedNonGeneric_3))]
+        public void MakeGenericTypeName_NestedNames(Type type)
+        {
+            AssemblyNameInfo assemblyName = new("New");
+            TypeName parsed = TypeName.Parse(type.AssemblyQualifiedName.AsSpan());
+            TypeName made = parsed.GetGenericTypeDefinition().WithAssemblyName(assemblyName).MakeGenericTypeName(parsed.GetGenericArguments());
+
+            VerifyNestedNames(parsed, made, assemblyName);
+        }
+
+        private static void VerifyNestedNames(TypeName parsed, TypeName made, AssemblyNameInfo assemblyName)
+        {
+            while (true)
+            {
+                Assert.Equal(parsed.Name, made.Name);
+                Assert.Equal(parsed.FullName, made.FullName);
+                Assert.Equal(assemblyName, made.AssemblyName);
+                Assert.NotEqual(parsed.AssemblyQualifiedName, made.AssemblyQualifiedName);
+                Assert.EndsWith(assemblyName.FullName, made.AssemblyQualifiedName);
+
+                if (!parsed.IsNested)
+                {
+                    break;
+                }
+
+                parsed = parsed.DeclaringType;
+                made = made.DeclaringType;
+            }
         }
 
         [Fact]
@@ -561,9 +785,7 @@ namespace System.Reflection.Metadata.Tests
         {
             TypeName parsed = TypeName.Parse(type.AssemblyQualifiedName.AsSpan());
 
-            Assert.Equal(type.Name, parsed.Name);
-            Assert.Equal(type.FullName, parsed.FullName);
-            Assert.Equal(type.AssemblyQualifiedName, parsed.AssemblyQualifiedName);
+            EnsureBasicMatch(parsed, type);
 
             if (type.IsGenericType)
             {
@@ -589,6 +811,18 @@ namespace System.Reflection.Metadata.Tests
             Assert.Equal($"{expectedName}[[int],[bool]]", parsed.FullName);
             Assert.Equal("int", parsed.GetGenericArguments()[0].Name);
             Assert.Equal("bool", parsed.GetGenericArguments()[1].Name);
+        }
+
+        [Fact]
+        public void ArrayRank_SByteOverflow()
+        {
+            const string Input = "WeDontEnforceAnyMaxArrayRank[,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,]";
+
+            TypeName typeName = TypeName.Parse(Input.AsSpan());
+
+            Assert.Equal(Input, typeName.FullName);
+            Assert.True(typeName.IsArray);
+            Assert.Equal(128, typeName.GetArrayRank());
         }
 
         [Theory]
@@ -626,9 +860,7 @@ namespace System.Reflection.Metadata.Tests
                 TypeName parsed = TypeName.Parse(type.AssemblyQualifiedName.AsSpan());
 
                 // ensure that Name, FullName and AssemblyQualifiedName match reflection APIs!!
-                Assert.Equal(type.Name, parsed.Name);
-                Assert.Equal(type.FullName, parsed.FullName);
-                Assert.Equal(type.AssemblyQualifiedName, parsed.AssemblyQualifiedName);
+                EnsureBasicMatch(parsed, type);
                 // now load load the type from name
                 Verify(type, parsed, ignoreCase: false);
 #if NET  // something weird is going on here
@@ -729,9 +961,27 @@ namespace System.Reflection.Metadata.Tests
 #pragma warning restore IL2055, IL2057, IL2075, IL2096
         }
 
+        private static void EnsureBasicMatch(TypeName typeName, Type type)
+        {
+            Assert.Equal(type.AssemblyQualifiedName, typeName.AssemblyQualifiedName);
+            Assert.Equal(type.FullName, typeName.FullName);
+            Assert.Equal(type.Name, typeName.Name);
+
+#if NET
+            Assert.Equal(type.IsSZArray, typeName.IsSZArray);
+#endif
+            Assert.Equal(type.IsArray, typeName.IsArray);
+            Assert.Equal(type.IsPointer, typeName.IsPointer);
+            Assert.Equal(type.IsByRef, typeName.IsByRef);
+            Assert.Equal(type.IsConstructedGenericType, typeName.IsConstructedGenericType);
+            Assert.Equal(type.IsNested, typeName.IsNested);
+        }
+
         public class NestedNonGeneric_0
         {
             public class NestedNonGeneric_1 { }
+
+            public class NestedGeneric_1<T> { }
         }
 
         public class NestedGeneric_0<T1>
@@ -742,7 +992,10 @@ namespace System.Reflection.Metadata.Tests
                 {
                     public class NestedNonGeneric_3 { }
                 }
+
+                public class NestedNonGeneric_2 { }
             }
+            public class NestedNonGeneric_1 { }
         }
     }
 }

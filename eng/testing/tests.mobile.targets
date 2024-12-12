@@ -29,7 +29,7 @@
     <PublishTrimmed>true</PublishTrimmed>
     <!-- Suppress trimming warnings as these are tests -->
     <SuppressTrimAnalysisWarnings>true</SuppressTrimAnalysisWarnings>
-    <NoWarn>$(NoWarn);IL2103;IL2105;IL2025;IL2111</NoWarn>
+    <NoWarn>$(NoWarn);IL2103;IL2025;IL2111;IL2122</NoWarn>
 
     <!-- Reduce library test app size by trimming framework library features  -->
     <DebuggerSupport Condition="'$(DebuggerSupport)' == '' and '$(Configuration)' != 'Debug'">false</DebuggerSupport>
@@ -38,6 +38,13 @@
     <HttpActivityPropagationSupport Condition="'$(HttpActivityPropagationSupport)' == ''">false</HttpActivityPropagationSupport>
     <UseSystemResourceKeys Condition="'$(UseSystemResourceKeys)' == ''">false</UseSystemResourceKeys>
     <UseNativeHttpHandler Condition="'$(UseNativeHttpHandler)' == ''">false</UseNativeHttpHandler>
+  </PropertyGroup>
+
+  <!-- When tests are built on Helix, override default trimming switches  -->
+  <PropertyGroup Condition="'$(EnableAggressiveTrimming)' == 'true' and '$(BuildTestsOnHelix)' == 'true'">
+    <DynamicCodeSupport Condition="'$(DynamicCodeSupport)' == '' and '$(MonoForceInterpreter)' != 'true'">false</DynamicCodeSupport>
+    <_DefaultValueAttributeSupport Condition="'$(OverrideDefaultValueAndDesignerHostSupport)' == 'true'">true</_DefaultValueAttributeSupport>
+    <_DesignerHostSupport Condition="'$(OverrideDefaultValueAndDesignerHostSupport)' == 'true'">true</_DesignerHostSupport>
   </PropertyGroup>
 
   <!-- When trimming non-exe projects, root the whole intermediate assembly.

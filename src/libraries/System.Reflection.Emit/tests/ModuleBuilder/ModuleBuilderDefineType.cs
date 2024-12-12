@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using Xunit;
 using System.Diagnostics.CodeAnalysis;
+using System.IO;
 
 namespace System.Reflection.Emit.Tests
 {
@@ -12,7 +13,7 @@ namespace System.Reflection.Emit.Tests
     {
         public static IEnumerable<object[]> TestData()
         {
-            foreach (string name in new string[] { "TestName", "testname", "class", "\uD800\uDC00" })
+            foreach (string name in new string[] { "TestName", "testname", "class", "\uD800\uDC00", "432" })
             {
                 foreach (TypeAttributes attributes in new TypeAttributes[] { TypeAttributes.NotPublic, TypeAttributes.Interface | TypeAttributes.Abstract, TypeAttributes.Class })
                 {
@@ -91,6 +92,153 @@ namespace System.Reflection.Emit.Tests
                 Assert.True(isDefaultSize && isDefaultPackingSize); // Sanity check
                 ModuleBuilder module7 = Helpers.DynamicModule();
                 Verify(module7.DefineType(name, attributes, parent, implementedInterfaces), module7);
+            }
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        [MemberData(nameof(TestData))]
+        public void DefineTypePersistedAssembly(string name, TypeAttributes attributes, Type parent, PackingSize packingSize, int typesize, Type[] implementedInterfaces)
+        {
+            bool isDefaultImplementedInterfaces = implementedInterfaces?.Length == 0;
+            bool isDefaultPackingSize = packingSize == PackingSize.Unspecified;
+            bool isDefaultSize = typesize == 0;
+            bool isDefaultParent = parent == null;
+            bool isDefaultAttributes = attributes == TypeAttributes.NotPublic;
+            Type baseType = attributes.HasFlag(TypeAttributes.Abstract) && parent == null ? null : (parent ?? typeof(object));
+
+            void VerifyTypeBuilder(TypeBuilder type, Module module)
+            {
+                Assert.Equal(module, type.Module);
+                Assert.Equal(module.Assembly, type.Assembly);
+                Assert.Equal(name, type.Name);
+                Assert.Equal(Helpers.GetFullName(name), type.FullName);
+                Assert.Equal(attributes, type.Attributes);
+                Assert.Equal(baseType, type.BaseType);
+                Assert.Equal(typesize, type.Size);
+                Assert.Equal(packingSize, type.PackingSize);
+                Assert.Equal(implementedInterfaces ?? new Type[0], type.GetInterfaces());
+            }
+
+            void VerifyType(Type createdType)
+            {
+                Assert.Equal(name, createdType.Name);
+                Assert.Equal(attributes, createdType.Attributes);
+                Assert.Equal(Helpers.GetFullName(name), createdType.FullName);
+                Assert.Equal(attributes, createdType.Attributes);
+                if (baseType != null)
+                {
+                    Assert.Equal(baseType.Name, createdType.BaseType.Name);
+                }
+                Assert.Equal((implementedInterfaces ?? new Type[0]).Length, createdType.GetInterfaces().Length);
+            }
+
+            PersistedAssemblyBuilder ab;
+            TypeBuilder typeBuilder;
+            if (isDefaultImplementedInterfaces)
+            {
+                if (isDefaultSize && isDefaultPackingSize)
+                {
+                    if (isDefaultParent)
+                    {
+                        if (isDefaultAttributes)
+                        {
+                            // Use DefineType(string)
+                            ab = AssemblySaveTools.PopulateAssemblyAndModule(out ModuleBuilder module1);
+                            typeBuilder = module1.DefineType(name);
+                            typeBuilder.CreateType();
+                            VerifyTypeBuilder(typeBuilder, module1);
+
+                            using (var stream = new MemoryStream())
+                            using (MetadataLoadContext mlc = new MetadataLoadContext(new CoreMetadataAssemblyResolver()))
+                            {
+                                ab.Save(stream);
+                                VerifyType(mlc.LoadFromStream(stream).GetType(name));
+                            }
+                        }
+                        // Use DefineType(string, TypeAttributes)
+                        ab = AssemblySaveTools.PopulateAssemblyAndModule(out ModuleBuilder module2);
+                        typeBuilder = module2.DefineType(name, attributes);
+                        typeBuilder.CreateType();
+                        VerifyTypeBuilder(typeBuilder, module2);
+
+                        using (var stream = new MemoryStream())
+                        using (MetadataLoadContext mlc = new MetadataLoadContext(new CoreMetadataAssemblyResolver()))
+                        {
+                            ab.Save(stream);
+                            VerifyType(mlc.LoadFromStream(stream).GetType(name));
+                        }
+                    }
+                    // Use DefineType(string, TypeAttributes, Type)
+                    ab = AssemblySaveTools.PopulateAssemblyAndModule(out ModuleBuilder module3);
+                    typeBuilder = module3.DefineType(name, attributes, parent);
+                    typeBuilder.CreateType();
+                    VerifyTypeBuilder(typeBuilder, module3);
+
+                    using (var stream = new MemoryStream())
+                    using (MetadataLoadContext mlc = new MetadataLoadContext(new CoreMetadataAssemblyResolver()))
+                    {
+                        ab.Save(stream);
+                        VerifyType(mlc.LoadFromStream(stream).GetType(name));
+                    }
+                }
+                else if (isDefaultSize)
+                {
+                    // Use DefineType(string, TypeAttributes, Type, PackingSize)
+                    ab = AssemblySaveTools.PopulateAssemblyAndModule(out ModuleBuilder module4);
+                    typeBuilder = module4.DefineType(name, attributes, parent, packingSize);
+                    typeBuilder.CreateType();
+                    VerifyTypeBuilder(typeBuilder, module4);
+
+                    using (var stream = new MemoryStream())
+                    using (MetadataLoadContext mlc = new MetadataLoadContext(new CoreMetadataAssemblyResolver()))
+                    {
+                        ab.Save(stream);
+                        VerifyType(mlc.LoadFromStream(stream).GetType(name));
+                    }
+                }
+                else if (isDefaultPackingSize)
+                {
+                    // Use DefineType(string, TypeAttributes, Type, int)
+                    ab = AssemblySaveTools.PopulateAssemblyAndModule(out ModuleBuilder module5);
+                    typeBuilder = module5.DefineType(name, attributes, parent, typesize);
+                    typeBuilder.CreateType();
+                    VerifyTypeBuilder(typeBuilder, module5);
+
+                    using (var stream = new MemoryStream())
+                    using (MetadataLoadContext mlc = new MetadataLoadContext(new CoreMetadataAssemblyResolver()))
+                    {
+                        ab.Save(stream);
+                        VerifyType(mlc.LoadFromStream(stream).GetType(name));
+                    }
+                }
+                // Use DefineType(string, TypeAttributes, Type, PackingSize, int)
+                ab = AssemblySaveTools.PopulateAssemblyAndModule(out ModuleBuilder module6);
+                typeBuilder = module6.DefineType(name, attributes, parent, packingSize, typesize);
+                typeBuilder.CreateType();
+                VerifyTypeBuilder(typeBuilder, module6);
+
+                using (var stream = new MemoryStream())
+                using (MetadataLoadContext mlc = new MetadataLoadContext(new CoreMetadataAssemblyResolver()))
+                {
+                    ab.Save(stream);
+                    VerifyType(mlc.LoadFromStream(stream).GetType(name));
+                }
+            }
+            else
+            {
+                // Use DefineType(string, TypeAttributes, Type, Type[])
+                Assert.True(isDefaultSize && isDefaultPackingSize); // Sanity check
+                ab = AssemblySaveTools.PopulateAssemblyAndModule(out ModuleBuilder module7);
+                typeBuilder = module7.DefineType(name, attributes, parent, implementedInterfaces);
+                typeBuilder.CreateType();
+                VerifyTypeBuilder(typeBuilder, module7);
+
+                using (var stream = new MemoryStream())
+                using (MetadataLoadContext mlc = new MetadataLoadContext(new CoreMetadataAssemblyResolver()))
+                {
+                    ab.Save(stream);
+                    VerifyType(mlc.LoadFromStream(stream).GetType(name));
+                }
             }
         }
 

@@ -258,7 +258,7 @@ namespace System.Reflection
                 return false;
             }
 
-            Span<ushort> versionNumbers = stackalloc ushort[4] { ushort.MaxValue, ushort.MaxValue, ushort.MaxValue, ushort.MaxValue };
+            Span<ushort> versionNumbers = [ushort.MaxValue, ushort.MaxValue, ushort.MaxValue, ushort.MaxValue];
             for (int i = 0; i < parts.Length; i++)
             {
                 if (!ushort.TryParse(

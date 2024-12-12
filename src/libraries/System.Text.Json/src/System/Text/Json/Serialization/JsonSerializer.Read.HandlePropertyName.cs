@@ -21,17 +21,16 @@ namespace System.Text.Json
             ReadOnlySpan<byte> unescapedPropertyName,
             ref ReadStack state,
             JsonSerializerOptions options,
-            out byte[] utf8PropertyName,
             out bool useExtensionProperty,
             bool createExtensionProperty = true)
         {
             JsonTypeInfo jsonTypeInfo = state.Current.JsonTypeInfo;
             useExtensionProperty = false;
 
-            JsonPropertyInfo jsonPropertyInfo = jsonTypeInfo.GetProperty(
+            JsonPropertyInfo? jsonPropertyInfo = jsonTypeInfo.GetProperty(
                 unescapedPropertyName,
                 ref state.Current,
-                out utf8PropertyName);
+                out byte[] utf8PropertyName);
 
             // Increment PropertyIndex so GetProperty() checks the next property first when called again.
             state.Current.PropertyIndex++;
@@ -40,7 +39,7 @@ namespace System.Text.Json
             state.Current.JsonPropertyName = utf8PropertyName;
 
             // Handle missing properties
-            if (jsonPropertyInfo == JsonPropertyInfo.s_missingProperty)
+            if (jsonPropertyInfo is null)
             {
                 if (jsonTypeInfo.EffectiveUnmappedMemberHandling is JsonUnmappedMemberHandling.Disallow)
                 {
@@ -62,6 +61,11 @@ namespace System.Text.Json
 
                     jsonPropertyInfo = dataExtProperty;
                     useExtensionProperty = true;
+                }
+                else
+                {
+                    // Populate with a placeholder value required by JsonPath calculations
+                    jsonPropertyInfo = JsonPropertyInfo.s_missingProperty;
                 }
             }
 

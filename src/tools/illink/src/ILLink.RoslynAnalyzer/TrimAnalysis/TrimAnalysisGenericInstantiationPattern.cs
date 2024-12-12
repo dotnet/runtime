@@ -1,7 +1,7 @@
 // Copyright (c) .NET Foundation and contributors. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.Collections.Generic;
+using System;
 using System.Diagnostics;
 using ILLink.RoslynAnalyzer.DataFlow;
 using ILLink.Shared.TrimAnalysis;
@@ -9,7 +9,7 @@ using Microsoft.CodeAnalysis;
 
 namespace ILLink.RoslynAnalyzer.TrimAnalysis
 {
-	public readonly record struct TrimAnalysisGenericInstantiationPattern
+	internal readonly record struct TrimAnalysisGenericInstantiationPattern
 	{
 		public ISymbol GenericInstantiation { get; init; }
 		public IOperation Operation { get; init; }
@@ -43,28 +43,26 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 				featureContextLattice.Meet (FeatureContext, other.FeatureContext));
 		}
 
-		public IEnumerable<Diagnostic> CollectDiagnostics (DataFlowAnalyzerContext context)
+		public void ReportDiagnostics (DataFlowAnalyzerContext context, Action<Diagnostic> reportDiagnostic)
 		{
-			DiagnosticContext diagnosticContext = new (Operation.Syntax.GetLocation ());
 			if (context.EnableTrimAnalyzer &&
 				!OwningSymbol.IsInRequiresUnreferencedCodeAttributeScope (out _) &&
 				!FeatureContext.IsEnabled (RequiresUnreferencedCodeAnalyzer.FullyQualifiedRequiresUnreferencedCodeAttribute)) {
+				var location = Operation.Syntax.GetLocation ();
 				switch (GenericInstantiation) {
 				case INamedTypeSymbol type:
-					GenericArgumentDataFlow.ProcessGenericArgumentDataFlow (diagnosticContext, type);
+					GenericArgumentDataFlow.ProcessGenericArgumentDataFlow (location, type, reportDiagnostic);
 					break;
 
 				case IMethodSymbol method:
-					GenericArgumentDataFlow.ProcessGenericArgumentDataFlow (diagnosticContext, method);
+					GenericArgumentDataFlow.ProcessGenericArgumentDataFlow (location, method, reportDiagnostic);
 					break;
 
 				case IFieldSymbol field:
-					GenericArgumentDataFlow.ProcessGenericArgumentDataFlow (diagnosticContext, field);
+					GenericArgumentDataFlow.ProcessGenericArgumentDataFlow (location, field, reportDiagnostic);
 					break;
 				}
 			}
-
-			return diagnosticContext.Diagnostics;
 		}
 	}
 }

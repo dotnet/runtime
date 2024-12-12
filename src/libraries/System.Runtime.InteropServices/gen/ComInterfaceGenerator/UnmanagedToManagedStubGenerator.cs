@@ -17,22 +17,25 @@ namespace Microsoft.Interop
 
         private readonly BoundGenerators _marshallers;
 
-        private readonly NativeToManagedStubCodeContext _context;
+        private readonly StubIdentifierContext _context;
 
         public UnmanagedToManagedStubGenerator(
             ImmutableArray<TypePositionInfo> argTypes,
             GeneratorDiagnosticsBag diagnosticsBag,
             IMarshallingGeneratorResolver generatorResolver)
         {
-            _context = new NativeToManagedStubCodeContext(ReturnIdentifier, ReturnIdentifier);
-            _marshallers = BoundGenerators.Create(argTypes, generatorResolver, _context, new Forwarder(), out var bindingDiagnostics);
+            _marshallers = BoundGenerators.Create(argTypes, generatorResolver, StubCodeContext.DefaultNativeToManagedStub, new Forwarder(), out var bindingDiagnostics);
 
             diagnosticsBag.ReportGeneratorDiagnostics(bindingDiagnostics);
 
-            if (_marshallers.NativeReturnMarshaller.Generator.UsesNativeIdentifier(_marshallers.NativeReturnMarshaller.TypeInfo, _context))
+            if (_marshallers.NativeReturnMarshaller.UsesNativeIdentifier)
             {
                 // If we need a different native return identifier, then recreate the context with the correct identifier before we generate any code.
-                _context = new NativeToManagedStubCodeContext(ReturnIdentifier, $"{ReturnIdentifier}{StubCodeContext.GeneratedNativeIdentifierSuffix}");
+                _context = new DefaultIdentifierContext(ReturnIdentifier, $"{ReturnIdentifier}{StubIdentifierContext.GeneratedNativeIdentifierSuffix}", MarshalDirection.UnmanagedToManaged);
+            }
+            else
+            {
+                _context = new DefaultIdentifierContext(ReturnIdentifier, ReturnIdentifier, MarshalDirection.UnmanagedToManaged);
             }
         }
 
@@ -46,11 +49,10 @@ namespace Microsoft.Interop
         /// </remarks>
         public BlockSyntax GenerateStubBody(ExpressionSyntax methodToInvoke)
         {
-            List<StatementSyntax> setupStatements = new();
             GeneratedStatements statements = GeneratedStatements.Create(
                 _marshallers,
-                _context,
-                methodToInvoke);
+                StubCodeContext.DefaultNativeToManagedStub,
+                _context, methodToInvoke);
             Debug.Assert(statements.CleanupCalleeAllocated.IsEmpty);
 
             bool shouldInitializeVariables =
@@ -59,27 +61,29 @@ namespace Microsoft.Interop
                 || !statements.ManagedExceptionCatchClauses.IsEmpty;
             VariableDeclarations declarations = VariableDeclarations.GenerateDeclarationsForUnmanagedToManaged(_marshallers, _context, shouldInitializeVariables);
 
-            setupStatements.AddRange(declarations.Initializations);
-            setupStatements.AddRange(declarations.Variables);
-            setupStatements.AddRange(statements.Setup);
+            List<StatementSyntax> setupStatements =
+            [
+                .. declarations.Initializations,
+                .. declarations.Variables,
+                .. statements.Setup,
+            ];
 
-            List<StatementSyntax> tryStatements = new();
-            tryStatements.AddRange(statements.GuaranteedUnmarshal);
-            tryStatements.AddRange(statements.Unmarshal);
-
-            tryStatements.Add(statements.InvokeStatement);
-
-            tryStatements.AddRange(statements.NotifyForSuccessfulInvoke);
-            tryStatements.AddRange(statements.Marshal);
-            tryStatements.AddRange(statements.PinnedMarshal);
+            List<StatementSyntax> tryStatements =
+            [
+                .. statements.GuaranteedUnmarshal,
+                .. statements.Unmarshal,
+                statements.InvokeStatement,
+                .. statements.NotifyForSuccessfulInvoke,
+                .. statements.Marshal,
+                .. statements.PinnedMarshal,
+            ];
 
             List<StatementSyntax> allStatements = setupStatements;
-            List<StatementSyntax> finallyStatements = new();
 
             SyntaxList<CatchClauseSyntax> catchClauses = List(statements.ManagedExceptionCatchClauses);
 
-            finallyStatements.AddRange(statements.CleanupCallerAllocated);
-            if (finallyStatements.Count > 0)
+            ImmutableArray<StatementSyntax> finallyStatements = statements.CleanupCallerAllocated;
+            if (finallyStatements.Length > 0)
             {
                 allStatements.Add(
                     TryStatement(Block(tryStatements), catchClauses, FinallyClause(Block(finallyStatements))));

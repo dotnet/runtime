@@ -176,9 +176,7 @@ namespace System.Runtime.InteropServices
 
             // Unsafe.AsPointer is safe since array must be pinned
             void* pRawData = Unsafe.AsPointer(ref MemoryMarshal.GetArrayDataReference(arr));
-#pragma warning disable 8500 // sizeof of managed types
             return (IntPtr)((byte*)pRawData + (uint)index * (nuint)sizeof(T));
-#pragma warning restore 8500
         }
 
         public static IntPtr OffsetOf<T>(string fieldName) => OffsetOf(typeof(T), fieldName);
@@ -1065,6 +1063,7 @@ namespace System.Runtime.InteropServices
         /// a PROGID in the metadata then it is returned otherwise a stable PROGID
         /// is generated based on the fully qualified name of the type.
         /// </summary>
+        [RequiresUnreferencedCode("Built-in COM support is not trim compatible", Url = "https://aka.ms/dotnet-illink/com")]
         public static string? GenerateProgIdForType(Type type)
         {
             ArgumentNullException.ThrowIfNull(type);
@@ -1084,7 +1083,7 @@ namespace System.Runtime.InteropServices
                 return progIdAttribute.Value ?? string.Empty;
             }
 
-            // If there is no prog ID attribute then use the full name of the type as the prog id.
+            // If there is no prog ID attribute then use the full name of the type as the prog ID.
             return type.FullName;
         }
 

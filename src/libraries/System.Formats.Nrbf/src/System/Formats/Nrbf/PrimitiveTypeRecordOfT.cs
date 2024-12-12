@@ -18,15 +18,13 @@ namespace System.Formats.Nrbf;
 /// <see cref="char"/>, <see cref="short"/>, <see cref="ushort"/>,
 /// <see cref="int"/>, <see cref="uint"/>, <see cref="long"/>, <see cref="ulong"/>,
 /// <see cref="float"/>, <see cref="double"/>, <see cref="decimal"/>,
-/// <see cref="DateTime"/> and <see cref="TimeSpan"/>.
+/// <see cref="DateTime"/>, and <see cref="TimeSpan"/>.
 /// </para>
 /// <para>Other serialization records are represented with <see cref="ClassRecord"/> or <see cref="ArrayRecord"/>.</para>
 /// </remarks>
 [DebuggerDisplay("{Value}")]
 public abstract class PrimitiveTypeRecord<T> : PrimitiveTypeRecord
 {
-    private static TypeName? s_typeName;
-
     private protected PrimitiveTypeRecord(T value) => Value = value;
 
     /// <summary>
@@ -36,8 +34,7 @@ public abstract class PrimitiveTypeRecord<T> : PrimitiveTypeRecord
     public new T Value { get; }
 
     /// <inheritdoc />
-    public override TypeName TypeName
-        => s_typeName ??= TypeName.Parse(typeof(T).FullName.AsSpan()).WithCoreLibAssemblyName();
+    public override TypeName TypeName => TypeNameHelpers.GetPrimitiveTypeName(TypeNameHelpers.GetPrimitiveType<T>());
 
     internal override object? GetValue() => Value;
 }

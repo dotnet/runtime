@@ -27,7 +27,7 @@ namespace System.Collections.Immutable
         /// </para>
         /// </remarks>
         [DebuggerDisplay("Count = {Count}")]
-        [DebuggerTypeProxy(typeof(ImmutableDictionaryBuilderDebuggerProxy<,>))]
+        [DebuggerTypeProxy(typeof(IDictionaryDebugView<,>))]
         public sealed class Builder : IDictionary<TKey, TValue>, IReadOnlyDictionary<TKey, TValue>, IDictionary
         {
             /// <summary>
@@ -708,37 +708,5 @@ namespace System.Collections.Immutable
                 return result.CountAdjustment != 0;
             }
         }
-    }
-
-    /// <summary>
-    /// A simple view of the immutable collection that the debugger can show to the developer.
-    /// </summary>
-    internal sealed class ImmutableDictionaryBuilderDebuggerProxy<TKey, TValue> where TKey : notnull
-    {
-        /// <summary>
-        /// The collection to be enumerated.
-        /// </summary>
-        private readonly ImmutableDictionary<TKey, TValue>.Builder _map;
-
-        /// <summary>
-        /// The simple view of the collection.
-        /// </summary>
-        private KeyValuePair<TKey, TValue>[]? _contents;
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="ImmutableDictionaryBuilderDebuggerProxy{TKey, TValue}"/> class.
-        /// </summary>
-        /// <param name="map">The collection to display in the debugger</param>
-        public ImmutableDictionaryBuilderDebuggerProxy(ImmutableDictionary<TKey, TValue>.Builder map)
-        {
-            Requires.NotNull(map, nameof(map));
-            _map = map;
-        }
-
-        /// <summary>
-        /// Gets a simple debugger-viewable collection.
-        /// </summary>
-        [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
-        public KeyValuePair<TKey, TValue>[] Contents => _contents ??= _map.ToArray(_map.Count);
     }
 }

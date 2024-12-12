@@ -10,7 +10,11 @@ using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Diagnostics.Metrics;
-#if TARGET_BROWSER
+#if TARGET_WASI
+using System.Diagnostics;
+using System.Net.Http.Metrics;
+using HttpHandlerType = System.Net.Http.WasiHttpHandler;
+#elif TARGET_BROWSER
 using System.Diagnostics;
 using System.Net.Http.Metrics;
 using HttpHandlerType = System.Net.Http.BrowserHttpHandler;
@@ -24,32 +28,36 @@ namespace System.Net.Http
     {
         private readonly HttpHandlerType _underlyingHandler;
 
-#if TARGET_BROWSER
+#if TARGET_BROWSER || TARGET_WASI
         private IMeterFactory? _meterFactory;
-        private MetricsHandler? _metricsHandler;
+        private HttpMessageHandler? _firstHandler; // DiagnosticsHandler or MetricsHandler, depending on global configuration.
 
-        private MetricsHandler Handler
+        private HttpMessageHandler Handler
         {
             get
             {
-                if (_metricsHandler != null)
+                if (_firstHandler != null)
                 {
-                    return _metricsHandler;
+                    return _firstHandler;
                 }
 
                 HttpMessageHandler handler = _underlyingHandler;
+
+                // MetricsHandler should be descendant of DiagnosticsHandler in the handler chain to make sure the 'http.request.duration'
+                // metric is recorded before stopping the request Activity. This is needed to make sure that our telemetry supports Exemplars.
+                handler = new MetricsHandler(handler, _meterFactory, out _);
                 if (DiagnosticsHandler.IsGloballyEnabled())
                 {
                     handler = new DiagnosticsHandler(handler, DistributedContextPropagator.Current);
                 }
-                MetricsHandler metricsHandler = new MetricsHandler(handler, _meterFactory, out _);
 
                 // Ensure a single handler is used for all requests.
-                if (Interlocked.CompareExchange(ref _metricsHandler, metricsHandler, null) != null)
+                if (Interlocked.CompareExchange(ref _firstHandler, handler, null) != null)
                 {
-                    metricsHandler.Dispose();
+                    handler.Dispose();
                 }
-                return _metricsHandler;
+
+                return _firstHandler;
             }
         }
 #else
@@ -90,12 +98,12 @@ namespace System.Net.Http
         [CLSCompliant(false)]
         public IMeterFactory? MeterFactory
         {
-#if TARGET_BROWSER
+#if TARGET_BROWSER || TARGET_WASI
             get => _meterFactory;
             set
             {
                 ObjectDisposedException.ThrowIf(_disposed, this);
-                if (_metricsHandler != null)
+                if (_firstHandler != null)
                 {
                     throw new InvalidOperationException(SR.net_http_operation_started);
                 }
@@ -258,14 +266,14 @@ namespace System.Net.Http
                 switch (value)
                 {
                     case ClientCertificateOption.Manual:
-#if !TARGET_BROWSER
+#if !(TARGET_BROWSER || TARGET_WASI)
                         ThrowForModifiedManagedSslOptionsIfStarted();
                         _underlyingHandler.SslOptions.LocalCertificateSelectionCallback = (sender, targetHost, localCertificates, remoteCertificate, acceptableIssuers) => CertificateHelper.GetEligibleClientCertificate(_underlyingHandler.SslOptions.ClientCertificates)!;
 #endif
                         break;
 
                     case ClientCertificateOption.Automatic:
-#if !TARGET_BROWSER
+#if !(TARGET_BROWSER || TARGET_WASI)
                         ThrowForModifiedManagedSslOptionsIfStarted();
                         _underlyingHandler.SslOptions.LocalCertificateSelectionCallback = (sender, targetHost, localCertificates, remoteCertificate, acceptableIssuers) => CertificateHelper.GetEligibleClientCertificate()!;
 #endif
@@ -296,7 +304,7 @@ namespace System.Net.Http
         [UnsupportedOSPlatform("browser")]
         public Func<HttpRequestMessage, X509Certificate2?, X509Chain?, SslPolicyErrors, bool>? ServerCertificateCustomValidationCallback
         {
-#if TARGET_BROWSER
+#if TARGET_BROWSER || TARGET_WASI
             get => throw new PlatformNotSupportedException();
             set => throw new PlatformNotSupportedException();
 #else
@@ -345,7 +353,7 @@ namespace System.Net.Http
         //[UnsupportedOSPlatform("tvos")]
         protected internal override HttpResponseMessage Send(HttpRequestMessage request, CancellationToken cancellationToken)
         {
-#if TARGET_BROWSER
+#if TARGET_BROWSER || TARGET_WASI
             throw new PlatformNotSupportedException();
 #else
             ArgumentNullException.ThrowIfNull(request);

@@ -22,6 +22,12 @@ namespace ILLink.RoslynAnalyzer.Tests.Inheritance.Interfaces
 		}
 
 		[Fact]
+		public Task OverrideOfRecursiveInterfaceIsRemoved ()
+		{
+			return RunTest (allowMissingWarnings: true);
+		}
+
+		[Fact]
 		public Task RecursiveInterfaceKept ()
 		{
 			return RunTest (allowMissingWarnings: true);

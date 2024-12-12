@@ -124,7 +124,7 @@ public:
     PTR_Assembly *GetManifestMetadataAssemblyRefMap() { return m_pNativeMetadataAssemblyRefMap; }
     AssemblyBinder *GetAssemblyBinder() const { return m_pAssemblyBinder; }
 
-    Assembly *LoadManifestAssembly(uint32_t rowid, DomainAssembly *pParentAssembly);
+    Assembly *LoadManifestAssembly(uint32_t rowid, Assembly *pParentAssembly);
     
     PTR_READYTORUN_CORE_HEADER GetComponentAssemblyHeader(LPCUTF8 assemblySimpleName);
 

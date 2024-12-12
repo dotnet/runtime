@@ -26,6 +26,7 @@
 #include <mono/utils/hazard-pointer.h>
 #include <mono/utils/mono-threads-coop.h>
 #include <mono/utils/mono-threads-debug.h>
+#include <minipal/thread.h>
 
 void
 mono_threads_suspend_init (void)
@@ -210,7 +211,7 @@ mono_threads_suspend_register (MonoThreadInfo *info)
 	info->native_handle = mach_thread_self ();
 
 	snprintf (thread_name, sizeof (thread_name), "tid_%x", (int) info->native_handle);
-	pthread_setname_np (thread_name);
+	minipal_set_thread_name (mono_thread_info_get_tid(info), thread_name);
 
 	mono_threads_install_dead_letter ();
 }
