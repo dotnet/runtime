@@ -7291,10 +7291,25 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 // Other binary math operations
 
+#ifdef TARGET_ARM64
             case CEE_DIV:
             case CEE_DIV_UN:
-                impImportDivision(opcode == CEE_DIV);
-                break;
+                if (opts.OptimizationEnabled())
+                {
+                    impImportDivision(opcode == CEE_DIV);
+                    break;
+                }
+                else
+                {
+                    oper = (opcode == CEE_DIV) ? GT_DIV : GT_UDIV;
+                    goto MATH_MAYBE_CALL_NO_OVF;
+                }
+#else
+            case CEE_DIV:
+            case CEE_DIV_UN:
+                oper = GT_UDIV;
+                goto MATH_MAYBE_CALL_NO_OVF;
+#endif // TARGET_ARM64
 
             case CEE_REM:
                 oper = GT_MOD;
@@ -13821,6 +13836,12 @@ methodPointerInfo* Compiler::impAllocateMethodPointerInfo(const CORINFO_RESOLVED
     return memory;
 }
 
+#ifdef TARGET_ARM64
+// impImportDivision: Import a division operation, adding runtime checks for overflow/divide-by-zero if needed.
+//
+// Arguments:
+//    isSigned - Is the division a signed operation?
+//
 void Compiler::impImportDivision(bool isSigned)
 {
     typeInfo tiRetVal = typeInfo();
@@ -13867,22 +13888,14 @@ void Compiler::impImportDivision(bool isSigned)
     assert(GenTree::s_gtNodeSizes[GT_CALL] == TREE_NODE_SZ_LARGE);
     GenTree* divNode = new (this, GT_CALL) GenTreeOp(oper, resultType, dividend, divisor DEBUGARG(/*largeNode*/ true));
 
-    // Special case: integer/long division may throw an exception
+    divNode = gtFoldExpr(divNode);
 
-    divNode         = gtFoldExpr(divNode);
+    const bool isDivisionAfterFold = divNode->OperIs(GT_DIV, GT_UDIV);
+
     GenTree* result = divNode;
 
-    // Is the result still a division after folding?
-    const bool isDivisionAfterFold = result->OperIs(GT_DIV, GT_UDIV);
-
-#if defined(TARGET_ARM64)
-    const bool isSuitableOptimizationArch = true;
-#else
-    const bool isSuitableOptimizationArch = false;
-#endif // defined(TARGET_ARM64)
-
-    if (opts.OptimizationEnabled() && isSuitableOptimizationArch && !varTypeIsFloating(resultType) &&
-        isDivisionAfterFold)
+    // Special case: integer/long division may throw an exception
+    if (opts.OptimizationEnabled() && !varTypeIsFloating(resultType) && isDivisionAfterFold)
     {
         // Spill the divisor, as (divisor == 0) is always checked.
         GenTree* divisorCopy = nullptr;
@@ -13954,3 +13967,4 @@ void Compiler::impImportDivision(bool isSigned)
     impPushOnStack(result, tiRetVal);
     return;
 }
+#endif // TARGET_ARM64
