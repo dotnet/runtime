@@ -190,8 +190,6 @@ private:
     //  ppCounter = <initial value>
     void TransformEntry(BasicBlock* block)
     {
-        assert(!block->HasFlag(BBF_PATCHPOINT));
-
         int initialCounterValue = JitConfig.TC_OnStackReplacement_InitialCounter();
 
         if (initialCounterValue < 0)
@@ -202,7 +200,7 @@ private:
         GenTree* initialCounterNode = compiler->gtNewIconNode(initialCounterValue, TYP_INT);
         GenTree* ppCounterStore     = compiler->gtNewStoreLclVarNode(ppCounterLclNum, initialCounterNode);
 
-        compiler->fgNewStmtNearEnd(block, ppCounterStore);
+        compiler->fgNewStmtAtBeg(block, ppCounterStore);
     }
 
     //------------------------------------------------------------------------
