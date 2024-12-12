@@ -41,14 +41,13 @@ typedef DPTR(RuntimeMethodBody) RUNTIMEMETHODBODYREF;
 typedef DPTR(RuntimeLocalVariableInfo) RUNTIMELOCALVARIABLEINFOREF;
 #endif
 
-class RuntimeExceptionHandlingClause : Object
+class RuntimeExceptionHandlingClause : public Object
 {
-private:
-    // Disallow creation and copy construction of these.
-    RuntimeExceptionHandlingClause() { }
-    RuntimeExceptionHandlingClause(RuntimeExceptionHandlingClause &r) { }
-
 public:
+    // Disallow creation and copy construction of these.
+    RuntimeExceptionHandlingClause() = delete;
+    RuntimeExceptionHandlingClause(const RuntimeExceptionHandlingClause&)  = delete;
+
     RUNTIMEMETHODBODYREF _methodBody;
     CorExceptionFlag _flags;
     INT32 _tryOffset;
@@ -61,12 +60,11 @@ public:
 
 class RuntimeMethodBody : public Object
 {
-private:
-    // Disallow creation and copy construction of these.
-    RuntimeMethodBody() { }
-    RuntimeMethodBody(RuntimeMethodBody &r) { }
-
 public:
+    // Disallow creation and copy construction of these.
+    RuntimeMethodBody() = delete;
+    RuntimeMethodBody(const RuntimeMethodBody&) = delete;
+
     U1ARRAYREF _IL;
     PTRARRAYREF _exceptionClauses;
     PTRARRAYREF _localVariables;
@@ -77,14 +75,12 @@ public:
     CLR_BOOL _initLocals;
 };
 
-class RuntimeLocalVariableInfo : Object
+class RuntimeLocalVariableInfo : public Object
 {
-private:
-    // Disallow creation and copy construction of these.
-    RuntimeLocalVariableInfo() { }
-    RuntimeLocalVariableInfo(RuntimeLocalVariableInfo &r) { }
-
 public:
+    // Disallow creation and copy construction of these.
+    RuntimeLocalVariableInfo() = delete;
+    RuntimeLocalVariableInfo(const RuntimeLocalVariableInfo&) = delete;
 
     REFLECTCLASSBASEREF GetType()
     {
