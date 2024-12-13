@@ -4397,75 +4397,37 @@ bool Compiler::fgRelocateEHRegions()
         printf("*************** In fgRelocateEHRegions()\n");
 #endif
 
-    if (fgCanRelocateEHRegions)
+    unsigned  XTnum;
+    EHblkDsc* HBtab;
+
+    for (XTnum = 0, HBtab = compHndBBtab; XTnum < compHndBBtabCount; XTnum++, HBtab++)
     {
-        unsigned  XTnum;
-        EHblkDsc* HBtab;
-
-        for (XTnum = 0, HBtab = compHndBBtab; XTnum < compHndBBtabCount; XTnum++, HBtab++)
+        // Nested EH regions cannot be moved.
+        // Also we don't want to relocate an EH region that has a filter
+        if ((HBtab->ebdHandlerNestingLevel == 0) && !HBtab->HasFilter())
         {
-            // Nested EH regions cannot be moved.
-            // Also we don't want to relocate an EH region that has a filter
-            if ((HBtab->ebdHandlerNestingLevel == 0) && !HBtab->HasFilter())
+            bool movedTry = false;
+#if DEBUG
+            bool movedHnd = false;
+#endif // DEBUG
+
+            // Only try to move the outermost try region
+            if (HBtab->ebdEnclosingTryIndex == EHblkDsc::NO_ENCLOSING_INDEX)
             {
-                bool movedTry = false;
-#if DEBUG
-                bool movedHnd = false;
-#endif // DEBUG
-
-                // Only try to move the outermost try region
-                if (HBtab->ebdEnclosingTryIndex == EHblkDsc::NO_ENCLOSING_INDEX)
+                // Move the entire try region if it can be moved
+                if (HBtab->ebdTryBeg->isRunRarely())
                 {
-                    // Move the entire try region if it can be moved
-                    if (HBtab->ebdTryBeg->isRunRarely())
-                    {
-                        BasicBlock* bTryLastBB = fgRelocateEHRange(XTnum, FG_RELOCATE_TRY);
-                        if (bTryLastBB != NULL)
-                        {
-                            result   = true;
-                            movedTry = true;
-                        }
-                    }
-#if DEBUG
-                    if (verbose && movedTry)
-                    {
-                        printf("\nAfter relocating an EH try region");
-                        fgDispBasicBlocks();
-                        fgDispHandlerTab();
-
-                        // Make sure that the predecessor lists are accurate
-                        if (expensiveDebugCheckLevel >= 2)
-                        {
-                            fgDebugCheckBBlist();
-                        }
-                    }
-#endif // DEBUG
-                }
-
-                // Currently it is not good to move the rarely run handler regions to the end of the method
-                // because fgDetermineFirstColdBlock() must put the start of any handler region in the hot
-                // section.
-
-#if 0
-                // Now try to move the entire handler region if it can be moved.
-                // Don't try to move a finally handler unless we already moved the try region.
-                if (HBtab->ebdHndBeg->isRunRarely() &&
-                    !HBtab->ebdHndBeg->hasTryIndex() &&
-                    (movedTry || !HBtab->HasFinallyHandler()))
-                {
-                    BasicBlock* bHndLastBB = fgRelocateEHRange(XTnum, FG_RELOCATE_HANDLER);
-                    if (bHndLastBB != NULL)
+                    BasicBlock* bTryLastBB = fgRelocateEHRange(XTnum, FG_RELOCATE_TRY);
+                    if (bTryLastBB != NULL)
                     {
                         result   = true;
-                        movedHnd = true;
+                        movedTry = true;
                     }
                 }
-#endif // 0
-
 #if DEBUG
-                if (verbose && movedHnd)
+                if (verbose && movedTry)
                 {
-                    printf("\nAfter relocating an EH handler region");
+                    printf("\nAfter relocating an EH try region");
                     fgDispBasicBlocks();
                     fgDispHandlerTab();
 
@@ -4477,6 +4439,41 @@ bool Compiler::fgRelocateEHRegions()
                 }
 #endif // DEBUG
             }
+
+            // Currently it is not good to move the rarely run handler regions to the end of the method
+            // because fgDetermineFirstColdBlock() must put the start of any handler region in the hot
+            // section.
+
+#if 0
+            // Now try to move the entire handler region if it can be moved.
+            // Don't try to move a finally handler unless we already moved the try region.
+            if (HBtab->ebdHndBeg->isRunRarely() &&
+                !HBtab->ebdHndBeg->hasTryIndex() &&
+                (movedTry || !HBtab->HasFinallyHandler()))
+            {
+                BasicBlock* bHndLastBB = fgRelocateEHRange(XTnum, FG_RELOCATE_HANDLER);
+                if (bHndLastBB != NULL)
+                {
+                    result   = true;
+                    movedHnd = true;
+                }
+            }
+#endif // 0
+
+#if DEBUG
+            if (verbose && movedHnd)
+            {
+                printf("\nAfter relocating an EH handler region");
+                fgDispBasicBlocks();
+                fgDispHandlerTab();
+
+                // Make sure that the predecessor lists are accurate
+                if (expensiveDebugCheckLevel >= 2)
+                {
+                    fgDebugCheckBBlist();
+                }
+            }
+#endif // DEBUG
         }
     }
 

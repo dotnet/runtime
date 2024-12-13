@@ -4059,8 +4059,6 @@ _SetMinOpts:
         JitMetadata::report(this, JitMetadata::TieringName, tieringName, strlen(tieringName));
 #endif
     }
-
-    fgCanRelocateEHRegions = true;
 }
 
 #if defined(TARGET_ARMARCH) || defined(TARGET_RISCV64)
