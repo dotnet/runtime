@@ -1412,7 +1412,7 @@ internal sealed unsafe partial class SOSDacImpl
     #endregion ISOSDacInterface12
 
     #region ISOSDacInterface13
-    int ISOSDacInterface13.TraverseLoaderHeap(ulong loaderHeapAddr, /*LoaderHeapKind*/ int kind, VISITHEAP pCallback)
+    int ISOSDacInterface13.TraverseLoaderHeap(ulong loaderHeapAddr, /*LoaderHeapKind*/ int kind, /*VISITHEAP*/ delegate* unmanaged<ulong, nuint, Interop.BOOL> pCallback)
         => _legacyImpl13 is not null ? _legacyImpl13.TraverseLoaderHeap(loaderHeapAddr, kind, pCallback) : HResults.E_NOTIMPL;
     int ISOSDacInterface13.GetDomainLoaderAllocator(ulong domainAddress, ulong* pLoaderAllocator)
         => _legacyImpl13 is not null ? _legacyImpl13.GetDomainLoaderAllocator(domainAddress, pLoaderAllocator) : HResults.E_NOTIMPL;
