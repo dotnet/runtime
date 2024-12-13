@@ -1274,7 +1274,7 @@ DONE:
             {
                 // For normal jitting we may branch back to the firstBB; this
                 // should already be imported.
-                loopHead = fgFirstBB;
+                loopHead = fgGetFirstILBlock();
             }
 
             JITDUMP("\nTail recursive call [%06u] in the method. Mark " FMT_BB " to " FMT_BB
@@ -2606,12 +2606,33 @@ GenTree* Compiler::impInitializeArrayIntrinsic(CORINFO_SIG_INFO* sig)
     }
 
     //
-    // We start by looking at the last statement, making sure it's a store, and
-    // that the target of the store is the array passed to InitializeArray.
+    // We start by looking at the last statement, making sure it's a store.
     //
     GenTree* arrayLocalStore = impLastStmt->GetRootNode();
-    if (!arrayLocalStore->OperIs(GT_STORE_LCL_VAR) || !arrayLocalNode->OperIs(GT_LCL_VAR) ||
-        (arrayLocalStore->AsLclVar()->GetLclNum() != arrayLocalNode->AsLclVar()->GetLclNum()))
+    if (arrayLocalStore->OperIs(GT_STORE_LCL_VAR) && arrayLocalNode->OperIs(GT_LCL_VAR))
+    {
+        // Make sure the target of the store is the array passed to InitializeArray.
+        if (arrayLocalStore->AsLclVar()->GetLclNum() != arrayLocalNode->AsLclVar()->GetLclNum())
+        {
+            if (opts.OptimizationDisabled())
+            {
+                return nullptr;
+            }
+
+            // The array can be spilled to a temp for stack allocation.
+            // Try getting the actual store node from the previous statement.
+            if (arrayLocalStore->AsLclVar()->Data()->OperIs(GT_LCL_VAR) && impLastStmt->GetPrevStmt() != nullptr)
+            {
+                arrayLocalStore = impLastStmt->GetPrevStmt()->GetRootNode();
+                if (!arrayLocalStore->OperIs(GT_STORE_LCL_VAR) ||
+                    arrayLocalStore->AsLclVar()->GetLclNum() != arrayLocalNode->AsLclVar()->GetLclNum())
+                {
+                    return nullptr;
+                }
+            }
+        }
+    }
+    else
     {
         return nullptr;
     }

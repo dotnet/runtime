@@ -350,16 +350,14 @@ internal sealed unsafe partial class SOSDacImpl
                 }
             }
 
-#if false // TODO[cdac]: HAVE_GCCOVER
+            // HAVE_GCCOVER
             if (requestedNativeCodeVersion.Valid)
             {
-                TargetPointer gcCoverAddr = nativeCodeContract.GetGCCoverageInfo(requestedNativeCodeVersion);
-                if (gcCoverAddr != TargetPointer.Null)
-                {
-                    throw new NotImplementedException(); // TODO[cdac]: gc stress code copy
-                }
+                // TargetPointer.Null if GCCover information is not available.
+                // In certain minidumps, we won't save the GCCover information.
+                // (it would be unwise to do so, it is heavy and not a customer scenario).
+                data->GCStressCodeCopy = nativeCodeContract.GetGCStressCodeCopy(requestedNativeCodeVersion);
             }
-#endif
 
             // Unlike the legacy implementation, the cDAC does not currently populate
             // data->managedDynamicMethodObject. This field is unused in both SOS and CLRMD
@@ -1412,7 +1410,7 @@ internal sealed unsafe partial class SOSDacImpl
     #endregion ISOSDacInterface12
 
     #region ISOSDacInterface13
-    int ISOSDacInterface13.TraverseLoaderHeap(ulong loaderHeapAddr, /*LoaderHeapKind*/ int kind, VISITHEAP pCallback)
+    int ISOSDacInterface13.TraverseLoaderHeap(ulong loaderHeapAddr, /*LoaderHeapKind*/ int kind, /*VISITHEAP*/ delegate* unmanaged<ulong, nuint, Interop.BOOL> pCallback)
         => _legacyImpl13 is not null ? _legacyImpl13.TraverseLoaderHeap(loaderHeapAddr, kind, pCallback) : HResults.E_NOTIMPL;
     int ISOSDacInterface13.GetDomainLoaderAllocator(ulong domainAddress, ulong* pLoaderAllocator)
         => _legacyImpl13 is not null ? _legacyImpl13.GetDomainLoaderAllocator(domainAddress, pLoaderAllocator) : HResults.E_NOTIMPL;

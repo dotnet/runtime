@@ -51,7 +51,6 @@ PhaseStatus Compiler::fgMorphInit()
                                     impTokenLookupContextHandle /* context */) &
         CORINFO_INITCLASS_USE_HELPER)
     {
-        fgEnsureFirstBBisScratch();
         fgNewStmtAtBeg(fgFirstBB, fgInitThisClass());
         madeChanges = true;
     }
@@ -67,8 +66,7 @@ PhaseStatus Compiler::fgMorphInit()
                 GenTree* op = gtNewLclvNode(i, TYP_REF);
                 op          = gtNewHelperCallNode(CORINFO_HELP_CHECK_OBJ, TYP_VOID, op);
 
-                fgEnsureFirstBBisScratch();
-                fgNewStmtAtEnd(fgFirstBB, op);
+                fgNewStmtAtBeg(fgFirstBB, op);
                 madeChanges = true;
                 if (verbose)
                 {
@@ -6744,24 +6742,19 @@ void Compiler::fgMorphRecursiveFastTailCallIntoLoop(BasicBlock* block, GenTreeCa
     if (opts.IsOSR())
     {
         // Todo: this may not look like a viable loop header.
-        // Might need the moral equivalent of a scratch BB.
+        // Might need the moral equivalent of an init BB.
         FlowEdge* const newEdge = fgAddRefPred(fgEntryBB, block);
         block->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
     }
     else
     {
-        // We should have ensured the first BB was scratch
-        // in morph init...
-        //
         assert(doesMethodHaveRecursiveTailcall());
-        assert(fgFirstBBisScratch());
 
-        // Loop detection needs to see a pred out of the loop,
-        // so mark the scratch block BBF_DONT_REMOVE to prevent empty
-        // block removal on it.
-        //
-        fgFirstBB->SetFlags(BBF_DONT_REMOVE);
-        FlowEdge* const newEdge = fgAddRefPred(fgFirstBB->Next(), block);
+        // TODO-Cleanup: We should really be expanding tailcalls into loops
+        // much earlier than this, at a place where we do not need to have
+        // hacky workarounds to figure out what the actual IL entry block is.
+        BasicBlock*     firstILBB = fgGetFirstILBlock();
+        FlowEdge* const newEdge   = fgAddRefPred(firstILBB, block);
         block->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
     }
 
@@ -13510,14 +13503,6 @@ PhaseStatus Compiler::fgMorphBlocks()
         lvSetMinOptsDoNotEnreg();
     }
 
-    // Ensure the first BB is scratch if we might need it as a pred for
-    // the recursive tail call to loop optimization.
-    //
-    if (doesMethodHaveRecursiveTailcall())
-    {
-        fgEnsureFirstBBisScratch();
-    }
-
     // Morph all blocks.
     //
     if (!optLocalAssertionProp)
@@ -13544,17 +13529,16 @@ PhaseStatus Compiler::fgMorphBlocks()
         MorphUnreachableInfo unreachableInfo(this);
 
         // Allow edge creation to genReturnBB (target of return merging)
-        // and the scratch block successor (target for tail call to loop).
+        // and the first IL BB (target for tail call to loop).
         // This will also disallow dataflow into these blocks.
         //
         if (genReturnBB != nullptr)
         {
             genReturnBB->SetFlags(BBF_CAN_ADD_PRED);
         }
-        if (fgFirstBBisScratch())
-        {
-            fgFirstBB->Next()->SetFlags(BBF_CAN_ADD_PRED);
-        }
+        // TODO-Cleanup: Remove this by transforming tailcalls to loops earlier.
+        BasicBlock* firstILBB = opts.IsOSR() ? fgEntryBB : fgGetFirstILBlock();
+        firstILBB->SetFlags(BBF_CAN_ADD_PRED);
 
         // Remember this so we can sanity check that no new blocks will get created.
         //
@@ -13579,10 +13563,7 @@ PhaseStatus Compiler::fgMorphBlocks()
         {
             genReturnBB->RemoveFlags(BBF_CAN_ADD_PRED);
         }
-        if (fgFirstBBisScratch())
-        {
-            fgFirstBB->Next()->RemoveFlags(BBF_CAN_ADD_PRED);
-        }
+        firstILBB->RemoveFlags(BBF_CAN_ADD_PRED);
     }
 
     // Under OSR, we no longer need to specially protect the original method entry
@@ -13630,7 +13611,33 @@ PhaseStatus Compiler::fgMorphBlocks()
         Metrics.MorphLocals            = lvaCount;
     }
 
+    // We may have converted a tailcall into a loop, in which case the first BB
+    // may no longer be canonical.
+    fgCanonicalizeFirstBB();
+
     return PhaseStatus::MODIFIED_EVERYTHING;
+}
+
+//------------------------------------------------------------------------
+// fgGetFirstILBB: Obtain the first basic block that was created due to IL.
+//
+// Returns:
+//   The basic block, skipping the init BB.
+//
+// Remarks:
+//   TODO-Cleanup: Refactor users to be able to remove this function.
+//
+BasicBlock* Compiler::fgGetFirstILBlock()
+{
+    BasicBlock* firstILBB = fgFirstBB;
+    while (firstILBB->HasFlag(BBF_INTERNAL))
+    {
+        assert(firstILBB->KindIs(BBJ_ALWAYS));
+        firstILBB = firstILBB->GetTarget();
+        assert((firstILBB != nullptr) && (firstILBB != fgFirstBB));
+    }
+
+    return firstILBB;
 }
 
 //------------------------------------------------------------------------
