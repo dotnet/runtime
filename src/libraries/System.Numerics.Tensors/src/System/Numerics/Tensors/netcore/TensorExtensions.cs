@@ -3519,8 +3519,7 @@ namespace System.Numerics.Tensors
             Span<T> output = new T[x.FlattenedLength];
             TensorPrimitives.Subtract(span, mean, output);
             TensorPrimitives.Abs(output, output);
-            TensorPrimitives.Pow((ReadOnlySpan<T>)output, T.CreateChecked(2), output);
-            T sum = TensorPrimitives.Sum((ReadOnlySpan<T>)output);
+            T sum = TensorPrimitives.SumOfSquares((ReadOnlySpan<T>)output);
             T variance = sum / T.CreateChecked(x._shape._memoryLength);
             return T.Sqrt(variance);
         }
