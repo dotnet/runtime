@@ -4053,9 +4053,12 @@ _SetMinOpts:
         {
             codeGen->SetAlignLoops(JitConfig.JitAlignLoops() == 1);
         }
-    }
 
-    fgCanRelocateEHRegions = true;
+#ifdef DEBUG
+        const char* tieringName = compGetTieringName(true);
+        JitMetadata::report(this, JitMetadata::TieringName, tieringName, strlen(tieringName));
+#endif
+    }
 }
 
 #if defined(TARGET_ARMARCH) || defined(TARGET_RISCV64)
@@ -7151,13 +7154,6 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
         // Disable JitDisasm for non-optimized code.
         opts.disAsm = false;
     }
-
-#ifdef DEBUG
-    {
-        const char* tieringName = compGetTieringName(true);
-        JitMetadata::report(this, JitMetadata::TieringName, tieringName, strlen(tieringName));
-    }
-#endif
 
 #if COUNT_BASIC_BLOCKS
     bbCntTable.record(fgBBcount);
