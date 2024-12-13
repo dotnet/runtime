@@ -253,14 +253,11 @@ namespace System.Collections.Generic
             }
         }
 
-        // FIXME
-#pragma warning disable CA1823
         // constants for serialization
         private const string VersionName = "Version"; // Do not rename (binary serialization)
         private const string HashSizeName = "HashSize"; // Do not rename (binary serialization). Must save buckets.Length
         private const string KeyValuePairsName = "KeyValuePairs"; // Do not rename (binary serialization)
         private const string ComparerName = "Comparer"; // Do not rename (binary serialization)
-#pragma warning restore CA1823
 
         private Bucket[]? _buckets;
         private Entry[]? _entries;
@@ -620,9 +617,6 @@ namespace System.Collections.Generic
         [EditorBrowsable(EditorBrowsableState.Never)]
         public virtual void GetObjectData(SerializationInfo info, StreamingContext context)
         {
-            // FIXME
-            throw new NotImplementedException();
-            /*
             if (info == null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.info);
@@ -630,15 +624,14 @@ namespace System.Collections.Generic
 
             info.AddValue(VersionName, _version);
             info.AddValue(ComparerName, Comparer, typeof(IEqualityComparer<TKey>));
-            info.AddValue(HashSizeName, _buckets == null ? 0 : _buckets.Length); // This is the length of the bucket array
+            info.AddValue(HashSizeName, _entries == null ? 0 : _entries.Length); // This is the length of the bucket array
 
-            if (_buckets != null)
+            if (_entries != null)
             {
                 var array = new KeyValuePair<TKey, TValue>[Count];
                 CopyTo(array, 0);
                 info.AddValue(KeyValuePairsName, array, typeof(KeyValuePair<TKey, TValue>[]));
             }
-            */
         }
 
         private ref Entry FindEntry<TProtocol, TActualKey>(TProtocol protocol, TActualKey key)
@@ -1263,10 +1256,6 @@ namespace System.Collections.Generic
 
         public virtual void OnDeserialization(object? sender)
         {
-            // FIXME
-            throw new NotImplementedException();
-            /*
-
             HashHelpers.SerializationInfoTable.TryGetValue(this, out SerializationInfo? siInfo);
 
             if (siInfo == null)
@@ -1309,7 +1298,6 @@ namespace System.Collections.Generic
 
             _version = realVersion;
             HashHelpers.SerializationInfoTable.Remove(this);
-            */
         }
 
         private void Resize() => Resize(HashHelpers.ExpandPrime(_count));
