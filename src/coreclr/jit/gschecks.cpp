@@ -525,25 +525,68 @@ void Compiler::gsParamsToShadows()
             call->gtArgs.PushBack(this, NewCallArg::Primitive(dst));
             call->gtArgs.PushBack(this, NewCallArg::Primitive(src));
 
-            fgEnsureFirstBBisScratch();
             compCurBB = fgFirstBB; // Needed by some morphing
             if (opts.IsReversePInvoke())
             {
-                JITDUMP(
-                    "Inserting special copy helper call at the end of the first block after Reverse P/Invoke transition\n");
-
-#ifdef DEBUG
-                // assert that we don't have any uses of the local variable in the first block
-                // before we insert the shadow copy statement.
-                for (Statement* const stmt : fgFirstBB->Statements())
-                {
-                    assert(!gtHasRef(stmt->GetRootNode(), lclNum));
-                }
-#endif
                 // If we are in a reverse P/Invoke, then we need to insert
                 // the call at the end of the first block as we need to do the GC transition
                 // before we can call the helper.
-                (void)fgNewStmtAtEnd(fgFirstBB, fgMorphTree(call));
+                //
+                // TODO-Cleanup: These gymnastics indicate that we are
+                // inserting reverse pinvoke transitions way too early in the
+                // JIT.
+
+                struct HasReversePInvokeEnterVisitor : GenTreeVisitor<HasReversePInvokeEnterVisitor>
+                {
+                    enum
+                    {
+                        DoPreOrder = true,
+                    };
+
+                    HasReversePInvokeEnterVisitor(Compiler* comp)
+                        : GenTreeVisitor(comp)
+                    {
+                    }
+
+                    fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
+                    {
+                        if (((*use)->gtFlags & GTF_CALL) == 0)
+                        {
+                            return fgWalkResult::WALK_SKIP_SUBTREES;
+                        }
+
+                        if ((*use)->IsHelperCall(m_compiler, CORINFO_HELP_JIT_REVERSE_PINVOKE_ENTER) ||
+                            (*use)->IsHelperCall(m_compiler, CORINFO_HELP_JIT_REVERSE_PINVOKE_ENTER_TRACK_TRANSITIONS))
+                        {
+                            return fgWalkResult::WALK_ABORT;
+                        }
+
+                        return fgWalkResult::WALK_CONTINUE;
+                    }
+                };
+
+                HasReversePInvokeEnterVisitor checker(this);
+
+                Statement* reversePInvokeStmt = nullptr;
+                for (Statement* const stmt : fgFirstBB->Statements())
+                {
+                    // assert that we don't have any uses of the local variable
+                    // at the point before we insert the shadow copy statement.
+                    assert(!gtHasRef(stmt->GetRootNode(), lclNum));
+
+                    if (checker.WalkTree(stmt->GetRootNodePointer(), nullptr) == fgWalkResult::WALK_ABORT)
+                    {
+                        reversePInvokeStmt = stmt;
+                        break;
+                    }
+                }
+
+                noway_assert(reversePInvokeStmt != nullptr);
+
+                JITDUMP("Inserting special copy helper call after Reverse P/Invoke transition " FMT_STMT "\n",
+                        reversePInvokeStmt->GetID());
+
+                (void)fgInsertStmtAfter(fgFirstBB, reversePInvokeStmt, gtNewStmt(fgMorphTree(call)));
             }
             else
             {
@@ -559,9 +602,8 @@ void Compiler::gsParamsToShadows()
 
             GenTree* store = gtNewStoreLclVarNode(shadowVarNum, src);
 
-            fgEnsureFirstBBisScratch();
             compCurBB = fgFirstBB; // Needed by some morphing
-            (void)fgNewStmtAtBeg(fgFirstBB, fgMorphTree(store));
+            fgNewStmtAtBeg(fgFirstBB, fgMorphTree(store));
         }
     }
     compCurBB = nullptr;

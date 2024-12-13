@@ -32,7 +32,8 @@ internal sealed unsafe partial class SOSDacImpl
     private readonly Target _target;
 
     // When this class is created, the runtime may not have loaded the string and object method tables and set the global pointers.
-    // They should be set when actually requested via a DAC API, so we lazily read the global pointers.
+    // This is also the case for the GetUsefulGlobals API, which can be called as part of load notifications before runtime start.
+    // They should be set when actually requested via other DAC APIs, so we lazily read the global pointers.
     private readonly Lazy<TargetPointer> _stringMethodTable;
     private readonly Lazy<TargetPointer> _objectMethodTable;
 
@@ -360,10 +361,11 @@ internal sealed unsafe partial class SOSDacImpl
             }
 #endif
 
-            if (data->bIsDynamic != 0)
-            {
-                throw new NotImplementedException(); // TODO[cdac]: get the dynamic method managed object
-            }
+            // Unlike the legacy implementation, the cDAC does not currently populate
+            // data->managedDynamicMethodObject. This field is unused in both SOS and CLRMD
+            // and would require accessing CorLib bound managed fields which the cDAC does not
+            // currently support. However, it must remain in the return type for compatibility.
+            data->managedDynamicMethodObject = 0;
 
             hr = HResults.S_OK;
         }
@@ -405,7 +407,8 @@ internal sealed unsafe partial class SOSDacImpl
                 Debug.Assert(data->MDToken == dataLocal.MDToken);
                 Debug.Assert(data->GCInfo == dataLocal.GCInfo);
                 Debug.Assert(data->GCStressCodeCopy == dataLocal.GCStressCodeCopy);
-                Debug.Assert(data->managedDynamicMethodObject == dataLocal.managedDynamicMethodObject);
+                // managedDynamicMethodObject is not currently populated by the cDAC API and may differ from legacyImpl.
+                Debug.Assert(data->managedDynamicMethodObject == 0);
                 Debug.Assert(data->requestedIP == dataLocal.requestedIP);
                 Debug.Assert(data->cJittedRejitVersions == dataLocal.cJittedRejitVersions);
 
@@ -1241,8 +1244,10 @@ internal sealed unsafe partial class SOSDacImpl
         {
             data->ArrayMethodTable = _target.ReadPointer(
                 _target.ReadGlobalPointer(Constants.Globals.ObjectArrayMethodTable));
-            data->StringMethodTable = _stringMethodTable.Value;
-            data->ObjectMethodTable = _objectMethodTable.Value;
+            data->StringMethodTable = _target.ReadPointer(
+                _target.ReadGlobalPointer(Constants.Globals.StringMethodTable));
+            data->ObjectMethodTable = _target.ReadPointer(
+                _target.ReadGlobalPointer(Constants.Globals.ObjectMethodTable));
             data->ExceptionMethodTable = _target.ReadPointer(
                 _target.ReadGlobalPointer(Constants.Globals.ExceptionMethodTable));
             data->FreeMethodTable = _target.ReadPointer(

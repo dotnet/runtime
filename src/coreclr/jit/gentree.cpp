@@ -27624,8 +27624,7 @@ void GenTreeHWIntrinsic::SetHWIntrinsicId(NamedIntrinsic intrinsicId)
 {
     return (op1->TypeGet() == op2->TypeGet()) && (op1->GetHWIntrinsicId() == op2->GetHWIntrinsicId()) &&
            (op1->GetSimdBaseType() == op2->GetSimdBaseType()) && (op1->GetSimdSize() == op2->GetSimdSize()) &&
-           (op1->GetAuxiliaryType() == op2->GetAuxiliaryType()) && (op1->GetRegByIndex(1) == op2->GetRegByIndex(1)) &&
-           OperandsAreEqual(op1, op2);
+           (op1->GetAuxiliaryType() == op2->GetAuxiliaryType()) && OperandsAreEqual(op1, op2);
 }
 
 void GenTreeHWIntrinsic::Initialize(NamedIntrinsic intrinsicId)

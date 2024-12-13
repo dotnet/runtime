@@ -728,7 +728,7 @@ namespace System.Net.Sockets.Tests
 
                 Assert.Equal(acceptBufferDataSize, acceptArgs.BytesTransferred);
 
-                AssertExtensions.SequenceEqual(sendBuffer, acceptArgs.Buffer.AsSpan(0, acceptArgs.BytesTransferred));
+                AssertExtensions.SequenceEqual(sendBuffer.AsSpan(), acceptArgs.Buffer.AsSpan(0, acceptArgs.BytesTransferred));
             }
         }
 
