@@ -641,21 +641,6 @@ namespace System.Collections.Generic
             */
         }
 
-        // The hash suffix is selected from 8 bits of the hash, and then modified to ensure
-        //  it is never zero (because a zero suffix indicates an empty slot.)
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static byte GetHashSuffix(uint hashCode)
-        {
-            // We could shift by 24 bits to take the other end of the value, but taking the low 8
-            //  bits produces better results for the common scenario where you're using sequential
-            //  integers as keys (since their default hash is the identity function).
-            var result = unchecked((byte)hashCode);
-            // Assuming the JIT turns this into a cmov, this should be better than a bitwise or
-            //  since it nearly doubles the number of possible suffixes, improving collision
-            //  resistance and reducing the odds of having to check multiple keys.
-            return result == 0 ? (byte)255 : result;
-        }
-
         private ref Entry FindEntry<TProtocol, TActualKey>(TProtocol protocol, TActualKey key)
             where TProtocol : struct, IComparisonProtocol<TActualKey>
             where TActualKey : allows ref struct
@@ -789,15 +774,6 @@ namespace System.Collections.Generic
 
                 ThrowHelper.ThrowInvalidOperationException_ConcurrentOperationsNotSupported();
             }
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static int GetBucketCountForEntryCount(int count)
-        {
-            int result = checked((count + Bucket.Capacity - 1) / Bucket.Capacity);
-            return (result > 1)
-                ? HashHelpers.GetPrime(result)
-                : result;
         }
 
         private int Initialize(int capacity)
@@ -1793,6 +1769,30 @@ namespace System.Collections.Generic
             {
                 Remove((TKey)key);
             }
+        }
+
+        // The hash suffix is selected from 8 bits of the hash, and then modified to ensure
+        //  it is never zero (because a zero suffix indicates an empty slot.)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static byte GetHashSuffix(uint hashCode)
+        {
+            // We could shift by 24 bits to take the other end of the value, but taking the low 8
+            //  bits produces better results for the common scenario where you're using sequential
+            //  integers as keys (since their default hash is the identity function).
+            var result = unchecked((byte)hashCode);
+            // Assuming the JIT turns this into a cmov, this should be better than a bitwise or
+            //  since it nearly doubles the number of possible suffixes, improving collision
+            //  resistance and reducing the odds of having to check multiple keys.
+            return result == 0 ? (byte)255 : result;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static int GetBucketCountForEntryCount(int count)
+        {
+            int result = checked((count + Bucket.Capacity - 1) / Bucket.Capacity);
+            return (result > 1)
+                ? HashHelpers.GetPrime(result)
+                : result;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
