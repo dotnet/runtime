@@ -783,7 +783,7 @@ namespace System.Reflection
                     }
                     else
                     {
-                        obj = RuntimeImports.RhBox(
+                        obj = RuntimeExports.RhBox(
                             (transform & Transform.FunctionPointer) != 0 ? MethodTable.Of<IntPtr>() : argumentInfo.Type,
                             ref obj.GetRawData());
                     }
@@ -818,7 +818,7 @@ namespace System.Reflection
                     }
                     else
                     {
-                        obj = RuntimeImports.RhBox(
+                        obj = RuntimeExports.RhBox(
                             (transform & Transform.FunctionPointer) != 0 ? MethodTable.Of<IntPtr>() : argumentInfo.Type,
                             ref obj.GetRawData());
                     }
@@ -849,7 +849,7 @@ namespace System.Reflection
             else if ((_returnTransform & Transform.FunctionPointer) != 0)
             {
                 Debug.Assert(Type.GetTypeFromMethodTable(_returnType).IsFunctionPointer);
-                obj = RuntimeImports.RhBox(MethodTable.Of<IntPtr>(), ref byref);
+                obj = RuntimeExports.RhBox(MethodTable.Of<IntPtr>(), ref byref);
             }
             else if ((_returnTransform & Transform.Reference) != 0)
             {
@@ -859,7 +859,7 @@ namespace System.Reflection
             else
             {
                 Debug.Assert((_returnTransform & (Transform.ByRef | Transform.Nullable)) != 0);
-                obj = RuntimeImports.RhBox(_returnType, ref byref);
+                obj = RuntimeExports.RhBox(_returnType, ref byref);
             }
             return obj;
         }

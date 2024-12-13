@@ -18,13 +18,6 @@
 #include "posterror.h"
 #include <type_traits>
 
-// Hot cache lines need to be aligned to cache line size to improve performance
-#if defined(TARGET_ARM64)
-#define MAX_CACHE_LINE_SIZE 128
-#else
-#define MAX_CACHE_LINE_SIZE 64
-#endif
-
 #ifndef DACCESS_COMPILE
 #if defined(TARGET_WINDOWS) && defined(TARGET_ARM64)
 // Flag to check if atomics feature is available on
@@ -799,17 +792,6 @@ int __cdecl stricmpUTF8(const char* szStr1, const char* szStr2);
 BOOL DbgIsExecutable(LPVOID lpMem, SIZE_T length);
 
 int GetRandomInt(int maxVal);
-
-//
-//
-// COMCHARACTER
-//
-//
-class COMCharacter {
-public:
-    //These are here for support from native code.  They are never called from our managed classes.
-    static BOOL nativeIsWhiteSpace(WCHAR c);
-};
 
 // ======================================================================================
 // Simple, reusable 100ns timer for normalizing ticks. For use in Q/FCalls to avoid discrepency with

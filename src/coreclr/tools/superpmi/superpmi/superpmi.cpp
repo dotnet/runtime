@@ -139,7 +139,7 @@ static const char* ResultToString(ReplayResult result)
 
 static void PrintDiffsCsvHeader(FileWriter& fw)
 {
-    fw.Print("Context,Context size,Method full name,Tier name,Base result,Diff result,MinOpts,Has diff,Base size,Diff size,Base instructions,Diff instructions");
+    fw.Print("Context,Context size,Method full name,Tier name,Base result,Diff result,MinOpts,Has diff,Base instructions,Diff instructions");
 
 #define JITMETADATAINFO(name, type, flags)
 #define JITMETADATAMETRIC(name, type, flags) fw.Print(",Base " #name ",Diff " #name);
@@ -157,14 +157,13 @@ static void PrintDiffsCsvRow(
     bool hasDiff)
 {
     fw.Printf("%d,%u,", context, contextSize);
-    fw.PrintQuotedCsvField(baseRes.CompileResults->MethodFullName == nullptr ? "" : baseRes.CompileResults->MethodFullName);
+    fw.PrintQuotedCsvField(diffRes.CompileResults->MethodFullName == nullptr ? "" : diffRes.CompileResults->MethodFullName);
     fw.Printf(
-        ",%s,%s,%s,%s,%s,%u,%u,%lld,%lld",
-        baseRes.CompileResults->TieringName == nullptr ? "" : baseRes.CompileResults->TieringName,
+        ",%s,%s,%s,%s,%s,%lld,%lld",
+        diffRes.CompileResults->TieringName == nullptr ? "" : diffRes.CompileResults->TieringName,
         ResultToString(baseRes.Result), ResultToString(diffRes.Result),
-        baseRes.IsMinOpts ? "True" : "False",
+        diffRes.IsMinOpts ? "True" : "False",
         hasDiff ? "True" : "False",
-        baseRes.NumCodeBytes, diffRes.NumCodeBytes,
         baseRes.NumExecutedInstructions, diffRes.NumExecutedInstructions);
 
 #define JITMETADATAINFO(name, type, flags)
@@ -181,7 +180,7 @@ static void PrintDiffsCsvRow(
 
 static void PrintReplayCsvHeader(FileWriter& fw)
 {
-    fw.Printf("Context,Context size,Method full name,Tier name,Result,MinOpts,Size,Instructions");
+    fw.Printf("Context,Context size,Method full name,Tier name,Result,MinOpts,Instructions");
 
 #define JITMETADATAINFO(name, type, flags)
 #define JITMETADATAMETRIC(name, type, flags) fw.Print("," #name);
@@ -198,11 +197,11 @@ static void PrintReplayCsvRow(
 {
     fw.Printf("%d,%u,", context, contextSize);
     fw.PrintQuotedCsvField(res.CompileResults->MethodFullName == nullptr ? "" : res.CompileResults->MethodFullName);
-    fw.Printf(",%s,%s,%s,%u,%lld",
+    fw.Printf(",%s,%s,%s,%lld",
         res.CompileResults->TieringName == nullptr ? "" : res.CompileResults->TieringName,
         ResultToString(res.Result),
         res.IsMinOpts ? "True" : "False",
-        res.NumCodeBytes, res.NumExecutedInstructions);
+        res.NumExecutedInstructions);
 
 #define JITMETADATAINFO(name, type, flags)
 #define JITMETADATAMETRIC(name, type, flags) \

@@ -50,6 +50,7 @@ set(VM_SOURCES_DAC_AND_WKS_COMMON
     bundle.cpp
     castcache.cpp
     callcounting.cpp
+    cdacplatformmetadata.cpp
     ceeload.cpp
     class.cpp
     classhash.cpp
@@ -301,7 +302,6 @@ set(VM_SOURCES_WKS
     comdynamic.cpp
     commodule.cpp
     comsynchronizable.cpp
-    comthreadpool.cpp
     comutilnative.cpp
     comwaithandle.cpp
     coreassemblyspec.cpp
@@ -401,7 +401,6 @@ set(VM_HEADERS_WKS
     comdynamic.h
     commodule.h
     comsynchronizable.h
-    comthreadpool.h
     comutilnative.h
     comwaithandle.h
     customattribute.h

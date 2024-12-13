@@ -436,6 +436,7 @@ private:
 
     ULONG           m_Recursion;
     PTR_Thread      m_HoldingThread;
+    DWORD           m_HoldingThreadId;
     SIZE_T          m_HoldingOSThreadId;
 
     LONG            m_TransientPrecious;
@@ -459,6 +460,7 @@ private:
 // PreFAST has trouble with initializing a NULL PTR_Thread.
           m_HoldingThread(NULL),
 #endif // DACCESS_COMPILE
+          m_HoldingThreadId(0),
           m_HoldingOSThreadId(0),
           m_TransientPrecious(0),
           m_dwSyncIndex(indx),
@@ -523,19 +525,26 @@ public:
         return m_HoldingThread;
     }
 
+    DWORD GetHoldingThreadId() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_HoldingThreadId;
+    }
+
 private:
     void ResetWaiterStarvationStartTime();
     void RecordWaiterStarvationStartTime();
     bool ShouldStopPreemptingWaiters() const;
 
 private: // friend access is required for this unsafe function
-    void InitializeToLockedWithNoWaiters(ULONG recursionLevel, PTR_Thread holdingThread, SIZE_T holdingOSThreadId)
+    void InitializeToLockedWithNoWaiters(ULONG recursionLevel, PTR_Thread holdingThread, DWORD holdingThreadId, SIZE_T holdingOSThreadId)
     {
         WRAPPER_NO_CONTRACT;
 
         m_lockState.InitializeToLockedWithNoWaiters();
         m_Recursion = recursionLevel;
         m_HoldingThread = holdingThread;
+        m_HoldingThreadId = holdingThreadId;
         m_HoldingOSThreadId = holdingOSThreadId;
     }
 
@@ -970,7 +979,7 @@ private:
     BYTE m_taggedAlloc[2 * sizeof(void*)];
 #endif // FEATURE_OBJCMARSHAL
 
-    template<typename T> friend struct ::cdac_data;
+    friend struct ::cdac_data<InteropSyncBlockInfo>;
 };
 
 template<>
@@ -1270,10 +1279,10 @@ class SyncBlock
     // This should ONLY be called when initializing a SyncBlock (i.e. ONLY from
     // ObjHeader::GetSyncBlock()), otherwise we'll have a race condition.
     // </NOTE>
-    void InitState(ULONG recursionLevel, PTR_Thread holdingThread, SIZE_T holdingOSThreadId)
+    void InitState(ULONG recursionLevel, PTR_Thread holdingThread, DWORD holdingThreadId, SIZE_T holdingOSThreadId)
     {
         WRAPPER_NO_CONTRACT;
-        m_Monitor.InitializeToLockedWithNoWaiters(recursionLevel, holdingThread, holdingOSThreadId);
+        m_Monitor.InitializeToLockedWithNoWaiters(recursionLevel, holdingThread, holdingThreadId, holdingOSThreadId);
     }
 
 #if defined(ENABLE_CONTRACTS_IMPL)
@@ -1286,7 +1295,7 @@ class SyncBlock
     }
 #endif // defined(ENABLE_CONTRACTS_IMPL)
 
-    template<typename T> friend struct ::cdac_data;
+    friend struct ::cdac_data<SyncBlock>;
 };
 
 template<>
@@ -1674,7 +1683,7 @@ class ObjHeader
 
     BOOL Validate (BOOL bVerifySyncBlkIndex = TRUE);
 
-    template<typename T> friend struct ::cdac_data;
+    friend struct ::cdac_data<ObjHeader>;
 };
 
 template<>

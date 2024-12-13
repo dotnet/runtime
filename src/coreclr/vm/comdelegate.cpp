@@ -337,6 +337,18 @@ struct ShuffleGraphNode
 
 BOOL AddNextShuffleEntryToArray(ArgLocDesc sArgSrc, ArgLocDesc sArgDst, SArray<ShuffleEntry> * pShuffleEntryArray, ShuffleComputationType shuffleType)
 {
+#if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
+    if (sArgSrc.m_structFields.flags != sArgDst.m_structFields.flags)
+    {
+        _ASSERT(sArgSrc.m_structFields.flags == FpStruct::UseIntCallConv
+            || sArgDst.m_structFields.flags == FpStruct::UseIntCallConv);
+        // StubLinkerCPU::EmitShuffleThunk supports shuffles only within the integer calling convention (floating-point
+        // arguments may be passed in registers but these are not shuffled then). Transferring arguments between
+        // calling conventions is handled by IL stubs.
+        return FALSE;
+    }
+#endif // TARGET_RISCV64 || TARGET_LOONGARCH64
+
     ShuffleEntry entry;
     ZeroMemory(&entry, sizeof(entry));
 
@@ -407,25 +419,6 @@ BOOL GenerateShuffleArrayPortable(MethodDesc* pMethodSrc, MethodDesc *pMethodDst
         if (stackSizeSrc != stackSizeDst)
             return FALSE;
     }
-
-    UINT stackSizeDelta = 0;
-
-#if defined(TARGET_X86) && !defined(UNIX_X86_ABI)
-    {
-        UINT stackSizeSrc = sArgPlacerSrc.SizeOfArgStack();
-        UINT stackSizeDst = sArgPlacerDst.SizeOfArgStack();
-
-        // Windows X86 calling convention requires the stack to shrink when removing
-        // arguments, as it is callee pop
-        if (stackSizeDst > stackSizeSrc)
-        {
-            // we can drop arguments but we can never make them up - this is definitely not allowed
-            COMPlusThrow(kVerificationException);
-        }
-
-        stackSizeDelta = stackSizeSrc - stackSizeDst;
-    }
-#endif // Callee pop architectures - defined(TARGET_X86) && !defined(UNIX_X86_ABI)
 
     INT ofsSrc;
     INT ofsDst;
@@ -623,20 +616,21 @@ BOOL GenerateShuffleArrayPortable(MethodDesc* pMethodSrc, MethodDesc *pMethodDst
     }
 
     entry.srcofs = ShuffleEntry::SENTINEL;
-    entry.dstofs = 0;
+    entry.stacksizedelta = 0;
     pShuffleEntryArray->Append(entry);
 
     return TRUE;
 }
 #endif // FEATURE_PORTABLE_SHUFFLE_THUNKS
 
-VOID GenerateShuffleArray(MethodDesc* pInvoke, MethodDesc *pTargetMeth, SArray<ShuffleEntry> * pShuffleEntryArray)
+BOOL GenerateShuffleArray(MethodDesc* pInvoke, MethodDesc *pTargetMeth, SArray<ShuffleEntry> * pShuffleEntryArray)
 {
     STANDARD_VM_CONTRACT;
 
 #ifdef FEATURE_PORTABLE_SHUFFLE_THUNKS
     // Portable default implementation
-    GenerateShuffleArrayPortable(pInvoke, pTargetMeth, pShuffleEntryArray, ShuffleComputationType::DelegateShuffleThunk);
+    if (!GenerateShuffleArrayPortable(pInvoke, pTargetMeth, pShuffleEntryArray, ShuffleComputationType::DelegateShuffleThunk))
+        return FALSE;
 #elif defined(TARGET_X86)
     ShuffleEntry entry;
     ZeroMemory(&entry, sizeof(entry));
@@ -724,6 +718,48 @@ VOID GenerateShuffleArray(MethodDesc* pInvoke, MethodDesc *pTargetMeth, SArray<S
 #else
 #error Unsupported architecture
 #endif
+
+    if (LoggingOn(LF_STUBS, LL_INFO1000000))
+    {
+        LOGALWAYS(("GenerateShuffleArray: %u entries for %s.%s -> %s.%s:\n",
+            pShuffleEntryArray->GetCount(),
+            pInvoke->GetMethodTable()->GetDebugClassName(), pInvoke->GetName(),
+            pTargetMeth->GetMethodTable()->GetDebugClassName(), pTargetMeth->GetName()));
+
+        for (COUNT_T i = 0; i < pShuffleEntryArray->GetCount(); ++i)
+        {
+            ShuffleEntry entry = (*pShuffleEntryArray)[i];
+            if (entry.srcofs == ShuffleEntry::SENTINEL)
+            {
+                LOGALWAYS(("    [%u] sentinel, stack size delta %u\n", i, entry.stacksizedelta));
+                _ASSERTE(i == pShuffleEntryArray->GetCount() - 1);
+                break;
+            }
+
+            struct ShuffleInfo { const char* type; int offset; };
+            auto getShuffleInfo = [](UINT16 offset) -> ShuffleInfo {
+                if (offset == ShuffleEntry::HELPERREG)
+                {
+                    return { "helper register" };
+                }
+                else if (offset & ShuffleEntry::REGMASK)
+                {
+                    const char* type = (offset & ShuffleEntry::FPREGMASK)
+                        ? ((offset & ShuffleEntry::FPSINGLEMASK) ? "single-FP register" : "FP register")
+                        : "integer register";
+                    return { type, offset & ShuffleEntry::OFSREGMASK };
+                }
+                else
+                {
+                    return {"stack slot", offset & ShuffleEntry::OFSMASK };
+                }
+            };
+            ShuffleInfo src = getShuffleInfo(entry.srcofs);
+            ShuffleInfo dst = getShuffleInfo(entry.dstofs);
+            LOGALWAYS(("    [%u] %s %i -> %s %i\n", i, src.type, src.offset, dst.type, dst.offset));
+        }
+    }
+    return TRUE;
 }
 
 static ShuffleThunkCache* s_pShuffleThunkCache = NULL;
@@ -789,8 +825,69 @@ LoaderHeap *DelegateEEClass::GetStubHeap()
     return GetInvokeMethod()->GetLoaderAllocator()->GetStubHeap();
 }
 
+#if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
+static Stub* CreateILDelegateShuffleThunk(MethodDesc* pDelegateMD, bool callTargetWithThis)
+{
+    SigTypeContext typeContext(pDelegateMD);
+    MetaSig sig(pDelegateMD);
+    if (LoggingOn(LF_STUBS, LL_INFO1000000))
+    {
+        SString delegateName;
+        pDelegateMD->GetFullMethodInfo(delegateName);
+        LOGALWAYS(("CreateILDelegateShuffleThunk %s (%i args, callTargetWithThis:%i)\n",
+            delegateName.GetUTF8(), sig.NumFixedArgs(), callTargetWithThis));
+    }
+    _ASSERTE(sig.HasThis());
 
-static Stub* SetupShuffleThunk(MethodTable* pDelMT, MethodDesc* pTargetMeth)
+    Module* pModule = sig.GetModule();
+    Signature signature = pDelegateMD->GetSignature();
+
+    ILStubLinkerFlags flags = ILSTUB_LINKER_FLAG_STUB_HAS_THIS;
+    ILStubLinker stubLinker(pModule, signature, &typeContext, pDelegateMD, flags);
+    ILCodeStream *pCode = stubLinker.NewCodeStream(ILStubLinker::kDispatch);
+
+    for (unsigned i = 0; i < sig.NumFixedArgs(); ++i)
+        pCode->EmitLDARG(i);
+
+    pCode->EmitLoadThis();
+    pCode->EmitLDFLD(pCode->GetToken(CoreLibBinder::GetField(FIELD__DELEGATE__METHOD_PTR_AUX)));
+    pCode->EmitCALLI(TOKEN_ILSTUB_TARGET_SIG, sig.NumFixedArgs(), sig.IsReturnTypeVoid() ? 0 : 1);
+    pCode->EmitRET();
+
+    MethodDesc* pStubMD = ILStubCache::CreateAndLinkNewILStubMethodDesc(
+        pDelegateMD->GetLoaderAllocator(), pDelegateMD->GetMethodTable(), ILSTUB_DELEGATE_SHUFFLE_THUNK,
+        pModule, signature.GetRawSig(), signature.GetRawSigLen(), &typeContext, &stubLinker);
+
+    // Build target signature
+    SigBuilder sigBuilder(signature.GetRawSigLen());
+    sigBuilder.AppendByte(callTargetWithThis
+        ? IMAGE_CEE_CS_CALLCONV_DEFAULT_HASTHIS
+        : IMAGE_CEE_CS_CALLCONV_DEFAULT);
+
+    unsigned numFixedArgs = sig.NumFixedArgs() - callTargetWithThis;
+    sigBuilder.AppendData(numFixedArgs);
+
+    SigPointer pReturn = sig.GetReturnProps();
+    pReturn.ConvertToInternalExactlyOne(pModule, &typeContext, &sigBuilder);
+
+    sig.SkipArg(); // skip delegate object
+    if (callTargetWithThis)
+        sig.SkipArg();
+
+    SigPointer pArgs = sig.GetArgProps();
+    for (unsigned i = 0; i < numFixedArgs; ++i)
+        pArgs.ConvertToInternalExactlyOne(pModule, &typeContext, &sigBuilder);
+
+    DWORD cbTargetSig;
+    PCCOR_SIGNATURE pTargetSig = (PCCOR_SIGNATURE)sigBuilder.GetSignature(&cbTargetSig);
+    ILStubResolver* pResolver = pStubMD->AsDynamicMethodDesc()->GetILStubResolver();
+    pResolver->SetStubTargetMethodSig(pTargetSig, cbTargetSig);
+
+    return Stub::NewStub(JitILStub(pStubMD), NEWSTUB_FL_SHUFFLE_THUNK);
+}
+#endif // TARGET_RISCV64 || TARGET_LOONGARCH64
+
+static PCODE SetupShuffleThunk(MethodTable * pDelMT, MethodDesc *pTargetMeth)
 {
     CONTRACTL
     {
@@ -801,49 +898,66 @@ static Stub* SetupShuffleThunk(MethodTable* pDelMT, MethodDesc* pTargetMeth)
     }
     CONTRACTL_END;
 
-    GCX_PREEMP();
-
+    bool isInstRetBuff = (!pTargetMeth->IsStatic() && pTargetMeth->HasRetBuffArg() && IsRetBuffPassedAsFirstArg());
     DelegateEEClass * pClass = (DelegateEEClass *)pDelMT->GetClass();
+
+    // Look for a thunk cached on the delegate class first. Note we need a different thunk for instance methods with a
+    // hidden return buffer argument because the extra argument switches place with the target when coming from the caller.
+    Stub* pShuffleThunk = isInstRetBuff ? pClass->m_pInstRetBuffCallStub : pClass->m_pStaticCallStub;
+    if (pShuffleThunk)
+        return pShuffleThunk->GetEntryPoint();
+
+    GCX_PREEMP();
 
     MethodDesc *pMD = pClass->GetInvokeMethod();
 
+    // We haven't already setup a shuffle thunk, go do it now (which will cache the result automatically).
     StackSArray<ShuffleEntry> rShuffleEntryArray;
-    GenerateShuffleArray(pMD, pTargetMeth, &rShuffleEntryArray);
-
-    ShuffleThunkCache* pShuffleThunkCache = s_pShuffleThunkCache;
-
-    LoaderAllocator* pLoaderAllocator = pDelMT->GetLoaderAllocator();
-    if (pLoaderAllocator->IsCollectible())
+    if (GenerateShuffleArray(pMD, pTargetMeth, &rShuffleEntryArray))
     {
-        pShuffleThunkCache = ((AssemblyLoaderAllocator*)pLoaderAllocator)->GetShuffleThunkCache();
+        ShuffleThunkCache* pShuffleThunkCache = s_pShuffleThunkCache;
+
+        LoaderAllocator* pLoaderAllocator = pDelMT->GetLoaderAllocator();
+        if (pLoaderAllocator->IsCollectible())
+        {
+            pShuffleThunkCache = ((AssemblyLoaderAllocator*)pLoaderAllocator)->GetShuffleThunkCache();
+        }
+
+        pShuffleThunk = pShuffleThunkCache->Canonicalize((const BYTE *)&rShuffleEntryArray[0]);
+    }
+    else
+    {
+#if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
+        pShuffleThunk = CreateILDelegateShuffleThunk(pMD, isInstRetBuff);
+#else
+        _ASSERTE(FALSE);
+        return (PCODE)NULL;
+#endif // TARGET_RISCV64 || TARGET_LOONGARCH64
     }
 
-    Stub* pShuffleThunk = pShuffleThunkCache->Canonicalize((const BYTE *)&rShuffleEntryArray[0]);
     if (!pShuffleThunk)
     {
         COMPlusThrowOM();
     }
 
-    if (!pTargetMeth->IsStatic() && pTargetMeth->HasRetBuffArg() && IsRetBuffPassedAsFirstArg())
+    // Cache the shuffle thunk
+    Stub** ppThunk = isInstRetBuff ? &pClass->m_pInstRetBuffCallStub : &pClass->m_pStaticCallStub;
+    Stub* pExistingThunk = InterlockedCompareExchangeT(ppThunk, pShuffleThunk, NULL);
+    if (pExistingThunk != NULL)
     {
-        if (InterlockedCompareExchangeT(&pClass->m_pInstRetBuffCallStub, pShuffleThunk, NULL ) != NULL)
+        if (pShuffleThunk->HasExternalEntryPoint()) // IL thunk
+        {
+            pShuffleThunk->DecRef();
+        }
+        else
         {
             ExecutableWriterHolder<Stub> shuffleThunkWriterHolder(pShuffleThunk, sizeof(Stub));
             shuffleThunkWriterHolder.GetRW()->DecRef();
-            pShuffleThunk = pClass->m_pInstRetBuffCallStub;
         }
-    }
-    else
-    {
-        if (InterlockedCompareExchangeT(&pClass->m_pStaticCallStub, pShuffleThunk, NULL ) != NULL)
-        {
-            ExecutableWriterHolder<Stub> shuffleThunkWriterHolder(pShuffleThunk, sizeof(Stub));
-            shuffleThunkWriterHolder.GetRW()->DecRef();
-            pShuffleThunk = pClass->m_pStaticCallStub;
-        }
+        pShuffleThunk = pExistingThunk;
     }
 
-    return pShuffleThunk;
+    return pShuffleThunk->GetEntryPoint();
 }
 
 static PCODE GetVirtualCallStub(MethodDesc *method, TypeHandle scopeType)
@@ -1101,22 +1215,10 @@ void COMDelegate::BindToMethod(DELEGATEREF   *pRefThis,
         // We need to shuffle arguments for open delegates since the first argument on the calling side is not meaningful to the
         // callee.
         MethodTable * pDelegateMT = (*pRefThis)->GetMethodTable();
-        DelegateEEClass *pDelegateClass = (DelegateEEClass*)pDelegateMT->GetClass();
-        Stub *pShuffleThunk = NULL;
-
-        // Look for a thunk cached on the delegate class first. Note we need a different thunk for instance methods with a
-        // hidden return buffer argument because the extra argument switches place with the target when coming from the caller.
-        if (!pTargetMethod->IsStatic() && pTargetMethod->HasRetBuffArg() && IsRetBuffPassedAsFirstArg())
-            pShuffleThunk = pDelegateClass->m_pInstRetBuffCallStub;
-        else
-            pShuffleThunk = pDelegateClass->m_pStaticCallStub;
-
-        // If we haven't already setup a shuffle thunk go do it now (which will cache the result automatically).
-        if (!pShuffleThunk)
-            pShuffleThunk = SetupShuffleThunk(pDelegateMT, pTargetMethod);
+        PCODE pEntryPoint = SetupShuffleThunk(pDelegateMT, pTargetMethod);
 
         // Indicate that the delegate will jump to the shuffle thunk rather than directly to the target method.
-        refRealDelegate->SetMethodPtr(pShuffleThunk->GetEntryPoint());
+        refRealDelegate->SetMethodPtr(pEntryPoint);
 
         // Use stub dispatch for all virtuals.
         // <TODO> Investigate not using this for non-interface virtuals. </TODO>
@@ -1612,7 +1714,6 @@ extern "C" void QCALLTYPE Delegate_Construct(QCall::ObjectHandleOnStack _this, Q
     if (Nullable::IsNullableType(pMeth->GetMethodTable()))
         COMPlusThrow(kNotSupportedException);
 
-    DelegateEEClass* pDelCls = (DelegateEEClass*)pDelMT->GetClass();
     MethodDesc* pDelegateInvoke = COMDelegate::FindDelegateInvokeMethod(pDelMT);
 
     UINT invokeArgCount = MethodDescToNumFixedArgs(pDelegateInvoke);
@@ -1634,14 +1735,8 @@ extern "C" void QCALLTYPE Delegate_Construct(QCall::ObjectHandleOnStack _this, Q
         refThis->SetTarget(refThis);
 
         // set the shuffle thunk
-        Stub *pShuffleThunk = (!pMeth->IsStatic() && pMeth->HasRetBuffArg() && IsRetBuffPassedAsFirstArg())
-            ? pDelCls->m_pInstRetBuffCallStub
-            : pDelCls->m_pStaticCallStub;
-
-        if (pShuffleThunk == NULL)
-            pShuffleThunk = SetupShuffleThunk(pDelMT, pMeth);
-
-        refThis->SetMethodPtr(pShuffleThunk->GetEntryPoint());
+        PCODE pEntryPoint = SetupShuffleThunk(pDelMT, pMeth);
+        refThis->SetMethodPtr(pEntryPoint);
 
         // set the ptr aux according to what is needed, if virtual need to call make virtual stub dispatch
         if (!pMeth->IsStatic() && pMeth->IsVirtual() && !pMeth->GetMethodTable()->IsValueType())
@@ -1876,10 +1971,11 @@ Stub* COMDelegate::GetInvokeMethodStub(EEImplMethodDesc* pMD)
     {
         // Validate the invoke method, which at the moment just means checking the calling convention
 
-        if (*pMD->GetSig() != (IMAGE_CEE_CS_CALLCONV_HASTHIS | IMAGE_CEE_CS_CALLCONV_DEFAULT))
-            COMPlusThrow(kInvalidProgramException);
-
         MetaSig sig(pMD);
+
+        BYTE callConv = sig.GetCallingConventionInfo();
+        if (callConv != (IMAGE_CEE_CS_CALLCONV_HASTHIS | IMAGE_CEE_CS_CALLCONV_DEFAULT))
+            COMPlusThrow(kInvalidProgramException);
 
         BOOL fReturnVal = !sig.IsReturnTypeVoid();
 
@@ -1926,36 +2022,6 @@ Stub* COMDelegate::GetInvokeMethodStub(EEImplMethodDesc* pMD)
         // We do not support asynchronous delegates in CoreCLR
         COMPlusThrow(kPlatformNotSupportedException);
     }
-}
-
-extern "C" void QCALLTYPE Delegate_InternalAlloc(QCall::TypeHandle pType, QCall::ObjectHandleOnStack d)
-{
-    QCALL_CONTRACT;
-
-    BEGIN_QCALL;
-
-    GCX_COOP();
-
-    _ASSERTE(pType.AsTypeHandle().AsMethodTable()->IsDelegate());
-
-    d.Set(pType.AsTypeHandle().AsMethodTable()->Allocate());
-
-    END_QCALL;
-}
-
-extern "C" void QCALLTYPE Delegate_InternalAllocLike(QCall::ObjectHandleOnStack d)
-{
-    QCALL_CONTRACT;
-
-    BEGIN_QCALL;
-
-    GCX_COOP();
-
-    _ASSERTE(d.Get()->GetMethodTable()->IsDelegate());
-
-    d.Set(d.Get()->GetMethodTable()->AllocateNoChecks());
-
-    END_QCALL;
 }
 
 void COMDelegate::ThrowIfInvalidUnmanagedCallersOnlyUsage(MethodDesc* pMD)
@@ -2137,17 +2203,29 @@ extern "C" PCODE QCALLTYPE Delegate_GetMulticastInvokeSlow(MethodTable* pDelegat
             dwReturnValNum = pCode->NewLocal(sig.GetRetTypeHandleNT());
 
         ILCodeLabel *nextDelegate = pCode->NewCodeLabel();
-        ILCodeLabel *checkCount = pCode->NewCodeLabel();
 
         // initialize counter
         pCode->EmitLDC(0);
         pCode->EmitSTLOC(dwLoopCounterNum);
 
-        // Make the shape of the loop similar to what C# compiler emits
-        pCode->EmitBR(checkCount);
-
         //Label_nextDelegate:
         pCode->EmitLabel(nextDelegate);
+
+#ifdef DEBUGGING_SUPPORTED
+        ILCodeLabel *invokeTraceHelper = pCode->NewCodeLabel();
+        ILCodeLabel *debuggerCheckEnd = pCode->NewCodeLabel();
+
+        // Call MulticastDebuggerTraceHelper only if we have a controller subscribing to the event
+        pCode->EmitLDC((DWORD_PTR)&g_multicastDelegateTraceActiveCount);
+        pCode->EmitCONV_I();
+        pCode->EmitLDIND_I4();
+        // g_multicastDelegateTraceActiveCount != 0
+        pCode->EmitLDC(0);
+        pCode->EmitCEQ();
+        pCode->EmitBRFALSE(invokeTraceHelper);
+
+        pCode->EmitLabel(debuggerCheckEnd);
+#endif // DEBUGGING_SUPPORTED
 
         // Load next delegate from array using LoopCounter as index
         pCode->EmitLoadThis();
@@ -2171,26 +2249,6 @@ extern "C" PCODE QCALLTYPE Delegate_GetMulticastInvokeSlow(MethodTable* pDelegat
         pCode->EmitLDC(1);
         pCode->EmitADD();
         pCode->EmitSTLOC(dwLoopCounterNum);
-
-        //Label_checkCount
-        pCode->EmitLabel(checkCount);
-
-#ifdef DEBUGGING_SUPPORTED
-        ILCodeLabel *invokeTraceHelper = pCode->NewCodeLabel();
-        ILCodeLabel *debuggerCheckEnd = pCode->NewCodeLabel();
-
-        // Call MulticastDebuggerTraceHelper only if any debugger is attached
-        pCode->EmitLDC((DWORD_PTR)&g_CORDebuggerControlFlags);
-        pCode->EmitCONV_I();
-        pCode->EmitLDIND_I4();
-
-        // (g_CORDebuggerControlFlags & DBCF_ATTACHED) != 0
-        pCode->EmitLDC(DBCF_ATTACHED);
-        pCode->EmitAND();
-        pCode->EmitBRTRUE(invokeTraceHelper);
-
-        pCode->EmitLabel(debuggerCheckEnd);
-#endif // DEBUGGING_SUPPORTED
 
         // compare LoopCounter with InvocationCount. If less then branch to nextDelegate
         pCode->EmitLDLOC(dwLoopCounterNum);
@@ -2713,7 +2771,6 @@ MethodDesc* COMDelegate::GetDelegateCtor(TypeHandle delegateType, MethodDesc *pT
     MethodDesc *pRealCtor = NULL;
 
     MethodTable *pDelMT = delegateType.AsMethodTable();
-    DelegateEEClass *pDelCls = (DelegateEEClass*)(pDelMT->GetClass());
 
     MethodDesc *pDelegateInvoke = COMDelegate::FindDelegateInvokeMethod(pDelMT);
 
@@ -2855,15 +2912,8 @@ MethodDesc* COMDelegate::GetDelegateCtor(TypeHandle delegateType, MethodDesc *pT
             else
                 pRealCtor = CoreLibBinder::GetMethod(METHOD__MULTICAST_DELEGATE__CTOR_OPENED);
         }
-        Stub *pShuffleThunk = NULL;
-        if (!pTargetMethod->IsStatic() && pTargetMethod->HasRetBuffArg() && IsRetBuffPassedAsFirstArg())
-            pShuffleThunk = pDelCls->m_pInstRetBuffCallStub;
-        else
-            pShuffleThunk = pDelCls->m_pStaticCallStub;
 
-        if (!pShuffleThunk)
-            pShuffleThunk = SetupShuffleThunk(pDelMT, pTargetMethod);
-        pCtorData->pArg3 = (void*)pShuffleThunk->GetEntryPoint();
+        pCtorData->pArg3 = (void*)SetupShuffleThunk(pDelMT, pTargetMethod);
         if (isCollectible)
         {
             pCtorData->pArg4 = pTargetMethodLoaderAllocator->GetLoaderAllocatorObjectHandle();

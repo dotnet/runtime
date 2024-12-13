@@ -44,8 +44,8 @@ namespace System.Formats.Asn1
         ///   Write a non-[<see cref="FlagsAttribute"/>] enum value as an Enumerated with
         ///   tag UNIVERSAL 10.
         /// </summary>
-        /// <param name="tag">The tag to write.</param>
         /// <param name="value">The boxed enumeration value to write.</param>
+        /// <param name="tag">The tag to write.</param>
         /// <exception cref="ArgumentNullException">
         ///   <paramref name="value"/> is <see langword="null"/>.
         /// </exception>
