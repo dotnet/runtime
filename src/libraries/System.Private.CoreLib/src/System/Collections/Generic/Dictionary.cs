@@ -44,11 +44,17 @@ namespace System.Collections.Generic
             public TKey GetKey(TKey input) => input;
         }
 
-        [method: MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private readonly struct ComparerComparisonProtocol(IEqualityComparer<TKey> comparer)
+        private readonly struct ComparerComparisonProtocol
                         : IComparisonProtocol<TKey>
         {
-            public readonly IEqualityComparer<TKey> comparer = comparer;
+            public readonly IEqualityComparer<TKey> comparer;
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public ComparerComparisonProtocol (IEqualityComparer<TKey> comparer)
+            {
+                Debug.Assert(comparer != null);
+                this.comparer = comparer;
+            }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public bool Equals(TKey lhs, TKey rhs) => comparer.Equals(lhs, rhs);
@@ -727,10 +733,10 @@ namespace System.Collections.Generic
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.key);
             }
 
-            var comparer = Comparer;
+            var comparer = _comparer;
             ref Entry entry = ref (typeof(TKey).IsValueType && (comparer == null))
                 ? ref FindEntry(default(DefaultValueTypeComparerComparisonProtocol), key)
-                : ref FindEntry(new ComparerComparisonProtocol(comparer), key);
+                : ref FindEntry(new ComparerComparisonProtocol(comparer!), key);
 
             if (Unsafe.IsNullRef(ref entry))
                 return ref Unsafe.NullRef<TValue>();
@@ -846,10 +852,10 @@ namespace System.Collections.Generic
 
         private ref Entry TryInsert(TKey key, TValue value, InsertionBehavior behavior, out bool exists)
         {
-            var comparer = Comparer;
+            var comparer = _comparer;
             return ref (typeof(TKey).IsValueType && (comparer == null))
                 ? ref TryInsert(default(DefaultValueTypeComparerComparisonProtocol), key, value, behavior, out exists)
-                : ref TryInsert(new ComparerComparisonProtocol(comparer), key, value, behavior, out exists);
+                : ref TryInsert(new ComparerComparisonProtocol(comparer!), key, value, behavior, out exists);
         }
 
         private ref Entry TryInsert<TProtocol, TActualKey>(TProtocol protocol, TActualKey key, TValue value, InsertionBehavior behavior, out bool exists)
@@ -931,7 +937,7 @@ namespace System.Collections.Generic
                     InsertIntoBucket(ref bucket, suffix, bucketCount, newEntryIndex);
                     _version++;
                     exists = false;
-                    if (AdjustCascadeCounts(enumerator, true) && (Comparer is NonRandomizedStringEqualityComparer))
+                    if (AdjustCascadeCounts(enumerator, true) && (_comparer is NonRandomizedStringEqualityComparer))
                     {
                         // if AdjustCascadeCounts returned true, we need to change comparers (if possible) to one with better collision
                         //  resistance.
@@ -1328,7 +1334,7 @@ namespace System.Collections.Generic
                 FillNewBucketsForResizeOrRehash(
                     newBuckets, fastModMultiplier, entries, _count,
                     // FIXME
-                    Comparer ?? EqualityComparer<TKey>.Default
+                    _comparer ?? EqualityComparer<TKey>.Default
                 );
                 _buckets = newBuckets;
                 _fastModMultiplier = fastModMultiplier;
@@ -1402,10 +1408,10 @@ namespace System.Collections.Generic
 
         public bool Remove(TKey key, [MaybeNullWhen(false)] out TValue value)
         {
-            var comparer = Comparer;
+            var comparer = _comparer;
             return (typeof(TKey).IsValueType && (comparer == null))
                 ? Remove(default(DefaultValueTypeComparerComparisonProtocol), key, out Unsafe.NullRef<TKey>()!, out value)
-                : Remove(new ComparerComparisonProtocol(comparer), key, out Unsafe.NullRef<TKey>()!, out value);
+                : Remove(new ComparerComparisonProtocol(comparer!), key, out Unsafe.NullRef<TKey>()!, out value);
         }
 
         private bool Remove<TProtocol, TActualKey>(
