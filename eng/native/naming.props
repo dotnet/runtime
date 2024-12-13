@@ -2,9 +2,36 @@
   <PropertyGroup>
     <StaticLibPrefix>lib</StaticLibPrefix>
     <ExeSuffix Condition="'$(HostOS)' == 'windows'">.exe</ExeSuffix>
+    <Blah>$(HostOS)</Blah>
   </PropertyGroup>
 
   <!-- Add path globs specific to native binaries to exclude unnecessary files from packages. -->
+  <Choose>
+    <When Condition="$(HostOS.StartsWith('win'))">
+      <PropertyGroup>
+        <HostLibSuffix>.dll</HostLibSuffix>
+        <HostStaticLibSuffix>.lib</HostStaticLibSuffix>
+        <HostSymbolsSuffix>.pdb</HostSymbolsSuffix>
+      </PropertyGroup>
+    </When>
+    <When Condition="$(HostOS.StartsWith('osx'))">
+      <PropertyGroup>
+        <HostLibPrefix>lib</HostLibPrefix>
+        <HostLibSuffix>.dylib</HostLibSuffix>
+        <HostStaticLibSuffix>.a</HostStaticLibSuffix>
+        <HostSymbolsSuffix>.dwarf</HostSymbolsSuffix>
+      </PropertyGroup>
+    </When>
+    <Otherwise>
+      <PropertyGroup>
+        <HostLibPrefix>lib</HostLibPrefix>
+        <HostLibSuffix>.so</HostLibSuffix>
+        <HostStaticLibSuffix>.a</HostStaticLibSuffix>
+        <HostSymbolsSuffix>.dbg</HostSymbolsSuffix>
+      </PropertyGroup>
+    </Otherwise>
+  </Choose>
+  
   <Choose>
     <When Condition="$(PackageRID.StartsWith('win'))">
       <PropertyGroup>
