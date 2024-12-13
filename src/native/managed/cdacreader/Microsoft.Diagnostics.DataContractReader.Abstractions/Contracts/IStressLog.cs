@@ -39,6 +39,7 @@ internal interface IStressLog : IContract
     public virtual StressLogData GetStressLogData(TargetPointer stressLog) => throw new NotImplementedException();
     public virtual IEnumerable<ThreadStressLogData> GetThreadStressLogs(TargetPointer Logs) => throw new NotImplementedException();
     public virtual IEnumerable<StressMsgData> GetStressMessages(ThreadStressLogData threadLog) => throw new NotImplementedException();
+    public virtual bool IsPointerInStressLog(StressLogData stressLog, TargetPointer pointer);
 }
 
 internal readonly struct StressLog : IStressLog
