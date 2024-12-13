@@ -25,6 +25,50 @@ namespace System.Collections.Generic
     [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class Dictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDictionary, IReadOnlyDictionary<TKey, TValue>, ISerializable, IDeserializationCallback where TKey : notnull
     {
+        // A comparison protocol is an adapter to allow us to have a single implementation of all our
+        //  search/insertion/removal algorithms that generalizes efficiently over different comparers at JIT
+        //  or AOT time without duplicated code
+        private interface IComparisonProtocol<TActualKey>
+            where TActualKey : allows ref struct
+        {
+            int GetHashCode(TActualKey key);
+            bool Equals(TActualKey lhs, TKey rhs);
+            TKey GetKey(TActualKey input);
+        }
+
+        private readonly struct DefaultValueTypeComparerComparisonProtocol : IComparisonProtocol<TKey>
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public bool Equals(TKey lhs, TKey rhs) => EqualityComparer<TKey>.Default.Equals(lhs, rhs);
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public int GetHashCode(TKey key) => EqualityComparer<TKey>.Default.GetHashCode(key);
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public TKey GetKey(TKey input) => input;
+        }
+
+        private readonly record struct ComparerComparisonProtocol(IEqualityComparer<TKey> comparer)
+            : IComparisonProtocol<TKey>
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public bool Equals(TKey lhs, TKey rhs) => comparer.Equals(lhs, rhs);
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public int GetHashCode(TKey key) => comparer.GetHashCode(key);
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public TKey GetKey(TKey input) => input;
+        }
+
+        private readonly record struct AlternateComparerComparisonProtocol<TAlternateKey>(IAlternateEqualityComparer<TAlternateKey, TKey> comparer)
+            : IComparisonProtocol<TAlternateKey>
+            where TAlternateKey : allows ref struct
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public bool Equals(TAlternateKey lhs, TKey rhs) => comparer.Equals(lhs, rhs);
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public int GetHashCode(TAlternateKey key) => comparer.GetHashCode(key);
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public TKey GetKey(TAlternateKey input) => comparer.Create(input);
+        }
+
         /*
         static Dictionary () {
             while (!Debugger.IsAttached)
@@ -612,11 +656,12 @@ namespace System.Collections.Generic
             return result == 0 ? (byte)255 : result;
         }
 
-        private ref Entry FindEntry(TKey key)
+        private ref Entry FindEntry<TProtocol, TActualKey>(TProtocol protocol, TActualKey key)
+            where TProtocol : IComparisonProtocol<TActualKey>
+            where TActualKey : allows ref struct
         {
             // FIXME: Specialize using static interface methods like SimdDictionary
-            var comparer = Comparer ?? EqualityComparer<TKey>.Default;
-            uint hashCode = (uint)((typeof(TKey).IsValueType && comparer == null) ? key.GetHashCode() : comparer!.GetHashCode(key));
+            uint hashCode = (uint)protocol.GetHashCode(key);
             var suffix = GetHashSuffix(hashCode);
             // FIXME: Skip this on non-vectorized targets
             var searchVector = Vector128.Create(suffix);
@@ -629,38 +674,7 @@ namespace System.Collections.Generic
                 int bucketCount = bucket.Count;
                 // Determine start index for key search
                 int startIndex = bucket.FindSuffix(bucketCount, suffix, searchVector);
-                ref var entry = ref FindEntryInBucket(ref bucket, entries, startIndex, bucketCount, comparer!, key, out _, out _);
-                if (Unsafe.IsNullRef(ref entry))
-                {
-                    if (bucket.CascadeCount == 0)
-                        return ref Unsafe.NullRef<Entry>();
-                }
-                else
-                    return ref entry;
-                bucket = ref enumerator.Advance();
-            }
-
-            return ref Unsafe.NullRef<Entry>();
-        }
-
-        private ref Entry FindEntry<TAlternateKey>(TAlternateKey key, IAlternateEqualityComparer<TAlternateKey, TKey> comparer)
-            where TAlternateKey : notnull, allows ref struct
-        {
-            // FIXME: Specialize using static interface methods like SimdDictionary
-            var hashCode = unchecked((uint)comparer.GetHashCode(key));
-            var suffix = GetHashSuffix(hashCode);
-            // FIXME: Skip this on non-vectorized targets
-            var searchVector = Vector128.Create(suffix);
-            ref var bucket = ref LoopingBucketEnumerator.New(_buckets, hashCode, _fastModMultiplier, out var enumerator);
-            Span<Entry> entries = _entries!;
-            // FIXME: Change to do { } while () by introducing EmptyBuckets optimization from SimdDictionary
-            while (!Unsafe.IsNullRef(ref bucket))
-            {
-                // Pipelining
-                int bucketCount = bucket.Count;
-                // Determine start index for key search
-                int startIndex = bucket.FindSuffix(bucketCount, suffix, searchVector);
-                ref var entry = ref FindEntryInBucket(ref bucket, entries, startIndex, bucketCount, comparer, key, out _, out _);
+                ref var entry = ref FindEntryInBucket(protocol, ref bucket, entries, startIndex, bucketCount, key, out _, out _);
                 if (Unsafe.IsNullRef(ref entry))
                 {
                     if (bucket.CascadeCount == 0)
@@ -675,17 +689,18 @@ namespace System.Collections.Generic
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static ref Entry FindEntryInBucket(
-            ref Bucket bucket, Span<Entry> entries, int startIndex, int bucketCount,
-            IEqualityComparer<TKey> comparer, TKey key,
+        private static ref Entry FindEntryInBucket<TProtocol, TActualKey>(
+            TProtocol protocol, ref Bucket bucket, Span<Entry> entries,
+            int startIndex, int bucketCount, TActualKey key,
             // These out-params are annoying but inlining seems to optimize them away
             out int entryIndex, out int matchIndexInBucket
         )
+            where TProtocol : IComparisonProtocol<TActualKey>
+            where TActualKey : allows ref struct
         {
             Unsafe.SkipInit(out matchIndexInBucket);
             Unsafe.SkipInit(out entryIndex);
             Debug.Assert(startIndex >= 0);
-            Debug.Assert(comparer != null);
 
             int count = bucketCount - startIndex;
             if (count <= 0)
@@ -695,51 +710,12 @@ namespace System.Collections.Generic
             while (true)
             {
                 ref var entry = ref entries[indexSlot];
-                if (comparer.Equals(key, entry.key))
+                if (protocol.Equals(key, entry.key))
                 {
                     // We could optimize out the bucketCount local to prevent a stack spill in some cases by doing
                     //  Unsafe.ByteOffset(...) / sizeof(Pair), but the potential idiv is extremely painful
                     entryIndex = indexSlot;
                     matchIndexInBucket = bucketCount - count;
-                    return ref entry;
-                }
-
-                // NOTE: --count <= 0 produces an extra 'test' opcode
-                if (--count == 0)
-                    return ref Unsafe.NullRef<Entry>();
-                else
-                    indexSlot = ref Unsafe.Add(ref indexSlot, 1);
-            }
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static ref Entry FindEntryInBucket<TAlternateKey>(
-            ref Bucket bucket, Span<Entry> entries, int startIndex, int bucketCount,
-            IAlternateEqualityComparer<TAlternateKey, TKey> comparer, TAlternateKey key,
-            // These out-params are annoying but inlining seems to optimize them away
-            out int entryIndex, out int matchIndexInBucket
-        )
-            where TAlternateKey : notnull, allows ref struct
-        {
-            Unsafe.SkipInit(out matchIndexInBucket);
-            Unsafe.SkipInit(out entryIndex);
-            Debug.Assert(startIndex >= 0);
-            Debug.Assert(comparer != null);
-
-            int count = bucketCount - startIndex;
-            if (count <= 0)
-                return ref Unsafe.NullRef<Entry>();
-
-            ref int indexSlot = ref bucket.Indices[startIndex];
-            while (true)
-            {
-                ref var entry = ref entries[indexSlot];
-                if (comparer.Equals(key, entry.key))
-                {
-                    // We could optimize out the bucketCount local to prevent a stack spill in some cases by doing
-                    //  Unsafe.ByteOffset(...) / sizeof(Pair), but the potential idiv is extremely painful
-                    matchIndexInBucket = bucketCount - count;
-                    entryIndex = indexSlot;
                     return ref entry;
                 }
 
@@ -758,7 +734,11 @@ namespace System.Collections.Generic
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.key);
             }
 
-            ref Entry entry = ref FindEntry(key);
+            var comparer = Comparer;
+            ref Entry entry = ref (typeof(TKey).IsValueType && (comparer == null))
+                ? ref FindEntry(default(DefaultValueTypeComparerComparisonProtocol), key)
+                : ref FindEntry(new ComparerComparisonProtocol(comparer), key);
+
             if (Unsafe.IsNullRef(ref entry))
                 return ref Unsafe.NullRef<TValue>();
             else
@@ -875,18 +855,23 @@ namespace System.Collections.Generic
 
         private ref Entry TryInsert(TKey key, TValue value, InsertionBehavior behavior, out bool exists)
         {
-            // NOTE: this method is mirrored in CollectionsMarshal.GetValueRefOrAddDefault below.
-            // If you make any changes here, make sure to keep that version in sync as well.
+            var comparer = Comparer;
+            return ref (typeof(TKey).IsValueType && (comparer == null))
+                ? ref TryInsert(default(DefaultValueTypeComparerComparisonProtocol), key, value, behavior, out exists)
+                : ref TryInsert(new ComparerComparisonProtocol(comparer), key, value, behavior, out exists);
+        }
 
+        private ref Entry TryInsert<TProtocol, TActualKey>(TProtocol protocol, TActualKey key, TValue value, InsertionBehavior behavior, out bool exists)
+            where TProtocol : IComparisonProtocol<TActualKey>
+            where TActualKey : allows ref struct
+        {
             if (key == null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.key);
             }
 
             // FIXME: Specialize using static interface methods like SimdDictionary
-            var comparer = Comparer ?? EqualityComparer<TKey>.Default;
-            Debug.Assert(comparer is not null || typeof(TKey).IsValueType);
-            uint hashCode = (uint)((typeof(TKey).IsValueType && comparer == null) ? key.GetHashCode() : comparer!.GetHashCode(key));
+            uint hashCode = (uint)protocol.GetHashCode(key);
             var suffix = GetHashSuffix(hashCode);
             // FIXME: Skip this on non-vectorized targets
             var searchVector = Vector128.Create(suffix);
@@ -915,7 +900,7 @@ namespace System.Collections.Generic
                 // Determine start index for key search
                 // FIXME: Call a separate version for non-vectorized targets
                 int startIndex = bucket.FindSuffix(bucketCount, suffix, searchVector);
-                ref var entry = ref FindEntryInBucket(ref bucket, entries, startIndex, bucketCount, comparer!, key, out _, out _);
+                ref var entry = ref FindEntryInBucket(protocol, ref bucket, entries, startIndex, bucketCount, key, out _, out _);
                 if (!Unsafe.IsNullRef(ref entry))
                 {
                     exists = true;
@@ -924,10 +909,10 @@ namespace System.Collections.Generic
                         case InsertionBehavior.InsertNewOnly:
                             return ref entry;
                         case InsertionBehavior.OverwriteExisting:
-                            PopulateEntry(ref entry, key, value);
+                            entry.value = value;
                             return ref entry;
                         case InsertionBehavior.ThrowOnExisting:
-                            ThrowHelper.ThrowAddingDuplicateWithKeyArgumentException(key);
+                            ThrowHelper.ThrowAddingDuplicateWithKeyArgumentException(protocol.GetKey(key));
                             return ref Unsafe.NullRef<Entry>();
                         default:
                             ThrowHelper.ThrowArgumentOutOfRangeException();
@@ -953,7 +938,7 @@ namespace System.Collections.Generic
                         else
                         {
                             newEntry = ref entries[newEntryIndex];
-                            PopulateEntry(ref newEntry, key, value);
+                            PopulateEntry(ref newEntry, protocol.GetKey(key), value);
                         }
                     }
 
@@ -1203,9 +1188,9 @@ namespace System.Collections.Generic
             internal ref TValue FindValue(TAlternateKey key, [MaybeNullWhen(false)] out TKey actualKey)
             {
                 Dictionary<TKey, TValue> dictionary = Dictionary;
-                IAlternateEqualityComparer<TAlternateKey, TKey> comparer = GetAlternateComparer(dictionary);
+                AlternateComparerComparisonProtocol<TAlternateKey> protocol = new(GetAlternateComparer(dictionary));
 
-                ref var entry = ref dictionary.FindEntry(key, comparer);
+                ref var entry = ref dictionary.FindEntry(protocol, key);
                 if (Unsafe.IsNullRef(ref entry))
                 {
                     actualKey = default!;
@@ -1222,8 +1207,12 @@ namespace System.Collections.Generic
             /// <param name="key">The alternate key of the element to remove.</param>
             /// <returns>true if the element is successfully found and removed; otherwise, false.</returns>
             /// <exception cref="ArgumentNullException"><paramref name="key"/> is <see langword="null"/>.</exception>
-            public bool Remove(TAlternateKey key) =>
-                Remove(key, out _, out _);
+            public bool Remove(TAlternateKey key)
+            {
+                Dictionary<TKey, TValue> dictionary = Dictionary;
+                AlternateComparerComparisonProtocol<TAlternateKey> protocol = new(GetAlternateComparer(dictionary));
+                return dictionary.Remove(protocol, key, out Unsafe.NullRef<TKey>()!, out Unsafe.NullRef<TValue>()!);
+            }
 
             /// <summary>
             /// Removes the value with the specified alternate key from the <see cref="Dictionary{TKey, TValue}"/>,
@@ -1237,70 +1226,8 @@ namespace System.Collections.Generic
             public bool Remove(TAlternateKey key, [MaybeNullWhen(false)] out TKey actualKey, [MaybeNullWhen(false)] out TValue value)
             {
                 Dictionary<TKey, TValue> dictionary = Dictionary;
-                Span<Bucket> buckets = dictionary._buckets;
-                IAlternateEqualityComparer<TAlternateKey, TKey> comparer = GetAlternateComparer(dictionary);
-                if (buckets.IsEmpty)
-                {
-                    actualKey = default!;
-                    value = default!;
-                    return false;
-                }
-
-                // This allows using Remove(key, out value) to implement Remove(key) efficiently,
-                //  as long as we check whether value is a null reference before writing to it.
-                Unsafe.SkipInit(out value);
-
-                if (key == null)
-                {
-                    ThrowHelper.ThrowArgumentNullException(ExceptionArgument.key);
-                }
-
-                // FIXME: Specialize using static interface methods like SimdDictionary
-                Debug.Assert(comparer is not null);
-                uint hashCode = (uint)(comparer!.GetHashCode(key));
-                var suffix = GetHashSuffix(hashCode);
-                // FIXME: Skip this on non-vectorized targets
-                var searchVector = Vector128.Create(suffix);
-                Span<Entry> entries = dictionary._entries!;
-                Debug.Assert(!entries.IsEmpty, "expected entries to be non-null");
-
-                ref var bucket = ref LoopingBucketEnumerator.New(buckets, hashCode, dictionary._fastModMultiplier, out var enumerator);
-
-                // FIXME: Change to do { } while () by introducing EmptyBuckets optimization from SimdDictionary
-                while (!Unsafe.IsNullRef(ref bucket))
-                {
-                    // Pipelining
-                    int bucketCount = bucket.Count;
-                    // Determine start index for key search
-                    int startIndex = bucket.FindSuffix(bucketCount, suffix, searchVector);
-                    ref var entry = ref FindEntryInBucket(
-                        ref bucket, entries, startIndex, bucketCount, comparer!, key,
-                        out int entryIndex, out int indexInBucket
-                    );
-                    if (!Unsafe.IsNullRef(ref entry))
-                    {
-                        actualKey = entry.key;
-                        value = entry.value;
-                        dictionary.RemoveEntry(ref entry, entryIndex);
-                        RemoveIndexFromBucket(ref bucket, indexInBucket, bucketCount);
-                        AdjustCascadeCounts(enumerator, false);
-                        return true;
-                    }
-
-                    if (bucket.CascadeCount == 0)
-                    {
-                        actualKey = default!;
-                        value = default!;
-                        return false;
-                    }
-
-                    bucket = ref enumerator.Advance();
-                }
-
-                actualKey = default!;
-                value = default!;
-                ThrowHelper.ThrowInvalidOperationException_ConcurrentOperationsNotSupported();
-                return false;
+                AlternateComparerComparisonProtocol<TAlternateKey> protocol = new(GetAlternateComparer(dictionary));
+                return dictionary.Remove(protocol, key, out actualKey, out value);
             }
 
             /// <summary>Attempts to add the specified key and value to the dictionary.</summary>
@@ -1325,124 +1252,9 @@ namespace System.Collections.Generic
             internal ref TValue? GetValueRefOrAddDefault(TAlternateKey key, out bool exists)
 #pragma warning restore IDE0060
             {
-                // NOTE: this method is a mirror of GetValueRefOrAddDefault above. Keep it in sync.
-                exists = false;
-
                 Dictionary<TKey, TValue> dictionary = Dictionary;
-                IAlternateEqualityComparer<TAlternateKey, TKey> comparer = GetAlternateComparer(dictionary);
-
-                if (key == null)
-                {
-                    ThrowHelper.ThrowArgumentNullException(ExceptionArgument.key);
-                }
-
-                // FIXME: Specialize using static interface methods like SimdDictionary
-                Debug.Assert(comparer is not null);
-                uint hashCode = (uint)(comparer!.GetHashCode(key));
-                var suffix = GetHashSuffix(hashCode);
-                // FIXME: Skip this on non-vectorized targets
-                var searchVector = Vector128.Create(suffix);
-                int newEntryIndex = -1;
-                ref Entry newEntry = ref Unsafe.NullRef<Entry>();
-
-            // We need to retry when we grow the buckets array since the correct destination bucket will have changed and might not
-            //  be the same as the destination bucket before resizing (it probably isn't, in fact)
-            retry:
-                Span<Bucket> buckets = dictionary._buckets;
-                if (buckets.IsEmpty)
-                {
-                    dictionary.Initialize(0);
-                    buckets = dictionary._buckets;
-                }
-                Debug.Assert(!buckets.IsEmpty, "expected entries to be non-null");
-                Span<Entry> entries = dictionary._entries!;
-                Debug.Assert(!entries.IsEmpty, "expected entries to be non-null");
-
-                ref var bucket = ref LoopingBucketEnumerator.New(buckets, hashCode, dictionary._fastModMultiplier, out var enumerator);
-                // FIXME: Change to do { } while () by introducing EmptyBuckets optimization from SimdDictionary
-                while (!Unsafe.IsNullRef(ref bucket))
-                {
-                    // Pipelining
-                    int bucketCount = bucket.Count;
-                    // Determine start index for key search
-                    // FIXME: Call a separate version for non-vectorized targets
-                    int startIndex = bucket.FindSuffix(bucketCount, suffix, searchVector);
-                    ref var entry = ref FindEntryInBucket(ref bucket, entries, startIndex, bucketCount, comparer!, key, out _, out _);
-                    if (!Unsafe.IsNullRef(ref entry))
-                    {
-                        exists = true;
-                        return ref entry.value!;
-                    }
-                    else if (startIndex < Bucket.Capacity)
-                    {
-                        // FIXME: Suffix collision. Track these for rehashing anti-DoS mitigation.
-                    }
-
-                    if (bucketCount < Bucket.Capacity)
-                    {
-                        if (newEntryIndex < 0)
-                        {
-                            newEntryIndex = dictionary.TryCreateNewEntry(entries);
-                            if (newEntryIndex < 0)
-                            {
-                                // We can't reuse the existing target bucket once we resized, so start over. This is very rare.
-                                dictionary.Resize();
-                                goto retry;
-                            }
-                            else
-                            {
-                                newEntry = ref entries[newEntryIndex];
-                                PopulateEntry(ref newEntry, comparer.Create(key), default!);
-                            }
-                        }
-
-                        if (TryInsertIntoBucket(ref bucket, suffix, bucketCount, newEntryIndex))
-                        {
-                            dictionary._version++;
-                            AdjustCascadeCounts(enumerator, true);
-                            exists = false;
-                            return ref entries[newEntryIndex].value!;
-                        }
-                    }
-
-                    bucket = ref enumerator.Advance();
-                }
-
-                if (dictionary._count >= entries.Length)
-                {
-                    dictionary.Resize();
-                    goto retry;
-                }
-
-                ThrowHelper.ThrowInvalidOperationException_ConcurrentOperationsNotSupported();
-                exists = false;
-                return ref Unsafe.NullRef<TValue>();
-
-                // FIXME: Re-implement this
-                /*
-                // Value types never rehash
-                if (!typeof(TKey).IsValueType && collisionCount > HashHelpers.HashCollisionThreshold && comparer is NonRandomizedStringEqualityComparer)
-                {
-                    // If we hit the collision threshold we'll need to switch to the comparer which is using randomized string hashing
-                    // i.e. EqualityComparer<string>.Default.
-                    dictionary.Resize(entries.Length, true);
-
-                    exists = false;
-
-                    // At this point the entries array has been resized, so the current reference we have is no longer valid.
-                    // We're forced to do a new lookup and return an updated reference to the new entry instance. This new
-                    // lookup is guaranteed to always find a value though and it will never return a null reference here.
-                    ref TValue? value = ref dictionary.FindValue(actualKey)!;
-
-                    Debug.Assert(!Unsafe.IsNullRef(ref value), "the lookup result cannot be a null ref here");
-
-                    return ref value;
-                }
-
-                exists = false;
-
-                return ref entry.value!;
-                */
+                AlternateComparerComparisonProtocol<TAlternateKey> protocol = new(GetAlternateComparer(dictionary));
+                return ref dictionary.TryInsert(protocol, key, default!, InsertionBehavior.InsertNewOnly, out exists).value!;
             }
         }
 
@@ -1554,11 +1366,6 @@ namespace System.Collections.Generic
             _version++;
         }
 
-        public bool Remove(TKey key)
-        {
-            return Remove(key, out Unsafe.NullRef<TValue>()!);
-        }
-
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static void RemoveIndexFromBucket(ref Bucket bucket, int indexInBucket, int bucketCount)
         {
@@ -1606,10 +1413,31 @@ namespace System.Collections.Generic
             _freeCount++;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public bool Remove(TKey key)
+        {
+            return Remove(key, out Unsafe.NullRef<TValue>()!);
+        }
+
         public bool Remove(TKey key, [MaybeNullWhen(false)] out TValue value)
+        {
+            var comparer = Comparer;
+            return (typeof(TKey).IsValueType && (comparer == null))
+                ? Remove(default(DefaultValueTypeComparerComparisonProtocol), key, out Unsafe.NullRef<TKey>()!, out value)
+                : Remove(new ComparerComparisonProtocol(comparer), key, out Unsafe.NullRef<TKey>()!, out value);
+        }
+
+        private bool Remove<TProtocol, TActualKey>(
+            TProtocol protocol, TActualKey key,
+            [MaybeNullWhen(false)] out TKey actualKey,
+            [MaybeNullWhen(false)] out TValue value
+        )
+            where TProtocol : IComparisonProtocol<TActualKey>
+            where TActualKey : allows ref struct
         {
             // This allows using Remove(key, out value) to implement Remove(key) efficiently,
             //  as long as we check whether value is a null reference before writing to it.
+            Unsafe.SkipInit(out actualKey);
             Unsafe.SkipInit(out value);
 
             if (key == null)
@@ -1619,15 +1447,15 @@ namespace System.Collections.Generic
 
             if (_buckets == null)
             {
+                if (!Unsafe.IsNullRef(ref actualKey))
+                    actualKey = default!;
                 if (!Unsafe.IsNullRef(ref value))
                     value = default!;
                 return false;
             }
 
             // FIXME: Specialize using static interface methods like SimdDictionary
-            var comparer = Comparer ?? EqualityComparer<TKey>.Default;
-            Debug.Assert(comparer is not null || typeof(TKey).IsValueType);
-            uint hashCode = (uint)((typeof(TKey).IsValueType && comparer == null) ? key.GetHashCode() : comparer!.GetHashCode(key));
+            uint hashCode = (uint)protocol.GetHashCode(key);
             var suffix = GetHashSuffix(hashCode);
             // FIXME: Skip this on non-vectorized targets
             var searchVector = Vector128.Create(suffix);
@@ -1644,12 +1472,14 @@ namespace System.Collections.Generic
                 // Determine start index for key search
                 int startIndex = bucket.FindSuffix(bucketCount, suffix, searchVector);
                 ref var entry = ref FindEntryInBucket(
-                    ref bucket, entries, startIndex, bucketCount, comparer!, key,
+                    protocol, ref bucket, entries, startIndex, bucketCount, key,
                     out int entryIndex, out int indexInBucket
                 );
 
                 if (!Unsafe.IsNullRef(ref entry))
                 {
+                    if (!Unsafe.IsNullRef(ref actualKey))
+                        actualKey = entry.key;
                     if (!Unsafe.IsNullRef(ref value))
                         value = entry.value;
                     // NOTE: We don't increment version because it's documented that removal during enumeration works.
@@ -1661,6 +1491,8 @@ namespace System.Collections.Generic
 
                 if (bucket.CascadeCount == 0)
                 {
+                    if (!Unsafe.IsNullRef(ref actualKey))
+                        actualKey = default!;
                     if (!Unsafe.IsNullRef(ref value))
                         value = default!;
                     return false;
@@ -1669,6 +1501,8 @@ namespace System.Collections.Generic
                 bucket = ref enumerator.Advance();
             }
 
+            if (!Unsafe.IsNullRef(ref actualKey))
+                actualKey = default!;
             if (!Unsafe.IsNullRef(ref value))
                 value = default!;
             ThrowHelper.ThrowInvalidOperationException_ConcurrentOperationsNotSupported();
