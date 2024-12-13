@@ -27,7 +27,7 @@ namespace Wasm.Build.Tests
     public abstract class BuildTestBase : IClassFixture<SharedBuildPerTestClassFixture>, IDisposable
     {
         public const string DefaultTargetFramework = "net10.0";
-        public const string DefaultTargetFrameworkForBlazor = "net9.0";
+        public const string DefaultTargetFrameworkForBlazor = "net10.0";
         public const string TargetFrameworkForTasks = "net10.0";
         private const string DefaultEnvironmentLocale = "en-US";
         protected static readonly string s_unicodeChars = "\u9FC0\u8712\u679B\u906B\u486B\u7149";

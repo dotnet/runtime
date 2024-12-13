@@ -214,17 +214,18 @@ public class WasmTemplateTestsBase : BuildTestBase
     {
         string mainJsPath = Path.Combine(_projectDir, "wwwroot", "main.js");
         string mainJsContent = File.ReadAllText(mainJsPath);
+        Version targetFrameworkVersion = new Version(targetFramework.Replace("net", ""));
 
         string updatedMainJsContent = StringReplaceWithAssert(
             mainJsContent,
             ".create()",
-            (targetFramework == "net8.0" || targetFramework == "net9.0")
+            (targetFrameworkVersion.Major >= 8)
                     ? ".withConsoleForwarding().withElementOnExit().withExitCodeLogging().withExitOnUnhandledError().create()"
                     : ".withConsoleForwarding().withElementOnExit().withExitCodeLogging().create()"
             );
 
-        // dotnet.run() is already used in <= net8.0
-        if (targetFramework != "net8.0")
+        // dotnet.run() is used instead of runMain() in net9.0+
+        if (targetFrameworkVersion.Major >= 9)
             updatedMainJsContent = StringReplaceWithAssert(updatedMainJsContent, "runMain()", "dotnet.run()");
 
         updatedMainJsContent = StringReplaceWithAssert(updatedMainJsContent, "from './_framework/dotnet.js'", $"from '{runtimeAssetsRelativePath}dotnet.js'");

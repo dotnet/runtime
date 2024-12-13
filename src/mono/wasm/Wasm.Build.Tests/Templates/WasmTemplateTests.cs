@@ -111,7 +111,10 @@ namespace Wasm.Build.Tests
             yield return new object?[] { "-f net10.0", "net10.0", DefaultRuntimeAssetsRelativePath };
 
             if (EnvironmentVariables.WorkloadsTestPreviousVersions)
+            {
                 yield return new object?[] { "-f net9.0", "net9.0", DefaultRuntimeAssetsRelativePath };
+                yield return new object?[] { "-f net8.0", "net8.0", DefaultRuntimeAssetsRelativePath };
+            }
 
             // ActiveIssue("https://github.com/dotnet/runtime/issues/90979")
             // yield return new object?[] { "", BuildTestBase.DefaultTargetFramework, "./" };
@@ -136,7 +139,7 @@ namespace Wasm.Build.Tests
                 addFrameworkArg: extraNewArgs.Length == 0
             );
 
-            if (targetFramework != "net8.0")
+            if (new Version(targetFramework.Replace("net", "")).Major > 8)
                 UpdateBrowserProgramFile();
             UpdateBrowserMainJs(targetFramework, runtimeAssetsRelativePath);
 
