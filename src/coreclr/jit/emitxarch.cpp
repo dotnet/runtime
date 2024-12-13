@@ -2257,9 +2257,11 @@ emitter::code_t emitter::emitExtractEvexPrefix(instruction ins, code_t& code) co
                 }
             }
 
-            // Now the byte in the 22 position must be an escape byte 0F
+            // Now the byte in the 22 position should be either of the below:
+            //                          1. An escape byte 0F (For isa befpre AVX10.2)
+            //                          2. A map number from 0 to 7 (For AVX10.2 and above)
             leadingBytes = check;
-            assert(leadingBytes == 0x0F);
+            assert(leadingBytes == 0x0F || (leadingBytes >= 0x00 && leadingBytes <= 0x07));
 
             // Get rid of both sizePrefix and escape byte
             code &= 0x0000FFFFLL;
@@ -2277,16 +2279,21 @@ emitter::code_t emitter::emitExtractEvexPrefix(instruction ins, code_t& code) co
     }
     else
     {
-        // 2-byte opcode with the bytes ordered as 0x0011RM22
-        // the byte in position 11 must be an escape byte.
+        // 2-byte opcode with the bytes ordered as 0x0011RM22. There are 2 posibilities here:
+        //      1. the byte in position 11 must be an escape byte.
+        //      2. the byte in position 11 must be a map number from 0 to 7.
         leadingBytes = (code >> 16) & 0xFF;
-        assert(leadingBytes == 0x0F || leadingBytes == 0x00);
+        assert(leadingBytes == 0x0F || (leadingBytes >= 0x00 && leadingBytes <= 0x07));
         code &= 0xFFFF;
     }
 
-    // If there is an escape byte it must be 0x0F or 0x0F3A or 0x0F38
-    // mm bits in byte 0 of EVEX prefix allows us to encode these
-    // implied leading bytes. They are identical to low two bits of VEX.mmmmm
+    // Encode the escape byte in the evex prefix using either of the below:
+    //          1. If there is an escape byte it must be 0x0F or 0x0F3A or 0x0F38
+    //             mm bits in byte 0 of EVEX prefix allows us to encode these
+    //             implied leading bytes. They are identical to low two bits of VEX.mmmmm
+    //          2. If there is no escape byte but a map number from 0 to 7,
+    //             EVEX.mmm bits in byte 0 of EVEX prefix allows us to encode these
+    //             map numbers
 
     switch (leadingBytes)
     {
@@ -2311,6 +2318,12 @@ emitter::code_t emitter::emitExtractEvexPrefix(instruction ins, code_t& code) co
         case 0x0F3A:
         {
             evexPrefix |= (0x03 << 16);
+            break;
+        }
+
+        case 0x05:
+        {
+            evexPrefix |= (0x05 << 16);
             break;
         }
 
@@ -19608,6 +19621,21 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_vscalefps:
         case INS_vscalefsd:
         case INS_vscalefss:
+        {
+            result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+            result.insLatency += PERFSCORE_LATENCY_4C;
+            break;
+        }
+
+        /* TBD handle perf for AVX10.2 instructions*/
+        case INS_vminmaxsd:
+        case INS_vminmaxss:
+        case INS_vminmaxpd:
+        case INS_vminmaxps:
+        case INS_vcvtps2ibs:
+        case INS_vcvtps2iubs:
+        case INS_vcvttps2ibs:
+        case INS_vcvttps2iubs:
         {
             result.insThroughput = PERFSCORE_THROUGHPUT_2X;
             result.insLatency += PERFSCORE_LATENCY_4C;

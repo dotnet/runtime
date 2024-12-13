@@ -50,6 +50,10 @@ static CORINFO_InstructionSet X64VersionOfIsa(CORINFO_InstructionSet isa)
             return InstructionSet_AVX10v1_X64;
         case InstructionSet_AVX10v1_V512:
             return InstructionSet_AVX10v1_V512_X64;
+        case InstructionSet_AVX10v2:
+            return InstructionSet_AVX10v2_X64;
+        case InstructionSet_AVX10v2_V512:
+            return InstructionSet_AVX10v2_V512_X64;
         case InstructionSet_AVXVNNI:
             return InstructionSet_AVXVNNI_X64;
         case InstructionSet_AES:
@@ -139,6 +143,10 @@ static CORINFO_InstructionSet V512VersionOfIsa(CORINFO_InstructionSet isa)
             return InstructionSet_AVX10v1_V512;
         case InstructionSet_AVX10v1_X64:
             return InstructionSet_AVX10v1_V512_X64;
+        case InstructionSet_AVX10v2:
+            return InstructionSet_AVX10v2_V512;
+        case InstructionSet_AVX10v2_X64:
+            return InstructionSet_AVX10v2_V512_X64;
         case InstructionSet_GFNI:
             return InstructionSet_GFNI_V512;
         case InstructionSet_PCLMULQDQ:
@@ -175,6 +183,10 @@ static CORINFO_InstructionSet lookupInstructionSet(const char* className)
             else if (strcmp(className + 3, "10v1") == 0)
             {
                 return InstructionSet_AVX10v1;
+            }
+            else if (strcmp(className + 3, "10v2") == 0)
+            {
+                return InstructionSet_AVX10v2;
             }
             else if (strcmp(className + 3, "2") == 0)
             {
@@ -412,6 +424,8 @@ int HWIntrinsicInfo::lookupImmUpperBound(NamedIntrinsic id)
         case NI_AVX_CompareScalar:
         case NI_AVX512F_Compare:
         case NI_EVEX_CompareMask:
+        case NI_AVX10v2_MinMaxScalar:
+        case NI_AVX10v2_MinMax:
         {
             assert(!HWIntrinsicInfo::HasFullRangeImm(id));
             return 31; // enum FloatComparisonMode has 32 values
@@ -910,6 +924,10 @@ bool HWIntrinsicInfo::isFullyImplementedIsa(CORINFO_InstructionSet isa)
         case InstructionSet_AVX10v1_X64:
         case InstructionSet_AVX10v1_V512:
         case InstructionSet_AVX10v1_V512_X64:
+        case InstructionSet_AVX10v2:
+        case InstructionSet_AVX10v2_X64:
+        case InstructionSet_AVX10v2_V512:
+        case InstructionSet_AVX10v2_V512_X64:
         case InstructionSet_EVEX:
         case InstructionSet_GFNI:
         case InstructionSet_GFNI_X64:
