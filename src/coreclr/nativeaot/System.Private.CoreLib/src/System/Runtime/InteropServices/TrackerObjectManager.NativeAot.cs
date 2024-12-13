@@ -137,9 +137,9 @@ namespace System.Runtime.InteropServices
 
         public static unsafe void RegisterGCCallbacks()
         {
-            delegate* unmanaged<int, void> gcStartCallback = &GCStartCollection;
-            delegate* unmanaged<int, void> gcStopCallback = &GCStopCollection;
-            delegate* unmanaged<int, void> gcAfterMarkCallback = &GCAfterMarkPhase;
+            delegate* unmanaged[Fastcall]<int, void> gcStartCallback = &GCStartCollection;
+            delegate* unmanaged[Fastcall]<int, void> gcStopCallback = &GCStopCollection;
+            delegate* unmanaged[Fastcall]<int, void> gcAfterMarkCallback = &GCAfterMarkPhase;
 
             if (!RuntimeImports.RhRegisterGcCallout(RuntimeImports.GcRestrictedCalloutKind.StartCollection, (IntPtr)gcStartCallback) ||
                 !RuntimeImports.RhRegisterGcCallout(RuntimeImports.GcRestrictedCalloutKind.EndCollection, (IntPtr)gcStopCallback) ||
@@ -155,7 +155,7 @@ namespace System.Runtime.InteropServices
         }
 
         // Used during GC callback
-        [UnmanagedCallersOnly]
+        [UnmanagedCallersOnly(CallConvs = [typeof(CallConvFastcall)])]
         private static void GCStartCollection(int condemnedGeneration)
         {
             if (condemnedGeneration >= 2)
@@ -167,7 +167,7 @@ namespace System.Runtime.InteropServices
         }
 
         // Used during GC callback
-        [UnmanagedCallersOnly]
+        [UnmanagedCallersOnly(CallConvs = [typeof(CallConvFastcall)])]
         private static void GCStopCollection(int condemnedGeneration)
         {
             if (condemnedGeneration >= 2)
@@ -177,7 +177,7 @@ namespace System.Runtime.InteropServices
         }
 
         // Used during GC callback
-        [UnmanagedCallersOnly]
+        [UnmanagedCallersOnly(CallConvs = [typeof(CallConvFastcall)])]
         private static void GCAfterMarkPhase(int condemnedGeneration)
         {
             DetachNonPromotedObjects();
