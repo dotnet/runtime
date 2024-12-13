@@ -823,9 +823,9 @@ bool Compiler::fgCanCompactBlock(BasicBlock* block)
         return false;
     }
 
-    // Don't compact the first block if it was specially created as a scratch block.
+    // Ensure we leave a valid init BB around.
     //
-    if (fgBBisScratch(block))
+    if ((block == fgFirstBB) && !fgCanCompactInitBlock())
     {
         return false;
     }
@@ -846,6 +846,40 @@ bool Compiler::fgCanCompactBlock(BasicBlock* block)
         {
             return false;
         }
+    }
+
+    return true;
+}
+
+//-------------------------------------------------------------
+// fgCanCompactInitBlock: Check if the first BB (the init BB) can be compacted
+// into its target.
+//
+// Returns:
+//    true if compaction is allowed
+//
+bool Compiler::fgCanCompactInitBlock()
+{
+    assert(fgFirstBB->KindIs(BBJ_ALWAYS));
+    BasicBlock* target = fgFirstBB->GetTarget();
+    if (target->hasTryIndex())
+    {
+        // Inside a try region
+        return false;
+    }
+
+    assert(target->bbPreds != nullptr);
+    if (target->bbPreds->getNextPredEdge() != nullptr)
+    {
+        // Multiple preds
+        return false;
+    }
+
+    if (opts.compDbgCode && !target->HasFlag(BBF_INTERNAL))
+    {
+        // Init BB must be internal for debug code to avoid conflating
+        // JIT-inserted code with user code.
+        return false;
     }
 
     return true;
@@ -1389,7 +1423,7 @@ bool Compiler::fgOptimizeEmptyBlock(BasicBlock* block)
             if (bPrev == nullptr)
             {
                 assert(block == fgFirstBB);
-                if (!block->JumpsToNext())
+                if (!block->JumpsToNext() || !fgCanCompactInitBlock())
                 {
                     break;
                 }
@@ -1401,8 +1435,9 @@ bool Compiler::fgOptimizeEmptyBlock(BasicBlock* block)
                 break;
             }
 
-            // Don't remove fgEntryBB
-            if (block == fgEntryBB)
+            // Don't remove the init BB if it does not leave a proper init BB
+            // in place
+            if ((block == fgFirstBB) && !fgCanCompactInitBlock())
             {
                 break;
             }
@@ -2161,11 +2196,6 @@ bool Compiler::fgOptimizeUncondBranchToSimpleCond(BasicBlock* block, BasicBlock*
         return false;
     }
 
-    if (fgBBisScratch(block))
-    {
-        return false;
-    }
-
     unsigned lclNum = BAD_VAR_NUM;
 
     // First check if the successor tests a local and then branches on the result
@@ -2521,12 +2551,6 @@ bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
     }
 
     if (bJump->HasFlag(BBF_KEEP_BBJ_ALWAYS))
-    {
-        return false;
-    }
-
-    // Don't hoist a conditional branch into the scratch block; we'd prefer it stay BBJ_ALWAYS.
-    if (fgBBisScratch(bJump))
     {
         return false;
     }
@@ -6481,9 +6505,9 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
                 Statement* const  stmt      = info.m_stmt;
                 BasicBlock* const predBlock = info.m_block;
 
-                // Never pick the scratch block as the victim as that would
+                // Never pick the init block as the victim as that would
                 // cause us to add a predecessor to it, which is invalid.
-                if (fgBBisScratch(predBlock))
+                if (predBlock == fgFirstBB)
                 {
                     continue;
                 }
