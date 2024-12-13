@@ -191,11 +191,32 @@ namespace HttpServer
             if (contentType != null && contentType.StartsWith("text/plain") && path.StartsWith("/"))
             {
                 path = path.Substring(1);
+                var split = path.Split('=');
+                string cmd;
+                if (split.Length > 1)
+                {
+                    cmd = split[0];
+                    path = split[1];
+                } else
+                    cmd = "rewrite";
+
                 if (Verbose)
-                    Console.WriteLine($"  writting POST stream to '{path}' file");
+                    Console.WriteLine($"  POST cmd: {cmd} path: '{path}'");
 
                 var content = await new StreamReader(context.Request.InputStream).ReadToEndAsync().ConfigureAwait(false);
-                await File.WriteAllTextAsync(path, content).ConfigureAwait(false);
+
+                switch (cmd) {
+                    case "rewrite":
+                        await File.WriteAllTextAsync(path, content).ConfigureAwait(false);
+                        break;
+                    case "log":
+                        await File.AppendAllTextAsync(path, content + "\n").ConfigureAwait(false); 
+                        Console.WriteLine($"  log: {content}");
+                        break;
+                    default:
+                        Console.WriteLine($"  unknown command: {cmd}");
+                        break;
+                }
             }
             else
                 return;
