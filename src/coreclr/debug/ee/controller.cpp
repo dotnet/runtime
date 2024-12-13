@@ -4102,7 +4102,7 @@ void DebuggerController::DisableGenericPInvokeCalli()
         LOG((LF_CORDB, LL_INFO10000, "DC::DisableGenericPInvokeCalli, this=%p, already disabled\n", this));
     }
 }
-// // Loop through controllers and dispatch TriggerGenericPInvokeCalli
+// Loop through controllers and dispatch TriggerGenericPInvokeCalli
 void DebuggerController::DispatchGenericPInvokeCalli(PCODE addr)
 {
     Thread * pThread = g_pEEInterface->GetThread();
@@ -7898,7 +7898,6 @@ void DebuggerStepper::TriggerGenericPInvokeCalli(PCODE target)
     trace.InitForStub(target);
     g_pEEInterface->FollowTrace(&trace);
     //fStopInUnmanaged only matters for TRACE_UNMANAGED
-    LOG((LF_CORDB, LL_INFO1000, "DS::TGPIC PatchTrace to be called\n"));
     PatchTrace(&trace, fp, /*fStopInUnmanaged*/false);
     this->DisableGenericPInvokeCalli();
 }
