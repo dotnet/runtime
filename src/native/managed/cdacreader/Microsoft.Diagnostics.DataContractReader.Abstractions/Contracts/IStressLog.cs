@@ -6,7 +6,7 @@ using System.Collections.Generic;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
-public record struct StressLogData(
+internal record struct StressLogData(
     uint LoggedFacilities,
     uint Level,
     uint MaxSizePerThread,
@@ -16,7 +16,7 @@ public record struct StressLogData(
     ulong StartTimestamp,
     TargetPointer Logs);
 
-public record struct ThreadStressLogData(
+internal record struct ThreadStressLogData(
     TargetPointer NextPointer,
     ulong ThreadId,
     bool WriteHasWrapped,
@@ -25,7 +25,7 @@ public record struct ThreadStressLogData(
     TargetPointer ChunkListTail,
     TargetPointer CurrentWriteChunk);
 
-public record struct StressMsgData(
+internal record struct StressMsgData(
     uint Facility,
     TargetPointer FormatString,
     ulong Timestamp,
@@ -39,7 +39,7 @@ internal interface IStressLog : IContract
     public virtual StressLogData GetStressLogData(TargetPointer stressLog) => throw new NotImplementedException();
     public virtual IEnumerable<ThreadStressLogData> GetThreadStressLogs(TargetPointer Logs) => throw new NotImplementedException();
     public virtual IEnumerable<StressMsgData> GetStressMessages(ThreadStressLogData threadLog) => throw new NotImplementedException();
-    public virtual bool IsPointerInStressLog(StressLogData stressLog, TargetPointer pointer);
+    public virtual bool IsPointerInStressLog(StressLogData stressLog, TargetPointer pointer) => throw new NotImplementedException();
 }
 
 internal readonly struct StressLog : IStressLog

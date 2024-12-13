@@ -5,7 +5,7 @@ using System;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
-public interface IContract
+internal interface IContract
 {
     static virtual string Name => throw new NotImplementedException();
 }
