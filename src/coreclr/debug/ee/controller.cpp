@@ -1145,6 +1145,8 @@ void DebuggerController::DisableAll()
             DisableMultiCastDelegate();
         if (m_externalMethodFixup)
             DisableExternalMethodFixup();
+        if (m_genericPInvokeCalli)
+            DisableGenericPInvokeCalli();
     }
 }
 
