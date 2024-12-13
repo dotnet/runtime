@@ -361,7 +361,7 @@ namespace System.ComponentModel.DataAnnotations
             // The IsValid method without a validationContext predates the one accepting the context.
             // This is theoretically unreachable through normal use cases.
             // Instead, the overload using validationContext should be called.
-            return !RequiresValidationContext && IsValid(value, null!) == ValidationResult.Success;
+            return IsValid(value, null!) == ValidationResult.Success;
         }
 
         /// <summary>
