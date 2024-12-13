@@ -6233,7 +6233,7 @@ public:
 #endif
     PhaseStatus fgComputeBlockWeights();
     bool fgComputeMissingBlockWeights(weight_t* returnWeight);
-    bool fgComputeCalledCount(weight_t returnWeight);
+    void fgComputeCalledCount();
 
     bool fgReorderBlocks(bool useProfile);
     void fgDoReversePostOrderLayout();
@@ -6491,6 +6491,7 @@ protected:
     PhaseStatus fgPrepareToInstrumentMethod();
     PhaseStatus fgInstrumentMethod();
     PhaseStatus fgIncorporateProfileData();
+    bool        fgIncorporateProfileCounts();
     bool        fgIncorporateBlockCounts();
     bool        fgIncorporateEdgeCounts();
 

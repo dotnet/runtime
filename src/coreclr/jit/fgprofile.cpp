@@ -2773,6 +2773,30 @@ PhaseStatus Compiler::fgInstrumentMethod()
 //
 PhaseStatus Compiler::fgIncorporateProfileData()
 {
+    bool incorporatedAny = fgIncorporateProfileCounts();
+
+    if (!incorporatedAny)
+    {
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+
+    if (!compIsForInlining() && fgIsUsingProfileWeights())
+    {
+        fgComputeCalledCount();
+    }
+
+    return PhaseStatus::MODIFIED_EVERYTHING;
+}
+
+//------------------------------------------------------------------------
+// fgIncorporateProfileCounts: add block/edge profile data to the flowgraph
+//   and compute profile scale for inlinees
+//
+// Returns:
+//   True if any counts were incorporated, otherwise false.
+//
+bool Compiler::fgIncorporateProfileCounts()
+{
     // Are we doing profile stress?
     //
     if (fgStressBBProf() > 0)
@@ -2781,7 +2805,7 @@ PhaseStatus Compiler::fgIncorporateProfileData()
         fgIncorporateBlockCounts();
         ProfileSynthesis::Run(this, ProfileSynthesisOption::RepairLikelihoods);
         fgApplyProfileScale();
-        return PhaseStatus::MODIFIED_EVERYTHING;
+        return true;
     }
 
     // For now we only rely on profile data when optimizing.
@@ -2789,7 +2813,7 @@ PhaseStatus Compiler::fgIncorporateProfileData()
     if (!opts.OptimizationEnabled())
     {
         JITDUMP("not optimizing, so not incorporating any profile data\n");
-        return PhaseStatus::MODIFIED_NOTHING;
+        return false;
     }
 
 #ifdef DEBUG
@@ -2802,7 +2826,7 @@ PhaseStatus Compiler::fgIncorporateProfileData()
             JITDUMP("Synthesizing profile data\n");
             ProfileSynthesis::Run(this, ProfileSynthesisOption::AssignLikelihoods);
             fgApplyProfileScale();
-            return PhaseStatus::MODIFIED_EVERYTHING;
+            return true;
         }
     }
 
@@ -2814,7 +2838,7 @@ PhaseStatus Compiler::fgIncorporateProfileData()
         JITDUMP("Synthesizing profile data and writing it out as the actual profile data\n");
         ProfileSynthesis::Run(this, ProfileSynthesisOption::AssignLikelihoods);
         fgApplyProfileScale();
-        return PhaseStatus::MODIFIED_EVERYTHING;
+        return true;
     }
 #endif
 
@@ -2845,7 +2869,7 @@ PhaseStatus Compiler::fgIncorporateProfileData()
         //
         fgApplyProfileScale();
 
-        return compIsForInlining() ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
+        return compIsForInlining();
     }
 
     // Summarize profile data
@@ -2960,7 +2984,7 @@ PhaseStatus Compiler::fgIncorporateProfileData()
     //
     fgApplyProfileScale();
 
-    return PhaseStatus::MODIFIED_EVERYTHING;
+    return true;
 }
 
 //------------------------------------------------------------------------
@@ -4242,15 +4266,6 @@ PhaseStatus Compiler::fgComputeBlockWeights()
 
     madeChanges |= fgComputeMissingBlockWeights(&returnWeight);
 
-    if (usingProfileWeights)
-    {
-        madeChanges |= fgComputeCalledCount(returnWeight);
-    }
-    else
-    {
-        JITDUMP(" -- no profile data, so using default called count\n");
-    }
-
     return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
 
@@ -4424,70 +4439,24 @@ bool Compiler::fgComputeMissingBlockWeights(weight_t* returnWeight)
 // fgComputeCalledCount: when profile information is in use,
 //   compute fgCalledCount
 //
-// Argument:
-//   returnWeight - sum of weights for all return and throw blocks
-//
-// Returns:
-//   true if any changes were made
-//
-bool Compiler::fgComputeCalledCount(weight_t returnWeight)
+void Compiler::fgComputeCalledCount()
 {
     // When we are not using profile data we have already setup fgCalledCount
     // only set it here if we are using profile data
     assert(fgIsUsingProfileWeights());
-    bool madeChanges = false;
 
-    BasicBlock* firstILBlock = fgFirstBB; // The first block for IL code (i.e. for the IL code at offset 0)
-
-    // OSR methods can have complex entry flow, and so
-    // for OSR we ensure fgFirstBB has plausible profile data.
-    //
-    if (!opts.IsOSR())
+    fgCalledCount = fgFirstBB->bbWeight;
+    for (FlowEdge* predEdge : fgFirstBB->PredEdges())
     {
-        // Skip past any/all BBF_INTERNAL blocks that may have been added before the first real IL block.
-        //
-        while (firstILBlock->HasFlag(BBF_INTERNAL))
-        {
-            firstILBlock = firstILBlock->Next();
-        }
-    }
-
-    // The 'firstILBlock' is now expected to have a profile-derived weight
-    assert(firstILBlock->hasProfileWeight());
-
-    // If the first block only has one ref then we use its weight for fgCalledCount.
-    // Otherwise we have backedges into the first block, so instead we use the sum
-    // of the return block weights for fgCalledCount.
-    //
-    // If the profile data has a 0 for the returnWeight
-    // (i.e. the function never returns because it always throws)
-    // then just use the first block weight rather than 0.
-    //
-    if ((firstILBlock->countOfInEdges() == 1) || (returnWeight == BB_ZERO_WEIGHT))
-    {
-        fgCalledCount = firstILBlock->bbWeight;
-    }
-    else
-    {
-        fgCalledCount = returnWeight;
-    }
-
-    // If we allocated a scratch block as the first BB then we need
-    // to set its profile-derived weight to be fgCalledCount
-    if (fgFirstBB->HasFlag(BBF_INTERNAL))
-    {
-        fgFirstBB->setBBProfileWeight(fgCalledCount);
-        madeChanges = true;
+        fgCalledCount -= predEdge->getSourceBlock()->bbWeight * predEdge->getLikelihood();
     }
 
 #if DEBUG
     if (verbose)
     {
-        printf("We are using the Profile Weights and fgCalledCount is " FMT_WT "\n", fgCalledCount);
+        printf("fgCalledCount is " FMT_WT "\n", fgCalledCount);
     }
 #endif
-
-    return madeChanges;
 }
 
 //------------------------------------------------------------------------
