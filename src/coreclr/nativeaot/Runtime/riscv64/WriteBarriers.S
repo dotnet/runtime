@@ -261,7 +261,7 @@ LEAF_END RhpCheckedAssignRef, _TEXT
 // On exit:
 //  t3, t4 : trashed
 //  t6 : incremented by 8
-LEAF_ENTRY RhpAssignRefRiscVh64, _TEXT
+LEAF_ENTRY RhpAssignRefRiscV64, _TEXT
 
     ALTERNATE_ENTRY RhpAssignRefAVLocation
         sd    t6, 0(t5)

@@ -42,7 +42,7 @@
         // Determine whether the end of the object would lie outside of the current allocation context. If so,
         // we abandon the attempt to allocate the object directly and fall back to the slow helper.
         add   a2, a2, t3
-        ld    t4, OFFSETOF__Thread__m_alloc_context__alloc_limit(a1)
+        ld    t4, OFFSETOF__Thread__m_eeAllocContext__combined_limit(a1)
         bltu  t4, a2, LOCAL_LABEL(RhpNewFast_RarePath)
 
         // Update the alloc pointer to account for the allocation.

@@ -493,7 +493,7 @@ LOCAL_LABEL(NotHijacked):
         addi  t3, a5, OFFSETOF__Thread__m_ThreadStateFlags
 
         addiw  a6, zero, -17  // Mask value (0xFFFFFFEF)
-        amoand.w  a4, t3, a6
+        amoand.w  a4, a6, (t3)
 
         // Set preserved regs to the values expected by the funclet
         RESTORE_PRESERVED_REGISTERS a2
@@ -623,7 +623,7 @@ LOCAL_LABEL(NoAbort):
         // Set the DoNotTriggerGc flag
         addi  t3, a2, OFFSETOF__Thread__m_ThreadStateFlags
         addiw  a3, zero, -17  // Mask value (0xFFFFFFEF)
-        amoand.w  a4, t3, a3
+        amoand.w  a4, a3, (t3)
 
         // Restore preserved registers
         RESTORE_PRESERVED_REGISTERS a1
@@ -646,7 +646,7 @@ LOCAL_LABEL(NoAbort):
 
         addi  t3, a2, OFFSETOF__Thread__m_ThreadStateFlags
         addiw  a3, zero, 16  // Mask value (0x10)
-        amoor.w  a1, t3, a3
+        amoor.w  a1, a3, (t3)
 
         // Restore floating-point registers
         fld  fs0,  0x00(sp)

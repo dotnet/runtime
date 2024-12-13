@@ -1,5 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 #include "common.h"
 #include "gcenv.h"
 #include "CommonTypes.h"
@@ -794,15 +795,11 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, NATIVE_CONTEXT* pC
     m_RegDisplay.pS9 = (PTR_uintptr_t)PTR_TO_REG(pCtx, S9);
     m_RegDisplay.pS10 = (PTR_uintptr_t)PTR_TO_REG(pCtx, S10);
     m_RegDisplay.pS11 = (PTR_uintptr_t)PTR_TO_REG(pCtx, S11);
-    m_RegDisplay.pFP = (PTR_uintptr_t)PTR_TO_REG(pCtx, FP);
-    m_RegDisplay.pRA = (PTR_uintptr_t)PTR_TO_REG(pCtx, RA);
-
+ 
     //
     // scratch regs
     //
     m_RegDisplay.pR0 = (PTR_uintptr_t)PTR_TO_REG(pCtx, R0);
-    m_RegDisplay.pGP = (PTR_uintptr_t)PTR_TO_REG(pCtx, GP);
-    m_RegDisplay.pTP = (PTR_uintptr_t)PTR_TO_REG(pCtx, TP);
     m_RegDisplay.pA0 = (PTR_uintptr_t)PTR_TO_REG(pCtx, A0);
     m_RegDisplay.pA1 = (PTR_uintptr_t)PTR_TO_REG(pCtx, A1);
     m_RegDisplay.pA2 = (PTR_uintptr_t)PTR_TO_REG(pCtx, A2);

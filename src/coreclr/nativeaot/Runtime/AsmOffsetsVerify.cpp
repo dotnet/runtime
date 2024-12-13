@@ -28,9 +28,12 @@ class AsmOffsets
     static_assert(offsetof(Array, m_Length) == offsetof(String, m_Length), "The length field of String and Array have different offsets");
     static_assert(sizeof(((Array*)0)->m_Length) == sizeof(((String*)0)->m_Length), "The length field of String and Array have different sizes");
 
+#define TO_STRING(x) #x
+#define OFFSET_STRING(cls, member) TO_STRING(offsetof(cls, member))
+
+// Macro definition
 #define PLAT_ASM_OFFSET(offset, cls, member) \
-    static_assert((offsetof(cls, member) == 0x##offset) || (offsetof(cls, member) > 0x##offset), "Bad asm offset for '" #cls "." #member "', the actual offset is smaller than 0x" #offset "."); \
-    static_assert((offsetof(cls, member) == 0x##offset) || (offsetof(cls, member) < 0x##offset), "Bad asm offset for '" #cls "." #member "', the actual offset is larger than 0x" #offset ".");
+    static_assert(offsetof(cls, member) == 0x##offset, "Bad asm offset for '" #cls "." #member "'. Actual offset: " OFFSET_STRING(cls, member));
 
 #define PLAT_ASM_SIZEOF(size,   cls        ) \
     static_assert((sizeof(cls) == 0x##size) || (sizeof(cls) > 0x##size), "Bad asm size for '" #cls "', the actual size is smaller than 0x" #size "."); \

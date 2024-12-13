@@ -1157,40 +1157,6 @@ inline uint64_t Registers_REGDISPLAY::getRegister(int regNum) const {
         return *pT5;
     case UNW_RISCV_X6:
         return *pT6;
-    case UNW_RISCV_X7:
-        return *pT7;
-    case UNW_RISCV_X8:
-        return *pT8;
-    case UNW_RISCV_X9:
-        return *pT9;
-    case UNW_RISCV_X10:
-        return *pT10;
-    case UNW_RISCV_X11:
-        return *pT11;
-    case UNW_RISCV_X12:
-        return *pT12;
-    case UNW_RISCV_X13:
-        return *pT13;
-    case UNW_RISCV_X14:
-        return *pT14;
-    case UNW_RISCV_X15:
-        return *pT15;
-    case UNW_RISCV_X16:
-        return *pT16;
-    case UNW_RISCV_X17:
-        return *pT17;
-    case UNW_RISCV_X18:
-        return *pT18;
-    case UNW_RISCV_X19:
-        return *pT19;
-    case UNW_RISCV_X20:
-        return *pT20;
-    case UNW_RISCV_X21:
-        return *pT21;
-    case UNW_RISCV_X22:
-        return *pT22;
-    case UNW_RISCV_X23:
-        return *pT23;
     // Add other general-purpose registers if needed
 
     case UNW_RISCV_F0:
@@ -1290,57 +1256,6 @@ void Registers_REGDISPLAY::setRegister(int regNum, uint64_t value, uint64_t loca
         break;
     case UNW_RISCV_X6:
         *pT6 = value;
-        break;
-    case UNW_RISCV_X7:
-        *pT7 = value;
-        break;
-    case UNW_RISCV_X8:
-        *pT8 = value;
-        break;
-    case UNW_RISCV_X9:
-        *pT9 = value;
-        break;
-    case UNW_RISCV_X10:
-        *pT10 = value;
-        break;
-    case UNW_RISCV_X11:
-        *pT11 = value;
-        break;
-    case UNW_RISCV_X12:
-        *pT12 = value;
-        break;
-    case UNW_RISCV_X13:
-        *pT13 = value;
-        break;
-    case UNW_RISCV_X14:
-        *pT14 = value;
-        break;
-    case UNW_RISCV_X15:
-        *pT15 = value;
-        break;
-    case UNW_RISCV_X16:
-        *pT16 = value;
-        break;
-    case UNW_RISCV_X17:
-        *pT17 = value;
-        break;
-    case UNW_RISCV_X18:
-        *pT18 = value;
-        break;
-    case UNW_RISCV_X19:
-        *pT19 = value;
-        break;
-    case UNW_RISCV_X20:
-        *pT20 = value;
-        break;
-    case UNW_RISCV_X21:
-        *pT21 = value;
-        break;
-    case UNW_RISCV_X22:
-        *pT22 = value;
-        break;
-    case UNW_RISCV_X23:
-        *pT23 = value;
         break;
 
     // Add other general-purpose registers if needed

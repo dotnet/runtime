@@ -17,8 +17,8 @@ PLAT_ASM_OFFSET(1C, ExInfo, m_idxCurClause)
 PLAT_ASM_OFFSET(20, ExInfo, m_frameIter)
 PLAT_ASM_OFFSET(348, ExInfo, m_notifyDebuggerSP)
 
-PLAT_ASM_OFFSET(0, PInvokeTransitionFrame, m_RIP)
-PLAT_ASM_OFFSET(8, PInvokeTransitionFrame, m_FramePointer)
+PLAT_ASM_OFFSET(0, PInvokeTransitionFrame, m_FramePointer)
+PLAT_ASM_OFFSET(8, PInvokeTransitionFrame, m_RIP)
 PLAT_ASM_OFFSET(10, PInvokeTransitionFrame, m_pThread)
 PLAT_ASM_OFFSET(18, PInvokeTransitionFrame, m_Flags)
 PLAT_ASM_OFFSET(20, PInvokeTransitionFrame, m_PreservedRegs)
@@ -52,7 +52,7 @@ PLAT_ASM_OFFSET(80, PAL_LIMITED_CONTEXT, IP)
 
 PLAT_ASM_SIZEOF(208, REGDISPLAY)
 
-PLAT_ASM_OFFSET(F8, REGDISPLAY, SP)
+PLAT_ASM_OFFSET(10, REGDISPLAY, SP)
 
 PLAT_ASM_OFFSET(48, REGDISPLAY, pS1)
 PLAT_ASM_OFFSET(90, REGDISPLAY, pS2)
