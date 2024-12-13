@@ -645,11 +645,10 @@ namespace System.Collections.Generic
             where TProtocol : struct, IComparisonProtocol<TActualKey>
             where TActualKey : allows ref struct
         {
-            // FIXME: Specialize using static interface methods like SimdDictionary
             uint hashCode = (uint)protocol.GetHashCode(key);
             var suffix = GetHashSuffix(hashCode);
-            // FIXME: Skip this on non-vectorized targets
-            var searchVector = Vector128.Create(suffix);
+            var vectorized = Sse2.IsSupported || AdvSimd.Arm64.IsSupported || PackedSimd.IsSupported;
+            Vector128<byte> searchVector = vectorized ? Vector128.Create(suffix) : default;
             ref var bucket = ref LoopingBucketEnumerator.New(_buckets, hashCode, _fastModMultiplier, out var enumerator);
             Span<Entry> entries = _entries!;
             // FIXME: Change to do { } while () by introducing EmptyBuckets optimization from SimdDictionary
@@ -658,7 +657,9 @@ namespace System.Collections.Generic
                 // Pipelining
                 int bucketCount = bucket.Count;
                 // Determine start index for key search
-                int startIndex = bucket.FindSuffix(bucketCount, suffix, searchVector);
+                int startIndex = vectorized
+                    ? bucket.FindSuffix(bucketCount, suffix, searchVector)
+                    : bucket.FindSuffixScalar(bucketCount, suffix);
                 ref var entry = ref FindEntryInBucket(protocol, ref bucket, entries, startIndex, bucketCount, key, out _, out _);
                 if (Unsafe.IsNullRef(ref entry))
                 {
@@ -846,11 +847,10 @@ namespace System.Collections.Generic
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.key);
             }
 
-            // FIXME: Specialize using static interface methods like SimdDictionary
             uint hashCode = (uint)protocol.GetHashCode(key);
             var suffix = GetHashSuffix(hashCode);
-            // FIXME: Skip this on non-vectorized targets
-            var searchVector = Vector128.Create(suffix);
+            var vectorized = Sse2.IsSupported || AdvSimd.Arm64.IsSupported || PackedSimd.IsSupported;
+            Vector128<byte> searchVector = vectorized ? Vector128.Create(suffix) : default;
             int newEntryIndex = -1;
             ref Entry newEntry = ref Unsafe.NullRef<Entry>();
 
@@ -874,8 +874,9 @@ namespace System.Collections.Generic
                 // Pipelining
                 int bucketCount = bucket.Count;
                 // Determine start index for key search
-                // FIXME: Call a separate version for non-vectorized targets
-                int startIndex = bucket.FindSuffix(bucketCount, suffix, searchVector);
+                int startIndex = vectorized
+                    ? bucket.FindSuffix(bucketCount, suffix, searchVector)
+                    : bucket.FindSuffixScalar(bucketCount, suffix);
                 ref var entry = ref FindEntryInBucket(protocol, ref bucket, entries, startIndex, bucketCount, key, out _, out _);
                 if (!Unsafe.IsNullRef(ref entry))
                 {
@@ -1430,11 +1431,10 @@ namespace System.Collections.Generic
                 return false;
             }
 
-            // FIXME: Specialize using static interface methods like SimdDictionary
             uint hashCode = (uint)protocol.GetHashCode(key);
             var suffix = GetHashSuffix(hashCode);
-            // FIXME: Skip this on non-vectorized targets
-            var searchVector = Vector128.Create(suffix);
+            var vectorized = Sse2.IsSupported || AdvSimd.Arm64.IsSupported || PackedSimd.IsSupported;
+            Vector128<byte> searchVector = vectorized ? Vector128.Create(suffix) : default;
             Span<Entry> entries = _entries!;
             Debug.Assert(!entries.IsEmpty, "expected entries to be non-null");
 
@@ -1446,7 +1446,9 @@ namespace System.Collections.Generic
                 // Pipelining
                 int bucketCount = bucket.Count;
                 // Determine start index for key search
-                int startIndex = bucket.FindSuffix(bucketCount, suffix, searchVector);
+                int startIndex = vectorized
+                    ? bucket.FindSuffix(bucketCount, suffix, searchVector)
+                    : bucket.FindSuffixScalar(bucketCount, suffix);
                 ref var entry = ref FindEntryInBucket(
                     protocol, ref bucket, entries, startIndex, bucketCount, key,
                     out int entryIndex, out int indexInBucket
