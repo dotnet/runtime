@@ -1892,6 +1892,13 @@ MethodTableBuilder::BuildMethodTableThrowing(
     // TODO: fix it so that we emit them in the correct order in the first place.
     if (pMT->ContainsGCPointers())
     {
+#ifdef _DEBUG
+        if (pMT->IsValueType())
+        {
+            DWORD baseSizePadding = pMT->GetClass()->GetBaseSizePadding();
+            _ASSERTE(baseSizePadding == (sizeof(TADDR) * 2)); // This is dependended on by GetNumInstanceFieldBytesIfContainsGCPointers.
+        }
+#endif // _DEBUG
         CGCDesc* gcDesc = CGCDesc::GetCGCDescFromMT(pMT);
         qsort(gcDesc->GetLowestSeries(), (int)gcDesc->GetNumSeries(), sizeof(CGCDescSeries), compareCGCDescSeries);
     }
@@ -10061,7 +10068,25 @@ void MethodTableBuilder::CheckForSystemTypes()
             // Pre-compute whether the class is a Nullable<T> so that code:Nullable::IsNullableType is efficient
             // This is useful to the performance of boxing/unboxing a Nullable
             if (GetCl() == g_pNullableClass->GetCl())
+            {
                 pMT->SetIsNullable();
+
+                // Capure Nullable<T> specific details into the MethodTable for better unboxing performance
+                FieldDesc* pFDValue = &pMT->GetApproxFieldDescListRaw()[1];
+                _ASSERTE(strcmp(pFDValue->GetDebugName(), "value") == 0);
+                UINT32 offset = pFDValue->GetOffset();
+                if (offset > 0xFF)
+                {
+                    BuildMethodTableThrowException(IDS_CLASSLOAD_FIELDTOOLARGE);
+                }
+
+                TypeHandle thValueFieldType = pFDValue->GetApproxFieldTypeHandleThrowing();
+                if (!thValueFieldType.IsTypeDesc()) // Non-MethodTable cases can only happen when the size doesn't matter, such as for type variables.
+                {
+                    pMT->SetNullableDetails((UINT8)offset, thValueFieldType.AsMethodTable()->GetNumInstanceFieldBytes());
+                    _ASSERTE(pMT->GetNullableNumInstanceFieldBytes() == pMT->GetNumInstanceFieldBytes());
+                }
+            }
 
             return;
         }

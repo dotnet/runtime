@@ -145,7 +145,34 @@ private:
 
 #ifdef FEATURE_CODE_VERSIONING
 
+enum class RejitFlags : uint32_t
+{
+    // The profiler has requested a ReJit, so we've allocated stuff, but we haven't
+    // called back to the profiler to get any info or indicate that the ReJit has
+    // started. (This Info can be 'reused' for a new ReJit if the
+    // profiler calls RequestRejit again before we transition to the next state.)
+    kStateRequested = 0x00000000,
 
+    // The CLR has initiated the call to the profiler's GetReJITParameters() callback
+    // but it hasn't completed yet. At this point we have to assume the profiler has
+    // committed to a specific IL body, even if the CLR doesn't know what it is yet.
+    // If the profiler calls RequestRejit we need to allocate a new ILCodeVersion
+    // and call GetReJITParameters() again.
+    kStateGettingReJITParameters = 0x00000001,
+
+    // We have asked the profiler about this method via ICorProfilerFunctionControl,
+    // and have thus stored the IL and codegen flags the profiler specified.
+    kStateActive = 0x00000002,
+
+    kStateMask = 0x0000000F,
+
+    // Indicates that the method being ReJITted is an inliner of the actual
+    // ReJIT request and we should not issue the GetReJITParameters for this
+    // method.
+    kSuppressParams = 0x80000000,
+
+    support_use_as_flags // Enable the template functions in enum_class_flags.h
+};
 
 class ILCodeVersion
 {
@@ -183,33 +210,6 @@ public:
     HRESULT GetOrCreateActiveNativeCodeVersion(MethodDesc* pClosedMethodDesc, NativeCodeVersion* pNativeCodeVersion);
     HRESULT SetActiveNativeCodeVersion(NativeCodeVersion activeNativeCodeVersion);
 #endif //DACCESS_COMPILE
-
-    enum RejitFlags
-    {
-        // The profiler has requested a ReJit, so we've allocated stuff, but we haven't
-        // called back to the profiler to get any info or indicate that the ReJit has
-        // started. (This Info can be 'reused' for a new ReJit if the
-        // profiler calls RequestRejit again before we transition to the next state.)
-        kStateRequested = 0x00000000,
-
-        // The CLR has initiated the call to the profiler's GetReJITParameters() callback
-        // but it hasn't completed yet. At this point we have to assume the profiler has
-        // committed to a specific IL body, even if the CLR doesn't know what it is yet.
-        // If the profiler calls RequestRejit we need to allocate a new ILCodeVersion
-        // and call GetReJITParameters() again.
-        kStateGettingReJITParameters = 0x00000001,
-
-        // We have asked the profiler about this method via ICorProfilerFunctionControl,
-        // and have thus stored the IL and codegen flags the profiler specified.
-        kStateActive = 0x00000002,
-
-        kStateMask = 0x0000000F,
-
-        // Indicates that the method being ReJITted is an inliner of the actual
-        // ReJIT request and we should not issue the GetReJITParameters for this
-        // method.
-        kSuppressParams = 0x80000000
-    };
 
     RejitFlags GetRejitState() const;
     BOOL GetEnableReJITCallback() const;
@@ -388,7 +388,7 @@ public:
     PTR_COR_ILMETHOD GetIL() const;
     DWORD GetJitFlags() const;
     const InstrumentedILOffsetMapping* GetInstrumentedILMap() const;
-    ILCodeVersion::RejitFlags GetRejitState() const;
+    RejitFlags GetRejitState() const;
     BOOL GetEnableReJITCallback() const;
     PTR_ILCodeVersionNode GetNextILVersionNode() const;
     BOOL IsDeoptimized() const;
@@ -396,7 +396,7 @@ public:
     void SetIL(COR_ILMETHOD* pIL);
     void SetJitFlags(DWORD flags);
     void SetInstrumentedILMap(SIZE_T cMap, COR_IL_MAP * rgMap);
-    void SetRejitState(ILCodeVersion::RejitFlags newState);
+    void SetRejitState(RejitFlags newState);
     void SetEnableReJITCallback(BOOL state);
     void SetNextILVersionNode(ILCodeVersionNode* pNextVersionNode);
 #endif
@@ -406,7 +406,7 @@ private:
     const mdMethodDef m_methodDef;
     const ReJITID m_rejitId;
     PTR_ILCodeVersionNode m_pNextILVersionNode; // Never modified after being added to the linked list
-    Volatile<ILCodeVersion::RejitFlags> m_rejitState;
+    Volatile<RejitFlags> m_rejitState;
     VolatilePtr<COR_ILMETHOD, PTR_COR_ILMETHOD> m_pIL;
     Volatile<DWORD> m_jitFlags;
     InstrumentedILOffsetMapping m_instrumentedILMap;
@@ -419,6 +419,8 @@ template<>
 struct cdac_data<ILCodeVersionNode>
 {
     static constexpr size_t VersionId = offsetof(ILCodeVersionNode, m_rejitId);
+    static constexpr size_t Next = offsetof(ILCodeVersionNode, m_pNextILVersionNode);
+    static constexpr size_t RejitState = offsetof(ILCodeVersionNode, m_rejitState);
 };
 
 class ILCodeVersionCollection
@@ -543,6 +545,7 @@ private:
 template<>
 struct cdac_data<ILCodeVersioningState>
 {
+    static constexpr size_t FirstVersionNode = offsetof(ILCodeVersioningState, m_pFirstVersionNode);
     static constexpr size_t ActiveVersionKind = offsetof(ILCodeVersioningState, m_activeVersion.m_storageKind);
     static constexpr size_t ActiveVersionNode = offsetof(ILCodeVersioningState, m_activeVersion.m_pVersionNode);
     static constexpr size_t ActiveVersionModule = offsetof(ILCodeVersioningState, m_activeVersion.m_synthetic.m_pModule);
