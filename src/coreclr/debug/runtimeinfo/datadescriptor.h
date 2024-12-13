@@ -376,6 +376,28 @@ CDAC_TYPE_SIZE(sizeof(DynamicMethodDesc))
 CDAC_TYPE_FIELD(DynamicMethodDesc, /*pointer*/, MethodName, cdac_data<DynamicMethodDesc>::MethodName)
 CDAC_TYPE_END(DynamicMethodDesc)
 
+CDAC_TYPE_BEGIN(ArrayMethodDesc)
+CDAC_TYPE_SIZE(sizeof(ArrayMethodDesc))
+CDAC_TYPE_END(ArrayMethodDesc)
+
+CDAC_TYPE_BEGIN(FCallMethodDesc)
+CDAC_TYPE_SIZE(sizeof(FCallMethodDesc))
+CDAC_TYPE_END(FCallMethodDesc)
+
+CDAC_TYPE_BEGIN(PInvokeMethodDesc)
+CDAC_TYPE_SIZE(sizeof(NDirectMethodDesc))
+CDAC_TYPE_END(PInvokeMethodDesc)
+
+CDAC_TYPE_BEGIN(EEImplMethodDesc)
+CDAC_TYPE_SIZE(sizeof(EEImplMethodDesc))
+CDAC_TYPE_END(EEImplMethodDesc)
+
+#ifdef FEATURE_COMINTEROP
+CDAC_TYPE_BEGIN(CLRToCOMCallMethodDesc)
+CDAC_TYPE_SIZE(sizeof(CLRToCOMCallMethodDesc))
+CDAC_TYPE_END(CLRToCOMCallMethodDesc)
+#endif // FEATURE_COMINTEROP
+
 CDAC_TYPE_BEGIN(CodePointer)
 CDAC_TYPE_SIZE(sizeof(PCODE))
 CDAC_TYPE_END(CodePointer)

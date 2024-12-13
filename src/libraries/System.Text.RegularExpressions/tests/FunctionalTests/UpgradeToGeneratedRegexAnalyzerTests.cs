@@ -85,9 +85,7 @@ public class Program
             string test = @"using System.Text.RegularExpressions;
 var isMatch = [|" + ConstructRegexInvocation(invocationType, pattern: "\"\"") + @"|]" + isMatchInvocation + ";";
             string fixedCode = @"using System.Text.RegularExpressions;
-var isMatch = MyRegex().IsMatch("""");
-
-partial class Program
+var isMatch = MyRegex().IsMatch(""""); partial class Program
 {
     [GeneratedRegex("""")]
     private static partial Regex MyRegex();
@@ -850,9 +848,7 @@ partial class Program
                 },
                 FixedState =
                 {
-                    Sources = { "public class C { }", @"var r = MyRegex();
-
-partial class Program
+                    Sources = { "public class C { }", @"var r = MyRegex(); partial class Program
 {
     [System.Text.RegularExpressions.GeneratedRegex("""")]
     private static partial System.Text.RegularExpressions.Regex MyRegex();

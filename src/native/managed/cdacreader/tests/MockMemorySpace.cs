@@ -120,8 +120,12 @@ internal unsafe static partial class MockMemorySpace
 
         internal int ReadFromTarget(ulong address, Span<byte> buffer)
         {
+            if (buffer.Length == 0)
+                return 0;
+
             if (address == 0)
                 return -1;
+
             bool partialReadOcurred = false;
             HeapFragment lastHeapFragment = default;
             int availableLength = 0;
