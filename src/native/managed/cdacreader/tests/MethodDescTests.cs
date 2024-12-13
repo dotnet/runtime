@@ -74,6 +74,8 @@ public class MethodDescTests
         Assert.False(isCollectible);
         TargetPointer versioning = rts.GetMethodDescVersioningState(handle);
         Assert.Equal(TargetPointer.Null, versioning);
+        TargetPointer gcStressCodeCopy = rts.GetGCStressCodeCopy(handle);
+        Assert.Equal(TargetPointer.Null, gcStressCodeCopy);
 
         // Method classification - IL method
         Assert.False(rts.IsStoredSigMethodDesc(handle, out _));

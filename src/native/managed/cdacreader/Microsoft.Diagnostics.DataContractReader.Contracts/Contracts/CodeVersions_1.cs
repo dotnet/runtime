@@ -183,6 +183,30 @@ internal readonly partial struct CodeVersions_1 : ICodeVersions
         });
     }
 
+    TargetPointer ICodeVersions.GetGCStressCodeCopy(NativeCodeVersionHandle codeVersionHandle)
+    {
+        Debug.Assert(codeVersionHandle.Valid);
+
+        if (!codeVersionHandle.IsExplicit)
+        {
+            // NativeCodeVersion::GetGCCoverageInfo
+            IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+            MethodDescHandle md = rts.GetMethodDescHandle(codeVersionHandle.MethodDescAddress);
+            return rts.GetGCStressCodeCopy(md);
+        }
+        else
+        {
+            // NativeCodeVersionNode::GetGCCoverageInfo
+            NativeCodeVersionNode codeVersionNode = AsNode(codeVersionHandle);
+            if (codeVersionNode.GCCoverageInfo is TargetPointer gcCoverageInfoAddr && gcCoverageInfoAddr != TargetPointer.Null)
+            {
+                Target.TypeInfo gcCoverageInfoType = _target.GetTypeInfo(DataType.GCCoverageInfo);
+                return gcCoverageInfoAddr + (ulong)gcCoverageInfoType.Fields["SavedCode"].Offset;
+            }
+            return TargetPointer.Null;
+        }
+    }
+
     [Flags]
     internal enum MethodDescVersioningStateFlags : byte
     {

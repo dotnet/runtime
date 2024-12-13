@@ -141,6 +141,9 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         public bool IsUnboxingStub => HasFlags(MethodDescFlags_1.MethodDescFlags3.IsUnboxingStub);
 
         public TargetPointer CodeData => _desc.CodeData;
+
+        public TargetPointer? GCCoverageInfo => _desc.GCCoverageInfo;
+
         public bool IsIL => Classification == MethodClassification.IL || Classification == MethodClassification.Instantiated;
 
         internal bool HasNonVtableSlot => MethodDescOptionalSlots.HasNonVtableSlot(_desc.Flags);
@@ -1010,6 +1013,17 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         Debug.Assert(_methodTables[typeHandle.Address].IsCanonMT);
         TargetPointer addrOfSlot = GetAddressOfSlot(typeHandle, md.Slot);
         return _target.ReadCodePointer(addrOfSlot);
+    }
+
+    TargetPointer IRuntimeTypeSystem.GetGCStressCodeCopy(MethodDescHandle methodDesc)
+    {
+        MethodDesc md = _methodDescs[methodDesc.Address];
+        if (md.GCCoverageInfo is TargetPointer gcCoverageInfoAddr && gcCoverageInfoAddr != TargetPointer.Null)
+        {
+            Target.TypeInfo gcCoverageInfoType = _target.GetTypeInfo(DataType.GCCoverageInfo);
+            return gcCoverageInfoAddr + (ulong)gcCoverageInfoType.Fields["SavedCode"].Offset;
+        }
+        return TargetPointer.Null;
     }
 
     private class NonValidatedMethodTableQueries : MethodValidation.IMethodTableQueries
