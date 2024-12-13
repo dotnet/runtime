@@ -109,7 +109,7 @@ jobs:
 
     # iOS devices
     - ${{ if in(parameters.platform, 'ios_arm64') }}:
-      - OSX.Amd64.Iphone.Scouting.Open
+      - osx.1200.amd64.iphone.open
 
     # tvOS devices
     - ${{ if in(parameters.platform, 'tvos_arm64') }}:
