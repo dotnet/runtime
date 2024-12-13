@@ -195,7 +195,6 @@ internal sealed unsafe partial class SOSDacImpl
             return HResults.E_INVALIDARG;
         }
 
-        int hr = HResults.E_NOTIMPL;
         try
         {
             Contracts.IRuntimeTypeSystem rtsContract = _target.Contracts.RuntimeTypeSystem;
@@ -366,80 +365,73 @@ internal sealed unsafe partial class SOSDacImpl
             // and would require accessing CorLib bound managed fields which the cDAC does not
             // currently support. However, it must remain in the return type for compatibility.
             data->managedDynamicMethodObject = 0;
-
-            hr = HResults.S_OK;
         }
         catch (global::System.Exception ex)
         {
-            hr = ex.HResult;
+            return ex.HResult;
         }
 
 #if DEBUG
         if (_legacyImpl is not null)
         {
-            if (hr == HResults.S_OK) {
-                DacpMethodDescData dataLocal = default;
-                DacpReJitData[]? rgRevertedRejitDataLocal = null;
-                if (rgRevertedRejitData != null)
-                {
-                    rgRevertedRejitDataLocal = new DacpReJitData[cRevertedRejitVersions];
-                }
-                uint cNeededRevertedRejitDataLocal = 0;
-                uint* pcNeededRevertedRejitDataLocal = null;
-                if (pcNeededRevertedRejitData != null)
-                {
-                    pcNeededRevertedRejitDataLocal = &cNeededRevertedRejitDataLocal;
-                }
-                int hrLocal;
-                fixed (DacpReJitData* rgRevertedRejitDataLocalPtr = rgRevertedRejitDataLocal)
-                {
-                    hrLocal = _legacyImpl.GetMethodDescData(methodDesc, ip, &dataLocal, cRevertedRejitVersions, rgRevertedRejitDataLocalPtr, pcNeededRevertedRejitDataLocal);
-                }
-                Debug.Assert(hrLocal == hr);
-                Debug.Assert(data->bHasNativeCode == dataLocal.bHasNativeCode);
-                Debug.Assert(data->bIsDynamic == dataLocal.bIsDynamic);
-                Debug.Assert(data->wSlotNumber == dataLocal.wSlotNumber);
-                Debug.Assert(data->NativeCodeAddr == dataLocal.NativeCodeAddr);
-                Debug.Assert(data->AddressOfNativeCodeSlot == dataLocal.AddressOfNativeCodeSlot);
-                Debug.Assert(data->MethodDescPtr == dataLocal.MethodDescPtr);
-                Debug.Assert(data->MethodTablePtr == dataLocal.MethodTablePtr);
-                Debug.Assert(data->ModulePtr == dataLocal.ModulePtr);
-                Debug.Assert(data->MDToken == dataLocal.MDToken);
-                Debug.Assert(data->GCInfo == dataLocal.GCInfo);
-                Debug.Assert(data->GCStressCodeCopy == dataLocal.GCStressCodeCopy);
-                // managedDynamicMethodObject is not currently populated by the cDAC API and may differ from legacyImpl.
-                Debug.Assert(data->managedDynamicMethodObject == 0);
-                Debug.Assert(data->requestedIP == dataLocal.requestedIP);
-                Debug.Assert(data->cJittedRejitVersions == dataLocal.cJittedRejitVersions);
+            DacpMethodDescData dataLocal = default;
+            DacpReJitData[]? rgRevertedRejitDataLocal = null;
+            if (rgRevertedRejitData != null)
+            {
+                rgRevertedRejitDataLocal = new DacpReJitData[cRevertedRejitVersions];
+            }
+            uint cNeededRevertedRejitDataLocal = 0;
+            uint* pcNeededRevertedRejitDataLocal = null;
+            if (pcNeededRevertedRejitData != null)
+            {
+                pcNeededRevertedRejitDataLocal = &cNeededRevertedRejitDataLocal;
+            }
+            int hrLocal;
+            fixed (DacpReJitData* rgRevertedRejitDataLocalPtr = rgRevertedRejitDataLocal)
+            {
+                hrLocal = _legacyImpl.GetMethodDescData(methodDesc, ip, &dataLocal, cRevertedRejitVersions, rgRevertedRejitDataLocalPtr, pcNeededRevertedRejitDataLocal);
+            }
+            Debug.Assert(hrLocal == HResults.S_OK);
+            Debug.Assert(data->bHasNativeCode == dataLocal.bHasNativeCode);
+            Debug.Assert(data->bIsDynamic == dataLocal.bIsDynamic);
+            Debug.Assert(data->wSlotNumber == dataLocal.wSlotNumber);
+            Debug.Assert(data->NativeCodeAddr == dataLocal.NativeCodeAddr);
+            Debug.Assert(data->AddressOfNativeCodeSlot == dataLocal.AddressOfNativeCodeSlot);
+            Debug.Assert(data->MethodDescPtr == dataLocal.MethodDescPtr);
+            Debug.Assert(data->MethodTablePtr == dataLocal.MethodTablePtr);
+            Debug.Assert(data->ModulePtr == dataLocal.ModulePtr);
+            Debug.Assert(data->MDToken == dataLocal.MDToken);
+            Debug.Assert(data->GCInfo == dataLocal.GCInfo);
+            Debug.Assert(data->GCStressCodeCopy == dataLocal.GCStressCodeCopy);
+            // managedDynamicMethodObject is not currently populated by the cDAC API and may differ from legacyImpl.
+            Debug.Assert(data->managedDynamicMethodObject == 0);
+            Debug.Assert(data->requestedIP == dataLocal.requestedIP);
+            Debug.Assert(data->cJittedRejitVersions == dataLocal.cJittedRejitVersions);
 
-                // rejitDataCurrent
-                Debug.Assert(data->rejitDataCurrent.rejitID == dataLocal.rejitDataCurrent.rejitID);
-                Debug.Assert(data->rejitDataCurrent.NativeCodeAddr == dataLocal.rejitDataCurrent.NativeCodeAddr);
-                Debug.Assert(data->rejitDataCurrent.flags == dataLocal.rejitDataCurrent.flags);
+            // rejitDataCurrent
+            Debug.Assert(data->rejitDataCurrent.rejitID == dataLocal.rejitDataCurrent.rejitID);
+            Debug.Assert(data->rejitDataCurrent.NativeCodeAddr == dataLocal.rejitDataCurrent.NativeCodeAddr);
+            Debug.Assert(data->rejitDataCurrent.flags == dataLocal.rejitDataCurrent.flags);
 
-                // rejitDataRequested
-                Debug.Assert(data->rejitDataRequested.rejitID == dataLocal.rejitDataRequested.rejitID);
-                Debug.Assert(data->rejitDataRequested.NativeCodeAddr == dataLocal.rejitDataRequested.NativeCodeAddr);
-                Debug.Assert(data->rejitDataRequested.flags == dataLocal.rejitDataRequested.flags);
+            // rejitDataRequested
+            Debug.Assert(data->rejitDataRequested.rejitID == dataLocal.rejitDataRequested.rejitID);
+            Debug.Assert(data->rejitDataRequested.NativeCodeAddr == dataLocal.rejitDataRequested.NativeCodeAddr);
+            Debug.Assert(data->rejitDataRequested.flags == dataLocal.rejitDataRequested.flags);
 
-                // rgRevertedRejitData
-                if (rgRevertedRejitData != null && rgRevertedRejitDataLocal != null)
+            // rgRevertedRejitData
+            if (rgRevertedRejitData != null && rgRevertedRejitDataLocal != null)
+            {
+                Debug.Assert(cNeededRevertedRejitDataLocal == *pcNeededRevertedRejitData);
+                for (ulong i = 0; i < cNeededRevertedRejitDataLocal; i++)
                 {
-                    Debug.Assert(cNeededRevertedRejitDataLocal == *pcNeededRevertedRejitData);
-                    for (ulong i = 0; i < cNeededRevertedRejitDataLocal; i++)
-                    {
-                        Debug.Assert(rgRevertedRejitData[i].rejitID == rgRevertedRejitDataLocal[i].rejitID);
-                        Debug.Assert(rgRevertedRejitData[i].NativeCodeAddr == rgRevertedRejitDataLocal[i].NativeCodeAddr);
-                        Debug.Assert(rgRevertedRejitData[i].flags == rgRevertedRejitDataLocal[i].flags);
-                    }
+                    Debug.Assert(rgRevertedRejitData[i].rejitID == rgRevertedRejitDataLocal[i].rejitID);
+                    Debug.Assert(rgRevertedRejitData[i].NativeCodeAddr == rgRevertedRejitDataLocal[i].NativeCodeAddr);
+                    Debug.Assert(rgRevertedRejitData[i].flags == rgRevertedRejitDataLocal[i].flags);
                 }
-            } else {
-                // TODO[cdac]: stop delegating to the legacy DAC
-                hr = _legacyImpl.GetMethodDescData(methodDesc, ip, data, cRevertedRejitVersions, rgRevertedRejitData, pcNeededRevertedRejitData);
             }
         }
 #endif
-        return hr;
+        return HResults.S_OK;
     }
 
     private void CopyNativeCodeVersionToReJitData(
