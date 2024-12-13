@@ -60,7 +60,7 @@ namespace ILCompiler.ObjectWriter
                 TargetArchitecture.ARM => EM_ARM,
                 TargetArchitecture.ARM64 => EM_AARCH64,
                 TargetArchitecture.LoongArch64 => EM_LOONGARCH,
-                TargetArchitecture.RiscV64 => EN_RISCV,
+                TargetArchitecture.RiscV64 => EM_RISCV,
                 _ => throw new NotSupportedException("Unsupported architecture")
             };
             _useInlineRelocationAddends = _machine is EM_386 or EM_ARM;
@@ -537,7 +537,7 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
-        private void EmitRelocationsRiscV(int sectionIndex, List<SymbolicRelocation> relocationList)
+        private void EmitRelocationsRiscV64(int sectionIndex, List<SymbolicRelocation> relocationList)
         {
             if (relocationList.Count > 0)
             {
@@ -553,12 +553,8 @@ namespace ILCompiler.ObjectWriter
                         IMAGE_REL_BASED_DIR64 => R_RISCV_64,
                         IMAGE_REL_BASED_HIGHLOW => R_RISCV_32,
                         IMAGE_REL_BASED_RELPTR32 => R_RISCV_RELATIVE,
-                        IMAGE_REL_BASED_RISCV_CALL => R_RISCV_CALL,
-                        IMAGE_REL_BASED_RISCV_JUMP_SLOT => R_RISCV_JUMP_SLOT,
-                        IMAGE_REL_BASED_RISCV_TLS_LE => R_RISCV_TLS_LE,
-                        IMAGE_REL_BASED_RISCV_TLS_GD => R_RISCV_TLS_GD,
-                        IMAGE_REL_BASED_RISCV_TLS_IE => R_RISCV_TLS_IE,
-                        IMAGE_REL_BASED_RISCV_TLS_LD => R_RISCV_TLS_LD,
+                        IMAGE_REL_BASED_RISCV64_PC => R_RISCV_PCREL_HI20,
+                        IMAGE_REL_BASED_RISCV64_JALR => R_RISCV_CALL32,
                         _ => throw new NotSupportedException("Unknown relocation type: " + symbolicRelocation.Type)
                     };
 
@@ -567,11 +563,10 @@ namespace ILCompiler.ObjectWriter
                     BinaryPrimitives.WriteInt64LittleEndian(relocationEntry.Slice(16), symbolicRelocation.Addend);
                     relocationStream.Write(relocationEntry);
 
-                    if (symbolicRelocation.Type is IMAGE_REL_BASED_RISCV_CALL)
+                    if (symbolicRelocation.Type is IMAGE_REL_BASED_RISCV64_PC)
                     {
-                        // Add an additional entry for the CALL relocation type
                         BinaryPrimitives.WriteUInt64LittleEndian(relocationEntry, (ulong)symbolicRelocation.Offset + 4);
-                        BinaryPrimitives.WriteUInt64LittleEndian(relocationEntry.Slice(8), ((ulong)symbolIndex << 32) | (type + 1));
+                        BinaryPrimitives.WriteUInt64LittleEndian(relocationEntry.Slice(8), ((ulong)symbolIndex << 32) | type + 1);
                         BinaryPrimitives.WriteInt64LittleEndian(relocationEntry.Slice(16), symbolicRelocation.Addend);
                         relocationStream.Write(relocationEntry);
                     }

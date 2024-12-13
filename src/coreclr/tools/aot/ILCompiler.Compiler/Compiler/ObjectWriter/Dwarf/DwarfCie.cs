@@ -93,7 +93,7 @@ namespace ILCompiler.ObjectWriter
                     InitialCFAOffset = 0;
                     break;
 
-                case TargetArchitecture.RISCV64:
+                case TargetArchitecture.RiscV64:
                     CodeAlignFactor = 1;
                     DataAlignFactor = -8;
                     ReturnAddressRegister = 1; // RA

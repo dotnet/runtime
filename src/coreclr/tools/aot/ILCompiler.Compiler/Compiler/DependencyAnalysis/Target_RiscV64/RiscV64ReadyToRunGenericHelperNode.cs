@@ -47,8 +47,8 @@ namespace ILCompiler.DependencyAnalysis
             // should be reported by someone else - the system should not rely on it coming from here.
             if (!relocsOnly && _hasInvalidEntries)
             {
-                encoder.EmitXOR(encoder.TargetRegister.IntraProcedureCallScratch1, result, 0);
-                encoder.EmitJE(encoder.TargetRegister.IntraProcedureCallScratch1, GetBadSlotHelper(factory));
+                encoder.EmitXORI(encoder.TargetRegister.IntraProcedureCallScratch1, result, 0);
+                encoder.EmitJALR(Register.X0, encoder.TargetRegister.IntraProcedureCallScratch1, 0);
             }
         }
 

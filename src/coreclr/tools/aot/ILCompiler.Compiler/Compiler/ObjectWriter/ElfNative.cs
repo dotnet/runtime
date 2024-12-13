@@ -607,9 +607,6 @@ namespace ILCompiler.ObjectWriter
         public const uint R_RISCV_PLT64 = 48;
         public const uint R_RISCV_COPY64 = 49;
         public const uint R_RISCV_RELATIVE64 = 50;
-        public const uint R_RISCV_TLS_DTPMOD64 = 51;
-        public const uint R_RISCV_TLS_DTPREL64 = 52;
-        public const uint R_RISCV_TLS_TPREL64 = 53;
         public const uint R_RISCV_64_ADD = 54;
         public const uint R_RISCV_64_SUB = 55;
         public const uint R_RISCV_64_HI20 = 56;

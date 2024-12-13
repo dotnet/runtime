@@ -165,7 +165,7 @@ namespace ILCompiler.ObjectWriter
                     // Normal registers are directly mapped
                     return regNum;
 
-                case TargetArchitecture.RISCV64:
+                case TargetArchitecture.RiscV64:
                     // Normal registers are directly mapped
                     return regNum;
 
