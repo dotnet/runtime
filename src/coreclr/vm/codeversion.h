@@ -330,6 +330,9 @@ struct cdac_data<NativeCodeVersionNode>
     static constexpr size_t NativeCode = offsetof(NativeCodeVersionNode, m_pNativeCode);
     static constexpr size_t Flags = offsetof(NativeCodeVersionNode, m_flags);
     static constexpr size_t ILVersionId = offsetof(NativeCodeVersionNode, m_parentId);
+#ifdef HAVE_GCCOVER
+    static constexpr size_t GCCoverageInfo = offsetof(NativeCodeVersionNode, m_gcCover);
+#endif // HAVE_GCCOVER
 };
 
 class NativeCodeVersionCollection

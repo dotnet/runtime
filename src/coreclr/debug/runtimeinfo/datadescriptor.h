@@ -331,6 +331,9 @@ CDAC_TYPE_FIELD(MethodDesc, /*uint16*/, Flags, cdac_data<MethodDesc>::Flags)
 CDAC_TYPE_FIELD(MethodDesc, /*uint16*/, Flags3AndTokenRemainder, cdac_data<MethodDesc>::Flags3AndTokenRemainder)
 CDAC_TYPE_FIELD(MethodDesc, /*uint8*/, EntryPointFlags, cdac_data<MethodDesc>::EntryPointFlags)
 CDAC_TYPE_FIELD(MethodDesc, /*pointer*/, CodeData, cdac_data<MethodDesc>::CodeData)
+#ifdef HAVE_GCCOVER
+CDAC_TYPE_FIELD(MethodDesc, /*pointer*/, GCCoverageInfo, offsetof(MethodDesc, m_GcCover))
+#endif // HAVE_GCCOVER
 CDAC_TYPE_END(MethodDesc)
 
 CDAC_TYPE_BEGIN(MethodDescChunk)
@@ -544,6 +547,9 @@ CDAC_TYPE_FIELD(NativeCodeVersionNode, /*pointer*/, MethodDesc, cdac_data<Native
 CDAC_TYPE_FIELD(NativeCodeVersionNode, /*pointer*/, NativeCode, cdac_data<NativeCodeVersionNode>::NativeCode)
 CDAC_TYPE_FIELD(NativeCodeVersionNode, /*uint32*/, Flags, cdac_data<NativeCodeVersionNode>::Flags)
 CDAC_TYPE_FIELD(NativeCodeVersionNode, /*nuint*/, ILVersionId, cdac_data<NativeCodeVersionNode>::ILVersionId)
+#ifdef HAVE_GCCOVER
+CDAC_TYPE_FIELD(NativeCodeVersionNode, /*pointer*/, GCCoverageInfo, cdac_data<NativeCodeVersionNode>::GCCoverageInfo)
+#endif // HAVE_GCCOVER
 CDAC_TYPE_END(NativeCodeVersionNode)
 
 CDAC_TYPE_BEGIN(ILCodeVersionNode)
@@ -556,6 +562,13 @@ CDAC_TYPE_END(ILCodeVersionNode)
 CDAC_TYPE_BEGIN(ProfControlBlock)
 CDAC_TYPE_FIELD(ProfControlBlock, /*uint64*/, GlobalEventMask, offsetof(ProfControlBlock, globalEventMask))
 CDAC_TYPE_END(ProfControlBlock)
+
+#ifdef HAVE_GCCOVER
+CDAC_TYPE_BEGIN(GCCoverageInfo)
+CDAC_TYPE_INDETERMINATE(GCCoverageInfo)
+CDAC_TYPE_FIELD(GCCoverageInfo, /*pointer*/, SavedCode, offsetof(GCCoverageInfo, savedCode))
+CDAC_TYPE_END(GCCoverageInfo)
+#endif // HAVE_GCCOVER
 
 CDAC_TYPES_END()
 
