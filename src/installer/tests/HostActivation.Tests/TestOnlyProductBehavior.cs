@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Microsoft.NET.HostModel.AppHost;
+using Microsoft.NET.HostModel.MachO.CodeSign.Tests;
 using System;
 using System.IO;
 
@@ -50,6 +51,10 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                     EnabledTestOnlyMarker);
                 returnDisposable = backup;
                 backup = null;
+                if (SigningTests.IsMachOImage(productBinaryPath))
+                {
+                    Microsoft.NET.HostModel.MachO.CodeSign.Tests.SigningTests.AdHocSignFileInPlace(productBinaryPath);
+                }
             }
             finally
             {

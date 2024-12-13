@@ -6,6 +6,7 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
 using Microsoft.DotNet.Cli.Build.Framework;
+using Microsoft.DotNet.CoreSetup;
 using Microsoft.DotNet.CoreSetup.Test;
 using Xunit;
 
@@ -60,6 +61,7 @@ namespace AppHost.Bundle.Tests
                 : sharedTestState.FrameworkDependentApp.Bundle();
 
             // Run the bundled app
+            // Assert.Equal(0, Codesign.Run("-v", singleFile).ExitCode);
             RunTheApp(singleFile, selfContained);
 
             if (OperatingSystem.IsMacOS())
@@ -67,6 +69,7 @@ namespace AppHost.Bundle.Tests
                 string fatApp = MakeUniversalBinary(singleFile, RuntimeInformation.OSArchitecture);
 
                 // Run the fat app
+                // Assert.Equal(0, Codesign.Run("-v", fatApp).ExitCode);
                 RunTheApp(fatApp, selfContained);
             }
 

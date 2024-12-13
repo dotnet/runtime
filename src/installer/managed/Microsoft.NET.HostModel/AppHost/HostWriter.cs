@@ -227,11 +227,6 @@ namespace Microsoft.NET.HostModel.AppHost
 
             // Re-write the destination apphost with the proper contents.
             RetryUtil.RetryOnIOError(() =>
-                        BinaryUtils.SearchAndReplace(appHostPath,
-                                                    bundleHeaderPlaceholder,
-                                                    BitConverter.GetBytes(bundleHeaderOffset),
-                                                    pad0s: false));
-            RetryUtil.RetryOnIOError(() =>
             {
                 using (FileStream bundleStream = new FileStream(appHostPath, FileMode.Open, FileAccess.ReadWrite))
                 {
@@ -245,12 +240,18 @@ namespace Microsoft.NET.HostModel.AppHost
                     using (MemoryMappedFile memoryMappedFile = MemoryMappedFile.CreateFromFile(bundleStream, null, mmapFileSize, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, leaveOpen: true))
                     using (MemoryMappedViewAccessor accessor = memoryMappedFile.CreateViewAccessor(0, 0, MemoryMappedFileAccess.ReadWrite))
                     {
+                        BinaryUtils.SearchAndReplace(accessor,
+                                                    bundleHeaderPlaceholder,
+                                                    BitConverter.GetBytes(bundleHeaderOffset),
+                                                    pad0s: false);
                         var machObjectFile = MachObjectFile.Create(accessor);
                         if (machObjectFile.HasSignature)
                             throw new AppHostMachOFormatException(MachOFormatError.SignNotRemoved);
+
                         bool wasBundled = machObjectFile.TryAdjustHeadersForBundle((ulong)bundleSize, accessor);
                         if (!wasBundled)
                             throw new InvalidOperationException("The single-file bundle was unable to be created. This is likely because the bundled content is too large.");
+
                         if (macosCodesign)
                             bundleSize = machObjectFile.CreateAdHocSignature(accessor, Path.GetFileName(appHostPath));
                     }
