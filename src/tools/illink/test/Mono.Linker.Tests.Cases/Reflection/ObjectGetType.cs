@@ -1681,7 +1681,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 				}
 
 				[Kept (By = Tool.Trimmer /* https://github.com/dotnet/runtime/issues/110563 */)]
-				[KeptMember (".ctor()")]
+				[KeptMember (".ctor()", By = Tool.Trimmer)]
 				[KeptInterface (typeof (IBase), By = Tool.Trimmer)]
 				class Implementation : IBase
 				{
@@ -1738,7 +1738,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 				}
 
 				[Kept (By = Tool.Trimmer /* https://github.com/dotnet/runtime/issues/110563 */)]
-				[KeptMember (".ctor()")]
+				[KeptMember (".ctor()", By = Tool.Trimmer)]
 				[KeptInterface (typeof (IBase), By = Tool.Trimmer)]
 				[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute), By = Tool.Trimmer)]
 				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.All)]
