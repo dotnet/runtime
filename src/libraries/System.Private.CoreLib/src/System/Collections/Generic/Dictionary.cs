@@ -1504,8 +1504,11 @@ namespace System.Collections.Generic
             return false;
         }
 
-        public bool TryAdd(TKey key, TValue value) =>
-            !Unsafe.IsNullRef(ref TryInsert(key, value, InsertionBehavior.InsertNewOnly, out _));
+        public bool TryAdd(TKey key, TValue value)
+        {
+            TryInsert(key, value, InsertionBehavior.InsertNewOnly, out bool exists);
+            return !exists;
+        }
 
         bool ICollection<KeyValuePair<TKey, TValue>>.IsReadOnly => false;
 
