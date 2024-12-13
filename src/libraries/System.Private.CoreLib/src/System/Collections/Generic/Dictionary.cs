@@ -657,7 +657,7 @@ namespace System.Collections.Generic
         }
 
         private ref Entry FindEntry<TProtocol, TActualKey>(TProtocol protocol, TActualKey key)
-            where TProtocol : IComparisonProtocol<TActualKey>
+            where TProtocol : struct, IComparisonProtocol<TActualKey>
             where TActualKey : allows ref struct
         {
             // FIXME: Specialize using static interface methods like SimdDictionary
@@ -695,7 +695,7 @@ namespace System.Collections.Generic
             // These out-params are annoying but inlining seems to optimize them away
             out int entryIndex, out int matchIndexInBucket
         )
-            where TProtocol : IComparisonProtocol<TActualKey>
+            where TProtocol : struct, IComparisonProtocol<TActualKey>
             where TActualKey : allows ref struct
         {
             Unsafe.SkipInit(out matchIndexInBucket);
@@ -862,7 +862,7 @@ namespace System.Collections.Generic
         }
 
         private ref Entry TryInsert<TProtocol, TActualKey>(TProtocol protocol, TActualKey key, TValue value, InsertionBehavior behavior, out bool exists)
-            where TProtocol : IComparisonProtocol<TActualKey>
+            where TProtocol : struct, IComparisonProtocol<TActualKey>
             where TActualKey : allows ref struct
         {
             if (key == null)
@@ -1432,7 +1432,7 @@ namespace System.Collections.Generic
             [MaybeNullWhen(false)] out TKey actualKey,
             [MaybeNullWhen(false)] out TValue value
         )
-            where TProtocol : IComparisonProtocol<TActualKey>
+            where TProtocol : struct, IComparisonProtocol<TActualKey>
             where TActualKey : allows ref struct
         {
             // This allows using Remove(key, out value) to implement Remove(key) efficiently,
