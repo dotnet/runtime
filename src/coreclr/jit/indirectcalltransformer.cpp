@@ -758,7 +758,7 @@ private:
             GenTree* const argNode = arg->GetNode();
             GenTree*       store   = compiler->gtNewTempStore(tmpNum, argNode);
 
-            if (argNode->TypeGet() == TYP_REF)
+            if (argNode->TypeIs(TYP_REF))
             {
                 bool                 isExact   = false;
                 bool                 isNonNull = false;
