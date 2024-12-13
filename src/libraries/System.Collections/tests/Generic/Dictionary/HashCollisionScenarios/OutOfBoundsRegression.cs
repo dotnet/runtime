@@ -317,7 +317,7 @@ namespace System.Collections.Tests
             // Now exceed the collision threshold, which should rebucket entries.
             // Continue adding a few more entries to ensure we didn't corrupt internal state.
 
-            for (int i = 100; i < 110; i++)
+            for (int i = 100; i < _collidingStrings.Count; i++)
             {
                 string newKey = _collidingStrings[i];
                 Assert.Equal(0, _lazyGetNonRandomizedHashCodeDel.Value(newKey)); // ensure has a zero hash code Ordinal
@@ -364,7 +364,8 @@ namespace System.Collections.Tests
             () => GetStringHashCodeOpenDelegate("GetNonRandomizedHashCodeOrdinalIgnoreCase"));
 
         // n.b., must be initialized *after* delegate fields above
-        private static readonly List<string> _collidingStrings = GenerateCollidingStrings(110);
+        // FIXME: This can't generate more than 124 colliding strings
+        private static readonly List<string> _collidingStrings = GenerateCollidingStrings(124);
 
         private static List<string> GenerateCollidingStrings(int count)
         {
