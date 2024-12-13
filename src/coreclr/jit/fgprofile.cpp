@@ -4446,7 +4446,10 @@ bool Compiler::fgComputeCalledCount(weight_t returnWeight)
     {
         // Skip past any/all BBF_INTERNAL blocks that may have been added before the first real IL block.
         //
-        firstILBlock = fgGetFirstILBlock();
+        while (firstILBlock->HasFlag(BBF_INTERNAL))
+        {
+            firstILBlock = firstILBlock->Next();
+        }
     }
 
     // The 'firstILBlock' is now expected to have a profile-derived weight
