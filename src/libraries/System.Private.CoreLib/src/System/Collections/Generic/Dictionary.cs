@@ -1,10 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-// FIXME
-#pragma warning disable IDE0008
-
-using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -48,9 +44,12 @@ namespace System.Collections.Generic
             public TKey GetKey(TKey input) => input;
         }
 
-        private readonly record struct ComparerComparisonProtocol(IEqualityComparer<TKey> comparer)
-            : IComparisonProtocol<TKey>
+        [method: MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private readonly struct ComparerComparisonProtocol(IEqualityComparer<TKey> comparer)
+                        : IComparisonProtocol<TKey>
         {
+            public readonly IEqualityComparer<TKey> comparer = comparer;
+
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public bool Equals(TKey lhs, TKey rhs) => comparer.Equals(lhs, rhs);
 
@@ -61,10 +60,13 @@ namespace System.Collections.Generic
             public TKey GetKey(TKey input) => input;
         }
 
-        private readonly record struct AlternateComparerComparisonProtocol<TAlternateKey>(IAlternateEqualityComparer<TAlternateKey, TKey> comparer)
+        [method: MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private readonly struct AlternateComparerComparisonProtocol<TAlternateKey>(IAlternateEqualityComparer<TAlternateKey, TKey> comparer)
             : IComparisonProtocol<TAlternateKey>
             where TAlternateKey : allows ref struct
         {
+            public readonly IAlternateEqualityComparer<TAlternateKey, TKey> comparer = comparer;
+
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public bool Equals(TAlternateKey lhs, TKey rhs) => comparer.Equals(lhs, rhs);
 
@@ -178,7 +180,7 @@ namespace System.Collections.Generic
             public Vector128<byte> Suffixes;
             public InlineEntryIndexArray Indices;
 
-// This analysis is incorrect
+            // This analysis is incorrect
 #pragma warning disable IDE0251
             public ref byte Count
             {
@@ -273,9 +275,9 @@ namespace System.Collections.Generic
 
         private Bucket[]? _buckets;
         private Entry[]? _entries;
-//#if TARGET_64BIT
+        //#if TARGET_64BIT
         private ulong _fastModMultiplier;
-//#endif
+        //#endif
         private int _count;
         private int _freeList;
         private int _freeCount;
@@ -736,11 +738,13 @@ namespace System.Collections.Generic
                 return ref entry.value;
         }
 
-        private static void FillNewBucketsForResize (
+        private static void FillNewBucketsForResizeOrRehash(
             Span<Bucket> newBuckets, ulong fastModMultiplier,
             Span<Entry> entries, int allocatedEntryCount, IEqualityComparer<TKey> comparer
-        ) {
-            for (int index = 0; index < allocatedEntryCount; index++) {
+        )
+        {
+            for (int index = 0; index < allocatedEntryCount; index++)
+            {
                 // FIXME: Use Unsafe.Add to optimize out the imul per element
                 ref var entry = ref entries[index];
                 if (entry.next >= -1)
@@ -764,12 +768,13 @@ namespace System.Collections.Generic
                 {
                     // Pipelining
                     int bucketCount = bucket.Count;
-                    if (bucketCount < Bucket.Capacity) {
-                        if (TryInsertIntoBucket(ref bucket, suffix, bucketCount, entryIndex))
-                        {
-                            AdjustCascadeCounts(enumerator, true);
-                            return;
-                        }
+                    if (bucketCount < Bucket.Capacity)
+                    {
+                        InsertIntoBucket(ref bucket, suffix, bucketCount, entryIndex);
+                        // We can ignore the return value of this, we're in the middle of rehashing/resizing so we wouldn't ever
+                        //  do a comparer swap in this scenario
+                        AdjustCascadeCounts(enumerator, true);
+                        return;
                     }
 
                     bucket = ref enumerator.Advance();
@@ -801,8 +806,9 @@ namespace System.Collections.Generic
 
         // TODO: Figure out if we can outline this (reduces code size) without regressing performance for all inserts/removes
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static void AdjustCascadeCounts(LoopingBucketEnumerator enumerator, bool increase)
+        private static bool AdjustCascadeCounts(LoopingBucketEnumerator enumerator, bool increase)
         {
+            bool needRehash = false;
             // We may have cascaded out of a previous bucket; if so, scan backwards and update
             //  the cascade count for every bucket we previously scanned.
             ref Bucket bucket = ref enumerator.Retreat();
@@ -814,7 +820,11 @@ namespace System.Collections.Generic
                 {
                     // Never overflow (wrap around) the counter
                     if (cascadeCount < Bucket.DegradedCascadeCount)
-                        bucket.CascadeCount = (ushort)(cascadeCount + 1);
+                    {
+                        int newCascadeCount = bucket.CascadeCount = (ushort)(cascadeCount + 1);
+                        if (!typeof(TKey).IsValueType && (newCascadeCount >= HashHelpers.HashCollisionThreshold))
+                            needRehash = true;
+                    }
                 }
                 else
                 {
@@ -830,6 +840,8 @@ namespace System.Collections.Generic
 
                 bucket = ref enumerator.Retreat();
             }
+
+            return needRehash;
         }
 
         private ref Entry TryInsert(TKey key, TValue value, InsertionBehavior behavior, out bool exists)
@@ -853,8 +865,6 @@ namespace System.Collections.Generic
             var suffix = GetHashSuffix(hashCode);
             var vectorized = Sse2.IsSupported || AdvSimd.Arm64.IsSupported || PackedSimd.IsSupported;
             Vector128<byte> searchVector = vectorized ? Vector128.Create(suffix) : default;
-            int newEntryIndex = -1;
-            ref Entry newEntry = ref Unsafe.NullRef<Entry>();
 
         // We need to retry when we grow the buckets array since the correct destination bucket will have changed and might not
         //  be the same as the destination bucket before resizing (it probably isn't, in fact)
@@ -892,10 +902,10 @@ namespace System.Collections.Generic
                             return ref entry;
                         case InsertionBehavior.ThrowOnExisting:
                             ThrowHelper.ThrowAddingDuplicateWithKeyArgumentException(protocol.GetKey(key));
-                            return ref Unsafe.NullRef<Entry>();
+                            return ref entry;
                         default:
                             ThrowHelper.ThrowArgumentOutOfRangeException();
-                            return ref Unsafe.NullRef<Entry>();
+                            return ref entry;
                     }
                 }
                 else if (startIndex < Bucket.Capacity)
@@ -905,37 +915,36 @@ namespace System.Collections.Generic
 
                 if (bucketCount < Bucket.Capacity)
                 {
+                    // NOTE: Compute this before creating the entry, otherwise a comparer that throws could corrupt us.
+                    var actualKey = protocol.GetKey(key);
+
+                    int newEntryIndex = TryCreateNewEntry(entries);
                     if (newEntryIndex < 0)
                     {
-                        // NOTE: Compute this before creating the entry, otherwise a comparer that throws could corrupt us.
-                        var actualKey = protocol.GetKey(key);
-
-                        newEntryIndex = TryCreateNewEntry(entries);
-                        if (newEntryIndex < 0)
-                        {
-                            // We can't reuse the existing target bucket once we resized, so start over. This is very rare.
-                            Resize();
-                            goto retry;
-                        }
-                        else
-                        {
-                            newEntry = ref entries[newEntryIndex];
-                            PopulateEntry(ref newEntry, actualKey, value);
-                        }
+                        // We can't reuse the existing target bucket once we resized, so start over. This is very rare.
+                        Resize();
+                        goto retry;
                     }
 
-                    if (TryInsertIntoBucket(ref bucket, suffix, bucketCount, newEntryIndex))
+                    ref var newEntry = ref entries[newEntryIndex];
+                    PopulateEntry(ref newEntry, actualKey, value);
+                    InsertIntoBucket(ref bucket, suffix, bucketCount, newEntryIndex);
+                    _version++;
+                    exists = false;
+                    if (AdjustCascadeCounts(enumerator, true) && (Comparer is NonRandomizedStringEqualityComparer))
                     {
-                        _version++;
-                        AdjustCascadeCounts(enumerator, true);
-                        exists = false;
-                        return ref entries[newEntryIndex];
+                        // if AdjustCascadeCounts returned true, we need to change comparers (if possible) to one with better collision
+                        //  resistance.
+                        ChangeToRandomizedStringEqualityComparer();
+                        // This will have invalidated our buckets but not our entries, so it's safe to return newEntry.
                     }
+                    return ref newEntry;
                 }
 
                 bucket = ref enumerator.Advance();
             }
 
+            // We failed to find any bucket with room and hit the end of the loop, so we should be full. This is very rare.
             if (_count >= entries.Length)
             {
                 Resize();
@@ -945,19 +954,6 @@ namespace System.Collections.Generic
             ThrowHelper.ThrowInvalidOperationException_ConcurrentOperationsNotSupported();
             exists = false;
             return ref Unsafe.NullRef<Entry>();
-
-            // FIXME: Re-implement this
-            /*
-            // Value types never rehash
-            if (!typeof(TKey).IsValueType && collisionCount > HashHelpers.HashCollisionThreshold && comparer is NonRandomizedStringEqualityComparer)
-            {
-                // If we hit the collision threshold we'll need to switch to the comparer which is using randomized string hashing
-                // i.e. EqualityComparer<string>.Default.
-                Resize(entries.Length, true);
-            }
-
-            return true;
-            */
         }
 
         private int TryCreateNewEntry(Span<Entry> entries)
@@ -990,10 +986,9 @@ namespace System.Collections.Generic
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool TryInsertIntoBucket(ref Bucket bucket, byte suffix, int bucketCount, int entryIndex)
+        private static bool InsertIntoBucket(ref Bucket bucket, byte suffix, int bucketCount, int entryIndex)
         {
-            if (bucketCount >= Bucket.Capacity)
-                return false;
+            Debug.Assert(bucketCount < Bucket.Capacity);
 
             unchecked
             {
@@ -1330,7 +1325,7 @@ namespace System.Collections.Generic
             if (newBucketCount != _buckets?.Length)
             {
                 Bucket[] newBuckets = new Bucket[newBucketCount];
-                FillNewBucketsForResize(
+                FillNewBucketsForResizeOrRehash(
                     newBuckets, fastModMultiplier, entries, _count,
                     // FIXME
                     Comparer ?? EqualityComparer<TKey>.Default
@@ -1341,6 +1336,15 @@ namespace System.Collections.Generic
 
             _entries = entries;
             _version++;
+        }
+
+        private void ChangeToRandomizedStringEqualityComparer()
+        {
+            Debug.Assert(_comparer is NonRandomizedStringEqualityComparer);
+            _comparer = (IEqualityComparer<TKey>)((NonRandomizedStringEqualityComparer)_comparer).GetRandomizedEqualityComparer();
+            Debug.Assert(_buckets != null);
+            Array.Clear(_buckets!);
+            FillNewBucketsForResizeOrRehash(_buckets, _fastModMultiplier, _entries, _count, _comparer);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -1808,13 +1812,6 @@ namespace System.Collections.Generic
                 return (int)(hashCode % buckets.Length);
 #endif
             }
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private ref Bucket GetBucket(uint hashCode)
-        {
-            Bucket[] buckets = _buckets!;
-            return ref buckets[GetBucketIndexForHashCode(buckets, hashCode, _fastModMultiplier)];
         }
 
         private struct Entry
