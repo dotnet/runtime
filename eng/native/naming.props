@@ -2,6 +2,7 @@
   <PropertyGroup>
     <StaticLibPrefix>lib</StaticLibPrefix>
     <ExeSuffix Condition="'$(HostOS)' == 'windows'">.exe</ExeSuffix>
+    <Blah>$(HostOS)</Blah>
   </PropertyGroup>
 
   <!-- Add path globs specific to native binaries to exclude unnecessary files from packages. -->

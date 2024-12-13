@@ -23,7 +23,8 @@ namespace Internal.TypeSystem
         FreeBSD,
         NetBSD,
         SunOS,
-        WebAssembly
+        WebAssembly,
+        Android
     }
 
     public enum TargetAbi

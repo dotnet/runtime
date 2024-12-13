@@ -44,6 +44,13 @@
   </ItemGroup>
 
   <PropertyGroup>
+    <_LibPrefix Condition="'$(_IsCrossHostPublish)' == 'true'">$(LibPrefix)</_LibPrefix>
+    <_LibPrefix Condition="'$(_IsCrossHostPublish)' != 'true'">$(HostLibPrefix)</_LibPrefix>
+    <_LibSuffix Condition="'$(_IsCrossHostPublish)' == 'true'">$(LibSuffix)</_LibSuffix>
+    <_LibSuffix Condition="'$(_IsCrossHostPublish)' != 'true'">$(HostLibSuffix)</_LibSuffix>
+  </PropertyGroup>
+
+  <PropertyGroup>
     <TargetArchitectureForSharedLibraries Condition="'$(CrossHostArch)' == ''">$(TargetArchitecture)</TargetArchitectureForSharedLibraries>
     <TargetArchitectureForSharedLibraries Condition="'$(CrossHostArch)' != ''">$(CrossHostArch)</TargetArchitectureForSharedLibraries>
     <TargetArchitectureForSharedLibraries Condition="'$(TargetArchitectureForSharedLibraries)'=='armel'">arm</TargetArchitectureForSharedLibraries>
