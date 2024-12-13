@@ -40,8 +40,10 @@ namespace System.Collections.Generic
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public bool Equals(TKey lhs, TKey rhs) => EqualityComparer<TKey>.Default.Equals(lhs, rhs);
+
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public int GetHashCode(TKey key) => EqualityComparer<TKey>.Default.GetHashCode(key);
+
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public TKey GetKey(TKey input) => input;
         }
@@ -51,8 +53,10 @@ namespace System.Collections.Generic
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public bool Equals(TKey lhs, TKey rhs) => comparer.Equals(lhs, rhs);
+
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public int GetHashCode(TKey key) => comparer.GetHashCode(key);
+
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public TKey GetKey(TKey input) => input;
         }
@@ -63,10 +67,18 @@ namespace System.Collections.Generic
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public bool Equals(TAlternateKey lhs, TKey rhs) => comparer.Equals(lhs, rhs);
+
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public int GetHashCode(TAlternateKey key) => comparer.GetHashCode(key);
+
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public TKey GetKey(TAlternateKey input) => comparer.Create(input);
+            public TKey GetKey(TAlternateKey input)
+            {
+                TKey result = comparer.Create(input);
+                if (result == null)
+                    ThrowHelper.ThrowArgumentNullException(ExceptionArgument.key);
+                return result;
+            }
         }
 
         /*
@@ -726,11 +738,8 @@ namespace System.Collections.Generic
 
         private static void FillNewBucketsForResize (
             Span<Bucket> newBuckets, ulong fastModMultiplier,
-            Span<Entry> entries, int allocatedEntryCount, IEqualityComparer<TKey>? comparer
+            Span<Entry> entries, int allocatedEntryCount, IEqualityComparer<TKey> comparer
         ) {
-            // FIXME
-            comparer ??= EqualityComparer<TKey>.Default;
-
             for (int index = 0; index < allocatedEntryCount; index++) {
                 // FIXME: Use Unsafe.Add to optimize out the imul per element
                 ref var entry = ref entries[index];
@@ -898,6 +907,9 @@ namespace System.Collections.Generic
                 {
                     if (newEntryIndex < 0)
                     {
+                        // NOTE: Compute this before creating the entry, otherwise a comparer that throws could corrupt us.
+                        var actualKey = protocol.GetKey(key);
+
                         newEntryIndex = TryCreateNewEntry(entries);
                         if (newEntryIndex < 0)
                         {
@@ -908,7 +920,7 @@ namespace System.Collections.Generic
                         else
                         {
                             newEntry = ref entries[newEntryIndex];
-                            PopulateEntry(ref newEntry, protocol.GetKey(key), value);
+                            PopulateEntry(ref newEntry, actualKey, value);
                         }
                     }
 
