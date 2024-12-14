@@ -1012,5 +1012,35 @@ namespace System.Linq.Expressions.Tests
             Func<bool> f = expr.Compile(preferInterpretation: useInterpreter);
             Assert.False(f());
         }
+
+        private static void _CallWithFunc1(Func<int> f) { }
+
+        // TODO: Temporary
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public void LambdaInstanceImplicitCast_Func1(bool useInterpreter)
+        {
+            Expression<Action> expr = Expression.Lambda<Action>(
+                Expression.Call(
+                    typeof(LambdaTests).GetMethod("_CallWithFunc1", BindingFlags.NonPublic | BindingFlags.Static),
+                    Expression.Lambda<Func<int>>(
+                        Expression.Constant(1))));
+            Action a = expr.Compile(preferInterpretation: useInterpreter);
+            a();
+        }
+
+        // TODO: Temporary
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public void LambdaInstanceExplicitCast_Func1(bool useInterpreter)
+        {
+            Expression<Action> expr = Expression.Lambda<Action>(
+                Expression.Call(
+                    typeof(LambdaTests).GetMethod("_CallWithFunc1", BindingFlags.NonPublic | BindingFlags.Static),
+                    Expression.Convert(
+                        Expression.Lambda<Func<int>>(
+                            Expression.Constant(1)),
+                        typeof(Func<int>))));
+            Action a = expr.Compile(preferInterpretation: useInterpreter);
+            a();
+        }
     }
 }

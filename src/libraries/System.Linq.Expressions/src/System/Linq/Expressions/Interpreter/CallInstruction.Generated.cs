@@ -446,7 +446,7 @@ namespace System.Linq.Expressions.Interpreter
                 NullCheck(firstArg);
             }
 
-            if (_isDelegateInvoke && TryGetLightLambdaTarget(firstArg, out var targetLambda))
+            if (_isInstance/*Temporary:_isDelegateInvoke*/ && TryGetLightLambdaTarget(firstArg, out var targetLambda))
             {
                 // no need to Invoke, just interpret the lambda body
                 result = InterpretLambdaInvoke(targetLambda, Array.Empty<object>());
