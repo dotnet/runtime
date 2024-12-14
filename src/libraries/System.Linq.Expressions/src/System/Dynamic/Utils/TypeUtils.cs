@@ -970,6 +970,12 @@ namespace System.Dynamic.Utils
             return delegateType.GetMethod("Invoke", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)!;
         }
 
+        internal static bool IsDelegateInvoke(MethodInfo methodInfo)
+        {
+            return methodInfo is { IsStatic: false, Name: "Invoke", DeclaringType: { } declaringType } &&
+                IsDelegate(declaringType);
+        }
+
         internal static bool IsUnsigned(this Type type) => IsUnsigned(GetNonNullableType(type).GetTypeCode());
 
         internal static bool IsUnsigned(this TypeCode typeCode)

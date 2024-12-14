@@ -239,6 +239,7 @@ namespace System.Linq.Expressions.Interpreter
     internal sealed class ActionCallInstruction<T0> : CallInstruction
     {
         private readonly bool _isInstance;
+        private readonly bool _isDelegateInvoke;
         private readonly Action<T0> _target;
         public override int ProducedStack => 0;
         public override int ArgumentCount => 1;
@@ -246,6 +247,7 @@ namespace System.Linq.Expressions.Interpreter
         public ActionCallInstruction(MethodInfo target)
         {
             _isInstance = !target.IsStatic;
+            _isDelegateInvoke = TypeUtils.IsDelegateInvoke(target);
             _target = (Action<T0>)target.CreateDelegate(typeof(Action<T0>));
         }
 
@@ -258,7 +260,7 @@ namespace System.Linq.Expressions.Interpreter
                 NullCheck(firstArg);
             }
 
-            if (_isInstance && TryGetLightLambdaTarget(firstArg, out var targetLambda))
+            if (_isDelegateInvoke && TryGetLightLambdaTarget(firstArg, out var targetLambda))
             {
                 // no need to Invoke, just interpret the lambda body
                 InterpretLambdaInvoke(targetLambda, Array.Empty<object>());
@@ -278,6 +280,7 @@ namespace System.Linq.Expressions.Interpreter
     internal sealed class ActionCallInstruction<T0, T1> : CallInstruction
     {
         private readonly bool _isInstance;
+        private readonly bool _isDelegateInvoke;
         private readonly Action<T0, T1> _target;
         public override int ProducedStack => 0;
         public override int ArgumentCount => 2;
@@ -285,6 +288,7 @@ namespace System.Linq.Expressions.Interpreter
         public ActionCallInstruction(MethodInfo target)
         {
             _isInstance = !target.IsStatic;
+            _isDelegateInvoke = TypeUtils.IsDelegateInvoke(target);
             _target = (Action<T0, T1>)target.CreateDelegate(typeof(Action<T0, T1>));
         }
 
@@ -297,7 +301,7 @@ namespace System.Linq.Expressions.Interpreter
                 NullCheck(firstArg);
             }
 
-            if (_isInstance && TryGetLightLambdaTarget(firstArg, out var targetLambda))
+            if (_isDelegateInvoke && TryGetLightLambdaTarget(firstArg, out var targetLambda))
             {
                 // no need to Invoke, just interpret the lambda body
                 InterpretLambdaInvoke(targetLambda, new object[] { frame.Data[frame.StackIndex - 1] });
@@ -317,6 +321,7 @@ namespace System.Linq.Expressions.Interpreter
     internal sealed class ActionCallInstruction<T0, T1, T2> : CallInstruction
     {
         private readonly bool _isInstance;
+        private readonly bool _isDelegateInvoke;
         private readonly Action<T0, T1, T2> _target;
         public override int ProducedStack => 0;
         public override int ArgumentCount => 3;
@@ -324,6 +329,7 @@ namespace System.Linq.Expressions.Interpreter
         public ActionCallInstruction(MethodInfo target)
         {
             _isInstance = !target.IsStatic;
+            _isDelegateInvoke = TypeUtils.IsDelegateInvoke(target);
             _target = (Action<T0, T1, T2>)target.CreateDelegate(typeof(Action<T0, T1, T2>));
         }
 
@@ -336,7 +342,7 @@ namespace System.Linq.Expressions.Interpreter
                 NullCheck(firstArg);
             }
 
-            if (_isInstance && TryGetLightLambdaTarget(firstArg, out var targetLambda))
+            if (_isDelegateInvoke && TryGetLightLambdaTarget(firstArg, out var targetLambda))
             {
                 // no need to Invoke, just interpret the lambda body
                 InterpretLambdaInvoke(targetLambda, new object[] { frame.Data[frame.StackIndex - 2], frame.Data[frame.StackIndex - 1] });
@@ -356,6 +362,7 @@ namespace System.Linq.Expressions.Interpreter
     internal sealed class ActionCallInstruction<T0, T1, T2, T3> : CallInstruction
     {
         private readonly bool _isInstance;
+        private readonly bool _isDelegateInvoke;
         private readonly Action<T0, T1, T2, T3> _target;
         public override int ProducedStack => 0;
         public override int ArgumentCount => 4;
@@ -363,6 +370,7 @@ namespace System.Linq.Expressions.Interpreter
         public ActionCallInstruction(MethodInfo target)
         {
             _isInstance = !target.IsStatic;
+            _isDelegateInvoke = TypeUtils.IsDelegateInvoke(target);
             _target = (Action<T0, T1, T2, T3>)target.CreateDelegate(typeof(Action<T0, T1, T2, T3>));
         }
 
@@ -375,7 +383,7 @@ namespace System.Linq.Expressions.Interpreter
                 NullCheck(firstArg);
             }
 
-            if (_isInstance && TryGetLightLambdaTarget(firstArg, out var targetLambda))
+            if (_isDelegateInvoke && TryGetLightLambdaTarget(firstArg, out var targetLambda))
             {
                 // no need to Invoke, just interpret the lambda body
                 InterpretLambdaInvoke(targetLambda, new object[] { frame.Data[frame.StackIndex - 3], frame.Data[frame.StackIndex - 2], frame.Data[frame.StackIndex - 1] });
@@ -416,6 +424,7 @@ namespace System.Linq.Expressions.Interpreter
     internal sealed class FuncCallInstruction<T0, TRet> : CallInstruction
     {
         private readonly bool _isInstance;
+        private readonly bool _isDelegateInvoke;
         private readonly Func<T0, TRet> _target;
         public override int ProducedStack => 1;
         public override int ArgumentCount => 1;
@@ -423,6 +432,7 @@ namespace System.Linq.Expressions.Interpreter
         public FuncCallInstruction(MethodInfo target)
         {
             _isInstance = !target.IsStatic;
+            _isDelegateInvoke = TypeUtils.IsDelegateInvoke(target);
             _target = (Func<T0, TRet>)target.CreateDelegate(typeof(Func<T0, TRet>));
         }
 
@@ -436,7 +446,7 @@ namespace System.Linq.Expressions.Interpreter
                 NullCheck(firstArg);
             }
 
-            if (_isInstance && TryGetLightLambdaTarget(firstArg, out var targetLambda))
+            if (_isDelegateInvoke && TryGetLightLambdaTarget(firstArg, out var targetLambda))
             {
                 // no need to Invoke, just interpret the lambda body
                 result = InterpretLambdaInvoke(targetLambda, Array.Empty<object>());
@@ -457,6 +467,7 @@ namespace System.Linq.Expressions.Interpreter
     internal sealed class FuncCallInstruction<T0, T1, TRet> : CallInstruction
     {
         private readonly bool _isInstance;
+        private readonly bool _isDelegateInvoke;
         private readonly Func<T0, T1, TRet> _target;
         public override int ProducedStack => 1;
         public override int ArgumentCount => 2;
@@ -464,6 +475,7 @@ namespace System.Linq.Expressions.Interpreter
         public FuncCallInstruction(MethodInfo target)
         {
             _isInstance = !target.IsStatic;
+            _isDelegateInvoke = TypeUtils.IsDelegateInvoke(target);
             _target = (Func<T0, T1, TRet>)target.CreateDelegate(typeof(Func<T0, T1, TRet>));
         }
 
@@ -477,7 +489,7 @@ namespace System.Linq.Expressions.Interpreter
                 NullCheck(firstArg);
             }
 
-            if (_isInstance && TryGetLightLambdaTarget(firstArg, out var targetLambda))
+            if (_isDelegateInvoke && TryGetLightLambdaTarget(firstArg, out var targetLambda))
             {
                 // no need to Invoke, just interpret the lambda body
                 result = InterpretLambdaInvoke(targetLambda, new object[] { frame.Data[frame.StackIndex - 1] });
@@ -498,6 +510,7 @@ namespace System.Linq.Expressions.Interpreter
     internal sealed class FuncCallInstruction<T0, T1, T2, TRet> : CallInstruction
     {
         private readonly bool _isInstance;
+        private readonly bool _isDelegateInvoke;
         private readonly Func<T0, T1, T2, TRet> _target;
         public override int ProducedStack => 1;
         public override int ArgumentCount => 3;
@@ -505,6 +518,7 @@ namespace System.Linq.Expressions.Interpreter
         public FuncCallInstruction(MethodInfo target)
         {
             _isInstance = !target.IsStatic;
+            _isDelegateInvoke = TypeUtils.IsDelegateInvoke(target);
             _target = (Func<T0, T1, T2, TRet>)target.CreateDelegate(typeof(Func<T0, T1, T2, TRet>));
         }
 
@@ -518,7 +532,7 @@ namespace System.Linq.Expressions.Interpreter
                 NullCheck(firstArg);
             }
 
-            if (_isInstance && TryGetLightLambdaTarget(firstArg, out var targetLambda))
+            if (_isDelegateInvoke && TryGetLightLambdaTarget(firstArg, out var targetLambda))
             {
                 // no need to Invoke, just interpret the lambda body
                 result = InterpretLambdaInvoke(targetLambda, new object[] { frame.Data[frame.StackIndex - 2], frame.Data[frame.StackIndex - 1] });
@@ -539,6 +553,7 @@ namespace System.Linq.Expressions.Interpreter
     internal sealed class FuncCallInstruction<T0, T1, T2, T3, TRet> : CallInstruction
     {
         private readonly bool _isInstance;
+        private readonly bool _isDelegateInvoke;
         private readonly Func<T0, T1, T2, T3, TRet> _target;
         public override int ProducedStack => 1;
         public override int ArgumentCount => 4;
@@ -546,6 +561,7 @@ namespace System.Linq.Expressions.Interpreter
         public FuncCallInstruction(MethodInfo target)
         {
             _isInstance = !target.IsStatic;
+            _isDelegateInvoke = TypeUtils.IsDelegateInvoke(target);
             _target = (Func<T0, T1, T2, T3, TRet>)target.CreateDelegate(typeof(Func<T0, T1, T2, T3, TRet>));
         }
 
@@ -559,7 +575,7 @@ namespace System.Linq.Expressions.Interpreter
                 NullCheck(firstArg);
             }
 
-            if (_isInstance && TryGetLightLambdaTarget(firstArg, out var targetLambda))
+            if (_isDelegateInvoke && TryGetLightLambdaTarget(firstArg, out var targetLambda))
             {
                 // no need to Invoke, just interpret the lambda body
                 result = InterpretLambdaInvoke(targetLambda, new object[] { frame.Data[frame.StackIndex - 3], frame.Data[frame.StackIndex - 2], frame.Data[frame.StackIndex - 1] });
