@@ -96,7 +96,7 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestsBase
         BlazorBuild(info, config, _defaultBuildOptions, isNativeBuild);
 
     protected (string projectDir, string buildOutput) BlazorBuild(
-        ProjectInfo info, Configuration config, MSBuildOptions buildOptions, bool? isNativeBuild = null)
+        ProjectInfo info, Configuration config, BuildOptions buildOptions, bool? isNativeBuild = null)
     {
         try
         {

@@ -22,14 +22,16 @@ public class WasmTemplateTestsBase : BuildTestBase
     private readonly WasmSdkBasedProjectProvider _provider;
     private readonly string _extraBuildArgsBuild = "/warnaserror";
     private readonly string _extraBuildArgsPublish = "-p:CompressionEnabled=false /warnaserror";
-    protected readonly PublishOptions _defaultPublishOptions = new PublishOptions(ExtraMSBuildArgs: _extraBuildArgsPublish);
-    protected readonly BuildOptions _defaultBuildOptions = new BuildOptions(ExtraMSBuildArgs: _extraBuildArgsBuild);
+    protected readonly PublishOptions _defaultPublishOptions;
+    protected readonly BuildOptions _defaultBuildOptions;
     protected const string DefaultRuntimeAssetsRelativePath = "./_framework/";
 
     public WasmTemplateTestsBase(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext, ProjectProviderBase? provider = null)
         : base(provider ?? new WasmSdkBasedProjectProvider(output, DefaultTargetFramework), output, buildContext)
     {
         _provider = GetProvider<WasmSdkBasedProjectProvider>();
+        _defaultPublishOptions = new PublishOptions(ExtraMSBuildArgs: _extraBuildArgsPublish);
+        _defaultBuildOptions = new BuildOptions(ExtraMSBuildArgs: _extraBuildArgsBuild);
     }
 
     private Dictionary<string, string> browserProgramReplacements = new Dictionary<string, string>
