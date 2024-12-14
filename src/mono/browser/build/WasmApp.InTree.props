@@ -5,7 +5,7 @@
     <WasmCommonTargetsPath Condition="'$(WasmCommonTargetsPath)' == ''">$([MSBuild]::NormalizeDirectory($(MonoProjectRoot), 'wasm', 'build'))</WasmCommonTargetsPath>
   </PropertyGroup>
 
-  <Import Project="$(MSBuildThisFileDirectory)BrowserWasmApp.props" />
+  <Import Project="$(MSBuildThisFileDirectory)BrowserWasmApp.props" Condition="'$(UsingNativeAOT)' != 'true'" />
   <PropertyGroup>
     <SelfContained>true</SelfContained>
     <Platform>AnyCPU</Platform>

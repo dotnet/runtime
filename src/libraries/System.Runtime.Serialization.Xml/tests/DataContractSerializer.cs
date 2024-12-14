@@ -3542,7 +3542,7 @@ public static partial class DataContractSerializerTests
     }
 
 
-    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+    [Fact]
     public static void DCS_BasicPerSerializerRoundTripAndCompare_DataSet()
     {
 

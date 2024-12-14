@@ -85,7 +85,7 @@ target_link_libraries(
 )
 
 set_target_properties(
-    %ProjectName% 
+    %ProjectName%
     PROPERTIES LINK_FLAGS
     %EXTRA_LINKER_ARGS%
 )

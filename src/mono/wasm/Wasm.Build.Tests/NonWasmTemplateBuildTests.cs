@@ -11,7 +11,7 @@ using Xunit.Abstractions;
 
 namespace Wasm.Build.Tests;
 
-public class NonWasmTemplateBuildTests : TestMainJsTestBase
+public class NonWasmTemplateBuildTests : WasmTemplateTestsBase
 {
     public NonWasmTemplateBuildTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
         : base(output, buildContext)
@@ -23,8 +23,8 @@ public class NonWasmTemplateBuildTests : TestMainJsTestBase
     // So, copy the reference for latest TFM, and add that back with the
     // TFM=DefaultTargetFramework
     //
-    // This is useful for the case when we are on tfm=net7.0, but sdk, and packages
-    // are really 8.0 .
+    // This is useful for the case when we are on tfm=net8.0, but sdk, and packages
+    // are really 9.0 .
     private const string s_latestTargetFramework = "net9.0";
     private const string s_previousTargetFramework = "net8.0";
     private static string s_directoryBuildTargetsForPreviousTFM =
@@ -55,8 +55,8 @@ public class NonWasmTemplateBuildTests : TestMainJsTestBase
     public static IEnumerable<object?[]> GetTestData() =>
         new IEnumerable<object?>[]
         {
-            new object?[] { "Debug" },
-            new object?[] { "Release" }
+            new object?[] { Configuration.Debug },
+            new object?[] { Configuration.Release }
         }
         .AsEnumerable()
         .MultiplyWithSingleArgs
@@ -67,15 +67,19 @@ public class NonWasmTemplateBuildTests : TestMainJsTestBase
         )
         .MultiplyWithSingleArgs
         (
-            "net6.0",
-            s_previousTargetFramework,
-            s_latestTargetFramework
+            EnvironmentVariables.WorkloadsTestPreviousVersions
+                ? [
+                    "net6.0",
+                    s_previousTargetFramework,
+                    s_latestTargetFramework
+                ]
+                : [s_latestTargetFramework]
         )
         .UnwrapItemsAsArrays().ToList();
 
     [Theory, TestCategory("no-workload")]
     [MemberData(nameof(GetTestData))]
-    public void NonWasmConsoleBuild_WithoutWorkload(string config, string extraBuildArgs, string targetFramework)
+    public void NonWasmConsoleBuild_WithoutWorkload(Configuration config, string extraBuildArgs, string targetFramework)
         => NonWasmConsoleBuild(config,
                                extraBuildArgs,
                                targetFramework,
@@ -84,14 +88,14 @@ public class NonWasmTemplateBuildTests : TestMainJsTestBase
 
     [Theory]
     [MemberData(nameof(GetTestData))]
-    public void NonWasmConsoleBuild_WithWorkload(string config, string extraBuildArgs, string targetFramework)
+    public void NonWasmConsoleBuild_WithWorkload(Configuration config, string extraBuildArgs, string targetFramework)
         => NonWasmConsoleBuild(config,
                                extraBuildArgs,
                                targetFramework,
                                // net6 is sdk would be needed to run the app
                                shouldRun: targetFramework == s_latestTargetFramework);
 
-    private void NonWasmConsoleBuild(string config,
+    private void NonWasmConsoleBuild(Configuration config,
                                      string extraBuildArgs,
                                      string targetFramework,
                                      string? directoryBuildTargets = null,
@@ -109,7 +113,7 @@ public class NonWasmTemplateBuildTests : TestMainJsTestBase
         File.WriteAllText(Path.Combine(_projectDir, "Directory.Build.targets"), directoryBuildTargets);
 
         using ToolCommand cmd = new DotNetCommand(s_buildEnv, _testOutput, useDefaultArgs: false)
-            .WithWorkingDirectory(_projectDir!);
+            .WithWorkingDirectory(_projectDir);
         cmd.ExecuteWithCapturedOutput("new console --no-restore")
             .EnsureSuccessful();
 

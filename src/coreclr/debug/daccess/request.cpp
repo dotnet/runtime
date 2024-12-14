@@ -921,11 +921,11 @@ void CopyNativeCodeVersionToReJitData(NativeCodeVersion nativeCodeVersion, Nativ
             pReJitData->flags = DacpReJitData::kUnknown;
             break;
 
-        case ILCodeVersion::kStateRequested:
+        case RejitFlags::kStateRequested:
             pReJitData->flags = DacpReJitData::kRequested;
             break;
 
-        case ILCodeVersion::kStateActive:
+        case RejitFlags::kStateActive:
             pReJitData->flags = DacpReJitData::kActive;
             break;
         }
@@ -1049,6 +1049,11 @@ HRESULT ClrDataAccess::GetMethodDescData(
             {
                 ILCodeVersion activeILCodeVersion = pCodeVersionManager->GetActiveILCodeVersion(pMD);
                 activeNativeCodeVersion = activeILCodeVersion.GetActiveNativeCodeVersion(pMD);
+                if (activeNativeCodeVersion.IsNull())
+                {
+                    // This is caught below and S_OK is returned
+                    DacError(E_ACCESSDENIED);
+                }
             }
             CopyNativeCodeVersionToReJitData(
                 activeNativeCodeVersion,
@@ -1571,12 +1576,18 @@ ClrDataAccess::GetObjectStringData(CLRDATA_ADDRESS obj, unsigned int count, _Ino
                 count = needed;
 
             TADDR pszStr = TO_TADDR(obj)+offsetof(StringObject, m_FirstChar);
-            hr = m_pTarget->ReadVirtual(pszStr, (PBYTE)stringData, count * sizeof(WCHAR), &needed);
+            ULONG32 bytesRead;
+            hr = m_pTarget->ReadVirtual(pszStr, (PBYTE)stringData, count * sizeof(WCHAR), &bytesRead);
+            needed = bytesRead / sizeof(WCHAR);
 
             if (SUCCEEDED(hr))
-                stringData[count - 1] = W('\0');
+            {
+                stringData[needed - 1] = W('\0');
+            }
             else
+            {
                 stringData[0] = W('\0');
+            }
         }
         else
         {
@@ -4618,7 +4629,7 @@ HRESULT ClrDataAccess::GetPendingReJITID(CLRDATA_ADDRESS methodDesc, int *pRejit
     {
         hr = E_INVALIDARG;
     }
-    else if (ilVersion.GetRejitState() == ILCodeVersion::kStateRequested)
+    else if (ilVersion.GetRejitState() == RejitFlags::kStateRequested)
     {
         *pRejitId = (int)ilVersion.GetVersionId();
     }
@@ -4661,11 +4672,11 @@ HRESULT ClrDataAccess::GetReJITInformation(CLRDATA_ADDRESS methodDesc, int rejit
             pReJitData->flags = DacpReJitData2::kUnknown;
             break;
 
-        case ILCodeVersion::kStateRequested:
+        case RejitFlags::kStateRequested:
             pReJitData->flags = DacpReJitData2::kRequested;
             break;
 
-        case ILCodeVersion::kStateActive:
+        case RejitFlags::kStateActive:
             pReJitData->flags = DacpReJitData2::kActive;
             break;
         }
@@ -4698,7 +4709,7 @@ HRESULT ClrDataAccess::GetProfilerModifiedILInformation(CLRDATA_ADDRESS methodDe
     CodeVersionManager* pCodeVersionManager = pMD->GetCodeVersionManager();
     CodeVersionManager::LockHolder codeVersioningLockHolder;
     ILCodeVersion ilVersion = pCodeVersionManager->GetActiveILCodeVersion(pMD);
-    if (ilVersion.GetRejitState() != ILCodeVersion::kStateActive || !ilVersion.HasDefaultIL())
+    if (ilVersion.GetRejitState() != RejitFlags::kStateActive || !ilVersion.HasDefaultIL())
     {
         pILData->type = DacpProfilerILData::ReJITModified;
         pILData->rejitID = static_cast<ULONG>(pCodeVersionManager->GetActiveILCodeVersion(pMD).GetVersionId());
@@ -4748,7 +4759,7 @@ HRESULT ClrDataAccess::GetMethodsWithProfilerModifiedIL(CLRDATA_ADDRESS mod, CLR
 
                 TADDR pDynamicIL = pModule->GetDynamicIL(pMD->GetMemberDef());
                 ILCodeVersion ilVersion = pCodeVersionManager->GetActiveILCodeVersion(pMD);
-                if (ilVersion.GetRejitState() != ILCodeVersion::kStateActive || !ilVersion.HasDefaultIL() || pDynamicIL != (TADDR)NULL)
+                if (ilVersion.GetRejitState() != RejitFlags::kStateActive || !ilVersion.HasDefaultIL() || pDynamicIL != (TADDR)NULL)
                 {
                     methodDescs[*pcMethodDescs] = PTR_CDADDR(pMD);
                     ++(*pcMethodDescs);
