@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Threading;
 using Internal.TypeSystem;
 using NumberStyles = System.Globalization.NumberStyles;
@@ -165,8 +166,8 @@ namespace Internal.JitInterface
 
             void** callbacks = (void**)Marshal.AllocCoTaskMem(sizeof(IntPtr) * numCallbacks);
 
-            callbacks[0] = (delegate* unmanaged<IntPtr, char*, int, int>)&getIntConfigValue;
-            callbacks[1] = (delegate* unmanaged<IntPtr, char*, char*, int, int>)&getStringConfigValue;
+            callbacks[0] = (delegate* unmanaged<IntPtr, byte*, int, int>)&getIntConfigValue;
+            callbacks[1] = (delegate* unmanaged<IntPtr, byte*, byte*, int, int>)&getStringConfigValue;
 
             IntPtr instance = Marshal.AllocCoTaskMem(sizeof(IntPtr));
             *(IntPtr*)instance = (IntPtr)callbacks;
@@ -175,20 +176,24 @@ namespace Internal.JitInterface
         }
 
         [UnmanagedCallersOnly]
-        private static unsafe int getIntConfigValue(IntPtr thisHandle, char* name, int defaultValue)
+        private static unsafe int getIntConfigValue(IntPtr thisHandle, byte* name, int defaultValue)
         {
-            return s_instance.GetIntConfigValue(new string(name), defaultValue);
+            return s_instance.GetIntConfigValue(Marshal.PtrToStringUTF8((IntPtr)name), defaultValue);
         }
 
         [UnmanagedCallersOnly]
-        private static unsafe int getStringConfigValue(IntPtr thisHandle, char* name, char* retBuffer, int retBufferLength)
+        private static unsafe int getStringConfigValue(IntPtr thisHandle, byte* name, byte* retBuffer, int retBufferLength)
         {
-            string result = s_instance.GetStringConfigValue(new string(name));
+            string result = s_instance.GetStringConfigValue(Marshal.PtrToStringUTF8((IntPtr)name));
 
-            for (int i = 0; i < Math.Min(retBufferLength, result.Length); i++)
-                retBuffer[i] = result[i];
+            if (result == "")
+            {
+                return 0;
+            }
 
-            return result.Length;
+            nuint requiredBufferSize;
+            CorInfoImpl.PrintFromUtf16(result, retBuffer, (nuint)retBufferLength, &requiredBufferSize);
+            return (int)requiredBufferSize;
         }
 
         #endregion

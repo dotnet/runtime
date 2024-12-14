@@ -71,6 +71,16 @@ extern "C" void             RedirectedHandledJITCaseForGCStress_Stub(void);
 #define IS_VALID_WRITE_PTR(addr, size)      _ASSERTE((addr) != NULL)
 #define IS_VALID_CODE_PTR(addr)             _ASSERTE((addr) != NULL)
 
+#if defined(TARGET_AMD64) || defined(TARGET_X86)
+// These values should be picked up from winnt.h, defining them in case they are missing there.
+#ifndef XSTATE_APX
+#define XSTATE_APX (19)
+#endif // XSTATE_APX
+
+#ifndef XSTATE_MASK_APX
+#define XSTATE_MASK_APX (1 << XSTATE_APX)
+#endif // XSTATE_MASK_APX
+#endif  // TARGET_AMD64 || TARGET_X86
 
 void ThreadSuspend::SetSuspendRuntimeInProgress()
 {
@@ -1961,7 +1971,7 @@ CONTEXT* AllocateOSContextHelper(BYTE** contextBuffer)
     DWORD context = CONTEXT_COMPLETE;
 
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
-    const DWORD64 xStateFeatureMask = XSTATE_MASK_AVX | XSTATE_MASK_AVX512;
+    const DWORD64 xStateFeatureMask = XSTATE_MASK_AVX | XSTATE_MASK_AVX512 | XSTATE_MASK_APX;
     const ULONG64 xStateCompactionMask = XSTATE_MASK_LEGACY | XSTATE_MASK_MPX | xStateFeatureMask;
 #elif defined(TARGET_ARM64)
     const DWORD64 xStateFeatureMask = XSTATE_MASK_ARM64_SVE;
@@ -2900,7 +2910,7 @@ BOOL Thread::RedirectThreadAtHandledJITCase(PFN_REDIRECTTARGET pTgt)
     // The system silently ignores any feature specified in the FeatureMask
     // which is not enabled on the processor.
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
-    SetXStateFeaturesMask(pCtx, XSTATE_MASK_AVX | XSTATE_MASK_AVX512);
+    SetXStateFeaturesMask(pCtx, XSTATE_MASK_AVX | XSTATE_MASK_AVX512 | XSTATE_MASK_APX);
 #elif defined(TARGET_ARM64)
     if (g_pfnSetXStateFeaturesMask != NULL)
     {
@@ -3051,7 +3061,7 @@ BOOL Thread::RedirectCurrentThreadAtHandledJITCase(PFN_REDIRECTTARGET pTgt, CONT
     if (srcFeatures != 0)
     {
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
-        const DWORD64 xStateFeatureMask = XSTATE_MASK_AVX | XSTATE_MASK_AVX512;
+        const DWORD64 xStateFeatureMask = XSTATE_MASK_AVX | XSTATE_MASK_AVX512 | XSTATE_MASK_APX;
 #elif defined(TARGET_ARM64)
         const DWORD64 xStateFeatureMask = XSTATE_MASK_ARM64_SVE;
 #endif
@@ -5722,8 +5732,9 @@ BOOL CheckActivationSafePoint(SIZE_T ip)
     Thread *pThread = GetThreadNULLOk();
 
     // The criteria for safe activation is to be running managed code.
-    // Also we are not interested in handling interruption if we are already in preemptive mode.
-    BOOL isActivationSafePoint = pThread != NULL &&
+    // Also we are not interested in handling interruption if we are already in preemptive mode nor if we are single stepping
+    BOOL isActivationSafePoint = pThread != NULL && 
+        (pThread->m_StateNC & Thread::TSNC_DebuggerIsStepping) == 0 &&
         pThread->PreemptiveGCDisabled() &&
         ExecutionManager::IsManagedCode(ip);
 
@@ -5908,7 +5919,12 @@ bool Thread::InjectActivation(ActivationReason reason)
     {
         return true;
     }
-
+    // Avoid APC calls when the thread is in single step state to avoid any
+    // wrong resume because it's running a native code.
+    if ((m_StateNC & Thread::TSNC_DebuggerIsStepping) != 0)
+    {
+        return false;
+    }
 #ifdef FEATURE_SPECIAL_USER_MODE_APC
     _ASSERTE(UseSpecialUserModeApc());
 

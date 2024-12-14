@@ -254,7 +254,19 @@ bool emitter::IsEvexEncodableInstruction(instruction ins) const
     {
         return false;
     }
-    return HasEvexEncoding(ins);
+
+    switch (ins)
+    {
+        case INS_pclmulqdq:
+        {
+            return emitComp->compOpportunisticallyDependsOn(InstructionSet_PCLMULQDQ_V256);
+        }
+
+        default:
+        {
+            return HasEvexEncoding(ins);
+        }
+    }
 }
 
 //------------------------------------------------------------------------
@@ -1585,6 +1597,12 @@ bool emitter::TakesRexWPrefix(const instrDesc* id) const
                 // TODO-Cleanup: This should really only ever be EA_4BYTE
                 assert((attr == EA_4BYTE) || (attr == EA_16BYTE));
                 return false;
+            }
+
+            case INS_gf2p8affineinvqb:
+            case INS_gf2p8affineqb:
+            {
+                return TakesVexPrefix(ins);
             }
 
             default:
@@ -19824,6 +19842,9 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_vpdpwssd:
         case INS_vpdpbusds:
         case INS_vpdpwssds:
+        case INS_gf2p8affineinvqb:
+        case INS_gf2p8affineqb:
+        case INS_gf2p8mulb:
             result.insThroughput = PERFSCORE_THROUGHPUT_2X;
             result.insLatency += PERFSCORE_LATENCY_5C;
             break;

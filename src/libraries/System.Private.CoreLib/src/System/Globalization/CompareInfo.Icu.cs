@@ -723,6 +723,13 @@ namespace System.Globalization
                 throw new ArgumentException(SR.Argument_InvalidFlag, nameof(options));
             }
 
+#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+            if (GlobalizationMode.Hybrid)
+            {
+                AssertComparisonSupported(options);
+            }
+#endif
+
             byte[] keyData;
             fixed (char* pSource = source)
             {
@@ -776,6 +783,11 @@ namespace System.Globalization
                     throw new PlatformNotSupportedException(GetPNSEWithReason("GetSortKey", "non-invariant culture"));
                 return InvariantGetSortKey(source, destination, options);
             }
+#elif TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+            if (GlobalizationMode.Hybrid)
+            {
+                AssertComparisonSupported(options);
+            }
 #endif
 
             // It's ok to pass nullptr (for empty buffers) to ICU's sort key routines.
@@ -826,6 +838,11 @@ namespace System.Globalization
                 if (!_isInvariantCulture)
                     throw new PlatformNotSupportedException(GetPNSEWithReason("GetSortKeyLength", "non-invariant culture"));
                 return InvariantGetSortKeyLength(source, options);
+            }
+#elif TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+            if (GlobalizationMode.Hybrid)
+            {
+                AssertComparisonSupported(options);
             }
 #endif
 
@@ -888,6 +905,11 @@ namespace System.Globalization
                 // JS cannot create locale-sensitive HashCode, use invaraint functions instead
                 ReadOnlySpan<char> sanitizedSource = SanitizeForInvariantHash(source, options);
                 return InvariantGetHashCode(sanitizedSource, options);
+            }
+#elif TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+            if (GlobalizationMode.Hybrid)
+            {
+                AssertComparisonSupported(options);
             }
 #endif
 

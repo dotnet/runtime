@@ -66,4 +66,11 @@ public enum DataType
     ILCodeVersioningState,
     NativeCodeVersionNode,
     ProfControlBlock,
+    ILCodeVersionNode,
+    ReadyToRunInfo,
+    ImageDataDirectory,
+    RuntimeFunction,
+    HashMap,
+    Bucket,
+    UnwindInfo,
 }

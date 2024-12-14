@@ -2962,9 +2962,6 @@ public:
             CORINFO_EE_INFO            *pEEInfoOut
             ) = 0;
 
-    // Returns name of the JIT timer log
-    virtual const char16_t *getJitTimeLogFilename() = 0;
-
     /*********************************************************************************/
     //
     // Diagnostic methods

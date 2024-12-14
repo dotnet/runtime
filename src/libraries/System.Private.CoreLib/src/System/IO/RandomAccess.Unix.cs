@@ -196,9 +196,10 @@ namespace System.IO
                     }
 
                     long bytesWritten;
-                    fixed (Interop.Sys.IOVector* pinnedVectors = &MemoryMarshal.GetReference(vectors))
+                    Span<Interop.Sys.IOVector> left = vectors.Slice(buffersOffset);
+                    fixed (Interop.Sys.IOVector* pinnedVectors = &MemoryMarshal.GetReference(left))
                     {
-                        bytesWritten = Interop.Sys.PWriteV(handle, pinnedVectors, buffersCount, fileOffset);
+                        bytesWritten = Interop.Sys.PWriteV(handle, pinnedVectors, buffersCount - buffersOffset, fileOffset);
                     }
 
                     FileStreamHelpers.CheckFileCall(bytesWritten, handle.Path);
@@ -208,6 +209,8 @@ namespace System.IO
                     }
 
                     // The write completed successfully but for fewer bytes than requested.
+                    // We need to perform next write where the previous one has finished.
+                    fileOffset += bytesWritten;
                     // We need to try again for the remainder.
                     for (int i = 0; i < buffersCount; i++)
                     {

@@ -1818,6 +1818,14 @@ FCIMPL2(MethodTable*, MethodTableNative::GetMethodTableMatchingParentClass, Meth
 }
 FCIMPLEND
 
+FCIMPL1(MethodTable*, MethodTableNative::InstantiationArg0, MethodTable* mt);
+{
+    FCALL_CONTRACT;
+
+    return mt->GetInstantiation()[0].AsMethodTable();
+}
+FCIMPLEND
+
 extern "C" BOOL QCALLTYPE MethodTable_AreTypesEquivalent(MethodTable* mta, MethodTable* mtb)
 {
     QCALL_CONTRACT;

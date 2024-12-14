@@ -1949,6 +1949,24 @@ int32_t SystemNative_PWrite(intptr_t fd, void* buffer, int32_t bufferSize, int64
     return (int32_t)count;
 }
 
+#if (HAVE_PREADV || HAVE_PWRITEV) && !defined(TARGET_WASM)
+static int GetAllowedVectorCount(int32_t vectorCount)
+{
+    int allowedCount = (int)vectorCount;
+
+#if defined(IOV_MAX)
+    if (IOV_MAX < allowedCount)
+    {
+        // We need to respect the limit of items that can be passed in iov.
+        // In case of writes, the managed code is reponsible for handling incomplete writes.
+        // In case of reads, we simply returns the number of bytes read and it's up to the users.
+        allowedCount = IOV_MAX;
+    }
+#endif
+    return allowedCount;
+}
+#endif // (HAVE_PREADV || HAVE_PWRITEV) && !defined(TARGET_WASM)
+
 int64_t SystemNative_PReadV(intptr_t fd, IOVector* vectors, int32_t vectorCount, int64_t fileOffset)
 {
     assert(vectors != NULL);
@@ -1957,7 +1975,8 @@ int64_t SystemNative_PReadV(intptr_t fd, IOVector* vectors, int32_t vectorCount,
     int64_t count = 0;
     int fileDescriptor = ToFileDescriptor(fd);
 #if HAVE_PREADV && !defined(TARGET_WASM) // preadv is buggy on WASM
-    while ((count = preadv(fileDescriptor, (struct iovec*)vectors, (int)vectorCount, (off_t)fileOffset)) < 0 && errno == EINTR);
+    int allowedVectorCount = GetAllowedVectorCount(vectorCount);
+    while ((count = preadv(fileDescriptor, (struct iovec*)vectors, allowedVectorCount, (off_t)fileOffset)) < 0 && errno == EINTR);
 #else
     int64_t current;
     for (int i = 0; i < vectorCount; i++)
@@ -1997,7 +2016,8 @@ int64_t SystemNative_PWriteV(intptr_t fd, IOVector* vectors, int32_t vectorCount
     int64_t count = 0;
     int fileDescriptor = ToFileDescriptor(fd);
 #if HAVE_PWRITEV && !defined(TARGET_WASM) // pwritev is buggy on WASM
-    while ((count = pwritev(fileDescriptor, (struct iovec*)vectors, (int)vectorCount, (off_t)fileOffset)) < 0 && errno == EINTR);
+    int allowedVectorCount = GetAllowedVectorCount(vectorCount);
+    while ((count = pwritev(fileDescriptor, (struct iovec*)vectors, allowedVectorCount, (off_t)fileOffset)) < 0 && errno == EINTR);
 #else
     int64_t current;
     for (int i = 0; i < vectorCount; i++)

@@ -275,7 +275,7 @@ class CCeeGen : public ICeeGenInternal {
     // Write the metadata in "emitter" to the default metadata section is "section" is 0
     // If 'section != 0, it will put the data in 'buffer'.  This
     // buffer is assumed to be in 'section' at 'offset' and of size 'buffLen'
-    // (should use GetSaveSize to insure that buffer is big enough
+    // (should use GetSaveSize to ensure that buffer is big enough
     virtual HRESULT emitMetaData(IMetaDataEmit *emitter,
                         CeeSection* section=0, DWORD offset=0, BYTE* buffer=0, unsigned buffLen=0);
     virtual HRESULT getMethodRVA(ULONG codeOffset, ULONG *codeRVA);

@@ -20,7 +20,6 @@ if(CLR_CMAKE_HOST_UNIX)
   add_compile_options(-nostdlib)
 
   if(CLR_CMAKE_TARGET_APPLE)
-    add_definitions(-D_XOPEN_SOURCE)
     add_definitions(-DFEATURE_OBJCMARSHAL)
   endif(CLR_CMAKE_TARGET_APPLE)
 

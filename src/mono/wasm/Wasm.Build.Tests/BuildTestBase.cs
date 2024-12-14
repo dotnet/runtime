@@ -650,8 +650,8 @@ namespace Wasm.Build.Tests
         }
 
         protected static string GetSkiaSharpReferenceItems()
-            => @"<PackageReference Include=""SkiaSharp"" Version=""2.88.6"" />
-                <PackageReference Include=""SkiaSharp.NativeAssets.WebAssembly"" Version=""2.88.6"" />
+            => @"<PackageReference Include=""SkiaSharp"" Version=""2.88.9-preview.2.2"" />
+                <PackageReference Include=""SkiaSharp.NativeAssets.WebAssembly"" Version=""2.88.9-preview.2.2"" />
                 <NativeFileReference Include=""$(SkiaSharpStaticLibraryPath)\3.1.56\st\*.a"" />";
 
         protected static string s_mainReturns42 = @"

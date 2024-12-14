@@ -365,22 +365,19 @@ The System.Text.Json library is built-in as part of the shared framework in .NET
     <Compile Include="$(CommonPath)System\Collections\Generic\EnumerableHelpers.cs" Link="Common\System\Collections\Generic\EnumerableHelpers.cs" />
     <Compile Include="$(LibrariesProjectRoot)System.Collections\src\System\Collections\Generic\OrderedDictionary.cs" Link="Common\System\Collections\Generic\OrderedDictionary.cs" />
     <Compile Include="$(LibrariesProjectRoot)System.Collections\src\System\Collections\ThrowHelper.cs" Link="Common\System\Collections\ThrowHelper.cs" />
-    
-    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\FeatureSwitchDefinitionAttribute.cs" />
-  </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and $([MSBuild]::VersionGreaterThanOrEquals('$(TargetFrameworkVersion)', '7.0'))">
-    <Compile Include="System\Text\Json\Serialization\Converters\Value\Int128Converter.cs" />
-    <Compile Include="System\Text\Json\Serialization\Converters\Value\UInt128Converter.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\FeatureSwitchDefinitionAttribute.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
     <Compile Include="System.Text.Json.Typeforwards.netcoreapp.cs" />
-    <Compile Include="System\Text\Json\Serialization\JsonSerializerOptionsUpdateHandler.cs" />
-    <Compile Include="System\Text\Json\Serialization\Converters\Value\DateOnlyConverter.cs" />
-    <Compile Include="System\Text\Json\Serialization\Converters\Value\TimeOnlyConverter.cs" />
-    <Compile Include="System\Text\Json\Serialization\Converters\Value\HalfConverter.cs" />
     <Compile Include="System\Text\Json\Reader\JsonReaderHelper.net8.cs" />
+    <Compile Include="System\Text\Json\Serialization\Converters\Value\DateOnlyConverter.cs" />
+    <Compile Include="System\Text\Json\Serialization\Converters\Value\HalfConverter.cs" />
+    <Compile Include="System\Text\Json\Serialization\Converters\Value\Int128Converter.cs" />
+    <Compile Include="System\Text\Json\Serialization\Converters\Value\TimeOnlyConverter.cs" />
+    <Compile Include="System\Text\Json\Serialization\Converters\Value\UInt128Converter.cs" />
+    <Compile Include="System\Text\Json\Serialization\JsonSerializerOptionsUpdateHandler.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
@@ -416,11 +413,11 @@ The System.Text.Json library is built-in as part of the shared framework in .NET
     <Reference Include="System.Text.RegularExpressions" />
     <Reference Include="System.Threading" />
   </ItemGroup>
-  
+
   <ItemGroup>
     <ProjectReference Include="$(LibrariesProjectRoot)System.Text.RegularExpressions\gen\System.Text.RegularExpressions.Generator.csproj" ReferenceOutputAssembly="false" SetTargetFramework="TargetFramework=netstandard2.0" OutputItemType="Analyzer" />
   </ItemGroup>
-  
+
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
     <PackageReference Include="System.Buffers" Version="$(SystemBuffersVersion)" />
     <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />

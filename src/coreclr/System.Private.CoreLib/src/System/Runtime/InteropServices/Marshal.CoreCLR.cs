@@ -22,6 +22,11 @@ namespace System.Runtime.InteropServices
         /// IUnknown is {00000000-0000-0000-C000-000000000046}
         /// </summary>
         internal static readonly Guid IID_IUnknown = new Guid(0, 0, 0, 0xC0, 0, 0, 0, 0, 0, 0, 0x46);
+
+        /// <summary>
+        /// IDispatch is {00020400-0000-0000-C000-000000000046}
+        /// </summary>
+        internal static readonly Guid IID_IDispatch = new Guid(0x00020400, 0, 0, 0xC0, 0, 0, 0, 0, 0, 0, 0x46);
 #endif //FEATURE_COMINTEROP
 
         internal static int SizeOfHelper(RuntimeType t, [MarshalAs(UnmanagedType.Bool)] bool throwIfNotMarshalable)

@@ -375,7 +375,7 @@ namespace System.Security.Cryptography.X509Certificates
 
             try
             {
-                foreach ((ReadOnlySpan<char> contents, PemFields fields) in new PemEnumerator(certPem))
+                foreach ((ReadOnlySpan<char> contents, PemFields fields) in PemEnumerator.Utf16(certPem))
                 {
                     ReadOnlySpan<char> label = contents[fields.Label];
 

@@ -1792,7 +1792,7 @@ namespace System.Threading.Tasks
         {
             //
             // WARNING: The Task/Task<TResult>/TaskCompletionSource classes
-            // have all been carefully crafted to insure that GetExceptions()
+            // have all been carefully crafted to ensure that GetExceptions()
             // is never called while AddException() is being called.  There
             // are locks taken on m_contingentProperties in several places:
             //
@@ -1804,7 +1804,7 @@ namespace System.Threading.Tasks
             //    is allowed to complete its operation before Task.Exception_get()
             //    can access GetExceptions().
             //
-            // -- Task.ThrowIfExceptional(): The lock insures that Wait() will
+            // -- Task.ThrowIfExceptional(): The lock ensures that Wait() will
             //    not attempt to call GetExceptions() while Task<TResult>.TrySetException()
             //    is in the process of calling AddException().
             //
@@ -3060,6 +3060,27 @@ namespace System.Threading.Tasks
             bool returnValue = SpinWait(millisecondsTimeout);
             if (!returnValue)
             {
+#if CORECLR
+                if (ThreadPoolWorkQueue.s_prioritizationExperiment)
+                {
+                    // We're about to block waiting for the task to complete, which is expensive, and if
+                    // the task being waited on depends on some other work to run, this thread could end up
+                    // waiting for some other thread to do work. If the two threads are part of the same scheduler,
+                    // such as the thread pool, that could lead to a (temporary) deadlock. This is made worse by
+                    // it also leading to a possible priority inversion on previously queued work. Each thread in
+                    // the thread pool has a local queue. A key motivator for this local queue is it allows this
+                    // thread to create work items that it will then prioritize above all other work in the
+                    // pool. However, while this thread makes its own local queue the top priority, that queue is
+                    // every other thread's lowest priority. If this thread blocks, all of its created work that's
+                    // supposed to be high priority becomes low priority, and work that's typically part of a
+                    // currently in-flight operation gets deprioritized relative to new requests coming into the
+                    // pool, which can lead to the whole system slowing down or even deadlocking. To address that,
+                    // just before we block, we move all local work into a global queue, so that it's at least
+                    // prioritized by other threads more fairly with respect to other work.
+                    ThreadPoolWorkQueue.TransferAllLocalWorkItemsToHighPriorityGlobalQueue();
+                }
+#endif
+
                 var mres = new SetOnInvokeMres();
                 try
                 {

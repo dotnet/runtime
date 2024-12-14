@@ -95,6 +95,10 @@ struct _InterpInst {
 	guint16 data [MONO_ZERO_LEN_ARRAY];
 };
 
+#define BB_STATE_NOT_EMITTED 0
+#define BB_STATE_EMITTING 1
+#define BB_STATE_EMITTED 2
+
 struct _InterpBasicBlock {
 	int il_offset;
 	GSList *seq_points;
@@ -151,6 +155,7 @@ struct _InterpBasicBlock {
 	SeqPoint **pred_seq_points;
 	guint num_pred_seq_points;
 
+	guint emit_state : 2;
 	guint reachable : 1;
 	// This block has special semantics and it shouldn't be optimized away
 	guint preserve : 1;

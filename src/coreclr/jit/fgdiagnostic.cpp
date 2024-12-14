@@ -56,7 +56,7 @@ void Compiler::fgPrintEdgeWeights()
 
 #ifdef DEBUG
 
-void Compiler::fgDebugCheckUpdate(const bool doAggressiveCompaction)
+void Compiler::fgDebugCheckUpdate()
 {
     if (!compStressCompile(STRESS_CHK_FLOW_UPDATE, 30))
     {
@@ -139,7 +139,7 @@ void Compiler::fgDebugCheckUpdate(const bool doAggressiveCompaction)
 
         /* no un-compacted blocks */
 
-        if (fgCanCompactBlock(block) && (doAggressiveCompaction || block->JumpsToNext()))
+        if (fgCanCompactBlock(block))
         {
             noway_assert(!"Found un-compacted blocks!");
         }
@@ -365,24 +365,6 @@ void Compiler::fgDumpTree(FILE* fgxFile, GenTree* const tree)
     }
 }
 
-#ifdef DEBUG
-namespace
-{
-const char* ConvertToUtf8(LPCWSTR wideString, CompAllocator& allocator)
-{
-    int utf8Len = WideCharToMultiByte(CP_UTF8, 0, wideString, -1, nullptr, 0, nullptr, nullptr);
-    if (utf8Len == 0)
-        return nullptr;
-
-    char* alloc = (char*)allocator.allocate<char>(utf8Len);
-    if (0 == WideCharToMultiByte(CP_UTF8, 0, wideString, -1, alloc, utf8Len, nullptr, nullptr))
-        return nullptr;
-
-    return alloc;
-}
-} // namespace
-#endif
-
 //------------------------------------------------------------------------
 // fgOpenFlowGraphFile: Open a file to dump either the xml or dot format flow graph
 //
@@ -429,10 +411,10 @@ FILE* Compiler::fgOpenFlowGraphFile(bool* wbDontClose, Phases phase, PhasePositi
     dumpFunction = JitConfig.JitDumpFg().contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args);
 
     CompAllocator allocator = getAllocatorDebugOnly();
-    filename                = ConvertToUtf8(JitConfig.JitDumpFgFile(), allocator);
-    pathname                = ConvertToUtf8(JitConfig.JitDumpFgDir(), allocator);
-    prePhasePattern         = ConvertToUtf8(JitConfig.JitDumpFgPrePhase(), allocator);
-    postPhasePattern        = ConvertToUtf8(JitConfig.JitDumpFgPhase(), allocator);
+    filename                = JitConfig.JitDumpFgFile();
+    pathname                = JitConfig.JitDumpFgDir();
+    prePhasePattern         = JitConfig.JitDumpFgPrePhase();
+    postPhasePattern        = JitConfig.JitDumpFgPhase();
 #endif // DEBUG
 
     if (!dumpFunction)
@@ -582,7 +564,7 @@ FILE* Compiler::fgOpenFlowGraphFile(bool* wbDontClose, Phases phase, PhasePositi
             sprintf_s((char*)filename, charCount, FILENAME_PATTERN, escapedString, phasePositionString, phaseName,
                       tierName, type);
         }
-        fgxFile = fopen(filename, "wx"); // Open the file for writing only only if it doesn't already exist
+        fgxFile = fopen_utf8(filename, "wx"); // Open the file for writing only only if it doesn't already exist
         if (fgxFile == nullptr)
         {
             // This filename already exists, so create a different one by appending ~2, ~3, etc...
@@ -598,7 +580,7 @@ FILE* Compiler::fgOpenFlowGraphFile(bool* wbDontClose, Phases phase, PhasePositi
                     sprintf_s((char*)filename, charCount, FILENAME_PATTERN_WITH_NUMBER, escapedString,
                               phasePositionString, phaseName, tierName, i, type);
                 }
-                fgxFile = fopen(filename, "wx"); // Open the file for writing only only if it doesn't already exist
+                fgxFile = fopen_utf8(filename, "wx"); // Open the file for writing only only if it doesn't already exist
                 if (fgxFile != nullptr)
                 {
                     break;
@@ -639,7 +621,7 @@ FILE* Compiler::fgOpenFlowGraphFile(bool* wbDontClose, Phases phase, PhasePositi
         {
             sprintf_s((char*)filename, charCount, "%s.%s", origFilename, type);
         }
-        fgxFile      = fopen(filename, "a+");
+        fgxFile      = fopen_utf8(filename, "a+");
         *wbDontClose = false;
     }
 

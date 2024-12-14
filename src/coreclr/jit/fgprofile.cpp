@@ -821,8 +821,8 @@ void Compiler::WalkSpanningTree(SpanningTreeVisitor* visitor)
 {
     // We will track visited or queued nodes with a bit vector.
     //
-    EnsureBasicBlockEpoch();
-    BlockSet marked = BlockSetOps::MakeEmpty(this);
+    BitVecTraits traits(compBasicBlockID, this);
+    BitVec       marked = BitVecOps::MakeEmpty(&traits);
 
     // And nodes to visit with a bit vector and stack.
     //
@@ -834,7 +834,7 @@ void Compiler::WalkSpanningTree(SpanningTreeVisitor* visitor)
     // Bit vector to track progress through those successors.
     //
     ArrayStack<BasicBlock*> scratch(getAllocator(CMK_Pgo));
-    BlockSet                processed = BlockSetOps::MakeEmpty(this);
+    BitVec                  processed = BitVecOps::MakeEmpty(&traits);
 
     // Push the method entry and all EH handler region entries on the stack.
     // (push method entry last so it's visited first).
@@ -852,18 +852,18 @@ void Compiler::WalkSpanningTree(SpanningTreeVisitor* visitor)
         {
             BasicBlock* hndBegBB = HBtab->ebdHndBeg;
             stack.Push(hndBegBB);
-            BlockSetOps::AddElemD(this, marked, hndBegBB->bbNum);
+            BitVecOps::AddElemD(&traits, marked, hndBegBB->bbID);
             if (HBtab->HasFilter())
             {
                 BasicBlock* filterBB = HBtab->ebdFilter;
                 stack.Push(filterBB);
-                BlockSetOps::AddElemD(this, marked, filterBB->bbNum);
+                BitVecOps::AddElemD(&traits, marked, filterBB->bbID);
             }
         }
     }
 
     stack.Push(fgFirstBB);
-    BlockSetOps::AddElemD(this, marked, fgFirstBB->bbNum);
+    BitVecOps::AddElemD(&traits, marked, fgFirstBB->bbID);
 
     unsigned nBlocks = 0;
 
@@ -873,7 +873,7 @@ void Compiler::WalkSpanningTree(SpanningTreeVisitor* visitor)
 
         // Visit the block.
         //
-        assert(BlockSetOps::IsMember(this, marked, block->bbNum));
+        assert(BitVecOps::IsMember(&traits, marked, block->bbID));
         visitor->VisitBlock(block);
         nBlocks++;
 
@@ -896,10 +896,10 @@ void Compiler::WalkSpanningTree(SpanningTreeVisitor* visitor)
                     // This block should be the only pred of the continuation.
                     //
                     BasicBlock* const target = block->Next();
-                    assert(!BlockSetOps::IsMember(this, marked, target->bbNum));
+                    assert(!BitVecOps::IsMember(&traits, marked, target->bbID));
                     visitor->VisitTreeEdge(block, target);
                     stack.Push(target);
-                    BlockSetOps::AddElemD(this, marked, target->bbNum);
+                    BitVecOps::AddElemD(&traits, marked, target->bbID);
                 }
             }
             break;
@@ -928,7 +928,7 @@ void Compiler::WalkSpanningTree(SpanningTreeVisitor* visitor)
                 // profiles for methods that throw lots of exceptions.
                 //
                 BasicBlock* const target = fgFirstBB;
-                assert(BlockSetOps::IsMember(this, marked, target->bbNum));
+                assert(BitVecOps::IsMember(&traits, marked, target->bbID));
                 visitor->VisitNonTreeEdge(block, target, SpanningTreeVisitor::EdgeKind::Pseudo);
             }
             break;
@@ -967,7 +967,7 @@ void Compiler::WalkSpanningTree(SpanningTreeVisitor* visitor)
                     }
                     else
                     {
-                        if (BlockSetOps::IsMember(this, marked, target->bbNum))
+                        if (BitVecOps::IsMember(&traits, marked, target->bbID))
                         {
                             visitor->VisitNonTreeEdge(block, target,
                                                       SpanningTreeVisitor::EdgeKind::PostdominatesSource);
@@ -976,7 +976,7 @@ void Compiler::WalkSpanningTree(SpanningTreeVisitor* visitor)
                         {
                             visitor->VisitTreeEdge(block, target);
                             stack.Push(target);
-                            BlockSetOps::AddElemD(this, marked, target->bbNum);
+                            BitVecOps::AddElemD(&traits, marked, target->bbID);
                         }
                     }
                 }
@@ -985,7 +985,7 @@ void Compiler::WalkSpanningTree(SpanningTreeVisitor* visitor)
                     // Pseudo-edge back to handler entry.
                     //
                     BasicBlock* const target = dsc->ebdHndBeg;
-                    assert(BlockSetOps::IsMember(this, marked, target->bbNum));
+                    assert(BitVecOps::IsMember(&traits, marked, target->bbID));
                     visitor->VisitNonTreeEdge(block, target, SpanningTreeVisitor::EdgeKind::Pseudo);
                 }
             }
@@ -1016,7 +1016,7 @@ void Compiler::WalkSpanningTree(SpanningTreeVisitor* visitor)
                     // Not a fork. Just visit the sole successor.
                     //
                     BasicBlock* const target = block->GetSucc(0, this);
-                    if (BlockSetOps::IsMember(this, marked, target->bbNum))
+                    if (BitVecOps::IsMember(&traits, marked, target->bbID))
                     {
                         // We can't instrument in the call finally pair tail block
                         // so treat this as a critical edge.
@@ -1030,7 +1030,7 @@ void Compiler::WalkSpanningTree(SpanningTreeVisitor* visitor)
                     {
                         visitor->VisitTreeEdge(block, target);
                         stack.Push(target);
-                        BlockSetOps::AddElemD(this, marked, target->bbNum);
+                        BitVecOps::AddElemD(&traits, marked, target->bbID);
                     }
                 }
                 else
@@ -1046,7 +1046,7 @@ void Compiler::WalkSpanningTree(SpanningTreeVisitor* visitor)
                     // edges from non-rare to rare be non-tree edges.
                     //
                     scratch.Reset();
-                    BlockSetOps::ClearD(this, processed);
+                    BitVecOps::ClearD(&traits, processed);
 
                     for (unsigned i = 0; i < numSucc; i++)
                     {
@@ -1060,7 +1060,7 @@ void Compiler::WalkSpanningTree(SpanningTreeVisitor* visitor)
                     {
                         BasicBlock* const target = scratch.Top(i);
 
-                        if (BlockSetOps::IsMember(this, processed, i))
+                        if (BitVecOps::IsMember(&traits, processed, i))
                         {
                             continue;
                         }
@@ -1070,9 +1070,9 @@ void Compiler::WalkSpanningTree(SpanningTreeVisitor* visitor)
                             continue;
                         }
 
-                        BlockSetOps::AddElemD(this, processed, i);
+                        BitVecOps::AddElemD(&traits, processed, i);
 
-                        if (BlockSetOps::IsMember(this, marked, target->bbNum))
+                        if (BitVecOps::IsMember(&traits, marked, target->bbID))
                         {
                             visitor->VisitNonTreeEdge(block, target,
                                                       target->bbRefs > 1
@@ -1083,7 +1083,7 @@ void Compiler::WalkSpanningTree(SpanningTreeVisitor* visitor)
                         {
                             visitor->VisitTreeEdge(block, target);
                             stack.Push(target);
-                            BlockSetOps::AddElemD(this, marked, target->bbNum);
+                            BitVecOps::AddElemD(&traits, marked, target->bbID);
                         }
                     }
 
@@ -1093,7 +1093,7 @@ void Compiler::WalkSpanningTree(SpanningTreeVisitor* visitor)
                     {
                         BasicBlock* const target = scratch.Top(i);
 
-                        if (BlockSetOps::IsMember(this, processed, i))
+                        if (BitVecOps::IsMember(&traits, processed, i))
                         {
                             continue;
                         }
@@ -1103,9 +1103,9 @@ void Compiler::WalkSpanningTree(SpanningTreeVisitor* visitor)
                             continue;
                         }
 
-                        BlockSetOps::AddElemD(this, processed, i);
+                        BitVecOps::AddElemD(&traits, processed, i);
 
-                        if (BlockSetOps::IsMember(this, marked, target->bbNum))
+                        if (BitVecOps::IsMember(&traits, marked, target->bbID))
                         {
                             visitor->VisitNonTreeEdge(block, target, SpanningTreeVisitor::EdgeKind::DominatesTarget);
                         }
@@ -1113,7 +1113,7 @@ void Compiler::WalkSpanningTree(SpanningTreeVisitor* visitor)
                         {
                             visitor->VisitTreeEdge(block, target);
                             stack.Push(target);
-                            BlockSetOps::AddElemD(this, marked, target->bbNum);
+                            BitVecOps::AddElemD(&traits, marked, target->bbID);
                         }
                     }
 
@@ -1123,14 +1123,14 @@ void Compiler::WalkSpanningTree(SpanningTreeVisitor* visitor)
                     {
                         BasicBlock* const target = scratch.Top(i);
 
-                        if (BlockSetOps::IsMember(this, processed, i))
+                        if (BitVecOps::IsMember(&traits, processed, i))
                         {
                             continue;
                         }
 
-                        BlockSetOps::AddElemD(this, processed, i);
+                        BitVecOps::AddElemD(&traits, processed, i);
 
-                        if (BlockSetOps::IsMember(this, marked, target->bbNum))
+                        if (BitVecOps::IsMember(&traits, marked, target->bbID))
                         {
                             visitor->VisitNonTreeEdge(block, target, SpanningTreeVisitor::EdgeKind::CriticalEdge);
                         }
@@ -1138,13 +1138,13 @@ void Compiler::WalkSpanningTree(SpanningTreeVisitor* visitor)
                         {
                             visitor->VisitTreeEdge(block, target);
                             stack.Push(target);
-                            BlockSetOps::AddElemD(this, marked, target->bbNum);
+                            BitVecOps::AddElemD(&traits, marked, target->bbID);
                         }
                     }
 
                     // Verify we processed each successor.
                     //
-                    assert(numSucc == BlockSetOps::Count(this, processed));
+                    assert(numSucc == BitVecOps::Count(&traits, processed));
                 }
             }
             break;
@@ -1155,7 +1155,7 @@ void Compiler::WalkSpanningTree(SpanningTreeVisitor* visitor)
     //
     for (BasicBlock* const block : Blocks())
     {
-        if (!BlockSetOps::IsMember(this, marked, block->bbNum))
+        if (!BitVecOps::IsMember(&traits, marked, block->bbID))
         {
             visitor->VisitBlock(block);
         }

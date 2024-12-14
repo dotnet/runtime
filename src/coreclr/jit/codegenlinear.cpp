@@ -2678,7 +2678,7 @@ void CodeGen::genEmitterUnitTests()
         return;
     }
 
-    const WCHAR* unitTestSection = JitConfig.JitEmitUnitTestsSections();
+    const char* unitTestSection = JitConfig.JitEmitUnitTestsSections();
 
     if (unitTestSection == nullptr)
     {
@@ -2695,26 +2695,30 @@ void CodeGen::genEmitterUnitTests()
     // Add NOPs at the start and end for easier script parsing.
     instGen(INS_nop);
 
-    bool unitTestSectionAll = (u16_strstr(unitTestSection, W("all")) != nullptr);
+    bool unitTestSectionAll = (strstr(unitTestSection, "all") != nullptr);
 
 #if defined(TARGET_AMD64)
-    if (unitTestSectionAll || (u16_strstr(unitTestSection, W("sse2")) != nullptr))
+    if (unitTestSectionAll || (strstr(unitTestSection, "sse2") != nullptr))
     {
         genAmd64EmitterUnitTestsSse2();
     }
 
 #elif defined(TARGET_ARM64)
-    if (unitTestSectionAll || (u16_strstr(unitTestSection, W("general")) != nullptr))
+    if (unitTestSectionAll || (strstr(unitTestSection, "general") != nullptr))
     {
         genArm64EmitterUnitTestsGeneral();
     }
-    if (unitTestSectionAll || (u16_strstr(unitTestSection, W("advsimd")) != nullptr))
+    if (unitTestSectionAll || (strstr(unitTestSection, "advsimd") != nullptr))
     {
         genArm64EmitterUnitTestsAdvSimd();
     }
-    if (unitTestSectionAll || (u16_strstr(unitTestSection, W("sve")) != nullptr))
+    if (unitTestSectionAll || (strstr(unitTestSection, "sve") != nullptr))
     {
         genArm64EmitterUnitTestsSve();
+    }
+    if (unitTestSectionAll || (strstr(unitTestSection, "pac") != nullptr))
+    {
+        genArm64EmitterUnitTestsPac();
     }
 #endif
 

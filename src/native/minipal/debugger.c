@@ -17,27 +17,43 @@
 
 #if defined(_WIN32)
 #include <windows.h>
+#define MINIPAL_DEBUGGER_PRESENT_CHECK
 #elif defined(__linux__)
 #include <stdio.h>
+#define MINIPAL_DEBUGGER_PRESENT_CHECK
 #elif defined(__APPLE__) || defined(__FreeBSD__)
 #include <sys/sysctl.h>
 #include <sys/types.h>
+#define MINIPAL_DEBUGGER_PRESENT_CHECK
 #elif defined(__NetBSD__)
 #include <kvm.h>
 #include <sys/param.h>
 #include <sys/sysctl.h>
 #include <sys/proc.h>
+#define MINIPAL_DEBUGGER_PRESENT_CHECK
 #elif defined(__sun)
 #include <fcntl.h>
 #include <procfs.h>
 #include <errno.h>
+#define MINIPAL_DEBUGGER_PRESENT_CHECK
 #elif defined(_AIX)
 #include <sys/proc.h>
 #include <sys/types.h>
 #include <sys/procfs.h>
+#define MINIPAL_DEBUGGER_PRESENT_CHECK
 #elif defined(__HAIKU__)
 #include <OS.h>
+#define MINIPAL_DEBUGGER_PRESENT_CHECK
 #endif
+
+bool minipal_can_check_for_native_debugger(void)
+{
+#if defined(MINIPAL_DEBUGGER_PRESENT_CHECK)
+    return true;
+#else
+    return false;
+#endif
+}
 
 bool minipal_is_native_debugger_present(void)
 {

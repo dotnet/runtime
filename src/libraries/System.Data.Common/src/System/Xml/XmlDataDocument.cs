@@ -18,6 +18,7 @@ namespace System.Xml
     /// </summary>
     [Obsolete("XmlDataDocument has been deprecated and is not supported.")]
     [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
+    [RequiresDynamicCode(DataSet.RequiresDynamicCodeMessage)]
     public class XmlDataDocument : XmlDocument
     {
         private DataSet _dataSet;

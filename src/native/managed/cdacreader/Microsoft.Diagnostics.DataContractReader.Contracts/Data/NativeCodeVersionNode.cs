@@ -15,10 +15,14 @@ internal sealed class NativeCodeVersionNode : IData<NativeCodeVersionNode>
         Next = target.ReadPointer(address + (ulong)type.Fields[nameof(Next)].Offset);
         MethodDesc = target.ReadPointer(address + (ulong)type.Fields[nameof(MethodDesc)].Offset);
         NativeCode = target.ReadCodePointer(address + (ulong)type.Fields[nameof(NativeCode)].Offset);
+        Flags = target.Read<uint>(address + (ulong)type.Fields[nameof(Flags)].Offset);
+        ILVersionId = target.ReadNUInt(address + (ulong)type.Fields[nameof(ILVersionId)].Offset);
     }
 
     public TargetPointer Next { get; init; }
     public TargetPointer MethodDesc { get; init; }
 
     public TargetCodePointer NativeCode { get; init; }
+    public uint Flags{ get; init; }
+    public TargetNUInt ILVersionId { get; init; }
 }

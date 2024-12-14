@@ -15,9 +15,9 @@ export function mono_wasm_compare_string (culture: number, cultureLength: number
         const cultureName = runtimeHelpers.utf16ToString(<any>culture, <any>(culture + 2 * cultureLength));
         const string1 = runtimeHelpers.utf16ToString(<any>str1, <any>(str1 + 2 * str1Length));
         const string2 = runtimeHelpers.utf16ToString(<any>str2, <any>(str2 + 2 * str2Length));
-        const casePicker = (options & 0x1f);
+        const compareOptions = (options & 0x3f);
         const locale = cultureName ? cultureName : undefined;
-        const result = compareStrings(string1, string2, locale, casePicker);
+        const result = compareStrings(string1, string2, locale, compareOptions);
         runtimeHelpers.setI32(resultPtr, result);
         return VoidPtrNull;
     } catch (ex: any) {
@@ -43,7 +43,7 @@ export function mono_wasm_starts_with (culture: number, cultureLength: number, s
         }
         const sourceOfPrefixLength = source.slice(0, prefix.length);
 
-        const casePicker = (options & 0x1f);
+        const casePicker = (options & 0x3f);
         const locale = cultureName ? cultureName : undefined;
         const cmpResult = compareStrings(sourceOfPrefixLength, prefix, locale, casePicker);
         const result = cmpResult === 0 ? 1 : 0; // equals ? true : false
@@ -72,7 +72,7 @@ export function mono_wasm_ends_with (culture: number, cultureLength: number, str
         }
         const sourceOfSuffixLength = source.slice(diff, source.length);
 
-        const casePicker = (options & 0x1f);
+        const casePicker = (options & 0x3f);
         const locale = cultureName ? cultureName : undefined;
         const cmpResult = compareStrings(sourceOfSuffixLength, suffix, locale, casePicker);
         const result = cmpResult === 0 ? 1 : 0; // equals ? true : false
@@ -101,7 +101,7 @@ export function mono_wasm_index_of (culture: number, cultureLength: number, need
         }
         const cultureName = runtimeHelpers.utf16ToString(<any>culture, <any>(culture + 2 * cultureLength));
         const locale = cultureName ? cultureName : undefined;
-        const casePicker = (options & 0x1f);
+        const casePicker = (options & 0x3f);
         let result = -1;
 
         const graphemeSegmenter = graphemeSegmenterCached || (graphemeSegmenterCached = new GraphemeSegmenter());
@@ -152,53 +152,60 @@ export function mono_wasm_index_of (culture: number, cultureLength: number, need
     }
 }
 
-function compareStrings (string1: string, string2: string, locale: string | undefined, casePicker: number): number {
-    switch (casePicker) {
+function compareStrings (string1: string, string2: string, locale: string | undefined, compareOptions: number): number {
+    let options: Intl.CollatorOptions | undefined = undefined;
+
+    const numericOrderingFlag = 0x20;
+    if (compareOptions & numericOrderingFlag) {
+        options = { numeric: true };
+    }
+
+    switch (compareOptions & (~numericOrderingFlag)) {
         case 0:
             // 0: None - default algorithm for the platform OR
             //    StringSort - for ICU it gives the same result as None, see: https://github.com/dotnet/dotnet-api-docs/issues
             //    does not work for "ja"
             if (locale && locale.split("-")[0] === "ja")
                 return COMPARISON_ERROR;
-            return string1.localeCompare(string2, locale); // a ≠ b, a ≠ á, a ≠ A
+            return string1.localeCompare(string2, locale, options); // a ≠ b, a ≠ á, a ≠ A
         case 8:
             // 8: IgnoreKanaType works only for "ja"
             if (locale && locale.split("-")[0] !== "ja")
                 return COMPARISON_ERROR;
-            return string1.localeCompare(string2, locale); // a ≠ b, a ≠ á, a ≠ A
+            return string1.localeCompare(string2, locale, options); // a ≠ b, a ≠ á, a ≠ A
         case 1:
             // 1: IgnoreCase
             string1 = string1.toLocaleLowerCase(locale);
             string2 = string2.toLocaleLowerCase(locale);
-            return string1.localeCompare(string2, locale); // a ≠ b, a ≠ á, a ≠ A
+            return string1.localeCompare(string2, locale, options); // a ≠ b, a ≠ á, a ≠ A
         case 4:
         case 12:
             // 4: IgnoreSymbols
             // 12: IgnoreKanaType | IgnoreSymbols
-            return string1.localeCompare(string2, locale, { ignorePunctuation: true }); // by default ignorePunctuation: false
+            return string1.localeCompare(string2, locale, { ignorePunctuation: true, ...options }); // by default ignorePunctuation: false
         case 5:
             // 5: IgnoreSymbols | IgnoreCase
             string1 = string1.toLocaleLowerCase(locale);
             string2 = string2.toLocaleLowerCase(locale);
-            return string1.localeCompare(string2, locale, { ignorePunctuation: true }); // a ≠ b, a ≠ á, a ≠ A
+            return string1.localeCompare(string2, locale, { ignorePunctuation: true, ...options }); // a ≠ b, a ≠ á, a ≠ A
         case 9:
             // 9: IgnoreKanaType | IgnoreCase
-            return string1.localeCompare(string2, locale, { sensitivity: "accent" }); // a ≠ b, a ≠ á, a = A
+            return string1.localeCompare(string2, locale, { sensitivity: "accent", ...options }); // a ≠ b, a ≠ á, a = A
         case 10:
             // 10: IgnoreKanaType | IgnoreNonSpace
-            return string1.localeCompare(string2, locale, { sensitivity: "case" }); // a ≠ b, a = á, a ≠ A
+            return string1.localeCompare(string2, locale, { sensitivity: "case", ...options }); // a ≠ b, a = á, a ≠ A
         case 11:
             // 11: IgnoreKanaType | IgnoreNonSpace | IgnoreCase
-            return string1.localeCompare(string2, locale, { sensitivity: "base" }); // a ≠ b, a = á, a = A
+            return string1.localeCompare(string2, locale, { sensitivity: "base", ...options }); // a ≠ b, a = á, a = A
         case 13:
             // 13: IgnoreKanaType | IgnoreCase | IgnoreSymbols
-            return string1.localeCompare(string2, locale, { sensitivity: "accent", ignorePunctuation: true }); // a ≠ b, a ≠ á, a = A
+            return string1.localeCompare(string2, locale, { sensitivity: "accent", ignorePunctuation: true, ...options }); // a ≠ b, a ≠ á, a = A
         case 14:
             // 14: IgnoreKanaType | IgnoreSymbols | IgnoreNonSpace
-            return string1.localeCompare(string2, locale, { sensitivity: "case", ignorePunctuation: true });// a ≠ b, a = á, a ≠ A
+            return string1.localeCompare(string2, locale, { sensitivity: "case", ignorePunctuation: true, ...options });// a ≠ b, a = á, a ≠ A
         case 15:
             // 15: IgnoreKanaType | IgnoreSymbols | IgnoreNonSpace | IgnoreCase
-            return string1.localeCompare(string2, locale, { sensitivity: "base", ignorePunctuation: true }); // a ≠ b, a = á, a = A
+            return string1.localeCompare(string2, locale, { sensitivity: "base", ignorePunctuation: true, ...options }); // a ≠ b, a = á, a = A
         case 2:
         case 3:
         case 6:
@@ -240,7 +247,7 @@ function compareStrings (string1: string, string2: string, locale: string | unde
             // 29: IgnoreKanaType | IgnoreWidth | IgnoreSymbols | IgnoreCase
             // 30: IgnoreKanaType | IgnoreWidth | IgnoreSymbols | IgnoreNonSpace
             // 31: IgnoreKanaType | IgnoreWidth | IgnoreSymbols | IgnoreNonSpace | IgnoreCase
-            throw new Error(`Invalid comparison option. Option=${casePicker}`);
+            throw new Error(`Invalid comparison option. Option=${compareOptions}`);
     }
 }
 

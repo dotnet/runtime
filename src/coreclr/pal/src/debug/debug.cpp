@@ -32,7 +32,6 @@ SET_DEFAULT_DEBUG_CHANNEL(DEBUG); // some headers have code with asserts, so do 
 #include "pal/context.h"
 #include "pal/debug.h"
 #include "pal/environ.h"
-#include "pal/malloc.hpp"
 #include "pal/module.h"
 #include "pal/stackstring.hpp"
 #include "pal/virtual.h"

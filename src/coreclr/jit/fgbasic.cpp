@@ -4945,7 +4945,7 @@ BasicBlock* Compiler::fgSplitEdge(BasicBlock* curr, BasicBlock* succ)
 
 // Removes the block from the bbPrev/bbNext chain
 // Updates fgFirstBB and fgLastBB if necessary
-// Does not update fgFirstFuncletBB or fgFirstColdBlock (fgUnlinkRange does)
+// Does not update fgFirstFuncletBB
 void Compiler::fgUnlinkBlock(BasicBlock* block)
 {
     if (block->IsFirst())
@@ -5006,6 +5006,9 @@ void Compiler::fgUnlinkRange(BasicBlock* bBeg, BasicBlock* bEnd)
     assert(bBeg != nullptr);
     assert(bEnd != nullptr);
 
+    // We shouldn't be churning the flowgraph after doing hot/cold splitting
+    assert(fgFirstColdBlock == nullptr);
+
     BasicBlock* bPrev = bBeg->Prev();
     assert(bPrev != nullptr); // Can't unlink a range starting with the first block
 
@@ -5018,12 +5021,6 @@ void Compiler::fgUnlinkRange(BasicBlock* bBeg, BasicBlock* bEnd)
     else
     {
         bPrev->SetNext(bEnd->Next());
-    }
-
-    // If bEnd was the first Cold basic block update fgFirstColdBlock
-    if (bEnd->IsFirstColdBlock(this))
-    {
-        fgFirstColdBlock = bPrev->Next();
     }
 
 #ifdef DEBUG
@@ -5056,6 +5053,9 @@ BasicBlock* Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
 {
     assert(block != nullptr);
 
+    // We shouldn't churn the flowgraph after doing hot/cold splitting
+    assert(fgFirstColdBlock == nullptr);
+
     JITDUMP("fgRemoveBlock " FMT_BB ", unreachable=%s\n", block->bbNum, dspBool(unreachable));
 
     BasicBlock* bPrev = block->Prev();
@@ -5077,12 +5077,6 @@ BasicBlock* Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
         if (block == fgFirstFuncletBB)
         {
             fgFirstFuncletBB = block->Next();
-        }
-
-        // If this is the first Cold basic block update fgFirstColdBlock
-        if (block->IsFirstColdBlock(this))
-        {
-            fgFirstColdBlock = block->Next();
         }
 
         // A BBJ_CALLFINALLY is usually paired with a BBJ_CALLFINALLYRET.
@@ -5139,12 +5133,6 @@ BasicBlock* Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
             // It looks like `block` is the source of a back edge of a loop, and once we remove `block` the
             // loop will still exist because we'll move the edge to `bPrev`. So, don't unscale the loop blocks.
             skipUnmarkLoop = true;
-        }
-
-        // If this is the first Cold basic block update fgFirstColdBlock
-        if (block->IsFirstColdBlock(this))
-        {
-            fgFirstColdBlock = block->Next();
         }
 
         // Update fgFirstFuncletBB if necessary
@@ -5398,30 +5386,6 @@ bool Compiler::fgRenumberBlocks()
     else
     {
         JITDUMP("=============== No blocks renumbered!\n");
-    }
-
-    // Now update the BlockSet epoch, which depends on the block numbers.
-    // If any blocks have been renumbered then create a new BlockSet epoch.
-    // Even if we have not renumbered any blocks, we might still need to force
-    // a new BlockSet epoch, for one of several reasons. If there are any new
-    // blocks with higher numbers than the former maximum numbered block, then we
-    // need a new epoch with a new size matching the new largest numbered block.
-    // Also, if the number of blocks is different from the last time we set the
-    // BlockSet epoch, then we need a new epoch. This wouldn't happen if we
-    // renumbered blocks after every block addition/deletion, but it might be
-    // the case that we can change the number of blocks, then set the BlockSet
-    // epoch without renumbering, then change the number of blocks again, then
-    // renumber.
-    if (renumbered || newMaxBBNum)
-    {
-        NewBasicBlockEpoch();
-
-        // The key in the unique switch successor map is dependent on the block number, so invalidate that cache.
-        InvalidateUniqueSwitchSuccMap();
-    }
-    else
-    {
-        EnsureBasicBlockEpoch();
     }
 
     // Tell our caller if any blocks actually were renumbered.

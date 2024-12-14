@@ -43,9 +43,6 @@ PhaseStatus Compiler::fgMorphInit()
         // compLocallocUsed            = true;
     }
 
-    // Initialize the BlockSet epoch
-    NewBasicBlockEpoch();
-
     fgAvailableOutgoingArgTemps = hashBv::Create(this);
 
     // Insert call to class constructor as the first basic block if
@@ -3405,7 +3402,7 @@ void Compiler::fgMoveOpsLeft(GenTree* tree)
         }
 
         // Check for GTF_ADDRMODE_NO_CSE flag on add/mul Binary Operators
-        if (((oper == GT_ADD) || (oper == GT_MUL)) && ((tree->gtFlags & GTF_ADDRMODE_NO_CSE) != 0))
+        if (tree->IsPartOfAddressMode())
         {
             return;
         }
@@ -7541,8 +7538,7 @@ GenTreeOp* Compiler::fgMorphCommutative(GenTreeOp* tree)
     {
         // Since 'tree->gtGetOp1()' can have complex structure (e.g. COMMA(..(COMMA(..,op1)))
         // don't run the optimization for such trees outside of global morph.
-        // Otherwise, there is a chance of violating VNs invariants and/or modifying a tree
-        // that is an active CSE candidate.
+        // Otherwise, there is a chance of violating VNs invariants.
         return nullptr;
     }
 
@@ -8398,7 +8394,6 @@ DONE_MORPHING_CHILDREN:
 
         case GT_EQ:
         case GT_NE:
-            // It is not safe to reorder/delete CSE's
             if (op2->IsIntegralConst())
             {
                 tree = fgOptimizeEqualityComparisonWithConst(tree->AsOp());
@@ -8433,7 +8428,6 @@ DONE_MORPHING_CHILDREN:
                 op2  = tree->gtGetOp2();
             }
 
-            // op2's value may be changed, so it cannot be a CSE candidate.
             if (op2->IsIntegralConst())
             {
                 tree = fgOptimizeRelationalComparisonWithConst(tree->AsOp());
@@ -8486,9 +8480,6 @@ DONE_MORPHING_CHILDREN:
                 goto CM_OVF_OP;
             }
 
-            // TODO #4104: there are a lot of other places where
-            // this condition is not checked before transformations.
-            noway_assert(op2);
             if (fgGlobalMorph && !op2->TypeIs(TYP_BYREF))
             {
                 /* Check for "op1 - cns2" , we change it to "op1 + (-cns2)" */
@@ -8671,10 +8662,6 @@ DONE_MORPHING_CHILDREN:
         case GT_NOT:
         case GT_NEG:
             // Remove double negation/not.
-            // Note: this is not a safe transformation if "tree" is a CSE candidate.
-            // Consider for example the following expression: NEG(NEG(OP)), where any
-            // NEG is a CSE candidate. Were we to morph this to just OP, CSE would fail to find
-            // the original NEG in the statement.
             if (op1->OperIs(oper) && opts.OptimizationEnabled())
             {
                 JITDUMP("Remove double negation/not\n")
@@ -8699,8 +8686,8 @@ DONE_MORPHING_CHILDREN:
                     if ((mulOrDiv->OperIs(GT_DIV) && (constVal != -1) && (constVal != 1)) ||
                         (mulOrDiv->OperIs(GT_MUL) && !mulOrDiv->gtOverflow()))
                     {
-                        GenTree* newOp1 = op1op1;                                      // a
-                        GenTree* newOp2 = gtNewIconNode(-constVal, op1op2->TypeGet()); // -C
+                        GenTree* newOp1 = op1op1;                                                  // a
+                        GenTree* newOp2 = gtNewIconNodeWithVN(this, -constVal, op1op2->TypeGet()); // -C
                         mulOrDiv->gtOp1 = newOp1;
                         mulOrDiv->gtOp2 = newOp2;
                         mulOrDiv->SetVNsFromNode(tree);
@@ -8962,9 +8949,7 @@ DONE_MORPHING_CHILDREN:
 
     assert(oper == tree->gtOper);
 
-    // Propagate comma throws.
-    // If we are in the Valuenum CSE phase then don't morph away anything as these
-    // nodes may have CSE defs/uses in them.
+    // Propagate comma throws. Only done in global morph since this does not preserve VNs.
     if (fgGlobalMorph && (oper != GT_COLON) &&
         /* TODO-ASG-Cleanup: delete this zero-diff quirk */ !GenTree::OperIsStore(oper))
     {
@@ -10361,8 +10346,7 @@ GenTree* Compiler::fgOptimizeHWIntrinsicAssociative(GenTreeHWIntrinsic* tree)
     {
         // Since 'tree->Op(1)' can have complex structure; e.g. `(.., (.., op1))`
         // don't run the optimization for such trees outside of global morph.
-        // Otherwise, there is a chance of violating VNs invariants and/or modifying a tree
-        // that is an active CSE candidate.
+        // Otherwise, there is a chance of violating VNs invariants.
         return nullptr;
     }
 
@@ -10735,7 +10719,7 @@ GenTree* Compiler::fgOptimizeMultiply(GenTreeOp* mul)
                 }
 
                 // change the multiplication into a smaller multiplication (by 3, 5 or 9) and a shift
-                op1        = gtNewOperNode(GT_MUL, mul->TypeGet(), op1, gtNewIconNode(factor, mul->TypeGet()));
+                op1 = gtNewOperNode(GT_MUL, mul->TypeGet(), op1, gtNewIconNodeWithVN(this, factor, mul->TypeGet()));
                 mul->gtOp1 = op1;
                 fgMorphTreeDone(op1);
 
@@ -11731,7 +11715,7 @@ GenTree* Compiler::fgMorphUModToAndSub(GenTreeOp* tree)
     const var_types type = tree->TypeGet();
 
     const size_t   cnsValue = (static_cast<size_t>(tree->gtOp2->AsIntConCommon()->IntegralValue())) - 1;
-    GenTree* const newTree  = gtNewOperNode(GT_AND, type, tree->gtOp1, gtNewIconNode(cnsValue, type));
+    GenTree* const newTree  = gtNewOperNode(GT_AND, type, tree->gtOp1, gtNewIconNodeWithVN(this, cnsValue, type));
 
     INDEBUG(newTree->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
 
@@ -12446,6 +12430,34 @@ void Compiler::fgAssertionGen(GenTree* tree)
 #endif
     };
 
+    // If this tree creates an assignment of 0 or 1 to an int local, also create a [0..1] subrange
+    // assertion for that local, in case this local is used as a bool.
+    //
+    auto addImpliedBoolSubrangeAssertion = [=](AssertionIndex index, ASSERT_TP assertions) {
+        AssertionDsc* const assertion = optGetAssertion(index);
+        if ((assertion->assertionKind == OAK_EQUAL) && (assertion->op1.kind == O1K_LCLVAR) &&
+            (assertion->op2.kind == O2K_CONST_INT))
+        {
+            ssize_t iconVal = assertion->op2.u1.iconVal;
+            if ((iconVal == 0) || (iconVal == 1))
+            {
+                AssertionDsc extraAssertion   = {OAK_SUBRANGE};
+                extraAssertion.op1.kind       = O1K_LCLVAR;
+                extraAssertion.op1.lcl.lclNum = assertion->op1.lcl.lclNum;
+                extraAssertion.op2.kind       = O2K_SUBRANGE;
+                extraAssertion.op2.u2         = IntegralRange(SymbolicIntegerValue::Zero, SymbolicIntegerValue::One);
+
+                AssertionIndex extraIndex = optFinalizeCreatingAssertion(&extraAssertion);
+                if (extraIndex != NO_ASSERTION_INDEX)
+                {
+                    unsigned const bvIndex = extraIndex - 1;
+                    BitVecOps::AddElemD(apTraits, assertions, bvIndex);
+                    announce(extraIndex, "[bool range] ");
+                }
+            }
+        }
+    };
+
     // For BBJ_COND nodes, we have two assertion out BVs.
     // apLocal will be stored on bbAssertionOutIfFalse and be used for false successors.
     // apLocalIfTrue will be stored on bbAssertionOutIfTrue and be used for true successors.
@@ -12470,7 +12482,7 @@ void Compiler::fgAssertionGen(GenTree* tree)
 
     if (makeCondAssertions)
     {
-        // Update apLocal and apIfTrue with suitable assertions
+        // Update apLocal and apLocalIfTrue with suitable assertions
         // from the JTRUE
         //
         assert(optCrossBlockLocalAssertionProp);
@@ -12494,6 +12506,7 @@ void Compiler::fgAssertionGen(GenTree* tree)
             announce(ifTrueAssertionIndex, "[if true] ");
             unsigned const bvIndex = ifTrueAssertionIndex - 1;
             BitVecOps::AddElemD(apTraits, apLocalIfTrue, bvIndex);
+            addImpliedBoolSubrangeAssertion(ifTrueAssertionIndex, apLocalIfTrue);
         }
 
         if (ifFalseAssertionIndex != NO_ASSERTION_INDEX)
@@ -12501,6 +12514,7 @@ void Compiler::fgAssertionGen(GenTree* tree)
             announce(ifFalseAssertionIndex, "[if false] ");
             unsigned const bvIndex = ifFalseAssertionIndex - 1;
             BitVecOps::AddElemD(apTraits, apLocal, ifFalseAssertionIndex - 1);
+            addImpliedBoolSubrangeAssertion(ifFalseAssertionIndex, apLocal);
         }
     }
     else
@@ -12509,6 +12523,7 @@ void Compiler::fgAssertionGen(GenTree* tree)
         announce(apIndex, "");
         unsigned const bvIndex = apIndex - 1;
         BitVecOps::AddElemD(apTraits, apLocal, bvIndex);
+        addImpliedBoolSubrangeAssertion(apIndex, apLocal);
     }
 }
 
@@ -12949,10 +12964,12 @@ bool Compiler::fgMorphBlockStmt(BasicBlock*     block,
         // We should not convert it to a ThrowBB.
         if ((block != fgFirstBB) || !fgFirstBB->HasFlag(BBF_INTERNAL))
         {
-            // Convert block to a throw bb
+            // Convert block to a throw bb, or make it rarely run if already a throw.
+            //
+            const bool isThrow = block->KindIs(BBJ_THROW);
             fgConvertBBToThrowBB(block);
 
-            if (invalidateDFSTreeOnFGChange)
+            if (!isThrow && invalidateDFSTreeOnFGChange)
             {
                 fgInvalidateDfsTree();
             }
@@ -13604,6 +13621,14 @@ PhaseStatus Compiler::fgMorphBlocks()
                 optAssertionCount, optAssertionOverflow);
     }
 #endif
+
+    if (optLocalAssertionProp)
+    {
+        Metrics.LocalAssertionCount    = optAssertionCount;
+        Metrics.LocalAssertionOverflow = optAssertionOverflow;
+        Metrics.MorphTrackedLocals     = lvaTrackedCount;
+        Metrics.MorphLocals            = lvaCount;
+    }
 
     return PhaseStatus::MODIFIED_EVERYTHING;
 }
