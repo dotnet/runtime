@@ -5,7 +5,7 @@ using Microsoft.Diagnostics.DataContractReader.Contracts;
 
 namespace StressLogAnalyzer.Filters;
 
-public interface IMessageFilter
+internal interface IMessageFilter
 {
     bool IncludeMessage(StressMsgData message);
 }
