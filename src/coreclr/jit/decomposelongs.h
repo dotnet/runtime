@@ -64,6 +64,7 @@ private:
 #ifdef FEATURE_HW_INTRINSICS
     GenTree* DecomposeHWIntrinsic(LIR::Use& use);
     GenTree* DecomposeHWIntrinsicGetElement(LIR::Use& use, GenTreeHWIntrinsic* node);
+    GenTree* DecomposeHWIntrinsicMoveMask(LIR::Use& use, GenTreeHWIntrinsic* node);
 #endif // FEATURE_HW_INTRINSICS
 
     GenTree* OptimizeCastFromDecomposedLong(GenTreeCast* cast, GenTree* nextNode);
