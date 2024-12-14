@@ -147,7 +147,7 @@ ADVANCE_METHOD:
             goto ADVANCE_METHOD;
         if (m_methodIteratorEntry->GetMethod()->GetMemberDef() != m_md)
             goto ADVANCE_METHOD;
-        if (m_methodIteratorEntry->GetMethod()->IsAsyncThunkMethod() != m_fIsAsyncThunk)
+        if (m_methodIteratorEntry->GetMethod()->IsAsyncHelperMethod() != m_fIsAsyncThunk)
             goto ADVANCE_METHOD;
     }
     else if (m_startedNonGenericMethod)
@@ -250,7 +250,7 @@ LoadedMethodDescIterator::Start(
     mdMethodDef     md,
     MethodDesc      *pMethodDesc)
 {
-    Start(pAppDomain, pModule, md, pMethodDesc->IsAsyncThunkMethod());
+    Start(pAppDomain, pModule, md, pMethodDesc->IsAsyncHelperMethod());
     m_mainMD = pMethodDesc;
 }
 

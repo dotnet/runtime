@@ -3218,9 +3218,9 @@ NoSpecialCase:
 
                 methodFlags |= ENCODE_METHOD_SIG_SlotInsteadOfToken;
             }
-            if (pTemplateMD->IsAsyncThunkMethod())
+            if (pTemplateMD->IsAsyncHelperMethod())
             {
-                methodFlags |= ENCODE_METHOD_SIG_AsyncThunk;
+                methodFlags |= ENCODE_METHOD_SIG_AsyncHelper;
             }
 
             sigBuilder.AppendData(methodFlags);

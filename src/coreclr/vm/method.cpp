@@ -447,7 +447,7 @@ void MethodDesc::GetSig(PCCOR_SIGNATURE *ppSig, DWORD *pcSig)
             return;
         }
     }
-    if (IsAsyncThunkMethod())
+    if (IsAsyncHelperMethod())
     {
         Signature sig = GetAddrOfAsyncMethodData()->sig;
         *ppSig = sig.GetRawSig();
@@ -482,7 +482,7 @@ void MethodDesc::GetSigFromMetadata(IMDInternalImport * importer,
     }
     CONTRACTL_END
 
-    _ASSERTE(!IsAsyncThunkMethod());
+    _ASSERTE(!IsAsyncHelperMethod());
     if (FAILED(importer->GetSigOfMethodDef(GetMemberDef(), pcSig, ppSig)))
     {   // Class loader already asked for signature, so this should always succeed (unless there's a
         // bug or a new code path)
@@ -768,7 +768,7 @@ BOOL MethodDesc::HasSameMethodDefAs(MethodDesc * pMD)
     if (this == pMD)
         return TRUE;
 
-    return (GetMemberDef() == pMD->GetMemberDef()) && (GetModule() == pMD->GetModule() && pMD->IsAsyncThunkMethod() == IsAsyncThunkMethod());
+    return (GetMemberDef() == pMD->GetMemberDef()) && (GetModule() == pMD->GetModule() && pMD->IsAsyncHelperMethod() == IsAsyncHelperMethod());
 }
 
 //*******************************************************************************
@@ -1155,7 +1155,7 @@ PTR_PCODE MethodDesc::GetAddrOfNativeCodeSlot()
 }
 
 //*******************************************************************************
-PTR_AsyncMethodData MethodDesc::GetAddrOfAsyncMethodData()
+PTR_AsyncMethodData MethodDesc::GetAddrOfAsyncMethodData() const
 {
     WRAPPER_NO_CONTRACT;
 

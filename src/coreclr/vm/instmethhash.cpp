@@ -119,7 +119,7 @@ MethodDesc* InstMethodHashTable::FindMethodDesc(TypeHandle declaringType,
                                                 BOOL unboxingStub,
                                                 Instantiation inst,
                                                 BOOL getSharedNotStub,
-                                                bool isAsyncThunk)
+                                                bool isAsyncHelper)
 {
     CONTRACTL
     {
@@ -161,7 +161,7 @@ MethodDesc* InstMethodHashTable::FindMethodDesc(TypeHandle declaringType,
             continue;  // Next iteration of the for loop
         }
 
-        if (pMD->IsAsyncThunkMethod() != isAsyncThunk)
+        if (pMD->IsAsyncHelperMethod() != isAsyncHelper)
         {
             continue;
         }
@@ -208,7 +208,7 @@ BOOL InstMethodHashTable::ContainsMethodDesc(MethodDesc* pMD)
 
     return FindMethodDesc(
         pMD->GetMethodTable(), pMD->GetMemberDef(), pMD->IsUnboxingStub(),
-        pMD->GetMethodInstantiation(), pMD->RequiresInstArg(), pMD->IsAsyncThunkMethod()) != NULL;
+        pMD->GetMethodInstantiation(), pMD->RequiresInstArg(), pMD->IsAsyncHelperMethod()) != NULL;
 }
 
 #endif // #ifndef DACCESS_COMPILE

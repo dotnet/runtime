@@ -688,7 +688,7 @@ void ComMTMemberInfoMap::GetMethodPropsForMeth(
     // Generally don't munge function into a getter.
     rProps[ix].bFunction2Getter = FALSE;
 
-    if (pMeth->IsAsyncThunkMethod())
+    if (pMeth->IsAsyncHelperMethod())
         ThrowHR(COR_E_NOTSUPPORTED);
 
     // See if there is property information for this member.
@@ -1607,7 +1607,7 @@ void ComMTMemberInfoMap::PopulateMemberHashtable()
 
             // We are dealing with a method.
             MethodDesc *pMD = pProps->pMeth;
-            if (pMD->IsAsyncThunkMethod())
+            if (pMD->IsAsyncHelperMethod())
             {
                 ThrowHR(COR_E_NOTSUPPORTED); // Probably this isn't right, and instead should be a skip, but a throw makes it easier to find if this is wrong
             }

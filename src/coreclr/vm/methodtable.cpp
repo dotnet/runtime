@@ -7805,7 +7805,7 @@ namespace
             MethodDesc* pMD = it.GetMethodDesc();
             if (pMD->GetMemberDef() == tkMethod
                 && pMD->GetModule() == mod
-                && pMD->IsAsyncThunkMethod() == pDefMD->IsAsyncThunkMethod())
+                && pMD->IsAsyncHelperMethod() == pDefMD->IsAsyncHelperMethod())
             {
                 return pMD;
             }
@@ -7840,7 +7840,7 @@ MethodDesc* MethodTable::GetParallelMethodDesc(MethodDesc* pDefMD, AsyncVariantL
         // This could be optimized with some trickery around slot numbers, but doing so is ... confusing, so I'm not implementing this yet
         mdMethodDef tkMethod = pDefMD->GetMemberDef();
         Module* mod = pDefMD->GetModule();
-        bool isAsyncThunkMethod = pDefMD->IsAsyncThunkMethod();
+        bool isAsyncHelperMethod = pDefMD->IsAsyncHelperMethod();
 
         MethodTable::IntroducedMethodIterator it(this);
         for (; it.IsValid(); it.Next())
@@ -7848,7 +7848,7 @@ MethodDesc* MethodTable::GetParallelMethodDesc(MethodDesc* pDefMD, AsyncVariantL
             MethodDesc* pMD = it.GetMethodDesc();
             if (pMD->GetMemberDef() == tkMethod
                 && pMD->GetModule() == mod
-                && pMD->IsAsyncThunkMethod() != isAsyncThunkMethod)
+                && pMD->IsAsyncHelperMethod() != isAsyncHelperMethod)
             {
                 return pMD;
             }
@@ -8237,7 +8237,7 @@ MethodTable::TryResolveVirtualStaticMethodOnThisType(MethodTable* pInterfaceType
         {
             if (pMethodDecl->GetMemberDef() == pInterfaceMD->GetMemberDef() && 
                 pMethodDecl->GetModule() == pInterfaceMD->GetModule() &&
-                pMethodDecl->IsAsyncThunkMethod() != pInterfaceMD->IsAsyncThunkMethod())
+                pMethodDecl->IsAsyncHelperMethod() != pInterfaceMD->IsAsyncHelperMethod())
             {
                 differsByAsyncVariant = true;
                 pMethodDecl = pMethodDecl->GetAsyncOtherVariant();

@@ -3892,6 +3892,7 @@ BOOL EEJitManager::JitCodeToMethodInfo(
 
     if (ppMethodDesc)
     {
+
         *ppMethodDesc = pCHdr->GetMethodDesc();
     }
     return TRUE;

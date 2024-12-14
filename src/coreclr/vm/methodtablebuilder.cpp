@@ -992,7 +992,7 @@ MethodTableBuilder::bmtRTMethod::bmtRTMethod(
     MethodDesc *    pMD)
     : m_pOwningType(pOwningType),
       m_pMD(pMD),
-      m_methodSig(pMD->IsAsyncThunkMethod()
+      m_methodSig(pMD->IsAsyncHelperMethod()
        ? MethodSignature(pMD->GetModule(),
                          pMD->GetMemberDef(),
                          pMD->GetSignature(),
@@ -1024,7 +1024,7 @@ MethodTableBuilder::bmtMDMethod::bmtMDMethod(
       m_dwImplAttrs(dwImplAttrs),
       m_dwRVA(dwRVA),
       m_type(type),
-      m_asyncMethodType(AsyncMethodType::NotAsync),
+      m_asyncMethodKind(AsyncMethodKind::NotAsync),
       m_implType(implType),
       m_methodSig(pOwningType->GetModule(),
                   tok,
@@ -1050,7 +1050,7 @@ MethodTableBuilder::bmtMDMethod::bmtMDMethod(
     DWORD dwImplAttrs,
     DWORD dwRVA,
     Signature sig,
-    AsyncMethodType thunkType,
+    AsyncMethodKind asyncMethodKind,
     MethodClassification type,
     METHOD_IMPL_TYPE implType)
     : m_pOwningType(pOwningType),
@@ -1058,7 +1058,7 @@ MethodTableBuilder::bmtMDMethod::bmtMDMethod(
       m_dwImplAttrs(dwImplAttrs),
       m_dwRVA(dwRVA),
       m_type(type),
-      m_asyncMethodType(thunkType),
+      m_asyncMethodKind(asyncMethodKind),
       m_implType(implType),
       m_methodSig(pOwningType->GetModule(),
                   tok,
@@ -2773,7 +2773,7 @@ AsyncTaskMethod ClassifyAsyncMethodCore(SigPointer sig, Module* pModule, PCCOR_S
 
     // Now we should be parsing the return type
 
-    // If the first custommodifier is a MOD_OPT to CallConvAsync2Call
+    // If the first custommodifier is a MOD_REQ to CallConvAsync2Call
     // Then this is a async2 function
     CorElementType elemType;
     if (offsetOfAsyncDetails != NULL)
@@ -2792,7 +2792,7 @@ AsyncTaskMethod ClassifyAsyncMethodCore(SigPointer sig, Module* pModule, PCCOR_S
         GetNameOfTypeDefOrRef(pModule, tk, &name, &_namespace);
         IfFailThrow(sig.GetByte(&elemTypeByte)); // Don't use GetElemType as it skips custom modifiers
         elemType = (CorElementType)elemTypeByte;
-        if (strcmp(_namespace, "System.Threading.Tasks") == 0 && IsTypeDefOrRefImplementedInSystemModule(pModule, tk) && (elemTypeCmod == ELEMENT_TYPE_CMOD_OPT))
+        if (strcmp(_namespace, "System.Threading.Tasks") == 0 && IsTypeDefOrRefImplementedInSystemModule(pModule, tk) && (elemTypeCmod == ELEMENT_TYPE_CMOD_REQD))
         {
             if ((strcmp(name, "Task`1") == 0) || (strcmp(name, "ValueTask`1") == 0))
             {
@@ -2824,7 +2824,7 @@ AsyncTaskMethod ClassifyAsyncMethodCore(SigPointer sig, Module* pModule, PCCOR_S
                     case ELEMENT_TYPE_MVAR:
                         return AsyncTaskMethod::Async2Method;
                     case ELEMENT_TYPE_TYPEDBYREF:
-                        return AsyncTaskMethod::Async2MethodThatCannotBeImplementedByTask;
+                        ThrowHR(COR_E_BADIMAGEFORMAT);
                     case ELEMENT_TYPE_GENERICINST:
                         IfFailThrow(sig.GetElemType(&elemType));
                         if (elemType == ELEMENT_TYPE_CLASS)
@@ -2836,7 +2836,7 @@ AsyncTaskMethod ClassifyAsyncMethodCore(SigPointer sig, Module* pModule, PCCOR_S
                             IfFailThrow(sig.GetToken(&tk));
                             if (IsTypeDefOrRefAByRefStruct(pModule, tk))
                             {
-                                return AsyncTaskMethod::Async2MethodThatCannotBeImplementedByTask;
+                                ThrowHR(COR_E_BADIMAGEFORMAT);
                             }
                             else
                             {
@@ -3585,9 +3585,20 @@ MethodTableBuilder::EnumerateClassMethods()
                     type,
                     implType);
 
-                if (IsAsyncTaskMethodAsync2Method(asyncMethodType))
+                if (IsAsyncTaskMethodTaskReturningMethod(asyncMethodType))
                 {
-                    pNewMethod->SetIsAsync2Method();
+                    // ordinary Task-returning method:
+                    //    declare an ordinary method and add a helper thunk with Async2 signature
+                    // 
+                    // IsMiAsync Task-returning method:
+                    //    declare an Async method and add a helper method with the actual implementation
+                    //    the Async method becomes a thunk to the implementation helper.
+                    pNewMethod->SetAsyncMethodKind(IsMiAsync(dwImplFlags) ? AsyncMethodKind::Async : AsyncMethodKind::NotAsync);
+                }
+                else
+                {
+                    _ASSERTE(IsAsyncTaskMethodNormal(asyncMethodType));
+                    pNewMethod->SetAsyncMethodKind(AsyncMethodKind::NotAsync);
                 }
 
                 pDeclaredMethod = pNewMethod;
@@ -3595,7 +3606,7 @@ MethodTableBuilder::EnumerateClassMethods()
             else
             {
                 ULONG cAsyncThunkMemberSignature = cMemberSignature;
-                AsyncMethodType thunkType;
+                AsyncMethodKind asyncKind;
                 ULONG originalTokenOffsetFromAsyncDetailsOffset;
                 ULONG newTokenOffsetFromAsyncDetailsOffset;
                 ULONG originalPrefixSize;
@@ -3603,49 +3614,31 @@ MethodTableBuilder::EnumerateClassMethods()
                 ULONG newSuffixSize;
                 ULONG newPrefixSize;
 
-                if (asyncMethodType == AsyncTaskMethod::Async2Method)
-                {
-                    cAsyncThunkMemberSignature += 2;
-                    originalTokenOffsetFromAsyncDetailsOffset = 1;
-                    newTokenOffsetFromAsyncDetailsOffset = 2;
-                    thunkType = AsyncMethodType::TaskToAsync;
-                    originalPrefixSize = 1;
-                    newPrefixSize = 2;
-                    originalSuffixSize = 0;
-                    newSuffixSize = 1;
-                }
-                else if (asyncMethodType == AsyncTaskMethod::Async2MethodNonGeneric)
-                {
-                    cAsyncThunkMemberSignature -= 1;
-                    originalTokenOffsetFromAsyncDetailsOffset = 1;
-                    newTokenOffsetFromAsyncDetailsOffset = 1;
-                    thunkType = AsyncMethodType::TaskToAsync;
-                    originalPrefixSize = 1;
-                    newPrefixSize = 1;
-                    originalSuffixSize = 1;
-                    newSuffixSize = 0;
-                }
-                else if (asyncMethodType == AsyncTaskMethod::TaskNonGenericReturningMethod)
+                if (asyncMethodType == AsyncTaskMethod::TaskNonGenericReturningMethod)
                 {
                     cAsyncThunkMemberSignature += 1;
                     originalTokenOffsetFromAsyncDetailsOffset = 1;
                     newTokenOffsetFromAsyncDetailsOffset = 1;
-                    thunkType = AsyncMethodType::AsyncToTask;
+                    asyncKind = IsMiAsync(dwImplFlags) ? AsyncMethodKind::AsyncImplHelper : AsyncMethodKind::AsyncThunkHelper;
                     originalPrefixSize = 1;
                     newPrefixSize = 1;
                     originalSuffixSize = 0;
                     newSuffixSize = 1;
                 }
-                else
+                else if (asyncMethodType == AsyncTaskMethod::TaskReturningMethod)
                 {
                     cAsyncThunkMemberSignature -= 2;
                     originalTokenOffsetFromAsyncDetailsOffset = 2;
                     newTokenOffsetFromAsyncDetailsOffset = 1;
-                    thunkType = AsyncMethodType::AsyncToTask;
+                    asyncKind = IsMiAsync(dwImplFlags)? AsyncMethodKind::AsyncImplHelper : AsyncMethodKind::AsyncThunkHelper;
                     originalPrefixSize = 2;
                     newPrefixSize = 1;
                     originalSuffixSize = 1;
                     newSuffixSize = 0;
+                }
+                else
+                {
+                    UNREACHABLE();
                 }
 
                 BYTE* pNewMemberSignature = AllocateFromHighFrequencyHeap(S_SIZE_T(cAsyncThunkMemberSignature));
@@ -3664,40 +3657,23 @@ MethodTableBuilder::EnumerateClassMethods()
 
                 BYTE elemTypeClassOrValuetype = isAsyncValueType ? (BYTE)ELEMENT_TYPE_VALUETYPE : (BYTE)ELEMENT_TYPE_CLASS;
 
-                if (asyncMethodType == AsyncTaskMethod::Async2Method)
-                {
-                    // Incoming sig will look something like ... E_T_CMOD_OPT <TokenOfTask> E_T_I4 ....
-                    // And needs to be translated to E_T_GENERICINST E_T_CLASS/E_T_VALUETYPE <TokenOfTask> 1 E_T_I4
-                    // Replace the ELEMENT_TYPE_CMOD with ELEMENT_TYPE_GENERICINST, and then add a 1 after the token which refers to Task<T>
-
-                    pNewMemberSignature[offsetOfAsyncDetails] = ELEMENT_TYPE_GENERICINST;
-                    pNewMemberSignature[offsetOfAsyncDetails + 1] = elemTypeClassOrValuetype;
-                    pNewMemberSignature[newRemainingSigOffset - 1] = 1;
-                }
-                else if (asyncMethodType == AsyncTaskMethod::Async2MethodNonGeneric)
-                {
-                    // Incoming sig will look like ...   E_T_CMOD_OPT <TokenOfTask> E_T_VOID
-                    // which needs to be translated to E_T_CLASS/E_T_VALUETYPE <TokenOfTask>
-
-                    // Replace the ELEMENT_TYPE_CMOD with ELEMENT_TYPE_CLASS/VALUETYPE
-                    pNewMemberSignature[offsetOfAsyncDetails] = elemTypeClassOrValuetype;
-                }
-                else if (asyncMethodType == AsyncTaskMethod::TaskNonGenericReturningMethod)
+                if (asyncMethodType == AsyncTaskMethod::TaskNonGenericReturningMethod)
                 {
                     // Incoming sig will look like ... E_T_CLASS/E_T_VALUETYPE <TokenOfTask>
-                    // and needs to be translated to E_T_CMOD_OPT <TokenOfTask> E_T_VOID
+                    // and needs to be translated to ELEMENT_TYPE_CMOD_REQD <TokenOfTask> E_T_VOID
 
-                    // Replace the E_T_CLASS/E_T_VALUETYPE with ELEMENT_TYPE_CMOD_OPT, and then add the E_T_VOID
-                    pNewMemberSignature[offsetOfAsyncDetails] = ELEMENT_TYPE_CMOD_OPT;
+                    // Replace the E_T_CLASS/E_T_VALUETYPE with ELEMENT_TYPE_CMOD_REQD, and then add the E_T_VOID
+                    pNewMemberSignature[offsetOfAsyncDetails] = ELEMENT_TYPE_CMOD_REQD;
                     pNewMemberSignature[newRemainingSigOffset - 1] = ELEMENT_TYPE_VOID;
                 }
                 else
                 {
+                    _ASSERTE(asyncMethodType == AsyncTaskMethod::TaskReturningMethod);
                     // Incoming sig will look something like ... E_T_GENERICINST E_T_CLASS/E_T_VALUETYPE <TokenOfTask> 1 E_T_I4 ....
-                    // And needs to be translated to E_T_CMOD_OPT <TokenOfTask> E_T_I4
+                    // And needs to be translated to ELEMENT_TYPE_CMOD_REQD <TokenOfTask> E_T_I4
 
-                    // Replace the ELEMENT_TYPE_GENERICINST with ELEMENT_TYPE_CMOD_OPT, and then remove the 1 which specifies the generic arg count for Task<T>
-                    pNewMemberSignature[offsetOfAsyncDetails] = ELEMENT_TYPE_CMOD_OPT;
+                    // Replace the ELEMENT_TYPE_GENERICINST with ELEMENT_TYPE_CMOD_REQD, and then remove the 1 which specifies the generic arg count for Task<T>
+                    pNewMemberSignature[offsetOfAsyncDetails] = ELEMENT_TYPE_CMOD_REQD;
                 }
 
                 Signature newMemberSig(pNewMemberSignature, cAsyncThunkMemberSignature);
@@ -3708,7 +3684,7 @@ MethodTableBuilder::EnumerateClassMethods()
                     dwImplFlags,
                     dwMethodRVA,
                     newMemberSig,
-                    thunkType,
+                    asyncKind,
                     type,
                     implType);
 
@@ -3731,7 +3707,7 @@ MethodTableBuilder::EnumerateClassMethods()
             }
 
             // Normal methods only insert a single method
-            if ((asyncMethodType == AsyncTaskMethod::NormalMethod) || (asyncMethodType == AsyncTaskMethod::Async2MethodThatCannotBeImplementedByTask))
+            if (IsAsyncTaskMethodNormal(asyncMethodType))
             {
                 break;
             }
@@ -5565,7 +5541,7 @@ MethodTableBuilder::InitNewMethodDesc(
     if (NeedsNativeCodeSlot(pMethod))
         pNewMD->SetHasNativeCodeSlot();
 
-    if (pMethod->GetAsyncMethodType() != AsyncMethodType::NotAsync)
+    if (pMethod->GetAsyncMethodKind() != AsyncMethodKind::NotAsync)
         pNewMD->SetHasAsyncMethodData();
 
     // Now we know the classification we can allocate the correct type of
@@ -5612,7 +5588,7 @@ MethodTableBuilder::InitNewMethodDesc(
                    GetMDImport(),
                    pName,
                    sig,
-                   pMethod->GetAsyncMethodType()
+                   pMethod->GetAsyncMethodKind()
                    COMMA_INDEBUG(pszDebugMethodNameCopy)
                    COMMA_INDEBUG(GetDebugClassName())
                    COMMA_INDEBUG("") // FIX this happens on global methods, give better info
@@ -5942,7 +5918,7 @@ MethodTableBuilder::FindDeclMethodOnInterfaceEntry(bmtInterfaceEntry *pItfEntry,
             if ((slotDeclMethod->GetOwningType() == declRTMethod->GetOwningType()) &&
                 (slotDeclMethod->GetMethodDesc()->GetMethodTable() == declRTMethod->GetMethodDesc()->GetMethodTable()) &&
                 (slotDeclMethod->GetMethodDesc()->GetMemberDef() == declRTMethod->GetMethodDesc()->GetMemberDef()) &&
-                (slotDeclMethod->GetMethodDesc()->IsAsyncThunkMethod() != declRTMethod->GetMethodDesc()->IsAsyncThunkMethod()))
+                (slotDeclMethod->GetMethodDesc()->IsAsyncHelperMethod() != declRTMethod->GetMethodDesc()->IsAsyncHelperMethod()))
             {
                 declMethod = slotIt->Decl();
                 foundOtherVariant = true;
@@ -6516,7 +6492,7 @@ MethodTableBuilder::InitMethodDesc(
     IMDInternalImport * pIMDII,     // Needed for NDirect, EEImpl(Delegate) cases
     LPCSTR              pMethodName, // Only needed for mcEEImpl (Delegate) case
     Signature           sig, // Only needed for the Async2 Thunk case
-    AsyncMethodType      thunkType
+    AsyncMethodKind     asyncKind
     COMMA_INDEBUG(LPCUTF8 pszDebugMethodName)
     COMMA_INDEBUG(LPCUTF8 pszDebugClassName)
     COMMA_INDEBUG(LPCUTF8 pszDebugMethodSignature)
@@ -6675,11 +6651,18 @@ MethodTableBuilder::InitMethodDesc(
 #endif // !_DEBUG
         pNewMD->SetSynchronized();
 
-    if (thunkType != AsyncMethodType::NotAsync)
+    if (asyncKind != AsyncMethodKind::NotAsync)
     {
         AsyncMethodData* pThunkData = pNewMD->GetAddrOfAsyncMethodData();
-        pThunkData->sig = sig;
-        pThunkData->type = thunkType;
+        pThunkData->kind = asyncKind;
+        if (asyncKind == AsyncMethodKind::AsyncThunkHelper || asyncKind == AsyncMethodKind::AsyncImplHelper)
+        {
+            pThunkData->sig = sig;
+        }
+        else
+        {
+            _ASSERTE(sig.GetRawSig() == NULL);
+        }
     }
 
 #ifdef _DEBUG
@@ -7414,7 +7397,7 @@ VOID MethodTableBuilder::AllocAndInitMethodDescs()
         if (NeedsNativeCodeSlot(*it))
             size += sizeof(MethodDesc::NativeCodeSlot);
         
-        if (it->GetAsyncMethodType() != AsyncMethodType::NotAsync)
+        if (it->GetAsyncMethodKind() != AsyncMethodKind::NotAsync)
             size += sizeof(AsyncMethodData);
 
         // See comment in AllocAndInitMethodDescChunk

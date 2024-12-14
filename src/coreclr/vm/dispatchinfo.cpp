@@ -449,7 +449,7 @@ ComMTMethodProps * DispatchMemberInfo::GetMemberProps(OBJECTREF MemberInfoObj, C
             MethodDesc* pMeth = (MethodDesc*) getMethodHandle.Call_RetLPVOID(&GetMethodHandleArg);
             if (pMeth)
             {
-                if (pMeth->IsAsyncThunkMethod())
+                if (pMeth->IsAsyncHelperMethod())
                 {
                     ThrowHR(COR_E_NOTSUPPORTED);
                 }
@@ -850,7 +850,7 @@ void DispatchMemberInfo::SetUpMethodMarshalerInfo(MethodDesc *pMD, BOOL bReturnV
     //
     // Initialize the parameter definition enum.
     //
-    if (pMD->IsAsyncThunkMethod())
+    if (pMD->IsAsyncHelperMethod())
     {
         ThrowHR(COR_E_NOTSUPPORTED);
     }
@@ -2588,7 +2588,7 @@ bool DispatchInfo::IsPropertyAccessorVisible(bool fIsSetter, OBJECTREF* pMemberI
 
         // Check to see if the new method is a property accessor.
         mdToken tkMember = mdTokenNil;
-        if (pMDForProperty->IsAsyncThunkMethod())
+        if (pMDForProperty->IsAsyncHelperMethod())
         {
             return false;
         }

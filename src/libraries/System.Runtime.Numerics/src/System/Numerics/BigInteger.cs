@@ -384,7 +384,7 @@ namespace System.Numerics
                     // The bytes parameter is in little-endian byte order.
                     // We can just copy the bytes directly into the uint array.
 
-                    value.Slice(0, wholeUInt32Count * 4).CopyTo(MemoryMarshal.AsBytes<uint>(val));
+                    value.Slice(0, wholeUInt32Count * 4).CopyTo(MemoryMarshal.AsBytes<uint>(val.AsSpan()));
                 }
 
                 // In both of the above cases on big-endian architecture, we need to perform

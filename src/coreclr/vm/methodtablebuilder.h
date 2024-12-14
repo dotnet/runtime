@@ -673,7 +673,7 @@ private:
 
         //-----------------------------------------------------------------------------------------
         // This constructor can be used with hard-coded signatures that are used for
-        // representing async thunk methods
+        // representing async helper methods
         MethodSignature(
             Module *             pModule,
             mdToken              tok,
@@ -956,7 +956,7 @@ private:
             DWORD dwImplAttrs,
             DWORD dwRVA,
             Signature sig,
-            AsyncMethodType thunkType,
+            AsyncMethodKind thunkKind,
             MethodClassification type,
             METHOD_IMPL_TYPE implType);
 
@@ -1062,18 +1062,24 @@ private:
 
         bool IsAsyncThunk() const
         {
-            return GetAsyncMethodType() == AsyncMethodType::AsyncToTask || GetAsyncMethodType() == AsyncMethodType::TaskToAsync;
+            return GetAsyncMethodKind() == AsyncMethodKind::AsyncThunkHelper ||
+                GetAsyncMethodKind() == AsyncMethodKind::AsyncImplHelper;
         }
 
-        void SetIsAsync2Method()
+        bool IsAsync2() const
         {
-            m_asyncMethodType = AsyncMethodType::Async;
+            return IsAsyncThunk();
         }
 
-        AsyncMethodType GetAsyncMethodType() const
+        void SetAsyncMethodKind(AsyncMethodKind kind)
+        {
+            m_asyncMethodKind = kind;
+        }
+
+        AsyncMethodKind GetAsyncMethodKind() const
         {
             LIMITED_METHOD_CONTRACT;
-            return m_asyncMethodType;
+            return m_asyncMethodKind;
         }
 
         bmtMDMethod *     GetAsyncOtherVariant() const { return m_asyncOtherVariant; }
@@ -1087,7 +1093,7 @@ private:
         DWORD             m_dwImplAttrs;
         DWORD             m_dwRVA;
         MethodClassification  m_type;               // Specific MethodDesc flavour
-        AsyncMethodType m_asyncMethodType;
+        AsyncMethodKind   m_asyncMethodKind;
         METHOD_IMPL_TYPE  m_implType;           // Whether or not the method is a methodImpl body
         MethodSignature   m_methodSig;
         bmtMDMethod*      m_asyncOtherVariant = NULL;
@@ -2686,7 +2692,7 @@ private:
         IMDInternalImport * pIMDII,  // Needed for NDirect, EEImpl(Delegate) cases
         LPCSTR              pMethodName, // Only needed for mcEEImpl (Delegate) case
         Signature           sig, // Only needed for the async thunk (Async2 Thunk) case
-        AsyncMethodType      thunkType
+        AsyncMethodKind      asyncKind
         COMMA_INDEBUG(LPCUTF8             pszDebugMethodName)
         COMMA_INDEBUG(LPCUTF8             pszDebugClassName)
         COMMA_INDEBUG(LPCUTF8             pszDebugMethodSignature));
