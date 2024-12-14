@@ -161,7 +161,7 @@
     <Import Project="Sdk.props" Sdk="Microsoft.NET.Runtime.MonoTargets.Sdk.${NetVersion}" />
     <Import Project="Sdk.targets" Sdk="Microsoft.NET.Runtime.MonoTargets.Sdk.${NetVersion}" />
   </ImportGroup>
-  <ImportGroup Condition="'$(TargetsCurrent)' == 'true' and '$(_IsAndroidLibraryMode)' == 'true' or '$(_IsAppleMobileLibraryMode)' == 'true'">
+  <ImportGroup Condition="'$(TargetsCurrent)' == 'true' and ('$(_IsAndroidLibraryMode)' == 'true' or '$(_IsAppleMobileLibraryMode)' == 'true')">
     <Import Project="Sdk.props" Sdk="Microsoft.NET.Runtime.LibraryBuilder.Sdk.${NetVersion}" />
     <Import Project="Sdk.targets" Sdk="Microsoft.NET.Runtime.LibraryBuilder.Sdk.${NetVersion}" />
   </ImportGroup>
@@ -230,14 +230,14 @@
   <ItemGroup Condition="'$(TargetsCurrent)' == 'true' and '$(_MonoWorkloadTargetsMobile)' == 'true'">
     <KnownRuntimePack Update="@(KnownRuntimePack)">
       <!-- FIXMEWASI: workaround for now -->
-      <RuntimePackRuntimeIdentifiers Condition="%(KnownRuntimePack.TargetFramework)' == '${NetVersion}' and '$(RuntimeIdentifier)' == 'wasi-wasm'">%(RuntimePackRuntimeIdentifiers);wasi-wasm</RuntimePackRuntimeIdentifiers>
+      <RuntimePackRuntimeIdentifiers Condition="'%(KnownRuntimePack.TargetFramework)' == '${NetVersion}' and '$(RuntimeIdentifier)' == 'wasi-wasm'">%(RuntimePackRuntimeIdentifiers);wasi-wasm</RuntimePackRuntimeIdentifiers>
 
       <LatestRuntimeFrameworkVersion Condition="'%(KnownRuntimePack.TargetFramework)' == '${NetVersion}' and '%(KnownRuntimePack.RuntimePackLabels)' == 'Mono'">$(_MonoWorkloadRuntimePackPackageVersion)</LatestRuntimeFrameworkVersion>
       <!-- Overrides for wasm threading support -->
-      <RuntimePackNamePatterns Condition="%(KnownRuntimePack.TargetFramework)' == '${NetVersion}' and '$(RuntimeIdentifier)' == 'browser-wasm' and '$(WasmEnableThreads)' == 'true'">Microsoft.NETCore.App.Runtime.Mono.multithread.**RID**</RuntimePackNamePatterns>
+      <RuntimePackNamePatterns Condition="'%(KnownRuntimePack.TargetFramework)' == '${NetVersion}' and '$(RuntimeIdentifier)' == 'browser-wasm' and '$(WasmEnableThreads)' == 'true'">Microsoft.NETCore.App.Runtime.Mono.multithread.**RID**</RuntimePackNamePatterns>
     </KnownRuntimePack>
     <KnownFrameworkReference Update="Microsoft.NETCore.App">
-      <TargetingPackVersion Condition="%(KnownFrameworkReference.TargetFramework)' == '${NetVersion}'">$(_MonoWorkloadRuntimePackPackageVersion)</TargetingPackVersion>
+      <TargetingPackVersion Condition="'%(KnownFrameworkReference.TargetFramework)' == '${NetVersion}'">$(_MonoWorkloadRuntimePackPackageVersion)</TargetingPackVersion>
     </KnownFrameworkReference>
     <KnownWebAssemblySdkPack Update="@(KnownWebAssemblySdkPack)">
       <WebAssemblySdkPackVersion Condition="'%(KnownWebAssemblySdkPack.TargetFramework)' == '${NetVersion}'">$(_KnownWebAssemblySdkPackVersion)</WebAssemblySdkPackVersion>

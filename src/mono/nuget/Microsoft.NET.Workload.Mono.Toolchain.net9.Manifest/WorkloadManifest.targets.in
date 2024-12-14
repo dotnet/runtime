@@ -9,7 +9,7 @@
     <Import Project="Sdk.props" Sdk="Microsoft.NET.Runtime.MonoTargets.Sdk.net9" />
     <Import Project="Sdk.targets" Sdk="Microsoft.NET.Runtime.MonoTargets.Sdk.net9" />
   </ImportGroup>
-  <ImportGroup Condition="'$(TargetsNet9)' == 'true' and '$(_IsAndroidLibraryMode)' == 'true' or '$(_IsAppleMobileLibraryMode)' == 'true'">
+  <ImportGroup Condition="'$(TargetsNet9)' == 'true' and ('$(_IsAndroidLibraryMode)' == 'true' or '$(_IsAppleMobileLibraryMode)' == 'true')">
     <Import Project="Sdk.props" Sdk="Microsoft.NET.Runtime.LibraryBuilder.Sdk.net9" />
     <Import Project="Sdk.targets" Sdk="Microsoft.NET.Runtime.LibraryBuilder.Sdk.net9" />
   </ImportGroup>
@@ -78,14 +78,14 @@
   <ItemGroup Condition="'$(TargetsNet9)' == 'true' and '$(_MonoWorkloadTargetsMobile)' == 'true'">
     <KnownRuntimePack Update="@(KnownRuntimePack)">
       <!-- FIXMEWASI: workaround for now -->
-      <RuntimePackRuntimeIdentifiers Condition="%(KnownRuntimePack.TargetFramework)' == 'net9.0' and '$(RuntimeIdentifier)' == 'wasi-wasm'">%(RuntimePackRuntimeIdentifiers);wasi-wasm</RuntimePackRuntimeIdentifiers>
+      <RuntimePackRuntimeIdentifiers Condition="'%(KnownRuntimePack.TargetFramework)' == 'net9.0' and '$(RuntimeIdentifier)' == 'wasi-wasm'">%(RuntimePackRuntimeIdentifiers);wasi-wasm</RuntimePackRuntimeIdentifiers>
 
       <LatestRuntimeFrameworkVersion Condition="'%(KnownRuntimePack.TargetFramework)' == 'net9.0' and '%(KnownRuntimePack.RuntimePackLabels)' == 'Mono'">$(_MonoWorkloadRuntimePackPackageVersion)</LatestRuntimeFrameworkVersion>
       <!-- Overrides for wasm threading support -->
-      <RuntimePackNamePatterns Condition="%(KnownRuntimePack.TargetFramework)' == 'net9.0' and '$(RuntimeIdentifier)' == 'browser-wasm' and '$(WasmEnableThreads)' == 'true'">Microsoft.NETCore.App.Runtime.Mono.multithread.**RID**</RuntimePackNamePatterns>
+      <RuntimePackNamePatterns Condition="'%(KnownRuntimePack.TargetFramework)' == 'net9.0' and '$(RuntimeIdentifier)' == 'browser-wasm' and '$(WasmEnableThreads)' == 'true'">Microsoft.NETCore.App.Runtime.Mono.multithread.**RID**</RuntimePackNamePatterns>
     </KnownRuntimePack>
     <KnownFrameworkReference Update="Microsoft.NETCore.App">
-      <TargetingPackVersion Condition="%(KnownFrameworkReference.TargetFramework)' == 'net9.0'">$(_MonoWorkloadRuntimePackPackageVersion)</TargetingPackVersion>
+      <TargetingPackVersion Condition="'%(KnownFrameworkReference.TargetFramework)' == 'net9.0'">$(_MonoWorkloadRuntimePackPackageVersion)</TargetingPackVersion>
     </KnownFrameworkReference>
     <KnownWebAssemblySdkPack Update="@(KnownWebAssemblySdkPack)">
       <WebAssemblySdkPackVersion Condition="'%(KnownWebAssemblySdkPack.TargetFramework)' == 'net9.0'">$(_KnownWebAssemblySdkPackVersion)</WebAssemblySdkPackVersion>
