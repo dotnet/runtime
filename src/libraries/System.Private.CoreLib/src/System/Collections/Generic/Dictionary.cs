@@ -100,8 +100,8 @@ namespace System.Collections.Generic
         {
             // The size of this struct is REALLY important! Adding even a single field to this will add stack spills to critical loops.
             // FIXME: This span being a field puts pressure on the JIT to do recursive struct decomposition; I'm not sure it always does
-            private readonly Span<Bucket> _buckets;
-            private readonly int _initialIndex;
+            private Span<Bucket> _buckets;
+            private int _initialIndex;
             private int _index;
 
             [Obsolete("Use LoopingBucketEnumerator.New")]
@@ -110,28 +110,17 @@ namespace System.Collections.Generic
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            private LoopingBucketEnumerator(Span<Bucket> buckets, uint hashCode, ulong fastModMultiplier)
-            {
-                _buckets = buckets;
-                _initialIndex = GetBucketIndexForHashCode(buckets, hashCode, fastModMultiplier);
-                _index = _initialIndex;
-            }
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static ref Bucket New(Span<Bucket> buckets, uint hashCode, ulong fastModMultiplier, out LoopingBucketEnumerator enumerator)
             {
-                // FIXME: Optimize this out with EmptyBuckets array like SimdDictionary
-                if (buckets.IsEmpty)
-                {
-                    enumerator = default;
-                    return ref Unsafe.NullRef<Bucket>();
-                }
-                else
-                {
-                    enumerator = new LoopingBucketEnumerator(buckets, hashCode, fastModMultiplier);
-                    // FIXME: Optimize out the memory load of _initialIndex somehow.
-                    return ref enumerator._buckets[enumerator._initialIndex];
-                }
+                Debug.Assert(!buckets.IsEmpty);
+                Debug.Assert(buckets.Length > 0);
+                Unsafe.SkipInit(out enumerator);
+                enumerator._buckets = buckets;
+                return ref enumerator._buckets[
+                    enumerator._index =
+                    enumerator._initialIndex =
+                        GetBucketIndexForHashCode(buckets, hashCode, fastModMultiplier)
+                ];
             }
 
             /// <summary>
@@ -181,7 +170,7 @@ namespace System.Collections.Generic
             public const int Capacity = 12,
                 CountSlot = 13,
                 CascadeSlot = 14,
-                DegradedCascadeCount = 0xFF;
+                DegradedCascadeCount = 0xFFFF;
 
             public Vector128<byte> Suffixes;
             public InlineEntryIndexArray Indices;
@@ -658,14 +647,17 @@ namespace System.Collections.Generic
             where TProtocol : struct, IComparisonProtocol<TActualKey>
             where TActualKey : allows ref struct
         {
+            Span<Bucket> buckets = _buckets;
+            Span<Entry> entries = _entries!;
+            if (buckets.IsEmpty)
+                return ref Unsafe.NullRef<Entry>();
+
             uint hashCode = (uint)protocol.GetHashCode(key);
             var suffix = GetHashSuffix(hashCode);
             var vectorized = Sse2.IsSupported || AdvSimd.Arm64.IsSupported || PackedSimd.IsSupported;
             Vector128<byte> searchVector = vectorized ? Vector128.Create(suffix) : default;
-            ref var bucket = ref LoopingBucketEnumerator.New(_buckets, hashCode, _fastModMultiplier, out var enumerator);
-            Span<Entry> entries = _entries!;
-            // FIXME: Change to do { } while () by introducing EmptyBuckets optimization from SimdDictionary
-            while (!Unsafe.IsNullRef(ref bucket))
+            ref var bucket = ref LoopingBucketEnumerator.New(buckets, hashCode, _fastModMultiplier, out var enumerator);
+            do
             {
                 // Pipelining
                 int bucketCount = bucket.Count;
@@ -682,7 +674,7 @@ namespace System.Collections.Generic
                 else
                     return ref entry;
                 bucket = ref enumerator.Advance();
-            }
+            } while (!Unsafe.IsNullRef(ref bucket));
 
             return ref Unsafe.NullRef<Entry>();
         }
@@ -769,8 +761,7 @@ namespace System.Collections.Generic
                 var searchVector = Vector128.Create(suffix);
 
                 ref var bucket = ref LoopingBucketEnumerator.New(newBuckets, hashCode, fastModMultiplier, out var enumerator);
-                // FIXME: Change to do { } while () by introducing EmptyBuckets optimization from SimdDictionary
-                while (!Unsafe.IsNullRef(ref bucket))
+                do
                 {
                     // Pipelining
                     int bucketCount = bucket.Count;
@@ -784,7 +775,7 @@ namespace System.Collections.Generic
                     }
 
                     bucket = ref enumerator.Advance();
-                }
+                } while (!Unsafe.IsNullRef(ref bucket));
 
                 ThrowHelper.ThrowInvalidOperationException_ConcurrentOperationsNotSupported();
             }
@@ -886,8 +877,7 @@ namespace System.Collections.Generic
             Debug.Assert(!entries.IsEmpty, "expected entries to be non-null");
 
             ref var bucket = ref LoopingBucketEnumerator.New(buckets, hashCode, _fastModMultiplier, out var enumerator);
-            // FIXME: Change to do { } while () by introducing EmptyBuckets optimization from SimdDictionary
-            while (!Unsafe.IsNullRef(ref bucket))
+            do
             {
                 // Pipelining
                 int bucketCount = bucket.Count;
@@ -948,7 +938,7 @@ namespace System.Collections.Generic
                 }
 
                 bucket = ref enumerator.Advance();
-            }
+            } while (!Unsafe.IsNullRef(ref bucket));
 
             // We failed to find any bucket with room and hit the end of the loop, so we should be full. This is very rare.
             if (_count >= entries.Length)
@@ -1432,7 +1422,9 @@ namespace System.Collections.Generic
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.key);
             }
 
-            if (_buckets == null)
+            Span<Bucket> buckets = _buckets;
+            Span<Entry> entries = _entries!;
+            if (buckets.IsEmpty)
             {
                 if (!Unsafe.IsNullRef(ref actualKey))
                     actualKey = default!;
@@ -1440,18 +1432,16 @@ namespace System.Collections.Generic
                     value = default!;
                 return false;
             }
+            Debug.Assert(!entries.IsEmpty, "expected entries to be non-null");
 
             uint hashCode = (uint)protocol.GetHashCode(key);
             var suffix = GetHashSuffix(hashCode);
             var vectorized = Sse2.IsSupported || AdvSimd.Arm64.IsSupported || PackedSimd.IsSupported;
             Vector128<byte> searchVector = vectorized ? Vector128.Create(suffix) : default;
-            Span<Entry> entries = _entries!;
-            Debug.Assert(!entries.IsEmpty, "expected entries to be non-null");
 
-            ref var bucket = ref LoopingBucketEnumerator.New(_buckets, hashCode, _fastModMultiplier, out var enumerator);
+            ref var bucket = ref LoopingBucketEnumerator.New(buckets, hashCode, _fastModMultiplier, out var enumerator);
 
-            // FIXME: Change to do { } while () by introducing EmptyBuckets optimization from SimdDictionary
-            while (!Unsafe.IsNullRef(ref bucket))
+            do
             {
                 // Pipelining
                 int bucketCount = bucket.Count;
@@ -1487,7 +1477,7 @@ namespace System.Collections.Generic
                 }
 
                 bucket = ref enumerator.Advance();
-            }
+            } while (!Unsafe.IsNullRef(ref bucket));
 
             if (!Unsafe.IsNullRef(ref actualKey))
                 actualKey = default!;
