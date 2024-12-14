@@ -986,5 +986,48 @@ namespace System.Linq.Expressions.Tests
             Func<GenericStruct<string>, string> f = funcE.Compile();
             Assert.Equal("B", f(new GenericStruct<string>()));
         }
+
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public void LambdaInstanceMethodReceiver_Func1(bool useInterpreter)
+        {
+            Expression<Func<string>> expr = Expression.Lambda<Func<string>>(
+                Expression.Call(
+                    Expression.Lambda<Func<int>>(
+                        Expression.Constant(1)),
+                    typeof(Func<int>).GetMethod("ToString", BindingFlags.Public | BindingFlags.Instance)));
+            Func<string> f = expr.Compile(preferInterpretation: useInterpreter);
+            Assert.Equal("System.Func`1[System.Int32]", f());
+        }
+
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public void LambdaInstanceMethodReceiver_Func2(bool useInterpreter)
+        {
+            Expression<Func<bool>> expr = Expression.Lambda<Func<bool>>(
+                Expression.Call(
+                    Expression.Lambda<Func<int, int>>(
+                        Expression.Constant(1),
+                        Expression.Parameter(typeof(int))),
+                    typeof(Func<int, int>).GetMethod("Equals", BindingFlags.Public | BindingFlags.Instance),
+                    Expression.Constant((object)null)));
+            Func<bool> f = expr.Compile(preferInterpretation: useInterpreter);
+            Assert.False(f());
+        }
+
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public void LambdaInstanceMethodReceiver_Action3(bool useInterpreter)
+        {
+            Expression<Action> expr = Expression.Lambda<Action>(
+                Expression.Call(
+                    Expression.Lambda<Action<int, int, int>>(
+                        Expression.Constant(1),
+                        Expression.Parameter(typeof(int)),
+                        Expression.Parameter(typeof(int)),
+                        Expression.Parameter(typeof(int))),
+                    typeof(Action<int, int, int>).GetMethod("GetObjectData", BindingFlags.Public | BindingFlags.Instance),
+                    Expression.Default(typeof(System.Runtime.Serialization.SerializationInfo)),
+                    Expression.Default(typeof(System.Runtime.Serialization.StreamingContext))));
+            Action a = expr.Compile(preferInterpretation: useInterpreter);
+            a();
+        }
     }
 }
