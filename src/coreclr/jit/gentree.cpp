@@ -13572,12 +13572,9 @@ void Compiler::gtDispLIRNode(GenTree* node, const char* prefixMsg /* = nullptr *
  *  and call the methods to perform the folding
  */
 
-GenTree* Compiler::gtFoldExpr(GenTree* tree, bool* folded)
+GenTree* Compiler::gtFoldExpr(GenTree* tree)
 {
     unsigned kind = tree->OperKind();
-
-    if (folded != nullptr)
-        *folded = false;
 
     /* We must have a simple operation to fold */
 
@@ -13598,19 +13595,13 @@ GenTree* Compiler::gtFoldExpr(GenTree* tree, bool* folded)
     {
         if (tree->OperIsConditional())
         {
-            GenTree* newTree = gtFoldExprConditional(tree);
-            if (folded != nullptr)
-                *folded = newTree != tree;
-            return newTree;
+            return gtFoldExprConditional(tree);
         }
 
 #if defined(FEATURE_HW_INTRINSICS)
         if (tree->OperIsHWIntrinsic())
         {
-            GenTree* newTree = gtFoldExprHWIntrinsic(tree->AsHWIntrinsic());
-            if (folded != nullptr)
-                *folded = newTree != tree;
-            return newTree;
+            return gtFoldExprHWIntrinsic(tree->AsHWIntrinsic());
         }
 #endif // FEATURE_HW_INTRINSICS
 
@@ -13638,7 +13629,6 @@ GenTree* Compiler::gtFoldExpr(GenTree* tree, bool* folded)
     {
         if (op1->OperIsConst())
         {
-            // constants folding results in a new tree that may be folded again, don't mark it as folded
             return gtFoldExprConst(tree);
         }
     }
@@ -13650,8 +13640,7 @@ GenTree* Compiler::gtFoldExpr(GenTree* tree, bool* folded)
         // one of their arguments is an address.
         if (op1->OperIsConst() && op2->OperIsConst() && !tree->OperIsAtomicOp())
         {
-            // both nodes are constants - fold the expression
-            // constants folding results in a new tree that may be folded again, don't mark it as folded
+            /* both nodes are constants - fold the expression */
             return gtFoldExprConst(tree);
         }
         else if (op1->OperIsConst() || op2->OperIsConst())
@@ -13666,19 +13655,13 @@ GenTree* Compiler::gtFoldExpr(GenTree* tree, bool* folded)
                 return tree;
             }
 
-            GenTree* newTree = gtFoldExprSpecial(tree);
-            if (folded != nullptr)
-                *folded = newTree != tree;
-            return newTree;
+            return gtFoldExprSpecial(tree);
         }
         else if (tree->OperIsCompare())
         {
             /* comparisons of two local variables can sometimes be folded */
 
-            GenTree* newTree = gtFoldExprCompare(tree);
-            if (folded != nullptr)
-                *folded = newTree != tree;
-            return newTree;
+            return gtFoldExprCompare(tree);
         }
     }
 
