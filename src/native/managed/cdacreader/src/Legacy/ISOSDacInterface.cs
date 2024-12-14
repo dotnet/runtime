@@ -556,19 +556,12 @@ internal unsafe partial interface ISOSDacInterface12
     int GetGlobalAllocationContext(ulong* allocPtr, ulong* allocLimit);
 }
 
-internal struct VISITHEAP
-{
-    public ulong blockData;
-    public nuint blockSize;
-    public Interop.BOOL blockIsCurrentBlock;
-}
-
 [GeneratedComInterface]
 [Guid("3176a8ed-597b-4f54-a71f-83695c6a8c5e")]
 internal unsafe partial interface ISOSDacInterface13
 {
     [PreserveSig]
-    int TraverseLoaderHeap(ulong loaderHeapAddr, /*LoaderHeapKind*/ int kind, VISITHEAP pCallback);
+    int TraverseLoaderHeap(ulong loaderHeapAddr, /*LoaderHeapKind*/ int kind, /*VISITHEAP*/ delegate* unmanaged<ulong, nuint, Interop.BOOL> pCallback);
     [PreserveSig]
     int GetDomainLoaderAllocator(ulong domainAddress, ulong* pLoaderAllocator);
     [PreserveSig]

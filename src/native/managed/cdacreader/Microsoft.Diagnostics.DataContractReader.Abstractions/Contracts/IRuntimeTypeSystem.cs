@@ -166,6 +166,8 @@ internal interface IRuntimeTypeSystem : IContract
     public virtual bool HasNativeCodeSlot(MethodDescHandle methodDesc) => throw new NotImplementedException();
 
     public virtual TargetPointer GetAddressOfNativeCodeSlot(MethodDescHandle methodDesc) => throw new NotImplementedException();
+
+    public virtual TargetPointer GetGCStressCodeCopy(MethodDescHandle methodDesc) => throw new NotImplementedException();
     #endregion MethodDesc inspection APIs
 }
 

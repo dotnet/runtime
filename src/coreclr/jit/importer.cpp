@@ -9679,10 +9679,32 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 // Remember that this function contains 'new' of an SD array.
                 optMethodFlags |= OMF_HAS_NEWARRAY;
+                block->SetFlags(BBF_HAS_NEWARR);
 
-                /* Push the result of the call on the stack */
+                if (opts.OptimizationEnabled())
+                {
+                    // We assign the newly allocated object (by a GT_CALL to newarr node)
+                    // to a temp. Note that the pattern "temp = allocArr" is required
+                    // by ObjectAllocator phase to be able to determine newarr nodes
+                    // without exhaustive walk over all expressions.
+                    lclNum = lvaGrabTemp(true DEBUGARG("NewArr temp"));
 
-                impPushOnStack(op1, tiRetVal);
+                    impStoreToTemp(lclNum, op1, CHECK_SPILL_ALL);
+
+                    assert(lvaTable[lclNum].lvSingleDef == 0);
+                    lvaTable[lclNum].lvSingleDef = 1;
+                    JITDUMP("Marked V%02u as a single def local\n", lclNum);
+                    lvaSetClass(lclNum, resolvedToken.hClass, true /* is Exact */);
+
+                    /* Push the result of the call on the stack */
+
+                    impPushOnStack(gtNewLclvNode(lclNum, TYP_REF), tiRetVal);
+                }
+                else
+                {
+                    /* Push the result of the call on the stack */
+                    impPushOnStack(op1, tiRetVal);
+                }
 
                 callTyp = TYP_REF;
             }
