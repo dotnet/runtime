@@ -137,6 +137,19 @@ namespace ILCompiler
 
         ILScanResults IILScanner.Scan()
         {
+            _dependencyGraph.AddRoot(GetHelperEntrypoint(ReadyToRunHelper.BulkWriteBarrier), "Not tracked by scanner");
+            _dependencyGraph.AddRoot(GetHelperEntrypoint(ReadyToRunHelper.MemCpy), "Not tracked by scanner");
+            _dependencyGraph.AddRoot(GetHelperEntrypoint(ReadyToRunHelper.MemSet), "Not tracked by scanner");
+            _dependencyGraph.AddRoot(GetHelperEntrypoint(ReadyToRunHelper.MemZero), "Not tracked by scanner");
+            _dependencyGraph.AddRoot(GetHelperEntrypoint(ReadyToRunHelper.CheckCastAny), "Not tracked by scanner");
+            _dependencyGraph.AddRoot(GetHelperEntrypoint(ReadyToRunHelper.CheckCastInterface), "Not tracked by scanner");
+            _dependencyGraph.AddRoot(GetHelperEntrypoint(ReadyToRunHelper.CheckCastClass), "Not tracked by scanner");
+            _dependencyGraph.AddRoot(GetHelperEntrypoint(ReadyToRunHelper.CheckCastClassSpecial), "Not tracked by scanner");
+            _dependencyGraph.AddRoot(GetHelperEntrypoint(ReadyToRunHelper.CheckInstanceAny), "Not tracked by scanner");
+            _dependencyGraph.AddRoot(GetHelperEntrypoint(ReadyToRunHelper.CheckInstanceInterface), "Not tracked by scanner");
+            _dependencyGraph.AddRoot(GetHelperEntrypoint(ReadyToRunHelper.CheckInstanceClass), "Not tracked by scanner");
+            _dependencyGraph.AddRoot(GetHelperEntrypoint(ReadyToRunHelper.IsInstanceOfException), "Not tracked by scanner");
+
             _dependencyGraph.ComputeMarkedNodes();
 
             _nodeFactory.SetMarkingComplete();

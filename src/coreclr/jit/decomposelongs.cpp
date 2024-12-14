@@ -1707,6 +1707,11 @@ GenTree* DecomposeLongs::DecomposeHWIntrinsic(LIR::Use& use)
             return DecomposeHWIntrinsicGetElement(use, hwintrinsicTree);
         }
 
+        case NI_EVEX_MoveMask:
+        {
+            return DecomposeHWIntrinsicMoveMask(use, hwintrinsicTree);
+        }
+
         default:
         {
             noway_assert(!"unexpected GT_HWINTRINSIC node in long decomposition");
@@ -1830,6 +1835,106 @@ GenTree* DecomposeLongs::DecomposeHWIntrinsicGetElement(LIR::Use& use, GenTreeHW
     return FinalizeDecomposition(use, loResult, hiResult, hiResult);
 }
 
+//------------------------------------------------------------------------
+// DecomposeHWIntrinsicMoveMask: Decompose GT_HWINTRINSIC -- NI_EVEX_MoveMask
+//
+// Decompose a MoveMask(x) node on Vector512<*>. For:
+//
+// GT_HWINTRINSIC{MoveMask}[*](simd_var)
+//
+// create:
+//
+// tmp_simd_var = simd_var
+// tmp_simd_lo  = GT_HWINTRINSIC{GetLower}(tmp_simd_var)
+// lo_result = GT_HWINTRINSIC{MoveMask}(tmp_simd_lo)
+// tmp_simd_hi  = GT_HWINTRINSIC{GetUpper}(tmp_simd_var)
+// hi_result = GT_HWINTRINSIC{MoveMask}(tmp_simd_hi)
+// return: GT_LONG(lo_result, hi_result)
+//
+// Noting that for all types except byte/sbyte, hi_result will be exclusively
+// zero and so we can actually optimize this a bit more directly
+//
+// Arguments:
+//    use - the LIR::Use object for the def that needs to be decomposed.
+//   node - the hwintrinsic node to decompose
+//
+// Return Value:
+//    The next node to process.
+//
+GenTree* DecomposeLongs::DecomposeHWIntrinsicMoveMask(LIR::Use& use, GenTreeHWIntrinsic* node)
+{
+    assert(node == use.Def());
+    assert(varTypeIsLong(node));
+    assert(node->GetHWIntrinsicId() == NI_EVEX_MoveMask);
+
+    GenTree*    op1             = node->Op(1);
+    CorInfoType simdBaseJitType = node->GetSimdBaseJitType();
+    var_types   simdBaseType    = node->GetSimdBaseType();
+    unsigned    simdSize        = node->GetSimdSize();
+
+    assert(varTypeIsArithmetic(simdBaseType));
+    assert(op1->TypeGet() == TYP_MASK);
+    assert(simdSize == 64);
+
+    GenTree* loResult = nullptr;
+    GenTree* hiResult = nullptr;
+
+    if (varTypeIsByte(simdBaseType))
+    {
+        // Create:
+        //      simdTmpVar = op1
+
+        GenTree* simdTmpVar    = RepresentOpAsLocalVar(op1, node, &node->Op(1));
+        unsigned simdTmpVarNum = simdTmpVar->AsLclVarCommon()->GetLclNum();
+        JITDUMP("[DecomposeHWIntrinsicMoveMask]: Saving op1 tree to a temp var:\n");
+        DISPTREERANGE(Range(), simdTmpVar);
+        Range().Remove(simdTmpVar);
+
+        Range().InsertBefore(node, simdTmpVar);
+
+        // Create:
+        //      loResult  = GT_HWINTRINSIC{MoveMask}(simdTmpVar)
+
+        loResult = m_compiler->gtNewSimdHWIntrinsicNode(TYP_INT, simdTmpVar, NI_EVEX_MoveMask, simdBaseJitType, 32);
+        Range().InsertBefore(node, loResult);
+
+        simdTmpVar = m_compiler->gtNewLclLNode(simdTmpVarNum, simdTmpVar->TypeGet());
+        Range().InsertBefore(node, simdTmpVar);
+
+        // Create:
+        //      simdTmpVar = GT_HWINTRINSIC{ShiftRightMask}(simdTmpVar, 32)
+        //      hiResult  = GT_HWINTRINSIC{MoveMask}(simdTmpVar)
+
+        GenTree* shiftIcon = m_compiler->gtNewIconNode(32, TYP_INT);
+        Range().InsertBefore(node, shiftIcon);
+
+        simdTmpVar = m_compiler->gtNewSimdHWIntrinsicNode(TYP_MASK, simdTmpVar, shiftIcon, NI_EVEX_ShiftRightMask,
+                                                          simdBaseJitType, 64);
+        Range().InsertBefore(node, simdTmpVar);
+
+        hiResult = m_compiler->gtNewSimdHWIntrinsicNode(TYP_INT, simdTmpVar, NI_EVEX_MoveMask, simdBaseJitType, 32);
+        Range().InsertBefore(node, hiResult);
+    }
+    else
+    {
+        // Create:
+        //      loResult  = GT_HWINTRINSIC{MoveMask}(op1)
+
+        loResult = m_compiler->gtNewSimdHWIntrinsicNode(TYP_INT, op1, NI_EVEX_MoveMask, simdBaseJitType, simdSize);
+        Range().InsertBefore(node, loResult);
+
+        // Create:
+        //      hiResult  = GT_ICON(0)
+
+        hiResult = m_compiler->gtNewZeroConNode(TYP_INT);
+        Range().InsertBefore(node, hiResult);
+    }
+
+    // Done with the original tree; remove it.
+    Range().Remove(node);
+
+    return FinalizeDecomposition(use, loResult, hiResult, hiResult);
+}
 #endif // FEATURE_HW_INTRINSICS
 
 //------------------------------------------------------------------------

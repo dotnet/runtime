@@ -331,6 +331,9 @@ CDAC_TYPE_FIELD(MethodDesc, /*uint16*/, Flags, cdac_data<MethodDesc>::Flags)
 CDAC_TYPE_FIELD(MethodDesc, /*uint16*/, Flags3AndTokenRemainder, cdac_data<MethodDesc>::Flags3AndTokenRemainder)
 CDAC_TYPE_FIELD(MethodDesc, /*uint8*/, EntryPointFlags, cdac_data<MethodDesc>::EntryPointFlags)
 CDAC_TYPE_FIELD(MethodDesc, /*pointer*/, CodeData, cdac_data<MethodDesc>::CodeData)
+#ifdef HAVE_GCCOVER
+CDAC_TYPE_FIELD(MethodDesc, /*pointer*/, GCCoverageInfo, offsetof(MethodDesc, m_GcCover))
+#endif // HAVE_GCCOVER
 CDAC_TYPE_END(MethodDesc)
 
 CDAC_TYPE_BEGIN(MethodDescChunk)
@@ -341,6 +344,18 @@ CDAC_TYPE_FIELD(MethodDescChunk, /*uint8*/, Size, cdac_data<MethodDescChunk>::Si
 CDAC_TYPE_FIELD(MethodDescChunk, /*uint8*/, Count, cdac_data<MethodDescChunk>::Count)
 CDAC_TYPE_FIELD(MethodDescChunk, /*uint16*/, FlagsAndTokenRange, cdac_data<MethodDescChunk>::FlagsAndTokenRange)
 CDAC_TYPE_END(MethodDescChunk)
+
+CDAC_TYPE_BEGIN(NonVtableSlot)
+CDAC_TYPE_SIZE(sizeof(MethodDesc::NonVtableSlot))
+CDAC_TYPE_END(NonVtableSlot)
+
+CDAC_TYPE_BEGIN(MethodImpl)
+CDAC_TYPE_SIZE(sizeof(MethodImpl))
+CDAC_TYPE_END(MethodImpl)
+
+CDAC_TYPE_BEGIN(NativeCodeSlot)
+CDAC_TYPE_SIZE(sizeof(MethodDesc::NativeCodeSlot))
+CDAC_TYPE_END(NativeCodeSlot)
 
 CDAC_TYPE_BEGIN(InstantiatedMethodDesc)
 CDAC_TYPE_SIZE(sizeof(InstantiatedMethodDesc))
@@ -360,6 +375,28 @@ CDAC_TYPE_BEGIN(DynamicMethodDesc)
 CDAC_TYPE_SIZE(sizeof(DynamicMethodDesc))
 CDAC_TYPE_FIELD(DynamicMethodDesc, /*pointer*/, MethodName, cdac_data<DynamicMethodDesc>::MethodName)
 CDAC_TYPE_END(DynamicMethodDesc)
+
+CDAC_TYPE_BEGIN(ArrayMethodDesc)
+CDAC_TYPE_SIZE(sizeof(ArrayMethodDesc))
+CDAC_TYPE_END(ArrayMethodDesc)
+
+CDAC_TYPE_BEGIN(FCallMethodDesc)
+CDAC_TYPE_SIZE(sizeof(FCallMethodDesc))
+CDAC_TYPE_END(FCallMethodDesc)
+
+CDAC_TYPE_BEGIN(PInvokeMethodDesc)
+CDAC_TYPE_SIZE(sizeof(NDirectMethodDesc))
+CDAC_TYPE_END(PInvokeMethodDesc)
+
+CDAC_TYPE_BEGIN(EEImplMethodDesc)
+CDAC_TYPE_SIZE(sizeof(EEImplMethodDesc))
+CDAC_TYPE_END(EEImplMethodDesc)
+
+#ifdef FEATURE_COMINTEROP
+CDAC_TYPE_BEGIN(CLRToCOMCallMethodDesc)
+CDAC_TYPE_SIZE(sizeof(CLRToCOMCallMethodDesc))
+CDAC_TYPE_END(CLRToCOMCallMethodDesc)
+#endif // FEATURE_COMINTEROP
 
 CDAC_TYPE_BEGIN(CodePointer)
 CDAC_TYPE_SIZE(sizeof(PCODE))
@@ -510,6 +547,9 @@ CDAC_TYPE_FIELD(NativeCodeVersionNode, /*pointer*/, MethodDesc, cdac_data<Native
 CDAC_TYPE_FIELD(NativeCodeVersionNode, /*pointer*/, NativeCode, cdac_data<NativeCodeVersionNode>::NativeCode)
 CDAC_TYPE_FIELD(NativeCodeVersionNode, /*uint32*/, Flags, cdac_data<NativeCodeVersionNode>::Flags)
 CDAC_TYPE_FIELD(NativeCodeVersionNode, /*nuint*/, ILVersionId, cdac_data<NativeCodeVersionNode>::ILVersionId)
+#ifdef HAVE_GCCOVER
+CDAC_TYPE_FIELD(NativeCodeVersionNode, /*pointer*/, GCCoverageInfo, cdac_data<NativeCodeVersionNode>::GCCoverageInfo)
+#endif // HAVE_GCCOVER
 CDAC_TYPE_END(NativeCodeVersionNode)
 
 CDAC_TYPE_BEGIN(ILCodeVersionNode)
@@ -522,6 +562,13 @@ CDAC_TYPE_END(ILCodeVersionNode)
 CDAC_TYPE_BEGIN(ProfControlBlock)
 CDAC_TYPE_FIELD(ProfControlBlock, /*uint64*/, GlobalEventMask, offsetof(ProfControlBlock, globalEventMask))
 CDAC_TYPE_END(ProfControlBlock)
+
+#ifdef HAVE_GCCOVER
+CDAC_TYPE_BEGIN(GCCoverageInfo)
+CDAC_TYPE_INDETERMINATE(GCCoverageInfo)
+CDAC_TYPE_FIELD(GCCoverageInfo, /*pointer*/, SavedCode, offsetof(GCCoverageInfo, savedCode))
+CDAC_TYPE_END(GCCoverageInfo)
+#endif // HAVE_GCCOVER
 
 CDAC_TYPES_END()
 

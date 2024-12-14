@@ -1542,6 +1542,7 @@ enum class PhaseChecks : unsigned int
     CHECK_LIKELIHOODS   = 1 << 5, // profile data likelihood integrity
     CHECK_PROFILE       = 1 << 6, // profile data full integrity
     CHECK_LINKED_LOCALS = 1 << 7, // check linked list of locals
+    CHECK_FG_INIT_BLOCK = 1 << 8, // flow graph has an init block
 };
 
 inline constexpr PhaseChecks operator ~(PhaseChecks a)
@@ -2218,9 +2219,6 @@ public:
 
     template<typename TFunc>
     BasicBlockVisit VisitLoopBlocks(TFunc func);
-
-    template<typename TFunc>
-    BasicBlockVisit VisitLoopBlocksLexical(TFunc func);
 
     template<typename TFunc>
     BasicBlockVisit VisitRegularExitBlocks(TFunc func);
@@ -3661,7 +3659,7 @@ public:
     // is #of nodes in subtree) of "tree" is greater than "limit".
     // (This is somewhat redundant with the "GetCostEx()/GetCostSz()" fields, but can be used
     // before they have been set.)
-    bool gtComplexityExceeds(GenTree* tree, unsigned limit);
+    bool gtComplexityExceeds(GenTree* tree, unsigned limit, unsigned* complexity = nullptr);
 
     GenTree* gtReverseCond(GenTree* tree);
 
@@ -5200,8 +5198,6 @@ public:
     BasicBlock* fgEntryBB = nullptr;        // For OSR, the original method's entry point
     BasicBlock* fgOSREntryBB = nullptr;     // For OSR, the logical entry point (~ patchpoint)
     BasicBlock* fgFirstFuncletBB = nullptr; // First block of outlined funclets (to allow block insertion before the funclets)
-    BasicBlock* fgFirstBBScratch = nullptr;   // Block inserted for initialization stuff. Is nullptr if no such block has been
-                                    // created.
     BasicBlockList* fgReturnBlocks = nullptr; // list of BBJ_RETURN blocks
     unsigned        fgEdgeCount = 0;    // # of control flow edges between the BBs
     unsigned        fgBBcount = 0;      // # of BBs in the method (in the linked list that starts with fgFirstBB)
@@ -5248,10 +5244,6 @@ public:
     {
         return getAllocator(cmk).allocate<T>(fgBBNumMax + 1);
     }
-
-    bool fgEnsureFirstBBisScratch();
-    bool fgFirstBBisScratch();
-    bool fgBBisScratch(BasicBlock* block);
 
     void fgExtendEHRegionBefore(BasicBlock* block);
     void fgExtendEHRegionAfter(BasicBlock* block);
@@ -5335,7 +5327,6 @@ public:
     // - Rationalization links all nodes into linear form which is kept until
     //   the end of compilation. The first and last nodes are stored in the block.
     NodeThreading fgNodeThreading = NodeThreading::None;
-    bool          fgCanRelocateEHRegions; // true if we are allowed to relocate the EH regions
     weight_t      fgCalledCount = BB_ZERO_WEIGHT;          // count of the number of times this method was called
                                           // This is derived from the profile data
                                           // or is BB_UNITY_WEIGHT when we don't have profile data
@@ -5376,7 +5367,7 @@ public:
 
     PhaseStatus fgRemoveEmptyTry();
 
-    PhaseStatus fgRemoveEmptyTryCatch();
+    PhaseStatus fgRemoveEmptyTryCatchOrTryFault();
 
     PhaseStatus fgRemoveEmptyFinally();
 
@@ -5443,6 +5434,7 @@ public:
     };
 
     PhaseStatus fgMorphBlocks();
+    BasicBlock* fgGetFirstILBlock();
     void fgMorphBlock(BasicBlock* block, MorphUnreachableInfo* unreachableInfo = nullptr);
     void fgMorphStmts(BasicBlock* block);
 
@@ -6162,6 +6154,7 @@ public:
     bool fgCheckRemoveStmt(BasicBlock* block, Statement* stmt);
 
     PhaseStatus fgCanonicalizeFirstBB();
+    void fgCreateNewInitBB();
 
     void fgSetEHRegionForNewPreheaderOrExit(BasicBlock* preheader);
 
@@ -6182,6 +6175,8 @@ public:
     void fgPrepareCallFinallyRetForRemoval(BasicBlock* block);
 
     bool fgCanCompactBlock(BasicBlock* block);
+
+    bool fgCanCompactInitBlock();
 
     void fgCompactBlock(BasicBlock* block);
 
@@ -6359,6 +6354,7 @@ public:
     void fgDebugCheckBBNumIncreasing();
     void fgDebugCheckBBlist(bool checkBBNum = false, bool checkBBRefs = true);
     void fgDebugCheckBlockLinks();
+    void fgDebugCheckInitBB();
     void fgDebugCheckLinks(bool morphTrees = false);
     void fgDebugCheckStmtsList(BasicBlock* block, bool morphTrees);
     void fgDebugCheckNodeLinks(BasicBlock* block, Statement* stmt);
@@ -6545,6 +6541,7 @@ public:
     }
 
     void fgRemoveProfileData(const char* reason);
+    void fgRepairProfileCondToUncond(BasicBlock* block, FlowEdge* retainedEdge, FlowEdge* removedEdge, int* metric = nullptr);
 
 //-------- Insert a statement at the start or end of a basic block --------
 
