@@ -8,7 +8,32 @@
     <EnableAggressiveTrimming Condition="'$(EnableAOTAndTrimming)' != ''">$(EnableAOTAndTrimming)</EnableAggressiveTrimming>
     <PublishTrimmed Condition="'$(EnableAOTAndTrimming)' != ''">$(EnableAOTAndTrimming)</PublishTrimmed>
     <RunAOTCompilation Condition="'$(EnableAOTAndTrimming)' != ''">$(EnableAOTAndTrimming)</RunAOTCompilation>
+    <WasmRuntimeAssetsLocation>./</WasmRuntimeAssetsLocation>
   </PropertyGroup>
+
+  <!-- NativeAOT -->
+  <PropertyGroup Condition="'$(UsingNativeAOT)' == 'true'">
+    <PublishTrimmed>true</PublishTrimmed>
+    <PublishDir>$(MSBuildThisFileDirectory)/bin/$(Configuration)/AppBundle</PublishDir>
+    <DebugType>none</DebugType>
+    <RestoreAdditionalProjectSources>$(RestoreAdditionalProjectSources);https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-experimental/nuget/v3/index.json</RestoreAdditionalProjectSources>
+    <UsingBrowserRuntimeWorkload>false</UsingBrowserRuntimeWorkload>
+    <UsingWasiRuntimeWorkload>false</UsingWasiRuntimeWorkload>
+    <UsingEmscriptenWorkload>true</UsingEmscriptenWorkload>
+    <DotNetJsApi>true</DotNetJsApi>
+    <_ExeExt Condition="$([MSBuild]::IsOSPlatform('WINDOWS'))">.exe</_ExeExt>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(UsingNativeAOT)' == 'true'">
+    <PackageReference Include="Microsoft.DotNet.ILCompiler.LLVM" Version="$(ProductVersion)-*" />
+    <PackageReference Include="runtime.$(ToolsRID).Microsoft.DotNet.ILCompiler.LLVM" Version="$(ProductVersion)-*" />
+    <!-- TODO: Can be removed when emscripten workload refactoring is aligned with NativeAOT -->
+    <EmscriptenEnvVars Include="DOTNET_EMSCRIPTEN_LLVM_ROOT=$(EmscriptenSdkToolsPath)bin" />
+    <EmscriptenEnvVars Include="DOTNET_EMSCRIPTEN_BINARYEN_ROOT=$(EmscriptenSdkToolsPath)" />
+    <EmscriptenEnvVars Include="DOTNET_EMSCRIPTEN_NODE_JS=$([MSBuild]::NormalizePath($(EmscriptenNodeToolsPath), 'bin', 'node$(_ExeExt)'))" />
+    <EmscriptenEnvVars Include="EM_FROZEN_CACHE=1" />
+    <EmscriptenEnvVars Include="EM_CACHE=$(WasmCachePath)" Condition="'$(WasmCachePath)' != ''" />
+  </ItemGroup>
+  <!-- /NativeAOT -->
 
   <ItemGroup>
     <WasmExtraFilesToDeploy Include="index.html" />

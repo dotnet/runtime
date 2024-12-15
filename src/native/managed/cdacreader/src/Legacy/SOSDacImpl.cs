@@ -32,7 +32,8 @@ internal sealed unsafe partial class SOSDacImpl
     private readonly Target _target;
 
     // When this class is created, the runtime may not have loaded the string and object method tables and set the global pointers.
-    // They should be set when actually requested via a DAC API, so we lazily read the global pointers.
+    // This is also the case for the GetUsefulGlobals API, which can be called as part of load notifications before runtime start.
+    // They should be set when actually requested via other DAC APIs, so we lazily read the global pointers.
     private readonly Lazy<TargetPointer> _stringMethodTable;
     private readonly Lazy<TargetPointer> _objectMethodTable;
 
@@ -349,16 +350,14 @@ internal sealed unsafe partial class SOSDacImpl
                 }
             }
 
-#if false // TODO[cdac]: HAVE_GCCOVER
+            // HAVE_GCCOVER
             if (requestedNativeCodeVersion.Valid)
             {
-                TargetPointer gcCoverAddr = nativeCodeContract.GetGCCoverageInfo(requestedNativeCodeVersion);
-                if (gcCoverAddr != TargetPointer.Null)
-                {
-                    throw new NotImplementedException(); // TODO[cdac]: gc stress code copy
-                }
+                // TargetPointer.Null if GCCover information is not available.
+                // In certain minidumps, we won't save the GCCover information.
+                // (it would be unwise to do so, it is heavy and not a customer scenario).
+                data->GCStressCodeCopy = nativeCodeContract.GetGCStressCodeCopy(requestedNativeCodeVersion);
             }
-#endif
 
             // Unlike the legacy implementation, the cDAC does not currently populate
             // data->managedDynamicMethodObject. This field is unused in both SOS and CLRMD
@@ -1243,8 +1242,10 @@ internal sealed unsafe partial class SOSDacImpl
         {
             data->ArrayMethodTable = _target.ReadPointer(
                 _target.ReadGlobalPointer(Constants.Globals.ObjectArrayMethodTable));
-            data->StringMethodTable = _stringMethodTable.Value;
-            data->ObjectMethodTable = _objectMethodTable.Value;
+            data->StringMethodTable = _target.ReadPointer(
+                _target.ReadGlobalPointer(Constants.Globals.StringMethodTable));
+            data->ObjectMethodTable = _target.ReadPointer(
+                _target.ReadGlobalPointer(Constants.Globals.ObjectMethodTable));
             data->ExceptionMethodTable = _target.ReadPointer(
                 _target.ReadGlobalPointer(Constants.Globals.ExceptionMethodTable));
             data->FreeMethodTable = _target.ReadPointer(
@@ -1409,7 +1410,7 @@ internal sealed unsafe partial class SOSDacImpl
     #endregion ISOSDacInterface12
 
     #region ISOSDacInterface13
-    int ISOSDacInterface13.TraverseLoaderHeap(ulong loaderHeapAddr, /*LoaderHeapKind*/ int kind, VISITHEAP pCallback)
+    int ISOSDacInterface13.TraverseLoaderHeap(ulong loaderHeapAddr, /*LoaderHeapKind*/ int kind, /*VISITHEAP*/ delegate* unmanaged<ulong, nuint, Interop.BOOL> pCallback)
         => _legacyImpl13 is not null ? _legacyImpl13.TraverseLoaderHeap(loaderHeapAddr, kind, pCallback) : HResults.E_NOTIMPL;
     int ISOSDacInterface13.GetDomainLoaderAllocator(ulong domainAddress, ulong* pLoaderAllocator)
         => _legacyImpl13 is not null ? _legacyImpl13.GetDomainLoaderAllocator(domainAddress, pLoaderAllocator) : HResults.E_NOTIMPL;

@@ -758,6 +758,13 @@ namespace Wasm.Build.Tests
         string? TargetFramework           = null,
         IDictionary<string, string>? ExtraBuildEnvironmentVariables = null
     );
+    
+    public record AssertBundleOptions(
+        BuildProjectOptions BuildOptions,
+        bool ExpectSymbolsFile = true,
+        bool AssertIcuAssets = true,
+        bool AssertSymbolsFile = true
+    );
 
     public enum NativeFilesType { FromRuntimePack, Relinked, AOT };
 }
