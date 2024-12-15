@@ -278,7 +278,7 @@ namespace System.Linq.Expressions.Compiler
             Label labEnd = _ilg.DefineLabel();
             EmitExpression(b.Left);
             _ilg.Emit(OpCodes.Dup);
-            MethodInfo? opFalse = TypeUtils.GetBooleanOperator(b.Method.DeclaringType!, "op_False");
+            MethodInfo? opFalse = TypeUtils.GetBooleanOperator(b.Method!.DeclaringType!, "op_False");
             Debug.Assert(opFalse != null, "factory should check that the method exists");
             _ilg.Emit(OpCodes.Call, opFalse);
             _ilg.Emit(OpCodes.Brtrue, labEnd);
@@ -391,7 +391,7 @@ namespace System.Linq.Expressions.Compiler
             Label labEnd = _ilg.DefineLabel();
             EmitExpression(b.Left);
             _ilg.Emit(OpCodes.Dup);
-            MethodInfo? opTrue = TypeUtils.GetBooleanOperator(b.Method.DeclaringType!, "op_True");
+            MethodInfo? opTrue = TypeUtils.GetBooleanOperator(b.Method!.DeclaringType!, "op_True");
             Debug.Assert(opTrue != null, "factory should check that the method exists");
             _ilg.Emit(OpCodes.Call, opTrue);
             _ilg.Emit(OpCodes.Brtrue, labEnd);
