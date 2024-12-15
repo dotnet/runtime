@@ -31,6 +31,7 @@ namespace System.Diagnostics
         public virtual void Write(string? message) { }
         public static void WriteCore(string message) { }
         public virtual void WriteLine(string? message) { }
+        public virtual void WriteLine() { }
     }
     public static partial class Debug
     {
