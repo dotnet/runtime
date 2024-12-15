@@ -79,7 +79,11 @@ StackFrameIterator::StackFrameIterator(Thread * pThreadToWalk, PInvokeTransition
     }
     else
     {
-        InternalInit(pThreadToWalk, pInitialTransitionFrame, GcStackWalkFlags);
+        uint32_t flags = (pInitialTransitionFrame->m_Flags | PTFF_THREAD_HIJACK) != 0 ?
+            GcStackWalkFlags :
+            GcStackWalkFlags | ActiveStackFrame;
+
+        InternalInit(pThreadToWalk, pInitialTransitionFrame, flags);
     }
 
     PrepareToYieldFrame();

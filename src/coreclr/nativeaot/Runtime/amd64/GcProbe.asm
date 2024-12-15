@@ -110,7 +110,7 @@ NESTED_ENTRY RhpGcProbeHijack, _TEXT, RhpPInvokeExceptionGuard
         jnz         @f
         ret
 @@:
-        or          ecx, DEFAULT_FRAME_SAVE_FLAGS + PTFF_SAVE_RAX
+        or          ecx, DEFAULT_FRAME_SAVE_FLAGS + PTFF_SAVE_RAX + PTFF_THREAD_HIJACK
         jmp         RhpWaitForGC
 NESTED_END RhpGcProbeHijack, _TEXT
 

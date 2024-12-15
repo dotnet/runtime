@@ -451,6 +451,7 @@ void Thread::GcScanRootsWorker(ScanFunc * pfnEnumCallback, ScanContext * pvCallb
     PTR_OBJECTREF    pHijackedReturnValue = NULL;
     GCRefKind        returnValueKind      = GCRK_Unknown;
 
+#ifdef TARGET_X86
     if (frameIterator.GetHijackedReturnValueLocation(&pHijackedReturnValue, &returnValueKind))
     {
         GCRefKind reg0Kind = ExtractReg0ReturnKind(returnValueKind);
@@ -469,6 +470,7 @@ void Thread::GcScanRootsWorker(ScanFunc * pfnEnumCallback, ScanContext * pvCallb
 #endif  // TARGET_ARM64 || TARGET_UNIX
 
     }
+#endif
 
 #ifndef DACCESS_COMPILE
     if (GetRuntimeInstance()->IsConservativeStackReportingEnabled())
