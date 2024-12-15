@@ -137,6 +137,7 @@ DEFINE_METHOD(ASSEMBLY,             CTOR,                   .ctor,              
 DEFINE_CLASS(ASYNCCALLBACK,         System,                 AsyncCallback)
 DEFINE_CLASS(ATTRIBUTE,             System,                 Attribute)
 
+DEFINE_CLASS_U(System,              Signature,          SignatureNative)
 
 DEFINE_CLASS(BINDER,                Reflection,             Binder)
 

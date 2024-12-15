@@ -667,6 +667,19 @@ namespace System
 
         internal static bool CanCastTo(RuntimeType type, RuntimeType target)
         {
+            // See TypeHandle::CanCastToCached() for duplicate quick checks.
+            TypeHandle typeTH = type.GetNativeTypeHandle();
+            TypeHandle targetTH = target.GetNativeTypeHandle();
+            if (TypeHandle.AreSameType(typeTH, targetTH))
+            {
+                return true;
+            }
+
+            if (!typeTH.IsTypeDesc && targetTH.IsTypeDesc)
+            {
+                return false;
+            }
+
             return CanCastToInternal(type, target) switch
             {
                 CastResult.CanCast => true,
@@ -1119,9 +1132,9 @@ namespace System
         {
             Debug.Assert(method != null);
 
-            int slot = GetMethodDef(method.Value);
+            int token = GetMethodDef(method.Value);
             GC.KeepAlive(method);
-            return slot;
+            return token;
         }
 
         internal static string GetName(RuntimeMethodHandleInternal method)
@@ -1985,7 +1998,6 @@ namespace System
             RuntimeMethodHandleInternal methodHandle,
             IntPtr typeHandle);
 
-        [MemberNotNull(nameof(_declaringType))]
         [MemberNotNull(nameof(_returnTypeORfieldType))]
         private void Init(
             void* pCorSig, int cCorSig,
@@ -1993,13 +2005,15 @@ namespace System
             RuntimeMethodHandleInternal methodHandle)
         {
             Signature _this = this;
-            IntPtr typeHandle = _declaringType?.GetUnderlyingNativeHandle() ?? IntPtr.Zero;
+
+            // Lifetime of typeHandle is extended since the RuntimeType is
+            // a member of Signature, whose lifetime is ensured below.
+            IntPtr typeHandle = _declaringType.GetUnderlyingNativeHandle();
             Init(ObjectHandleOnStack.Create(ref _this),
                 pCorSig, cCorSig,
                 fieldHandle,
                 methodHandle,
                 typeHandle);
-            Debug.Assert(_declaringType != null);
             Debug.Assert(_returnTypeORfieldType != null);
         }
 
@@ -2016,7 +2030,8 @@ namespace System
             Debug.Assert((_managedCallingConventionAndArgIteratorFlags & 0xffffff00) == 0);
             _pMethod = methodHandle.Value;
 
-            Init(null, 0, default, methodHandle.Value);
+            _declaringType = RuntimeMethodHandle.GetDeclaringType(_pMethod);
+            Init(null, 0, default, _pMethod);
             GC.KeepAlive(methodHandle);
         }
 

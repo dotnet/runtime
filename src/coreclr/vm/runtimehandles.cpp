@@ -1064,6 +1064,9 @@ extern "C" BOOL QCALLTYPE RuntimeTypeHandle_SatisfiesConstraints(QCall::TypeHand
 
     BEGIN_QCALL;
 
+    // Instantiation classInst = Instantiation{};
+    // Instantiation methodInst = Instantiation{};
+
     Instantiation classInst = typeContextArgs != NULL
         ? Instantiation(typeContextArgs, typeContextCount)
         : Instantiation{};
@@ -1637,17 +1640,7 @@ FCIMPL1(INT32, RuntimeMethodHandle::GetMethodDef, MethodDesc* pMethod)
 {
     FCALL_CONTRACT;
     _ASSERTE(pMethod != NULL);
-
-    if (pMethod->HasMethodInstantiation())
-        pMethod = pMethod->StripMethodInstantiation();
-
-    INT32 tkMethodDef = (INT32)pMethod->GetMemberDef();
-    _ASSERTE(TypeFromToken(tkMethodDef) == mdtMethodDef);
-
-    if (IsNilToken(tkMethodDef) || TypeFromToken(tkMethodDef) != mdtMethodDef)
-        return mdMethodDefNil;
-
-    return tkMethodDef;
+    return (INT32)pMethod->GetMemberDef();
 }
 FCIMPLEND
 
@@ -1672,15 +1665,6 @@ extern "C" void QCALLTYPE Signature_Init(
     GCPROTECT_BEGIN(gc);
 
     TypeHandle declType = TypeHandle::FromPtr(typeHandleRaw);
-    if (declType.IsNull())
-    {
-        // Dynamic method case
-        _ASSERTE(pMethodDesc->IsDynamicMethod());
-        declType = pMethodDesc->GetMethodTable();
-
-        REFLECTCLASSBASEREF refDeclType = (REFLECTCLASSBASEREF)declType.GetManagedClassObject();
-        gc.pSig->SetDeclaringType(refDeclType);
-    }
     _ASSERTE(!declType.IsNull());
 
     if (pMethodDesc != NULL)
@@ -1751,7 +1735,6 @@ extern "C" void QCALLTYPE Signature_Init(
         }
     }
 
-    _ASSERTE(gc.pSig->m_declaringType != NULL);
     _ASSERTE(gc.pSig->m_returnType != NULL);
     GCPROTECT_END();
     END_QCALL;

@@ -11,7 +11,6 @@
 #include "typectxt.h"
 
 typedef void* EnregisteredTypeHandle;
-class SignatureNative;
 
 // NOTE: These are defined in CallingConventions.cs.
 typedef enum ReflectionCallConv {
@@ -299,16 +298,6 @@ public:
 
 extern "C" void QCALLTYPE AssemblyHandle_GetManifestModuleSlow(QCall::ObjectHandleOnStack assembly, QCall::ObjectHandleOnStack module);
 
-class SignatureNative;
-
-typedef DPTR(SignatureNative) PTR_SignatureNative;
-
-#ifdef USE_CHECKED_OBJECTREFS
-typedef REF<SignatureNative> SIGNATURENATIVEREF;
-#else
-typedef PTR_SignatureNative SIGNATURENATIVEREF;
-#endif
-
 extern "C" void QCALLTYPE Signature_Init(
     QCall::ObjectHandleOnStack sigObj,
     PCCOR_SIGNATURE pCorSig, DWORD cCorSig,
@@ -513,6 +502,14 @@ private:
     INT32 m_nSizeOfArgStack;
     MethodDesc* m_pMethod;
 };
+
+typedef DPTR(SignatureNative) PTR_SignatureNative;
+
+#ifdef USE_CHECKED_OBJECTREFS
+typedef REF<SignatureNative> SIGNATURENATIVEREF;
+#else
+typedef PTR_SignatureNative SIGNATURENATIVEREF;
+#endif
 
 class ReflectionPointer : public Object
 {
