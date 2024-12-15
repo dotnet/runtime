@@ -134,6 +134,10 @@ namespace System.Diagnostics
             s_provider.Fail(message, detailMessage);
 
         [Conditional("DEBUG")]
+        public static void WriteLine() =>
+            s_provider.WriteLine();
+
+        [Conditional("DEBUG")]
         public static void WriteLine(string? message) =>
             s_provider.WriteLine(message);
 

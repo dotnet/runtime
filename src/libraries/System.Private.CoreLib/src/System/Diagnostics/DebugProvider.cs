@@ -63,6 +63,11 @@ namespace System.Diagnostics
             }
         }
 
+        public virtual void WriteLine()
+        {
+            Write(Environment.NewLineConst);
+        }
+
         public virtual void WriteLine(string? message)
         {
             Write(message + Environment.NewLineConst);
