@@ -1,17 +1,34 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
 
-#include "common.h"
-#include "introsort.h"
+#ifndef _INTROSORT_H
+#define _INTROSORT_H
 
+class introsort
+{
 
- void introsort::sort (uint8_t** begin, uint8_t** end, int ignored)
+private:
+    static const int size_threshold = 64;
+    static const int max_depth = 100;
+
+    inline static void swap_elements(uint8_t** i,uint8_t** j)
+    {
+        uint8_t* t=*i;
+        *i=*j;
+        *j=t;
+    }
+
+public:
+    static void sort (uint8_t** begin, uint8_t** end, int ignored)
     {
         ignored = 0;
         introsort_loop (begin, end, max_depth);
         insertionsort (begin, end);
     }
 
+private:
 
- void introsort::introsort_loop (uint8_t** lo, uint8_t** hi, int depth_limit)
+    static void introsort_loop (uint8_t** lo, uint8_t** hi, int depth_limit)
     {
         while (hi-lo >= size_threshold)
         {
@@ -27,7 +44,7 @@
         }
     }
 
- uint8_t** introsort::median_partition (uint8_t** low, uint8_t** high)
+    static uint8_t** median_partition (uint8_t** low, uint8_t** high)
     {
         uint8_t *pivot, **left, **right;
 
@@ -56,8 +73,7 @@
         return left;
     }
 
-
- void introsort::insertionsort (uint8_t** lo, uint8_t** hi)
+    static void insertionsort (uint8_t** lo, uint8_t** hi)
     {
         for (uint8_t** i=lo+1; i <= hi; i++)
         {
@@ -72,7 +88,7 @@
         }
     }
 
- void introsort::heapsort (uint8_t** lo, uint8_t** hi)
+    static void heapsort (uint8_t** lo, uint8_t** hi)
     {
         size_t n = hi - lo + 1;
         for (size_t i=n / 2; i >= 1; i--)
@@ -86,7 +102,7 @@
         }
     }
 
- void introsort::downheap (size_t i, size_t n, uint8_t** lo)
+    static void downheap (size_t i, size_t n, uint8_t** lo)
     {
         uint8_t* d = *(lo + i - 1);
         size_t child;
@@ -106,3 +122,7 @@
         }
         *(lo + i - 1) = d;
     }
+
+};
+
+#endif // _INTROSORT_H

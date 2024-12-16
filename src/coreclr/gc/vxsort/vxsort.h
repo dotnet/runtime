@@ -31,7 +31,7 @@
 #endif //VXSORT_STATS
 #include "packer.h"
 #include "smallsort/bitonic_sort.h"
-#include "introsort.h"
+#include "../introsort.h"
 
 namespace vxsort {
 using vxsort::smallsort::bitonic;

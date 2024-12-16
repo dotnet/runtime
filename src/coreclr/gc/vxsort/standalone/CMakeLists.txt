@@ -31,7 +31,6 @@ set (VXSORT_SOURCES
   ../do_vxsort_avx2.cpp
   ../do_vxsort_avx512.cpp
   ../do_vxsort_neon.cpp
-  ../introsort.cpp
   ../machine_traits.avx2.cpp
   ../machine_traits.neon.cpp
   ../smallsort/bitonic_sort.AVX2.int64_t.generated.cpp
