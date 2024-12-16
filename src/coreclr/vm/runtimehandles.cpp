@@ -1050,13 +1050,13 @@ extern "C" BOOL QCALLTYPE RuntimeTypeHandle_CanCastToSlow(QCall::TypeHandle type
     return retVal;
 }
 
-extern "C" BOOL QCALLTYPE RuntimeTypeHandle_SatisfiesConstraints(QCall::TypeHandle paramType, TypeHandle* typeContextArgs, INT32 typeContextCount, TypeHandle* methodContextArgs, INT32 methodContextCount, QCall::TypeHandle toType)
+extern "C" BOOL QCALLTYPE RuntimeTypeHandle_SatisfiesConstraints(QCall::TypeHandle paramType, EnregisteredTypeHandle typeContext, MethodDesc* methodContext, QCall::TypeHandle toType)
 {
     CONTRACTL
     {
         QCALL_CHECK;
-        PRECONDITION(CheckPointer(typeContextArgs, NULL_OK));
-        PRECONDITION(CheckPointer(methodContextArgs, NULL_OK));
+        PRECONDITION(CheckPointer(typeContext, NULL_OK));
+        PRECONDITION(CheckPointer(methodContext, NULL_OK));
     }
     CONTRACTL_END;
 
@@ -1064,14 +1064,12 @@ extern "C" BOOL QCALLTYPE RuntimeTypeHandle_SatisfiesConstraints(QCall::TypeHand
 
     BEGIN_QCALL;
 
-    // Instantiation classInst = Instantiation{};
-    // Instantiation methodInst = Instantiation{};
-
-    Instantiation classInst = typeContextArgs != NULL
-        ? Instantiation(typeContextArgs, typeContextCount)
+    TypeHandle typeHandle = TypeHandle::FromPtr(typeContext);
+    Instantiation classInst = !typeHandle.IsNull()
+        ? typeHandle.GetMethodTable()->GetInstantiation()
         : Instantiation{};
-    Instantiation methodInst = methodContextArgs != NULL
-        ? Instantiation(methodContextArgs, methodContextCount)
+    Instantiation methodInst = methodContext != NULL
+        ? methodContext->GetMethodInstantiation()
         : Instantiation{};
 
     SigTypeContext typeContext;

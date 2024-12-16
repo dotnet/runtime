@@ -859,22 +859,16 @@ namespace System
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_SatisfiesConstraints")]
-        private static partial Interop.BOOL SatisfiesConstraints(QCallTypeHandle paramType, IntPtr* pTypeContext, int typeContextLength, IntPtr* pMethodContext, int methodContextLength, QCallTypeHandle toType);
+        private static partial Interop.BOOL SatisfiesConstraints(QCallTypeHandle paramType, nint pTypeContext, RuntimeMethodHandleInternal pMethodContext, QCallTypeHandle toType);
 
-        internal static bool SatisfiesConstraints(RuntimeType paramType, RuntimeType[]? typeContext, RuntimeType[]? methodContext, RuntimeType toType)
+        internal static bool SatisfiesConstraints(RuntimeType paramType, RuntimeType? typeContext, RuntimeMethodInfo? methodContext, RuntimeType toType)
         {
-            IntPtr[]? typeContextHandles = CopyRuntimeTypeHandles(typeContext, out int typeContextLength);
-            IntPtr[]? methodContextHandles = CopyRuntimeTypeHandles(methodContext, out int methodContextLength);
-
-            fixed (IntPtr* pTypeContextHandles = typeContextHandles, pMethodContextHandles = methodContextHandles)
-            {
-                bool result = SatisfiesConstraints(new QCallTypeHandle(ref paramType), pTypeContextHandles, typeContextLength, pMethodContextHandles, methodContextLength, new QCallTypeHandle(ref toType)) != Interop.BOOL.FALSE;
-
-                GC.KeepAlive(typeContext);
-                GC.KeepAlive(methodContext);
-
-                return result;
-            }
+            IntPtr typeContextRaw = typeContext?.GetUnderlyingNativeHandle() ?? default;
+            RuntimeMethodHandleInternal methodContextRaw = ((IRuntimeMethodInfo?)methodContext)?.Value ?? RuntimeMethodHandleInternal.EmptyHandle;
+            bool result = SatisfiesConstraints(new QCallTypeHandle(ref paramType), typeContextRaw, methodContextRaw, new QCallTypeHandle(ref toType)) != Interop.BOOL.FALSE;
+            GC.KeepAlive(typeContext);
+            GC.KeepAlive(methodContext);
+            return result;
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_RegisterCollectibleTypeDependency")]
