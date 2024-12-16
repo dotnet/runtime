@@ -65,7 +65,6 @@ usage()
   echo ""
 
   echo "Libraries settings:"
-  echo "  --allconfigurations        Build packages for all build configurations."
   echo "  --coverage                 Collect code coverage when testing."
   echo "  --framework (-f)           Build framework: net10.0 or net48."
   echo "                             [Default: net10.0]"
@@ -308,11 +307,6 @@ while [[ $# > 0 ]]; do
       shift 2
       ;;
 
-     -allconfigurations)
-      arguments="$arguments /p:BuildAllConfigurations=true"
-      shift 1
-      ;;
-
      -testscope)
       if [ -z ${2+x} ]; then
         echo "No test scope supplied. See help (--help) for supported test scope values." 1>&2
@@ -551,6 +545,10 @@ fi
 
 if [[ "${TreatWarningsAsErrors:-}" == "false" ]]; then
     arguments="$arguments -warnAsError false"
+fi
+
+if [[ ! -z "$pack" ]]; then
+  arguments="$arguments /p:BuildAllConfigurations=true"
 fi
 
 # disable terminal logger for now: https://github.com/dotnet/runtime/issues/97211
