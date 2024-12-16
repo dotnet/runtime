@@ -27,7 +27,6 @@ Abstract:
 #include "pal/perftrace.h"
 #include "pal/dbgmsg.h"
 #include "pal/cruntime.h"
-#include "pal/misc.h"
 
 /* Standard headers */
 #include <stdio.h>

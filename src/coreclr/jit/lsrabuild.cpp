@@ -2526,7 +2526,6 @@ void LinearScan::buildIntervals()
         // handling clobbers REG_SCRATCH, so kill it here.
         if ((block == compiler->fgFirstBB) && compiler->lvaHasAnySwiftStackParamToReassemble())
         {
-            assert(compiler->fgFirstBBisScratch());
             addKillForRegs(genRegMask(REG_SCRATCH), currentLoc + 1);
             currentLoc += 2;
         }
@@ -2536,7 +2535,6 @@ void LinearScan::buildIntervals()
         // into the scratch register, so it will be killed here.
         if (compiler->compShouldPoisonFrame() && (block == compiler->fgFirstBB))
         {
-            assert(compiler->fgFirstBBisScratch());
             regMaskTP killed;
 #if defined(TARGET_XARCH)
             // Poisoning uses EAX for small vars and rep stosd that kills edi, ecx and eax for large vars.
@@ -2766,12 +2764,12 @@ void LinearScan::buildIntervals()
                     {
                         calleeSaveCount = CNT_CALLEE_ENREG;
                     }
-#if (defined(TARGET_XARCH) || defined(TARGET_ARM64)) && defined(FEATURE_SIMD)
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
                     else if (varTypeUsesMaskReg(interval->registerType))
                     {
                         calleeSaveCount = CNT_CALLEE_SAVED_MASK;
                     }
-#endif // (TARGET_XARCH || TARGET_ARM64) && FEATURE_SIMD
+#endif // FEATURE_MASKED_HW_INTRINSICS
                     else
                     {
                         assert(varTypeUsesFloatReg(interval->registerType));

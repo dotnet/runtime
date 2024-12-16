@@ -93,7 +93,7 @@ namespace System
             return members ?? Array.Empty<MemberInfo>();
         }
 
-        public override Type GetElementType() => RuntimeTypeHandle.GetElementType(this);
+        public override Type? GetElementType() => RuntimeTypeHandle.GetElementType(this);
 
         public override string? GetEnumName(object value)
         {
@@ -774,7 +774,7 @@ namespace System
             CorElementType corElemType = type.GetCorElementType();
             if (corElemType == CorElementType.ELEMENT_TYPE_BYREF)
             {
-                elementType = RuntimeTypeHandle.GetElementType(type);
+                elementType = RuntimeTypeHandle.GetElementType(type)!;
                 return true;
             }
 

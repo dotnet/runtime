@@ -641,6 +641,19 @@ namespace ILCompiler
                     if (DiagnosticUtilities.TryGetRequiresAttribute(method, DiagnosticUtilities.RequiresAssemblyFilesAttribute, out _))
                         Logger.LogWarning(new MessageOrigin(method), DiagnosticId.RequiresAssemblyFilesOnStaticConstructor, method.GetDisplayName());
                 }
+
+                if (method is EcmaMethod maybeEntrypoint
+                    && (maybeEntrypoint.Module.EntryPoint == method || (method.IsUnmanagedCallersOnly && maybeEntrypoint.GetUnmanagedCallersOnlyExportName() != null)))
+                {
+                    if (DiagnosticUtilities.TryGetRequiresAttribute(method, DiagnosticUtilities.RequiresUnreferencedCodeAttribute, out _))
+                        Logger.LogWarning(new MessageOrigin(method), DiagnosticId.RequiresUnreferencedCodeOnEntryPoint, method.GetDisplayName());
+
+                    if (DiagnosticUtilities.TryGetRequiresAttribute(method, DiagnosticUtilities.RequiresDynamicCodeAttribute, out _))
+                        Logger.LogWarning(new MessageOrigin(method), DiagnosticId.RequiresDynamicCodeOnEntryPoint, method.GetDisplayName());
+
+                    if (DiagnosticUtilities.TryGetRequiresAttribute(method, DiagnosticUtilities.RequiresAssemblyFilesAttribute, out _))
+                        Logger.LogWarning(new MessageOrigin(method), DiagnosticId.RequiresAssemblyFilesOnEntryPoint, method.GetDisplayName());
+                }
             }
 
             if (method.GetTypicalMethodDefinition() is Internal.TypeSystem.Ecma.EcmaMethod ecmaMethod)

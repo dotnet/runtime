@@ -175,9 +175,6 @@ namespace System
         private const uint BulkMoveWithWriteBarrierChunk = 0x4000;
 #endif
 
-#if NATIVEAOT
-        [System.Runtime.RuntimeExport("RhBuffer_BulkMoveWithWriteBarrier")]
-#endif
         internal static void BulkMoveWithWriteBarrier(ref byte destination, ref byte source, nuint byteCount)
         {
             if (byteCount <= BulkMoveWithWriteBarrierChunk)

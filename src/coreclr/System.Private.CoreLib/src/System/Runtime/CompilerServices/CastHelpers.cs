@@ -24,11 +24,26 @@ namespace System.Runtime.CompilerServices
             throw null!; // Provide hint to the inliner that this method does not return
         }
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern object IsInstanceOfAny_NoCacheLookup(void* toTypeHnd, object obj);
+        [LibraryImport(RuntimeHelpers.QCall)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static partial bool IsInstanceOf_NoCacheLookup(void *toTypeHnd, [MarshalAs(UnmanagedType.Bool)] bool throwCastException, ObjectHandleOnStack obj);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern object ChkCastAny_NoCacheLookup(void* toTypeHnd, object obj);
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static object? IsInstanceOfAny_NoCacheLookup(void* toTypeHnd, object obj)
+        {
+            if (IsInstanceOf_NoCacheLookup(toTypeHnd, false, ObjectHandleOnStack.Create(ref obj)))
+            {
+                return obj;
+            }
+            return null;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static object ChkCastAny_NoCacheLookup(void* toTypeHnd, object obj)
+        {
+            IsInstanceOf_NoCacheLookup(toTypeHnd, true, ObjectHandleOnStack.Create(ref obj));
+            return obj;
+        }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern void WriteBarrier(ref object? dst, object? obj);
@@ -175,8 +190,10 @@ namespace System.Runtime.CompilerServices
                 mt = mt->ParentMethodTable;
             }
 
+#if FEATURE_TYPEEQUIVALENCE
             // this helper is not supposed to be used with type-equivalent "to" type.
             Debug.Assert(!((MethodTable*)toTypeHnd)->HasTypeEquivalence);
+#endif // FEATURE_TYPEEQUIVALENCE
 
             obj = null;
 
@@ -462,13 +479,13 @@ namespace System.Runtime.CompilerServices
         {
             Debug.Assert(obj != null);
 
-            obj = IsInstanceOfAny_NoCacheLookup(elementType, obj);
-            if (obj == null)
+            object? obj2 = IsInstanceOfAny_NoCacheLookup(elementType, obj);
+            if (obj2 == null)
             {
                 ThrowArrayMismatchException();
             }
 
-            WriteBarrier(ref element, obj);
+            WriteBarrier(ref element, obj2);
         }
 
         [DebuggerHidden]
@@ -494,8 +511,7 @@ namespace System.Runtime.CompilerServices
         {
             Debug.Assert(obj != null);
 
-            obj = IsInstanceOfAny_NoCacheLookup(elementType, obj);
-            if (obj == null)
+            if (IsInstanceOfAny_NoCacheLookup(elementType, obj) == null)
             {
                 ThrowArrayMismatchException();
             }
@@ -594,6 +610,32 @@ namespace System.Runtime.CompilerServices
                         SpanHelpers.Memmove(ref dst, ref src, valueSize);
                 }
             }
+        }
+
+        [DebuggerHidden]
+        internal static object? ReboxFromNullable(MethodTable* srcMT, object src)
+        {
+            Debug.Assert(srcMT->IsNullable);
+
+            ref byte nullableData = ref src.GetRawData();
+
+            // If 'hasValue' is false, return null.
+            if (!Unsafe.As<byte, bool>(ref nullableData))
+                return null;
+
+            // Allocate a new instance of the T in Nullable<T>.
+            MethodTable* dstMT = srcMT->InstantiationArg0();
+            object dst = RuntimeTypeHandle.InternalAlloc(dstMT);
+
+            // Copy data from the Nullable<T>.
+            ref byte srcData = ref Unsafe.Add(ref nullableData, srcMT->NullableValueAddrOffset);
+            ref byte dstData = ref RuntimeHelpers.GetRawData(dst);
+            if (dstMT->ContainsGCPointers)
+                Buffer.BulkMoveWithWriteBarrier(ref dstData, ref srcData, dstMT->GetNumInstanceFieldBytesIfContainsGCPointers());
+            else
+                SpanHelpers.Memmove(ref dstData, ref srcData, dstMT->GetNumInstanceFieldBytes());
+
+            return dst;
         }
 
         [DebuggerHidden]

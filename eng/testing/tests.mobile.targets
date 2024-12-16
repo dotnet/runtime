@@ -40,6 +40,13 @@
     <UseNativeHttpHandler Condition="'$(UseNativeHttpHandler)' == ''">false</UseNativeHttpHandler>
   </PropertyGroup>
 
+  <!-- When tests are built on Helix, override default trimming switches  -->
+  <PropertyGroup Condition="'$(EnableAggressiveTrimming)' == 'true' and '$(BuildTestsOnHelix)' == 'true'">
+    <DynamicCodeSupport Condition="'$(DynamicCodeSupport)' == '' and '$(MonoForceInterpreter)' != 'true'">false</DynamicCodeSupport>
+    <_DefaultValueAttributeSupport Condition="'$(OverrideDefaultValueAndDesignerHostSupport)' == 'true'">true</_DefaultValueAttributeSupport>
+    <_DesignerHostSupport Condition="'$(OverrideDefaultValueAndDesignerHostSupport)' == 'true'">true</_DesignerHostSupport>
+  </PropertyGroup>
+
   <!-- When trimming non-exe projects, root the whole intermediate assembly.
        The SDK settings root only the entry point by default. These targets are used not only for standard
        console apps, but also for test projects without an entry point. -->

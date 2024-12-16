@@ -751,7 +751,9 @@ namespace System.Runtime.CompilerServices
         private const uint enum_flag_ContainsGCPointers = 0x01000000;
         private const uint enum_flag_ContainsGenericVariables = 0x20000000;
         private const uint enum_flag_HasComponentSize = 0x80000000;
+#if FEATURE_TYPEEQUIVALENCE
         private const uint enum_flag_HasTypeEquivalence = 0x02000000;
+#endif // FEATURE_TYPEEQUIVALENCE
         private const uint enum_flag_HasFinalizer = 0x00100000;
         private const uint enum_flag_Category_Mask = 0x000F0000;
         private const uint enum_flag_Category_ValueType = 0x00040000;

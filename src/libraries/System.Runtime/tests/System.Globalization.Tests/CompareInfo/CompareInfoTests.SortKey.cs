@@ -21,6 +21,50 @@ namespace System.Globalization.Tests
                     PlatformDetection.IsNlsGlobalization && CompareStringEx("", NORM_LINGUISTIC_CASING, "", 0, "\u200C", 1, IntPtr.Zero, IntPtr.Zero, 0) != 2;
         public static IEnumerable<object[]> SortKey_TestData()
         {
+            #region Numeric ordering
+            if (PlatformDetection.IsNumericComparisonSupported)
+            {
+                var isNls = PlatformDetection.IsNlsGlobalization;
+
+                yield return new object[] { s_invariantCompare, "1234567890", "1234567890", CompareOptions.NumericOrdering, 0 };
+                yield return new object[] { s_invariantCompare, "1234567890", "1234567890", CompareOptions.NumericOrdering, 0 };
+
+                // Leading zero
+                yield return new object[] { s_invariantCompare, "02", "1", CompareOptions.NumericOrdering, 1 };
+                yield return new object[] { s_invariantCompare, "a02", "a1", CompareOptions.NumericOrdering, 1 };
+                yield return new object[] { s_invariantCompare, "02a", "1a", CompareOptions.NumericOrdering, 1 };
+
+                // NLS treats equivalent numbers differing by leading zeros as unequal
+                yield return new object[] { s_invariantCompare, "01", "1", CompareOptions.NumericOrdering, isNls ? -1 : 0 };
+                yield return new object[] { s_invariantCompare, "a01", "a1", CompareOptions.NumericOrdering, isNls ? -1 : 0 };
+                yield return new object[] { s_invariantCompare, "01a", "1a", CompareOptions.NumericOrdering, isNls ? -1 : 0 };
+
+                // But they are closer in sort order than unequal numbers: 1 < 02 < 2 < 03
+                // Unlike non-numerical sort which bookends them: 02 < 03 < 1 < 2
+                yield return new object[] { s_invariantCompare, "1", "02", CompareOptions.NumericOrdering, -1 };
+                yield return new object[] { s_invariantCompare, "02", "2", CompareOptions.NumericOrdering, isNls ? -1 : 0 };
+                yield return new object[] { s_invariantCompare, "2", "03", CompareOptions.NumericOrdering, -1 };
+
+                // 2 < 10
+                yield return new object[] { s_invariantCompare, "2", "10", CompareOptions.NumericOrdering, -1 };
+                yield return new object[] { s_invariantCompare, "a2", "a10", CompareOptions.NumericOrdering, -1 };
+                yield return new object[] { s_invariantCompare, "2a", "10a", CompareOptions.NumericOrdering, -1 };
+
+                // With casing
+                yield return new object[] { s_invariantCompare, "1A02", "1a02", CompareOptions.NumericOrdering | CompareOptions.IgnoreCase, 0 };
+                yield return new object[] { s_invariantCompare, "A1", "a2", CompareOptions.NumericOrdering, -1 }; // Numerical differences have higher precedence
+                yield return new object[] { s_invariantCompare, "A01", "a1", CompareOptions.NumericOrdering, isNls ? -1 : 1 }; // ICU treats 01 == 1
+
+                // With diacritics
+                yield return new object[] { s_invariantCompare, "1\u00E102", "1a02", CompareOptions.NumericOrdering | CompareOptions.IgnoreNonSpace, 0 };
+                yield return new object[] { s_invariantCompare, "\u00E11", "a2", CompareOptions.NumericOrdering, -1 }; // Numerical differences have higher precedence
+                yield return new object[] { s_invariantCompare, "\u00E101", "a1", CompareOptions.NumericOrdering, isNls ? -1 : 1 }; // ICU treats 01 == 1
+
+                // Period is NOT part of the numeric value
+                yield return new object[] { s_invariantCompare, "0.1", "0.02", CompareOptions.NumericOrdering, -1 };
+            }
+            #endregion
+
             CompareOptions ignoreKanaIgnoreWidthIgnoreCase = CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth | CompareOptions.IgnoreCase;
             yield return new object[] { s_invariantCompare, "\u3042", "\u30A2", ignoreKanaIgnoreWidthIgnoreCase, 0 };
             yield return new object[] { s_invariantCompare, "\u3042", "\uFF71", ignoreKanaIgnoreWidthIgnoreCase, 0 };
@@ -228,14 +272,14 @@ namespace System.Globalization.Tests
             yield return new object[] { s_invariantCompare, "\u3060", "\uFF80\uFF9E", CompareOptions.None, s_expectedHiraganaToKatakanaCompare };
         }
 
-        [ConditionalTheory(typeof(CompareInfoSortKeyTests), nameof(IsNotWindowsKanaRegressedVersionAndNotHybridGlobalizationOnWasm))]
+        [ConditionalTheory(typeof(CompareInfoSortKeyTests), nameof(IsNotWindowsKanaRegressedVersion))]
         [MemberData(nameof(SortKey_Kana_TestData))]
         public void SortKeyKanaTest(CompareInfo compareInfo, string string1, string string2, CompareOptions options, int expected)
         {
             SortKeyTest(compareInfo, string1, string2, options, expected);
         }
         
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [Theory]
         [MemberData(nameof(SortKey_TestData))]
         public void SortKeyTest(CompareInfo compareInfo, string string1, string string2, CompareOptions options, int expectedSign)
         {
@@ -284,7 +328,7 @@ namespace System.Globalization.Tests
             }
         }
         
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [Fact]
         public void SortKeyMiscTest()
         {
             CompareInfo ci = new CultureInfo("en-US").CompareInfo;

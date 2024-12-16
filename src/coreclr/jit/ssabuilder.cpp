@@ -1737,12 +1737,10 @@ bool IncrementalSsaBuilder::FinalizeDefs()
     for (int i = 0; i < m_defs.Height(); i++)
     {
         UseDefLocation& def = m_defs.BottomRef(i);
-        if (!m_comp->m_dfsTree->Contains(def.Block))
+        if (m_comp->m_dfsTree->Contains(def.Block))
         {
-            continue;
+            BitVecOps::AddElemD(&m_poTraits, m_defBlocks, def.Block->bbPostorderNum);
         }
-
-        BitVecOps::AddElemD(&m_poTraits, m_defBlocks, def.Block->bbPostorderNum);
 
         unsigned ssaNum = dsc->lvPerSsaData.AllocSsaNum(m_comp->getAllocator(CMK_SSA), def.Block, def.Tree);
         def.Tree->SetSsaNum(ssaNum);
@@ -1763,17 +1761,13 @@ bool IncrementalSsaBuilder::FinalizeDefs()
 // Parameters:
 //   use - Location of the use
 //
-// Returns:
-//   True if the use was in a reachable block and thus has a reaching def;
-//   otherwise false.
-//
 // Remarks:
 //   All uses are required to never read an uninitialized value of the local.
 //   That is, this function requires that all paths through the function go
 //   through one of the defs in "defs" before any use in "uses" for uses that
 //   are statically reachable.
 //
-bool IncrementalSsaBuilder::InsertUse(const UseDefLocation& use)
+void IncrementalSsaBuilder::InsertUse(const UseDefLocation& use)
 {
     assert(m_finalizedDefs);
 
@@ -1788,11 +1782,14 @@ bool IncrementalSsaBuilder::InsertUse(const UseDefLocation& use)
     {
         if (!m_comp->m_dfsTree->Contains(use.Block))
         {
-            JITDUMP("  Use is in unreachable block " FMT_BB "\n", use.Block->bbNum);
-            return false;
+            reachingDef = m_defs.Bottom(0);
+            JITDUMP("  Use is in unreachable block " FMT_BB ", using first def [%06u] in " FMT_BB "\n",
+                    use.Block->bbNum, Compiler::dspTreeID(reachingDef.Tree), reachingDef.Block->bbNum);
         }
-
-        reachingDef = FindOrCreateReachingDef(use);
+        else
+        {
+            reachingDef = FindOrCreateReachingDef(use);
+        }
     }
 
     JITDUMP("  Reaching def is [%06u] d:%d\n", Compiler::dspTreeID(reachingDef.Tree), reachingDef.Tree->GetSsaNum());
@@ -1802,5 +1799,4 @@ bool IncrementalSsaBuilder::InsertUse(const UseDefLocation& use)
 
     LclVarDsc* dsc = m_comp->lvaGetDesc(m_lclNum);
     dsc->GetPerSsaData(reachingDef.Tree->GetSsaNum())->AddUse(use.Block);
-    return true;
 }
