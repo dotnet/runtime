@@ -845,14 +845,12 @@ namespace System
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_SatisfiesConstraints")]
-        private static partial Interop.BOOL SatisfiesConstraints(QCallTypeHandle paramType, nint pTypeContext, RuntimeMethodHandleInternal pMethodContext, QCallTypeHandle toType);
+        private static partial Interop.BOOL SatisfiesConstraints(QCallTypeHandle paramType, QCallTypeHandle pTypeContext, RuntimeMethodHandleInternal pMethodContext, QCallTypeHandle toType);
 
         internal static bool SatisfiesConstraints(RuntimeType paramType, RuntimeType? typeContext, RuntimeMethodInfo? methodContext, RuntimeType toType)
         {
-            IntPtr typeContextRaw = typeContext?.GetUnderlyingNativeHandle() ?? default;
             RuntimeMethodHandleInternal methodContextRaw = ((IRuntimeMethodInfo?)methodContext)?.Value ?? RuntimeMethodHandleInternal.EmptyHandle;
-            bool result = SatisfiesConstraints(new QCallTypeHandle(ref paramType), typeContextRaw, methodContextRaw, new QCallTypeHandle(ref toType)) != Interop.BOOL.FALSE;
-            GC.KeepAlive(typeContext);
+            bool result = SatisfiesConstraints(new QCallTypeHandle(ref paramType), new QCallTypeHandle(ref typeContext!), methodContextRaw, new QCallTypeHandle(ref toType)) != Interop.BOOL.FALSE;
             GC.KeepAlive(methodContext);
             return result;
         }

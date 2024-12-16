@@ -1038,12 +1038,11 @@ extern "C" BOOL QCALLTYPE RuntimeTypeHandle_CanCastToSlow(QCall::TypeHandle type
     return retVal;
 }
 
-extern "C" BOOL QCALLTYPE RuntimeTypeHandle_SatisfiesConstraints(QCall::TypeHandle paramType, EnregisteredTypeHandle typeContext, MethodDesc* methodContext, QCall::TypeHandle toType)
+extern "C" BOOL QCALLTYPE RuntimeTypeHandle_SatisfiesConstraints(QCall::TypeHandle paramType, QCall::TypeHandle typeContext, MethodDesc* methodContext, QCall::TypeHandle toType)
 {
     CONTRACTL
     {
         QCALL_CHECK;
-        PRECONDITION(CheckPointer(typeContext, NULL_OK));
         PRECONDITION(CheckPointer(methodContext, NULL_OK));
     }
     CONTRACTL_END;
@@ -1052,7 +1051,7 @@ extern "C" BOOL QCALLTYPE RuntimeTypeHandle_SatisfiesConstraints(QCall::TypeHand
 
     BEGIN_QCALL;
 
-    TypeHandle typeHandle = TypeHandle::FromPtr(typeContext);
+    TypeHandle typeHandle = typeContext.AsTypeHandle();
     Instantiation classInst = !typeHandle.IsNull()
         ? typeHandle.GetMethodTable()->GetInstantiation()
         : Instantiation{};
