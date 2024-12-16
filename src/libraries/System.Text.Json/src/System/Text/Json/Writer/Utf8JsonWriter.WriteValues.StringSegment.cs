@@ -396,7 +396,7 @@ namespace System.Text.Json
             output[BytesPending++] = JsonConstants.Quote;
         }
 
-        private void WriteStringSegmentEpilog()
+        private void WriteStringSegmentEpilogue()
         {
             if (_memory.Length == BytesPending)
             {
