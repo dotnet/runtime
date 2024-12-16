@@ -1115,6 +1115,11 @@ namespace System.Security.Cryptography.Xml
 
         private static bool IsKeyTheCorrectAlgorithm(AsymmetricAlgorithm key, Type expectedType)
         {
+            if (expectedType is null)
+            {
+                throw new ArgumentNullException(nameof(expectedType));
+            }
+
             Type actualType = key.GetType();
 
             if (actualType == expectedType)
