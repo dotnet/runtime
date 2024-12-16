@@ -20,14 +20,17 @@ namespace Wasm.Build.Tests;
 public class WasmTemplateTestsBase : BuildTestBase
 {
     private readonly WasmSdkBasedProjectProvider _provider;
-    protected readonly PublishOptions _defaultPublishOptions = new PublishOptions();
-    protected readonly BuildOptions _defaultBuildOptions = new BuildOptions();
+    private readonly string _extraBuildArgsPublish = "-p:CompressionEnabled=false";
+    protected readonly PublishOptions _defaultPublishOptions;
+    protected readonly BuildOptions _defaultBuildOptions;
     protected const string DefaultRuntimeAssetsRelativePath = "./_framework/";
 
     public WasmTemplateTestsBase(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext, ProjectProviderBase? provider = null)
         : base(provider ?? new WasmSdkBasedProjectProvider(output, DefaultTargetFramework), output, buildContext)
     {
         _provider = GetProvider<WasmSdkBasedProjectProvider>();
+        _defaultPublishOptions = new PublishOptions(ExtraMSBuildArgs: _extraBuildArgsPublish);
+        _defaultBuildOptions = new BuildOptions();
     }
 
     private Dictionary<string, string> browserProgramReplacements = new Dictionary<string, string>
@@ -117,22 +120,34 @@ public class WasmTemplateTestsBase : BuildTestBase
         ProjectInfo info,
         Configuration configuration,
         bool? isNativeBuild = null) => // null for WasmBuildNative unset
-        BuildProject(info, configuration, _defaultPublishOptions, isNativeBuild);
+        BuildProjectCore(info, configuration, _defaultPublishOptions, isNativeBuild);
 
     public virtual (string projectDir, string buildOutput) PublishProject(
         ProjectInfo info,
         Configuration configuration,
         PublishOptions publishOptions,
         bool? isNativeBuild = null) =>
-        BuildProject(info, configuration, publishOptions, isNativeBuild);
+        BuildProjectCore(
+            info,
+            configuration,
+            publishOptions with { ExtraMSBuildArgs = $"{_extraBuildArgsPublish} {publishOptions.ExtraMSBuildArgs}" },
+            isNativeBuild
+        );
 
     public virtual (string projectDir, string buildOutput) BuildProject(
         ProjectInfo info,
         Configuration configuration,
         bool? isNativeBuild = null) => // null for WasmBuildNative unset
-        BuildProject(info, configuration, _defaultBuildOptions, isNativeBuild);
+        BuildProjectCore(info, configuration, _defaultBuildOptions, isNativeBuild);
 
     public virtual (string projectDir, string buildOutput) BuildProject(
+        ProjectInfo info,
+        Configuration configuration,
+        BuildOptions buildOptions,
+        bool? isNativeBuild = null) =>
+        BuildProjectCore(info, configuration, buildOptions, isNativeBuild);
+
+    private (string projectDir, string buildOutput) BuildProjectCore(
         ProjectInfo info,
         Configuration configuration,
         MSBuildOptions buildOptions,
