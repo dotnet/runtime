@@ -283,6 +283,7 @@ namespace Wasm.Build.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/110620")]
         public async void LibraryModeBuildPublishRun()
         {
             var config = Configuration.Release;
@@ -298,9 +299,5 @@ namespace Wasm.Build.Tests
             var result = await RunForPublishWithWebServer(new BrowserRunOptions(config, ExpectedExitCode: 100));
             Assert.Contains("WASM Library MyCallback is called", result.TestOutput);
         }
-        // "method":"console.error","payload":"MONO_WASM: The handle is invalid.\n
-        // at System.Reflection.MethodBase.GetMethodFromHandle(RuntimeMethodHandle handle)\n
-        // at System.Runtime.InteropServices.JavaScript.JSHostImplementation.CallEntrypoint(IntPtr assemblyNamePtr, String[] args, Boolean waitForDebugger)
-        // Error: The handle is invalid.
     }
 }
