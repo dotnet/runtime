@@ -20,12 +20,6 @@ namespace System.Text.Json
             }
         }
 
-        private void ValidateWritingComment()
-        {
-            // Make sure a new comment is not attempted within an unfinalized string.
-            ValidateNotWithinUnfinalizedString();
-        }
-
         private void ValidateWritingValue()
         {
             Debug.Assert(!_options.SkipValidation);

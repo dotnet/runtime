@@ -63,7 +63,9 @@ namespace System.Text.Json
         {
             if (!_options.SkipValidation)
             {
-                ValidateWritingComment();
+                // Comments generally can be placed anywhere in JSON, but not after a non-final
+                // string segment.
+                ValidateNotWithinUnfinalizedString();
             }
 
             if (_options.Indented)

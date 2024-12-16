@@ -52,12 +52,24 @@ namespace System.Text.Json
         private JsonTokenType _tokenType;
         private BitStack _bitStack;
 
-#if NET
-        private Inline4ByteArray _partialCodePoint;
-        private Span<byte> PartialCodePointRaw => _partialCodePoint;
-#else
+        /// <summary>
+        /// This 4-byte array stores the partial code point leftover when writing a string value
+        /// segment that is split across multiple write calls. The first 3 bytes provide space
+        /// to store the leftover bytes using the source encoding and the last byte is the number
+        /// of bytes used to store the partial code point.
+        /// </summary>
+#if !NET
         private byte[]? _partialCodePoint;
         private Span<byte> PartialCodePointRaw => _partialCodePoint ??= new byte[4];
+#else
+        private Inline4ByteArray _partialCodePoint;
+        private Span<byte> PartialCodePointRaw => _partialCodePoint;
+
+        [InlineArray(4)]
+        private struct Inline4ByteArray
+        {
+            public byte byte0;
+        }
 #endif
 
         // The highest order bit of _currentDepth is used to discern whether we are writing the first item in a list or not.

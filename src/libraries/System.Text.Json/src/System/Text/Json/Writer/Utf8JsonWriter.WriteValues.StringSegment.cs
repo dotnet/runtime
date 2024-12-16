@@ -37,7 +37,7 @@ namespace System.Text.Json
 
             if (_tokenType != Utf8JsonWriter.StringSegmentSentinel)
             {
-                WriteStringSegmentProlog();
+                WriteStringSegmentPrologue();
                 _tokenType = Utf8JsonWriter.StringSegmentSentinel;
             }
 
@@ -54,7 +54,7 @@ namespace System.Text.Json
 
             if (isFinalSegment)
             {
-                WriteStringSegmentEpilog();
+                WriteStringSegmentEpilogue();
                 SetFlagToAddListSeparatorBeforeNextItem();
                 _tokenType = JsonTokenType.String;
             }
@@ -198,7 +198,7 @@ namespace System.Text.Json
 
             if (_tokenType != Utf8JsonWriter.StringSegmentSentinel)
             {
-                WriteStringSegmentProlog();
+                WriteStringSegmentPrologue();
                 _tokenType = Utf8JsonWriter.StringSegmentSentinel;
             }
 
@@ -215,7 +215,7 @@ namespace System.Text.Json
 
             if (isFinalSegment)
             {
-                WriteStringSegmentEpilog();
+                WriteStringSegmentEpilogue();
                 SetFlagToAddListSeparatorBeforeNextItem();
                 _tokenType = JsonTokenType.String;
             }
@@ -337,15 +337,15 @@ namespace System.Text.Json
         {
             if (_options.Indented)
             {
-                WriteStringSegmentIndentedProlog();
+                WriteStringSegmentIndentedPrologue();
             }
             else
             {
-                WriteStringSegmentMinimizedProlog();
+                WriteStringSegmentMinimizedPrologue();
             }
         }
 
-        private void WriteStringSegmentIndentedProlog()
+        private void WriteStringSegmentIndentedPrologue()
         {
             int indent = Indentation;
             Debug.Assert(indent <= _indentLength * _options.MaxDepth);
@@ -377,7 +377,7 @@ namespace System.Text.Json
             output[BytesPending++] = JsonConstants.Quote;
         }
 
-        private void WriteStringSegmentMinimizedProlog()
+        private void WriteStringSegmentMinimizedPrologue()
         {
             // One quote and optionally 1 list separator
             int bytesRequired = 2;
@@ -405,14 +405,6 @@ namespace System.Text.Json
 
             _memory.Span[BytesPending++] = JsonConstants.Quote;
         }
-
-#if NET
-        [InlineArray(4)]
-        private struct Inline4ByteArray
-        {
-            public byte byte0;
-        }
-#endif
 
         private void GetPartialUtf8CodePoint(out ReadOnlySpan<byte> codePointBytes)
         {
