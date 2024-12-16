@@ -120,7 +120,7 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [MemberData(nameof(BrowserBuildAndRunTestData))]
-        public async Task BrowserBuildAndRun(string extraNewArgs, string targetFramework, string runtimeAssetsRelativePath) 
+        public async Task BrowserBuildAndRun(string extraNewArgs, string targetFramework, string runtimeAssetsRelativePath)
         {
             Configuration config = Configuration.Debug;
             string extraProperties = runtimeAssetsRelativePath == DefaultRuntimeAssetsRelativePath ?
@@ -164,7 +164,7 @@ namespace Wasm.Build.Tests
                 Path.Combine(projectDirectory, "bin", info.ProjectName, config.ToString().ToLower(), "wwwroot", "_framework") :
                 GetBinFrameworkDir(config, isPublish);
 
-            string extraPropertiesForDBP = string.Empty;            
+            string extraPropertiesForDBP = string.Empty;
             if (useArtifacts)
             {
                 extraPropertiesForDBP += "<UseArtifactsOutput>true</UseArtifactsOutput><ArtifactsPath>.</ArtifactsPath>";
@@ -269,7 +269,7 @@ namespace Wasm.Build.Tests
             string extraProperties = $"<CopyOutputSymbolsToPublishDirectory>{shouldCopy}</CopyOutputSymbolsToPublishDirectory>";
             ProjectInfo info = CreateWasmTemplateProject(Template.WasmBrowser, config, aot: false, "publishpdb", extraProperties: extraProperties);
 
-            PublishProject(info, config);
+            PublishProject(info, config, new PublishOptions(ExtraMSBuildArgs: "-p:CompressionEnabled=true"));
             string publishPath = GetBinFrameworkDir(config, forPublish: true);
             AssertFile(".pdb");
             AssertFile(".pdb.gz");
