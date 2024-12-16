@@ -1098,6 +1098,8 @@ namespace System.Runtime.CompilerServices
 
         public static bool AreSameType(TypeHandle left, TypeHandle right) => left.m_asTAddr == right.m_asTAddr;
 
+        public int GetCorElementType() => GetCorElementType(m_asTAddr);
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool CanCastTo(TypeHandle destTH)
         {
@@ -1105,12 +1107,38 @@ namespace System.Runtime.CompilerServices
             {
                 CastResult.CanCast => true,
                 CastResult.CannotCast => false,
-                _ => CanCastTo_NoCacheLookup(m_asTAddr, destTH.m_asTAddr)
+                _ => CanCastTo_NoCacheLookup(m_asTAddr, destTH.m_asTAddr) != Interop.BOOL.FALSE
             };
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static CastResult TryCanCastTo(TypeHandle srcTH, TypeHandle destTH)
+        public static bool CanCastToForReflection(TypeHandle srcTH, TypeHandle destTH)
+        {
+            return TryCanCastTo(srcTH, destTH) switch
+            {
+                CastResult.CanCast => true,
+                CastResult.CannotCast => false,
+                _ => CanCastToForReflectionWorker(srcTH, destTH)
+            };
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static bool CanCastToForReflectionWorker(TypeHandle srcTH, TypeHandle destTH)
+            {
+                 // Reflection allows T to be cast to Nullable<T>
+                 // see TypeHandle::CanCastTo and ObjIsInstanceOfCore
+                 if (!srcTH.IsTypeDesc
+                    && !destTH.IsTypeDesc
+                    && CastHelpers.IsNullableForType(destTH.AsMethodTable(), srcTH.AsMethodTable()))
+                 {
+                     return true;
+                 }
+
+                 return CanCastTo_NoCacheLookup(srcTH.m_asTAddr, destTH.m_asTAddr) != Interop.BOOL.FALSE;
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static CastResult TryCanCastTo(TypeHandle srcTH, TypeHandle destTH)
         {
             // See TypeHandle::CanCastToCached() for duplicate quick checks.
             if (srcTH.m_asTAddr == destTH.m_asTAddr)
@@ -1122,11 +1150,8 @@ namespace System.Runtime.CompilerServices
             return CastCache.TryGet(CastHelpers.s_table!, (nuint)srcTH.m_asTAddr, (nuint)destTH.m_asTAddr);
         }
 
-        public int GetCorElementType() => GetCorElementType(m_asTAddr);
-
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeHandle_CanCastTo_NoCacheLookup")]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        private static partial bool CanCastTo_NoCacheLookup(void* fromTypeHnd, void* toTypeHnd);
+        private static partial Interop.BOOL CanCastTo_NoCacheLookup(void* fromTypeHnd, void* toTypeHnd);
 
         [SuppressGCTransition]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeHandle_GetCorElementType")]

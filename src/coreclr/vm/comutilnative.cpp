@@ -1861,11 +1861,6 @@ extern "C" BOOL QCALLTYPE TypeHandle_CanCastTo_NoCacheLookup(void* fromTypeHnd, 
     {
         ret = fromTH.AsTypeDesc()->CanCastTo(toTH, NULL);
     }
-    else if (Nullable::IsNullableForType(toTH, fromTH.AsMethodTable()))
-    {
-        // do not allow type T to be cast to Nullable<T>
-        ret = FALSE;
-    }
     else
     {
         ret = fromTH.AsMethodTable()->CanCastTo(toTH.AsMethodTable(), NULL);

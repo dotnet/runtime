@@ -996,48 +996,6 @@ extern "C" EnregisteredTypeHandle QCALLTYPE RuntimeTypeHandle_GetDeclaringTypeHa
     return (EnregisteredTypeHandle)retTypeHandle.AsTAddr();
 }
 
-extern "C" BOOL QCALLTYPE RuntimeTypeHandle_CanCastToSlow(QCall::TypeHandle type, QCall::TypeHandle target)
-{
-    QCALL_CONTRACT;
-
-    BOOL retVal = FALSE;
-
-    BEGIN_QCALL;
-
-    TypeHandle fromHandle = type.AsTypeHandle();
-    TypeHandle toHandle = target.AsTypeHandle();
-
-    // We allow T to be cast to Nullable<T>
-    if (!fromHandle.IsTypeDesc()
-        && Nullable::IsNullableForType(toHandle, fromHandle.AsMethodTable()))
-    {
-        // do not put this in the cache (see TypeHandle::CanCastTo and ObjIsInstanceOfCore).
-        retVal = TRUE;
-    }
-    else
-    {
-        GCX_COOP();
-
-        if (fromHandle.IsTypeDesc())
-        {
-            retVal = fromHandle.AsTypeDesc()->CanCastTo(toHandle, /* pVisited */ NULL);
-        }
-        else if (toHandle.IsTypeDesc())
-        {
-            retVal = FALSE;
-            CastCache::TryAddToCache(fromHandle, toHandle, FALSE);
-        }
-        else
-        {
-            retVal = fromHandle.AsMethodTable()->CanCastTo(toHandle.AsMethodTable(), /* pVisited */ NULL);
-        }
-    }
-
-    END_QCALL;
-
-    return retVal;
-}
-
 extern "C" BOOL QCALLTYPE RuntimeTypeHandle_SatisfiesConstraints(QCall::TypeHandle paramType, QCall::TypeHandle typeContext, MethodDesc* methodContext, QCall::TypeHandle toType)
 {
     CONTRACTL

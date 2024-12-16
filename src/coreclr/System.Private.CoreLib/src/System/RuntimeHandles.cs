@@ -659,23 +659,12 @@ namespace System
             return new MdUtf8String(name);
         }
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_CanCastToSlow")]
-        private static partial Interop.BOOL CanCastToSlow(QCallTypeHandle type1, QCallTypeHandle type2);
-
         internal static bool CanCastTo(RuntimeType type, RuntimeType target)
         {
-            TypeHandle typeTH = type.GetNativeTypeHandle();
-            TypeHandle targetTH = target.GetNativeTypeHandle();
-            return TypeHandle.TryCanCastTo(typeTH, targetTH) switch
-            {
-                CastResult.CanCast => true,
-                CastResult.CannotCast => false,
-                _ => CanCastToWorker(type, target)
-            };
-
-            [MethodImpl(MethodImplOptions.NoInlining)]
-            static bool CanCastToWorker(RuntimeType type1, RuntimeType type2)
-                => CanCastToSlow(new QCallTypeHandle(ref type1), new QCallTypeHandle(ref type2)) != Interop.BOOL.FALSE;
+            bool ret = TypeHandle.CanCastToForReflection(type.GetNativeTypeHandle(), target.GetNativeTypeHandle());
+            GC.KeepAlive(type);
+            GC.KeepAlive(target);
+            return ret;
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_GetDeclaringTypeHandleForGenericVariable")]
