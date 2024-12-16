@@ -158,7 +158,6 @@
         ld a5, 0x168(sp)         // Restore a5
         ld a6, 0x170(sp)         // Restore a6
         ld a7, 0x178(sp)         // Restore a7
-        ld tp, 0x180(sp)         // Restore tp
 
         // Restore FP and RA registers, and free the allocated stack block
         EPILOG_RESTORE_REG_PAIR_INDEXED  fp, ra, STACK_SIZE
