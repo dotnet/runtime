@@ -388,8 +388,8 @@ FCIMPL1(uint8_t *, RhGetCodeTarget, uint8_t * pCodeOrg)
         (pCode[2] & 0x707f) == 0x0067)               // jr (jalr with x0 as rd and funct3=000)
     {
         // Compute the distance to the IAT cell
-        int64_t distToIatCell = (((int64_t)pCode[0] & 0xfffff000) >> 12);  // Extract imm20 from auipc
-        distToIatCell += ((int64_t)(pCode[1] & 0xfff));                    // Add imm12 from ld
+        int64_t distToIatCell = (((int32_t)pCode[0]) >> 12) << 12;  // Extract imm20 from auipc
+        distToIatCell += ((int32_t)pCode[1]) >> 20;                    // Add imm12 from ld
 
         uint8_t ** pIatCell = (uint8_t **)(((int64_t)pCode & ~0xfff) + distToIatCell);
         return *pIatCell;
@@ -402,10 +402,10 @@ FCIMPL1(uint8_t *, RhGetCodeTarget, uint8_t * pCodeOrg)
             (pCode[1] & 0x707f) == 0x0067)              // jalr opcode with funct3=000
     {
         // Extract imm20 from auipc
-        int64_t distToTarget = (((int64_t)pCode[0] & 0xfffff000) >> 12);  // Extract imm20 (bits 31:12)
+        int64_t distToTarget = (((int32_t)pCode[0]) >> 12) << 12;  // Extract imm20 (bits 31:12)
 
         // Extract imm12 from jalr
-        distToTarget += ((int64_t)pCode[1] & 0xfff);  // Extract imm12 (bits 31:20)
+        distToTarget += ((int32_t)pCode[1]) >> 20;  // Extract imm12 (bits 31:20)
 
         // Calculate the final target address relative to PC
         return (uint8_t *)((int64_t)pCode + distToTarget);
