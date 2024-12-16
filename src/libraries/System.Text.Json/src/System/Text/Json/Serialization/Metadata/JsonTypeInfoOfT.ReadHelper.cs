@@ -29,10 +29,11 @@ namespace System.Text.Json.Serialization.Metadata
             ReadStack readStack = default;
             readStack.Initialize(this, supportContinuation: true);
             var jsonReaderState = new JsonReaderState(options.GetReaderOptions());
-            var bufferState = new ReadBufferState(options.DefaultBufferSize);
+            ReadBufferState bufferState = null;
 
             try
             {
+                bufferState = new ReadBufferState(options.DefaultBufferSize);
                 while (true)
                 {
                     bufferState = await bufferState.ReadFromStreamAsync(utf8Json, cancellationToken).ConfigureAwait(false);
@@ -61,10 +62,11 @@ namespace System.Text.Json.Serialization.Metadata
             ReadStack readStack = default;
             readStack.Initialize(this, supportContinuation: true);
             var jsonReaderState = new JsonReaderState(options.GetReaderOptions());
-            var bufferState = new ReadBufferState(options.DefaultBufferSize);
+            ReadBufferState bufferState = null;
 
             try
             {
+                bufferState = new ReadBufferState(options.DefaultBufferSize);
                 while (true)
                 {
                     bufferState.ReadFromStream(utf8Json);
