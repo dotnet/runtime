@@ -37,34 +37,34 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector128<float> MinMaxScalar(Vector128<float> left, Vector128<float> right, [ConstantExpected] byte control) => MinMaxScalar(left, right, control);
 
         // VCVTPS2IBS xmm1{k1}{z}, xmm2/m128/m32bcst
-        public static Vector128<int> ConvertToSByteWithSaturationAndWidenToInt32(Vector128<float> value) => ConvertToSByteWithSaturationAndWidenToInt32(value);
+        public static Vector128<int> ConvertToSByteWithSaturationAndZeroExtendToInt32(Vector128<float> value) => ConvertToSByteWithSaturationAndZeroExtendToInt32(value);
 
         // VCVTPS2IBS ymm1{k1}{z}, ymm2/m256/m32bcst {er}
-        public static Vector256<int> ConvertToSByteWithSaturationAndWidenToInt32(Vector256<float> value) => ConvertToSByteWithSaturationAndWidenToInt32(value);
+        public static Vector256<int> ConvertToSByteWithSaturationAndZeroExtendToInt32(Vector256<float> value) => ConvertToSByteWithSaturationAndZeroExtendToInt32(value);
 
         // VCVTPS2IBS ymm1{k1}{z}, ymm2/m256/m32bcst {er}
-        public static Vector256<int> ConvertToSByteWithSaturationAndWidenToInt32(Vector256<float> value, [ConstantExpected(Max = FloatRoundingMode.ToZero)] FloatRoundingMode mode) => ConvertToSByteWithSaturationAndWidenToInt32(value, mode);
+        public static Vector256<int> ConvertToSByteWithSaturationAndZeroExtendToInt32(Vector256<float> value, [ConstantExpected(Max = FloatRoundingMode.ToZero)] FloatRoundingMode mode) => ConvertToSByteWithSaturationAndZeroExtendToInt32(value, mode);
 
         // VCVTPS2IUBS xmm1{k1}{z}, xmm2/m128/m32bcst
-        public static Vector128<int> ConvertToByteWithSaturationAndWidenToInt32(Vector128<float> value) => ConvertToByteWithSaturationAndWidenToInt32(value);
+        public static Vector128<int> ConvertToByteWithSaturationAndZeroExtendToInt32(Vector128<float> value) => ConvertToByteWithSaturationAndZeroExtendToInt32(value);
 
         // VCVTPS2IUBS ymm1{k1}{z}, ymm2/m256/m32bcst {er}
-        public static Vector256<int> ConvertToByteWithSaturationAndWidenToInt32(Vector256<float> value) => ConvertToByteWithSaturationAndWidenToInt32(value);
+        public static Vector256<int> ConvertToByteWithSaturationAndZeroExtendToInt32(Vector256<float> value) => ConvertToByteWithSaturationAndZeroExtendToInt32(value);
 
         // VCVTPS2IUBS ymm1{k1}{z}, ymm2/m256/m32bcst {er}
-        public static Vector256<int> ConvertToByteWithSaturationAndWidenToInt32(Vector256<float> value, [ConstantExpected(Max = FloatRoundingMode.ToZero)] FloatRoundingMode mode) => ConvertToByteWithSaturationAndWidenToInt32(value, mode);
+        public static Vector256<int> ConvertToByteWithSaturationAndZeroExtendToInt32(Vector256<float> value, [ConstantExpected(Max = FloatRoundingMode.ToZero)] FloatRoundingMode mode) => ConvertToByteWithSaturationAndZeroExtendToInt32(value, mode);
 
         // VCVTTPS2IBS xmm1{k1}{z}, xmm2/m128/m32bcst
-        public static Vector128<int> ConvertToSByteWithTruncationSaturationAndWidenToInt32(Vector128<float> value) => ConvertToSByteWithTruncationSaturationAndWidenToInt32(value);
+        public static Vector128<int> ConvertToSByteWithTruncatedSaturationAndZeroExtendToInt32(Vector128<float> value) => ConvertToSByteWithTruncatedSaturationAndZeroExtendToInt32(value);
 
         // VCVTTPS2IBS ymm1{k1}{z}, ymm2/m256/m32bcst {sae}
-        public static Vector256<int> ConvertToSByteWithTruncationSaturationAndWidenToInt32(Vector256<float> value) => ConvertToSByteWithTruncationSaturationAndWidenToInt32(value);
+        public static Vector256<int> ConvertToSByteWithTruncatedSaturationAndZeroExtendToInt32(Vector256<float> value) => ConvertToSByteWithTruncatedSaturationAndZeroExtendToInt32(value);
 
         // VCVTTPS2IUBS xmm1{k1}{z}, xmm2/m128/m32bcst
-        public static Vector128<int> ConvertToByteWithTruncationSaturationAndWidenToInt32(Vector128<float> value) => ConvertToByteWithTruncationSaturationAndWidenToInt32(value);
+        public static Vector128<int> ConvertToByteWithTruncatedSaturationAndZeroExtendToInt32(Vector128<float> value) => ConvertToByteWithTruncatedSaturationAndZeroExtendToInt32(value);
 
         // VCVTTPS2IUBS ymm1{k1}{z}, ymm2/m256/m32bcst {sae}
-        public static Vector256<int> ConvertToByteWithTruncationSaturationAndWidenToInt32(Vector256<float> value) => ConvertToByteWithTruncationSaturationAndWidenToInt32(value);
+        public static Vector256<int> ConvertToByteWithTruncatedSaturationAndZeroExtendToInt32(Vector256<float> value) => ConvertToByteWithTruncatedSaturationAndZeroExtendToInt32(value);
 
         // VMOVD xmm1, xmm2/m32
         public static Vector128<uint> ConvertToVector128UInt32(Vector128<uint> value) => ConvertToVector128UInt32(value);
@@ -187,22 +187,22 @@ namespace System.Runtime.Intrinsics.X86
             public static Vector512<float> MinMax(Vector512<float> left, Vector512<float> right, [ConstantExpected] byte control) => MinMax(left, right, control);
 
             // VCVTPS2IBS zmm1{k1}{z}, zmm2/m512/m32bcst {er}
-            public static Vector512<int> ConvertToSByteWithSaturationAndWidenToInt32(Vector512<float> value) => ConvertToSByteWithSaturationAndWidenToInt32(value);
+            public static Vector512<int> ConvertToSByteWithSaturationAndZeroExtendToInt32(Vector512<float> value) => ConvertToSByteWithSaturationAndZeroExtendToInt32(value);
 
             // VCVTPS2IBS zmm1{k1}{z}, zmm2/m512/m32bcst {er}
-            public static Vector512<int> ConvertToSByteWithSaturationAndWidenToInt32(Vector512<float> value, [ConstantExpected(Max = FloatRoundingMode.ToZero)] FloatRoundingMode mode) => ConvertToSByteWithSaturationAndWidenToInt32(value, mode);
+            public static Vector512<int> ConvertToSByteWithSaturationAndZeroExtendToInt32(Vector512<float> value, [ConstantExpected(Max = FloatRoundingMode.ToZero)] FloatRoundingMode mode) => ConvertToSByteWithSaturationAndZeroExtendToInt32(value, mode);
 
             // VCVTPS2IUBS zmm1{k1}{z}, zmm2/m512/m32bcst {er}
-            public static Vector512<int> ConvertToByteWithSaturationAndWidenToInt32(Vector512<float> value) => ConvertToByteWithSaturationAndWidenToInt32(value);
+            public static Vector512<int> ConvertToByteWithSaturationAndZeroExtendToInt32(Vector512<float> value) => ConvertToByteWithSaturationAndZeroExtendToInt32(value);
 
             // VCVTPS2IUBS zmm1{k1}{z}, zmm2/m512/m32bcst {er}
-            public static Vector512<int> ConvertToByteWithSaturationAndWidenToInt32(Vector512<float> value, [ConstantExpected(Max = FloatRoundingMode.ToZero)] FloatRoundingMode mode) => ConvertToByteWithSaturationAndWidenToInt32(value, mode);
+            public static Vector512<int> ConvertToByteWithSaturationAndZeroExtendToInt32(Vector512<float> value, [ConstantExpected(Max = FloatRoundingMode.ToZero)] FloatRoundingMode mode) => ConvertToByteWithSaturationAndZeroExtendToInt32(value, mode);
 
             // VCVTTPS2IBS zmm1{k1}{z}, zmm2/m512/m32bcst {sae}
-            public static Vector512<int> ConvertToSByteWithTruncationSaturationAndWidenToInt32(Vector512<float> value) => ConvertToSByteWithTruncationSaturationAndWidenToInt32(value);
+            public static Vector512<int> ConvertToSByteWithTruncatedSaturationAndZeroExtendToInt32(Vector512<float> value) => ConvertToSByteWithTruncatedSaturationAndZeroExtendToInt32(value);
 
             // VCVTTPS2IUBS zmm1{k1}{z}, zmm2/m512/m32bcst {sae}
-            public static Vector512<int> ConvertToByteWithTruncationSaturationAndWidenToInt32(Vector512<float> value) => ConvertToByteWithTruncationSaturationAndWidenToInt32(value);
+            public static Vector512<int> ConvertToByteWithTruncatedSaturationAndZeroExtendToInt32(Vector512<float> value) => ConvertToByteWithTruncatedSaturationAndZeroExtendToInt32(value);
 
             // This is a 512 extension of previously existing 128/26 inrinsic
             // VMPSADBW zmm1{k1}{z}, zmm2, zmm3/m512, imm8
