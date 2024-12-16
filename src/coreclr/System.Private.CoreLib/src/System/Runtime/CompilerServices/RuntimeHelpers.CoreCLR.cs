@@ -1101,18 +1101,25 @@ namespace System.Runtime.CompilerServices
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool CanCastTo(TypeHandle destTH)
         {
-            if (m_asTAddr == destTH.m_asTAddr)
-                return true;
+            return TryCanCastTo(this, destTH) switch
+            {
+                CastResult.CanCast => true,
+                CastResult.CannotCast => false,
+                _ => CanCastTo_NoCacheLookup(m_asTAddr, destTH.m_asTAddr)
+            };
+        }
 
-            if (!IsTypeDesc && destTH.IsTypeDesc)
-                return false;
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static CastResult TryCanCastTo(TypeHandle srcTH, TypeHandle destTH)
+        {
+            // See TypeHandle::CanCastToCached() for duplicate quick checks.
+            if (srcTH.m_asTAddr == destTH.m_asTAddr)
+                return CastResult.CanCast;
 
-            CastResult result = CastCache.TryGet(CastHelpers.s_table!, (nuint)m_asTAddr, (nuint)destTH.m_asTAddr);
+            if (!srcTH.IsTypeDesc && destTH.IsTypeDesc)
+                return CastResult.CannotCast;
 
-            if (result != CastResult.MaybeCast)
-                return result == CastResult.CanCast;
-
-            return CanCastTo_NoCacheLookup(m_asTAddr, destTH.m_asTAddr);
+            return CastCache.TryGet(CastHelpers.s_table!, (nuint)srcTH.m_asTAddr, (nuint)destTH.m_asTAddr);
         }
 
         public int GetCorElementType() => GetCorElementType(m_asTAddr);

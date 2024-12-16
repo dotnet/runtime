@@ -249,7 +249,7 @@ extern "C" void QCALLTYPE RuntimeMethodHandle_GetTypicalMethodDefinition(MethodD
 extern "C" void QCALLTYPE RuntimeMethodHandle_StripMethodInstantiation(MethodDesc * pMethod, QCall::ObjectHandleOnStack refMethod);
 extern "C" void QCALLTYPE RuntimeMethodHandle_Destroy(MethodDesc * pMethod);
 extern "C" MethodDesc* QCALLTYPE RuntimeMethodHandle_GetStubIfNeededSlow(MethodDesc* pMethod, QCall::TypeHandle declaringTypeHandle, QCall::ObjectHandleOnStack methodInstantiation);
-extern "C" void QCALLTYPE RuntimeMethodHandle_GetMethodBody(MethodDesc* pMethod, EnregisteredTypeHandle pDeclaringType, QCall::ObjectHandleOnStack result);
+extern "C" void QCALLTYPE RuntimeMethodHandle_GetMethodBody(MethodDesc* pMethod, QCall::TypeHandle pDeclaringType, QCall::ObjectHandleOnStack result);
 
 class RuntimeFieldHandle
 {
@@ -302,8 +302,7 @@ extern "C" void QCALLTYPE Signature_Init(
     QCall::ObjectHandleOnStack sigObj,
     PCCOR_SIGNATURE pCorSig, DWORD cCorSig,
     FieldDesc* pFieldDesc,
-    MethodDesc* pMethodDesc,
-    EnregisteredTypeHandle typeHandleRaw);
+    MethodDesc* pMethodDesc);
 
 extern "C" BOOL QCALLTYPE Signature_AreEqual(
     PCCOR_SIGNATURE sig1, INT32 cSig1, QCall::TypeHandle handle1,
@@ -321,8 +320,7 @@ class SignatureNative : public Object
         QCall::ObjectHandleOnStack sigObj,
         PCCOR_SIGNATURE pCorSig, DWORD cCorSig,
         FieldDesc* pFieldDesc,
-        MethodDesc* pMethodDesc,
-        EnregisteredTypeHandle typeHandleRaw);
+        MethodDesc* pMethodDesc);
     friend class ArgIteratorForMethodInvoke;
 
 public:
@@ -332,8 +330,8 @@ public:
 
     static FCDECL3(INT32, GetCallingConventionFromFunctionPointerAtOffsetInternal, PCCOR_SIGNATURE sig, DWORD csig, INT32 offset);
 
-    BOOL HasThis() { LIMITED_METHOD_CONTRACT; return (m_managedCallingConvention & CALLCONV_HasThis); }
-    INT32 NumFixedArgs() { WRAPPER_NO_CONTRACT; return m_PtrArrayarguments->GetNumComponents(); }
+    BOOL HasThis() { LIMITED_METHOD_CONTRACT; return (_managedCallingConventionAndArgIteratorFlags & CALLCONV_HasThis); }
+    INT32 NumFixedArgs() { WRAPPER_NO_CONTRACT; return _arguments->GetNumComponents(); }
     TypeHandle GetReturnTypeHandle()
     {
         CONTRACTL {
@@ -343,11 +341,11 @@ public:
         }
         CONTRACTL_END;
 
-        return ((REFLECTCLASSBASEREF)m_returnType)->GetType();
+        return ((REFLECTCLASSBASEREF)_returnTypeORfieldType)->GetType();
     }
 
-    PCCOR_SIGNATURE GetCorSig() { LIMITED_METHOD_CONTRACT; return m_sig; }
-    DWORD GetCorSigSize() { LIMITED_METHOD_CONTRACT; return m_cSig; }
+    PCCOR_SIGNATURE GetCorSig() { LIMITED_METHOD_CONTRACT; return _sig; }
+    DWORD GetCorSigSize() { LIMITED_METHOD_CONTRACT; return _csig; }
     Module* GetModule() { WRAPPER_NO_CONTRACT; return GetDeclaringType().GetModule(); }
 
     TypeHandle GetArgumentAt(INT32 position)
@@ -359,31 +357,31 @@ public:
         }
         CONTRACTL_END;
 
-        REFLECTCLASSBASEREF refArgument = (REFLECTCLASSBASEREF)m_PtrArrayarguments->GetAt(position);
+        REFLECTCLASSBASEREF refArgument = (REFLECTCLASSBASEREF)_arguments->GetAt(position);
         return refArgument->GetType();
     }
 
     DWORD GetArgIteratorFlags()
     {
         LIMITED_METHOD_CONTRACT;
-        return VolatileLoad(&m_managedCallingConvention) >> CALLCONV_ArgIteratorFlags_Shift;
+        return VolatileLoad(&_managedCallingConventionAndArgIteratorFlags) >> CALLCONV_ArgIteratorFlags_Shift;
     }
 
     INT32 GetSizeOfArgStack()
     {
         LIMITED_METHOD_CONTRACT;
-        return m_nSizeOfArgStack;
+        return _nSizeOfArgStack;
     }
 
     TypeHandle GetDeclaringType()
     {
         LIMITED_METHOD_CONTRACT;
-        return m_declaringType->GetType();
+        return _declaringType->GetType();
     }
     MethodDesc* GetMethod()
     {
         LIMITED_METHOD_CONTRACT;
-        return m_pMethod;
+        return _pMethod;
     }
 
     const SigTypeContext * GetTypeContext(SigTypeContext *pTypeContext)
@@ -396,9 +394,9 @@ public:
         }
         CONTRACTL_END;
 
-       _ASSERTE(m_pMethod || !GetDeclaringType().IsNull());
-        if (m_pMethod)
-            return SigTypeContext::GetOptionalTypeContext(m_pMethod, GetDeclaringType(), pTypeContext);
+       _ASSERTE(_pMethod || !GetDeclaringType().IsNull());
+        if (_pMethod)
+            return SigTypeContext::GetOptionalTypeContext(_pMethod, GetDeclaringType(), pTypeContext);
         else
             return SigTypeContext::GetOptionalTypeContext(GetDeclaringType(), pTypeContext);
     }
@@ -412,7 +410,7 @@ private:
             MODE_COOPERATIVE;
         }
         CONTRACTL_END;
-        SetObjectReference(&m_returnType, returnType);
+        SetObjectReference(&_returnTypeORfieldType, returnType);
     }
 
     void SetKeepAlive(OBJECTREF keepAlive)
@@ -423,18 +421,7 @@ private:
             MODE_COOPERATIVE;
         }
         CONTRACTL_END;
-        SetObjectReference(&m_keepalive, keepAlive);
-    }
-
-    void SetDeclaringType(REFLECTCLASSBASEREF declaringType)
-    {
-        CONTRACTL {
-            THROWS;
-            GC_TRIGGERS;
-            MODE_COOPERATIVE;
-        }
-        CONTRACTL_END;
-        SetObjectReference((OBJECTREF*)&m_declaringType, (OBJECTREF)declaringType);
+        SetObjectReference(&_keepAlive, keepAlive);
     }
 
     void SetArgumentArray(PTRARRAYREF ptrArrayarguments)
@@ -445,7 +432,7 @@ private:
             MODE_COOPERATIVE;
         }
         CONTRACTL_END;
-        SetObjectReference((OBJECTREF*)&m_PtrArrayarguments, (OBJECTREF)ptrArrayarguments);
+        SetObjectReference((OBJECTREF*)&_arguments, (OBJECTREF)ptrArrayarguments);
     }
 
     void SetArgument(INT32 argument, OBJECTREF argumentType)
@@ -457,19 +444,19 @@ private:
         }
         CONTRACTL_END;
 
-        m_PtrArrayarguments->SetAt(argument, argumentType);
+        _arguments->SetAt(argument, argumentType);
     }
 
     void SetArgIteratorFlags(DWORD flags)
     {
         LIMITED_METHOD_CONTRACT;
-        return VolatileStore(&m_managedCallingConvention, (INT32)(m_managedCallingConvention | (flags << CALLCONV_ArgIteratorFlags_Shift)));
+        return VolatileStore(&_managedCallingConventionAndArgIteratorFlags, (INT32)(_managedCallingConventionAndArgIteratorFlags | (flags << CALLCONV_ArgIteratorFlags_Shift)));
     }
 
     void SetSizeOfArgStack(INT32 nSizeOfArgStack)
     {
         LIMITED_METHOD_CONTRACT;
-        m_nSizeOfArgStack = nSizeOfArgStack;
+        _nSizeOfArgStack = nSizeOfArgStack;
     }
 
     void SetCallingConvention(INT32 mdCallingConvention)
@@ -477,30 +464,30 @@ private:
         LIMITED_METHOD_CONTRACT;
 
         if ((mdCallingConvention & IMAGE_CEE_CS_CALLCONV_MASK) == IMAGE_CEE_CS_CALLCONV_VARARG)
-            m_managedCallingConvention = CALLCONV_VarArgs;
+            _managedCallingConventionAndArgIteratorFlags = CALLCONV_VarArgs;
         else
-            m_managedCallingConvention = CALLCONV_Standard;
+            _managedCallingConventionAndArgIteratorFlags = CALLCONV_Standard;
 
         if ((mdCallingConvention & IMAGE_CEE_CS_CALLCONV_HASTHIS) != 0)
-            m_managedCallingConvention |= CALLCONV_HasThis;
+            _managedCallingConventionAndArgIteratorFlags |= CALLCONV_HasThis;
 
         if ((mdCallingConvention & IMAGE_CEE_CS_CALLCONV_EXPLICITTHIS) != 0)
-            m_managedCallingConvention |= CALLCONV_ExplicitThis;
+            _managedCallingConventionAndArgIteratorFlags |= CALLCONV_ExplicitThis;
     }
 
     // Mirrored in the managed world (System.Signature)
     //
     // this is the layout the classloader chooses by default for the managed struct.
     //
-    PTRARRAYREF m_PtrArrayarguments;
-    REFLECTCLASSBASEREF m_declaringType;
-    OBJECTREF m_returnType;
-    OBJECTREF m_keepalive;
-    PCCOR_SIGNATURE m_sig;
-    DWORD m_cSig;
-    INT32 m_managedCallingConvention;
-    INT32 m_nSizeOfArgStack;
-    MethodDesc* m_pMethod;
+    PTRARRAYREF _arguments;
+    REFLECTCLASSBASEREF _declaringType;
+    OBJECTREF _returnTypeORfieldType;
+    OBJECTREF _keepAlive;
+    PCCOR_SIGNATURE _sig;
+    DWORD _csig;
+    INT32 _managedCallingConventionAndArgIteratorFlags;
+    INT32 _nSizeOfArgStack;
+    MethodDesc* _pMethod;
 };
 
 typedef DPTR(SignatureNative) PTR_SignatureNative;

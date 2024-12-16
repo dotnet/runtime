@@ -996,18 +996,6 @@ extern "C" EnregisteredTypeHandle QCALLTYPE RuntimeTypeHandle_GetDeclaringTypeHa
     return (EnregisteredTypeHandle)retTypeHandle.AsTAddr();
 }
 
-FCIMPL2(TypeHandle::CastResult, RuntimeTypeHandle::CanCastToInternal, ReflectClassBaseObject *pTypeUNSAFE, ReflectClassBaseObject *pTargetUNSAFE)
-{
-    FCALL_CONTRACT;
-
-    REFLECTCLASSBASEREF refType = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(pTypeUNSAFE);
-    REFLECTCLASSBASEREF refTarget = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(pTargetUNSAFE);
-    TypeHandle fromHandle = refType->GetType();
-    TypeHandle toHandle = refTarget->GetType();
-    return fromHandle.CanCastToCached(toHandle);
-}
-FCIMPLEND
-
 extern "C" BOOL QCALLTYPE RuntimeTypeHandle_CanCastToSlow(QCall::TypeHandle type, QCall::TypeHandle target)
 {
     QCALL_CONTRACT;
@@ -1646,8 +1634,7 @@ extern "C" void QCALLTYPE Signature_Init(
     QCall::ObjectHandleOnStack sigObj,
     PCCOR_SIGNATURE pCorSig, DWORD cCorSig,
     FieldDesc* pFieldDesc,
-    MethodDesc* pMethodDesc,
-    EnregisteredTypeHandle typeHandleRaw)
+    MethodDesc* pMethodDesc)
 {
     QCALL_CONTRACT;
 
@@ -1662,7 +1649,7 @@ extern "C" void QCALLTYPE Signature_Init(
     gc.pSig = (SIGNATURENATIVEREF)sigObj.Get();
     GCPROTECT_BEGIN(gc);
 
-    TypeHandle declType = TypeHandle::FromPtr(typeHandleRaw);
+    TypeHandle declType = gc.pSig->GetDeclaringType();
     _ASSERTE(!declType.IsNull());
 
     if (pMethodDesc != NULL)
@@ -1681,59 +1668,67 @@ extern "C" void QCALLTYPE Signature_Init(
     }
     _ASSERTE(pCorSig != NULL && cCorSig > 0);
 
-    gc.pSig->m_sig = pCorSig;
-    gc.pSig->m_cSig = cCorSig;
-    gc.pSig->m_pMethod = pMethodDesc;
+    gc.pSig->_sig = pCorSig;
+    gc.pSig->_csig = cCorSig;
+    gc.pSig->_pMethod = pMethodDesc;
 
-    uint32_t callConv;
-    if (FAILED(CorSigUncompressCallingConv(pCorSig, cCorSig, &callConv)))
-        COMPlusThrow(kBadImageFormatException);
-
-    SigTypeContext typeContext;
-    if (pMethodDesc != NULL)
+    // Initialize _returnTypeORfieldType and _arguments if they were not initialized yet
+    if (gc.pSig->_returnTypeORfieldType != NULL)
     {
-        SigTypeContext::InitTypeContext(
-            pMethodDesc, declType.GetClassOrArrayInstantiation(), pMethodDesc->LoadMethodInstantiation(), &typeContext);
+        _ASSERTE(gc.pSig->_arguments != NULL);
     }
     else
     {
-        SigTypeContext::InitTypeContext(declType, &typeContext);
-    }
+        uint32_t callConv;
+        if (FAILED(CorSigUncompressCallingConv(pCorSig, cCorSig, &callConv)))
+            COMPlusThrow(kBadImageFormatException);
 
-    Module* pModule = declType.GetModule();
-    MetaSig msig(pCorSig, cCorSig, pModule, &typeContext,
-        (callConv & IMAGE_CEE_CS_CALLCONV_MASK) == IMAGE_CEE_CS_CALLCONV_FIELD ? MetaSig::sigField : MetaSig::sigMember);
-
-    if (callConv == IMAGE_CEE_CS_CALLCONV_FIELD)
-    {
-        msig.NextArgNormalized();
-
-        OBJECTREF refRetType = msig.GetLastTypeHandleThrowing().GetManagedClassObject();
-        gc.pSig->SetReturnType(refRetType);
-    }
-    else if (pMethodDesc == NULL || !pMethodDesc->IsDynamicMethod())
-    {
-        gc.pSig->SetCallingConvention(msig.GetCallingConventionInfo());
-
-        OBJECTREF refRetType = msig.GetRetTypeHandleThrowing().GetManagedClassObject();
-        gc.pSig->SetReturnType(refRetType);
-
-        INT32 nArgs = msig.NumFixedArgs();
-        TypeHandle arrayHandle = ClassLoader::LoadArrayTypeThrowing(TypeHandle(g_pRuntimeTypeClass), ELEMENT_TYPE_SZARRAY);
-
-        PTRARRAYREF ptrArrayarguments = (PTRARRAYREF) AllocateSzArray(arrayHandle, nArgs);
-        gc.pSig->SetArgumentArray(ptrArrayarguments);
-
-        for (INT32 i = 0; i < nArgs; i++)
+        SigTypeContext typeContext;
+        if (pMethodDesc != NULL)
         {
-            msig.NextArg();
+            SigTypeContext::InitTypeContext(
+                pMethodDesc, declType.GetClassOrArrayInstantiation(), pMethodDesc->LoadMethodInstantiation(), &typeContext);
+        }
+        else
+        {
+            SigTypeContext::InitTypeContext(declType, &typeContext);
+        }
 
-            OBJECTREF refArgType = msig.GetLastTypeHandleThrowing().GetManagedClassObject();
-            gc.pSig->SetArgument(i, refArgType);
+        Module* pModule = declType.GetModule();
+        MetaSig msig(pCorSig, cCorSig, pModule, &typeContext,
+            (callConv & IMAGE_CEE_CS_CALLCONV_MASK) == IMAGE_CEE_CS_CALLCONV_FIELD ? MetaSig::sigField : MetaSig::sigMember);
+
+        if (callConv == IMAGE_CEE_CS_CALLCONV_FIELD)
+        {
+            msig.NextArgNormalized();
+
+            OBJECTREF refRetType = msig.GetLastTypeHandleThrowing().GetManagedClassObject();
+            gc.pSig->SetReturnType(refRetType);
+        }
+        else
+        {
+            gc.pSig->SetCallingConvention(msig.GetCallingConventionInfo());
+
+            OBJECTREF refRetType = msig.GetRetTypeHandleThrowing().GetManagedClassObject();
+            gc.pSig->SetReturnType(refRetType);
+
+            INT32 nArgs = msig.NumFixedArgs();
+            TypeHandle arrayHandle = ClassLoader::LoadArrayTypeThrowing(TypeHandle(g_pRuntimeTypeClass), ELEMENT_TYPE_SZARRAY);
+
+            PTRARRAYREF ptrArrayarguments = (PTRARRAYREF) AllocateSzArray(arrayHandle, nArgs);
+            gc.pSig->SetArgumentArray(ptrArrayarguments);
+
+            for (INT32 i = 0; i < nArgs; i++)
+            {
+                msig.NextArg();
+
+                OBJECTREF refArgType = msig.GetLastTypeHandleThrowing().GetManagedClassObject();
+                gc.pSig->SetArgument(i, refArgType);
+            }
         }
     }
 
-    _ASSERTE(gc.pSig->m_returnType != NULL);
+    _ASSERTE(gc.pSig->_returnTypeORfieldType != NULL);
     GCPROTECT_END();
     END_QCALL;
 }
@@ -2020,7 +2015,7 @@ FCIMPL2(MethodDesc*, RuntimeMethodHandle::GetMethodFromCanonical, MethodDesc *pM
 }
 FCIMPLEND
 
-extern "C" void QCALLTYPE RuntimeMethodHandle_GetMethodBody(MethodDesc* pMethod, EnregisteredTypeHandle pDeclaringType, QCall::ObjectHandleOnStack result)
+extern "C" void QCALLTYPE RuntimeMethodHandle_GetMethodBody(MethodDesc* pMethod, QCall::TypeHandle pDeclaringType, QCall::ObjectHandleOnStack result)
 {
     QCALL_CONTRACT;
 
@@ -2045,7 +2040,7 @@ extern "C" void QCALLTYPE RuntimeMethodHandle_GetMethodBody(MethodDesc* pMethod,
     gc.TempArray            = NULL;
     GCPROTECT_BEGIN(gc);
 
-    TypeHandle declaringType = TypeHandle::FromPtr(pDeclaringType);
+    TypeHandle declaringType = pDeclaringType.AsTypeHandle();
 
     COR_ILMETHOD* pILHeader = NULL;
     if (pMethod->IsIL())

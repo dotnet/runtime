@@ -659,28 +659,14 @@ namespace System
             return new MdUtf8String(name);
         }
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern CastResult CanCastToInternal(RuntimeType type, RuntimeType target);
-
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_CanCastToSlow")]
         private static partial Interop.BOOL CanCastToSlow(QCallTypeHandle type1, QCallTypeHandle type2);
 
         internal static bool CanCastTo(RuntimeType type, RuntimeType target)
         {
-            // See TypeHandle::CanCastToCached() for duplicate quick checks.
             TypeHandle typeTH = type.GetNativeTypeHandle();
             TypeHandle targetTH = target.GetNativeTypeHandle();
-            if (TypeHandle.AreSameType(typeTH, targetTH))
-            {
-                return true;
-            }
-
-            if (!typeTH.IsTypeDesc && targetTH.IsTypeDesc)
-            {
-                return false;
-            }
-
-            return CanCastToInternal(type, target) switch
+            return TypeHandle.TryCanCastTo(typeTH, targetTH) switch
             {
                 CastResult.CanCast => true,
                 CastResult.CannotCast => false,
@@ -1329,14 +1315,13 @@ namespace System
         internal static extern Resolver GetResolver(RuntimeMethodHandleInternal method);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeMethodHandle_GetMethodBody")]
-        private static partial void GetMethodBody(RuntimeMethodHandleInternal method, nint declaringType, ObjectHandleOnStack result);
+        private static partial void GetMethodBody(RuntimeMethodHandleInternal method, QCallTypeHandle declaringType, ObjectHandleOnStack result);
 
         internal static RuntimeMethodBody? GetMethodBody(IRuntimeMethodInfo method, RuntimeType declaringType)
         {
             RuntimeMethodBody? result = null;
-            GetMethodBody(method.Value, declaringType.GetUnderlyingNativeHandle(), ObjectHandleOnStack.Create(ref result));
+            GetMethodBody(method.Value, new QCallTypeHandle(ref declaringType), ObjectHandleOnStack.Create(ref result));
             GC.KeepAlive(method);
-            GC.KeepAlive(declaringType);
             return result;
         }
 
@@ -1989,8 +1974,7 @@ namespace System
             ObjectHandleOnStack _this,
             void* pCorSig, int cCorSig,
             RuntimeFieldHandleInternal fieldHandle,
-            RuntimeMethodHandleInternal methodHandle,
-            IntPtr typeHandle);
+            RuntimeMethodHandleInternal methodHandle);
 
         [MemberNotNull(nameof(_returnTypeORfieldType))]
         private void Init(
@@ -1999,15 +1983,10 @@ namespace System
             RuntimeMethodHandleInternal methodHandle)
         {
             Signature _this = this;
-
-            // Lifetime of typeHandle is extended since the RuntimeType is
-            // a member of Signature, whose lifetime is ensured below.
-            IntPtr typeHandle = _declaringType.GetUnderlyingNativeHandle();
             Init(ObjectHandleOnStack.Create(ref _this),
                 pCorSig, cCorSig,
                 fieldHandle,
-                methodHandle,
-                typeHandle);
+                methodHandle);
             Debug.Assert(_returnTypeORfieldType != null);
         }
 
@@ -2052,7 +2031,14 @@ namespace System
 
         #region Internal Members
         internal CallingConventions CallingConvention => (CallingConventions)(_managedCallingConventionAndArgIteratorFlags & 0xff);
-        internal RuntimeType[] Arguments => _arguments ?? [];
+        internal RuntimeType[] Arguments
+        {
+            get
+            {
+                Debug.Assert(_arguments != null);
+                return _arguments;
+            }
+        }
         internal RuntimeType ReturnType => _returnTypeORfieldType;
         internal RuntimeType FieldType => _returnTypeORfieldType;
 
