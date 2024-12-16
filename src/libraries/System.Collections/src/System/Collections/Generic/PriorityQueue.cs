@@ -172,6 +172,11 @@ namespace System.Collections.Generic
         public int Count => _size;
 
         /// <summary>
+        ///  Gets the total numbers of elements the internal data structure can hold without resizing.
+        /// </summary>
+        public int Capacity => _nodes.Length;
+
+        /// <summary>
         ///  Gets the priority comparer used by the <see cref="PriorityQueue{TElement, TPriority}"/>.
         /// </summary>
         public IComparer<TPriority> Comparer => _comparer ?? Comparer<TPriority>.Default;

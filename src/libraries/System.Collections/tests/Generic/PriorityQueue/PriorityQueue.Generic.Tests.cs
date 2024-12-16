@@ -34,6 +34,15 @@ namespace System.Collections.Tests
             return queue;
         }
 
+        [Theory]
+        [InlineData(1)]
+        [InlineData(100)]
+        public void CreateWithCapacity_EqualsCapacityProperty(int capacity)
+        {
+            var queue = new PriorityQueue<TElement, TPriority>(capacity);
+            Assert.Equal(capacity, queue.Capacity);
+        }
+
         #endregion
 
         #region Constructors
