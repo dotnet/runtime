@@ -19636,6 +19636,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_vcvtps2iubs:
         case INS_vcvttps2ibs:
         case INS_vcvttps2iubs:
+        case INS_vmpsadbw:
         {
             result.insThroughput = PERFSCORE_THROUGHPUT_2X;
             result.insLatency += PERFSCORE_LATENCY_4C;

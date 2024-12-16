@@ -27419,8 +27419,8 @@ bool GenTreeHWIntrinsic::OperIsEmbRoundingEnabled() const
         case NI_AVX10v1_V512_ConvertToVector512UInt64:
         case NI_AVX10v2_ConvertToSByteWithSaturationAndWidenToInt32:
         case NI_AVX10v2_ConvertToByteWithSaturationAndWidenToInt32:
-        case NI_AVX10v2_ConvertToSByteWithTruncationSaturationAndWidenToInt32:
-        case NI_AVX10v2_ConvertToByteWithTruncationSaturationAndWidenToInt32:
+        case NI_AVX10v2_V512_ConvertToSByteWithSaturationAndWidenToInt32:
+        case NI_AVX10v2_V512_ConvertToByteWithSaturationAndWidenToInt32:
         {
             return numArgs == 2;
         }

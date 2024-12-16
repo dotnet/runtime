@@ -9551,6 +9551,7 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
                 case NI_AVX10v1_RoundScaleScalar:
                 case NI_AVX10v2_MinMaxScalar:
                 case NI_AVX10v2_MinMax:
+                case NI_AVX10v2_V512_MinMax:
                 {
                     assert(supportsAlignedSIMDLoads == false);
 
@@ -10755,6 +10756,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                         case NI_AVX10v1_RoundScaleScalar:
                         case NI_AVX10v2_MinMaxScalar:
                         case NI_AVX10v2_MinMax:
+                        case NI_AVX10v2_V512_MinMax:
                         {
                             // These intrinsics have both 2 and 3-operand overloads.
                             //
@@ -11345,6 +11347,8 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                         case NI_AVX10v1_V512_Range:
                         case NI_AVX10v2_MinMaxScalar:
                         case NI_AVX10v2_MinMax:
+                        case NI_AVX10v2_V512_MinMax:
+                        case NI_AVX10v2_V512_MultipleSumAbsoluteDifferences:
                         case NI_GFNI_GaloisFieldAffineTransform:
                         case NI_GFNI_GaloisFieldAffineTransformInverse:
                         case NI_GFNI_V256_GaloisFieldAffineTransform:
