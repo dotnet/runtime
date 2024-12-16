@@ -1853,10 +1853,8 @@ public:
     //
     // Optional MethodDesc slots appear after the end of base MethodDesc in this order:
     //
-
-    // class MethodImpl;                            // Present if HasMethodImplSlot() is true
-
     typedef PCODE NonVtableSlot;   // Present if HasNonVtableSlot() is true
+    // class MethodImpl;           // Present if HasMethodImplSlot() is true
     typedef PCODE NativeCodeSlot;  // Present if HasNativeCodeSlot() is true
 
 // Stub Dispatch code

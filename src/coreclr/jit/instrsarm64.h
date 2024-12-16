@@ -1587,6 +1587,45 @@ INST1(uxtb,        "uxtb",         0,      IF_DR_2H,  0x53001C00)
 INST1(uxth,        "uxth",         0,      IF_DR_2H,  0x53003C00)
                                    //  uxth    Rd,Rn                DR_2H  0101001100000000 001111nnnnnddddd   5300 3C00
 
+INST1(autia1716,   "autia1716",    0,      IF_PC_0A,  0xD503219F)
+                                   //  autia1716                    PC_0A  1101010100000011 0010000110011111   D503 219F
+
+INST1(autiasp,     "autiasp",      0,      IF_PC_0A,  0xD50323BF)
+                                   //  autiasp                      PC_0A  1101010100000011 0010001110111111   D503 23BF
+
+INST1(autiaz,      "autiaz",       0,      IF_PC_0A,  0xD503239F)
+                                   //  autiaz                       PC_0A  1101010100000011 0010001110011111   D503 239F
+
+INST1(pacia1716,   "pacia1716 ",   0,      IF_PC_0A,  0xD503211F)
+                                   //  pacia1716                    PC_0A  1101010100000011 0010000100011111   D503 211F
+
+INST1(paciasp,     "paciasp",      0,      IF_PC_0A,  0xD503233F)
+                                   //  paciasp                      PC_0A  1101010100000011 0010001100111111   D503 233F
+
+INST1(paciaz,      "paciaz",       0,      IF_PC_0A,  0xD503231F)
+                                   //  paciaz                       PC_0A  1101010100000011 0010001100011111   D503 231F
+
+INST1(xpaclri,     "xpaclri",      0,      IF_PC_0A,  0xD50320FF)
+                                   //  xpaclri Rd                   PC_0A  1101010100000011 0010000011111111   D503 20FF
+
+INST1(autiza,      "autiza",       0,      IF_PC_1A,  0xDAC133E0)
+                                   //  autiza  Rd                   PC_1A  1101101011000001 0001000000000000   DAC1 33E0
+
+INST1(paciza,      "paciza",       0,      IF_PC_1A,  0xDAC123E0)
+                                   //  paciza  Rd                   PC_1A  1101101011000001 00000011111ddddd   DAC1 23E0
+
+INST1(xpacd,       "xpacd",        0,      IF_PC_1A,  0xDAC147E0)
+                                   //  xpacd   Rd                   PC_0A  1101101011000001 0100011111100000   DAC1 47E0
+
+INST1(xpaci,       "xpaci",        0,      IF_PC_1A,  0xDAC143E0)
+                                   //  xpaci   Rd                   PC_0A  1101101011000001 0100001111100000   DAC1 43E0
+
+INST1(autia,       "autia",        0,      IF_PC_2A,  0xDAC11000)
+                                   //  autia   Rd,Rn                PC_2A  1101101011000001 00110011111ddddd   DAC1 1000
+
+INST1(pacia,       "pacia",        0,      IF_PC_2A,  0xDAC10000)
+                                   //  pacia   Rd,Rn                PC_2A  1101101011000001 000000nnnnnddddd   DAC1 0000
+
 INST1(nop,         "nop",          0,      IF_SN_0A,  0xD503201F)
                                    //  nop                          SN_0A  1101010100000011 0010000000011111   D503 201F
 

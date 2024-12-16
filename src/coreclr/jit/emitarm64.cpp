@@ -940,6 +940,18 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(isVectorRegister(id->idReg4()));
             break;
 
+        case IF_PC_1A: // PC_1A   ................ ...........ddddd      Rd
+            assert(id->idOpSize() == EA_8BYTE);
+            assert(isGeneralRegister(id->idReg1()));
+            break;
+
+        case IF_PC_2A: // PC_2A   X........X...... ......nnnnnddddd      Rd Rn
+            assert(id->idOpSize() == EA_8BYTE);
+            assert(isGeneralRegister(id->idReg1()));
+            assert(isIntegerRegister(id->idReg2())); // SP
+            break;
+
+        case IF_PC_0A: // PC_0A   ................ ................
         case IF_SN_0A: // SN_0A   ................ ................
         case IF_SI_0A: // SI_0A   ...........iiiii iiiiiiiiiii.....               imm16
         case IF_SI_0B: // SI_0B   ................ ....bbbb........               imm4 - barrier
@@ -1065,6 +1077,12 @@ bool emitter::emitInsMayWriteToGCReg(instrDesc* id)
             assert(emitInsIsStore(ins));
             assert(emitInsIsLoad(ins));
             return true;
+
+        case IF_PC_1A: // PC_1A   ................ ...........ddddd      Rd
+            return (ins == INS_autiza || ins == INS_paciza || ins == INS_xpacd || ins == INS_xpaci);
+
+        case IF_PC_2A: // PC_2A   X........X...... ......nnnnnddddd      Rd Rn
+            return (ins == INS_autia || ins == INS_pacia);
 
         case IF_SR_1A: // SR_1A   ................ ...........ttttt      Rt       (dc zva, mrs)
             return ins == INS_mrs_tpid0;
@@ -3651,7 +3669,22 @@ void emitter::emitIns(instruction ins)
 
     if (ins != INS_BREAKPOINT)
     {
-        assert(fmt == IF_SN_0A);
+        switch (ins)
+        {
+            case INS_autia1716:
+            case INS_autiasp:
+            case INS_autiaz:
+            case INS_pacia1716:
+            case INS_paciasp:
+            case INS_paciaz:
+            case INS_xpaclri:
+                assert(fmt == IF_PC_0A);
+                break;
+
+            default:
+                assert(fmt == IF_SN_0A);
+                break;
+        }
     }
 
     id->idIns(ins);
@@ -3717,9 +3750,13 @@ void emitter::emitIns_R(instruction ins, emitAttr attr, regNumber reg, insOpts o
             break;
 
         case INS_dczva:
+        case INS_autiza:
+        case INS_paciza:
+        case INS_xpacd:
+        case INS_xpaci:
             assert(isGeneralRegister(reg));
             assert(attr == EA_8BYTE);
-            fmt = IF_SR_1A;
+            fmt = (ins == INS_dczva) ? IF_SR_1A : IF_PC_1A;
             break;
 
         case INS_mrs_tpid0:
@@ -5043,6 +5080,18 @@ void emitter::emitIns_R_R(instruction     ins,
             }
             break;
 
+        case INS_autia:
+        case INS_pacia:
+        {
+            assert(insOptsNone(opt));
+            assert(isValidGeneralDatasize(size));
+            assert(isGeneralRegister(reg1));
+            assert(isGeneralRegisterOrSP(reg2));
+            reg2 = encodingSPtoZR(reg2);
+            fmt  = IF_PC_2A;
+            break;
+        }
+
         default:
             // fallback to emit SVE instructions.
             return emitInsSve_R_R(ins, attr, reg1, reg2, opt, sopt);
@@ -5653,7 +5702,8 @@ void emitter::emitIns_R_R_I(instruction     ins,
         case INS_stlurb:
         case INS_stlurh:
         case INS_stlur:
-            fmt = IF_LS_2C;
+            reg2 = encodingSPtoZR(reg2);
+            fmt  = IF_LS_2C;
             break;
 
         case INS_ld2:
@@ -11562,6 +11612,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             break;
 
         case IF_DR_2H: // DR_2H   X........X...... ......nnnnnddddd      Rd Rn
+        case IF_PC_2A: // PC_2A   X........X...... ......nnnnnddddd      Rd Rn
             code = emitInsCode(ins, fmt);
             code |= insEncodeDatasizeBF(code, id->idOpSize()); // X........X
             code |= insEncodeReg_Rd(id->idReg1());             // ddddd
@@ -12090,6 +12141,14 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             dst += emitOutput_Instr(dst, code);
             break;
 
+        case IF_PC_1A: // PC_1A   ................ ...........ddddd      Rd
+            assert(insOptsNone(id->idInsOpt()));
+            code = emitInsCode(ins, fmt);
+            code |= insEncodeReg_Rd(id->idReg1()); // ddddd
+            dst += emitOutput_Instr(dst, code);
+            break;
+
+        case IF_PC_0A: // PC_0A   ................ ................
         case IF_SN_0A: // SN_0A   ................ ................
         {
             bool skipIns = false;
@@ -14308,6 +14367,7 @@ void emitter::emitDispInsHelp(
             emitDispReg(id->idReg4(), size, false);
             break;
 
+        case IF_PC_0A: // PC_0A   ................ ................
         case IF_SN_0A: // SN_0A   ................ ................
             if (ins == INS_align)
             {
@@ -14321,6 +14381,15 @@ void emitter::emitDispInsHelp(
                 }
                 printf("]");
             }
+            break;
+
+        case IF_PC_1A: // PC_1A   ................ ...........ddddd      Rd
+            emitDispReg(id->idReg1(), size, false);
+            break;
+
+        case IF_PC_2A: // PC_2A   X........X...... ......nnnnnddddd      Rd Rn
+            emitDispReg(id->idReg1(), size, true);
+            emitDispReg(encodingZRtoSP(id->idReg2()), size, false);
             break;
 
         case IF_SI_0A: // SI_0A   ...........iiiii iiiiiiiiiii.....               imm16
@@ -15678,6 +15747,24 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
 
                 default:
                     unreached();
+            }
+            break;
+
+        case IF_PC_0A: // autia1716, autiasp, autiaz, pacia1716, paciasp, paciaz, xpaclri
+        case IF_PC_1A: // autiza, paciza, xpacd, xpaci
+        case IF_PC_2A: // autia, pacia
+            switch (ins)
+            {
+                case INS_xpacd:
+                case INS_xpaci:
+                case INS_xpaclri:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+                    result.insLatency    = PERFSCORE_LATENCY_2C;
+                    break;
+
+                default:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+                    result.insLatency    = PERFSCORE_LATENCY_5C;
             }
             break;
 

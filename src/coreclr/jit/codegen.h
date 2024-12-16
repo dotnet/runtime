@@ -643,6 +643,7 @@ protected:
     void genArm64EmitterUnitTestsGeneral();
     void genArm64EmitterUnitTestsAdvSimd();
     void genArm64EmitterUnitTestsSve();
+    void genArm64EmitterUnitTestsPac();
 #endif
 
 #if defined(TARGET_AMD64)

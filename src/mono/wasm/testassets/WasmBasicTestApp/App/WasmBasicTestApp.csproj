@@ -4,6 +4,8 @@
     <RuntimeIdentifier>browser-wasm</RuntimeIdentifier>
     <OutputType>Exe</OutputType>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- The private field 'class member' is never used -->
+    <NoWarn>$(NoWarn);CS0169</NoWarn>
   </PropertyGroup>
 
   <!-- Lazy loading test various extensions -->
@@ -15,11 +17,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Library\Json.csproj" />
+    <ProjectReference Include="..\Json\Json.csproj" />
     <ProjectReference Include="..\ResourceLibrary\ResourceLibrary.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
+  <ItemGroup Condition="'$(TestLazyLoading)' == 'true'">
     <BlazorWebAssemblyLazyLoad Include="Json$(WasmAssemblyExtension)" />
     <WasmExtraFilesToDeploy Include="profiler.js" />
   </ItemGroup>
