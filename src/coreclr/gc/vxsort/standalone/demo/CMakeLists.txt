@@ -1,5 +1,4 @@
 set(TARGET_NAME ${CMAKE_PROJECT_NAME}_demo)
-set(CMAKE_BUILD_TYPE Release)
 
 include_directories("../..")
 

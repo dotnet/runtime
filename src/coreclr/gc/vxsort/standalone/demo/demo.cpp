@@ -9,7 +9,7 @@ using namespace std;
 
 uint8_t* START = (uint8_t*)0x1234567812345678;
 
-std::vector<uint8_t*> generate_random_garbage(const uint8_t size) {
+std::vector<uint8_t*> generate_random_garbage(const uint64_t size) {
 
     auto vec = std::vector<uint8_t*>(size);
     std::iota(vec.begin(), vec.end(), START);
