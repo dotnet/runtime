@@ -706,7 +706,7 @@ namespace System.Security.Cryptography.Pkcs
 
             if (!verifySignatureOnly)
             {
-                X509Chain chain = new X509Chain();
+                using X509Chain chain = new X509Chain();
                 chain.ChainPolicy.ExtraStore.AddRange(extraStore);
                 chain.ChainPolicy.RevocationMode = X509RevocationMode.Online;
                 chain.ChainPolicy.RevocationFlag = X509RevocationFlag.ExcludeRoot;
