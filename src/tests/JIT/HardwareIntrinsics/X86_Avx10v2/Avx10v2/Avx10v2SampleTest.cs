@@ -68,9 +68,9 @@ namespace IntelHardwareIntrinsicTest._Avx10v2
                 Vector128<double> right = Vector128.Create<double>(-12.0);
                 Vector128<float> firstOp = Vector128.Create<float>(0.65f);
                 Vector256<float> secondOp = Vector256.Create<float>(27.35f);
-                Console.WriteLine("widen to int is " + Avx10v2.ConvertToByteWithSaturationAndWidenToInt32(secondOp, FloatRoundingMode.ToNegativeInfinity));
-                Console.WriteLine("widen to int is " + Avx10v2.ConvertToByteWithSaturationAndWidenToInt32(secondOp, FloatRoundingMode.ToPositiveInfinity));
-                Console.WriteLine("widen to int is " + Avx10v2.ConvertToByteWithSaturationAndWidenToInt32(secondOp, FloatRoundingMode.ToZero));
+                // Console.WriteLine("widen to int is " + Avx10v2.ConvertToByteWithSaturationAndWidenToInt32(secondOp, FloatRoundingMode.ToNegativeInfinity));
+                // Console.WriteLine("widen to int is " + Avx10v2.ConvertToByteWithSaturationAndWidenToInt32(secondOp, FloatRoundingMode.ToPositiveInfinity));
+                // Console.WriteLine("widen to int is " + Avx10v2.ConvertToByteWithSaturationAndWidenToInt32(secondOp, FloatRoundingMode.ToZero));
                 // Console.WriteLine("Scalar conversion " + (int)(sbyte)Math.Clamp(Math.Round(0.65f), sbyte.MinValue, sbyte.MaxValue));
                 // Console.WriteLine("widen to uint is " + Avx10v2.ConvertToByteWithSaturationAndWidenToInt32(firstOp));
                 // Console.WriteLine("widen to int is " + Avx10v2.ConvertToSByteWithSaturationAndWidenToInt32(secondOp));
