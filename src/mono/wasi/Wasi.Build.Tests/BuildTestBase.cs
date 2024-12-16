@@ -46,7 +46,7 @@ namespace Wasm.Build.Tests
         // FIXME: use an envvar to override this
         protected static int s_defaultPerTestTimeoutMs = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? 30*60*1000 : 15*60*1000;
         protected static BuildEnvironment s_buildEnv;
-        private const string s_runtimePackPathPattern = "\\*\\* MicrosoftNetCoreAppRuntimePackDir : '([^ ']*)'";
+        private const string s_runtimePackPathPattern = "\\*\\* MicrosoftNetCoreAppRuntimePackDir : '([^']*)'";
         private const string s_nugetInsertionTag = "<!-- TEST_RESTORE_SOURCES_INSERTION_LINE -->";
         private static Regex s_runtimePackPathRegex;
         private static int s_testCounter;
