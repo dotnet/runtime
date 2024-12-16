@@ -48,7 +48,7 @@ namespace System.Security.Cryptography.Xml
                     if (elem.LocalName == "XPath")
                     {
                         _xpathexpr = elem.InnerXml.Trim(null);
-                        XmlNodeReader nr = new XmlNodeReader(elem);
+                        using XmlNodeReader nr = new XmlNodeReader(elem);
                         XmlNameTable nt = nr.NameTable;
                         _nsm = new XmlNamespaceManager(nt);
                         if (!Utils.VerifyAttributes(elem, (string?)null))
