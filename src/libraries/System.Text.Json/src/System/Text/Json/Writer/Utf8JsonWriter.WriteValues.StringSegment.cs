@@ -333,7 +333,7 @@ namespace System.Text.Json
             BytesPending += escapedValue.Length;
         }
 
-        private void WriteStringSegmentProlog()
+        private void WriteStringSegmentPrologue()
         {
             if (_options.Indented)
             {
