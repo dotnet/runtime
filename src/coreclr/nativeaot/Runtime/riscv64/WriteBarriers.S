@@ -65,8 +65,7 @@
 
         // Someone went and updated the real heap. We need to invalidate INVALIDGCVALUE the shadow location since we cannot
         // guarantee whose shadow update won.
-        lui  t3, (INVALIDGCVALUE >> 12) & 0xFFFFF
-        ori  t3, t3, INVALIDGCVALUE & 0xFFF
+        li   t3, INVALIDGCVALUE
         sd   t3, 0(\destReg)
 
 0:

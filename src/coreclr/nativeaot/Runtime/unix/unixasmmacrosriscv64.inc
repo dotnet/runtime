@@ -61,20 +61,23 @@ C_FUNC(\Name):
 .macro PROLOG_STACK_ALLOC Size
     // If Size is larger than 2047, split it into multiple instructions
     .if (\Size > 2047) || (\Size < -2048)
-        // Load the upper 20 bits into a temporary register (e.g., t0)
-        lui t0, %hi(\Size)
-        // Add the lower 12 bits to the temporary register
-        addi t0, t0, %lo(\Size)
-        // Subtract the value from the stack pointer
-        sub sp, sp, t0
+        li t0, -\Size
+        add sp, sp, t0
     .else
         addi sp, sp, -\Size
     .endif
 .endm
 
 .macro EPILOG_STACK_FREE Size
-    addi  sp, sp, \Size
-    .cfi_adjust_cfa_offset -\Size
+    // If Size is larger than 2047 or smaller than -2048, split into multiple instructions
+    .if (\Size > 2047) || (\Size < -2048)
+        li t0, \Size           // Load the large Size value into a temporary register
+        add sp, sp, t0         // Use the add instruction for full 64-bit addition
+        .cfi_adjust_cfa_offset -\Size
+    .else
+        addi sp, sp, \Size     // Handle small immediate directly with addi
+        .cfi_adjust_cfa_offset -\Size
+    .endif
 .endm
 
 .macro EPILOG_STACK_RESTORE

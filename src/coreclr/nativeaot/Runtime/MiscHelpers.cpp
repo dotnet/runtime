@@ -375,7 +375,7 @@ FCIMPL1(uint8_t *, RhGetCodeTarget, uint8_t * pCodeOrg)
 #elif TARGET_RISCV64
     uint32_t * pCode = (uint32_t *)pCodeOrg;
     // is this "addi a0, a0, 8"?
-    if (pCode[0] == 0x000200b3)  // Encoding for `addi a0, a0, 8` in 32-bit RISC-V
+    if (pCode[0] == 0x00850513)  // Encoding for `addi a0, a0, 8` in 32-bit instruction format
     {
         // unboxing sequence
         unboxingStub = true;
@@ -383,27 +383,32 @@ FCIMPL1(uint8_t *, RhGetCodeTarget, uint8_t * pCodeOrg)
     }
     // is this an indirect jump?
     // lui t0, imm; jalr t0, t0, imm12
-    if ((pCode[0] & 0x000ff000) == 0x00020000 &&
-        (pCode[1] & 0x000ff000) == 0x000000a0 &&
-        (pCode[2] & 0x0000000f) == 0x00000000)
+    if ((pCode[0] & 0x7f) == 0x17 &&                 // auipc
+        (pCode[1] & 0x707f) == 0x3003 &&             // ld with funct3=011
+        (pCode[2] & 0x707f) == 0x0067)               // jr (jalr with x0 as rd and funct3=000)
     {
-        // normal import stub - dist to IAT cell is relative to (PC & ~0xfff)
-        // lui: imm = SignExtend(imm20:Zeros(12), 64);
-        int64_t distToIatCell = ((((int64_t)pCode[0] & ~0xfff) << 12) >> 32);
-        // jalr: offset = SignExtend(imm12, 64);
-        distToIatCell += (int64_t)(pCode[1] & 0xfff);
+        // Compute the distance to the IAT cell
+        int64_t distToIatCell = (((int64_t)pCode[0] & 0xfffff000) >> 12);  // Extract imm20 from auipc
+        distToIatCell += ((int64_t)(pCode[1] & 0xfff));                    // Add imm12 from ld
+
         uint8_t ** pIatCell = (uint8_t **)(((int64_t)pCode & ~0xfff) + distToIatCell);
         return *pIatCell;
     }
-    // is this an unboxing stub followed by a relative jump?
-    // jal ra, imm
-    else if (unboxingStub && (pCode[0] & 0xffe00000) == 0x00000000 &&
-             (pCode[1] & 0x0000ffff) == 0x00000000)
+
+    // Is this an unboxing stub followed by a relative jump?
+    // auipc t0, imm20; jalr ra, imm12(t0)
+    else if (unboxingStub &&
+            (pCode[0] & 0x7f) == 0x17 &&                 // auipc opcode
+            (pCode[1] & 0x707f) == 0x0067)              // jalr opcode with funct3=000
     {
-        // relative jump - dist is relative to the instruction
-        // offset = SignExtend(imm20:Zeros(12), 64);
-        int64_t distToTarget = ((int64_t)(pCode[1] & 0xffff) << 12) >> 12;
-        return (uint8_t *)pCode + distToTarget;
+        // Extract imm20 from auipc
+        int64_t distToTarget = (((int64_t)pCode[0] & 0xfffff000) >> 12);  // Extract imm20 (bits 31:12)
+
+        // Extract imm12 from jalr
+        distToTarget += ((int64_t)pCode[1] & 0xfff);  // Extract imm12 (bits 31:20)
+
+        // Calculate the final target address relative to PC
+        return (uint8_t *)((int64_t)pCode + distToTarget);
     }
 
 #else

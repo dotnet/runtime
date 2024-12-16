@@ -583,13 +583,11 @@ typedef struct DECLSPEC_ALIGN(16) _CONTEXT {
     uint64_t T5;
     uint64_t T6;
     uint64_t Pc;
-    uint64_t T61;
-    uint64_t Pc1;
 
     //
     // Floating Point Registers
     //
-    uint64_t F[4*32];
+    uint64_t F[32];
     uint32_t Fcsr;
 
     void SetIp(uintptr_t ip) { Pc = ip; }

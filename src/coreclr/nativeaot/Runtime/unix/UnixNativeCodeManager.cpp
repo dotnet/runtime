@@ -1227,7 +1227,7 @@ int UnixNativeCodeManager::TrailingEpilogueInstructionsCount(MethodInfo * pMetho
 // BEQ, BNE, JAL, etc.
 // 1100 0000 0000 0000 0000 0000 0000 0000
 #define BEGS_BITS 0x00000063
-#define BEGS_MASK 0x7F000000
+#define BEGS_MASK 0x0000007F
 
     UnixNativeMethodInfo * pNativeMethodInfo = (UnixNativeMethodInfo *)pMethodInfo;
     ASSERT(pNativeMethodInfo != NULL);
@@ -1245,20 +1245,20 @@ int UnixNativeCodeManager::TrailingEpilogueInstructionsCount(MethodInfo * pMetho
     {
         uint32_t instr = *pInstr;
 
-        // check for Branches, Jumps, System calls.
-        // If we see such instruction before seeing registers restored, we are not in an epilog.
-        // Note: this includes RET, branches, jumps, system calls, etc...
+        // Check for branches, jumps, or system calls.
+        // If we see such instructions before registers are restored, we are not in an epilogue.
+        // Note: this includes RET, branches, jumps, and system calls.
         if ((instr & BEGS_MASK) == BEGS_BITS)
         {
             // not in an epilogue
             break;
         }
 
-        // check for restoring registers with LD or LUI
-        int rd = (instr >> 7) & 0x1F;
-        if (rd == 2 || rd == 1)  // example register numbers for FP or RA
+        // Check for restoring registers (FP or RA) with `ld`
+        int rd = (instr >> 7) & 0x1F;  // Extract the destination register
+        if (rd == 8 || rd == 1)  // Check for FP (x8) or RA (x1)
         {
-            if ((instr & LD_MASK) == LD_BITS || (instr & LUI_MASK) == LUI_BITS)
+            if ((instr & LD_MASK) == LD_BITS)  // Match `ld` instruction
             {
                 return -1;
             }

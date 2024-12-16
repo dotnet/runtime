@@ -115,7 +115,7 @@ LOCAL_LABEL(NewOutOfMemory):
 
         // Compute overall allocation size (align(base size + (element size * elements), 8)).
         li    a3, STRING_COMPONENT_SIZE                 // Load STRING_COMPONENT_SIZE into a3
-        mul   a2, a1, a3                                // a2 = a1 * STRING_COMPONENT_SIZE
+        slli  a2, a1, 1                                 // a2 = a1 * STRING_COMPONENT_SIZE, where STRING_COMPONENT_SIZE == 2
         addi  a2, a2, STRING_BASE_SIZE + 7              // a2 = a2 + STRING_BASE_SIZE + 7
         andi  a2, a2, ~0x7                              // Clear the bits[2:0] of a2 (align to 8 bytes)
 

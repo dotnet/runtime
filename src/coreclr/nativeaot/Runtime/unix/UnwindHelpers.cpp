@@ -1134,10 +1134,7 @@ inline bool Registers_REGDISPLAY::validRegister(int num) const {
 
 bool Registers_REGDISPLAY::validVectorRegister(int num) const
 {
-    // Vector registers are mapped to floating-point registers F24 to F31
-    if (num >= UNW_RISCV_F24 && num <= UNW_RISCV_F31)
-        return true;
-
+    // Vector registers currently unsupported
     return false;
 }
 
@@ -1370,34 +1367,12 @@ void Registers_REGDISPLAY::setRegister(int regNum, uint64_t value, uint64_t loca
 
 libunwind::v128 Registers_REGDISPLAY::getVectorRegister(int num) const
 {
-    num -= UNW_RISCV_F24; // Adjust the base to 0
-
-    if (num < 0 || num >= sizeof(F) / sizeof(uint64_t))
-    {
-        PORTABILITY_ASSERT("unsupported riscv64 vector register");
-    }
-
-    libunwind::v128 result;
-
-    // Assuming F array stores 64-bit parts of the vector data
-    result.vec[0] = 0;
-    result.vec[1] = 0;
-    result.vec[2] = F[num] >> 32;
-    result.vec[3] = F[num] & 0xFFFFFFFF;
-
-    return result;
+    PORTABILITY_ASSERT("Vector registers currently unsupported on RISC-V");
 }
 
 void Registers_REGDISPLAY::setVectorRegister(int num, libunwind::v128 value)
 {
-    num -= UNW_RISCV_F24; // Adjust the base to 0
-
-    if (num < 0 || num >= sizeof(F) / sizeof(uint64_t))
-    {
-        PORTABILITY_ASSERT("unsupported riscv64 vector register");
-    }
-
-    F[num] = (uint64_t)value.vec[2] << 32 | (uint64_t)value.vec[3];
+    PORTABILITY_ASSERT("Vector registers currently unsupported on RISC-V");
 }
 
 #endif // TARGET_RISCV64
