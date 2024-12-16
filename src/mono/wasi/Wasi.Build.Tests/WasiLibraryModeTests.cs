@@ -25,21 +25,7 @@ public class WasiLibraryModeTests : BuildTestBase
         string config = "Release";
         string id = $"{config}_{GetRandomId()}";
         string projectFile = CreateWasmTemplateProject(id, "wasiconsole");
-        string code =
-                """
-                using System;
-                using System.Runtime.InteropServices;
-                public unsafe class Test
-                {
-                    [UnmanagedCallersOnly(EntryPoint = "MyCallback")]
-                    public static int MyCallback()
-                    {
-                        Console.WriteLine("WASM Library MyCallback is called");
-                        return 100;
-                    }
-                }
-                """;
-        string csprojCode = 
+        string csprojCode =
                 """
                 <Project Sdk="Microsoft.NET.Sdk.WebAssembly">
                     <PropertyGroup>
@@ -51,6 +37,7 @@ public class WasiLibraryModeTests : BuildTestBase
                     </PropertyGroup>
                 </Project>
                 """;
+        string code = File.ReadAllText(Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "LibraryMode.cs"));
         File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), code);
         File.WriteAllText(Path.Combine(_projectDir!, $"{id}.csproj"), csprojCode);
         string projectName = Path.GetFileNameWithoutExtension(projectFile);
