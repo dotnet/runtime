@@ -304,15 +304,15 @@ bool emitter::IsLegacyMap1(code_t code) const
         // 2-byte
         return true;
     }
-    if ((code & 0xFF0000) == 0x0F0000)
+    if ((code & 0xFFFF0000) == 0x000F0000)
     {
         // 3-byte
         return true;
     }
 
-    if ((code & 0xFF000000) == 0x0F000000)
+    if ((code & 0xFF00FF00) == 0x0F000000)
     {
-        // 4-byte, need to check if PP is prefixs
+        // 4-byte, need to check if PP is a prefix.
         BYTE prefix = (BYTE)((code & 0xFF0000) >> 16);
         return ((prefix == 0xF2) || (prefix == 0xF3) || (prefix == 0x66));
     }
@@ -1369,7 +1369,7 @@ bool emitter::TakesRex2Prefix(const instrDesc* id) const
     // TODO-xarch-apx:
     // At this stage, we are only using REX2 in the case that non-simd integer instructions
     // with EGPRs being used in its operands, it could be either direct register uses, or
-    // memory addresssig operands, i.e. index and base.
+    // memory addressing operands, i.e. index and base.
     instruction ins = id->idIns();
     if (!IsRex2EncodableInstruction(ins))
     {
@@ -1381,17 +1381,17 @@ bool emitter::TakesRex2Prefix(const instrDesc* id) const
         return false;
     }
 
+    if (HasExtendedGPReg(id))
+    {
+        return true;
+    }
+
 #if defined(DEBUG)
     if (emitComp->DoJitStressRex2Encoding())
     {
         return true;
     }
 #endif // DEBUG
-
-    if (HasExtendedGPReg(id))
-    {
-        return true;
-    }
 
     return false;
 }
@@ -1786,7 +1786,7 @@ bool emitter::HasHighSIMDReg(const instrDesc* id) const
 }
 
 //------------------------------------------------------------------------
-// HasExtendedGPReg: Checks if an instruction uses a extended general purpose registers - EGPRs (r16-r31)
+// HasExtendedGPReg: Checks if an instruction uses an extended general-purpose register - EGPR (r16-r31)
 // and will require one of the REX2 EGPR bits (REX2.R4/R3, REX2.B4/B3, REX2.X4/X3)
 //
 // Arguments:
@@ -2571,7 +2571,7 @@ unsigned emitter::emitOutputRexOrSimdPrefixIfNeeded(instruction ins, BYTE* dst, 
         if ((code & 0xFF) == 0x0F)
         {
             // some map-1 instructions have opcode in forms like:
-            // XX0F, remove the leading 0x0F byte as it have been recoreded in REX2.
+            // XX0F, remove the leading 0x0F byte as it has been recorded in REX2.
             code = code >> 8;
         }
 
@@ -3556,7 +3556,7 @@ inline unsigned emitter::insEncodeReg012(const instrDesc* id, regNumber reg, emi
         }
         if (false /*reg >= REG_R16 && reg <= REG_R31*/)
         {
-            // seperate the encoding for REX2.B3/B4, REX2.B3 will be handled in `AddRexBPrefix`.
+            // Seperate the encoding for REX2.B3/B4, REX2.B3 will be handled in `AddRexBPrefix`.
             assert(TakesRex2Prefix(id));
             *code |= 0x001000000000ULL; // REX2.B4
         }

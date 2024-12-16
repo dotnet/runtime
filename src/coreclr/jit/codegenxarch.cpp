@@ -9064,7 +9064,10 @@ void CodeGen::genAmd64EmitterUnitTestsApx()
     genDefineTempLabel(genCreateTempLabel());
 
     // This test suite needs REX2 enabled.
-    assert(theEmitter->UseRex2Encoding() || theEmitter->emitComp->DoJitStressRex2Encoding());
+    if (!theEmitter->UseRex2Encoding() && !theEmitter->emitComp->DoJitStressRex2Encoding())
+    {
+        return;
+    }
 
     theEmitter->emitIns_R_R(INS_add, EA_1BYTE, REG_EAX, REG_ECX);
     theEmitter->emitIns_R_R(INS_add, EA_2BYTE, REG_EAX, REG_ECX);
@@ -9205,18 +9208,12 @@ void CodeGen::genAmd64EmitterUnitTestsApx()
     theEmitter->emitIns_R(INS_div, EA_8BYTE, REG_EDX);
     theEmitter->emitIns_R(INS_mulEAX, EA_8BYTE, REG_EDX);
 
-    // Note:
-    // All the tests below rely on the runtime status of the stack this unit tests attaching to,
-    // it might fail due to stack value unavailable/mismatch, since these tests are mainly for
-    // encoding correctness check, this kind of failures may be considered as not harmful.
+    GenTreePhysReg physReg(REG_EDX);
+    physReg.SetRegNum(REG_EDX);
+    GenTreeIndir load = indirForm(TYP_INT, &physReg);
 
-    GenTree* stkNum = theEmitter->emitComp->stackState.esStack[0].val;
-    stkNum->SetRegNum(REG_EDX);
-    stkNum->SetUnusedValue();
-    GenTreeIndir load = indirForm(TYP_INT, stkNum);
-
-    theEmitter->emitIns_R_A(INS_add, EA_4BYTE, REG_EAX, &load);
-    theEmitter->emitIns_R_A(INS_add, EA_4BYTE, REG_EAX, &load);
+    theEmitter->emitIns_R_A(INS_add, EA_1BYTE, REG_EAX, &load);
+    theEmitter->emitIns_R_A(INS_add, EA_2BYTE, REG_EAX, &load);
     theEmitter->emitIns_R_A(INS_add, EA_4BYTE, REG_EAX, &load);
     theEmitter->emitIns_R_A(INS_add, EA_8BYTE, REG_EAX, &load);
     theEmitter->emitIns_R_A(INS_or, EA_4BYTE, REG_EAX, &load);
@@ -9229,6 +9226,11 @@ void CodeGen::genAmd64EmitterUnitTestsApx()
     theEmitter->emitIns_R_A(INS_test, EA_4BYTE, REG_EAX, &load);
     theEmitter->emitIns_R_A(INS_bsf, EA_4BYTE, REG_EAX, &load);
     theEmitter->emitIns_R_A(INS_bsr, EA_4BYTE, REG_EAX, &load);
+
+    // Note:
+    // All the tests below rely on the runtime status of the stack this unit tests attaching to,
+    // it might fail due to stack value unavailable/mismatch, since these tests are mainly for
+    // encoding correctness check, this kind of failures may be considered as not harmful.
 
     theEmitter->emitIns_R_S(INS_add, EA_1BYTE, REG_EAX, 0, 0);
     theEmitter->emitIns_R_S(INS_add, EA_2BYTE, REG_EAX, 0, 0);
