@@ -26,7 +26,6 @@
 #include "comdatetime.h"
 #include "debugdebugger.h"
 #include "assemblynative.hpp"
-#include "comthreadpool.h"
 #include "comwaithandle.h"
 
 #include "proftoeeinterfaceimpl.h"

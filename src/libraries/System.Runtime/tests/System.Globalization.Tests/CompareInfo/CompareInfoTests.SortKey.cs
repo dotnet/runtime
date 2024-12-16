@@ -272,14 +272,14 @@ namespace System.Globalization.Tests
             yield return new object[] { s_invariantCompare, "\u3060", "\uFF80\uFF9E", CompareOptions.None, s_expectedHiraganaToKatakanaCompare };
         }
 
-        [ConditionalTheory(typeof(CompareInfoSortKeyTests), nameof(IsNotWindowsKanaRegressedVersionAndNotHybridGlobalizationOnWasm))]
+        [ConditionalTheory(typeof(CompareInfoSortKeyTests), nameof(IsNotWindowsKanaRegressedVersion))]
         [MemberData(nameof(SortKey_Kana_TestData))]
         public void SortKeyKanaTest(CompareInfo compareInfo, string string1, string string2, CompareOptions options, int expected)
         {
             SortKeyTest(compareInfo, string1, string2, options, expected);
         }
         
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [Theory]
         [MemberData(nameof(SortKey_TestData))]
         public void SortKeyTest(CompareInfo compareInfo, string string1, string string2, CompareOptions options, int expectedSign)
         {
@@ -328,7 +328,7 @@ namespace System.Globalization.Tests
             }
         }
         
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [Fact]
         public void SortKeyMiscTest()
         {
             CompareInfo ci = new CultureInfo("en-US").CompareInfo;

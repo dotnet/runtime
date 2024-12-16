@@ -138,7 +138,6 @@
       <_WasmPropertyNames Include="WasiClangLinkOptimizationFlag" />
       <_WasmPropertyNames Include="WasmIncludeFullIcuData" />
       <_WasmPropertyNames Include="WasmIcuDataFileName" />
-      <_WasmPropertyNames Include="HybridGlobalization" />
     </ItemGroup>
   </Target>
 

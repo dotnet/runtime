@@ -4474,7 +4474,7 @@ bool Compiler::fgComputeCalledCount(weight_t returnWeight)
 
     // If we allocated a scratch block as the first BB then we need
     // to set its profile-derived weight to be fgCalledCount
-    if (fgFirstBBisScratch())
+    if (fgFirstBB->HasFlag(BBF_INTERNAL))
     {
         fgFirstBB->setBBProfileWeight(fgCalledCount);
         madeChanges = true;

@@ -3521,7 +3521,17 @@ namespace System.Numerics.Tensors
             TensorPrimitives.Abs(output, output);
             TensorPrimitives.Pow((ReadOnlySpan<T>)output, T.CreateChecked(2), output);
             T sum = TensorPrimitives.Sum((ReadOnlySpan<T>)output);
-            return T.CreateChecked(sum / T.CreateChecked(x._shape._memoryLength));
+            T variance = sum / T.CreateChecked(x._shape._memoryLength);
+
+            if (typeof(T) == typeof(float))
+            {
+                return T.CreateChecked(MathF.Sqrt(float.CreateChecked(variance)));
+            }
+            if (typeof(T) == typeof(double))
+            {
+                return T.CreateChecked(Math.Sqrt(double.CreateChecked(variance)));
+            }
+            return T.Pow(variance, T.CreateChecked(0.5));
         }
         #endregion
 
