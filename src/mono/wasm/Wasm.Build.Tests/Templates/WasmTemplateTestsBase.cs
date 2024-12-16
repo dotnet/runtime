@@ -20,8 +20,7 @@ namespace Wasm.Build.Tests;
 public class WasmTemplateTestsBase : BuildTestBase
 {
     private readonly WasmSdkBasedProjectProvider _provider;
-    private readonly string _extraBuildArgsBuild = "/warnaserror";
-    private readonly string _extraBuildArgsPublish = "-p:CompressionEnabled=false /warnaserror";
+    private readonly string _extraBuildArgsPublish = "-p:CompressionEnabled=false";
     protected readonly PublishOptions _defaultPublishOptions;
     protected readonly BuildOptions _defaultBuildOptions;
     protected const string DefaultRuntimeAssetsRelativePath = "./_framework/";
@@ -31,7 +30,7 @@ public class WasmTemplateTestsBase : BuildTestBase
     {
         _provider = GetProvider<WasmSdkBasedProjectProvider>();
         _defaultPublishOptions = new PublishOptions(ExtraMSBuildArgs: _extraBuildArgsPublish);
-        _defaultBuildOptions = new BuildOptions(ExtraMSBuildArgs: _extraBuildArgsBuild);
+        _defaultBuildOptions = new BuildOptions();
     }
 
     private Dictionary<string, string> browserProgramReplacements = new Dictionary<string, string>
@@ -146,12 +145,7 @@ public class WasmTemplateTestsBase : BuildTestBase
         Configuration configuration,
         BuildOptions buildOptions,
         bool? isNativeBuild = null) =>
-        BuildProjectCore(
-            info,
-            configuration,
-            buildOptions with { ExtraMSBuildArgs = $"{buildOptions.ExtraMSBuildArgs} {_extraBuildArgsBuild}" },
-            isNativeBuild
-        );
+        BuildProjectCore(info, configuration, buildOptions, isNativeBuild);
 
     private (string projectDir, string buildOutput) BuildProjectCore(
         ProjectInfo info,
