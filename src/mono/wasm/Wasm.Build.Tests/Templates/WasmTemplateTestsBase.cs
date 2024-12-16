@@ -130,7 +130,7 @@ public class WasmTemplateTestsBase : BuildTestBase
         BuildProjectCore(
             info,
             configuration,
-            publishOptions with { ExtraMSBuildArgs = $"{publishOptions.ExtraMSBuildArgs} {_extraBuildArgsPublish}" },
+            publishOptions with { ExtraMSBuildArgs = $"{_extraBuildArgsPublish} {publishOptions.ExtraMSBuildArgs}" },
             isNativeBuild
         );
 
