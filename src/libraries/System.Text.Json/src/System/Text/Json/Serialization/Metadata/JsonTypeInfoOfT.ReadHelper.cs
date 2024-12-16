@@ -25,11 +25,11 @@ namespace System.Text.Json.Serialization.Metadata
         internal async ValueTask<T?> DeserializeAsync(Stream utf8Json, CancellationToken cancellationToken)
         {
             Debug.Assert(IsConfigured);
-            JsonSerializerOptions options = Options;
-            var bufferState = new ReadBufferState(options.DefaultBufferSize);
+            JsonSerializerOptions options = Options;        
             ReadStack readStack = default;
             readStack.Initialize(this, supportContinuation: true);
             var jsonReaderState = new JsonReaderState(options.GetReaderOptions());
+            var bufferState = new ReadBufferState(options.DefaultBufferSize);
 
             try
             {
@@ -58,10 +58,10 @@ namespace System.Text.Json.Serialization.Metadata
         {
             Debug.Assert(IsConfigured);
             JsonSerializerOptions options = Options;
-            var bufferState = new ReadBufferState(options.DefaultBufferSize);
             ReadStack readStack = default;
             readStack.Initialize(this, supportContinuation: true);
             var jsonReaderState = new JsonReaderState(options.GetReaderOptions());
+            var bufferState = new ReadBufferState(options.DefaultBufferSize);
 
             try
             {
