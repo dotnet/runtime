@@ -2,6 +2,19 @@
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props, $(MSBuildThisFileDirectory)..))" />
 
   <PropertyGroup>
+
+    <PackageIndexFile>$(MSBuildThisFileDirectory)packageIndex.json</PackageIndexFile>
+
+    <!-- this repo doesn't currently use the index so don't force it to be in sync -->
+    <SkipIndexCheck>true</SkipIndexCheck>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageIndex Include="$(PackageIndexFile)" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <Platform>$(TargetArchitecture)</Platform>
     <PackagePlatform>AnyCPU</PackagePlatform>
 
     <SkipPackageFileCheck>true</SkipPackageFileCheck>

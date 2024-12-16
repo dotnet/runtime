@@ -20,7 +20,7 @@
     <MacOSScriptsTemplateDirectory>osx_scripts/host</MacOSScriptsTemplateDirectory>
     <MacOSPackageDescription>The .NET Shared Host.</MacOSPackageDescription>
     <!-- Enables stable upgrade code - do not change -->
-    <MsiUpgradeCodeSeed>dotnet-host $(MajorVersion).$(MinorVersion) $(Platform)</MsiUpgradeCodeSeed>
+    <MsiUpgradeCodeSeed>dotnet-host $(MajorVersion).$(MinorVersion) $(TargetArchitecture)</MsiUpgradeCodeSeed>
   </PropertyGroup>
 
   <ItemGroup>
