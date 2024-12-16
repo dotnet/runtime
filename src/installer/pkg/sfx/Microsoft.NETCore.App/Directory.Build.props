@@ -150,29 +150,18 @@
     <PlatformManifestFileEntry Include="libstdc++compat.a" IsNative="true" />
     <!-- NativeAOT/Windows specific files -->
     <PlatformManifestFileEntry Include="bootstrapper.obj" IsNative="true" />
-    <PlatformManifestFileEntry Include="bootstrapper.GuardCF.obj" IsNative="true" />
     <PlatformManifestFileEntry Include="bootstrapperdll.obj" IsNative="true" />
-    <PlatformManifestFileEntry Include="bootstrapperdll.GuardCF.obj" IsNative="true" />
     <PlatformManifestFileEntry Include="dllmain.obj" IsNative="true" />
-    <PlatformManifestFileEntry Include="dllmain.GuardCF.obj" IsNative="true" />
     <PlatformManifestFileEntry Include="eventpipe-disabled.lib" IsNative="true" />
-    <PlatformManifestFileEntry Include="eventpipe-disabled.GuardCF.lib" IsNative="true" />
     <PlatformManifestFileEntry Include="eventpipe-enabled.lib" IsNative="true" />
-    <PlatformManifestFileEntry Include="eventpipe-enabled.GuardCF.lib" IsNative="true" />
     <PlatformManifestFileEntry Include="Runtime.ServerGC.lib" IsNative="true" />
-    <PlatformManifestFileEntry Include="Runtime.ServerGC.GuardCF.lib" IsNative="true" />
     <PlatformManifestFileEntry Include="Runtime.WorkstationGC.lib" IsNative="true" />
     <PlatformManifestFileEntry Include="Runtime.VxsortEnabled.lib" IsNative="true" />
-    <PlatformManifestFileEntry Include="Runtime.VxsortEnabled.GuardCF.lib" IsNative="true" />
     <PlatformManifestFileEntry Include="Runtime.VxsortDisabled.lib" IsNative="true" />
     <PlatformManifestFileEntry Include="standalonegc-disabled.lib" IsNative="true" />
-    <PlatformManifestFileEntry Include="standalonegc-disabled.GuardCF.lib" IsNative="true" />
     <PlatformManifestFileEntry Include="standalonegc-enabled.lib" IsNative="true" />
-    <PlatformManifestFileEntry Include="standalonegc-enabled.GuardCF.lib" IsNative="true" />
     <PlatformManifestFileEntry Include="System.Globalization.Native.Aot.lib" IsNative="true" />
-    <PlatformManifestFileEntry Include="System.Globalization.Native.Aot.GuardCF.lib" IsNative="true" />
     <PlatformManifestFileEntry Include="System.IO.Compression.Native.Aot.lib" IsNative="true" />
-    <PlatformManifestFileEntry Include="System.IO.Compression.Native.Aot.GuardCF.lib" IsNative="true" />
     <PlatformManifestFileEntry Include="aotminipal.lib" IsNative="true" />
     <!-- NativeAOT managed specific files -->
     <PlatformManifestFileEntry Include="System.Private.Reflection.Execution.dll" />

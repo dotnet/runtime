@@ -157,12 +157,12 @@ static void PrintDiffsCsvRow(
     bool hasDiff)
 {
     fw.Printf("%d,%u,", context, contextSize);
-    fw.PrintQuotedCsvField(baseRes.CompileResults->MethodFullName == nullptr ? "" : baseRes.CompileResults->MethodFullName);
+    fw.PrintQuotedCsvField(diffRes.CompileResults->MethodFullName == nullptr ? "" : diffRes.CompileResults->MethodFullName);
     fw.Printf(
         ",%s,%s,%s,%s,%s,%lld,%lld",
-        baseRes.CompileResults->TieringName == nullptr ? "" : baseRes.CompileResults->TieringName,
+        diffRes.CompileResults->TieringName == nullptr ? "" : diffRes.CompileResults->TieringName,
         ResultToString(baseRes.Result), ResultToString(diffRes.Result),
-        baseRes.IsMinOpts ? "True" : "False",
+        diffRes.IsMinOpts ? "True" : "False",
         hasDiff ? "True" : "False",
         baseRes.NumExecutedInstructions, diffRes.NumExecutedInstructions);
 

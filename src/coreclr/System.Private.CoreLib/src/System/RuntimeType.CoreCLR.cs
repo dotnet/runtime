@@ -826,30 +826,21 @@ namespace System
                     #endregion
 
                     #region Populate Literal Fields on Interfaces
+                    Type[] interfaces;
                     if (ReflectedType.IsGenericParameter)
                     {
-                        Type[] interfaces = ReflectedType.BaseType!.GetInterfaces();
-
-                        for (int i = 0; i < interfaces.Length; i++)
-                        {
-                            // Populate literal fields defined on any of the interfaces implemented by the declaring type
-                            PopulateLiteralFields(filter, (RuntimeType)interfaces[i], ref list);
-                            PopulateRtFields(filter, (RuntimeType)interfaces[i], ref list);
-                        }
+                        interfaces = ReflectedType.BaseType!.GetInterfaces();
                     }
                     else
                     {
-                        Type[]? interfaces = RuntimeTypeHandle.GetInterfaces(ReflectedType);
+                        interfaces = RuntimeTypeHandle.GetInterfaces(ReflectedType);
+                    }
 
-                        if (interfaces != null)
-                        {
-                            for (int i = 0; i < interfaces.Length; i++)
-                            {
-                                // Populate literal fields defined on any of the interfaces implemented by the declaring type
-                                PopulateLiteralFields(filter, (RuntimeType)interfaces[i], ref list);
-                                PopulateRtFields(filter, (RuntimeType)interfaces[i], ref list);
-                            }
-                        }
+                    foreach (Type iface in interfaces)
+                    {
+                        // Populate literal fields defined on any of the interfaces implemented by the declaring type
+                        PopulateLiteralFields(filter, (RuntimeType)iface, ref list);
+                        PopulateRtFields(filter, (RuntimeType)iface, ref list);
                     }
                     #endregion
 
@@ -858,25 +849,22 @@ namespace System
 
                 private unsafe void PopulateRtFields(Filter filter, RuntimeType declaringType, ref ListBuilder<RuntimeFieldInfo> list)
                 {
-                    IntPtr* pResult = stackalloc IntPtr[64];
-                    int count = 64;
-
-                    if (!RuntimeTypeHandle.GetFields(declaringType, pResult, &count))
+                    Span<IntPtr> result = stackalloc IntPtr[64];
+                    int count;
+                    while (!RuntimeTypeHandle.GetFields(declaringType, result, out count))
                     {
-                        fixed (IntPtr* pBigResult = new IntPtr[count])
-                        {
-                            RuntimeTypeHandle.GetFields(declaringType, pBigResult, &count);
-                            PopulateRtFields(filter, pBigResult, count, declaringType, ref list);
-                        }
+                        Debug.Assert(count > result.Length);
+                        result = new IntPtr[count];
                     }
-                    else if (count > 0)
+
+                    if (count > 0)
                     {
-                        PopulateRtFields(filter, pResult, count, declaringType, ref list);
+                        PopulateRtFields(filter, result.Slice(0, count), declaringType, ref list);
                     }
                 }
 
                 private unsafe void PopulateRtFields(Filter filter,
-                    IntPtr* ppFieldHandles, int count, RuntimeType declaringType, ref ListBuilder<RuntimeFieldInfo> list)
+                    ReadOnlySpan<IntPtr> fieldHandles, RuntimeType declaringType, ref ListBuilder<RuntimeFieldInfo> list)
                 {
                     Debug.Assert(declaringType != null);
                     Debug.Assert(ReflectedType != null);
@@ -884,9 +872,9 @@ namespace System
                     bool needsStaticFieldForGeneric = declaringType.IsGenericType && !RuntimeTypeHandle.ContainsGenericVariables(declaringType);
                     bool isInherited = declaringType != ReflectedType;
 
-                    for (int i = 0; i < count; i++)
+                    foreach (IntPtr handle in fieldHandles)
                     {
-                        RuntimeFieldHandleInternal runtimeFieldHandle = new RuntimeFieldHandleInternal(ppFieldHandles[i]);
+                        RuntimeFieldHandleInternal runtimeFieldHandle = new RuntimeFieldHandleInternal(handle);
 
                         if (filter.RequiresStringComparison())
                         {
@@ -1017,23 +1005,19 @@ namespace System
 
                     if (!RuntimeTypeHandle.IsGenericVariable(declaringType))
                     {
-                        Type[]? ifaces = RuntimeTypeHandle.GetInterfaces(declaringType);
-
-                        if (ifaces != null)
+                        Type[] ifaces = RuntimeTypeHandle.GetInterfaces(declaringType);
+                        foreach (Type iface in ifaces)
                         {
-                            for (int i = 0; i < ifaces.Length; i++)
+                            RuntimeType interfaceType = (RuntimeType)iface;
+
+                            if (filter.RequiresStringComparison())
                             {
-                                RuntimeType interfaceType = (RuntimeType)ifaces[i];
-
-                                if (filter.RequiresStringComparison())
-                                {
-                                    if (!filter.Match(RuntimeTypeHandle.GetUtf8Name(interfaceType)))
-                                        continue;
-                                }
-
-                                Debug.Assert(interfaceType.IsInterface);
-                                list.Add(interfaceType);
+                                if (!filter.Match(RuntimeTypeHandle.GetUtf8Name(interfaceType)))
+                                    continue;
                             }
+
+                            Debug.Assert(interfaceType.IsInterface);
+                            list.Add(interfaceType);
                         }
 
                         if (ReflectedType.IsSZArray)

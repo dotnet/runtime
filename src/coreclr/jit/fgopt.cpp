@@ -823,16 +823,9 @@ bool Compiler::fgCanCompactBlock(BasicBlock* block)
         return false;
     }
 
-    // Don't compact the first block if it was specially created as a scratch block.
+    // Ensure we leave a valid init BB around.
     //
-    if (fgBBisScratch(block))
-    {
-        return false;
-    }
-
-    // We don't want to compact blocks that are in different hot/cold regions
-    //
-    if (fgInDifferentRegions(block, target))
+    if ((block == fgFirstBB) && !fgCanCompactInitBlock())
     {
         return false;
     }
@@ -859,6 +852,40 @@ bool Compiler::fgCanCompactBlock(BasicBlock* block)
 }
 
 //-------------------------------------------------------------
+// fgCanCompactInitBlock: Check if the first BB (the init BB) can be compacted
+// into its target.
+//
+// Returns:
+//    true if compaction is allowed
+//
+bool Compiler::fgCanCompactInitBlock()
+{
+    assert(fgFirstBB->KindIs(BBJ_ALWAYS));
+    BasicBlock* target = fgFirstBB->GetTarget();
+    if (target->hasTryIndex())
+    {
+        // Inside a try region
+        return false;
+    }
+
+    assert(target->bbPreds != nullptr);
+    if (target->bbPreds->getNextPredEdge() != nullptr)
+    {
+        // Multiple preds
+        return false;
+    }
+
+    if (opts.compDbgCode && !target->HasFlag(BBF_INTERNAL))
+    {
+        // Init BB must be internal for debug code to avoid conflating
+        // JIT-inserted code with user code.
+        return false;
+    }
+
+    return true;
+}
+
+//-------------------------------------------------------------
 // fgCompactBlock: Compact BBJ_ALWAYS block and its target into one.
 //
 // Requires that all necessary checks have been performed, i.e. fgCanCompactBlock returns true.
@@ -872,6 +899,10 @@ bool Compiler::fgCanCompactBlock(BasicBlock* block)
 void Compiler::fgCompactBlock(BasicBlock* block)
 {
     assert(fgCanCompactBlock(block));
+
+    // We shouldn't churn the flowgraph after doing hot/cold splitting
+    assert(fgFirstColdBlock == nullptr);
+
     BasicBlock* const target = block->GetTarget();
 
     JITDUMP("\nCompacting " FMT_BB " into " FMT_BB ":\n", target->bbNum, block->bbNum);
@@ -1356,6 +1387,9 @@ bool Compiler::fgOptimizeEmptyBlock(BasicBlock* block)
 {
     assert(block->isEmpty());
 
+    // We shouldn't churn the flowgraph after doing hot/cold splitting
+    assert(fgFirstColdBlock == nullptr);
+
     bool        madeChanges = false;
     BasicBlock* bPrev       = block->Prev();
 
@@ -1389,7 +1423,7 @@ bool Compiler::fgOptimizeEmptyBlock(BasicBlock* block)
             if (bPrev == nullptr)
             {
                 assert(block == fgFirstBB);
-                if (!block->JumpsToNext())
+                if (!block->JumpsToNext() || !fgCanCompactInitBlock())
                 {
                     break;
                 }
@@ -1401,14 +1435,9 @@ bool Compiler::fgOptimizeEmptyBlock(BasicBlock* block)
                 break;
             }
 
-            // can't allow fall through into cold code
-            if (block->IsLastHotBlock(this))
-            {
-                break;
-            }
-
-            // Don't remove fgEntryBB
-            if (block == fgEntryBB)
+            // Don't remove the init BB if it does not leave a proper init BB
+            // in place
+            if ((block == fgFirstBB) && !fgCanCompactInitBlock())
             {
                 break;
             }
@@ -2167,11 +2196,6 @@ bool Compiler::fgOptimizeUncondBranchToSimpleCond(BasicBlock* block, BasicBlock*
         return false;
     }
 
-    if (fgBBisScratch(block))
-    {
-        return false;
-    }
-
     unsigned lclNum = BAD_VAR_NUM;
 
     // First check if the successor tests a local and then branches on the result
@@ -2527,12 +2551,6 @@ bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
     }
 
     if (bJump->HasFlag(BBF_KEEP_BBJ_ALWAYS))
-    {
-        return false;
-    }
-
-    // Don't hoist a conditional branch into the scratch block; we'd prefer it stay BBJ_ALWAYS.
-    if (fgBBisScratch(bJump))
     {
         return false;
     }
@@ -5606,6 +5624,9 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication /* = false */, bool isPh
 
     noway_assert(opts.OptimizationEnabled());
 
+    // We shouldn't be churning the flowgraph after doing hot/cold splitting
+    assert(fgFirstColdBlock == nullptr);
+
 #ifdef DEBUG
     if (verbose && !isPhase)
     {
@@ -5762,9 +5783,7 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication /* = false */, bool isPh
                     bNext->KindIs(BBJ_ALWAYS) && // the next block is a BBJ_ALWAYS block
                     !bNext->JumpsToNext() &&     // and it doesn't jump to the next block (we might compact them)
                     bNext->isEmpty() &&          // and it is an empty block
-                    !bNext->TargetIs(bNext) &&   // special case for self jumps
-                    !bDest->IsFirstColdBlock(this) &&
-                    !fgInDifferentRegions(block, bDest)) // do not cross hot/cold sections
+                    !bNext->TargetIs(bNext))     // special case for self jumps
                 {
                     assert(block->FalseTargetIs(bNext));
 
@@ -5806,20 +5825,6 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication /* = false */, bool isPh
                     if (bNext->hasTryIndex() && !BasicBlock::sameTryRegion(block, bNext))
                     {
                         optimizeJump = false;
-                    }
-
-                    // If we are optimizing using real profile weights
-                    // then don't optimize a conditional jump to an unconditional jump
-                    // until after we have computed the edge weights
-                    //
-                    if (fgIsUsingProfileWeights())
-                    {
-                        // if block and bDest are in different hot/cold regions we can't do this optimization
-                        // because we can't allow fall-through into the cold region.
-                        if (fgInDifferentRegions(block, bDest))
-                        {
-                            optimizeJump = false;
-                        }
                     }
 
                     if (optimizeJump && isJumpToJoinFree)
@@ -5909,12 +5914,6 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication /* = false */, bool isPh
 
                         /* Mark the block as removed */
                         bNext->SetFlags(BBF_REMOVED);
-
-                        // If this is the first Cold basic block update fgFirstColdBlock
-                        if (bNext->IsFirstColdBlock(this))
-                        {
-                            fgFirstColdBlock = bNext->Next();
-                        }
 
                         //
                         // If we removed the end of a try region or handler region
@@ -6506,9 +6505,9 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
                 Statement* const  stmt      = info.m_stmt;
                 BasicBlock* const predBlock = info.m_block;
 
-                // Never pick the scratch block as the victim as that would
+                // Never pick the init block as the victim as that would
                 // cause us to add a predecessor to it, which is invalid.
-                if (fgBBisScratch(predBlock))
+                if (predBlock == fgFirstBB)
                 {
                     continue;
                 }

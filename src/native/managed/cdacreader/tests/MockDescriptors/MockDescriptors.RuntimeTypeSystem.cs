@@ -72,6 +72,7 @@ internal partial class MockDescriptors
                     FnPtrTypeDescFields,
                     ParamTypeDescFields,
                     TypeVarTypeDescFields,
+                    GCCoverageInfoFields,
                 ]);
         }
 

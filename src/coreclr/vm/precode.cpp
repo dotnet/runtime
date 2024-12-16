@@ -150,23 +150,6 @@ MethodDesc* Precode::GetMethodDesc(BOOL fSpeculative /*= FALSE*/)
     return (PTR_MethodDesc)pMD;
 }
 
-BOOL Precode::IsCorrectMethodDesc(MethodDesc *  pMD)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-    MethodDesc * pMDfromPrecode = GetMethodDesc(TRUE);
-
-    if (pMDfromPrecode == pMD)
-        return TRUE;
-
-    return FALSE;
-}
-
 BOOL Precode::IsPointingToPrestub(PCODE target)
 {
     CONTRACTL
