@@ -426,6 +426,13 @@ FCIMPL0(int, RhpGetThunkBlockSize)
 }
 FCIMPLEND
 
+FCIMPL0(int, RhpGetThunkDataBlockSize)
+{
+    ASSERT_UNCONDITIONALLY("NYI");
+    return 0;
+}
+FCIMPLEND
+
 FCIMPL0(void *, RhGetCommonStubAddress)
 {
     ASSERT_UNCONDITIONALLY("NYI");

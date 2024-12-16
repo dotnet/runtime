@@ -364,6 +364,10 @@ namespace System.Runtime
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern int RhpGetThunkBlockSize();
 
+        [RuntimeImport(Redhawk.BaseName, "RhpGetThunkDataBlockSize")]
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static extern int RhpGetThunkDataBlockSize();
+
         [LibraryImport(RuntimeLibrary, EntryPoint = "RhAllocateThunksMapping")]
         internal static partial IntPtr RhAllocateThunksMapping();
 
