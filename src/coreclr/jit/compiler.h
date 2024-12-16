@@ -5345,6 +5345,8 @@ public:
     bool fgGlobalMorph = false; // indicates if we are during the global morphing phase
                         // since fgMorphTree can be called from several places
 
+    bool fgGlobalRemorph = false; // true if we are intentionaly remorphing already morphed nodes
+
     bool fgGlobalMorphDone = false;
 
     bool     impBoxTempInUse; // the temp below is valid and available
@@ -5445,6 +5447,10 @@ public:
     PhaseStatus fgMorphBlocks();
     void fgMorphBlock(BasicBlock* block, MorphUnreachableInfo* unreachableInfo = nullptr);
     void fgMorphStmts(BasicBlock* block);
+
+#ifdef DEBUG
+    void fgPostGlobalMorphChecks();
+#endif
 
     void fgMergeBlockReturn(BasicBlock* block);
 
@@ -6788,7 +6794,7 @@ private:
     void fgKillDependentAssertionsSingle(unsigned lclNum DEBUGARG(GenTree* tree));
     void fgKillDependentAssertions(unsigned lclNum DEBUGARG(GenTree* tree));
     void fgMorphTreeDone(GenTree* tree);
-    void fgMorphTreeDone(GenTree* tree, bool optAssertionPropDone, bool isMorphedTree DEBUGARG(int morphNum = 0));
+    void fgMorphTreeDone(GenTree* tree, bool optAssertionPropDone DEBUGARG(int morphNum = 0));
 
     Statement* fgMorphStmt;
     unsigned   fgBigOffsetMorphingTemps[TYP_COUNT];
