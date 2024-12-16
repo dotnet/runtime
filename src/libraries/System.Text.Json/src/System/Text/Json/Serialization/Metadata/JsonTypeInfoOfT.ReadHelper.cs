@@ -25,7 +25,7 @@ namespace System.Text.Json.Serialization.Metadata
         internal async ValueTask<T?> DeserializeAsync(Stream utf8Json, CancellationToken cancellationToken)
         {
             Debug.Assert(IsConfigured);
-            JsonSerializerOptions options = Options;        
+            JsonSerializerOptions options = Options;
             ReadStack readStack = default;
             readStack.Initialize(this, supportContinuation: true);
             var jsonReaderState = new JsonReaderState(options.GetReaderOptions());
