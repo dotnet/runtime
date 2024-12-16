@@ -120,7 +120,7 @@ STDMETHODIMP CCeeGen::GetString(ULONG RVA, __inout LPWSTR *lpString)
 
 
 ErrExit:
-    if (*lpString)
+    if (lpString != NULL && *lpString != 0)
         return S_OK;
     return hr;
 }
