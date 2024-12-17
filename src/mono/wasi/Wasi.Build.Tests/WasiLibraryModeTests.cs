@@ -20,18 +20,16 @@ public class WasiLibraryModeTests : BuildTestBase
     }
 
     [Theory]
-    // issue: ILLink : error IL1034: Root assembly does not have entry point
-    // https://github.com/dotnet/runtime/issues/110620
-    // [InlineData(true)]
-    [InlineData(false)]
-    public void LibraryModeBuildPublishRun(bool isPublish)
+    [InlineData("Microsoft.NET.Sdk")]
+    [InlineData("Microsoft.NET.Sdk.WebAssembly")]
+    public void LibraryModeBuildPublishRun(string sdk)
     {
         string config = "Release";
         string id = $"{config}_{GetRandomId()}";
         string projectFile = CreateWasmTemplateProject(id, "wasiconsole");
         string csprojCode =
-                """
-                <Project Sdk="Microsoft.NET.Sdk.WebAssembly">
+                $"""
+                <Project Sdk="{sdk}">
                     <PropertyGroup>
                         <TargetFramework>net9.0</TargetFramework>
                         <RuntimeIdentifier>wasi-wasm</RuntimeIdentifier>
@@ -52,11 +50,8 @@ public class WasiLibraryModeTests : BuildTestBase
                     new BuildProjectOptions(
                         DotnetWasmFromRuntimePack: false,
                         CreateProject: false,
-                        Publish: isPublish,
+                        Publish: false,
                         TargetFramework: BuildTestBase.DefaultTargetFramework
                         ));
-        // Issue: "Error: failed to run main module `Release_5hsp0uzk_qpq.wasm`"
-        // https://github.com/dotnet/runtime/issues/110620
-        // RunWithoutBuild(config, id);
     }
 }
