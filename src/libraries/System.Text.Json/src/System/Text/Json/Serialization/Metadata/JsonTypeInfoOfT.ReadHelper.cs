@@ -30,7 +30,7 @@ namespace System.Text.Json.Serialization.Metadata
             readStack.Initialize(this, supportContinuation: true);
             var jsonReaderState = new JsonReaderState(options.GetReaderOptions());
             // Note: The ReadBufferState ctor rents pooled buffers.
-            var bufferState = new ReadBufferState(options.DefaultBufferSize);
+            ReadBufferState bufferState = new(options.DefaultBufferSize);
 
             try
             {
@@ -63,7 +63,7 @@ namespace System.Text.Json.Serialization.Metadata
             readStack.Initialize(this, supportContinuation: true);
             var jsonReaderState = new JsonReaderState(options.GetReaderOptions());
             // Note: The ReadBufferState ctor rents pooled buffers.
-            var bufferState = new ReadBufferState(options.DefaultBufferSize);
+            ReadBufferState bufferState = new(options.DefaultBufferSize);
 
             try
             {
