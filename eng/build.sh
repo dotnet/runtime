@@ -309,6 +309,7 @@ while [[ $# > 0 ]]; do
 
      -pack)
       arguments="$arguments --pack /p:BuildAllConfigurations=true"
+      shift 1
       ;;
 
      -testscope)
