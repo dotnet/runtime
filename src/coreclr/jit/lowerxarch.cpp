@@ -9517,7 +9517,7 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
         case NI_AVX512F_LoadAlignedVector512:
         {
             // In minOpts, we need to ensure that an unaligned address will fault when an explicit LoadAligned is used.
-            // non-VEX encoded instructions will fault if a contained SIMD16 load is contained but will not for scalar
+            // non-VEX encoded instructions will fault if an unaligned SIMD16 load is contained but will not for scalar
             // loads, and VEX-encoded instructions will not fault for unaligned loads in any case.
             //
             // When optimizations are enabled, we want to contain any aligned load that is large enough for the parent's

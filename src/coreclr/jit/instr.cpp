@@ -365,7 +365,7 @@ bool CodeGenInterface::instIsEmbeddedBroadcastCompatible(instruction ins)
 
 /*****************************************************************************
  *
- *  Returns the given instruction's embedded broadcast size in bytes.
+ *  Returns the value of the given instruction's input size attribute, in bytes.
  */
 
 unsigned CodeGenInterface::instInputSize(instruction ins)
