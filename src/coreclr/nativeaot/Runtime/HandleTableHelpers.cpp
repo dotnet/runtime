@@ -111,7 +111,7 @@ static ManagedObjectWrapper* ToManagedObjectWrapper(void* dispatchPtr)
 //
 // AddRef is implemented in native code so that it can be invoked during a GC.  This is important because Xaml invokes AddRef
 // while holding a lock that it *also* holds while a GC is in progress.  If AddRef was managed, we would have to synchronize
-// with the GC before entering AddRef, which would deadlocks with the other thread holding Xaml's lock.
+// with the GC before entering AddRef, which would deadlock with the other thread holding Xaml's lock.
 //
 static uint32_t __stdcall IUnknown_AddRef(void* pComThis)
 {
