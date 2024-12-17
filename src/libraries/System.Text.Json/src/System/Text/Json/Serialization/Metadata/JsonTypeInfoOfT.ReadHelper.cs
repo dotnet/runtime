@@ -29,7 +29,7 @@ namespace System.Text.Json.Serialization.Metadata
             ReadStack readStack = default;
             readStack.Initialize(this, supportContinuation: true);
             var jsonReaderState = new JsonReaderState(options.GetReaderOptions());
-            // bufferState is initialized last to exclude any exceptions before entering the try/finally block where bufferState.Dispose call is executed
+            // Note: The ReadBufferState ctor rents pooled buffers.
             var bufferState = new ReadBufferState(options.DefaultBufferSize);
 
             try
@@ -62,7 +62,7 @@ namespace System.Text.Json.Serialization.Metadata
             ReadStack readStack = default;
             readStack.Initialize(this, supportContinuation: true);
             var jsonReaderState = new JsonReaderState(options.GetReaderOptions());
-            // bufferState is initialized last to exclude any exceptions before entering the try/finally block where bufferState.Dispose call is executed
+            // Note: The ReadBufferState ctor rents pooled buffers.
             var bufferState = new ReadBufferState(options.DefaultBufferSize);
 
             try
