@@ -20,9 +20,9 @@ public class WasiLibraryModeTests : BuildTestBase
     }
 
     [Theory]
-    [InlineData("Microsoft.NET.Sdk")]
-    [InlineData("Microsoft.NET.Sdk.WebAssembly")]
-    public void LibraryModeBuildPublishRun(string sdk)
+    [InlineData("Microsoft.NET.Sdk", false)]
+    [InlineData("Microsoft.NET.Sdk.WebAssembly", true)]
+    public void LibraryModeBuildPublishRun(string sdk, bool hasWasmAppBundle)
     {
         string config = "Release";
         string id = $"{config}_{GetRandomId()}";
@@ -51,6 +51,7 @@ public class WasiLibraryModeTests : BuildTestBase
                         DotnetWasmFromRuntimePack: false,
                         CreateProject: false,
                         Publish: false,
+                        AssertAppBundle: hasWasmAppBundle,
                         TargetFramework: BuildTestBase.DefaultTargetFramework
                         ));
     }
