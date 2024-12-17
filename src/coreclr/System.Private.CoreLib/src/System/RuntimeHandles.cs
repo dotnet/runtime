@@ -1039,14 +1039,7 @@ namespace System
             QCallModule sourceModule);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern MethodAttributes GetAttributesInternal(RuntimeMethodHandleInternal method);
-
-        internal static MethodAttributes GetAttributes(RuntimeMethodHandleInternal method)
-        {
-            if (method.IsNullHandle())
-                throw new ArgumentNullException(SR.Arg_InvalidHandle);
-            return GetAttributesInternal(method);
-        }
+        internal static extern MethodAttributes GetAttributes(RuntimeMethodHandleInternal method);
 
         internal static MethodAttributes GetAttributes(IRuntimeMethodInfo method)
         {
@@ -1088,14 +1081,7 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern int GetSlotInternal(RuntimeMethodHandleInternal method);
-
-        internal static int GetSlot(RuntimeMethodHandleInternal method)
-        {
-            if (method.IsNullHandle())
-                throw new ArgumentNullException(SR.Arg_InvalidHandle);
-            return GetSlotInternal(method);
-        }
+        internal static extern int GetSlot(RuntimeMethodHandleInternal method);
 
         internal static int GetSlot(IRuntimeMethodInfo method)
         {
@@ -1494,14 +1480,7 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern FieldAttributes GetAttributesInternal(RuntimeFieldHandleInternal field);
-
-        internal static FieldAttributes GetAttributes(RuntimeFieldHandleInternal field)
-        {
-            if (field.IsNullHandle())
-                throw new ArgumentNullException(SR.Arg_InvalidHandle);
-            return GetAttributesInternal(field);
-        }
+        internal static extern FieldAttributes GetAttributes(RuntimeFieldHandleInternal field);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern MethodTable* GetApproxDeclaringMethodTable(RuntimeFieldHandleInternal field);
@@ -1651,11 +1630,6 @@ namespace System
 
         internal static RuntimeFieldHandleInternal GetStaticFieldForGenericType(RuntimeFieldHandleInternal field, RuntimeType declaringType)
         {
-            if (field.IsNullHandle())
-            {
-                throw new ArgumentNullException(SR.Arg_InvalidHandle);
-            }
-
             TypeHandle th = declaringType.GetNativeTypeHandle();
             if (th.IsTypeDesc || declaringType.IsArray)
             {

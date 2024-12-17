@@ -1270,9 +1270,10 @@ FCIMPL1(LPCUTF8, RuntimeMethodHandle::GetUtf8Name, MethodDesc* pMethod)
 }
 FCIMPLEND
 
-FCIMPL1(INT32, RuntimeMethodHandle::GetAttributesInternal, MethodDesc *pMethod)
+FCIMPL1(INT32, RuntimeMethodHandle::GetAttributes, MethodDesc *pMethod)
 {
     FCALL_CONTRACT;
+    _ASSERTE(pMethod != NULL);
     return (INT32)pMethod->GetAttrs();
 }
 FCIMPLEND
@@ -1293,20 +1294,16 @@ FCIMPLEND
 
 FCIMPL1(MethodTable*, RuntimeMethodHandle::GetMethodTable, MethodDesc *pMethod)
 {
-    CONTRACTL
-    {
-        FCALL_CHECK;
-        PRECONDITION(pMethod != NULL);
-    }
-    CONTRACTL_END;
-
+    FCALL_CONTRACT;
+    _ASSERTE(pMethod != NULL);
     return pMethod->GetMethodTable();
 }
 FCIMPLEND
 
-FCIMPL1(INT32, RuntimeMethodHandle::GetSlotInternal, MethodDesc *pMethod)
+FCIMPL1(INT32, RuntimeMethodHandle::GetSlot, MethodDesc *pMethod)
 {
     FCALL_CONTRACT;
+    _ASSERTE(pMethod != NULL);
     return (INT32)pMethod->GetSlot();
 }
 FCIMPLEND
@@ -2118,9 +2115,10 @@ FCIMPL1(LPCUTF8, RuntimeFieldHandle::GetUtf8Name, FieldDesc *pField)
 }
 FCIMPLEND
 
-FCIMPL1(INT32, RuntimeFieldHandle::GetAttributesInternal, FieldDesc *pField)
+FCIMPL1(INT32, RuntimeFieldHandle::GetAttributes, FieldDesc *pField)
 {
     FCALL_CONTRACT;
+    _ASSERTE(pField != NULL);
     return (INT32)pField->GetAttributes();
 }
 FCIMPLEND
@@ -2189,13 +2187,10 @@ FCIMPL1(INT32, AssemblyHandle::GetTokenInternal, AssemblyBaseObject* pAssemblyUN
     _ASSERTE(refAssembly != NULL);
 
     mdAssembly token = mdAssemblyNil;
-    IMDInternalImport *mdImport = refAssembly->GetAssembly()->GetMDImport();
 
-    if (mdImport != NULL)
-    {
-        if (FAILED(mdImport->GetAssemblyFromScope(&token)))
-            return COR_E_BADIMAGEFORMAT;
-    }
+    IMDInternalImport* mdImport = refAssembly->GetAssembly()->GetMDImport();
+    if (FAILED(mdImport->GetAssemblyFromScope(&token)))
+        return COR_E_BADIMAGEFORMAT;
 
     return token;
 }
