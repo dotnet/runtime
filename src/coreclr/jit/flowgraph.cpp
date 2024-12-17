@@ -2353,12 +2353,10 @@ PhaseStatus Compiler::fgAddInternal()
 
         if (lvaThisCopyVar != BAD_VAR_NUM)
         {
-            fgEnsureFirstBBisScratch();
-
             ClassLayout* layout = lvaGetDesc(lvaThisCopyVar)->GetLayout();
             GenTree* addr = gtNewLclVarNode(info.compThisArg);
             GenTree* store = gtNewStoreLclVarNode(lvaThisCopyVar, gtNewBlkIndir(layout, addr));
-            Statement* stmt = fgNewStmtAtEnd(fgFirstBB, store);
+            Statement* stmt = fgNewStmtAtBeg(fgFirstBB, store);
 
             JITDUMP("\nCopy \"this\" to V%02u for struct instance method operating on copy\n", lvaThisCopyVar);
             DISPSTMT(stmt);

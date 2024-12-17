@@ -1212,6 +1212,7 @@ enum mcPackets
     Packet_GetMethodInstantiationArgument = 227,
     Packet_GetInstantiatedEntry = 228,
     Packet_GetAsync2Info = 229,
+    Packet_GetAsyncResumptionStub = 230,
 };
 
 void SetDebugDumpVariables();

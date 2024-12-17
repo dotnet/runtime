@@ -1306,21 +1306,11 @@ void Async2Transformation::CreateResumptionSwitch()
 {
     BasicBlock* newEntryBB = BasicBlock::New(m_comp, BBJ_ALWAYS);
 
-    bool hadScratchBB = m_comp->fgFirstBBisScratch();
-
     if (m_comp->fgFirstBB->hasProfileWeight())
     {
         newEntryBB->inheritWeight(m_comp->fgFirstBB);
     }
     m_comp->fgFirstBB->bbRefs--;
-
-    if (hadScratchBB)
-    {
-        // If previous first BB was a scratch BB then we have to recreate it
-        // after since later phases may be relying on it.
-        // TODO-Cleanup: The later phases should be creating it if they need it.
-        m_comp->fgFirstBBScratch = nullptr;
-    }
 
     FlowEdge* toPrevEntryEdge = m_comp->fgAddRefPred(m_comp->fgFirstBB, newEntryBB);
     toPrevEntryEdge->setLikelihood(1);
@@ -1508,10 +1498,5 @@ void Async2Transformation::CreateResumptionSwitch()
         GenTree* ltZero           = m_comp->gtNewOperNode(GT_LT, TYP_INT, ilOffset, zero);
         GenTree* jtrue            = m_comp->gtNewOperNode(GT_JTRUE, TYP_VOID, ltZero);
         LIR::AsRange(checkILOffsetBB).InsertAtEnd(LIR::SeqTree(m_comp, jtrue));
-    }
-
-    if (hadScratchBB)
-    {
-        m_comp->fgEnsureFirstBBisScratch();
     }
 }

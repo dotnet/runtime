@@ -1362,7 +1362,6 @@ public:
     if (pException != nullptr) throw pException;
 }
 
-<<<<<<< HEAD
     virtual void getAsync2Info(
           CORINFO_ASYNC2_INFO* pAsync2InfoOut)
 {
@@ -1371,25 +1370,6 @@ public:
     if (pException != nullptr) throw pException;
 }
 
-    virtual const char16_t* getJitTimeLogFilename()
-{
-    CorInfoExceptionClass* pException = nullptr;
-    const char16_t* temp = _callbacks->getJitTimeLogFilename(_thisHandle, &pException);
-    if (pException != nullptr) throw pException;
-    return temp;
-}
-
-||||||| 741390a6850
-    virtual const char16_t* getJitTimeLogFilename()
-{
-    CorInfoExceptionClass* pException = nullptr;
-    const char16_t* temp = _callbacks->getJitTimeLogFilename(_thisHandle, &pException);
-    if (pException != nullptr) throw pException;
-    return temp;
-}
-
-=======
->>>>>>> 040cbe276907174316e2cc07b35814b3069874a6
     virtual mdMethodDef getMethodDefFromMethod(
           CORINFO_METHOD_HANDLE hMethod)
 {

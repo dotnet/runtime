@@ -10866,7 +10866,7 @@ void Compiler::impLoadArg(unsigned ilArgNum, IL_OFFSET offset)
             if (lvaThisCopyVar != BAD_VAR_NUM)
             {
                 GenTree* lclAddr = gtNewLclVarAddrNode(lvaThisCopyVar, TYP_BYREF);
-                impPushOnStack(lclAddr, verMakeTypeInfoForLocal(lclNum));
+                impPushOnStack(lclAddr, makeTypeInfoForLocal(lclNum));
                 return;
             }
         }
