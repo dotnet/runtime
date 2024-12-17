@@ -40,6 +40,9 @@ public virtual bool CodeVersionManagerSupportsMethod(TargetPointer methodDesc);
 
 // Return the instruction pointer corresponding to the start of the given native code version
 public virtual TargetCodePointer GetNativeCode(NativeCodeVersionHandle codeVersionHandle);
+
+// Gets the GCStressCodeCopy pointer if available, otherwise returns TargetPointer.Null
+public virtual TargetPointer GetGCStressCodeCopy(NativeCodeVersionHandle codeVersionHandle);
 ```
 ### Extension Methods
 ```csharp
@@ -61,6 +64,7 @@ Data descriptors used:
 | NativeCodeVersionNode | NativeCode | indicates an explicit native code version node |
 | NativeCodeVersionNode | Flags | `NativeCodeVersionNodeFlags` flags, see below |
 | NativeCodeVersionNode | VersionId | Version ID corresponding to the parent IL code version |
+| NativeCodeVersionNode | GCCoverageInfo | GCStress debug info, if supported |
 | ILCodeVersioningState | FirstVersionNode | pointer to the first `ILCodeVersionNode` |
 | ILCodeVersioningState | ActiveVersionKind | an `ILCodeVersionKind` value indicating which fields of the active version are value |
 | ILCodeVersioningState | ActiveVersionNode | if the active version is explicit, the NativeCodeVersionNode for the active version |
@@ -68,6 +72,7 @@ Data descriptors used:
 | ILCodeVersioningState | ActiveVersionMethodDef | if the active version is synthetic or unknown, the MethodDef token for the method |
 | ILCodeVersionNode | VersionId | Version ID of the node |
 | ILCodeVersionNode | Next | Pointer to the next `ILCodeVersionNode`|
+| GCCoverageInfo | SavedCode | Pointer to the GCCover saved code copy, if supported |
 
 The flag indicates that the default version of the code for a method desc is active:
 ```csharp
@@ -249,3 +254,11 @@ bool ICodeVersions.CodeVersionManagerSupportsMethod(TargetPointer methodDescAddr
     return true;
 }
 ```
+
+### Finding GCStress Code Copy
+```csharp
+public virtual TargetPointer GetGCStressCodeCopy(NativeCodeVersionHandle codeVersionHandle);
+```
+
+1. If `codeVersionHandle` is synthetic, use the `IRuntimeTypeSystem` to find the GCStressCodeCopy.
+2. If `codeVersionHandle` is explicit, read the `NativeCodeVersionNode` for the `GCCoverageInfo` pointer. This value only exists in some builds. If the value doesn't exist or is a nullptr, return `TargetPointer.Null`. Otherwise return the `SavedCode` pointer from the `GCCoverageInfo` struct.
