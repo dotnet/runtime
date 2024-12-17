@@ -1631,11 +1631,7 @@ namespace System
         internal static RuntimeFieldHandleInternal GetStaticFieldForGenericType(RuntimeFieldHandleInternal field, RuntimeType declaringType)
         {
             TypeHandle th = declaringType.GetNativeTypeHandle();
-            if (th.IsTypeDesc || declaringType.IsArray)
-            {
-                throw new ArgumentNullException(SR.Arg_InvalidHandle);
-            }
-
+            Debug.Assert(!th.IsTypeDesc);
             return GetStaticFieldForGenericType(field, th.AsMethodTable());
         }
 
