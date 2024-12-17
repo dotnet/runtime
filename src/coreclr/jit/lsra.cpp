@@ -275,6 +275,15 @@ SingleTypeRegSet LinearScan::lowSIMDRegs()
 #endif
 }
 
+SingleTypeRegSet LinearScan::lowGPRRegs()
+{
+#if defined(TARGET_AMD64)
+    return (availableIntRegs & RBM_LOWINT.GetIntRegSet());
+#else
+    return availableIntRegs;
+#endif
+}
+
 void LinearScan::updateNextFixedRef(RegRecord* regRecord, RefPosition* nextRefPosition, RefPosition* nextKill)
 {
     LsraLocation nextLocation = nextRefPosition == nullptr ? MaxLocation : nextRefPosition->nodeLocation;

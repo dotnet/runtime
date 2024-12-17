@@ -1076,6 +1076,7 @@ private:
     SingleTypeRegSet allByteRegs();
     SingleTypeRegSet allSIMDRegs();
     SingleTypeRegSet lowSIMDRegs();
+    SingleTypeRegSet lowGPRRegs();
     SingleTypeRegSet internalFloatRegCandidates();
 
     void makeRegisterInactive(RegRecord* physRegRecord);
@@ -1935,8 +1936,11 @@ private:
     int          BuildBinaryUses(GenTreeOp* node, SingleTypeRegSet candidates = RBM_NONE);
     int          BuildCastUses(GenTreeCast* cast, SingleTypeRegSet candidates);
 #ifdef TARGET_XARCH
-    int BuildRMWUses(GenTree* node, GenTree* op1, GenTree* op2, SingleTypeRegSet candidates = RBM_NONE);
+    int BuildRMWUses(
+        GenTree* node, GenTree* op1, GenTree* op2, SingleTypeRegSet op1Candidates, SingleTypeRegSet op2Candidates);
     inline SingleTypeRegSet BuildEvexIncompatibleMask(GenTree* tree);
+    inline SingleTypeRegSet BuildApxIncompatibleGPRMask(GenTree* tree, bool isGPR = false);
+    inline bool DoesThisUseGPR(GenTree* op);
 #endif // !TARGET_XARCH
     int BuildSelect(GenTreeOp* select);
     // This is the main entry point for building the RefPositions for a node.
