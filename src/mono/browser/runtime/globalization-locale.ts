@@ -3,11 +3,27 @@
 
 import { VoidPtrNull } from "./types/internal";
 import { Int32Ptr, VoidPtr } from "./types/emscripten";
-import { OUTER_SEPARATOR, normalizeLocale } from "./hybrid-globalization/helpers";
 import { stringToUTF16, stringToUTF16Ptr, utf16ToString } from "./strings";
 import { setI32 } from "./memory";
 
-// functions common for Hybrid Globalization -> true | false :
+export const OUTER_SEPARATOR = "##";
+
+function normalizeLocale (locale: string | null) {
+    if (!locale)
+        return undefined;
+    try {
+        locale = locale.toLocaleLowerCase();
+        if (locale.includes("zh")) {
+            // browser does not recognize "zh-chs" and "zh-cht" as equivalents of "zh-HANS" "zh-HANT", we are helping, otherwise
+            // it would throw on getCanonicalLocales with "RangeError: Incorrect locale information provided"
+            locale = locale.replace("chs", "HANS").replace("cht", "HANT");
+        }
+        const canonicalLocales = (Intl as any).getCanonicalLocales(locale.replace("_", "-"));
+        return canonicalLocales.length > 0 ? canonicalLocales[0] : undefined;
+    } catch {
+        return undefined;
+    }
+}
 
 export function mono_wasm_get_locale_info (culture: number, cultureLength: number, locale: number, localeLength: number, dst: number, dstMaxLength: number, dstLength: Int32Ptr): VoidPtr {
     try {

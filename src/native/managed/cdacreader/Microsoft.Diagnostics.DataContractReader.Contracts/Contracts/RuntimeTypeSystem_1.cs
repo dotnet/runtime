@@ -267,7 +267,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
         if ((addressLowBits != TypeHandleBits.MethodTable) && (addressLowBits != TypeHandleBits.TypeDesc))
         {
-            throw new InvalidOperationException("Invalid type handle pointer");
+            throw new ArgumentException("Invalid type handle pointer", nameof(typeHandlePointer));
         }
 
         // if we already validated this address, return a handle
@@ -306,7 +306,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         // Otherwse, get ready to validate
         if (!_typeValidation.TryValidateMethodTablePointer(methodTablePointer))
         {
-            throw new InvalidOperationException("Invalid method table pointer");
+            throw new ArgumentException("Invalid method table pointer", nameof(typeHandlePointer));
         }
         // ok, we validated it, cache the data and add the MethodTable_1 struct to the dictionary
         Data.MethodTable trustedMethodTableData = _target.ProcessedData.GetOrAdd<Data.MethodTable>(methodTablePointer);
@@ -636,7 +636,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
         if (!_methodValidation.ValidateMethodDescPointer(methodDescPointer, out TargetPointer methodDescChunkPointer))
         {
-            throw new InvalidOperationException("Invalid method desc pointer");
+            throw new ArgumentException("Invalid method desc pointer", nameof(methodDescPointer));
         }
 
         // ok, we validated it, cache the data and add the MethodDesc struct to the dictionary
