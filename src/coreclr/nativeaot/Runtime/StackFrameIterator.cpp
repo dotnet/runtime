@@ -77,9 +77,13 @@ StackFrameIterator::StackFrameIterator(Thread * pThreadToWalk, PInvokeTransition
     {
         InternalInit(pThreadToWalk, pThreadToWalk->GetInterruptedContext(), GcStackWalkFlags | ActiveStackFrame);
     }
+    else if (pInitialTransitionFrame == TOP_OF_STACK_MARKER)
+    {
+        InternalInit(pThreadToWalk, pInitialTransitionFrame, GcStackWalkFlags);
+    }
     else
     {
-        uint32_t flags = (pInitialTransitionFrame->m_Flags | PTFF_THREAD_HIJACK) != 0 ?
+        uint32_t flags = (pInitialTransitionFrame->m_Flags & PTFF_THREAD_HIJACK) == 0 ?
             GcStackWalkFlags :
             GcStackWalkFlags | ActiveStackFrame;
 
