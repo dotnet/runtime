@@ -1805,7 +1805,14 @@ void CodeGen::genCodeForReturnTrap(GenTreeOp* tree)
     inst_JMP(EJ_je, skipLabel);
 
     // emit the call to the EE-helper that stops for GC (or other reasons)
+#if defined(TARGET_AMD64)
+    // TODO-Xarch-apx : Revert. Excluding eGPR so that it's not used for non REX2 supported movs. Revisit this one.
+    // Might not be necessary.
+    regNumber tmpReg = internalRegisters.GetSingle(tree, RBM_ALLINT_INIT);
+#else
     regNumber tmpReg = internalRegisters.GetSingle(tree, RBM_ALLINT);
+#endif
+
     assert(genIsValidIntReg(tmpReg));
 
     genEmitHelperCall(CORINFO_HELP_STOP_FOR_GC, 0, EA_UNKNOWN, tmpReg);

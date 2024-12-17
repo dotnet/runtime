@@ -5350,6 +5350,10 @@ void CodeGen::genFnProlog()
     // will be skipped.
     bool      initRegZeroed = false;
     regMaskTP excludeMask   = intRegState.rsCalleeRegArgMaskLiveIn;
+#if defined(TARGET_AMD64)
+    // TODO-Xarch-apx : Revert. Excluding eGPR so that it's not used for non REX2 supported movs.
+    excludeMask = excludeMask | RBM_HIGHINT;
+#endif // !defined(TARGET_AMD64)
 
 #ifdef TARGET_ARM
     // If we have a variable sized frame (compLocallocUsed is true)
