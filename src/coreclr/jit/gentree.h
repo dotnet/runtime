@@ -985,7 +985,7 @@ public:
         gtDebugFlags &= ~GTF_DEBUG_NODE_MORPHED;
     }
 #else
-    void SetMorphed(Compiler*, bool)
+    void SetMorphed(Compiler* compiler, bool doChildren = false)
     {
     }
     void ClearMorphed()
