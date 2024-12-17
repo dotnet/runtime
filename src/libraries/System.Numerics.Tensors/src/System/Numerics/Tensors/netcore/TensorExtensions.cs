@@ -3515,11 +3515,10 @@ namespace System.Numerics.Tensors
             where T : IFloatingPoint<T>, IAdditionOperators<T, T, T>, IAdditiveIdentity<T, T>, IRootFunctions<T>
         {
             T mean = Average(x);
-            Span<T> span = MemoryMarshal.CreateSpan(ref x._reference, (int)x._shape._memoryLength);
-            Span<T> output = new T[x.FlattenedLength];
-            TensorPrimitives.Subtract(span, mean, output);
-            TensorPrimitives.Abs(output, output);
-            T sum = TensorPrimitives.SumOfSquares((ReadOnlySpan<T>)output);
+            Tensor<T> temp = CreateUninitialized<T>(x.Lengths);
+            Subtract(x, mean, temp);
+            Abs<T>(temp, temp);
+            T sum = SumOfSquares<T>(temp);
             T variance = sum / T.CreateChecked(x._shape._memoryLength);
             return T.Sqrt(variance);
         }
@@ -6651,6 +6650,19 @@ namespace System.Numerics.Tensors
             where T : IAdditionOperators<T, T, T>, IAdditiveIdentity<T, T>
         {
             return TensorPrimitivesHelperSpanInTOut(x, TensorPrimitives.Sum);
+        }
+        #endregion
+
+        #region SumOfSquares
+        /// <summary>
+        /// Sums the squared elements of the specified tensor.
+        /// </summary>
+        /// <param name="x">Tensor to sum squares of</param>
+        /// <returns></returns>
+        internal static T SumOfSquares<T>(scoped in ReadOnlyTensorSpan<T> x)
+            where T : IAdditionOperators<T, T, T>, IAdditiveIdentity<T, T>, IMultiplyOperators<T, T, T>
+        {
+            return TensorPrimitivesHelperSpanInTOut(x, TensorPrimitives.SumOfSquares);
         }
         #endregion
 
