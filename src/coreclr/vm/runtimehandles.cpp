@@ -185,27 +185,22 @@ extern "C" BOOL QCALLTYPE RuntimeTypeHandle_IsEquivalentTo(QCall::TypeHandle rtT
 }
 #endif // FEATURE_TYPEEQUIVALENCE
 
-FCIMPL1(MethodDesc *, RuntimeTypeHandle::GetFirstIntroducedMethod, ReflectClassBaseObject *pTypeUNSAFE) {
-    CONTRACTL {
+FCIMPL1(MethodDesc *, RuntimeTypeHandle::GetFirstIntroducedMethod, ReflectClassBaseObject *pTypeUNSAFE)
+{
+    CONTRACTL
+    {
         FCALL_CHECK;
         PRECONDITION(CheckPointer(pTypeUNSAFE));
+        PRECONDITION(!typeHandle.IsGenericVariable());
     }
     CONTRACTL_END;
 
     REFLECTCLASSBASEREF refType = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(pTypeUNSAFE);
     TypeHandle typeHandle = refType->GetType();
-
-    if (typeHandle.IsGenericVariable())
-        FCThrowRes(kArgumentException, W("Arg_InvalidHandle"));
-
-    if (typeHandle.IsTypeDesc()) {
+    if (typeHandle.IsTypeDesc())
         return NULL;
-    }
 
     MethodTable* pMT = typeHandle.AsMethodTable();
-    if (pMT == NULL)
-        return NULL;
-
     MethodDesc* pMethod = MethodTable::IntroducedMethodIterator::GetFirst(pMT);
     return pMethod;
 }
@@ -622,22 +617,14 @@ extern "C" void QCALLTYPE RuntimeTypeHandle_GetConstraints(QCall::TypeHandle pTy
     return;
 }
 
-FCIMPL1(INT32, RuntimeTypeHandle::GetAttributes, ReflectClassBaseObject *pTypeUNSAFE) {
-    CONTRACTL {
-        FCALL_CHECK;
-    }
-    CONTRACTL_END;
+FCIMPL1(INT32, RuntimeTypeHandle::GetAttributes, ReflectClassBaseObject *pTypeUNSAFE)
+{
+    FCALL_CONTRACT;
 
     REFLECTCLASSBASEREF refType = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(pTypeUNSAFE);
-
-    if (refType == NULL)
-        FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
-
     TypeHandle typeHandle = refType->GetType();
-
-    if (typeHandle.IsTypeDesc()) {
+    if (typeHandle.IsTypeDesc())
         return tdPublic;
-    }
 
 #ifdef FEATURE_COMINTEROP
     // __ComObject types are always public.
@@ -757,19 +744,14 @@ FCIMPL1(LPCUTF8, RuntimeTypeHandle::GetUtf8Name, MethodTable* pMT)
 }
 FCIMPLEND
 
-FCIMPL1(INT32, RuntimeTypeHandle::GetToken, ReflectClassBaseObject *pTypeUNSAFE) {
-    CONTRACTL {
-        FCALL_CHECK;
-    }
-    CONTRACTL_END;
+FCIMPL1(INT32, RuntimeTypeHandle::GetToken, ReflectClassBaseObject *pTypeUNSAFE)
+{
+    FCALL_CONTRACT;
 
     REFLECTCLASSBASEREF refType = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(pTypeUNSAFE);
-
-    if (refType == NULL)
-        FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
+    _ASSERTE(refType != NULL);
 
     TypeHandle typeHandle = refType->GetType();
-
     if (typeHandle.IsTypeDesc() || typeHandle.IsArray())
     {
         if (typeHandle.IsGenericVariable())
@@ -1161,10 +1143,6 @@ FCIMPL2(FC_BOOL_RET, RuntimeTypeHandle::CompareCanonicalHandles, ReflectClassBas
 
     REFLECTCLASSBASEREF refLeft = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(pLeftUNSAFE);
     REFLECTCLASSBASEREF refRight = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(pRightUNSAFE);
-
-    if ((refLeft == NULL) || (refRight == NULL))
-        FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
-
     FC_RETURN_BOOL(refLeft->GetType().GetCanonicalMethodTable() == refRight->GetType().GetCanonicalMethodTable());
 }
 FCIMPLEND
@@ -1174,10 +1152,6 @@ FCIMPL1(FC_BOOL_RET, RuntimeTypeHandle::IsGenericVariable, PTR_ReflectClassBaseO
     FCALL_CONTRACT;
 
     REFLECTCLASSBASEREF refType = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(pTypeUNSAFE);
-
-    if (refType == NULL)
-        FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
-
     FC_RETURN_BOOL(refType->GetType().IsGenericVariable());
 }
 FCIMPLEND
@@ -1187,10 +1161,6 @@ FCIMPL1(INT32, RuntimeTypeHandle::GetGenericVariableIndex, PTR_ReflectClassBaseO
     FCALL_CONTRACT;
 
     REFLECTCLASSBASEREF refType = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(pTypeUNSAFE);
-
-    if (refType == NULL)
-        FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
-
     return (INT32)refType->GetType().AsGenericVariable()->GetIndex();
 }
 FCIMPLEND
@@ -1200,10 +1170,6 @@ FCIMPL1(FC_BOOL_RET, RuntimeTypeHandle::ContainsGenericVariables, PTR_ReflectCla
     FCALL_CONTRACT;
 
     REFLECTCLASSBASEREF refType = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(pTypeUNSAFE);
-
-    if (refType == NULL)
-        FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
-
     FC_RETURN_BOOL(refType->GetType().ContainsGenericVariables());
 }
 FCIMPLEND
@@ -1304,33 +1270,22 @@ FCIMPL1(LPCUTF8, RuntimeMethodHandle::GetUtf8Name, MethodDesc* pMethod)
 }
 FCIMPLEND
 
-FCIMPL1(INT32, RuntimeMethodHandle::GetAttributes, MethodDesc *pMethod) {
-    CONTRACTL {
-        FCALL_CHECK;
-    }
-    CONTRACTL_END;
-
-    if (!pMethod)
-        FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
-
+FCIMPL1(INT32, RuntimeMethodHandle::GetAttributesInternal, MethodDesc *pMethod)
+{
+    FCALL_CONTRACT;
     return (INT32)pMethod->GetAttrs();
 }
 FCIMPLEND
 
-FCIMPL1(INT32, RuntimeMethodHandle::GetImplAttributes, ReflectMethodObject *pMethodUNSAFE) {
-    CONTRACTL {
-        FCALL_CHECK;
-    }
-    CONTRACTL_END;
+FCIMPL1(INT32, RuntimeMethodHandle::GetImplAttributes, ReflectMethodObject *pMethodUNSAFE)
+{
+    FCALL_CONTRACT;
 
-    if (!pMethodUNSAFE)
-        FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
-
+    _ASSERTE(pMethodUNSAFE != NULL);
     MethodDesc* pMethod = pMethodUNSAFE->GetMethod();
-    INT32 attributes = 0;
 
     if (IsNilToken(pMethod->GetMemberDef()))
-        return attributes;
+        return 0;
 
     return (INT32)pMethod->GetImplAttrs();
 }
@@ -1349,15 +1304,9 @@ FCIMPL1(MethodTable*, RuntimeMethodHandle::GetMethodTable, MethodDesc *pMethod)
 }
 FCIMPLEND
 
-FCIMPL1(INT32, RuntimeMethodHandle::GetSlot, MethodDesc *pMethod) {
-    CONTRACTL {
-        FCALL_CHECK;
-    }
-    CONTRACTL_END;
-
-    if (!pMethod)
-        FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
-
+FCIMPL1(INT32, RuntimeMethodHandle::GetSlotInternal, MethodDesc *pMethod)
+{
+    FCALL_CONTRACT;
     return (INT32)pMethod->GetSlot();
 }
 FCIMPLEND
@@ -1759,9 +1708,7 @@ FCIMPLEND
 FCIMPL1(Object*, RuntimeMethodHandle::GetResolver, MethodDesc * pMethod)
 {
     FCALL_CONTRACT;
-
-    if (!pMethod)
-        FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
+    _ASSERTE(pMethod != NULL);
 
     OBJECTREF resolver = NULL;
     if (pMethod->IsLCGMethod())
@@ -1803,12 +1750,7 @@ extern "C" void QCALLTYPE RuntimeMethodHandle_Destroy(MethodDesc * pMethod)
 FCIMPL1(FC_BOOL_RET, RuntimeMethodHandle::IsTypicalMethodDefinition, ReflectMethodObject *pMethodUNSAFE)
 {
     FCALL_CONTRACT;
-
-    if (!pMethodUNSAFE)
-        FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
-
     MethodDesc* pMethod = pMethodUNSAFE->GetMethod();
-
     FC_RETURN_BOOL(pMethod->IsTypicalMethodDefinition());
 }
 FCIMPLEND
@@ -2176,15 +2118,9 @@ FCIMPL1(LPCUTF8, RuntimeFieldHandle::GetUtf8Name, FieldDesc *pField)
 }
 FCIMPLEND
 
-FCIMPL1(INT32, RuntimeFieldHandle::GetAttributes, FieldDesc *pField)
+FCIMPL1(INT32, RuntimeFieldHandle::GetAttributesInternal, FieldDesc *pField)
 {
-    CONTRACTL
-    {
-        FCALL_CHECK;
-        PRECONDITION(pField != NULL);
-    }
-    CONTRACTL_END;
-
+    FCALL_CONTRACT;
     return (INT32)pField->GetAttributes();
 }
 FCIMPLEND
@@ -2217,26 +2153,11 @@ FCIMPL1(INT32, RuntimeFieldHandle::GetToken, FieldDesc* pField)
 }
 FCIMPLEND
 
-FCIMPL2(FieldDesc*, RuntimeFieldHandle::GetStaticFieldForGenericType, FieldDesc *pField, ReflectClassBaseObject *pDeclaringTypeUNSAFE)
+FCIMPL2(FieldDesc*, RuntimeFieldHandle::GetStaticFieldForGenericType, FieldDesc* pField, MethodTable* pMT)
 {
-    CONTRACTL {
-        FCALL_CHECK;
-    }
-    CONTRACTL_END;
+    FCALL_CONTRACT;
 
-    REFLECTCLASSBASEREF refDeclaringType = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(pDeclaringTypeUNSAFE);
-
-    if ((refDeclaringType == NULL) || (pField == NULL))
-        FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
-
-    TypeHandle declaringType = refDeclaringType->GetType();
-
-    if (!pField)
-        FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
-    if (declaringType.IsTypeDesc() || declaringType.IsArray())
-        FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
-    MethodTable *pMT = declaringType.AsMethodTable();
-
+    _ASSERTE ((pField != NULL) && (pMT != NULL));
     _ASSERTE(pField->IsStatic());
     if (pMT->HasGenericsStaticsInfo())
         pField = pMT->GetFieldDescByIndex(pField->GetApproxEnclosingMethodTable()->GetIndexForFieldDesc(pField));
@@ -2252,8 +2173,7 @@ FCIMPL1(ReflectModuleBaseObject*, AssemblyHandle::GetManifestModule, AssemblyBas
     FCALL_CONTRACT;
 
     ASSEMBLYREF refAssembly = (ASSEMBLYREF)ObjectToOBJECTREF(pAssemblyUNSAFE);
-    if (refAssembly == NULL)
-        return NULL;
+    _ASSERTE(refAssembly != NULL);
 
     Module* pModule = refAssembly->GetAssembly()->GetModule();
     OBJECTREF refModule = pModule->GetExposedObjectIfExists();
@@ -2261,23 +2181,20 @@ FCIMPL1(ReflectModuleBaseObject*, AssemblyHandle::GetManifestModule, AssemblyBas
 }
 FCIMPLEND
 
-FCIMPL1(INT32, AssemblyHandle::GetToken, AssemblyBaseObject* pAssemblyUNSAFE) {
+FCIMPL1(INT32, AssemblyHandle::GetTokenInternal, AssemblyBaseObject* pAssemblyUNSAFE)
+{
     FCALL_CONTRACT;
 
     ASSEMBLYREF refAssembly = (ASSEMBLYREF)ObjectToOBJECTREF(pAssemblyUNSAFE);
-
-    if (refAssembly == NULL)
-        FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
+    _ASSERTE(refAssembly != NULL);
 
     mdAssembly token = mdAssemblyNil;
     IMDInternalImport *mdImport = refAssembly->GetAssembly()->GetMDImport();
 
-    if (mdImport != 0)
+    if (mdImport != NULL)
     {
         if (FAILED(mdImport->GetAssemblyFromScope(&token)))
-        {
-            FCThrow(kBadImageFormatException);
-        }
+            return COR_E_BADIMAGEFORMAT;
     }
 
     return token;
