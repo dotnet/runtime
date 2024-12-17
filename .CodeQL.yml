@@ -11,5 +11,6 @@ path_classifiers:
     # exclude artifacts/obj/**/CMakeFiles/**/CheckFunctionExists.c since CMake 
     # generates random directory names causing creation of duplicate issues 
     # related to obsolete encryption algorithm used. Note that CheckFuntionExists 
-    # is build time only and shouldnt affect the product binares. 
+    # files are generated as part of build-time checks in CMake and are not compiled
+    # or linked into any product binaries.
     - artifacts/obj/**/CMakeFiles/**/CheckFunctionExists.c
