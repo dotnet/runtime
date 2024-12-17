@@ -264,17 +264,16 @@ EXTERN_C void* QCALLTYPE RhAllocateThunksMapping()
             // jr     t1                  // Jump and don't link register
 
             int delta = (int)(pCurrentDataAddress - pCurrentThunkAddress);
-            *((uint32_t*)pCurrentThunkAddress) = 0x0002A013 | (((delta & 0x3FFFFC) >> 2) << 12);  // lui + addi
+            uint32_t deltaHi = (delta + 0x800) & 0xfffff000;
+            uint32_t deltaLo = delta << (32 - 12);
+            
+            *((uint32_t*)pCurrentThunkAddress) = 0x00000297 | deltaHi;  // auipc
             pCurrentThunkAddress += 4;
 
-            delta += OS_PAGE_SIZE - POINTER_SIZE - (i * POINTER_SIZE * 2) - 4;
-            *((uint32_t*)pCurrentThunkAddress) = 0x0002B014 | (((delta & 0x3FFFFC) >> 2) << 12);  // lui + addi
+            *((uint32_t*)pCurrentThunkAddress) = 0x0002B303 | deltaLo;  // addi
             pCurrentThunkAddress += 4;
 
-            *((uint32_t*)pCurrentThunkAddress) = 0x0002C294; // Example opcode, specific to RISC-V
-            pCurrentThunkAddress += 4;
-
-            *((uint32_t*)pCurrentThunkAddress) = 0x0004C280; // Example opcode, specific to RISC-V
+            *((uint32_t*)pCurrentThunkAddress) = 0x00030067; // jr
             pCurrentThunkAddress += 4;
 
 #else

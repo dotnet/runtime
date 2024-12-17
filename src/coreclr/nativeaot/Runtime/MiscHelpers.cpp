@@ -374,7 +374,6 @@ FCIMPL1(uint8_t *, RhGetCodeTarget, uint8_t * pCodeOrg)
 
 #elif TARGET_RISCV64
     uint32_t * pCode = (uint32_t *)pCodeOrg;
-    // is this "addi a0, a0, 8"?
     if (pCode[0] == 0x00850513)  // Encoding for `addi a0, a0, 8` in 32-bit instruction format
     {
         // unboxing sequence
