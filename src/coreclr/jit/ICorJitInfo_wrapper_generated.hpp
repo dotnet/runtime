@@ -191,6 +191,17 @@ CORINFO_METHOD_HANDLE WrapICorJitInfo::getUnboxedEntry(
     return temp;
 }
 
+CORINFO_METHOD_HANDLE WrapICorJitInfo::getInstantiatedEntry(
+          CORINFO_METHOD_HANDLE ftn,
+          CORINFO_METHOD_HANDLE* methodArg,
+          CORINFO_CLASS_HANDLE* classArg)
+{
+    API_ENTER(getInstantiatedEntry);
+    CORINFO_METHOD_HANDLE temp = wrapHnd->getInstantiatedEntry(ftn, methodArg, classArg);
+    API_LEAVE(getInstantiatedEntry);
+    return temp;
+}
+
 CORINFO_CLASS_HANDLE WrapICorJitInfo::getDefaultComparerClass(
           CORINFO_CLASS_HANDLE elemType)
 {
@@ -392,6 +403,16 @@ CORINFO_CLASS_HANDLE WrapICorJitInfo::getTypeInstantiationArgument(
     API_ENTER(getTypeInstantiationArgument);
     CORINFO_CLASS_HANDLE temp = wrapHnd->getTypeInstantiationArgument(cls, index);
     API_LEAVE(getTypeInstantiationArgument);
+    return temp;
+}
+
+CORINFO_CLASS_HANDLE WrapICorJitInfo::getMethodInstantiationArgument(
+          CORINFO_METHOD_HANDLE ftn,
+          unsigned index)
+{
+    API_ENTER(getMethodInstantiationArgument);
+    CORINFO_CLASS_HANDLE temp = wrapHnd->getMethodInstantiationArgument(ftn, index);
+    API_LEAVE(getMethodInstantiationArgument);
     return temp;
 }
 
@@ -1166,14 +1187,6 @@ void WrapICorJitInfo::getAsync2Info(
     API_ENTER(getAsync2Info);
     wrapHnd->getAsync2Info(pAsync2InfoOut);
     API_LEAVE(getAsync2Info);
-}
-
-const char16_t* WrapICorJitInfo::getJitTimeLogFilename()
-{
-    API_ENTER(getJitTimeLogFilename);
-    const char16_t* temp = wrapHnd->getJitTimeLogFilename();
-    API_LEAVE(getJitTimeLogFilename);
-    return temp;
 }
 
 mdMethodDef WrapICorJitInfo::getMethodDefFromMethod(

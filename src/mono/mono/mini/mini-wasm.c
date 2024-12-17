@@ -748,7 +748,7 @@ mono_wasm_enable_debugging (int log_level)
 	mono_wasm_debug_level = log_level;
 }
 
-int
+MONO_API int
 mono_wasm_get_debug_level (void)
 {
 	return mono_wasm_debug_level;

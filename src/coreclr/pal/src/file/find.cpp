@@ -20,7 +20,6 @@ Revision History:
 --*/
 
 #include "pal/thread.hpp"
-#include "pal/malloc.hpp"
 #include "pal/file.hpp"
 #include "pal/stackstring.hpp"
 

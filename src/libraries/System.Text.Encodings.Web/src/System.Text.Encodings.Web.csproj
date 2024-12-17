@@ -31,7 +31,6 @@ System.Text.Encodings.Web.JavaScriptEncoder</PackageDescription>
     <Compile Include="System\Text\Encodings\Web\OptimizedInboxTextEncoder.cs" />
     <Compile Include="System\Text\Encodings\Web\DefaultUrlEncoder.cs" />
     <Compile Include="System\Text\Encodings\Web\DefaultJavaScriptEncoder.cs" />
-    <Compile Include="System\Text\Encodings\Web\SpanUtility.cs" />
     <Compile Include="System\Text\Encodings\Web\ScalarEscaperBase.cs" />
     <Compile Include="System\Text\Encodings\Web\HtmlEncoder.cs" />
     <Compile Include="System\Text\Encodings\Web\DefaultHtmlEncoder.cs" />

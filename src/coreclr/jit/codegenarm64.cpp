@@ -2405,6 +2405,7 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
         }
         break;
 
+#if defined(FEATURE_SIMD)
         case GT_CNS_VEC:
         {
             GenTreeVecCon* vecCon = tree->AsVecCon();
@@ -2414,7 +2415,6 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
 
             switch (tree->TypeGet())
             {
-#if defined(FEATURE_SIMD)
                 case TYP_SIMD8:
                 case TYP_SIMD12:
                 case TYP_SIMD16:
@@ -2470,7 +2470,6 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
                     }
                     break;
                 }
-#endif // FEATURE_SIMD
 
                 default:
                 {
@@ -2480,6 +2479,7 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
 
             break;
         }
+#endif // FEATURE_SIMD
 
         default:
             unreached();

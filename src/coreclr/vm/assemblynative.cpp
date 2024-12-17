@@ -1089,7 +1089,7 @@ extern "C" void QCALLTYPE AssemblyNative_GetEntryPoint(QCall::AssemblyHandle pAs
     if (pMeth != NULL)
     {
         GCX_COOP();
-        retMethod.Set(pMeth->GetStubMethodInfo());
+        retMethod.Set(pMeth->AllocateStubMethodInfo());
     }
 
     END_QCALL;

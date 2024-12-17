@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Runtime;
 using System.Runtime.CompilerServices;
+using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 
@@ -457,6 +458,10 @@ namespace System.Threading
                 thread._startHelper = null;
 
                 startHelper.Run();
+            }
+            catch (Exception ex) when (ExceptionHandling.IsHandledByGlobalHandler(ex))
+            {
+                // the handler returned "true" means the exception is now "handled" and we should gracefully exit.
             }
             finally
             {

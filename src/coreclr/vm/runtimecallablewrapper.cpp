@@ -1491,30 +1491,15 @@ RCW::MarshalingType RCW::GetMarshalingType(IUnknown* pUnk, MethodTable *pClassMT
     }
     CONTRACTL_END;
 
-    PTR_EEClass pClass = pClassMT->GetClass();
+    // Check whether the COM object can be marshaled. Hence we query for INoMarshal
+    SafeComHolderPreemp<INoMarshal> pNoMarshal;
+    HRESULT hr = SafeQueryInterfacePreemp(pUnk, IID_INoMarshal, (IUnknown**)&pNoMarshal);
+    LogInteropQI(pUnk, IID_INoMarshal, hr, "RCW::GetMarshalingType: QI for INoMarshal");
 
-    // Skip attributes on interfaces as any object could implement those interface
-    if (!pClass->IsInterface() && pClass->IsMarshalingTypeSet())
-    {
-        MarshalingType mType;
-        ( pClass ->IsMarshalingTypeFreeThreaded() ) ? mType = MarshalingType_FreeThreaded
-            : (pClass->IsMarshalingTypeInhibit() ? mType = MarshalingType_Inhibit
-            : mType = MarshalingType_Standard);
-        return mType;
-    }
-    // MarshalingBehavior is not set and hence we will have to find the behavior using the QI
-    else
-    {
-        // Check whether the COM object can be marshaled. Hence we query for INoMarshal
-        SafeComHolderPreemp<INoMarshal> pNoMarshal;
-        HRESULT hr = SafeQueryInterfacePreemp(pUnk, IID_INoMarshal, (IUnknown**)&pNoMarshal);
-        LogInteropQI(pUnk, IID_INoMarshal, hr, "RCW::GetMarshalingType: QI for INoMarshal");
-
-        if (SUCCEEDED(hr))
-            return MarshalingType_Inhibit;
-        if (IUnkEntry::IsComponentFreeThreaded(pUnk))
-            return MarshalingType_FreeThreaded;
-    }
+    if (SUCCEEDED(hr))
+        return MarshalingType_Inhibit;
+    if (IUnkEntry::IsComponentFreeThreaded(pUnk))
+        return MarshalingType_FreeThreaded;
     return MarshalingType_Unknown;
 }
 

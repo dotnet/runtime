@@ -25,7 +25,6 @@ Abstract:
 #include "pal/debug.h"
 #include "pal/init.h"
 #include "pal/process.h"
-#include "pal/malloc.hpp"
 #include "pal/signal.hpp"
 #include "pal/virtual.h"
 
@@ -305,7 +304,7 @@ PAL_ERROR SEHEnable(CPalThread *pthrCurrent)
 {
 #if HAVE_MACH_EXCEPTIONS
     return pthrCurrent->EnableMachExceptions();
-#elif defined(__linux__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__sun)
+#elif defined(__linux__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__sun) || defined(__HAIKU__)
     return NO_ERROR;
 #else// HAVE_MACH_EXCEPTIONS
 #error not yet implemented
@@ -330,7 +329,7 @@ PAL_ERROR SEHDisable(CPalThread *pthrCurrent)
 {
 #if HAVE_MACH_EXCEPTIONS
     return pthrCurrent->DisableMachExceptions();
-#elif defined(__linux__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__sun)
+#elif defined(__linux__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__sun) || defined(__HAIKU__)
     return NO_ERROR;
 #else // HAVE_MACH_EXCEPTIONS
 #error not yet implemented

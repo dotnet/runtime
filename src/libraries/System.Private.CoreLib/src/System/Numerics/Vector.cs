@@ -17,7 +17,7 @@ namespace System.Numerics
 
         /// <summary>Gets a value that indicates whether vector operations are subject to hardware acceleration through JIT intrinsic support.</summary>
         /// <value><see langword="true" /> if vector operations are subject to hardware acceleration; otherwise, <see langword="false" />.</value>
-        /// <remarks>Vector operations are subject to hardware acceleration on systems that support Single Instruction, Multiple Data (SIMD) instructions and the RyuJIT just-in-time compiler is used to compile managed code.</remarks>
+        /// <remarks>Vector operations are subject to hardware acceleration on systems that support single instruction, multiple data (SIMD) instructions and when the RyuJIT just-in-time compiler is used to compile managed code.</remarks>
         public static bool IsHardwareAccelerated
         {
             [Intrinsic]

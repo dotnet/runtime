@@ -43,13 +43,14 @@ jobs:
     
     steps:
     - script: >-
-        build.cmd -ci
-        -subset publish
-        -configuration Release
+        build.cmd -restore -sign -publish -ci -configuration Release
+        /p:RestoreToolsetOnly=true
         /p:PublishRidAgnosticPackagesFromPlatform=${{ parameters.PublishRidAgnosticPackagesFromPlatform }}
+        /p:DownloadDirectory=$(Build.SourcesDirectory)\artifacts\PackageDownload\
         /p:OfficialBuildId=$(Build.BuildNumber)
         /p:SignType=$(_SignType)
         /p:DotNetSignType=$(_SignType)
+        /p:DotNetPublishUsingPipelines=true
         /bl:$(Build.SourcesDirectory)\prepare-artifacts.binlog
       displayName: Prepare artifacts and upload to build
     

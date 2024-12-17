@@ -442,6 +442,7 @@ namespace System.Data
         // If the column type is not string, or the column type is string and the value is not empty string, then a non-empty string is returned
         // This method does not throw any formatting exceptions, since we can always format the field value to a string.
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
+        [RequiresDynamicCode(DataSet.RequiresDynamicCodeMessage)]
         internal string? GetColumnValueAsString(DataRow row, DataRowVersion version)
         {
             object objValue = this[row.GetRecordFromVersion(version)];
@@ -1755,6 +1756,7 @@ namespace System.Data
             ColumnName + " + " + Expression;
 
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
+        [RequiresDynamicCode(DataSet.RequiresDynamicCodeMessage)]
         internal object ConvertXmlToObject(string s)
         {
             Debug.Assert(s != null, "Caller is responsible for missing element/attribute case");
@@ -1762,12 +1764,14 @@ namespace System.Data
         }
 
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
+        [RequiresDynamicCode(DataSet.RequiresDynamicCodeMessage)]
         internal object ConvertXmlToObject(XmlReader xmlReader, XmlRootAttribute? xmlAttrib)
         {
             return InsureStorage().ConvertXmlToObject(xmlReader, xmlAttrib);
         }
 
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
+        [RequiresDynamicCode(DataSet.RequiresDynamicCodeMessage)]
         internal string ConvertObjectToXml(object value)
         {
             Debug.Assert(value != null && (value != DBNull.Value), "Caller is responsible for checking on DBNull");
@@ -1775,6 +1779,7 @@ namespace System.Data
         }
 
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
+        [RequiresDynamicCode(DataSet.RequiresDynamicCodeMessage)]
         internal void ConvertObjectToXml(object value, XmlWriter xmlWriter, XmlRootAttribute? xmlAttrib)
         {
             Debug.Assert(value != null && (value != DBNull.Value), "Caller is responsible for checking on DBNull");
