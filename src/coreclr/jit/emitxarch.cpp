@@ -15859,8 +15859,6 @@ BYTE* emitter::emitOutputR(BYTE* dst, instrDesc* id)
                 }
             }
 
-            code = AddX86PrefixIfNeeded(id, code, size);
-
             if (TakesRexWPrefix(id))
             {
                 code = AddRexWPrefix(id, code);
