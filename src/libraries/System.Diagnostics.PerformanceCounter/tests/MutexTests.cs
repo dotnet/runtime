@@ -8,7 +8,7 @@ using Xunit;
 
 namespace System.Diagnostics.Tests
 {
-    public static class MutextTests
+    public static class MutexTests
     {
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInAppContainer))] // Can't create global objects in appcontainer
         public static void VerifySecurityIdentifier()
@@ -27,14 +27,14 @@ namespace System.Diagnostics.Tests
             try
             {
                 // This is the SID that is added by EnterMutex().
-                SecurityIdentifier allUsersSid = new(WellKnownSidType.AuthenticatedUserSid, null);
+                SecurityIdentifier authenticatedUserSid = new(WellKnownSidType.AuthenticatedUserSid, null);
 
                 MutexSecurity security = mutex.GetAccessControl();
                 AuthorizationRuleCollection rules = security.GetAccessRules(true, true, typeof(SecurityIdentifier));
                 Assert.Equal(1, rules.Count);
                 MutexAccessRule accessRule = (MutexAccessRule)rules[0];
                 SecurityIdentifier sid = (SecurityIdentifier)accessRule.IdentityReference;
-                Assert.Equal(allUsersSid, sid);
+                Assert.Equal(authenticatedUserSid, sid);
             }
             finally
             {

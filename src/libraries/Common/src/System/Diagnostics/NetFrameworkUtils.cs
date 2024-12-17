@@ -27,8 +27,8 @@ namespace System.Diagnostics
             // Specify a SID in case the mutex has not yet been created; this prevents it from using the SID from the current thread.
             // This SID (AuthenticatedUserSid) is the same one used by .NET Framework.
             MutexSecurity sec = new MutexSecurity();
-            SecurityIdentifier everyoneSid = new SecurityIdentifier(WellKnownSidType.AuthenticatedUserSid, null);
-            sec.AddAccessRule(new MutexAccessRule(everyoneSid, MutexRights.Synchronize | MutexRights.Modify, AccessControlType.Allow));
+            SecurityIdentifier authenticatedUserSid = new SecurityIdentifier(WellKnownSidType.AuthenticatedUserSid, null);
+            sec.AddAccessRule(new MutexAccessRule(authenticatedUserSid, MutexRights.Synchronize | MutexRights.Modify, AccessControlType.Allow));
             tmpMutex.SetAccessControl(sec);
 
             SafeWaitForMutex(tmpMutex, ref mutex);
